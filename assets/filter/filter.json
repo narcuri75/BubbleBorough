@@ -1,0 +1,48 @@
+{
+  "filters": [
+    {
+      "key": "basic-filter.png",
+      "name": "Basic Filter",
+      "blurb": "Starter filtration for a new aquarium.",
+      "cleanDays": 3.5,
+      "comfortBoost": 0,
+      "cost": 0,
+      "purchasable": false,
+      "tier": 0,
+      "flow": 1
+    },
+    {
+      "key": "charcoal-filter.png",
+      "name": "Charcoal Filter",
+      "blurb": "Keeps an empty tank clean for about 5.25 days.",
+      "cleanDays": 5.25,
+      "comfortBoost": 0.04,
+      "cost": 30,
+      "purchasable": true,
+      "tier": 1,
+      "flow": 1.04
+    },
+    {
+      "key": "porcelain-filter.png",
+      "name": "Porcelain Filter",
+      "blurb": "Keeps an empty tank clean for about 7 days.",
+      "cleanDays": 7,
+      "comfortBoost": 0.08,
+      "cost": 40,
+      "purchasable": true,
+      "tier": 2,
+      "flow": 1.08
+    },
+    {
+      "key": "reef-filter.png",
+      "name": "Reef Filter",
+      "blurb": "Keeps an empty tank clean for about 10.5 days.",
+      "cleanDays": 10.5,
+      "comfortBoost": 0.12,
+      "cost": 50,
+      "purchasable": true,
+      "tier": 3,
+      "flow": 1.14
+    }
+  ]
+}

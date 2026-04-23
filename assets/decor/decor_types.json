@@ -1,0 +1,593 @@
+  {
+    "decor": [
+      {
+        "file": "seaweed-bunch.png",
+        "name": "Green Seaweed Bunch",
+        "cost": 2,
+        "width": 175,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "mushroomcoral_seaweed.png",
+        "name": "Mushroom Coral",
+        "cost": 15,
+        "width": 300,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "floatingseaweed_1.png",
+        "name": "Green Floating Seaweed",
+        "cost": 4,
+        "width": 200,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "seaweed_1.png",
+        "name": "Green Seaweed",
+        "cost": 4,
+        "width": 200,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "anubia-rock_seaweed.png",
+        "name": "Anubias Rock",
+        "cost": 4,
+        "width": 150,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "rock-arch.png",
+        "name": "Rock Arch",
+        "cost": 8,
+        "width": 350,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "moss-bridge.png",
+        "name": "Moss Bridge",
+        "cost": 10,
+        "width": 450,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "driftwood-root.png",
+        "name": "Driftwood Root",
+        "cost": 10,
+        "width": 400,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "slate-cave.png",
+        "name": "Slate Cave",
+        "cost": 12,
+        "width": 400,
+        "defaultScale": 1,
+        "caveSettings": {
+          "entryCount": 1,
+          "entries": [
+            {
+              "id": "main-front",
+              "x": 0.51,
+              "y": 0.67,
+              "side": "front"
+            }
+          ],
+          "seatCount": 2,
+          "seats": [
+            {
+              "id": "left-seat",
+              "x": 0.42,
+              "y": 0.64,
+              "facing": "right"
+            },
+            {
+              "id": "right-seat",
+              "x": 0.6,
+              "y": 0.64,
+              "facing": "left"
+            }
+          ]
+        },
+        "caveBehavior": {
+          "portals": [
+            {
+              "id": "main_front",
+              "approachX": 0.5,
+              "approachY": 0.77,
+              "mouthX": 0.5,
+              "mouthY": 0.67,
+              "outsideLayer": 2,
+              "insideLayer": 4,
+              "path": [
+                {
+                  "x": 0.5,
+                  "y": 0.61
+                },
+                {
+                  "x": 0.5,
+                  "y": 0.56
+                }
+              ]
+            }
+          ],
+          "insideSlots": [
+            {
+              "id": "center",
+              "x": 0.5,
+              "y": 0.53,
+              "layer": 4,
+              "portalIds": [
+                "main_front"
+              ]
+            }
+          ]
+        },
+        "theme": "Regular"
+      },
+      {
+        "file": "Shipwreck.png",
+        "name": "Shipwreck",
+        "cost": 15,
+        "width": 440,
+        "defaultScale": 1,
+        "fishBehavior": {
+          "hangout": "hide"
+        },
+        "theme": "Regular"
+      },
+      {
+        "file": "Castle-Cave.png",
+        "name": "Castle Cave",
+        "cost": 16,
+        "width": 500,
+        "defaultScale": 1,
+        "caveSettings": {
+          "entryCount": 3,
+          "entries": [
+            {
+              "id": "main-both",
+              "x": 0.49,
+              "y": 0.69,
+              "side": "both"
+            },
+            {
+              "id": "right-front",
+              "x": 0.76,
+              "y": 0.84,
+              "side": "front"
+            },
+            {
+              "id": "far-right-front",
+              "x": 0.92,
+              "y": 0.89,
+              "side": "front"
+            }
+          ],
+          "seatCount": 3,
+          "seats": [
+            {
+              "id": "main-upper",
+              "x": 0.5,
+              "y": 0.74,
+              "facing": "right"
+            },
+            {
+              "id": "right-seat",
+              "x": 0.76,
+              "y": 0.84,
+              "facing": "left"
+            },
+            {
+              "id": "main-lower",
+              "x": 0.51,
+              "y": 0.78,
+              "facing": "left"
+            }
+          ]
+        },
+        "caveBehavior": {
+          "portals": [
+            {
+              "id": "main_front",
+              "approachX": 0.49,
+              "approachY": 0.76,
+              "mouthX": 0.5,
+              "mouthY": 0.67,
+              "outsideLayer": 2,
+              "insideLayer": 4,
+              "path": [
+                {
+                  "x": 0.5,
+                  "y": 0.6
+                },
+                {
+                  "x": 0.49,
+                  "y": 0.55
+                }
+              ]
+            },
+            {
+              "id": "side_layer4",
+              "approachX": 0.74,
+              "approachY": 0.62,
+              "mouthX": 0.69,
+              "mouthY": 0.6,
+              "outsideLayer": 4,
+              "insideLayer": 4,
+              "path": [
+                {
+                  "x": 0.63,
+                  "y": 0.57
+                },
+                {
+                  "x": 0.56,
+                  "y": 0.54
+                }
+              ]
+            }
+          ],
+          "insideSlots": [
+            {
+              "id": "main_chamber",
+              "x": 0.52,
+              "y": 0.52,
+              "layer": 4,
+              "portalIds": [
+                "main_front",
+                "side_layer4"
+              ]
+            }
+          ]
+        },
+        "theme": "Fantasy"
+      },
+      {
+        "file": "Plane-wreck.png",
+        "name": "Plane Crash",
+        "cost": 12,
+        "width": 350,
+        "defaultScale": 1,
+        "fishBehavior": {
+          "hangout": "hide"
+        },
+        "theme": "Regular"
+      },
+
+      {
+        "file": "blue_castle_cave.png",
+        "name": "Blue Castle Cave",
+        "cost": 16,
+        "width": 350,
+        "defaultScale": 1,
+        "caveSettings": {
+          "entryCount": 3,
+          "entries": [
+            {
+              "id": "left-front",
+              "x": 0.24,
+              "y": 0.82,
+              "side": "front"
+            },
+            {
+              "id": "center-front",
+              "x": 0.44,
+              "y": 0.65,
+              "side": "front"
+            },
+            {
+              "id": "right-front",
+              "x": 0.62,
+              "y": 0.84,
+              "side": "front"
+            }
+          ],
+          "seatCount": 3,
+          "seats": [
+            {
+              "id": "left-seat",
+              "x": 0.24,
+              "y": 0.82
+            },
+            {
+              "id": "center-seat",
+              "x": 0.44,
+              "y": 0.65
+            },
+            {
+              "id": "right-seat",
+              "x": 0.62,
+              "y": 0.84
+            }
+          ]
+        },
+        "theme": "Fantasy"
+      },
+
+      {
+        "file": "meteor_cave.png",
+        "name": "Meteor Cave",
+        "cost": 16,
+        "width": 450,
+        "defaultScale": 1,
+        "caveSettings": {
+          "entryCount": 1,
+          "entries": [
+            {
+              "id": "main-front",
+              "x": 0.56,
+              "y": 0.67,
+              "side": "front"
+            }
+          ],
+          "seatCount": 2,
+          "seats": [
+            {
+              "id": "upper-seat",
+              "x": 0.5,
+              "y": 0.55,
+              "facing": "right"
+            },
+            {
+              "id": "lower-seat",
+              "x": 0.49,
+              "y": 0.72,
+              "facing": "right"
+            }
+          ]
+        },
+        "theme": "Regular"
+      },
+      {
+        "file": "driftwood.png",
+        "name": "Driftwood",
+        "cost": 10,
+        "width": 450,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "fishing_lure.png",
+        "name": "Fishing Lure",
+        "cost": 6,
+        "width": 150,
+        "defaultScale": 1,
+        "fishBehavior": {
+          "hangout": "lure",
+          "occupancyLimit": 1
+        },
+        "theme": "Regular"
+      },
+      {
+        "file": "gorebag_lure.png",
+        "name": "Gorbag",
+        "cost": 10,
+        "width": 200,
+        "defaultScale": 1,
+        "fishBehavior": {
+          "hangout": "lure",
+          "occupancyLimit": 1
+        },
+        "theme": "Spooky"
+      },
+      {
+        "file": "fishheadeffigy_1.png",
+        "name": "Neon Fish Head Effigy",
+        "cost": 3,
+        "width": 70,
+        "defaultScale": 1,
+        "fishBehavior": {
+          "hangout": "spooky",
+          "occupancyLimit": 1
+        },
+        "theme": "Spooky"
+      },
+      {
+        "file": "fishheadeffigy_2.png",
+        "name": "Guppy Fish Head Effigy",
+        "cost": 3,
+        "width": 70,
+        "defaultScale": 1,
+        "fishBehavior": {
+          "hangout": "spooky",
+          "occupancyLimit": 1
+        },
+        "theme": "Spooky"
+      },
+      {
+        "file": "fishheadeffigy_3.png",
+        "name": "Danio Fish Head Effigy",
+        "cost": 3,
+        "width": 70,
+        "defaultScale": 1,
+        "fishBehavior": {
+          "hangout": "spooky",
+          "occupancyLimit": 1
+        },
+        "theme": "Spooky"
+      },
+      {
+        "file": "rock_1_bricks.png",
+        "name": "Rock 1",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "rock_2_bricks.png",
+        "name": "Rock 2",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "rock_3_bricks.png",
+        "name": "Rock 3",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "rock_4_bricks.png",
+        "name": "Rock 4",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "rock_5_bricks.png",
+        "name": "Rock 5",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "volcanic_rock_1_bricks.png",
+        "name": "Volcanic Rock 1",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "volcanic_rock_2_bricks.png",
+        "name": "Volcanic Rock 2",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "volcanic_rock_3_bricks.png",
+        "name": "Volcanic Rock 3",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "volcanic_rock_4_bricks.png",
+        "name": "Volcanic Rock 4",
+        "cost": 1,
+        "width": 100,
+        "defaultScale": 1,
+        "theme": "Regular"
+      },
+      {
+        "file": "volcano-1_bubbler.png",
+        "name": "Volcano Bubbler 1",
+        "cost": 16,
+        "width": 260,
+        "defaultScale": 1,
+        "bubbler": {
+          "spoutQty": 1,
+          "spouts": [
+            {
+              "horizontalLocation": 0.5,
+              "intensity": 15,
+              "speed": 2,
+              "spread": 40,
+              "fadeDistance": 250,
+              "bubbleColor": [
+                "",
+                "",
+                ""
+              ],
+              "bubbleOpacity": 3
+            }
+          ]
+        },
+        "theme": "Regular"
+      },
+      {
+        "file": "volcano-2_bubbler.png",
+        "name": "Volcano Bubbler 2",
+        "cost": 18,
+        "width": 300,
+        "defaultScale": 1,
+        "bubbler": {
+          "spoutQty": 2,
+          "spouts": [
+            {
+              "horizontalLocation": 0.3,
+              "intensity": 15,
+              "speed": 2,
+              "spread": 20,
+              "fadeDistance": 200,
+              "bubbleColor": [
+                "",
+                "",
+                ""
+              ],
+              "bubbleOpacity": 3
+            },
+            {
+              "horizontalLocation": 0.6,
+              "intensity": 10,
+              "speed": 2,
+              "spread": 20,
+              "fadeDistance": 200,
+              "bubbleColor": [
+                "",
+                "",
+                ""
+              ],
+              "bubbleOpacity": 3
+            }
+          ]
+        },
+        "theme": "Regular"
+      },
+      {
+        "file": "treasure-chest_bubbler.png",
+        "name": "Treasure Chest Bubbler",
+        "cost": 8,
+        "width": 150,
+        "defaultScale": 1,
+        "fishBehavior": {
+          "hangout": [
+            "hardscape"
+          ]
+        },
+        "bubbler": {
+          "spoutQty": 1,
+          "spouts": [
+            {
+              "horizontalLocation": 0.5,
+              "intensity": 4,
+              "speed": 1,
+              "spread": 50,
+              "fadeDistance": 200,
+              "bubbleColor": [
+                "",
+                "",
+                ""
+              ],
+              "bubbleOpacity": 3
+            }
+          ]
+        },
+        "theme": "Regular"
+      },
+      {
+        "file": "floating_swampmoss_1.png",
+        "name": "Floating Swamp Moss",
+        "theme": "Spooky",
+        "cost": 5,
+        "width": 300,
+        "defaultScale": 1
+      }
+    ]
+  }

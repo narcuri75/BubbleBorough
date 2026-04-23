@@ -1,0 +1,10 @@
+{
+  "name": "bubble-borough",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A real-time fish tank idle game.",
+  "scripts": {
+    "generate:assets": "powershell -ExecutionPolicy Bypass -File scripts/generate-assets.ps1",
+    "generate:manifest": "powershell -ExecutionPolicy Bypass -File scripts/generate-asset-manifest.ps1"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "fallbackImage": "bottle.png",
+  "food": {
+    "basic": {
+      "id": "basic",
+      "name": "Food",
+      "description": "Simple pellets that satisfy hunger.",
+      "bottlePellets": 99,
+      "cost": 5,
+      "image": "basic-food.png",
+      "dropStyle": "pellet",
+      "pelletColor": "#6E4A22",
+      "pelletAccentColor": "#9B6D36",
+      "pelletHighlightColor": "#D8B37A"
+    },
+    "upgraded": {
+      "id": "upgraded",
+      "name": "Food+",
+      "description": "Cleaner pellets that help limit dirtiness.",
+      "bottlePellets": 99,
+      "cost": 10,
+      "image": "upgraded-food.png",
+      "dropStyle": "pellet",
+      "pelletColor": "#355C2C",
+      "pelletAccentColor": "#547F42",
+      "pelletHighlightColor": "#98B57A"
+    },
+    "frisky": {
+      "id": "frisky",
+      "name": "Frisky",
+      "description": "Pellets that raise the chance of fish pairing up.",
+      "bottlePellets": 99,
+      "cost": 5,
+      "image": "frisky-food.png",
+      "dropStyle": "pellet",
+      "pelletColor": "#D958A8",
+      "pelletAccentColor": "#F089C8",
+      "pelletHighlightColor": "#FFD3EA"
+    },
+    "chum": {
+      "id": "chum",
+      "name": "Chum",
+      "description": "A messy bait food that attracts piranha-like feeders.",
+      "bottlePellets": 99,
+      "cost": 10,
+      "image": "chum-food.png",
+      "dropStyle": "sprite",
+      "dropImages": [
+        "chum_1.png",
+        "chum_2.png",
+        "chum_3.png"
+      ]
+    }
+  },
+  "medicine": {
+    "firstAid": {
+      "id": "firstAid",
+      "name": "First Aid",
+      "description": "Blue drops that heal half a heart every 10 seconds for 1 minute.",
+      "color": "#56B8FF",
+      "bottleDrops": 3,
+      "cost": 8,
+      "image": "first-aid-drops.png"
+    },
+    "betaBlocker": {
+      "id": "betaBlocker",
+      "name": "Calming Serum",
+      "description": "Yellow drops that calm the tank and set comfort to 100% for the rest of the day.",
+      "color": "#F3D348",
+      "bottleDrops": 3,
+      "cost": 10,
+      "image": "calming-serum.png"
+    },
+    "antidote": {
+      "id": "antidote",
+      "name": "The Cure",
+      "description": "Green drops that cure zombie virus, restore zombie variants, and kill skeletons.",
+      "color": "#49D17A",
+      "bottleDrops": 3,
+      "cost": 50,
+      "image": "zombie-virus-antidote-drops.png"
+    }
+  }
+}

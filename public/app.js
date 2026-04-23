@@ -27465,7 +27465,7 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
     : `
       <div class="tank-name-display">
         <strong>${escapeHtml(tankLabel)}</strong>
-        <button class="small-button icon-only alt" type="button" data-edit-tank-name title="Rename tank" aria-label="Rename tank">✏️</button>
+        <button class="small-button icon-only alt" type="button" data-edit-tank-name title="Rename tank" aria-label="Rename tank">&#9998;</button>
       </div>
     `;
 
@@ -27475,30 +27475,26 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
     const switchTankDisclaimer = "*To switch between tanks, use either the hidden arrow keys in the bottom corners of the tank OR the left and right arrow keys on your keyboard.*";
 
     return `
-      <div class="management-hero-layout management-tone-${status.tone}">
-        <div class="management-hero-topline">
-          <div class="management-hero-nameplate">
+      <div class="management-summary-strip management-tone-${status.tone}">
+        <div class="management-summary-head">
+          <div class="management-summary-nameplate">
             ${nameMarkup}
           </div>
           <span class="management-status-pill management-tone-${status.tone}">${escapeHtml(status.label)}</span>
         </div>
-        <p class="management-hero-description">${escapeHtml(status.note)}</p>
-        <div class="management-hero-meta management-hero-meta-primary">
-          ${buildManagementHeroChip("Aquarium", `${currentTankIndex + 1} of ${tankCount}`)}
-          ${buildManagementHeroChip("Filter", filterLabel)}
+        <div class="management-summary-meta">
+          ${buildManagementSummaryChip(`Aquarium ${currentTankIndex + 1} of ${tankCount}`)}
+          ${buildManagementSummaryButton("Fish", fishCount, "fish")}
+          ${buildManagementSummaryButton("Decor", decorCount, "decor")}
         </div>
-        <div class="management-hero-meta management-hero-meta-secondary">
-          ${buildManagementHeroButton("Fish", fishCount, "fish")}
-          ${buildManagementHeroButton("Decor", decorCount, "decor")}
-        </div>
-        <div class="tank-action-row management-hero-actions">
+        <div class="tank-action-row management-summary-actions">
           <button class="small-button alt" type="button" data-open-equipment-overlay>Edit Tank</button>
           <button class="small-button alt" type="button" data-open-store-tab="equipment">Buy Tank</button>
           <button class="small-button warn" type="button" data-sell-current-tank ${isTankEmpty(tank) && tankCount > 1 ? "" : "disabled"}>
-            Sell Tank (🪙${resaleValue})
+            Sell Tank (&#129689;${resaleValue})
           </button>
         </div>
-        <div class="management-inline-disclaimer">${escapeHtml(switchTankDisclaimer)}</div>
+        <p class="management-summary-disclaimer">${escapeHtml(switchTankDisclaimer)}</p>
       </div>
     `;
   }
@@ -27516,25 +27512,22 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
       <button class="small-button alt" type="button" data-open-equipment-overlay>Edit Tank</button>
       <button class="small-button alt" data-open-store-tab="equipment">Buy Tank</button>
       <button class="small-button warn" data-sell-current-tank ${isTankEmpty(tank) && tankCount > 1 ? "" : "disabled"}>
-        Sell Tank (🪙${resaleValue})
+        Sell Tank (&#129689;${resaleValue})
       </button>
     </div>
   `;
 }
 
-function buildManagementHeroChip(label, value) {
+function buildManagementSummaryChip(value) {
   return `
-    <div class="management-hero-chip">
-      <span>${escapeHtml(label)}</span>
-      <strong>${escapeHtml(String(value))}</strong>
-    </div>
+    <span class="management-summary-chip">${escapeHtml(String(value))}</span>
   `;
 }
 
-function buildManagementHeroButton(label, value, view) {
+function buildManagementSummaryButton(label, value, view) {
   return `
-    <button class="management-hero-chip management-hero-chip-button" type="button" data-management-view="${escapeHtml(view)}">
-      <strong>${escapeHtml(`${label} (${value})`)}</strong>
+    <button class="management-summary-button" type="button" data-management-view="${escapeHtml(view)}">
+      ${escapeHtml(`${label} (${value})`)}
     </button>
   `;
 }
@@ -27724,7 +27717,30 @@ function buildManagementCareQueue(stats) {
     }];
   }
 
-  return tasks.slice(0, 3);
+  return tasks;
+}
+
+function buildManagementSnapshotStat(label, value, tone = "") {
+  const toneClass = tone ? ` management-tone-${tone}` : "";
+  return `
+    <article class="management-snapshot-stat${toneClass}">
+      <span class="management-snapshot-label">${escapeHtml(label)}</span>
+      <strong class="management-snapshot-value">${escapeHtml(String(value))}</strong>
+    </article>
+  `;
+}
+
+function buildManagementCompactTaskRow(task = {}) {
+  const toneClass = task.tone ? ` management-tone-${task.tone}` : "";
+  const badgeLabel = task.badge || "Task";
+  const rightValue = task.value ? `<span class="management-task-value">${escapeHtml(String(task.value))}</span>` : "";
+  return `
+    <article class="management-task-row${toneClass}">
+      <span class="management-task-badge">${escapeHtml(badgeLabel)}</span>
+      <span class="management-task-text">${escapeHtml(task.label || "")}</span>
+      ${rightValue}
+    </article>
+  `;
 }
 
 function buildManagementEventsMarkup(events = state.events, limit = MANAGEMENT_HISTORY_PAGE_SIZE) {
@@ -27780,29 +27796,19 @@ function selectDecorInTankFromManagement(placedId) {
 }
 
 function buildManagementBrowserShell(title, count, listMarkup, options = {}) {
-  const shopTab = typeof options.shopTab === "string" ? options.shopTab : "";
-  const shopLabel = typeof options.shopLabel === "string" ? options.shopLabel : "";
   const emptyCopy = typeof options.emptyCopy === "string" ? options.emptyCopy : "";
-  const headerActions = shopTab && shopLabel
-    ? `<button class="small-button alt" type="button" data-open-store-tab="${escapeHtml(shopTab)}">${escapeHtml(shopLabel)}</button>`
-    : "";
-  const emptyActions = shopTab && shopLabel
-    ? `<div class="tank-action-row management-browser-empty-actions"><button class="small-button alt" type="button" data-open-store-tab="${escapeHtml(shopTab)}">${escapeHtml(shopLabel)}</button></div>`
-    : "";
 
   return `
     <section class="settings-section management-browser">
       <div class="management-browser-head">
         <button class="small-button icon-only alt management-browser-back" type="button" data-management-view="overview" aria-label="Back to tank management">&#8592;</button>
         <h3>${escapeHtml(`${title} (${count})`)}</h3>
-        <div class="management-browser-head-actions">${headerActions}</div>
       </div>
       ${count
         ? `<div class="management-browser-list">${listMarkup}</div>`
         : `
           <div class="empty-state management-browser-empty">
             <div>${escapeHtml(emptyCopy)}</div>
-            ${emptyActions}
           </div>
         `}
     </section>
@@ -27847,8 +27853,8 @@ function buildManagementFishRow(fish, now = Date.now()) {
       <div class="management-browser-actions">
         <button class="small-button alt" type="button" data-management-select-fish="${escapeHtml(fish.id)}">Select In Tank</button>
         <button class="small-button alt" type="button" data-management-store-fish="${escapeHtml(fish.id)}" ${canStore ? "" : "disabled"}>To Storage</button>
-        <button class="small-button alt" type="button" data-management-buy-another-fish="${escapeHtml(fish.id)}" ${(canBuyAnother && state.coins >= purchaseCost) ? "" : "disabled"}>Buy Another 🪙${purchaseCost}</button>
-        <button class="small-button warn" type="button" data-management-sell-fish="${escapeHtml(fish.id)}" ${canSell ? "" : "disabled"}>Sell 🪙${resaleValue}</button>
+        <button class="small-button alt" type="button" data-management-buy-another-fish="${escapeHtml(fish.id)}" ${(canBuyAnother && state.coins >= purchaseCost) ? "" : "disabled"}>Buy Another (&#129689;${purchaseCost})</button>
+        <button class="small-button warn" type="button" data-management-sell-fish="${escapeHtml(fish.id)}" ${canSell ? "" : "disabled"}>Sell (&#129689;${resaleValue})</button>
       </div>
     </article>
   `;
@@ -27869,8 +27875,6 @@ function buildTankManagementFishBrowser(now = Date.now()) {
     fishList.length,
     fishList.map((fish) => buildManagementFishRow(fish, now)).join(""),
     {
-      shopTab: "fish",
-      shopLabel: "Fish Shop",
       emptyCopy: "This tank has no fish yet."
     }
   );
@@ -27891,14 +27895,14 @@ function buildManagementDecorRow(item) {
       <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(decor.path)}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
       <div class="management-browser-copy">
         <strong>${escapeHtml(decor.name)}</strong>
-        <span>${escapeHtml(`Layer ${getDecorTankLayer(item)} • ${formatDecorScale(item.scale)}`)}</span>
+        <span>${escapeHtml(`Layer ${getDecorTankLayer(item)} / ${formatDecorScale(item.scale)}`)}</span>
         <small>${grouped ? "Grouped decor" : "Placed in tank"}</small>
       </div>
       <div class="management-browser-actions">
         <button class="small-button alt" type="button" data-management-select-decor="${escapeHtml(item.id)}">Select In Tank</button>
         <button class="small-button alt" type="button" data-management-store-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>To Storage</button>
-        <button class="small-button alt" type="button" data-management-buy-another-decor="${escapeHtml(item.decorKey)}" ${(canBuyAnother && state.coins >= cost) ? "" : "disabled"}>Buy Another 🪙${cost}</button>
-        <button class="small-button warn" type="button" data-management-sell-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>Sell 🪙${resaleValue}</button>
+        <button class="small-button alt" type="button" data-management-buy-another-decor="${escapeHtml(item.decorKey)}" ${(canBuyAnother && state.coins >= cost) ? "" : "disabled"}>Buy Another (&#129689;${cost})</button>
+        <button class="small-button warn" type="button" data-management-sell-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>Sell (&#129689;${resaleValue})</button>
       </div>
     </article>
   `;
@@ -27917,8 +27921,6 @@ function buildTankManagementDecorBrowser() {
     decorItems.length,
     decorItems.map((item) => buildManagementDecorRow(item)).join(""),
     {
-      shopTab: "decor",
-      shopLabel: "Decor Shop",
       emptyCopy: "This tank has no decor placed yet."
     }
   );
@@ -27999,6 +28001,8 @@ function buildTankManagementOverlayBody(now = Date.now()) {
 
   const stats = getManagementHubStats(now);
   const careQueue = buildManagementCareQueue(stats);
+  const visibleTasks = careQueue.slice(0, 3);
+  const hiddenTaskCount = Math.max(0, careQueue.length - visibleTasks.length);
   const historyEvents = Array.isArray(state.events) ? state.events : [];
   const visibleHistoryCount = Math.max(
     MANAGEMENT_HISTORY_PAGE_SIZE,
@@ -28008,16 +28012,6 @@ function buildTankManagementOverlayBody(now = Date.now()) {
   const cleanlinessTone = stats.cleanPercent <= 20 ? "danger" : stats.cleanPercent <= 45 ? "warn" : "good";
   const mealsTone = !stats.livingFish ? "neutral" : stats.hungryFish > 0 ? "warn" : stats.currentMealServed ? "good" : "neutral";
   const healthTone = stats.deadFish > 0 ? "danger" : stats.injuredFish > 0 ? "warn" : stats.livingFish ? "good" : "neutral";
-  const cleanlinessNote = stats.cleanPercent <= 45
-    ? `Clean soon. Max grime in ${stats.maxDirtyIn}.`
-    : `Filter max grime in ${stats.maxDirtyIn}.`;
-  const mealsNote = !stats.livingFish
-    ? "Add fish to start meal windows."
-    : stats.hungryFish > 0
-      ? `${stats.hungryFish} hungry. ${stats.mealNote}.`
-      : stats.currentMealServed
-        ? "Current meal window is served."
-        : stats.mealNote;
   const healthValue = stats.deadFish > 0
     ? `${stats.deadFish} lost`
     : stats.injuredFish > 0
@@ -28025,61 +28019,51 @@ function buildTankManagementOverlayBody(now = Date.now()) {
       : stats.livingFish
         ? "Stable"
         : "No fish";
-  const healthNote = stats.deadFish > 0
-    ? "Dispose dead fish before the next care cycle."
-    : stats.injuredFish > 0
-      ? "Medicine can help injured fish recover."
-      : stats.livingFish
-        ? "No fish need care right now."
-        : "Tank is ready for new fish.";
+  const wasteValue = stats.wasteCount > 0
+    ? stats.wasteCount
+    : stats.pendingWasteCount > 0
+      ? `${stats.pendingWasteCount} pending`
+      : 0;
 
   return `
     <div class="management-hub">
-      <section class="settings-section management-hub-overview">
-        <div class="compact-heading">
-          <h3>Current Aquarium</h3>
-        </div>
+      <section class="settings-section management-summary-panel">
         ${buildTankManagementCardMarkup(tank, { variant: "overlay", stats })}
       </section>
 
-      <section class="settings-section management-hub-care">
+      <section class="settings-section management-care-panel">
         <div class="compact-heading">
-          <h3>Suggested Tasks</h3>
+          <h3>Care Snapshot</h3>
         </div>
-        <div class="management-care-list">
-          ${careQueue.map((task, index) => buildManagementCareItem(task, index)).join("")}
+        <div class="management-care-body">
+          <div class="management-snapshot-stats">
+            ${buildManagementSnapshotStat("Meals", `${stats.servedMeals}/${stats.mealSlots.length}`, mealsTone)}
+            ${buildManagementSnapshotStat("Health", healthValue, healthTone)}
+            ${buildManagementSnapshotStat("Cleanliness", `${stats.cleanPercent}%`, cleanlinessTone)}
+            ${buildManagementSnapshotStat("Waste", wasteValue, stats.wasteCount > 0 ? "warn" : stats.pendingWasteCount > 0 ? "neutral" : "")}
+          </div>
+          <div class="management-task-stack">
+            <div class="management-task-heading">Suggested Tasks</div>
+            <div class="management-task-list">
+              ${visibleTasks.map((task) => buildManagementCompactTaskRow(task)).join("")}
+              ${hiddenTaskCount > 0 ? `<div class="management-task-more">+${hiddenTaskCount} more issue${hiddenTaskCount === 1 ? "" : "s"}</div>` : ""}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section class="settings-section management-hub-vitals">
-        <div class="compact-heading">
-          <h3>Tank Vitals</h3>
-        </div>
-        <div class="management-priority-grid">
-          ${buildManagementStatCard("Cleanliness", `${stats.cleanPercent}%`, cleanlinessNote, cleanlinessTone, { variant: "primary" })}
-          ${buildManagementStatCard("Meals", `${stats.servedMeals}/${stats.mealSlots.length}`, mealsNote, mealsTone, { variant: "primary" })}
-          ${buildManagementStatCard("Health", healthValue, healthNote, healthTone, { variant: "primary" })}
-        </div>
-        <div class="management-secondary-grid">
-          ${buildManagementStatCard("Fish", stats.livingFish, stats.livingFish ? `${stats.storedFish} stored, ${stats.deadFish} dead` : "Tank is empty", stats.deadFish > 0 ? "danger" : "", { variant: "secondary" })}
-          ${buildManagementStatCard("Decor", stats.placedDecor, `${stats.storedDecor} stored`, "", { variant: "secondary" })}
-          ${buildManagementStatCard("Waste", stats.wasteCount, stats.pendingWasteCount ? `${stats.pendingWasteCount} pending` : "Floor is clear", stats.wasteCount > 0 ? "warn" : stats.pendingWasteCount > 0 ? "neutral" : "", { variant: "secondary" })}
-          ${buildManagementStatCard("Filter", stats.filterLabel, `Tank load +${stats.grimeLoad}%`, stats.grimeLoad >= 45 ? "warn" : "", { variant: "secondary" })}
-          ${buildManagementStatCard("Coins/Meal", stats.coinsPerMeal, `${state.coins} coins held`, "", { variant: "secondary" })}
-        </div>
-      </section>
-
-      <section class="settings-section management-hub-log">
+      <section class="settings-section management-history-panel">
         <div class="compact-heading">
           <h3>Recent History</h3>
         </div>
         <div class="management-event-feed">${buildManagementEventsMarkup(historyEvents, shownHistoryCount)}</div>
-        <div class="tank-action-row management-log-footer">
+        ${historyEvents.length > shownHistoryCount ? `
+          <div class="tank-action-row management-log-footer">
           ${historyEvents.length > shownHistoryCount
             ? `<button class="small-button alt" type="button" data-management-history-more>(More)</button>`
             : ""}
-          <button class="small-button alt" type="button" data-open-settings-from-management>Settings</button>
-        </div>
+          </div>
+        ` : ""}
       </section>
     </div>
   `;

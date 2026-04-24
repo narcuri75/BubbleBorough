@@ -1089,6 +1089,10 @@ h2 {
   backdrop-filter: blur(3px);
 }
 
+:root[data-toolbar-position="bottom-center"] .edit-decor-tray {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+}
+
 .edit-decor-tray[hidden] {
   display: none !important;
 }
@@ -5043,6 +5047,10 @@ h2 {
     padding: 6px 8px;
   }
 
+  :root[data-toolbar-position="bottom-center"] .edit-decor-tray {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 60px);
+  }
+
   .edit-decor-tray-arrow {
     width: 32px;
     height: 62px;
@@ -5368,6 +5376,10 @@ h2 {
     gap: 6px;
     padding: 7px 8px;
     z-index: 12;
+  }
+
+  :root[data-toolbar-position="bottom-center"] .edit-decor-tray {
+    bottom: calc(var(--phone-dock-clearance) + 12px);
   }
 
   .edit-decor-tray-arrow {
@@ -5763,6 +5775,10 @@ h2 {
     gap: 4px;
     padding: 4px 6px;
     border-radius: 14px 14px 0 0;
+  }
+
+  :root[data-toolbar-position="bottom-center"] .edit-decor-tray {
+    bottom: 42px;
   }
 
   .edit-decor-tray-arrow {

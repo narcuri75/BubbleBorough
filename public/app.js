@@ -5206,6 +5206,11 @@ function isInfoOnlyTutorialActive() {
   return tutorial?.mode === TUTORIAL_MODE_INFO_ONLY;
 }
 
+function isTutorialTankDirtinessLocked() {
+  const tutorial = getActiveTutorial();
+  return Boolean(tutorial && tutorial.rewards?.forcedPoopTriggered !== true);
+}
+
 function isTutorialStage(...stages) {
   const tutorial = getActiveTutorial();
   return Boolean(tutorial && stages.includes(tutorial.stage));
@@ -5417,6 +5422,9 @@ function forceTutorialPoopScenario(now = Date.now()) {
   if (!state?.tutorial?.rewards || state.tutorial.rewards.forcedPoopTriggered) {
     return false;
   }
+
+  state.pendingPoops = [];
+  state.poops = [];
 
   const fish = getTutorialFishRecord() || getLivingTankFish()[0] || null;
   if (fish) {
@@ -20544,6 +20552,12 @@ function syncCurrentTankState(now, options = {}) {
   }
 
   const targetTank = getCurrentTank();
+  if (isTutorialTankDirtinessLocked() && (state.poops.length || state.pendingPoops.length)) {
+    // Keep the cleanup lesson deterministic until the tutorial spawns its scripted mess.
+    state.poops = [];
+    state.pendingPoops = [];
+    changed = true;
+  }
   changed = scrubImpossiblePredatorState(now) || changed;
   changed = scrubProtectedTankFishPredatorState(now) || changed;
   changed = processAutoDispenserSlots(state.lastSimulatedAt, now, {
@@ -20842,9 +20856,11 @@ function getCriticalTankConditionStartAt(now) {
     );
   }
 
-  const dirtyAt = state.lastCleanedAt + getFilterMaxDirtyDurationMs();
-  if (dirtyAt <= now) {
-    startCandidates.push(dirtyAt);
+  if (!isTutorialTankDirtinessLocked()) {
+    const dirtyAt = state.lastCleanedAt + getFilterMaxDirtyDurationMs();
+    if (dirtyAt <= now) {
+      startCandidates.push(dirtyAt);
+    }
   }
 
   return startCandidates.length ? Math.min(...startCandidates) : null;
@@ -42353,6 +42369,9 @@ function getTankDirtiness(now) {
 }
 
 function getBaseTankDirtiness(now) {
+  if (isTutorialTankDirtinessLocked()) {
+    return 0;
+  }
   return clamp((now - state.lastCleanedAt) / getFilterMaxDirtyDurationMs(), 0, 1);
 }
 

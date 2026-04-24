@@ -1,40 +1,71 @@
 const STORAGE_KEY = "bubble-borough-save-v1";
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 33;
+const STATE_VERSION = 36;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
 const CUSTOM_IMAGE_STORAGE_TEST_ID = "__bb-custom-image-storage-test__";
-const STARTING_COINS = 30;
-// Keep the intro walkthrough disabled in this static build.
-const INTRO_TUTORIAL_ENABLED = false;
-const INTRO_TUTORIAL_ARROW_DISTANCE = 62;
-const INTRO_TUTORIAL_ARROW_PADDING = 52;
-const INTRO_TUTORIAL_STEPS = Object.freeze([
-  {
-    message: "Welcome to Bubble Borough! Let's learn the basics!"
-  },
-  {
-    message: "This is where you can see your current coin count 🪙, along with some other important information like Tank Cleanliness 🧽 and Daily Meal Count 🍗. Notice that you start with 20 coins. You can gain more coins by feeding your fish, which you can do twice a day safely.",
-    target: "coins",
-    arrowDirection: "left"
-  },
-  {
-    message: "This is the Store! From the store, you can buy things like Fish, Food, Medication, Decor, Tank Customization, and Equipment!",
-    target: "store",
-    arrowDirection: "down"
-  },
-  {
-    message: "Please note that, while it can be tempting to spend all of your coins on fish right off the bat, make sure you budget for food. The fish can die if not fed 💀. They will lose half a heart per missed meal 💔.",
-    target: "store",
-    arrowDirection: "down"
-  },
-  {
-    message: "That is all you should need to know right now, please explore and have fun!"
-  }
+const APP_CONFIG_PATH = "assets/app-config.json";
+const HARDWARE_ACCELERATION_NOTICE_DISMISSED_KEY = "bubble-borough-hardware-acceleration-dismissed-v1";
+const STARTING_COINS = 20;
+const DEFAULT_APP_CONFIG = Object.freeze({
+  wallpaperEngine: false
+});
+const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
+  /swiftshader/i,
+  /llvmpipe/i,
+  /software/i,
+  /basic render/i,
+  /\bwarp\b/i
 ]);
+let appConfig = DEFAULT_APP_CONFIG;
 const DEBUG_MODE = false;
+const TUTORIAL_MODE_DISABLED = "disabled";
+const TUTORIAL_MODE_GUIDED = "guided-live";
+const TUTORIAL_MODE_INFO_ONLY = "info-only";
+const TUTORIAL_STAGE_SPLASH = "splash";
+const TUTORIAL_STAGE_WELCOME = "welcome";
+const TUTORIAL_STAGE_FISH_STORE = "fish-store";
+const TUTORIAL_STAGE_FISH_SETTLE = "fish-settle";
+const TUTORIAL_STAGE_FISH_ADDED = "fish-added";
+const TUTORIAL_STAGE_DECOR_STORE = "decor-store";
+const TUTORIAL_STAGE_DECOR_STORAGE = "decor-storage";
+const TUTORIAL_STAGE_DECOR_PLACE_HINT = "decor-place-hint";
+const TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS = "decor-place-instructions";
+const TUTORIAL_STAGE_DECOR_PLACE = "decor-place";
+const TUTORIAL_STAGE_DECOR_CLOSE = "decor-close";
+const TUTORIAL_STAGE_DECOR_OBSERVE = "decor-observe";
+const TUTORIAL_STAGE_FOOD_INTRO = "food-intro";
+const TUTORIAL_STAGE_FOOD_FEED = "food-feed";
+const TUTORIAL_STAGE_FOOD_SETTLE = "food-settle";
+const TUTORIAL_STAGE_TANK_SUMMARY = "tank-summary";
+const TUTORIAL_STAGE_DISPLAY = "display";
+const TUTORIAL_STAGE_FEATURES = "features";
+const TUTORIAL_STAGE_POOP_WATCH = "poop-watch";
+const TUTORIAL_STAGE_CLEAN_INTRO = "clean-intro";
+const TUTORIAL_STAGE_CLEAN = "clean";
+const TUTORIAL_STAGE_COMPLETE = "complete";
+const TUTORIAL_STAGE_COMPLETED = "completed";
+const TUTORIAL_FEATURE_MANAGE_FISH = "manage-fish";
+const TUTORIAL_FEATURE_EDIT_TANK = "edit-tank";
+const TUTORIAL_FEATURE_SETTINGS = "settings";
+const TUTORIAL_FEATURE_IDS = Object.freeze([
+  TUTORIAL_FEATURE_MANAGE_FISH,
+  TUTORIAL_FEATURE_EDIT_TANK,
+  TUTORIAL_FEATURE_SETTINGS
+]);
+const TUTORIAL_STORE_COST_CAP = 10;
+const TUTORIAL_SPLASH_DURATION_MS = 8150;
+const TUTORIAL_STORE_CLOSE_DELAY_MS = 650;
+const TUTORIAL_FISH_ADDED_DELAY_MS = 5000;
+const TUTORIAL_DECOR_OBSERVE_DELAY_MS = 5000;
+const TUTORIAL_POST_FEED_DELAY_MS = 5000;
+const TUTORIAL_POOP_TRIGGER_DELAY_MS = 3500;
+const TUTORIAL_POOP_CLEAN_PROMPT_DELAY_MS = 8000;
+const TUTORIAL_BASIC_FOOD_REWARD_COUNT = 5;
+const TUTORIAL_BASIC_FOOD_KEY = "basic";
+const TUTORIAL_TOAST_DECOR_DONE = "tutorial-decor-done";
 const DEBUG_UNLOCK_SEQUENCE = "bbtools";
 const VIEW_LOCK_SEQUENCE = "viewlock";
 const HIDDEN_KEY_SEQUENCE_BUFFER_LENGTH = Math.max(DEBUG_UNLOCK_SEQUENCE.length, VIEW_LOCK_SEQUENCE.length);
@@ -70,7 +101,8 @@ const TANK_WIDTH = 1280;
 const TANK_HEIGHT = 720;
 const SCRUB_GRID_COLS = 72;
 const SCRUB_GRID_ROWS = 40;
-const SCRUB_THRESHOLD = 0.85;
+const DEFAULT_SCRUB_THRESHOLD = 0.95;
+const WALLPAPER_ENGINE_SCRUB_THRESHOLD = 0.85;
 const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
 const SCRUB_MAX_STAMPS = 3600;
@@ -91,7 +123,7 @@ const UV_LIGHT_RENDER_QUALITY_OPTIONS = Object.freeze([
   UV_LIGHT_RENDER_QUALITY_HIGH
 ]);
 const DEFAULT_UI_SETTINGS = Object.freeze({
-  toolbarPosition: "right-center",
+  toolbarPosition: "bottom-center",
   displayPosition: "top-left",
   toolbarCollapsed: false,
   displayCollapsed: false,
@@ -186,9 +218,37 @@ const NONE_BACKGROUND_ASSET_KEY = "none.png";
 const DEFAULT_BACKGROUND_ASSET_KEY = "classic-sand.png";
 const CUSTOM_BACKGROUND_MODE_SOLID = "solid";
 const CUSTOM_BACKGROUND_MODE_GRADIENT = "gradient";
+const CUSTOM_BACKGROUND_MODE_ANIMATED = "animated";
+const DEFAULT_TANK_BACKGROUND_ASSET_KEY = NONE_BACKGROUND_ASSET_KEY;
+const DEFAULT_TANK_CUSTOM_BACKGROUND_MODE = CUSTOM_BACKGROUND_MODE_ANIMATED;
+const DEFAULT_ANIMATED_BACKGROUND_SURFACE_BLOOM_COLOR = "#78DCFF";
+const DEFAULT_ANIMATED_BACKGROUND_SHADOW_BLOOM_COLOR = "#0050B4";
 const DEFAULT_SOLID_BACKGROUND_COLOR = "#0D84B4";
 const DEFAULT_GRADIENT_BACKGROUND_START_COLOR = "#8EE6FF";
 const DEFAULT_GRADIENT_BACKGROUND_END_COLOR = "#1A5FAF";
+const DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR = "#7FDCFF";
+const DEFAULT_ANIMATED_BACKGROUND_MID_COLOR = "#1B8BD1";
+const DEFAULT_ANIMATED_BACKGROUND_BOTTOM_COLOR = "#064F8F";
+const DEFAULT_ANIMATED_BACKGROUND_ABYSS_COLOR = "#022A5C";
+const DEFAULT_ANIMATED_BACKGROUND_HIGHLIGHT_COLOR = "#FFFFFF";
+const DEFAULT_ANIMATED_BACKGROUND_DRIFT_A_COLOR = "#96E6FF";
+const DEFAULT_ANIMATED_BACKGROUND_DRIFT_B_COLOR = "#50BEFF";
+const DEFAULT_ANIMATED_BACKGROUND_DRIFT_C_COLOR = "#0078DC";
+const ANIMATED_BACKGROUND_COLOR_GROUPS = Object.freeze([
+  { key: "surface", label: "Color Scheme", description: "color scheme" }
+]);
+const ANIMATED_BACKGROUND_SOURCE_PALETTE = Object.freeze({
+  surfaceBloom: DEFAULT_ANIMATED_BACKGROUND_SURFACE_BLOOM_COLOR,
+  shadowBloom: DEFAULT_ANIMATED_BACKGROUND_SHADOW_BLOOM_COLOR,
+  surface: DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR,
+  mid: DEFAULT_ANIMATED_BACKGROUND_MID_COLOR,
+  deep: DEFAULT_ANIMATED_BACKGROUND_BOTTOM_COLOR,
+  abyss: DEFAULT_ANIMATED_BACKGROUND_ABYSS_COLOR,
+  highlight: DEFAULT_ANIMATED_BACKGROUND_HIGHLIGHT_COLOR,
+  driftA: DEFAULT_ANIMATED_BACKGROUND_DRIFT_A_COLOR,
+  driftB: DEFAULT_ANIMATED_BACKGROUND_DRIFT_B_COLOR,
+  driftC: DEFAULT_ANIMATED_BACKGROUND_DRIFT_C_COLOR
+});
 const DEFAULT_OWNED_BACKGROUND_KEYS = Object.freeze([NONE_BACKGROUND_ASSET_KEY, CUSTOM_IMAGE_BACKGROUND_ASSET_KEY, DEFAULT_BACKGROUND_ASSET_KEY]);
 const DEFAULT_GRAVEL_ASSET_KEY = "classic-sand.png";
 const CUSTOM_GRAVEL_LAYER_COUNT = 3;
@@ -242,8 +302,8 @@ const FISH_GRAVEL_PEBBLE_PICKUP_Y_OFFSET_MIN_PX = 12;
 const FISH_GRAVEL_PEBBLE_PICKUP_Y_OFFSET_MAX_PX = 20;
 const FISH_GRAVEL_PEBBLE_CARRY_RISE_MIN_NORM = 0.18;
 const FISH_GRAVEL_PEBBLE_CARRY_RISE_MAX_NORM = 0.32;
-const FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX = CUSTOM_GRAVEL_CONTOUR_PEBBLE_SIZE_MIN_PX;
-const FISH_GRAVEL_PEBBLE_HOLD_SIZE_MAX_PX = CUSTOM_GRAVEL_CONTOUR_PEBBLE_SIZE_MAX_PX;
+const FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX = CUSTOM_GRAVEL_CONTOUR_PEBBLE_SIZE_MIN_PX + 2;
+const FISH_GRAVEL_PEBBLE_HOLD_SIZE_MAX_PX = CUSTOM_GRAVEL_CONTOUR_PEBBLE_SIZE_MAX_PX + 4;
 const FISH_GRAVEL_PEBBLE_FRONT_SCAN_RATIO = 0.16;
 const FISH_GRAVEL_PEBBLE_MOUTH_OVERLAP_RATIO = 0.1;
 // Shared by custom gravel, fish tinting, decor color layers, bubbler bubbles, and gravel/background swatches.
@@ -304,10 +364,15 @@ const CUSTOM_GRAVEL_UV_REACTIVE_COLOR_KEYS = new Set(
     .filter((choice) => choice.uvReactive !== false)
     .map((choice) => choice.key)
 );
-const DEFAULT_CUSTOM_GRAVEL_LAYER_COLORS = Object.freeze([
+const LEGACY_DEFAULT_CUSTOM_GRAVEL_LAYER_COLORS = Object.freeze([
   "#2F80FF",
   "#57F000",
   "#FF4FBF"
+]);
+const DEFAULT_CUSTOM_GRAVEL_LAYER_COLORS = Object.freeze([
+  "#F1D7A6",
+  "#B88C57",
+  "#D9BA82"
 ]);
 const DEFAULT_DECOR_SCALE = 1.5;
 const DECOR_SCALE_MIN = 0.5;
@@ -488,6 +553,11 @@ const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_SURFACE_BREACH_ALLOWANCE_PX = 6;
 const FISH_SURFACE_MOTION_HEADROOM_PX = 10;
 const FISH_SURFACE_HEIGHT_GUARD_MULTIPLIER = 1.08;
+const FISH_ENTRY_DURATION_MS = 1450;
+const FISH_ENTRY_FROM_Y_NORM = 0.03;
+const FISH_ENTRY_SPLASH_PROGRESS = 0.22;
+const FISH_ENTRY_RIGHTING_END_PROGRESS = 0.68;
+const FISH_ENTRY_NOSE_DIVE_TILT = Math.PI * 0.5;
 const FEED_CHASE_MULTIPLIER = 2.5;
 const DECOR_HANGOUT_DEFAULT_OCCUPANCY_LIMIT = 2;
 const DECOR_HANGOUT_SICK_OCCUPANCY_LIMIT = 1;
@@ -601,6 +671,16 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "solidBackgroundColor",
   "gradientBackgroundStartColor",
   "gradientBackgroundEndColor",
+  "animatedBackgroundSurfaceBloomColor",
+  "animatedBackgroundShadowBloomColor",
+  "animatedBackgroundTopColor",
+  "animatedBackgroundMidColor",
+  "animatedBackgroundBottomColor",
+  "animatedBackgroundAbyssColor",
+  "animatedBackgroundHighlightColor",
+  "animatedBackgroundDriftColorA",
+  "animatedBackgroundDriftColorB",
+  "animatedBackgroundDriftColorC",
   "localBackgroundImageDataUrl",
   "localBackgroundImageRefId",
   "selectedTankAsset",
@@ -683,6 +763,7 @@ const MEDICINE_DROP_SOUND_PATHS = Object.freeze([
   "assets/sounds/drop1.mp3",
   "assets/sounds/drop2.mp3"
 ]);
+const CLEANING_COMPLETE_SOUND_PATH = "assets/sounds/glass_shine.mp3";
 const GLASS_KNOCK_SOUND_PATHS = Object.freeze([
   "assets/sounds/glass_knock_1.mp3"
 ]);
@@ -701,6 +782,8 @@ const SCRUB_WIPE_SOUND_MIN_DISTANCE_PX = 12;
 const SCRUB_WIPE_SOUND_COOLDOWN_MS = 180;
 const GLASS_TAP_EFFECT_DURATION_MS = 320;
 const GLASS_TAP_EFFECT_LIMIT = 8;
+const GLASS_TAP_MAX_HOLD_MS = 250;
+const GLASS_TAP_MAX_MOVE_PX = 14;
 const GLASS_TAP_FISH_STARTLE_RADIUS_PX = 260;
 const GLASS_TAP_FISH_ESCAPE_MIN_DISTANCE_PX = 145;
 const GLASS_TAP_FISH_ESCAPE_MAX_DISTANCE_PX = 285;
@@ -709,6 +792,7 @@ const SOUND_EFFECT_PATHS = Object.freeze([
   DISPENSER_SOUND_PATH,
   ...FISH_SPLASH_SOUND_PATHS,
   ...MEDICINE_DROP_SOUND_PATHS,
+  CLEANING_COMPLETE_SOUND_PATH,
   ...GLASS_KNOCK_SOUND_PATHS,
   ...SCRUB_WIPE_SOUND_PATH_GROUPS.flat()
 ]);
@@ -776,6 +860,48 @@ function resolveAppUrl(path) {
   }
 
   return new URL(trimmed.replace(/^\/+/, ""), document.baseURI).toString();
+}
+
+function sanitizeAppConfig(rawConfig) {
+  const source = rawConfig && typeof rawConfig === "object" ? rawConfig : {};
+  return Object.freeze({
+    wallpaperEngine: source.wallpaperEngine === true
+  });
+}
+
+async function loadAppConfig() {
+  try {
+    const response = await fetch(resolveAppUrl(APP_CONFIG_PATH), { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Could not load app config: ${response.status}`);
+    }
+    appConfig = sanitizeAppConfig(await response.json());
+  } catch (error) {
+    console.warn("Falling back to default app config.", error);
+    appConfig = DEFAULT_APP_CONFIG;
+  }
+
+  return appConfig;
+}
+
+function isWallpaperEngineModeEnabled() {
+  return appConfig.wallpaperEngine === true;
+}
+
+function isIntroTutorialEnabled() {
+  return !isWallpaperEngineModeEnabled();
+}
+
+function shouldUseExternalLinkPrompt() {
+  return isWallpaperEngineModeEnabled();
+}
+
+function shouldShowHardwareAccelerationNotice() {
+  return !isWallpaperEngineModeEnabled();
+}
+
+function isTankMouseLockFeatureEnabled() {
+  return isWallpaperEngineModeEnabled();
 }
 
 function resolveFoodAndMedAssetPath(fileName) {
@@ -1392,7 +1518,9 @@ const dom = {
   debugGravelPebbleButton: document.querySelector("#debugGravelPebbleButton"),
   debugCaveButton: document.querySelector("#debugCaveButton"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
+  loadingOverlayText: document.querySelector(".loading-overlay-text"),
   tankStage: document.querySelector("#tankStage"),
+  tankStageBackground: document.querySelector("#tankStageBackground"),
   tankDisplay: document.querySelector(".tank-display"),
   displayTab: document.querySelector("#displayTab"),
   tankSidebar: document.querySelector("#tankSidebar"),
@@ -1430,6 +1558,8 @@ const dom = {
   mealTrack: document.querySelector("#mealTrack"),
   summaryGrid: document.querySelector("#summaryGrid"),
   eventFeed: document.querySelector("#eventFeed"),
+  tutorialSettingsSection: document.querySelector("#tutorialSettingsSection"),
+  replayTutorialButton: document.querySelector("#replayTutorialButton"),
   resetProgressButton: document.querySelector("#resetProgressButton"),
   exportDataButton: document.querySelector("#exportDataButton"),
   importDataButton: document.querySelector("#importDataButton"),
@@ -1461,9 +1591,12 @@ const dom = {
   settingsOverlay: document.querySelector("#settingsOverlay"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   introTutorialOverlay: document.querySelector("#introTutorialOverlay"),
-  introTutorialArrow: document.querySelector("#introTutorialArrow"),
+  introTutorialSplash: document.querySelector("#introTutorialSplash"),
+  introTutorialPanel: document.querySelector("#introTutorialPanel"),
+  introTutorialKicker: document.querySelector("#introTutorialKicker"),
   introTutorialBody: document.querySelector("#introTutorialBody"),
-  introTutorialNextButton: document.querySelector("#introTutorialNextButton"),
+  introTutorialActions: document.querySelector("#introTutorialActions"),
+  introTutorialCloseButton: document.querySelector("#introTutorialCloseButton"),
   storeFoodTab: document.querySelector("#storeFoodTab"),
   storePharmacyTab: document.querySelector("#storePharmacyTab"),
   storeFishTab: document.querySelector("#storeFishTab"),
@@ -1569,6 +1702,10 @@ const runtime = {
     fish: "",
     decor: ""
   },
+  tutorialSkipReturnTab: "",
+  tutorialSkipReturnStage: "",
+  tutorialDismissedFeaturePopup: "",
+  tutorialDisplayCollapsed: false,
   sidebarCollapsed: true,
   editTankMode: false,
   fishEditMode: false,
@@ -1599,6 +1736,7 @@ const runtime = {
   pendingCustomFishUpload: null,
   pendingSaveExport: null,
   pendingExternalLink: null,
+  hardwareAccelerationIssue: null,
   customImageDbPromise: null,
   customImageStorageMode: "unknown",
   customImageStorageTestPromise: null,
@@ -1609,8 +1747,17 @@ const runtime = {
   editingTankNameValue: "",
   managementHubView: "overview",
   managementHistoryVisibleCount: MANAGEMENT_HISTORY_PAGE_SIZE,
+  tutorialPanelCacheKey: "",
   suppressNextTankClick: false,
   suppressNextGlassTap: false,
+  glassTapGesture: {
+    pointerId: null,
+    startedAt: 0,
+    startX: 0,
+    startY: 0,
+    movedTooFar: false,
+    allowNextClick: false
+  },
   editDecorTrayContextMenuState: {
     entryId: null,
     decorKey: null,
@@ -1641,6 +1788,7 @@ const runtime = {
   },
   suppressEditFishTrayClickFishId: null,
   pointerDown: false,
+  capturedTankPointerId: null,
   pointerStagePx: null,
   stageRenderScale: 1,
   stageRenderOffsetX: 0,
@@ -1721,6 +1869,7 @@ const runtime = {
   lastGrimeCanvasFilter: "",
   lastTankCanvasFilter: "",
   toastHandle: null,
+  toastKey: "",
   saveStateWarningShown: false,
   lastAnimationFrameAt: 0,
   lastAnimationUpdateAt: 0,
@@ -2128,8 +2277,12 @@ function isUvLightOwned(targetState = state) {
   return Boolean(targetState?.uvLightOwned);
 }
 
+function isUvLightFeatureEnabled() {
+  return isDebugModeEnabled();
+}
+
 function isUvLightInstalled(targetTank = getCurrentTank()) {
-  return Boolean(isUvLightOwned() && targetTank?.uvLightInstalled);
+  return Boolean(isUvLightFeatureEnabled() && isUvLightOwned() && targetTank?.uvLightInstalled);
 }
 
 function isUvLightActive(targetTank = getCurrentTank()) {
@@ -2139,6 +2292,18 @@ function isUvLightActive(targetTank = getCurrentTank()) {
 function createTankState(options = {}) {
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const typeMeta = getTankTypeMeta("rectangular");
+  const animatedBackgroundColors = sanitizeAnimatedBackgroundColors({
+    surfaceBloom: options.animatedBackgroundSurfaceBloomColor,
+    shadowBloom: options.animatedBackgroundShadowBloomColor,
+    top: options.animatedBackgroundTopColor,
+    mid: options.animatedBackgroundMidColor,
+    bottom: options.animatedBackgroundBottomColor,
+    abyss: options.animatedBackgroundAbyssColor,
+    highlight: options.animatedBackgroundHighlightColor,
+    driftA: options.animatedBackgroundDriftColorA,
+    driftB: options.animatedBackgroundDriftColorB,
+    driftC: options.animatedBackgroundDriftColorC
+  });
 
   return {
     id: String(options.id || createId("tank")),
@@ -2163,11 +2328,21 @@ function createTankState(options = {}) {
     gravelSeed: Number.isFinite(options.gravelSeed) ? Math.abs(Math.floor(options.gravelSeed)) : Math.floor(Math.random() * 0x7fffffff),
     gravelLivePebbles: Array.isArray(options.gravelLivePebbles) ? options.gravelLivePebbles : [],
     floatingPellets: Array.isArray(options.floatingPellets) ? options.floatingPellets : [],
-    selectedBackground: options.selectedBackground ?? getCatalogDefaultKey(runtime.backgroundCatalog, DEFAULT_BACKGROUND_ASSET_KEY),
-    customBackgroundMode: normalizeCustomBackgroundMode(options.customBackgroundMode),
+    selectedBackground: options.selectedBackground ?? getCatalogDefaultKey(runtime.backgroundCatalog, DEFAULT_TANK_BACKGROUND_ASSET_KEY),
+    customBackgroundMode: normalizeCustomBackgroundMode(options.customBackgroundMode ?? DEFAULT_TANK_CUSTOM_BACKGROUND_MODE),
     solidBackgroundColor: normalizeHexColor(options.solidBackgroundColor) || DEFAULT_SOLID_BACKGROUND_COLOR,
     gradientBackgroundStartColor: normalizeHexColor(options.gradientBackgroundStartColor) || DEFAULT_GRADIENT_BACKGROUND_START_COLOR,
     gradientBackgroundEndColor: normalizeHexColor(options.gradientBackgroundEndColor) || DEFAULT_GRADIENT_BACKGROUND_END_COLOR,
+    animatedBackgroundSurfaceBloomColor: animatedBackgroundColors.surfaceBloom,
+    animatedBackgroundShadowBloomColor: animatedBackgroundColors.shadowBloom,
+    animatedBackgroundTopColor: animatedBackgroundColors.surface,
+    animatedBackgroundMidColor: animatedBackgroundColors.mid,
+    animatedBackgroundBottomColor: animatedBackgroundColors.deep,
+    animatedBackgroundAbyssColor: animatedBackgroundColors.abyss,
+    animatedBackgroundHighlightColor: animatedBackgroundColors.highlight,
+    animatedBackgroundDriftColorA: animatedBackgroundColors.driftA,
+    animatedBackgroundDriftColorB: animatedBackgroundColors.driftB,
+    animatedBackgroundDriftColorC: animatedBackgroundColors.driftC,
     localBackgroundImageDataUrl: typeof options.localBackgroundImageDataUrl === "string" ? options.localBackgroundImageDataUrl : "",
     localBackgroundImageRefId: sanitizeCustomImageRefId(options.localBackgroundImageRefId),
     selectedTankAsset: options.selectedTankAsset ?? null,
@@ -2394,6 +2569,11 @@ function toggleSidebarSection(key) {
 }
 
 function openStoreOverlay(tab = "food") {
+  if (getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
+    showToast("Let's finish this step before heading back to the store.");
+    return;
+  }
+
   clearPrimaryToolModes();
   runtime.storeOverlayOpen = true;
   runtime.utilityOverlayOpen = false;
@@ -2404,13 +2584,30 @@ function openStoreOverlay(tab = "food") {
   runtime.pendingCustomFishUpload = null;
   runtime.settingsOverlayOpen = false;
   runtime.equipmentOverlayOpen = false;
-  runtime.storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(tab) ? tab : "food";
+  const requestedTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(tab) ? tab : "food";
+  const allowedTabs = getTutorialAllowedStoreTabs();
+  runtime.storeTab = allowedTabs && !allowedTabs.has(requestedTab)
+    ? (getTutorialPreferredStoreTab() || [...allowedTabs][0] || requestedTab)
+    : requestedTab;
   renderUi(Date.now());
 }
 
-function closeStoreOverlay() {
+function closeStoreOverlay(options = {}) {
+  if (
+    options.force !== true
+    && isGuidedTutorialActive()
+    && (isTutorialStage(TUTORIAL_STAGE_FISH_STORE) || isTutorialStage(TUTORIAL_STAGE_DECOR_STORE))
+  ) {
+    requestTutorialSkipConfirmation({
+      returnTab: runtime.storeTab,
+      returnStage: state.tutorial.stage
+    });
+    return false;
+  }
+
   runtime.storeOverlayOpen = false;
   renderUi(Date.now());
+  return true;
 }
 
 function openUtilityOverlay(mode) {
@@ -2937,7 +3134,7 @@ function getDecorRgbCycleHue(now = Date.now()) {
 function getDecorRgbCycleColor(now = Date.now()) {
   const hue = normalizeHueUnit(
     Math.round(normalizeHueUnit((Number(now) || 0) / DECOR_RGB_CYCLE_MS) * DECOR_RGB_CYCLE_CACHE_STEPS)
-      / DECOR_RGB_CYCLE_CACHE_STEPS
+    / DECOR_RGB_CYCLE_CACHE_STEPS
   );
   return rgbToHex(hslToRgb({
     h: hue,
@@ -2992,11 +3189,11 @@ function sanitizePlacedCaveColorSettings(settings = null, decorOrKey = null) {
 
     const colorize = normalizeDecorColorizeSetting(
       sourceColorize[getDecorColorizeSettingKey(layer.id)]
-        ?? sourceColorize[`${layer.id}Mode`]
-        ?? sourceColorize[`${layer.id}Blend`]
-        ?? sourceColorize[layer.id]?.colorize
-        ?? sourceColorize[layer.id]
-        ?? false
+      ?? sourceColorize[`${layer.id}Mode`]
+      ?? sourceColorize[`${layer.id}Blend`]
+      ?? sourceColorize[layer.id]?.colorize
+      ?? sourceColorize[layer.id]
+      ?? false
     );
     if (colorize) {
       sanitized[getDecorColorizeSettingKey(layer.id)] = true;
@@ -4889,6 +5086,12 @@ function closeUtilityOverlay() {
 
 function openSettingsOverlay() {
   clearPrimaryToolModes();
+  let tutorialChanged = false;
+  if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && !hasTutorialFeatureVisited(TUTORIAL_FEATURE_SETTINGS)) {
+    state.tutorial.activeFeatureStep = TUTORIAL_FEATURE_SETTINGS;
+    runtime.tutorialDismissedFeaturePopup = "";
+    tutorialChanged = true;
+  }
   runtime.settingsOverlayOpen = true;
   runtime.storeOverlayOpen = false;
   runtime.utilityOverlayOpen = false;
@@ -4898,16 +5101,32 @@ function openSettingsOverlay() {
   runtime.pendingCustomHideUpload = null;
   runtime.pendingCustomFishUpload = null;
   runtime.equipmentOverlayOpen = false;
+  if (tutorialChanged) {
+    saveState();
+  }
   renderUi(Date.now());
 }
 
 function closeSettingsOverlay() {
+  let tutorialChanged = false;
+  if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && state?.tutorial?.activeFeatureStep === TUTORIAL_FEATURE_SETTINGS) {
+    tutorialChanged = completeTutorialFeature(TUTORIAL_FEATURE_SETTINGS) || tutorialChanged;
+  }
   runtime.settingsOverlayOpen = false;
+  if (tutorialChanged) {
+    saveState();
+  }
   renderUi(Date.now());
 }
 
 function openEquipmentOverlay() {
   clearPrimaryToolModes();
+  let tutorialChanged = false;
+  if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && !hasTutorialFeatureVisited(TUTORIAL_FEATURE_EDIT_TANK)) {
+    state.tutorial.activeFeatureStep = TUTORIAL_FEATURE_EDIT_TANK;
+    runtime.tutorialDismissedFeaturePopup = "";
+    tutorialChanged = true;
+  }
   runtime.equipmentOverlayOpen = true;
   runtime.storeOverlayOpen = false;
   runtime.utilityOverlayOpen = false;
@@ -4917,142 +5136,1350 @@ function openEquipmentOverlay() {
   runtime.pendingCustomHideUpload = null;
   runtime.pendingCustomFishUpload = null;
   runtime.settingsOverlayOpen = false;
+  if (tutorialChanged) {
+    saveState();
+  }
   renderUi(Date.now());
 }
 
 function closeEquipmentOverlay() {
+  let tutorialChanged = false;
+  if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && state?.tutorial?.activeFeatureStep === TUTORIAL_FEATURE_EDIT_TANK) {
+    tutorialChanged = completeTutorialFeature(TUTORIAL_FEATURE_EDIT_TANK) || tutorialChanged;
+  }
   runtime.equipmentOverlayOpen = false;
+  if (tutorialChanged) {
+    saveState();
+  }
   renderUi(Date.now());
 }
 
 function isIntroTutorialActive() {
-  return Boolean(
-    INTRO_TUTORIAL_ENABLED
-    && state
-    && state.tutorial
-    && state.tutorial.introCompleted !== true
-  );
+  return Boolean(getActiveTutorial());
 }
 
-function getIntroTutorialFinalStepIndex() {
-  return Math.max(0, INTRO_TUTORIAL_STEPS.length - 1);
+function getDefaultToolbarPosition() {
+  return isWallpaperEngineModeEnabled() ? "right-center" : "bottom-center";
+}
+
+function normalizeTutorialMode(value, fallback = TUTORIAL_MODE_GUIDED) {
+  switch (String(value || "").trim()) {
+    case TUTORIAL_MODE_GUIDED:
+    case TUTORIAL_MODE_INFO_ONLY:
+    case TUTORIAL_MODE_DISABLED:
+      return String(value).trim();
+    default:
+      return fallback;
+  }
+}
+
+function normalizeTutorialStage(value, fallback = TUTORIAL_STAGE_SPLASH) {
+  const normalized = String(value || "").trim();
+  return normalized || fallback;
+}
+
+function sanitizeTutorialFeatureSteps(rawValue) {
+  if (!Array.isArray(rawValue)) {
+    return [];
+  }
+
+  return [...new Set(rawValue
+    .map((value) => String(value || "").trim())
+    .filter((value) => TUTORIAL_FEATURE_IDS.includes(value)))];
+}
+
+function sanitizeTutorialRewards(rawValue) {
+  const source = rawValue && typeof rawValue === "object" ? rawValue : {};
+  return {
+    basicPelletsGranted: source.basicPelletsGranted === true,
+    forcedPoopTriggered: source.forcedPoopTriggered === true
+  };
+}
+
+function isGuidedTutorialActive() {
+  const tutorial = getActiveTutorial();
+  return tutorial?.mode === TUTORIAL_MODE_GUIDED;
+}
+
+function isInfoOnlyTutorialActive() {
+  const tutorial = getActiveTutorial();
+  return tutorial?.mode === TUTORIAL_MODE_INFO_ONLY;
+}
+
+function isTutorialStage(...stages) {
+  const tutorial = getActiveTutorial();
+  return Boolean(tutorial && stages.includes(tutorial.stage));
 }
 
 function getDisabledIntroTutorialState() {
   return {
-    introCompleted: true,
-    introStep: getIntroTutorialFinalStepIndex()
+    mode: TUTORIAL_MODE_DISABLED,
+    stage: TUTORIAL_STAGE_COMPLETED,
+    stageEnteredAt: 0,
+    completed: true,
+    fishId: "",
+    decorKey: "",
+    placedDecorId: "",
+    activeFeatureStep: "",
+    visitedFeatureSteps: [],
+    rewards: sanitizeTutorialRewards(null)
   };
 }
 
 function buildDefaultTutorialState(overrides = {}) {
-  const baseState = INTRO_TUTORIAL_ENABLED
+  const now = Date.now();
+  const baseState = isIntroTutorialEnabled()
     ? {
-      introCompleted: false,
-      introStep: 0
+      mode: TUTORIAL_MODE_GUIDED,
+      stage: TUTORIAL_STAGE_SPLASH,
+      stageEnteredAt: now,
+      completed: false,
+      fishId: "",
+      decorKey: "",
+      placedDecorId: "",
+      activeFeatureStep: "",
+      visitedFeatureSteps: [],
+      rewards: sanitizeTutorialRewards(null)
     }
     : getDisabledIntroTutorialState();
 
   return {
     ...baseState,
-    ...overrides
+    ...overrides,
+    rewards: sanitizeTutorialRewards(overrides.rewards ?? baseState.rewards),
+    visitedFeatureSteps: sanitizeTutorialFeatureSteps(overrides.visitedFeatureSteps ?? baseState.visitedFeatureSteps)
   };
 }
 
 function sanitizeTutorialState(rawState, options = {}) {
-  if (!INTRO_TUTORIAL_ENABLED) {
+  if (!isIntroTutorialEnabled()) {
     return getDisabledIntroTutorialState();
   }
 
   const source = rawState && typeof rawState === "object" ? rawState : {};
   const defaultCompleted = Boolean(options.defaultCompleted);
-  const maxStepIndex = getIntroTutorialFinalStepIndex();
-  const rawStep = Math.floor(Number(source.introStep) || 0);
-  const introCompleted = typeof source.introCompleted === "boolean"
-    ? source.introCompleted
-    : defaultCompleted;
-  const introStep = clamp(rawStep, 0, maxStepIndex);
+  const legacyCompleted = source.introCompleted === true;
+  const completed = typeof source.completed === "boolean"
+    ? source.completed
+    : (legacyCompleted || defaultCompleted);
+  const mode = normalizeTutorialMode(source.mode, TUTORIAL_MODE_GUIDED);
+  const fallbackStage = completed ? TUTORIAL_STAGE_COMPLETED : TUTORIAL_STAGE_SPLASH;
+  const stage = normalizeTutorialStage(
+    source.stage || (legacyCompleted ? TUTORIAL_STAGE_COMPLETED : TUTORIAL_STAGE_SPLASH),
+    fallbackStage
+  );
 
   return buildDefaultTutorialState({
-    introCompleted,
-    introStep: introCompleted ? maxStepIndex : introStep
+    mode,
+    stage: completed ? TUTORIAL_STAGE_COMPLETED : stage,
+    stageEnteredAt: Number.isFinite(Number(source.stageEnteredAt)) ? Number(source.stageEnteredAt) : Date.now(),
+    completed,
+    fishId: typeof source.fishId === "string" ? source.fishId : "",
+    decorKey: typeof source.decorKey === "string" ? source.decorKey : "",
+    placedDecorId: typeof source.placedDecorId === "string" ? source.placedDecorId : "",
+    activeFeatureStep: typeof source.activeFeatureStep === "string" ? source.activeFeatureStep : "",
+    visitedFeatureSteps: sanitizeTutorialFeatureSteps(source.visitedFeatureSteps),
+    rewards: sanitizeTutorialRewards(source.rewards)
   });
 }
 
-function getIntroTutorialStepIndex() {
-  const maxStepIndex = getIntroTutorialFinalStepIndex();
-  return clamp(Math.floor(Number(state?.tutorial?.introStep) || 0), 0, maxStepIndex);
-}
-
-function getIntroTutorialStep() {
-  return isIntroTutorialActive() ? INTRO_TUTORIAL_STEPS[getIntroTutorialStepIndex()] : null;
-}
-
-function getIntroTutorialTargetElement(targetKey) {
-  if (targetKey === "coins") {
-    return dom.coinCount?.closest(".display-cell") || dom.coinCount;
+function getActiveTutorial() {
+  if (!isIntroTutorialEnabled() || !state?.tutorial) {
+    return null;
   }
 
-  if (targetKey === "store") {
-    return dom.openStoreButton || null;
+  const tutorial = state.tutorial;
+  return tutorial.completed === true || tutorial.mode === TUTORIAL_MODE_DISABLED
+    ? null
+    : tutorial;
+}
+
+function setTutorialStage(stage, options = {}) {
+  if (!state?.tutorial) {
+    return false;
+  }
+
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const tutorial = state.tutorial;
+  const nextStage = normalizeTutorialStage(stage, tutorial.stage || TUTORIAL_STAGE_SPLASH);
+  let changed = false;
+
+  if (tutorial.stage !== nextStage) {
+    tutorial.stage = nextStage;
+    tutorial.stageEnteredAt = now;
+    changed = true;
+  } else if (!Number.isFinite(Number(tutorial.stageEnteredAt))) {
+    tutorial.stageEnteredAt = now;
+    changed = true;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(options, "fishId")) {
+    const nextFishId = typeof options.fishId === "string" ? options.fishId : "";
+    if (tutorial.fishId !== nextFishId) {
+      tutorial.fishId = nextFishId;
+      changed = true;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(options, "decorKey")) {
+    const nextDecorKey = typeof options.decorKey === "string" ? options.decorKey : "";
+    if (tutorial.decorKey !== nextDecorKey) {
+      tutorial.decorKey = nextDecorKey;
+      changed = true;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(options, "placedDecorId")) {
+    const nextPlacedDecorId = typeof options.placedDecorId === "string" ? options.placedDecorId : "";
+    if (tutorial.placedDecorId !== nextPlacedDecorId) {
+      tutorial.placedDecorId = nextPlacedDecorId;
+      changed = true;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(options, "activeFeatureStep")) {
+    const nextFeatureStep = typeof options.activeFeatureStep === "string" ? options.activeFeatureStep : "";
+    if (tutorial.activeFeatureStep !== nextFeatureStep) {
+      tutorial.activeFeatureStep = nextFeatureStep;
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+function hasTutorialFeatureVisited(featureId) {
+  return Boolean(
+    state?.tutorial
+    && sanitizeTutorialFeatureSteps(state.tutorial.visitedFeatureSteps).includes(featureId)
+  );
+}
+
+function markTutorialFeatureVisited(featureId) {
+  if (!state?.tutorial || !TUTORIAL_FEATURE_IDS.includes(featureId)) {
+    return false;
+  }
+
+  const visited = sanitizeTutorialFeatureSteps(state.tutorial.visitedFeatureSteps);
+  if (visited.includes(featureId)) {
+    return false;
+  }
+
+  visited.push(featureId);
+  state.tutorial.visitedFeatureSteps = visited;
+  state.tutorial.activeFeatureStep = "";
+  runtime.tutorialDismissedFeaturePopup = "";
+  return true;
+}
+
+function completeTutorialFeature(featureId, now = Date.now()) {
+  if (!markTutorialFeatureVisited(featureId)) {
+    return false;
+  }
+
+  if (TUTORIAL_FEATURE_IDS.every((value) => hasTutorialFeatureVisited(value))) {
+    setTutorialStage(TUTORIAL_STAGE_POOP_WATCH, { now, activeFeatureStep: "" });
+  }
+
+  return true;
+}
+
+function getTutorialFishRecord() {
+  const tutorialFishId = state?.tutorial?.fishId || "";
+  return tutorialFishId
+    ? state.fish.find((fish) => fish.id === tutorialFishId) || null
+    : null;
+}
+
+function getTutorialFishDisplayName() {
+  const fish = getTutorialFishRecord();
+  return fish?.name || "Your fish";
+}
+
+function getTutorialFishTypeLabel() {
+  const fish = getTutorialFishRecord();
+  const species = fish ? getSpeciesForFish(fish) : null;
+  return fish && species
+    ? getFishDisplaySpeciesName(fish, species)
+    : "starter fish";
+}
+
+function grantTutorialBasicFoodReward(now = Date.now()) {
+  if (!state?.tutorial?.rewards || state.tutorial.rewards.basicPelletsGranted) {
+    return false;
+  }
+
+  const currentCount = Math.max(0, Number(state.foodInventory?.[TUTORIAL_BASIC_FOOD_KEY]) || 0);
+  state.foodInventory[TUTORIAL_BASIC_FOOD_KEY] = currentCount + TUTORIAL_BASIC_FOOD_REWARD_COUNT;
+  state.tutorial.rewards.basicPelletsGranted = true;
+  pushEvent(`The tutorial stocked ${TUTORIAL_BASIC_FOOD_REWARD_COUNT} basic pellets for a practice feeding.`, now);
+  return true;
+}
+
+function forceTutorialPoopScenario(now = Date.now()) {
+  if (!state?.tutorial?.rewards || state.tutorial.rewards.forcedPoopTriggered) {
+    return false;
+  }
+
+  const fish = getTutorialFishRecord() || getLivingTankFish()[0] || null;
+  if (fish) {
+    state.poops.push(createPoopRecord({
+      fishId: fish.id,
+      createdAt: now,
+      xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.012, 0.012), 0.08, 0.92),
+      startYNorm: clamp((fish.yNorm || 0.4) + 0.04, 0.14, 0.8),
+      tankLayer: getFishTankLayer(fish)
+    }));
+  }
+
+  rebaseTankDirtiness(now, 0.8);
+  runtime.cleaningTransition = null;
+  runtime.cleaningMode = false;
+  runtime.toolModeSource = null;
+  runtime.pointerDown = false;
+  clearScrubProgress();
+  renderToolCursor();
+  state.tutorial.rewards.forcedPoopTriggered = true;
+  pushEvent(`${getTutorialFishDisplayName()} made a mess during the tutorial.`, now);
+  return true;
+}
+
+function syncTutorialFlow(now = Date.now()) {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
+    return false;
+  }
+
+  let changed = false;
+  if (!Number.isFinite(Number(tutorial.stageEnteredAt))) {
+    tutorial.stageEnteredAt = now;
+    changed = true;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_SPLASH && dom.loadingOverlay && !dom.loadingOverlay.hidden) {
+    return changed;
+  }
+
+  const elapsed = Math.max(0, now - tutorial.stageEnteredAt);
+  if (tutorial.stage === TUTORIAL_STAGE_SPLASH && elapsed >= TUTORIAL_SPLASH_DURATION_MS) {
+    changed = setTutorialStage(TUTORIAL_STAGE_WELCOME, { now }) || changed;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_SETTLE && elapsed >= TUTORIAL_FISH_ADDED_DELAY_MS) {
+    changed = setTutorialStage(TUTORIAL_STAGE_FISH_ADDED, { now }) || changed;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_OBSERVE && elapsed >= TUTORIAL_DECOR_OBSERVE_DELAY_MS) {
+    if (tutorial.mode === TUTORIAL_MODE_GUIDED) {
+      changed = grantTutorialBasicFoodReward(now) || changed;
+    }
+    changed = setTutorialStage(TUTORIAL_STAGE_FOOD_INTRO, { now }) || changed;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FOOD_SETTLE && elapsed >= TUTORIAL_POST_FEED_DELAY_MS) {
+    changed = setTutorialStage(TUTORIAL_STAGE_TANK_SUMMARY, { now }) || changed;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_POOP_WATCH) {
+    if (tutorial.mode === TUTORIAL_MODE_GUIDED && elapsed >= TUTORIAL_POOP_TRIGGER_DELAY_MS) {
+      changed = forceTutorialPoopScenario(now) || changed;
+    }
+    if (elapsed >= TUTORIAL_POOP_CLEAN_PROMPT_DELAY_MS) {
+      changed = setTutorialStage(TUTORIAL_STAGE_CLEAN_INTRO, { now }) || changed;
+    }
+  }
+
+  return changed;
+}
+
+function restoreTutorialRuntimeState(now = Date.now()) {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
+    return false;
+  }
+
+  let tutorialChanged = false;
+  const setToolbarToolBaseState = () => {
+    clearPrimaryToolModes();
+    runtime.storeOverlayOpen = false;
+    runtime.utilityOverlayOpen = false;
+    runtime.utilityOverlayMode = "";
+    runtime.settingsOverlayOpen = false;
+    runtime.equipmentOverlayOpen = false;
+    runtime.pendingDecorAction = null;
+    runtime.pendingCustomDecorUpload = null;
+    runtime.pendingCustomHideUpload = null;
+    runtime.pendingCustomFishUpload = null;
+    runtime.selectedFishId = null;
+    runtime.sidebarCollapsed = true;
+    runtime.pointerDown = false;
+    runtime.pointerStagePx = null;
+    runtime.lastScrubPoint = null;
+    runtime.suppressNextTankClick = false;
+    runtime.suppressNextGlassTap = false;
+    clearGlassTapGesture();
+    releaseTankPointerCapture();
+  };
+  const setStoreResumeState = (tab) => {
+    setToolbarToolBaseState();
+    runtime.storeOverlayOpen = true;
+    runtime.storeTab = tab;
+  };
+  const setEditDecorResumeState = () => {
+    setToolbarToolBaseState();
+    runtime.editTankMode = true;
+    runtime.toolModeSource = "toolbar";
+    runtime.activeTab = "decor";
+  };
+  const setFoodResumeState = () => {
+    setToolbarToolBaseState();
+    if (tutorial.mode === TUTORIAL_MODE_GUIDED) {
+      tutorialChanged = grantTutorialBasicFoodReward(now) || tutorialChanged;
+    }
+    runtime.foodTrayOpen = true;
+    runtime.toolModeSource = "toolbar";
+    runtime.feedingModeFoodKey = Math.max(0, Number(state.foodInventory?.[TUTORIAL_BASIC_FOOD_KEY]) || 0) > 0
+      ? TUTORIAL_BASIC_FOOD_KEY
+      : "";
+  };
+  const setCleaningResumeState = () => {
+    setToolbarToolBaseState();
+    runtime.cleaningMode = true;
+    runtime.toolModeSource = "toolbar";
+  };
+  const restoreDecorPlacementMode = (decorKey) => {
+    const key = String(decorKey || "");
+    if (
+      !key
+      || Math.max(0, Number(state.decorInventory?.[key]) || 0) <= 0
+      || !canUseDecorWithCurrentContentSettings(key)
+      || !canDecorLiveInCurrentTank(key)
+    ) {
+      runtime.placementMode = null;
+      runtime.placementPreview = null;
+      return false;
+    }
+
+    const initialLayer = getDecorFrontLayer(key, runtime.decorPlacementLayer);
+    setEditDecorResumeState();
+    runtime.selectedDecorId = null;
+    runtime.selectedDecorIds = [];
+    runtime.bubblerSettingsDecorId = null;
+    runtime.customDecorSettingsDecorId = null;
+    runtime.placementMode = {
+      decorKey: key,
+      tankLayer: initialLayer,
+      scale: getDecorScaleDefault(key),
+      flipped: false
+    };
+    runtime.placementPreview = clampDecorPlacement(0.5, 0.8, {
+      decorKey: key,
+      tankLayer: initialLayer,
+      scale: runtime.placementMode.scale,
+      flipped: runtime.placementMode.flipped
+    });
+    return true;
+  };
+
+  switch (tutorial.stage) {
+    case TUTORIAL_STAGE_FISH_STORE:
+      setStoreResumeState("fish");
+      break;
+    case TUTORIAL_STAGE_DECOR_STORE:
+      setStoreResumeState("decor");
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE_HINT:
+      setEditDecorResumeState();
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS:
+      if (!restoreDecorPlacementMode(tutorial.decorKey)) {
+        setEditDecorResumeState();
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE:
+      if (tutorial.placedDecorId && getPlacedDecorById(tutorial.placedDecorId)) {
+        tutorialChanged = setTutorialStage(TUTORIAL_STAGE_DECOR_CLOSE, {
+          now,
+          placedDecorId: tutorial.placedDecorId
+        }) || tutorialChanged;
+        setEditDecorResumeState();
+        setSelectedDecor(tutorial.placedDecorId);
+        showTutorialDecorDoneToast();
+        break;
+      }
+      if (!restoreDecorPlacementMode(tutorial.decorKey)) {
+        setEditDecorResumeState();
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_CLOSE:
+      setEditDecorResumeState();
+      if (tutorial.placedDecorId && getPlacedDecorById(tutorial.placedDecorId)) {
+        setSelectedDecor(tutorial.placedDecorId);
+      }
+      showTutorialDecorDoneToast();
+      break;
+    case TUTORIAL_STAGE_FOOD_FEED:
+      setFoodResumeState();
+      break;
+    case TUTORIAL_STAGE_CLEAN:
+      setCleaningResumeState();
+      break;
+    default:
+      break;
+  }
+
+  renderToolCursor();
+  return tutorialChanged;
+}
+
+function requestTutorialSkipConfirmation(options = {}) {
+  if (!getActiveTutorial()) {
+    return false;
+  }
+
+  runtime.tutorialSkipReturnTab = typeof options.returnTab === "string" ? options.returnTab : "";
+  runtime.tutorialSkipReturnStage = typeof options.returnStage === "string" ? options.returnStage : "";
+  openUtilityOverlay("tutorial-skip-confirm");
+  return true;
+}
+
+function cancelTutorialSkipConfirmation() {
+  const reopenTab = runtime.tutorialSkipReturnTab;
+  const reopenStage = runtime.tutorialSkipReturnStage;
+  runtime.tutorialSkipReturnTab = "";
+  runtime.tutorialSkipReturnStage = "";
+  closeUtilityOverlay();
+  if (reopenTab && isTutorialStage(reopenStage)) {
+    openStoreOverlay(reopenTab);
+  }
+}
+
+function finishTutorial(options = {}) {
+  if (!state?.tutorial) {
+    return;
+  }
+
+  const now = Date.now();
+  const mode = normalizeTutorialMode(state.tutorial.mode, TUTORIAL_MODE_GUIDED);
+  state.tutorial = buildDefaultTutorialState({
+    ...state.tutorial,
+    mode,
+    stage: TUTORIAL_STAGE_COMPLETED,
+    stageEnteredAt: now,
+    completed: true
+  });
+  runtime.tutorialSkipReturnTab = "";
+  runtime.tutorialSkipReturnStage = "";
+  runtime.tutorialDisplayCollapsed = false;
+  runtime.storeOverlayOpen = false;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
+  renderToolCursor();
+  saveState();
+  renderUi(now);
+  if (options.skipped) {
+    showToast("Tutorial skipped.");
+  }
+}
+
+function advanceIntroTutorial(action = "continue") {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
+    return;
+  }
+
+  const now = Date.now();
+  if (action === "skip") {
+    requestTutorialSkipConfirmation({
+      returnTab: runtime.storeOverlayOpen ? runtime.storeTab : "",
+      returnStage: tutorial.stage
+    });
+    return;
+  }
+  if (action === "confirm-skip") {
+    finishTutorial({ skipped: true });
+    return;
+  }
+  if (action === "cancel-skip") {
+    cancelTutorialSkipConfirmation();
+    return;
+  }
+  if (action === "dismiss-popup") {
+    if (tutorial.stage === TUTORIAL_STAGE_FEATURES && tutorial.activeFeatureStep) {
+      runtime.tutorialDismissedFeaturePopup = tutorial.activeFeatureStep;
+      renderUi(now, { full: false });
+    }
+    return;
+  }
+
+  switch (tutorial.stage) {
+    case TUTORIAL_STAGE_WELCOME:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        openTutorialStoreForCurrentStage();
+        return;
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS:
+      setTutorialStage(TUTORIAL_STAGE_DECOR_PLACE, { now });
+      showTutorialDecorDoneToast();
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE_HINT:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_DECOR_CLOSE, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_STORAGE:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_DECOR_PLACE_HINT, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_CLOSE:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_DECOR_OBSERVE, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_TANK_SUMMARY:
+      setTutorialStage(TUTORIAL_STAGE_DISPLAY, { now });
+      break;
+    case TUTORIAL_STAGE_DISPLAY:
+      setTutorialStage(TUTORIAL_STAGE_FEATURES, { now });
+      break;
+    case TUTORIAL_STAGE_FEATURES:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        if (!tutorial.activeFeatureStep) {
+          setTutorialStage(TUTORIAL_STAGE_FEATURES, {
+            now,
+            activeFeatureStep: TUTORIAL_FEATURE_MANAGE_FISH
+          });
+        } else if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_MANAGE_FISH) {
+          setTutorialStage(TUTORIAL_STAGE_FEATURES, {
+            now,
+            activeFeatureStep: TUTORIAL_FEATURE_EDIT_TANK
+          });
+        } else if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_EDIT_TANK) {
+          setTutorialStage(TUTORIAL_STAGE_FEATURES, {
+            now,
+            activeFeatureStep: TUTORIAL_FEATURE_SETTINGS
+          });
+        } else {
+          setTutorialStage(TUTORIAL_STAGE_POOP_WATCH, {
+            now,
+            activeFeatureStep: ""
+          });
+        }
+      }
+      break;
+    case TUTORIAL_STAGE_COMPLETE:
+      finishTutorial();
+      return;
+    case TUTORIAL_STAGE_FISH_STORE:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        runtime.storeOverlayOpen = false;
+        setTutorialStage(TUTORIAL_STAGE_FISH_ADDED, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_STORE:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        runtime.storeOverlayOpen = false;
+        setTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_FOOD_INTRO:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_TANK_SUMMARY, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_CLEAN_INTRO:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_COMPLETE, { now });
+      }
+      break;
+    default:
+      break;
+  }
+
+  saveState();
+  renderUi(now);
+}
+
+function rerunIntroTutorial() {
+  if (!state || !isIntroTutorialEnabled()) {
+    return;
+  }
+
+  state.tutorial = buildDefaultTutorialState({
+    mode: TUTORIAL_MODE_INFO_ONLY,
+    stage: TUTORIAL_STAGE_SPLASH,
+    stageEnteredAt: Date.now(),
+    completed: false,
+    fishId: state.tutorial?.fishId || "",
+    decorKey: state.tutorial?.decorKey || "",
+    placedDecorId: state.tutorial?.placedDecorId || "",
+    activeFeatureStep: "",
+    visitedFeatureSteps: [],
+    rewards: sanitizeTutorialRewards(null)
+  });
+  runtime.tutorialSkipReturnTab = "";
+  runtime.tutorialSkipReturnStage = "";
+  runtime.tutorialDisplayCollapsed = false;
+  saveState();
+  closeSettingsOverlay();
+}
+
+function getTutorialPreferredStoreTab() {
+  if (isTutorialStage(TUTORIAL_STAGE_WELCOME, TUTORIAL_STAGE_FISH_STORE, TUTORIAL_STAGE_FISH_SETTLE)) {
+    return "fish";
+  }
+  if (isTutorialStage(TUTORIAL_STAGE_FISH_ADDED, TUTORIAL_STAGE_DECOR_STORE)) {
+    return "decor";
+  }
+  return "";
+}
+
+function openTutorialStoreForCurrentStage() {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
+    return false;
+  }
+
+  const now = Date.now();
+  if (tutorial.stage === TUTORIAL_STAGE_WELCOME) {
+    setTutorialStage(TUTORIAL_STAGE_FISH_STORE, { now });
+    saveState();
+    openStoreOverlay("fish");
+    return true;
+  }
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_ADDED) {
+    setTutorialStage(TUTORIAL_STAGE_DECOR_STORE, { now });
+    saveState();
+    openStoreOverlay("decor");
+    return true;
+  }
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_STORE || tutorial.stage === TUTORIAL_STAGE_DECOR_STORE) {
+    openStoreOverlay(getTutorialPreferredStoreTab() || runtime.storeTab || "fish");
+    return true;
+  }
+
+  return false;
+}
+
+function getTutorialDecorDisplayName() {
+  const decor = runtime.decorMap.get(state?.tutorial?.decorKey || "");
+  return decor?.name || "decoration";
+}
+
+function rememberTankPointerCapture(pointerId) {
+  runtime.capturedTankPointerId = Number.isInteger(pointerId) ? pointerId : null;
+}
+
+function releaseTankPointerCapture(pointerId = runtime.capturedTankPointerId) {
+  const capturedPointerId = Number.isInteger(pointerId) ? pointerId : null;
+  if (
+    capturedPointerId !== null
+    && dom.tankStage
+    && typeof dom.tankStage.hasPointerCapture === "function"
+    && dom.tankStage.hasPointerCapture(capturedPointerId)
+  ) {
+    try {
+      dom.tankStage.releasePointerCapture(capturedPointerId);
+    } catch (error) {
+      console.debug("Pointer release skipped.", error);
+    }
+  }
+  if (runtime.capturedTankPointerId === capturedPointerId) {
+    runtime.capturedTankPointerId = null;
+  }
+}
+
+function cancelTutorialBlockingTankInteractions() {
+  runtime.pointerDown = false;
+  runtime.pointerStagePx = null;
+  runtime.lastScrubPoint = null;
+  runtime.dragState = null;
+  runtime.fishDragState = null;
+  runtime.eggDragState = null;
+  runtime.pebbleDragState = null;
+  runtime.suppressNextTankClick = true;
+  runtime.suppressNextGlassTap = true;
+  resetScrubWipeSoundState();
+  releaseTankPointerCapture();
+  renderToolCursor();
+}
+
+function isTutorialDecorDoneStep() {
+  return isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE, TUTORIAL_STAGE_DECOR_CLOSE);
+}
+
+function getTutorialDecorDoneToastText(prefix = "") {
+  const message = "Click 🌿 on the toolbar when you are done.";
+  return prefix ? `${prefix} ${message}` : message;
+}
+
+function showTutorialDecorDoneToast(durationMs = 120000) {
+  if (!isTutorialDecorDoneStep()) {
+    return;
+  }
+  showToast(getTutorialDecorDoneToastText(), {
+    durationMs,
+    key: TUTORIAL_TOAST_DECOR_DONE
+  });
+}
+
+function isTutorialFeaturePopupDismissed(featureId) {
+  return isGuidedTutorialActive()
+    && String(runtime.tutorialDismissedFeaturePopup || "") === String(featureId || "");
+}
+
+function reconcileTutorialTransientUi() {
+  const tutorial = getActiveTutorial();
+  if (
+    runtime.tutorialDismissedFeaturePopup
+    && (!tutorial || tutorial.stage !== TUTORIAL_STAGE_FEATURES || tutorial.activeFeatureStep !== runtime.tutorialDismissedFeaturePopup)
+  ) {
+    runtime.tutorialDismissedFeaturePopup = "";
+  }
+
+  if (!isTutorialDecorDoneStep()) {
+    hideToast({ key: TUTORIAL_TOAST_DECOR_DONE });
+  }
+}
+
+function getTutorialAllowedStoreTabs() {
+  if (isTutorialStage(TUTORIAL_STAGE_FISH_STORE)) {
+    return new Set(["fish"]);
+  }
+  if (isTutorialStage(TUTORIAL_STAGE_DECOR_STORE)) {
+    return new Set(["decor"]);
+  }
+  return null;
+}
+
+function getTutorialStoreRestriction(kind) {
+  const shopKind = kind === "decor" ? "decor" : "fish";
+  const allowedTabs = getTutorialAllowedStoreTabs();
+  if (!allowedTabs || !allowedTabs.has(shopKind)) {
+    return null;
+  }
+
+  return {
+    maxCost: TUTORIAL_STORE_COST_CAP,
+    hideCustom: true,
+    hideControls: true,
+    previewOnly: isInfoOnlyTutorialActive()
+  };
+}
+
+function buildTutorialBodyMarkup(lines) {
+  return (Array.isArray(lines) ? lines : [lines])
+    .filter(Boolean)
+    .map((line) => `<p>${escapeHtml(line)}</p>`)
+    .join("");
+}
+
+function buildTutorialActionMarkup(actions) {
+  return (actions || [])
+    .filter((action) => action?.action !== "skip")
+    .map((action) => {
+      const variantClass = action.variant ? ` ${action.variant}` : "";
+      return `<button class="small-button${variantClass}" type="button" data-tutorial-action="${escapeHtml(action.action)}">${escapeHtml(action.label)}</button>`;
+    })
+    .join("");
+}
+
+function getTutorialPopupConfig() {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
+    return null;
+  }
+
+  const fishName = getTutorialFishDisplayName();
+  const fishType = getTutorialFishTypeLabel();
+  const decorName = getTutorialDecorDisplayName();
+
+  if (tutorial.stage === TUTORIAL_STAGE_SPLASH) {
+    return {
+      mode: "splash"
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_WELCOME) {
+    return {
+      kicker: "Tutorial",
+      title: "",
+      body: buildTutorialBodyMarkup([
+        "Welcome to Bubble Borough! Let's get you started with your first tank.",
+        "Click the 🛒 icon on the toolbar to go to the store."
+      ]),
+      actions: []
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_STORE && tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+    return {
+      kicker: "Tutorial",
+      title: "Choose a Fish",
+      body: buildTutorialBodyMarkup([
+        "This is the fish section of the store.",
+        "During replay, this step is preview-only."
+      ]),
+      actions: [
+        { label: "Continue", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_ADDED) {
+    return {
+      kicker: "Tutorial",
+      title: "",
+      body: buildTutorialBodyMarkup([
+        tutorial.mode === TUTORIAL_MODE_GUIDED
+          ? `${fishName} the ${fishType} has now been added to your tank! Next, you will need to get some decorations.`
+          : "In a fresh tutorial, your starter fish would now be in the tank! Next, you would grab a decoration.",
+        "Click the 🛒 icon on the toolbar again to go to the store."
+      ]),
+      actions: []
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_STORE && tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+    return {
+      kicker: "Tutorial",
+      title: "Choose a Decoration",
+      body: buildTutorialBodyMarkup([
+        "This is the decor section of the store.",
+        "During replay, this step is preview-only."
+      ]),
+      actions: [
+        { label: "Continue", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_STORAGE) {
+    return {
+      kicker: "Tutorial",
+      title: "",
+      body: buildTutorialBodyMarkup([
+        tutorial.mode === TUTORIAL_MODE_GUIDED
+          ? "Great choice! Your new decoration is waiting for you in your storage."
+          : `In a fresh tutorial, ${decorName} would now be waiting in your storage.`,
+        "Click the 🌿 icon on the toolbar to Edit Decor."
+      ]),
+      actions: []
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_PLACE_HINT) {
+    return tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+      ? {
+        kicker: "Decor",
+        title: "Placement Preview",
+        body: buildTutorialBodyMarkup([
+          "This is where your stored decoration would appear during a normal tutorial.",
+          "Click Continue to move ahead without placing anything."
+        ]),
+        actions: [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+      }
+      : {
+        kicker: "Tutorial",
+        title: "",
+        body: buildTutorialBodyMarkup([
+          "Click on your decoration from the menu and place it where you wish."
+        ]),
+        actions: []
+      };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS) {
+    return {
+      kicker: "Tutorial",
+      title: "Placement Controls",
+      blockInteraction: true,
+      body: buildTutorialBodyMarkup([
+        "Decorations can be adjusted however you see fit!",
+        "Press Z/X or ▲/▼ to change the placement layer.",
+        "Press + or - to change the size.",
+        "Press F to flip the decoration.",
+        "Press S to adjust the settings.",
+        "When you have more decorations, you can even create groups of items by Shift/Ctrl clicking on multiple items and clicking G to group, or U to ungroup!",
+        "Take your time placing the item! Click 🌿 on the toolbar when you are done."
+      ]),
+      actions: [
+        { label: "Okay!", action: "continue" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_CLOSE && tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+    return {
+      kicker: "Decor",
+      title: "Close Edit Decor",
+      body: buildTutorialBodyMarkup([
+        "In a normal tutorial, this is where you would close Edit Decor and continue watching your tank."
+      ]),
+      actions: [
+        { label: "Continue", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FOOD_INTRO) {
+    return {
+      kicker: "Feeding",
+      title: "Time To Feed",
+      body: buildTutorialBodyMarkup([
+        tutorial.mode === TUTORIAL_MODE_GUIDED
+          ? `${fishName} looks hungry! I have given you some fish pellets. Let's feed them!\n\nClick the 🍗 icon on the toolbar.`
+          : "This is where the food tool lives. During replay, this step is preview-only."
+      ]),
+      actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+        ? [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+        : [
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_TANK_SUMMARY) {
+    return {
+      kicker: "Care",
+      title: "Looking Good",
+      body: buildTutorialBodyMarkup([
+        "Your tank is coming together nicely! Just remember to feed your fish twice a day, and make sure not to over feed them. When you run out of fish food, you can purchase a new bottle from the store. I don't know if you noticed, but you actually earned money by feeding your fish, so it literally pays to feed your fish. Different fish have different earnings per meal."
+      ]),
+      actions: [
+        { label: "Okay!", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DISPLAY) {
+    return {
+      kicker: "Display",
+      title: "Digital Readout",
+      body: buildTutorialBodyMarkup([
+        "This digital display is a quick reference for tank cleanliness, daily meals, and how many coins you have. You can click the tab to hide it."
+      ]),
+      actions: [
+        { label: "Okay great!", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FEATURES) {
+    if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY && !tutorial.activeFeatureStep) {
+      return {
+        kicker: "Features",
+        title: "Let's See What Else We Can Do!",
+        body: buildTutorialBodyMarkup([
+          "Replay mode previews the rest of the toolbar one tool at a time."
+        ]),
+        actions: [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+      };
+    }
+    if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_MANAGE_FISH) {
+      if (isTutorialFeaturePopupDismissed(TUTORIAL_FEATURE_MANAGE_FISH)) {
+        return null;
+      }
+      return {
+        kicker: "Manage Fish",
+        title: "Fish Control",
+        closeAction: tutorial.mode === TUTORIAL_MODE_GUIDED ? "dismiss-popup" : "skip",
+        body: buildTutorialBodyMarkup([
+          "Similar to the Edit Decor tool, you can add or remove fish from your tank within this menu. Click the Manage Fish toolbar icon again to close it."
+        ]),
+        actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+          ? [
+            { label: "Continue", action: "continue" },
+            { label: "Skip Tutorial", action: "skip", variant: "alt" }
+          ]
+          : [
+            { label: "Okay!", action: "dismiss-popup" }
+          ]
+      };
+    }
+    if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_EDIT_TANK) {
+      if (isTutorialFeaturePopupDismissed(TUTORIAL_FEATURE_EDIT_TANK)) {
+        return null;
+      }
+      return {
+        kicker: "Edit Tank",
+        title: "Tank Styling",
+        closeAction: tutorial.mode === TUTORIAL_MODE_GUIDED ? "dismiss-popup" : "skip",
+        body: buildTutorialBodyMarkup([
+          "From this menu, you can change the background, the colors of your gravel, switch to sand, and change your filter. Try changing your background and gravel color!"
+        ]),
+        actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+          ? [
+            { label: "Continue", action: "continue" },
+            { label: "Skip Tutorial", action: "skip", variant: "alt" }
+          ]
+          : [
+            { label: "Okay!", action: "dismiss-popup" }
+          ]
+      };
+    }
+    if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_SETTINGS) {
+      if (isTutorialFeaturePopupDismissed(TUTORIAL_FEATURE_SETTINGS)) {
+        return null;
+      }
+      return {
+        kicker: "Settings",
+        title: "Aquarium Tools",
+        closeAction: tutorial.mode === TUTORIAL_MODE_GUIDED ? "dismiss-popup" : "skip",
+        body: buildTutorialBodyMarkup([
+          "From this menu, you can toggle certain things on or off, adjust the placement of your toolbar and digital display, export and import save data, reset your progress, or view the credits or the creators site!"
+        ]),
+        actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+          ? [
+            { label: "Continue", action: "continue" },
+            { label: "Skip Tutorial", action: "skip", variant: "alt" }
+          ]
+          : [
+            { label: "Okay!", action: "dismiss-popup" }
+          ]
+      };
+    }
+
+    return {
+      kicker: "Features",
+      title: "Let's See What Else We Can Do!",
+      body: buildTutorialBodyMarkup([
+        "Open Manage Fish, Edit Tank, and Settings to learn where the rest of your aquarium tools live."
+      ]),
+      actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+        ? [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+        : [
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_CLEAN_INTRO) {
+    return {
+      kicker: "Cleaning",
+      title: "Let's Clean That Up",
+      body: buildTutorialBodyMarkup([
+        tutorial.mode === TUTORIAL_MODE_GUIDED
+          ? `That was fast! ${fishName} just ate! Wow...`
+          : "During replay, this is where the cleanup lesson would begin.",
+        "Well, let's clean that up!"
+      ]),
+      actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+        ? [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+        : [
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_COMPLETE) {
+    return {
+      kicker: "Finished",
+      title: "Tutorial Complete",
+      body: buildTutorialBodyMarkup([
+        "Great job! It looks great! It normally shouldn't happen that quick, but make sure that you maintain a clean environment for your fish so they don't get sick.",
+        "That is all for now! Enjoy your new fish tank!"
+      ]),
+      actions: [
+        { label: "Okay!", action: "continue" }
+      ]
+    };
   }
 
   return null;
 }
 
-function resolveIntroTutorialArrowPosition(step) {
-  if (!step?.target || !step.arrowDirection || !dom.tankStage) {
+function getTutorialUiState() {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
     return null;
   }
 
-  const target = getIntroTutorialTargetElement(step.target);
-  if (!target) {
-    return null;
+  const stage = tutorial.stage;
+  const visibleButtons = new Set();
+  const pulseButtons = new Set();
+  const toolbarVisible = stage !== TUTORIAL_STAGE_SPLASH;
+  const displayVisible = [
+    TUTORIAL_STAGE_DISPLAY,
+    TUTORIAL_STAGE_FEATURES,
+    TUTORIAL_STAGE_POOP_WATCH,
+    TUTORIAL_STAGE_CLEAN_INTRO,
+    TUTORIAL_STAGE_CLEAN,
+    TUTORIAL_STAGE_COMPLETE
+  ].includes(stage);
+
+  if (toolbarVisible) {
+    visibleButtons.add("openStoreButton");
   }
 
-  const stageRect = dom.tankStage.getBoundingClientRect();
-  const targetRect = target.getBoundingClientRect();
-  if (!stageRect.width || !stageRect.height || !targetRect.width || !targetRect.height) {
-    return null;
+  if ([
+    TUTORIAL_STAGE_DECOR_STORAGE,
+    TUTORIAL_STAGE_DECOR_PLACE_HINT,
+    TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS,
+    TUTORIAL_STAGE_DECOR_PLACE,
+    TUTORIAL_STAGE_DECOR_CLOSE,
+    TUTORIAL_STAGE_DECOR_OBSERVE,
+    TUTORIAL_STAGE_FOOD_INTRO,
+    TUTORIAL_STAGE_FOOD_FEED,
+    TUTORIAL_STAGE_FOOD_SETTLE,
+    TUTORIAL_STAGE_TANK_SUMMARY,
+    TUTORIAL_STAGE_DISPLAY,
+    TUTORIAL_STAGE_FEATURES,
+    TUTORIAL_STAGE_POOP_WATCH,
+    TUTORIAL_STAGE_CLEAN_INTRO,
+    TUTORIAL_STAGE_CLEAN,
+    TUTORIAL_STAGE_COMPLETE
+  ].includes(stage)) {
+    visibleButtons.add("editModeDockButton");
   }
 
-  const centerX = targetRect.left - stageRect.left + (targetRect.width / 2);
-  const centerY = targetRect.top - stageRect.top + (targetRect.height / 2);
-  let x = centerX;
-  let y = centerY;
+  if ([
+    TUTORIAL_STAGE_FOOD_INTRO,
+    TUTORIAL_STAGE_FOOD_FEED,
+    TUTORIAL_STAGE_FOOD_SETTLE,
+    TUTORIAL_STAGE_TANK_SUMMARY,
+    TUTORIAL_STAGE_DISPLAY,
+    TUTORIAL_STAGE_FEATURES,
+    TUTORIAL_STAGE_POOP_WATCH,
+    TUTORIAL_STAGE_CLEAN_INTRO,
+    TUTORIAL_STAGE_CLEAN,
+    TUTORIAL_STAGE_COMPLETE
+  ].includes(stage)) {
+    visibleButtons.add("feedButton");
+  }
 
-  if (step.arrowDirection === "left") {
-    x = targetRect.right - stageRect.left + INTRO_TUTORIAL_ARROW_DISTANCE;
-  } else if (step.arrowDirection === "right") {
-    x = targetRect.left - stageRect.left - INTRO_TUTORIAL_ARROW_DISTANCE;
-  } else if (step.arrowDirection === "up") {
-    y = targetRect.bottom - stageRect.top + INTRO_TUTORIAL_ARROW_DISTANCE;
-  } else if (step.arrowDirection === "down") {
-    y = targetRect.top - stageRect.top - INTRO_TUTORIAL_ARROW_DISTANCE;
-  } else {
-    return null;
+  if ([
+    TUTORIAL_STAGE_FEATURES,
+    TUTORIAL_STAGE_POOP_WATCH,
+    TUTORIAL_STAGE_CLEAN_INTRO,
+    TUTORIAL_STAGE_CLEAN,
+    TUTORIAL_STAGE_COMPLETE
+  ].includes(stage)) {
+    visibleButtons.add("fishEditModeDockButton");
+    visibleButtons.add("openEquipmentButton");
+    visibleButtons.add("openSettingsButton");
+  }
+
+  if ([TUTORIAL_STAGE_CLEAN_INTRO, TUTORIAL_STAGE_CLEAN, TUTORIAL_STAGE_COMPLETE].includes(stage)) {
+    visibleButtons.add("spongeButton");
+    visibleButtons.add("scoopButton");
+  }
+
+  if (stage === TUTORIAL_STAGE_WELCOME || stage === TUTORIAL_STAGE_FISH_ADDED) {
+    pulseButtons.add("openStoreButton");
+  }
+  if (stage === TUTORIAL_STAGE_DECOR_STORAGE || stage === TUTORIAL_STAGE_DECOR_CLOSE) {
+    pulseButtons.add("editModeDockButton");
+  }
+  if (stage === TUTORIAL_STAGE_FOOD_INTRO) {
+    pulseButtons.add("feedButton");
+  }
+  if (stage === TUTORIAL_STAGE_FEATURES) {
+    if (!hasTutorialFeatureVisited(TUTORIAL_FEATURE_MANAGE_FISH)) {
+      pulseButtons.add("fishEditModeDockButton");
+    }
+    if (!hasTutorialFeatureVisited(TUTORIAL_FEATURE_EDIT_TANK)) {
+      pulseButtons.add("openEquipmentButton");
+    }
+    if (!hasTutorialFeatureVisited(TUTORIAL_FEATURE_SETTINGS)) {
+      pulseButtons.add("openSettingsButton");
+    }
+  }
+  if (stage === TUTORIAL_STAGE_CLEAN_INTRO) {
+    pulseButtons.add("spongeButton");
   }
 
   return {
-    x: clamp(x, INTRO_TUTORIAL_ARROW_PADDING, stageRect.width - INTRO_TUTORIAL_ARROW_PADDING),
-    y: clamp(y, INTRO_TUTORIAL_ARROW_PADDING, stageRect.height - INTRO_TUTORIAL_ARROW_PADDING)
+    toolbarVisible,
+    displayVisible,
+    pulseDisplay: stage === TUTORIAL_STAGE_DISPLAY,
+    visibleButtons,
+    pulseButtons,
+    pulseDecorKey: [
+      TUTORIAL_STAGE_DECOR_PLACE_HINT,
+      TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS
+    ].includes(stage) ? (tutorial.decorKey || "") : "",
+    pulseFoodKey: stage === TUTORIAL_STAGE_FOOD_FEED ? TUTORIAL_BASIC_FOOD_KEY : "",
+    hideToolbarTab: true,
+    hideDisplayTab: !displayVisible,
+    forceToolbarPosition: "bottom-center"
   };
 }
 
-function advanceIntroTutorial() {
-  if (!state?.tutorial || state.tutorial.introCompleted) {
-    return;
+function getEffectiveDisplayCollapsed(uiSettings = getUiSettings(), tutorialUi = getTutorialUiState()) {
+  if (tutorialUi) {
+    return Boolean(tutorialUi.displayVisible) && runtime.tutorialDisplayCollapsed === true;
+  }
+  return uiSettings.displayCollapsed === true;
+}
+
+function canUseTutorialToolbarControl(controlId) {
+  if (!getActiveTutorial()) {
+    return true;
   }
 
-  const nextStepIndex = getIntroTutorialStepIndex() + 1;
-  if (nextStepIndex >= INTRO_TUTORIAL_STEPS.length) {
-    state.tutorial.introCompleted = true;
-  } else {
-    state.tutorial.introStep = nextStepIndex;
+  switch (controlId) {
+    case "openStoreButton":
+      return isTutorialStage(
+        TUTORIAL_STAGE_WELCOME,
+        TUTORIAL_STAGE_FISH_STORE,
+        TUTORIAL_STAGE_FISH_ADDED,
+        TUTORIAL_STAGE_DECOR_STORE
+      );
+    case "editModeDockButton":
+      return isTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE, TUTORIAL_STAGE_DECOR_CLOSE)
+        || (isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE) && Boolean(state?.tutorial?.placedDecorId));
+    case "feedButton":
+      return isTutorialStage(TUTORIAL_STAGE_FOOD_INTRO, TUTORIAL_STAGE_FOOD_FEED);
+    case "fishEditModeDockButton":
+    case "openEquipmentButton":
+    case "openSettingsButton":
+      return isTutorialStage(TUTORIAL_STAGE_FEATURES);
+    case "spongeButton":
+      return isTutorialStage(TUTORIAL_STAGE_CLEAN_INTRO, TUTORIAL_STAGE_CLEAN);
+    case "scoopButton":
+      return false;
+    default:
+      return true;
+  }
+}
+
+function guardTutorialToolbarControl(controlId) {
+  if (canUseTutorialToolbarControl(controlId)) {
+    return true;
   }
 
-  saveState();
-  renderUi(Date.now());
+  const messages = {
+    openStoreButton: "Let's finish this step before heading back to the store.",
+    editModeDockButton: "We'll come back to Edit Decor right after this step.",
+    feedButton: "We'll feed your fish in just a moment.",
+    fishEditModeDockButton: "We'll tour that tool in just a moment.",
+    openEquipmentButton: "We'll tour that tool in just a moment.",
+    openSettingsButton: "We'll tour that tool in just a moment.",
+    spongeButton: "We'll clean the tank in just a moment.",
+    scoopButton: "The sponge is the tool we need for this cleanup step."
+  };
+  showToast(messages[controlId] || "Let's finish this step first.");
+  return false;
 }
 
 function getWheelDeltaPixels(event) {
@@ -5150,6 +6577,11 @@ function handleEditDecorTrayWheel(event) {
 function toggleEditTankMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.editTankMode;
   clearPrimaryToolModes();
+  if (!nextMode) {
+    hideToast({ key: TUTORIAL_TOAST_DECOR_DONE });
+  }
+  const now = Date.now();
+  let tutorialChanged = false;
 
   if (nextMode) {
     runtime.editTankMode = true;
@@ -5158,9 +6590,20 @@ function toggleEditTankMode(force = null, options = {}) {
     if (options.collapseSidebar) {
       runtime.sidebarCollapsed = true;
     }
+    if (isTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE)) {
+      tutorialChanged = setTutorialStage(TUTORIAL_STAGE_DECOR_PLACE_HINT, { now }) || tutorialChanged;
+    }
+  } else if (
+    isTutorialStage(TUTORIAL_STAGE_DECOR_CLOSE)
+    || (isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE) && Boolean(state?.tutorial?.placedDecorId))
+  ) {
+    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_DECOR_OBSERVE, { now }) || tutorialChanged;
   }
 
-  renderUi(Date.now());
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(now);
 }
 
 function handleEditFishTrayWheel(event) {
@@ -5523,6 +6966,8 @@ function hasToolbarTriggeredToolMode() {
 function toggleFishEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.fishEditMode;
   clearPrimaryToolModes();
+  const now = Date.now();
+  let tutorialChanged = false;
 
   if (nextMode) {
     runtime.fishEditMode = true;
@@ -5530,14 +6975,29 @@ function toggleFishEditMode(force = null, options = {}) {
     if (options.collapseSidebar) {
       runtime.sidebarCollapsed = true;
     }
+    if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && !hasTutorialFeatureVisited(TUTORIAL_FEATURE_MANAGE_FISH)) {
+      state.tutorial.activeFeatureStep = TUTORIAL_FEATURE_MANAGE_FISH;
+      runtime.tutorialDismissedFeaturePopup = "";
+      tutorialChanged = true;
+    }
+  } else if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && state?.tutorial?.activeFeatureStep === TUTORIAL_FEATURE_MANAGE_FISH) {
+    tutorialChanged = completeTutorialFeature(TUTORIAL_FEATURE_MANAGE_FISH, now) || tutorialChanged;
   }
 
-  renderUi(Date.now());
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(now);
 }
 
 function toggleFoodTray(force = null, options = {}) {
-  const nextMode = typeof force === "boolean" ? force : !(runtime.foodTrayOpen || runtime.feedingModeFoodKey);
+  const guidedFeedStep = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FOOD_FEED);
+  const nextMode = guidedFeedStep
+    ? true
+    : (typeof force === "boolean" ? force : !(runtime.foodTrayOpen || runtime.feedingModeFoodKey));
   clearPrimaryToolModes();
+  const now = Date.now();
+  let tutorialChanged = false;
   runtime.storeOverlayOpen = false;
   runtime.utilityOverlayOpen = false;
   runtime.settingsOverlayOpen = false;
@@ -5548,9 +7008,15 @@ function toggleFoodTray(force = null, options = {}) {
     if (options.collapseSidebar) {
       runtime.sidebarCollapsed = true;
     }
+    if (isTutorialStage(TUTORIAL_STAGE_FOOD_INTRO)) {
+      tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FOOD_FEED, { now }) || tutorialChanged;
+    }
   }
 
-  renderUi(Date.now());
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(now);
 }
 
 function toggleMedicineTray(force = null, options = {}) {
@@ -5630,6 +7096,7 @@ init().catch((error) => {
 });
 
 async function init() {
+  await loadAppConfig();
   applyAspectRatioMode();
   bindEvents();
 
@@ -5699,6 +7166,7 @@ async function init() {
   });
   syncRuntimeCustomFishAssetsFromState(state);
   syncRuntimeCustomDecorAssetsFromState(state);
+  const tutorialResumeChanged = restoreTutorialRuntimeState(Date.now());
   applyContentSettingsEffects(Date.now());
 
   await preloadImages([
@@ -5755,17 +7223,30 @@ async function init() {
   const now = Date.now();
   const decorPlacementChanged = normalizePlacedDecorState();
   const stateChanged = syncState(now);
-  if (needsReconcileSave || customImagesChanged || wallpaperEnginePropertyChanged || decorPlacementChanged || stateChanged) {
+  if (needsReconcileSave || customImagesChanged || wallpaperEnginePropertyChanged || tutorialResumeChanged || decorPlacementChanged || stateChanged) {
     saveState();
   }
   renderUi(now);
+  maybeShowHardwareAccelerationNotice();
   renderTank(now);
   syncAmbienceAudio();
   window.setInterval(() => tick(), 1000);
   window.requestAnimationFrame(animationLoop);
   window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(hideLoadingOverlay);
+    window.requestAnimationFrame(showLoadingOverlayReadyState);
   });
+}
+
+function showLoadingOverlayReadyState() {
+  const overlay = dom.loadingOverlay;
+  if (!overlay || overlay.hidden || overlay.classList.contains("is-hiding")) {
+    return;
+  }
+
+  overlay.classList.add("is-ready");
+  if (dom.loadingOverlayText) {
+    dom.loadingOverlayText.textContent = "Click to play";
+  }
 }
 
 function hideLoadingOverlay() {
@@ -5780,12 +7261,22 @@ function hideLoadingOverlay() {
       return;
     }
     completed = true;
+    overlay.classList.remove("is-ready");
     overlay.hidden = true;
     overlay.removeEventListener("transitionend", complete);
+    if (isTutorialStage(TUTORIAL_STAGE_SPLASH) && state?.tutorial) {
+      const now = Date.now();
+      state.tutorial.stageEnteredAt = now;
+      saveState();
+      renderUi(now, { full: false });
+    }
+    syncAmbienceAudio();
   };
 
   overlay.addEventListener("transitionend", complete, { once: true });
+  overlay.classList.remove("is-ready");
   overlay.classList.add("is-hiding");
+  syncAmbienceAudio();
 
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
     complete();
@@ -5802,8 +7293,9 @@ function showLoadingOverlayError() {
   }
 
   overlay.hidden = false;
+  overlay.classList.remove("is-ready");
   overlay.classList.remove("is-hiding");
-  const text = overlay.querySelector(".loading-overlay-text");
+  const text = dom.loadingOverlayText || overlay.querySelector(".loading-overlay-text");
   if (text) {
     text.textContent = "Aquarium failed to load";
   }
@@ -5824,7 +7316,8 @@ function isAspectRatioLocked() {
 
 function toggleDebugTools() {
   runtime.debugToolsEnabled = !runtime.debugToolsEnabled;
-  renderUi(Date.now(), { full: false });
+  runtime.uvGlowMaskCache.clear();
+  renderUi(Date.now());
   showToast(runtime.debugToolsEnabled ? "Debug tools enabled." : "Debug tools hidden.");
 }
 
@@ -5883,7 +7376,7 @@ function bindEvents() {
       return;
     }
 
-    if (isIntroTutorialActive()) {
+    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode) {
       return;
     }
 
@@ -5912,7 +7405,15 @@ function bindEvents() {
     }
 
     const key = keyRaw.toLowerCase();
-    if ((keyRaw === "ArrowLeft" || keyRaw === "ArrowRight") && !runtime.storeOverlayOpen && !runtime.settingsOverlayOpen && !runtime.utilityOverlayOpen && !runtime.equipmentOverlayOpen) {
+    if (
+      (keyRaw === "ArrowLeft" || keyRaw === "ArrowRight")
+      && !runtime.editTankMode
+      && !runtime.fishEditMode
+      && !runtime.storeOverlayOpen
+      && !runtime.settingsOverlayOpen
+      && !runtime.utilityOverlayOpen
+      && !runtime.equipmentOverlayOpen
+    ) {
       event.preventDefault();
       switchTankByOffset(keyRaw === "ArrowLeft" ? -1 : 1);
       return;
@@ -5951,12 +7452,20 @@ function bindEvents() {
       event.preventDefault();
       const flipped = toggleActiveDecorFlip();
       if (flipped !== null) {
-        showToast(flipped ? "Decor flipped." : "Decor flip cleared.");
+        showToast(
+          isTutorialDecorDoneStep()
+            ? getTutorialDecorDoneToastText(flipped ? "Decor flipped." : "Decor flip cleared.")
+            : (flipped ? "Decor flipped." : "Decor flip cleared."),
+          {
+            durationMs: isTutorialDecorDoneStep() ? 120000 : undefined,
+            key: isTutorialDecorDoneStep() ? TUTORIAL_TOAST_DECOR_DONE : ""
+          }
+        );
       }
       return;
     }
 
-    if (keyRaw === "+" || event.code === "NumpadAdd") {
+    if (keyRaw === "+" || keyRaw === "=" || event.code === "NumpadAdd") {
       event.preventDefault();
       performDecorEditShortcutAction("scale-up");
       return;
@@ -5991,6 +7500,16 @@ function bindEvents() {
   window.addEventListener("keydown", () => {
     primeSoundEffects();
   }, true);
+  dom.loadingOverlay?.addEventListener("click", (event) => {
+    if (!dom.loadingOverlay?.classList.contains("is-ready")) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    primeSoundEffects();
+    hideLoadingOverlay();
+  });
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", () => {
       syncAmbienceAudio();
@@ -6011,6 +7530,9 @@ function bindEvents() {
       if (!url) {
         return;
       }
+      if (!shouldUseExternalLinkPrompt()) {
+        return;
+      }
       event.preventDefault();
       promptExternalLink(url, link.textContent);
     });
@@ -6019,7 +7541,12 @@ function bindEvents() {
   dom.prevTankButton?.addEventListener("click", () => switchTankByOffset(-1));
   dom.nextTankButton?.addEventListener("click", () => switchTankByOffset(1));
   dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("daily-bonus"));
-  dom.feedButton.addEventListener("click", () => toggleFoodTray(null, { source: "toolbar", collapseSidebar: true }));
+  dom.feedButton.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("feedButton")) {
+      return;
+    }
+    toggleFoodTray(null, { source: "toolbar", collapseSidebar: true });
+  });
   dom.medicineButton?.addEventListener("click", () => toggleMedicineTray(null, { source: "toolbar", collapseSidebar: true }));
   dom.tipsButton?.addEventListener("click", () => openUtilityOverlay("tips"));
   dom.resetProgressButton?.addEventListener("click", () => openUtilityOverlay("reset-progress-confirm"));
@@ -6047,8 +7574,18 @@ function bindEvents() {
   });
   dom.resetMealsButton.addEventListener("click", () => resetMealsDebug());
   dom.debugDispenserButton?.addEventListener("click", () => debugDispenseAutoDispenser());
-  dom.spongeButton.addEventListener("click", () => toggleCleaningMode({ source: "toolbar", collapseSidebar: true }));
-  dom.scoopButton?.addEventListener("click", () => toggleScoopMode({ source: "toolbar", collapseSidebar: true }));
+  dom.spongeButton.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("spongeButton")) {
+      return;
+    }
+    toggleCleaningMode({ source: "toolbar", collapseSidebar: true });
+  });
+  dom.scoopButton?.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("scoopButton")) {
+      return;
+    }
+    toggleScoopMode({ source: "toolbar", collapseSidebar: true });
+  });
   dom.debugDamageFishButton.addEventListener("click", () => damageSelectedFish());
   dom.debugBreedButton?.addEventListener("click", () => triggerDebugBabySequence());
   dom.resetFishHealthButton?.addEventListener("click", () => restoreAllFishHealthDebug());
@@ -6058,15 +7595,45 @@ function bindEvents() {
   dom.debugGravelPebbleButton?.addEventListener("click", () => triggerDebugGravelPebbleTest());
   dom.debugCaveButton.addEventListener("click", () => toggleDebugNightCaveMode());
   dom.introTutorialOverlay?.addEventListener("pointerdown", (event) => {
-    event.stopPropagation();
+    if (dom.introTutorialOverlay?.classList.contains("is-blocking")) {
+      event.stopPropagation();
+      return;
+    }
+    if (event.target === dom.introTutorialOverlay || event.target === dom.introTutorialSplash) {
+      event.stopPropagation();
+    }
   });
   dom.introTutorialOverlay?.addEventListener("click", (event) => {
-    event.stopPropagation();
+    if (dom.introTutorialOverlay?.classList.contains("is-blocking")) {
+      event.stopPropagation();
+      return;
+    }
+    if (event.target === dom.introTutorialOverlay || event.target === dom.introTutorialSplash) {
+      event.stopPropagation();
+    }
   });
-  dom.introTutorialNextButton?.addEventListener("click", () => advanceIntroTutorial());
+  dom.introTutorialPanel?.addEventListener("pointerdown", (event) => {
+    if (dom.introTutorialOverlay?.classList.contains("is-blocking")) {
+      event.stopPropagation();
+    }
+  });
+  dom.introTutorialPanel?.addEventListener("click", (event) => {
+    if (dom.introTutorialOverlay?.classList.contains("is-blocking")) {
+      event.stopPropagation();
+    }
+  });
+  dom.replayTutorialButton?.addEventListener("click", () => rerunIntroTutorial());
   dom.toggleFishShop.addEventListener("click", () => openStoreOverlay("fish"));
   dom.toggleDecorShop.addEventListener("click", () => openStoreOverlay("decor"));
-  dom.openStoreButton.addEventListener("click", () => openStoreOverlay("food"));
+  dom.openStoreButton.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("openStoreButton")) {
+      return;
+    }
+    if (openTutorialStoreForCurrentStage()) {
+      return;
+    }
+    openStoreOverlay("food");
+  });
   dom.toolbarTab?.addEventListener("click", () => toggleToolbarCollapsed());
   dom.displayTab?.addEventListener("click", () => toggleDisplayCollapsed());
   dom.openManagementButton?.addEventListener("click", () => {
@@ -6076,15 +7643,35 @@ function bindEvents() {
     }
     openUtilityOverlay("tank-management");
   });
-  dom.openEquipmentButton?.addEventListener("click", () => openEquipmentOverlay());
-  dom.openSettingsButton?.addEventListener("click", () => openSettingsOverlay());
+  dom.openEquipmentButton?.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("openEquipmentButton")) {
+      return;
+    }
+    openEquipmentOverlay();
+  });
+  dom.openSettingsButton?.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("openSettingsButton")) {
+      return;
+    }
+    openSettingsOverlay();
+  });
   dom.openSettingsSidebarButton?.addEventListener("click", () => openSettingsOverlay());
   dom.openEquipmentShopButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.openEquipmentStoreButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.toggleMouseLockButton?.addEventListener("click", () => toggleTankMouseInputLocked());
   dom.uvLightToggleButton?.addEventListener("click", () => toggleUvLightPower());
-  dom.editModeDockButton?.addEventListener("click", () => toggleEditTankMode(null, { source: "toolbar", collapseSidebar: true }));
-  dom.fishEditModeDockButton?.addEventListener("click", () => toggleFishEditMode(null, { source: "toolbar", collapseSidebar: true }));
+  dom.editModeDockButton?.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("editModeDockButton")) {
+      return;
+    }
+    toggleEditTankMode(null, { source: "toolbar", collapseSidebar: true });
+  });
+  dom.fishEditModeDockButton?.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("fishEditModeDockButton")) {
+      return;
+    }
+    toggleFishEditMode(null, { source: "toolbar", collapseSidebar: true });
+  });
   dom.editLayerUpButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-up"));
   dom.editLayerDownButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-down"));
   dom.editScaleUpButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-up"));
@@ -6096,10 +7683,20 @@ function bindEvents() {
       closeStoreOverlay();
     }
   });
-  dom.closeUtilityOverlay?.addEventListener("click", () => closeUtilityOverlay());
+  dom.closeUtilityOverlay?.addEventListener("click", () => {
+    if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+      cancelTutorialSkipConfirmation();
+      return;
+    }
+    closeUtilityOverlay();
+  });
   dom.utilityOverlay?.addEventListener("wheel", handleOverlayWheelScroll, { passive: false });
   dom.utilityOverlay?.addEventListener("click", (event) => {
     if (event.target === dom.utilityOverlay) {
+      if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+        cancelTutorialSkipConfirmation();
+        return;
+      }
       closeUtilityOverlay();
     }
   });
@@ -7045,70 +8642,91 @@ function bindEvents() {
     }
   });
   dom.utilityOverlayFooter?.addEventListener("click", (event) => {
-    if (event.target.closest("[data-claim-daily-bonus]")) {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) {
+      return;
+    }
+    if (target.closest("[data-confirm-tutorial-skip]")) {
+      advanceIntroTutorial("confirm-skip");
+      return;
+    }
+    if (target.closest("[data-cancel-tutorial-skip]")) {
+      advanceIntroTutorial("cancel-skip");
+      return;
+    }
+    if (target.closest("[data-claim-daily-bonus]")) {
       claimDailyBonus();
       return;
     }
-    if (event.target.closest("[data-confirm-dispenser-reset]")) {
+    if (target.closest("[data-confirm-dispenser-reset]")) {
       returnAutoDispenserPelletsToInventory();
       return;
     }
-    if (event.target.closest("[data-confirm-import-save]")) {
+    if (target.closest("[data-confirm-import-save]")) {
       openImportDataPicker();
       closeUtilityOverlay();
       return;
     }
-    if (event.target.closest("[data-confirm-reset-progress]")) {
+    if (target.closest("[data-confirm-reset-progress]")) {
       resetAllProgress();
       return;
     }
-    if (event.target.closest("[data-confirm-decor-buy-another]")) {
+    if (target.closest("[data-confirm-decor-buy-another]")) {
       confirmDecorBuyAnother();
       return;
     }
-    if (event.target.closest("[data-confirm-decor-sell]")) {
+    if (target.closest("[data-confirm-decor-sell]")) {
       confirmDecorSell();
       return;
     }
-    if (event.target.closest("[data-save-custom-decor]")) {
+    if (target.closest("[data-save-custom-decor]")) {
       void savePendingCustomDecorUpload();
       return;
     }
-    if (event.target.closest("[data-choose-custom-hide-background]")) {
+    if (target.closest("[data-choose-custom-hide-background]")) {
       openLocalHideBackgroundPicker();
       return;
     }
-    if (event.target.closest("[data-save-custom-hide]")) {
+    if (target.closest("[data-save-custom-hide]")) {
       void savePendingCustomHideUpload();
       return;
     }
-    if (event.target.closest("[data-save-custom-fish]")) {
+    if (target.closest("[data-save-custom-fish]")) {
       void savePendingCustomFishUpload();
       return;
     }
-    if (event.target.closest("[data-copy-save-export]")) {
+    if (target.closest("[data-copy-save-export]")) {
       void copyCurrentSaveExportData();
       return;
     }
-    if (event.target.closest("[data-select-save-export]")) {
+    if (target.closest("[data-select-save-export]")) {
       if (selectSaveExportText()) {
         showToast("Save data selected.");
       }
       return;
     }
-    if (event.target.closest("[data-download-save-export]")) {
+    if (target.closest("[data-download-save-export]")) {
       void retrySaveExportDownload();
       return;
     }
-    if (event.target.closest("[data-open-external-link]")) {
+    if (target.closest("[data-open-external-link]")) {
       openPendingExternalLink();
       return;
     }
-    if (event.target.closest("[data-copy-external-link]")) {
+    if (target.closest("[data-copy-external-link]")) {
       void copyPendingExternalLink();
       return;
     }
-    if (event.target.closest("[data-close-utility]")) {
+    if (target.closest("[data-dismiss-hardware-acceleration-notice]")) {
+      dismissHardwareAccelerationNotice();
+      closeUtilityOverlay();
+      return;
+    }
+    if (target.closest("[data-close-utility]")) {
+      if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+        cancelTutorialSkipConfirmation();
+        return;
+      }
       closeUtilityOverlay();
     }
   });
@@ -7371,6 +8989,20 @@ function bindEvents() {
         return;
       }
 
+      const animatedBackgroundColorButton = event.target.closest("[data-animated-background-color]");
+      if (animatedBackgroundColorButton) {
+        setAnimatedBackgroundColor(
+          animatedBackgroundColorButton.dataset.animatedBackgroundRole,
+          animatedBackgroundColorButton.dataset.animatedBackgroundColor
+        );
+        return;
+      }
+
+      if (event.target.closest("[data-reset-animated-background-colors]")) {
+        resetAnimatedBackgroundColors();
+        return;
+      }
+
       const tankButton = event.target.closest("[data-select-tank]");
       if (tankButton) {
         selectTankAsset(tankButton.dataset.selectTank);
@@ -7430,6 +9062,12 @@ function bindEvents() {
       const gradientBackgroundToggle = event.target.closest("[data-toggle-gradient-background]");
       if (gradientBackgroundToggle instanceof HTMLInputElement) {
         setGradientBackgroundEnabled(gradientBackgroundToggle.checked);
+        return;
+      }
+
+      const animatedBackgroundToggle = event.target.closest("[data-toggle-animated-background]");
+      if (animatedBackgroundToggle instanceof HTMLInputElement) {
+        setAnimatedBackgroundEnabled(animatedBackgroundToggle.checked);
       }
     });
   };
@@ -7459,6 +9097,7 @@ function bindEvents() {
   });
 
   dom.tankStage.addEventListener("pointerdown", (event) => {
+    clearGlassTapGesture();
     if (shouldCaptureTankDesktopInput(event.target)) {
       event.preventDefault();
     }
@@ -7489,6 +9128,7 @@ function bindEvents() {
       runtime.suppressNextTankClick = true;
       runtime.pointerDown = true;
       dom.tankStage.setPointerCapture(event.pointerId);
+      rememberTankPointerCapture(event.pointerId);
       handleScoopAtPoint(point, Date.now());
       return;
     }
@@ -7549,9 +9189,12 @@ function bindEvents() {
       beginFishDrag(hitFish, point, event.pointerId);
       return;
     }
+
+    beginGlassTapGesture(event, point, now);
   });
 
   dom.tankStage.addEventListener("click", (event) => {
+    const quickGlassTapForThisClick = consumePendingGlassTapClick();
     if (isTankMouseInputLocked()) {
       runtime.suppressNextTankClick = false;
       runtime.suppressNextGlassTap = false;
@@ -7607,7 +9250,7 @@ function bindEvents() {
       return;
     }
 
-    if (!suppressGlassTapForThisClick && canTriggerGlassTap(event)) {
+    if (!suppressGlassTapForThisClick && quickGlassTapForThisClick && canTriggerGlassTap(event)) {
       spawnGlassTapEffect(point);
     }
   });
@@ -7675,6 +9318,7 @@ function bindEvents() {
     }
 
     const point = getTankPoint(event);
+    updateGlassTapGesture(event, point);
     renderToolCursor();
 
     if (runtime.dragState) {
@@ -7856,6 +9500,7 @@ function bindEvents() {
   const releasePointer = (event) => {
     clearEditDecorTrayLongPress(event && Number.isInteger(event.pointerId) ? event.pointerId : null);
     clearEditFishTrayLongPress(event && Number.isInteger(event.pointerId) ? event.pointerId : null);
+    finalizeGlassTapGesture(event);
     runtime.pointerDown = false;
     runtime.lastScrubPoint = null;
     resetScrubWipeSoundState();
@@ -7872,18 +9517,7 @@ function bindEvents() {
     //   finalizeGravelPebbleDrag();
     // }
 
-    if (
-      event &&
-      Number.isInteger(event.pointerId) &&
-      typeof dom.tankStage.hasPointerCapture === "function" &&
-      dom.tankStage.hasPointerCapture(event.pointerId)
-    ) {
-      try {
-        dom.tankStage.releasePointerCapture(event.pointerId);
-      } catch (error) {
-        console.debug("Pointer release skipped.", error);
-      }
-    }
+    releaseTankPointerCapture(event && Number.isInteger(event.pointerId) ? event.pointerId : runtime.capturedTankPointerId);
 
     if (!runtime.cleaningMode) {
       runtime.pointerStagePx = null;
@@ -8464,10 +10098,10 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
     Number.isFinite(Number(entry.amount))
       ? Number(entry.amount)
       : Number.isFinite(Number(entry.intensity))
-      ? Number(entry.intensity)
-      : Number.isFinite(Number(entry.bubblerIntensity))
-        ? Number(entry.bubblerIntensity)
-        : defaultSpout.intensity,
+        ? Number(entry.intensity)
+        : Number.isFinite(Number(entry.bubblerIntensity))
+          ? Number(entry.bubblerIntensity)
+          : defaultSpout.intensity,
     0.15,
     MAX_BUBBLER_INTENSITY
   );
@@ -8482,10 +10116,10 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
       Number.isFinite(Number(entry.width))
         ? Number(entry.width)
         : Number.isFinite(Number(entry.spread))
-        ? Number(entry.spread)
-        : Number.isFinite(Number(entry.bubblerSpread))
-          ? Number(entry.bubblerSpread)
-          : defaultSpout.spread,
+          ? Number(entry.spread)
+          : Number.isFinite(Number(entry.bubblerSpread))
+            ? Number(entry.bubblerSpread)
+            : defaultSpout.spread,
       0,
       320
     ),
@@ -8493,10 +10127,10 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
       Number.isFinite(Number(entry.distance))
         ? Number(entry.distance)
         : Number.isFinite(Number(entry.fadeDistance))
-        ? Number(entry.fadeDistance)
-        : Number.isFinite(Number(entry.bubblerFadeDistance))
-          ? Number(entry.bubblerFadeDistance)
-          : defaultSpout.fadeDistance,
+          ? Number(entry.fadeDistance)
+          : Number.isFinite(Number(entry.bubblerFadeDistance))
+            ? Number(entry.bubblerFadeDistance)
+            : defaultSpout.fadeDistance,
       24,
       TANK_HEIGHT
     ),
@@ -8504,10 +10138,10 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
     bubbleColors: resolvedBubbleColors,
     bubbleColorize: normalizeDecorColorizeSetting(
       entry.bubbleColorize
-        ?? entry.colorize
-        ?? entry.bubbleColorized
-        ?? entry.colorized
-        ?? defaultSpout.bubbleColorize
+      ?? entry.colorize
+      ?? entry.bubbleColorized
+      ?? entry.colorized
+      ?? defaultSpout.bubbleColorize
     ),
     bubbleSize: clamp(
       Number.isFinite(Number(entry.bubbleSize))
@@ -8741,9 +10375,9 @@ function buildBackgroundCatalog(items, metaMap = {}) {
         ? { name: "Custom Background", cost: 0, defaultUnlocked: true, sortOrder: 0 }
         : key === CUSTOM_IMAGE_BACKGROUND_ASSET_KEY
           ? { name: "Local Image", cost: 0, defaultUnlocked: true, sortOrder: 1 }
-        : key === DEFAULT_BACKGROUND_ASSET_KEY
-          ? { name: "Classic Sand", cost: 0, defaultUnlocked: true, sortOrder: 2 }
-          : {};
+          : key === DEFAULT_BACKGROUND_ASSET_KEY
+            ? { name: "Classic Sand", cost: 0, defaultUnlocked: true, sortOrder: 2 }
+            : {};
       const meta = { ...fallbackMeta, ...(metaMap[key] || {}) };
       return {
         key,
@@ -9772,8 +11406,8 @@ async function savePendingCustomFishUpload() {
     name: asset.name,
     scale: DEFAULT_FISH_SCALE,
     entryStartedAt: now,
-    entryDurationMs: 1450,
-    entryFromYNorm: 0.03
+    entryDurationMs: FISH_ENTRY_DURATION_MS,
+    entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
   });
   if (!fish) {
     delete state.customFishAssets[asset.key];
@@ -11336,6 +12970,11 @@ function withAlpha(color, alpha) {
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${clamp(alpha, 0, 1).toFixed(3)})`;
 }
 
+function colorToCssRgbChannels(color, fallback = DEFAULT_ANIMATED_BACKGROUND_HIGHLIGHT_COLOR) {
+  const rgb = hexToRgb(color) || hexToRgb(fallback) || { r: 255, g: 255, b: 255 };
+  return `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+}
+
 function getDefaultGravelPalette() {
   return [...DEFAULT_GRAVEL_PALETTE];
 }
@@ -11348,6 +12987,44 @@ function getDefaultCustomGravelLayerColorizeSettings() {
   return Array.from({ length: CUSTOM_GRAVEL_LAYER_COUNT }, () => true);
 }
 
+function sanitizeAnimatedBackgroundColors(colors) {
+  const source = colors && typeof colors === "object" ? colors : {};
+  return {
+    surfaceBloom: normalizeHexColor(source.surfaceBloom)
+      || normalizeHexColor(source.animatedBackgroundSurfaceBloomColor)
+      || DEFAULT_ANIMATED_BACKGROUND_SURFACE_BLOOM_COLOR,
+    shadowBloom: normalizeHexColor(source.shadowBloom)
+      || normalizeHexColor(source.animatedBackgroundShadowBloomColor)
+      || DEFAULT_ANIMATED_BACKGROUND_SHADOW_BLOOM_COLOR,
+    surface: normalizeHexColor(source.surface)
+      || normalizeHexColor(source.top)
+      || normalizeHexColor(source.animatedBackgroundTopColor)
+      || DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR,
+    mid: normalizeHexColor(source.mid)
+      || normalizeHexColor(source.animatedBackgroundMidColor)
+      || DEFAULT_ANIMATED_BACKGROUND_MID_COLOR,
+    deep: normalizeHexColor(source.deep)
+      || normalizeHexColor(source.bottom)
+      || normalizeHexColor(source.animatedBackgroundBottomColor)
+      || DEFAULT_ANIMATED_BACKGROUND_BOTTOM_COLOR,
+    abyss: normalizeHexColor(source.abyss)
+      || normalizeHexColor(source.animatedBackgroundAbyssColor)
+      || DEFAULT_ANIMATED_BACKGROUND_ABYSS_COLOR,
+    highlight: normalizeHexColor(source.highlight)
+      || normalizeHexColor(source.animatedBackgroundHighlightColor)
+      || DEFAULT_ANIMATED_BACKGROUND_HIGHLIGHT_COLOR,
+    driftA: normalizeHexColor(source.driftA)
+      || normalizeHexColor(source.animatedBackgroundDriftColorA)
+      || DEFAULT_ANIMATED_BACKGROUND_DRIFT_A_COLOR,
+    driftB: normalizeHexColor(source.driftB)
+      || normalizeHexColor(source.animatedBackgroundDriftColorB)
+      || DEFAULT_ANIMATED_BACKGROUND_DRIFT_B_COLOR,
+    driftC: normalizeHexColor(source.driftC)
+      || normalizeHexColor(source.animatedBackgroundDriftColorC)
+      || DEFAULT_ANIMATED_BACKGROUND_DRIFT_C_COLOR
+  };
+}
+
 function getCatalogDefaultKey(catalog, preferredKey) {
   return catalog.find((item) => item.key === preferredKey)?.key || catalog[0]?.key || null;
 }
@@ -11357,9 +13034,13 @@ function getDefaultFilterKey() {
 }
 
 function normalizeCustomBackgroundMode(value) {
-  return value === CUSTOM_BACKGROUND_MODE_GRADIENT
-    ? CUSTOM_BACKGROUND_MODE_GRADIENT
-    : CUSTOM_BACKGROUND_MODE_SOLID;
+  if (value === CUSTOM_BACKGROUND_MODE_GRADIENT) {
+    return CUSTOM_BACKGROUND_MODE_GRADIENT;
+  }
+  if (value === CUSTOM_BACKGROUND_MODE_ANIMATED) {
+    return CUSTOM_BACKGROUND_MODE_ANIMATED;
+  }
+  return CUSTOM_BACKGROUND_MODE_SOLID;
 }
 
 function getSolidBackgroundColorChoices() {
@@ -11406,30 +13087,131 @@ function getActiveGradientBackgroundColors(target = getCurrentTank()) {
   };
 }
 
+function getActiveAnimatedBackgroundColors(target = getCurrentTank()) {
+  return sanitizeAnimatedBackgroundColors({
+    surfaceBloom: target?.animatedBackgroundSurfaceBloomColor,
+    shadowBloom: target?.animatedBackgroundShadowBloomColor,
+    top: target?.animatedBackgroundTopColor,
+    mid: target?.animatedBackgroundMidColor,
+    bottom: target?.animatedBackgroundBottomColor,
+    abyss: target?.animatedBackgroundAbyssColor,
+    highlight: target?.animatedBackgroundHighlightColor,
+    driftA: target?.animatedBackgroundDriftColorA,
+    driftB: target?.animatedBackgroundDriftColorB,
+    driftC: target?.animatedBackgroundDriftColorC
+  });
+}
+
+function getActiveAnimatedBackgroundSchemeColor(target = getCurrentTank()) {
+  return getActiveAnimatedBackgroundColors(target).surface;
+}
+
 function getActiveCustomBackgroundMode(target = getCurrentTank()) {
   return normalizeCustomBackgroundMode(target?.customBackgroundMode);
 }
 
 function buildCustomBackgroundPreviewFill(target = getCurrentTank()) {
-  if (getActiveCustomBackgroundMode(target) === CUSTOM_BACKGROUND_MODE_GRADIENT) {
+  const mode = getActiveCustomBackgroundMode(target);
+  if (mode === CUSTOM_BACKGROUND_MODE_GRADIENT) {
     const { start, end } = getActiveGradientBackgroundColors(target);
     return `linear-gradient(135deg, ${start}, ${end})`;
+  }
+
+  if (mode === CUSTOM_BACKGROUND_MODE_ANIMATED) {
+    const { surface, mid, deep, abyss } = getAnimatedBackgroundDerivedPalette(target);
+    return `linear-gradient(180deg, ${surface} 0%, ${mid} 38%, ${deep} 70%, ${abyss} 100%)`;
   }
 
   const color = getActiveSolidBackgroundColor(target);
   return `linear-gradient(180deg, color-mix(in srgb, ${color} 88%, white 12%), ${color})`;
 }
 
+function remapAnimatedBackgroundSourceColor(templateColor, schemeColor) {
+  const templateRgb = hexToRgb(templateColor);
+  const defaultRgb = hexToRgb(DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR);
+  const schemeRgb = hexToRgb(schemeColor);
+  if (!templateRgb || !defaultRgb || !schemeRgb) {
+    return normalizeHexColor(templateColor) || DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR;
+  }
+
+  const templateHsl = rgbToHsl(templateRgb);
+  const defaultHsl = rgbToHsl(defaultRgb);
+  const schemeHsl = rgbToHsl(schemeRgb);
+  return rgbToHex(hslToRgb({
+    h: normalizeHueUnit(templateHsl.h + getHueDeltaUnit(defaultHsl.h, schemeHsl.h)),
+    s: clamp(templateHsl.s + (schemeHsl.s - defaultHsl.s), 0, 1),
+    l: clamp(templateHsl.l + (schemeHsl.l - defaultHsl.l), 0, 1)
+  }));
+}
+
+function getAnimatedBackgroundDerivedPalette(target = getCurrentTank()) {
+  const schemeColor = getActiveAnimatedBackgroundSchemeColor(target);
+  return {
+    surfaceBloom: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.surfaceBloom, schemeColor),
+    shadowBloom: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.shadowBloom, schemeColor),
+    surface: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.surface, schemeColor),
+    mid: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.mid, schemeColor),
+    deep: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.deep, schemeColor),
+    abyss: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.abyss, schemeColor),
+    highlight: ANIMATED_BACKGROUND_SOURCE_PALETTE.highlight,
+    driftA: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.driftA, schemeColor),
+    driftB: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.driftB, schemeColor),
+    driftC: remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.driftC, schemeColor)
+  };
+}
+
+function getAnimatedBackgroundCssDeclarations(target = getCurrentTank()) {
+  const {
+    surfaceBloom,
+    shadowBloom,
+    surface,
+    mid,
+    deep,
+    abyss,
+    highlight,
+    driftA,
+    driftB,
+    driftC
+  } = getAnimatedBackgroundDerivedPalette(target);
+  return [
+    `--underwater-surface-bloom-rgb:${colorToCssRgbChannels(surfaceBloom, DEFAULT_ANIMATED_BACKGROUND_SURFACE_BLOOM_COLOR)}`,
+    `--underwater-shadow-bloom-rgb:${colorToCssRgbChannels(shadowBloom, DEFAULT_ANIMATED_BACKGROUND_SHADOW_BLOOM_COLOR)}`,
+    `--underwater-surface:${surface}`,
+    `--underwater-mid:${mid}`,
+    `--underwater-deep:${deep}`,
+    `--underwater-abyss:${abyss}`,
+    `--underwater-highlight-rgb:${colorToCssRgbChannels(highlight, DEFAULT_ANIMATED_BACKGROUND_HIGHLIGHT_COLOR)}`,
+    `--underwater-drift-a-rgb:${colorToCssRgbChannels(driftA, DEFAULT_ANIMATED_BACKGROUND_DRIFT_A_COLOR)}`,
+    `--underwater-drift-b-rgb:${colorToCssRgbChannels(driftB, DEFAULT_ANIMATED_BACKGROUND_DRIFT_B_COLOR)}`,
+    `--underwater-drift-c-rgb:${colorToCssRgbChannels(driftC, DEFAULT_ANIMATED_BACKGROUND_DRIFT_C_COLOR)}`
+  ];
+}
+
 function getCustomBackgroundPreviewStyle(target = getCurrentTank()) {
-  return `--background-preview-fill:${buildCustomBackgroundPreviewFill(target)};`;
+  const declarations = [`--background-preview-fill:${buildCustomBackgroundPreviewFill(target)}`];
+  if (getActiveCustomBackgroundMode(target) === CUSTOM_BACKGROUND_MODE_ANIMATED) {
+    declarations.push(...getAnimatedBackgroundCssDeclarations(target));
+  }
+  return `${declarations.join(";")};`;
 }
 
 function createCustomBackgroundFill(context, left, top, width, height, target = getCurrentTank()) {
-  if (getActiveCustomBackgroundMode(target) === CUSTOM_BACKGROUND_MODE_GRADIENT) {
+  const mode = getActiveCustomBackgroundMode(target);
+  if (mode === CUSTOM_BACKGROUND_MODE_GRADIENT) {
     const { start, end } = getActiveGradientBackgroundColors(target);
     const gradient = context.createLinearGradient(left, top, left + width, top + height);
     gradient.addColorStop(0, start);
     gradient.addColorStop(1, end);
+    return gradient;
+  }
+
+  if (mode === CUSTOM_BACKGROUND_MODE_ANIMATED) {
+    const { surface, mid, deep, abyss } = getAnimatedBackgroundDerivedPalette(target);
+    const gradient = context.createLinearGradient(left, top, left, top + height);
+    gradient.addColorStop(0, surface);
+    gradient.addColorStop(0.38, mid);
+    gradient.addColorStop(0.7, deep);
+    gradient.addColorStop(1, abyss);
     return gradient;
   }
 
@@ -11470,7 +13252,11 @@ function isGradientBackgroundEnabled(target = getCurrentTank()) {
 }
 
 function isSolidBackgroundEnabled(target = getCurrentTank()) {
-  return isCustomBackgroundEnabled(target) && getActiveCustomBackgroundMode(target) !== CUSTOM_BACKGROUND_MODE_GRADIENT;
+  return isCustomBackgroundEnabled(target) && getActiveCustomBackgroundMode(target) === CUSTOM_BACKGROUND_MODE_SOLID;
+}
+
+function isAnimatedBackgroundEnabled(target = getCurrentTank()) {
+  return isCustomBackgroundEnabled(target) && getActiveCustomBackgroundMode(target) === CUSTOM_BACKGROUND_MODE_ANIMATED;
 }
 
 function isBackgroundOwned(backgroundKey) {
@@ -11710,7 +13496,7 @@ function normalizeToolbarPosition(value) {
     case "left-center":
       return String(value).trim();
     default:
-      return DEFAULT_UI_SETTINGS.toolbarPosition;
+      return getDefaultToolbarPosition();
   }
 }
 
@@ -11741,7 +13527,7 @@ function sanitizeUiSettings(rawSettings) {
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
     soundMuted: source.soundMuted === true,
-    tankMouseInputLocked: source.tankMouseInputLocked === true,
+    tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality)
   };
 }
@@ -11921,7 +13707,7 @@ function applyWallpaperEngineUserProperties(properties) {
 }
 
 function isTankMouseInputLocked() {
-  return getUiSettings().tankMouseInputLocked === true;
+  return isTankMouseLockFeatureEnabled() && getUiSettings().tankMouseInputLocked === true;
 }
 
 function getContentSettings() {
@@ -12147,6 +13933,16 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     solidBackgroundColor: normalizeHexColor(incomingTank.solidBackgroundColor) || DEFAULT_SOLID_BACKGROUND_COLOR,
     gradientBackgroundStartColor: normalizeHexColor(incomingTank.gradientBackgroundStartColor) || DEFAULT_GRADIENT_BACKGROUND_START_COLOR,
     gradientBackgroundEndColor: normalizeHexColor(incomingTank.gradientBackgroundEndColor) || DEFAULT_GRADIENT_BACKGROUND_END_COLOR,
+    animatedBackgroundSurfaceBloomColor: incomingTank.animatedBackgroundSurfaceBloomColor,
+    animatedBackgroundShadowBloomColor: incomingTank.animatedBackgroundShadowBloomColor,
+    animatedBackgroundTopColor: incomingTank.animatedBackgroundTopColor,
+    animatedBackgroundMidColor: incomingTank.animatedBackgroundMidColor,
+    animatedBackgroundBottomColor: incomingTank.animatedBackgroundBottomColor,
+    animatedBackgroundAbyssColor: incomingTank.animatedBackgroundAbyssColor,
+    animatedBackgroundHighlightColor: incomingTank.animatedBackgroundHighlightColor,
+    animatedBackgroundDriftColorA: incomingTank.animatedBackgroundDriftColorA,
+    animatedBackgroundDriftColorB: incomingTank.animatedBackgroundDriftColorB,
+    animatedBackgroundDriftColorC: incomingTank.animatedBackgroundDriftColorC,
     localBackgroundImageDataUrl,
     localBackgroundImageRefId,
     selectedTankAsset: runtime.tankMap.has(incomingTank.selectedTankAsset) ? incomingTank.selectedTankAsset : null,
@@ -12199,6 +13995,16 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     solidBackgroundColor: incoming?.solidBackgroundColor,
     gradientBackgroundStartColor: incoming?.gradientBackgroundStartColor,
     gradientBackgroundEndColor: incoming?.gradientBackgroundEndColor,
+    animatedBackgroundSurfaceBloomColor: incoming?.animatedBackgroundSurfaceBloomColor,
+    animatedBackgroundShadowBloomColor: incoming?.animatedBackgroundShadowBloomColor,
+    animatedBackgroundTopColor: incoming?.animatedBackgroundTopColor,
+    animatedBackgroundMidColor: incoming?.animatedBackgroundMidColor,
+    animatedBackgroundBottomColor: incoming?.animatedBackgroundBottomColor,
+    animatedBackgroundAbyssColor: incoming?.animatedBackgroundAbyssColor,
+    animatedBackgroundHighlightColor: incoming?.animatedBackgroundHighlightColor,
+    animatedBackgroundDriftColorA: incoming?.animatedBackgroundDriftColorA,
+    animatedBackgroundDriftColorB: incoming?.animatedBackgroundDriftColorB,
+    animatedBackgroundDriftColorC: incoming?.animatedBackgroundDriftColorC,
     localBackgroundImageDataUrl: incoming?.localBackgroundImageDataUrl,
     localBackgroundImageRefId: incoming?.localBackgroundImageRefId,
     selectedTankAsset: incoming?.selectedTankAsset,
@@ -12243,6 +14049,60 @@ function normalizeTankFilterAssignments(targetState) {
 
     available[filterKey] = remaining - 1;
   }
+}
+
+function matchesLegacyDefaultStarterTankAppearance(tank, index, defaultFilterKey = getDefaultFilterKey()) {
+  if (!tank) {
+    return false;
+  }
+
+  const defaultBackgroundKey = getCatalogDefaultKey(runtime.backgroundCatalog, DEFAULT_TANK_BACKGROUND_ASSET_KEY);
+  const layerColors = sanitizeCustomGravelLayerColors(tank.customGravelLayerColors);
+  const matchesLegacyColors = layerColors.length === LEGACY_DEFAULT_CUSTOM_GRAVEL_LAYER_COLORS.length
+    && layerColors.every((color, layerIndex) => color === LEGACY_DEFAULT_CUSTOM_GRAVEL_LAYER_COLORS[layerIndex]);
+  const matchesCurrentDefaultColors = layerColors.length === DEFAULT_CUSTOM_GRAVEL_LAYER_COLORS.length
+    && layerColors.every((color, layerIndex) => color === DEFAULT_CUSTOM_GRAVEL_LAYER_COLORS[layerIndex]);
+  return sanitizeTankName(tank.name, buildDefaultTankName(index)) === buildDefaultTankName(index)
+    && Array.isArray(tank.fish) && tank.fish.length === 0
+    && Array.isArray(tank.placedDecor) && tank.placedDecor.length === 0
+    && Array.isArray(tank.pendingPoops) && tank.pendingPoops.length === 0
+    && Array.isArray(tank.poops) && tank.poops.length === 0
+    && Array.isArray(tank.fishEggs) && tank.fishEggs.length === 0
+    && Array.isArray(tank.floatingPellets) && tank.floatingPellets.length === 0
+    && Object.keys(tank.feedHistory || {}).length === 0
+    && !tank.selectedTankAsset
+    && tank.selectedFilterAsset === defaultFilterKey
+    && !tank.uvLightInstalled
+    && tank.selectedBackground === defaultBackgroundKey
+    && normalizeCustomBackgroundMode(tank.customBackgroundMode) === CUSTOM_BACKGROUND_MODE_SOLID
+    && (matchesLegacyColors || matchesCurrentDefaultColors);
+}
+
+function applyDefaultStarterTankAppearance(tank) {
+  if (!tank) {
+    return false;
+  }
+
+  const nextBackgroundKey = getCatalogDefaultKey(runtime.backgroundCatalog, DEFAULT_TANK_BACKGROUND_ASSET_KEY);
+  const nextLayerColors = getDefaultCustomGravelLayerColors();
+  const nextLayerColorize = getDefaultCustomGravelLayerColorizeSettings();
+  const changed = tank.selectedBackground !== nextBackgroundKey
+    || normalizeCustomBackgroundMode(tank.customBackgroundMode) !== DEFAULT_TANK_CUSTOM_BACKGROUND_MODE
+    || tank.customGravelEnabled !== true
+    || tank.customGravelLayerColors.length !== nextLayerColors.length
+    || nextLayerColors.some((color, index) => tank.customGravelLayerColors[index] !== color)
+    || tank.customGravelLayerColorize.length !== nextLayerColorize.length
+    || nextLayerColorize.some((enabled, index) => tank.customGravelLayerColorize[index] !== enabled);
+  if (!changed) {
+    return false;
+  }
+
+  tank.selectedBackground = nextBackgroundKey;
+  tank.customBackgroundMode = DEFAULT_TANK_CUSTOM_BACKGROUND_MODE;
+  tank.customGravelEnabled = true;
+  tank.customGravelLayerColors = nextLayerColors;
+  tank.customGravelLayerColorize = nextLayerColorize;
+  return true;
 }
 
 function reconcileState(rawState) {
@@ -12410,6 +14270,16 @@ function reconcileState(rawState) {
     nextState.storedFish = nextState.storedFish.map((fish) => rebalanceFishHealthForCurrentModel(fish));
   }
 
+  if (incomingVersion < 36) {
+    const defaultFilterKey = getDefaultFilterKey();
+    nextState.tanks.forEach((tank, index) => {
+      // Refresh untouched starter tanks that still match the old or partially-updated visual defaults.
+      if (matchesLegacyDefaultStarterTankAppearance(tank, index, defaultFilterKey)) {
+        applyDefaultStarterTankAppearance(tank);
+      }
+    });
+  }
+
   const corpseCount = getAllTankFish(nextState).filter((fish) => isFishDead(fish)).length
     + nextState.storedFish.filter((fish) => isFishDead(fish)).length;
 
@@ -12534,6 +14404,86 @@ function normalizeExternalUrl(value) {
   }
 }
 
+function getHardwareAccelerationDismissed() {
+  try {
+    return localStorage.getItem(HARDWARE_ACCELERATION_NOTICE_DISMISSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function dismissHardwareAccelerationNotice() {
+  try {
+    localStorage.setItem(HARDWARE_ACCELERATION_NOTICE_DISMISSED_KEY, "1");
+  } catch { }
+}
+
+function getWebGlRendererLabel(gl) {
+  if (!gl || typeof gl.getParameter !== "function") {
+    return "";
+  }
+
+  try {
+    const debugInfo = gl.getExtension?.("WEBGL_debug_renderer_info");
+    if (debugInfo?.UNMASKED_RENDERER_WEBGL) {
+      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      if (renderer) {
+        return String(renderer);
+      }
+    }
+  } catch { }
+
+  try {
+    const renderer = gl.getParameter(gl.RENDERER);
+    return renderer ? String(renderer) : "";
+  } catch {
+    return "";
+  }
+}
+
+function detectHardwareAccelerationIssue() {
+  if (!shouldShowHardwareAccelerationNotice() || typeof document === "undefined") {
+    return null;
+  }
+
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) {
+      return {
+        reason: "webgl-unavailable",
+        renderer: ""
+      };
+    }
+
+    const renderer = getWebGlRendererLabel(gl).trim();
+    if (renderer && SOFTWARE_RENDERER_PATTERNS.some((pattern) => pattern.test(renderer))) {
+      return {
+        reason: "software-renderer",
+        renderer
+      };
+    }
+  } catch (error) {
+    console.warn("Hardware acceleration detection failed.", error);
+  }
+
+  return null;
+}
+
+function maybeShowHardwareAccelerationNotice() {
+  if (runtime.utilityOverlayOpen || getHardwareAccelerationDismissed()) {
+    return;
+  }
+
+  const issue = detectHardwareAccelerationIssue();
+  if (!issue) {
+    return;
+  }
+
+  runtime.hardwareAccelerationIssue = issue;
+  openUtilityOverlay("hardware-acceleration");
+}
+
 function promptExternalLink(url, label = "") {
   const normalizedUrl = normalizeExternalUrl(url);
   if (!normalizedUrl) {
@@ -12595,7 +14545,7 @@ function tryBrowserExternalOpen(url) {
     }
     try {
       opened.opener = null;
-    } catch {}
+    } catch { }
     return true;
   } catch (error) {
     console.warn("Browser external link opener failed.", error);
@@ -12759,9 +14709,17 @@ function resetTransientAquariumUiState() {
   closeEditDecorTrayContextMenu({ render: false });
   clearEditFishTrayLongPress();
   closeEditFishTrayContextMenu({ render: false });
+  if (runtime.toastHandle) {
+    clearTimeout(runtime.toastHandle);
+  }
+  runtime.toastHandle = null;
+  runtime.toastKey = "";
+  dom.toast?.classList.remove("is-visible");
   runtime.storeOverlayOpen = false;
   runtime.utilityOverlayOpen = false;
   runtime.utilityOverlayMode = "";
+  runtime.tutorialDismissedFeaturePopup = "";
+  runtime.tutorialDisplayCollapsed = false;
   runtime.settingsOverlayOpen = false;
   runtime.equipmentOverlayOpen = false;
   runtime.storeTab = "fish";
@@ -12790,6 +14748,8 @@ function resetTransientAquariumUiState() {
   runtime.lastTankPoint = null;
   runtime.lastScrubPoint = null;
   runtime.suppressNextTankClick = false;
+  runtime.suppressNextGlassTap = false;
+  clearGlassTapGesture();
   runtime.splashBursts = [];
   runtime.fallingGravelPebbles = [];
   runtime.fishShadowPlaneCache.clear();
@@ -12830,6 +14790,7 @@ async function applyImportedSaveData(rawState) {
   });
   syncRuntimeCustomFishAssetsFromState(state);
   syncRuntimeCustomDecorAssetsFromState(state);
+  restoreTutorialRuntimeState(now);
   void preloadImages([
     ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
     ...getCustomDecorCatalogEntries(state).flatMap((item) => [item.path, item.bgPath].filter(Boolean)),
@@ -13542,10 +15503,10 @@ function createDefaultBubblerSettings(seed = null) {
   const bubbleColor = normalizeDecorColorSetting(source.bubbleColor ?? source.color) || DEFAULT_BUBBLER_BUBBLE_COLOR;
   const bubbleColorize = normalizeDecorColorizeSetting(
     source.bubbleColorize
-      ?? source.colorize
-      ?? source.bubbleColorized
-      ?? source.colorized
-      ?? false
+    ?? source.colorize
+    ?? source.bubbleColorized
+    ?? source.colorized
+    ?? false
   );
   const bubbleSize = clamp(
     Number(source.bubbleSize ?? source.size ?? source.radiusScale) || DEFAULT_CUSTOM_BUBBLER_BUBBLE_SIZE,
@@ -14078,11 +16039,11 @@ function updatePlacedDecorResizeAnchor(item) {
     || Math.abs((Number(item.xCenterOffsetPx) || 0) - centerOffsetPx) > 0.001
     || (anchorToWaterSurface
       ? previousWaterSurfaceOffsetPx === null
-        || Math.abs(previousWaterSurfaceOffsetPx - waterSurfaceOffsetPx) > 0.001
-        || previousLayerBoundaryOffsetPx !== null
+      || Math.abs(previousWaterSurfaceOffsetPx - waterSurfaceOffsetPx) > 0.001
+      || previousLayerBoundaryOffsetPx !== null
       : previousLayerBoundaryOffsetPx === null
-        || Math.abs(previousLayerBoundaryOffsetPx - boundaryGapPx) > 0.001
-        || previousWaterSurfaceOffsetPx !== null);
+      || Math.abs(previousLayerBoundaryOffsetPx - boundaryGapPx) > 0.001
+      || previousWaterSurfaceOffsetPx !== null);
 
   delete item.resizeAnchorSpace;
   item.xCenterOffsetPx = centerOffsetPx;
@@ -16176,6 +18137,7 @@ function beginGravelPebbleDrag(pebble, point, pointerId, options = {}) {
 
   try {
     dom.tankStage.setPointerCapture(pointerId);
+    rememberTankPointerCapture(pointerId);
   } catch (error) {
     console.debug("Pointer capture skipped.", error);
   }
@@ -18474,7 +20436,8 @@ function tick() {
   }
 
   const now = Date.now();
-  const changed = syncState(now) || runtime.gravelStateDirty;
+  const tutorialChanged = syncTutorialFlow(now);
+  const changed = syncState(now) || runtime.gravelStateDirty || tutorialChanged;
   renderTickUi(now, { stateChanged: changed });
   if (changed) {
     saveState();
@@ -18488,6 +20451,8 @@ function renderTickUi(now, options = {}) {
   renderMealTrack(now);
   renderFishInspector(now);
   renderControls(now);
+  renderIntroTutorial();
+  renderTutorialGuidance();
   if (stateChanged) {
     renderSummary(now);
     renderEvents();
@@ -18578,13 +20543,17 @@ function syncCurrentTankState(now, options = {}) {
     changed = true;
   }
 
+  const targetTank = getCurrentTank();
   changed = scrubImpossiblePredatorState(now) || changed;
   changed = scrubProtectedTankFishPredatorState(now) || changed;
-  changed = processAutoDispenserSlots(state.lastSimulatedAt, now, { visibleTankId: options.visibleTankId }) || changed;
+  changed = processAutoDispenserSlots(state.lastSimulatedAt, now, {
+    visibleTankId: options.visibleTankId,
+    tank: targetTank
+  }) || changed;
 
   const completedSlots = getCompletedMealSlots(state.lastSimulatedAt, now);
   for (const slot of completedSlots) {
-    const wasFed = isMealSlotServed(slot);
+    const wasFed = isMealSlotServed(slot, targetTank);
     let missedCount = 0;
     let starvationDamageCount = 0;
     let starvationDamageUnits = 0;
@@ -19170,8 +21139,16 @@ function canFishTargetFoodPellet(fish, pellet, now = Date.now()) {
   return Math.hypot((fish.xNorm || 0.5) - pellet.xNorm, (fish.yNorm || 0.5) - pellet.yNorm) <= FOOD_PELLET_SETTLED_NEARBY_TARGET_RADIUS_NORM;
 }
 
-function ensureMealHistoryEntry(slotKey, now = Date.now()) {
-  const existing = getMealHistoryEntry(slotKey);
+function ensureMealHistoryEntry(slotKey, now = Date.now(), tank = getCurrentTank()) {
+  if (!tank || !slotKey) {
+    return null;
+  }
+
+  if (!tank.feedHistory || typeof tank.feedHistory !== "object") {
+    tank.feedHistory = {};
+  }
+
+  const existing = getMealHistoryEntry(slotKey, tank);
   if (existing) {
     existing.fedAt = Math.max(Number(existing.fedAt) || 0, now);
     existing.coinsEarned = Math.max(0, Number(existing.coinsEarned) || 0);
@@ -19179,21 +21156,24 @@ function ensureMealHistoryEntry(slotKey, now = Date.now()) {
     return existing;
   }
 
-  state.feedHistory[slotKey] = {
+  tank.feedHistory[slotKey] = {
     fedAt: now,
     coinsEarned: 0,
     fishIds: []
   };
-  return state.feedHistory[slotKey];
+  return tank.feedHistory[slotKey];
 }
 
-function recordFishMealCredit(fish, now = Date.now()) {
+function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   if (!fish || isMealFreeFish(fish)) {
     return 0;
   }
 
   const slot = getCurrentMealSlot(now);
-  const entry = ensureMealHistoryEntry(slot.key, now);
+  const entry = ensureMealHistoryEntry(slot.key, now, tank);
+  if (!entry) {
+    return 0;
+  }
   const fedFishIds = new Set(entry.fishIds);
   if (fedFishIds.has(fish.id)) {
     return 0;
@@ -19208,7 +21188,7 @@ function recordFishMealCredit(fish, now = Date.now()) {
   return mealCoins;
 }
 
-function hasFishEatenInSlot(fish, slotOrKey) {
+function hasFishEatenInSlot(fish, slotOrKey, tank = getCurrentTank()) {
   if (!fish || isMealFreeFish(fish)) {
     return true;
   }
@@ -19218,7 +21198,7 @@ function hasFishEatenInSlot(fish, slotOrKey) {
     return false;
   }
 
-  const entry = getMealHistoryEntry(slotKey);
+  const entry = getMealHistoryEntry(slotKey, tank);
   if (!entry || !Array.isArray(entry.fishIds)) {
     return false;
   }
@@ -19253,12 +21233,16 @@ function isMealSlotCompleteForTank(slot = getCurrentMealSlot(Date.now())) {
   return eligibleFish.every((fish) => hasFishEatenInSlot(fish, slot));
 }
 
-function scheduleFishPoop(fish, now = Date.now()) {
-  if (!fish || isFishDead(fish)) {
+function scheduleFishPoop(fish, now = Date.now(), tank = getCurrentTank()) {
+  if (!fish || isFishDead(fish) || !tank) {
     return;
   }
 
-  state.pendingPoops.push({
+  if (!Array.isArray(tank.pendingPoops)) {
+    tank.pendingPoops = [];
+  }
+
+  tank.pendingPoops.push({
     id: createId("poop"),
     fishId: fish.id,
     dueAt: now + HOUR_MS + Math.random() * (2 * HOUR_MS)
@@ -19594,8 +21578,8 @@ function returnAutoDispenserPelletsToInventory(now = Date.now()) {
   return true;
 }
 
-function getAutoDispenserFeedCandidates(foodKey, now, slot) {
-  return state.fish
+function getAutoDispenserFeedCandidates(foodKey, now, slot, tank = getCurrentTank()) {
+  return (Array.isArray(tank?.fish) ? tank.fish : [])
     .filter((fish) => (
       fish
       && !isFishDead(fish)
@@ -19609,11 +21593,22 @@ function getAutoDispenserFeedCandidates(foodKey, now, slot) {
     ));
 }
 
-function applyFoodBuff(foodKey, now = Date.now()) {
+function applyFoodBuff(foodKey, now = Date.now(), tank = getCurrentTank()) {
+  if (!tank) {
+    return;
+  }
+
+  if (!tank.foodBuffs || typeof tank.foodBuffs !== "object") {
+    tank.foodBuffs = {
+      upgradedUntil: 0,
+      friskyUntil: 0
+    };
+  }
+
   if (foodKey === "upgraded") {
-    state.foodBuffs.upgradedUntil = Math.max(Number(state.foodBuffs?.upgradedUntil) || 0, now + FOOD_BUFF_DURATION_MS);
+    tank.foodBuffs.upgradedUntil = Math.max(Number(tank.foodBuffs?.upgradedUntil) || 0, now + FOOD_BUFF_DURATION_MS);
   } else if (foodKey === "frisky") {
-    state.foodBuffs.friskyUntil = Math.max(Number(state.foodBuffs?.friskyUntil) || 0, now + FOOD_BUFF_DURATION_MS);
+    tank.foodBuffs.friskyUntil = Math.max(Number(tank.foodBuffs?.friskyUntil) || 0, now + FOOD_BUFF_DURATION_MS);
   }
 }
 
@@ -19662,11 +21657,12 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
     return null;
   }
 
+  const targetTank = options.tank || getCurrentTank();
   const species = getSpeciesForFish(fish);
   const foodKey = pellet.foodKey || "basic";
-  const mealCoins = recordFishMealCredit(fish, now);
-  scheduleFishPoop(fish, now);
-  applyFoodBuff(foodKey, now);
+  const mealCoins = recordFishMealCredit(fish, now, targetTank);
+  scheduleFishPoop(fish, now, targetTank);
+  applyFoodBuff(foodKey, now, targetTank);
   const intake = applyFishMealWindowFoodIntake(fish, now);
   const announce = options.announce !== false;
   const died = intake.damageUnits > 0 && fish.healthUnits <= 0;
@@ -19675,16 +21671,17 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
     if (announce) {
       pushEvent(
         `${fish.name} was overfed during the ${intake.slot.label.toLowerCase()} meal and lost ${intake.damageUnits} half-heart ${pluralize("step", intake.damageUnits)}.`,
-        now
+        now,
+        targetTank
       );
     }
     if (died) {
       markFishAsDead(fish, now, `${fish.name} died after being overfed.`);
     }
   } else if (announce && mealCoins > 0) {
-    pushEvent(`${fish.name} ate and earned ${mealCoins} ${pluralize("coin", mealCoins)}.`, now);
+    pushEvent(`${fish.name} ate and earned ${mealCoins} ${pluralize("coin", mealCoins)}.`, now, targetTank);
   } else if (announce && species) {
-    pushEvent(`${fish.name} ate some ${foodKey === "chum" ? "chum" : species.name.includes("Fish") ? "food" : foodKey}.`, now);
+    pushEvent(`${fish.name} ate some ${foodKey === "chum" ? "chum" : species.name.includes("Fish") ? "food" : foodKey}.`, now, targetTank);
   }
 
   return {
@@ -19699,7 +21696,7 @@ function handleFishEatFoodPellet(fish, pellet, now = Date.now()) {
   return applyFoodPelletToFish(fish, pellet, now, { announce: true });
 }
 
-function simulateAutoDispenserRelease(releasedPellets, slot) {
+function simulateAutoDispenserRelease(releasedPellets, slot, tank = getCurrentTank()) {
   if (!Array.isArray(releasedPellets) || !releasedPellets.length || !slot) {
     return {
       fedCount: 0,
@@ -19713,7 +21710,7 @@ function simulateAutoDispenserRelease(releasedPellets, slot) {
   let deathCount = 0;
 
   for (const storedPellet of releasedPellets) {
-    const candidate = getAutoDispenserFeedCandidates(storedPellet.foodKey, slot.start, slot)[0];
+    const candidate = getAutoDispenserFeedCandidates(storedPellet.foodKey, slot.start, slot, tank)[0];
     if (!candidate) {
       continue;
     }
@@ -19721,7 +21718,7 @@ function simulateAutoDispenserRelease(releasedPellets, slot) {
     const result = applyFoodPelletToFish(candidate, {
       foodKey: storedPellet.foodKey,
       spritePath: storedPellet.spritePath
-    }, slot.start, { announce: false });
+    }, slot.start, { announce: false, tank });
     if (!result) {
       continue;
     }
@@ -19742,8 +21739,148 @@ function simulateAutoDispenserRelease(releasedPellets, slot) {
   };
 }
 
+function getAutoDispenserCatchUpAssignments(storedPellets, eligibleFish, now = Date.now()) {
+  if (!Array.isArray(storedPellets) || !storedPellets.length || !Array.isArray(eligibleFish) || !eligibleFish.length) {
+    return [];
+  }
+
+  const fishPlans = eligibleFish
+    .map((fish, fishIndex) => ({
+      fish,
+      fishIndex,
+      compatiblePelletIndices: storedPellets.reduce((indices, pellet, pelletIndex) => {
+        if (pellet && canFishEatFoodPellet(fish, pellet.foodKey, now)) {
+          indices.push(pelletIndex);
+        }
+        return indices;
+      }, [])
+    }))
+    .sort((left, right) => (
+      left.compatiblePelletIndices.length - right.compatiblePelletIndices.length
+      || left.fishIndex - right.fishIndex
+    ));
+  const pelletMatches = Array.from({ length: storedPellets.length }, () => -1);
+
+  function tryAssignFish(planIndex, visitedPelletIndices = new Set()) {
+    const plan = fishPlans[planIndex];
+    for (const pelletIndex of plan.compatiblePelletIndices) {
+      if (visitedPelletIndices.has(pelletIndex)) {
+        continue;
+      }
+
+      visitedPelletIndices.add(pelletIndex);
+      const matchedPlanIndex = pelletMatches[pelletIndex];
+      if (matchedPlanIndex === -1 || tryAssignFish(matchedPlanIndex, visitedPelletIndices)) {
+        pelletMatches[pelletIndex] = planIndex;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  for (let planIndex = 0; planIndex < fishPlans.length; planIndex += 1) {
+    if (!tryAssignFish(planIndex)) {
+      return [];
+    }
+  }
+
+  return pelletMatches
+    .map((planIndex, pelletIndex) => (
+      planIndex === -1
+        ? null
+        : {
+          fish: fishPlans[planIndex].fish,
+          pellet: storedPellets[pelletIndex],
+          pelletIndex
+        }
+    ))
+    .filter(Boolean);
+}
+
+function processAutoDispenserCatchUpSlot(slot, options = {}) {
+  const targetTank = options.tank || getCurrentTank();
+  const dispenser = options.dispenser || targetTank?.autoDispenser;
+  if (!slot || !targetTank || !dispenser?.installed) {
+    return false;
+  }
+
+  const requested = clamp(dispenser.mealPortion, AUTO_DISPENSER_PORTION_MIN, AUTO_DISPENSER_PORTION_MAX);
+  const eventTime = Number.isFinite(Number(options.eventTime)) ? Number(options.eventTime) : (slot.start || Date.now());
+  dispenser.lastDispensedSlotKey = slot.key;
+
+  if (isMealSlotServed(slot, targetTank)) {
+    return true;
+  }
+
+  const remainingFish = getMealEligibleFishForSlot(slot, targetTank)
+    .filter((fish) => !hasFishEatenInSlot(fish, slot, targetTank));
+  if (!remainingFish.length) {
+    return true;
+  }
+
+  if (requested < remainingFish.length) {
+    dispenser.refillAlert = requested > 0 && getAutoDispenserLoadedCount(dispenser) <= 0;
+    pushEvent(
+      `The pellet dispenser was set too low to cover the ${slot.label.toLowerCase()} meal while the tank was away.`,
+      eventTime,
+      targetTank
+    );
+    return true;
+  }
+
+  const storedPellets = Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : [];
+  if (storedPellets.length < remainingFish.length) {
+    dispenser.refillAlert = true;
+    pushEvent(
+      `The pellet dispenser could not cover the ${slot.label.toLowerCase()} meal while the tank was away because it did not have enough food for every fish.`,
+      eventTime,
+      targetTank
+    );
+    return true;
+  }
+
+  const assignments = getAutoDispenserCatchUpAssignments(storedPellets, remainingFish, slot.start);
+  if (assignments.length < remainingFish.length) {
+    dispenser.refillAlert = false;
+    pushEvent(
+      `The pellet dispenser could not cover the ${slot.label.toLowerCase()} meal while the tank was away because the loaded food was not compatible with every fish.`,
+      eventTime,
+      targetTank
+    );
+    return true;
+  }
+
+  const usedPelletIndices = new Set(assignments.map((assignment) => assignment.pelletIndex));
+  dispenser.storedPellets = dispenser.storedPellets.filter((_, pelletIndex) => !usedPelletIndices.has(pelletIndex));
+
+  let fedCount = 0;
+  for (const assignment of assignments) {
+    const result = applyFoodPelletToFish(assignment.fish, {
+      foodKey: assignment.pellet.foodKey,
+      spritePath: assignment.pellet.spritePath
+    }, slot.start, { announce: false, tank: targetTank });
+    if (result) {
+      fedCount += 1;
+    }
+  }
+
+  dispenser.refillAlert = requested > 0 && getAutoDispenserLoadedCount(dispenser) <= 0;
+  pushEvent(
+    `The pellet dispenser covered the ${slot.label.toLowerCase()} meal while the tank was away, and ${fedCount} fish ate.`,
+    eventTime,
+    targetTank
+  );
+  if (dispenser.refillAlert) {
+    pushEvent(`The pellet dispenser ran empty during the ${slot.label.toLowerCase()} meal.`, eventTime, targetTank);
+  }
+
+  return true;
+}
+
 function processAutoDispenserSlot(slot, options = {}) {
-  const dispenser = state.autoDispenser;
+  const targetTank = options.tank || getCurrentTank();
+  const dispenser = targetTank?.autoDispenser;
   if (!dispenser?.installed || dispenser.lastDispensedSlotKey === slot?.key || (dispenser.mealPortion || 0) <= 0) {
     return false;
   }
@@ -19751,83 +21888,89 @@ function processAutoDispenserSlot(slot, options = {}) {
   const requested = clamp(dispenser.mealPortion, AUTO_DISPENSER_PORTION_MIN, AUTO_DISPENSER_PORTION_MAX);
   const eventTime = Number.isFinite(Number(options.eventTime)) ? Number(options.eventTime) : (slot?.start || Date.now());
   const animate = options.animate === true;
+  dispenser.lastDispensedSlotKey = slot.key;
+
+  if (isMealSlotServed(slot, targetTank)) {
+    return true;
+  }
+
+  if (!animate) {
+    return processAutoDispenserCatchUpSlot(slot, {
+      tank: targetTank,
+      dispenser,
+      eventTime
+    });
+  }
+
   const availableCount = getAutoDispenserLoadedCount(dispenser);
   const releaseCount = Math.min(requested, availableCount);
   const releasedPellets = releaseCount > 0 ? dispenser.storedPellets.splice(0, releaseCount) : [];
-  dispenser.lastDispensedSlotKey = slot.key;
-
-  let fedCount = 0;
-  if (animate) {
-    const floatingPellets = releasedPellets
-      .map((storedPellet, index) => createAutoDispenserDroppedPellet(storedPellet, eventTime + index * AUTO_DISPENSER_RELEASE_SPACING_MS))
-      .filter(Boolean);
-    if (floatingPellets.length) {
-      state.floatingPellets.push(...floatingPellets);
-      assignFloatingPelletsToHungryFish(eventTime);
-      playDispenserSoundEffect();
-    }
-    if (floatingPellets.length > 0) {
-      pushEvent(
-        `The pellet dispenser released ${floatingPellets.length} pellet${floatingPellets.length === 1 ? "" : "s"} for the ${slot.label.toLowerCase()} meal.`,
-        eventTime
-      );
-    }
-  } else {
-    const summary = simulateAutoDispenserRelease(releasedPellets, slot);
-    fedCount = summary.fedCount;
-    if (releaseCount > 0) {
-      pushEvent(
-        fedCount > 0
-          ? `The pellet dispenser released ${releaseCount} pellet${releaseCount === 1 ? "" : "s"} for the ${slot.label.toLowerCase()} meal, and ${fedCount} fish ate.`
-          : `The pellet dispenser released ${releaseCount} pellet${releaseCount === 1 ? "" : "s"} for the ${slot.label.toLowerCase()} meal, but no fish ate.`,
-        slot.start
-      );
-    }
+  const floatingPellets = releasedPellets
+    .map((storedPellet, index) => createAutoDispenserDroppedPellet(storedPellet, eventTime + index * AUTO_DISPENSER_RELEASE_SPACING_MS))
+    .filter(Boolean);
+  if (floatingPellets.length) {
+    state.floatingPellets.push(...floatingPellets);
+    assignFloatingPelletsToHungryFish(eventTime);
+    playDispenserSoundEffect();
+  }
+  if (floatingPellets.length > 0) {
+    pushEvent(
+      `The pellet dispenser released ${floatingPellets.length} pellet${floatingPellets.length === 1 ? "" : "s"} for the ${slot.label.toLowerCase()} meal.`,
+      eventTime,
+      targetTank
+    );
   }
 
   const ranEmpty = requested > releaseCount || (requested > 0 && getAutoDispenserLoadedCount(dispenser) <= 0);
   if (ranEmpty) {
     dispenser.refillAlert = true;
     if (releaseCount > 0) {
-      pushEvent(`The pellet dispenser ran empty during the ${slot.label.toLowerCase()} meal.`, eventTime);
+      pushEvent(`The pellet dispenser ran empty during the ${slot.label.toLowerCase()} meal.`, eventTime, targetTank);
     }
   } else {
     dispenser.refillAlert = false;
   }
 
   if (releaseCount <= 0) {
-    pushEvent(`The pellet dispenser tried to run for the ${slot.label.toLowerCase()} meal, but it was empty.`, eventTime);
+    pushEvent(`The pellet dispenser tried to run for the ${slot.label.toLowerCase()} meal, but it was empty.`, eventTime, targetTank);
   }
 
   return true;
 }
 
 function processAutoDispenserSlots(startTs, endTs, options = {}) {
-  if (!hasAutoDispenserInstalled()) {
+  const targetTank = options.tank || getCurrentTank();
+  if (!hasAutoDispenserInstalled(targetTank)) {
     return false;
   }
 
   let changed = false;
   const slots = getMealSlotsStartingBetween(startTs, endTs);
-  const currentTankId = getCurrentTank()?.id || "";
+  const currentTankId = targetTank?.id || "";
   const visibleTankId = typeof options.visibleTankId === "string" ? options.visibleTankId : "";
 
   for (const slot of slots) {
     const animate = currentTankId === visibleTankId && endTs - slot.start <= AUTO_DISPENSER_MAX_ANIMATION_LAG_MS;
     changed = processAutoDispenserSlot(slot, {
       animate,
-      eventTime: animate ? endTs : slot.start
+      eventTime: animate ? endTs : slot.start,
+      tank: targetTank
     }) || changed;
   }
 
   return changed;
 }
 
-function dropSelectedFoodAtPoint(point, now = Date.now()) {
+function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FOOD_FEED, TUTORIAL_STAGE_FOOD_SETTLE)) {
+    showToast("Replay tutorial is preview-only.");
+    return { ok: false, previewOnly: true };
+  }
+
   const foodKey = runtime.feedingModeFoodKey;
   const food = getFoodMeta(foodKey);
   if (!food || !point) {
-    return false;
+    return { ok: false, reason: "missing-food-or-point" };
   }
 
   const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
@@ -19835,7 +21978,7 @@ function dropSelectedFoodAtPoint(point, now = Date.now()) {
     runtime.feedingModeFoodKey = "";
     renderUi(now);
     showToast("That food is out of stock.");
-    return true;
+    return { ok: false, reason: "out-of-stock", foodId: food.id };
   }
 
   state.foodInventory[food.id] = quantity - 1;
@@ -19850,9 +21993,28 @@ function dropSelectedFoodAtPoint(point, now = Date.now()) {
     runtime.feedingModeFoodKey = "";
   }
 
+  const shouldExitFoodToolAfterDrop = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FOOD_FEED);
+  if (options.closeTrayAfterDrop === true || shouldExitFoodToolAfterDrop) {
+    runtime.foodTrayOpen = false;
+  }
+  if (shouldExitFoodToolAfterDrop) {
+    runtime.feedingModeFoodKey = "";
+    runtime.toolModeSource = null;
+  }
+
+  let tutorialChanged = false;
+  if (shouldExitFoodToolAfterDrop) {
+    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FOOD_SETTLE, { now }) || tutorialChanged;
+  }
+
   saveState();
   renderUi(now);
-  return true;
+  return {
+    ok: true,
+    foodId: food.id,
+    pelletId: pellet?.id || "",
+    tutorialChanged
+  };
 }
 
 function getNextDayStartTimestamp(timestamp = Date.now()) {
@@ -20193,7 +22355,6 @@ function addFishToTank(fish, now = Date.now()) {
   preserveTankDirtinessThroughChange(now, () => {
     state.fish.push(fish);
   });
-  playFishEntrySplashSoundIfNeeded(fish);
   return fish;
 }
 
@@ -20816,16 +22977,16 @@ function buyMedicine(medicineKey) {
   showToast(`${medicine.name} stocked. +${medicine.bottleDrops} drops.`);
 }
 
-function selectFoodMode(foodKey) {
+function selectFoodMode(foodKey, options = {}) {
   const food = getFoodMeta(foodKey);
   if (!food) {
-    return;
+    return { ok: false, reason: "missing-food" };
   }
 
   const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
   if (quantity <= 0) {
     showToast("Buy that food first.");
-    return;
+    return { ok: false, reason: "out-of-stock", foodId: food.id };
   }
 
   runtime.foodTrayOpen = true;
@@ -20838,6 +22999,12 @@ function selectFoodMode(foodKey) {
       ? `${food.name} selected. Click inside the tank to drop one piece.`
       : "Feeding mode cleared."
   );
+  return {
+    ok: true,
+    foodId: food.id,
+    selected: runtime.feedingModeFoodKey === food.id,
+    closeAfterDrop: options.closeAfterDrop === true
+  };
 }
 
 function selectMedicineMode(medicineKey) {
@@ -20871,40 +23038,53 @@ function selectMedicineMode(medicineKey) {
   );
 }
 
-function buyFish(speciesId) {
+function buyFish(speciesId, options = {}) {
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FISH_STORE)) {
+    closeStoreOverlay({ force: true });
+    setTutorialStage(TUTORIAL_STAGE_FISH_ADDED, { now: Date.now() });
+    saveState();
+    renderUi(Date.now());
+    showToast("Replay tutorial is preview-only.");
+    return { ok: true, previewOnly: true };
+  }
+
   if (isCustomFishShopKey(speciesId)) {
     openLocalFishPicker();
-    return;
+    return { ok: false, reason: "custom-upload" };
   }
 
   const species = runtime.fishMap.get(speciesId);
   if (!species) {
-    return;
+    return { ok: false, reason: "missing-species" };
   }
 
   if (isUndeadSpecies(species) && !isViolenceAndGoreEnabled()) {
     showToast("Enable Violence & Gore to buy undead fish.");
-    return;
+    return { ok: false, reason: "content-locked" };
   }
 
   if (!isFishSpeciesUnlocked(species)) {
     showToast(`${species.name} has not been unlocked yet.`);
-    return;
+    return { ok: false, reason: "species-locked" };
   }
 
   const purchaseCost = getFishPurchaseCost(speciesId);
   if (state.coins < purchaseCost) {
     showToast(`You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`);
-    return;
+    return { ok: false, reason: "insufficient-coins" };
   }
 
-  state.coins -= purchaseCost;
   const now = Date.now();
+  const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FISH_STORE);
+  const entryStartedAt = tutorialPurchase || options.closeOverlayFirst === true
+    ? now + TUTORIAL_STORE_CLOSE_DELAY_MS
+    : now;
+  state.coins -= purchaseCost;
   const fish = createFishRecord(speciesId, {
     now,
-    entryStartedAt: now,
-    entryDurationMs: 1450,
-    entryFromYNorm: 0.03
+    entryStartedAt,
+    entryDurationMs: FISH_ENTRY_DURATION_MS,
+    entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
   });
   addFishToTank(fish, now);
 
@@ -20917,9 +23097,23 @@ function buyFish(speciesId) {
   }
 
   pushEvent(`${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`, fish.acquiredAt);
+  let tutorialChanged = false;
+  if (tutorialPurchase) {
+    closeStoreOverlay({ force: true });
+    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FISH_SETTLE, {
+      now,
+      fishId: fish.id
+    }) || tutorialChanged;
+  }
   saveState();
   renderUi(now);
   showToast(`${fish.name} joined the aquarium.`);
+  return {
+    ok: true,
+    fish,
+    species,
+    tutorialChanged
+  };
 }
 
 function buyAnotherCustomFish(fishId) {
@@ -20963,8 +23157,8 @@ function buyAnotherCustomFish(fishId) {
     desiredTankLayer: tankLayer,
     scale: sourceFish.scale,
     entryStartedAt: now,
-    entryDurationMs: 1450,
-    entryFromYNorm: 0.03
+    entryDurationMs: FISH_ENTRY_DURATION_MS,
+    entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
   });
   if (!fish) {
     showToast("Could not add another custom fish to the tank.");
@@ -20993,37 +23187,63 @@ function getDecorPurchaseCost(decorKey) {
   return Math.max(0, Math.floor(Number(decor?.cost) || 0));
 }
 
-function buyDecor(decorKey) {
+function buyDecor(decorKey, options = {}) {
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_STORE)) {
+    closeStoreOverlay({ force: true });
+    setTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE, {
+      now: Date.now(),
+      decorKey: String(decorKey || "")
+    });
+    saveState();
+    renderUi(Date.now());
+    showToast("Replay tutorial is preview-only.");
+    return { ok: true, previewOnly: true };
+  }
+
   if (isCustomDecorShopKey(decorKey)) {
     openLocalDecorPicker();
-    return;
+    return { ok: false, reason: "custom-upload" };
   }
   if (isCustomHideShopKey(decorKey)) {
     openLocalHideFrontPicker();
-    return;
+    return { ok: false, reason: "custom-hide" };
   }
 
   const decor = runtime.decorMap.get(decorKey);
   if (!decor) {
-    return;
+    return { ok: false, reason: "missing-decor" };
   }
 
   if (!canUseDecorWithCurrentContentSettings(decor)) {
     showToast("Enable Violence & Gore to buy that decor.");
-    return;
+    return { ok: false, reason: "content-locked" };
   }
 
   if (state.coins < decor.cost) {
     showToast(`You need ${decor.cost} coins for ${decor.name}.`);
-    return;
+    return { ok: false, reason: "insufficient-coins" };
   }
 
+  const now = Date.now();
+  const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_STORE);
   state.coins -= decor.cost;
   state.decorInventory[decorKey] = (state.decorInventory[decorKey] || 0) + 1;
-  pushEvent(`Bought ${decor.name}.`, Date.now());
+  pushEvent(`Bought ${decor.name}.`, now);
+  if (tutorialPurchase || options.closeOverlayFirst === true) {
+    closeStoreOverlay({ force: true });
+    setTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE, {
+      now,
+      decorKey
+    });
+  }
   saveState();
-  renderUi(Date.now());
+  renderUi(now);
   showToast(`${decor.name} is waiting in storage.`);
+  return {
+    ok: true,
+    decor,
+    tutorialChanged: tutorialPurchase
+  };
 }
 
 function buyAnotherDecor(decorKey) {
@@ -21261,6 +23481,11 @@ function buyAutoDispenser() {
 }
 
 function buyUvLight() {
+  if (!isUvLightFeatureEnabled()) {
+    showToast("UV light is currently available in debug mode only.");
+    return;
+  }
+
   if (isUvLightOwned()) {
     showToast("You already own a UV light.");
     return;
@@ -21311,6 +23536,17 @@ function sellFilter(filterKey) {
 }
 
 function startPlacingDecor(decorKey) {
+  if (isInfoOnlyTutorialActive() && isTutorialStage(
+    TUTORIAL_STAGE_DECOR_STORAGE,
+    TUTORIAL_STAGE_DECOR_PLACE_HINT,
+    TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS,
+    TUTORIAL_STAGE_DECOR_PLACE,
+    TUTORIAL_STAGE_DECOR_CLOSE
+  )) {
+    showToast("Replay tutorial is preview-only.");
+    return;
+  }
+
   if (!state.decorInventory[decorKey]) {
     return;
   }
@@ -21366,7 +23602,15 @@ function startPlacingDecor(decorKey) {
   runtime.eggDragState = null;
   runtime.activeTab = "decor";
   runtime.sidebarCollapsed = true;
-  renderUi(Date.now());
+  const now = Date.now();
+  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE_HINT)) {
+    setTutorialStage(TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS, {
+      now,
+      decorKey
+    });
+    saveState();
+  }
+  renderUi(now);
 
   showToast(
     isBubblerDecorKey(decorKey)
@@ -21429,6 +23673,11 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
 }
 
 function placeDecorAtPoint(xNorm, yNorm) {
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE, TUTORIAL_STAGE_DECOR_CLOSE)) {
+    showToast("Replay tutorial is preview-only.");
+    return;
+  }
+
   const placement = runtime.placementMode;
   if (!placement) {
     return;
@@ -21455,9 +23704,23 @@ function placeDecorAtPoint(xNorm, yNorm) {
   runtime.suppressNextTankClick = true;
   const now = Date.now();
   pushEvent(`Placed ${created.decor?.name || titleFromFile(created.placedItem.decorKey)} in the aquarium.`, now);
+  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE)) {
+    setTutorialStage(TUTORIAL_STAGE_DECOR_CLOSE, {
+      now,
+      placedDecorId: created.placedItem.id
+    });
+  }
   saveState();
   renderUi(now);
-  showToast(`${created.decor?.name || "Decor"} placed.`);
+  showToast(
+    isGuidedTutorialActive()
+      ? getTutorialDecorDoneToastText(`${created.decor?.name || "Decor"} placed.`)
+      : `${created.decor?.name || "Decor"} placed.`,
+    {
+      durationMs: isGuidedTutorialActive() ? 120000 : undefined,
+      key: isGuidedTutorialActive() ? TUTORIAL_TOAST_DECOR_DONE : ""
+    }
+  );
 }
 
 function isDecorLayerShortcutEndpoint(decorKey, layer, step) {
@@ -21798,14 +24061,14 @@ function toggleActiveDecorFlip() {
 
   if (activeTarget.mode === "placement") {
     runtime.placementMode.flipped = !Boolean(runtime.placementMode.flipped);
-      if (runtime.placementPreview) {
-        runtime.placementPreview = clampDecorPlacement(runtime.placementPreview.xNorm, runtime.placementPreview.yNorm, {
-          decorKey: runtime.placementMode.decorKey,
-          tankLayer: runtime.placementMode.tankLayer,
-          scale: runtime.placementMode.scale,
-          flipped: runtime.placementMode.flipped
-        });
-      }
+    if (runtime.placementPreview) {
+      runtime.placementPreview = clampDecorPlacement(runtime.placementPreview.xNorm, runtime.placementPreview.yNorm, {
+        decorKey: runtime.placementMode.decorKey,
+        tankLayer: runtime.placementMode.tankLayer,
+        scale: runtime.placementMode.scale,
+        flipped: runtime.placementMode.flipped
+      });
+    }
     renderUi(Date.now());
     return runtime.placementMode.flipped;
   }
@@ -21844,7 +24107,15 @@ function performDecorEditShortcutAction(action) {
   if (action === "scale-up" || action === "scale-down") {
     const nextScale = stepActiveDecorScale(action === "scale-up" ? 1 : -1);
     if (nextScale !== null) {
-      showToast(`Decor size ${formatDecorScale(nextScale)}.`);
+      showToast(
+        isTutorialDecorDoneStep()
+          ? getTutorialDecorDoneToastText(`Decor size ${formatDecorScale(nextScale)}.`)
+          : `Decor size ${formatDecorScale(nextScale)}.`,
+        {
+          durationMs: isTutorialDecorDoneStep() ? 120000 : undefined,
+          key: isTutorialDecorDoneStep() ? TUTORIAL_TOAST_DECOR_DONE : ""
+        }
+      );
       return true;
     }
     return false;
@@ -21853,7 +24124,15 @@ function performDecorEditShortcutAction(action) {
   if (action === "layer-up" || action === "layer-down") {
     const result = stepActiveDecorLayer(action === "layer-up" ? 1 : -1);
     if (result.changed) {
-      showToast(`Layer ${result.layer} of ${TANK_DEPTH_LAYERS}.`);
+      showToast(
+        isTutorialDecorDoneStep()
+          ? getTutorialDecorDoneToastText(`Layer ${result.layer} of ${TANK_DEPTH_LAYERS}.`)
+          : `Layer ${result.layer} of ${TANK_DEPTH_LAYERS}.`,
+        {
+          durationMs: isTutorialDecorDoneStep() ? 120000 : undefined,
+          key: isTutorialDecorDoneStep() ? TUTORIAL_TOAST_DECOR_DONE : ""
+        }
+      );
       return true;
     }
     if (result.atLimit) {
@@ -21867,7 +24146,7 @@ function performDecorEditShortcutAction(action) {
 
 function getPlacementHintText() {
   if (runtime.cleaningMode) {
-    return "Move the sponge around until 85% of the glass is clear to clean the tank.";
+    return `Move the sponge around until ${getRequiredScrubPercent()}% of the glass is clear to clean the tank.`;
   }
 
   if (runtime.scoopMode) {
@@ -21933,7 +24212,7 @@ function renderEditQuickRef() {
     `
     : `
       ${layerHintMarkup}
-      <div><strong>[-]/[+]</strong> - Change Size</div>
+      <div><strong>[-]/[+]/[=]</strong> - Change Size</div>
       ${flipHintMarkup}
       ${settingsHintMarkup}
       <div><strong>Shift/Ctrl Click</strong> - Select Multiple Decor</div>
@@ -21973,6 +24252,7 @@ function beginDecorDrag(item, point, pointerId, options = {}) {
 
   try {
     dom.tankStage.setPointerCapture(pointerId);
+    rememberTankPointerCapture(pointerId);
   } catch (error) {
     console.debug("Pointer capture skipped.", error);
   }
@@ -22212,6 +24492,7 @@ function beginFishDrag(fish, point, pointerId) {
 
   try {
     dom.tankStage.setPointerCapture(pointerId);
+    rememberTankPointerCapture(pointerId);
   } catch (error) {
     console.debug("Pointer capture skipped.", error);
   }
@@ -22332,6 +24613,7 @@ function beginFishEggDrag(egg, point, pointerId) {
 
   try {
     dom.tankStage.setPointerCapture(pointerId);
+    rememberTankPointerCapture(pointerId);
   } catch (error) {
     console.debug("Pointer capture skipped.", error);
   }
@@ -22728,8 +25010,8 @@ function restoreFishToTank(fishId) {
     state.storedFish.splice(index, 1);
     resetLivingFishPredatorState(fish, now, {
       entryAnimation: true,
-      entryDurationMs: 1450,
-      entryFromYNorm: 0.03
+      entryDurationMs: FISH_ENTRY_DURATION_MS,
+      entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
     });
     fish.xNorm = randomSwimX();
     fish.yNorm = randomBetween(0.2, 0.72);
@@ -22766,7 +25048,6 @@ function restoreFishToTank(fishId) {
     fish.frozenLastSimulatedAt = now;
     state.fish.push(fish);
   });
-  playFishEntrySplashSoundIfNeeded(fish);
   pushEvent(`${fish.name} splashed back into the aquarium.`, now);
   saveState();
   renderUi(now);
@@ -23403,6 +25684,19 @@ function getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, 
   };
 }
 
+function getFishFrontMouthOffsetAtPose(fish, species, width, height, pose, now = Date.now(), localForwardOffsetPx = 0) {
+  const localPoint = getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, now);
+  localPoint.x += Number.isFinite(localForwardOffsetPx) ? localForwardOffsetPx : 0;
+  const bodyScaleX = pose.bodyScaleX || 1;
+  const bodyScaleY = pose.bodyScaleY || 1;
+  const tilt = pose.tilt || 0;
+  const facingScaleX = pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1);
+  return {
+    x: (pose.swayX || 0) + facingScaleX * (Math.cos(tilt) * bodyScaleX * localPoint.x - Math.sin(tilt) * bodyScaleY * localPoint.y),
+    y: Math.sin(tilt) * bodyScaleX * localPoint.x + Math.cos(tilt) * bodyScaleY * localPoint.y
+  };
+}
+
 function getFishGravelPebbleMouthPoint(fish, species, now = Date.now(), localForwardOffsetPx = 0) {
   if (!fish || !species) {
     return null;
@@ -23416,15 +25710,61 @@ function getFishGravelPebbleMouthPoint(fish, species, now = Date.now(), localFor
   const pose = getFishPose(fish, species, now);
   const width = getFishDisplayWidth(fish, species, now);
   const height = width * (image.height / image.width);
-  const localPoint = getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, now);
-  localPoint.x += Number.isFinite(localForwardOffsetPx) ? localForwardOffsetPx : 0;
-  const bodyScaleX = pose.bodyScaleX || 1;
-  const bodyScaleY = pose.bodyScaleY || 1;
-  const tilt = pose.tilt || 0;
-  const facingScaleX = pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1);
+  const mouthOffset = getFishFrontMouthOffsetAtPose(
+    fish,
+    species,
+    width,
+    height,
+    pose,
+    now,
+    localForwardOffsetPx
+  );
   return {
-    x: pose.x + (pose.swayX || 0) + facingScaleX * (Math.cos(tilt) * bodyScaleX * localPoint.x - Math.sin(tilt) * bodyScaleY * localPoint.y),
-    y: pose.y + Math.sin(tilt) * bodyScaleX * localPoint.x + Math.cos(tilt) * bodyScaleY * localPoint.y
+    x: pose.x + mouthOffset.x,
+    y: pose.y + mouthOffset.y
+  };
+}
+
+function getFishTargetNormForMouthPoint(fish, species, targetX, targetY, now = Date.now(), options = {}) {
+  if (
+    !fish
+    || !species
+    || !Number.isFinite(Number(targetX))
+    || !Number.isFinite(Number(targetY))
+  ) {
+    return null;
+  }
+
+  const image = runtime.images.get(getFishDisplayAssetPath(fish, species, now) || species.asset);
+  if (!image) {
+    return null;
+  }
+
+  const direction = Number.isFinite(Number(options.direction))
+    ? (Number(options.direction) < 0 ? -1 : 1)
+    : (Number(targetX) >= fish.xNorm * TANK_WIDTH ? 1 : -1);
+  const pose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, direction);
+  const width = getFishDisplayWidth(fish, species, now);
+  const height = width * (image.height / image.width);
+  const mouthOffset = getFishFrontMouthOffsetAtPose(
+    fish,
+    species,
+    width,
+    height,
+    pose,
+    now,
+    options.localForwardOffsetPx
+  );
+  const minYNorm = clamp(Number.isFinite(Number(options.minYNorm)) ? Number(options.minYNorm) : 0.14, 0.08, 0.96);
+  const maxYNorm = clamp(
+    Number.isFinite(Number(options.maxYNorm)) ? Number(options.maxYNorm) : 0.8,
+    minYNorm,
+    0.96
+  );
+  return {
+    xNorm: clamp((Number(targetX) - mouthOffset.x) / TANK_WIDTH, 0.08, 0.92),
+    yNorm: clamp((Number(targetY) - mouthOffset.y) / TANK_HEIGHT, minYNorm, maxYNorm),
+    direction
   };
 }
 
@@ -24186,17 +26526,28 @@ function getDecorShopSearchHaystack(decor) {
 
 function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
   const shopKind = kind === "decor" ? "decor" : "fish";
+  const tutorialRestriction = getTutorialStoreRestriction(shopKind);
   const selectedSort = normalizeStoreSortKey(runtime.storeSorts?.[shopKind]);
-  const selectedFilter = shopKind === "fish"
-    ? normalizeFishStoreFilterKey(runtime.storeFilters?.fish)
-    : "all";
-  const query = getStoreSearchQuery(shopKind);
+  const selectedFilter = tutorialRestriction
+    ? "all"
+    : shopKind === "fish"
+      ? normalizeFishStoreFilterKey(runtime.storeFilters?.fish)
+      : "all";
+  const query = tutorialRestriction ? "" : getStoreSearchQuery(shopKind);
   const itemLabel = shopKind === "decor"
     ? pluralize("decor piece", visibleCount)
     : (selectedFilter === "cave" ? "cave fish" : "fish");
   const summaryMarkup = totalCount !== visibleCount
     ? `<div class="fish-meta shop-toolbar-summary"><span class="shop-toolbar-count"><strong>${visibleCount}</strong> of <strong>${totalCount}</strong></span> ${itemLabel} available</div>`
     : `<div class="fish-meta shop-toolbar-summary"><span class="shop-toolbar-count"><strong>${visibleCount}</strong></span> ${itemLabel} available</div>`;
+
+  if (tutorialRestriction?.hideControls) {
+    return `
+      <div class="shop-toolbar">
+        ${summaryMarkup}
+      </div>
+    `;
+  }
 
   return `
     <div class="shop-toolbar">
@@ -24852,6 +27203,84 @@ function setGradientBackgroundColor(role, color) {
   renderUi(Date.now());
 }
 
+function setAnimatedBackgroundColor(role, color) {
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor) {
+    return;
+  }
+
+  const key = role === "surface"
+    ? "animatedBackgroundTopColor"
+    : role === "surfaceBloom"
+      ? "animatedBackgroundSurfaceBloomColor"
+      : role === "shadowBloom"
+        ? "animatedBackgroundShadowBloomColor"
+        : role === "mid"
+          ? "animatedBackgroundMidColor"
+          : role === "deep" || role === "bottom"
+            ? "animatedBackgroundBottomColor"
+            : role === "abyss"
+              ? "animatedBackgroundAbyssColor"
+              : role === "highlight"
+                ? "animatedBackgroundHighlightColor"
+                : role === "driftA"
+                  ? "animatedBackgroundDriftColorA"
+                  : role === "driftB"
+                    ? "animatedBackgroundDriftColorB"
+                    : role === "driftC"
+                      ? "animatedBackgroundDriftColorC"
+                      : "animatedBackgroundTopColor";
+  if (state[key] === normalizedColor) {
+    return;
+  }
+
+  state[key] = normalizedColor;
+  saveState();
+  renderUi(Date.now());
+}
+
+function resetAnimatedBackgroundColors() {
+  const nextDefaults = sanitizeAnimatedBackgroundColors({
+    top: DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR,
+    mid: DEFAULT_ANIMATED_BACKGROUND_MID_COLOR,
+    bottom: DEFAULT_ANIMATED_BACKGROUND_BOTTOM_COLOR,
+    surfaceBloom: DEFAULT_ANIMATED_BACKGROUND_SURFACE_BLOOM_COLOR,
+    shadowBloom: DEFAULT_ANIMATED_BACKGROUND_SHADOW_BLOOM_COLOR,
+    abyss: DEFAULT_ANIMATED_BACKGROUND_ABYSS_COLOR,
+    highlight: DEFAULT_ANIMATED_BACKGROUND_HIGHLIGHT_COLOR,
+    driftA: DEFAULT_ANIMATED_BACKGROUND_DRIFT_A_COLOR,
+    driftB: DEFAULT_ANIMATED_BACKGROUND_DRIFT_B_COLOR,
+    driftC: DEFAULT_ANIMATED_BACKGROUND_DRIFT_C_COLOR
+  });
+
+  const changed = state.animatedBackgroundTopColor !== nextDefaults.surface
+    || state.animatedBackgroundMidColor !== nextDefaults.mid
+    || state.animatedBackgroundBottomColor !== nextDefaults.deep
+    || state.animatedBackgroundSurfaceBloomColor !== nextDefaults.surfaceBloom
+    || state.animatedBackgroundShadowBloomColor !== nextDefaults.shadowBloom
+    || state.animatedBackgroundAbyssColor !== nextDefaults.abyss
+    || state.animatedBackgroundHighlightColor !== nextDefaults.highlight
+    || state.animatedBackgroundDriftColorA !== nextDefaults.driftA
+    || state.animatedBackgroundDriftColorB !== nextDefaults.driftB
+    || state.animatedBackgroundDriftColorC !== nextDefaults.driftC;
+  if (!changed) {
+    return;
+  }
+
+  state.animatedBackgroundTopColor = nextDefaults.surface;
+  state.animatedBackgroundMidColor = nextDefaults.mid;
+  state.animatedBackgroundBottomColor = nextDefaults.deep;
+  state.animatedBackgroundSurfaceBloomColor = nextDefaults.surfaceBloom;
+  state.animatedBackgroundShadowBloomColor = nextDefaults.shadowBloom;
+  state.animatedBackgroundAbyssColor = nextDefaults.abyss;
+  state.animatedBackgroundHighlightColor = nextDefaults.highlight;
+  state.animatedBackgroundDriftColorA = nextDefaults.driftA;
+  state.animatedBackgroundDriftColorB = nextDefaults.driftB;
+  state.animatedBackgroundDriftColorC = nextDefaults.driftC;
+  saveState();
+  renderUi(Date.now());
+}
+
 function enableCustomBackgroundMode(mode) {
   const nextMode = normalizeCustomBackgroundMode(mode);
   const alreadyEnabled = isCustomBackgroundEnabled();
@@ -24892,6 +27321,17 @@ function setGradientBackgroundEnabled(enabled) {
   }
 
   if (isGradientBackgroundEnabled()) {
+    disableCustomBackground();
+  }
+}
+
+function setAnimatedBackgroundEnabled(enabled) {
+  if (enabled) {
+    enableCustomBackgroundMode(CUSTOM_BACKGROUND_MODE_ANIMATED);
+    return;
+  }
+
+  if (isAnimatedBackgroundEnabled()) {
     disableCustomBackground();
   }
 }
@@ -24986,6 +27426,11 @@ function selectFilterAsset(filterKey) {
 }
 
 function setUvLightInstalled(installed) {
+  if (!isUvLightFeatureEnabled()) {
+    showToast("UV light is currently available in debug mode only.");
+    return;
+  }
+
   if (!isUvLightOwned()) {
     showToast("Buy the UV light in the Tank shop first.");
     return;
@@ -25006,6 +27451,11 @@ function setUvLightInstalled(installed) {
 }
 
 function toggleUvLightPower(force = null) {
+  if (!isUvLightFeatureEnabled()) {
+    showToast("UV light is currently available in debug mode only.");
+    return;
+  }
+
   if (!isUvLightInstalled()) {
     showToast("Add the UV light to this tank from Edit Tank first.");
     return;
@@ -25050,6 +27500,8 @@ function selectBubbleAsset(bubbleKey) {
 function toggleCleaningMode(options = {}) {
   const nextMode = !runtime.cleaningMode;
   clearPrimaryToolModes();
+  const now = Date.now();
+  let tutorialChanged = false;
   runtime.lastScrubPoint = null;
   resetScrubWipeSoundState();
 
@@ -25059,10 +27511,16 @@ function toggleCleaningMode(options = {}) {
     if (options.collapseSidebar) {
       runtime.sidebarCollapsed = true;
     }
+    if (isTutorialStage(TUTORIAL_STAGE_CLEAN_INTRO)) {
+      tutorialChanged = setTutorialStage(TUTORIAL_STAGE_CLEAN, { now }) || tutorialChanged;
+    }
   }
 
   renderToolCursor();
-  renderUi(Date.now());
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(now);
 }
 
 function toggleScoopMode(options = {}) {
@@ -25727,14 +28185,50 @@ function scrubGlass(x, y) {
   const coverage = getScrubCoverage();
   renderScrubProgress();
 
-  if (coverage >= SCRUB_THRESHOLD) {
+  if (coverage >= getRequiredScrubThreshold()) {
     completeCleaning();
   }
 }
 
+function getRequiredScrubThreshold() {
+  return isWallpaperEngineModeEnabled()
+    ? WALLPAPER_ENGINE_SCRUB_THRESHOLD
+    : DEFAULT_SCRUB_THRESHOLD;
+}
+
+function getRequiredScrubPercent() {
+  return Math.round(getRequiredScrubThreshold() * 100);
+}
+
+function isPointInsideScrubbableTankArea(x, y, target = getCurrentTank()) {
+  const point = {
+    x: Number(x) || 0,
+    y: Number(y) || 0
+  };
+  if (
+    point.x < 0
+    || point.x > TANK_WIDTH
+    || point.y < 0
+    || point.y > TANK_HEIGHT
+  ) {
+    return false;
+  }
+
+  const shellPoints = getTankShellPointSet("outer", target);
+  if (!shellPoints) {
+    return true;
+  }
+  return pointInPolygon(point, shellPoints);
+}
+
 function markScrubStamp(x, y) {
-  const scrubX = clamp(x, GLASS_MARGIN_X + 6, TANK_WIDTH - GLASS_MARGIN_X - 6);
-  const scrubY = clamp(y, WATER_SURFACE_Y + 6, TANK_HEIGHT - GLASS_MARGIN_BOTTOM - 6);
+  const constrainedPoint = constrainPointToTankShell(x, y, { variant: "outer" });
+  const scrubX = constrainedPoint.x;
+  const scrubY = constrainedPoint.y;
+  const target = getCurrentTank();
+  if (!isPointInsideScrubbableTankArea(scrubX, scrubY, target)) {
+    return false;
+  }
   const cellWidth = TANK_WIDTH / SCRUB_GRID_COLS;
   const cellHeight = TANK_HEIGHT / SCRUB_GRID_ROWS;
   const startCol = clamp(Math.floor((scrubX - SCRUB_BRUSH_RADIUS) / cellWidth), 0, SCRUB_GRID_COLS - 1);
@@ -25747,12 +28241,7 @@ function markScrubStamp(x, y) {
     for (let col = startCol; col <= endCol; col += 1) {
       const cellCenterX = col * cellWidth + cellWidth / 2;
       const cellCenterY = row * cellHeight + cellHeight / 2;
-      if (
-        cellCenterX < GLASS_MARGIN_X
-        || cellCenterX > TANK_WIDTH - GLASS_MARGIN_X
-        || cellCenterY < WATER_SURFACE_Y
-        || cellCenterY > TANK_HEIGHT - GLASS_MARGIN_BOTTOM
-      ) {
+      if (!isPointInsideScrubbableTankArea(cellCenterX, cellCenterY, target)) {
         continue;
       }
 
@@ -25765,25 +28254,37 @@ function markScrubStamp(x, y) {
     }
   }
 
-  if (changed) {
-    const stamp = {
-      x: scrubX,
-      y: scrubY,
-      radius: SCRUB_BRUSH_RADIUS * (0.92 + Math.random() * 0.1)
-    };
-    runtime.scrubStamps.push(stamp);
-    paintScrubMaskStamp(stamp);
-    if (runtime.scrubStamps.length > SCRUB_MAX_STAMPS) {
-      runtime.scrubStamps.splice(0, runtime.scrubStamps.length - SCRUB_MAX_STAMPS);
-      rebuildScrubMaskCanvas();
-    }
+  const stamp = {
+    x: scrubX,
+    y: scrubY,
+    radius: SCRUB_BRUSH_RADIUS * (0.92 + Math.random() * 0.1)
+  };
+  runtime.scrubStamps.push(stamp);
+  paintScrubMaskStamp(stamp);
+  if (runtime.scrubStamps.length > SCRUB_MAX_STAMPS) {
+    runtime.scrubStamps.splice(0, runtime.scrubStamps.length - SCRUB_MAX_STAMPS);
+    rebuildScrubMaskCanvas();
   }
 
   return changed;
 }
 
-function completeCleaning() {
+function completeCleaning(options = {}) {
   const now = Date.now();
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_CLEAN, TUTORIAL_STAGE_COMPLETE)) {
+    runtime.cleaningMode = false;
+    runtime.toolModeSource = null;
+    runtime.pointerDown = false;
+    runtime.lastScrubPoint = null;
+    clearScrubProgress();
+    renderToolCursor();
+    setTutorialStage(TUTORIAL_STAGE_COMPLETE, { now });
+    saveState();
+    renderUi(now);
+    showToast("Replay tutorial is preview-only.");
+    return { ok: true, previewOnly: true };
+  }
+
   const fromDirtiness = getBaseTankDirtiness(now);
   const cleanReward =
     fromDirtiness < 0.25 ? 0 :
@@ -25807,6 +28308,7 @@ function completeCleaning() {
     fromDirtiness,
     sparkles: createCleaningSparkles()
   };
+  playCleaningCompleteSoundEffect();
 
   runtime.cleaningMode = false;
   runtime.toolModeSource = null;
@@ -25822,6 +28324,11 @@ function completeCleaning() {
     now
   );
 
+  let tutorialChanged = false;
+  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_CLEAN)) {
+    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_COMPLETE, { now }) || tutorialChanged;
+  }
+
   saveState();
   renderUi(now);
   showToast(
@@ -25829,6 +28336,12 @@ function completeCleaning() {
       ? `Tank cleaned. +${cleanReward} coins.`
       : "Tank cleaned. The haze is gone."
   );
+  return {
+    ok: true,
+    cleanReward,
+    tutorialChanged,
+    source: options.source || "sponge"
+  };
 }
 
 function clearScrubProgress() {
@@ -25853,21 +28366,14 @@ function getScrubCoverage() {
 function getCleanableScrubCellCount() {
   const cellWidth = TANK_WIDTH / SCRUB_GRID_COLS;
   const cellHeight = TANK_HEIGHT / SCRUB_GRID_ROWS;
-  const left = GLASS_MARGIN_X;
-  const right = TANK_WIDTH - GLASS_MARGIN_X;
-  const top = WATER_SURFACE_Y;
-  const bottom = TANK_HEIGHT - GLASS_MARGIN_BOTTOM;
+  const target = getCurrentTank();
   let count = 0;
 
   for (let row = 0; row < SCRUB_GRID_ROWS; row += 1) {
     const y = row * cellHeight + cellHeight / 2;
-    if (y < top || y > bottom) {
-      continue;
-    }
-
     for (let col = 0; col < SCRUB_GRID_COLS; col += 1) {
       const x = col * cellWidth + cellWidth / 2;
-      if (x >= left && x <= right) {
+      if (isPointInsideScrubbableTankArea(x, y, target)) {
         count += 1;
       }
     }
@@ -25947,9 +28453,6 @@ function renderGrimeBaseCanvas(dirtiness) {
   const severeGrime = getSevereGrimeVisualIntensity(dirtiness);
   grimeBaseContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   grimeBaseContext.save();
-  grimeBaseContext.beginPath();
-  grimeBaseContext.rect(GLASS_MARGIN_X, WATER_SURFACE_Y, TANK_WIDTH - GLASS_MARGIN_X * 2, TANK_HEIGHT - WATER_SURFACE_Y - GLASS_MARGIN_BOTTOM);
-  grimeBaseContext.clip();
   grimeBaseContext.fillStyle = `rgba(108, 148, 74, ${(lightGrime * 0.16 + severeGrime * 0.18).toFixed(3)})`;
   grimeBaseContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
 
@@ -26003,13 +28506,6 @@ function renderGrimeBaseCanvas(dirtiness) {
   }
 
   grimeBaseContext.filter = "none";
-  const scumGlow = grimeBaseContext.createLinearGradient(0, WATER_SURFACE_Y, 0, WATER_SURFACE_Y + TANK_HEIGHT * 0.34);
-  scumGlow.addColorStop(0, `rgba(224, 255, 166, ${(severeGrime * 0.22).toFixed(3)})`);
-  scumGlow.addColorStop(0.42, `rgba(160, 205, 79, ${(severeGrime * 0.16).toFixed(3)})`);
-  scumGlow.addColorStop(1, "rgba(160, 205, 79, 0)");
-  grimeBaseContext.fillStyle = scumGlow;
-  grimeBaseContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
-
   const topGlow = grimeBaseContext.createLinearGradient(0, 0, 0, TANK_HEIGHT);
   topGlow.addColorStop(0, `rgba(236, 255, 223, ${(lightGrime * 0.08 + severeGrime * 0.12).toFixed(3)})`);
   topGlow.addColorStop(1, "rgba(236, 255, 223, 0)");
@@ -26202,13 +28698,19 @@ function updateCleaningTransition(now) {
   }
 }
 
-function pushEvent(text, time = Date.now()) {
-  state.events.unshift({
+function pushEvent(text, time = Date.now(), tank = getCurrentTank()) {
+  const targetTank = tank || getCurrentTank();
+  if (!targetTank) {
+    return;
+  }
+
+  const events = Array.isArray(targetTank.events) ? targetTank.events : [];
+  events.unshift({
     id: createId("event"),
     time,
     text
   });
-  state.events = state.events.slice(0, MAX_TANK_EVENT_HISTORY);
+  targetTank.events = events.slice(0, MAX_TANK_EVENT_HISTORY);
 }
 
 function saveState() {
@@ -26481,6 +28983,7 @@ function clearAmbienceAudioResumeListeners() {
     return;
   }
 
+  window.removeEventListener("pointerdown", runtime.ambienceAudioResumeHandler, true);
   window.removeEventListener("click", runtime.ambienceAudioResumeHandler);
   window.removeEventListener("keydown", runtime.ambienceAudioResumeHandler);
   runtime.ambienceAudioResumeHandler = null;
@@ -26496,6 +28999,7 @@ function bindAmbienceAudioResumeListeners() {
     syncAmbienceAudio();
   };
   runtime.ambienceAudioResumeEventsBound = true;
+  window.addEventListener("pointerdown", runtime.ambienceAudioResumeHandler, true);
   window.addEventListener("click", runtime.ambienceAudioResumeHandler);
   window.addEventListener("keydown", runtime.ambienceAudioResumeHandler);
 }
@@ -26543,7 +29047,12 @@ function syncAmbienceAudio() {
   }
 
   const uiSettings = getUiSettings();
-  const shouldSilence = uiSettings.soundMuted || isWallpaperEnginePauseActive();
+  const shouldWaitForLoadingOverlay = Boolean(
+    dom.loadingOverlay
+    && !dom.loadingOverlay.hidden
+    && !dom.loadingOverlay.classList.contains("is-hiding")
+  );
+  const shouldSilence = uiSettings.soundMuted || isWallpaperEnginePauseActive() || shouldWaitForLoadingOverlay;
   for (const channel of channels) {
     channel.loop = false;
   }
@@ -26847,6 +29356,10 @@ function playDropSoundEffect() {
   }
 }
 
+function playCleaningCompleteSoundEffect() {
+  playSoundEffect(CLEANING_COMPLETE_SOUND_PATH, { volume: 0.72 });
+}
+
 function playGlassTapSoundEffect() {
   const path = pickSoundEffectPathExcluding(GLASS_KNOCK_SOUND_PATHS, runtime.lastGlassKnockSoundPath);
   if (playSoundEffect(path, { volume: 0.5 })) {
@@ -26916,8 +29429,11 @@ function playScrubWipeSoundForMovement(fromPoint, toPoint) {
 
 function renderUi(now, options = {}) {
   const full = options.full !== false;
+  syncTutorialFlow(now);
+  reconcileTutorialTransientUi();
   getSelectedPlacedDecor();
   renderTheme();
+  renderAnimatedBackgroundLayer();
   renderToolbarPosition();
   renderSidebar();
   renderTabs();
@@ -26938,6 +29454,7 @@ function renderUi(now, options = {}) {
   renderMedicineTray();
   renderFishInspector(now);
   renderControls(now);
+  renderTutorialGuidance();
   if (full) {
     renderTankManagement();
     renderFoodShop();
@@ -26962,12 +29479,34 @@ function renderTheme() {
   document.documentElement.dataset.theme = DEFAULT_THEME;
 }
 
+function renderAnimatedBackgroundLayer(target = getCurrentTank()) {
+  const layer = dom.tankStageBackground;
+  if (!(layer instanceof HTMLElement)) {
+    return;
+  }
+
+  const enabled = isAnimatedBackgroundEnabled(target);
+  layer.classList.toggle("is-active", enabled);
+  layer.toggleAttribute("hidden", !enabled);
+
+  if (!enabled) {
+    layer.removeAttribute("style");
+    return;
+  }
+
+  const styleText = `${getAnimatedBackgroundCssDeclarations(target).join(";")};`;
+  if (layer.getAttribute("style") !== styleText) {
+    layer.setAttribute("style", styleText);
+  }
+}
+
 function renderToolbarPosition() {
   const uiSettings = getUiSettings();
-  const toolbarPosition = uiSettings.toolbarPosition;
+  const tutorialUi = getTutorialUiState();
+  const toolbarPosition = tutorialUi?.forceToolbarPosition || uiSettings.toolbarPosition;
   const displayPosition = uiSettings.displayPosition;
-  const toolbarCollapsed = uiSettings.toolbarCollapsed;
-  const displayCollapsed = uiSettings.displayCollapsed;
+  const toolbarCollapsed = tutorialUi ? false : uiSettings.toolbarCollapsed;
+  const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, tutorialUi);
   document.documentElement.dataset.toolbarPosition = toolbarPosition;
   document.documentElement.dataset.displayPosition = displayPosition;
   document.documentElement.dataset.toolbarCollapsed = toolbarCollapsed ? "true" : "false";
@@ -27181,12 +29720,23 @@ function formatFishShopBehavior(species) {
 }
 
 function renderFishShop() {
-  const searchQuery = getStoreSearchQuery("fish");
-  const fishFilter = normalizeFishStoreFilterKey(runtime.storeFilters?.fish);
+  const tutorialRestriction = getTutorialStoreRestriction("fish");
+  const searchQuery = tutorialRestriction ? "" : getStoreSearchQuery("fish");
+  const fishFilter = tutorialRestriction ? "all" : normalizeFishStoreFilterKey(runtime.storeFilters?.fish);
   const filteredCatalog = getFishShopCatalog()
-    .filter((fish) => matchesFishStoreFilter(fish, fishFilter));
+    .filter((fish) => matchesFishStoreFilter(fish, fishFilter))
+    .filter((fish) => {
+      if (!tutorialRestriction) {
+        return true;
+      }
+      if (tutorialRestriction.hideCustom && (isCustomFishShopKey(fish.id) || isCustomFishAssetKey(fish.id))) {
+        return false;
+      }
+      return getFishPurchaseCost(fish.id) <= tutorialRestriction.maxCost;
+    });
   const allCatalog = sortCatalogEntries(filteredCatalog, runtime.storeSorts.fish);
   const catalog = allCatalog.filter((fish) => matchesShopSearchQuery(getFishShopSearchHaystack(fish), searchQuery));
+  const tutorialPreviewOnly = tutorialRestriction?.previewOnly === true;
   if (!allCatalog.length) {
     setMarkupIfChanged(
       "fish-shop",
@@ -27215,7 +29765,7 @@ function renderFishShop() {
     .map((fish) => {
       const isCustomUploadProduct = isCustomFishShopKey(fish.id);
       const purchaseCost = getFishPurchaseCost(fish.id);
-      const affordable = state.coins >= purchaseCost;
+      const affordable = !tutorialPreviewOnly && state.coins >= purchaseCost;
       const maxHealthUnits = getSpeciesMaxHealthUnits(fish);
       const heartCount = Math.ceil(maxHealthUnits / 2);
       const healthDisplay = isCustomUploadProduct
@@ -27224,8 +29774,8 @@ function renderFishShop() {
       const coinsDisplay = isCustomUploadProduct
         ? "Behavior-based"
         : isMealFreeFish(fish)
-        ? "None"
-        : renderFishShopIcons("🪙", fish.mealCoins, { collapseAt: 5 });
+          ? "None"
+          : renderFishShopIcons("🪙", fish.mealCoins, { collapseAt: 5 });
       const dirtinessLoadPercent = isCustomUploadProduct
         ? null
         : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
@@ -27247,8 +29797,8 @@ function renderFishShop() {
           </div>
           <div class="shop-meta">
             <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
-            <button class="buy-button" data-buy-fish="${fish.id}" ${affordable ? "" : "disabled"}>
-              ${isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
+            <button class="buy-button" data-buy-fish="${fish.id}" ${(affordable || tutorialPreviewOnly) ? "" : "disabled"} ${tutorialPreviewOnly ? "disabled" : ""}>
+              ${tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
             </button>
           </div>
         </article>
@@ -27264,6 +29814,10 @@ function renderFishShop() {
 }
 
 function renderStoreOverlay() {
+  const allowedTabs = getTutorialAllowedStoreTabs();
+  if (runtime.storeOverlayOpen && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
+    runtime.storeTab = getTutorialPreferredStoreTab() || [...allowedTabs][0] || runtime.storeTab;
+  }
   const showingFood = runtime.storeTab === "food";
   const showingPharmacy = runtime.storeTab === "pharmacy";
   const showingFish = runtime.storeTab === "fish";
@@ -27278,6 +29832,11 @@ function renderStoreOverlay() {
   dom.storeFishTab.classList.toggle("is-active", showingFish);
   dom.storeDecorTab.classList.toggle("is-active", showingDecor);
   dom.storeEquipmentTab?.classList.toggle("is-active", showingEquipment);
+  dom.storeFoodTab?.classList.toggle("is-tutorial-hidden", Boolean(allowedTabs) && !allowedTabs.has("food"));
+  dom.storePharmacyTab?.classList.toggle("is-tutorial-hidden", Boolean(allowedTabs) && !allowedTabs.has("pharmacy"));
+  dom.storeFishTab.classList.toggle("is-tutorial-hidden", Boolean(allowedTabs) && !allowedTabs.has("fish"));
+  dom.storeDecorTab.classList.toggle("is-tutorial-hidden", Boolean(allowedTabs) && !allowedTabs.has("decor"));
+  dom.storeEquipmentTab?.classList.toggle("is-tutorial-hidden", Boolean(allowedTabs) && !allowedTabs.has("equipment"));
 
   dom.storeFoodTab?.setAttribute("aria-selected", String(showingFood));
   dom.storePharmacyTab?.setAttribute("aria-selected", String(showingPharmacy));
@@ -27339,13 +29898,34 @@ function renderTankProductImage(tankTypeId, alt, className = "shop-thumb") {
   return `<img class="${className}" src="${imagePath}" alt="${alt}" onerror="this.onerror=null;this.src='${fallbackPath}'" />`;
 }
 
+function getCustomBackgroundPreviewClasses(baseClassName = "background-thumb", target = getCurrentTank()) {
+  const classes = [baseClassName, "background-custom-preview"];
+  if (isAnimatedBackgroundEnabled(target)) {
+    classes.push("background-underwater-preview");
+  }
+  return classes.join(" ");
+}
+
+function renderCustomBackgroundPreview(target = getCurrentTank(), className = "background-thumb", label = "Custom Background") {
+  return `<div class="${getCustomBackgroundPreviewClasses(className, target)}" aria-label="${escapeHtml(label)}" style="${getCustomBackgroundPreviewStyle(target)}"></div>`;
+}
+
+function renderCustomBackgroundPreviewSwatch(target = getCurrentTank(), className = "background-fill-preview background-solid-toggle-preview") {
+  const classes = className.split(/\s+/).filter(Boolean);
+  classes.push("background-fill-preview");
+  if (isAnimatedBackgroundEnabled(target)) {
+    classes.push("background-underwater-preview");
+  }
+  return `<span class="${[...new Set(classes)].join(" ")}" style="${getCustomBackgroundPreviewStyle(target)}"></span>`;
+}
+
 function renderBackgroundPreview(background, className = "background-thumb") {
   if (!background) {
     return "";
   }
 
   if (isCustomBackgroundKey(background.key)) {
-    return `<div class="${className} background-custom-preview" aria-label="${escapeHtml(background.name)}" style="${getCustomBackgroundPreviewStyle()}"></div>`;
+    return renderCustomBackgroundPreview(getCurrentTank(), className, background.name);
   }
 
   if (isLocalImageBackgroundKey(background.key)) {
@@ -27805,8 +30385,8 @@ function buildManagementBrowserShell(title, count, listMarkup, options = {}) {
         <h3>${escapeHtml(`${title} (${count})`)}</h3>
       </div>
       ${count
-        ? `<div class="management-browser-list">${listMarkup}</div>`
-        : `
+      ? `<div class="management-browser-list">${listMarkup}</div>`
+      : `
           <div class="empty-state management-browser-empty">
             <div>${escapeHtml(emptyCopy)}</div>
           </div>
@@ -28060,8 +30640,8 @@ function buildTankManagementOverlayBody(now = Date.now()) {
         ${historyEvents.length > shownHistoryCount ? `
           <div class="tank-action-row management-log-footer">
           ${historyEvents.length > shownHistoryCount
-            ? `<button class="small-button alt" type="button" data-management-history-more>(More)</button>`
-            : ""}
+        ? `<button class="small-button alt" type="button" data-management-history-more>(More)</button>`
+        : ""}
           </div>
         ` : ""}
       </section>
@@ -28087,11 +30667,48 @@ function renderUtilityOverlay() {
   let footer = "";
   let closable = true;
 
-  if (runtime.utilityOverlayMode === "food") {
+  if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+    const replayMode = isInfoOnlyTutorialActive();
+    kicker = "Tutorial";
+    title = "Skip Tutorial?";
+    body = `
+      <div class="utility-confirm-card">
+        <div class="utility-confirm-copy">
+          <strong>Are you sure?</strong>
+          <div class="fish-meta">${replayMode
+        ? "Skipping exits the replay tutorial right away."
+        : "Skipping restores the full toolbar and digital display right away."}</div>
+        </div>
+      </div>
+    `;
+    footer = `<div class="utility-confirm-actions"><button class="small-button warn" data-confirm-tutorial-skip>Yes</button><button class="small-button alt" data-cancel-tutorial-skip>No</button></div>`;
+  } else if (runtime.utilityOverlayMode === "food") {
     kicker = "Feeding";
     title = "Food Inventory";
     body = renderFoodInventoryOverlay();
     footer = `<div class="mini-note">Select a food, then click inside the tank to drop one piece at a time.</div>`;
+  } else if (runtime.utilityOverlayMode === "hardware-acceleration") {
+    const issue = runtime.hardwareAccelerationIssue;
+    const rendererText = issue?.renderer
+      ? `<div class="external-link-url">${escapeHtml(issue.renderer)}</div>`
+      : "";
+    const detailText = issue?.reason === "webgl-unavailable"
+      ? "WebGL is unavailable in this browser session, which usually means hardware acceleration is off or blocked."
+      : "This browser appears to be using a software renderer for graphics work.";
+    kicker = "Performance";
+    title = "Enable Hardware Acceleration";
+    body = `
+      <div class="utility-confirm-card external-link-card">
+        <div class="utility-confirm-copy">
+          <strong>Bubble Borough runs best with browser hardware acceleration enabled.</strong>
+          <div class="fish-meta">${detailText}</div>
+          <div class="fish-meta">If the aquarium looks blank, stutters, or feels unusually slow, enable hardware acceleration and fully restart the browser.</div>
+          <div class="fish-meta">Chrome / Edge: Settings -> System -> Use hardware acceleration when available.</div>
+        </div>
+        ${rendererText}
+      </div>
+    `;
+    footer = `<div class="utility-confirm-actions"><button class="small-button" data-close-utility>Continue</button><button class="small-button alt" data-dismiss-hardware-acceleration-notice>Don't Show Again</button></div>`;
   } else if (runtime.utilityOverlayMode === "medicine") {
     kicker = "Pharmacy";
     title = "Medicine Inventory";
@@ -28276,6 +30893,16 @@ function renderUtilityOverlay() {
   if (dom.utilityOverlayFooter) {
     setMarkupIfChanged("utility-overlay-footer", dom.utilityOverlayFooter, footer);
     dom.utilityOverlayFooter.hidden = !String(footer || "").trim();
+    if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+      const confirmButton = dom.utilityOverlayFooter.querySelector("[data-confirm-tutorial-skip]");
+      const cancelButton = dom.utilityOverlayFooter.querySelector("[data-cancel-tutorial-skip]");
+      if (confirmButton instanceof HTMLButtonElement) {
+        confirmButton.onclick = () => advanceIntroTutorial("confirm-skip");
+      }
+      if (cancelButton instanceof HTMLButtonElement) {
+        cancelButton.onclick = () => advanceIntroTutorial("cancel-skip");
+      }
+    }
   }
   if (dom.closeUtilityOverlay) {
     dom.closeUtilityOverlay.hidden = !closable;
@@ -28924,7 +31551,7 @@ function renderDecorSettingsOverlay(item) {
     ? `<div class="mini-note">The object stays still while the bubble stream preview updates live.</div>`
     : hasCaveControls
       ? ""
-    : `<div class="mini-note">This decor is still, so only size is available.</div>`;
+      : `<div class="mini-note">This decor is still, so only size is available.</div>`;
   const controlsMarkup = `
     <div class="custom-decor-controls-column">
       <label class="bubbler-control-row">
@@ -29067,7 +31694,7 @@ function renderBubblerSettingsOverlay(item) {
   const activeBubbleColorChoice = isDecorRgbColorSetting(activeBubbleColor)
     ? { label: "RGB", color: activeBubbleColor }
     : getCustomGravelColorChoices().find((choice) => choice.color === activeBubbleColor)
-      || { label: activeBubbleColor, color: activeBubbleColor };
+    || { label: activeBubbleColor, color: activeBubbleColor };
   const defaultColorSelected = activeBubbleColor === DEFAULT_BUBBLER_BUBBLE_COLOR;
   const rgbColorSelected = isDecorRgbColorSetting(activeBubbleColor);
   const defaultColorTile = `
@@ -29377,6 +32004,9 @@ function renderSettingsOverlay() {
 
   const settings = getContentSettings();
   const uiSettings = getUiSettings();
+  const tutorialAvailable = isIntroTutorialEnabled();
+  const mouseLockAvailable = isTankMouseLockFeatureEnabled();
+  const mouseLockRow = dom.tankMouseLockToggleInput?.closest(".settings-toggle-row");
   dom.settingsOverlay.hidden = !runtime.settingsOverlayOpen;
   dom.settingsOverlay.classList.toggle("is-open", runtime.settingsOverlayOpen);
   if (dom.violenceGoreToggleInput) {
@@ -29385,11 +32015,27 @@ function renderSettingsOverlay() {
   if (dom.soundMuteToggleInput) {
     dom.soundMuteToggleInput.checked = uiSettings.soundMuted;
   }
+  const uvLightQualitySection = dom.uvLightQualitySelect?.closest(".settings-section");
   if (dom.uvLightQualitySelect instanceof HTMLSelectElement) {
+    const uvLightSettingsVisible = isUvLightFeatureEnabled();
     dom.uvLightQualitySelect.value = uiSettings.uvLightQuality;
+    dom.uvLightQualitySelect.disabled = !uvLightSettingsVisible;
+    if (uvLightQualitySection instanceof HTMLElement) {
+      uvLightQualitySection.hidden = !uvLightSettingsVisible;
+    }
+  }
+  if (dom.tutorialSettingsSection) {
+    dom.tutorialSettingsSection.hidden = !tutorialAvailable;
+  }
+  if (dom.replayTutorialButton) {
+    dom.replayTutorialButton.disabled = !tutorialAvailable;
+  }
+  if (mouseLockRow instanceof HTMLElement) {
+    mouseLockRow.hidden = !mouseLockAvailable;
   }
   if (dom.tankMouseLockToggleInput) {
     dom.tankMouseLockToggleInput.checked = uiSettings.tankMouseInputLocked;
+    dom.tankMouseLockToggleInput.disabled = !mouseLockAvailable;
   }
   for (const input of dom.settingsOverlay.querySelectorAll("[data-toolbar-position-choice]")) {
     if (input instanceof HTMLInputElement) {
@@ -29415,37 +32061,157 @@ function renderEquipmentOverlay() {
 }
 
 function renderIntroTutorial() {
-  if (!dom.introTutorialOverlay || !dom.introTutorialArrow) {
+  if (
+    !dom.introTutorialOverlay
+    || !dom.introTutorialPanel
+    || !dom.introTutorialSplash
+    || !dom.introTutorialKicker
+    || !dom.introTutorialBody
+    || !dom.introTutorialActions
+    || !dom.introTutorialCloseButton
+  ) {
     return;
   }
 
-  const step = getIntroTutorialStep();
-  const isOpen = Boolean(step);
+  const popup = getTutorialPopupConfig();
+  const isOpen = Boolean(popup);
+  const isSplash = popup?.mode === "splash";
+  const isBlocking = Boolean(popup?.blockInteraction);
+  const closeAction = String(popup?.closeAction || "skip");
+
   dom.introTutorialOverlay.hidden = !isOpen;
-  dom.introTutorialOverlay.classList.toggle("is-focus-step", isOpen && getIntroTutorialStepIndex() > 0);
+  dom.introTutorialOverlay.classList.toggle("is-splash", isSplash);
+  dom.introTutorialOverlay.classList.toggle("is-blocking", isBlocking);
+
   if (!isOpen) {
-    dom.introTutorialArrow.hidden = true;
-    dom.introTutorialArrow.className = "tutorial-arrow";
+    dom.introTutorialSplash.hidden = true;
+    dom.introTutorialPanel.hidden = true;
+    dom.introTutorialCloseButton.hidden = true;
+    dom.introTutorialKicker.hidden = true;
+    setTextIfChanged(dom.introTutorialKicker, "");
+    setMarkupIfChanged("intro-tutorial-body", dom.introTutorialBody, "");
+    setMarkupIfChanged("intro-tutorial-actions", dom.introTutorialActions, "");
+    dom.introTutorialActions.hidden = true;
     return;
   }
 
-  setTextIfChanged(dom.introTutorialBody, step.message);
-  setTextIfChanged(
-    dom.introTutorialNextButton,
-    getIntroTutorialStepIndex() >= INTRO_TUTORIAL_STEPS.length - 1 ? "Finish" : "Next"
+  dom.introTutorialSplash.hidden = !isSplash;
+  dom.introTutorialSplash.setAttribute("aria-hidden", String(!isSplash));
+  dom.introTutorialPanel.hidden = isSplash;
+  dom.introTutorialCloseButton.hidden = isSplash;
+  if (isSplash) {
+    dom.introTutorialActions.hidden = true;
+    return;
+  }
+
+  const kicker = "Tutorial";
+  const bodyMarkup = String(popup.body || "");
+  const actionsMarkup = buildTutorialActionMarkup(popup.actions || []);
+
+  if (isBlocking) {
+    cancelTutorialBlockingTankInteractions();
+  }
+
+  dom.introTutorialKicker.hidden = false;
+  setTextIfChanged(dom.introTutorialKicker, kicker);
+  setMarkupIfChanged("intro-tutorial-body", dom.introTutorialBody, bodyMarkup);
+  setMarkupIfChanged("intro-tutorial-actions", dom.introTutorialActions, actionsMarkup);
+  dom.introTutorialActions.hidden = !actionsMarkup;
+  dom.introTutorialCloseButton.setAttribute(
+    "aria-label",
+    closeAction === "dismiss-popup" ? "Close tutorial message" : "Skip tutorial"
   );
+  dom.introTutorialCloseButton.onclick = (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    advanceIntroTutorial(closeAction);
+  };
+  for (const button of dom.introTutorialActions.querySelectorAll("[data-tutorial-action]")) {
+    if (!(button instanceof HTMLButtonElement)) {
+      continue;
+    }
+    button.onclick = (event) => {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      advanceIntroTutorial(button.dataset.tutorialAction || "continue");
+    };
+  }
+}
 
-  const arrowPosition = resolveIntroTutorialArrowPosition(step);
-  if (!arrowPosition) {
-    dom.introTutorialArrow.hidden = true;
-    dom.introTutorialArrow.className = "tutorial-arrow";
+function findElementByDatasetValue(container, datasetKey, value) {
+  if (!container || !value) {
+    return null;
+  }
+
+  for (const element of container.querySelectorAll("*")) {
+    if (element instanceof HTMLElement && element.dataset?.[datasetKey] === value) {
+      return element;
+    }
+  }
+
+  return null;
+}
+
+function renderTutorialGuidance() {
+  const tutorialUi = getTutorialUiState();
+  const dockButtonIds = [
+    "openManagementButton",
+    "openStoreButton",
+    "feedButton",
+    "medicineButton",
+    "spongeButton",
+    "scoopButton",
+    "fishEditModeDockButton",
+    "editModeDockButton",
+    "openEquipmentButton",
+    "openSettingsButton",
+    "toggleMouseLockButton",
+    "uvLightToggleButton"
+  ];
+  const clearSpotlights = () => {
+    dom.tankDisplay?.classList.remove("is-tutorial-pulse");
+    for (const container of [dom.editDecorTrayScroller, dom.foodTrayScroller, dom.fishShop, dom.decorShop]) {
+      if (!container) {
+        continue;
+      }
+      for (const element of container.querySelectorAll(".is-tutorial-pulse")) {
+        element.classList.remove("is-tutorial-pulse");
+      }
+    }
+  };
+
+  dom.tankBottomDock?.classList.toggle("is-tutorial-hidden", Boolean(tutorialUi) && !tutorialUi.toolbarVisible);
+  dom.tankDisplay?.classList.toggle("is-tutorial-hidden", Boolean(tutorialUi) && !tutorialUi.displayVisible);
+  dom.tankDisplay?.classList.toggle("is-tutorial-pulse", Boolean(tutorialUi?.pulseDisplay));
+
+  for (const buttonId of dockButtonIds) {
+    const button = dom[buttonId];
+    if (!button) {
+      continue;
+    }
+    button.classList.toggle("is-tutorial-hidden", Boolean(tutorialUi) && !tutorialUi.visibleButtons.has(buttonId));
+    button.classList.toggle("is-tutorial-pulse", Boolean(tutorialUi?.pulseButtons.has(buttonId)));
+  }
+
+  if (dom.toolbarTab) {
+    dom.toolbarTab.classList.toggle("is-tutorial-hidden", Boolean(tutorialUi?.hideToolbarTab));
+    dom.toolbarTab.classList.toggle("is-tutorial-pulse", false);
+  }
+  if (dom.displayTab) {
+    dom.displayTab.classList.toggle("is-tutorial-hidden", Boolean(tutorialUi?.hideDisplayTab));
+    dom.displayTab.classList.toggle("is-tutorial-pulse", false);
+  }
+
+  clearSpotlights();
+  if (!tutorialUi) {
     return;
   }
 
-  dom.introTutorialArrow.hidden = false;
-  dom.introTutorialArrow.className = `tutorial-arrow is-${step.arrowDirection}`;
-  dom.introTutorialArrow.style.left = `${arrowPosition.x}px`;
-  dom.introTutorialArrow.style.top = `${arrowPosition.y}px`;
+  const decorTileButton = findElementByDatasetValue(dom.editDecorTrayScroller, "trayPlaceDecor", tutorialUi.pulseDecorKey);
+  decorTileButton?.closest(".edit-decor-tile")?.classList.add("is-tutorial-pulse");
+
+  const foodTileButton = findElementByDatasetValue(dom.foodTrayScroller, "selectFood", tutorialUi.pulseFoodKey);
+  foodTileButton?.classList.add("is-tutorial-pulse");
 }
 
 function getStoredDecorEntries() {
@@ -29720,6 +32486,16 @@ function positionEditTrayContextMenu(tray, menu, anchorX, anchorY) {
 }
 
 function openEditDecorTrayContextMenu(entryId, anchor = null) {
+  if (getActiveTutorial() && isTutorialStage(
+    TUTORIAL_STAGE_DECOR_PLACE_HINT,
+    TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS,
+    TUTORIAL_STAGE_DECOR_PLACE,
+    TUTORIAL_STAGE_DECOR_CLOSE
+  )) {
+    closeEditDecorTrayContextMenu();
+    return;
+  }
+
   const entry = getDecorTrayEntryById(entryId);
   if (!entry) {
     closeEditDecorTrayContextMenu();
@@ -30853,14 +33629,32 @@ function renderFishInspector(now) {
 }
 
 function renderDecorShop() {
+  const tutorialRestriction = getTutorialStoreRestriction("decor");
   if (!runtime.decorCatalog.length) {
     setMarkupIfChanged("decor-shop", dom.decorShop, `<div class="empty-state">No decor PNGs were found in the decor folder yet.</div>`);
     return;
   }
 
-  const searchQuery = getStoreSearchQuery("decor");
+  const searchQuery = tutorialRestriction ? "" : getStoreSearchQuery("decor");
   const allCatalog = sortCatalogEntries(
-    runtime.decorCatalog.filter((decor) => canUseDecorWithCurrentContentSettings(decor)),
+    runtime.decorCatalog
+      .filter((decor) => canUseDecorWithCurrentContentSettings(decor))
+      .filter((decor) => {
+        if (!tutorialRestriction) {
+          return true;
+        }
+        if (
+          tutorialRestriction.hideCustom
+          && (
+            isCustomDecorUploadShopKey(decor.key)
+            || isCustomDecorAssetKey(decor.key)
+            || isCustomBubblerDecorKey(decor.key)
+          )
+        ) {
+          return false;
+        }
+        return getDecorPurchaseCost(decor.key) <= tutorialRestriction.maxCost;
+      }),
     runtime.storeSorts.decor
   );
   if (!allCatalog.length) {
@@ -30872,6 +33666,7 @@ function renderDecorShop() {
     return;
   }
   const catalog = allCatalog.filter((decor) => matchesShopSearchQuery(getDecorShopSearchHaystack(decor), searchQuery));
+  const tutorialPreviewOnly = tutorialRestriction?.previewOnly === true;
   if (!catalog.length) {
     setMarkupIfChanged(
       "decor-shop",
@@ -30882,7 +33677,7 @@ function renderDecorShop() {
   }
   const cardsMarkup = catalog
     .map((decor) => {
-      const affordable = state.coins >= decor.cost;
+      const affordable = !tutorialPreviewOnly && state.coins >= decor.cost;
       const owned = state.decorInventory[decor.key] || 0;
       const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
       const isCustomHideUpload = isCustomHideShopKey(decor.key);
@@ -30899,8 +33694,8 @@ function renderDecorShop() {
           </div>
           <div class="shop-meta">
             <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
-            <button class="buy-button" data-buy-decor="${decor.key}" ${affordable ? "" : "disabled"}>
-              ${isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
+            <button class="buy-button" data-buy-decor="${decor.key}" ${(affordable || tutorialPreviewOnly) ? "" : "disabled"} ${tutorialPreviewOnly ? "disabled" : ""}>
+              ${tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
             </button>
           </div>
         </article>
@@ -30981,11 +33776,13 @@ function renderEquipmentShop() {
       </article>
   `;
 
-  const uvLightOwned = isUvLightOwned();
-  const uvLightInstalled = isUvLightInstalled();
-  const uvLightActive = isUvLightActive();
-  const uvLightAffordable = state.coins >= UV_LIGHT_COST;
-  const uvLightMarkup = `
+  const uvLightMarkup = isUvLightFeatureEnabled()
+    ? (() => {
+      const uvLightOwned = isUvLightOwned();
+      const uvLightInstalled = isUvLightInstalled();
+      const uvLightActive = isUvLightActive();
+      const uvLightAffordable = state.coins >= UV_LIGHT_COST;
+      return `
       <article class="shop-card">
         <img class="shop-thumb uv-light-shop-thumb" src="${UV_LIGHT_IMAGE_PATH}" alt="UV light" />
         <div class="shop-meta shop-card-main">
@@ -31004,6 +33801,8 @@ function renderEquipmentShop() {
         </div>
       </article>
   `;
+    })()
+    : "";
 
   const backgroundMarkup = runtime.backgroundCatalog
     .filter((background) => !background.defaultUnlocked)
@@ -31084,6 +33883,7 @@ function renderEquipmentShop() {
         ${dispenserMarkup}
       </div>
     </section>
+    ${uvLightMarkup ? `
     <section class="shop-section">
       <div class="shop-section-heading">
         <h3>Lighting</h3>
@@ -31092,7 +33892,7 @@ function renderEquipmentShop() {
       <div class="shop-section-cards">
         ${uvLightMarkup}
       </div>
-    </section>
+    </section>` : ""}
     <section class="shop-section">
       <div class="shop-section-heading">
         <h3>Backgrounds</h3>
@@ -31272,23 +34072,7 @@ function renderPlacedDecor() {
 }
 
 function renderBackgrounds() {
-  const containers = [
-    ["background-list", dom.backgroundList],
-    ["equipment-background-list", dom.equipmentBackgroundList]
-  ].filter(([, container]) => container);
-  if (!containers.length) {
-    return;
-  }
-
-  if (!runtime.backgroundCatalog.length) {
-    for (const [cacheKey, container] of containers) {
-      setMarkupIfChanged(cacheKey, container, `<div class="empty-state">No background PNGs were found.</div>`);
-    }
-    return;
-  }
-
-  const markup = getOwnedBackgroundCatalog()
-    .filter((background) => !isCustomBackgroundKey(background.key))
+  const buildBackgroundCardsMarkup = (backgrounds) => backgrounds
     .map((background) => {
       const selected = state.selectedBackground === background.key;
       return `
@@ -31299,19 +34083,62 @@ function renderBackgrounds() {
           </div>
           <button data-select-background="${background.key}">
             ${selected
-              ? "Using This Background"
-              : isLocalImageBackgroundKey(background.key) && !hasLocalBackgroundImage()
-                ? "Choose Image"
-                : "Use Background"}
+          ? "Using This Background"
+          : isLocalImageBackgroundKey(background.key) && !hasLocalBackgroundImage()
+            ? "Choose Image"
+            : "Use Background"}
           </button>
         </article>
       `;
     })
     .join("");
 
-  const resolvedMarkup = markup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`;
-  for (const [cacheKey, container] of containers) {
-    setMarkupIfChanged(cacheKey, container, resolvedMarkup);
+  if (dom.backgroundList) {
+    const sharedMarkup = buildBackgroundCardsMarkup(
+      getOwnedBackgroundCatalog().filter((background) => !isCustomBackgroundKey(background.key))
+    );
+    setMarkupIfChanged(
+      "background-list",
+      dom.backgroundList,
+      sharedMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
+    );
+  }
+
+  if (dom.equipmentBackgroundList) {
+    const localImageReady = hasLocalBackgroundImage();
+    const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
+    const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
+    const localCardMarkup = localBackground
+      ? `
+        <article class="background-card local-background-card ${localImageSelected ? "is-selected" : ""}">
+          ${renderBackgroundPreview(localBackground, "background-thumb")}
+          <div>
+            <strong>${localBackground.name}</strong>
+            <div class="fish-meta">${localImageReady
+        ? localImageSelected
+          ? "Currently in use for this aquarium."
+          : "Ready to use as a background image."
+        : "Use your own image file for this aquarium."}</div>
+          </div>
+          <div class="shop-button-row">
+            <button type="button" data-open-local-background-picker>${localImageReady ? "Replace Image" : "Choose Image"}</button>
+            <button class="small-button alt" type="button" data-select-background="${CUSTOM_IMAGE_BACKGROUND_ASSET_KEY}" ${localImageReady ? "" : "disabled"}>${localImageSelected ? "Using This Image" : "Use Image"}</button>
+            <button class="small-button alt" type="button" data-clear-local-background ${localImageReady ? "" : "disabled"}>Clear</button>
+          </div>
+        </article>
+      `
+      : "";
+    const equipmentMarkup = `${localCardMarkup}${buildBackgroundCardsMarkup(
+      getOwnedBackgroundCatalog().filter((background) => (
+        !isCustomBackgroundKey(background.key)
+        && !isLocalImageBackgroundKey(background.key)
+      ))
+    )}`;
+    setMarkupIfChanged(
+      "equipment-background-list",
+      dom.equipmentBackgroundList,
+      equipmentMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
+    );
   }
 }
 
@@ -31323,18 +34150,27 @@ function renderSolidBackgroundControls() {
 
   const solidEnabled = isSolidBackgroundEnabled();
   const gradientEnabled = isGradientBackgroundEnabled();
-  const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
-  const localImageReady = hasLocalBackgroundImage();
+  const animatedEnabled = isAnimatedBackgroundEnabled();
+  const colorChoices = getSolidBackgroundColorChoices();
   const activeColor = getActiveSolidBackgroundColor();
-  const activeChoice = getSolidBackgroundColorChoices().find((choice) => choice.color === activeColor)
+  const activeChoice = colorChoices.find((choice) => choice.color === activeColor)
     || { label: activeColor, color: activeColor };
   const gradientColors = getActiveGradientBackgroundColors();
-  const gradientStartChoice = getSolidBackgroundColorChoices().find((choice) => choice.color === gradientColors.start)
+  const gradientStartChoice = colorChoices.find((choice) => choice.color === gradientColors.start)
     || { label: gradientColors.start, color: gradientColors.start };
-  const gradientEndChoice = getSolidBackgroundColorChoices().find((choice) => choice.color === gradientColors.end)
+  const gradientEndChoice = colorChoices.find((choice) => choice.color === gradientColors.end)
     || { label: gradientColors.end, color: gradientColors.end };
+  const animatedColors = getActiveAnimatedBackgroundColors();
+  const animatedChoicesByKey = Object.fromEntries(
+    ANIMATED_BACKGROUND_COLOR_GROUPS.map((group) => {
+      const color = animatedColors[group.key];
+      const choice = colorChoices.find((entry) => entry.color === color)
+        || { label: color, color };
+      return [group.key, choice];
+    })
+  );
   const swatches = solidEnabled
-    ? getSolidBackgroundColorChoices()
+    ? colorChoices
       .map((choice) => {
         const selected = choice.color === activeColor;
         return `
@@ -31351,7 +34187,7 @@ function renderSolidBackgroundControls() {
       })
       .join("")
     : "";
-  const renderGradientSwatches = (role, activeColorValue) => getSolidBackgroundColorChoices()
+  const renderGradientSwatches = (role, activeColorValue) => colorChoices
     .map((choice) => {
       const selected = choice.color === activeColorValue;
       return `
@@ -31368,6 +34204,36 @@ function renderSolidBackgroundControls() {
       `;
     })
     .join("");
+  const renderAnimatedSwatches = (role, activeColorValue, roleLabel) => colorChoices
+    .map((choice) => {
+      const selected = choice.color === activeColorValue;
+      return `
+        <button
+          class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
+          type="button"
+          data-animated-background-role="${role}"
+          data-animated-background-color="${choice.color}"
+          aria-pressed="${selected}"
+          aria-label="Set ${roleLabel} color to ${choice.label}"
+          title="${choice.label}"
+          style="--swatch:${choice.color};">
+        </button>
+      `;
+    })
+    .join("");
+  const animatedGroupMarkup = ANIMATED_BACKGROUND_COLOR_GROUPS
+    .map((group) => `
+      <div class="background-gradient-color-group">
+        <div class="custom-gravel-choice-summary">
+          <span>${group.label}</span>
+          <strong>${animatedChoicesByKey[group.key].label}</strong>
+        </div>
+        <div class="custom-gravel-swatches" role="group" aria-label="Animated background ${group.description} color choices">
+          ${renderAnimatedSwatches(group.key, animatedColors[group.key], group.description)}
+        </div>
+      </div>
+    `)
+    .join("");
 
   const markup = `
     <div class="background-color-panel-shell">
@@ -31377,7 +34243,7 @@ function renderSolidBackgroundControls() {
           <span class="settings-toggle-note">Use a flat backdrop instead of an image background.</span>
         </div>
         <div class="background-solid-toggle-controls">
-          ${solidEnabled ? `<span class="background-fill-preview background-solid-toggle-preview" style="${getCustomBackgroundPreviewStyle()}"></span>` : ""}
+          ${solidEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
           <input
             id="solidBackgroundToggle"
             class="settings-checkbox"
@@ -31393,7 +34259,7 @@ function renderSolidBackgroundControls() {
           <span class="settings-toggle-note">Blend two colors diagonally from the top left to the bottom right.</span>
         </div>
         <div class="background-solid-toggle-controls">
-          ${gradientEnabled ? `<span class="background-fill-preview background-solid-toggle-preview" style="${getCustomBackgroundPreviewStyle()}"></span>` : ""}
+          ${gradientEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
           <input
             id="gradientBackgroundToggle"
             class="settings-checkbox"
@@ -31403,13 +34269,39 @@ function renderSolidBackgroundControls() {
             aria-label="Use Gradient background" />
         </div>
       </label>
+      <label class="settings-toggle-row background-solid-toggle-row" for="animatedBackgroundToggle">
+        <div class="settings-toggle-copy">
+          <span class="settings-toggle-label">Animated Background</span>
+          <span class="settings-toggle-note">Use a slow underwater wallpaper effect instead of a still image.</span>
+        </div>
+        <div class="background-solid-toggle-controls">
+          ${animatedEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+          <input
+            id="animatedBackgroundToggle"
+            class="settings-checkbox"
+            type="checkbox"
+            data-toggle-animated-background
+            ${animatedEnabled ? "checked" : ""}
+            aria-label="Use Animated background" />
+        </div>
+      </label>
+      ${(solidEnabled || gradientEnabled || animatedEnabled) ? `
+      <div class="settings-subsection-heading">
+        <h4>Colors</h4>
+        <p>${solidEnabled
+        ? "Choose the solid backdrop color for the tank."
+        : gradientEnabled
+          ? "Choose the two colors used in the background gradient."
+          : "Choose one gravel color to drive the underwater wallpaper palette."}</p>
+      </div>
+      ` : ""}
       ${solidEnabled ? `
       <article class="custom-gravel-layer-card background-solid-color-card">
         <div class="custom-gravel-layer-header">
           <div>
             <div class="fish-meta">Choose a background color.</div>
           </div>
-          <span class="background-fill-preview background-mode-preview" style="${getCustomBackgroundPreviewStyle()}"></span>
+          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
         </div>
         <div class="custom-gravel-choice-summary">
           <span>Selected Color</span>
@@ -31426,7 +34318,7 @@ function renderSolidBackgroundControls() {
           <div>
             <div class="fish-meta">Choose two colors for a diagonal gradient backdrop.</div>
           </div>
-          <span class="background-fill-preview background-mode-preview" style="${getCustomBackgroundPreviewStyle()}"></span>
+          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
         </div>
         <div class="background-gradient-grid">
           <div class="background-gradient-color-group">
@@ -31450,24 +34342,22 @@ function renderSolidBackgroundControls() {
         </div>
       </article>
       ` : ""}
-      <article class="custom-gravel-layer-card background-solid-color-card local-background-panel">
+      ${animatedEnabled ? `
+      <article class="custom-gravel-layer-card background-solid-color-card">
         <div class="custom-gravel-layer-header">
           <div>
-            <div class="settings-toggle-label">Local Image Background</div>
-            <div class="fish-meta">Use your own image file for this aquarium.</div>
+            <div class="fish-meta">Pick one gravel color. The animation design stays the same and the wallpaper palette shifts around that scheme.</div>
           </div>
-          ${localImageReady ? renderBackgroundPreview(runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY), "background-fill-preview background-mode-preview local-background-preview") : `<span class="background-fill-preview background-mode-preview local-background-preview local-background-preview-empty">Image</span>`}
+          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
         </div>
-        <div class="custom-gravel-choice-summary">
-          <span>Status</span>
-          <strong>${localImageReady ? (localImageSelected ? "In Use" : "Ready") : "No Image Selected"}</strong>
+        <div class="shop-button-row">
+          <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset Scheme</button>
         </div>
-        <div class="shop-button-row local-background-actions">
-          <button class="small-button" type="button" data-open-local-background-picker>${localImageReady ? "Replace Image" : "Choose Image"}</button>
-          <button class="small-button alt" type="button" data-select-background="${CUSTOM_IMAGE_BACKGROUND_ASSET_KEY}" ${localImageReady ? "" : "disabled"}>${localImageSelected ? "Using This Image" : "Use Image"}</button>
-          <button class="small-button alt" type="button" data-clear-local-background ${localImageReady ? "" : "disabled"}>Clear</button>
+        <div class="background-gradient-grid">
+          ${animatedGroupMarkup}
         </div>
       </article>
+      ` : ""}
     </div>
   `;
 
@@ -31489,6 +34379,19 @@ function renderUvLightControls() {
     ["equipment-uv-light-controls", dom.equipmentUvLightList]
   ].filter(([, container]) => container);
   if (!containers.length) {
+    return;
+  }
+
+  const uvLightVisible = isUvLightFeatureEnabled();
+  for (const [, container] of containers) {
+    if (container instanceof HTMLElement) {
+      container.hidden = !uvLightVisible;
+    }
+  }
+  if (!uvLightVisible) {
+    for (const [cacheKey, container] of containers) {
+      setMarkupIfChanged(cacheKey, container, "");
+    }
     return;
   }
 
@@ -31533,7 +34436,7 @@ function renderGravelAssets() {
 
   const customEnabled = Boolean(state.customGravelEnabled);
   const statusMarkup = customEnabled
-    ? `<div class="custom-gravel-status">Sand is currently disabled while Custom Colored Gravel is in use.</div>`
+    ? `<div class="custom-gravel-status">Gravel Colors are enabled, so sand options are currently disabled.</div>`
     : "";
   const cardsMarkup = runtime.gravelCatalog
     .map((item) => {
@@ -31648,18 +34551,18 @@ function renderCustomGravelControls() {
     <div class="custom-gravel-panel-shell">
       <div class="custom-gravel-toggle-row">
         <div class="compact-heading">
-          <strong>Customizable Colored Gravel</strong>
+          <strong>Sand Toggle</strong>
           <p>${enabled
-      ? "Sand is disabled while Colored Gravel is enabled."
-      : "Enable to replace sand with customizable colored gravel."}</p>
+      ? "Sand is off while Gravel Colors are enabled."
+      : "Sand is on. Turn it off to customize the gravel colors instead."}</p>
         </div>
         <button
           class="custom-gravel-toggle ${enabled ? "is-active" : ""}"
           type="button"
           data-toggle-custom-gravel="true"
           aria-pressed="${enabled}">
-          <span>Enable</span>
-          <strong>${enabled ? "On" : "Off"}</strong>
+          <span>Sand</span>
+          <strong>${enabled ? "Off" : "On"}</strong>
         </button>
       </div>
       ${enabled ? `<div class="custom-gravel-layer-list">${layerMarkup}</div>` : ""}
@@ -31783,9 +34686,10 @@ function renderControls(now) {
   dom.openManagementButton?.classList.toggle("is-active", runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management");
   dom.toggleMouseLockButton?.classList.toggle("is-active", isTankMouseInputLocked());
   if (dom.uvLightToggleButton) {
+    const uvLightVisible = isUvLightFeatureEnabled();
     const uvInstalled = isUvLightInstalled();
     const uvActive = isUvLightActive();
-    dom.uvLightToggleButton.hidden = !uvInstalled;
+    dom.uvLightToggleButton.hidden = !uvLightVisible || !uvInstalled;
     dom.uvLightToggleButton.classList.toggle("is-active", uvActive);
     dom.uvLightToggleButton.title = uvActive ? "Turn UV Light Off" : "Turn UV Light On";
     dom.uvLightToggleButton.setAttribute("aria-label", uvActive ? "Turn UV Light Off" : "Turn UV Light On");
@@ -31807,7 +34711,7 @@ function renderControls(now) {
   }
   if (dom.displayTab) {
     const uiSettings = getUiSettings();
-    const displayCollapsed = uiSettings.displayCollapsed;
+    const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, getTutorialUiState());
     const displayAtBottom = uiSettings.displayPosition.startsWith("bottom-");
     const displayLabel = displayCollapsed ? "Show Display" : "Hide Display";
     dom.displayTab.textContent = displayAtBottom
@@ -31831,7 +34735,10 @@ function renderControls(now) {
     dom.openManagementButton.setAttribute("aria-label", managementOpen ? "Tank Management open" : "Tank Management");
   }
   if (dom.toggleMouseLockButton) {
+    const mouseLockAvailable = isTankMouseLockFeatureEnabled();
     const locked = isTankMouseInputLocked();
+    dom.toggleMouseLockButton.hidden = !mouseLockAvailable;
+    dom.toggleMouseLockButton.disabled = !mouseLockAvailable;
     dom.toggleMouseLockButton.title = locked ? "Unlock Tank Mouse Input" : "Lock Tank Mouse Input";
     dom.toggleMouseLockButton.setAttribute("aria-label", locked ? "Unlock Tank Mouse Input" : "Lock Tank Mouse Input");
     dom.toggleMouseLockButton.setAttribute("aria-pressed", String(locked));
@@ -31864,8 +34771,8 @@ function renderControls(now) {
   if (dom.editScaleUpButton) {
     dom.editScaleUpButton.hidden = !runtime.editTankMode;
     dom.editScaleUpButton.disabled = scaleShortcutsDisabled;
-    dom.editScaleUpButton.title = scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Increase decor size (+)";
-    dom.editScaleUpButton.setAttribute("aria-label", scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Increase decor size (+)");
+    dom.editScaleUpButton.title = scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Increase decor size (+ / =)";
+    dom.editScaleUpButton.setAttribute("aria-label", scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Increase decor size (+ / =)");
   }
   if (dom.editScaleDownButton) {
     dom.editScaleDownButton.hidden = !runtime.editTankMode;
@@ -32069,10 +34976,10 @@ function resetLivingFishPredatorState(fish, now = Date.now(), options = {}) {
 
   if (options.entryAnimation) {
     fish.entryStartedAt = now;
-    fish.entryDurationMs = Math.max(0, Number(options.entryDurationMs) || 1450);
+    fish.entryDurationMs = Math.max(0, Number(options.entryDurationMs) || FISH_ENTRY_DURATION_MS);
     fish.entryFromYNorm = Number.isFinite(Number(options.entryFromYNorm))
       ? clamp(Number(options.entryFromYNorm), 0.02, 0.18)
-      : 0.03;
+      : FISH_ENTRY_FROM_Y_NORM;
     fish.entrySplashTriggered = false;
   }
 }
@@ -32278,6 +35185,7 @@ function setSoundMuted(value, options = {}) {
 function clearTankMouseInteractionState() {
   runtime.suppressNextTankClick = false;
   runtime.suppressNextGlassTap = false;
+  clearGlassTapGesture();
   runtime.pointerDown = false;
   runtime.lastTankPoint = null;
   runtime.lastScrubPoint = null;
@@ -32330,6 +35238,20 @@ function toggleToolbarCollapsed(force = null) {
   }
 
   const currentSettings = getUiSettings();
+  if (getActiveTutorial()) {
+    const nextSettings = sanitizeUiSettings({
+      ...currentSettings,
+      toolbarCollapsed: false
+    });
+    if (currentSettings.toolbarCollapsed !== nextSettings.toolbarCollapsed) {
+      state.uiSettings = nextSettings;
+      saveState();
+    }
+    renderUi(Date.now(), { full: false });
+    showToast("Toolbar stays open during the tutorial.");
+    return;
+  }
+
   const nextSettings = sanitizeUiSettings({
     ...currentSettings,
     toolbarCollapsed: typeof force === "boolean"
@@ -32347,6 +35269,22 @@ function toggleToolbarCollapsed(force = null) {
 
 function toggleDisplayCollapsed(force = null) {
   if (!state) {
+    return;
+  }
+
+  if (getActiveTutorial()) {
+    const tutorialUi = getTutorialUiState();
+    if (!tutorialUi?.displayVisible) {
+      return;
+    }
+    const nextCollapsed = typeof force === "boolean"
+      ? force
+      : !getEffectiveDisplayCollapsed(getUiSettings(), tutorialUi);
+    if (runtime.tutorialDisplayCollapsed === nextCollapsed) {
+      return;
+    }
+    runtime.tutorialDisplayCollapsed = nextCollapsed;
+    renderUi(Date.now(), { full: false });
     return;
   }
 
@@ -33505,6 +36443,8 @@ function updateFishMotion(now, deltaSeconds) {
     const zombieLockedOnTarget = Boolean(zombieAttackTarget);
     const zombieBittenVictim = hasZombieBiteInfection(fish);
     let pellet = null;
+    let pelletPose = null;
+    let pelletBounds = null;
 
     if (fish.id === activelyDraggedFishId) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
@@ -33628,8 +36568,8 @@ function updateFishMotion(now, deltaSeconds) {
       fish.motionLevel = clamp(fish.motionLevel + (0.42 - fish.motionLevel) * Math.min(1, deltaSeconds * 5), 0.08, 0.7);
     }
 
-    if (fish.entryStartedAt && fish.entryDurationMs > 0) {
-      const progress = clamp((now - fish.entryStartedAt) / fish.entryDurationMs, 0, 1);
+    const entryProgress = getFishEntryProgress(fish, now);
+    if (entryProgress !== null) {
       fish.motionLevel = clamp(fish.motionLevel + (0.2 - fish.motionLevel) * Math.min(1, deltaSeconds * 6), 0.04, 0.4);
       fish.wiggleClock += deltaSeconds * 1.15;
       setFishTankLayers(
@@ -33639,12 +36579,17 @@ function updateFishMotion(now, deltaSeconds) {
       );
       fish.hangoutDecorId = null;
 
-      if (!fish.entrySplashTriggered && progress >= 0.22) {
+      const entryDescriptor = getFishShapeDescriptor(fish, species, now);
+      const fishHitWaterline = entryDescriptor
+        ? entryDescriptor.bounds.bottom >= WATER_SURFACE_Y
+        : entryProgress >= FISH_ENTRY_SPLASH_PROGRESS;
+      if (!fish.entrySplashTriggered && fishHitWaterline) {
+        playFishEntrySplashSoundIfNeeded(fish);
         fish.entrySplashTriggered = true;
         spawnFishReturnSplash(fish.xNorm);
       }
 
-      if (progress < 1) {
+      if (entryProgress < 1) {
         continue;
       }
 
@@ -33739,9 +36684,26 @@ function updateFishMotion(now, deltaSeconds) {
         if (fish.caveState) {
           abortFishCaveBehavior(fish, now, false);
         }
-        const pelletPose = getPelletPose(pellet, now);
-        fish.targetXNorm = pelletPose.xNorm;
-        fish.targetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+        pelletPose = getPelletPose(pellet, now);
+        pelletBounds = getPelletHitBounds(pellet, now);
+        const mouthChaseTarget = getFishTargetNormForMouthPoint(
+          fish,
+          species,
+          pelletPose.xNorm * TANK_WIDTH,
+          pelletPose.yNorm * TANK_HEIGHT,
+          now,
+          {
+            minYNorm: 0.14,
+            maxYNorm: pellet.settled ? 0.9 : 0.82
+          }
+        );
+        if (mouthChaseTarget) {
+          fish.targetXNorm = mouthChaseTarget.xNorm;
+          fish.targetYNorm = mouthChaseTarget.yNorm;
+        } else {
+          fish.targetXNorm = pelletPose.xNorm;
+          fish.targetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+        }
         fish.targetAt = now + 1000;
         setFishDesiredTankLayer(
           fish,
@@ -33892,7 +36854,9 @@ function updateFishMotion(now, deltaSeconds) {
       if (effectiveBehavior === "sucker") {
         setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
       } else if (!handledDirectionThisFrame) {
-        const facingDx = fish.targetXNorm - fish.xNorm;
+        const facingDx = fish.activity === "feeding" && pelletPose
+          ? pelletPose.xNorm - fish.xNorm
+          : fish.targetXNorm - fish.xNorm;
         if (Math.abs(facingDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
           setFishDirection(fish, facingDx >= 0 ? 1 : -1, species, now);
           handledDirectionThisFrame = true;
@@ -33927,9 +36891,21 @@ function updateFishMotion(now, deltaSeconds) {
     );
     fish.wiggleClock += deltaSeconds * (0.35 + fish.motionLevel * (1.85 + fish.swimSpeed * 18)) * (isFishCriticallyLowHealth(fish) ? 1.22 : 1);
 
-    if (fish.activity === "feeding" && pellet) {
-      const pelletPose = getPelletPose(pellet, now);
-      if (Math.hypot(fish.xNorm - pelletPose.xNorm, fish.yNorm - pelletPose.yNorm) < 0.024) {
+    if (fish.activity === "feeding" && pellet && pelletPose) {
+      const mouthPoint = getFishGravelPebbleMouthPoint(fish, species, now);
+      const pelletReachPx = pelletBounds
+        ? Math.max(
+          8 * getViewportStableAssetScale(),
+          Math.max(pelletBounds.right - pelletBounds.left, pelletBounds.bottom - pelletBounds.top) * 0.55
+        )
+        : 14 * getViewportStableAssetScale();
+      const mouthReachedPellet = mouthPoint
+        ? Math.hypot(
+          mouthPoint.x - pelletPose.xNorm * TANK_WIDTH,
+          mouthPoint.y - pelletPose.yNorm * TANK_HEIGHT
+        ) <= pelletReachPx
+        : Math.hypot(fish.xNorm - pelletPose.xNorm, fish.yNorm - pelletPose.yNorm) < 0.024;
+      if (mouthReachedPellet) {
         handleFishEatFoodPellet(fish, pellet, now);
         state.floatingPellets = state.floatingPellets.filter((entry) => entry.id !== pellet.id);
         fish.activity = "roam";
@@ -34504,7 +37480,7 @@ function renderTank(now) {
   drawWaterSurface(now);
   drawUvLightAtmosphere(now, "front");
   drawSplashBursts(now);
-// Front glass glare is disabled for this display-focused view.
+  // Front glass glare is disabled for this display-focused view.
   tankContext.restore();
   drawAutoDispenser(now);
   drawGrime(dirtiness);
@@ -34731,6 +37707,9 @@ function clipToTankShellBounds(context = tankContext, target = getCurrentTank(),
 
 function drawTankBackdrop() {
   tankContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  if (isAnimatedBackgroundEnabled()) {
+    return;
+  }
   if (isBowlTank()) {
     tankContext.fillStyle = "#000";
     tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
@@ -34764,8 +37743,10 @@ function drawBackground(now = Date.now()) {
   if (image) {
     drawImageCover(tankContext, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
   } else if (isCustomBackgroundKey(background?.key)) {
-    tankContext.fillStyle = createCustomBackgroundFill(tankContext, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
-    tankContext.fillRect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    if (!isAnimatedBackgroundEnabled()) {
+      tankContext.fillStyle = createCustomBackgroundFill(tankContext, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+      tankContext.fillRect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    }
   } else {
     const gradient = tankContext.createLinearGradient(0, backgroundTop, 0, TANK_HEIGHT);
     gradient.addColorStop(0, "#10171c");
@@ -34774,6 +37755,10 @@ function drawBackground(now = Date.now()) {
     tankContext.fillRect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
   }
   tankContext.restore();
+
+  if (isAnimatedBackgroundEnabled()) {
+    return;
+  }
 
   tankContext.save();
   tankContext.beginPath();
@@ -34787,8 +37772,8 @@ function drawBackground(now = Date.now()) {
   tankContext.fillStyle = clearWaterShade;
   tankContext.fillRect(GLASS_MARGIN_X, waterTop, backgroundWidth, waterHeight);
 
-  tankContext.globalAlpha = 0.16;
-  tankContext.strokeStyle = "rgba(255, 255, 255, 0.03)";
+  tankContext.globalAlpha = isAnimatedBackgroundEnabled() ? 0.08 : 0.16;
+  tankContext.strokeStyle = isAnimatedBackgroundEnabled() ? "rgba(255, 255, 255, 0.02)" : "rgba(255, 255, 255, 0.03)";
   tankContext.lineWidth = Math.max(0.4, 0.65 * getViewportStableAssetScale());
   tankContext.lineCap = "round";
   for (let index = 0; index < 5; index += 1) {
@@ -38041,8 +41026,8 @@ function drawDecorPreview() {
     } else {
       const bgImage = runtime.images.get(decor.bgPath);
       if (bgImage) {
-      const bgHeight = width * (bgImage.height / bgImage.width);
-      drawDecorImageLayer(bgImage, x - width / 2, y - bgHeight, width, bgHeight, previewItem, Date.now(), previewMotion, 0.72);
+        const bgHeight = width * (bgImage.height / bgImage.width);
+        drawDecorImageLayer(bgImage, x - width / 2, y - bgHeight, width, bgHeight, previewItem, Date.now(), previewMotion, 0.72);
       }
     }
   }
@@ -39289,11 +42274,17 @@ function getFishPose(fish, species, now) {
       isDead: false
     };
   }
-  const wiggle = Math.sin(wiggleClock + fish.phase * Math.PI * 2) * sickMotionBoost;
+  const baseWiggle = Math.sin(wiggleClock + fish.phase * Math.PI * 2) * sickMotionBoost;
   const glide = Math.sin(wiggleClock * 0.48 + fish.phase * Math.PI * 1.4) * sickMotionBoost;
-  const entryProgress = fish.entryStartedAt && fish.entryDurationMs > 0
-    ? clamp((now - fish.entryStartedAt) / fish.entryDurationMs, 0, 1)
-    : null;
+  const entryProgress = getFishEntryProgress(fish, now);
+  const entryRightingProgress = getFishEntryRightingProgress(entryProgress);
+  const entryRightingEase = entryRightingProgress === null
+    ? 1
+    : 1 - Math.pow(1 - entryRightingProgress, 3);
+  const entryWiggleFactor = entryProgress === null
+    ? 1
+    : 0.18 + entryRightingEase * 0.82;
+  const wiggle = baseWiggle * entryWiggleFactor;
   const easedEntry = entryProgress === null ? null : 1 - Math.pow(1 - entryProgress, 3);
   const renderYNorm = easedEntry === null || fish.entryFromYNorm === null
     ? fish.yNorm
@@ -39316,13 +42307,16 @@ function getFishPose(fish, species, now) {
   const turnLean = turnProgress === null
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * 0.14;
-  const tilt = clamp(
+  const baseTilt = clamp(
     (fish.targetYNorm - fish.yNorm) * (0.9 + motionLevel * 0.35)
     + wiggle * (0.008 + motionLevel * 0.04)
     + turnLean,
     -0.26,
     0.26
   );
+  const tilt = entryProgress === null
+    ? baseTilt
+    : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
   const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch) * (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X));
   const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78)) * (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1));
   const turnSway = turnProgress === null
@@ -39337,7 +42331,8 @@ function getFishPose(fish, species, now) {
     wiggle,
     bodyScaleX,
     bodyScaleY,
-    swayX: wiggle * (0.7 + motionLevel * 1.55) + turnSway,
+    swayX: wiggle * (0.7 + motionLevel * 1.55)
+      + turnSway * (entryProgress === null ? 1 : entryRightingEase),
     isDead: false
   };
 }
@@ -39538,24 +42533,19 @@ function getTankPoint(event, options = {}) {
     y: (canvasY - offsetY) / scale
   };
   if (options.variant === "glass") {
-    const glassBounds = {
-      left: GLASS_MARGIN_X,
-      right: TANK_WIDTH - GLASS_MARGIN_X,
-      top: WATER_SURFACE_Y,
-      bottom: TANK_HEIGHT - GLASS_MARGIN_BOTTOM
-    };
     if (
-      rawPoint.x < glassBounds.left
-      || rawPoint.x > glassBounds.right
-      || rawPoint.y < glassBounds.top
-      || rawPoint.y > glassBounds.bottom
+      rawPoint.x < 0
+      || rawPoint.x > TANK_WIDTH
+      || rawPoint.y < 0
+      || rawPoint.y > TANK_HEIGHT
     ) {
       return null;
     }
 
+    const constrainedGlassPoint = constrainPointToTankShell(rawPoint.x, rawPoint.y, { variant: "outer" });
     return {
-      x: clamp(rawPoint.x, glassBounds.left, glassBounds.right),
-      y: clamp(rawPoint.y, glassBounds.top, glassBounds.bottom)
+      x: constrainedGlassPoint.x,
+      y: constrainedGlassPoint.y
     };
   }
 
@@ -43663,7 +46653,7 @@ function boundsIntersect(leftBounds, rightBounds) {
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, .tank-overlay-hints, .store-overlay, .settings-overlay, .fish-inspector, .decor-settings-badge-button, .decor-action-float-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .decor-settings-badge-button, .decor-action-float-button, .tab-buttons"))
   );
 }
 
@@ -43691,6 +46681,83 @@ function hasActiveTankToolOrOverlay() {
     || runtime.pebbleDragState
     || fishInspectorOpen
   );
+}
+
+function clearGlassTapGesture() {
+  runtime.glassTapGesture.pointerId = null;
+  runtime.glassTapGesture.startedAt = 0;
+  runtime.glassTapGesture.startX = 0;
+  runtime.glassTapGesture.startY = 0;
+  runtime.glassTapGesture.movedTooFar = false;
+  runtime.glassTapGesture.allowNextClick = false;
+}
+
+function beginGlassTapGesture(event, point, now = Date.now()) {
+  const primaryPointer = !(event instanceof MouseEvent) || event.button === 0;
+  if (!primaryPointer || !point) {
+    clearGlassTapGesture();
+    return;
+  }
+
+  runtime.glassTapGesture.pointerId = Number.isInteger(event.pointerId) ? event.pointerId : null;
+  runtime.glassTapGesture.startedAt = now;
+  runtime.glassTapGesture.startX = point.x;
+  runtime.glassTapGesture.startY = point.y;
+  runtime.glassTapGesture.movedTooFar = false;
+  runtime.glassTapGesture.allowNextClick = false;
+}
+
+function updateGlassTapGesture(event, point) {
+  const gesture = runtime.glassTapGesture;
+  if (!gesture.startedAt) {
+    return;
+  }
+
+  if (
+    Number.isInteger(gesture.pointerId)
+    && Number.isInteger(event?.pointerId)
+    && gesture.pointerId !== event.pointerId
+  ) {
+    return;
+  }
+
+  if (!point) {
+    return;
+  }
+
+  if (Math.hypot(point.x - gesture.startX, point.y - gesture.startY) > GLASS_TAP_MAX_MOVE_PX) {
+    gesture.movedTooFar = true;
+  }
+}
+
+function finalizeGlassTapGesture(event, now = Date.now()) {
+  const gesture = runtime.glassTapGesture;
+  const pointerMatches = !Number.isInteger(gesture.pointerId)
+    || !Number.isInteger(event?.pointerId)
+    || gesture.pointerId === event.pointerId;
+  const pressDuration = gesture.startedAt > 0 ? now - gesture.startedAt : Number.POSITIVE_INFINITY;
+  const allowNextClick = Boolean(
+    pointerMatches
+    && gesture.startedAt > 0
+    && !gesture.movedTooFar
+    && pressDuration <= GLASS_TAP_MAX_HOLD_MS
+    && !runtime.cleaningMode
+    && !runtime.editTankMode
+    && !runtime.scoopMode
+    && !runtime.placementMode
+    && !runtime.dragState
+    && !runtime.fishDragState
+    && !runtime.eggDragState
+    && !runtime.pebbleDragState
+  );
+  clearGlassTapGesture();
+  runtime.glassTapGesture.allowNextClick = allowNextClick;
+}
+
+function consumePendingGlassTapClick() {
+  const allowNextClick = Boolean(runtime.glassTapGesture.allowNextClick);
+  runtime.glassTapGesture.allowNextClick = false;
+  return allowNextClick;
 }
 
 function canTriggerGlassTap(event) {
@@ -43731,6 +46798,35 @@ function getFishFacingAngle(fish) {
   return Number.isFinite(Number(fish?.displayAngle))
     ? normalizeAngle(Number(fish.displayAngle))
     : (getFishFacingDirection(fish) < 0 ? Math.PI : 0);
+}
+
+function getFishEntryProgress(fish, now = Date.now()) {
+  if (
+    !fish
+    || !Number.isFinite(Number(fish.entryStartedAt))
+    || Number(fish.entryDurationMs) <= 0
+  ) {
+    return null;
+  }
+
+  return clamp(
+    (now - Number(fish.entryStartedAt)) / Math.max(1, Number(fish.entryDurationMs)),
+    0,
+    1
+  );
+}
+
+function getFishEntryRightingProgress(entryProgress) {
+  if (!Number.isFinite(entryProgress)) {
+    return null;
+  }
+
+  return clamp(
+    (entryProgress - FISH_ENTRY_SPLASH_PROGRESS)
+    / Math.max(0.001, FISH_ENTRY_RIGHTING_END_PROGRESS - FISH_ENTRY_SPLASH_PROGRESS),
+    0,
+    1
+  );
 }
 
 function getDirectedAngleDelta(fromAngle, toAngle, spinDirection = 1) {
@@ -44243,7 +47339,22 @@ function positionTransientMessages() {
   positionToast();
 }
 
-function showToast(message) {
+function hideToast(options = {}) {
+  const targetKey = typeof options.key === "string" ? options.key : "";
+  if (targetKey && runtime.toastKey !== targetKey) {
+    return false;
+  }
+  if (runtime.toastHandle) {
+    clearTimeout(runtime.toastHandle);
+    runtime.toastHandle = null;
+  }
+  runtime.toastKey = "";
+  dom.toast?.classList.remove("is-visible");
+  return true;
+}
+
+function showToast(message, options = {}) {
+  runtime.toastKey = typeof options.key === "string" ? options.key : "";
   dom.toast.textContent = message;
   positionToast();
   dom.toast.classList.add("is-visible");
@@ -44252,9 +47363,12 @@ function showToast(message) {
     clearTimeout(runtime.toastHandle);
   }
 
+  const durationMs = Math.max(0, Number.isFinite(Number(options.durationMs)) ? Number(options.durationMs) : 2200);
   runtime.toastHandle = setTimeout(() => {
     dom.toast.classList.remove("is-visible");
-  }, 2200);
+    runtime.toastHandle = null;
+    runtime.toastKey = "";
+  }, durationMs);
 }
 
 function clamp(value, min, max) {

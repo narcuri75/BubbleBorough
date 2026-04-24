@@ -65,11 +65,63 @@ body {
   display: grid;
   place-items: center;
   padding: clamp(24px, 6vw, 96px);
-  background: #000;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(120, 220, 255, 0.35), transparent 35%),
+    radial-gradient(circle at 70% 80%, rgba(0, 80, 180, 0.45), transparent 45%),
+    linear-gradient(180deg, #7fdcff 0%, #1b8bd1 38%, #064f8f 70%, #022a5c 100%);
   color: #fff;
   opacity: 1;
   pointer-events: auto;
   transition: opacity 900ms ease;
+}
+
+.loading-overlay::before,
+.loading-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.loading-overlay::before {
+  inset: -20%;
+  z-index: -2;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(150, 230, 255, 0.25), transparent 35%),
+    radial-gradient(ellipse at 80% 40%, rgba(80, 190, 255, 0.2), transparent 40%),
+    radial-gradient(ellipse at 50% 80%, rgba(0, 120, 220, 0.25), transparent 45%);
+  filter: blur(35px);
+  animation: loading-water-drift 36s ease-in-out infinite alternate;
+}
+
+.loading-overlay::after {
+  z-index: -1;
+  background:
+    linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.03) 18%,
+      rgba(255, 255, 255, 0.14) 32%,
+      rgba(255, 255, 255, 0.02) 48%,
+      rgba(255, 255, 255, 0.1) 65%,
+      rgba(255, 255, 255, 0.03) 100%
+    ),
+    repeating-linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 2px,
+      transparent 3px,
+      transparent 42px
+    );
+  background-size: 300% 300%, auto;
+  opacity: 0.3;
+  filter: blur(6px);
+  transform: scale(1.3);
+  animation:
+    loading-water-light 28s ease-in-out infinite,
+    loading-water-caustics 18s linear infinite;
 }
 
 .loading-overlay.is-hiding {
@@ -77,8 +129,13 @@ body {
   pointer-events: none;
 }
 
+.loading-overlay.is-ready {
+  cursor: pointer;
+}
+
 .loading-overlay-content {
   position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: min(1000px, 100%);
@@ -103,8 +160,53 @@ body {
   line-height: 1.2;
   letter-spacing: 0;
   text-align: center;
+  text-shadow: 0 4px 20px rgba(0, 20, 60, 0.7);
   transform: translateX(-50%);
   width: min(100%, 520px);
+}
+
+.loading-overlay.is-ready .loading-overlay-text {
+  padding: 14px 22px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(10, 43, 79, 0.82), rgba(6, 28, 55, 0.9));
+  border: 1px solid rgba(191, 235, 255, 0.34);
+  box-shadow:
+    0 20px 46px rgba(0, 15, 45, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+@keyframes loading-water-light {
+  0% {
+    background-position: 0% 50%, 0 0;
+  }
+
+  50% {
+    background-position: 100% 50%, 110px 70px;
+  }
+
+  100% {
+    background-position: 0% 50%, 220px 140px;
+  }
+}
+
+@keyframes loading-water-drift {
+  0% {
+    transform: translate(-4%, -2%) scale(1.05) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(4%, 3%) scale(1.18) rotate(6deg);
+  }
+}
+
+@keyframes loading-water-caustics {
+  0% {
+    transform: translateX(-6%) translateY(-3%) scale(1.3) rotate(0deg);
+  }
+
+  100% {
+    transform: translateX(6%) translateY(3%) scale(1.35) rotate(2deg);
+  }
 }
 
 @media (max-width: 480px) {
@@ -116,6 +218,16 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .loading-overlay {
     transition: none;
+  }
+
+  .loading-overlay::before,
+  .loading-overlay::after,
+  .tank-stage-underwater,
+  .tank-stage-underwater::before,
+  .tank-stage-underwater::after,
+  .background-underwater-preview::before,
+  .background-underwater-preview::after {
+    animation: none;
   }
 }
 
@@ -172,6 +284,72 @@ h2 {
   box-shadow: none;
 }
 
+.tank-stage-background,
+.tank-stage-underwater {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tank-stage-background {
+  z-index: 0;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(var(--underwater-surface-bloom-rgb, 120, 220, 255), 0.35), transparent 35%),
+    radial-gradient(circle at 70% 80%, rgba(var(--underwater-shadow-bloom-rgb, 0, 80, 180), 0.45), transparent 45%),
+    linear-gradient(180deg,
+      var(--underwater-surface, #7fdcff) 0%,
+      var(--underwater-mid, #1b8bd1) 38%,
+      var(--underwater-deep, #064f8f) 70%,
+      var(--underwater-abyss, #022a5c) 100%);
+}
+
+.tank-stage-underwater {
+  background: none;
+}
+
+.tank-stage-underwater::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(var(--underwater-drift-a-rgb, 150, 230, 255), 0.25), transparent 35%),
+    radial-gradient(ellipse at 80% 40%, rgba(var(--underwater-drift-b-rgb, 80, 190, 255), 0.2), transparent 40%),
+    radial-gradient(ellipse at 50% 80%, rgba(var(--underwater-drift-c-rgb, 0, 120, 220), 0.25), transparent 45%);
+  filter: blur(35px);
+  animation: loading-water-drift 36s ease-in-out infinite alternate;
+}
+
+.tank-stage-underwater::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      120deg,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.16) 0%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.03) 18%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.14) 32%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.02) 48%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.1) 65%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.03) 100%
+    ),
+    repeating-linear-gradient(
+      100deg,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.08) 0px,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.08) 2px,
+      transparent 3px,
+      transparent 42px
+    );
+  background-size: 300% 300%, auto;
+  opacity: 0.3;
+  filter: blur(6px);
+  transform: scale(1.3);
+  animation:
+    loading-water-light 28s ease-in-out infinite,
+    loading-water-caustics 18s linear infinite;
+}
+
 #tankCanvas,
 #grimeCanvas,
 #glassCanvas,
@@ -182,7 +360,20 @@ h2 {
   height: 100%;
 }
 
+#tankCanvas {
+  z-index: 1;
+}
+
+#grimeCanvas {
+  z-index: 2;
+}
+
+#glassCanvas {
+  z-index: 3;
+}
+
 .tank-overlay {
+  z-index: 4;
   pointer-events: none;
 }
 
@@ -1331,7 +1522,8 @@ h2 {
 
 .tank-bottom-dock {
   --toolbar-edge-gap: 22px;
-  --toolbar-taskbar-clearance: 62px;
+  --toolbar-collapse-peek: 16px;
+  --toolbar-taskbar-clearance: 8px;
   --toolbar-open-transform: translateY(-50%);
   --toolbar-collapsed-transform: translateY(-50%) translateX(calc(100% + var(--toolbar-edge-gap)));
   position: absolute;
@@ -1364,7 +1556,7 @@ h2 {
 
 :root[data-toolbar-position="bottom-center"] .tank-bottom-dock {
   --toolbar-open-transform: translateX(-50%);
-  --toolbar-collapsed-transform: translateX(-50%) translateY(calc(100% + var(--toolbar-edge-gap)));
+  --toolbar-collapsed-transform: translateX(-50%) translateY(calc(100% + var(--toolbar-edge-gap) - var(--toolbar-collapse-peek)));
   left: 50%;
   right: auto;
   top: auto;
@@ -1871,7 +2063,7 @@ h2 {
   display: grid;
   place-items: center;
   padding: 32px;
-  background: rgba(4, 10, 16, 0.56);
+  background: transparent;
 }
 
 .store-overlay[hidden] {
@@ -1885,6 +2077,10 @@ h2 {
   display: grid;
   place-items: center;
   padding: 28px;
+  pointer-events: none;
+}
+
+.tutorial-overlay.is-blocking {
   pointer-events: auto;
 }
 
@@ -1896,17 +2092,39 @@ h2 {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(125, 224, 248, 0.12), transparent 42%),
-    rgba(3, 8, 14, 0.48);
-  backdrop-filter: blur(4px);
+  background: transparent;
+  backdrop-filter: none;
 }
 
-.tutorial-overlay.is-focus-step::before {
-  background:
-    radial-gradient(circle at 50% 50%, rgba(125, 224, 248, 0.08), transparent 42%),
-    rgba(3, 8, 14, 0.18);
+.utility-overlay {
+  z-index: 16;
+}
+
+.tutorial-overlay.is-splash::before {
+  background: transparent;
   backdrop-filter: none;
+}
+
+.tutorial-splash {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+}
+
+.tutorial-splash[hidden] {
+  display: none !important;
+}
+
+.tutorial-splash-content {
+  width: 100%;
+  height: 100%;
+}
+
+.tutorial-splash-logo {
+  animation: tutorial-logo-fade 8s linear both;
 }
 
 .tutorial-panel {
@@ -1915,7 +2133,7 @@ h2 {
   width: min(520px, calc(100% - 24px));
   display: grid;
   gap: 18px;
-  padding: 24px 24px 22px;
+  padding: 24px 78px 22px 24px;
   border-radius: 24px;
   border: 1px solid rgba(173, 225, 255, 0.2);
   background:
@@ -1923,6 +2141,14 @@ h2 {
   box-shadow:
     0 28px 68px rgba(0, 0, 0, 0.42),
     inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  pointer-events: auto;
+}
+
+.tutorial-close-button {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
 }
 
 .tutorial-copy {
@@ -1939,123 +2165,105 @@ h2 {
   text-transform: uppercase;
 }
 
-.tutorial-copy h2,
 .tutorial-copy p {
   margin: 0;
 }
 
-.tutorial-copy p {
+.tutorial-copy p,
+.tutorial-body {
   color: rgba(232, 247, 255, 0.9);
   line-height: 1.6;
 }
 
+.tutorial-body {
+  display: grid;
+  gap: 10px;
+}
+
+.tutorial-body p {
+  margin: 0;
+}
+
 .tutorial-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 10px;
 }
 
 .tutorial-actions .small-button {
   min-width: 140px;
 }
 
-.tutorial-arrow {
-  position: absolute;
-  width: 92px;
-  height: 92px;
-  z-index: 1;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.34));
-  animation: tutorial-arrow-blink 1s ease-in-out infinite;
+@keyframes tutorial-logo-fade {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  62.5% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
 }
 
-.tutorial-arrow::before,
-.tutorial-arrow::after {
-  content: "";
-  position: absolute;
-}
-
-.tutorial-arrow.is-left::before,
-.tutorial-arrow.is-right::before {
-  top: 50%;
-  width: 46px;
-  height: 8px;
-  border-radius: 999px;
-  background: #ff3131;
-  transform: translateY(-50%);
-}
-
-.tutorial-arrow.is-up::before,
-.tutorial-arrow.is-down::before {
-  left: 50%;
-  width: 8px;
-  height: 46px;
-  border-radius: 999px;
-  background: #ff3131;
-  transform: translateX(-50%);
-}
-
-.tutorial-arrow.is-left::before {
-  right: 16px;
-}
-
-.tutorial-arrow.is-right::before {
-  left: 16px;
-}
-
-.tutorial-arrow.is-up::before {
-  bottom: 16px;
-}
-
-.tutorial-arrow.is-down::before {
-  top: 16px;
-}
-
-.tutorial-arrow.is-left::after {
-  top: 50%;
-  left: 10px;
-  border-top: 16px solid transparent;
-  border-bottom: 16px solid transparent;
-  border-right: 26px solid #ff3131;
-  transform: translateY(-50%);
-}
-
-.tutorial-arrow.is-right::after {
-  top: 50%;
-  right: 10px;
-  border-top: 16px solid transparent;
-  border-bottom: 16px solid transparent;
-  border-left: 26px solid #ff3131;
-  transform: translateY(-50%);
-}
-
-.tutorial-arrow.is-up::after {
-  left: 50%;
-  top: 10px;
-  border-left: 16px solid transparent;
-  border-right: 16px solid transparent;
-  border-bottom: 26px solid #ff3131;
-  transform: translateX(-50%);
-}
-
-.tutorial-arrow.is-down::after {
-  left: 50%;
-  bottom: 10px;
-  border-left: 16px solid transparent;
-  border-right: 16px solid transparent;
-  border-top: 26px solid #ff3131;
-  transform: translateX(-50%);
-}
-
-@keyframes tutorial-arrow-blink {
+@keyframes tutorial-guidance-pulse {
   0%,
   100% {
-    opacity: 1;
+    box-shadow:
+      0 0 0 0 rgba(255, 217, 121, 0.48),
+      0 0 0 0 rgba(255, 217, 121, 0.2),
+      0 0 18px 0 rgba(255, 217, 121, 0.24);
+    filter: brightness(1) saturate(1);
+    transform: scale(1);
   }
 
   50% {
-    opacity: 0.28;
+    box-shadow:
+      0 0 0 14px rgba(255, 217, 121, 0),
+      0 0 36px 12px rgba(255, 217, 121, 0.42),
+      0 0 68px 18px rgba(255, 217, 121, 0.2);
+    filter: brightness(1.18) saturate(1.24);
+    transform: scale(1.045);
   }
+}
+
+.dock-button.is-tutorial-pulse,
+.store-tab-button.is-tutorial-pulse,
+.buy-button.is-tutorial-pulse,
+.store-close-button.is-tutorial-pulse,
+.toolbar-tab.is-tutorial-pulse,
+.display-tab.is-tutorial-pulse {
+  animation: tutorial-guidance-pulse 1.35s ease-in-out infinite;
+  will-change: transform, box-shadow, filter;
+}
+
+.tank-display.is-tutorial-pulse .display-grid,
+.edit-decor-tile.is-tutorial-pulse .edit-decor-tile-surface,
+.shop-card.is-tutorial-pulse,
+.inventory-card.is-tutorial-pulse {
+  animation: tutorial-guidance-pulse 1.35s ease-in-out infinite;
+  will-change: transform, box-shadow, filter;
+}
+
+.tank-display.is-tutorial-hidden,
+.tank-bottom-dock.is-tutorial-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.store-tab-button.is-tutorial-hidden,
+.dock-button.is-tutorial-hidden,
+.toolbar-tab.is-tutorial-hidden,
+.display-tab.is-tutorial-hidden,
+.store-panel-actions > .is-tutorial-hidden {
+  display: none !important;
 }
 
 .store-panel {
@@ -2342,6 +2550,28 @@ h2 {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settings-subsection-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.settings-subsection-heading h4,
+.settings-subsection-heading p {
+  margin: 0;
+}
+
+.settings-subsection-heading h4 {
+  color: #f3fbff;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.settings-subsection-heading p {
+  color: rgba(232, 247, 255, 0.7);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .settings-toggle-row {
@@ -4439,9 +4669,69 @@ h2 {
 
 .background-custom-preview,
 .background-fill-preview {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   background:
     radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.28), transparent 24%),
     var(--background-preview-fill, linear-gradient(180deg, #32b6e6, #0d84b4));
+}
+
+.background-underwater-preview {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(var(--underwater-surface-bloom-rgb, 120, 220, 255), 0.35), transparent 35%),
+    radial-gradient(circle at 70% 80%, rgba(var(--underwater-shadow-bloom-rgb, 0, 80, 180), 0.45), transparent 45%),
+    linear-gradient(180deg,
+      var(--underwater-surface, #7fdcff) 0%,
+      var(--underwater-mid, #1b8bd1) 38%,
+      var(--underwater-deep, #064f8f) 70%,
+      var(--underwater-abyss, #022a5c) 100%);
+}
+
+.background-underwater-preview::before,
+.background-underwater-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.background-underwater-preview::before {
+  inset: -18%;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(var(--underwater-drift-a-rgb, 150, 230, 255), 0.25), transparent 35%),
+    radial-gradient(ellipse at 80% 40%, rgba(var(--underwater-drift-b-rgb, 80, 190, 255), 0.2), transparent 40%),
+    radial-gradient(ellipse at 50% 80%, rgba(var(--underwater-drift-c-rgb, 0, 120, 220), 0.25), transparent 45%);
+  filter: blur(14px);
+  animation: loading-water-drift 20s ease-in-out infinite alternate;
+}
+
+.background-underwater-preview::after {
+  background:
+    linear-gradient(
+      120deg,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.16) 0%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.03) 18%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.14) 32%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.02) 48%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.1) 65%,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.03) 100%
+    ),
+    repeating-linear-gradient(
+      100deg,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.08) 0px,
+      rgba(var(--underwater-highlight-rgb, 255, 255, 255), 0.08) 2px,
+      transparent 3px,
+      transparent 42px
+    );
+  background-size: 300% 300%, auto;
+  opacity: 0.3;
+  filter: blur(6px);
+  transform: scale(1.18);
+  animation:
+    loading-water-light 28s ease-in-out infinite,
+    loading-water-caustics 18s linear infinite;
 }
 
 .background-upload-preview {
@@ -5100,7 +5390,7 @@ h2 {
   :root[data-toolbar-position="bottom-center"] .tank-bottom-dock {
     --toolbar-edge-gap: env(safe-area-inset-bottom, 0px);
     --toolbar-open-transform: none;
-    --toolbar-collapsed-transform: translateY(calc(100% + var(--toolbar-edge-gap)));
+    --toolbar-collapsed-transform: translateY(calc(100% + var(--toolbar-edge-gap) - var(--toolbar-collapse-peek)));
     position: fixed;
     left: 0;
     right: 0;
@@ -5310,11 +5600,10 @@ h2 {
     margin-top: 8px;
   }
 
-  .settings-panel-copy h2,
-  .settings-section h3,
-  .tutorial-copy h2 {
-    font-size: 0.98rem;
-  }
+.settings-panel-copy h2,
+.settings-section h3 {
+  font-size: 0.98rem;
+}
 
   .settings-kicker,
   .tutorial-kicker,
@@ -5496,7 +5785,7 @@ h2 {
   :root[data-toolbar-position="bottom-center"] .tank-bottom-dock {
     --toolbar-edge-gap: 0px;
     --toolbar-open-transform: none;
-    --toolbar-collapsed-transform: translateY(100%);
+    --toolbar-collapsed-transform: translateY(calc(100% - var(--toolbar-collapse-peek)));
     left: 0;
     right: 0;
     top: auto;

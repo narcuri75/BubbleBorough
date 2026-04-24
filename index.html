@@ -5,8 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bubble Borough</title>
-  <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="./public/styles.css?v=20260422b" />
+  <link rel="icon" type="image/png" href="assets/misc/favicon.png" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260423e" />
 </head>
 
 <body>
@@ -21,6 +21,9 @@
     <main class="tank-page">
       <section class="aquarium-card">
         <div class="tank-stage" id="tankStage">
+          <div class="tank-stage-background" id="tankStageBackground" hidden aria-hidden="true">
+            <div class="tank-stage-underwater"></div>
+          </div>
           <canvas id="tankCanvas" width="1280" height="720"></canvas>
           <canvas id="grimeCanvas" width="1280" height="720"></canvas>
           <canvas id="glassCanvas" width="1280" height="720"></canvas>
@@ -48,7 +51,7 @@
             <aside id="editQuickRef" class="edit-quick-ref" hidden aria-label="Edit mode quick reference">
               <div id="editQuickRefCard" class="edit-quick-ref-card">
                 <div><strong>[Z]/[X] or [Up]/[Down]</strong> - Change Layer</div>
-                <div><strong>[-]/[+]</strong> - Change Size</div>
+                <div><strong>[-]/[+]/[=]</strong> - Change Size</div>
                 <div><strong>Store Button</strong> - Move to Storage</div>
               </div>
             </aside>
@@ -143,6 +146,10 @@
                       <button class="small-button alt credits-button" type="button" data-open-credits>
                         Credits
                       </button>
+                      <a class="small-button alt" href="https://forms.gle/p6Qnwo3SoHQJc8VY6" target="_blank"
+                        rel="noopener noreferrer">
+                        Feedback
+                      </a>
                       <a class="small-button alt" href="https://nathanarcuri.com/" target="_blank"
                         rel="noopener noreferrer">
                         Visit My Site
@@ -512,6 +519,14 @@
                     </div>
                   </section>
 
+                  <section id="tutorialSettingsSection" class="settings-section">
+                    <h3>Tutorial</h3>
+                    <p class="settings-section-note">Replay the intro walkthrough from the beginning.</p>
+                    <button id="replayTutorialButton" class="small-button alt" type="button">
+                      Replay Tutorial
+                    </button>
+                  </section>
+
                   <section class="settings-section">
                     <h3>Save Data</h3>
                     <p class="settings-section-note">Export your current tank or import a save file to restore it.</p>
@@ -540,6 +555,10 @@
                       <button class="small-button alt credits-button" type="button" data-open-credits>
                         Credits
                       </button>
+                      <a class="small-button alt" href="https://forms.gle/p6Qnwo3SoHQJc8VY6" target="_blank"
+                        rel="noopener noreferrer">
+                        Feedback
+                      </a>
                       <a class="small-button alt" href="https://nathanarcuri.com/" target="_blank"
                         rel="noopener noreferrer">
                         Visit My Site
@@ -562,7 +581,7 @@
                   <div class="settings-panel-copy">
                     <p class="settings-kicker">Aquarium Tools</p>
                     <h2 id="equipmentTitle">Edit Tank</h2>
-                    <p>Adjust the current aquarium&apos;s filter, UV light, background, sand, and custom gravel.</p>
+                    <p>Adjust the current aquarium&apos;s background, gravel colors, filter, and UV light.</p>
                   </div>
 
                   <button id="closeEquipmentOverlay" class="store-close-button" type="button" title="Close Edit Tank"
@@ -573,11 +592,35 @@
 
                 <div class="settings-panel-body">
                   <section class="settings-section">
+                    <h3>Background</h3>
+                    <p class="settings-section-note">Use a color fill, animated wallpaper, gradient, unlocked backdrop, or a local image
+                      for this aquarium.</p>
+                    <div id="equipmentBackgroundColorPanel"></div>
+                    <div class="settings-subsection-heading">
+                      <h4>Background Image</h4>
+                      <p>Pick an unlocked background image or use your own local image.</p>
+                    </div>
+                    <div id="equipmentBackgroundList" class="background-grid"></div>
+                  </section>
+
+                  <section class="settings-section">
+                    <h3>Gravel Colors</h3>
+                    <p class="settings-section-note">Switch between sand and customizable gravel colors for the tank
+                      floor.</p>
+                    <div id="equipmentCustomGravelPanel"></div>
+                    <div class="settings-subsection-heading">
+                      <h4>Sand</h4>
+                      <p>Choose the sand texture to use whenever sand is turned on.</p>
+                    </div>
+                    <div id="equipmentGravelAssetList" class="background-grid"></div>
+                  </section>
+
+                  <section class="settings-section">
                     <div class="equipment-heading">
                       <div>
-                        <h3>Filters</h3>
-                        <p class="settings-section-note">Equip owned filters here. Buy stronger ones from the tank
-                          shop.</p>
+                        <h3>Change Filter</h3>
+                        <p class="settings-section-note">Equip owned filters here and buy stronger ones from the
+                          tank shop.</p>
                       </div>
                       <button id="openEquipmentStoreButton" class="small-button alt" type="button">
                         Tank Shop
@@ -586,43 +629,31 @@
                     <div id="equipmentFilterList" class="background-grid"></div>
                     <div id="equipmentUvLightList" class="uv-light-equipment"></div>
                   </section>
-
-                  <section class="settings-section">
-                    <h3>Background</h3>
-                    <p class="settings-section-note">Choose a backdrop for the current aquarium.</p>
-                    <div id="equipmentBackgroundColorPanel"></div>
-                    <div id="equipmentBackgroundList" class="background-grid"></div>
-                  </section>
-
-                  <section class="settings-section">
-                    <h3>Sand</h3>
-                    <p class="settings-section-note"></p>
-                    <div id="equipmentGravelAssetList" class="background-grid"></div>
-                  </section>
-
-                  <section class="settings-section">
-                    <h3>Gravel</h3>
-                    <p class="settings-section-note"></p>
-                    <div id="equipmentCustomGravelPanel"></div>
-                  </section>
                 </div>
               </div>
             </section>
 
-            <section id="introTutorialOverlay" class="tutorial-overlay" hidden aria-labelledby="introTutorialTitle"
-              aria-modal="true" role="dialog">
-              <div id="introTutorialArrow" class="tutorial-arrow" hidden aria-hidden="true"></div>
+            <section id="introTutorialOverlay" class="tutorial-overlay" hidden aria-label="Tutorial" aria-modal="true"
+              role="dialog">
+              <div id="introTutorialSplash" class="tutorial-splash" hidden aria-hidden="true">
+                <div class="loading-overlay-content tutorial-splash-content">
+                  <img class="loading-overlay-logo tutorial-splash-logo" src="assets/misc/bb_logo.png"
+                    alt="Bubble Borough" />
+                </div>
+              </div>
 
-              <div class="tutorial-panel">
+              <div id="introTutorialPanel" class="tutorial-panel">
+                <button id="introTutorialCloseButton" class="store-close-button tutorial-close-button" type="button"
+                  aria-label="Skip tutorial" title="Skip Tutorial">
+                  &times;
+                </button>
+
                 <div class="tutorial-copy">
-                  <p class="tutorial-kicker">Introduction</p>
-                  <h2 id="introTutorialTitle">Bubble Borough Tutorial</h2>
-                  <p id="introTutorialBody"></p>
+                  <p id="introTutorialKicker" class="tutorial-kicker">Tutorial</p>
+                  <div id="introTutorialBody" class="tutorial-body"></div>
                 </div>
 
-                <div class="tutorial-actions">
-                  <button id="introTutorialNextButton" class="small-button" type="button">Next</button>
-                </div>
+                <div id="introTutorialActions" class="tutorial-actions"></div>
               </div>
             </section>
 
@@ -708,7 +739,7 @@
                 title="Previous decor layer (X / Down)" aria-label="Previous decor layer (X / Down)">X</button>
 
               <button id="editScaleUpButton" class="dock-button edit-shortcut-control" type="button" hidden
-                title="Increase decor size (+)" aria-label="Increase decor size (+)">+</button>
+                title="Increase decor size (+ / =)" aria-label="Increase decor size (+ / =)">+</button>
 
               <button id="editScaleDownButton" class="dock-button edit-shortcut-control" type="button" hidden
                 title="Decrease decor size (-)" aria-label="Decrease decor size (-)">-</button>
@@ -864,7 +895,7 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-  <script type="module" src="./public/app.js?v=20260423a"></script>
+  <script type="module" src="./public/app.js?v=20260423f"></script>
 </body>
 
 </html>

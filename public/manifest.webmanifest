@@ -1,0 +1,23 @@
+{
+  "name": "Bubble Borough",
+  "short_name": "Bubble Borough",
+  "start_url": "../",
+  "scope": "../",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#031429",
+  "theme_color": "#031429",
+  "icons": [
+    {
+      "src": "../assets/misc/favicon.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "../assets/misc/bb_tile.png",
+      "sizes": "750x750",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -42,12 +42,8 @@
                       "path":  "assets/decor/anubia-rock_seaweed.png?v=639107590970104351"
                   },
                   {
-                      "key":  "anubia-rock_seaweed_color1.png",
-                      "path":  "assets/decor/anubia-rock_seaweed_color1.png?v=639124318153333151"
-                  },
-                  {
-                      "key":  "Bathysphere-Wreck-Cave_seats.png",
-                      "path":  "assets/decor/Bathysphere-Wreck-Cave_seats.png?v=639107573311577642"
+                      "key":  "anubia-rock_seaweed_color2.png",
+                      "path":  "assets/decor/anubia-rock_seaweed_color2.png?v=639124318153333151"
                   },
                   {
                       "key":  "blue_castle_cave_bg.png",
@@ -58,12 +54,12 @@
                       "path":  "assets/decor/blue_castle_cave.png?v=639107568082813172"
                   },
                   {
-                      "key":  "blue_castle_color1.png",
-                      "path":  "assets/decor/blue_castle_color1.png?v=639124202347253608"
+                      "key":  "blue_castle_color2.png",
+                      "path":  "assets/decor/blue_castle_color2.png?v=639124202347253608"
                   },
                   {
-                      "key":  "blue_castle_color2.png",
-                      "path":  "assets/decor/blue_castle_color2.png?v=639124202494955146"
+                      "key":  "blue_castle_color3.png",
+                      "path":  "assets/decor/blue_castle_color3.png?v=639124202494955146"
                   },
                   {
                       "key":  "Castle-Cave.png",
@@ -74,8 +70,12 @@
                       "path":  "assets/decor/Castle-Cave_bg.png?v=639100066283428376"
                   },
                   {
-                      "key":  "Castle-Cave_seats.png",
-                      "path":  "assets/decor/Castle-Cave_seats.png?v=639101724639265027"
+                      "key":  "Castle-Cave_color2.png",
+                      "path":  "assets/decor/Castle-Cave_color2.png?v=639124298077100311"
+                  },
+                  {
+                      "key":  "Castle-Cave_color3.png",
+                      "path":  "assets/decor/Castle-Cave_color3.png?v=639124297335740706"
                   },
                   {
                       "key":  "driftwood.png",
@@ -84,6 +84,10 @@
                   {
                       "key":  "driftwood-root.png",
                       "path":  "assets/decor/driftwood-root.png?v=639107577658036597"
+                  },
+                  {
+                      "key":  "driftwood-root_color2.png",
+                      "path":  "assets/decor/driftwood-root_color2.png?v=639124324144594797"
                   },
                   {
                       "key":  "fishheadeffigy_1.png",
@@ -122,8 +126,8 @@
                       "path":  "assets/decor/meteor_cave_bg.png?v=639105119392985444"
                   },
                   {
-                      "key":  "meteor_cave_seats.png",
-                      "path":  "assets/decor/meteor_cave_seats.png?v=639105122336802083"
+                      "key":  "meteor_cave_color2.png",
+                      "path":  "assets/decor/meteor_cave_color2.png?v=639124329110942283"
                   },
                   {
                       "key":  "moss-bridge.png",
@@ -180,10 +184,6 @@
                   {
                       "key":  "slate-cave_bg.png",
                       "path":  "assets/decor/slate-cave_bg.png?v=639107592298380655"
-                  },
-                  {
-                      "key":  "slate-cave_seats.png",
-                      "path":  "assets/decor/slate-cave_seats.png?v=639107592532991316"
                   },
                   {
                       "key":  "treasure-chest_bubbler.png",

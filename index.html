@@ -3,10 +3,19 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="theme-color" content="#031429" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bubble Borough" />
   <title>Bubble Borough</title>
+  <link rel="manifest" href="./public/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" href="assets/misc/favicon.png" />
-  <link rel="stylesheet" href="./public/styles.css?v=20260423e" />
+  <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="./public/styles.css?v=20260425c" />
 </head>
 
 <body>
@@ -73,7 +82,7 @@
 
             <div id="tankSidebar" class="tank-sidebar">
               <nav class="tab-buttons" aria-label="Aquarium panels">
-                <button class="tab-button active" data-tab="overview" type="button">Aquarium Management</button>
+                <button class="tab-button active" data-tab="overview" type="button">Tank Info</button>
                 <button class="tab-button" data-tab="fish" type="button">Fish</button>
                 <button class="tab-button" data-tab="decor" type="button">Decor</button>
               </nav>
@@ -82,8 +91,8 @@
                 <section class="tab-panel active" data-panel="overview">
                   <div class="panel-heading">
                     <div>
-                      <h2>Aquarium Management</h2>
-                      <p>Manage the current aquarium, its name, care, and equipment.</p>
+                      <h2>Tank Info</h2>
+                      <p>View the current aquarium, its name, care, and equipment.</p>
                     </div>
                   </div>
 
@@ -258,17 +267,17 @@
                       </div>
                     </section>
 
-                    <section class="info-card full-span collapsible-section" data-collapsible-section="decorFilter">
+                    <section id="tankFilterSection" class="info-card full-span collapsible-section" data-collapsible-section="decorFilter">
                       <div class="collapsible-header">
                         <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorFilter"
                           aria-expanded="true">
-                          <span class="collapsible-title">Filter</span>
+                          <span id="tankFilterSectionTitle" class="collapsible-title">Filter</span>
                           <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
                         </button>
                       </div>
                       <div data-collapsible-body>
                         <div class="compact-heading equipment-heading">
-                          <p>Equip owned filters here. Buy stronger ones from the tank shop.</p>
+                          <p id="tankFilterSectionNote">Equip owned filters here. Buy stronger ones from the tank shop.</p>
                           <button id="openEquipmentShopButton" class="small-button alt" type="button">
                             Tank Shop
                           </button>
@@ -322,15 +331,34 @@
             </div>
 
             <div id="toolCursor" class="tool-cursor" hidden aria-hidden="true"></div>
-            <button id="selectedDecorSettingsButton" class="decor-settings-badge-button" type="button" hidden
-              title="Decor Settings" aria-label="Decor Settings">[S] Settings</button>
-            <button id="selectedDecorSellButton" class="decor-action-float-button sell-decor-float-button" type="button"
-              hidden title="Sell" aria-label="Sell">+&#129689;</button>
-            <button id="selectedDecorStoreButton" class="decor-action-float-button store-decor-float-button" type="button"
-              hidden title="Move to Storage" aria-label="Move to Storage">&#128230;</button>
-            <button id="selectedDecorBuyAnotherButton" class="decor-action-float-button buy-another-float-button"
-              type="button" hidden
-              title="Buy Another" aria-label="Buy Another">-&#129689;</button>
+            <div id="selectedDecorScaleControls" class="decor-side-control-panel decor-size-controls" hidden
+              aria-label="Selected decor size">
+              <span class="decor-side-control-title">Size</span>
+              <button id="selectedDecorScaleUpButton" class="decor-side-control-button" type="button"
+                title="Increase Size" aria-label="Increase Decor Size">+</button>
+              <span id="selectedDecorSizeValue" class="decor-side-control-value">100%</span>
+              <button id="selectedDecorScaleDownButton" class="decor-side-control-button" type="button"
+                title="Decrease Size" aria-label="Decrease Decor Size">-</button>
+            </div>
+            <div id="selectedDecorLayerControls" class="decor-side-control-panel decor-layer-controls" hidden
+              aria-label="Selected decor layer">
+              <span class="decor-side-control-title">Layer</span>
+              <button id="selectedDecorLayerUpButton" class="decor-side-control-button" type="button"
+                title="Move Layer Up" aria-label="Move Decor Layer Up">&uarr;</button>
+              <span id="selectedDecorLayerValue" class="decor-side-control-value">3-4</span>
+              <button id="selectedDecorLayerDownButton" class="decor-side-control-button" type="button"
+                title="Move Layer Down" aria-label="Move Decor Layer Down">&darr;</button>
+            </div>
+            <div id="selectedDecorActionBar" class="decor-action-top-bar" hidden aria-label="Selected decor actions">
+              <button id="selectedDecorSellButton" class="decor-action-float-button sell-decor-float-button"
+                type="button" title="Sell" aria-label="Sell">SELL</button>
+              <button id="selectedDecorBuyAnotherButton" class="decor-action-float-button buy-another-float-button"
+                type="button" title="Buy Another" aria-label="Buy Another">BUY</button>
+              <button id="selectedDecorStoreButton" class="decor-action-float-button store-decor-float-button"
+                type="button" title="Move to Storage" aria-label="Move to Storage">PUT AWAY</button>
+              <button id="selectedDecorSettingsButton" class="decor-action-float-button settings-decor-float-button"
+                type="button" title="Decor Settings" aria-label="Decor Settings">(S)ETTINGS</button>
+            </div>
 
             <section id="storeOverlay" class="store-overlay" hidden aria-label="Store">
               <div class="store-panel">
@@ -579,9 +607,8 @@
               <div class="settings-panel equipment-panel">
                 <div class="settings-panel-header">
                   <div class="settings-panel-copy">
-                    <p class="settings-kicker">Aquarium Tools</p>
                     <h2 id="equipmentTitle">Edit Tank</h2>
-                    <p>Adjust the current aquarium&apos;s background, gravel colors, filter, and UV light.</p>
+                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel colors, filter, and UV light.</p>
                   </div>
 
                   <button id="closeEquipmentOverlay" class="store-close-button" type="button" title="Close Edit Tank"
@@ -615,11 +642,11 @@
                     <div id="equipmentGravelAssetList" class="background-grid"></div>
                   </section>
 
-                  <section class="settings-section">
+                  <section id="equipmentFilterSection" class="settings-section">
                     <div class="equipment-heading">
                       <div>
-                        <h3>Change Filter</h3>
-                        <p class="settings-section-note">Equip owned filters here and buy stronger ones from the
+                        <h3 id="equipmentFilterSectionTitle">Change Filter</h3>
+                        <p id="equipmentFilterSectionNote" class="settings-section-note">Equip owned filters here and buy stronger ones from the
                           tank shop.</p>
                       </div>
                       <button id="openEquipmentStoreButton" class="small-button alt" type="button">
@@ -711,26 +738,46 @@
 
               <!--REG BUTTONS-->
 
-              <button id="openManagementButton" class="dock-button management" type="button" title="Tank Management"
-                aria-label="Tank Management">🔎</button>
+              <button id="openManagementButton" class="dock-button management" type="button" title="Tank Info"
+                aria-label="Tank Info">
+                <img class="dock-button-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="feedButton" class="dock-button feed" type="button" title="Feed Fish"
-                aria-label="Feed Fish">🍗</button>
+                aria-label="Feed Fish">
+                <img class="dock-button-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="medicineButton" class="dock-button medicine" type="button" title="Medicine"
-                aria-label="Medicine">💊</button>
+                aria-label="Medicine">
+                <img class="dock-button-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="spongeButton" class="dock-button sponge" type="button" title="Clean Tank"
-                aria-label="Clean Tank">🧽</button>
+                aria-label="Clean Tank">
+                <img class="dock-button-icon" src="assets/icons/sponge.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
-              <button id="scoopButton" class="dock-button sponge" type="button" title="Scoop Fish"
-                aria-label="Scoop Fish">🥄</button>
+              <button id="scoopButton" class="dock-button scoop" type="button" title="Scoop" aria-label="Scoop">
+                <img class="dock-button-icon" src="assets/icons/scoop.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="fishEditModeDockButton" class="dock-button edit" type="button" title="Manage Fish"
-                aria-label="Manage Fish">🐟</button>
+                aria-label="Manage Fish">
+                <img class="dock-button-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="editModeDockButton" class="dock-button edit" type="button" title="Edit Decor"
-                aria-label="Edit Decor">🌿</button>
+                aria-label="Edit Decor">
+                <img class="dock-button-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="editLayerUpButton" class="dock-button edit-shortcut-control" type="button" hidden
                 title="Next decor layer (Z / Up)" aria-label="Next decor layer (Z / Up)">Z</button>
@@ -745,17 +792,26 @@
                 title="Decrease decor size (-)" aria-label="Decrease decor size (-)">-</button>
 
               <button id="openEquipmentButton" class="dock-button settings" type="button" title="Edit Tank"
-                aria-label="Edit Tank">🎨</button>
+                aria-label="Edit Tank">
+                <img class="dock-button-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="openStoreButton" class="dock-button shop" type="button" title="Store"
-                aria-label="Store">🛒</button>
+                aria-label="Store">
+                <img class="dock-button-icon" src="assets/icons/store.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="tipsButton" class="dock-button tips" type="button" title="Care Tips" hidden
                 aria-label="Care Tips">❔</button>
 
 
               <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
-                aria-label="Settings">⚙️</button>
+                aria-label="Settings">
+                <img class="dock-button-icon" src="assets/icons/settings.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="toggleMouseLockButton" class="dock-button settings" type="button"
                 title="Lock Tank Mouse Input" aria-label="Lock Tank Mouse Input">&#128274;</button>
@@ -781,6 +837,7 @@
                 aria-label="Debug: Make a Baby">🥚</button>
 
               <button id="debugDamageFishButton" class="dock-button debug" type="button"
+                data-preserve-fish-selection
                 title="Debug: Selected Fish loses half a heart"
                 aria-label="Debug: Selected Fish loses half a heart">💔</button>
 
@@ -869,14 +926,18 @@
                 </div>
 
                 <div class="fish-inspector-actions">
-                  <button id="inspectorSellFish" class="small-button sell-fish-button" type="button" hidden
-                    aria-label="Sell Fish" title="Sell Fish">Sell</button>
-                  <button id="inspectorBuyAnotherFish" class="small-button buy-another-button" type="button" hidden
-                    aria-label="Buy One" title="Buy One">Buy 1</button>
-                  <button id="inspectorStoreFish" class="small-button alt icon-only store-fish-button" type="button" hidden
-                    aria-label="Move to Storage" title="Move to Storage">&#128230;</button>
-                  <button id="inspectorFishSettingsButton" class="small-button alt icon-only" type="button"
-                    aria-label="Fish Settings" title="Fish Settings">&#9881;</button>
+                  <button id="inspectorSellFish"
+                    class="fish-inspector-action-button fish-action-sell"
+                    type="button" hidden aria-label="Sell Fish" title="Sell Fish">SELL</button>
+                  <button id="inspectorBuyAnotherFish"
+                    class="fish-inspector-action-button fish-action-buy"
+                    type="button" hidden aria-label="Buy One" title="Buy One">BUY</button>
+                  <button id="inspectorStoreFish"
+                    class="fish-inspector-action-button fish-action-store"
+                    type="button" hidden aria-label="Move to Storage" title="Move to Storage">PUT AWAY</button>
+                  <button id="inspectorFishSettingsButton"
+                    class="fish-inspector-action-button fish-action-settings"
+                    type="button" aria-label="Fish Settings" title="Fish Settings">SETTINGS</button>
                   <button id="inspectorDisposeFish" class="small-button warn icon" type="button" hidden
                     aria-label="Dispose of fish" title="Dispose of fish">&#128701;</button>
                 </div>
@@ -895,7 +956,7 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-  <script type="module" src="./public/app.js?v=20260423f"></script>
+<script type="module" src="./public/app.js?v=20260425w"></script>
 </body>
 
 </html>

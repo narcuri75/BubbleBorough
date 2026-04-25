@@ -1,4 +1,4 @@
-﻿const STORAGE_KEY = "bubble-borough-save-v1";
+const STORAGE_KEY = "bubble-borough-save-v1";
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
 const STATE_VERSION = 36;
@@ -388,17 +388,12 @@ const FISH_BRIGHTNESS_MIN = 50;
 const FISH_BRIGHTNESS_MAX = 150;
 const FISH_CATALOG_WIDTH_MIN = 84;
 const FISH_CATALOG_WIDTH_MAX = 420;
-const FISH_WORLD_SIZE_MULTIPLIER = 1;
-const DECOR_WORLD_SIZE_MULTIPLIER = 1;
-const DECOR_X_ANCHOR_MODE_CENTER_OFFSET = "center-offset";
-const DECOR_Y_ANCHOR_MODE_BOTTOM_GAP = "bottom-gap";
-const DECOR_Y_ANCHOR_MODE_TOP_GAP = "top-gap";
-const DECOR_Y_ANCHOR_MODE_COLUMN_FRACTION = "column-fraction";
-const DECOR_Y_ANCHOR_MODES = Object.freeze([
-  DECOR_Y_ANCHOR_MODE_BOTTOM_GAP,
-  DECOR_Y_ANCHOR_MODE_TOP_GAP,
-  DECOR_Y_ANCHOR_MODE_COLUMN_FRACTION
-]);
+const STANDARD_CSS_PIXELS_PER_INCH = 96;
+const REFERENCE_MONITOR_DIAGONAL_INCHES = 35;
+const MONITOR_PHYSICAL_SCALE_MIN = 0.85;
+const MONITOR_PHYSICAL_SCALE_MAX = 1.45;
+const FISH_REAL_WORLD_SIZE_MULTIPLIER = 1.6;
+const DECOR_REAL_WORLD_SIZE_MULTIPLIER = 1.45;
 const SIZE_STEP = 0.05;
 const GRAVEL_COLOR_SWATCHES = Object.freeze(CUSTOM_GRAVEL_COLOR_OPTIONS.map((choice) => choice.color));
 const DEFAULT_GRAVEL_PALETTE = ["#F5C185", "#E07A9C", "#81909F"];
@@ -441,6 +436,7 @@ const DEFAULT_TANK_LAYER = 3;
 const LAYER_BOTTOM_GRAVEL_SURFACE_OFFSET_PX = 0;
 const LAYER_BOTTOM_GRAVEL_STEP_PX = 20;
 const LAYER_LIMIT_PULSE_MS = 620;
+const DECOR_RESIZE_ANCHOR_MAX_OFFSET_PX = 10000;
 const GRAVEL_BED_STAMP_COUNT = 7600;
 const GRAVEL_LIVE_PEBBLE_COUNT = 220;
 const GRAVEL_SPRITE_CACHE_SIZE = 256;
@@ -457,9 +453,9 @@ const GRAVEL_FISH_DISTURB_RADIUS_PX = 56;
 const GRAVEL_FISH_DISTURB_MS_MIN = 1600;
 const GRAVEL_FISH_DISTURB_MS_MAX = 3200;
 const GRAVEL_CACHE_OVERSAMPLE = 1.08;
-// Estimated from the user's reference screenshot: the gravel band reads as
-// roughly 17% of the visible tank stage height.
-const GRAVEL_VIEWPORT_HEIGHT_RATIO = 0.17;
+const GRAVEL_VIEWPORT_HEIGHT_RATIO = 0.16;
+const GRAVEL_VISIBLE_HEIGHT_MIN_PX = 116;
+const GRAVEL_VISIBLE_HEIGHT_MAX_PX = 260;
 const SUBSTRATE_CONTOUR_POINTS = 26;
 const ALPHA_HIT_THRESHOLD = 26;
 const ALPHA_COLLISION_THRESHOLD = 40;
@@ -1263,7 +1259,7 @@ const FISH_TYPES = [
 const FILTER_META = {
   "basic-filter.png": {
     name: "Basic Filter",
-    blurb: "â²ï¸ðŸ§½ - 3.5 days",
+    blurb: "⏲️🧽 - 3.5 days",
     cleanDays: BASE_TANK_DIRTY_DAYS,
     comfortBoost: 0,
     cost: 0,
@@ -1273,7 +1269,7 @@ const FILTER_META = {
   },
   "charcoal-filter.png": {
     name: "Charcoal Filter",
-    blurb: "â²ï¸ðŸ§½ - 5.25 days",
+    blurb: "⏲️🧽 - 5.25 days",
     cleanDays: 5.25,
     comfortBoost: 0.04,
     cost: 30,
@@ -1283,7 +1279,7 @@ const FILTER_META = {
   },
   "porcelain-filter.png": {
     name: "Porcelain Filter",
-    blurb: "â²ï¸ðŸ§½ - 7 days",
+    blurb: "⏲️🧽 - 7 days",
     cleanDays: 7,
     comfortBoost: 0.08,
     cost: 40,
@@ -1293,7 +1289,7 @@ const FILTER_META = {
   },
   "reef-filter.png": {
     name: "Reef Filter",
-    blurb: "â²ï¸ðŸ§½ - 10.5 days",
+    blurb: "⏲️🧽 - 10.5 days",
     cleanDays: 10.5,
     comfortBoost: 0.12,
     cost: 50,
@@ -1797,15 +1793,6 @@ const runtime = {
   stageRenderScale: 1,
   stageRenderOffsetX: 0,
   stageRenderOffsetY: 0,
-  playfield: {
-    scale: 1,
-    left: 0,
-    top: 0,
-    width: TANK_WIDTH,
-    height: TANK_HEIGHT,
-    contentWidth: TANK_WIDTH,
-    contentHeight: TANK_HEIGHT
-  },
   lastScrubPoint: null,
   scrubCells: new Uint8Array(SCRUB_GRID_COLS * SCRUB_GRID_ROWS),
   scrubbedCount: 0,
@@ -1883,8 +1870,6 @@ const runtime = {
   lastTankCanvasFilter: "",
   toastHandle: null,
   toastKey: "",
-  guidanceToastOwner: "",
-  guidanceHintOwner: "",
   saveStateWarningShown: false,
   lastAnimationFrameAt: 0,
   lastAnimationUpdateAt: 0,
@@ -2445,11 +2430,20 @@ function setActiveTank(tankId, options = {}) {
   }
 
   clearPrimaryToolModes();
-  resetCompetingOverlayState({ reason: "tank-switch" });
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
+  runtime.pendingDecorAction = null;
+  runtime.pendingCustomDecorUpload = null;
+  runtime.pendingCustomHideUpload = null;
+  runtime.pendingCustomFishUpload = null;
   runtime.selectedFishId = null;
   runtime.fishInspectorSettingsOpen = false;
   runtime.editingTankNameId = null;
   runtime.editingTankNameValue = "";
+  runtime.feedingModeFoodKey = "";
+  runtime.medicineModeKey = "";
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
   runtime.bloodClouds = [];
   runtime.bloodWaterTint = 0;
   runtime.fishShadowPlaneCache.clear();
@@ -2574,181 +2568,35 @@ function toggleSidebarSection(key) {
   renderUi(Date.now());
 }
 
-function getUtilityOverlayModeDef(modeId) {
-  const id = String(modeId || "");
-  return id && Object.prototype.hasOwnProperty.call(UTILITY_OVERLAY_MODES, id)
-    ? UTILITY_OVERLAY_MODES[id]
-    : null;
-}
-
-function getUtilityOverlayContext(now = Date.now()) {
-  return {
-    now,
-    tank: getCurrentTank(),
-    mode: runtime.utilityOverlayMode,
-    state,
-    runtime
-  };
-}
-
-const CUSTOM_ASSET_PENDING_RUNTIME_KEYS = Object.freeze({
-  decor: "pendingCustomDecorUpload",
-  hide: "pendingCustomHideUpload",
-  fish: "pendingCustomFishUpload"
-});
-
-function getCustomAssetPendingStateKey(type) {
-  const assetType = String(type || "").trim();
-  return assetType && Object.prototype.hasOwnProperty.call(CUSTOM_ASSET_PENDING_RUNTIME_KEYS, assetType)
-    ? CUSTOM_ASSET_PENDING_RUNTIME_KEYS[assetType]
-    : "";
-}
-
-function clearPendingCustomAssetUploads(options = {}) {
-  const types = Array.isArray(options.types) && options.types.length
-    ? options.types
-    : Object.keys(CUSTOM_ASSET_PENDING_RUNTIME_KEYS);
-  const preserve = new Set((Array.isArray(options.preserveTypes) ? options.preserveTypes : [])
-    .map((type) => getCustomAssetPendingStateKey(type))
-    .filter(Boolean));
-  for (const type of types) {
-    const key = getCustomAssetPendingStateKey(type);
-    if (key && !preserve.has(key)) {
-      runtime[key] = null;
-    }
-  }
-}
-
-function getOverlayPendingStateKeys() {
-  return [
-    "pendingDecorAction",
-    ...Object.values(CUSTOM_ASSET_PENDING_RUNTIME_KEYS)
-  ];
-}
-
-function clearOverlayPendingState(options = {}) {
-  const preserve = new Set(Array.isArray(options.preservePendingState) ? options.preservePendingState : []);
-  for (const key of getOverlayPendingStateKeys()) {
-    if (!preserve.has(key)) {
-      runtime[key] = null;
-    }
-  }
-  if (options.clearExternalLink === true) {
-    runtime.pendingExternalLink = null;
-  }
-}
-
-function closeUtilityOverlayState(options = {}) {
-  const modeId = runtime.utilityOverlayMode;
-  const modeDef = getUtilityOverlayModeDef(modeId);
-  if (modeDef?.onClose) {
-    modeDef.onClose(getUtilityOverlayContext(options.now), {
-      reason: options.reason || "close",
-      nextKind: options.nextKind || "",
-      nextMode: options.nextMode || ""
-    });
-  }
-  runtime.utilityOverlayOpen = false;
-  runtime.utilityOverlayMode = "";
-}
-
-function resetCompetingOverlayState(options = {}) {
-  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
-  if (runtime.utilityOverlayOpen || runtime.utilityOverlayMode) {
-    closeUtilityOverlayState({
-      now,
-      reason: options.reason || "reset",
-      nextKind: options.nextKind || "",
-      nextMode: options.nextMode || ""
-    });
-  } else {
-    runtime.utilityOverlayOpen = false;
-    runtime.utilityOverlayMode = "";
-  }
-
-  runtime.storeOverlayOpen = false;
-  runtime.settingsOverlayOpen = false;
-  runtime.equipmentOverlayOpen = false;
-
-  if (options.clearPendingState !== false) {
-    clearOverlayPendingState({
-      preservePendingState: options.preservePendingState,
-      clearExternalLink: options.clearExternalLink !== false
-    });
-  }
-
-  if (options.resetStoreTab === true) {
-    runtime.storeTab = options.storeTab || "fish";
-  }
-}
-
-function openExclusiveOverlay(kind, options = {}) {
-  const overlayKind = String(kind || "").trim();
-  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
-  const nextUtilityMode = overlayKind === "utility" ? String(options.mode || "") : "";
-  const utilityModeDef = overlayKind === "utility" ? getUtilityOverlayModeDef(nextUtilityMode) : null;
-  const preservePendingState = utilityModeDef?.preservePendingState || [];
-
-  if (options.clearPrimaryToolModes !== false) {
-    clearPrimaryToolModes();
-  }
-  clearGuidanceForModeChange(`overlay:${overlayKind}`);
-
-  resetCompetingOverlayState({
-    now,
-    reason: "replace",
-    nextKind: overlayKind,
-    nextMode: nextUtilityMode,
-    preservePendingState,
-    clearExternalLink: overlayKind === "utility" && !preservePendingState.includes("pendingExternalLink")
-  });
-
-  switch (overlayKind) {
-    case "store": {
-      const requestedTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(options.tab) ? options.tab : "food";
-      const allowedTabs = getTutorialAllowedStoreTabs();
-      runtime.storeOverlayOpen = true;
-      runtime.storeTab = allowedTabs && !allowedTabs.has(requestedTab)
-        ? (getTutorialPreferredStoreTab() || [...allowedTabs][0] || requestedTab)
-        : requestedTab;
-      break;
-    }
-    case "utility":
-      runtime.utilityOverlayOpen = true;
-      runtime.utilityOverlayMode = nextUtilityMode;
-      utilityModeDef?.onOpen?.(getUtilityOverlayContext(now), options);
-      break;
-    case "settings":
-      runtime.settingsOverlayOpen = true;
-      break;
-    case "equipment":
-      runtime.equipmentOverlayOpen = true;
-      break;
-    default:
-      break;
-  }
-
-  if (options.render !== false) {
-    renderUi(now);
-  }
-}
-
 function openStoreOverlay(tab = "food") {
   if (getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
     showToast("Let's finish this step before heading back to the store.");
     return;
   }
 
-  openExclusiveOverlay("store", { tab });
+  clearPrimaryToolModes();
+  runtime.storeOverlayOpen = true;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
+  runtime.pendingDecorAction = null;
+  runtime.pendingCustomDecorUpload = null;
+  runtime.pendingCustomHideUpload = null;
+  runtime.pendingCustomFishUpload = null;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  const requestedTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(tab) ? tab : "food";
+  const allowedTabs = getTutorialAllowedStoreTabs();
+  runtime.storeTab = allowedTabs && !allowedTabs.has(requestedTab)
+    ? (getTutorialPreferredStoreTab() || [...allowedTabs][0] || requestedTab)
+    : requestedTab;
+  renderUi(Date.now());
 }
 
 function closeStoreOverlay(options = {}) {
-  const tutorialState = getActiveTutorialStageRuntime(Date.now());
-  const stageStore = tutorialState?.storeConfig || null;
   if (
     options.force !== true
     && isGuidedTutorialActive()
-    && stageStore?.blockCloseWithSkipConfirm === true
+    && (isTutorialStage(TUTORIAL_STAGE_FISH_STORE) || isTutorialStage(TUTORIAL_STAGE_DECOR_STORE))
   ) {
     requestTutorialSkipConfirmation({
       returnTab: runtime.storeTab,
@@ -2762,12 +2610,26 @@ function closeStoreOverlay(options = {}) {
   return true;
 }
 
-function openUtilityOverlay(mode, options = {}) {
+function openUtilityOverlay(mode) {
+  clearPrimaryToolModes();
   const nextMode = String(mode || "");
-  openExclusiveOverlay("utility", {
-    ...options,
-    mode: nextMode
-  });
+  runtime.utilityOverlayOpen = true;
+  runtime.utilityOverlayMode = nextMode;
+  if (nextMode === "tank-management") {
+    runtime.managementHubView = "overview";
+    runtime.managementHistoryVisibleCount = MANAGEMENT_HISTORY_PAGE_SIZE;
+  }
+  runtime.pendingDecorAction = null;
+  runtime.pendingCustomDecorUpload = null;
+  runtime.pendingCustomHideUpload = null;
+  runtime.pendingCustomFishUpload = null;
+  if (nextMode !== "external-link") {
+    runtime.pendingExternalLink = null;
+  }
+  runtime.storeOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  renderUi(Date.now());
 }
 
 function openAutoDispenserResetConfirmation() {
@@ -2814,7 +2676,12 @@ function openDecorSettings(placedId) {
 
   runtime.customDecorSettingsDecorId = item.id;
   runtime.bubblerSettingsDecorId = null;
-  openUtilityOverlay("decor-settings", { clearPrimaryToolModes: false });
+  runtime.utilityOverlayOpen = true;
+  runtime.utilityOverlayMode = "decor-settings";
+  runtime.storeOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  renderUi(Date.now());
 }
 
 function openCustomDecorSettings(placedId) {
@@ -2827,9 +2694,12 @@ function openDecorActionConfirmation(action) {
   }
 
   runtime.pendingDecorAction = action;
-  openUtilityOverlay(action.type === "sell" ? "decor-sell-confirm" : "decor-buy-confirm", {
-    clearPrimaryToolModes: false
-  });
+  runtime.utilityOverlayOpen = true;
+  runtime.utilityOverlayMode = action.type === "sell" ? "decor-sell-confirm" : "decor-buy-confirm";
+  runtime.storeOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  renderUi(Date.now());
 }
 
 function getDecorSettingsTarget() {
@@ -2943,6 +2813,16 @@ function getPlacedDecorMotionSettings(item) {
     swaySplitY: sanitizeCustomDecorMotionSplit(settings.swaySplitY ?? capabilities.defaultSwaySplitY),
     swaySide: normalizeDecorSwaySide(settings.swaySide ?? capabilities.defaultSwaySide)
   };
+}
+
+function shouldAnchorDecorToWaterSurface(itemOrKey) {
+  const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
+  const capabilities = getDecorMotionCapabilities(itemOrKey);
+  if (capabilities.isLure) {
+    return false;
+  }
+
+  return isDecorFloatingKey(decorKey) || capabilities.motionType === "floating-seaweed";
 }
 
 function ensurePlacedDecorSettings(item) {
@@ -4604,59 +4484,10 @@ function getDecorSwaySliceProgress(t, splitY, swaySide) {
   return clamp((clampedSplit - clampedT) / Math.max(0.01, clampedSplit), 0, 1);
 }
 
-const CUSTOM_ASSET_EDITOR_OVERLAY_CONFIGS = Object.freeze({
-  decor: {
-    pendingStateKey: getCustomAssetPendingStateKey("decor"),
-    overlayMode: "custom-decor-name",
-    inputSelector: "[data-custom-decor-name-input]",
-    afterOpen: () => updatePendingCustomDecorPreview()
-  },
-  hide: {
-    pendingStateKey: getCustomAssetPendingStateKey("hide"),
-    overlayMode: "custom-hide-create",
-    inputSelector: "[data-custom-hide-name-input]",
-    afterOpen: () => updatePendingCustomHidePreview()
-  },
-  fish: {
-    pendingStateKey: getCustomAssetPendingStateKey("fish"),
-    overlayMode: "custom-fish-create",
-    inputSelector: "[data-custom-fish-name-input]",
-    afterOpen: () => updatePendingCustomFishPreview()
-  }
-});
-
-function focusUtilityOverlayInputAfterRender(selector, afterOpen = null) {
-  window.requestAnimationFrame(() => {
-    const input = selector ? dom.utilityOverlayBody?.querySelector(selector) : null;
-    input?.focus?.();
-    input?.select?.();
-    afterOpen?.();
-  });
-}
-
-function openCustomAssetEditorOverlay(type, pendingValue, options = {}) {
-  const assetType = String(type || "").trim();
-  const overlayConfig = assetType && Object.prototype.hasOwnProperty.call(CUSTOM_ASSET_EDITOR_OVERLAY_CONFIGS, assetType)
-    ? CUSTOM_ASSET_EDITOR_OVERLAY_CONFIGS[assetType]
-    : null;
-  if (!overlayConfig?.pendingStateKey) {
-    return false;
-  }
-
-  if (Array.isArray(options.clearPendingTypes) && options.clearPendingTypes.length) {
-    clearPendingCustomAssetUploads({ types: options.clearPendingTypes });
-  }
-
-  runtime[overlayConfig.pendingStateKey] = pendingValue;
-  openUtilityOverlay(overlayConfig.overlayMode, { clearPrimaryToolModes: false });
-  focusUtilityOverlayInputAfterRender(overlayConfig.inputSelector, overlayConfig.afterOpen);
-  return true;
-}
-
 function openCustomDecorNameOverlay(dataUrl, suggestedName = "Custom Decor", dimensions = {}) {
   const naturalWidth = Math.max(1, Math.round(Number(dimensions.width) || CUSTOM_DECOR_DEFAULT_WIDTH));
   const naturalHeight = Math.max(1, Math.round(Number(dimensions.height) || CUSTOM_DECOR_DEFAULT_WIDTH));
-  openCustomAssetEditorOverlay("decor", {
+  runtime.pendingCustomDecorUpload = {
     dataUrl,
     suggestedName: sanitizeCustomDecorName(suggestedName, "Custom Decor"),
     name: sanitizeCustomDecorName(suggestedName, "Custom Decor"),
@@ -4667,6 +4498,18 @@ function openCustomDecorNameOverlay(dataUrl, suggestedName = "Custom Decor", dim
     motionSplitY: DEFAULT_CUSTOM_DECOR_MOTION_SPLIT_Y,
     motionSwaySide: DEFAULT_DECOR_SWAY_SIDE,
     motionIntensity: DEFAULT_CUSTOM_DECOR_MOTION_INTENSITY
+  };
+  runtime.utilityOverlayOpen = true;
+  runtime.utilityOverlayMode = "custom-decor-name";
+  runtime.storeOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  renderUi(Date.now());
+  window.requestAnimationFrame(() => {
+    const input = dom.utilityOverlayBody?.querySelector("[data-custom-decor-name-input]");
+    input?.focus?.();
+    input?.select?.();
+    updatePendingCustomDecorPreview();
   });
 }
 
@@ -4983,7 +4826,61 @@ function setPendingCustomDecorMotionType(value) {
 }
 
 async function savePendingCustomDecorUpload() {
-  return savePendingCustomAsset("decor");
+  const pending = runtime.pendingCustomDecorUpload;
+  if (!pending?.dataUrl) {
+    showToast("Choose an image for Custom Decor first.");
+    return;
+  }
+
+  const rawName = String(pending.name || "").replace(/\s+/g, " ").trim();
+  if (!rawName) {
+    showToast("Name your custom decor first.");
+    dom.utilityOverlayBody?.querySelector("[data-custom-decor-name-input]")?.focus?.();
+    return;
+  }
+  const name = sanitizeCustomDecorName(rawName);
+
+  if (state.coins < CUSTOM_DECOR_COST) {
+    showToast(`You need ${CUSTOM_DECOR_COST} ${pluralize("coin", CUSTOM_DECOR_COST)} for Custom Decor.`);
+    return;
+  }
+
+  const storedImage = await storeCustomImageDataUrl(pending.dataUrl, "custom-decor");
+  await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
+  const decorKey = `${CUSTOM_DECOR_KEY_PREFIX}${createId("asset")}`;
+  const asset = sanitizeCustomDecorAssetEntry({
+    key: decorKey,
+    name,
+    path: storedImage.dataUrl,
+    imageRefId: storedImage.imageRefId,
+    width: pending.width,
+    defaultScale: 1,
+    motionType: pending.motionType,
+    motionSplitY: pending.motionSplitY,
+    motionSwaySide: pending.motionSwaySide,
+    motionIntensity: pending.motionIntensity,
+    createdAt: Date.now()
+  }, decorKey);
+  if (!asset) {
+    showToast("Could not create that custom decor.");
+    return;
+  }
+  setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
+
+  state.coins -= CUSTOM_DECOR_COST;
+  if (!state.customDecorAssets || typeof state.customDecorAssets !== "object") {
+    state.customDecorAssets = {};
+  }
+  state.customDecorAssets[asset.key] = asset;
+  syncRuntimeCustomDecorAssetsFromState(state);
+  state.decorInventory[asset.key] = (state.decorInventory[asset.key] || 0) + 1;
+  runtime.pendingCustomDecorUpload = null;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
+  pushEvent(`Created custom decor ${asset.name}.`, Date.now());
+  saveState();
+  renderUi(Date.now());
+  showToast(`${asset.name} saved. Custom decor created and waiting in storage.`);
 }
 
 function openCustomHideCreationOverlay(upload) {
@@ -4993,7 +4890,7 @@ function openCustomHideCreationOverlay(upload) {
   }
 
   const suggestedName = sanitizeCustomDecorName(upload.suggestedName || upload.frontName || "Custom Hide", "Custom Hide");
-  openCustomAssetEditorOverlay("hide", {
+  runtime.pendingCustomHideUpload = {
     frontDataUrl: upload.frontDataUrl,
     bgDataUrl: upload.bgDataUrl,
     suggestedName,
@@ -5006,8 +4903,20 @@ function openCustomHideCreationOverlay(upload) {
     bgNaturalWidth: Math.max(1, Math.round(Number(upload.bgNaturalWidth) || CUSTOM_DECOR_DEFAULT_WIDTH)),
     bgNaturalHeight: Math.max(1, Math.round(Number(upload.bgNaturalHeight) || CUSTOM_DECOR_DEFAULT_WIDTH)),
     caveSettings: sanitizePlacedCaveSettings()
-  }, {
-    clearPendingTypes: ["decor", "fish"]
+  };
+  runtime.pendingCustomDecorUpload = null;
+  runtime.pendingCustomFishUpload = null;
+  runtime.utilityOverlayOpen = true;
+  runtime.utilityOverlayMode = "custom-hide-create";
+  runtime.storeOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  renderUi(Date.now());
+  window.requestAnimationFrame(() => {
+    const input = dom.utilityOverlayBody?.querySelector("[data-custom-hide-name-input]");
+    input?.focus?.();
+    input?.select?.();
+    updatePendingCustomHidePreview();
   });
 }
 
@@ -5079,45 +4988,170 @@ function updatePendingCustomHideScale(value) {
 }
 
 async function savePendingCustomHideUpload() {
-  return savePendingCustomAsset("hide");
+  const pending = runtime.pendingCustomHideUpload;
+  if (!pending?.frontDataUrl || !pending?.bgDataUrl) {
+    showToast("Choose both images for Custom Hide first.");
+    return;
+  }
+
+  const rawName = String(pending.name || "").replace(/\s+/g, " ").trim();
+  if (!rawName) {
+    showToast("Name your custom hide first.");
+    dom.utilityOverlayBody?.querySelector("[data-custom-hide-name-input]")?.focus?.();
+    return;
+  }
+  const name = sanitizeCustomDecorName(rawName, "Custom Hide");
+
+  if (state.coins < CUSTOM_HIDE_COST) {
+    showToast(`You need ${CUSTOM_HIDE_COST} ${pluralize("coin", CUSTOM_HIDE_COST)} for Custom Hide.`);
+    return;
+  }
+
+  const [frontImage, backgroundImage] = await Promise.all([
+    storeCustomImageDataUrl(pending.frontDataUrl, "custom-hide-front"),
+    storeCustomImageDataUrl(pending.bgDataUrl, "custom-hide-background")
+  ]);
+  await preloadImages([
+    frontImage.runtimeUrl || frontImage.dataUrl,
+    backgroundImage.runtimeUrl || backgroundImage.dataUrl
+  ]);
+  const decorKey = `${CUSTOM_HIDE_KEY_PREFIX}${createId("asset")}`;
+  const asset = sanitizeCustomDecorAssetEntry({
+    key: decorKey,
+    customType: "hide",
+    name,
+    path: frontImage.dataUrl,
+    imageRefId: frontImage.imageRefId,
+    bgPath: backgroundImage.dataUrl,
+    bgImageRefId: backgroundImage.imageRefId,
+    width: pending.width,
+    defaultScale: pending.scale,
+    caveSettings: pending.caveSettings,
+    createdAt: Date.now()
+  }, decorKey);
+  if (!asset) {
+    showToast("Could not create that custom hide.");
+    return;
+  }
+  setRuntimeImageSource(asset, "runtimePath", frontImage.runtimeUrl);
+  setRuntimeImageSource(asset, "runtimeBgPath", backgroundImage.runtimeUrl);
+
+  state.coins -= CUSTOM_HIDE_COST;
+  if (!state.customDecorAssets || typeof state.customDecorAssets !== "object") {
+    state.customDecorAssets = {};
+  }
+  state.customDecorAssets[asset.key] = asset;
+  syncRuntimeCustomDecorAssetsFromState(state);
+  state.decorInventory[asset.key] = (state.decorInventory[asset.key] || 0) + 1;
+  runtime.pendingCustomHideUpload = null;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
+  pushEvent(`Created custom hide ${asset.name}.`, Date.now());
+  saveState();
+  renderUi(Date.now());
+  showToast(`${asset.name} saved. Custom hide created and waiting in storage.`);
 }
 
 function closeUtilityOverlay() {
-  closeUtilityOverlayState({ now: Date.now(), reason: "close" });
-  renderUi(Date.now());
-}
-
-function openTutorialFeatureOverlay(featureId, overlayKind) {
-  const tutorialChanged = beginTutorialFeatureStep(featureId);
-  if (tutorialChanged) {
-    saveState();
+  if (runtime.utilityOverlayMode === "bubbler-settings") {
+    runtime.bubblerSettingsDecorId = null;
   }
-  openExclusiveOverlay(overlayKind);
-}
-
-function closeTutorialFeatureOverlay(featureId, runtimeKey) {
-  const tutorialChanged = finishTutorialFeatureStep(featureId);
-  runtime[runtimeKey] = false;
-  if (tutorialChanged) {
-    saveState();
+  if (runtime.utilityOverlayMode === "custom-decor-settings" || runtime.utilityOverlayMode === "decor-settings") {
+    runtime.customDecorSettingsDecorId = null;
+  }
+  if (runtime.utilityOverlayMode === "decor-buy-confirm" || runtime.utilityOverlayMode === "decor-sell-confirm") {
+    runtime.pendingDecorAction = null;
+  }
+  if (runtime.utilityOverlayMode === "custom-decor-name") {
+    runtime.pendingCustomDecorUpload = null;
+  }
+  if (runtime.utilityOverlayMode === "custom-hide-create" || runtime.utilityOverlayMode === "custom-hide-background") {
+    runtime.pendingCustomHideUpload = null;
+  }
+  if (runtime.utilityOverlayMode === "custom-fish-create") {
+    runtime.pendingCustomFishUpload = null;
+  }
+  if (runtime.utilityOverlayMode === "save-export") {
+    runtime.pendingSaveExport = null;
+  }
+  if (runtime.utilityOverlayMode === "external-link") {
+    runtime.pendingExternalLink = null;
+  }
+  runtime.utilityOverlayOpen = false;
+  if (runtime.utilityOverlayMode !== "food") {
+    runtime.feedingModeFoodKey = runtime.feedingModeFoodKey || "";
   }
   renderUi(Date.now());
 }
 
 function openSettingsOverlay() {
-  openTutorialFeatureOverlay(TUTORIAL_FEATURE_SETTINGS, "settings");
+  clearPrimaryToolModes();
+  let tutorialChanged = false;
+  if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && !hasTutorialFeatureVisited(TUTORIAL_FEATURE_SETTINGS)) {
+    state.tutorial.activeFeatureStep = TUTORIAL_FEATURE_SETTINGS;
+    runtime.tutorialDismissedFeaturePopup = "";
+    tutorialChanged = true;
+  }
+  runtime.settingsOverlayOpen = true;
+  runtime.storeOverlayOpen = false;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
+  runtime.pendingDecorAction = null;
+  runtime.pendingCustomDecorUpload = null;
+  runtime.pendingCustomHideUpload = null;
+  runtime.pendingCustomFishUpload = null;
+  runtime.equipmentOverlayOpen = false;
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(Date.now());
 }
 
 function closeSettingsOverlay() {
-  closeTutorialFeatureOverlay(TUTORIAL_FEATURE_SETTINGS, "settingsOverlayOpen");
+  let tutorialChanged = false;
+  if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && state?.tutorial?.activeFeatureStep === TUTORIAL_FEATURE_SETTINGS) {
+    tutorialChanged = completeTutorialFeature(TUTORIAL_FEATURE_SETTINGS) || tutorialChanged;
+  }
+  runtime.settingsOverlayOpen = false;
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(Date.now());
 }
 
 function openEquipmentOverlay() {
-  openTutorialFeatureOverlay(TUTORIAL_FEATURE_EDIT_TANK, "equipment");
+  clearPrimaryToolModes();
+  let tutorialChanged = false;
+  if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && !hasTutorialFeatureVisited(TUTORIAL_FEATURE_EDIT_TANK)) {
+    state.tutorial.activeFeatureStep = TUTORIAL_FEATURE_EDIT_TANK;
+    runtime.tutorialDismissedFeaturePopup = "";
+    tutorialChanged = true;
+  }
+  runtime.equipmentOverlayOpen = true;
+  runtime.storeOverlayOpen = false;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
+  runtime.pendingDecorAction = null;
+  runtime.pendingCustomDecorUpload = null;
+  runtime.pendingCustomHideUpload = null;
+  runtime.pendingCustomFishUpload = null;
+  runtime.settingsOverlayOpen = false;
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(Date.now());
 }
 
 function closeEquipmentOverlay() {
-  closeTutorialFeatureOverlay(TUTORIAL_FEATURE_EDIT_TANK, "equipmentOverlayOpen");
+  let tutorialChanged = false;
+  if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && state?.tutorial?.activeFeatureStep === TUTORIAL_FEATURE_EDIT_TANK) {
+    tutorialChanged = completeTutorialFeature(TUTORIAL_FEATURE_EDIT_TANK) || tutorialChanged;
+  }
+  runtime.equipmentOverlayOpen = false;
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(Date.now());
 }
 
 function isIntroTutorialActive() {
@@ -5352,21 +5386,6 @@ function completeTutorialFeature(featureId, now = Date.now()) {
   return true;
 }
 
-function beginTutorialFeatureStep(featureId) {
-  if (!isTutorialStage(TUTORIAL_STAGE_FEATURES) || hasTutorialFeatureVisited(featureId)) {
-    return false;
-  }
-  state.tutorial.activeFeatureStep = featureId;
-  runtime.tutorialDismissedFeaturePopup = "";
-  return true;
-}
-
-function finishTutorialFeatureStep(featureId, now = Date.now()) {
-  return isTutorialStage(TUTORIAL_STAGE_FEATURES) && state?.tutorial?.activeFeatureStep === featureId
-    ? completeTutorialFeature(featureId, now)
-    : false;
-}
-
 function getTutorialFishRecord() {
   const tutorialFishId = state?.tutorial?.fishId || "";
   return tutorialFishId
@@ -5430,143 +5449,190 @@ function forceTutorialPoopScenario(now = Date.now()) {
   return true;
 }
 
-function resetTutorialRuntimeOverlayState() {
-  clearPrimaryToolModes();
-  resetCompetingOverlayState({ reason: "tutorial-reset" });
-  runtime.selectedFishId = null;
-  runtime.sidebarCollapsed = true;
-  resetTankInteractionRuntimeState({ clearGlassTap: true });
-}
-
-function resumeTutorialRuntimeMode(options = {}) {
-  let changed = false;
-  resetTutorialRuntimeOverlayState();
-  if (typeof options.beforeResume === "function") {
-    changed = options.beforeResume() || changed;
-  }
-  if (typeof options.storeTab === "string" && options.storeTab) {
-    runtime.storeOverlayOpen = true;
-    runtime.storeTab = options.storeTab;
-  }
-  if (options.editTankMode === true) {
-    runtime.editTankMode = true;
-  }
-  if (options.foodTrayOpen === true) {
-    runtime.foodTrayOpen = true;
-  }
-  if (options.cleaningMode === true) {
-    runtime.cleaningMode = true;
-  }
-  if (typeof options.toolModeSource === "string" && options.toolModeSource) {
-    runtime.toolModeSource = options.toolModeSource;
-  }
-  if (typeof options.activeTab === "string" && options.activeTab) {
-    runtime.activeTab = options.activeTab;
-  }
-  if (Object.prototype.hasOwnProperty.call(options, "feedingModeFoodKey")) {
-    runtime.feedingModeFoodKey = options.feedingModeFoodKey || "";
-  }
-  return changed;
-}
-
-function resumeTutorialStoreState(tab) {
-  resumeTutorialRuntimeMode({
-    storeTab: tab
-  });
-}
-
-function resumeTutorialEditDecorState() {
-  resumeTutorialRuntimeMode({
-    editTankMode: true,
-    toolModeSource: "toolbar",
-    activeTab: "decor"
-  });
-}
-
-function resumeTutorialFoodState(tutorial, now = Date.now()) {
-  return resumeTutorialRuntimeMode({
-    beforeResume: () => tutorial?.mode === TUTORIAL_MODE_GUIDED ? grantTutorialBasicFoodReward(now) : false,
-    foodTrayOpen: true,
-    toolModeSource: "toolbar",
-    feedingModeFoodKey: Math.max(0, Number(state.foodInventory?.[TUTORIAL_BASIC_FOOD_KEY]) || 0) > 0
-      ? TUTORIAL_BASIC_FOOD_KEY
-      : ""
-  });
-}
-
-function resumeTutorialCleaningState() {
-  resumeTutorialRuntimeMode({
-    cleaningMode: true,
-    toolModeSource: "toolbar"
-  });
-}
-
-function restoreTutorialDecorPlacementMode(decorKey) {
-  const key = String(decorKey || "");
-  if (
-    !key
-    || Math.max(0, Number(state.decorInventory?.[key]) || 0) <= 0
-    || !canUseDecorWithCurrentContentSettings(key)
-    || !canDecorLiveInCurrentTank(key)
-  ) {
-    runtime.placementMode = null;
-    runtime.placementPreview = null;
-    return false;
-  }
-
-  const initialLayer = getDecorFrontLayer(key, runtime.decorPlacementLayer);
-  resumeTutorialEditDecorState();
-  runtime.selectedDecorId = null;
-  runtime.selectedDecorIds = [];
-  runtime.bubblerSettingsDecorId = null;
-  runtime.customDecorSettingsDecorId = null;
-  runtime.placementMode = {
-    decorKey: key,
-    tankLayer: initialLayer,
-    scale: getDecorScaleDefault(key),
-    flipped: false
-  };
-  runtime.placementPreview = clampDecorPlacement(0.5, 0.8, {
-    decorKey: key,
-    tankLayer: initialLayer,
-    scale: runtime.placementMode.scale,
-    flipped: runtime.placementMode.flipped
-  });
-  return true;
-}
-
-function getNextTutorialFeatureStepId(currentFeatureId = "") {
-  const currentIndex = TUTORIAL_FEATURE_IDS.indexOf(String(currentFeatureId || ""));
-  return currentIndex >= 0 && currentIndex < TUTORIAL_FEATURE_IDS.length - 1
-    ? TUTORIAL_FEATURE_IDS[currentIndex + 1]
-    : "";
-}
-
 function syncTutorialFlow(now = Date.now()) {
-  const tutorialState = getActiveTutorialStageRuntime(now);
-  if (!tutorialState) {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
     return false;
   }
 
-  const { tutorial, ctx, stageDef } = tutorialState;
   let changed = false;
   if (!Number.isFinite(Number(tutorial.stageEnteredAt))) {
     tutorial.stageEnteredAt = now;
     changed = true;
   }
-  const advance = stageDef?.advance;
-  if (!advance?.onSync) {
+
+  if (tutorial.stage === TUTORIAL_STAGE_SPLASH && dom.loadingOverlay && !dom.loadingOverlay.hidden) {
     return changed;
   }
-  return advance.onSync(ctx) || changed;
+
+  const elapsed = Math.max(0, now - tutorial.stageEnteredAt);
+  if (tutorial.stage === TUTORIAL_STAGE_SPLASH && elapsed >= TUTORIAL_SPLASH_DURATION_MS) {
+    changed = setTutorialStage(TUTORIAL_STAGE_WELCOME, { now }) || changed;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_SETTLE && elapsed >= TUTORIAL_FISH_ADDED_DELAY_MS) {
+    changed = setTutorialStage(TUTORIAL_STAGE_FISH_ADDED, { now }) || changed;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_OBSERVE && elapsed >= TUTORIAL_DECOR_OBSERVE_DELAY_MS) {
+    if (tutorial.mode === TUTORIAL_MODE_GUIDED) {
+      changed = grantTutorialBasicFoodReward(now) || changed;
+    }
+    changed = setTutorialStage(TUTORIAL_STAGE_FOOD_INTRO, { now }) || changed;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FOOD_SETTLE && elapsed >= TUTORIAL_POST_FEED_DELAY_MS) {
+    changed = setTutorialStage(TUTORIAL_STAGE_TANK_SUMMARY, { now }) || changed;
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_POOP_WATCH) {
+    if (tutorial.mode === TUTORIAL_MODE_GUIDED && elapsed >= TUTORIAL_POOP_TRIGGER_DELAY_MS) {
+      changed = forceTutorialPoopScenario(now) || changed;
+    }
+    if (elapsed >= TUTORIAL_POOP_CLEAN_PROMPT_DELAY_MS) {
+      changed = setTutorialStage(TUTORIAL_STAGE_CLEAN_INTRO, { now }) || changed;
+    }
+  }
+
+  return changed;
 }
 
 function restoreTutorialRuntimeState(now = Date.now()) {
-  const tutorialState = getActiveTutorialStageRuntime(now);
-  if (!tutorialState) {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
     return false;
   }
-  const tutorialChanged = tutorialState.stageDef?.resume?.(tutorialState.ctx) || false;
+
+  let tutorialChanged = false;
+  const setToolbarToolBaseState = () => {
+    clearPrimaryToolModes();
+    runtime.storeOverlayOpen = false;
+    runtime.utilityOverlayOpen = false;
+    runtime.utilityOverlayMode = "";
+    runtime.settingsOverlayOpen = false;
+    runtime.equipmentOverlayOpen = false;
+    runtime.pendingDecorAction = null;
+    runtime.pendingCustomDecorUpload = null;
+    runtime.pendingCustomHideUpload = null;
+    runtime.pendingCustomFishUpload = null;
+    runtime.selectedFishId = null;
+    runtime.sidebarCollapsed = true;
+    runtime.pointerDown = false;
+    runtime.pointerStagePx = null;
+    runtime.lastScrubPoint = null;
+    runtime.suppressNextTankClick = false;
+    runtime.suppressNextGlassTap = false;
+    clearGlassTapGesture();
+    releaseTankPointerCapture();
+  };
+  const setStoreResumeState = (tab) => {
+    setToolbarToolBaseState();
+    runtime.storeOverlayOpen = true;
+    runtime.storeTab = tab;
+  };
+  const setEditDecorResumeState = () => {
+    setToolbarToolBaseState();
+    runtime.editTankMode = true;
+    runtime.toolModeSource = "toolbar";
+    runtime.activeTab = "decor";
+  };
+  const setFoodResumeState = () => {
+    setToolbarToolBaseState();
+    if (tutorial.mode === TUTORIAL_MODE_GUIDED) {
+      tutorialChanged = grantTutorialBasicFoodReward(now) || tutorialChanged;
+    }
+    runtime.foodTrayOpen = true;
+    runtime.toolModeSource = "toolbar";
+    runtime.feedingModeFoodKey = Math.max(0, Number(state.foodInventory?.[TUTORIAL_BASIC_FOOD_KEY]) || 0) > 0
+      ? TUTORIAL_BASIC_FOOD_KEY
+      : "";
+  };
+  const setCleaningResumeState = () => {
+    setToolbarToolBaseState();
+    runtime.cleaningMode = true;
+    runtime.toolModeSource = "toolbar";
+  };
+  const restoreDecorPlacementMode = (decorKey) => {
+    const key = String(decorKey || "");
+    if (
+      !key
+      || Math.max(0, Number(state.decorInventory?.[key]) || 0) <= 0
+      || !canUseDecorWithCurrentContentSettings(key)
+      || !canDecorLiveInCurrentTank(key)
+    ) {
+      runtime.placementMode = null;
+      runtime.placementPreview = null;
+      return false;
+    }
+
+    const initialLayer = getDecorFrontLayer(key, runtime.decorPlacementLayer);
+    setEditDecorResumeState();
+    runtime.selectedDecorId = null;
+    runtime.selectedDecorIds = [];
+    runtime.bubblerSettingsDecorId = null;
+    runtime.customDecorSettingsDecorId = null;
+    runtime.placementMode = {
+      decorKey: key,
+      tankLayer: initialLayer,
+      scale: getDecorScaleDefault(key),
+      flipped: false
+    };
+    runtime.placementPreview = clampDecorPlacement(0.5, 0.8, {
+      decorKey: key,
+      tankLayer: initialLayer,
+      scale: runtime.placementMode.scale,
+      flipped: runtime.placementMode.flipped
+    });
+    return true;
+  };
+
+  switch (tutorial.stage) {
+    case TUTORIAL_STAGE_FISH_STORE:
+      setStoreResumeState("fish");
+      break;
+    case TUTORIAL_STAGE_DECOR_STORE:
+      setStoreResumeState("decor");
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE_HINT:
+      setEditDecorResumeState();
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS:
+      if (!restoreDecorPlacementMode(tutorial.decorKey)) {
+        setEditDecorResumeState();
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE:
+      if (tutorial.placedDecorId && getPlacedDecorById(tutorial.placedDecorId)) {
+        tutorialChanged = setTutorialStage(TUTORIAL_STAGE_DECOR_CLOSE, {
+          now,
+          placedDecorId: tutorial.placedDecorId
+        }) || tutorialChanged;
+        setEditDecorResumeState();
+        setSelectedDecor(tutorial.placedDecorId);
+        showTutorialDecorDoneToast();
+        break;
+      }
+      if (!restoreDecorPlacementMode(tutorial.decorKey)) {
+        setEditDecorResumeState();
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_CLOSE:
+      setEditDecorResumeState();
+      if (tutorial.placedDecorId && getPlacedDecorById(tutorial.placedDecorId)) {
+        setSelectedDecor(tutorial.placedDecorId);
+      }
+      showTutorialDecorDoneToast();
+      break;
+    case TUTORIAL_STAGE_FOOD_FEED:
+      setFoodResumeState();
+      break;
+    case TUTORIAL_STAGE_CLEAN:
+      setCleaningResumeState();
+      break;
+    default:
+      break;
+  }
+
   renderToolCursor();
   return tutorialChanged;
 }
@@ -5610,7 +5676,9 @@ function finishTutorial(options = {}) {
   runtime.tutorialSkipReturnTab = "";
   runtime.tutorialSkipReturnStage = "";
   runtime.tutorialDisplayCollapsed = false;
-  resetCompetingOverlayState({ reason: options.skipped ? "tutorial-skip" : "tutorial-finish" });
+  runtime.storeOverlayOpen = false;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
   renderToolCursor();
   saveState();
   renderUi(now);
@@ -5620,13 +5688,12 @@ function finishTutorial(options = {}) {
 }
 
 function advanceIntroTutorial(action = "continue") {
-  const tutorialState = getActiveTutorialStageRuntime(Date.now());
-  if (!tutorialState) {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
     return;
   }
 
-  const { tutorial, ctx, stageDef } = tutorialState;
-  const now = ctx.now;
+  const now = Date.now();
   if (action === "skip") {
     requestTutorialSkipConfirmation({
       returnTab: runtime.storeOverlayOpen ? runtime.storeTab : "",
@@ -5642,17 +5709,101 @@ function advanceIntroTutorial(action = "continue") {
     cancelTutorialSkipConfirmation();
     return;
   }
-  let changed = false;
-
   if (action === "dismiss-popup") {
-    changed = stageDef?.advance?.onDismiss?.(ctx) || false;
-  } else if (action === "continue") {
-    changed = stageDef?.advance?.onContinue?.(ctx) || false;
+    if (tutorial.stage === TUTORIAL_STAGE_FEATURES && tutorial.activeFeatureStep) {
+      runtime.tutorialDismissedFeaturePopup = tutorial.activeFeatureStep;
+      renderUi(now, { full: false });
+    }
+    return;
   }
 
-  if (changed) {
-    saveState();
+  switch (tutorial.stage) {
+    case TUTORIAL_STAGE_WELCOME:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        openTutorialStoreForCurrentStage();
+        return;
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS:
+      setTutorialStage(TUTORIAL_STAGE_DECOR_PLACE, { now });
+      showTutorialDecorDoneToast();
+      break;
+    case TUTORIAL_STAGE_DECOR_PLACE_HINT:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_DECOR_CLOSE, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_STORAGE:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_DECOR_PLACE_HINT, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_CLOSE:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_DECOR_OBSERVE, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_TANK_SUMMARY:
+      setTutorialStage(TUTORIAL_STAGE_DISPLAY, { now });
+      break;
+    case TUTORIAL_STAGE_DISPLAY:
+      setTutorialStage(TUTORIAL_STAGE_FEATURES, { now });
+      break;
+    case TUTORIAL_STAGE_FEATURES:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        if (!tutorial.activeFeatureStep) {
+          setTutorialStage(TUTORIAL_STAGE_FEATURES, {
+            now,
+            activeFeatureStep: TUTORIAL_FEATURE_MANAGE_FISH
+          });
+        } else if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_MANAGE_FISH) {
+          setTutorialStage(TUTORIAL_STAGE_FEATURES, {
+            now,
+            activeFeatureStep: TUTORIAL_FEATURE_EDIT_TANK
+          });
+        } else if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_EDIT_TANK) {
+          setTutorialStage(TUTORIAL_STAGE_FEATURES, {
+            now,
+            activeFeatureStep: TUTORIAL_FEATURE_SETTINGS
+          });
+        } else {
+          setTutorialStage(TUTORIAL_STAGE_POOP_WATCH, {
+            now,
+            activeFeatureStep: ""
+          });
+        }
+      }
+      break;
+    case TUTORIAL_STAGE_COMPLETE:
+      finishTutorial();
+      return;
+    case TUTORIAL_STAGE_FISH_STORE:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        runtime.storeOverlayOpen = false;
+        setTutorialStage(TUTORIAL_STAGE_FISH_ADDED, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_DECOR_STORE:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        runtime.storeOverlayOpen = false;
+        setTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_FOOD_INTRO:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_TANK_SUMMARY, { now });
+      }
+      break;
+    case TUTORIAL_STAGE_CLEAN_INTRO:
+      if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+        setTutorialStage(TUTORIAL_STAGE_COMPLETE, { now });
+      }
+      break;
+    default:
+      break;
   }
+
+  saveState();
   renderUi(now);
 }
 
@@ -5681,15 +5832,40 @@ function rerunIntroTutorial() {
 }
 
 function getTutorialPreferredStoreTab() {
-  return String(getActiveTutorialStageRuntime(Date.now())?.storeConfig?.preferredTab || "");
+  if (isTutorialStage(TUTORIAL_STAGE_WELCOME, TUTORIAL_STAGE_FISH_STORE, TUTORIAL_STAGE_FISH_SETTLE)) {
+    return "fish";
+  }
+  if (isTutorialStage(TUTORIAL_STAGE_FISH_ADDED, TUTORIAL_STAGE_DECOR_STORE)) {
+    return "decor";
+  }
+  return "";
 }
 
 function openTutorialStoreForCurrentStage() {
-  const tutorialState = getActiveTutorialStageRuntime(Date.now());
-  if (!tutorialState) {
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
     return false;
   }
-  return Boolean(tutorialState.storeConfig?.open?.(tutorialState.ctx));
+
+  const now = Date.now();
+  if (tutorial.stage === TUTORIAL_STAGE_WELCOME) {
+    setTutorialStage(TUTORIAL_STAGE_FISH_STORE, { now });
+    saveState();
+    openStoreOverlay("fish");
+    return true;
+  }
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_ADDED) {
+    setTutorialStage(TUTORIAL_STAGE_DECOR_STORE, { now });
+    saveState();
+    openStoreOverlay("decor");
+    return true;
+  }
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_STORE || tutorial.stage === TUTORIAL_STAGE_DECOR_STORE) {
+    openStoreOverlay(getTutorialPreferredStoreTab() || runtime.storeTab || "fish");
+    return true;
+  }
+
+  return false;
 }
 
 function getTutorialDecorDisplayName() {
@@ -5720,7 +5896,7 @@ function releaseTankPointerCapture(pointerId = runtime.capturedTankPointerId) {
   }
 }
 
-function resetTankInteractionRuntimeState(options = {}) {
+function cancelTutorialBlockingTankInteractions() {
   runtime.pointerDown = false;
   runtime.pointerStagePx = null;
   runtime.lastScrubPoint = null;
@@ -5728,26 +5904,10 @@ function resetTankInteractionRuntimeState(options = {}) {
   runtime.fishDragState = null;
   runtime.eggDragState = null;
   runtime.pebbleDragState = null;
-  if (options.clearLastTankPoint === true) {
-    runtime.lastTankPoint = null;
-  }
-  runtime.suppressNextTankClick = options.suppressNextTankClick === true;
-  runtime.suppressNextGlassTap = options.suppressNextGlassTap === true;
-  if (options.resetScrubSound === true) {
-    resetScrubWipeSoundState();
-  }
-  if (options.clearGlassTap === true) {
-    clearGlassTapGesture();
-  }
+  runtime.suppressNextTankClick = true;
+  runtime.suppressNextGlassTap = true;
+  resetScrubWipeSoundState();
   releaseTankPointerCapture();
-}
-
-function cancelTutorialBlockingTankInteractions() {
-  resetTankInteractionRuntimeState({
-    suppressNextTankClick: true,
-    suppressNextGlassTap: true,
-    resetScrubSound: true
-  });
   renderToolCursor();
 }
 
@@ -5756,7 +5916,7 @@ function isTutorialDecorDoneStep() {
 }
 
 function getTutorialDecorDoneToastText(prefix = "") {
-  const message = "Click ðŸŒ¿ on the toolbar when you are done.";
+  const message = "Click 🌿 on the toolbar when you are done.";
   return prefix ? `${prefix} ${message}` : message;
 }
 
@@ -5764,7 +5924,7 @@ function showTutorialDecorDoneToast(durationMs = 120000) {
   if (!isTutorialDecorDoneStep()) {
     return;
   }
-  showGuidanceToast("tutorial:decor-done", getTutorialDecorDoneToastText(), {
+  showToast(getTutorialDecorDoneToastText(), {
     durationMs,
     key: TUTORIAL_TOAST_DECOR_DONE
   });
@@ -5776,30 +5936,42 @@ function isTutorialFeaturePopupDismissed(featureId) {
 }
 
 function reconcileTutorialTransientUi() {
-  const tutorialState = getActiveTutorialStageRuntime(Date.now());
-  if (!tutorialState) {
+  const tutorial = getActiveTutorial();
+  if (
+    runtime.tutorialDismissedFeaturePopup
+    && (!tutorial || tutorial.stage !== TUTORIAL_STAGE_FEATURES || tutorial.activeFeatureStep !== runtime.tutorialDismissedFeaturePopup)
+  ) {
     runtime.tutorialDismissedFeaturePopup = "";
-    hideToast({ key: TUTORIAL_TOAST_DECOR_DONE });
-    return;
   }
 
-  const { tutorial, ctx, stageDef } = tutorialState;
-  if (tutorial.stage !== TUTORIAL_STAGE_FEATURES && runtime.tutorialDismissedFeaturePopup) {
-    runtime.tutorialDismissedFeaturePopup = "";
-  }
-  stageDef?.reconcile?.(ctx);
-  if (stageDef?.keepDecorDoneToast !== true) {
+  if (!isTutorialDecorDoneStep()) {
     hideToast({ key: TUTORIAL_TOAST_DECOR_DONE });
   }
 }
 
 function getTutorialAllowedStoreTabs() {
-  return getActiveTutorialStageRuntime(Date.now())?.storeConfig?.allowedTabs || null;
+  if (isTutorialStage(TUTORIAL_STAGE_FISH_STORE)) {
+    return new Set(["fish"]);
+  }
+  if (isTutorialStage(TUTORIAL_STAGE_DECOR_STORE)) {
+    return new Set(["decor"]);
+  }
+  return null;
 }
 
 function getTutorialStoreRestriction(kind) {
   const shopKind = kind === "decor" ? "decor" : "fish";
-  return getActiveTutorialStageRuntime(Date.now())?.storeConfig?.restrictions?.[shopKind] || null;
+  const allowedTabs = getTutorialAllowedStoreTabs();
+  if (!allowedTabs || !allowedTabs.has(shopKind)) {
+    return null;
+  }
+
+  return {
+    maxCost: TUTORIAL_STORE_COST_CAP,
+    hideCustom: true,
+    hideControls: true,
+    previewOnly: isInfoOnlyTutorialActive()
+  };
 }
 
 function buildTutorialBodyMarkup(lines) {
@@ -5819,784 +5991,446 @@ function buildTutorialActionMarkup(actions) {
     .join("");
 }
 
-const TUTORIAL_TOOLBAR_CONTROL_IDS = Object.freeze([
-  "openStoreButton",
-  "editModeDockButton",
-  "feedButton",
-  "fishEditModeDockButton",
-  "openEquipmentButton",
-  "openSettingsButton",
-  "spongeButton",
-  "scoopButton"
-]);
-
-const TUTORIAL_TOOLBAR_BLOCK_MESSAGES = Object.freeze({
-  openStoreButton: "Let's finish this step before heading back to the store.",
-  editModeDockButton: "We'll come back to Edit Decor right after this step.",
-  feedButton: "We'll feed your fish in just a moment.",
-  fishEditModeDockButton: "We'll tour that tool in just a moment.",
-  openEquipmentButton: "We'll tour that tool in just a moment.",
-  openSettingsButton: "We'll tour that tool in just a moment.",
-  spongeButton: "We'll clean the tank in just a moment.",
-  scoopButton: "The sponge is the tool we need for this cleanup step."
-});
-
-function createTutorialUiStateConfig(options = {}) {
-  const toolbarVisible = options.toolbarVisible !== false;
-  const visibleButtons = new Set(Array.isArray(options.visibleButtons) ? options.visibleButtons : []);
-  if (toolbarVisible) {
-    visibleButtons.add("openStoreButton");
-  }
-  return {
-    toolbarVisible,
-    displayVisible: options.displayVisible === true,
-    pulseDisplay: options.pulseDisplay === true,
-    visibleButtons,
-    pulseButtons: new Set(Array.isArray(options.pulseButtons) ? options.pulseButtons : []),
-    pulseDecorKey: typeof options.pulseDecorKey === "string" ? options.pulseDecorKey : "",
-    pulseFoodKey: typeof options.pulseFoodKey === "string" ? options.pulseFoodKey : "",
-    hideToolbarTab: options.hideToolbarTab !== false,
-    hideDisplayTab: typeof options.hideDisplayTab === "boolean"
-      ? options.hideDisplayTab
-      : !(options.displayVisible === true),
-    forceToolbarPosition: options.forceToolbarPosition || "bottom-center"
-  };
-}
-
-function createTutorialToolbarConfig(allowedControls = [], blockedMessages = {}) {
-  return {
-    allowedControls: new Set(Array.isArray(allowedControls) ? allowedControls : []),
-    blockedMessages: {
-      ...TUTORIAL_TOOLBAR_BLOCK_MESSAGES,
-      ...(blockedMessages || {})
-    }
-  };
-}
-
-function createTutorialStoreRestrictionConfig(previewOnly = false) {
-  return {
-    maxCost: TUTORIAL_STORE_COST_CAP,
-    hideCustom: true,
-    hideControls: true,
-    previewOnly
-  };
-}
-
-function createTutorialTimedAdvance(afterMs, nextStage, beforeAdvance = null) {
-  return {
-    type: "timeout",
-    afterMs,
-    onSync(ctx) {
-      if (ctx.elapsed < afterMs) {
-        return false;
-      }
-      let changed = false;
-      if (typeof beforeAdvance === "function") {
-        changed = beforeAdvance(ctx) || changed;
-      }
-      return ctx.setStage(nextStage) || changed;
-    }
-  };
-}
-
-function getTutorialFeatureStepDef(featureId) {
-  const id = String(featureId || "");
-  return id && Object.prototype.hasOwnProperty.call(TUTORIAL_FEATURE_STEP_DEFS, id)
-    ? TUTORIAL_FEATURE_STEP_DEFS[id]
-    : null;
-}
-
-function getTutorialStageDef(stageId) {
-  const id = String(stageId || "");
-  return id && Object.prototype.hasOwnProperty.call(TUTORIAL_STAGE_DEFS, id)
-    ? TUTORIAL_STAGE_DEFS[id]
-    : TUTORIAL_STAGE_DEFS[TUTORIAL_STAGE_SPLASH];
-}
-
-function getTutorialContext(now = Date.now()) {
-  const tutorial = getActiveTutorial();
-  const safeNow = Number.isFinite(Number(now)) ? Number(now) : Date.now();
-  const elapsed = tutorial?.stageEnteredAt
-    ? Math.max(0, safeNow - tutorial.stageEnteredAt)
-    : 0;
-  const featureStepDef = tutorial?.activeFeatureStep ? getTutorialFeatureStepDef(tutorial.activeFeatureStep) : null;
-  return {
-    tutorial,
-    now: safeNow,
-    elapsed,
-    isGuided: tutorial?.mode === TUTORIAL_MODE_GUIDED,
-    isInfoOnly: tutorial?.mode === TUTORIAL_MODE_INFO_ONLY,
-    fishName: getTutorialFishDisplayName(),
-    fishType: getTutorialFishTypeLabel(),
-    decorName: getTutorialDecorDisplayName(),
-    featureStepDef,
-    setStage(stage, options = {}) {
-      return setTutorialStage(stage, {
-        now: safeNow,
-        ...options
-      });
-    }
-  };
-}
-
-function getActiveTutorialStageRuntime(now = Date.now()) {
+function getTutorialPopupConfig() {
   const tutorial = getActiveTutorial();
   if (!tutorial) {
     return null;
   }
 
-  const ctx = getTutorialContext(now);
-  const stageDef = getTutorialStageDef(tutorial.stage) || null;
-  return {
-    tutorial,
-    ctx,
-    stageDef,
-    storeConfig: stageDef?.store?.(ctx) || null,
-    toolbarConfig: stageDef?.toolbar?.(ctx) || null,
-    popupConfig: stageDef?.popup?.(ctx) || null,
-    uiConfig: stageDef?.ui?.(ctx) || null
-  };
-}
+  const fishName = getTutorialFishDisplayName();
+  const fishType = getTutorialFishTypeLabel();
+  const decorName = getTutorialDecorDisplayName();
 
-const TUTORIAL_FEATURE_STEP_DEFS = Object.freeze({
-  [TUTORIAL_FEATURE_MANAGE_FISH]: {
-    id: TUTORIAL_FEATURE_MANAGE_FISH,
-    controlId: "fishEditModeDockButton",
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          "Similar to the Edit Decor tool, you can add or remove fish from your tank within this menu. Click the Manage Fish toolbar icon again to close it."
-        ]),
-        closeAction: "dismiss-popup",
-        actions: ctx.isInfoOnly
-          ? [{ label: "Continue", action: "continue" }]
-          : [{ label: "Okay!", action: "dismiss-popup" }]
-      };
-    }
-  },
-  [TUTORIAL_FEATURE_EDIT_TANK]: {
-    id: TUTORIAL_FEATURE_EDIT_TANK,
-    controlId: "openEquipmentButton",
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          "From this menu, you can change the background, the colors of your gravel, switch to sand, and change your filter. Try changing your background and gravel color!"
-        ]),
-        closeAction: "dismiss-popup",
-        actions: ctx.isInfoOnly
-          ? [{ label: "Continue", action: "continue" }]
-          : [{ label: "Okay!", action: "dismiss-popup" }]
-      };
-    }
-  },
-  [TUTORIAL_FEATURE_SETTINGS]: {
-    id: TUTORIAL_FEATURE_SETTINGS,
-    controlId: "openSettingsButton",
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          "From this menu, you can toggle certain things on or off, adjust the placement of your toolbar and digital display, export and import save data, reset your progress, or view the credits or the creators site!"
-        ]),
-        closeAction: "dismiss-popup",
-        actions: ctx.isInfoOnly
-          ? [{ label: "Continue", action: "continue" }]
-          : [{ label: "Okay!", action: "dismiss-popup" }]
-      };
-    }
+  if (tutorial.stage === TUTORIAL_STAGE_SPLASH) {
+    return {
+      mode: "splash"
+    };
   }
-});
 
-const TUTORIAL_STAGE_DEFS = Object.freeze({
-  [TUTORIAL_STAGE_SPLASH]: {
-    id: TUTORIAL_STAGE_SPLASH,
-    popup: () => ({ mode: "splash" }),
-    ui: () => createTutorialUiStateConfig({ toolbarVisible: false, displayVisible: false }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "timeout",
-      onSync(ctx) {
-        if (dom.loadingOverlay && !dom.loadingOverlay.hidden) {
-          return false;
-        }
-        return createTutorialTimedAdvance(TUTORIAL_SPLASH_DURATION_MS, TUTORIAL_STAGE_WELCOME).onSync(ctx);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_WELCOME]: {
-    id: TUTORIAL_STAGE_WELCOME,
-    popup: () => ({
+  if (tutorial.stage === TUTORIAL_STAGE_WELCOME) {
+    return {
+      kicker: "Tutorial",
+      title: "",
       body: buildTutorialBodyMarkup([
         "Welcome to Bubble Borough! Let's get you started with your first tank.",
-        "Click the ðŸ›’ icon on the toolbar to go to the store."
+        "Click the 🛒 icon on the toolbar to go to the store."
       ]),
       actions: []
-    }),
-    ui: () => createTutorialUiStateConfig({
-      pulseButtons: ["openStoreButton"]
-    }),
-    store: () => ({
-      preferredTab: "fish",
-      open(ctx) {
-        ctx.setStage(TUTORIAL_STAGE_FISH_STORE);
-        saveState();
-        openStoreOverlay("fish");
-        return true;
-      }
-    }),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (ctx.isInfoOnly) {
-          return openTutorialStoreForCurrentStage();
-        }
-        return false;
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_FISH_STORE]: {
-    id: TUTORIAL_STAGE_FISH_STORE,
-    popup(ctx) {
-      return ctx.isInfoOnly
-        ? {
-          body: buildTutorialBodyMarkup([
-            "This is the fish section of the store.",
-            "During replay, this step is preview-only."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        }
-        : null;
-    },
-    ui: () => createTutorialUiStateConfig(),
-    store: (ctx) => ({
-      allowedTabs: new Set(["fish"]),
-      preferredTab: "fish",
-      blockCloseWithSkipConfirm: ctx.isGuided,
-      restrictions: {
-        fish: createTutorialStoreRestrictionConfig(ctx.isInfoOnly)
-      },
-      open() {
-        openStoreOverlay("fish");
-        return true;
-      }
-    }),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        closeStoreOverlay({ force: true });
-        return ctx.setStage(TUTORIAL_STAGE_FISH_ADDED);
-      }
-    },
-    resume: () => {
-      resumeTutorialStoreState("fish");
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_FISH_SETTLE]: {
-    id: TUTORIAL_STAGE_FISH_SETTLE,
-    ui: () => createTutorialUiStateConfig(),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    advance: createTutorialTimedAdvance(TUTORIAL_FISH_ADDED_DELAY_MS, TUTORIAL_STAGE_FISH_ADDED),
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_FISH_ADDED]: {
-    id: TUTORIAL_STAGE_FISH_ADDED,
-    popup(ctx) {
-      return {
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_STORE && tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+    return {
+      kicker: "Tutorial",
+      title: "Choose a Fish",
+      body: buildTutorialBodyMarkup([
+        "This is the fish section of the store.",
+        "During replay, this step is preview-only."
+      ]),
+      actions: [
+        { label: "Continue", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FISH_ADDED) {
+    return {
+      kicker: "Tutorial",
+      title: "",
+      body: buildTutorialBodyMarkup([
+        tutorial.mode === TUTORIAL_MODE_GUIDED
+          ? `${fishName} the ${fishType} has now been added to your tank! Next, you will need to get some decorations.`
+          : "In a fresh tutorial, your starter fish would now be in the tank! Next, you would grab a decoration.",
+        "Click the 🛒 icon on the toolbar again to go to the store."
+      ]),
+      actions: []
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_STORE && tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+    return {
+      kicker: "Tutorial",
+      title: "Choose a Decoration",
+      body: buildTutorialBodyMarkup([
+        "This is the decor section of the store.",
+        "During replay, this step is preview-only."
+      ]),
+      actions: [
+        { label: "Continue", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_STORAGE) {
+    return {
+      kicker: "Tutorial",
+      title: "",
+      body: buildTutorialBodyMarkup([
+        tutorial.mode === TUTORIAL_MODE_GUIDED
+          ? "Great choice! Your new decoration is waiting for you in your storage."
+          : `In a fresh tutorial, ${decorName} would now be waiting in your storage.`,
+        "Click the 🌿 icon on the toolbar to Edit Decor."
+      ]),
+      actions: []
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_PLACE_HINT) {
+    return tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+      ? {
+        kicker: "Decor",
+        title: "Placement Preview",
         body: buildTutorialBodyMarkup([
-          ctx.isGuided
-            ? `${ctx.fishName} the ${ctx.fishType} has now been added to your tank! Next, you will need to get some decorations.`
-            : "In a fresh tutorial, your starter fish would now be in the tank! Next, you would grab a decoration.",
-          "Click the ðŸ›’ icon on the toolbar again to go to the store."
+          "This is where your stored decoration would appear during a normal tutorial.",
+          "Click Continue to move ahead without placing anything."
+        ]),
+        actions: [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+      }
+      : {
+        kicker: "Tutorial",
+        title: "",
+        body: buildTutorialBodyMarkup([
+          "Click on your decoration from the menu and place it where you wish."
         ]),
         actions: []
       };
-    },
-    ui: () => createTutorialUiStateConfig({
-      pulseButtons: ["openStoreButton"]
-    }),
-    store: () => ({
-      preferredTab: "decor",
-      open(ctx) {
-        ctx.setStage(TUTORIAL_STAGE_DECOR_STORE);
-        saveState();
-        openStoreOverlay("decor");
-        return true;
-      }
-    }),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_DECOR_STORE]: {
-    id: TUTORIAL_STAGE_DECOR_STORE,
-    popup(ctx) {
-      return ctx.isInfoOnly
-        ? {
-          body: buildTutorialBodyMarkup([
-            "This is the decor section of the store.",
-            "During replay, this step is preview-only."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        }
-        : null;
-    },
-    ui: () => createTutorialUiStateConfig(),
-    store: (ctx) => ({
-      allowedTabs: new Set(["decor"]),
-      preferredTab: "decor",
-      blockCloseWithSkipConfirm: ctx.isGuided,
-      restrictions: {
-        decor: createTutorialStoreRestrictionConfig(ctx.isInfoOnly)
-      },
-      open() {
-        openStoreOverlay("decor");
-        return true;
-      }
-    }),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        closeStoreOverlay({ force: true });
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_STORAGE);
-      }
-    },
-    resume: () => {
-      resumeTutorialStoreState("decor");
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_STORAGE]: {
-    id: TUTORIAL_STAGE_DECOR_STORAGE,
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          ctx.isGuided
-            ? "Great choice! Your new decoration is waiting for you in your storage."
-            : `In a fresh tutorial, ${ctx.decorName} would now be waiting in your storage.`,
-          "Click the ðŸŒ¿ icon on the toolbar to Edit Decor."
-        ]),
-        actions: []
-      };
-    },
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseButtons: ["editModeDockButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig(["editModeDockButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_PLACE_HINT);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_DECOR_PLACE_HINT]: {
-    id: TUTORIAL_STAGE_DECOR_PLACE_HINT,
-    popup(ctx) {
-      return ctx.isInfoOnly
-        ? {
-          body: buildTutorialBodyMarkup([
-            "This is where your stored decoration would appear during a normal tutorial.",
-            "Click Continue to move ahead without placing anything."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        }
-        : {
-          body: buildTutorialBodyMarkup([
-            "Click on your decoration from the menu and place it where you wish."
-          ]),
-          actions: []
-        };
-    },
-    ui: (ctx) => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseDecorKey: ctx.tutorial?.decorKey || ""
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_CLOSE);
-      }
-    },
-    resume: () => {
-      resumeTutorialEditDecorState();
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS]: {
-    id: TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS,
-    popup: () => ({
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS) {
+    return {
+      kicker: "Tutorial",
+      title: "Placement Controls",
       blockInteraction: true,
       body: buildTutorialBodyMarkup([
         "Decorations can be adjusted however you see fit!",
-        "Press Z/X or â–²/â–¼ to change the placement layer.",
+        "Press Z/X or ▲/▼ to change the placement layer.",
         "Press + or - to change the size.",
         "Press F to flip the decoration.",
         "Press S to adjust the settings.",
         "When you have more decorations, you can even create groups of items by Shift/Ctrl clicking on multiple items and clicking G to group, or U to ungroup!",
-        "Take your time placing the item! Click ðŸŒ¿ on the toolbar when you are done."
+        "Take your time placing the item! Click 🌿 on the toolbar when you are done."
       ]),
-      actions: [{ label: "Okay!", action: "continue" }]
-    }),
-    ui: (ctx) => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseDecorKey: ctx.tutorial?.decorKey || ""
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_PLACE);
-      }
-    },
-    resume: (ctx) => {
-      if (!restoreTutorialDecorPlacementMode(ctx.tutorial?.decorKey)) {
-        resumeTutorialEditDecorState();
-      }
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_PLACE]: {
-    id: TUTORIAL_STAGE_DECOR_PLACE,
-    keepDecorDoneToast: true,
-    ui: (ctx) => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseDecorKey: ctx.tutorial?.decorKey || ""
-    }),
-    toolbar: (ctx) => createTutorialToolbarConfig(ctx.tutorial?.placedDecorId ? ["editModeDockButton"] : []),
-    resume: (ctx) => {
-      if (ctx.tutorial?.placedDecorId && getPlacedDecorById(ctx.tutorial.placedDecorId)) {
-        const changed = ctx.setStage(TUTORIAL_STAGE_DECOR_CLOSE, {
-          placedDecorId: ctx.tutorial.placedDecorId
-        });
-        resumeTutorialEditDecorState();
-        setSelectedDecor(ctx.tutorial.placedDecorId);
-        showTutorialDecorDoneToast();
-        return changed;
-      }
-      if (!restoreTutorialDecorPlacementMode(ctx.tutorial?.decorKey)) {
-        resumeTutorialEditDecorState();
-      }
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_CLOSE]: {
-    id: TUTORIAL_STAGE_DECOR_CLOSE,
-    keepDecorDoneToast: true,
-    popup(ctx) {
-      return ctx.isInfoOnly
-        ? {
-          body: buildTutorialBodyMarkup([
-            "In a normal tutorial, this is where you would close Edit Decor and continue watching your tank."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        }
-        : null;
-    },
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseButtons: ["editModeDockButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig(["editModeDockButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_OBSERVE);
-      }
-    },
-    resume: (ctx) => {
-      resumeTutorialEditDecorState();
-      if (ctx.tutorial?.placedDecorId && getPlacedDecorById(ctx.tutorial.placedDecorId)) {
-        setSelectedDecor(ctx.tutorial.placedDecorId);
-      }
-      showTutorialDecorDoneToast();
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_OBSERVE]: {
-    id: TUTORIAL_STAGE_DECOR_OBSERVE,
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: createTutorialTimedAdvance(
-      TUTORIAL_DECOR_OBSERVE_DELAY_MS,
-      TUTORIAL_STAGE_FOOD_INTRO,
-      (ctx) => ctx.isGuided ? grantTutorialBasicFoodReward(ctx.now) : false
-    ),
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_FOOD_INTRO]: {
-    id: TUTORIAL_STAGE_FOOD_INTRO,
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          ctx.isGuided
-            ? `${ctx.fishName} looks hungry! I have given you some fish pellets. Let's feed them!\n\nClick the ðŸ— icon on the toolbar.`
-            : "This is where the food tool lives. During replay, this step is preview-only."
-        ]),
-        actions: ctx.isInfoOnly ? [{ label: "Continue", action: "continue" }] : []
-      };
-    },
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"],
-      pulseButtons: ["feedButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig(["feedButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_TANK_SUMMARY);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_FOOD_FEED]: {
-    id: TUTORIAL_STAGE_FOOD_FEED,
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"],
-      pulseFoodKey: TUTORIAL_BASIC_FOOD_KEY
-    }),
-    toolbar: () => createTutorialToolbarConfig(["feedButton"]),
-    resume: (ctx) => resumeTutorialFoodState(ctx.tutorial, ctx.now)
-  },
-  [TUTORIAL_STAGE_FOOD_SETTLE]: {
-    id: TUTORIAL_STAGE_FOOD_SETTLE,
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: createTutorialTimedAdvance(TUTORIAL_POST_FEED_DELAY_MS, TUTORIAL_STAGE_TANK_SUMMARY),
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_TANK_SUMMARY]: {
-    id: TUTORIAL_STAGE_TANK_SUMMARY,
-    popup: () => ({
+      actions: [
+        { label: "Okay!", action: "continue" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DECOR_CLOSE && tutorial.mode === TUTORIAL_MODE_INFO_ONLY) {
+    return {
+      kicker: "Decor",
+      title: "Close Edit Decor",
+      body: buildTutorialBodyMarkup([
+        "In a normal tutorial, this is where you would close Edit Decor and continue watching your tank."
+      ]),
+      actions: [
+        { label: "Continue", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FOOD_INTRO) {
+    return {
+      kicker: "Feeding",
+      title: "Time To Feed",
+      body: buildTutorialBodyMarkup([
+        tutorial.mode === TUTORIAL_MODE_GUIDED
+          ? `${fishName} looks hungry! I have given you some fish pellets. Let's feed them!\n\nClick the 🍗 icon on the toolbar.`
+          : "This is where the food tool lives. During replay, this step is preview-only."
+      ]),
+      actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+        ? [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+        : [
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_TANK_SUMMARY) {
+    return {
+      kicker: "Care",
+      title: "Looking Good",
       body: buildTutorialBodyMarkup([
         "Your tank is coming together nicely! Just remember to feed your fish twice a day, and make sure not to over feed them. When you run out of fish food, you can purchase a new bottle from the store. I don't know if you noticed, but you actually earned money by feeding your fish, so it literally pays to feed your fish. Different fish have different earnings per meal."
       ]),
-      actions: [{ label: "Okay!", action: "continue" }]
-    }),
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        return ctx.setStage(TUTORIAL_STAGE_DISPLAY);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_DISPLAY]: {
-    id: TUTORIAL_STAGE_DISPLAY,
-    popup: () => ({
+      actions: [
+        { label: "Okay!", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_DISPLAY) {
+    return {
+      kicker: "Display",
+      title: "Digital Readout",
       body: buildTutorialBodyMarkup([
         "This digital display is a quick reference for tank cleanliness, daily meals, and how many coins you have. You can click the tab to hide it."
       ]),
-      actions: [{ label: "Okay great!", action: "continue" }]
-    }),
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"],
-      displayVisible: true,
-      pulseDisplay: true
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        return ctx.setStage(TUTORIAL_STAGE_FEATURES);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_FEATURES]: {
-    id: TUTORIAL_STAGE_FEATURES,
-    popup(ctx) {
-      if (ctx.isInfoOnly && !ctx.tutorial?.activeFeatureStep) {
-        return {
-          body: buildTutorialBodyMarkup([
-            "Replay mode previews the rest of the toolbar one tool at a time."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        };
-      }
-      if (ctx.featureStepDef) {
-        if (isTutorialFeaturePopupDismissed(ctx.tutorial.activeFeatureStep)) {
-          return null;
-        }
-        return ctx.featureStepDef.popup(ctx);
-      }
+      actions: [
+        { label: "Okay great!", action: "continue" },
+        { label: "Skip Tutorial", action: "skip", variant: "alt" }
+      ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_FEATURES) {
+    if (tutorial.mode === TUTORIAL_MODE_INFO_ONLY && !tutorial.activeFeatureStep) {
       return {
+        kicker: "Features",
+        title: "Let's See What Else We Can Do!",
         body: buildTutorialBodyMarkup([
-          "Open Manage Fish, Edit Tank, and Settings to learn where the rest of your aquarium tools live."
+          "Replay mode previews the rest of the toolbar one tool at a time."
         ]),
-        actions: ctx.isInfoOnly ? [{ label: "Continue", action: "continue" }] : []
+        actions: [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
       };
-    },
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton"],
-      pulseButtons: [
-        !hasTutorialFeatureVisited(TUTORIAL_FEATURE_MANAGE_FISH) ? "fishEditModeDockButton" : "",
-        !hasTutorialFeatureVisited(TUTORIAL_FEATURE_EDIT_TANK) ? "openEquipmentButton" : "",
-        !hasTutorialFeatureVisited(TUTORIAL_FEATURE_SETTINGS) ? "openSettingsButton" : ""
-      ].filter(Boolean),
-      displayVisible: true
-    }),
-    toolbar: () => createTutorialToolbarConfig(["fishEditModeDockButton", "openEquipmentButton", "openSettingsButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        if (!ctx.tutorial?.activeFeatureStep) {
-          return ctx.setStage(TUTORIAL_STAGE_FEATURES, { activeFeatureStep: TUTORIAL_FEATURE_MANAGE_FISH });
-        }
-        const nextFeatureStep = getNextTutorialFeatureStepId(ctx.tutorial.activeFeatureStep);
-        return nextFeatureStep
-          ? ctx.setStage(TUTORIAL_STAGE_FEATURES, { activeFeatureStep: nextFeatureStep })
-          : ctx.setStage(TUTORIAL_STAGE_POOP_WATCH, { activeFeatureStep: "" });
-      },
-      onDismiss(ctx) {
-        if (ctx.tutorial?.activeFeatureStep) {
-          runtime.tutorialDismissedFeaturePopup = ctx.tutorial.activeFeatureStep;
-          renderUi(ctx.now, { full: false });
-          return true;
-        }
-        return false;
-      }
-    },
-    reconcile(ctx) {
-      if (
-        runtime.tutorialDismissedFeaturePopup
-        && ctx.tutorial?.activeFeatureStep !== runtime.tutorialDismissedFeaturePopup
-      ) {
-        runtime.tutorialDismissedFeaturePopup = "";
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_POOP_WATCH]: {
-    id: TUTORIAL_STAGE_POOP_WATCH,
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton"],
-      displayVisible: true
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "timeout",
-      onSync(ctx) {
-        let changed = false;
-        if (ctx.isGuided && ctx.elapsed >= TUTORIAL_POOP_TRIGGER_DELAY_MS) {
-          changed = forceTutorialPoopScenario(ctx.now) || changed;
-        }
-        if (ctx.elapsed >= TUTORIAL_POOP_CLEAN_PROMPT_DELAY_MS) {
-          changed = ctx.setStage(TUTORIAL_STAGE_CLEAN_INTRO) || changed;
-        }
-        return changed;
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_CLEAN_INTRO]: {
-    id: TUTORIAL_STAGE_CLEAN_INTRO,
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          ctx.isGuided
-            ? `That was fast! ${ctx.fishName} just ate! Wow...`
-            : "During replay, this is where the cleanup lesson would begin.",
-          "Well, let's clean that up!"
-        ]),
-        actions: ctx.isInfoOnly ? [{ label: "Continue", action: "continue" }] : []
-      };
-    },
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton", "spongeButton", "scoopButton"],
-      pulseButtons: ["spongeButton"],
-      displayVisible: true
-    }),
-    toolbar: () => createTutorialToolbarConfig(["spongeButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_COMPLETE);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_CLEAN]: {
-    id: TUTORIAL_STAGE_CLEAN,
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton", "spongeButton", "scoopButton"],
-      displayVisible: true
-    }),
-    toolbar: () => createTutorialToolbarConfig(["spongeButton"]),
-    resume: () => {
-      resumeTutorialCleaningState();
-      return false;
     }
-  },
-  [TUTORIAL_STAGE_COMPLETE]: {
-    id: TUTORIAL_STAGE_COMPLETE,
-    popup: () => ({
+    if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_MANAGE_FISH) {
+      if (isTutorialFeaturePopupDismissed(TUTORIAL_FEATURE_MANAGE_FISH)) {
+        return null;
+      }
+      return {
+        kicker: "Manage Fish",
+        title: "Fish Control",
+        closeAction: tutorial.mode === TUTORIAL_MODE_GUIDED ? "dismiss-popup" : "skip",
+        body: buildTutorialBodyMarkup([
+          "Similar to the Edit Decor tool, you can add or remove fish from your tank within this menu. Click the Manage Fish toolbar icon again to close it."
+        ]),
+        actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+          ? [
+            { label: "Continue", action: "continue" },
+            { label: "Skip Tutorial", action: "skip", variant: "alt" }
+          ]
+          : [
+            { label: "Okay!", action: "dismiss-popup" }
+          ]
+      };
+    }
+    if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_EDIT_TANK) {
+      if (isTutorialFeaturePopupDismissed(TUTORIAL_FEATURE_EDIT_TANK)) {
+        return null;
+      }
+      return {
+        kicker: "Edit Tank",
+        title: "Tank Styling",
+        closeAction: tutorial.mode === TUTORIAL_MODE_GUIDED ? "dismiss-popup" : "skip",
+        body: buildTutorialBodyMarkup([
+          "From this menu, you can change the background, the colors of your gravel, switch to sand, and change your filter. Try changing your background and gravel color!"
+        ]),
+        actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+          ? [
+            { label: "Continue", action: "continue" },
+            { label: "Skip Tutorial", action: "skip", variant: "alt" }
+          ]
+          : [
+            { label: "Okay!", action: "dismiss-popup" }
+          ]
+      };
+    }
+    if (tutorial.activeFeatureStep === TUTORIAL_FEATURE_SETTINGS) {
+      if (isTutorialFeaturePopupDismissed(TUTORIAL_FEATURE_SETTINGS)) {
+        return null;
+      }
+      return {
+        kicker: "Settings",
+        title: "Aquarium Tools",
+        closeAction: tutorial.mode === TUTORIAL_MODE_GUIDED ? "dismiss-popup" : "skip",
+        body: buildTutorialBodyMarkup([
+          "From this menu, you can toggle certain things on or off, adjust the placement of your toolbar and digital display, export and import save data, reset your progress, or view the credits or the creators site!"
+        ]),
+        actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+          ? [
+            { label: "Continue", action: "continue" },
+            { label: "Skip Tutorial", action: "skip", variant: "alt" }
+          ]
+          : [
+            { label: "Okay!", action: "dismiss-popup" }
+          ]
+      };
+    }
+
+    return {
+      kicker: "Features",
+      title: "Let's See What Else We Can Do!",
+      body: buildTutorialBodyMarkup([
+        "Open Manage Fish, Edit Tank, and Settings to learn where the rest of your aquarium tools live."
+      ]),
+      actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+        ? [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+        : [
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_CLEAN_INTRO) {
+    return {
+      kicker: "Cleaning",
+      title: "Let's Clean That Up",
+      body: buildTutorialBodyMarkup([
+        tutorial.mode === TUTORIAL_MODE_GUIDED
+          ? `That was fast! ${fishName} just ate! Wow...`
+          : "During replay, this is where the cleanup lesson would begin.",
+        "Well, let's clean that up!"
+      ]),
+      actions: tutorial.mode === TUTORIAL_MODE_INFO_ONLY
+        ? [
+          { label: "Continue", action: "continue" },
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+        : [
+          { label: "Skip Tutorial", action: "skip", variant: "alt" }
+        ]
+    };
+  }
+
+  if (tutorial.stage === TUTORIAL_STAGE_COMPLETE) {
+    return {
+      kicker: "Finished",
+      title: "Tutorial Complete",
       body: buildTutorialBodyMarkup([
         "Great job! It looks great! It normally shouldn't happen that quick, but make sure that you maintain a clean environment for your fish so they don't get sick.",
         "That is all for now! Enjoy your new fish tank!"
       ]),
-      actions: [{ label: "Okay!", action: "continue" }]
-    }),
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton", "spongeButton", "scoopButton"],
-      displayVisible: true
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue() {
-        finishTutorial();
-        return true;
-      }
-    },
-    resume: () => false
+      actions: [
+        { label: "Okay!", action: "continue" }
+      ]
+    };
   }
-});
 
-function getTutorialPopupConfig() {
-  return getActiveTutorialStageRuntime(Date.now())?.popupConfig || null;
+  return null;
 }
 
 function getTutorialUiState() {
-  return getActiveTutorialStageRuntime(Date.now())?.uiConfig || null;
+  const tutorial = getActiveTutorial();
+  if (!tutorial) {
+    return null;
+  }
+
+  const stage = tutorial.stage;
+  const visibleButtons = new Set();
+  const pulseButtons = new Set();
+  const toolbarVisible = stage !== TUTORIAL_STAGE_SPLASH;
+  const displayVisible = [
+    TUTORIAL_STAGE_DISPLAY,
+    TUTORIAL_STAGE_FEATURES,
+    TUTORIAL_STAGE_POOP_WATCH,
+    TUTORIAL_STAGE_CLEAN_INTRO,
+    TUTORIAL_STAGE_CLEAN,
+    TUTORIAL_STAGE_COMPLETE
+  ].includes(stage);
+
+  if (toolbarVisible) {
+    visibleButtons.add("openStoreButton");
+  }
+
+  if ([
+    TUTORIAL_STAGE_DECOR_STORAGE,
+    TUTORIAL_STAGE_DECOR_PLACE_HINT,
+    TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS,
+    TUTORIAL_STAGE_DECOR_PLACE,
+    TUTORIAL_STAGE_DECOR_CLOSE,
+    TUTORIAL_STAGE_DECOR_OBSERVE,
+    TUTORIAL_STAGE_FOOD_INTRO,
+    TUTORIAL_STAGE_FOOD_FEED,
+    TUTORIAL_STAGE_FOOD_SETTLE,
+    TUTORIAL_STAGE_TANK_SUMMARY,
+    TUTORIAL_STAGE_DISPLAY,
+    TUTORIAL_STAGE_FEATURES,
+    TUTORIAL_STAGE_POOP_WATCH,
+    TUTORIAL_STAGE_CLEAN_INTRO,
+    TUTORIAL_STAGE_CLEAN,
+    TUTORIAL_STAGE_COMPLETE
+  ].includes(stage)) {
+    visibleButtons.add("editModeDockButton");
+  }
+
+  if ([
+    TUTORIAL_STAGE_FOOD_INTRO,
+    TUTORIAL_STAGE_FOOD_FEED,
+    TUTORIAL_STAGE_FOOD_SETTLE,
+    TUTORIAL_STAGE_TANK_SUMMARY,
+    TUTORIAL_STAGE_DISPLAY,
+    TUTORIAL_STAGE_FEATURES,
+    TUTORIAL_STAGE_POOP_WATCH,
+    TUTORIAL_STAGE_CLEAN_INTRO,
+    TUTORIAL_STAGE_CLEAN,
+    TUTORIAL_STAGE_COMPLETE
+  ].includes(stage)) {
+    visibleButtons.add("feedButton");
+  }
+
+  if ([
+    TUTORIAL_STAGE_FEATURES,
+    TUTORIAL_STAGE_POOP_WATCH,
+    TUTORIAL_STAGE_CLEAN_INTRO,
+    TUTORIAL_STAGE_CLEAN,
+    TUTORIAL_STAGE_COMPLETE
+  ].includes(stage)) {
+    visibleButtons.add("fishEditModeDockButton");
+    visibleButtons.add("openEquipmentButton");
+    visibleButtons.add("openSettingsButton");
+  }
+
+  if ([TUTORIAL_STAGE_CLEAN_INTRO, TUTORIAL_STAGE_CLEAN, TUTORIAL_STAGE_COMPLETE].includes(stage)) {
+    visibleButtons.add("spongeButton");
+    visibleButtons.add("scoopButton");
+  }
+
+  if (stage === TUTORIAL_STAGE_WELCOME || stage === TUTORIAL_STAGE_FISH_ADDED) {
+    pulseButtons.add("openStoreButton");
+  }
+  if (stage === TUTORIAL_STAGE_DECOR_STORAGE || stage === TUTORIAL_STAGE_DECOR_CLOSE) {
+    pulseButtons.add("editModeDockButton");
+  }
+  if (stage === TUTORIAL_STAGE_FOOD_INTRO) {
+    pulseButtons.add("feedButton");
+  }
+  if (stage === TUTORIAL_STAGE_FEATURES) {
+    if (!hasTutorialFeatureVisited(TUTORIAL_FEATURE_MANAGE_FISH)) {
+      pulseButtons.add("fishEditModeDockButton");
+    }
+    if (!hasTutorialFeatureVisited(TUTORIAL_FEATURE_EDIT_TANK)) {
+      pulseButtons.add("openEquipmentButton");
+    }
+    if (!hasTutorialFeatureVisited(TUTORIAL_FEATURE_SETTINGS)) {
+      pulseButtons.add("openSettingsButton");
+    }
+  }
+  if (stage === TUTORIAL_STAGE_CLEAN_INTRO) {
+    pulseButtons.add("spongeButton");
+  }
+
+  return {
+    toolbarVisible,
+    displayVisible,
+    pulseDisplay: stage === TUTORIAL_STAGE_DISPLAY,
+    visibleButtons,
+    pulseButtons,
+    pulseDecorKey: [
+      TUTORIAL_STAGE_DECOR_PLACE_HINT,
+      TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS
+    ].includes(stage) ? (tutorial.decorKey || "") : "",
+    pulseFoodKey: stage === TUTORIAL_STAGE_FOOD_FEED ? TUTORIAL_BASIC_FOOD_KEY : "",
+    hideToolbarTab: true,
+    hideDisplayTab: !displayVisible,
+    forceToolbarPosition: "bottom-center"
+  };
 }
 
 function getEffectiveDisplayCollapsed(uiSettings = getUiSettings(), tutorialUi = getTutorialUiState()) {
@@ -6607,23 +6441,52 @@ function getEffectiveDisplayCollapsed(uiSettings = getUiSettings(), tutorialUi =
 }
 
 function canUseTutorialToolbarControl(controlId) {
-  const tutorialState = getActiveTutorialStageRuntime(Date.now());
-  if (!tutorialState) {
+  if (!getActiveTutorial()) {
     return true;
   }
-  if (!TUTORIAL_TOOLBAR_CONTROL_IDS.includes(controlId)) {
-    return true;
+
+  switch (controlId) {
+    case "openStoreButton":
+      return isTutorialStage(
+        TUTORIAL_STAGE_WELCOME,
+        TUTORIAL_STAGE_FISH_STORE,
+        TUTORIAL_STAGE_FISH_ADDED,
+        TUTORIAL_STAGE_DECOR_STORE
+      );
+    case "editModeDockButton":
+      return isTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE, TUTORIAL_STAGE_DECOR_CLOSE)
+        || (isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE) && Boolean(state?.tutorial?.placedDecorId));
+    case "feedButton":
+      return isTutorialStage(TUTORIAL_STAGE_FOOD_INTRO, TUTORIAL_STAGE_FOOD_FEED);
+    case "fishEditModeDockButton":
+    case "openEquipmentButton":
+    case "openSettingsButton":
+      return isTutorialStage(TUTORIAL_STAGE_FEATURES);
+    case "spongeButton":
+      return isTutorialStage(TUTORIAL_STAGE_CLEAN_INTRO, TUTORIAL_STAGE_CLEAN);
+    case "scoopButton":
+      return false;
+    default:
+      return true;
   }
-  return tutorialState.toolbarConfig?.allowedControls?.has(controlId) === true;
 }
 
 function guardTutorialToolbarControl(controlId) {
   if (canUseTutorialToolbarControl(controlId)) {
     return true;
   }
-  const message = getActiveTutorialStageRuntime(Date.now())?.toolbarConfig?.blockedMessages?.[controlId]
-    || "Let's finish this step first.";
-  showToast(message);
+
+  const messages = {
+    openStoreButton: "Let's finish this step before heading back to the store.",
+    editModeDockButton: "We'll come back to Edit Decor right after this step.",
+    feedButton: "We'll feed your fish in just a moment.",
+    fishEditModeDockButton: "We'll tour that tool in just a moment.",
+    openEquipmentButton: "We'll tour that tool in just a moment.",
+    openSettingsButton: "We'll tour that tool in just a moment.",
+    spongeButton: "We'll clean the tank in just a moment.",
+    scoopButton: "The sponge is the tool we need for this cleanup step."
+  };
+  showToast(messages[controlId] || "Let's finish this step first.");
   return false;
 }
 
@@ -6818,7 +6681,6 @@ function handleMedicineTrayWheel(event) {
 }
 
 function clearPrimaryToolModes() {
-  clearGuidanceForModeChange("primary-tools");
   runtime.editTankMode = false;
   runtime.fishEditMode = false;
   runtime.foodTrayOpen = false;
@@ -6964,7 +6826,6 @@ function groupSelectedDecor() {
   for (const item of affectedItems) {
     item.groupId = targetGroupId;
   }
-  syncDecorGroupToLargestResizeAnchor(affectedItems, { deriveMissing: true });
 
   runtime.selectedDecorIds = affectedItems.map((item) => item.id);
   runtime.selectedDecorId = selectedItems[0]?.id || affectedItems[0]?.id || null;
@@ -7122,34 +6983,13 @@ function toggleFishEditMode(force = null, options = {}) {
     if (options.collapseSidebar) {
       runtime.sidebarCollapsed = true;
     }
-    tutorialChanged = beginTutorialFeatureStep(TUTORIAL_FEATURE_MANAGE_FISH) || tutorialChanged;
-  } else {
-    tutorialChanged = finishTutorialFeatureStep(TUTORIAL_FEATURE_MANAGE_FISH, now) || tutorialChanged;
-  }
-
-  if (tutorialChanged) {
-    saveState();
-  }
-  renderUi(now);
-}
-
-function toggleToolbarTrayMode(config, force = null, options = {}) {
-  const forcedOpen = typeof config.forceOpen === "function" ? config.forceOpen() : false;
-  const nextMode = forcedOpen
-    ? true
-    : (typeof force === "boolean" ? force : !(config.isOpen() || config.hasSelection()));
-  clearPrimaryToolModes();
-  const now = Date.now();
-  let tutorialChanged = false;
-  resetCompetingOverlayState({
-    now,
-    reason: config.reason,
-    clearPendingState: false,
-    clearExternalLink: false
-  });
-
-  if (nextMode) {
-    tutorialChanged = config.onOpen(now, options) || tutorialChanged;
+    if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && !hasTutorialFeatureVisited(TUTORIAL_FEATURE_MANAGE_FISH)) {
+      state.tutorial.activeFeatureStep = TUTORIAL_FEATURE_MANAGE_FISH;
+      runtime.tutorialDismissedFeaturePopup = "";
+      tutorialChanged = true;
+    }
+  } else if (isTutorialStage(TUTORIAL_STAGE_FEATURES) && state?.tutorial?.activeFeatureStep === TUTORIAL_FEATURE_MANAGE_FISH) {
+    tutorialChanged = completeTutorialFeature(TUTORIAL_FEATURE_MANAGE_FISH, now) || tutorialChanged;
   }
 
   if (tutorialChanged) {
@@ -7159,40 +6999,50 @@ function toggleToolbarTrayMode(config, force = null, options = {}) {
 }
 
 function toggleFoodTray(force = null, options = {}) {
-  toggleToolbarTrayMode({
-    reason: "food-tray",
-    forceOpen: () => isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FOOD_FEED),
-    isOpen: () => runtime.foodTrayOpen,
-    hasSelection: () => Boolean(runtime.feedingModeFoodKey),
-    onOpen(now, toggleOptions) {
-      let tutorialChanged = false;
-      runtime.foodTrayOpen = true;
-      runtime.toolModeSource = toggleOptions.source || "toolbar";
-      if (toggleOptions.collapseSidebar) {
-        runtime.sidebarCollapsed = true;
-      }
-      if (isTutorialStage(TUTORIAL_STAGE_FOOD_INTRO)) {
-        tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FOOD_FEED, { now }) || tutorialChanged;
-      }
-      return tutorialChanged;
+  const guidedFeedStep = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FOOD_FEED);
+  const nextMode = guidedFeedStep
+    ? true
+    : (typeof force === "boolean" ? force : !(runtime.foodTrayOpen || runtime.feedingModeFoodKey));
+  clearPrimaryToolModes();
+  const now = Date.now();
+  let tutorialChanged = false;
+  runtime.storeOverlayOpen = false;
+  runtime.utilityOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+
+  if (nextMode) {
+    runtime.foodTrayOpen = true;
+    runtime.toolModeSource = options.source || "toolbar";
+    if (options.collapseSidebar) {
+      runtime.sidebarCollapsed = true;
     }
-  }, force, options);
+    if (isTutorialStage(TUTORIAL_STAGE_FOOD_INTRO)) {
+      tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FOOD_FEED, { now }) || tutorialChanged;
+    }
+  }
+
+  if (tutorialChanged) {
+    saveState();
+  }
+  renderUi(now);
 }
 
 function toggleMedicineTray(force = null, options = {}) {
-  toggleToolbarTrayMode({
-    reason: "medicine-tray",
-    isOpen: () => runtime.medicineTrayOpen,
-    hasSelection: () => Boolean(runtime.medicineModeKey),
-    onOpen(_now, toggleOptions) {
-      runtime.medicineTrayOpen = true;
-      runtime.toolModeSource = toggleOptions.source || "toolbar";
-      if (toggleOptions.collapseSidebar) {
-        runtime.sidebarCollapsed = true;
-      }
-      return false;
+  const nextMode = typeof force === "boolean" ? force : !(runtime.medicineTrayOpen || runtime.medicineModeKey);
+  clearPrimaryToolModes();
+  runtime.storeOverlayOpen = false;
+  runtime.utilityOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+
+  if (nextMode) {
+    runtime.medicineTrayOpen = true;
+    runtime.toolModeSource = options.source || "toolbar";
+    if (options.collapseSidebar) {
+      runtime.sidebarCollapsed = true;
     }
-  }, force, options);
+  }
+
+  renderUi(Date.now());
 }
 
 function renderCollapsibleSections() {
@@ -7225,7 +7075,7 @@ function renderCollapsibleSections() {
     body.hidden = collapsed;
 
     if (icon) {
-      icon.textContent = collapsed ? "â¬‡ï¸" : "â¬†ï¸";
+      icon.textContent = collapsed ? "⬇️" : "⬆️";
     }
   });
 }
@@ -7842,12 +7692,20 @@ function bindEvents() {
     }
   });
   dom.closeUtilityOverlay?.addEventListener("click", () => {
-    requestCloseUtilityOverlay();
+    if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+      cancelTutorialSkipConfirmation();
+      return;
+    }
+    closeUtilityOverlay();
   });
   dom.utilityOverlay?.addEventListener("wheel", handleOverlayWheelScroll, { passive: false });
   dom.utilityOverlay?.addEventListener("click", (event) => {
     if (event.target === dom.utilityOverlay) {
-      requestCloseUtilityOverlay();
+      if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+        cancelTutorialSkipConfirmation();
+        return;
+      }
+      closeUtilityOverlay();
     }
   });
   dom.closeSettingsOverlay?.addEventListener("click", () => closeSettingsOverlay());
@@ -8398,42 +8256,486 @@ function bindEvents() {
     }
   });
   dom.utilityOverlayBody?.addEventListener("click", (event) => {
-    dispatchUtilityOverlayTargetEvent("onBodyClick", event);
+    const foodButton = event.target.closest("[data-select-food]");
+    if (foodButton) {
+      selectFoodMode(foodButton.dataset.selectFood);
+      return;
+    }
+
+    const medicineButton = event.target.closest("[data-select-medicine]");
+    if (medicineButton) {
+      selectMedicineMode(medicineButton.dataset.selectMedicine);
+      return;
+    }
+    const managementViewButton = event.target.closest("[data-management-view]");
+    if (managementViewButton) {
+      runtime.managementHubView = normalizeManagementHubView(managementViewButton.dataset.managementView);
+      renderUi(Date.now());
+      return;
+    }
+    const managementSelectFishButton = event.target.closest("[data-management-select-fish]");
+    if (managementSelectFishButton) {
+      selectFishInTankFromManagement(managementSelectFishButton.dataset.managementSelectFish);
+      return;
+    }
+    const managementStoreFishButton = event.target.closest("[data-management-store-fish]");
+    if (managementStoreFishButton) {
+      storeFish(managementStoreFishButton.dataset.managementStoreFish);
+      return;
+    }
+    const managementBuyFishButton = event.target.closest("[data-management-buy-another-fish]");
+    if (managementBuyFishButton) {
+      buyAnotherFishFromManagement(managementBuyFishButton.dataset.managementBuyAnotherFish);
+      return;
+    }
+    const managementSellFishButton = event.target.closest("[data-management-sell-fish]");
+    if (managementSellFishButton) {
+      sellFish(managementSellFishButton.dataset.managementSellFish);
+      return;
+    }
+    const managementSelectDecorButton = event.target.closest("[data-management-select-decor]");
+    if (managementSelectDecorButton) {
+      selectDecorInTankFromManagement(managementSelectDecorButton.dataset.managementSelectDecor);
+      return;
+    }
+    const managementStoreDecorButton = event.target.closest("[data-management-store-decor]");
+    if (managementStoreDecorButton) {
+      storeDecor(managementStoreDecorButton.dataset.managementStoreDecor);
+      return;
+    }
+    const managementBuyDecorButton = event.target.closest("[data-management-buy-another-decor]");
+    if (managementBuyDecorButton) {
+      buyAnotherDecor(managementBuyDecorButton.dataset.managementBuyAnotherDecor);
+      return;
+    }
+    const managementSellDecorButton = event.target.closest("[data-management-sell-decor]");
+    if (managementSellDecorButton) {
+      sellPlacedDecor(managementSellDecorButton.dataset.managementSellDecor);
+      return;
+    }
+    if (event.target.closest("[data-management-history-more]")) {
+      const totalEvents = Array.isArray(state.events) ? state.events.length : 0;
+      runtime.managementHistoryVisibleCount = Math.min(
+        totalEvents,
+        (Number(runtime.managementHistoryVisibleCount) || MANAGEMENT_HISTORY_PAGE_SIZE) + MANAGEMENT_HISTORY_PAGE_SIZE
+      );
+      renderUi(Date.now());
+      return;
+    }
+    const openStoreButton = event.target.closest("[data-open-store-tab]");
+    if (openStoreButton) {
+      openStoreOverlay(openStoreButton.dataset.openStoreTab);
+      return;
+    }
+    if (event.target.closest("[data-open-equipment-overlay]")) {
+      openEquipmentOverlay();
+      return;
+    }
+    if (event.target.closest("[data-open-settings-from-management]")) {
+      openSettingsOverlay();
+      return;
+    }
+    if (event.target.closest("[data-edit-tank-name]")) {
+      const tank = getCurrentTank();
+      if (!tank) {
+        return;
+      }
+      runtime.editingTankNameId = tank.id;
+      runtime.editingTankNameValue = getTankLabel(tank);
+      renderUi(Date.now());
+      window.requestAnimationFrame(() => {
+        const input = dom.utilityOverlayBody?.querySelector("[data-tank-name-input]");
+        input?.focus?.();
+        input?.select?.();
+      });
+      return;
+    }
+    if (event.target.closest("[data-save-tank-name]")) {
+      saveCurrentTankName();
+      return;
+    }
+    if (event.target.closest("[data-cancel-tank-name]")) {
+      cancelCurrentTankNameEdit();
+      return;
+    }
+    if (event.target.closest("[data-sell-current-tank]")) {
+      sellCurrentTank();
+      return;
+    }
+    if (event.target.closest("[data-reset-bubbler-settings]")) {
+      resetSelectedBubblerSettings();
+      return;
+    }
+    const bubblerColorButton = event.target.closest("[data-bubbler-color]");
+    if (bubblerColorButton) {
+      updateSelectedBubblerSetting("bubbleColor", bubblerColorButton.dataset.bubblerColor);
+      return;
+    }
+    const caveColorButton = event.target.closest("[data-cave-color-layer]");
+    if (caveColorButton) {
+      updateSelectedCaveColorSetting(
+        caveColorButton.dataset.caveColorLayer,
+        caveColorButton.dataset.caveColor || ""
+      );
+      return;
+    }
+    const caveEntryButton = event.target.closest("[data-cave-entry-select]");
+    if (caveEntryButton) {
+      updateSelectedCaveSetting("activeEntryIndex", caveEntryButton.dataset.caveEntrySelect);
+      return;
+    }
+    const caveSeatButton = event.target.closest("[data-cave-seat-select]");
+    if (caveSeatButton) {
+      updateSelectedCaveSetting("activeSeatIndex", caveSeatButton.dataset.caveSeatSelect);
+      return;
+    }
+    const caveSeatFacingButton = event.target.closest("[data-cave-seat-facing]");
+    if (caveSeatFacingButton) {
+      updateSelectedCaveSetting(
+        "seatFacing",
+        caveSeatFacingButton.dataset.caveSeatFacing,
+        caveSeatFacingButton.dataset.caveSeatIndex
+      );
+      return;
+    }
   });
   dom.utilityOverlayBody?.addEventListener("pointerdown", (event) => {
-    dispatchUtilityOverlayPointerEvent("onBodyPointerDown", event);
+    const previewFrame = event.target.closest("[data-decor-settings-preview-frame]");
+    const caveTarget = getEditableCaveSettingsTarget();
+    if (
+      previewFrame instanceof HTMLElement
+      && (runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-hide-create")
+      && isCaveDecorKey(caveTarget?.item?.decorKey)
+    ) {
+      const pointTarget = getCaveSettingsPreviewPointerTarget(event);
+      const point = getCaveSettingsPreviewLocalPoint(event);
+      if (pointTarget && point) {
+        runtime.caveSettingsDrag = {
+          kind: pointTarget.kind,
+          index: pointTarget.index,
+          pointerId: event.pointerId
+        };
+        previewFrame.setPointerCapture?.(event.pointerId);
+        applyCaveSettingsPreviewPoint(pointTarget.kind, pointTarget.index, point, { commit: false });
+        event.preventDefault();
+        return;
+      }
+    }
+    const caveEntryControl = event.target.closest("[data-cave-setting][data-cave-entry-index]");
+    if (caveEntryControl instanceof HTMLInputElement || caveEntryControl instanceof HTMLSelectElement) {
+      updateSelectedCaveSetting("activeEntryIndex", caveEntryControl.dataset.caveEntryIndex);
+    }
+    const caveSeatControl = event.target.closest("[data-cave-setting][data-cave-seat-index]");
+    if (caveSeatControl instanceof HTMLInputElement || caveSeatControl instanceof HTMLSelectElement) {
+      updateSelectedCaveSetting("activeSeatIndex", caveSeatControl.dataset.caveSeatIndex);
+    }
   });
   dom.utilityOverlayBody?.addEventListener("pointermove", (event) => {
-    dispatchUtilityOverlayPointerEvent("onBodyPointerMove", event);
+    const drag = runtime.caveSettingsDrag;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const point = getCaveSettingsPreviewLocalPoint(event);
+    if (point) {
+      applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: false });
+      event.preventDefault();
+    }
   });
   dom.utilityOverlayBody?.addEventListener("pointerup", (event) => {
-    dispatchUtilityOverlayPointerEvent("onBodyPointerUp", event);
+    finishCaveSettingsPreviewDrag(event);
   });
   dom.utilityOverlayBody?.addEventListener("pointercancel", (event) => {
-    dispatchUtilityOverlayPointerEvent("onBodyPointerCancel", event);
+    finishCaveSettingsPreviewDrag(event);
   });
   dom.utilityOverlayBody?.addEventListener("focusin", (event) => {
-    dispatchUtilityOverlayTargetEvent("onBodyFocusIn", event);
+    const caveEntryControl = event.target.closest("[data-cave-setting][data-cave-entry-index]");
+    if (caveEntryControl instanceof HTMLInputElement || caveEntryControl instanceof HTMLSelectElement) {
+      updateSelectedCaveSetting("activeEntryIndex", caveEntryControl.dataset.caveEntryIndex);
+    }
+    const caveSeatControl = event.target.closest("[data-cave-setting][data-cave-seat-index]");
+    if (caveSeatControl instanceof HTMLInputElement || caveSeatControl instanceof HTMLSelectElement) {
+      updateSelectedCaveSetting("activeSeatIndex", caveSeatControl.dataset.caveSeatIndex);
+    }
   });
   dom.utilityOverlayBody?.addEventListener("input", (event) => {
-    dispatchUtilityOverlayTargetEvent("onBodyInput", event);
+    const caveSettingInput = event.target.closest("[data-cave-setting]");
+    if (caveSettingInput instanceof HTMLInputElement) {
+      updateSelectedCaveSetting(
+        caveSettingInput.dataset.caveSetting,
+        caveSettingInput.type === "checkbox" ? caveSettingInput.checked : caveSettingInput.value,
+        caveSettingInput.dataset.caveSeatIndex,
+        caveSettingInput.dataset.caveEntryIndex
+      );
+      return;
+    }
+    const bubblerInput = event.target.closest("[data-bubbler-setting]");
+    if (bubblerInput instanceof HTMLInputElement) {
+      updateSelectedBubblerSetting(
+        bubblerInput.dataset.bubblerSetting,
+        bubblerInput.type === "checkbox" ? bubblerInput.checked : bubblerInput.value
+      );
+      return;
+    }
+    const decorSettingInput = event.target.closest("[data-decor-setting]");
+    if (decorSettingInput instanceof HTMLInputElement) {
+      if (decorSettingInput.dataset.decorSetting === "size") {
+        updateSelectedDecorSetting(decorSettingInput.dataset.decorSetting, decorSettingInput.value);
+      } else {
+        updateSelectedDecorMotionSetting(decorSettingInput.dataset.decorSetting, decorSettingInput.value);
+      }
+      return;
+    }
+    const customDecorSettingInput = event.target.closest("[data-custom-decor-setting]");
+    if (customDecorSettingInput instanceof HTMLInputElement) {
+      updateSelectedCustomDecorSetting(
+        customDecorSettingInput.dataset.customDecorSetting,
+        customDecorSettingInput.value
+      );
+      return;
+    }
+    const customDecorInput = event.target.closest("[data-custom-decor-name-input]");
+    if (customDecorInput instanceof HTMLInputElement && runtime.pendingCustomDecorUpload) {
+      runtime.pendingCustomDecorUpload.name = customDecorInput.value;
+      return;
+    }
+    const customDecorSizeInput = event.target.closest("[data-custom-decor-size-input]");
+    if (customDecorSizeInput instanceof HTMLInputElement && runtime.pendingCustomDecorUpload) {
+      updatePendingCustomDecorSize(customDecorSizeInput.value);
+      return;
+    }
+    const customDecorSplitInput = event.target.closest("[data-custom-decor-split-input]");
+    if (customDecorSplitInput instanceof HTMLInputElement && runtime.pendingCustomDecorUpload) {
+      updatePendingCustomDecorMotionSplit(customDecorSplitInput.value);
+      return;
+    }
+    const customDecorIntensityInput = event.target.closest("[data-custom-decor-intensity-input]");
+    if (customDecorIntensityInput instanceof HTMLInputElement && runtime.pendingCustomDecorUpload) {
+      updatePendingCustomDecorMotionIntensity(customDecorIntensityInput.value);
+      return;
+    }
+    const customHideNameInput = event.target.closest("[data-custom-hide-name-input]");
+    if (customHideNameInput instanceof HTMLInputElement && runtime.pendingCustomHideUpload) {
+      runtime.pendingCustomHideUpload.name = customHideNameInput.value;
+      return;
+    }
+    const customHideSizeInput = event.target.closest("[data-custom-hide-size-input]");
+    if (customHideSizeInput instanceof HTMLInputElement && runtime.pendingCustomHideUpload) {
+      updatePendingCustomHideScale(customHideSizeInput.value);
+      return;
+    }
+    const customFishNameInput = event.target.closest("[data-custom-fish-name-input]");
+    if (customFishNameInput instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
+      runtime.pendingCustomFishUpload.name = customFishNameInput.value;
+      return;
+    }
+    const customFishSizeInput = event.target.closest("[data-custom-fish-size-input]");
+    if (customFishSizeInput instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
+      updatePendingCustomFishSize(customFishSizeInput.value);
+      return;
+    }
+    const input = event.target.closest("[data-tank-name-input]");
+    if (input instanceof HTMLInputElement) {
+      runtime.editingTankNameValue = input.value;
+    }
   });
   dom.utilityOverlayBody?.addEventListener("change", (event) => {
-    dispatchUtilityOverlayTargetEvent("onBodyChange", event);
+    const caveColorizeControl = event.target.closest("[data-cave-colorize-layer]");
+    if (caveColorizeControl instanceof HTMLInputElement) {
+      updateSelectedCaveColorizeSetting(
+        caveColorizeControl.dataset.caveColorizeLayer,
+        caveColorizeControl.checked
+      );
+      return;
+    }
+    const caveSettingControl = event.target.closest("[data-cave-setting]");
+    if (caveSettingControl instanceof HTMLInputElement || caveSettingControl instanceof HTMLSelectElement) {
+      updateSelectedCaveSetting(
+        caveSettingControl.dataset.caveSetting,
+        caveSettingControl.value,
+        caveSettingControl.dataset.caveSeatIndex,
+        caveSettingControl.dataset.caveEntryIndex
+      );
+    }
+    const bubblerControl = event.target.closest("[data-bubbler-setting]");
+    if (bubblerControl instanceof HTMLInputElement || bubblerControl instanceof HTMLSelectElement) {
+      updateSelectedBubblerSetting(
+        bubblerControl.dataset.bubblerSetting,
+        bubblerControl instanceof HTMLInputElement && bubblerControl.type === "checkbox"
+          ? bubblerControl.checked
+          : bubblerControl.value
+      );
+    }
+    const customDecorSettingControl = event.target.closest("[data-custom-decor-setting]");
+    if (customDecorSettingControl instanceof HTMLInputElement || customDecorSettingControl instanceof HTMLSelectElement) {
+      updateSelectedCustomDecorSetting(
+        customDecorSettingControl.dataset.customDecorSetting,
+        customDecorSettingControl.value
+      );
+    }
+    const decorSettingControl = event.target.closest("[data-decor-setting]");
+    if (decorSettingControl instanceof HTMLInputElement || decorSettingControl instanceof HTMLSelectElement) {
+      const decorSetting = decorSettingControl.dataset.decorSetting;
+      if (decorSetting === "size" || decorSetting === "tankLayer") {
+        updateSelectedDecorSetting(decorSetting, decorSettingControl.value);
+      } else {
+        updateSelectedDecorMotionSetting(decorSetting, decorSettingControl.value);
+      }
+    }
+    const customFishBehaviorSelect = event.target.closest("[data-custom-fish-behavior-select]");
+    if (customFishBehaviorSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+      runtime.pendingCustomFishUpload.behaviorProfileId = normalizeCustomFishBehaviorProfileId(customFishBehaviorSelect.value);
+    }
+    const customDecorTypeSelect = event.target.closest("[data-custom-decor-type-select]");
+    if (customDecorTypeSelect instanceof HTMLSelectElement && runtime.pendingCustomDecorUpload) {
+      setPendingCustomDecorMotionType(customDecorTypeSelect.value);
+    }
+    const customDecorSwaySideSelect = event.target.closest("[data-custom-decor-sway-side-select]");
+    if (customDecorSwaySideSelect instanceof HTMLSelectElement && runtime.pendingCustomDecorUpload) {
+      setPendingCustomDecorSwaySide(customDecorSwaySideSelect.value);
+    }
   });
   dom.utilityOverlayBody?.addEventListener("keydown", (event) => {
-    dispatchUtilityOverlayTargetEvent("onBodyKeyDown", event);
+    const customDecorInput = event.target.closest("[data-custom-decor-name-input]");
+    if (customDecorInput instanceof HTMLInputElement) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void savePendingCustomDecorUpload();
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeUtilityOverlay();
+      }
+      return;
+    }
+    const customHideInput = event.target.closest("[data-custom-hide-name-input]");
+    if (customHideInput instanceof HTMLInputElement) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void savePendingCustomHideUpload();
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeUtilityOverlay();
+      }
+      return;
+    }
+    const customFishInput = event.target.closest("[data-custom-fish-name-input]");
+    if (customFishInput instanceof HTMLInputElement) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void savePendingCustomFishUpload();
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeUtilityOverlay();
+      }
+      return;
+    }
+    const input = event.target.closest("[data-tank-name-input]");
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      saveCurrentTankName();
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelCurrentTankNameEdit();
+    }
   });
   dom.utilityOverlayFooter?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) {
       return;
     }
-    if (dispatchUtilityOverlayTargetEvent("onFooterClick", event)) {
+    if (target.closest("[data-confirm-tutorial-skip]")) {
+      advanceIntroTutorial("confirm-skip");
+      return;
+    }
+    if (target.closest("[data-cancel-tutorial-skip]")) {
+      advanceIntroTutorial("cancel-skip");
+      return;
+    }
+    if (target.closest("[data-claim-daily-bonus]")) {
+      claimDailyBonus();
+      return;
+    }
+    if (target.closest("[data-confirm-dispenser-reset]")) {
+      returnAutoDispenserPelletsToInventory();
+      return;
+    }
+    if (target.closest("[data-confirm-import-save]")) {
+      openImportDataPicker();
+      closeUtilityOverlay();
+      return;
+    }
+    if (target.closest("[data-confirm-reset-progress]")) {
+      resetAllProgress();
+      return;
+    }
+    if (target.closest("[data-confirm-decor-buy-another]")) {
+      confirmDecorBuyAnother();
+      return;
+    }
+    if (target.closest("[data-confirm-decor-sell]")) {
+      confirmDecorSell();
+      return;
+    }
+    if (target.closest("[data-save-custom-decor]")) {
+      void savePendingCustomDecorUpload();
+      return;
+    }
+    if (target.closest("[data-choose-custom-hide-background]")) {
+      openLocalHideBackgroundPicker();
+      return;
+    }
+    if (target.closest("[data-save-custom-hide]")) {
+      void savePendingCustomHideUpload();
+      return;
+    }
+    if (target.closest("[data-save-custom-fish]")) {
+      void savePendingCustomFishUpload();
+      return;
+    }
+    if (target.closest("[data-copy-save-export]")) {
+      void copyCurrentSaveExportData();
+      return;
+    }
+    if (target.closest("[data-select-save-export]")) {
+      if (selectSaveExportText()) {
+        showToast("Save data selected.");
+      }
+      return;
+    }
+    if (target.closest("[data-download-save-export]")) {
+      void retrySaveExportDownload();
+      return;
+    }
+    if (target.closest("[data-open-external-link]")) {
+      openPendingExternalLink();
+      return;
+    }
+    if (target.closest("[data-copy-external-link]")) {
+      void copyPendingExternalLink();
+      return;
+    }
+    if (target.closest("[data-dismiss-hardware-acceleration-notice]")) {
+      dismissHardwareAccelerationNotice();
+      closeUtilityOverlay();
       return;
     }
     if (target.closest("[data-close-utility]")) {
-      requestCloseUtilityOverlay();
+      if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+        cancelTutorialSkipConfirmation();
+        return;
+      }
+      closeUtilityOverlay();
     }
   });
 
@@ -9269,24 +9571,6 @@ function configureCanvasContext(context) {
   }
 }
 
-function updatePlayfieldCssVariables() {
-  if (!dom.tankStage) {
-    return;
-  }
-
-  const playfield = runtime.playfield || {};
-  const left = Number(playfield.left) || 0;
-  const top = Number(playfield.top) || 0;
-  const width = Number(playfield.width) || TANK_WIDTH;
-  const height = Number(playfield.height) || TANK_HEIGHT;
-  dom.tankStage.style.setProperty("--playfield-left", `${left}px`);
-  dom.tankStage.style.setProperty("--playfield-top", `${top}px`);
-  dom.tankStage.style.setProperty("--playfield-width", `${width}px`);
-  dom.tankStage.style.setProperty("--playfield-height", `${height}px`);
-  dom.tankStage.style.setProperty("--playfield-right", `${left + width}px`);
-  dom.tankStage.style.setProperty("--playfield-bottom", `${top + height}px`);
-}
-
 function resizeDisplayCanvases() {
   const rect = dom.tankStage.getBoundingClientRect();
   if (!rect.width || !rect.height) {
@@ -9327,16 +9611,6 @@ function resizeDisplayCanvases() {
   runtime.stageRenderScale = stageScale;
   runtime.stageRenderOffsetX = offsetX;
   runtime.stageRenderOffsetY = offsetY;
-  runtime.playfield = {
-    scale: 1,
-    left: 0,
-    top: 0,
-    width: rect.width,
-    height: rect.height,
-    contentWidth: TANK_WIDTH,
-    contentHeight: TANK_HEIGHT
-  };
-  updatePlayfieldCssVariables();
   const waterSurfaceChanged = syncViewportAnchoredWaterSurface();
 
   tankContext.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
@@ -10892,7 +11166,7 @@ function formatCustomFishBehaviorOption(profile) {
 function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", dimensions = {}) {
   const naturalWidth = Math.max(1, Math.round(Number(dimensions.width) || CUSTOM_FISH_DEFAULT_WIDTH));
   const naturalHeight = Math.max(1, Math.round(Number(dimensions.height) || CUSTOM_FISH_DEFAULT_WIDTH));
-  openCustomAssetEditorOverlay("fish", {
+  runtime.pendingCustomFishUpload = {
     dataUrl,
     suggestedName: sanitizeCustomFishName(suggestedName, "Custom Fish"),
     name: sanitizeCustomFishName(suggestedName, "Custom Fish"),
@@ -10900,435 +11174,20 @@ function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", d
     naturalWidth,
     naturalHeight,
     behaviorProfileId: normalizeCustomFishBehaviorProfileId("")
+  };
+  runtime.utilityOverlayOpen = true;
+  runtime.utilityOverlayMode = "custom-fish-create";
+  runtime.storeOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  renderUi(Date.now());
+  window.requestAnimationFrame(() => {
+    const input = dom.utilityOverlayBody?.querySelector("[data-custom-fish-name-input]");
+    input?.focus?.();
+    input?.select?.();
+    updatePendingCustomFishPreview();
   });
 }
-
-function getCustomAssetTypeDef(type) {
-  const assetType = String(type || "").trim();
-  return assetType && Object.prototype.hasOwnProperty.call(CUSTOM_ASSET_TYPES, assetType)
-    ? CUSTOM_ASSET_TYPES[assetType]
-    : null;
-}
-
-function getCustomAssetInput(type, step = "primary") {
-  const typeDef = getCustomAssetTypeDef(type);
-  const stepDef = typeDef?.pickerSteps?.[step];
-  const inputKey = stepDef?.inputKey;
-  return inputKey ? dom[inputKey] : null;
-}
-
-function resetCustomAssetInput(input) {
-  if (input instanceof HTMLInputElement) {
-    input.value = "";
-  }
-}
-
-function ensureCustomAssetCost(type) {
-  const typeDef = getCustomAssetTypeDef(type);
-  if (!typeDef || Math.max(0, Number(typeDef.cost) || 0) <= 0) {
-    return true;
-  }
-  if (state.coins >= typeDef.cost) {
-    return true;
-  }
-  showToast(`You need ${typeDef.cost} ${pluralize("coin", typeDef.cost)} for ${typeDef.label}.`);
-  return false;
-}
-
-function getPendingCustomAsset(type) {
-  const typeDef = getCustomAssetTypeDef(type);
-  return typeDef ? runtime[typeDef.pendingStateKey] : null;
-}
-
-function finalizeCustomAssetCreation(type, options = {}) {
-  const typeDef = getCustomAssetTypeDef(type);
-  if (!typeDef) {
-    return false;
-  }
-  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
-  runtime[typeDef.pendingStateKey] = null;
-  closeUtilityOverlayState({ now, reason: "complete" });
-  if (typeof options.eventText === "string" && options.eventText) {
-    pushEvent(options.eventText, now);
-  }
-  saveState();
-  renderUi(now);
-  if (typeof options.toastText === "string" && options.toastText) {
-    showToast(options.toastText);
-  }
-  return true;
-}
-
-function openCustomAssetPicker(type, step = "primary") {
-  const typeDef = getCustomAssetTypeDef(type);
-  const stepDef = typeDef?.pickerSteps?.[step];
-  if (!typeDef || !stepDef) {
-    return false;
-  }
-  if (stepDef.checkCost !== false && !ensureCustomAssetCost(type)) {
-    return false;
-  }
-  const input = getCustomAssetInput(type, step);
-  if (!(input instanceof HTMLInputElement)) {
-    showToast(stepDef.unavailableMessage || `${typeDef.label} picker unavailable.`);
-    return false;
-  }
-  if (typeof stepDef.beforeOpen === "function") {
-    stepDef.beforeOpen();
-  }
-  resetCustomAssetInput(input);
-  input.click();
-  return true;
-}
-
-async function importCustomAssetFromPicker(type, step = "primary", event) {
-  const typeDef = getCustomAssetTypeDef(type);
-  const stepDef = typeDef?.pickerSteps?.[step];
-  const input = event?.currentTarget instanceof HTMLInputElement
-    ? event.currentTarget
-    : getCustomAssetInput(type, step);
-  const file = input?.files?.[0];
-  if (!typeDef || !stepDef || !file) {
-    return;
-  }
-
-  try {
-    if (stepDef.checkCost !== false && !ensureCustomAssetCost(type)) {
-      return;
-    }
-    await stepDef.importStep({
-      typeDef,
-      stepDef,
-      file,
-      input,
-      now: Date.now()
-    });
-  } catch (error) {
-    console.error(error);
-    if (typeof stepDef.onError === "function") {
-      stepDef.onError(error);
-    } else {
-      showToast(error?.message || typeDef.failureToast);
-    }
-  } finally {
-    resetCustomAssetInput(input);
-  }
-}
-
-async function savePendingCustomAsset(type) {
-  const typeDef = getCustomAssetTypeDef(type);
-  if (!typeDef) {
-    return false;
-  }
-  const pending = getPendingCustomAsset(type);
-  const validation = typeof typeDef.validatePending === "function"
-    ? typeDef.validatePending(pending)
-    : { ok: true };
-  if (!validation?.ok) {
-    if (validation?.message) {
-      showToast(validation.message);
-    }
-    if (validation?.focusSelector) {
-      dom.utilityOverlayBody?.querySelector(validation.focusSelector)?.focus?.();
-    }
-    return false;
-  }
-  if (!ensureCustomAssetCost(type)) {
-    return false;
-  }
-  return typeDef.save({
-    pending,
-    now: Date.now()
-  });
-}
-
-const CUSTOM_ASSET_TYPES = Object.freeze({
-  decor: {
-    type: "decor",
-    label: "Custom Decor",
-    cost: CUSTOM_DECOR_COST,
-    pendingStateKey: "pendingCustomDecorUpload",
-    failureToast: "Could not use that image.",
-    pickerSteps: {
-      primary: {
-        inputKey: "localDecorInput",
-        unavailableMessage: "Custom decor picker unavailable.",
-        importStep: async ({ file }) => {
-          const dataUrl = await prepareLocalDecorImageDataUrl(file);
-          await preloadImages([dataUrl]);
-          const image = runtime.images.get(dataUrl) || await loadImageElement(dataUrl);
-          openCustomDecorNameOverlay(dataUrl, titleFromFile(file.name || "Custom Decor"), {
-            width: image.naturalWidth || image.width,
-            height: image.naturalHeight || image.height
-          });
-        }
-      }
-    },
-    validatePending(pending) {
-      if (!pending?.dataUrl) {
-        return { ok: false, message: "Choose an image for Custom Decor first." };
-      }
-      const rawName = String(pending.name || "").replace(/\s+/g, " ").trim();
-      if (!rawName) {
-        return {
-          ok: false,
-          message: "Name your custom decor first.",
-          focusSelector: "[data-custom-decor-name-input]"
-        };
-      }
-      return { ok: true, rawName };
-    },
-    async save({ pending, now }) {
-      const rawName = String(pending.name || "").replace(/\s+/g, " ").trim();
-      const name = sanitizeCustomDecorName(rawName);
-      const storedImage = await storeCustomImageDataUrl(pending.dataUrl, "custom-decor");
-      await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
-      const decorKey = `${CUSTOM_DECOR_KEY_PREFIX}${createId("asset")}`;
-      const asset = sanitizeCustomDecorAssetEntry({
-        key: decorKey,
-        name,
-        path: storedImage.dataUrl,
-        imageRefId: storedImage.imageRefId,
-        width: pending.width,
-        defaultScale: 1,
-        motionType: pending.motionType,
-        motionSplitY: pending.motionSplitY,
-        motionSwaySide: pending.motionSwaySide,
-        motionIntensity: pending.motionIntensity,
-        createdAt: now
-      }, decorKey);
-      if (!asset) {
-        showToast("Could not create that custom decor.");
-        return false;
-      }
-      setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
-      state.coins -= CUSTOM_DECOR_COST;
-      if (!state.customDecorAssets || typeof state.customDecorAssets !== "object") {
-        state.customDecorAssets = {};
-      }
-      state.customDecorAssets[asset.key] = asset;
-      syncRuntimeCustomDecorAssetsFromState(state);
-      state.decorInventory[asset.key] = (state.decorInventory[asset.key] || 0) + 1;
-      return finalizeCustomAssetCreation("decor", {
-        now,
-        eventText: `Created custom decor ${asset.name}.`,
-        toastText: `${asset.name} saved. Custom decor created and waiting in storage.`
-      });
-    }
-  },
-  hide: {
-    type: "hide",
-    label: "Custom Hide",
-    cost: CUSTOM_HIDE_COST,
-    pendingStateKey: "pendingCustomHideUpload",
-    failureToast: "Could not use that image.",
-    pickerSteps: {
-      front: {
-        inputKey: "localHideFrontInput",
-        unavailableMessage: "Custom hide picker unavailable.",
-        beforeOpen: () => {
-          clearPendingCustomAssetUploads({ types: ["hide"] });
-        },
-        importStep: async ({ file }) => {
-          const dataUrl = await prepareLocalDecorImageDataUrl(file);
-          await preloadImages([dataUrl]);
-          const image = runtime.images.get(dataUrl) || await loadImageElement(dataUrl);
-          runtime.pendingCustomHideUpload = {
-            frontDataUrl: dataUrl,
-            frontName: titleFromFile(file.name || "Custom Hide"),
-            frontNaturalWidth: Math.max(1, image.naturalWidth || image.width || CUSTOM_DECOR_DEFAULT_WIDTH),
-            frontNaturalHeight: Math.max(1, image.naturalHeight || image.height || CUSTOM_DECOR_DEFAULT_WIDTH)
-          };
-          showToast("Front image selected. Choose a background image for the hide.");
-          openCustomHideBackgroundPrompt();
-        },
-        onError: (error) => {
-          clearPendingCustomAssetUploads({ types: ["hide"] });
-          showToast(error?.message || "Could not use that front image.");
-        }
-      },
-      background: {
-        inputKey: "localHideBackgroundInput",
-        checkCost: false,
-        unavailableMessage: "Custom hide background picker unavailable.",
-        importStep: async ({ file }) => {
-          const pending = runtime.pendingCustomHideUpload;
-          if (!pending?.frontDataUrl) {
-            showToast("Choose a front image for Custom Hide first.");
-            openCustomAssetPicker("hide", "front");
-            return;
-          }
-          const dataUrl = await prepareLocalDecorImageDataUrl(file);
-          await preloadImages([pending.frontDataUrl, dataUrl]);
-          const image = runtime.images.get(dataUrl) || await loadImageElement(dataUrl);
-          openCustomHideCreationOverlay({
-            ...pending,
-            bgDataUrl: dataUrl,
-            bgNaturalWidth: Math.max(1, image.naturalWidth || image.width || CUSTOM_DECOR_DEFAULT_WIDTH),
-            bgNaturalHeight: Math.max(1, image.naturalHeight || image.height || CUSTOM_DECOR_DEFAULT_WIDTH),
-            suggestedName: pending.frontName || titleFromFile(file.name || "Custom Hide")
-          });
-        },
-        onError: (error) => {
-          showToast(error?.message || "Could not use that background image.");
-        }
-      }
-    },
-    validatePending(pending) {
-      if (!pending?.frontDataUrl || !pending?.bgDataUrl) {
-        return { ok: false, message: "Choose both images for Custom Hide first." };
-      }
-      const rawName = String(pending.name || "").replace(/\s+/g, " ").trim();
-      if (!rawName) {
-        return {
-          ok: false,
-          message: "Name your custom hide first.",
-          focusSelector: "[data-custom-hide-name-input]"
-        };
-      }
-      return { ok: true, rawName };
-    },
-    async save({ pending, now }) {
-      const name = sanitizeCustomDecorName(String(pending.name || "").replace(/\s+/g, " ").trim(), "Custom Hide");
-      const [frontImage, backgroundImage] = await Promise.all([
-        storeCustomImageDataUrl(pending.frontDataUrl, "custom-hide-front"),
-        storeCustomImageDataUrl(pending.bgDataUrl, "custom-hide-background")
-      ]);
-      await preloadImages([
-        frontImage.runtimeUrl || frontImage.dataUrl,
-        backgroundImage.runtimeUrl || backgroundImage.dataUrl
-      ]);
-      const decorKey = `${CUSTOM_HIDE_KEY_PREFIX}${createId("asset")}`;
-      const asset = sanitizeCustomDecorAssetEntry({
-        key: decorKey,
-        customType: "hide",
-        name,
-        path: frontImage.dataUrl,
-        imageRefId: frontImage.imageRefId,
-        bgPath: backgroundImage.dataUrl,
-        bgImageRefId: backgroundImage.imageRefId,
-        width: pending.width,
-        defaultScale: pending.scale,
-        caveSettings: pending.caveSettings,
-        createdAt: now
-      }, decorKey);
-      if (!asset) {
-        showToast("Could not create that custom hide.");
-        return false;
-      }
-      setRuntimeImageSource(asset, "runtimePath", frontImage.runtimeUrl);
-      setRuntimeImageSource(asset, "runtimeBgPath", backgroundImage.runtimeUrl);
-      state.coins -= CUSTOM_HIDE_COST;
-      if (!state.customDecorAssets || typeof state.customDecorAssets !== "object") {
-        state.customDecorAssets = {};
-      }
-      state.customDecorAssets[asset.key] = asset;
-      syncRuntimeCustomDecorAssetsFromState(state);
-      state.decorInventory[asset.key] = (state.decorInventory[asset.key] || 0) + 1;
-      return finalizeCustomAssetCreation("hide", {
-        now,
-        eventText: `Created custom hide ${asset.name}.`,
-        toastText: `${asset.name} saved. Custom hide created and waiting in storage.`
-      });
-    }
-  },
-  fish: {
-    type: "fish",
-    label: "Custom Fish",
-    cost: CUSTOM_FISH_COST,
-    pendingStateKey: "pendingCustomFishUpload",
-    failureToast: "Could not use that image.",
-    pickerSteps: {
-      primary: {
-        inputKey: "localFishInput",
-        unavailableMessage: "Custom fish picker unavailable.",
-        importStep: async ({ file }) => {
-          const dataUrl = await prepareLocalFishImageDataUrl(file);
-          const image = await loadImageElement(dataUrl);
-          await preloadImages([dataUrl]);
-          openCustomFishCreationOverlay(dataUrl, titleFromFile(file.name || "Custom Fish"), {
-            width: image.naturalWidth || image.width || CUSTOM_FISH_DEFAULT_WIDTH,
-            height: image.naturalHeight || image.height || CUSTOM_FISH_DEFAULT_WIDTH
-          });
-        }
-      }
-    },
-    validatePending(pending) {
-      if (!pending?.dataUrl) {
-        return { ok: false, message: "Choose an image for Custom Fish first." };
-      }
-      const rawName = String(pending.name || "").replace(/\s+/g, " ").trim();
-      if (!rawName) {
-        return {
-          ok: false,
-          message: "Name your custom fish type first.",
-          focusSelector: "[data-custom-fish-name-input]"
-        };
-      }
-      if (!normalizeCustomFishBehaviorProfileId(pending.behaviorProfileId)) {
-        return {
-          ok: false,
-          message: "Choose a fish behavior first.",
-          focusSelector: "[data-custom-fish-behavior-select]"
-        };
-      }
-      return { ok: true, rawName };
-    },
-    async save({ pending, now }) {
-      const storedImage = await storeCustomImageDataUrl(pending.dataUrl, "custom-fish");
-      await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
-      const speciesKey = `${CUSTOM_FISH_KEY_PREFIX}${createId("species")}`;
-      const asset = sanitizeCustomFishAssetEntry({
-        key: speciesKey,
-        name: sanitizeCustomFishName(String(pending.name || "").replace(/\s+/g, " ").trim()),
-        path: storedImage.dataUrl,
-        imageRefId: storedImage.imageRefId,
-        width: pending.width,
-        behaviorProfileId: pending.behaviorProfileId,
-        createdAt: now
-      }, speciesKey);
-      if (!asset) {
-        showToast("Could not create that custom fish.");
-        return false;
-      }
-      setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
-      state.coins -= CUSTOM_FISH_COST;
-      if (!state.customFishAssets || typeof state.customFishAssets !== "object") {
-        state.customFishAssets = {};
-      }
-      state.customFishAssets[asset.key] = asset;
-      syncRuntimeCustomFishAssetsFromState(state);
-      const fish = createFishRecord(asset.key, {
-        now,
-        name: asset.name,
-        scale: DEFAULT_FISH_SCALE,
-        entryStartedAt: now,
-        entryDurationMs: FISH_ENTRY_DURATION_MS,
-        entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
-      });
-      if (!fish) {
-        delete state.customFishAssets[asset.key];
-        syncRuntimeCustomFishAssetsFromState(state);
-        state.coins += CUSTOM_FISH_COST;
-        showToast("Could not add that custom fish to the tank.");
-        return false;
-      }
-      addFishToTank(fish, now);
-      const currentSlot = getCurrentMealSlot(now);
-      if (!isMealFreeFish(fish)) {
-        const entry = ensureMealHistoryEntry(currentSlot.key, now);
-        const fedFishIds = new Set(entry.fishIds);
-        fedFishIds.add(fish.id);
-        entry.fishIds = [...fedFishIds];
-      }
-      return finalizeCustomAssetCreation("fish", {
-        now,
-        eventText: `Created custom fish ${asset.name}.`,
-        toastText: `${asset.name} created and added to the tank.`
-      });
-    }
-  }
-});
 
 function updatePendingCustomFishPreview() {
   const pending = runtime.pendingCustomFishUpload;
@@ -11500,7 +11359,88 @@ function syncRuntimeCustomFishAssetsFromState(targetState = state) {
 }
 
 async function savePendingCustomFishUpload() {
-  return savePendingCustomAsset("fish");
+  const pending = runtime.pendingCustomFishUpload;
+  if (!pending?.dataUrl) {
+    showToast("Choose an image for Custom Fish first.");
+    return;
+  }
+
+  const rawName = String(pending.name || "").replace(/\s+/g, " ").trim();
+  if (!rawName) {
+    showToast("Name your custom fish type first.");
+    dom.utilityOverlayBody?.querySelector("[data-custom-fish-name-input]")?.focus?.();
+    return;
+  }
+
+  if (!normalizeCustomFishBehaviorProfileId(pending.behaviorProfileId)) {
+    showToast("Choose a fish behavior first.");
+    dom.utilityOverlayBody?.querySelector("[data-custom-fish-behavior-select]")?.focus?.();
+    return;
+  }
+
+  if (state.coins < CUSTOM_FISH_COST) {
+    showToast(`You need ${CUSTOM_FISH_COST} ${pluralize("coin", CUSTOM_FISH_COST)} for Custom Fish.`);
+    return;
+  }
+
+  const storedImage = await storeCustomImageDataUrl(pending.dataUrl, "custom-fish");
+  await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
+  const speciesKey = `${CUSTOM_FISH_KEY_PREFIX}${createId("species")}`;
+  const asset = sanitizeCustomFishAssetEntry({
+    key: speciesKey,
+    name: sanitizeCustomFishName(rawName),
+    path: storedImage.dataUrl,
+    imageRefId: storedImage.imageRefId,
+    width: pending.width,
+    behaviorProfileId: pending.behaviorProfileId,
+    createdAt: Date.now()
+  }, speciesKey);
+  if (!asset) {
+    showToast("Could not create that custom fish.");
+    return;
+  }
+  setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
+
+  state.coins -= CUSTOM_FISH_COST;
+  if (!state.customFishAssets || typeof state.customFishAssets !== "object") {
+    state.customFishAssets = {};
+  }
+  state.customFishAssets[asset.key] = asset;
+  syncRuntimeCustomFishAssetsFromState(state);
+
+  const now = Date.now();
+  const fish = createFishRecord(asset.key, {
+    now,
+    name: asset.name,
+    scale: DEFAULT_FISH_SCALE,
+    entryStartedAt: now,
+    entryDurationMs: FISH_ENTRY_DURATION_MS,
+    entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
+  });
+  if (!fish) {
+    delete state.customFishAssets[asset.key];
+    syncRuntimeCustomFishAssetsFromState(state);
+    state.coins += CUSTOM_FISH_COST;
+    showToast("Could not add that custom fish to the tank.");
+    return;
+  }
+
+  addFishToTank(fish, now);
+  const currentSlot = getCurrentMealSlot(now);
+  if (!isMealFreeFish(fish)) {
+    const entry = ensureMealHistoryEntry(currentSlot.key, now);
+    const fedFishIds = new Set(entry.fishIds);
+    fedFishIds.add(fish.id);
+    entry.fishIds = [...fedFishIds];
+  }
+
+  runtime.pendingCustomFishUpload = null;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
+  pushEvent(`Created custom fish ${asset.name}.`, now);
+  saveState();
+  renderUi(now);
+  showToast(`${asset.name} created and added to the tank.`);
 }
 
 function normalizeFishCatalog(payload, options = {}) {
@@ -12398,7 +12338,11 @@ function getFishDisplaySourceSpecies(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishDisplayScaleForSpecies(species = null) {
-  return getViewportStableAssetScale() * getAquariumPhysicalAssetScale("fish");
+  const stableScale = getViewportStableAssetScale();
+  if (species?.customAsset || isCustomFishAssetKey(species?.id)) {
+    return stableScale;
+  }
+  return stableScale * getAquariumPhysicalAssetScale("fish");
 }
 
 function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date.now()) {
@@ -14773,23 +14717,47 @@ function resetTransientAquariumUiState() {
   closeEditDecorTrayContextMenu({ render: false });
   clearEditFishTrayLongPress();
   closeEditFishTrayContextMenu({ render: false });
-  clearPrimaryToolModes();
   if (runtime.toastHandle) {
     clearTimeout(runtime.toastHandle);
   }
   runtime.toastHandle = null;
   runtime.toastKey = "";
-  runtime.guidanceToastOwner = "";
-  runtime.guidanceHintOwner = "";
   dom.toast?.classList.remove("is-visible");
-  resetCompetingOverlayState({ reason: "transient-reset", resetStoreTab: true });
+  runtime.storeOverlayOpen = false;
+  runtime.utilityOverlayOpen = false;
+  runtime.utilityOverlayMode = "";
   runtime.tutorialDismissedFeaturePopup = "";
   runtime.tutorialDisplayCollapsed = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  runtime.storeTab = "fish";
+  runtime.editTankMode = false;
+  runtime.fishEditMode = false;
+  runtime.toolModeSource = null;
+  runtime.placementMode = null;
+  runtime.placementPreview = null;
+  runtime.cleaningMode = false;
+  runtime.scoopMode = false;
+  runtime.dragState = null;
+  runtime.fishDragState = null;
+  runtime.eggDragState = null;
+  runtime.pebbleDragState = null;
   runtime.selectedFishId = null;
-  resetTankInteractionRuntimeState({
-    clearLastTankPoint: true,
-    clearGlassTap: true
-  });
+  runtime.selectedDecorId = null;
+  runtime.selectedDecorIds = [];
+  runtime.bubblerSettingsDecorId = null;
+  runtime.customDecorSettingsDecorId = null;
+  runtime.pendingDecorAction = null;
+  runtime.pendingCustomDecorUpload = null;
+  runtime.pendingCustomHideUpload = null;
+  runtime.pendingCustomFishUpload = null;
+  runtime.pointerDown = false;
+  runtime.pointerStagePx = null;
+  runtime.lastTankPoint = null;
+  runtime.lastScrubPoint = null;
+  runtime.suppressNextTankClick = false;
+  runtime.suppressNextGlassTap = false;
+  clearGlassTapGesture();
   runtime.splashBursts = [];
   runtime.fallingGravelPebbles = [];
   runtime.fishShadowPlaneCache.clear();
@@ -14885,15 +14853,42 @@ function openLocalBackgroundPicker() {
 }
 
 function openLocalDecorPicker() {
-  openCustomAssetPicker("decor");
+  if (state.coins < CUSTOM_DECOR_COST) {
+    showToast(`You need ${CUSTOM_DECOR_COST} ${pluralize("coin", CUSTOM_DECOR_COST)} for Custom Decor.`);
+    return;
+  }
+  const input = dom.localDecorInput;
+  if (!(input instanceof HTMLInputElement)) {
+    showToast("Custom decor picker unavailable.");
+    return;
+  }
+  input.value = "";
+  input.click();
 }
 
 function openLocalHideFrontPicker() {
-  openCustomAssetPicker("hide", "front");
+  if (state.coins < CUSTOM_HIDE_COST) {
+    showToast(`You need ${CUSTOM_HIDE_COST} ${pluralize("coin", CUSTOM_HIDE_COST)} for Custom Hide.`);
+    return;
+  }
+  const input = dom.localHideFrontInput;
+  if (!(input instanceof HTMLInputElement)) {
+    showToast("Custom hide picker unavailable.");
+    return;
+  }
+  runtime.pendingCustomHideUpload = null;
+  input.value = "";
+  input.click();
 }
 
 function openLocalHideBackgroundPicker() {
-  openCustomAssetPicker("hide", "background");
+  const input = dom.localHideBackgroundInput;
+  if (!(input instanceof HTMLInputElement)) {
+    showToast("Custom hide background picker unavailable.");
+    return;
+  }
+  input.value = "";
+  input.click();
 }
 
 function openCustomHideBackgroundPrompt() {
@@ -14902,11 +14897,26 @@ function openCustomHideBackgroundPrompt() {
     return;
   }
 
-  openUtilityOverlay("custom-hide-background", { clearPrimaryToolModes: false });
+  runtime.utilityOverlayOpen = true;
+  runtime.utilityOverlayMode = "custom-hide-background";
+  runtime.storeOverlayOpen = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.equipmentOverlayOpen = false;
+  renderUi(Date.now());
 }
 
 function openLocalFishPicker() {
-  openCustomAssetPicker("fish");
+  if (state.coins < CUSTOM_FISH_COST) {
+    showToast(`You need ${CUSTOM_FISH_COST} ${pluralize("coin", CUSTOM_FISH_COST)} for Custom Fish.`);
+    return;
+  }
+  const input = dom.localFishInput;
+  if (!(input instanceof HTMLInputElement)) {
+    showToast("Custom fish picker unavailable.");
+    return;
+  }
+  input.value = "";
+  input.click();
 }
 
 async function importSaveDataFromPicker(event) {
@@ -14970,19 +14980,145 @@ async function importLocalBackgroundFromPicker(event) {
 }
 
 async function importLocalDecorFromPicker(event) {
-  await importCustomAssetFromPicker("decor", "primary", event);
+  const input = event?.currentTarget instanceof HTMLInputElement
+    ? event.currentTarget
+    : dom.localDecorInput;
+  const file = input?.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    if (state.coins < CUSTOM_DECOR_COST) {
+      showToast(`You need ${CUSTOM_DECOR_COST} ${pluralize("coin", CUSTOM_DECOR_COST)} for Custom Decor.`);
+      return;
+    }
+
+    const dataUrl = await prepareLocalDecorImageDataUrl(file);
+    await preloadImages([dataUrl]);
+    const image = runtime.images.get(dataUrl) || await loadImageElement(dataUrl);
+    openCustomDecorNameOverlay(dataUrl, titleFromFile(file.name || "Custom Decor"), {
+      width: image.naturalWidth || image.width,
+      height: image.naturalHeight || image.height
+    });
+  } catch (error) {
+    console.error(error);
+    showToast(error?.message || "Could not use that image.");
+  } finally {
+    if (input) {
+      input.value = "";
+    }
+  }
 }
 
 async function importLocalHideFrontFromPicker(event) {
-  await importCustomAssetFromPicker("hide", "front", event);
+  const input = event?.currentTarget instanceof HTMLInputElement
+    ? event.currentTarget
+    : dom.localHideFrontInput;
+  const file = input?.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    if (state.coins < CUSTOM_HIDE_COST) {
+      showToast(`You need ${CUSTOM_HIDE_COST} ${pluralize("coin", CUSTOM_HIDE_COST)} for Custom Hide.`);
+      return;
+    }
+
+    const dataUrl = await prepareLocalDecorImageDataUrl(file);
+    await preloadImages([dataUrl]);
+    const image = runtime.images.get(dataUrl) || await loadImageElement(dataUrl);
+    runtime.pendingCustomHideUpload = {
+      frontDataUrl: dataUrl,
+      frontName: titleFromFile(file.name || "Custom Hide"),
+      frontNaturalWidth: Math.max(1, image.naturalWidth || image.width || CUSTOM_DECOR_DEFAULT_WIDTH),
+      frontNaturalHeight: Math.max(1, image.naturalHeight || image.height || CUSTOM_DECOR_DEFAULT_WIDTH)
+    };
+    showToast("Front image selected. Choose a background image for the hide.");
+    openCustomHideBackgroundPrompt();
+  } catch (error) {
+    console.error(error);
+    runtime.pendingCustomHideUpload = null;
+    showToast(error?.message || "Could not use that front image.");
+  } finally {
+    if (input) {
+      input.value = "";
+    }
+  }
 }
 
 async function importLocalHideBackgroundFromPicker(event) {
-  await importCustomAssetFromPicker("hide", "background", event);
+  const input = event?.currentTarget instanceof HTMLInputElement
+    ? event.currentTarget
+    : dom.localHideBackgroundInput;
+  const file = input?.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    const pending = runtime.pendingCustomHideUpload;
+    if (!pending?.frontDataUrl) {
+      showToast("Choose a front image for Custom Hide first.");
+      openLocalHideFrontPicker();
+      return;
+    }
+    if (state.coins < CUSTOM_HIDE_COST) {
+      showToast(`You need ${CUSTOM_HIDE_COST} ${pluralize("coin", CUSTOM_HIDE_COST)} for Custom Hide.`);
+      return;
+    }
+
+    const dataUrl = await prepareLocalDecorImageDataUrl(file);
+    await preloadImages([pending.frontDataUrl, dataUrl]);
+    const image = runtime.images.get(dataUrl) || await loadImageElement(dataUrl);
+    openCustomHideCreationOverlay({
+      ...pending,
+      bgDataUrl: dataUrl,
+      bgNaturalWidth: Math.max(1, image.naturalWidth || image.width || CUSTOM_DECOR_DEFAULT_WIDTH),
+      bgNaturalHeight: Math.max(1, image.naturalHeight || image.height || CUSTOM_DECOR_DEFAULT_WIDTH),
+      suggestedName: pending.frontName || titleFromFile(file.name || "Custom Hide")
+    });
+  } catch (error) {
+    console.error(error);
+    showToast(error?.message || "Could not use that background image.");
+  } finally {
+    if (input) {
+      input.value = "";
+    }
+  }
 }
 
 async function importLocalFishFromPicker(event) {
-  await importCustomAssetFromPicker("fish", "primary", event);
+  const input = event?.currentTarget instanceof HTMLInputElement
+    ? event.currentTarget
+    : dom.localFishInput;
+  const file = input?.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    if (state.coins < CUSTOM_FISH_COST) {
+      showToast(`You need ${CUSTOM_FISH_COST} ${pluralize("coin", CUSTOM_FISH_COST)} for Custom Fish.`);
+      return;
+    }
+
+    const dataUrl = await prepareLocalFishImageDataUrl(file);
+    const image = await loadImageElement(dataUrl);
+    await preloadImages([dataUrl]);
+    openCustomFishCreationOverlay(dataUrl, titleFromFile(file.name || "Custom Fish"), {
+      width: image.naturalWidth || image.width || CUSTOM_FISH_DEFAULT_WIDTH,
+      height: image.naturalHeight || image.height || CUSTOM_FISH_DEFAULT_WIDTH
+    });
+  } catch (error) {
+    console.error(error);
+    showToast(error?.message || "Could not use that image.");
+  } finally {
+    if (input) {
+      input.value = "";
+    }
+  }
 }
 
 function sanitizeFish(fish, options = {}) {
@@ -15457,50 +15593,6 @@ function sanitizePlacedDecorMotionSettings(settings) {
   return Object.keys(sanitized).length ? sanitized : null;
 }
 
-function normalizeDecorXAnchorMode(value) {
-  return value === DECOR_X_ANCHOR_MODE_CENTER_OFFSET ? value : "";
-}
-
-function normalizeDecorYAnchorMode(value) {
-  return DECOR_Y_ANCHOR_MODES.includes(value) ? value : "";
-}
-
-function sanitizeDecorWorldAnchorDistance(value, minValue = -TANK_HEIGHT * 4, maxValue = TANK_HEIGHT * 4) {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? clamp(numeric, minValue, maxValue) : null;
-}
-
-function sanitizeDecorYAnchorValue(value, mode) {
-  if (mode === DECOR_Y_ANCHOR_MODE_COLUMN_FRACTION) {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? clamp(numeric, 0, 1) : null;
-  }
-  return sanitizeDecorWorldAnchorDistance(value);
-}
-
-function getPlacedDecorDefaultYAnchorMode(item) {
-  const capabilities = getDecorMotionCapabilities(item);
-  return capabilities.isFloating || capabilities.isLure
-    ? DECOR_Y_ANCHOR_MODE_TOP_GAP
-    : DECOR_Y_ANCHOR_MODE_BOTTOM_GAP;
-}
-
-function getSanitizedPlacedDecorWorldAnchors(item) {
-  const xAnchorMode = normalizeDecorXAnchorMode(item?.xAnchorMode);
-  const yAnchorMode = normalizeDecorYAnchorMode(item?.yAnchorMode);
-  const xCenterOffsetWorld = sanitizeDecorWorldAnchorDistance(item?.xCenterOffsetWorld, -TANK_WIDTH * 2, TANK_WIDTH * 2);
-  const yAnchorValue = sanitizeDecorYAnchorValue(item?.yAnchorValue, yAnchorMode);
-  if (!xAnchorMode || !yAnchorMode || xCenterOffsetWorld === null || yAnchorValue === null) {
-    return null;
-  }
-  return {
-    xAnchorMode,
-    xCenterOffsetWorld,
-    yAnchorMode,
-    yAnchorValue
-  };
-}
-
 function sanitizePlacedDecor(item) {
   if (!item || typeof item.decorKey !== "string") {
     return null;
@@ -15538,9 +15630,17 @@ function sanitizePlacedDecor(item) {
   if (caveColorSettings) {
     sanitized.caveColorSettings = caveColorSettings;
   }
-  const worldAnchors = getSanitizedPlacedDecorWorldAnchors(item);
-  if (worldAnchors) {
-    Object.assign(sanitized, worldAnchors);
+  const xCenterOffsetPx = sanitizeDecorResizeAnchorPx(item.xCenterOffsetPx);
+  const layerBoundaryOffsetPx = sanitizeDecorResizeAnchorPx(item.layerBoundaryOffsetPx, 0);
+  const waterSurfaceOffsetPx = sanitizeDecorResizeAnchorPx(item.waterSurfaceOffsetPx);
+  if (xCenterOffsetPx !== null && (layerBoundaryOffsetPx !== null || waterSurfaceOffsetPx !== null)) {
+    sanitized.xCenterOffsetPx = xCenterOffsetPx;
+    if (layerBoundaryOffsetPx !== null) {
+      sanitized.layerBoundaryOffsetPx = layerBoundaryOffsetPx;
+    }
+    if (waterSurfaceOffsetPx !== null) {
+      sanitized.waterSurfaceOffsetPx = waterSurfaceOffsetPx;
+    }
   }
   return sanitized;
 }
@@ -15594,9 +15694,8 @@ function normalizePlacedDecorState(targetState = state) {
     item.yNorm = placement.yNorm;
     item.tankLayer = normalizedLayer;
     if (!hadResizeAnchor) {
-      changed = true;
+      changed = updatePlacedDecorResizeAnchor(item) || changed;
     }
-    changed = updatePlacedDecorResizeAnchor(item) || changed;
   }
 
   if (!changed) {
@@ -15758,50 +15857,31 @@ function getViewportStableAssetScale() {
   return dpr / scale;
 }
 
-function getAquariumPhysicalAssetScale(type = "fish") {
-  // Keep monitor and device metrics out of asset sizing. Screen-stable sizing
-  // is handled separately by getViewportStableAssetScale().
-  return type === "decor" ? DECOR_WORLD_SIZE_MULTIPLIER : FISH_WORLD_SIZE_MULTIPLIER;
+function getApproximateMonitorCssPixelsPerInch() {
+  const screenWidth = Math.max(1, Number(window.screen?.width) || Number(window.innerWidth) || TANK_WIDTH);
+  const screenHeight = Math.max(1, Number(window.screen?.height) || Number(window.innerHeight) || TANK_HEIGHT);
+  const tankAspect = TANK_WIDTH / TANK_HEIGHT;
+  const activeWidth = Math.min(screenWidth, screenHeight * tankAspect);
+  const activeHeight = Math.min(screenHeight, screenWidth / tankAspect);
+  return Math.hypot(activeWidth, activeHeight) / REFERENCE_MONITOR_DIAGONAL_INCHES;
 }
 
-function getAquariumWorldMetrics() {
-  const visibleBounds = getVisibleTankVirtualBounds();
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
-  const offsetY = Number(runtime.stageRenderOffsetY) || 0;
-  const waterlineY = clamp(
-    (WATER_SURFACE_VIEWPORT_TOP_PX * dpr - offsetY) / scale,
-    visibleBounds.top,
-    Math.max(visibleBounds.top, visibleBounds.bottom - 36)
+function getAquariumPhysicalAssetScale(type = "fish") {
+  const monitorScale = clamp(
+    getApproximateMonitorCssPixelsPerInch() / STANDARD_CSS_PIXELS_PER_INCH,
+    MONITOR_PHYSICAL_SCALE_MIN,
+    MONITOR_PHYSICAL_SCALE_MAX
   );
-  const floorBottomY = visibleBounds.bottom;
-  const gravelHeight = clamp(
-    getTargetVisibleGravelHeightVirtual(),
-    24,
-    Math.max(24, floorBottomY - waterlineY - 28)
-  );
-  const gravelTopY = floorBottomY - gravelHeight;
-  const tankCenterX = (visibleBounds.left + visibleBounds.right) * 0.5;
-  const layerFloorByLayer = Array.from({ length: TANK_DEPTH_LAYERS }, (_, index) => {
-    const layer = index + 1;
-    const gravelOffset = getTankLayerBottomGravelOffsetPx(layer);
-    return clamp(gravelTopY + gravelOffset, waterlineY + 38, floorBottomY - 14);
-  });
-  return {
-    waterlineY,
-    floorBottomY,
-    gravelTopY,
-    gravelHeight,
-    tankCenterX,
-    layerFloorByLayer,
-    getLayerFloorY(layer) {
-      return layerFloorByLayer[clampTankLayer(layer) - 1];
-    }
-  };
+  return monitorScale * (type === "decor" ? DECOR_REAL_WORLD_SIZE_MULTIPLIER : FISH_REAL_WORLD_SIZE_MULTIPLIER);
 }
 
 function getViewportAnchoredWaterSurfaceY() {
-  return getAquariumWorldMetrics().waterlineY;
+  const visibleBounds = getVisibleTankVirtualBounds();
+  return clamp(
+    visibleBounds.top + getViewportPxAsTankVirtual(WATER_SURFACE_VIEWPORT_TOP_PX),
+    12,
+    TANK_HEIGHT - 160
+  );
 }
 
 function syncViewportAnchoredWaterSurface() {
@@ -15819,10 +15899,7 @@ function getDecorDisplayWidth(decor, itemOrScale = 1) {
   const scale = typeof itemOrScale === "number"
     ? itemOrScale
     : Number(itemOrScale?.scale);
-  return decor.width
-    * (Number.isFinite(scale) ? scale : 1)
-    * getViewportStableAssetScale()
-    * getAquariumPhysicalAssetScale("decor");
+  return decor.width * (Number.isFinite(scale) ? scale : 1) * getViewportStableAssetScale() * getAquariumPhysicalAssetScale("decor");
 }
 
 function getTankLayerBottomGravelOffsetPx(layer) {
@@ -15831,21 +15908,39 @@ function getTankLayerBottomGravelOffsetPx(layer) {
 }
 
 function getTankLayerBottomBoundaryY(layer) {
-  return getAquariumWorldMetrics().getLayerFloorY(layer);
+  const bottom = getVisibleTankFloorBottomY();
+  const gravelTop = getDynamicGravelSurfaceBaseY();
+  const gravelOffset = getViewportPxAsTankVirtual(getTankLayerBottomGravelOffsetPx(layer));
+  return clamp(gravelTop + gravelOffset, WATER_SURFACE_Y + 38, bottom - 14);
 }
 
 function getTankLayerBottomBoundaryNorm(layer) {
   return getTankLayerBottomBoundaryY(layer) / TANK_HEIGHT;
 }
 
+function roundDecorResizeAnchorPx(value) {
+  return Math.round((Number(value) || 0) * 1000) / 1000;
+}
+
+function sanitizeDecorResizeAnchorPx(value, minValue = -DECOR_RESIZE_ANCHOR_MAX_OFFSET_PX) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric)
+    ? clamp(numeric, minValue, DECOR_RESIZE_ANCHOR_MAX_OFFSET_PX)
+    : null;
+}
+
 function hasPlacedDecorResizeAnchor(item) {
-  return Boolean(
-    item
-    && normalizeDecorXAnchorMode(item.xAnchorMode) === DECOR_X_ANCHOR_MODE_CENTER_OFFSET
-    && sanitizeDecorWorldAnchorDistance(item.xCenterOffsetWorld, -TANK_WIDTH * 2, TANK_WIDTH * 2) !== null
-    && normalizeDecorYAnchorMode(item.yAnchorMode)
-    && sanitizeDecorYAnchorValue(item.yAnchorValue, item.yAnchorMode) !== null
-  );
+  if (!item || !Number.isFinite(Number(item.xCenterOffsetPx))) {
+    return false;
+  }
+
+  return Number.isFinite(Number(item.waterSurfaceOffsetPx))
+    || Number.isFinite(Number(item.layerBoundaryOffsetPx));
+}
+
+function getVisibleTankCenterX() {
+  const visibleBounds = getVisibleTankVirtualBounds();
+  return (visibleBounds.left + visibleBounds.right) / 2;
 }
 
 function getPlacedDecorRelativeOpaqueBounds(item) {
@@ -15912,24 +16007,6 @@ function getLargestDecorGroupItem(items) {
     ), null);
 }
 
-function getDecorGroupRootMetrics(item) {
-  if (!item) {
-    return null;
-  }
-
-  const bounds = getPlacedDecorPlacementBounds(item) || getPlacedDecorBounds(item);
-  const anchorX = item.xNorm * TANK_WIDTH;
-  const anchorY = item.yNorm * TANK_HEIGHT;
-  const width = Math.max(1, bounds ? bounds.right - bounds.left : 1);
-  const height = Math.max(1, bounds ? bounds.bottom - bounds.top : 1);
-  return {
-    anchorX,
-    anchorY,
-    width,
-    height
-  };
-}
-
 function getDecorTopOverhangLimitY(relBounds, shellBounds = getTankShellBounds()) {
   if (!relBounds) {
     return shellBounds.innerTop;
@@ -15943,10 +16020,6 @@ function getDecorTopOverhangLimitY(relBounds, shellBounds = getTankShellBounds()
   );
 }
 
-function roundDecorWorldAnchorValue(value) {
-  return Math.round((Number(value) || 0) * 1000) / 1000;
-}
-
 function updatePlacedDecorResizeAnchor(item) {
   if (!item || !runtime.images.size) {
     return false;
@@ -15957,40 +16030,38 @@ function updatePlacedDecorResizeAnchor(item) {
     return false;
   }
 
-  const metrics = getAquariumWorldMetrics();
-  const nextXAnchorMode = DECOR_X_ANCHOR_MODE_CENTER_OFFSET;
-  const nextYAnchorMode = getPlacedDecorDefaultYAnchorMode(item);
-  const nextXCenterOffsetWorld = roundDecorWorldAnchorValue(item.xNorm * TANK_WIDTH - metrics.tankCenterX);
-  let nextYAnchorValue = 0;
-  if (nextYAnchorMode === DECOR_Y_ANCHOR_MODE_TOP_GAP) {
-    nextYAnchorValue = roundDecorWorldAnchorValue(bounds.top - metrics.waterlineY);
-  } else if (nextYAnchorMode === DECOR_Y_ANCHOR_MODE_COLUMN_FRACTION) {
-    nextYAnchorValue = roundDecorWorldAnchorValue(
-      clamp(
-        ((item.yNorm * TANK_HEIGHT) - metrics.waterlineY) / Math.max(1, metrics.gravelTopY - metrics.waterlineY),
-        0,
-        1
-      )
-    );
+  const anchorX = item.xNorm * TANK_WIDTH;
+  const centerOffsetPx = roundDecorResizeAnchorPx(
+    getTankVirtualPxAsViewportPx(anchorX - getVisibleTankCenterX())
+  );
+  const anchorToWaterSurface = shouldAnchorDecorToWaterSurface(item);
+  const waterSurfaceOffsetPx = anchorToWaterSurface
+    ? roundDecorResizeAnchorPx(getTankVirtualPxAsViewportPx(bounds.top - WATER_SURFACE_Y))
+    : null;
+  const boundaryGapPx = anchorToWaterSurface
+    ? null
+    : roundDecorResizeAnchorPx(Math.max(0, getTankVirtualPxAsViewportPx(getTankLayerBottomBoundaryY(getDecorTankLayer(item)) - bounds.bottom)));
+  const previousWaterSurfaceOffsetPx = sanitizeDecorResizeAnchorPx(item.waterSurfaceOffsetPx);
+  const previousLayerBoundaryOffsetPx = sanitizeDecorResizeAnchorPx(item.layerBoundaryOffsetPx, 0);
+  const changed = item.resizeAnchorSpace !== undefined
+    || Math.abs((Number(item.xCenterOffsetPx) || 0) - centerOffsetPx) > 0.001
+    || (anchorToWaterSurface
+      ? previousWaterSurfaceOffsetPx === null
+      || Math.abs(previousWaterSurfaceOffsetPx - waterSurfaceOffsetPx) > 0.001
+      || previousLayerBoundaryOffsetPx !== null
+      : previousLayerBoundaryOffsetPx === null
+      || Math.abs(previousLayerBoundaryOffsetPx - boundaryGapPx) > 0.001
+      || previousWaterSurfaceOffsetPx !== null);
+
+  delete item.resizeAnchorSpace;
+  item.xCenterOffsetPx = centerOffsetPx;
+  if (anchorToWaterSurface) {
+    item.waterSurfaceOffsetPx = waterSurfaceOffsetPx;
+    delete item.layerBoundaryOffsetPx;
   } else {
-    nextYAnchorValue = roundDecorWorldAnchorValue(getTankLayerBottomBoundaryY(getDecorTankLayer(item)) - bounds.bottom);
+    item.layerBoundaryOffsetPx = boundaryGapPx;
+    delete item.waterSurfaceOffsetPx;
   }
-
-  const previousXAnchorMode = normalizeDecorXAnchorMode(item.xAnchorMode);
-  const previousYAnchorMode = normalizeDecorYAnchorMode(item.yAnchorMode);
-  const previousXCenterOffsetWorld = sanitizeDecorWorldAnchorDistance(item.xCenterOffsetWorld, -TANK_WIDTH * 2, TANK_WIDTH * 2);
-  const previousYAnchorValue = sanitizeDecorYAnchorValue(item.yAnchorValue, previousYAnchorMode);
-  const changed = previousXAnchorMode !== nextXAnchorMode
-    || previousYAnchorMode !== nextYAnchorMode
-    || previousXCenterOffsetWorld === null
-    || previousYAnchorValue === null
-    || Math.abs(previousXCenterOffsetWorld - nextXCenterOffsetWorld) > 0.001
-    || Math.abs(previousYAnchorValue - nextYAnchorValue) > 0.001;
-
-  item.xAnchorMode = nextXAnchorMode;
-  item.xCenterOffsetWorld = nextXCenterOffsetWorld;
-  item.yAnchorMode = nextYAnchorMode;
-  item.yAnchorValue = nextYAnchorValue;
   return changed;
 }
 
@@ -16004,27 +16075,30 @@ function resolvePlacedDecorPositionFromResizeAnchor(item) {
     return null;
   }
 
-  const metrics = getAquariumWorldMetrics();
-  const xCenterOffsetWorld = sanitizeDecorWorldAnchorDistance(item.xCenterOffsetWorld, -TANK_WIDTH * 2, TANK_WIDTH * 2);
-  const yAnchorMode = normalizeDecorYAnchorMode(item.yAnchorMode);
-  const yAnchorValue = sanitizeDecorYAnchorValue(item.yAnchorValue, yAnchorMode);
-  if (xCenterOffsetWorld === null || !yAnchorMode || yAnchorValue === null) {
+  const shellBounds = getTankShellBounds();
+  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleLeft = Math.max(shellBounds.innerLeft, visibleBounds.left);
+  const visibleRight = Math.min(shellBounds.innerLeft + shellBounds.innerWidth, visibleBounds.right);
+  const anchorToWaterSurface = shouldAnchorDecorToWaterSurface(item)
+    && Number.isFinite(Number(item.waterSurfaceOffsetPx));
+  const hasLayerBoundaryAnchor = Number.isFinite(Number(item.layerBoundaryOffsetPx));
+  if (!anchorToWaterSurface && !hasLayerBoundaryAnchor) {
     return null;
   }
 
-  const desiredX = metrics.tankCenterX + xCenterOffsetWorld;
-  let desiredY = item.yNorm * TANK_HEIGHT;
-  if (yAnchorMode === DECOR_Y_ANCHOR_MODE_TOP_GAP) {
-    const desiredTop = metrics.waterlineY + yAnchorValue;
-    desiredY = desiredTop - relBounds.top;
-  } else if (yAnchorMode === DECOR_Y_ANCHOR_MODE_COLUMN_FRACTION) {
-    desiredY = metrics.waterlineY + yAnchorValue * Math.max(1, metrics.gravelTopY - metrics.waterlineY);
-  } else {
-    const desiredBottom = getTankLayerBottomBoundaryY(getDecorTankLayer(item)) - yAnchorValue;
-    desiredY = desiredBottom - relBounds.bottom;
-  }
+  const targetLayer = getDecorTankLayer(item);
+  const desiredX = getVisibleTankCenterX() + getSignedViewportPxAsTankVirtual(item.xCenterOffsetPx);
+  const desiredAnchorY = anchorToWaterSurface
+    ? WATER_SURFACE_Y + getSignedViewportPxAsTankVirtual(item.waterSurfaceOffsetPx)
+    : getTankLayerBottomBoundaryY(targetLayer) - getSignedViewportPxAsTankVirtual(Math.max(0, Number(item.layerBoundaryOffsetPx) || 0));
+  const desiredY = desiredAnchorY - (anchorToWaterSurface ? relBounds.top : relBounds.bottom);
+  const minAnchorX = visibleLeft - relBounds.left;
+  const maxAnchorX = visibleRight - relBounds.right;
+  const clampedX = minAnchorX <= maxAnchorX
+    ? clamp(desiredX, minAnchorX, maxAnchorX)
+    : desiredX;
 
-  return clampDecorPlacement(desiredX / TANK_WIDTH, desiredY / TANK_HEIGHT, { item });
+  return clampDecorPlacement(clampedX / TANK_WIDTH, desiredY / TANK_HEIGHT, { item });
 }
 
 function resolveSharedDecorGroupDelta(records, rawDeltaX, rawDeltaY) {
@@ -16092,79 +16166,50 @@ function syncDecorGroupToLargestResizeAnchor(groupItems, options = {}) {
   }
 
   let changed = false;
-  const normalizedItems = items.map((item) => {
+  for (const item of items) {
     const normalizedLayer = getDecorFrontLayer(item.decorKey, item.tankLayer);
     if (normalizedLayer !== item.tankLayer) {
       item.tankLayer = normalizedLayer;
       changed = true;
     }
-    return {
-      item,
-      tankLayer: normalizedLayer
-    };
-  });
+  }
 
-  const anchorItem = getLargestDecorGroupItem(items) || items[0];
+  const anchorItem = getLargestDecorGroupItem(items);
   if (!anchorItem) {
     return changed;
   }
-  const rootMetrics = getDecorGroupRootMetrics(anchorItem);
-  if (!rootMetrics) {
+
+  const anchorPlacement = hasPlacedDecorResizeAnchor(anchorItem)
+    ? resolvePlacedDecorPositionFromResizeAnchor(anchorItem)
+    : options.deriveMissing
+      ? clampDecorPlacement(anchorItem.xNorm, anchorItem.yNorm, { item: anchorItem })
+      : null;
+  if (!anchorPlacement) {
     return changed;
   }
 
-  const relativeLayouts = normalizedItems.map((record) => ({
-    ...record,
-    offsetXRatio: ((record.item.xNorm * TANK_WIDTH) - rootMetrics.anchorX) / rootMetrics.width,
-    offsetYRatio: ((record.item.yNorm * TANK_HEIGHT) - rootMetrics.anchorY) / rootMetrics.height
+  const rawDeltaX = (anchorPlacement.xNorm - anchorItem.xNorm) * TANK_WIDTH;
+  const rawDeltaY = (anchorPlacement.yNorm - anchorItem.yNorm) * TANK_HEIGHT;
+  const constraintRecords = items.map((item) => ({
+    item,
+    startXNorm: item.xNorm,
+    startYNorm: item.yNorm,
+    tankLayer: getDecorFrontLayer(item.decorKey, item.tankLayer)
   }));
+  const { deltaX, deltaY } = resolveSharedDecorGroupDelta(constraintRecords, rawDeltaX, rawDeltaY);
 
-  const anchorHadResizeAnchor = hasPlacedDecorResizeAnchor(anchorItem);
-  if (!anchorHadResizeAnchor && options.deriveMissing) {
-    changed = true;
-  }
-
-  const anchorPlacement = anchorHadResizeAnchor
-    ? (resolvePlacedDecorPositionFromResizeAnchor(anchorItem) || clampDecorPlacement(anchorItem.xNorm, anchorItem.yNorm, { item: anchorItem }))
-    : clampDecorPlacement(anchorItem.xNorm, anchorItem.yNorm, { item: anchorItem });
-  const resolvedRootMetrics = {
-    ...rootMetrics,
-    anchorX: anchorPlacement.xNorm * TANK_WIDTH,
-    anchorY: anchorPlacement.yNorm * TANK_HEIGHT
-  };
-
-  const desiredRecords = relativeLayouts.map((record) => {
-    const desiredXNorm = record.item.id === anchorItem.id
-      ? anchorPlacement.xNorm
-      : clamp((resolvedRootMetrics.anchorX + record.offsetXRatio * resolvedRootMetrics.width) / TANK_WIDTH, 0, 1);
-    const desiredYNorm = record.item.id === anchorItem.id
-      ? anchorPlacement.yNorm
-      : clamp((resolvedRootMetrics.anchorY + record.offsetYRatio * resolvedRootMetrics.height) / TANK_HEIGHT, 0, 1);
-    return {
-      item: record.item,
-      startXNorm: desiredXNorm,
-      startYNorm: desiredYNorm,
-      tankLayer: record.tankLayer
-    };
-  });
-
-  const { deltaX, deltaY } = resolveSharedDecorGroupDelta(desiredRecords, 0, 0);
-
-  for (const record of desiredRecords) {
+  for (const record of constraintRecords) {
+    const item = record.item;
     const nextXNorm = clamp((record.startXNorm * TANK_WIDTH + deltaX) / TANK_WIDTH, 0, 1);
     const nextYNorm = clamp((record.startYNorm * TANK_HEIGHT + deltaY) / TANK_HEIGHT, 0, 1);
     if (
-      Math.abs(nextXNorm - record.item.xNorm) > 0.000001
-      || Math.abs(nextYNorm - record.item.yNorm) > 0.000001
+      record.tankLayer !== item.tankLayer
+      || Math.abs(nextXNorm - item.xNorm) > 0.000001
+      || Math.abs(nextYNorm - item.yNorm) > 0.000001
     ) {
-      record.item.xNorm = nextXNorm;
-      record.item.yNorm = nextYNorm;
-      changed = true;
-    }
-  }
-
-  for (const item of items) {
-    if (!hasPlacedDecorResizeAnchor(item) && options.deriveMissing) {
+      item.tankLayer = record.tankLayer;
+      item.xNorm = nextXNorm;
+      item.yNorm = nextYNorm;
       changed = true;
     }
     changed = updatePlacedDecorResizeAnchor(item) || changed;
@@ -16186,6 +16231,7 @@ function syncPlacedDecorToResizeAnchors(targetState = state, options = {}) {
       if (processedGroupIds.has(groupId)) {
         continue;
       }
+
       const groupItems = targetState.placedDecor.filter((entry) => normalizeDecorGroupId(entry?.groupId) === groupId);
       processedGroupIds.add(groupId);
       if (groupItems.length > 1) {
@@ -16194,21 +16240,26 @@ function syncPlacedDecorToResizeAnchors(targetState = state, options = {}) {
       }
     }
 
-    const placement = hasPlacedDecorResizeAnchor(item)
-      ? resolvePlacedDecorPositionFromResizeAnchor(item)
-      : null;
-    if (placement && (
+    if (!hasPlacedDecorResizeAnchor(item)) {
+      if (options.deriveMissing) {
+        changed = updatePlacedDecorResizeAnchor(item) || changed;
+      }
+      continue;
+    }
+
+    const placement = resolvePlacedDecorPositionFromResizeAnchor(item);
+    if (!placement) {
+      continue;
+    }
+
+    if (
       Math.abs(placement.xNorm - item.xNorm) > 0.000001
       || Math.abs(placement.yNorm - item.yNorm) > 0.000001
-    )) {
+    ) {
       item.xNorm = placement.xNorm;
       item.yNorm = placement.yNorm;
       changed = true;
     }
-    if (!hasPlacedDecorResizeAnchor(item) && options.deriveMissing) {
-      changed = true;
-    }
-    changed = updatePlacedDecorResizeAnchor(item) || changed;
   }
 
   if (changed && Array.isArray(targetState.gravelLivePebbles)) {
@@ -16231,8 +16282,10 @@ function getFishVisualHalfHeightPx(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishSurfaceMinYNorm(fish = null, species = getSpeciesForFish(fish), requestedMinYNorm = 0.14) {
-  const fixedWaterlinePadding = 26;
-  const motionHeadroom = FISH_SURFACE_MOTION_HEADROOM_PX - FISH_SURFACE_BREACH_ALLOWANCE_PX;
+  const fixedWaterlinePadding = getViewportPxAsTankVirtual(26);
+  const motionHeadroom = getViewportPxAsTankVirtual(
+    FISH_SURFACE_MOTION_HEADROOM_PX - FISH_SURFACE_BREACH_ALLOWANCE_PX
+  );
   const fishHeightPadding = getFishVisualHalfHeightPx(fish, species) * FISH_SURFACE_HEIGHT_GUARD_MULTIPLIER + motionHeadroom;
   return Math.max(
     Number.isFinite(Number(requestedMinYNorm)) ? Number(requestedMinYNorm) : 0.14,
@@ -16799,13 +16852,61 @@ function buildConfiguredCaveDockingPlan(item, fish, now = Date.now()) {
     return null;
   }
 
-  const validatedPlan = buildTriggerSeatCavePlan(item, fish, now);
-  return validatedPlan
-    ? {
-      ...validatedPlan,
-      configuredPoints: true
+  const profile = buildCaveBehaviorProfileFromPlacedSettings(item);
+  const portals = Array.isArray(profile?.portals) ? profile.portals : [];
+  const seats = getCaveSeatRegions(item)
+    .filter((seat) => !isCaveSeatOccupied(item.id, seat.id, fish.id))
+    .sort((left, right) => Math.hypot(left.xNorm - fish.xNorm, left.yNorm - fish.yNorm) - Math.hypot(right.xNorm - fish.xNorm, right.yNorm - fish.yNorm));
+  if (!portals.length || !seats.length) {
+    return null;
+  }
+
+  const currentLayer = getFishTankLayer(fish);
+  const backLayer = getCaveInsideLayerForItem(item);
+  const candidates = [];
+  for (const portal of portals) {
+    const approach = mapDecorLocalPointToTankNorm(item, portal.approachX, portal.approachY);
+    const mouth = mapDecorLocalPointToTankNorm(item, portal.mouthX, portal.mouthY);
+    if (!approach || !mouth) {
+      continue;
     }
-    : null;
+
+    const frontLayer = clampTankLayer(portal.outsideLayer || 2);
+    for (const seat of seats) {
+      const seatDirection = getCaveSeatFacingDirection(seat, fish.direction || 1);
+      candidates.push({
+        decorId: item.id,
+        portalId: portal.id,
+        triggerId: portal.id,
+        seatId: seat.id,
+        seatDirection,
+        configuredPoints: true,
+        frontLayer,
+        backLayer,
+        approach,
+        mouth,
+        inside: {
+          xNorm: seat.xNorm,
+          yNorm: seat.yNorm
+        },
+        entryPathNodes: [{
+          xNorm: seat.xNorm,
+          yNorm: seat.yNorm
+        }],
+        exitPathNodes: [{
+          xNorm: mouth.xNorm,
+          yNorm: mouth.yNorm
+        }],
+        lingerMs: profile.lingerMinMs + Math.random() * Math.max(200, profile.lingerMaxMs - profile.lingerMinMs),
+        score: Math.hypot(fish.xNorm - approach.xNorm, fish.yNorm - approach.yNorm)
+          + Math.hypot(seat.xNorm - mouth.xNorm, seat.yNorm - mouth.yNorm) * 0.2
+          + Math.abs(currentLayer - frontLayer) * 0.08
+      });
+    }
+  }
+
+  candidates.sort((left, right) => left.score - right.score);
+  return candidates[0] || null;
 }
 
 function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
@@ -16833,30 +16934,11 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
       continue;
     }
 
-    const matchedPortal = getPortalMatchForTriggerRegion(item, trigger, profile);
-    const matchedPortalId = matchedPortal?.portal?.id || trigger.id;
-    const approachPoint = matchedPortal?.approachPoint || {
-      xNorm: trigger.xNorm,
-      yNorm: trigger.yNorm
-    };
-    const mouthPoint = matchedPortal?.mouthPoint || {
-      xNorm: trigger.xNorm,
-      yNorm: trigger.yNorm
-    };
-    const entryDirection = Math.abs(mouthPoint.xNorm - fish.xNorm) > 0.0001
-      ? (mouthPoint.xNorm >= fish.xNorm ? 1 : -1)
+    const entryDirection = Math.abs(trigger.xNorm - fish.xNorm) > 0.0001
+      ? (trigger.xNorm >= fish.xNorm ? 1 : -1)
       : (fish.direction || 1);
-    if (!portalOpeningFitsFish(item, fish, species, now, mouthPoint, entryDirection)) {
-      continue;
-    }
 
-    const matchingSeats = seatRegions.filter((seat) => {
-      const portalIds = getCaveSeatPortalIds(seat);
-      return !portalIds.length || portalIds.includes(matchedPortalId);
-    });
-    const seatPool = matchingSeats.length ? matchingSeats : seatRegions;
-
-    const availableSeats = seatPool
+    const availableSeats = seatRegions
       .filter((seat) => !isCaveSeatOccupied(item.id, seat.id, fish.id))
       .filter((seat) => doesFishFitCaveRegionSize(seat, fish, species, 0.45))
       .sort((left, right) => {
@@ -16884,12 +16966,21 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
     }
 
     const distanceScore = Math.hypot(fish.xNorm - trigger.xNorm, fish.yNorm - trigger.yNorm);
+    const matchedPortal = getPortalMatchForTriggerRegion(item, trigger, profile);
     const frontLayer = clampTankLayer(
       Number.isFinite(Number(matchedPortal?.portal?.outsideLayer))
         ? Number(matchedPortal.portal.outsideLayer)
         : (CAVE_ALLOWED_OUTSIDE_LAYERS.includes(currentLayer) ? currentLayer : 2)
     );
     const backLayer = getCaveInsideLayerForItem(item);
+    const approachPoint = matchedPortal?.approachPoint || {
+      xNorm: trigger.xNorm,
+      yNorm: trigger.yNorm
+    };
+    const mouthPoint = matchedPortal?.mouthPoint || {
+      xNorm: trigger.xNorm,
+      yNorm: trigger.yNorm
+    };
     const layerPenalty = Math.abs(currentLayer - frontLayer) * 0.08;
     const lingerMinMs = Math.max(CAVE_TRIGGER_COOLDOWN_MS + 2000, Number.isFinite(profile?.lingerMinMs) ? profile.lingerMinMs : 12000);
     const lingerMaxMs = Math.max(lingerMinMs + 2000, Number.isFinite(profile?.lingerMaxMs) ? profile.lingerMaxMs : 22000);
@@ -19749,8 +19840,7 @@ function getCaveSeatRegions(item) {
         return region
           ? {
             ...region,
-            facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction),
-            portalIds: getCaveSeatPortalIds(slot)
+            facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction)
           }
           : null;
       })
@@ -19774,7 +19864,6 @@ function getCaveSeatRegions(item) {
       return region
         ? {
           ...region,
-          portalIds: getCaveSeatPortalIds(slot),
           ...(slot.facing !== undefined || slot.direction !== undefined || slot.seatFacing !== undefined
             ? { facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction ?? slot.seatFacing) }
             : {})
@@ -19794,12 +19883,6 @@ function findRegionById(regions, regionId) {
 
 function getCaveSeatFacingDirection(seat, fallback = 1) {
   return normalizeCaveSeatFacing(seat?.facing ?? seat?.direction ?? seat?.seatFacing, fallback);
-}
-
-function getCaveSeatPortalIds(seat) {
-  return Array.isArray(seat?.portalIds)
-    ? seat.portalIds.map((value) => String(value).trim()).filter(Boolean)
-    : [];
 }
 
 function getFishBodySizePx(fish, species) {
@@ -19911,6 +19994,13 @@ function pickCaveSeatIdleTarget(item, seatRegion, fish, species, now = Date.now(
     return null;
   }
 
+  if (hasPlacedCaveSettings(item)) {
+    return {
+      xNorm: seatRegion.xNorm,
+      yNorm: seatRegion.yNorm
+    };
+  }
+
   const direction = directionOverride == null ? (fish.direction || 1) : (directionOverride < 0 ? -1 : 1);
   const centerPoint = {
     xNorm: seatRegion.xNorm,
@@ -19988,14 +20078,14 @@ function pickAvailableCaveSeatAssignment(item, fish, species, now = Date.now(), 
 
   return getCaveSeatRegions(item)
     .filter((seat) => !isCaveSeatOccupied(item.id, seat.id, fish.id))
-    .filter((seat) => doesFishFitCaveRegionSize(seat, fish, species, 0.45))
+    .filter((seat) => hasPlacedCaveSettings(item) || doesFishFitCaveRegionSize(seat, fish, species, 0.45))
     .map((seat) => {
       const fallbackDirection = Math.abs(seat.xNorm - origin.xNorm) > 0.001
         ? (seat.xNorm >= origin.xNorm ? 1 : -1)
         : (fish.direction || 1);
       const direction = getCaveSeatFacingDirection(seat, fallbackDirection);
       const point = pickCaveSeatIdleTarget(item, seat, fish, species, now, direction);
-      if (!point || !doesFishFitAtCavePoint(item, fish, species, now, point, direction, CAVE_PLAN_SAMPLE_STEP_PX)) {
+      if (!point || (!hasPlacedCaveSettings(item) && !doesFishFitAtCavePoint(item, fish, species, now, point, direction, CAVE_PLAN_SAMPLE_STEP_PX))) {
         return null;
       }
 
@@ -24070,123 +24160,42 @@ function performDecorEditShortcutAction(action) {
   return false;
 }
 
-function getPlacementHintState() {
+function getPlacementHintText() {
   if (runtime.cleaningMode) {
-    return {
-      owner: "hint:cleaning",
-      text: `Move the sponge around until ${getRequiredScrubPercent()}% of the glass is clear to clean the tank.`
-    };
+    return `Move the sponge around until ${getRequiredScrubPercent()}% of the glass is clear to clean the tank.`;
   }
 
   if (runtime.scoopMode) {
-    return {
-      owner: "hint:scoop",
-      text: "Click or drag across fish, food, or waste to scoop it out. (Fish -> Storage | Waste/Food -> Trash)"
-    };
+    return "Click or drag across fish, food, or waste to scoop it out. (Fish -> Storage | Waste/Food -> Trash)";
   }
 
   if (shouldShowDecorSwimGuide()) {
-    return {
-      owner: "hint:decor-layer",
-      text: "*Current layer bottom boundary. Higher layers stop closer to the gravel edge."
-    };
+    return "*Current layer bottom boundary. Higher layers stop closer to the gravel edge.";
   }
 
   if (runtime.editTankMode) {
-    return {
-      owner: "",
-      text: ""
-    };
+    return "";
   }
 
   if (runtime.dragState) {
-    return {
-      owner: "hint:decor-drag",
-      text: !isCaveDecorKey(runtime.dragState.decorKey)
-        ? "Press [z]/[x] or [up]/[down] to change layer."
-        : ""
-    };
+    return !isCaveDecorKey(runtime.dragState.decorKey)
+      ? "Press [z]/[x] or [up]/[down] to change layer."
+      : "";
   }
 
   if (runtime.fishDragState) {
-    return {
-      owner: "hint:fish-drag",
-      text: "Drag the fish anywhere inside the tank, then release to let it swim again."
-    };
+    return "Drag the fish anywhere inside the tank, then release to let it swim again.";
   }
 
-  return {
-    owner: "",
-    text: ""
-  };
-}
-
-function getPlacementHintText() {
-  return getPlacementHintState().text;
-}
-
-function clearGuidance(options = {}) {
-  const surface = String(options.surface || "").trim();
-  const owner = typeof options.owner === "string" ? options.owner : "";
-  if (!surface || surface === "toast") {
-    if (!owner || runtime.guidanceToastOwner === owner) {
-      hideToast({ key: options.key });
-      runtime.guidanceToastOwner = "";
-    }
-  }
-  if (!surface || surface === "hint") {
-    if (!owner || runtime.guidanceHintOwner === owner) {
-      runtime.guidanceHintOwner = "";
-      if (dom.placementHint) {
-        dom.placementHint.textContent = "";
-        dom.placementHint.style.opacity = "0";
-        dom.placementHint.style.visibility = "hidden";
-      }
-      if (dom.placementHint?.parentElement) {
-        dom.placementHint.parentElement.hidden = true;
-      }
-    }
-  }
-}
-
-function clearGuidanceForModeChange(reason = "") {
-  runtime.guidanceHintOwner = "";
-  if (reason && runtime.guidanceToastOwner.startsWith("tutorial:") && !isTutorialDecorDoneStep()) {
-    clearGuidance({
-      surface: "toast",
-      owner: runtime.guidanceToastOwner,
-      key: TUTORIAL_TOAST_DECOR_DONE
-    });
-  }
-}
-
-function reconcileGuidanceState() {
-  if (runtime.guidanceToastOwner === "tutorial:decor-done" && !isTutorialDecorDoneStep()) {
-    clearGuidance({
-      surface: "toast",
-      owner: "tutorial:decor-done",
-      key: TUTORIAL_TOAST_DECOR_DONE
-    });
-  }
-
-  const popup = getTutorialPopupConfig?.();
-  const suppressHint = runtime.utilityOverlayOpen || Boolean(popup?.blockInteraction);
-  if (suppressHint) {
-    clearGuidance({ surface: "hint" });
-  }
+  return "";
 }
 
 function renderPlacementHint() {
-  const hintState = getPlacementHintState();
-  const popup = getTutorialPopupConfig?.();
-  const hintText = runtime.utilityOverlayOpen || Boolean(popup?.blockInteraction)
-    ? ""
-    : hintState.text;
+  const hintText = getPlacementHintText();
   const hintContainer = dom.placementHint?.parentElement;
   dom.placementHint.textContent = hintText;
   dom.placementHint.style.opacity = hintText ? "1" : "0";
   dom.placementHint.style.visibility = hintText ? "visible" : "hidden";
-  runtime.guidanceHintOwner = hintText ? hintState.owner : "";
   if (hintContainer) {
     hintContainer.hidden = !hintText;
   }
@@ -25439,7 +25448,7 @@ function getPoopLayerTargetAnchorY(poop, sprite = null, width = POOP_DRAW_WIDTH_
     : width * 0.5;
   return clamp(
     getTankLayerBottomBoundaryY(layer) - 4 - height * 0.12,
-    WATER_SURFACE_Y + 24,
+    WATER_SURFACE_Y + getViewportPxAsTankVirtual(24),
     TANK_HEIGHT - GLASS_MARGIN_BOTTOM - 6
   );
 }
@@ -25911,7 +25920,7 @@ function getFishPebbleTossLayerLandingY(tossOrLayer, holdSizePx = FISH_GRAVEL_PE
   const size = (Number.isFinite(Number(holdSizePx)) ? Number(holdSizePx) : FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX) * stableScale;
   return clamp(
     getTankLayerBottomBoundaryY(normalizedLayer) - size * 0.5 + offsetPx,
-    WATER_SURFACE_Y + 24,
+    WATER_SURFACE_Y + getViewportPxAsTankVirtual(24),
     TANK_HEIGHT - GLASS_MARGIN_BOTTOM - size * 0.5
   );
 }
@@ -26244,7 +26253,7 @@ function getFishSchoolFollowAnchor(fish, leader) {
     return null;
   }
 
-  const leaderDirection = getFishFacingDirection(leader);
+  const leaderDirection = Number(leader.direction) < 0 ? -1 : 1;
   const spacingNorm = clamp(
     (Math.max(80, getFishVisualSize(fish)) + Math.max(80, getFishVisualSize(leader))) / TANK_WIDTH * 0.2,
     SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
@@ -26278,43 +26287,6 @@ function getFishSchoolFollowAnchor(fish, leader) {
     offsetXNorm,
     offsetYNorm
   };
-}
-
-function getFishSchoolFollowFacingDirection(fish, species, now = Date.now(), fallbackDx = null) {
-  if (
-    !fish ||
-    !species ||
-    species.behavior === "sucker" ||
-    fish.activity !== "roam" ||
-    fish.caveState ||
-    !Number.isFinite(fish.followUntil) ||
-    now >= fish.followUntil
-  ) {
-    return null;
-  }
-
-  const leader = getFishSchoolFollowLeader(fish);
-  if (!isFishEligibleSchoolLeader(leader, fish, species, now)) {
-    return null;
-  }
-
-  const leaderDirection = getFishFacingDirection(leader);
-  const targetXNorm = Number.isFinite(Number(fish.targetXNorm))
-    ? Number(fish.targetXNorm)
-    : fish.xNorm;
-  const dx = Number.isFinite(Number(fallbackDx))
-    ? Number(fallbackDx)
-    : (targetXNorm - fish.xNorm);
-  const spacingNorm = clamp(
-    Math.abs(Number(fish.followOffsetXNorm)) || SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
-    SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
-    SAME_SPECIES_FOLLOW_SPACING_MAX_NORM
-  );
-  const reverseSlack = Math.max(
-    FISH_DIRECTION_TARGET_DEADZONE_NORM * 2,
-    spacingNorm * 0.45
-  );
-  return dx * leaderDirection >= -reverseSlack ? leaderDirection : null;
 }
 
 function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
@@ -28153,7 +28125,9 @@ function deleteAllFishAndDecor() {
   runtime.selectedDecorIds = [];
   runtime.bubblerSettingsDecorId = null;
   runtime.customDecorSettingsDecorId = null;
-  clearPendingCustomAssetUploads();
+  runtime.pendingCustomDecorUpload = null;
+  runtime.pendingCustomHideUpload = null;
+  runtime.pendingCustomFishUpload = null;
   runtime.dragState = null;
   runtime.fishDragState = null;
   runtime.eggDragState = null;
@@ -29473,7 +29447,6 @@ function renderUi(now, options = {}) {
   const full = options.full !== false;
   syncTutorialFlow(now);
   reconcileTutorialTransientUi();
-  reconcileGuidanceState();
   getSelectedPlacedDecor();
   renderTheme();
   renderAnimatedBackgroundLayer();
@@ -29631,12 +29604,12 @@ function buildMealTrackMarkup(now) {
                 ? "Not needed"
                 : "No fish yet";
       const statusIcon = served
-        ? "âœ…"
+        ? "✅"
         : missed
-          ? "âŒ"
+          ? "❌"
           : future || neededByAnyFish
-            ? "â³"
-            : "â€”";
+            ? "⏳"
+            : "—";
 
       const displayStatusIcon = served
         ? "\u2705"
@@ -29813,12 +29786,12 @@ function renderFishShop() {
       const heartCount = Math.ceil(maxHealthUnits / 2);
       const healthDisplay = isCustomUploadProduct
         ? "Behavior-based"
-        : renderFishShopIcons("â¤ï¸", heartCount, { collapseAt: 5 });
+        : renderFishShopIcons("❤️", heartCount, { collapseAt: 5 });
       const coinsDisplay = isCustomUploadProduct
         ? "Behavior-based"
         : isMealFreeFish(fish)
           ? "None"
-          : renderFishShopIcons("ðŸª™", fish.mealCoins, { collapseAt: 5 });
+          : renderFishShopIcons("🪙", fish.mealCoins, { collapseAt: 5 });
       const dirtinessLoadPercent = isCustomUploadProduct
         ? null
         : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
@@ -29887,7 +29860,7 @@ function renderStoreOverlay() {
   dom.storeDecorTab.setAttribute("aria-selected", String(showingDecor));
   dom.storeEquipmentTab?.setAttribute("aria-selected", String(showingEquipment));
 
-  dom.storeCoinCounter.textContent = `ðŸª™ ${formatNumber(state.coins)}`;
+  dom.storeCoinCounter.textContent = `🪙 ${formatNumber(state.coins)}`;
 
   if (dom.foodShop) {
     dom.foodShop.hidden = !runtime.storeOverlayOpen || !showingFood;
@@ -30692,152 +30665,55 @@ function buildTankManagementOverlayBody(now = Date.now()) {
   `;
 }
 
-function buildDefaultUtilityOverlayConfig() {
-  return {
-    kicker: "Tank Tools",
-    title: "Details",
-    body: "",
-    footer: "",
-    closable: true
-  };
-}
-
-function buildUtilityActionButtonMarkup(action = {}) {
-  const variantClass = action.variant ? ` ${action.variant}` : "";
-  const attributes = [];
-  const attribute = String(action.attribute || "").trim();
-  if (attribute) {
-    attributes.push(attribute);
+function renderUtilityOverlay() {
+  if (!dom.utilityOverlay) {
+    return;
   }
-  if (Array.isArray(action.attributes)) {
-    attributes.push(...action.attributes.filter(Boolean));
+
+  dom.utilityOverlay.hidden = !runtime.utilityOverlayOpen;
+  dom.utilityOverlay.classList.toggle("is-open", runtime.utilityOverlayOpen);
+  if (!runtime.utilityOverlayOpen) {
+    return;
   }
-  if (action.disabled) {
-    attributes.push("disabled");
-  }
-  const attributeMarkup = attributes.length ? ` ${attributes.join(" ")}` : "";
-  return `<button class="small-button${variantClass}"${attributeMarkup}>${escapeHtml(action.label || "Okay")}</button>`;
-}
 
-function buildUtilityActionsFooter(actions = []) {
-  const buttons = (Array.isArray(actions) ? actions : [])
-    .map((action) => buildUtilityActionButtonMarkup(action))
-    .join("");
-  return buttons ? `<div class="utility-confirm-actions">${buttons}</div>` : "";
-}
+  const tank = getCurrentTank();
+  let kicker = "Tank Tools";
+  let title = "Details";
+  let body = "";
+  let footer = "";
+  let closable = true;
 
-function buildUtilityCloseFooter(label = "Close", variant = "alt") {
-  return buildUtilityActionsFooter([
-    { label, variant, attribute: "data-close-utility" }
-  ]);
-}
-
-function buildUtilityConfirmCardMarkup(options = {}) {
-  const classes = ["utility-confirm-card", String(options.cardClass || "").trim()].filter(Boolean).join(" ");
-  const headline = String(options.headline || "").trim();
-  const detail = String(options.detail || "").trim();
-  const extraMarkup = String(options.extraMarkup || "");
-  return `
-    <div class="${classes}">
-      <div class="utility-confirm-copy">
-        ${headline ? `<strong>${headline}</strong>` : ""}
-        ${detail ? `<div class="fish-meta">${detail}</div>` : ""}
-      </div>
-      ${extraMarkup}
-    </div>
-  `;
-}
-
-const DECOR_SETTINGS_UTILITY_MODE_HANDLERS = Object.freeze({
-  onBodyClick: handleCaveSettingsUtilityOverlayBodyClick,
-  onBodyPointerDown: handleCaveSettingsUtilityOverlayPointerDown,
-  onBodyPointerMove: handleCaveSettingsUtilityOverlayPointerMove,
-  onBodyPointerUp: handleCaveSettingsUtilityOverlayPointerEnd,
-  onBodyPointerCancel: handleCaveSettingsUtilityOverlayPointerEnd,
-  onBodyFocusIn: handleCaveSettingsUtilityOverlayFocusIn,
-  onBodyInput: handleCommonUtilityOverlayInput,
-  onBodyChange: handleCommonUtilityOverlayChange
-});
-
-function createPendingStateUtilityMode(options = {}) {
-  const {
-    pendingStateKey: rawPendingStateKey,
-    onClose: onCloseOption,
-    exclusive,
-    ...modeDef
-  } = options;
-  const pendingStateKey = String(rawPendingStateKey || "").trim();
-  const onClose = typeof onCloseOption === "function" ? onCloseOption : null;
-  return {
-    ...modeDef,
-    exclusive: exclusive !== false,
-    preservePendingState: pendingStateKey ? [pendingStateKey] : modeDef.preservePendingState,
-    onClose: () => {
-      if (pendingStateKey) {
-        runtime[pendingStateKey] = null;
-      }
-      onClose?.();
-    }
-  };
-}
-
-function createPlacedDecorUtilityMode(options = {}) {
-  const runtimeKey = String(options.runtimeKey || "").trim();
-  return {
-    id: options.id,
-    exclusive: true,
-    onClose: () => {
-      if (runtimeKey) {
-        runtime[runtimeKey] = null;
-      }
-      options.onClose?.();
-    },
-    render: () => {
-      const item = options.getItem?.() || null;
-      const decor = item ? runtime.decorMap.get(item.decorKey) : null;
-      return {
-        kicker: String(options.kicker || "Decor"),
-        title: decor?.name || options.fallbackTitle || "Decor Settings",
-        body: options.renderBody(item),
-        footer: buildUtilityCloseFooter(options.footerLabel || "Done", "alt"),
-        closable: true
-      };
-    },
-    ...DECOR_SETTINGS_UTILITY_MODE_HANDLERS,
-    ...(options.handlers || {})
-  };
-}
-
-function renderTutorialSkipConfirmUtilityOverlay() {
-  const replayMode = isInfoOnlyTutorialActive();
-  return {
-    kicker: "Tutorial",
-    title: "Skip Tutorial?",
-    body: buildUtilityConfirmCardMarkup({
-      headline: "Are you sure?",
-      detail: replayMode
+  if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+    const replayMode = isInfoOnlyTutorialActive();
+    kicker = "Tutorial";
+    title = "Skip Tutorial?";
+    body = `
+      <div class="utility-confirm-card">
+        <div class="utility-confirm-copy">
+          <strong>Are you sure?</strong>
+          <div class="fish-meta">${replayMode
         ? "Skipping exits the replay tutorial right away."
-        : "Skipping restores the full toolbar and digital display right away."
-    }),
-    footer: buildUtilityActionsFooter([
-      { label: "Yes", variant: "warn", attribute: "data-confirm-tutorial-skip" },
-      { label: "No", variant: "alt", attribute: "data-cancel-tutorial-skip" }
-    ])
-  };
-}
-
-function renderHardwareAccelerationUtilityOverlay() {
-  const issue = runtime.hardwareAccelerationIssue;
-  const rendererText = issue?.renderer
-    ? `<div class="external-link-url">${escapeHtml(issue.renderer)}</div>`
-    : "";
-  const detailText = issue?.reason === "webgl-unavailable"
-    ? "WebGL is unavailable in this browser session, which usually means hardware acceleration is off or blocked."
-    : "This browser appears to be using a software renderer for graphics work.";
-  return {
-    kicker: "Performance",
-    title: "Enable Hardware Acceleration",
-    body: `
+        : "Skipping restores the full toolbar and digital display right away."}</div>
+        </div>
+      </div>
+    `;
+    footer = `<div class="utility-confirm-actions"><button class="small-button warn" data-confirm-tutorial-skip>Yes</button><button class="small-button alt" data-cancel-tutorial-skip>No</button></div>`;
+  } else if (runtime.utilityOverlayMode === "food") {
+    kicker = "Feeding";
+    title = "Food Inventory";
+    body = renderFoodInventoryOverlay();
+    footer = `<div class="mini-note">Select a food, then click inside the tank to drop one piece at a time.</div>`;
+  } else if (runtime.utilityOverlayMode === "hardware-acceleration") {
+    const issue = runtime.hardwareAccelerationIssue;
+    const rendererText = issue?.renderer
+      ? `<div class="external-link-url">${escapeHtml(issue.renderer)}</div>`
+      : "";
+    const detailText = issue?.reason === "webgl-unavailable"
+      ? "WebGL is unavailable in this browser session, which usually means hardware acceleration is off or blocked."
+      : "This browser appears to be using a software renderer for graphics work.";
+    kicker = "Performance";
+    title = "Enable Hardware Acceleration";
+    body = `
       <div class="utility-confirm-card external-link-card">
         <div class="utility-confirm-copy">
           <strong>Bubble Borough runs best with browser hardware acceleration enabled.</strong>
@@ -30847,36 +30723,35 @@ function renderHardwareAccelerationUtilityOverlay() {
         </div>
         ${rendererText}
       </div>
-    `,
-    footer: `<div class="utility-confirm-actions"><button class="small-button" data-close-utility>Continue</button><button class="small-button alt" data-dismiss-hardware-acceleration-notice>Don't Show Again</button></div>`
-  };
-}
-
-function renderDispenserResetUtilityOverlay() {
-  const pelletCount = getAutoDispenserLoadedCount(state.autoDispenser);
-  return {
-    kicker: "Pellet Dispenser",
-    title: "Reset Dispenser",
-    body: pelletCount > 0
-      ? buildUtilityConfirmCardMarkup({
-        headline: "Return stored pellets?",
-        detail: `Are you sure you want to put the dispenser's ${pelletCount} pellet${pelletCount === 1 ? "" : "s"} back into your food inventory?`
-      })
-      : `<div class="empty-state">The pellet dispenser is already empty.</div>`,
-    footer: pelletCount > 0
-      ? buildUtilityActionsFooter([
-        { label: "Yes", attribute: "data-confirm-dispenser-reset" },
-        { label: "No", variant: "alt", attribute: "data-close-utility" }
-      ])
-      : buildUtilityCloseFooter("Close")
-  };
-}
-
-function renderCreditsUtilityOverlay() {
-  return {
-    kicker: "Credits",
-    title: "Bubble Borough",
-    body: `
+    `;
+    footer = `<div class="utility-confirm-actions"><button class="small-button" data-close-utility>Continue</button><button class="small-button alt" data-dismiss-hardware-acceleration-notice>Don't Show Again</button></div>`;
+  } else if (runtime.utilityOverlayMode === "medicine") {
+    kicker = "Pharmacy";
+    title = "Medicine Inventory";
+    body = renderMedicineInventoryOverlay();
+    footer = `<div class="mini-note">Select a medicine, then click the tank to use one dose on the whole tank.</div>`;
+  } else if (runtime.utilityOverlayMode === "dispenser-reset") {
+    const pelletCount = getAutoDispenserLoadedCount(state.autoDispenser);
+    kicker = "Pellet Dispenser";
+    title = "Reset Dispenser";
+    body = pelletCount > 0
+      ? `<div class="utility-confirm-card"><div class="utility-confirm-copy"><strong>Return stored pellets?</strong><div class="fish-meta">Are you sure you want to put the dispenser's ${pelletCount} pellet${pelletCount === 1 ? "" : "s"} back into your food inventory?</div></div></div>`
+      : `<div class="empty-state">The pellet dispenser is already empty.</div>`;
+    footer = pelletCount > 0
+      ? `<div class="utility-confirm-actions"><button class="small-button" data-confirm-dispenser-reset>Yes</button><button class="small-button alt" data-close-utility>No</button></div>`
+      : `<button class="small-button" data-close-utility>Close</button>`;
+  } else if (runtime.utilityOverlayMode === "tips") {
+    kicker = "Care";
+    title = "Current Tank Tips";
+    body = renderTipsOverlay();
+  } else if (runtime.utilityOverlayMode === "tank-management") {
+    kicker = "Tank Management";
+    title = tank ? getTankLabel(tank) : "Aquarium Management";
+    body = buildTankManagementOverlayBody(Date.now());
+  } else if (runtime.utilityOverlayMode === "credits") {
+    kicker = "Credits";
+    title = "Bubble Borough";
+    body = `
       <div class="utility-confirm-card credits-card">
         <div class="credits-list">
           <div class="credits-row">
@@ -30905,908 +30780,124 @@ function renderCreditsUtilityOverlay() {
           </div>
         </div>
       </div>
-    `,
-    footer: buildUtilityCloseFooter("Close")
-  };
-}
-
-function renderDecorBuyConfirmUtilityOverlay() {
-  const details = getPendingDecorBuyAnotherDetails();
-  return {
-    kicker: "Decor",
-    title: "Buy Another",
-    body: details
+    `;
+    footer = `<div class="utility-confirm-actions"><button class="small-button alt" data-close-utility>Close</button></div>`;
+  } else if (runtime.utilityOverlayMode === "bubbler-settings") {
+    const item = getPlacedDecorById(runtime.bubblerSettingsDecorId) || getSelectedPlacedDecor();
+    const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+    kicker = "Decor";
+    title = decor?.name || "Bubbler Settings";
+    body = renderBubblerSettingsOverlay(item);
+    footer = `<div class="utility-confirm-actions"><button class="small-button alt" data-close-utility>Done</button></div>`;
+  } else if (runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-decor-settings") {
+    const item = getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor();
+    const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+    kicker = "Decor";
+    title = decor?.name || "Decor Settings";
+    body = renderDecorSettingsOverlay(item);
+    footer = `<div class="utility-confirm-actions"><button class="small-button alt" data-close-utility>Done</button></div>`;
+  } else if (runtime.utilityOverlayMode === "decor-buy-confirm") {
+    const details = getPendingDecorBuyAnotherDetails();
+    kicker = "Decor";
+    title = "Buy Another";
+    body = details
       ? `
         <div class="utility-confirm-card">
           <div class="utility-confirm-copy">
-            <strong>Spend Ã°Å¸Âªâ„¢${details.cost} to buy another ${escapeHtml(details.decor.name)}?</strong>
+            <strong>Spend 🪙${details.cost} to buy another ${escapeHtml(details.decor.name)}?</strong>
             <div class="fish-meta">${details.canAfford ? "A new copy will be added to storage." : "You do not have enough coins right now."}</div>
           </div>
         </div>
       `
-      : `<div class="empty-state">That decor is no longer available.</div>`,
-    footer: details
+      : `<div class="empty-state">That decor is no longer available.</div>`;
+    footer = details
       ? `<div class="utility-confirm-actions"><button class="small-button" data-confirm-decor-buy-another ${details.canAfford ? "" : "disabled"}>Yes</button><button class="small-button alt" data-close-utility>No</button></div>`
-      : `<button class="small-button" data-close-utility>Close</button>`
-  };
-}
-
-function renderDecorSellConfirmUtilityOverlay() {
-  const details = getPendingDecorSellDetails();
-  return {
-    kicker: "Decor",
-    title: "Sell Decor",
-    body: details
+      : `<button class="small-button" data-close-utility>Close</button>`;
+  } else if (runtime.utilityOverlayMode === "decor-sell-confirm") {
+    const details = getPendingDecorSellDetails();
+    kicker = "Decor";
+    title = "Sell Decor";
+    body = details
       ? `
         <div class="utility-confirm-card">
           <div class="utility-confirm-copy">
-            <strong>Sell ${escapeHtml(details.decor.name)} for Ã°Å¸Âªâ„¢${details.resaleValue}?</strong>
+            <strong>Sell ${escapeHtml(details.decor.name)} for 🪙${details.resaleValue}?</strong>
             <div class="fish-meta">${details.grouped ? "Ungroup this decor before selling it." : "This will remove it from the tank."}</div>
           </div>
         </div>
       `
-      : `<div class="empty-state">That decor is no longer in the tank.</div>`,
-    footer: details
+      : `<div class="empty-state">That decor is no longer in the tank.</div>`;
+    footer = details
       ? `<div class="utility-confirm-actions"><button class="small-button warn" data-confirm-decor-sell ${details.grouped ? "disabled" : ""}>Yes</button><button class="small-button alt" data-close-utility>No</button></div>`
-      : `<button class="small-button" data-close-utility>Close</button>`
-  };
-}
-
-function renderImportConfirmUtilityOverlay() {
-  return {
-    kicker: "Save Data",
-    title: "Import Save File",
-    body: buildUtilityConfirmCardMarkup({
-      headline: "Importing a save file will overwrite your current progress.",
-      detail: "Continue?"
-    }),
-    footer: buildUtilityActionsFooter([
-      { label: "Yes", attribute: "data-confirm-import-save" },
-      { label: "No", variant: "alt", attribute: "data-close-utility" }
-    ])
-  };
-}
-
-function renderResetProgressUtilityOverlay() {
-  return {
-    kicker: "Progress",
-    title: "Reset Progress",
-    body: buildUtilityConfirmCardMarkup({
-      headline: "Delete all fish, decor, coins, tanks, and care history?",
-      detail: "This clears the current save and cannot be undone."
-    }),
-    footer: buildUtilityActionsFooter([
-      { label: "Reset", variant: "warn", attribute: "data-confirm-reset-progress" },
-      { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
-    ])
-  };
-}
-
-function createUtilityOverlayActionHandler(actions) {
-  return (ctx, target, event) => {
-    for (const action of actions) {
-      const matched = target?.closest?.(action.selector);
-      if (!matched) {
-        continue;
-      }
-      action.run(ctx, matched, event);
-      return true;
-    }
-    return false;
-  };
-}
-
-function handleFoodUtilityOverlayBodyClick(ctx, target) {
-  const foodButton = target?.closest?.("[data-select-food]");
-  if (!foodButton) {
-    return false;
+      : `<button class="small-button" data-close-utility>Close</button>`;
+  } else if (runtime.utilityOverlayMode === "custom-decor-name") {
+    kicker = "Custom Decor";
+    title = "Create Decor";
+    body = renderCustomDecorNameOverlay();
+    footer = `<div class="utility-confirm-actions"><button class="small-button" data-save-custom-decor>Save</button><button class="small-button alt" data-close-utility>Cancel</button></div>`;
+  } else if (runtime.utilityOverlayMode === "custom-hide-background") {
+    kicker = "Custom Hide";
+    title = "Choose Background";
+    body = renderCustomHideBackgroundPrompt();
+    footer = `<div class="utility-confirm-actions"><button class="small-button" data-choose-custom-hide-background>Choose Background</button><button class="small-button alt" data-close-utility>Cancel</button></div>`;
+  } else if (runtime.utilityOverlayMode === "custom-hide-create") {
+    kicker = "Custom Hide";
+    title = "Create Hide";
+    body = renderCustomHideCreationOverlay();
+    footer = `<div class="utility-confirm-actions"><button class="small-button" data-save-custom-hide>Create Hide</button><button class="small-button alt" data-close-utility>Cancel</button></div>`;
+  } else if (runtime.utilityOverlayMode === "custom-fish-create") {
+    kicker = "Custom Fish";
+    title = "Create Fish";
+    body = renderCustomFishCreationOverlay();
+    footer = `<div class="utility-confirm-actions"><button class="small-button" data-save-custom-fish>Create Fish</button><button class="small-button alt" data-close-utility>Cancel</button></div>`;
+  } else if (runtime.utilityOverlayMode === "save-export") {
+    const exportData = runtime.pendingSaveExport;
+    kicker = "Save Data";
+    title = "Save Export";
+    body = renderSaveExportOverlay(exportData);
+    footer = exportData
+      ? `<div class="utility-confirm-actions"><button class="small-button" data-copy-save-export>Copy Data</button><button class="small-button alt" data-select-save-export>Select All</button><button class="small-button alt" data-download-save-export>Download File</button><button class="small-button alt" data-close-utility>Done</button></div>`
+      : `<button class="small-button" data-close-utility>Close</button>`;
+  } else if (runtime.utilityOverlayMode === "external-link") {
+    const link = getPendingExternalLink();
+    kicker = "External Link";
+    title = "Open Link";
+    body = renderExternalLinkOverlay(link);
+    footer = link
+      ? `<div class="utility-confirm-actions"><button class="small-button" data-open-external-link>Open Link</button><button class="small-button alt" data-copy-external-link>Copy Link</button><button class="small-button alt" data-close-utility>Cancel</button></div>`
+      : `<button class="small-button" data-close-utility>Close</button>`;
+  } else if (runtime.utilityOverlayMode === "import-confirm") {
+    kicker = "Save Data";
+    title = "Import Save File";
+    body = `
+      <div class="utility-confirm-card">
+        <div class="utility-confirm-copy">
+          <strong>Importing a save file will overwrite your current progress.</strong>
+          <div class="fish-meta">Continue?</div>
+        </div>
+      </div>
+    `;
+    footer = `<div class="utility-confirm-actions"><button class="small-button" data-confirm-import-save>Yes</button><button class="small-button alt" data-close-utility>No</button></div>`;
+  } else if (runtime.utilityOverlayMode === "reset-progress-confirm") {
+    kicker = "Progress";
+    title = "Reset Progress";
+    body = `
+      <div class="utility-confirm-card">
+        <div class="utility-confirm-copy">
+          <strong>Delete all fish, decor, coins, tanks, and care history?</strong>
+          <div class="fish-meta">This clears the current save and cannot be undone.</div>
+        </div>
+      </div>
+    `;
+    footer = `<div class="utility-confirm-actions"><button class="small-button warn" data-confirm-reset-progress>Reset</button><button class="small-button alt" data-close-utility>Cancel</button></div>`;
+  } else if (runtime.utilityOverlayMode === "daily-bonus") {
+    kicker = "Daily Bonus";
+    title = "Bonus Summary";
+    body = renderDailyBonusOverlay();
+    footer = state.dailyBonus?.available
+      ? `<button class="small-button" data-claim-daily-bonus>Okay</button>`
+      : `<button class="small-button" data-close-utility>Close</button>`;
   }
-  selectFoodMode(foodButton.dataset.selectFood);
-  return true;
-}
-
-function handleMedicineUtilityOverlayBodyClick(ctx, target) {
-  const medicineButton = target?.closest?.("[data-select-medicine]");
-  if (!medicineButton) {
-    return false;
-  }
-  selectMedicineMode(medicineButton.dataset.selectMedicine);
-  return true;
-}
-
-function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
-  const managementViewButton = target?.closest?.("[data-management-view]");
-  if (managementViewButton) {
-    runtime.managementHubView = normalizeManagementHubView(managementViewButton.dataset.managementView);
-    renderUi(Date.now());
-    return true;
-  }
-  const managementSelectFishButton = target?.closest?.("[data-management-select-fish]");
-  if (managementSelectFishButton) {
-    selectFishInTankFromManagement(managementSelectFishButton.dataset.managementSelectFish);
-    return true;
-  }
-  const managementStoreFishButton = target?.closest?.("[data-management-store-fish]");
-  if (managementStoreFishButton) {
-    storeFish(managementStoreFishButton.dataset.managementStoreFish);
-    return true;
-  }
-  const managementBuyFishButton = target?.closest?.("[data-management-buy-another-fish]");
-  if (managementBuyFishButton) {
-    buyAnotherFishFromManagement(managementBuyFishButton.dataset.managementBuyAnotherFish);
-    return true;
-  }
-  const managementSellFishButton = target?.closest?.("[data-management-sell-fish]");
-  if (managementSellFishButton) {
-    sellFish(managementSellFishButton.dataset.managementSellFish);
-    return true;
-  }
-  const managementSelectDecorButton = target?.closest?.("[data-management-select-decor]");
-  if (managementSelectDecorButton) {
-    selectDecorInTankFromManagement(managementSelectDecorButton.dataset.managementSelectDecor);
-    return true;
-  }
-  const managementStoreDecorButton = target?.closest?.("[data-management-store-decor]");
-  if (managementStoreDecorButton) {
-    storeDecor(managementStoreDecorButton.dataset.managementStoreDecor);
-    return true;
-  }
-  const managementBuyDecorButton = target?.closest?.("[data-management-buy-another-decor]");
-  if (managementBuyDecorButton) {
-    buyAnotherDecor(managementBuyDecorButton.dataset.managementBuyAnotherDecor);
-    return true;
-  }
-  const managementSellDecorButton = target?.closest?.("[data-management-sell-decor]");
-  if (managementSellDecorButton) {
-    sellPlacedDecor(managementSellDecorButton.dataset.managementSellDecor);
-    return true;
-  }
-  if (target?.closest?.("[data-management-history-more]")) {
-    const totalEvents = Array.isArray(state.events) ? state.events.length : 0;
-    runtime.managementHistoryVisibleCount = Math.min(
-      totalEvents,
-      (Number(runtime.managementHistoryVisibleCount) || MANAGEMENT_HISTORY_PAGE_SIZE) + MANAGEMENT_HISTORY_PAGE_SIZE
-    );
-    renderUi(Date.now());
-    return true;
-  }
-  const openStoreButton = target?.closest?.("[data-open-store-tab]");
-  if (openStoreButton) {
-    openStoreOverlay(openStoreButton.dataset.openStoreTab);
-    return true;
-  }
-  if (target?.closest?.("[data-open-equipment-overlay]")) {
-    openEquipmentOverlay();
-    return true;
-  }
-  if (target?.closest?.("[data-open-settings-from-management]")) {
-    openSettingsOverlay();
-    return true;
-  }
-  if (target?.closest?.("[data-edit-tank-name]")) {
-    const tank = getCurrentTank();
-    if (!tank) {
-      return true;
-    }
-    runtime.editingTankNameId = tank.id;
-    runtime.editingTankNameValue = getTankLabel(tank);
-    renderUi(Date.now());
-    window.requestAnimationFrame(() => {
-      const input = dom.utilityOverlayBody?.querySelector("[data-tank-name-input]");
-      input?.focus?.();
-      input?.select?.();
-    });
-    return true;
-  }
-  if (target?.closest?.("[data-save-tank-name]")) {
-    saveCurrentTankName();
-    return true;
-  }
-  if (target?.closest?.("[data-cancel-tank-name]")) {
-    cancelCurrentTankNameEdit();
-    return true;
-  }
-  if (target?.closest?.("[data-sell-current-tank]")) {
-    sellCurrentTank();
-    return true;
-  }
-  return false;
-}
-
-function handleCaveSettingsUtilityOverlayBodyClick(ctx, target) {
-  if (target?.closest?.("[data-reset-bubbler-settings]")) {
-    resetSelectedBubblerSettings();
-    return true;
-  }
-  const bubblerColorButton = target?.closest?.("[data-bubbler-color]");
-  if (bubblerColorButton) {
-    updateSelectedBubblerSetting("bubbleColor", bubblerColorButton.dataset.bubblerColor);
-    return true;
-  }
-  const caveColorButton = target?.closest?.("[data-cave-color-layer]");
-  if (caveColorButton) {
-    updateSelectedCaveColorSetting(
-      caveColorButton.dataset.caveColorLayer,
-      caveColorButton.dataset.caveColor || ""
-    );
-    return true;
-  }
-  const caveEntryButton = target?.closest?.("[data-cave-entry-select]");
-  if (caveEntryButton) {
-    updateSelectedCaveSetting("activeEntryIndex", caveEntryButton.dataset.caveEntrySelect);
-    return true;
-  }
-  const caveSeatButton = target?.closest?.("[data-cave-seat-select]");
-  if (caveSeatButton) {
-    updateSelectedCaveSetting("activeSeatIndex", caveSeatButton.dataset.caveSeatSelect);
-    return true;
-  }
-  const caveSeatFacingButton = target?.closest?.("[data-cave-seat-facing]");
-  if (caveSeatFacingButton) {
-    updateSelectedCaveSetting(
-      "seatFacing",
-      caveSeatFacingButton.dataset.caveSeatFacing,
-      caveSeatFacingButton.dataset.caveSeatIndex
-    );
-    return true;
-  }
-  return false;
-}
-
-function handleCaveSettingsUtilityOverlayPointerDown(ctx, event) {
-  const previewFrame = event.target.closest("[data-decor-settings-preview-frame]");
-  const caveTarget = getEditableCaveSettingsTarget();
-  if (
-    previewFrame instanceof HTMLElement
-    && (runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-hide-create")
-    && isCaveDecorKey(caveTarget?.item?.decorKey)
-  ) {
-    const pointTarget = getCaveSettingsPreviewPointerTarget(event);
-    const point = getCaveSettingsPreviewLocalPoint(event);
-    if (pointTarget && point) {
-      runtime.caveSettingsDrag = {
-        kind: pointTarget.kind,
-        index: pointTarget.index,
-        pointerId: event.pointerId
-      };
-      previewFrame.setPointerCapture?.(event.pointerId);
-      applyCaveSettingsPreviewPoint(pointTarget.kind, pointTarget.index, point, { commit: false });
-      event.preventDefault();
-      return true;
-    }
-  }
-  const caveEntryControl = event.target.closest("[data-cave-setting][data-cave-entry-index]");
-  if (caveEntryControl instanceof HTMLInputElement || caveEntryControl instanceof HTMLSelectElement) {
-    updateSelectedCaveSetting("activeEntryIndex", caveEntryControl.dataset.caveEntryIndex);
-    return true;
-  }
-  const caveSeatControl = event.target.closest("[data-cave-setting][data-cave-seat-index]");
-  if (caveSeatControl instanceof HTMLInputElement || caveSeatControl instanceof HTMLSelectElement) {
-    updateSelectedCaveSetting("activeSeatIndex", caveSeatControl.dataset.caveSeatIndex);
-    return true;
-  }
-  return false;
-}
-
-function handleCaveSettingsUtilityOverlayPointerMove(ctx, event) {
-  const drag = runtime.caveSettingsDrag;
-  if (!drag || drag.pointerId !== event.pointerId) {
-    return false;
-  }
-  const point = getCaveSettingsPreviewLocalPoint(event);
-  if (point) {
-    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: false });
-    event.preventDefault();
-    return true;
-  }
-  return false;
-}
-
-function handleCaveSettingsUtilityOverlayPointerEnd(ctx, event) {
-  finishCaveSettingsPreviewDrag(event);
-  return true;
-}
-
-function handleCaveSettingsUtilityOverlayFocusIn(ctx, target) {
-  const caveEntryControl = target?.closest?.("[data-cave-setting][data-cave-entry-index]");
-  if (caveEntryControl instanceof HTMLInputElement || caveEntryControl instanceof HTMLSelectElement) {
-    updateSelectedCaveSetting("activeEntryIndex", caveEntryControl.dataset.caveEntryIndex);
-    return true;
-  }
-  const caveSeatControl = target?.closest?.("[data-cave-setting][data-cave-seat-index]");
-  if (caveSeatControl instanceof HTMLInputElement || caveSeatControl instanceof HTMLSelectElement) {
-    updateSelectedCaveSetting("activeSeatIndex", caveSeatControl.dataset.caveSeatIndex);
-    return true;
-  }
-  return false;
-}
-
-function handleCommonUtilityOverlayInput(ctx, target) {
-  const caveSettingInput = target?.closest?.("[data-cave-setting]");
-  if (caveSettingInput instanceof HTMLInputElement) {
-    updateSelectedCaveSetting(
-      caveSettingInput.dataset.caveSetting,
-      caveSettingInput.type === "checkbox" ? caveSettingInput.checked : caveSettingInput.value,
-      caveSettingInput.dataset.caveSeatIndex,
-      caveSettingInput.dataset.caveEntryIndex
-    );
-    return true;
-  }
-  const bubblerInput = target?.closest?.("[data-bubbler-setting]");
-  if (bubblerInput instanceof HTMLInputElement) {
-    updateSelectedBubblerSetting(
-      bubblerInput.dataset.bubblerSetting,
-      bubblerInput.type === "checkbox" ? bubblerInput.checked : bubblerInput.value
-    );
-    return true;
-  }
-  const decorSettingInput = target?.closest?.("[data-decor-setting]");
-  if (decorSettingInput instanceof HTMLInputElement) {
-    if (decorSettingInput.dataset.decorSetting === "size") {
-      updateSelectedDecorSetting(decorSettingInput.dataset.decorSetting, decorSettingInput.value);
-    } else {
-      updateSelectedDecorMotionSetting(decorSettingInput.dataset.decorSetting, decorSettingInput.value);
-    }
-    return true;
-  }
-  const customDecorSettingInput = target?.closest?.("[data-custom-decor-setting]");
-  if (customDecorSettingInput instanceof HTMLInputElement) {
-    updateSelectedCustomDecorSetting(
-      customDecorSettingInput.dataset.customDecorSetting,
-      customDecorSettingInput.value
-    );
-    return true;
-  }
-  return false;
-}
-
-function handleCustomDecorUtilityOverlayInput(ctx, target) {
-  const customDecorInput = target?.closest?.("[data-custom-decor-name-input]");
-  if (customDecorInput instanceof HTMLInputElement && runtime.pendingCustomDecorUpload) {
-    runtime.pendingCustomDecorUpload.name = customDecorInput.value;
-    return true;
-  }
-  const customDecorSizeInput = target?.closest?.("[data-custom-decor-size-input]");
-  if (customDecorSizeInput instanceof HTMLInputElement && runtime.pendingCustomDecorUpload) {
-    updatePendingCustomDecorSize(customDecorSizeInput.value);
-    return true;
-  }
-  const customDecorSplitInput = target?.closest?.("[data-custom-decor-split-input]");
-  if (customDecorSplitInput instanceof HTMLInputElement && runtime.pendingCustomDecorUpload) {
-    updatePendingCustomDecorMotionSplit(customDecorSplitInput.value);
-    return true;
-  }
-  const customDecorIntensityInput = target?.closest?.("[data-custom-decor-intensity-input]");
-  if (customDecorIntensityInput instanceof HTMLInputElement && runtime.pendingCustomDecorUpload) {
-    updatePendingCustomDecorMotionIntensity(customDecorIntensityInput.value);
-    return true;
-  }
-  return false;
-}
-
-function handleCustomHideUtilityOverlayInput(ctx, target) {
-  const customHideNameInput = target?.closest?.("[data-custom-hide-name-input]");
-  if (customHideNameInput instanceof HTMLInputElement && runtime.pendingCustomHideUpload) {
-    runtime.pendingCustomHideUpload.name = customHideNameInput.value;
-    return true;
-  }
-  const customHideSizeInput = target?.closest?.("[data-custom-hide-size-input]");
-  if (customHideSizeInput instanceof HTMLInputElement && runtime.pendingCustomHideUpload) {
-    updatePendingCustomHideScale(customHideSizeInput.value);
-    return true;
-  }
-  return false;
-}
-
-function handleCustomFishUtilityOverlayInput(ctx, target) {
-  const customFishNameInput = target?.closest?.("[data-custom-fish-name-input]");
-  if (customFishNameInput instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
-    runtime.pendingCustomFishUpload.name = customFishNameInput.value;
-    return true;
-  }
-  const customFishSizeInput = target?.closest?.("[data-custom-fish-size-input]");
-  if (customFishSizeInput instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
-    updatePendingCustomFishSize(customFishSizeInput.value);
-    return true;
-  }
-  return false;
-}
-
-function handleTankManagementUtilityOverlayInput(ctx, target) {
-  const input = target?.closest?.("[data-tank-name-input]");
-  if (input instanceof HTMLInputElement) {
-    runtime.editingTankNameValue = input.value;
-    return true;
-  }
-  return false;
-}
-
-function handleCommonUtilityOverlayChange(ctx, target) {
-  const caveColorizeControl = target?.closest?.("[data-cave-colorize-layer]");
-  if (caveColorizeControl instanceof HTMLInputElement) {
-    updateSelectedCaveColorizeSetting(
-      caveColorizeControl.dataset.caveColorizeLayer,
-      caveColorizeControl.checked
-    );
-    return true;
-  }
-  const caveSettingControl = target?.closest?.("[data-cave-setting]");
-  if (caveSettingControl instanceof HTMLInputElement || caveSettingControl instanceof HTMLSelectElement) {
-    updateSelectedCaveSetting(
-      caveSettingControl.dataset.caveSetting,
-      caveSettingControl.value,
-      caveSettingControl.dataset.caveSeatIndex,
-      caveSettingControl.dataset.caveEntryIndex
-    );
-    return true;
-  }
-  const bubblerControl = target?.closest?.("[data-bubbler-setting]");
-  if (bubblerControl instanceof HTMLInputElement || bubblerControl instanceof HTMLSelectElement) {
-    updateSelectedBubblerSetting(
-      bubblerControl.dataset.bubblerSetting,
-      bubblerControl instanceof HTMLInputElement && bubblerControl.type === "checkbox"
-        ? bubblerControl.checked
-        : bubblerControl.value
-    );
-    return true;
-  }
-  const customDecorSettingControl = target?.closest?.("[data-custom-decor-setting]");
-  if (customDecorSettingControl instanceof HTMLInputElement || customDecorSettingControl instanceof HTMLSelectElement) {
-    updateSelectedCustomDecorSetting(
-      customDecorSettingControl.dataset.customDecorSetting,
-      customDecorSettingControl.value
-    );
-    return true;
-  }
-  const decorSettingControl = target?.closest?.("[data-decor-setting]");
-  if (decorSettingControl instanceof HTMLInputElement || decorSettingControl instanceof HTMLSelectElement) {
-    const decorSetting = decorSettingControl.dataset.decorSetting;
-    if (decorSetting === "size" || decorSetting === "tankLayer") {
-      updateSelectedDecorSetting(decorSetting, decorSettingControl.value);
-    } else {
-      updateSelectedDecorMotionSetting(decorSetting, decorSettingControl.value);
-    }
-    return true;
-  }
-  const customFishBehaviorSelect = target?.closest?.("[data-custom-fish-behavior-select]");
-  if (customFishBehaviorSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
-    runtime.pendingCustomFishUpload.behaviorProfileId = normalizeCustomFishBehaviorProfileId(customFishBehaviorSelect.value);
-    return true;
-  }
-  const customDecorTypeSelect = target?.closest?.("[data-custom-decor-type-select]");
-  if (customDecorTypeSelect instanceof HTMLSelectElement && runtime.pendingCustomDecorUpload) {
-    setPendingCustomDecorMotionType(customDecorTypeSelect.value);
-    return true;
-  }
-  const customDecorSwaySideSelect = target?.closest?.("[data-custom-decor-sway-side-select]");
-  if (customDecorSwaySideSelect instanceof HTMLSelectElement && runtime.pendingCustomDecorUpload) {
-    setPendingCustomDecorSwaySide(customDecorSwaySideSelect.value);
-    return true;
-  }
-  return false;
-}
-
-function handleTankManagementUtilityOverlayKeyDown(ctx, target, event) {
-  const input = target?.closest?.("[data-tank-name-input]");
-  if (!(input instanceof HTMLInputElement)) {
-    return false;
-  }
-  if (event.key === "Enter") {
-    event.preventDefault();
-    saveCurrentTankName();
-    return true;
-  }
-  if (event.key === "Escape") {
-    event.preventDefault();
-    cancelCurrentTankNameEdit();
-    return true;
-  }
-  return false;
-}
-
-function handleCustomDecorUtilityOverlayKeyDown(ctx, target, event) {
-  const customDecorInput = target?.closest?.("[data-custom-decor-name-input]");
-  if (!(customDecorInput instanceof HTMLInputElement)) {
-    return false;
-  }
-  if (event.key === "Enter") {
-    event.preventDefault();
-    void savePendingCustomDecorUpload();
-    return true;
-  }
-  if (event.key === "Escape") {
-    event.preventDefault();
-    requestCloseUtilityOverlay();
-    return true;
-  }
-  return false;
-}
-
-function handleCustomHideUtilityOverlayKeyDown(ctx, target, event) {
-  const customHideInput = target?.closest?.("[data-custom-hide-name-input]");
-  if (!(customHideInput instanceof HTMLInputElement)) {
-    return false;
-  }
-  if (event.key === "Enter") {
-    event.preventDefault();
-    void savePendingCustomHideUpload();
-    return true;
-  }
-  if (event.key === "Escape") {
-    event.preventDefault();
-    requestCloseUtilityOverlay();
-    return true;
-  }
-  return false;
-}
-
-function handleCustomFishUtilityOverlayKeyDown(ctx, target, event) {
-  const customFishInput = target?.closest?.("[data-custom-fish-name-input]");
-  if (!(customFishInput instanceof HTMLInputElement)) {
-    return false;
-  }
-  if (event.key === "Enter") {
-    event.preventDefault();
-    void savePendingCustomFishUpload();
-    return true;
-  }
-  if (event.key === "Escape") {
-    event.preventDefault();
-    requestCloseUtilityOverlay();
-    return true;
-  }
-  return false;
-}
-
-const UTILITY_OVERLAY_MODES = Object.freeze({
-  "tutorial-skip-confirm": {
-    id: "tutorial-skip-confirm",
-    exclusive: true,
-    render: renderTutorialSkipConfirmUtilityOverlay,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-confirm-tutorial-skip]", run: () => advanceIntroTutorial("confirm-skip") },
-      { selector: "[data-cancel-tutorial-skip]", run: () => advanceIntroTutorial("cancel-skip") }
-    ]),
-    onRequestClose: () => {
-      cancelTutorialSkipConfirmation();
-      return true;
-    }
-  },
-  food: {
-    id: "food",
-    exclusive: true,
-    render: () => ({
-      kicker: "Feeding",
-      title: "Food Inventory",
-      body: renderFoodInventoryOverlay(),
-      footer: `<div class="mini-note">Select a food, then click inside the tank to drop one piece at a time.</div>`,
-      closable: true
-    }),
-    onBodyClick: handleFoodUtilityOverlayBodyClick
-  },
-  "hardware-acceleration": {
-    id: "hardware-acceleration",
-    exclusive: true,
-    render: renderHardwareAccelerationUtilityOverlay,
-    onFooterClick: createUtilityOverlayActionHandler([
-      {
-        selector: "[data-dismiss-hardware-acceleration-notice]",
-        run: () => {
-          dismissHardwareAccelerationNotice();
-          closeUtilityOverlay();
-        }
-      }
-    ])
-  },
-  medicine: {
-    id: "medicine",
-    exclusive: true,
-    render: () => ({
-      kicker: "Pharmacy",
-      title: "Medicine Inventory",
-      body: renderMedicineInventoryOverlay(),
-      footer: `<div class="mini-note">Select a medicine, then click the tank to use one dose on the whole tank.</div>`,
-      closable: true
-    }),
-    onBodyClick: handleMedicineUtilityOverlayBodyClick
-  },
-  "dispenser-reset": {
-    id: "dispenser-reset",
-    exclusive: true,
-    render: renderDispenserResetUtilityOverlay,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-confirm-dispenser-reset]", run: () => returnAutoDispenserPelletsToInventory() }
-    ])
-  },
-  tips: {
-    id: "tips",
-    exclusive: true,
-    render: () => ({
-      kicker: "Care",
-      title: "Current Tank Tips",
-      body: renderTipsOverlay(),
-      footer: "",
-      closable: true
-    })
-  },
-  "tank-management": {
-    id: "tank-management",
-    exclusive: true,
-    onOpen: () => {
-      runtime.managementHubView = "overview";
-      runtime.managementHistoryVisibleCount = MANAGEMENT_HISTORY_PAGE_SIZE;
-    },
-    render: (ctx) => ({
-      kicker: "Tank Management",
-      title: ctx.tank ? getTankLabel(ctx.tank) : "Aquarium Management",
-      body: buildTankManagementOverlayBody(ctx.now),
-      footer: "",
-      closable: true
-    }),
-    onBodyClick: handleTankManagementUtilityOverlayBodyClick,
-    onBodyInput: handleTankManagementUtilityOverlayInput,
-    onBodyKeyDown: handleTankManagementUtilityOverlayKeyDown
-  },
-  credits: {
-    id: "credits",
-    exclusive: true,
-    render: renderCreditsUtilityOverlay
-  },
-  "bubbler-settings": createPlacedDecorUtilityMode({
-    id: "bubbler-settings",
-    runtimeKey: "bubblerSettingsDecorId",
-    fallbackTitle: "Bubbler Settings",
-    getItem: () => getPlacedDecorById(runtime.bubblerSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderBubblerSettingsOverlay(item)
-  }),
-  "decor-settings": createPlacedDecorUtilityMode({
-    id: "decor-settings",
-    runtimeKey: "customDecorSettingsDecorId",
-    fallbackTitle: "Decor Settings",
-    getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderDecorSettingsOverlay(item)
-  }),
-  "custom-decor-settings": createPlacedDecorUtilityMode({
-    id: "custom-decor-settings",
-    runtimeKey: "customDecorSettingsDecorId",
-    fallbackTitle: "Decor Settings",
-    getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderDecorSettingsOverlay(item)
-  }),
-  "decor-buy-confirm": createPendingStateUtilityMode({
-    id: "decor-buy-confirm",
-    pendingStateKey: "pendingDecorAction",
-    render: renderDecorBuyConfirmUtilityOverlay,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-confirm-decor-buy-another]", run: () => confirmDecorBuyAnother() }
-    ])
-  }),
-  "decor-sell-confirm": createPendingStateUtilityMode({
-    id: "decor-sell-confirm",
-    pendingStateKey: "pendingDecorAction",
-    render: renderDecorSellConfirmUtilityOverlay,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-confirm-decor-sell]", run: () => confirmDecorSell() }
-    ])
-  }),
-  "custom-decor-name": createPendingStateUtilityMode({
-    id: "custom-decor-name",
-    pendingStateKey: "pendingCustomDecorUpload",
-    render: () => ({
-      kicker: "Custom Decor",
-      title: "Create Decor",
-      body: renderCustomDecorNameOverlay(),
-      footer: buildUtilityActionsFooter([
-        { label: "Save", attribute: "data-save-custom-decor" },
-        { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
-      ]),
-      closable: true
-    }),
-    onBodyInput: handleCustomDecorUtilityOverlayInput,
-    onBodyChange: handleCommonUtilityOverlayChange,
-    onBodyKeyDown: handleCustomDecorUtilityOverlayKeyDown,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-save-custom-decor]", run: () => void savePendingCustomDecorUpload() }
-    ])
-  }),
-  "custom-hide-background": createPendingStateUtilityMode({
-    id: "custom-hide-background",
-    pendingStateKey: "pendingCustomHideUpload",
-    render: () => ({
-      kicker: "Custom Hide",
-      title: "Choose Background",
-      body: renderCustomHideBackgroundPrompt(),
-      footer: buildUtilityActionsFooter([
-        { label: "Choose Background", attribute: "data-choose-custom-hide-background" },
-        { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
-      ]),
-      closable: true
-    }),
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-choose-custom-hide-background]", run: () => openLocalHideBackgroundPicker() }
-    ])
-  }),
-  "custom-hide-create": createPendingStateUtilityMode({
-    id: "custom-hide-create",
-    pendingStateKey: "pendingCustomHideUpload",
-    render: () => ({
-      kicker: "Custom Hide",
-      title: "Create Hide",
-      body: renderCustomHideCreationOverlay(),
-      footer: buildUtilityActionsFooter([
-        { label: "Create Hide", attribute: "data-save-custom-hide" },
-        { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
-      ]),
-      closable: true
-    }),
-    ...DECOR_SETTINGS_UTILITY_MODE_HANDLERS,
-    onBodyInput: (ctx, target, event) => handleCommonUtilityOverlayInput(ctx, target, event) || handleCustomHideUtilityOverlayInput(ctx, target, event),
-    onBodyKeyDown: handleCustomHideUtilityOverlayKeyDown,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-save-custom-hide]", run: () => void savePendingCustomHideUpload() }
-    ])
-  }),
-  "custom-fish-create": createPendingStateUtilityMode({
-    id: "custom-fish-create",
-    pendingStateKey: "pendingCustomFishUpload",
-    render: () => ({
-      kicker: "Custom Fish",
-      title: "Create Fish",
-      body: renderCustomFishCreationOverlay(),
-      footer: buildUtilityActionsFooter([
-        { label: "Create Fish", attribute: "data-save-custom-fish" },
-        { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
-      ]),
-      closable: true
-    }),
-    onBodyInput: handleCustomFishUtilityOverlayInput,
-    onBodyChange: handleCommonUtilityOverlayChange,
-    onBodyKeyDown: handleCustomFishUtilityOverlayKeyDown,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-save-custom-fish]", run: () => void savePendingCustomFishUpload() }
-    ])
-  }),
-  "save-export": {
-    id: "save-export",
-    exclusive: true,
-    onClose: () => {
-      runtime.pendingSaveExport = null;
-    },
-    render: () => {
-      const exportData = runtime.pendingSaveExport;
-      return {
-        kicker: "Save Data",
-        title: "Save Export",
-        body: renderSaveExportOverlay(exportData),
-        footer: exportData
-          ? `<div class="utility-confirm-actions"><button class="small-button" data-copy-save-export>Copy Data</button><button class="small-button alt" data-select-save-export>Select All</button><button class="small-button alt" data-download-save-export>Download File</button><button class="small-button alt" data-close-utility>Done</button></div>`
-          : `<button class="small-button" data-close-utility>Close</button>`,
-        closable: true
-      };
-    },
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-copy-save-export]", run: () => void copyCurrentSaveExportData() },
-      {
-        selector: "[data-select-save-export]",
-        run: () => {
-          if (selectSaveExportText()) {
-            showToast("Save data selected.");
-          }
-        }
-      },
-      { selector: "[data-download-save-export]", run: () => void retrySaveExportDownload() }
-    ])
-  },
-  "external-link": {
-    id: "external-link",
-    exclusive: true,
-    preservePendingState: ["pendingExternalLink"],
-    onClose: () => {
-      runtime.pendingExternalLink = null;
-    },
-    render: () => {
-      const link = getPendingExternalLink();
-      return {
-        kicker: "External Link",
-        title: "Open Link",
-        body: renderExternalLinkOverlay(link),
-        footer: link
-          ? buildUtilityActionsFooter([
-            { label: "Open Link", attribute: "data-open-external-link" },
-            { label: "Copy Link", variant: "alt", attribute: "data-copy-external-link" },
-            { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
-          ])
-          : buildUtilityCloseFooter("Close"),
-        closable: true
-      };
-    },
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-open-external-link]", run: () => openPendingExternalLink() },
-      { selector: "[data-copy-external-link]", run: () => void copyPendingExternalLink() }
-    ])
-  },
-  "import-confirm": {
-    id: "import-confirm",
-    exclusive: true,
-    render: renderImportConfirmUtilityOverlay,
-    onFooterClick: createUtilityOverlayActionHandler([
-      {
-        selector: "[data-confirm-import-save]",
-        run: () => {
-          openImportDataPicker();
-          closeUtilityOverlay();
-        }
-      }
-    ])
-  },
-  "reset-progress-confirm": {
-    id: "reset-progress-confirm",
-    exclusive: true,
-    render: renderResetProgressUtilityOverlay,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-confirm-reset-progress]", run: () => resetAllProgress() }
-    ])
-  },
-  "daily-bonus": {
-    id: "daily-bonus",
-    exclusive: true,
-    render: () => ({
-      kicker: "Daily Bonus",
-      title: "Bonus Summary",
-      body: renderDailyBonusOverlay(),
-      footer: state.dailyBonus?.available
-        ? `<button class="small-button" data-claim-daily-bonus>Okay</button>`
-        : `<button class="small-button" data-close-utility>Close</button>`,
-      closable: true
-    }),
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-claim-daily-bonus]", run: () => claimDailyBonus() }
-    ])
-  }
-});
-
-function requestCloseUtilityOverlay() {
-  const modeDef = getUtilityOverlayModeDef(runtime.utilityOverlayMode);
-  if (modeDef?.onRequestClose?.(getUtilityOverlayContext(Date.now())) === true) {
-    return true;
-  }
-  closeUtilityOverlay();
-  return true;
-}
-
-function dispatchUtilityOverlayTargetEvent(handlerKey, event) {
-  const target = event.target instanceof Element ? event.target : null;
-  if (!target) {
-    return false;
-  }
-  const modeDef = getUtilityOverlayModeDef(runtime.utilityOverlayMode);
-  const handler = modeDef?.[handlerKey];
-  return handler ? handler(getUtilityOverlayContext(Date.now()), target, event) === true : false;
-}
-
-function dispatchUtilityOverlayPointerEvent(handlerKey, event) {
-  const modeDef = getUtilityOverlayModeDef(runtime.utilityOverlayMode);
-  const handler = modeDef?.[handlerKey];
-  return handler ? handler(getUtilityOverlayContext(Date.now()), event) === true : false;
-}
-
-function renderUtilityOverlay() {
-  if (!dom.utilityOverlay) {
-    return;
-  }
-
-  dom.utilityOverlay.hidden = !runtime.utilityOverlayOpen;
-  dom.utilityOverlay.classList.toggle("is-open", runtime.utilityOverlayOpen);
-  if (!runtime.utilityOverlayOpen) {
-    return;
-  }
-
-  const modeDef = getUtilityOverlayModeDef(runtime.utilityOverlayMode);
-  const config = modeDef?.render?.(getUtilityOverlayContext(Date.now())) || buildDefaultUtilityOverlayConfig();
-  const kicker = String(config.kicker || "Tank Tools");
-  const title = String(config.title || "Details");
-  const body = String(config.body || "");
-  const footer = String(config.footer || "");
 
   setTextIfChanged(dom.utilityOverlayTitle, title);
   if (dom.utilityOverlayKicker) {
@@ -31817,10 +30908,20 @@ function renderUtilityOverlay() {
   }
   if (dom.utilityOverlayFooter) {
     setMarkupIfChanged("utility-overlay-footer", dom.utilityOverlayFooter, footer);
-    dom.utilityOverlayFooter.hidden = !footer.trim();
+    dom.utilityOverlayFooter.hidden = !String(footer || "").trim();
+    if (runtime.utilityOverlayMode === "tutorial-skip-confirm") {
+      const confirmButton = dom.utilityOverlayFooter.querySelector("[data-confirm-tutorial-skip]");
+      const cancelButton = dom.utilityOverlayFooter.querySelector("[data-cancel-tutorial-skip]");
+      if (confirmButton instanceof HTMLButtonElement) {
+        confirmButton.onclick = () => advanceIntroTutorial("confirm-skip");
+      }
+      if (cancelButton instanceof HTMLButtonElement) {
+        cancelButton.onclick = () => advanceIntroTutorial("cancel-skip");
+      }
+    }
   }
   if (dom.closeUtilityOverlay) {
-    dom.closeUtilityOverlay.hidden = config.closable === false;
+    dom.closeUtilityOverlay.hidden = !closable;
   }
 }
 
@@ -33523,7 +32624,7 @@ function renderEditDecorTrayContextMenu() {
             title="Buy Another"
             ${canAffordAnotherDecor ? "" : "disabled"}
           >
-            Buy Another ðŸª™${purchaseCost}
+            Buy Another 🪙${purchaseCost}
           </button>
         ` : ""}
         <button
@@ -33970,7 +33071,7 @@ function renderFoodTray() {
       ? items.map((food) => {
         const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
         const active = runtime.feedingModeFoodKey === food.id;
-        const label = `${food.name} â€¢ ${quantity} left`;
+        const label = `${food.name} • ${quantity} left`;
         return `
           <button
             class="edit-decor-tile ${active ? "is-active" : ""}"
@@ -34025,7 +33126,7 @@ function renderMedicineTray() {
       ? items.map((medicine) => {
         const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
         const active = runtime.medicineModeKey === medicine.id;
-        const label = `${medicine.name} â€¢ ${quantity} left`;
+        const label = `${medicine.name} • ${quantity} left`;
         return `
           <button
             class="edit-decor-tile ${active ? "is-active" : ""}"
@@ -34155,7 +33256,7 @@ function renderFishList(now) {
           aria-expanded="${String(!tankCollapsed)}"
         >
           <span class="collapsible-title">In Tank</span>
-          <span class="collapsible-icon" data-collapsible-icon>${tankCollapsed ? "â¬‡ï¸" : "â¬†ï¸"}</span>
+          <span class="collapsible-icon" data-collapsible-icon>${tankCollapsed ? "⬇️" : "⬆️"}</span>
         </button>
         <div class="collapsible-meta">
           <strong>${livingTankFish.length}</strong>
@@ -34174,7 +33275,7 @@ function renderFishList(now) {
             aria-expanded="${String(!deadCollapsed)}"
           >
             <span class="collapsible-title">Dead Fish</span>
-            <span class="collapsible-icon" data-collapsible-icon>${deadCollapsed ? "â¬‡ï¸" : "â¬†ï¸"}</span>
+            <span class="collapsible-icon" data-collapsible-icon>${deadCollapsed ? "⬇️" : "⬆️"}</span>
           </button>
           <div class="collapsible-meta">
             <button class="small-button warn" data-dispose-all-dead title="Dispose of all dead fish" aria-label="Dispose of all dead fish">&#128701;</button>
@@ -34194,7 +33295,7 @@ function renderFishList(now) {
           aria-expanded="${String(!storageCollapsed)}"
         >
           <span class="collapsible-title">Storage</span>
-          <span class="collapsible-icon" data-collapsible-icon>${storageCollapsed ? "â¬‡ï¸" : "â¬†ï¸"}</span>
+          <span class="collapsible-icon" data-collapsible-icon>${storageCollapsed ? "⬇️" : "⬆️"}</span>
         </button>
         <div class="collapsible-meta">
           <strong>${livingStoredFish.length}</strong>
@@ -34440,10 +33541,10 @@ function renderFishInspector(now) {
   let mealLabel = isMealFreeFish(fish)
     ? "N/A"
     : hasFishEatenInSlot(fish, currentSlot)
-      ? "âœ…"
+      ? "✅"
       : isFishSettlingForSlot(fish, currentSlot)
         ? "Next meal"
-        : "âŒ";
+        : "❌";
 
   if (dom.inspectorMeal) {
     if (mealLabel !== "N/A" && mealLabel !== "Next meal") {
@@ -35726,13 +34827,13 @@ function renderToolCursor() {
   }
 
   if (runtime.feedingModeFoodKey || runtime.medicineModeKey) {
-    dom.toolCursor.textContent = runtime.medicineModeKey ? "ðŸ’Š" : "ðŸ—";
+    dom.toolCursor.textContent = runtime.medicineModeKey ? "💊" : "🍗";
     dom.toolCursor.style.left = `${runtime.pointerStagePx.x}px`;
     dom.toolCursor.style.top = `${runtime.pointerStagePx.y}px`;
     return;
   }
 
-  dom.toolCursor.textContent = runtime.scoopMode ? "ðŸ¥„" : "ðŸ§½";
+  dom.toolCursor.textContent = runtime.scoopMode ? "🥄" : "🧽";
   dom.toolCursor.style.left = `${runtime.pointerStagePx.x}px`;
   dom.toolCursor.style.top = `${runtime.pointerStagePx.y}px`;
 }
@@ -37772,13 +36873,7 @@ function updateFishMotion(now, deltaSeconds) {
         const facingDx = fish.activity === "feeding" && pelletPose
           ? pelletPose.xNorm - fish.xNorm
           : fish.targetXNorm - fish.xNorm;
-        const schoolFollowFacing = fish.activity === "roam"
-          ? getFishSchoolFollowFacingDirection(fish, species, now, facingDx)
-          : null;
-        if (schoolFollowFacing !== null) {
-          setFishDirection(fish, schoolFollowFacing, species, now);
-          handledDirectionThisFrame = true;
-        } else if (Math.abs(facingDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
+        if (Math.abs(facingDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
           setFishDirection(fish, facingDx >= 0 ? 1 : -1, species, now);
           handledDirectionThisFrame = true;
         }
@@ -39550,7 +38645,7 @@ function drawAutoDispenserButton(bounds, label, options = {}) {
     tankContext.font = `900 ${Math.max(10, Math.round(height * 0.82))}px "Segoe UI Symbol", "Arial Unicode MS", "Trebuchet MS", sans-serif`;
     tankContext.textAlign = "center";
     tankContext.textBaseline = "middle";
-    tankContext.fillText("â†º", centerX, centerY + height * 0.03, width * 0.86);
+    tankContext.fillText("↺", centerX, centerY + height * 0.03, width * 0.86);
     tankContext.restore();
     return;
   }
@@ -41583,7 +40678,7 @@ function getFishShadowLayerPlaneY(fish) {
   const floorY = getTankFloorSurfaceYAtX((fish?.xNorm || 0.5) * TANK_WIDTH) + 7;
   return clamp(
     getTankLayerBottomBoundaryY(layer),
-    WATER_SURFACE_Y + 24,
+    WATER_SURFACE_Y + getViewportPxAsTankVirtual(24),
     floorY
   );
 }
@@ -41648,7 +40743,7 @@ function drawGroundShadows(now) {
     GLASS_MARGIN_X,
     WATER_SURFACE_Y,
     TANK_WIDTH - GLASS_MARGIN_X * 2,
-    getVisibleTankFloorBottomY() - WATER_SURFACE_Y + 12
+    getVisibleTankFloorBottomY() - WATER_SURFACE_Y + getViewportPxAsTankVirtual(12)
   );
   shadowContext.clip();
   pruneFishShadowPlaneCache();
@@ -42636,7 +41731,7 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
       tankContext.fillText(
-        pose.isDead ? "â˜ ï¸" : "ðŸ’”",
+        pose.isDead ? "☠️" : "💔",
         pose.x + pose.swayX,
         statusY
       );
@@ -46117,16 +45212,18 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
       return beginRoam();
     }
 
-    const pathNodes = buildNormalCaveInsideTravelNodes(
-      decorItem,
-      fish,
-      species,
-      currentPoint,
-      seatAssignment.point,
-      now,
-      interiorAnchor
-    );
-    if (!pathNodes.length && Math.hypot(currentPoint.xNorm - seatAssignment.point.xNorm, currentPoint.yNorm - seatAssignment.point.yNorm) > 0.012) {
+    const pathNodes = configuredPoints
+      ? []
+      : buildNormalCaveInsideTravelNodes(
+        decorItem,
+        fish,
+        species,
+        currentPoint,
+        seatAssignment.point,
+        now,
+        interiorAnchor
+      );
+    if (!configuredPoints && !pathNodes.length && Math.hypot(currentPoint.xNorm - seatAssignment.point.xNorm, currentPoint.yNorm - seatAssignment.point.yNorm) > 0.012) {
       return beginRoam();
     }
 
@@ -46447,6 +45544,9 @@ function fishShapeLeavesActiveCaveInterior(fish, species, now, xNorm, yNorm) {
   if (!plan) {
     return true;
   }
+  if (plan.configuredPoints) {
+    return false;
+  }
 
   const decor = getCaveBehaviorDecorById(plan.decorId);
   if (!decor) {
@@ -46660,7 +45760,7 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
       fish.targetXNorm = fish.xNorm;
       fish.targetYNorm = fish.yNorm;
       const mouthPose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
-      if (!debugForcedPlan && !stalledAtTrigger && !canFishChangeToLayer(fish, species, now, clampTankLayer(fish.caveBackLayer || DEFAULT_TANK_LAYER), mouthPose)) {
+      if (!plan.configuredPoints && !debugForcedPlan && !stalledAtTrigger && !canFishChangeToLayer(fish, species, now, clampTankLayer(fish.caveBackLayer || DEFAULT_TANK_LAYER), mouthPose)) {
         setFishTankLayers(
           fish,
           clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER),
@@ -46772,7 +45872,7 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
       fish.targetXNorm = fish.xNorm;
       fish.targetYNorm = fish.yNorm;
       const mouthPose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
-      if (!debugForcedPlan && !stalledAtTrigger && !canFishChangeToLayer(fish, species, now, clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER), mouthPose)) {
+      if (!plan.configuredPoints && !debugForcedPlan && !stalledAtTrigger && !canFishChangeToLayer(fish, species, now, clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER), mouthPose)) {
         fish.targetAt = now + 900;
         return true;
       }
@@ -46916,14 +46016,8 @@ function segmentHitsShapeDescriptor(
 
 function getFishCollisionPose(fish, species, now, xNorm, yNorm, directionOverride = null) {
   const pose = getFishPose(fish, species, now);
-  const followFacingDirection = directionOverride == null
-    ? getFishSchoolFollowFacingDirection(fish, species, now)
-    : null;
   const direction = directionOverride == null
-    ? (
-      followFacingDirection
-      ?? (Math.abs(fish.targetXNorm - fish.xNorm) > 0.0001 ? (fish.targetXNorm >= fish.xNorm ? 1 : -1) : (fish.direction || 1))
-    )
+    ? (Math.abs(fish.targetXNorm - fish.xNorm) > 0.0001 ? (fish.targetXNorm >= fish.xNorm ? 1 : -1) : (fish.direction || 1))
     : directionOverride;
 
   return {
@@ -47927,38 +47021,53 @@ function getVisibleTankVirtualBounds() {
   const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
   const offsetX = Number(runtime.stageRenderOffsetX) || 0;
   const offsetY = Number(runtime.stageRenderOffsetY) || 0;
-  const displayWidth = Math.max(1, dom.tankCanvas?.width || Math.round((dom.tankStage?.getBoundingClientRect?.().width || TANK_WIDTH) * dpr));
-  const displayHeight = Math.max(1, dom.tankCanvas?.height || Math.round((dom.tankStage?.getBoundingClientRect?.().height || TANK_HEIGHT) * dpr));
-  const left = clamp((-offsetX) / scale, 0, TANK_WIDTH);
-  const top = clamp((-offsetY) / scale, 0, TANK_HEIGHT);
-  const right = clamp((displayWidth - offsetX) / scale, left, TANK_WIDTH);
-  const bottom = clamp((displayHeight - offsetY) / scale, top, TANK_HEIGHT);
+  const width = Math.max(1, dom.tankCanvas?.width || TANK_WIDTH * scale);
+  const height = Math.max(1, dom.tankCanvas?.height || TANK_HEIGHT * scale);
+
   return {
-    left,
-    top,
-    right,
-    bottom
+    left: clamp((0 - offsetX) / scale, 0, TANK_WIDTH),
+    top: clamp((0 - offsetY) / scale, 0, TANK_HEIGHT),
+    right: clamp((width - offsetX) / scale, 0, TANK_WIDTH),
+    bottom: clamp((height - offsetY) / scale, 0, TANK_HEIGHT)
   };
 }
 
 function getTargetVisibleGravelHeightPx() {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.();
-  const stageHeight = stageRect?.height || (dom.tankCanvas?.height ? dom.tankCanvas.height / Math.max(1, window.devicePixelRatio || 1) : TANK_HEIGHT);
-  return stageHeight * GRAVEL_VIEWPORT_HEIGHT_RATIO;
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const viewportHeight = Math.max(
+    1,
+    dom.tankStage?.getBoundingClientRect().height || ((dom.tankCanvas?.height || TANK_HEIGHT) / dpr)
+  );
+  return clamp(
+    viewportHeight * GRAVEL_VIEWPORT_HEIGHT_RATIO,
+    GRAVEL_VISIBLE_HEIGHT_MIN_PX,
+    GRAVEL_VISIBLE_HEIGHT_MAX_PX
+  );
 }
 
 function getTargetVisibleGravelHeightVirtual() {
-  return getViewportPxAsTankVirtual(getTargetVisibleGravelHeightPx());
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
+  return (getTargetVisibleGravelHeightPx() * dpr) / scale;
 }
 
 function getVisibleTankFloorBottomY() {
-  return getVisibleTankVirtualBounds().bottom;
+  const visibleBounds = getVisibleTankVirtualBounds();
+  const tankBottom = TANK_HEIGHT - GLASS_MARGIN_BOTTOM;
+  return clamp(
+    Math.min(tankBottom, visibleBounds.bottom),
+    WATER_SURFACE_Y + 90,
+    tankBottom
+  );
 }
 
 function getDynamicGravelSurfaceBaseY() {
-  return Math.max(
-    WATER_SURFACE_Y + 28,
-    getVisibleTankFloorBottomY() - getTargetVisibleGravelHeightVirtual()
+  const bottom = getVisibleTankFloorBottomY();
+  const targetHeight = getTargetVisibleGravelHeightVirtual();
+  return clamp(
+    bottom - targetHeight,
+    WATER_SURFACE_Y + 80,
+    bottom - 40
   );
 }
 
@@ -48259,21 +47368,12 @@ function hideToast(options = {}) {
     runtime.toastHandle = null;
   }
   runtime.toastKey = "";
-  runtime.guidanceToastOwner = "";
   dom.toast?.classList.remove("is-visible");
   return true;
 }
 
-function showGuidanceToast(owner, message, options = {}) {
-  return showToast(message, {
-    ...options,
-    owner
-  });
-}
-
 function showToast(message, options = {}) {
   runtime.toastKey = typeof options.key === "string" ? options.key : "";
-  runtime.guidanceToastOwner = typeof options.owner === "string" ? options.owner : "toast:general";
   dom.toast.textContent = message;
   positionToast();
   dom.toast.classList.add("is-visible");
@@ -48287,7 +47387,6 @@ function showToast(message, options = {}) {
     dom.toast.classList.remove("is-visible");
     runtime.toastHandle = null;
     runtime.toastKey = "";
-    runtime.guidanceToastOwner = "";
   }, durationMs);
 }
 

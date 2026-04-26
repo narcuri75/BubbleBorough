@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260425c" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260425f" />
 </head>
 
 <body>
@@ -55,6 +55,10 @@
                   <strong id="coinCount">0</strong>
                 </article>
               </div>
+              <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Daily recap ready"
+                aria-label="Open daily recap">
+                <img class="daily-bonus-bell-icon" src="./assets/icons/bell.png" alt="" aria-hidden="true" />
+              </button>
             </section>
 
             <aside id="editQuickRef" class="edit-quick-ref" hidden aria-label="Edit mode quick reference">
@@ -64,11 +68,6 @@
                 <div><strong>Store Button</strong> - Move to Storage</div>
               </div>
             </aside>
-
-            <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Daily bonus available"
-              aria-label="Open daily bonus">
-              &#128276;
-            </button>
 
             <button id="prevTankButton" class="tank-nav-button tank-nav-button-left" type="button" hidden
               aria-label="Previous tank">
@@ -469,6 +468,14 @@
                       </div>
                       <input id="soundMuteToggleInput" class="settings-checkbox" type="checkbox" />
                     </label>
+
+                    <label class="settings-toggle-row" for="uiMuteToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Mute UI</span>
+                        <span class="settings-toggle-note">Turns off button press and menu feedback sounds only.</span>
+                      </div>
+                      <input id="uiMuteToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
                   </section>
 
                   <section class="settings-section">
@@ -856,6 +863,10 @@
 
               <button id="debugCaveButton" class="dock-button debug" type="button" title="Debug: Force Cave Test Loop"
                 aria-label="Debug: Force Cave Test Loop">🏔️</button>
+              <button id="debugDailyRecapButton" class="dock-button debug" type="button"
+                title="Debug: Trigger Daily Recap" aria-label="Debug: Trigger Daily Recap">&#128276;</button>
+              <button id="debugFishBehaviorLogButton" class="dock-button debug" type="button"
+                title="Debug: Download Fish Behavior Log" aria-label="Debug: Download Fish Behavior Log">&#128221;</button>
               <!--^^^-->
 
             </div>
@@ -887,6 +898,10 @@
                   <div class="inspector-line">
                     <span>Comfort:</span>
                     <strong id="inspectorComfort">100% (Calm)</strong>
+                  </div>
+                  <div class="inspector-line inspector-line-chips">
+                    <span>Needs:</span>
+                    <div id="inspectorNeeds" class="inspector-chip-row"></div>
                   </div>
                   <div class="inspector-line">
                     <span>Age:</span>
@@ -956,7 +971,7 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-<script type="module" src="./public/app.js?v=20260425w"></script>
+  <script type="module" src="./public/app.js?v=20260425ab"></script>
 </body>
 
 </html>

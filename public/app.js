@@ -21,6 +21,7 @@ const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
 ]);
 let appConfig = DEFAULT_APP_CONFIG;
 const DEBUG_MODE = false;
+const DEBUG_FISH_BEHAVIOR_LOG_LIMIT = 600;
 const TUTORIAL_MODE_DISABLED = "disabled";
 const TUTORIAL_MODE_GUIDED = "guided-live";
 const TUTORIAL_MODE_INFO_ONLY = "info-only";
@@ -90,6 +91,163 @@ const MINUTE_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
 const HOUR_MS = 60 * 60 * 1000;
+const BRINE_SHRIMP_FOOD_KEY = "brineShrimpFood";
+const NORMAL_MEAL_FOOD_KEYS = Object.freeze(["basic", "frisky"]);
+const PREDATOR_MEAL_FOOD_KEYS = Object.freeze(["chum"]);
+const COMFORT_MEAL_WINDOW_MS = 12 * HOUR_MS;
+const COMFORT_MEALTIME_BOOST_MS = HOUR_MS;
+const BREEDING_FOOD_BOOST_MS = MINUTE_MS;
+const DAILY_MEAL_COIN_CAP = 8;
+const DAILY_RECAP_REWARD_CAP = 30;
+const DAILY_RECAP_HISTORY_LIMIT = 45;
+const COMFORT_VERY_LOW_EVENT_MS = 2 * HOUR_MS;
+const TANK_SPACE_FULL_LOAD = 10;
+const TANK_SPACE_MAX_LOAD = 14;
+const COMFORT_COMPONENTS = Object.freeze({
+  cleanliness: 20,
+  meal: 20,
+  needs: 20,
+  health: 15,
+  space: 15,
+  mealBoost: 10,
+  conflictPenalty: 10,
+  maxConflictPenalty: 30
+});
+const COMFORT_NEED_LABELS = Object.freeze({
+  plants: "Plants",
+  cave: "Cave",
+  bubbler: "Bubbler",
+  driftwood: "Driftwood",
+  hardscape: "Hardscape",
+  seaweed_algae: "Seaweed",
+  coral: "Coral",
+  spooky: "Spooky Decor",
+  open_water: "Open Water",
+  school_2_plus: "School 2+",
+  surface_cover: "Surface Cover",
+  brine_food: "Brine Shrimp Food"
+});
+const COMFORT_CONFLICT_LABELS = Object.freeze({
+  betta_present: "Betta Present",
+  aggressive_predator: "Aggressive Predator",
+  fin_nipper: "Fin Nipper",
+  large_fish: "Large Fish",
+  tiny_fish: "Tiny Fish",
+  same_species: "Same Species",
+  tang_present: "Another Tang",
+  puffer_present: "Another Puffer",
+  surface_crowding: "Surface Crowding",
+  overcrowded: "Overcrowded",
+  sharp_decor: "Sharp Decor",
+  fast_eater: "Fast Eater",
+  community_fish: "Community Fish",
+  the_cure: "The Cure"
+});
+const FISH_COMFORT_PROFILES = Object.freeze({
+  "guppy": { mealCoins: 1, unlock: null, needs: ["plants", "open_water"], conflicts: ["betta_present", "aggressive_predator", "fin_nipper"] },
+  "zebra-danio": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
+  "goldfish": { mealCoins: 1, unlock: null, needs: ["open_water", "hardscape"], conflicts: ["overcrowded", "fin_nipper"] },
+  "neon-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator", "large_fish"] },
+  "cherry-barb": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator"] },
+  "brine-shrimp": { mealCoins: 1, unlock: "first-care", needs: ["brine_food", "open_water"], conflicts: ["aggressive_predator", "large_fish"] },
+  "celestial-pearl-danio": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "large_fish", "aggressive_predator"] },
+  "moor-goldfish": { mealCoins: 1, unlock: "first-care", needs: ["open_water", "hardscape"], conflicts: ["sharp_decor", "fin_nipper", "overcrowded"] },
+  "otocinclus": { mealCoins: 0, unlock: "first-care", needs: ["seaweed_algae", "plants"], conflicts: ["aggressive_predator", "large_fish"] },
+  "molly": { mealCoins: 1, unlock: "first-care", needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "livebearer": { mealCoins: 1, unlock: "first-care", needs: ["plants", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "suckerfish": { mealCoins: 0, unlock: "stable-tank", needs: ["driftwood", "cave"], conflicts: ["same_species", "overcrowded"] },
+  "loach": { mealCoins: 1, unlock: "stable-tank", needs: ["cave", "plants"], conflicts: ["sharp_decor", "aggressive_predator"] },
+  "swordtail": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "plants"], conflicts: ["same_species", "overcrowded"] },
+  "betta": { mealCoins: 1, unlock: "stable-tank", needs: ["plants", "cave"], conflicts: ["betta_present", "community_fish", "fin_nipper"] },
+  "blue-ram": { mealCoins: 1, unlock: "stable-tank", needs: ["cave", "plants"], conflicts: ["fast_eater", "aggressive_predator"] },
+  "piranha": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "cave"], conflicts: ["community_fish", "overcrowded"] },
+  "zombie-fish": { mealCoins: 0, unlock: "spooky-keeper", needs: ["spooky", "cave"], conflicts: ["the_cure", "community_fish"] },
+  "skeleton-fish": { mealCoins: 0, unlock: "spooky-keeper", needs: ["spooky", "cave"], conflicts: ["the_cure", "overcrowded"] },
+  "wonder-killifish": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "open_water"], conflicts: ["tiny_fish", "surface_crowding"] },
+  "rainbowfish": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded", "aggressive_predator"] },
+  "gourami": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "plants"], conflicts: ["betta_present", "fin_nipper"] },
+  "discus": { mealCoins: 2, unlock: "master-keeper", needs: ["plants", "driftwood"], conflicts: ["fast_eater", "aggressive_predator"] },
+  "angelfish": { mealCoins: 2, unlock: "master-keeper", needs: ["plants", "open_water"], conflicts: ["fin_nipper", "tiny_fish"] },
+  "clownfish": { mealCoins: 2, unlock: "marine-curator", needs: ["coral", "cave"], conflicts: ["same_species", "aggressive_predator"] },
+  "royal-gramma": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
+  "yellow-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
+  "blue-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
+  "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] }
+});
+const PROGRESSION_MILESTONES = Object.freeze([
+  {
+    id: "first-care",
+    label: "First Care",
+    reward: 3,
+    unlocks: ["brine-shrimp", "celestial-pearl-danio", "moor-goldfish", "otocinclus", "molly", "livebearer"],
+    decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "rock-arch.png", "treasure-chest_bubbler.png"],
+    isMet: (stats) => stats.latestScore >= 3
+  },
+  {
+    id: "stable-tank",
+    label: "Stable Tank",
+    reward: 8,
+    unlocks: ["suckerfish", "loach", "swordtail", "betta", "blue-ram", "piranha"],
+    decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
+    isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70
+  },
+  {
+    id: "happy-habitat",
+    label: "Happy Habitat",
+    reward: 12,
+    unlocks: ["wonder-killifish", "rainbowfish", "gourami"],
+    decorUnlocks: ["Shipwreck.png", "mushroomcoral_seaweed.png", "Castle-Cave.png", "blue_castle_cave.png", "meteor_cave.png", "volcano-1_bubbler.png", "volcano-2_bubbler.png", "__custom-decor-shop__", "__custom-hide-shop__"],
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80
+  },
+  {
+    id: "master-keeper",
+    label: "Master Keeper",
+    reward: 18,
+    unlocks: ["discus", "angelfish"],
+    decorUnlocks: [],
+    isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish
+  },
+  {
+    id: "marine-curator",
+    label: "Marine Curator",
+    reward: 20,
+    unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish"],
+    decorUnlocks: [],
+    isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3
+  },
+  {
+    id: "spooky-keeper",
+    label: "Spooky Keeper",
+    reward: 5,
+    unlocks: ["zombie-fish", "skeleton-fish"],
+    decorUnlocks: ["gorebag_lure.png", "fishheadeffigy_1.png", "fishheadeffigy_2.png", "fishheadeffigy_3.png"],
+    isMet: (stats) => stats.hasSpookyKeeperPath
+  }
+]);
+const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
+  "rock-arch.png": "first-care",
+  "fishing_lure.png": "first-care",
+  "treasure-chest_bubbler.png": "first-care",
+  "floating_swampmoss_1.png": "first-care",
+  "driftwood-root.png": "stable-tank",
+  "driftwood.png": "stable-tank",
+  "moss-bridge.png": "stable-tank",
+  "slate-cave.png": "stable-tank",
+  "Plane-wreck.png": "stable-tank",
+  "Shipwreck.png": "happy-habitat",
+  "mushroomcoral_seaweed.png": "happy-habitat",
+  "Castle-Cave.png": "happy-habitat",
+  "blue_castle_cave.png": "happy-habitat",
+  "meteor_cave.png": "happy-habitat",
+  "volcano-1_bubbler.png": "happy-habitat",
+  "volcano-2_bubbler.png": "happy-habitat",
+  "__custom-decor-shop__": "happy-habitat",
+  "__custom-hide-shop__": "happy-habitat",
+  "gorebag_lure.png": "spooky-keeper",
+  "fishheadeffigy_1.png": "spooky-keeper",
+  "fishheadeffigy_2.png": "spooky-keeper",
+  "fishheadeffigy_3.png": "spooky-keeper"
+});
 const MANAGEMENT_HISTORY_PAGE_SIZE = 12;
 const MAX_TANK_EVENT_HISTORY = 500;
 const CRITICAL_COMFORT_HEALTH_TICK_MS = 6 * HOUR_MS;
@@ -138,6 +296,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarCollapsed: false,
   displayCollapsed: false,
   soundMuted: false,
+  uiSoundsMuted: false,
   tankMouseInputLocked: false,
   uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY
 });
@@ -1248,6 +1407,375 @@ function normalizeFishNeeds(entry) {
   };
 }
 
+function normalizeComfortTagList(values) {
+  return normalizeStringList(values)
+    .map((value) => value.toLowerCase().replace(/[\s-]+/g, "_"))
+    .filter((value, index, list) => Boolean(value) && list.indexOf(value) === index);
+}
+
+function getSpeciesComfortProfile(speciesOrId) {
+  const speciesId = typeof speciesOrId === "string"
+    ? speciesOrId
+    : speciesOrId?.id;
+  const species = typeof speciesOrId === "string"
+    ? (runtime.fishMap.get(speciesId) || { id: speciesId })
+    : speciesOrId;
+  const profile = speciesId ? FISH_COMFORT_PROFILES[speciesId] : null;
+  if (profile) {
+    return {
+      mealCoins: Number.isFinite(Number(profile.mealCoins)) ? Math.max(0, Math.round(Number(profile.mealCoins))) : 1,
+      unlock: profile.unlock || null,
+      needs: normalizeComfortTagList(profile.needs).slice(0, 2),
+      conflicts: normalizeComfortTagList(profile.conflicts)
+    };
+  }
+
+  return {
+    mealCoins: species?.customAsset ? 0 : 1,
+    unlock: null,
+    needs: ["open_water", "plants"],
+    conflicts: ["betta_present", "aggressive_predator"]
+  };
+}
+
+function getSpeciesNeedTags(speciesOrId) {
+  const tags = getSpeciesComfortProfile(speciesOrId).needs;
+  return tags.length >= 2 ? tags.slice(0, 2) : [...tags, "open_water"].slice(0, 2);
+}
+
+function getSpeciesConflictTags(speciesOrId) {
+  return getSpeciesComfortProfile(speciesOrId).conflicts;
+}
+
+function getComfortTagLabel(tag) {
+  const key = String(tag || "").toLowerCase();
+  return COMFORT_NEED_LABELS[key] || COMFORT_CONFLICT_LABELS[key] || titleFromFile(key);
+}
+
+function getSpeciesUnlockRequirement(speciesOrId) {
+  const species = typeof speciesOrId === "string" ? runtime.fishMap.get(speciesOrId) : speciesOrId;
+  const profileUnlock = getSpeciesComfortProfile(species || speciesOrId).unlock;
+  return profileUnlock === "starter" ? null : profileUnlock;
+}
+
+function getUnlockRequirementLabel(requirement) {
+  switch (String(requirement || "").toLowerCase()) {
+    case "first-care":
+      return "First Care";
+    case "stable-tank":
+      return "Stable Tank";
+    case "happy-habitat":
+      return "Happy Habitat";
+    case "master-keeper":
+      return "Master Keeper";
+    case "marine-curator":
+      return "Marine Curator";
+    case "spooky-keeper":
+    case "corpse-zombie":
+      return "Spooky Keeper";
+    case "corpse-skeleton":
+      return "Spooky Keeper";
+    default:
+      return requirement ? titleFromFile(requirement) : "";
+  }
+}
+
+function isBrineShrimpSpecies(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  return species?.id === "brine-shrimp" || species?.behavior === "shrimp";
+}
+
+function isBrineShrimpFood(foodKey) {
+  return String(foodKey || "") === BRINE_SHRIMP_FOOD_KEY;
+}
+
+function isNormalMealFood(foodKey) {
+  return NORMAL_MEAL_FOOD_KEYS.includes(String(foodKey || ""));
+}
+
+function isPredatorMealFood(foodKey) {
+  return PREDATOR_MEAL_FOOD_KEYS.includes(String(foodKey || ""));
+}
+
+function isFoodAllowedInAutoDispenser(foodOrKey) {
+  const food = typeof foodOrKey === "string" ? getFoodMeta(foodOrKey) : foodOrKey;
+  return Boolean(food && food.dispenserAllowed !== false && !food.brineFood);
+}
+
+function getFishMealFoodLabel(fishOrSpecies) {
+  if (isBrineShrimpSpecies(fishOrSpecies)) {
+    return "Brine Shrimp Food";
+  }
+  if (isPiranhaSpecies(fishOrSpecies) || isZombieFish(fishOrSpecies) || fishOrSpecies?.id === "zombie-fish" || fishOrSpecies?.speciesId === "zombie-fish") {
+    return "Chum or prey";
+  }
+  return "Food or Frisky";
+}
+
+function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
+  if (!fish || isFishDead(fish)) {
+    return false;
+  }
+  if (isBrineShrimpSpecies(fish)) {
+    return isBrineShrimpFood(foodKey);
+  }
+  if (isPiranhaSpecies(fish) || isZombieFish(fish) || fish.speciesId === "zombie-fish") {
+    return isPredatorMealFood(foodKey);
+  }
+  if (isSkeletonFish(fish) || isMealFreeFish(fish)) {
+    return false;
+  }
+  return isNormalMealFood(foodKey);
+}
+
+function canFishOverfeed(fish) {
+  return !isBrineShrimpSpecies(fish);
+}
+
+function getFishSpaceLoad(fish, species = getSpeciesForFish(fish)) {
+  const width = Math.max(1, Number(species?.width) || 128) * clamp(Number(fish?.scale) || 1, FISH_SCALE_MIN, FISH_SCALE_MAX);
+  if (width <= 90) {
+    return 0.5;
+  }
+  if (width <= 150) {
+    return 1;
+  }
+  if (width <= 225) {
+    return 1.5;
+  }
+  if (width <= 300) {
+    return 2.5;
+  }
+  return 3;
+}
+
+function getTankSpaceLoad(tank = getCurrentTank()) {
+  return (Array.isArray(tank?.fish) ? tank.fish : [])
+    .filter((fish) => fish && !isFishDead(fish))
+    .reduce((total, fish) => total + getFishSpaceLoad(fish), 0);
+}
+
+function getTankSpaceComfortPoints(tank = getCurrentTank()) {
+  const load = getTankSpaceLoad(tank);
+  if (load <= TANK_SPACE_FULL_LOAD) {
+    return COMFORT_COMPONENTS.space;
+  }
+  if (load >= TANK_SPACE_MAX_LOAD) {
+    return 0;
+  }
+  return COMFORT_COMPONENTS.space * (1 - ((load - TANK_SPACE_FULL_LOAD) / (TANK_SPACE_MAX_LOAD - TANK_SPACE_FULL_LOAD)));
+}
+
+function getTankComfortDecorTags(tank = getCurrentTank()) {
+  const tags = new Set();
+  const placedDecor = Array.isArray(tank?.placedDecor) ? tank.placedDecor : [];
+  for (const item of placedDecor) {
+    const decorKey = String(item?.decorKey || "").toLowerCase();
+    const decor = runtime.decorMap.get(item?.decorKey) || runtime.decorMeta[item?.decorKey] || {};
+    const categories = Array.isArray(decor.categories) && decor.categories.length
+      ? decor.categories
+      : deriveDecorCategories(decor, decorKey);
+    for (const category of categories) {
+      const normalized = String(category || "").toLowerCase();
+      if (normalized === "plants" || normalized === "plant") {
+        tags.add("plants");
+        tags.add("seaweed_algae");
+      }
+      if (normalized === "caves" || normalized === "hide") {
+        tags.add("cave");
+        tags.add("hardscape");
+      }
+      if (normalized === "ornaments" || normalized === "hardscape") {
+        tags.add("hardscape");
+      }
+      if (normalized === "bubbler") {
+        tags.add("bubbler");
+      }
+      if (normalized === "custom") {
+        tags.add("hardscape");
+      }
+    }
+    if (decor.caveSettings || decor.caveBehavior || /cave|hide|wreck|castle|ship|plane|arch/.test(decorKey)) {
+      tags.add("cave");
+      tags.add("hardscape");
+    }
+    if (decor.bubbler || isBubblerDecorKey(decorKey) || isCustomBubblerDecorKey(decorKey)) {
+      tags.add("bubbler");
+    }
+    if (/seaweed|moss|anub|plant|kelp|algae/.test(decorKey)) {
+      tags.add("plants");
+      tags.add("seaweed_algae");
+      tags.add("surface_cover");
+    }
+    if (/floating|surface/.test(decorKey)) {
+      tags.add("surface_cover");
+    }
+    if (/driftwood|root/.test(decorKey)) {
+      tags.add("driftwood");
+      tags.add("hardscape");
+      tags.add("seaweed_algae");
+    }
+    if (/coral|reef|mushroomcoral/.test(decorKey)) {
+      tags.add("coral");
+      tags.add("hardscape");
+    }
+    if (/spooky|effigy|gorebag|fishhead/.test(decorKey) || String(decor.theme || "").toLowerCase() === "spooky") {
+      tags.add("spooky");
+    }
+    if (/rock|volcanic|arch|bridge|chest|slate|meteor|castle|ship|plane/.test(decorKey)) {
+      tags.add("hardscape");
+    }
+    if (/volcanic|rock_[0-9]|_bricks/.test(decorKey)) {
+      tags.add("sharp_decor");
+    }
+  }
+  return tags;
+}
+
+function getTankComfortFacts(tank = getCurrentTank(), now = Date.now()) {
+  const livingFish = (Array.isArray(tank?.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+  const decorTags = getTankComfortDecorTags(tank);
+  const countsBySpecies = new Map();
+  for (const fish of livingFish) {
+    countsBySpecies.set(fish.speciesId, (countsBySpecies.get(fish.speciesId) || 0) + 1);
+  }
+  const spacePoints = getTankSpaceComfortPoints(tank);
+  return {
+    now,
+    livingFish,
+    decorTags,
+    countsBySpecies,
+    spaceLoad: getTankSpaceLoad(tank),
+    spacePoints,
+    hasBetta: livingFish.some((fish) => fish.speciesId === "betta"),
+    hasPuffer: livingFish.some((fish) => fish.speciesId === "pufferfish"),
+    hasAggressivePredator: livingFish.some((fish) => isPiranhaSpecies(fish) || isZombieFish(fish) || fish.speciesId === "pufferfish"),
+    hasTang: livingFish.some((fish) => fish.speciesId === "yellow-tang" || fish.speciesId === "blue-tang"),
+    hasFastEater: livingFish.some((fish) => ["zebra-danio", "rainbowfish", "swordtail"].includes(fish.speciesId)),
+    hasFinNipper: livingFish.some((fish) => ["zebra-danio", "betta", "piranha"].includes(fish.speciesId)),
+    surfaceFishCount: livingFish.filter((fish) => ["wonder-killifish", "gourami", "betta"].includes(fish.speciesId)).length,
+    hasTheCure: (Array.isArray(tank?.medicineEffects) ? tank.medicineEffects : []).some((effect) => effect?.type === "antidote" && (effect.endsAt || 0) > now)
+  };
+}
+
+function isFishNeedMet(fish, needTag, tank = getCurrentTank(), facts = getTankComfortFacts(tank)) {
+  const tag = String(needTag || "").toLowerCase();
+  const species = getSpeciesForFish(fish);
+  switch (tag) {
+    case "plants":
+    case "cave":
+    case "bubbler":
+    case "driftwood":
+    case "hardscape":
+    case "seaweed_algae":
+    case "coral":
+    case "spooky":
+    case "surface_cover":
+      return facts.decorTags.has(tag) || (tag === "surface_cover" && facts.decorTags.has("plants"));
+    case "open_water":
+      return facts.spacePoints >= 12;
+    case "school_2_plus":
+      return (facts.countsBySpecies.get(fish?.speciesId) || 0) >= 2;
+    case "brine_food":
+      return isBrineShrimpSpecies(species) && (
+        Math.max(0, Number(state.foodInventory?.[BRINE_SHRIMP_FOOD_KEY]) || 0) > 0
+        || (Number(fish?.lastAteAt) || 0) > 0
+      );
+    default:
+      return false;
+  }
+}
+
+function getFishNeedsStatus(fish, tank = getCurrentTank(), now = Date.now()) {
+  const species = getSpeciesForFish(fish);
+  const facts = getTankComfortFacts(tank, now);
+  return getSpeciesNeedTags(species).map((tag) => ({
+    tag,
+    label: getComfortTagLabel(tag),
+    met: isFishNeedMet(fish, tag, tank, facts)
+  }));
+}
+
+function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts = getTankComfortFacts(tank)) {
+  if (!fish || isFishDead(fish)) {
+    return false;
+  }
+  const tag = String(conflictTag || "").toLowerCase();
+  const species = getSpeciesForFish(fish);
+  const otherFish = facts.livingFish.filter((other) => other.id !== fish.id);
+  switch (tag) {
+    case "betta_present":
+      return otherFish.some((other) => other.speciesId === "betta");
+    case "aggressive_predator":
+      return otherFish.some((other) => isPiranhaSpecies(other) || isZombieFish(other) || other.speciesId === "pufferfish");
+    case "fin_nipper":
+      return otherFish.some((other) => ["zebra-danio", "betta", "piranha"].includes(other.speciesId));
+    case "large_fish":
+      return otherFish.some((other) => (Number(getSpeciesForFish(other)?.width) || 0) >= 220);
+    case "tiny_fish":
+      return otherFish.some((other) => (Number(getSpeciesForFish(other)?.width) || 0) <= 90);
+    case "same_species":
+      return otherFish.some((other) => other.speciesId === fish.speciesId);
+    case "tang_present":
+      return ["yellow-tang", "blue-tang"].includes(species?.id) && otherFish.some((other) => ["yellow-tang", "blue-tang"].includes(other.speciesId));
+    case "puffer_present":
+      return species?.id === "pufferfish" && otherFish.some((other) => other.speciesId === "pufferfish");
+    case "surface_crowding":
+      return facts.surfaceFishCount > 2;
+    case "overcrowded":
+      return facts.spaceLoad > TANK_SPACE_FULL_LOAD;
+    case "sharp_decor":
+      return facts.decorTags.has("sharp_decor");
+    case "fast_eater":
+      return otherFish.some((other) => ["zebra-danio", "rainbowfish", "swordtail"].includes(other.speciesId));
+    case "community_fish":
+      if (isPiranhaSpecies(fish)) {
+        return otherFish.some((other) => !isPiranhaSpecies(other) && !isUndeadFish(other));
+      }
+      if (isZombieFish(fish)) {
+        return otherFish.some((other) => !isUndeadFish(other));
+      }
+      return otherFish.length > 0;
+    case "the_cure":
+      return facts.hasTheCure;
+    default:
+      return false;
+  }
+}
+
+function getFishConflictStatus(fish, tank = getCurrentTank(), now = Date.now()) {
+  const species = getSpeciesForFish(fish);
+  const facts = getTankComfortFacts(tank, now);
+  return getSpeciesConflictTags(species).map((tag) => ({
+    tag,
+    label: getComfortTagLabel(tag),
+    active: isFishConflictActive(fish, tag, tank, facts)
+  }));
+}
+
+function renderComfortTagChips(items, options = {}) {
+  const type = options.type === "conflict" ? "conflict" : "need";
+  const visibleItems = Array.isArray(items) ? items : [];
+  if (!visibleItems.length) {
+    return `<span class="comfort-chip is-neutral">None</span>`;
+  }
+  return visibleItems.map((item) => {
+    const active = type === "conflict" ? Boolean(item.active) : Boolean(item.met);
+    const className = type === "conflict"
+      ? `comfort-chip ${active ? "is-bad" : "is-good"}`
+      : `comfort-chip ${active ? "is-good" : "is-bad"}`;
+    return `<span class="${className}">${escapeHtml(item.label)}</span>`;
+  }).join("");
+}
+
+function renderNeutralComfortTagChips(tags) {
+  const visibleTags = normalizeComfortTagList(tags);
+  if (!visibleTags.length) {
+    return `<span class="comfort-chip is-neutral">None</span>`;
+  }
+  return visibleTags.map((tag) => `<span class="comfort-chip is-neutral">${escapeHtml(getComfortTagLabel(tag))}</span>`).join("");
+}
+
 const DEFAULT_CAVE_BEHAVIOR_PROFILE = {
   portals: [
     { id: "left", approachX: 0.34, approachY: 0.76, mouthX: 0.38, mouthY: 0.69 },
@@ -1301,7 +1829,7 @@ const FISH_TYPES = [
   {
     id: "goldfish",
     name: "Goldfish",
-    cost: 10,
+    cost: 5,
     mealCoins: 1,
     asset: "/assets/fish/goldfish.png",
     description: "The classic round buddy. Big, cheerful, and always hungry.",
@@ -1318,7 +1846,7 @@ const FISH_TYPES = [
     id: "guppy",
     name: "Guppy",
     cost: 4,
-    mealCoins: 2,
+    mealCoins: 1,
     asset: "/assets/fish/guppy.png",
     description: "A ribbon-tailed coin helper with a fast little wiggle.",
     width: 112,
@@ -1333,8 +1861,8 @@ const FISH_TYPES = [
   {
     id: "betta",
     name: "Betta",
-    cost: 9,
-    mealCoins: 4,
+    cost: 10,
+    mealCoins: 1,
     asset: "/assets/fish/betta.png",
     description: "A dramatic, fluttery fish with elegant fins and better payouts.",
     width: 140,
@@ -1349,8 +1877,8 @@ const FISH_TYPES = [
   {
     id: "clownfish",
     name: "Clownfish",
-    cost: 18,
-    mealCoins: 6,
+    cost: 20,
+    mealCoins: 2,
     asset: "/assets/fish/clownfish.png",
     description: "Bright stripes, playful swimming, and a solid meal bonus.",
     width: 136,
@@ -1365,8 +1893,8 @@ const FISH_TYPES = [
   {
     id: "angelfish",
     name: "Angelfish",
-    cost: 30,
-    mealCoins: 9,
+    cost: 36,
+    mealCoins: 2,
     asset: "/assets/fish/angelfish.png",
     description: "Tall fins and graceful turns. Fancy fish, fancy coins.",
     width: 156,
@@ -1381,8 +1909,8 @@ const FISH_TYPES = [
   {
     id: "pufferfish",
     name: "Pufferfish",
-    cost: 48,
-    mealCoins: 12,
+    cost: 40,
+    mealCoins: 2,
     asset: "/assets/fish/pufferfish.png",
     description: "The round little oddball. Expensive, adorable, and profitable.",
     width: 150,
@@ -1398,7 +1926,7 @@ const FISH_TYPES = [
     id: "brine-shrimp",
     name: "Brine Shrimp",
     cost: 2,
-    mealCoins: 0,
+    mealCoins: 1,
     asset: "/assets/fish/brineshrimp_1.png",
     assetVariants: [
       "/assets/fish/brineshrimp_1.png",
@@ -1425,7 +1953,7 @@ const FISH_TYPES = [
   {
     id: "suckerfish",
     name: "Sucker Fish",
-    cost: 12,
+    cost: 7,
     mealCoins: 0,
     asset: "/assets/fish/otocinclus.png",
     fallbackAsset: "/assets/fish/otocinclus.png",
@@ -1707,6 +2235,8 @@ const dom = {
   deleteAllButton: document.querySelector("#deleteAllButton"),
   debugGravelPebbleButton: document.querySelector("#debugGravelPebbleButton"),
   debugCaveButton: document.querySelector("#debugCaveButton"),
+  debugDailyRecapButton: document.querySelector("#debugDailyRecapButton"),
+  debugFishBehaviorLogButton: document.querySelector("#debugFishBehaviorLogButton"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
   loadingOverlayText: document.querySelector(".loading-overlay-text"),
   tankStage: document.querySelector("#tankStage"),
@@ -1810,6 +2340,7 @@ const dom = {
   closeEquipmentOverlay: document.querySelector("#closeEquipmentOverlay"),
   violenceGoreToggleInput: document.querySelector("#violenceGoreToggleInput"),
   soundMuteToggleInput: document.querySelector("#soundMuteToggleInput"),
+  uiMuteToggleInput: document.querySelector("#uiMuteToggleInput"),
   uvLightQualitySelect: document.querySelector("#uvLightQualitySelect"),
   tankMouseLockToggleInput: document.querySelector("#tankMouseLockToggleInput"),
   openEquipmentShopButton: document.querySelector("#openEquipmentShopButton"),
@@ -1853,6 +2384,7 @@ const dom = {
   inspectorSpecies: document.querySelector("#inspectorSpecies"),
   inspectorHealth: document.querySelector("#inspectorHealth"),
   inspectorComfort: document.querySelector("#inspectorComfort"),
+  inspectorNeeds: document.querySelector("#inspectorNeeds"),
   inspectorAge: document.querySelector("#inspectorAge"),
   inspectorMeal: document.querySelector("#inspectorMeal"),
   inspectorFishSettingsButton: document.querySelector("#inspectorFishSettingsButton"),
@@ -2096,6 +2628,8 @@ const runtime = {
   aspectRatioLocked: FIXED_16_9_ASPECT_RATIO,
   hiddenKeySequenceBuffer: "",
   debugBreedingSequence: null,
+  debugFishBehaviorLog: [],
+  debugFishBehaviorSignatures: new Map(),
   lastTankPoint: null,
   viewportMetrics: {
     orientation: "",
@@ -2342,7 +2876,13 @@ function getMedicineCatalog() {
 }
 
 function shouldShowFoodInStore(food) {
-  return Boolean(food);
+  if (!food) {
+    return false;
+  }
+  if (food.id === BRINE_SHRIMP_FOOD_KEY) {
+    return isFishSpeciesUnlocked("brine-shrimp");
+  }
+  return food.id !== "upgraded";
 }
 
 function shouldShowMedicineInStore(medicine) {
@@ -2361,6 +2901,33 @@ function isFilteredGoreDecor(decorOrKey) {
 
 function canUseDecorWithCurrentContentSettings(decorOrKey) {
   return isViolenceAndGoreEnabled() || !isFilteredGoreDecor(decorOrKey);
+}
+
+function getDecorUnlockRequirement(decorOrKey) {
+  const key = normalizeDecorKey(typeof decorOrKey === "string" ? decorOrKey : decorOrKey?.key || decorOrKey?.decorKey || "");
+  return DECOR_UNLOCK_REQUIREMENTS[key] || null;
+}
+
+function isDecorUnlocked(decorOrKey) {
+  return isDecorProgressUnlocked(decorOrKey);
+}
+
+function getDecorUnlockRequirementLabel(decorOrKey) {
+  return getUnlockRequirementLabel(getDecorUnlockRequirement(decorOrKey));
+}
+
+function unlockDecorKey(decorKey, now = Date.now(), reasonText = "") {
+  const key = normalizeDecorKey(decorKey);
+  const decor = runtime.decorMap.get(key);
+  if (!decor || isDecorUnlocked(key)) {
+    return false;
+  }
+  state.unlockedDecorKeys = sanitizeUnlockedDecorKeys([
+    ...(state.unlockedDecorKeys || []),
+    key
+  ]);
+  pushEvent(reasonText || `${decor.name} is now available in the shop.`, now);
+  return true;
 }
 
 function getFoodMeta(foodKey) {
@@ -2535,6 +3102,7 @@ function createTankState(options = {}) {
   return {
     id: String(options.id || createId("tank")),
     name: sanitizeTankName(options.name),
+    createdAt: Number.isFinite(Number(options.createdAt)) ? Number(options.createdAt) : now,
     tankTypeId: typeMeta.id,
     waterType: normalizeWaterType(options.waterType, typeMeta.defaultWaterType || "freshwater"),
     setupPending: false,
@@ -3261,6 +3829,13 @@ function sanitizeCaveLocalPoint(entry, fallback = CAVE_SETTINGS_DEFAULT_ENTRY) {
   };
 }
 
+function normalizeCaveSettingsIdList(value) {
+  const rawValues = Array.isArray(value)
+    ? value
+    : (value === null || value === undefined || value === "" ? [] : [value]);
+  return [...new Set(rawValues.map((entry) => String(entry || "").trim()).filter(Boolean))];
+}
+
 function sanitizePlacedCaveSettings(settings = null) {
   const source = settings && typeof settings === "object" ? settings : {};
   const legacyEntry = source.entry || {
@@ -3303,6 +3878,8 @@ function sanitizePlacedCaveSettings(settings = null) {
       ? sourceSeats[index]
       : null;
     const point = sanitizeCaveLocalPoint(sourceSeat, fallback);
+    const entryIds = normalizeCaveSettingsIdList(sourceSeat?.entryIds ?? sourceSeat?.entryId);
+    const portalIds = normalizeCaveSettingsIdList(sourceSeat?.portalIds ?? sourceSeat?.portalId);
     return {
       id: typeof sourceSeat?.id === "string" && sourceSeat.id.trim()
         ? sourceSeat.id.trim()
@@ -3311,7 +3888,9 @@ function sanitizePlacedCaveSettings(settings = null) {
       facing: normalizeCaveSeatFacing(
         sourceSeat?.facing ?? sourceSeat?.direction ?? sourceSeat?.seatFacing,
         fallback.facing ?? getDefaultCaveSeatFacing(point, index)
-      )
+      ),
+      ...(entryIds.length ? { entryIds } : {}),
+      ...(portalIds.length ? { portalIds } : {})
     };
   });
   const activeSeatIndex = clamp(
@@ -3331,28 +3910,7 @@ function sanitizePlacedCaveSettings(settings = null) {
   };
 }
 
-function hasPlacedCaveSettings(item) {
-  return Boolean(item?.caveSettings && typeof item.caveSettings === "object");
-}
-
-function getPlacedCaveSettings(item) {
-  if (!item || !isCaveDecorKey(item.decorKey)) {
-    return null;
-  }
-
-  return sanitizePlacedCaveSettings(item.caveSettings);
-}
-
-function ensurePlacedCaveSettings(item) {
-  if (!item || !isCaveDecorKey(item.decorKey)) {
-    return null;
-  }
-
-  item.caveSettings = sanitizePlacedCaveSettings(item.caveSettings || getDecorDefaultCaveSettings(item.decorKey));
-  return item.caveSettings;
-}
-
-function getDecorDefaultCaveSettings(decorKey = "") {
+function getAuthoredDecorCaveSettings(decorKey = "") {
   const decor = runtime.decorMap.get(decorKey);
   const meta = runtime.decorMeta[decorKey] || null;
   const directSettings = decor?.defaultCaveSettings
@@ -3366,6 +3924,46 @@ function getDecorDefaultCaveSettings(decorKey = "") {
   const asset = state?.customDecorAssets?.[decorKey];
   if (asset?.caveSettings && typeof asset.caveSettings === "object") {
     return sanitizePlacedCaveSettings(asset.caveSettings);
+  }
+
+  return null;
+}
+
+function hasPlacedCaveSettings(item) {
+  if (!item || !isCaveDecorKey(item.decorKey)) {
+    return false;
+  }
+
+  return Boolean(
+    (item.caveSettings && typeof item.caveSettings === "object")
+    || getAuthoredDecorCaveSettings(item.decorKey)
+  );
+}
+
+function getPlacedCaveSettings(item) {
+  if (!item || !isCaveDecorKey(item.decorKey)) {
+    return null;
+  }
+
+  const source = item.caveSettings && typeof item.caveSettings === "object"
+    ? item.caveSettings
+    : getAuthoredDecorCaveSettings(item.decorKey);
+  return source ? sanitizePlacedCaveSettings(source) : null;
+}
+
+function ensurePlacedCaveSettings(item) {
+  if (!item || !isCaveDecorKey(item.decorKey)) {
+    return null;
+  }
+
+  item.caveSettings = sanitizePlacedCaveSettings(item.caveSettings || getDecorDefaultCaveSettings(item.decorKey));
+  return item.caveSettings;
+}
+
+function getDecorDefaultCaveSettings(decorKey = "") {
+  const authoredSettings = getAuthoredDecorCaveSettings(decorKey);
+  if (authoredSettings) {
+    return authoredSettings;
   }
 
   return sanitizePlacedCaveSettings();
@@ -3717,9 +4315,10 @@ function buildCaveBehaviorProfileFromSettings(settingsValue) {
     return null;
   }
 
+  const portalsByEntryId = new Map();
   const portals = entries.flatMap((entry, index) => {
     const entryId = entry.id || `user-entry-${index + 1}`;
-    return getCaveEntryOutsideLayers(entry.side).map((outsideLayer) => ({
+    const entryPortals = getCaveEntryOutsideLayers(entry.side).map((outsideLayer) => ({
       id: `${entryId}-${outsideLayer === 5 ? "back" : "front"}`,
       approachX: entry.x,
       approachY: clamp(entry.y + 0.12, 0.02, 0.98),
@@ -3730,8 +4329,48 @@ function buildCaveBehaviorProfileFromSettings(settingsValue) {
       side: outsideLayer === 5 ? "back" : "front",
       path: []
     }));
+    portalsByEntryId.set(entryId, entryPortals.map((portal) => portal.id));
+    return entryPortals;
   });
-  const portalIds = portals.map((portal) => portal.id);
+  const allPortalIds = portals.map((portal) => portal.id);
+  const resolveSeatPortalIds = (seat) => {
+    const explicitPortalIds = normalizeCaveSettingsIdList(seat?.portalIds)
+      .filter((portalId) => allPortalIds.includes(portalId));
+    if (explicitPortalIds.length) {
+      return explicitPortalIds;
+    }
+
+    const explicitEntryIds = normalizeCaveSettingsIdList(seat?.entryIds);
+    if (explicitEntryIds.length) {
+      const mappedPortalIds = [...new Set(explicitEntryIds.flatMap((entryId) => portalsByEntryId.get(entryId) || []))];
+      if (mappedPortalIds.length) {
+        return mappedPortalIds;
+      }
+    }
+
+    let nearestEntryIds = [];
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    for (const entry of entries) {
+      const entryId = entry.id || "";
+      if (!entryId) {
+        continue;
+      }
+
+      const distance = Math.hypot((seat?.x ?? 0.5) - entry.x, (seat?.y ?? 0.5) - entry.y);
+      if (distance + 0.000001 < nearestDistance) {
+        nearestDistance = distance;
+        nearestEntryIds = [entryId];
+        continue;
+      }
+
+      if (Math.abs(distance - nearestDistance) <= 0.000001) {
+        nearestEntryIds.push(entryId);
+      }
+    }
+
+    const derivedPortalIds = [...new Set(nearestEntryIds.flatMap((entryId) => portalsByEntryId.get(entryId) || []))];
+    return derivedPortalIds.length ? derivedPortalIds : allPortalIds;
+  };
   return {
     portals,
     insideSlots: settings.seats.map((seat, index) => ({
@@ -3740,7 +4379,7 @@ function buildCaveBehaviorProfileFromSettings(settingsValue) {
       y: seat.y,
       layer: 4,
       facing: normalizeCaveSeatFacing(seat.facing),
-      portalIds
+      portalIds: resolveSeatPortalIds(seat)
     })),
     interiorZones: [],
     lingerMinMs: DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMinMs,
@@ -7690,8 +8329,259 @@ function isAspectRatioLocked() {
   return runtime.aspectRatioLocked === true;
 }
 
+function getDebugFishDisplayName(fish, species = getSpeciesForFish(fish)) {
+  const name = typeof fish?.name === "string" && fish.name.trim()
+    ? fish.name.trim()
+    : "";
+  return name || species?.name || "Fish";
+}
+
+function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  if (!fish || !species) {
+    return null;
+  }
+
+  const effectiveBehavior = getEffectiveFishBehavior(fish, species) || "steady";
+  const activity = typeof fish.activity === "string" && fish.activity
+    ? fish.activity
+    : "roam";
+  const activeLayer = getFishTankLayer(fish);
+  const desiredLayer = getDesiredFishTankLayer(fish);
+  const targetX = clamp(Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5, 0, 1);
+  const targetY = clamp(Number(fish.targetYNorm) || Number(fish.yNorm) || 0.5, 0, 1);
+  const targetBucket = `${Math.round(targetX * 20)},${Math.round(targetY * 20)}`;
+  const targetText = `${Math.round(targetX * 100)},${Math.round(targetY * 100)}`;
+  const comfort = getFishComfort(fish, now);
+  const comfortValue = clamp(Number(comfort?.value) || 0, 0, 1);
+  const healthUnits = Math.max(0, Math.round(Number(fish.healthUnits) || 0));
+  const maxHealthUnits = Math.max(1, Math.round(Number(getFishMaxHealthUnits(fish)) || 1));
+  const displayName = getDebugFishDisplayName(fish, species);
+  const detailParts = [];
+  const signatureParts = [
+    effectiveBehavior,
+    activity,
+    `layer:${activeLayer}>${desiredLayer}`,
+    `health:${healthUnits}`,
+    `comfort:${Math.round(comfortValue * 10)}`
+  ];
+
+  const breedingSequence = runtime.debugBreedingSequence;
+  const breedingRole = breedingSequence
+    ? (fish.id === breedingSequence.leftFishId
+      ? "left"
+      : (fish.id === breedingSequence.rightFishId ? "right" : ""))
+    : "";
+  const gravelAction = getFishGravelPebbleAction(fish);
+  const caveState = typeof fish.caveState === "string" && fish.caveState ? fish.caveState : "";
+  const panicActive = Number.isFinite(Number(fish.panicUntil)) && now < Number(fish.panicUntil);
+  const feedingPelletId = typeof fish.feedingPelletId === "string" && fish.feedingPelletId
+    ? fish.feedingPelletId
+    : "";
+  const hangoutDecorId = typeof fish.hangoutDecorId === "string" && fish.hangoutDecorId
+    ? fish.hangoutDecorId
+    : "";
+  const blockedDecorId = typeof fish.blockedDecorId === "string" && fish.blockedDecorId
+    ? fish.blockedDecorId
+    : "";
+
+  if (hasPendingZombieRevival(fish)) {
+    detailParts.push("reviving soon");
+  } else if (isFishDead(fish)) {
+    detailParts.push(isFishBeingConsumedByPiranhas(fish, now) ? "being consumed" : "dead drift");
+  } else if (breedingRole) {
+    detailParts.push(`debug breeding ${breedingRole}`);
+  } else if (caveState) {
+    detailParts.push(`cave ${caveState}`);
+  } else if (activity === "feeding") {
+    detailParts.push(feedingPelletId ? "chasing pellet" : "seeking food");
+  } else if (activity === FISH_GRAVEL_PEBBLE_ACTIVITY) {
+    detailParts.push(`gravel ${gravelAction?.stage || "play"}`);
+  } else if (panicActive) {
+    detailParts.push("panic swim");
+  } else if (hasZombieBiteInfection(fish)) {
+    detailParts.push("zombie bite reaction");
+  } else if (hangoutDecorId) {
+    detailParts.push(`hangout ${fish.hangoutZoneType || "decor"}`);
+  } else if (blockedDecorId) {
+    detailParts.push("rerouting around decor");
+  } else if (effectiveBehavior === "sucker") {
+    detailParts.push("glass grazing");
+  } else if (effectiveBehavior === "piranha") {
+    detailParts.push(getActivePiranhaPrey(now) ? "swarm hunting" : "predator patrol");
+  } else if (effectiveBehavior === "zombie") {
+    detailParts.push("zombie hunt");
+  } else if (effectiveBehavior === "skeleton") {
+    detailParts.push("skeleton patrol");
+  } else if (effectiveBehavior === "shrimp") {
+    detailParts.push("shrimp drift");
+  } else {
+    detailParts.push("free swim");
+  }
+
+  if (runtime.debugNightCaveMode && isDebugCaveTestFish(fish)) {
+    detailParts.push("debug cave loop");
+  }
+  if (feedingPelletId) {
+    detailParts.push(`pellet ${feedingPelletId.slice(-6)}`);
+  }
+  if (caveState) {
+    signatureParts.push(`cave:${caveState}`);
+  }
+  if (breedingRole) {
+    signatureParts.push(`breed:${breedingRole}`);
+  }
+  if (gravelAction?.stage) {
+    signatureParts.push(`gravel:${gravelAction.stage}`);
+  }
+  if (feedingPelletId) {
+    signatureParts.push(`pellet:${feedingPelletId}`);
+  }
+  if (hangoutDecorId) {
+    signatureParts.push(`hangout:${hangoutDecorId}:${fish.hangoutZoneType || ""}`);
+  }
+  if (blockedDecorId) {
+    signatureParts.push(`blocked:${blockedDecorId}`);
+  }
+  if (panicActive) {
+    signatureParts.push("panic");
+  }
+  if (runtime.debugNightCaveMode && isDebugCaveTestFish(fish)) {
+    signatureParts.push("debug-cave");
+  }
+  if (activity !== "feeding") {
+    signatureParts.push(`target:${targetBucket}`);
+  }
+
+  const behaviorLine = `${effectiveBehavior} / ${activity}`;
+  const detailText = detailParts.join(" | ");
+  const layerText = `L${activeLayer}->${desiredLayer} T${targetText}`;
+  const conditionText = `H ${healthUnits}/${maxHealthUnits} C ${Math.round(comfortValue * 100)}%`;
+
+  return {
+    signature: signatureParts.join("|"),
+    displayName,
+    behavior: effectiveBehavior,
+    activity,
+    detailText,
+    layerText,
+    conditionText,
+    labelLines: [
+      displayName,
+      behaviorLine,
+      detailText,
+      `${layerText} ${conditionText}`
+    ],
+    logText: `${displayName}: ${behaviorLine} - ${detailText} - ${layerText} - ${conditionText}`
+  };
+}
+
+function resetDebugFishBehaviorBroadcastState() {
+  runtime.debugFishBehaviorSignatures.clear();
+}
+
+function pushDebugFishBehaviorLog(fish, snapshot, now = Date.now()) {
+  if (!isDebugModeEnabled() || !fish || !snapshot) {
+    return;
+  }
+
+  const tank = getCurrentTank();
+  const entry = {
+    time: now,
+    tankId: tank?.id || state?.activeTankId || "",
+    fishId: fish.id || "",
+    text: snapshot.logText
+  };
+  runtime.debugFishBehaviorLog.push(entry);
+  if (runtime.debugFishBehaviorLog.length > DEBUG_FISH_BEHAVIOR_LOG_LIMIT) {
+    runtime.debugFishBehaviorLog.splice(
+      0,
+      runtime.debugFishBehaviorLog.length - DEBUG_FISH_BEHAVIOR_LOG_LIMIT
+    );
+  }
+
+  console.debug(`[fish behavior] ${formatDebugFishBehaviorLogEntry(entry)}`);
+}
+
+function syncDebugFishBehaviorBroadcast(now = Date.now()) {
+  if (!isDebugModeEnabled() || !state?.fish?.length) {
+    resetDebugFishBehaviorBroadcastState();
+    return;
+  }
+
+  const seenFishIds = new Set();
+  for (const fish of state.fish) {
+    const species = getSpeciesForFish(fish);
+    if (!species || !fish?.id) {
+      continue;
+    }
+
+    seenFishIds.add(fish.id);
+    const snapshot = getDebugFishBehaviorSnapshot(fish, species, now);
+    if (!snapshot) {
+      continue;
+    }
+
+    const previousSignature = runtime.debugFishBehaviorSignatures.get(fish.id);
+    if (previousSignature !== snapshot.signature) {
+      runtime.debugFishBehaviorSignatures.set(fish.id, snapshot.signature);
+      pushDebugFishBehaviorLog(fish, snapshot, now);
+    }
+  }
+
+  for (const fishId of runtime.debugFishBehaviorSignatures.keys()) {
+    if (!seenFishIds.has(fishId)) {
+      runtime.debugFishBehaviorSignatures.delete(fishId);
+    }
+  }
+}
+
+function formatDebugFishBehaviorLogEntry(entry) {
+  const time = new Date(Number(entry?.time) || Date.now()).toLocaleString();
+  const tankText = entry?.tankId ? ` tank=${entry.tankId}` : "";
+  const fishText = entry?.fishId ? ` fish=${entry.fishId}` : "";
+  return `[${time}]${tankText}${fishText} ${entry?.text || ""}`.trim();
+}
+
+function buildDebugFishBehaviorLogText() {
+  const lines = runtime.debugFishBehaviorLog.map((entry) => formatDebugFishBehaviorLogEntry(entry));
+  return [
+    "Bubble Borough fish behavior debug log",
+    `Generated: ${new Date().toLocaleString()}`,
+    `Entries: ${lines.length}`,
+    "",
+    ...lines
+  ].join("\n");
+}
+
+function createDebugFishBehaviorLogFilename(timestamp = Date.now()) {
+  const exportedAt = new Date(timestamp);
+  const pad = (value) => String(value).padStart(2, "0");
+  return `bubble-borough-fish-behavior-${exportedAt.getFullYear()}-${pad(exportedAt.getMonth() + 1)}-${pad(exportedAt.getDate())}-${pad(exportedAt.getHours())}${pad(exportedAt.getMinutes())}${pad(exportedAt.getSeconds())}.txt`;
+}
+
+function downloadDebugFishBehaviorLog() {
+  if (!isDebugModeEnabled()) {
+    return;
+  }
+
+  if (!runtime.debugFishBehaviorLog.length) {
+    showToast("No fish behavior log yet.");
+    return;
+  }
+
+  downloadTextFile(
+    buildDebugFishBehaviorLogText(),
+    createDebugFishBehaviorLogFilename(),
+    "text/plain"
+  );
+  showToast("Fish behavior log download started.");
+}
+
 function toggleDebugTools() {
   runtime.debugToolsEnabled = !runtime.debugToolsEnabled;
+  if (!runtime.debugToolsEnabled) {
+    resetDebugFishBehaviorBroadcastState();
+  }
   runtime.uvGlowMaskCache.clear();
   renderUi(Date.now());
   showToast(runtime.debugToolsEnabled ? "Debug tools enabled." : "Debug tools hidden.");
@@ -8074,6 +8964,7 @@ function bindEvents() {
   dom.prevTankButton?.addEventListener("click", () => switchTankByOffset(-1));
   dom.nextTankButton?.addEventListener("click", () => switchTankByOffset(1));
   dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("daily-bonus"));
+  dom.debugDailyRecapButton?.addEventListener("click", () => triggerDebugDailyRecap());
   dom.feedButton.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("feedButton")) {
       return;
@@ -8127,6 +9018,7 @@ function bindEvents() {
   dom.deleteAllButton.addEventListener("click", () => deleteAllFishAndDecor());
   dom.debugGravelPebbleButton?.addEventListener("click", () => triggerDebugGravelPebbleTest());
   dom.debugCaveButton.addEventListener("click", () => toggleDebugNightCaveMode());
+  dom.debugFishBehaviorLogButton?.addEventListener("click", () => downloadDebugFishBehaviorLog());
   dom.introTutorialOverlay?.addEventListener("pointerdown", (event) => {
     if (dom.introTutorialOverlay?.classList.contains("is-blocking")) {
       event.stopPropagation();
@@ -8301,6 +9193,11 @@ function bindEvents() {
   };
   dom.soundMuteToggleInput?.addEventListener("input", handleSoundMuteToggleInput);
   dom.soundMuteToggleInput?.addEventListener("change", handleSoundMuteToggleInput);
+  const handleUiMuteToggleInput = (event) => {
+    setUiSoundsMuted(event.currentTarget?.checked);
+  };
+  dom.uiMuteToggleInput?.addEventListener("input", handleUiMuteToggleInput);
+  dom.uiMuteToggleInput?.addEventListener("change", handleUiMuteToggleInput);
   dom.uvLightQualitySelect?.addEventListener("change", (event) => {
     setUvLightRenderQuality(event.currentTarget?.value);
   });
@@ -10001,6 +10898,10 @@ function normalizeFoodAndMedCatalog(payload) {
         pelletColor: normalizeHexColor(entry.pelletColor) || "",
         pelletAccentColor: normalizeHexColor(entry.pelletAccentColor) || "",
         pelletHighlightColor: normalizeHexColor(entry.pelletHighlightColor) || "",
+        dispenserAllowed: entry.dispenserAllowed !== false,
+        brineFood: entry.brineFood === true,
+        piecesPerDrop: Number.isFinite(Number(entry.piecesPerDrop)) ? Math.max(1, Math.floor(Number(entry.piecesPerDrop))) : 1,
+        pelletScale: Number.isFinite(Number(entry.pelletScale)) ? clamp(Number(entry.pelletScale), 0.12, 1.5) : 1,
         dropImages: (Array.isArray(entry.dropImages) ? entry.dropImages : [entry.dropImage])
           .filter((value) => typeof value === "string" && value.trim())
           .map((value) => resolveFoodAndMedAssetPath(value))
@@ -10746,17 +11647,26 @@ function buildFishCostRange(entries = runtime.fishCatalog) {
 }
 
 function resolveSpeciesMealCoins(species) {
-  if (!species || isMealFreeFish(species)) {
+  if (!species) {
+    return 0;
+  }
+
+  const profileMealCoins = getSpeciesComfortProfile(species).mealCoins;
+  if (Number.isFinite(Number(profileMealCoins))) {
+    return clamp(Math.max(0, Math.round(Number(profileMealCoins))), 0, 2);
+  }
+
+  if (isMealFreeFish(species)) {
     return 0;
   }
 
   const explicitOverride = Number(species.mealCoinOverride ?? species.coinsPerMealOverride);
   if (Number.isFinite(explicitOverride)) {
-    return clamp(Math.max(0, Math.round(explicitOverride)), 0, MAX_FISH_MEAL_COINS);
+    return clamp(Math.max(0, Math.round(explicitOverride)), 0, 2);
   }
 
   const cost = Math.max(1, Math.floor(Number(species.cost) || 1));
-  return clamp(Math.ceil(cost / FISH_MEAL_COIN_COST_DIVISOR), 1, MAX_FISH_MEAL_COINS);
+  return clamp(Math.ceil(cost / FISH_MEAL_COIN_COST_DIVISOR), 1, 2);
 }
 
 function getDecorCompanionType(decorKey = "") {
@@ -11788,7 +12698,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       }
       addFishToTank(fish, now);
       const currentSlot = getCurrentMealSlot(now);
-      if (!isMealFreeFish(fish)) {
+      if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
         const entry = ensureMealHistoryEntry(currentSlot.key, now);
         const fedFishIds = new Set(entry.fishIds);
         fedFishIds.add(fish.id);
@@ -12144,9 +13054,11 @@ function normalizeFishDefinition(entry, index, options = {}) {
       : (diet === "detritus" ? 1 : 0),
     shadowScale: clamp(Number(entry.shadowScale) || 0.28, 0.14, 0.5),
     defaultScale: clamp(Number(entry.defaultScale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX),
-    unlockRequirement: typeof entry.unlockRequirement === "string" && entry.unlockRequirement.trim()
-      ? entry.unlockRequirement.trim().toLowerCase()
-      : null,
+    unlockRequirement: getSpeciesUnlockRequirement(id) || (
+      typeof entry.unlockRequirement === "string" && entry.unlockRequirement.trim()
+        ? entry.unlockRequirement.trim().toLowerCase()
+        : null
+    ),
     undeadType: typeof entry.undeadType === "string" && entry.undeadType.trim()
       ? entry.undeadType.trim().toLowerCase()
       : null,
@@ -12279,6 +13191,12 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now()) {
   }
   if (grayscalePercent > 0) {
     filters.push(`grayscale(${grayscalePercent}%)`);
+  }
+  if (!isFishDead(fish)) {
+    const comfortValue = getFishComfort(fish, now).value;
+    if (comfortValue <= 0.4) {
+      filters.push("brightness(72%) saturate(68%) drop-shadow(0 0 10px rgba(0, 0, 0, 0.62))");
+    }
   }
 
   return filters.length ? filters.join(" ") : "none";
@@ -13201,10 +14119,13 @@ function isDetritusFish(target) {
 }
 
 function isMealFreeFish(target) {
-  if (isZombieVariantFish(target)) {
-    return true;
-  }
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  if (isBrineShrimpSpecies(species) || isPiranhaSpecies(target) || isZombieFish(target) || species?.id === "zombie-fish" || target?.speciesId === "zombie-fish") {
+    return false;
+  }
+  if (isZombieVariantFish(target)) {
+    return false;
+  }
   return species?.diet === "detritus" || species?.diet === "none";
 }
 
@@ -13302,8 +14223,8 @@ function isPiranhaSpecies(target) {
   return species?.behavior === "piranha";
 }
 
-function getFeedableLivingFish() {
-  return state.fish.filter((fish) => !isFishDead(fish) && !isMealFreeFish(fish) && (Number(fish.satiatedUntil) || 0) <= Date.now());
+function getFeedableLivingFish(foodKey = "basic", now = Date.now()) {
+  return state.fish.filter((fish) => canFishEatFoodPellet(fish, foodKey, now));
 }
 
 function fishNeedsMealWindow(target) {
@@ -14071,6 +14992,7 @@ function sanitizeUiSettings(rawSettings) {
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
     soundMuted: source.soundMuted === true,
+    uiSoundsMuted: source.uiSoundsMuted === true,
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality)
   };
@@ -14340,18 +15262,64 @@ function buildDefaultDailyBonusState() {
     summary: null,
     lastQualifiedDayKey: null,
     lastClaimedDayKey: null,
-    lastEvaluatedDayKey: null
+    lastEvaluatedDayKey: null,
+    summariesByTankId: {},
+    lastEvaluatedByTankId: {},
+    claimedByTankDay: {},
+    recapHistory: [],
+    milestones: {}
   };
 }
 
 function sanitizeDailyBonusState(rawState) {
   const source = rawState && typeof rawState === "object" ? rawState : {};
+  const sanitizeSummary = (summary) => summary && typeof summary === "object"
+    ? {
+      ...summary,
+      dayKey: typeof summary.dayKey === "string" ? summary.dayKey : "",
+      tankId: typeof summary.tankId === "string" ? summary.tankId : "",
+      score: Math.round(Number(summary.score) || 0),
+      reward: clamp(Math.floor(Number(summary.reward) || 0), 0, DAILY_RECAP_REWARD_CAP),
+      rows: Array.isArray(summary.rows) ? summary.rows.map((row) => ({
+        text: typeof row?.text === "string" ? row.text : "",
+        score: clamp(Math.round(Number(row?.score) || 0), -1, 1),
+        type: typeof row?.type === "string" ? row.type : "event",
+        time: Number.isFinite(Number(row?.time)) ? Number(row.time) : 0
+      })).filter((row) => row.text) : []
+    }
+    : null;
+  const summariesByTankId = {};
+  const rawSummaries = source.summariesByTankId && typeof source.summariesByTankId === "object" ? source.summariesByTankId : {};
+  for (const [tankId, summary] of Object.entries(rawSummaries)) {
+    const sanitizedSummary = sanitizeSummary(summary);
+    if (sanitizedSummary) {
+      summariesByTankId[String(tankId)] = sanitizedSummary;
+    }
+  }
+  const lastEvaluatedByTankId = source.lastEvaluatedByTankId && typeof source.lastEvaluatedByTankId === "object"
+    ? Object.fromEntries(Object.entries(source.lastEvaluatedByTankId).map(([key, value]) => [String(key), String(value || "")]).filter(([, value]) => value))
+    : {};
+  const claimedByTankDay = source.claimedByTankDay && typeof source.claimedByTankDay === "object"
+    ? Object.fromEntries(Object.entries(source.claimedByTankDay).map(([key, value]) => [String(key), Boolean(value)]))
+    : {};
+  const recapHistory = Array.isArray(source.recapHistory)
+    ? source.recapHistory.map(sanitizeSummary).filter(Boolean).slice(0, DAILY_RECAP_HISTORY_LIMIT)
+    : [];
+  const milestones = source.milestones && typeof source.milestones === "object"
+    ? Object.fromEntries(Object.entries(source.milestones).map(([key, value]) => [String(key), Boolean(value)]))
+    : {};
+  const legacySummary = sanitizeSummary(source.summary);
   return {
-    available: Boolean(source.available && source.summary),
-    summary: source.summary && typeof source.summary === "object" ? source.summary : null,
+    available: Boolean(source.available && (legacySummary || Object.keys(summariesByTankId).length)),
+    summary: legacySummary,
     lastQualifiedDayKey: typeof source.lastQualifiedDayKey === "string" ? source.lastQualifiedDayKey : null,
     lastClaimedDayKey: typeof source.lastClaimedDayKey === "string" ? source.lastClaimedDayKey : null,
-    lastEvaluatedDayKey: typeof source.lastEvaluatedDayKey === "string" ? source.lastEvaluatedDayKey : null
+    lastEvaluatedDayKey: typeof source.lastEvaluatedDayKey === "string" ? source.lastEvaluatedDayKey : null,
+    summariesByTankId,
+    lastEvaluatedByTankId,
+    claimedByTankDay,
+    recapHistory,
+    milestones
   };
 }
 
@@ -14658,6 +15626,7 @@ function reconcileState(rawState) {
     lifetimeDeaths: 0,
     lastCorpseSicknessAt: null,
     unlockedFishSpecies: [],
+    unlockedDecorKeys: [],
     storedFish: [],
     decorInventory: {},
     customDecorAssets: {},
@@ -14698,6 +15667,7 @@ function reconcileState(rawState) {
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     lastCorpseSicknessAt: Number.isFinite(incoming.lastCorpseSicknessAt) ? incoming.lastCorpseSicknessAt : null,
     unlockedFishSpecies: sanitizeUnlockedFishSpecies(incoming.unlockedFishSpecies),
+    unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
     storedFish: Array.isArray(incoming.storedFish) ? incoming.storedFish.map(sanitizeFishEntry).filter(Boolean) : [],
     decorInventory: sanitizeDecorInventory(incoming.decorInventory),
     customDecorAssets: incomingCustomDecorAssets,
@@ -14837,6 +15807,13 @@ function reconcileState(rawState) {
       .map((fish) => fish?.speciesId)
       .filter((speciesId) => runtime.fishMap.get(speciesId)?.unlockRequirement)
   ]);
+  nextState.unlockedDecorKeys = sanitizeUnlockedDecorKeys([
+    ...nextState.unlockedDecorKeys,
+    ...Object.keys(nextState.decorInventory || {}),
+    ...getAllPlacedDecor(nextState).map((decor) => decor?.decorKey),
+    ...(Object.keys(nextState.customDecorAssets || {}).length ? [CUSTOM_DECOR_SHOP_KEY, CUSTOM_HIDE_SHOP_KEY] : [])
+  ]);
+  delete nextState.foodInventory.upgraded;
 
   if (!nextState.tanks.some((tank) => tank.events.length)) {
     nextState.tanks[0].events = [
@@ -15551,6 +16528,9 @@ function sanitizeFish(fish, options = {}) {
         : clamp(rawHealthUnits, 0, maxHealthUnits),
     fedStreak: clamp(Math.round(Number(fish.fedStreak) || 0), 0, 999),
     missedMealsInRow: clamp(Math.round(Number(fish.missedMealsInRow) || 0), 0, 999),
+    lastAteAt: Number.isFinite(Number(fish.lastAteAt)) ? Number(fish.lastAteAt) : 0,
+    veryLowComfortStartedAt: Number.isFinite(Number(fish.veryLowComfortStartedAt)) ? Number(fish.veryLowComfortStartedAt) : 0,
+    veryLowComfortEventDayKey: typeof fish.veryLowComfortEventDayKey === "string" ? fish.veryLowComfortEventDayKey : "",
     xNorm: spawnX,
     yNorm: spawnY,
     targetXNorm: clamp(Number(fish.targetXNorm) || randomSwimX(), 0.08, 0.92),
@@ -15639,6 +16619,25 @@ function sanitizeUnlockedFishSpecies(unlockedFishSpecies) {
   return source
     .map((value) => String(value || "").trim())
     .filter((value, index, entries) => value && runtime.fishMap.has(value) && entries.indexOf(value) === index);
+}
+
+function getDefaultUnlockedDecorKeys() {
+  return runtime.decorCatalog
+    .map((decor) => decor.key)
+    .filter((key) => runtime.decorMap.has(key) && !getDecorUnlockRequirement(key));
+}
+
+function sanitizeUnlockedDecorKeys(unlockedDecorKeys) {
+  const source = Array.isArray(unlockedDecorKeys)
+    ? unlockedDecorKeys
+    : Array.isArray(unlockedDecorKeys?.decor)
+      ? unlockedDecorKeys.decor
+      : [];
+  const defaults = getDefaultUnlockedDecorKeys();
+  return [
+    ...defaults,
+    ...source.map((value) => normalizeDecorKey(value))
+  ].filter((value, index, entries) => value && runtime.decorMap.has(value) && entries.indexOf(value) === index);
 }
 
 function sanitizeHistory(feedHistory) {
@@ -17506,6 +18505,7 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
 
   const currentLayer = getFishTankLayer(fish);
   const profile = getCaveBehaviorProfileForItem(item);
+  const seatsCarryPortalAffinity = seatRegions.some((seat) => getCaveSeatPortalIds(seat).length);
   const candidates = [];
 
   for (const trigger of triggerRegions) {
@@ -17534,7 +18534,12 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
       const portalIds = getCaveSeatPortalIds(seat);
       return !portalIds.length || portalIds.includes(matchedPortalId);
     });
-    const seatPool = matchingSeats.length ? matchingSeats : seatRegions;
+    const seatPool = matchingSeats.length
+      ? matchingSeats
+      : (seatsCarryPortalAffinity ? [] : seatRegions);
+    if (!seatPool.length) {
+      continue;
+    }
 
     const availableSeats = seatPool
       .filter((seat) => !isCaveSeatOccupied(item.id, seat.id, fish.id))
@@ -19034,7 +20039,11 @@ function sanitizePellet(pellet) {
     foodKey: foodMeta?.id || defaultFoodKey,
     spritePath: resolveStoredFoodDropSpritePath(foodMeta, pellet.spritePath),
     rotation: clamp(Number.isFinite(Number(pellet.rotation)) ? Number(pellet.rotation) : randomBetween(-0.65, 0.65), -1.25, 1.25),
-    scale: clamp(Number.isFinite(Number(pellet.scale)) ? Number(pellet.scale) : 1, 0.7, 1.4),
+    scale: clamp(
+      Number.isFinite(Number(pellet.scale)) ? Number(pellet.scale) : 1,
+      foodMeta?.brineFood ? 0.12 : 0.7,
+      1.4
+    ),
     sinkDurationMs: clamp(Number(pellet.sinkDurationMs) || FOOD_PELLET_SINK_DURATION_MS, 30 * 1000, 60 * MINUTE_MS),
     dropStartXNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartXNorm), 0.08, 0.92) : null,
     dropStartYNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartYNorm), 0.02, AUTO_DISPENSER_PELLET_MAX_Y_NORM) : null,
@@ -19051,11 +20060,25 @@ function sanitizeEvent(entry) {
     return null;
   }
 
-  return {
+  const score = Number(entry.score ?? entry.recapScore);
+  const sanitized = {
     id: String(entry.id || createId("event")),
     time: Number.isFinite(entry.time) ? entry.time : Date.now(),
     text: entry.text
   };
+  if (Number.isFinite(score)) {
+    sanitized.score = clamp(Math.round(score), -1, 1);
+  }
+  if (typeof entry.type === "string" && entry.type.trim()) {
+    sanitized.type = entry.type.trim();
+  }
+  if (typeof entry.fishId === "string" && entry.fishId.trim()) {
+    sanitized.fishId = entry.fishId.trim();
+  }
+  if (entry.recapEligible === false) {
+    sanitized.recapEligible = false;
+  }
+  return sanitized;
 }
 
 function preloadImages(paths) {
@@ -21339,6 +22362,8 @@ function syncCurrentTankState(now, options = {}) {
   changed = processFishDecayStates(now) || changed;
   changed = processDetritusFish(now) || changed;
   changed = applyCriticalComfortHealthEffects(now) || changed;
+  changed = updateComfortHistoryEvents(now) || changed;
+  changed = maybeGenerateDailyRecapForTank(targetTank, now) || changed;
   changed = normalizeCurrentTankShellState() || changed;
 
   pruneTankState(now, getCurrentTank());
@@ -21726,14 +22751,21 @@ function feedFish() {
   let earnedCoins = 0;
   for (const fish of feedableFish) {
     const species = getSpeciesForFish(fish);
-    earnedCoins += species?.mealCoins || 0;
-    state.pendingPoops.push({
-      id: createId("poop"),
-      fishId: fish.id,
-      dueAt: now + HOUR_MS + Math.random() * (2 * HOUR_MS)
-    });
+    const remainingMealCoins = Math.max(0, DAILY_MEAL_COIN_CAP - earnedCoins);
+    const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(species?.mealCoins) || 0));
+    earnedCoins += mealCoins;
+    fish.lastAteAt = now;
+    applyFishMealWindowFoodIntake(fish, now, { foodKey: "basic" });
+    if (!isBrineShrimpSpecies(fish)) {
+      state.pendingPoops.push({
+        id: createId("poop"),
+        fishId: fish.id,
+        dueAt: now + HOUR_MS + Math.random() * (2 * HOUR_MS)
+      });
+    }
   }
 
+  applyFoodBuff("basic", now);
   state.coins += earnedCoins;
   state.floatingPellets = createFloatingPellets(now, feedableFish);
   for (const fish of feedableFish) {
@@ -21784,11 +22816,7 @@ function canFishEatFoodPellet(fish, foodKey = "basic", now = Date.now()) {
     return false;
   }
 
-  if (foodKey === "chum") {
-    return isPredatoryFoodTarget(fish);
-  }
-
-  return !isMealFreeFish(fish);
+  return canFoodSatisfyFishMeal(fish, foodKey);
 }
 
 function getFoodPelletSettledAgeMs(pellet, now = Date.now()) {
@@ -21863,7 +22891,9 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   fedFishIds.add(fish.id);
   entry.fishIds = [...fedFishIds];
   entry.fedAt = Math.max(Number(entry.fedAt) || 0, now);
-  const mealCoins = Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0);
+  fish.lastAteAt = now;
+  const remainingMealCoins = Math.max(0, DAILY_MEAL_COIN_CAP - (Math.max(0, Number(entry.coinsEarned) || 0)));
+  const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0));
   entry.coinsEarned = Math.max(0, Number(entry.coinsEarned) || 0) + mealCoins;
   state.coins += mealCoins;
   return mealCoins;
@@ -22043,13 +23073,16 @@ function releasePelletsTargetingFishIds(fishIds) {
   return changed;
 }
 
-function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now()) {
+function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), options = {}) {
   const food = getFoodMeta(foodKey);
   const dropStyle = getFoodDropStyle(food);
-  const dropXNorm = clamp(Number(xNorm) + randomBetween(-FOOD_DROP_SPREAD_NORM, FOOD_DROP_SPREAD_NORM), 0.08, 0.92);
-  const dropYNorm = clamp(Number(yNorm), WATER_SURFACE_Y / TANK_HEIGHT + 0.1, 0.72);
+  const brineFood = Boolean(food?.brineFood);
+  const spread = brineFood ? FOOD_DROP_SPREAD_NORM * 2.8 : FOOD_DROP_SPREAD_NORM;
+  const dropXNorm = clamp(Number(xNorm) + randomBetween(-spread, spread), 0.08, 0.92);
+  const dropYNorm = clamp(Number(yNorm) + (brineFood ? randomBetween(-0.018, 0.018) : 0), WATER_SURFACE_Y / TANK_HEIGHT + 0.1, 0.72);
+  const baseScale = brineFood ? clamp(Number(food?.pelletScale) || 0.28, 0.16, 0.5) : null;
   return sanitizePellet({
-    id: createId("pellet"),
+    id: createId(brineFood ? "brine-speck" : "pellet"),
     foodKey,
     spritePath: resolveStoredFoodDropSpritePath(food),
     targetFishId: "",
@@ -22058,16 +23091,16 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now()) {
     startYNorm: dropYNorm,
     sway: Math.random(),
     rotation: dropStyle === "sprite" ? randomBetween(-0.95, 0.95) : randomBetween(-0.22, 0.22),
-    scale: dropStyle === "sprite" ? randomBetween(0.92, 1.18) : randomBetween(0.94, 1.08),
-    sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
+    scale: brineFood ? baseScale * randomBetween(0.78, 1.22) : (dropStyle === "sprite" ? randomBetween(0.92, 1.18) : randomBetween(0.94, 1.08)),
+    sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * (brineFood ? randomBetween(1.15, 1.75) : randomBetween(0.85, 1.2)),
     createdAt: now,
-    expiresAt: now + FOOD_PELLET_SETTLED_LIFETIME_MS
+    expiresAt: now + (brineFood ? 45 * MINUTE_MS : FOOD_PELLET_SETTLED_LIFETIME_MS)
   });
 }
 
 function createAutoDispenserStoredPellet(foodKey) {
   const foodMeta = getFoodMeta(foodKey);
-  if (!foodMeta) {
+  if (!foodMeta || !isFoodAllowedInAutoDispenser(foodMeta)) {
     return null;
   }
 
@@ -22169,6 +23202,11 @@ function loadSelectedFoodIntoAutoDispenser(now = Date.now()) {
   const food = getFoodMeta(foodKey);
   if (!food) {
     showToast("Select a food from the tray first.");
+    return true;
+  }
+
+  if (!isFoodAllowedInAutoDispenser(food)) {
+    showToast(`${food.name} is too fine for the dispenser. Drop it by hand.`);
     return true;
   }
 
@@ -22286,10 +23324,8 @@ function applyFoodBuff(foodKey, now = Date.now(), tank = getCurrentTank()) {
     };
   }
 
-  if (foodKey === "upgraded") {
-    tank.foodBuffs.upgradedUntil = Math.max(Number(tank.foodBuffs?.upgradedUntil) || 0, now + FOOD_BUFF_DURATION_MS);
-  } else if (foodKey === "frisky") {
-    tank.foodBuffs.friskyUntil = Math.max(Number(tank.foodBuffs?.friskyUntil) || 0, now + FOOD_BUFF_DURATION_MS);
+  if (isNormalMealFood(foodKey)) {
+    tank.foodBuffs.friskyUntil = Math.max(Number(tank.foodBuffs?.friskyUntil) || 0, now + BREEDING_FOOD_BOOST_MS);
   }
 }
 
@@ -22318,8 +23354,9 @@ function applyFishMealWindowFoodIntake(fish, now = Date.now(), options = {}) {
     fish.satiatedUntil = Math.max(Number(fish.satiatedUntil) || 0, now + FISH_SATIATED_MS);
   }
 
-  const previousExtraCount = Math.max(0, previousCount - 1);
-  const nextExtraCount = Math.max(0, nextCount - 1);
+  const canOverfeed = options.allowOverfeed !== false && canFishOverfeed(fish);
+  const previousExtraCount = canOverfeed ? Math.max(0, previousCount - 1) : 0;
+  const nextExtraCount = canOverfeed ? Math.max(0, nextCount - 1) : 0;
   const damageUnits = Math.max(0, nextExtraCount - previousExtraCount);
   if (damageUnits > 0) {
     fish.healthUnits = Math.max(0, Number(fish.healthUnits) - damageUnits);
@@ -22342,7 +23379,9 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
   const species = getSpeciesForFish(fish);
   const foodKey = pellet.foodKey || "basic";
   const mealCoins = recordFishMealCredit(fish, now, targetTank);
-  scheduleFishPoop(fish, now, targetTank);
+  if (!isBrineShrimpSpecies(fish)) {
+    scheduleFishPoop(fish, now, targetTank);
+  }
   applyFoodBuff(foodKey, now, targetTank);
   const intake = applyFishMealWindowFoodIntake(fish, now);
   const announce = options.announce !== false;
@@ -22663,9 +23702,16 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
   }
 
   state.foodInventory[food.id] = quantity - 1;
-  const pellet = createDroppedFoodPellet(food.id, point.x / TANK_WIDTH, point.y / TANK_HEIGHT, now);
-  if (pellet) {
-    state.floatingPellets.push(pellet);
+  const dropCount = Math.max(1, Math.floor(Number(food.piecesPerDrop) || 1));
+  const createdPellets = [];
+  for (let index = 0; index < dropCount; index += 1) {
+    const pellet = createDroppedFoodPellet(food.id, point.x / TANK_WIDTH, point.y / TANK_HEIGHT, now, { pieceIndex: index, pieceCount: dropCount });
+    if (pellet) {
+      createdPellets.push(pellet);
+    }
+  }
+  if (createdPellets.length) {
+    state.floatingPellets.push(...createdPellets);
     assignFloatingPelletsToHungryFish(now);
   }
   playDropSoundEffect();
@@ -22693,7 +23739,7 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
   return {
     ok: true,
     foodId: food.id,
-    pelletId: pellet?.id || "",
+    pelletId: createdPellets[0]?.id || "",
     tutorialChanged
   };
 }
@@ -22943,6 +23989,9 @@ function createFishRecord(speciesId, options = {}) {
     ),
     fedStreak: 0,
     missedMealsInRow: 0,
+    lastAteAt: 0,
+    veryLowComfortStartedAt: 0,
+    veryLowComfortEventDayKey: "",
     xNorm: initialPosition.xNorm,
     yNorm: initialPosition.yNorm,
     targetXNorm: initialTarget.xNorm,
@@ -23361,18 +24410,20 @@ function processFishBreedingForSlot(slot) {
   }
 
   let changed = false;
-  const friskyBonus = (Number(state.foodBuffs?.friskyUntil) || 0) > slot.start ? 0.2 : 0;
+  const guaranteedBreeding = (Number(state.foodBuffs?.friskyUntil) || 0) > slot.start;
   for (const [speciesId, eligibleFish] of breedingGroups) {
     const pairCount = Math.floor(eligibleFish.length / 2);
     if (pairCount < 1) {
       continue;
     }
 
-    const spawnChance = clamp(
-      BREEDING_BASE_CHANCE_PER_WINDOW + Math.max(0, pairCount - 1) * BREEDING_EXTRA_PAIR_BONUS_CHANCE + friskyBonus,
-      0,
-      BREEDING_MAX_CHANCE_PER_WINDOW
-    );
+    const spawnChance = guaranteedBreeding
+      ? 1
+      : clamp(
+        BREEDING_BASE_CHANCE_PER_WINDOW + Math.max(0, pairCount - 1) * BREEDING_EXTRA_PAIR_BONUS_CHANCE,
+        0,
+        BREEDING_MAX_CHANCE_PER_WINDOW
+      );
     if (Math.random() > spawnChance) {
       continue;
     }
@@ -23621,6 +24672,11 @@ function buyFood(foodKey) {
     return;
   }
 
+  if (!shouldShowFoodInStore(food) || food.id === "upgraded") {
+    showToast(food.id === BRINE_SHRIMP_FOOD_KEY ? "Unlock Brine Shrimp first." : "That food is no longer available.");
+    return;
+  }
+
   if (state.coins < food.cost) {
     showToast("Not enough coins for that food bottle.");
     return;
@@ -23664,6 +24720,10 @@ function selectFoodMode(foodKey, options = {}) {
   const food = getFoodMeta(foodKey);
   if (!food) {
     return { ok: false, reason: "missing-food" };
+  }
+  if (!shouldShowFoodInStore(food) || food.id === "upgraded") {
+    showToast(food.id === BRINE_SHRIMP_FOOD_KEY ? "Unlock Brine Shrimp first." : "That food is no longer available.");
+    return { ok: false, reason: "food-locked", foodId: food.id };
   }
 
   const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
@@ -23746,7 +24806,7 @@ function buyFish(speciesId, options = {}) {
     return { ok: false, reason: "content-locked" };
   }
 
-  if (!isFishSpeciesUnlocked(species)) {
+  if (!isFishSpeciesShopUnlocked(species)) {
     showToast(`${species.name} has not been unlocked yet.`);
     return { ok: false, reason: "species-locked" };
   }
@@ -23772,7 +24832,8 @@ function buyFish(speciesId, options = {}) {
   addFishToTank(fish, now);
 
   const currentSlot = getCurrentMealSlot(now);
-  if (!isMealFreeFish(fish)) {
+  if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
+    fish.lastAteAt = now;
     const entry = ensureMealHistoryEntry(currentSlot.key, now);
     const fedFishIds = new Set(entry.fishIds);
     fedFishIds.add(fish.id);
@@ -23853,7 +24914,7 @@ function buyAnotherCustomFish(fishId) {
   addFishToTank(fish, now);
 
   const currentSlot = getCurrentMealSlot(now);
-  if (!isMealFreeFish(fish)) {
+  if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
     const entry = ensureMealHistoryEntry(currentSlot.key, now);
     const fedFishIds = new Set(entry.fishIds);
     fedFishIds.add(fish.id);
@@ -23885,6 +24946,16 @@ function buyDecor(decorKey, options = {}) {
     return { ok: true, previewOnly: true };
   }
 
+  const decor = runtime.decorMap.get(decorKey);
+  if (!decor) {
+    return { ok: false, reason: "missing-decor" };
+  }
+
+  if (!isDecorUnlocked(decor)) {
+    showToast(`${decor.name} unlocks at ${getDecorUnlockRequirementLabel(decor)}.`);
+    return { ok: false, reason: "decor-locked" };
+  }
+
   if (isCustomDecorShopKey(decorKey)) {
     openLocalDecorPicker();
     return { ok: false, reason: "custom-upload" };
@@ -23892,11 +24963,6 @@ function buyDecor(decorKey, options = {}) {
   if (isCustomHideShopKey(decorKey)) {
     openLocalHideFrontPicker();
     return { ok: false, reason: "custom-hide" };
-  }
-
-  const decor = runtime.decorMap.get(decorKey);
-  if (!decor) {
-    return { ok: false, reason: "missing-decor" };
   }
 
   if (!canUseDecorWithCurrentContentSettings(decor)) {
@@ -23942,6 +25008,11 @@ function buyAnotherDecor(decorKey) {
 
   if (!canUseDecorWithCurrentContentSettings(key)) {
     showToast("Enable Violence & Gore to buy that decor.");
+    return;
+  }
+
+  if (!isDecorUnlocked(key)) {
+    showToast(`${decor.name} unlocks at ${getDecorUnlockRequirementLabel(key)}.`);
     return;
   }
 
@@ -24995,7 +26066,7 @@ function renderEditQuickRef() {
     `
     : `
       ${layerHintMarkup}
-      <div><strong>[-]/[+]/[=]</strong> - Change Size</div>
+      <div><strong>[-]/[+]</strong> - Change Size</div>
       ${flipHintMarkup}
       ${settingsHintMarkup}
       <div><strong>Shift/Ctrl Click</strong> - Select Multiple Decor</div>
@@ -25932,7 +27003,10 @@ function finalizePiranhaConsumedFish(fishList, now = Date.now(), options = {}) {
   }
 
   const overfedPiranhas = [];
+  let piranhaMealCoins = 0;
   for (const piranha of getLivingPiranhaFish()) {
+    piranha.lastAteAt = now;
+    piranhaMealCoins += recordFishMealCredit(piranha, now);
     const intake = applyFishMealWindowFoodIntake(piranha, now, { satiate: false });
     if (intake.damageUnits > 0) {
       overfedPiranhas.push({ fish: piranha, damageUnits: intake.damageUnits, slot: intake.slot });
@@ -25965,7 +27039,7 @@ function finalizePiranhaConsumedFish(fishList, now = Date.now(), options = {}) {
   const consumedMessage = consumedFish.length === 1
     ? `${consumedFish[0].name} was completely devoured by piranhas.`
     : `${consumedFish.length} fish were completely devoured by piranhas.`;
-  pushEvent(consumedMessage, now);
+  pushEvent(piranhaMealCoins > 0 ? `${consumedMessage} Piranhas earned ${piranhaMealCoins} ${pluralize("coin", piranhaMealCoins)}.` : consumedMessage, now);
 
   if (overfedPiranhas.length) {
     const totalDamageUnits = overfedPiranhas.reduce((total, entry) => total + entry.damageUnits, 0);
@@ -26165,11 +27239,9 @@ function getDeadFishDirtinessBonus(deadFishList = getExposedDeadTankFish()) {
 
 function getTankFishDirtinessMultiplier(fishList = getLivingTankFish(), deadFishList = getExposedDeadTankFish()) {
   const activeFish = Array.isArray(fishList) ? fishList.filter((fish) => fish && !isFishDead(fish)) : [];
-  const upgradedFoodReduction = (Number(state.foodBuffs?.upgradedUntil) || 0) > Date.now() ? 0.15 : 0;
   return Math.max(0.65, 1
     + activeFish.reduce((total, fish) => total + getFishDirtinessBonus(fish), 0)
-    + getDeadFishDirtinessBonus(deadFishList)
-    - upgradedFoodReduction);
+    + getDeadFishDirtinessBonus(deadFishList));
 }
 
 function getFilterMaxDirtyDurationMs(filterKey = state?.selectedFilterAsset, fishList = getLivingTankFish()) {
@@ -27265,6 +28337,11 @@ function getFeaturedShopSortRank(entry) {
 function sortCatalogEntries(entries, sortKey) {
   const normalizedSort = normalizeStoreSortKey(sortKey);
   return [...entries].sort((left, right) => {
+    const lockRank = getCatalogLockSortRank(left) - getCatalogLockSortRank(right);
+    if (lockRank !== 0) {
+      return lockRank;
+    }
+
     const featuredRank = getFeaturedShopSortRank(left) - getFeaturedShopSortRank(right);
     if (featuredRank !== 0) {
       return featuredRank;
@@ -27284,6 +28361,54 @@ function sortCatalogEntries(entries, sortKey) {
     return (left?.cost ?? Number.MAX_SAFE_INTEGER) - (right?.cost ?? Number.MAX_SAFE_INTEGER)
       || String(left?.name || "").localeCompare(String(right?.name || ""));
   });
+}
+
+function isFishSpeciesProgressUnlocked(speciesOrId) {
+  const species = typeof speciesOrId === "string"
+    ? runtime.fishMap.get(speciesOrId)
+    : speciesOrId;
+  if (!species) {
+    return false;
+  }
+
+  if (!species.unlockRequirement) {
+    return true;
+  }
+
+  return (state?.unlockedFishSpecies || []).includes(species.id);
+}
+
+function isFishSpeciesShopUnlocked(speciesOrId) {
+  const species = typeof speciesOrId === "string"
+    ? runtime.fishMap.get(speciesOrId)
+    : speciesOrId;
+  if (!species) {
+    return false;
+  }
+  return isDebugModeEnabled() || isFishSpeciesProgressUnlocked(species);
+}
+
+function isDecorProgressUnlocked(decorOrKey) {
+  const key = normalizeDecorKey(typeof decorOrKey === "string" ? decorOrKey : decorOrKey?.key || decorOrKey?.decorKey || "");
+  if (!key || !runtime.decorMap.has(key)) {
+    return false;
+  }
+  const requirement = getDecorUnlockRequirement(key);
+  return !requirement || (state?.unlockedDecorKeys || []).includes(key);
+}
+
+function getCatalogLockSortRank(entry) {
+  const fishId = typeof entry?.id === "string" ? entry.id : "";
+  if (fishId && runtime.fishMap.has(fishId) && !isCustomFishShopKey(fishId)) {
+    return isFishSpeciesProgressUnlocked(entry) ? 0 : 1;
+  }
+
+  const decorKey = normalizeDecorKey(typeof entry?.key === "string" ? entry.key : "");
+  if (decorKey && runtime.decorMap.has(decorKey)) {
+    return isDecorProgressUnlocked(decorKey) ? 0 : 1;
+  }
+
+  return 0;
 }
 
 function renderShopThemePill(theme) {
@@ -27334,6 +28459,9 @@ function getFishShopSearchHaystack(fish) {
     fish?.behavior,
     fish?.diet,
     fish?.waterType,
+    getUnlockRequirementLabel(fish?.unlockRequirement),
+    ...getSpeciesNeedTags(fish).map((tag) => getComfortTagLabel(tag)),
+    ...getSpeciesConflictTags(fish).map((tag) => getComfortTagLabel(tag)),
     fish?.caveEnabled === true ? "cave cave fish" : "",
     formatFishShopBehavior(fish)
   ].filter(Boolean).join(" ");
@@ -27344,6 +28472,7 @@ function getDecorShopSearchHaystack(decor) {
     decor?.name,
     decor?.key,
     decor?.theme,
+    getDecorUnlockRequirementLabel(decor),
     ...(Array.isArray(decor?.categories) ? decor.categories : [])
   ].filter(Boolean).join(" ");
 }
@@ -27475,29 +28604,18 @@ function setStoreSearchQuery(kind, value, options = {}) {
 }
 
 function isFishSpeciesUnlocked(speciesOrId) {
-  const species = typeof speciesOrId === "string"
-    ? runtime.fishMap.get(speciesOrId)
-    : speciesOrId;
-  if (!species) {
-    return false;
-  }
-
-  if (!species.unlockRequirement) {
-    return true;
-  }
-
-  return (state?.unlockedFishSpecies || []).includes(species.id);
+  return isFishSpeciesProgressUnlocked(speciesOrId);
 }
 
 function getFishShopCatalog() {
   return runtime.fishCatalog.filter((species) => (
-    isFishSpeciesUnlocked(species)
-    && (isGoreEnabled() || !isUndeadSpecies(species))
+    isGoreEnabled() || !isUndeadSpecies(species)
   ));
 }
 
 function getStarterFishSpecies() {
-  return [...(getFishShopCatalog().length ? getFishShopCatalog() : runtime.fishCatalog)]
+  const unlockedCatalog = getFishShopCatalog().filter((species) => isFishSpeciesUnlocked(species));
+  return [...(unlockedCatalog.length ? unlockedCatalog : runtime.fishCatalog)]
     .sort(compareFishCatalogBySize)[0] || null;
 }
 
@@ -29110,10 +30228,10 @@ function completeCleaning(options = {}) {
   const fromDirtiness = getBaseTankDirtiness(now);
   const cleanReward =
     fromDirtiness < 0.25 ? 0 :
-      fromDirtiness < 0.5 ? 3 :
-        fromDirtiness < 0.7 ? 6 :
-          fromDirtiness < 0.85 ? 9 :
-            12;
+      fromDirtiness < 0.5 ? 1 :
+        fromDirtiness < 0.7 ? 3 :
+          fromDirtiness < 0.85 ? 5 :
+            6;
 
   state.lastCleanedAt = now;
   state.poops = [];
@@ -29521,19 +30639,322 @@ function updateCleaningTransition(now) {
   }
 }
 
-function pushEvent(text, time = Date.now(), tank = getCurrentTank()) {
+function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) {
   const targetTank = tank || getCurrentTank();
   if (!targetTank) {
     return;
   }
 
-  const events = Array.isArray(targetTank.events) ? targetTank.events : [];
-  events.unshift({
+  const score = Number(meta?.score ?? meta?.recapScore);
+  const eventEntry = {
     id: createId("event"),
     time,
     text
-  });
+  };
+  if (Number.isFinite(score)) {
+    eventEntry.score = clamp(Math.round(score), -1, 1);
+  }
+  if (typeof meta?.type === "string" && meta.type.trim()) {
+    eventEntry.type = meta.type.trim();
+  }
+  if (typeof meta?.fishId === "string" && meta.fishId.trim()) {
+    eventEntry.fishId = meta.fishId.trim();
+  }
+  if (meta?.recapEligible === false) {
+    eventEntry.recapEligible = false;
+  }
+
+  const events = Array.isArray(targetTank.events) ? targetTank.events : [];
+  events.unshift(eventEntry);
   targetTank.events = events.slice(0, MAX_TANK_EVENT_HISTORY);
+}
+
+function getLocalDayKey(timestamp = Date.now()) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getLocalDayStartTimestamp(dayKeyOrTimestamp = Date.now()) {
+  if (typeof dayKeyOrTimestamp === "string") {
+    const [year, month, day] = dayKeyOrTimestamp.split("-").map((part) => Number(part));
+    return new Date(year || 1970, Math.max(0, (month || 1) - 1), day || 1, 0, 0, 0, 0).getTime();
+  }
+  const date = new Date(dayKeyOrTimestamp);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function getPreviousLocalDayKey(timestamp = Date.now()) {
+  return getLocalDayKey(getLocalDayStartTimestamp(timestamp) - 1);
+}
+
+function getActiveDailyBonusSummary(tank = getCurrentTank()) {
+  if (!state?.dailyBonus) {
+    return null;
+  }
+  const tankId = tank?.id || state.activeTankId || "";
+  return state.dailyBonus.summariesByTankId?.[tankId] || (
+    state.dailyBonus.summary?.tankId === tankId || !state.dailyBonus.summary?.tankId
+      ? state.dailyBonus.summary
+      : null
+  );
+}
+
+function syncActiveDailyBonusState() {
+  if (!state?.dailyBonus) {
+    return;
+  }
+  const summary = getActiveDailyBonusSummary();
+  state.dailyBonus.summary = summary || null;
+  state.dailyBonus.available = Boolean(summary);
+}
+
+function classifyEventForDailyRecap(event) {
+  if (!event || event.recapEligible === false) {
+    return null;
+  }
+  if (Number.isFinite(Number(event.score))) {
+    const score = clamp(Math.round(Number(event.score)), -1, 1);
+    if (score !== 0) {
+      return { text: event.text, score, type: event.type || "event", time: event.time };
+    }
+  }
+  const text = String(event.text || "");
+  const lower = text.toLowerCase();
+  const negativePatterns = [
+    /missed .* meal/,
+    /overfed|gorged/,
+    /lost .*heart|lost half/,
+    /died|dead fish|could not survive/,
+    /attacked|nipped|bit |bite|swarmed/,
+    /maximum dirtiness|filthy|critical/,
+    /very uncomfortable|comfort is low|panicking/
+  ];
+  const positivePatterns = [
+    /splashed into the tank|joined the aquarium|splash(ed)? back/,
+    / ate |fed \d+ fish|meal served/,
+    /earned \d+ .*coin/,
+    /sparkled back to life|tank cleaned/,
+    /placed |bought |installed /,
+    /found a coin/,
+    /recovered half a heart/,
+    /egg appeared|hatched/,
+    /unlocked|available in the shop|milestone/
+  ];
+  if (negativePatterns.some((pattern) => pattern.test(lower))) {
+    return { text, score: -1, type: "negative", time: event.time };
+  }
+  if (positivePatterns.some((pattern) => pattern.test(lower))) {
+    return { text, score: 1, type: "positive", time: event.time };
+  }
+  return null;
+}
+
+function buildDailyRecapSummary(tank, dayKey, now = Date.now(), options = {}) {
+  if (!tank) {
+    return null;
+  }
+  const start = getLocalDayStartTimestamp(dayKey);
+  const end = start + DAY_MS;
+  const rows = (Array.isArray(tank.events) ? tank.events : [])
+    .filter((event) => event && Number(event.time) >= start && Number(event.time) < end)
+    .sort((left, right) => Number(left.time) - Number(right.time))
+    .map((event) => classifyEventForDailyRecap(event))
+    .filter(Boolean);
+
+  const livingFish = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+  const comfortValues = livingFish.map((fish) => getFishComfort(fish, now).value);
+  const averageComfort = comfortValues.length
+    ? Math.round((comfortValues.reduce((total, value) => total + value, 0) / comfortValues.length) * 100)
+    : 0;
+  if (livingFish.length && averageComfort >= 80) {
+    rows.push({ text: `The tank averaged ${averageComfort}% comfort.`, score: 1, type: "comfort", time: end - 1 });
+  }
+  for (const fish of livingFish) {
+    const comfort = getFishComfort(fish, now);
+    const needsStatus = getFishNeedsStatus(fish, tank, now);
+    const activeConflicts = getFishConflictStatus(fish, tank, now).filter((conflict) => conflict.active);
+    if (getFishHealthRatio(fish) >= 1) {
+      rows.push({ text: `${fish.name} stayed healthy.`, score: 1, type: "health", time: end - 1 });
+    }
+    if (needsStatus.length && needsStatus.every((need) => need.met)) {
+      rows.push({ text: `${fish.name}'s comfort needs were satisfied.`, score: 1, type: "need", time: end - 1 });
+    }
+    if (comfort.value >= 0.95) {
+      rows.push({ text: `${fish.name} reached sparkling comfort.`, score: 1, type: "comfort", time: end - 1 });
+    }
+    if (comfort.value < 0.4) {
+      rows.push({ text: `${fish.name} averaged under 40% comfort.`, score: -1, type: "comfort", time: end - 1 });
+    }
+    for (const conflict of activeConflicts.slice(0, 2)) {
+      rows.push({ text: `${fish.name} had an active conflict: ${conflict.label}.`, score: -1, type: "conflict", time: end - 1 });
+    }
+  }
+  if (livingFish.length && !rows.some((row) => row.score < 0)) {
+    rows.push({ text: "No critical care alerts were recorded.", score: 1, type: "care", time: end - 1 });
+  }
+  if (!rows.length && !options.force && !livingFish.length) {
+    return null;
+  }
+
+  const score = rows.reduce((total, row) => total + row.score, 0);
+  const reward = clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP);
+  return {
+    tankId: tank.id || "",
+    tankName: getTankLabel(tank),
+    dayKey,
+    generatedAt: now,
+    rows,
+    score,
+    reward,
+    mealsFed: rows.filter((row) => / ate |fed \d+ fish|meal served/i.test(row.text)).length,
+    averageComfort,
+    fishCount: livingFish.length,
+    decorCount: Array.isArray(tank.placedDecor) ? tank.placedDecor.length : 0,
+    overall: score >= 12 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
+  };
+}
+
+function storeDailyRecapSummary(summary) {
+  if (!summary?.tankId || !state?.dailyBonus) {
+    return false;
+  }
+  if (!state.dailyBonus.summariesByTankId || typeof state.dailyBonus.summariesByTankId !== "object") {
+    state.dailyBonus.summariesByTankId = {};
+  }
+  state.dailyBonus.summariesByTankId[summary.tankId] = summary;
+  state.dailyBonus.lastQualifiedDayKey = summary.dayKey;
+  state.dailyBonus.lastEvaluatedDayKey = summary.dayKey;
+  if (!Array.isArray(state.dailyBonus.recapHistory)) {
+    state.dailyBonus.recapHistory = [];
+  }
+  const existingIndex = state.dailyBonus.recapHistory.findIndex((entry) => entry.tankId === summary.tankId && entry.dayKey === summary.dayKey);
+  if (existingIndex >= 0) {
+    state.dailyBonus.recapHistory.splice(existingIndex, 1);
+  }
+  state.dailyBonus.recapHistory.unshift(summary);
+  state.dailyBonus.recapHistory = state.dailyBonus.recapHistory.slice(0, DAILY_RECAP_HISTORY_LIMIT);
+  syncActiveDailyBonusState();
+  return true;
+}
+
+function maybeGenerateDailyRecapForTank(tank, now = Date.now(), options = {}) {
+  if (!tank || !state?.dailyBonus) {
+    return false;
+  }
+  if (!state.dailyBonus.lastEvaluatedByTankId || typeof state.dailyBonus.lastEvaluatedByTankId !== "object") {
+    state.dailyBonus.lastEvaluatedByTankId = {};
+  }
+  const force = options.force === true;
+  const dayKey = force ? getLocalDayKey(now) : getPreviousLocalDayKey(now);
+  const tankId = tank.id || "";
+  const claimedKey = `${tankId}:${dayKey}`;
+  if (!force && state.dailyBonus.lastEvaluatedByTankId[tankId] === dayKey) {
+    syncActiveDailyBonusState();
+    return false;
+  }
+  if (!force && state.dailyBonus.claimedByTankDay?.[claimedKey]) {
+    state.dailyBonus.lastEvaluatedByTankId[tankId] = dayKey;
+    syncActiveDailyBonusState();
+    return false;
+  }
+  if (!force && getLocalDayKey(now) === getLocalDayKey(Number(tank.lastSimulatedAt) || now)) {
+    syncActiveDailyBonusState();
+    return false;
+  }
+  const summary = buildDailyRecapSummary(tank, dayKey, now, { force });
+  state.dailyBonus.lastEvaluatedByTankId[tankId] = dayKey;
+  if (!summary) {
+    syncActiveDailyBonusState();
+    return true;
+  }
+  return storeDailyRecapSummary(summary);
+}
+
+function getMilestoneStats(latestSummary = null, now = Date.now()) {
+  const history = Array.isArray(state?.dailyBonus?.recapHistory) ? state.dailyBonus.recapHistory : [];
+  const recent = history.slice(0, 5);
+  const goodRecaps = history.filter((summary) => Number(summary.score) >= 5 && Number(summary.averageComfort) >= 70).length;
+  const recentAverageComfort = recent.length
+    ? Math.round(recent.reduce((total, summary) => total + (Number(summary.averageComfort) || 0), 0) / recent.length)
+    : (Number(latestSummary?.averageComfort) || 0);
+  const livingFish = getAllTankFish(state).filter((fish) => fish && !isFishDead(fish));
+  const oldestLivingFishAgeMs = livingFish.reduce((oldest, fish) => Math.max(oldest, now - (Number(fish.acquiredAt) || now)), 0);
+  const allEvents = getAllTanks(state).flatMap((tank) => Array.isArray(tank.events) ? tank.events : []);
+  const latestDeath = allEvents
+    .filter((event) => / died|dead fish|could not survive/i.test(event?.text || ""))
+    .reduce((latest, event) => Math.max(latest, Number(event.time) || 0), 0);
+  const stewardshipStartCandidates = [
+    ...getAllTanks(state).map((tank) => Number(tank?.createdAt) || Number(tank?.lastSimulatedAt) || now),
+    ...livingFish.map((fish) => Number(fish.acquiredAt) || now)
+  ];
+  const stewardshipStart = Math.min(...stewardshipStartCandidates.filter((value) => Number.isFinite(value) && value > 0), now);
+  const daysSinceLastDeath = latestDeath > 0
+    ? Math.floor((now - latestDeath) / DAY_MS)
+    : Math.floor((now - stewardshipStart) / DAY_MS);
+  return {
+    latestScore: Number(latestSummary?.score) || 0,
+    goodRecaps,
+    recentAverageComfort,
+    oldestLivingFishAgeMs,
+    daysSinceLastDeath,
+    hasSparklingFish: livingFish.some((fish) => getFishComfort(fish, now).value >= 0.95),
+    hasSaltwaterFish: livingFish.some((fish) => getSpeciesWaterType(fish) === "saltwater"),
+    hasSpookyKeeperPath: Number(state?.lifetimeDeaths) > 0
+      || allEvents.some((event) => /zombie|skeleton|corpse|dead fish/i.test(event?.text || ""))
+      || (state?.unlockedFishSpecies || []).some((speciesId) => speciesId === "zombie-fish" || speciesId === "skeleton-fish")
+  };
+}
+
+function applyProgressMilestones(latestSummary = null, now = Date.now()) {
+  if (!state?.dailyBonus) {
+    return [];
+  }
+  if (!state.dailyBonus.milestones || typeof state.dailyBonus.milestones !== "object") {
+    state.dailyBonus.milestones = {};
+  }
+  const stats = getMilestoneStats(latestSummary, now);
+  const unlocked = [];
+  for (const milestone of PROGRESSION_MILESTONES) {
+    if (state.dailyBonus.milestones[milestone.id] || !milestone.isMet(stats)) {
+      continue;
+    }
+    state.dailyBonus.milestones[milestone.id] = true;
+    state.coins += milestone.reward;
+    const speciesUnlocked = [];
+    for (const speciesId of milestone.unlocks) {
+      if (unlockFishSpecies(speciesId, now, `${runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)} unlocked from ${milestone.label}.`)) {
+        speciesUnlocked.push(speciesId);
+      }
+    }
+    const decorUnlocked = [];
+    for (const decorKey of milestone.decorUnlocks || []) {
+      if (unlockDecorKey(decorKey, now, `${runtime.decorMap.get(decorKey)?.name || titleFromFile(decorKey)} unlocked from ${milestone.label}.`)) {
+        decorUnlocked.push(decorKey);
+      }
+    }
+    pushEvent(`${milestone.label} milestone reached. Earned ${milestone.reward} ${pluralize("coin", milestone.reward)}.`, now);
+    unlocked.push({ ...milestone, speciesUnlocked, decorUnlocked });
+  }
+  return unlocked;
+}
+
+function triggerDebugDailyRecap(now = Date.now()) {
+  const tank = getCurrentTank();
+  if (!tank) {
+    showToast("No tank selected.");
+    return false;
+  }
+  const changed = maybeGenerateDailyRecapForTank(tank, now, { force: true });
+  syncActiveDailyBonusState();
+  saveState();
+  renderUi(now);
+  openUtilityOverlay("daily-bonus");
+  showToast(changed ? "Debug daily recap generated." : "Debug daily recap refreshed.");
+  return true;
 }
 
 function saveState() {
@@ -30210,6 +31631,18 @@ function playSoundEffect(pathOrPaths, options = {}) {
   return audio;
 }
 
+function areUiSoundsMuted() {
+  const uiSettings = getUiSettings();
+  return uiSettings.soundMuted || uiSettings.uiSoundsMuted;
+}
+
+function playUiSoundEffect(pathOrPaths, options = {}) {
+  if (areUiSoundsMuted()) {
+    return null;
+  }
+  return playSoundEffect(pathOrPaths, options);
+}
+
 function stopActiveSoundEffects() {
   for (const audio of runtime.activeSoundEffects) {
     try {
@@ -30227,7 +31660,7 @@ function playDispenserSoundEffect() {
 
 function playToolbarButtonSoundEffect(kind = "press") {
   const path = kind === "exit" ? TOOLBAR_BUTTON_EXIT_SOUND_PATH : TOOLBAR_BUTTON_PRESS_SOUND_PATH;
-  playSoundEffect(path, { volume: 0.58 });
+  playUiSoundEffect(path, { volume: 0.58 });
 }
 
 function playToolbarButtonExitSoundEffect() {
@@ -30247,15 +31680,15 @@ function playUiCollapseToggleSound(collapsed) {
 }
 
 function playRegularButtonSoundEffect() {
-  playSoundEffect(REGULAR_BUTTON_SOUND_PATH, { volume: 0.58 });
+  playUiSoundEffect(REGULAR_BUTTON_SOUND_PATH, { volume: 0.58 });
 }
 
 function playPurchaseSoundEffect() {
-  playSoundEffect(PURCHASE_SOUND_PATH, { volume: 0.66 });
+  playUiSoundEffect(PURCHASE_SOUND_PATH, { volume: 0.66 });
 }
 
 function playCoinSoundEffect() {
-  playSoundEffect(COIN_SOUND_PATH, { volume: 0.66 });
+  playUiSoundEffect(COIN_SOUND_PATH, { volume: 0.66 });
 }
 
 function getEnabledSoundActionTarget(event, selector) {
@@ -30979,8 +32412,11 @@ function renderFishShop() {
   const cardsMarkup = catalog
     .map((fish) => {
       const isCustomUploadProduct = isCustomFishShopKey(fish.id);
+      const progressLocked = !isCustomUploadProduct && !isFishSpeciesProgressUnlocked(fish);
+      const locked = !isCustomUploadProduct && !isFishSpeciesShopUnlocked(fish);
+      const debugUnlocked = progressLocked && !locked;
       const purchaseCost = getFishPurchaseCost(fish.id);
-      const affordable = !tutorialPreviewOnly && state.coins >= purchaseCost;
+      const affordable = !locked && !tutorialPreviewOnly && state.coins >= purchaseCost;
       const maxHealthUnits = getSpeciesMaxHealthUnits(fish);
       const heartCount = Math.ceil(maxHealthUnits / 2);
       const healthDisplay = isCustomUploadProduct
@@ -30995,25 +32431,38 @@ function renderFishShop() {
         ? null
         : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
       const fishAsset = getFishCatalogAssetPath(fish) || fish.asset;
+      const needChips = renderNeutralComfortTagChips(getSpeciesNeedTags(fish));
+      const conflictChips = renderNeutralComfortTagChips(getSpeciesConflictTags(fish));
+      const lockedRequirementLabel = getUnlockRequirementLabel(fish.unlockRequirement);
+      const unlockLabel = locked
+        ? lockedRequirementLabel
+        : debugUnlocked
+          ? `Debug unlocked (${lockedRequirementLabel})`
+          : "Unlocked";
       return `
-        <article class="shop-card">
-          <img class="shop-thumb" src="${fishAsset}" alt="${fish.name}" />
+        <article class="shop-card ${locked ? "is-locked" : ""}">
+          <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${fishAsset}" alt="${fish.name}" />
           <div class="shop-meta shop-card-main">
             <div>
               <strong>${fish.name}</strong>
               ${renderFishShopThemePill(fish.theme)}
             </div>
             <div class="shop-stat-list">
+              <div class="shop-stat-row"><span class="shop-stat-label">Unlock:</span><span class="shop-stat-value">${escapeHtml(unlockLabel)}</span></div>
               <div class="shop-stat-row"><span class="shop-stat-label">Health:</span><span class="shop-stat-value">${healthDisplay}</span></div>
               <div class="shop-stat-row"><span class="shop-stat-label">Coins Per Meal:</span><span class="shop-stat-value">${coinsDisplay}</span></div>
               <div class="shop-stat-row"><span class="shop-stat-label">Grime Multiplier:</span><span class="shop-stat-value">${isCustomUploadProduct ? "Size-based" : `+${dirtinessLoadPercent}%`}</span></div>
               <div class="shop-stat-row"><span class="shop-stat-label">Behavior:</span><span class="shop-stat-value">${formatFishShopBehavior(fish)}</span></div>
             </div>
+            <div class="shop-comfort-profile">
+              <div><span>Needs</span><div class="inspector-chip-row">${needChips}</div></div>
+              <div><span>Conflicts</span><div class="inspector-chip-row">${conflictChips}</div></div>
+            </div>
           </div>
           <div class="shop-meta">
             <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
             <button class="buy-button" data-buy-fish="${fish.id}" ${(affordable || tutorialPreviewOnly) ? "" : "disabled"} ${tutorialPreviewOnly ? "disabled" : ""}>
-              ${tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
+              ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
             </button>
           </div>
         </article>
@@ -31084,7 +32533,12 @@ function renderTankNavigation() {
     dom.nextTankButton.hidden = !visible;
   }
   if (dom.dailyBonusBell) {
-    dom.dailyBonusBell.hidden = !Boolean(state?.dailyBonus?.available);
+    syncActiveDailyBonusState();
+    const hasRecap = Boolean(state?.dailyBonus?.available);
+    dom.dailyBonusBell.hidden = !hasRecap;
+    dom.dailyBonusBell.classList.toggle("has-daily-recap", hasRecap);
+    dom.dailyBonusBell.title = hasRecap ? "Daily recap ready" : "Daily recap";
+    dom.dailyBonusBell.setAttribute("aria-label", hasRecap ? "Open daily recap" : "Daily recap");
   }
 }
 
@@ -31630,7 +33084,7 @@ function buildManagementFishRow(fish, now = Date.now()) {
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
   const purchaseCost = getFishPurchaseCost(fish.speciesId);
-  const canBuyAnother = isCustomFishAssetKey(fish.speciesId) || isFishSpeciesUnlocked(baseSpecies);
+  const canBuyAnother = isCustomFishAssetKey(fish.speciesId) || isFishSpeciesShopUnlocked(baseSpecies);
   const canSell = Boolean(baseSpecies) && !dead && !isFishBeingConsumedByPiranhas(fish, now) && !juvenile;
   const canStore = !dead && !infected;
   const status = dead
@@ -32929,11 +34383,11 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     id: "daily-bonus",
     exclusive: true,
     render: () => ({
-      kicker: "Daily Bonus",
-      title: "Bonus Summary",
+      kicker: "Daily Recap",
+      title: "Recap Summary",
       body: renderDailyBonusOverlay(),
       footer: state.dailyBonus?.available
-        ? `<button class="small-button" data-claim-daily-bonus>Okay</button>`
+        ? `<button class="small-button" data-claim-daily-bonus>Claim Bonus</button>`
         : `<button class="small-button" data-close-utility>Close</button>`,
       closable: true
     }),
@@ -33888,7 +35342,9 @@ function renderBubblerSettingsOverlay(item) {
 
 function renderFoodInventoryOverlay() {
   const cards = getFoodCatalog().filter((food) => (
-    Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
+    shouldShowFoodInStore(food)
+    && food.id !== "upgraded"
+    && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
   )).map((food) => {
     const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
     const active = runtime.feedingModeFoodKey === food.id;
@@ -33948,18 +35404,33 @@ function renderTipsOverlay() {
 }
 
 function renderDailyBonusOverlay() {
-  const summary = state.dailyBonus?.summary;
+  syncActiveDailyBonusState();
+  const summary = getActiveDailyBonusSummary();
   if (!summary) {
-    return `<div class="empty-state">No daily bonus is waiting right now.</div>`;
+    return `<div class="empty-state">No daily recap is waiting right now.</div>`;
   }
 
+  const rows = Array.isArray(summary.rows) && summary.rows.length
+    ? summary.rows.map((row) => `
+      <div class="daily-recap-row ${row.score >= 0 ? "is-positive" : "is-negative"}">
+        <span>${escapeHtml(row.text)}</span>
+        <strong>${row.score > 0 ? "+" : ""}${row.score}</strong>
+      </div>
+    `).join("")
+    : `<div class="empty-state">Nothing major happened in this tank.</div>`;
   return `
+    <div class="daily-recap-list">
+      <div class="compact-heading">
+        <h3>Daily Recap!</h3>
+        <p>${escapeHtml(summary.tankName || "Aquarium")} - ${escapeHtml(summary.dayKey || "")}</p>
+      </div>
+      ${rows}
+    </div>
     <div class="summary-grid bonus-summary-grid">
-      <div class="summary-row"><span>Meals Fed</span><strong>${summary.mealsFed}</strong></div>
-      <div class="summary-row"><span>Average Comfort</span><strong>${summary.averageComfort}%</strong></div>
-      <div class="summary-row"><span>Fish Count</span><strong>${summary.fishCount}</strong></div>
-      <div class="summary-row"><span>Decor Count</span><strong>${summary.decorCount}</strong></div>
-      <div class="summary-row"><span>Reward</span><strong>${summary.reward} coins</strong></div>
+      <div class="summary-row"><span>Overall</span><strong>${escapeHtml(summary.overall || "Quiet day.")}</strong></div>
+      <div class="summary-row"><span>Average Comfort</span><strong>${summary.averageComfort || 0}%</strong></div>
+      <div class="summary-row"><span>Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
+      <div class="summary-row"><span>Total Bonus</span><strong>${summary.reward || 0} coins</strong></div>
     </div>
   `;
 }
@@ -34001,19 +35472,6 @@ function buildCurrentTankCareSuggestions(now = Date.now()) {
     return [];
   }
 
-  const decorCategories = new Set(
-    tank.placedDecor.flatMap((item) => {
-      const decor = runtime.decorMap.get(item.decorKey) || runtime.decorMeta[item.decorKey];
-      return Array.isArray(decor?.categories) && decor.categories.length
-        ? decor.categories
-        : deriveDecorCategories(item.decorKey);
-    })
-  );
-  const countsBySpecies = new Map();
-  for (const fish of livingFish) {
-    countsBySpecies.set(fish.speciesId, (countsBySpecies.get(fish.speciesId) || 0) + 1);
-  }
-
   const suggestions = new Map();
   const putSuggestion = (key, label, fulfilled) => {
     const existing = suggestions.get(key);
@@ -34029,40 +35487,38 @@ function buildCurrentTankCareSuggestions(now = Date.now()) {
     if (!species) {
       continue;
     }
-
-    for (const category of species.needs?.decor || []) {
-      putSuggestion(
-        `decor:${category}`,
-        getCareCategoryLabel(category),
-        decorCategories.has(category)
-      );
+    const speciesName = getFishDisplaySpeciesName(fish, species);
+    for (const need of getFishNeedsStatus(fish, tank, now)) {
+      if (need.met) {
+        continue;
+      }
+      const needPhrase = need.tag === "school_2_plus"
+        ? `another ${speciesName} nearby`
+        : need.tag === "open_water"
+          ? "more open swimming space"
+          : need.tag === "brine_food"
+            ? "Brine Shrimp Food available"
+            : `${need.label.toLowerCase()} in the tank`;
+      putSuggestion(`need:${fish.id}:${need.tag}`, `${fish.name} would love ${needPhrase}.`, false);
     }
 
-    const friendNeed = species.needs?.friends;
-    if (friendNeed?.min > 0) {
-      const friendCount = friendNeed.alikeOnly ? (countsBySpecies.get(fish.speciesId) || 0) : livingFish.length;
-      putSuggestion(
-        `friends:${fish.speciesId}:${friendNeed.min}:${friendNeed.alikeOnly ? "alike" : "any"}`,
-        friendNeed.alikeOnly
-          ? `${species.name} need ${friendNeed.min}+ of their own kind`
-          : `Keep at least ${friendNeed.min} fish together`,
-        friendCount >= friendNeed.min
-      );
-    }
-
-    const disliked = normalizeStringList(species.dislikedTypes)
-      .filter((type) => livingFish.some((otherFish) => otherFish.id !== fish.id && otherFish.speciesId === type));
-    if (disliked.length) {
-      putSuggestion(
-        `dislikes:${fish.speciesId}`,
-        `${species.name} dislike ${disliked.map((type) => runtime.fishMap.get(type)?.name || titleFromFile(type)).join(", ")}`,
-        false
-      );
+    for (const conflict of getFishConflictStatus(fish, tank, now).filter((entry) => entry.active)) {
+      const conflictLabel = conflict.label.toLowerCase();
+      const label = conflict.tag === "community_fish" && fish.speciesId === "betta"
+        ? `${fish.name} the ${speciesName} is not very popular in this tank. Consider giving them their own space.`
+        : conflict.tag === "betta_present"
+          ? `${fish.name} is stressed by a betta in this tank.`
+          : conflict.tag === "overcrowded"
+            ? `${fish.name} needs a roomier tank setup.`
+            : conflict.tag === "sharp_decor"
+              ? `${fish.name} is uneasy around sharp decor.`
+              : `${fish.name} is bothered by ${conflictLabel}.`;
+      putSuggestion(`conflict:${fish.id}:${conflict.tag}`, label, false);
     }
 
     const comfort = getFishComfort(fish, now);
     if (comfort.value < 0.45) {
-      putSuggestion(`comfort:${fish.id}`, `${species.name} comfort is low`, false);
+      putSuggestion(`comfort:${fish.id}`, `${fish.name}'s comfort is low.`, false);
     }
   }
 
@@ -34071,9 +35527,25 @@ function buildCurrentTankCareSuggestions(now = Date.now()) {
 
 function claimDailyBonus() {
   const now = Date.now();
-  const summary = state.dailyBonus?.summary;
+  syncActiveDailyBonusState();
+  const tank = getCurrentTank();
+  const summary = getActiveDailyBonusSummary(tank);
   if (!state.dailyBonus?.available || !summary) {
     closeUtilityOverlay();
+    return;
+  }
+
+  const tankId = summary.tankId || tank?.id || "";
+  const claimedKey = tankId && summary.dayKey ? `${tankId}:${summary.dayKey}` : "";
+  if (claimedKey && state.dailyBonus.claimedByTankDay?.[claimedKey]) {
+    if (state.dailyBonus.summariesByTankId && tankId) {
+      delete state.dailyBonus.summariesByTankId[tankId];
+    }
+    syncActiveDailyBonusState();
+    closeUtilityOverlay();
+    saveState();
+    renderUi(now);
+    showToast("That daily recap was already claimed.");
     return;
   }
 
@@ -34081,13 +35553,27 @@ function claimDailyBonus() {
   if (reward > 0) {
     state.coins += reward;
   }
+  if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
+    state.dailyBonus.claimedByTankDay = {};
+  }
+  if (claimedKey) {
+    state.dailyBonus.claimedByTankDay[claimedKey] = true;
+  }
+  if (state.dailyBonus.summariesByTankId && tankId) {
+    delete state.dailyBonus.summariesByTankId[tankId];
+  }
   state.dailyBonus.available = false;
   state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
-  pushEvent(`Claimed a daily care bonus worth ${reward} ${pluralize("coin", reward)}.`, now);
+  syncActiveDailyBonusState();
+  const milestones = applyProgressMilestones(summary, now);
+  pushEvent(`Claimed a daily recap worth ${reward} ${pluralize("coin", reward)}.`, now, tank, { score: 1, type: "daily_recap", recapEligible: false });
+  playToolbarButtonSoundEffect("press");
+  playCoinSoundEffect();
   closeUtilityOverlay();
   saveState();
   renderUi(now);
-  showToast(`Daily bonus claimed. +${reward} coins.`);
+  const milestoneCoins = milestones.reduce((total, milestone) => total + (Number(milestone.reward) || 0), 0);
+  showToast(`Daily recap claimed. +${reward + milestoneCoins} coins.`);
 }
 
 function renderSettingsOverlay() {
@@ -34107,6 +35593,9 @@ function renderSettingsOverlay() {
   }
   if (dom.soundMuteToggleInput) {
     dom.soundMuteToggleInput.checked = uiSettings.soundMuted;
+  }
+  if (dom.uiMuteToggleInput) {
+    dom.uiMuteToggleInput.checked = uiSettings.uiSoundsMuted;
   }
   const uvLightQualitySection = dom.uvLightQualitySelect?.closest(".settings-section");
   if (dom.uvLightQualitySelect instanceof HTMLSelectElement) {
@@ -35135,12 +36624,14 @@ function renderFoodTray() {
   }
 
   const items = getFoodCatalog().filter((food) => (
-    Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
+    shouldShowFoodInStore(food)
+    && food.id !== "upgraded"
+    && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
   ));
   const dataKey = [
     runtime.foodTrayOpen ? "1" : "0",
     runtime.feedingModeFoodKey || "",
-    ...getFoodCatalog().map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`)
+    ...getFoodCatalog().filter((food) => shouldShowFoodInStore(food)).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`)
   ].join("|");
 
   if (shouldRebuildRenderSection("food-tray-data", dataKey)) {
@@ -35673,7 +37164,7 @@ function renderFishInspector(now) {
   const dead = isFishDead(fish);
   const beingConsumed = dead && isFishBeingConsumedByPiranhas(fish, now);
   const corpseLabel = dead ? getFishCorpseStateLabel(fish, now) : null;
-  const canBuyAnother = Boolean(baseSpecies && !dead && !inStorage && isFishSpeciesUnlocked(baseSpecies));
+  const canBuyAnother = Boolean(baseSpecies && !dead && !inStorage && isFishSpeciesShopUnlocked(baseSpecies));
   const purchaseCost = canBuyAnother ? getFishPurchaseCost(fish.speciesId) : 0;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
   const canSell = Boolean(baseSpecies) && !dead && !beingConsumed && !isFishJuvenile(fish);
@@ -35693,6 +37184,18 @@ function renderFishInspector(now) {
         ? corpseLabel
         : `${Math.round(comfort.value * 100)}% (${comfort.label})`
   );
+  if (dom.inspectorNeeds) {
+    const needsMarkup = inStorage || dead
+      ? `<span class="comfort-chip is-neutral">${inStorage ? "Stored" : "N/A"}</span>`
+      : renderComfortTagChips(getFishNeedsStatus(fish, getCurrentTank(), now), { type: "need" });
+    const activeConflicts = inStorage || dead
+      ? []
+      : getFishConflictStatus(fish, getCurrentTank(), now).filter((conflict) => conflict.active);
+    const conflictsMarkup = activeConflicts.length
+      ? `<span class="comfort-chip-label">Conflicts</span>${renderComfortTagChips(activeConflicts, { type: "conflict" })}`
+      : "";
+    setMarkupIfChanged("fish-inspector-needs", dom.inspectorNeeds, `${needsMarkup}${conflictsMarkup}`);
+  }
   setTextIfChanged(dom.inspectorAge, formatFishAge(fish.acquiredAt, now));
 
   const currentSlot = getCurrentMealSlot(now);
@@ -35852,25 +37355,27 @@ function renderDecorShop() {
   }
   const cardsMarkup = catalog
     .map((decor) => {
-      const affordable = !tutorialPreviewOnly && state.coins >= decor.cost;
+      const locked = !isDecorUnlocked(decor);
+      const affordable = !locked && !tutorialPreviewOnly && state.coins >= decor.cost;
       const owned = state.decorInventory[decor.key] || 0;
       const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
       const isCustomHideUpload = isCustomHideShopKey(decor.key);
+      const statusLabel = locked ? `Unlocks at ${getDecorUnlockRequirementLabel(decor)}` : `${owned} in storage`;
       return `
-        <article class="shop-card">
-          <img class="shop-thumb" src="${decor.path}" alt="${decor.name}" />
+        <article class="shop-card ${locked ? "is-locked" : ""}">
+          <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${decor.path}" alt="${decor.name}" />
           <div class="shop-meta">
             <div>
               <strong>${decor.name}</strong>
               ${renderShopThemePill(decor.theme)}
-              <div class="fish-meta">${isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : `${owned} in storage`}</div>
+              <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
             </div>
             <div class="fish-meta"></div>
           </div>
           <div class="shop-meta">
             <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
             <button class="buy-button" data-buy-decor="${decor.key}" ${(affordable || tutorialPreviewOnly) ? "" : "disabled"} ${tutorialPreviewOnly ? "disabled" : ""}>
-              ${tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
+              ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
             </button>
           </div>
         </article>
@@ -36863,6 +38368,12 @@ function renderControls(now) {
   dom.deleteAllButton.hidden = !debugMode;
   dom.debugGravelPebbleButton.hidden = !debugMode;
   dom.debugCaveButton.hidden = !debugMode;
+  if (dom.debugDailyRecapButton) {
+    dom.debugDailyRecapButton.hidden = !debugMode;
+  }
+  if (dom.debugFishBehaviorLogButton) {
+    dom.debugFishBehaviorLogButton.hidden = !debugMode;
+  }
 
   dom.resetMealsButton.disabled = !debugMode;
   dom.debugDispenserButton.disabled = !debugMode || !hasAutoDispenserInstalled();
@@ -36873,6 +38384,12 @@ function renderControls(now) {
   dom.debugGravelPebbleButton.disabled = !debugMode || !hasGravelPebbleCandidate;
   dom.debugDamageFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
   dom.debugBreedButton.disabled = !debugMode || (!hasDebugBreedingPairCandidate(now) && !runtime.debugBreedingSequence);
+  if (dom.debugDailyRecapButton) {
+    dom.debugDailyRecapButton.disabled = !debugMode || !getCurrentTank();
+  }
+  if (dom.debugFishBehaviorLogButton) {
+    dom.debugFishBehaviorLogButton.disabled = !debugMode || runtime.debugFishBehaviorLog.length === 0;
+  }
   dom.debugBreedButton.classList.toggle("is-active", Boolean(runtime.debugBreedingSequence));
   dom.debugBreedButton.title = runtime.debugBreedingSequence
     ? "Debug: Baby Sequence Running"
@@ -37117,6 +38634,7 @@ function animationLoop(frameTime) {
   updateSplashBursts(now);
   updateGlassTapEffects(now);
   updateFishMotion(now, deltaSeconds);
+  syncDebugFishBehaviorBroadcast(now);
   updateWaterLifeEffects(now, deltaSeconds);
   renderTank(now);
   updateSelectedDecorActionButtons();
@@ -37433,6 +38951,36 @@ function setSoundMuted(value, options = {}) {
   }
   if (shouldShowToast) {
     showToast(nextSettings.soundMuted ? "Sounds muted." : "Sounds on.");
+  }
+  return true;
+}
+
+function setUiSoundsMuted(value, options = {}) {
+  if (!state) {
+    return false;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    uiSoundsMuted: Boolean(value)
+  });
+  if (currentSettings.uiSoundsMuted === nextSettings.uiSoundsMuted) {
+    return false;
+  }
+
+  const shouldSave = options.save !== false;
+  const shouldRender = options.render !== false;
+  const shouldShowToast = options.showToast !== false;
+  state.uiSettings = nextSettings;
+  if (shouldSave) {
+    saveState();
+  }
+  if (shouldRender) {
+    renderUi(Date.now(), { full: false });
+  }
+  if (shouldShowToast) {
+    showToast(nextSettings.uiSoundsMuted ? "UI sounds muted." : "UI sounds on.");
   }
   return true;
 }
@@ -38037,7 +39585,15 @@ function infectFishWithZombieBite(target, attacker, now = Date.now()) {
   target.zombieReviveAt = null;
   target.zombieReviveSourceId = null;
   makeFishScurryFromAttack(target, attacker, now);
-  pushEvent(`${attacker.name} bit ${target.name} with a zombie bite.`, now);
+  attacker.lastAteAt = now;
+  const mealCoins = recordFishMealCredit(attacker, now);
+  applyFishMealWindowFoodIntake(attacker, now, { satiate: false });
+  pushEvent(
+    mealCoins > 0
+      ? `${attacker.name} bit ${target.name} with a zombie bite and earned ${mealCoins} ${pluralize("coin", mealCoins)}.`
+      : `${attacker.name} bit ${target.name} with a zombie bite.`,
+    now
+  );
   return true;
 }
 
@@ -41217,7 +42773,8 @@ function getTintedFoodPelletSprite(appearance) {
 }
 
 function drawProceduralFoodPelletPiece(x, y, pellet, appearance) {
-  const scale = clamp(Number(pellet?.scale) || 1, 0.75, 1.35) * getViewportStableAssetScale();
+  const brineFood = isBrineShrimpFood(pellet?.foodKey);
+  const scale = clamp(Number(pellet?.scale) || 1, brineFood ? 0.12 : 0.75, 1.35) * getViewportStableAssetScale();
   const width = 11.6 * scale;
   const height = 6.6 * scale;
   const accentWidth = width * 0.65;
@@ -41253,7 +42810,8 @@ function drawFoodPelletPiece(x, y, pellet, appearance) {
     return;
   }
 
-  const scale = clamp(Number(pellet?.scale) || 1, 0.75, 1.35) * getViewportStableAssetScale();
+  const brineFood = isBrineShrimpFood(pellet?.foodKey);
+  const scale = clamp(Number(pellet?.scale) || 1, brineFood ? 0.12 : 0.75, 1.35) * getViewportStableAssetScale();
   const size = 9.8 * scale;
   const drawWidth = size;
   const drawHeight = size * (sprite.height / Math.max(1, sprite.width));
@@ -43900,6 +45458,103 @@ function drawFishPebbleTosses(now) {
   }
 }
 
+function drawFishComfortSparkles(pose, width, height, now = Date.now()) {
+  const stableScale = getViewportStableAssetScale();
+  const sparkleCount = 7;
+  tankContext.save();
+  tankContext.translate(pose.x + pose.swayX, pose.y);
+  tankContext.lineWidth = Math.max(1, stableScale * 1.4);
+  for (let index = 0; index < sparkleCount; index += 1) {
+    const angle = (now / 850 + index * 2.399) % (Math.PI * 2);
+    const orbitX = Math.cos(angle) * width * randomBetweenWith(mulberry32(index + 42), 0.28, 0.55);
+    const orbitY = Math.sin(angle * 1.3) * height * randomBetweenWith(mulberry32(index + 84), 0.22, 0.48);
+    const pulse = 0.55 + 0.45 * Math.sin(now / 260 + index);
+    const size = stableScale * (3.5 + pulse * 3);
+    tankContext.globalAlpha = 0.36 + pulse * 0.42;
+    tankContext.strokeStyle = "rgba(255, 245, 151, 0.96)";
+    tankContext.beginPath();
+    tankContext.moveTo(orbitX - size, orbitY);
+    tankContext.lineTo(orbitX + size, orbitY);
+    tankContext.moveTo(orbitX, orbitY - size);
+    tankContext.lineTo(orbitX, orbitY + size);
+    tankContext.stroke();
+  }
+  tankContext.restore();
+}
+
+function fitDebugFishBehaviorLine(text, maxWidth) {
+  const value = String(text || "");
+  if (tankContext.measureText(value).width <= maxWidth) {
+    return value;
+  }
+
+  const suffix = "...";
+  let end = value.length;
+  while (end > 3 && tankContext.measureText(`${value.slice(0, end)}${suffix}`).width > maxWidth) {
+    end -= 1;
+  }
+  return `${value.slice(0, Math.max(1, end))}${suffix}`;
+}
+
+function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now()) {
+  if (!isDebugModeEnabled()) {
+    return;
+  }
+
+  const snapshot = getDebugFishBehaviorSnapshot(fish, species, now);
+  if (!snapshot?.labelLines?.length) {
+    return;
+  }
+
+  const fontSize = Math.max(8, 10 * stableScale);
+  const lineHeight = Math.ceil(fontSize * 1.25);
+  const paddingX = 8 * stableScale;
+  const paddingY = 5 * stableScale;
+  const maxTextWidth = 220 * stableScale;
+
+  tankContext.save();
+  tankContext.font = `700 ${fontSize}px Trebuchet MS, sans-serif`;
+  tankContext.textAlign = "center";
+  tankContext.textBaseline = "middle";
+
+  const lines = snapshot.labelLines
+    .filter((line) => String(line || "").trim())
+    .slice(0, 4)
+    .map((line) => fitDebugFishBehaviorLine(line, maxTextWidth));
+  const textWidth = Math.max(...lines.map((line) => tankContext.measureText(line).width), 1);
+  const labelWidth = Math.ceil(textWidth + paddingX * 2);
+  const labelHeight = Math.ceil(lines.length * lineHeight + paddingY * 2);
+  const centerX = clamp(
+    pose.x + pose.swayX,
+    GLASS_MARGIN_X + labelWidth / 2,
+    TANK_WIDTH - GLASS_MARGIN_X - labelWidth / 2
+  );
+  const desiredY = pose.y - height * 0.72 - labelHeight / 2 - 8 * stableScale;
+  const centerY = Math.max(topFrameBottomY + labelHeight / 2 + 3 * stableScale, desiredY);
+  const left = centerX - labelWidth / 2;
+  const top = centerY - labelHeight / 2;
+
+  tankContext.fillStyle = "rgba(4, 16, 24, 0.78)";
+  tankContext.strokeStyle = "rgba(255, 220, 92, 0.72)";
+  tankContext.lineWidth = Math.max(1, stableScale);
+  tankContext.beginPath();
+  tankContext.roundRect(left, top, labelWidth, labelHeight, 7 * stableScale);
+  tankContext.fill();
+  tankContext.stroke();
+
+  lines.forEach((line, index) => {
+    tankContext.fillStyle = index === 0
+      ? "rgba(255, 235, 150, 0.98)"
+      : "rgba(232, 250, 255, 0.94)";
+    tankContext.fillText(
+      line,
+      centerX,
+      top + paddingY + lineHeight * index + lineHeight / 2
+    );
+  });
+  tankContext.restore();
+}
+
 function drawFish(now, layer = null, options = {}) {
   if (!state.fish.length) {
     return;
@@ -43967,6 +45622,10 @@ function drawFish(now, layer = null, options = {}) {
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
     tankContext.restore();
 
+    if (!pose.isDead && getFishComfort(fish, now).value >= 0.95) {
+      drawFishComfortSparkles(pose, width, height, now);
+    }
+
     if ((!pose.isBeingConsumed && pose.isDead) || fish.healthUnits === 1) {
       const statusY = Math.max(topFrameBottomY + 12 * stableScale, pose.y - height * 0.72);
       tankContext.save();
@@ -43980,6 +45639,8 @@ function drawFish(now, layer = null, options = {}) {
       );
       tankContext.restore();
     }
+
+    drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
 
     if (runtime.selectedFishId === fish.id) {
       tankContext.save();
@@ -45770,6 +47431,31 @@ function getUndeadComfortPenalty(fish) {
   return clamp(undeadNeighbors * UNDEAD_COMFORT_PENALTY, 0, MAX_UNDEAD_COMFORT_PENALTY);
 }
 
+function updateComfortHistoryEvents(now = Date.now()) {
+  let changed = false;
+  const dayKey = getLocalDayKey(now);
+  for (const fish of getLivingTankFish()) {
+    const comfort = getFishComfort(fish, now);
+    if (comfort.value <= 0.4) {
+      if (!Number.isFinite(Number(fish.veryLowComfortStartedAt)) || Number(fish.veryLowComfortStartedAt) <= 0) {
+        fish.veryLowComfortStartedAt = now;
+        changed = true;
+      } else if (
+        now - Number(fish.veryLowComfortStartedAt) >= COMFORT_VERY_LOW_EVENT_MS
+        && fish.veryLowComfortEventDayKey !== dayKey
+      ) {
+        fish.veryLowComfortEventDayKey = dayKey;
+        pushEvent(`${fish.name} is very uncomfortable.`, now, getCurrentTank(), { score: -1, type: "comfort", fishId: fish.id });
+        changed = true;
+      }
+    } else if (Number(fish.veryLowComfortStartedAt) > 0) {
+      fish.veryLowComfortStartedAt = 0;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 function getFishComfort(fish, now) {
   if (isFishDead(fish)) {
     return { value: 0, label: "Deceased" };
@@ -45788,27 +47474,46 @@ function getFishComfort(fish, now) {
     return { value: 0, label: "Critical" };
   }
 
-  const cleanlinessScore = clamp(1 - dirtiness * 1.08, 0, 1);
-  const healthScore = getFishHealthRatio(fish);
-  const servedToday = getTodaysMealSlots(now).filter((slot) => isMealSlotServed(slot)).length / 2;
-  const decorScore = clamp(state.placedDecor.length / Math.max(1, state.fish.length + 1), 0, 1);
-  const filterBoost = getFilterProfile().comfortBoost;
+  const cleanliness = clamp(1 - dirtiness, 0, 1);
+  const cleanlinessPoints = cleanliness >= 0.9
+    ? COMFORT_COMPONENTS.cleanliness
+    : (cleanliness / 0.9) * COMFORT_COMPONENTS.cleanliness;
+  const lastAteAt = Number(fish.lastAteAt) || 0;
+  const currentSlot = getCurrentMealSlot(now);
+  const hasRecentMeal = lastAteAt > 0 && now - lastAteAt <= COMFORT_MEAL_WINDOW_MS;
+  const mealSatisfied = hasRecentMeal || hasFishEatenInSlot(fish, currentSlot);
+  const mealPoints = mealSatisfied ? COMFORT_COMPONENTS.meal : 0;
+  const mealBoost = lastAteAt > 0 && now - lastAteAt <= COMFORT_MEALTIME_BOOST_MS
+    ? COMFORT_COMPONENTS.mealBoost
+    : 0;
+  const needsStatus = getFishNeedsStatus(fish, getCurrentTank(), now);
+  const needsPoints = needsStatus.reduce((total, need) => total + (need.met ? COMFORT_COMPONENTS.needs / Math.max(1, needsStatus.length) : 0), 0);
+  const healthPoints = getFishHealthRatio(fish) * COMFORT_COMPONENTS.health;
+  const spacePoints = getTankSpaceComfortPoints(getCurrentTank());
+  const activeConflicts = getFishConflictStatus(fish, getCurrentTank(), now).filter((conflict) => conflict.active);
+  const conflictPenalty = Math.min(COMFORT_COMPONENTS.maxConflictPenalty, activeConflicts.length * COMFORT_COMPONENTS.conflictPenalty);
   const undeadPenalty = getUndeadComfortPenalty(fish);
   const comfortValue = clamp(
-    healthScore * 0.38
-    + cleanlinessScore * 0.34
-    + servedToday * 0.12
-    + decorScore * 0.08
-    + filterBoost
+    (
+      cleanlinessPoints
+      + mealPoints
+      + needsPoints
+      + healthPoints
+      + spacePoints
+      + mealBoost
+      - conflictPenalty
+    ) / 100
     - undeadPenalty,
     0,
     1
   );
-  const label = comfortValue >= 0.84
+  const label = comfortValue >= 0.95
+    ? "Sparkling"
+    : comfortValue >= 0.84
     ? "Cozy"
-    : comfortValue >= 0.64
+    : comfortValue >= 0.65
       ? "Content"
-      : comfortValue >= 0.4
+      : comfortValue >= 0.41
         ? "Uneasy"
         : comfortValue >= 0.16
           ? "Stressed"
@@ -47432,6 +49137,14 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
     fish.caveSeatId = null;
   };
   const configuredPoints = Boolean(plan.configuredPoints);
+  const tryConfiguredSeatReplacement = () => {
+    if (!configuredPoints) {
+      return false;
+    }
+
+    const replacementSeat = pickAvailableCaveSeatAssignment(decorItem, fish, species, now, currentPoint);
+    return replacementSeat ? beginSeatMove(replacementSeat) : false;
+  };
   const beginRoam = () => {
     if (configuredPoints) {
       return beginFishNormalCaveExit(fish, plan, mouthNode, now);
@@ -47539,6 +49252,9 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
       clearNormalCavePathState(plan);
       clearSeatReservation();
       plan.normalInsideMode = null;
+      if (tryConfiguredSeatReplacement()) {
+        return true;
+      }
       return chooseNextAction();
     }
 
@@ -47546,6 +49262,9 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
       clearNormalCavePathState(plan);
       clearSeatReservation();
       plan.normalInsideMode = null;
+      if (tryConfiguredSeatReplacement()) {
+        return true;
+      }
       return chooseNextAction();
     }
 
@@ -47582,6 +49301,9 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
       clearNormalCavePathState(plan);
       clearSeatReservation();
       plan.normalInsideMode = null;
+      if (tryConfiguredSeatReplacement()) {
+        return true;
+      }
       return chooseNextAction();
     }
 
@@ -47589,6 +49311,9 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
       clearNormalCavePathState(plan);
       clearSeatReservation();
       plan.normalInsideMode = null;
+      if (tryConfiguredSeatReplacement()) {
+        return true;
+      }
       return chooseNextAction();
     }
 

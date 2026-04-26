@@ -13,17 +13,21 @@
       "pelletAccentColor": "#9B6D36",
       "pelletHighlightColor": "#D8B37A"
     },
-    "upgraded": {
-      "id": "upgraded",
-      "name": "Food+",
-      "description": "Cleaner pellets that help limit dirtiness.",
-      "bottlePellets": 99,
+    "brineShrimpFood": {
+      "id": "brineShrimpFood",
+      "name": "Brine Shrimp Food",
+      "description": "Tiny food specks for brine shrimp. Cannot be loaded into the dispenser.",
+      "bottlePellets": 20,
       "cost": 10,
       "image": "upgraded-food.png",
       "dropStyle": "pellet",
-      "pelletColor": "#355C2C",
-      "pelletAccentColor": "#547F42",
-      "pelletHighlightColor": "#98B57A"
+      "pelletColor": "#B58A36",
+      "pelletAccentColor": "#D8B35A",
+      "pelletHighlightColor": "#FFF1B8",
+      "dispenserAllowed": false,
+      "brineFood": true,
+      "piecesPerDrop": 10,
+      "pelletScale": 0.28
     },
     "frisky": {
       "id": "frisky",

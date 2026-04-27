@@ -8,47 +8,34 @@
       "sortOrder": 0
     },
     {
-      "key": "Classic_Sand.png",
-      "name": "Classic Sand",
-      "cost": 0,
-      "defaultUnlocked": true,
-      "sortOrder": 1
-    },
-    {
       "key": "Volcanic_Reef.png",
       "name": "Volcanic Reef",
       "cost": 10,
-      "sortOrder": 2
+      "sortOrder": 1
     },
     {
       "key": "Sunken_Ship.png",
       "name": "Sunken Ship",
       "cost": 10,
-      "sortOrder": 3
+      "sortOrder": 2
     },
     {
       "key": "Underwater_City.png",
       "name": "Underwater City",
       "cost": 10,
-      "sortOrder": 4
+      "sortOrder": 3
     },
     {
       "key": "Sunken_UFO.png",
       "name": "Sunken UFO",
       "cost": 10,
-      "sortOrder": 5
+      "sortOrder": 4
     },
     {
       "key": "Aquatic_Ambience.png",
       "name": "Aquatic Ambience",
       "cost": 10,
-      "sortOrder": 6
-    },
-    {
-      "key": "Japanese_City.png",
-      "name": "Japanese City",
-      "cost": 10,
-      "sortOrder": 7
+      "sortOrder": 5
     }
   ]
 }

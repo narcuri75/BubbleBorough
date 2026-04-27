@@ -5,14 +5,6 @@
                             "path":  "assets/backgrounds/Aquatic_Ambience.png?v=639111940678243852"
                         },
                         {
-                            "key":  "Classic_Sand.png",
-                            "path":  "assets/backgrounds/Classic_Sand.png?v=639096815670143390"
-                        },
-                        {
-                            "key":  "Japanese_City.png",
-                            "path":  "assets/backgrounds/Japanese_City.png?v=639111959896732670"
-                        },
-                        {
                             "key":  "none.png",
                             "path":  "assets/backgrounds/none.png?v=639104303250848710"
                         },
@@ -547,14 +539,10 @@
                  }
              ],
     "gravel":  [
-                   {
-                       "key":  "classic-sand.png",
-                       "path":  "assets/gravel/classic-sand.png?v=639100041937124434"
-                   },
-                   {
-                       "key":  "Gravel_L1.png",
-                       "path":  "assets/gravel/Gravel_L1.png?v=639104361930810315"
-                   },
+                  {
+                      "key":  "Gravel_L1.png",
+                      "path":  "assets/gravel/Gravel_L1.png?v=639104361930810315"
+                  },
                    {
                        "key":  "Gravel_L2.png",
                        "path":  "assets/gravel/Gravel_L2.png?v=639104362068756617"

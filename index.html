@@ -13,9 +13,9 @@
   <title>Bubble Borough</title>
   <link rel="manifest" href="./public/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
-  <link rel="icon" type="image/png" href="assets/misc/favicon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260425f" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260427g" />
 </head>
 
 <body>
@@ -55,11 +55,12 @@
                   <strong id="coinCount">0</strong>
                 </article>
               </div>
-              <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Daily recap ready"
-                aria-label="Open daily recap">
-                <img class="daily-bonus-bell-icon" src="./assets/icons/bell.png" alt="" aria-hidden="true" />
-              </button>
             </section>
+
+            <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Daily recap ready"
+              aria-label="Open daily recap">
+              <img class="daily-bonus-bell-icon" src="./assets/icons/bell.png" alt="" aria-hidden="true" />
+            </button>
 
             <aside id="editQuickRef" class="edit-quick-ref" hidden aria-label="Edit mode quick reference">
               <div id="editQuickRefCard" class="edit-quick-ref-card">
@@ -286,21 +287,6 @@
                       </div>
                     </section>
 
-                    <section class="info-card full-span collapsible-section" data-collapsible-section="decorGravel">
-                      <div class="collapsible-header">
-                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorGravel"
-                          aria-expanded="true">
-                          <span class="collapsible-title">Sand</span>
-                          <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
-                        </button>
-                      </div>
-                      <div data-collapsible-body>
-                        <div class="compact-heading">
-                        </div>
-                        <div id="gravelAssetList" class="background-grid"></div>
-                      </div>
-                    </section>
-
                     <section class="info-card full-span collapsible-section"
                       data-collapsible-section="decorCustomGravel">
                       <div class="collapsible-header">
@@ -329,16 +315,12 @@
               <div id="placementHint" class="placement-hint"></div>
             </div>
 
+            <section id="careTaskPane" class="care-task-pane" hidden aria-live="polite">
+              <div class="care-task-heading">Tasks:</div>
+              <div id="careTaskList" class="care-task-list"></div>
+            </section>
+
             <div id="toolCursor" class="tool-cursor" hidden aria-hidden="true"></div>
-            <div id="selectedDecorScaleControls" class="decor-side-control-panel decor-size-controls" hidden
-              aria-label="Selected decor size">
-              <span class="decor-side-control-title">Size</span>
-              <button id="selectedDecorScaleUpButton" class="decor-side-control-button" type="button"
-                title="Increase Size" aria-label="Increase Decor Size">+</button>
-              <span id="selectedDecorSizeValue" class="decor-side-control-value">100%</span>
-              <button id="selectedDecorScaleDownButton" class="decor-side-control-button" type="button"
-                title="Decrease Size" aria-label="Decrease Decor Size">-</button>
-            </div>
             <div id="selectedDecorLayerControls" class="decor-side-control-panel decor-layer-controls" hidden
               aria-label="Selected decor layer">
               <span class="decor-side-control-title">Layer</span>
@@ -358,6 +340,17 @@
               <button id="selectedDecorSettingsButton" class="decor-action-float-button settings-decor-float-button"
                 type="button" title="Decor Settings" aria-label="Decor Settings">(S)ETTINGS</button>
             </div>
+            <div id="selectedDecorResizeHandles" class="decor-resize-handles" hidden aria-hidden="true">
+              <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="nw"
+                title="Resize from top left" aria-label="Resize decor from top left"></button>
+              <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="ne"
+                title="Resize from top right" aria-label="Resize decor from top right"></button>
+              <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="sw"
+                title="Resize from bottom left" aria-label="Resize decor from bottom left"></button>
+              <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="se"
+                title="Resize from bottom right" aria-label="Resize decor from bottom right"></button>
+            </div>
+            <div id="selectedDecorResizeIndicator" class="decor-resize-indicator" hidden>100%</div>
 
             <section id="storeOverlay" class="store-overlay" hidden aria-label="Store">
               <div class="store-panel">
@@ -638,15 +631,9 @@
                   </section>
 
                   <section class="settings-section">
-                    <h3>Gravel Colors</h3>
-                    <p class="settings-section-note">Switch between sand and customizable gravel colors for the tank
-                      floor.</p>
+                    <h3>Gravel</h3>
+                    <p class="settings-section-note">Customize the colored gravel for the tank floor.</p>
                     <div id="equipmentCustomGravelPanel"></div>
-                    <div class="settings-subsection-heading">
-                      <h4>Sand</h4>
-                      <p>Choose the sand texture to use whenever sand is turned on.</p>
-                    </div>
-                    <div id="equipmentGravelAssetList" class="background-grid"></div>
                   </section>
 
                   <section id="equipmentFilterSection" class="settings-section">
@@ -667,8 +654,7 @@
               </div>
             </section>
 
-            <section id="introTutorialOverlay" class="tutorial-overlay" hidden aria-label="Tutorial" aria-modal="true"
-              role="dialog">
+            <section id="introTutorialOverlay" class="tutorial-overlay" hidden aria-label="Tutorial" role="region">
               <div id="introTutorialSplash" class="tutorial-splash" hidden aria-hidden="true">
                 <div class="loading-overlay-content tutorial-splash-content">
                   <img class="loading-overlay-logo tutorial-splash-logo" src="assets/misc/bb_logo.png"
@@ -683,8 +669,8 @@
                 </button>
 
                 <div class="tutorial-copy">
-                  <p id="introTutorialKicker" class="tutorial-kicker">Tutorial</p>
-                  <div id="introTutorialBody" class="tutorial-body"></div>
+                  <p id="introTutorialKicker" class="tutorial-kicker">Tasks:</p>
+                  <div id="introTutorialBody" class="tutorial-body" aria-live="polite"></div>
                 </div>
 
                 <div id="introTutorialActions" class="tutorial-actions"></div>
@@ -739,7 +725,7 @@
               </button>
             </section>
 
-            <div class="tank-bottom-dock">
+            <div class="tank-bottom-dock toolbar-fast-tooltip-experiment">
               <button id="toolbarTab" class="toolbar-tab" type="button" title="Hide Toolbar"
                 aria-label="Hide Toolbar">&gt;</button>
 
@@ -748,6 +734,12 @@
               <button id="openManagementButton" class="dock-button management" type="button" title="Tank Info"
                 aria-label="Tank Info">
                 <img class="dock-button-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="careTaskPaneButton" class="dock-button care-tasks" type="button" title="Tasks"
+                aria-label="Tasks" aria-pressed="false">
+                <img class="dock-button-icon" src="assets/icons/tasks.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -855,8 +847,8 @@
               <button id="maxDirtButton" class="dock-button debug" type="button"
                 title="Debug: Increase Dirtiness by 10%" aria-label="Debug: Increase Dirtiness by 10%">💩</button>
 
-              <button id="deleteAllButton" class="dock-button debug" type="button" title="Debug: Delete Fish and Decor"
-                aria-label="Debug: Delete Fish and Decor">🗑️</button>
+              <button id="debugGravelDigButton" class="dock-button debug" type="button" title="Debug: Force Gravel Dig"
+                aria-label="Debug: Force Gravel Dig">🕳️</button>
 
               <button id="debugGravelPebbleButton" class="dock-button debug" type="button"
                 title="Debug: Force Gravel Pebble Toss" aria-label="Debug: Force Gravel Pebble Toss">🪨</button>
@@ -870,6 +862,7 @@
               <!--^^^-->
 
             </div>
+            <div id="toolbarFastTooltip" class="toolbar-fast-tooltip" role="tooltip" hidden></div>
 
             <section id="fishInspector" class="fish-inspector" hidden>
               <div class="fish-inspector-card">
@@ -971,7 +964,7 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-  <script type="module" src="./public/app.js?v=20260425ab"></script>
+  <script type="module" src="./public/app.js?v=20260427g"></script>
 </body>
 
 </html>

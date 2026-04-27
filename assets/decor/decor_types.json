@@ -2,9 +2,9 @@
     "decor": [
       {
         "file": "seaweed-bunch.png",
-        "name": "Green Seaweed Bunch",
+        "name": "Seaweed Bunch",
         "cost": 2,
-        "width": 175,
+        "width": 298,
         "defaultScale": 1,
         "theme": "Regular"
       },
@@ -12,23 +12,23 @@
         "file": "mushroomcoral_seaweed.png",
         "name": "Mushroom Coral",
         "cost": 15,
-        "width": 300,
+        "width": 510,
         "defaultScale": 1,
         "theme": "Regular"
       },
       {
         "file": "floatingseaweed_1.png",
-        "name": "Green Floating Seaweed",
+        "name": "Floating Seaweed",
         "cost": 4,
-        "width": 200,
+        "width": 220,
         "defaultScale": 1,
         "theme": "Regular"
       },
       {
         "file": "seaweed_1.png",
-        "name": "Green Seaweed",
+        "name": "Seaweed",
         "cost": 4,
-        "width": 200,
+        "width": 280,
         "defaultScale": 1,
         "theme": "Regular"
       },
@@ -36,7 +36,7 @@
         "file": "anubia-rock_seaweed.png",
         "name": "Anubias Rock",
         "cost": 4,
-        "width": 150,
+        "width": 495,
         "defaultScale": 1,
         "theme": "Regular"
       },
@@ -44,7 +44,7 @@
         "file": "rock-arch.png",
         "name": "Rock Arch",
         "cost": 8,
-        "width": 350,
+        "width": 595,
         "defaultScale": 1,
         "theme": "Regular"
       },
@@ -52,7 +52,7 @@
         "file": "moss-bridge.png",
         "name": "Moss Bridge",
         "cost": 10,
-        "width": 450,
+        "width": 698,
         "defaultScale": 1,
         "theme": "Regular"
       },
@@ -60,7 +60,7 @@
         "file": "driftwood-root.png",
         "name": "Driftwood Root",
         "cost": 10,
-        "width": 400,
+        "width": 660,
         "defaultScale": 1,
         "theme": "Regular"
       },
@@ -68,7 +68,7 @@
         "file": "slate-cave.png",
         "name": "Slate Cave",
         "cost": 12,
-        "width": 400,
+        "width": 620,
         "defaultScale": 1,
         "caveSettings": {
           "entryCount": 1,
@@ -136,7 +136,7 @@
         "file": "Shipwreck.png",
         "name": "Shipwreck",
         "cost": 15,
-        "width": 440,
+        "width": 616,
         "defaultScale": 1,
         "fishBehavior": {
           "hangout": "hide"
@@ -145,9 +145,9 @@
       },
       {
         "file": "Castle-Cave.png",
-        "name": "Castle Cave",
+        "name": "Castle Cave 2",
         "cost": 16,
-        "width": 500,
+        "width": 600,
         "defaultScale": 1,
         "caveSettings": {
           "entryCount": 3,
@@ -253,7 +253,7 @@
         "file": "Plane-wreck.png",
         "name": "Plane Crash",
         "cost": 12,
-        "width": 350,
+        "width": 613,
         "defaultScale": 1,
         "fishBehavior": {
           "hangout": "hide"
@@ -263,9 +263,9 @@
 
       {
         "file": "blue_castle_cave.png",
-        "name": "Blue Castle Cave",
+        "name": "Castle Cave 1",
         "cost": 16,
-        "width": 350,
+        "width": 595,
         "defaultScale": 1,
         "caveSettings": {
           "entryCount": 3,
@@ -315,7 +315,7 @@
         "file": "meteor_cave.png",
         "name": "Meteor Cave",
         "cost": 16,
-        "width": 450,
+        "width": 585,
         "defaultScale": 1,
         "caveSettings": {
           "entryCount": 1,
@@ -349,7 +349,7 @@
         "file": "driftwood.png",
         "name": "Driftwood",
         "cost": 10,
-        "width": 450,
+        "width": 675,
         "defaultScale": 1,
         "theme": "Regular"
       },
@@ -357,7 +357,7 @@
         "file": "fishing_lure.png",
         "name": "Fishing Lure",
         "cost": 6,
-        "width": 150,
+        "width": 255,
         "defaultScale": 1,
         "fishBehavior": {
           "hangout": "lure",
@@ -489,7 +489,7 @@
         "file": "volcano-1_bubbler.png",
         "name": "Volcano Bubbler 1",
         "cost": 16,
-        "width": 260,
+        "width": 390,
         "defaultScale": 1,
         "bubbler": {
           "spoutQty": 1,
@@ -515,7 +515,7 @@
         "file": "volcano-2_bubbler.png",
         "name": "Volcano Bubbler 2",
         "cost": 18,
-        "width": 300,
+        "width": 375,
         "defaultScale": 1,
         "bubbler": {
           "spoutQty": 2,
@@ -554,7 +554,7 @@
         "file": "treasure-chest_bubbler.png",
         "name": "Treasure Chest Bubbler",
         "cost": 8,
-        "width": 150,
+        "width": 233,
         "defaultScale": 1,
         "fishBehavior": {
           "hangout": [
@@ -586,7 +586,7 @@
         "name": "Floating Swamp Moss",
         "theme": "Spooky",
         "cost": 5,
-        "width": 300,
+        "width": 510,
         "defaultScale": 1
       }
     ]

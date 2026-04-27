@@ -1,5 +1,21 @@
 ﻿const STORAGE_KEY = "bubble-borough-save-v1";
 const SAVE_FILE_FORMAT = "bubble-borough-save";
+import {
+  ZOMBIE_SKELETON_BEHAVIOR_CONFIG,
+  ZOMBIE_SKELETON_COMFORT_PROFILES,
+  ZOMBIE_SKELETON_FEATURE_DEFAULT_ENABLED,
+  ZOMBIE_SKELETON_FISH_CATALOG_PATH,
+  ZOMBIE_SKELETON_PROGRESSION_UNLOCKS,
+  canZombieSkeletonPassAttackTarget,
+  canZombieSkeletonUsePassAttack,
+  getZombieSkeletonEffectiveBehavior,
+  isZombieSkeletonAssetFile,
+  isZombieSkeletonCatalogSpecies,
+  isZombieSkeletonStage,
+  isZombieSkeletonUndeadType,
+  mergeZombieSkeletonStageAssets,
+  usesZombieSkeletonHunterBehavior
+} from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
 const STATE_VERSION = 36;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
@@ -21,49 +37,47 @@ const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
 ]);
 let appConfig = DEFAULT_APP_CONFIG;
 const DEBUG_MODE = false;
+// Toggle this to keep zombie/skeleton fish behavior and assets out of the main catalog.
+const ZOMBIE_SKELETON_BEHAVIOR_ENABLED = ZOMBIE_SKELETON_FEATURE_DEFAULT_ENABLED;
 const DEBUG_FISH_BEHAVIOR_LOG_LIMIT = 600;
 const TUTORIAL_MODE_DISABLED = "disabled";
 const TUTORIAL_MODE_GUIDED = "guided-live";
 const TUTORIAL_MODE_INFO_ONLY = "info-only";
 const TUTORIAL_STAGE_SPLASH = "splash";
-const TUTORIAL_STAGE_WELCOME = "welcome";
-const TUTORIAL_STAGE_FISH_STORE = "fish-store";
-const TUTORIAL_STAGE_FISH_SETTLE = "fish-settle";
-const TUTORIAL_STAGE_FISH_ADDED = "fish-added";
-const TUTORIAL_STAGE_DECOR_STORE = "decor-store";
-const TUTORIAL_STAGE_DECOR_STORAGE = "decor-storage";
-const TUTORIAL_STAGE_DECOR_PLACE_HINT = "decor-place-hint";
-const TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS = "decor-place-instructions";
-const TUTORIAL_STAGE_DECOR_PLACE = "decor-place";
-const TUTORIAL_STAGE_DECOR_CLOSE = "decor-close";
-const TUTORIAL_STAGE_DECOR_OBSERVE = "decor-observe";
-const TUTORIAL_STAGE_FOOD_INTRO = "food-intro";
-const TUTORIAL_STAGE_FOOD_FEED = "food-feed";
-const TUTORIAL_STAGE_FOOD_SETTLE = "food-settle";
-const TUTORIAL_STAGE_TANK_SUMMARY = "tank-summary";
-const TUTORIAL_STAGE_DISPLAY = "display";
-const TUTORIAL_STAGE_FEATURES = "features";
-const TUTORIAL_STAGE_POOP_WATCH = "poop-watch";
-const TUTORIAL_STAGE_CLEAN_INTRO = "clean-intro";
-const TUTORIAL_STAGE_CLEAN = "clean";
-const TUTORIAL_STAGE_COMPLETE = "complete";
+const TUTORIAL_STAGE_ADOPT_FISH = "adopt-fish";
+const TUTORIAL_STAGE_ADOPT_FISH_DONE = "adopt-fish-done";
+const TUTORIAL_STAGE_PLACE_DECORATION = "place-decoration";
+const TUTORIAL_STAGE_PLACE_DECORATION_DONE = "place-decoration-done";
+const TUTORIAL_STAGE_FEED_FISH = "feed-fish";
+const TUTORIAL_STAGE_FEED_FISH_DONE = "feed-fish-done";
+const TUTORIAL_STAGE_CLEAN_TANK = "clean-tank";
+const TUTORIAL_STAGE_CLEAN_TANK_DONE = "clean-tank-done";
+const TUTORIAL_STAGE_TOOLBAR_REVEAL = "toolbar-reveal";
 const TUTORIAL_STAGE_COMPLETED = "completed";
+const TUTORIAL_STAGE_IDS = Object.freeze([
+  TUTORIAL_STAGE_SPLASH,
+  TUTORIAL_STAGE_ADOPT_FISH,
+  TUTORIAL_STAGE_ADOPT_FISH_DONE,
+  TUTORIAL_STAGE_PLACE_DECORATION,
+  TUTORIAL_STAGE_PLACE_DECORATION_DONE,
+  TUTORIAL_STAGE_FEED_FISH,
+  TUTORIAL_STAGE_FEED_FISH_DONE,
+  TUTORIAL_STAGE_CLEAN_TANK,
+  TUTORIAL_STAGE_CLEAN_TANK_DONE,
+  TUTORIAL_STAGE_TOOLBAR_REVEAL,
+  TUTORIAL_STAGE_COMPLETED
+]);
 const TUTORIAL_FEATURE_MANAGE_FISH = "manage-fish";
 const TUTORIAL_FEATURE_EDIT_TANK = "edit-tank";
 const TUTORIAL_FEATURE_SETTINGS = "settings";
-const TUTORIAL_FEATURE_IDS = Object.freeze([
-  TUTORIAL_FEATURE_MANAGE_FISH,
-  TUTORIAL_FEATURE_EDIT_TANK,
-  TUTORIAL_FEATURE_SETTINGS
-]);
+const TUTORIAL_FEATURE_IDS = Object.freeze([]);
 const TUTORIAL_STORE_COST_CAP = 10;
-const TUTORIAL_SPLASH_DURATION_MS = 8150;
+const TUTORIAL_SPLASH_DURATION_MS = 7000;
 const TUTORIAL_STORE_CLOSE_DELAY_MS = 650;
-const TUTORIAL_FISH_ADDED_DELAY_MS = 5000;
-const TUTORIAL_DECOR_OBSERVE_DELAY_MS = 5000;
+const TUTORIAL_TASK_COMPLETE_DELAY_MS = 2200;
 const TUTORIAL_POST_FEED_DELAY_MS = 5000;
-const TUTORIAL_POOP_TRIGGER_DELAY_MS = 3500;
-const TUTORIAL_POOP_CLEAN_PROMPT_DELAY_MS = 8000;
+const TUTORIAL_TOOLBAR_REVEAL_STEP_MS = 170;
+const TUTORIAL_TOOLBAR_REVEAL_SETTLE_MS = 700;
 const TUTORIAL_BASIC_FOOD_REWARD_COUNT = 5;
 const TUTORIAL_BASIC_FOOD_KEY = "basic";
 const TUTORIAL_TOAST_DECOR_DONE = "tutorial-decor-done";
@@ -155,14 +169,12 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "otocinclus": { mealCoins: 0, unlock: "first-care", needs: ["seaweed_algae", "plants"], conflicts: ["aggressive_predator", "large_fish"] },
   "molly": { mealCoins: 1, unlock: "first-care", needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
   "livebearer": { mealCoins: 1, unlock: "first-care", needs: ["plants", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
-  "suckerfish": { mealCoins: 0, unlock: "stable-tank", needs: ["driftwood", "cave"], conflicts: ["same_species", "overcrowded"] },
   "loach": { mealCoins: 1, unlock: "stable-tank", needs: ["cave", "plants"], conflicts: ["sharp_decor", "aggressive_predator"] },
   "swordtail": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "plants"], conflicts: ["same_species", "overcrowded"] },
   "betta": { mealCoins: 1, unlock: "stable-tank", needs: ["plants", "cave"], conflicts: ["betta_present", "community_fish", "fin_nipper"] },
   "blue-ram": { mealCoins: 1, unlock: "stable-tank", needs: ["cave", "plants"], conflicts: ["fast_eater", "aggressive_predator"] },
   "piranha": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "cave"], conflicts: ["community_fish", "overcrowded"] },
-  "zombie-fish": { mealCoins: 0, unlock: "spooky-keeper", needs: ["spooky", "cave"], conflicts: ["the_cure", "community_fish"] },
-  "skeleton-fish": { mealCoins: 0, unlock: "spooky-keeper", needs: ["spooky", "cave"], conflicts: ["the_cure", "overcrowded"] },
+  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? ZOMBIE_SKELETON_COMFORT_PROFILES : {}),
   "wonder-killifish": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "open_water"], conflicts: ["tiny_fish", "surface_crowding"] },
   "rainbowfish": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded", "aggressive_predator"] },
   "gourami": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "plants"], conflicts: ["betta_present", "fin_nipper"] },
@@ -187,7 +199,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "stable-tank",
     label: "Stable Tank",
     reward: 8,
-    unlocks: ["suckerfish", "loach", "swordtail", "betta", "blue-ram", "piranha"],
+    unlocks: ["loach", "swordtail", "betta", "blue-ram", "piranha"],
     decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70
   },
@@ -216,13 +228,213 @@ const PROGRESSION_MILESTONES = Object.freeze([
     isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3
   },
   {
+    id: "clean-start",
+    label: "Clean Start",
+    reward: 5,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.cleanRecapStreak90 >= 3
+  },
+  {
+    id: "crystal-keeper",
+    label: "Crystal Keeper",
+    reward: 12,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.cleanRecapCount95 >= 7
+  },
+  {
+    id: "full-bellies",
+    label: "Full Bellies",
+    reward: 6,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.allMealsSatisfiedStreak >= 3
+  },
+  {
+    id: "reliable-feeder",
+    label: "Reliable Feeder",
+    reward: 14,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.allMealsSatisfiedStreak >= 7
+  },
+  {
+    id: "cozy-corner",
+    label: "Cozy Corner",
+    reward: 6,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.comfort80Streak >= 3
+  },
+  {
+    id: "little-paradise",
+    label: "Little Paradise",
+    reward: 12,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.comfort90Streak >= 3
+  },
+  {
+    id: "perfect-hour",
+    label: "Perfect Hour",
+    reward: 5,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.hasSparklingFish || stats.sparklingComfortEvents >= 1
+  },
+  {
+    id: "perfect-day",
+    label: "Perfect Day",
+    reward: 15,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.hasPerfectDay
+  },
+  {
+    id: "no-drama-day",
+    label: "No Drama Day",
+    reward: 5,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.latestNoDramaDay
+  },
+  {
+    id: "peaceful-week",
+    label: "Peaceful Week",
+    reward: 16,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.noAttackDeathRecapStreak >= 5
+  },
+  {
+    id: "gentle-keeper",
+    label: "Gentle Keeper",
+    reward: 5,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.noGlassTapStressStreak >= 3
+  },
+  {
+    id: "calm-glass",
+    label: "Calm Glass",
+    reward: 12,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.noGlassTapStressStreak >= 7
+  },
+  {
+    id: "decorator",
+    label: "Decorator",
+    reward: 5,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.decorPlacedCount >= 5
+  },
+  {
+    id: "habitat-builder",
+    label: "Habitat Builder",
+    reward: 10,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.metNeedsCount >= 10
+  },
+  {
+    id: "need-expert",
+    label: "Need Expert",
+    reward: 15,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.hasAllLivingNeedsMet
+  },
+  {
+    id: "community-tank",
+    label: "Community Tank",
+    reward: 12,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.hasCommunityTank && stats.goodRecaps >= 3
+  },
+  {
+    id: "big-family",
+    label: "Big Family",
+    reward: 10,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.livingFishCount >= 10
+  },
+  {
+    id: "careful-curator",
+    label: "Careful Curator",
+    reward: 18,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.livingFishCount >= 15 && stats.noOvercrowdedTanks
+  },
+  {
+    id: "first-generation",
+    label: "First Generation",
+    reward: 8,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.hatchedFishEvents >= 1
+  },
+  {
+    id: "nursery-keeper",
+    label: "Nursery Keeper",
+    reward: 16,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.grownBabyFishCount >= 3
+  },
+  {
+    id: "gravel-luck",
+    label: "Gravel Luck",
+    reward: 5,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.gravelCoinFinds >= 5
+  },
+  {
+    id: "treasure-hunter",
+    label: "Treasure Hunter",
+    reward: 18,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.gravelCoinFinds >= 25
+  },
+  {
+    id: "medicine-cabinet",
+    label: "Medicine Cabinet",
+    reward: 8,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.healingEvents >= 3
+  },
+  {
+    id: "rescue-keeper",
+    label: "Rescue Keeper",
+    reward: 12,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.hasRescueKeeper
+  },
+  {
+    id: "tank-network",
+    label: "Tank Network",
+    reward: 20,
+    unlocks: [],
+    decorUnlocks: [],
+    isMet: (stats) => stats.healthyTankCount >= 3
+  },
+  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? [{
     id: "spooky-keeper",
     label: "Spooky Keeper",
     reward: 5,
-    unlocks: ["zombie-fish", "skeleton-fish"],
+    unlocks: [...ZOMBIE_SKELETON_PROGRESSION_UNLOCKS],
     decorUnlocks: ["gorebag_lure.png", "fishheadeffigy_1.png", "fishheadeffigy_2.png", "fishheadeffigy_3.png"],
     isMet: (stats) => stats.hasSpookyKeeperPath
-  }
+  }] : [])
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
   "rock-arch.png": "first-care",
@@ -243,16 +455,18 @@ const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
   "volcano-2_bubbler.png": "happy-habitat",
   "__custom-decor-shop__": "happy-habitat",
   "__custom-hide-shop__": "happy-habitat",
-  "gorebag_lure.png": "spooky-keeper",
-  "fishheadeffigy_1.png": "spooky-keeper",
-  "fishheadeffigy_2.png": "spooky-keeper",
-  "fishheadeffigy_3.png": "spooky-keeper"
+  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? {
+    "gorebag_lure.png": "spooky-keeper",
+    "fishheadeffigy_1.png": "spooky-keeper",
+    "fishheadeffigy_2.png": "spooky-keeper",
+    "fishheadeffigy_3.png": "spooky-keeper"
+  } : {})
 });
 const MANAGEMENT_HISTORY_PAGE_SIZE = 12;
-const MAX_TANK_EVENT_HISTORY = 500;
+const MAX_TANK_EVENT_HISTORY = Number.POSITIVE_INFINITY;
 const CRITICAL_COMFORT_HEALTH_TICK_MS = 6 * HOUR_MS;
-const FISH_DECAY_ZOMBIE_MS = 12 * HOUR_MS;
-const FISH_DECAY_SKELETON_MS = 24 * HOUR_MS;
+const FISH_DECAY_ZOMBIE_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecayZombieMs;
+const FISH_DECAY_SKELETON_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecaySkeletonMs;
 const POOP_FALL_MS = 18 * 1000;
 const POOP_DRAW_WIDTH_PX = 36;
 const TANK_WIDTH = 1280;
@@ -279,6 +493,7 @@ const GRIME_VISUAL_START_DIRTINESS = 0.1;
 const SEVERE_GRIME_VISUAL_THRESHOLD = 0.72;
 const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
+const CARE_TASK_COMPLETE_HOLD_MS = 2200;
 const DEFAULT_THEME = "dark";
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false
@@ -295,6 +510,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   displayPosition: "top-left",
   toolbarCollapsed: false,
   displayCollapsed: false,
+  careTaskPaneOpen: false,
   soundMuted: false,
   uiSoundsMuted: false,
   tankMouseInputLocked: false,
@@ -384,7 +600,7 @@ const FILTERED_GORE_DECOR_KEYS = new Set([
   "fishheadeffigy_3.png"
 ]);
 const NONE_BACKGROUND_ASSET_KEY = "none.png";
-const DEFAULT_BACKGROUND_ASSET_KEY = "classic-sand.png";
+const DEFAULT_BACKGROUND_ASSET_KEY = NONE_BACKGROUND_ASSET_KEY;
 const CUSTOM_BACKGROUND_MODE_SOLID = "solid";
 const CUSTOM_BACKGROUND_MODE_GRADIENT = "gradient";
 const CUSTOM_BACKGROUND_MODE_ANIMATED = "animated";
@@ -418,8 +634,7 @@ const ANIMATED_BACKGROUND_SOURCE_PALETTE = Object.freeze({
   driftB: DEFAULT_ANIMATED_BACKGROUND_DRIFT_B_COLOR,
   driftC: DEFAULT_ANIMATED_BACKGROUND_DRIFT_C_COLOR
 });
-const DEFAULT_OWNED_BACKGROUND_KEYS = Object.freeze([NONE_BACKGROUND_ASSET_KEY, CUSTOM_IMAGE_BACKGROUND_ASSET_KEY, DEFAULT_BACKGROUND_ASSET_KEY]);
-const DEFAULT_GRAVEL_ASSET_KEY = "classic-sand.png";
+const DEFAULT_OWNED_BACKGROUND_KEYS = Object.freeze([NONE_BACKGROUND_ASSET_KEY, CUSTOM_IMAGE_BACKGROUND_ASSET_KEY]);
 const CUSTOM_GRAVEL_LAYER_COUNT = 3;
 const DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR = "#2F80FF";
 const CUSTOM_GRAVEL_LAYER_SPECS = Object.freeze([
@@ -462,6 +677,7 @@ const CUSTOM_GRAVEL_CONTOUR_PEBBLE_SIZE_MIN_PX = 9;
 const CUSTOM_GRAVEL_CONTOUR_PEBBLE_SIZE_MAX_PX = 11;
 const CUSTOM_GRAVEL_TOP_PEBBLE_SPRITE_CACHE_SIZE = 96;
 const FISH_GRAVEL_PEBBLE_ACTIVITY = "gravel-play";
+const FISH_GRAVEL_DIG_ACTIVITY = "gravel-dig";
 const FISH_GRAVEL_PEBBLE_CHANCE_PER_SECOND = 0.0026;
 const MAX_ACTIVE_FISH_GRAVEL_PEBBLE_ACTIONS = 1;
 const MAX_ACTIVE_FISH_GRAVEL_PEBBLE_TOSSES = 6;
@@ -477,56 +693,56 @@ const FISH_GRAVEL_PEBBLE_FRONT_SCAN_RATIO = 0.16;
 const FISH_GRAVEL_PEBBLE_MOUTH_OVERLAP_RATIO = 0.1;
 // Shared by custom gravel, fish tinting, decor color layers, bubbler bubbles, and gravel/background swatches.
 const CUSTOM_GRAVEL_COLOR_OPTIONS = Object.freeze([
-  { key: "deep-navy", label: "Deep Navy", color: "#1D2A6D", uvReactive: false },
-  { key: "indigo-pulse", label: "Indigo Pulse", color: "#4F46E5" },
-  { key: "electric-blue", label: "Electric Blue", color: "#2F80FF" },
-  { key: "periwinkle", label: "Periwinkle", color: "#8AA8F7", uvReactive: false },
-  { key: "lavender-periwinkle", label: "Lavender / Periwinkle", color: "#A79BFF" },
-  { key: "lagoon-blue", label: "Lagoon Blue", color: "#67C8E0", uvReactive: false },
-  { key: "cyan-pop", label: "Cyan Pop", color: "#18D6FF" },
-  { key: "teal-current", label: "Teal Current", color: "#00B8A9" },
-  { key: "aqua-burst", label: "Aqua Burst", color: "#1FE7C9" },
-  { key: "forest-green", label: "Forest Green", color: "#2E6B3E", uvReactive: false },
-  { key: "jade-flash", label: "Jade Flash", color: "#10D98B" },
-  { key: "mint-glass", label: "Mint Glass", color: "#6FD7B8", uvReactive: false },
-  { key: "meadow-green", label: "Meadow Green", color: "#8FD368", uvReactive: false },
-  { key: "seafoam-glow", label: "Seafoam Glow", color: "#42F5A1" },
-  { key: "neon-green", label: "Neon Green", color: "#57F000" },
-  { key: "lime-spark", label: "Lime Spark", color: "#A8FF2A" },
+  { key: "white-glow", label: "White", color: "#FFFFFF" },
+  { key: "cream-ivory", label: "Cream / Ivory", color: "#FFF4D6", uvReactive: false },
+  { key: "light-tan", label: "Light Tan", color: "#F1D7A6", uvReactive: false },
+  { key: "silver-gray", label: "Silver Gray", color: "#BFC7D2", uvReactive: false },
+  { key: "stone-gray", label: "Gray", color: "#8C96A8", uvReactive: false },
+  { key: "slate-gray", label: "Slate Gray", color: "#81909F", uvReactive: false },
+  { key: "peach", label: "Peach", color: "#F5C185", uvReactive: false },
+  { key: "tan", label: "Tan", color: "#D9BA82", uvReactive: false },
   { key: "aged-gold", label: "Aged Gold", color: "#D7C56A", uvReactive: false },
-  { key: "gold-flare", label: "Gold Flare", color: "#FFB703" },
   { key: "standard-yellow", label: "Standard Yellow", color: "#FFD700" },
   { key: "sun-yellow", label: "Sun Yellow", color: "#FFD93D" },
-  { key: "dark-brown", label: "Dark Brown", color: "#5A3825", uvReactive: false },
-  { key: "darker-sand", label: "Darker Sand", color: "#B88C57", uvReactive: false },
-  { key: "sand", label: "Sand", color: "#D9BA82", uvReactive: false },
-  { key: "salmon-sand", label: "Salmon Sand", color: "#F19A76", uvReactive: false },
-  { key: "peach-sand", label: "Peach Sand", color: "#F5C185", uvReactive: false },
+  { key: "gold-flare", label: "Gold Flare", color: "#FFB703" },
   { key: "orange-zing", label: "Orange Zing", color: "#FF8C42" },
   { key: "tangerine-pop", label: "Tangerine Pop", color: "#FF6B35" },
-  { key: "lighter-sand", label: "Lighter Sand", color: "#F1D7A6", uvReactive: false },
-  { key: "cream-ivory", label: "Cream / Ivory", color: "#FFF4D6", uvReactive: false },
-  { key: "blood-red", label: "Deep Red / Blood Red", color: "#8A0303", uvReactive: false },
-  { key: "crimson-wave", label: "Crimson Wave", color: "#E63946" },
-  { key: "cherry-pop", label: "Cherry Pop", color: "#FF1744" },
-  { key: "ruby-red", label: "Ruby Red", color: "#FF3355" },
+  { key: "dark-tan", label: "Dark Tan", color: "#B88C57", uvReactive: false },
+  { key: "dark-brown", label: "Dark Brown", color: "#5A3825", uvReactive: false },
   { key: "coral-punch", label: "Coral Punch", color: "#FF5E78" },
   { key: "dusty-rose", label: "Dusty Rose", color: "#E07A9C", uvReactive: false },
-  { key: "hot-pink", label: "Hot Pink", color: "#FF4FBF" },
   { key: "bubblegum", label: "Bubblegum", color: "#FF77E1" },
+  { key: "hot-pink", label: "Hot Pink", color: "#FF4FBF" },
   { key: "magenta-flash", label: "Magenta Flash", color: "#E83DFF" },
-  { key: "royal-purple", label: "Royal Purple", color: "#6D3DFF" },
-  { key: "ultraviolet", label: "Ultraviolet", color: "#8E5BFF" },
-  { key: "violet-burst", label: "Violet Burst", color: "#B55CFF" },
-  { key: "orchid-glow", label: "Orchid Glow", color: "#C65BFF" },
+  { key: "ruby-red", label: "Ruby Red", color: "#FF3355" },
+  { key: "cherry-pop", label: "Cherry Pop", color: "#FF1744" },
+  { key: "crimson-wave", label: "Crimson Wave", color: "#E63946" },
+  { key: "blood-red", label: "Deep Red / Blood Red", color: "#8A0303", uvReactive: false },
   { key: "lavender-mist", label: "Lavender Mist", color: "#B98DEB", uvReactive: false },
-  { key: "black-black", label: "Black Black", color: "#000000", uvReactive: false },
-  { key: "deep-black", label: "Black", color: "#212121", uvReactive: false },
+  { key: "lavender-periwinkle", label: "Lavender / Periwinkle", color: "#A79BFF" },
+  { key: "orchid-glow", label: "Orchid Glow", color: "#C65BFF" },
+  { key: "violet-burst", label: "Violet Burst", color: "#B55CFF" },
+  { key: "ultraviolet", label: "Ultraviolet", color: "#8E5BFF" },
+  { key: "royal-purple", label: "Royal Purple", color: "#6D3DFF" },
+  { key: "deep-purple", label: "Deep Purple", color: "#4B1D95" },
+  { key: "periwinkle", label: "Periwinkle", color: "#8AA8F7", uvReactive: false },
+  { key: "lagoon-blue", label: "Lagoon Blue", color: "#67C8E0", uvReactive: false },
+  { key: "cyan-pop", label: "Cyan Pop", color: "#18D6FF" },
+  { key: "aqua-burst", label: "Aqua Burst", color: "#1FE7C9" },
+  { key: "teal-current", label: "Teal Current", color: "#00B8A9" },
+  { key: "electric-blue", label: "Electric Blue", color: "#2F80FF" },
+  { key: "indigo-pulse", label: "Indigo Pulse", color: "#4F46E5" },
+  { key: "deep-navy", label: "Deep Navy", color: "#1D2A6D", uvReactive: false },
+  { key: "mint-glass", label: "Mint Glass", color: "#6FD7B8", uvReactive: false },
+  { key: "seafoam-glow", label: "Seafoam Glow", color: "#42F5A1" },
+  { key: "jade-flash", label: "Jade Flash", color: "#10D98B" },
+  { key: "meadow-green", label: "Meadow Green", color: "#8FD368", uvReactive: false },
+  { key: "lime-spark", label: "Lime Spark", color: "#A8FF2A" },
+  { key: "neon-green", label: "Neon Green", color: "#57F000" },
+  { key: "forest-green", label: "Forest Green", color: "#2E6B3E", uvReactive: false },
   { key: "charcoal", label: "Charcoal", color: "#4E5966", uvReactive: false },
-  { key: "slate-gray", label: "Slate Gray", color: "#81909F", uvReactive: false },
-  { key: "stone-gray", label: "Gray", color: "#8C96A8", uvReactive: false },
-  { key: "silver-gray", label: "Silver Gray", color: "#BFC7D2", uvReactive: false },
-  { key: "white-glow", label: "White", color: "#FFFFFF" }
+  { key: "deep-black", label: "Black", color: "#212121", uvReactive: false },
+  { key: "black-black", label: "Black Black", color: "#000000", uvReactive: false }
 ]);
 const CUSTOM_GRAVEL_UV_REACTIVE_COLOR_KEYS = new Set(
   CUSTOM_GRAVEL_COLOR_OPTIONS
@@ -555,8 +771,8 @@ const FISH_SATURATION_MIN = 0;
 const FISH_SATURATION_MAX = 200;
 const FISH_BRIGHTNESS_MIN = 50;
 const FISH_BRIGHTNESS_MAX = 150;
-const FISH_CATALOG_WIDTH_MIN = 84;
-const FISH_CATALOG_WIDTH_MAX = 420;
+const FISH_CATALOG_WIDTH_MIN = 70;
+const FISH_CATALOG_WIDTH_MAX = 488;
 const FISH_WORLD_SIZE_MULTIPLIER = 1;
 const DECOR_WORLD_SIZE_MULTIPLIER = 1;
 const DECOR_X_ANCHOR_MODE_CENTER_OFFSET = "center-offset";
@@ -583,18 +799,19 @@ const DEFAULT_BUBBLER_BUBBLE_OPACITY = 1.35;
 const DEFAULT_BUBBLER_FILL_TINT_ENABLED = true;
 const DEFAULT_BUBBLER_FILL_OPACITY = 0.28;
 const DEFAULT_BUBBLER_SPEED = 1;
-const MIN_BUBBLER_SPEED = 0.2;
+const MIN_BUBBLER_SPEED = 0.05;
 const MAX_BUBBLER_SPEED = 4;
 const DEFAULT_CUSTOM_BUBBLER_AMOUNT = 8;
-const MIN_CUSTOM_BUBBLER_AMOUNT = 1;
+const MIN_CUSTOM_BUBBLER_AMOUNT = 0.1;
 const DEFAULT_CUSTOM_BUBBLER_BUBBLE_SIZE = 1;
 const MIN_CUSTOM_BUBBLER_BUBBLE_SIZE = 0.35;
-const MAX_CUSTOM_BUBBLER_BUBBLE_SIZE = 10;
+const MAX_CUSTOM_BUBBLER_BUBBLE_SIZE = 20;
 const MIN_CUSTOM_BUBBLER_OPACITY = 0.25;
 const MAX_CUSTOM_BUBBLER_OPACITY = 3;
 const MIN_CUSTOM_BUBBLER_WIDTH_PX = 0;
 const MAX_CUSTOM_BUBBLER_WIDTH_PX = 260;
 const MIN_CUSTOM_BUBBLER_DISTANCE_PX = 40;
+const MAX_CUSTOM_BUBBLER_DISTANCE_PX = 1000;
 const CUSTOM_BUBBLER_HIT_SCALE = 2;
 const DEFAULT_CUSTOM_BUBBLER_DIRECTION = "up";
 const BUBBLER_DIRECTION_OPTIONS = Object.freeze([
@@ -604,8 +821,20 @@ const BUBBLER_DIRECTION_OPTIONS = Object.freeze([
   { id: "down", label: "Down" }
 ]);
 const MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 72;
-const MIN_BUBBLER_STREAM_CADENCE_MS = 120;
-const MAX_BUBBLER_STREAM_CADENCE_MS = 1350;
+const MIN_BUBBLER_STREAM_CADENCE_MS = 95;
+const MAX_BUBBLER_STREAM_CADENCE_MS = 6000;
+const DEFAULT_BUBBLER_TRAVEL_DURATION_MS = 3600;
+const MIN_BUBBLER_TRAVEL_DURATION_MS = 900;
+const MAX_BUBBLER_TRAVEL_DURATION_MS = 45000;
+const DEFAULT_BUBBLER_POP_ENABLED = false;
+const DEFAULT_BUBBLER_MALFORMED_ENABLED = false;
+const DEFAULT_BUBBLER_MALFORMED_INTENSITY = 0.75;
+const MIN_BUBBLER_MALFORMED_INTENSITY = 0;
+const MAX_BUBBLER_MALFORMED_INTENSITY = 2;
+const DEFAULT_BUBBLER_MALFORMED_SPEED = 0.75;
+const MIN_BUBBLER_MALFORMED_SPEED = 0.05;
+const MAX_BUBBLER_MALFORMED_SPEED = 3;
+const BUBBLER_POP_MICRO_BUBBLE_COUNT = 10;
 const DEFAULT_TANK_LAYER = 3;
 const LAYER_BOTTOM_GRAVEL_SURFACE_OFFSET_PX = 0;
 const LAYER_BOTTOM_GRAVEL_STEP_PX = 20;
@@ -786,6 +1015,76 @@ const SEDIMENT_CLOUD_DURATION_MAX_MS = 4000;
 const MAX_SEDIMENT_CLOUDS = 36;
 const SEDIMENT_WAKE_MIN_SPEED_PX_PER_SECOND = 90;
 const SEDIMENT_WAKE_COOLDOWN_MS = 1300;
+const MAX_EFFECT_CLOUD_PARTICLES = 520;
+const EFFECT_CLOUD_LAYER_FLOOR = "floor";
+const EFFECT_CLOUD_LAYER_FRONT = "front";
+const BLOOD_CLOUD_COLOR_STOPS = Object.freeze([
+  { offset: 0, rgb: "110, 0, 0", alpha: 1.15 },
+  { offset: 0.22, rgb: "92, 0, 0", alpha: 0.9 },
+  { offset: 0.55, rgb: "58, 0, 0", alpha: 0.42 },
+  { offset: 1, rgb: "20, 0, 0", alpha: 0 }
+]);
+const GRAVEL_DUST_CLOUD_COLOR_STOPS = Object.freeze([
+  { offset: 0, rgb: "124, 100, 68", alpha: 0.68 },
+  { offset: 0.3, rgb: "92, 88, 64", alpha: 0.42 },
+  { offset: 0.62, rgb: "58, 78, 54", alpha: 0.24 },
+  { offset: 1, rgb: "48, 42, 30", alpha: 0 }
+]);
+const EFFECT_CLOUD_PRESETS = Object.freeze({
+  blood: Object.freeze({
+    key: "blood",
+    layer: EFFECT_CLOUD_LAYER_FRONT,
+    requiresGore: true,
+    colorStops: BLOOD_CLOUD_COLOR_STOPS,
+    countBase: 42,
+    countScale: 36,
+    speedMin: 0.00006,
+    speedMax: 0.00034,
+    driftMin: 0.00002,
+    driftMax: 0.0001,
+    yLiftMin: 0.000005,
+    yLiftMax: 0.00003,
+    radiusMin: 0.0018,
+    radiusMax: 0.0046,
+    alphaMin: 0.22,
+    alphaMax: 0.5,
+    lifeMinMs: 2200,
+    lifeMaxMs: 4600,
+    spreadNorm: 0.003,
+    radiusGrowth: 1.006
+  }),
+  gravelDust: Object.freeze({
+    key: "gravelDust",
+    layer: EFFECT_CLOUD_LAYER_FLOOR,
+    requiresGore: false,
+    colorStops: GRAVEL_DUST_CLOUD_COLOR_STOPS,
+    countBase: 22,
+    countScale: 24,
+    speedMin: 0.00004,
+    speedMax: 0.0002,
+    driftMin: 0.00002,
+    driftMax: 0.00012,
+    yLiftMin: 0.000018,
+    yLiftMax: 0.000075,
+    radiusMin: 0.0024,
+    radiusMax: 0.0066,
+    alphaMin: 0.1,
+    alphaMax: 0.26,
+    lifeMinMs: 1500,
+    lifeMaxMs: 3400,
+    spreadNorm: 0.005,
+    radiusGrowth: 1.007
+  })
+});
+const MAX_GRAVEL_DIG_BURSTS = 8;
+const GRAVEL_DIG_BURST_DURATION_MIN_MS = 850;
+const GRAVEL_DIG_BURST_DURATION_MAX_MS = 1450;
+const GRAVEL_DIG_BURST_PEBBLE_MIN = 3;
+const GRAVEL_DIG_BURST_PEBBLE_MAX = 9;
+const FISH_GRAVEL_DIG_CHANCE = 0.18;
+const FISH_GRAVEL_DIG_COOLDOWN_MIN_MS = 9000;
+const FISH_GRAVEL_DIG_COOLDOWN_MAX_MS = 18000;
+const FORCED_GRAVEL_DIG_TIMEOUT_MS = 9000;
 const WATER_PARTICLE_COUNT = 50;
 const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 50;
 const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 50;
@@ -877,7 +1176,6 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "autoDispenser",
   "uvLightInstalled",
   "uvLightEnabled",
-  "selectedGravelAsset",
   "selectedBubbleAsset",
   "theme",
   "lastCleanedAt",
@@ -898,11 +1196,11 @@ const DEBUG_BREEDING_REACHED_DISTANCE_NORM = 0.024;
 const BETTA_ATTACK_PASS_CHANCE = 0.001;
 const BETTA_ATTACK_TRIGGER_RANGE_NORM = 0.052;
 const BETTA_ATTACK_RELEASE_RANGE_NORM = 0.074;
-const ZOMBIE_BITE_FATAL_MS = 30 * 1000;
-const ZOMBIE_BITE_BLOOD_INTERVAL_MS = 1000;
-const ZOMBIE_BITE_REVIVE_MIN_MS = 1 * MINUTE_MS;
-const ZOMBIE_BITE_REVIVE_MAX_MS = 2 * MINUTE_MS;
-const ZOMBIE_ATTACK_TARGET_REFRESH_MS = 820;
+const ZOMBIE_BITE_FATAL_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteFatalMs;
+const ZOMBIE_BITE_BLOOD_INTERVAL_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteBloodIntervalMs;
+const ZOMBIE_BITE_REVIVE_MIN_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteReviveMinMs;
+const ZOMBIE_BITE_REVIVE_MAX_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteReviveMaxMs;
+const ZOMBIE_ATTACK_TARGET_REFRESH_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.attackTargetRefreshMs;
 const FISH_SPAWN_PROTECTION_MS = 15000;
 const PIRANHA_ATTACK_TRIGGER_RANGE_NORM = 0.04;
 const PIRANHA_ATTACK_RELEASE_RANGE_NORM = 0.06;
@@ -916,8 +1214,8 @@ const PIRANHA_BLOOD_CLOUD_INTERVAL_MS = 1200;
 const PIRANHA_TARGET_REFRESH_MS = 650;
 const BLOOD_WATER_TINT_DECAY_PER_SECOND = 0.0034;
 const CHUM_BLOOD_CLOUD_INTERVAL_MS = 1300;
-const UNDEAD_COMFORT_PENALTY = 0.1;
-const MAX_UNDEAD_COMFORT_PENALTY = 0.4;
+const UNDEAD_COMFORT_PENALTY = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.undeadComfortPenalty;
+const MAX_UNDEAD_COMFORT_PENALTY = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.maxUndeadComfortPenalty;
 const CORPSE_VIGIL_TRIGGER_RANGE_NORM = 0.16;
 const CAVE_NIGHT_ENTRY_CHANCE = 0.5;
 const CAVE_NIGHT_START_HOUR = 21;
@@ -947,6 +1245,8 @@ const REGULAR_BUTTON_SOUND_PATH = "assets/sounds/reg_button.mp3";
 const PURCHASE_SOUND_PATH = "assets/sounds/purchase.mp3";
 const COIN_SOUND_PATH = "assets/sounds/coin.mp3";
 const DISPENSER_SOUND_PATH = "assets/sounds/dispenser.mp3";
+const TOOLBAR_FAST_TOOLTIP_DELAY_MS = 100;
+const TOOLBAR_FAST_TOOLTIP_OFFSET_PX = 14;
 const TANK_INFO_REGULAR_BUTTON_SOUND_SELECTOR = [
   "[data-open-equipment-overlay]",
   '[data-open-store-tab="equipment"]',
@@ -956,6 +1256,8 @@ const TANK_INFO_TOOLBAR_BUTTON_SOUND_SELECTOR = [
   "[data-edit-tank-name]",
   '[data-management-view="fish"]',
   '[data-management-view="decor"]',
+  '[data-management-view="history"]',
+  '[data-management-view="milestones"]',
   "[data-management-select-fish]",
   "[data-management-store-fish]",
   "[data-management-buy-another-fish]",
@@ -996,8 +1298,7 @@ const EQUIPMENT_REGULAR_BUTTON_SOUND_SELECTOR = [
   "[data-reset-animated-background-colors]",
   "[data-open-local-background-picker]",
   "[data-select-background]",
-  "[data-clear-local-background]",
-  "[data-toggle-custom-gravel]"
+  "[data-clear-local-background]"
 ].join(",");
 const EQUIPMENT_TOOLBAR_BUTTON_SOUND_SELECTOR = [
   "[data-solid-background-color]",
@@ -1125,6 +1426,12 @@ const GLASS_TAP_MAX_MOVE_PX = 14;
 const GLASS_TAP_FISH_STARTLE_RADIUS_PX = 260;
 const GLASS_TAP_FISH_ESCAPE_MIN_DISTANCE_PX = 145;
 const GLASS_TAP_FISH_ESCAPE_MAX_DISTANCE_PX = 285;
+const GLASS_TAP_STRESS_RADIUS_PX = 120;
+const GLASS_TAP_STRESS_WINDOW_MS = 10 * 1000;
+const GLASS_TAP_STRESS_TAP_THRESHOLD = 3;
+const GLASS_TAP_STRESS_DURATION_MS = 30 * MINUTE_MS;
+const GLASS_TAP_STRESS_PENALTY = 0.01;
+const GLASS_TAP_STRESS_MAX_STACKS = 5;
 const SOUND_EFFECT_POOL_SIZE = 2;
 const SOUND_EFFECT_PATHS = Object.freeze([
   TOOLBAR_BUTTON_PRESS_SOUND_PATH,
@@ -1506,7 +1813,11 @@ function getFishMealFoodLabel(fishOrSpecies) {
   if (isBrineShrimpSpecies(fishOrSpecies)) {
     return "Brine Shrimp Food";
   }
-  if (isPiranhaSpecies(fishOrSpecies) || isZombieFish(fishOrSpecies) || fishOrSpecies?.id === "zombie-fish" || fishOrSpecies?.speciesId === "zombie-fish") {
+  if (
+    isPiranhaSpecies(fishOrSpecies)
+    || isZombieFish(fishOrSpecies)
+    || (isZombieSkeletonModeAvailable() && (fishOrSpecies?.id === "zombie-fish" || fishOrSpecies?.speciesId === "zombie-fish"))
+  ) {
     return "Chum or prey";
   }
   return "Food or Frisky";
@@ -1519,7 +1830,7 @@ function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
   if (isBrineShrimpSpecies(fish)) {
     return isBrineShrimpFood(foodKey);
   }
-  if (isPiranhaSpecies(fish) || isZombieFish(fish) || fish.speciesId === "zombie-fish") {
+  if (isPiranhaSpecies(fish) || isZombieFish(fish) || (isZombieSkeletonModeAvailable() && fish.speciesId === "zombie-fish")) {
     return isPredatorMealFood(foodKey);
   }
   if (isSkeletonFish(fish) || isMealFreeFish(fish)) {
@@ -1833,7 +2144,7 @@ const FISH_TYPES = [
     mealCoins: 1,
     asset: "/assets/fish/goldfish.png",
     description: "The classic round buddy. Big, cheerful, and always hungry.",
-    width: 124,
+    width: 405,
     cycleSeconds: 28,
     bobSpeed: 1.25,
     swimStyle: "peaceful",
@@ -1849,7 +2160,7 @@ const FISH_TYPES = [
     mealCoins: 1,
     asset: "/assets/fish/guppy.png",
     description: "A ribbon-tailed coin helper with a fast little wiggle.",
-    width: 112,
+    width: 179,
     cycleSeconds: 23,
     bobSpeed: 1.45,
     swimStyle: "sporadic",
@@ -1865,7 +2176,7 @@ const FISH_TYPES = [
     mealCoins: 1,
     asset: "/assets/fish/betta.png",
     description: "A dramatic, fluttery fish with elegant fins and better payouts.",
-    width: 140,
+    width: 219,
     cycleSeconds: 30,
     bobSpeed: 1.15,
     swimStyle: "peaceful",
@@ -1881,7 +2192,7 @@ const FISH_TYPES = [
     mealCoins: 2,
     asset: "/assets/fish/clownfish.png",
     description: "Bright stripes, playful swimming, and a solid meal bonus.",
-    width: 136,
+    width: 270,
     cycleSeconds: 24,
     bobSpeed: 1.35,
     swimStyle: "steady",
@@ -1897,7 +2208,7 @@ const FISH_TYPES = [
     mealCoins: 2,
     asset: "/assets/fish/angelfish.png",
     description: "Tall fins and graceful turns. Fancy fish, fancy coins.",
-    width: 156,
+    width: 456,
     cycleSeconds: 33,
     bobSpeed: 1.05,
     swimStyle: "peaceful",
@@ -1949,28 +2260,6 @@ const FISH_TYPES = [
     cleanupStrength: 0.012,
     poopCleanupChance: 0.08,
     defaultNames: ["Briny", "Speck", "Mote", "Pip"]
-  },
-  {
-    id: "suckerfish",
-    name: "Sucker Fish",
-    cost: 7,
-    mealCoins: 0,
-    asset: "/assets/fish/otocinclus.png",
-    fallbackAsset: "/assets/fish/otocinclus.png",
-    description: "A slow back-glass grazer that ignores pellets and lives off grime and waste.",
-    width: 122,
-    cycleSeconds: 42,
-    bobSpeed: 0.2,
-    swimStyle: "peaceful",
-    speedMin: 0.00022,
-    speedMax: 0.0004,
-    targetMinMs: 18000,
-    targetMaxMs: 34000,
-    behavior: "sucker",
-    diet: "detritus",
-    cleanupMinMs: 11 * 60 * 1000,
-    cleanupMaxMs: 22 * 60 * 1000,
-    cleanupStrength: 0.16
   }
 ];
 
@@ -2136,14 +2425,14 @@ const DECOR_META = {
   "rock-arch.png": {
     name: "Rock Arch",
     cost: 9,
-    width: 168,
-    defaultScale: DEFAULT_DECOR_SCALE
+    width: 595,
+    defaultScale: 1
   },
   "seaweed-bunch.png": {
     name: "Seaweed Bunch",
     cost: 4,
-    width: 120,
-    defaultScale: DEFAULT_DECOR_SCALE
+    width: 298,
+    defaultScale: 1
   },
   "treasure-chest.png": {
     name: "Treasure Chest",
@@ -2154,20 +2443,20 @@ const DECOR_META = {
   "anubia-rock_seaweed.png": {
     name: "Anubias Rock",
     cost: 8,
-    width: 146,
-    defaultScale: DEFAULT_DECOR_SCALE
+    width: 495,
+    defaultScale: 1
   },
   "driftwood-root.png": {
     name: "Driftwood Root",
     cost: 14,
-    width: 204,
-    defaultScale: DEFAULT_DECOR_SCALE
+    width: 660,
+    defaultScale: 1
   },
   "moss-bridge.png": {
     name: "Moss Bridge",
     cost: 13,
-    width: 188,
-    defaultScale: DEFAULT_DECOR_SCALE
+    width: 698,
+    defaultScale: 1
   },
   "pagoda-lantern.png": {
     name: "Pagoda Lantern",
@@ -2178,8 +2467,8 @@ const DECOR_META = {
   "slate-cave.png": {
     name: "Slate Cave",
     cost: 11,
-    width: 182,
-    defaultScale: DEFAULT_DECOR_SCALE
+    width: 620,
+    defaultScale: 1
   },
   "terracotta-hide.png": {
     name: "Terracotta Hide",
@@ -2207,7 +2496,8 @@ function normalizeDecorKey(decorKey = "") {
   return DECOR_KEY_ALIASES[key] || DECOR_KEY_ALIASES[key.toLowerCase()] || key;
 }
 
-const CUSTOM_BUBBLER_DECOR_IMAGE = resolveAppUrl("assets/misc/custom_bubbler.png");
+const CUSTOM_BUBBLER_DECOR_IMAGE = resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH);
+const CUSTOM_BUBBLER_THUMBNAIL_IMAGE = resolveAppUrl("assets/misc/custom_bubbler.png");
 const CUSTOM_DECOR_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_decor.png");
 const CUSTOM_HIDE_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_hide.png");
 const CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_fish.png");
@@ -2232,7 +2522,7 @@ const dom = {
   resetFishHealthButton: document.querySelector("#resetFishHealthButton"),
   addCoinsButton: document.querySelector("#addCoinsButton"),
   maxDirtButton: document.querySelector("#maxDirtButton"),
-  deleteAllButton: document.querySelector("#deleteAllButton"),
+  debugGravelDigButton: document.querySelector("#debugGravelDigButton"),
   debugGravelPebbleButton: document.querySelector("#debugGravelPebbleButton"),
   debugCaveButton: document.querySelector("#debugCaveButton"),
   debugDailyRecapButton: document.querySelector("#debugDailyRecapButton"),
@@ -2245,6 +2535,7 @@ const dom = {
   displayTab: document.querySelector("#displayTab"),
   tankSidebar: document.querySelector("#tankSidebar"),
   tankBottomDock: document.querySelector(".tank-bottom-dock"),
+  toolbarFastTooltip: document.querySelector("#toolbarFastTooltip"),
   toolbarTab: document.querySelector("#toolbarTab"),
   tankCanvas: document.querySelector("#tankCanvas"),
   grimeCanvas: document.querySelector("#grimeCanvas"),
@@ -2254,6 +2545,8 @@ const dom = {
   dailyBonusBell: document.querySelector("#dailyBonusBell"),
   placementHint: document.querySelector("#placementHint"),
   placementHintContainer: document.querySelector(".tank-overlay-hints"),
+  careTaskPane: document.querySelector("#careTaskPane"),
+  careTaskList: document.querySelector("#careTaskList"),
   editQuickRef: document.querySelector("#editQuickRef"),
   editQuickRefCard: document.querySelector("#editQuickRefCard"),
   editDecorTray: document.querySelector("#editDecorTray"),
@@ -2332,6 +2625,7 @@ const dom = {
   storeCoinCounter: document.querySelector("#storeCoinCounter"),
   closeStoreOverlay: document.querySelector("#closeStoreOverlay"),
   openManagementButton: document.querySelector("#openManagementButton"),
+  careTaskPaneButton: document.querySelector("#careTaskPaneButton"),
   openStoreButton: document.querySelector("#openStoreButton"),
   openEquipmentButton: document.querySelector("#openEquipmentButton"),
   openSettingsButton: document.querySelector("#openSettingsButton"),
@@ -2355,14 +2649,15 @@ const dom = {
   equipmentUvLightList: document.querySelector("#equipmentUvLightList"),
   //gravelPaletteSlots: document.querySelector("#gravelPaletteSlots"),
   //gravelPaletteChoices: document.querySelector("#gravelPaletteChoices"),
-  gravelAssetList: document.querySelector("#gravelAssetList"),
-  equipmentGravelAssetList: document.querySelector("#equipmentGravelAssetList"),
   customGravelPanel: document.querySelector("#customGravelPanel"),
   equipmentCustomGravelPanel: document.querySelector("#equipmentCustomGravelPanel"),
   fishInspector: document.querySelector("#fishInspector"),
   closeInspector: document.querySelector("#closeInspector"),
   selectedDecorActionBar: document.querySelector("#selectedDecorActionBar"),
   selectedDecorScaleControls: document.querySelector("#selectedDecorScaleControls"),
+  selectedDecorResizeHandles: document.querySelector("#selectedDecorResizeHandles"),
+  selectedDecorResizeIndicator: document.querySelector("#selectedDecorResizeIndicator"),
+  selectedDecorResizeCornerHandles: [...document.querySelectorAll("[data-selected-decor-resize-corner]")],
   selectedDecorLayerControls: document.querySelector("#selectedDecorLayerControls"),
   selectedDecorSettingsButton: document.querySelector("#selectedDecorSettingsButton"),
   selectedDecorSellButton: document.querySelector("#selectedDecorSellButton"),
@@ -2444,6 +2739,7 @@ const runtime = {
   tutorialSkipReturnStage: "",
   tutorialDismissedFeaturePopup: "",
   tutorialDisplayCollapsed: false,
+  tutorialToolbarRevealOrder: [],
   sidebarCollapsed: true,
   editTankMode: false,
   fishEditMode: false,
@@ -2457,6 +2753,7 @@ const runtime = {
   cleaningMode: false,
   scoopMode: false,
   dragState: null,
+  decorResizeState: null,
   fishDragState: null,
   eggDragState: null,
   pebbleDragState: null,
@@ -2469,6 +2766,7 @@ const runtime = {
   caveSettingsActivePointType: "seat",
   caveSettingsDrag: null,
   pendingDecorAction: null,
+  pendingFishAction: null,
   pendingCustomDecorUpload: null,
   pendingCustomHideUpload: null,
   pendingCustomFishUpload: null,
@@ -2485,8 +2783,23 @@ const runtime = {
   editingTankNameValue: "",
   managementHubView: "overview",
   managementHistoryVisibleCount: MANAGEMENT_HISTORY_PAGE_SIZE,
+  managementHistoryFilters: {
+    eventType: "",
+    fishType: "",
+    fishName: "",
+    decorType: "",
+    decorKey: ""
+  },
+  careTaskPaneTankId: "",
+  careTaskPaneInitialized: false,
+  careTaskPaneActiveTasks: new Map(),
+  careTaskPaneCompletingTasks: new Map(),
+  careTaskPaneCleanupHandle: null,
   tutorialPanelCacheKey: "",
   pendingToolbarButtonSound: null,
+  toolbarFastTooltipButton: null,
+  toolbarFastTooltipTimer: 0,
+  toolbarFastTooltipPointer: null,
   soundDragState: null,
   suppressNextTankClick: false,
   suppressNextGlassTap: false,
@@ -2608,7 +2921,10 @@ const runtime = {
   fishShadowPlaneCache: new Map(),
   fishGravelPebbleActions: new Map(),
   fishPebbleTosses: [],
+  forcedGravelDigUntilByFishId: new Map(),
+  gravelDigBursts: [],
   sedimentClouds: [],
+  effectClouds: [],
   coinGlints: [],
   waterParticles: [],
   waterParticleTankId: null,
@@ -2667,7 +2983,6 @@ const runtime = {
   splashBursts: [],
   glassTapEffects: [],
   fallingGravelPebbles: [],
-  bloodClouds: [],
   bloodWaterTint: 0,
   chumBloodCloudAtByPelletId: new Map(),
   bettaPassLocks: new Set(),
@@ -2889,7 +3204,7 @@ function shouldShowMedicineInStore(medicine) {
   if (!medicine) {
     return false;
   }
-  return isViolenceAndGoreEnabled() || medicine.id !== "antidote";
+  return (isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled()) || medicine.id !== "antidote";
 }
 
 function isFilteredGoreDecor(decorOrKey) {
@@ -2926,7 +3241,10 @@ function unlockDecorKey(decorKey, now = Date.now(), reasonText = "") {
     ...(state.unlockedDecorKeys || []),
     key
   ]);
-  pushEvent(reasonText || `${decor.name} is now available in the shop.`, now);
+  pushEvent(reasonText || `${decor.name} is now available in the shop.`, now, getCurrentTank(), {
+    type: "unlock",
+    decorKey: key
+  });
   return true;
 }
 
@@ -3112,7 +3430,7 @@ function createTankState(options = {}) {
     poops: Array.isArray(options.poops) ? options.poops : [],
     fishEggs: Array.isArray(options.fishEggs) ? options.fishEggs : [],
     placedDecor: Array.isArray(options.placedDecor) ? options.placedDecor : [],
-    customGravelEnabled: options.customGravelEnabled ?? true,
+    customGravelEnabled: true,
     customGravelLayerColors: Array.isArray(options.customGravelLayerColors)
       ? options.customGravelLayerColors
       : getDefaultCustomGravelLayerColors(),
@@ -3145,7 +3463,6 @@ function createTankState(options = {}) {
     autoDispenser: createDefaultAutoDispenserState(options.autoDispenser),
     uvLightInstalled: Boolean(options.uvLightInstalled),
     uvLightEnabled: Boolean(options.uvLightInstalled) && options.uvLightEnabled !== false,
-    selectedGravelAsset: options.selectedGravelAsset ?? getCatalogDefaultKey(runtime.gravelCatalog, DEFAULT_GRAVEL_ASSET_KEY),
     selectedBubbleAsset: options.selectedBubbleAsset ?? (runtime.bubbleCatalog[0]?.key || null),
     theme: DEFAULT_THEME,
     lastCleanedAt: Number.isFinite(options.lastCleanedAt) ? options.lastCleanedAt : now,
@@ -3230,11 +3547,13 @@ function setActiveTank(tankId, options = {}) {
   runtime.fishInspectorSettingsOpen = false;
   runtime.editingTankNameId = null;
   runtime.editingTankNameValue = "";
-  runtime.bloodClouds = [];
+  runtime.effectClouds = [];
   runtime.bloodWaterTint = 0;
   runtime.fishShadowPlaneCache.clear();
   runtime.fishGravelPebbleActions.clear();
   runtime.fishPebbleTosses = [];
+  runtime.forcedGravelDigUntilByFishId.clear();
+  runtime.gravelDigBursts = [];
   state.activeTankId = nextTank.id;
   renderUi(Date.now());
   saveState();
@@ -3270,10 +3589,8 @@ function buyTank(tankTypeId) {
   const newTank = createTankState({
     now: Date.now(),
     tankTypeId: tankType.id,
-    name: getNextAvailableTankName(),
-    customGravelEnabled: true
+    name: getNextAvailableTankName()
   });
-  newTank.customGravelEnabled = true;
   state.tanks.push(newTank);
   state.activeTankId = newTank.id;
   pushEvent(`Added ${getTankLabel(newTank)}.`, Date.now());
@@ -3517,7 +3834,7 @@ function openExclusiveOverlay(kind, options = {}) {
 
 function openStoreOverlay(tab = "food") {
   if (getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
-    showToast("Let's finish this step before heading back to the store.");
+    showToast("Finish this task first.");
     return;
   }
 
@@ -3610,6 +3927,17 @@ function openDecorActionConfirmation(action) {
 
   runtime.pendingDecorAction = action;
   openUtilityOverlay(action.type === "sell" ? "decor-sell-confirm" : "decor-buy-confirm", {
+    clearPrimaryToolModes: false
+  });
+}
+
+function openFishActionConfirmation(action) {
+  if (!action || typeof action !== "object") {
+    return;
+  }
+
+  runtime.pendingFishAction = action;
+  openUtilityOverlay(action.type === "sell" ? "fish-sell-confirm" : "fish-buy-confirm", {
     clearPrimaryToolModes: false
   });
 }
@@ -3969,6 +4297,25 @@ function getDecorDefaultCaveSettings(decorKey = "") {
   return sanitizePlacedCaveSettings();
 }
 
+function getDecorDefaultCaveColorSettings(decorKey = "") {
+  const decor = runtime.decorMap.get(decorKey);
+  const meta = runtime.decorMeta[decorKey] || null;
+  const directSettings = decor?.defaultCaveColorSettings
+    || decor?.caveColorSettings
+    || meta?.defaultCaveColorSettings
+    || meta?.caveColorSettings;
+  if (directSettings && typeof directSettings === "object") {
+    return sanitizePlacedCaveColorSettings(directSettings, decor || meta) || null;
+  }
+
+  const asset = state?.customDecorAssets?.[decorKey];
+  if (asset?.caveColorSettings && typeof asset.caveColorSettings === "object") {
+    return sanitizePlacedCaveColorSettings(asset.caveColorSettings, decor || buildCustomDecorCatalogEntry(asset)) || null;
+  }
+
+  return null;
+}
+
 function getDecorCaveColorLayers(decorOrKey) {
   const decor = typeof decorOrKey === "string" ? runtime.decorMap.get(decorOrKey) : decorOrKey;
   return Array.isArray(decor?.caveColorLayers)
@@ -4200,12 +4547,14 @@ function formatCaveColorChoiceLabel(color) {
   return getCustomGravelColorChoices().find((choice) => choice.color === normalized)?.label || normalized;
 }
 
-function updateCaveColorSettingsControls(item = getDecorSettingsTarget()) {
+function updateCaveColorSettingsControls(item = getDecorSettingsTarget(), decorOverride = null) {
   if (!dom.utilityOverlayBody || runtime.utilityOverlayMode !== "decor-settings") {
-    return;
+    if (runtime.utilityOverlayMode !== "custom-hide-create") {
+      return;
+    }
   }
 
-  const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+  const decor = decorOverride || (item ? runtime.decorMap.get(item.decorKey) : null);
   const layers = getVisibleDecorColorLayers(decor);
   if (!item || !decor || !layers.length) {
     return;
@@ -4243,8 +4592,9 @@ function updateCaveColorSettingsControls(item = getDecorSettingsTarget()) {
 }
 
 function updateSelectedCaveColorSetting(layerId, color) {
-  const item = getDecorSettingsTarget();
-  const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+  const pendingCustomHide = runtime.utilityOverlayMode === "custom-hide-create" ? runtime.pendingCustomHideUpload : null;
+  const item = pendingCustomHide ? getPendingCustomHidePreviewItem() : getDecorSettingsTarget();
+  const decor = pendingCustomHide ? getPendingCustomHidePreviewDecor() : (item ? runtime.decorMap.get(item.decorKey) : null);
   const layers = getVisibleDecorColorLayers(decor);
   if (!item || !decor || !layers.some((layer) => layer.id === layerId)) {
     return;
@@ -4259,6 +4609,15 @@ function updateSelectedCaveColorSetting(layerId, color) {
   }
 
   const sanitized = sanitizePlacedCaveColorSettings(nextSettings, decor);
+  if (pendingCustomHide) {
+    if (sanitized) {
+      pendingCustomHide.caveColorSettings = sanitized;
+    } else {
+      delete pendingCustomHide.caveColorSettings;
+    }
+    updateCaveColorSettingsControls(getPendingCustomHidePreviewItem(), getPendingCustomHidePreviewDecor());
+    return;
+  }
   if (sanitized) {
     item.caveColorSettings = sanitized;
   } else {
@@ -4271,8 +4630,9 @@ function updateSelectedCaveColorSetting(layerId, color) {
 }
 
 function updateSelectedCaveColorizeSetting(layerId, colorize) {
-  const item = getDecorSettingsTarget();
-  const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+  const pendingCustomHide = runtime.utilityOverlayMode === "custom-hide-create" ? runtime.pendingCustomHideUpload : null;
+  const item = pendingCustomHide ? getPendingCustomHidePreviewItem() : getDecorSettingsTarget();
+  const decor = pendingCustomHide ? getPendingCustomHidePreviewDecor() : (item ? runtime.decorMap.get(item.decorKey) : null);
   const layers = getVisibleDecorColorLayers(decor);
   if (!item || !decor || !layers.some((layer) => layer.id === layerId)) {
     return;
@@ -4287,6 +4647,15 @@ function updateSelectedCaveColorizeSetting(layerId, colorize) {
   }
 
   const sanitized = sanitizePlacedCaveColorSettings(nextSettings, decor);
+  if (pendingCustomHide) {
+    if (sanitized) {
+      pendingCustomHide.caveColorSettings = sanitized;
+    } else {
+      delete pendingCustomHide.caveColorSettings;
+    }
+    updateCaveColorSettingsControls(getPendingCustomHidePreviewItem(), getPendingCustomHidePreviewDecor());
+    return;
+  }
   if (sanitized) {
     item.caveColorSettings = sanitized;
   } else {
@@ -5223,13 +5592,22 @@ function finishCaveSettingsPreviewDrag(event) {
   runtime.caveSettingsDrag = null;
 }
 
+function formatBubblerSpeedReadout(speed) {
+  const resolvedSpeed = clamp(Number(speed) || DEFAULT_BUBBLER_SPEED, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED);
+  return resolvedSpeed < 1
+    ? resolvedSpeed.toFixed(2)
+    : resolvedSpeed.toFixed(1);
+}
+
 function formatBubblerSettingReadout(setting, settings) {
   switch (setting) {
     case "speed":
-      return settings.speed.toFixed(1);
+      return formatBubblerSpeedReadout(settings.speed);
     case "amount":
     case "intensity":
-      return String(Math.round(settings.amount));
+      return settings.amount < 1
+        ? settings.amount.toFixed(1)
+        : String(Math.round(settings.amount));
     case "bubbleSize":
       return `${settings.bubbleSize.toFixed(2)}x`;
     case "bubbleOpacity":
@@ -5250,6 +5628,16 @@ function formatBubblerSettingReadout(setting, settings) {
       return settings.bubbleColorize ? "On" : "Off";
     case "bubbleFillOpacity":
       return `${Math.round(settings.bubbleFillOpacity * 100)}%`;
+    case "bubblePopEnabled":
+      return settings.bubblePopEnabled ? "On" : "Off";
+    case "bubbleMalformed":
+      return settings.bubbleMalformed ? "On" : "Off";
+    case "bubbleMalformedIntensity":
+      return `${settings.bubbleMalformedIntensity.toFixed(2)}x`;
+    case "bubbleMalformedSpeed":
+      return settings.bubbleMalformedSpeed < 1
+        ? `${settings.bubbleMalformedSpeed.toFixed(2)}x`
+        : `${settings.bubbleMalformedSpeed.toFixed(1)}x`;
     default:
       return "";
   }
@@ -5278,6 +5666,14 @@ function getBubblerSettingControlValue(setting, settings) {
       return settings.bubbleColorize;
     case "bubbleFillOpacity":
       return settings.bubbleFillOpacity;
+    case "bubblePopEnabled":
+      return settings.bubblePopEnabled;
+    case "bubbleMalformed":
+      return settings.bubbleMalformed;
+    case "bubbleMalformedIntensity":
+      return settings.bubbleMalformedIntensity;
+    case "bubbleMalformedSpeed":
+      return settings.bubbleMalformedSpeed;
     default:
       return "";
   }
@@ -5353,7 +5749,7 @@ function updateSelectedBubblerSetting(setting, value) {
       settings.spread = settings.width;
       break;
     case "distance":
-      settings.distance = clamp(finiteValue ?? DEFAULT_BUBBLER_FADE_DISTANCE_PX, MIN_CUSTOM_BUBBLER_DISTANCE_PX, TANK_HEIGHT);
+      settings.distance = clamp(finiteValue ?? DEFAULT_BUBBLER_FADE_DISTANCE_PX, MIN_CUSTOM_BUBBLER_DISTANCE_PX, MAX_CUSTOM_BUBBLER_DISTANCE_PX);
       settings.fadeDistance = settings.distance;
       break;
     case "bubbleColor":
@@ -5365,6 +5761,18 @@ function updateSelectedBubblerSetting(setting, value) {
       break;
     case "bubbleFillOpacity":
       settings.bubbleFillOpacity = clamp(finiteValue ?? DEFAULT_BUBBLER_FILL_OPACITY, 0, 1);
+      break;
+    case "bubblePopEnabled":
+      settings.bubblePopEnabled = Boolean(value);
+      break;
+    case "bubbleMalformed":
+      settings.bubbleMalformed = Boolean(value);
+      break;
+    case "bubbleMalformedIntensity":
+      settings.bubbleMalformedIntensity = clamp(finiteValue ?? DEFAULT_BUBBLER_MALFORMED_INTENSITY, MIN_BUBBLER_MALFORMED_INTENSITY, MAX_BUBBLER_MALFORMED_INTENSITY);
+      break;
+    case "bubbleMalformedSpeed":
+      settings.bubbleMalformedSpeed = clamp(finiteValue ?? DEFAULT_BUBBLER_MALFORMED_SPEED, MIN_BUBBLER_MALFORMED_SPEED, MAX_BUBBLER_MALFORMED_SPEED);
       break;
     default:
       return;
@@ -5498,6 +5906,13 @@ function openCustomAssetEditorOverlay(type, pendingValue, options = {}) {
 
   if (Array.isArray(options.clearPendingTypes) && options.clearPendingTypes.length) {
     clearPendingCustomAssetUploads({ types: options.clearPendingTypes });
+  }
+
+  if (runtime.utilityOverlayOpen && runtime.utilityOverlayMode === overlayConfig.overlayMode) {
+    runtime[overlayConfig.pendingStateKey] = pendingValue;
+    renderUi(Date.now());
+    focusUtilityOverlayInputAfterRender(overlayConfig.inputSelector, overlayConfig.afterOpen);
+    return true;
   }
 
   runtime[overlayConfig.pendingStateKey] = pendingValue;
@@ -5749,7 +6164,7 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
   const drawX = horizontalPad;
   const drawY = verticalPad;
 
-  if (hasCavePreview && hasDecorCaveColorLayers(decor)) {
+  if ((hasCavePreview || hasBubblerPreview) && hasDecorCaveColorLayers(decor) && bgImage) {
     drawCaveBackgroundLayerToContext(context, item, decor, now, {
       drawX,
       drawY,
@@ -5839,29 +6254,104 @@ async function savePendingCustomDecorUpload() {
   return savePendingCustomAsset("decor");
 }
 
-function openCustomHideCreationOverlay(upload) {
-  if (!upload?.frontDataUrl || !upload?.bgDataUrl) {
-    showToast("Choose both images for Custom Hide first.");
-    return;
-  }
-
-  const suggestedName = sanitizeCustomDecorName(upload.suggestedName || upload.frontName || "Custom Hide", "Custom Hide");
-  openCustomAssetEditorOverlay("hide", {
-    frontDataUrl: upload.frontDataUrl,
-    bgDataUrl: upload.bgDataUrl,
+function buildPendingCustomHideUpload(upload = null) {
+  const current = runtime.pendingCustomHideUpload && typeof runtime.pendingCustomHideUpload === "object"
+    ? runtime.pendingCustomHideUpload
+    : {};
+  const source = upload && typeof upload === "object"
+    ? { ...current, ...upload }
+    : { ...current };
+  const suggestedName = sanitizeCustomDecorName(
+    source.suggestedName || source.frontName || current.frontName || source.name || "Custom Hide",
+    "Custom Hide"
+  );
+  const rawName = typeof source.name === "string" ? source.name.replace(/\s+/g, " ").trim() : "";
+  return {
+    ...source,
     suggestedName,
-    name: suggestedName,
-    width: clamp(CUSTOM_DECOR_DEFAULT_WIDTH, CUSTOM_DECOR_MIN_WIDTH, CUSTOM_DECOR_MAX_WIDTH),
-    scale: 1,
-    tankLayer: getDecorFrontLayer(`${CUSTOM_HIDE_KEY_PREFIX}pending`, DEFAULT_TANK_LAYER),
-    frontNaturalWidth: Math.max(1, Math.round(Number(upload.frontNaturalWidth) || CUSTOM_DECOR_DEFAULT_WIDTH)),
-    frontNaturalHeight: Math.max(1, Math.round(Number(upload.frontNaturalHeight) || CUSTOM_DECOR_DEFAULT_WIDTH)),
-    bgNaturalWidth: Math.max(1, Math.round(Number(upload.bgNaturalWidth) || CUSTOM_DECOR_DEFAULT_WIDTH)),
-    bgNaturalHeight: Math.max(1, Math.round(Number(upload.bgNaturalHeight) || CUSTOM_DECOR_DEFAULT_WIDTH)),
-    caveSettings: sanitizePlacedCaveSettings()
-  }, {
+    name: rawName || suggestedName,
+    width: clamp(
+      Math.round(Number(source.width) || CUSTOM_DECOR_DEFAULT_WIDTH),
+      CUSTOM_DECOR_MIN_WIDTH,
+      CUSTOM_DECOR_MAX_WIDTH
+    ),
+    scale: clamp(Number(source.scale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX),
+    tankLayer: getDecorFrontLayer(`${CUSTOM_HIDE_KEY_PREFIX}pending`, source.tankLayer || DEFAULT_TANK_LAYER),
+    frontNaturalWidth: Math.max(1, Math.round(Number(source.frontNaturalWidth) || CUSTOM_DECOR_DEFAULT_WIDTH)),
+    frontNaturalHeight: Math.max(1, Math.round(Number(source.frontNaturalHeight) || CUSTOM_DECOR_DEFAULT_WIDTH)),
+    bgNaturalWidth: Math.max(1, Math.round(Number(source.bgNaturalWidth) || CUSTOM_DECOR_DEFAULT_WIDTH)),
+    bgNaturalHeight: Math.max(1, Math.round(Number(source.bgNaturalHeight) || CUSTOM_DECOR_DEFAULT_WIDTH)),
+    caveSettings: sanitizePlacedCaveSettings(source.caveSettings),
+    caveColorSettings: sanitizePlacedCaveColorSettings(
+      source.caveColorSettings,
+      source.frontDataUrl
+        ? {
+          caveColorLayers: buildCustomDecorColorLayers({
+            key: `${CUSTOM_HIDE_KEY_PREFIX}pending`,
+            customType: "hide",
+            path: source.frontDataUrl,
+            bgPath: source.bgDataUrl || source.frontDataUrl
+          })
+        }
+        : null
+    )
+  };
+}
+
+function openCustomHideCreationOverlay(upload) {
+  openCustomAssetEditorOverlay("hide", buildPendingCustomHideUpload(upload), {
     clearPendingTypes: ["decor", "fish"]
   });
+}
+
+function getPendingCustomHidePreviewDecor() {
+  const pending = runtime.pendingCustomHideUpload;
+  if (!pending?.frontDataUrl) {
+    return null;
+  }
+
+  const path = pending.frontDataUrl;
+  const bgPath = pending.bgDataUrl || pending.frontDataUrl;
+  const caveSettings = sanitizePlacedCaveSettings(pending.caveSettings);
+  const caveColorLayers = buildCustomDecorColorLayers({
+    key: `${CUSTOM_HIDE_KEY_PREFIX}pending`,
+    customType: "hide",
+    path,
+    bgPath
+  });
+  return {
+    key: `${CUSTOM_HIDE_KEY_PREFIX}pending`,
+    path,
+    bgPath,
+    hasBg: true,
+    hasMask: false,
+    hasMid: false,
+    hasTrigger: false,
+    hasSeats: false,
+    caveColorLayers,
+    hasCaveColorLayers: caveColorLayers.length > 0,
+    name: pending.name || pending.suggestedName || "Custom Hide",
+    theme: "Custom",
+    cost: CUSTOM_HIDE_COST,
+    width: clamp(Number(pending.width) || CUSTOM_DECOR_DEFAULT_WIDTH, CUSTOM_DECOR_MIN_WIDTH, CUSTOM_DECOR_MAX_WIDTH),
+    defaultScale: clamp(Number(pending.scale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX),
+    customType: "hide",
+    motionType: DEFAULT_CUSTOM_DECOR_MOTION_TYPE,
+    motionSplitY: DEFAULT_CUSTOM_DECOR_MOTION_SPLIT_Y,
+    motionSwaySide: DEFAULT_DECOR_SWAY_SIDE,
+    motionIntensity: DEFAULT_CUSTOM_DECOR_MOTION_INTENSITY,
+    categories: ["custom", "caves"],
+    fishBehavior: {
+      explicitHangout: false,
+      hangoutTypes: ["hide"],
+      occupancyLimit: null,
+      note: ""
+    },
+    caveBehavior: buildCaveBehaviorProfileFromSettings(caveSettings),
+    defaultCaveSettings: caveSettings,
+    bubbler: null,
+    customAsset: true
+  };
 }
 
 function getPendingCustomHidePreviewItem() {
@@ -5879,7 +6369,8 @@ function getPendingCustomHidePreviewItem() {
     scale: clamp(Number(pending.scale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX),
     tankLayer: getDecorFrontLayer(`${CUSTOM_HIDE_KEY_PREFIX}pending`, pending.tankLayer || DEFAULT_TANK_LAYER),
     flipped: false,
-    caveSettings: pending.caveSettings
+    caveSettings: pending.caveSettings,
+    ...(pending.caveColorSettings ? { caveColorSettings: pending.caveColorSettings } : {})
   };
 }
 
@@ -5918,7 +6409,14 @@ function updatePendingCustomHidePreview() {
     slider.value = String(scale);
   }
 
-  updateCaveSettingsControls(getPendingCustomHidePreviewItem());
+  const previewItem = getPendingCustomHidePreviewItem();
+  const previewDecor = getPendingCustomHidePreviewDecor();
+  if (previewItem) {
+    updateCaveSettingsControls(previewItem);
+  }
+  if (previewItem && previewDecor) {
+    updateCaveColorSettingsControls(previewItem, previewDecor);
+  }
 }
 
 function updatePendingCustomHideScale(value) {
@@ -5928,6 +6426,16 @@ function updatePendingCustomHideScale(value) {
   }
 
   pending.scale = clamp(Number(value) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+  updatePendingCustomHidePreview();
+}
+
+function updatePendingCustomHideLayer(value) {
+  const pending = runtime.pendingCustomHideUpload;
+  if (!pending) {
+    return;
+  }
+
+  pending.tankLayer = getDecorFrontLayer(`${CUSTOM_HIDE_KEY_PREFIX}pending`, value);
   updatePendingCustomHidePreview();
 }
 
@@ -5994,7 +6502,51 @@ function normalizeTutorialMode(value, fallback = TUTORIAL_MODE_GUIDED) {
 
 function normalizeTutorialStage(value, fallback = TUTORIAL_STAGE_SPLASH) {
   const normalized = String(value || "").trim();
-  return normalized || fallback;
+  return TUTORIAL_STAGE_IDS.includes(normalized) ? normalized : fallback;
+}
+
+function migrateTutorialStage(rawStage, source = {}) {
+  const stage = String(rawStage || "").trim();
+  if (TUTORIAL_STAGE_IDS.includes(stage)) {
+    return stage;
+  }
+
+  switch (stage) {
+    case "welcome":
+    case "fish-store":
+      return TUTORIAL_STAGE_ADOPT_FISH;
+    case "fish-settle":
+      return TUTORIAL_STAGE_ADOPT_FISH_DONE;
+    case "fish-added":
+    case "decor-store":
+    case "decor-storage":
+    case "decor-place-hint":
+    case "decor-place-instructions":
+    case "decor-place":
+      return source.placedDecorId ? TUTORIAL_STAGE_PLACE_DECORATION_DONE : TUTORIAL_STAGE_PLACE_DECORATION;
+    case "decor-close":
+    case "decor-observe":
+      return TUTORIAL_STAGE_PLACE_DECORATION_DONE;
+    case "food-intro":
+    case "food-feed":
+      return TUTORIAL_STAGE_FEED_FISH;
+    case "food-settle":
+    case "tank-summary":
+    case "display":
+    case "features":
+      return TUTORIAL_STAGE_FEED_FISH_DONE;
+    case "poop-watch":
+      return source.rewards?.forcedPoopTriggered === true
+        ? TUTORIAL_STAGE_CLEAN_TANK
+        : TUTORIAL_STAGE_FEED_FISH_DONE;
+    case "clean-intro":
+    case "clean":
+      return TUTORIAL_STAGE_CLEAN_TANK;
+    case "complete":
+      return TUTORIAL_STAGE_CLEAN_TANK_DONE;
+    default:
+      return TUTORIAL_STAGE_SPLASH;
+  }
 }
 
 function sanitizeTutorialFeatureSteps(rawValue) {
@@ -6088,10 +6640,11 @@ function sanitizeTutorialState(rawState, options = {}) {
     : (legacyCompleted || defaultCompleted);
   const mode = normalizeTutorialMode(source.mode, TUTORIAL_MODE_GUIDED);
   const fallbackStage = completed ? TUTORIAL_STAGE_COMPLETED : TUTORIAL_STAGE_SPLASH;
-  const stage = normalizeTutorialStage(
+  const migratedStage = migrateTutorialStage(
     source.stage || (legacyCompleted ? TUTORIAL_STAGE_COMPLETED : TUTORIAL_STAGE_SPLASH),
-    fallbackStage
+    source
   );
+  const stage = normalizeTutorialStage(migratedStage, fallbackStage);
 
   return buildDefaultTutorialState({
     mode,
@@ -6101,7 +6654,7 @@ function sanitizeTutorialState(rawState, options = {}) {
     fishId: typeof source.fishId === "string" ? source.fishId : "",
     decorKey: typeof source.decorKey === "string" ? source.decorKey : "",
     placedDecorId: typeof source.placedDecorId === "string" ? source.placedDecorId : "",
-    activeFeatureStep: typeof source.activeFeatureStep === "string" ? source.activeFeatureStep : "",
+    activeFeatureStep: "",
     visitedFeatureSteps: sanitizeTutorialFeatureSteps(source.visitedFeatureSteps),
     rewards: sanitizeTutorialRewards(source.rewards)
   });
@@ -6194,30 +6747,20 @@ function markTutorialFeatureVisited(featureId) {
 }
 
 function completeTutorialFeature(featureId, now = Date.now()) {
-  if (!markTutorialFeatureVisited(featureId)) {
-    return false;
-  }
-
-  if (TUTORIAL_FEATURE_IDS.every((value) => hasTutorialFeatureVisited(value))) {
-    setTutorialStage(TUTORIAL_STAGE_POOP_WATCH, { now, activeFeatureStep: "" });
-  }
-
-  return true;
+  void featureId;
+  void now;
+  return false;
 }
 
 function beginTutorialFeatureStep(featureId) {
-  if (!isTutorialStage(TUTORIAL_STAGE_FEATURES) || hasTutorialFeatureVisited(featureId)) {
-    return false;
-  }
-  state.tutorial.activeFeatureStep = featureId;
-  runtime.tutorialDismissedFeaturePopup = "";
-  return true;
+  void featureId;
+  return false;
 }
 
 function finishTutorialFeatureStep(featureId, now = Date.now()) {
-  return isTutorialStage(TUTORIAL_STAGE_FEATURES) && state?.tutorial?.activeFeatureStep === featureId
-    ? completeTutorialFeature(featureId, now)
-    : false;
+  void featureId;
+  void now;
+  return false;
 }
 
 function getTutorialFishRecord() {
@@ -6463,12 +7006,15 @@ function finishTutorial(options = {}) {
   runtime.tutorialSkipReturnTab = "";
   runtime.tutorialSkipReturnStage = "";
   runtime.tutorialDisplayCollapsed = false;
+  runtime.tutorialToolbarRevealOrder = [];
   resetCompetingOverlayState({ reason: options.skipped ? "tutorial-skip" : "tutorial-finish" });
   renderToolCursor();
   saveState();
   renderUi(now);
   if (options.skipped) {
     showToast("Tutorial skipped.");
+  } else {
+    showToast("Congratulations on completing the tutorial. Have fun in Bubble Borough!", { durationMs: 5200 });
   }
 }
 
@@ -6529,6 +7075,7 @@ function rerunIntroTutorial() {
   runtime.tutorialSkipReturnTab = "";
   runtime.tutorialSkipReturnStage = "";
   runtime.tutorialDisplayCollapsed = false;
+  runtime.tutorialToolbarRevealOrder = [];
   saveState();
   closeSettingsOverlay();
 }
@@ -6578,6 +7125,7 @@ function resetTankInteractionRuntimeState(options = {}) {
   runtime.pointerStagePx = null;
   runtime.lastScrubPoint = null;
   runtime.dragState = null;
+  runtime.decorResizeState = null;
   runtime.fishDragState = null;
   runtime.eggDragState = null;
   runtime.pebbleDragState = null;
@@ -6605,7 +7153,7 @@ function cancelTutorialBlockingTankInteractions() {
 }
 
 function isTutorialDecorDoneStep() {
-  return isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE, TUTORIAL_STAGE_DECOR_CLOSE);
+  return false;
 }
 
 function getTutorialDecorDoneToastText(prefix = "") {
@@ -6636,8 +7184,8 @@ function reconcileTutorialTransientUi() {
     return;
   }
 
-  const { tutorial, ctx, stageDef } = tutorialState;
-  if (tutorial.stage !== TUTORIAL_STAGE_FEATURES && runtime.tutorialDismissedFeaturePopup) {
+  const { ctx, stageDef } = tutorialState;
+  if (runtime.tutorialDismissedFeaturePopup) {
     runtime.tutorialDismissedFeaturePopup = "";
   }
   stageDef?.reconcile?.(ctx);
@@ -6679,40 +7227,40 @@ const TUTORIAL_TOOLBAR_CONTROL_IDS = Object.freeze([
   "fishEditModeDockButton",
   "openEquipmentButton",
   "openSettingsButton",
+  "careTaskPaneButton",
   "spongeButton",
   "scoopButton"
 ]);
 
 const TUTORIAL_TOOLBAR_BLOCK_MESSAGES = Object.freeze({
-  openStoreButton: "Let's finish this step before heading back to the store.",
-  editModeDockButton: "We'll come back to Edit Decor right after this step.",
-  feedButton: "We'll feed your fish in just a moment.",
-  fishEditModeDockButton: "We'll tour that tool in just a moment.",
-  openEquipmentButton: "We'll tour that tool in just a moment.",
-  openSettingsButton: "We'll tour that tool in just a moment.",
-  spongeButton: "We'll clean the tank in just a moment.",
-  scoopButton: "The sponge is the tool we need for this cleanup step."
+  openStoreButton: "Finish this task first.",
+  editModeDockButton: "Decoration comes next.",
+  feedButton: "Feeding comes next.",
+  fishEditModeDockButton: "Available after the tutorial.",
+  openEquipmentButton: "Available after the tutorial.",
+  openSettingsButton: "Available after the tutorial.",
+  careTaskPaneButton: "Available after the tutorial.",
+  spongeButton: "Cleaning comes next.",
+  scoopButton: "Use the sponge here."
 });
 
 function createTutorialUiStateConfig(options = {}) {
   const toolbarVisible = options.toolbarVisible !== false;
   const visibleButtons = new Set(Array.isArray(options.visibleButtons) ? options.visibleButtons : []);
-  if (toolbarVisible) {
-    visibleButtons.add("openStoreButton");
-  }
   return {
     toolbarVisible,
-    displayVisible: options.displayVisible === true,
+    displayVisible: options.displayVisible !== false,
     pulseDisplay: options.pulseDisplay === true,
     visibleButtons,
     pulseButtons: new Set(Array.isArray(options.pulseButtons) ? options.pulseButtons : []),
+    revealButtons: new Set(Array.isArray(options.revealButtons) ? options.revealButtons : []),
     pulseDecorKey: typeof options.pulseDecorKey === "string" ? options.pulseDecorKey : "",
     pulseFoodKey: typeof options.pulseFoodKey === "string" ? options.pulseFoodKey : "",
     hideToolbarTab: options.hideToolbarTab !== false,
     hideDisplayTab: typeof options.hideDisplayTab === "boolean"
       ? options.hideDisplayTab
-      : !(options.displayVisible === true),
-    forceToolbarPosition: options.forceToolbarPosition || "bottom-center"
+      : options.displayVisible === false,
+    forceToolbarPosition: options.forceToolbarPosition || ""
   };
 }
 
@@ -6811,53 +7359,85 @@ function getActiveTutorialStageRuntime(now = Date.now()) {
   };
 }
 
-const TUTORIAL_FEATURE_STEP_DEFS = Object.freeze({
-  [TUTORIAL_FEATURE_MANAGE_FISH]: {
-    id: TUTORIAL_FEATURE_MANAGE_FISH,
-    controlId: "fishEditModeDockButton",
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          "Similar to the Edit Decor tool, you can add or remove fish from your tank within this menu. Click the Manage Fish toolbar icon again to close it."
-        ]),
-        closeAction: "dismiss-popup",
-        actions: ctx.isInfoOnly
-          ? [{ label: "Continue", action: "continue" }]
-          : [{ label: "Okay!", action: "dismiss-popup" }]
-      };
-    }
+const TUTORIAL_FEATURE_STEP_DEFS = Object.freeze({});
+
+const TUTORIAL_TASK_ADOPT_FISH = "adopt-fish";
+const TUTORIAL_TASK_PLACE_DECORATION = "place-decoration";
+const TUTORIAL_TASK_FEED_FISH = "feed-fish";
+const TUTORIAL_TASK_CLEAN_TANK = "clean-tank";
+const TUTORIAL_TASK_DEFS = Object.freeze({
+  [TUTORIAL_TASK_ADOPT_FISH]: {
+    id: TUTORIAL_TASK_ADOPT_FISH,
+    label: "Adopt A Fish"
   },
-  [TUTORIAL_FEATURE_EDIT_TANK]: {
-    id: TUTORIAL_FEATURE_EDIT_TANK,
-    controlId: "openEquipmentButton",
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          "From this menu, you can change the background, the colors of your gravel, switch to sand, and change your filter. Try changing your background and gravel color!"
-        ]),
-        closeAction: "dismiss-popup",
-        actions: ctx.isInfoOnly
-          ? [{ label: "Continue", action: "continue" }]
-          : [{ label: "Okay!", action: "dismiss-popup" }]
-      };
-    }
+  [TUTORIAL_TASK_PLACE_DECORATION]: {
+    id: TUTORIAL_TASK_PLACE_DECORATION,
+    label: "Place A Decoration"
   },
-  [TUTORIAL_FEATURE_SETTINGS]: {
-    id: TUTORIAL_FEATURE_SETTINGS,
-    controlId: "openSettingsButton",
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          "From this menu, you can toggle certain things on or off, adjust the placement of your toolbar and digital display, export and import save data, reset your progress, or view the credits or the creators site!"
-        ]),
-        closeAction: "dismiss-popup",
-        actions: ctx.isInfoOnly
-          ? [{ label: "Continue", action: "continue" }]
-          : [{ label: "Okay!", action: "dismiss-popup" }]
-      };
-    }
+  [TUTORIAL_TASK_FEED_FISH]: {
+    id: TUTORIAL_TASK_FEED_FISH,
+    label: "Feed Your Fish"
+  },
+  [TUTORIAL_TASK_CLEAN_TANK]: {
+    id: TUTORIAL_TASK_CLEAN_TANK,
+    label: "Clean The Tank"
   }
 });
+
+const TUTORIAL_CORE_TOOLBAR_BUTTON_IDS = Object.freeze([
+  "openStoreButton",
+  "editModeDockButton",
+  "feedButton",
+  "spongeButton"
+]);
+const TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS = Object.freeze([
+  "scoopButton",
+  "fishEditModeDockButton",
+  "openEquipmentButton",
+  "openSettingsButton",
+  "openManagementButton",
+  "careTaskPaneButton",
+  "medicineButton",
+  "tipsButton",
+  "toggleMouseLockButton",
+  "uvLightToggleButton"
+]);
+const TUTORIAL_ALL_TOOLBAR_BUTTON_IDS = Object.freeze([
+  ...TUTORIAL_CORE_TOOLBAR_BUTTON_IDS,
+  ...TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS
+]);
+
+function createTutorialTaskPopup(taskId, completed = false) {
+  const task = TUTORIAL_TASK_DEFS[taskId];
+  return task
+    ? {
+      mode: "task",
+      taskId: task.id,
+      taskLabel: task.label,
+      taskCompleted: completed === true
+    }
+    : null;
+}
+
+function getTutorialRevealButtonIds(ctx) {
+  if (
+    !Array.isArray(runtime.tutorialToolbarRevealOrder)
+    || runtime.tutorialToolbarRevealOrder.length !== TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS.length
+    || runtime.tutorialToolbarRevealOrder.some((buttonId) => !TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS.includes(buttonId))
+  ) {
+    const order = [...TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS];
+    for (let index = order.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [order[index], order[swapIndex]] = [order[swapIndex], order[index]];
+    }
+    runtime.tutorialToolbarRevealOrder = order;
+  }
+  const revealCount = Math.min(
+    runtime.tutorialToolbarRevealOrder.length,
+    Math.max(0, Math.floor(ctx.elapsed / TUTORIAL_TOOLBAR_REVEAL_STEP_MS))
+  );
+  return runtime.tutorialToolbarRevealOrder.slice(0, revealCount);
+}
 
 const TUTORIAL_STAGE_DEFS = Object.freeze({
   [TUTORIAL_STAGE_SPLASH]: {
@@ -6871,58 +7451,18 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
         if (dom.loadingOverlay && !dom.loadingOverlay.hidden) {
           return false;
         }
-        return createTutorialTimedAdvance(TUTORIAL_SPLASH_DURATION_MS, TUTORIAL_STAGE_WELCOME).onSync(ctx);
+        return createTutorialTimedAdvance(TUTORIAL_SPLASH_DURATION_MS, TUTORIAL_STAGE_ADOPT_FISH).onSync(ctx);
       }
     },
     resume: () => false
   },
-  [TUTORIAL_STAGE_WELCOME]: {
-    id: TUTORIAL_STAGE_WELCOME,
-    popup: () => ({
-      body: buildTutorialBodyMarkup([
-        "Welcome to Bubble Borough! Let's get you started with your first tank.",
-        "Click the Store button on the toolbar to go to the store."
-      ]),
-      actions: []
-    }),
+  [TUTORIAL_STAGE_ADOPT_FISH]: {
+    id: TUTORIAL_STAGE_ADOPT_FISH,
+    popup: () => createTutorialTaskPopup(TUTORIAL_TASK_ADOPT_FISH),
     ui: () => createTutorialUiStateConfig({
+      visibleButtons: ["openStoreButton"],
       pulseButtons: ["openStoreButton"]
     }),
-    store: () => ({
-      preferredTab: "fish",
-      open(ctx) {
-        ctx.setStage(TUTORIAL_STAGE_FISH_STORE);
-        saveState();
-        openStoreOverlay("fish");
-        return true;
-      }
-    }),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (ctx.isInfoOnly) {
-          return openTutorialStoreForCurrentStage();
-        }
-        return false;
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_FISH_STORE]: {
-    id: TUTORIAL_STAGE_FISH_STORE,
-    popup(ctx) {
-      return ctx.isInfoOnly
-        ? {
-          body: buildTutorialBodyMarkup([
-            "This is the fish section of the store.",
-            "During replay, this step is preview-only."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        }
-        : null;
-    },
-    ui: () => createTutorialUiStateConfig(),
     store: (ctx) => ({
       allowedTabs: new Set(["fish"]),
       preferredTab: "fish",
@@ -6936,70 +7476,30 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
       }
     }),
     toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        closeStoreOverlay({ force: true });
-        return ctx.setStage(TUTORIAL_STAGE_FISH_ADDED);
-      }
-    },
-    resume: () => {
-      resumeTutorialStoreState("fish");
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_FISH_SETTLE]: {
-    id: TUTORIAL_STAGE_FISH_SETTLE,
-    ui: () => createTutorialUiStateConfig(),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    advance: createTutorialTimedAdvance(TUTORIAL_FISH_ADDED_DELAY_MS, TUTORIAL_STAGE_FISH_ADDED),
     resume: () => false
   },
-  [TUTORIAL_STAGE_FISH_ADDED]: {
-    id: TUTORIAL_STAGE_FISH_ADDED,
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          ctx.isGuided
-            ? `${ctx.fishName} the ${ctx.fishType} has now been added to your tank! Next, you will need to get some decorations.`
-            : "In a fresh tutorial, your starter fish would now be in the tank! Next, you would grab a decoration.",
-          "Click the Store button on the toolbar again to go to the store."
-        ]),
-        actions: []
-      };
-    },
+  [TUTORIAL_STAGE_ADOPT_FISH_DONE]: {
+    id: TUTORIAL_STAGE_ADOPT_FISH_DONE,
+    popup: () => createTutorialTaskPopup(TUTORIAL_TASK_ADOPT_FISH, true),
     ui: () => createTutorialUiStateConfig({
-      pulseButtons: ["openStoreButton"]
+      visibleButtons: ["openStoreButton"]
     }),
-    store: () => ({
-      preferredTab: "decor",
-      open(ctx) {
-        ctx.setStage(TUTORIAL_STAGE_DECOR_STORE);
-        saveState();
-        openStoreOverlay("decor");
-        return true;
-      }
-    }),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
+    toolbar: () => createTutorialToolbarConfig([]),
+    advance: createTutorialTimedAdvance(TUTORIAL_TASK_COMPLETE_DELAY_MS, TUTORIAL_STAGE_PLACE_DECORATION),
     resume: () => false
   },
-  [TUTORIAL_STAGE_DECOR_STORE]: {
-    id: TUTORIAL_STAGE_DECOR_STORE,
-    popup(ctx) {
-      return ctx.isInfoOnly
-        ? {
-          body: buildTutorialBodyMarkup([
-            "This is the decor section of the store.",
-            "During replay, this step is preview-only."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        }
-        : null;
+  [TUTORIAL_STAGE_PLACE_DECORATION]: {
+    id: TUTORIAL_STAGE_PLACE_DECORATION,
+    popup: () => createTutorialTaskPopup(TUTORIAL_TASK_PLACE_DECORATION),
+    ui: (ctx) => {
+      const hasDecor = Boolean(ctx.tutorial?.decorKey);
+      const editModeOpen = runtime.editTankMode === true;
+      return createTutorialUiStateConfig({
+        visibleButtons: hasDecor ? ["openStoreButton", "editModeDockButton"] : ["openStoreButton"],
+        pulseButtons: hasDecor && !editModeOpen ? ["editModeDockButton"] : (!hasDecor ? ["openStoreButton"] : []),
+        pulseDecorKey: hasDecor && editModeOpen ? ctx.tutorial.decorKey : ""
+      });
     },
-    ui: () => createTutorialUiStateConfig(),
     store: (ctx) => ({
       allowedTabs: new Set(["decor"]),
       preferredTab: "decor",
@@ -7012,436 +7512,108 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
         return true;
       }
     }),
-    toolbar: () => createTutorialToolbarConfig(["openStoreButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        closeStoreOverlay({ force: true });
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_STORAGE);
-      }
-    },
-    resume: () => {
-      resumeTutorialStoreState("decor");
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_STORAGE]: {
-    id: TUTORIAL_STAGE_DECOR_STORAGE,
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          ctx.isGuided
-            ? "Great choice! Your new decoration is waiting for you in your storage."
-            : `In a fresh tutorial, ${ctx.decorName} would now be waiting in your storage.`,
-          "Click the Decor button on the toolbar to edit decor."
-        ]),
-        actions: []
-      };
-    },
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseButtons: ["editModeDockButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig(["editModeDockButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_PLACE_HINT);
-      }
-    },
+    toolbar: (ctx) => createTutorialToolbarConfig(ctx.tutorial?.decorKey
+      ? ["openStoreButton", "editModeDockButton"]
+      : ["openStoreButton"]),
     resume: () => false
   },
-  [TUTORIAL_STAGE_DECOR_PLACE_HINT]: {
-    id: TUTORIAL_STAGE_DECOR_PLACE_HINT,
-    popup(ctx) {
-      return ctx.isInfoOnly
-        ? {
-          body: buildTutorialBodyMarkup([
-            "This is where your stored decoration would appear during a normal tutorial.",
-            "Click Continue to move ahead without placing anything."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        }
-        : {
-          body: buildTutorialBodyMarkup([
-            "Click on your decoration from the menu and place it where you wish."
-          ]),
-          actions: []
-        };
-    },
-    ui: (ctx) => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseDecorKey: ctx.tutorial?.decorKey || ""
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_CLOSE);
-      }
-    },
-    resume: () => {
-      resumeTutorialEditDecorState();
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS]: {
-    id: TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS,
-    popup: () => ({
-      blockInteraction: true,
-      body: buildTutorialBodyMarkup([
-        "Decorations can be adjusted however you see fit!",
-        "Press Z/X or Up/Down to change the placement layer.",
-        "Press + or - to change the size.",
-        "Press F to flip the decoration.",
-        "Press S to adjust the settings.",
-        "When you have more decorations, you can even create groups of items by Shift/Ctrl clicking on multiple items and clicking G to group, or U to ungroup!",
-        "Take your time placing the item! Click the Decor button on the toolbar when you are done."
-      ]),
-      actions: [{ label: "Okay!", action: "continue" }]
-    }),
-    ui: (ctx) => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseDecorKey: ctx.tutorial?.decorKey || ""
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_PLACE);
-      }
-    },
-    resume: (ctx) => {
-      if (!restoreTutorialDecorPlacementMode(ctx.tutorial?.decorKey)) {
-        resumeTutorialEditDecorState();
-      }
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_PLACE]: {
-    id: TUTORIAL_STAGE_DECOR_PLACE,
-    keepDecorDoneToast: true,
-    ui: (ctx) => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseDecorKey: ctx.tutorial?.decorKey || ""
-    }),
-    toolbar: (ctx) => createTutorialToolbarConfig(ctx.tutorial?.placedDecorId ? ["editModeDockButton"] : []),
-    resume: (ctx) => {
-      if (ctx.tutorial?.placedDecorId && getPlacedDecorById(ctx.tutorial.placedDecorId)) {
-        const changed = ctx.setStage(TUTORIAL_STAGE_DECOR_CLOSE, {
-          placedDecorId: ctx.tutorial.placedDecorId
-        });
-        resumeTutorialEditDecorState();
-        setSelectedDecor(ctx.tutorial.placedDecorId);
-        showTutorialDecorDoneToast();
-        return changed;
-      }
-      if (!restoreTutorialDecorPlacementMode(ctx.tutorial?.decorKey)) {
-        resumeTutorialEditDecorState();
-      }
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_CLOSE]: {
-    id: TUTORIAL_STAGE_DECOR_CLOSE,
-    keepDecorDoneToast: true,
-    popup(ctx) {
-      return ctx.isInfoOnly
-        ? {
-          body: buildTutorialBodyMarkup([
-            "In a normal tutorial, this is where you would close Edit Decor and continue watching your tank."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        }
-        : null;
-    },
+  [TUTORIAL_STAGE_PLACE_DECORATION_DONE]: {
+    id: TUTORIAL_STAGE_PLACE_DECORATION_DONE,
+    popup: () => createTutorialTaskPopup(TUTORIAL_TASK_PLACE_DECORATION, true),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"],
-      pulseButtons: ["editModeDockButton"]
+      visibleButtons: ["openStoreButton", "editModeDockButton"]
     }),
     toolbar: () => createTutorialToolbarConfig(["editModeDockButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_DECOR_OBSERVE);
-      }
-    },
-    resume: (ctx) => {
-      resumeTutorialEditDecorState();
-      if (ctx.tutorial?.placedDecorId && getPlacedDecorById(ctx.tutorial.placedDecorId)) {
-        setSelectedDecor(ctx.tutorial.placedDecorId);
-      }
-      showTutorialDecorDoneToast();
-      return false;
-    }
-  },
-  [TUTORIAL_STAGE_DECOR_OBSERVE]: {
-    id: TUTORIAL_STAGE_DECOR_OBSERVE,
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
     advance: createTutorialTimedAdvance(
-      TUTORIAL_DECOR_OBSERVE_DELAY_MS,
-      TUTORIAL_STAGE_FOOD_INTRO,
+      TUTORIAL_TASK_COMPLETE_DELAY_MS,
+      TUTORIAL_STAGE_FEED_FISH,
       (ctx) => ctx.isGuided ? grantTutorialBasicFoodReward(ctx.now) : false
     ),
     resume: () => false
   },
-  [TUTORIAL_STAGE_FOOD_INTRO]: {
-    id: TUTORIAL_STAGE_FOOD_INTRO,
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          ctx.isGuided
-            ? `${ctx.fishName} looks hungry! I have given you some fish pellets. Let's feed them!\n\nClick the Feed button on the toolbar.`
-            : "This is where the food tool lives. During replay, this step is preview-only."
-        ]),
-        actions: ctx.isInfoOnly ? [{ label: "Continue", action: "continue" }] : []
-      };
-    },
+  [TUTORIAL_STAGE_FEED_FISH]: {
+    id: TUTORIAL_STAGE_FEED_FISH,
+    popup: () => createTutorialTaskPopup(TUTORIAL_TASK_FEED_FISH),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"],
-      pulseButtons: ["feedButton"]
+      visibleButtons: ["openStoreButton", "editModeDockButton", "feedButton"],
+      pulseButtons: runtime.editTankMode ? ["editModeDockButton"] : (runtime.foodTrayOpen ? [] : ["feedButton"]),
+      pulseFoodKey: runtime.foodTrayOpen ? TUTORIAL_BASIC_FOOD_KEY : ""
     }),
-    toolbar: () => createTutorialToolbarConfig(["feedButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        return ctx.setStage(TUTORIAL_STAGE_TANK_SUMMARY);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_FOOD_FEED]: {
-    id: TUTORIAL_STAGE_FOOD_FEED,
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"],
-      pulseFoodKey: TUTORIAL_BASIC_FOOD_KEY
-    }),
-    toolbar: () => createTutorialToolbarConfig(["feedButton"]),
+    toolbar: () => createTutorialToolbarConfig(runtime.editTankMode
+      ? ["editModeDockButton", "feedButton"]
+      : ["feedButton"]),
     resume: (ctx) => resumeTutorialFoodState(ctx.tutorial, ctx.now)
   },
-  [TUTORIAL_STAGE_FOOD_SETTLE]: {
-    id: TUTORIAL_STAGE_FOOD_SETTLE,
+  [TUTORIAL_STAGE_FEED_FISH_DONE]: {
+    id: TUTORIAL_STAGE_FEED_FISH_DONE,
+    popup: () => createTutorialTaskPopup(TUTORIAL_TASK_FEED_FISH, true),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: createTutorialTimedAdvance(TUTORIAL_POST_FEED_DELAY_MS, TUTORIAL_STAGE_TANK_SUMMARY),
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_TANK_SUMMARY]: {
-    id: TUTORIAL_STAGE_TANK_SUMMARY,
-    popup: () => ({
-      body: buildTutorialBodyMarkup([
-        "Your tank is coming together nicely! Just remember to feed your fish twice a day, and make sure not to over feed them. When you run out of fish food, you can purchase a new bottle from the store. I don't know if you noticed, but you actually earned money by feeding your fish, so it literally pays to feed your fish. Different fish have different earnings per meal."
-      ]),
-      actions: [{ label: "Okay!", action: "continue" }]
-    }),
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"]
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        return ctx.setStage(TUTORIAL_STAGE_DISPLAY);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_DISPLAY]: {
-    id: TUTORIAL_STAGE_DISPLAY,
-    popup: () => ({
-      body: buildTutorialBodyMarkup([
-        "This digital display is a quick reference for tank cleanliness, daily meals, and how many coins you have. You can click the tab to hide it."
-      ]),
-      actions: [{ label: "Okay great!", action: "continue" }]
-    }),
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton"],
-      displayVisible: true,
-      pulseDisplay: true
-    }),
-    toolbar: () => createTutorialToolbarConfig([]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        return ctx.setStage(TUTORIAL_STAGE_FEATURES);
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_FEATURES]: {
-    id: TUTORIAL_STAGE_FEATURES,
-    popup(ctx) {
-      if (ctx.isInfoOnly && !ctx.tutorial?.activeFeatureStep) {
-        return {
-          body: buildTutorialBodyMarkup([
-            "Replay mode previews the rest of the toolbar one tool at a time."
-          ]),
-          actions: [{ label: "Continue", action: "continue" }]
-        };
-      }
-      if (ctx.featureStepDef) {
-        if (isTutorialFeaturePopupDismissed(ctx.tutorial.activeFeatureStep)) {
-          return null;
-        }
-        return ctx.featureStepDef.popup(ctx);
-      }
-      return {
-        body: buildTutorialBodyMarkup([
-          "Open Manage Fish, Edit Tank, and Settings to learn where the rest of your aquarium tools live."
-        ]),
-        actions: ctx.isInfoOnly ? [{ label: "Continue", action: "continue" }] : []
-      };
-    },
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton"],
-      pulseButtons: [
-        !hasTutorialFeatureVisited(TUTORIAL_FEATURE_MANAGE_FISH) ? "fishEditModeDockButton" : "",
-        !hasTutorialFeatureVisited(TUTORIAL_FEATURE_EDIT_TANK) ? "openEquipmentButton" : "",
-        !hasTutorialFeatureVisited(TUTORIAL_FEATURE_SETTINGS) ? "openSettingsButton" : ""
-      ].filter(Boolean),
-      displayVisible: true
-    }),
-    toolbar: () => createTutorialToolbarConfig(["fishEditModeDockButton", "openEquipmentButton", "openSettingsButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
-          return false;
-        }
-        if (!ctx.tutorial?.activeFeatureStep) {
-          return ctx.setStage(TUTORIAL_STAGE_FEATURES, { activeFeatureStep: TUTORIAL_FEATURE_MANAGE_FISH });
-        }
-        const nextFeatureStep = getNextTutorialFeatureStepId(ctx.tutorial.activeFeatureStep);
-        return nextFeatureStep
-          ? ctx.setStage(TUTORIAL_STAGE_FEATURES, { activeFeatureStep: nextFeatureStep })
-          : ctx.setStage(TUTORIAL_STAGE_POOP_WATCH, { activeFeatureStep: "" });
-      },
-      onDismiss(ctx) {
-        if (ctx.tutorial?.activeFeatureStep) {
-          runtime.tutorialDismissedFeaturePopup = ctx.tutorial.activeFeatureStep;
-          renderUi(ctx.now, { full: false });
-          return true;
-        }
-        return false;
-      }
-    },
-    reconcile(ctx) {
-      if (
-        runtime.tutorialDismissedFeaturePopup
-        && ctx.tutorial?.activeFeatureStep !== runtime.tutorialDismissedFeaturePopup
-      ) {
-        runtime.tutorialDismissedFeaturePopup = "";
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_POOP_WATCH]: {
-    id: TUTORIAL_STAGE_POOP_WATCH,
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton"],
-      displayVisible: true
+      visibleButtons: ["openStoreButton", "editModeDockButton", "feedButton"]
     }),
     toolbar: () => createTutorialToolbarConfig([]),
     advance: {
       type: "timeout",
       onSync(ctx) {
-        let changed = false;
-        if (ctx.isGuided && ctx.elapsed >= TUTORIAL_POOP_TRIGGER_DELAY_MS) {
-          changed = forceTutorialPoopScenario(ctx.now) || changed;
-        }
-        if (ctx.elapsed >= TUTORIAL_POOP_CLEAN_PROMPT_DELAY_MS) {
-          changed = ctx.setStage(TUTORIAL_STAGE_CLEAN_INTRO) || changed;
-        }
-        return changed;
-      }
-    },
-    resume: () => false
-  },
-  [TUTORIAL_STAGE_CLEAN_INTRO]: {
-    id: TUTORIAL_STAGE_CLEAN_INTRO,
-    popup(ctx) {
-      return {
-        body: buildTutorialBodyMarkup([
-          ctx.isGuided
-            ? `That was fast! ${ctx.fishName} just ate! Wow...`
-            : "During replay, this is where the cleanup lesson would begin.",
-          "Well, let's clean that up!"
-        ]),
-        actions: ctx.isInfoOnly ? [{ label: "Continue", action: "continue" }] : []
-      };
-    },
-    ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton", "spongeButton", "scoopButton"],
-      pulseButtons: ["spongeButton"],
-      displayVisible: true
-    }),
-    toolbar: () => createTutorialToolbarConfig(["spongeButton"]),
-    advance: {
-      type: "action",
-      onContinue(ctx) {
-        if (!ctx.isInfoOnly) {
+        if (ctx.elapsed < TUTORIAL_POST_FEED_DELAY_MS) {
           return false;
         }
-        return ctx.setStage(TUTORIAL_STAGE_COMPLETE);
+        let changed = false;
+        if (ctx.isGuided) {
+          changed = forceTutorialPoopScenario(ctx.now) || changed;
+        }
+        return ctx.setStage(TUTORIAL_STAGE_CLEAN_TANK) || changed;
       }
     },
     resume: () => false
   },
-  [TUTORIAL_STAGE_CLEAN]: {
-    id: TUTORIAL_STAGE_CLEAN,
+  [TUTORIAL_STAGE_CLEAN_TANK]: {
+    id: TUTORIAL_STAGE_CLEAN_TANK,
+    popup: () => createTutorialTaskPopup(TUTORIAL_TASK_CLEAN_TANK),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton", "spongeButton", "scoopButton"],
-      displayVisible: true
+      visibleButtons: ["openStoreButton", "editModeDockButton", "feedButton", "spongeButton"],
+      pulseButtons: ["spongeButton"]
     }),
     toolbar: () => createTutorialToolbarConfig(["spongeButton"]),
-    resume: () => {
-      resumeTutorialCleaningState();
-      return false;
-    }
+    resume: () => false
   },
-  [TUTORIAL_STAGE_COMPLETE]: {
-    id: TUTORIAL_STAGE_COMPLETE,
-    popup: () => ({
-      body: buildTutorialBodyMarkup([
-        "Great job! It looks great! It normally shouldn't happen that quick, but make sure that you maintain a clean environment for your fish so they don't get sick.",
-        "That is all for now! Enjoy your new fish tank!"
-      ]),
-      actions: [{ label: "Okay!", action: "continue" }]
-    }),
+  [TUTORIAL_STAGE_CLEAN_TANK_DONE]: {
+    id: TUTORIAL_STAGE_CLEAN_TANK_DONE,
+    popup: () => createTutorialTaskPopup(TUTORIAL_TASK_CLEAN_TANK, true),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["editModeDockButton", "feedButton", "fishEditModeDockButton", "openEquipmentButton", "openSettingsButton", "spongeButton", "scoopButton"],
-      displayVisible: true
+      visibleButtons: ["openStoreButton", "editModeDockButton", "feedButton", "spongeButton"]
     }),
     toolbar: () => createTutorialToolbarConfig([]),
+    advance: createTutorialTimedAdvance(TUTORIAL_TASK_COMPLETE_DELAY_MS, TUTORIAL_STAGE_TOOLBAR_REVEAL),
+    resume: () => false
+  },
+  [TUTORIAL_STAGE_TOOLBAR_REVEAL]: {
+    id: TUTORIAL_STAGE_TOOLBAR_REVEAL,
+    popup: () => null,
+    ui: (ctx) => {
+      const revealButtons = getTutorialRevealButtonIds(ctx);
+      return createTutorialUiStateConfig({
+        visibleButtons: [
+          ...TUTORIAL_CORE_TOOLBAR_BUTTON_IDS,
+          ...revealButtons
+        ],
+        revealButtons
+      });
+    },
+    toolbar: () => createTutorialToolbarConfig(TUTORIAL_ALL_TOOLBAR_BUTTON_IDS),
     advance: {
-      type: "action",
-      onContinue() {
+      type: "timeout",
+      onSync(ctx) {
+        const revealDuration = TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS.length * TUTORIAL_TOOLBAR_REVEAL_STEP_MS
+          + TUTORIAL_TOOLBAR_REVEAL_SETTLE_MS;
+        if (ctx.elapsed < revealDuration) {
+          return false;
+        }
         finishTutorial();
         return true;
       }
     },
     resume: () => false
-  }
+  },
 });
 
 function getTutorialPopupConfig() {
@@ -7475,7 +7647,7 @@ function guardTutorialToolbarControl(controlId) {
     return true;
   }
   const message = getActiveTutorialStageRuntime(Date.now())?.toolbarConfig?.blockedMessages?.[controlId]
-    || "Let's finish this step first.";
+    || "Finish this task first.";
   showToast(message);
   return false;
 }
@@ -7588,14 +7760,6 @@ function toggleEditTankMode(force = null, options = {}) {
     if (options.collapseSidebar) {
       runtime.sidebarCollapsed = true;
     }
-    if (isTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE)) {
-      tutorialChanged = setTutorialStage(TUTORIAL_STAGE_DECOR_PLACE_HINT, { now }) || tutorialChanged;
-    }
-  } else if (
-    isTutorialStage(TUTORIAL_STAGE_DECOR_CLOSE)
-    || (isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE) && Boolean(state?.tutorial?.placedDecorId))
-  ) {
-    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_DECOR_OBSERVE, { now }) || tutorialChanged;
   }
 
   if (tutorialChanged) {
@@ -7684,6 +7848,7 @@ function clearPrimaryToolModes() {
   runtime.cleaningMode = false;
   runtime.scoopMode = false;
   runtime.dragState = null;
+  runtime.decorResizeState = null;
   runtime.fishDragState = null;
   runtime.eggDragState = null;
   runtime.pebbleDragState = null;
@@ -8014,18 +8179,21 @@ function toggleToolbarTrayMode(config, force = null, options = {}) {
 function toggleFoodTray(force = null, options = {}) {
   toggleToolbarTrayMode({
     reason: "food-tray",
-    forceOpen: () => isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FOOD_FEED),
+    forceOpen: () => isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FEED_FISH),
     isOpen: () => runtime.foodTrayOpen,
     hasSelection: () => Boolean(runtime.feedingModeFoodKey),
     onOpen(now, toggleOptions) {
       let tutorialChanged = false;
+      if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FEED_FISH)) {
+        runtime.foodTrayOpen = false;
+        runtime.feedingModeFoodKey = "";
+        runtime.toolModeSource = null;
+        return setTutorialStage(TUTORIAL_STAGE_FEED_FISH_DONE, { now });
+      }
       runtime.foodTrayOpen = true;
       runtime.toolModeSource = toggleOptions.source || "toolbar";
       if (toggleOptions.collapseSidebar) {
         runtime.sidebarCollapsed = true;
-      }
-      if (isTutorialStage(TUTORIAL_STAGE_FOOD_INTRO)) {
-        tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FOOD_FEED, { now }) || tutorialChanged;
       }
       return tutorialChanged;
     }
@@ -8112,7 +8280,7 @@ async function init() {
   bindEvents();
   syncFilterFeatureVisibility();
 
-  const [backgroundResponse, tankResponse, filterResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, decorCatalog, filterCatalogMeta, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
+  const [backgroundResponse, tankResponse, filterResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, filterCatalogMeta, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
     fetchAssetList("backgrounds"),
     fetchAssetList("tank"),
     fetchAssetList("filter"),
@@ -8122,6 +8290,7 @@ async function init() {
     fetchAssetList("decor"),
     fetchAssetList("sucker-fish"),
     fetchFishCatalog(),
+    fetchZombieSkeletonFishCatalog(),
     fetchDecorCatalog(),
     fetchFilterCatalogMeta(),
     fetchBackgroundCatalogMeta(),
@@ -8129,16 +8298,32 @@ async function init() {
   ]);
 
   runtime.suckerFishCatalog = suckerFishResponse;
+  const baseFishResponse = fishResponse.filter((item) => !isZombieSkeletonAssetFile(item));
   const normalizedDecorMeta = normalizeDecorMeta(decorCatalog);
   const normalizedFilterMeta = normalizeFilterMeta(filterCatalogMeta);
   runtime.decorMeta = normalizedDecorMeta;
   runtime.foodAndMedCatalog = normalizeFoodAndMedCatalog(foodAndMedCatalog);
-  const normalizedFishCatalog = normalizeFishCatalog(fishCatalog, {
+  const normalizedBaseFishCatalog = normalizeFishCatalog(fishCatalog, {
     assetFolders: {
-      fish: fishResponse,
+      fish: baseFishResponse,
       "sucker-fish": suckerFishResponse
-    }
+    },
+    includeZombieSkeletonStageAssets: false,
+    allowZombieSkeletonFish: false
   });
+  const normalizedZombieSkeletonFishCatalog = ZOMBIE_SKELETON_BEHAVIOR_ENABLED
+    ? normalizeFishCatalog(zombieSkeletonFishCatalog, {
+      assetFolders: {},
+      includeZombieSkeletonStageAssets: false,
+      allowZombieSkeletonFish: true
+    })
+    : [];
+  const normalizedFishCatalog = ZOMBIE_SKELETON_BEHAVIOR_ENABLED
+    ? [
+      ...mergeZombieSkeletonStageAssets(normalizedBaseFishCatalog, zombieSkeletonFishCatalog, { resolveAppUrl }),
+      ...normalizedZombieSkeletonFishCatalog
+    ]
+    : normalizedBaseFishCatalog;
   runtime.fishCatalog = [
     ...normalizedFishCatalog,
     ...buildVirtualFishCatalogEntries()
@@ -8152,8 +8337,7 @@ async function init() {
   runtime.filterCatalog = buildFilterCatalog(filterResponse, normalizedFilterMeta);
   runtime.customGravelLayerCatalog = buildCustomGravelLayerCatalog(gravelResponse);
   runtime.customGravelPebbleCatalog = buildCustomGravelPebbleCatalog(gravelResponse);
-  runtime.gravelCatalog = buildSimpleAssetCatalog(gravelResponse, {}, "")
-    .filter((item) => !isCustomGravelReservedAssetKey(item.key));
+  runtime.gravelCatalog = [...runtime.customGravelPebbleCatalog];
   runtime.bubbleCatalog = buildSimpleAssetCatalog(bubbleResponse, BUBBLE_META, "");
   runtime.decorCatalog = [
     ...buildDecorCatalog(decorResponse, normalizedDecorMeta),
@@ -8204,6 +8388,7 @@ async function init() {
     ...Object.values(TOOL_CURSOR_ICON_PATHS),
     ...runtime.decorCatalog.flatMap((item) => [
       item.path,
+      item.thumbnailPath,
       item.bgPath,
       item.midPath,
       item.maskPath,
@@ -8288,6 +8473,9 @@ function hideLoadingOverlay() {
     syncAmbienceAudio();
   };
 
+  if (isTutorialStage(TUTORIAL_STAGE_SPLASH) && state?.tutorial) {
+    renderUi(Date.now(), { full: false });
+  }
   overlay.addEventListener("transitionend", complete, { once: true });
   overlay.classList.remove("is-ready");
   overlay.classList.add("is-hiding");
@@ -9015,7 +9203,7 @@ function bindEvents() {
   dom.resetFishHealthButton?.addEventListener("click", () => restoreAllFishHealthDebug());
   dom.addCoinsButton.addEventListener("click", () => addDebugCoins());
   dom.maxDirtButton.addEventListener("click", () => makeTankMaxDirty());
-  dom.deleteAllButton.addEventListener("click", () => deleteAllFishAndDecor());
+  dom.debugGravelDigButton?.addEventListener("click", () => triggerDebugGravelDigTest());
   dom.debugGravelPebbleButton?.addEventListener("click", () => triggerDebugGravelPebbleTest());
   dom.debugCaveButton.addEventListener("click", () => toggleDebugNightCaveMode());
   dom.debugFishBehaviorLogButton?.addEventListener("click", () => downloadDebugFishBehaviorLog());
@@ -9052,6 +9240,14 @@ function bindEvents() {
   dom.toggleDecorShop.addEventListener("click", () => openStoreOverlay("decor"));
   dom.tankBottomDock?.addEventListener("click", captureToolbarButtonSoundState, true);
   dom.tankBottomDock?.addEventListener("click", playToolbarButtonSoundForClick);
+  dom.tankBottomDock?.addEventListener("pointerover", handleToolbarFastTooltipPointerOver);
+  dom.tankBottomDock?.addEventListener("pointermove", handleToolbarFastTooltipPointerMove);
+  dom.tankBottomDock?.addEventListener("pointerout", handleToolbarFastTooltipPointerOut);
+  dom.tankBottomDock?.addEventListener("focusin", handleToolbarFastTooltipFocusIn);
+  dom.tankBottomDock?.addEventListener("focusout", handleToolbarFastTooltipFocusOut);
+  dom.tankBottomDock?.addEventListener("click", hideToolbarFastTooltip, true);
+  window.addEventListener("resize", hideToolbarFastTooltip);
+  document.addEventListener("scroll", hideToolbarFastTooltip, true);
   dom.openStoreButton.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("openStoreButton")) {
       return;
@@ -9073,6 +9269,12 @@ function bindEvents() {
       return;
     }
     openUtilityOverlay("tank-management");
+  });
+  dom.careTaskPaneButton?.addEventListener("click", () => {
+    if (!guardTutorialToolbarControl("careTaskPaneButton")) {
+      return;
+    }
+    toggleCareTaskPane();
   });
   dom.openEquipmentButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("openEquipmentButton")) {
@@ -9528,7 +9730,7 @@ function bindEvents() {
     const sellButton = event.target.closest("[data-tray-sell-fish]");
     if (sellButton) {
       closeEditFishTrayContextMenu({ render: false });
-      sellFish(sellButton.dataset.traySellFish);
+      openFishSellConfirmation(sellButton.dataset.traySellFish);
       return;
     }
     const disposeButton = event.target.closest("[data-tray-dispose-fish]");
@@ -9966,7 +10168,7 @@ function bindEvents() {
 
     const sellButton = event.target.closest("[data-sell-fish]");
     if (sellButton) {
-      sellFish(sellButton.dataset.sellFish);
+      openFishSellConfirmation(sellButton.dataset.sellFish);
       return;
     }
 
@@ -10066,18 +10268,6 @@ function bindEvents() {
         return;
       }
 
-      const gravelButton = event.target.closest("[data-select-gravel]");
-      if (gravelButton) {
-        selectGravelAsset(gravelButton.dataset.selectGravel);
-        return;
-      }
-
-      const toggleCustomGravelButton = event.target.closest("[data-toggle-custom-gravel]");
-      if (toggleCustomGravelButton) {
-        setCustomGravelEnabled(!state?.customGravelEnabled);
-        return;
-      }
-
       const swatchButton = event.target.closest("[data-custom-gravel-color]");
       if (swatchButton) {
         setCustomGravelLayerColor(
@@ -10126,8 +10316,6 @@ function bindEvents() {
   bindEquipmentSurface(dom.equipmentFilterList);
   bindEquipmentSurface(dom.uvLightList);
   bindEquipmentSurface(dom.equipmentUvLightList);
-  bindEquipmentSurface(dom.gravelAssetList);
-  bindEquipmentSurface(dom.equipmentGravelAssetList);
   bindEquipmentSurface(dom.customGravelPanel);
   bindEquipmentSurface(dom.equipmentCustomGravelPanel);
 
@@ -10368,6 +10556,13 @@ function bindEvents() {
     updateGlassTapGesture(event, point);
     renderToolCursor();
 
+    if (runtime.decorResizeState) {
+      if (point) {
+        updateDecorCornerResize(point);
+      }
+      return;
+    }
+
     if (runtime.dragState) {
       if (point) {
         updateDraggedDecor(point);
@@ -10458,9 +10653,24 @@ function bindEvents() {
   for (const container of [
     dom.selectedDecorActionBar,
     dom.selectedDecorScaleControls,
-    dom.selectedDecorLayerControls
+    dom.selectedDecorLayerControls,
+    dom.selectedDecorResizeHandles
   ]) {
     container?.addEventListener("click", playSelectedDecorActionSound, true);
+  }
+  for (const handle of dom.selectedDecorResizeCornerHandles || []) {
+    handle?.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const corner = handle.dataset.selectedDecorResizeCorner;
+      const placedId = handle.dataset.resizeDecor || runtime.selectedDecorId;
+      const item = getPlacedDecorById(placedId);
+      const point = getTankPoint(event);
+      if (item && point) {
+        playToolbarButtonReleaseSoundEffect();
+        beginDecorCornerResize(item, corner, point, event.pointerId);
+      }
+    });
   }
   dom.selectedDecorScaleUpButton?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -10534,7 +10744,7 @@ function bindEvents() {
   dom.inspectorSellFish?.addEventListener("click", () => {
     const fishId = dom.inspectorSellFish?.dataset.sellFish;
     if (fishId) {
-      sellFish(fishId);
+      openFishSellConfirmation(fishId);
     }
   });
   dom.inspectorStoreFish?.addEventListener("click", () => {
@@ -10597,6 +10807,9 @@ function bindEvents() {
     runtime.pointerDown = false;
     runtime.lastScrubPoint = null;
     resetScrubWipeSoundState();
+    if (runtime.decorResizeState) {
+      finalizeDecorCornerResize();
+    }
     if (runtime.dragState) {
       finalizeDecorDrag();
     }
@@ -10625,6 +10838,33 @@ function bindEvents() {
     releasePointer(event);
   });
   dom.tankStage.addEventListener("pointercancel", releasePointer);
+  window.addEventListener("pointermove", (event) => {
+    if (!runtime.decorResizeState) {
+      return;
+    }
+    if (event.target instanceof Element && dom.tankStage?.contains(event.target)) {
+      return;
+    }
+    event.preventDefault();
+    const point = getTankPoint(event);
+    if (point) {
+      updateDecorCornerResize(point);
+    }
+  });
+  const releaseActiveTankPointer = (event) => {
+    if (
+      runtime.pointerDown
+      || runtime.decorResizeState
+      || runtime.dragState
+      || runtime.fishDragState
+      || runtime.eggDragState
+      || runtime.pebbleDragState
+    ) {
+      releasePointer(event);
+    }
+  };
+  window.addEventListener("pointerup", releaseActiveTankPointer);
+  window.addEventListener("pointercancel", releaseActiveTankPointer);
   window.addEventListener("pointerdown", (event) => {
     if (
       runtime.editDecorTrayContextMenuState.decorKey
@@ -10697,15 +10937,15 @@ function resizeDisplayCanvases() {
     dom.glassCanvas.width = displayWidth;
     dom.glassCanvas.height = displayHeight;
   }
-  const scrubMaskSizeChanged = runtime.scrubMaskCanvas.width !== displayWidth || runtime.scrubMaskCanvas.height !== displayHeight;
+  const scrubMaskSizeChanged = runtime.scrubMaskCanvas.width !== TANK_WIDTH || runtime.scrubMaskCanvas.height !== TANK_HEIGHT;
   if (scrubMaskSizeChanged) {
-    runtime.scrubMaskCanvas.width = displayWidth;
-    runtime.scrubMaskCanvas.height = displayHeight;
+    runtime.scrubMaskCanvas.width = TANK_WIDTH;
+    runtime.scrubMaskCanvas.height = TANK_HEIGHT;
   }
-  const grimeBaseSizeChanged = runtime.grimeBaseCanvas.width !== displayWidth || runtime.grimeBaseCanvas.height !== displayHeight;
+  const grimeBaseSizeChanged = runtime.grimeBaseCanvas.width !== TANK_WIDTH || runtime.grimeBaseCanvas.height !== TANK_HEIGHT;
   if (grimeBaseSizeChanged) {
-    runtime.grimeBaseCanvas.width = displayWidth;
-    runtime.grimeBaseCanvas.height = displayHeight;
+    runtime.grimeBaseCanvas.width = TANK_WIDTH;
+    runtime.grimeBaseCanvas.height = TANK_HEIGHT;
   }
 
   const stageScale = Math.max(displayWidth / TANK_WIDTH, displayHeight / TANK_HEIGHT);
@@ -10729,8 +10969,8 @@ function resizeDisplayCanvases() {
   tankContext.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
   grimeContext.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
   glassContext.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
-  scrubMaskContext?.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
-  grimeBaseContext?.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
+  scrubMaskContext?.setTransform(1, 0, 0, 1, 0, 0);
+  grimeBaseContext?.setTransform(1, 0, 0, 1, 0, 0);
   configureCanvasContext(tankContext);
   configureCanvasContext(grimeContext);
   configureCanvasContext(glassContext);
@@ -10790,6 +11030,24 @@ async function fetchFishCatalog() {
   } catch (error) {
     console.error(error);
     return { fish: FISH_TYPES };
+  }
+}
+
+async function fetchZombieSkeletonFishCatalog() {
+  if (!ZOMBIE_SKELETON_BEHAVIOR_ENABLED) {
+    return { fish: [], variants: [] };
+  }
+
+  try {
+    const response = await fetch(resolveAppUrl(ZOMBIE_SKELETON_FISH_CATALOG_PATH), { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("Could not load zombie/skeleton fish catalog");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return { fish: [], variants: [] };
   }
 }
 
@@ -11160,18 +11418,27 @@ function normalizeBubblerHorizontalPosition(value) {
 }
 
 function getBubblerCadenceFromIntensity(intensity = DEFAULT_BUBBLER_INTENSITY) {
-  const resolvedIntensity = clamp(Number(intensity) || DEFAULT_BUBBLER_INTENSITY, 0.15, MAX_BUBBLER_INTENSITY);
+  const resolvedIntensity = clamp(Number(intensity) || DEFAULT_BUBBLER_INTENSITY, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY);
   const intensityRatio = clamp(
-    (resolvedIntensity - 0.15) / Math.max(0.0001, MAX_BUBBLER_INTENSITY - 0.15),
+    (resolvedIntensity - MIN_CUSTOM_BUBBLER_AMOUNT) / Math.max(0.0001, MAX_BUBBLER_INTENSITY - MIN_CUSTOM_BUBBLER_AMOUNT),
     0,
     1
   );
-  const speedRatio = Math.pow(intensityRatio, 0.74);
+  const speedRatio = Math.pow(intensityRatio, 0.58);
   return clamp(
     MAX_BUBBLER_STREAM_CADENCE_MS
     + (MIN_BUBBLER_STREAM_CADENCE_MS - MAX_BUBBLER_STREAM_CADENCE_MS) * speedRatio,
     MIN_BUBBLER_STREAM_CADENCE_MS,
     MAX_BUBBLER_STREAM_CADENCE_MS
+  );
+}
+
+function getBubblerTravelDurationFromSpeed(speed = DEFAULT_BUBBLER_SPEED) {
+  const resolvedSpeed = clamp(Number(speed) || DEFAULT_BUBBLER_SPEED, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED);
+  return clamp(
+    DEFAULT_BUBBLER_TRAVEL_DURATION_MS / resolvedSpeed,
+    MIN_BUBBLER_TRAVEL_DURATION_MS,
+    MAX_BUBBLER_TRAVEL_DURATION_MS
   );
 }
 
@@ -11192,6 +11459,10 @@ function buildDefaultBubblerSpoutMeta(index = 0, spoutQty = DEFAULT_BUBBLER_SPOU
     bubbleOpacity: DEFAULT_BUBBLER_BUBBLE_OPACITY,
     bubbleFillTintEnabled: DEFAULT_BUBBLER_FILL_TINT_ENABLED,
     bubbleFillOpacity: DEFAULT_BUBBLER_FILL_OPACITY,
+    bubblePopEnabled: DEFAULT_BUBBLER_POP_ENABLED,
+    bubbleMalformed: DEFAULT_BUBBLER_MALFORMED_ENABLED,
+    bubbleMalformedIntensity: DEFAULT_BUBBLER_MALFORMED_INTENSITY,
+    bubbleMalformedSpeed: DEFAULT_BUBBLER_MALFORMED_SPEED,
     speed: DEFAULT_BUBBLER_SPEED,
     direction: DEFAULT_CUSTOM_BUBBLER_DIRECTION
   };
@@ -11227,7 +11498,7 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
         : Number.isFinite(Number(entry.bubblerIntensity))
           ? Number(entry.bubblerIntensity)
           : defaultSpout.intensity,
-    0.15,
+    MIN_CUSTOM_BUBBLER_AMOUNT,
     MAX_BUBBLER_INTENSITY
   );
 
@@ -11257,7 +11528,7 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
             ? Number(entry.bubblerFadeDistance)
             : defaultSpout.fadeDistance,
       24,
-      TANK_HEIGHT
+      MAX_CUSTOM_BUBBLER_DISTANCE_PX
     ),
     bubbleColor: resolvedBubbleColors[0] || defaultSpout.bubbleColor,
     bubbleColors: resolvedBubbleColors,
@@ -11309,6 +11580,34 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
             : defaultSpout.bubbleFillOpacity,
       0,
       1
+    ),
+    bubblePopEnabled: normalizeWallpaperEngineBooleanPropertyValue(
+      entry.bubblePopEnabled
+      ?? entry.popBubbles
+      ?? entry.pop
+    ) ?? defaultSpout.bubblePopEnabled,
+    bubbleMalformed: normalizeWallpaperEngineBooleanPropertyValue(
+      entry.bubbleMalformed
+      ?? entry.malformedBubbles
+      ?? entry.malform
+    ) ?? defaultSpout.bubbleMalformed,
+    bubbleMalformedIntensity: clamp(
+      Number.isFinite(Number(entry.bubbleMalformedIntensity))
+        ? Number(entry.bubbleMalformedIntensity)
+        : Number.isFinite(Number(entry.malformIntensity))
+          ? Number(entry.malformIntensity)
+          : defaultSpout.bubbleMalformedIntensity,
+      MIN_BUBBLER_MALFORMED_INTENSITY,
+      MAX_BUBBLER_MALFORMED_INTENSITY
+    ),
+    bubbleMalformedSpeed: clamp(
+      Number.isFinite(Number(entry.bubbleMalformedSpeed))
+        ? Number(entry.bubbleMalformedSpeed)
+        : Number.isFinite(Number(entry.malformSpeed))
+          ? Number(entry.malformSpeed)
+          : defaultSpout.bubbleMalformedSpeed,
+      MIN_BUBBLER_MALFORMED_SPEED,
+      MAX_BUBBLER_MALFORMED_SPEED
     ),
     speed: clamp(
       Number.isFinite(Number(entry.speed))
@@ -11500,9 +11799,7 @@ function buildBackgroundCatalog(items, metaMap = {}) {
         ? { name: "Custom Background", cost: 0, defaultUnlocked: true, sortOrder: 0 }
         : key === CUSTOM_IMAGE_BACKGROUND_ASSET_KEY
           ? { name: "Local Image", cost: 0, defaultUnlocked: true, sortOrder: 1 }
-          : key === DEFAULT_BACKGROUND_ASSET_KEY
-            ? { name: "Classic Sand", cost: 0, defaultUnlocked: true, sortOrder: 2 }
-            : {};
+          : {};
       const meta = { ...fallbackMeta, ...(metaMap[key] || {}) };
       return {
         key,
@@ -11888,11 +12185,16 @@ function isCustomBubblerDecorKey(decorKey = "") {
   return String(decorKey || "") === CUSTOM_BUBBLER_DECOR_KEY;
 }
 
+function getDecorThumbnailPath(decor) {
+  return decor?.thumbnailPath || decor?.path || "";
+}
+
 function buildVirtualDecorCatalogEntries() {
   return [
     {
       key: CUSTOM_BUBBLER_DECOR_KEY,
       path: CUSTOM_BUBBLER_DECOR_IMAGE,
+      thumbnailPath: CUSTOM_BUBBLER_THUMBNAIL_IMAGE,
       bgPath: null,
       maskPath: null,
       midPath: null,
@@ -11906,7 +12208,7 @@ function buildVirtualDecorCatalogEntries() {
       name: "Bubbler",
       theme: "Custom",
       cost: CUSTOM_BUBBLER_COST,
-      width: 94,
+      width: 47,
       defaultScale: 1,
       categories: ["bubbler"],
       fishBehavior: {
@@ -12010,6 +12312,14 @@ function sanitizeCustomDecorAssetEntry(entry, key) {
   if (!decorKey || (!path && !imageRefId) || (customType === "hide" && !bgPath && !bgImageRefId)) {
     return null;
   }
+  const caveColorLayers = customType === "hide"
+    ? buildCustomDecorColorLayers({
+      key: decorKey,
+      customType: "hide",
+      path,
+      bgPath
+    })
+    : [];
 
   return {
     key: decorKey,
@@ -12028,6 +12338,9 @@ function sanitizeCustomDecorAssetEntry(entry, key) {
     motionSwaySide: normalizeDecorSwaySide(entry.motionSwaySide),
     motionIntensity: sanitizeCustomDecorMotionIntensity(entry.motionIntensity),
     caveSettings: customType === "hide" ? sanitizePlacedCaveSettings(entry.caveSettings) : null,
+    caveColorSettings: customType === "hide"
+      ? sanitizePlacedCaveColorSettings(entry.caveColorSettings, { caveColorLayers })
+      : null,
     cost: customType === "hide" ? CUSTOM_HIDE_COST : CUSTOM_DECOR_COST,
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
@@ -12076,6 +12389,7 @@ function buildCustomDecorCatalogEntry(asset) {
   const isHide = asset.customType === "hide" || isCustomHideAssetKey(asset.key);
   const caveSettings = isHide ? sanitizePlacedCaveSettings(asset.caveSettings) : null;
   const caveColorLayers = buildCustomDecorColorLayers(asset);
+  const caveColorSettings = isHide ? sanitizePlacedCaveColorSettings(asset.caveColorSettings, { caveColorLayers }) : null;
   const path = getStoredImageSource(asset, "runtimePath", "path", isHide ? CUSTOM_HIDE_SHOP_IMAGE : CUSTOM_DECOR_SHOP_IMAGE);
   const bgPath = isHide ? getStoredImageSource(asset, "runtimeBgPath", "bgPath", path) : null;
   return {
@@ -12112,6 +12426,7 @@ function buildCustomDecorCatalogEntry(asset) {
     },
     caveBehavior: isHide ? buildCaveBehaviorProfileFromSettings(caveSettings) : null,
     defaultCaveSettings: caveSettings,
+    defaultCaveColorSettings: caveColorSettings,
     bubbler: null,
     customAsset: true
   };
@@ -12509,24 +12824,20 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       front: {
         inputKey: "localHideFrontInput",
         unavailableMessage: "Custom hide picker unavailable.",
-        beforeOpen: () => {
-          clearPendingCustomAssetUploads({ types: ["hide"] });
-        },
         importStep: async ({ file }) => {
           const dataUrl = await prepareLocalDecorImageDataUrl(file);
           await preloadImages([dataUrl]);
           const image = runtime.images.get(dataUrl) || await loadImageElement(dataUrl);
-          runtime.pendingCustomHideUpload = {
+          const pending = buildPendingCustomHideUpload({
             frontDataUrl: dataUrl,
             frontName: titleFromFile(file.name || "Custom Hide"),
             frontNaturalWidth: Math.max(1, image.naturalWidth || image.width || CUSTOM_DECOR_DEFAULT_WIDTH),
             frontNaturalHeight: Math.max(1, image.naturalHeight || image.height || CUSTOM_DECOR_DEFAULT_WIDTH)
-          };
-          showToast("Front image selected. Choose a background image for the hide.");
-          openCustomHideBackgroundPrompt();
+          });
+          showToast(pending.bgDataUrl ? "Front image updated." : "Front image selected. Choose a background image for the hide.");
+          openCustomHideCreationOverlay(pending);
         },
         onError: (error) => {
-          clearPendingCustomAssetUploads({ types: ["hide"] });
           showToast(error?.message || "Could not use that front image.");
         }
       },
@@ -12538,19 +12849,21 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
           const pending = runtime.pendingCustomHideUpload;
           if (!pending?.frontDataUrl) {
             showToast("Choose a front image for Custom Hide first.");
-            openCustomAssetPicker("hide", "front");
+            openCustomHideCreationOverlay();
             return;
           }
           const dataUrl = await prepareLocalDecorImageDataUrl(file);
           await preloadImages([pending.frontDataUrl, dataUrl]);
           const image = runtime.images.get(dataUrl) || await loadImageElement(dataUrl);
-          openCustomHideCreationOverlay({
+          const nextPending = buildPendingCustomHideUpload({
             ...pending,
             bgDataUrl: dataUrl,
             bgNaturalWidth: Math.max(1, image.naturalWidth || image.width || CUSTOM_DECOR_DEFAULT_WIDTH),
             bgNaturalHeight: Math.max(1, image.naturalHeight || image.height || CUSTOM_DECOR_DEFAULT_WIDTH),
             suggestedName: pending.frontName || titleFromFile(file.name || "Custom Hide")
           });
+          showToast("Background image selected.");
+          openCustomHideCreationOverlay(nextPending);
         },
         onError: (error) => {
           showToast(error?.message || "Could not use that background image.");
@@ -12593,6 +12906,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         width: pending.width,
         defaultScale: pending.scale,
         caveSettings: pending.caveSettings,
+        caveColorSettings: pending.caveColorSettings,
         createdAt: now
       }, decorKey);
       if (!asset) {
@@ -12892,8 +13206,10 @@ function normalizeFishCatalog(payload, options = {}) {
     : Array.isArray(payload?.fish)
       ? payload.fish
       : [];
+  const allowZombieSkeletonFish = options.allowZombieSkeletonFish === true;
 
   return entries
+    .filter((entry) => allowZombieSkeletonFish || !isZombieSkeletonCatalogSpecies(entry))
     .map((entry, index) => normalizeFishDefinition(entry, index, options))
     .filter(Boolean);
 }
@@ -12930,6 +13246,22 @@ function findCatalogAssetManifestItem(folderAssets, assetFile) {
     || null;
 }
 
+function resolveFishCatalogAssetFolderPath(assetFolder = "fish") {
+  const normalizedAssetFolder = typeof assetFolder === "string" && assetFolder.trim()
+    ? assetFolder.trim().replace(/^\/+|\/+$/g, "").replaceAll("\\", "/")
+    : "fish";
+  return normalizedAssetFolder.startsWith("assets/")
+    ? normalizedAssetFolder
+    : `assets/${normalizedAssetFolder}`;
+}
+
+function encodeCatalogAssetPath(assetFile = "") {
+  return String(assetFile || "")
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+}
+
 function resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, fallbackAsset, options = {}) {
   const allowFallback = options.allowFallback !== false;
   const allowDirect = options.allowDirect !== false;
@@ -12943,7 +13275,7 @@ function resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, fallbackA
     ? resolveAppUrl(normalizedAssetFile)
     : matchedFolderAsset?.path
     || (allowFallback ? fallbackAsset : null)
-    || (allowDirect ? resolveAppUrl(`assets/fish/${encodeURIComponent(normalizedAssetFile)}`) : null);
+    || (allowDirect ? resolveAppUrl(`${resolveFishCatalogAssetFolderPath(assetFolder)}/${encodeCatalogAssetPath(normalizedAssetFile)}`) : null);
 }
 
 function resolveFishCatalogStageAssets(assetFiles, assetFolder, folderAssets, stage) {
@@ -12997,22 +13329,27 @@ function normalizeFishDefinition(entry, index, options = {}) {
     .map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, fallbackAsset))
     .filter(Boolean)]
     .filter((value, assetIndex, list) => list.indexOf(value) === assetIndex);
+  const includeZombieSkeletonStageAssets = options.includeZombieSkeletonStageAssets === true;
   const explicitZombieAssetFiles = collectFishCatalogAssetFiles(entry.zombieAsset, entry.zombieImage, entry.zombieFile, entry.zombieAssetVariants, entry.zombieAssets);
   const explicitSkeletonAssetFiles = collectFishCatalogAssetFiles(entry.skeletonAsset, entry.skeletonImage, entry.skeletonFile, entry.skeletonAssetVariants, entry.skeletonAssets);
-  const zombieAssetVariants = (explicitZombieAssetFiles.length
-    ? explicitZombieAssetFiles.map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, null, {
-      allowFallback: false,
-      allowDirect: false
-    }))
-    : resolveFishCatalogStageAssets(assetSourceFiles, assetFolder, folderAssets, "zombie"))
-    .filter((value, assetIndex, list) => Boolean(value) && list.indexOf(value) === assetIndex);
-  const skeletonAssetVariants = (explicitSkeletonAssetFiles.length
-    ? explicitSkeletonAssetFiles.map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, null, {
-      allowFallback: false,
-      allowDirect: false
-    }))
-    : resolveFishCatalogStageAssets(assetSourceFiles, assetFolder, folderAssets, "skeleton"))
-    .filter((value, assetIndex, list) => Boolean(value) && list.indexOf(value) === assetIndex);
+  const zombieAssetVariants = includeZombieSkeletonStageAssets
+    ? (explicitZombieAssetFiles.length
+      ? explicitZombieAssetFiles.map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, null, {
+        allowFallback: false,
+        allowDirect: false
+      }))
+      : resolveFishCatalogStageAssets(assetSourceFiles, assetFolder, folderAssets, "zombie"))
+      .filter((value, assetIndex, list) => Boolean(value) && list.indexOf(value) === assetIndex)
+    : [];
+  const skeletonAssetVariants = includeZombieSkeletonStageAssets
+    ? (explicitSkeletonAssetFiles.length
+      ? explicitSkeletonAssetFiles.map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, null, {
+        allowFallback: false,
+        allowDirect: false
+      }))
+      : resolveFishCatalogStageAssets(assetSourceFiles, assetFolder, folderAssets, "skeleton"))
+      .filter((value, assetIndex, list) => Boolean(value) && list.indexOf(value) === assetIndex)
+    : [];
 
   const speedMinFloor = behavior === "sucker" ? 0.00005 : 0.012;
   const speedMaxCeiling = behavior === "sucker" ? 0.006 : 0.095;
@@ -13705,11 +14042,7 @@ function getSpeciesForFish(fish) {
 }
 
 function isCatalogUndeadShopSpecies(species) {
-  return Boolean(
-    species
-    && ["zombie-fish", "skeleton-fish"].includes(species.id)
-    && ["zombie", "skeleton"].includes(species.undeadType)
-  );
+  return Boolean(isZombieSkeletonModeAvailable() && isZombieSkeletonCatalogSpecies(species));
 }
 
 function getUndeadTemplateStageForSpecies(species) {
@@ -13874,7 +14207,7 @@ function deriveFishStageAssetFile(assetFile, stage) {
 }
 
 function getFishDeathAssetCandidates(species, stage) {
-  if (!species || !["zombie", "skeleton"].includes(stage)) {
+  if (!ZOMBIE_SKELETON_BEHAVIOR_ENABLED || !species || !isZombieSkeletonStage(stage)) {
     return [];
   }
 
@@ -13942,7 +14275,7 @@ function getFishDecayStage(fish, now = Date.now()) {
     return null;
   }
 
-  if (!isGoreEnabled()) {
+  if (!isGoreEnabled() || !isZombieSkeletonModeAvailable()) {
     return null;
   }
 
@@ -13974,7 +14307,7 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   }
 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  const undeadBaseStage = isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
+  const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
   const preferredBaseAsset = isZombieVariantFish(fish)
     ? getFishZombieVariantAssetPath(fish, displaySpecies)
     : undeadBaseStage
@@ -14120,7 +14453,12 @@ function isDetritusFish(target) {
 
 function isMealFreeFish(target) {
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
-  if (isBrineShrimpSpecies(species) || isPiranhaSpecies(target) || isZombieFish(target) || species?.id === "zombie-fish" || target?.speciesId === "zombie-fish") {
+  if (
+    isBrineShrimpSpecies(species)
+    || isPiranhaSpecies(target)
+    || isZombieFish(target)
+    || (isZombieSkeletonModeAvailable() && (species?.id === "zombie-fish" || target?.speciesId === "zombie-fish"))
+  ) {
     return false;
   }
   if (isZombieVariantFish(target)) {
@@ -14130,7 +14468,7 @@ function isMealFreeFish(target) {
 }
 
 function isZombieVariantFish(target) {
-  return Boolean(target?.speciesId && target.zombieVariant && isGoreEnabled());
+  return Boolean(target?.speciesId && target.zombieVariant && isZombieSkeletonModeAvailable() && isGoreEnabled());
 }
 
 function isZombieFish(target) {
@@ -14145,7 +14483,7 @@ function isSkeletonFish(target) {
 
 function isUndeadSpecies(target) {
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
-  return Boolean(species?.undeadType === "zombie" || species?.undeadType === "skeleton");
+  return Boolean(isZombieSkeletonUndeadType(species?.undeadType));
 }
 
 function isUndeadFish(target) {
@@ -14173,7 +14511,11 @@ function hasPendingZombieRevival(fish) {
 }
 
 function usesZombieHunterBehavior(target) {
-  return isZombieModeEnabled() && isZombieFish(target);
+  return usesZombieSkeletonHunterBehavior({
+    enabled: isZombieModeEnabled(),
+    target,
+    isZombieFish
+  });
 }
 
 function getEffectiveFishBehavior(target) {
@@ -14183,11 +14525,14 @@ function getEffectiveFishBehavior(target) {
     return null;
   }
 
-  if (isZombieModeEnabled() && (isZombieVariantFish(fish) || species.undeadType === "zombie")) {
-    return "zombie";
-  }
-  if (isZombieModeEnabled() && species.undeadType === "skeleton") {
-    return "skeleton";
+  const zombieSkeletonBehavior = getZombieSkeletonEffectiveBehavior({
+    enabled: isZombieModeEnabled(),
+    fish,
+    species,
+    isZombieVariantFish
+  });
+  if (zombieSkeletonBehavior) {
+    return zombieSkeletonBehavior;
   }
   return species.behavior || "steady";
 }
@@ -14271,6 +14616,62 @@ function isMealSlotServed(slot, tank = getCurrentTank()) {
 
   const fedIds = getMealFedFishIds(slot.key, tank);
   return eligibleFish.every((fish) => fedIds.has(fish.id));
+}
+
+function getMealHungryFishForSlot(slot, tank = getCurrentTank()) {
+  if (!slot || !tank) {
+    return [];
+  }
+
+  return getMealEligibleFishForSlot(slot, tank)
+    .filter((fish) => !hasFishEatenInSlot(fish, slot, tank));
+}
+
+function didTankHaveMealNeedingFishDuringSlot(slot, tank = getCurrentTank(), now = Date.now()) {
+  if (!slot || !tank || !Array.isArray(tank.fish)) {
+    return false;
+  }
+
+  const effectiveEnd = Math.min(Number(slot.end) || 0, Number(now) || Date.now());
+  if (!Number.isFinite(effectiveEnd) || effectiveEnd <= 0) {
+    return false;
+  }
+
+  return tank.fish.some((fish) => (
+    fish
+    && !isFishDead(fish)
+    && fishNeedsMealWindow(fish)
+    && Number(fish.acquiredAt || 0) <= effectiveEnd
+  ));
+}
+
+function hasCurrentMealNeedingFish(tank = getCurrentTank(), now = Date.now()) {
+  if (!tank || !Array.isArray(tank.fish)) {
+    return false;
+  }
+
+  return tank.fish.some((fish) => (
+    fish
+    && !isFishDead(fish)
+    && fishNeedsMealWindow(fish)
+    && Number(fish.acquiredAt || 0) <= Number(now)
+  ));
+}
+
+function isMealSlotSatisfiedForDisplay(slot, tank = getCurrentTank(), now = Date.now()) {
+  if (!slot) {
+    return false;
+  }
+  if (isMealSlotServed(slot, tank)) {
+    return true;
+  }
+  if (Number(slot.start) > Number(now)) {
+    return false;
+  }
+  if (!hasCurrentMealNeedingFish(tank, now)) {
+    return false;
+  }
+  return !didTankHaveMealNeedingFishDuringSlot(slot, tank, now);
 }
 
 function hasActiveSuckerFish() {
@@ -14839,6 +15240,12 @@ function getActiveGravelPalette() {
   return sanitizeGravelPalette(state?.gravelPalette);
 }
 
+function getActiveGravelEffectPalette(now = Date.now()) {
+  return hasReadyCustomGravelLayers()
+    ? getResolvedCustomGravelLayerColors(now)
+    : getActiveGravelPalette();
+}
+
 function sanitizeCustomGravelLayerColors(colors) {
   const fallback = getDefaultCustomGravelLayerColors();
   const candidate = Array.isArray(colors)
@@ -14991,6 +15398,7 @@ function sanitizeUiSettings(rawSettings) {
     displayPosition: normalizeDisplayPosition(source.displayPosition),
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
+    careTaskPaneOpen: source.careTaskPaneOpen === true,
     soundMuted: source.soundMuted === true,
     uiSoundsMuted: source.uiSoundsMuted === true,
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
@@ -15192,8 +15600,12 @@ function isGoreEnabled() {
   return isViolenceAndGoreEnabled();
 }
 
+function isZombieSkeletonModeAvailable() {
+  return ZOMBIE_SKELETON_BEHAVIOR_ENABLED;
+}
+
 function isZombieModeEnabled() {
-  return isViolenceAndGoreEnabled();
+  return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
 }
 
 function shouldPersistReconciledState(rawState) {
@@ -15434,7 +15846,7 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     poops: Array.isArray(incomingTank.poops) ? incomingTank.poops.map(sanitizePoop).filter(Boolean) : [],
     fishEggs: Array.isArray(incomingTank.fishEggs) ? incomingTank.fishEggs.map(sanitizeFishEgg).filter(Boolean) : [],
     placedDecor: Array.isArray(incomingTank.placedDecor) ? incomingTank.placedDecor.map(sanitizePlacedDecor).filter(Boolean) : [],
-    customGravelEnabled: Boolean(incomingTank.customGravelEnabled),
+    customGravelEnabled: true,
     customGravelLayerColors: sanitizeCustomGravelLayerColors(incomingTank.customGravelLayerColors),
     customGravelLayerColorize: sanitizeCustomGravelLayerColorizeSettings(incomingTank.customGravelLayerColorize),
     gravelPalette: sanitizeGravelPalette(incomingTank.gravelPalette),
@@ -15462,9 +15874,6 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     autoDispenser: createDefaultAutoDispenserState(incomingTank.autoDispenser),
     uvLightInstalled: Boolean(incomingTank.uvLightInstalled),
     uvLightEnabled: incomingTank.uvLightEnabled !== false,
-    selectedGravelAsset: runtime.gravelMap.has(incomingTank.selectedGravelAsset)
-      ? incomingTank.selectedGravelAsset
-      : getCatalogDefaultKey(runtime.gravelCatalog, DEFAULT_GRAVEL_ASSET_KEY),
     selectedBubbleAsset: runtime.bubbleMap.has(incomingTank.selectedBubbleAsset)
       ? incomingTank.selectedBubbleAsset
       : (runtime.bubbleCatalog[0]?.key || null),
@@ -15496,7 +15905,7 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     poops: incoming?.poops,
     fishEggs: incoming?.fishEggs,
     placedDecor: incoming?.placedDecor,
-    customGravelEnabled: incoming?.customGravelEnabled ?? true,
+    customGravelEnabled: true,
     customGravelLayerColors: incoming?.customGravelLayerColors,
     customGravelLayerColorize: incoming?.customGravelLayerColorize,
     gravelPalette: incoming?.gravelPalette,
@@ -15524,7 +15933,6 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     autoDispenser: incoming?.autoDispenser,
     uvLightInstalled: incoming?.uvLightInstalled,
     uvLightEnabled: incoming?.uvLightEnabled,
-    selectedGravelAsset: incoming?.selectedGravelAsset,
     selectedBubbleAsset: incoming?.selectedBubbleAsset,
     lastCleanedAt: incoming?.lastCleanedAt,
     lastSimulatedAt: incoming?.lastSimulatedAt,
@@ -16252,12 +16660,14 @@ function resetTransientAquariumUiState() {
   runtime.fishShadowPlaneCache.clear();
   runtime.fishGravelPebbleActions.clear();
   runtime.fishPebbleTosses = [];
+  runtime.forcedGravelDigUntilByFishId.clear();
+  runtime.gravelDigBursts = [];
   runtime.sedimentClouds = [];
+  runtime.effectClouds = [];
   runtime.coinGlints = [];
   runtime.waterParticles = [];
   runtime.waterParticleTankId = null;
   runtime.waterEffectFishSamples.clear();
-  runtime.bloodClouds = [];
   runtime.bloodWaterTint = 0;
   runtime.activeFishCavePlans.clear();
   runtime.bettaPassLocks.clear();
@@ -16531,6 +16941,15 @@ function sanitizeFish(fish, options = {}) {
     lastAteAt: Number.isFinite(Number(fish.lastAteAt)) ? Number(fish.lastAteAt) : 0,
     veryLowComfortStartedAt: Number.isFinite(Number(fish.veryLowComfortStartedAt)) ? Number(fish.veryLowComfortStartedAt) : 0,
     veryLowComfortEventDayKey: typeof fish.veryLowComfortEventDayKey === "string" ? fish.veryLowComfortEventDayKey : "",
+    glassTapStressEndsAt: Array.isArray(fish.glassTapStressEndsAt)
+      ? fish.glassTapStressEndsAt
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0)
+        .sort((left, right) => left - right)
+        .slice(-GLASS_TAP_STRESS_MAX_STACKS)
+      : [],
+    glassTapWindowStartedAt: Number.isFinite(Number(fish.glassTapWindowStartedAt)) ? Number(fish.glassTapWindowStartedAt) : 0,
+    glassTapWindowCount: clamp(Math.floor(Number(fish.glassTapWindowCount) || 0), 0, GLASS_TAP_STRESS_TAP_THRESHOLD * GLASS_TAP_STRESS_MAX_STACKS),
     xNorm: spawnX,
     yNorm: spawnY,
     targetXNorm: clamp(Number(fish.targetXNorm) || randomSwimX(), 0.08, 0.92),
@@ -16849,7 +17268,7 @@ function createDefaultBubblerSettings(seed = null) {
   const distance = clamp(
     Number(source.distance ?? source.fadeDistance) || DEFAULT_BUBBLER_FADE_DISTANCE_PX,
     MIN_CUSTOM_BUBBLER_DISTANCE_PX,
-    TANK_HEIGHT
+    MAX_CUSTOM_BUBBLER_DISTANCE_PX
   );
   const bubbleColor = normalizeDecorColorSetting(source.bubbleColor ?? source.color) || DEFAULT_BUBBLER_BUBBLE_COLOR;
   const bubbleColorize = normalizeDecorColorizeSetting(
@@ -16886,6 +17305,34 @@ function createDefaultBubblerSettings(seed = null) {
     0,
     1
   );
+  const bubblePopEnabled = normalizeWallpaperEngineBooleanPropertyValue(
+    source.bubblePopEnabled
+    ?? source.popBubbles
+    ?? source.pop
+  ) ?? DEFAULT_BUBBLER_POP_ENABLED;
+  const bubbleMalformed = normalizeWallpaperEngineBooleanPropertyValue(
+    source.bubbleMalformed
+    ?? source.malformedBubbles
+    ?? source.malform
+  ) ?? DEFAULT_BUBBLER_MALFORMED_ENABLED;
+  const bubbleMalformedIntensity = clamp(
+    Number.isFinite(Number(source.bubbleMalformedIntensity))
+      ? Number(source.bubbleMalformedIntensity)
+      : Number.isFinite(Number(source.malformIntensity))
+        ? Number(source.malformIntensity)
+        : DEFAULT_BUBBLER_MALFORMED_INTENSITY,
+    MIN_BUBBLER_MALFORMED_INTENSITY,
+    MAX_BUBBLER_MALFORMED_INTENSITY
+  );
+  const bubbleMalformedSpeed = clamp(
+    Number.isFinite(Number(source.bubbleMalformedSpeed))
+      ? Number(source.bubbleMalformedSpeed)
+      : Number.isFinite(Number(source.malformSpeed))
+        ? Number(source.malformSpeed)
+        : DEFAULT_BUBBLER_MALFORMED_SPEED,
+    MIN_BUBBLER_MALFORMED_SPEED,
+    MAX_BUBBLER_MALFORMED_SPEED
+  );
   return {
     amount,
     intensity: amount,
@@ -16901,7 +17348,11 @@ function createDefaultBubblerSettings(seed = null) {
     bubbleSize,
     bubbleOpacity,
     bubbleFillTintEnabled,
-    bubbleFillOpacity
+    bubbleFillOpacity,
+    bubblePopEnabled,
+    bubbleMalformed,
+    bubbleMalformedIntensity,
+    bubbleMalformedSpeed
   };
 }
 
@@ -17125,12 +17576,21 @@ function tankVirtualPointToStagePx(x, y) {
 }
 
 function hideSelectedDecorActionButtons() {
-  for (const container of [dom.selectedDecorActionBar, dom.selectedDecorScaleControls, dom.selectedDecorLayerControls]) {
+  for (const container of [
+    dom.selectedDecorActionBar,
+    dom.selectedDecorScaleControls,
+    dom.selectedDecorLayerControls,
+    dom.selectedDecorResizeHandles,
+    dom.selectedDecorResizeIndicator
+  ]) {
     if (!container) {
       continue;
     }
 
     container.hidden = true;
+    if (container === dom.selectedDecorResizeHandles) {
+      container.setAttribute("aria-hidden", "true");
+    }
     container.style.left = "";
     container.style.top = "";
   }
@@ -17161,6 +17621,66 @@ function hideSelectedDecorActionButtons() {
   }
 }
 
+function positionSelectedDecorResizeHandles(item, bounds, stageRect, options = {}) {
+  const handlesContainer = dom.selectedDecorResizeHandles;
+  const indicator = dom.selectedDecorResizeIndicator;
+  const handles = Array.isArray(dom.selectedDecorResizeCornerHandles) ? dom.selectedDecorResizeCornerHandles : [];
+  if (!item || !bounds || !stageRect?.width || !stageRect?.height) {
+    if (handlesContainer) {
+      handlesContainer.hidden = true;
+      handlesContainer.setAttribute("aria-hidden", "true");
+    }
+    if (indicator) {
+      indicator.hidden = true;
+    }
+    return;
+  }
+
+  const stagePadding = 8;
+  const handleInset = Math.max(8, Number(options.padding) || 10);
+  const cornerPoints = {
+    nw: { x: bounds.left - handleInset, y: bounds.top - handleInset },
+    ne: { x: bounds.right + handleInset, y: bounds.top - handleInset },
+    sw: { x: bounds.left - handleInset, y: bounds.bottom + handleInset },
+    se: { x: bounds.right + handleInset, y: bounds.bottom + handleInset }
+  };
+
+  if (handlesContainer) {
+    handlesContainer.hidden = options.showHandles === false;
+    handlesContainer.setAttribute("aria-hidden", options.showHandles === false ? "true" : "false");
+  }
+  for (const handle of handles) {
+    const corner = handle?.dataset?.selectedDecorResizeCorner;
+    const virtualPoint = cornerPoints[corner];
+    if (!handle || !virtualPoint || options.showHandles === false) {
+      if (handle) {
+        handle.hidden = true;
+      }
+      continue;
+    }
+    const point = tankVirtualPointToStagePx(virtualPoint.x, virtualPoint.y);
+    handle.hidden = false;
+    handle.dataset.resizeDecor = item.id;
+    handle.style.left = `${clamp(Math.round(point.x), stagePadding, Math.max(stagePadding, Math.round(stageRect.width - stagePadding)))}px`;
+    handle.style.top = `${clamp(Math.round(point.y), stagePadding, Math.max(stagePadding, Math.round(stageRect.height - stagePadding)))}px`;
+  }
+
+  if (!indicator) {
+    return;
+  }
+  if (options.showIndicator !== true) {
+    indicator.hidden = true;
+    return;
+  }
+
+  const label = options.label || formatDecorScale(item.scale);
+  const indicatorPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - 38);
+  indicator.hidden = false;
+  indicator.textContent = label;
+  indicator.style.left = `${clamp(Math.round(indicatorPoint.x), 42, Math.max(42, Math.round(stageRect.width - 42)))}px`;
+  indicator.style.top = `${clamp(Math.round(indicatorPoint.y), 18, Math.max(18, Math.round(stageRect.height - 18)))}px`;
+}
+
 function updateSelectedDecorActionButtons() {
   const actionBar = dom.selectedDecorActionBar;
   const scaleControls = dom.selectedDecorScaleControls;
@@ -17173,7 +17693,9 @@ function updateSelectedDecorActionButtons() {
   const scaleDownButton = dom.selectedDecorScaleDownButton;
   const layerUpButton = dom.selectedDecorLayerUpButton;
   const layerDownButton = dom.selectedDecorLayerDownButton;
-  if (!buyButton && !sellButton && !storeButton && !settingsButton && !scaleUpButton && !scaleDownButton && !layerUpButton && !layerDownButton) {
+  const resizeHandles = dom.selectedDecorResizeHandles;
+  const resizeIndicator = dom.selectedDecorResizeIndicator;
+  if (!buyButton && !sellButton && !storeButton && !settingsButton && !scaleUpButton && !scaleDownButton && !layerUpButton && !layerDownButton && !resizeHandles && !resizeIndicator) {
     return;
   }
 
@@ -17213,6 +17735,7 @@ function updateSelectedDecorActionButtons() {
   const canLayerDown = canStepPlacedDecorLayer(item, -1);
   const layerIsFixed = !canLayerUp && !canLayerDown;
   const sizeLabel = formatDecorScale(currentScale);
+  const resizingDecor = runtime.decorResizeState?.placedId === item.id;
 
   if (dom.selectedDecorSizeValue) {
     dom.selectedDecorSizeValue.textContent = sizeLabel;
@@ -17220,6 +17743,25 @@ function updateSelectedDecorActionButtons() {
 
   if (dom.selectedDecorLayerValue) {
     dom.selectedDecorLayerValue.textContent = layerValue;
+  }
+
+  if (scaleControls) {
+    scaleControls.hidden = true;
+  }
+
+  if (resizingDecor) {
+    if (actionBar) {
+      actionBar.hidden = true;
+    }
+    if (layerControls) {
+      layerControls.hidden = true;
+    }
+    positionSelectedDecorResizeHandles(item, bounds, stageRect, {
+      showHandles: false,
+      showIndicator: true,
+      label: sizeLabel
+    });
+    return;
   }
 
   if (buyButton) {
@@ -17262,19 +17804,13 @@ function updateSelectedDecorActionButtons() {
   }
 
   if (scaleUpButton) {
-    scaleUpButton.hidden = false;
-    scaleUpButton.dataset.resizeDecor = item.id;
-    scaleUpButton.disabled = currentScale >= DECOR_SCALE_MAX;
-    scaleUpButton.title = `Increase size from ${sizeLabel}`;
-    scaleUpButton.setAttribute("aria-label", `Increase ${decor.name} size from ${sizeLabel}`);
+    scaleUpButton.hidden = true;
+    delete scaleUpButton.dataset.resizeDecor;
   }
 
   if (scaleDownButton) {
-    scaleDownButton.hidden = false;
-    scaleDownButton.dataset.resizeDecor = item.id;
-    scaleDownButton.disabled = currentScale <= DECOR_SCALE_MIN;
-    scaleDownButton.title = `Decrease size from ${sizeLabel}`;
-    scaleDownButton.setAttribute("aria-label", `Decrease ${decor.name} size from ${sizeLabel}`);
+    scaleDownButton.hidden = true;
+    delete scaleDownButton.dataset.resizeDecor;
   }
 
   if (layerUpButton) {
@@ -17319,24 +17855,6 @@ function updateSelectedDecorActionButtons() {
     )}px`;
   }
 
-  if (scaleControls) {
-    scaleControls.hidden = false;
-    const scalePoint = tankVirtualPointToStagePx(bounds.left - 34, (bounds.top + bounds.bottom) / 2);
-    const scaleRect = scaleControls.getBoundingClientRect?.() || { width: 0, height: 0 };
-    const scaleHalfWidth = Math.ceil((Number(scaleRect.width) || 50) / 2);
-    const scaleHalfHeight = Math.ceil((Number(scaleRect.height) || 90) / 2);
-    scaleControls.style.left = `${clamp(
-      Math.round(scalePoint.x),
-      stagePadding + scaleHalfWidth,
-      Math.max(stagePadding + scaleHalfWidth, Math.round(stageRect.width - stagePadding - scaleHalfWidth))
-    )}px`;
-    scaleControls.style.top = `${clamp(
-      Math.round(scalePoint.y),
-      topPadding + scaleHalfHeight,
-      Math.max(topPadding + scaleHalfHeight, Math.round(stageRect.height - topPadding - scaleHalfHeight))
-    )}px`;
-  }
-
   if (layerControls) {
     layerControls.hidden = false;
     const layerPoint = tankVirtualPointToStagePx(bounds.right + 34, (bounds.top + bounds.bottom) / 2);
@@ -17354,6 +17872,12 @@ function updateSelectedDecorActionButtons() {
       Math.max(topPadding + layerHalfHeight, Math.round(stageRect.height - topPadding - layerHalfHeight))
     )}px`;
   }
+
+  positionSelectedDecorResizeHandles(item, bounds, stageRect, {
+    showHandles: true,
+    showIndicator: false,
+    label: sizeLabel
+  });
 }
 
 function getViewportStableAssetScale() {
@@ -18077,7 +18601,11 @@ function getPlacedDecorBubblerSettings(item) {
     bubbleSize: item.bubblerSettings?.bubbleSize ?? firstSpout.bubbleSize ?? DEFAULT_CUSTOM_BUBBLER_BUBBLE_SIZE,
     bubbleOpacity: item.bubblerSettings?.bubbleOpacity ?? firstSpout.bubbleOpacity ?? DEFAULT_BUBBLER_BUBBLE_OPACITY,
     bubbleFillTintEnabled: item.bubblerSettings?.bubbleFillTintEnabled ?? firstSpout.bubbleFillTintEnabled ?? DEFAULT_BUBBLER_FILL_TINT_ENABLED,
-    bubbleFillOpacity: item.bubblerSettings?.bubbleFillOpacity ?? firstSpout.bubbleFillOpacity ?? DEFAULT_BUBBLER_FILL_OPACITY
+    bubbleFillOpacity: item.bubblerSettings?.bubbleFillOpacity ?? firstSpout.bubbleFillOpacity ?? DEFAULT_BUBBLER_FILL_OPACITY,
+    bubblePopEnabled: item.bubblerSettings?.bubblePopEnabled ?? firstSpout.bubblePopEnabled ?? DEFAULT_BUBBLER_POP_ENABLED,
+    bubbleMalformed: item.bubblerSettings?.bubbleMalformed ?? firstSpout.bubbleMalformed ?? DEFAULT_BUBBLER_MALFORMED_ENABLED,
+    bubbleMalformedIntensity: item.bubblerSettings?.bubbleMalformedIntensity ?? firstSpout.bubbleMalformedIntensity ?? DEFAULT_BUBBLER_MALFORMED_INTENSITY,
+    bubbleMalformedSpeed: item.bubblerSettings?.bubbleMalformedSpeed ?? firstSpout.bubbleMalformedSpeed ?? DEFAULT_BUBBLER_MALFORMED_SPEED
   });
 }
 
@@ -18095,6 +18623,10 @@ function buildBubblerSpoutFromSettings(settings, baseSpout = null) {
     bubbleOpacity: resolved.bubbleOpacity,
     bubbleFillTintEnabled: resolved.bubbleFillTintEnabled,
     bubbleFillOpacity: resolved.bubbleFillOpacity,
+    bubblePopEnabled: resolved.bubblePopEnabled,
+    bubbleMalformed: resolved.bubbleMalformed,
+    bubbleMalformedIntensity: resolved.bubbleMalformedIntensity,
+    bubbleMalformedSpeed: resolved.bubbleMalformedSpeed,
     speed: resolved.speed,
     direction: resolved.direction
   };
@@ -19763,8 +20295,17 @@ function beginGravelPebbleDrag(pebble, point, pointerId, options = {}) {
     radiusPx: options.existing ? 34 : 72,
     force: options.existing ? 0.24 : 0.78
   });
+  const now = Date.now();
+  spawnGravelCloudEffectAtPoint(point.x, point.y, {
+    now,
+    intensity: options.existing ? 0.46 : 0.9,
+    sedimentStrength: getSedimentStrength(now, options.existing ? 0.55 : 0.9),
+    baseRadius: options.existing ? 15 : 24,
+    driftX: randomBetween(-4, 4),
+    driftY: randomBetween(-8, -2)
+  });
   updateDraggedGravelPebble(point);
-  renderUi(Date.now());
+  renderUi(now);
 }
 
 function updateDraggedGravelPebble(point) {
@@ -19851,6 +20392,12 @@ function updateFallingGravelPebbles(now) {
     }
 
     state.gravelLivePebbles.push(falling.pebble);
+    spawnGravelLandingEffects(falling.endX, falling.endY, {
+      now,
+      intensity: 0.86,
+      radiusPx: 42,
+      force: 0.36
+    });
     landedAny = true;
     return false;
   });
@@ -19993,8 +20540,8 @@ function maybeDisturbGravelByFish(fish, species, now, moveDistance) {
 
   const fishX = fish.xNorm * TANK_WIDTH;
   const fishY = fish.yNorm * TANK_HEIGHT;
-  const floorY = getTankFloorSurfaceYAtX(fishX);
-  if (floorY - fishY > 44) {
+  const layerBoundaryY = getFishGravelDigLayerBoundaryY(fish);
+  if (layerBoundaryY - fishY > 44) {
     return;
   }
 
@@ -20002,11 +20549,194 @@ function maybeDisturbGravelByFish(fish, species, now, moveDistance) {
     return;
   }
 
-  applyLocalGravelDisturbance(fishX, floorY - 4, {
-    radiusPx: GRAVEL_FISH_DISTURB_RADIUS_PX + getFishDisplayWidth(fish, species, now) * 0.08,
-    force: species.behavior === "sucker" ? 0.12 : 0.2 + fish.motionLevel * 0.24
-  });
+  maybeSpawnFishGravelDig(fish, species, now, layerBoundaryY);
   fish.nextGravelDisturbAt = now + GRAVEL_FISH_DISTURB_MS_MIN + Math.random() * (GRAVEL_FISH_DISTURB_MS_MAX - GRAVEL_FISH_DISTURB_MS_MIN);
+}
+
+function getFishGravelDigLayer(fish, prompt = null) {
+  const promptLayer = Number(prompt?.tankLayer);
+  return Number.isFinite(promptLayer)
+    ? clampTankLayer(promptLayer)
+    : getFishTankLayer(fish);
+}
+
+function getFishGravelDigLayerBoundaryY(fish, prompt = null) {
+  return getTankLayerBottomBoundaryY(getFishGravelDigLayer(fish, prompt));
+}
+
+function getFishGravelDigMouthTarget(fish, species, impactX, impactY, direction, now = Date.now()) {
+  return getFishTargetNormForMouthPoint(
+    fish,
+    species,
+    impactX,
+    impactY,
+    now,
+    {
+      direction,
+      minYNorm: 0.14,
+      maxYNorm: 0.96
+    }
+  );
+}
+
+function updateForcedFishGravelDigTarget(fish, species, prompt, now = Date.now()) {
+  if (!fish || !species || !prompt) {
+    return false;
+  }
+
+  const digLayer = getFishGravelDigLayer(fish, prompt);
+  const targetXNorm = Number.isFinite(Number(prompt.targetXNorm))
+    ? clamp(Number(prompt.targetXNorm), 0.08, 0.92)
+    : fish.xNorm;
+  const targetYNorm = Number.isFinite(Number(prompt.targetYNorm))
+    ? clamp(Number(prompt.targetYNorm), 0.2, 0.96)
+    : fish.yNorm;
+
+  fish.activity = FISH_GRAVEL_DIG_ACTIVITY;
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.panicUntil = null;
+  fish.panicSpeedBoost = null;
+  clearFishSchoolFollowState(fish);
+  fish.targetXNorm = targetXNorm;
+  fish.targetYNorm = targetYNorm;
+  fish.targetAt = now + 900;
+  setFishDesiredTankLayer(fish, digLayer);
+
+  const direction = Number.isFinite(Number(prompt.direction))
+    ? (Number(prompt.direction) < 0 ? -1 : 1)
+    : (targetXNorm >= fish.xNorm ? 1 : -1);
+  setFishDirection(fish, direction, species, now);
+  return true;
+}
+
+function completeForcedFishGravelDig(fish, species, prompt, now = Date.now()) {
+  if (!fish || !species || !prompt) {
+    return false;
+  }
+
+  const width = getFishDisplayWidth(fish, species, now);
+  let impactX = Number.isFinite(Number(prompt.impactX))
+    ? Number(prompt.impactX)
+    : fish.xNorm * TANK_WIDTH;
+  let impactY = getFishGravelDigLayerBoundaryY(fish, prompt);
+  const mouthPoint = getFishGravelPebbleMouthPoint(fish, species, now);
+  const mouthDistance = mouthPoint
+    ? Math.hypot(mouthPoint.x - impactX, mouthPoint.y - impactY)
+    : Math.hypot(fish.xNorm * TANK_WIDTH - impactX, fish.yNorm * TANK_HEIGHT - impactY);
+  const timedOut = now > (Number(prompt.startedAt) || now) + FORCED_GRAVEL_DIG_TIMEOUT_MS * 0.82;
+  const contactThresholdPx = clamp(width * 0.12, 14, 30);
+  if (mouthDistance > contactThresholdPx) {
+    const reachedBodyTarget = Math.hypot(fish.targetXNorm - fish.xNorm, fish.targetYNorm - fish.yNorm) <= 0.0035;
+    const layerBoundaryY = getFishGravelDigLayerBoundaryY(fish, prompt);
+    const mouthLayerGap = mouthPoint ? Math.abs(mouthPoint.y - layerBoundaryY) : Infinity;
+    if (reachedBodyTarget && !Number.isFinite(Number(prompt.arrivedAt))) {
+      prompt.arrivedAt = now;
+    } else if (!reachedBodyTarget) {
+      prompt.arrivedAt = null;
+    }
+    const heldAtTarget = Number.isFinite(Number(prompt.arrivedAt)) && now - Number(prompt.arrivedAt) > 520;
+    if (reachedBodyTarget && mouthPoint && (mouthLayerGap <= clamp(width * 0.16, 18, 38) || heldAtTarget)) {
+      impactX = clamp(mouthPoint.x, GLASS_MARGIN_X + 8, TANK_WIDTH - GLASS_MARGIN_X - 8);
+      impactY = layerBoundaryY;
+    } else if (timedOut) {
+      clearForcedGravelDigPrompt(fish);
+      return false;
+    } else {
+      return false;
+    }
+  }
+
+  const direction = Number.isFinite(Number(prompt.direction))
+    ? (Number(prompt.direction) < 0 ? -1 : 1)
+    : getFishFacingDirection(fish);
+  const rootingEffort = clamp(0.68 + (Number(fish.motionLevel) || 0) * 0.18 + clamp(width / 360, 0, 0.14), 0.62, 0.96);
+  spawnGravelDigBurst(impactX, impactY + 2, {
+    now,
+    intensity: rootingEffort,
+    count: Math.round(randomBetween(7, 10) * rootingEffort),
+    direction,
+    surfaceY: impactY,
+    scatterPx: 28,
+    liftMinPx: 8,
+    liftMaxPx: 28
+  });
+  spawnGravelCloudEffectAtPoint(impactX, impactY - 4, {
+    now,
+    intensity: clamp(0.9 + rootingEffort * 0.28, 0.9, 1.2),
+    countBase: 26,
+    countScale: 22,
+    sedimentStrength: getSedimentStrength(now, 1.16),
+    baseRadius: clamp(width * 0.22, 24, 42),
+    driftX: randomBetween(-7, 7),
+    driftY: randomBetween(-9, -3),
+    durationMs: 3300
+  });
+
+  clearForcedGravelDigPrompt(fish);
+  fish.targetXNorm = clamp(fish.xNorm - direction * randomBetween(0.04, 0.08), 0.08, 0.92);
+  fish.targetYNorm = clamp(fish.yNorm - randomBetween(0.025, 0.055), 0.22, 0.78);
+  fish.targetAt = now + 1100;
+  fish.nextGravelDisturbAt = now + randomBetween(1500, 2600);
+  fish.nextGravelDigAt = now + FISH_GRAVEL_DIG_COOLDOWN_MIN_MS + Math.random() * (FISH_GRAVEL_DIG_COOLDOWN_MAX_MS - FISH_GRAVEL_DIG_COOLDOWN_MIN_MS);
+  return true;
+}
+
+function maybeSpawnFishGravelDig(fish, species, now, fallbackFloorY) {
+  if (!fish || !species || species.behavior === "sucker" || species.behavior === "shrimp") {
+    return;
+  }
+
+  const forceDig = Boolean(getForcedGravelDigPrompt(fish, now));
+  if (!forceDig && (now < (fish.nextGravelDigAt || 0) || Math.random() >= FISH_GRAVEL_DIG_CHANCE)) {
+    return;
+  }
+
+  const width = getFishDisplayWidth(fish, species, now);
+  const mouthPoint = getFishGravelPebbleMouthPoint(fish, species, now);
+  const direction = getFishFacingDirection(fish);
+  const digX = clamp(
+    mouthPoint?.x ?? fish.xNorm * TANK_WIDTH + direction * width * 0.28,
+    GLASS_MARGIN_X + 12,
+    TANK_WIDTH - GLASS_MARGIN_X - 12
+  );
+  const floorY = getFishGravelDigLayerBoundaryY(fish);
+  const mouthY = mouthPoint?.y ?? fish.yNorm * TANK_HEIGHT + width * 0.18;
+  const nearFloor = floorY - mouthY < clamp(width * 0.1, 12, 24);
+  if (!nearFloor && fallbackFloorY - fish.yNorm * TANK_HEIGHT > width * 0.3) {
+    return;
+  }
+
+  const rootingEffort = forceDig
+    ? clamp(0.68 + (Number(fish.motionLevel) || 0) * 0.18 + clamp(width / 360, 0, 0.14), 0.62, 0.96)
+    : clamp(0.38 + (Number(fish.motionLevel) || 0) * 0.22, 0.34, 0.68);
+  const digY = floorY - 3;
+  spawnGravelDigBurst(digX, digY + 2, {
+    now,
+    intensity: rootingEffort,
+    count: forceDig ? Math.round(randomBetween(7, 10) * rootingEffort) : undefined,
+    direction,
+    surfaceY: floorY,
+    scatterPx: forceDig ? 28 : 18,
+    liftMinPx: forceDig ? 8 : 5,
+    liftMaxPx: forceDig ? 28 : 17
+  });
+  spawnGravelCloudEffectAtPoint(digX, digY, {
+    now,
+    intensity: forceDig ? clamp(0.9 + rootingEffort * 0.28, 0.9, 1.2) : clamp(0.48 + rootingEffort * 0.38, 0.46, 0.78),
+    countBase: forceDig ? 26 : 14,
+    countScale: forceDig ? 22 : 14,
+    sedimentStrength: getSedimentStrength(now, forceDig ? 1.16 : 0.82),
+    baseRadius: forceDig ? clamp(width * 0.22, 24, 42) : clamp(width * 0.14, 14, GRAVEL_FISH_DISTURB_RADIUS_PX * 0.48),
+    driftX: randomBetween(-7, 7),
+    driftY: forceDig ? randomBetween(-9, -3) : randomBetween(-7, -2),
+    durationMs: forceDig ? 3300 : undefined
+  });
+  if (forceDig) {
+    clearForcedGravelDigPrompt(fish);
+  }
+  fish.nextGravelDigAt = now + FISH_GRAVEL_DIG_COOLDOWN_MIN_MS + Math.random() * (FISH_GRAVEL_DIG_COOLDOWN_MAX_MS - FISH_GRAVEL_DIG_COOLDOWN_MIN_MS);
 }
 
 function sanitizePellet(pellet) {
@@ -20074,6 +20804,12 @@ function sanitizeEvent(entry) {
   }
   if (typeof entry.fishId === "string" && entry.fishId.trim()) {
     sanitized.fishId = entry.fishId.trim();
+  }
+  if (typeof entry.decorKey === "string" && entry.decorKey.trim()) {
+    sanitized.decorKey = normalizeDecorKey(entry.decorKey);
+  }
+  if (typeof entry.placedDecorId === "string" && entry.placedDecorId.trim()) {
+    sanitized.placedDecorId = entry.placedDecorId.trim();
   }
   if (entry.recapEligible === false) {
     sanitized.recapEligible = false;
@@ -22147,6 +22883,7 @@ function renderTickUi(now, options = {}) {
   renderControls(now);
   renderIntroTutorial();
   renderTutorialGuidance();
+  renderCareTaskPane(now);
   if (stateChanged) {
     renderSummary(now);
     renderEvents();
@@ -22204,7 +22941,6 @@ function renderVisiblePanels(now) {
     renderSolidBackgroundControls();
     renderFilterAssets();
     renderUvLightControls();
-    renderGravelAssets();
     renderCustomGravelControls();
   }
 
@@ -22226,7 +22962,7 @@ function syncCurrentTankState(now, options = {}) {
       fish.piranhaAttackStartedAt = null;
       fish.piranhaLastDamageAt = null;
     }
-    runtime.bloodClouds = [];
+    clearBloodEffectClouds();
     runtime.bloodWaterTint = 0;
   }
   if (!state) {
@@ -23682,8 +24418,10 @@ function processAutoDispenserSlots(startTs, endTs, options = {}) {
 }
 
 function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
-  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FOOD_FEED, TUTORIAL_STAGE_FOOD_SETTLE)) {
-    showToast("Replay tutorial is preview-only.");
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FEED_FISH)) {
+    setTutorialStage(TUTORIAL_STAGE_FEED_FISH_DONE, { now });
+    saveState();
+    renderUi(now);
     return { ok: false, previewOnly: true };
   }
 
@@ -23720,7 +24458,7 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
     runtime.feedingModeFoodKey = "";
   }
 
-  const shouldExitFoodToolAfterDrop = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FOOD_FEED);
+  const shouldExitFoodToolAfterDrop = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FEED_FISH);
   if (options.closeTrayAfterDrop === true || shouldExitFoodToolAfterDrop) {
     runtime.foodTrayOpen = false;
   }
@@ -23731,7 +24469,7 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
 
   let tutorialChanged = false;
   if (shouldExitFoodToolAfterDrop) {
-    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FOOD_SETTLE, { now }) || tutorialChanged;
+    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FEED_FISH_DONE, { now }) || tutorialChanged;
   }
 
   saveState();
@@ -24782,12 +25520,11 @@ function selectMedicineMode(medicineKey) {
 }
 
 function buyFish(speciesId, options = {}) {
-  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FISH_STORE)) {
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_ADOPT_FISH)) {
     closeStoreOverlay({ force: true });
-    setTutorialStage(TUTORIAL_STAGE_FISH_ADDED, { now: Date.now() });
+    setTutorialStage(TUTORIAL_STAGE_ADOPT_FISH_DONE, { now: Date.now() });
     saveState();
     renderUi(Date.now());
-    showToast("Replay tutorial is preview-only.");
     return { ok: true, previewOnly: true };
   }
 
@@ -24818,8 +25555,8 @@ function buyFish(speciesId, options = {}) {
   }
 
   const now = Date.now();
-  const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FISH_STORE);
-  const entryStartedAt = tutorialPurchase || options.closeOverlayFirst === true
+  const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_ADOPT_FISH);
+  const entryStartedAt = options.closeOverlayFirst === true
     ? now + TUTORIAL_STORE_CLOSE_DELAY_MS
     : now;
   state.coins -= purchaseCost;
@@ -24844,7 +25581,7 @@ function buyFish(speciesId, options = {}) {
   let tutorialChanged = false;
   if (tutorialPurchase) {
     closeStoreOverlay({ force: true });
-    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_FISH_SETTLE, {
+    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_ADOPT_FISH_DONE, {
       now,
       fishId: fish.id
     }) || tutorialChanged;
@@ -24928,21 +25665,214 @@ function buyAnotherCustomFish(fishId) {
   showToast(`Another ${species.name} joined the aquarium.`);
 }
 
+function buyAnotherFishFromSource(fishId) {
+  const managed = getManagedFishById(fishId);
+  const fish = managed?.fish || null;
+  if (!fish) {
+    return false;
+  }
+
+  if (isCustomFishAssetKey(fish.speciesId)) {
+    buyAnotherCustomFish(fish.id);
+    return true;
+  }
+
+  buyFish(fish.speciesId);
+  return true;
+}
+
+function getPendingFishActionDetails(expectedType) {
+  const action = runtime.pendingFishAction;
+  if (!action || action.type !== expectedType) {
+    return null;
+  }
+
+  const fishId = String(action.fishId || "");
+  const managed = getManagedFishById(fishId);
+  const fish = managed?.fish || null;
+  if (!fish) {
+    return null;
+  }
+
+  const species = getSpeciesForFish(fish);
+  const baseSpecies = getBaseSpeciesForFish(fish) || species;
+  if (!species || !baseSpecies) {
+    return null;
+  }
+
+  return {
+    fishId,
+    fish,
+    species,
+    baseSpecies,
+    inStorage: managed.inStorage === true
+  };
+}
+
+function getPendingFishBuyAnotherDetails() {
+  const details = getPendingFishActionDetails("buy-another");
+  if (!details) {
+    return null;
+  }
+
+  const cost = getFishPurchaseCost(details.fish.speciesId);
+  const customFish = isCustomFishAssetKey(details.fish.speciesId);
+  const goreLocked = isUndeadSpecies(details.species) && !isViolenceAndGoreEnabled();
+  const unlocked = customFish || isFishSpeciesShopUnlocked(details.baseSpecies);
+  return {
+    ...details,
+    cost,
+    customFish,
+    goreLocked,
+    unlocked,
+    canAfford: state.coins >= cost,
+    canBuy: unlocked && !goreLocked
+  };
+}
+
+function getPendingFishSellDetails() {
+  const details = getPendingFishActionDetails("sell");
+  if (!details) {
+    return null;
+  }
+
+  const dead = isFishDead(details.fish);
+  const juvenile = !dead && isFishJuvenile(details.fish);
+  return {
+    ...details,
+    dead,
+    juvenile,
+    resaleValue: getResaleValue(details.baseSpecies?.cost || details.species?.cost || 0),
+    canSell: !dead && !juvenile
+  };
+}
+
+function openFishBuyAnotherConfirmation(fishId) {
+  runtime.pendingFishAction = {
+    type: "buy-another",
+    fishId: String(fishId || "")
+  };
+  const details = getPendingFishBuyAnotherDetails();
+  if (!details) {
+    runtime.pendingFishAction = null;
+    showToast("Choose a fish first.");
+    return;
+  }
+
+  if (details.goreLocked) {
+    runtime.pendingFishAction = null;
+    showToast("Enable Violence & Gore to buy undead fish.");
+    return;
+  }
+
+  if (!details.unlocked) {
+    runtime.pendingFishAction = null;
+    showToast(`${details.baseSpecies.name} has not been unlocked yet.`);
+    return;
+  }
+
+  if (!details.canAfford) {
+    runtime.pendingFishAction = null;
+    showToast(`You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`);
+    return;
+  }
+
+  openFishActionConfirmation({
+    type: "buy-another",
+    fishId: details.fishId
+  });
+}
+
+function openFishSellConfirmation(fishId) {
+  runtime.pendingFishAction = {
+    type: "sell",
+    fishId: String(fishId || "")
+  };
+  const details = getPendingFishSellDetails();
+  if (!details) {
+    runtime.pendingFishAction = null;
+    showToast("Choose a fish first.");
+    return;
+  }
+
+  if (details.dead) {
+    runtime.pendingFishAction = null;
+    showToast("Dead fish cannot be sold.");
+    return;
+  }
+
+  if (details.juvenile) {
+    runtime.pendingFishAction = null;
+    showToast("Baby fish need time to grow before they can be sold.");
+    return;
+  }
+
+  openFishActionConfirmation({
+    type: "sell",
+    fishId: details.fishId
+  });
+}
+
+function confirmFishBuyAnother() {
+  const details = getPendingFishBuyAnotherDetails();
+  if (!details) {
+    showToast("That fish is no longer available.");
+    closeUtilityOverlay();
+    return;
+  }
+
+  if (!details.canBuy) {
+    showToast(details.goreLocked
+      ? "Enable Violence & Gore to buy undead fish."
+      : `${details.baseSpecies.name} has not been unlocked yet.`);
+    closeUtilityOverlay();
+    return;
+  }
+
+  if (!details.canAfford) {
+    showToast(`You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`);
+    closeUtilityOverlay();
+    return;
+  }
+
+  buyAnotherFishFromSource(details.fishId);
+  closeUtilityOverlay();
+}
+
+function confirmFishSell() {
+  const details = getPendingFishSellDetails();
+  if (!details) {
+    showToast("That fish is no longer available.");
+    closeUtilityOverlay();
+    return;
+  }
+
+  if (!details.canSell) {
+    showToast(details.dead
+      ? "Dead fish cannot be sold."
+      : "Baby fish need time to grow before they can be sold.");
+    closeUtilityOverlay();
+    return;
+  }
+
+  sellFish(details.fishId);
+  closeUtilityOverlay();
+}
+
 function getDecorPurchaseCost(decorKey) {
   const decor = runtime.decorMap.get(decorKey);
   return Math.max(0, Math.floor(Number(decor?.cost) || 0));
 }
 
 function buyDecor(decorKey, options = {}) {
-  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_STORE)) {
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
     closeStoreOverlay({ force: true });
-    setTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE, {
+    setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION_DONE, {
       now: Date.now(),
       decorKey: String(decorKey || "")
     });
     saveState();
     renderUi(Date.now());
-    showToast("Replay tutorial is preview-only.");
     return { ok: true, previewOnly: true };
   }
 
@@ -24951,7 +25881,7 @@ function buyDecor(decorKey, options = {}) {
     return { ok: false, reason: "missing-decor" };
   }
 
-  if (!isDecorUnlocked(decor)) {
+  if (!isDecorShopUnlocked(decor)) {
     showToast(`${decor.name} unlocks at ${getDecorUnlockRequirementLabel(decor)}.`);
     return { ok: false, reason: "decor-locked" };
   }
@@ -24961,7 +25891,7 @@ function buyDecor(decorKey, options = {}) {
     return { ok: false, reason: "custom-upload" };
   }
   if (isCustomHideShopKey(decorKey)) {
-    openLocalHideFrontPicker();
+    openCustomHideCreationOverlay();
     return { ok: false, reason: "custom-hide" };
   }
 
@@ -24976,13 +25906,16 @@ function buyDecor(decorKey, options = {}) {
   }
 
   const now = Date.now();
-  const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_STORE);
+  const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION);
   state.coins -= decor.cost;
   state.decorInventory[decorKey] = (state.decorInventory[decorKey] || 0) + 1;
-  pushEvent(`Bought ${decor.name}.`, now);
+  pushEvent(`Bought ${decor.name}.`, now, getCurrentTank(), {
+    type: "decor",
+    decorKey
+  });
   if (tutorialPurchase || options.closeOverlayFirst === true) {
     closeStoreOverlay({ force: true });
-    setTutorialStage(TUTORIAL_STAGE_DECOR_STORAGE, {
+    setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, {
       now,
       decorKey
     });
@@ -25011,7 +25944,7 @@ function buyAnotherDecor(decorKey) {
     return;
   }
 
-  if (!isDecorUnlocked(key)) {
+  if (!isDecorShopUnlocked(key)) {
     showToast(`${decor.name} unlocks at ${getDecorUnlockRequirementLabel(key)}.`);
     return;
   }
@@ -25025,7 +25958,10 @@ function buyAnotherDecor(decorKey) {
   state.coins -= cost;
   state.decorInventory[key] = (state.decorInventory[key] || 0) + 1;
   const now = Date.now();
-  pushEvent(`Bought another ${decor.name}.`, now);
+  pushEvent(`Bought another ${decor.name}.`, now, getCurrentTank(), {
+    type: "decor",
+    decorKey: key
+  });
   saveState();
   playPurchaseSoundEffect();
   renderUi(now);
@@ -25299,14 +26235,13 @@ function sellFilter(filterKey) {
 }
 
 function startPlacingDecor(decorKey) {
-  if (isInfoOnlyTutorialActive() && isTutorialStage(
-    TUTORIAL_STAGE_DECOR_STORAGE,
-    TUTORIAL_STAGE_DECOR_PLACE_HINT,
-    TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS,
-    TUTORIAL_STAGE_DECOR_PLACE,
-    TUTORIAL_STAGE_DECOR_CLOSE
-  )) {
-    showToast("Replay tutorial is preview-only.");
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
+    setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION_DONE, {
+      now: Date.now(),
+      decorKey: String(decorKey || "")
+    });
+    saveState();
+    renderUi(Date.now());
     return;
   }
 
@@ -25361,13 +26296,14 @@ function startPlacingDecor(decorKey) {
     });
   runtime.cleaningMode = false;
   runtime.dragState = null;
+  runtime.decorResizeState = null;
   runtime.fishDragState = null;
   runtime.eggDragState = null;
   runtime.activeTab = "decor";
   runtime.sidebarCollapsed = true;
   const now = Date.now();
-  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE_HINT)) {
-    setTutorialStage(TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS, {
+  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
+    setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, {
       now,
       decorKey
     });
@@ -25427,6 +26363,10 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
   }
   if (isCaveDecorKey(decorKey)) {
     placedItem.caveSettings = getDecorDefaultCaveSettings(decorKey);
+    const defaultCaveColorSettings = getDecorDefaultCaveColorSettings(decorKey);
+    if (defaultCaveColorSettings) {
+      placedItem.caveColorSettings = defaultCaveColorSettings;
+    }
   }
   updatePlacedDecorResizeAnchor(placedItem);
 
@@ -25436,8 +26376,10 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
 }
 
 function placeDecorAtPoint(xNorm, yNorm) {
-  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE, TUTORIAL_STAGE_DECOR_CLOSE)) {
-    showToast("Replay tutorial is preview-only.");
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
+    setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION_DONE, { now: Date.now() });
+    saveState();
+    renderUi(Date.now());
     return;
   }
 
@@ -25466,24 +26408,20 @@ function placeDecorAtPoint(xNorm, yNorm) {
   setSelectedDecor(created.placedItem.id);
   runtime.suppressNextTankClick = true;
   const now = Date.now();
-  pushEvent(`Placed ${created.decor?.name || titleFromFile(created.placedItem.decorKey)} in the aquarium.`, now);
-  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_DECOR_PLACE)) {
-    setTutorialStage(TUTORIAL_STAGE_DECOR_CLOSE, {
+  pushEvent(`Placed ${created.decor?.name || titleFromFile(created.placedItem.decorKey)} in the aquarium.`, now, getCurrentTank(), {
+    type: "decor",
+    decorKey: created.placedItem.decorKey,
+    placedDecorId: created.placedItem.id
+  });
+  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
+    setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION_DONE, {
       now,
       placedDecorId: created.placedItem.id
     });
   }
   saveState();
   renderUi(now);
-  showToast(
-    isGuidedTutorialActive()
-      ? getTutorialDecorDoneToastText(`${created.decor?.name || "Decor"} placed.`)
-      : `${created.decor?.name || "Decor"} placed.`,
-    {
-      durationMs: isGuidedTutorialActive() ? 120000 : undefined,
-      key: isGuidedTutorialActive() ? TUTORIAL_TOAST_DECOR_DONE : ""
-    }
-  );
+  showToast(`${created.decor?.name || "Decor"} placed.`);
 }
 
 function isDecorLayerShortcutEndpoint(decorKey, layer, step) {
@@ -25998,6 +26936,12 @@ function clearGuidance(options = {}) {
 
 function clearGuidanceForModeChange(reason = "") {
   runtime.guidanceHintOwner = "";
+  if (runtime.guidanceToastOwner.startsWith("hint:")) {
+    clearGuidance({
+      surface: "toast",
+      owner: runtime.guidanceToastOwner
+    });
+  }
   if (reason && runtime.guidanceToastOwner.startsWith("tutorial:") && !isTutorialDecorDoneStep()) {
     clearGuidance({
       surface: "toast",
@@ -26020,6 +26964,12 @@ function reconcileGuidanceState() {
   const suppressHint = runtime.utilityOverlayOpen || Boolean(popup?.blockInteraction);
   if (suppressHint) {
     clearGuidance({ surface: "hint" });
+    if (runtime.guidanceToastOwner.startsWith("hint:")) {
+      clearGuidance({
+        surface: "toast",
+        owner: runtime.guidanceToastOwner
+      });
+    }
   }
 }
 
@@ -26030,14 +26980,35 @@ function renderPlacementHint() {
     ? ""
     : hintState.text;
   const hintContainer = dom.placementHint?.parentElement;
-  dom.placementHint.textContent = hintText;
-  dom.placementHint.style.opacity = hintText ? "1" : "0";
-  dom.placementHint.style.visibility = hintText ? "visible" : "hidden";
-  runtime.guidanceHintOwner = hintText ? hintState.owner : "";
-  if (hintContainer) {
-    hintContainer.hidden = !hintText;
+  if (dom.placementHint) {
+    dom.placementHint.textContent = "";
+    dom.placementHint.style.opacity = "0";
+    dom.placementHint.style.visibility = "hidden";
   }
-  positionPlacementHint();
+  if (hintContainer) {
+    hintContainer.hidden = true;
+  }
+  runtime.guidanceHintOwner = "";
+
+  if (!hintText) {
+    if (runtime.guidanceToastOwner.startsWith("hint:")) {
+      clearGuidance({
+        surface: "toast",
+        owner: runtime.guidanceToastOwner
+      });
+    }
+    return;
+  }
+
+  if (
+    runtime.guidanceToastOwner !== hintState.owner
+    || dom.toast?.textContent !== hintText
+    || !dom.toast?.classList.contains("is-visible")
+  ) {
+    showGuidanceToast(hintState.owner, hintText, { durationMs: 120000 });
+  } else {
+    positionToast();
+  }
 }
 
 function renderEditQuickRef() {
@@ -26075,6 +27046,116 @@ function renderEditQuickRef() {
       <div><strong>Store Button</strong> - Move to Storage</div>
     `;
   setMarkupIfChanged("edit-quick-ref", dom.editQuickRefCard, markup);
+}
+
+function normalizeDecorResizeCorner(value) {
+  const corner = String(value || "").toLowerCase();
+  return ["nw", "ne", "sw", "se"].includes(corner) ? corner : "";
+}
+
+function snapDecorScaleToStep(value) {
+  const snapped = Math.round((Number(value) || DEFAULT_DECOR_SCALE) / SIZE_STEP) * SIZE_STEP;
+  return clamp(Number(snapped.toFixed(2)), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+}
+
+function beginDecorCornerResize(item, corner, point, pointerId) {
+  const resizeCorner = normalizeDecorResizeCorner(corner);
+  const bounds = getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
+  if (!item || !resizeCorner || !point || !bounds) {
+    return;
+  }
+
+  const width = Math.max(1, bounds.right - bounds.left);
+  const height = Math.max(1, bounds.bottom - bounds.top);
+  const anchorX = item.xNorm * TANK_WIDTH;
+  const anchorY = item.yNorm * TANK_HEIGHT;
+  const west = resizeCorner.includes("w");
+  const north = resizeCorner.includes("n");
+  runtime.pointerDown = true;
+  runtime.suppressNextTankClick = true;
+  setSelectedDecor(item.id);
+  runtime.decorResizeState = {
+    placedId: item.id,
+    corner: resizeCorner,
+    pointerId: Number.isInteger(pointerId) ? pointerId : null,
+    startScale: clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX),
+    startBounds: { ...bounds },
+    startWidth: width,
+    startHeight: height,
+    oppositeX: west ? bounds.right : bounds.left,
+    oppositeY: north ? bounds.bottom : bounds.top,
+    anchorUnitX: clamp((anchorX - bounds.left) / width, -2, 2),
+    anchorUnitY: clamp((anchorY - bounds.top) / height, -2, 2),
+    decorName: runtime.decorMap.get(item.decorKey)?.name || titleFromFile(item.decorKey),
+    currentScale: clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX)
+  };
+
+  try {
+    dom.tankStage.setPointerCapture(pointerId);
+    rememberTankPointerCapture(pointerId);
+  } catch (error) {
+    console.debug("Pointer capture skipped.", error);
+  }
+
+  updateDecorCornerResize(point);
+  renderUi(Date.now(), { full: false });
+}
+
+function updateDecorCornerResize(point) {
+  const resize = runtime.decorResizeState;
+  if (!resize || !point) {
+    return;
+  }
+
+  const item = getPlacedDecorById(resize.placedId);
+  if (!item) {
+    runtime.decorResizeState = null;
+    renderUi(Date.now(), { full: false });
+    return;
+  }
+
+  const east = resize.corner.includes("e");
+  const south = resize.corner.includes("s");
+  const rawWidth = east ? point.x - resize.oppositeX : resize.oppositeX - point.x;
+  const rawHeight = south ? point.y - resize.oppositeY : resize.oppositeY - point.y;
+  const widthRatio = rawWidth / Math.max(1, resize.startWidth);
+  const heightRatio = rawHeight / Math.max(1, resize.startHeight);
+  const scaleRatio = Math.max(widthRatio, heightRatio, DECOR_SCALE_MIN / Math.max(0.01, resize.startScale));
+  const nextScale = snapDecorScaleToStep(resize.startScale * scaleRatio);
+  const appliedRatio = nextScale / Math.max(0.01, resize.startScale);
+  const nextWidth = resize.startWidth * appliedRatio;
+  const nextHeight = resize.startHeight * appliedRatio;
+  const nextLeft = east ? resize.oppositeX : resize.oppositeX - nextWidth;
+  const nextTop = south ? resize.oppositeY : resize.oppositeY - nextHeight;
+  const nextAnchorX = nextLeft + resize.anchorUnitX * nextWidth;
+  const nextAnchorY = nextTop + resize.anchorUnitY * nextHeight;
+
+  item.scale = nextScale;
+  const placement = clampDecorPlacement(nextAnchorX / TANK_WIDTH, nextAnchorY / TANK_HEIGHT, { item });
+  item.xNorm = placement.xNorm;
+  item.yNorm = placement.yNorm;
+  resize.currentScale = nextScale;
+  updatePlacedDecorResizeAnchor(item);
+  renderPlacementHint();
+  renderUi(Date.now(), { full: false });
+}
+
+function finalizeDecorCornerResize() {
+  const resize = runtime.decorResizeState;
+  if (!resize) {
+    return;
+  }
+
+  const item = getPlacedDecorById(resize.placedId);
+  runtime.decorResizeState = null;
+  const now = Date.now();
+  if (item) {
+    applyDecorGravelInsertion(item);
+    updatePlacedDecorResizeAnchor(item);
+    showToast(`${resize.decorName || "Decor"} size ${formatDecorScale(item.scale)}.`);
+  }
+  saveState();
+  renderUi(now);
 }
 
 function beginDecorDrag(item, point, pointerId, options = {}) {
@@ -26232,7 +27313,11 @@ function finalizeDecorDrag() {
   const now = Date.now();
 
   if (drag.isNewPlacement) {
-    pushEvent(`Placed ${drag.decorName} in the aquarium.`, now);
+    pushEvent(`Placed ${drag.decorName} in the aquarium.`, now, getCurrentTank(), {
+      type: "decor",
+      decorKey: drag.decorKey,
+      placedDecorId: drag.placedId
+    });
     showToast(`${drag.decorName} placed.`);
   }
 
@@ -26287,6 +27372,24 @@ function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
 function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
   if (!fish || !species || isFishDead(fish)) {
     return false;
+  }
+
+  if (fish.activity === FISH_GRAVEL_DIG_ACTIVITY && getForcedGravelDigPrompt(fish)) {
+    const minYNorm = getFishSurfaceMinYNorm(fish, species, 0.14);
+    const maxYNorm = 0.96;
+    const xNorm = clamp(Number.isFinite(Number(fish.xNorm)) ? fish.xNorm : 0.5, 0.08, 0.92);
+    const yNorm = clamp(Number.isFinite(Number(fish.yNorm)) ? fish.yNorm : minYNorm, minYNorm, maxYNorm);
+    const targetXNorm = clamp(Number.isFinite(Number(fish.targetXNorm)) ? fish.targetXNorm : xNorm, 0.08, 0.92);
+    const targetYNorm = clamp(Number.isFinite(Number(fish.targetYNorm)) ? fish.targetYNorm : yNorm, minYNorm, maxYNorm);
+    const changed = Math.abs(xNorm - fish.xNorm) > 0.000001
+      || Math.abs(yNorm - fish.yNorm) > 0.000001
+      || Math.abs(targetXNorm - fish.targetXNorm) > 0.000001
+      || Math.abs(targetYNorm - fish.targetYNorm) > 0.000001;
+    fish.xNorm = xNorm;
+    fish.yNorm = yNorm;
+    fish.targetXNorm = targetXNorm;
+    fish.targetYNorm = targetYNorm;
+    return changed;
   }
 
   const currentLayer = species.behavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish);
@@ -26571,10 +27674,17 @@ function storeDecor(placedId) {
   if (runtime.dragState?.placedId === removed.id) {
     runtime.dragState = null;
   }
+  if (runtime.decorResizeState?.placedId === removed.id) {
+    runtime.decorResizeState = null;
+  }
   clearSelectedDecor(removed.id);
   state.gravelLivePebbles = [];
   state.decorInventory[removed.decorKey] = (state.decorInventory[removed.decorKey] || 0) + 1;
-  pushEvent(`Stored ${runtime.decorMap.get(removed.decorKey)?.name || titleFromFile(removed.decorKey)} for later.`, Date.now());
+  pushEvent(`Stored ${runtime.decorMap.get(removed.decorKey)?.name || titleFromFile(removed.decorKey)} for later.`, Date.now(), getCurrentTank(), {
+    type: "decor",
+    decorKey: removed.decorKey,
+    placedDecorId: removed.id
+  });
   saveState();
   renderUi(Date.now());
 }
@@ -26735,7 +27845,10 @@ function sellStoredDecor(decorKey) {
   state.coins += resaleValue;
 
   const now = Date.now();
-  pushEvent(`Sold ${decor?.name || titleFromFile(decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now);
+  pushEvent(`Sold ${decor?.name || titleFromFile(decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now, getCurrentTank(), {
+    type: "economy",
+    decorKey
+  });
   saveState();
   playCoinSoundEffect();
   renderUi(now);
@@ -26757,6 +27870,9 @@ function sellPlacedDecor(placedId) {
   if (runtime.dragState?.placedId === removed.id) {
     runtime.dragState = null;
   }
+  if (runtime.decorResizeState?.placedId === removed.id) {
+    runtime.decorResizeState = null;
+  }
   clearSelectedDecor(removed.id);
   state.gravelLivePebbles = [];
 
@@ -26765,7 +27881,11 @@ function sellPlacedDecor(placedId) {
   state.coins += resaleValue;
 
   const now = Date.now();
-  pushEvent(`Sold ${decor?.name || titleFromFile(removed.decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now);
+  pushEvent(`Sold ${decor?.name || titleFromFile(removed.decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now, getCurrentTank(), {
+    type: "economy",
+    decorKey: removed.decorKey,
+    placedDecorId: removed.id
+  });
   saveState();
   playCoinSoundEffect();
   renderUi(now);
@@ -27382,14 +28502,40 @@ function pruneFishGravelPebbleRuntimeState(now = Date.now()) {
       runtime.fishGravelPebbleActions.delete(fishId);
     }
   }
-
-  runtime.fishPebbleTosses = (runtime.fishPebbleTosses || []).filter((toss) => {
-    if (!toss?.assetPath || !toss?.color) {
-      return false;
+  for (const [fishId, prompt] of runtime.forcedGravelDigUntilByFishId) {
+    const until = typeof prompt === "object" && prompt
+      ? Number(prompt.until)
+      : Number(prompt);
+    if (!activeFishIds.has(fishId) || !Number.isFinite(until) || until < now) {
+      runtime.forcedGravelDigUntilByFishId.delete(fishId);
     }
+  }
+}
 
-    return now < toss.startedAt + toss.durationMs;
-  });
+function getForcedGravelDigPrompt(fish, now = Date.now()) {
+  if (!fish?.id || !runtime.forcedGravelDigUntilByFishId.has(fish.id)) {
+    return null;
+  }
+
+  const prompt = runtime.forcedGravelDigUntilByFishId.get(fish.id);
+  const until = typeof prompt === "object" && prompt
+    ? Number(prompt.until)
+    : Number(prompt);
+  if (!Number.isFinite(until) || now > until) {
+    runtime.forcedGravelDigUntilByFishId.delete(fish.id);
+    return null;
+  }
+
+  return typeof prompt === "object" && prompt ? prompt : { until };
+}
+
+function clearForcedGravelDigPrompt(fish) {
+  if (fish?.id) {
+    runtime.forcedGravelDigUntilByFishId.delete(fish.id);
+  }
+  if (fish?.activity === FISH_GRAVEL_DIG_ACTIVITY) {
+    fish.activity = "roam";
+  }
 }
 
 function isFishSpeciesEligibleForGravelPebble(species) {
@@ -27462,6 +28608,47 @@ function pickFishGravelPebbleDebugCandidate(now = Date.now()) {
     const species = getSpeciesForFish(fish);
     return isFishEligibleForGravelPebbleAction(fish, species, now);
   });
+  if (!candidates.length) {
+    return null;
+  }
+
+  return candidates[Math.floor(Math.random() * candidates.length)] || candidates[0];
+}
+
+function isFishEligibleForGravelDigPrompt(fish, species, now = Date.now()) {
+  if (!fish || !isFishSpeciesEligibleForGravelPebble(species) || isFishDead(fish)) {
+    return false;
+  }
+
+  if (!(state?.fish || []).some((entry) => entry.id === fish.id)) {
+    return false;
+  }
+
+  if (runtime.fishDragState?.fishId === fish.id || fish.caveState) {
+    return false;
+  }
+
+  if (runtime.debugBreedingSequence) {
+    const breedingFishIds = new Set([
+      runtime.debugBreedingSequence.leftFishId,
+      runtime.debugBreedingSequence.rightFishId
+    ].filter(Boolean));
+    if (breedingFishIds.has(fish.id)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function hasFishGravelDigCandidate(now = Date.now()) {
+  pruneFishGravelPebbleRuntimeState(now);
+  return (state?.fish || []).some((fish) => isFishEligibleForGravelDigPrompt(fish, getSpeciesForFish(fish), now));
+}
+
+function pickFishGravelDigDebugCandidate(now = Date.now()) {
+  pruneFishGravelPebbleRuntimeState(now);
+  const candidates = (state?.fish || []).filter((fish) => isFishEligibleForGravelDigPrompt(fish, getSpeciesForFish(fish), now));
   if (!candidates.length) {
     return null;
   }
@@ -27761,6 +28948,14 @@ function getFishPebbleTossLayerLandingY(tossOrLayer, holdSizePx = FISH_GRAVEL_PE
   const normalizedLayer = clampTankLayer(layer);
   const stableScale = getViewportStableAssetScale();
   const size = (Number.isFinite(Number(holdSizePx)) ? Number(holdSizePx) : FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX) * stableScale;
+  if (typeof tossOrLayer === "object" && Number.isFinite(Number(tossOrLayer.endX))) {
+    return clamp(
+      getTankFloorSurfaceYAtX(Number(tossOrLayer.endX)) - size * 0.46 + offsetPx,
+      WATER_SURFACE_Y + 24,
+      TANK_HEIGHT - GLASS_MARGIN_BOTTOM - size * 0.5
+    );
+  }
+
   return clamp(
     getTankLayerBottomBoundaryY(normalizedLayer) - size * 0.5 + offsetPx,
     WATER_SURFACE_Y + 24,
@@ -27794,7 +28989,11 @@ function spawnFishGravelPebbleToss(fish, species, action, now = Date.now()) {
   const landingX = clamp(mouthPoint.x + randomBetween(-56, 56), GLASS_MARGIN_X + 10, TANK_WIDTH - GLASS_MARGIN_X - 10);
   const landingLayer = getFishTankLayer(fish);
   const landingYOffsetPx = randomBetween(-2, 3);
-  const landingY = getFishPebbleTossLayerLandingY(landingLayer, action.holdSizePx) + landingYOffsetPx;
+  const landingY = getFishPebbleTossLayerLandingY({
+    endLayer: landingLayer,
+    endX: landingX,
+    endYOffsetPx: landingYOffsetPx
+  }, action.holdSizePx);
   runtime.fishPebbleTosses.push({
     id: createId("fish-gravel-pebble"),
     fishId: fish.id,
@@ -27848,6 +29047,145 @@ function spawnSedimentCloud(x, y, options = {}) {
     driftX: Number.isFinite(Number(options.driftX)) ? Number(options.driftX) : randomBetween(-7, 7),
     driftY: Number.isFinite(Number(options.driftY)) ? Number(options.driftY) : randomBetween(-10, -3)
   });
+}
+
+function spawnGravelCloudEffectAtPoint(x, y, options = {}) {
+  if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) {
+    return;
+  }
+
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const intensity = clamp(Number.isFinite(Number(options.intensity)) ? Number(options.intensity) : 1, 0.12, 1.8);
+  const cloudX = clamp(Number(x), GLASS_MARGIN_X, TANK_WIDTH - GLASS_MARGIN_X);
+  const cloudY = clamp(Number(y), WATER_SURFACE_Y + 20, TANK_HEIGHT - GLASS_MARGIN_BOTTOM);
+
+  spawnEffectCloudAtPoint(cloudX, cloudY, {
+    preset: "gravelDust",
+    intensity,
+    layer: EFFECT_CLOUD_LAYER_FLOOR,
+    countBase: Number.isFinite(Number(options.countBase)) ? Number(options.countBase) : undefined,
+    countScale: Number.isFinite(Number(options.countScale)) ? Number(options.countScale) : undefined,
+    spreadNorm: Number.isFinite(Number(options.spreadNorm)) ? Number(options.spreadNorm) : undefined
+  });
+
+  if (options.sediment !== false) {
+    spawnSedimentCloud(cloudX, cloudY, {
+      now,
+      strength: Number.isFinite(Number(options.sedimentStrength))
+        ? Number(options.sedimentStrength)
+        : getSedimentStrength(now, 0.74 + intensity * 0.28),
+      baseRadius: Number.isFinite(Number(options.baseRadius)) ? Number(options.baseRadius) : 18 + intensity * 8,
+      driftX: Number.isFinite(Number(options.driftX)) ? Number(options.driftX) : randomBetween(-6, 6),
+      driftY: Number.isFinite(Number(options.driftY)) ? Number(options.driftY) : randomBetween(-10, -3),
+      durationMs: Number.isFinite(Number(options.durationMs)) ? Number(options.durationMs) : undefined
+    });
+  }
+}
+
+function spawnGravelLandingEffects(x, y, options = {}) {
+  if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) {
+    return;
+  }
+
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const intensity = clamp(Number.isFinite(Number(options.intensity)) ? Number(options.intensity) : 0.82, 0.2, 1.5);
+  const impactX = clamp(Number(x), GLASS_MARGIN_X + 8, TANK_WIDTH - GLASS_MARGIN_X - 8);
+  const impactY = clamp(Number(y), WATER_SURFACE_Y + 24, TANK_HEIGHT - GLASS_MARGIN_BOTTOM);
+
+  applyLocalGravelDisturbance(impactX, impactY, {
+    radiusPx: Number.isFinite(Number(options.radiusPx)) ? Number(options.radiusPx) : 32 + intensity * 18,
+    force: Number.isFinite(Number(options.force)) ? Number(options.force) : 0.22 + intensity * 0.18
+  });
+  spawnGravelCloudEffectAtPoint(impactX, impactY - 3, {
+    now,
+    intensity,
+    sedimentStrength: getSedimentStrength(now, 0.72 + intensity * 0.26),
+    baseRadius: 16 + intensity * 7,
+    driftX: randomBetween(-5, 5),
+    driftY: randomBetween(-9, -3)
+  });
+  spawnGravelDigBurst(impactX, impactY - 2, {
+    now,
+    intensity: clamp(intensity * 0.64, 0.38, 0.96),
+    direction: Number.isFinite(Number(options.direction))
+      ? Number(options.direction)
+      : (Math.random() < 0.5 ? -1 : 1)
+  });
+}
+
+function spawnGravelDigBurst(originX, originY, options = {}) {
+  if (!Number.isFinite(Number(originX)) || !Number.isFinite(Number(originY))) {
+    return;
+  }
+
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const intensity = clamp(Number.isFinite(Number(options.intensity)) ? Number(options.intensity) : 1, 0.2, 1.8);
+  const count = clamp(
+    Number.isFinite(Number(options.count))
+      ? Math.round(Number(options.count))
+      : Math.round(randomBetween(GRAVEL_DIG_BURST_PEBBLE_MIN, GRAVEL_DIG_BURST_PEBBLE_MAX) * intensity),
+    GRAVEL_DIG_BURST_PEBBLE_MIN,
+    GRAVEL_DIG_BURST_PEBBLE_MAX + 10
+  );
+  const direction = Number(options.direction) < 0 ? -1 : 1;
+  const palette = getActiveGravelEffectPalette(now);
+  const pebbleAssets = getCustomGravelLoosePebbleAssets();
+  const spriteCount = Math.max(1, pebbleAssets.length || runtime.gravelCatalog.length || 1);
+  const baseX = clamp(Number(originX), GLASS_MARGIN_X + 8, TANK_WIDTH - GLASS_MARGIN_X - 8);
+  const baseY = clamp(Number(originY), WATER_SURFACE_Y + 24, TANK_HEIGHT - GLASS_MARGIN_BOTTOM);
+  const scatterPx = Number.isFinite(Number(options.scatterPx)) ? Math.max(8, Number(options.scatterPx)) : 20;
+  const liftMinPx = Number.isFinite(Number(options.liftMinPx)) ? Math.max(4, Number(options.liftMinPx)) : 7;
+  const liftMaxPx = Number.isFinite(Number(options.liftMaxPx)) ? Math.max(liftMinPx, Number(options.liftMaxPx)) : 24;
+  const settleSurfaceY = Number.isFinite(Number(options.surfaceY))
+    ? clamp(Number(options.surfaceY), WATER_SURFACE_Y + 24, TANK_HEIGHT - GLASS_MARGIN_BOTTOM)
+    : null;
+  const particles = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const scatterX = randomBetween(-scatterPx, scatterPx) + direction * randomBetween(-4, scatterPx * 0.7);
+    const endX = clamp(baseX + scatterX, GLASS_MARGIN_X + 8, TANK_WIDTH - GLASS_MARGIN_X - 8);
+    const endY = (settleSurfaceY ?? getTankFloorSurfaceYAtX(endX)) - randomBetween(0, 4);
+    const colorIndex = Math.floor(Math.random() * Math.max(1, palette.length));
+    const customAsset = pebbleAssets.length
+      ? (pebbleAssets[Math.floor(Math.random() * pebbleAssets.length)] || pebbleAssets[0])
+      : null;
+    particles.push({
+      startX: clamp(baseX + randomBetween(-8, 8), GLASS_MARGIN_X + 8, TANK_WIDTH - GLASS_MARGIN_X - 8),
+      startY: baseY + randomBetween(-2, 5),
+      endX,
+      endY,
+      liftPx: randomBetween(liftMinPx, liftMaxPx) * Math.sqrt(intensity),
+      sway: Math.random(),
+      delay: randomBetween(0, 0.18),
+      sizePx: randomBetween(FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX, FISH_GRAVEL_PEBBLE_HOLD_SIZE_MAX_PX),
+      rotation: randomBetween(-Math.PI, Math.PI),
+      spin: randomBetween(-1.6, 1.6),
+      spriteIndex: Math.floor(Math.random() * spriteCount),
+      assetPath: customAsset?.path || "",
+      color: palette[colorIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR,
+      colorize: true,
+      variantIndex: Math.floor(Math.random() * GRAVEL_VARIANT_BUCKETS),
+      stretchY: randomBetween(0.82, 1.18),
+      alpha: randomBetween(0.78, 0.96)
+    });
+  }
+
+  if (runtime.gravelDigBursts.length >= MAX_GRAVEL_DIG_BURSTS) {
+    runtime.gravelDigBursts.shift();
+  }
+
+  runtime.gravelDigBursts.push({
+    id: createId("gravel-dig"),
+    startedAt: now,
+    durationMs: randomBetween(GRAVEL_DIG_BURST_DURATION_MIN_MS, GRAVEL_DIG_BURST_DURATION_MAX_MS),
+    particles
+  });
+}
+
+function updateGravelDigBursts(now = Date.now()) {
+  runtime.gravelDigBursts = (runtime.gravelDigBursts || []).filter((burst) => (
+    burst && (Number(burst.startedAt) || 0) + (Number(burst.durationMs) || 0) > now
+  ));
 }
 
 function spawnCoinGlint(x, y, now = Date.now()) {
@@ -27919,12 +29257,18 @@ function updateFishGravelPebbleAction(fish, species, now = Date.now()) {
       if (!action.pickupEffectsSpawned) {
         const pickupX = action.pickupXNorm * TANK_WIDTH;
         const pickupY = action.pickupYNorm * TANK_HEIGHT;
-        spawnSedimentCloud(pickupX, pickupY + 8, {
+        spawnGravelCloudEffectAtPoint(pickupX, pickupY + 8, {
           now,
-          strength: getSedimentStrength(now, 1.18),
+          intensity: 1.05,
+          sedimentStrength: getSedimentStrength(now, 1.18),
           baseRadius: 22,
           driftX: randomBetween(-5, 5),
           driftY: randomBetween(-8, -2)
+        });
+        spawnGravelDigBurst(pickupX, pickupY + 6, {
+          now,
+          intensity: 0.58,
+          direction: getFishFacingDirection(fish)
         });
         attemptGravelCoinFind(fish, action, now);
         action.pickupEffectsSpawned = true;
@@ -27957,6 +29301,30 @@ function updateFishGravelPebbleAction(fish, species, now = Date.now()) {
 
 function updateFishPebbleTosses(now = Date.now()) {
   pruneFishGravelPebbleRuntimeState(now);
+  if (!runtime.fishPebbleTosses?.length) {
+    return;
+  }
+
+  runtime.fishPebbleTosses = runtime.fishPebbleTosses.filter((toss) => {
+    if (!toss?.assetPath || !toss?.color) {
+      return false;
+    }
+
+    if (now < toss.startedAt + toss.durationMs) {
+      return true;
+    }
+
+    const endY = Number.isFinite(Number(toss.endLayer))
+      ? getFishPebbleTossLayerLandingY(toss, toss.sizePx)
+      : toss.endY;
+    spawnGravelLandingEffects(toss.endX, endY, {
+      now,
+      intensity: 0.72,
+      radiusPx: 38,
+      force: 0.28
+    });
+    return false;
+  });
 }
 
 function updateSedimentClouds(now = Date.now()) {
@@ -28035,9 +29403,12 @@ function updateFishSedimentWakes(now = Date.now()) {
 
 function updateWaterLifeEffects(now = Date.now(), deltaSeconds = 0.016) {
   updateSedimentClouds(now);
+  updateGravelDigBursts(now);
   updateCoinGlints(now);
   updateFishSedimentWakes(now);
   updateWaterParticles(now, deltaSeconds);
+  updateBloodWaterTint(deltaSeconds);
+  updateEffectClouds(deltaSeconds);
 }
 
 function getFishPebbleTossPose(toss, now = Date.now()) {
@@ -28397,6 +29768,14 @@ function isDecorProgressUnlocked(decorOrKey) {
   return !requirement || (state?.unlockedDecorKeys || []).includes(key);
 }
 
+function isDecorShopUnlocked(decorOrKey) {
+  const key = normalizeDecorKey(typeof decorOrKey === "string" ? decorOrKey : decorOrKey?.key || decorOrKey?.decorKey || "");
+  if (!key || !runtime.decorMap.has(key)) {
+    return false;
+  }
+  return isDebugModeEnabled() || isDecorProgressUnlocked(key);
+}
+
 function getCatalogLockSortRank(entry) {
   const fishId = typeof entry?.id === "string" ? entry.id : "";
   if (fishId && runtime.fishMap.has(fishId) && !isCustomFishShopKey(fishId)) {
@@ -28609,7 +29988,7 @@ function isFishSpeciesUnlocked(speciesOrId) {
 
 function getFishShopCatalog() {
   return runtime.fishCatalog.filter((species) => (
-    isGoreEnabled() || !isUndeadSpecies(species)
+    (isZombieSkeletonModeAvailable() && isGoreEnabled()) || !isUndeadSpecies(species)
   ));
 }
 
@@ -28870,11 +30249,7 @@ function buyInspectorFish() {
     return;
   }
 
-  if (isCustomFishAssetKey(fish.speciesId)) {
-    buyAnotherCustomFish(fish.id);
-    return;
-  }
-  buyFish(fish.speciesId);
+  openFishBuyAnotherConfirmation(fish.id);
 }
 
 function getFishInspectorBehaviorProfiles() {
@@ -28954,7 +30329,15 @@ function renderFishInspectorColorControls(fish) {
   setMarkupIfChanged(
     "fish-inspector-color-swatches",
     dom.inspectorFishColorSwatches,
-    `${originalTile}${rgbTile}${swatches}`
+    `
+      <div class="color-choice-mode-row">
+        ${originalTile}
+        ${rgbTile}
+      </div>
+      <div class="color-choice-swatch-row">
+        ${swatches}
+      </div>
+    `
   );
 }
 
@@ -29046,35 +30429,6 @@ function updateInspectorFishSetting(setting, rawValue) {
   }
   saveState();
   renderUi(now);
-}
-
-function selectGravelAsset(gravelKey) {
-  if (!runtime.gravelMap.has(gravelKey)) {
-    return;
-  }
-
-  state.selectedGravelAsset = gravelKey;
-  invalidateGravelBedCache(false);
-  saveState();
-  renderUi(Date.now());
-}
-
-function setCustomGravelEnabled(enabled) {
-  if (!hasReadyCustomGravelLayers()) {
-    return;
-  }
-
-  const nextEnabled = Boolean(enabled);
-  if (state.customGravelEnabled === nextEnabled) {
-    return;
-  }
-
-  state.customGravelEnabled = nextEnabled;
-  if (!nextEnabled) {
-    clearAllFishGravelPebbleActions(Date.now());
-  }
-  saveState();
-  renderUi(Date.now());
 }
 
 function setCustomGravelLayerColor(layerIndex, color) {
@@ -29448,13 +30802,14 @@ function toggleCleaningMode(options = {}) {
   resetScrubWipeSoundState();
 
   if (nextMode) {
-    runtime.cleaningMode = true;
-    runtime.toolModeSource = options.source || "toolbar";
-    if (options.collapseSidebar) {
-      runtime.sidebarCollapsed = true;
-    }
-    if (isTutorialStage(TUTORIAL_STAGE_CLEAN_INTRO)) {
-      tutorialChanged = setTutorialStage(TUTORIAL_STAGE_CLEAN, { now }) || tutorialChanged;
+    if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_CLEAN_TANK)) {
+      tutorialChanged = setTutorialStage(TUTORIAL_STAGE_CLEAN_TANK_DONE, { now }) || tutorialChanged;
+    } else {
+      runtime.cleaningMode = true;
+      runtime.toolModeSource = options.source || "toolbar";
+      if (options.collapseSidebar) {
+        runtime.sidebarCollapsed = true;
+      }
     }
   }
 
@@ -29664,7 +31019,7 @@ function debugDispenseAutoDispenser() {
 function triggerDebugGravelPebbleTest() {
   const now = Date.now();
   if (!canUseFishGravelPebblePlay()) {
-    showToast("Enable Custom Gravel Test to use the gravel pebble debug.");
+    showToast("Add gravel pebble assets to use the gravel pebble debug.");
     return;
   }
 
@@ -29689,6 +31044,83 @@ function triggerDebugGravelPebbleTest() {
   pushEvent(`Debug sent ${fish.name} to toss a gravel pebble.`, now);
   renderUi(now);
   showToast(`${fish.name} is heading down to grab a pebble.`);
+}
+
+function triggerDebugGravelDigTest() {
+  const now = Date.now();
+  const fish = pickFishGravelDigDebugCandidate(now);
+  if (!fish) {
+    showToast("Keep a living non-sucker fish in the tank to test gravel digging.");
+    return;
+  }
+
+  const species = getSpeciesForFish(fish);
+  if (!species) {
+    return;
+  }
+
+  clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+  if (fish.caveState) {
+    abortFishCaveBehavior(fish, now, false);
+  }
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  releasePelletsTargetingFishIds(fish.id);
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.panicUntil = null;
+  fish.panicSpeedBoost = null;
+  clearFishSchoolFollowState(fish);
+
+  const currentX = fish.xNorm * TANK_WIDTH;
+  const direction = Math.random() < 0.5 ? -1 : 1;
+  const digX = clamp(
+    currentX + direction * randomBetween(38, 104),
+    GLASS_MARGIN_X + 18,
+    TANK_WIDTH - GLASS_MARGIN_X - 18
+  );
+  const digLayer = getFishTankLayer(fish);
+  const digY = getTankLayerBottomBoundaryY(digLayer);
+  const fishWidth = getFishDisplayWidth(fish, species, now);
+  const digDirection = digX >= currentX ? 1 : -1;
+  const fallbackTargetXNorm = clamp((digX - digDirection * fishWidth * 0.28) / TANK_WIDTH, 0.08, 0.92);
+  const fallbackTargetYNorm = clamp((digY - fishWidth * 0.34) / TANK_HEIGHT, 0.24, 0.96);
+  fish.targetXNorm = fallbackTargetXNorm;
+  fish.targetYNorm = fallbackTargetYNorm;
+  fish.activity = FISH_GRAVEL_DIG_ACTIVITY;
+  fish.targetAt = now + 5200;
+  fish.nextGravelDisturbAt = 0;
+  fish.nextGravelDigAt = 0;
+  const digPrompt = {
+    startedAt: now,
+    until: now + FORCED_GRAVEL_DIG_TIMEOUT_MS,
+    targetXNorm: fish.targetXNorm,
+    targetYNorm: fish.targetYNorm,
+    impactX: digX,
+    tankLayer: digLayer,
+    direction: digDirection
+  };
+  runtime.forcedGravelDigUntilByFishId.set(fish.id, digPrompt);
+  setFishDesiredTankLayer(fish, digLayer);
+  const mouthTarget = getFishGravelDigMouthTarget(fish, species, digX, digY, digDirection, now);
+  if (mouthTarget) {
+    digPrompt.targetXNorm = mouthTarget.xNorm;
+    digPrompt.targetYNorm = mouthTarget.yNorm;
+    fish.targetXNorm = mouthTarget.xNorm;
+    fish.targetYNorm = mouthTarget.yNorm;
+  }
+  fish.swimSpeed = normalizeFishSpeed(
+    species,
+    randomBetween(Math.max(species.speedMin, species.speedMax * 0.74), species.speedMax)
+  );
+  if (Math.abs(fish.targetXNorm - fish.xNorm) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
+    setFishDirection(fish, digDirection, species, now);
+  }
+
+  runtime.selectedFishId = fish.id;
+  pushEvent(`Debug sent ${fish.name} to dig in the gravel.`, now);
+  renderUi(now);
+  showToast(`${fish.name} is heading down to dig.`);
 }
 
 function isDebugCaveTestFish(fish) {
@@ -30031,50 +31463,6 @@ function damageSelectedFish() {
   showToast(toast);
 }
 
-function deleteAllFishAndDecor() {
-  const now = Date.now();
-  state.fish = [];
-  state.storedFish = [];
-  state.lastCorpseSicknessAt = null;
-  state.pendingPoops = [];
-  state.poops = [];
-  state.fishEggs = [];
-  state.floatingPellets = [];
-  state.lastGravelCoinFoundAt = 0;
-  state.decorInventory = {};
-  state.customFishAssets = {};
-  syncRuntimeCustomFishAssetsFromState(state);
-  state.placedDecor = [];
-  state.gravelLivePebbles = [];
-  runtime.selectedFishId = null;
-  runtime.selectedDecorId = null;
-  runtime.selectedDecorIds = [];
-  runtime.bubblerSettingsDecorId = null;
-  runtime.customDecorSettingsDecorId = null;
-  clearPendingCustomAssetUploads();
-  runtime.dragState = null;
-  runtime.fishDragState = null;
-  runtime.eggDragState = null;
-  runtime.pebbleDragState = null;
-  runtime.placementMode = null;
-  runtime.placementPreview = null;
-  runtime.splashBursts = [];
-  runtime.fallingGravelPebbles = [];
-  runtime.fishGravelPebbleActions.clear();
-  runtime.fishPebbleTosses = [];
-  runtime.sedimentClouds = [];
-  runtime.coinGlints = [];
-  runtime.waterParticles = [];
-  runtime.waterParticleTankId = null;
-  runtime.waterEffectFishSamples.clear();
-  runtime.bettaPassLocks.clear();
-  runtime.debugBreedingSequence = null;
-  pushEvent("Debug reset cleared all fish and decor.", now);
-  saveState();
-  renderUi(now);
-  showToast("Fish and decor cleared.");
-}
-
 function resetAllProgress() {
   localStorage.removeItem(STORAGE_KEY);
   revokeAllCustomImageRuntimeUrls();
@@ -30211,17 +31599,16 @@ function markScrubStamp(x, y) {
 
 function completeCleaning(options = {}) {
   const now = Date.now();
-  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_CLEAN, TUTORIAL_STAGE_COMPLETE)) {
+  if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_CLEAN_TANK)) {
     runtime.cleaningMode = false;
     runtime.toolModeSource = null;
     runtime.pointerDown = false;
     runtime.lastScrubPoint = null;
     clearScrubProgress();
     renderToolCursor();
-    setTutorialStage(TUTORIAL_STAGE_COMPLETE, { now });
+    setTutorialStage(TUTORIAL_STAGE_CLEAN_TANK_DONE, { now });
     saveState();
     renderUi(now);
-    showToast("Replay tutorial is preview-only.");
     return { ok: true, previewOnly: true };
   }
 
@@ -30265,8 +31652,8 @@ function completeCleaning(options = {}) {
   );
 
   let tutorialChanged = false;
-  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_CLEAN)) {
-    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_COMPLETE, { now }) || tutorialChanged;
+  if (isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_CLEAN_TANK)) {
+    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_CLEAN_TANK_DONE, { now }) || tutorialChanged;
   }
 
   saveState();
@@ -30478,6 +31865,73 @@ function updateGlassTapEffects(now) {
   runtime.glassTapEffects = runtime.glassTapEffects.filter((effect) => now <= effect.endsAt);
 }
 
+function getActiveGlassTapStressEnds(fish, now = Date.now()) {
+  return Array.isArray(fish?.glassTapStressEndsAt)
+    ? fish.glassTapStressEndsAt
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value) && value > now)
+      .sort((left, right) => left - right)
+      .slice(0, GLASS_TAP_STRESS_MAX_STACKS)
+    : [];
+}
+
+function getFishGlassTapStressPenalty(fish, now = Date.now()) {
+  return getActiveGlassTapStressEnds(fish, now).length * GLASS_TAP_STRESS_PENALTY;
+}
+
+function hasTankGlassTapStressEventToday(tank, now = Date.now()) {
+  if (!tank || !Array.isArray(tank.events)) {
+    return false;
+  }
+
+  const dayStart = getLocalDayStartTimestamp(now);
+  const dayEnd = dayStart + DAY_MS;
+  return tank.events.some((event) => (
+    event
+    && event.type === "glass_tap_stress"
+    && Number(event.time) >= dayStart
+    && Number(event.time) < dayEnd
+  ));
+}
+
+function recordGlassTapStressForFish(fish, now = Date.now()) {
+  if (!fish || isFishDead(fish)) {
+    return false;
+  }
+
+  if (
+    !Number.isFinite(Number(fish.glassTapWindowStartedAt))
+    || now - Number(fish.glassTapWindowStartedAt) > GLASS_TAP_STRESS_WINDOW_MS
+  ) {
+    fish.glassTapWindowStartedAt = now;
+    fish.glassTapWindowCount = 0;
+  }
+
+  fish.glassTapWindowCount = Math.max(0, Math.floor(Number(fish.glassTapWindowCount) || 0)) + 1;
+  if (fish.glassTapWindowCount % GLASS_TAP_STRESS_TAP_THRESHOLD !== 0) {
+    return false;
+  }
+
+  const activeStressEnds = getActiveGlassTapStressEnds(fish, now);
+  const nextStressEnds = [...activeStressEnds, now + GLASS_TAP_STRESS_DURATION_MS]
+    .sort((left, right) => left - right)
+    .slice(-GLASS_TAP_STRESS_MAX_STACKS);
+  const changed = nextStressEnds.length !== activeStressEnds.length
+    || nextStressEnds.some((value, index) => value !== activeStressEnds[index]);
+  fish.glassTapStressEndsAt = nextStressEnds;
+
+  const tank = getCurrentTank();
+  if (tank && !hasTankGlassTapStressEventToday(tank, now)) {
+    pushEvent(`${fish.name} was startled by repeated glass tapping.`, now, tank, {
+      score: -1,
+      type: "glass_tap_stress",
+      fishId: fish.id
+    });
+  }
+
+  return changed;
+}
+
 function spawnGlassTapEffect(point, now = Date.now()) {
   if (!point) {
     return;
@@ -30509,15 +31963,20 @@ function spawnGlassTapEffect(point, now = Date.now()) {
   if (runtime.glassTapEffects.length > GLASS_TAP_EFFECT_LIMIT) {
     runtime.glassTapEffects.splice(0, runtime.glassTapEffects.length - GLASS_TAP_EFFECT_LIMIT);
   }
-  scareNearbyFishFromGlassTap(point, now);
+  const stressChanged = scareNearbyFishFromGlassTap(point, now);
+  if (stressChanged) {
+    saveState();
+    renderUi(now, { full: false });
+  }
   playGlassTapSoundEffect();
 }
 
 function scareNearbyFishFromGlassTap(point, now = Date.now()) {
   if (!point || !Array.isArray(state?.fish) || !state.fish.length) {
-    return;
+    return false;
   }
 
+  let stressChanged = false;
   for (const fish of state.fish) {
     if (
       !fish
@@ -30541,6 +32000,10 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
     const distance = Math.hypot(dx, dy);
     if (distance > GLASS_TAP_FISH_STARTLE_RADIUS_PX) {
       continue;
+    }
+
+    if (distance <= GLASS_TAP_STRESS_RADIUS_PX) {
+      stressChanged = recordGlassTapStressForFish(fish, now) || stressChanged;
     }
 
     const fallbackAngle = Math.random() * Math.PI * 2;
@@ -30599,6 +32062,8 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
       setFishDirection(fish, target.xNorm >= fish.xNorm ? 1 : -1, species, now);
     }
   }
+
+  return stressChanged;
 }
 
 function spawnFishReturnSplash(xNorm) {
@@ -30660,6 +32125,12 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
   if (typeof meta?.fishId === "string" && meta.fishId.trim()) {
     eventEntry.fishId = meta.fishId.trim();
   }
+  if (typeof meta?.decorKey === "string" && meta.decorKey.trim()) {
+    eventEntry.decorKey = normalizeDecorKey(meta.decorKey);
+  }
+  if (typeof meta?.placedDecorId === "string" && meta.placedDecorId.trim()) {
+    eventEntry.placedDecorId = meta.placedDecorId.trim();
+  }
   if (meta?.recapEligible === false) {
     eventEntry.recapEligible = false;
   }
@@ -30691,16 +32162,27 @@ function getPreviousLocalDayKey(timestamp = Date.now()) {
   return getLocalDayKey(getLocalDayStartTimestamp(timestamp) - 1);
 }
 
+function getDailyBonusClaimKey(summary, tank = getCurrentTank()) {
+  const tankId = summary?.tankId || tank?.id || state.activeTankId || "";
+  return tankId && summary?.dayKey ? `${tankId}:${summary.dayKey}` : "";
+}
+
+function isDailyBonusSummaryClaimed(summary, tank = getCurrentTank()) {
+  const claimedKey = getDailyBonusClaimKey(summary, tank);
+  return Boolean(claimedKey && state?.dailyBonus?.claimedByTankDay?.[claimedKey]);
+}
+
 function getActiveDailyBonusSummary(tank = getCurrentTank()) {
   if (!state?.dailyBonus) {
     return null;
   }
   const tankId = tank?.id || state.activeTankId || "";
-  return state.dailyBonus.summariesByTankId?.[tankId] || (
+  const summary = state.dailyBonus.summariesByTankId?.[tankId] || (
     state.dailyBonus.summary?.tankId === tankId || !state.dailyBonus.summary?.tankId
       ? state.dailyBonus.summary
       : null
   );
+  return summary && !isDailyBonusSummaryClaimed(summary, tank) ? summary : null;
 }
 
 function syncActiveDailyBonusState() {
@@ -30759,6 +32241,7 @@ function buildDailyRecapSummary(tank, dayKey, now = Date.now(), options = {}) {
   }
   const start = getLocalDayStartTimestamp(dayKey);
   const end = start + DAY_MS;
+  const cleanPercent = getTankCleanlinessPercentForMilestones(tank, now);
   const rows = (Array.isArray(tank.events) ? tank.events : [])
     .filter((event) => event && Number(event.time) >= start && Number(event.time) < end)
     .sort((left, right) => Number(left.time) - Number(right.time))
@@ -30802,6 +32285,15 @@ function buildDailyRecapSummary(tank, dayKey, now = Date.now(), options = {}) {
 
   const score = rows.reduce((total, row) => total + row.score, 0);
   const reward = clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP);
+  const mealSlots = getTodaysMealSlots(start + HOUR_MS);
+  const allMealsSatisfied = livingFish.length > 0 && mealSlots.every((slot) => (
+    getMealEligibleFishForSlot(slot, tank).length === 0
+    || isMealSlotServed(slot, tank)
+  ));
+  const hasNegativeEvents = rows.some((row) => row.score < 0);
+  const hasAttackOrDeath = rows.some((row) => /attack|bit|bite|died|death|devoured/i.test(row.text || ""));
+  const hasGlassTapStress = rows.some((row) => row.type === "glass_tap_stress" || /glass tapping|startled/i.test(row.text || ""));
+  const hasSparklingComfort = rows.some((row) => /sparkling comfort/i.test(row.text || ""));
   return {
     tankId: tank.id || "",
     tankName: getTankLabel(tank),
@@ -30812,6 +32304,12 @@ function buildDailyRecapSummary(tank, dayKey, now = Date.now(), options = {}) {
     reward,
     mealsFed: rows.filter((row) => / ate |fed \d+ fish|meal served/i.test(row.text)).length,
     averageComfort,
+    cleanPercent,
+    allMealsSatisfied,
+    hasNegativeEvents,
+    hasAttackOrDeath,
+    hasGlassTapStress,
+    hasSparklingComfort,
     fishCount: livingFish.length,
     decorCount: Array.isArray(tank.placedDecor) ? tank.placedDecor.length : 0,
     overall: score >= 12 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
@@ -30874,13 +32372,168 @@ function maybeGenerateDailyRecapForTank(tank, now = Date.now(), options = {}) {
   return storeDailyRecapSummary(summary);
 }
 
-function getMilestoneStats(latestSummary = null, now = Date.now()) {
+function getTankCleanlinessPercentForMilestones(tank = getCurrentTank(), now = Date.now()) {
+  if (!tank) {
+    return 0;
+  }
+
+  const activeTank = getCurrentTank();
+  if (activeTank?.id && tank.id === activeTank.id) {
+    return Math.max(0, Math.round((1 - getTankDirtiness(now)) * 100));
+  }
+
+  const fishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+  const deadFishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && isFishDead(fish) && !isFishBeingConsumedByPiranhas(fish, now));
+  const typeMeta = getTankTypeMeta(tank.tankTypeId);
+  const baseCleanDays = tankSupportsFilters(tank)
+    ? BASE_TANK_DIRTY_DAYS
+    : Math.max(1.2, Number(typeMeta.baseCleanDays) || FILTERLESS_BASE_TANK_DIRTY_DAYS);
+  const filter = tankSupportsFilters(tank)
+    ? runtime.filterMap.get(tank.selectedFilterAsset || getDefaultFilterKey())
+    : null;
+  const cleanDays = filter
+    ? Math.max(BASE_TANK_DIRTY_DAYS, Number(filter.cleanDays) || BASE_TANK_DIRTY_DAYS)
+    : baseCleanDays;
+  const duration = cleanDays * DAY_MS / Math.max(1, getTankFishDirtinessMultiplier(fishList, deadFishList));
+  const dirtiness = clamp((now - (Number(tank.lastCleanedAt) || now)) / Math.max(1, duration), 0, 1);
+  return Math.max(0, Math.round((1 - dirtiness) * 100));
+}
+
+function getMilestoneHistoryWithLatest(latestSummary = null) {
   const history = Array.isArray(state?.dailyBonus?.recapHistory) ? state.dailyBonus.recapHistory : [];
+  if (!latestSummary?.tankId || !latestSummary?.dayKey) {
+    return history;
+  }
+
+  const alreadyIncluded = history.some((summary) => (
+    summary?.tankId === latestSummary.tankId
+    && summary?.dayKey === latestSummary.dayKey
+  ));
+  return alreadyIncluded ? history : [latestSummary, ...history];
+}
+
+function getRecapRows(summary) {
+  return Array.isArray(summary?.rows) ? summary.rows : [];
+}
+
+function getRecapCleanPercent(summary, now = Date.now()) {
+  if (Number.isFinite(Number(summary?.cleanPercent))) {
+    return clamp(Math.round(Number(summary.cleanPercent)), 0, 100);
+  }
+
+  const tank = getAllTanks(state).find((entry) => entry?.id === summary?.tankId);
+  return tank ? getTankCleanlinessPercentForMilestones(tank, now) : 0;
+}
+
+function recapHasNegativeEvents(summary) {
+  if (typeof summary?.hasNegativeEvents === "boolean") {
+    return summary.hasNegativeEvents;
+  }
+  return getRecapRows(summary).some((row) => Number(row?.score) < 0);
+}
+
+function recapHasAttackOrDeath(summary) {
+  if (typeof summary?.hasAttackOrDeath === "boolean") {
+    return summary.hasAttackOrDeath;
+  }
+  return getRecapRows(summary).some((row) => /attack|bit|bite|died|death|devoured/i.test(row?.text || ""));
+}
+
+function recapHasGlassTapStress(summary) {
+  if (typeof summary?.hasGlassTapStress === "boolean") {
+    return summary.hasGlassTapStress;
+  }
+  return getRecapRows(summary).some((row) => row?.type === "glass_tap_stress" || /glass tapping|startled/i.test(row?.text || ""));
+}
+
+function recapHasSparklingComfort(summary) {
+  if (typeof summary?.hasSparklingComfort === "boolean") {
+    return summary.hasSparklingComfort;
+  }
+  return getRecapRows(summary).some((row) => /sparkling comfort/i.test(row?.text || ""));
+}
+
+function countRecentRecapStreak(history, predicate) {
+  let streak = 0;
+  for (const summary of Array.isArray(history) ? history : []) {
+    if (!predicate(summary)) {
+      break;
+    }
+    streak += 1;
+  }
+  return streak;
+}
+
+function countEventOccurrences(events, pattern) {
+  return (Array.isArray(events) ? events : []).reduce((total, event) => {
+    const text = String(event?.text || "");
+    if (!pattern.test(text)) {
+      return total;
+    }
+    const count = Number(text.match(/^\s*(\d+)/)?.[1]);
+    return total + Math.max(1, Number.isFinite(count) ? Math.floor(count) : 1);
+  }, 0);
+}
+
+function getLatestEventTime(events, pattern) {
+  return (Array.isArray(events) ? events : [])
+    .filter((event) => pattern.test(String(event?.text || "")))
+    .reduce((latest, event) => Math.max(latest, Number(event?.time) || 0), 0);
+}
+
+function getMilestoneTankFishEntries() {
+  return getAllTanks(state).flatMap((tank) => (
+    Array.isArray(tank?.fish)
+      ? tank.fish.map((fish) => ({ tank, fish })).filter((entry) => entry.fish)
+      : []
+  ));
+}
+
+function getCurrentMetNeedsCount(now = Date.now()) {
+  return getMilestoneTankFishEntries().reduce((total, { tank, fish }) => {
+    if (isFishDead(fish)) {
+      return total;
+    }
+    return total + getFishNeedsStatus(fish, tank, now).filter((need) => need.met).length;
+  }, 0);
+}
+
+function hasAllLivingFishNeedsMet(now = Date.now()) {
+  const livingEntries = getMilestoneTankFishEntries().filter(({ fish }) => !isFishDead(fish));
+  return livingEntries.length > 0 && livingEntries.every(({ tank, fish }) => {
+    const needs = getFishNeedsStatus(fish, tank, now);
+    return needs.length > 0 && needs.every((need) => need.met);
+  });
+}
+
+function isCommunityMilestoneFish(fish) {
+  return Boolean(fish && !isPiranhaSpecies(fish) && !isUndeadFish(fish) && fish.speciesId !== "pufferfish");
+}
+
+function hasCommunityMilestoneTank(recentAverageComfort = 0) {
+  return getAllTanks(state).some((tank) => {
+    const livingFish = (Array.isArray(tank?.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+    return livingFish.filter(isCommunityMilestoneFish).length >= 5
+      && getTankSpaceLoad(tank) <= TANK_SPACE_FULL_LOAD
+      && Number(recentAverageComfort) >= 70;
+  });
+}
+
+function getHealthyTankCount() {
+  return getAllTanks(state).filter((tank) => (
+    Array.isArray(tank?.fish)
+    && tank.fish.some((fish) => fish && !isFishDead(fish) && getFishHealthRatio(fish) >= 1)
+  )).length;
+}
+
+function getMilestoneStats(latestSummary = null, now = Date.now()) {
+  const history = getMilestoneHistoryWithLatest(latestSummary);
+  const referenceSummary = latestSummary || history[0] || null;
   const recent = history.slice(0, 5);
   const goodRecaps = history.filter((summary) => Number(summary.score) >= 5 && Number(summary.averageComfort) >= 70).length;
   const recentAverageComfort = recent.length
     ? Math.round(recent.reduce((total, summary) => total + (Number(summary.averageComfort) || 0), 0) / recent.length)
-    : (Number(latestSummary?.averageComfort) || 0);
+    : (Number(referenceSummary?.averageComfort) || 0);
   const livingFish = getAllTankFish(state).filter((fish) => fish && !isFishDead(fish));
   const oldestLivingFishAgeMs = livingFish.reduce((oldest, fish) => Math.max(oldest, now - (Number(fish.acquiredAt) || now)), 0);
   const allEvents = getAllTanks(state).flatMap((tank) => Array.isArray(tank.events) ? tank.events : []);
@@ -30895,8 +32548,37 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
   const daysSinceLastDeath = latestDeath > 0
     ? Math.floor((now - latestDeath) / DAY_MS)
     : Math.floor((now - stewardshipStart) / DAY_MS);
+  const cleanRecapStreak90 = countRecentRecapStreak(history, (summary) => getRecapCleanPercent(summary, now) >= 90);
+  const cleanRecapCount95 = history.filter((summary) => getRecapCleanPercent(summary, now) >= 95).length;
+  const allMealsSatisfiedStreak = countRecentRecapStreak(history, (summary) => summary?.allMealsSatisfied === true);
+  const comfort80Streak = countRecentRecapStreak(history, (summary) => Number(summary?.averageComfort) >= 80);
+  const comfort90Streak = countRecentRecapStreak(history, (summary) => Number(summary?.averageComfort) >= 90);
+  const noAttackDeathRecapStreak = countRecentRecapStreak(history, (summary) => Number(summary?.fishCount) > 0 && !recapHasAttackOrDeath(summary));
+  const noGlassTapStressStreak = countRecentRecapStreak(history, (summary) => Number(summary?.fishCount) > 0 && !recapHasGlassTapStress(summary));
+  const sparklingComfortEvents = history.filter((summary) => recapHasSparklingComfort(summary)).length;
+  const latestNoDramaDay = Boolean(referenceSummary && Number(referenceSummary.fishCount) > 0 && !recapHasNegativeEvents(referenceSummary));
+  const hasPerfectDay = history.some((summary) => Number(summary?.score) >= 8 && recapHasSparklingComfort(summary));
+  const decorPlacedEventCount = countEventOccurrences(allEvents, /^Placed .+ in the aquarium\./i);
+  const gravelCoinFinds = countEventOccurrences(allEvents, /found a coin in the gravel/i);
+  const hatchedFishEvents = countEventOccurrences(allEvents, /has just hatched/i);
+  const healingEvents = countEventOccurrences(allEvents, /recovered half a heart|medicine .* used|was used in|health reset restored/i);
+  const lastHealingAt = getLatestEventTime(allEvents, /recovered half a heart|medicine .* used|was used in|health reset restored/i);
+  const deathAfterLastHealing = lastHealingAt > 0 && allEvents.some((event) => (
+    / died|dead fish|could not survive/i.test(event?.text || "")
+    && (Number(event?.time) || 0) > lastHealingAt
+  ));
+  const grownBabyFishCount = [
+    ...getAllTankFish(state),
+    ...(Array.isArray(state.storedFish) ? state.storedFish : [])
+  ].filter((fish) => (
+    fish
+    && !isFishDead(fish)
+    && Number.isFinite(Number(fish.growthEndsAt))
+    && Number(fish.growthEndsAt) <= now
+  )).length;
+  const noOvercrowdedTanks = getAllTanks(state).every((tank) => getTankSpaceLoad(tank) <= TANK_SPACE_FULL_LOAD);
   return {
-    latestScore: Number(latestSummary?.score) || 0,
+    latestScore: Number(referenceSummary?.score) || 0,
     goodRecaps,
     recentAverageComfort,
     oldestLivingFishAgeMs,
@@ -30905,7 +32587,29 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     hasSaltwaterFish: livingFish.some((fish) => getSpeciesWaterType(fish) === "saltwater"),
     hasSpookyKeeperPath: Number(state?.lifetimeDeaths) > 0
       || allEvents.some((event) => /zombie|skeleton|corpse|dead fish/i.test(event?.text || ""))
-      || (state?.unlockedFishSpecies || []).some((speciesId) => speciesId === "zombie-fish" || speciesId === "skeleton-fish")
+      || (state?.unlockedFishSpecies || []).some((speciesId) => speciesId === "zombie-fish" || speciesId === "skeleton-fish"),
+    cleanRecapStreak90,
+    cleanRecapCount95,
+    allMealsSatisfiedStreak,
+    comfort80Streak,
+    comfort90Streak,
+    sparklingComfortEvents,
+    hasPerfectDay,
+    latestNoDramaDay,
+    noAttackDeathRecapStreak,
+    noGlassTapStressStreak,
+    decorPlacedCount: Math.max(getAllPlacedDecor(state).length, decorPlacedEventCount),
+    metNeedsCount: getCurrentMetNeedsCount(now),
+    hasAllLivingNeedsMet: hasAllLivingFishNeedsMet(now),
+    hasCommunityTank: hasCommunityMilestoneTank(recentAverageComfort),
+    livingFishCount: livingFish.length,
+    noOvercrowdedTanks,
+    hatchedFishEvents,
+    grownBabyFishCount,
+    gravelCoinFinds,
+    healingEvents,
+    hasRescueKeeper: lastHealingAt > 0 && now - lastHealingAt >= 3 * DAY_MS && !deathAfterLastHealing,
+    healthyTankCount: getHealthyTankCount()
   };
 }
 
@@ -31919,6 +33623,8 @@ function getToolbarButtonControlState(button) {
       return runtime.storeOverlayOpen;
     case "openManagementButton":
       return runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management";
+    case "careTaskPaneButton":
+      return getUiSettings().careTaskPaneOpen === true;
     case "openEquipmentButton":
       return runtime.equipmentOverlayOpen;
     case "openSettingsButton":
@@ -31975,6 +33681,212 @@ function playToolbarButtonSoundForClick(event) {
   const wasActive = pending?.button === button && pending.wasActive === true;
   const isActive = getToolbarButtonControlState(button);
   playToolbarButtonSoundEffect(wasActive && !isActive ? "exit" : "press");
+}
+
+function isToolbarFastTooltipExperimentEnabled() {
+  return Boolean(
+    dom.tankBottomDock
+    && dom.toolbarFastTooltip
+    && dom.tankBottomDock.classList.contains("toolbar-fast-tooltip-experiment")
+    && !dom.tankBottomDock.classList.contains("is-toolbar-collapsed")
+    && !dom.tankBottomDock.classList.contains("is-tutorial-hidden")
+  );
+}
+
+function getToolbarFastTooltipButton(target) {
+  if (!(target instanceof Element) || !dom.tankBottomDock) {
+    return null;
+  }
+
+  const button = target.closest(".dock-button");
+  return button && dom.tankBottomDock.contains(button) && !button.disabled && !button.hidden
+    ? button
+    : null;
+}
+
+function getToolbarFastTooltipText(button) {
+  return String(
+    button?.dataset?.toolbarTooltipTitle
+    || button?.getAttribute?.("title")
+    || button?.getAttribute?.("aria-label")
+    || ""
+  ).trim();
+}
+
+function syncToolbarFastTooltipExperiment() {
+  const dock = dom.tankBottomDock;
+  if (!dock) {
+    return;
+  }
+
+  const enabled = isToolbarFastTooltipExperimentEnabled();
+  const buttons = dock.querySelectorAll(".dock-button");
+  for (const button of buttons) {
+    if (enabled) {
+      const currentTitle = button.getAttribute("title");
+      if (currentTitle !== null) {
+        button.dataset.toolbarTooltipTitle = currentTitle;
+        button.removeAttribute("title");
+      } else if (!button.dataset.toolbarTooltipTitle && button.getAttribute("aria-label")) {
+        button.dataset.toolbarTooltipTitle = button.getAttribute("aria-label") || "";
+      }
+      if (getToolbarFastTooltipText(button)) {
+        button.setAttribute("aria-describedby", "toolbarFastTooltip");
+      }
+      continue;
+    }
+
+    if (!button.hasAttribute("title") && button.dataset.toolbarTooltipTitle) {
+      button.setAttribute("title", button.dataset.toolbarTooltipTitle);
+    }
+    delete button.dataset.toolbarTooltipTitle;
+    if (button.getAttribute("aria-describedby") === "toolbarFastTooltip") {
+      button.removeAttribute("aria-describedby");
+    }
+  }
+
+  if (!enabled) {
+    hideToolbarFastTooltip();
+  }
+}
+
+function clearToolbarFastTooltipTimer() {
+  if (runtime.toolbarFastTooltipTimer) {
+    clearTimeout(runtime.toolbarFastTooltipTimer);
+    runtime.toolbarFastTooltipTimer = 0;
+  }
+}
+
+function positionToolbarFastTooltip(clientX = null, clientY = null, button = runtime.toolbarFastTooltipButton) {
+  const tooltip = dom.toolbarFastTooltip;
+  if (!tooltip || tooltip.hidden) {
+    return;
+  }
+
+  let x = Number(clientX);
+  let y = Number(clientY);
+  if ((!Number.isFinite(x) || !Number.isFinite(y)) && button instanceof HTMLElement) {
+    const rect = button.getBoundingClientRect();
+    x = rect.left + rect.width / 2;
+    y = rect.top;
+  }
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return;
+  }
+
+  const viewportPadding = 8;
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const left = clamp(x - tooltipRect.width / 2, viewportPadding, window.innerWidth - tooltipRect.width - viewportPadding);
+  let top = y - tooltipRect.height - TOOLBAR_FAST_TOOLTIP_OFFSET_PX;
+  if (top < viewportPadding) {
+    top = y + TOOLBAR_FAST_TOOLTIP_OFFSET_PX;
+  }
+  top = clamp(top, viewportPadding, window.innerHeight - tooltipRect.height - viewportPadding);
+
+  tooltip.style.left = `${Math.round(left)}px`;
+  tooltip.style.top = `${Math.round(top)}px`;
+}
+
+function showToolbarFastTooltip(button) {
+  if (!isToolbarFastTooltipExperimentEnabled() || button !== runtime.toolbarFastTooltipButton) {
+    return;
+  }
+
+  const text = getToolbarFastTooltipText(button);
+  const tooltip = dom.toolbarFastTooltip;
+  if (!tooltip || !text) {
+    hideToolbarFastTooltip();
+    return;
+  }
+
+  tooltip.textContent = text;
+  tooltip.hidden = false;
+  positionToolbarFastTooltip(
+    runtime.toolbarFastTooltipPointer?.x,
+    runtime.toolbarFastTooltipPointer?.y,
+    button
+  );
+  tooltip.classList.add("is-visible");
+}
+
+function scheduleToolbarFastTooltip(button, event = null) {
+  if (!isToolbarFastTooltipExperimentEnabled() || !button) {
+    hideToolbarFastTooltip();
+    return;
+  }
+
+  runtime.toolbarFastTooltipButton = button;
+  if (Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY)) {
+    runtime.toolbarFastTooltipPointer = {
+      x: event.clientX,
+      y: event.clientY
+    };
+  } else {
+    runtime.toolbarFastTooltipPointer = null;
+  }
+
+  clearToolbarFastTooltipTimer();
+  runtime.toolbarFastTooltipTimer = setTimeout(() => {
+    runtime.toolbarFastTooltipTimer = 0;
+    showToolbarFastTooltip(button);
+  }, TOOLBAR_FAST_TOOLTIP_DELAY_MS);
+}
+
+function hideToolbarFastTooltip() {
+  clearToolbarFastTooltipTimer();
+  runtime.toolbarFastTooltipButton = null;
+  runtime.toolbarFastTooltipPointer = null;
+  if (!dom.toolbarFastTooltip) {
+    return;
+  }
+  dom.toolbarFastTooltip.classList.remove("is-visible");
+  dom.toolbarFastTooltip.hidden = true;
+}
+
+function handleToolbarFastTooltipPointerOver(event) {
+  syncToolbarFastTooltipExperiment();
+  const button = getToolbarFastTooltipButton(event.target);
+  if (!button || button === runtime.toolbarFastTooltipButton) {
+    return;
+  }
+  scheduleToolbarFastTooltip(button, event);
+}
+
+function handleToolbarFastTooltipPointerMove(event) {
+  if (!runtime.toolbarFastTooltipButton) {
+    return;
+  }
+  runtime.toolbarFastTooltipPointer = {
+    x: event.clientX,
+    y: event.clientY
+  };
+  positionToolbarFastTooltip(event.clientX, event.clientY, runtime.toolbarFastTooltipButton);
+}
+
+function handleToolbarFastTooltipPointerOut(event) {
+  const button = getToolbarFastTooltipButton(event.target);
+  if (!button || button !== runtime.toolbarFastTooltipButton) {
+    return;
+  }
+  if (event.relatedTarget instanceof Element && button.contains(event.relatedTarget)) {
+    return;
+  }
+  hideToolbarFastTooltip();
+}
+
+function handleToolbarFastTooltipFocusIn(event) {
+  syncToolbarFastTooltipExperiment();
+  const button = getToolbarFastTooltipButton(event.target);
+  if (button) {
+    scheduleToolbarFastTooltip(button);
+  }
+}
+
+function handleToolbarFastTooltipFocusOut(event) {
+  const button = getToolbarFastTooltipButton(event.target);
+  if (button && button === runtime.toolbarFastTooltipButton) {
+    hideToolbarFastTooltip();
+  }
 }
 
 function playFishSplashSoundEffect() {
@@ -32094,6 +34006,7 @@ function renderUi(now, options = {}) {
   syncTankStageTouchScrollState();
   renderControls(now);
   renderTutorialGuidance();
+  renderCareTaskPane(now);
   if (full) {
     renderTankManagement();
     renderFoodShop();
@@ -32107,7 +34020,6 @@ function renderUi(now, options = {}) {
     renderBackgrounds();
     renderSolidBackgroundControls();
     renderFilterAssets();
-    renderGravelAssets();
     renderCustomGravelControls();
     renderCollapsibleSections();
   }
@@ -32209,7 +34121,7 @@ function renderTabs() {
 function renderHeader(now) {
   const dirtiness = getTankDirtiness(now);
   const cleanliness = Math.max(0, Math.round((1 - dirtiness) * 100));
-  const servedToday = getTodaysMealSlots(now).filter((slot) => isMealSlotServed(slot)).length;
+  const servedToday = getTodaysMealSlots(now).filter((slot) => isMealSlotSatisfiedForDisplay(slot, getCurrentTank(), now)).length;
 
   setTextIfChanged(dom.coinCount, formatNumber(state.coins));
   setTextIfChanged(dom.cleanlinessLabel, `${cleanliness}%`);
@@ -32229,8 +34141,8 @@ function buildMealTrackMarkup(now) {
   const slots = getTodaysMealSlots(now);
   return slots
     .map((slot) => {
-      const served = isMealSlotServed(slot);
-      const neededByAnyFish = getMealEligibleFishForSlot(slot).length > 0;
+      const served = isMealSlotSatisfiedForDisplay(slot, getCurrentTank(), now);
+      const neededByAnyFish = getMealHungryFishForSlot(slot, getCurrentTank(), now).length > 0;
       const missed = slot.end <= now && !served && neededByAnyFish;
       const future = slot.start > now;
       const status = served
@@ -32893,6 +34805,7 @@ function buildManagementCareItem(task = {}, index = 0) {
 function buildManagementCareQueue(stats) {
   if (!stats?.livingFish) {
     return [{
+      id: "stock-aquarium",
       badge: "On Deck",
       label: "Stock this aquarium",
       value: "No fish yet",
@@ -32904,6 +34817,7 @@ function buildManagementCareQueue(stats) {
   const tasks = [];
   if (stats.deadFish > 0) {
     tasks.push({
+      id: "dispose-dead-fish",
       badge: "Now",
       label: "Dispose dead fish",
       value: `${stats.deadFish} waiting`,
@@ -32914,6 +34828,7 @@ function buildManagementCareQueue(stats) {
 
   if (stats.injuredFish > 0) {
     tasks.push({
+      id: "dose-medicine",
       badge: tasks.length ? "Soon" : "Now",
       label: "Dose medicine",
       value: `${stats.injuredFish} healing`,
@@ -32924,6 +34839,7 @@ function buildManagementCareQueue(stats) {
 
   if (stats.hungryFish > 0) {
     tasks.push({
+      id: "serve-current-meal",
       badge: tasks.length ? "Soon" : "Now",
       label: "Serve the current meal",
       value: `${stats.hungryFish} hungry`,
@@ -32934,6 +34850,7 @@ function buildManagementCareQueue(stats) {
 
   if (stats.cleanPercent <= 45) {
     tasks.push({
+      id: "clean-tank",
       badge: tasks.length ? "Soon" : "Now",
       label: stats.cleanPercent <= 20 ? "Clean the tank" : "Schedule a scrub",
       value: `${stats.cleanPercent}% clean`,
@@ -32944,6 +34861,7 @@ function buildManagementCareQueue(stats) {
 
   if (stats.wasteCount > 0) {
     tasks.push({
+      id: "scoop-floor",
       badge: tasks.length ? "Soon" : "Heads Up",
       label: "Scoop the floor",
       value: `${stats.wasteCount} waste`,
@@ -32952,22 +34870,38 @@ function buildManagementCareQueue(stats) {
         : "Once scooped, the gravel is clear again.",
       tone: "warn"
     });
-  } else if (stats.pendingWasteCount > 0) {
+  }
+
+  const comfortSuggestions = buildCurrentTankCareSuggestions(stats.now || Date.now())
+    .filter((suggestion) => suggestion && suggestion.fulfilled !== true);
+  for (const suggestion of comfortSuggestions) {
+    if (tasks.length >= 6) {
+      break;
+    }
+    const key = String(suggestion.key || "");
+    const isNeedSuggestion = key.startsWith("need:");
+    const isGlassStressSuggestion = key.startsWith("glass_tap_stress:");
     tasks.push({
-      badge: tasks.length ? "Soon" : "Heads Up",
-      label: "Watch the gravel",
-      value: `${stats.pendingWasteCount} pending`,
-      note: "Waste will settle after digestion, so a scoop is coming up.",
-      tone: "neutral"
+      id: `comfort:${key || suggestion.label}`,
+      badge: tasks.length ? "Comfort" : "Now",
+      label: suggestion.label,
+      value: isNeedSuggestion ? "Need" : isGlassStressSuggestion ? "Stress" : "Conflict",
+      note: isGlassStressSuggestion
+        ? "Avoid tapping nearby glass until the stress fades."
+        : isNeedSuggestion
+        ? "Add matching decor, space, or tankmates to satisfy this need."
+        : "Adjust tankmates or decor to remove this comfort penalty.",
+      tone: isNeedSuggestion ? "neutral" : "warn"
     });
   }
 
   if (!tasks.length) {
     return [{
+      id: "all-clear",
       badge: "On Track",
       label: "Everything is on track",
       value: "All clear",
-      note: "Meals, health, and cleanup look good.",
+      note: "Meals, health, comfort, and cleanup look good.",
       tone: "good"
     }];
   }
@@ -32998,6 +34932,163 @@ function buildManagementCompactTaskRow(task = {}) {
   `;
 }
 
+function getCareTaskId(task = {}) {
+  const explicitId = String(task.id || "").trim();
+  if (explicitId) {
+    return explicitId;
+  }
+  return [
+    task.badge || "",
+    task.label || "",
+    task.value || ""
+  ].map((part) => String(part).trim().toLowerCase()).join("|");
+}
+
+function cloneCareTask(task = {}) {
+  return {
+    id: getCareTaskId(task),
+    badge: String(task.badge || ""),
+    label: String(task.label || ""),
+    value: String(task.value || ""),
+    note: String(task.note || ""),
+    tone: String(task.tone || "")
+  };
+}
+
+function resetCareTaskPaneRuntime(tasks = [], tankId = "") {
+  runtime.careTaskPaneTankId = tankId;
+  runtime.careTaskPaneInitialized = true;
+  runtime.careTaskPaneActiveTasks = new Map(tasks.map((task) => [getCareTaskId(task), cloneCareTask(task)]));
+  runtime.careTaskPaneCompletingTasks.clear();
+  if (runtime.careTaskPaneCleanupHandle) {
+    clearTimeout(runtime.careTaskPaneCleanupHandle);
+    runtime.careTaskPaneCleanupHandle = null;
+  }
+}
+
+function scheduleCareTaskPaneCleanup(now = Date.now()) {
+  if (runtime.careTaskPaneCleanupHandle || runtime.careTaskPaneCompletingTasks.size === 0) {
+    return;
+  }
+
+  const nextExpiry = Math.min(
+    ...Array.from(runtime.careTaskPaneCompletingTasks.values())
+      .map((entry) => Number(entry.completedAt) + CARE_TASK_COMPLETE_HOLD_MS)
+      .filter(Number.isFinite)
+  );
+  if (!Number.isFinite(nextExpiry)) {
+    return;
+  }
+
+  runtime.careTaskPaneCleanupHandle = setTimeout(() => {
+    runtime.careTaskPaneCleanupHandle = null;
+    renderUi(Date.now(), { full: false });
+  }, Math.max(0, nextExpiry - now));
+}
+
+function syncCareTaskPaneTasks(tasks = [], now = Date.now()) {
+  const tankId = getCurrentTank()?.id || "";
+  const isOpen = getUiSettings().careTaskPaneOpen === true;
+  if (!isOpen || runtime.careTaskPaneTankId !== tankId || !runtime.careTaskPaneInitialized) {
+    resetCareTaskPaneRuntime(tasks, tankId);
+    return;
+  }
+
+  const nextTaskMap = new Map(tasks.map((task) => [getCareTaskId(task), cloneCareTask(task)]));
+  for (const [taskId, previousTask] of runtime.careTaskPaneActiveTasks.entries()) {
+    if (taskId === "all-clear" || nextTaskMap.has(taskId) || runtime.careTaskPaneCompletingTasks.has(taskId)) {
+      continue;
+    }
+    runtime.careTaskPaneCompletingTasks.set(taskId, {
+      task: previousTask,
+      completedAt: now
+    });
+  }
+
+  for (const taskId of nextTaskMap.keys()) {
+    runtime.careTaskPaneCompletingTasks.delete(taskId);
+  }
+
+  for (const [taskId, entry] of Array.from(runtime.careTaskPaneCompletingTasks.entries())) {
+    if (now - Number(entry.completedAt) >= CARE_TASK_COMPLETE_HOLD_MS) {
+      runtime.careTaskPaneCompletingTasks.delete(taskId);
+    }
+  }
+
+  runtime.careTaskPaneActiveTasks = nextTaskMap;
+  scheduleCareTaskPaneCleanup(now);
+}
+
+function buildCareTaskPaneRow(task = {}, options = {}) {
+  const completed = options.completed === true;
+  const toneClass = task.tone ? ` care-task-tone-${escapeHtml(task.tone)} management-tone-${escapeHtml(task.tone)}` : "";
+  const label = String(task.label || "Task");
+  const value = task.value ? `<span class="care-task-value">${escapeHtml(String(task.value))}</span>` : "";
+  const badge = task.badge ? `<span class="care-task-badge">${escapeHtml(String(task.badge))}</span>` : "";
+  return `
+    <article class="care-task-row${toneClass}${completed ? " is-complete" : ""}" style="--task-letter-count:${Math.max(1, label.length)}">
+      <span class="care-task-box" aria-hidden="true"></span>
+      <span class="care-task-label">
+        <span class="care-task-text">${escapeHtml(label)}</span>
+        <span class="care-task-strike" aria-hidden="true"></span>
+      </span>
+      ${value || badge ? `<span class="care-task-meta">${value}${badge}</span>` : ""}
+    </article>
+  `;
+}
+
+function renderCareTaskPane(now = Date.now()) {
+  if (!dom.careTaskPane || !dom.careTaskList) {
+    return;
+  }
+
+  const isOpen = getUiSettings().careTaskPaneOpen === true && !isIntroTutorialActive();
+  dom.careTaskPane.hidden = !isOpen;
+  if (!isOpen) {
+    resetCareTaskPaneRuntime([], getCurrentTank()?.id || "");
+    setMarkupIfChanged("care-task-pane-list", dom.careTaskList, "");
+    return;
+  }
+
+  const tasks = buildManagementCareQueue(getManagementHubStats(now));
+  syncCareTaskPaneTasks(tasks, now);
+  const completedRows = Array.from(runtime.careTaskPaneCompletingTasks.values())
+    .sort((left, right) => Number(left.completedAt) - Number(right.completedAt))
+    .map((entry) => buildCareTaskPaneRow(entry.task, { completed: true }));
+  const noActiveTasks = tasks.length === 1 && getCareTaskId(tasks[0]) === "all-clear";
+  const activeTasks = noActiveTasks
+    ? []
+    : tasks;
+  const activeRows = activeTasks.map((task) => buildCareTaskPaneRow(task));
+  const emptyMarkup = !completedRows.length && noActiveTasks
+    ? `<div class="care-task-empty">No tasks to display</div>`
+    : "";
+  setMarkupIfChanged("care-task-pane-list", dom.careTaskList, [...completedRows, ...activeRows, emptyMarkup].join(""));
+}
+
+function setCareTaskPaneOpen(open) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    careTaskPaneOpen: Boolean(open)
+  });
+  if (currentSettings.careTaskPaneOpen === nextSettings.careTaskPaneOpen) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+}
+
+function toggleCareTaskPane() {
+  setCareTaskPaneOpen(!getUiSettings().careTaskPaneOpen);
+}
+
 function buildManagementEventsMarkup(events = state.events, limit = MANAGEMENT_HISTORY_PAGE_SIZE) {
   const safeEvents = Array.isArray(events) ? events.slice(0, Math.max(0, Math.floor(limit) || 0)) : [];
   return Array.isArray(events) && events.length
@@ -33011,22 +35102,711 @@ function buildManagementEventsMarkup(events = state.events, limit = MANAGEMENT_H
 }
 
 function normalizeManagementHubView(view) {
-  return view === "fish" || view === "decor" ? view : "overview";
+  return ["fish", "decor", "history", "milestones"].includes(view) ? view : "overview";
+}
+
+function getMilestoneIconPath(milestoneId) {
+  const safeId = String(milestoneId || "milestone").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return `assets/milestones/${safeId || "milestone"}_milestone_icon.png`;
+}
+
+function getMilestoneRequirementText(milestoneId) {
+  switch (String(milestoneId || "")) {
+    case "first-care":
+      return "Claim a Daily Recap with score 3+.";
+    case "stable-tank":
+      return "Claim 3 good recaps and keep recent average comfort at 70%+.";
+    case "happy-habitat":
+      return "Keep any fish alive for 7 days and recent average comfort at 80%+.";
+    case "master-keeper":
+      return "Go 14 days without a death and have one fish at Sparkling comfort.";
+    case "marine-curator":
+      return "Own a saltwater fish, earn 5 good recaps, and go 3 days without a death.";
+    case "clean-start":
+      return "Keep cleanliness at 90%+ for 3 daily recaps in a row.";
+    case "crystal-keeper":
+      return "Keep cleanliness at 95%+ for 7 daily recaps.";
+    case "full-bellies":
+      return "Feed all meal-needing fish for 3 daily recaps in a row.";
+    case "reliable-feeder":
+      return "Feed all meal-needing fish for 7 daily recaps in a row.";
+    case "cozy-corner":
+      return "Average 80%+ comfort for 3 daily recaps in a row.";
+    case "little-paradise":
+      return "Average 90%+ comfort for 3 daily recaps in a row.";
+    case "perfect-hour":
+      return "Have any fish reach Sparkling comfort.";
+    case "perfect-day":
+      return "Have Sparkling comfort during a daily recap with score 8+.";
+    case "no-drama-day":
+      return "Claim a daily recap with no negative events.";
+    case "peaceful-week":
+      return "Claim 5 recaps in a row with no attacks or deaths.";
+    case "gentle-keeper":
+      return "Claim 3 recaps in a row without stress-tapping fish.";
+    case "calm-glass":
+      return "Claim 7 recaps in a row without stress-tapping fish.";
+    case "decorator":
+      return "Place 5 decor items across your aquariums.";
+    case "habitat-builder":
+      return "Satisfy 10 total fish comfort needs at once.";
+    case "need-expert":
+      return "Have every living fish's comfort needs satisfied at once.";
+    case "community-tank":
+      return "Keep 5 community-safe fish with 70%+ recent comfort and 3 good recaps.";
+    case "big-family":
+      return "Own 10 living fish across your aquariums.";
+    case "careful-curator":
+      return "Own 15 living fish without overcrowding any aquarium.";
+    case "first-generation":
+      return "Hatch one egg.";
+    case "nursery-keeper":
+      return "Raise 3 baby fish past juvenile stage.";
+    case "gravel-luck":
+      return "Find 5 gravel coins.";
+    case "treasure-hunter":
+      return "Find 25 gravel coins.";
+    case "medicine-cabinet":
+      return "Heal fish or use medicine 3 times.";
+    case "rescue-keeper":
+      return "Heal a fish and go 3 days without a death afterward.";
+    case "tank-network":
+      return "Own 3 aquariums with at least one healthy fish in each.";
+    case "spooky-keeper":
+      return "Discover the corpse, zombie, or skeleton care path.";
+    default:
+      return "Complete the listed care goal.";
+  }
+}
+
+function averageProgressParts(parts) {
+  const usableParts = (Array.isArray(parts) ? parts : []).filter((part) => part && Number.isFinite(Number(part.value)));
+  if (!usableParts.length) {
+    return 0;
+  }
+  return clamp(usableParts.reduce((total, part) => total + clamp(Number(part.value) || 0, 0, 1), 0) / usableParts.length, 0, 1);
+}
+
+function getMilestoneProgressInfo(milestone, stats = getMilestoneStats(null, Date.now()), now = Date.now()) {
+  const unlocked = Boolean(state?.dailyBonus?.milestones?.[milestone.id]);
+  if (unlocked) {
+    return {
+      value: 1,
+      details: ["Complete"]
+    };
+  }
+
+  const latestScore = Number(stats.latestScore) || 0;
+  const goodRecaps = Number(stats.goodRecaps) || 0;
+  const recentAverageComfort = Number(stats.recentAverageComfort) || 0;
+  const oldestAgeMs = Math.max(0, Number(stats.oldestLivingFishAgeMs) || 0);
+  const daysSinceLastDeath = Math.max(0, Number(stats.daysSinceLastDeath) || 0);
+  let parts = [];
+
+  switch (milestone.id) {
+    case "first-care":
+      parts = [{
+        value: latestScore / 3,
+        label: `Latest recap score ${Math.max(0, latestScore)}/3`
+      }];
+      break;
+    case "stable-tank":
+      parts = [
+        { value: goodRecaps / 3, label: `Good recaps ${Math.min(goodRecaps, 3)}/3` },
+        { value: recentAverageComfort / 70, label: `Recent comfort ${Math.min(recentAverageComfort, 70)}%/70%` }
+      ];
+      break;
+    case "happy-habitat":
+      parts = [
+        { value: oldestAgeMs / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(oldestAgeMs, WEEK_MS))}/7d` },
+        { value: recentAverageComfort / 80, label: `Recent comfort ${Math.min(recentAverageComfort, 80)}%/80%` }
+      ];
+      break;
+    case "master-keeper":
+      parts = [
+        { value: daysSinceLastDeath / 14, label: `No-death streak ${Math.min(daysSinceLastDeath, 14)}/14d` },
+        { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
+      ];
+      break;
+    case "marine-curator":
+      parts = [
+        { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
+        { value: goodRecaps / 5, label: `Good recaps ${Math.min(goodRecaps, 5)}/5` },
+        { value: daysSinceLastDeath / 3, label: `No-death streak ${Math.min(daysSinceLastDeath, 3)}/3d` }
+      ];
+      break;
+    case "clean-start":
+      parts = [{
+        value: (Number(stats.cleanRecapStreak90) || 0) / 3,
+        label: `90%+ clean recaps ${Math.min(Number(stats.cleanRecapStreak90) || 0, 3)}/3`
+      }];
+      break;
+    case "crystal-keeper":
+      parts = [{
+        value: (Number(stats.cleanRecapCount95) || 0) / 7,
+        label: `95%+ clean recaps ${Math.min(Number(stats.cleanRecapCount95) || 0, 7)}/7`
+      }];
+      break;
+    case "full-bellies":
+      parts = [{
+        value: (Number(stats.allMealsSatisfiedStreak) || 0) / 3,
+        label: `Full feeding streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 3)}/3`
+      }];
+      break;
+    case "reliable-feeder":
+      parts = [{
+        value: (Number(stats.allMealsSatisfiedStreak) || 0) / 7,
+        label: `Full feeding streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 7)}/7`
+      }];
+      break;
+    case "cozy-corner":
+      parts = [{
+        value: (Number(stats.comfort80Streak) || 0) / 3,
+        label: `80%+ comfort streak ${Math.min(Number(stats.comfort80Streak) || 0, 3)}/3`
+      }];
+      break;
+    case "little-paradise":
+      parts = [{
+        value: (Number(stats.comfort90Streak) || 0) / 3,
+        label: `90%+ comfort streak ${Math.min(Number(stats.comfort90Streak) || 0, 3)}/3`
+      }];
+      break;
+    case "perfect-hour":
+      parts = [{
+        value: (stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0) ? 1 : 0,
+        label: (stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0) ? "Sparkling comfort found" : "Needs one Sparkling fish"
+      }];
+      break;
+    case "perfect-day":
+      parts = [{
+        value: stats.hasPerfectDay ? 1 : 0,
+        label: stats.hasPerfectDay ? "Perfect day recorded" : "Needs score 8+ with Sparkling comfort"
+      }];
+      break;
+    case "no-drama-day":
+      parts = [{
+        value: stats.latestNoDramaDay ? 1 : 0,
+        label: stats.latestNoDramaDay ? "Latest recap had no drama" : "Needs one no-drama recap"
+      }];
+      break;
+    case "peaceful-week":
+      parts = [{
+        value: (Number(stats.noAttackDeathRecapStreak) || 0) / 5,
+        label: `Peaceful recap streak ${Math.min(Number(stats.noAttackDeathRecapStreak) || 0, 5)}/5`
+      }];
+      break;
+    case "gentle-keeper":
+      parts = [{
+        value: (Number(stats.noGlassTapStressStreak) || 0) / 3,
+        label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 3)}/3`
+      }];
+      break;
+    case "calm-glass":
+      parts = [{
+        value: (Number(stats.noGlassTapStressStreak) || 0) / 7,
+        label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 7)}/7`
+      }];
+      break;
+    case "decorator":
+      parts = [{
+        value: (Number(stats.decorPlacedCount) || 0) / 5,
+        label: `Decor placed ${Math.min(Number(stats.decorPlacedCount) || 0, 5)}/5`
+      }];
+      break;
+    case "habitat-builder":
+      parts = [{
+        value: (Number(stats.metNeedsCount) || 0) / 10,
+        label: `Needs satisfied ${Math.min(Number(stats.metNeedsCount) || 0, 10)}/10`
+      }];
+      break;
+    case "need-expert":
+      parts = [{
+        value: stats.hasAllLivingNeedsMet ? 1 : 0,
+        label: stats.hasAllLivingNeedsMet ? "All living needs met" : "Some living fish still need comfort help"
+      }];
+      break;
+    case "community-tank":
+      parts = [
+        { value: stats.hasCommunityTank ? 1 : 0, label: stats.hasCommunityTank ? "Community tank ready" : "Needs 5 peaceful fish and 70%+ recent comfort" },
+        { value: goodRecaps / 3, label: `Good recaps ${Math.min(goodRecaps, 3)}/3` }
+      ];
+      break;
+    case "big-family":
+      parts = [{
+        value: (Number(stats.livingFishCount) || 0) / 10,
+        label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 10)}/10`
+      }];
+      break;
+    case "careful-curator":
+      parts = [
+        { value: (Number(stats.livingFishCount) || 0) / 15, label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 15)}/15` },
+        { value: stats.noOvercrowdedTanks ? 1 : 0, label: stats.noOvercrowdedTanks ? "No overcrowded tanks" : "One or more tanks are overcrowded" }
+      ];
+      break;
+    case "first-generation":
+      parts = [{
+        value: (Number(stats.hatchedFishEvents) || 0) / 1,
+        label: `Eggs hatched ${Math.min(Number(stats.hatchedFishEvents) || 0, 1)}/1`
+      }];
+      break;
+    case "nursery-keeper":
+      parts = [{
+        value: (Number(stats.grownBabyFishCount) || 0) / 3,
+        label: `Raised babies ${Math.min(Number(stats.grownBabyFishCount) || 0, 3)}/3`
+      }];
+      break;
+    case "gravel-luck":
+      parts = [{
+        value: (Number(stats.gravelCoinFinds) || 0) / 5,
+        label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 5)}/5`
+      }];
+      break;
+    case "treasure-hunter":
+      parts = [{
+        value: (Number(stats.gravelCoinFinds) || 0) / 25,
+        label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 25)}/25`
+      }];
+      break;
+    case "medicine-cabinet":
+      parts = [{
+        value: (Number(stats.healingEvents) || 0) / 3,
+        label: `Healing events ${Math.min(Number(stats.healingEvents) || 0, 3)}/3`
+      }];
+      break;
+    case "rescue-keeper":
+      parts = [{
+        value: stats.hasRescueKeeper ? 1 : 0,
+        label: stats.hasRescueKeeper ? "Rescue streak complete" : "Needs a heal followed by 3 safe days"
+      }];
+      break;
+    case "tank-network":
+      parts = [{
+        value: (Number(stats.healthyTankCount) || 0) / 3,
+        label: `Healthy tanks ${Math.min(Number(stats.healthyTankCount) || 0, 3)}/3`
+      }];
+      break;
+    case "spooky-keeper":
+      parts = [{
+        value: stats.hasSpookyKeeperPath ? 1 : 0,
+        label: stats.hasSpookyKeeperPath ? "Spooky path found" : "No spooky path discovered yet"
+      }];
+      break;
+    default:
+      parts = [];
+      break;
+  }
+
+  return {
+    value: averageProgressParts(parts),
+    details: parts.map((part) => part.label).filter(Boolean)
+  };
+}
+
+function getMilestoneDecorUnlockName(decorKey) {
+  const key = normalizeDecorKey(decorKey);
+  if (key === "__custom-decor-shop__") {
+    return "Custom Decor";
+  }
+  if (key === "__custom-hide-shop__") {
+    return "Custom Hides";
+  }
+  return runtime.decorMap.get(key)?.name || titleFromFile(key);
+}
+
+function getMilestoneUnlockLabels(milestone) {
+  const fishLabels = (Array.isArray(milestone.unlocks) ? milestone.unlocks : [])
+    .map((speciesId) => runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId))
+    .filter(Boolean);
+  const decorLabels = (Array.isArray(milestone.decorUnlocks) ? milestone.decorUnlocks : [])
+    .map((decorKey) => getMilestoneDecorUnlockName(decorKey))
+    .filter(Boolean);
+  const extras = milestone.id === "first-care" ? ["Brine Shrimp Food"] : [];
+  return [...fishLabels, ...decorLabels, ...extras];
+}
+
+function buildTankManagementMilestonesBrowser(now = Date.now()) {
+  const stats = getMilestoneStats(null, now);
+  const sortedMilestones = PROGRESSION_MILESTONES
+    .map((milestone, index) => {
+      const unlocked = Boolean(state?.dailyBonus?.milestones?.[milestone.id]);
+      const progress = getMilestoneProgressInfo(milestone, stats, now);
+      return {
+        milestone,
+        index,
+        unlocked,
+        progress,
+        progressValue: unlocked ? 1 : clamp(Number(progress.value) || 0, 0, 1)
+      };
+    })
+    .sort((left, right) => (
+      Number(right.unlocked) - Number(left.unlocked)
+      || right.progressValue - left.progressValue
+      || left.index - right.index
+    ));
+  const milestoneRows = sortedMilestones.map(({ milestone, unlocked, progress }) => {
+    const progressPercent = unlocked ? 100 : Math.round(clamp(progress.value, 0, 1) * 100);
+    const unlockLabels = getMilestoneUnlockLabels(milestone);
+    return `
+      <article class="management-milestone-card ${unlocked ? "is-complete" : "is-locked"}">
+        <img class="management-milestone-icon" src="${escapeHtml(getMilestoneIconPath(milestone.id))}" alt="${escapeHtml(`${milestone.label} medal`)}" />
+        <div class="management-milestone-copy">
+          <div class="management-milestone-topline">
+            <strong>${escapeHtml(milestone.label)}</strong>
+            <span class="management-status-pill management-tone-${unlocked ? "good" : "neutral"}">${unlocked ? "Unlocked" : `${progressPercent}%`}</span>
+          </div>
+          <div class="management-milestone-requirement">${escapeHtml(getMilestoneRequirementText(milestone.id))}</div>
+          ${unlocked ? "" : `
+            <div class="management-progress-track" aria-label="${escapeHtml(`${milestone.label} progress ${progressPercent}%`)}">
+              <span style="width: ${progressPercent}%"></span>
+            </div>
+          `}
+          <div class="management-milestone-detail-list">
+            ${progress.details.map((detail) => `<span>${escapeHtml(detail)}</span>`).join("")}
+          </div>
+          <div class="management-milestone-rewards">
+            <span>${escapeHtml(`${milestone.reward} coin reward`)}</span>
+            ${unlockLabels.length ? `<span>${escapeHtml(`Unlocks: ${unlockLabels.join(", ")}`)}</span>` : ""}
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  return buildManagementBrowserShell(
+    "Milestones",
+    PROGRESSION_MILESTONES.length,
+    milestoneRows,
+    {
+      emptyCopy: "No milestones are configured yet.",
+      className: "management-milestones-browser"
+    }
+  );
+}
+
+function getManagementHistoryFilters() {
+  const source = runtime.managementHistoryFilters && typeof runtime.managementHistoryFilters === "object"
+    ? runtime.managementHistoryFilters
+    : {};
+  return {
+    eventType: String(source.eventType || ""),
+    fishType: String(source.fishType || ""),
+    fishName: String(source.fishName || ""),
+    decorType: String(source.decorType || ""),
+    decorKey: String(source.decorKey || "")
+  };
+}
+
+function resetManagementHistoryFilters() {
+  runtime.managementHistoryFilters = {
+    eventType: "",
+    fishType: "",
+    fishName: "",
+    decorType: "",
+    decorKey: ""
+  };
+}
+
+function getHistoryEventType(event) {
+  const rawType = String(event?.type || "").toLowerCase();
+  const text = String(event?.text || "").toLowerCase();
+  if (/daily_recap|recap/.test(rawType) || /daily recap/.test(text)) {
+    return "daily_recap";
+  }
+  if (/unlock|milestone/.test(rawType) || /unlocked|milestone/.test(text)) {
+    return "unlock";
+  }
+  if (/feed|food|meal|ate|hungry|chum/.test(rawType) || / ate |meal|food|hungry|chum/.test(text)) {
+    return "feeding";
+  }
+  if (/comfort|conflict|stress|glass_tap/.test(rawType) || /comfort|stressed|startled|uneasy|popular/.test(text)) {
+    return "comfort";
+  }
+  if (/clean|waste|medicine|health|death|died|care/.test(rawType) || /clean|waste|medicine|health|died|dead fish|scoop/.test(text)) {
+    return "care";
+  }
+  if (/decor|bubbler|cave/.test(rawType) || /decor|bubbler|cave|plant|rock|wood|castle|ship|plane|chest/.test(text)) {
+    return "decor";
+  }
+  if (/coin|sell|buy|purchase|economy/.test(rawType) || /coin|sold|bought|purchased|earned/.test(text)) {
+    return "economy";
+  }
+  if (/tank|aquarium/.test(rawType) || /tank|aquarium/.test(text)) {
+    return "tank";
+  }
+  if (/debug/.test(rawType) || /debug/.test(text)) {
+    return "debug";
+  }
+  if (/fish|added|stored|returned|gravel/.test(rawType) || /fish|added|put away|returned|gravel/.test(text)) {
+    return "fish";
+  }
+  return "other";
+}
+
+function getHistoryEventTypeLabel(type) {
+  switch (String(type || "")) {
+    case "daily_recap":
+      return "Daily Recap";
+    case "feeding":
+      return "Feeding";
+    case "comfort":
+      return "Comfort";
+    case "care":
+      return "Care";
+    case "decor":
+      return "Decor";
+    case "economy":
+      return "Economy";
+    case "tank":
+      return "Tank";
+    case "debug":
+      return "Debug";
+    case "unlock":
+      return "Unlocks";
+    case "fish":
+      return "Fish";
+    default:
+      return "Other";
+  }
+}
+
+function getHistoryKnownFish() {
+  const fishList = [
+    ...getAllTankFish(state),
+    ...(Array.isArray(state.storedFish) ? state.storedFish : [])
+  ].filter(Boolean);
+  const byId = new Map();
+  for (const fish of fishList) {
+    if (fish.id && !byId.has(fish.id)) {
+      byId.set(fish.id, fish);
+    }
+  }
+  return {
+    fishList,
+    byId
+  };
+}
+
+function textContainsLoose(text, needle) {
+  const haystack = String(text || "").toLowerCase();
+  const target = String(needle || "").toLowerCase().trim();
+  return Boolean(target && haystack.includes(target));
+}
+
+function getHistoryMatchingDecor(eventOrText) {
+  const event = eventOrText && typeof eventOrText === "object" ? eventOrText : null;
+  const text = event ? String(event.text || "") : String(eventOrText || "");
+  const explicitKeys = new Set();
+  if (event?.decorKey) {
+    explicitKeys.add(normalizeDecorKey(event.decorKey));
+  }
+  if (event?.placedDecorId) {
+    for (const item of getAllPlacedDecor(state)) {
+      if (item?.id === event.placedDecorId && item.decorKey) {
+        explicitKeys.add(normalizeDecorKey(item.decorKey));
+      }
+    }
+  }
+  return runtime.decorCatalog.filter((decor) => (
+    decor
+    && (
+      explicitKeys.has(normalizeDecorKey(decor.key))
+      || textContainsLoose(text, decor.name)
+      || textContainsLoose(text, titleFromFile(decor.key))
+      || textContainsLoose(text, decor.key)
+    )
+  ));
+}
+
+function getDecorCategoryLabel(category) {
+  switch (String(category || "").toLowerCase()) {
+    case "caves":
+      return "Caves";
+    case "plants":
+      return "Plants";
+    case "ornaments":
+      return "Ornaments";
+    case "bubbler":
+      return "Bubblers";
+    case "custom":
+      return "Custom";
+    default:
+      return titleFromFile(category);
+  }
+}
+
+function getAllManagementHistoryRecords() {
+  const tanks = getAllTanks(state);
+  const knownFish = getHistoryKnownFish();
+  return tanks.flatMap((tank, index) => {
+    const tankEvents = Array.isArray(tank?.events) ? tank.events : [];
+    return tankEvents.map((event) => {
+      const fish = event?.fishId ? knownFish.byId.get(event.fishId) : null;
+      const species = fish ? getSpeciesForFish(fish) : null;
+      const matchingDecor = getHistoryMatchingDecor(event);
+      const decorCategories = new Set();
+      for (const decor of matchingDecor) {
+        for (const category of deriveDecorCategories(decor, decor.key)) {
+          decorCategories.add(category);
+        }
+      }
+      return {
+        ...event,
+        tankId: tank.id,
+        tankLabel: getTankLabel(tank, index),
+        eventType: getHistoryEventType(event),
+        fish,
+        species,
+        decorMatches: matchingDecor,
+        decorCategories: [...decorCategories]
+      };
+    });
+  }).sort((left, right) => (Number(right.time) || 0) - (Number(left.time) || 0));
+}
+
+function recordMatchesManagementHistoryFilters(record, filters, knownFish) {
+  const text = String(record?.text || "");
+  if (filters.eventType && record.eventType !== filters.eventType) {
+    return false;
+  }
+  if (filters.fishType) {
+    const species = record.species || (record.fish ? getSpeciesForFish(record.fish) : null);
+    const selectedSpecies = runtime.fishMap.get(filters.fishType);
+    const speciesMatches = record.species?.id === filters.fishType
+      || textContainsLoose(text, selectedSpecies?.name)
+      || textContainsLoose(text, titleFromFile(filters.fishType));
+    if (!speciesMatches && species?.id !== filters.fishType) {
+      return false;
+    }
+  }
+  if (filters.fishName) {
+    const fishName = String(record.fish?.name || "");
+    if (fishName !== filters.fishName && !textContainsLoose(text, filters.fishName)) {
+      return false;
+    }
+  }
+  if (filters.decorType && !record.decorCategories.includes(filters.decorType) && !textContainsLoose(text, getDecorCategoryLabel(filters.decorType))) {
+    return false;
+  }
+  if (filters.decorKey) {
+    const selectedDecor = runtime.decorMap.get(filters.decorKey);
+    const decorMatches = record.decorMatches.some((decor) => decor.key === filters.decorKey)
+      || textContainsLoose(text, selectedDecor?.name)
+      || textContainsLoose(text, titleFromFile(filters.decorKey));
+    if (!decorMatches) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function buildManagementHistoryFilterOptions(records, knownFish) {
+  const eventTypes = new Set();
+  const fishTypes = new Map();
+  const fishNames = new Set();
+  const decorTypes = new Set();
+  const decorKeys = new Map();
+
+  for (const record of records) {
+    eventTypes.add(record.eventType);
+    if (record.species?.id) {
+      fishTypes.set(record.species.id, record.species.name || titleFromFile(record.species.id));
+    }
+    if (record.fish?.name) {
+      fishNames.add(record.fish.name);
+    }
+    for (const decor of record.decorMatches) {
+      decorKeys.set(decor.key, decor.name || titleFromFile(decor.key));
+      for (const category of deriveDecorCategories(decor, decor.key)) {
+        decorTypes.add(category);
+      }
+    }
+  }
+
+  for (const fish of knownFish.fishList) {
+    const species = getSpeciesForFish(fish);
+    if (species?.id) {
+      fishTypes.set(species.id, species.name || titleFromFile(species.id));
+    }
+    if (fish.name) {
+      fishNames.add(fish.name);
+    }
+  }
+
+  return {
+    eventTypes: [...eventTypes].sort((left, right) => getHistoryEventTypeLabel(left).localeCompare(getHistoryEventTypeLabel(right))),
+    fishTypes: [...fishTypes.entries()].sort((left, right) => left[1].localeCompare(right[1])),
+    fishNames: [...fishNames].sort((left, right) => left.localeCompare(right)),
+    decorTypes: [...decorTypes].sort((left, right) => getDecorCategoryLabel(left).localeCompare(getDecorCategoryLabel(right))),
+    decorKeys: [...decorKeys.entries()].sort((left, right) => left[1].localeCompare(right[1]))
+  };
+}
+
+function buildManagementHistorySelect(label, key, value, options, getLabel = (entry) => String(entry)) {
+  const rows = (Array.isArray(options) ? options : []).map((entry) => {
+    const optionValue = Array.isArray(entry) ? entry[0] : entry;
+    const optionLabel = Array.isArray(entry) ? entry[1] : getLabel(entry);
+    return `<option value="${escapeHtml(optionValue)}" ${String(value) === String(optionValue) ? "selected" : ""}>${escapeHtml(optionLabel)}</option>`;
+  }).join("");
+  return `
+    <label class="management-history-filter">
+      <span>${escapeHtml(label)}</span>
+      <select data-management-history-filter="${escapeHtml(key)}">
+        <option value="">All</option>
+        ${rows}
+      </select>
+    </label>
+  `;
+}
+
+function buildManagementHistoryRecordRow(record) {
+  return `
+    <article class="management-event-row management-history-record">
+      <span class="management-event-time-pill">${escapeHtml(timeAgo(record.time))}</span>
+      <div class="management-event-text">
+        <strong>${escapeHtml(record.tankLabel)}</strong>
+        <span>${escapeHtml(record.text)}</span>
+        <small>${escapeHtml(getHistoryEventTypeLabel(record.eventType))}</small>
+      </div>
+    </article>
+  `;
+}
+
+function buildTankManagementHistoryBrowser() {
+  const records = getAllManagementHistoryRecords();
+  const knownFish = getHistoryKnownFish();
+  const filters = getManagementHistoryFilters();
+  const options = buildManagementHistoryFilterOptions(records, knownFish);
+  const filteredRecords = records.filter((record) => recordMatchesManagementHistoryFilters(record, filters, knownFish));
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const filterMarkup = `
+    <div class="management-history-filters">
+      ${buildManagementHistorySelect("Event Type", "eventType", filters.eventType, options.eventTypes, getHistoryEventTypeLabel)}
+      ${buildManagementHistorySelect("Fish Type", "fishType", filters.fishType, options.fishTypes)}
+      ${buildManagementHistorySelect("Fish Name", "fishName", filters.fishName, options.fishNames)}
+      ${buildManagementHistorySelect("Decor Type", "decorType", filters.decorType, options.decorTypes, getDecorCategoryLabel)}
+      ${buildManagementHistorySelect("Specific Decor", "decorKey", filters.decorKey, options.decorKeys)}
+      <button class="small-button alt" type="button" data-management-history-reset ${activeFilterCount ? "" : "disabled"}>Reset</button>
+    </div>
+  `;
+  const listMarkup = filteredRecords.length
+    ? filteredRecords.map((record) => buildManagementHistoryRecordRow(record)).join("")
+    : `<div class="empty-state management-history-empty">No history matches those filters.</div>`;
+
+  return buildManagementBrowserShell(
+    "History",
+    filteredRecords.length,
+    `${filterMarkup}<div class="management-event-feed management-history-full-list">${listMarkup}</div>`,
+    {
+      emptyCopy: "Nothing has happened yet.",
+      className: "management-history-browser",
+      countSuffix: records.length === filteredRecords.length ? "" : ` of ${records.length}`,
+      alwaysShowList: true
+    }
+  );
 }
 
 function buyAnotherFishFromManagement(fishId) {
-  const managed = getManagedFishById(fishId);
-  const fish = managed?.fish || null;
-  if (!fish) {
-    return;
-  }
-
-  if (isCustomFishAssetKey(fish.speciesId)) {
-    buyAnotherCustomFish(fish.id);
-    return;
-  }
-
-  buyFish(fish.speciesId);
+  openFishBuyAnotherConfirmation(fishId);
 }
 
 function selectFishInTankFromManagement(fishId) {
@@ -33052,14 +35832,17 @@ function selectDecorInTankFromManagement(placedId) {
 
 function buildManagementBrowserShell(title, count, listMarkup, options = {}) {
   const emptyCopy = typeof options.emptyCopy === "string" ? options.emptyCopy : "";
+  const className = typeof options.className === "string" && options.className.trim() ? ` ${options.className.trim()}` : "";
+  const countSuffix = typeof options.countSuffix === "string" ? options.countSuffix : "";
+  const showList = count || options.alwaysShowList === true;
 
   return `
-    <section class="settings-section management-browser">
+    <section class="settings-section management-browser${className}">
       <div class="management-browser-head">
         <button class="small-button icon-only alt management-browser-back" type="button" data-management-view="overview" aria-label="Back to tank info">&#8592;</button>
-        <h3>${escapeHtml(`${title} (${count})`)}</h3>
+        <h3>${escapeHtml(`${title} (${count}${countSuffix})`)}</h3>
       </div>
-      ${count
+      ${showList
       ? `<div class="management-browser-list">${listMarkup}</div>`
       : `
           <div class="empty-state management-browser-empty">
@@ -33147,7 +35930,7 @@ function buildManagementDecorRow(item) {
 
   return `
     <article class="management-browser-item">
-      <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(decor.path)}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
+      <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
       <div class="management-browser-copy">
         <strong>${escapeHtml(decor.name)}</strong>
         <span>${escapeHtml(`Layer ${getDecorTankLayer(item)} / ${formatDecorScale(item.scale)}`)}</span>
@@ -33201,10 +35984,10 @@ function getManagementHubStats(now = Date.now()) {
     total + (isMealFreeFish(fish) ? 0 : (getSpeciesForFish(fish)?.mealCoins || 0))
   ), 0);
   const mealSlots = getTodaysMealSlots(now);
-  const servedMeals = mealSlots.filter((slot) => isMealSlotServed(slot)).length;
+  const servedMeals = mealSlots.filter((slot) => isMealSlotSatisfiedForDisplay(slot, tank, now)).length;
   const currentSlot = getCurrentMealSlot(now);
-  const hungryFish = currentSlot ? getMealEligibleFishForSlot(currentSlot).length : 0;
-  const currentMealServed = currentSlot ? isMealSlotServed(currentSlot) : false;
+  const hungryFish = currentSlot ? getMealHungryFishForSlot(currentSlot, tank, now).length : 0;
+  const currentMealServed = currentSlot ? isMealSlotSatisfiedForDisplay(currentSlot, tank, now) : false;
   const mealStatus = !livingFish
     ? "No fish yet"
     : currentMealServed
@@ -33230,6 +36013,7 @@ function getManagementHubStats(now = Date.now()) {
     mealNote,
     mealSlots,
     mealStatus,
+    now,
     placedDecor,
     servedMeals,
     storedDecor,
@@ -33253,17 +36037,15 @@ function buildTankManagementOverlayBody(now = Date.now()) {
   if (managementView === "decor") {
     return buildTankManagementDecorBrowser();
   }
+  if (managementView === "history") {
+    return buildTankManagementHistoryBrowser();
+  }
+  if (managementView === "milestones") {
+    return buildTankManagementMilestonesBrowser(now);
+  }
 
   const stats = getManagementHubStats(now);
   const careQueue = buildManagementCareQueue(stats);
-  const visibleTasks = careQueue.slice(0, 3);
-  const hiddenTaskCount = Math.max(0, careQueue.length - visibleTasks.length);
-  const historyEvents = Array.isArray(state.events) ? state.events : [];
-  const visibleHistoryCount = Math.max(
-    MANAGEMENT_HISTORY_PAGE_SIZE,
-    Math.floor(Number(runtime.managementHistoryVisibleCount) || MANAGEMENT_HISTORY_PAGE_SIZE)
-  );
-  const shownHistoryCount = Math.min(visibleHistoryCount, historyEvents.length);
   const cleanlinessTone = stats.cleanPercent <= 20 ? "danger" : stats.cleanPercent <= 45 ? "warn" : "good";
   const mealsTone = !stats.livingFish ? "neutral" : stats.hungryFish > 0 ? "warn" : stats.currentMealServed ? "good" : "neutral";
   const healthTone = stats.deadFish > 0 ? "danger" : stats.injuredFish > 0 ? "warn" : stats.livingFish ? "good" : "neutral";
@@ -33300,25 +36082,26 @@ function buildTankManagementOverlayBody(now = Date.now()) {
           <div class="management-task-stack">
             <div class="management-task-heading">Suggested Tasks</div>
             <div class="management-task-list">
-              ${visibleTasks.map((task) => buildManagementCompactTaskRow(task)).join("")}
-              ${hiddenTaskCount > 0 ? `<div class="management-task-more">+${hiddenTaskCount} more issue${hiddenTaskCount === 1 ? "" : "s"}</div>` : ""}
+              ${careQueue.map((task) => buildManagementCompactTaskRow(task)).join("")}
             </div>
           </div>
         </div>
       </section>
 
-      <section class="settings-section management-history-panel">
+      <section class="settings-section management-records-panel">
         <div class="compact-heading">
-          <h3>Recent History</h3>
+          <h3>Records</h3>
         </div>
-        <div class="management-event-feed">${buildManagementEventsMarkup(historyEvents, shownHistoryCount)}</div>
-        ${historyEvents.length > shownHistoryCount ? `
-          <div class="tank-action-row management-log-footer">
-          ${historyEvents.length > shownHistoryCount
-        ? `<button class="small-button alt" type="button" data-management-history-more>(More)</button>`
-        : ""}
-          </div>
-        ` : ""}
+        <div class="management-record-button-grid">
+          <button class="management-record-button" type="button" data-management-view="milestones">
+            <strong>Milestones</strong>
+            <span>See unlock goals, progress, rewards, and medals.</span>
+          </button>
+          <button class="management-record-button" type="button" data-management-view="history">
+            <strong>History</strong>
+            <span>Review saved events across every aquarium.</span>
+          </button>
+        </div>
       </section>
     </div>
   `;
@@ -33584,6 +36367,57 @@ function renderDecorSellConfirmUtilityOverlay() {
   };
 }
 
+function renderFishBuyConfirmUtilityOverlay() {
+  const details = getPendingFishBuyAnotherDetails();
+  return {
+    kicker: "Fish",
+    title: "Buy Another",
+    body: details
+      ? buildUtilityConfirmCardMarkup({
+        headline: `Spend ${details.cost} ${pluralize("coin", details.cost)} to buy another ${escapeHtml(details.baseSpecies.name)}?`,
+        detail: details.canAfford
+          ? "A new fish will join the aquarium."
+          : "You do not have enough coins right now."
+      })
+      : `<div class="empty-state">That fish is no longer available.</div>`,
+    footer: details
+      ? buildUtilityActionsFooter([
+        { label: "Yes", attribute: "data-confirm-fish-buy-another", disabled: !details.canBuy || !details.canAfford },
+        { label: "No", variant: "alt", attribute: "data-close-utility" }
+      ])
+      : `<button class="small-button" data-close-utility>Close</button>`
+  };
+}
+
+function renderFishSellConfirmUtilityOverlay() {
+  const details = getPendingFishSellDetails();
+  const detail = details
+    ? details.dead
+      ? "Dead fish cannot be sold."
+      : details.juvenile
+        ? "Baby fish need time to grow before they can be sold."
+        : details.inStorage
+          ? "This will remove it from storage."
+          : "This will remove it from the tank."
+    : "";
+  return {
+    kicker: "Fish",
+    title: "Sell Fish",
+    body: details
+      ? buildUtilityConfirmCardMarkup({
+        headline: `Sell ${escapeHtml(details.fish.name)} for ${details.resaleValue} ${pluralize("coin", details.resaleValue)}?`,
+        detail
+      })
+      : `<div class="empty-state">That fish is no longer available.</div>`,
+    footer: details
+      ? buildUtilityActionsFooter([
+        { label: "Yes", variant: "warn", attribute: "data-confirm-fish-sell", disabled: !details.canSell },
+        { label: "No", variant: "alt", attribute: "data-close-utility" }
+      ])
+      : `<button class="small-button" data-close-utility>Close</button>`
+  };
+}
+
 function renderImportConfirmUtilityOverlay() {
   return {
     kicker: "Save Data",
@@ -33670,7 +36504,7 @@ function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
   }
   const managementSellFishButton = target?.closest?.("[data-management-sell-fish]");
   if (managementSellFishButton) {
-    sellFish(managementSellFishButton.dataset.managementSellFish);
+    openFishSellConfirmation(managementSellFishButton.dataset.managementSellFish);
     return true;
   }
   const managementSelectDecorButton = target?.closest?.("[data-management-select-decor]");
@@ -33693,12 +36527,8 @@ function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
     sellPlacedDecor(managementSellDecorButton.dataset.managementSellDecor);
     return true;
   }
-  if (target?.closest?.("[data-management-history-more]")) {
-    const totalEvents = Array.isArray(state.events) ? state.events.length : 0;
-    runtime.managementHistoryVisibleCount = Math.min(
-      totalEvents,
-      (Number(runtime.managementHistoryVisibleCount) || MANAGEMENT_HISTORY_PAGE_SIZE) + MANAGEMENT_HISTORY_PAGE_SIZE
-    );
+  if (target?.closest?.("[data-management-history-reset]")) {
+    resetManagementHistoryFilters();
     renderUi(Date.now());
     return true;
   }
@@ -33925,6 +36755,45 @@ function handleCustomHideUtilityOverlayInput(ctx, target) {
   const customHideSizeInput = target?.closest?.("[data-custom-hide-size-input]");
   if (customHideSizeInput instanceof HTMLInputElement && runtime.pendingCustomHideUpload) {
     updatePendingCustomHideScale(customHideSizeInput.value);
+    return true;
+  }
+  return false;
+}
+
+function handleTankManagementUtilityOverlayChange(ctx, target) {
+  const filterControl = target?.closest?.("[data-management-history-filter]");
+  if (filterControl instanceof HTMLSelectElement) {
+    const key = String(filterControl.dataset.managementHistoryFilter || "");
+    if (Object.prototype.hasOwnProperty.call(getManagementHistoryFilters(), key)) {
+      runtime.managementHistoryFilters = {
+        ...getManagementHistoryFilters(),
+        [key]: filterControl.value
+      };
+      renderUi(Date.now());
+      return true;
+    }
+  }
+  return false;
+}
+
+function handleCustomHideUtilityOverlayChange(ctx, target) {
+  const customHideLayerSelect = target?.closest?.("[data-custom-hide-setting='tankLayer']");
+  if (customHideLayerSelect instanceof HTMLSelectElement && runtime.pendingCustomHideUpload) {
+    updatePendingCustomHideLayer(customHideLayerSelect.value);
+    return true;
+  }
+  return false;
+}
+
+function handleCustomHideUtilityOverlayBodyClick(ctx, target) {
+  const chooseFrontButton = target?.closest?.("[data-choose-custom-hide-front]");
+  if (chooseFrontButton) {
+    openLocalHideFrontPicker();
+    return true;
+  }
+  const chooseBackgroundButton = target?.closest?.("[data-choose-custom-hide-background]");
+  if (chooseBackgroundButton) {
+    openLocalHideBackgroundPicker();
     return true;
   }
   return false;
@@ -34167,6 +37036,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     onOpen: () => {
       runtime.managementHubView = "overview";
       runtime.managementHistoryVisibleCount = MANAGEMENT_HISTORY_PAGE_SIZE;
+      resetManagementHistoryFilters();
     },
     render: (ctx) => ({
       kicker: "Tank Info",
@@ -34177,6 +37047,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     }),
     onBodyClick: handleTankManagementUtilityOverlayBodyClick,
     onBodyInput: handleTankManagementUtilityOverlayInput,
+    onBodyChange: handleTankManagementUtilityOverlayChange,
     onBodyKeyDown: handleTankManagementUtilityOverlayKeyDown
   },
   credits: {
@@ -34204,6 +37075,22 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
     renderBody: (item) => renderDecorSettingsOverlay(item)
+  }),
+  "fish-buy-confirm": createPendingStateUtilityMode({
+    id: "fish-buy-confirm",
+    pendingStateKey: "pendingFishAction",
+    render: renderFishBuyConfirmUtilityOverlay,
+    onFooterClick: createUtilityOverlayActionHandler([
+      { selector: "[data-confirm-fish-buy-another]", run: () => confirmFishBuyAnother() }
+    ])
+  }),
+  "fish-sell-confirm": createPendingStateUtilityMode({
+    id: "fish-sell-confirm",
+    pendingStateKey: "pendingFishAction",
+    render: renderFishSellConfirmUtilityOverlay,
+    onFooterClick: createUtilityOverlayActionHandler([
+      { selector: "[data-confirm-fish-sell]", run: () => confirmFishSell() }
+    ])
   }),
   "decor-buy-confirm": createPendingStateUtilityMode({
     id: "decor-buy-confirm",
@@ -34266,13 +37153,19 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
       title: "Create Hide",
       body: renderCustomHideCreationOverlay(),
       footer: buildUtilityActionsFooter([
-        { label: "Create Hide", attribute: "data-save-custom-hide" },
+        {
+          label: "Create Hide",
+          attribute: "data-save-custom-hide",
+          disabled: !runtime.pendingCustomHideUpload?.frontDataUrl || !runtime.pendingCustomHideUpload?.bgDataUrl
+        },
         { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
       ]),
       closable: true
     }),
     ...DECOR_SETTINGS_UTILITY_MODE_HANDLERS,
+    onBodyClick: (ctx, target, event) => handleCustomHideUtilityOverlayBodyClick(ctx, target, event) || handleCaveSettingsUtilityOverlayBodyClick(ctx, target, event),
     onBodyInput: (ctx, target, event) => handleCommonUtilityOverlayInput(ctx, target, event) || handleCustomHideUtilityOverlayInput(ctx, target, event),
+    onBodyChange: (ctx, target, event) => handleCustomHideUtilityOverlayChange(ctx, target, event) || handleCommonUtilityOverlayChange(ctx, target, event),
     onBodyKeyDown: handleCustomHideUtilityOverlayKeyDown,
     onFooterClick: createUtilityOverlayActionHandler([
       { selector: "[data-save-custom-hide]", run: () => void savePendingCustomHideUpload() }
@@ -34699,9 +37592,13 @@ function renderCaveColorSettingsControls(item, decor) {
           <strong data-cave-color-layer-value="${escapeHtml(layer.id)}">${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong>
         </div>
         <div class="bubbler-color-swatches cave-color-swatches">
-          ${originalTile}
-          ${rgbTile}
-          ${swatches}
+          <div class="color-choice-mode-row">
+            ${originalTile}
+            ${rgbTile}
+          </div>
+          <div class="color-choice-swatch-row">
+            ${swatches}
+          </div>
         </div>
         <label class="cave-colorize-toggle">
           <input
@@ -34751,84 +37648,136 @@ function renderCustomHideBackgroundPrompt() {
 }
 
 function renderCustomHideCreationOverlay() {
-  const pending = runtime.pendingCustomHideUpload;
-  if (!pending?.frontDataUrl || !pending?.bgDataUrl) {
-    return `<div class="empty-state">Choose front and background images from the decor shop first.</div>`;
-  }
-
-  pending.caveSettings = sanitizePlacedCaveSettings(pending.caveSettings);
+  const pending = buildPendingCustomHideUpload(runtime.pendingCustomHideUpload);
+  runtime.pendingCustomHideUpload = pending;
+  const hasFrontImage = Boolean(pending.frontDataUrl);
+  const hasBackgroundImage = Boolean(pending.bgDataUrl);
+  const hasBothImages = hasFrontImage && hasBackgroundImage;
   const scale = clamp(Number(pending.scale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const displayWidth = Math.max(1, Math.round((Number(pending.width) || CUSTOM_DECOR_DEFAULT_WIDTH) * scale));
   const frontHeight = Math.max(1, Math.round(displayWidth * (pending.frontNaturalHeight / Math.max(1, pending.frontNaturalWidth))));
   const bgHeight = Math.max(1, Math.round(displayWidth * (pending.bgNaturalHeight / Math.max(1, pending.bgNaturalWidth))));
-  const previewItem = getPendingCustomHidePreviewItem();
+  const previewItem = hasBothImages ? getPendingCustomHidePreviewItem() : null;
+  const previewDecor = hasBothImages ? getPendingCustomHidePreviewDecor() : null;
   const layerReadout = previewItem ? formatDecorSettingReadout("tankLayer", previewItem) : "Layers 3-4";
   const layerOptions = previewItem ? renderDecorLayerOptions(previewItem) : `<option selected>Layer 3</option>`;
   const caveSettings = pending.caveSettings;
+  const frontAspectRatio = pending.frontNaturalHeight && pending.frontNaturalWidth
+    ? `${Math.max(1, Number(pending.frontNaturalWidth))} / ${Math.max(1, Number(pending.frontNaturalHeight))}`
+    : "1 / 1";
+  const bgAspectRatio = pending.bgNaturalHeight && pending.bgNaturalWidth
+    ? `${Math.max(1, Number(pending.bgNaturalWidth))} / ${Math.max(1, Number(pending.bgNaturalHeight))}`
+    : "1 / 1";
+  const uploadChooserMarkup = `
+    <div class="custom-hide-upload-grid">
+      <button
+        class="custom-hide-upload-tile ${hasFrontImage ? "has-image" : ""}"
+        type="button"
+        data-choose-custom-hide-front>
+        <span class="custom-hide-upload-label">Front</span>
+        ${hasFrontImage
+          ? `<img src="${escapeHtml(pending.frontDataUrl)}" alt="Uploaded custom hide front preview" style="aspect-ratio: ${escapeHtml(frontAspectRatio)};" />`
+          : `<span class="custom-hide-upload-empty">Choose front image</span>`}
+      </button>
+      <button
+        class="custom-hide-upload-tile ${hasBackgroundImage ? "has-image" : ""}"
+        type="button"
+        data-choose-custom-hide-background
+        ${hasFrontImage ? "" : "disabled"}>
+        <span class="custom-hide-upload-label">Background</span>
+        ${hasBackgroundImage
+          ? `<img src="${escapeHtml(pending.bgDataUrl)}" alt="Uploaded custom hide background preview" style="aspect-ratio: ${escapeHtml(bgAspectRatio)};" />`
+          : `<span class="custom-hide-upload-empty">${hasFrontImage ? "Choose background image" : "Choose front first"}</span>`}
+      </button>
+    </div>
+  `;
+  const combinedPreviewMarkup = hasBothImages
+    ? `
+      <div class="custom-decor-size-window">
+        <div class="custom-decor-size-stage">
+          <div
+            class="custom-decor-motion-preview custom-hide-overlay-preview"
+            style="width: ${displayWidth}px; height: ${frontHeight}px;"
+            data-custom-hide-preview-frame
+            data-decor-settings-preview-frame>
+            <img
+              class="custom-hide-overlay-image custom-hide-overlay-bg"
+              src="${escapeHtml(pending.bgDataUrl)}"
+              alt="Uploaded custom hide background preview"
+              style="width: ${displayWidth}px; height: ${bgHeight}px;"
+              data-custom-hide-bg-preview />
+            <img
+              class="custom-hide-overlay-image custom-hide-overlay-front"
+              src="${escapeHtml(pending.frontDataUrl)}"
+              alt="Uploaded custom hide front preview"
+              style="width: ${displayWidth}px; height: ${frontHeight}px;"
+              data-custom-hide-front-preview />
+            ${renderCaveSettingsMarkers(caveSettings)}
+          </div>
+        </div>
+        <div class="custom-fish-size-readout">
+          <span>Hide Points</span>
+          <strong data-custom-hide-size-label>${formatDecorScale(scale)}</strong>
+        </div>
+      </div>
+    `
+    : `
+      <div class="utility-confirm-card custom-hide-upload-note">
+        <div class="utility-confirm-copy">
+          <strong>Choose a front and background image to continue.</strong>
+          <div class="fish-meta">Once both are selected, we’ll overlay them here so you can set size, layer, colors, entry points, and seats before creating the hide.</div>
+        </div>
+      </div>
+    `;
+  const controlsMarkup = hasBothImages
+    ? `
+      <div class="custom-decor-controls-column">
+        <label class="custom-decor-name-row">
+          <span>Hide Name</span>
+          <input
+            class="tank-name-input custom-decor-name-input"
+            type="text"
+            maxlength="48"
+            value="${escapeHtml(pending.name || pending.suggestedName || "Custom Hide")}"
+            data-custom-hide-name-input
+            aria-label="Custom hide name" />
+        </label>
+        <label class="bubbler-control-row">
+          <span>Size <strong data-custom-hide-size-label>${formatDecorScale(scale)}</strong></span>
+          <input
+            type="range"
+            min="${DECOR_SCALE_MIN}"
+            max="${DECOR_SCALE_MAX}"
+            step="0.01"
+            value="${scale}"
+            data-custom-hide-size-input />
+        </label>
+        <label class="bubbler-control-row">
+          <span>Layer <strong>${escapeHtml(layerReadout)}</strong></span>
+          <select class="shop-sort-select" data-custom-hide-setting="tankLayer" aria-label="Custom hide layer">
+            ${layerOptions}
+          </select>
+          <em>Caves span layers 3-4 for fish entrances and interiors, so their front layer is locked.</em>
+        </label>
+        ${previewItem && previewDecor ? renderCaveColorSettingsControls(previewItem, previewDecor) : ""}
+        ${previewItem ? renderCaveSettingsControls(previewItem) : ""}
+        <div class="mini-note">This will create one custom hide for ${CUSTOM_HIDE_COST} ${pluralize("coin", CUSTOM_HIDE_COST)} and place it in storage.</div>
+      </div>
+    `
+    : `
+      <div class="custom-decor-controls-column">
+        <div class="mini-note">Choose the front image first, then the background image. Creation stays locked until both are ready.</div>
+      </div>
+    `;
 
   return `
     <div class="custom-decor-name-panel decor-settings-panel">
       <div class="custom-decor-create-layout decor-settings-layout">
         <div class="custom-decor-preview-column">
-          <div class="custom-decor-size-window">
-            <div class="custom-decor-size-stage">
-              <div
-                class="custom-decor-motion-preview custom-hide-overlay-preview"
-                style="width: ${displayWidth}px; height: ${frontHeight}px;"
-                data-custom-hide-preview-frame
-                data-decor-settings-preview-frame>
-                <img
-                  class="custom-hide-overlay-image custom-hide-overlay-bg"
-                  src="${escapeHtml(pending.bgDataUrl)}"
-                  alt="Uploaded custom hide background preview"
-                  style="width: ${displayWidth}px; height: ${bgHeight}px;"
-                  data-custom-hide-bg-preview />
-                <img
-                  class="custom-hide-overlay-image custom-hide-overlay-front"
-                  src="${escapeHtml(pending.frontDataUrl)}"
-                  alt="Uploaded custom hide front preview"
-                  style="width: ${displayWidth}px; height: ${frontHeight}px;"
-                  data-custom-hide-front-preview />
-                ${renderCaveSettingsMarkers(caveSettings)}
-              </div>
-            </div>
-            <div class="custom-fish-size-readout">
-              <span>Hide Points</span>
-              <strong data-custom-hide-size-label>${formatDecorScale(scale)}</strong>
-            </div>
-          </div>
+          ${uploadChooserMarkup}
+          ${combinedPreviewMarkup}
         </div>
-        <div class="custom-decor-controls-column">
-          <label class="custom-decor-name-row">
-            <span>Hide Name</span>
-            <input
-              class="tank-name-input custom-decor-name-input"
-              type="text"
-              maxlength="48"
-              value="${escapeHtml(pending.name || pending.suggestedName || "Custom Hide")}"
-              data-custom-hide-name-input
-              aria-label="Custom hide name" />
-          </label>
-          <label class="bubbler-control-row">
-            <span>Size <strong data-custom-hide-size-label>${formatDecorScale(scale)}</strong></span>
-            <input
-              type="range"
-              min="${DECOR_SCALE_MIN}"
-              max="${DECOR_SCALE_MAX}"
-              step="0.01"
-              value="${scale}"
-              data-custom-hide-size-input />
-          </label>
-          <label class="bubbler-control-row">
-            <span>Layer <strong>${escapeHtml(layerReadout)}</strong></span>
-            <select class="shop-sort-select" aria-label="Custom hide layer">
-              ${layerOptions}
-            </select>
-            <em>Caves span layers 3-4 for fish entrances and interiors, so their front layer is locked.</em>
-          </label>
-          ${previewItem ? renderCaveSettingsControls(previewItem) : ""}
-          <div class="mini-note">This will create one custom hide for ${CUSTOM_HIDE_COST} ${pluralize("coin", CUSTOM_HIDE_COST)} and place it in storage.</div>
-        </div>
+        ${controlsMarkup}
       </div>
     </div>
   `;
@@ -35013,7 +37962,7 @@ function renderDecorSettingsOverlay(item) {
     return `<div class="empty-state">That decor could not be found.</div>`;
   }
 
-  const imageSrc = escapeHtml(decor.path);
+  const imageSrc = escapeHtml(getDecorThumbnailPath(decor));
   const capabilities = getDecorMotionCapabilities(item);
   const motionSettings = getPlacedDecorMotionSettings(item);
   const hasMotionControls = capabilities.hasBob || capabilities.hasSway;
@@ -35288,12 +38237,12 @@ function renderBubblerSettingsOverlay(item) {
   return `
     <div class="bubbler-settings-panel">
       <label class="bubbler-control-row">
-        <span>Speed <strong data-bubbler-setting-value="speed">${settings.speed.toFixed(1)}</strong></span>
-        <input type="range" min="${MIN_BUBBLER_SPEED}" max="${MAX_BUBBLER_SPEED}" step="0.1" value="${settings.speed}" data-bubbler-setting="speed" />
+        <span>Speed <strong data-bubbler-setting-value="speed">${formatBubblerSpeedReadout(settings.speed)}</strong></span>
+        <input type="range" min="${MIN_BUBBLER_SPEED}" max="${MAX_BUBBLER_SPEED}" step="0.05" value="${settings.speed}" data-bubbler-setting="speed" />
       </label>
       <label class="bubbler-control-row">
-        <span>Intensity <strong data-bubbler-setting-value="intensity">${Math.round(settings.amount)}</strong></span>
-        <input type="range" min="${MIN_CUSTOM_BUBBLER_AMOUNT}" max="${MAX_BUBBLER_INTENSITY}" step="1" value="${settings.amount}" data-bubbler-setting="intensity" />
+        <span>Intensity <strong data-bubbler-setting-value="intensity">${settings.amount < 1 ? settings.amount.toFixed(1) : Math.round(settings.amount)}</strong></span>
+        <input type="range" min="${MIN_CUSTOM_BUBBLER_AMOUNT}" max="${MAX_BUBBLER_INTENSITY}" step="0.1" value="${settings.amount}" data-bubbler-setting="intensity" />
       </label>
       <label class="bubbler-control-row">
         <span>Bubble Size <strong data-bubbler-setting-value="bubbleSize">${settings.bubbleSize.toFixed(2)}x</strong></span>
@@ -35306,9 +38255,13 @@ function renderBubblerSettingsOverlay(item) {
       <div class="bubbler-control-row bubbler-color-row">
         <span>Bubble Color <strong data-bubbler-setting-value="bubbleColor">${escapeHtml(activeBubbleColorChoice.label)}</strong></span>
         <div class="custom-gravel-swatches bubbler-color-swatches" role="group" aria-label="Bubble color choices">
-          ${defaultColorTile}
-          ${rgbColorTile}
-          ${bubbleColorSwatches}
+          <div class="color-choice-mode-row">
+            ${defaultColorTile}
+            ${rgbColorTile}
+          </div>
+          <div class="color-choice-swatch-row">
+            ${bubbleColorSwatches}
+          </div>
         </div>
         <label class="cave-colorize-toggle">
           <input
@@ -35322,6 +38275,31 @@ function renderBubblerSettingsOverlay(item) {
         <span>Inside Fill <strong data-bubbler-setting-value="bubbleFillOpacity">${Math.round(bubbleFillOpacity * 100)}%</strong></span>
         <input type="range" min="0" max="1" step="0.05" value="${bubbleFillOpacity}" data-bubbler-setting="bubbleFillOpacity" />
       </label>
+      <div class="bubbler-control-row bubbler-toggle-row">
+        <span>Bubble End</span>
+        <label class="cave-colorize-toggle">
+          <input
+            type="checkbox"
+            data-bubbler-setting="bubblePopEnabled"
+            ${settings.bubblePopEnabled ? "checked" : ""} />
+          <span>Pop bubbles</span>
+        </label>
+        <label class="cave-colorize-toggle">
+          <input
+            type="checkbox"
+            data-bubbler-setting="bubbleMalformed"
+            ${settings.bubbleMalformed ? "checked" : ""} />
+          <span>Malformed bubbles</span>
+        </label>
+      </div>
+      <label class="bubbler-control-row">
+        <span>Malformed Intensity <strong data-bubbler-setting-value="bubbleMalformedIntensity">${settings.bubbleMalformedIntensity.toFixed(2)}x</strong></span>
+        <input type="range" min="${MIN_BUBBLER_MALFORMED_INTENSITY}" max="${MAX_BUBBLER_MALFORMED_INTENSITY}" step="0.05" value="${settings.bubbleMalformedIntensity}" data-bubbler-setting="bubbleMalformedIntensity" />
+      </label>
+      <label class="bubbler-control-row">
+        <span>Malformed Speed <strong data-bubbler-setting-value="bubbleMalformedSpeed">${settings.bubbleMalformedSpeed < 1 ? settings.bubbleMalformedSpeed.toFixed(2) : settings.bubbleMalformedSpeed.toFixed(1)}x</strong></span>
+        <input type="range" min="${MIN_BUBBLER_MALFORMED_SPEED}" max="${MAX_BUBBLER_MALFORMED_SPEED}" step="0.05" value="${settings.bubbleMalformedSpeed}" data-bubbler-setting="bubbleMalformedSpeed" />
+      </label>
       <label class="bubbler-control-row">
         <span>Direction</span>
         <select class="shop-sort-select" data-bubbler-setting="direction">${directionOptions}</select>
@@ -35332,7 +38310,7 @@ function renderBubblerSettingsOverlay(item) {
       </label>
       <label class="bubbler-control-row">
         <span>Distance <strong data-bubbler-setting-value="distance">${Math.round(settings.distance)} px</strong></span>
-        <input type="range" min="${MIN_CUSTOM_BUBBLER_DISTANCE_PX}" max="${TANK_HEIGHT}" step="5" value="${settings.distance}" data-bubbler-setting="distance" />
+        <input type="range" min="${MIN_CUSTOM_BUBBLER_DISTANCE_PX}" max="${MAX_CUSTOM_BUBBLER_DISTANCE_PX}" step="5" value="${settings.distance}" data-bubbler-setting="distance" />
       </label>
       <div class="mini-note">Side and downward streams bend upward after a short run. Higher speed lets them travel farther before they rise.</div>
       <button class="small-button alt" type="button" data-reset-bubbler-settings>Reset Bubbler</button>
@@ -35488,6 +38466,10 @@ function buildCurrentTankCareSuggestions(now = Date.now()) {
       continue;
     }
     const speciesName = getFishDisplaySpeciesName(fish, species);
+    if (getFishGlassTapStressPenalty(fish, now) > 0) {
+      putSuggestion(`glass_tap_stress:${fish.id}`, `Give ${fish.name} some quiet time after glass tapping.`, false);
+    }
+
     for (const need of getFishNeedsStatus(fish, tank, now)) {
       if (need.met) {
         continue;
@@ -35541,6 +38523,7 @@ function claimDailyBonus() {
     if (state.dailyBonus.summariesByTankId && tankId) {
       delete state.dailyBonus.summariesByTankId[tankId];
     }
+    state.dailyBonus.summary = null;
     syncActiveDailyBonusState();
     closeUtilityOverlay();
     saveState();
@@ -35562,6 +38545,7 @@ function claimDailyBonus() {
   if (state.dailyBonus.summariesByTankId && tankId) {
     delete state.dailyBonus.summariesByTankId[tankId];
   }
+  state.dailyBonus.summary = null;
   state.dailyBonus.available = false;
   state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
   syncActiveDailyBonusState();
@@ -35642,6 +38626,157 @@ function renderEquipmentOverlay() {
   dom.equipmentOverlay.classList.toggle("is-open", runtime.equipmentOverlayOpen);
 }
 
+function buildTutorialTaskMarkup(popup) {
+  const label = String(popup?.taskLabel || "");
+  if (!label) {
+    return "";
+  }
+
+  const letterCount = Math.max(1, label.length);
+  const completeClass = popup.taskCompleted ? " is-complete" : "";
+  return `
+    <div class="tutorial-task-row${completeClass}" data-tutorial-task="${escapeHtml(popup.taskId || "")}" style="--task-letter-count: ${letterCount}">
+      <span class="tutorial-task-box" aria-hidden="true"></span>
+      <span class="tutorial-task-label">
+        <span class="tutorial-task-text">${escapeHtml(label)}</span>
+        <span class="tutorial-task-strike" aria-hidden="true"></span>
+      </span>
+    </div>
+  `;
+}
+
+function getVisibleTutorialAvoidanceRect(element) {
+  if (!(element instanceof HTMLElement) || element.hidden) {
+    return null;
+  }
+  if (
+    element.classList.contains("is-tutorial-hidden")
+    || element.classList.contains("is-display-collapsed")
+    || element.classList.contains("is-toolbar-collapsed")
+    || element.getAttribute("aria-expanded") === "false"
+  ) {
+    return null;
+  }
+
+  const rect = element.getBoundingClientRect?.();
+  return rect?.width && rect?.height ? rect : null;
+}
+
+function doRectsOverlap(left, right) {
+  return Boolean(
+    left
+    && right
+    && left.left < right.right
+    && left.right > right.left
+    && left.top < right.bottom
+    && left.bottom > right.top
+  );
+}
+
+function positionTutorialTaskPane() {
+  const overlay = dom.introTutorialOverlay;
+  const panel = dom.introTutorialPanel;
+  if (!(overlay instanceof HTMLElement) || !(panel instanceof HTMLElement) || overlay.hidden || panel.hidden) {
+    return;
+  }
+
+  const overlayRect = overlay.getBoundingClientRect?.();
+  const panelRect = panel.getBoundingClientRect?.();
+  if (!overlayRect?.width || !overlayRect?.height || !panelRect?.width || !panelRect?.height) {
+    return;
+  }
+
+  const padding = 18;
+  const gap = 14;
+  const panelWidth = Math.min(panelRect.width, Math.max(1, overlayRect.width - padding * 2));
+  const panelHeight = Math.min(panelRect.height, Math.max(1, overlayRect.height - padding * 2));
+  const displayRect = getVisibleTutorialAvoidanceRect(dom.tankDisplay);
+  const dockRect = getVisibleTutorialAvoidanceRect(dom.tankBottomDock);
+  const avoidRects = [displayRect, dockRect].filter(Boolean);
+  const clampCandidate = (candidate) => ({
+    left: clamp(candidate.left, overlayRect.left + padding, overlayRect.right - padding - panelWidth),
+    top: clamp(candidate.top, overlayRect.top + padding, overlayRect.bottom - padding - panelHeight)
+  });
+  const toRect = (candidate) => ({
+    left: candidate.left,
+    top: candidate.top,
+    right: candidate.left + panelWidth,
+    bottom: candidate.top + panelHeight
+  });
+  const adjustCandidate = (candidate) => {
+    let next = clampCandidate(candidate);
+    for (const avoidRect of avoidRects) {
+      if (!doRectsOverlap(toRect(next), avoidRect)) {
+        continue;
+      }
+      const rightOfAvoid = avoidRect.right + gap;
+      const belowAvoid = avoidRect.bottom + gap;
+      if (rightOfAvoid + panelWidth <= overlayRect.right - padding) {
+        next.left = rightOfAvoid;
+      } else if (belowAvoid + panelHeight <= overlayRect.bottom - padding) {
+        next.top = belowAvoid;
+      } else {
+        next.left = overlayRect.right - padding - panelWidth;
+      }
+      next = clampCandidate(next);
+    }
+    return next;
+  };
+  const rawCandidates = [];
+  if (displayRect) {
+    const displayCenterX = displayRect.left + displayRect.width / 2;
+    const displayCenterY = displayRect.top + displayRect.height / 2;
+    const alignRight = displayCenterX > overlayRect.left + overlayRect.width / 2;
+    const displayOnTop = displayCenterY <= overlayRect.top + overlayRect.height / 2;
+    const displayInset = 16;
+    const anchoredLeft = alignRight
+      ? displayRect.right - panelWidth - displayInset
+      : displayRect.left + displayInset;
+    const leftAligned = displayRect.left + displayInset;
+    const rightAligned = displayRect.right - panelWidth - displayInset;
+    const preferredTop = displayOnTop
+      ? displayRect.bottom + gap
+      : displayRect.top - gap - panelHeight;
+    const fallbackTop = displayOnTop
+      ? displayRect.top - gap - panelHeight
+      : displayRect.bottom + gap;
+    rawCandidates.push(
+      { left: anchoredLeft, top: preferredTop, priority: 0 },
+      { left: leftAligned, top: preferredTop, priority: 1 },
+      { left: rightAligned, top: preferredTop, priority: 1 },
+      { left: anchoredLeft, top: fallbackTop, priority: 2 }
+    );
+  }
+  rawCandidates.push(
+    { left: overlayRect.left + padding, top: overlayRect.top + padding, priority: 3 },
+    { left: overlayRect.right - padding - panelWidth, top: overlayRect.top + padding, priority: 3 },
+    { left: overlayRect.left + padding, top: overlayRect.top + padding + 88, priority: 4 },
+    { left: overlayRect.right - padding - panelWidth, top: overlayRect.top + padding + 88, priority: 4 }
+  );
+  const candidates = rawCandidates.map((candidate, index) => ({
+    candidate: adjustCandidate(candidate),
+    priority: candidate.priority,
+    index
+  }));
+  const ranked = candidates
+    .map(({ candidate, priority, index }) => {
+      const rect = toRect(candidate);
+      const overlaps = avoidRects.filter((avoidRect) => doRectsOverlap(rect, avoidRect)).length;
+      return {
+        candidate,
+        score: overlaps * 10000
+          + priority * 1000
+          + Math.abs(candidate.top - overlayRect.top)
+          + Math.abs(candidate.left - overlayRect.left) * 0.2
+          + index
+      };
+    })
+    .sort((left, right) => left.score - right.score);
+  const best = ranked[0]?.candidate || candidates[0]?.candidate;
+  panel.style.setProperty("--tutorial-pane-left", `${Math.round(best.left - overlayRect.left)}px`);
+  panel.style.setProperty("--tutorial-pane-top", `${Math.round(best.top - overlayRect.top)}px`);
+}
+
 function renderIntroTutorial() {
   if (
     !dom.introTutorialOverlay
@@ -35656,14 +38791,20 @@ function renderIntroTutorial() {
   }
 
   const popup = getTutorialPopupConfig();
-  const isOpen = Boolean(popup);
   const isSplash = popup?.mode === "splash";
+  const loadingVisible = Boolean(dom.loadingOverlay && !dom.loadingOverlay.hidden);
+  const isOpen = Boolean(popup);
+  const isTask = popup?.mode === "task";
   const isBlocking = Boolean(popup?.blockInteraction);
   const closeAction = String(popup?.closeAction || "skip");
 
   dom.introTutorialOverlay.hidden = !isOpen;
   dom.introTutorialOverlay.classList.toggle("is-splash", isSplash);
+  dom.introTutorialOverlay.classList.toggle("is-waiting-for-loading", isSplash && loadingVisible);
+  dom.introTutorialOverlay.classList.toggle("is-task", isTask);
   dom.introTutorialOverlay.classList.toggle("is-blocking", isBlocking);
+  dom.introTutorialPanel.classList.toggle("is-task-pane", isTask);
+  dom.introTutorialPanel.classList.toggle("is-complete", Boolean(popup?.taskCompleted));
 
   if (!isOpen) {
     dom.introTutorialSplash.hidden = true;
@@ -35686,9 +38827,9 @@ function renderIntroTutorial() {
     return;
   }
 
-  const kicker = "Tutorial";
-  const bodyMarkup = String(popup.body || "");
-  const actionsMarkup = buildTutorialActionMarkup(popup.actions || []);
+  const kicker = isTask ? "Tasks:" : "Tutorial";
+  const bodyMarkup = isTask ? buildTutorialTaskMarkup(popup) : String(popup.body || "");
+  const actionsMarkup = isTask ? "" : buildTutorialActionMarkup(popup.actions || []);
 
   if (isBlocking) {
     cancelTutorialBlockingTankInteractions();
@@ -35699,6 +38840,7 @@ function renderIntroTutorial() {
   setMarkupIfChanged("intro-tutorial-body", dom.introTutorialBody, bodyMarkup);
   setMarkupIfChanged("intro-tutorial-actions", dom.introTutorialActions, actionsMarkup);
   dom.introTutorialActions.hidden = !actionsMarkup;
+  positionTutorialTaskPane();
   dom.introTutorialCloseButton.setAttribute(
     "aria-label",
     closeAction === "dismiss-popup" ? "Close tutorial message" : "Skip tutorial"
@@ -35743,6 +38885,7 @@ function renderTutorialGuidance() {
     "medicineButton",
     "spongeButton",
     "scoopButton",
+    "careTaskPaneButton",
     "fishEditModeDockButton",
     "editModeDockButton",
     "openEquipmentButton",
@@ -35773,6 +38916,7 @@ function renderTutorialGuidance() {
     }
     button.classList.toggle("is-tutorial-hidden", Boolean(tutorialUi) && !tutorialUi.visibleButtons.has(buttonId));
     button.classList.toggle("is-tutorial-pulse", Boolean(tutorialUi?.pulseButtons.has(buttonId)));
+    button.classList.toggle("is-tutorial-reveal", Boolean(tutorialUi?.revealButtons.has(buttonId)));
   }
 
   if (dom.toolbarTab) {
@@ -35794,6 +38938,7 @@ function renderTutorialGuidance() {
 
   const foodTileButton = findElementByDatasetValue(dom.foodTrayScroller, "selectFood", tutorialUi.pulseFoodKey);
   foodTileButton?.classList.add("is-tutorial-pulse");
+  positionTutorialTaskPane();
 }
 
 function getStoredDecorEntries() {
@@ -36068,12 +39213,7 @@ function positionEditTrayContextMenu(tray, menu, anchorX, anchorY) {
 }
 
 function openEditDecorTrayContextMenu(entryId, anchor = null) {
-  if (getActiveTutorial() && isTutorialStage(
-    TUTORIAL_STAGE_DECOR_PLACE_HINT,
-    TUTORIAL_STAGE_DECOR_PLACE_INSTRUCTIONS,
-    TUTORIAL_STAGE_DECOR_PLACE,
-    TUTORIAL_STAGE_DECOR_CLOSE
-  )) {
+  if (getActiveTutorial() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
     closeEditDecorTrayContextMenu();
     return;
   }
@@ -36299,7 +39439,7 @@ function renderEditDecorTray() {
                 aria-label="${escapeHtml(actionLabel)}"
               >
                 <span class="edit-decor-tile-surface">
-                  <img class="edit-decor-tile-thumb" src="${decor.path}" alt="${escapeHtml(decor.name)}"${entry.type === "placed" && isDecorHorizontallyFlipped(entry.item) ? ` style="transform: translate(-50%, -50%) scaleX(-1);"` : ""} />
+                  <img class="edit-decor-tile-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${entry.type === "placed" && isDecorHorizontallyFlipped(entry.item) ? ` style="transform: translate(-50%, -50%) scaleX(-1);"` : ""} />
                   <span class="edit-decor-tile-count">${badge}</span>
                 </span>
               </button>
@@ -37067,6 +40207,51 @@ function clearFishInspectorDisplayDocking() {
   inspector.style.maxHeight = "";
 }
 
+function getFishInspectorDockingBounds(referenceRect, padding, uiSettings) {
+  const bounds = {
+    left: padding,
+    right: Math.max(padding, referenceRect.width - padding)
+  };
+  const toolbar = dom.tankBottomDock;
+  const toolbarPosition = toolbar?.dataset?.toolbarPosition
+    || document.documentElement?.dataset?.toolbarPosition
+    || uiSettings?.toolbarPosition;
+  if (
+    !toolbar
+    || (toolbarPosition !== "left-center" && toolbarPosition !== "right-center")
+    || toolbar.classList.contains("is-toolbar-collapsed")
+    || toolbar.classList.contains("is-tutorial-hidden")
+    || toolbar.getAttribute("aria-expanded") === "false"
+  ) {
+    return bounds;
+  }
+
+  const toolbarRect = toolbar.getBoundingClientRect?.();
+  if (
+    !toolbarRect?.width
+    || !toolbarRect?.height
+    || toolbarRect.right <= referenceRect.left
+    || toolbarRect.left >= referenceRect.left + referenceRect.width
+  ) {
+    return bounds;
+  }
+
+  const toolbarGap = 12;
+  if (toolbarPosition === "right-center") {
+    bounds.right = Math.max(
+      bounds.left + 96,
+      Math.min(bounds.right, Math.floor(toolbarRect.left - referenceRect.left - toolbarGap))
+    );
+  } else {
+    bounds.left = Math.min(
+      bounds.right - 96,
+      Math.max(bounds.left, Math.ceil(toolbarRect.right - referenceRect.left + toolbarGap))
+    );
+  }
+
+  return bounds;
+}
+
 function updateFishInspectorDisplayDocking() {
   const inspector = dom.fishInspector;
   const display = dom.tankDisplay;
@@ -37108,13 +40293,14 @@ function updateFishInspectorDisplayDocking() {
   const inspectorRect = inspector.getBoundingClientRect?.();
   const padding = 8;
   const gap = 8;
-  const availableWidth = Math.max(96, referenceRect.width - padding * 2);
+  const dockingBounds = getFishInspectorDockingBounds(referenceRect, padding, uiSettings);
+  const availableWidth = Math.max(96, dockingBounds.right - dockingBounds.left);
   const inspectorWidth = Math.min(Math.max(96, Number(inspectorRect?.width) || 340), availableWidth);
   const displayCenterX = displayRect.left - referenceRect.left + displayRect.width / 2;
   const left = clamp(
     Math.round(displayCenterX - inspectorWidth / 2),
-    padding,
-    Math.max(padding, Math.round(referenceRect.width - inspectorWidth - padding))
+    dockingBounds.left,
+    Math.max(dockingBounds.left, Math.round(dockingBounds.right - inspectorWidth))
   );
   const rawTop = displayRect.bottom - referenceRect.top + gap;
   const top = clamp(
@@ -37355,15 +40541,22 @@ function renderDecorShop() {
   }
   const cardsMarkup = catalog
     .map((decor) => {
-      const locked = !isDecorUnlocked(decor);
+      const progressLocked = !isDecorProgressUnlocked(decor);
+      const locked = !isDecorShopUnlocked(decor);
+      const debugUnlocked = progressLocked && !locked;
       const affordable = !locked && !tutorialPreviewOnly && state.coins >= decor.cost;
       const owned = state.decorInventory[decor.key] || 0;
       const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
       const isCustomHideUpload = isCustomHideShopKey(decor.key);
-      const statusLabel = locked ? `Unlocks at ${getDecorUnlockRequirementLabel(decor)}` : `${owned} in storage`;
+      const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
+      const statusLabel = locked
+        ? `Unlocks at ${lockedRequirementLabel}`
+        : debugUnlocked
+          ? `Debug unlocked (${lockedRequirementLabel})`
+          : `${owned} in storage`;
       return `
         <article class="shop-card ${locked ? "is-locked" : ""}">
-          <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${decor.path}" alt="${decor.name}" />
+          <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
           <div class="shop-meta">
             <div>
               <strong>${decor.name}</strong>
@@ -37643,7 +40836,7 @@ function renderDecorInventory() {
 
       return `
         <article class="mini-card">
-          <img class="decor-thumb" src="${decor.path}" alt="${decor.name}" />
+          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${count} in storage.</div>
@@ -37731,7 +40924,7 @@ function renderPlacedDecor() {
 
       return `
         <article class="mini-card ${selected ? "is-selected" : ""}">
-          <img class="decor-thumb" src="${decor.path}" alt="${decor.name}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
+          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${grouped ? "Grouped decor." : "Placed in the tank."}</div>
@@ -38152,54 +41345,6 @@ function renderUvLightControls() {
   }
 }
 
-function renderGravelAssets() {
-  const containers = [
-    ["scene-assets-gravel", dom.gravelAssetList],
-    ["equipment-scene-assets-gravel", dom.equipmentGravelAssetList]
-  ].filter(([, container]) => container);
-  if (!containers.length) {
-    return;
-  }
-
-  if (!runtime.gravelCatalog.length) {
-    for (const [cacheKey, container] of containers) {
-      setMarkupIfChanged(cacheKey, container, `<div class="empty-state">No PNG assets were found in this folder yet.</div>`);
-    }
-    return;
-  }
-
-  const customEnabled = Boolean(state.customGravelEnabled);
-  const statusMarkup = customEnabled
-    ? `<div class="custom-gravel-status">Gravel Colors are enabled, so sand options are currently disabled.</div>`
-    : "";
-  const cardsMarkup = runtime.gravelCatalog
-    .map((item) => {
-      const selected = state.selectedGravelAsset === item.key;
-      const buttonLabel = customEnabled
-        ? "Disabled"
-        : selected
-          ? "Using This Sand"
-          : "Use Sand";
-      return `
-        <article class="background-card ${selected ? "is-selected" : ""}">
-          <img class="scene-thumb" src="${item.path}" alt="${item.name}" />
-          <div>
-            <strong>${item.name}</strong>
-            <div class="fish-meta">${item.blurb}</div>
-          </div>
-          <button data-select-gravel="${item.key}" ${customEnabled ? "disabled" : ""}>
-            ${buttonLabel}
-          </button>
-        </article>
-      `;
-    })
-    .join("");
-
-  for (const [cacheKey, container] of containers) {
-    setMarkupIfChanged(cacheKey, container, `${statusMarkup}${cardsMarkup}`);
-  }
-}
-
 function renderCustomGravelControls() {
   const containers = [
     ["custom-gravel-panel", dom.customGravelPanel],
@@ -38211,7 +41356,6 @@ function renderCustomGravelControls() {
 
   const layerCatalog = runtime.customGravelLayerCatalog || [];
   const layersReady = hasReadyCustomGravelLayers();
-  const enabled = Boolean(state.customGravelEnabled);
 
   if (!layersReady) {
     for (const [cacheKey, container] of containers) {
@@ -38227,9 +41371,8 @@ function renderCustomGravelControls() {
   const choices = getCustomGravelColorChoices();
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
-  const layerMarkup = enabled
-    ? layerCatalog
-      .map((layer, index) => {
+  const layerMarkup = layerCatalog
+    .map((layer, index) => {
         const activeColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
         const activeChoice = choices.find((choice) => choice.color === activeColor) || { label: activeColor, color: activeColor };
         const colorizeChecked = activeColorizeSettings[index] === true;
@@ -38277,29 +41420,12 @@ function renderCustomGravelControls() {
             </label>
           </article>
         `;
-      })
-      .join("")
-    : "";
+    })
+    .join("");
 
   const markup = `
     <div class="custom-gravel-panel-shell">
-      <div class="custom-gravel-toggle-row">
-        <div class="compact-heading">
-          <strong>Sand Toggle</strong>
-          <p>${enabled
-      ? "Sand is off while Gravel Colors are enabled."
-      : "Sand is on. Turn it off to customize the gravel colors instead."}</p>
-        </div>
-        <button
-          class="custom-gravel-toggle ${enabled ? "is-active" : ""}"
-          type="button"
-          data-toggle-custom-gravel="true"
-          aria-pressed="${enabled}">
-          <span>Sand</span>
-          <strong>${enabled ? "Off" : "On"}</strong>
-        </button>
-      </div>
-      ${enabled ? `<div class="custom-gravel-layer-list">${layerMarkup}</div>` : ""}
+      <div class="custom-gravel-layer-list">${layerMarkup}</div>
     </div>
   `;
 
@@ -38351,6 +41477,7 @@ function renderControls(now) {
     return species && species.behavior !== "sucker" && species.caveEnabled !== false && !isFishDead(fish);
   });
   const hasGravelPebbleCandidate = hasFishGravelPebbleCandidate(now);
+  const hasGravelDigCandidate = hasFishGravelDigCandidate(now);
   const debugMode = isDebugModeEnabled();
 
   dom.feedButton.disabled = false;
@@ -38365,7 +41492,7 @@ function renderControls(now) {
   dom.resetFishHealthButton.hidden = !debugMode;
   dom.addCoinsButton.hidden = !debugMode;
   dom.maxDirtButton.hidden = !debugMode;
-  dom.deleteAllButton.hidden = !debugMode;
+  dom.debugGravelDigButton.hidden = !debugMode;
   dom.debugGravelPebbleButton.hidden = !debugMode;
   dom.debugCaveButton.hidden = !debugMode;
   if (dom.debugDailyRecapButton) {
@@ -38380,7 +41507,7 @@ function renderControls(now) {
   dom.resetFishHealthButton.disabled = !debugMode;
   dom.addCoinsButton.disabled = !debugMode;
   dom.maxDirtButton.disabled = !debugMode;
-  dom.deleteAllButton.disabled = !debugMode;
+  dom.debugGravelDigButton.disabled = !debugMode || !hasGravelDigCandidate;
   dom.debugGravelPebbleButton.disabled = !debugMode || !hasGravelPebbleCandidate;
   dom.debugDamageFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
   dom.debugBreedButton.disabled = !debugMode || (!hasDebugBreedingPairCandidate(now) && !runtime.debugBreedingSequence);
@@ -38414,12 +41541,23 @@ function renderControls(now) {
   if (dom.debugGravelPebbleButton) {
     dom.debugGravelPebbleButton.title = hasGravelPebbleCandidate
       ? "Debug: Force Gravel Pebble Toss"
-      : "Debug: Enable Custom Gravel and keep a living non-sucker fish in the tank";
+      : "Debug: Keep gravel pebble assets and a living non-sucker fish in the tank";
     dom.debugGravelPebbleButton.setAttribute(
       "aria-label",
       hasGravelPebbleCandidate
         ? "Debug: Force Gravel Pebble Toss"
-        : "Debug: Enable Custom Gravel and keep a living non-sucker fish in the tank"
+        : "Debug: Keep gravel pebble assets and a living non-sucker fish in the tank"
+    );
+  }
+  if (dom.debugGravelDigButton) {
+    dom.debugGravelDigButton.title = hasGravelDigCandidate
+      ? "Debug: Force Gravel Dig"
+      : "Debug: Keep a living non-sucker fish in the tank";
+    dom.debugGravelDigButton.setAttribute(
+      "aria-label",
+      hasGravelDigCandidate
+        ? "Debug: Force Gravel Dig"
+        : "Debug: Keep a living non-sucker fish in the tank"
     );
   }
 
@@ -38430,6 +41568,7 @@ function renderControls(now) {
   dom.openEquipmentButton?.classList.toggle("is-active", runtime.equipmentOverlayOpen);
   dom.openSettingsButton?.classList.toggle("is-active", runtime.settingsOverlayOpen);
   dom.openManagementButton?.classList.toggle("is-active", runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management");
+  dom.careTaskPaneButton?.classList.toggle("is-active", getUiSettings().careTaskPaneOpen === true);
   dom.toggleMouseLockButton?.classList.toggle("is-active", isTankMouseInputLocked());
   if (dom.uvLightToggleButton) {
     const uvLightVisible = isUvLightFeatureEnabled();
@@ -38479,6 +41618,12 @@ function renderControls(now) {
     const managementOpen = runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management";
     dom.openManagementButton.title = managementOpen ? "Tank Info (Open)" : "Tank Info";
     dom.openManagementButton.setAttribute("aria-label", managementOpen ? "Tank Info open" : "Tank Info");
+  }
+  if (dom.careTaskPaneButton) {
+    const tasksOpen = getUiSettings().careTaskPaneOpen === true;
+    dom.careTaskPaneButton.title = tasksOpen ? "Hide Tasks" : "Show Tasks";
+    dom.careTaskPaneButton.setAttribute("aria-label", tasksOpen ? "Hide Tasks" : "Show Tasks");
+    dom.careTaskPaneButton.setAttribute("aria-pressed", String(tasksOpen));
   }
   if (dom.toggleMouseLockButton) {
     const mouseLockAvailable = isTankMouseLockFeatureEnabled();
@@ -38539,11 +41684,12 @@ function renderControls(now) {
 
   dom.tankStage.style.cursor = (runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey)
     ? "none"
-    : (runtime.dragState || runtime.fishDragState || runtime.eggDragState)
+    : (runtime.dragState || runtime.decorResizeState || runtime.fishDragState || runtime.eggDragState)
       ? "grabbing"
       : (runtime.editTankMode || runtime.fishEditMode)
         ? "grab"
         : "default";
+  syncToolbarFastTooltipExperiment();
   renderToolCursor();
 }
 
@@ -38766,8 +41912,8 @@ function applyContentSettingsEffects(now = Date.now()) {
   const violenceAndGoreEnabled = settings.violenceAndGoreEnabled;
   let changed = false;
 
-  if (!violenceAndGoreEnabled && (runtime.bloodClouds.length || runtime.bloodWaterTint > 0)) {
-    runtime.bloodClouds = [];
+  if (!violenceAndGoreEnabled && (hasBloodEffectClouds() || runtime.bloodWaterTint > 0)) {
+    clearBloodEffectClouds();
     runtime.bloodWaterTint = 0;
   }
 
@@ -38779,7 +41925,7 @@ function applyContentSettingsEffects(now = Date.now()) {
     runtime.bettaPassLocks.clear();
   }
 
-  if (!violenceAndGoreEnabled && runtime.medicineModeKey === "antidote") {
+  if ((!violenceAndGoreEnabled || !isZombieSkeletonModeAvailable()) && runtime.medicineModeKey === "antidote") {
     runtime.medicineModeKey = "";
   }
 
@@ -39722,7 +42868,10 @@ function processZombieInfections(now) {
 }
 
 function canFishUsePassAttack(species) {
-  return Boolean(species && (species.id === "betta" || (isZombieModeEnabled() && species.undeadType === "skeleton")));
+  return Boolean(species && (
+    species.id === "betta"
+    || canZombieSkeletonUsePassAttack({ enabled: isZombieModeEnabled(), species })
+  ));
 }
 
 function canFishPassAttackTarget(attackerSpecies, target) {
@@ -39730,8 +42879,14 @@ function canFishPassAttackTarget(attackerSpecies, target) {
     return false;
   }
 
-  if (attackerSpecies.undeadType === "skeleton") {
-    return !isUndeadFish(target);
+  const zombieSkeletonTargetAllowed = canZombieSkeletonPassAttackTarget({
+    enabled: isZombieModeEnabled(),
+    attackerSpecies,
+    target,
+    isUndeadFish
+  });
+  if (zombieSkeletonTargetAllowed !== null) {
+    return zombieSkeletonTargetAllowed;
   }
 
   return true;
@@ -39875,29 +43030,81 @@ function handleBettaPassAttacks(now) {
   showToast(landedMessages.length === 1 ? landedMessages[0] : `${landedMessages.length} attacks landed.`);
 }
 
-function spawnBloodCloud(xNorm, yNorm, intensity = 1) {
-  if (!isGoreEnabled()) {
+function getEffectCloudPreset(presetKey = "gravelDust") {
+  return EFFECT_CLOUD_PRESETS[presetKey] || EFFECT_CLOUD_PRESETS.gravelDust;
+}
+
+function hasBloodEffectClouds() {
+  return (runtime.effectClouds || []).some((cloud) => cloud?.requiresGore || cloud?.preset === "blood");
+}
+
+function clearBloodEffectClouds() {
+  runtime.effectClouds = (runtime.effectClouds || []).filter((cloud) => (
+    cloud && !cloud.requiresGore && cloud.preset !== "blood"
+  ));
+}
+
+function spawnEffectCloud(xNorm, yNorm, options = {}) {
+  if (!Number.isFinite(Number(xNorm)) || !Number.isFinite(Number(yNorm))) {
     return;
   }
 
-  const count = Math.round(42 + intensity * 36);
+  const preset = getEffectCloudPreset(options.preset);
+  if (preset.requiresGore && !isGoreEnabled()) {
+    return;
+  }
+
+  const intensity = clamp(Number.isFinite(Number(options.intensity)) ? Number(options.intensity) : 1, 0.08, 3.2);
+  const countBase = Number.isFinite(Number(options.countBase)) ? Number(options.countBase) : preset.countBase;
+  const countScale = Number.isFinite(Number(options.countScale)) ? Number(options.countScale) : preset.countScale;
+  const count = Math.max(1, Math.round(countBase + intensity * countScale));
+  const spreadNorm = Number.isFinite(Number(options.spreadNorm)) ? Number(options.spreadNorm) : preset.spreadNorm;
+  const layer = options.layer || preset.layer || EFFECT_CLOUD_LAYER_FRONT;
+  const colorStops = Array.isArray(options.colorStops) && options.colorStops.length
+    ? options.colorStops
+    : preset.colorStops;
+
+  if (!Array.isArray(runtime.effectClouds)) {
+    runtime.effectClouds = [];
+  }
+  const overflow = runtime.effectClouds.length + count - MAX_EFFECT_CLOUD_PARTICLES;
+  if (overflow > 0) {
+    runtime.effectClouds.splice(0, overflow);
+  }
 
   for (let i = 0; i < count; i += 1) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = randomBetween(0.00006, 0.00034) * intensity;
-    const drift = randomBetween(0.00002, 0.0001);
+    const speed = randomBetween(preset.speedMin, preset.speedMax) * intensity;
+    const drift = randomBetween(preset.driftMin, preset.driftMax);
 
-    runtime.bloodClouds.push({
-      xNorm: xNorm + randomBetween(-0.003, 0.003),
-      yNorm: yNorm + randomBetween(-0.003, 0.003),
+    runtime.effectClouds.push({
+      preset: preset.key,
+      layer,
+      requiresGore: preset.requiresGore === true,
+      colorStops,
+      xNorm: clamp(Number(xNorm) + randomBetween(-spreadNorm, spreadNorm), 0.02, 0.98),
+      yNorm: clamp(Number(yNorm) + randomBetween(-spreadNorm, spreadNorm), 0.02, 0.98),
       vx: Math.cos(angle) * speed + randomBetween(-drift, drift),
-      vy: Math.sin(angle) * speed + randomBetween(-drift, drift) - randomBetween(0.000005, 0.00003),
-      radiusNorm: randomBetween(0.0018, 0.0046) * randomBetween(0.9, 1.4),
-      alpha: randomBetween(0.22, 0.5),
-      lifeMs: randomBetween(2200, 4600),
+      vy: Math.sin(angle) * speed + randomBetween(-drift, drift) - randomBetween(preset.yLiftMin, preset.yLiftMax),
+      radiusNorm: randomBetween(preset.radiusMin, preset.radiusMax) * randomBetween(0.9, 1.4),
+      radiusGrowth: Number.isFinite(Number(options.radiusGrowth)) ? Number(options.radiusGrowth) : preset.radiusGrowth,
+      alpha: randomBetween(preset.alphaMin, preset.alphaMax),
+      lifeMs: randomBetween(preset.lifeMinMs, preset.lifeMaxMs),
       ageMs: 0
     });
   }
+}
+
+function spawnEffectCloudAtPoint(x, y, options = {}) {
+  spawnEffectCloud(Number(x) / TANK_WIDTH, Number(y) / TANK_HEIGHT, options);
+}
+
+function spawnBloodCloud(xNorm, yNorm, intensity = 1) {
+  spawnEffectCloud(xNorm, yNorm, {
+    preset: "blood",
+    intensity,
+    layer: EFFECT_CLOUD_LAYER_FRONT
+  });
 }
 
 function updateChumBloodClouds(now = Date.now()) {
@@ -39934,21 +43141,32 @@ function updateChumBloodClouds(now = Date.now()) {
   }
 }
 
-function updateBloodClouds(deltaSeconds) {
+function updateBloodWaterTint(deltaSeconds) {
   if (!isGoreEnabled()) {
-    runtime.bloodClouds = [];
+    clearBloodEffectClouds();
     runtime.bloodWaterTint = 0;
     return;
   }
 
   runtime.bloodWaterTint = clamp(runtime.bloodWaterTint - deltaSeconds * BLOOD_WATER_TINT_DECAY_PER_SECOND, 0, 1);
+}
 
-  for (let i = runtime.bloodClouds.length - 1; i >= 0; i -= 1) {
-    const cloud = runtime.bloodClouds[i];
+function updateEffectClouds(deltaSeconds) {
+  if (!Array.isArray(runtime.effectClouds) || !runtime.effectClouds.length) {
+    return;
+  }
+
+  for (let i = runtime.effectClouds.length - 1; i >= 0; i -= 1) {
+    const cloud = runtime.effectClouds[i];
+    if (!cloud || (cloud.requiresGore && !isGoreEnabled())) {
+      runtime.effectClouds.splice(i, 1);
+      continue;
+    }
+
     cloud.ageMs += deltaSeconds * 1000;
 
     if (cloud.ageMs >= cloud.lifeMs) {
-      runtime.bloodClouds.splice(i, 1);
+      runtime.effectClouds.splice(i, 1);
       continue;
     }
 
@@ -39960,7 +43178,7 @@ function updateBloodClouds(deltaSeconds) {
     cloud.vx *= 0.992;
     cloud.vy *= 0.992;
 
-    cloud.radiusNorm *= 1.006;
+    cloud.radiusNorm *= Number.isFinite(Number(cloud.radiusGrowth)) ? Number(cloud.radiusGrowth) : 1.006;
 
     if (t < 0.25) {
       cloud.alpha *= 0.997;
@@ -40009,25 +43227,33 @@ function drawWaterBloodTint() {
   tankContext.restore();
 }
 
-function drawBloodClouds() {
-  if (!runtime.bloodClouds.length) {
+function drawEffectClouds(layer = null) {
+  if (!Array.isArray(runtime.effectClouds) || !runtime.effectClouds.length) {
     return;
   }
 
   tankContext.save();
   tankContext.globalCompositeOperation = "source-over";
 
-  for (const cloud of runtime.bloodClouds) {
+  for (const cloud of runtime.effectClouds) {
+    if (layer && cloud.layer !== layer) {
+      continue;
+    }
+
     const x = cloud.xNorm * TANK_WIDTH;
     const y = cloud.yNorm * TANK_HEIGHT;
     const radius = cloud.radiusNorm * Math.min(TANK_WIDTH, TANK_HEIGHT);
+    const colorStops = Array.isArray(cloud.colorStops) && cloud.colorStops.length
+      ? cloud.colorStops
+      : getEffectCloudPreset(cloud.preset).colorStops;
 
     const gradient = tankContext.createRadialGradient(x, y, 0, x, y, radius);
-
-    gradient.addColorStop(0, `rgba(110, 0, 0, ${clamp(cloud.alpha * 1.15, 0, 1)})`);
-    gradient.addColorStop(0.22, `rgba(92, 0, 0, ${clamp(cloud.alpha * 0.9, 0, 1)})`);
-    gradient.addColorStop(0.55, `rgba(58, 0, 0, ${clamp(cloud.alpha * 0.42, 0, 1)})`);
-    gradient.addColorStop(1, "rgba(20, 0, 0, 0)");
+    for (const stop of colorStops) {
+      gradient.addColorStop(
+        clamp(Number(stop.offset) || 0, 0, 1),
+        `rgba(${stop.rgb || "110, 0, 0"}, ${clamp(cloud.alpha * (Number.isFinite(Number(stop.alpha)) ? Number(stop.alpha) : 1), 0, 1)})`
+      );
+    }
 
     tankContext.fillStyle = gradient;
     tankContext.beginPath();
@@ -40229,6 +43455,7 @@ function updateFishMotion(now, deltaSeconds) {
   if (!state?.fish.length) {
     runtime.fishGravelPebbleActions.clear();
     runtime.fishPebbleTosses = [];
+    runtime.forcedGravelDigUntilByFishId.clear();
     runtime.bettaPassLocks.clear();
     return;
   }
@@ -40263,6 +43490,7 @@ function updateFishMotion(now, deltaSeconds) {
 
     if (fish.id === activelyDraggedFishId) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+      clearForcedGravelDigPrompt(fish);
       fish.activity = "roam";
       fish.feedingPelletId = null;
       fish.targetXNorm = fish.xNorm;
@@ -40281,6 +43509,7 @@ function updateFishMotion(now, deltaSeconds) {
 
     if (isFishDead(fish)) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+      clearForcedGravelDigPrompt(fish);
       fish.activity = "dead";
       fish.feedingPelletId = null;
       setFishTankLayers(
@@ -40373,6 +43602,7 @@ function updateFishMotion(now, deltaSeconds) {
 
     if (breedingRole) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+      clearForcedGravelDigPrompt(fish);
       if (fish.caveState) {
         abortFishCaveBehavior(fish, now, false);
       }
@@ -40417,6 +43647,7 @@ function updateFishMotion(now, deltaSeconds) {
 
     if (zombieLockedOnTarget) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+      clearForcedGravelDigPrompt(fish);
       if (fish.caveState) {
         abortFishCaveBehavior(fish, now, false);
       }
@@ -40447,6 +43678,7 @@ function updateFishMotion(now, deltaSeconds) {
       );
     } else if (zombieBittenVictim) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+      clearForcedGravelDigPrompt(fish);
       if (fish.caveState) {
         abortFishCaveBehavior(fish, now, false);
       }
@@ -40471,6 +43703,7 @@ function updateFishMotion(now, deltaSeconds) {
       );
     } else if (piranhaLockedOnPrey) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+      clearForcedGravelDigPrompt(fish);
       if (fish.caveState) {
         abortFishCaveBehavior(fish, now, false);
       }
@@ -40483,7 +43716,14 @@ function updateFishMotion(now, deltaSeconds) {
       fish.panicSpeedBoost = null;
       clearFishSchoolFollowState(fish);
     } else {
-      pellet = fish.feedingPelletId ? state.floatingPellets.find((entry) => entry.id === fish.feedingPelletId) : null;
+      const forcedGravelDigPrompt = getForcedGravelDigPrompt(fish, now);
+      if (forcedGravelDigPrompt) {
+        updateForcedFishGravelDigTarget(fish, species, forcedGravelDigPrompt, now);
+      } else {
+        if (fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
+          fish.activity = "roam";
+        }
+        pellet = fish.feedingPelletId ? state.floatingPellets.find((entry) => entry.id === fish.feedingPelletId) : null;
       if (fish.activity === "feeding" && pellet && !canFishTargetFoodPellet(fish, pellet, now)) {
         if (pellet.targetFishId === fish.id) {
           pellet.targetFishId = "";
@@ -40558,6 +43798,7 @@ function updateFishMotion(now, deltaSeconds) {
       if (fish.activity === "roam" && !fish.caveState && !breedingRole) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
+      }
     }
 
     enforceFishLayerBoundary(fish, species);
@@ -40565,12 +43806,16 @@ function updateFishMotion(now, deltaSeconds) {
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
     const moveDistance = Math.hypot(moveDx, moveDy);
-    const isDirectedSwim = fish.activity === "feeding" || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY;
+    const isDirectedSwim = fish.activity === "feeding"
+      || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
+      || fish.activity === FISH_GRAVEL_DIG_ACTIVITY;
     let motionTarget = fish.activity === "feeding"
       ? 1
       : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
         ? 0.76
-        : (isFishCriticallyLowHealth(fish) ? 0.22 : 0.08);
+        : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+          ? 0.9
+          : (isFishCriticallyLowHealth(fish) ? 0.22 : 0.08);
     if (zombieLockedOnTarget) {
       motionTarget = Math.max(motionTarget, 0.78);
     } else if (zombieBittenVictim) {
@@ -40583,7 +43828,9 @@ function updateFishMotion(now, deltaSeconds) {
         ? FEED_CHASE_MULTIPLIER
         : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
           ? 1.14
-          : 1;
+          : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+            ? 1.34
+            : 1;
 
       if (Number.isFinite(fish.panicUntil)) {
         if (now < fish.panicUntil) {
@@ -40594,7 +43841,12 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
-      if (isFishCriticallyLowHealth(fish) && fish.activity !== "feeding" && fish.activity !== FISH_GRAVEL_PEBBLE_ACTIVITY) {
+      if (
+        isFishCriticallyLowHealth(fish)
+        && fish.activity !== "feeding"
+        && fish.activity !== FISH_GRAVEL_PEBBLE_ACTIVITY
+        && fish.activity !== FISH_GRAVEL_DIG_ACTIVITY
+      ) {
         speedMultiplier *= 1.22;
       }
 
@@ -40610,16 +43862,23 @@ function updateFishMotion(now, deltaSeconds) {
 
       const speed = fish.swimSpeed * FISH_MOTION_SCALE * speedMultiplier;
       const step = Math.min(moveDistance, speed * deltaSeconds);
+      const previousXNorm = fish.xNorm;
+      const previousYNorm = fish.yNorm;
 
       const nextXNorm = clamp(fish.xNorm + (moveDx / moveDistance) * step, 0.08, 0.92);
-      const movementMaxYNorm = fish.activity === "feeding" && pellet?.settled ? 0.9 : 0.8;
-      const nextYNorm = clampFishYNormToLayer(
-        fish.yNorm + (moveDy / moveDistance) * step,
-        fish,
-        species,
-        getFishTankLayer(fish),
-        { minYNorm: 0.14, maxYNorm: movementMaxYNorm }
-      );
+      const movementMaxYNorm = fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+        ? 0.96
+        : (fish.activity === "feeding" && pellet?.settled ? 0.9 : 0.8);
+      const rawNextYNorm = fish.yNorm + (moveDy / moveDistance) * step;
+      const nextYNorm = fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+        ? clamp(rawNextYNorm, 0.14, movementMaxYNorm)
+        : clampFishYNormToLayer(
+          rawNextYNorm,
+          fish,
+          species,
+          getFishTankLayer(fish),
+          { minYNorm: 0.14, maxYNorm: movementMaxYNorm }
+        );
 
       if (effectiveBehavior === "sucker") {
         fish.xNorm = nextXNorm;
@@ -40651,6 +43910,9 @@ function updateFishMotion(now, deltaSeconds) {
           } else if (resolvedMove.blocked && fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY) {
             clearFishGravelPebbleAction(fish, species, now);
             handledDirectionThisFrame = true;
+          } else if (resolvedMove.blocked && fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
+            clearForcedGravelDigPrompt(fish);
+            handledDirectionThisFrame = true;
           }
         }
 
@@ -40659,12 +43921,26 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
+      const forcedDigPromptAfterMove = getForcedGravelDigPrompt(fish, now);
+      if (forcedDigPromptAfterMove) {
+        completeForcedFishGravelDig(fish, species, forcedDigPromptAfterMove, now);
+      } else {
+        maybeDisturbGravelByFish(
+          fish,
+          species,
+          now,
+          Math.hypot(fish.xNorm - previousXNorm, fish.yNorm - previousYNorm)
+        );
+      }
+
       const travelRatio = clamp(step / Math.max(0.00001, speed * deltaSeconds), 0, 1);
       motionTarget = fish.activity === "feeding"
         ? 1
         : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
           ? clamp(0.54 + travelRatio * 0.38 + Math.min(0.12, moveDistance * 3), 0.34, 0.86)
-          : clamp(0.44 + travelRatio * 0.5 + Math.min(0.16, moveDistance * 4.5), 0.16, 0.92);
+          : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+            ? clamp(0.78 + travelRatio * 0.24 + Math.min(0.12, moveDistance * 3), 0.54, 0.98)
+            : clamp(0.44 + travelRatio * 0.5 + Math.min(0.16, moveDistance * 4.5), 0.16, 0.92);
 
       if (effectiveBehavior === "sucker") {
         setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
@@ -40682,6 +43958,11 @@ function updateFishMotion(now, deltaSeconds) {
           setFishDirection(fish, facingDx >= 0 ? 1 : -1, species, now);
           handledDirectionThisFrame = true;
         }
+      }
+    } else {
+      const forcedDigPromptAtRest = getForcedGravelDigPrompt(fish, now);
+      if (forcedDigPromptAtRest) {
+        completeForcedFishGravelDig(fish, species, forcedDigPromptAtRest, now);
       }
     }
 
@@ -40750,7 +44031,6 @@ function updateFishMotion(now, deltaSeconds) {
   handleBettaPassAttacks(now);
   updateFishPebbleTosses(now);
   updateChumBloodClouds(now);
-  updateBloodClouds(deltaSeconds);
 }
 
 function assignSwimTarget(fish, species, now) {
@@ -41270,6 +44550,8 @@ function renderTank(now) {
   drawTankFloor(now);
   drawGravelGrime(now, dirtiness);
   drawSedimentClouds(now);
+  drawEffectClouds(EFFECT_CLOUD_LAYER_FLOOR);
+  drawGravelDigBursts(now);
   //drawLooseGravelCap();
   drawGroundShadows(now);
   drawPellets(now);
@@ -41294,7 +44576,7 @@ function renderTank(now) {
   drawMedicineWaterTint(now);
   drawMedicineClouds(now);
   drawWaterBloodTint();
-  drawBloodClouds();
+  drawEffectClouds(EFFECT_CLOUD_LAYER_FRONT);
   drawDecorPreview();
   drawDecorSwimGuide(now);
   drawActiveDecorLayerCue();
@@ -41635,12 +44917,37 @@ function drawAmbientBubbles(now, layer = 3) {
     }
 
     const bubbleImage = getBubbleSpriteByIndex(bubble.spriteIndex);
-    const progress = ((now / 1000) * bubble.speed + bubble.offset) % 1;
+    const rawProgress = (now / 1000) * bubble.speed + bubble.offset;
+    const progress = rawProgress % 1;
+    const cycle = Math.floor(rawProgress);
     const travelPhase = progress * bubble.wave + bubble.offset * 8;
     const x = bubble.x * TANK_WIDTH
       + Math.sin(travelPhase) * bubble.wobble * layerProfile.wobbleScale * stableScale
       + Math.cos(now / layerProfile.parallaxMs + bubble.offset * 11) * layerProfile.parallaxPx * stableScale;
     const y = TANK_HEIGHT - GLASS_MARGIN_BOTTOM - 8 - progress * (TANK_HEIGHT - WATER_SURFACE_Y - 20);
+    const popStartProgress = 0.955;
+    const popProgress = clamp((progress - popStartProgress) / Math.max(0.0001, 1 - popStartProgress), 0, 1);
+    if (popProgress > 0) {
+      const popSeed = hashStringToUint32(`ambient|${bubble.x}|${bubble.offset}|${bubble.layer}|${cycle}`);
+      const popRadius = bubble.size * layerProfile.sizeScale * (bubble.style === "sprite" ? 1.3 : 0.9);
+      drawBubblePopBurstToContext(
+        tankContext,
+        x,
+        y,
+        popRadius,
+        bubble.alpha * layerProfile.alphaScale,
+        null,
+        stableScale,
+        popSeed,
+        popProgress,
+        {
+          count: Math.min(10, Math.max(5, Math.round(5 + bubble.size * 0.45))),
+          burstScale: 0.72 + bubble.size * 0.035,
+          surfaceY: WATER_SURFACE_Y + 2 * stableScale
+        }
+      );
+      continue;
+    }
     if (y <= WATER_SURFACE_Y + 2) {
       continue;
     }
@@ -42937,17 +46244,6 @@ function traceTankFloorMaskPath(context, bounds = getTankFloorDrawBounds()) {
   context.closePath();
 }
 
-function drawSelectedGravelFloorImage(bounds) {
-  const gravel = runtime.gravelMap.get(state.selectedGravelAsset) || runtime.gravelCatalog[0] || null;
-  const gravelImage = gravel ? runtime.images.get(gravel.path) : null;
-  if (!gravelImage) {
-    return false;
-  }
-
-  drawImageCover(tankContext, gravelImage, bounds.left, bounds.drawTop, bounds.drawWidth, bounds.drawHeight);
-  return true;
-}
-
 function getCustomGravelAssetImage(asset) {
   if (!asset) {
     return { image: null, path: "" };
@@ -43078,17 +46374,17 @@ function getCustomGravelLoosePebbleAssets() {
 }
 
 function canUseFishGravelPebblePlay() {
-  return Boolean(state?.customGravelEnabled) && getCustomGravelLoosePebbleAssets().length > 0;
+  return getCustomGravelLoosePebbleAssets().length > 0;
 }
 
 function getCustomGravelTopPebbleColors(now = Date.now()) {
-  return state?.customGravelEnabled && hasReadyCustomGravelLayers()
+  return hasReadyCustomGravelLayers()
     ? getResolvedCustomGravelLayerColors(now)
     : getActiveGravelPalette();
 }
 
 function getCustomGravelTopPebbleColorizeSettings() {
-  return state?.customGravelEnabled && hasReadyCustomGravelLayers()
+  return hasReadyCustomGravelLayers()
     ? getActiveCustomGravelLayerColorizeSettings()
     : getActiveGravelPalette().map(() => true);
 }
@@ -43116,7 +46412,7 @@ function getCustomGravelTopLayerCacheKey(bounds, now = Date.now()) {
   const assets = getCustomGravelLoosePebbleAssets().map((asset) => asset.key).join("|");
   return [
     state.gravelSeed || 1,
-    state?.customGravelEnabled ? "custom" : "selected",
+    "custom",
     colors,
     colorize,
     assets,
@@ -43348,10 +46644,7 @@ function drawTankFloor(now = Date.now()) {
   traceTankFloorMaskPath(tankContext, bounds);
   tankContext.clip();
 
-  const usedCustomGravel = state.customGravelEnabled && drawCustomGravelFloor(bounds, now);
-  if (!usedCustomGravel) {
-    drawSelectedGravelFloorImage(bounds);
-  }
+  drawCustomGravelFloor(bounds, now);
 
   tankContext.restore();
 
@@ -43450,6 +46743,67 @@ function drawSedimentClouds(now = Date.now()) {
     }
   }
   tankContext.restore();
+}
+
+function drawGravelDigBursts(now = Date.now()) {
+  if (!runtime.gravelDigBursts?.length) {
+    return;
+  }
+
+  for (const burst of runtime.gravelDigBursts) {
+    const duration = Math.max(1, Number(burst.durationMs) || GRAVEL_DIG_BURST_DURATION_MIN_MS);
+    const progress = clamp((now - (Number(burst.startedAt) || now)) / duration, 0, 1);
+
+    for (const particle of burst.particles || []) {
+      const particleProgress = clamp((progress - particle.delay) / Math.max(0.2, 1 - particle.delay), 0, 1);
+      if (particleProgress <= 0 || particleProgress >= 1) {
+        continue;
+      }
+
+      const horizontalProgress = 1 - Math.pow(1 - particleProgress, 1.45);
+      const settleProgress = Math.pow(particleProgress, 1.85);
+      const sway = Math.sin(particleProgress * Math.PI * 2.4 + particle.sway * Math.PI * 2) * (1 - particleProgress) * 4;
+      const x = particle.startX + (particle.endX - particle.startX) * horizontalProgress + sway;
+      const y = particle.startY + (particle.endY - particle.startY) * settleProgress - Math.sin(particleProgress * Math.PI) * particle.liftPx;
+      const alpha = particle.alpha * (particleProgress < 0.86 ? 1 : clamp((1 - particleProgress) / 0.14, 0, 1));
+      const customSprite = particle.assetPath
+        ? getCustomGravelPebbleSpriteByPath(particle.assetPath, particle.color, { colorize: particle.colorize })
+        : null;
+
+      if (customSprite?.width && customSprite?.height) {
+        const stableScale = getViewportStableAssetScale();
+        const size = (Number.isFinite(Number(particle.sizePx)) ? Number(particle.sizePx) : FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX) * stableScale;
+        const aspect = customSprite.width / Math.max(1, customSprite.height);
+        const drawWidth = aspect >= 1 ? size : size * aspect;
+        const drawHeight = aspect >= 1 ? size / aspect : size;
+        tankContext.save();
+        tankContext.translate(x, y);
+        tankContext.rotate(particle.rotation + particle.spin * horizontalProgress);
+        tankContext.globalAlpha = alpha;
+        tankContext.drawImage(
+          customSprite,
+          -drawWidth * 0.5,
+          -drawHeight * 0.5,
+          drawWidth,
+          drawHeight
+        );
+        tankContext.restore();
+      } else if (!particle.assetPath) {
+        drawGravelPebbleSprite(
+          tankContext,
+          x,
+          y,
+          Number.isFinite(Number(particle.sizePx)) ? Number(particle.sizePx) : FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX,
+          particle.rotation + particle.spin * horizontalProgress,
+          particle.spriteIndex,
+          particle.color,
+          alpha,
+          particle.stretchY,
+          particle.variantIndex
+        );
+      }
+    }
+  }
 }
 
 function drawCoinGlints(now = Date.now()) {
@@ -44759,7 +48113,15 @@ function drawDecor(layer = null, now = Date.now()) {
       const bgImage = decor.bgPath ? runtime.images.get(decor.bgPath) : null;
       if (bgImage) {
         const bgHeight = width * (bgImage.height / bgImage.width);
-        drawDecorImageLayer(bgImage, drawX, y - bgHeight, width, bgHeight, item, now, motion);
+        if (!drawCaveBackgroundLayerToContext(tankContext, item, decor, now, {
+          drawX,
+          bgDrawY: y - bgHeight,
+          width,
+          baseHeight: height,
+          motion
+        })) {
+          drawDecorImageLayer(bgImage, drawX, y - bgHeight, width, bgHeight, item, now, motion);
+        }
       }
       drawDecorBubblerEffect(item, decor, image, now);
       if (!isCustomBubblerDecorKey(item.decorKey) || runtime.editTankMode) {
@@ -45053,7 +48415,7 @@ function drawSelectedDecorHighlight(item) {
   const top = bounds.top - padding;
   const width = bounds.right - bounds.left + padding * 2;
   const height = bounds.bottom - bounds.top + padding * 2;
-  const radius = Math.max(12, Math.min(width, height) * 0.16);
+  const cornerSize = Math.min(18, Math.max(10, Math.min(width, height) * 0.14));
 
   tankContext.save();
   tankContext.fillStyle = "rgba(104, 232, 255, 0.08)";
@@ -45061,10 +48423,20 @@ function drawSelectedDecorHighlight(item) {
   tankContext.lineWidth = 2.5;
   tankContext.shadowColor = "rgba(104, 232, 255, 0.4)";
   tankContext.shadowBlur = 18;
-  tankContext.beginPath();
-  tankContext.roundRect(left, top, width, height, radius);
-  tankContext.fill();
-  tankContext.stroke();
+  tankContext.fillRect(left, top, width, height);
+  tankContext.strokeRect(left, top, width, height);
+  tankContext.shadowBlur = 8;
+  tankContext.fillStyle = "rgba(10, 99, 126, 0.95)";
+  tankContext.strokeStyle = "rgba(238, 253, 255, 0.98)";
+  for (const [x, y] of [
+    [left, top],
+    [left + width, top],
+    [left, top + height],
+    [left + width, top + height]
+  ]) {
+    tankContext.fillRect(x - cornerSize / 2, y - cornerSize / 2, cornerSize, cornerSize);
+    tankContext.strokeRect(x - cornerSize / 2, y - cornerSize / 2, cornerSize, cornerSize);
+  }
   tankContext.restore();
 }
 
@@ -46234,11 +49606,15 @@ function getFishPose(fish, species, now) {
     -0.26,
     0.26
   );
+  const forcedDigPrompt = getForcedGravelDigPrompt(fish, now);
+  const forcedDigTilt = forcedDigPrompt
+    ? clamp(0.72 + motionLevel * 0.16 + Math.sin(wiggleClock * 1.4 + fish.phase * Math.PI) * 0.05, 0.62, 0.92)
+    : null;
   const tilt = entryProgress === null
-    ? baseTilt
+    ? (forcedDigTilt ?? baseTilt)
     : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
-  const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch) * (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X));
-  const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78)) * (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1));
+  const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch) * (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)) * (forcedDigPrompt ? 0.97 : 1);
+  const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78)) * (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)) * (forcedDigPrompt ? 1.04 : 1);
   const turnSway = turnProgress === null
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * (0.35 + motionLevel * 0.95);
@@ -46473,7 +49849,7 @@ function getTankPoint(event, options = {}) {
   }
 
   const constrainedPoint = constrainPointToTankShell(rawPoint.x, rawPoint.y, { variant: "inner" });
-  const dragging = Boolean(runtime.dragState || runtime.fishDragState || runtime.eggDragState || runtime.pebbleDragState);
+  const dragging = Boolean(runtime.dragState || runtime.decorResizeState || runtime.fishDragState || runtime.eggDragState || runtime.pebbleDragState);
   if (!constrainedPoint.inside && !dragging) {
     return null;
   }
@@ -46703,7 +50079,112 @@ function drawBubbleOrbInteriorFill(x, y, radius, stretch, fillStyle, insetScale 
   drawBubbleOrbInteriorFillToContext(tankContext, x, y, radius, stretch, fillStyle, insetScale);
 }
 
-function drawBubbleOrbToContext(context, x, y, radius, alpha, stretch = 1, palette = null, stableScale = getViewportStableAssetScale()) {
+function drawMalformedBubbleSpriteToContext(context, sprite, x, y, drawWidth, drawHeight, options = {}) {
+  const seed = Number.isFinite(Number(options.seed)) ? Number(options.seed) : 1;
+  const rand = mulberry32(seed >>> 0);
+  const amount = clamp(
+    Number.isFinite(Number(options.amount)) ? Number(options.amount) : randomBetweenWith(rand, 0.035, 0.11),
+    0,
+    0.32
+  );
+  if (amount <= 0.001) {
+    return false;
+  }
+
+  const deformationSpeed = clamp(
+    Number.isFinite(Number(options.speed)) ? Number(options.speed) : DEFAULT_BUBBLER_MALFORMED_SPEED,
+    MIN_BUBBLER_MALFORMED_SPEED,
+    MAX_BUBBLER_MALFORMED_SPEED
+  );
+  const turbulence = clamp((deformationSpeed - 0.8) / (MAX_BUBBLER_MALFORMED_SPEED - 0.8), 0, 1);
+  const pointCount = turbulence > 0.5 ? 30 : 24;
+  const phase = Number.isFinite(Number(options.phase)) ? Number(options.phase) : randomBetweenWith(rand, 0, Math.PI * 2);
+  const rotation = Number.isFinite(Number(options.rotation))
+    ? Number(options.rotation)
+    : randomBetweenWith(rand, -0.12, 0.12);
+  const palette = options.palette || {};
+  const stableScale = clamp(Number(options.stableScale) || getViewportStableAssetScale(), 0.25, 6);
+  const phaseA = randomBetweenWith(rand, 0, Math.PI * 2);
+  const phaseB = randomBetweenWith(rand, 0, Math.PI * 2);
+  const phaseC = randomBetweenWith(rand, 0, Math.PI * 2);
+  const pinchAngle = randomBetweenWith(rand, 0, Math.PI * 2) + Math.sin(phase * 0.7 + phaseA) * (0.18 + turbulence * 0.48);
+  const pinchStrength = randomBetweenWith(rand, 0.18, 0.55) * amount;
+  const skew = (randomBetweenWith(rand, -0.12, 0.12) + Math.sin(phase * 0.9 + phaseB) * 0.22 * turbulence) * amount;
+  const widthScale = randomBetweenWith(rand, 0.92, 1.12) + Math.sin(phase * 0.62 + phaseA) * amount * 0.32;
+  const heightScale = randomBetweenWith(rand, 0.9, 1.1) + Math.cos(phase * 0.58 + phaseB) * amount * 0.28;
+  const halfWidth = drawWidth * 0.5 * widthScale;
+  const halfHeight = drawHeight * 0.5 * heightScale;
+  const angleDistance = (left, right) => Math.atan2(Math.sin(left - right), Math.cos(left - right));
+  const points = [];
+
+  for (let index = 0; index < pointCount; index += 1) {
+    const theta = (index / pointCount) * Math.PI * 2;
+    const pinch = Math.exp(-Math.pow(angleDistance(theta, pinchAngle) / 0.72, 2)) * pinchStrength;
+    const wobble = 1
+      + Math.sin(theta * 2 + phase + phaseA) * amount * 0.45
+      + Math.sin(theta * 3 - phase * 1.15 + phaseB) * amount * 0.32
+      + Math.sin(theta * 5 + phase * 1.7 + phaseC) * amount * (0.12 + turbulence * 0.18)
+      + Math.sin(theta * 8 - phase * 2.8 + phaseA * 0.4) * amount * turbulence * 0.16
+      - pinch;
+    points.push({
+      x: Math.cos(theta) * halfWidth * wobble + Math.sin(theta) * halfWidth * skew,
+      y: Math.sin(theta) * halfHeight * (1 + (wobble - 1) * 0.72)
+    });
+  }
+
+  const tracePath = () => {
+    const first = points[0];
+    const last = points[points.length - 1];
+    context.beginPath();
+    context.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
+    for (let index = 0; index < points.length; index += 1) {
+      const point = points[index];
+      const next = points[(index + 1) % points.length];
+      context.quadraticCurveTo(point.x, point.y, (point.x + next.x) / 2, (point.y + next.y) / 2);
+    }
+    context.closePath();
+  };
+
+  context.save();
+  context.translate(x, y);
+  context.rotate(rotation);
+  tracePath();
+  if (palette.fill) {
+    context.fillStyle = palette.fill;
+    context.fill();
+  }
+
+  tracePath();
+  context.lineWidth = Math.max(0.8 * stableScale, Math.min(drawWidth, drawHeight) * 0.052);
+  context.strokeStyle = palette.stroke || "rgba(240, 250, 255, 0.7)";
+  context.stroke();
+  context.save();
+  tracePath();
+  context.clip();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha = 0.18 + turbulence * 0.1;
+  context.strokeStyle = palette.highlight || "rgba(250, 253, 255, 0.4)";
+  context.lineWidth = Math.max(0.45 * stableScale, Math.min(drawWidth, drawHeight) * 0.022);
+  context.beginPath();
+  context.arc(-halfWidth * 0.16, -halfHeight * 0.1, Math.max(1, Math.min(halfWidth, halfHeight) * 0.62), Math.PI * 1.08, Math.PI * 1.78);
+  context.stroke();
+  context.restore();
+  if (palette.highlight) {
+    context.save();
+    tracePath();
+    context.clip();
+    context.globalCompositeOperation = "screen";
+    context.fillStyle = palette.highlight;
+    context.beginPath();
+    context.ellipse(-halfWidth * 0.25, -halfHeight * 0.34, halfWidth * 0.16, halfHeight * 0.08, -0.35, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+  context.restore();
+  return true;
+}
+
+function drawBubbleOrbToContext(context, x, y, radius, alpha, stretch = 1, palette = null, stableScale = getViewportStableAssetScale(), options = {}) {
   const drawRadius = radius * stableScale;
   const resolvedPalette = palette || {
     tint: "rgba(255, 255, 255, 0.98)",
@@ -46725,8 +50206,19 @@ function drawBubbleOrbToContext(context, x, y, radius, alpha, stretch = 1, palet
   if (bubbleSprite) {
     const drawWidth = Math.max(2 * stableScale, drawRadius * stretch * 2.3);
     const drawHeight = Math.max(2 * stableScale, drawRadius * 2.3);
+    if (options.malform && drawMalformedBubbleSpriteToContext(context, bubbleSprite, x, y, drawWidth, drawHeight, {
+      ...options.malform,
+      palette: resolvedPalette,
+      stableScale,
+      speed: options.malform.speed
+    })) {
+      context.restore();
+      return;
+    }
     drawBubbleOrbInteriorFillToContext(context, x, y, drawRadius, stretch, resolvedPalette.fill, 0.82);
-    context.drawImage(bubbleSprite, x - drawWidth / 2, y - drawHeight / 2, drawWidth, drawHeight);
+    {
+      context.drawImage(bubbleSprite, x - drawWidth / 2, y - drawHeight / 2, drawWidth, drawHeight);
+    }
     context.restore();
     return;
   }
@@ -46745,6 +50237,50 @@ function drawBubbleOrbToContext(context, x, y, radius, alpha, stretch = 1, palet
 
 function drawBubbleOrb(x, y, radius, alpha, stretch = 1, palette = null) {
   drawBubbleOrbToContext(tankContext, x, y, radius, alpha, stretch, palette);
+}
+
+function drawBubblePopBurstToContext(context, x, y, radius, alpha, palette, stableScale, seed, popProgress, options = {}) {
+  const progress = clamp(Number(popProgress) || 0, 0, 1);
+  if (progress <= 0 || alpha <= 0.008 || radius <= 0) {
+    return;
+  }
+
+  const count = Math.max(1, Math.floor(Number(options.count) || BUBBLER_POP_MICRO_BUBBLE_COUNT));
+  const burstEase = 1 - Math.pow(1 - progress, 3);
+  const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) : 1;
+  const burstScale = Number.isFinite(Number(options.burstScale)) ? Number(options.burstScale) : 1;
+  const surfaceY = Number.isFinite(Number(options.surfaceY)) ? Number(options.surfaceY) : null;
+  for (let microIndex = 0; microIndex < count; microIndex += 1) {
+    const microRand = mulberry32((baseSeed ^ (0x68bc21eb + microIndex * 0x45d9f3b)) >>> 0);
+    const angle = (microIndex / count) * Math.PI * 2 + randomBetweenWith(microRand, -0.34, 0.34);
+    const burstDistance = randomBetweenWith(microRand, 4.5, 14) * stableScale * Math.max(0.28, burstEase) * burstScale;
+    const microAlpha = clamp(
+      alpha * Math.pow(1 - progress, 1.25) * randomBetweenWith(microRand, 0.5, 0.95),
+      0,
+      1
+    );
+    if (microAlpha <= 0.008) {
+      continue;
+    }
+
+    const microRadius = clamp(radius * randomBetweenWith(microRand, 0.13, 0.26) * (1 - progress * 0.42), 0.22, 2.4);
+    const microX = x + Math.cos(angle) * burstDistance;
+    const rawMicroY = y + Math.sin(angle) * burstDistance - burstEase * randomBetweenWith(microRand, 1, 5) * stableScale;
+    const microY = surfaceY === null
+      ? rawMicroY
+      : Math.max(rawMicroY, surfaceY + microRadius * stableScale);
+
+    drawBubbleOrbToContext(
+      context,
+      microX,
+      microY,
+      microRadius,
+      microAlpha,
+      randomBetweenWith(microRand, 0.88, 1.14),
+      palette,
+      stableScale
+    );
+  }
 }
 
 function getBubblerSpoutSourceOffsetRatio(imagePath, spout) {
@@ -46818,11 +50354,23 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
     const spoutBubbleColors = Array.isArray(spout.bubbleColors) && spout.bubbleColors.length
       ? spout.bubbleColors
       : [spout.bubbleColor || DEFAULT_BUBBLER_BUBBLE_COLOR];
-    const intensity = clamp(Number(spout.intensity) || DEFAULT_BUBBLER_INTENSITY, 0.15, MAX_BUBBLER_INTENSITY);
+    const intensity = clamp(Number(spout.intensity) || DEFAULT_BUBBLER_INTENSITY, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY);
     const bubbleOpacity = clamp(Number(spout.bubbleOpacity) || DEFAULT_BUBBLER_BUBBLE_OPACITY, MIN_CUSTOM_BUBBLER_OPACITY, MAX_CUSTOM_BUBBLER_OPACITY);
     const bubbleSize = clamp(Number(spout.bubbleSize) || DEFAULT_CUSTOM_BUBBLER_BUBBLE_SIZE, MIN_CUSTOM_BUBBLER_BUBBLE_SIZE, MAX_CUSTOM_BUBBLER_BUBBLE_SIZE);
     const bubbleFillOpacity = clamp(Number.isFinite(Number(spout.bubbleFillOpacity)) ? Number(spout.bubbleFillOpacity) : DEFAULT_BUBBLER_FILL_OPACITY, 0, 1);
     const bubbleColorize = normalizeDecorColorizeSetting(spout.bubbleColorize);
+    const bubblePopEnabled = Boolean(spout.bubblePopEnabled);
+    const bubbleMalformed = Boolean(spout.bubbleMalformed);
+    const bubbleMalformedIntensity = clamp(
+      Number.isFinite(Number(spout.bubbleMalformedIntensity)) ? Number(spout.bubbleMalformedIntensity) : DEFAULT_BUBBLER_MALFORMED_INTENSITY,
+      MIN_BUBBLER_MALFORMED_INTENSITY,
+      MAX_BUBBLER_MALFORMED_INTENSITY
+    );
+    const bubbleMalformedSpeed = clamp(
+      Number.isFinite(Number(spout.bubbleMalformedSpeed)) ? Number(spout.bubbleMalformedSpeed) : DEFAULT_BUBBLER_MALFORMED_SPEED,
+      MIN_BUBBLER_MALFORMED_SPEED,
+      MAX_BUBBLER_MALFORMED_SPEED
+    );
     const spoutPalettes = spoutBubbleColors.map((color) => getBubbleOrbPalette(
       resolveDecorColorSettingForRender(color, now, DEFAULT_BUBBLER_BUBBLE_COLOR),
       {
@@ -46846,43 +50394,48 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
     const sourceY = drawY + height * sourceYOffsetRatio + Math.max(2 * stableScale, item.scale * 2 * stableScale);
     const spoutWidthPx = Math.max(0, spout.spread * item.scale * stableScale);
     const fadeDistancePx = Math.max(24 * stableScale, spout.fadeDistance * stableScale);
+    const cadenceMs = getBubblerCadenceFromIntensity(intensity);
+    const travelDurationMs = getBubblerTravelDurationFromSpeed(speed);
     const totalBubbleCount = clamp(
-      Math.round(8 + intensity * 4.2 + spoutWidthPx / 18),
-      8,
+      Math.ceil(travelDurationMs / cadenceMs) + 2 + Math.round(spoutWidthPx / 80),
+      1,
       getMaxVisibleBubblerBubblesPerSpout()
     );
-    const cadenceMs = clamp(
-      getBubblerCadenceFromIntensity(intensity) / speed,
-      MIN_BUBBLER_STREAM_CADENCE_MS,
-      MAX_BUBBLER_STREAM_CADENCE_MS
-    );
     const wobblePx = Math.min(2.1, 0.55 + intensity * 0.06) * stableScale;
-    const availableTravelPx = Math.max(24, sourceY - (waterSurfaceY + 6));
+    const waterlineStopY = waterSurfaceY + Math.max(2 * stableScale, 2);
+    const availableTravelPx = Math.max(24, sourceY - waterlineStopY);
     const renderedBubbles = [];
+    const streamSeed = hashStringToUint32(`${item.id}|${item.decorKey}|${spoutIndex}|stream`);
+    const streamRand = mulberry32(streamSeed ^ 0x9e3779b9);
+    const streamTimeMs = now + randomBetweenWith(streamRand, 0, cadenceMs);
+    const latestEmissionCycle = Math.floor(streamTimeMs / cadenceMs);
 
     for (let slotIndex = 0; slotIndex < totalBubbleCount; slotIndex += 1) {
-      const slotSeed = hashStringToUint32(
-        `${item.id}|${item.decorKey}|${spoutIndex}|slot|${slotIndex}`
-      );
-      const slotRand = mulberry32(slotSeed ^ 0x27d4eb2d);
-      const slotCadenceMs = cadenceMs * randomBetweenWith(slotRand, 0.84, 1.16);
-      const slotWobbleCadenceMs = Math.max(
-        180,
-        slotCadenceMs * randomBetweenWith(slotRand, 0.78, 1.28)
-      );
-      const slotPhaseOffset = randomBetweenWith(slotRand, 0, 1);
-      const slotWobblePx = wobblePx * randomBetweenWith(slotRand, 0.45, 1.15);
-
-      const rawPhase = (now / slotCadenceMs) + slotPhaseOffset;
-      const emissionCycle = Math.floor(rawPhase);
-      const phase = rawPhase - emissionCycle;
-      const riseProgress = Math.pow(phase, isStraightUpStream ? 0.82 : 0.94);
+      const emissionCycle = latestEmissionCycle - slotIndex;
       const emissionSeed = hashStringToUint32(
-        `${item.id}|${item.decorKey}|${spoutIndex}|${slotIndex}|${emissionCycle}`
+        `${item.id}|${item.decorKey}|${spoutIndex}|${emissionCycle}`
       );
       const emissionRand = mulberry32(emissionSeed ^ 0x5f3759df);
       const colorRand = mulberry32(emissionSeed ^ 0x85ebca6b);
       const depthRand = mulberry32(emissionSeed ^ 0x9e3779b9);
+      const motionRand = mulberry32(emissionSeed ^ 0x27d4eb2d);
+      const originRand = mulberry32(emissionSeed ^ 0x165667b1);
+      const jitterRatio = clamp((intensity - MIN_CUSTOM_BUBBLER_AMOUNT) / 8, 0, 0.14);
+      const emittedAtMs = emissionCycle * cadenceMs + randomBetweenWith(motionRand, -jitterRatio, jitterRatio) * cadenceMs;
+      const ageMs = streamTimeMs - emittedAtMs;
+      if (ageMs < 0 || ageMs > travelDurationMs) {
+        continue;
+      }
+
+      const phase = clamp(ageMs / travelDurationMs, 0, 1);
+      const riseProgress = Math.pow(phase, isStraightUpStream ? 0.82 : 0.94);
+      const slotWobbleCadenceMs = Math.max(
+        620,
+        travelDurationMs * randomBetweenWith(motionRand, 0.08, 0.2)
+      );
+      const slotWobblePx = wobblePx * randomBetweenWith(motionRand, 0.45, 1.15);
+      const wobblePhase = randomBetweenWith(motionRand, 0, Math.PI * 2);
+      const wobbleCadenceOffsetMs = randomBetweenWith(motionRand, 0, 120);
       const palette = spoutPalettes[
         clamp(Math.floor(randomBetweenWith(colorRand, 0, 1) * spoutPalettes.length), 0, spoutPalettes.length - 1)
       ] || spoutPalettes[0] || getBubbleOrbPalette(DEFAULT_BUBBLER_BUBBLE_COLOR);
@@ -46890,17 +50443,20 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
       const depthScale = 0.72 + depth * 0.52;
       const depthAlphaScale = 0.48 + depth * 0.74;
       const depthWobblePx = slotWobblePx * (0.58 + depth * 0.62);
-      const spawnSpreadBias = (randomBetweenWith(emissionRand, -1, 1) + randomBetweenWith(emissionRand, -1, 1)) * 0.5;
-      const spawnOffsetX = spawnSpreadBias * spoutWidthPx * 0.5;
-      const trajectoryDriftPx = randomBetweenWith(emissionRand, -1, 1) * Math.min(4.5, spoutWidthPx * 0.2);
+      const originBias = (randomBetweenWith(originRand, -1, 1) + randomBetweenWith(originRand, -1, 1)) * 0.5;
+      const spawnOffsetX = originBias * spoutWidthPx * 0.5;
+      const trajectoryDriftPx = randomBetweenWith(motionRand, -1, 1) * Math.min(5.5 * stableScale, Math.max(1.2 * stableScale, spoutWidthPx * 0.035));
       const sway = Math.sin(
-        now / (slotWobbleCadenceMs + (slotIndex % 5) * 24) + slotIndex * 0.93 + spoutIndex * 0.9
+        now / (slotWobbleCadenceMs + wobbleCadenceOffsetMs) + wobblePhase + spoutIndex * 0.9
       ) * depthWobblePx
-        + Math.sin(phase * 10.2 + slotIndex * 0.31) * depthWobblePx * 0.28;
-      const travelPx = Math.min(
-        fadeDistancePx * randomBetweenWith(emissionRand, 0.88, 1.06),
-        availableTravelPx
-      );
+        + Math.sin(phase * 10.2 + wobblePhase * 0.47) * depthWobblePx * 0.28;
+      const reachesWaterline = fadeDistancePx >= availableTravelPx - 1 * stableScale;
+      const travelPx = reachesWaterline
+        ? availableTravelPx
+        : Math.min(
+          fadeDistancePx * randomBetweenWith(emissionRand, 0.88, 1.06),
+          availableTravelPx
+        );
       // Straight-up streams should lift immediately so they do not appear to pool at the spout.
       const turnRatio = isStraightUpStream ? 0 : clamp(0.16 + speed * 0.1, 0.2, 0.56);
       const turnProgress = isStraightUpStream
@@ -46927,7 +50483,7 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
           ? travelPx
           : (travelPx + Math.max(0, directionalY))
       );
-      const x = sourceX + spawnOffsetX + directionalX + trajectoryDriftPx * riseProgress + sway * (0.64 + upwardProgress * 0.5);
+      const x = sourceX + spawnOffsetX + directionalX + trajectoryDriftPx * riseProgress + sway * (0.5 + upwardProgress * 0.34);
       const y = sourceY + directionalY - upwardTravelPx;
 
       const spawnFade = phase < 0.08 ? phase / 0.08 : 1;
@@ -46936,8 +50492,15 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
       const distanceFade = riseProgress <= fadeStartProgress
         ? 1
         : Math.pow(clamp(1 - (riseProgress - fadeStartProgress) / Math.max(0.0001, 1 - fadeStartProgress), 0, 1), 1.8);
+      const shouldPop = bubblePopEnabled || reachesWaterline;
+      const popDurationMs = clamp(cadenceMs * 0.56, reachesWaterline ? 180 : 280, reachesWaterline ? 460 : 620);
+      const popStartAgeMs = Math.max(0, travelDurationMs - popDurationMs);
+      const popProgress = shouldPop
+        ? clamp((ageMs - popStartAgeMs) / Math.max(1, popDurationMs), 0, 1)
+        : 0;
+      const effectiveDistanceFade = shouldPop ? 1 : distanceFade;
       const alpha = clamp(
-        (0.16 + intensity * 0.018) * distanceFade * spawnFade * alphaScale * bubbleOpacity * depthAlphaScale,
+        (0.16 + intensity * 0.018) * effectiveDistanceFade * spawnFade * alphaScale * bubbleOpacity * depthAlphaScale,
         0,
         1
       );
@@ -46952,30 +50515,87 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
       const radius = clamp(
         (radiusMin + (radiusMax - radiusMin) * sizeBias) * occasionalLargeBubble,
         0.45,
-        12
+        24
       );
-      const fadeScale = 0.72 + distanceFade * 0.28;
+      const fadeScale = 0.72 + effectiveDistanceFade * 0.28;
       const fadedRadius = radius * fadeScale * depthScale;
+      const ySurfaceLimit = waterlineStopY + fadedRadius * stableScale;
+      const drawY = reachesWaterline
+        ? Math.max(y, ySurfaceLimit)
+        : y;
       const stretch = 1
         + riseProgress * 0.2
         + Math.min(0.34, intensity * 0.015)
         + depth * 0.06
         + randomBetweenWith(emissionRand, -0.04, 0.06);
-      renderedBubbles.push({
-        depth,
-        x,
-        y,
-        radius: fadedRadius,
-        alpha,
-        stretch,
-        palette
-      });
+      const malformRand = mulberry32(emissionSeed ^ 0xa24baed5);
+      const malformRoll = randomBetweenWith(malformRand, 0, 1);
+      const malformChance = clamp(0.12 + fadedRadius * 0.038 + bubbleMalformedIntensity * 0.18, 0.16, 0.76);
+      const malform = bubbleMalformed && malformRoll <= malformChance
+        ? {
+          seed: emissionSeed ^ 0x7f4a7c15,
+          amount: (randomBetweenWith(malformRand, 0.018, 0.13) + Math.min(0.055, fadedRadius * 0.0035)) * bubbleMalformedIntensity,
+          phase: now / (randomBetweenWith(mulberry32(emissionSeed ^ 0x94d049bb), 320, 2600) / bubbleMalformedSpeed) + randomBetweenWith(mulberry32(emissionSeed ^ 0x632be59b), 0, Math.PI * 2),
+          rotation: randomBetweenWith(mulberry32(emissionSeed ^ 0x51ed270b), -0.16, 0.16) + Math.sin(now / (900 / bubbleMalformedSpeed) + emissionSeed) * 0.08 * clamp((bubbleMalformedSpeed - 0.8) / 2.2, 0, 1),
+          speed: bubbleMalformedSpeed
+        }
+        : null;
+      const parentAlpha = bubblePopEnabled
+        ? (popProgress > 0 ? 0 : alpha)
+        : alpha;
+      if (parentAlpha > 0.008) {
+        renderedBubbles.push({
+          depth,
+          x,
+          y: drawY,
+          radius: fadedRadius,
+          alpha: parentAlpha,
+          stretch,
+          palette,
+          malform
+        });
+      }
+
+      if (shouldPop && popProgress > 0) {
+        const burstEase = 1 - Math.pow(1 - popProgress, 3);
+        for (let microIndex = 0; microIndex < BUBBLER_POP_MICRO_BUBBLE_COUNT; microIndex += 1) {
+          const microRand = mulberry32(emissionSeed ^ (0x68bc21eb + microIndex * 0x45d9f3b));
+          const angle = (microIndex / BUBBLER_POP_MICRO_BUBBLE_COUNT) * Math.PI * 2
+            + randomBetweenWith(microRand, -0.34, 0.34);
+          const burstDistance = randomBetweenWith(microRand, 4.5, 14) * stableScale * Math.max(0.28, burstEase) * (0.78 + bubbleSize * 0.08);
+          const microAlpha = clamp(
+            alpha * Math.pow(1 - popProgress, 1.25) * randomBetweenWith(microRand, 0.5, 0.95),
+            0,
+            1
+          );
+          if (microAlpha <= 0.008) {
+            continue;
+          }
+
+          const microRadius = clamp(fadedRadius * randomBetweenWith(microRand, 0.13, 0.26) * (1 - popProgress * 0.42), 0.22, 2.4);
+          const rawMicroY = drawY + Math.sin(angle) * burstDistance - burstEase * randomBetweenWith(microRand, 1, 5) * stableScale;
+          renderedBubbles.push({
+            depth: depth + microIndex * 0.0001,
+            x: x + Math.cos(angle) * burstDistance,
+            y: reachesWaterline
+              ? Math.max(rawMicroY, waterlineStopY + microRadius * stableScale)
+              : rawMicroY,
+            radius: microRadius,
+            alpha: microAlpha,
+            stretch: randomBetweenWith(microRand, 0.88, 1.14),
+            palette,
+            malform: null
+          });
+        }
+      }
     }
 
     renderedBubbles
       .sort((left, right) => left.depth - right.depth || left.y - right.y)
       .forEach((bubble) => {
-        drawBubbleOrbToContext(context, bubble.x, bubble.y, bubble.radius, bubble.alpha, bubble.stretch, bubble.palette, stableScale);
+        drawBubbleOrbToContext(context, bubble.x, bubble.y, bubble.radius, bubble.alpha, bubble.stretch, bubble.palette, stableScale, {
+          malform: bubble.malform
+        });
       });
   });
 }
@@ -47493,6 +51113,7 @@ function getFishComfort(fish, now) {
   const activeConflicts = getFishConflictStatus(fish, getCurrentTank(), now).filter((conflict) => conflict.active);
   const conflictPenalty = Math.min(COMFORT_COMPONENTS.maxConflictPenalty, activeConflicts.length * COMFORT_COMPONENTS.conflictPenalty);
   const undeadPenalty = getUndeadComfortPenalty(fish);
+  const glassTapStressPenalty = getFishGlassTapStressPenalty(fish, now);
   const comfortValue = clamp(
     (
       cleanlinessPoints
@@ -47503,7 +51124,8 @@ function getFishComfort(fish, now) {
       + mealBoost
       - conflictPenalty
     ) / 100
-    - undeadPenalty,
+    - undeadPenalty
+    - glassTapStressPenalty,
     0,
     1
   );
@@ -50703,7 +54325,7 @@ function boundsIntersect(leftBounds, rightBounds) {
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
   );
 }
 
@@ -51317,12 +54939,286 @@ function getTransientMessageAnchor(gap = 14) {
   };
 }
 
+function getVisibleTransientRect(element) {
+  if (!(element instanceof HTMLElement) || element.hidden) {
+    return null;
+  }
+  if (
+    element.classList.contains("is-tutorial-hidden")
+    || element.classList.contains("is-display-collapsed")
+    || element.classList.contains("is-toolbar-collapsed")
+    || element.getAttribute("aria-expanded") === "false"
+  ) {
+    return null;
+  }
+
+  const rect = element.getBoundingClientRect?.();
+  if (!rect?.width || !rect?.height) {
+    return null;
+  }
+  const viewportWidth = Math.max(1, window.innerWidth || 1);
+  const viewportHeight = Math.max(1, window.innerHeight || 1);
+  if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= viewportWidth || rect.top >= viewportHeight) {
+    return null;
+  }
+  return rect;
+}
+
+function getToastAvoidanceRects() {
+  const viewportArea = Math.max(1, (window.innerWidth || 1) * (window.innerHeight || 1));
+  return [
+    dom.tankDisplay,
+    dom.careTaskPane,
+    dom.dailyBonusBell,
+    dom.introTutorialPanel,
+    dom.tankBottomDock,
+    dom.editDecorTray,
+    dom.editFishTray,
+    dom.foodTray,
+    dom.medicineTray,
+    dom.placementHintContainer,
+    dom.fishInspector,
+    dom.storeOverlay,
+    dom.utilityOverlay,
+    dom.settingsOverlay,
+    dom.equipmentOverlay
+  ]
+    .map(getVisibleTransientRect)
+    .filter((rect) => rect && (rect.width * rect.height) < viewportArea * 0.72);
+}
+
+function getRectOverlapArea(left, right) {
+  if (!doRectsOverlap(left, right)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(left.right, right.right) - Math.max(left.left, right.left))
+    * Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top));
+}
+
+function positionCareTaskPane() {
+  if (!dom.careTaskPane || dom.careTaskPane.hidden || !dom.tankStage) {
+    return;
+  }
+
+  const stageRect = dom.tankStage.getBoundingClientRect?.();
+  if (!stageRect?.width || !stageRect?.height) {
+    return;
+  }
+
+  const padding = 12;
+  const gap = 12;
+  const paneRect = dom.careTaskPane.getBoundingClientRect?.();
+  const maxPaneWidth = Math.max(1, stageRect.width - padding * 2);
+  const maxPaneHeight = Math.max(1, stageRect.height - padding * 2);
+  const paneWidth = Math.min(Math.max(240, Math.ceil(paneRect?.width || 330)), maxPaneWidth);
+  const paneHeight = Math.min(Math.max(70, Math.ceil(paneRect?.height || 120)), maxPaneHeight);
+  const viewport = {
+    left: stageRect.left + padding,
+    top: stageRect.top + padding,
+    right: stageRect.right - padding,
+    bottom: stageRect.bottom - padding
+  };
+  const displayRect = getVisibleTransientRect(dom.tankDisplay);
+  const toolbarRect = getVisibleTransientRect(dom.tankBottomDock);
+  const candidateFromRect = (rect) => rect
+    ? [
+      { left: rect.left, top: rect.bottom + gap, priority: 0 },
+      { left: rect.right + gap, top: rect.top, priority: 2 },
+      { left: rect.left, top: rect.top - paneHeight - gap, priority: 4 }
+    ]
+    : [];
+  const rawCandidates = [
+    ...candidateFromRect(displayRect),
+    { left: viewport.left, top: viewport.top, priority: 5 },
+    { left: viewport.right - paneWidth, top: viewport.top, priority: 6 },
+    { left: viewport.left, top: viewport.bottom - paneHeight, priority: 8 }
+  ];
+  const avoidRects = [
+    displayRect,
+    toolbarRect,
+    getVisibleTransientRect(dom.foodTray),
+    getVisibleTransientRect(dom.medicineTray),
+    getVisibleTransientRect(dom.editDecorTray),
+    getVisibleTransientRect(dom.editFishTray),
+    getVisibleTransientRect(dom.fishInspector)
+  ].filter(Boolean);
+  const clampCandidate = (candidate) => ({
+    left: clamp(candidate.left, viewport.left, Math.max(viewport.left, viewport.right - paneWidth)),
+    top: clamp(candidate.top, viewport.top, Math.max(viewport.top, viewport.bottom - paneHeight))
+  });
+  const toRect = (candidate) => ({
+    left: candidate.left,
+    top: candidate.top,
+    right: candidate.left + paneWidth,
+    bottom: candidate.top + paneHeight
+  });
+  const best = rawCandidates
+    .map((candidate, index) => {
+      const clamped = clampCandidate(candidate);
+      const rect = toRect(clamped);
+      const overlapArea = avoidRects.reduce((total, avoidRect) => total + getRectOverlapArea(rect, avoidRect), 0);
+      const anchorDistance = displayRect
+        ? Math.abs(clamped.left - displayRect.left) + Math.abs(clamped.top - (displayRect.bottom + gap))
+        : 0;
+      return {
+        candidate: clamped,
+        score: overlapArea * 1000 + candidate.priority * 10000 + anchorDistance + index
+      };
+    })
+    .sort((left, right) => left.score - right.score)[0]?.candidate || clampCandidate(rawCandidates[0]);
+
+  dom.careTaskPane.style.setProperty("--care-task-pane-left", `${Math.round(best.left - stageRect.left)}px`);
+  dom.careTaskPane.style.setProperty("--care-task-pane-top", `${Math.round(best.top - stageRect.top)}px`);
+  dom.careTaskPane.style.setProperty("--care-task-pane-width", `${Math.round(paneWidth)}px`);
+}
+
+function positionDailyBonusBell() {
+  if (!dom.dailyBonusBell || dom.dailyBonusBell.hidden || !dom.tankStage) {
+    return;
+  }
+
+  const stageRect = dom.tankStage.getBoundingClientRect?.();
+  if (!stageRect?.width || !stageRect?.height) {
+    return;
+  }
+
+  const padding = 12;
+  const gap = 10;
+  const measuredRect = dom.dailyBonusBell.getBoundingClientRect?.();
+  const bellWidth = Math.max(28, Math.ceil(measuredRect?.width || 44));
+  const bellHeight = Math.max(28, Math.ceil(measuredRect?.height || 44));
+  const viewport = {
+    left: stageRect.left + padding,
+    top: stageRect.top + padding,
+    right: stageRect.right - padding,
+    bottom: stageRect.bottom - padding
+  };
+  const preferredLeft = viewport.right - bellWidth;
+  const preferredTop = viewport.top;
+  const displayRect = getVisibleTransientRect(dom.tankDisplay);
+  const taskPaneRect = getVisibleTransientRect(dom.careTaskPane);
+  const avoidRects = [
+    displayRect,
+    taskPaneRect,
+    getVisibleTransientRect(dom.tankBottomDock),
+    getVisibleTransientRect(dom.foodTray),
+    getVisibleTransientRect(dom.medicineTray),
+    getVisibleTransientRect(dom.editDecorTray),
+    getVisibleTransientRect(dom.editFishTray),
+    getVisibleTransientRect(dom.placementHintContainer),
+    getVisibleTransientRect(dom.fishInspector)
+  ].filter(Boolean);
+  const rawCandidates = [
+    { left: preferredLeft, top: preferredTop, priority: 0 },
+    { left: preferredLeft, top: (displayRect?.bottom || preferredTop) + gap, priority: 1 },
+    { left: preferredLeft, top: (taskPaneRect?.bottom || displayRect?.bottom || preferredTop) + gap, priority: 2 },
+    { left: displayRect ? displayRect.left - bellWidth - gap : preferredLeft, top: displayRect?.top || preferredTop, priority: 3 },
+    { left: viewport.left, top: viewport.top, priority: 8 },
+    { left: preferredLeft, top: viewport.bottom - bellHeight, priority: 9 }
+  ];
+  for (const rect of avoidRects) {
+    rawCandidates.push(
+      { left: preferredLeft, top: rect.bottom + gap, priority: 2 },
+      { left: rect.left - bellWidth - gap, top: rect.top, priority: 4 },
+      { left: rect.right + gap, top: rect.top, priority: 5 }
+    );
+  }
+
+  const clampCandidate = (candidate) => ({
+    left: clamp(candidate.left, viewport.left, Math.max(viewport.left, viewport.right - bellWidth)),
+    top: clamp(candidate.top, viewport.top, Math.max(viewport.top, viewport.bottom - bellHeight))
+  });
+  const toRect = (candidate) => ({
+    left: candidate.left,
+    top: candidate.top,
+    right: candidate.left + bellWidth,
+    bottom: candidate.top + bellHeight
+  });
+  const best = rawCandidates
+    .map((candidate, index) => {
+      const clamped = clampCandidate(candidate);
+      const rect = toRect(clamped);
+      const overlapArea = avoidRects.reduce((total, avoidRect) => total + getRectOverlapArea(rect, avoidRect), 0);
+      const topRightDistance = Math.abs(clamped.left - preferredLeft) + Math.abs(clamped.top - preferredTop);
+      return {
+        candidate: clamped,
+        score: overlapArea * 1000 + candidate.priority * 10000 + topRightDistance + index
+      };
+    })
+    .sort((left, right) => left.score - right.score)[0]?.candidate || clampCandidate(rawCandidates[0]);
+
+  dom.dailyBonusBell.style.setProperty("--daily-bonus-bell-left", `${Math.round(best.left - stageRect.left)}px`);
+  dom.dailyBonusBell.style.setProperty("--daily-bonus-bell-top", `${Math.round(best.top - stageRect.top)}px`);
+}
+
+function getDynamicToastAnchor(baseAnchor) {
+  const padding = 12;
+  const gap = 12;
+  const viewport = {
+    left: padding,
+    top: padding,
+    right: Math.max(padding, (window.innerWidth || 0) - padding),
+    bottom: Math.max(padding, (window.innerHeight || 0) - padding)
+  };
+  const maxWidth = Math.max(220, Math.min(420, Math.round(viewport.right - viewport.left)));
+  dom.toast.style.maxWidth = `${maxWidth}px`;
+  const measuredRect = dom.toast.getBoundingClientRect?.();
+  const toastWidth = Math.max(220, Math.min(maxWidth, Math.ceil(measuredRect?.width || 320)));
+  const toastHeight = Math.max(38, Math.ceil(measuredRect?.height || 48));
+  const clampCandidate = (candidate) => ({
+    left: clamp(candidate.left, viewport.left, Math.max(viewport.left, viewport.right - toastWidth)),
+    top: clamp(candidate.top, viewport.top, Math.max(viewport.top, viewport.bottom - toastHeight))
+  });
+  const toRect = (candidate) => ({
+    left: candidate.left,
+    top: candidate.top,
+    right: candidate.left + toastWidth,
+    bottom: candidate.top + toastHeight
+  });
+  const avoidRects = getToastAvoidanceRects();
+  const rawCandidates = [
+    { left: baseAnchor.viewportLeft, top: baseAnchor.viewportTop, priority: 0 },
+    { left: viewport.left, top: viewport.top, priority: 4 },
+    { left: viewport.right - toastWidth, top: viewport.top, priority: 5 },
+    { left: viewport.left, top: viewport.bottom - toastHeight, priority: 7 },
+    { left: viewport.right - toastWidth, top: viewport.bottom - toastHeight, priority: 8 },
+    { left: viewport.left + (viewport.right - viewport.left - toastWidth) / 2, top: viewport.top, priority: 6 }
+  ];
+  for (const rect of avoidRects) {
+    rawCandidates.push(
+      { left: rect.left, top: rect.bottom + gap, priority: 1 },
+      { left: rect.right + gap, top: rect.top, priority: 2 },
+      { left: rect.left, top: rect.top - toastHeight - gap, priority: 3 },
+      { left: rect.left - toastWidth - gap, top: rect.top, priority: 6 }
+    );
+  }
+
+  const best = rawCandidates
+    .map((candidate, index) => {
+      const clamped = clampCandidate(candidate);
+      const rect = toRect(clamped);
+      const overlapArea = avoidRects.reduce((total, avoidRect) => total + getRectOverlapArea(rect, avoidRect), 0);
+      const anchorDistance = Math.abs(clamped.left - baseAnchor.viewportLeft) + Math.abs(clamped.top - baseAnchor.viewportTop);
+      return {
+        candidate: clamped,
+        score: overlapArea * 1000 + candidate.priority * 10000 + anchorDistance + index
+      };
+    })
+    .sort((left, right) => left.score - right.score)[0]?.candidate || clampCandidate(rawCandidates[0]);
+
+  return {
+    viewportLeft: Math.round(best.left),
+    viewportTop: Math.round(best.top),
+    toastMaxWidth: Math.max(220, Math.min(maxWidth, Math.round(viewport.right - best.left)))
+  };
+}
+
 function positionToast() {
   if (!dom.toast) {
     return;
   }
 
-  const anchor = getTransientMessageAnchor();
+  const anchor = getDynamicToastAnchor(getTransientMessageAnchor());
   dom.toast.style.left = `${anchor.viewportLeft}px`;
   dom.toast.style.top = `${anchor.viewportTop}px`;
   dom.toast.style.bottom = "auto";
@@ -51370,7 +55266,9 @@ function positionPlacementHint() {
 }
 
 function positionTransientMessages() {
+  positionCareTaskPane();
   positionPlacementHint();
+  positionDailyBonusBell();
   positionToast();
 }
 

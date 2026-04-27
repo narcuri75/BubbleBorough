@@ -1,0 +1,208 @@
+{
+  "assetFolder": "fish/zombie_skeleton_fish",
+  "fish": [
+    {
+      "id": "zombie-fish",
+      "name": "Zombie Fish",
+      "theme": "Spooky",
+      "cost": 8,
+      "mealCoins": 0,
+      "assetFolder": "fish/zombie_skeleton_fish",
+      "asset": "goldfish_zombie.png",
+      "description": "A shambling undead hunter that ignores hunger and dirty water, then infects living fish with deadly zombie bites.",
+      "width": 188,
+      "bobSpeed": 1.08,
+      "swimStyle": "steady",
+      "speedMin": 0.018,
+      "speedMax": 0.024,
+      "targetMinMs": 3600,
+      "targetMaxMs": 6800,
+      "diet": "none",
+      "unlockRequirement": "spooky-keeper",
+      "undeadType": "zombie",
+      "defaultNames": [
+        "Rotfin",
+        "Gloom",
+        "Murk",
+        "Bitey",
+        "Molder",
+        "Hex",
+        "Boggie",
+        "Wretch",
+        "Ghoul",
+        "Slink"
+      ],
+      "caveEnabled": false,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": []
+    },
+    {
+      "id": "skeleton-fish",
+      "name": "Skeleton Fish",
+      "theme": "Spooky",
+      "cost": 9,
+      "mealCoins": 0,
+      "assetFolder": "fish/zombie_skeleton_fish",
+      "asset": "goldfish_skeleton.png",
+      "description": "A bare-boned undead fish that shrugs off foul water and meals while rattling nearby fish.",
+      "width": 176,
+      "bobSpeed": 1.14,
+      "swimStyle": "steady",
+      "speedMin": 0.022,
+      "speedMax": 0.03,
+      "targetMinMs": 2800,
+      "targetMaxMs": 5600,
+      "diet": "none",
+      "unlockRequirement": "spooky-keeper",
+      "undeadType": "skeleton",
+      "defaultNames": [
+        "Rattle",
+        "Bones",
+        "Marrow",
+        "Ivory",
+        "Clatter",
+        "Spine",
+        "Skully",
+        "Dust",
+        "Tibia",
+        "Crypt"
+      ],
+      "caveEnabled": false,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": []
+    }
+  ],
+  "variants": [
+    {
+      "speciesId": "angelfish",
+      "zombieAsset": "angelfish_zombie.png",
+      "skeletonAsset": "angelfish_skeleton.png"
+    },
+    {
+      "speciesId": "betta",
+      "zombieAsset": "betta_zombie.png",
+      "skeletonAsset": "betta_skeleton.png"
+    },
+    {
+      "speciesId": "blue-ram",
+      "zombieAsset": "BlueRam_zombie.png",
+      "skeletonAsset": "BlueRam_skeleton.png"
+    },
+    {
+      "speciesId": "blue-tang",
+      "zombieAsset": "bluetang_zombie.png",
+      "skeletonAsset": "bluetang_skeleton.png"
+    },
+    {
+      "speciesId": "celestial-pearl-danio",
+      "zombieAsset": "CelestialPearlDanio_zombie.png",
+      "skeletonAsset": "CelestialPearlDanio_skeleton.png"
+    },
+    {
+      "speciesId": "cherry-barb",
+      "zombieAsset": "cherrybarb_zombie.png",
+      "skeletonAsset": "cherrybarb_skeleton.png"
+    },
+    {
+      "speciesId": "clownfish",
+      "zombieAsset": "clownfish_zombie.png",
+      "skeletonAsset": "clownfish_skeleton.png"
+    },
+    {
+      "speciesId": "discus",
+      "zombieAsset": "discus_zombie.png",
+      "skeletonAsset": "discus_skeleton.png"
+    },
+    {
+      "speciesId": "goldfish",
+      "zombieAsset": "goldfish_zombie.png",
+      "skeletonAsset": "goldfish_skeleton.png"
+    },
+    {
+      "speciesId": "gourami",
+      "zombieAsset": "Gourami_zombie.png",
+      "skeletonAsset": "Gourami_skeleton.png"
+    },
+    {
+      "speciesId": "guppy",
+      "zombieAsset": "guppy_zombie.png",
+      "skeletonAsset": "guppy_skeleton.png"
+    },
+    {
+      "speciesId": "livebearer",
+      "zombieAsset": "Livebearer_zombie.png",
+      "skeletonAsset": "Livebearer_skeleton.png"
+    },
+    {
+      "speciesId": "loach",
+      "zombieAsset": "Loach_zombie.png",
+      "skeletonAsset": "Loach_skeleton.png"
+    },
+    {
+      "speciesId": "molly",
+      "zombieAsset": "molly_zombie.png",
+      "skeletonAsset": "molly_skeleton.png"
+    },
+    {
+      "speciesId": "moor-goldfish",
+      "zombieAsset": "moorgoldfish_zombie.png",
+      "skeletonAsset": "moorgoldfish_skeleton.png"
+    },
+    {
+      "speciesId": "neon-tetra",
+      "zombieAsset": "NeonTetra_zombie.png",
+      "skeletonAsset": "NeonTetra_skeleton.png"
+    },
+    {
+      "speciesId": "piranha",
+      "zombieAsset": "piranha_zombie.png",
+      "skeletonAsset": "piranha_skeleton.png"
+    },
+    {
+      "speciesId": "pufferfish",
+      "zombieAsset": "pufferfish_zombie.png",
+      "skeletonAsset": "pufferfish_skeleton.png"
+    },
+    {
+      "speciesId": "rainbowfish",
+      "zombieAsset": "rainbowfish_zombie.png",
+      "skeletonAsset": "rainbowfish_skeleton.png"
+    },
+    {
+      "speciesId": "royal-gramma",
+      "zombieAsset": "royalgramma_zombie.png"
+    },
+    {
+      "speciesId": "swordtail",
+      "zombieAsset": "Swordtail_zombie.png",
+      "skeletonAsset": "Swordtail_skeleton.png"
+    },
+    {
+      "speciesId": "wonder-killifish",
+      "zombieAsset": "WonderKillifish_zombie.png",
+      "skeletonAsset": "WonderKillifish_skeleton.png"
+    },
+    {
+      "speciesId": "yellow-tang",
+      "zombieAsset": "yellowtang_zombie.png",
+      "skeletonAsset": "yellowtang_skeleton.png"
+    },
+    {
+      "speciesId": "zebra-danio",
+      "zombieAsset": "zebradanio_zombie.png",
+      "skeletonAsset": "zebradanio_skeleton.png"
+    }
+  ]
+}

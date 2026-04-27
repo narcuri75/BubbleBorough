@@ -10,7 +10,7 @@
   "icons": [
     {
       "src": "../assets/misc/favicon.png",
-      "sizes": "152x152",
+      "sizes": "192x192",
       "type": "image/png"
     },
     {

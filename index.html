@@ -438,57 +438,51 @@
 
                 <div class="settings-panel-body">
                   <section class="settings-section">
-                    <h3>Content</h3>
-
-                    <label class="settings-toggle-row" for="violenceGoreToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Violence &amp; Gore</span>
-                        <span class="settings-toggle-note">Turns off betta and piranha attacks, zombie and skeleton
-                          fish, blood clouds, corpse decay stages, and The Cure while turning chum into red
-                          pellets.</span>
-                      </div>
-                      <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
+                    <h3>Data</h3>
+                    <p class="settings-section-note">Export, import, or reset your aquarium save.</p>
+                    <div class="overview-actions">
+                      <button id="exportDataButton" class="small-button" type="button">
+                        Export
+                      </button>
+                      <button id="importDataButton" class="small-button alt" type="button">
+                        Import
+                      </button>
+                      <button id="resetProgressButton" class="small-button warn" type="button">
+                        Reset Progress
+                      </button>
+                    </div>
+                    <input id="importDataInput" type="file" accept=".json,application/json" hidden />
                   </section>
 
                   <section class="settings-section">
-                    <h3>Sound</h3>
+                    <h3>General</h3>
 
-                    <label class="settings-toggle-row" for="soundMuteToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Mute Sounds</span>
-                        <span class="settings-toggle-note">Turns off ambience and sound effects.</span>
-                      </div>
-                      <input id="soundMuteToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
+                    <div class="settings-subsection-heading">
+                      <h4>Toolbar Location</h4>
+                    </div>
+                    <div class="toolbar-position-grid">
+                      <label class="toolbar-position-option" for="toolbarPositionLeft">
+                        <input id="toolbarPositionLeft" class="settings-checkbox" type="radio" name="toolbarPosition"
+                          value="left-center" data-toolbar-position-choice />
+                        <span class="settings-toggle-label">Left</span>
+                      </label>
 
-                    <label class="settings-toggle-row" for="uiMuteToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Mute UI</span>
-                        <span class="settings-toggle-note">Turns off button press and menu feedback sounds only.</span>
-                      </div>
-                      <input id="uiMuteToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
-                  </section>
+                      <label class="toolbar-position-option" for="toolbarPositionBottom">
+                        <input id="toolbarPositionBottom" class="settings-checkbox" type="radio"
+                          name="toolbarPosition" value="bottom-center" data-toolbar-position-choice />
+                        <span class="settings-toggle-label">Center</span>
+                      </label>
 
-                  <section class="settings-section">
-                    <h3>Performance</h3>
+                      <label class="toolbar-position-option" for="toolbarPositionRight">
+                        <input id="toolbarPositionRight" class="settings-checkbox" type="radio" name="toolbarPosition"
+                          value="right-center" data-toolbar-position-choice />
+                        <span class="settings-toggle-label">Right</span>
+                      </label>
+                    </div>
 
-                    <label class="settings-toggle-row" for="uvLightQualitySelect">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">UV Light Quality</span>
-                        <span class="settings-toggle-note">Low reduces blacklight render cost. High restores fuller glow detail.</span>
-                      </div>
-                      <select id="uvLightQualitySelect" class="shop-sort-select" aria-label="UV light quality">
-                        <option value="low">Low</option>
-                        <option value="high">High</option>
-                      </select>
-                    </label>
-                  </section>
-
-                  <section class="settings-section">
-                    <h3>Digital Display</h3>
-                    <p class="settings-section-note">Choose which corner holds the aquarium stats display.</p>
+                    <div class="settings-subsection-heading">
+                      <h4>Digital Display Location</h4>
+                    </div>
                     <div class="display-position-grid">
                       <label class="display-position-option" for="displayPositionTopLeft">
                         <input id="displayPositionTopLeft" class="settings-checkbox" type="radio"
@@ -514,71 +508,58 @@
                         <span class="settings-toggle-label">Bottom Right</span>
                       </label>
                     </div>
-                  </section>
 
-                  <section class="settings-section">
-                    <h3>Toolbar</h3>
-                    <p class="settings-section-note">Choose where the main toolbar sits on screen.</p>
-                    <label class="settings-toggle-row" for="tankMouseLockToggleInput">
+                    <label class="settings-toggle-row" for="violenceGoreToggleInput">
                       <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Lock Tank Mouse Input</span>
-                        <span class="settings-toggle-note">Disables fish clicks, tank clicks, feeding, scrubbing, and dragging until you unlock it. Useful for passive display mode.</span>
+                        <span class="settings-toggle-label">Gore and Violence</span>
+                        <span class="settings-toggle-note">Toggles graphic effects and aggressive fish behavior.</span>
                       </div>
-                      <input id="tankMouseLockToggleInput" class="settings-checkbox" type="checkbox" />
+                      <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
                     </label>
-                    <div class="toolbar-position-grid">
-                      <label class="toolbar-position-option" for="toolbarPositionLeft">
-                        <input id="toolbarPositionLeft" class="settings-checkbox" type="radio" name="toolbarPosition"
-                          value="left-center" data-toolbar-position-choice />
-                        <span class="settings-toggle-label">Left</span>
-                      </label>
-
-                      <label class="toolbar-position-option" for="toolbarPositionBottom">
-                        <input id="toolbarPositionBottom" class="settings-checkbox" type="radio"
-                          name="toolbarPosition" value="bottom-center" data-toolbar-position-choice />
-                        <span class="settings-toggle-label">Center</span>
-                      </label>
-
-                      <label class="toolbar-position-option" for="toolbarPositionRight">
-                        <input id="toolbarPositionRight" class="settings-checkbox" type="radio" name="toolbarPosition"
-                          value="right-center" data-toolbar-position-choice />
-                        <span class="settings-toggle-label">Right</span>
-                      </label>
-                    </div>
-                  </section>
-
-                  <section id="tutorialSettingsSection" class="settings-section">
-                    <h3>Tutorial</h3>
-                    <p class="settings-section-note">Replay the intro walkthrough from the beginning.</p>
-                    <button id="replayTutorialButton" class="small-button alt" type="button">
-                      Replay Tutorial
-                    </button>
                   </section>
 
                   <section class="settings-section">
-                    <h3>Save Data</h3>
-                    <p class="settings-section-note">Export your current tank or import a save file to restore it.</p>
-                    <div class="overview-actions">
-                      <button id="exportDataButton" class="small-button" type="button">
-                        Export Data
-                      </button>
-                      <button id="importDataButton" class="small-button alt" type="button">
-                        Import Data
-                      </button>
-                    </div>
-                    <input id="importDataInput" type="file" accept=".json,application/json" hidden />
+                    <h3>Graphics</h3>
+
+                    <label class="settings-toggle-row" for="ambientBubblesToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Ambient Bubbles</span>
+                        <span class="settings-toggle-note">Shows drifting aquarium bubbles.</span>
+                      </div>
+                      <input id="ambientBubblesToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+
+                    <label class="settings-toggle-row" for="waterParticlesToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Ambient Particles</span>
+                        <span class="settings-toggle-note">Shows suspended particles moving through the water.</span>
+                      </div>
+                      <input id="waterParticlesToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
                   </section>
 
                   <section class="settings-section">
-                    <h3>Progress</h3>
-                    <p class="settings-section-note">Delete all fish, decor, coins, care history, and saved progress.
-                    </p>
-                    <button id="resetProgressButton" class="small-button warn" type="button">
-                      Reset Progress
-                    </button>
+                    <h3>Audio</h3>
+
+                    <label class="settings-toggle-row" for="uiMuteToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Mute UI</span>
+                        <span class="settings-toggle-note">Turns off button press and menu feedback sounds only.</span>
+                      </div>
+                      <input id="uiMuteToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+
+                    <label class="settings-toggle-row" for="soundMuteToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Mute All Audio</span>
+                        <span class="settings-toggle-note">Turns off ambience and sound effects.</span>
+                      </div>
+                      <input id="soundMuteToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
                   </section>
 
-                  <section class="settings-section settings-credits-section" aria-label="Game credits">
+                  <section class="settings-section settings-credits-section" aria-label="Other settings">
+                    <h3>Other</h3>
                     <div class="overview-actions">
                       <button class="small-button alt credits-button" type="button" data-open-credits>
                         Credits
@@ -596,7 +577,6 @@
                         Pizza Me!
                       </a>
                     </div>
-
                   </section>
                 </div>
               </div>
@@ -964,7 +944,7 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-  <script type="module" src="./public/app.js?v=20260427g"></script>
+  <script type="module" src="./public/app.js?v=20260427p"></script>
 </body>
 
 </html>

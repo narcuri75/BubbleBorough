@@ -514,6 +514,8 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   soundMuted: false,
   uiSoundsMuted: false,
   tankMouseInputLocked: false,
+  ambientBubblesEnabled: true,
+  waterParticlesEnabled: true,
   uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY
 });
 const CUSTOM_IMAGE_BACKGROUND_ASSET_KEY = "__custom-image-background__";
@@ -787,6 +789,7 @@ const DECOR_Y_ANCHOR_MODES = Object.freeze([
 const SIZE_STEP = 0.05;
 const GRAVEL_COLOR_SWATCHES = Object.freeze(CUSTOM_GRAVEL_COLOR_OPTIONS.map((choice) => choice.color));
 const DEFAULT_GRAVEL_PALETTE = ["#F5C185", "#E07A9C", "#81909F"];
+const AMBIENT_BUBBLE_COUNT = 30;
 const AMBIENT_BUBBLE_DEPTH_LAYERS = 5;
 const TANK_DEPTH_LAYERS = 5;
 const DEFAULT_BUBBLER_SPOUT_QTY = 1;
@@ -1085,9 +1088,9 @@ const FISH_GRAVEL_DIG_CHANCE = 0.18;
 const FISH_GRAVEL_DIG_COOLDOWN_MIN_MS = 9000;
 const FISH_GRAVEL_DIG_COOLDOWN_MAX_MS = 18000;
 const FORCED_GRAVEL_DIG_TIMEOUT_MS = 9000;
-const WATER_PARTICLE_COUNT = 50;
-const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 50;
-const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 50;
+const WATER_PARTICLE_COUNT = 30;
+const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
+const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 30;
 const WATER_PARTICLE_FISH_FORCE_RADIUS_PX = 90;
 const WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX = 74;
 const WATER_PARTICLE_FILTER_FORCE_RADIUS_PX = 130;
@@ -1231,7 +1234,7 @@ const DECOR_CATALOG_PATH = "assets/decor/decor_types.json";
 const FILTER_CATALOG_PATH = "assets/filter/filter.json";
 const BACKGROUND_CATALOG_PATH = "assets/backgrounds/backgrounds.json";
 const FOOD_AND_MEDS_CATALOG_PATH = "assets/foodandmeds/food-and-meds.json";
-const FOOD_AND_MEDS_FALLBACK_IMAGE = "assets/foodandmeds/bottle.png";
+const FOOD_AND_MEDS_FALLBACK_IMAGE_NAME = "basic-food.png";
 const FOOD_AND_MEDS_ASSET_VERSION = "2026-04-01";
 const AMBIENCE_AUDIO_PATH = "assets/sounds/ambience.mp3";
 const AMBIENCE_AUDIO_VOLUME = 0.55;
@@ -1557,7 +1560,7 @@ function isTankMouseLockFeatureEnabled() {
 function resolveFoodAndMedAssetPath(fileName) {
   const normalizedFileName = typeof fileName === "string" && fileName.trim()
     ? fileName.trim().replace(/^\/+/, "")
-    : "bottle.png";
+    : FOOD_AND_MEDS_FALLBACK_IMAGE_NAME;
   return resolveAppUrl(`assets/foodandmeds/${normalizedFileName}?v=${FOOD_AND_MEDS_ASSET_VERSION}`);
 }
 
@@ -2635,6 +2638,8 @@ const dom = {
   violenceGoreToggleInput: document.querySelector("#violenceGoreToggleInput"),
   soundMuteToggleInput: document.querySelector("#soundMuteToggleInput"),
   uiMuteToggleInput: document.querySelector("#uiMuteToggleInput"),
+  ambientBubblesToggleInput: document.querySelector("#ambientBubblesToggleInput"),
+  waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
   uvLightQualitySelect: document.querySelector("#uvLightQualitySelect"),
   tankMouseLockToggleInput: document.querySelector("#tankMouseLockToggleInput"),
   openEquipmentShopButton: document.querySelector("#openEquipmentShopButton"),
@@ -2872,7 +2877,7 @@ const runtime = {
   decorMeta: {},
   fishCatalog: [...FISH_TYPES],
   foodAndMedCatalog: {
-    fallbackImage: resolveFoodAndMedAssetPath("bottle.png"),
+    fallbackImage: resolveFoodAndMedAssetPath(FOOD_AND_MEDS_FALLBACK_IMAGE_NAME),
     items: {
       food: {},
       medicine: {}
@@ -2917,7 +2922,6 @@ const runtime = {
   scrubMaskCanvas: document.createElement("canvas"),
   grimeBaseCanvas: document.createElement("canvas"),
   grimeBaseCacheKey: "",
-  shadowCanvas: document.createElement("canvas"),
   fishShadowPlaneCache: new Map(),
   fishGravelPebbleActions: new Map(),
   fishPebbleTosses: [],
@@ -8251,12 +8255,9 @@ function renderCollapsibleSections() {
   });
 }
 
-const shadowContext = runtime.shadowCanvas.getContext("2d");
 const scrubMaskContext = runtime.scrubMaskCanvas.getContext("2d");
 const grimeBaseContext = runtime.grimeBaseCanvas.getContext("2d");
 
-runtime.shadowCanvas.width = TANK_WIDTH;
-runtime.shadowCanvas.height = TANK_HEIGHT;
 runtime.scrubMaskCanvas.width = TANK_WIDTH;
 runtime.scrubMaskCanvas.height = TANK_HEIGHT;
 runtime.grimeBaseCanvas.width = TANK_WIDTH;
@@ -8264,7 +8265,6 @@ runtime.grimeBaseCanvas.height = TANK_HEIGHT;
 configureCanvasContext(tankContext);
 configureCanvasContext(grimeContext);
 configureCanvasContext(glassContext);
-configureCanvasContext(shadowContext);
 configureCanvasContext(scrubMaskContext);
 configureCanvasContext(grimeBaseContext);
 
@@ -8365,7 +8365,7 @@ async function init() {
   const tutorialResumeChanged = restoreTutorialRuntimeState(Date.now());
   applyContentSettingsEffects(Date.now());
 
-  await preloadImages([
+  await preloadImages(filterPreloadPathsForCurrentContentSettings([
     ...runtime.backgroundCatalog
       .filter((item) => !isLocalImageBackgroundKey(item.key))
       .map((item) => item.path),
@@ -8417,7 +8417,7 @@ async function init() {
       ...getFishDeathAssetCandidates(fish, "zombie"),
       ...getFishDeathAssetCandidates(fish, "skeleton")
     ]))
-  ]);
+  ]));
 
   resizeDisplayCanvases();
   const now = Date.now();
@@ -8873,15 +8873,19 @@ function getWaterParticleDirtyVisibleCount() {
 
 function getAmbientBubbleSeedCount() {
   return isPortablePerformanceModeActive()
-    ? Math.min(34, PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT)
-    : 34;
+    ? Math.min(AMBIENT_BUBBLE_COUNT, PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT)
+    : AMBIENT_BUBBLE_COUNT;
 }
 
 function getVisibleAmbientSceneBubbles() {
+  if (!areAmbientBubblesEnabled()) {
+    return [];
+  }
+
   const bubbles = Array.isArray(runtime.scene?.bubbles) ? runtime.scene.bubbles : [];
   return isPortablePerformanceModeActive()
     ? bubbles.slice(0, Math.min(PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT, bubbles.length))
-    : bubbles;
+    : bubbles.slice(0, Math.min(AMBIENT_BUBBLE_COUNT, bubbles.length));
 }
 
 function getMaxVisibleBubblerBubblesPerSpout() {
@@ -9400,6 +9404,12 @@ function bindEvents() {
   };
   dom.uiMuteToggleInput?.addEventListener("input", handleUiMuteToggleInput);
   dom.uiMuteToggleInput?.addEventListener("change", handleUiMuteToggleInput);
+  dom.ambientBubblesToggleInput?.addEventListener("change", (event) => {
+    setAmbientBubblesEnabled(event.currentTarget?.checked);
+  });
+  dom.waterParticlesToggleInput?.addEventListener("change", (event) => {
+    setWaterParticlesEnabled(event.currentTarget?.checked);
+  });
   dom.uvLightQualitySelect?.addEventListener("change", (event) => {
     setUvLightRenderQuality(event.currentTarget?.value);
   });
@@ -11114,7 +11124,7 @@ async function fetchFoodAndMedCatalog() {
   } catch (error) {
     console.error(error);
     return {
-      fallbackImage: "bottle.png",
+      fallbackImage: FOOD_AND_MEDS_FALLBACK_IMAGE_NAME,
       food: {},
       medicine: {}
     };
@@ -11125,7 +11135,7 @@ function normalizeFoodAndMedCatalog(payload) {
   const source = payload && typeof payload === "object" ? payload : {};
   const fallbackImage = typeof source.fallbackImage === "string" && source.fallbackImage.trim()
     ? source.fallbackImage.trim()
-    : "bottle.png";
+    : FOOD_AND_MEDS_FALLBACK_IMAGE_NAME;
   const normalizeFoodSection = (section) => {
     const rawSection = section && typeof section === "object" ? section : {};
     const entries = {};
@@ -15402,12 +15412,22 @@ function sanitizeUiSettings(rawSettings) {
     soundMuted: source.soundMuted === true,
     uiSoundsMuted: source.uiSoundsMuted === true,
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
+    ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
+    waterParticlesEnabled: source.waterParticlesEnabled !== false,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality)
   };
 }
 
 function getUiSettings() {
   return sanitizeUiSettings(state?.uiSettings);
+}
+
+function areAmbientBubblesEnabled() {
+  return getUiSettings().ambientBubblesEnabled;
+}
+
+function areWaterParticlesEnabled() {
+  return getUiSettings().waterParticlesEnabled;
 }
 
 function getUvLightRenderQuality() {
@@ -15606,6 +15626,90 @@ function isZombieSkeletonModeAvailable() {
 
 function isZombieModeEnabled() {
   return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
+}
+
+function getAssetFileName(value = "") {
+  return String(value || "")
+    .replace(/\?.*$/, "")
+    .split(/[\\/]/)
+    .pop()
+    .trim()
+    .toLowerCase();
+}
+
+function isZombieSkeletonAssetPath(value = "") {
+  const normalizedPath = String(value || "").replaceAll("\\", "/").replace(/\?.*$/, "").toLowerCase();
+  const fileName = getAssetFileName(normalizedPath);
+  return normalizedPath.includes("/zombie_skeleton_fish/")
+    || /_(zombie|skeleton)\.[^.]+$/i.test(fileName);
+}
+
+function isGoreOnlyAssetPath(value = "") {
+  const fileName = getAssetFileName(value);
+  return FILTERED_GORE_DECOR_KEYS.has(fileName)
+    || fileName === "zombie-virus-antidote-drops.png";
+}
+
+function shouldPreloadAssetForCurrentContentSettings(path) {
+  if (!path) {
+    return false;
+  }
+  if (isZombieSkeletonAssetPath(path)) {
+    return isZombieSkeletonModeAvailable();
+  }
+  if (getAssetFileName(path) === "zombie-virus-antidote-drops.png") {
+    return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
+  }
+  if (isGoreOnlyAssetPath(path)) {
+    return isViolenceAndGoreEnabled();
+  }
+  return true;
+}
+
+function filterPreloadPathsForCurrentContentSettings(paths) {
+  return (Array.isArray(paths) ? paths : []).filter(shouldPreloadAssetForCurrentContentSettings);
+}
+
+function isContentGatedAssetPath(path) {
+  return isZombieSkeletonAssetPath(path) || isGoreOnlyAssetPath(path);
+}
+
+function getContentGatedPreloadPaths() {
+  const paths = [
+    ...runtime.decorCatalog.flatMap((item) => [
+      item.path,
+      item.thumbnailPath,
+      item.bgPath,
+      item.midPath,
+      item.maskPath,
+      item.triggerPath,
+      item.seatsPath,
+      ...(Array.isArray(item.caveColorLayers)
+        ? item.caveColorLayers.flatMap((layer) => [
+          ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
+          ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])
+        ])
+        : [])
+    ].filter(Boolean)),
+    ...(isZombieSkeletonModeAvailable()
+      ? runtime.fishCatalog.flatMap((fish) => [
+        ...getFishDeathAssetCandidates(fish, "zombie"),
+        ...getFishDeathAssetCandidates(fish, "skeleton")
+      ])
+      : []),
+    getMedicineCatalogEntries().antidote?.image
+      ? resolveFoodAndMedAssetPath(getMedicineCatalogEntries().antidote.image)
+      : ""
+  ];
+
+  return filterPreloadPathsForCurrentContentSettings(paths.filter(isContentGatedAssetPath));
+}
+
+async function preloadContentGatedAssetsForCurrentSettings() {
+  if (!state || !isViolenceAndGoreEnabled()) {
+    return;
+  }
+  await preloadImages(getContentGatedPreloadPaths());
 }
 
 function shouldPersistReconciledState(rawState) {
@@ -16714,7 +16818,47 @@ async function applyImportedSaveData(rawState) {
   syncAmbienceAudio();
 }
 
-async function exportSaveData() {
+async function exportSaveData(options = {}) {
+  if (!state) {
+    if (options.showToast !== false) {
+      showToast("No aquarium data is loaded yet.");
+    }
+    return false;
+  }
+
+  const shouldOpenOverlay = options.openOverlay !== false;
+  const shouldShowToast = options.showToast !== false;
+  try {
+    runtime.pendingSaveExport = null;
+    runtime.pendingSaveExport = await createSaveExportData(Date.now());
+    downloadTextFile(runtime.pendingSaveExport.contents, runtime.pendingSaveExport.filename);
+    if (shouldOpenOverlay) {
+      openUtilityOverlay("save-export");
+    }
+    if (shouldShowToast) {
+      showToast("Save export ready.");
+    }
+    return true;
+  } catch (error) {
+    console.error(error);
+    if (runtime.pendingSaveExport?.contents) {
+      if (shouldOpenOverlay) {
+        openUtilityOverlay("save-export");
+      }
+      if (shouldShowToast) {
+        showToast("Download blocked. Save export is ready to copy.");
+      }
+      return true;
+    }
+
+    if (shouldShowToast) {
+      showToast(error?.message || "Could not export save data.");
+    }
+    return false;
+  }
+}
+
+async function prepareResetProgressSaveExport() {
   if (!state) {
     showToast("No aquarium data is loaded yet.");
     return;
@@ -16724,12 +16868,12 @@ async function exportSaveData() {
     runtime.pendingSaveExport = null;
     runtime.pendingSaveExport = await createSaveExportData(Date.now());
     downloadTextFile(runtime.pendingSaveExport.contents, runtime.pendingSaveExport.filename);
-    openUtilityOverlay("save-export");
+    openUtilityOverlay("reset-progress-save-export");
     showToast("Save export ready.");
   } catch (error) {
     console.error(error);
     if (runtime.pendingSaveExport?.contents) {
-      openUtilityOverlay("save-export");
+      openUtilityOverlay("reset-progress-save-export");
       showToast("Download blocked. Save export is ready to copy.");
     } else {
       showToast(error?.message || "Could not export save data.");
@@ -20821,6 +20965,7 @@ function preloadImages(paths) {
   return Promise.all(
     [...new Set(paths)]
       .filter(Boolean)
+      .filter((path) => !runtime.images.has(path))
       .map(
         (path) =>
           new Promise((resolve) => {
@@ -34458,7 +34603,7 @@ function getFoodAndMedArt(kind, id) {
   const section = kind === "medicine" ? "medicine" : "food";
   const catalog = runtime.foodAndMedCatalog?.items?.[section] || {};
   const entry = catalog[id] || {};
-  const fallbackPath = runtime.foodAndMedCatalog?.fallbackImage || resolveFoodAndMedAssetPath("bottle.png");
+  const fallbackPath = runtime.foodAndMedCatalog?.fallbackImage || resolveFoodAndMedAssetPath(FOOD_AND_MEDS_FALLBACK_IMAGE_NAME);
   const imagePath = entry.image
     ? resolveFoodAndMedAssetPath(entry.image)
     : fallbackPath;
@@ -36435,16 +36580,45 @@ function renderImportConfirmUtilityOverlay() {
 
 function renderResetProgressUtilityOverlay() {
   return {
-    kicker: "Progress",
+    kicker: "Data",
     title: "Reset Progress",
     body: buildUtilityConfirmCardMarkup({
-      headline: "Delete all fish, decor, coins, tanks, and care history?",
-      detail: "This clears the current save and cannot be undone."
+      headline: "Are you sure you want to reset all progress?",
+      detail: "This will delete your fish, decor, coins, tanks, care history, and saved progress."
     }),
     footer: buildUtilityActionsFooter([
-      { label: "Reset", variant: "warn", attribute: "data-confirm-reset-progress" },
+      { label: "Yes", variant: "warn", attribute: "data-confirm-reset-progress" },
       { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
     ])
+  };
+}
+
+function renderResetProgressSaveChoiceUtilityOverlay() {
+  return {
+    kicker: "Data",
+    title: "Save Before Reset",
+    body: buildUtilityConfirmCardMarkup({
+      headline: "Do you want to save your current aquarium first?",
+      detail: "Choose Save First to export your current state before resetting."
+    }),
+    footer: buildUtilityActionsFooter([
+      { label: "Save First", attribute: "data-reset-save-first" },
+      { label: "Reset Without Saving", variant: "warn", attribute: "data-reset-without-saving" },
+      { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
+    ])
+  };
+}
+
+function renderResetProgressSaveExportUtilityOverlay() {
+  const exportData = runtime.pendingSaveExport;
+  return {
+    kicker: "Data",
+    title: "Save Before Reset",
+    body: renderSaveExportOverlay(exportData),
+    footer: exportData
+      ? renderSaveExportActionsFooter({ includeReset: true, doneLabel: "Cancel" })
+      : `<button class="small-button alt" data-close-utility>Cancel</button>`,
+    closable: true
   };
 }
 
@@ -37204,7 +37378,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
         title: "Save Export",
         body: renderSaveExportOverlay(exportData),
         footer: exportData
-          ? `<div class="utility-confirm-actions"><button class="small-button" data-copy-save-export>Copy Data</button><button class="small-button alt" data-select-save-export>Select All</button><button class="small-button alt" data-download-save-export>Download File</button><button class="small-button alt" data-close-utility>Done</button></div>`
+          ? renderSaveExportActionsFooter({ doneLabel: "Done" })
           : `<button class="small-button" data-close-utility>Close</button>`,
         closable: true
       };
@@ -37269,7 +37443,37 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     exclusive: true,
     render: renderResetProgressUtilityOverlay,
     onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-confirm-reset-progress]", run: () => resetAllProgress() }
+      { selector: "[data-confirm-reset-progress]", run: () => openUtilityOverlay("reset-progress-save-choice") }
+    ])
+  },
+  "reset-progress-save-choice": {
+    id: "reset-progress-save-choice",
+    exclusive: true,
+    render: renderResetProgressSaveChoiceUtilityOverlay,
+    onFooterClick: createUtilityOverlayActionHandler([
+      { selector: "[data-reset-save-first]", run: () => void prepareResetProgressSaveExport() },
+      { selector: "[data-reset-without-saving]", run: () => resetAllProgress() }
+    ])
+  },
+  "reset-progress-save-export": {
+    id: "reset-progress-save-export",
+    exclusive: true,
+    onClose: () => {
+      runtime.pendingSaveExport = null;
+    },
+    render: renderResetProgressSaveExportUtilityOverlay,
+    onFooterClick: createUtilityOverlayActionHandler([
+      { selector: "[data-copy-save-export]", run: () => void copyCurrentSaveExportData() },
+      {
+        selector: "[data-select-save-export]",
+        run: () => {
+          if (selectSaveExportText()) {
+            showToast("Save data selected.");
+          }
+        }
+      },
+      { selector: "[data-download-save-export]", run: () => void retrySaveExportDownload() },
+      { selector: "[data-reset-after-save-export]", run: () => resetAllProgress() }
     ])
   },
   "daily-bonus": {
@@ -37370,19 +37574,33 @@ function renderSaveExportOverlay(exportData) {
     return `<div class="empty-state">No aquarium data is loaded yet.</div>`;
   }
 
+  const showInlineData = isWallpaperEngineModeEnabled();
   return `
     <div class="save-export-panel">
       <div class="utility-confirm-card save-export-summary">
         <div class="utility-confirm-copy">
           <strong>Save file ready.</strong>
-          <div class="fish-meta">Downloads may be blocked, so this export is also available here.</div>
+          <div class="fish-meta">${showInlineData ? "Downloads may be blocked, so this export is also available here." : "A download should start automatically. Use Download File to try again."}</div>
         </div>
         <div class="save-export-meta">
           <span class="save-export-pill">${escapeHtml(exportData.filename)}</span>
           <span class="save-export-pill">${escapeHtml(exportData.sizeLabel)}</span>
         </div>
       </div>
-      <textarea class="save-export-textarea" data-save-export-text readonly spellcheck="false">${escapeHtml(exportData.contents)}</textarea>
+      ${showInlineData ? `<textarea class="save-export-textarea" data-save-export-text readonly spellcheck="false">${escapeHtml(exportData.contents)}</textarea>` : ""}
+    </div>
+  `;
+}
+
+function renderSaveExportActionsFooter(options = {}) {
+  const showInlineData = isWallpaperEngineModeEnabled();
+  const doneLabel = options.doneLabel || "Done";
+  return `
+    <div class="utility-confirm-actions">
+      ${showInlineData ? `<button class="small-button" data-copy-save-export>Copy Data</button><button class="small-button alt" data-select-save-export>Select All</button>` : ""}
+      <button class="small-button alt" data-download-save-export>Download File</button>
+      ${options.includeReset ? `<button class="small-button warn" data-reset-after-save-export>Reset Now</button>` : ""}
+      <button class="small-button alt" data-close-utility>${escapeHtml(doneLabel)}</button>
     </div>
   `;
 }
@@ -38580,6 +38798,12 @@ function renderSettingsOverlay() {
   }
   if (dom.uiMuteToggleInput) {
     dom.uiMuteToggleInput.checked = uiSettings.uiSoundsMuted;
+  }
+  if (dom.ambientBubblesToggleInput) {
+    dom.ambientBubblesToggleInput.checked = uiSettings.ambientBubblesEnabled;
+  }
+  if (dom.waterParticlesToggleInput) {
+    dom.waterParticlesToggleInput.checked = uiSettings.waterParticlesEnabled;
   }
   const uvLightQualitySection = dom.uvLightQualitySelect?.closest(".settings-section");
   if (dom.uvLightQualitySelect instanceof HTMLSelectElement) {
@@ -41997,6 +42221,17 @@ function setContentSetting(settingKey, value) {
   applyContentSettingsEffects(now);
   saveState();
   renderUi(now);
+  if (nextSettings.violenceAndGoreEnabled) {
+    void preloadContentGatedAssetsForCurrentSettings()
+      .then(() => {
+        const refreshNow = Date.now();
+        renderUi(refreshNow);
+        renderTank(refreshNow);
+      })
+      .catch((error) => {
+        console.debug("Content-gated asset preload skipped.", error);
+      });
+  }
   showToast(
     nextSettings.violenceAndGoreEnabled
       ? "Violence & Gore enabled."
@@ -42129,6 +42364,50 @@ function setUiSoundsMuted(value, options = {}) {
     showToast(nextSettings.uiSoundsMuted ? "UI sounds muted." : "UI sounds on.");
   }
   return true;
+}
+
+function setAmbientBubblesEnabled(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    ambientBubblesEnabled: Boolean(value)
+  });
+  if (currentSettings.ambientBubblesEnabled === nextSettings.ambientBubblesEnabled) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+  showToast(nextSettings.ambientBubblesEnabled ? "Ambient bubbles on." : "Ambient bubbles off.");
+}
+
+function setWaterParticlesEnabled(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    waterParticlesEnabled: Boolean(value)
+  });
+  if (currentSettings.waterParticlesEnabled === nextSettings.waterParticlesEnabled) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  if (!nextSettings.waterParticlesEnabled) {
+    runtime.waterParticles = [];
+    runtime.waterParticleTankId = null;
+  }
+  saveState();
+  renderUi(Date.now(), { full: false });
+  showToast(nextSettings.waterParticlesEnabled ? "Water particles on." : "Water particles off.");
 }
 
 function clearTankMouseInteractionState() {
@@ -44900,6 +45179,10 @@ function drawBackground(now = Date.now()) {
 }
 
 function drawAmbientBubbles(now, layer = 3) {
+  if (!areAmbientBubblesEnabled()) {
+    return;
+  }
+
   const layerProfile = getAmbientBubbleLayerProfile(layer);
   if (!layerProfile) {
     return;
@@ -45388,6 +45671,10 @@ function getAmbientBubbleParticleLayers(renderPass) {
 }
 
 function collectAmbientBubbleParticleFields(now = Date.now()) {
+  if (!areAmbientBubblesEnabled()) {
+    return [];
+  }
+
   const fields = [];
   const stableScale = getViewportStableAssetScale();
   for (const bubble of getVisibleAmbientSceneBubbles()) {
@@ -45538,7 +45825,7 @@ function applyFishForceToParticle(particle, fishFields, deltaSeconds) {
 }
 
 function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
-  if (!state) {
+  if (!state || !areWaterParticlesEnabled()) {
     return;
   }
 
@@ -45613,7 +45900,7 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
 }
 
 function drawWaterParticles(now = Date.now(), layer = null) {
-  if (!state) {
+  if (!state || !areWaterParticlesEnabled()) {
     return;
   }
 
@@ -47882,40 +48169,18 @@ function pruneFishShadowPlaneCache() {
 }
 
 function drawGroundShadows(now) {
-  shadowContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  shadowContext.save();
-  traceTankFloorPath(shadowContext);
-  shadowContext.clip();
-
-  const decorShadowItems = [...state.placedDecor].sort((left, right) => left.yNorm - right.yNorm);
-  for (const item of decorShadowItems) {
-    const decor = runtime.decorMap.get(item.decorKey);
-    const image = decor ? runtime.images.get(decor.path) : null;
-    if (!decor || !image) {
-      continue;
-    }
-
-    const width = getDecorDisplayWidth(decor, item);
-    const height = width * (image.height / image.width);
-    const motion = getDecorMotion(item, now);
-    const x = item.xNorm * TANK_WIDTH + ((motion.isFloating || motion.isLure) ? motion.bobX : 0);
-    const y = item.yNorm * TANK_HEIGHT + ((motion.isFloating || motion.isLure) ? motion.bobY : 0);
-    drawProjectedShadow(shadowContext, x, y, width, height, 0.18, 0.24);
-  }
-  shadowContext.restore();
-
-  shadowContext.save();
-  shadowContext.beginPath();
-  shadowContext.rect(
+  tankContext.save();
+  tankContext.globalCompositeOperation = "multiply";
+  tankContext.beginPath();
+  tankContext.rect(
     GLASS_MARGIN_X,
     WATER_SURFACE_Y,
     TANK_WIDTH - GLASS_MARGIN_X * 2,
     getVisibleTankFloorBottomY() - WATER_SURFACE_Y + 12
   );
-  shadowContext.clip();
+  tankContext.clip();
   pruneFishShadowPlaneCache();
-  const fishShadowItems = [...state.fish].sort((left, right) => left.yNorm - right.yNorm);
-  for (const fish of fishShadowItems) {
+  for (const fish of state.fish) {
     const species = getSpeciesForFish(fish);
     const image = species ? runtime.images.get(getFishDisplayAssetPath(fish, species, now) || species.asset) : null;
     if (!species || !image || getEffectiveFishBehavior(fish, species) === "sucker") {
@@ -47927,7 +48192,7 @@ function drawGroundShadows(now) {
     const height = width * (image.height / image.width);
     const shadowPlaneY = getSmoothedFishShadowPlaneY(fish, getFishShadowLayerPlaneY(fish), now);
     drawFishProjectedShadow(
-      shadowContext,
+      tankContext,
       pose.x,
       pose.y + height * 0.14,
       width,
@@ -47937,11 +48202,6 @@ function drawGroundShadows(now) {
       shadowPlaneY
     );
   }
-  shadowContext.restore();
-
-  tankContext.save();
-  tankContext.globalCompositeOperation = "multiply";
-  tankContext.drawImage(runtime.shadowCanvas, 0, 0);
   tankContext.restore();
 }
 

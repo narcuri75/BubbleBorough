@@ -15,10 +15,18 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260427x" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260428t" />
 </head>
 
 <body>
+  <section class="mobile-unsupported-blocker" aria-label="Unsupported device" role="status">
+    <div class="mobile-unsupported-card">
+      <p class="mobile-unsupported-kicker">Bubble Borough</p>
+      <h1>Please Use A Computer</h1>
+      <p>For the best experience with Bubble Borough, please use a desktop or laptop computer. Bubble Borough is not intended for mobile devices.</p>
+    </div>
+  </section>
+
   <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite">
     <div class="loading-overlay-content">
       <img class="loading-overlay-logo" src="assets/misc/bb_logo.png" alt="Bubble Borough" />
@@ -800,6 +808,11 @@
               <button id="toggleMouseLockButton" class="dock-button settings" type="button"
                 title="Lock Tank Mouse Input" aria-label="Lock Tank Mouse Input">&#128274;</button>
 
+              <button id="lightsOutToggleButton" class="dock-button lights-out" type="button" title="Lights Out: Auto"
+                aria-label="Lights Out Auto" aria-pressed="false">
+                <span class="dock-button-night-icon" aria-hidden="true"></span>
+              </button>
+
               <button id="uvLightToggleButton" class="dock-button uv-light" type="button" title="Turn UV Light Off"
                 aria-label="Turn UV Light Off" hidden>
                 <img src="assets/misc/uvlight.png" alt="" aria-hidden="true" />
@@ -812,11 +825,6 @@
 
               <button id="resetMealsButton" class="dock-button debug" type="button" title="Debug: Reset Today's Meals"
                 aria-label="Debug: Reset Today's Meals">🍽️</button>
-              <button id="debugDispenserButton" class="dock-button debug" type="button"
-                title="Debug: Dispense from Pellet Dispenser" aria-label="Debug: Dispense from Pellet Dispenser">
-                &#129385;
-              </button>
-
               <button id="debugBreedButton" class="dock-button debug" type="button" title="Debug: Make a Baby"
                 aria-label="Debug: Make a Baby">🥚</button>
 
@@ -832,13 +840,13 @@
               <button id="maxDirtButton" class="dock-button debug" type="button"
                 title="Debug: Increase Dirtiness by 10%" aria-label="Debug: Increase Dirtiness by 10%">💩</button>
 
-              <button id="debugGravelDigButton" class="dock-button debug" type="button" title="Debug: Force Gravel Dig"
+              <button id="debugGravelDigButton" class="dock-button debug" type="button" title="Debug: Dig"
                 aria-label="Debug: Force Gravel Dig">🕳️</button>
 
               <button id="debugGravelPebbleButton" class="dock-button debug" type="button"
                 title="Debug: Force Gravel Pebble Toss" aria-label="Debug: Force Gravel Pebble Toss">🪨</button>
 
-              <button id="debugCaveButton" class="dock-button debug" type="button" title="Debug: Force Cave Test Loop"
+              <button id="debugCaveButton" class="dock-button debug" type="button" title="Debug: Cave"
                 aria-label="Debug: Force Cave Test Loop">🏔️</button>
               <button id="debugDailyRecapButton" class="dock-button debug" type="button"
                 title="Debug: Trigger Daily Recap" aria-label="Debug: Trigger Daily Recap">&#128276;</button>
@@ -846,8 +854,71 @@
                 title="Debug: Download Fish Behavior Log" aria-label="Debug: Download Fish Behavior Log">&#128221;</button>
               <!--^^^-->
 
+              <button id="toggleDebugMenuButton" class="dock-button debug" type="button" hidden
+                title="Debug Menu" aria-label="Debug Menu" aria-controls="debugSidebar" aria-expanded="false"
+                data-preserve-fish-selection>&#128296;</button>
+
             </div>
             <div id="toolbarFastTooltip" class="toolbar-fast-tooltip" role="tooltip" hidden></div>
+
+            <aside id="debugSidebar" class="debug-sidebar" hidden aria-label="Debug Menu"
+              data-preserve-fish-selection>
+              <div class="debug-sidebar-panel">
+                <div class="debug-sidebar-header">
+                  <h2>&#128296; Debug Menu</h2>
+                </div>
+
+                <div class="debug-menu-section">
+                  <h3>Game State:</h3>
+                  <div id="debugMenuGameState" class="debug-menu-grid is-paired">
+                    <button id="addHundredCoinsButton" class="debug-menu-button" type="button"
+                      title="Debug: Add 100 coins" aria-label="Debug: Add 100 coins">
+                      <span class="debug-menu-icon">&#128176;</span>
+                      <span>Add 100 coins</span>
+                    </button>
+                    <button id="completeMealsButton" class="debug-menu-button" type="button"
+                      title="Debug: Complete Today's Meals" aria-label="Debug: Complete Today's Meals">
+                      <span class="debug-menu-icon">&#127869;&#65039;</span>
+                      <span>Complete Meals</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="debug-menu-section">
+                  <h3>Tank State:</h3>
+                  <div id="debugMenuDirtiness" class="debug-menu-grid is-paired">
+                    <button id="debugMaxDirtinessButton" class="debug-menu-button danger" type="button"
+                      title="Debug: Maximum Dirtiness" aria-label="Debug: Maximum Dirtiness">
+                      <span class="debug-menu-icon">&#9762;&#65039;</span>
+                      <span>Maximum Dirtiness</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="debug-menu-section">
+                  <h3>Fish:</h3>
+                  <div id="debugMenuFish" class="debug-menu-grid">
+                    <button id="debugInfectFishButton" class="debug-menu-button" type="button"
+                      data-preserve-fish-selection title="Debug: Infect Selected Fish"
+                      aria-label="Debug: Infect Selected Fish">
+                      <span class="debug-menu-icon">&#129440;</span>
+                      <span>Infect Selected Fish</span>
+                    </button>
+                    <button id="debugCureFishButton" class="debug-menu-button" type="button"
+                      data-preserve-fish-selection title="Debug: Cure Selected Fish"
+                      aria-label="Debug: Cure Selected Fish">
+                      <span class="debug-menu-icon">&#128137;</span>
+                      <span>Cure Selected Fish</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="debug-menu-section">
+                  <h3>Behavior:</h3>
+                  <div id="debugMenuBehaviors" class="debug-menu-grid"></div>
+                </div>
+              </div>
+            </aside>
 
             <section id="fishInspector" class="fish-inspector" hidden>
               <div class="fish-inspector-card">
@@ -949,7 +1020,20 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-  <script type="module" src="./public/app.js?v=20260427x"></script>
+  <script>
+    (() => {
+      const unsupportedScreenQuery = "(max-width: 767px), (max-width: 1180px) and (max-height: 620px)";
+      if (window.matchMedia?.(unsupportedScreenQuery)?.matches) {
+        document.documentElement.dataset.unsupportedMobileDevice = "true";
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = "./public/app.js?v=20260428b";
+      document.body.appendChild(script);
+    })();
+  </script>
 </body>
 
 </html>

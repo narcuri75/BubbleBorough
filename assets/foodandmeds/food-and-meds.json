@@ -60,7 +60,7 @@
     "firstAid": {
       "id": "firstAid",
       "name": "First Aid",
-      "description": "Blue drops that heal half a heart every 10 seconds for 1 minute.",
+      "description": "Blue drops that heal half a heart every 10 seconds for 1 minute and help sick fish slow down their decline.",
       "color": "#56B8FF",
       "bottleDrops": 3,
       "cost": 8,

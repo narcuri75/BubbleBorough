@@ -17,13 +17,13 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 36;
+const STATE_VERSION = 37;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
 const CUSTOM_IMAGE_STORAGE_TEST_ID = "__bb-custom-image-storage-test__";
 const APP_CONFIG_PATH = "assets/app-config.json";
-const HARDWARE_ACCELERATION_NOTICE_DISMISSED_KEY = "bubble-borough-hardware-acceleration-dismissed-v1";
+const HARDWARE_ACCELERATION_NOTICE_DISMISSED_KEY = "bubble-borough-hardware-acceleration-dismissed-v3";
 const STARTING_COINS = 20;
 const DEFAULT_APP_CONFIG = Object.freeze({
   wallpaperEngine: false
@@ -126,6 +126,210 @@ const COMFORT_COMPONENTS = Object.freeze({
   mealBoost: 10,
   conflictPenalty: 10,
   maxConflictPenalty: 30
+});
+const DISEASE_STATE_NONE = "none";
+const DISEASE_STATE_CARRIER = "carrier";
+const DISEASE_STATE_INCUBATING = "incubating";
+const DISEASE_STATE_EARLY = "earlySymptoms";
+const DISEASE_STATE_VISIBLE = "visibleSymptoms";
+const DISEASE_STATE_SEVERE = "severe";
+const DISEASE_STATE_RECOVERING = "recovering";
+const DISEASE_STATE_IMMUNE = "temporaryImmunity";
+const DISEASE_STATES = Object.freeze([
+  DISEASE_STATE_NONE,
+  DISEASE_STATE_CARRIER,
+  DISEASE_STATE_INCUBATING,
+  DISEASE_STATE_EARLY,
+  DISEASE_STATE_VISIBLE,
+  DISEASE_STATE_SEVERE,
+  DISEASE_STATE_RECOVERING,
+  DISEASE_STATE_IMMUNE
+]);
+const DEBUG_DISEASE_STAGE_ORDER = Object.freeze([
+  DISEASE_STATE_CARRIER,
+  DISEASE_STATE_INCUBATING,
+  DISEASE_STATE_EARLY,
+  DISEASE_STATE_VISIBLE,
+  DISEASE_STATE_SEVERE
+]);
+const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
+  { id: "debugBehaviorRefuseFoodButton", domKey: "debugBehaviorRefuseFoodButton", action: "refuse-food", icon: "&#127860;", label: "Refuse Food", title: "Debug: Refuse Food" },
+  { id: "debugBehaviorAnticipateFoodButton", domKey: "debugBehaviorAnticipateFoodButton", action: "anticipate-food", icon: "&#9201;&#65039;", label: "Anticipate Food", title: "Debug: Anticipate Food" },
+  { id: "debugBehaviorHideButton", domKey: "debugBehaviorHideButton", action: "hide", icon: "&#127793;", label: "Hide", title: "Debug: Hide Near Cover" },
+  { id: "debugBehaviorInspectLureButton", domKey: "debugBehaviorInspectLureButton", action: "inspect-lure", icon: "&#127907;", label: "Inspect Lure", title: "Debug: Inspect Lure" },
+  { id: "debugBehaviorGuardCaveButton", domKey: "debugBehaviorGuardCaveButton", action: "guard-cave", icon: "&#9968;&#65039;", label: "Guard Cave", title: "Debug: Guard Cave Or Hardscape" },
+  { id: "debugBehaviorFollowButton", domKey: "debugBehaviorFollowButton", action: "follow", icon: "&#128101;", label: "Follow", title: "Debug: Follow A Friend" },
+  { id: "debugBehaviorAvoidButton", domKey: "debugBehaviorAvoidButton", action: "avoid", icon: "&#8618;&#65039;", label: "Avoid", title: "Debug: Avoid A Feared Fish" },
+  { id: "debugBehaviorDiseaseButton", domKey: "debugBehaviorDiseaseButton", action: "disease", icon: "&#129658;", label: "Symptom Test", title: "Debug: Disease Symptom Test" },
+  { id: "debugBehaviorNightSleepButton", domKey: "debugBehaviorNightSleepButton", action: "night-sleep", icon: "&#127769;", label: "Night Sleep", title: "Debug: Night Sleep" },
+  { id: "debugBehaviorNightForageButton", domKey: "debugBehaviorNightForageButton", action: "night-forage", icon: "&#128269;", label: "Night Forage", title: "Debug: Night Forage" },
+  { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
+]);
+const DEBUG_BEHAVIOR_STEER_REFRESH_MS = 260;
+const DEBUG_BEHAVIOR_FOLLOW_DURATION_MS = 45 * 1000;
+const DEBUG_BEHAVIOR_FOLLOW_DISTANCE_NORM = 0.045;
+const DEBUG_BEHAVIOR_FOLLOW_CLOSE_NORM = 0.075;
+const DEBUG_BEHAVIOR_FOLLOW_CATCHUP_NORM = 0.16;
+const DEBUG_BEHAVIOR_FOLLOW_LOOKAHEAD_NORM = 0.026;
+const DEBUG_BEHAVIOR_AVOID_DURATION_MS = 45 * 1000;
+const DEBUG_BEHAVIOR_AVOID_RANGE_NORM = 0.48;
+const DEBUG_BEHAVIOR_AVOID_RETREAT_NORM = 0.34;
+const DEBUG_BEHAVIOR_LURE_INSPECT_DURATION_MS = 45 * 1000;
+const DEBUG_BEHAVIOR_LURE_SIDE_MS = 4200;
+const DEBUG_BEHAVIOR_ANTICIPATE_FOOD_DURATION_MS = 14 * 1000;
+const DISEASE_TYPE_GENERIC = "generic";
+const DISEASE_CARRIER_MS = 12 * HOUR_MS;
+const DISEASE_INCUBATING_MS = 24 * HOUR_MS;
+const DISEASE_EARLY_MS = 48 * HOUR_MS;
+const DISEASE_VISIBLE_MS = 72 * HOUR_MS;
+const DISEASE_TREATMENT_SLOW_MS = 12 * HOUR_MS;
+const DISEASE_RECOVERY_REQUIRED_MS = 24 * HOUR_MS;
+const DISEASE_RECOVERING_ENTRY_MS = 6 * HOUR_MS;
+const DISEASE_HEALTH_DAMAGE_INTERVAL_MS = 12 * HOUR_MS;
+const DISEASE_HEALTH_DAMAGE_UNITS = 1;
+const DISEASE_BASE_DAILY_CHANCE = 0.001;
+const DISEASE_LOW_CLEANLINESS_CHANCE = 0.005;
+const DISEASE_CRITICAL_CLEANLINESS_CHANCE = 0.01;
+const DISEASE_LOW_COMFORT_CHANCE = 0.005;
+const DISEASE_CROWDED_CHANCE = 0.005;
+const DISEASE_NEW_FISH_CLEAN_CHANCE = 0.05;
+const DISEASE_NEW_FISH_DIRTY_MIN_CHANCE = 0.08;
+const DISEASE_NEW_FISH_DIRTY_MAX_CHANCE = 0.12;
+const DISEASE_NEW_FISH_CROWDED_MIN_BONUS = 0.02;
+const DISEASE_NEW_FISH_CROWDED_MAX_BONUS = 0.04;
+const DISEASE_NEW_FISH_LOW_COMFORT_MIN_BONUS = 0.02;
+const DISEASE_NEW_FISH_LOW_COMFORT_MAX_BONUS = 0.04;
+const DISEASE_LOW_CLEANLINESS_THRESHOLD = 0.5;
+const DISEASE_CRITICAL_CLEANLINESS_THRESHOLD = 0.25;
+const DISEASE_LOW_COMFORT_THRESHOLD = 0.4;
+const DISEASE_CROWDED_LOAD_THRESHOLD = TANK_SPACE_FULL_LOAD;
+const DISEASE_EXPOSURE_MAX = 100;
+const DISEASE_EXPOSURE_DECAY_CLEAN = 2.2;
+const DISEASE_EXPOSURE_DECAY_DIRTY = 0.7;
+const DISEASE_SPREAD_BASE_GAIN = 5.5;
+const DISEASE_SPREAD_CHECK_MIN_MS = 5 * 1000;
+const DISEASE_SPREAD_CHECK_MAX_MS = 10 * 1000;
+const DISEASE_STAGE_CHECK_MIN_MS = 10 * 1000;
+const DISEASE_STAGE_CHECK_MAX_MS = 30 * 1000;
+const DISEASE_EXPOSURE_DECAY_MIN_MS = 30 * 1000;
+const DISEASE_EXPOSURE_DECAY_MAX_MS = 60 * 1000;
+const DISEASE_SYMPTOM_CHECK_MIN_MS = 2 * 1000;
+const DISEASE_SYMPTOM_CHECK_MAX_MS = 6 * 1000;
+const DISEASE_TASK_COOLDOWN_MS = 4 * MINUTE_MS;
+const DISEASE_SIGNAL_HISTORY_LIMIT = 12;
+const DISEASE_TEMPORARY_IMMUNITY_MIN_MS = DAY_MS;
+const DISEASE_TEMPORARY_IMMUNITY_MAX_MS = 3 * DAY_MS;
+const DISEASE_PROXIMITY_SMALL_PX = 110;
+const DISEASE_PROXIMITY_NORMAL_PX = 170;
+const DISEASE_PROXIMITY_CROWDED_PX = 230;
+const DISEASE_VISIBLE_AVOIDANCE_MIN_RADIUS_NORM = 0.4;
+const DISEASE_VISIBLE_AVOIDANCE_MAX_RADIUS_NORM = 0.58;
+const DISEASE_VISIBLE_AVOIDANCE_RETREAT_MIN_NORM = 0.28;
+const DISEASE_VISIBLE_AVOIDANCE_RETREAT_MAX_NORM = 0.52;
+const DISEASE_FEEDING_EXPOSURE_MULTIPLIER = 1.5;
+const DISEASE_SHARED_HIDE_EXPOSURE_MULTIPLIER = 1.7;
+const DISEASE_TREATED_MULTIPLIER = 0.35;
+const DISEASE_RECOVERY_TREATED_MULTIPLIER = 1.35;
+const DISEASE_SPREAD_CHECK_EXPOSURE_CAPS = Object.freeze({
+  [DISEASE_STATE_CARRIER]: 5,
+  [DISEASE_STATE_INCUBATING]: 12,
+  [DISEASE_STATE_EARLY]: 20,
+  [DISEASE_STATE_VISIBLE]: 28,
+  [DISEASE_STATE_SEVERE]: 42,
+  [DISEASE_STATE_RECOVERING]: 10
+});
+const DISEASE_SIGNAL_TYPES = Object.freeze([
+  "looking_under_weather",
+  "green_bubbles",
+  "food_refused",
+  "missed_feeding",
+  "hiding_more_than_usual",
+  "avoiding_group",
+  "sick_isolation",
+  "surface_hover",
+  "bottom_sit",
+  "slow_drift",
+  "stopped_grazing",
+  "stopped_digging",
+  "stopped_hunting",
+  "night_active_still",
+  "odd_sleep_spot",
+  "lingering_near_bubbler"
+]);
+const LIGHTS_OUT_OVERRIDE_AUTO = "auto";
+const LIGHTS_OUT_OVERRIDE_ON = "on";
+const LIGHTS_OUT_OVERRIDE_OFF = "off";
+const LIGHTS_OUT_OVERRIDES = Object.freeze([
+  LIGHTS_OUT_OVERRIDE_AUTO,
+  LIGHTS_OUT_OVERRIDE_ON,
+  LIGHTS_OUT_OVERRIDE_OFF
+]);
+const BEHAVIOR_PERSONALITIES = Object.freeze([
+  "bold",
+  "shy",
+  "social",
+  "standoffish",
+  "curious",
+  "territorial",
+  "greedy",
+  "sensitive",
+  "digger",
+  "cleaner",
+  "routine-loving",
+  "night-active",
+  "follower",
+  "homebody",
+  "hunter",
+  "explorer",
+  "display",
+  "gentle",
+  "nervous"
+]);
+const PERSONALITY_RARITY_TYPE = "type";
+const PERSONALITY_RARITY_VARIATION = "variation";
+const PERSONALITY_RARITY_ODDBALL = "oddball";
+const BEHAVIOR_SIGNAL_EXPIRY_MS = 12 * MINUTE_MS;
+const BEHAVIOR_SIGNAL_COOLDOWN_MS = 4 * MINUTE_MS;
+const BEHAVIOR_INTENT_LINGER_MS = 90 * 1000;
+const FOOD_REFUSAL_RETARGET_MS = 80 * 1000;
+const BEHAVIOR_RELATIONSHIP_CHECK_MS = 2 * MINUTE_MS;
+const DISEASE_BEHAVIOR_CHECK_MS = 30 * 1000;
+const DISEASE_AVOIDANCE_CHECK_MIN_MS = 900;
+const DISEASE_AVOIDANCE_CHECK_MAX_MS = 2200;
+const FISH_BEHAVIOR_PROFILES = Object.freeze({
+  "blue-tang": { group: "open-water-cruiser", personalities: ["explorer", "bold", "social", "curious"], rare: ["greedy", "routine-loving", "shy"] },
+  "yellow-tang": { group: "open-water-cruiser", personalities: ["explorer", "bold", "routine-loving", "curious"], rare: ["social", "territorial", "greedy"] },
+  "rainbowfish": { group: "open-water-cruiser", personalities: ["display", "social", "explorer", "routine-loving"], rare: ["bold", "curious", "greedy"] },
+  "swordtail": { group: "open-water-cruiser", personalities: ["bold", "explorer", "territorial", "greedy"], rare: ["social", "standoffish", "routine-loving"] },
+  "molly": { group: "open-water-cruiser", personalities: ["social", "routine-loving", "greedy", "gentle"], rare: ["bold", "curious", "follower"] },
+  "livebearer": { group: "small-social", personalities: ["social", "routine-loving", "curious", "follower"], rare: ["greedy", "shy", "bold"] },
+  "clownfish": { group: "open-water-cruiser", personalities: ["social", "curious", "bold", "homebody"], rare: ["greedy", "routine-loving", "territorial"] },
+  "goldfish": { group: "slow-graceful", personalities: ["greedy", "gentle", "routine-loving", "curious"], rare: ["bold", "homebody", "sensitive"], slowGraceful: true },
+  "betta": { group: "slow-graceful", personalities: ["display", "standoffish", "territorial", "sensitive"], rare: ["curious", "homebody", "greedy"], slowGraceful: true },
+  "angelfish": { group: "slow-graceful", personalities: ["display", "gentle", "sensitive", "social"], rare: ["territorial", "homebody", "curious"], slowGraceful: true },
+  "discus": { group: "slow-graceful", personalities: ["display", "sensitive", "gentle", "routine-loving"], rare: ["shy", "social", "homebody"], slowGraceful: true },
+  "moor-goldfish": { group: "slow-graceful", personalities: ["gentle", "sensitive", "shy", "routine-loving"], rare: ["night-active", "curious", "homebody"], slowGraceful: true, nightActive: true },
+  "gourami": { group: "slow-graceful", personalities: ["display", "gentle", "sensitive", "homebody"], rare: ["territorial", "curious", "routine-loving"], slowGraceful: true },
+  "blue-ram": { group: "slow-graceful", personalities: ["territorial", "homebody", "sensitive", "digger"], rare: ["curious", "gentle", "display"], slowGraceful: true },
+  "royal-gramma": { group: "slow-graceful", personalities: ["territorial", "homebody", "standoffish", "display"], rare: ["curious", "sensitive", "gentle"], slowGraceful: true },
+  "guppy": { group: "small-social", personalities: ["social", "curious", "shy", "follower"], rare: ["bold", "greedy", "routine-loving"] },
+  "zebra-danio": { group: "small-social", personalities: ["explorer", "social", "curious", "nervous"], rare: ["bold", "follower", "routine-loving"] },
+  "cherry-barb": { group: "small-social", personalities: ["social", "shy", "follower", "gentle"], rare: ["curious", "routine-loving", "bold"] },
+  "neon-tetra": { group: "small-social", personalities: ["social", "follower", "routine-loving", "shy"], rare: ["curious", "nervous", "night-active"] },
+  "celestial-pearl-danio": { group: "small-social", personalities: ["shy", "curious", "nervous", "social"], rare: ["follower", "night-active", "routine-loving"] },
+  "otocinclus": { group: "bottom-cleaner", personalities: ["cleaner", "homebody", "night-active", "shy"], rare: ["curious", "sensitive", "digger"], nightActive: true, detritusDiet: true },
+  "brine-shrimp": { group: "bottom-cleaner", personalities: ["cleaner", "digger", "social", "night-active"], rare: ["curious", "homebody", "shy"], nightActive: true, detritusDiet: true },
+  "loach": { group: "bottom-cleaner", personalities: ["digger", "explorer", "cleaner", "night-active"], rare: ["social", "homebody", "curious"], nightActive: true },
+  "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
+  "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
+  "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true }
+});
+const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
+  "open-water-cruiser": ["bold", "explorer", "social", "routine-loving", "curious", "greedy"],
+  "slow-graceful": ["display", "gentle", "sensitive", "homebody", "territorial", "routine-loving", "curious"],
+  "small-social": ["social", "shy", "follower", "routine-loving", "curious", "nervous"],
+  "bottom-cleaner": ["digger", "cleaner", "night-active", "homebody", "curious", "shy"],
+  "special-predator": ["hunter", "bold", "curious", "standoffish", "territorial", "greedy"]
 });
 const COMFORT_NEED_LABELS = Object.freeze({
   plants: "Plants",
@@ -838,6 +1042,11 @@ const DEFAULT_BUBBLER_MALFORMED_SPEED = 0.75;
 const MIN_BUBBLER_MALFORMED_SPEED = 0.05;
 const MAX_BUBBLER_MALFORMED_SPEED = 3;
 const BUBBLER_POP_MICRO_BUBBLE_COUNT = 10;
+const DISEASE_GREEN_BUBBLE_COLOR = "#7DDF22";
+const DISEASE_GREEN_BUBBLE_CADENCE_MS = 1800;
+const DISEASE_GREEN_BUBBLE_MIN_TRAVEL_MS = 5400;
+const DISEASE_GREEN_BUBBLE_POP_MS = 620;
+const DISEASE_GREEN_BUBBLE_MAX_PER_FISH = 24;
 const DEFAULT_TANK_LAYER = 3;
 const LAYER_BOTTOM_GRAVEL_SURFACE_OFFSET_PX = 0;
 const LAYER_BOTTOM_GRAVEL_STEP_PX = 20;
@@ -1549,8 +1758,19 @@ function shouldUseExternalLinkPrompt() {
   return isWallpaperEngineModeEnabled();
 }
 
+function isMobileDisplayForHardwareAccelerationNotice() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return Boolean(
+    window.matchMedia?.(PORTABLE_PERFORMANCE_MEDIA_QUERY)?.matches
+    || window.matchMedia?.("(max-width: 720px)")?.matches
+  );
+}
+
 function shouldShowHardwareAccelerationNotice() {
-  return !isWallpaperEngineModeEnabled();
+  return !isWallpaperEngineModeEnabled() && !isMobileDisplayForHardwareAccelerationNotice();
 }
 
 function isTankMouseLockFeatureEnabled() {
@@ -2516,20 +2736,31 @@ const dom = {
   scrubProgressBar: document.querySelector("#scrubProgressBar"),
   nextMealCountdownMirror: document.querySelector("#nextMealCountdownMirror"),
   feedButton: document.querySelector("#feedButton"),
+  toggleDebugMenuButton: document.querySelector("#toggleDebugMenuButton"),
+  debugSidebar: document.querySelector("#debugSidebar"),
+  debugMenuGameState: document.querySelector("#debugMenuGameState"),
+  debugMenuFish: document.querySelector("#debugMenuFish"),
+  debugMenuDirtiness: document.querySelector("#debugMenuDirtiness"),
+  debugMenuBehaviors: document.querySelector("#debugMenuBehaviors"),
   resetMealsButton: document.querySelector("#resetMealsButton"),
-  debugDispenserButton: document.querySelector("#debugDispenserButton"),
+  addHundredCoinsButton: document.querySelector("#addHundredCoinsButton"),
+  completeMealsButton: document.querySelector("#completeMealsButton"),
   spongeButton: document.querySelector("#spongeButton"),
   scoopButton: document.querySelector("#scoopButton"),
   debugDamageFishButton: document.querySelector("#debugDamageFishButton"),
   debugBreedButton: document.querySelector("#debugBreedButton"),
   resetFishHealthButton: document.querySelector("#resetFishHealthButton"),
+  debugInfectFishButton: document.querySelector("#debugInfectFishButton"),
+  debugCureFishButton: document.querySelector("#debugCureFishButton"),
   addCoinsButton: document.querySelector("#addCoinsButton"),
   maxDirtButton: document.querySelector("#maxDirtButton"),
+  debugMaxDirtinessButton: document.querySelector("#debugMaxDirtinessButton"),
   debugGravelDigButton: document.querySelector("#debugGravelDigButton"),
   debugGravelPebbleButton: document.querySelector("#debugGravelPebbleButton"),
   debugCaveButton: document.querySelector("#debugCaveButton"),
   debugDailyRecapButton: document.querySelector("#debugDailyRecapButton"),
   debugFishBehaviorLogButton: document.querySelector("#debugFishBehaviorLogButton"),
+  lightsOutToggleButton: document.querySelector("#lightsOutToggleButton"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
   loadingOverlayText: document.querySelector(".loading-overlay-text"),
   tankStage: document.querySelector("#tankStage"),
@@ -2923,6 +3154,8 @@ const runtime = {
   grimeBaseCanvas: document.createElement("canvas"),
   grimeBaseCacheKey: "",
   fishShadowPlaneCache: new Map(),
+  diseaseGreenBubblesByFishId: new Map(),
+  debugBehaviorSteeringByFishId: new Map(),
   fishGravelPebbleActions: new Map(),
   fishPebbleTosses: [],
   forcedGravelDigUntilByFishId: new Map(),
@@ -2945,6 +3178,7 @@ const runtime = {
   lastAnimationFrameAt: 0,
   lastAnimationUpdateAt: 0,
   debugToolsEnabled: DEBUG_MODE,
+  debugSidebarOpen: false,
   aspectRatioLocked: FIXED_16_9_ASPECT_RATIO,
   hiddenKeySequenceBuffer: "",
   debugBreedingSequence: null,
@@ -3467,6 +3701,7 @@ function createTankState(options = {}) {
     autoDispenser: createDefaultAutoDispenserState(options.autoDispenser),
     uvLightInstalled: Boolean(options.uvLightInstalled),
     uvLightEnabled: Boolean(options.uvLightInstalled) && options.uvLightEnabled !== false,
+    lightsOutOverride: normalizeLightsOutOverride(options.lightsOutOverride),
     selectedBubbleAsset: options.selectedBubbleAsset ?? (runtime.bubbleCatalog[0]?.key || null),
     theme: DEFAULT_THEME,
     lastCleanedAt: Number.isFinite(options.lastCleanedAt) ? options.lastCleanedAt : now,
@@ -7484,6 +7719,7 @@ const TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS = Object.freeze([
   "medicineButton",
   "tipsButton",
   "toggleMouseLockButton",
+  "lightsOutToggleButton",
   "uvLightToggleButton"
 ]);
 const TUTORIAL_ALL_TOOLBAR_BUTTON_IDS = Object.freeze([
@@ -8357,6 +8593,7 @@ init().catch((error) => {
 async function init() {
   await loadAppConfig();
   applyAspectRatioMode();
+  setupDebugMenuButtons();
   bindEvents();
   syncFilterFeatureVisibility();
 
@@ -8523,6 +8760,14 @@ function showLoadingOverlayReadyState() {
     return;
   }
 
+  if (isHardwareAccelerationNoticeBlockingStart()) {
+    overlay.classList.remove("is-ready");
+    if (dom.loadingOverlayText) {
+      dom.loadingOverlayText.textContent = "Loading Aquarium";
+    }
+    return;
+  }
+
   overlay.classList.add("is-ready");
   if (dom.loadingOverlayText) {
     dom.loadingOverlayText.textContent = "Click to play";
@@ -8591,6 +8836,81 @@ function applyAspectRatioMode() {
 
 function isDebugModeEnabled() {
   return runtime.debugToolsEnabled === true;
+}
+
+function setupDebugMenuButtons() {
+  const moveButton = (button, container, iconMarkup, label, extraClass = "", before = null) => {
+    if (!button || !container) {
+      return;
+    }
+
+    button.className = `debug-menu-button${extraClass ? ` ${extraClass}` : ""}`;
+    button.innerHTML = `
+      <span class="debug-menu-icon">${iconMarkup}</span>
+      <span>${label}</span>
+    `;
+    if (before && before.parentElement === container) {
+      container.insertBefore(button, before);
+    } else {
+      container.appendChild(button);
+    }
+  };
+  const ensureBehaviorButton = (config) => {
+    if (!config?.id || !config?.domKey) {
+      return null;
+    }
+
+    let button = dom[config.domKey] || document.querySelector(`#${config.id}`);
+    if (!button) {
+      button = document.createElement("button");
+      button.id = config.id;
+      button.type = "button";
+    }
+    button.dataset.debugBehaviorAction = config.action;
+    button.setAttribute("data-preserve-fish-selection", "");
+    button.title = config.title || `Debug: ${config.label}`;
+    button.setAttribute("aria-label", config.title || `Debug: ${config.label}`);
+    dom[config.domKey] = button;
+    return button;
+  };
+
+  moveButton(dom.addCoinsButton, dom.debugMenuGameState, "&#129689;", "Add 10 coins", "", dom.addHundredCoinsButton);
+  moveButton(dom.resetMealsButton, dom.debugMenuGameState, "&#127860;", "Reset Meals", "", dom.completeMealsButton);
+  moveButton(dom.debugDailyRecapButton, dom.debugMenuGameState, "&#128276;", "Daily Bonus Prompt", "wide");
+  moveButton(dom.debugFishBehaviorLogButton, dom.debugMenuGameState, "&#128200;", "Export Log Data", "wide");
+
+  moveButton(dom.debugBreedButton, dom.debugMenuFish, "&#129370;", "Make Baby", "", dom.debugInfectFishButton);
+  moveButton(dom.debugDamageFishButton, dom.debugMenuFish, "&#128148;", "Hurt Selected Fish", "", dom.debugInfectFishButton);
+  moveButton(dom.resetFishHealthButton, dom.debugMenuFish, "&#128150;", "Restore Fish Health", "", dom.debugInfectFishButton);
+
+  moveButton(dom.maxDirtButton, dom.debugMenuDirtiness, "&#128169;", "+10% Dirtiness");
+  if (dom.maxDirtButton && dom.debugMaxDirtinessButton && dom.debugMenuDirtiness) {
+    dom.debugMenuDirtiness.insertBefore(dom.maxDirtButton, dom.debugMaxDirtinessButton);
+  }
+
+  moveButton(dom.debugGravelDigButton, dom.debugMenuBehaviors, "&#128371;&#65039;", "Dig");
+  moveButton(dom.debugGravelPebbleButton, dom.debugMenuBehaviors, "&#129704;", "Pebble");
+  moveButton(dom.debugCaveButton, dom.debugMenuBehaviors, "&#9968;&#65039;", "Cave");
+  // TODO(debug-menu behavior): Additional Fish Behaviors will go here.
+  for (const config of DEBUG_BEHAVIOR_BUTTON_CONFIGS) {
+    moveButton(
+      ensureBehaviorButton(config),
+      dom.debugMenuBehaviors,
+      config.icon,
+      config.label,
+      config.extraClass || ""
+    );
+  }
+}
+
+function toggleDebugSidebar() {
+  if (!isDebugModeEnabled()) {
+    runtime.debugSidebarOpen = false;
+    return;
+  }
+
+  runtime.debugSidebarOpen = !runtime.debugSidebarOpen;
+  renderUi(Date.now(), { full: false });
 }
 
 function isAspectRatioLocked() {
@@ -8719,11 +9039,50 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   if (activity !== "feeding") {
     signatureParts.push(`target:${targetBucket}`);
   }
+  const diseaseState = sanitizeDiseaseState(fish.diseaseState);
+  const recentDiseaseSignals = getRecentDiseaseSignals(fish, now);
+  const behaviorIntent = getFishBehaviorIntent(fish, now);
+  if (behaviorIntent?.type) {
+    detailParts.unshift(`${behaviorIntent.type}${behaviorIntent.cause ? ` | ${behaviorIntent.cause}` : ""}`);
+    signatureParts.push(`intent:${behaviorIntent.type}:${behaviorIntent.cause || ""}`);
+  }
+  const behaviorSignals = Object.values(sanitizeBehaviorSignals(fish.behaviorSignals, now))
+    .sort((left, right) => Number(right.lastSeenAt) - Number(left.lastSeenAt));
+  if (behaviorSignals[0]?.debugText) {
+    detailParts.unshift(behaviorSignals[0].debugText);
+    signatureParts.push(`behavior-signal:${behaviorSignals[0].type}`);
+  }
+  if (isTankLightsOut(now)) {
+    detailParts.push(isNightActiveFish(fish) ? "lights out active" : "lights out dim");
+    signatureParts.push("lights-out");
+  }
+  if (fish.personality) {
+    detailParts.push(`trait ${fish.personality}`);
+    signatureParts.push(`personality:${fish.personality}:${fish.personalityRarity || ""}`);
+  }
+  if (diseaseState !== DISEASE_STATE_NONE) {
+    const exposure = Math.round(Number(fish.diseaseExposureLevel) || 0);
+    const contagiousness = getDiseaseStageSpreadMultiplier(diseaseState);
+    const treated = (Number(fish.diseaseTreatedUntil) || 0) > now;
+    detailParts.push(`disease ${diseaseState}`);
+    detailParts.push(`exposure ${exposure}/${DISEASE_EXPOSURE_MAX}`);
+    detailParts.push(`contagious ${contagiousness.toFixed(1)}x${treated ? " treated" : ""}`);
+    signatureParts.push(`disease:${diseaseState}:${exposure}:${Math.round(contagiousness * 10)}`);
+  } else if ((Number(fish.diseaseExposureLevel) || 0) > 0) {
+    const exposure = Math.round(Number(fish.diseaseExposureLevel) || 0);
+    detailParts.push(`exposure ${exposure}/${DISEASE_EXPOSURE_MAX}`);
+    signatureParts.push(`exposure:${exposure}`);
+  }
+  if (recentDiseaseSignals.length) {
+    detailParts.push(`signal ${recentDiseaseSignals[0]}`);
+    signatureParts.push(`signal:${recentDiseaseSignals[0]}`);
+  }
 
   const behaviorLine = `${effectiveBehavior} / ${activity}`;
   const detailText = detailParts.join(" | ");
   const layerText = `L${activeLayer}->${desiredLayer} T${targetText}`;
   const conditionText = `H ${healthUnits}/${maxHealthUnits} C ${Math.round(comfortValue * 100)}%`;
+  const illnessLine = `Illness: ${diseaseState} E ${Math.round(Number(fish.diseaseExposureLevel) || 0)}/${DISEASE_EXPOSURE_MAX}`;
 
   return {
     signature: signatureParts.join("|"),
@@ -8736,6 +9095,7 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     labelLines: [
       displayName,
       behaviorLine,
+      illnessLine,
       detailText,
       `${layerText} ${conditionText}`
     ],
@@ -8848,6 +9208,7 @@ function downloadDebugFishBehaviorLog() {
 function toggleDebugTools() {
   runtime.debugToolsEnabled = !runtime.debugToolsEnabled;
   if (!runtime.debugToolsEnabled) {
+    runtime.debugSidebarOpen = false;
     resetDebugFishBehaviorBroadcastState();
   }
   runtime.uvGlowMaskCache.clear();
@@ -9087,7 +9448,7 @@ function bindEvents() {
         return;
       }
       if (runtime.utilityOverlayOpen) {
-        closeUtilityOverlay();
+        requestCloseUtilityOverlay();
         return;
       }
       if (runtime.storeOverlayOpen) {
@@ -9201,6 +9562,9 @@ function bindEvents() {
 
     event.preventDefault();
     event.stopPropagation();
+    if (isHardwareAccelerationNoticeBlockingStart()) {
+      return;
+    }
     primeSoundEffects();
     playRegularButtonSoundEffect();
     hideLoadingOverlay();
@@ -9236,6 +9600,7 @@ function bindEvents() {
   dom.prevTankButton?.addEventListener("click", () => switchTankByOffset(-1));
   dom.nextTankButton?.addEventListener("click", () => switchTankByOffset(1));
   dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("daily-bonus"));
+  dom.toggleDebugMenuButton?.addEventListener("click", () => toggleDebugSidebar());
   dom.debugDailyRecapButton?.addEventListener("click", () => triggerDebugDailyRecap());
   dom.feedButton.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("feedButton")) {
@@ -9269,7 +9634,7 @@ function bindEvents() {
     void importLocalFishFromPicker(event);
   });
   dom.resetMealsButton.addEventListener("click", () => resetMealsDebug());
-  dom.debugDispenserButton?.addEventListener("click", () => debugDispenseAutoDispenser());
+  dom.completeMealsButton?.addEventListener("click", () => completeMealsDebug());
   dom.spongeButton.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("spongeButton")) {
       return;
@@ -9285,12 +9650,19 @@ function bindEvents() {
   dom.debugDamageFishButton.addEventListener("click", () => damageSelectedFish());
   dom.debugBreedButton?.addEventListener("click", () => triggerDebugBabySequence());
   dom.resetFishHealthButton?.addEventListener("click", () => restoreAllFishHealthDebug());
-  dom.addCoinsButton.addEventListener("click", () => addDebugCoins());
-  dom.maxDirtButton.addEventListener("click", () => makeTankMaxDirty());
+  dom.debugInfectFishButton?.addEventListener("click", () => infectSelectedFishDebug());
+  dom.debugCureFishButton?.addEventListener("click", () => cureSelectedFishDebug());
+  dom.addCoinsButton.addEventListener("click", () => addDebugCoins(10));
+  dom.addHundredCoinsButton?.addEventListener("click", () => addDebugCoins(100));
+  dom.maxDirtButton.addEventListener("click", () => increaseTankDirtinessDebug());
+  dom.debugMaxDirtinessButton?.addEventListener("click", () => maxTankDirtinessDebug());
   dom.debugGravelDigButton?.addEventListener("click", () => triggerDebugGravelDigTest());
   dom.debugGravelPebbleButton?.addEventListener("click", () => triggerDebugGravelPebbleTest());
   dom.debugCaveButton.addEventListener("click", () => toggleDebugNightCaveMode());
   dom.debugFishBehaviorLogButton?.addEventListener("click", () => downloadDebugFishBehaviorLog());
+  for (const config of DEBUG_BEHAVIOR_BUTTON_CONFIGS) {
+    dom[config.domKey]?.addEventListener("click", () => triggerDebugBehaviorScenario(config.action));
+  }
   dom.introTutorialOverlay?.addEventListener("pointerdown", (event) => {
     if (dom.introTutorialOverlay?.classList.contains("is-blocking")) {
       event.stopPropagation();
@@ -9330,6 +9702,9 @@ function bindEvents() {
   dom.tankBottomDock?.addEventListener("focusin", handleToolbarFastTooltipFocusIn);
   dom.tankBottomDock?.addEventListener("focusout", handleToolbarFastTooltipFocusOut);
   dom.tankBottomDock?.addEventListener("click", hideToolbarFastTooltip, true);
+  dom.debugSidebar?.addEventListener("click", (event) => {
+    playRegularButtonSoundForAction(event, ".debug-menu-button");
+  }, true);
   window.addEventListener("resize", hideToolbarFastTooltip);
   document.addEventListener("scroll", hideToolbarFastTooltip, true);
   dom.openStoreButton.addEventListener("click", () => {
@@ -9384,6 +9759,7 @@ function bindEvents() {
   dom.openEquipmentShopButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.openEquipmentStoreButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.toggleMouseLockButton?.addEventListener("click", () => toggleTankMouseInputLocked());
+  dom.lightsOutToggleButton?.addEventListener("click", () => toggleLightsOutOverride());
   dom.uvLightToggleButton?.addEventListener("click", () => toggleUvLightPower());
   dom.editModeDockButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("editModeDockButton")) {
@@ -13101,6 +13477,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         return false;
       }
       addFishToTank(fish, now);
+      maybeSeedNewFishDiseaseCarrier(fish, now);
       const currentSlot = getCurrentMealSlot(now);
       if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
         const entry = ensureMealHistoryEntry(currentSlot.key, now);
@@ -13566,6 +13943,246 @@ function sanitizeFishBehaviorSpeciesId(value, baseSpeciesId = "") {
     : "";
 }
 
+function normalizeLightsOutOverride(value) {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return LIGHTS_OUT_OVERRIDES.includes(normalized) ? normalized : LIGHTS_OUT_OVERRIDE_AUTO;
+}
+
+function normalizeBehaviorPersonality(value) {
+  const normalized = typeof value === "string"
+    ? value.trim().toLowerCase().replace(/[_\s]+/g, "-")
+    : "";
+  return BEHAVIOR_PERSONALITIES.includes(normalized) ? normalized : "";
+}
+
+function getFishBehaviorProfile(speciesOrFish) {
+  const species = speciesOrFish?.speciesId
+    ? (getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
+    : speciesOrFish;
+  const speciesId = typeof species?.id === "string" ? species.id : (typeof speciesOrFish?.speciesId === "string" ? speciesOrFish.speciesId : "");
+  const profile = FISH_BEHAVIOR_PROFILES[speciesId] || null;
+  const behavior = species?.behavior || "";
+  const fallbackGroup = behavior === "sucker" || behavior === "shrimp"
+    ? "bottom-cleaner"
+    : behavior === "piranha"
+      ? "special-predator"
+      : "open-water-cruiser";
+  const group = profile?.group || fallbackGroup;
+  const groupPersonalities = FISH_BEHAVIOR_GROUP_VARIATIONS[group] || FISH_BEHAVIOR_GROUP_VARIATIONS["open-water-cruiser"];
+  return {
+    group,
+    personalities: Array.isArray(profile?.personalities) && profile.personalities.length
+      ? profile.personalities
+      : groupPersonalities,
+    rare: Array.isArray(profile?.rare) && profile.rare.length
+      ? profile.rare
+      : BEHAVIOR_PERSONALITIES.filter((trait) => !groupPersonalities.includes(trait)).slice(0, 5),
+    slowGraceful: Boolean(profile?.slowGraceful),
+    nightActive: Boolean(profile?.nightActive),
+    detritusDiet: Boolean(profile?.detritusDiet) || species?.diet === "detritus",
+    predatorDiet: Boolean(profile?.predatorDiet) || behavior === "piranha"
+  };
+}
+
+function pickFishPersonality(speciesOrFish) {
+  const profile = getFishBehaviorProfile(speciesOrFish);
+  const roll = Math.random();
+  if (roll < 0.7) {
+    return {
+      personality: profile.personalities[Math.floor(Math.random() * profile.personalities.length)] || "curious",
+      rarity: PERSONALITY_RARITY_TYPE
+    };
+  }
+  if (roll < 0.9) {
+    const variationPool = FISH_BEHAVIOR_GROUP_VARIATIONS[profile.group] || profile.personalities;
+    return {
+      personality: variationPool[Math.floor(Math.random() * variationPool.length)] || "curious",
+      rarity: PERSONALITY_RARITY_VARIATION
+    };
+  }
+  return {
+    personality: profile.rare[Math.floor(Math.random() * profile.rare.length)] || "curious",
+    rarity: PERSONALITY_RARITY_ODDBALL
+  };
+}
+
+function sanitizePersonalityRarity(value) {
+  return [PERSONALITY_RARITY_TYPE, PERSONALITY_RARITY_VARIATION, PERSONALITY_RARITY_ODDBALL].includes(value)
+    ? value
+    : PERSONALITY_RARITY_TYPE;
+}
+
+function createDefaultFeedingMemory(now = Date.now()) {
+  return {
+    lastFoodXNorm: null,
+    lastFoodYNorm: null,
+    lastFoodAt: 0,
+    feederXNorm: null,
+    feederYNorm: null,
+    feederSeenAt: 0,
+    crowdedFishIds: [],
+    updatedAt: now
+  };
+}
+
+function sanitizeFeedingMemory(value, now = Date.now()) {
+  const source = value && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : {};
+  const xNorm = Number(source.lastFoodXNorm);
+  const yNorm = Number(source.lastFoodYNorm);
+  const feederXNorm = Number(source.feederXNorm);
+  const feederYNorm = Number(source.feederYNorm);
+  return {
+    lastFoodXNorm: Number.isFinite(xNorm) ? clamp(xNorm, 0.08, 0.92) : null,
+    lastFoodYNorm: Number.isFinite(yNorm) ? clamp(yNorm, 0.08, 0.9) : null,
+    lastFoodAt: Number.isFinite(Number(source.lastFoodAt)) ? Math.max(0, Number(source.lastFoodAt)) : 0,
+    feederXNorm: Number.isFinite(feederXNorm) ? clamp(feederXNorm, 0.08, 0.92) : null,
+    feederYNorm: Number.isFinite(feederYNorm) ? clamp(feederYNorm, 0.02, 0.42) : null,
+    feederSeenAt: Number.isFinite(Number(source.feederSeenAt)) ? Math.max(0, Number(source.feederSeenAt)) : 0,
+    crowdedFishIds: Array.isArray(source.crowdedFishIds)
+      ? [...new Set(source.crowdedFishIds.map((fishId) => String(fishId || "")).filter(Boolean))].slice(0, 6)
+      : [],
+    updatedAt: Number.isFinite(Number(source.updatedAt)) ? Math.max(0, Number(source.updatedAt)) : now
+  };
+}
+
+function sanitizeFavoriteSpot(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const xNorm = Number(value.xNorm);
+  const yNorm = Number(value.yNorm);
+  if (!Number.isFinite(xNorm) || !Number.isFinite(yNorm)) {
+    return null;
+  }
+
+  return {
+    xNorm: clamp(xNorm, 0.08, 0.92),
+    yNorm: clamp(yNorm, 0.14, 0.9),
+    decorId: typeof value.decorId === "string" ? value.decorId : "",
+    zoneType: typeof value.zoneType === "string" ? value.zoneType : "",
+    assignedAt: Number.isFinite(Number(value.assignedAt)) ? Math.max(0, Number(value.assignedAt)) : 0
+  };
+}
+
+function createDefaultBehaviorDiseaseSnapshot(now = Date.now()) {
+  return {
+    type: DISEASE_TYPE_GENERIC,
+    stage: DISEASE_STATE_NONE,
+    exposure: 0,
+    startedAt: 0,
+    stageStartedAt: 0,
+    nextStageCheckAt: now + randomBetween(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS),
+    nextSpreadCheckAt: now + randomBetween(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS),
+    nextSymptomAt: now + randomBetween(DISEASE_SYMPTOM_CHECK_MIN_MS, DISEASE_SYMPTOM_CHECK_MAX_MS),
+    lastBubbleAt: 0,
+    lastDamageAt: 0,
+    treatedAt: 0,
+    recoveredAt: 0
+  };
+}
+
+function sanitizeBehaviorDiseaseSnapshot(value, now = Date.now()) {
+  const source = value && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : {};
+  const fallback = createDefaultBehaviorDiseaseSnapshot(now);
+  const stage = DISEASE_STATES.includes(source.stage) ? source.stage : DISEASE_STATE_NONE;
+  return {
+    type: typeof source.type === "string" && source.type ? source.type : DISEASE_TYPE_GENERIC,
+    stage,
+    exposure: clamp(Number(source.exposure) || 0, 0, DISEASE_EXPOSURE_MAX),
+    startedAt: Number.isFinite(Number(source.startedAt)) ? Math.max(0, Number(source.startedAt)) : 0,
+    stageStartedAt: Number.isFinite(Number(source.stageStartedAt)) ? Math.max(0, Number(source.stageStartedAt)) : 0,
+    nextStageCheckAt: Number.isFinite(Number(source.nextStageCheckAt)) ? Math.max(0, Number(source.nextStageCheckAt)) : fallback.nextStageCheckAt,
+    nextSpreadCheckAt: Number.isFinite(Number(source.nextSpreadCheckAt)) ? Math.max(0, Number(source.nextSpreadCheckAt)) : fallback.nextSpreadCheckAt,
+    nextSymptomAt: Number.isFinite(Number(source.nextSymptomAt)) ? Math.max(0, Number(source.nextSymptomAt)) : fallback.nextSymptomAt,
+    lastBubbleAt: Number.isFinite(Number(source.lastBubbleAt)) ? Math.max(0, Number(source.lastBubbleAt)) : 0,
+    lastDamageAt: Number.isFinite(Number(source.lastDamageAt)) ? Math.max(0, Number(source.lastDamageAt)) : 0,
+    treatedAt: Number.isFinite(Number(source.treatedAt)) ? Math.max(0, Number(source.treatedAt)) : 0,
+    recoveredAt: Number.isFinite(Number(source.recoveredAt)) ? Math.max(0, Number(source.recoveredAt)) : 0
+  };
+}
+
+function sanitizeBehaviorSignals(value, now = Date.now()) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(Object.entries(value)
+    .map(([type, signal]) => {
+      if (!signal || typeof signal !== "object") {
+        return null;
+      }
+      const expiresAt = Number.isFinite(Number(signal.expiresAt)) ? Number(signal.expiresAt) : 0;
+      if (expiresAt && expiresAt <= now) {
+        return null;
+      }
+      const key = String(type || "").trim();
+      if (!key) {
+        return null;
+      }
+      return [key, {
+        type: key,
+        taskText: typeof signal.taskText === "string" ? signal.taskText : "",
+        debugText: typeof signal.debugText === "string" ? signal.debugText : "",
+        firstSeenAt: Number.isFinite(Number(signal.firstSeenAt)) ? Number(signal.firstSeenAt) : now,
+        lastSeenAt: Number.isFinite(Number(signal.lastSeenAt)) ? Number(signal.lastSeenAt) : now,
+        expiresAt: expiresAt || now + BEHAVIOR_SIGNAL_EXPIRY_MS,
+        cooldownUntil: Number.isFinite(Number(signal.cooldownUntil)) ? Number(signal.cooldownUntil) : 0
+      }];
+    })
+    .filter(Boolean)
+    .slice(-DISEASE_SIGNAL_HISTORY_LIMIT));
+}
+
+function sanitizeFishRelationships(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(Object.entries(value)
+    .map(([fishId, relation]) => {
+      const otherId = String(fishId || "").trim();
+      if (!otherId || !relation || typeof relation !== "object") {
+        return null;
+      }
+      const kind = ["friend", "neutral", "dislike", "fear", "rival"].includes(relation.kind)
+        ? relation.kind
+        : "neutral";
+      return [otherId, {
+        kind,
+        score: clamp(Number(relation.score) || 0, -100, 100),
+        updatedAt: Number.isFinite(Number(relation.updatedAt)) ? Math.max(0, Number(relation.updatedAt)) : 0
+      }];
+    })
+    .filter(Boolean));
+}
+
+function sanitizeBehaviorIntent(value, now = Date.now()) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const expiresAt = Number.isFinite(Number(value.expiresAt)) ? Number(value.expiresAt) : 0;
+  if (expiresAt && expiresAt <= now) {
+    return null;
+  }
+  const type = typeof value.type === "string" ? value.type.trim() : "";
+  if (!type) {
+    return null;
+  }
+  return {
+    type,
+    cause: typeof value.cause === "string" ? value.cause.trim() : "",
+    targetId: typeof value.targetId === "string" ? value.targetId.trim() : "",
+    targetName: typeof value.targetName === "string" ? value.targetName.trim() : "",
+    startedAt: Number.isFinite(Number(value.startedAt)) ? Math.max(0, Number(value.startedAt)) : now,
+    expiresAt: expiresAt || now + BEHAVIOR_INTENT_LINGER_MS
+  };
+}
+
 function sanitizeFishHueShift(value) {
   return clamp(Math.round(Number(value) || 0), FISH_HUE_SHIFT_MIN, FISH_HUE_SHIFT_MAX);
 }
@@ -13612,9 +14229,17 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now()) {
   const filters = [];
   const grayscalePercent = Math.round((1 - clamp(Number(healthRatio) || 0, 0, 1)) * 100);
   const colorCycleFilter = getFishColorCycleFilter(fish, now);
+  const diseaseSaturationPercent = getFishDiseaseSaturationPercent(fish, now);
+  const diseaseBrightnessPercent = getFishDiseaseBrightnessPercent(fish, now);
 
   if (colorCycleFilter !== "none") {
     filters.push(colorCycleFilter);
+  }
+  if (diseaseSaturationPercent < 100 || diseaseBrightnessPercent < 100) {
+    filters.push(`saturate(${diseaseSaturationPercent}%) brightness(${diseaseBrightnessPercent}%)`);
+  }
+  if (!isFishDead(fish) && isTankLightsOut(now)) {
+    filters.push(isNightActiveFish(fish) ? "brightness(108%) saturate(96%)" : "brightness(84%) saturate(82%)");
   }
   if (grayscalePercent > 0) {
     filters.push(`grayscale(${grayscalePercent}%)`);
@@ -13627,6 +14252,2006 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now()) {
   }
 
   return filters.length ? filters.join(" ") : "none";
+}
+
+function sanitizeDiseaseState(value) {
+  const stateId = typeof value === "string" ? value.trim() : "";
+  return DISEASE_STATES.includes(stateId) ? stateId : DISEASE_STATE_NONE;
+}
+
+function sanitizeDiseaseSignalMap(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key, timestamp]) => DISEASE_SIGNAL_TYPES.includes(key) && Number.isFinite(Number(timestamp)))
+      .map(([key, timestamp]) => [key, Math.max(0, Number(timestamp))])
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, DISEASE_SIGNAL_HISTORY_LIMIT)
+  );
+}
+
+function randomDelay(minMs, maxMs) {
+  return Math.max(0, Number(minMs) || 0) + Math.random() * Math.max(0, (Number(maxMs) || 0) - (Number(minMs) || 0));
+}
+
+function hasIllnessUnlocked(targetState = state) {
+  return Boolean(targetState?.dailyBonus?.milestones?.["stable-tank"]);
+}
+
+function isActiveDiseaseState(stateId) {
+  return [
+    DISEASE_STATE_CARRIER,
+    DISEASE_STATE_INCUBATING,
+    DISEASE_STATE_EARLY,
+    DISEASE_STATE_VISIBLE,
+    DISEASE_STATE_SEVERE,
+    DISEASE_STATE_RECOVERING
+  ].includes(sanitizeDiseaseState(stateId));
+}
+
+function hasActiveFishDisease(fish) {
+  return Boolean(fish && isActiveDiseaseState(fish.diseaseState));
+}
+
+function isFishDiseaseVisible(fish) {
+  return [
+    DISEASE_STATE_EARLY,
+    DISEASE_STATE_VISIBLE,
+    DISEASE_STATE_SEVERE,
+    DISEASE_STATE_RECOVERING
+  ].includes(sanitizeDiseaseState(fish?.diseaseState));
+}
+
+function isFishDiseaseContagious(fish) {
+  return [
+    DISEASE_STATE_CARRIER,
+    DISEASE_STATE_INCUBATING,
+    DISEASE_STATE_EARLY,
+    DISEASE_STATE_VISIBLE,
+    DISEASE_STATE_SEVERE,
+    DISEASE_STATE_RECOVERING
+  ].includes(sanitizeDiseaseState(fish?.diseaseState));
+}
+
+function isFishDiseaseAvoidanceSource(fish) {
+  return [
+    DISEASE_STATE_VISIBLE,
+    DISEASE_STATE_SEVERE
+  ].includes(sanitizeDiseaseState(fish?.diseaseState));
+}
+
+function getDiseaseStateFromProgress(progressMs) {
+  const progress = Math.max(0, Number(progressMs) || 0);
+  if (progress < DISEASE_CARRIER_MS) {
+    return DISEASE_STATE_CARRIER;
+  }
+  if (progress < DISEASE_INCUBATING_MS) {
+    return DISEASE_STATE_INCUBATING;
+  }
+  if (progress < DISEASE_EARLY_MS) {
+    return DISEASE_STATE_EARLY;
+  }
+  if (progress < DISEASE_VISIBLE_MS) {
+    return DISEASE_STATE_VISIBLE;
+  }
+  return DISEASE_STATE_SEVERE;
+}
+
+function getDebugDiseaseProgressForStage(stateId) {
+  switch (sanitizeDiseaseState(stateId)) {
+    case DISEASE_STATE_CARRIER:
+      return 0;
+    case DISEASE_STATE_INCUBATING:
+      return DISEASE_CARRIER_MS;
+    case DISEASE_STATE_EARLY:
+      return DISEASE_INCUBATING_MS;
+    case DISEASE_STATE_VISIBLE:
+      return DISEASE_EARLY_MS;
+    case DISEASE_STATE_SEVERE:
+    case DISEASE_STATE_RECOVERING:
+      return DISEASE_VISIBLE_MS;
+    default:
+      return 0;
+  }
+}
+
+function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.now()) {
+  if (!fish) {
+    return false;
+  }
+
+  const previous = [
+    fish.diseaseState,
+    fish.diseaseType,
+    fish.diseaseInfectedAt,
+    fish.diseaseProgressMs,
+    fish.diseaseLastProgressAt,
+    fish.diseaseExposureLevel,
+    fish.diseaseRecoveryProgressMs,
+    fish.diseaseTreatedUntil,
+    fish.diseaseLastDamageAt,
+    fish.diseaseSource,
+    fish.temporaryImmunityUntil,
+    fish.nextDiseaseCheckAt,
+    fish.nextDiseaseSpreadCheckAt,
+    fish.nextSymptomCheckAt,
+    fish.nextGreenBubbleAt
+  ].join("|");
+
+  fish.diseaseState = sanitizeDiseaseState(stateId);
+  fish.diseaseType = "";
+  fish.diseaseInfectedAt = 0;
+  fish.diseaseProgressMs = 0;
+  fish.diseaseLastProgressAt = 0;
+  fish.diseaseExposureLevel = 0;
+  fish.diseaseRecoveryProgressMs = 0;
+  fish.diseaseTreatedUntil = 0;
+  fish.diseaseLastDamageAt = 0;
+  fish.diseaseSource = "";
+  fish.temporaryImmunityUntil = 0;
+  fish.nextDiseaseCheckAt = now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS);
+  fish.nextDiseaseSpreadCheckAt = now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS);
+  fish.nextSymptomCheckAt = now + randomDelay(DISEASE_SYMPTOM_CHECK_MIN_MS, DISEASE_SYMPTOM_CHECK_MAX_MS);
+  fish.nextGreenBubbleAt = 0;
+  fish.lastIllnessSignalAtByType = sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType);
+
+  if (fish.diseaseState === DISEASE_STATE_IMMUNE) {
+    fish.temporaryImmunityUntil = now + randomBetween(DISEASE_TEMPORARY_IMMUNITY_MIN_MS, DISEASE_TEMPORARY_IMMUNITY_MAX_MS);
+  }
+
+  const current = [
+    fish.diseaseState,
+    fish.diseaseType,
+    fish.diseaseInfectedAt,
+    fish.diseaseProgressMs,
+    fish.diseaseLastProgressAt,
+    fish.diseaseExposureLevel,
+    fish.diseaseRecoveryProgressMs,
+    fish.diseaseTreatedUntil,
+    fish.diseaseLastDamageAt,
+    fish.diseaseSource,
+    fish.temporaryImmunityUntil,
+    fish.nextDiseaseCheckAt,
+    fish.nextDiseaseSpreadCheckAt,
+    fish.nextSymptomCheckAt,
+    fish.nextGreenBubbleAt
+  ].join("|");
+  return previous !== current;
+}
+
+function infectFishWithDisease(fish, source = "conditions", now = Date.now(), initialState = DISEASE_STATE_INCUBATING) {
+  if (
+    !fish
+    || !hasIllnessUnlocked()
+    || isFishDead(fish)
+    || isUndeadFish(fish)
+    || hasActiveFishDisease(fish)
+    || sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_IMMUNE
+    || (Number(fish.temporaryImmunityUntil) || 0) > now
+  ) {
+    return false;
+  }
+
+  const stateId = sanitizeDiseaseState(initialState);
+  fish.diseaseState = stateId === DISEASE_STATE_NONE || stateId === DISEASE_STATE_IMMUNE
+    ? DISEASE_STATE_INCUBATING
+    : stateId;
+  fish.diseaseType = DISEASE_TYPE_GENERIC;
+  fish.diseaseInfectedAt = now;
+  fish.diseaseProgressMs = fish.diseaseState === DISEASE_STATE_CARRIER ? 0 : DISEASE_CARRIER_MS;
+  fish.diseaseLastProgressAt = now;
+  fish.diseaseExposureLevel = 0;
+  fish.diseaseRecoveryProgressMs = 0;
+  fish.diseaseTreatedUntil = 0;
+  fish.temporaryImmunityUntil = 0;
+  fish.nextDiseaseCheckAt = now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS);
+  fish.nextDiseaseSpreadCheckAt = now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS);
+  fish.nextSymptomCheckAt = now + randomDelay(DISEASE_SYMPTOM_CHECK_MIN_MS, DISEASE_SYMPTOM_CHECK_MAX_MS);
+  fish.nextGreenBubbleAt = getNextGreenBubbleAtForDisease(fish, now);
+  fish.lastIllnessRiskDayKey = typeof fish.lastIllnessRiskDayKey === "string" ? fish.lastIllnessRiskDayKey : "";
+  fish.lastIllnessSignalAtByType = sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType);
+  fish.diseaseLastDamageAt = now;
+  fish.diseaseSource = String(source || "conditions");
+  return true;
+}
+
+function getDiseaseTankCleanliness(now = Date.now()) {
+  return clamp(1 - getBaseTankDirtiness(now), 0, 1);
+}
+
+function getTankLivingFishLoad(targetTank = getCurrentTank()) {
+  return (Array.isArray(targetTank?.fish) ? targetTank.fish : []).filter((fish) => fish && !isFishDead(fish)).length;
+}
+
+function isTankCrowdedForDisease(targetTank = getCurrentTank()) {
+  return getTankLivingFishLoad(targetTank) > DISEASE_CROWDED_LOAD_THRESHOLD;
+}
+
+function getAverageLivingTankComfort(now = Date.now(), targetTank = getCurrentTank()) {
+  const livingFish = (Array.isArray(targetTank?.fish) ? targetTank.fish : []).filter((fish) => fish && !isFishDead(fish));
+  if (!livingFish.length) {
+    return 1;
+  }
+
+  return livingFish.reduce((total, fish) => total + getFishComfort(fish, now).value, 0) / livingFish.length;
+}
+
+function getNewFishDiseaseCarrierChance(now = Date.now()) {
+  if (!hasIllnessUnlocked()) {
+    return 0;
+  }
+
+  const cleanliness = getDiseaseTankCleanliness(now);
+  let chance = cleanliness < DISEASE_LOW_CLEANLINESS_THRESHOLD
+    ? randomBetween(DISEASE_NEW_FISH_DIRTY_MIN_CHANCE, DISEASE_NEW_FISH_DIRTY_MAX_CHANCE)
+    : DISEASE_NEW_FISH_CLEAN_CHANCE;
+  if (isTankCrowdedForDisease()) {
+    chance += randomBetween(DISEASE_NEW_FISH_CROWDED_MIN_BONUS, DISEASE_NEW_FISH_CROWDED_MAX_BONUS);
+  }
+  if (getAverageLivingTankComfort(now) < DISEASE_LOW_COMFORT_THRESHOLD) {
+    chance += randomBetween(DISEASE_NEW_FISH_LOW_COMFORT_MIN_BONUS, DISEASE_NEW_FISH_LOW_COMFORT_MAX_BONUS);
+  }
+  return clamp(chance, 0, 0.28);
+}
+
+function maybeSeedNewFishDiseaseCarrier(fish, now = Date.now()) {
+  if (!fish || !hasIllnessUnlocked() || isUndeadFish(fish)) {
+    return false;
+  }
+  return Math.random() < getNewFishDiseaseCarrierChance(now)
+    ? infectFishWithDisease(fish, "new-fish", now, DISEASE_STATE_CARRIER)
+    : false;
+}
+
+function getDailyFishDiseaseChance(fish, now = Date.now()) {
+  if (!fish || !hasIllnessUnlocked() || hasActiveFishDisease(fish) || isFishDead(fish) || isUndeadFish(fish)) {
+    return 0;
+  }
+
+  if ((Number(fish.temporaryImmunityUntil) || 0) > now) {
+    return DISEASE_BASE_DAILY_CHANCE * 0.12;
+  }
+
+  const cleanliness = getDiseaseTankCleanliness(now);
+  const comfort = getFishComfort(fish, now).value;
+  let chance = DISEASE_BASE_DAILY_CHANCE;
+  if (cleanliness < DISEASE_LOW_CLEANLINESS_THRESHOLD) {
+    chance += DISEASE_LOW_CLEANLINESS_CHANCE;
+  }
+  if (cleanliness < DISEASE_CRITICAL_CLEANLINESS_THRESHOLD) {
+    chance += DISEASE_CRITICAL_CLEANLINESS_CHANCE;
+  }
+  if (comfort < DISEASE_LOW_COMFORT_THRESHOLD) {
+    chance += DISEASE_LOW_COMFORT_CHANCE;
+  }
+  if (isTankCrowdedForDisease()) {
+    chance += DISEASE_CROWDED_CHANCE;
+  }
+  return clamp(chance, 0, 0.08);
+}
+
+function getDiseaseStageSpreadMultiplier(stateId) {
+  switch (sanitizeDiseaseState(stateId)) {
+    case DISEASE_STATE_CARRIER:
+      return 0.08;
+    case DISEASE_STATE_INCUBATING:
+      return 0.3;
+    case DISEASE_STATE_EARLY:
+      return 0.8;
+    case DISEASE_STATE_VISIBLE:
+      return 1.8;
+    case DISEASE_STATE_SEVERE:
+      return 3;
+    case DISEASE_STATE_RECOVERING:
+      return 0.25;
+    default:
+      return 0;
+  }
+}
+
+function getDiseaseSpreadCheckExposureCap(stateId) {
+  const cap = DISEASE_SPREAD_CHECK_EXPOSURE_CAPS[sanitizeDiseaseState(stateId)];
+  return Number.isFinite(Number(cap)) && Number(cap) > 0
+    ? Number(cap)
+    : DISEASE_EXPOSURE_MAX;
+}
+
+function getDiseaseCleanlinessMultiplier(cleanliness) {
+  const value = clamp(Number(cleanliness) || 0, 0, 1) * 100;
+  if (value >= 80) {
+    return 0.4;
+  }
+  if (value >= 60) {
+    return 0.8;
+  }
+  if (value >= 40) {
+    return 1.2;
+  }
+  if (value >= 20) {
+    return 1.7;
+  }
+  return 2.5;
+}
+
+function getDiseaseComfortMultiplier(comfort) {
+  const value = clamp(Number(comfort) || 0, 0, 1) * 100;
+  if (value >= 70) {
+    return 0.6;
+  }
+  if (value >= 41) {
+    return 1;
+  }
+  if (value >= 21) {
+    return 1.5;
+  }
+  return 2;
+}
+
+function getDiseaseExposureRadiusNorm(sourceFish) {
+  const radiusPx = isTankCrowdedForDisease()
+    ? DISEASE_PROXIMITY_CROWDED_PX
+    : getFishVisualSize(sourceFish) <= 140
+      ? DISEASE_PROXIMITY_SMALL_PX
+      : DISEASE_PROXIMITY_NORMAL_PX;
+  return radiusPx / Math.max(TANK_WIDTH, TANK_HEIGHT);
+}
+
+function getDiseaseVisibleAvoidanceRadiusNorm(sourceFish, targetFish) {
+  const exposureRadius = getDiseaseExposureRadiusNorm(sourceFish);
+  const visualFootprintNorm = (
+    (getFishVisualSize(sourceFish) || 0)
+    + (getFishVisualSize(targetFish) || 0)
+  ) * 0.52 / Math.max(TANK_WIDTH, TANK_HEIGHT);
+  return clamp(
+    Math.max(exposureRadius * 2.6, visualFootprintNorm + 0.18, DISEASE_VISIBLE_AVOIDANCE_MIN_RADIUS_NORM),
+    exposureRadius,
+    DISEASE_VISIBLE_AVOIDANCE_MAX_RADIUS_NORM
+  );
+}
+
+function getFishDiseaseComfortPenalty(fish, now = Date.now()) {
+  switch (sanitizeDiseaseState(fish?.diseaseState)) {
+    case DISEASE_STATE_EARLY:
+      return 0.08;
+    case DISEASE_STATE_VISIBLE:
+      return 0.2;
+    case DISEASE_STATE_SEVERE:
+      return 0.38;
+    case DISEASE_STATE_RECOVERING:
+      return 0.1 * (1 - getFishDiseaseRecoveryRatio(fish));
+    default:
+      return 0;
+  }
+}
+
+function getFishDiseaseRecoveryRatio(fish) {
+  return clamp((Number(fish?.diseaseRecoveryProgressMs) || 0) / DISEASE_RECOVERY_REQUIRED_MS, 0, 1);
+}
+
+function getFishDiseaseSpeedMultiplier(fish, now = Date.now()) {
+  switch (sanitizeDiseaseState(fish?.diseaseState)) {
+    case DISEASE_STATE_INCUBATING:
+      return 0.95;
+    case DISEASE_STATE_EARLY:
+      return 0.86;
+    case DISEASE_STATE_VISIBLE:
+      return 0.68;
+    case DISEASE_STATE_SEVERE:
+      return 0.46;
+    case DISEASE_STATE_RECOVERING:
+      return 0.78 + getFishDiseaseRecoveryRatio(fish) * 0.2;
+    default:
+      return 1;
+  }
+}
+
+function getFishDiseaseSaturationPercent(fish, now = Date.now()) {
+  switch (sanitizeDiseaseState(fish?.diseaseState)) {
+    case DISEASE_STATE_EARLY:
+      return 88;
+    case DISEASE_STATE_VISIBLE:
+      return 74;
+    case DISEASE_STATE_SEVERE:
+      return 56;
+    case DISEASE_STATE_RECOVERING:
+      return Math.round(82 + getFishDiseaseRecoveryRatio(fish) * 18);
+    default:
+      return 100;
+  }
+}
+
+function getFishDiseaseBrightnessPercent(fish, now = Date.now()) {
+  switch (sanitizeDiseaseState(fish?.diseaseState)) {
+    case DISEASE_STATE_VISIBLE:
+      return 92;
+    case DISEASE_STATE_SEVERE:
+      return 78;
+    case DISEASE_STATE_RECOVERING:
+      return Math.round(88 + getFishDiseaseRecoveryRatio(fish) * 12);
+    default:
+      return 100;
+  }
+}
+
+function getFishDiseaseFoodRefusalChance(fish, now = Date.now()) {
+  let chance = 0;
+  switch (sanitizeDiseaseState(fish?.diseaseState)) {
+    case DISEASE_STATE_INCUBATING:
+      chance = 0.04;
+      break;
+    case DISEASE_STATE_EARLY:
+      chance = 0.16;
+      break;
+    case DISEASE_STATE_VISIBLE:
+      chance = 0.45;
+      break;
+    case DISEASE_STATE_SEVERE:
+      chance = 0.82;
+      break;
+    case DISEASE_STATE_RECOVERING:
+      chance = 0.28 * (1 - getFishDiseaseRecoveryRatio(fish));
+      break;
+    default:
+      chance = 0;
+  }
+
+  if (getFishComfort(fish, now).value <= DISEASE_LOW_COMFORT_THRESHOLD) {
+    chance += 0.1;
+  }
+  return clamp(chance, 0, 0.95);
+}
+
+function recordDiseaseSignal(fish, signalType, now = Date.now()) {
+  if (!fish || !DISEASE_SIGNAL_TYPES.includes(signalType)) {
+    return false;
+  }
+
+  const signals = sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType);
+  const previousAt = Number(signals[signalType]) || 0;
+  if (previousAt && now - previousAt < DISEASE_TASK_COOLDOWN_MS) {
+    return false;
+  }
+
+  signals[signalType] = now;
+  fish.lastIllnessSignalAtByType = sanitizeDiseaseSignalMap(signals);
+  pushDiseaseSignalHistoryEvent(fish, signalType, now);
+  return true;
+}
+
+function forceDiseaseSignalForDebug(fish, signalType, now = Date.now()) {
+  if (!fish || !DISEASE_SIGNAL_TYPES.includes(signalType)) {
+    return false;
+  }
+
+  const signals = sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType);
+  signals[signalType] = now;
+  fish.lastIllnessSignalAtByType = sanitizeDiseaseSignalMap(signals);
+  return true;
+}
+
+function getRecentDiseaseSignals(fish, now = Date.now()) {
+  const signals = sanitizeDiseaseSignalMap(fish?.lastIllnessSignalAtByType);
+  const cutoff = now - 12 * MINUTE_MS;
+  return Object.entries(signals)
+    .filter(([, timestamp]) => Number(timestamp) >= cutoff)
+    .sort((left, right) => Number(right[1]) - Number(left[1]))
+    .map(([type]) => type);
+}
+
+function getDiseaseSignalHistoryEventText(signalType, fish, species) {
+  const displayName = fish?.name || "A fish";
+  const speciesName = species ? getFishDisplaySpeciesName(fish, species) : "fish";
+  switch (signalType) {
+    case "looking_under_weather":
+      return `${displayName} looks off-color.`;
+    case "green_bubbles":
+      return `${displayName} is producing strange green bubbles.`;
+    case "food_refused":
+      return `${displayName} approached food but did not eat.`;
+    case "missed_feeding":
+      return `${displayName} stopped joining feeding time.`;
+    case "hiding_more_than_usual":
+    case "sick_isolation":
+      return `${displayName} has been hiding more than usual.`;
+    case "avoiding_group":
+      return `${displayName} is avoiding the group.`;
+    case "surface_hover":
+      return `${displayName} is staying near the surface.`;
+    case "bottom_sit":
+      return `${displayName} is sitting low in the tank.`;
+    case "slow_drift":
+      return `${displayName} is drifting more weakly than usual.`;
+    case "stopped_grazing":
+      return speciesName.includes("Shrimp")
+        ? `${displayName} has stopped scavenging.`
+        : "A cleanup fish has stopped grazing.";
+    case "stopped_digging":
+      return `${displayName} has stopped exploring the bottom.`;
+    case "stopped_hunting":
+      return `${displayName} has stopped hunting.`;
+    case "night_active_still":
+      return `${displayName} has been unusually still at night.`;
+    case "odd_sleep_spot":
+      return `${displayName} is resting somewhere unusual.`;
+    case "lingering_near_bubbler":
+      return `${displayName} is lingering near a bubbler.`;
+    default:
+      return `${displayName} is not following its usual routine.`;
+  }
+}
+
+function pushDiseaseSignalHistoryEvent(fish, signalType, now = Date.now()) {
+  if (!fish || !DISEASE_SIGNAL_TYPES.includes(signalType)) {
+    return false;
+  }
+
+  const eventText = getDiseaseSignalHistoryEventText(signalType, fish, getSpeciesForFish(fish));
+  if (!eventText) {
+    return false;
+  }
+
+  pushEvent(eventText, now, getCurrentTank(), {
+    type: hasActiveFishDisease(fish) ? "illness" : "behavior",
+    fishId: fish.id,
+    recapEligible: false
+  });
+  return true;
+}
+
+function getDiseaseSignalFulfilled(signalType, fish, now = Date.now()) {
+  if (!fish || isFishDead(fish)) {
+    return true;
+  }
+  const signalAt = Number(sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType)[signalType]) || 0;
+  if (["food_refused", "missed_feeding"].includes(signalType)) {
+    return Number(fish.lastAteAt) > signalAt;
+  }
+  const stateId = sanitizeDiseaseState(fish.diseaseState);
+  if (stateId === DISEASE_STATE_NONE || stateId === DISEASE_STATE_IMMUNE) {
+    return true;
+  }
+  if (stateId === DISEASE_STATE_RECOVERING && getFishDiseaseRecoveryRatio(fish) > 0.65) {
+    return true;
+  }
+  if (signalType === "green_bubbles") {
+    return !["visibleSymptoms", "severe"].includes(stateId);
+  }
+  return false;
+}
+
+function shouldFishRefuseFoodForDisease(fish, foodKey = "basic", now = Date.now()) {
+  if (!fish || isFishDead(fish) || isMealFreeFish(fish) || isUndeadFish(fish)) {
+    return false;
+  }
+  if (!canFoodSatisfyFishMeal(fish, foodKey)) {
+    return false;
+  }
+  return Math.random() < getFishDiseaseFoodRefusalChance(fish, now);
+}
+
+function makeFishRefuseFood(fish, pellet, now = Date.now()) {
+  if (!fish || !pellet) {
+    return false;
+  }
+
+  recordDiseaseSignal(fish, "food_refused", now);
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  fish.foodRefusalUntil = now + randomBetween(45 * 1000, 90 * 1000);
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  pellet.targetFishId = "";
+  const awayX = fish.xNorm >= pellet.xNorm ? 1 : -1;
+  fish.targetXNorm = clamp(fish.xNorm + awayX * randomBetween(0.08, 0.18), 0.08, 0.92);
+  fish.targetYNorm = clamp(fish.yNorm + randomBetween(-0.08, 0.08), 0.14, 0.8);
+  fish.targetAt = now + randomBetween(1800, 3600);
+  fish.swimSpeed = normalizeFishSpeed(getSpeciesForFish(fish));
+  return true;
+}
+
+function getNextGreenBubbleAtForDisease(fish, now = Date.now()) {
+  switch (sanitizeDiseaseState(fish?.diseaseState)) {
+    case DISEASE_STATE_EARLY:
+      return now + randomBetween(30 * 1000, 60 * 1000);
+    case DISEASE_STATE_VISIBLE:
+      return now + randomBetween(10 * 1000, 25 * 1000);
+    case DISEASE_STATE_SEVERE:
+      return now + randomBetween(4 * 1000, 10 * 1000);
+    case DISEASE_STATE_RECOVERING:
+      return now + randomBetween(15 * 1000, 30 * 1000 + getFishDiseaseRecoveryRatio(fish) * 30 * 1000);
+    default:
+      return 0;
+  }
+}
+
+function shouldDrawDiseaseGreenBubble(fish, now = Date.now()) {
+  if (!fish || isFishDead(fish)) {
+    return false;
+  }
+  const stateId = sanitizeDiseaseState(fish.diseaseState);
+  if ([DISEASE_STATE_VISIBLE, DISEASE_STATE_SEVERE, DISEASE_STATE_RECOVERING].includes(stateId)) {
+    return true;
+  }
+  return stateId === DISEASE_STATE_EARLY
+    && Number(fish.nextGreenBubbleAt) > 0
+    && now >= Number(fish.nextGreenBubbleAt) - DISEASE_GREEN_BUBBLE_CADENCE_MS;
+}
+
+function getFishDiseaseBubbleMouthPoint(fish, species, pose, width, height, now = Date.now()) {
+  const stableScale = getViewportStableAssetScale();
+  const direction = pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1);
+  const mouthOffset = getFishFrontMouthOffsetAtPose(
+    fish,
+    species,
+    width,
+    height,
+    pose,
+    now,
+    2.8 * stableScale
+  );
+  return {
+    x: pose.x + mouthOffset.x,
+    y: pose.y + mouthOffset.y,
+    direction,
+    stableScale
+  };
+}
+
+function clearDiseaseGreenBubbleStream(fish) {
+  if (fish?.id) {
+    runtime.diseaseGreenBubblesByFishId.delete(fish.id);
+  }
+}
+
+function getDiseaseGreenBubbleStream(fish, now = Date.now()) {
+  if (!fish?.id) {
+    return null;
+  }
+
+  let stream = runtime.diseaseGreenBubblesByFishId.get(fish.id);
+  if (!stream) {
+    stream = {
+      lastEmissionAt: now - DISEASE_GREEN_BUBBLE_CADENCE_MS,
+      bubbles: []
+    };
+    runtime.diseaseGreenBubblesByFishId.set(fish.id, stream);
+  }
+  return stream;
+}
+
+function emitDiseaseGreenBubble(fish, mouth, stream, emissionAt, now = Date.now()) {
+  const seed = hashStringToUint32(`${fish.id}|disease-green-bubble|${Math.floor(emissionAt / DISEASE_GREEN_BUBBLE_CADENCE_MS)}`);
+  const rand = mulberry32(seed ^ 0x87c2f40d);
+  const stateId = sanitizeDiseaseState(fish.diseaseState);
+  const severeScale = stateId === DISEASE_STATE_SEVERE ? 1.22 : 1;
+  stream.bubbles.push({
+    createdAt: emissionAt,
+    sourceX: mouth.x + mouth.direction * randomBetweenWith(rand, 0, 2.5) * mouth.stableScale,
+    sourceY: mouth.y + randomBetweenWith(rand, -2.2, 2.4) * mouth.stableScale,
+    seed,
+    radius: randomBetweenWith(rand, 2.9, 4.7) * randomBetweenWith(rand, 1, 1.1) * severeScale,
+    stretch: randomBetweenWith(rand, 0.88, 1.16),
+    driftX: randomBetweenWith(rand, -12, 12) * mouth.stableScale,
+    wobble: randomBetweenWith(rand, 1.2, 3.8) * mouth.stableScale,
+    wobblePhase: randomBetweenWith(rand, 0, Math.PI * 2),
+    layerBias: randomBetweenWith(rand, 0, 1)
+  });
+}
+
+function syncDiseaseGreenBubbleStream(fish, species, pose, width, height, now = Date.now()) {
+  if (!shouldDrawDiseaseGreenBubble(fish, now)) {
+    clearDiseaseGreenBubbleStream(fish);
+    return null;
+  }
+
+  const mouth = getFishDiseaseBubbleMouthPoint(fish, species, pose, width, height, now);
+  const stream = getDiseaseGreenBubbleStream(fish, now);
+  if (!stream) {
+    return null;
+  }
+
+  if (now - Number(stream.lastEmissionAt || 0) > MAX_BUBBLER_TRAVEL_DURATION_MS + DISEASE_GREEN_BUBBLE_CADENCE_MS) {
+    stream.lastEmissionAt = now - DISEASE_GREEN_BUBBLE_CADENCE_MS;
+    stream.bubbles = [];
+  }
+
+  const latestAllowedEmissionAt = now;
+  let guard = 0;
+  while (
+    stream.lastEmissionAt + DISEASE_GREEN_BUBBLE_CADENCE_MS <= latestAllowedEmissionAt
+    && guard < DISEASE_GREEN_BUBBLE_MAX_PER_FISH
+  ) {
+    stream.lastEmissionAt += DISEASE_GREEN_BUBBLE_CADENCE_MS;
+    emitDiseaseGreenBubble(fish, mouth, stream, stream.lastEmissionAt, now);
+    guard += 1;
+  }
+  return stream;
+}
+
+function drawFishDiseaseBubbles(fish, species, pose, width, height, now = Date.now()) {
+  const stream = syncDiseaseGreenBubbleStream(fish, species, pose, width, height, now);
+  if (!stream?.bubbles?.length) {
+    return;
+  }
+
+  const stableScale = getViewportStableAssetScale();
+  const palette = getBubbleOrbPalette(DISEASE_GREEN_BUBBLE_COLOR, {
+    fillOpacity: 0.4,
+    colorize: true
+  });
+  const waterlineStopY = WATER_SURFACE_Y + Math.max(2 * stableScale, 2);
+  const nextBubbles = [];
+  const renderedBubbles = [];
+  for (const bubble of stream.bubbles) {
+    const ageMs = now - Number(bubble.createdAt);
+    if (ageMs < 0) {
+      nextBubbles.push(bubble);
+      continue;
+    }
+
+    const radius = Number(bubble.radius) || 3.4;
+    const availableTravelPx = Math.max(10 * stableScale, Number(bubble.sourceY) - waterlineStopY);
+    const travelDurationMs = clamp(
+      availableTravelPx * 27,
+      DISEASE_GREEN_BUBBLE_MIN_TRAVEL_MS,
+      MAX_BUBBLER_TRAVEL_DURATION_MS
+    );
+    const popProgress = clamp((ageMs - travelDurationMs) / DISEASE_GREEN_BUBBLE_POP_MS, 0, 1);
+    if (ageMs > travelDurationMs + DISEASE_GREEN_BUBBLE_POP_MS) {
+      continue;
+    }
+
+    nextBubbles.push(bubble);
+    const travelProgress = clamp(ageMs / travelDurationMs, 0, 1);
+    const spawnFade = clamp(ageMs / 280, 0, 1);
+    const x = Number(bubble.sourceX)
+      + Number(bubble.driftX) * travelProgress
+      + Math.sin(now / 2200 + Number(bubble.wobblePhase)) * Number(bubble.wobble) * (0.28 + travelProgress * 0.72);
+    const rawY = Number(bubble.sourceY) - availableTravelPx * travelProgress;
+    const y = Math.max(rawY, waterlineStopY + radius * stableScale);
+    const alpha = clamp(spawnFade * (popProgress > 0 ? 1 - popProgress : 1), 0, 1);
+    if (alpha <= 0.008 && popProgress <= 0) {
+      continue;
+    }
+
+    const malform = popProgress > 0
+      ? null
+      : {
+        seed: bubble.seed ^ 0x7f4a7c15,
+        amount: 0.32,
+        phase: now / 5200 + Number(bubble.wobblePhase),
+        rotation: Math.sin(now / 6800 + Number(bubble.seed)) * 0.08,
+        speed: 0.5
+      };
+    renderedBubbles.push({
+      depth: Number(bubble.layerBias) || 0,
+      x,
+      y,
+      radius,
+      alpha,
+      stretch: Number(bubble.stretch) || 1,
+      malform,
+      popProgress,
+      seed: bubble.seed
+    });
+  }
+
+  stream.bubbles = nextBubbles.slice(-DISEASE_GREEN_BUBBLE_MAX_PER_FISH);
+  renderedBubbles
+    .sort((left, right) => left.depth - right.depth || left.y - right.y)
+    .forEach((bubble) => {
+      if (bubble.popProgress > 0) {
+        drawBubblePopBurstToContext(
+          tankContext,
+          bubble.x,
+          bubble.y,
+          bubble.radius,
+          bubble.alpha,
+          palette,
+          stableScale,
+          bubble.seed,
+          bubble.popProgress,
+          {
+            count: BUBBLER_POP_MICRO_BUBBLE_COUNT,
+            burstScale: 1.05,
+            surfaceY: waterlineStopY
+          }
+        );
+        return;
+      }
+      drawBubbleOrbToContext(tankContext, bubble.x, bubble.y, bubble.radius, bubble.alpha, bubble.stretch, palette, stableScale, {
+        malform: bubble.malform
+      });
+    });
+  if (!stream.bubbles.length) {
+    runtime.diseaseGreenBubblesByFishId.delete(fish.id);
+  }
+}
+
+function processDiseaseDailyRisk(fish, now = Date.now()) {
+  const dayKey = getLocalDayKey(now);
+  if (!fish || !hasIllnessUnlocked() || fish.lastIllnessRiskDayKey === dayKey) {
+    return false;
+  }
+
+  fish.lastIllnessRiskDayKey = dayKey;
+  const chance = getDailyFishDiseaseChance(fish, now);
+  if (chance <= 0 || Math.random() >= chance) {
+    return true;
+  }
+
+  return infectFishWithDisease(fish, "conditions", now, DISEASE_STATE_INCUBATING) || true;
+}
+
+function applyFirstAidDiseaseSlowdown(now = Date.now()) {
+  let changed = false;
+  for (const fish of getLivingTankFish()) {
+    if (!hasActiveFishDisease(fish)) {
+      continue;
+    }
+    const nextTreatedUntil = Math.max(Number(fish.diseaseTreatedUntil) || 0, now + DISEASE_TREATMENT_SLOW_MS);
+    if (fish.diseaseTreatedUntil !== nextTreatedUntil) {
+      fish.diseaseTreatedUntil = nextTreatedUntil;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+function processFishDisease(now = Date.now()) {
+  if (!state?.fish?.length) {
+    return false;
+  }
+
+  let changed = false;
+  const previousSimulatedAt = Math.min(now, Number(state.lastSimulatedAt) || now);
+  const cleanliness = getDiseaseTankCleanliness(now);
+
+  for (const fish of state.fish) {
+    if (!fish || isFishDead(fish) || isUndeadFish(fish)) {
+      if (hasActiveFishDisease(fish)) {
+        changed = resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now) || changed;
+      }
+      continue;
+    }
+
+    let stateId = sanitizeDiseaseState(fish.diseaseState);
+    if (stateId === DISEASE_STATE_IMMUNE) {
+      if ((Number(fish.temporaryImmunityUntil) || 0) <= now) {
+        changed = resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now) || changed;
+      }
+      continue;
+    }
+
+    if (!hasActiveFishDisease(fish)) {
+      if (now >= (Number(fish.nextDiseaseCheckAt) || 0)) {
+        fish.diseaseExposureLevel = Math.max(0, (Number(fish.diseaseExposureLevel) || 0) - (cleanliness >= 0.8 ? DISEASE_EXPOSURE_DECAY_CLEAN : DISEASE_EXPOSURE_DECAY_DIRTY));
+        changed = processDiseaseDailyRisk(fish, now) || changed;
+        fish.nextDiseaseCheckAt = now + randomDelay(DISEASE_EXPOSURE_DECAY_MIN_MS, DISEASE_EXPOSURE_DECAY_MAX_MS);
+      }
+      continue;
+    }
+
+    if (now >= (Number(fish.nextDiseaseCheckAt) || 0)) {
+      const diseaseElapsedMs = clamp(now - (Number(fish.diseaseLastProgressAt) || previousSimulatedAt), 0, DAY_MS);
+      fish.diseaseLastProgressAt = now;
+      fish.nextDiseaseCheckAt = now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS);
+
+      const treated = (Number(fish.diseaseTreatedUntil) || 0) > now;
+      const comfort = getFishComfort(fish, now).value;
+      const goodConditions = cleanliness >= DISEASE_LOW_CLEANLINESS_THRESHOLD && comfort > DISEASE_LOW_COMFORT_THRESHOLD;
+      const progressRate = treated ? DISEASE_TREATED_MULTIPLIER : 1;
+      if (stateId !== DISEASE_STATE_RECOVERING) {
+        fish.diseaseProgressMs = Math.max(0, Number(fish.diseaseProgressMs) || 0) + diseaseElapsedMs * progressRate;
+      }
+
+      if (goodConditions) {
+        fish.diseaseRecoveryProgressMs = Math.min(
+          DISEASE_RECOVERY_REQUIRED_MS,
+          (Number(fish.diseaseRecoveryProgressMs) || 0) + diseaseElapsedMs * (treated ? DISEASE_RECOVERY_TREATED_MULTIPLIER : 1)
+        );
+      } else {
+        fish.diseaseRecoveryProgressMs = Math.max(0, (Number(fish.diseaseRecoveryProgressMs) || 0) - diseaseElapsedMs * 0.45);
+      }
+
+      if (fish.diseaseRecoveryProgressMs >= DISEASE_RECOVERY_REQUIRED_MS) {
+        changed = resetFishDiseaseFields(fish, DISEASE_STATE_IMMUNE, now) || changed;
+        recordDiseaseSignal(fish, "sick_isolation", now);
+        continue;
+      }
+
+      const nextState = fish.diseaseRecoveryProgressMs >= DISEASE_RECOVERING_ENTRY_MS
+        ? DISEASE_STATE_RECOVERING
+        : getDiseaseStateFromProgress(fish.diseaseProgressMs);
+      if (fish.diseaseState !== nextState) {
+        fish.diseaseState = nextState;
+        if (nextState === DISEASE_STATE_VISIBLE) {
+          recordDiseaseSignal(fish, "looking_under_weather", now);
+        }
+        changed = true;
+      }
+      stateId = nextState;
+
+      if (stateId === DISEASE_STATE_SEVERE) {
+        const lastDamageAt = Number(fish.diseaseLastDamageAt) || Number(fish.diseaseInfectedAt) || now;
+        if (now - lastDamageAt >= DISEASE_HEALTH_DAMAGE_INTERVAL_MS) {
+          const result = applyFishDamage(fish, DISEASE_HEALTH_DAMAGE_UNITS, now, null, `${fish.name} died after a long decline.`);
+          fish.diseaseLastDamageAt = now;
+          changed = result.changed || changed;
+        }
+      }
+    }
+
+    if (now >= (Number(fish.nextSymptomCheckAt) || 0)) {
+      changed = updateFishDiseaseSignals(fish, now) || changed;
+      fish.nextSymptomCheckAt = now + randomDelay(DISEASE_SYMPTOM_CHECK_MIN_MS, DISEASE_SYMPTOM_CHECK_MAX_MS);
+    }
+
+    if (isFishDiseaseVisible(fish) && (!Number(fish.nextGreenBubbleAt) || now >= Number(fish.nextGreenBubbleAt) + 2000)) {
+      fish.nextGreenBubbleAt = getNextGreenBubbleAtForDisease(fish, now);
+      changed = true;
+    }
+  }
+
+  changed = processFishDiseaseExposure(now) || changed;
+  return changed;
+}
+
+function updateFishDiseaseSignals(fish, now = Date.now()) {
+  const species = getSpeciesForFish(fish);
+  if (!species || !isFishDiseaseVisible(fish)) {
+    return false;
+  }
+
+  const stateId = sanitizeDiseaseState(fish.diseaseState);
+  const behavior = getEffectiveFishBehavior(fish, species);
+  const signals = [];
+  const allowSlowSignal = !isSlowGracefulFish(species);
+  if (stateId === DISEASE_STATE_EARLY) {
+    signals.push("hiding_more_than_usual");
+    if (allowSlowSignal) {
+      signals.push("slow_drift");
+    }
+  } else if (stateId === DISEASE_STATE_VISIBLE) {
+    signals.push("looking_under_weather", "green_bubbles", "food_refused", "avoiding_group", "surface_hover", "hiding_more_than_usual");
+  } else if (stateId === DISEASE_STATE_SEVERE) {
+    signals.push("looking_under_weather", "green_bubbles", "surface_hover", "bottom_sit", "food_refused");
+    if (allowSlowSignal) {
+      signals.push("slow_drift");
+    }
+  } else if (stateId === DISEASE_STATE_RECOVERING) {
+    signals.push("green_bubbles", "sick_isolation");
+  }
+
+  if (behavior === "sucker") {
+    signals.push("stopped_grazing");
+  } else if (behavior === "shrimp") {
+    signals.push("stopped_grazing");
+  } else if (behavior === "piranha") {
+    signals.push("stopped_hunting");
+  } else if (species.id === "loach") {
+    signals.push("stopped_digging");
+  } else if (isSocialDiseaseFish(species)) {
+    signals.push("avoiding_group");
+  }
+
+  const picked = signals[Math.floor(Math.random() * signals.length)];
+  return recordDiseaseSignal(fish, picked, now);
+}
+
+function isSocialDiseaseFish(speciesOrFish) {
+  const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
+  return ["guppy", "cherry-barb", "neon-tetra", "livebearer", "molly", "clownfish", "rainbowfish", "brine-shrimp"].includes(species?.id);
+}
+
+function processFishDiseaseExposure(now = Date.now()) {
+  if (!hasIllnessUnlocked()) {
+    return false;
+  }
+
+  let changed = false;
+  const contagiousFish = state.fish.filter((fish) => (
+    fish
+    && !isFishDead(fish)
+    && isFishDiseaseContagious(fish)
+    && now >= (Number(fish.nextDiseaseSpreadCheckAt) || 0)
+  ));
+  if (!contagiousFish.length) {
+    return false;
+  }
+
+  const cleanliness = getDiseaseTankCleanliness(now);
+  for (const sourceFish of contagiousFish) {
+    sourceFish.nextDiseaseSpreadCheckAt = now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS);
+    const stageMultiplier = getDiseaseStageSpreadMultiplier(sourceFish.diseaseState);
+    if (stageMultiplier <= 0) {
+      continue;
+    }
+
+    const sourceTreatedMultiplier = (Number(sourceFish.diseaseTreatedUntil) || 0) > now ? DISEASE_TREATED_MULTIPLIER : 1;
+    const radiusNorm = getDiseaseExposureRadiusNorm(sourceFish);
+    for (const targetFish of state.fish) {
+      if (
+        !targetFish
+        || targetFish.id === sourceFish.id
+        || isFishDead(targetFish)
+        || isUndeadFish(targetFish)
+        || hasActiveFishDisease(targetFish)
+      ) {
+        continue;
+      }
+
+      const distanceNorm = Math.hypot((sourceFish.xNorm || 0.5) - (targetFish.xNorm || 0.5), (sourceFish.yNorm || 0.5) - (targetFish.yNorm || 0.5));
+      if (distanceNorm > radiusNorm) {
+        continue;
+      }
+
+      const comfortMultiplier = getDiseaseComfortMultiplier(getFishComfort(targetFish, now).value);
+      const proximityMultiplier = 1 + (1 - clamp(distanceNorm / Math.max(0.0001, radiusNorm), 0, 1));
+      const sharedFeedingMultiplier = sourceFish.activity === "feeding" && targetFish.activity === "feeding"
+        ? DISEASE_FEEDING_EXPOSURE_MULTIPLIER
+        : 1;
+      const sharedHideMultiplier = sourceFish.hangoutDecorId && sourceFish.hangoutDecorId === targetFish.hangoutDecorId
+        ? DISEASE_SHARED_HIDE_EXPOSURE_MULTIPLIER
+        : 1;
+      const immunityMultiplier = (Number(targetFish.temporaryImmunityUntil) || 0) > now ? 0.15 : 1;
+      const rawExposureGain = DISEASE_SPREAD_BASE_GAIN
+        * stageMultiplier
+        * sourceTreatedMultiplier
+        * getDiseaseCleanlinessMultiplier(cleanliness)
+        * comfortMultiplier
+        * proximityMultiplier
+        * sharedFeedingMultiplier
+        * sharedHideMultiplier
+        * immunityMultiplier;
+      const exposureGain = Math.min(
+        rawExposureGain,
+        getDiseaseSpreadCheckExposureCap(sourceFish.diseaseState)
+      );
+      targetFish.diseaseExposureLevel = clamp((Number(targetFish.diseaseExposureLevel) || 0) + exposureGain, 0, DISEASE_EXPOSURE_MAX);
+      changed = true;
+
+      if (targetFish.diseaseExposureLevel >= DISEASE_EXPOSURE_MAX && infectFishWithDisease(targetFish, "exposure", now, DISEASE_STATE_INCUBATING)) {
+        recordDiseaseSignal(sourceFish, "avoiding_group", now);
+      }
+    }
+  }
+  return changed;
+}
+
+function pickDiseaseBehaviorTarget(fish, species, now = Date.now()) {
+  const stateId = sanitizeDiseaseState(fish?.diseaseState);
+  if (
+    !fish
+    || !species
+    || ![DISEASE_STATE_INCUBATING, DISEASE_STATE_EARLY, DISEASE_STATE_VISIBLE, DISEASE_STATE_SEVERE, DISEASE_STATE_RECOVERING].includes(stateId)
+    || isFishDead(fish)
+  ) {
+    return null;
+  }
+
+  const behavior = getEffectiveFishBehavior(fish, species);
+  const severe = stateId === DISEASE_STATE_SEVERE;
+  const visible = stateId === DISEASE_STATE_VISIBLE || severe;
+  const chance = stateId === DISEASE_STATE_INCUBATING ? 0.12 : stateId === DISEASE_STATE_EARLY ? 0.24 : stateId === DISEASE_STATE_RECOVERING ? 0.28 : severe ? 0.78 : 0.56;
+  if (Math.random() > chance) {
+    return null;
+  }
+
+  const base = {
+    targetAt: now + randomBetween(5000, severe ? 16000 : 11000),
+    targetLayer: getFishTankLayer(fish),
+    speed: normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * (severe ? 0.45 : 0.72)))),
+    signal: "slow_drift"
+  };
+
+  if (behavior === "sucker") {
+    return {
+      ...base,
+      xNorm: clamp(fish.xNorm + randomBetween(-0.08, 0.08), 0.16, 0.84),
+      yNorm: clamp(randomBetween(0.34, 0.62), 0.2, 0.72),
+      targetLayer: TANK_DEPTH_LAYERS,
+      signal: "stopped_grazing"
+    };
+  }
+
+  if (behavior === "shrimp") {
+    return {
+      ...base,
+      xNorm: Math.random() < 0.5 ? randomBetween(0.1, 0.22) : randomBetween(0.78, 0.9),
+      yNorm: visible ? randomBetween(0.42, 0.62) : randomBetween(0.66, 0.82),
+      targetLayer: TANK_DEPTH_LAYERS - 1,
+      signal: "stopped_grazing"
+    };
+  }
+
+  if (behavior === "piranha") {
+    return {
+      ...base,
+      xNorm: clamp(fish.xNorm + randomBetween(-0.18, 0.18), 0.1, 0.9),
+      yNorm: severe ? randomBetween(0.18, 0.32) : randomBetween(0.3, 0.62),
+      signal: "stopped_hunting"
+    };
+  }
+
+  if (severe && Math.random() < 0.48) {
+    return {
+      ...base,
+      xNorm: clamp(fish.xNorm + randomBetween(-0.08, 0.08), 0.1, 0.9),
+      yNorm: Math.random() < 0.58 ? randomBetween(0.16, 0.28) : randomBetween(0.72, 0.82),
+      signal: Math.random() < 0.58 ? "surface_hover" : "bottom_sit"
+    };
+  }
+
+  const hideout = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["hide", "plant", "hardscape", "spooky", "bubbler"],
+    chanceMultiplier: visible ? 2.4 : 1.5,
+    lingerMultiplier: visible ? 2.4 : 1.45,
+    occupancyLimit: 1,
+    preferBackLayer: true
+  });
+  if (hideout) {
+    return {
+      ...base,
+      xNorm: hideout.xNorm,
+      yNorm: hideout.yNorm,
+      targetAt: now + hideout.lingerMs,
+      targetLayer: hideout.targetLayer,
+      hangoutDecorId: hideout.decorId,
+      hangoutZoneType: hideout.zoneType,
+      signal: hideout.zoneType === "bubbler" ? "lingering_near_bubbler" : "hiding_more_than_usual"
+    };
+  }
+
+  return {
+    ...base,
+    xNorm: clamp(fish.xNorm + randomBetween(-0.16, 0.16), 0.1, 0.9),
+    yNorm: visible ? randomBetween(0.18, 0.74) : randomBetween(0.24, 0.72),
+    signal: isSocialDiseaseFish(species) ? "avoiding_group" : "slow_drift"
+  };
+}
+
+function applyDiseaseBehaviorTarget(fish, species, target, now = Date.now()) {
+  if (!fish || !species || !target) {
+    return false;
+  }
+
+  clearFishSchoolFollowState(fish);
+  if (fish.caveState) {
+    return false;
+  }
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  releasePelletsTargetingFishIds(fish.id);
+  fish.targetXNorm = clamp(target.xNorm, 0.08, 0.92);
+  fish.targetYNorm = clamp(target.yNorm, 0.14, 0.84);
+  fish.targetAt = target.targetAt || now + randomBetween(2500, 6500);
+  fish.hangoutDecorId = target.hangoutDecorId || null;
+  fish.hangoutZoneType = target.hangoutZoneType || null;
+  setFishDesiredTankLayer(fish, Number.isFinite(Number(target.targetLayer)) ? clampTankLayer(Number(target.targetLayer)) : getFishTankLayer(fish));
+  fish.swimSpeed = target.speed || normalizeFishSpeed(species);
+  recordDiseaseSignal(fish, target.signal || "slow_drift", now);
+  return true;
+}
+
+function getNearestContagiousDiseaseFish(fish, now = Date.now()) {
+  if (!fish || isFishDead(fish)) {
+    return null;
+  }
+
+  return state.fish
+    .filter((otherFish) => (
+      otherFish
+      && otherFish.id !== fish.id
+      && !isFishDead(otherFish)
+      && isFishDiseaseAvoidanceSource(otherFish)
+      && isFishDiseaseContagious(otherFish)
+    ))
+    .map((otherFish) => ({
+      fish: otherFish,
+      distanceNorm: Math.hypot((otherFish.xNorm || 0.5) - (fish.xNorm || 0.5), (otherFish.yNorm || 0.5) - (fish.yNorm || 0.5))
+    }))
+    .sort((left, right) => left.distanceNorm - right.distanceNorm)[0] || null;
+}
+
+function hasVisibleDiseaseAvoidanceSource(now = Date.now()) {
+  return Array.isArray(state?.fish) && state.fish.some((fish) => (
+    fish
+    && !isFishDead(fish)
+    && isFishDiseaseAvoidanceSource(fish)
+    && isFishDiseaseContagious(fish)
+  ));
+}
+
+function applyDiseaseAvoidanceTarget(fish, species, now = Date.now()) {
+  if (!fish || !species || isFishDead(fish) || fish.activity !== "roam" || fish.caveState) {
+    return false;
+  }
+
+  const nearest = getNearestContagiousDiseaseFish(fish, now);
+  const avoidanceRadius = nearest ? getDiseaseVisibleAvoidanceRadiusNorm(nearest.fish, fish) : 0;
+  if (!nearest || nearest.distanceNorm > avoidanceRadius) {
+    return false;
+  }
+
+  const urgency = 1 - clamp(nearest.distanceNorm / Math.max(0.0001, avoidanceRadius), 0, 1);
+  const retreatNorm = clamp(
+    avoidanceRadius * randomBetween(0.72 + urgency * 0.22, 1.02 + urgency * 0.18),
+    DISEASE_VISIBLE_AVOIDANCE_RETREAT_MIN_NORM,
+    DISEASE_VISIBLE_AVOIDANCE_RETREAT_MAX_NORM
+  );
+  const escape = getAvoidanceEscapeTarget(fish, species, nearest.fish, {
+    retreatNorm,
+    verticalScale: randomBetween(0.58, 0.86),
+    cornerThreatRadius: avoidanceRadius,
+    targetLayer: getFishTankLayer(fish)
+  });
+  clearFishSchoolFollowState(fish);
+  fish.targetXNorm = escape?.xNorm ?? fish.xNorm;
+  fish.targetYNorm = escape?.yNorm ?? fish.yNorm;
+  fish.targetAt = now + (escape?.cornerEscape ? randomBetween(520, 1100) : randomBetween(900, 1800));
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  if (escape?.targetLayer) {
+    setFishDesiredTankLayer(fish, escape.targetLayer);
+  }
+  if (species.speedMode === "dynamic") {
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.84), species.speedMax));
+  }
+  recordDiseaseSignal(nearest.fish, "avoiding_group", now);
+  return true;
+}
+
+function maybeApplyDiseaseAvoidanceReaction(fish, species, now = Date.now()) {
+  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish) || isUndeadFish(fish)) {
+    return false;
+  }
+  if (!hasVisibleDiseaseAvoidanceSource(now)) {
+    return false;
+  }
+  if (Number(fish.behaviorNextThinkAt) > now) {
+    return false;
+  }
+
+  fish.behaviorNextThinkAt = now + randomDelay(DISEASE_AVOIDANCE_CHECK_MIN_MS, DISEASE_AVOIDANCE_CHECK_MAX_MS);
+  if (!applyDiseaseAvoidanceTarget(fish, species, now)) {
+    return false;
+  }
+
+  setFishBehaviorIntent(fish, "avoid", "visible symptoms nearby", now, { durationMs: BEHAVIOR_INTENT_LINGER_MS });
+  return true;
+}
+
+function getLightsOutOverride(targetTank = getCurrentTank()) {
+  return normalizeLightsOutOverride(targetTank?.lightsOutOverride);
+}
+
+function isTankLightsOut(now = Date.now(), targetTank = getCurrentTank()) {
+  const override = getLightsOutOverride(targetTank);
+  if (override === LIGHTS_OUT_OVERRIDE_ON) {
+    return true;
+  }
+  if (override === LIGHTS_OUT_OVERRIDE_OFF) {
+    return false;
+  }
+  return isCaveNightWindow(now);
+}
+
+function isNightActiveFish(fishOrSpecies) {
+  const profile = getFishBehaviorProfile(fishOrSpecies);
+  const personality = normalizeBehaviorPersonality(fishOrSpecies?.personality);
+  return profile.nightActive || personality === "night-active";
+}
+
+function isSlowGracefulFish(fishOrSpecies) {
+  return getFishBehaviorProfile(fishOrSpecies).slowGraceful;
+}
+
+function getFishPersonality(fish) {
+  return normalizeBehaviorPersonality(fish?.personality) || "curious";
+}
+
+function setFishBehaviorIntent(fish, type, cause = "", now = Date.now(), options = {}) {
+  if (!fish || !type) {
+    return false;
+  }
+  fish.behaviorIntent = {
+    type: String(type),
+    cause: String(cause || ""),
+    targetId: typeof options.targetId === "string" ? options.targetId : "",
+    targetName: typeof options.targetName === "string" ? options.targetName : "",
+    startedAt: now,
+    expiresAt: now + Math.max(1000, Number(options.durationMs) || BEHAVIOR_INTENT_LINGER_MS)
+  };
+  return true;
+}
+
+function clearExpiredFishBehaviorIntent(fish, now = Date.now()) {
+  if (fish?.behaviorIntent?.expiresAt && fish.behaviorIntent.expiresAt <= now) {
+    fish.behaviorIntent = null;
+    return true;
+  }
+  return false;
+}
+
+function getFishBehaviorIntent(fish, now = Date.now()) {
+  clearExpiredFishBehaviorIntent(fish, now);
+  return fish?.behaviorIntent || null;
+}
+
+function getBehaviorHistoryEventText(signalType, fish, options = {}) {
+  const name = fish?.name || "A fish";
+  const targetName = typeof options.targetName === "string" ? options.targetName.trim() : "";
+  switch (signalType) {
+    case "food_refused":
+      return `${name} approached food but did not eat.`;
+    case "hiding_more_than_usual":
+      return `${name} is hiding more than usual.`;
+    case "avoid_specific_fish":
+      return targetName
+        ? `${name} is keeping distance from ${targetName}.`
+        : `${name} is avoiding another fish.`;
+    case "guard_territory":
+      return `${name} is guarding a favorite area.`;
+    case "follow_friend":
+      return targetName
+        ? `${name} and ${targetName} are swimming together more than usual.`
+        : "Two fish are swimming together more than usual.";
+    case "inspect_lure":
+      return `${name} keeps inspecting a lure.`;
+    case "night_sleep":
+      return `${name} settled into a sleep spot after lights out.`;
+    case "night_forage":
+      return `${name} is moving after lights out.`;
+    case "night_active_still":
+      return `${name} has been unusually still at night.`;
+    case "odd_sleep_spot":
+      return `${name} is sleeping somewhere unusual.`;
+    case "lingering_near_bubbler":
+      return `${name} is lingering near the bubbler.`;
+    case "digging_hardscape":
+      return `${name} keeps returning to the same gravel spot.`;
+    case "grazing_hardscape":
+      return `${name} has been grazing hardscape.`;
+    default:
+      return `${name} has stopped following its usual routine.`;
+  }
+}
+
+function pushFishBehaviorSignalHistoryEvent(fish, signalType, now = Date.now(), options = {}) {
+  if (!fish || !signalType || DISEASE_SIGNAL_TYPES.includes(signalType)) {
+    return false;
+  }
+
+  const eventText = typeof options.eventText === "string" && options.eventText.trim()
+    ? options.eventText.trim()
+    : getBehaviorHistoryEventText(signalType, fish, options);
+  if (!eventText) {
+    return false;
+  }
+
+  pushEvent(eventText, now, getCurrentTank(), {
+    type: "behavior",
+    fishId: fish.id,
+    placedDecorId: typeof options.placedDecorId === "string" ? options.placedDecorId : "",
+    recapEligible: false
+  });
+  return true;
+}
+
+function recordFishBehaviorSignal(fish, signalType, now = Date.now(), options = {}) {
+  if (!fish || !signalType) {
+    return false;
+  }
+  const signals = sanitizeBehaviorSignals(fish.behaviorSignals, now);
+  const previous = signals[signalType];
+  if (previous?.cooldownUntil && previous.cooldownUntil > now) {
+    fish.behaviorSignals = signals;
+    return false;
+  }
+  signals[signalType] = {
+    type: signalType,
+    taskText: typeof options.taskText === "string" && options.taskText
+      ? options.taskText
+      : getBehaviorHistoryEventText(signalType, fish, options),
+    debugText: typeof options.debugText === "string" ? options.debugText : "",
+    firstSeenAt: previous?.firstSeenAt || now,
+    lastSeenAt: now,
+    expiresAt: now + Math.max(1000, Number(options.expiryMs) || BEHAVIOR_SIGNAL_EXPIRY_MS),
+    cooldownUntil: now + Math.max(1000, Number(options.cooldownMs) || BEHAVIOR_SIGNAL_COOLDOWN_MS)
+  };
+  fish.behaviorSignals = signals;
+  if (DISEASE_SIGNAL_TYPES.includes(signalType)) {
+    recordDiseaseSignal(fish, signalType, now);
+  } else {
+    pushFishBehaviorSignalHistoryEvent(fish, signalType, now, options);
+  }
+  return true;
+}
+
+function pruneFishBehaviorState(fish, now = Date.now()) {
+  if (!fish) {
+    return false;
+  }
+  const previousSignals = JSON.stringify(fish.behaviorSignals || {});
+  fish.behaviorSignals = sanitizeBehaviorSignals(fish.behaviorSignals, now);
+  const intentChanged = clearExpiredFishBehaviorIntent(fish, now);
+  return intentChanged || previousSignals !== JSON.stringify(fish.behaviorSignals || {});
+}
+
+function getRelationshipKindForFish(fish, otherFish) {
+  if (!fish || !otherFish || fish.id === otherFish.id) {
+    return "neutral";
+  }
+  if (isPiranhaSpecies(otherFish) || isZombieFish(otherFish) || isSkeletonFish(otherFish)) {
+    return "fear";
+  }
+  const personality = getFishPersonality(fish);
+  const otherPersonality = getFishPersonality(otherFish);
+  const species = getSpeciesForFish(fish);
+  const otherSpecies = getSpeciesForFish(otherFish);
+  if (personality === "social" || personality === "follower" || getFishBehaviorProfile(species).group === "small-social") {
+    if (species?.id === otherSpecies?.id || getFishBehaviorProfile(otherSpecies).group === "small-social") {
+      return "friend";
+    }
+  }
+  if (personality === "territorial" || otherPersonality === "territorial") {
+    return species?.id === otherSpecies?.id ? "rival" : "dislike";
+  }
+  if (personality === "standoffish" || otherPersonality === "standoffish") {
+    return "dislike";
+  }
+  return "neutral";
+}
+
+function ensureFishRelationships(now = Date.now()) {
+  if (!state?.fish?.length) {
+    return false;
+  }
+  let changed = false;
+  const livingIds = new Set(state.fish.filter((fish) => fish && !isFishDead(fish)).map((fish) => fish.id));
+  for (const fish of state.fish) {
+    if (!fish || isFishDead(fish)) {
+      continue;
+    }
+    if (Number(fish.relationshipNextCheckAt) > now) {
+      continue;
+    }
+    const nextRelationships = sanitizeFishRelationships(fish.relationships);
+    for (const key of Object.keys(nextRelationships)) {
+      if (!livingIds.has(key)) {
+        delete nextRelationships[key];
+        changed = true;
+      }
+    }
+    for (const otherFish of state.fish) {
+      if (!otherFish || otherFish.id === fish.id || isFishDead(otherFish)) {
+        continue;
+      }
+      if (!nextRelationships[otherFish.id]) {
+        const kind = getRelationshipKindForFish(fish, otherFish);
+        const score = kind === "friend" ? randomBetween(34, 78)
+          : kind === "fear" ? randomBetween(-95, -62)
+            : kind === "rival" ? randomBetween(-70, -34)
+              : kind === "dislike" ? randomBetween(-48, -18)
+                : randomBetween(-10, 18);
+        nextRelationships[otherFish.id] = { kind, score, updatedAt: now };
+        changed = true;
+      }
+    }
+    fish.relationships = nextRelationships;
+    fish.relationshipNextCheckAt = now + BEHAVIOR_RELATIONSHIP_CHECK_MS + Math.random() * BEHAVIOR_RELATIONSHIP_CHECK_MS;
+  }
+  return changed;
+}
+
+function processFishBehaviorState(now = Date.now()) {
+  if (!state?.fish?.length) {
+    return false;
+  }
+  let changed = ensureFishRelationships(now);
+  for (const fish of state.fish) {
+    changed = pruneFishBehaviorState(fish, now) || changed;
+  }
+  return changed;
+}
+
+function applyBehaviorTarget(fish, species, target, now = Date.now()) {
+  if (!fish || !species || !target || fish.caveState) {
+    return false;
+  }
+  clearFishSchoolFollowState(fish);
+  fish.targetXNorm = clamp(target.xNorm, 0.08, 0.92);
+  fish.targetYNorm = clamp(target.yNorm, 0.14, 0.84);
+  fish.targetAt = target.targetAt || now + randomBetween(species.targetMinMs, species.targetMaxMs);
+  fish.hangoutDecorId = target.hangoutDecorId || target.decorId || null;
+  fish.hangoutZoneType = target.hangoutZoneType || target.zoneType || null;
+  if (Number.isFinite(Number(target.targetLayer))) {
+    setFishDesiredTankLayer(fish, clampTankLayer(Number(target.targetLayer)));
+  }
+  if (target.speed) {
+    fish.swimSpeed = target.speed;
+  } else if (species.speedMode === "dynamic" || target.slow) {
+    fish.swimSpeed = normalizeFishSpeed(species, target.slow ? randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.72)) : undefined);
+  }
+  if (target.intentType) {
+    setFishBehaviorIntent(fish, target.intentType, target.intentCause || "", now, {
+      targetId: target.intentTargetId || target.hangoutDecorId || target.decorId || "",
+      targetName: target.intentTargetName || ""
+    });
+  }
+  if (target.signalType) {
+    recordFishBehaviorSignal(fish, target.signalType, now, {
+      debugText: target.debugText || "",
+      taskText: target.taskText || "",
+      eventText: target.eventText || "",
+      targetName: target.intentTargetName || target.targetName || "",
+      placedDecorId: target.hangoutDecorId || target.decorId || ""
+    });
+  }
+  if ((fish.personality === "homebody" || fish.personality === "territorial") && (target.hangoutDecorId || target.decorId)) {
+    fish.favoriteSpot = {
+      xNorm: fish.targetXNorm,
+      yNorm: fish.targetYNorm,
+      decorId: target.hangoutDecorId || target.decorId || "",
+      zoneType: target.hangoutZoneType || target.zoneType || "",
+      assignedAt: now
+    };
+  }
+  return true;
+}
+
+function getAvoidanceEscapeTarget(fish, species, threatFish, options = {}) {
+  if (!fish || !species || !threatFish) {
+    return null;
+  }
+  const currentX = clamp(Number(fish.xNorm) || 0.5, 0.08, 0.92);
+  const currentY = clamp(Number(fish.yNorm) || 0.5, 0.14, 0.8);
+  const threatX = clamp(Number(threatFish.xNorm) || 0.5, 0.08, 0.92);
+  const threatY = clamp(Number(threatFish.yNorm) || 0.5, 0.14, 0.8);
+  let awayX = currentX - threatX;
+  let awayY = currentY - threatY;
+  let distance = Math.hypot(awayX, awayY);
+  if (distance < 0.0001) {
+    awayX = currentX >= threatX ? 1 : -1;
+    awayY = 0;
+    distance = 1;
+  }
+
+  const retreatNorm = clamp(Number(options.retreatNorm) || 0.22, 0.04, 0.62);
+  const verticalScale = clamp(Number(options.verticalScale) || 0.72, 0.2, 1.15);
+  const minYNorm = clamp(Number.isFinite(Number(options.minYNorm)) ? Number(options.minYNorm) : 0.14, 0.08, 0.8);
+  const maxYNorm = clamp(Number.isFinite(Number(options.maxYNorm)) ? Number(options.maxYNorm) : 0.8, minYNorm, 0.86);
+  const targetLayer = Number.isFinite(Number(options.targetLayer))
+    ? clampTankLayer(Number(options.targetLayer))
+    : getFishTankLayer(fish);
+
+  let rawX = currentX + (awayX / distance) * retreatNorm;
+  let rawY = currentY + (awayY / distance) * retreatNorm * verticalScale;
+  const nearLeft = currentX <= 0.145;
+  const nearRight = currentX >= 0.855;
+  const nearTop = currentY <= 0.22;
+  const nearBottom = currentY >= 0.71;
+  const inCorner = (nearLeft || nearRight) && (nearTop || nearBottom);
+  const clippedByWall = rawX < 0.08 || rawX > 0.92 || rawY < minYNorm || rawY > maxYNorm;
+  const cornerThreatRadius = clamp(Number(options.cornerThreatRadius) || 0.32, 0.08, 0.7);
+  let cornerEscape = false;
+
+  if ((inCorner || clippedByWall) && distance <= cornerThreatRadius) {
+    const inwardX = nearLeft ? 1 : nearRight ? -1 : (awayX >= 0 ? 1 : -1);
+    const inwardY = nearTop ? 1 : nearBottom ? -1 : (awayY >= 0 ? 1 : -1);
+    rawX = currentX + inwardX * retreatNorm * randomBetween(0.82, 1.08);
+    rawY = currentY + inwardY * retreatNorm * verticalScale * randomBetween(0.58, 0.86);
+    if (nearLeft) {
+      rawX = Math.max(rawX, Math.min(0.34, currentX + 0.2));
+    } else if (nearRight) {
+      rawX = Math.min(rawX, Math.max(0.66, currentX - 0.2));
+    }
+    if (nearTop) {
+      rawY = Math.max(rawY, Math.min(0.36, currentY + 0.16));
+    } else if (nearBottom) {
+      rawY = Math.min(rawY, Math.max(0.56, currentY - 0.16));
+    }
+    cornerEscape = true;
+  }
+
+  return {
+    xNorm: clamp(rawX, 0.08, 0.92),
+    yNorm: clampFishYNormToLayer(rawY, fish, species, targetLayer, {
+      minYNorm,
+      maxYNorm
+    }),
+    targetLayer,
+    cornerEscape
+  };
+}
+
+function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  const relationships = sanitizeFishRelationships(fish?.relationships);
+  if (!Object.keys(relationships).length) {
+    return null;
+  }
+  const personality = getFishPersonality(fish);
+  const nearby = state.fish
+    .filter((otherFish) => otherFish && otherFish.id !== fish.id && !isFishDead(otherFish))
+    .map((otherFish) => ({
+      fish: otherFish,
+      relation: relationships[otherFish.id],
+      distance: Math.hypot((fish.xNorm || 0.5) - (otherFish.xNorm || 0.5), (fish.yNorm || 0.5) - (otherFish.yNorm || 0.5))
+    }))
+    .filter((entry) => entry.relation)
+    .sort((left, right) => left.distance - right.distance);
+  const threat = nearby.find((entry) => ["fear", "dislike", "rival"].includes(entry.relation.kind) && entry.distance <= 0.34);
+  if (threat) {
+    const escape = getAvoidanceEscapeTarget(fish, species, threat.fish, {
+      retreatNorm: randomBetween(0.18, 0.32),
+      verticalScale: randomBetween(0.62, 0.86),
+      cornerThreatRadius: 0.38
+    });
+    return {
+      xNorm: escape?.xNorm ?? fish.xNorm,
+      yNorm: escape?.yNorm ?? fish.yNorm,
+      targetLayer: escape?.targetLayer ?? getFishTankLayer(fish),
+      targetAt: now + (escape?.cornerEscape ? randomBetween(900, 1900) : randomBetween(2200, 5000)),
+      intentType: threat.relation.kind === "fear" ? "avoid" : "space",
+      intentCause: `${threat.relation.kind} ${threat.fish.name}`,
+      intentTargetId: threat.fish.id,
+      intentTargetName: threat.fish.name,
+      signalType: "avoid_specific_fish",
+      debugText: `avoid ${threat.fish.name} | ${threat.relation.kind}`
+    };
+  }
+  if (options.onlyThreat) {
+    return null;
+  }
+  if (["social", "follower"].includes(personality) || getFishBehaviorProfile(species).group === "small-social") {
+    const friend = nearby.find((entry) => entry.relation.kind === "friend" && entry.distance <= 0.42);
+    if (friend && Math.random() < 0.55) {
+      return {
+        xNorm: clamp(friend.fish.xNorm + randomBetween(-0.05, 0.05), 0.08, 0.92),
+        yNorm: clamp(friend.fish.yNorm + randomBetween(-0.04, 0.04), 0.14, 0.8),
+        targetLayer: getFishTankLayer(friend.fish),
+        targetAt: now + randomBetween(3200, 7200),
+        intentType: "follow",
+        intentCause: "friend",
+        intentTargetId: friend.fish.id,
+        intentTargetName: friend.fish.name,
+        signalType: "follow_friend",
+        debugText: `follow ${friend.fish.name} | friend`
+      };
+    }
+  }
+  return null;
+}
+
+function pickNightBehaviorTarget(fish, species, now = Date.now()) {
+  if (!isTankLightsOut(now)) {
+    return null;
+  }
+  const personality = getFishPersonality(fish);
+  const nightActive = isNightActiveFish(fish);
+  if (nightActive) {
+    const forage = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["hardscape", "plant", "hide"],
+      chanceMultiplier: 1.9,
+      lingerMultiplier: 0.9,
+      preferBackLayer: false
+    });
+    if (forage) {
+      return {
+        ...forage,
+        intentType: "night forage",
+        intentCause: "night-active",
+        signalType: "night_forage",
+        debugText: "night forage | night-active"
+      };
+    }
+    return {
+      xNorm: randomSwimX(),
+      yNorm: randomBetween(0.56, 0.82),
+      targetLayer: clampTankLayer(Math.max(1, getFishTankLayer(fish))),
+      targetAt: now + randomBetween(3600, 7600),
+      intentType: "night forage",
+      intentCause: "night-active",
+      signalType: "night_forage",
+      debugText: "night forage | night-active"
+    };
+  }
+
+  const homeSpot = fish.favoriteSpot && ["homebody", "routine-loving"].includes(personality)
+    ? fish.favoriteSpot
+    : null;
+  if (homeSpot && Math.random() < 0.65) {
+    return {
+      xNorm: homeSpot.xNorm,
+      yNorm: homeSpot.yNorm,
+      targetLayer: getFishTankLayer(fish),
+      targetAt: now + randomBetween(8000, 18000),
+      intentType: "night sleep",
+      intentCause: "favorite spot",
+      signalType: "night_sleep",
+      debugText: "night sleep | lights out"
+    };
+  }
+  const cover = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
+    chanceMultiplier: ["shy", "sensitive", "homebody"].includes(personality) ? 2.2 : 1.2,
+    lingerMultiplier: 2.3,
+    preferBackLayer: true
+  });
+  if (cover) {
+    return {
+      ...cover,
+      intentType: "night sleep",
+      intentCause: "lights out",
+      signalType: "night_sleep",
+      debugText: "night sleep | lights out",
+      slow: true
+    };
+  }
+  if (Math.random() < 0.2) {
+    return {
+      xNorm: clamp(fish.xNorm + randomBetween(-0.05, 0.05), 0.08, 0.92),
+      yNorm: clamp(fish.yNorm + randomBetween(-0.03, 0.03), 0.18, 0.78),
+      targetLayer: getFishTankLayer(fish),
+      targetAt: now + randomBetween(8000, 16000),
+      intentType: "night sleep",
+      intentCause: "exposed",
+      signalType: "odd_sleep_spot",
+      debugText: "night sleep | exposed"
+    };
+  }
+  return null;
+}
+
+function pickFeedingMemoryBehaviorTarget(fish, species, now = Date.now()) {
+  if (!fish || !species || isMealFreeFish(fish) || !canFoodSatisfyFishMeal(fish, "basic")) {
+    return null;
+  }
+  const personality = getFishPersonality(fish);
+  if (!["greedy", "routine-loving", "curious", "social"].includes(personality)) {
+    return null;
+  }
+  const slot = getCurrentMealSlot(now);
+  if (hasFishEatenInSlot(fish, slot)) {
+    return null;
+  }
+  const memory = sanitizeFeedingMemory(fish.feedingMemory, now);
+  const nextBoundary = getNextMealBoundary(now).getTime();
+  const nearMealTime = nextBoundary - now <= 20 * MINUTE_MS || now - slot.start <= 20 * MINUTE_MS;
+  const activeFood = state.floatingPellets?.some((pellet) => pellet && canFishTargetFoodPellet(fish, pellet, now));
+  if (!nearMealTime && !activeFood) {
+    return null;
+  }
+  const xNorm = Number.isFinite(Number(memory.feederXNorm))
+    ? memory.feederXNorm
+    : memory.lastFoodXNorm;
+  const yNorm = Number.isFinite(Number(memory.feederYNorm))
+    ? clamp(memory.feederYNorm + 0.08, 0.14, 0.42)
+    : memory.lastFoodYNorm;
+  if (!Number.isFinite(Number(xNorm)) || !Number.isFinite(Number(yNorm))) {
+    return null;
+  }
+  const chance = personality === "routine-loving" ? 0.72 : personality === "greedy" ? 0.62 : 0.38;
+  if (Math.random() > chance) {
+    return null;
+  }
+  return {
+    xNorm: clamp(Number(xNorm) + randomBetween(-0.035, 0.035), 0.08, 0.92),
+    yNorm: clamp(Number(yNorm) + randomBetween(-0.025, 0.025), 0.14, 0.54),
+    targetLayer: clampTankLayer(Math.min(getFishTankLayer(fish), 2)),
+    targetAt: now + randomBetween(3200, 8200),
+    intentType: memory.feederSeenAt ? "feeder memory" : "feeding memory",
+    intentCause: personality,
+    debugText: `${memory.feederSeenAt ? "inspect feeder" : "feeding spot"} | ${personality}`
+  };
+}
+
+function pickPersonalityDecorBehaviorTarget(fish, species, now = Date.now()) {
+  const personality = getFishPersonality(fish);
+  const comfort = getFishComfort(fish, now).value;
+  const group = getFishBehaviorProfile(species).group;
+  if ((comfort <= 0.4 || ["shy", "sensitive", "nervous"].includes(personality)) && Math.random() < 0.68) {
+    const cover = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["plant", "hide", "spooky"],
+      chanceMultiplier: 2.1,
+      lingerMultiplier: comfort <= 0.4 ? 2.6 : 1.5,
+      preferBackLayer: true
+    });
+    if (cover) {
+      return {
+        ...cover,
+        intentType: "hide plant",
+        intentCause: `${personality}${comfort <= 0.4 ? " + stressed" : ""}`,
+        signalType: "hiding_more_than_usual",
+        debugText: `hide ${cover.zoneType} | ${personality}${comfort <= 0.4 ? " + stressed" : ""}`,
+        slow: true
+      };
+    }
+  }
+  if (["curious", "hunter"].includes(personality) && Math.random() < 0.54) {
+    const inspect = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: personality === "hunter" ? ["lure", "spooky"] : ["lure", "bubbler", "spooky"],
+      chanceMultiplier: 1.75,
+      lingerMultiplier: 0.9,
+      occupancyLimit: 1
+    });
+    if (inspect) {
+      return {
+        ...inspect,
+        intentType: inspect.zoneType === "lure" ? "inspect lure" : `inspect ${inspect.zoneType}`,
+        intentCause: personality,
+        signalType: inspect.zoneType === "lure" ? "inspect_lure" : (inspect.zoneType === "bubbler" ? "lingering_near_bubbler" : ""),
+        debugText: `inspect ${inspect.zoneType} | ${personality}`
+      };
+    }
+  }
+  if (["territorial", "homebody"].includes(personality) && Math.random() < 0.58) {
+    const territory = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["hardscape", "hide"],
+      chanceMultiplier: 1.8,
+      lingerMultiplier: personality === "territorial" ? 1.9 : 1.35,
+      occupancyLimit: personality === "territorial" ? 1 : undefined
+    });
+    if (territory) {
+      return {
+        ...territory,
+        intentType: personality === "territorial" ? "guard cave" : "home spot",
+        intentCause: personality,
+        signalType: personality === "territorial" ? "guard_territory" : "",
+        debugText: `${personality === "territorial" ? "guard" : "return"} ${territory.zoneType} | ${personality}`
+      };
+    }
+  }
+  if ((personality === "digger" || group === "bottom-cleaner") && Math.random() < 0.62) {
+    const dig = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["hardscape"],
+      chanceMultiplier: 1.9,
+      lingerMultiplier: 1.1
+    });
+    if (dig) {
+      return {
+        ...dig,
+        yNorm: clamp(Math.max(dig.yNorm, 0.64), 0.54, 0.88),
+        targetLayer: clampTankLayer(Math.max(dig.targetLayer, TANK_DEPTH_LAYERS - 1)),
+        intentType: personality === "cleaner" ? "graze hardscape" : "dig under hardscape",
+        intentCause: `${personality} + hardscape`,
+        signalType: personality === "cleaner" ? "grazing_hardscape" : "digging_hardscape",
+        debugText: `${personality === "cleaner" ? "graze" : "dig under"} hardscape | ${personality}`
+      };
+    }
+  }
+  return null;
+}
+
+function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
+  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish) || isUndeadFish(fish)) {
+    return false;
+  }
+  if (applyDiseaseAvoidanceTarget(fish, species, now)) {
+    setFishBehaviorIntent(fish, "avoid", "visible symptoms nearby", now);
+    return true;
+  }
+  const diseaseTarget = pickDiseaseBehaviorTarget(fish, species, now);
+  if (diseaseTarget && applyDiseaseBehaviorTarget(fish, species, diseaseTarget, now)) {
+    setFishBehaviorIntent(fish, "disease isolate", sanitizeDiseaseState(fish.diseaseState), now);
+    return true;
+  }
+  const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+  if (["sucker", "shrimp", "piranha"].includes(effectiveBehavior)) {
+    if (isTankLightsOut(now) && isNightActiveFish(fish)) {
+      setFishBehaviorIntent(fish, "night forage", "night-active", now);
+      recordFishBehaviorSignal(fish, "night_forage", now, { debugText: "night forage | night-active" });
+    }
+    return false;
+  }
+  const threatTarget = pickRelationshipBehaviorTarget(fish, species, now, { onlyThreat: true });
+  if (threatTarget && applyBehaviorTarget(fish, species, threatTarget, now)) {
+    return true;
+  }
+  const nightTarget = pickNightBehaviorTarget(fish, species, now);
+  if (nightTarget && applyBehaviorTarget(fish, species, nightTarget, now)) {
+    return true;
+  }
+  const feedingMemoryTarget = pickFeedingMemoryBehaviorTarget(fish, species, now);
+  if (feedingMemoryTarget && applyBehaviorTarget(fish, species, feedingMemoryTarget, now)) {
+    return true;
+  }
+  const relationshipTarget = pickRelationshipBehaviorTarget(fish, species, now);
+  if (relationshipTarget && applyBehaviorTarget(fish, species, relationshipTarget, now)) {
+    return true;
+  }
+  const decorTarget = pickPersonalityDecorBehaviorTarget(fish, species, now);
+  if (decorTarget && applyBehaviorTarget(fish, species, decorTarget, now)) {
+    return true;
+  }
+  return false;
+}
+
+function recordFishFeedingMemory(fish, pellet, now = Date.now()) {
+  if (!fish || !pellet) {
+    return false;
+  }
+  const memory = sanitizeFeedingMemory(fish.feedingMemory, now);
+  memory.lastFoodXNorm = clamp(Number(pellet.xNorm) || fish.xNorm || 0.5, 0.08, 0.92);
+  memory.lastFoodYNorm = clamp(Number(pellet.yNorm) || fish.yNorm || 0.3, 0.08, 0.9);
+  memory.lastFoodAt = now;
+  memory.updatedAt = now;
+  const dispenserLayout = pellet.dropStartXNorm != null || pellet.dropStartYNorm != null
+    ? getAutoDispenserLayout()
+    : null;
+  if (dispenserLayout) {
+    memory.feederXNorm = clamp((dispenserLayout.nozzle.x || 0) / TANK_WIDTH, 0.08, 0.92);
+    memory.feederYNorm = clamp((dispenserLayout.nozzle.y || 0) / TANK_HEIGHT, 0.02, 0.42);
+    memory.feederSeenAt = now;
+  }
+  memory.crowdedFishIds = state.fish
+    .filter((otherFish) => otherFish && otherFish.id !== fish.id && !isFishDead(otherFish))
+    .filter((otherFish) => Math.hypot((otherFish.xNorm || 0.5) - memory.lastFoodXNorm, (otherFish.yNorm || 0.5) - memory.lastFoodYNorm) <= 0.18)
+    .map((otherFish) => otherFish.id)
+    .slice(0, 6);
+  fish.feedingMemory = memory;
+  return true;
+}
+
+function shouldFishRefuseFoodForComfort(fish, foodKey = "basic", now = Date.now()) {
+  if (!fish || isMealFreeFish(fish) || isUndeadFish(fish)) {
+    return false;
+  }
+  if (Number(fish.foodRefusalUntil) > now) {
+    return true;
+  }
+  const comfortValue = getFishComfort(fish, now).value;
+  let eatChance = comfortValue <= 0.2
+    ? 0.05
+    : comfortValue <= 0.4
+      ? randomBetween(0.15, 0.3)
+      : comfortValue <= 0.6
+        ? randomBetween(0.5, 0.7)
+        : randomBetween(0.8, 1);
+  if (getFishPersonality(fish) === "greedy") {
+    eatChance = Math.min(0.98, eatChance + 0.16);
+  } else if (["sensitive", "shy", "nervous"].includes(getFishPersonality(fish))) {
+    eatChance = Math.max(0.02, eatChance - 0.12);
+  }
+  if (shouldFishRefuseFoodForDisease(fish, foodKey, now)) {
+    eatChance = Math.min(eatChance, 0.25);
+  }
+  return Math.random() > eatChance;
+}
+
+function handleFishRefuseFoodPellet(fish, pellet, now = Date.now()) {
+  if (!fish || !pellet) {
+    return false;
+  }
+  const diseaseState = sanitizeDiseaseState(fish.diseaseState);
+  const comfortPercent = Math.round(getFishComfort(fish, now).value * 100);
+  const refusalReason = diseaseState !== DISEASE_STATE_NONE
+    ? `${diseaseState} symptoms + comfort ${comfortPercent}%`
+    : `comfort ${comfortPercent}%`;
+  recordFishFeedingMemory(fish, pellet, now);
+  recordFishBehaviorSignal(fish, "food_refused", now, {
+    debugText: `refuse food | ${refusalReason}`
+  });
+  recordDiseaseSignal(fish, "food_refused", now);
+  setFishBehaviorIntent(fish, "refuse food", refusalReason, now, { durationMs: FOOD_REFUSAL_RETARGET_MS });
+  fish.foodRefusalUntil = now + FOOD_REFUSAL_RETARGET_MS;
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  if (pellet.targetFishId === fish.id) {
+    pellet.targetFishId = "";
+  }
+  const awayX = (fish.xNorm || 0.5) >= (pellet.xNorm || 0.5) ? 1 : -1;
+  fish.targetXNorm = clamp((fish.xNorm || 0.5) + awayX * randomBetween(0.08, 0.18), 0.08, 0.92);
+  fish.targetYNorm = clamp((fish.yNorm || 0.5) + randomBetween(-0.08, 0.08), 0.14, 0.8);
+  fish.targetAt = now + randomBetween(2200, 5200);
+  fish.swimSpeed = normalizeFishSpeed(getSpeciesForFish(fish));
+  return true;
 }
 
 function getUvGlowSourceKey(sourceImage) {
@@ -16058,6 +18683,7 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     autoDispenser: createDefaultAutoDispenserState(incomingTank.autoDispenser),
     uvLightInstalled: Boolean(incomingTank.uvLightInstalled),
     uvLightEnabled: incomingTank.uvLightEnabled !== false,
+    lightsOutOverride: normalizeLightsOutOverride(incomingTank.lightsOutOverride),
     selectedBubbleAsset: runtime.bubbleMap.has(incomingTank.selectedBubbleAsset)
       ? incomingTank.selectedBubbleAsset
       : (runtime.bubbleCatalog[0]?.key || null),
@@ -16531,6 +19157,20 @@ function dismissHardwareAccelerationNotice() {
   } catch { }
 }
 
+function acknowledgeHardwareAccelerationNotice(options = {}) {
+  const shouldDismiss = options.dismiss === true
+    || Boolean(dom.utilityOverlay?.querySelector?.("[data-hardware-acceleration-dont-show]")?.checked);
+  if (shouldDismiss) {
+    dismissHardwareAccelerationNotice();
+  }
+  closeUtilityOverlay();
+  showLoadingOverlayReadyState();
+}
+
+function isHardwareAccelerationNoticeBlockingStart() {
+  return runtime.utilityOverlayOpen === true && runtime.utilityOverlayMode === "hardware-acceleration";
+}
+
 function getWebGlRendererLabel(gl) {
   if (!gl || typeof gl.getParameter !== "function") {
     return "";
@@ -16584,16 +19224,14 @@ function detectHardwareAccelerationIssue() {
 }
 
 function maybeShowHardwareAccelerationNotice() {
-  if (runtime.utilityOverlayOpen || getHardwareAccelerationDismissed()) {
+  if (!shouldShowHardwareAccelerationNotice() || runtime.utilityOverlayOpen || getHardwareAccelerationDismissed()) {
     return;
   }
 
-  const issue = detectHardwareAccelerationIssue();
-  if (!issue) {
-    return;
-  }
-
-  runtime.hardwareAccelerationIssue = issue;
+  runtime.hardwareAccelerationIssue = detectHardwareAccelerationIssue() || {
+    reason: "first-visit",
+    renderer: ""
+  };
   openUtilityOverlay("hardware-acceleration");
 }
 
@@ -17081,6 +19719,7 @@ function sanitizeFish(fish, options = {}) {
     return null;
   }
 
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const species = getBaseSpeciesForFish(fish);
   const legacyHealthModel = Boolean(options.legacyHealthModel);
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
@@ -17119,6 +19758,8 @@ function sanitizeFish(fish, options = {}) {
   const storedUndeadTemplateSpecies = storedUndeadTemplateSpeciesId
     ? runtime.fishMap.get(storedUndeadTemplateSpeciesId)
     : null;
+  const pickedPersonality = pickFishPersonality(species);
+  const storedPersonality = normalizeBehaviorPersonality(fish.personality);
   return {
     id: String(fish.id || createId("fish")),
     speciesId: fish.speciesId,
@@ -17128,8 +19769,8 @@ function sanitizeFish(fish, options = {}) {
       ? storedUndeadTemplateSpecies.id
       : null,
     name: typeof fish.name === "string" && fish.name.trim() ? fish.name : buildFishName(fish.speciesId, []),
-    acquiredAt: Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : Date.now(),
-    tankAddedAt: Number.isFinite(fish.tankAddedAt) ? fish.tankAddedAt : (Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : Date.now()),
+    acquiredAt: Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now,
+    tankAddedAt: Number.isFinite(fish.tankAddedAt) ? fish.tankAddedAt : (Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now),
     deadAt: Number.isFinite(fish.deadAt) ? fish.deadAt : null,
     zombieVariant: Boolean(fish.zombieVariant),
     // Predator combat is intentionally not resumed across reloads.
@@ -17163,8 +19804,37 @@ function sanitizeFish(fish, options = {}) {
     fedStreak: clamp(Math.round(Number(fish.fedStreak) || 0), 0, 999),
     missedMealsInRow: clamp(Math.round(Number(fish.missedMealsInRow) || 0), 0, 999),
     lastAteAt: Number.isFinite(Number(fish.lastAteAt)) ? Number(fish.lastAteAt) : 0,
+    satiatedUntil: Number.isFinite(Number(fish.satiatedUntil)) ? Math.max(0, Number(fish.satiatedUntil)) : 0,
+    personality: storedPersonality || pickedPersonality.personality,
+    personalityRarity: storedPersonality ? sanitizePersonalityRarity(fish.personalityRarity) : pickedPersonality.rarity,
+    relationships: sanitizeFishRelationships(fish.relationships),
+    feedingMemory: sanitizeFeedingMemory(fish.feedingMemory, now),
+    favoriteSpot: sanitizeFavoriteSpot(fish.favoriteSpot),
+    disease: sanitizeBehaviorDiseaseSnapshot(fish.disease, now),
+    behaviorSignals: sanitizeBehaviorSignals(fish.behaviorSignals, now),
+    behaviorIntent: sanitizeBehaviorIntent(fish.behaviorIntent, now),
+    foodRefusalUntil: Number.isFinite(Number(fish.foodRefusalUntil)) ? Math.max(0, Number(fish.foodRefusalUntil)) : 0,
+    behaviorNextThinkAt: Number.isFinite(Number(fish.behaviorNextThinkAt)) ? Math.max(0, Number(fish.behaviorNextThinkAt)) : 0,
+    relationshipNextCheckAt: Number.isFinite(Number(fish.relationshipNextCheckAt)) ? Math.max(0, Number(fish.relationshipNextCheckAt)) : 0,
     veryLowComfortStartedAt: Number.isFinite(Number(fish.veryLowComfortStartedAt)) ? Number(fish.veryLowComfortStartedAt) : 0,
     veryLowComfortEventDayKey: typeof fish.veryLowComfortEventDayKey === "string" ? fish.veryLowComfortEventDayKey : "",
+    diseaseState: dead ? DISEASE_STATE_NONE : sanitizeDiseaseState(fish.diseaseState),
+    diseaseType: typeof fish.diseaseType === "string" && fish.diseaseType.trim() ? fish.diseaseType.trim() : "",
+    diseaseInfectedAt: Number.isFinite(Number(fish.diseaseInfectedAt)) ? Math.max(0, Number(fish.diseaseInfectedAt)) : 0,
+    diseaseProgressMs: Math.max(0, Number(fish.diseaseProgressMs) || 0),
+    diseaseLastProgressAt: Number.isFinite(Number(fish.diseaseLastProgressAt)) ? Math.max(0, Number(fish.diseaseLastProgressAt)) : 0,
+    diseaseExposureLevel: clamp(Number(fish.diseaseExposureLevel) || 0, 0, DISEASE_EXPOSURE_MAX),
+    diseaseRecoveryProgressMs: Math.max(0, Number(fish.diseaseRecoveryProgressMs) || 0),
+    diseaseTreatedUntil: Number.isFinite(Number(fish.diseaseTreatedUntil)) ? Math.max(0, Number(fish.diseaseTreatedUntil)) : 0,
+    diseaseLastDamageAt: Number.isFinite(Number(fish.diseaseLastDamageAt)) ? Math.max(0, Number(fish.diseaseLastDamageAt)) : 0,
+    diseaseSource: typeof fish.diseaseSource === "string" ? fish.diseaseSource.trim() : "",
+    temporaryImmunityUntil: Number.isFinite(Number(fish.temporaryImmunityUntil)) ? Math.max(0, Number(fish.temporaryImmunityUntil)) : 0,
+    nextDiseaseCheckAt: Number.isFinite(Number(fish.nextDiseaseCheckAt)) ? Math.max(0, Number(fish.nextDiseaseCheckAt)) : 0,
+    nextDiseaseSpreadCheckAt: Number.isFinite(Number(fish.nextDiseaseSpreadCheckAt)) ? Math.max(0, Number(fish.nextDiseaseSpreadCheckAt)) : 0,
+    nextSymptomCheckAt: Number.isFinite(Number(fish.nextSymptomCheckAt)) ? Math.max(0, Number(fish.nextSymptomCheckAt)) : 0,
+    nextGreenBubbleAt: Number.isFinite(Number(fish.nextGreenBubbleAt)) ? Math.max(0, Number(fish.nextGreenBubbleAt)) : 0,
+    lastIllnessRiskDayKey: typeof fish.lastIllnessRiskDayKey === "string" ? fish.lastIllnessRiskDayKey : "",
+    lastIllnessSignalAtByType: sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType),
     glassTapStressEndsAt: Array.isArray(fish.glassTapStressEndsAt)
       ? fish.glassTapStressEndsAt
         .map((value) => Number(value))
@@ -17289,14 +19959,18 @@ function sanitizeHistory(feedHistory) {
   }
 
   const entries = Object.entries(feedHistory)
-    .filter(([, value]) => value && Number.isFinite(value.fedAt))
+    .filter(([, value]) => value && (Number.isFinite(value.fedAt) || Number.isFinite(value.offeredAt)))
     .map(([key, value]) => [
       key,
       {
-        fedAt: value.fedAt,
+        fedAt: Number.isFinite(value.fedAt) ? value.fedAt : 0,
+        offeredAt: Number.isFinite(value.offeredAt) ? Math.max(0, Number(value.offeredAt)) : 0,
         coinsEarned: Number.isFinite(value.coinsEarned) ? Math.max(0, Math.floor(value.coinsEarned)) : 0,
         fishIds: Array.isArray(value.fishIds)
           ? [...new Set(value.fishIds.map((fishId) => String(fishId || "")).filter(Boolean))]
+          : [],
+        offeredFishIds: Array.isArray(value.offeredFishIds)
+          ? [...new Set(value.offeredFishIds.map((fishId) => String(fishId || "")).filter(Boolean))]
           : []
       }
     ]);
@@ -20995,6 +23669,8 @@ function sanitizePellet(pellet) {
     settledAt: settled && Number.isFinite(Number(pellet.settledAt)) ? Number(pellet.settledAt) : null,
     sway: clamp(Number(pellet.sway) || Math.random(), 0, 1),
     targetFishId: typeof pellet.targetFishId === "string" ? pellet.targetFishId : "",
+    diseaseRefusalFishId: typeof pellet.diseaseRefusalFishId === "string" ? pellet.diseaseRefusalFishId : "",
+    refusalPrecheckedFishId: typeof pellet.refusalPrecheckedFishId === "string" ? pellet.refusalPrecheckedFishId : "",
     foodKey: foodMeta?.id || defaultFoodKey,
     spritePath: resolveStoredFoodDropSpritePath(foodMeta, pellet.spritePath),
     rotation: clamp(Number.isFinite(Number(pellet.rotation)) ? Number(pellet.rotation) : randomBetween(-0.65, 0.65), -1.25, 1.25),
@@ -23324,6 +26000,8 @@ function syncCurrentTankState(now, options = {}) {
   changed = changed || pelletMotionChanged || pelletsBefore !== state.floatingPellets.length;
 
   changed = processTankMedicineEffects(now) || changed;
+  changed = processFishDisease(now) || changed;
+  changed = processFishBehaviorState(now) || changed;
   changed = processZombieInfections(now) || changed;
   changed = processFishDecayStates(now) || changed;
   changed = processDetritusFish(now) || changed;
@@ -23687,6 +26365,20 @@ function processDetritusFish(now) {
   return changed;
 }
 
+function hasActiveMealOffer(slot, tank = getCurrentTank(), now = Date.now()) {
+  if (!slot || !tank) {
+    return false;
+  }
+  const activeNormalPellets = Array.isArray(tank.floatingPellets)
+    && tank.floatingPellets.some((pellet) => pellet && isNormalMealFood(pellet.foodKey || "basic") && pellet.expiresAt > now);
+  if (activeNormalPellets) {
+    return true;
+  }
+  const entry = getMealHistoryEntry(slot.key, tank);
+  const offeredAt = Number(entry?.offeredAt) || 0;
+  return offeredAt > 0 && now - offeredAt < 5 * MINUTE_MS && !isMealSlotServed(slot, tank);
+}
+
 function feedFish() {
   const now = Date.now();
   syncState(now);
@@ -23714,27 +26406,19 @@ function feedFish() {
     return;
   }
 
-  let earnedCoins = 0;
-  for (const fish of feedableFish) {
-    const species = getSpeciesForFish(fish);
-    const remainingMealCoins = Math.max(0, DAILY_MEAL_COIN_CAP - earnedCoins);
-    const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(species?.mealCoins) || 0));
-    earnedCoins += mealCoins;
-    fish.lastAteAt = now;
-    applyFishMealWindowFoodIntake(fish, now, { foodKey: "basic" });
-    if (!isBrineShrimpSpecies(fish)) {
-      state.pendingPoops.push({
-        id: createId("poop"),
-        fishId: fish.id,
-        dueAt: now + HOUR_MS + Math.random() * (2 * HOUR_MS)
-      });
-    }
+  const feedTargets = feedableFish.filter((fish) => !hasFishEatenInSlot(fish, slot));
+  if (!feedTargets.length) {
+    showToast("No fish in the tank need pellets right now.");
+    return;
   }
 
-  applyFoodBuff("basic", now);
-  state.coins += earnedCoins;
-  state.floatingPellets = createFloatingPellets(now, feedableFish);
-  for (const fish of feedableFish) {
+  if (hasActiveMealOffer(slot, state, now)) {
+    showToast("Food is already in the tank.");
+    return;
+  }
+
+  state.floatingPellets = createFloatingPellets(now, feedTargets);
+  for (const fish of feedTargets) {
     const pellet = state.floatingPellets.find((entry) => entry.targetFishId === fish.id);
     if (!pellet) {
       continue;
@@ -23746,17 +26430,18 @@ function feedFish() {
     fish.targetAt = now + 4 * 60 * 1000;
     fish.targetXNorm = pellet.xNorm;
     fish.targetYNorm = pellet.yNorm;
+    recordFishFeedingMemory(fish, pellet, now);
   }
-  state.feedHistory[slot.key] = {
-    fedAt: now,
-    coinsEarned: earnedCoins,
-    fishIds: feedableFish.map((fish) => fish.id)
-  };
+  const mealEntry = ensureMealHistoryEntry(slot.key, now);
+  if (mealEntry) {
+    mealEntry.offeredAt = now;
+    mealEntry.offeredFishIds = feedTargets.map((fish) => fish.id);
+  }
 
-  pushEvent(`Fed ${feedableFish.length} fish for ${earnedCoins} ${pluralize("coin", earnedCoins)}.`, now);
+  pushEvent(`Dropped food for ${feedTargets.length} ${pluralize("fish", feedTargets.length)}.`, now);
   saveState();
   renderUi(now);
-  showToast(`Meal served. +${earnedCoins} coins.`);
+  showToast("Food dropped. Watch who eats.");
 }
 
 function createFloatingPellets(now, fishList) {
@@ -23778,7 +26463,12 @@ function isPredatoryFoodTarget(fish) {
 }
 
 function canFishEatFoodPellet(fish, foodKey = "basic", now = Date.now()) {
-  if (!fish || isFishDead(fish) || (Number(fish.satiatedUntil) || 0) > now) {
+  if (
+    !fish
+    || isFishDead(fish)
+    || (Number(fish.satiatedUntil) || 0) > now
+    || (Number(fish.foodRefusalUntil) || 0) > now
+  ) {
     return false;
   }
 
@@ -23826,15 +26516,19 @@ function ensureMealHistoryEntry(slotKey, now = Date.now(), tank = getCurrentTank
   const existing = getMealHistoryEntry(slotKey, tank);
   if (existing) {
     existing.fedAt = Math.max(Number(existing.fedAt) || 0, now);
+    existing.offeredAt = Math.max(0, Number(existing.offeredAt) || 0);
     existing.coinsEarned = Math.max(0, Number(existing.coinsEarned) || 0);
     existing.fishIds = Array.isArray(existing.fishIds) ? [...new Set(existing.fishIds.map((value) => String(value)))] : [];
+    existing.offeredFishIds = Array.isArray(existing.offeredFishIds) ? [...new Set(existing.offeredFishIds.map((value) => String(value)))] : [];
     return existing;
   }
 
   tank.feedHistory[slotKey] = {
     fedAt: now,
+    offeredAt: 0,
     coinsEarned: 0,
-    fishIds: []
+    fishIds: [],
+    offeredFishIds: []
   };
   return tank.feedHistory[slotKey];
 }
@@ -23938,6 +26632,12 @@ function assignPelletToFish(fish, pellet, now = Date.now()) {
   fish.targetAt = now + 4 * 60 * 1000;
   fish.targetXNorm = pellet.xNorm;
   fish.targetYNorm = pellet.yNorm;
+  recordFishFeedingMemory(fish, pellet, now);
+  if (["greedy", "routine-loving", "curious"].includes(getFishPersonality(fish))) {
+    setFishBehaviorIntent(fish, pellet.dropStartXNorm != null ? "feeder memory" : "feeding memory", getFishPersonality(fish), now, {
+      durationMs: 20 * 1000
+    });
+  }
   return true;
 }
 
@@ -24344,6 +27044,19 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
   const targetTank = options.tank || getCurrentTank();
   const species = getSpeciesForFish(fish);
   const foodKey = pellet.foodKey || "basic";
+  const forcedRefusal = typeof pellet.diseaseRefusalFishId === "string" && pellet.diseaseRefusalFishId === fish.id;
+  const refusalPrechecked = typeof pellet.refusalPrecheckedFishId === "string" && pellet.refusalPrecheckedFishId === fish.id;
+  if (options.allowRefusal !== false && (forcedRefusal || (!refusalPrechecked && shouldFishRefuseFoodForDisease(fish, foodKey, now)))) {
+    handleFishRefuseFoodPellet(fish, pellet, now);
+    return {
+      foodKey,
+      mealCoins: 0,
+      damageUnits: 0,
+      died: false,
+      refused: true
+    };
+  }
+
   const mealCoins = recordFishMealCredit(fish, now, targetTank);
   if (!isBrineShrimpSpecies(fish)) {
     scheduleFishPoop(fish, now, targetTank);
@@ -24406,6 +27119,9 @@ function simulateAutoDispenserRelease(releasedPellets, slot, tank = getCurrentTa
       spritePath: storedPellet.spritePath
     }, slot.start, { announce: false, tank });
     if (!result) {
+      continue;
+    }
+    if (result.refused) {
       continue;
     }
 
@@ -24788,6 +27504,10 @@ function processTankMedicineEffects(now = Date.now()) {
     }
 
     if (effect.type === "firstAid") {
+      if (!effect.diseaseSlowAppliedAt) {
+        changed = applyFirstAidDiseaseSlowdown(now) || changed;
+        effect.diseaseSlowAppliedAt = now;
+      }
       while ((effect.nextTickAt || 0) <= now && (effect.nextTickAt || 0) < effect.endsAt) {
         for (const fish of getLivingTankFish()) {
           const maxHealth = getFishMaxHealthUnits(fish);
@@ -24927,6 +27647,7 @@ function createFishRecord(speciesId, options = {}) {
     name: options.name,
     speciesId
   });
+  const personalityPick = pickFishPersonality(species);
   const fish = {
     id: fishId,
     speciesId,
@@ -24958,8 +27679,39 @@ function createFishRecord(speciesId, options = {}) {
     fedStreak: 0,
     missedMealsInRow: 0,
     lastAteAt: 0,
+    satiatedUntil: 0,
+    personality: normalizeBehaviorPersonality(options.personality) || personalityPick.personality,
+    personalityRarity: normalizeBehaviorPersonality(options.personality)
+      ? sanitizePersonalityRarity(options.personalityRarity)
+      : personalityPick.rarity,
+    relationships: sanitizeFishRelationships(options.relationships),
+    feedingMemory: sanitizeFeedingMemory(options.feedingMemory, now),
+    favoriteSpot: sanitizeFavoriteSpot(options.favoriteSpot),
+    disease: sanitizeBehaviorDiseaseSnapshot(options.disease, now),
+    behaviorSignals: sanitizeBehaviorSignals(options.behaviorSignals, now),
+    behaviorIntent: sanitizeBehaviorIntent(options.behaviorIntent, now),
+    foodRefusalUntil: 0,
+    behaviorNextThinkAt: 0,
+    relationshipNextCheckAt: 0,
     veryLowComfortStartedAt: 0,
     veryLowComfortEventDayKey: "",
+    diseaseState: DISEASE_STATE_NONE,
+    diseaseType: "",
+    diseaseInfectedAt: 0,
+    diseaseProgressMs: 0,
+    diseaseLastProgressAt: 0,
+    diseaseExposureLevel: 0,
+    diseaseRecoveryProgressMs: 0,
+    diseaseTreatedUntil: 0,
+    diseaseLastDamageAt: 0,
+    diseaseSource: "",
+    temporaryImmunityUntil: 0,
+    nextDiseaseCheckAt: now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS),
+    nextDiseaseSpreadCheckAt: now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS),
+    nextSymptomCheckAt: now + randomDelay(DISEASE_SYMPTOM_CHECK_MIN_MS, DISEASE_SYMPTOM_CHECK_MAX_MS),
+    nextGreenBubbleAt: 0,
+    lastIllnessRiskDayKey: "",
+    lastIllnessSignalAtByType: {},
     xNorm: initialPosition.xNorm,
     yNorm: initialPosition.yNorm,
     targetXNorm: initialTarget.xNorm,
@@ -25797,6 +28549,7 @@ function buyFish(speciesId, options = {}) {
     entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
   });
   addFishToTank(fish, now);
+  maybeSeedNewFishDiseaseCarrier(fish, now);
 
   const currentSlot = getCurrentMealSlot(now);
   if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
@@ -25879,6 +28632,7 @@ function buyAnotherCustomFish(fishId) {
 
   state.coins -= purchaseCost;
   addFishToTank(fish, now);
+  maybeSeedNewFishDiseaseCarrier(fish, now);
 
   const currentSlot = getCurrentMealSlot(now);
   if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
@@ -29799,6 +32553,7 @@ function isFishEligibleSchoolLeader(leader, follower, species, now = Date.now())
     leader.activity !== "roam" ||
     leader.caveState ||
     leader.entryStartedAt ||
+    isFishDiseaseAvoidanceSource(leader) ||
     isFishSickOrDying(leader)
   ) {
     return false;
@@ -31121,6 +33876,28 @@ function toggleUvLightPower(force = null) {
   showToast(nextEnabled ? "UV light on." : "UV light off.");
 }
 
+function toggleLightsOutOverride() {
+  const targetTank = getCurrentTank();
+  if (!targetTank) {
+    return;
+  }
+  const current = getLightsOutOverride(targetTank);
+  const next = current === LIGHTS_OUT_OVERRIDE_AUTO
+    ? LIGHTS_OUT_OVERRIDE_ON
+    : current === LIGHTS_OUT_OVERRIDE_ON
+      ? LIGHTS_OUT_OVERRIDE_OFF
+      : LIGHTS_OUT_OVERRIDE_AUTO;
+  targetTank.lightsOutOverride = next;
+  const now = Date.now();
+  saveState();
+  renderUi(now);
+  showToast(next === LIGHTS_OUT_OVERRIDE_AUTO
+    ? "Lights Out follows the tank clock."
+    : next === LIGHTS_OUT_OVERRIDE_ON
+      ? "Lights Out on."
+      : "Lights Out off until you switch it back.");
+}
+
 function setGravelPaletteColor(slotIndex, color) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) {
@@ -31189,17 +33966,7 @@ function toggleScoopMode(options = {}) {
   renderUi(Date.now());
 }
 
-function makeTankMaxDirty() {
-  const now = Date.now();
-  syncState(now);
-
-  const currentBaseDirtiness = getBaseTankDirtiness(now);
-  if (currentBaseDirtiness >= 0.995) {
-    showToast("The tank is already at maximum dirtiness.");
-    return;
-  }
-
-  const targetBaseDirtiness = clamp(currentBaseDirtiness + 0.1, 0, 1);
+function applyDebugTankDirtiness(targetBaseDirtiness, now, eventMessage, toastMessage) {
   rebaseTankDirtiness(now, targetBaseDirtiness);
   const livingFish = getLivingTankFish();
   const desiredPoopCount = livingFish.length
@@ -31227,19 +33994,61 @@ function makeTankMaxDirty() {
   clearScrubProgress();
   renderToolCursor();
   const nextCleanliness = Math.max(0, Math.round((1 - getBaseTankDirtiness(now)) * 100));
-  pushEvent(`Debug grime increased. Tank cleanliness dropped to ${nextCleanliness}%.`, now);
+  pushEvent(eventMessage(nextCleanliness), now);
   saveState();
   renderUi(now);
-  showToast("-10% cleanliness.");
+  showToast(toastMessage(nextCleanliness));
 }
 
-function addDebugCoins() {
+function increaseTankDirtinessDebug() {
   const now = Date.now();
-  state.coins += 10;
-  pushEvent("Debug coins added. +10 coins.", now);
+  syncState(now);
+
+  const currentBaseDirtiness = getBaseTankDirtiness(now);
+  if (currentBaseDirtiness >= 0.995) {
+    showToast("The tank is already at maximum dirtiness.");
+    return;
+  }
+
+  const targetBaseDirtiness = clamp(currentBaseDirtiness + 0.1, 0, 1);
+  applyDebugTankDirtiness(
+    targetBaseDirtiness,
+    now,
+    (nextCleanliness) => `Debug grime increased. Tank cleanliness dropped to ${nextCleanliness}%.`,
+    () => "-10% cleanliness."
+  );
+}
+
+function maxTankDirtinessDebug() {
+  const now = Date.now();
+  syncState(now);
+
+  const currentBaseDirtiness = getBaseTankDirtiness(now);
+  if (currentBaseDirtiness >= 0.995) {
+    showToast("The tank is already at maximum dirtiness.");
+    return;
+  }
+
+  applyDebugTankDirtiness(
+    1,
+    now,
+    (nextCleanliness) => `Debug tank dirtiness maxed. Tank cleanliness dropped to ${nextCleanliness}%.`,
+    () => "Tank dirtiness maxed."
+  );
+}
+
+function addDebugCoins(amount = 10) {
+  const now = Date.now();
+  const coinAmount = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!coinAmount) {
+    return;
+  }
+
+  state.coins += coinAmount;
+  pushEvent(`Debug coins added. +${coinAmount} ${pluralize("coin", coinAmount)}.`, now);
   saveState();
   renderUi(now);
-  showToast("+10 coins.");
+  showToast(`+${coinAmount} ${pluralize("coin", coinAmount)}.`);
 }
 
 function restoreAllFishHealthDebug() {
@@ -31305,6 +34114,44 @@ function resetMealsDebug() {
   showToast("Today's meals reset.");
 }
 
+function completeMealsDebug() {
+  const now = Date.now();
+  const slots = getTodaysMealSlots(now);
+  let completedSlots = 0;
+  let creditedFishCount = 0;
+
+  for (const slot of slots) {
+    const eligibleFish = getMealEligibleFishForSlot(slot);
+    if (!eligibleFish.length) {
+      continue;
+    }
+
+    const entry = ensureMealHistoryEntry(slot.key, now);
+    const fedFishIds = new Set(Array.isArray(entry.fishIds) ? entry.fishIds : []);
+    const beforeCount = fedFishIds.size;
+    for (const fish of eligibleFish) {
+      fedFishIds.add(fish.id);
+      fish.lastAteAt = Math.max(Number(fish.lastAteAt) || 0, now);
+    }
+    entry.fishIds = [...fedFishIds];
+    entry.fedAt = Math.max(Number(entry.fedAt) || 0, now);
+    if (fedFishIds.size > beforeCount) {
+      completedSlots += 1;
+      creditedFishCount += fedFishIds.size - beforeCount;
+    }
+  }
+
+  if (!completedSlots) {
+    showToast("Today's meals are already complete.");
+    return;
+  }
+
+  pushEvent(`Debug meal completion marked today's meals complete for ${creditedFishCount} ${pluralize("fish", creditedFishCount)}.`, now);
+  saveState();
+  renderUi(now);
+  showToast("Today's meals completed.");
+}
+
 function dispenseAutoDispenserNow(now = Date.now()) {
   if (!hasAutoDispenserInstalled()) {
     showToast("Install a pellet dispenser first.");
@@ -31363,10 +34210,6 @@ function dispenseAutoDispenserNow(now = Date.now()) {
 
   showToast("The pellet dispenser could not release pellets right now.");
   return false;
-}
-
-function debugDispenseAutoDispenser() {
-  return dispenseAutoDispenserNow(Date.now());
 }
 
 function triggerDebugGravelPebbleTest() {
@@ -31734,6 +34577,1040 @@ function toggleDebugNightCaveMode() {
   renderUi(now);
 }
 
+function getDebugBehaviorScenarioOptions(action) {
+  switch (action) {
+    case "refuse-food":
+      return { allowFeeding: true, requireNormalFood: true, disallowSpecial: true };
+    case "anticipate-food":
+      return { requireNormalFood: true, disallowSpecial: true };
+    case "inspect-lure":
+      return { allowPredatorSpecial: true };
+    case "disease":
+      return { allowSuckerShrimpSpecial: true, allowPredatorSpecial: true };
+    case "night-forage":
+      return { allowSuckerShrimpSpecial: true };
+    case "clear":
+      return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowUndead: true, allowSuckerShrimpSpecial: true, allowPredatorSpecial: true, allowDead: true };
+    default:
+      return { disallowSpecial: true };
+  }
+}
+
+function getDebugBehaviorBlockReason(fish, species = getSpeciesForFish(fish), options = {}) {
+  if (!fish) {
+    return "Select a fish in the tank first.";
+  }
+  if (!species) {
+    return "Selected fish has no species profile.";
+  }
+  if (!options.allowDead && isFishDead(fish)) {
+    return "Select a living fish first.";
+  }
+  if (runtime.fishDragState?.fishId === fish.id) {
+    return "Release the selected fish before forcing behavior.";
+  }
+  if (!options.allowActiveCave && fish.caveState) {
+    return "That fish is using cave behavior right now.";
+  }
+  if (!options.allowFeeding && fish.activity === "feeding") {
+    return "That fish is feeding right now.";
+  }
+  if (
+    !options.allowGravelAction
+    && (
+      fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+      || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
+      || getFishGravelPebbleAction(fish)
+      || getForcedGravelDigPrompt(fish)
+    )
+  ) {
+    return "That fish is already using a gravel behavior.";
+  }
+  if (!options.allowUndead && isUndeadFish(fish)) {
+    return "Zombie and skeleton fish keep their own behavior debug path.";
+  }
+
+  const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+  if (
+    options.disallowSpecial
+    && ["sucker", "shrimp", "piranha", "zombie", "skeleton"].includes(effectiveBehavior)
+  ) {
+    return `${getDebugFishDisplayName(fish, species)} uses protected ${effectiveBehavior} behavior.`;
+  }
+  if (
+    ["sucker", "shrimp"].includes(effectiveBehavior)
+    && !options.allowSuckerShrimpSpecial
+  ) {
+    return `${getDebugFishDisplayName(fish, species)} uses protected cleanup behavior.`;
+  }
+  if (effectiveBehavior === "piranha" && !options.allowPredatorSpecial) {
+    return `${getDebugFishDisplayName(fish, species)} uses protected predator behavior.`;
+  }
+  if (
+    options.requireNormalFood
+    && (
+      isMealFreeFish(fish)
+      || effectiveBehavior === "piranha"
+      || !canFoodSatisfyFishMeal(fish, "basic")
+    )
+  ) {
+    return `${getDebugFishDisplayName(fish, species)} does not use normal pellet feeding.`;
+  }
+  return "";
+}
+
+function getSelectedDebugBehaviorFish(options = {}) {
+  const fish = state?.fish?.find((entry) => entry?.id === runtime.selectedFishId) || null;
+  const species = getSpeciesForFish(fish);
+  return {
+    fish,
+    species,
+    reason: getDebugBehaviorBlockReason(fish, species, options)
+  };
+}
+
+function getDebugBehaviorSelectedFishOrToast(action) {
+  const selection = getSelectedDebugBehaviorFish(getDebugBehaviorScenarioOptions(action));
+  if (selection.reason) {
+    showToast(selection.reason);
+    return null;
+  }
+  return selection;
+}
+
+function hasDebugDecorHangoutZone(zoneTypes) {
+  const allowed = new Set(normalizeStringList(zoneTypes).map((type) => type.toLowerCase().replace(/[-_\s]+/g, "-")));
+  if (!allowed.size) {
+    return false;
+  }
+  return getCachedDecorHangoutZones().some((zone) => allowed.has(zone.type));
+}
+
+function getDebugRelationshipPartner(fish) {
+  if (!fish) {
+    return null;
+  }
+  return state.fish
+    .filter((otherFish) => otherFish && otherFish.id !== fish.id && !isFishDead(otherFish))
+    .filter((otherFish) => runtime.fishDragState?.fishId !== otherFish.id)
+    .map((otherFish) => ({
+      fish: otherFish,
+      distance: Math.hypot((fish.xNorm || 0.5) - (otherFish.xNorm || 0.5), (fish.yNorm || 0.5) - (otherFish.yNorm || 0.5))
+    }))
+    .sort((left, right) => left.distance - right.distance)[0]?.fish || null;
+}
+
+function setDebugFishRelationship(fish, otherFish, kind, now = Date.now()) {
+  if (!fish || !otherFish || fish.id === otherFish.id) {
+    return false;
+  }
+  const score = kind === "friend" ? 88 : kind === "fear" ? -92 : kind === "rival" ? -72 : kind === "dislike" ? -48 : 0;
+  const relationships = sanitizeFishRelationships(fish.relationships);
+  relationships[otherFish.id] = { kind, score, updatedAt: now };
+  fish.relationships = relationships;
+  fish.relationshipNextCheckAt = now + BEHAVIOR_RELATIONSHIP_CHECK_MS;
+  return true;
+}
+
+function prepareFishForDebugBehavior(fish, species, now = Date.now(), options = {}) {
+  const reason = getDebugBehaviorBlockReason(fish, species, options);
+  if (reason) {
+    showToast(reason);
+    return false;
+  }
+  clearFishSchoolFollowState(fish);
+  clearDebugBehaviorSteering(fish);
+  if (!options.keepFeeding) {
+    fish.activity = "roam";
+    fish.feedingPelletId = null;
+    releasePelletsTargetingFishIds(fish.id);
+  }
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.panicUntil = null;
+  fish.panicSpeedBoost = null;
+  if (species.speedMode === "dynamic") {
+    fish.swimSpeed = normalizeFishSpeed(species);
+  }
+  runtime.debugFishBehaviorSignatures.delete(fish.id);
+  return true;
+}
+
+function finishDebugBehaviorScenario(fish, eventText, toastText, now = Date.now()) {
+  runtime.selectedFishId = fish?.id || runtime.selectedFishId;
+  if (eventText) {
+    pushEvent(eventText, now);
+  }
+  saveState();
+  renderUi(now);
+  if (toastText) {
+    showToast(toastText);
+  }
+}
+
+function forceLightsOutForDebug(now = Date.now()) {
+  const tank = getCurrentTank();
+  if (!tank) {
+    return false;
+  }
+  tank.lightsOutOverride = LIGHTS_OUT_OVERRIDE_ON;
+  return isTankLightsOut(now, tank);
+}
+
+function getActiveDebugBehaviorSteering(fish, now = Date.now()) {
+  if (!fish?.id || !runtime.debugBehaviorSteeringByFishId) {
+    return null;
+  }
+  const steering = runtime.debugBehaviorSteeringByFishId.get(fish.id);
+  if (!steering) {
+    return null;
+  }
+  if (!isDebugModeEnabled() || (Number(steering.expiresAt) || 0) <= now) {
+    runtime.debugBehaviorSteeringByFishId.delete(fish.id);
+    return null;
+  }
+  return steering;
+}
+
+function setDebugBehaviorSteering(fish, steering, now = Date.now()) {
+  if (!fish?.id || !steering?.type) {
+    return false;
+  }
+  const durationMs = Math.max(1000, Number(steering.durationMs) || 12 * 1000);
+  runtime.debugBehaviorSteeringByFishId.set(fish.id, {
+    ...steering,
+    type: String(steering.type),
+    startedAt: now,
+    expiresAt: now + durationMs,
+    nextRefreshAt: 0,
+    faceDirection: Number.isFinite(Number(steering.faceDirection))
+      ? (Number(steering.faceDirection) < 0 ? -1 : 1)
+      : null,
+    initialSide: Number.isFinite(Number(steering.initialSide))
+      ? (Number(steering.initialSide) < 0 ? -1 : 1)
+      : null
+  });
+  return true;
+}
+
+function clearDebugBehaviorSteering(fish) {
+  if (fish?.id && runtime.debugBehaviorSteeringByFishId) {
+    runtime.debugBehaviorSteeringByFishId.delete(fish.id);
+  }
+}
+
+function getDebugBehaviorFacingDirection(fish, now = Date.now()) {
+  if (!fish || fish.caveState || fish.activity !== "roam") {
+    return null;
+  }
+  const steering = getActiveDebugBehaviorSteering(fish, now);
+  if (!steering || !["inspect-lure", "anticipate-food"].includes(steering.type)) {
+    return null;
+  }
+  return Number.isFinite(Number(steering.faceDirection))
+    ? (Number(steering.faceDirection) < 0 ? -1 : 1)
+    : null;
+}
+
+function isDebugBehaviorSteeringBlocked(fish, species, steering, now = Date.now()) {
+  if (!fish || !species || !steering || isFishDead(fish) || fish.caveState || fish.activity !== "roam") {
+    return true;
+  }
+  if (runtime.fishDragState?.fishId === fish.id || getFishEntryProgress(fish, now) !== null) {
+    return true;
+  }
+  const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+  if (isUndeadFish(fish) && !steering.allowUndead) {
+    return true;
+  }
+  if (["sucker", "shrimp"].includes(effectiveBehavior) && !steering.allowSuckerShrimpSpecial) {
+    return true;
+  }
+  if (effectiveBehavior === "piranha" && !steering.allowPredatorSpecial) {
+    return true;
+  }
+  return false;
+}
+
+function setDebugBehaviorSteeringIntent(fish, steering, type, cause, now = Date.now(), options = {}) {
+  setFishBehaviorIntent(fish, type, cause, now, {
+    targetId: options.targetId || steering.targetFishId || steering.decorId || "",
+    targetName: options.targetName || steering.targetName || "",
+    durationMs: options.durationMs || DEBUG_BEHAVIOR_STEER_REFRESH_MS * 5
+  });
+  if (options.signalType) {
+    recordFishBehaviorSignal(fish, options.signalType, now, {
+      debugText: options.debugText || `${type} | ${cause}`,
+      cooldownMs: options.cooldownMs || BEHAVIOR_SIGNAL_COOLDOWN_MS,
+      targetName: options.targetName || steering.targetName || "",
+      placedDecorId: options.placedDecorId || steering.decorId || ""
+    });
+  }
+}
+
+function updateDebugFollowSteering(fish, species, steering, now = Date.now()) {
+  const targetFish = state.fish.find((entry) => entry?.id === steering.targetFishId && !isFishDead(entry));
+  if (!targetFish) {
+    clearDebugBehaviorSteering(fish);
+    return false;
+  }
+  if (now < Number(steering.nextRefreshAt || 0) && now < Number(fish.targetAt || 0)) {
+    return true;
+  }
+
+  const elapsed = Math.max(0, now - (Number(steering.startedAt) || now));
+  const targetDirection = getFishFacingDirection(targetFish);
+  const distance = Math.hypot((fish.xNorm || 0.5) - (targetFish.xNorm || 0.5), (fish.yNorm || 0.5) - (targetFish.yNorm || 0.5));
+  const sideWobble = Math.sin(elapsed / 1100 + (fish.phase || 0) * Math.PI * 2) * 0.012;
+  const verticalWobble = Math.cos(elapsed / 1350 + (fish.phase || 0) * Math.PI * 2) * 0.016;
+  const leaderMoveX = (targetFish.targetXNorm || targetFish.xNorm || 0.5) - (targetFish.xNorm || 0.5);
+  const leaderMoveY = (targetFish.targetYNorm || targetFish.yNorm || 0.5) - (targetFish.yNorm || 0.5);
+  const leaderMoveDistance = Math.hypot(leaderMoveX, leaderMoveY);
+  const leaderHeadingX = leaderMoveDistance > 0.002 ? leaderMoveX / leaderMoveDistance : targetDirection;
+  const leaderHeadingY = leaderMoveDistance > 0.002 ? leaderMoveY / leaderMoveDistance : 0;
+  const lookahead = leaderMoveDistance > 0.002
+    ? DEBUG_BEHAVIOR_FOLLOW_LOOKAHEAD_NORM * (distance <= DEBUG_BEHAVIOR_FOLLOW_CLOSE_NORM ? 1.2 : 0.7)
+    : 0;
+  const trailX = (targetFish.xNorm || 0.5) - targetDirection * DEBUG_BEHAVIOR_FOLLOW_DISTANCE_NORM + sideWobble;
+  const trailY = (targetFish.yNorm || 0.5) + verticalWobble;
+  fish.targetXNorm = clamp(trailX + leaderHeadingX * lookahead, 0.08, 0.92);
+  fish.targetYNorm = clampFishYNormToLayer(
+    trailY + leaderHeadingY * lookahead,
+    fish,
+    species,
+    getFishTankLayer(targetFish),
+    { minYNorm: 0.14, maxYNorm: 0.8 }
+  );
+  fish.targetAt = now + 520;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  setFishDesiredTankLayer(fish, getFishTankLayer(targetFish));
+  steering.distanceNorm = distance;
+  steering.leaderSwimSpeed = Number(targetFish.swimSpeed) || 0;
+  steering.leaderMoving = leaderMoveDistance > 0.002;
+  if (species.speedMode === "dynamic") {
+    const targetSpecies = getSpeciesForFish(targetFish);
+    const leaderSpeed = Number(targetFish.swimSpeed) || (targetSpecies ? normalizeFishSpeed(targetSpecies) : species.speedMin);
+    const catchupFactor = distance > DEBUG_BEHAVIOR_FOLLOW_CATCHUP_NORM
+      ? 1.18
+      : distance > DEBUG_BEHAVIOR_FOLLOW_CLOSE_NORM
+        ? 1.03
+        : 0.92;
+    fish.swimSpeed = normalizeFishSpeed(species, leaderSpeed * catchupFactor);
+  }
+  steering.nextRefreshAt = now + DEBUG_BEHAVIOR_STEER_REFRESH_MS;
+  setDebugBehaviorSteeringIntent(fish, steering, "follow", "friend", now, {
+    targetName: steering.targetName || getDebugFishDisplayName(targetFish),
+    signalType: "follow_friend",
+    debugText: `follow ${steering.targetName || getDebugFishDisplayName(targetFish)} | friend`
+  });
+  return true;
+}
+
+function updateDebugAvoidSteering(fish, species, steering, now = Date.now()) {
+  const targetFish = state.fish.find((entry) => entry?.id === steering.targetFishId && !isFishDead(entry));
+  if (!targetFish) {
+    clearDebugBehaviorSteering(fish);
+    return false;
+  }
+  if (now < Number(steering.nextRefreshAt || 0) && now < Number(fish.targetAt || 0)) {
+    return true;
+  }
+
+  const distance = Math.hypot((fish.xNorm || 0.5) - (targetFish.xNorm || 0.5), (fish.yNorm || 0.5) - (targetFish.yNorm || 0.5));
+  const retreatNorm = distance <= DEBUG_BEHAVIOR_AVOID_RANGE_NORM
+    ? DEBUG_BEHAVIOR_AVOID_RETREAT_NORM
+    : DEBUG_BEHAVIOR_AVOID_RETREAT_NORM * 0.48;
+  const escape = getAvoidanceEscapeTarget(fish, species, targetFish, {
+    retreatNorm,
+    verticalScale: 0.72,
+    cornerThreatRadius: DEBUG_BEHAVIOR_AVOID_RANGE_NORM
+  });
+  fish.targetXNorm = escape?.xNorm ?? fish.xNorm;
+  fish.targetYNorm = escape?.yNorm ?? fish.yNorm;
+  fish.targetAt = now + (escape?.cornerEscape ? 520 : 760);
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  if (escape?.targetLayer) {
+    setFishDesiredTankLayer(fish, escape.targetLayer);
+  }
+  if (species.speedMode === "dynamic") {
+    const speedBlend = distance <= DEBUG_BEHAVIOR_AVOID_RANGE_NORM ? 0.96 : 0.68;
+    fish.swimSpeed = normalizeFishSpeed(species, species.speedMin + (species.speedMax - species.speedMin) * speedBlend);
+  }
+  steering.nextRefreshAt = now + DEBUG_BEHAVIOR_STEER_REFRESH_MS;
+  setDebugBehaviorSteeringIntent(fish, steering, "avoid", "fear", now, {
+    targetName: steering.targetName || getDebugFishDisplayName(targetFish),
+    signalType: "avoid_specific_fish",
+    debugText: `avoid ${steering.targetName || getDebugFishDisplayName(targetFish)} | fear`
+  });
+  return true;
+}
+
+function updateDebugLureInspectSteering(fish, species, steering, now = Date.now()) {
+  if (now < Number(steering.nextRefreshAt || 0) && now < Number(fish.targetAt || 0)) {
+    return true;
+  }
+  const decor = state.placedDecor.find((item) => item?.id === steering.decorId) || null;
+  const stableScale = getViewportStableAssetScale();
+  const focusXNorm = clamp(Number.isFinite(Number(steering.focusXNorm)) ? Number(steering.focusXNorm) : (decor?.xNorm ?? fish.xNorm ?? 0.5), 0.08, 0.92);
+  const focusYNorm = clamp(Number.isFinite(Number(steering.focusYNorm)) ? Number(steering.focusYNorm) : (decor?.yNorm ?? fish.yNorm ?? 0.5), 0.08, 0.84);
+  const elapsed = Math.max(0, now - (Number(steering.startedAt) || now));
+  const initialSide = steering.initialSide || ((fish.xNorm || 0.5) <= focusXNorm ? -1 : 1);
+  const side = Math.floor(elapsed / DEBUG_BEHAVIOR_LURE_SIDE_MS) % 2 === 0 ? initialSide : -initialSide;
+  const faceDirection = side < 0 ? 1 : -1;
+  const mouthTargetX = focusXNorm * TANK_WIDTH + side * 9 * stableScale;
+  const mouthTargetY = focusYNorm * TANK_HEIGHT + Math.sin(elapsed / 1250 + (fish.phase || 0) * Math.PI) * 7 * stableScale;
+  const mouthTarget = getFishTargetNormForMouthPoint(fish, species, mouthTargetX, mouthTargetY, now, {
+    direction: faceDirection,
+    localForwardOffsetPx: 3 * stableScale,
+    minYNorm: 0.12,
+    maxYNorm: 0.84
+  });
+  fish.targetXNorm = mouthTarget ? mouthTarget.xNorm : clamp(focusXNorm + side * 0.065, 0.08, 0.92);
+  fish.targetYNorm = mouthTarget ? mouthTarget.yNorm : clamp(focusYNorm + Math.sin(elapsed / 1250) * 0.018, 0.14, 0.8);
+  fish.targetAt = now + 680;
+  fish.hangoutDecorId = steering.decorId || null;
+  fish.hangoutZoneType = "lure";
+  setFishDesiredTankLayer(fish, Number.isFinite(Number(steering.targetLayer)) ? clampTankLayer(Number(steering.targetLayer)) : getFishTankLayer(fish));
+  if (species.speedMode === "dynamic") {
+    fish.swimSpeed = normalizeFishSpeed(species, species.speedMin + (species.speedMax - species.speedMin) * 0.58);
+  }
+  steering.faceDirection = faceDirection;
+  steering.nextRefreshAt = now + DEBUG_BEHAVIOR_STEER_REFRESH_MS;
+  setDebugBehaviorSteeringIntent(fish, steering, "inspect lure", steering.cause || "curious", now, {
+    signalType: "inspect_lure",
+    debugText: `inspect lure | ${steering.cause || "curious"}`
+  });
+  return true;
+}
+
+function updateDebugAnticipateFoodSteering(fish, species, steering, now = Date.now()) {
+  if (now < Number(steering.nextRefreshAt || 0) && now < Number(fish.targetAt || 0)) {
+    return true;
+  }
+  const focusXNorm = clamp(Number(steering.foodXNorm) || fish.xNorm || 0.5, 0.08, 0.92);
+  const focusYNorm = clamp(Number(steering.foodYNorm) || 0.28, 0.08, 0.7);
+  const targetYNorm = clampFishYNormToLayer(
+    focusYNorm + 0.075,
+    fish,
+    species,
+    clampTankLayer(Math.min(getFishTankLayer(fish), 2)),
+    { minYNorm: 0.14, maxYNorm: 0.62 }
+  );
+  fish.targetXNorm = focusXNorm;
+  fish.targetYNorm = targetYNorm;
+  fish.targetAt = now + 920;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  setFishDesiredTankLayer(fish, clampTankLayer(Math.min(getFishTankLayer(fish), 2)));
+  if (Math.abs(focusXNorm - (fish.xNorm || 0.5)) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
+    steering.faceDirection = focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1;
+  } else if (!Number.isFinite(Number(steering.faceDirection))) {
+    steering.faceDirection = fish.direction || 1;
+  }
+  if (species.speedMode === "dynamic") {
+    fish.swimSpeed = normalizeFishSpeed(species, species.speedMin + (species.speedMax - species.speedMin) * 0.24);
+  }
+  steering.nextRefreshAt = now + DEBUG_BEHAVIOR_STEER_REFRESH_MS;
+  setDebugBehaviorSteeringIntent(fish, steering, "anticipate food", "feeding memory", now, {
+    durationMs: DEBUG_BEHAVIOR_STEER_REFRESH_MS * 5
+  });
+  return true;
+}
+
+function updateDebugBehaviorSteering(fish, species, now = Date.now()) {
+  const steering = getActiveDebugBehaviorSteering(fish, now);
+  if (!steering || isDebugBehaviorSteeringBlocked(fish, species, steering, now)) {
+    return false;
+  }
+  switch (steering.type) {
+    case "follow":
+      return updateDebugFollowSteering(fish, species, steering, now);
+    case "avoid":
+      return updateDebugAvoidSteering(fish, species, steering, now);
+    case "inspect-lure":
+      return updateDebugLureInspectSteering(fish, species, steering, now);
+    case "anticipate-food":
+      return updateDebugAnticipateFoodSteering(fish, species, steering, now);
+    default:
+      return false;
+  }
+}
+
+function getDebugAnticipateFoodTarget(fish, now = Date.now()) {
+  const memory = sanitizeFeedingMemory(fish?.feedingMemory, now);
+  let foodXNorm = Number.isFinite(Number(memory.feederXNorm)) ? memory.feederXNorm : memory.lastFoodXNorm;
+  let foodYNorm = Number.isFinite(Number(memory.feederYNorm))
+    ? clamp(memory.feederYNorm + 0.1, 0.12, 0.42)
+    : memory.lastFoodYNorm;
+
+  if (!Number.isFinite(Number(foodXNorm)) || !Number.isFinite(Number(foodYNorm))) {
+    const activePellet = state.floatingPellets?.[0] || null;
+    if (activePellet) {
+      foodXNorm = activePellet.xNorm;
+      foodYNorm = activePellet.yNorm;
+    }
+  }
+
+  if ((!Number.isFinite(Number(foodXNorm)) || !Number.isFinite(Number(foodYNorm))) && hasAutoDispenserInstalled()) {
+    const layout = getAutoDispenserLayout();
+    foodXNorm = clamp((layout.nozzle.x || 0) / TANK_WIDTH, 0.08, 0.92);
+    foodYNorm = clamp(((layout.nozzle.y || 0) + 58 * getViewportStableAssetScale()) / TANK_HEIGHT, 0.12, 0.42);
+    memory.feederXNorm = foodXNorm;
+    memory.feederYNorm = clamp((layout.nozzle.y || 0) / TANK_HEIGHT, 0.02, 0.42);
+    memory.feederSeenAt = now;
+  }
+
+  if (!Number.isFinite(Number(foodXNorm)) || !Number.isFinite(Number(foodYNorm))) {
+    foodXNorm = clamp(fish?.xNorm || 0.5, 0.08, 0.92);
+    foodYNorm = clamp((fish?.yNorm || 0.35) - 0.08, 0.12, 0.52);
+  }
+
+  memory.lastFoodXNorm = clamp(Number(foodXNorm), 0.08, 0.92);
+  memory.lastFoodYNorm = clamp(Number(foodYNorm), 0.08, 0.9);
+  memory.lastFoodAt = memory.lastFoodAt || now;
+  memory.updatedAt = now;
+  if (fish) {
+    fish.feedingMemory = memory;
+  }
+  return {
+    foodXNorm: memory.lastFoodXNorm,
+    foodYNorm: memory.lastFoodYNorm
+  };
+}
+
+function triggerDebugBehaviorRefuseFood(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("refuse-food");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, { ...getDebugBehaviorScenarioOptions("refuse-food"), keepFeeding: true })) {
+    return;
+  }
+
+  const existingPellet = (state.floatingPellets || []).find((pellet) => pellet && canFishTargetFoodPellet(fish, pellet, now));
+  const pellet = existingPellet || {
+    id: createId("debug-food-refusal"),
+    foodKey: "basic",
+    xNorm: clamp((fish.xNorm || 0.5) + (fish.direction || 1) * 0.08, 0.08, 0.92),
+    yNorm: clamp((fish.yNorm || 0.5) + randomBetween(-0.04, 0.04), 0.14, 0.76),
+    targetFishId: fish.id
+  };
+  recordFishFeedingMemory(fish, pellet, now);
+  fish.activity = "roam";
+  fish.targetXNorm = pellet.xNorm;
+  fish.targetYNorm = pellet.yNorm;
+  fish.targetAt = now + 1200;
+  setFishBehaviorIntent(fish, "approach food", "debug refusal setup", now, {
+    targetId: pellet.id,
+    durationMs: 2600
+  });
+  runtime.debugFishBehaviorSignatures.delete(fish.id);
+  finishDebugBehaviorScenario(fish, `Debug set up ${fish.name} to approach food.`, `${fish.name} will approach food, then refuse it.`, now);
+
+  window.setTimeout(() => {
+    const targetFish = state?.fish?.find((entry) => entry?.id === fish.id) || null;
+    const targetSpecies = getSpeciesForFish(targetFish);
+    if (
+      !isDebugModeEnabled()
+      || getDebugBehaviorBlockReason(targetFish, targetSpecies, { ...getDebugBehaviorScenarioOptions("refuse-food"), allowFeeding: true })
+    ) {
+      return;
+    }
+    const refusalAt = Date.now();
+    handleFishRefuseFoodPellet(targetFish, pellet, refusalAt);
+    runtime.debugFishBehaviorSignatures.delete(targetFish.id);
+    finishDebugBehaviorScenario(targetFish, `Debug made ${targetFish.name} refuse food.`, `${targetFish.name} refused the food.`, refusalAt);
+  }, 1300);
+}
+
+function triggerDebugBehaviorAnticipateFood(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("anticipate-food");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("anticipate-food"))) {
+    return;
+  }
+
+  const target = getDebugAnticipateFoodTarget(fish, now);
+  setDebugBehaviorSteering(fish, {
+    type: "anticipate-food",
+    foodXNorm: target.foodXNorm,
+    foodYNorm: target.foodYNorm,
+    durationMs: DEBUG_BEHAVIOR_ANTICIPATE_FOOD_DURATION_MS
+  }, now);
+  updateDebugBehaviorSteering(fish, species, now);
+  runtime.debugFishBehaviorSignatures.delete(fish.id);
+  finishDebugBehaviorScenario(fish, `Debug made ${fish.name} anticipate food.`, `${fish.name} is waiting under the remembered food spot.`, now);
+}
+
+function triggerDebugBehaviorHide(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("hide");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("hide"))) {
+    return;
+  }
+
+  const cover = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["plant", "hide", "spooky"],
+    force: true,
+    ignoreOccupancy: true,
+    lingerMultiplier: 2.6,
+    preferBackLayer: true
+  });
+  if (!cover) {
+    showToast("Add plants, caves, wrecks, or spooky decor to test hiding.");
+    return;
+  }
+
+  applyBehaviorTarget(fish, species, {
+    ...cover,
+    intentType: "hide plant",
+    intentCause: "shy + stressed",
+    signalType: "hiding_more_than_usual",
+    debugText: `hide ${cover.zoneType} | shy + stressed`,
+    slow: true
+  }, now);
+  finishDebugBehaviorScenario(fish, `Debug sent ${fish.name} to hide near ${cover.zoneType}.`, `${fish.name} is hiding near cover.`, now);
+}
+
+function triggerDebugBehaviorInspectLure(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("inspect-lure");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("inspect-lure"))) {
+    return;
+  }
+
+  const lure = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["lure"],
+    force: true,
+    ignoreOccupancy: true,
+    occupancyLimit: 1,
+    lingerMultiplier: 1
+  });
+  if (!lure) {
+    showToast("Add a Fishing Lure or Gorbag to test lure inspection.");
+    return;
+  }
+
+  const cause = getFishPersonality(fish) === "hunter" ? "hunter" : "curious";
+  applyBehaviorTarget(fish, species, {
+    ...lure,
+    intentType: "inspect lure",
+    intentCause: cause,
+    signalType: "inspect_lure",
+    debugText: `inspect lure | ${cause}`
+  }, now);
+  const lureDecor = state.placedDecor.find((item) => item?.id === lure.decorId) || null;
+  setDebugBehaviorSteering(fish, {
+    type: "inspect-lure",
+    decorId: lure.decorId || "",
+    focusXNorm: lureDecor?.xNorm ?? lure.xNorm,
+    focusYNorm: lureDecor?.yNorm ?? lure.yNorm,
+    targetLayer: lure.targetLayer,
+    cause,
+    initialSide: (fish.xNorm || 0.5) <= (lureDecor?.xNorm ?? lure.xNorm ?? 0.5) ? -1 : 1,
+    durationMs: DEBUG_BEHAVIOR_LURE_INSPECT_DURATION_MS,
+    allowPredatorSpecial: true
+  }, now);
+  updateDebugBehaviorSteering(fish, species, now);
+  finishDebugBehaviorScenario(fish, `Debug sent ${fish.name} to inspect a lure.`, `${fish.name} is inspecting the lure.`, now);
+}
+
+function triggerDebugBehaviorGuardCave(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("guard-cave");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("guard-cave"))) {
+    return;
+  }
+
+  const territory = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["hide", "hardscape"],
+    force: true,
+    ignoreOccupancy: true,
+    occupancyLimit: 1,
+    lingerMultiplier: 2,
+    preferBackLayer: false
+  });
+  if (!territory) {
+    showToast("Add a cave, arch, rock, or hardscape decor to test guarding.");
+    return;
+  }
+
+  const guardedName = territory.zoneType === "hide" ? "cave" : territory.zoneType;
+  applyBehaviorTarget(fish, species, {
+    ...territory,
+    intentType: "guard cave",
+    intentCause: "territorial",
+    signalType: "guard_territory",
+    debugText: `guard ${guardedName} | territorial`
+  }, now);
+  finishDebugBehaviorScenario(fish, `Debug made ${fish.name} guard ${guardedName}.`, `${fish.name} is guarding ${guardedName}.`, now);
+}
+
+function triggerDebugBehaviorFollow(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("follow");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("follow"))) {
+    return;
+  }
+
+  const otherFish = getDebugRelationshipPartner(fish);
+  if (!otherFish) {
+    showToast("Add another living fish to test following.");
+    return;
+  }
+
+  setDebugFishRelationship(fish, otherFish, "friend", now);
+  const otherName = getDebugFishDisplayName(otherFish);
+  applyBehaviorTarget(fish, species, {
+    xNorm: clamp((otherFish.xNorm || 0.5) + randomBetween(-0.05, 0.05), 0.08, 0.92),
+    yNorm: clamp((otherFish.yNorm || 0.5) + randomBetween(-0.04, 0.04), 0.14, 0.8),
+    targetLayer: getFishTankLayer(otherFish),
+    targetAt: now + randomBetween(4200, 7600),
+    intentType: "follow",
+    intentCause: "friend",
+    intentTargetId: otherFish.id,
+    intentTargetName: otherName,
+    signalType: "follow_friend",
+    debugText: `follow ${otherName} | friend`
+  }, now);
+  setDebugBehaviorSteering(fish, {
+    type: "follow",
+    targetFishId: otherFish.id,
+    targetName: otherName,
+    durationMs: DEBUG_BEHAVIOR_FOLLOW_DURATION_MS
+  }, now);
+  updateDebugBehaviorSteering(fish, species, now);
+  finishDebugBehaviorScenario(fish, `Debug made ${fish.name} follow ${otherName}.`, `${fish.name} is following ${otherName}.`, now);
+}
+
+function triggerDebugBehaviorAvoid(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("avoid");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("avoid"))) {
+    return;
+  }
+
+  const otherFish = getDebugRelationshipPartner(fish);
+  if (!otherFish) {
+    showToast("Add another living fish to test avoidance.");
+    return;
+  }
+
+  setDebugFishRelationship(fish, otherFish, "fear", now);
+  const otherName = getDebugFishDisplayName(otherFish);
+  const awayX = (fish.xNorm || 0.5) - (otherFish.xNorm || 0.5);
+  const awayY = (fish.yNorm || 0.5) - (otherFish.yNorm || 0.5);
+  const distance = Math.max(0.0001, Math.hypot(awayX, awayY));
+  applyBehaviorTarget(fish, species, {
+    xNorm: clamp((fish.xNorm || 0.5) + (awayX / distance) * 0.18, 0.08, 0.92),
+    yNorm: clamp((fish.yNorm || 0.5) + (awayY / distance) * 0.12, 0.14, 0.8),
+    targetLayer: getFishTankLayer(fish),
+    targetAt: now + randomBetween(2800, 5600),
+    intentType: "avoid",
+    intentCause: "fear",
+    intentTargetId: otherFish.id,
+    intentTargetName: otherName,
+    signalType: "avoid_specific_fish",
+    debugText: `avoid ${otherName} | fear`
+  }, now);
+  setDebugBehaviorSteering(fish, {
+    type: "avoid",
+    targetFishId: otherFish.id,
+    targetName: otherName,
+    durationMs: DEBUG_BEHAVIOR_AVOID_DURATION_MS
+  }, now);
+  updateDebugBehaviorSteering(fish, species, now);
+  finishDebugBehaviorScenario(fish, `Debug made ${fish.name} avoid ${otherName}.`, `${fish.name} is avoiding ${otherName}.`, now);
+}
+
+function getDebugDiseaseBehaviorCause(stateId) {
+  switch (sanitizeDiseaseState(stateId)) {
+    case DISEASE_STATE_INCUBATING:
+      return "incubating";
+    case DISEASE_STATE_EARLY:
+      return "early symptoms";
+    case DISEASE_STATE_VISIBLE:
+      return "visible symptoms";
+    case DISEASE_STATE_SEVERE:
+      return "severe symptoms";
+    case DISEASE_STATE_RECOVERING:
+      return "recovering";
+    default:
+      return "hidden carrier";
+  }
+}
+
+function getNextDebugDiseaseBehaviorStage(stateId) {
+  switch (sanitizeDiseaseState(stateId)) {
+    case DISEASE_STATE_VISIBLE:
+      return DISEASE_STATE_SEVERE;
+    case DISEASE_STATE_SEVERE:
+      return DISEASE_STATE_RECOVERING;
+    case DISEASE_STATE_RECOVERING:
+      return DISEASE_STATE_VISIBLE;
+    default:
+      return DISEASE_STATE_VISIBLE;
+  }
+}
+
+function triggerDebugBehaviorDisease(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("disease");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("disease"))) {
+    return;
+  }
+  const currentState = sanitizeDiseaseState(fish.diseaseState);
+  const nextState = getNextDebugDiseaseBehaviorStage(currentState);
+  setSelectedFishDiseaseStageForDebug(fish, nextState, now);
+
+  const target = pickDiseaseBehaviorTarget(fish, species, now)
+    || pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["hide", "plant", "hardscape", "spooky", "bubbler"],
+      force: true,
+      ignoreOccupancy: true,
+      preferBackLayer: true,
+      lingerMultiplier: 2
+    })
+    || {
+      xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.12, 0.12), 0.1, 0.9),
+      yNorm: nextState === DISEASE_STATE_SEVERE ? randomBetween(0.18, 0.28) : randomBetween(0.36, 0.72),
+      targetLayer: getFishTankLayer(fish),
+      targetAt: now + randomBetween(5200, 11000),
+      signal: nextState === DISEASE_STATE_SEVERE ? "surface_hover" : "hiding_more_than_usual"
+    };
+  applyDiseaseBehaviorTarget(fish, species, {
+    ...target,
+    hangoutDecorId: target.hangoutDecorId || target.decorId || null,
+    hangoutZoneType: target.hangoutZoneType || target.zoneType || null,
+    signal: target.signal || (target.zoneType === "bubbler" ? "lingering_near_bubbler" : "hiding_more_than_usual")
+  }, now);
+
+  const cause = getDebugDiseaseBehaviorCause(nextState);
+  setFishBehaviorIntent(fish, "disease isolate", cause, now, { durationMs: BEHAVIOR_INTENT_LINGER_MS });
+  recordFishBehaviorSignal(fish, target.signal || "hiding_more_than_usual", now, {
+    debugText: `disease isolate | ${cause}`
+  });
+  finishDebugBehaviorScenario(fish, `Debug advanced ${fish.name} illness to ${nextState}.`, `${fish.name} disease behavior: ${nextState}.`, now);
+}
+
+function triggerDebugBehaviorNightSleep(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("night-sleep");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("night-sleep"))) {
+    return;
+  }
+  forceLightsOutForDebug(now);
+
+  const cover = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
+    force: true,
+    ignoreOccupancy: true,
+    lingerMultiplier: 2.4,
+    preferBackLayer: true
+  }) || {
+    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.04, 0.04), 0.08, 0.92),
+    yNorm: clamp((fish.yNorm || 0.5) + randomBetween(-0.03, 0.03), 0.18, 0.78),
+    targetLayer: getFishTankLayer(fish),
+    targetAt: now + randomBetween(9000, 16000),
+    signalType: "odd_sleep_spot",
+    debugText: "night sleep | exposed"
+  };
+  applyBehaviorTarget(fish, species, {
+    ...cover,
+    targetAt: cover.targetAt || now + randomBetween(9000, 18000),
+    intentType: "night sleep",
+    intentCause: cover.signalType === "odd_sleep_spot" ? "exposed" : "lights out",
+    signalType: cover.signalType || "night_sleep",
+    debugText: cover.debugText || "night sleep | lights out",
+    slow: true
+  }, now);
+  finishDebugBehaviorScenario(fish, `Debug put ${fish.name} into Lights Out sleep.`, `${fish.name} is settling for Lights Out.`, now);
+}
+
+function triggerDebugBehaviorNightForage(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("night-forage");
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("night-forage"))) {
+    return;
+  }
+  forceLightsOutForDebug(now);
+
+  const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+  if (["sucker", "shrimp"].includes(effectiveBehavior)) {
+    setFishBehaviorIntent(fish, "night forage", "night-active", now);
+    recordFishBehaviorSignal(fish, "night_forage", now, { debugText: "night forage | night-active" });
+    finishDebugBehaviorScenario(fish, `Debug marked ${fish.name} for night foraging.`, `${fish.name} keeps special movement while night-forage is logged.`, now);
+    return;
+  }
+
+  const forage = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["hardscape", "plant", "hide"],
+    force: true,
+    ignoreOccupancy: true,
+    lingerMultiplier: 0.9,
+    preferBackLayer: false
+  }) || {
+    xNorm: randomSwimX(),
+    yNorm: randomBetween(0.56, 0.82),
+    targetLayer: clampTankLayer(Math.max(1, getFishTankLayer(fish))),
+    targetAt: now + randomBetween(3600, 7600)
+  };
+  applyBehaviorTarget(fish, species, {
+    ...forage,
+    intentType: "night forage",
+    intentCause: "night-active",
+    signalType: "night_forage",
+    debugText: "night forage | night-active"
+  }, now);
+  finishDebugBehaviorScenario(fish, `Debug sent ${fish.name} night foraging.`, `${fish.name} is foraging after Lights Out.`, now);
+}
+
+function triggerDebugBehaviorClear(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("clear");
+  if (!selection) {
+    return;
+  }
+  const { fish } = selection;
+  fish.behaviorIntent = null;
+  fish.behaviorSignals = {};
+  fish.foodRefusalUntil = 0;
+  clearDebugBehaviorSteering(fish);
+  if (!fish.caveState && fish.activity === "roam") {
+    fish.hangoutDecorId = null;
+    fish.hangoutZoneType = null;
+    fish.targetAt = now;
+  }
+  runtime.debugFishBehaviorSignatures.delete(fish.id);
+  finishDebugBehaviorScenario(fish, `Debug cleared forced behavior for ${fish.name}.`, `${fish.name} behavior debug cleared.`, now);
+}
+
+function triggerDebugBehaviorScenario(action) {
+  if (!isDebugModeEnabled()) {
+    return;
+  }
+  switch (action) {
+    case "refuse-food":
+      triggerDebugBehaviorRefuseFood();
+      break;
+    case "anticipate-food":
+      triggerDebugBehaviorAnticipateFood();
+      break;
+    case "hide":
+      triggerDebugBehaviorHide();
+      break;
+    case "inspect-lure":
+      triggerDebugBehaviorInspectLure();
+      break;
+    case "guard-cave":
+      triggerDebugBehaviorGuardCave();
+      break;
+    case "follow":
+      triggerDebugBehaviorFollow();
+      break;
+    case "avoid":
+      triggerDebugBehaviorAvoid();
+      break;
+    case "disease":
+      triggerDebugBehaviorDisease();
+      break;
+    case "night-sleep":
+      triggerDebugBehaviorNightSleep();
+      break;
+    case "night-forage":
+      triggerDebugBehaviorNightForage();
+      break;
+    case "clear":
+      triggerDebugBehaviorClear();
+      break;
+    default:
+      showToast("Unknown behavior debug scenario.");
+  }
+}
+
+function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now()) {
+  const species = getSpeciesForFish(selectedFish);
+  const config = DEBUG_BEHAVIOR_BUTTON_CONFIGS.find((entry) => entry.action === action);
+  const title = config?.title || "Debug behavior";
+  const reason = getDebugBehaviorBlockReason(selectedFish, species, getDebugBehaviorScenarioOptions(action));
+  if (reason) {
+    return { enabled: false, title: `${title}: ${reason}` };
+  }
+
+  switch (action) {
+    case "hide":
+      return hasDebugDecorHangoutZone(["plant", "hide", "spooky"])
+        ? { enabled: true, title }
+        : { enabled: false, title: `${title}: add plants, caves, wrecks, or spooky decor` };
+    case "inspect-lure":
+      return hasDebugDecorHangoutZone(["lure"])
+        ? { enabled: true, title }
+        : { enabled: false, title: `${title}: add a Fishing Lure or Gorbag` };
+    case "guard-cave":
+      return hasDebugDecorHangoutZone(["hide", "hardscape"])
+        ? { enabled: true, title }
+        : { enabled: false, title: `${title}: add a cave, arch, rock, or hardscape` };
+    case "follow":
+    case "avoid":
+      return getDebugRelationshipPartner(selectedFish)
+        ? { enabled: true, title }
+        : { enabled: false, title: `${title}: add another living fish` };
+    default:
+      return { enabled: true, title };
+  }
+}
+
+function syncDebugBehaviorLabButtons(debugMode, selectedFish, now = Date.now()) {
+  for (const config of DEBUG_BEHAVIOR_BUTTON_CONFIGS) {
+    const button = dom[config.domKey];
+    if (!button) {
+      continue;
+    }
+    const availability = debugMode
+      ? getDebugBehaviorButtonAvailability(config.action, selectedFish, now)
+      : { enabled: false, title: config.title };
+    button.hidden = !debugMode;
+    button.disabled = !debugMode || !availability.enabled;
+    button.title = availability.title || config.title;
+    button.setAttribute("aria-label", availability.title || config.title);
+    button.classList.toggle(
+      "is-active",
+      config.action === "disease"
+        && selectedFish
+        && sanitizeDiseaseState(selectedFish.diseaseState) !== DISEASE_STATE_NONE
+    );
+  }
+}
+
 function sendRandomFishIntoCaveNow(now = Date.now(), options = {}) {
   const { ignoreBlockedDecor = true, silentFailure = false } = options;
   const activelyDraggedFishId = runtime.fishDragState?.fishId || null;
@@ -31814,6 +35691,150 @@ function damageSelectedFish() {
   saveState();
   renderUi(now);
   showToast(toast);
+}
+
+function getNextDebugDiseaseStage(stateId) {
+  const currentState = sanitizeDiseaseState(stateId);
+  const currentIndex = DEBUG_DISEASE_STAGE_ORDER.indexOf(currentState);
+  if (currentIndex === -1) {
+    return DISEASE_STATE_CARRIER;
+  }
+  return DEBUG_DISEASE_STAGE_ORDER[Math.min(currentIndex + 1, DEBUG_DISEASE_STAGE_ORDER.length - 1)];
+}
+
+function forceDebugDiseaseSignals(fish, stateId, now = Date.now()) {
+  if (!fish) {
+    return;
+  }
+
+  const diseaseState = sanitizeDiseaseState(stateId);
+  const signalsByStage = {
+    [DISEASE_STATE_INCUBATING]: ["missed_feeding"],
+    [DISEASE_STATE_EARLY]: ["hiding_more_than_usual"],
+    [DISEASE_STATE_VISIBLE]: ["looking_under_weather", "green_bubbles", "food_refused"],
+    [DISEASE_STATE_SEVERE]: ["looking_under_weather", "green_bubbles", "surface_hover", "bottom_sit"],
+    [DISEASE_STATE_RECOVERING]: ["green_bubbles", "sick_isolation"]
+  };
+  fish.lastIllnessSignalAtByType = {};
+  for (const signalType of signalsByStage[diseaseState] || []) {
+    forceDiseaseSignalForDebug(fish, signalType, now);
+  }
+
+  fish.nextSymptomCheckAt = now;
+  fish.nextGreenBubbleAt = [DISEASE_STATE_VISIBLE, DISEASE_STATE_SEVERE, DISEASE_STATE_RECOVERING].includes(diseaseState)
+    ? now
+    : getNextGreenBubbleAtForDisease(fish, now);
+  if (diseaseState !== DISEASE_STATE_NONE) {
+    setFishBehaviorIntent(fish, "debug illness", diseaseState, now, { durationMs: 45 * 1000 });
+  }
+}
+
+function setSelectedFishDiseaseStageForDebug(fish, stateId, now = Date.now()) {
+  if (!fish) {
+    return false;
+  }
+
+  const diseaseState = sanitizeDiseaseState(stateId);
+  if (diseaseState === DISEASE_STATE_NONE) {
+    const changed = resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now);
+    fish.lastIllnessSignalAtByType = {};
+    fish.behaviorIntent = null;
+    fish.foodRefusalUntil = 0;
+    runtime.debugFishBehaviorSignatures.delete(fish.id);
+    return changed;
+  }
+
+  fish.diseaseState = diseaseState;
+  fish.diseaseType = DISEASE_TYPE_GENERIC;
+  fish.diseaseInfectedAt = now;
+  fish.diseaseProgressMs = getDebugDiseaseProgressForStage(diseaseState);
+  fish.diseaseLastProgressAt = now;
+  fish.diseaseExposureLevel = 0;
+  fish.diseaseRecoveryProgressMs = diseaseState === DISEASE_STATE_RECOVERING ? DISEASE_RECOVERING_ENTRY_MS : 0;
+  fish.diseaseTreatedUntil = 0;
+  fish.diseaseLastDamageAt = now;
+  fish.diseaseSource = "debug";
+  fish.temporaryImmunityUntil = 0;
+  fish.nextDiseaseCheckAt = now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS);
+  fish.nextDiseaseSpreadCheckAt = now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS);
+  fish.nextSymptomCheckAt = now;
+  fish.nextGreenBubbleAt = getNextGreenBubbleAtForDisease(fish, now);
+  fish.lastIllnessRiskDayKey = typeof fish.lastIllnessRiskDayKey === "string" ? fish.lastIllnessRiskDayKey : "";
+  forceDebugDiseaseSignals(fish, diseaseState, now);
+  runtime.debugFishBehaviorSignatures.delete(fish.id);
+  return true;
+}
+
+function infectSelectedFishDebug() {
+  const managed = getManagedFishById(runtime.selectedFishId);
+  if (!managed) {
+    showToast("Select a fish in the tank first.");
+    return;
+  }
+
+  if (managed.inStorage) {
+    showToast("Take the fish out of storage before testing illness.");
+    return;
+  }
+
+  const { fish } = managed;
+  const now = Date.now();
+  if (isFishDead(fish)) {
+    showToast(`${fish.name} is already dead.`);
+    return;
+  }
+  if (isUndeadFish(fish)) {
+    showToast(`${fish.name} cannot use the regular illness debug path.`);
+    return;
+  }
+
+  const currentState = sanitizeDiseaseState(fish.diseaseState);
+  const nextState = getNextDebugDiseaseStage(currentState);
+  setSelectedFishDiseaseStageForDebug(fish, nextState, now);
+  saveState();
+  renderUi(now);
+  showToast(currentState === DISEASE_STATE_SEVERE
+    ? `${fish.name} is already at severe illness.`
+    : `${fish.name} illness stage: ${nextState}.`);
+}
+
+function cureSelectedFishDebug() {
+  const managed = getManagedFishById(runtime.selectedFishId);
+  if (!managed) {
+    showToast("Select a fish in the tank first.");
+    return;
+  }
+
+  if (managed.inStorage) {
+    showToast("Take the fish out of storage before testing illness.");
+    return;
+  }
+
+  const { fish } = managed;
+  const now = Date.now();
+  if (isFishDead(fish)) {
+    showToast(`${fish.name} is already dead.`);
+    return;
+  }
+
+  const currentState = sanitizeDiseaseState(fish.diseaseState);
+  if (currentState === DISEASE_STATE_NONE && (Number(fish.diseaseExposureLevel) || 0) <= 0) {
+    showToast(`${fish.name} has no active illness.`);
+    return;
+  }
+
+  if (currentState === DISEASE_STATE_RECOVERING || currentState === DISEASE_STATE_IMMUNE || currentState === DISEASE_STATE_NONE) {
+    setSelectedFishDiseaseStageForDebug(fish, DISEASE_STATE_NONE, now);
+    saveState();
+    renderUi(now);
+    showToast(`${fish.name} illness cleared.`);
+    return;
+  }
+
+  setSelectedFishDiseaseStageForDebug(fish, DISEASE_STATE_RECOVERING, now);
+  saveState();
+  renderUi(now);
+  showToast(`${fish.name} is now recovering.`);
 }
 
 function resetAllProgress() {
@@ -33982,6 +38003,8 @@ function getToolbarButtonControlState(button) {
       return runtime.equipmentOverlayOpen;
     case "openSettingsButton":
       return runtime.settingsOverlayOpen;
+    case "toggleDebugMenuButton":
+      return runtime.debugSidebarOpen;
     case "feedButton":
       return runtime.foodTrayOpen || Boolean(runtime.feedingModeFoodKey);
     case "medicineButton":
@@ -34446,6 +38469,7 @@ function renderToolbarPosition() {
   if (dom.utilityOverlay) {
     dom.utilityOverlay.dataset.utilityMode = runtime.utilityOverlayMode || "";
   }
+  document.documentElement.dataset.hardwareAccelerationNoticeOpen = isHardwareAccelerationNoticeBlockingStart() ? "true" : "false";
 }
 
 function renderSidebar() {
@@ -34476,7 +38500,7 @@ function renderHeader(now) {
   const cleanliness = Math.max(0, Math.round((1 - dirtiness) * 100));
   const servedToday = getTodaysMealSlots(now).filter((slot) => isMealSlotSatisfiedForDisplay(slot, getCurrentTank(), now)).length;
 
-  setTextIfChanged(dom.coinCount, formatNumber(state.coins));
+  setTextIfChanged(dom.coinCount, formatLcdNumber(state.coins));
   setTextIfChanged(dom.cleanlinessLabel, `${cleanliness}%`);
   setTextIfChanged(dom.mealWindowLabel, `${servedToday} / 2`);
 
@@ -35155,6 +39179,45 @@ function buildManagementCareItem(task = {}, index = 0) {
   `;
 }
 
+function buildIllnessCareTask(now = Date.now()) {
+  if (!state?.fish?.length) {
+    return null;
+  }
+
+  const affectedFish = state.fish
+    .filter((fish) => fish && !isFishDead(fish) && isFishDiseaseVisible(fish) && hasActiveFishDisease(fish))
+    .sort((left, right) => Number(left.diseaseInfectedAt || 0) - Number(right.diseaseInfectedAt || 0));
+  if (!affectedFish.length) {
+    return null;
+  }
+
+  const count = affectedFish.length;
+  const hasSevere = affectedFish.some((fish) => sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_SEVERE);
+  const allRecovering = affectedFish.every((fish) => sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_RECOVERING);
+  const firstFish = affectedFish[0];
+  const label = count === 1
+    ? allRecovering
+      ? `${firstFish.name} is recovering.`
+      : `${firstFish.name} looks off-color.`
+    : allRecovering
+      ? "Several fish are recovering."
+      : "Several fish look off-color.";
+  const note = allRecovering
+    ? "Keep conditions steady until normal routines return."
+    : count === 1
+      ? "Give them quiet space and medicine if you can."
+      : "Keep the tank calm, clean the water, and dose medicine if you can.";
+
+  return {
+    id: "illness-care",
+    badge: hasSevere ? "Now" : "Care",
+    label,
+    value: count === 1 ? "Care" : `${count} fish`,
+    note,
+    tone: hasSevere ? "danger" : "warn"
+  };
+}
+
 function buildManagementCareQueue(stats) {
   if (!stats?.livingFish) {
     return [{
@@ -35222,6 +39285,14 @@ function buildManagementCareQueue(stats) {
         ? `${stats.pendingWasteCount} more ${pluralize("drop", stats.pendingWasteCount)} pending after the last meal.`
         : "Once scooped, the gravel is clear again.",
       tone: "warn"
+    });
+  }
+
+  const illnessCareTask = buildIllnessCareTask(stats.now || Date.now());
+  if (illnessCareTask && tasks.length < 6) {
+    tasks.push({
+      ...illnessCareTask,
+      badge: tasks.length ? illnessCareTask.badge : (illnessCareTask.tone === "danger" ? "Now" : "Care")
     });
   }
 
@@ -35868,6 +39939,12 @@ function getHistoryEventType(event) {
   if (/unlock|milestone/.test(rawType) || /unlocked|milestone/.test(text)) {
     return "unlock";
   }
+  if (/behavior|routine|observe/.test(rawType)) {
+    return "behavior";
+  }
+  if (/illness|disease|symptom/.test(rawType)) {
+    return "illness";
+  }
   if (/feed|food|meal|ate|hungry|chum/.test(rawType) || / ate |meal|food|hungry|chum/.test(text)) {
     return "feeding";
   }
@@ -35899,6 +39976,10 @@ function getHistoryEventTypeLabel(type) {
   switch (String(type || "")) {
     case "daily_recap":
       return "Daily Recap";
+    case "behavior":
+      return "Behavior";
+    case "illness":
+      return "Illness";
     case "feeding":
       return "Feeding";
     case "comfort":
@@ -36596,28 +40677,92 @@ function renderTutorialSkipConfirmUtilityOverlay() {
 
 function renderHardwareAccelerationUtilityOverlay() {
   const issue = runtime.hardwareAccelerationIssue;
+  const reason = String(issue?.reason || "first-visit");
   const rendererText = issue?.renderer
     ? `<div class="external-link-url">${escapeHtml(issue.renderer)}</div>`
     : "";
-  const detailText = issue?.reason === "webgl-unavailable"
+  const detailText = reason === "webgl-unavailable"
     ? "WebGL is unavailable in this browser session, which usually means hardware acceleration is off or blocked."
-    : "This browser appears to be using a software renderer for graphics work.";
+    : reason === "software-renderer"
+      ? "This browser appears to be using a software renderer for graphics work."
+      : "Before you start playing, make sure browser hardware acceleration is enabled for the smoothest aquarium experience.";
   return {
-    kicker: "Performance",
+    kicker: false,
     title: "Enable Hardware Acceleration",
     body: `
-      <div class="utility-confirm-card external-link-card">
+      <div class="utility-confirm-card external-link-card hardware-acceleration-card">
         <div class="utility-confirm-copy">
           <strong>Bubble Borough runs best with browser hardware acceleration enabled.</strong>
           <div class="fish-meta">${detailText}</div>
           <div class="fish-meta">If the aquarium looks blank, stutters, or feels unusually slow, enable hardware acceleration and fully restart the browser.</div>
-          <div class="fish-meta">Chrome / Edge: Settings -> System -> Use hardware acceleration when available.</div>
+          <div class="hardware-acceleration-instructions">
+            <details class="hardware-acceleration-details" name="hardware-acceleration-browser" open>
+              <summary>Chrome / Edge</summary>
+              <ol>
+                <li>Open Settings.</li>
+                <li>Go to System.</li>
+                <li>Enable Use hardware acceleration when available.</li>
+                <li>Fully restart the browser.</li>
+              </ol>
+            </details>
+            <details class="hardware-acceleration-details" name="hardware-acceleration-browser">
+              <summary>Firefox</summary>
+              <ol>
+                <li>Open Settings.</li>
+                <li>Go to General, then Performance.</li>
+                <li>Use recommended performance settings, or enable hardware acceleration when available.</li>
+                <li>Fully restart the browser.</li>
+              </ol>
+            </details>
+            <details class="hardware-acceleration-details" name="hardware-acceleration-browser">
+              <summary>Safari</summary>
+              <ol>
+                <li>Safari uses hardware acceleration automatically when it is available.</li>
+                <li>Keep Safari and macOS updated.</li>
+                <li>If the aquarium still looks wrong, try Chrome or Edge with hardware acceleration enabled.</li>
+              </ol>
+            </details>
+          </div>
         </div>
         ${rendererText}
       </div>
     `,
-    footer: `<div class="utility-confirm-actions"><button class="small-button" data-close-utility>Continue</button><button class="small-button alt" data-dismiss-hardware-acceleration-notice>Don't Show Again</button></div>`
+    footer: `
+      <label class="hardware-acceleration-dismiss-row">
+        <input class="settings-checkbox" type="checkbox" data-hardware-acceleration-dont-show />
+        <span>Don't show this again</span>
+      </label>
+      <div class="utility-confirm-actions">
+        <button class="small-button" data-acknowledge-hardware-acceleration-notice>Continue</button>
+      </div>
+    `,
+    closable: false
   };
+}
+
+function handleHardwareAccelerationUtilityOverlayBodyClick(ctx, target) {
+  const summary = target?.closest?.(".hardware-acceleration-details > summary");
+  if (!summary) {
+    return false;
+  }
+
+  const selectedDetails = summary.closest(".hardware-acceleration-details");
+  if (!(selectedDetails instanceof HTMLDetailsElement)) {
+    return false;
+  }
+
+  window.requestAnimationFrame(() => {
+    if (!selectedDetails.open) {
+      return;
+    }
+
+    for (const details of dom.utilityOverlayBody?.querySelectorAll(".hardware-acceleration-details") || []) {
+      if (details !== selectedDetails && details instanceof HTMLDetailsElement) {
+        details.open = false;
+      }
+    }
+  });
+  return true;
 }
 
 function renderDispenserResetUtilityOverlay() {
@@ -37371,15 +41516,18 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     id: "hardware-acceleration",
     exclusive: true,
     render: renderHardwareAccelerationUtilityOverlay,
+    onBodyClick: handleHardwareAccelerationUtilityOverlayBodyClick,
     onFooterClick: createUtilityOverlayActionHandler([
       {
+        selector: "[data-acknowledge-hardware-acceleration-notice]",
+        run: () => acknowledgeHardwareAccelerationNotice()
+      },
+      {
         selector: "[data-dismiss-hardware-acceleration-notice]",
-        run: () => {
-          dismissHardwareAccelerationNotice();
-          closeUtilityOverlay();
-        }
+        run: () => acknowledgeHardwareAccelerationNotice({ dismiss: true })
       }
-    ])
+    ]),
+    onRequestClose: () => true
   },
   medicine: {
     id: "medicine",
@@ -37740,7 +41888,8 @@ function renderUtilityOverlay() {
 
   const modeDef = getUtilityOverlayModeDef(runtime.utilityOverlayMode);
   const config = modeDef?.render?.(getUtilityOverlayContext(Date.now())) || buildDefaultUtilityOverlayConfig();
-  const kicker = String(config.kicker || "Tank Tools");
+  const hideKicker = config.kicker === false;
+  const kicker = hideKicker ? "" : String(config.kicker || "Tank Tools");
   const title = String(config.title || "Details");
   const body = String(config.body || "");
   const footer = String(config.footer || "");
@@ -37748,6 +41897,7 @@ function renderUtilityOverlay() {
   setTextIfChanged(dom.utilityOverlayTitle, title);
   if (dom.utilityOverlayKicker) {
     setTextIfChanged(dom.utilityOverlayKicker, kicker);
+    dom.utilityOverlayKicker.hidden = hideKicker;
   }
   if (dom.utilityOverlayBody) {
     setMarkupIfChanged("utility-overlay-body", dom.utilityOverlayBody, body);
@@ -39332,6 +43482,7 @@ function renderTutorialGuidance() {
     "openEquipmentButton",
     "openSettingsButton",
     "toggleMouseLockButton",
+    "lightsOutToggleButton",
     "uvLightToggleButton"
   ];
   const clearSpotlights = () => {
@@ -41920,19 +46071,48 @@ function renderControls(now) {
   const hasGravelPebbleCandidate = hasFishGravelPebbleCandidate(now);
   const hasGravelDigCandidate = hasFishGravelDigCandidate(now);
   const debugMode = isDebugModeEnabled();
+  if (!debugMode && runtime.debugSidebarOpen) {
+    runtime.debugSidebarOpen = false;
+  }
 
   dom.feedButton.disabled = false;
   if (dom.medicineButton) {
     dom.medicineButton.disabled = false;
   }
 
+  if (dom.toggleDebugMenuButton) {
+    const debugSidebarOpen = debugMode && runtime.debugSidebarOpen;
+    dom.toggleDebugMenuButton.hidden = !debugMode;
+    dom.toggleDebugMenuButton.disabled = !debugMode;
+    dom.toggleDebugMenuButton.classList.toggle("is-active", debugSidebarOpen);
+    dom.toggleDebugMenuButton.title = debugSidebarOpen ? "Close Debug Menu" : "Debug Menu";
+    dom.toggleDebugMenuButton.setAttribute("aria-label", debugSidebarOpen ? "Close Debug Menu" : "Debug Menu");
+    dom.toggleDebugMenuButton.setAttribute("aria-expanded", String(debugSidebarOpen));
+  }
+  if (dom.debugSidebar) {
+    dom.debugSidebar.hidden = !debugMode || !runtime.debugSidebarOpen;
+  }
   dom.resetMealsButton.hidden = !debugMode;
-  dom.debugDispenserButton.hidden = !debugMode;
+  if (dom.completeMealsButton) {
+    dom.completeMealsButton.hidden = !debugMode;
+  }
   dom.debugDamageFishButton.hidden = !debugMode;
   dom.debugBreedButton.hidden = !debugMode;
   dom.resetFishHealthButton.hidden = !debugMode;
+  if (dom.debugInfectFishButton) {
+    dom.debugInfectFishButton.hidden = !debugMode;
+  }
+  if (dom.debugCureFishButton) {
+    dom.debugCureFishButton.hidden = !debugMode;
+  }
   dom.addCoinsButton.hidden = !debugMode;
+  if (dom.addHundredCoinsButton) {
+    dom.addHundredCoinsButton.hidden = !debugMode;
+  }
   dom.maxDirtButton.hidden = !debugMode;
+  if (dom.debugMaxDirtinessButton) {
+    dom.debugMaxDirtinessButton.hidden = !debugMode;
+  }
   dom.debugGravelDigButton.hidden = !debugMode;
   dom.debugGravelPebbleButton.hidden = !debugMode;
   dom.debugCaveButton.hidden = !debugMode;
@@ -41942,15 +46122,30 @@ function renderControls(now) {
   if (dom.debugFishBehaviorLogButton) {
     dom.debugFishBehaviorLogButton.hidden = !debugMode;
   }
+  syncDebugBehaviorLabButtons(debugMode, selectedActiveFish, now);
 
   dom.resetMealsButton.disabled = !debugMode;
-  dom.debugDispenserButton.disabled = !debugMode || !hasAutoDispenserInstalled();
+  if (dom.completeMealsButton) {
+    dom.completeMealsButton.disabled = !debugMode;
+  }
   dom.resetFishHealthButton.disabled = !debugMode;
   dom.addCoinsButton.disabled = !debugMode;
+  if (dom.addHundredCoinsButton) {
+    dom.addHundredCoinsButton.disabled = !debugMode;
+  }
   dom.maxDirtButton.disabled = !debugMode;
+  if (dom.debugMaxDirtinessButton) {
+    dom.debugMaxDirtinessButton.disabled = !debugMode;
+  }
   dom.debugGravelDigButton.disabled = !debugMode || !hasGravelDigCandidate;
   dom.debugGravelPebbleButton.disabled = !debugMode || !hasGravelPebbleCandidate;
   dom.debugDamageFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
+  if (dom.debugInfectFishButton) {
+    dom.debugInfectFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
+  }
+  if (dom.debugCureFishButton) {
+    dom.debugCureFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
+  }
   dom.debugBreedButton.disabled = !debugMode || (!hasDebugBreedingPairCandidate(now) && !runtime.debugBreedingSequence);
   if (dom.debugDailyRecapButton) {
     dom.debugDailyRecapButton.disabled = !debugMode || !getCurrentTank();
@@ -41972,32 +46167,32 @@ function renderControls(now) {
   dom.debugCaveButton.classList.toggle("is-active", runtime.debugNightCaveMode);
   dom.debugCaveButton.title = runtime.debugNightCaveMode
     ? "Debug: Disable Cave Test Loop"
-    : "Debug: Force Cave Test Loop";
+    : "Debug: Cave";
   dom.debugCaveButton.setAttribute(
     "aria-label",
     runtime.debugNightCaveMode
       ? "Debug: Disable Cave Test Loop"
-      : "Debug: Force Cave Test Loop"
+      : "Debug: Cave"
   );
   if (dom.debugGravelPebbleButton) {
     dom.debugGravelPebbleButton.title = hasGravelPebbleCandidate
-      ? "Debug: Force Gravel Pebble Toss"
+      ? "Debug: Pebble"
       : "Debug: Keep gravel pebble assets and a living non-sucker fish in the tank";
     dom.debugGravelPebbleButton.setAttribute(
       "aria-label",
       hasGravelPebbleCandidate
-        ? "Debug: Force Gravel Pebble Toss"
+        ? "Debug: Pebble"
         : "Debug: Keep gravel pebble assets and a living non-sucker fish in the tank"
     );
   }
   if (dom.debugGravelDigButton) {
     dom.debugGravelDigButton.title = hasGravelDigCandidate
-      ? "Debug: Force Gravel Dig"
+      ? "Debug: Dig"
       : "Debug: Keep a living non-sucker fish in the tank";
     dom.debugGravelDigButton.setAttribute(
       "aria-label",
       hasGravelDigCandidate
-        ? "Debug: Force Gravel Dig"
+        ? "Debug: Dig"
         : "Debug: Keep a living non-sucker fish in the tank"
     );
   }
@@ -42011,6 +46206,21 @@ function renderControls(now) {
   dom.openManagementButton?.classList.toggle("is-active", runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management");
   dom.careTaskPaneButton?.classList.toggle("is-active", getUiSettings().careTaskPaneOpen === true);
   dom.toggleMouseLockButton?.classList.toggle("is-active", isTankMouseInputLocked());
+  if (dom.lightsOutToggleButton) {
+    const override = getLightsOutOverride();
+    const active = isTankLightsOut(now);
+    const modeText = override === LIGHTS_OUT_OVERRIDE_AUTO
+      ? "Auto"
+      : override === LIGHTS_OUT_OVERRIDE_ON
+        ? "On"
+        : "Off";
+    dom.lightsOutToggleButton.hidden = false;
+    dom.lightsOutToggleButton.classList.toggle("is-active", active);
+    dom.lightsOutToggleButton.dataset.mode = override;
+    dom.lightsOutToggleButton.title = `Lights Out: ${modeText}`;
+    dom.lightsOutToggleButton.setAttribute("aria-label", `Lights Out ${modeText}`);
+    dom.lightsOutToggleButton.setAttribute("aria-pressed", String(active));
+  }
   if (dom.uvLightToggleButton) {
     const uvLightVisible = isUvLightFeatureEnabled();
     const uvInstalled = isUvLightInstalled();
@@ -44283,7 +48493,27 @@ function updateFishMotion(now, deltaSeconds) {
 
       const gravelPebbleOwnsMovement = !breedingRole && updateFishGravelPebbleAction(fish, species, now);
       const caveBehaviorOwnsMovement = !breedingRole && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
-      if (fish.activity === "roam" && !breedingRole && !caveBehaviorOwnsMovement && now >= fish.targetAt) {
+      const debugBehaviorOwnsMovement = !breedingRole
+        && !gravelPebbleOwnsMovement
+        && !caveBehaviorOwnsMovement
+        && fish.activity === "roam"
+        && !debugCaveTestFish
+        && updateDebugBehaviorSteering(fish, species, now);
+      const diseaseAvoidanceOwnsMovement = !breedingRole
+        && !gravelPebbleOwnsMovement
+        && !caveBehaviorOwnsMovement
+        && !debugBehaviorOwnsMovement
+        && fish.activity === "roam"
+        && !debugCaveTestFish
+        && maybeApplyDiseaseAvoidanceReaction(fish, species, now);
+      if (
+        fish.activity === "roam"
+        && !breedingRole
+        && !caveBehaviorOwnsMovement
+        && !debugBehaviorOwnsMovement
+        && !diseaseAvoidanceOwnsMovement
+        && now >= fish.targetAt
+      ) {
         if (retargetsThisFrame >= MAX_FISH_RETARGETS_PER_FRAME) {
           fish.targetAt = now + 30 + Math.random() * 60;
         } else {
@@ -44292,7 +48522,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
-      if (fish.activity === "roam" && !fish.caveState && !breedingRole) {
+      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
       }
@@ -44303,9 +48533,13 @@ function updateFishMotion(now, deltaSeconds) {
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
     const moveDistance = Math.hypot(moveDx, moveDy);
+    const activeDebugSteering = fish.activity === "roam" && !fish.caveState
+      ? getActiveDebugBehaviorSteering(fish, now)
+      : null;
     const isDirectedSwim = fish.activity === "feeding"
       || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
-      || fish.activity === FISH_GRAVEL_DIG_ACTIVITY;
+      || fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+      || Boolean(activeDebugSteering);
     let motionTarget = fish.activity === "feeding"
       ? 1
       : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
@@ -44317,6 +48551,20 @@ function updateFishMotion(now, deltaSeconds) {
       motionTarget = Math.max(motionTarget, 0.78);
     } else if (zombieBittenVictim) {
       motionTarget = Math.max(motionTarget, 0.92);
+    } else if (activeDebugSteering?.type === "avoid") {
+      motionTarget = Math.max(motionTarget, 0.74);
+    } else if (activeDebugSteering?.type === "follow") {
+      const followDistance = Number(activeDebugSteering.distanceNorm) || moveDistance;
+      const followMotion = followDistance > DEBUG_BEHAVIOR_FOLLOW_CATCHUP_NORM
+        ? 0.66
+        : followDistance > DEBUG_BEHAVIOR_FOLLOW_CLOSE_NORM
+          ? 0.42
+          : 0.24;
+      motionTarget = Math.max(motionTarget, followMotion);
+    } else if (activeDebugSteering?.type === "inspect-lure") {
+      motionTarget = Math.max(motionTarget, 0.58);
+    } else if (activeDebugSteering?.type === "anticipate-food") {
+      motionTarget = Math.max(motionTarget, 0.16);
     }
     let handledDirectionThisFrame = false;
 
@@ -44356,6 +48604,18 @@ function updateFishMotion(now, deltaSeconds) {
       if (isPiranhaSpecies(fish)) {
         speedMultiplier *= getPiranhaTargetCandidate(now) ? 1.2 : 1.04;
       }
+      if (activeDebugSteering?.type === "follow") {
+        const followDistance = Number(activeDebugSteering.distanceNorm) || moveDistance;
+        const leaderSpeed = Math.max(0.00001, Number(activeDebugSteering.leaderSwimSpeed) || fish.swimSpeed);
+        const currentSpeed = Math.max(0.00001, Number(fish.swimSpeed) || leaderSpeed);
+        const matchFactor = followDistance > DEBUG_BEHAVIOR_FOLLOW_CATCHUP_NORM
+          ? 1.38
+          : followDistance > DEBUG_BEHAVIOR_FOLLOW_CLOSE_NORM
+            ? 1.02
+            : (activeDebugSteering.leaderMoving ? 0.82 : 0.38);
+        speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.18, 1.4);
+      }
+      speedMultiplier *= getFishDiseaseSpeedMultiplier(fish, now);
 
       const speed = fish.swimSpeed * FISH_MOTION_SCALE * speedMultiplier;
       const step = Math.min(moveDistance, speed * deltaSeconds);
@@ -44442,13 +48702,17 @@ function updateFishMotion(now, deltaSeconds) {
       if (effectiveBehavior === "sucker") {
         setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
       } else if (!handledDirectionThisFrame) {
+        const debugFaceDirection = getDebugBehaviorFacingDirection(fish, now);
         const facingDx = fish.activity === "feeding" && pelletPose
           ? pelletPose.xNorm - fish.xNorm
           : fish.targetXNorm - fish.xNorm;
         const schoolFollowFacing = fish.activity === "roam"
           ? getFishSchoolFollowFacingDirection(fish, species, now, facingDx)
           : null;
-        if (schoolFollowFacing !== null) {
+        if (debugFaceDirection !== null) {
+          setFishDirection(fish, debugFaceDirection, species, now);
+          handledDirectionThisFrame = true;
+        } else if (schoolFollowFacing !== null) {
           setFishDirection(fish, schoolFollowFacing, species, now);
           handledDirectionThisFrame = true;
         } else if (Math.abs(facingDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
@@ -44461,6 +48725,14 @@ function updateFishMotion(now, deltaSeconds) {
       if (forcedDigPromptAtRest) {
         completeForcedFishGravelDig(fish, species, forcedDigPromptAtRest, now);
       }
+    }
+
+    const debugFaceDirectionAtRest = !handledDirectionThisFrame
+      ? getDebugBehaviorFacingDirection(fish, now)
+      : null;
+    if (debugFaceDirectionAtRest !== null && fish.activity === "roam" && !fish.caveState) {
+      setFishDirection(fish, debugFaceDirectionAtRest, species, now);
+      handledDirectionThisFrame = true;
     }
 
     if (
@@ -44505,7 +48777,20 @@ function updateFishMotion(now, deltaSeconds) {
         ) <= pelletReachPx
         : Math.hypot(fish.xNorm - pelletPose.xNorm, fish.yNorm - pelletPose.yNorm) < 0.024;
       if (mouthReachedPellet) {
-        handleFishEatFoodPellet(fish, pellet, now);
+        const diseaseForcedRefusal = typeof pellet.diseaseRefusalFishId === "string" && pellet.diseaseRefusalFishId === fish.id;
+        const refusalPrechecked = typeof pellet.refusalPrecheckedFishId === "string" && pellet.refusalPrecheckedFishId === fish.id;
+        if (diseaseForcedRefusal || (!refusalPrechecked && shouldFishRefuseFoodForComfort(fish, pellet.foodKey, now))) {
+          handleFishRefuseFoodPellet(fish, pellet, now);
+          assignFloatingPelletsToHungryFish(now);
+          syncFishDrawLayer(fish, species, now);
+          continue;
+        }
+        const eatResult = handleFishEatFoodPellet(fish, pellet, now);
+        if (eatResult?.refused) {
+          assignFloatingPelletsToHungryFish(now);
+          syncFishDrawLayer(fish, species, now);
+          continue;
+        }
         state.floatingPellets = state.floatingPellets.filter((entry) => entry.id !== pellet.id);
         fish.activity = "roam";
         fish.feedingPelletId = null;
@@ -44584,6 +48869,10 @@ function assignSwimTarget(fish, species, now) {
       fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.76), species.speedMax));
       return;
     }
+  }
+
+  if (applyFishBehaviorIntentLayer(fish, species, now)) {
+    return;
   }
 
   if (effectiveBehavior === "sucker") {
@@ -44705,6 +48994,13 @@ function assignSwimTarget(fish, species, now) {
 
   const cavePlan = pickCaveEntryBehavior(species, fish, now);
   if (cavePlan) {
+    const personality = getFishPersonality(fish);
+    setFishBehaviorIntent(
+      fish,
+      isTankLightsOut(now) ? "night sleep" : (personality === "territorial" ? "guard cave" : "cave visit"),
+      isTankLightsOut(now) ? "lights out" : personality,
+      now
+    );
     beginFishCaveBehavior(fish, cavePlan, now);
     if (species.speedMode === "dynamic") {
       fish.swimSpeed = normalizeFishSpeed(species);
@@ -44742,6 +49038,14 @@ function getDecorFishBehaviorMeta(itemOrKey) {
   return runtime.decorMap.get(decorKey)?.fishBehavior
     || runtime.decorMeta[decorKey]?.fishBehavior
     || null;
+}
+
+function isSpookyDecorItem(itemOrKey) {
+  const decorKey = String(typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey || "").toLowerCase();
+  const meta = getDecorFishBehaviorMeta(itemOrKey);
+  return Boolean(
+    Array.isArray(meta?.hangoutTypes) && meta.hangoutTypes.includes("spooky")
+  ) || /(effigy|spooky|gorebag|swamp-moss|fish-head)/.test(decorKey);
 }
 
 function getDecorHangoutOccupancyGroup(fish, species = getSpeciesForFish(fish)) {
@@ -44906,7 +49210,7 @@ function buildDecorHangoutZones() {
     const fishBehavior = getDecorFishBehaviorMeta(item);
     const explicitHangoutTypes = (Array.isArray(fishBehavior?.hangoutTypes)
       ? fishBehavior.hangoutTypes
-      : []).filter((type) => type !== "bubbler");
+      : []);
     if (isCaveDecorKey(key) && !explicitHangoutTypes.length) {
       continue;
     }
@@ -45024,6 +49328,10 @@ function buildDecorHangoutZones() {
       addTypedZone("plant");
     }
 
+    if (isBubblerDecorKey(item.decorKey)) {
+      addTypedZone("bubbler");
+    }
+
     if (/(driftwood|root|shell|chest|rock)/.test(key)) {
       addTypedZone("hardscape");
     }
@@ -45077,6 +49385,7 @@ function renderTank(now) {
   drawDecorPreview();
   drawDecorSwimGuide(now);
   drawActiveDecorLayerCue();
+  drawLightsOutOverlay(now);
   drawWaterSurface(now);
   drawUvLightAtmosphere(now, "front");
   drawSplashBursts(now);
@@ -45106,6 +49415,27 @@ function renderTank(now) {
     dom.grimeCanvas.style.filter = grimeCanvasFilter;
     runtime.lastGrimeCanvasFilter = grimeCanvasFilter;
   }
+}
+
+function drawLightsOutOverlay(now = Date.now()) {
+  if (!isTankLightsOut(now)) {
+    return;
+  }
+  const forced = getLightsOutOverride() === LIGHTS_OUT_OVERRIDE_ON;
+  const alpha = forced ? 0.36 : 0.3;
+  tankContext.save();
+  const gradient = tankContext.createLinearGradient(0, 0, 0, TANK_HEIGHT);
+  gradient.addColorStop(0, `rgba(3, 12, 26, ${alpha + 0.08})`);
+  gradient.addColorStop(0.52, `rgba(2, 16, 30, ${alpha})`);
+  gradient.addColorStop(1, `rgba(0, 6, 16, ${alpha + 0.04})`);
+  tankContext.fillStyle = gradient;
+  tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  tankContext.globalCompositeOperation = "screen";
+  tankContext.fillStyle = forced
+    ? "rgba(112, 178, 255, 0.045)"
+    : "rgba(98, 155, 220, 0.035)";
+  tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  tankContext.restore();
 }
 
 function getScaledTankShellPoints(pointSet) {
@@ -48458,6 +52788,13 @@ function drawFishProjectedShadow(context, x, objectBottomY, width, height, opaci
 }
 
 function drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion = null, alpha = 1) {
+  if (isTankLightsOut(now) && isSpookyDecorItem(item)) {
+    tankContext.save();
+    tankContext.filter = "brightness(118%) saturate(112%) drop-shadow(0 0 12px rgba(118, 210, 180, 0.28))";
+    drawDecorImageLayerToContext(tankContext, image, drawX, drawY, width, height, item, now, motion, alpha);
+    tankContext.restore();
+    return;
+  }
   drawDecorImageLayerToContext(tankContext, image, drawX, drawY, width, height, item, now, motion, alpha);
 }
 
@@ -49375,7 +53712,7 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
 
   const lines = snapshot.labelLines
     .filter((line) => String(line || "").trim())
-    .slice(0, 4)
+    .slice(0, 5)
     .map((line) => fitDebugFishBehaviorLine(line, maxTextWidth));
   const textWidth = Math.max(...lines.map((line) => tankContext.measureText(line).width), 1);
   const labelWidth = Math.ceil(textWidth + paddingX * 2);
@@ -49477,6 +53814,7 @@ function drawFish(now, layer = null, options = {}) {
     drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
     tankContext.restore();
+    drawFishDiseaseBubbles(fish, species, pose, width, height, now);
 
     if (!pose.isDead && getFishComfort(fish, now).value >= 0.95) {
       drawFishComfortSparkles(pose, width, height, now);
@@ -50094,9 +54432,18 @@ function getFishPose(fish, species, now) {
   const forcedDigTilt = forcedDigPrompt
     ? clamp(0.72 + motionLevel * 0.16 + Math.sin(wiggleClock * 1.4 + fish.phase * Math.PI) * 0.05, 0.62, 0.92)
     : null;
-  const tilt = entryProgress === null
+  let tilt = entryProgress === null
     ? (forcedDigTilt ?? baseTilt)
     : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
+  const debugPoseSteering = fish.activity === "roam" && !fish.caveState
+    ? getActiveDebugBehaviorSteering(fish, now)
+    : null;
+  if (debugPoseSteering?.type === "anticipate-food") {
+    const faceDirection = Number.isFinite(Number(debugPoseSteering.faceDirection))
+      ? (Number(debugPoseSteering.faceDirection) < 0 ? -1 : 1)
+      : renderDirection;
+    tilt = clamp(tilt * 0.35 - faceDirection * 0.2, -0.34, 0.34);
+  }
   const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch) * (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)) * (forcedDigPrompt ? 0.97 : 1);
   const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78)) * (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)) * (forcedDigPrompt ? 1.04 : 1);
   const turnSway = turnProgress === null
@@ -51598,6 +55945,7 @@ function getFishComfort(fish, now) {
   const conflictPenalty = Math.min(COMFORT_COMPONENTS.maxConflictPenalty, activeConflicts.length * COMFORT_COMPONENTS.conflictPenalty);
   const undeadPenalty = getUndeadComfortPenalty(fish);
   const glassTapStressPenalty = getFishGlassTapStressPenalty(fish, now);
+  const diseasePenalty = getFishDiseaseComfortPenalty(fish, now);
   const comfortValue = clamp(
     (
       cleanlinessPoints
@@ -51609,7 +55957,8 @@ function getFishComfort(fish, now) {
       - conflictPenalty
     ) / 100
     - undeadPenalty
-    - glassTapStressPenalty,
+    - glassTapStressPenalty
+    - diseasePenalty,
     0,
     1
   );
@@ -54809,7 +59158,7 @@ function boundsIntersect(leftBounds, rightBounds) {
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, #debugSidebar, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
   );
 }
 
@@ -54820,6 +59169,7 @@ function hasActiveTankToolOrOverlay() {
     || runtime.utilityOverlayOpen
     || runtime.settingsOverlayOpen
     || runtime.equipmentOverlayOpen
+    || runtime.debugSidebarOpen
     || isIntroTutorialActive()
     || !runtime.sidebarCollapsed
     || runtime.editTankMode
@@ -55339,6 +59689,15 @@ function createId(prefix) {
 
 function formatNumber(value) {
   return new Intl.NumberFormat().format(value);
+}
+
+function formatLcdNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return "0";
+  }
+
+  return String(Math.max(0, Math.floor(number)));
 }
 
 function formatDuration(ms) {

@@ -4620,6 +4620,7 @@ function updateSelectedCaveColorSetting(layerId, color) {
       delete pendingCustomHide.caveColorSettings;
     }
     updateCaveColorSettingsControls(getPendingCustomHidePreviewItem(), getPendingCustomHidePreviewDecor());
+    renderCustomHidePreview(Date.now());
     return;
   }
   if (sanitized) {
@@ -4658,6 +4659,7 @@ function updateSelectedCaveColorizeSetting(layerId, colorize) {
       delete pendingCustomHide.caveColorSettings;
     }
     updateCaveColorSettingsControls(getPendingCustomHidePreviewItem(), getPendingCustomHidePreviewDecor());
+    renderCustomHidePreview(Date.now());
     return;
   }
   if (sanitized) {
@@ -6109,8 +6111,7 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
     return;
   }
 
-  const previewScale = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
-  const width = Math.max(1, Math.round((Number(decor.width) || CUSTOM_DECOR_DEFAULT_WIDTH) * previewScale));
+  const width = getDecorPreviewPaneWidth(decor, item);
   const height = width * (image.naturalHeight / Math.max(1, image.naturalWidth));
   const motion = getDecorMotion(item, now);
   const bubblerMeta = hasBubblerPreview ? getPlacedDecorBubblerMeta(item, decor) : null;
@@ -6385,29 +6386,11 @@ function updatePendingCustomHidePreview() {
   }
 
   const scale = clamp(Number(pending.scale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
-  const displayWidth = Math.max(1, Math.round((Number(pending.width) || CUSTOM_DECOR_DEFAULT_WIDTH) * scale));
-  const frontHeight = Math.max(1, Math.round(displayWidth * (pending.frontNaturalHeight / Math.max(1, pending.frontNaturalWidth))));
-  const bgHeight = Math.max(1, Math.round(displayWidth * (pending.bgNaturalHeight / Math.max(1, pending.bgNaturalWidth))));
-  const frame = dom.utilityOverlayBody?.querySelector("[data-custom-hide-preview-frame]");
   const slider = dom.utilityOverlayBody?.querySelector("[data-custom-hide-size-input]");
   const labels = dom.utilityOverlayBody?.querySelectorAll("[data-custom-hide-size-label]") || [];
-  const bgImage = dom.utilityOverlayBody?.querySelector("[data-custom-hide-bg-preview]");
-  const frontImage = dom.utilityOverlayBody?.querySelector("[data-custom-hide-front-preview]");
 
   for (const label of labels) {
     label.textContent = formatDecorScale(scale);
-  }
-  if (frame instanceof HTMLElement) {
-    frame.style.width = `${displayWidth}px`;
-    frame.style.height = `${frontHeight}px`;
-  }
-  if (bgImage instanceof HTMLImageElement) {
-    bgImage.style.width = `${displayWidth}px`;
-    bgImage.style.height = `${bgHeight}px`;
-  }
-  if (frontImage instanceof HTMLImageElement) {
-    frontImage.style.width = `${displayWidth}px`;
-    frontImage.style.height = `${frontHeight}px`;
   }
   if (slider instanceof HTMLInputElement && Number(slider.value) !== scale) {
     slider.value = String(scale);
@@ -6421,6 +6404,103 @@ function updatePendingCustomHidePreview() {
   if (previewItem && previewDecor) {
     updateCaveColorSettingsControls(previewItem, previewDecor);
   }
+  renderCustomHidePreview(Date.now());
+}
+
+function renderCustomHidePreview(now = Date.now()) {
+  if (runtime.utilityOverlayMode !== "custom-hide-create" || !runtime.pendingCustomHideUpload?.frontDataUrl || !runtime.pendingCustomHideUpload?.bgDataUrl) {
+    return;
+  }
+
+  const pending = runtime.pendingCustomHideUpload;
+  const previewItem = getPendingCustomHidePreviewItem();
+  const previewDecor = getPendingCustomHidePreviewDecor();
+  const shell = dom.utilityOverlayBody?.querySelector("[data-custom-hide-preview-shell]");
+  const hitbox = dom.utilityOverlayBody?.querySelector("[data-custom-hide-preview-frame]");
+  const canvas = dom.utilityOverlayBody?.querySelector("[data-custom-hide-preview-canvas]");
+  const bgImage = dom.utilityOverlayBody?.querySelector("[data-custom-hide-bg-preview]");
+  const frontImage = dom.utilityOverlayBody?.querySelector("[data-custom-hide-front-preview]");
+  if (
+    !previewItem
+    || !previewDecor
+    || !(shell instanceof HTMLElement)
+    || !(hitbox instanceof HTMLElement)
+    || !(canvas instanceof HTMLCanvasElement)
+    || !(bgImage instanceof HTMLImageElement)
+    || !(frontImage instanceof HTMLImageElement)
+    || !bgImage.complete
+    || !frontImage.complete
+    || !bgImage.naturalWidth
+    || !frontImage.naturalWidth
+  ) {
+    return;
+  }
+
+  const width = getDecorPreviewPaneWidth(previewDecor, previewItem);
+  const frontHeight = Math.max(1, Math.round(width * (pending.frontNaturalHeight / Math.max(1, pending.frontNaturalWidth))));
+  const bgHeight = Math.max(1, Math.round(width * (pending.bgNaturalHeight / Math.max(1, pending.bgNaturalWidth))));
+  const shellHeight = Math.max(frontHeight, bgHeight);
+  const frontDrawY = shellHeight - frontHeight;
+  const bgDrawY = shellHeight - bgHeight;
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const nextWidth = Math.max(1, Math.round(width * dpr));
+  const nextHeight = Math.max(1, Math.round(shellHeight * dpr));
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+
+  shell.style.width = `${width}px`;
+  shell.style.height = `${shellHeight}px`;
+  hitbox.style.width = `${width}px`;
+  hitbox.style.height = `${frontHeight}px`;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${shellHeight}px`;
+
+  if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+    canvas.width = nextWidth;
+    canvas.height = nextHeight;
+  }
+
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  context.clearRect(0, 0, width, shellHeight);
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+
+  const settings = hasDecorCaveColorLayers(previewDecor) ? getPlacedCaveColorSettings(previewItem, previewDecor) : {};
+  const colorizeSettings = hasDecorCaveColorLayers(previewDecor) ? getPlacedCaveColorizeSettings(previewItem, previewDecor) : {};
+  const motion = getDecorMotion(previewItem, now);
+  const colorSetting = settings.color1;
+  const colorizeSetting = colorizeSettings.color1;
+
+  drawDecorColorLayerImageToContext(
+    context,
+    bgImage,
+    pending.bgDataUrl,
+    colorSetting,
+    colorizeSetting,
+    0,
+    bgDrawY,
+    width,
+    bgHeight,
+    previewItem,
+    now,
+    motion
+  );
+  drawDecorColorLayerImageToContext(
+    context,
+    frontImage,
+    pending.frontDataUrl,
+    colorSetting,
+    colorizeSetting,
+    0,
+    frontDrawY,
+    width,
+    frontHeight,
+    previewItem,
+    now,
+    motion
+  );
 }
 
 function updatePendingCustomHideScale(value) {
@@ -18154,6 +18234,11 @@ function getDecorDisplayWidth(decor, itemOrScale = 1) {
     * getAquariumPhysicalAssetScale("decor");
 }
 
+function getDecorPreviewPaneWidth(decor, itemOrScale = 1) {
+  const worldWidth = getDecorDisplayWidth(decor, itemOrScale);
+  return Math.max(1, Math.round(getTankVirtualPxAsViewportPx(worldWidth)));
+}
+
 function getTankLayerBottomGravelOffsetPx(layer) {
   const normalizedLayer = clampTankLayer(layer);
   return LAYER_BOTTOM_GRAVEL_SURFACE_OFFSET_PX + (TANK_DEPTH_LAYERS - normalizedLayer) * LAYER_BOTTOM_GRAVEL_STEP_PX;
@@ -27156,6 +27241,145 @@ function renderPlacementHint() {
   }
 }
 
+function buildEditQuickRefRowMarkup(key, description) {
+  return `
+    <div class="edit-quick-ref-row">
+      <span class="edit-quick-ref-key">${key}</span>
+      <span class="edit-quick-ref-copy">${description}</span>
+    </div>
+  `;
+}
+
+function getEditQuickRefItems() {
+  if (runtime.fishEditMode) {
+    return [
+      { key: "Drag Fish", description: "Reposition in tank" },
+      { key: "Store Button", description: "Move to storage" }
+    ];
+  }
+
+  const selectedItems = runtime.editTankMode ? getSelectedPlacedDecorItems() : [];
+  const selectionCount = selectedItems.length;
+  const groupedSelectionCount = getDecorGroupIdsForItems(selectedItems).length;
+  const activeDecorTarget = getActiveDecorShortcutTarget();
+  const hasSingleTarget = Boolean(activeDecorTarget && selectionCount <= 1);
+  const items = [];
+
+  if (runtime.placementMode) {
+    items.push(
+      { key: "Click", description: "Place decor" },
+      { key: "Right Click", description: "Cancel placement" },
+      { key: "[Z]/[X] or [Up]/[Down]", description: "Change layer" },
+      { key: "[-]/[+]", description: "Change size" },
+      { key: "[F]", description: "Flip decor" }
+    );
+    return items;
+  }
+
+  if (runtime.dragState) {
+    items.push({ key: "Drag", description: "Reposition selected decor" });
+  } else if (runtime.decorResizeState) {
+    items.push({ key: "Drag Corner", description: "Resize selected decor" });
+  } else if (selectionCount > 1) {
+    items.push({ key: "Drag", description: "Move selected decor" });
+  } else if (hasSingleTarget) {
+    items.push({ key: "Drag", description: "Reposition decor" });
+  } else {
+    items.push(
+      { key: "Click Decor", description: "Select to edit" },
+      { key: "Shift/Ctrl Click", description: "Select multiple decor" }
+    );
+    return items;
+  }
+
+  items.push(
+    { key: "[Z]/[X] or [Up]/[Down]", description: "Change layer" },
+    { key: "[-]/[+]", description: "Change size" }
+  );
+
+  if (hasSingleTarget) {
+    items.push({ key: "[F]", description: "Flip decor" });
+    if (activeDecorTarget?.item && canOpenDecorSettings(activeDecorTarget)) {
+      items.push({ key: "[S]", description: "Open decor settings" });
+    }
+  }
+
+  items.push({ key: "Shift/Ctrl Click", description: "Adjust selection" });
+
+  if (selectionCount > 1) {
+    items.push({
+      key: "[G]",
+      description: groupedSelectionCount ? "Add selected decor to group" : "Group selected decor"
+    });
+  }
+
+  if (groupedSelectionCount) {
+    items.push({ key: "[U]", description: "Ungroup selected decor" });
+  }
+
+  if (hasSingleTarget) {
+    items.push({ key: "Store Button", description: "Move to storage" });
+  }
+
+  return items;
+}
+
+function updateEditQuickRefLayout() {
+  if (!dom.editQuickRef || dom.editQuickRef.hidden) {
+    return;
+  }
+
+  dom.editQuickRef.classList.remove("is-compact");
+  dom.editQuickRef.style.removeProperty("--edit-quick-ref-right");
+  dom.editQuickRef.style.removeProperty("--edit-quick-ref-max-width");
+
+  const stageRect = dom.tankStage?.getBoundingClientRect?.();
+  if (!stageRect?.width || !stageRect?.height) {
+    return;
+  }
+
+  const computedStyle = window.getComputedStyle(dom.editQuickRef);
+  const baseRight = Number.parseFloat(computedStyle.right) || 24;
+  const stageWidth = Math.max(0, stageRect.width);
+  let rightOffset = baseRight;
+  let maxWidth = Math.max(200, Math.floor(stageWidth - baseRight - 20));
+
+  const toolbar = dom.tankBottomDock;
+  const toolbarPosition = toolbar?.dataset?.toolbarPosition
+    || document.documentElement?.dataset?.toolbarPosition
+    || getUiSettings()?.toolbarPosition;
+
+  if (
+    toolbar
+    && toolbarPosition === "right-center"
+    && !toolbar.classList.contains("is-toolbar-collapsed")
+    && !toolbar.classList.contains("is-tutorial-hidden")
+    && toolbar.getAttribute("aria-expanded") !== "false"
+  ) {
+    const toolbarRect = toolbar.getBoundingClientRect?.();
+    if (
+      toolbarRect?.width
+      && toolbarRect?.height
+      && toolbarRect.right > stageRect.left
+      && toolbarRect.left < stageRect.right
+    ) {
+      const toolbarGap = 14;
+      rightOffset = Math.max(
+        baseRight,
+        Math.round(stageRect.right - toolbarRect.left + toolbarGap)
+      );
+      maxWidth = Math.max(
+        176,
+        Math.floor(toolbarRect.left - stageRect.left - 20)
+      );
+    }
+  }
+
+  dom.editQuickRef.style.setProperty("--edit-quick-ref-right", `${rightOffset}px`);
+  dom.editQuickRef.style.setProperty("--edit-quick-ref-max-width", `${maxWidth}px`);
+  dom.editQuickRef.classList.toggle("is-compact", maxWidth < 260);
+}
+
 function renderEditQuickRef() {
   if (!dom.editQuickRef) {
     return;
@@ -27164,33 +27388,17 @@ function renderEditQuickRef() {
   const visible = runtime.editTankMode || runtime.fishEditMode;
   dom.editQuickRef.hidden = !visible;
   if (!visible || !dom.editQuickRefCard) {
+    dom.editQuickRef.classList.remove("is-compact");
+    dom.editQuickRef.style.removeProperty("--edit-quick-ref-right");
+    dom.editQuickRef.style.removeProperty("--edit-quick-ref-max-width");
     return;
   }
 
-  const activeDecorTarget = getActiveDecorShortcutTarget();
-  const flipHintMarkup = activeDecorTarget
-    ? `<div><strong>[F]</strong> - Flip Object</div>`
-    : "";
-  const settingsHintMarkup = canOpenDecorSettings(activeDecorTarget)
-    ? `<div><strong>[S]</strong> - Decor Settings</div>`
-    : "";
-  const layerHintMarkup = `<div><strong>[Z]/[X] or [Up]/[Down]</strong> - Change Layer</div>`;
-  const markup = runtime.fishEditMode
-    ? `
-      <div><strong>Store Button</strong> - Move to Storage</div>
-      <div><strong>Drag Fish</strong> - Reposition in Tank</div>
-    `
-    : `
-      ${layerHintMarkup}
-      <div><strong>[-]/[+]</strong> - Change Size</div>
-      ${flipHintMarkup}
-      ${settingsHintMarkup}
-      <div><strong>Shift/Ctrl Click</strong> - Select Multiple Decor</div>
-      <div><strong>[G]</strong> - Group Selected Decor</div>
-      <div><strong>[U]</strong> - Ungroup Selected Decor</div>
-      <div><strong>Store Button</strong> - Move to Storage</div>
-    `;
+  const markup = getEditQuickRefItems()
+    .map((item) => buildEditQuickRefRowMarkup(item.key, item.description))
+    .join("");
   setMarkupIfChanged("edit-quick-ref", dom.editQuickRefCard, markup);
+  updateEditQuickRefLayout();
 }
 
 function normalizeDecorResizeCorner(value) {
@@ -37871,12 +38079,14 @@ function renderCustomHideCreationOverlay() {
   const hasFrontImage = Boolean(pending.frontDataUrl);
   const hasBackgroundImage = Boolean(pending.bgDataUrl);
   const hasBothImages = hasFrontImage && hasBackgroundImage;
-  const scale = clamp(Number(pending.scale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
-  const displayWidth = Math.max(1, Math.round((Number(pending.width) || CUSTOM_DECOR_DEFAULT_WIDTH) * scale));
-  const frontHeight = Math.max(1, Math.round(displayWidth * (pending.frontNaturalHeight / Math.max(1, pending.frontNaturalWidth))));
-  const bgHeight = Math.max(1, Math.round(displayWidth * (pending.bgNaturalHeight / Math.max(1, pending.bgNaturalWidth))));
   const previewItem = hasBothImages ? getPendingCustomHidePreviewItem() : null;
   const previewDecor = hasBothImages ? getPendingCustomHidePreviewDecor() : null;
+  const scale = clamp(Number(pending.scale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+  const displayWidth = hasBothImages && previewItem && previewDecor
+    ? getDecorPreviewPaneWidth(previewDecor, previewItem)
+    : Math.max(1, Math.round((Number(pending.width) || CUSTOM_DECOR_DEFAULT_WIDTH) * scale));
+  const frontHeight = Math.max(1, Math.round(displayWidth * (pending.frontNaturalHeight / Math.max(1, pending.frontNaturalWidth))));
+  const bgHeight = Math.max(1, Math.round(displayWidth * (pending.bgNaturalHeight / Math.max(1, pending.bgNaturalWidth))));
   const layerReadout = previewItem ? formatDecorSettingReadout("tankLayer", previewItem) : "Layers 3-4";
   const layerOptions = previewItem ? renderDecorLayerOptions(previewItem) : `<option selected>Layer 3</option>`;
   const caveSettings = pending.caveSettings;
@@ -37912,25 +38122,32 @@ function renderCustomHideCreationOverlay() {
   const combinedPreviewMarkup = hasBothImages
     ? `
       <div class="custom-decor-size-window">
-        <div class="custom-decor-size-stage">
+        <div class="custom-decor-size-stage" data-custom-hide-preview-stage>
           <div
             class="custom-decor-motion-preview custom-hide-overlay-preview"
-            style="width: ${displayWidth}px; height: ${frontHeight}px;"
-            data-custom-hide-preview-frame
-            data-decor-settings-preview-frame>
+            style="width: ${displayWidth}px; height: ${Math.max(frontHeight, bgHeight)}px;"
+            data-custom-hide-preview-shell>
+            <canvas
+              class="custom-decor-motion-canvas"
+              data-custom-hide-preview-canvas
+              aria-label="Uploaded custom hide preview"></canvas>
             <img
-              class="custom-hide-overlay-image custom-hide-overlay-bg"
+              class="custom-decor-motion-source custom-hide-overlay-image custom-hide-overlay-bg"
               src="${escapeHtml(pending.bgDataUrl)}"
               alt="Uploaded custom hide background preview"
-              style="width: ${displayWidth}px; height: ${bgHeight}px;"
               data-custom-hide-bg-preview />
             <img
-              class="custom-hide-overlay-image custom-hide-overlay-front"
+              class="custom-decor-motion-source custom-hide-overlay-image custom-hide-overlay-front"
               src="${escapeHtml(pending.frontDataUrl)}"
               alt="Uploaded custom hide front preview"
-              style="width: ${displayWidth}px; height: ${frontHeight}px;"
               data-custom-hide-front-preview />
-            ${renderCaveSettingsMarkers(caveSettings)}
+            <div
+              class="custom-hide-preview-hitbox"
+              style="width: ${displayWidth}px; height: ${frontHeight}px;"
+              data-custom-hide-preview-frame
+              data-decor-settings-preview-frame>
+              ${renderCaveSettingsMarkers(caveSettings)}
+            </div>
           </div>
         </div>
         <div class="custom-fish-size-readout">
@@ -42009,6 +42226,7 @@ function animationLoop(frameTime) {
   renderTank(now);
   updateSelectedDecorActionButtons();
   renderCustomDecorMotionPreview(now);
+  renderCustomHidePreview(now);
   renderDecorSettingsMotionPreview(now);
 }
 
@@ -47796,7 +48014,7 @@ function getCaveLayerSourceStats(imagePath, width, height, sourcePixels = null) 
 function getTintedCaveLayerImage(imagePath, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!imagePath || !normalizedColor) {
-    return runtime.images.get(imagePath) || null;
+    return runtime.images.get(imagePath) || options.sourceImage || null;
   }
 
   const colorize = options.colorize === true;
@@ -47806,7 +48024,7 @@ function getTintedCaveLayerImage(imagePath, color, options = {}) {
     return cached;
   }
 
-  const image = runtime.images.get(imagePath);
+  const image = runtime.images.get(imagePath) || options.sourceImage || null;
   if (!image?.width || !image?.height) {
     return null;
   }
@@ -47889,12 +48107,18 @@ function drawDecorColorLayerImageToContext(context, sourceImage, imagePath, colo
       return true;
     }
 
-    const fallbackImage = getTintedCaveLayerImage(imagePath, getDecorRgbCycleColor(now), { colorize }) || sourceImage;
+    const fallbackImage = getTintedCaveLayerImage(imagePath, getDecorRgbCycleColor(now), {
+      colorize,
+      sourceImage
+    }) || sourceImage;
     drawDecorImageLayerToContext(context, fallbackImage, drawX, drawY, width, height, item, now, motion, alpha);
     return true;
   }
 
-  const image = getTintedCaveLayerImage(imagePath, normalizedSetting, { colorize }) || sourceImage;
+  const image = getTintedCaveLayerImage(imagePath, normalizedSetting, {
+    colorize,
+    sourceImage
+  }) || sourceImage;
   drawDecorImageLayerToContext(context, image, drawX, drawY, width, height, item, now, motion, alpha);
   return true;
 }

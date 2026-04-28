@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260427g" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260427x" />
 </head>
 
 <body>
@@ -64,9 +64,14 @@
 
             <aside id="editQuickRef" class="edit-quick-ref" hidden aria-label="Edit mode quick reference">
               <div id="editQuickRefCard" class="edit-quick-ref-card">
-                <div><strong>[Z]/[X] or [Up]/[Down]</strong> - Change Layer</div>
-                <div><strong>[-]/[+]/[=]</strong> - Change Size</div>
-                <div><strong>Store Button</strong> - Move to Storage</div>
+                <div class="edit-quick-ref-row">
+                  <span class="edit-quick-ref-key">Click Decor</span>
+                  <span class="edit-quick-ref-copy">Select to edit</span>
+                </div>
+                <div class="edit-quick-ref-row">
+                  <span class="edit-quick-ref-key">Shift/Ctrl Click</span>
+                  <span class="edit-quick-ref-copy">Select multiple decor</span>
+                </div>
               </div>
             </aside>
 
@@ -944,7 +949,7 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-  <script type="module" src="./public/app.js?v=20260427p"></script>
+  <script type="module" src="./public/app.js?v=20260427x"></script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-﻿const STORAGE_KEY = "bubble-borough-save-v1";
+const STORAGE_KEY = "bubble-borough-save-v1";
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 import {
   ZOMBIE_SKELETON_BEHAVIOR_CONFIG,
@@ -26,7 +26,7 @@ const APP_CONFIG_PATH = "assets/app-config.json";
 const HARDWARE_ACCELERATION_NOTICE_DISMISSED_KEY = "bubble-borough-hardware-acceleration-dismissed-v3";
 const STARTING_COINS = 20;
 const DEFAULT_APP_CONFIG = Object.freeze({
-  wallpaperEngine: false
+  wallpaperEngine: true
 });
 const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
   /swiftshader/i,
@@ -689,9 +689,11 @@ const SCRUB_GRID_COLS = 72;
 const SCRUB_GRID_ROWS = 40;
 const DEFAULT_SCRUB_THRESHOLD = 0.95;
 const WALLPAPER_ENGINE_SCRUB_THRESHOLD = 0.85;
+const SCRUB_AUTO_COMPLETE_GRACE_THRESHOLD = 0.8;
+const SCRUB_AUTO_COMPLETE_GRACE_MS = 5 * 1000;
 const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
-const SCRUB_MAX_STAMPS = 3600;
+const SCRUB_MAX_STAMPS = 12000;
 const GRIME_CACHE_PRECISION = 1000;
 const GRIME_VISUAL_START_DIRTINESS = 0.1;
 const SEVERE_GRIME_VISUAL_THRESHOLD = 0.72;
@@ -740,6 +742,8 @@ const CUSTOM_DECOR_MAX_WIDTH = 1440;
 const CUSTOM_FISH_DEFAULT_WIDTH = 140;
 const CUSTOM_FISH_MIN_WIDTH = 40;
 const CUSTOM_FISH_MAX_WIDTH = 420;
+const CUSTOM_FISH_ROTATION_MIN_DEGREES = -45;
+const CUSTOM_FISH_ROTATION_MAX_DEGREES = 45;
 const MAX_CUSTOM_BACKGROUND_IMAGE_DIMENSION = 1920;
 const MAX_CUSTOM_DECOR_IMAGE_DIMENSION = 640;
 const MAX_CUSTOM_FISH_IMAGE_DIMENSION = 640;
@@ -846,22 +850,19 @@ const DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR = "#2F80FF";
 const CUSTOM_GRAVEL_LAYER_SPECS = Object.freeze([
   {
     id: "layer-1",
-    label: "Layer 1",
-    drawOrderLabel: "Draws first",
+    label: "Back Layer",
     fileName: "Gravel_L1.png",
     manifestKeys: ["Gravel_L1.png", "Gravel_1.png"]
   },
   {
     id: "layer-2",
-    label: "Layer 2",
-    drawOrderLabel: "Draws second",
+    label: "Middle Layer",
     fileName: "Gravel_L2.png",
     manifestKeys: ["Gravel_L2.png", "Gravel_2.png"]
   },
   {
     id: "layer-3",
-    label: "Layer 3",
-    drawOrderLabel: "Draws third",
+    label: "Front Layer",
     fileName: "Gravel_L3.png",
     manifestKeys: ["Gravel_L3.png", "Gravel_3.png"]
   }
@@ -996,6 +997,7 @@ const DEFAULT_GRAVEL_PALETTE = ["#F5C185", "#E07A9C", "#81909F"];
 const AMBIENT_BUBBLE_COUNT = 30;
 const AMBIENT_BUBBLE_DEPTH_LAYERS = 5;
 const TANK_DEPTH_LAYERS = 5;
+const FISH_LAYER_DEPTH_SCALE_STEP = 0.1;
 const DEFAULT_BUBBLER_SPOUT_QTY = 1;
 const DEFAULT_BUBBLER_INTENSITY = 1;
 const MAX_BUBBLER_INTENSITY = 24;
@@ -1067,9 +1069,17 @@ const GRAVEL_FISH_DISTURB_RADIUS_PX = 56;
 const GRAVEL_FISH_DISTURB_MS_MIN = 1600;
 const GRAVEL_FISH_DISTURB_MS_MAX = 3200;
 const GRAVEL_CACHE_OVERSAMPLE = 1.08;
-// Estimated from the user's reference screenshot: the gravel band reads as
+// Estimated from the desktop reference screenshot: the gravel band reads as
 // roughly 17% of the visible tank stage height.
 const GRAVEL_VIEWPORT_HEIGHT_RATIO = 0.17;
+const MOBILE_GRAVEL_VIEWPORT_HEIGHT_RATIO = 1 / 3;
+const MOBILE_SWIM_EDGE_INSET_PX = 8;
+const MOBILE_VIEWPORT_OBJECT_SCALE_MULTIPLIERS = Object.freeze({
+  fish: 0.62,
+  decor: 0.68,
+  hardware: 0.74
+});
+const MOBILE_VIEWPORT_OBJECT_SCALE_MIN = 0.22;
 const SUBSTRATE_CONTOUR_POINTS = 26;
 const ALPHA_HIT_THRESHOLD = 26;
 const ALPHA_COLLISION_THRESHOLD = 40;
@@ -1146,6 +1156,8 @@ const DEFAULT_FILTER_ASSET_KEY = BASIC_FILTER_KEY;
 const BASE_TANK_DIRTY_DAYS = 3.5;
 const FISH_DIRTINESS_BONUS_MIN = 0.01;
 const FISH_DIRTINESS_BONUS_MAX = 0.10;
+const SUCKER_FISH_CLEAN_DURATION_BONUS = 0.25;
+const SUCKER_FISH_CLEAN_DURATION_BONUS_CAP = 0.9;
 const DEAD_FISH_DIRTINESS_BONUS = 0.5;
 const CRITICAL_TANK_DIRTINESS = 0.999;
 const SICK_FISH_HEALTH_RATIO_THRESHOLD = 0.5;
@@ -1178,6 +1190,37 @@ const AUTO_DISPENSER_VIEWPORT_SIZE_MULTIPLIER = 1.5;
 const AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX = 18;
 const FISH_MOTION_SCALE = 3.35;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
+const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
+const SUCKER_FISH_FACE_PIVOT_ENABLED = true;
+const SUCKER_FISH_FACE_PIVOT_X = 0.88;
+const SUCKER_FISH_FACE_PIVOT_Y = 0.5;
+const SUCKER_FISH_GLASS_SHADOW_ENABLED = true;
+const SUCKER_FISH_GLASS_SHADOW_ALPHA = 0.16;
+const SUCKER_FISH_GLASS_SHADOW_BLUR_PX = 2.25;
+const SUCKER_FISH_GLASS_SHADOW_OFFSET_X = 0.75;
+const SUCKER_FISH_GLASS_SHADOW_OFFSET_Y = 3.25;
+const SUCKER_FISH_GLASS_SHADOW_SCALE = 1.012;
+const SUCKER_FISH_BACK_GLASS_LAYER = TANK_DEPTH_LAYERS;
+const SUCKER_FISH_FRONT_GLASS_LAYER = 1;
+const SUCKER_FISH_BACK_GLASS_MIN_Y_NORM = 0.18;
+const SUCKER_FISH_BACK_GLASS_MAX_Y_NORM = 0.76;
+const SUCKER_FISH_FRONT_GLASS_MIN_Y_NORM = 0.18;
+const SUCKER_FISH_FRONT_GLASS_MAX_Y_NORM = 0.96;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_RADIUS = 7;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_MOUTH_INSET_RATIO = 0.075;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_COOLDOWN_MS = 16;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_MAX_INTERVAL_MS = 33;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_MIN_DISTANCE_PX = 0.35;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_STROKE_STEP_PX = 2.5;
+const SUCKER_FISH_FRONT_GLASS_DIRTINESS_REDUCTION_PER_SCRUB_COVERAGE = 0.45;
+const SUCKER_FISH_FRONT_GLASS_GRIME_TARGET_CHANCE = 0.72;
+const SUCKER_FISH_COLLISION_ITERATIONS = 3;
+const SUCKER_FISH_COLLISION_RADIUS_X_RATIO = 0.43;
+const SUCKER_FISH_COLLISION_RADIUS_Y_RATIO = 0.36;
+const SUCKER_FISH_COLLISION_PADDING_PX = 4;
+const SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES = Object.freeze({
+  otocinclus: "assets/fish/otocinclus_bottom.png"
+});
 const FISH_SURFACE_BREACH_ALLOWANCE_PX = 6;
 const FISH_SURFACE_MOTION_HEADROOM_PX = 10;
 const FISH_SURFACE_HEIGHT_GUARD_MULTIPLIER = 1.08;
@@ -1456,6 +1499,7 @@ const TOOLBAR_BUTTON_EXIT_SOUND_PATH = "assets/sounds/toolbar_button_2.mp3";
 const REGULAR_BUTTON_SOUND_PATH = "assets/sounds/reg_button.mp3";
 const PURCHASE_SOUND_PATH = "assets/sounds/purchase.mp3";
 const COIN_SOUND_PATH = "assets/sounds/coin.mp3";
+const COIN_ICON_PATH = resolveAppUrl("assets/icons/coin.png");
 const DISPENSER_SOUND_PATH = "assets/sounds/dispenser.mp3";
 const TOOLBAR_FAST_TOOLTIP_DELAY_MS = 100;
 const TOOLBAR_FAST_TOOLTIP_OFFSET_PX = 14;
@@ -1751,7 +1795,7 @@ function isWallpaperEngineModeEnabled() {
 }
 
 function isIntroTutorialEnabled() {
-  return !isWallpaperEngineModeEnabled();
+  return true;
 }
 
 function shouldUseExternalLinkPrompt() {
@@ -2724,6 +2768,7 @@ const CUSTOM_BUBBLER_THUMBNAIL_IMAGE = resolveAppUrl("assets/misc/custom_bubbler
 const CUSTOM_DECOR_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_decor.png");
 const CUSTOM_HIDE_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_hide.png");
 const CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_fish.png");
+const CUSTOM_FISH_TEMPLATE_IMAGE = resolveAppUrl("assets/misc/fish_template.png");
 
 const dom = {
   coinCount: document.querySelector("#coinCount"),
@@ -2762,6 +2807,8 @@ const dom = {
   debugFishBehaviorLogButton: document.querySelector("#debugFishBehaviorLogButton"),
   lightsOutToggleButton: document.querySelector("#lightsOutToggleButton"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
+  loadingOverlayBackground: document.querySelector("#loadingOverlayBackground"),
+  loadingOverlayUnderwater: document.querySelector("#loadingOverlayUnderwater"),
   loadingOverlayText: document.querySelector(".loading-overlay-text"),
   tankStage: document.querySelector("#tankStage"),
   tankStageBackground: document.querySelector("#tankStageBackground"),
@@ -2831,6 +2878,7 @@ const dom = {
   decorInventory: document.querySelector("#decorInventory"),
   decorShop: document.querySelector("#decorShop"),
   equipmentShop: document.querySelector("#equipmentShop"),
+  storeScrollControls: document.querySelector("#storeScrollControls"),
   storeOverlay: document.querySelector("#storeOverlay"),
   utilityOverlay: document.querySelector("#utilityOverlay"),
   utilityOverlayTitle: document.querySelector("#utilityOverlayTitle"),
@@ -2910,8 +2958,10 @@ const dom = {
   inspectorStoreFish: document.querySelector("#inspectorStoreFish"),
   inspectorDisposeFish: document.querySelector("#inspectorDisposeFish"),
   saveFishName: document.querySelector("#saveFishName"),
+  clearFishName: document.querySelector("#clearFishName"),
   randomizeFishName: document.querySelector("#randomizeFishName"),
   fishNameInput: document.querySelector("#fishNameInput"),
+  fishNameKeyboard: document.querySelector("#fishNameKeyboard"),
   inspectorSpecies: document.querySelector("#inspectorSpecies"),
   inspectorHealth: document.querySelector("#inspectorHealth"),
   inspectorComfort: document.querySelector("#inspectorComfort"),
@@ -2971,6 +3021,19 @@ const runtime = {
     fish: "",
     decor: ""
   },
+  storeScrollPointerId: null,
+  storeScrollPointerDirection: "",
+  storeScrollSuppressClickUntil: 0,
+  storeScrollAnimationFrame: 0,
+  wallpaperScrollRepeatTimer: 0,
+  wallpaperScrollRepeatTarget: "",
+  wallpaperScrollRepeatDirection: "",
+  fishNameKeyboardMode: "letters",
+  fishNameKeyboardUppercase: false,
+  fishNameKeyboardOpen: false,
+  fishNameDraftId: "",
+  fishNameDraftValue: "",
+  wallpaperUtilityKeyboardOpenId: "",
   tutorialSkipReturnTab: "",
   tutorialSkipReturnStage: "",
   tutorialDismissedFeaturePopup: "",
@@ -3095,6 +3158,8 @@ const runtime = {
   scrubCells: new Uint8Array(SCRUB_GRID_COLS * SCRUB_GRID_ROWS),
   scrubbedCount: 0,
   scrubStamps: [],
+  scrubAutoCompleteAt: 0,
+  tankStateDirty: false,
   cleaningTransition: null,
   backgroundCatalog: [],
   tankCatalog: [],
@@ -3154,6 +3219,7 @@ const runtime = {
   grimeBaseCanvas: document.createElement("canvas"),
   grimeBaseCacheKey: "",
   fishShadowPlaneCache: new Map(),
+  fishLayerDepthScaleTransitions: new Map(),
   diseaseGreenBubblesByFishId: new Map(),
   debugBehaviorSteeringByFishId: new Map(),
   fishGravelPebbleActions: new Map(),
@@ -3264,6 +3330,25 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function buildCoinIconMarkup(className = "", options = {}) {
+  const classes = ["coin-symbol", className].filter(Boolean).join(" ");
+  const decorative = options.decorative === true;
+  const ariaHidden = decorative ? ' aria-hidden="true"' : "";
+  const altText = decorative ? "" : "coin";
+  return `<img class="${escapeHtml(classes)}" src="${escapeHtml(COIN_ICON_PATH)}" alt="${altText}"${ariaHidden} draggable="false" />`;
+}
+
+function buildCoinAmountMarkup(value, options = {}) {
+  const formattedValue = options.formatted === true ? String(value ?? "") : formatNumber(value);
+  return `<span class="coin-amount">${buildCoinIconMarkup("coin-amount-icon", {
+    decorative: options.decorative === true
+  })}<span>${escapeHtml(formattedValue)}</span></span>`;
+}
+
+function formatStoreCoinCounterValue(value) {
+  return String(Math.max(0, Math.floor(Number(value) || 0)));
 }
 
 function makeInlineSvgDataUrl(svgMarkup) {
@@ -3986,6 +4071,7 @@ function closeUtilityOverlayState(options = {}) {
       nextMode: options.nextMode || ""
     });
   }
+  runtime.wallpaperUtilityKeyboardOpenId = "";
   runtime.utilityOverlayOpen = false;
   runtime.utilityOverlayMode = "";
 }
@@ -6491,6 +6577,8 @@ function setPendingCustomDecorMotionType(value) {
 }
 
 async function savePendingCustomDecorUpload() {
+  runtime.wallpaperUtilityKeyboardOpenId = "";
+  syncWallpaperUtilityNameKeyboards();
   return savePendingCustomAsset("decor");
 }
 
@@ -6759,10 +6847,13 @@ function updatePendingCustomHideLayer(value) {
 }
 
 async function savePendingCustomHideUpload() {
+  runtime.wallpaperUtilityKeyboardOpenId = "";
+  syncWallpaperUtilityNameKeyboards();
   return savePendingCustomAsset("hide");
 }
 
 function closeUtilityOverlay() {
+  runtime.wallpaperUtilityKeyboardOpenId = "";
   closeUtilityOverlayState({ now: Date.now(), reason: "close" });
   renderUi(Date.now());
 }
@@ -8042,6 +8133,351 @@ function handleOverlayWheelScroll(event) {
   target.scrollTop = clamp(target.scrollTop + delta, 0, target.scrollHeight - target.clientHeight);
 }
 
+function getActiveStoreScroller() {
+  switch (runtime.storeTab) {
+    case "food":
+      return dom.foodShop;
+    case "pharmacy":
+      return dom.pharmacyShop;
+    case "fish":
+      return dom.fishShop;
+    case "decor":
+      return dom.decorShop;
+    case "equipment":
+      return dom.equipmentShop;
+    default:
+      return null;
+  }
+}
+
+function canStoreScrollerMove(scroller, direction) {
+  if (!(scroller instanceof Element) || scroller.hidden) {
+    return false;
+  }
+  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  if (maxScroll <= 1) {
+    return false;
+  }
+  return direction === "up"
+    ? scroller.scrollTop > 1
+    : scroller.scrollTop < maxScroll - 1;
+}
+
+function canWallpaperScrollerMove(scroller, direction) {
+  if (!(scroller instanceof Element)) {
+    return false;
+  }
+  const overflowY = window.getComputedStyle(scroller).overflowY;
+  if (overflowY === "hidden" || overflowY === "clip" || overflowY === "visible") {
+    return false;
+  }
+  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  if (maxScroll <= 1) {
+    return false;
+  }
+  return direction === "up"
+    ? scroller.scrollTop > 1
+    : scroller.scrollTop < maxScroll - 1;
+}
+
+function getWallpaperScrollControlMarkup(targetId, label) {
+  if (!isWallpaperEngineInputAssistEnabled()) {
+    return "";
+  }
+  const escapedTarget = escapeHtml(targetId);
+  const escapedLabel = escapeHtml(label || "Panel");
+  return `
+    <div class="wallpaper-scroll-controls" data-wallpaper-scroll-controls="${escapedTarget}" aria-label="${escapedLabel} scroll controls">
+      <button class="store-scroll-button" type="button" data-wallpaper-scroll="up" aria-label="Scroll ${escapedLabel} up">&uarr;</button>
+      <button class="store-scroll-button" type="button" data-wallpaper-scroll="down" aria-label="Scroll ${escapedLabel} down">&darr;</button>
+    </div>
+  `;
+}
+
+function resolveWallpaperScrollTarget(targetId) {
+  let root = null;
+  for (const candidate of document.querySelectorAll("[data-wallpaper-scroll-target]")) {
+    if (candidate instanceof Element && candidate.dataset.wallpaperScrollTarget === targetId) {
+      root = candidate;
+      break;
+    }
+  }
+  if (!(root instanceof Element)) {
+    return null;
+  }
+  if (canWallpaperScrollerMove(root, "up") || canWallpaperScrollerMove(root, "down")) {
+    return root;
+  }
+  const nested = root.querySelector(".management-history-full-list, .management-browser-list, .settings-panel-body, .utility-overlay-body");
+  return nested instanceof Element ? nested : root;
+}
+
+function getScrollSnapTop(scroller, direction, selector, options = {}) {
+  if (!(scroller instanceof Element) || !selector) {
+    return null;
+  }
+  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  const currentTop = scroller.scrollTop;
+  const items = [...scroller.querySelectorAll(selector)].filter((item) => item instanceof HTMLElement);
+  if (!items.length) {
+    return null;
+  }
+  const scrollerRect = scroller.getBoundingClientRect();
+  const itemTops = items
+    .map((item) => Math.round(item.getBoundingClientRect().top - scrollerRect.top + currentTop))
+    .filter((top) => Number.isFinite(top))
+    .map((top) => clamp(top, 0, maxScroll));
+  const snapThreshold = Number.isFinite(Number(options.snapThreshold))
+    ? Math.max(0, Number(options.snapThreshold))
+    : 14;
+  if (direction === "up") {
+    for (let index = itemTops.length - 1; index >= 0; index -= 1) {
+      if (itemTops[index] < currentTop - snapThreshold) {
+        return itemTops[index];
+      }
+    }
+    return 0;
+  }
+  for (const top of itemTops) {
+    if (top > currentTop + snapThreshold) {
+      return top;
+    }
+  }
+  return maxScroll;
+}
+
+function scrollWallpaperScroller(scroller, direction, options = {}) {
+  if (!(scroller instanceof Element)) {
+    return false;
+  }
+  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  if (maxScroll <= 1) {
+    return false;
+  }
+  const snapTop = getScrollSnapTop(scroller, direction, options.itemSelector || "", options);
+  const fallbackAmount = Math.max(120, Math.round(scroller.clientHeight * 0.72));
+  const targetTop = snapTop ?? clamp(
+    scroller.scrollTop + (direction === "up" ? -fallbackAmount : fallbackAmount),
+    0,
+    maxScroll
+  );
+  scroller.scrollTo({
+    top: targetTop,
+    behavior: options.smooth === false ? "auto" : "smooth"
+  });
+  return true;
+}
+
+function cancelStoreScrollAnimation() {
+  if (runtime.storeScrollAnimationFrame) {
+    window.cancelAnimationFrame(runtime.storeScrollAnimationFrame);
+    runtime.storeScrollAnimationFrame = 0;
+  }
+}
+
+function getStoreScrollItemBounds(scroller) {
+  if (!(scroller instanceof Element)) {
+    return [];
+  }
+  const scrollerRect = scroller.getBoundingClientRect();
+  const currentTop = scroller.scrollTop;
+  return [...scroller.querySelectorAll(".shop-card")]
+    .filter((item) => item instanceof HTMLElement && !item.hidden)
+    .map((item) => {
+      const rect = item.getBoundingClientRect();
+      return {
+        top: Math.round(rect.top - scrollerRect.top + currentTop),
+        bottom: Math.round(rect.bottom - scrollerRect.top + currentTop)
+      };
+    })
+    .filter((bounds) => Number.isFinite(bounds.top) && Number.isFinite(bounds.bottom))
+    .sort((a, b) => a.top - b.top);
+}
+
+function getStoreScrollTargetTop(scroller, direction) {
+  if (!(scroller instanceof Element)) {
+    return null;
+  }
+  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  if (maxScroll <= 1) {
+    return null;
+  }
+  const currentTop = scroller.scrollTop;
+  const viewportBottom = currentTop + scroller.clientHeight;
+  const itemBounds = getStoreScrollItemBounds(scroller);
+  const threshold = 8;
+  if (!itemBounds.length) {
+    const fallbackAmount = Math.max(120, Math.round(scroller.clientHeight * 0.62));
+    return clamp(currentTop + (direction === "up" ? -fallbackAmount : fallbackAmount), 0, maxScroll);
+  }
+  if (direction === "up") {
+    const currentItem = [...itemBounds].reverse().find((bounds) =>
+      bounds.top < currentTop - threshold && bounds.bottom > currentTop + threshold
+    );
+    if (currentItem) {
+      return clamp(currentItem.top, 0, maxScroll);
+    }
+    for (let index = itemBounds.length - 1; index >= 0; index -= 1) {
+      if (itemBounds[index].top < currentTop - threshold) {
+        return clamp(itemBounds[index].top, 0, maxScroll);
+      }
+    }
+    return 0;
+  }
+  const currentItem = itemBounds.find((bounds) =>
+    bounds.top <= currentTop + threshold && bounds.bottom > viewportBottom + threshold
+  );
+  if (currentItem) {
+    return clamp(
+      Math.min(currentTop + Math.max(120, Math.round(scroller.clientHeight * 0.58)), currentItem.bottom - scroller.clientHeight + 16),
+      0,
+      maxScroll
+    );
+  }
+  for (const bounds of itemBounds) {
+    if (bounds.top > currentTop + threshold) {
+      return clamp(bounds.top, 0, maxScroll);
+    }
+  }
+  return maxScroll;
+}
+
+function animateStoreScrollerTo(scroller, targetTop, options = {}) {
+  if (!(scroller instanceof Element) || !Number.isFinite(Number(targetTop))) {
+    return false;
+  }
+  cancelStoreScrollAnimation();
+  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  const startTop = scroller.scrollTop;
+  const endTop = clamp(Number(targetTop), 0, maxScroll);
+  if (Math.abs(endTop - startTop) < 1) {
+    syncWallpaperEngineStoreScrollControls();
+    return false;
+  }
+  const duration = options.smooth === false ? 0 : 180;
+  if (!duration) {
+    scroller.scrollTop = endTop;
+    syncWallpaperEngineStoreScrollControls();
+    return true;
+  }
+  const startedAt = performance.now();
+  const step = (now) => {
+    const progress = clamp((now - startedAt) / duration, 0, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    scroller.scrollTop = startTop + ((endTop - startTop) * eased);
+    syncWallpaperEngineStoreScrollControls();
+    if (progress < 1) {
+      runtime.storeScrollAnimationFrame = window.requestAnimationFrame(step);
+      return;
+    }
+    runtime.storeScrollAnimationFrame = 0;
+    scroller.scrollTop = endTop;
+    syncWallpaperEngineStoreScrollControls();
+  };
+  runtime.storeScrollAnimationFrame = window.requestAnimationFrame(step);
+  return true;
+}
+
+function scrollActiveStoreDrawer(direction, options = {}) {
+  const scroller = getActiveStoreScroller();
+  if (!(scroller instanceof Element)) {
+    return false;
+  }
+  const targetTop = getStoreScrollTargetTop(scroller, direction);
+  return animateStoreScrollerTo(scroller, targetTop, options);
+}
+
+function syncWallpaperScrollControls(root = document) {
+  const controls = root?.querySelectorAll?.("[data-wallpaper-scroll-controls]") || [];
+  for (const control of controls) {
+    if (!(control instanceof HTMLElement)) {
+      continue;
+    }
+    const showControls = isWallpaperEngineInputAssistEnabled();
+    control.hidden = !showControls;
+    if (!showControls) {
+      continue;
+    }
+    const scroller = resolveWallpaperScrollTarget(control.dataset.wallpaperScrollControls || "");
+    const upButton = control.querySelector('[data-wallpaper-scroll="up"]');
+    const downButton = control.querySelector('[data-wallpaper-scroll="down"]');
+    if (upButton instanceof HTMLButtonElement) {
+      upButton.disabled = !canWallpaperScrollerMove(scroller, "up");
+    }
+    if (downButton instanceof HTMLButtonElement) {
+      downButton.disabled = !canWallpaperScrollerMove(scroller, "down");
+    }
+  }
+}
+
+function scrollWallpaperTarget(targetId, direction, options = {}) {
+  const scroller = resolveWallpaperScrollTarget(targetId);
+  const itemSelector = targetId === "settings"
+    ? ".settings-section"
+    : ".management-browser-item, .management-milestone-card, .management-event-row";
+  const didScroll = scrollWallpaperScroller(scroller, direction, { ...options, itemSelector });
+  window.setTimeout(() => syncWallpaperScrollControls(document), 90);
+  return didScroll;
+}
+
+function syncWallpaperEngineStoreScrollControls() {
+  if (!dom.storeScrollControls) {
+    return;
+  }
+  const showControls = isWallpaperEngineInputAssistEnabled() && runtime.storeOverlayOpen;
+  dom.storeScrollControls.hidden = !showControls;
+  dom.storeOverlay?.classList.toggle("has-store-scroll-controls", showControls);
+  if (!showControls) {
+    return;
+  }
+  const scroller = getActiveStoreScroller();
+  const upButton = dom.storeScrollControls.querySelector('[data-store-scroll="up"]');
+  const downButton = dom.storeScrollControls.querySelector('[data-store-scroll="down"]');
+  if (upButton instanceof HTMLButtonElement) {
+    upButton.disabled = !canStoreScrollerMove(scroller, "up");
+  }
+  if (downButton instanceof HTMLButtonElement) {
+    downButton.disabled = !canStoreScrollerMove(scroller, "down");
+  }
+}
+
+function stopWallpaperScrollRepeat() {
+  if (runtime.wallpaperScrollRepeatTimer) {
+    window.clearInterval(runtime.wallpaperScrollRepeatTimer);
+    runtime.wallpaperScrollRepeatTimer = 0;
+  }
+  runtime.wallpaperScrollRepeatTarget = "";
+  runtime.wallpaperScrollRepeatDirection = "";
+}
+
+function startWallpaperScrollRepeat(targetId, direction) {
+  stopWallpaperScrollRepeat();
+  runtime.wallpaperScrollRepeatTarget = targetId;
+  runtime.wallpaperScrollRepeatDirection = direction;
+  scrollWallpaperTarget(targetId, direction, { smooth: false });
+  runtime.wallpaperScrollRepeatTimer = window.setInterval(() => {
+    if (!runtime.wallpaperScrollRepeatTarget || !runtime.wallpaperScrollRepeatDirection) {
+      stopWallpaperScrollRepeat();
+      return;
+    }
+    if (!scrollWallpaperTarget(runtime.wallpaperScrollRepeatTarget, runtime.wallpaperScrollRepeatDirection, { smooth: false })) {
+      stopWallpaperScrollRepeat();
+    }
+  }, 130);
+}
+
+function getWallpaperScrollButtonFromEvent(event) {
+  const button = event.target instanceof Element ? event.target.closest("[data-wallpaper-scroll]") : null;
+  if (!(button instanceof HTMLButtonElement) || button.disabled) {
+    return null;
+  }
+  const controls = button.closest("[data-wallpaper-scroll-controls]");
+  if (!(controls instanceof HTMLElement)) {
+    return null;
+  }
+  return { button, targetId: controls.dataset.wallpaperScrollControls || "" };
+}
+
 function handleEditDecorTrayWheel(event) {
   if (dom.editDecorTray?.hidden || !dom.editDecorTrayScroller) {
     return;
@@ -8167,6 +8603,7 @@ function clearPrimaryToolModes() {
   runtime.placementPreview = null;
   runtime.cleaningMode = false;
   runtime.scoopMode = false;
+  runtime.scrubAutoCompleteAt = 0;
   runtime.dragState = null;
   runtime.decorResizeState = null;
   runtime.fishDragState = null;
@@ -8596,6 +9033,8 @@ async function init() {
   setupDebugMenuButtons();
   bindEvents();
   syncFilterFeatureVisibility();
+  const earlyRawState = loadState();
+  applyLoadingOverlayBackground(getSavedActiveTankCandidate(earlyRawState));
 
   const [backgroundResponse, tankResponse, filterResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, filterCatalogMeta, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
     fetchAssetList("backgrounds"),
@@ -8668,7 +9107,7 @@ async function init() {
   runtime.decorMap = new Map(runtime.decorCatalog.map((item) => [item.key, item]));
   runtime.scene = createSceneSeeds();
 
-  const rawState = loadState();
+  const rawState = earlyRawState || loadState();
   const needsReconcileSave = shouldPersistReconciledState(rawState);
   state = reconcileState(rawState);
   const customImagesChanged = await hydrateCustomImagesFromStorage(state);
@@ -8733,7 +9172,8 @@ async function init() {
       ...getFishAssetVariants(fish),
       ...getFishDeathAssetCandidates(fish, "zombie"),
       ...getFishDeathAssetCandidates(fish, "skeleton")
-    ]))
+    ])),
+    ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
   ]));
 
   resizeDisplayCanvases();
@@ -8744,6 +9184,7 @@ async function init() {
     saveState();
   }
   renderUi(now);
+  applyLoadingOverlayBackground();
   maybeShowHardwareAccelerationNotice();
   renderTank(now);
   syncAmbienceAudio();
@@ -8770,7 +9211,144 @@ function showLoadingOverlayReadyState() {
 
   overlay.classList.add("is-ready");
   if (dom.loadingOverlayText) {
-    dom.loadingOverlayText.textContent = "Click to play";
+    dom.loadingOverlayText.textContent = isWallpaperEngineModeEnabled() ? "Starting Aquarium" : "Click to play";
+  }
+
+  if (isWallpaperEngineModeEnabled()) {
+    primeSoundEffects();
+    window.requestAnimationFrame(hideLoadingOverlay);
+  }
+}
+
+function quoteCssUrl(value) {
+  return `"${String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function getSavedActiveTankCandidate(rawState) {
+  const source = rawState && typeof rawState === "object" ? rawState : null;
+  if (!source) {
+    return null;
+  }
+  if (Array.isArray(source.tanks) && source.tanks.length) {
+    return source.tanks.find((tank) => tank?.id === source.activeTankId) || source.tanks[0] || null;
+  }
+  return source;
+}
+
+function getLoadingOverlayBackgroundConfig(target = getCurrentTank()) {
+  if (!target) {
+    return null;
+  }
+
+  const backgroundKey = target.selectedBackground || DEFAULT_TANK_BACKGROUND_ASSET_KEY;
+  const background = runtime.backgroundMap.get(backgroundKey) || {
+    key: backgroundKey,
+    path: resolveAppUrl(`assets/backgrounds/${encodeURIComponent(backgroundKey)}`)
+  };
+  if (isLocalImageBackgroundKey(backgroundKey)) {
+    const localImageUrl = getLocalBackgroundImageDataUrl(target);
+    if (localImageUrl) {
+      return { type: "image", imageUrl: localImageUrl };
+    }
+  }
+
+  if (backgroundKey && !isCustomBackgroundKey(backgroundKey) && !isLocalImageBackgroundKey(backgroundKey) && background.path) {
+    return { type: "image", imageUrl: background.path };
+  }
+
+  if (isCustomBackgroundKey(backgroundKey)) {
+    const mode = getActiveCustomBackgroundMode(target);
+    if (mode === CUSTOM_BACKGROUND_MODE_GRADIENT) {
+      const { start, end } = getActiveGradientBackgroundColors(target);
+      return {
+        type: "fill",
+        backgroundImage: `linear-gradient(135deg, ${start}, ${end})`,
+        disableUnderwater: true
+      };
+    }
+    if (mode === CUSTOM_BACKGROUND_MODE_SOLID) {
+      const color = getActiveSolidBackgroundColor(target);
+      return {
+        type: "fill",
+        backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${color} 88%, white 12%), ${color})`,
+        disableUnderwater: true
+      };
+    }
+  }
+
+  return {
+    type: "animated",
+    declarations: getAnimatedBackgroundCssDeclarations(target)
+  };
+}
+
+function applyLoadingOverlayBackground(target = getCurrentTank()) {
+  const backgroundLayer = dom.loadingOverlayBackground;
+  const underwaterLayer = dom.loadingOverlayUnderwater;
+  if (!(backgroundLayer instanceof HTMLElement)) {
+    return;
+  }
+
+  const config = getLoadingOverlayBackgroundConfig(target);
+  backgroundLayer.classList.remove("is-image-background");
+  backgroundLayer.style.removeProperty("background-image");
+  backgroundLayer.style.removeProperty("background-size");
+  backgroundLayer.style.removeProperty("background-position");
+  backgroundLayer.style.removeProperty("background-repeat");
+  if (underwaterLayer instanceof HTMLElement) {
+    underwaterLayer.hidden = false;
+  }
+
+  for (const property of [
+    "--underwater-surface-bloom-rgb",
+    "--underwater-shadow-bloom-rgb",
+    "--underwater-surface",
+    "--underwater-mid",
+    "--underwater-deep",
+    "--underwater-abyss",
+    "--underwater-highlight-rgb",
+    "--underwater-drift-a-rgb",
+    "--underwater-drift-b-rgb",
+    "--underwater-drift-c-rgb"
+  ]) {
+    backgroundLayer.style.removeProperty(property);
+    underwaterLayer?.style?.removeProperty?.(property);
+  }
+
+  if (!config) {
+    return;
+  }
+
+  if (config.type === "image") {
+    backgroundLayer.classList.add("is-image-background");
+    backgroundLayer.style.backgroundImage = [
+      "linear-gradient(180deg, rgba(2, 10, 18, 0.12), rgba(2, 10, 18, 0.42))",
+      `url(${quoteCssUrl(config.imageUrl)})`
+    ].join(", ");
+    backgroundLayer.style.backgroundSize = "cover";
+    backgroundLayer.style.backgroundPosition = "center";
+    backgroundLayer.style.backgroundRepeat = "no-repeat";
+    return;
+  }
+
+  if (config.backgroundImage) {
+    backgroundLayer.style.backgroundImage = config.backgroundImage;
+  }
+
+  if (underwaterLayer instanceof HTMLElement && config.disableUnderwater) {
+    underwaterLayer.hidden = true;
+  }
+
+  if (Array.isArray(config.declarations)) {
+    for (const declaration of config.declarations) {
+      const [rawName, ...rawValueParts] = String(declaration || "").split(":");
+      const propertyName = rawName?.trim();
+      const value = rawValueParts.join(":").trim();
+      if (propertyName && value) {
+        backgroundLayer.style.setProperty(propertyName, value);
+        underwaterLayer?.style?.setProperty?.(propertyName, value);
+      }
+    }
   }
 }
 
@@ -8874,7 +9452,14 @@ function setupDebugMenuButtons() {
     return button;
   };
 
-  moveButton(dom.addCoinsButton, dom.debugMenuGameState, "&#129689;", "Add 10 coins", "", dom.addHundredCoinsButton);
+  moveButton(
+    dom.addCoinsButton,
+    dom.debugMenuGameState,
+    buildCoinIconMarkup("debug-menu-coin-icon", { decorative: true }),
+    "Add 10 coins",
+    "",
+    dom.addHundredCoinsButton
+  );
   moveButton(dom.resetMealsButton, dom.debugMenuGameState, "&#127860;", "Reset Meals", "", dom.completeMealsButton);
   moveButton(dom.debugDailyRecapButton, dom.debugMenuGameState, "&#128276;", "Daily Bonus Prompt", "wide");
   moveButton(dom.debugFishBehaviorLogButton, dom.debugMenuGameState, "&#128200;", "Export Log Data", "wide");
@@ -9472,6 +10057,20 @@ function bindEvents() {
       return;
     }
 
+    if (key === "z" || keyRaw === "ArrowUp") {
+      if (stepDraggedSuckerFishLayer(1)) {
+        event.preventDefault();
+        return;
+      }
+    }
+
+    if (key === "x" || keyRaw === "ArrowDown") {
+      if (stepDraggedSuckerFishLayer(-1)) {
+        event.preventDefault();
+        return;
+      }
+    }
+
     if (!runtime.editTankMode) {
       return;
     }
@@ -9785,6 +10384,61 @@ function bindEvents() {
     }
   });
   dom.storeOverlay?.addEventListener("wheel", handleOverlayWheelScroll, { passive: false });
+  dom.storeOverlay?.addEventListener("scroll", syncWallpaperEngineStoreScrollControls, true);
+  const clearStoreScrollPointer = () => {
+    runtime.storeScrollPointerId = null;
+    runtime.storeScrollPointerDirection = "";
+  };
+  const getStoreScrollButtonFromEvent = (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-store-scroll]") : null;
+    return button instanceof HTMLButtonElement ? button : null;
+  };
+  dom.storeScrollControls?.addEventListener("click", (event) => {
+    const button = getStoreScrollButtonFromEvent(event);
+    if (!(button instanceof HTMLButtonElement) || button.disabled) {
+      return;
+    }
+    if (performance.now() < runtime.storeScrollSuppressClickUntil) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    scrollActiveStoreDrawer(button.dataset.storeScroll === "up" ? "up" : "down");
+  });
+  dom.storeScrollControls?.addEventListener("pointerdown", (event) => {
+    const button = getStoreScrollButtonFromEvent(event);
+    if (!(button instanceof HTMLButtonElement) || button.disabled) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    runtime.storeScrollPointerId = event.pointerId;
+    runtime.storeScrollPointerDirection = button.dataset.storeScroll === "up" ? "up" : "down";
+    button.setPointerCapture?.(event.pointerId);
+  });
+  dom.storeScrollControls?.addEventListener("pointerup", (event) => {
+    const button = getStoreScrollButtonFromEvent(event);
+    const direction = runtime.storeScrollPointerDirection;
+    if (runtime.storeScrollPointerId !== event.pointerId || !direction) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    runtime.storeScrollSuppressClickUntil = performance.now() + 350;
+    if (button instanceof HTMLButtonElement && !button.disabled) {
+      scrollActiveStoreDrawer(direction);
+    }
+    clearStoreScrollPointer();
+  });
+  dom.storeScrollControls?.addEventListener("pointercancel", clearStoreScrollPointer);
+  dom.storeScrollControls?.addEventListener("lostpointercapture", clearStoreScrollPointer);
+  dom.storeScrollControls?.addEventListener("pointerleave", (event) => {
+    if (runtime.storeScrollPointerId === event.pointerId) {
+      clearStoreScrollPointer();
+    }
+  });
   dom.storeOverlay?.addEventListener("click", playStoreActionClickSound, true);
   dom.storeOverlay?.addEventListener("change", playStoreFilterChangeSound, true);
   dom.storeOverlay?.addEventListener("click", (event) => {
@@ -9804,6 +10458,27 @@ function bindEvents() {
     }
   });
   dom.utilityOverlay?.addEventListener("wheel", handleOverlayWheelScroll, { passive: false });
+  dom.utilityOverlay?.addEventListener("scroll", () => syncWallpaperScrollControls(dom.utilityOverlayBody || dom.utilityOverlay), true);
+  dom.utilityOverlay?.addEventListener("click", (event) => {
+    const scrollButton = getWallpaperScrollButtonFromEvent(event);
+    if (!scrollButton) {
+      return;
+    }
+    event.preventDefault();
+    scrollWallpaperTarget(scrollButton.targetId, scrollButton.button.dataset.wallpaperScroll === "up" ? "up" : "down");
+  });
+  dom.utilityOverlay?.addEventListener("pointerdown", (event) => {
+    const scrollButton = getWallpaperScrollButtonFromEvent(event);
+    if (!scrollButton) {
+      return;
+    }
+    event.preventDefault();
+    scrollButton.button.setPointerCapture?.(event.pointerId);
+    startWallpaperScrollRepeat(scrollButton.targetId, scrollButton.button.dataset.wallpaperScroll === "up" ? "up" : "down");
+  });
+  dom.utilityOverlay?.addEventListener("pointerup", stopWallpaperScrollRepeat);
+  dom.utilityOverlay?.addEventListener("pointercancel", stopWallpaperScrollRepeat);
+  dom.utilityOverlay?.addEventListener("pointerleave", stopWallpaperScrollRepeat);
   dom.utilityOverlay?.addEventListener("click", (event) => {
     if (event.target === dom.utilityOverlay) {
       const wasOpen = runtime.utilityOverlayOpen;
@@ -9821,6 +10496,27 @@ function bindEvents() {
     }
   });
   dom.settingsOverlay?.addEventListener("wheel", handleOverlayWheelScroll, { passive: false });
+  dom.settingsOverlay?.addEventListener("scroll", () => syncWallpaperScrollControls(dom.settingsOverlay), true);
+  dom.settingsOverlay?.addEventListener("click", (event) => {
+    const scrollButton = getWallpaperScrollButtonFromEvent(event);
+    if (!scrollButton) {
+      return;
+    }
+    event.preventDefault();
+    scrollWallpaperTarget(scrollButton.targetId, scrollButton.button.dataset.wallpaperScroll === "up" ? "up" : "down");
+  });
+  dom.settingsOverlay?.addEventListener("pointerdown", (event) => {
+    const scrollButton = getWallpaperScrollButtonFromEvent(event);
+    if (!scrollButton) {
+      return;
+    }
+    event.preventDefault();
+    scrollButton.button.setPointerCapture?.(event.pointerId);
+    startWallpaperScrollRepeat(scrollButton.targetId, scrollButton.button.dataset.wallpaperScroll === "up" ? "up" : "down");
+  });
+  dom.settingsOverlay?.addEventListener("pointerup", stopWallpaperScrollRepeat);
+  dom.settingsOverlay?.addEventListener("pointercancel", stopWallpaperScrollRepeat);
+  dom.settingsOverlay?.addEventListener("pointerleave", stopWallpaperScrollRepeat);
   dom.settingsOverlay?.addEventListener("click", (event) => {
     if (event.target === dom.settingsOverlay) {
       const wasOpen = runtime.settingsOverlayOpen;
@@ -10416,10 +11112,16 @@ function bindEvents() {
   });
   dom.utilityOverlayBody?.addEventListener("focusin", (event) => {
     dispatchUtilityOverlayTargetEvent("onBodyFocusIn", event);
+    const keyboardInput = getWallpaperKeyboardNameInput(event.target);
+    if (keyboardInput) {
+      runtime.wallpaperUtilityKeyboardOpenId = keyboardInput.dataset.wallpaperKeyboardInput || "";
+      syncWallpaperUtilityNameKeyboards();
+    }
   });
   dom.utilityOverlayBody?.addEventListener("input", playUtilityOverlayInputSound, true);
   dom.utilityOverlayBody?.addEventListener("input", (event) => {
     dispatchUtilityOverlayTargetEvent("onBodyInput", event);
+    syncWallpaperUtilityNameKeyboards();
   });
   dom.utilityOverlayBody?.addEventListener("change", playUtilityOverlayChangeSound, true);
   dom.utilityOverlayBody?.addEventListener("change", (event) => {
@@ -10427,6 +11129,26 @@ function bindEvents() {
   });
   dom.utilityOverlayBody?.addEventListener("keydown", (event) => {
     dispatchUtilityOverlayTargetEvent("onBodyKeyDown", event);
+  });
+  dom.utilityOverlayBody?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest("[data-wallpaper-keyboard] [data-fish-name-key], [data-wallpaper-keyboard] [data-fish-name-action]")
+      : null;
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+    const keyboard = button.closest("[data-wallpaper-keyboard]");
+    const input = keyboard instanceof HTMLElement
+      ? [...(dom.utilityOverlayBody?.querySelectorAll?.("[data-wallpaper-keyboard-input]") || [])]
+        .find((candidate) => candidate instanceof HTMLInputElement && candidate.dataset.wallpaperKeyboardInput === keyboard.dataset.wallpaperKeyboard)
+      : null;
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+    event.preventDefault();
+    applyWallpaperNameKeyboardActionToInput(input, button.dataset.fishNameAction || button.dataset.fishNameKey || "");
+    runtime.wallpaperUtilityKeyboardOpenId = input.dataset.wallpaperKeyboardInput || "";
+    syncWallpaperUtilityNameKeyboards();
   });
   dom.utilityOverlayFooter?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -11264,6 +11986,33 @@ function bindEvents() {
       event.preventDefault();
       saveInspectorName();
     }
+  });
+  dom.fishNameInput.addEventListener("focus", () => {
+    runtime.fishNameKeyboardOpen = true;
+    updateWallpaperFishNameKeyboard();
+  });
+  dom.fishNameInput.addEventListener("click", () => {
+    runtime.fishNameKeyboardOpen = true;
+    updateWallpaperFishNameKeyboard();
+  });
+  dom.fishNameInput.addEventListener("input", () => {
+    setFishNameDraftFromInput();
+    updateWallpaperFishNameKeyboard();
+  });
+  dom.clearFishName?.addEventListener("click", (event) => {
+    event.preventDefault();
+    runtime.fishNameKeyboardOpen = true;
+    applyWallpaperFishNameKeyboardAction("clear");
+  });
+  dom.fishNameKeyboard?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest("[data-fish-name-key], [data-fish-name-action]")
+      : null;
+    if (!(button instanceof HTMLButtonElement)) {
+      return;
+    }
+    event.preventDefault();
+    applyWallpaperFishNameKeyboardAction(button.dataset.fishNameAction || button.dataset.fishNameKey || "");
   });
 
   const releasePointer = (event) => {
@@ -13057,6 +13806,8 @@ function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", d
   const naturalHeight = Math.max(1, Math.round(Number(dimensions.height) || CUSTOM_FISH_DEFAULT_WIDTH));
   openCustomAssetEditorOverlay("fish", {
     dataUrl,
+    flipX: false,
+    rotation: 0,
     suggestedName: sanitizeCustomFishName(suggestedName, "Custom Fish"),
     name: sanitizeCustomFishName(suggestedName, "Custom Fish"),
     width: clamp(CUSTOM_FISH_DEFAULT_WIDTH, CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
@@ -13438,7 +14189,8 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       return { ok: true, rawName };
     },
     async save({ pending, now }) {
-      const storedImage = await storeCustomImageDataUrl(pending.dataUrl, "custom-fish");
+      const outputDataUrl = await getPendingCustomFishOutputDataUrl(pending);
+      const storedImage = await storeCustomImageDataUrl(outputDataUrl || pending.dataUrl, "custom-fish");
       await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
       const speciesKey = `${CUSTOM_FISH_KEY_PREFIX}${createId("species")}`;
       const asset = sanitizeCustomFishAssetEntry({
@@ -13494,6 +14246,74 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
   }
 });
 
+function sanitizeCustomFishRotation(value) {
+  return clamp(
+    Math.round(Number(value) || 0),
+    CUSTOM_FISH_ROTATION_MIN_DEGREES,
+    CUSTOM_FISH_ROTATION_MAX_DEGREES
+  );
+}
+
+function getPendingCustomFishTransform(pending) {
+  const rotation = sanitizeCustomFishRotation(pending?.rotation);
+  const scale = pending?.flipX ? -1 : 1;
+  return `rotate(${rotation}deg) scaleX(${scale})`;
+}
+
+function updatePendingCustomFishTransformControls(pending) {
+  const rotation = sanitizeCustomFishRotation(pending?.rotation);
+  const rotationLabels = dom.utilityOverlayBody?.querySelectorAll("[data-custom-fish-rotation-label]") || [];
+  const rotationSlider = dom.utilityOverlayBody?.querySelector("[data-custom-fish-rotation-input]");
+  const flipToggle = dom.utilityOverlayBody?.querySelector("[data-custom-fish-flip-toggle]");
+
+  for (const label of rotationLabels) {
+    label.textContent = `${rotation} deg`;
+  }
+  if (rotationSlider instanceof HTMLInputElement && Number(rotationSlider.value) !== rotation) {
+    rotationSlider.value = String(rotation);
+  }
+  if (flipToggle instanceof HTMLInputElement) {
+    const flipped = Boolean(pending?.flipX);
+    flipToggle.checked = flipped;
+  }
+}
+
+async function getPendingCustomFishOutputDataUrl(pending) {
+  const sourceDataUrl = pending?.dataUrl;
+  if (!isDataImageUrl(sourceDataUrl)) {
+    return "";
+  }
+
+  const rotation = sanitizeCustomFishRotation(pending.rotation);
+  const flipX = Boolean(pending.flipX);
+  if (!rotation && !flipX) {
+    return sourceDataUrl;
+  }
+
+  const image = await loadImageElement(sourceDataUrl);
+  const sourceWidth = Math.max(1, Math.round(image.naturalWidth || image.width || 1));
+  const sourceHeight = Math.max(1, Math.round(image.naturalHeight || image.height || 1));
+  const radians = rotation * Math.PI / 180;
+  const sin = Math.abs(Math.sin(radians));
+  const cos = Math.abs(Math.cos(radians));
+  const outputWidth = Math.max(1, Math.ceil(sourceWidth * cos + sourceHeight * sin));
+  const outputHeight = Math.max(1, Math.ceil(sourceWidth * sin + sourceHeight * cos));
+  const canvas = document.createElement("canvas");
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return sourceDataUrl;
+  }
+
+  context.clearRect(0, 0, outputWidth, outputHeight);
+  context.translate(outputWidth / 2, outputHeight / 2);
+  context.rotate(radians);
+  context.scale(flipX ? -1 : 1, 1);
+  context.drawImage(image, -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight);
+  return canvas.toDataURL("image/png");
+}
+
 function updatePendingCustomFishPreview() {
   const pending = runtime.pendingCustomFishUpload;
   if (!pending) {
@@ -13509,10 +14329,12 @@ function updatePendingCustomFishPreview() {
   }
   if (preview instanceof HTMLElement) {
     preview.style.width = `${Math.round(width)}px`;
+    preview.style.transform = getPendingCustomFishTransform(pending);
   }
   if (slider instanceof HTMLInputElement && Number(slider.value) !== Math.round(width)) {
     slider.value = String(Math.round(width));
   }
+  updatePendingCustomFishTransformControls(pending);
 }
 
 function updatePendingCustomFishSize(value) {
@@ -13525,6 +14347,24 @@ function updatePendingCustomFishSize(value) {
     CUSTOM_FISH_MIN_WIDTH,
     CUSTOM_FISH_MAX_WIDTH
   );
+  updatePendingCustomFishPreview();
+}
+
+function updatePendingCustomFishFlip(value) {
+  if (!runtime.pendingCustomFishUpload) {
+    return;
+  }
+
+  runtime.pendingCustomFishUpload.flipX = Boolean(value);
+  updatePendingCustomFishPreview();
+}
+
+function updatePendingCustomFishRotation(value) {
+  if (!runtime.pendingCustomFishUpload) {
+    return;
+  }
+
+  runtime.pendingCustomFishUpload.rotation = sanitizeCustomFishRotation(value);
   updatePendingCustomFishPreview();
 }
 
@@ -13664,6 +14504,8 @@ function syncRuntimeCustomFishAssetsFromState(targetState = state) {
 }
 
 async function savePendingCustomFishUpload() {
+  runtime.wallpaperUtilityKeyboardOpenId = "";
+  syncWallpaperUtilityNameKeyboards();
   return savePendingCustomAsset("fish");
 }
 
@@ -16840,13 +17682,50 @@ function getFishDisplayScaleForSpecies(species = null) {
   return getViewportStableObjectScale("fish") * getAquariumPhysicalAssetScale("fish");
 }
 
+function getFishLayerDepthScaleForLayer(layer) {
+  return 1 + Math.max(0, TANK_DEPTH_LAYERS - clampTankLayer(layer)) * FISH_LAYER_DEPTH_SCALE_STEP;
+}
+
+function getFishLayerDepthScaleMultiplier(fish, now = Date.now()) {
+  if (!fish) {
+    return 1;
+  }
+
+  const targetScale = getFishLayerDepthScaleForLayer(getFishTankLayer(fish));
+  const transition = fish.id ? runtime.fishLayerDepthScaleTransitions.get(fish.id) : null;
+  if (!transition) {
+    return targetScale;
+  }
+
+  const progress = clamp((now - transition.startedAt) / Math.max(1, transition.durationMs), 0, 1);
+  if (progress >= 1 || Math.abs(targetScale - transition.toScale) > 0.0001) {
+    runtime.fishLayerDepthScaleTransitions.delete(fish.id);
+    return targetScale;
+  }
+
+  const eased = 1 - Math.pow(1 - progress, 3);
+  return transition.fromScale + (transition.toScale - transition.fromScale) * eased;
+}
+
+function getSuckerFishFrontGlassAssetPath(species) {
+  const assetPath = SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES[species?.id || ""];
+  return assetPath ? resolveAppUrl(assetPath) : null;
+}
+
 function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date.now()) {
   const widthSpecies = getFishDisplaySourceSpecies(fish, species) || species;
   if (!widthSpecies) {
-    return (runtime.fishSizeRange?.min || FISH_CATALOG_WIDTH_MIN) * getFishDisplayScaleForSpecies();
+    return (runtime.fishSizeRange?.min || FISH_CATALOG_WIDTH_MIN)
+      * getFishDisplayScaleForSpecies()
+      * getFishLayerDepthScaleMultiplier(fish, now)
+      * getMobileViewportObjectScaleMultiplier("fish");
   }
 
-  return widthSpecies.width * getFishEffectiveScale(fish, species, now) * getFishDisplayScaleForSpecies(widthSpecies);
+  return widthSpecies.width
+    * getFishEffectiveScale(fish, species, now)
+    * getFishDisplayScaleForSpecies(widthSpecies)
+    * getFishLayerDepthScaleMultiplier(fish, now)
+    * getMobileViewportObjectScaleMultiplier("fish");
 }
 
 function getFishAppearanceVariantSeed(fish, species = getSpeciesForFish(fish)) {
@@ -17022,6 +17901,9 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   }
 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
+  const frontGlassAsset = !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
+    ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
+    : null;
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
   const preferredBaseAsset = isZombieVariantFish(fish)
     ? getFishZombieVariantAssetPath(fish, displaySpecies)
@@ -17035,7 +17917,7 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
         || species.fallbackAsset
         || null
       )
-      : (getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null);
+      : (frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null);
   const baseAsset = [
     preferredBaseAsset,
     displaySpecies.fallbackAsset,
@@ -17646,7 +18528,7 @@ function getSolidBackgroundColorChoices() {
     labeledChoices.push({
       key: `gravel-background-color-${index + 1}`,
       color: normalizedColor,
-      label: `Gravel Color ${index + 1}`
+      label: `Background Color ${index + 1}`
     });
   });
 
@@ -18307,6 +19189,46 @@ function applyWallpaperEngineUserProperties(properties) {
 
 function isTankMouseInputLocked() {
   return isTankMouseLockFeatureEnabled() && getUiSettings().tankMouseInputLocked === true;
+}
+
+function isWallpaperEngineInputAssistEnabled() {
+  return isWallpaperEngineModeEnabled();
+}
+
+function isFishNameKeyboardFocusTarget(target) {
+  return Boolean(
+    target === dom.fishNameInput
+    || target === dom.clearFishName
+    || target === dom.saveFishName
+    || dom.fishNameKeyboard?.contains?.(target)
+  );
+}
+
+function getWallpaperKeyboardNameInput(target) {
+  const element = target instanceof Element ? target : null;
+  const input = element?.closest?.("[data-wallpaper-keyboard-input]");
+  return input instanceof HTMLInputElement ? input : null;
+}
+
+function getWallpaperKeyboardForInput(input) {
+  const id = input instanceof HTMLInputElement ? input.dataset.wallpaperKeyboardInput : "";
+  if (!id) {
+    return null;
+  }
+  for (const keyboard of dom.utilityOverlayBody?.querySelectorAll?.("[data-wallpaper-keyboard]") || []) {
+    if (keyboard instanceof HTMLElement && keyboard.dataset.wallpaperKeyboard === id) {
+      return keyboard;
+    }
+  }
+  return null;
+}
+
+function isWallpaperKeyboardFocusTarget(target) {
+  const element = target instanceof Element ? target : null;
+  return Boolean(
+    getWallpaperKeyboardNameInput(element)
+    || element?.closest?.("[data-wallpaper-keyboard]")
+  );
 }
 
 function getContentSettings() {
@@ -19742,12 +20664,12 @@ function sanitizeFish(fish, options = {}) {
     ? normalizeAngle(Number(fish.turnToAngle))
     : displayAngle;
   const baseTankLayer = species.behavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? normalizeSuckerFishGlassLayer(Number.isFinite(Number(fish.tankLayer)) ? Number(fish.tankLayer) : SUCKER_FISH_BACK_GLASS_LAYER)
     : clampTankLayer(Number.isFinite(Number(fish.tankLayer))
       ? (species.behavior === "shrimp" ? Math.min(TANK_DEPTH_LAYERS - 1, Number(fish.tankLayer)) : Number(fish.tankLayer))
       : (species.behavior === "shrimp" ? TANK_DEPTH_LAYERS - 1 : (fish.drawLayer === "back" ? 4 : DEFAULT_TANK_LAYER)));
   const desiredTankLayer = species.behavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? normalizeSuckerFishGlassLayer(Number.isFinite(Number(fish.desiredTankLayer)) ? Number(fish.desiredTankLayer) : baseTankLayer)
     : clampTankLayer(Number.isFinite(Number(fish.desiredTankLayer))
       ? (species.behavior === "shrimp" ? Math.min(TANK_DEPTH_LAYERS - 1, Number(fish.desiredTankLayer)) : Number(fish.desiredTankLayer))
       : (species.behavior === "shrimp" ? baseTankLayer : (fish.desiredDrawLayer === "back" ? Math.max(baseTankLayer, 4) : baseTankLayer)));
@@ -20814,6 +21736,20 @@ function getResponsiveViewportAssetScale() {
   return getResponsiveViewportScale(MIN_VIEWPORT_ASSET_SCALE);
 }
 
+function isMobilePageRuntime() {
+  return typeof document !== "undefined" && document.documentElement?.dataset?.mobilePage === "true";
+}
+
+function getMobileViewportObjectScaleMultiplier(type = "fish") {
+  if (!isMobilePageRuntime()) {
+    return 1;
+  }
+
+  return MOBILE_VIEWPORT_OBJECT_SCALE_MULTIPLIERS[type]
+    || MOBILE_VIEWPORT_OBJECT_SCALE_MULTIPLIERS.fish
+    || 1;
+}
+
 function getResponsiveViewportObjectScale(type = "fish") {
   const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
   const width = Number(stageRect?.width) || 0;
@@ -20834,9 +21770,19 @@ function getResponsiveViewportObjectScale(type = "fish") {
   const narrowLimit = VIEWPORT_OBJECT_NARROW_LIMIT_MIN
     + (1 - VIEWPORT_OBJECT_NARROW_LIMIT_MIN) * aspectComfort;
   const shortLimit = clamp(height / TANK_HEIGHT, VIEWPORT_OBJECT_SHORT_LIMIT_MIN, 1);
-  return clamp(
+  const baseScale = clamp(
     viewportAreaScale * Math.min(narrowLimit, shortLimit),
     profile.min,
+    profile.max
+  );
+
+  if (!isMobilePageRuntime()) {
+    return baseScale;
+  }
+
+  return clamp(
+    baseScale * getMobileViewportObjectScaleMultiplier(type),
+    MOBILE_VIEWPORT_OBJECT_SCALE_MIN,
     profile.max
   );
 }
@@ -21343,17 +22289,25 @@ function getDeadFishFloatYNorm(fish = null, species = getSpeciesForFish(fish)) {
 
 function clampFishYNormToLayer(yNorm, fish = null, species = getSpeciesForFish(fish), layer = DEFAULT_TANK_LAYER, options = {}) {
   const requestedMinYNorm = Number.isFinite(Number(options.minYNorm)) ? Number(options.minYNorm) : 0.14;
-  const minYNorm = getFishSurfaceMinYNorm(fish, species, requestedMinYNorm);
+  let minYNorm = getFishSurfaceMinYNorm(fish, species, requestedMinYNorm);
   const baseMaxYNorm = Number.isFinite(Number(options.maxYNorm)) ? Number(options.maxYNorm) : 0.8;
   const halfHeight = getFishVisualHalfHeightPx(fish, species);
   const layerMaxYNorm = (getTankLayerBottomBoundaryY(layer) - halfHeight) / TANK_HEIGHT;
-  const maxYNorm = Math.max(minYNorm, Math.min(baseMaxYNorm, layerMaxYNorm));
+  let maxYNorm = Math.max(minYNorm, Math.min(baseMaxYNorm, layerMaxYNorm));
+  if (isMobilePageRuntime()) {
+    const viewportBounds = getMobileViewportSwimBoundsNorm(fish, species);
+    minYNorm = Math.max(minYNorm, viewportBounds.minY);
+    maxYNorm = Math.max(minYNorm, Math.min(maxYNorm, viewportBounds.maxY));
+  }
   return clamp(Number.isFinite(Number(yNorm)) ? Number(yNorm) : minYNorm, minYNorm, maxYNorm);
 }
 
 function getLayerSwimYRange(layer = DEFAULT_TANK_LAYER, fish = null, species = getSpeciesForFish(fish), options = {}) {
   const requestedMinYNorm = Number.isFinite(Number(options.minYNorm)) ? Number(options.minYNorm) : 0.14;
-  const minYNorm = getFishSurfaceMinYNorm(fish, species, requestedMinYNorm);
+  let minYNorm = getFishSurfaceMinYNorm(fish, species, requestedMinYNorm);
+  if (isMobilePageRuntime()) {
+    minYNorm = Math.max(minYNorm, getMobileViewportSwimBoundsNorm(fish, species).minY);
+  }
   const maxYNorm = clampFishYNormToLayer(
     Number.isFinite(Number(options.maxYNorm)) ? Number(options.maxYNorm) : 0.8,
     fish,
@@ -21383,6 +22337,48 @@ function getFishTankLayer(fish) {
   return clampTankLayer(fish?.tankLayer || DEFAULT_TANK_LAYER);
 }
 
+function normalizeSuckerFishGlassLayer(layer) {
+  const requestedLayer = clampTankLayer(layer ?? SUCKER_FISH_BACK_GLASS_LAYER);
+  return requestedLayer <= SUCKER_FISH_FRONT_GLASS_LAYER
+    ? SUCKER_FISH_FRONT_GLASS_LAYER
+    : SUCKER_FISH_BACK_GLASS_LAYER;
+}
+
+function getSuckerFishGlassLayer(fish) {
+  return normalizeSuckerFishGlassLayer(fish?.tankLayer ?? fish?.desiredTankLayer ?? SUCKER_FISH_BACK_GLASS_LAYER);
+}
+
+function getDesiredSuckerFishGlassLayer(fish) {
+  return normalizeSuckerFishGlassLayer(fish?.desiredTankLayer ?? fish?.tankLayer ?? SUCKER_FISH_BACK_GLASS_LAYER);
+}
+
+function isFrontGlassSuckerFish(fish, species = getSpeciesForFish(fish)) {
+  return getEffectiveFishBehavior(fish, species) === "sucker"
+    && getSuckerFishGlassLayer(fish) === SUCKER_FISH_FRONT_GLASS_LAYER;
+}
+
+function getSuckerFishLayerForShortcut(direction) {
+  return direction < 0
+    ? SUCKER_FISH_FRONT_GLASS_LAYER
+    : SUCKER_FISH_BACK_GLASS_LAYER;
+}
+
+function getSuckerFishPlacementOptionsForLayer(layer) {
+  return normalizeSuckerFishGlassLayer(layer) === SUCKER_FISH_FRONT_GLASS_LAYER
+    ? {
+      minYNorm: SUCKER_FISH_FRONT_GLASS_MIN_Y_NORM,
+      maxYNorm: SUCKER_FISH_FRONT_GLASS_MAX_Y_NORM
+    }
+    : {
+      minYNorm: SUCKER_FISH_BACK_GLASS_MIN_Y_NORM,
+      maxYNorm: SUCKER_FISH_BACK_GLASS_MAX_Y_NORM
+    };
+}
+
+function getSuckerFishYRange(fish, species = getSpeciesForFish(fish), layer = getSuckerFishGlassLayer(fish)) {
+  return getLayerSwimYRange(layer, fish, species, getSuckerFishPlacementOptionsForLayer(layer));
+}
+
 function getDesiredFishTankLayer(fish) {
   if (fish?.caveState) {
     if (["approach", "align", "leave"].includes(fish.caveState)) {
@@ -21403,13 +22399,35 @@ function setFishTankLayers(fish, tankLayer, desiredTankLayer = tankLayer) {
   const species = getSpeciesForFish(fish);
   const clampRegularFishLayer = (value) =>
     Math.max(1, Math.min(TANK_DEPTH_LAYERS, Math.round(Number(value) || 1)));
+  const previousTankLayer = getFishTankLayer(fish);
+  const now = Date.now();
+  const previousVisualScale = getFishLayerDepthScaleMultiplier(fish, now);
+  let nextTankLayer;
+  let nextDesiredTankLayer;
 
   if (species?.behavior === "sucker") {
-    fish.tankLayer = TANK_DEPTH_LAYERS;
-    fish.desiredTankLayer = TANK_DEPTH_LAYERS;
+    nextTankLayer = normalizeSuckerFishGlassLayer(tankLayer);
+    nextDesiredTankLayer = normalizeSuckerFishGlassLayer(desiredTankLayer);
   } else {
-    fish.tankLayer = clampRegularFishLayer(tankLayer);
-    fish.desiredTankLayer = clampRegularFishLayer(desiredTankLayer);
+    nextTankLayer = clampRegularFishLayer(tankLayer);
+    nextDesiredTankLayer = clampRegularFishLayer(desiredTankLayer);
+  }
+
+  fish.tankLayer = nextTankLayer;
+  fish.desiredTankLayer = nextDesiredTankLayer;
+
+  if (fish.id && nextTankLayer !== previousTankLayer) {
+    const nextScale = getFishLayerDepthScaleForLayer(nextTankLayer);
+    if (Math.abs(nextScale - previousVisualScale) > 0.0001) {
+      runtime.fishLayerDepthScaleTransitions.set(fish.id, {
+        fromScale: previousVisualScale,
+        toScale: nextScale,
+        startedAt: now,
+        durationMs: FISH_LAYER_DEPTH_SCALE_EASE_MS
+      });
+    } else {
+      runtime.fishLayerDepthScaleTransitions.delete(fish.id);
+    }
   }
 
   fish.drawLayer = tankLayerToLegacy(fish.tankLayer);
@@ -25773,11 +26791,12 @@ function tick() {
 
   const now = Date.now();
   const tutorialChanged = syncTutorialFlow(now);
-  const changed = syncState(now) || runtime.gravelStateDirty || tutorialChanged;
+  const changed = syncState(now) || runtime.gravelStateDirty || runtime.tankStateDirty || tutorialChanged;
   renderTickUi(now, { stateChanged: changed });
   if (changed) {
     saveState();
     runtime.gravelStateDirty = false;
+    runtime.tankStateDirty = false;
   }
 }
 
@@ -25835,6 +26854,9 @@ function renderVisiblePanels(now) {
 
   if (showingEquipmentStore) {
     renderEquipmentShop();
+  }
+  if (runtime.storeOverlayOpen) {
+    syncWallpaperEngineStoreScrollControls();
   }
 
   if (showingDecorTab) {
@@ -27585,7 +28607,11 @@ function createFishRecord(speciesId, options = {}) {
     ? (Number(options.direction) < 0 ? -1 : 1)
     : (Math.random() > 0.5 ? 1 : -1);
   const tankLayer = species.behavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? normalizeSuckerFishGlassLayer(
+      Number.isFinite(Number(options.tankLayer))
+        ? Number(options.tankLayer)
+        : SUCKER_FISH_BACK_GLASS_LAYER
+    )
     : species.behavior === "shrimp"
       ? clampTankLayer(
         Number.isFinite(Number(options.tankLayer))
@@ -27598,7 +28624,11 @@ function createFishRecord(speciesId, options = {}) {
           : (1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS))
       );
   const desiredTankLayer = species.behavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? normalizeSuckerFishGlassLayer(
+      Number.isFinite(Number(options.desiredTankLayer))
+        ? Number(options.desiredTankLayer)
+        : tankLayer
+    )
     : species.behavior === "shrimp"
       ? clampTankLayer(
         Number.isFinite(Number(options.desiredTankLayer))
@@ -27861,7 +28891,7 @@ function createBabyFishFromSpecies(speciesId, now = Date.now(), options = {}) {
   const anchorXNorm = clamp(Number.isFinite(Number(options.anchorXNorm)) ? Number(options.anchorXNorm) : randomSwimX(), 0.12, 0.88);
   const anchorYNorm = clamp(Number.isFinite(Number(options.anchorYNorm)) ? Number(options.anchorYNorm) : randomSwimY(), 0.18, 0.76);
   const tankLayer = species.behavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? SUCKER_FISH_BACK_GLASS_LAYER
     : clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : DEFAULT_TANK_LAYER);
   return createFishRecord(speciesId, {
     now,
@@ -27986,7 +29016,7 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
 
   const xNorm = clamp(Number.isFinite(Number(options.xNorm)) ? Number(options.xNorm) : randomSwimX(), 0.08, 0.92);
   const tankLayer = species.behavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? SUCKER_FISH_BACK_GLASS_LAYER
     : clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : DEFAULT_TANK_LAYER);
   const targetYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
   const startYNorm = clamp(
@@ -28088,12 +29118,12 @@ function processFishEggs(now = Date.now()) {
 }
 
 function getBreedingEventTankLayer(species) {
-  return species?.behavior === "sucker" ? TANK_DEPTH_LAYERS : BREEDING_EVENT_TANK_LAYER;
+  return species?.behavior === "sucker" ? SUCKER_FISH_BACK_GLASS_LAYER : BREEDING_EVENT_TANK_LAYER;
 }
 
 function getBreedingEggTankLayer(species, parentLayer = getBreedingEventTankLayer(species)) {
   return species?.behavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? SUCKER_FISH_BACK_GLASS_LAYER
     : clampTankLayer(Math.min(TANK_DEPTH_LAYERS, clampTankLayer(parentLayer) + 1));
 }
 
@@ -28604,7 +29634,7 @@ function buyAnotherCustomFish(fishId) {
   const now = Date.now();
   const sourceLayer = getFishTankLayer(sourceFish);
   const tankLayer = managed.inStorage || isFishDead(sourceFish)
-    ? (species.behavior === "sucker" ? TANK_DEPTH_LAYERS : clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS)))
+    ? (species.behavior === "sucker" ? SUCKER_FISH_BACK_GLASS_LAYER : clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS)))
     : sourceLayer;
   const xNorm = managed.inStorage || isFishDead(sourceFish)
     ? randomSwimX()
@@ -29279,6 +30309,7 @@ function startPlacingDecor(decorKey) {
       flipped: runtime.placementMode.flipped
     });
   runtime.cleaningMode = false;
+  runtime.scrubAutoCompleteAt = 0;
   runtime.dragState = null;
   runtime.decorResizeState = null;
   runtime.fishDragState = null;
@@ -29837,6 +30868,36 @@ function performDecorEditShortcutAction(action) {
   }
 
   return false;
+}
+
+function stepDraggedSuckerFishLayer(direction) {
+  const drag = runtime.fishDragState;
+  if (!drag) {
+    return false;
+  }
+
+  const fish = state.fish.find((entry) => entry.id === drag.fishId);
+  const species = getSpeciesForFish(fish);
+  if (!fish || isFishDead(fish) || getEffectiveFishBehavior(fish, species) !== "sucker") {
+    return false;
+  }
+
+  const nextLayer = getSuckerFishLayerForShortcut(direction);
+  if (getSuckerFishGlassLayer(fish) === nextLayer) {
+    triggerLayerLimitPulse(nextLayer);
+    return true;
+  }
+
+  setFishTankLayers(fish, nextLayer, nextLayer);
+  fish.targetXNorm = fish.xNorm;
+  fish.targetYNorm = fish.yNorm;
+  fish.targetAt = Date.now() + 1200;
+  fish.hangoutDecorId = null;
+  drag.moved = true;
+  runtime.suppressNextTankClick = true;
+  triggerLayerLimitPulse(nextLayer);
+  renderUi(Date.now());
+  return true;
 }
 
 function getPlacementHintState() {
@@ -30446,15 +31507,19 @@ function finalizeDecorDrag() {
 function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
   const fish = options.fish || null;
   const layer = species?.behavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? normalizeSuckerFishGlassLayer(options.layer ?? getSuckerFishGlassLayer(fish))
     : clampTankLayer(options.layer ?? getFishTankLayer(fish) ?? DEFAULT_TANK_LAYER);
+  const suckerPlacementOptions = species?.behavior === "sucker"
+    ? getSuckerFishPlacementOptionsForLayer(layer)
+    : null;
+  const baseXNorm = clampFishXNormToMobileViewport(xNorm, fish, species);
   const basePlacement = species?.behavior === "sucker"
     ? {
-      xNorm: clamp(xNorm, 0.08, 0.92),
-      yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, { minYNorm: 0.18, maxYNorm: 0.76 })
+      xNorm: baseXNorm,
+      yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, suckerPlacementOptions)
     }
     : {
-      xNorm: clamp(xNorm, 0.08, 0.92),
+      xNorm: baseXNorm,
       yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, { minYNorm: 0.14, maxYNorm: 0.8 })
     };
 
@@ -30465,13 +31530,13 @@ function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
   const constrained = constrainNormalizedPointToTankShell(basePlacement.xNorm, basePlacement.yNorm, { variant: "inner" });
   if (species?.behavior === "sucker") {
     return {
-      xNorm: clamp(constrained.xNorm, 0.08, 0.92),
-      yNorm: clampFishYNormToLayer(constrained.yNorm, fish, species, layer, { minYNorm: 0.18, maxYNorm: 0.76 })
+      xNorm: clampFishXNormToMobileViewport(constrained.xNorm, fish, species),
+      yNorm: clampFishYNormToLayer(constrained.yNorm, fish, species, layer, suckerPlacementOptions)
     };
   }
 
   return {
-    xNorm: clamp(constrained.xNorm, 0.08, 0.92),
+    xNorm: clampFishXNormToMobileViewport(constrained.xNorm, fish, species),
     yNorm: clampFishYNormToLayer(constrained.yNorm, fish, species, layer, { minYNorm: 0.14, maxYNorm: 0.8 })
   };
 }
@@ -30484,9 +31549,9 @@ function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
   if (fish.activity === FISH_GRAVEL_DIG_ACTIVITY && getForcedGravelDigPrompt(fish)) {
     const minYNorm = getFishSurfaceMinYNorm(fish, species, 0.14);
     const maxYNorm = 0.96;
-    const xNorm = clamp(Number.isFinite(Number(fish.xNorm)) ? fish.xNorm : 0.5, 0.08, 0.92);
+    const xNorm = clampFishXNormToMobileViewport(Number.isFinite(Number(fish.xNorm)) ? fish.xNorm : 0.5, fish, species);
     const yNorm = clamp(Number.isFinite(Number(fish.yNorm)) ? fish.yNorm : minYNorm, minYNorm, maxYNorm);
-    const targetXNorm = clamp(Number.isFinite(Number(fish.targetXNorm)) ? fish.targetXNorm : xNorm, 0.08, 0.92);
+    const targetXNorm = clampFishXNormToMobileViewport(Number.isFinite(Number(fish.targetXNorm)) ? fish.targetXNorm : xNorm, fish, species);
     const targetYNorm = clamp(Number.isFinite(Number(fish.targetYNorm)) ? fish.targetYNorm : yNorm, minYNorm, maxYNorm);
     const changed = Math.abs(xNorm - fish.xNorm) > 0.000001
       || Math.abs(yNorm - fish.yNorm) > 0.000001
@@ -30499,8 +31564,8 @@ function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
     return changed;
   }
 
-  const currentLayer = species.behavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish);
-  const targetLayer = species.behavior === "sucker" ? TANK_DEPTH_LAYERS : getDesiredFishTankLayer(fish);
+  const currentLayer = species.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish);
+  const targetLayer = species.behavior === "sucker" ? getDesiredSuckerFishGlassLayer(fish) : getDesiredFishTankLayer(fish);
   const position = clampFishPlacement(fish.xNorm, fish.yNorm, species, {
     fish,
     layer: currentLayer
@@ -30544,7 +31609,7 @@ function beginFishDrag(fish, point, pointerId) {
   fish.targetAt = now + 1200;
   fish.targetXNorm = fish.xNorm;
   fish.targetYNorm = fish.yNorm;
-  setFishTankLayers(fish, species.behavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish), species.behavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish));
+  setFishTankLayers(fish, species.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish), species.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
 
   runtime.pointerDown = true;
   runtime.fishDragState = {
@@ -30611,7 +31676,9 @@ function updateDraggedFish(point) {
   clearFishCaveBehavior(fish);
   fish.hangoutDecorId = null;
   if (species?.behavior === "sucker") {
-    setFishTankLayers(fish, TANK_DEPTH_LAYERS, TANK_DEPTH_LAYERS);
+    const glassLayer = getSuckerFishGlassLayer(fish);
+    setFishTankLayers(fish, glassLayer, glassLayer);
+    resolveSuckerFishGlassCollisions(now, { draggedFishId: fish.id });
   }
 }
 
@@ -30633,7 +31700,8 @@ function finalizeFishDrag() {
   fish.targetAt = now + 900 + Math.random() * 1400;
   fish.hangoutDecorId = null;
   if (species?.behavior === "sucker") {
-    setFishTankLayers(fish, TANK_DEPTH_LAYERS, TANK_DEPTH_LAYERS);
+    const glassLayer = getSuckerFishGlassLayer(fish);
+    setFishTankLayers(fish, glassLayer, glassLayer);
   } else {
     setFishTankLayers(fish, getFishTankLayer(fish), getFishTankLayer(fish));
   }
@@ -30837,8 +31905,8 @@ function storeFish(fishId, options = {}) {
       const effectiveBehavior = getEffectiveFishBehavior(fish);
       setFishTankLayers(
         fish,
-        effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : fish.tankLayer || DEFAULT_TANK_LAYER,
-        effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : fish.tankLayer || DEFAULT_TANK_LAYER
+        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : fish.tankLayer || DEFAULT_TANK_LAYER,
+        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : fish.tankLayer || DEFAULT_TANK_LAYER
       );
     }
     fish.hangoutDecorId = null;
@@ -31111,7 +32179,7 @@ function restoreFishToTank(fishId) {
     fish.comfortDamageProgressMs = 0;
     clearFishCaveBehavior(fish);
     const returnLayer = getEffectiveFishBehavior(fish) === "sucker"
-      ? TANK_DEPTH_LAYERS
+      ? SUCKER_FISH_BACK_GLASS_LAYER
       : clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
     setFishTankLayers(fish, returnLayer, returnLayer);
     fish.hangoutDecorId = null;
@@ -31473,7 +32541,13 @@ function getTankFishDirtinessMultiplier(fishList = getLivingTankFish(), deadFish
 
 function getFilterMaxDirtyDurationMs(filterKey = state?.selectedFilterAsset, fishList = getLivingTankFish()) {
   const filterProfile = getFilterProfile(filterKey);
-  return filterProfile.cleanDays * DAY_MS / Math.max(1, getTankFishDirtinessMultiplier(fishList));
+  const activeFish = Array.isArray(fishList) ? fishList.filter((fish) => fish && !isFishDead(fish)) : [];
+  const suckerFishCount = activeFish.filter((fish) => getSpeciesForFish(fish)?.behavior === "sucker").length;
+  const suckerCleanDurationBonus = Math.min(
+    SUCKER_FISH_CLEAN_DURATION_BONUS_CAP,
+    suckerFishCount * SUCKER_FISH_CLEAN_DURATION_BONUS
+  );
+  return filterProfile.cleanDays * DAY_MS * (1 + suckerCleanDurationBonus) / Math.max(1, getTankFishDirtinessMultiplier(activeFish));
 }
 
 function getFishCriticalHealthTickMs(fish, species = getSpeciesForFish(fish)) {
@@ -31844,9 +32918,26 @@ function getFishFrontMouthOffsetAtPose(fish, species, width, height, pose, now =
   const bodyScaleY = pose.bodyScaleY || 1;
   const tilt = pose.tilt || 0;
   const facingScaleX = pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1);
+  const scaledX = bodyScaleX * localPoint.x;
+  const scaledY = bodyScaleY * localPoint.y;
+  const useSuckerFacePivot = (
+    SUCKER_FISH_FACE_PIVOT_ENABLED
+    && !pose.isDead
+    && getEffectiveFishBehavior(fish, species) === "sucker"
+  );
+  const drawX = -width / 2 + (pose.wiggle || 0) * width * 0.018;
+  const drawY = -height / 2;
+  const pivotX = useSuckerFacePivot ? drawX + width * SUCKER_FISH_FACE_PIVOT_X : 0;
+  const pivotY = useSuckerFacePivot ? drawY + height * SUCKER_FISH_FACE_PIVOT_Y : 0;
+  const pivotedX = useSuckerFacePivot ? scaledX - pivotX : scaledX;
+  const pivotedY = useSuckerFacePivot ? scaledY - pivotY : scaledY;
+  const rotatedX = Math.cos(tilt) * pivotedX - Math.sin(tilt) * pivotedY;
+  const rotatedY = Math.sin(tilt) * pivotedX + Math.cos(tilt) * pivotedY;
+  const transformedX = useSuckerFacePivot ? rotatedX + pivotX : rotatedX;
+  const transformedY = useSuckerFacePivot ? rotatedY + pivotY : rotatedY;
   return {
-    x: (pose.swayX || 0) + facingScaleX * (Math.cos(tilt) * bodyScaleX * localPoint.x - Math.sin(tilt) * bodyScaleY * localPoint.y),
-    y: Math.sin(tilt) * bodyScaleX * localPoint.x + Math.cos(tilt) * bodyScaleY * localPoint.y
+    x: (pose.swayX || 0) + facingScaleX * transformedX,
+    y: transformedY
   };
 }
 
@@ -33177,7 +34268,7 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
   fish.activity = "dead";
   fish.feedingPelletId = null;
   clearFishCaveBehavior(fish);
-  setFishTankLayers(fish, species?.behavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish), species?.behavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish));
+  setFishTankLayers(fish, species?.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish), species?.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
   fish.hangoutDecorId = null;
   fish.entryStartedAt = null;
   fish.entryDurationMs = 0;
@@ -33276,6 +34367,8 @@ function openFishInspector(fishId) {
 
   if (runtime.selectedFishId !== fishId) {
     runtime.fishInspectorSettingsOpen = false;
+    runtime.fishNameDraftId = "";
+    runtime.fishNameDraftValue = "";
   }
   runtime.selectedFishId = fishId;
   renderUi(Date.now());
@@ -33284,7 +34377,23 @@ function openFishInspector(fishId) {
 function closeFishInspector() {
   runtime.selectedFishId = null;
   runtime.fishInspectorSettingsOpen = false;
+  runtime.fishNameKeyboardOpen = false;
+  runtime.fishNameDraftId = "";
+  runtime.fishNameDraftValue = "";
   renderUi(Date.now());
+}
+
+function setFishNameDraftFromInput() {
+  if (!(dom.fishNameInput instanceof HTMLInputElement) || !runtime.selectedFishId) {
+    return;
+  }
+  runtime.fishNameDraftId = runtime.selectedFishId;
+  runtime.fishNameDraftValue = dom.fishNameInput.value;
+}
+
+function clearFishNameDraft() {
+  runtime.fishNameDraftId = "";
+  runtime.fishNameDraftValue = "";
 }
 
 function saveInspectorName() {
@@ -33297,12 +34406,14 @@ function saveInspectorName() {
   const nextName = dom.fishNameInput.value.trim().slice(0, 20);
   if (!nextName) {
     showToast("Fish names cannot be blank.");
-    dom.fishNameInput.value = fish.name;
+    setFishNameDraftFromInput();
     return;
   }
 
   fish.name = nextName;
   pushEvent(`${nextName} got a fresh new name tag.`, Date.now());
+  runtime.fishNameKeyboardOpen = false;
+  clearFishNameDraft();
   saveState();
   renderUi(Date.now());
   showToast(`${nextName} has been renamed.`);
@@ -33338,8 +34449,161 @@ function randomizeInspectorName() {
     : pool[Math.floor(Math.random() * pool.length)];
 
   fish.name = nextName.slice(0, 20);
+  clearFishNameDraft();
   saveState();
   renderUi(Date.now());
+}
+
+function getWallpaperFishNameKeyboardRows() {
+  const mode = runtime.fishNameKeyboardMode;
+  if (mode === "numbers") {
+    return [
+      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", { action: "backspace", label: "Back" }],
+      ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""],
+      [{ action: "letters", label: "ABC", wide: true }, ".", ",", "?", "!", "'", { action: "symbols", label: "#+=", wide: true }],
+      [{ spacer: true, wide: true }, { action: "space", label: "Space", space: true }, { spacer: true, wide: true }]
+    ];
+  }
+  if (mode === "symbols") {
+    return [
+      ["[", "]", "{", "}", "#", "%", "^", "*", "+", "=", { action: "backspace", label: "Back" }],
+      ["_", "\\", "|", "~", "<", ">", "`", ".", ",", "?"],
+      [{ action: "numbers", label: "123", wide: true }, "!", "'", "\"", "-", "/", { action: "letters", label: "ABC", wide: true }],
+      [{ spacer: true, wide: true }, { action: "space", label: "Space", space: true }, { spacer: true, wide: true }]
+    ];
+  }
+
+  const applyCase = (letter) => runtime.fishNameKeyboardUppercase ? letter.toUpperCase() : letter.toLowerCase();
+  return [
+    [..."qwertyuiop"].map(applyCase).concat([{ action: "backspace", label: "Back" }]),
+    [{ spacer: true }, ...[..."asdfghjkl"].map(applyCase), { spacer: true, wide: true }],
+    [{ action: "case", label: runtime.fishNameKeyboardUppercase ? "abc" : "ABC", wide: true }, ...[..."zxcvbnm"].map(applyCase), { action: "numbers", label: "123", wide: true }],
+    [{ spacer: true, wide: true }, { action: "space", label: "Space", space: true }, { spacer: true, wide: true }]
+  ];
+}
+
+function renderWallpaperNameKeyboardInto(keyboard) {
+  if (!(keyboard instanceof HTMLElement)) {
+    return;
+  }
+  const rows = getWallpaperFishNameKeyboardRows();
+  keyboard.innerHTML = rows.map((row) => `
+    <div class="wallpaper-name-keyboard-row">
+      ${row.map((entry) => {
+        if (typeof entry === "object" && entry.spacer) {
+          return `<span class="wallpaper-name-keyboard-spacer ${entry.wide ? "is-wide" : ""}" aria-hidden="true"></span>`;
+        }
+        const key = typeof entry === "string" ? entry : "";
+        const action = typeof entry === "object" ? entry.action : "";
+        const label = typeof entry === "object" ? entry.label : key;
+        const className = [
+          typeof entry === "object" && entry.wide ? "is-wide" : "",
+          typeof entry === "object" && entry.space ? "is-space" : "",
+          action === "backspace" ? "is-backspace" : ""
+        ].filter(Boolean).join(" ");
+        return `<button class="${className}" type="button" ${action ? `data-fish-name-action="${escapeHtml(action)}"` : `data-fish-name-key="${escapeHtml(key)}"`}>${escapeHtml(label)}</button>`;
+      }).join("")}
+    </div>
+  `).join("");
+}
+
+function renderWallpaperFishNameKeyboard() {
+  renderWallpaperNameKeyboardInto(dom.fishNameKeyboard);
+}
+
+function updateWallpaperFishNameKeyboard() {
+  if (!dom.fishNameKeyboard) {
+    return;
+  }
+  renderWallpaperFishNameKeyboard();
+  dom.fishNameKeyboard.hidden = !(
+    isWallpaperEngineInputAssistEnabled()
+    && runtime.selectedFishId
+    && dom.fishInspector
+    && !dom.fishInspector.hidden
+    && runtime.fishNameKeyboardOpen
+  );
+  if (dom.clearFishName instanceof HTMLButtonElement && dom.fishNameInput instanceof HTMLInputElement) {
+    dom.clearFishName.hidden = !isWallpaperEngineInputAssistEnabled() || !dom.fishNameInput.value;
+  }
+}
+
+function setFishNameInputValue(value) {
+  if (!(dom.fishNameInput instanceof HTMLInputElement)) {
+    return;
+  }
+  const nextValue = String(value || "").slice(0, Number(dom.fishNameInput.maxLength) || 20);
+  dom.fishNameInput.value = nextValue;
+  dom.fishNameInput.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function setNameInputValue(input, value) {
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+  const maxLength = Number(input.maxLength) > 0 ? Number(input.maxLength) : 48;
+  const nextValue = String(value || "").slice(0, maxLength);
+  input.value = nextValue;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function applyWallpaperNameKeyboardActionToInput(input, actionOrKey) {
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+  const currentValue = input.value || "";
+  switch (actionOrKey) {
+    case "space":
+      setNameInputValue(input, `${currentValue} `);
+      break;
+    case "backspace":
+      setNameInputValue(input, currentValue.slice(0, -1));
+      break;
+    case "clear":
+      setNameInputValue(input, "");
+      break;
+    case "case":
+      runtime.fishNameKeyboardUppercase = !runtime.fishNameKeyboardUppercase;
+      updateWallpaperFishNameKeyboard();
+      syncWallpaperUtilityNameKeyboards();
+      break;
+    case "letters":
+    case "numbers":
+    case "symbols":
+      runtime.fishNameKeyboardMode = actionOrKey;
+      updateWallpaperFishNameKeyboard();
+      syncWallpaperUtilityNameKeyboards();
+      break;
+    default:
+      setNameInputValue(input, `${currentValue}${String(actionOrKey || "").slice(0, 1)}`);
+      break;
+  }
+  input.focus?.({ preventScroll: true });
+}
+
+function applyWallpaperFishNameKeyboardAction(actionOrKey) {
+  applyWallpaperNameKeyboardActionToInput(dom.fishNameInput, actionOrKey);
+}
+
+function syncWallpaperUtilityNameKeyboards() {
+  const keyboards = dom.utilityOverlayBody?.querySelectorAll?.("[data-wallpaper-keyboard]") || [];
+  for (const keyboard of keyboards) {
+    if (keyboard instanceof HTMLElement) {
+      renderWallpaperNameKeyboardInto(keyboard);
+      let input = null;
+      for (const candidate of dom.utilityOverlayBody?.querySelectorAll?.("[data-wallpaper-keyboard-input]") || []) {
+        if (candidate instanceof HTMLInputElement && candidate.dataset.wallpaperKeyboardInput === keyboard.dataset.wallpaperKeyboard) {
+          input = candidate;
+          break;
+        }
+      }
+      keyboard.hidden = !(
+        isWallpaperEngineInputAssistEnabled()
+        && input instanceof HTMLInputElement
+        && runtime.wallpaperUtilityKeyboardOpenId === input.dataset.wallpaperKeyboardInput
+      );
+    }
+  }
 }
 
 function toggleFishInspectorSettings() {
@@ -33937,6 +35201,9 @@ function toggleCleaningMode(options = {}) {
     } else {
       runtime.cleaningMode = true;
       runtime.toolModeSource = options.source || "toolbar";
+      runtime.scrubAutoCompleteAt = getScrubCoverage() >= SCRUB_AUTO_COMPLETE_GRACE_THRESHOLD
+        ? now + SCRUB_AUTO_COMPLETE_GRACE_MS
+        : 0;
       if (options.collapseSidebar) {
         runtime.sidebarCollapsed = true;
       }
@@ -35885,11 +37152,210 @@ function scrubGlass(x, y) {
   }
 
   const coverage = getScrubCoverage();
-  renderScrubProgress();
-
   if (coverage >= getRequiredScrubThreshold()) {
     completeCleaning();
+    return;
   }
+  if (coverage >= SCRUB_AUTO_COMPLETE_GRACE_THRESHOLD && !runtime.scrubAutoCompleteAt) {
+    runtime.scrubAutoCompleteAt = Date.now() + SCRUB_AUTO_COMPLETE_GRACE_MS;
+  }
+  renderScrubProgress();
+}
+
+function isTankPointAlreadyScrubbed(x, y) {
+  if (!runtime.scrubCells?.length) {
+    return false;
+  }
+
+  const col = clamp(Math.floor((Number(x) || 0) / (TANK_WIDTH / SCRUB_GRID_COLS)), 0, SCRUB_GRID_COLS - 1);
+  const row = clamp(Math.floor((Number(y) || 0) / (TANK_HEIGHT / SCRUB_GRID_ROWS)), 0, SCRUB_GRID_ROWS - 1);
+  return Boolean(runtime.scrubCells[row * SCRUB_GRID_COLS + col]);
+}
+
+function getFrontGlassSuckerScrubPoint(fish, species, now = Date.now()) {
+  const fallback = {
+    x: clamp(Number(fish?.xNorm) || 0.5, 0.08, 0.92) * TANK_WIDTH,
+    y: clamp(Number(fish?.yNorm) || 0.5, 0.16, 0.96) * TANK_HEIGHT
+  };
+  if (!fish || !species) {
+    return fallback;
+  }
+
+  const image = runtime.images.get(getFishDisplayAssetPath(fish, species, now) || species.asset);
+  if (!image) {
+    return fallback;
+  }
+
+  const width = getFishDisplayWidth(fish, species, now);
+  const mouthPoint = getFishGravelPebbleMouthPoint(
+    fish,
+    species,
+    now,
+    -width * SUCKER_FISH_FRONT_GLASS_SCRUB_MOUTH_INSET_RATIO
+  );
+  if (
+    !mouthPoint
+    || !Number.isFinite(Number(mouthPoint.x))
+    || !Number.isFinite(Number(mouthPoint.y))
+  ) {
+    return fallback;
+  }
+
+  return {
+    x: clamp(Number(mouthPoint.x), 0, TANK_WIDTH),
+    y: clamp(Number(mouthPoint.y), 0, TANK_HEIGHT)
+  };
+}
+
+function applyFrontGlassSuckerScrubCleaning(scrubbedCellDelta, cleanableCellCount, now = Date.now()) {
+  const changedCells = Math.max(0, Math.floor(Number(scrubbedCellDelta) || 0));
+  if (!state || changedCells <= 0 || isTutorialTankDirtinessLocked()) {
+    return false;
+  }
+
+  const totalCleanableCells = Math.max(1, Math.floor(Number(cleanableCellCount) || getCleanableScrubCellCount()));
+  const currentDirtiness = getBaseTankDirtiness(now);
+  if (currentDirtiness <= 0) {
+    return false;
+  }
+
+  const dirtinessReduction = Math.min(
+    currentDirtiness,
+    (changedCells / totalCleanableCells) * SUCKER_FISH_FRONT_GLASS_DIRTINESS_REDUCTION_PER_SCRUB_COVERAGE
+  );
+  if (dirtinessReduction <= 0) {
+    return false;
+  }
+
+  rebaseTankDirtiness(now, currentDirtiness - dirtinessReduction);
+  runtime.tankStateDirty = true;
+  return true;
+}
+
+function scrubFrontGlassSuckerTrail(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  if (
+    !fish
+    || isFishDead(fish)
+    || !isFrontGlassSuckerFish(fish, species)
+    || getVisibleGrimeDirtiness(getTankDirtiness(now)) <= 0
+  ) {
+    return false;
+  }
+
+  const scrubPoint = getFrontGlassSuckerScrubPoint(fish, species, now);
+  const x = scrubPoint.x;
+  const y = scrubPoint.y;
+  const lastScrubAt = Number(fish.frontGlassScrubAt) || 0;
+  const timeSinceLastScrub = now - lastScrubAt;
+  if (timeSinceLastScrub < SUCKER_FISH_FRONT_GLASS_SCRUB_COOLDOWN_MS) {
+    return false;
+  }
+
+  const lastX = Number(fish.frontGlassScrubX);
+  const lastY = Number(fish.frontGlassScrubY);
+  const hasLastScrubPoint = Number.isFinite(lastX) && Number.isFinite(lastY);
+  const scrubDistance = hasLastScrubPoint ? distance(lastX, lastY, x, y) : 0;
+  if (hasLastScrubPoint
+    && scrubDistance < SUCKER_FISH_FRONT_GLASS_SCRUB_MIN_DISTANCE_PX
+    && timeSinceLastScrub < SUCKER_FISH_FRONT_GLASS_SCRUB_MAX_INTERVAL_MS
+  ) {
+    return false;
+  }
+
+  fish.frontGlassScrubAt = now;
+  fish.frontGlassScrubX = x;
+  fish.frontGlassScrubY = y;
+  const points = [];
+  if (hasLastScrubPoint && scrubDistance > 0) {
+    const steps = Math.max(1, Math.ceil(scrubDistance / SUCKER_FISH_FRONT_GLASS_SCRUB_STROKE_STEP_PX));
+    for (let step = 1; step <= steps; step += 1) {
+      const progress = step / steps;
+      points.push({
+        x: lastX + (x - lastX) * progress,
+        y: lastY + (y - lastY) * progress
+      });
+    }
+  } else {
+    points.push({ x, y });
+  }
+
+  const scrubbedBefore = runtime.scrubbedCount;
+  let changed = false;
+  for (const point of points) {
+    changed = markScrubStamp(point.x, point.y, { radius: SUCKER_FISH_FRONT_GLASS_SCRUB_RADIUS }) || changed;
+  }
+  if (!changed) {
+    return false;
+  }
+
+  const cleanableCellCount = getCleanableScrubCellCount();
+  const scrubbedCellDelta = Math.max(0, runtime.scrubbedCount - scrubbedBefore);
+  applyFrontGlassSuckerScrubCleaning(scrubbedCellDelta, cleanableCellCount, now);
+
+  const coverage = cleanableCellCount > 0
+    ? runtime.scrubbedCount / cleanableCellCount
+    : 0;
+  if (coverage >= getRequiredScrubThreshold()) {
+    completeCleaning({ source: "sucker" });
+    return true;
+  }
+  if (runtime.cleaningMode && coverage >= SCRUB_AUTO_COMPLETE_GRACE_THRESHOLD && !runtime.scrubAutoCompleteAt) {
+    runtime.scrubAutoCompleteAt = now + SCRUB_AUTO_COMPLETE_GRACE_MS;
+  }
+  if (runtime.cleaningMode) {
+    renderScrubProgress();
+  }
+  return true;
+}
+
+function pickFrontGlassSuckerGrimeTarget(fish, now = Date.now()) {
+  if (!isFrontGlassSuckerFish(fish) || Math.random() > SUCKER_FISH_FRONT_GLASS_GRIME_TARGET_CHANCE) {
+    return null;
+  }
+
+  const species = getSpeciesForFish(fish);
+  const yRange = getSuckerFishYRange(fish, species, SUCKER_FISH_FRONT_GLASS_LAYER);
+  const grimeMarks = Array.isArray(runtime.scene?.grimeMarks) ? runtime.scene.grimeMarks : [];
+  const visibleMarkCount = Math.min(
+    grimeMarks.length,
+    Math.floor(getLightGrimeVisualIntensity(getTankDirtiness(now)) * grimeMarks.length)
+  );
+  if (!visibleMarkCount) {
+    return null;
+  }
+
+  let bestTarget = null;
+  const sampleCount = Math.min(visibleMarkCount, 14);
+  for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+    const mark = grimeMarks[Math.floor(Math.random() * visibleMarkCount)];
+    if (!mark) {
+      continue;
+    }
+
+    const xNorm = clamp(Number(mark.x) || 0.5, 0.1, 0.9);
+    const yNorm = clamp(Number(mark.y) || 0.5, yRange.min, yRange.max);
+    const scrubbedPenalty = isTankPointAlreadyScrubbed(xNorm * TANK_WIDTH, yNorm * TANK_HEIGHT)
+      ? 0.24
+      : 0;
+    const score = Math.hypot(xNorm - fish.xNorm, yNorm - fish.yNorm) + scrubbedPenalty + Math.random() * 0.08;
+    if (!bestTarget || score < bestTarget.score) {
+      bestTarget = { xNorm, yNorm, score };
+    }
+  }
+
+  if (!bestTarget) {
+    return null;
+  }
+
+  return clampFishPlacement(
+    bestTarget.xNorm + randomBetween(-0.018, 0.018),
+    bestTarget.yNorm + randomBetween(-0.024, 0.024),
+    species,
+    {
+      fish,
+      layer: SUCKER_FISH_FRONT_GLASS_LAYER
+    }
+  );
 }
 
 function getRequiredScrubThreshold() {
@@ -35923,7 +37389,7 @@ function isPointInsideScrubbableTankArea(x, y, target = getCurrentTank()) {
   return pointInPolygon(point, shellPoints);
 }
 
-function markScrubStamp(x, y) {
+function markScrubStamp(x, y, options = {}) {
   const constrainedPoint = constrainPointToTankShell(x, y, { variant: "outer" });
   const scrubX = constrainedPoint.x;
   const scrubY = constrainedPoint.y;
@@ -35931,12 +37397,13 @@ function markScrubStamp(x, y) {
   if (!isPointInsideScrubbableTankArea(scrubX, scrubY, target)) {
     return false;
   }
+  const brushRadius = clamp(Number(options.radius) || SCRUB_BRUSH_RADIUS, 4, SCRUB_BRUSH_RADIUS);
   const cellWidth = TANK_WIDTH / SCRUB_GRID_COLS;
   const cellHeight = TANK_HEIGHT / SCRUB_GRID_ROWS;
-  const startCol = clamp(Math.floor((scrubX - SCRUB_BRUSH_RADIUS) / cellWidth), 0, SCRUB_GRID_COLS - 1);
-  const endCol = clamp(Math.ceil((scrubX + SCRUB_BRUSH_RADIUS) / cellWidth), 0, SCRUB_GRID_COLS - 1);
-  const startRow = clamp(Math.floor((scrubY - SCRUB_BRUSH_RADIUS) / cellHeight), 0, SCRUB_GRID_ROWS - 1);
-  const endRow = clamp(Math.ceil((scrubY + SCRUB_BRUSH_RADIUS) / cellHeight), 0, SCRUB_GRID_ROWS - 1);
+  const startCol = clamp(Math.floor((scrubX - brushRadius) / cellWidth), 0, SCRUB_GRID_COLS - 1);
+  const endCol = clamp(Math.ceil((scrubX + brushRadius) / cellWidth), 0, SCRUB_GRID_COLS - 1);
+  const startRow = clamp(Math.floor((scrubY - brushRadius) / cellHeight), 0, SCRUB_GRID_ROWS - 1);
+  const endRow = clamp(Math.ceil((scrubY + brushRadius) / cellHeight), 0, SCRUB_GRID_ROWS - 1);
 
   let changed = false;
   for (let row = startRow; row <= endRow; row += 1) {
@@ -35948,7 +37415,7 @@ function markScrubStamp(x, y) {
       }
 
       const index = row * SCRUB_GRID_COLS + col;
-      if (!runtime.scrubCells[index] && distance(cellCenterX, cellCenterY, scrubX, scrubY) <= SCRUB_BRUSH_RADIUS) {
+      if (!runtime.scrubCells[index] && distance(cellCenterX, cellCenterY, scrubX, scrubY) <= brushRadius) {
         runtime.scrubCells[index] = 1;
         runtime.scrubbedCount += 1;
         changed = true;
@@ -35959,13 +37426,12 @@ function markScrubStamp(x, y) {
   const stamp = {
     x: scrubX,
     y: scrubY,
-    radius: SCRUB_BRUSH_RADIUS * (0.92 + Math.random() * 0.1)
+    radius: brushRadius * (0.92 + Math.random() * 0.1)
   };
   runtime.scrubStamps.push(stamp);
   paintScrubMaskStamp(stamp);
   if (runtime.scrubStamps.length > SCRUB_MAX_STAMPS) {
     runtime.scrubStamps.splice(0, runtime.scrubStamps.length - SCRUB_MAX_STAMPS);
-    rebuildScrubMaskCanvas();
   }
 
   return changed;
@@ -35978,6 +37444,7 @@ function completeCleaning(options = {}) {
     runtime.toolModeSource = null;
     runtime.pointerDown = false;
     runtime.lastScrubPoint = null;
+    runtime.scrubAutoCompleteAt = 0;
     clearScrubProgress();
     renderToolCursor();
     setTutorialStage(TUTORIAL_STAGE_CLEAN_TANK_DONE, { now });
@@ -36015,6 +37482,7 @@ function completeCleaning(options = {}) {
   runtime.toolModeSource = null;
   runtime.pointerDown = false;
   runtime.lastScrubPoint = null;
+  runtime.scrubAutoCompleteAt = 0;
   resetScrubWipeSoundState();
   renderToolCursor();
 
@@ -36050,6 +37518,7 @@ function clearScrubProgress() {
   runtime.scrubbedCount = 0;
   runtime.scrubStamps = [];
   runtime.lastScrubPoint = null;
+  runtime.scrubAutoCompleteAt = 0;
   resetScrubWipeSoundState();
   if (scrubMaskContext) {
     scrubMaskContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
@@ -36388,7 +37857,7 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
       GLASS_TAP_FISH_ESCAPE_MIN_DISTANCE_PX,
       GLASS_TAP_FISH_ESCAPE_MAX_DISTANCE_PX
     ) * (0.78 + proximity * 0.45);
-    const targetLayer = species.behavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish);
+    const targetLayer = species.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish);
     const target = clampFishPlacement(
       (fishX + nx * escapeDistance) / TANK_WIDTH,
       (fishY + ny * escapeDistance * 0.72) / TANK_HEIGHT,
@@ -37052,6 +38521,7 @@ function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     runtime.gravelStateDirty = false;
+    runtime.tankStateDirty = false;
     runtime.saveStateWarningShown = false;
     scheduleCustomImageStorageCleanup();
   } catch (error) {
@@ -38797,7 +40267,14 @@ function renderStoreOverlay() {
   dom.storeDecorTab.setAttribute("aria-selected", String(showingDecor));
   dom.storeEquipmentTab?.setAttribute("aria-selected", String(showingEquipment));
 
-  dom.storeCoinCounter.textContent = `Coins: ${formatNumber(state.coins)}`;
+  if (dom.storeCoinCounter) {
+    const currentCoins = formatStoreCoinCounterValue(state.coins);
+    dom.storeCoinCounter.innerHTML = `
+      ${buildCoinIconMarkup("store-coin-icon store-coin-counter-icon", { decorative: true })}
+      <span class="store-coin-counter-value">${escapeHtml(currentCoins)}</span>
+    `;
+    dom.storeCoinCounter.setAttribute("aria-label", `Current coins: ${currentCoins}`);
+  }
 
   if (dom.foodShop) {
     dom.foodShop.hidden = !runtime.storeOverlayOpen || !showingFood;
@@ -38810,6 +40287,7 @@ function renderStoreOverlay() {
   if (dom.equipmentShop) {
     dom.equipmentShop.hidden = !runtime.storeOverlayOpen || !showingEquipment;
   }
+  syncWallpaperEngineStoreScrollControls();
 }
 
 function renderTankNavigation() {
@@ -38890,7 +40368,7 @@ function renderBackgroundPreview(background, className = "background-thumb") {
     const dataUrl = getLocalBackgroundImageDataUrl();
     return dataUrl
       ? `<img class="${className}" src="${dataUrl}" alt="${escapeHtml(background.name)}" />`
-      : `<div class="${className} background-custom-preview background-upload-preview" aria-label="${escapeHtml(background.name)}"><span>Choose Image</span></div>`;
+      : "";
   }
 
   return `<img class="${className}" src="${background.path}" alt="${escapeHtml(background.name)}" />`;
@@ -39035,7 +40513,7 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
           <button class="small-button alt" type="button" data-open-equipment-overlay>Edit Tank</button>
           <button class="small-button alt" type="button" data-open-store-tab="equipment">Buy Tank</button>
           <button class="small-button warn" type="button" data-sell-current-tank ${isTankEmpty(tank) && tankCount > 1 ? "" : "disabled"}>
-            Sell Tank (&#129689;${resaleValue})
+            Sell Tank (${buildCoinAmountMarkup(resaleValue)})
           </button>
         </div>
         <p class="management-summary-disclaimer">${escapeHtml(switchTankDisclaimer)}</p>
@@ -39056,7 +40534,7 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
       <button class="small-button alt" type="button" data-open-equipment-overlay>Edit Tank</button>
       <button class="small-button alt" data-open-store-tab="equipment">Buy Tank</button>
       <button class="small-button warn" data-sell-current-tank ${isTankEmpty(tank) && tankCount > 1 ? "" : "disabled"}>
-        Sell Tank (&#129689;${resaleValue})
+        Sell Tank (${buildCoinAmountMarkup(resaleValue)})
       </button>
     </div>
   `;
@@ -40269,6 +41747,7 @@ function buildManagementBrowserShell(title, count, listMarkup, options = {}) {
   const className = typeof options.className === "string" && options.className.trim() ? ` ${options.className.trim()}` : "";
   const countSuffix = typeof options.countSuffix === "string" ? options.countSuffix : "";
   const showList = count || options.alwaysShowList === true;
+  const scrollTargetId = `tank-management-${String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "list"}`;
 
   return `
     <section class="settings-section management-browser${className}">
@@ -40277,7 +41756,12 @@ function buildManagementBrowserShell(title, count, listMarkup, options = {}) {
         <h3>${escapeHtml(`${title} (${count}${countSuffix})`)}</h3>
       </div>
       ${showList
-      ? `<div class="management-browser-list">${listMarkup}</div>`
+      ? `
+          <div class="wallpaper-scroll-shell management-browser-scroll-shell">
+            <div class="management-browser-list" data-wallpaper-scroll-target="${escapeHtml(scrollTargetId)}">${listMarkup}</div>
+            ${getWallpaperScrollControlMarkup(scrollTargetId, title)}
+          </div>
+        `
       : `
           <div class="empty-state management-browser-empty">
             <div>${escapeHtml(emptyCopy)}</div>
@@ -41337,7 +42821,25 @@ function handleCustomFishUtilityOverlayInput(ctx, target) {
     updatePendingCustomFishSize(customFishSizeInput.value);
     return true;
   }
+  const customFishRotationInput = target?.closest?.("[data-custom-fish-rotation-input]");
+  if (customFishRotationInput instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
+    updatePendingCustomFishRotation(customFishRotationInput.value);
+    return true;
+  }
   return false;
+}
+
+function handleCustomFishUtilityOverlayBodyClick(ctx, target) {
+  return false;
+}
+
+function handleCustomFishUtilityOverlayChange(ctx, target) {
+  const flipToggle = target?.closest?.("[data-custom-fish-flip-toggle]");
+  if (flipToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
+    updatePendingCustomFishFlip(flipToggle.checked);
+    return true;
+  }
+  return handleCommonUtilityOverlayChange(ctx, target);
 }
 
 function handleTankManagementUtilityOverlayInput(ctx, target) {
@@ -41709,13 +43211,17 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
       title: "Create Fish",
       body: renderCustomFishCreationOverlay(),
       footer: buildUtilityActionsFooter([
-        { label: "Create Fish", attribute: "data-save-custom-fish" },
+        {
+          label: "Create Fish",
+          attribute: "data-save-custom-fish"
+        },
         { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
       ]),
       closable: true
     }),
+    onBodyClick: handleCustomFishUtilityOverlayBodyClick,
     onBodyInput: handleCustomFishUtilityOverlayInput,
-    onBodyChange: handleCommonUtilityOverlayChange,
+    onBodyChange: handleCustomFishUtilityOverlayChange,
     onBodyKeyDown: handleCustomFishUtilityOverlayKeyDown,
     onFooterClick: createUtilityOverlayActionHandler([
       { selector: "[data-save-custom-fish]", run: () => void savePendingCustomFishUpload() }
@@ -41901,6 +43407,8 @@ function renderUtilityOverlay() {
   }
   if (dom.utilityOverlayBody) {
     setMarkupIfChanged("utility-overlay-body", dom.utilityOverlayBody, body);
+    syncWallpaperUtilityNameKeyboards();
+    syncWallpaperScrollControls(dom.utilityOverlayBody);
   }
   if (dom.utilityOverlayFooter) {
     setMarkupIfChanged("utility-overlay-footer", dom.utilityOverlayFooter, footer);
@@ -42050,8 +43558,10 @@ function renderCustomDecorNameOverlay() {
               type="text"
               maxlength="48"
               value="${escapeHtml(pending.name || pending.suggestedName || "Custom Decor")}"
+              data-wallpaper-keyboard-input="custom-decor"
               data-custom-decor-name-input
               aria-label="Custom decor name" />
+            <div class="wallpaper-name-keyboard" data-wallpaper-keyboard="custom-decor" hidden aria-label="Custom decor name keyboard"></div>
           </label>
           <label class="custom-decor-name-row">
             <span>Decor Type</span>
@@ -42189,7 +43699,7 @@ function renderCaveColorSettingsControls(item, decor) {
 
   return `
     <div class="cave-color-controls">
-      <div class="custom-decor-type-summary">Decor color layers use the custom gravel colors.</div>
+      <div class="custom-decor-type-summary">Decor color layers use the shared color palette.</div>
       ${layerControls}
     </div>
   `;
@@ -42310,7 +43820,7 @@ function renderCustomHideCreationOverlay() {
       <div class="utility-confirm-card custom-hide-upload-note">
         <div class="utility-confirm-copy">
           <strong>Choose a front and background image to continue.</strong>
-          <div class="fish-meta">Once both are selected, we’ll overlay them here so you can set size, layer, colors, entry points, and seats before creating the hide.</div>
+          <div class="fish-meta">Once both are selected, we'll overlay them here so you can set size, layer, colors, entry points, and seats before creating the hide.</div>
         </div>
       </div>
     `;
@@ -42324,8 +43834,10 @@ function renderCustomHideCreationOverlay() {
             type="text"
             maxlength="48"
             value="${escapeHtml(pending.name || pending.suggestedName || "Custom Hide")}"
+            data-wallpaper-keyboard-input="custom-hide"
             data-custom-hide-name-input
             aria-label="Custom hide name" />
+          <div class="wallpaper-name-keyboard" data-wallpaper-keyboard="custom-hide" hidden aria-label="Custom hide name keyboard"></div>
         </label>
         <label class="bubbler-control-row">
           <span>Size <strong data-custom-hide-size-label>${formatDecorScale(scale)}</strong></span>
@@ -42713,49 +44225,82 @@ function renderCustomFishCreationOverlay() {
   const aspectRatio = pending.naturalHeight && pending.naturalWidth
     ? `${Math.max(1, Number(pending.naturalWidth))} / ${Math.max(1, Number(pending.naturalHeight))}`
     : "1 / 1";
+  const rotation = sanitizeCustomFishRotation(pending.rotation);
+  const flipped = Boolean(pending.flipX);
+  const transform = getPendingCustomFishTransform(pending);
 
   return `
     <div class="custom-fish-create-panel">
-      <label class="custom-decor-name-row">
-        <span>Fish Type Name</span>
-        <input
-          class="tank-name-input custom-decor-name-input"
-          type="text"
-          maxlength="48"
-          value="${escapeHtml(pending.name || pending.suggestedName || "Custom Fish")}"
-          data-custom-fish-name-input
-          aria-label="Custom fish type name" />
-      </label>
-      <label class="custom-decor-name-row">
-        <span>Fish Behavior</span>
-        <select class="shop-sort-select" data-custom-fish-behavior-select aria-label="Custom fish behavior">
-          ${behaviorOptions}
-        </select>
-      </label>
-      <div class="custom-fish-size-window">
-        <div class="custom-fish-size-stage">
-          <img
-            src="${escapeHtml(pending.dataUrl)}"
-            alt="Uploaded custom fish preview"
-            style="width: ${width}px; aspect-ratio: ${escapeHtml(aspectRatio)};"
-            data-custom-fish-preview />
-        </div>
-        <div class="custom-fish-size-readout">
-          <span>Actual fish width</span>
-          <strong data-custom-fish-size-label>${width} px</strong>
+      <div class="custom-fish-preview-column">
+        <div class="custom-fish-size-window">
+          <div class="custom-fish-size-stage">
+            <img
+              class="custom-fish-template-overlay"
+              src="${escapeHtml(CUSTOM_FISH_TEMPLATE_IMAGE)}"
+              alt=""
+              aria-hidden="true"
+              draggable="false" />
+            <img
+              class="custom-fish-upload-preview"
+              src="${escapeHtml(pending.dataUrl)}"
+              alt="Uploaded custom fish preview"
+              style="width: ${width}px; aspect-ratio: ${escapeHtml(aspectRatio)}; transform: ${escapeHtml(transform)};"
+              data-custom-fish-preview />
+          </div>
+          <div class="custom-fish-size-readout">
+            <span>Actual fish width</span>
+            <strong data-custom-fish-size-label>${width} px</strong>
+          </div>
         </div>
       </div>
-      <label class="bubbler-control-row custom-fish-size-control">
-        <span>Fish Size <strong data-custom-fish-size-label>${width} px</strong></span>
-        <input
-          type="range"
-          min="${CUSTOM_FISH_MIN_WIDTH}"
-          max="${CUSTOM_FISH_MAX_WIDTH}"
-          step="1"
-          value="${width}"
-          data-custom-fish-size-input />
-      </label>
-      <div class="mini-note">This will create one custom fish for ${CUSTOM_FISH_COST} ${pluralize("coin", CUSTOM_FISH_COST)} and add it to the tank.</div>
+      <div class="custom-fish-settings-column">
+        <label class="custom-decor-name-row">
+          <span>Fish Type Name</span>
+          <input
+            class="tank-name-input custom-decor-name-input"
+            type="text"
+            maxlength="48"
+            value="${escapeHtml(pending.name || pending.suggestedName || "Custom Fish")}"
+            data-wallpaper-keyboard-input="custom-fish"
+            data-custom-fish-name-input
+            aria-label="Custom fish type name" />
+          <div class="wallpaper-name-keyboard" data-wallpaper-keyboard="custom-fish" hidden aria-label="Custom fish type name keyboard"></div>
+        </label>
+        <label class="custom-decor-name-row">
+          <span>Fish Behavior</span>
+          <select class="shop-sort-select" data-custom-fish-behavior-select aria-label="Custom fish behavior">
+            ${behaviorOptions}
+          </select>
+        </label>
+        <label class="bubbler-control-row custom-fish-size-control">
+          <span>Fish Size <strong data-custom-fish-size-label>${width} px</strong></span>
+          <input
+            type="range"
+            min="${CUSTOM_FISH_MIN_WIDTH}"
+            max="${CUSTOM_FISH_MAX_WIDTH}"
+            step="1"
+            value="${width}"
+            data-custom-fish-size-input />
+        </label>
+        <label class="cave-colorize-toggle custom-fish-flip-toggle">
+          <input
+            type="checkbox"
+            data-custom-fish-flip-toggle
+            ${flipped ? "checked" : ""} />
+          <span>Flip horizontally</span>
+        </label>
+        <label class="bubbler-control-row custom-fish-rotation-control">
+          <span>Rotation <strong data-custom-fish-rotation-label>${rotation} deg</strong></span>
+          <input
+            type="range"
+            min="${CUSTOM_FISH_ROTATION_MIN_DEGREES}"
+            max="${CUSTOM_FISH_ROTATION_MAX_DEGREES}"
+            step="1"
+            value="${rotation}"
+            data-custom-fish-rotation-input />
+        </label>
+        <div class="mini-note">This will create one custom fish for ${CUSTOM_FISH_COST} ${pluralize("coin", CUSTOM_FISH_COST)} and add it to the tank.</div>
+      </div>
     </div>
   `;
 }
@@ -43206,6 +44751,7 @@ function renderSettingsOverlay() {
       input.closest(".display-position-option")?.classList.toggle("is-selected", input.checked);
     }
   }
+  syncWallpaperScrollControls(dom.settingsOverlay);
 }
 
 function renderEquipmentOverlay() {
@@ -43609,7 +45155,7 @@ function getDecorTrayEntryById(entryId) {
 }
 
 function getDecorTrayEntries() {
-  const storedEntries = getStoredDecorEntries().map(([decorKey, count]) => {
+  return getStoredDecorEntries().map(([decorKey, count]) => {
     const decor = runtime.decorMap.get(decorKey) || {
       name: titleFromFile(decorKey),
       path: resolveAppUrl(`assets/decor/${encodeURIComponent(decorKey)}`),
@@ -43625,30 +45171,6 @@ function getDecorTrayEntries() {
       count
     };
   });
-  const placedEntries = [...state.placedDecor]
-    .sort((left, right) => {
-      if (getDecorTankLayer(left) !== getDecorTankLayer(right)) {
-        return getDecorTankLayer(right) - getDecorTankLayer(left);
-      }
-      return left.yNorm - right.yNorm;
-    })
-    .map((item) => {
-      const decor = runtime.decorMap.get(item.decorKey) || {
-        name: titleFromFile(item.decorKey),
-        path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`),
-        cost: 0
-      };
-      return {
-        id: getPlacedDecorTrayEntryId(item.id),
-        type: "placed",
-        decorKey: item.decorKey,
-        placedId: item.id,
-        item,
-        decor,
-        count: 1
-      };
-    });
-  return [...storedEntries, ...placedEntries];
 }
 
 function selectPlacedDecorFromTray(placedId, options = {}) {
@@ -44039,7 +45561,7 @@ function renderEditDecorTray() {
           `;
         })
         .join("")
-      : `<div class="edit-decor-tray-empty">No decor is in storage or placed in the tank yet. Open the store to buy something to place.</div>`;
+      : `<div class="edit-decor-tray-empty">No decor is in storage. Open the store to buy something to place.</div>`;
 
     setMarkupIfChanged("edit-decor-tray", dom.editDecorTrayScroller, markup);
   }
@@ -44933,6 +46455,9 @@ function renderFishInspector(now) {
       dom.inspectorBuyAnotherFish.hidden = true;
       delete dom.inspectorBuyAnotherFish.dataset.buyAnotherFish;
     }
+    runtime.fishNameKeyboardOpen = false;
+    clearFishNameDraft();
+    updateWallpaperFishNameKeyboard();
     return;
   }
 
@@ -45067,8 +46592,10 @@ function renderFishInspector(now) {
     }
   }
 
-  if (document.activeElement !== dom.fishNameInput || dom.fishNameInput.dataset.fishId !== fish.id) {
-    dom.fishNameInput.value = fish.name;
+  const draftName = runtime.fishNameDraftId === fish.id ? runtime.fishNameDraftValue : null;
+  const nextInputName = draftName ?? fish.name;
+  if (dom.fishNameInput.dataset.fishId !== fish.id || dom.fishNameInput.value !== nextInputName) {
+    dom.fishNameInput.value = nextInputName;
     dom.fishNameInput.dataset.fishId = fish.id;
   }
   if (dom.fishInspectorSettings) {
@@ -45081,6 +46608,7 @@ function renderFishInspector(now) {
   }
   renderFishInspectorBehaviorOptions(fish, baseSpecies);
   updateInspectorFishReadouts(fish);
+  updateWallpaperFishNameKeyboard();
   updateFishInspectorDisplayDocking();
 }
 
@@ -45757,20 +47285,12 @@ function renderSolidBackgroundControls() {
       </label>
       ${(solidEnabled || gradientEnabled || animatedEnabled) ? `
       <div class="settings-subsection-heading">
-        <h4>Colors</h4>
-        <p>${solidEnabled
-        ? "Choose the solid backdrop color for the tank."
-        : gradientEnabled
-          ? "Choose the two colors used in the background gradient."
-          : "Choose one gravel color to drive the underwater wallpaper palette."}</p>
+        <h4>Background Colors</h4>
       </div>
       ` : ""}
       ${solidEnabled ? `
       <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header">
-          <div>
-            <div class="fish-meta">Choose a background color.</div>
-          </div>
+        <div class="custom-gravel-layer-header background-color-preview-header">
           ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
         </div>
         <div class="custom-gravel-choice-summary">
@@ -45784,10 +47304,7 @@ function renderSolidBackgroundControls() {
       ` : ""}
       ${gradientEnabled ? `
       <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header">
-          <div>
-            <div class="fish-meta">Choose two colors for a diagonal gradient backdrop.</div>
-          </div>
+        <div class="custom-gravel-layer-header background-color-preview-header">
           ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
         </div>
         <div class="background-gradient-grid">
@@ -45814,10 +47331,7 @@ function renderSolidBackgroundControls() {
       ` : ""}
       ${animatedEnabled ? `
       <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header">
-          <div>
-            <div class="fish-meta">Pick one gravel color. The animation design stays the same and the wallpaper palette shifts around that scheme.</div>
-          </div>
+        <div class="custom-gravel-layer-header background-color-preview-header">
           ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
         </div>
         <div class="shop-button-row">
@@ -45884,11 +47398,11 @@ function syncFilterFeatureVisibility() {
   if (dom.equipmentPanelDescription) {
     dom.equipmentPanelDescription.textContent = filterEnabled
       ? (uvLightEnabled
-        ? "Adjust the current aquarium's background, gravel colors, filter, and UV light."
-        : "Adjust the current aquarium's background, gravel colors, and filter.")
+        ? "Adjust the current aquarium's background, gravel, filter, and UV light."
+        : "Adjust the current aquarium's background, gravel, and filter.")
       : (uvLightEnabled
-        ? "Adjust the current aquarium's background, gravel colors, and UV light."
-        : "Adjust the current aquarium's background and gravel colors.");
+        ? "Adjust the current aquarium's background, gravel, and UV light."
+        : "Adjust the current aquarium's background and gravel.");
   }
 }
 
@@ -45991,7 +47505,6 @@ function renderCustomGravelControls() {
             <div class="custom-gravel-layer-header">
               <div>
                 <strong>${layer.label}</strong>
-                <div class="fish-meta">${layer.drawOrderLabel}</div>
               </div>
               <span class="custom-gravel-layer-swatch" style="--swatch:${activeColor};"></span>
             </div>
@@ -46393,7 +47906,12 @@ function getActiveToolCursorIconPath() {
 function renderScrubProgress() {
   const scrubPercent = Math.round(getScrubCoverage() * 100);
   if (dom.scrubProgressLabel) {
-    dom.scrubProgressLabel.textContent = `${scrubPercent}%`;
+    const autoCompleteSeconds = runtime.cleaningMode && runtime.scrubAutoCompleteAt
+      ? Math.max(0, Math.ceil((runtime.scrubAutoCompleteAt - Date.now()) / 1000))
+      : 0;
+    dom.scrubProgressLabel.textContent = autoCompleteSeconds
+      ? `${scrubPercent}% - auto in ${autoCompleteSeconds}s`
+      : `${scrubPercent}%`;
   }
   if (dom.scrubProgressBar) {
     dom.scrubProgressBar.style.width = `${scrubPercent}%`;
@@ -46427,6 +47945,16 @@ function animationLoop(frameTime) {
     : 0.016;
   runtime.lastAnimationUpdateAt = frameTime;
   updateAmbienceAudioLoop();
+  if (runtime.cleaningMode && runtime.scrubAutoCompleteAt && now >= runtime.scrubAutoCompleteAt) {
+    if (getScrubCoverage() >= SCRUB_AUTO_COMPLETE_GRACE_THRESHOLD) {
+      completeCleaning({ source: "scrub-timer" });
+    } else {
+      runtime.scrubAutoCompleteAt = 0;
+    }
+  }
+  if (runtime.cleaningMode && runtime.scrubAutoCompleteAt) {
+    renderScrubProgress();
+  }
   updateCleaningTransition(now);
   updateSplashBursts(now);
   updateGlassTapEffects(now);
@@ -48158,6 +49686,131 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
   }
 }
 
+function getSuckerFishCollisionEntry(fish, species, now = Date.now()) {
+  if (
+    !fish
+    || !species
+    || isFishDead(fish)
+    || getEffectiveFishBehavior(fish, species) !== "sucker"
+  ) {
+    return null;
+  }
+
+  const width = getFishDisplayWidth(fish, species, now);
+  const image = runtime.images.get(getFishDisplayAssetPath(fish, species, now) || species.asset);
+  const height = image?.width
+    ? width * (image.height / image.width)
+    : width * 0.32;
+  return {
+    fish,
+    species,
+    layer: getSuckerFishGlassLayer(fish),
+    x: clamp(Number(fish.xNorm) || 0.5, 0.08, 0.92) * TANK_WIDTH,
+    y: clamp(Number(fish.yNorm) || 0.5, 0.12, 0.96) * TANK_HEIGHT,
+    radiusX: Math.max(16, width * SUCKER_FISH_COLLISION_RADIUS_X_RATIO + SUCKER_FISH_COLLISION_PADDING_PX),
+    radiusY: Math.max(10, height * SUCKER_FISH_COLLISION_RADIUS_Y_RATIO + SUCKER_FISH_COLLISION_PADDING_PX)
+  };
+}
+
+function moveSuckerFishCollisionEntry(entry, dxPx, dyPx, now, options = {}) {
+  if (!entry || (!dxPx && !dyPx)) {
+    return false;
+  }
+
+  const fish = entry.fish;
+  const layer = entry.layer;
+  const placement = clampFishPlacement(
+    fish.xNorm + dxPx / TANK_WIDTH,
+    fish.yNorm + dyPx / TANK_HEIGHT,
+    entry.species,
+    { fish, layer }
+  );
+  const moved = Math.abs(placement.xNorm - fish.xNorm) > 0.000001
+    || Math.abs(placement.yNorm - fish.yNorm) > 0.000001;
+  fish.xNorm = placement.xNorm;
+  fish.yNorm = placement.yNorm;
+  entry.x = fish.xNorm * TANK_WIDTH;
+  entry.y = fish.yNorm * TANK_HEIGHT;
+
+  if (options.dragged) {
+    fish.targetXNorm = fish.xNorm;
+    fish.targetYNorm = fish.yNorm;
+  } else {
+    const targetPlacement = clampFishPlacement(
+      (Number.isFinite(Number(fish.targetXNorm)) ? Number(fish.targetXNorm) : fish.xNorm) + dxPx / TANK_WIDTH,
+      (Number.isFinite(Number(fish.targetYNorm)) ? Number(fish.targetYNorm) : fish.yNorm) + dyPx / TANK_HEIGHT,
+      entry.species,
+      { fish, layer }
+    );
+    fish.targetXNorm = targetPlacement.xNorm;
+    fish.targetYNorm = targetPlacement.yNorm;
+    fish.targetAt = Math.min(Number(fish.targetAt) || now, now + 900);
+  }
+
+  setFishTankLayers(fish, layer, layer);
+  return moved;
+}
+
+function resolveSuckerFishGlassCollisions(now = Date.now(), options = {}) {
+  if (!Array.isArray(state?.fish) || state.fish.length < 2) {
+    return false;
+  }
+
+  const draggedFishId = typeof options.draggedFishId === "string" && options.draggedFishId
+    ? options.draggedFishId
+    : (typeof runtime.fishDragState?.fishId === "string" ? runtime.fishDragState.fishId : "");
+  const entries = state.fish
+    .map((fish) => getSuckerFishCollisionEntry(fish, getSpeciesForFish(fish), now))
+    .filter(Boolean);
+  if (entries.length < 2) {
+    return false;
+  }
+
+  let changed = false;
+  for (let iteration = 0; iteration < SUCKER_FISH_COLLISION_ITERATIONS; iteration += 1) {
+    for (let leftIndex = 0; leftIndex < entries.length - 1; leftIndex += 1) {
+      const left = entries[leftIndex];
+      for (let rightIndex = leftIndex + 1; rightIndex < entries.length; rightIndex += 1) {
+        const right = entries[rightIndex];
+        if (left.layer !== right.layer) {
+          continue;
+        }
+
+        let dx = right.x - left.x;
+        let dy = right.y - left.y;
+        if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) {
+          const angle = ((Number(left.fish.phase) || 0.25) - (Number(right.fish.phase) || 0.75)) * Math.PI * 2;
+          dx = Math.cos(angle) || 1;
+          dy = Math.sin(angle) || 0.2;
+        }
+
+        const radiusX = Math.max(1, left.radiusX + right.radiusX);
+        const radiusY = Math.max(1, left.radiusY + right.radiusY);
+        const scaledX = dx / radiusX;
+        const scaledY = dy / radiusY;
+        const scaledDistance = Math.hypot(scaledX, scaledY);
+        if (scaledDistance >= 1) {
+          continue;
+        }
+
+        const normalX = scaledX / Math.max(0.0001, scaledDistance);
+        const normalY = scaledY / Math.max(0.0001, scaledDistance);
+        const pushX = normalX * (1 - scaledDistance) * radiusX;
+        const pushY = normalY * (1 - scaledDistance) * radiusY;
+        const leftDragged = draggedFishId && left.fish.id === draggedFishId;
+        const rightDragged = draggedFishId && right.fish.id === draggedFishId;
+        const leftShare = leftDragged ? 0 : (rightDragged ? 1 : 0.5);
+        const rightShare = rightDragged ? 0 : (leftDragged ? 1 : 0.5);
+
+        changed = moveSuckerFishCollisionEntry(left, -pushX * leftShare, -pushY * leftShare, now, { dragged: leftDragged }) || changed;
+        changed = moveSuckerFishCollisionEntry(right, pushX * rightShare, pushY * rightShare, now, { dragged: rightDragged }) || changed;
+      }
+    }
+  }
+
+  return changed;
+}
+
 function updateFishMotion(now, deltaSeconds) {
   if (!state?.fish.length) {
     runtime.fishGravelPebbleActions.clear();
@@ -48208,8 +49861,8 @@ function updateFishMotion(now, deltaSeconds) {
       fish.wiggleClock += deltaSeconds * 0.42;
       setFishTankLayers(
         fish,
-        effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish),
-        effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish)
+        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish),
+        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish)
       );
       continue;
     }
@@ -48221,8 +49874,8 @@ function updateFishMotion(now, deltaSeconds) {
       fish.feedingPelletId = null;
       setFishTankLayers(
         fish,
-        effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish),
-        effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish)
+        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish),
+        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish)
       );
       fish.hangoutDecorId = null;
       fish.panicUntil = null;
@@ -48292,7 +49945,8 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     if (effectiveBehavior === "sucker") {
-      setFishTankLayers(fish, TANK_DEPTH_LAYERS, TANK_DEPTH_LAYERS);
+      const glassLayer = getSuckerFishGlassLayer(fish);
+      setFishTankLayers(fish, glassLayer, glassLayer);
       fish.hangoutDecorId = null;
       if (fish.activity === "feeding") {
         fish.activity = "roam";
@@ -48326,8 +49980,8 @@ function updateFishMotion(now, deltaSeconds) {
       fish.wiggleClock += deltaSeconds * 1.15;
       setFishTankLayers(
         fish,
-        effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish),
-        effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish)
+        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish),
+        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish)
       );
       fish.hangoutDecorId = null;
 
@@ -48376,7 +50030,7 @@ function updateFishMotion(now, deltaSeconds) {
       setFishDesiredTankLayer(
         fish,
         effectiveBehavior === "sucker"
-          ? TANK_DEPTH_LAYERS
+          ? getSuckerFishGlassLayer(fish)
           : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, getFishTankLayer(zombieAttackTarget))))
       );
       fish.swimSpeed = normalizeFishSpeed(
@@ -48405,7 +50059,7 @@ function updateFishMotion(now, deltaSeconds) {
       setFishDesiredTankLayer(
         fish,
         effectiveBehavior === "sucker"
-          ? TANK_DEPTH_LAYERS
+          ? getSuckerFishGlassLayer(fish)
           : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, getFishTankLayer(fish))))
       );
     } else if (piranhaLockedOnPrey) {
@@ -48470,7 +50124,7 @@ function updateFishMotion(now, deltaSeconds) {
         setFishDesiredTankLayer(
           fish,
           effectiveBehavior === "sucker"
-            ? TANK_DEPTH_LAYERS
+            ? getSuckerFishGlassLayer(fish)
             : (pellet.settled ? TANK_DEPTH_LAYERS : clampTankLayer(Math.min(getFishTankLayer(fish), 2)))
         );
         fish.hangoutDecorId = null;
@@ -48479,7 +50133,7 @@ function updateFishMotion(now, deltaSeconds) {
         fish.feedingPelletId = null;
         fish.targetAt = now + 800 + Math.random() * 1200;
         fish.swimSpeed = normalizeFishSpeed(species);
-        setFishDesiredTankLayer(fish, effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish));
+        setFishDesiredTankLayer(fish, effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
         fish.hangoutDecorId = null;
       }
 
@@ -48529,6 +50183,7 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     enforceFishLayerBoundary(fish, species);
+    clampFishToMobileViewport(fish, species, now);
 
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
@@ -48622,12 +50277,20 @@ function updateFishMotion(now, deltaSeconds) {
       const previousXNorm = fish.xNorm;
       const previousYNorm = fish.yNorm;
 
-      const nextXNorm = clamp(fish.xNorm + (moveDx / moveDistance) * step, 0.08, 0.92);
+      const nextXNorm = clampFishXNormToMobileViewport(fish.xNorm + (moveDx / moveDistance) * step, fish, species, now);
       const movementMaxYNorm = fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? 0.96
         : (fish.activity === "feeding" && pellet?.settled ? 0.9 : 0.8);
       const rawNextYNorm = fish.yNorm + (moveDy / moveDistance) * step;
-      const nextYNorm = fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+      const nextPlacement = effectiveBehavior === "sucker"
+        ? clampFishPlacement(nextXNorm, rawNextYNorm, species, {
+          fish,
+          layer: getSuckerFishGlassLayer(fish)
+        })
+        : null;
+      const nextYNorm = nextPlacement
+        ? nextPlacement.yNorm
+        : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? clamp(rawNextYNorm, 0.14, movementMaxYNorm)
         : clampFishYNormToLayer(
           rawNextYNorm,
@@ -48794,7 +50457,7 @@ function updateFishMotion(now, deltaSeconds) {
         state.floatingPellets = state.floatingPellets.filter((entry) => entry.id !== pellet.id);
         fish.activity = "roam";
         fish.feedingPelletId = null;
-        setFishDesiredTankLayer(fish, effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : getFishTankLayer(fish));
+        setFishDesiredTankLayer(fish, effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
         fish.hangoutDecorId = null;
         fish.targetXNorm = clamp(fish.xNorm + (Math.random() - 0.5) * 0.18, 0.08, 0.92);
         fish.targetYNorm = randomSwimY(getDesiredFishTankLayer(fish), fish, species);
@@ -48803,9 +50466,13 @@ function updateFishMotion(now, deltaSeconds) {
       }
     }
 
+    if (effectiveBehavior === "sucker") {
+      scrubFrontGlassSuckerTrail(fish, species, now);
+    }
     syncFishDrawLayer(fish, species, now);
   }
 
+  resolveSuckerFishGlassCollisions(now);
   scrubImpossiblePredatorState(now);
   scrubProtectedTankFishPredatorState(now);
   handlePiranhaSwarm(now, deltaSeconds);
@@ -48838,7 +50505,7 @@ function assignSwimTarget(fish, species, now) {
     fish.targetXNorm = vigilTarget.xNorm;
     fish.targetYNorm = vigilTarget.yNorm;
     fish.targetAt = now + vigilTarget.lingerMs;
-    setFishDesiredTankLayer(fish, effectiveBehavior === "sucker" ? TANK_DEPTH_LAYERS : vigilTarget.targetLayer);
+    setFishDesiredTankLayer(fish, effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : vigilTarget.targetLayer);
     fish.hangoutDecorId = null;
     if (species.speedMode === "dynamic") {
       fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.86)));
@@ -48876,11 +50543,31 @@ function assignSwimTarget(fish, species, now) {
   }
 
   if (effectiveBehavior === "sucker") {
+    const glassLayer = getSuckerFishGlassLayer(fish);
+    const yRange = getSuckerFishYRange(fish, species, glassLayer);
+    const grimeTarget = pickFrontGlassSuckerGrimeTarget(fish, now);
+    if (grimeTarget) {
+      const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
+      const travelDistance = Math.hypot(grimeTarget.xNorm - fish.xNorm, grimeTarget.yNorm - fish.yNorm);
+      const travelSeconds = travelDistance / Math.max(0.00001, crawlSpeed * FISH_MOTION_SCALE);
+      fish.targetXNorm = grimeTarget.xNorm;
+      fish.targetYNorm = grimeTarget.yNorm;
+      fish.targetAt = now + Math.max(
+        species.targetMinMs * 0.72,
+        travelSeconds * 1000 * randomBetween(1.12, 1.45),
+        2200 + Math.random() * 2400
+      );
+      setFishTankLayers(fish, glassLayer, glassLayer);
+      fish.hangoutDecorId = null;
+      fish.swimSpeed = crawlSpeed;
+      return;
+    }
+
     const currentFacing = Math.cos(getFishFacingAngle(fish)) < 0 ? -1 : 1;
     const nearLeftWall = fish.xNorm <= 0.12;
     const nearRightWall = fish.xNorm >= 0.88;
-    const nearTopWall = fish.yNorm <= 0.24;
-    const nearBottomWall = fish.yNorm >= 0.7;
+    const nearTopWall = fish.yNorm <= yRange.min + 0.025;
+    const nearBottomWall = fish.yNorm >= yRange.max - 0.035;
     const shouldReverse = nearLeftWall || nearRightWall || Math.random() < 0.12;
     const crawlDirection = nearLeftWall
       ? 1
@@ -48897,19 +50584,27 @@ function assignSwimTarget(fish, species, now) {
       : nearBottomWall
         ? -randomBetween(0.05, 0.16)
         : randomBetween(-0.14, 0.14);
-    const nextYNorm = clamp(fish.yNorm + verticalShift + randomBetween(-0.015, 0.015), 0.22, 0.72);
+    const nextPlacement = clampFishPlacement(
+      nextXNorm,
+      fish.yNorm + verticalShift + randomBetween(-0.015, 0.015),
+      species,
+      {
+        fish,
+        layer: glassLayer
+      }
+    );
     const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
-    const travelDistance = Math.hypot(nextXNorm - fish.xNorm, nextYNorm - fish.yNorm);
+    const travelDistance = Math.hypot(nextPlacement.xNorm - fish.xNorm, nextPlacement.yNorm - fish.yNorm);
     const travelSeconds = travelDistance / Math.max(0.00001, crawlSpeed * FISH_MOTION_SCALE);
     const lingerMultiplier = shouldReverse ? randomBetween(1.12, 1.34) : randomBetween(1.35, 1.7);
-    fish.targetXNorm = nextXNorm;
-    fish.targetYNorm = nextYNorm;
+    fish.targetXNorm = nextPlacement.xNorm;
+    fish.targetYNorm = nextPlacement.yNorm;
     fish.targetAt = now + Math.max(
       species.targetMinMs,
       travelSeconds * 1000 * lingerMultiplier,
       species.targetMinMs + Math.random() * Math.max(2400, species.targetMaxMs - species.targetMinMs)
     );
-    setFishTankLayers(fish, TANK_DEPTH_LAYERS, TANK_DEPTH_LAYERS);
+    setFishTankLayers(fish, glassLayer, glassLayer);
     fish.hangoutDecorId = null;
     fish.swimSpeed = crawlSpeed;
     return;
@@ -49009,7 +50704,7 @@ function assignSwimTarget(fish, species, now) {
   }
 
   const nextRoamLayer = effectiveBehavior === "sucker"
-    ? TANK_DEPTH_LAYERS
+    ? getSuckerFishGlassLayer(fish)
     : clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
   fish.targetXNorm = randomSwimX();
   fish.targetYNorm = randomSwimY(nextRoamLayer, fish, species);
@@ -49382,6 +51077,7 @@ function renderTank(now) {
   drawMedicineClouds(now);
   drawWaterBloodTint();
   drawEffectClouds(EFFECT_CLOUD_LAYER_FRONT);
+  drawFish(now, SUCKER_FISH_FRONT_GLASS_LAYER, { onlyBehavior: "sucker" });
   drawDecorPreview();
   drawDecorSwimGuide(now);
   drawActiveDecorLayerCue();
@@ -53786,6 +55482,7 @@ function drawFish(now, layer = null, options = {}) {
 
   for (const fish of sortedFish) {
     const species = getSpeciesForFish(fish);
+    clampFishToMobileViewport(fish, species, now);
     const imagePath = getFishDisplayAssetPath(fish, species, now) || species.asset;
     const image = runtime.images.get(imagePath);
     if (!image) {
@@ -53799,15 +55496,53 @@ function drawFish(now, layer = null, options = {}) {
     const stableScale = getViewportStableAssetScale();
     const shellBounds = getTankShellBounds();
     const topFrameBottomY = shellBounds.outerTop + 28;
+    const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+    const healthRatio = getFishHealthRatio(fish, species);
+    const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
+    const useSuckerFacePivot = (
+      SUCKER_FISH_FACE_PIVOT_ENABLED
+      && !pose.isDead
+      && effectiveBehavior === "sucker"
+    );
+    const suckerFacePivotX = useSuckerFacePivot
+      ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X
+      : 0;
+    const suckerFacePivotY = useSuckerFacePivot
+      ? -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y
+      : 0;
 
     tankContext.save();
     tankContext.translate(pose.x + pose.swayX, pose.y);
     tankContext.scale(pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1), 1);
-    tankContext.rotate(pose.tilt);
+    if (useSuckerFacePivot) {
+      tankContext.translate(suckerFacePivotX, suckerFacePivotY);
+      tankContext.rotate(pose.tilt);
+      tankContext.translate(-suckerFacePivotX, -suckerFacePivotY);
+    } else {
+      tankContext.rotate(pose.tilt);
+    }
     tankContext.scale(pose.bodyScaleX, pose.bodyScaleY);
 
-    const healthRatio = getFishHealthRatio(fish, species);
-    const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
+    if (
+      SUCKER_FISH_GLASS_SHADOW_ENABLED
+      && !pose.isDead
+      && effectiveBehavior === "sucker"
+    ) {
+      const shadowWidth = width * SUCKER_FISH_GLASS_SHADOW_SCALE;
+      const shadowHeight = height * SUCKER_FISH_GLASS_SHADOW_SCALE;
+      tankContext.save();
+      tankContext.globalCompositeOperation = "multiply";
+      tankContext.globalAlpha = SUCKER_FISH_GLASS_SHADOW_ALPHA;
+      tankContext.filter = `brightness(0) blur(${SUCKER_FISH_GLASS_SHADOW_BLUR_PX}px)`;
+      tankContext.drawImage(
+        renderImage,
+        fishDrawX - (shadowWidth - width) / 2 + SUCKER_FISH_GLASS_SHADOW_OFFSET_X,
+        -height / 2 - (shadowHeight - height) / 2 + SUCKER_FISH_GLASS_SHADOW_OFFSET_Y,
+        shadowWidth,
+        shadowHeight
+      );
+      tankContext.restore();
+    }
     tankContext.filter = getFishCanvasFilter(fish, healthRatio, now);
     tankContext.drawImage(renderImage, fishDrawX, -height / 2, width, height);
     tankContext.filter = "none";
@@ -58850,7 +60585,7 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
   const effectiveLayer = currentLayer;
   const startXNorm = fish.xNorm;
   const startYNorm = fish.yNorm;
-  let resolvedXNorm = clamp(nextXNorm, 0.08, 0.92);
+  let resolvedXNorm = clampFishXNormToMobileViewport(nextXNorm, fish, species, now);
   let resolvedYNorm = clamp(nextYNorm, 0.14, 0.8);
 
   if (effectiveLayer < 3) {
@@ -58931,6 +60666,17 @@ function getFishShapeDescriptor(fish, species, now, poseOverride = null) {
   const tilt = pose.tilt || 0;
   const drawX = -width / 2 + pose.wiggle * width * 0.018;
   const drawY = -height / 2;
+  const useSuckerFacePivot = (
+    SUCKER_FISH_FACE_PIVOT_ENABLED
+    && !pose.isDead
+    && getEffectiveFishBehavior(fish, species) === "sucker"
+  );
+  const suckerFacePivotX = useSuckerFacePivot
+    ? drawX + width * SUCKER_FISH_FACE_PIVOT_X
+    : 0;
+  const suckerFacePivotY = useSuckerFacePivot
+    ? drawY + height * SUCKER_FISH_FACE_PIVOT_Y
+    : 0;
   const cos = Math.cos(-tilt);
   const sin = Math.sin(-tilt);
   const worldCos = Math.cos(tilt);
@@ -58938,11 +60684,15 @@ function getFishShapeDescriptor(fish, species, now, poseOverride = null) {
   const localToWorld = (localX, localY) => {
     const sx = localX * bodyScaleX;
     const sy = localY * bodyScaleY;
-    const rx = sx * worldCos - sy * worldSin;
-    const ry = sx * worldSin + sy * worldCos;
+    const pivotedX = useSuckerFacePivot ? sx - suckerFacePivotX : sx;
+    const pivotedY = useSuckerFacePivot ? sy - suckerFacePivotY : sy;
+    const rx = pivotedX * worldCos - pivotedY * worldSin;
+    const ry = pivotedX * worldSin + pivotedY * worldCos;
+    const transformedX = useSuckerFacePivot ? rx + suckerFacePivotX : rx;
+    const transformedY = useSuckerFacePivot ? ry + suckerFacePivotY : ry;
     return {
-      x: centerX + rx * facingScaleX,
-      y: centerY + ry
+      x: centerX + transformedX * facingScaleX,
+      y: centerY + transformedY
     };
   };
   const corners = [
@@ -58964,10 +60714,14 @@ function getFishShapeDescriptor(fish, species, now, poseOverride = null) {
       let localX = worldX - centerX;
       let localY = worldY - centerY;
       localX /= Math.abs(facingScaleX) < 0.0001 ? 1 : facingScaleX;
-      const rotatedX = localX * cos - localY * sin;
-      const rotatedY = localX * sin + localY * cos;
-      localX = rotatedX / (Math.abs(bodyScaleX) < 0.0001 ? 1 : bodyScaleX);
-      localY = rotatedY / (Math.abs(bodyScaleY) < 0.0001 ? 1 : bodyScaleY);
+      const pivotedX = useSuckerFacePivot ? localX - suckerFacePivotX : localX;
+      const pivotedY = useSuckerFacePivot ? localY - suckerFacePivotY : localY;
+      const rotatedX = pivotedX * cos - pivotedY * sin;
+      const rotatedY = pivotedX * sin + pivotedY * cos;
+      const unpivotedX = useSuckerFacePivot ? rotatedX + suckerFacePivotX : rotatedX;
+      const unpivotedY = useSuckerFacePivot ? rotatedY + suckerFacePivotY : rotatedY;
+      localX = unpivotedX / (Math.abs(bodyScaleX) < 0.0001 ? 1 : bodyScaleX);
+      localY = unpivotedY / (Math.abs(bodyScaleY) < 0.0001 ? 1 : bodyScaleY);
       return {
         u: (localX - drawX) / width,
         v: (localY - drawY) / height
@@ -59091,7 +60845,8 @@ function canFishChangeToLayer(fish, species, now, desiredLayer, poseOverride = n
 
 function syncFishDrawLayer(fish, species, now) {
   if (getEffectiveFishBehavior(fish, species) === "sucker") {
-    setFishTankLayers(fish, TANK_DEPTH_LAYERS, TANK_DEPTH_LAYERS);
+    const glassLayer = getSuckerFishGlassLayer(fish);
+    setFishTankLayers(fish, glassLayer, glassLayer);
     return;
   }
 
@@ -59277,6 +61032,13 @@ function canTriggerGlassTap(event) {
 }
 
 function randomSwimX() {
+  if (isMobilePageRuntime()) {
+    const bounds = getMobileViewportSwimBoundsNorm(null, null, Date.now(), {
+      edgeInsetPx: MOBILE_SWIM_EDGE_INSET_PX * 2
+    });
+    return bounds.minX + Math.random() * Math.max(0, bounds.maxX - bounds.minX);
+  }
+
   return 0.08 + Math.random() * 0.84;
 }
 
@@ -59522,10 +61284,133 @@ function getVisibleTankVirtualBounds() {
   };
 }
 
+function normalizeViewportNormRange(min, max, fallbackCenter) {
+  if (min <= max) {
+    return {
+      min,
+      max
+    };
+  }
+
+  const center = clamp(fallbackCenter, 0, 1);
+  return {
+    min: center,
+    max: center
+  };
+}
+
+function getMobileViewportSwimBoundsNorm(fish = null, species = getSpeciesForFish(fish), now = Date.now(), options = {}) {
+  if (!isMobilePageRuntime()) {
+    return {
+      minX: 0.08,
+      maxX: 0.92,
+      minY: 0.14,
+      maxY: 0.8
+    };
+  }
+
+  const visibleBounds = getVisibleTankVirtualBounds();
+  const imagePath = species
+    ? (getFishDisplayAssetPath(fish, species, now) || species.asset)
+    : null;
+  const image = imagePath ? runtime.images.get(imagePath) : null;
+  const width = species
+    ? getFishDisplayWidth(fish || {
+      speciesId: species.id,
+      scale: species.defaultScale || DEFAULT_FISH_SCALE
+    }, species, now)
+    : 0;
+  const height = image?.width && width
+    ? width * (image.height / image.width)
+    : width * 0.58;
+  const edgeInsetPx = Number.isFinite(Number(options.edgeInsetPx))
+    ? Math.max(0, Number(options.edgeInsetPx))
+    : MOBILE_SWIM_EDGE_INSET_PX;
+  const xInset = Math.max(edgeInsetPx, width * 0.5);
+  const yInset = Math.max(edgeInsetPx, height * 0.5);
+  const centerX = ((visibleBounds.left + visibleBounds.right) * 0.5) / TANK_WIDTH;
+  const centerY = ((visibleBounds.top + visibleBounds.bottom) * 0.5) / TANK_HEIGHT;
+  const xRange = normalizeViewportNormRange(
+    clamp((visibleBounds.left + xInset) / TANK_WIDTH, 0, 1),
+    clamp((visibleBounds.right - xInset) / TANK_WIDTH, 0, 1),
+    centerX
+  );
+  const yRange = normalizeViewportNormRange(
+    clamp((visibleBounds.top + yInset) / TANK_HEIGHT, 0, 1),
+    clamp((visibleBounds.bottom - yInset) / TANK_HEIGHT, 0, 1),
+    centerY
+  );
+
+  return {
+    minX: xRange.min,
+    maxX: xRange.max,
+    minY: yRange.min,
+    maxY: yRange.max
+  };
+}
+
+function clampFishXNormToMobileViewport(xNorm, fish = null, species = getSpeciesForFish(fish), now = Date.now()) {
+  const value = Number.isFinite(Number(xNorm)) ? Number(xNorm) : 0.5;
+  if (!isMobilePageRuntime()) {
+    return clamp(value, 0.08, 0.92);
+  }
+
+  const bounds = getMobileViewportSwimBoundsNorm(fish, species, now);
+  return clamp(value, bounds.minX, bounds.maxX);
+}
+
+function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  if (!isMobilePageRuntime() || !fish || !species) {
+    return false;
+  }
+
+  const currentLayer = species.behavior === "sucker"
+    ? getSuckerFishGlassLayer(fish)
+    : getFishTankLayer(fish);
+  const targetLayer = species.behavior === "sucker"
+    ? getDesiredSuckerFishGlassLayer(fish)
+    : getDesiredFishTankLayer(fish);
+  const clampYNorm = (value, layer) => {
+    if (fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
+      const viewportBounds = getMobileViewportSwimBoundsNorm(fish, species, now);
+      const minYNorm = Math.max(0.14, viewportBounds.minY);
+      const maxYNorm = Math.max(minYNorm, Math.min(0.96, viewportBounds.maxY));
+      return clamp(Number.isFinite(Number(value)) ? Number(value) : minYNorm, minYNorm, maxYNorm);
+    }
+
+    return clampFishYNormToLayer(value, fish, species, layer, {
+      minYNorm: 0.14,
+      maxYNorm: 0.8
+    });
+  };
+  const xNorm = clampFishXNormToMobileViewport(fish.xNorm, fish, species, now);
+  const yNorm = clampYNorm(fish.yNorm, currentLayer);
+  const targetXNorm = clampFishXNormToMobileViewport(
+    Number.isFinite(Number(fish.targetXNorm)) ? fish.targetXNorm : xNorm,
+    fish,
+    species,
+    now
+  );
+  const targetYNorm = clampYNorm(
+    Number.isFinite(Number(fish.targetYNorm)) ? fish.targetYNorm : yNorm,
+    targetLayer
+  );
+  const changed = Math.abs(xNorm - fish.xNorm) > 0.000001
+    || Math.abs(yNorm - fish.yNorm) > 0.000001
+    || Math.abs(targetXNorm - fish.targetXNorm) > 0.000001
+    || Math.abs(targetYNorm - fish.targetYNorm) > 0.000001;
+
+  fish.xNorm = xNorm;
+  fish.yNorm = yNorm;
+  fish.targetXNorm = targetXNorm;
+  fish.targetYNorm = targetYNorm;
+  return changed;
+}
+
 function getTargetVisibleGravelHeightPx() {
   const stageRect = dom.tankStage?.getBoundingClientRect?.();
   const stageHeight = stageRect?.height || (dom.tankCanvas?.height ? dom.tankCanvas.height / getStageRenderDevicePixelRatio() : TANK_HEIGHT);
-  return stageHeight * GRAVEL_VIEWPORT_HEIGHT_RATIO;
+  return stageHeight * (isMobilePageRuntime() ? MOBILE_GRAVEL_VIEWPORT_HEIGHT_RATIO : GRAVEL_VIEWPORT_HEIGHT_RATIO);
 }
 
 function getTargetVisibleGravelHeightVirtual() {

@@ -1,0 +1,2889 @@
+:root[data-mobile-page="true"],
+body.mobile-page {
+  --mobile-safe-top: env(safe-area-inset-top, 0px);
+  --mobile-safe-right: env(safe-area-inset-right, 0px);
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-safe-left: env(safe-area-inset-left, 0px);
+  --mobile-top-height: calc(var(--mobile-safe-top) + 78px);
+  --mobile-dock-height: calc(var(--mobile-safe-bottom) + 54px);
+  --mobile-dock-rendered-height: var(--mobile-dock-height);
+  --mobile-store-tabs-height: 42px;
+  --mobile-store-tabs-side-inset: clamp(28px, 9vw, 48px);
+  --mobile-tray-side-inset: clamp(42px, 14vw, 72px);
+  --mobile-tray-dock-gap: 0px;
+  --mobile-panel: rgba(20, 27, 97, 0.76);
+  --mobile-panel-strong: rgba(13, 17, 68, 0.88);
+  --mobile-line: rgba(193, 218, 255, 0.22);
+}
+
+html[data-mobile-page="true"],
+body.mobile-page {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  background: #020613;
+  touch-action: manipulation;
+}
+
+body.mobile-page .mobile-unsupported-blocker {
+  display: none !important;
+}
+
+body.mobile-page #editQuickRef,
+body.mobile-page .management-summary-disclaimer {
+  display: none !important;
+}
+
+body.mobile-page .loading-overlay {
+  display: grid !important;
+}
+
+body.mobile-page .app-shell,
+body.mobile-page .toast {
+  display: block !important;
+}
+
+body.mobile-page .toast {
+  left: calc(var(--mobile-safe-left) + 8px);
+  top: calc(var(--mobile-safe-top) + 58px);
+  max-width: min(188px, calc(100vw - var(--mobile-safe-left) - var(--mobile-safe-right) - 16px));
+  max-height: min(120px, 22dvh);
+  padding: 4px 7px;
+  border-radius: 8px;
+  font-size: 0.54rem;
+  line-height: 1.08;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.25);
+}
+
+body.mobile-page .app-shell,
+body.mobile-page .tank-page,
+body.mobile-page .aquarium-card,
+body.mobile-page .tank-stage {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: none;
+  max-height: none;
+}
+
+body.mobile-page .aquarium-card {
+  display: block;
+  padding: 0;
+}
+
+body.mobile-page .tank-stage {
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(87, 226, 255, 0.22), transparent 28%),
+    radial-gradient(circle at 82% 68%, rgba(51, 143, 255, 0.18), transparent 36%),
+    linear-gradient(180deg, #344dff 0%, #171a84 44%, #07072f 100%);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+body.mobile-page .tank-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(9, 18, 78, 0.18) 0, transparent 24%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.18), transparent 32%);
+}
+
+body.mobile-page #tankCanvas,
+body.mobile-page #grimeCanvas,
+body.mobile-page #glassCanvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+body.mobile-page .tank-display {
+  --display-edge-gap: 0px;
+  position: fixed !important;
+  top: calc(var(--mobile-safe-top) + 10px) !important;
+  left: calc(var(--mobile-safe-left) + 12px) !important;
+  right: calc(var(--mobile-safe-right) + 12px) !important;
+  bottom: auto !important;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  padding: 4px 5px;
+  border: 1px solid rgba(225, 239, 255, 0.22);
+  border-radius: 15px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.17), transparent 28%),
+    radial-gradient(circle at 14% 0%, rgba(132, 177, 255, 0.24), transparent 34%),
+    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(31, 45, 142, 0.46), rgba(8, 13, 55, 0.54));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 12px 28px rgba(0, 0, 0, 0.22);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  backdrop-filter: blur(22px) saturate(1.45);
+  color: #9cff71;
+  z-index: 10;
+  transform: none !important;
+  transition:
+    transform 220ms ease,
+    opacity 180ms ease;
+}
+
+body.mobile-page.mobile-display-hidden .tank-display {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(-100% - var(--mobile-safe-top) - 24px)) !important;
+}
+
+body.mobile-page.mobile-display-hidden .care-task-pane {
+  display: none !important;
+}
+
+body.mobile-page.mobile-menu-overlay-open .care-task-pane,
+body.mobile-page.mobile-menu-overlay-open #introTutorialPanel {
+  display: none !important;
+}
+
+body.mobile-page:has(#storeOverlay:not([hidden])) .care-task-pane,
+body.mobile-page:has(#storeOverlay:not([hidden])) #introTutorialPanel,
+body.mobile-page:has(#settingsOverlay:not([hidden])) .care-task-pane,
+body.mobile-page:has(#settingsOverlay:not([hidden])) #introTutorialPanel,
+body.mobile-page:has(#equipmentOverlay:not([hidden])) .care-task-pane,
+body.mobile-page:has(#equipmentOverlay:not([hidden])) #introTutorialPanel,
+body.mobile-page:has(#utilityOverlay:not([hidden])) .care-task-pane,
+body.mobile-page:has(#utilityOverlay:not([hidden])) #introTutorialPanel,
+body.mobile-page:has(.mobile-popout-menu:not([hidden])) .care-task-pane,
+body.mobile-page:has(.mobile-popout-menu:not([hidden])) #introTutorialPanel {
+  display: none !important;
+}
+
+body.mobile-page .display-tab {
+  display: none !important;
+}
+
+body.mobile-page .display-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.mobile-page .display-grid::after {
+  display: none;
+}
+
+body.mobile-page .display-cell {
+  min-height: 36px;
+  padding: 0 6px;
+  display: grid;
+  grid-template-columns: 18px auto;
+  grid-template-rows: 13px 18px;
+  grid-template-areas:
+    "icon label"
+    "icon value";
+  align-content: center;
+  justify-content: center;
+  column-gap: 4px;
+  border-left: 1px solid rgba(202, 222, 255, 0.15);
+}
+
+body.mobile-page .display-cell:first-child {
+  border-left: 0;
+}
+
+body.mobile-page .display-cell::before {
+  content: "";
+  grid-area: icon;
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  background: url("../assets/icons/sponge.png") center / contain no-repeat;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.28));
+}
+
+body.mobile-page .display-cell:nth-child(2)::before {
+  background-image: url("../assets/icons/feed_fish.png");
+}
+
+body.mobile-page .display-cell:nth-child(3)::before {
+  background-image: url("../assets/icons/coin.png");
+}
+
+body.mobile-page .display-label {
+  grid-area: label;
+  align-self: end;
+  justify-self: start;
+  min-width: 0;
+  font-size: clamp(0.38rem, 1.35vw, 0.52rem);
+  line-height: 1;
+  color: rgba(232, 241, 255, 0.76);
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: none;
+}
+
+body.mobile-page .display-cell strong {
+  grid-area: value;
+  align-self: start;
+  justify-self: start;
+  font-family: var(--ui-font-stack);
+  font-size: clamp(0.76rem, 3.5vw, 1.05rem);
+  line-height: 1;
+  font-weight: 900;
+  color: #95ff68;
+  text-shadow: 0 0 10px rgba(115, 255, 78, 0.32);
+}
+
+body.mobile-page .display-cell:nth-child(3) strong {
+  color: #ffd845;
+  text-shadow: 0 0 10px rgba(255, 203, 53, 0.3);
+}
+
+body.mobile-page .tank-sidebar,
+body.mobile-page .tank-sidebar.is-collapsed,
+body.mobile-page .edit-quick-ref {
+  display: none !important;
+}
+
+body.mobile-page .tank-bottom-dock,
+html[data-toolbar-position] body.mobile-page .tank-bottom-dock,
+body.mobile-page .tank-bottom-dock.is-toolbar-collapsed {
+  --toolbar-open-transform: none;
+  --toolbar-collapsed-transform: none;
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + 8px) !important;
+  right: calc(var(--mobile-safe-right) + 8px) !important;
+  top: auto !important;
+  bottom: 0 !important;
+  width: auto;
+  min-height: var(--mobile-dock-height);
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: center;
+  justify-items: center;
+  gap: 3px;
+  padding: 5px 6px calc(var(--mobile-safe-bottom) + 5px);
+  border: 1px solid rgba(225, 239, 255, 0.22);
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.3), transparent 36%),
+    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.17), transparent 38%),
+    linear-gradient(180deg, rgba(37, 120, 208, 0.52), rgba(12, 48, 145, 0.56));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+    0 -16px 34px rgba(0, 0, 0, 0.24);
+  transform: none !important;
+  overflow: visible;
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  backdrop-filter: blur(22px) saturate(1.45);
+  z-index: 70;
+}
+
+body.mobile-page .toolbar-tab {
+  display: none !important;
+}
+
+body.mobile-page .tank-nav-button {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+body.mobile-page .tank-bottom-dock > .dock-button {
+  display: none !important;
+}
+
+body.mobile-page .tank-bottom-dock > :is(
+  #openManagementButton,
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton,
+  #openStoreButton,
+  #openSettingsButton
+) {
+  display: flex !important;
+}
+
+body.mobile-page .tank-bottom-dock > :is(
+  #openManagementButton,
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton,
+  #openStoreButton,
+  #openSettingsButton
+) {
+  position: relative;
+  width: 100%;
+  height: 38px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border-radius: 11px;
+  background: transparent;
+  box-shadow: none;
+  color: rgba(215, 225, 255, 0.68);
+  font-size: 1rem;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+body.mobile-page .tank-bottom-dock > :is(
+  #openManagementButton,
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton,
+  #openStoreButton,
+  #openSettingsButton
+) .dock-button-icon {
+  width: 25px;
+  height: 25px;
+  opacity: 0.9;
+  filter:
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.34))
+    saturate(0.9);
+}
+
+body.mobile-page .mobile-dock-symbol {
+  display: block;
+  font-size: 1.22rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.34));
+}
+
+body.mobile-page #openManagementButton::after,
+body.mobile-page #mobileFishCareButton::after,
+body.mobile-page #mobileToolsButton::after,
+body.mobile-page #mobileEditTankButton::after,
+body.mobile-page #openStoreButton::after,
+body.mobile-page #openSettingsButton::after {
+  content: "" !important;
+  display: none !important;
+  font-size: clamp(0.46rem, 1.8vw, 0.58rem);
+  line-height: 1;
+  font-weight: 800;
+  color: currentColor;
+  white-space: nowrap;
+}
+
+body.mobile-page #openManagementButton::after {
+  content: "Tank";
+}
+
+body.mobile-page #mobileFishCareButton::after {
+  content: "Fish Care";
+}
+
+body.mobile-page #mobileToolsButton::after {
+  content: "Tools";
+}
+
+body.mobile-page #mobileEditTankButton::after {
+  content: "Edit Tank";
+}
+
+body.mobile-page #openStoreButton::after {
+  content: "Shop";
+}
+
+body.mobile-page #openSettingsButton::after {
+  content: "Settings";
+}
+
+body.mobile-page #toolbarFastTooltip,
+body.mobile-page .toolbar-fast-tooltip {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+body.mobile-page .tank-bottom-dock > :is(
+  #openManagementButton,
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton,
+  #openStoreButton,
+  #openSettingsButton
+):focus,
+body.mobile-page .tank-bottom-dock > :is(
+  #openManagementButton,
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton,
+  #openStoreButton,
+  #openSettingsButton
+):focus-visible {
+  outline: none;
+}
+
+body.mobile-page .tank-bottom-dock > :is(
+  #openManagementButton,
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton,
+  #openStoreButton,
+  #openSettingsButton
+):is(:hover, :focus, :focus-visible, :active):not(.is-active):not(.is-mobile-proxy-active):not([aria-expanded="true"]) {
+  background: transparent;
+  box-shadow: none;
+  color: rgba(215, 225, 255, 0.68);
+  transform: none;
+}
+
+body.mobile-page .tank-bottom-dock > :is(
+  #openManagementButton,
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton,
+  #openStoreButton,
+  #openSettingsButton
+):is(:hover, :focus, :focus-visible, :active):not(.is-active):not(.is-mobile-proxy-active):not([aria-expanded="true"]) .dock-button-icon {
+  opacity: 0.82;
+  filter:
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.34))
+    saturate(0.9);
+  transform: none;
+}
+
+body.mobile-page .dock-button.is-active,
+body.mobile-page .dock-button.is-mobile-proxy-active,
+body.mobile-page .mobile-menu-dock-button[aria-expanded="true"] {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 42%),
+    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.28), transparent 52%),
+    rgba(57, 139, 220, 0.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 22px rgba(0, 0, 0, 0.18);
+}
+
+body.mobile-page .tank-bottom-dock > :is(
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton
+):is(.is-active, .is-mobile-proxy-active, [aria-expanded="true"]),
+body.mobile-page:has(#mobileFishCareMenu:not([hidden])) #mobileFishCareButton,
+body.mobile-page:has(#mobileToolsMenu:not([hidden])) #mobileToolsButton,
+body.mobile-page:has(#mobileEditTankMenu:not([hidden])) #mobileEditTankButton {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 42%),
+    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.28), transparent 52%),
+    rgba(57, 139, 220, 0.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 22px rgba(0, 0, 0, 0.18);
+  animation: none !important;
+}
+
+body.mobile-page .tank-bottom-dock > :is(
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton
+):is(.is-active, .is-mobile-proxy-active, [aria-expanded="true"]) .dock-button-icon,
+body.mobile-page:has(#mobileFishCareMenu:not([hidden])) #mobileFishCareButton .dock-button-icon,
+body.mobile-page:has(#mobileToolsMenu:not([hidden])) #mobileToolsButton .dock-button-icon,
+body.mobile-page:has(#mobileEditTankMenu:not([hidden])) #mobileEditTankButton .dock-button-icon {
+  opacity: 1;
+  filter:
+    drop-shadow(0 0 8px rgba(145, 229, 255, 0.32))
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))
+    saturate(1.12);
+}
+
+body.mobile-page:has(#storeOverlay:not([hidden])) #openStoreButton {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
+    radial-gradient(circle at 50% 12%, rgba(155, 193, 255, 0.28), transparent 50%),
+    rgba(82, 102, 198, 0.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 22px rgba(0, 0, 0, 0.18);
+  animation: none !important;
+}
+
+body.mobile-page:has(#storeOverlay:not([hidden])) #openStoreButton.is-tutorial-pulse {
+  animation: none !important;
+}
+
+body.mobile-page:has(#settingsOverlay:not([hidden])) #openSettingsButton {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
+    radial-gradient(circle at 50% 12%, rgba(155, 193, 255, 0.28), transparent 50%),
+    rgba(82, 102, 198, 0.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 22px rgba(0, 0, 0, 0.18);
+  animation: none !important;
+}
+
+body.mobile-page:has(#settingsOverlay:not([hidden])) #openSettingsButton.is-tutorial-pulse {
+  animation: none !important;
+}
+
+body.mobile-page:has(#utilityOverlay[data-utility-mode="tank-management"]:not([hidden])) #openManagementButton {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
+    radial-gradient(circle at 50% 12%, rgba(155, 193, 255, 0.28), transparent 50%),
+    rgba(82, 102, 198, 0.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 22px rgba(0, 0, 0, 0.18);
+  animation: none !important;
+}
+
+body.mobile-page:has(#utilityOverlay[data-utility-mode="tank-management"]:not([hidden])) #openManagementButton.is-tutorial-pulse {
+  animation: none !important;
+}
+
+body.mobile-page .dock-button:is(:hover, :focus-visible),
+body.mobile-page .dock-button:is(:hover, :focus-visible) .dock-button-icon {
+  transform: none;
+}
+
+body.mobile-page .mobile-popout-backdrop {
+  position: fixed;
+  inset: 0 0 var(--mobile-dock-rendered-height, var(--mobile-dock-height)) 0;
+  z-index: 12;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+body.mobile-page .mobile-popout-menu {
+  position: fixed;
+  left: calc(var(--mobile-safe-left) + 22px);
+  right: calc(var(--mobile-safe-right) + 22px);
+  bottom: calc(var(--mobile-dock-height) + 7px);
+  z-index: 71;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+  gap: 6px;
+  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-height) - 24px);
+  padding: 7px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  border: 1px solid rgba(225, 239, 255, 0.23);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.3), transparent 36%),
+    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.17), transparent 38%),
+    linear-gradient(180deg, rgba(37, 120, 208, 0.5), rgba(12, 48, 145, 0.54));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 18px 36px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  backdrop-filter: blur(24px) saturate(1.5);
+}
+
+body.mobile-page .mobile-popout-action {
+  min-height: 43px;
+  padding: 7px 6px;
+  border: 1px solid rgba(225, 239, 255, 0.18);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 42%),
+    rgba(37, 120, 208, 0.24);
+  color: #fff;
+  font: inherit;
+  line-height: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.16);
+}
+
+body.mobile-page .mobile-popout-action.is-mobile-proxy-active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 44%),
+    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.28), transparent 58%),
+    rgba(57, 139, 220, 0.38);
+  border-color: rgba(185, 220, 255, 0.34);
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 244, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 18px rgba(0, 0, 0, 0.2);
+}
+
+body.mobile-page .mobile-popout-action img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.34));
+}
+
+body.mobile-page .mobile-popout-action span {
+  display: none;
+}
+
+body.mobile-page .mobile-popout-action.is-tutorial-pulse {
+  animation: tutorial-guidance-pulse 1.35s ease-in-out infinite;
+  will-change: transform, box-shadow, filter;
+  border-color: rgba(145, 229, 255, 0.42);
+  box-shadow:
+    inset 0 0 0 1px rgba(145, 229, 255, 0.16),
+    0 0 0 4px rgba(125, 224, 248, 0.08),
+    0 16px 30px rgba(0, 0, 0, 0.28);
+}
+
+body.mobile-page .daily-bonus-bell {
+  top: calc(var(--mobile-safe-top) + 98px);
+  right: calc(var(--mobile-safe-right) + 16px);
+  z-index: 13;
+}
+
+body.mobile-page .fish-inspector {
+  position: fixed;
+  left: calc(var(--mobile-safe-left) + 12px);
+  right: calc(var(--mobile-safe-right) + 12px);
+  bottom: calc(var(--mobile-dock-height) + 18px);
+  width: auto;
+  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-height) - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  z-index: 18;
+}
+
+body.mobile-page .edit-decor-tray {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + var(--mobile-tray-side-inset)) !important;
+  right: calc(var(--mobile-safe-right) + var(--mobile-tray-side-inset)) !important;
+  top: auto !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + var(--mobile-tray-dock-gap)) !important;
+  width: auto !important;
+  max-width: none !important;
+  min-height: 42px;
+  max-height: 58px;
+  transform: none !important;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 26px;
+  gap: 5px;
+  align-items: center;
+  padding: 5px 6px;
+  border: 1px solid rgba(225, 239, 255, 0.22);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.18), transparent 36%),
+    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.1), transparent 38%),
+    linear-gradient(180deg, rgba(37, 120, 208, 0.24), rgba(12, 48, 145, 0.28)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 -8px 20px rgba(0, 0, 0, 0.18);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  backdrop-filter: blur(22px) saturate(1.45);
+  overflow: visible;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  z-index: 28;
+  font-size: 0.52rem;
+}
+
+body.mobile-page .edit-decor-tray-arrow {
+  width: 26px;
+  height: 34px;
+  min-height: 34px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  line-height: 1;
+  border: 1px solid rgba(225, 239, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    rgba(37, 120, 208, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+}
+
+body.mobile-page .edit-decor-tray-scroller {
+  gap: 6px;
+  padding: 0 0 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+body.mobile-page .edit-decor-tray-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tray-scroller {
+  align-items: center;
+  gap: 5px;
+  min-height: 42px;
+  padding: 0;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile {
+  width: 42px;
+  min-width: 42px;
+  max-width: 42px;
+  height: 42px;
+  min-height: 42px;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile::before,
+body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-menu-button {
+  display: none !important;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-primary {
+  touch-action: pan-x;
+  -webkit-touch-callout: none;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-surface {
+  border-radius: 10px;
+  border-color: rgba(225, 239, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    rgba(37, 120, 208, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-thumb {
+  width: calc(100% - 5px);
+  height: calc(100% - 5px);
+  max-width: 100%;
+  max-height: 100%;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-count {
+  right: 3px;
+  bottom: 2px;
+  font-size: 0.44rem;
+  line-height: 1;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-menu {
+  z-index: 31;
+  min-width: 126px;
+  max-width: min(164px, calc(100vw - 32px));
+  pointer-events: auto;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-card {
+  gap: 4px;
+  padding: 6px;
+  border-radius: 10px;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-copy strong {
+  font-size: 0.54rem;
+  line-height: 1.08;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-copy span {
+  font-size: 0.46rem;
+  line-height: 1.08;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-action {
+  min-height: 22px;
+  padding: 4px 7px;
+  font-size: 0.5rem;
+  line-height: 1;
+}
+
+body.mobile-page .edit-decor-tray .inventory-tray-label,
+body.mobile-page .edit-decor-tray .edit-decor-tray-empty {
+  font-size: 0.46rem;
+  line-height: 1.05;
+}
+
+body.mobile-page .store-overlay,
+body.mobile-page .settings-overlay,
+body.mobile-page .equipment-overlay,
+body.mobile-page .utility-overlay,
+body.mobile-page .tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  padding:
+    calc(var(--mobile-safe-top) + 14px)
+    calc(var(--mobile-safe-right) + 12px)
+    calc(var(--mobile-safe-bottom) + 14px)
+    calc(var(--mobile-safe-left) + 12px);
+  overflow: hidden;
+  z-index: 30;
+}
+
+body.mobile-page .store-panel,
+body.mobile-page .settings-panel,
+body.mobile-page .equipment-panel,
+body.mobile-page .utility-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 22px;
+}
+
+body.mobile-page .utility-overlay[data-utility-mode] .utility-panel,
+body.mobile-page .utility-overlay[data-utility-mode] .store-panel {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+body.mobile-page .store-panel-body,
+body.mobile-page .settings-panel-body,
+body.mobile-page .equipment-panel-body,
+body.mobile-page .utility-panel .utility-overlay-body,
+body.mobile-page .store-drawer,
+body.mobile-page .card-stack,
+body.mobile-page .mini-card-stack,
+body.mobile-page .decor-grid,
+body.mobile-page .event-feed {
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-page .store-panel-header,
+body.mobile-page .settings-panel-header {
+  min-width: 0;
+}
+
+body.mobile-page #introTutorialOverlay {
+  padding: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+body.mobile-page #introTutorialOverlay::before {
+  display: none;
+}
+
+body.mobile-page #introTutorialPanel {
+  position: fixed;
+  left: calc(var(--mobile-safe-left) + 8px);
+  top: calc(var(--mobile-safe-top) + 58px);
+  right: auto;
+  bottom: auto;
+  width: min(190px, calc(100vw - var(--mobile-safe-left) - var(--mobile-safe-right) - 16px));
+  max-height: min(150px, 28dvh);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 3px;
+  padding: 5px 22px 5px 7px;
+  border-radius: 8px;
+  font-size: 0.54rem;
+  line-height: 1.08;
+  overflow: hidden;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-close-button {
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  line-height: 1;
+  text-align: center;
+  pointer-events: auto;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-copy {
+  min-height: 0;
+  gap: 3px;
+  overflow: hidden;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-kicker {
+  font-size: 0.46rem;
+  line-height: 1;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-body {
+  max-height: 96px;
+  gap: 3px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-size: 0.54rem;
+  line-height: 1.08;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-task-row {
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 4px;
+  min-height: 13px;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-task-box {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-task-box::after {
+  left: 2px;
+  top: 2px;
+  width: 5px;
+  height: 3px;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-task-label {
+  max-width: 100%;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-actions {
+  gap: 3px;
+  justify-content: start;
+}
+
+body.mobile-page #introTutorialPanel .tutorial-actions .small-button {
+  min-width: 0;
+  min-height: 18px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 0.52rem;
+}
+
+body.mobile-page #storeOverlay {
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.mobile-page #storeOverlay .store-panel {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + 8px) !important;
+  right: calc(var(--mobile-safe-right) + 8px) !important;
+  top: calc(var(--mobile-safe-top) + 8px) !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + var(--mobile-store-tabs-height) + 5px) !important;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  padding: 8px;
+  border-radius: 16px;
+  box-sizing: border-box;
+  font-size: 0.5rem;
+  pointer-events: auto;
+}
+
+body.mobile-page #storeOverlay .store-panel-header {
+  display: contents;
+}
+
+body.mobile-page #storeOverlay .store-panel-actions {
+  position: fixed;
+  left: calc(var(--mobile-safe-left) + 14px);
+  right: calc(var(--mobile-safe-right) + 14px);
+  top: calc(var(--mobile-safe-top) + 14px);
+  z-index: 35;
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+body.mobile-page #storeOverlay .store-coin-counter {
+  min-height: 24px;
+  max-width: min(92px, 28vw);
+  gap: 4px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 10px;
+  background: #172338;
+  border: 1px solid rgba(244, 211, 99, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 5px 12px rgba(0, 0, 0, 0.34);
+  font-size: 0.56rem;
+  line-height: 1;
+  pointer-events: auto;
+}
+
+body.mobile-page #storeOverlay .store-coin-counter-icon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  object-fit: contain;
+}
+
+body.mobile-page #storeOverlay .store-coin-counter-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+body.mobile-page #storeOverlay .store-close-button {
+  display: none !important;
+}
+
+body.mobile-page #storeOverlay[hidden] + .store-panel-tabs {
+  display: none !important;
+}
+
+body.mobile-page #storeOverlay + .store-panel-tabs {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + var(--mobile-store-tabs-side-inset)) !important;
+  right: calc(var(--mobile-safe-right) + var(--mobile-store-tabs-side-inset)) !important;
+  top: auto !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + 5px) !important;
+  z-index: 42;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+  width: auto !important;
+  max-width: none !important;
+  height: var(--mobile-store-tabs-height);
+  margin: 0 !important;
+  padding: 4px 6px;
+  pointer-events: auto;
+  touch-action: manipulation;
+  border: 1px solid rgba(225, 239, 255, 0.22);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent 24%),
+    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.26), transparent 36%),
+    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.15), transparent 38%),
+    linear-gradient(180deg, rgba(37, 120, 208, 0.44), rgba(12, 48, 145, 0.52));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 10px 20px rgba(0, 0, 0, 0.22);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  backdrop-filter: blur(22px) saturate(1.45);
+  box-sizing: border-box;
+}
+
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 2px;
+  border-radius: 8px;
+  font-size: clamp(0.42rem, 1.55vw, 0.52rem);
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  touch-action: manipulation;
+  border: 1px solid rgba(225, 239, 255, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    rgba(37, 120, 208, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+}
+
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button.is-active {
+  border-color: rgba(185, 220, 255, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 44%),
+    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.25), transparent 58%),
+    rgba(57, 139, 220, 0.34);
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 244, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 7px 15px rgba(0, 0, 0, 0.18);
+}
+
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
+  opacity: 0.9;
+}
+
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button.is-active .store-tab-icon {
+  opacity: 1;
+  filter:
+    drop-shadow(0 0 8px rgba(145, 229, 255, 0.38))
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+body.mobile-page #utilityOverlay[hidden] + .mobile-management-tabs,
+body.mobile-page #utilityOverlay:not([data-utility-mode="tank-management"]) + .mobile-management-tabs,
+body.mobile-page #utilityOverlay + .mobile-management-tabs[hidden] {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay + .mobile-management-tabs {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + var(--mobile-store-tabs-side-inset)) !important;
+  right: calc(var(--mobile-safe-right) + var(--mobile-store-tabs-side-inset)) !important;
+  top: auto !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + 5px) !important;
+  z-index: 42;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+  width: auto !important;
+  max-width: none !important;
+  height: var(--mobile-store-tabs-height);
+  margin: 0 !important;
+  padding: 4px 6px;
+  pointer-events: auto;
+  touch-action: manipulation;
+  border: 1px solid rgba(225, 239, 255, 0.22);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent 24%),
+    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.26), transparent 36%),
+    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.15), transparent 38%),
+    linear-gradient(180deg, rgba(37, 120, 208, 0.44), rgba(12, 48, 145, 0.52));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 10px 20px rgba(0, 0, 0, 0.22);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  backdrop-filter: blur(22px) saturate(1.45);
+  box-sizing: border-box;
+}
+
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 2px;
+  border: 1px solid rgba(225, 239, 255, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    rgba(37, 120, 208, 0.2);
+  color: #f5fbff;
+  overflow: hidden;
+  pointer-events: auto;
+  touch-action: manipulation;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+}
+
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button.is-active {
+  border-color: rgba(185, 220, 255, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 44%),
+    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.25), transparent 58%),
+    rgba(57, 139, 220, 0.34);
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 244, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 7px 15px rgba(0, 0, 0, 0.18);
+}
+
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  opacity: 0.9;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
+}
+
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button.is-active .mobile-management-tab-icon {
+  opacity: 1;
+  filter:
+    drop-shadow(0 0 8px rgba(145, 229, 255, 0.38))
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+body.mobile-page #storeOverlay .store-panel-body {
+  min-height: 0;
+  max-height: 100%;
+  padding: 32px 0 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+body.mobile-page #storeOverlay.has-store-scroll-controls .store-drawer,
+body.mobile-page #storeOverlay .store-drawer {
+  min-height: 0;
+  padding-right: 0;
+  padding-bottom: 4px;
+  overflow: visible;
+  font-size: 0.5rem;
+}
+
+body.mobile-page #storeOverlay .shop-toolbar {
+  gap: 4px;
+  padding: 0 2px 5px;
+  font-size: 0.5rem;
+}
+
+body.mobile-page #storeOverlay .shop-toolbar-controls {
+  gap: 4px;
+}
+
+body.mobile-page #storeOverlay .shop-search-control,
+body.mobile-page #storeOverlay .shop-sort-control {
+  gap: 3px;
+  font-size: 0.46rem;
+}
+
+body.mobile-page #storeOverlay .shop-search-input,
+body.mobile-page #storeOverlay .shop-sort-select {
+  min-width: 0;
+  max-width: 96px;
+  min-height: 22px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  font-size: 0.48rem;
+}
+
+body.mobile-page #storeOverlay .shop-section {
+  gap: 5px;
+}
+
+body.mobile-page #storeOverlay .shop-section + .shop-section {
+  margin-top: 8px;
+}
+
+body.mobile-page #storeOverlay .shop-section-heading {
+  gap: 2px;
+  padding: 0 2px;
+}
+
+body.mobile-page #storeOverlay .shop-section-heading h3 {
+  font-size: 0.62rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #storeOverlay .shop-section-heading p {
+  font-size: 0.46rem;
+  line-height: 1.12;
+}
+
+body.mobile-page #storeOverlay .shop-section-cards {
+  gap: 5px;
+}
+
+body.mobile-page #storeOverlay .shop-card {
+  grid-template-columns: 56px minmax(0, 1fr) 44px;
+  align-items: stretch;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 9px;
+}
+
+body.mobile-page #storeOverlay .shop-thumb {
+  width: 56px;
+  height: 100%;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 7px;
+  align-self: stretch;
+  object-fit: contain;
+}
+
+body.mobile-page #storeOverlay .shop-card-main {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+body.mobile-page #storeOverlay .shop-card h3,
+body.mobile-page #storeOverlay .shop-card h4 {
+  margin: 0;
+  font-size: 0.56rem;
+  line-height: 1.04;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-page #storeOverlay .shop-card strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.55rem;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+body.mobile-page #storeOverlay .shop-card p,
+body.mobile-page #storeOverlay .shop-meta,
+body.mobile-page #storeOverlay .shop-stat-row,
+body.mobile-page #storeOverlay .shop-stat-label,
+body.mobile-page #storeOverlay .shop-stat-value {
+  font-size: 0.45rem;
+  line-height: 1.08;
+}
+
+body.mobile-page #storeOverlay .shop-comfort-profile {
+  gap: 2px;
+  margin-top: 2px;
+}
+
+body.mobile-page #storeOverlay .shop-comfort-profile > div {
+  gap: 2px;
+}
+
+body.mobile-page #storeOverlay .shop-comfort-profile > div > span {
+  font-size: 0.42rem;
+  line-height: 1;
+}
+
+body.mobile-page #storeOverlay .inspector-chip-row {
+  gap: 2px;
+}
+
+body.mobile-page #storeOverlay .comfort-chip,
+body.mobile-page #storeOverlay .comfort-chip-label {
+  min-height: 15px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  font-size: 0.42rem;
+  line-height: 1;
+}
+
+body.mobile-page #storeOverlay .shop-stat-list,
+body.mobile-page #storeOverlay .shop-theme-pill {
+  display: none;
+}
+
+body.mobile-page #storeOverlay .shop-card > :last-child {
+  grid-column: 3;
+  justify-self: stretch;
+  align-self: center;
+  width: 100%;
+  min-width: 0;
+}
+
+body.mobile-page #storeOverlay .shop-card > .shop-meta:last-child,
+body.mobile-page #storeOverlay .shop-card-actions {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  justify-items: center;
+  align-content: center;
+}
+
+body.mobile-page #storeOverlay .shop-button-row {
+  display: grid;
+  gap: 2px;
+  justify-content: center;
+  justify-items: center;
+}
+
+body.mobile-page #storeOverlay .price-tag,
+body.mobile-page #storeOverlay .buy-button,
+body.mobile-page #storeOverlay .small-button {
+  min-height: 18px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  font-size: 0.44rem;
+  line-height: 1;
+}
+
+body.mobile-page #storeOverlay .price-tag {
+  display: none;
+}
+
+body.mobile-page #storeOverlay .buy-button.mobile-price-buy-button {
+  width: 38px;
+  min-width: 38px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 5px;
+  border: 1px solid rgba(173, 255, 184, 0.24);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5ef37a, #18a946);
+  color: #052415;
+  font-size: 0.56rem;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 5px 10px rgba(0, 0, 0, 0.24);
+}
+
+body.mobile-page #storeOverlay .buy-button.mobile-price-buy-button:disabled {
+  background: linear-gradient(180deg, #74a979, #357143);
+  color: rgba(5, 36, 21, 0.72);
+  opacity: 0.62;
+}
+
+body.mobile-page #storeOverlay .mobile-price-buy-icon {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  object-fit: contain;
+}
+
+body.mobile-page #storeOverlay .mobile-price-buy-value {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+body.mobile-page #settingsOverlay {
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.mobile-page #settingsOverlay .settings-panel {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + 8px) !important;
+  right: calc(var(--mobile-safe-right) + 8px) !important;
+  top: calc(var(--mobile-safe-top) + 8px) !important;
+  bottom: auto !important;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-rendered-height) - 76px);
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
+  padding: 9px;
+  border-radius: 16px;
+  box-sizing: border-box;
+  font-size: 0.58rem;
+  pointer-events: auto;
+}
+
+body.mobile-page #settingsOverlay .settings-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 0 2px 5px;
+  min-width: 0;
+}
+
+body.mobile-page #settingsOverlay .settings-panel-copy {
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mobile-page #settingsOverlay .settings-kicker,
+body.mobile-page #settingsOverlay .settings-panel-copy p {
+  display: none;
+}
+
+body.mobile-page #settingsOverlay .settings-panel-copy h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #settingsOverlay .store-close-button,
+body.mobile-page #settingsOverlay .mobile-location-setting {
+  display: none !important;
+}
+
+body.mobile-page #settingsOverlay .wallpaper-scroll-shell {
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mobile-page #settingsOverlay .settings-panel-body {
+  display: grid;
+  gap: 5px;
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-size: 0.58rem;
+}
+
+body.mobile-page #settingsOverlay .settings-section {
+  gap: 4px;
+  padding: 7px;
+  border-radius: 10px;
+}
+
+body.mobile-page #settingsOverlay .settings-section h3 {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #settingsOverlay .settings-section h4 {
+  font-size: 0.62rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #settingsOverlay .settings-section-note,
+body.mobile-page #settingsOverlay .settings-toggle-note {
+  font-size: 0.48rem;
+  line-height: 1.1;
+}
+
+body.mobile-page #settingsOverlay .settings-toggle-row {
+  grid-template-columns: minmax(0, 1fr) 16px;
+  align-items: center;
+  justify-items: stretch;
+  min-height: 30px;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 9px;
+}
+
+body.mobile-page #settingsOverlay .settings-toggle-copy {
+  min-width: 0;
+  gap: 2px;
+}
+
+body.mobile-page #settingsOverlay .settings-toggle-label {
+  font-size: 0.58rem;
+  line-height: 1.08;
+}
+
+body.mobile-page #settingsOverlay .settings-checkbox {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  justify-self: end;
+  align-self: center;
+}
+
+body.mobile-page #settingsOverlay .overview-actions {
+  gap: 4px;
+}
+
+body.mobile-page #settingsOverlay .small-button {
+  min-height: 22px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  font-size: 0.5rem;
+  line-height: 1;
+}
+
+body.mobile-page #settingsOverlay .settings-section:first-of-type {
+  gap: 3px;
+  padding: 5px 7px;
+}
+
+body.mobile-page #settingsOverlay .settings-section:first-of-type .settings-section-note {
+  margin: 0 0 1px;
+  font-size: 0.42rem;
+  line-height: 1;
+}
+
+body.mobile-page #settingsOverlay .settings-section:first-of-type .overview-actions,
+body.mobile-page #settingsOverlay .settings-credits-section .overview-actions {
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+body.mobile-page #settingsOverlay .settings-section:first-of-type .small-button,
+body.mobile-page #settingsOverlay .settings-credits-section .small-button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 20px;
+  padding: 3px 6px;
+  font-size: 0.46rem;
+  white-space: nowrap;
+}
+
+body.mobile-page #settingsOverlay .settings-credits-section {
+  gap: 3px;
+  padding: 5px 7px;
+}
+
+body.mobile-page #equipmentOverlay {
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.mobile-page #equipmentOverlay .equipment-panel {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + 8px) !important;
+  right: calc(var(--mobile-safe-right) + 8px) !important;
+  top: calc(var(--mobile-safe-top) + 8px) !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + 6px) !important;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
+  padding: 8px;
+  border-radius: 16px;
+  box-sizing: border-box;
+  font-size: 0.55rem;
+  pointer-events: auto;
+}
+
+body.mobile-page #equipmentOverlay .settings-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 0 2px 4px;
+  min-width: 0;
+}
+
+body.mobile-page #equipmentOverlay .settings-panel-copy {
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mobile-page #equipmentOverlay .settings-panel-copy h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #equipmentOverlay .settings-panel-copy p {
+  display: none;
+}
+
+body.mobile-page #equipmentOverlay .store-close-button {
+  display: none !important;
+}
+
+body.mobile-page #equipmentOverlay .settings-panel-body {
+  display: grid;
+  gap: 5px;
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-size: 0.55rem;
+}
+
+body.mobile-page #equipmentOverlay .settings-section {
+  gap: 4px;
+  padding: 6px;
+  border-radius: 10px;
+}
+
+body.mobile-page #equipmentOverlay .settings-section h3 {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #equipmentOverlay .settings-section h4 {
+  margin: 0;
+  font-size: 0.58rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #equipmentOverlay .settings-section-note,
+body.mobile-page #equipmentOverlay .settings-toggle-note,
+body.mobile-page #equipmentOverlay .settings-subsection-heading p,
+body.mobile-page #equipmentOverlay .fish-meta {
+  font-size: 0.46rem;
+  line-height: 1.12;
+}
+
+body.mobile-page #equipmentOverlay .settings-subsection-heading {
+  gap: 1px;
+  margin: 0;
+}
+
+body.mobile-page #equipmentOverlay .background-color-panel-shell,
+body.mobile-page #equipmentOverlay .custom-gravel-panel-shell,
+body.mobile-page #equipmentOverlay .custom-gravel-layer-list {
+  gap: 5px;
+}
+
+body.mobile-page #equipmentOverlay .settings-toggle-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 30px;
+  gap: 6px;
+  padding: 6px 7px;
+  border-radius: 9px;
+}
+
+body.mobile-page #equipmentOverlay .settings-toggle-label {
+  font-size: 0.58rem;
+  line-height: 1.08;
+}
+
+body.mobile-page #equipmentOverlay .settings-checkbox {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
+body.mobile-page #equipmentOverlay .background-solid-toggle-controls {
+  gap: 5px;
+}
+
+body.mobile-page #equipmentOverlay .background-solid-toggle-preview,
+body.mobile-page #equipmentOverlay .background-mode-preview,
+body.mobile-page #equipmentOverlay .custom-gravel-layer-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+}
+
+body.mobile-page #equipmentOverlay .custom-gravel-layer-card {
+  gap: 5px;
+  padding: 7px;
+  border-radius: 10px;
+}
+
+body.mobile-page #equipmentOverlay .custom-gravel-layer-header {
+  gap: 6px;
+}
+
+body.mobile-page #equipmentOverlay .background-solid-color-card .background-color-preview-header {
+  justify-content: flex-start;
+  order: 0;
+}
+
+body.mobile-page #equipmentOverlay .background-solid-color-card > .shop-button-row {
+  order: 1;
+}
+
+body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-animated-background-colors]) {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "preview reset"
+    "colors colors";
+  align-items: center;
+}
+
+body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-animated-background-colors]) .background-color-preview-header {
+  grid-area: preview;
+  width: auto;
+  justify-self: start;
+}
+
+body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-animated-background-colors]) > .shop-button-row {
+  grid-area: reset;
+  justify-self: end;
+  width: min(112px, 100%);
+}
+
+body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-animated-background-colors]) > .background-gradient-grid {
+  grid-area: colors;
+  width: 100%;
+}
+
+body.mobile-page #equipmentOverlay .custom-gravel-choice-summary {
+  gap: 2px;
+}
+
+body.mobile-page #equipmentOverlay .custom-gravel-choice-summary span {
+  font-size: 0.45rem;
+}
+
+body.mobile-page #equipmentOverlay .custom-gravel-choice-summary strong {
+  font-size: 0.56rem;
+}
+
+body.mobile-page #equipmentOverlay .custom-gravel-swatches,
+body.mobile-page #equipmentOverlay .color-choice-mode-row,
+body.mobile-page #equipmentOverlay .color-choice-swatch-row {
+  gap: 4px;
+}
+
+body.mobile-page #equipmentOverlay .color-choice-mode-row {
+  padding-bottom: 4px;
+}
+
+body.mobile-page #equipmentOverlay .custom-gravel-color-swatch,
+body.mobile-page #equipmentOverlay .gravel-swatch {
+  width: 23px;
+  height: 23px;
+  border-radius: 7px;
+}
+
+body.mobile-page #equipmentOverlay .cave-color-rgb-tile,
+body.mobile-page #equipmentOverlay .bubbler-color-default-tile {
+  min-width: 42px;
+}
+
+body.mobile-page #equipmentOverlay .background-gradient-grid,
+body.mobile-page #equipmentOverlay .background-gradient-color-group {
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+body.mobile-page #equipmentOverlay .background-grid,
+body.mobile-page #equipmentOverlay #equipmentFilterList {
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 5px;
+  justify-content: stretch;
+}
+
+body.mobile-page #equipmentOverlay #equipmentBackgroundList {
+  grid-template-columns: 1fr;
+}
+
+body.mobile-page #equipmentOverlay .background-card {
+  gap: 3px;
+  padding: 5px;
+  border-radius: 9px;
+  min-width: 0;
+}
+
+body.mobile-page #equipmentOverlay #equipmentBackgroundList .background-card {
+  grid-template-columns: 46px minmax(0, 1fr) minmax(74px, auto);
+  align-items: center;
+  gap: 6px;
+  min-height: 54px;
+}
+
+body.mobile-page #equipmentOverlay #equipmentBackgroundList .local-background-card {
+  grid-template-columns: minmax(0, 1fr) minmax(92px, auto);
+}
+
+body.mobile-page #equipmentOverlay #equipmentBackgroundList .background-card > div {
+  min-width: 0;
+}
+
+body.mobile-page #equipmentOverlay .background-card strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.54rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #equipmentOverlay .scene-thumb,
+body.mobile-page #equipmentOverlay .background-thumb,
+body.mobile-page #equipmentOverlay #equipmentFilterList .scene-thumb {
+  width: 100%;
+  height: 46px;
+  min-height: 0;
+  padding: 3px;
+  object-fit: contain;
+}
+
+body.mobile-page #equipmentOverlay #equipmentBackgroundList .scene-thumb,
+body.mobile-page #equipmentOverlay #equipmentBackgroundList .background-thumb {
+  width: 42px;
+  height: 42px;
+  padding: 2px;
+}
+
+body.mobile-page #equipmentOverlay #equipmentBackgroundList .local-background-card .scene-thumb,
+body.mobile-page #equipmentOverlay #equipmentBackgroundList .local-background-card .background-thumb {
+  display: none;
+}
+
+body.mobile-page #equipmentOverlay .shop-button-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  gap: 3px;
+}
+
+body.mobile-page #equipmentOverlay #equipmentBackgroundList .shop-button-row {
+  grid-template-columns: 1fr;
+  align-content: center;
+  min-width: 0;
+}
+
+body.mobile-page #equipmentOverlay .small-button,
+body.mobile-page #equipmentOverlay .background-card button {
+  min-height: 20px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  font-size: 0.45rem;
+  line-height: 1;
+}
+
+body.mobile-page #equipmentOverlay .uv-light-equipment {
+  margin-top: 5px;
+}
+
+body.mobile-page #equipmentOverlay .uv-light-card {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] {
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .utility-panel {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + 8px) !important;
+  right: calc(var(--mobile-safe-right) + 8px) !important;
+  top: calc(var(--mobile-safe-top) + 8px) !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + var(--mobile-store-tabs-height) + 5px) !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 6px;
+  padding: 10px;
+  border-radius: 16px;
+  box-sizing: border-box;
+  font-size: 0.54rem;
+  pointer-events: auto;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .store-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 0 2px 5px;
+  min-width: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .settings-panel-copy {
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .settings-kicker {
+  margin: 0;
+  font-size: 0.48rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] #utilityOverlayTitle {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .store-close-button,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .utility-overlay-footer {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .utility-overlay-body {
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  font-size: 0.54rem;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-hub {
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "summary"
+    "care"
+    "log";
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 7px;
+  height: 100%;
+  min-height: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-hub .settings-section {
+  gap: 5px;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-hub .compact-heading {
+  gap: 2px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-hub .compact-heading h3,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-head h3 {
+  font-size: 0.72rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-strip {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-head {
+  gap: 6px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-nameplate .tank-name-display strong {
+  font-size: 0.86rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-nameplate .tank-name-display {
+  gap: 5px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-actions,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-record-button-grid {
+  gap: 5px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-meta {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"]:not([data-mobile-management-tab="tanks"]) .mobile-tank-switcher {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  justify-content: stretch;
+  margin-top: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-actions .small-button {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-chip,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-button,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-status-pill {
+  min-height: 22px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 0.5rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-button {
+  min-height: 30px;
+  display: inline-grid;
+  place-items: center;
+  padding: 5px 8px;
+  border: 1px solid rgba(141, 213, 255, 0.32);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    rgba(36, 62, 92, 0.82);
+  color: #f5fbff;
+  font-size: 0.58rem;
+  font-weight: 900;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-button[data-management-view="fish"]::before {
+  content: "🐟";
+  margin-right: 4px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-button[data-management-view="decor"]::before {
+  content: "🌿";
+  margin-right: 4px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .small-button {
+  min-height: 24px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 0.54rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .small-button.icon-only {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-disclaimer,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-hub .settings-section-note,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-event-text,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-copy span,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-copy small {
+  font-size: 0.48rem;
+  line-height: 1.18;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-disclaimer {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher {
+  display: grid;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid rgba(141, 213, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(6, 18, 32, 0.34);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  color: rgba(235, 248, 255, 0.92);
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-list {
+  display: grid;
+  gap: 5px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid rgba(225, 239, 255, 0.12);
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 42%),
+    rgba(37, 120, 208, 0.12);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-card.is-current {
+  border-color: rgba(149, 255, 104, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 42%),
+    rgba(74, 162, 92, 0.16);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-copy strong {
+  overflow: hidden;
+  color: #f5fbff;
+  font-size: 0.58rem;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-copy span {
+  overflow: hidden;
+  color: rgba(202, 228, 241, 0.78);
+  font-size: 0.46rem;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-button {
+  min-width: 58px;
+  min-height: 22px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #66e0ff, #31b8df);
+  color: #031725;
+  font-size: 0.5rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-button:disabled {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(235, 248, 255, 0.68);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-care-panel {
+  gap: 5px;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-care-panel > .compact-heading,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-snapshot-stats,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-task-heading {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-task-stack {
+  gap: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-record-button-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-record-button {
+  min-height: 48px;
+  gap: 3px;
+  padding: 7px;
+  border-radius: 9px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-record-button strong {
+  font-size: 0.66rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-record-button span {
+  font-size: 0.46rem;
+  line-height: 1.14;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-care-body,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-event-feed,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-list {
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-snapshot-stats,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-history-filters {
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-task-row,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-event-item,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-item {
+  gap: 5px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-stat-label,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-care-badge,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-history-filter span {
+  font-size: 0.46rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-stat-value,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-task-value {
+  font-size: 0.68rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser {
+  gap: 5px;
+  height: 100%;
+  min-height: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-head {
+  gap: 5px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-item,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-card {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 6px;
+  padding: 6px 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-item {
+  align-items: center;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-thumb,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-icon {
+  width: 34px;
+  height: 34px;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-copy {
+  gap: 1px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-copy strong,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-topline strong {
+  font-size: 0.62rem;
+  line-height: 1.08;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-actions,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-detail-list,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-rewards {
+  gap: 3px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-actions .small-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 22px;
+  padding: 4px 3px;
+  border-radius: 7px;
+  font-size: 0.48rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-copy {
+  gap: 3px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-requirement,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-detail-list,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-rewards {
+  font-size: 0.46rem;
+  line-height: 1.14;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-detail-list span,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-milestone-rewards span {
+  padding: 2px 5px;
+  font-size: 0.44rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) {
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .utility-panel {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + 8px) !important;
+  right: calc(var(--mobile-safe-right) + 8px) !important;
+  top: calc(var(--mobile-safe-top) + 8px) !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + 6px) !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-height: 0;
+  gap: 6px;
+  padding: 9px;
+  border-radius: 15px;
+  font-size: 0.58rem;
+  pointer-events: auto;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .store-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 6px;
+  padding: 0 2px 3px;
+  min-width: 0;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .settings-panel-copy {
+  gap: 1px;
+  min-width: 0;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .settings-kicker {
+  margin: 0;
+  font-size: 0.46rem;
+  line-height: 1;
+  letter-spacing: 0.11em;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) #utilityOverlayTitle {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .store-close-button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .utility-overlay-body {
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .utility-overlay-footer {
+  min-height: 26px;
+  padding-top: 3px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .utility-overlay-footer .small-button {
+  min-height: 24px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.56rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .decor-settings-panel,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-name-panel {
+  height: auto;
+  min-height: 0;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .decor-settings-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  height: auto;
+  min-height: 0;
+  gap: 6px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-preview-column,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-controls-column {
+  min-width: 0;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-preview-column {
+  order: 0;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-controls-column {
+  order: 1;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding-right: 0;
+  overflow: visible;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-size-window {
+  height: auto;
+  min-height: 0;
+  grid-template-rows: auto auto;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 9px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-size-stage {
+  height: clamp(86px, 21dvh, 138px);
+  min-height: 86px;
+  max-height: 138px;
+  overflow: auto;
+  border-radius: 8px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-fish-size-readout {
+  gap: 6px;
+  font-size: 0.54rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .bubbler-control-row,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-name-row,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-color-layer-card,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-seat-card {
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .bubbler-control-row span,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-name-row span,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-color-layer-header,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-seat-card-header {
+  gap: 6px;
+  font-size: 0.54rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .bubbler-control-row strong,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-color-layer-header strong {
+  font-size: 0.54rem;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .bubbler-control-row em,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .custom-decor-type-summary,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .mini-note {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) :is(.shop-sort-select, .tank-name-input, input[type="text"]) {
+  min-width: 0;
+  width: 100%;
+  min-height: 24px;
+  padding: 4px 24px 4px 8px;
+  border-radius: 999px;
+  font-size: 0.56rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) input[type="range"] {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-color-controls,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-entry-list,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-seat-list {
+  gap: 5px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-color-layer-card.is-mobile-color-dropdown .cave-color-swatches {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .mobile-cave-color-select {
+  margin-top: 1px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-colorize-toggle {
+  width: 100%;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 7px;
+  border-radius: 8px;
+  font-size: 0.54rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-colorize-toggle input {
+  width: 14px;
+  height: 14px;
+}
+
+body.mobile-page:has(#utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+):not([hidden])) #mobileEditTankButton {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
+    radial-gradient(circle at 50% 12%, rgba(155, 193, 255, 0.28), transparent 50%),
+    rgba(82, 102, 198, 0.28);
+  box-shadow:
+    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 22px rgba(0, 0, 0, 0.18);
+  animation: none !important;
+}
+
+@media (max-width: 370px) {
+  body.mobile-page .mobile-top-chrome {
+    display: none;
+  }
+
+  body.mobile-page .display-cell {
+    grid-template-columns: 18px minmax(0, 1fr);
+    column-gap: 3px;
+    padding: 0 4px;
+  }
+
+  body.mobile-page .display-cell::before {
+    width: 18px;
+    height: 18px;
+  }
+
+  body.mobile-page .tank-bottom-dock > :is(
+    #openManagementButton,
+    #mobileFishCareButton,
+    #mobileToolsButton,
+    #mobileEditTankButton,
+    #openStoreButton,
+    #openSettingsButton
+  ) {
+    height: 40px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 540px) {
+  :root[data-mobile-page="true"],
+  body.mobile-page {
+    --mobile-top-height: calc(var(--mobile-safe-top) + 72px);
+    --mobile-dock-height: calc(var(--mobile-safe-bottom) + 54px);
+  }
+
+  body.mobile-page .mobile-top-chrome {
+    height: var(--mobile-top-height);
+    padding-top: calc(var(--mobile-safe-top) + 10px);
+  }
+
+  body.mobile-page .mobile-top-chrome h1 {
+    margin-top: 9px;
+    font-size: 1.7rem;
+  }
+
+  body.mobile-page .mobile-menu-button {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+  }
+
+  body.mobile-page .tank-display {
+    top: calc(var(--mobile-safe-top) + 10px) !important;
+    width: min(42vw, 280px);
+    min-width: min(42vw, 280px);
+    max-width: calc(100vw - 220px);
+  }
+
+  body.mobile-page .tank-bottom-dock,
+  html[data-toolbar-position] body.mobile-page .tank-bottom-dock {
+    min-height: var(--mobile-dock-height);
+    padding-top: 8px;
+    padding-bottom: calc(var(--mobile-safe-bottom) + 8px);
+  }
+
+  body.mobile-page .tank-bottom-dock > :is(
+    #openManagementButton,
+    #mobileFishCareButton,
+    #mobileToolsButton,
+    #mobileEditTankButton,
+    #openStoreButton,
+    #openSettingsButton
+  ) {
+    height: 36px;
+    flex-direction: row;
+    gap: 5px;
+  }
+
+  body.mobile-page .tank-bottom-dock > :is(
+    #openManagementButton,
+    #mobileFishCareButton,
+    #mobileToolsButton,
+    #mobileEditTankButton,
+    #openStoreButton,
+    #openSettingsButton
+  ) .dock-button-icon {
+    width: 19px;
+    height: 19px;
+  }
+
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  html[data-mobile-page="true"] {
+    overflow: hidden;
+    background: #020613;
+  }
+
+  body.mobile-page {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vh;
+    height: 100vw;
+    min-width: 100vh;
+    min-height: 100vw;
+    transform: rotate(90deg) translateY(-100%);
+    transform-origin: 0 0;
+  }
+
+  body.mobile-page .app-shell,
+  body.mobile-page .tank-page,
+  body.mobile-page .aquarium-card,
+  body.mobile-page .tank-stage {
+    width: 100vh !important;
+    height: 100vw !important;
+    min-width: 100vh !important;
+    min-height: 100vw !important;
+    max-width: 100vh !important;
+    max-height: 100vw !important;
+  }
+
+  body.mobile-page .tank-display {
+    width: min(88vh, 360px) !important;
+    min-width: min(88vh, 360px) !important;
+    max-width: calc(100vh - var(--mobile-safe-left) - var(--mobile-safe-right) - 28px) !important;
+  }
+}

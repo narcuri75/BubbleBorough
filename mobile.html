@@ -1,0 +1,2531 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="theme-color" content="#031429" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bubble Borough" />
+  <meta name="screen-orientation" content="portrait" />
+  <title>Bubble Borough</title>
+  <link rel="manifest" href="./public/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
+  <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="./public/styles.css?v=20260502d" />
+  <link rel="stylesheet" href="./public/mobile_styles.css?v=20260502ak" />
+</head>
+
+<body class="mobile-page">
+  <section class="mobile-unsupported-blocker" aria-label="Unsupported device" role="status">
+    <div class="mobile-unsupported-card">
+      <p class="mobile-unsupported-kicker">Bubble Borough</p>
+      <h1>Please Use A Computer</h1>
+      <p>For the best experience with Bubble Borough, please use a desktop or laptop computer. Bubble Borough is not intended for mobile devices.</p>
+    </div>
+  </section>
+
+  <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite">
+    <div id="loadingOverlayBackground" class="tank-stage-background loading-overlay-background" aria-hidden="true"></div>
+    <div id="loadingOverlayUnderwater" class="tank-stage-underwater loading-overlay-underwater" aria-hidden="true"></div>
+    <div class="loading-overlay-content">
+      <img class="loading-overlay-logo" src="assets/misc/bb_logo.png" alt="Bubble Borough" />
+      <div class="loading-overlay-text">Loading Aquarium</div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <main class="tank-page">
+      <section class="aquarium-card">
+        <div class="tank-stage" id="tankStage">
+          <div class="tank-stage-background" id="tankStageBackground" hidden aria-hidden="true">
+            <div class="tank-stage-underwater"></div>
+          </div>
+          <canvas id="tankCanvas" width="1280" height="720"></canvas>
+          <canvas id="grimeCanvas" width="1280" height="720"></canvas>
+          <canvas id="glassCanvas" width="1280" height="720"></canvas>
+
+          <div class="tank-overlay">
+            <section class="tank-display">
+              <button id="displayTab" class="display-tab" type="button" title="Hide Display"
+                aria-label="Hide Display">^</button>
+              <div class="display-grid">
+                <article class="display-cell">
+                  <span class="display-label">Cleanliness</span>
+                  <strong id="cleanlinessLabel">100%</strong>
+                </article>
+                <article class="display-cell">
+                  <span class="display-label">Meals Today</span>
+                  <strong id="mealWindowLabel">0 / 2</strong>
+                </article>
+                <article class="display-cell">
+                  <span class="display-label">Coins</span>
+                  <strong id="coinCount">0</strong>
+                </article>
+              </div>
+            </section>
+
+            <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Daily recap ready"
+              aria-label="Open daily recap">
+              <img class="daily-bonus-bell-icon" src="./assets/icons/bell.png" alt="" aria-hidden="true" />
+            </button>
+
+            <aside id="editQuickRef" class="edit-quick-ref" hidden aria-label="Edit mode quick reference">
+              <div id="editQuickRefCard" class="edit-quick-ref-card">
+                <div class="edit-quick-ref-row">
+                  <span class="edit-quick-ref-key">Click Decor</span>
+                  <span class="edit-quick-ref-copy">Select to edit</span>
+                </div>
+                <div class="edit-quick-ref-row">
+                  <span class="edit-quick-ref-key">Shift/Ctrl Click</span>
+                  <span class="edit-quick-ref-copy">Select multiple decor</span>
+                </div>
+              </div>
+            </aside>
+
+            <button id="prevTankButton" class="tank-nav-button tank-nav-button-left" type="button" hidden
+              aria-label="Previous tank">
+              &#10094;
+            </button>
+
+            <button id="nextTankButton" class="tank-nav-button tank-nav-button-right" type="button" hidden
+              aria-label="Next tank">
+              &#10095;
+            </button>
+
+            <div id="tankSidebar" class="tank-sidebar">
+              <nav class="tab-buttons" aria-label="Aquarium panels">
+                <button class="tab-button active" data-tab="overview" type="button">Tank Info</button>
+                <button class="tab-button" data-tab="fish" type="button">Fish</button>
+                <button class="tab-button" data-tab="decor" type="button">Decor</button>
+              </nav>
+
+              <div id="tankPanelShell" class="tank-panel-shell">
+                <section class="tab-panel active" data-panel="overview">
+                  <div class="panel-heading">
+                    <div>
+                      <h2>Tank Info</h2>
+                      <p>View the current aquarium, its name, care, and equipment.</p>
+                    </div>
+                  </div>
+
+                  <section class="info-card">
+                    <div id="tankManagementCard" class="tank-management-card"></div>
+                  </section>
+
+                  <section class="info-card">
+                    <h3>Today&apos;s Meals</h3>
+                    <div id="mealTrack" class="meal-track"></div>
+                  </section>
+
+                  <section class="info-card">
+                    <h3>Basics:</h3>
+                    <ul class="rule-list">
+                      <li>🍗 Feed fish once every 12 hours.</li>
+                      <li>💊 Add drops of medication to the tank when they are ill.</li>
+                      <li>🧽 Scrub the tank with the sponge to clean it.</li>
+                      <li>🥄 Scoop fish into storage if needed.</li>
+                      <li>🐟 Move fish between tank and storage.</li>
+                      <li>🌿 Move decor between tank and storage.</li>
+                      <li>🎨 Customize your tank.</li>
+                      <li>🛒 Buy fish, decor, customizations, and equipment.</li>
+                      <li>❔ Review tips for fish comfort.</li>
+                      <li>⚙️ Change Settings, Export/Import save data, and Reset game data.</li>
+
+                    </ul>
+                  </section>
+
+                  <section class="info-card">
+                    <h3>Tips:</h3>
+                    <ul class="rule-list">
+                      <li>💔 Missing a meal removes half a heart.</li>
+                      <li>💖 4 meals in a row restore half a heart.</li>
+                      <li>💩 Fish poop 1 to 3 hours after eating and it settles on the gravel.</li>
+                      <li>🏚️ Bigger fish and more fish make grime build up faster.</li>
+                      <li>🐠 Sucker fish and better filters help slow grime build-up.</li>
+                    </ul>
+                  </section>
+
+                  <div class="summary-grid" id="summaryGrid"></div>
+
+                  <section class="info-card">
+                    <h3>Recent Events</h3>
+                    <div id="eventFeed" class="event-feed"></div>
+                  </section>
+
+                  <section class="info-card">
+                    <div class="compact-heading">
+                      <h3>Settings</h3>
+                      <p>Open the toolbar settings panel for save tools, content filters, and reset options.</p>
+                    </div>
+                    <button id="openSettingsSidebarButton" class="small-button alt" type="button">
+                      Open Settings
+                    </button>
+                  </section>
+
+                  <section class="info-card info-card-credits">
+                    <div class="overview-actions">
+                      <button class="small-button alt credits-button" type="button" data-open-credits>
+                        Credits
+                      </button>
+                      <a class="small-button alt" href="https://forms.gle/p6Qnwo3SoHQJc8VY6" target="_blank"
+                        rel="noopener noreferrer">
+                        Feedback
+                      </a>
+                      <a class="small-button alt" href="https://nathanarcuri.com/" target="_blank"
+                        rel="noopener noreferrer">
+                        Visit My Site
+                      </a>
+                      <a class="small-button donation-button" href="https://buymeacoffee.com/nathanarcuri" target="_blank"
+                        rel="noopener noreferrer" aria-label="Donate with Buy Me a Coffee">
+                        Pizza Me!
+                      </a>
+                    </div>
+
+                    <!-- External embed intentionally omitted for static build compatibility.
+                      data-name="bmc-button" data-slug="nathanarcuri" data-color="#ff0000" data-emoji="🍕"
+                      data-font="Cookie" data-text="Pizza me!" data-outline-color="#ffffff" data-font-color="#ffffff"
+                      data-coffee-color="#FFDD00" -->
+                  </section>
+                </section>
+
+
+
+                <section class="tab-panel" data-panel="fish">
+                  <div class="panel-heading with-action">
+                    <div>
+                      <h2>Fish Management</h2>
+                      <p>Track health, comfort, age, and names.</p>
+                    </div>
+
+                    <button id="toggleFishShop" class="icon-button icon-only" type="button" title="Open fish shop"
+                      aria-label="Open fish shop">
+                      🛒
+                    </button>
+                  </div>
+
+                  <div id="fishList" class="card-stack"></div>
+                </section>
+
+                <section class="tab-panel" data-panel="decor">
+                  <div class="panel-heading with-action">
+                    <div>
+                      <h2>Decor Studio</h2>
+                      <p>Use edit mode to preview, place, and rearrange the tank live.</p>
+                    </div>
+
+                    <div class="panel-heading-actions">
+                      <button id="toggleEditMode" class="icon-button" type="button" title="Toggle tank edit mode"
+                        aria-label="Toggle tank edit mode">
+                        Edit
+                      </button>
+                      <button id="toggleDecorShop" class="icon-button icon-only" type="button" title="Open decor shop"
+                        aria-label="Open decor shop">
+                        🛒
+                      </button>
+                    </div>
+                  </div>
+
+                  <div id="decorWorkspace" class="decor-grid">
+                    <section class="info-card collapsible-section" data-collapsible-section="decorPlaced">
+                      <div class="collapsible-header">
+                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorPlaced"
+                          aria-expanded="true">
+                          <span class="collapsible-title">Placed Decor</span>
+                          <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
+                        </button>
+                      </div>
+                      <div data-collapsible-body>
+                        <div id="placedDecorList" class="mini-card-stack"></div>
+                      </div>
+                    </section>
+
+                    <section class="info-card collapsible-section" data-collapsible-section="decorStorage">
+                      <div class="collapsible-header">
+                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorStorage"
+                          aria-expanded="true">
+                          <span class="collapsible-title">Storage</span>
+                          <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
+                        </button>
+                      </div>
+                      <div data-collapsible-body>
+                        <div id="decorInventory" class="mini-card-stack"></div>
+                      </div>
+                    </section>
+
+                    <section class="info-card full-span collapsible-section"
+                      data-collapsible-section="decorBackgrounds">
+                      <div class="collapsible-header">
+                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorBackgrounds"
+                          aria-expanded="true">
+                          <span class="collapsible-title">Backgrounds</span>
+                          <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
+                        </button>
+                      </div>
+                      <div data-collapsible-body>
+                        <div id="backgroundList" class="background-grid"></div>
+                      </div>
+                    </section>
+
+                    <section class="info-card full-span collapsible-section" data-collapsible-section="decorTankShell">
+                      <div class="collapsible-header">
+                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorTankShell"
+                          aria-expanded="true">
+                          <span class="collapsible-title">Tank Shell</span>
+                          <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
+                        </button>
+                      </div>
+                      <div data-collapsible-body>
+                        <div id="tankAssetList" class="background-grid"></div>
+                      </div>
+                    </section>
+
+                    <section id="tankFilterSection" class="info-card full-span collapsible-section" data-collapsible-section="decorFilter">
+                      <div class="collapsible-header">
+                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorFilter"
+                          aria-expanded="true">
+                          <span id="tankFilterSectionTitle" class="collapsible-title">Filter</span>
+                          <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
+                        </button>
+                      </div>
+                      <div data-collapsible-body>
+                        <div class="compact-heading equipment-heading">
+                          <p id="tankFilterSectionNote">Equip owned filters here. Buy stronger ones from the tank shop.</p>
+                          <button id="openEquipmentShopButton" class="small-button alt" type="button">
+                            Tank Shop
+                          </button>
+                        </div>
+                        <div id="filterAssetList" class="background-grid"></div>
+                        <div id="uvLightList" class="uv-light-equipment"></div>
+                      </div>
+                    </section>
+
+                    <section class="info-card full-span collapsible-section"
+                      data-collapsible-section="decorCustomGravel">
+                      <div class="collapsible-header">
+                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorCustomGravel"
+                          aria-expanded="true">
+                          <span class="collapsible-title">Gravel</span>
+                          <span class="collapsible-icon" data-collapsible-icon>&#9662;</span>
+                        </button>
+                      </div>
+                      <div data-collapsible-body>
+                        <div id="customGravelPanel"></div>
+                      </div>
+                    </section>
+
+                  </div>
+                </section>
+              </div>
+
+              <button id="toggleSidebar" class="sidebar-toggle" type="button" aria-controls="tankPanelShell"
+                aria-expanded="false" aria-label="Toggle tank panel">
+                Panel
+              </button>
+            </div>
+
+            <div class="tank-overlay-hints" hidden>
+              <div id="placementHint" class="placement-hint"></div>
+            </div>
+
+            <section id="careTaskPane" class="care-task-pane" hidden aria-live="polite">
+              <div class="care-task-heading">Tasks:</div>
+              <div id="careTaskList" class="care-task-list"></div>
+            </section>
+
+            <div id="toolCursor" class="tool-cursor" hidden aria-hidden="true"></div>
+            <div id="selectedDecorLayerControls" class="decor-side-control-panel decor-layer-controls" hidden
+              aria-label="Selected decor layer">
+              <span class="decor-side-control-title">Layer</span>
+              <button id="selectedDecorLayerUpButton" class="decor-side-control-button" type="button"
+                title="Move Layer Up" aria-label="Move Decor Layer Up">&uarr;</button>
+              <span id="selectedDecorLayerValue" class="decor-side-control-value">3-4</span>
+              <button id="selectedDecorLayerDownButton" class="decor-side-control-button" type="button"
+                title="Move Layer Down" aria-label="Move Decor Layer Down">&darr;</button>
+            </div>
+            <div id="selectedDecorActionBar" class="decor-action-top-bar" hidden aria-label="Selected decor actions">
+              <button id="selectedDecorSellButton" class="decor-action-float-button sell-decor-float-button"
+                type="button" title="Sell" aria-label="Sell">SELL</button>
+              <button id="selectedDecorBuyAnotherButton" class="decor-action-float-button buy-another-float-button"
+                type="button" title="Buy Another" aria-label="Buy Another">BUY</button>
+              <button id="selectedDecorStoreButton" class="decor-action-float-button store-decor-float-button"
+                type="button" title="Move to Storage" aria-label="Move to Storage">PUT AWAY</button>
+              <button id="selectedDecorSettingsButton" class="decor-action-float-button settings-decor-float-button"
+      type="button" title="Decor Settings" aria-label="Decor Settings">SETTINGS</button>
+            </div>
+            <div id="selectedDecorResizeHandles" class="decor-resize-handles" hidden aria-hidden="true">
+              <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="nw"
+                title="Resize from top left" aria-label="Resize decor from top left"></button>
+              <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="ne"
+                title="Resize from top right" aria-label="Resize decor from top right"></button>
+              <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="sw"
+                title="Resize from bottom left" aria-label="Resize decor from bottom left"></button>
+              <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="se"
+                title="Resize from bottom right" aria-label="Resize decor from bottom right"></button>
+            </div>
+            <div id="selectedDecorResizeIndicator" class="decor-resize-indicator" hidden>100%</div>
+
+            <section id="storeOverlay" class="store-overlay" hidden aria-label="Store">
+              <div class="store-panel">
+                <div class="store-panel-header">
+                  <div class="store-panel-actions">
+                    <div id="storeCoinCounter" class="store-coin-counter" aria-label="Current coins: 0">
+                      <img class="coin-symbol store-coin-icon store-coin-counter-icon" src="assets/icons/coin.png"
+                        alt="" aria-hidden="true" draggable="false" />
+                      <span class="store-coin-counter-value">0</span>
+                    </div>
+
+                    <button id="closeStoreOverlay" class="store-close-button" type="button" title="Close store"
+                      aria-label="Close store">
+                      &times;
+                    </button>
+                  </div>
+                </div>
+
+                <div class="store-panel-body">
+                  <div id="foodShop" class="shop-drawer store-drawer" hidden></div>
+                  <div id="pharmacyShop" class="shop-drawer store-drawer" hidden></div>
+                  <div id="fishShop" class="shop-drawer store-drawer" hidden></div>
+                  <div id="decorShop" class="shop-drawer store-drawer" hidden></div>
+                  <div id="equipmentShop" class="shop-drawer store-drawer" hidden></div>
+                </div>
+                <div id="storeScrollControls" class="store-scroll-controls" hidden aria-label="Store scroll controls">
+                  <button class="store-scroll-button" type="button" data-store-scroll="up" aria-label="Scroll store up">&uarr;</button>
+                  <button class="store-scroll-button" type="button" data-store-scroll="down" aria-label="Scroll store down">&darr;</button>
+                </div>
+              </div>
+            </section>
+            <div class="store-panel-tabs" role="tablist" aria-label="Store Tabs">
+              <button id="storeFoodTab" class="store-tab-button" type="button" role="tab" aria-selected="true"
+                aria-controls="foodShop" aria-label="Food" title="Food">
+                <img class="store-tab-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+              <button id="storePharmacyTab" class="store-tab-button" type="button" role="tab"
+                aria-selected="false" aria-controls="pharmacyShop" aria-label="Medicine" title="Medicine">
+                <img class="store-tab-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+              <button id="storeFishTab" class="store-tab-button" type="button" role="tab" aria-selected="false"
+                aria-controls="fishShop" aria-label="Fish" title="Fish">
+                <img class="store-tab-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+              <button id="storeDecorTab" class="store-tab-button" type="button" role="tab" aria-selected="false"
+                aria-controls="decorShop" aria-label="Decor" title="Decor">
+                <img class="store-tab-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+              <button id="storeEquipmentTab" class="store-tab-button" type="button" role="tab"
+                aria-selected="false" aria-controls="equipmentShop" aria-label="Tank" title="Tank">
+                <img class="store-tab-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+            </div>
+
+            <section id="utilityOverlay" class="store-overlay utility-overlay" hidden
+              aria-labelledby="utilityOverlayTitle" aria-modal="true" role="dialog">
+              <div class="store-panel utility-panel">
+                <div class="store-panel-header">
+                  <div class="settings-panel-copy">
+                    <p id="utilityOverlayKicker" class="settings-kicker">Tank Tools</p>
+                    <h2 id="utilityOverlayTitle">Details</h2>
+                  </div>
+
+                  <button id="closeUtilityOverlay" class="store-close-button" type="button" title="Close panel"
+                    aria-label="Close panel">
+                    &times;
+                  </button>
+                </div>
+
+                <div id="utilityOverlayBody" class="store-panel-body utility-overlay-body"></div>
+                <div id="utilityOverlayFooter" class="utility-overlay-footer"></div>
+              </div>
+            </section>
+            <div id="mobileManagementTabs" class="mobile-management-tabs" role="tablist" aria-label="Tank Info Tabs" hidden>
+              <button class="mobile-management-tab-button" type="button" role="tab" data-mobile-management-tab="tanks"
+                aria-selected="true" aria-label="Tanks" title="Tanks">
+                <img class="mobile-management-tab-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+              <button class="mobile-management-tab-button" type="button" role="tab" data-mobile-management-tab="fish"
+                aria-selected="false" aria-label="Fish" title="Fish">
+                <img class="mobile-management-tab-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+              <button class="mobile-management-tab-button" type="button" role="tab" data-mobile-management-tab="decor"
+                aria-selected="false" aria-label="Decor" title="Decor">
+                <img class="mobile-management-tab-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+            </div>
+
+            <section id="settingsOverlay" class="store-overlay settings-overlay" hidden aria-labelledby="settingsTitle"
+              aria-modal="true" role="dialog">
+              <div class="settings-panel">
+                <div class="settings-panel-header">
+                  <div class="settings-panel-copy">
+                    <p class="settings-kicker">Aquarium Tools</p>
+                    <h2 id="settingsTitle">Settings</h2>
+                    <p>Manage save files, content filters, and reset tools for this aquarium.</p>
+                  </div>
+
+                  <button id="closeSettingsOverlay" class="store-close-button" type="button" title="Close settings"
+                    aria-label="Close settings">
+                    &times;
+                  </button>
+                </div>
+
+                <div class="wallpaper-scroll-shell settings-scroll-shell">
+                  <div class="settings-panel-body" data-wallpaper-scroll-target="settings">
+                  <section class="settings-section">
+                    <h3>Data</h3>
+                    <p class="settings-section-note">Export, import, or reset your aquarium save.</p>
+                    <div class="overview-actions">
+                      <button id="exportDataButton" class="small-button" type="button">
+                        Export
+                      </button>
+                      <button id="importDataButton" class="small-button alt" type="button">
+                        Import
+                      </button>
+                      <button id="resetProgressButton" class="small-button warn" type="button">
+                        Reset Progress
+                      </button>
+                    </div>
+                    <input id="importDataInput" type="file" accept=".json,application/json" hidden />
+                  </section>
+
+                  <section class="settings-section">
+                    <h3>General</h3>
+
+                    <div class="settings-subsection-heading mobile-location-setting">
+                      <h4>Toolbar Location</h4>
+                    </div>
+                    <div class="toolbar-position-grid mobile-location-setting">
+                      <label class="toolbar-position-option" for="toolbarPositionLeft">
+                        <input id="toolbarPositionLeft" class="settings-checkbox" type="radio" name="toolbarPosition"
+                          value="left-center" data-toolbar-position-choice />
+                        <span class="settings-toggle-label">Left</span>
+                      </label>
+
+                      <label class="toolbar-position-option" for="toolbarPositionBottom">
+                        <input id="toolbarPositionBottom" class="settings-checkbox" type="radio"
+                          name="toolbarPosition" value="bottom-center" data-toolbar-position-choice />
+                        <span class="settings-toggle-label">Center</span>
+                      </label>
+
+                      <label class="toolbar-position-option" for="toolbarPositionRight">
+                        <input id="toolbarPositionRight" class="settings-checkbox" type="radio" name="toolbarPosition"
+                          value="right-center" data-toolbar-position-choice />
+                        <span class="settings-toggle-label">Right</span>
+                      </label>
+                    </div>
+
+                    <div class="settings-subsection-heading mobile-location-setting">
+                      <h4>Digital Display Location</h4>
+                    </div>
+                    <div class="display-position-grid mobile-location-setting">
+                      <label class="display-position-option" for="displayPositionTopLeft">
+                        <input id="displayPositionTopLeft" class="settings-checkbox" type="radio"
+                          name="displayPosition" value="top-left" data-display-position-choice />
+                        <span class="settings-toggle-label">Top Left</span>
+                      </label>
+
+                      <label class="display-position-option" for="displayPositionBottomLeft">
+                        <input id="displayPositionBottomLeft" class="settings-checkbox" type="radio"
+                          name="displayPosition" value="bottom-left" data-display-position-choice />
+                        <span class="settings-toggle-label">Bottom Left</span>
+                      </label>
+
+                      <label class="display-position-option" for="displayPositionTopRight">
+                        <input id="displayPositionTopRight" class="settings-checkbox" type="radio"
+                          name="displayPosition" value="top-right" data-display-position-choice />
+                        <span class="settings-toggle-label">Top Right</span>
+                      </label>
+
+                      <label class="display-position-option" for="displayPositionBottomRight">
+                        <input id="displayPositionBottomRight" class="settings-checkbox" type="radio"
+                          name="displayPosition" value="bottom-right" data-display-position-choice />
+                        <span class="settings-toggle-label">Bottom Right</span>
+                      </label>
+                    </div>
+
+                    <label class="settings-toggle-row" for="violenceGoreToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Gore and Violence</span>
+                        <span class="settings-toggle-note">Toggles graphic effects and aggressive fish behavior.</span>
+                      </div>
+                      <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+                  </section>
+
+                  <section class="settings-section">
+                    <h3>Graphics</h3>
+
+                    <label class="settings-toggle-row" for="ambientBubblesToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Ambient Bubbles</span>
+                        <span class="settings-toggle-note">Shows drifting aquarium bubbles.</span>
+                      </div>
+                      <input id="ambientBubblesToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+
+                    <label class="settings-toggle-row" for="waterParticlesToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Ambient Particles</span>
+                        <span class="settings-toggle-note">Shows suspended particles moving through the water.</span>
+                      </div>
+                      <input id="waterParticlesToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+                  </section>
+
+                  <section class="settings-section">
+                    <h3>Audio</h3>
+
+                    <label class="settings-toggle-row" for="uiMuteToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Mute UI</span>
+                        <span class="settings-toggle-note">Turns off button press and menu feedback sounds only.</span>
+                      </div>
+                      <input id="uiMuteToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+
+                    <label class="settings-toggle-row" for="soundMuteToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Mute All Audio</span>
+                        <span class="settings-toggle-note">Turns off ambience and sound effects.</span>
+                      </div>
+                      <input id="soundMuteToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+                  </section>
+
+                  <section class="settings-section settings-credits-section" aria-label="Other settings">
+                    <h3>Other</h3>
+                    <div class="overview-actions">
+                      <button class="small-button alt credits-button" type="button" data-open-credits>
+                        Credits
+                      </button>
+                      <a class="small-button alt" href="https://forms.gle/p6Qnwo3SoHQJc8VY6" target="_blank"
+                        rel="noopener noreferrer">
+                        Feedback
+                      </a>
+                      <a class="small-button alt" href="https://nathanarcuri.com/" target="_blank"
+                        rel="noopener noreferrer">
+                        Visit My Site
+                      </a>
+                      <a class="small-button donation-button" href="https://buymeacoffee.com/nathanarcuri" target="_blank"
+                        rel="noopener noreferrer" aria-label="Donate with Buy Me a Coffee">
+                        Pizza Me!
+                      </a>
+                    </div>
+                  </section>
+                  </div>
+                  <div class="wallpaper-scroll-controls" data-wallpaper-scroll-controls="settings" hidden
+                    aria-label="Settings scroll controls">
+                    <button class="store-scroll-button" type="button" data-wallpaper-scroll="up"
+                      aria-label="Scroll settings up">&uarr;</button>
+                    <button class="store-scroll-button" type="button" data-wallpaper-scroll="down"
+                      aria-label="Scroll settings down">&darr;</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section id="equipmentOverlay" class="store-overlay settings-overlay equipment-overlay" hidden
+              aria-labelledby="equipmentTitle" aria-modal="true" role="dialog">
+              <div class="settings-panel equipment-panel">
+                <div class="settings-panel-header">
+                  <div class="settings-panel-copy">
+                    <h2 id="equipmentTitle">Edit Tank</h2>
+                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel, filter, and UV light.</p>
+                  </div>
+
+                  <button id="closeEquipmentOverlay" class="store-close-button" type="button" title="Close Edit Tank"
+                    aria-label="Close Edit Tank">
+                    &times;
+                  </button>
+                </div>
+
+                <div class="settings-panel-body">
+                  <section class="settings-section">
+                    <h3>Background</h3>
+                    <p class="settings-section-note">Use a color fill, animated wallpaper, gradient, unlocked backdrop, or a local image
+                      for this aquarium.</p>
+                    <div id="equipmentBackgroundColorPanel"></div>
+                    <div class="settings-subsection-heading">
+                      <h4>Background Image</h4>
+                      <p>Pick an unlocked background image or use your own local image.</p>
+                    </div>
+                    <div id="equipmentBackgroundList" class="background-grid"></div>
+                  </section>
+
+                  <section class="settings-section">
+                    <h3>Gravel</h3>
+                    <div id="equipmentCustomGravelPanel"></div>
+                  </section>
+
+                  <section id="equipmentFilterSection" class="settings-section">
+                    <div class="equipment-heading">
+                      <div>
+                        <h3 id="equipmentFilterSectionTitle">Change Filter</h3>
+                        <p id="equipmentFilterSectionNote" class="settings-section-note">Equip owned filters here and buy stronger ones from the
+                          tank shop.</p>
+                      </div>
+                      <button id="openEquipmentStoreButton" class="small-button alt" type="button">
+                        Tank Shop
+                      </button>
+                    </div>
+                    <div id="equipmentFilterList" class="background-grid"></div>
+                    <div id="equipmentUvLightList" class="uv-light-equipment"></div>
+                  </section>
+                </div>
+              </div>
+            </section>
+
+            <section id="introTutorialOverlay" class="tutorial-overlay" hidden aria-label="Tutorial" role="region">
+              <div id="introTutorialSplash" class="tutorial-splash" hidden aria-hidden="true">
+                <div class="loading-overlay-content tutorial-splash-content">
+                  <img class="loading-overlay-logo tutorial-splash-logo" src="assets/misc/bb_logo.png"
+                    alt="Bubble Borough" />
+                </div>
+              </div>
+
+              <div id="introTutorialPanel" class="tutorial-panel">
+                <button id="introTutorialCloseButton" class="store-close-button tutorial-close-button" type="button"
+                  aria-label="Skip tutorial" title="Skip Tutorial">
+                  &times;
+                </button>
+
+                <div class="tutorial-copy">
+                  <p id="introTutorialKicker" class="tutorial-kicker">Tasks:</p>
+                  <div id="introTutorialBody" class="tutorial-body" aria-live="polite"></div>
+                </div>
+
+                <div id="introTutorialActions" class="tutorial-actions"></div>
+              </div>
+            </section>
+
+            <section id="editDecorTray" class="edit-decor-tray" hidden aria-label="Edit decor tray">
+              <button id="editDecorTrayPrev" class="edit-decor-tray-arrow" type="button"
+                aria-label="Scroll decor tray left">
+                &#8249;
+              </button>
+              <div id="editDecorTrayScroller" class="edit-decor-tray-scroller"></div>
+              <div id="editDecorTrayContextMenu" class="edit-fish-tray-context-menu" hidden></div>
+              <button id="editDecorTrayNext" class="edit-decor-tray-arrow" type="button"
+                aria-label="Scroll decor tray right">
+                &#8250;
+              </button>
+            </section>
+
+            <section id="editFishTray" class="edit-decor-tray" hidden aria-label="Edit fish tray">
+              <button id="editFishTrayPrev" class="edit-decor-tray-arrow" type="button"
+                aria-label="Scroll fish tray left">
+                &#8249;
+              </button>
+              <div id="editFishTrayScroller" class="edit-decor-tray-scroller"></div>
+              <div id="editFishTrayContextMenu" class="edit-fish-tray-context-menu" hidden></div>
+              <button id="editFishTrayNext" class="edit-decor-tray-arrow" type="button"
+                aria-label="Scroll fish tray right">
+                &#8250;
+              </button>
+            </section>
+
+            <section id="foodTray" class="edit-decor-tray" hidden aria-label="Food tray">
+              <button id="foodTrayPrev" class="edit-decor-tray-arrow" type="button" aria-label="Scroll food tray left">
+                &#8249;
+              </button>
+              <div id="foodTrayScroller" class="edit-decor-tray-scroller"></div>
+              <button id="foodTrayNext" class="edit-decor-tray-arrow" type="button" aria-label="Scroll food tray right">
+                &#8250;
+              </button>
+            </section>
+
+            <section id="medicineTray" class="edit-decor-tray" hidden aria-label="Medicine tray">
+              <button id="medicineTrayPrev" class="edit-decor-tray-arrow" type="button"
+                aria-label="Scroll medicine tray left">
+                &#8249;
+              </button>
+              <div id="medicineTrayScroller" class="edit-decor-tray-scroller"></div>
+              <button id="medicineTrayNext" class="edit-decor-tray-arrow" type="button"
+                aria-label="Scroll medicine tray right">
+                &#8250;
+              </button>
+            </section>
+
+            <div class="tank-bottom-dock toolbar-fast-tooltip-experiment">
+              <button id="toolbarTab" class="toolbar-tab" type="button" title="Hide Toolbar"
+                aria-label="Hide Toolbar">&gt;</button>
+
+              <!--REG BUTTONS-->
+
+              <button id="openManagementButton" class="dock-button management" type="button" title="Tank Info"
+                aria-label="Tank Info">
+                <img class="dock-button-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="mobileFishCareButton" class="dock-button mobile-menu-dock-button fish-care" type="button"
+                title="Fish Care" aria-label="Fish Care" data-mobile-menu-target="mobileFishCareMenu">
+                <img class="dock-button-icon" src="assets/icons/fish_care.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="careTaskPaneButton" class="dock-button care-tasks" type="button" title="Tasks"
+                aria-label="Tasks" aria-pressed="false">
+                <img class="dock-button-icon" src="assets/icons/tasks.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="feedButton" class="dock-button feed" type="button" title="Feed Fish"
+                aria-label="Feed Fish">
+                <img class="dock-button-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="medicineButton" class="dock-button medicine" type="button" title="Medicine"
+                aria-label="Medicine">
+                <img class="dock-button-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="spongeButton" class="dock-button sponge" type="button" title="Clean Tank"
+                aria-label="Clean Tank">
+                <img class="dock-button-icon" src="assets/icons/sponge.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="scoopButton" class="dock-button scoop" type="button" title="Scoop" aria-label="Scoop">
+                <img class="dock-button-icon" src="assets/icons/scoop.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="mobileToolsButton" class="dock-button mobile-menu-dock-button tools" type="button"
+                title="Tools" aria-label="Tools" data-mobile-menu-target="mobileToolsMenu">
+                <img class="dock-button-icon" src="assets/icons/tools.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="fishEditModeDockButton" class="dock-button edit" type="button" title="Manage Fish"
+                aria-label="Manage Fish">
+                <img class="dock-button-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="editModeDockButton" class="dock-button edit" type="button" title="Edit Decor"
+                aria-label="Edit Decor">
+                <img class="dock-button-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="mobileEditTankButton" class="dock-button mobile-menu-dock-button edit-tank" type="button"
+                title="Edit Tank" aria-label="Edit Tank" data-mobile-menu-target="mobileEditTankMenu">
+                <img class="dock-button-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="editLayerUpButton" class="dock-button edit-shortcut-control" type="button" hidden
+                title="Next decor layer (Z / Up)" aria-label="Next decor layer (Z / Up)">Z</button>
+
+              <button id="editLayerDownButton" class="dock-button edit-shortcut-control" type="button" hidden
+                title="Previous decor layer (X / Down)" aria-label="Previous decor layer (X / Down)">X</button>
+
+              <button id="editScaleUpButton" class="dock-button edit-shortcut-control" type="button" hidden
+                title="Increase decor size (+ / =)" aria-label="Increase decor size (+ / =)">+</button>
+
+              <button id="editScaleDownButton" class="dock-button edit-shortcut-control" type="button" hidden
+                title="Decrease decor size (-)" aria-label="Decrease decor size (-)">-</button>
+
+              <button id="openEquipmentButton" class="dock-button settings" type="button" title="Edit Tank"
+                aria-label="Edit Tank">
+                <img class="dock-button-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="openStoreButton" class="dock-button shop" type="button" title="Store"
+                aria-label="Store">
+                <img class="dock-button-icon" src="assets/icons/store.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="tipsButton" class="dock-button tips" type="button" title="Care Tips" hidden
+                aria-label="Care Tips">❔</button>
+
+
+              <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
+                aria-label="Settings">
+                <img class="dock-button-icon" src="assets/icons/settings.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="toggleMouseLockButton" class="dock-button settings" type="button"
+                title="Lock Tank Mouse Input" aria-label="Lock Tank Mouse Input">&#128274;</button>
+
+              <button id="lightsOutToggleButton" class="dock-button lights-out" type="button" title="Lights Out: Auto"
+                aria-label="Lights Out Auto" aria-pressed="false">
+                <span class="dock-button-night-icon" aria-hidden="true"></span>
+              </button>
+
+              <button id="uvLightToggleButton" class="dock-button uv-light" type="button" title="Turn UV Light Off"
+                aria-label="Turn UV Light Off" hidden>
+                <img src="assets/misc/uvlight.png" alt="" aria-hidden="true" />
+              </button>
+
+              <!--DEBUG BUTTONS-->
+
+              <button id="addCoinsButton" class="dock-button debug" type="button" title="Debug: Add 10 coins"
+                aria-label="Debug: Add 10 coins">
+                <img class="dock-button-icon coin-symbol" src="assets/icons/coin.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="resetMealsButton" class="dock-button debug" type="button" title="Debug: Reset Today's Meals"
+                aria-label="Debug: Reset Today's Meals">🍽️</button>
+              <button id="debugBreedButton" class="dock-button debug" type="button" title="Debug: Make a Baby"
+                aria-label="Debug: Make a Baby">🥚</button>
+
+              <button id="debugDamageFishButton" class="dock-button debug" type="button"
+                data-preserve-fish-selection
+                title="Debug: Selected Fish loses half a heart"
+                aria-label="Debug: Selected Fish loses half a heart">💔</button>
+
+              <button id="resetFishHealthButton" class="dock-button debug" type="button" hidden
+                title="Debug: Restore all fish to full health"
+                aria-label="Debug: Restore all fish to full health">💖</button>
+
+              <button id="maxDirtButton" class="dock-button debug" type="button"
+                title="Debug: Increase Dirtiness by 10%" aria-label="Debug: Increase Dirtiness by 10%">💩</button>
+
+              <button id="debugGravelDigButton" class="dock-button debug" type="button" title="Debug: Dig"
+                aria-label="Debug: Force Gravel Dig">🕳️</button>
+
+              <button id="debugGravelPebbleButton" class="dock-button debug" type="button"
+                title="Debug: Force Gravel Pebble Toss" aria-label="Debug: Force Gravel Pebble Toss">🪨</button>
+
+              <button id="debugCaveButton" class="dock-button debug" type="button" title="Debug: Cave"
+                aria-label="Debug: Force Cave Test Loop">🏔️</button>
+              <button id="debugDailyRecapButton" class="dock-button debug" type="button"
+                title="Debug: Trigger Daily Recap" aria-label="Debug: Trigger Daily Recap">&#128276;</button>
+              <button id="debugFishBehaviorLogButton" class="dock-button debug" type="button"
+                title="Debug: Download Fish Behavior Log" aria-label="Debug: Download Fish Behavior Log">&#128221;</button>
+              <!--^^^-->
+
+              <button id="toggleDebugMenuButton" class="dock-button debug" type="button" hidden
+                title="Debug Menu" aria-label="Debug Menu" aria-controls="debugSidebar" aria-expanded="false"
+                data-preserve-fish-selection>&#128296;</button>
+
+            </div>
+            <div id="toolbarFastTooltip" class="toolbar-fast-tooltip" role="tooltip" hidden></div>
+
+            <aside id="debugSidebar" class="debug-sidebar" hidden aria-label="Debug Menu"
+              data-preserve-fish-selection>
+              <div class="debug-sidebar-panel">
+                <div class="debug-sidebar-header">
+                  <h2>&#128296; Debug Menu</h2>
+                </div>
+
+                <div class="debug-menu-section">
+                  <h3>Game State:</h3>
+                  <div id="debugMenuGameState" class="debug-menu-grid is-paired">
+                    <button id="addHundredCoinsButton" class="debug-menu-button" type="button"
+                      title="Debug: Add 100 coins" aria-label="Debug: Add 100 coins">
+                      <span class="debug-menu-icon">&#128176;</span>
+                      <span>Add 100 coins</span>
+                    </button>
+                    <button id="completeMealsButton" class="debug-menu-button" type="button"
+                      title="Debug: Complete Today's Meals" aria-label="Debug: Complete Today's Meals">
+                      <span class="debug-menu-icon">&#127869;&#65039;</span>
+                      <span>Complete Meals</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="debug-menu-section">
+                  <h3>Tank State:</h3>
+                  <div id="debugMenuDirtiness" class="debug-menu-grid is-paired">
+                    <button id="debugMaxDirtinessButton" class="debug-menu-button danger" type="button"
+                      title="Debug: Maximum Dirtiness" aria-label="Debug: Maximum Dirtiness">
+                      <span class="debug-menu-icon">&#9762;&#65039;</span>
+                      <span>Maximum Dirtiness</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="debug-menu-section">
+                  <h3>Fish:</h3>
+                  <div id="debugMenuFish" class="debug-menu-grid">
+                    <button id="debugInfectFishButton" class="debug-menu-button" type="button"
+                      data-preserve-fish-selection title="Debug: Infect Selected Fish"
+                      aria-label="Debug: Infect Selected Fish">
+                      <span class="debug-menu-icon">&#129440;</span>
+                      <span>Infect Selected Fish</span>
+                    </button>
+                    <button id="debugCureFishButton" class="debug-menu-button" type="button"
+                      data-preserve-fish-selection title="Debug: Cure Selected Fish"
+                      aria-label="Debug: Cure Selected Fish">
+                      <span class="debug-menu-icon">&#128137;</span>
+                      <span>Cure Selected Fish</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="debug-menu-section">
+                  <h3>Behavior:</h3>
+                  <div id="debugMenuBehaviors" class="debug-menu-grid"></div>
+                </div>
+              </div>
+            </aside>
+
+            <section id="fishInspector" class="fish-inspector" hidden>
+              <div class="fish-inspector-card">
+                <div class="fish-inspector-name-row">
+                  <label for="fishNameInput">Name:</label>
+                  <div class="fish-name-input-wrap">
+                    <input id="fishNameInput" type="text" maxlength="20" autocomplete="off" />
+                    <button id="clearFishName" class="fish-name-clear-button" type="button" aria-label="Clear fish name">&times;</button>
+                  </div>
+                  <button id="randomizeFishName" class="small-button inspector-icon-button" type="button"
+                    aria-label="Randomize fish name" title="Randomize Name">?</button>
+                  <button id="saveFishName" class="small-button inspector-save-button inspector-icon-button" type="button"
+                    aria-label="Save fish name" title="Save Name"></button>
+                  <button id="closeInspector" class="icon-button close-inspector" type="button"
+                    aria-label="Close fish details" hidden>
+                    &times;
+                  </button>
+                </div>
+                <div id="fishNameKeyboard" class="wallpaper-name-keyboard" hidden aria-label="Fish name keyboard"></div>
+
+                <div class="inspector-lines">
+                  <div class="inspector-line">
+                    <span>Type:</span>
+                    <strong id="inspectorSpecies">Goldfish</strong>
+                  </div>
+                  <div class="inspector-line">
+                    <span>Health:</span>
+                    <div id="inspectorHealth" class="hearts"></div>
+                  </div>
+                  <div class="inspector-line">
+                    <span>Comfort:</span>
+                    <strong id="inspectorComfort">100% (Calm)</strong>
+                  </div>
+                  <div class="inspector-line inspector-line-chips">
+                    <span>Needs:</span>
+                    <div id="inspectorNeeds" class="inspector-chip-row"></div>
+                  </div>
+                  <div class="inspector-line">
+                    <span>Age:</span>
+                    <strong id="inspectorAge">0s</strong>
+                  </div>
+                  <div class="inspector-line">
+                    <span>Has eaten?:</span>
+                    <strong id="inspectorMeal">❌</strong>
+                  </div>
+                </div>
+
+                <div id="fishInspectorSettings" class="fish-inspector-settings" hidden>
+                  <label class="inspector-setting-row">
+                    <span>Size</span>
+                    <input id="inspectorFishSizeInput" type="range" min="50" max="300" step="5"
+                      data-inspector-fish-setting="size" />
+                    <strong id="inspectorFishSizeValue">100%</strong>
+                  </label>
+                  <label class="inspector-setting-row inspector-setting-row-select">
+                    <span>Behavior</span>
+                    <select id="inspectorFishBehaviorSelect" data-inspector-fish-setting="behavior"></select>
+                  </label>
+                  <div class="fish-inspector-color-card">
+                    <div class="bubbler-color-row cave-color-layer-header">
+                      <span>Color</span>
+                      <strong id="inspectorFishColorValue">Original</strong>
+                    </div>
+                    <div id="inspectorFishColorSwatches"
+                      class="bubbler-color-swatches cave-color-swatches fish-inspector-color-swatches"
+                      role="group" aria-label="Fish color choices"></div>
+                    <label class="cave-colorize-toggle fish-inspector-colorize-toggle">
+                      <input id="inspectorFishColorizeInput" type="checkbox"
+                        data-inspector-fish-setting="colorize" />
+                      <span>Colorize</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="fish-inspector-actions">
+                  <button id="inspectorSellFish"
+                    class="fish-inspector-action-button fish-action-sell"
+                    type="button" hidden aria-label="Sell Fish" title="Sell Fish">SELL</button>
+                  <button id="inspectorBuyAnotherFish"
+                    class="fish-inspector-action-button fish-action-buy"
+                    type="button" hidden aria-label="Buy One" title="Buy One">BUY</button>
+                  <button id="inspectorStoreFish"
+                    class="fish-inspector-action-button fish-action-store"
+                    type="button" hidden aria-label="Move to Storage" title="Move to Storage">PUT AWAY</button>
+                  <button id="inspectorFishSettingsButton"
+                    class="fish-inspector-action-button fish-action-settings"
+                    type="button" aria-label="Fish Settings" title="Fish Settings">SETTINGS</button>
+                  <button id="inspectorDisposeFish" class="small-button warn icon" type="button" hidden
+                    aria-label="Dispose of fish" title="Dispose of fish">&#128701;</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="mobilePopoutBackdrop" class="mobile-popout-backdrop" hidden></div>
+
+  <section id="mobileFishCareMenu" class="mobile-popout-menu" hidden aria-label="Fish Care">
+    <button class="mobile-popout-action" type="button" aria-label="Food" title="Food" data-mobile-proxy-click="#feedButton">
+      <img src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
+      <span>Food</span>
+    </button>
+    <button class="mobile-popout-action" type="button" aria-label="Medication" title="Medication" data-mobile-proxy-click="#medicineButton">
+      <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+      <span>Medication</span>
+    </button>
+  </section>
+
+  <section id="mobileToolsMenu" class="mobile-popout-menu" hidden aria-label="Tools">
+    <button class="mobile-popout-action" type="button" aria-label="Scoop" title="Scoop" data-mobile-proxy-click="#scoopButton">
+      <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+      <span>Scoop</span>
+    </button>
+    <button class="mobile-popout-action" type="button" aria-label="Sponge" title="Sponge" data-mobile-proxy-click="#spongeButton">
+      <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+      <span>Sponge</span>
+    </button>
+  </section>
+
+  <section id="mobileEditTankMenu" class="mobile-popout-menu" hidden aria-label="Edit Tank">
+    <button class="mobile-popout-action" type="button" aria-label="Manage Fish" title="Manage Fish" data-mobile-proxy-click="#fishEditModeDockButton">
+      <img src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" />
+      <span>Manage Fish</span>
+    </button>
+    <button class="mobile-popout-action" type="button" aria-label="Edit Decor" title="Edit Decor" data-mobile-proxy-click="#editModeDockButton">
+      <img src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" />
+      <span>Edit Decor</span>
+    </button>
+    <button class="mobile-popout-action" type="button" aria-label="Edit Tank" title="Edit Tank" data-mobile-proxy-click="#openEquipmentButton">
+      <img src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" />
+      <span>Edit Tank</span>
+    </button>
+  </section>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <input id="localBackgroundInput" type="file" accept="image/*" hidden />
+  <input id="localDecorInput" type="file" accept="image/*" hidden />
+  <input id="localHideFrontInput" type="file" accept="image/*" hidden />
+  <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
+  <input id="localFishInput" type="file" accept="image/*" hidden />
+
+  <script>
+    (() => {
+      document.documentElement.dataset.mobilePage = "true";
+      document.documentElement.dataset.saveNamespace = "mobile";
+
+      const installMobilePortraitLock = () => {
+        document.documentElement.dataset.mobileOrientationLock = "portrait";
+        const requestPortraitLock = () => {
+          const orientation = window.screen?.orientation;
+          if (!orientation?.lock) {
+            return;
+          }
+          orientation.lock("portrait").catch(() => {
+            // Browsers usually require fullscreen/PWA install before honoring orientation locks.
+          });
+        };
+
+        requestPortraitLock();
+        document.addEventListener("fullscreenchange", requestPortraitLock);
+        window.addEventListener("orientationchange", requestPortraitLock);
+      };
+      installMobilePortraitLock();
+
+      const installMobileGravelZoomOut = () => {
+        const contextPrototype = window.CanvasRenderingContext2D?.prototype;
+        if (!contextPrototype || contextPrototype.__bubbleBoroughMobileGravelZoomOut) {
+          return;
+        }
+
+        const originalDrawImage = contextPrototype.drawImage;
+        const gravelLayerPattern = /\/assets\/gravel\/Gravel_L[123]\.png(?:$|[?#])/i;
+        const gravelZoom = 0.58;
+        contextPrototype.drawImage = function drawMobileZoomedGravel(source, ...args) {
+          try {
+            const sourcePath = String(source?.currentSrc || source?.src || "");
+            if (sourcePath && gravelLayerPattern.test(sourcePath) && this.canvas) {
+              this.canvas.__bubbleBoroughMobileGravelLayer = true;
+            }
+
+            if (
+              source?.__bubbleBoroughMobileGravelLayer
+              && this.canvas?.id === "tankCanvas"
+              && args.length === 4
+            ) {
+              const [drawX, drawY, drawWidth, drawHeight] = args.map(Number);
+              const sourceWidth = Math.max(1, Number(source.width || source.naturalWidth) || 1);
+              const sourceHeight = Math.max(1, Number(source.height || source.naturalHeight) || 1);
+              const pattern = this.createPattern(source, "repeat");
+              if (pattern && Number.isFinite(drawWidth) && Number.isFinite(drawHeight)) {
+                this.save();
+                if (typeof pattern.setTransform === "function" && typeof DOMMatrix !== "undefined") {
+                  pattern.setTransform(
+                    new DOMMatrix()
+                      .translate(drawX, drawY)
+                      .scale((drawWidth / sourceWidth) * gravelZoom, (drawHeight / sourceHeight) * gravelZoom)
+                  );
+                } else {
+                  this.translate(drawX, drawY);
+                  this.scale((drawWidth / sourceWidth) * gravelZoom, (drawHeight / sourceHeight) * gravelZoom);
+                  this.fillStyle = pattern;
+                  this.fillRect(0, 0, drawWidth / Math.max(0.001, (drawWidth / sourceWidth) * gravelZoom), drawHeight / Math.max(0.001, (drawHeight / sourceHeight) * gravelZoom));
+                  this.restore();
+                  return;
+                }
+                this.fillStyle = pattern;
+                this.fillRect(drawX, drawY, drawWidth, drawHeight);
+                this.restore();
+                return;
+              }
+            }
+          } catch (error) {
+            console.warn("Mobile gravel zoom-out hook fell back to default drawing.", error);
+          }
+
+          return originalDrawImage.call(this, source, ...args);
+        };
+
+        Object.defineProperty(contextPrototype, "__bubbleBoroughMobileGravelZoomOut", {
+          value: true,
+          configurable: true
+        });
+      };
+      installMobileGravelZoomOut();
+
+      const installMobileStoreCoinCounter = () => {
+        const counter = document.querySelector("#storeCoinCounter");
+        if (!counter || counter.__bubbleBoroughMobileCoinCounter) {
+          return;
+        }
+
+        const getCoinAmount = () => {
+          const valueText = counter.querySelector(".store-coin-counter-value")?.textContent || "";
+          const text = counter.textContent || valueText;
+          const amount = text.match(/\d[\d,]*/)?.[0] || valueText.match(/\d[\d,]*/)?.[0] || "0";
+          return amount.replaceAll(",", "");
+        };
+
+        const renderCounter = () => {
+          const amount = getCoinAmount();
+          if (
+            counter.querySelector(".store-coin-counter-icon")
+            && counter.querySelector(".store-coin-counter-value")?.textContent === amount
+          ) {
+            return;
+          }
+
+          counter.setAttribute("aria-label", `Current coins: ${amount}`);
+          counter.innerHTML = `
+            <img class="coin-symbol store-coin-icon store-coin-counter-icon" src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
+            <span class="store-coin-counter-value">${amount}</span>
+          `;
+        };
+
+        const observer = new MutationObserver(renderCounter);
+        observer.observe(counter, { childList: true, characterData: true, subtree: true });
+        renderCounter();
+
+        Object.defineProperty(counter, "__bubbleBoroughMobileCoinCounter", {
+          value: true,
+          configurable: true
+        });
+      };
+      installMobileStoreCoinCounter();
+
+      const installMobileStorePriceButtons = () => {
+        const storeOverlay = document.querySelector("#storeOverlay");
+        if (!storeOverlay || storeOverlay.__bubbleBoroughMobilePriceButtons) {
+          return;
+        }
+
+        const extractPriceLabel = (priceTag) => {
+          const text = (priceTag?.textContent || "").trim();
+          const amount = text.match(/\d[\d,]*/)?.[0];
+          if (amount) {
+            return amount;
+          }
+          if (/free/i.test(text)) {
+            return "0";
+          }
+          return text.replace(/\bcoins?\b/gi, "").trim() || "0";
+        };
+
+        const formatPriceButton = (button, priceTag) => {
+          const price = extractPriceLabel(priceTag);
+          if (button.dataset.mobilePriceValue === price && button.querySelector(".mobile-price-buy-icon")) {
+            return;
+          }
+
+          const originalLabel = button.dataset.mobileOriginalLabel || button.textContent.trim() || "Buy";
+          button.dataset.mobileOriginalLabel = originalLabel;
+          button.dataset.mobilePriceValue = price;
+          button.classList.add("mobile-price-buy-button");
+          button.setAttribute("aria-label", `${originalLabel} for ${price === "0" ? "free" : `${price} coins`}`);
+
+          const icon = document.createElement("img");
+          icon.className = "mobile-price-buy-icon";
+          icon.src = "assets/icons/coin.png";
+          icon.alt = "";
+          icon.setAttribute("aria-hidden", "true");
+          icon.draggable = false;
+
+          const value = document.createElement("span");
+          value.className = "mobile-price-buy-value";
+          value.textContent = price;
+
+          button.replaceChildren(icon, value);
+        };
+
+        const formatStorePriceButtons = () => {
+          storeOverlay.querySelectorAll(".shop-card").forEach((card) => {
+            const priceTag = card.querySelector(".price-tag");
+            const buyButton = card.querySelector(".buy-button");
+            if (priceTag && buyButton instanceof HTMLButtonElement) {
+              formatPriceButton(buyButton, priceTag);
+            }
+          });
+        };
+
+        let priceButtonFrame = 0;
+        const schedulePriceButtonFormatting = () => {
+          if (priceButtonFrame) {
+            return;
+          }
+          priceButtonFrame = window.requestAnimationFrame(() => {
+            priceButtonFrame = 0;
+            formatStorePriceButtons();
+          });
+        };
+
+        const observer = new MutationObserver(schedulePriceButtonFormatting);
+        observer.observe(storeOverlay, { childList: true, characterData: true, subtree: true });
+        schedulePriceButtonFormatting();
+
+        Object.defineProperty(storeOverlay, "__bubbleBoroughMobilePriceButtons", {
+          value: true,
+          configurable: true
+        });
+      };
+      installMobileStorePriceButtons();
+
+      const installMobileDockMetrics = () => {
+        const syncDockMetrics = () => {
+          const dock = document.querySelector(".tank-bottom-dock");
+          const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+          if (!dock || !viewportHeight) {
+            return;
+          }
+
+          const dockRect = dock.getBoundingClientRect();
+          const renderedHeight = Math.max(0, Math.ceil(viewportHeight - dockRect.top));
+          if (renderedHeight > 0) {
+            document.documentElement.style.setProperty("--mobile-dock-rendered-height", `${renderedHeight}px`);
+          }
+        };
+
+        let dockMetricFrame = 0;
+        const scheduleDockMetricsSync = () => {
+          if (dockMetricFrame) {
+            return;
+          }
+          dockMetricFrame = window.requestAnimationFrame(() => {
+            dockMetricFrame = 0;
+            syncDockMetrics();
+          });
+        };
+
+        syncDockMetrics();
+        window.addEventListener("resize", scheduleDockMetricsSync, { passive: true });
+        window.visualViewport?.addEventListener("resize", scheduleDockMetricsSync, { passive: true });
+        const dock = document.querySelector(".tank-bottom-dock");
+        if (dock && "ResizeObserver" in window) {
+          new ResizeObserver(scheduleDockMetricsSync).observe(dock);
+        }
+      };
+      installMobileDockMetrics();
+
+      const desktopSaveKey = "bubble-borough-save-v1";
+      const mobileSaveKey = "bubble-borough-mobile-save-v1";
+      const desktopCustomImageDbName = "bubble-borough-custom-images-v1";
+      const mobileCustomImageDbName = "bubble-borough-mobile-custom-images-v1";
+      const mapMobileStorageKey = (key) => String(key) === desktopSaveKey ? mobileSaveKey : key;
+      const mapMobileDatabaseName = (name) =>
+        String(name) === desktopCustomImageDbName ? mobileCustomImageDbName : name;
+
+      try {
+        const storagePrototype = window.Storage?.prototype;
+        if (storagePrototype && !storagePrototype.__bubbleBoroughMobileSaveMapped) {
+          const originalGetItem = storagePrototype.getItem;
+          const originalSetItem = storagePrototype.setItem;
+          const originalRemoveItem = storagePrototype.removeItem;
+          storagePrototype.getItem = function getMobileMappedStorageItem(key) {
+            return originalGetItem.call(this, this === window.localStorage ? mapMobileStorageKey(key) : key);
+          };
+          storagePrototype.setItem = function setMobileMappedStorageItem(key, value) {
+            return originalSetItem.call(this, this === window.localStorage ? mapMobileStorageKey(key) : key, value);
+          };
+          storagePrototype.removeItem = function removeMobileMappedStorageItem(key) {
+            return originalRemoveItem.call(this, this === window.localStorage ? mapMobileStorageKey(key) : key);
+          };
+          Object.defineProperty(storagePrototype, "__bubbleBoroughMobileSaveMapped", {
+            value: true,
+            configurable: true
+          });
+        }
+      } catch (error) {
+        console.warn("Mobile save namespace mapping could not be installed.", error);
+      }
+
+      try {
+        const idbPrototype = window.IDBFactory?.prototype;
+        if (idbPrototype && !idbPrototype.__bubbleBoroughMobileDbMapped) {
+          const originalOpen = idbPrototype.open;
+          const originalDeleteDatabase = idbPrototype.deleteDatabase;
+          idbPrototype.open = function openMobileMappedDatabase(name, version) {
+            return originalOpen.call(this, mapMobileDatabaseName(name), version);
+          };
+          idbPrototype.deleteDatabase = function deleteMobileMappedDatabase(name) {
+            return originalDeleteDatabase.call(this, mapMobileDatabaseName(name));
+          };
+          Object.defineProperty(idbPrototype, "__bubbleBoroughMobileDbMapped", {
+            value: true,
+            configurable: true
+          });
+        }
+      } catch (error) {
+        console.warn("Mobile custom image storage namespace mapping could not be installed.", error);
+      }
+
+      const installMobileTankSwitcher = () => {
+        const saveKey = mobileSaveKey;
+        const readMobileSave = () => {
+          try {
+            const raw = window.localStorage.getItem(saveKey);
+            return raw ? JSON.parse(raw) : null;
+          } catch (error) {
+            console.warn("Mobile tank switcher could not read save data.", error);
+            return null;
+          }
+        };
+        const writeMobileSave = (nextState) => {
+          window.localStorage.setItem(saveKey, JSON.stringify(nextState));
+        };
+        const escapeText = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "\"": "&quot;",
+          "'": "&#39;"
+        })[char]);
+        const getTankName = (tank, index) => {
+          const rawName = typeof tank?.name === "string" ? tank.name.trim() : "";
+          return rawName || `Aquarium ${index + 1}`;
+        };
+        const managementTabs = document.querySelector("#mobileManagementTabs");
+        const isTankManagementOverlayOpen = () => {
+          const overlay = document.querySelector("#utilityOverlay");
+          return Boolean(
+            overlay
+            && overlay.dataset.utilityMode === "tank-management"
+            && !overlay.hasAttribute("hidden")
+            && overlay.getAttribute("aria-hidden") !== "true"
+          );
+        };
+        const getRenderedManagementView = () => {
+          if (!isTankManagementOverlayOpen()) {
+            return "";
+          }
+          const body = document.querySelector("#utilityOverlayBody");
+          const browserTitle = body?.querySelector(".management-browser-head h3")?.textContent || "";
+          if (/^Fish\b/i.test(browserTitle)) {
+            return "fish";
+          }
+          if (/^Decor\b/i.test(browserTitle)) {
+            return "decor";
+          }
+          return "tanks";
+        };
+        const syncMobileManagementTabs = () => {
+          if (!managementTabs) {
+            return;
+          }
+          const visible = isTankManagementOverlayOpen();
+          managementTabs.hidden = !visible;
+          managementTabs.setAttribute("aria-hidden", visible ? "false" : "true");
+          if (!visible) {
+            return;
+          }
+
+          const overlay = document.querySelector("#utilityOverlay");
+          const activeView = getRenderedManagementView();
+          overlay.dataset.mobileManagementTab = activeView || "tanks";
+          managementTabs.querySelectorAll("[data-mobile-management-tab]").forEach((button) => {
+            const isActive = button.getAttribute("data-mobile-management-tab") === activeView;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-selected", isActive ? "true" : "false");
+          });
+        };
+        const dispatchMobileManagementView = (view) => {
+          const body = document.querySelector("#utilityOverlayBody");
+          if (!body) {
+            return;
+          }
+          const managementView = view === "fish" || view === "decor" ? view : "overview";
+          let button = body.querySelector(`[data-management-view="${managementView}"]`);
+          let temporaryButton = null;
+          if (!button) {
+            temporaryButton = document.createElement("button");
+            temporaryButton.type = "button";
+            temporaryButton.hidden = true;
+            temporaryButton.dataset.managementView = managementView;
+            body.append(temporaryButton);
+            button = temporaryButton;
+          }
+          button.click();
+          if (temporaryButton) {
+            window.requestAnimationFrame(() => temporaryButton.remove());
+          }
+        };
+        managementTabs?.addEventListener("click", (event) => {
+          const tab = event.target.closest?.("[data-mobile-management-tab]");
+          if (!tab || !isTankManagementOverlayOpen()) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          const nextTab = tab.getAttribute("data-mobile-management-tab") || "tanks";
+          document.querySelector("#utilityOverlay").dataset.mobileManagementTab = nextTab;
+          dispatchMobileManagementView(nextTab);
+          window.requestAnimationFrame(syncMobileManagementTabs);
+        });
+        const renderTankSwitcher = () => {
+          const overlay = document.querySelector('#utilityOverlay[data-utility-mode="tank-management"]');
+          const summary = overlay?.querySelector(".management-summary-strip");
+          const summaryMeta = summary?.querySelector(".management-summary-meta");
+          if (!summary || !summaryMeta) {
+            syncMobileManagementTabs();
+            return;
+          }
+
+          const save = readMobileSave();
+          const tanks = Array.isArray(save?.tanks) ? save.tanks.filter((tank) => tank?.id) : [];
+          summary.querySelector(".mobile-tank-switcher")?.remove();
+          if (tanks.length <= 1) {
+            return;
+          }
+
+          const activeTankId = typeof save?.activeTankId === "string" ? save.activeTankId : tanks[0]?.id;
+          const cards = tanks.map((tank, index) => {
+            const isCurrent = tank.id === activeTankId;
+            const fishCount = Array.isArray(tank.fish) ? tank.fish.length : 0;
+            const decorCount = Array.isArray(tank.placedDecor) ? tank.placedDecor.length : 0;
+            return `
+              <article class="mobile-tank-switcher-card${isCurrent ? " is-current" : ""}">
+                <div class="mobile-tank-switcher-copy">
+                  <strong>${escapeText(getTankName(tank, index))}</strong>
+                  <span>Aquarium ${index + 1} of ${tanks.length} - Fish ${fishCount} - Decor ${decorCount}</span>
+                </div>
+                <button class="mobile-tank-switcher-button" type="button" data-mobile-view-tank="${escapeText(tank.id)}" ${isCurrent ? "disabled" : ""}>
+                  ${isCurrent ? "Current" : "View Tank"}
+                </button>
+              </article>
+            `;
+          }).join("");
+
+          const switcher = document.createElement("section");
+          switcher.className = "mobile-tank-switcher";
+          switcher.setAttribute("aria-label", "View additional tanks");
+          switcher.innerHTML = `
+            <div class="mobile-tank-switcher-title">
+              <span>View Additional Tanks</span>
+              <span>${tanks.length}</span>
+            </div>
+            <div class="mobile-tank-switcher-list">${cards}</div>
+          `;
+          summaryMeta.insertAdjacentElement("afterend", switcher);
+        };
+        const rewriteTankShopCopy = () => {
+          document.querySelectorAll("#storeOverlay .shop-section-heading p").forEach((paragraph) => {
+            if (/arrow buttons\/keys/i.test(paragraph.textContent || "")) {
+              paragraph.textContent = "Switch between owned aquariums from Tank Info.";
+            }
+          });
+        };
+        const viewTank = (tankId) => {
+          const save = readMobileSave();
+          const tanks = Array.isArray(save?.tanks) ? save.tanks : [];
+          if (!tanks.some((tank) => tank?.id === tankId) || save.activeTankId === tankId) {
+            return;
+          }
+          save.activeTankId = tankId;
+          writeMobileSave(save);
+          document.querySelector("#closeUtilityOverlay")?.click();
+          const loadingText = document.querySelector(".loading-overlay-text");
+          if (loadingText) {
+            loadingText.textContent = "Loading Aquarium";
+          }
+          document.querySelector("#loadingOverlay")?.classList.remove("is-hiding");
+          window.setTimeout(() => window.location.reload(), 80);
+        };
+
+        let renderFrame = 0;
+        const scheduleRender = () => {
+          if (renderFrame) {
+            return;
+          }
+          renderFrame = window.requestAnimationFrame(() => {
+            renderFrame = 0;
+            renderTankSwitcher();
+            rewriteTankShopCopy();
+            syncMobileManagementTabs();
+          });
+        };
+
+        new MutationObserver(scheduleRender).observe(document.body, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ["hidden", "class", "style", "aria-hidden", "data-utility-mode"]
+        });
+        document.addEventListener("click", (event) => {
+          const button = event.target.closest?.("[data-mobile-view-tank]");
+          if (!button) {
+            return;
+          }
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          viewTank(button.dataset.mobileViewTank);
+        }, true);
+        document.addEventListener("keydown", (event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+            return;
+          }
+          const target = event.target;
+          if (target?.matches?.("input, textarea, select, [contenteditable='true']")) {
+            return;
+          }
+          event.stopImmediatePropagation();
+        }, true);
+        scheduleRender();
+      };
+      installMobileTankSwitcher();
+
+      const installMobileHotkeyHintScrubber = () => {
+        const hotkeyTextPattern = /\b(?:shift|ctrl|control|alt|meta|hotkeys?|keyboard)\b|shift-click|ctrl-click|press\s+[a-z0-9]\b|arrow buttons\/keys|arrow keys?|hidden arrow keys?/i;
+        const hotkeyHintSelector = [
+          "#editQuickRef",
+          "#editQuickRef .edit-quick-ref-row",
+          ".management-summary-disclaimer",
+          ".mini-note",
+          ".fish-meta",
+          ".shop-section-heading p"
+        ].join(",");
+        const hideHotkeyHint = (element) => {
+          if (!(element instanceof HTMLElement)) {
+            return;
+          }
+          if (element.hidden && element.getAttribute("aria-hidden") === "true") {
+            return;
+          }
+          element.hidden = true;
+          element.setAttribute("aria-hidden", "true");
+        };
+        const scrubHotkeyHints = () => {
+          document.querySelectorAll(hotkeyHintSelector).forEach((element) => {
+            const shouldAlwaysHide = element.matches("#editQuickRef, .management-summary-disclaimer");
+            if (shouldAlwaysHide || hotkeyTextPattern.test(element.textContent || "")) {
+              hideHotkeyHint(element);
+            }
+          });
+        };
+        let scrubFrame = 0;
+        const scheduleScrub = () => {
+          if (scrubFrame) {
+            return;
+          }
+          scrubFrame = window.requestAnimationFrame(() => {
+            scrubFrame = 0;
+            scrubHotkeyHints();
+          });
+        };
+        new MutationObserver(scheduleScrub).observe(document.body, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+          attributes: true,
+          attributeFilter: ["hidden", "class", "style", "aria-hidden"]
+        });
+        scheduleScrub();
+      };
+      installMobileHotkeyHintScrubber();
+
+      const mobileMenuIds = ["mobileFishCareMenu", "mobileToolsMenu", "mobileEditTankMenu"];
+      const backdrop = document.querySelector("#mobilePopoutBackdrop");
+      const mobileDisplayHidingSelectors = [
+        "#mobileFishCareMenu",
+        "#mobileToolsMenu",
+        "#mobileEditTankMenu",
+        "#storeOverlay",
+        "#settingsOverlay",
+        "#equipmentOverlay",
+        "#utilityOverlay",
+        "#introTutorialOverlay",
+        "#editDecorTray",
+        "#editFishTray",
+        "#foodTray",
+        "#medicineTray",
+        "#fishInspector",
+        "#selectedDecorActionBar",
+        "#selectedDecorResizeHandles"
+      ].join(",");
+      const mobileMenuOverlaySelectors = [
+        "#mobileFishCareMenu",
+        "#mobileToolsMenu",
+        "#mobileEditTankMenu",
+        "#storeOverlay",
+        "#settingsOverlay",
+        "#equipmentOverlay",
+        "#utilityOverlay",
+        "#editDecorTray",
+        "#editFishTray",
+        "#foodTray",
+        "#medicineTray",
+        "#fishInspector",
+        "#selectedDecorActionBar",
+        "#selectedDecorResizeHandles"
+      ].join(",");
+      let mobileDisplaySyncFrame = 0;
+      const isMobileMenuVisible = (element) => {
+        if (!element || element.hasAttribute("hidden") || element.getAttribute("aria-hidden") === "true") {
+          return false;
+        }
+
+        const style = window.getComputedStyle(element);
+        return style.display !== "none" && style.visibility !== "hidden";
+      };
+      const syncMobileDigitalDisplay = () => {
+        mobileDisplaySyncFrame = 0;
+        const shouldHideDisplay = Array.from(document.querySelectorAll(mobileDisplayHidingSelectors))
+          .some(isMobileMenuVisible);
+        const shouldPrioritizeMenuOverlay = Array.from(document.querySelectorAll(mobileMenuOverlaySelectors))
+          .some(isMobileMenuVisible);
+        document.body.classList.toggle("mobile-display-hidden", shouldHideDisplay);
+        document.body.classList.toggle("mobile-menu-overlay-open", shouldPrioritizeMenuOverlay);
+      };
+      const scheduleMobileDigitalDisplaySync = () => {
+        if (mobileDisplaySyncFrame) {
+          return;
+        }
+
+        mobileDisplaySyncFrame = window.requestAnimationFrame(syncMobileDigitalDisplay);
+      };
+      const mobileDisplayObserver = new MutationObserver(scheduleMobileDigitalDisplaySync);
+      mobileDisplayObserver.observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["hidden", "class", "style", "aria-hidden"]
+      });
+      document.addEventListener("click", scheduleMobileDigitalDisplaySync, true);
+      document.addEventListener("keydown", scheduleMobileDigitalDisplaySync, true);
+      window.addEventListener("resize", scheduleMobileDigitalDisplaySync);
+      scheduleMobileDigitalDisplaySync();
+
+      const closeMobileMenus = () => {
+        for (const id of mobileMenuIds) {
+          document.getElementById(id)?.setAttribute("hidden", "");
+        }
+        backdrop?.setAttribute("hidden", "");
+        document.querySelectorAll("[data-mobile-menu-target]").forEach((button) => {
+          button.setAttribute("aria-expanded", "false");
+        });
+        scheduleMobileDigitalDisplaySync();
+      };
+      const openMobileMenu = (menuId, button) => {
+        const menu = document.getElementById(menuId);
+        if (!menu) {
+          return;
+        }
+        const wasOpen = !menu.hasAttribute("hidden");
+        closeMobileMenus();
+        if (wasOpen) {
+          return;
+        }
+        menu.removeAttribute("hidden");
+        backdrop?.removeAttribute("hidden");
+        button?.setAttribute("aria-expanded", "true");
+        scheduleMobileDigitalDisplaySync();
+      };
+      const closeMobileOverlaySurface = (overlay) => {
+        if (!overlay || !isMobileMenuVisible(overlay)) {
+          return;
+        }
+        overlay.setAttribute("hidden", "");
+        if (overlay.id === "utilityOverlay") {
+          document.querySelector("#mobileManagementTabs")?.setAttribute("hidden", "");
+        }
+      };
+      const closeMobileOverlayControl = (overlay, closeSelector) => {
+        if (!overlay || !isMobileMenuVisible(overlay)) {
+          return;
+        }
+        const closeButton = closeSelector ? document.querySelector(closeSelector) : null;
+        if (closeButton) {
+          closeButton.click();
+          return;
+        }
+        closeMobileOverlaySurface(overlay);
+      };
+      const closeActiveMobileOverlayControls = (exceptButton = null) => {
+        const overlayCloseControls = [
+          ["#storeOverlay", () => "openStoreButton", "#closeStoreOverlay"],
+          ["#settingsOverlay", () => "openSettingsButton", "#closeSettingsOverlay"],
+          ["#equipmentOverlay", () => "mobileEditTankButton", "#closeEquipmentOverlay"],
+          ["#utilityOverlay", (overlay) => (
+            overlay?.dataset.utilityMode === "tank-management"
+              ? "openManagementButton"
+              : "mobileEditTankButton"
+          ), "#closeUtilityOverlay"]
+        ];
+
+        for (const [overlaySelector, getOwnerId, closeSelector] of overlayCloseControls) {
+          const overlay = document.querySelector(overlaySelector);
+          const ownerId = getOwnerId(overlay);
+          if (overlay && ownerId !== exceptButton?.id) {
+            closeMobileOverlayControl(overlay, closeSelector);
+          }
+        }
+        scheduleMobileDigitalDisplaySync();
+      };
+      const closeActiveMobileToolMode = (exceptButton = null) => {
+        document.querySelectorAll("#spongeButton.is-active, #scoopButton.is-active").forEach((activeToolButton) => {
+          if (activeToolButton !== exceptButton) {
+            activeToolButton.click();
+          }
+        });
+      };
+      const mobileTrayModeControls = [
+        ["#feedButton", "#foodTray"],
+        ["#medicineButton", "#medicineTray"],
+        ["#fishEditModeDockButton", "#editFishTray"],
+        ["#editModeDockButton", "#editDecorTray"]
+      ];
+      const closeActiveMobileTrayModes = (exceptButton = null) => {
+        for (const [buttonSelector, surfaceSelector] of mobileTrayModeControls) {
+          const button = document.querySelector(buttonSelector);
+          const surface = document.querySelector(surfaceSelector);
+          const active = Boolean(
+            button?.classList.contains("is-active") ||
+            button?.getAttribute("aria-pressed") === "true" ||
+            button?.getAttribute("aria-expanded") === "true" ||
+            isMobileMenuVisible(surface)
+          );
+          if (button && button !== exceptButton && active) {
+            button.click();
+          }
+        }
+        scheduleMobileDigitalDisplaySync();
+      };
+      const mobileProxyActiveGroups = [
+        {
+          parentSelector: "#mobileFishCareButton",
+          items: [
+            { actionSelector: '[data-mobile-proxy-click="#feedButton"]', targetSelector: "#feedButton", surfaceSelector: "#foodTray" },
+            { actionSelector: '[data-mobile-proxy-click="#medicineButton"]', targetSelector: "#medicineButton", surfaceSelector: "#medicineTray" }
+          ]
+        },
+        {
+          parentSelector: "#mobileToolsButton",
+          items: [
+            { actionSelector: '[data-mobile-proxy-click="#scoopButton"]', targetSelector: "#scoopButton" },
+            { actionSelector: '[data-mobile-proxy-click="#spongeButton"]', targetSelector: "#spongeButton" }
+          ]
+        },
+        {
+          parentSelector: "#mobileEditTankButton",
+          items: [
+            { actionSelector: '[data-mobile-proxy-click="#fishEditModeDockButton"]', targetSelector: "#fishEditModeDockButton", surfaceSelector: "#editFishTray" },
+            { actionSelector: '[data-mobile-proxy-click="#editModeDockButton"]', targetSelector: "#editModeDockButton", surfaceSelector: "#editDecorTray" },
+            { actionSelector: '[data-mobile-proxy-click="#openEquipmentButton"]', targetSelector: "#openEquipmentButton", surfaceSelector: "#equipmentOverlay" }
+          ]
+        }
+      ];
+      let mobileProxyActiveSyncFrame = 0;
+      const isMobileProxyTargetActive = ({ targetSelector, surfaceSelector }) => {
+        const target = document.querySelector(targetSelector);
+        const surface = surfaceSelector ? document.querySelector(surfaceSelector) : null;
+        return Boolean(
+          target?.classList.contains("is-active") ||
+          target?.getAttribute("aria-pressed") === "true" ||
+          target?.getAttribute("aria-expanded") === "true" ||
+          isMobileMenuVisible(surface)
+        );
+      };
+      const syncMobileProxyActiveStates = () => {
+        mobileProxyActiveSyncFrame = 0;
+        for (const group of mobileProxyActiveGroups) {
+          const parent = document.querySelector(group.parentSelector);
+          let groupIsActive = false;
+          for (const item of group.items) {
+            const action = document.querySelector(item.actionSelector);
+            const itemIsActive = isMobileProxyTargetActive(item);
+            action?.classList.toggle("is-mobile-proxy-active", itemIsActive);
+            action?.setAttribute("aria-pressed", itemIsActive ? "true" : "false");
+            groupIsActive = groupIsActive || itemIsActive;
+          }
+          parent?.classList.toggle("is-mobile-proxy-active", groupIsActive);
+        }
+      };
+      const scheduleMobileProxyActiveSync = () => {
+        if (mobileProxyActiveSyncFrame) {
+          return;
+        }
+        mobileProxyActiveSyncFrame = window.requestAnimationFrame(syncMobileProxyActiveStates);
+      };
+      const mobileProxyActiveObserver = new MutationObserver(scheduleMobileProxyActiveSync);
+      mobileProxyActiveObserver.observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["hidden", "class", "style", "aria-hidden", "aria-pressed", "aria-expanded"]
+      });
+      document.addEventListener("click", scheduleMobileProxyActiveSync, true);
+      document.addEventListener("keydown", scheduleMobileProxyActiveSync, true);
+      scheduleMobileProxyActiveSync();
+      const installMobileDecorSettingsControls = () => {
+        const decorSettingsSelector = [
+          '#utilityOverlay[data-utility-mode="decor-settings"]',
+          '#utilityOverlay[data-utility-mode="custom-decor-settings"]'
+        ].join(",");
+        const mobileDockSelector = [
+          "#openManagementButton",
+          "#mobileFishCareButton",
+          "#mobileToolsButton",
+          "#mobileEditTankButton",
+          "#openStoreButton",
+          "#openSettingsButton"
+        ].join(",");
+        let decorSettingsSyncFrame = 0;
+        const getColorButtonLabel = (button) => {
+          const title = button.getAttribute("title") || "";
+          const text = button.textContent.trim();
+          return title || text || "Color";
+        };
+        const syncDecorColorDropdowns = () => {
+          decorSettingsSyncFrame = 0;
+          const overlay = document.querySelector(decorSettingsSelector);
+          if (!isMobileMenuVisible(overlay)) {
+            return;
+          }
+
+          overlay.querySelectorAll(".cave-color-layer-card").forEach((card) => {
+            const header = card.querySelector(".cave-color-layer-header");
+            const buttons = [...card.querySelectorAll("[data-cave-color-layer][data-cave-color]")];
+            if (!header || !buttons.length) {
+              return;
+            }
+
+            let select = card.querySelector(".mobile-cave-color-select");
+            if (!(select instanceof HTMLSelectElement)) {
+              select = document.createElement("select");
+              select.className = "shop-sort-select mobile-cave-color-select";
+              select.setAttribute("aria-label", `${header.querySelector("span")?.textContent?.trim() || "Decor"} color`);
+              header.insertAdjacentElement("afterend", select);
+              select.addEventListener("change", () => {
+                const selectedButton = buttons.find((button) => button.getAttribute("data-cave-color") === select.value);
+                selectedButton?.click();
+                window.requestAnimationFrame(scheduleDecorSettingsSync);
+              });
+            }
+
+            select.replaceChildren(...buttons.map((button) => {
+              const option = document.createElement("option");
+              option.value = button.getAttribute("data-cave-color") || "";
+              option.textContent = getColorButtonLabel(button);
+              return option;
+            }));
+            const activeButton = buttons.find((button) => (
+              button.classList.contains("is-selected") || button.getAttribute("aria-pressed") === "true"
+            )) || buttons[0];
+            select.value = activeButton?.getAttribute("data-cave-color") || "";
+            card.classList.add("is-mobile-color-dropdown");
+          });
+        };
+        function scheduleDecorSettingsSync() {
+          if (decorSettingsSyncFrame) {
+            return;
+          }
+          decorSettingsSyncFrame = window.requestAnimationFrame(syncDecorColorDropdowns);
+        }
+
+        const closeDecorSettingsBeforeDockAction = (event) => {
+          const dockButton = event.target.closest?.(mobileDockSelector);
+          if (!dockButton) {
+            return;
+          }
+          const overlay = document.querySelector("#utilityOverlay");
+          if (
+            isMobileMenuVisible(overlay)
+            && overlay?.dataset.utilityMode
+            && overlay.dataset.utilityMode !== "tank-management"
+          ) {
+            closeMobileOverlayControl(overlay, "#closeUtilityOverlay");
+            scheduleDecorSettingsSync();
+          }
+        };
+
+        new MutationObserver(scheduleDecorSettingsSync).observe(document.body, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ["hidden", "class", "style", "aria-hidden", "aria-pressed", "data-utility-mode"]
+        });
+        document.addEventListener("click", closeDecorSettingsBeforeDockAction, true);
+        document.addEventListener("click", scheduleDecorSettingsSync, true);
+        scheduleDecorSettingsSync();
+      };
+      installMobileDecorSettingsControls();
+      let mobileToolDrag = null;
+      let suppressMobileToolbarClicksUntil = 0;
+      const mobileToolDragControlSelector = [
+        ".tank-bottom-dock",
+        ".mobile-popout-menu",
+        ".store-panel-tabs",
+        ".store-overlay",
+        ".settings-overlay",
+        ".utility-overlay",
+        ".equipment-overlay",
+        ".tutorial-overlay"
+      ].join(",");
+      const mobileToolClickControlSelector = [
+        "button",
+        "a",
+        "input",
+        "select",
+        "textarea",
+        "label",
+        ".tank-bottom-dock",
+        ".mobile-popout-menu",
+        ".store-panel-tabs"
+      ].join(",");
+      const isMobileToolModeActive = () => Boolean(document.querySelector("#spongeButton.is-active, #scoopButton.is-active"));
+      document.addEventListener("pointerdown", (event) => {
+        if (!isMobileToolModeActive()) {
+          return;
+        }
+        const target = event.target;
+        const startedInTank = target.closest?.("#tankStage, #tankCanvas, #grimeCanvas, #glassCanvas");
+        if (!startedInTank || target.closest?.(mobileToolDragControlSelector)) {
+          return;
+        }
+
+        mobileToolDrag = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          moved: false
+        };
+      }, true);
+      document.addEventListener("pointermove", (event) => {
+        if (!mobileToolDrag || mobileToolDrag.pointerId !== event.pointerId) {
+          return;
+        }
+        const deltaX = event.clientX - mobileToolDrag.startX;
+        const deltaY = event.clientY - mobileToolDrag.startY;
+        if ((deltaX * deltaX) + (deltaY * deltaY) > 64) {
+          mobileToolDrag.moved = true;
+        }
+      }, true);
+      const finishMobileToolDrag = (event) => {
+        if (!mobileToolDrag || mobileToolDrag.pointerId !== event.pointerId) {
+          return;
+        }
+        if (mobileToolDrag.moved) {
+          suppressMobileToolbarClicksUntil = Date.now() + 450;
+        }
+        mobileToolDrag = null;
+      };
+      document.addEventListener("pointerup", finishMobileToolDrag, true);
+      document.addEventListener("pointercancel", finishMobileToolDrag, true);
+      document.addEventListener("click", (event) => {
+        if (Date.now() > suppressMobileToolbarClicksUntil) {
+          return;
+        }
+        if (event.target.closest?.(mobileToolClickControlSelector)) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      }, true);
+      const mobilePrimaryToolbarButtonSelector = [
+        "#openManagementButton",
+        "#mobileFishCareButton",
+        "#mobileToolsButton",
+        "#mobileEditTankButton",
+        "#openStoreButton",
+        "#openSettingsButton"
+      ].join(",");
+      const getActiveMobileToolbarOwners = () => {
+        const owners = new Set();
+        if (isMobileMenuVisible(document.querySelector("#mobileFishCareMenu"))) {
+          owners.add("mobileFishCareButton");
+        }
+        if (isMobileMenuVisible(document.querySelector("#mobileToolsMenu"))) {
+          owners.add("mobileToolsButton");
+        }
+        if (isMobileMenuVisible(document.querySelector("#mobileEditTankMenu"))) {
+          owners.add("mobileEditTankButton");
+        }
+        if (isMobileMenuVisible(document.querySelector("#foodTray")) || isMobileMenuVisible(document.querySelector("#medicineTray"))) {
+          owners.add("mobileFishCareButton");
+        }
+        if (isMobileMenuVisible(document.querySelector("#editFishTray")) || isMobileMenuVisible(document.querySelector("#editDecorTray"))) {
+          owners.add("mobileEditTankButton");
+        }
+        if (isMobileMenuVisible(document.querySelector("#storeOverlay"))) {
+          owners.add("openStoreButton");
+        }
+        if (isMobileMenuVisible(document.querySelector("#settingsOverlay"))) {
+          owners.add("openSettingsButton");
+        }
+        if (isMobileMenuVisible(document.querySelector("#equipmentOverlay"))) {
+          owners.add("mobileEditTankButton");
+        }
+        const utilityOverlay = document.querySelector("#utilityOverlay");
+        if (isMobileMenuVisible(utilityOverlay)) {
+          owners.add(utilityOverlay?.dataset.utilityMode === "tank-management" ? "openManagementButton" : "mobileEditTankButton");
+        }
+        if (document.querySelector("#spongeButton.is-active, #scoopButton.is-active")) {
+          owners.add("mobileToolsButton");
+        }
+        return owners;
+      };
+      const shouldSwitchMobileToolbarTarget = (button) => {
+        const buttonId = button?.id || "";
+        if (!buttonId) {
+          return false;
+        }
+        const activeOwners = getActiveMobileToolbarOwners();
+        return activeOwners.size > 0 && !(activeOwners.size === 1 && activeOwners.has(buttonId));
+      };
+      document.addEventListener("click", (event) => {
+        const dockButton = event.target.closest?.(mobilePrimaryToolbarButtonSelector);
+        if (!dockButton) {
+          return;
+        }
+        const isMobileMenuToggle = dockButton.matches("[data-mobile-menu-target]");
+        if (shouldSwitchMobileToolbarTarget(dockButton)) {
+          closeActiveMobileOverlayControls(dockButton);
+          closeActiveMobileTrayModes();
+          closeActiveMobileToolMode();
+          closeMobileMenus();
+          if (isMobileMenuToggle) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            openMobileMenu(dockButton.dataset.mobileMenuTarget, dockButton);
+          }
+          scheduleMobileProxyActiveSync();
+          return;
+        }
+        closeActiveMobileTrayModes();
+        if (!isMobileMenuToggle) {
+          closeMobileMenus();
+        }
+        scheduleMobileProxyActiveSync();
+      }, true);
+      document.addEventListener("click", (event) => {
+        const toggle = event.target.closest?.("[data-mobile-menu-target]");
+        if (!toggle) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        closeActiveMobileOverlayControls();
+        closeActiveMobileTrayModes();
+        closeActiveMobileToolMode();
+        openMobileMenu(toggle.dataset.mobileMenuTarget, toggle);
+        scheduleMobileProxyActiveSync();
+      }, true);
+      document.addEventListener("click", (event) => {
+        const proxy = event.target.closest?.("[data-mobile-proxy-click]");
+        if (proxy) {
+          event.preventDefault();
+          const target = document.querySelector(proxy.dataset.mobileProxyClick);
+          closeActiveMobileOverlayControls(target);
+          closeActiveMobileTrayModes(target);
+          closeActiveMobileToolMode(target);
+          closeMobileMenus();
+          target?.click();
+          scheduleMobileProxyActiveSync();
+          return;
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeMobileMenus();
+        }
+      });
+
+      const installMobileTutorialEditTankBridge = () => {
+        const sourceEditDecorButton = document.querySelector("#editModeDockButton");
+        const mobileEditTankButton = document.querySelector("#mobileEditTankButton");
+        const mobileEditTankMenu = document.querySelector("#mobileEditTankMenu");
+        const mobileEditDecorAction = mobileEditTankMenu?.querySelector('[data-mobile-proxy-click="#editModeDockButton"]');
+        if (!sourceEditDecorButton || !mobileEditTankButton || !mobileEditTankMenu || !mobileEditDecorAction) {
+          return;
+        }
+
+        const syncMobileTutorialEditTank = () => {
+          const shouldPulseEditDecor = sourceEditDecorButton.classList.contains("is-tutorial-pulse");
+          const shouldRevealEditDecor = sourceEditDecorButton.classList.contains("is-tutorial-reveal");
+          const editDecorIsActive = sourceEditDecorButton.classList.contains("is-active");
+          const menuOpen = !mobileEditTankMenu.hasAttribute("hidden");
+
+          mobileEditTankButton.classList.toggle("is-active", editDecorIsActive || menuOpen);
+          mobileEditTankButton.classList.toggle("is-tutorial-pulse", shouldPulseEditDecor && !menuOpen);
+          mobileEditTankButton.classList.toggle("is-tutorial-reveal", shouldRevealEditDecor);
+
+          mobileEditDecorAction.classList.toggle("is-tutorial-pulse", shouldPulseEditDecor && menuOpen);
+          mobileEditDecorAction.classList.toggle("is-tutorial-reveal", shouldRevealEditDecor && menuOpen);
+        };
+
+        const observer = new MutationObserver(syncMobileTutorialEditTank);
+        observer.observe(sourceEditDecorButton, { attributes: true, attributeFilter: ["class"] });
+        observer.observe(mobileEditTankMenu, { attributes: true, attributeFilter: ["hidden", "class", "style", "aria-hidden"] });
+        document.addEventListener("click", () => window.requestAnimationFrame(syncMobileTutorialEditTank), true);
+        syncMobileTutorialEditTank();
+      };
+      installMobileTutorialEditTankBridge();
+
+      const installMobileTutorialToolsBridge = () => {
+        const sourceSpongeButton = document.querySelector("#spongeButton");
+        const mobileToolsButton = document.querySelector("#mobileToolsButton");
+        const mobileToolsMenu = document.querySelector("#mobileToolsMenu");
+        const mobileSpongeAction = mobileToolsMenu?.querySelector('[data-mobile-proxy-click="#spongeButton"]');
+        if (!sourceSpongeButton || !mobileToolsButton || !mobileToolsMenu || !mobileSpongeAction) {
+          return;
+        }
+
+        const syncMobileTutorialTools = () => {
+          const shouldPulseSponge = sourceSpongeButton.classList.contains("is-tutorial-pulse");
+          const shouldRevealSponge = sourceSpongeButton.classList.contains("is-tutorial-reveal");
+          const spongeIsActive = sourceSpongeButton.classList.contains("is-active");
+          const menuOpen = !mobileToolsMenu.hasAttribute("hidden");
+
+          mobileToolsButton.classList.toggle("is-active", spongeIsActive || menuOpen);
+          mobileToolsButton.classList.toggle("is-tutorial-pulse", shouldPulseSponge && !menuOpen);
+          mobileToolsButton.classList.toggle("is-tutorial-reveal", shouldRevealSponge);
+
+          mobileSpongeAction.classList.toggle("is-tutorial-pulse", shouldPulseSponge && menuOpen);
+          mobileSpongeAction.classList.toggle("is-tutorial-reveal", shouldRevealSponge && menuOpen);
+        };
+
+        const observer = new MutationObserver(syncMobileTutorialTools);
+        observer.observe(sourceSpongeButton, { attributes: true, attributeFilter: ["class"] });
+        observer.observe(mobileToolsMenu, { attributes: true, attributeFilter: ["hidden", "class", "style", "aria-hidden"] });
+        document.addEventListener("click", () => window.requestAnimationFrame(syncMobileTutorialTools), true);
+        syncMobileTutorialTools();
+      };
+      installMobileTutorialToolsBridge();
+
+      const mobileAppScriptUrl = "./public/app.js?v=20260502i";
+      const loadOriginalMobileAppScript = () => {
+        const script = document.createElement("script");
+        script.type = "module";
+        script.src = mobileAppScriptUrl;
+        document.body.appendChild(script);
+      };
+      const buildMobilePatchedAppSource = (appSource) => {
+        const mobileScrubCoverageSource = `function getScrubCoverage() {
+  if (isMobilePageRuntime()) {
+    const visibleScrubCounts = getMobileVisibleScrubCellCounts();
+    return visibleScrubCounts.cleanable > 0
+      ? visibleScrubCounts.scrubbed / visibleScrubCounts.cleanable
+      : 0;
+  }
+
+  const cleanableCellCount = getCleanableScrubCellCount();
+  return cleanableCellCount > 0
+    ? runtime.scrubbedCount / cleanableCellCount
+    : 0;
+}`;
+        const mobileVisibleScrubCellCountsSource = `function getMobileVisibleScrubCellCounts() {
+  const cellWidth = TANK_WIDTH / SCRUB_GRID_COLS;
+  const cellHeight = TANK_HEIGHT / SCRUB_GRID_ROWS;
+  const target = getCurrentTank();
+  const visibleBounds = getVisibleTankVirtualBounds();
+  const minX = visibleBounds.left;
+  const maxX = visibleBounds.right;
+  const minY = visibleBounds.top;
+  const maxY = visibleBounds.bottom;
+  let cleanable = 0;
+  let scrubbed = 0;
+
+  for (let row = 0; row < SCRUB_GRID_ROWS; row += 1) {
+    const y = row * cellHeight + cellHeight / 2;
+    if (y < minY || y > maxY) {
+      continue;
+    }
+    for (let col = 0; col < SCRUB_GRID_COLS; col += 1) {
+      const x = col * cellWidth + cellWidth / 2;
+      if (x < minX || x > maxX || !isPointInsideScrubbableTankArea(x, y, target)) {
+        continue;
+      }
+
+      cleanable += 1;
+      if (runtime.scrubCells?.[row * SCRUB_GRID_COLS + col]) {
+        scrubbed += 1;
+      }
+    }
+  }
+
+  return { cleanable, scrubbed };
+}`;
+        const mobileCleanableScrubCellCountSource = `function getCleanableScrubCellCount() {
+  if (isMobilePageRuntime()) {
+    return getMobileVisibleScrubCellCounts().cleanable;
+  }
+
+  const cellWidth = TANK_WIDTH / SCRUB_GRID_COLS;
+  const cellHeight = TANK_HEIGHT / SCRUB_GRID_ROWS;
+  const target = getCurrentTank();
+  let count = 0;
+
+  for (let row = 0; row < SCRUB_GRID_ROWS; row += 1) {
+    const y = row * cellHeight + cellHeight / 2;
+    for (let col = 0; col < SCRUB_GRID_COLS; col += 1) {
+      const x = col * cellWidth + cellWidth / 2;
+      if (isPointInsideScrubbableTankArea(x, y, target)) {
+        count += 1;
+      }
+    }
+  }
+
+  return count;
+}`;
+        const mobileFishShadowPlaneSource = `function getFishShadowLayerPlaneY(fish) {
+  const layer = getFishTankLayer(fish);
+  if (isMobilePageRuntime()) {
+    const visibleBottom = getVisibleTankVirtualBounds().bottom;
+    const bottomInset = getViewportPxAsTankVirtual(2);
+    return clamp(
+      getTankLayerBottomBoundaryY(layer),
+      WATER_SURFACE_Y + 24,
+      Math.max(WATER_SURFACE_Y + 24, visibleBottom - bottomInset)
+    );
+  }
+
+  const floorY = getTankFloorSurfaceYAtX((fish?.xNorm || 0.5) * TANK_WIDTH) + 7;
+  return clamp(
+    getTankLayerBottomBoundaryY(layer),
+    WATER_SURFACE_Y + 24,
+    floorY
+  );
+}`;
+        let normalizedSource = String(appSource || "").replace(/\r\n/g, "\n");
+        const patchWarnings = [];
+        const warnMissingPatch = (label) => {
+          patchWarnings.push(`Could not apply mobile patch: ${label}.`);
+        };
+        const findFunctionRange = (source, functionName) => {
+          const functionPattern = new RegExp(`function\\s+${functionName}\\s*\\(`);
+          const match = functionPattern.exec(source);
+          if (!match) {
+            return null;
+          }
+
+          const braceStart = source.indexOf("{", match.index);
+          if (braceStart === -1) {
+            return null;
+          }
+
+          let depth = 0;
+          for (let index = braceStart; index < source.length; index += 1) {
+            const char = source[index];
+            if (char === "{") {
+              depth += 1;
+            } else if (char === "}") {
+              depth -= 1;
+              if (depth === 0) {
+                return { start: match.index, end: index + 1 };
+              }
+            }
+          }
+
+          return null;
+        };
+        const replaceFunctionSource = (source, functionName, replacementSource, label) => {
+          const range = findFunctionRange(source, functionName);
+          if (!range) {
+            warnMissingPatch(label || functionName);
+            return source;
+          }
+
+          return `${source.slice(0, range.start)}${replacementSource}${source.slice(range.end)}`;
+        };
+        const replaceOnce = (source, pattern, replacement, label) => {
+          let replaced = false;
+          const nextSource = source.replace(pattern, (...args) => {
+            if (replaced) {
+              return args[0];
+            }
+
+            replaced = true;
+            return typeof replacement === "function" ? replacement(...args) : replacement;
+          });
+          if (!replaced) {
+            warnMissingPatch(label);
+          }
+          return nextSource;
+        };
+        let rewroteModuleImport = false;
+        normalizedSource = normalizedSource.replace(
+          /from\s+["']\.\/zombie_skeleton_behaviors\.js(\?[^"']*)?["']/g,
+          (_match, versionSuffix = "") => {
+            rewroteModuleImport = true;
+            const behaviorModulePath = `./public/zombie_skeleton_behaviors.js${versionSuffix}`;
+            return `from "${new URL(behaviorModulePath, document.baseURI).href}"`;
+          }
+        );
+        if (!rewroteModuleImport && normalizedSource.includes("zombie_skeleton_behaviors")) {
+          warnMissingPatch("behavior module import rewrite");
+        }
+
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+MAX_CUSTOM_BUBBLER_DISTANCE_PX\s*=\s*\d+\s*;/,
+          "const MAX_CUSTOM_BUBBLER_DISTANCE_PX = 1500;",
+          "bubbler distance limit"
+        );
+        normalizedSource = replaceFunctionSource(
+          normalizedSource,
+          "getScrubCoverage",
+          mobileScrubCoverageSource,
+          "scrub coverage"
+        );
+        normalizedSource = replaceFunctionSource(
+          normalizedSource,
+          "getCleanableScrubCellCount",
+          `${mobileVisibleScrubCellCountsSource}\n\n${mobileCleanableScrubCellCountSource}`,
+          "visible scrub cell count"
+        );
+        normalizedSource = replaceFunctionSource(
+          normalizedSource,
+          "getFishShadowLayerPlaneY",
+          mobileFishShadowPlaneSource,
+          "fish shadow plane"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+offsetX\s*=\s*8\s*\+\s*Math\.min\(\s*18\s*,\s*heightAboveFloor\s*\*\s*0\.045\s*\);/,
+          "const offsetX = isMobilePageRuntime() ? 0 : 8 + Math.min(18, heightAboveFloor * 0.045);",
+          "fish shadow horizontal offset"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /settingsButton\.textContent\s*=\s*"\(S\)ETTINGS";/,
+          'settingsButton.textContent = isMobilePageRuntime() ? "SETTINGS" : "(S)ETTINGS";',
+          "mobile selected decor settings label"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+fadeDistancePx\s*=\s*Math\.max\(\s*24\s*\*\s*stableScale\s*,\s*spout\.fadeDistance\s*\*\s*stableScale\s*\);/,
+          "const fadeDistancePx = Math.max(24 * stableScale, isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) ? spout.fadeDistance : spout.fadeDistance * stableScale);",
+          "mobile bubbler distance scale"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+cadenceMs\s*=\s*getBubblerCadenceFromIntensity\(intensity\);\s*const\s+travelDurationMs\s*=\s*getBubblerTravelDurationFromSpeed\(speed\);/,
+          "const travelDurationMs = getBubblerTravelDurationFromSpeed(speed);\n    const mobileCustomBubblerAtMaxDistance = isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) && spout.fadeDistance >= MAX_CUSTOM_BUBBLER_DISTANCE_PX - 5;\n    const baseCadenceMs = getBubblerCadenceFromIntensity(intensity);\n    const cadenceMs = mobileCustomBubblerAtMaxDistance\n      ? Math.min(baseCadenceMs, Math.max(45, travelDurationMs / 30))\n      : baseCadenceMs;",
+          "mobile custom bubbler max distance cadence"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+totalBubbleCount\s*=\s*clamp\(\s*Math\.ceil\(travelDurationMs\s*\/\s*cadenceMs\)\s*\+\s*2\s*\+\s*Math\.round\(spoutWidthPx\s*\/\s*80\),/,
+          "const totalBubbleCount = clamp(\n      Math.ceil(travelDurationMs / cadenceMs) + 2 + Math.round(spoutWidthPx / 80) + (isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) ? 10 : 0),",
+          "mobile custom bubbler density"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /if\s*\(\s*ageMs\s*<\s*0\s*\|\|\s*ageMs\s*>\s*travelDurationMs\s*\)\s*{\s*continue;\s*}/,
+          "if (ageMs < 0 || (!mobileCustomBubblerAtMaxDistance && ageMs > travelDurationMs)) {\n        continue;\n      }",
+          "mobile custom bubbler max distance age limit"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+phase\s*=\s*clamp\(\s*ageMs\s*\/\s*travelDurationMs\s*,\s*0\s*,\s*1\s*\);/,
+          "const phase = mobileCustomBubblerAtMaxDistance\n        ? clamp(slotIndex / Math.max(1, totalBubbleCount - 1) + ((streamTimeMs % cadenceMs) / Math.max(1, cadenceMs)) / Math.max(1, totalBubbleCount - 1), 0, 1)\n        : clamp(ageMs / travelDurationMs, 0, 1);",
+          "mobile custom bubbler max distance phase"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+reachesWaterline\s*=\s*fadeDistancePx\s*>=\s*availableTravelPx\s*-\s*1\s*\*\s*stableScale;/,
+          "const reachesWaterline = mobileCustomBubblerAtMaxDistance || fadeDistancePx >= availableTravelPx - 1 * stableScale;",
+          "mobile custom bubbler waterline reach"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+popStartAgeMs\s*=\s*Math\.max\(\s*0\s*,\s*travelDurationMs\s*-\s*popDurationMs\s*\);/,
+          "const popStartAgeMs = Math.max(0, travelDurationMs - (isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) && reachesWaterline ? Math.min(popDurationMs, 80) : popDurationMs));",
+          "mobile bubbler pop start"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+popProgress\s*=\s*shouldPop\s*\?\s*clamp\(\s*\(ageMs\s*-\s*popStartAgeMs\)\s*\/\s*Math\.max\(\s*1\s*,\s*popDurationMs\s*\)\s*,\s*0\s*,\s*1\s*\)\s*:\s*0;/,
+          "const popProgress = shouldPop\n        ? (mobileCustomBubblerAtMaxDistance\n          ? clamp((phase - 0.94) / 0.06, 0, 1)\n          : clamp((ageMs - popStartAgeMs) / Math.max(1, popDurationMs), 0, 1))\n        : 0;",
+          "mobile custom bubbler max distance pop progress"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+parentAlpha\s*=\s*bubblePopEnabled\s*\?\s*\(popProgress\s*>\s*0\s*\?\s*0\s*:\s*alpha\)\s*:\s*alpha;/,
+          "const parentAlpha = bubblePopEnabled ? (popProgress > (isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) && reachesWaterline ? 0.82 : 0) ? 0 : alpha) : alpha;",
+          "mobile bubbler pop parent visibility"
+        );
+
+        if (patchWarnings.length) {
+          console.warn("Mobile app patch loaded with warnings.", patchWarnings);
+        }
+        return normalizedSource;
+      };
+      const loadMobileAppScript = async () => {
+        try {
+          const response = await fetch(mobileAppScriptUrl, { cache: "no-cache" });
+          if (!response.ok) {
+            throw new Error(`Mobile app script request failed with ${response.status}.`);
+          }
+
+          const patchedSource = buildMobilePatchedAppSource(await response.text());
+          const blobUrl = URL.createObjectURL(new Blob([patchedSource], { type: "text/javascript" }));
+          const script = document.createElement("script");
+          script.type = "module";
+          script.src = blobUrl;
+          script.addEventListener("load", () => URL.revokeObjectURL(blobUrl), { once: true });
+          script.addEventListener("error", () => {
+            URL.revokeObjectURL(blobUrl);
+            loadOriginalMobileAppScript();
+          }, { once: true });
+          document.body.appendChild(script);
+        } catch (error) {
+          console.warn("Mobile-only app patch could not be applied; loading the original app script.", error);
+          loadOriginalMobileAppScript();
+        }
+      };
+      loadMobileAppScript();
+    })();
+  </script>
+</body>
+
+</html>

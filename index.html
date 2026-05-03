@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260428t" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260502d" />
 </head>
 
 <body>
@@ -28,6 +28,8 @@
   </section>
 
   <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite">
+    <div id="loadingOverlayBackground" class="tank-stage-background loading-overlay-background" aria-hidden="true"></div>
+    <div id="loadingOverlayUnderwater" class="tank-stage-underwater loading-overlay-underwater" aria-hidden="true"></div>
     <div class="loading-overlay-content">
       <img class="loading-overlay-logo" src="assets/misc/bb_logo.png" alt="Bubble Borough" />
       <div class="loading-overlay-text">Loading Aquarium</div>
@@ -392,8 +394,10 @@
                   </div>
 
                   <div class="store-panel-actions">
-                    <div id="storeCoinCounter" class="store-coin-counter" aria-label="Current coins">
-                      ðŸª™ 0
+                    <div id="storeCoinCounter" class="store-coin-counter" aria-label="Current coins: 0">
+                      <img class="coin-symbol store-coin-icon store-coin-counter-icon" src="assets/icons/coin.png"
+                        alt="" aria-hidden="true" draggable="false" />
+                      <span class="store-coin-counter-value">0</span>
                     </div>
 
                     <button id="closeStoreOverlay" class="store-close-button" type="button" title="Close store"
@@ -409,6 +413,10 @@
                   <div id="fishShop" class="shop-drawer store-drawer" hidden></div>
                   <div id="decorShop" class="shop-drawer store-drawer" hidden></div>
                   <div id="equipmentShop" class="shop-drawer store-drawer" hidden></div>
+                </div>
+                <div id="storeScrollControls" class="store-scroll-controls" hidden aria-label="Store scroll controls">
+                  <button class="store-scroll-button" type="button" data-store-scroll="up" aria-label="Scroll store up">&uarr;</button>
+                  <button class="store-scroll-button" type="button" data-store-scroll="down" aria-label="Scroll store down">&darr;</button>
                 </div>
               </div>
             </section>
@@ -449,7 +457,8 @@
                   </button>
                 </div>
 
-                <div class="settings-panel-body">
+                <div class="wallpaper-scroll-shell settings-scroll-shell">
+                  <div class="settings-panel-body" data-wallpaper-scroll-target="settings">
                   <section class="settings-section">
                     <h3>Data</h3>
                     <p class="settings-section-note">Export, import, or reset your aquarium save.</p>
@@ -591,6 +600,14 @@
                       </a>
                     </div>
                   </section>
+                  </div>
+                  <div class="wallpaper-scroll-controls" data-wallpaper-scroll-controls="settings" hidden
+                    aria-label="Settings scroll controls">
+                    <button class="store-scroll-button" type="button" data-wallpaper-scroll="up"
+                      aria-label="Scroll settings up">&uarr;</button>
+                    <button class="store-scroll-button" type="button" data-wallpaper-scroll="down"
+                      aria-label="Scroll settings down">&darr;</button>
+                  </div>
                 </div>
               </div>
             </section>
@@ -601,7 +618,7 @@
                 <div class="settings-panel-header">
                   <div class="settings-panel-copy">
                     <h2 id="equipmentTitle">Edit Tank</h2>
-                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel colors, filter, and UV light.</p>
+                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel, filter, and UV light.</p>
                   </div>
 
                   <button id="closeEquipmentOverlay" class="store-close-button" type="button" title="Close Edit Tank"
@@ -625,7 +642,6 @@
 
                   <section class="settings-section">
                     <h3>Gravel</h3>
-                    <p class="settings-section-note">Customize the colored gravel for the tank floor.</p>
                     <div id="equipmentCustomGravelPanel"></div>
                   </section>
 
@@ -821,7 +837,10 @@
               <!--DEBUG BUTTONS-->
 
               <button id="addCoinsButton" class="dock-button debug" type="button" title="Debug: Add 10 coins"
-                aria-label="Debug: Add 10 coins">🪙</button>
+                aria-label="Debug: Add 10 coins">
+                <img class="dock-button-icon coin-symbol" src="assets/icons/coin.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
 
               <button id="resetMealsButton" class="dock-button debug" type="button" title="Debug: Reset Today's Meals"
                 aria-label="Debug: Reset Today's Meals">🍽️</button>
@@ -924,7 +943,10 @@
               <div class="fish-inspector-card">
                 <div class="fish-inspector-name-row">
                   <label for="fishNameInput">Name:</label>
-                  <input id="fishNameInput" type="text" maxlength="20" autocomplete="off" />
+                  <div class="fish-name-input-wrap">
+                    <input id="fishNameInput" type="text" maxlength="20" autocomplete="off" />
+                    <button id="clearFishName" class="fish-name-clear-button" type="button" aria-label="Clear fish name">&times;</button>
+                  </div>
                   <button id="randomizeFishName" class="small-button inspector-icon-button" type="button"
                     aria-label="Randomize fish name" title="Randomize Name">?</button>
                   <button id="saveFishName" class="small-button inspector-save-button inspector-icon-button" type="button"
@@ -934,6 +956,7 @@
                     &times;
                   </button>
                 </div>
+                <div id="fishNameKeyboard" class="wallpaper-name-keyboard" hidden aria-label="Fish name keyboard"></div>
 
                 <div class="inspector-lines">
                   <div class="inspector-line">
@@ -1022,6 +1045,19 @@
 
   <script>
     (() => {
+      const phoneScreenQuery = "(hover: none) and (pointer: coarse) and (max-width: 767px)";
+      const phoneLandscapeQuery = "(hover: none) and (pointer: coarse) and (max-width: 932px) and (max-height: 500px) and (orientation: landscape)";
+      const phoneAgentPattern = /Android.*Mobile|iPhone|iPod|IEMobile|Windows Phone|webOS|BlackBerry|Opera Mini/i;
+      const shouldUseMobilePage =
+        window.matchMedia?.(phoneScreenQuery)?.matches
+        || window.matchMedia?.(phoneLandscapeQuery)?.matches
+        || phoneAgentPattern.test(navigator.userAgent || "");
+
+      if (shouldUseMobilePage) {
+        window.location.replace("./mobile.html");
+        return;
+      }
+
       const unsupportedScreenQuery = "(max-width: 767px), (max-width: 1180px) and (max-height: 620px)";
       if (window.matchMedia?.(unsupportedScreenQuery)?.matches) {
         document.documentElement.dataset.unsupportedMobileDevice = "true";
@@ -1030,7 +1066,7 @@
 
       const script = document.createElement("script");
       script.type = "module";
-      script.src = "./public/app.js?v=20260428b";
+      script.src = "./public/app.js?v=20260502f";
       document.body.appendChild(script);
     })();
   </script>

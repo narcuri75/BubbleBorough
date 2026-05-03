@@ -2335,6 +2335,26 @@
     floorY
   );
 }`;
+        const mobilePrimeSoundEffectsSource = `function primeSoundEffects() {
+  if (runtime.soundEffectsPrimed || typeof Audio !== "function") {
+    return;
+  }
+
+  if (isMobilePageRuntime()) {
+    runtime.soundEffectsPrimed = true;
+    clearSoundEffectsResumeListeners();
+    getSoundEffectAudioContext();
+    return;
+  }
+
+  runtime.soundEffectsPrimed = true;
+  clearSoundEffectsResumeListeners();
+  for (const path of SOUND_EFFECT_PATHS) {
+    for (const audio of getSoundEffectPool(path)) {
+      primeSoundEffectAudio(audio);
+    }
+  }
+}`;
         let normalizedSource = String(appSource || "").replace(/\r\n/g, "\n");
         const patchWarnings = [];
         const warnMissingPatch = (label) => {
@@ -2428,6 +2448,12 @@
           mobileFishShadowPlaneSource,
           "fish shadow plane"
         );
+        normalizedSource = replaceFunctionSource(
+          normalizedSource,
+          "primeSoundEffects",
+          mobilePrimeSoundEffectsSource,
+          "mobile sound effect priming"
+        );
         normalizedSource = replaceOnce(
           normalizedSource,
           /const\s+offsetX\s*=\s*8\s*\+\s*Math\.min\(\s*18\s*,\s*heightAboveFloor\s*\*\s*0\.045\s*\);/,
@@ -2439,6 +2465,12 @@
           /settingsButton\.textContent\s*=\s*"\(S\)ETTINGS";/,
           'settingsButton.textContent = isMobilePageRuntime() ? "SETTINGS" : "(S)ETTINGS";',
           "mobile selected decor settings label"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+actionPoint\s*=\s*tankVirtualPointToStagePx\(\s*\(bounds\.left\s*\+\s*bounds\.right\)\s*\/\s*2\s*,\s*bounds\.top\s*-\s*24\s*\);/,
+          "const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - (isMobilePageRuntime() ? 58 : 24));",
+          "mobile selected decor action bar spacing"
         );
         normalizedSource = replaceOnce(
           normalizedSource,

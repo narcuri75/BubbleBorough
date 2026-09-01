@@ -3,6 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#031429" />
@@ -17,7 +19,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="stylesheet" href="./public/styles.css?v=20260502d" />
-  <link rel="stylesheet" href="./public/mobile_styles.css?v=20260502ak" />
+  <link rel="stylesheet" href="./public/mobile_styles.css?v=20260503u" />
 </head>
 
 <body class="mobile-page">
@@ -45,9 +47,21 @@
           <div class="tank-stage-background" id="tankStageBackground" hidden aria-hidden="true">
             <div class="tank-stage-underwater"></div>
           </div>
-          <canvas id="tankCanvas" width="1280" height="720"></canvas>
-          <canvas id="grimeCanvas" width="1280" height="720"></canvas>
-          <canvas id="glassCanvas" width="1280" height="720"></canvas>
+            <canvas id="tankCanvas" width="1280" height="720"></canvas>
+            <canvas id="grimeCanvas" width="1280" height="720"></canvas>
+            <canvas id="glassCanvas" width="1280" height="720"></canvas>
+
+            <section id="boroughOverview" class="borough-overview" hidden aria-label="Bubble Borough aquarium overview">
+              <div class="borough-overview-header">
+                <div>
+                  <span class="borough-overview-kicker">Bubble Borough</span>
+                  <h2 id="boroughOverviewTitle">Aquarium Overview</h2>
+                  <p id="boroughOverviewHint">Choose a neighborhood to visit.</p>
+                </div>
+                <button id="closeBoroughOverview" class="borough-overview-close" type="button" aria-label="Close overview">&times;</button>
+              </div>
+              <div id="boroughGrid" class="borough-grid" role="grid" aria-label="Aquarium neighborhood map"></div>
+            </section>
 
           <div class="tank-overlay">
             <section class="tank-display">
@@ -99,7 +113,7 @@
 
             <div id="tankSidebar" class="tank-sidebar">
               <nav class="tab-buttons" aria-label="Aquarium panels">
-                <button class="tab-button active" data-tab="overview" type="button">Tank Info</button>
+                <button class="tab-button active" data-tab="overview" type="button">Neighborhood</button>
                 <button class="tab-button" data-tab="fish" type="button">Fish</button>
                 <button class="tab-button" data-tab="decor" type="button">Decor</button>
               </nav>
@@ -108,7 +122,7 @@
                 <section class="tab-panel active" data-panel="overview">
                   <div class="panel-heading">
                     <div>
-                      <h2>Tank Info</h2>
+                      <h2>Neighborhood</h2>
                       <p>View the current aquarium, its name, care, and equipment.</p>
                     </div>
                   </div>
@@ -300,7 +314,6 @@
                           </button>
                         </div>
                         <div id="filterAssetList" class="background-grid"></div>
-                        <div id="uvLightList" class="uv-light-equipment"></div>
                       </div>
                     </section>
 
@@ -354,6 +367,8 @@
                 type="button" title="Buy Another" aria-label="Buy Another">BUY</button>
               <button id="selectedDecorStoreButton" class="decor-action-float-button store-decor-float-button"
                 type="button" title="Move to Storage" aria-label="Move to Storage">PUT AWAY</button>
+              <button id="selectedDecorAssignButton" class="decor-action-float-button assign-decor-float-button"
+                type="button" title="Assign Residence" aria-label="Assign Residence">ASSIGN</button>
               <button id="selectedDecorSettingsButton" class="decor-action-float-button settings-decor-float-button"
       type="button" title="Decor Settings" aria-label="Decor Settings">SETTINGS</button>
             </div>
@@ -421,7 +436,7 @@
                   draggable="false" />
               </button>
               <button id="storeEquipmentTab" class="store-tab-button" type="button" role="tab"
-                aria-selected="false" aria-controls="equipmentShop" aria-label="Tank" title="Tank">
+                aria-selected="false" aria-controls="equipmentShop" aria-label="Equipment" title="Equipment">
                 <img class="store-tab-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
@@ -584,6 +599,21 @@
                   </section>
 
                   <section class="settings-section">
+                    <h3>Seasonal</h3>
+                    <label class="settings-toggle-row" for="halloweenModeSelect">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Halloween Mode</span>
+                        <span class="settings-toggle-note">Automatic uses local time and runs October 1–31. This changes artwork only.</span>
+                      </div>
+                      <select id="halloweenModeSelect" class="settings-select" aria-label="Halloween Mode">
+                        <option value="automatic">Automatic</option>
+                        <option value="on">On</option>
+                        <option value="off">Off</option>
+                      </select>
+                    </label>
+                  </section>
+
+                  <section class="settings-section">
                     <h3>Audio</h3>
 
                     <label class="settings-toggle-row" for="uiMuteToggleInput">
@@ -641,7 +671,7 @@
                 <div class="settings-panel-header">
                   <div class="settings-panel-copy">
                     <h2 id="equipmentTitle">Edit Tank</h2>
-                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel, filter, and UV light.</p>
+                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel, and filter.</p>
                   </div>
 
                   <button id="closeEquipmentOverlay" class="store-close-button" type="button" title="Close Edit Tank"
@@ -680,7 +710,6 @@
                       </button>
                     </div>
                     <div id="equipmentFilterList" class="background-grid"></div>
-                    <div id="equipmentUvLightList" class="uv-light-equipment"></div>
                   </section>
                 </div>
               </div>
@@ -710,6 +739,14 @@
             </section>
 
             <section id="editDecorTray" class="edit-decor-tray" hidden aria-label="Edit decor tray">
+              <div class="edit-decor-tray-header">
+                <label class="edit-decor-in-tank-toggle" title="Allow grounded decor to be positioned above its layer floor">
+                  <input type="checkbox" data-decor-free-placement-toggle />
+                  <span>Free Placement</span>
+                </label>
+                <button id="closeEditDecorTrayButton" class="edit-tray-done-button" type="button"
+                  aria-label="Finish editing decor" title="Done editing decor">Done</button>
+              </div>
               <button id="editDecorTrayPrev" class="edit-decor-tray-arrow" type="button"
                 aria-label="Scroll decor tray left">
                 &#8249;
@@ -723,6 +760,8 @@
             </section>
 
             <section id="editFishTray" class="edit-decor-tray" hidden aria-label="Edit fish tray">
+              <button id="closeEditFishTrayButton" class="edit-tray-done-button" type="button"
+                aria-label="Finish managing fish" title="Done managing fish">Done</button>
               <button id="editFishTrayPrev" class="edit-decor-tray-arrow" type="button"
                 aria-label="Scroll fish tray left">
                 &#8249;
@@ -766,6 +805,12 @@
               <button id="openManagementButton" class="dock-button management" type="button" title="Tank Info"
                 aria-label="Tank Info">
                 <img class="dock-button-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
+                  draggable="false" />
+              </button>
+
+              <button id="overviewButton" class="dock-button borough-control" type="button" title="Aquarium Overview"
+                aria-label="Aquarium Overview" aria-pressed="false">
+                <img class="dock-button-icon" src="assets/icons/aquarium_overview.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -870,11 +915,6 @@
                 <span class="dock-button-night-icon" aria-hidden="true"></span>
               </button>
 
-              <button id="uvLightToggleButton" class="dock-button uv-light" type="button" title="Turn UV Light Off"
-                aria-label="Turn UV Light Off" hidden>
-                <img src="assets/misc/uvlight.png" alt="" aria-hidden="true" />
-              </button>
-
               <!--DEBUG BUTTONS-->
 
               <button id="addCoinsButton" class="dock-button debug" type="button" title="Debug: Add 10 coins"
@@ -977,6 +1017,7 @@
                   <h3>Behavior:</h3>
                   <div id="debugMenuBehaviors" class="debug-menu-grid"></div>
                 </div>
+                <div id="debugLivingBoroughPanel"></div>
               </div>
             </aside>
 
@@ -1025,6 +1066,8 @@
                     <strong id="inspectorMeal">❌</strong>
                   </div>
                 </div>
+
+                <div id="inspectorLifeStory" class="fish-life-story" aria-label="Fish life and activity"></div>
 
                 <div id="fishInspectorSettings" class="fish-inspector-settings" hidden>
                   <label class="inspector-setting-row">
@@ -1247,6 +1290,76 @@
       };
       installMobileStoreCoinCounter();
 
+      const installMobileStoreToolbarCounter = () => {
+        const storeOverlay = document.querySelector("#storeOverlay");
+        const counter = document.querySelector("#storeCoinCounter");
+        if (!storeOverlay || !counter || storeOverlay.__bubbleBoroughMobileToolbarCounter) {
+          return;
+        }
+
+        const getActiveStoreDrawer = () => [
+          "#foodShop",
+          "#pharmacyShop",
+          "#fishShop",
+          "#decorShop",
+          "#equipmentShop"
+        ]
+          .map((selector) => storeOverlay.querySelector(selector))
+          .find((drawer) => drawer && !drawer.hidden);
+
+        const ensureToolbar = (drawer) => {
+          let toolbar = drawer.querySelector(":scope > .shop-toolbar");
+          if (toolbar) {
+            return toolbar;
+          }
+
+          toolbar = document.createElement("div");
+          toolbar.className = "shop-toolbar mobile-shop-wallet-toolbar";
+          drawer.prepend(toolbar);
+          return toolbar;
+        };
+
+        let toolbarCounterFrame = 0;
+        const syncToolbarCounter = () => {
+          toolbarCounterFrame = 0;
+          if (storeOverlay.hidden) {
+            return;
+          }
+
+          const activeDrawer = getActiveStoreDrawer();
+          if (!activeDrawer) {
+            return;
+          }
+
+          const toolbar = ensureToolbar(activeDrawer);
+          counter.classList.add("mobile-shop-toolbar-counter");
+          if (counter.parentElement !== toolbar) {
+            toolbar.appendChild(counter);
+          }
+        };
+
+        const scheduleToolbarCounterSync = () => {
+          if (toolbarCounterFrame) {
+            return;
+          }
+          toolbarCounterFrame = window.requestAnimationFrame(syncToolbarCounter);
+        };
+
+        new MutationObserver(scheduleToolbarCounterSync).observe(storeOverlay, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ["hidden", "class", "style", "aria-selected"]
+        });
+        scheduleToolbarCounterSync();
+
+        Object.defineProperty(storeOverlay, "__bubbleBoroughMobileToolbarCounter", {
+          value: true,
+          configurable: true
+        });
+      };
+      installMobileStoreToolbarCounter();
+
       const installMobileStorePriceButtons = () => {
         const storeOverlay = document.querySelector("#storeOverlay");
         if (!storeOverlay || storeOverlay.__bubbleBoroughMobilePriceButtons) {
@@ -1436,6 +1549,57 @@
           const rawName = typeof tank?.name === "string" ? tank.name.trim() : "";
           return rawName || `Aquarium ${index + 1}`;
         };
+        const getMobileDisplayText = (selector, fallback) => {
+          const text = document.querySelector(selector)?.textContent?.trim();
+          return text || fallback;
+        };
+        const renderMobileTankStatus = (summary) => {
+          const actions = summary?.querySelector(".management-summary-actions");
+          if (!summary || !actions) {
+            return;
+          }
+
+          let statusStrip = summary.querySelector(".mobile-tank-status-strip");
+          if (!statusStrip) {
+            statusStrip = document.createElement("section");
+            statusStrip.className = "mobile-tank-status-strip";
+            statusStrip.setAttribute("aria-label", "Tank status");
+            actions.insertAdjacentElement("afterend", statusStrip);
+          }
+
+          const cleanliness = getMobileDisplayText("#cleanlinessLabel", "100%");
+          const mealsServed = getMobileDisplayText("#mealWindowLabel", "0 / 2");
+          const coins = getMobileDisplayText("#coinCount", "0");
+          const statusKey = `${cleanliness}|${mealsServed}|${coins}`;
+          if (statusStrip.dataset.mobileTankStatusKey === statusKey) {
+            return;
+          }
+
+          statusStrip.dataset.mobileTankStatusKey = statusKey;
+          statusStrip.innerHTML = `
+            <article class="mobile-tank-status-cell">
+              <img class="mobile-tank-status-icon" src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+              <span class="mobile-tank-status-copy">
+                <span class="mobile-tank-status-label">Cleanliness</span>
+                <strong>${escapeText(cleanliness)}</strong>
+              </span>
+            </article>
+            <article class="mobile-tank-status-cell">
+              <img class="mobile-tank-status-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
+              <span class="mobile-tank-status-copy">
+                <span class="mobile-tank-status-label">Meals Served</span>
+                <strong>${escapeText(mealsServed)}</strong>
+              </span>
+            </article>
+            <article class="mobile-tank-status-cell">
+              <img class="mobile-tank-status-icon" src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
+              <span class="mobile-tank-status-copy">
+                <span class="mobile-tank-status-label">Coins</span>
+                <strong>${escapeText(coins)}</strong>
+              </span>
+            </article>
+          `;
+        };
         const managementTabs = document.querySelector("#mobileManagementTabs");
         const isTankManagementOverlayOpen = () => {
           const overlay = document.querySelector("#utilityOverlay");
@@ -1522,14 +1686,28 @@
             return;
           }
 
+          renderMobileTankStatus(summary);
+
           const save = readMobileSave();
           const tanks = Array.isArray(save?.tanks) ? save.tanks.filter((tank) => tank?.id) : [];
-          summary.querySelector(".mobile-tank-switcher")?.remove();
+          const existingSwitcher = summary.querySelector(".mobile-tank-switcher");
           if (tanks.length <= 1) {
+            existingSwitcher?.remove();
             return;
           }
 
           const activeTankId = typeof save?.activeTankId === "string" ? save.activeTankId : tanks[0]?.id;
+          const switcherKey = JSON.stringify(tanks.map((tank, index) => ({
+            id: tank.id,
+            name: getTankName(tank, index),
+            fishCount: Array.isArray(tank.fish) ? tank.fish.length : 0,
+            decorCount: Array.isArray(tank.placedDecor) ? tank.placedDecor.length : 0
+          }))).concat("|", activeTankId || "");
+          if (existingSwitcher?.dataset.mobileTankSwitcherKey === switcherKey) {
+            return;
+          }
+          existingSwitcher?.remove();
+
           const cards = tanks.map((tank, index) => {
             const isCurrent = tank.id === activeTankId;
             const fishCount = Array.isArray(tank.fish) ? tank.fish.length : 0;
@@ -1549,6 +1727,7 @@
 
           const switcher = document.createElement("section");
           switcher.className = "mobile-tank-switcher";
+          switcher.dataset.mobileTankSwitcherKey = switcherKey;
           switcher.setAttribute("aria-label", "View additional tanks");
           switcher.innerHTML = `
             <div class="mobile-tank-switcher-title">
@@ -1599,6 +1778,7 @@
         new MutationObserver(scheduleRender).observe(document.body, {
           subtree: true,
           childList: true,
+          characterData: true,
           attributes: true,
           attributeFilter: ["hidden", "class", "style", "aria-hidden", "data-utility-mode"]
         });
@@ -1724,8 +1904,28 @@
           .some(isMobileMenuVisible);
         const shouldPrioritizeMenuOverlay = Array.from(document.querySelectorAll(mobileMenuOverlaySelectors))
           .some(isMobileMenuVisible);
+        const utilityOverlay = document.querySelector("#utilityOverlay");
+        const utilityMode = utilityOverlay?.dataset.utilityMode || "";
+        const utilityVisible = isMobileMenuVisible(utilityOverlay);
         document.body.classList.toggle("mobile-display-hidden", shouldHideDisplay);
         document.body.classList.toggle("mobile-menu-overlay-open", shouldPrioritizeMenuOverlay);
+        document.body.classList.toggle("mobile-fish-care-menu-open", isMobileMenuVisible(document.querySelector("#mobileFishCareMenu")));
+        document.body.classList.toggle("mobile-tools-menu-open", isMobileMenuVisible(document.querySelector("#mobileToolsMenu")));
+        document.body.classList.toggle("mobile-edit-tank-menu-open", isMobileMenuVisible(document.querySelector("#mobileEditTankMenu")));
+        document.body.classList.toggle("mobile-store-open", isMobileMenuVisible(document.querySelector("#storeOverlay")));
+        document.body.classList.toggle("mobile-settings-open", isMobileMenuVisible(document.querySelector("#settingsOverlay")));
+        document.body.classList.toggle("mobile-equipment-open", isMobileMenuVisible(document.querySelector("#equipmentOverlay")));
+        document.body.classList.toggle("mobile-management-open", utilityVisible && utilityMode === "tank-management");
+        document.body.classList.toggle(
+          "mobile-decor-settings-open",
+          utilityVisible && (utilityMode === "decor-settings" || utilityMode === "custom-decor-settings")
+        );
+        document.querySelectorAll("#equipmentOverlay .background-solid-color-card").forEach((card) => {
+          card.classList.toggle(
+            "has-animated-background-reset",
+            Boolean(card.querySelector("[data-reset-animated-background-colors]"))
+          );
+        });
       };
       const scheduleMobileDigitalDisplaySync = () => {
         if (mobileDisplaySyncFrame) {
@@ -1919,11 +2119,6 @@
           "#openSettingsButton"
         ].join(",");
         let decorSettingsSyncFrame = 0;
-        const getColorButtonLabel = (button) => {
-          const title = button.getAttribute("title") || "";
-          const text = button.textContent.trim();
-          return title || text || "Color";
-        };
         const syncDecorColorDropdowns = () => {
           decorSettingsSyncFrame = 0;
           const overlay = document.querySelector(decorSettingsSelector);
@@ -1938,30 +2133,9 @@
               return;
             }
 
-            let select = card.querySelector(".mobile-cave-color-select");
-            if (!(select instanceof HTMLSelectElement)) {
-              select = document.createElement("select");
-              select.className = "shop-sort-select mobile-cave-color-select";
-              select.setAttribute("aria-label", `${header.querySelector("span")?.textContent?.trim() || "Decor"} color`);
-              header.insertAdjacentElement("afterend", select);
-              select.addEventListener("change", () => {
-                const selectedButton = buttons.find((button) => button.getAttribute("data-cave-color") === select.value);
-                selectedButton?.click();
-                window.requestAnimationFrame(scheduleDecorSettingsSync);
-              });
-            }
-
-            select.replaceChildren(...buttons.map((button) => {
-              const option = document.createElement("option");
-              option.value = button.getAttribute("data-cave-color") || "";
-              option.textContent = getColorButtonLabel(button);
-              return option;
-            }));
-            const activeButton = buttons.find((button) => (
-              button.classList.contains("is-selected") || button.getAttribute("aria-pressed") === "true"
-            )) || buttons[0];
-            select.value = activeButton?.getAttribute("data-cave-color") || "";
-            card.classList.add("is-mobile-color-dropdown");
+            card.querySelector(".mobile-cave-color-select")?.remove();
+            card.classList.remove("is-mobile-color-dropdown");
+            card.classList.add("is-mobile-color-swatches");
           });
         };
         function scheduleDecorSettingsSync() {
@@ -2241,7 +2415,7 @@
       };
       installMobileTutorialToolsBridge();
 
-      const mobileAppScriptUrl = "./public/app.js?v=20260502i";
+      const mobileAppScriptUrl = "./public/app.js?v=20260503a";
       const loadOriginalMobileAppScript = () => {
         const script = document.createElement("script");
         script.type = "module";
@@ -2355,6 +2529,45 @@
     }
   }
 }`;
+        const mobileAnimationFpsLimitSource = `function getMobileAnimationFpsLimit() {
+  if (!isMobilePageRuntime()) {
+    return 0;
+  }
+
+  const activelyManipulatingTank = Boolean(
+    runtime.pointerDown ||
+    runtime.cleaningMode ||
+    runtime.scoopMode ||
+    runtime.feedingModeFoodKey ||
+    runtime.medicineModeKey ||
+    runtime.placementMode ||
+    runtime.dragState ||
+    runtime.fishDragState ||
+    runtime.eggDragState ||
+    runtime.pebbleDragState ||
+    runtime.caveSettingsDrag
+  );
+  const uiSurfaceActive = Boolean(document.body?.classList.contains("mobile-menu-overlay-open"));
+  return activelyManipulatingTank || uiSurfaceActive ? 24 : 20;
+}
+
+function getEffectiveAnimationFpsLimit() {
+  const portableLimit = isPortablePerformanceModeActive()
+    ? (isMobilePageRuntime() ? getMobileAnimationFpsLimit() : PORTABLE_PERFORMANCE_MAX_FPS)
+    : 0;
+  const wallpaperLimit = Math.max(0, Number(runtime.wallpaperEngineFpsLimit) || 0);
+  if (portableLimit > 0 && wallpaperLimit > 0) {
+    return Math.min(portableLimit, wallpaperLimit);
+  }
+  return portableLimit || wallpaperLimit;
+}`;
+        const mobileWaterParticlesEnabledSource = `function areWaterParticlesEnabled() {
+  return isMobilePageRuntime() ? false : getUiSettings().waterParticlesEnabled;
+}`;
+        const mobileSettingsSyncSource = `if (dom.waterParticlesToggleInput) {
+    dom.waterParticlesToggleInput.checked = isMobilePageRuntime() ? false : uiSettings.waterParticlesEnabled;
+    dom.waterParticlesToggleInput.disabled = isMobilePageRuntime();
+  }`;
         let normalizedSource = String(appSource || "").replace(/\r\n/g, "\n");
         const patchWarnings = [];
         const warnMissingPatch = (label) => {
@@ -2367,7 +2580,27 @@
             return null;
           }
 
-          const braceStart = source.indexOf("{", match.index);
+          const parameterStart = source.indexOf("(", match.index);
+          if (parameterStart === -1) {
+            return null;
+          }
+
+          let parameterDepth = 0;
+          let parameterEnd = -1;
+          for (let index = parameterStart; index < source.length; index += 1) {
+            const char = source[index];
+            if (char === "(") {
+              parameterDepth += 1;
+            } else if (char === ")") {
+              parameterDepth -= 1;
+              if (parameterDepth === 0) {
+                parameterEnd = index;
+                break;
+              }
+            }
+          }
+
+          const braceStart = parameterEnd === -1 ? -1 : source.indexOf("{", parameterEnd + 1);
           if (braceStart === -1) {
             return null;
           }
@@ -2426,9 +2659,93 @@
 
         normalizedSource = replaceOnce(
           normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_MAX_RENDER_DPR\s*=\s*1\.25\s*;/,
+          "const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.15;",
+          "mobile render DPR cap"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_MAX_FPS\s*=\s*30\s*;/,
+          "const PORTABLE_PERFORMANCE_MAX_FPS = 24;",
+          "mobile active FPS cap"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT\s*=\s*30\s*;/,
+          "const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 8;",
+          "mobile water particle count"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT\s*=\s*24\s*;/,
+          "const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 8;",
+          "mobile clean water particle count"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT\s*=\s*30\s*;/,
+          "const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 8;",
+          "mobile dirty water particle count"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT\s*=\s*18\s*;/,
+          "const PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT = 8;",
+          "mobile ambient bubble count"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT\s*=\s*32\s*;/,
+          "const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 12;",
+          "mobile bubbler bubble cap"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_TANK_BLUR_SCALE\s*=\s*0\.55\s*;/,
+          "const PORTABLE_PERFORMANCE_TANK_BLUR_SCALE = 0;",
+          "mobile tank blur"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+PORTABLE_PERFORMANCE_GRIME_BLUR_SCALE\s*=\s*0\.5\s*;/,
+          "const PORTABLE_PERFORMANCE_GRIME_BLUR_SCALE = 0;",
+          "mobile grime blur"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+BUBBLER_POP_MICRO_BUBBLE_COUNT\s*=\s*10\s*;/,
+          "const BUBBLER_POP_MICRO_BUBBLE_COUNT = 3;",
+          "mobile bubbler pop particles"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
           /const\s+MAX_CUSTOM_BUBBLER_DISTANCE_PX\s*=\s*\d+\s*;/,
-          "const MAX_CUSTOM_BUBBLER_DISTANCE_PX = 1500;",
-          "bubbler distance limit"
+          "const MAX_CUSTOM_BUBBLER_DISTANCE_PX = 850;",
+          "mobile bubbler distance limit"
+        );
+        normalizedSource = replaceFunctionSource(
+          normalizedSource,
+          "getEffectiveAnimationFpsLimit",
+          mobileAnimationFpsLimitSource,
+          "mobile animation fps limit"
+        );
+        normalizedSource = replaceFunctionSource(
+          normalizedSource,
+          "areWaterParticlesEnabled",
+          mobileWaterParticlesEnabledSource,
+          "mobile water particles"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /if\s*\(\s*dom\.waterParticlesToggleInput\s*\)\s*{\s*dom\.waterParticlesToggleInput\.checked\s*=\s*uiSettings\.waterParticlesEnabled;\s*}/,
+          mobileSettingsSyncSource,
+          "mobile water particle setting display"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+MOBILE_VIEWPORT_OBJECT_SCALE_MULTIPLIERS\s*=\s*Object\.freeze\(\{\s*fish:\s*0\.62,\s*decor:\s*0\.68,\s*hardware:\s*0\.74\s*\}\);/,
+          "const MOBILE_VIEWPORT_OBJECT_SCALE_MULTIPLIERS = Object.freeze({\n  fish: 0.682,\n  decor: 0.748,\n  hardware: 0.74\n});",
+          "mobile fish/decor size increase"
         );
         normalizedSource = replaceFunctionSource(
           normalizedSource,
@@ -2469,8 +2786,14 @@
         normalizedSource = replaceOnce(
           normalizedSource,
           /const\s+actionPoint\s*=\s*tankVirtualPointToStagePx\(\s*\(bounds\.left\s*\+\s*bounds\.right\)\s*\/\s*2\s*,\s*bounds\.top\s*-\s*24\s*\);/,
-          "const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - (isMobilePageRuntime() ? 58 : 24));",
+          "const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - (isMobilePageRuntime() ? 82 : 24));",
           "mobile selected decor action bar spacing"
+        );
+        normalizedSource = replaceOnce(
+          normalizedSource,
+          /const\s+y\s*=\s*visibleBounds\.top\s*-\s*getViewportPxAsTankVirtual\(\s*AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX\s*\);/,
+          "const y = isMobilePageRuntime()\n    ? WATER_SURFACE_Y - height\n    : visibleBounds.top - getViewportPxAsTankVirtual(AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX);",
+          "mobile auto dispenser waterline position"
         );
         normalizedSource = replaceOnce(
           normalizedSource,
@@ -2481,13 +2804,13 @@
         normalizedSource = replaceOnce(
           normalizedSource,
           /const\s+cadenceMs\s*=\s*getBubblerCadenceFromIntensity\(intensity\);\s*const\s+travelDurationMs\s*=\s*getBubblerTravelDurationFromSpeed\(speed\);/,
-          "const travelDurationMs = getBubblerTravelDurationFromSpeed(speed);\n    const mobileCustomBubblerAtMaxDistance = isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) && spout.fadeDistance >= MAX_CUSTOM_BUBBLER_DISTANCE_PX - 5;\n    const baseCadenceMs = getBubblerCadenceFromIntensity(intensity);\n    const cadenceMs = mobileCustomBubblerAtMaxDistance\n      ? Math.min(baseCadenceMs, Math.max(45, travelDurationMs / 30))\n      : baseCadenceMs;",
+          "const travelDurationMs = getBubblerTravelDurationFromSpeed(speed);\n    const mobileCustomBubblerAtMaxDistance = isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) && spout.fadeDistance >= MAX_CUSTOM_BUBBLER_DISTANCE_PX - 5;\n    const baseCadenceMs = getBubblerCadenceFromIntensity(intensity);\n    const cadenceMs = mobileCustomBubblerAtMaxDistance\n      ? Math.max(baseCadenceMs, Math.max(120, travelDurationMs / 12))\n      : baseCadenceMs;",
           "mobile custom bubbler max distance cadence"
         );
         normalizedSource = replaceOnce(
           normalizedSource,
           /const\s+totalBubbleCount\s*=\s*clamp\(\s*Math\.ceil\(travelDurationMs\s*\/\s*cadenceMs\)\s*\+\s*2\s*\+\s*Math\.round\(spoutWidthPx\s*\/\s*80\),/,
-          "const totalBubbleCount = clamp(\n      Math.ceil(travelDurationMs / cadenceMs) + 2 + Math.round(spoutWidthPx / 80) + (isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) ? 10 : 0),",
+          "const totalBubbleCount = clamp(\n      Math.ceil(travelDurationMs / cadenceMs) + (isMobilePageRuntime() && isCustomBubblerDecorKey(item.decorKey) ? 1 : 2 + Math.round(spoutWidthPx / 80)),",
           "mobile custom bubbler density"
         );
         normalizedSource = replaceOnce(

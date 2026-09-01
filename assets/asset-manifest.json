@@ -216,6 +216,34 @@
                   {
                       "key":  "volcano-2_bubbler_bg.png",
                       "path":  "assets/decor/volcano-2_bubbler_bg.png?v=639104396789381039"
+                  },
+                  {
+                      "key":  "bubble-plaza.png",
+                      "path":  "assets/decor/bubble-plaza.png?v=borough-services-2"
+                  },
+                  {
+                      "key":  "transit-tube.png",
+                      "path":  "assets/decor/transit-tube.png?v=borough-transit-1"
+                  },
+                  {
+                      "key":  "coral-clinic.png",
+                      "path":  "assets/decor/coral-clinic.png?v=borough-services-2"
+                  },
+                  {
+                      "key":  "kelp-cafe.png",
+                      "path":  "assets/decor/kelp-cafe.png?v=borough-services-2"
+                  },
+                  {
+                      "key":  "moonstone-grotto.png",
+                      "path":  "assets/decor/moonstone-grotto.png?v=borough-services-2"
+                  },
+                  {
+                      "key":  "nursery-garden.png",
+                      "path":  "assets/decor/nursery-garden.png?v=borough-services-2"
+                  },
+                  {
+                      "key":  "shell-house.png",
+                      "path":  "assets/decor/shell-house.png?v=borough-services-2"
                   }
               ],
     "filter":  [
@@ -284,14 +312,6 @@
                  {
                      "key":  "bluetang_zombie.png",
                      "path":  "assets/fish/bluetang_zombie.png?v=639107543276403487"
-                 },
-                 {
-                     "key":  "brineshrimp_1.png",
-                     "path":  "assets/fish/brineshrimp_1.png?v=639107543868573329"
-                 },
-                 {
-                     "key":  "brineshrimp_2.png",
-                     "path":  "assets/fish/brineshrimp_2.png?v=639107544254223678"
                  },
                  {
                      "key":  "CelestialPearlDanio.png",

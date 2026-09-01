@@ -3,6 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#031429" />
@@ -15,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260502d" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260828-pointer-reflection" />
 </head>
 
 <body>
@@ -47,7 +49,40 @@
           <canvas id="grimeCanvas" width="1280" height="720"></canvas>
           <canvas id="glassCanvas" width="1280" height="720"></canvas>
 
+          <section id="boroughOverview" class="borough-overview" hidden aria-label="Bubble Borough aquarium overview">
+            <div class="borough-overview-header">
+              <div>
+                <span class="borough-overview-kicker">Bubble Borough</span>
+                <h2 id="boroughOverviewTitle">Aquarium Overview</h2>
+                <p id="boroughOverviewHint">Choose a neighborhood to visit.</p>
+              </div>
+              <button id="closeBoroughOverview" class="borough-overview-close" type="button" aria-label="Close overview">&times;</button>
+            </div>
+            <div id="boroughGrid" class="borough-grid" role="grid" aria-label="Aquarium neighborhood map"></div>
+          </section>
+
           <div class="tank-overlay">
+            <section id="fishActionFlyout" class="fish-action-flyout" hidden aria-label="Fish action menu" data-preserve-fish-selection>
+              <div class="fish-action-flyout-branch fish-action-flyout-left">
+                <button class="fish-action-flyout-button" type="button" data-fish-action-category="food">Food</button>
+                <button class="fish-action-flyout-button" type="button" data-fish-action-category="rest">Rest</button>
+                <button class="fish-action-flyout-button" type="button" data-fish-action-category="social">Social</button>
+              </div>
+              <button id="fishActionFlyoutName" class="fish-action-flyout-name" type="button">Fish</button>
+              <button id="fishActionFlyoutSettings" class="fish-action-flyout-settings" type="button" aria-label="Open fish details">Settings</button>
+              <div id="fishActionQueue" class="fish-action-queue" aria-label="Queued fish actions"></div>
+              <div class="fish-action-flyout-branch fish-action-flyout-right">
+                <button class="fish-action-flyout-button" type="button" data-fish-action-category="explore">Explore</button>
+                <button class="fish-action-flyout-button" type="button" data-fish-action-category="play">Play</button>
+                <button class="fish-action-flyout-button is-clear" type="button" data-fish-action-category="system">Manage</button>
+              </div>
+            </section>
+
+            <section id="fishActionQueueDock" class="fish-action-queue-dock" hidden aria-label="Queued fish actions" data-preserve-fish-selection></section>
+            <section id="fishActionSubmenu" class="fish-action-submenu" hidden aria-label="Fish action folder" data-preserve-fish-selection></section>
+            <section id="fishActionTargetMenu" class="fish-action-target-menu" hidden aria-label="Choose fish target" data-preserve-fish-selection></section>
+            <section id="selectedFishNeedsPanel" class="selected-fish-needs-panel" hidden aria-label="Selected fish needs"></section>
+
             <section class="tank-display">
               <button id="displayTab" class="display-tab" type="button" title="Hide Display"
                 aria-label="Hide Display">^</button>
@@ -57,8 +92,8 @@
                   <strong id="cleanlinessLabel">100%</strong>
                 </article>
                 <article class="display-cell">
-                  <span class="display-label">Meals Today</span>
-                  <strong id="mealWindowLabel">0 / 2</strong>
+                  <span class="display-label">Hungry Fish</span>
+                  <strong id="mealWindowLabel">0</strong>
                 </article>
                 <article class="display-cell">
                   <span class="display-label">Coins</span>
@@ -97,7 +132,7 @@
 
             <div id="tankSidebar" class="tank-sidebar">
               <nav class="tab-buttons" aria-label="Aquarium panels">
-                <button class="tab-button active" data-tab="overview" type="button">Tank Info</button>
+                <button class="tab-button active" data-tab="overview" type="button">Neighborhood</button>
                 <button class="tab-button" data-tab="fish" type="button">Fish</button>
                 <button class="tab-button" data-tab="decor" type="button">Decor</button>
               </nav>
@@ -106,7 +141,7 @@
                 <section class="tab-panel active" data-panel="overview">
                   <div class="panel-heading">
                     <div>
-                      <h2>Tank Info</h2>
+                      <h2>Neighborhood</h2>
                       <p>View the current aquarium, its name, care, and equipment.</p>
                     </div>
                   </div>
@@ -116,14 +151,14 @@
                   </section>
 
                   <section class="info-card">
-                    <h3>Today&apos;s Meals</h3>
+                    <h3>Hunger</h3>
                     <div id="mealTrack" class="meal-track"></div>
                   </section>
 
                   <section class="info-card">
                     <h3>Basics:</h3>
                     <ul class="rule-list">
-                      <li>🍗 Feed fish once every 12 hours.</li>
+                      <li>🍗 Feed hungry fish before they start starving.</li>
                       <li>💊 Add drops of medication to the tank when they are ill.</li>
                       <li>🧽 Scrub the tank with the sponge to clean it.</li>
                       <li>🥄 Scoop fish into storage if needed.</li>
@@ -140,8 +175,8 @@
                   <section class="info-card">
                     <h3>Tips:</h3>
                     <ul class="rule-list">
-                      <li>💔 Missing a meal removes half a heart.</li>
-                      <li>💖 4 meals in a row restore half a heart.</li>
+                      <li>💔 Starving fish can lose health.</li>
+                      <li>💖 Fed fish recover and stay in better moods.</li>
                       <li>💩 Fish poop 1 to 3 hours after eating and it settles on the gravel.</li>
                       <li>🏚️ Bigger fish and more fish make grime build up faster.</li>
                       <li>🐠 Sucker fish and better filters help slow grime build-up.</li>
@@ -298,7 +333,6 @@
                           </button>
                         </div>
                         <div id="filterAssetList" class="background-grid"></div>
-                        <div id="uvLightList" class="uv-light-equipment"></div>
                       </div>
                     </section>
 
@@ -352,6 +386,8 @@
                 type="button" title="Buy Another" aria-label="Buy Another">BUY</button>
               <button id="selectedDecorStoreButton" class="decor-action-float-button store-decor-float-button"
                 type="button" title="Move to Storage" aria-label="Move to Storage">PUT AWAY</button>
+              <button id="selectedDecorAssignButton" class="decor-action-float-button assign-decor-float-button"
+                type="button" title="Assign Residence" aria-label="Assign Residence">ASSIGN</button>
               <button id="selectedDecorSettingsButton" class="decor-action-float-button settings-decor-float-button"
                 type="button" title="Decor Settings" aria-label="Decor Settings">(S)ETTINGS</button>
             </div>
@@ -389,7 +425,7 @@
                     </button>
                     <button id="storeEquipmentTab" class="store-tab-button" type="button" role="tab"
                       aria-selected="false" aria-controls="equipmentShop">
-                      Tank
+                      Equipment
                     </button>
                   </div>
 
@@ -538,6 +574,15 @@
                       </div>
                       <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
                     </label>
+
+                    <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Tank Mouse Input</span>
+                        <span class="settings-toggle-note">Lock aquarium interactions while leaving the display and menus available.</span>
+                      </div>
+                      <button id="toggleMouseLockButton" class="small-button alt settings-action-button" type="button"
+                        aria-pressed="false">Lock Input</button>
+                    </div>
                   </section>
 
                   <section class="settings-section">
@@ -557,6 +602,21 @@
                         <span class="settings-toggle-note">Shows suspended particles moving through the water.</span>
                       </div>
                       <input id="waterParticlesToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+                  </section>
+
+                  <section class="settings-section">
+                    <h3>Seasonal</h3>
+                    <label class="settings-toggle-row" for="halloweenModeSelect">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Halloween Mode</span>
+                        <span class="settings-toggle-note">Automatic uses local time and runs October 1–31. This changes artwork only.</span>
+                      </div>
+                      <select id="halloweenModeSelect" class="settings-select" aria-label="Halloween Mode">
+                        <option value="automatic">Automatic</option>
+                        <option value="on">On</option>
+                        <option value="off">Off</option>
+                      </select>
                     </label>
                   </section>
 
@@ -618,7 +678,7 @@
                 <div class="settings-panel-header">
                   <div class="settings-panel-copy">
                     <h2 id="equipmentTitle">Edit Tank</h2>
-                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel, filter, and UV light.</p>
+                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel, and filter.</p>
                   </div>
 
                   <button id="closeEquipmentOverlay" class="store-close-button" type="button" title="Close Edit Tank"
@@ -657,7 +717,6 @@
                       </button>
                     </div>
                     <div id="equipmentFilterList" class="background-grid"></div>
-                    <div id="equipmentUvLightList" class="uv-light-equipment"></div>
                   </section>
                 </div>
               </div>
@@ -687,6 +746,26 @@
             </section>
 
             <section id="editDecorTray" class="edit-decor-tray" hidden aria-label="Edit decor tray">
+              <div class="edit-decor-tray-header">
+                <div class="edit-decor-tray-tabs" role="tablist" aria-label="Decor type">
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="all" data-decor-tone="all">All</button>
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="caves" data-decor-tone="caves">Caves</button>
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="plants" data-decor-tone="plants">Plants</button>
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="ornaments" data-decor-tone="ornaments">Ornaments</button>
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="bubbler" data-decor-tone="bubbler">Bubblers</button>
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="custom" data-decor-tone="custom">Custom</button>
+                </div>
+                <label class="edit-decor-in-tank-toggle">
+                  <input type="checkbox" data-decor-in-tank-toggle />
+                  <span>In Tank</span>
+                </label>
+                <label class="edit-decor-in-tank-toggle" title="Allow grounded decor to be positioned above its layer floor">
+                  <input type="checkbox" data-decor-free-placement-toggle />
+                  <span>Free Placement</span>
+                </label>
+                <button id="closeEditDecorTrayButton" class="edit-tray-done-button" type="button"
+                  aria-label="Finish editing decor" title="Done editing decor">Done</button>
+              </div>
               <button id="editDecorTrayPrev" class="edit-decor-tray-arrow" type="button"
                 aria-label="Scroll decor tray left">
                 &#8249;
@@ -699,7 +778,15 @@
               </button>
             </section>
 
-            <section id="editFishTray" class="edit-decor-tray" hidden aria-label="Edit fish tray">
+            <section id="editFishTray" class="edit-decor-tray edit-fish-tray" hidden aria-label="Manage fish tray">
+              <div class="edit-fish-tray-header">
+                <div class="edit-fish-tray-tabs" role="tablist" aria-label="Fish location">
+                  <button class="edit-fish-tray-tab" type="button" role="tab" data-fish-tray-tab="tank">Tank</button>
+                  <button class="edit-fish-tray-tab" type="button" role="tab" data-fish-tray-tab="storage">Storage</button>
+                </div>
+                <button id="closeEditFishTrayButton" class="edit-tray-done-button" type="button"
+                  aria-label="Finish managing fish" title="Done managing fish">Done</button>
+              </div>
               <button id="editFishTrayPrev" class="edit-decor-tray-arrow" type="button"
                 aria-label="Scroll fish tray left">
                 &#8249;
@@ -740,15 +827,16 @@
 
               <!--REG BUTTONS-->
 
-              <button id="openManagementButton" class="dock-button management" type="button" title="Tank Info"
-                aria-label="Tank Info">
+              <button id="openManagementButton" class="dock-button management" type="button" title="Aquarium"
+                aria-label="Aquarium">
                 <img class="dock-button-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
                   draggable="false" />
+                <span id="aquariumTaskBadge" class="dock-button-badge" hidden aria-hidden="true"></span>
               </button>
 
-              <button id="careTaskPaneButton" class="dock-button care-tasks" type="button" title="Tasks"
-                aria-label="Tasks" aria-pressed="false">
-                <img class="dock-button-icon" src="assets/icons/tasks.png" alt="" aria-hidden="true"
+              <button id="overviewButton" class="dock-button borough-control" type="button" title="Aquarium Overview"
+                aria-label="Aquarium Overview" aria-pressed="false">
+                <img class="dock-button-icon" src="assets/icons/aquarium_overview.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -758,34 +846,53 @@
                   draggable="false" />
               </button>
 
-              <button id="medicineButton" class="dock-button medicine" type="button" title="Medicine"
-                aria-label="Medicine">
-                <img class="dock-button-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true"
+              <button id="careMenuButton" class="dock-button toolbar-group-button care" type="button" title="Care"
+                aria-label="Care tools" aria-haspopup="menu" aria-controls="toolbarCareMenu" aria-expanded="false">
+                <img class="dock-button-icon" src="assets/icons/fish_care.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
-              <button id="spongeButton" class="dock-button sponge" type="button" title="Clean Tank"
-                aria-label="Clean Tank">
-                <img class="dock-button-icon" src="assets/icons/sponge.png" alt="" aria-hidden="true"
+              <section id="toolbarCareMenu" class="toolbar-action-menu" role="menu" aria-label="Care tools" hidden>
+                <button id="medicineButton" class="toolbar-action-menu-button" type="button" role="menuitem"
+                  title="Medicine" aria-label="Medicine">
+                  <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+                  <span>Medicine</span>
+                </button>
+                <button id="spongeButton" class="toolbar-action-menu-button" type="button" role="menuitem"
+                  title="Clean Tank" aria-label="Clean Tank">
+                  <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+                  <span>Scrub</span>
+                </button>
+                <button id="scoopButton" class="toolbar-action-menu-button" type="button" role="menuitem"
+                  title="Scoop" aria-label="Scoop">
+                  <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+                  <span>Scoop</span>
+                </button>
+              </section>
+
+              <button id="editMenuButton" class="dock-button toolbar-group-button edit" type="button" title="Edit"
+                aria-label="Edit aquarium" aria-haspopup="menu" aria-controls="toolbarEditMenu" aria-expanded="false">
+                <img class="dock-button-icon" src="assets/icons/tools.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
-              <button id="scoopButton" class="dock-button scoop" type="button" title="Scoop" aria-label="Scoop">
-                <img class="dock-button-icon" src="assets/icons/scoop.png" alt="" aria-hidden="true"
-                  draggable="false" />
-              </button>
-
-              <button id="fishEditModeDockButton" class="dock-button edit" type="button" title="Manage Fish"
-                aria-label="Manage Fish">
-                <img class="dock-button-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true"
-                  draggable="false" />
-              </button>
-
-              <button id="editModeDockButton" class="dock-button edit" type="button" title="Edit Decor"
-                aria-label="Edit Decor">
-                <img class="dock-button-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true"
-                  draggable="false" />
-              </button>
+              <section id="toolbarEditMenu" class="toolbar-action-menu" role="menu" aria-label="Edit aquarium" hidden>
+                <button id="fishEditModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
+                  title="Manage Fish" aria-label="Manage Fish">
+                  <img src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" />
+                  <span>Fish</span>
+                </button>
+                <button id="editModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
+                  title="Edit Decor" aria-label="Edit Decor">
+                  <img src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" />
+                  <span>Decor</span>
+                </button>
+                <button id="openEquipmentButton" class="toolbar-action-menu-button" type="button" role="menuitem"
+                  title="Edit Tank" aria-label="Edit Tank">
+                  <img src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" />
+                  <span>Tank</span>
+                </button>
+              </section>
 
               <button id="editLayerUpButton" class="dock-button edit-shortcut-control" type="button" hidden
                 title="Next decor layer (Z / Up)" aria-label="Next decor layer (Z / Up)">Z</button>
@@ -799,12 +906,6 @@
               <button id="editScaleDownButton" class="dock-button edit-shortcut-control" type="button" hidden
                 title="Decrease decor size (-)" aria-label="Decrease decor size (-)">-</button>
 
-              <button id="openEquipmentButton" class="dock-button settings" type="button" title="Edit Tank"
-                aria-label="Edit Tank">
-                <img class="dock-button-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
-                  draggable="false" />
-              </button>
-
               <button id="openStoreButton" class="dock-button shop" type="button" title="Store"
                 aria-label="Store">
                 <img class="dock-button-icon" src="assets/icons/store.png" alt="" aria-hidden="true"
@@ -815,23 +916,16 @@
                 aria-label="Care Tips">❔</button>
 
 
+              <button id="lightsOutToggleButton" class="dock-button lights-out" type="button" title="Lights Out: Auto"
+                aria-label="Lights Out Auto" aria-pressed="false">
+                <span class="dock-button-night-icon" aria-hidden="true"></span>
+                <span id="lightsOutModeBadge" class="dock-button-mode-badge" aria-hidden="true">A</span>
+              </button>
+
               <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
                 aria-label="Settings">
                 <img class="dock-button-icon" src="assets/icons/settings.png" alt="" aria-hidden="true"
                   draggable="false" />
-              </button>
-
-              <button id="toggleMouseLockButton" class="dock-button settings" type="button"
-                title="Lock Tank Mouse Input" aria-label="Lock Tank Mouse Input">&#128274;</button>
-
-              <button id="lightsOutToggleButton" class="dock-button lights-out" type="button" title="Lights Out: Auto"
-                aria-label="Lights Out Auto" aria-pressed="false">
-                <span class="dock-button-night-icon" aria-hidden="true"></span>
-              </button>
-
-              <button id="uvLightToggleButton" class="dock-button uv-light" type="button" title="Turn UV Light Off"
-                aria-label="Turn UV Light Off" hidden>
-                <img src="assets/misc/uvlight.png" alt="" aria-hidden="true" />
               </button>
 
               <!--DEBUG BUTTONS-->
@@ -936,6 +1030,7 @@
                   <h3>Behavior:</h3>
                   <div id="debugMenuBehaviors" class="debug-menu-grid"></div>
                 </div>
+                <div id="debugLivingBoroughPanel"></div>
               </div>
             </aside>
 
@@ -968,9 +1063,10 @@
                     <div id="inspectorHealth" class="hearts"></div>
                   </div>
                   <div class="inspector-line">
-                    <span>Comfort:</span>
+                    <span>Mood:</span>
                     <strong id="inspectorComfort">100% (Calm)</strong>
                   </div>
+                  <div id="inspectorNeedsBars" class="fish-needs-bars" aria-label="Fish needs"></div>
                   <div class="inspector-line inspector-line-chips">
                     <span>Needs:</span>
                     <div id="inspectorNeeds" class="inspector-chip-row"></div>
@@ -980,10 +1076,12 @@
                     <strong id="inspectorAge">0s</strong>
                   </div>
                   <div class="inspector-line">
-                    <span>Has eaten?:</span>
+                    <span>Hunger:</span>
                     <strong id="inspectorMeal">❌</strong>
                   </div>
                 </div>
+
+                <div id="inspectorLifeStory" class="fish-life-story" aria-label="Fish life and activity"></div>
 
                 <div id="fishInspectorSettings" class="fish-inspector-settings" hidden>
                   <label class="inspector-setting-row">
@@ -1066,7 +1164,7 @@
 
       const script = document.createElement("script");
       script.type = "module";
-      script.src = "./public/app.js?v=20260502f";
+      script.src = "./public/app.js?v=20260828-pointer-reflection";
       document.body.appendChild(script);
     })();
   </script>

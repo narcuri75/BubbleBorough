@@ -4,6 +4,12 @@
   "version": "1.0.0",
   "description": "A real-time fish tank idle game.",
   "scripts": {
+    "start": "node scripts/start-web.cjs",
+    "start:web": "node scripts/start-web.cjs",
+    "build:app": "node scripts/build-app-bundle.cjs",
+    "check:app": "node scripts/build-app-bundle.cjs --check",
+    "check:mobile": "node scripts/check-mobile-patch.cjs",
+    "test": "npm run check:app && npm run check:mobile && node --check public/app.js && npm --prefix desktop-app test",
     "generate:assets": "powershell -ExecutionPolicy Bypass -File scripts/generate-assets.ps1",
     "generate:manifest": "powershell -ExecutionPolicy Bypass -File scripts/generate-asset-manifest.ps1"
   }

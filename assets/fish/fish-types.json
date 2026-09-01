@@ -712,65 +712,6 @@
             "dislikedTypes": []
         },
         {
-            "id": "brine-shrimp",
-            "name": "Brine Shrimp",
-            "cost": 2,
-            "mealCoins": 1,
-            "asset": "brineshrimp_1.png",
-            "assetVariants": [
-                "brineshrimp_1.png",
-                "brineshrimp_2.png"
-            ],
-            "description": "A tiny drifting scavenger that hangs low, pecks at trace grime, and rarely makes a mess.",
-            "width": 84,
-            "defaultScale": 0.5,
-            "shadowScale": 0.14,
-            "bobSpeed": 1.65,
-            "swimStyle": "sporadic",
-            "speedMin": 0.014,
-            "speedMax": 0.028,
-            "targetMinMs": 1800,
-            "targetMaxMs": 4200,
-            "behavior": "shrimp",
-            "diet": "detritus",
-            "cleanupMinMs": 1680000,
-            "cleanupMaxMs": 3240000,
-            "cleanupStrength": 0.012,
-            "poopCleanupChance": 0.08,
-            "defaultNames": [
-                "Briny",
-                "Speck",
-                "Mote",
-                "Pip",
-                "Skim",
-                "Dot",
-                "Peb",
-                "Boba",
-                "Plank",
-                "Blink",
-                "Shrimpo",
-                "Fizz",
-                "Nib",
-                "Pixel",
-                "Scud",
-                "Dusty",
-                "Bits",
-                "Flea",
-                "Crumb",
-                "Nori"
-            ],
-            "caveEnabled": false,
-            "theme": "Salt Water",
-            "needs": {
-                "decor": [],
-                "friends": {
-                    "min": 0,
-                    "alike": false
-                }
-            },
-            "dislikedTypes": []
-        },
-        {
             "id": "blue-ram",
             "name": "Blue Ram",
             "cost": 11,

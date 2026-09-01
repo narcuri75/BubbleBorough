@@ -1,3 +1,28 @@
+/*
+  Mobile stylesheet map
+
+  1. Tokens and page shell
+  2. Loading, toast, and aquarium stage
+  3. Tank HUD
+  4. Bottom dock, popout menus, and trays
+  5. Overlay foundations and tutorial
+  6. Store overlay and store tabs
+  7. Settings overlay
+  8. Equipment overlay
+  9. Utility overlays
+  10. Decor settings utility
+  11. Responsive rules
+  12. Glass and performance guardrails
+
+  Keep component layout rules close to their component. Late guardrails are
+  intentionally grouped at the bottom because they normalize cross-component
+  glass, compositor, and scroll behavior after the component rules have landed.
+*/
+
+/* ==========================================================================
+   1. Tokens and page shell
+   ========================================================================== */
+
 :root[data-mobile-page="true"],
 body.mobile-page {
   --mobile-safe-top: env(safe-area-inset-top, 0px);
@@ -6,14 +31,23 @@ body.mobile-page {
   --mobile-safe-left: env(safe-area-inset-left, 0px);
   --mobile-top-height: calc(var(--mobile-safe-top) + 78px);
   --mobile-dock-height: calc(var(--mobile-safe-bottom) + 54px);
-  --mobile-dock-rendered-height: var(--mobile-dock-height);
+  --mobile-dock-rendered-height: 54px;
   --mobile-store-tabs-height: 42px;
   --mobile-store-tabs-side-inset: clamp(28px, 9vw, 48px);
+  --mobile-overlay-tab-overlap: 0px;
+  --mobile-glass-radius: 14px;
   --mobile-tray-side-inset: clamp(42px, 14vw, 72px);
   --mobile-tray-dock-gap: 0px;
-  --mobile-panel: rgba(20, 27, 97, 0.76);
-  --mobile-panel-strong: rgba(13, 17, 68, 0.88);
-  --mobile-line: rgba(193, 218, 255, 0.22);
+  --mobile-window-top-offset: clamp(54px, 7.5dvh, 72px);
+  --mobile-panel: rgba(0, 0, 0, 0.1);
+  --mobile-panel-strong: rgba(0, 0, 0, 0.1);
+  --mobile-line: rgba(235, 248, 255, 0.32);
+  --mobile-glass-blue: rgba(0, 0, 0, 0.1);
+  --mobile-glass-blue-strong: rgba(0, 0, 0, 0.1);
+  --mobile-glass-dark: rgba(0, 0, 0, 0.1);
+  --mobile-glass-card: rgba(0, 0, 0, 0.1);
+  --mobile-glass-edge: rgba(235, 248, 255, 0.28);
+  --mobile-glass-highlight: rgba(255, 255, 255, 0.12);
 }
 
 html[data-mobile-page="true"],
@@ -35,8 +69,76 @@ body.mobile-page .management-summary-disclaimer {
   display: none !important;
 }
 
+/* ==========================================================================
+   2. Loading, toast, and aquarium stage
+   ========================================================================== */
+
 body.mobile-page .loading-overlay {
   display: grid !important;
+  padding: 0 !important;
+  place-items: stretch !important;
+}
+
+body.mobile-page .loading-overlay-content {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  justify-items: center !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+body.mobile-page .loading-overlay-logo {
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  justify-self: center !important;
+  align-self: center !important;
+  width: min(82vw, 470px) !important;
+  max-width: calc(100vw - 48px) !important;
+  margin: 0 auto !important;
+  transform: none !important;
+}
+
+body.mobile-page .loading-overlay-text {
+  position: fixed !important;
+  left: 50vw !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(calc(100vw - 64px), 424px) !important;
+  max-width: calc(100vw - 64px) !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  margin: 0 !important;
+}
+
+body.mobile-page .loading-overlay:not(.is-ready) .loading-overlay-text {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.mobile-page .loading-overlay.is-ready .loading-overlay-text {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 56px !important;
+  padding: 12px 22px !important;
+  border: 1px solid rgba(191, 235, 255, 0.34) !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 10px 22px rgba(0, 0, 0, 0.16) !important;
 }
 
 body.mobile-page .app-shell,
@@ -104,6 +206,10 @@ body.mobile-page #glassCanvas {
   height: 100% !important;
 }
 
+/* ==========================================================================
+   3. Tank HUD
+   ========================================================================== */
+
 body.mobile-page .tank-display {
   --display-edge-gap: 0px;
   position: fixed !important;
@@ -116,18 +222,16 @@ body.mobile-page .tank-display {
   max-width: none;
   padding: 4px 5px;
   border: 1px solid rgba(225, 239, 255, 0.22);
-  border-radius: 15px;
+  border-radius: var(--mobile-glass-radius);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.17), transparent 28%),
-    radial-gradient(circle at 14% 0%, rgba(132, 177, 255, 0.24), transparent 34%),
-    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.12), transparent 36%),
-    linear-gradient(180deg, rgba(31, 45, 142, 0.46), rgba(8, 13, 55, 0.54));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     inset 0 -1px 0 rgba(0, 0, 0, 0.18),
     0 12px 28px rgba(0, 0, 0, 0.22);
-  -webkit-backdrop-filter: blur(22px) saturate(1.45);
-  backdrop-filter: blur(22px) saturate(1.45);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02);
+  backdrop-filter: blur(1.5px) saturate(1.02);
   color: #9cff71;
   z-index: 10;
   transform: none !important;
@@ -142,6 +246,13 @@ body.mobile-page.mobile-display-hidden .tank-display {
   transform: translateY(calc(-100% - var(--mobile-safe-top) - 24px)) !important;
 }
 
+body.mobile-page .tank-display.is-display-collapsed,
+html[data-mobile-page="true"][data-display-collapsed="true"] body.mobile-page .tank-display {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(calc(-100% - 1px)) !important;
+}
+
 body.mobile-page.mobile-display-hidden .care-task-pane {
   display: none !important;
 }
@@ -151,21 +262,27 @@ body.mobile-page.mobile-menu-overlay-open #introTutorialPanel {
   display: none !important;
 }
 
-body.mobile-page:has(#storeOverlay:not([hidden])) .care-task-pane,
-body.mobile-page:has(#storeOverlay:not([hidden])) #introTutorialPanel,
-body.mobile-page:has(#settingsOverlay:not([hidden])) .care-task-pane,
-body.mobile-page:has(#settingsOverlay:not([hidden])) #introTutorialPanel,
-body.mobile-page:has(#equipmentOverlay:not([hidden])) .care-task-pane,
-body.mobile-page:has(#equipmentOverlay:not([hidden])) #introTutorialPanel,
-body.mobile-page:has(#utilityOverlay:not([hidden])) .care-task-pane,
-body.mobile-page:has(#utilityOverlay:not([hidden])) #introTutorialPanel,
-body.mobile-page:has(.mobile-popout-menu:not([hidden])) .care-task-pane,
-body.mobile-page:has(.mobile-popout-menu:not([hidden])) #introTutorialPanel {
-  display: none !important;
-}
-
 body.mobile-page .display-tab {
-  display: none !important;
+  left: auto !important;
+  right: clamp(16px, 8vw, 34px) !important;
+  top: calc(100% - 1px) !important;
+  transform: none !important;
+  display: grid !important;
+  width: 36px;
+  height: 46px;
+  border-color: rgba(180, 218, 255, 0.26);
+  border-radius: 0 0 14px 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
+  color: rgba(240, 250, 255, 0.9);
+  font-size: 0.58rem;
+  text-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 12px rgba(0, 0, 0, 0.22);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02);
+  backdrop-filter: blur(1.5px) saturate(1.02);
 }
 
 body.mobile-page .display-grid {
@@ -256,6 +373,10 @@ body.mobile-page .edit-quick-ref {
   display: none !important;
 }
 
+/* ==========================================================================
+   4. Bottom dock, popout menus, and trays
+   ========================================================================== */
+
 body.mobile-page .tank-bottom-dock,
 html[data-toolbar-position] body.mobile-page .tank-bottom-dock,
 body.mobile-page .tank-bottom-dock.is-toolbar-collapsed {
@@ -265,7 +386,7 @@ body.mobile-page .tank-bottom-dock.is-toolbar-collapsed {
   left: calc(var(--mobile-safe-left) + 8px) !important;
   right: calc(var(--mobile-safe-right) + 8px) !important;
   top: auto !important;
-  bottom: 0 !important;
+  bottom: calc(var(--mobile-safe-bottom) * -1) !important;
   width: auto;
   min-height: var(--mobile-dock-height);
   display: grid !important;
@@ -278,18 +399,16 @@ body.mobile-page .tank-bottom-dock.is-toolbar-collapsed {
   border-bottom: 0;
   border-radius: 16px 16px 0 0;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 28%),
-    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.3), transparent 36%),
-    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.17), transparent 38%),
-    linear-gradient(180deg, rgba(37, 120, 208, 0.52), rgba(12, 48, 145, 0.56));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.32),
     inset 0 -1px 0 rgba(0, 0, 0, 0.22),
     0 -16px 34px rgba(0, 0, 0, 0.24);
   transform: none !important;
   overflow: visible;
-  -webkit-backdrop-filter: blur(22px) saturate(1.45);
-  backdrop-filter: blur(22px) saturate(1.45);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02);
+  backdrop-filter: blur(1.5px) saturate(1.02);
   z-index: 70;
 }
 
@@ -332,15 +451,23 @@ body.mobile-page .tank-bottom-dock > :is(
   align-items: center;
   justify-content: center;
   gap: 0;
+  border: 1px solid rgba(235, 248, 255, 0.2);
   border-radius: 11px;
-  background: transparent;
-  box-shadow: none;
+  border-color: rgba(235, 248, 255, 0.24) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12) !important;
   color: rgba(215, 225, 255, 0.68);
   font-size: 1rem;
   outline: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02) !important;
+  backdrop-filter: blur(1.5px) saturate(1.02) !important;
 }
 
 body.mobile-page .tank-bottom-dock > :is(
@@ -439,8 +566,13 @@ body.mobile-page .tank-bottom-dock > :is(
   #openStoreButton,
   #openSettingsButton
 ):is(:hover, :focus, :focus-visible, :active):not(.is-active):not(.is-mobile-proxy-active):not([aria-expanded="true"]) {
-  background: transparent;
-  box-shadow: none;
+  border-color: rgba(235, 248, 255, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   color: rgba(215, 225, 255, 0.68);
   transform: none;
 }
@@ -465,9 +597,8 @@ body.mobile-page .dock-button.is-mobile-proxy-active,
 body.mobile-page .mobile-menu-dock-button[aria-expanded="true"] {
   color: #fff;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 42%),
-    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.28), transparent 52%),
-    rgba(57, 139, 220, 0.28);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.014)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 0 0 1px rgba(226, 240, 255, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
@@ -479,14 +610,13 @@ body.mobile-page .tank-bottom-dock > :is(
   #mobileToolsButton,
   #mobileEditTankButton
 ):is(.is-active, .is-mobile-proxy-active, [aria-expanded="true"]),
-body.mobile-page:has(#mobileFishCareMenu:not([hidden])) #mobileFishCareButton,
-body.mobile-page:has(#mobileToolsMenu:not([hidden])) #mobileToolsButton,
-body.mobile-page:has(#mobileEditTankMenu:not([hidden])) #mobileEditTankButton {
+body.mobile-page.mobile-fish-care-menu-open #mobileFishCareButton,
+body.mobile-page.mobile-tools-menu-open #mobileToolsButton,
+body.mobile-page.mobile-edit-tank-menu-open #mobileEditTankButton {
   color: #fff;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 42%),
-    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.28), transparent 52%),
-    rgba(57, 139, 220, 0.28);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.014)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 0 0 1px rgba(226, 240, 255, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
@@ -499,9 +629,9 @@ body.mobile-page .tank-bottom-dock > :is(
   #mobileToolsButton,
   #mobileEditTankButton
 ):is(.is-active, .is-mobile-proxy-active, [aria-expanded="true"]) .dock-button-icon,
-body.mobile-page:has(#mobileFishCareMenu:not([hidden])) #mobileFishCareButton .dock-button-icon,
-body.mobile-page:has(#mobileToolsMenu:not([hidden])) #mobileToolsButton .dock-button-icon,
-body.mobile-page:has(#mobileEditTankMenu:not([hidden])) #mobileEditTankButton .dock-button-icon {
+body.mobile-page.mobile-fish-care-menu-open #mobileFishCareButton .dock-button-icon,
+body.mobile-page.mobile-tools-menu-open #mobileToolsButton .dock-button-icon,
+body.mobile-page.mobile-edit-tank-menu-open #mobileEditTankButton .dock-button-icon {
   opacity: 1;
   filter:
     drop-shadow(0 0 8px rgba(145, 229, 255, 0.32))
@@ -509,12 +639,14 @@ body.mobile-page:has(#mobileEditTankMenu:not([hidden])) #mobileEditTankButton .d
     saturate(1.12);
 }
 
-body.mobile-page:has(#storeOverlay:not([hidden])) #openStoreButton {
+body.mobile-page.mobile-store-open #openStoreButton,
+body.mobile-page.mobile-settings-open #openSettingsButton,
+body.mobile-page.mobile-management-open #openManagementButton,
+body.mobile-page.mobile-decor-settings-open #mobileEditTankButton {
   color: #fff;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
-    radial-gradient(circle at 50% 12%, rgba(155, 193, 255, 0.28), transparent 50%),
-    rgba(82, 102, 198, 0.28);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.014)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 0 0 1px rgba(226, 240, 255, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
@@ -522,41 +654,9 @@ body.mobile-page:has(#storeOverlay:not([hidden])) #openStoreButton {
   animation: none !important;
 }
 
-body.mobile-page:has(#storeOverlay:not([hidden])) #openStoreButton.is-tutorial-pulse {
-  animation: none !important;
-}
-
-body.mobile-page:has(#settingsOverlay:not([hidden])) #openSettingsButton {
-  color: #fff;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
-    radial-gradient(circle at 50% 12%, rgba(155, 193, 255, 0.28), transparent 50%),
-    rgba(82, 102, 198, 0.28);
-  box-shadow:
-    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 10px 22px rgba(0, 0, 0, 0.18);
-  animation: none !important;
-}
-
-body.mobile-page:has(#settingsOverlay:not([hidden])) #openSettingsButton.is-tutorial-pulse {
-  animation: none !important;
-}
-
-body.mobile-page:has(#utilityOverlay[data-utility-mode="tank-management"]:not([hidden])) #openManagementButton {
-  color: #fff;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
-    radial-gradient(circle at 50% 12%, rgba(155, 193, 255, 0.28), transparent 50%),
-    rgba(82, 102, 198, 0.28);
-  box-shadow:
-    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 10px 22px rgba(0, 0, 0, 0.18);
-  animation: none !important;
-}
-
-body.mobile-page:has(#utilityOverlay[data-utility-mode="tank-management"]:not([hidden])) #openManagementButton.is-tutorial-pulse {
+body.mobile-page.mobile-store-open #openStoreButton.is-tutorial-pulse,
+body.mobile-page.mobile-settings-open #openSettingsButton.is-tutorial-pulse,
+body.mobile-page.mobile-management-open #openManagementButton.is-tutorial-pulse {
   animation: none !important;
 }
 
@@ -577,29 +677,27 @@ body.mobile-page .mobile-popout-menu {
   position: fixed;
   left: calc(var(--mobile-safe-left) + 22px);
   right: calc(var(--mobile-safe-right) + 22px);
-  bottom: calc(var(--mobile-dock-height) + 7px);
+  bottom: calc(var(--mobile-dock-rendered-height) + 3px);
   z-index: 71;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
   gap: 6px;
-  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-height) - 24px);
+  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-rendered-height) - 20px);
   padding: 7px;
   overflow: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;
   border: 1px solid rgba(225, 239, 255, 0.23);
-  border-radius: 20px;
+  border-radius: var(--mobile-glass-radius);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 28%),
-    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.3), transparent 36%),
-    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.17), transparent 38%),
-    linear-gradient(180deg, rgba(37, 120, 208, 0.5), rgba(12, 48, 145, 0.54));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2),
     0 18px 36px rgba(0, 0, 0, 0.3);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02);
+  backdrop-filter: blur(1.5px) saturate(1.02);
 }
 
 body.mobile-page .mobile-popout-action {
@@ -610,8 +708,8 @@ body.mobile-page .mobile-popout-action {
   display: grid;
   place-items: center;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 42%),
-    rgba(37, 120, 208, 0.24);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   color: #fff;
   font: inherit;
   line-height: 1;
@@ -622,9 +720,8 @@ body.mobile-page .mobile-popout-action {
 
 body.mobile-page .mobile-popout-action.is-mobile-proxy-active {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 44%),
-    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.28), transparent 58%),
-    rgba(57, 139, 220, 0.38);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.014)),
+    rgba(0, 0, 0, 0.1);
   border-color: rgba(185, 220, 255, 0.34);
   box-shadow:
     inset 0 0 0 1px rgba(232, 244, 255, 0.18),
@@ -663,13 +760,17 @@ body.mobile-page .fish-inspector {
   position: fixed;
   left: calc(var(--mobile-safe-left) + 12px);
   right: calc(var(--mobile-safe-right) + 12px);
-  bottom: calc(var(--mobile-dock-height) + 18px);
+  bottom: calc(var(--mobile-dock-rendered-height) + 10px);
   width: auto;
-  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-height) - 32px);
+  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-rendered-height) - 26px);
   overflow: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;
   z-index: 18;
+}
+
+body.mobile-page .decor-action-top-bar {
+  transform: translate(-50%, calc(-50% - 12px)) !important;
 }
 
 body.mobile-page .edit-decor-tray {
@@ -692,21 +793,74 @@ body.mobile-page .edit-decor-tray {
   border-bottom: 0;
   border-radius: 14px 14px 0 0;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 28%),
-    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.18), transparent 36%),
-    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.1), transparent 38%),
-    linear-gradient(180deg, rgba(37, 120, 208, 0.24), rgba(12, 48, 145, 0.28)) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2),
     0 -8px 20px rgba(0, 0, 0, 0.18);
-  -webkit-backdrop-filter: blur(22px) saturate(1.45);
-  backdrop-filter: blur(22px) saturate(1.45);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02);
+  backdrop-filter: blur(1.5px) saturate(1.02);
   overflow: visible;
   overscroll-behavior: contain;
   box-sizing: border-box;
   z-index: 28;
   font-size: 0.52rem;
+}
+
+body.mobile-page :is(#editDecorTray, #editFishTray):has(.edit-decor-tray-tabs, .edit-fish-tray-tabs, .edit-decor-tray-header) {
+  max-height: 86px;
+}
+
+body.mobile-page #editDecorTray .edit-decor-tray-header {
+  justify-content: flex-end;
+}
+
+body.mobile-page .edit-decor-tray-tabs,
+body.mobile-page .edit-fish-tray-tabs {
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+body.mobile-page .edit-decor-tray-header {
+  gap: 5px;
+}
+
+body.mobile-page .edit-decor-tray-tabs::-webkit-scrollbar,
+body.mobile-page .edit-fish-tray-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+body.mobile-page .edit-decor-tray-tab,
+body.mobile-page .edit-fish-tray-tab {
+  min-width: auto;
+  min-height: 20px;
+  padding: 2px 8px;
+  font-size: 0.48rem;
+}
+
+body.mobile-page .edit-decor-in-tank-toggle {
+  min-height: 20px;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 0.48rem;
+}
+
+body.mobile-page .edit-decor-in-tank-toggle input {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+body.mobile-page .edit-decor-in-tank-toggle input:checked::after {
+  left: 3px;
+  top: 1px;
+  width: 3px;
+  height: 6px;
+  border-width: 0 1.5px 1.5px 0;
 }
 
 body.mobile-page .edit-decor-tray-arrow {
@@ -718,8 +872,8 @@ body.mobile-page .edit-decor-tray-arrow {
   line-height: 1;
   border: 1px solid rgba(225, 239, 255, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
-    rgba(37, 120, 208, 0.14);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.14);
@@ -766,8 +920,8 @@ body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .e
   border-radius: 10px;
   border-color: rgba(225, 239, 255, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
-    rgba(37, 120, 208, 0.14);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 -1px 0 rgba(0, 0, 0, 0.14);
@@ -823,6 +977,15 @@ body.mobile-page .edit-decor-tray .edit-decor-tray-empty {
   line-height: 1.05;
 }
 
+body.mobile-page #editDecorTray .edit-decor-tray-empty {
+  min-height: 42px;
+  padding: 0 4px;
+}
+
+/* ==========================================================================
+   5. Overlay foundations and tutorial
+   ========================================================================== */
+
 body.mobile-page .store-overlay,
 body.mobile-page .settings-overlay,
 body.mobile-page .equipment-overlay,
@@ -854,7 +1017,7 @@ body.mobile-page .utility-panel {
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
-  border-radius: 22px;
+  border-radius: var(--mobile-glass-radius);
 }
 
 body.mobile-page .utility-overlay[data-utility-mode] .utility-panel,
@@ -902,7 +1065,7 @@ body.mobile-page #introTutorialOverlay::before {
 body.mobile-page #introTutorialPanel {
   position: fixed;
   left: calc(var(--mobile-safe-left) + 8px);
-  top: calc(var(--mobile-safe-top) + 58px);
+  top: calc(var(--mobile-safe-top) + var(--mobile-window-top-offset));
   right: auto;
   bottom: auto;
   width: min(190px, calc(100vw - var(--mobile-safe-left) - var(--mobile-safe-right) - 16px));
@@ -991,6 +1154,10 @@ body.mobile-page #introTutorialPanel .tutorial-actions .small-button {
   font-size: 0.52rem;
 }
 
+/* ==========================================================================
+   6. Store overlay and store tabs
+   ========================================================================== */
+
 body.mobile-page #storeOverlay {
   padding: 0;
   overflow: hidden;
@@ -1001,8 +1168,8 @@ body.mobile-page #storeOverlay .store-panel {
   position: fixed !important;
   left: calc(var(--mobile-safe-left) + 8px) !important;
   right: calc(var(--mobile-safe-right) + 8px) !important;
-  top: calc(var(--mobile-safe-top) + 8px) !important;
-  bottom: calc(var(--mobile-dock-rendered-height) + var(--mobile-store-tabs-height) + 5px) !important;
+  top: calc(var(--mobile-safe-top) + var(--mobile-window-top-offset)) !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + var(--mobile-store-tabs-height) + 5px - var(--mobile-overlay-tab-overlap)) !important;
   width: auto;
   height: auto;
   max-width: none;
@@ -1011,35 +1178,32 @@ body.mobile-page #storeOverlay .store-panel {
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
   padding: 8px;
-  border-radius: 16px;
+  border-radius: var(--mobile-glass-radius);
   box-sizing: border-box;
   font-size: 0.5rem;
   pointer-events: auto;
 }
 
 body.mobile-page #storeOverlay .store-panel-header {
-  display: contents;
+  display: none;
 }
 
 body.mobile-page #storeOverlay .store-panel-actions {
-  position: fixed;
-  left: calc(var(--mobile-safe-left) + 14px);
-  right: calc(var(--mobile-safe-right) + 14px);
-  top: calc(var(--mobile-safe-top) + 14px);
-  z-index: 35;
-  display: flex;
-  gap: 6px;
-  justify-content: space-between;
-  pointer-events: none;
+  display: none;
 }
 
 body.mobile-page #storeOverlay .store-coin-counter {
+  grid-area: wallet;
+  justify-self: end;
+  align-self: start;
   min-height: 24px;
   max-width: min(92px, 28vw);
   gap: 4px;
   padding: 2px 7px 2px 5px;
   border-radius: 10px;
-  background: #172338;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(244, 211, 99, 0.34);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
@@ -1073,7 +1237,8 @@ body.mobile-page #storeOverlay[hidden] + .store-panel-tabs {
   display: none !important;
 }
 
-body.mobile-page #storeOverlay + .store-panel-tabs {
+body.mobile-page #storeOverlay + .store-panel-tabs,
+body.mobile-page #utilityOverlay + .mobile-management-tabs {
   position: fixed !important;
   left: calc(var(--mobile-safe-left) + var(--mobile-store-tabs-side-inset)) !important;
   right: calc(var(--mobile-safe-right) + var(--mobile-store-tabs-side-inset)) !important;
@@ -1081,7 +1246,6 @@ body.mobile-page #storeOverlay + .store-panel-tabs {
   bottom: calc(var(--mobile-dock-rendered-height) + 5px) !important;
   z-index: 42;
   display: grid !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
   min-width: 0;
   width: auto !important;
@@ -1093,66 +1257,79 @@ body.mobile-page #storeOverlay + .store-panel-tabs {
   touch-action: manipulation;
   border: 1px solid rgba(225, 239, 255, 0.22);
   border-top: 0;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 var(--mobile-glass-radius) var(--mobile-glass-radius);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent 24%),
-    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.26), transparent 36%),
-    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.15), transparent 38%),
-    linear-gradient(180deg, rgba(37, 120, 208, 0.44), rgba(12, 48, 145, 0.52));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     inset 0 -1px 0 rgba(0, 0, 0, 0.18),
     0 10px 20px rgba(0, 0, 0, 0.22);
-  -webkit-backdrop-filter: blur(22px) saturate(1.45);
-  backdrop-filter: blur(22px) saturate(1.45);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02);
+  backdrop-filter: blur(1.5px) saturate(1.02);
   box-sizing: border-box;
 }
 
-body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button {
+body.mobile-page #storeOverlay + .store-panel-tabs {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+body.mobile-page #utilityOverlay + .mobile-management-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button,
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button {
+  display: grid;
+  place-items: center;
   min-width: 0;
   min-height: 0;
   height: 100%;
   padding: 2px;
-  border-radius: 8px;
+  border: 1px solid rgba(225, 239, 255, 0.16);
+  border-radius: var(--mobile-glass-radius);
   font-size: clamp(0.42rem, 1.55vw, 0.52rem);
   line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: grid;
-  place-items: center;
   pointer-events: auto;
   touch-action: manipulation;
-  border: 1px solid rgba(225, 239, 255, 0.16);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
-    rgba(37, 120, 208, 0.2);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 -1px 0 rgba(0, 0, 0, 0.14);
 }
 
-body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button.is-active {
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button {
+  color: #f5fbff;
+}
+
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button.is-active,
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button.is-active {
   border-color: rgba(185, 220, 255, 0.34);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 44%),
-    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.25), transparent 58%),
-    rgba(57, 139, 220, 0.34);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.014)),
+    rgba(0, 0, 0, 0.1);
   box-shadow:
     inset 0 0 0 1px rgba(232, 244, 255, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 7px 15px rgba(0, 0, 0, 0.18);
 }
 
-body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-icon {
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-icon,
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-icon {
   width: 20px;
   height: 20px;
   object-fit: contain;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
   opacity: 0.9;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
 }
 
-body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button.is-active .store-tab-icon {
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button.is-active .store-tab-icon,
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button.is-active .mobile-management-tab-icon {
   opacity: 1;
   filter:
     drop-shadow(0 0 8px rgba(145, 229, 255, 0.38))
@@ -1165,93 +1342,10 @@ body.mobile-page #utilityOverlay + .mobile-management-tabs[hidden] {
   display: none !important;
 }
 
-body.mobile-page #utilityOverlay + .mobile-management-tabs {
-  position: fixed !important;
-  left: calc(var(--mobile-safe-left) + var(--mobile-store-tabs-side-inset)) !important;
-  right: calc(var(--mobile-safe-right) + var(--mobile-store-tabs-side-inset)) !important;
-  top: auto !important;
-  bottom: calc(var(--mobile-dock-rendered-height) + 5px) !important;
-  z-index: 42;
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  min-width: 0;
-  width: auto !important;
-  max-width: none !important;
-  height: var(--mobile-store-tabs-height);
-  margin: 0 !important;
-  padding: 4px 6px;
-  pointer-events: auto;
-  touch-action: manipulation;
-  border: 1px solid rgba(225, 239, 255, 0.22);
-  border-top: 0;
-  border-radius: 0 0 12px 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent 24%),
-    radial-gradient(circle at 16% 0%, rgba(132, 201, 255, 0.26), transparent 36%),
-    radial-gradient(circle at 84% 18%, rgba(78, 217, 255, 0.15), transparent 38%),
-    linear-gradient(180deg, rgba(37, 120, 208, 0.44), rgba(12, 48, 145, 0.52));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 10px 20px rgba(0, 0, 0, 0.22);
-  -webkit-backdrop-filter: blur(22px) saturate(1.45);
-  backdrop-filter: blur(22px) saturate(1.45);
-  box-sizing: border-box;
-}
-
-body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button {
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-  padding: 2px;
-  border: 1px solid rgba(225, 239, 255, 0.16);
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
-    rgba(37, 120, 208, 0.2);
-  color: #f5fbff;
-  overflow: hidden;
-  pointer-events: auto;
-  touch-action: manipulation;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.14);
-}
-
-body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button.is-active {
-  border-color: rgba(185, 220, 255, 0.34);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 44%),
-    radial-gradient(circle at 50% 12%, rgba(145, 229, 255, 0.25), transparent 58%),
-    rgba(57, 139, 220, 0.34);
-  box-shadow:
-    inset 0 0 0 1px rgba(232, 244, 255, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 7px 15px rgba(0, 0, 0, 0.18);
-}
-
-body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  opacity: 0.9;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
-}
-
-body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button.is-active .mobile-management-tab-icon {
-  opacity: 1;
-  filter:
-    drop-shadow(0 0 8px rgba(145, 229, 255, 0.38))
-    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-}
-
 body.mobile-page #storeOverlay .store-panel-body {
   min-height: 0;
   max-height: 100%;
-  padding: 32px 0 0;
+  padding: 0;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -1259,20 +1353,65 @@ body.mobile-page #storeOverlay .store-panel-body {
 body.mobile-page #storeOverlay.has-store-scroll-controls .store-drawer,
 body.mobile-page #storeOverlay .store-drawer {
   min-height: 0;
+  max-height: none !important;
   padding-right: 0;
   padding-bottom: 4px;
-  overflow: visible;
+  overflow: visible !important;
   font-size: 0.5rem;
 }
 
 body.mobile-page #storeOverlay .shop-toolbar {
-  gap: 4px;
-  padding: 0 2px 5px;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "controls wallet"
+    "summary wallet";
+  align-items: start;
+  column-gap: 8px;
+  row-gap: 3px;
+  margin: 0 0 6px;
+  padding: 5px 6px 6px;
+  border: 1px solid rgba(125, 179, 220, 0.22);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 6px 14px rgba(0, 0, 0, 0.24);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02);
+  backdrop-filter: blur(1.5px) saturate(1.02);
   font-size: 0.5rem;
 }
 
 body.mobile-page #storeOverlay .shop-toolbar-controls {
+  grid-area: controls;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  min-width: 0;
   gap: 4px;
+  margin-left: 0;
+  justify-content: flex-start;
+}
+
+body.mobile-page #storeOverlay .shop-toolbar-summary {
+  grid-area: summary;
+  margin: 0;
+  padding: 0;
+  align-self: start;
+  font-size: 0.5rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #storeOverlay .mobile-shop-wallet-toolbar {
+  grid-template-areas: "spacer wallet";
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 34px;
+  align-items: center;
 }
 
 body.mobile-page #storeOverlay .shop-search-control,
@@ -1479,6 +1618,10 @@ body.mobile-page #storeOverlay .mobile-price-buy-value {
   font-variant-numeric: tabular-nums;
 }
 
+/* ==========================================================================
+   7. Settings overlay
+   ========================================================================== */
+
 body.mobile-page #settingsOverlay {
   padding: 0;
   overflow: hidden;
@@ -1489,17 +1632,17 @@ body.mobile-page #settingsOverlay .settings-panel {
   position: fixed !important;
   left: calc(var(--mobile-safe-left) + 8px) !important;
   right: calc(var(--mobile-safe-right) + 8px) !important;
-  top: calc(var(--mobile-safe-top) + 8px) !important;
-  bottom: auto !important;
+  top: calc(var(--mobile-safe-top) + var(--mobile-window-top-offset)) !important;
+  bottom: calc(var(--mobile-safe-bottom) - 2px) !important;
   width: auto;
   height: auto;
   max-width: none;
-  max-height: calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-rendered-height) - 76px);
+  max-height: none;
   min-height: 0;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 4px;
-  padding: 9px;
-  border-radius: 16px;
+  padding: 9px 9px calc(var(--mobile-dock-rendered-height) + 10px);
+  border-radius: var(--mobile-glass-radius);
   box-sizing: border-box;
   font-size: 0.58rem;
   pointer-events: auto;
@@ -1647,6 +1790,10 @@ body.mobile-page #settingsOverlay .settings-credits-section {
   padding: 5px 7px;
 }
 
+/* ==========================================================================
+   8. Equipment overlay
+   ========================================================================== */
+
 body.mobile-page #equipmentOverlay {
   padding: 0;
   overflow: hidden;
@@ -1657,7 +1804,7 @@ body.mobile-page #equipmentOverlay .equipment-panel {
   position: fixed !important;
   left: calc(var(--mobile-safe-left) + 8px) !important;
   right: calc(var(--mobile-safe-right) + 8px) !important;
-  top: calc(var(--mobile-safe-top) + 8px) !important;
+  top: calc(var(--mobile-safe-top) + var(--mobile-window-top-offset)) !important;
   bottom: calc(var(--mobile-dock-rendered-height) + 6px) !important;
   width: auto;
   height: auto;
@@ -1667,7 +1814,7 @@ body.mobile-page #equipmentOverlay .equipment-panel {
   grid-template-rows: auto minmax(0, 1fr);
   gap: 4px;
   padding: 8px;
-  border-radius: 16px;
+  border-radius: var(--mobile-glass-radius);
   box-sizing: border-box;
   font-size: 0.55rem;
   pointer-events: auto;
@@ -1798,7 +1945,7 @@ body.mobile-page #equipmentOverlay .background-solid-color-card > .shop-button-r
   order: 1;
 }
 
-body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-animated-background-colors]) {
+body.mobile-page #equipmentOverlay .background-solid-color-card.has-animated-background-reset {
   display: grid !important;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas:
@@ -1807,19 +1954,19 @@ body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-
   align-items: center;
 }
 
-body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-animated-background-colors]) .background-color-preview-header {
+body.mobile-page #equipmentOverlay .background-solid-color-card.has-animated-background-reset .background-color-preview-header {
   grid-area: preview;
   width: auto;
   justify-self: start;
 }
 
-body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-animated-background-colors]) > .shop-button-row {
+body.mobile-page #equipmentOverlay .background-solid-color-card.has-animated-background-reset > .shop-button-row {
   grid-area: reset;
   justify-self: end;
   width: min(112px, 100%);
 }
 
-body.mobile-page #equipmentOverlay .background-solid-color-card:has([data-reset-animated-background-colors]) > .background-gradient-grid {
+body.mobile-page #equipmentOverlay .background-solid-color-card.has-animated-background-reset > .background-gradient-grid {
   grid-area: colors;
   width: 100%;
 }
@@ -1957,6 +2104,263 @@ body.mobile-page #equipmentOverlay .uv-light-card {
   grid-template-columns: 48px minmax(0, 1fr);
 }
 
+/* ==========================================================================
+   9. Utility overlays
+   ========================================================================== */
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"],
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) {
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .utility-panel {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + 8px) !important;
+  right: calc(var(--mobile-safe-right) + 8px) !important;
+  top: calc(var(--mobile-safe-top) + var(--mobile-window-top-offset)) !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + var(--mobile-store-tabs-height) + 5px) !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--mobile-glass-radius);
+  box-sizing: border-box;
+  font-size: 0.5rem;
+  pointer-events: auto;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .utility-panel {
+  position: fixed !important;
+  left: calc(var(--mobile-safe-left) + 12px) !important;
+  right: calc(var(--mobile-safe-right) + 12px) !important;
+  top: auto !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + 12px) !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: min(230px, calc(100dvh - var(--mobile-safe-top) - var(--mobile-dock-rendered-height) - 28px));
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--mobile-glass-radius);
+  box-sizing: border-box;
+  font-size: 0.5rem;
+  pointer-events: auto;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .store-panel-header,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .store-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  align-items: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 1px 3px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .settings-panel-copy,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .settings-panel-copy {
+  gap: 1px;
+  min-width: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .settings-kicker,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .settings-kicker {
+  margin: 0;
+  font-size: 0.46rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] #utilityOverlayTitle,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) #utilityOverlayTitle {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.05;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .store-close-button {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  display: grid !important;
+  place-items: center;
+  justify-self: end;
+  align-self: start;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .store-close-button {
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .utility-overlay-body,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .utility-overlay-body {
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  font-size: 0.5rem;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .utility-overlay-footer,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .utility-overlay-footer {
+  min-height: 24px;
+  padding: 2px 0 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .small-button,
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .small-button {
+  min-height: 24px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.52rem;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .utility-confirm-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .utility-confirm-card {
+  padding: 8px;
+  border-radius: 12px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .utility-confirm-copy {
+  gap: 4px;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .utility-confirm-copy strong {
+  font-size: 0.62rem;
+  line-height: 1.14;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="fish-buy-confirm"],
+  [data-utility-mode="fish-sell-confirm"],
+  [data-utility-mode="decor-buy-confirm"],
+  [data-utility-mode="decor-sell-confirm"]
+) .fish-meta {
+  font-size: 0.5rem;
+  line-height: 1.16;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .daily-recap-list {
+  gap: 5px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .daily-recap-list .compact-heading {
+  display: none;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .daily-recap-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.58rem;
+  line-height: 1.12;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .summary-grid {
+  gap: 3px;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="daily-bonus"] .summary-row {
+  min-height: 24px;
+  padding: 4px 0;
+  font-size: 0.58rem;
+  line-height: 1.1;
+}
+
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] {
   padding: 0;
   overflow: hidden;
@@ -1967,8 +2371,8 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .utility-p
   position: fixed !important;
   left: calc(var(--mobile-safe-left) + 8px) !important;
   right: calc(var(--mobile-safe-right) + 8px) !important;
-  top: calc(var(--mobile-safe-top) + 8px) !important;
-  bottom: calc(var(--mobile-dock-rendered-height) + var(--mobile-store-tabs-height) + 5px) !important;
+  top: calc(var(--mobile-safe-top) + var(--mobile-window-top-offset)) !important;
+  bottom: calc(var(--mobile-dock-rendered-height) + var(--mobile-store-tabs-height) + 5px - var(--mobile-overlay-tab-overlap)) !important;
   width: auto !important;
   height: auto !important;
   max-width: none !important;
@@ -1977,7 +2381,7 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .utility-p
   grid-template-rows: auto minmax(0, 1fr);
   gap: 6px;
   padding: 10px;
-  border-radius: 16px;
+  border-radius: var(--mobile-glass-radius);
   box-sizing: border-box;
   font-size: 0.54rem;
   pointer-events: auto;
@@ -2038,6 +2442,13 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .managemen
   gap: 5px;
   padding: 8px;
   border-radius: 10px;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-hub .settings-section::before {
+  display: none !important;
 }
 
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-hub .compact-heading {
@@ -2098,6 +2509,64 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .managemen
   text-overflow: ellipsis;
 }
 
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-cell {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-label,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-label {
+  font-size: 0.42rem;
+  line-height: 1;
+  color: rgba(232, 247, 255, 0.72);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-copy strong {
+  font-size: 0.74rem;
+  line-height: 1;
+  color: #95ff68;
+  text-shadow: 0 0 10px rgba(115, 255, 78, 0.24);
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-status-cell:nth-child(3) strong {
+  color: #ffd845;
+  text-shadow: 0 0 10px rgba(255, 203, 53, 0.22);
+}
+
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-chip,
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-button,
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-status-pill {
@@ -2113,16 +2582,12 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .managemen
   display: inline-grid;
   place-items: center;
   padding: 5px 8px;
-  border: 1px solid rgba(141, 213, 255, 0.32);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 42%),
-    rgba(36, 62, 92, 0.82);
+  border: 1px solid rgba(235, 248, 255, 0.16);
+  background: transparent;
   color: #f5fbff;
   font-size: 0.58rem;
   font-weight: 900;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 6px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
 }
 
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-button[data-management-view="fish"]::before {
@@ -2168,9 +2633,9 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-ta
   display: grid;
   gap: 5px;
   padding: 6px;
-  border: 1px solid rgba(141, 213, 255, 0.18);
+  border: 0;
   border-radius: 10px;
-  background: rgba(6, 18, 32, 0.34);
+  background: transparent;
 }
 
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-title {
@@ -2196,18 +2661,14 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-ta
   gap: 6px;
   min-width: 0;
   padding: 6px;
-  border: 1px solid rgba(225, 239, 255, 0.12);
+  border: 0;
   border-radius: 9px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 42%),
-    rgba(37, 120, 208, 0.12);
+  background: transparent;
 }
 
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-card.is-current {
-  border-color: rgba(149, 255, 104, 0.28);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 42%),
-    rgba(74, 162, 92, 0.16);
+  border-color: transparent;
+  background: transparent;
 }
 
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-copy {
@@ -2248,7 +2709,7 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-ta
 }
 
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .mobile-tank-switcher-button:disabled {
-  background: rgba(255, 255, 255, 0.12);
+  background: transparent;
   color: rgba(235, 248, 255, 0.68);
 }
 
@@ -2304,6 +2765,7 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .managemen
 }
 
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-task-row,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-event-row,
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-event-item,
 body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-item {
   gap: 5px;
@@ -2403,6 +2865,64 @@ body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .managemen
   line-height: 1;
 }
 
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] :is(
+  .management-browser-item,
+  .management-browser-thumb,
+  .management-hub .settings-section,
+  .management-summary-strip,
+  .management-summary-head,
+  .management-summary-nameplate,
+  .mobile-tank-status-cell,
+  .management-task-row,
+  .management-event-row,
+  .management-event-item,
+  .management-record-button,
+  .management-milestone-card,
+  .management-milestone-icon,
+  .mobile-tank-switcher,
+  .mobile-tank-switcher-card
+) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] :is(
+  .management-browser-thumb,
+  .management-hub .settings-section,
+  .management-browser-item,
+  .mobile-tank-status-cell,
+  .management-task-row,
+  .management-event-row,
+  .management-event-item,
+  .management-record-button,
+  .management-milestone-card,
+  .mobile-tank-switcher,
+  .mobile-tank-switcher-card
+) {
+  border-color: transparent !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] :is(
+  .management-hub .settings-section,
+  .management-summary-strip,
+  .mobile-tank-status-cell,
+  .management-record-button,
+  .management-browser,
+  .management-browser-head,
+  .management-browser-item,
+  .management-browser-thumb,
+  .management-milestone-card,
+  .management-milestone-icon,
+  .mobile-tank-switcher,
+  .mobile-tank-switcher-card
+) {
+  border-radius: var(--mobile-glass-radius) !important;
+}
+
+/* ==========================================================================
+   10. Decor settings utility
+   ========================================================================== */
+
 body.mobile-page #utilityOverlay:is(
   [data-utility-mode="decor-settings"],
   [data-utility-mode="custom-decor-settings"]
@@ -2419,7 +2939,7 @@ body.mobile-page #utilityOverlay:is(
   position: fixed !important;
   left: calc(var(--mobile-safe-left) + 8px) !important;
   right: calc(var(--mobile-safe-right) + 8px) !important;
-  top: calc(var(--mobile-safe-top) + 8px) !important;
+  top: calc(var(--mobile-safe-top) + var(--mobile-window-top-offset)) !important;
   bottom: calc(var(--mobile-dock-rendered-height) + 6px) !important;
   width: auto !important;
   height: auto !important;
@@ -2428,7 +2948,7 @@ body.mobile-page #utilityOverlay:is(
   min-height: 0;
   gap: 6px;
   padding: 9px;
-  border-radius: 15px;
+  border-radius: var(--mobile-glass-radius);
   font-size: 0.58rem;
   pointer-events: auto;
 }
@@ -2712,14 +3232,58 @@ body.mobile-page #utilityOverlay:is(
   [data-utility-mode="decor-settings"],
   [data-utility-mode="custom-decor-settings"]
 ) .cave-color-layer-card.is-mobile-color-dropdown .cave-color-swatches {
-  display: none !important;
+  display: grid !important;
 }
 
 body.mobile-page #utilityOverlay:is(
   [data-utility-mode="decor-settings"],
   [data-utility-mode="custom-decor-settings"]
 ) .mobile-cave-color-select {
-  margin-top: 1px;
+  display: none !important;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-color-layer-card.is-mobile-color-swatches .cave-color-swatches {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  max-height: none;
+  padding: 2px 0;
+  overflow: visible;
+  overscroll-behavior: contain;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-color-layer-card.is-mobile-color-swatches .custom-gravel-color-swatch {
+  flex: 0 0 auto;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border-radius: 8px;
+  font-size: 0;
+  line-height: 1;
+}
+
+body.mobile-page #utilityOverlay:is(
+  [data-utility-mode="decor-settings"],
+  [data-utility-mode="custom-decor-settings"]
+) .cave-color-layer-card.is-mobile-color-swatches :is(
+  .bubbler-color-default-tile,
+  .cave-color-rgb-tile
+) {
+  flex-basis: auto;
+  min-width: 52px;
+  width: auto;
+  font-size: 0.48rem;
+  padding: 0 8px;
 }
 
 body.mobile-page #utilityOverlay:is(
@@ -2743,23 +3307,24 @@ body.mobile-page #utilityOverlay:is(
   height: 14px;
 }
 
-body.mobile-page:has(#utilityOverlay:is(
-  [data-utility-mode="decor-settings"],
-  [data-utility-mode="custom-decor-settings"]
-):not([hidden])) #mobileEditTankButton {
-  color: #fff;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
-    radial-gradient(circle at 50% 12%, rgba(155, 193, 255, 0.28), transparent 50%),
-    rgba(82, 102, 198, 0.28);
-  box-shadow:
-    inset 0 0 0 1px rgba(226, 240, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 10px 22px rgba(0, 0, 0, 0.18);
-  animation: none !important;
-}
+/* ==========================================================================
+   11. Responsive rules
+   ========================================================================== */
 
 @media (max-width: 370px) {
+  body.mobile-page .residence-fish-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.mobile-page .residence-fish-card {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+  }
+
+  body.mobile-page .residence-fish-thumb {
+    width: 48px;
+    height: 40px;
+  }
+
   body.mobile-page .mobile-top-chrome {
     display: none;
   }
@@ -2886,4 +3451,323 @@ body.mobile-page:has(#utilityOverlay:is(
     min-width: min(88vh, 360px) !important;
     max-width: calc(100vh - var(--mobile-safe-left) - var(--mobile-safe-right) - 28px) !important;
   }
+}
+
+/* ==========================================================================
+   12. Glass and performance guardrails
+   ========================================================================== */
+
+/* Shared glass treatment applied after component layout rules. */
+body.mobile-page :is(
+  .toast,
+  .tank-display,
+  .display-grid,
+  .display-tab,
+  .tank-bottom-dock,
+  .mobile-popout-menu,
+  .mobile-popout-action,
+  .edit-decor-tray,
+  .edit-decor-tray-arrow,
+  .edit-decor-tile-surface,
+  .edit-fish-tray-context-card,
+  .fish-inspector,
+  .fish-inspector-card,
+  .fish-inspector-color-panel,
+  .decor-action-top-bar,
+  .decor-side-control-panel,
+  .decor-layer-controls,
+  .decor-layer-control,
+  .tutorial-panel,
+  #introTutorialPanel
+),
+body.mobile-page .tank-bottom-dock > :is(
+  #openManagementButton,
+  #mobileFishCareButton,
+  #mobileToolsButton,
+  #mobileEditTankButton,
+  #openStoreButton,
+  #openSettingsButton
+),
+body.mobile-page #storeOverlay :is(
+  .store-panel
+),
+body.mobile-page #storeOverlay + .store-panel-tabs,
+body.mobile-page #storeOverlay + .store-panel-tabs .store-tab-button,
+body.mobile-page #settingsOverlay :is(
+  .settings-panel
+),
+body.mobile-page #equipmentOverlay :is(
+  .settings-panel,
+  .equipment-panel
+),
+body.mobile-page #utilityOverlay :is(
+  .utility-panel
+),
+body.mobile-page #utilityOverlay + .mobile-management-tabs,
+body.mobile-page #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button {
+  border-color: rgba(235, 248, 255, 0.24) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 18px rgba(0, 0, 0, 0.12) !important;
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02) !important;
+  backdrop-filter: blur(1.5px) saturate(1.02) !important;
+}
+
+body.mobile-page #storeOverlay :is(
+  .store-coin-counter,
+  .shop-toolbar,
+  .shop-card,
+  .shop-thumb
+),
+body.mobile-page #settingsOverlay :is(
+  .settings-section,
+  .settings-toggle-row
+),
+body.mobile-page #equipmentOverlay :is(
+  .settings-section,
+  .settings-toggle-row,
+  .background-card,
+  .custom-gravel-layer-card,
+  .background-solid-color-card,
+  .uv-light-card
+),
+body.mobile-page #utilityOverlay :is(
+  .utility-confirm-card,
+  .daily-recap-row,
+  .summary-row,
+  .decor-settings-panel,
+  .custom-decor-name-panel,
+  .custom-decor-size-window,
+  .custom-decor-size-stage,
+  .bubbler-control-row,
+  .custom-decor-name-row,
+  .cave-color-layer-card,
+  .cave-seat-card,
+  .cave-colorize-toggle
+) {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.mobile-page :is(
+  .mobile-popout-action.is-mobile-proxy-active,
+  .dock-button.is-active,
+  .dock-button.is-mobile-proxy-active,
+  .mobile-menu-dock-button[aria-expanded="true"],
+  #storeOverlay + .store-panel-tabs .store-tab-button.is-active,
+  #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button.is-active
+),
+body.mobile-page.mobile-fish-care-menu-open #mobileFishCareButton,
+body.mobile-page.mobile-tools-menu-open #mobileToolsButton,
+body.mobile-page.mobile-edit-tank-menu-open #mobileEditTankButton,
+body.mobile-page.mobile-store-open #openStoreButton,
+body.mobile-page.mobile-settings-open #openSettingsButton,
+body.mobile-page.mobile-management-open #openManagementButton,
+body.mobile-page.mobile-decor-settings-open #mobileEditTankButton {
+  border-color: rgba(235, 248, 255, 0.34) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.014)),
+    rgba(0, 0, 0, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 8px 18px rgba(0, 0, 0, 0.12) !important;
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.02) !important;
+  backdrop-filter: blur(1.5px) saturate(1.02) !important;
+}
+
+/* Mobile thermal profile: keep the phone compositor away from blur/filter work. */
+body.mobile-page *,
+body.mobile-page *::before,
+body.mobile-page *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+body.mobile-page #tankCanvas,
+body.mobile-page #grimeCanvas,
+body.mobile-page #glassCanvas {
+  filter: none !important;
+}
+
+body.mobile-page .tank-stage-underwater::before,
+body.mobile-page .tank-stage-underwater::after,
+body.mobile-page .background-underwater-preview::before,
+body.mobile-page .background-underwater-preview::after {
+  display: none !important;
+  animation: none !important;
+  filter: none !important;
+}
+
+body.mobile-page :is(
+  .dock-button-icon,
+  .mobile-popout-action img,
+  .display-tab img,
+  .shop-thumb,
+  .scene-thumb,
+  .coin-symbol
+) {
+  filter: none !important;
+}
+
+body.mobile-page :is(
+  .dock-button.is-tutorial-pulse,
+  .mobile-popout-action.is-tutorial-pulse,
+  .store-tab-button.is-tutorial-pulse,
+  .buy-button.is-tutorial-pulse,
+  .store-close-button.is-tutorial-pulse,
+  .toolbar-tab.is-tutorial-pulse,
+  .display-tab.is-tutorial-pulse,
+  .tank-display.is-tutorial-pulse .display-grid,
+  .edit-decor-tile.is-tutorial-pulse .edit-decor-tile-surface,
+  .shop-card.is-tutorial-pulse,
+  .inventory-card.is-tutorial-pulse,
+  .cave-color-rgb-tile
+) {
+  animation: none !important;
+  will-change: auto !important;
+}
+
+body.mobile-page :is(
+  .tank-display,
+  .tank-bottom-dock,
+  .mobile-popout-menu,
+  .mobile-popout-action,
+  #storeOverlay .store-panel,
+  #settingsOverlay .settings-panel,
+  #equipmentOverlay .settings-panel,
+  #equipmentOverlay .equipment-panel,
+  #utilityOverlay .utility-panel,
+  #storeOverlay + .store-panel-tabs,
+  #utilityOverlay + .mobile-management-tabs
+) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 5px 12px rgba(0, 0, 0, 0.16) !important;
+}
+
+body.mobile-page .tank-display {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Tank management needs explicit scroll owners once the global overlays clamp overflow. */
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-head,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-summary-nameplate {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .utility-overlay-body {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-hub {
+  height: 100%;
+  min-height: 0;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .utility-overlay-body > .management-browser {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-scroll-shell {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-browser-list {
+  min-height: 0;
+  max-height: 100%;
+  height: 100%;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-history-browser .management-browser-list {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden !important;
+}
+
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .management-history-full-list {
+  min-height: 0;
+  height: 100%;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  padding-bottom: 8px;
+}
+
+body.mobile-page :is(
+  #storeOverlay .store-panel,
+  #settingsOverlay .settings-panel,
+  #equipmentOverlay .settings-panel,
+  #equipmentOverlay .equipment-panel,
+  #utilityOverlay .utility-panel
+) {
+  top: calc(var(--mobile-safe-top) + var(--mobile-window-top-offset)) !important;
+}
+
+/* Final geometry clamps: one radius system and attached tab bars. */
+body.mobile-page :is(
+  #storeOverlay .store-panel,
+  #settingsOverlay .settings-panel,
+  #equipmentOverlay .settings-panel,
+  #equipmentOverlay .equipment-panel,
+  #utilityOverlay .utility-panel,
+  .tank-bottom-dock,
+  .mobile-popout-menu,
+  .edit-decor-tray,
+  .decor-action-top-bar,
+  .decor-layer-control,
+  .toast,
+  .tutorial-panel,
+  #introTutorialPanel
+) {
+  border-radius: var(--mobile-glass-radius) !important;
+}
+
+body.mobile-page :is(
+  #storeOverlay + .store-panel-tabs,
+  #utilityOverlay + .mobile-management-tabs
+) {
+  bottom: calc(var(--mobile-dock-rendered-height) + 5px) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 var(--mobile-glass-radius) var(--mobile-glass-radius) !important;
+}
+
+body.mobile-page #storeOverlay .store-panel,
+body.mobile-page #utilityOverlay[data-utility-mode="tank-management"] .utility-panel {
+  bottom: calc(var(--mobile-dock-rendered-height) + 5px + var(--mobile-store-tabs-height)) !important;
+}
+
+body.mobile-page :is(
+  .mobile-popout-action,
+  .edit-decor-tray-arrow,
+  .edit-decor-tile-surface,
+  .tank-bottom-dock > #openManagementButton,
+  .tank-bottom-dock > #mobileFishCareButton,
+  .tank-bottom-dock > #mobileToolsButton,
+  .tank-bottom-dock > #mobileEditTankButton,
+  .tank-bottom-dock > #openStoreButton,
+  .tank-bottom-dock > #openSettingsButton,
+  #storeOverlay + .store-panel-tabs .store-tab-button,
+  #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button
+) {
+  border-radius: var(--mobile-glass-radius) !important;
 }

@@ -588,6 +588,122 @@
         "cost": 5,
         "width": 510,
         "defaultScale": 1
+      },
+      {
+        "file": "kelp-cafe.png",
+        "name": "Kelp Cafe",
+        "cost": 28,
+        "width": 560,
+        "defaultScale": 0.8,
+        "categories": ["ornaments", "services"],
+        "fishBehavior": {
+          "hangout": ["hardscape"],
+          "services": ["food"],
+          "occupancyLimit": 4,
+          "note": "Hungry fish can feed themselves here without an automatic feeder."
+        },
+        "theme": "Borough"
+      },
+      {
+        "file": "shell-house.png",
+        "name": "Shell House",
+        "cost": 24,
+        "width": 500,
+        "defaultScale": 0.78,
+        "categories": ["caves", "services"],
+        "fishBehavior": {
+          "hangout": ["hide"],
+          "services": ["home"],
+          "occupancyLimit": 3,
+          "note": "A sheltered home that restores comfort and energy."
+        },
+        "theme": "Borough"
+      },
+      {
+        "file": "coral-clinic.png",
+        "name": "Coral Clinic",
+        "cost": 42,
+        "width": 520,
+        "defaultScale": 0.78,
+        "categories": ["ornaments", "services"],
+        "fishBehavior": {
+          "hangout": ["hardscape"],
+          "services": ["clinic"],
+          "occupancyLimit": 2,
+          "note": "Injured and ill fish visit for treatment and recovery."
+        },
+        "theme": "Borough"
+      },
+      {
+        "file": "bubble-plaza.png",
+        "name": "Bubble Plaza",
+        "cost": 34,
+        "width": 600,
+        "defaultScale": 0.76,
+        "categories": ["bubbler", "services"],
+        "fishBehavior": {
+          "hangout": ["bubbler", "hardscape"],
+          "services": ["social"],
+          "occupancyLimit": 6,
+          "note": "A lively gathering place that restores social and stimulation needs."
+        },
+        "bubbler": {
+          "spoutQty": 1,
+          "spouts": [{
+            "horizontalLocation": 0.5,
+            "intensity": 8,
+            "speed": 1,
+            "spread": 36,
+            "fadeDistance": 260,
+            "bubbleColor": ["", "", ""],
+            "bubbleOpacity": 3
+          }]
+        },
+        "theme": "Borough"
+      },
+      {
+        "file": "transit-tube.png",
+        "name": "Borough Transit Tube",
+        "cost": 28,
+        "width": 230,
+        "defaultScale": 0.58,
+        "categories": ["ornaments", "services"],
+        "fishBehavior": {
+          "hangout": ["hardscape"],
+          "occupancyLimit": 1,
+          "note": "Name and link two tubes to give fish a fast route between neighborhoods. It only bubbles while in use."
+        },
+        "theme": "Borough"
+      },
+      {
+        "file": "moonstone-grotto.png",
+        "name": "Moonstone Grotto",
+        "cost": 30,
+        "width": 470,
+        "defaultScale": 0.8,
+        "categories": ["caves", "services"],
+        "fishBehavior": {
+          "hangout": ["hide"],
+          "services": ["rest"],
+          "occupancyLimit": 2,
+          "note": "A low-activity retreat for tired or stressed fish."
+        },
+        "theme": "Borough"
+      },
+      {
+        "file": "nursery-garden.png",
+        "name": "Nursery Garden",
+        "cost": 48,
+        "width": 560,
+        "defaultScale": 0.78,
+        "categories": ["plants", "services"],
+        "fishBehavior": {
+          "hangout": ["plant"],
+          "services": ["nursery"],
+          "occupancyLimit": 4,
+          "note": "A protected breeding garden that encourages compatible fish to reproduce."
+        },
+        "theme": "Borough"
       }
     ]
   }

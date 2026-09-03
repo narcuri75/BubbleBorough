@@ -1376,6 +1376,7 @@
       }
 
       function normalizeTankazonPurchaseButtons() {
+        if (completingPurchase) return;
         document.querySelectorAll(
           "#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-tank]"
         ).forEach((button) => {
@@ -1555,38 +1556,163 @@
         if (catalog) catalog.scrollTop = 0;
       }
 
+
+      function getTankazonCoinBalance() {
+        const counter = document.getElementById("storeCoinCounter");
+        const value = counter?.textContent?.match(/\d+/);
+        return value ? Number(value[0]) : NaN;
+      }
+
+      function getTankazonCartSubtotal() {
+        return [...cart.values()].reduce(
+          (sum, item) => sum + (Number(item.cost) || 0) * (Number(item.quantity) || 0),
+          0
+        );
+      }
+
+      function getTankazonCategoryTab(category) {
+        if (category === "food") return document.getElementById("storeFoodTab");
+        if (category === "pharmacy") return document.getElementById("storePharmacyTab");
+        if (category === "fish") return document.getElementById("storeFishTab");
+        if (category === "decor") return document.getElementById("storeDecorTab");
+        if (category === "equipment") return document.getElementById("storeEquipmentTab");
+        return null;
+      }
+
+      function findTankazonNativePurchaseButton(item) {
+        const selector = [
+          "#storeOverlay [data-buy-fish]",
+          "#storeOverlay [data-buy-food]",
+          "#storeOverlay [data-buy-medicine]",
+          "#storeOverlay [data-buy-decor]",
+          "#storeOverlay [data-buy-filter]",
+          "#storeOverlay [data-buy-background]",
+          "#storeOverlay [data-buy-auto-dispenser]",
+          "#storeOverlay [data-buy-tank]"
+        ].join(", ");
+
+        return [...document.querySelectorAll(selector)].find((button) => {
+          const descriptor = getButtonDescriptor(button);
+          return descriptor?.key === item.key;
+        }) || null;
+      }
+
+      function waitForTankazonRender() {
+        return new Promise((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(resolve));
+        });
+      }
+
+      async function ensureTankazonNativePurchaseButton(item) {
+        let button = findTankazonNativePurchaseButton(item);
+        if (button) return button;
+
+        const tab = getTankazonCategoryTab(item.category);
+        if (tab) {
+          tab.click();
+          await waitForTankazonRender();
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          button = findTankazonNativePurchaseButton(item);
+        }
+
+        return button;
+      }
+
+      async function waitForTankazonCoinChange(previousBalance, expectedCost, timeoutMs = 2500) {
+        if (!Number.isFinite(previousBalance) || expectedCost <= 0) {
+          await new Promise((resolve) => setTimeout(resolve, 80));
+          return true;
+        }
+
+        const started = performance.now();
+        while (performance.now() - started < timeoutMs) {
+          const currentBalance = getTankazonCoinBalance();
+          if (Number.isFinite(currentBalance) && currentBalance <= previousBalance - expectedCost) {
+            return true;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 40));
+        }
+        return false;
+      }
+
+      async function executeTankazonNativePurchase(item) {
+        const button = await ensureTankazonNativePurchaseButton(item);
+        if (!button) {
+          throw new Error(`Could not find the native purchase control for ${item.name}.`);
+        }
+
+        if (button.disabled || /out of stock|locked/i.test(button.textContent || "")) {
+          throw new Error(`${item.name} is no longer available.`);
+        }
+
+        const beforeCoins = getTankazonCoinBalance();
+
+        // completingPurchase=true makes Tankazon's capture listener stand aside,
+        // so this click reaches Bubble Borough's real purchase handler.
+        button.click();
+
+        const changed = await waitForTankazonCoinChange(beforeCoins, Number(item.cost) || 0);
+        if (!changed) {
+          throw new Error(`${item.name} did not complete its native purchase.`);
+        }
+
+        await waitForTankazonRender();
+      }
+
       async function completePurchase() {
         if (completingPurchase || !cart.size) return;
-        completingPurchase = true;
+
         const button = document.getElementById("tankazonCompletePurchase");
-        if (button) { button.disabled = true; button.textContent = "Completing..."; }
+        const subtotal = getTankazonCartSubtotal();
+        const balance = getTankazonCoinBalance();
+
+        if (Number.isFinite(balance) && subtotal > balance) {
+          if (typeof window.showToast === "function") {
+            window.showToast("Not enough coins to complete this purchase.");
+          }
+          return;
+        }
+
+        completingPurchase = true;
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Completing...";
+        }
+
         try {
-          for (const item of [...cart.values()]) {
-            const fn = window[item.fnName];
-            if (typeof fn !== "function") throw new Error(`Purchase function ${item.fnName} is unavailable.`);
+          const items = [...cart.values()];
+
+          for (const item of items) {
             for (let i = 0; i < item.quantity; i += 1) {
-              const arg = item.fnName === "buyAutoDispenser" ? undefined : item.id;
-              const result = await Promise.resolve(arg === undefined ? fn() : fn(arg));
-              if (result && result.ok === false && !["custom-upload", "custom-hide"].includes(result.reason)) {
-                throw new Error("A cart item could not be purchased.");
-              }
+              await executeTankazonNativePurchase(item);
             }
           }
+
           cart.clear();
           saveTankazonCart();
           renderCart();
+
           const delivery = document.getElementById("tankazonDeliveryComplete");
           if (delivery) delivery.hidden = false;
+
           setTimeout(() => {
             if (delivery) delivery.hidden = true;
             document.getElementById("closeStoreOverlay")?.click();
           }, 1250);
         } catch (error) {
           console.error("Tankazon checkout failed", error);
-          if (typeof window.showToast === "function") window.showToast("Purchase could not be completed. Check your coins and cart items.");
-          if (button) { button.disabled = false; button.textContent = "Complete Purchase"; }
+
+          if (typeof window.showToast === "function") {
+            window.showToast(error?.message || "Purchase could not be completed.");
+          }
+
+          if (button) {
+            button.disabled = false;
+            button.textContent = "Complete Purchase";
+          }
         } finally {
           completingPurchase = false;
+          queueMicrotask(normalizeTankazonPurchaseButtons);
         }
       }
 

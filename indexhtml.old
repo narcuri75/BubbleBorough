@@ -441,74 +441,52 @@
             </div>
             <div id="selectedDecorResizeIndicator" class="decor-resize-indicator" hidden>100%</div>
 
-            <section id="storeOverlay" class="store-overlay tankazon-store" hidden aria-label="Tankazon Store">
-              <div class="store-panel tankazon-panel">
-                <header class="store-panel-header tankazon-header">
-                  <div class="tankazon-mainbar">
-                    <img class="tankazon-logo" src="assets/misc/Store_Logo.png" alt="Tankazon" draggable="false" />
-                    <label class="tankazon-search" aria-label="Search Tankazon">
-                      <select id="tankazonSearchScope" class="tankazon-search-scope" aria-label="Search category">
-                        <option value="all">All</option>
-                        <option value="food">Food</option>
-                        <option value="pharmacy">Pharmacy</option>
-                        <option value="fish">Fish</option>
-                        <option value="decor">Decor</option>
-                        <option value="equipment">Equipment</option>
-                      </select>
-                      <input id="tankazonSearchInput" type="search" placeholder="Search for anything for your tank..." autocomplete="off" />
-                      <button id="tankazonSearchButton" class="tankazon-search-button" type="button" aria-label="Search">⌕</button>
-                    </label>
-                    <div class="store-panel-actions">
-                      <div id="storeCoinCounter" class="store-coin-counter" aria-label="Current coins: 0">
-                        <img class="coin-symbol store-coin-icon store-coin-counter-icon" src="assets/icons/coin.png"
-                          alt="" aria-hidden="true" draggable="false" />
-                        <span class="store-coin-counter-value">0</span>
-                      </div>
-                      <button id="closeStoreOverlay" class="store-close-button" type="button" title="Close Tankazon"
-                        aria-label="Close Tankazon">&times;</button>
-                    </div>
+            <section id="storeOverlay" class="store-overlay" hidden aria-label="Store">
+              <div class="store-panel">
+                <div class="store-panel-header">
+                  <div class="store-panel-tabs" role="tablist" aria-label="Store Tabs">
+                    <button id="storeFoodTab" class="store-tab-button" type="button" role="tab" aria-selected="true"
+                      aria-controls="foodShop">
+                      Food
+                    </button>
+                    <button id="storePharmacyTab" class="store-tab-button" type="button" role="tab"
+                      aria-selected="false" aria-controls="pharmacyShop">
+                      Pharmacy
+                    </button>
+                    <button id="storeFishTab" class="store-tab-button" type="button" role="tab" aria-selected="false"
+                      aria-controls="fishShop">
+                      Fish
+                    </button>
+                    <button id="storeDecorTab" class="store-tab-button" type="button" role="tab" aria-selected="false"
+                      aria-controls="decorShop">
+                      Decor
+                    </button>
+                    <button id="storeEquipmentTab" class="store-tab-button" type="button" role="tab"
+                      aria-selected="false" aria-controls="equipmentShop">
+                      Equipment
+                    </button>
                   </div>
 
-                  <div class="tankazon-navrow">
-                    <button id="tankazonAllCategories" class="tankazon-all-categories" type="button">☰&nbsp; All Categories</button>
-                    <div class="store-panel-tabs" role="tablist" aria-label="Tankazon Categories">
-                      <button id="storeFoodTab" class="store-tab-button" type="button" role="tab" aria-selected="true" aria-controls="foodShop">Food</button>
-                      <button id="storePharmacyTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="pharmacyShop">Pharmacy</button>
-                      <button id="storeFishTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="fishShop">Fish</button>
-                      <button id="storeDecorTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="decorShop">Decor</button>
-                      <button id="storeEquipmentTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="equipmentShop">Equipment</button>
+                  <div class="store-panel-actions">
+                    <div id="storeCoinCounter" class="store-coin-counter" aria-label="Current coins: 0">
+                      <img class="coin-symbol store-coin-icon store-coin-counter-icon" src="assets/icons/coin.png"
+                        alt="" aria-hidden="true" draggable="false" />
+                      <span class="store-coin-counter-value">0</span>
                     </div>
-                  </div>
-                </header>
 
-                <div class="tankazon-promo-strip">
-                  <div><strong>Everything for a <span>thriving tank.</span></strong><small>Happy fish. Better tanks. Questionable delivery methods.</small></div>
+                    <button id="closeStoreOverlay" class="store-close-button" type="button" title="Close store"
+                      aria-label="Close store">
+                      &times;
+                    </button>
+                  </div>
                 </div>
 
-                <div class="store-panel-body tankazon-body">
-                  <main id="tankazonCatalogArea" class="tankazon-catalog-area">
-                    <div id="foodShop" class="shop-drawer store-drawer" data-tankazon-category="food" hidden></div>
-                    <div id="pharmacyShop" class="shop-drawer store-drawer" data-tankazon-category="pharmacy" hidden></div>
-                    <div id="fishShop" class="shop-drawer store-drawer" data-tankazon-category="fish" hidden></div>
-                    <div id="decorShop" class="shop-drawer store-drawer" data-tankazon-category="decor" hidden></div>
-                    <div id="equipmentShop" class="shop-drawer store-drawer" data-tankazon-category="equipment" hidden></div>
-                  </main>
-                  <aside id="tankazonCart" class="tankazon-cart" aria-label="Shopping cart">
-                    <div class="tankazon-cart-heading">
-                      <strong>Your Cart (<span id="tankazonCartCount">0</span>)</strong>
-                    </div>
-                    <div id="tankazonCartItems" class="tankazon-cart-items">
-                      <div class="tankazon-cart-empty">Your cart is empty.</div>
-                    </div>
-                    <div class="tankazon-cart-footer">
-                      <div class="tankazon-cart-subtotal">Subtotal: <strong class="tankazon-subtotal-value"><img src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" /><span id="tankazonCartSubtotal">0</span></strong></div>
-                      <button id="tankazonCompletePurchase" class="tankazon-complete-purchase" type="button" disabled>Complete Purchase</button>
-                    </div>
-                  </aside>
-                  <div id="tankazonDeliveryComplete" class="tankazon-delivery-complete" hidden aria-live="polite">
-                    <img src="assets/icons/Store_Icon.png" alt="" draggable="false" />
-                    <strong>Delivery Completed!</strong>
-                  </div>
+                <div class="store-panel-body">
+                  <div id="foodShop" class="shop-drawer store-drawer" hidden></div>
+                  <div id="pharmacyShop" class="shop-drawer store-drawer" hidden></div>
+                  <div id="fishShop" class="shop-drawer store-drawer" hidden></div>
+                  <div id="decorShop" class="shop-drawer store-drawer" hidden></div>
+                  <div id="equipmentShop" class="shop-drawer store-drawer" hidden></div>
                 </div>
                 <div id="storeScrollControls" class="store-scroll-controls" hidden aria-label="Store scroll controls">
                   <button class="store-scroll-button" type="button" data-store-scroll="up" aria-label="Scroll store up">&uarr;</button>
@@ -979,7 +957,7 @@
 
               <button id="openStoreButton" class="dock-button shop" type="button" title="Store"
                 aria-label="Store">
-                <img class="dock-button-icon" src="assets/icons/Store_Icon.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" src="assets/icons/store.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -1211,544 +1189,6 @@
   <input id="localHideFrontInput" type="file" accept="image/*" hidden />
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
-
-  <script>
-    (() => {
-      const CATEGORY_IDS = ["food", "pharmacy", "fish", "decor", "equipment"];
-      const categoryLabels = { food: "Food", pharmacy: "Pharmacy", fish: "Fish", decor: "Decor", equipment: "Equipment" };
-      const TANKAZON_CART_STORAGE_KEY = "bubble-borough-tankazon-cart-v1";
-      const TANKAZON_VIEW_STORAGE_KEY = "bubble-borough-tankazon-view-v1";
-      const cart = new Map();
-      let allCategoriesMode = true;
-      let lastTankazonCategory = "all";
-      let completingPurchase = false;
-      let committedSearchQuery = "";
-      let committedSearchScrollTop = 0;
-      let allCategoriesScrollTop = 0;
-
-      const overlay = () => document.getElementById("storeOverlay");
-      const drawers = () => CATEGORY_IDS.map((id) => document.querySelector(`[data-tankazon-category="${id}"]`)).filter(Boolean);
-      const scope = () => document.getElementById("tankazonSearchScope")?.value || "all";
-      const typedQuery = () => (document.getElementById("tankazonSearchInput")?.value || "").trim().toLowerCase();
-      const query = () => committedSearchQuery;
-
-      function saveTankazonCart() {
-        try {
-          localStorage.setItem(TANKAZON_CART_STORAGE_KEY, JSON.stringify([...cart.values()]));
-        } catch (error) {
-          console.debug("Tankazon cart save skipped.", error);
-        }
-      }
-
-      function restoreTankazonCart() {
-        try {
-          const saved = JSON.parse(localStorage.getItem(TANKAZON_CART_STORAGE_KEY) || "[]");
-          if (!Array.isArray(saved)) return;
-          cart.clear();
-          saved.forEach((item) => {
-            if (!item || typeof item.key !== "string") return;
-            cart.set(item.key, {
-              ...item,
-              quantity: Math.max(1, Math.floor(Number(item.quantity) || 1))
-            });
-          });
-        } catch (error) {
-          console.debug("Tankazon cart restore skipped.", error);
-        }
-      }
-
-      function saveTankazonView(category) {
-        const normalized = CATEGORY_IDS.includes(category) ? category : "all";
-        lastTankazonCategory = normalized;
-        try {
-          localStorage.setItem(TANKAZON_VIEW_STORAGE_KEY, normalized);
-        } catch (error) {
-          console.debug("Tankazon view save skipped.", error);
-        }
-      }
-
-      function restoreTankazonView() {
-        try {
-          const saved = localStorage.getItem(TANKAZON_VIEW_STORAGE_KEY);
-          lastTankazonCategory = CATEGORY_IDS.includes(saved) ? saved : "all";
-        } catch (error) {
-          lastTankazonCategory = "all";
-        }
-        return lastTankazonCategory;
-      }
-
-      function restoreTankazonViewToUI() {
-        const view = restoreTankazonView();
-        const select = document.getElementById("tankazonSearchScope");
-        allCategoriesMode = view === "all";
-        if (select) select.value = view;
-        syncTankazonNavState();
-        applySearch({ preserveScroll: true });
-      }
-
-      function commitTankazonSearch() {
-        committedSearchQuery = typedQuery();
-        committedSearchScrollTop = 0;
-        applySearch({ preserveScroll: false });
-        const catalog = document.getElementById("tankazonCatalogArea");
-        if (catalog) catalog.scrollTop = 0;
-      }
-
-      function useBackgroundCatalogImages() {
-        document.querySelectorAll("#storeOverlay .shop-card img.shop-thumb, #storeOverlay .shop-card img.decor-thumb").forEach((img) => {
-          const src = img.getAttribute("src") || "";
-          if (!src || /_bg(?:\.[a-z0-9]+)(?:[?#].*)?$/i.test(src) || img.dataset.tankazonBgChecked === src) return;
-          img.dataset.tankazonBgChecked = src;
-          const match = src.match(/^(.*?)(\.[a-z0-9]+)([?#].*)?$/i);
-          if (!match) return;
-          const candidate = `${match[1]}_bg${match[2]}${match[3] || ""}`;
-          const probe = new Image();
-          probe.onload = () => {
-            if (img.isConnected && img.getAttribute("src") === src) img.setAttribute("src", candidate);
-          };
-          probe.src = candidate;
-        });
-      }
-
-      function normalizeTankazonTiles() {
-        document.querySelectorAll("#storeOverlay .shop-card").forEach((card) => {
-          const nameNode = card.querySelector(
-            ".shop-card-main strong, .shop-meta strong, strong, h3, h4"
-          );
-          const imageNode = card.querySelector("img.shop-thumb, img.decor-thumb, img");
-          const priceNode = card.querySelector(".price-tag");
-          const imageAlt = imageNode?.getAttribute("alt")?.trim() || "";
-          const name = imageAlt || nameNode?.textContent?.trim() || card.dataset.tankazonTitle || "Unknown Item";
-          const priceText = priceNode?.textContent?.trim() || card.dataset.tankazonCost || "";
-          const priceMatch = priceText.match(/\d+/);
-          const costAmount = priceMatch ? priceMatch[0] : "0";
-          const costText = `${costAmount} coins`;
-          card.dataset.tankazonTitle = name;
-          card.dataset.tankazonCost = costText;
-
-          let info = card.querySelector(":scope > .tankazon-tile-info");
-          if (!info) {
-            info = document.createElement("div");
-            info.className = "tankazon-tile-info";
-
-            const title = document.createElement("div");
-            title.className = "tankazon-tile-title";
-            title.textContent = name;
-
-            const cost = document.createElement("div");
-            cost.className = "tankazon-tile-cost";
-            const coinIcon = document.createElement("img");
-            coinIcon.className = "tankazon-tile-cost-icon";
-            coinIcon.src = "assets/misc/coin_unicode.png";
-            coinIcon.alt = "";
-            coinIcon.setAttribute("aria-hidden", "true");
-            const costValue = document.createElement("span");
-            costValue.className = "tankazon-tile-cost-value";
-            costValue.textContent = costAmount;
-            cost.append(coinIcon, costValue);
-
-            info.append(title, cost);
-            const actionHost = card.lastElementChild;
-            if (actionHost) card.insertBefore(info, actionHost);
-            else card.appendChild(info);
-          } else {
-            const title = info.querySelector(".tankazon-tile-title");
-            const cost = info.querySelector(".tankazon-tile-cost");
-            if (title && title.textContent !== name) title.textContent = name;
-            if (cost) {
-              let coinIcon = cost.querySelector(".tankazon-tile-cost-icon");
-              let costValue = cost.querySelector(".tankazon-tile-cost-value");
-              if (!coinIcon || !costValue) {
-                cost.replaceChildren();
-                coinIcon = document.createElement("img");
-                coinIcon.className = "tankazon-tile-cost-icon";
-                coinIcon.src = "assets/misc/coin_unicode.png";
-                coinIcon.alt = "";
-                coinIcon.setAttribute("aria-hidden", "true");
-                costValue = document.createElement("span");
-                costValue.className = "tankazon-tile-cost-value";
-                cost.append(coinIcon, costValue);
-              }
-              if (costValue.textContent !== costAmount) costValue.textContent = costAmount;
-            }
-          }
-        });
-      }
-
-      function normalizeTankazonPurchaseButtons() {
-        document.querySelectorAll(
-          "#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-tank]"
-        ).forEach((button) => {
-          const currentLabel = button.textContent.trim();
-          if (button.dataset.tankazonOriginalLabel === undefined) button.dataset.tankazonOriginalLabel = currentLabel;
-          const originalLabel = button.dataset.tankazonOriginalLabel || currentLabel;
-          if (/^(locked|out of stock)$/i.test(currentLabel) || /locked/i.test(originalLabel)) {
-            if (button.textContent !== "Out of Stock") button.textContent = "Out of Stock";
-            button.disabled = true;
-            button.classList.add("tankazon-out-of-stock");
-            return;
-          }
-          button.classList.remove("tankazon-out-of-stock");
-          button.disabled = false;
-          if (button.textContent !== "Add to Cart") button.textContent = "Add to Cart";
-        });
-        document.querySelectorAll("#storeOverlay button").forEach((button) => {
-          if (/^locked$/i.test(button.textContent.trim())) {
-            button.textContent = "Out of Stock";
-            button.disabled = true;
-            button.classList.add("tankazon-out-of-stock");
-          }
-        });
-        useBackgroundCatalogImages();
-        normalizeTankazonTiles();
-      }
-
-      function getButtonDescriptor(button) {
-        const mappings = [
-          ["buyFood", "food", "buyFood"], ["buyMedicine", "pharmacy", "buyMedicine"], ["buyFish", "fish", "buyFish"],
-          ["buyDecor", "decor", "buyDecor"], ["buyFilter", "equipment", "buyFilter"], ["buyBackground", "equipment", "buyBackground"],
-          ["buyTank", "equipment", "buyTank"], ["buyAutoDispenser", "equipment", "buyAutoDispenser"]
-        ];
-        for (const [datasetKey, category, fnName] of mappings) {
-          if (button.dataset[datasetKey] !== undefined) {
-            const card = button.closest(".shop-card");
-            const raw = button.dataset[datasetKey];
-            const id = raw === "true" ? "true" : raw;
-            const priceText = card?.querySelector(".price-tag")?.textContent || "0";
-            const cost = Number((priceText.match(/\d+/) || [0])[0]);
-            const name = card?.querySelector(".shop-card-main strong, strong")?.textContent?.trim() || button.textContent.trim();
-            const image = card?.querySelector("img")?.getAttribute("src") || "assets/icons/Store_Icon.png";
-            return { key: `${fnName}:${id}`, fnName, id, category, name, image, cost };
-          }
-        }
-        return null;
-      }
-
-      function renderCart() {
-        const itemsEl = document.getElementById("tankazonCartItems");
-        const countEl = document.getElementById("tankazonCartCount");
-        const subtotalEl = document.getElementById("tankazonCartSubtotal");
-        const complete = document.getElementById("tankazonCompletePurchase");
-        const items = [...cart.values()];
-        const count = items.reduce((sum, item) => sum + item.quantity, 0);
-        const subtotal = items.reduce((sum, item) => sum + item.cost * item.quantity, 0);
-        if (countEl) countEl.textContent = String(count);
-        if (subtotalEl) subtotalEl.textContent = String(subtotal);
-        if (complete) complete.disabled = count === 0;
-        if (!itemsEl) return;
-        if (!items.length) {
-          itemsEl.innerHTML = '<div class="tankazon-cart-empty">Your cart is empty.</div>';
-          return;
-        }
-        itemsEl.innerHTML = items.map((item) => `
-          <article class="tankazon-cart-item" data-cart-key="${item.key}">
-            <img src="${item.image}" alt="" />
-            <div>
-              <strong>${item.name}</strong>
-              <small>${categoryLabels[item.category]}</small>
-              <b class="tankazon-cart-item-price">
-                <img src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" />
-                <span>${item.cost}</span>
-                <span class="tankazon-cart-item-price-each">each</span>
-              </b>
-            </div>
-            <div class="tankazon-cart-item-actions">
-              <button type="button" data-cart-dec="${item.key}" aria-label="Decrease quantity">−</button>
-              <span>${item.quantity}</span>
-              <button type="button" data-cart-inc="${item.key}" aria-label="Increase quantity">+</button>
-              <button class="tankazon-cart-remove" type="button" data-cart-remove="${item.key}">Remove</button>
-            </div>
-          </article>`).join("");
-      }
-
-      function addToCart(descriptor) {
-        const current = cart.get(descriptor.key);
-        cart.set(descriptor.key, { ...descriptor, quantity: (current?.quantity || 0) + 1 });
-        saveTankazonCart();
-        renderCart();
-      }
-
-      function getTankazonProductSearchText(card) {
-        if (!card) return "";
-
-        // Search ONLY the normalized visible product title.
-        const visibleTitle = card.querySelector(":scope > .tankazon-tile-info .tankazon-tile-title")?.textContent?.trim();
-        if (visibleTitle) return visibleTitle.toLowerCase();
-
-        // Fallbacks are still name-only fields, never stats/descriptions.
-        const storedTitle = (card.dataset.tankazonTitle || "").trim();
-        if (storedTitle) return storedTitle.toLowerCase();
-
-        return (card.querySelector("img.shop-thumb, img.decor-thumb, img")?.getAttribute("alt") || "")
-          .trim()
-          .toLowerCase();
-      }
-
-      function applySearch(options = {}) {
-        const catalog = document.getElementById("tankazonCatalogArea");
-        const restoreTop = allCategoriesMode
-          ? allCategoriesScrollTop
-          : (query() ? committedSearchScrollTop : (catalog?.scrollTop || 0));
-        const q = query();
-        const selectedScope = scope();
-        const inAllView = allCategoriesMode || selectedScope === "all";
-        drawers().forEach((drawer) => {
-          const category = drawer.dataset.tankazonCategory;
-          const matchesScope = selectedScope === "all" || category === selectedScope;
-          let matchingProducts = 0;
-
-          drawer.querySelectorAll(".shop-card").forEach((card) => {
-            const productName = getTankazonProductSearchText(card);
-            const matchesText = !q || productName.includes(q);
-            const visible = matchesScope && matchesText;
-
-            // Do not rely on the HTML hidden attribute here because older
-            // Tankazon card CSS contains explicit display rules.
-            card.classList.toggle("tankazon-search-hidden", !visible);
-            card.hidden = false;
-
-            if (visible) matchingProducts += 1;
-          });
-
-          // During a committed search, do not leave empty category sections on screen.
-          // The results area should contain only categories that actually have matches.
-          if (q) {
-            drawer.hidden = !matchesScope || matchingProducts === 0;
-          } else if (inAllView) {
-            drawer.hidden = false;
-          } else {
-            drawer.hidden = !matchesScope;
-          }
-          drawer.classList.toggle("tankazon-all-section", inAllView && !q);
-          drawer.classList.toggle("tankazon-search-results", Boolean(q));
-        });
-        if (catalog && options.preserveScroll !== false) {
-          requestAnimationFrame(() => {
-            catalog.scrollTop = restoreTop;
-          });
-        }
-      }
-
-      function syncTankazonNavState() {
-        const allButton = document.getElementById("tankazonAllCategories");
-        if (allButton) {
-          allButton.classList.toggle("is-active", allCategoriesMode);
-          allButton.setAttribute("aria-pressed", allCategoriesMode ? "true" : "false");
-        }
-        if (allCategoriesMode) {
-          document.querySelectorAll(".store-tab-button").forEach((tab) => {
-            tab.classList.remove("is-active");
-            tab.setAttribute("aria-selected", "false");
-          });
-        }
-      }
-
-      function showAllCategories() {
-        allCategoriesMode = true;
-        allCategoriesScrollTop = 0;
-        saveTankazonView("all");
-        const select = document.getElementById("tankazonSearchScope");
-        if (select) select.value = "all";
-        syncTankazonNavState();
-        applySearch({ preserveScroll: false });
-        const catalog = document.getElementById("tankazonCatalogArea");
-        if (catalog) catalog.scrollTop = 0;
-      }
-
-      async function completePurchase() {
-        if (completingPurchase || !cart.size) return;
-        completingPurchase = true;
-        const button = document.getElementById("tankazonCompletePurchase");
-        if (button) { button.disabled = true; button.textContent = "Completing..."; }
-        try {
-          for (const item of [...cart.values()]) {
-            const fn = window[item.fnName];
-            if (typeof fn !== "function") throw new Error(`Purchase function ${item.fnName} is unavailable.`);
-            for (let i = 0; i < item.quantity; i += 1) {
-              const arg = item.fnName === "buyAutoDispenser" ? undefined : item.id;
-              const result = await Promise.resolve(arg === undefined ? fn() : fn(arg));
-              if (result && result.ok === false && !["custom-upload", "custom-hide"].includes(result.reason)) {
-                throw new Error("A cart item could not be purchased.");
-              }
-            }
-          }
-          cart.clear();
-          saveTankazonCart();
-          renderCart();
-          const delivery = document.getElementById("tankazonDeliveryComplete");
-          if (delivery) delivery.hidden = false;
-          setTimeout(() => {
-            if (delivery) delivery.hidden = true;
-            document.getElementById("closeStoreOverlay")?.click();
-          }, 1250);
-        } catch (error) {
-          console.error("Tankazon checkout failed", error);
-          if (typeof window.showToast === "function") window.showToast("Purchase could not be completed. Check your coins and cart items.");
-          if (button) { button.disabled = false; button.textContent = "Complete Purchase"; }
-        } finally {
-          completingPurchase = false;
-        }
-      }
-
-      document.addEventListener("click", (event) => {
-        const purchaseButton = event.target.closest?.("#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-tank]");
-        if (purchaseButton && !completingPurchase) {
-          event.preventDefault();
-          event.stopPropagation();
-          event.stopImmediatePropagation();
-          const descriptor = getButtonDescriptor(purchaseButton);
-          if (descriptor) addToCart(descriptor);
-          return;
-        }
-        if (event.target.closest?.("#tankazonAllCategories")) { event.preventDefault(); showAllCategories(); return; }
-        if (event.target.closest?.("#tankazonSearchButton")) { commitTankazonSearch(); return; }
-        if (event.target.closest?.("#tankazonCompletePurchase")) { completePurchase(); return; }
-        const inc = event.target.closest?.("[data-cart-inc]");
-        if (inc) {
-          const item = cart.get(inc.dataset.cartInc);
-          if (item) item.quantity += 1;
-          saveTankazonCart();
-          renderCart();
-          return;
-        }
-        const dec = event.target.closest?.("[data-cart-dec]");
-        if (dec) {
-          const item = cart.get(dec.dataset.cartDec);
-          if (item) {
-            item.quantity -= 1;
-            if (item.quantity <= 0) cart.delete(item.key);
-          }
-          saveTankazonCart();
-          renderCart();
-          return;
-        }
-        const remove = event.target.closest?.("[data-cart-remove]");
-        if (remove) {
-          cart.delete(remove.dataset.cartRemove);
-          saveTankazonCart();
-          renderCart();
-          return;
-        }
-        const tab = event.target.closest?.(".store-tab-button");
-        if (tab) {
-          allCategoriesMode = false;
-          document.getElementById("tankazonAllCategories")?.classList.remove("is-active");
-          document.getElementById("tankazonAllCategories")?.setAttribute("aria-pressed", "false");
-          const category = tab.id === "storeFoodTab" ? "food" : tab.id === "storePharmacyTab" ? "pharmacy" : tab.id === "storeFishTab" ? "fish" : tab.id === "storeDecorTab" ? "decor" : "equipment";
-          saveTankazonView(category);
-          const select = document.getElementById("tankazonSearchScope");
-          if (select) select.value = category;
-          queueMicrotask(() => { applySearch(); syncTankazonNavState(); });
-        }
-      }, true);
-
-      document.addEventListener("keydown", (event) => {
-        if (event.target?.id !== "tankazonSearchInput" || event.key !== "Enter") return;
-        event.preventDefault();
-        commitTankazonSearch();
-      });
-      document.addEventListener("change", (event) => {
-        if (event.target?.id !== "tankazonSearchScope") return;
-        allCategoriesMode = event.target.value === "all";
-        saveTankazonView(event.target.value);
-        syncTankazonNavState();
-        applySearch();
-      });
-
-
-      const catalogArea = document.getElementById("tankazonCatalogArea");
-      catalogArea?.addEventListener("scroll", () => {
-        if (allCategoriesMode) {
-          allCategoriesScrollTop = catalogArea.scrollTop;
-        } else if (query()) {
-          committedSearchScrollTop = catalogArea.scrollTop;
-        }
-      }, { passive: true });
-
-      const storeOverlay = overlay();
-      if (storeOverlay) {
-        let wasStoreOpen = !storeOverlay.hidden;
-
-        const savedTabButton = (category) => {
-          if (category === "food") return document.getElementById("storeFoodTab");
-          if (category === "pharmacy") return document.getElementById("storePharmacyTab");
-          if (category === "fish") return document.getElementById("storeFishTab");
-          if (category === "decor") return document.getElementById("storeDecorTab");
-          if (category === "equipment") return document.getElementById("storeEquipmentTab");
-          return null;
-        };
-
-        const observer = new MutationObserver((mutations) => {
-          const isStoreOpen = !storeOverlay.hidden;
-          const justOpened = isStoreOpen && !wasStoreOpen;
-          wasStoreOpen = isStoreOpen;
-
-          if (!isStoreOpen) return;
-
-          if (justOpened) {
-            const savedView = restoreTankazonView();
-
-            // Let Bubble Borough finish its normal Food-store opening first.
-            // Then use the real category tab so the native store renderer
-            // populates the saved category instead of faking visibility.
-            setTimeout(() => {
-              if (savedView === "all") {
-                showAllCategories();
-              } else {
-                const tab = savedTabButton(savedView);
-                if (tab) {
-                  tab.click();
-                } else {
-                  showAllCategories();
-                }
-              }
-
-              normalizeTankazonPurchaseButtons();
-              syncTankazonNavState();
-              applySearch({ preserveScroll: false });
-            }, 0);
-
-            return;
-          }
-
-          if (!mutations.some((mutation) =>
-            mutation.type === "childList" && mutation.addedNodes.length
-          )) return;
-
-          queueMicrotask(normalizeTankazonPurchaseButtons);
-          if (allCategoriesMode || query()) {
-            queueMicrotask(() => applySearch({ preserveScroll: true }));
-          }
-          queueMicrotask(syncTankazonNavState);
-        });
-
-        observer.observe(storeOverlay, {
-          subtree: true,
-          childList: true,
-          attributes: true,
-          attributeFilter: ["hidden"]
-        });
-      }
-
-      document.addEventListener("wheel", (event) => {
-        const catalog = document.getElementById("tankazonCatalogArea");
-        if (!catalog) return;
-
-        const insideCatalog = event.target.closest?.("#tankazonCatalogArea");
-        if (!insideCatalog) return;
-
-        // Do not let nested product content consume wheel scrolling.
-        event.preventDefault();
-        event.stopPropagation();
-        catalog.scrollTop += event.deltaY;
-        catalog.scrollLeft += event.deltaX;
-      }, { capture: true, passive: false });
-
-      normalizeTankazonPurchaseButtons();
-      renderCart();
-      syncTankazonNavState();
-    })();
-  </script>
 
   <script>
     (() => {

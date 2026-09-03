@@ -11,6 +11,7 @@ function renderPlacedDecor() {
       Number(item.yNorm).toFixed(4),
       Number(item.scale).toFixed(2),
       isDecorHorizontallyFlipped(item) ? 1 : 0,
+      isDecorVerticallyFlipped(item) ? 1 : 0,
       item.groupId || ""
     ].join(","))
     .concat([
@@ -64,7 +65,7 @@ function renderPlacedDecor() {
 
       return `
         <article class="mini-card ${selected ? "is-selected" : ""}">
-          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
+          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${grouped ? "Grouped decor." : "Placed in the tank."}</div>
@@ -808,20 +809,20 @@ function renderControls(now) {
     dom.openSettingsButton.title = runtime.settingsOverlayOpen ? "Settings (Open)" : "Settings";
     dom.openSettingsButton.setAttribute("aria-label", runtime.settingsOverlayOpen ? "Settings open" : "Settings");
   }
-  if (dom.openManagementButton) {
-    const managementOpen = runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management";
+  if (dom.overviewButton) {
+    const overviewOpen = runtime.boroughOverviewOpen === true;
     if (!runtime.toolbarCareTaskCountAt || now - runtime.toolbarCareTaskCountAt >= 1000) {
-      runtime.toolbarCareTaskCount = getCurrentTank()
-        ? buildManagementCareQueue(getManagementHubStats(now)).filter((task) => getCareTaskId(task) !== "all-clear").length
-        : 0;
+      runtime.toolbarCareTaskCount = buildUniversalManagementCareQueue(now)
+        .filter((task) => getCareTaskId(task) !== "all-clear").length;
       runtime.toolbarCareTaskCountAt = now;
     }
     const taskCount = runtime.toolbarCareTaskCount;
-    const aquariumLabel = taskCount
-      ? `Aquarium, ${taskCount} care ${pluralize("task", taskCount)}`
-      : "Aquarium, all clear";
-    dom.openManagementButton.title = managementOpen ? `${aquariumLabel} (Open)` : aquariumLabel;
-    dom.openManagementButton.setAttribute("aria-label", managementOpen ? `${aquariumLabel}, open` : aquariumLabel);
+    const overviewLabel = taskCount
+      ? `Borough Overview, ${taskCount} care ${pluralize("task", taskCount)}`
+      : "Borough Overview, all clear";
+    dom.overviewButton.title = overviewOpen ? `${overviewLabel} (Open)` : overviewLabel;
+    dom.overviewButton.setAttribute("aria-label", overviewOpen ? `${overviewLabel}, open` : overviewLabel);
+    dom.overviewButton.classList.toggle("is-active", overviewOpen);
     if (dom.aquariumTaskBadge) {
       dom.aquariumTaskBadge.hidden = taskCount <= 0;
       dom.aquariumTaskBadge.textContent = taskCount > 9 ? "9+" : String(taskCount);
@@ -996,6 +997,7 @@ function animationLoop(frameTime) {
   runtime.lastAnimationUpdateAt = frameTime;
   updateAmbienceAudioLoop();
   if (runtime.boroughOverviewOpen) {
+    paintBoroughSnapshots(getAllTanks(), now);
     renderBoroughOverviewFish(now);
     return;
   }

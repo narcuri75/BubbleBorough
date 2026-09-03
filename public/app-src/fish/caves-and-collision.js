@@ -2029,6 +2029,16 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
     };
   }
 
+  const pendingTubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
+  if (pendingTubeTravel?.mode === "tube" && blockingCave.item?.id === pendingTubeTravel.sourceTubeId) {
+    return {
+      xNorm: resolvedXNorm,
+      yNorm: resolvedYNorm,
+      blocked: false,
+      blockingCave: null
+    };
+  }
+
   const activePlan = fish.caveState ? getActiveFishCavePlan(fish) : null;
   if (
     activePlan?.debugForced &&

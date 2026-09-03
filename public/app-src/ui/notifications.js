@@ -1,6 +1,309 @@
 // Source fragment: ui/notifications.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function buildDefaultNotificationCenterState() {
+  return { entries: [] };
+}
+
+function sanitizeNotificationCenterEntry(entry) {
+  if (!entry || typeof entry !== "object" || typeof entry.title !== "string" || !entry.title.trim()) {
+    return null;
+  }
+  return {
+    id: String(entry.id || createId("notification")),
+    type: String(entry.type || "activity").slice(0, 40),
+    title: entry.title.trim().slice(0, 180),
+    detail: typeof entry.detail === "string" ? entry.detail.trim().slice(0, 360) : "",
+    createdAt: Number.isFinite(Number(entry.createdAt)) ? Math.max(0, Number(entry.createdAt)) : Date.now(),
+    readAt: Number.isFinite(Number(entry.readAt)) ? Math.max(0, Number(entry.readAt)) : null,
+    signature: typeof entry.signature === "string" ? entry.signature.slice(0, 240) : "",
+    tankId: typeof entry.tankId === "string" ? entry.tankId : "",
+    fishId: typeof entry.fishId === "string" ? entry.fishId : "",
+    achievementId: typeof entry.achievementId === "string" ? entry.achievementId : "",
+    recapDayKey: typeof entry.recapDayKey === "string" ? entry.recapDayKey : "",
+    coinReward: Math.max(0, Math.floor(Number(entry.coinReward) || 0)),
+    iconPath: typeof entry.iconPath === "string" ? entry.iconPath.slice(0, 260) : "",
+    unlockedItems: Array.isArray(entry.unlockedItems)
+      ? entry.unlockedItems.map((value) => String(value).slice(0, 100)).filter(Boolean).slice(0, 20)
+      : []
+  };
+}
+
+function sanitizeNotificationCenterState(rawState) {
+  const entries = Array.isArray(rawState?.entries)
+    ? rawState.entries.map(sanitizeNotificationCenterEntry).filter(Boolean).slice(0, NOTIFICATION_CENTER_HISTORY_LIMIT)
+    : [];
+  return { entries };
+}
+
+function getNotificationCenterEntries() {
+  return Array.isArray(state?.notificationCenter?.entries) ? state.notificationCenter.entries : [];
+}
+
+function enqueueNotificationCenterEntry(entry, options = {}) {
+  if (!state) {
+    return null;
+  }
+  if (!state.notificationCenter || typeof state.notificationCenter !== "object") {
+    state.notificationCenter = buildDefaultNotificationCenterState();
+  }
+  if (!Array.isArray(state.notificationCenter.entries)) {
+    state.notificationCenter.entries = [];
+  }
+  const sanitized = sanitizeNotificationCenterEntry({
+    ...entry,
+    id: entry?.id || createId("notification"),
+    createdAt: Number.isFinite(Number(entry?.createdAt)) ? Number(entry.createdAt) : Date.now()
+  });
+  if (!sanitized) {
+    return null;
+  }
+  if (sanitized.signature) {
+    const existing = state.notificationCenter.entries.find((item) => item?.signature === sanitized.signature);
+    if (existing) {
+      return existing;
+    }
+  }
+  state.notificationCenter.entries.unshift(sanitized);
+  state.notificationCenter.entries = state.notificationCenter.entries.slice(0, NOTIFICATION_CENTER_HISTORY_LIMIT);
+  if (options.surface === true) {
+    queueBoroughActivityNotification(sanitized.title, sanitized.detail, {
+      force: true,
+      persist: false,
+      durationMs: options.durationMs
+    });
+  }
+  return sanitized;
+}
+
+function getUnreadNotificationCount() {
+  return getNotificationCenterEntries().filter((entry) => !entry?.readAt).length;
+}
+
+function getPendingDailyRecapSummaries() {
+  const summary = state?.dailyBonus?.summariesByTankId?.[BOROUGH_DAILY_RECAP_ID]
+    || state?.dailyBonus?.summary
+    || null;
+  return summary?.dayKey && !isDailyBonusSummaryClaimed(summary) ? [summary] : [];
+}
+
+function markNotificationCenterRead(now = Date.now()) {
+  let changed = false;
+  for (const entry of getNotificationCenterEntries()) {
+    if (!entry.readAt) {
+      entry.readAt = now;
+      changed = true;
+    }
+  }
+  if (changed) {
+    saveState();
+    renderUi(now, { full: false });
+  }
+  return changed;
+}
+
+function clearNotificationCenter(now = Date.now()) {
+  if (!state?.notificationCenter) {
+    return false;
+  }
+  const pendingRecapSignatures = new Set(getPendingDailyRecapSummaries()
+    .map((summary) => `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}`));
+  const retained = getNotificationCenterEntries().filter((entry) => pendingRecapSignatures.has(entry.signature));
+  if (retained.length === getNotificationCenterEntries().length) {
+    return false;
+  }
+  state.notificationCenter.entries = retained;
+  saveState();
+  renderUi(now, { full: false });
+  return true;
+}
+
+function ensurePendingRecapNotifications() {
+  if (!state?.dailyBonus) {
+    return false;
+  }
+  let changed = false;
+  const pendingDayKeys = new Set(getPendingDailyRecapSummaries().map((summary) => summary.dayKey));
+  const entriesBeforeCleanup = getNotificationCenterEntries().length;
+  state.notificationCenter.entries = getNotificationCenterEntries().filter((entry) => (
+    entry.type !== "daily_recap"
+    || !pendingDayKeys.has(entry.recapDayKey)
+    || entry.signature === `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${entry.recapDayKey}`
+  ));
+  changed = state.notificationCenter.entries.length !== entriesBeforeCleanup;
+  for (const summary of getPendingDailyRecapSummaries()) {
+    const signature = `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}`;
+    if (getNotificationCenterEntries().some((entry) => entry.signature === signature)) {
+      continue;
+    }
+    changed = Boolean(enqueueNotificationCenterEntry({
+      type: "daily_recap",
+      title: "Daily Recap ready",
+      detail: `Bubble Borough · ${summary.reward || 0} coin bonus`,
+      createdAt: summary.generatedAt || Date.now(),
+      signature,
+      tankId: "",
+      recapDayKey: summary.dayKey || ""
+    })) || changed;
+  }
+  return changed;
+}
+
+function syncNotificationBellPresentation() {
+  if (!dom.dailyBonusBell) {
+    return;
+  }
+  ensurePendingRecapNotifications();
+  const unreadCount = getUnreadNotificationCount();
+  const hasRecap = getPendingDailyRecapSummaries().length > 0;
+  dom.dailyBonusBell.hidden = false;
+  dom.dailyBonusBell.classList.toggle("has-daily-recap", hasRecap);
+  dom.dailyBonusBell.classList.toggle("has-unread-notifications", unreadCount > 0);
+  dom.dailyBonusBell.title = unreadCount > 0 ? `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}` : "Notifications";
+  dom.dailyBonusBell.setAttribute("aria-label", dom.dailyBonusBell.title);
+  if (dom.notificationBellBadge) {
+    dom.notificationBellBadge.hidden = unreadCount <= 0;
+    dom.notificationBellBadge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
+  }
+}
+
+function formatNotificationCenterTime(timestamp) {
+  const value = Number(timestamp) || Date.now();
+  return new Date(value).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function renderNotificationCenterOverlay() {
+  ensurePendingRecapNotifications();
+  const entries = getNotificationCenterEntries();
+  const body = entries.length ? entries.map((entry) => {
+    const inferredFish = entry.fishId
+      ? getAllTankFish(state).find((fish) => fish.id === entry.fishId)
+      : getAllTankFish(state).find((fish) => String(entry.title || "").startsWith(`${fish.name} `));
+    const targetFishId = inferredFish?.id || "";
+    const targetTankId = entry.tankId || getTankContainingFish(targetFishId)?.id || "";
+    const typeLabel = entry.type === "achievement" ? "Achievement" : entry.type === "daily_recap" ? "Daily Recap" : "Borough";
+    const icon = entry.iconPath
+      ? `<img class="notification-center-icon" src="${escapeHtml(entry.iconPath)}" alt="" />`
+      : `<span class="notification-center-symbol" aria-hidden="true">${entry.type === "daily_recap" ? "☀" : "•"}</span>`;
+    const rewards = [
+      entry.coinReward > 0 ? `+${entry.coinReward} coins` : "",
+      ...(entry.unlockedItems || []).slice(0, 4)
+    ].filter(Boolean);
+    const recapPending = entry.type === "daily_recap" && getPendingDailyRecapSummaries().some((summary) => (
+      summary.dayKey === entry.recapDayKey
+    ));
+    return `
+      <article class="notification-center-entry ${entry.readAt ? "is-read" : "is-unread"}${targetTankId || targetFishId ? " is-actionable" : ""}"${targetTankId || targetFishId ? ` data-notification-tank-id="${escapeHtml(targetTankId)}" data-notification-fish-id="${escapeHtml(targetFishId)}" tabindex="0" role="button"` : ""}>
+        ${icon}
+        <div class="notification-center-copy">
+          <div class="notification-center-meta"><span>${escapeHtml(typeLabel)}</span><time>${escapeHtml(formatNotificationCenterTime(entry.createdAt))}</time></div>
+          <strong>${escapeHtml(entry.title)}</strong>
+          ${entry.detail ? `<p>${escapeHtml(entry.detail)}</p>` : ""}
+          ${rewards.length ? `<div class="notification-center-rewards">${rewards.map((reward) => `<span>${escapeHtml(reward)}</span>`).join("")}</div>` : ""}
+          ${recapPending ? `<button class="small-button" type="button" data-open-daily-recap="borough">View Recap</button>` : ""}
+        </div>
+      </article>`;
+  }).join("") : `<div class="empty-state">No recent notifications yet.</div>`;
+  return {
+    kicker: "Borough Inbox",
+    title: "Notifications",
+    body: `<div class="notification-center-list">${body}</div>`,
+    footer: `<button class="small-button alt" type="button" data-mark-notifications-read>Mark all read</button><button class="small-button alt" type="button" data-clear-notifications>Clear history</button>`,
+    closable: true
+  };
+}
+
+function handleNotificationCenterBodyClick(ctx, target) {
+  const recapButton = target?.closest?.("[data-open-daily-recap]");
+  if (recapButton instanceof HTMLElement) {
+    openUtilityOverlay("daily-bonus");
+    return true;
+  }
+  const entry = target?.closest?.("[data-notification-tank-id], [data-notification-fish-id]");
+  if (!(entry instanceof HTMLElement)) {
+    return false;
+  }
+  const tankId = entry.dataset.notificationTankId || getTankContainingFish(entry.dataset.notificationFishId)?.id || "";
+  const fishId = entry.dataset.notificationFishId || "";
+  closeUtilityOverlay();
+  if (tankId && state.activeTankId !== tankId) {
+    setActiveTank(tankId, { announce: false });
+  }
+  if (fishId && getTankContainingFish(fishId)?.id === state.activeTankId) {
+    openFishInspector(fishId);
+  }
+  return true;
+}
+
+function ensureBoroughNotificationHost() {
+  let host = document.querySelector("#boroughActivityNotifications");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "boroughActivityNotifications";
+    host.className = "borough-activity-notifications";
+    host.setAttribute("aria-live", "polite");
+    host.setAttribute("aria-atomic", "false");
+    document.body.append(host);
+  }
+  return host;
+}
+
+function queueBoroughActivityNotification(title, detail = "", options = {}) {
+  const now = Number.isFinite(Number(options.time)) ? Number(options.time) : Date.now();
+  const signature = String(options.signature || `${title}|${detail}`).toLowerCase();
+  const lastDuplicateAt = Number(runtime.boroughNotificationSignatures.get(signature)) || 0;
+  if (!options.force && (now - runtime.lastBoroughNotificationAt < BOROUGH_NOTIFICATION_COOLDOWN_MS || now - lastDuplicateAt < BOROUGH_NOTIFICATION_DUPLICATE_MS)) {
+    return false;
+  }
+  runtime.lastBoroughNotificationAt = now;
+  runtime.boroughNotificationSignatures.set(signature, now);
+  for (const [key, timestamp] of runtime.boroughNotificationSignatures) {
+    if (now - timestamp > BOROUGH_NOTIFICATION_DUPLICATE_MS * 2) {
+      runtime.boroughNotificationSignatures.delete(key);
+    }
+  }
+  if (options.persist !== false) {
+    enqueueNotificationCenterEntry({
+      type: options.type || "borough",
+      title,
+      detail,
+      createdAt: now,
+      signature,
+      tankId: options.tankId || "",
+      fishId: options.fishId || ""
+    });
+  }
+  const host = ensureBoroughNotificationHost();
+  const notification = document.createElement("div");
+  notification.className = "borough-activity-notification";
+  notification.innerHTML = `<strong>${escapeHtml(title)}</strong>${detail ? `<span>${escapeHtml(detail)}</span>` : ""}`;
+  host.append(notification);
+  while (host.children.length > 3) {
+    host.firstElementChild?.remove();
+  }
+  requestAnimationFrame(() => notification.classList.add("is-visible"));
+  window.setTimeout(() => {
+    notification.classList.remove("is-visible");
+    window.setTimeout(() => notification.remove(), 350);
+  }, Math.max(2400, Number(options.durationMs) || 4200));
+  return true;
+}
+
+function publishBoroughActivityEvent(event, tank = getCurrentTank()) {
+  const happening = maybeRecordBoroughHappeningFromEvent(event, tank);
+  const type = String(event?.type || "").toLowerCase();
+  if (["travel", "service", "residence", "birthday", "recovery", "birth"].includes(type)) {
+    queueBoroughActivityNotification(event.text, event.detail || "", {
+      time: event.time,
+      signature: `${type}:${event.fishId || ""}:${event.destinationTankId || event.placedDecorId || event.text}`,
+      type,
+      tankId: tank?.id || "",
+      fishId: event.fishId || ""
+    });
+  }
+  return happening;
+}
+
 function getMessageAnchorRect() {
   return dom.tankDisplay?.getBoundingClientRect?.() || document.querySelector(".tank-display")?.getBoundingClientRect?.() || null;
 }
@@ -379,6 +682,16 @@ function hideToast(options = {}) {
   runtime.guidanceToastOwner = "";
   dom.toast?.classList.remove("is-visible");
   return true;
+}
+
+function resetToastState() {
+  if (runtime.toastHandle) {
+    clearTimeout(runtime.toastHandle);
+  }
+  runtime.toastHandle = null;
+  runtime.toastKey = "";
+  runtime.guidanceToastOwner = "";
+  dom.toast?.classList.remove("is-visible");
 }
 
 function showGuidanceToast(owner, message, options = {}) {

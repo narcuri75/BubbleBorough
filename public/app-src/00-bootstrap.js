@@ -17,7 +17,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 40;
+const STATE_VERSION = 41;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -112,6 +112,9 @@ const COMFORT_MEALTIME_BOOST_MS = HOUR_MS;
 const BREEDING_FOOD_BOOST_MS = MINUTE_MS;
 const DAILY_RECAP_REWARD_CAP = 30;
 const DAILY_RECAP_HISTORY_LIMIT = 45;
+const BOROUGH_DAILY_RECAP_ID = "borough";
+const BOROUGH_RECAP_SCORE_MODEL = "borough-normalized-v1";
+const MAX_BOROUGH_EVENT_HISTORY = 400;
 const COMFORT_VERY_LOW_EVENT_MS = 2 * HOUR_MS;
 const TANK_SPACE_FULL_LOAD = 10;
 const TANK_SPACE_MAX_LOAD = 14;
@@ -388,250 +391,334 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "first-care",
     label: "First Care",
+    requirement: "Finish a Daily Recap with score 3+.",
     reward: 3,
     unlocks: ["celestial-pearl-danio", "moor-goldfish", "otocinclus", "molly", "livebearer"],
     decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "rock-arch.png", "treasure-chest_bubbler.png"],
-    isMet: (stats) => stats.latestScore >= 3
+    isMet: (stats) => stats.latestScore >= 3,
+    progress: (stats) => [{ value: (Number(stats.latestScore) || 0) / 3, label: `Latest recap score ${Math.max(0, Number(stats.latestScore) || 0)}/3` }]
   },
   {
     id: "stable-tank",
     label: "Stable Tank",
+    requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
     reward: 8,
     unlocks: ["loach", "swordtail", "betta", "blue-ram", "piranha"],
     decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
-    isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70
+    isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
+    progress: (stats) => [
+      { value: (Number(stats.goodRecaps) || 0) / 3, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 3)}/3` },
+      { value: (Number(stats.recentAverageComfort) || 0) / 70, label: `Recent comfort ${Math.min(Number(stats.recentAverageComfort) || 0, 70)}%/70%` }
+    ]
   },
   {
     id: "happy-habitat",
     label: "Happy Habitat",
+    requirement: "Keep any fish alive for 7 days and recent average comfort at 80%+.",
     reward: 12,
     unlocks: ["wonder-killifish", "rainbowfish", "gourami"],
     decorUnlocks: ["Shipwreck.png", "mushroomcoral_seaweed.png", "Castle-Cave.png", "blue_castle_cave.png", "meteor_cave.png", "volcano-1_bubbler.png", "volcano-2_bubbler.png", "__custom-decor-shop__", "__custom-hide-shop__"],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80,
+    progress: (stats) => [
+      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, WEEK_MS))}/7d` },
+      { value: (Number(stats.recentAverageComfort) || 0) / 80, label: `Recent comfort ${Math.min(Number(stats.recentAverageComfort) || 0, 80)}%/80%` }
+    ]
   },
   {
     id: "master-keeper",
     label: "Master Keeper",
+    requirement: "Go 14 days without a death and have one fish at Sparkling comfort.",
     reward: 18,
     unlocks: ["discus", "angelfish"],
     decorUnlocks: [],
-    isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish
+    isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish,
+    progress: (stats) => [
+      { value: (Number(stats.daysSinceLastDeath) || 0) / 14, label: `No-death streak ${Math.min(Number(stats.daysSinceLastDeath) || 0, 14)}/14d` },
+      { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
+    ]
   },
   {
     id: "marine-curator",
     label: "Marine Curator",
+    requirement: "Own a saltwater fish, finish 5 good recaps, and go 3 days without a death.",
     reward: 20,
     unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish"],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3
+    isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3,
+    progress: (stats) => [
+      { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
+      { value: (Number(stats.goodRecaps) || 0) / 5, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 5)}/5` },
+      { value: (Number(stats.daysSinceLastDeath) || 0) / 3, label: `No-death streak ${Math.min(Number(stats.daysSinceLastDeath) || 0, 3)}/3d` }
+    ]
   },
   {
     id: "clean-start",
     label: "Clean Start",
+    requirement: "Keep cleanliness at 90%+ for 3 daily recaps in a row.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.cleanRecapStreak90 >= 3
+    isMet: (stats) => stats.cleanRecapStreak90 >= 3,
+    progress: (stats) => [{ value: (Number(stats.cleanRecapStreak90) || 0) / 3, label: `90%+ clean recaps ${Math.min(Number(stats.cleanRecapStreak90) || 0, 3)}/3` }]
   },
   {
     id: "crystal-keeper",
     label: "Crystal Keeper",
+    requirement: "Keep cleanliness at 95%+ for 7 daily recaps.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.cleanRecapCount95 >= 7
+    isMet: (stats) => stats.cleanRecapCount95 >= 7,
+    progress: (stats) => [{ value: (Number(stats.cleanRecapCount95) || 0) / 7, label: `95%+ clean recaps ${Math.min(Number(stats.cleanRecapCount95) || 0, 7)}/7` }]
   },
   {
     id: "full-bellies",
     label: "Full Bellies",
+    requirement: "Keep fish from reaching Starving for 3 daily recaps in a row.",
     reward: 6,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.allMealsSatisfiedStreak >= 3
+    isMet: (stats) => stats.allMealsSatisfiedStreak >= 3,
+    progress: (stats) => [{ value: (Number(stats.allMealsSatisfiedStreak) || 0) / 3, label: `No-starving streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 3)}/3` }]
   },
   {
     id: "reliable-feeder",
     label: "Reliable Feeder",
+    requirement: "Keep fish from reaching Starving for 7 daily recaps in a row.",
     reward: 14,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.allMealsSatisfiedStreak >= 7
+    isMet: (stats) => stats.allMealsSatisfiedStreak >= 7,
+    progress: (stats) => [{ value: (Number(stats.allMealsSatisfiedStreak) || 0) / 7, label: `No-starving streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 7)}/7` }]
   },
   {
     id: "cozy-corner",
     label: "Cozy Corner",
+    requirement: "Average 80%+ comfort for 3 daily recaps in a row.",
     reward: 6,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.comfort80Streak >= 3
+    isMet: (stats) => stats.comfort80Streak >= 3,
+    progress: (stats) => [{ value: (Number(stats.comfort80Streak) || 0) / 3, label: `80%+ comfort streak ${Math.min(Number(stats.comfort80Streak) || 0, 3)}/3` }]
   },
   {
     id: "little-paradise",
     label: "Little Paradise",
+    requirement: "Average 90%+ comfort for 3 daily recaps in a row.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.comfort90Streak >= 3
+    isMet: (stats) => stats.comfort90Streak >= 3,
+    progress: (stats) => [{ value: (Number(stats.comfort90Streak) || 0) / 3, label: `90%+ comfort streak ${Math.min(Number(stats.comfort90Streak) || 0, 3)}/3` }]
   },
   {
     id: "perfect-hour",
     label: "Perfect Hour",
+    requirement: "Have any fish reach Sparkling comfort.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasSparklingFish || stats.sparklingComfortEvents >= 1
+    isMet: (stats) => stats.hasSparklingFish || stats.sparklingComfortEvents >= 1,
+    progress: (stats) => [{
+      value: stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0 ? 1 : 0,
+      label: stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0 ? "Sparkling comfort found" : "Needs one Sparkling fish"
+    }]
   },
   {
     id: "perfect-day",
     label: "Perfect Day",
+    requirement: "Have Sparkling comfort during a daily recap with score 8+.",
     reward: 15,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasPerfectDay
+    isMet: (stats) => stats.hasPerfectDay,
+    progress: (stats) => [{ value: stats.hasPerfectDay ? 1 : 0, label: stats.hasPerfectDay ? "Perfect day recorded" : "Needs score 8+ with Sparkling comfort" }]
   },
   {
     id: "no-drama-day",
     label: "No Drama Day",
+    requirement: "Finish a daily recap with no negative events.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.latestNoDramaDay
+    isMet: (stats) => stats.latestNoDramaDay,
+    progress: (stats) => [{ value: stats.latestNoDramaDay ? 1 : 0, label: stats.latestNoDramaDay ? "Latest recap had no drama" : "Needs one no-drama recap" }]
   },
   {
     id: "peaceful-week",
     label: "Peaceful Week",
+    requirement: "Finish 5 recaps in a row with no attacks or deaths.",
     reward: 16,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.noAttackDeathRecapStreak >= 5
+    isMet: (stats) => stats.noAttackDeathRecapStreak >= 5,
+    progress: (stats) => [{ value: (Number(stats.noAttackDeathRecapStreak) || 0) / 5, label: `Peaceful recap streak ${Math.min(Number(stats.noAttackDeathRecapStreak) || 0, 5)}/5` }]
   },
   {
     id: "gentle-keeper",
     label: "Gentle Keeper",
+    requirement: "Finish 3 recaps in a row without stress-tapping fish.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.noGlassTapStressStreak >= 3
+    isMet: (stats) => stats.noGlassTapStressStreak >= 3,
+    progress: (stats) => [{ value: (Number(stats.noGlassTapStressStreak) || 0) / 3, label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 3)}/3` }]
   },
   {
     id: "calm-glass",
     label: "Calm Glass",
+    requirement: "Finish 7 recaps in a row without stress-tapping fish.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.noGlassTapStressStreak >= 7
+    isMet: (stats) => stats.noGlassTapStressStreak >= 7,
+    progress: (stats) => [{ value: (Number(stats.noGlassTapStressStreak) || 0) / 7, label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 7)}/7` }]
   },
   {
     id: "decorator",
     label: "Decorator",
+    requirement: "Place 5 decor items across your aquariums.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.decorPlacedCount >= 5
+    isMet: (stats) => stats.decorPlacedCount >= 5,
+    progress: (stats) => [{ value: (Number(stats.decorPlacedCount) || 0) / 5, label: `Decor placed ${Math.min(Number(stats.decorPlacedCount) || 0, 5)}/5` }]
   },
   {
     id: "habitat-builder",
     label: "Habitat Builder",
+    requirement: "Satisfy 10 total fish comfort needs at once.",
     reward: 10,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.metNeedsCount >= 10
+    isMet: (stats) => stats.metNeedsCount >= 10,
+    progress: (stats) => [{ value: (Number(stats.metNeedsCount) || 0) / 10, label: `Needs satisfied ${Math.min(Number(stats.metNeedsCount) || 0, 10)}/10` }]
   },
   {
     id: "need-expert",
     label: "Need Expert",
+    requirement: "Have every living fish's comfort needs satisfied at once.",
     reward: 15,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasAllLivingNeedsMet
+    isMet: (stats) => stats.hasAllLivingNeedsMet,
+    progress: (stats) => [{ value: stats.hasAllLivingNeedsMet ? 1 : 0, label: stats.hasAllLivingNeedsMet ? "All living needs met" : "Some living fish still need comfort help" }]
   },
   {
     id: "community-tank",
     label: "Community Tank",
+    requirement: "Keep 5 community-safe fish with 70%+ recent comfort and 3 good recaps.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasCommunityTank && stats.goodRecaps >= 3
+    isMet: (stats) => stats.hasCommunityTank && stats.goodRecaps >= 3,
+    progress: (stats) => [
+      { value: stats.hasCommunityTank ? 1 : 0, label: stats.hasCommunityTank ? "Community tank ready" : "Needs 5 peaceful fish and 70%+ recent comfort" },
+      { value: (Number(stats.goodRecaps) || 0) / 3, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 3)}/3` }
+    ]
   },
   {
     id: "big-family",
     label: "Big Family",
+    requirement: "Own 10 living fish across your aquariums.",
     reward: 10,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.livingFishCount >= 10
+    isMet: (stats) => stats.livingFishCount >= 10,
+    progress: (stats) => [{ value: (Number(stats.livingFishCount) || 0) / 10, label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 10)}/10` }]
   },
   {
     id: "careful-curator",
     label: "Careful Curator",
+    requirement: "Own 15 living fish without overcrowding any aquarium.",
     reward: 18,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.livingFishCount >= 15 && stats.noOvercrowdedTanks
+    isMet: (stats) => stats.livingFishCount >= 15 && stats.noOvercrowdedTanks,
+    progress: (stats) => [
+      { value: (Number(stats.livingFishCount) || 0) / 15, label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 15)}/15` },
+      { value: stats.noOvercrowdedTanks ? 1 : 0, label: stats.noOvercrowdedTanks ? "No overcrowded tanks" : "One or more tanks are overcrowded" }
+    ]
   },
   {
     id: "first-generation",
     label: "First Generation",
+    requirement: "Hatch one egg.",
     reward: 8,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hatchedFishEvents >= 1
+    isMet: (stats) => stats.hatchedFishEvents >= 1,
+    progress: (stats) => [{ value: Number(stats.hatchedFishEvents) || 0, label: `Eggs hatched ${Math.min(Number(stats.hatchedFishEvents) || 0, 1)}/1` }]
   },
   {
     id: "nursery-keeper",
     label: "Nursery Keeper",
+    requirement: "Raise 3 baby fish past juvenile stage.",
     reward: 16,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.grownBabyFishCount >= 3
+    isMet: (stats) => stats.grownBabyFishCount >= 3,
+    progress: (stats) => [{ value: (Number(stats.grownBabyFishCount) || 0) / 3, label: `Raised babies ${Math.min(Number(stats.grownBabyFishCount) || 0, 3)}/3` }]
   },
   {
     id: "gravel-luck",
     label: "Gravel Luck",
+    requirement: "Find 5 gravel coins.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.gravelCoinFinds >= 5
+    isMet: (stats) => stats.gravelCoinFinds >= 5,
+    progress: (stats) => [{ value: (Number(stats.gravelCoinFinds) || 0) / 5, label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 5)}/5` }]
   },
   {
     id: "treasure-hunter",
     label: "Treasure Hunter",
+    requirement: "Find 25 gravel coins.",
     reward: 18,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.gravelCoinFinds >= 25
+    isMet: (stats) => stats.gravelCoinFinds >= 25,
+    progress: (stats) => [{ value: (Number(stats.gravelCoinFinds) || 0) / 25, label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 25)}/25` }]
   },
   {
     id: "medicine-cabinet",
     label: "Medicine Cabinet",
+    requirement: "Heal fish or use medicine 3 times.",
     reward: 8,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.healingEvents >= 3
+    isMet: (stats) => stats.healingEvents >= 3,
+    progress: (stats) => [{ value: (Number(stats.healingEvents) || 0) / 3, label: `Healing events ${Math.min(Number(stats.healingEvents) || 0, 3)}/3` }]
   },
   {
     id: "rescue-keeper",
     label: "Rescue Keeper",
+    requirement: "Heal a fish and go 3 days without a death afterward.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasRescueKeeper
+    isMet: (stats) => stats.hasRescueKeeper,
+    progress: (stats) => [{ value: stats.hasRescueKeeper ? 1 : 0, label: stats.hasRescueKeeper ? "Rescue streak complete" : "Needs a heal followed by 3 safe days" }]
   },
   {
     id: "tank-network",
     label: "Tank Network",
+    requirement: "Own 3 aquariums with at least one healthy fish in each.",
     reward: 20,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.healthyTankCount >= 3
+    isMet: (stats) => stats.healthyTankCount >= 3,
+    progress: (stats) => [{ value: (Number(stats.healthyTankCount) || 0) / 3, label: `Healthy tanks ${Math.min(Number(stats.healthyTankCount) || 0, 3)}/3` }]
   },
   ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? [{
     id: "spooky-keeper",
     label: "Spooky Keeper",
+    requirement: "Discover the corpse, zombie, or skeleton care path.",
     reward: 5,
     unlocks: [...ZOMBIE_SKELETON_PROGRESSION_UNLOCKS],
     decorUnlocks: ["gorebag_lure.png", "fishheadeffigy_1.png", "fishheadeffigy_2.png", "fishheadeffigy_3.png"],
-    isMet: (stats) => stats.hasSpookyKeeperPath
+    isMet: (stats) => stats.hasSpookyKeeperPath,
+    progress: (stats) => [{ value: stats.hasSpookyKeeperPath ? 1 : 0, label: stats.hasSpookyKeeperPath ? "Spooky path found" : "No spooky path discovered yet" }]
   }] : [])
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
@@ -681,6 +768,7 @@ const HALLOWEEN_MODE_OPTIONS = Object.freeze([
 const FISH_AGE_MILESTONE_DAYS = Object.freeze([7, 30, 100, 365]);
 const BOROUGH_NOTIFICATION_COOLDOWN_MS = 22 * 1000;
 const BOROUGH_NOTIFICATION_DUPLICATE_MS = 3 * MINUTE_MS;
+const NOTIFICATION_CENTER_HISTORY_LIMIT = 60;
 const CRITICAL_COMFORT_HEALTH_TICK_MS = 6 * HOUR_MS;
 const FISH_DECAY_ZOMBIE_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecayZombieMs;
 const FISH_DECAY_SKELETON_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecaySkeletonMs;
@@ -706,10 +794,18 @@ const SCRUB_AUTO_COMPLETE_GRACE_THRESHOLD = 0.8;
 const SCRUB_AUTO_COMPLETE_GRACE_MS = 5 * 1000;
 const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
-const SCRUB_MAX_STAMPS = 12000;
-const GRIME_CACHE_PRECISION = 1000;
+const SCRUB_MAX_STAMPS = 2400;
+const GRIME_CACHE_PRECISION = 240;
 const GRIME_VISUAL_START_DIRTINESS = 0.1;
 const SEVERE_GRIME_VISUAL_THRESHOLD = 0.72;
+const GRIME_OVERLAY_OVERSCAN = 1.1;
+const GRIME_OVERLAY_ASSET_PATHS = Object.freeze([
+  resolveAppUrl("assets/grime/grime-level-1.webp"),
+  resolveAppUrl("assets/grime/grime-level-2.webp"),
+  resolveAppUrl("assets/grime/grime-level-3.webp"),
+  resolveAppUrl("assets/grime/grime-level-4.webp"),
+  resolveAppUrl("assets/grime/grime-level-5.webp")
+]);
 const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
 const CARE_TASK_COMPLETE_HOLD_MS = 2200;
@@ -1177,9 +1273,9 @@ const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
 const PORTABLE_PERFORMANCE_MAX_FPS = 30;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 30;
+const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 96;
 const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 24;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 30;
+const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 96;
 const PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT = 18;
 const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 32;
 const PORTABLE_PERFORMANCE_RESIZE_DEBOUNCE_MS = 120;
@@ -1372,9 +1468,9 @@ const FISH_GRAVEL_DIG_CHANCE = 0.18;
 const FISH_GRAVEL_DIG_COOLDOWN_MIN_MS = 9000;
 const FISH_GRAVEL_DIG_COOLDOWN_MAX_MS = 18000;
 const FORCED_GRAVEL_DIG_TIMEOUT_MS = 9000;
-const WATER_PARTICLE_COUNT = 30;
+const WATER_PARTICLE_COUNT = 180;
 const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
-const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 30;
+const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 180;
 const WATER_PARTICLE_FISH_FORCE_RADIUS_PX = 90;
 const WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX = 74;
 const WATER_PARTICLE_FILTER_FORCE_RADIUS_PX = 130;
@@ -1394,9 +1490,9 @@ const FOOD_DROP_SPREAD_NORM = 0.03;
 const FOOD_PELLET_SINK_DURATION_MS = 95 * 1000;
 const FOOD_PELLET_SETTLED_LIFETIME_MS = 36 * HOUR_MS;
 const FOOD_PELLET_SETTLED_Y_OFFSET_PX = 5;
-const FOOD_PELLET_SETTLED_OPEN_TARGET_MS = 35 * 1000;
-const FOOD_PELLET_SETTLED_STALE_TARGET_MS = 3 * MINUTE_MS;
-const FOOD_PELLET_SETTLED_NEARBY_TARGET_RADIUS_NORM = 0.14;
+const FOOD_PELLET_SETTLED_OPEN_TARGET_MS = 2 * MINUTE_MS;
+const FOOD_PELLET_SETTLED_STALE_TARGET_MS = 15 * MINUTE_MS;
+const FOOD_PELLET_SETTLED_NEARBY_TARGET_RADIUS_NORM = 0.5;
 const AUTO_DISPENSER_MAX_PELLETS = 99;
 const AUTO_DISPENSER_PORTION_MIN = 0;
 const AUTO_DISPENSER_PORTION_MAX = AUTO_DISPENSER_MAX_PELLETS;
@@ -1462,7 +1558,7 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "lastCleanedAt",
   "lastSimulatedAt",
   "events",
-  "lastGravelCoinFoundAt",
+  "lastCorpseSicknessAt",
   "tankTypeId",
   "waterType",
   "setupPending",
@@ -1543,6 +1639,9 @@ const REGULAR_BUTTON_SOUND_PATH = "assets/sounds/reg_button.mp3";
 const PURCHASE_SOUND_PATH = "assets/sounds/purchase.mp3";
 const COIN_SOUND_PATH = "assets/sounds/coin.mp3";
 const COIN_ICON_PATH = resolveAppUrl("assets/icons/coin.png");
+const MAX_WALLET_COINS = 9999;
+// Keep the legacy digital display implementation available, but ship it off.
+const DIGITAL_DISPLAY_ENABLED = false;
 const DISPENSER_SOUND_PATH = "assets/sounds/dispenser.mp3";
 const TOOLBAR_FAST_TOOLTIP_DELAY_MS = 100;
 const TOOLBAR_FAST_TOOLTIP_OFFSET_PX = 14;
@@ -2190,6 +2289,8 @@ const CUSTOM_FISH_TEMPLATE_IMAGE = resolveAppUrl("assets/misc/fish_template.png"
 
 const dom = {
   coinCount: document.querySelector("#coinCount"),
+  toolbarWallet: document.querySelector("#toolbarWallet"),
+  toolbarCoinCount: document.querySelector("#toolbarCoinCount"),
   cleanlinessLabel: document.querySelector("#cleanlinessLabel"),
   mealWindowLabel: document.querySelector("#mealWindowLabel"),
   tankStatus: document.querySelector("#tankStatus"),
@@ -2250,11 +2351,17 @@ const dom = {
   boroughOverview: document.querySelector("#boroughOverview"),
   boroughOverviewTitle: document.querySelector("#boroughOverviewTitle"),
   boroughOverviewHint: document.querySelector("#boroughOverviewHint"),
+  boroughOverviewStatus: document.querySelector("#boroughOverviewStatus"),
+  boroughOverviewInfo: document.querySelector("#boroughOverviewInfo"),
+  boroughOverviewInfoBody: document.querySelector("#boroughOverviewInfoBody"),
+  toggleBoroughEditMode: document.querySelector("#toggleBoroughEditMode"),
+  addBoroughTankButton: document.querySelector("#addBoroughTankButton"),
   boroughGrid: document.querySelector("#boroughGrid"),
   closeBoroughOverview: document.querySelector("#closeBoroughOverview"),
   overviewButton: document.querySelector("#overviewButton"),
   extendAquariumButton: document.querySelector("#extendAquariumButton"),
   dailyBonusBell: document.querySelector("#dailyBonusBell"),
+  notificationBellBadge: document.querySelector("#notificationBellBadge"),
   placementHint: document.querySelector("#placementHint"),
   placementHintContainer: document.querySelector(".tank-overlay-hints"),
   careTaskPane: document.querySelector("#careTaskPane"),
@@ -2387,6 +2494,9 @@ const dom = {
   selectedDecorResizeIndicator: document.querySelector("#selectedDecorResizeIndicator"),
   selectedDecorResizeCornerHandles: [...document.querySelectorAll("[data-selected-decor-resize-corner]")],
   selectedDecorLayerControls: document.querySelector("#selectedDecorLayerControls"),
+  selectedDecorTransformControls: document.querySelector("#selectedDecorTransformControls"),
+  selectedDecorFlipHorizontalButton: document.querySelector("#selectedDecorFlipHorizontalButton"),
+  selectedDecorFlipVerticalButton: document.querySelector("#selectedDecorFlipVerticalButton"),
   selectedDecorSettingsButton: document.querySelector("#selectedDecorSettingsButton"),
   selectedDecorAssignButton: document.querySelector("#selectedDecorAssignButton"),
   selectedDecorSellButton: document.querySelector("#selectedDecorSellButton"),
@@ -2553,13 +2663,23 @@ const runtime = {
   boroughOverviewFishSampleMs: 2000,
   boroughOverviewFishProxies: new Map(),
   boroughOverviewSnapshotCache: new Map(),
+  boroughOverviewSnapshotRenderedAt: 0,
+  boroughOverviewSnapshotFrameMs: 1500,
   boroughOverviewDraggedTankId: null,
+  boroughOverviewEditMode: false,
+  boroughOverviewInfoTab: "borough",
+  boroughOverviewInfoView: "overview",
+  boroughOverviewInfoTankId: null,
+  boroughOverviewDragPointerId: null,
   transitTubeBursts: [],
   pendingNeighborhoodTravel: new Map(),
+  foodTravelDestinations: new Map(),
+  tankAppearanceClipboard: { background: null, gravel: null },
   boroughEdgeBursts: [],
   boroughActivityNotifications: [],
   boroughNotificationSignatures: new Map(),
   lastBoroughNotificationAt: 0,
+  achievementEvaluationActive: false,
   lastBoroughHappeningAt: 0,
   debugSimulatedNow: null,
   debugTimeScale: 1,
@@ -2648,10 +2768,17 @@ const runtime = {
     contentHeight: TANK_HEIGHT
   },
   lastScrubPoint: null,
+  pendingScrubPoint: null,
+  scrubFrameHandle: 0,
   scrubCells: new Uint8Array(SCRUB_GRID_COLS * SCRUB_GRID_ROWS),
   scrubbedCount: 0,
   scrubStamps: [],
   scrubAutoCompleteAt: 0,
+  scrubMaskRevision: 0,
+  cleanableScrubCellCount: 0,
+  scrubbedCleanableCellCount: 0,
+  scrubCoverageCacheKey: "",
+  grimeCompositeCacheKey: "",
   tankStateDirty: false,
   cleaningTransition: null,
   backgroundCatalog: [],
@@ -2685,6 +2812,11 @@ const runtime = {
   gravelMap: new Map(),
   bubbleMap: new Map(),
   images: new Map(),
+  imageLoadPromises: new Map(),
+  imageLoadFailures: new Map(),
+  imageRecoveryNextAt: new Map(),
+  missingFishImageWarnings: new Set(),
+  pendingFishPurchases: new Set(),
   alphaMaskCache: new Map(),
   bubblerSpoutOriginCache: new Map(),
   maskRegionCache: new Map(),
@@ -3392,7 +3524,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       if (!fish) {
         delete state.customFishAssets[asset.key];
         syncRuntimeCustomFishAssetsFromState(state);
-        state.coins += CUSTOM_FISH_COST;
+        state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
         showToast("Could not add that custom fish to the tank.");
         return false;
       }
@@ -3799,6 +3931,17 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     }),
     onFooterClick: createUtilityOverlayActionHandler([
       { selector: "[data-claim-daily-bonus]", run: () => claimDailyBonus() }
+    ])
+  },
+  notifications: {
+    id: "notifications",
+    exclusive: true,
+    onOpen: () => markNotificationCenterRead(),
+    render: renderNotificationCenterOverlay,
+    onBodyClick: handleNotificationCenterBodyClick,
+    onFooterClick: createUtilityOverlayActionHandler([
+      { selector: "[data-mark-notifications-read]", run: () => markNotificationCenterRead() },
+      { selector: "[data-clear-notifications]", run: () => clearNotificationCenter() }
     ])
   }
 });

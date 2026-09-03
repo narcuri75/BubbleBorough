@@ -46,7 +46,8 @@ function startPlacingDecor(decorKey) {
     decorKey,
     tankLayer: initialLayer,
     scale: getDecorScaleDefault(decorKey),
-    flipped: false
+    flipped: false,
+    flippedY: false
   };
   runtime.placementPreview = runtime.lastTankPoint
     ? clampDecorPlacement(runtime.lastTankPoint.x / TANK_WIDTH, runtime.lastTankPoint.y / TANK_HEIGHT, {
@@ -54,6 +55,7 @@ function startPlacingDecor(decorKey) {
       tankLayer: initialLayer,
       scale: runtime.placementMode.scale,
       flipped: runtime.placementMode.flipped,
+      flippedY: runtime.placementMode.flippedY,
       applyGravity: true
     })
     : clampDecorPlacement(0.5, 0.8, {
@@ -61,6 +63,7 @@ function startPlacingDecor(decorKey) {
       tankLayer: initialLayer,
       scale: runtime.placementMode.scale,
       flipped: runtime.placementMode.flipped,
+      flippedY: runtime.placementMode.flippedY,
       applyGravity: true
     });
   runtime.cleaningMode = false;
@@ -106,12 +109,14 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
   const decor = runtime.decorMap.get(decorKey);
   const scaleBase = clamp(Number(runtime.placementMode?.scale) || getDecorScaleDefault(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const flipped = Boolean(runtime.placementMode?.flipped);
+  const flippedY = Boolean(runtime.placementMode?.flippedY);
   const finalLayer = getDecorFrontLayer(decorKey, tankLayer);
   const placement = clampDecorPlacement(xNorm, yNorm, {
     decorKey,
     tankLayer: finalLayer,
     scale: scaleBase,
     flipped,
+    flippedY,
     applyGravity: true
   });
 
@@ -127,7 +132,8 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     yNorm: placement.yNorm,
     scale: scaleBase,
     tankLayer: finalLayer,
-    flipped
+    flipped,
+    flippedY
   };
   if (isCustomBubblerDecorKey(decorKey)) {
     placedItem.bubblerSettings = createDefaultBubblerSettings();
@@ -340,16 +346,22 @@ function stepDecorGroupScale(item, step, save = false) {
   return nextScale;
 }
 
-function toggleDecorGroupFlip(item, save = false) {
+function toggleDecorGroupFlip(item, save = false, axis = "horizontal") {
   const groupItems = getDecorGroupTransformItems(item);
   if (groupItems.length <= 1) {
     return null;
   }
 
   const center = getDecorItemsCenter(groupItems);
+  const vertical = axis === "vertical";
   for (const groupItem of groupItems) {
-    groupItem.xNorm = center.xNorm - (groupItem.xNorm - center.xNorm);
-    groupItem.flipped = !Boolean(groupItem.flipped);
+    if (vertical) {
+      groupItem.yNorm = center.yNorm - (groupItem.yNorm - center.yNorm);
+      groupItem.flippedY = !Boolean(groupItem.flippedY);
+    } else {
+      groupItem.xNorm = center.xNorm - (groupItem.xNorm - center.xNorm);
+      groupItem.flipped = !Boolean(groupItem.flipped);
+    }
     const placement = clampDecorPlacement(groupItem.xNorm, groupItem.yNorm, { item: groupItem, applyGravity: true });
     groupItem.xNorm = placement.xNorm;
     groupItem.yNorm = placement.yNorm;
@@ -393,6 +405,7 @@ function stepActiveDecorLayer(direction) {
           tankLayer: placementLayer,
           scale: runtime.placementMode.scale,
           flipped: runtime.placementMode.flipped,
+          flippedY: runtime.placementMode.flippedY,
           applyGravity: true
         });
       }
@@ -496,6 +509,7 @@ function stepActiveDecorScale(direction) {
           tankLayer: runtime.placementMode.tankLayer,
           scale: placementScale,
           flipped: runtime.placementMode.flipped,
+          flippedY: runtime.placementMode.flippedY,
           applyGravity: true
         });
       }
@@ -538,25 +552,29 @@ function stepActiveDecorScale(direction) {
   return nextScale;
 }
 
-function toggleActiveDecorFlip() {
+function toggleActiveDecorFlip(axis = "horizontal") {
   const activeTarget = getActiveDecorShortcutTarget();
   if (!activeTarget) {
     return null;
   }
 
+  const vertical = axis === "vertical";
+  const property = vertical ? "flippedY" : "flipped";
+
   if (activeTarget.mode === "placement") {
-    runtime.placementMode.flipped = !Boolean(runtime.placementMode.flipped);
+    runtime.placementMode[property] = !Boolean(runtime.placementMode[property]);
     if (runtime.placementPreview) {
       runtime.placementPreview = clampDecorPlacement(runtime.placementPreview.xNorm, runtime.placementPreview.yNorm, {
         decorKey: runtime.placementMode.decorKey,
         tankLayer: runtime.placementMode.tankLayer,
         scale: runtime.placementMode.scale,
         flipped: runtime.placementMode.flipped,
+        flippedY: runtime.placementMode.flippedY,
         applyGravity: true
       });
     }
     renderUi(Date.now());
-    return runtime.placementMode.flipped;
+    return runtime.placementMode[property];
   }
 
   const item = activeTarget.item;
@@ -568,12 +586,12 @@ function toggleActiveDecorFlip() {
     return null;
   }
 
-  const groupFlip = toggleDecorGroupFlip(item, activeTarget.mode === "selected");
+  const groupFlip = toggleDecorGroupFlip(item, activeTarget.mode === "selected", axis);
   if (groupFlip !== null) {
     return groupFlip;
   }
 
-  item.flipped = !Boolean(item.flipped);
+  item[property] = !Boolean(item[property]);
   const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
   item.xNorm = placement.xNorm;
   item.yNorm = placement.yNorm;
@@ -582,7 +600,7 @@ function toggleActiveDecorFlip() {
     saveState();
   }
   renderUi(Date.now());
-  return item.flipped;
+  return item[property];
 }
 
 function performDecorEditShortcutAction(action) {
@@ -1610,6 +1628,7 @@ function storeDecor(placedId) {
 
   const [removed] = state.placedDecor.splice(index, 1);
   clearDecorResidenceAssignments(removed.id, { save: false });
+  clearDecorBoroughServiceReservations(removed.id);
   if (runtime.dragState?.placedId === removed.id) {
     runtime.dragState = null;
   }
@@ -1743,29 +1762,33 @@ function sellFish(fishId) {
 
   const resaleValue = getResaleValue(species.cost);
   const now = Date.now();
-
-  if (isActive) {
-    preserveTankDirtinessThroughChange(now, () => {
-      list.splice(index, 1);
-      state.pendingPoops = state.pendingPoops.filter((poop) => poop.fishId !== fishId);
-      releasePelletsTargetingFishIds(fishId);
-    });
-  } else {
-    list.splice(index, 1);
-    state.pendingPoops = state.pendingPoops.filter((poop) => poop.fishId !== fishId);
-    releasePelletsTargetingFishIds(fishId);
-  }
-
-  if (runtime.selectedFishId === fishId) {
-    runtime.selectedFishId = null;
-  }
-
-  state.coins += resaleValue;
-  pushEvent(`Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now);
-  saveState();
-  playCoinSoundEffect();
-  renderUi(now);
-  showToast(`Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`);
+  return performCoinTransaction({
+    direction: "credit",
+    amount: resaleValue,
+    now,
+    apply: () => {
+      const removeFish = () => {
+        list.splice(index, 1);
+        state.pendingPoops = state.pendingPoops.filter((poop) => poop.fishId !== fishId);
+        releasePelletsTargetingFishIds(fishId);
+      };
+      if (isActive) {
+        preserveTankDirtinessThroughChange(now, removeFish);
+      } else {
+        removeFish();
+      }
+      if (runtime.selectedFishId === fishId) {
+        runtime.selectedFishId = null;
+      }
+    },
+    event: {
+      type: "sale",
+      tone: "neutral",
+      fishId,
+      text: `Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    },
+    toast: `Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+  });
 }
 
 function sellStoredDecor(decorKey) {
@@ -1777,23 +1800,25 @@ function sellStoredDecor(decorKey) {
   const decor = runtime.decorMap.get(decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
 
-  if (count <= 1) {
-    delete state.decorInventory[decorKey];
-  } else {
-    state.decorInventory[decorKey] = count - 1;
-  }
-
-  state.coins += resaleValue;
-
-  const now = Date.now();
-  pushEvent(`Sold ${decor?.name || titleFromFile(decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now, getCurrentTank(), {
-    type: "economy",
-    decorKey
+  const displayName = decor?.name || titleFromFile(decorKey);
+  return performCoinTransaction({
+    direction: "credit",
+    amount: resaleValue,
+    apply: () => {
+      if (count <= 1) {
+        delete state.decorInventory[decorKey];
+      } else {
+        state.decorInventory[decorKey] = count - 1;
+      }
+    },
+    event: {
+      type: "sale",
+      tone: "neutral",
+      decorKey,
+      text: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    },
+    toast: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
   });
-  saveState();
-  playCoinSoundEffect();
-  renderUi(now);
-  showToast(`Sold ${decor?.name || titleFromFile(decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`);
 }
 
 function sellPlacedDecor(placedId) {
@@ -1807,31 +1832,35 @@ function sellPlacedDecor(placedId) {
     return;
   }
 
-  const [removed] = state.placedDecor.splice(index, 1);
-  clearDecorResidenceAssignments(removed.id, { save: false });
-  if (runtime.dragState?.placedId === removed.id) {
-    runtime.dragState = null;
-  }
-  if (runtime.decorResizeState?.placedId === removed.id) {
-    runtime.decorResizeState = null;
-  }
-  clearSelectedDecor(removed.id);
-  state.gravelLivePebbles = [];
-
-  const decor = runtime.decorMap.get(removed.decorKey);
+  const item = state.placedDecor[index];
+  const decor = runtime.decorMap.get(item.decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
-  state.coins += resaleValue;
-
-  const now = Date.now();
-  pushEvent(`Sold ${decor?.name || titleFromFile(removed.decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now, getCurrentTank(), {
-    type: "economy",
-    decorKey: removed.decorKey,
-    placedDecorId: removed.id
+  const displayName = decor?.name || titleFromFile(item.decorKey);
+  return performCoinTransaction({
+    direction: "credit",
+    amount: resaleValue,
+    apply: () => {
+      const [removed] = state.placedDecor.splice(index, 1);
+      clearDecorResidenceAssignments(removed.id, { save: false });
+      clearDecorBoroughServiceReservations(removed.id);
+      if (runtime.dragState?.placedId === removed.id) {
+        runtime.dragState = null;
+      }
+      if (runtime.decorResizeState?.placedId === removed.id) {
+        runtime.decorResizeState = null;
+      }
+      clearSelectedDecor(removed.id);
+      state.gravelLivePebbles = [];
+    },
+    event: {
+      type: "sale",
+      tone: "neutral",
+      decorKey: item.decorKey,
+      placedDecorId: item.id,
+      text: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    },
+    toast: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
   });
-  saveState();
-  playCoinSoundEffect();
-  renderUi(now);
-  showToast(`Sold ${decor?.name || titleFromFile(removed.decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`);
 }
 
 function disposeFish(fishId) {

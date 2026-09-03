@@ -3,11 +3,11 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 47,
-  "functionCount": 2448,
+  "functionCount": 2516,
   "modules": [
     {
       "path": "borough/living-borough.js",
-      "functionCount": 55,
+      "functionCount": 56,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -15,9 +15,11 @@
         "core/utilities.js",
         "debug/tools.js",
         "decor/customization.js",
+        "decor/hit-testing.js",
         "decor/layout-and-layers.js",
         "decor/placement-and-dragging.js",
         "fish/actions.js",
+        "fish/caves-and-collision.js",
         "fish/decor-behavior.js",
         "fish/health.js",
         "fish/meals-and-needs.js",
@@ -59,7 +61,7 @@
     },
     {
       "path": "decor/customization.js",
-      "functionCount": 154,
+      "functionCount": 159,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -211,7 +213,7 @@
     },
     {
       "path": "fish/undead-and-appearance.js",
-      "functionCount": 80,
+      "functionCount": 81,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -241,7 +243,7 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 100,
+      "functionCount": 102,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -271,7 +273,7 @@
     },
     {
       "path": "decor/layout-and-layers.js",
-      "functionCount": 100,
+      "functionCount": 102,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -319,7 +321,7 @@
     },
     {
       "path": "assets/image-storage-and-import.js",
-      "functionCount": 60,
+      "functionCount": 64,
       "dependencies": [
         "assets/custom-content.js",
         "core/utilities.js",
@@ -389,11 +391,12 @@
     },
     {
       "path": "fish/feeding-and-medicine.js",
-      "functionCount": 28,
+      "functionCount": 29,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
         "core/utilities.js",
+        "decor/customization.js",
         "decor/layout-and-layers.js",
         "fish/health.js",
         "fish/meals-and-needs.js",
@@ -401,6 +404,7 @@
         "fish/undead-and-appearance.js",
         "tank/catalog-and-equipment.js",
         "tank/events-recaps-and-save.js",
+        "tank/simulation.js",
         "tutorial/flow.js",
         "ui/main-and-store-rendering.js",
         "ui/notifications.js"
@@ -462,10 +466,10 @@
     },
     {
       "path": "store/purchases.js",
-      "functionCount": 28,
+      "functionCount": 32,
       "dependencies": [
         "assets/custom-content.js",
-        "audio/system.js",
+        "assets/image-storage-and-import.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
@@ -494,7 +498,6 @@
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
-        "audio/system.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "debug/tools.js",
@@ -516,6 +519,7 @@
         "rendering/fish-and-effects.js",
         "rendering/fish-motion-and-floor.js",
         "rendering/tank-and-water.js",
+        "store/purchases.js",
         "tank/catalog-and-equipment.js",
         "tank/cleaning-and-glass.js",
         "tank/events-recaps-and-save.js",
@@ -611,7 +615,7 @@
     },
     {
       "path": "tank/appearance-controls.js",
-      "functionCount": 18,
+      "functionCount": 21,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/settings-and-persistence.js",
@@ -662,8 +666,9 @@
     },
     {
       "path": "tank/cleaning-and-glass.js",
-      "functionCount": 36,
+      "functionCount": 41,
       "dependencies": [
+        "assets/image-storage-and-import.js",
         "audio/system.js",
         "core/platform.js",
         "core/utilities.js",
@@ -681,16 +686,16 @@
         "tutorial/flow.js",
         "ui/main-and-store-rendering.js",
         "ui/notifications.js",
-        "ui/scene-controls-and-animation.js",
-        "ui/tool-modes-and-debug-panels.js"
+        "ui/scene-controls-and-animation.js"
       ]
     },
     {
       "path": "tank/events-recaps-and-save.js",
-      "functionCount": 33,
+      "functionCount": 38,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "audio/system.js",
         "borough/living-borough.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
@@ -704,6 +709,7 @@
         "tank/catalog-and-equipment.js",
         "tank/simulation.js",
         "ui/main-and-store-rendering.js",
+        "ui/management-and-overlays.js",
         "ui/notifications.js"
       ]
     },
@@ -718,7 +724,7 @@
     },
     {
       "path": "ui/main-and-store-rendering.js",
-      "functionCount": 41,
+      "functionCount": 47,
       "dependencies": [
         "assets/custom-content.js",
         "borough/living-borough.js",
@@ -747,7 +753,7 @@
     },
     {
       "path": "ui/management-and-overlays.js",
-      "functionCount": 110,
+      "functionCount": 111,
       "dependencies": [
         "assets/custom-content.js",
         "borough/living-borough.js",
@@ -886,11 +892,12 @@
     },
     {
       "path": "fish/decor-behavior.js",
-      "functionCount": 30,
+      "functionCount": 38,
       "dependencies": [
         "core/utilities.js",
         "decor/hit-testing.js",
         "decor/layout-and-layers.js",
+        "fish/cave-navigation.js",
         "fish/feeding-and-medicine.js",
         "fish/health.js",
         "fish/lifecycle-and-breeding.js",
@@ -904,7 +911,7 @@
     },
     {
       "path": "rendering/tank-and-water.js",
-      "functionCount": 56,
+      "functionCount": 57,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -970,13 +977,16 @@
     },
     {
       "path": "rendering/fish-and-effects.js",
-      "functionCount": 22,
+      "functionCount": 23,
       "dependencies": [
+        "assets/image-storage-and-import.js",
         "borough/living-borough.js",
         "core/utilities.js",
         "debug/tools.js",
         "decor/customization.js",
+        "decor/hit-testing.js",
         "decor/layout-and-layers.js",
+        "fish/decor-behavior.js",
         "fish/gravel-and-schooling.js",
         "fish/health.js",
         "fish/lifecycle-and-breeding.js",
@@ -1091,11 +1101,19 @@
     },
     {
       "path": "ui/notifications.js",
-      "functionCount": 14,
+      "functionCount": 32,
       "dependencies": [
+        "borough/living-borough.js",
         "core/utilities.js",
+        "decor/customization.js",
+        "fish/decor-behavior.js",
         "rendering/decor.js",
-        "ui/customization-actions-and-inventory.js"
+        "tank/catalog-and-equipment.js",
+        "tank/events-recaps-and-save.js",
+        "tutorial/flow.js",
+        "ui/customization-actions-and-inventory.js",
+        "ui/fish-inspector.js",
+        "ui/main-and-store-rendering.js"
       ]
     }
   ]

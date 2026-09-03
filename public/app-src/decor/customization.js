@@ -88,6 +88,7 @@ function createTankState(options = {}) {
     lastCleanedAt: Number.isFinite(options.lastCleanedAt) ? options.lastCleanedAt : now,
     lastSimulatedAt: Number.isFinite(options.lastSimulatedAt) ? options.lastSimulatedAt : now,
     events: Array.isArray(options.events) ? options.events : [],
+    lastCorpseSicknessAt: Number.isFinite(Number(options.lastCorpseSicknessAt)) ? Number(options.lastCorpseSicknessAt) : null,
     lastGravelCoinFoundAt: Number.isFinite(options.lastGravelCoinFoundAt) ? options.lastGravelCoinFoundAt : 0,
     foodBuffs: {
       upgradedUntil: Number.isFinite(options?.foodBuffs?.upgradedUntil) ? options.foodBuffs.upgradedUntil : 0,
@@ -134,23 +135,24 @@ function installTankStateAccessors(targetState) {
 }
 
 function normalizeAquariumSectionGrid(tanks = getAllTanks()) {
+  const orderedTanks = [...tanks].sort((left, right) => {
+    const leftY = Number.isInteger(Number(left?.gridY)) ? Number(left.gridY) : 0;
+    const rightY = Number.isInteger(Number(right?.gridY)) ? Number(right.gridY) : 0;
+    const leftX = Number.isInteger(Number(left?.gridX)) ? Number(left.gridX) : 0;
+    const rightX = Number.isInteger(Number(right?.gridX)) ? Number(right.gridX) : 0;
+    return leftY - rightY || leftX - rightX || Number(left?.createdAt || 0) - Number(right?.createdAt || 0);
+  });
   const occupied = new Set();
-  let fallbackX = 0;
-  for (const [index, tank] of tanks.entries()) {
+  for (const [index, tank] of orderedTanks.entries()) {
     if (/^Aquarium\s+\d+$/i.test(String(tank?.name || "").trim())) {
       tank.name = buildDefaultTankName(index);
     }
-    let x = Number.isInteger(Number(tank?.gridX)) ? Number(tank.gridX) : fallbackX;
-    let y = Number.isInteger(Number(tank?.gridY)) ? Number(tank.gridY) : 0;
-    while (occupied.has(`${x},${y}`)) {
-      fallbackX += 1;
-      x = fallbackX;
-      y = 0;
-    }
-    tank.gridX = x;
-    tank.gridY = y;
-    occupied.add(`${x},${y}`);
-    fallbackX = Math.max(fallbackX, x);
+    let gridX = Number.isInteger(Number(tank.gridX)) ? Number(tank.gridX) : index;
+    let gridY = Number.isInteger(Number(tank.gridY)) ? Number(tank.gridY) : 0;
+    while (occupied.has(`${gridX}:${gridY}`)) gridX += 1;
+    tank.gridX = gridX;
+    tank.gridY = gridY;
+    occupied.add(`${gridX}:${gridY}`);
   }
   return tanks;
 }
@@ -159,29 +161,67 @@ function getAquariumSectionAt(gridX, gridY, targetState = state) {
   return getAllTanks(targetState).find((tank) => tank.gridX === gridX && tank.gridY === gridY) || null;
 }
 
-function getAdjacentAquariumSections(tank = getCurrentTank(), targetState = state) {
+function getBoroughTravelWallKey(firstTankId, secondTankId) {
+  return [String(firstTankId || ""), String(secondTankId || "")].sort().join("|");
+}
+
+function isBoroughTravelWallBlocked(firstTank, secondTank, targetState = state) {
+  if (!firstTank || !secondTank) {
+    return false;
+  }
+  return targetState?.boroughTravelWalls?.[getBoroughTravelWallKey(firstTank.id, secondTank.id)] === true;
+}
+
+function toggleBoroughTravelWall(firstTankId, secondTankId) {
+  const firstTank = getTankById(firstTankId);
+  const secondTank = getTankById(secondTankId);
+  if (!firstTank || !secondTank || Math.abs(firstTank.gridX - secondTank.gridX) + Math.abs(firstTank.gridY - secondTank.gridY) !== 1) {
+    return false;
+  }
+  state.boroughTravelWalls ||= {};
+  const key = getBoroughTravelWallKey(firstTank.id, secondTank.id);
+  const blocked = state.boroughTravelWalls[key] !== true;
+  if (blocked) {
+    state.boroughTravelWalls[key] = true;
+  } else {
+    delete state.boroughTravelWalls[key];
+  }
+  for (const pending of [...runtime.pendingNeighborhoodTravel.values()]) {
+    if (pending.mode !== "tube" && getBoroughTravelWallKey(pending.sourceTankId, pending.destinationTankId) === key) {
+      runtime.pendingNeighborhoodTravel.delete(pending.fishId);
+    }
+  }
+  saveState();
+  renderAquariumOverview();
+  showToast(blocked ? "Travel wall closed. Fish must go around or use a Transit Tube." : "Travel wall opened.");
+  return true;
+}
+
+function getAdjacentAquariumSections(tank = getCurrentTank(), targetState = state, options = {}) {
   if (!tank) {
     return [];
   }
-  return [[0, -1], [1, 0], [0, 1], [-1, 0]]
+  // Rows are separate runs of glass. Fish may only cross a shared horizontal
+  // edge; linked transit tubes intentionally bypass this restriction.
+  return [[1, 0], [-1, 0]]
     .map(([dx, dy]) => getAquariumSectionAt(tank.gridX + dx, tank.gridY + dy, targetState))
-    .filter(Boolean);
+    .filter((neighbor) => neighbor && (options.ignoreTravelWalls === true || !isBoroughTravelWallBlocked(tank, neighbor, targetState)));
 }
 
 function getValidAquariumExpansionSpaces(targetState = state) {
-  const spaces = new Map();
-  for (const tank of getAllTanks(targetState)) {
-    // New sections stay side-by-side so their open-water edges connect naturally.
-    // Existing vertical layouts remain readable and traversable for save compatibility.
-    for (const [dx, dy] of [[1, 0], [-1, 0]]) {
+  const tanks = getAllTanks(targetState);
+  if (!tanks.length) {
+    return [];
+  }
+  const candidates = new Map();
+  for (const tank of tanks) {
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
       const gridX = tank.gridX + dx;
       const gridY = tank.gridY + dy;
-      if (!getAquariumSectionAt(gridX, gridY, targetState)) {
-        spaces.set(`${gridX},${gridY}`, { gridX, gridY });
-      }
+      if (!getAquariumSectionAt(gridX, gridY, targetState)) candidates.set(`${gridX}:${gridY}`, { gridX, gridY });
     }
   }
-  return [...spaces.values()];
+  return [...candidates.values()];
 }
 
 function getAquariumExpansionCost(targetState = state) {
@@ -315,6 +355,21 @@ function swapAquariumSectionPositions(firstTankId, secondTankId) {
   return true;
 }
 
+function moveAquariumSectionToGrid(tankId, gridX, gridY) {
+  const tank = getTankById(tankId);
+  const x = Number(gridX);
+  const y = Number(gridY);
+  if (!tank || !Number.isInteger(x) || !Number.isInteger(y)) return false;
+  const occupant = getAquariumSectionAt(x, y);
+  if (occupant && occupant.id !== tank.id) return swapAquariumSectionPositions(tank.id, occupant.id);
+  tank.gridX = x;
+  tank.gridY = y;
+  saveState();
+  renderAquariumOverview();
+  showToast(`Moved ${getTankLabel(tank)}.`);
+  return true;
+}
+
 function withActiveTank(tankId, callback, targetState = state) {
   if (!targetState || typeof callback !== "function") {
     return null;
@@ -343,8 +398,14 @@ function setActiveTank(tankId, options = {}) {
     return false;
   }
 
-  clearPrimaryToolModes();
-  resetCompetingOverlayState({ reason: "tank-switch" });
+  const preserveHorizontalOverlays = options.preserveHorizontalOverlays === true;
+  if (!preserveHorizontalOverlays) {
+    clearPrimaryToolModes();
+    resetCompetingOverlayState({ reason: "tank-switch" });
+  } else {
+    runtime.selectedDecorIds = [];
+    runtime.selectedPlacedDecorId = null;
+  }
   runtime.selectedFishId = null;
   runtime.fishInspectorSettingsOpen = false;
   runtime.editingTankNameId = null;
@@ -374,7 +435,7 @@ function switchTankByOffset(offset) {
 
   const currentIndex = Math.max(0, getCurrentTankIndex());
   const nextIndex = (currentIndex + offset + tanks.length) % tanks.length;
-  return setActiveTank(tanks[nextIndex].id);
+  return setActiveTank(tanks[nextIndex].id, { preserveHorizontalOverlays: true });
 }
 
 function beginAquariumExpansionPurchase() {
@@ -382,33 +443,49 @@ function beginAquariumExpansionPurchase() {
 }
 
 function sellCurrentTank() {
-  const tank = getCurrentTank();
+  return sellAquariumTank(getCurrentTank()?.id);
+}
+
+function sellAquariumTank(tankId) {
+  const tank = getTankById(tankId);
   if (!tank) {
-    return;
+    return false;
   }
 
   if (state.tanks.length <= 1) {
     showToast("You need to keep at least one tank.");
-    return;
+    return false;
   }
 
   if (!isTankEmpty(tank)) {
     showToast("Only empty tanks can be sold.");
-    return;
+    return false;
   }
 
   const resaleValue = getTankResaleValue(tank);
-  const currentIndex = getCurrentTankIndex();
+  const currentIndex = state.tanks.findIndex((entry) => entry.id === tank.id);
+  const soldActiveTank = state.activeTankId === tank.id;
   state.tanks = state.tanks.filter((entry) => entry.id !== tank.id);
-  state.coins += resaleValue;
-  const fallbackTank = state.tanks[Math.max(0, currentIndex - 1)] || state.tanks[0];
-  state.activeTankId = fallbackTank?.id || null;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + resaleValue);
+  if (soldActiveTank) {
+    const fallbackTank = state.tanks[Math.max(0, currentIndex - 1)] || state.tanks[0];
+    state.activeTankId = fallbackTank?.id || null;
+  }
+  for (const [key] of Object.entries(state.boroughTravelWalls || {})) {
+    if (key.split("|").includes(tank.id)) delete state.boroughTravelWalls[key];
+  }
+  for (const pending of [...runtime.pendingNeighborhoodTravel.values()]) {
+    if (pending.sourceTankId === tank.id || pending.destinationTankId === tank.id) {
+      runtime.pendingNeighborhoodTravel.delete(pending.fishId);
+    }
+  }
   runtime.editingTankNameId = null;
   runtime.editingTankNameValue = "";
   pushEvent(`Sold ${getTankLabel(tank, currentIndex)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, Date.now());
   saveState();
   playCoinSoundEffect();
   renderUi(Date.now());
+  return true;
 }
 
 function cancelCurrentTankNameEdit() {

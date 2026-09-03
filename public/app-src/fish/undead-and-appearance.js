@@ -922,6 +922,11 @@ function isDetritusFish(target) {
   return species?.diet === "detritus";
 }
 
+function isBrineShrimpSpecies(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  return species?.id === "brine-shrimp" || species?.behavior === "shrimp";
+}
+
 function isMealFreeFish(target) {
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
   if (
@@ -1043,11 +1048,11 @@ function fishNeedsMealWindow(target) {
 }
 
 function getMealHistoryEntry(slotKey, tank = getCurrentTank()) {
-  if (!tank || !slotKey) {
+  if (!slotKey) {
     return null;
   }
 
-  const entry = tank.feedHistory?.[slotKey];
+  const entry = state.mealHistory?.[slotKey];
   if (!entry || typeof entry !== "object") {
     return null;
   }

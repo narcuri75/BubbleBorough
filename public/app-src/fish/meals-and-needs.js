@@ -726,7 +726,7 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
         horizontalOffsetPx: null
       }
     );
-    const sourceY = drawY + height * sourceYOffsetRatio + Math.max(2 * stableScale, item.scale * 2 * stableScale);
+    const sourceY = drawY + height * resolveDecorVerticalUnit(item, sourceYOffsetRatio) + Math.max(2 * stableScale, item.scale * 2 * stableScale);
     const spoutWidthPx = Math.max(0, spout.spread * item.scale * stableScale);
     const fadeDistancePx = Math.max(24 * stableScale, spout.fadeDistance * stableScale);
     const cadenceMs = getBubblerCadenceFromIntensity(intensity);

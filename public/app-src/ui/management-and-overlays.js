@@ -126,14 +126,6 @@ function getManagementTankStatus(stats) {
     };
   }
 
-  if (!stats.livingFish) {
-    return {
-      label: "Ready To Stock",
-      note: "Buy fish to start this aquarium.",
-      tone: "neutral"
-    };
-  }
-
   if (stats.deadFish > 0) {
     return {
       label: "Needs Care",
@@ -178,6 +170,14 @@ function getManagementTankStatus(stats) {
     return {
       label: "Needs Cleaning",
       note: `${stats.pendingWasteCount} more ${pluralize("waste drop", stats.pendingWasteCount)} will settle soon.`,
+      tone: "neutral"
+    };
+  }
+
+  if (!stats.livingFish) {
+    return {
+      label: "Ready To Stock",
+      note: "This neighborhood is clean and ready for fish.",
       tone: "neutral"
     };
   }
@@ -229,17 +229,6 @@ function buildIllnessCareTask(now = Date.now()) {
 }
 
 function buildManagementCareQueue(stats) {
-  if (!stats?.livingFish) {
-    return [{
-      id: "stock-aquarium",
-      badge: "On Deck",
-      label: "Stock this aquarium",
-      value: "No fish yet",
-      note: "Buy fish when you are ready to start a new care cycle.",
-      tone: "neutral"
-    }];
-  }
-
   const tasks = [];
   if (stats.deadFish > 0) {
     tasks.push({
@@ -330,17 +319,82 @@ function buildManagementCareQueue(stats) {
   }
 
   if (!tasks.length) {
+    const readyToStock = !stats?.livingFish;
     return [{
       id: "all-clear",
-      badge: "On Track",
-      label: "Everything is on track",
-      value: "All clear",
-      note: "Hunger, health, comfort, and cleanup look good.",
-      tone: "good"
+      badge: readyToStock ? "Ready" : "On Track",
+      label: readyToStock ? "Ready to stock" : "Everything is on track",
+      value: readyToStock ? "No fish" : "All clear",
+      note: readyToStock ? "This neighborhood is clean and ready for fish." : "Hunger, health, comfort, and cleanup look good.",
+      tone: readyToStock ? "neutral" : "good"
     }];
   }
 
   return tasks;
+}
+
+function buildUniversalManagementCareQueue(now = Date.now()) {
+  const tasks = [];
+  const hungryFish = [];
+  const injuredFish = [];
+  const diseasedFish = [];
+  for (const tank of getAllTanks()) {
+    const localTasks = withActiveTank(tank.id, () => buildManagementCareQueue(getManagementHubStats(now))) || [];
+    for (const task of localTasks) {
+      const localId = getCareTaskId(task);
+      if (localId === "all-clear") {
+        continue;
+      }
+      let targetFish = null;
+      if (localId === "feed-hungry-fish") {
+        hungryFish.push(...getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD).map((fish) => ({ fish, tank })));
+        continue;
+      } else if (localId === "dose-medicine") {
+        injuredFish.push(...tank.fish.filter((fish) => !isFishDead(fish) && fish.healthUnits < getFishMaxHealthUnits(fish)).map((fish) => ({ fish, tank })));
+        continue;
+      } else if (localId === "illness-care") {
+        diseasedFish.push(...tank.fish.filter((fish) => !isFishDead(fish) && isFishDiseaseVisible(fish) && hasActiveFishDisease(fish)).map((fish) => ({ fish, tank })));
+        continue;
+      } else if (localId.startsWith("comfort:")) {
+        targetFish = tank.fish.find((fish) => String(task.label || "").startsWith(`${fish.name} `)) || null;
+      }
+      tasks.push({
+        ...task,
+        // Fish-care task identity follows the fish, not its current tank. Tank
+        // chores remain tied to the physical section that needs attention.
+        id: targetFish ? localId : `${tank.id}:${localId}`,
+        tankId: tank.id,
+        fishId: targetFish?.id || "",
+        tankLabel: getTankLabel(tank)
+      });
+    }
+  }
+  const pushAggregate = (id, entries, label, badge, valueLabel, tone, actionNote) => {
+    if (!entries.length) return;
+    const first = entries[0];
+    tasks.unshift({
+      id,
+      badge,
+      label,
+      value: `${entries.length} ${valueLabel}`,
+      note: actionNote,
+      tone,
+      tankId: first.tank.id,
+      fishId: first.fish.id,
+      tankLabel: getTankLabel(first.tank)
+    });
+  };
+  pushAggregate("feed-hungry-fish", hungryFish, "Feed hungry fish", "Soon", "hungry", "warn", "Drop food in any reachable neighborhood; hungry fish will travel to it.");
+  pushAggregate("dose-medicine", injuredFish, "Dose medicine", "Now", "healing", "warn", "Select a fish to jump to its current neighborhood.");
+  pushAggregate("illness-care", diseasedFish, diseasedFish.length === 1 ? `${diseasedFish[0].fish.name} looks off-color.` : "Several fish look off-color.", "Care", "sick", "danger", "Select a fish to jump to its current neighborhood.");
+  return tasks.length ? tasks : [{
+    id: "all-clear",
+    badge: "On Track",
+    label: "Everything is on track",
+    value: "All clear",
+    note: "Hunger, health, comfort, and cleanup look good across the borough.",
+    tone: "good"
+  }];
 }
 
 function buildManagementSnapshotStat(label, value, tone = "") {
@@ -354,7 +408,8 @@ function buildManagementSnapshotStat(label, value, tone = "") {
 }
 
 function getManagementCareTaskAction(task = {}) {
-  const taskId = getCareTaskId(task);
+  const explicitTaskId = getCareTaskId(task);
+  const taskId = explicitTaskId.includes(":") ? explicitTaskId.slice(explicitTaskId.lastIndexOf(":") + 1) : explicitTaskId;
   if (taskId === "stock-aquarium") {
     return "store-fish";
   }
@@ -391,8 +446,16 @@ function buildManagementCompactTaskRow(task = {}) {
   `;
 }
 
-function runManagementCareTaskAction(action) {
+function runManagementCareTaskAction(action, tankId = "", fishId = "") {
+  if (tankId && state.activeTankId !== tankId) {
+    setActiveTank(tankId, { announce: false, preserveHorizontalOverlays: true });
+  }
+  if (fishId && getTankContainingFish(fishId)?.id === state.activeTankId) {
+    openFishInspector(fishId);
+  }
   switch (String(action || "")) {
+    case "focus":
+      return Boolean(tankId || fishId);
     case "store-fish":
       openStoreOverlay("fish");
       return true;
@@ -441,7 +504,10 @@ function cloneCareTask(task = {}) {
     label: String(task.label || ""),
     value: String(task.value || ""),
     note: String(task.note || ""),
-    tone: String(task.tone || "")
+    tone: String(task.tone || ""),
+    tankId: String(task.tankId || ""),
+    fishId: String(task.fishId || ""),
+    tankLabel: String(task.tankLabel || "")
   };
 }
 
@@ -477,7 +543,7 @@ function scheduleCareTaskPaneCleanup(now = Date.now()) {
 }
 
 function syncCareTaskPaneTasks(tasks = [], now = Date.now()) {
-  const tankId = getCurrentTank()?.id || "";
+  const tankId = "borough";
   const isOpen = getUiSettings().careTaskPaneOpen === true;
   if (!isOpen || runtime.careTaskPaneTankId !== tankId || !runtime.careTaskPaneInitialized) {
     resetCareTaskPaneRuntime(tasks, tankId);
@@ -515,15 +581,20 @@ function buildCareTaskPaneRow(task = {}, options = {}) {
   const label = String(task.label || "Task");
   const value = task.value ? `<span class="care-task-value">${escapeHtml(String(task.value))}</span>` : "";
   const badge = task.badge ? `<span class="care-task-badge">${escapeHtml(String(task.badge))}</span>` : "";
+  const action = getManagementCareTaskAction(task) || (task.tankId || task.fishId ? "focus" : "");
+  const tagName = !completed && action ? "button" : "article";
+  const actionAttributes = !completed && action
+    ? ` type="button" data-care-task-action="${escapeHtml(action)}" data-care-task-tank-id="${escapeHtml(task.tankId || "")}" data-care-task-fish-id="${escapeHtml(task.fishId || "")}" title="Go to ${escapeHtml(task.fishId ? label : task.tankLabel || "this task")}"`
+    : "";
   return `
-    <article class="care-task-row${toneClass}${completed ? " is-complete" : ""}" style="--task-letter-count:${Math.max(1, label.length)}">
+    <${tagName} class="care-task-row${toneClass}${completed ? " is-complete" : ""}${action ? " is-actionable" : ""}"${actionAttributes} style="--task-letter-count:${Math.max(1, label.length)}">
       <span class="care-task-box" aria-hidden="true"></span>
       <span class="care-task-label">
-        <span class="care-task-text">${escapeHtml(label)}</span>
+        <span class="care-task-text${task.fishId ? " care-task-fish-link" : ""}">${escapeHtml(label)}</span>
         <span class="care-task-strike" aria-hidden="true"></span>
       </span>
       ${value || badge ? `<span class="care-task-meta">${value}${badge}</span>` : ""}
-    </article>
+    </${tagName}>
   `;
 }
 
@@ -535,12 +606,12 @@ function renderCareTaskPane(now = Date.now()) {
   const isOpen = getUiSettings().careTaskPaneOpen === true && !isIntroTutorialActive();
   dom.careTaskPane.hidden = !isOpen;
   if (!isOpen) {
-    resetCareTaskPaneRuntime([], getCurrentTank()?.id || "");
+    resetCareTaskPaneRuntime([], "borough");
     setMarkupIfChanged("care-task-pane-list", dom.careTaskList, "");
     return;
   }
 
-  const tasks = buildManagementCareQueue(getManagementHubStats(now));
+  const tasks = buildUniversalManagementCareQueue(now);
   syncCareTaskPaneTasks(tasks, now);
   const completedRows = Array.from(runtime.careTaskPaneCompletingTasks.values())
     .sort((left, right) => Number(left.completedAt) - Number(right.completedAt))
@@ -589,72 +660,8 @@ function getMilestoneIconPath(milestoneId) {
 }
 
 function getMilestoneRequirementText(milestoneId) {
-  switch (String(milestoneId || "")) {
-    case "first-care":
-      return "Claim a Daily Recap with score 3+.";
-    case "stable-tank":
-      return "Claim 3 good recaps and keep recent average comfort at 70%+.";
-    case "happy-habitat":
-      return "Keep any fish alive for 7 days and recent average comfort at 80%+.";
-    case "master-keeper":
-      return "Go 14 days without a death and have one fish at Sparkling comfort.";
-    case "marine-curator":
-      return "Own a saltwater fish, earn 5 good recaps, and go 3 days without a death.";
-    case "clean-start":
-      return "Keep cleanliness at 90%+ for 3 daily recaps in a row.";
-    case "crystal-keeper":
-      return "Keep cleanliness at 95%+ for 7 daily recaps.";
-    case "full-bellies":
-      return "Keep fish from reaching Starving for 3 daily recaps in a row.";
-    case "reliable-feeder":
-      return "Keep fish from reaching Starving for 7 daily recaps in a row.";
-    case "cozy-corner":
-      return "Average 80%+ comfort for 3 daily recaps in a row.";
-    case "little-paradise":
-      return "Average 90%+ comfort for 3 daily recaps in a row.";
-    case "perfect-hour":
-      return "Have any fish reach Sparkling comfort.";
-    case "perfect-day":
-      return "Have Sparkling comfort during a daily recap with score 8+.";
-    case "no-drama-day":
-      return "Claim a daily recap with no negative events.";
-    case "peaceful-week":
-      return "Claim 5 recaps in a row with no attacks or deaths.";
-    case "gentle-keeper":
-      return "Claim 3 recaps in a row without stress-tapping fish.";
-    case "calm-glass":
-      return "Claim 7 recaps in a row without stress-tapping fish.";
-    case "decorator":
-      return "Place 5 decor items across your aquariums.";
-    case "habitat-builder":
-      return "Satisfy 10 total fish comfort needs at once.";
-    case "need-expert":
-      return "Have every living fish's comfort needs satisfied at once.";
-    case "community-tank":
-      return "Keep 5 community-safe fish with 70%+ recent comfort and 3 good recaps.";
-    case "big-family":
-      return "Own 10 living fish across your aquariums.";
-    case "careful-curator":
-      return "Own 15 living fish without overcrowding any aquarium.";
-    case "first-generation":
-      return "Hatch one egg.";
-    case "nursery-keeper":
-      return "Raise 3 baby fish past juvenile stage.";
-    case "gravel-luck":
-      return "Find 5 gravel coins.";
-    case "treasure-hunter":
-      return "Find 25 gravel coins.";
-    case "medicine-cabinet":
-      return "Heal fish or use medicine 3 times.";
-    case "rescue-keeper":
-      return "Heal a fish and go 3 days without a death afterward.";
-    case "tank-network":
-      return "Own 3 aquariums with at least one healthy fish in each.";
-    case "spooky-keeper":
-      return "Discover the corpse, zombie, or skeleton care path.";
-    default:
-      return "Complete the listed care goal.";
-  }
+  const milestone = PROGRESSION_MILESTONES.find((entry) => entry.id === String(milestoneId || ""));
+  return milestone?.requirement || "Complete the listed care goal.";
 }
 
 function averageProgressParts(parts) {
@@ -674,212 +681,14 @@ function getMilestoneProgressInfo(milestone, stats = getMilestoneStats(null, Dat
     };
   }
 
-  const latestScore = Number(stats.latestScore) || 0;
-  const goodRecaps = Number(stats.goodRecaps) || 0;
-  const recentAverageComfort = Number(stats.recentAverageComfort) || 0;
-  const oldestAgeMs = Math.max(0, Number(stats.oldestLivingFishAgeMs) || 0);
-  const daysSinceLastDeath = Math.max(0, Number(stats.daysSinceLastDeath) || 0);
-  let parts = [];
-
-  switch (milestone.id) {
-    case "first-care":
-      parts = [{
-        value: latestScore / 3,
-        label: `Latest recap score ${Math.max(0, latestScore)}/3`
-      }];
-      break;
-    case "stable-tank":
-      parts = [
-        { value: goodRecaps / 3, label: `Good recaps ${Math.min(goodRecaps, 3)}/3` },
-        { value: recentAverageComfort / 70, label: `Recent comfort ${Math.min(recentAverageComfort, 70)}%/70%` }
-      ];
-      break;
-    case "happy-habitat":
-      parts = [
-        { value: oldestAgeMs / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(oldestAgeMs, WEEK_MS))}/7d` },
-        { value: recentAverageComfort / 80, label: `Recent comfort ${Math.min(recentAverageComfort, 80)}%/80%` }
-      ];
-      break;
-    case "master-keeper":
-      parts = [
-        { value: daysSinceLastDeath / 14, label: `No-death streak ${Math.min(daysSinceLastDeath, 14)}/14d` },
-        { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
-      ];
-      break;
-    case "marine-curator":
-      parts = [
-        { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
-        { value: goodRecaps / 5, label: `Good recaps ${Math.min(goodRecaps, 5)}/5` },
-        { value: daysSinceLastDeath / 3, label: `No-death streak ${Math.min(daysSinceLastDeath, 3)}/3d` }
-      ];
-      break;
-    case "clean-start":
-      parts = [{
-        value: (Number(stats.cleanRecapStreak90) || 0) / 3,
-        label: `90%+ clean recaps ${Math.min(Number(stats.cleanRecapStreak90) || 0, 3)}/3`
-      }];
-      break;
-    case "crystal-keeper":
-      parts = [{
-        value: (Number(stats.cleanRecapCount95) || 0) / 7,
-        label: `95%+ clean recaps ${Math.min(Number(stats.cleanRecapCount95) || 0, 7)}/7`
-      }];
-      break;
-    case "full-bellies":
-      parts = [{
-        value: (Number(stats.allMealsSatisfiedStreak) || 0) / 3,
-        label: `No-starving streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 3)}/3`
-      }];
-      break;
-    case "reliable-feeder":
-      parts = [{
-        value: (Number(stats.allMealsSatisfiedStreak) || 0) / 7,
-        label: `No-starving streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 7)}/7`
-      }];
-      break;
-    case "cozy-corner":
-      parts = [{
-        value: (Number(stats.comfort80Streak) || 0) / 3,
-        label: `80%+ comfort streak ${Math.min(Number(stats.comfort80Streak) || 0, 3)}/3`
-      }];
-      break;
-    case "little-paradise":
-      parts = [{
-        value: (Number(stats.comfort90Streak) || 0) / 3,
-        label: `90%+ comfort streak ${Math.min(Number(stats.comfort90Streak) || 0, 3)}/3`
-      }];
-      break;
-    case "perfect-hour":
-      parts = [{
-        value: (stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0) ? 1 : 0,
-        label: (stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0) ? "Sparkling comfort found" : "Needs one Sparkling fish"
-      }];
-      break;
-    case "perfect-day":
-      parts = [{
-        value: stats.hasPerfectDay ? 1 : 0,
-        label: stats.hasPerfectDay ? "Perfect day recorded" : "Needs score 8+ with Sparkling comfort"
-      }];
-      break;
-    case "no-drama-day":
-      parts = [{
-        value: stats.latestNoDramaDay ? 1 : 0,
-        label: stats.latestNoDramaDay ? "Latest recap had no drama" : "Needs one no-drama recap"
-      }];
-      break;
-    case "peaceful-week":
-      parts = [{
-        value: (Number(stats.noAttackDeathRecapStreak) || 0) / 5,
-        label: `Peaceful recap streak ${Math.min(Number(stats.noAttackDeathRecapStreak) || 0, 5)}/5`
-      }];
-      break;
-    case "gentle-keeper":
-      parts = [{
-        value: (Number(stats.noGlassTapStressStreak) || 0) / 3,
-        label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 3)}/3`
-      }];
-      break;
-    case "calm-glass":
-      parts = [{
-        value: (Number(stats.noGlassTapStressStreak) || 0) / 7,
-        label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 7)}/7`
-      }];
-      break;
-    case "decorator":
-      parts = [{
-        value: (Number(stats.decorPlacedCount) || 0) / 5,
-        label: `Decor placed ${Math.min(Number(stats.decorPlacedCount) || 0, 5)}/5`
-      }];
-      break;
-    case "habitat-builder":
-      parts = [{
-        value: (Number(stats.metNeedsCount) || 0) / 10,
-        label: `Needs satisfied ${Math.min(Number(stats.metNeedsCount) || 0, 10)}/10`
-      }];
-      break;
-    case "need-expert":
-      parts = [{
-        value: stats.hasAllLivingNeedsMet ? 1 : 0,
-        label: stats.hasAllLivingNeedsMet ? "All living needs met" : "Some living fish still need comfort help"
-      }];
-      break;
-    case "community-tank":
-      parts = [
-        { value: stats.hasCommunityTank ? 1 : 0, label: stats.hasCommunityTank ? "Community tank ready" : "Needs 5 peaceful fish and 70%+ recent comfort" },
-        { value: goodRecaps / 3, label: `Good recaps ${Math.min(goodRecaps, 3)}/3` }
-      ];
-      break;
-    case "big-family":
-      parts = [{
-        value: (Number(stats.livingFishCount) || 0) / 10,
-        label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 10)}/10`
-      }];
-      break;
-    case "careful-curator":
-      parts = [
-        { value: (Number(stats.livingFishCount) || 0) / 15, label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 15)}/15` },
-        { value: stats.noOvercrowdedTanks ? 1 : 0, label: stats.noOvercrowdedTanks ? "No overcrowded tanks" : "One or more tanks are overcrowded" }
-      ];
-      break;
-    case "first-generation":
-      parts = [{
-        value: (Number(stats.hatchedFishEvents) || 0) / 1,
-        label: `Eggs hatched ${Math.min(Number(stats.hatchedFishEvents) || 0, 1)}/1`
-      }];
-      break;
-    case "nursery-keeper":
-      parts = [{
-        value: (Number(stats.grownBabyFishCount) || 0) / 3,
-        label: `Raised babies ${Math.min(Number(stats.grownBabyFishCount) || 0, 3)}/3`
-      }];
-      break;
-    case "gravel-luck":
-      parts = [{
-        value: (Number(stats.gravelCoinFinds) || 0) / 5,
-        label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 5)}/5`
-      }];
-      break;
-    case "treasure-hunter":
-      parts = [{
-        value: (Number(stats.gravelCoinFinds) || 0) / 25,
-        label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 25)}/25`
-      }];
-      break;
-    case "medicine-cabinet":
-      parts = [{
-        value: (Number(stats.healingEvents) || 0) / 3,
-        label: `Healing events ${Math.min(Number(stats.healingEvents) || 0, 3)}/3`
-      }];
-      break;
-    case "rescue-keeper":
-      parts = [{
-        value: stats.hasRescueKeeper ? 1 : 0,
-        label: stats.hasRescueKeeper ? "Rescue streak complete" : "Needs a heal followed by 3 safe days"
-      }];
-      break;
-    case "tank-network":
-      parts = [{
-        value: (Number(stats.healthyTankCount) || 0) / 3,
-        label: `Healthy tanks ${Math.min(Number(stats.healthyTankCount) || 0, 3)}/3`
-      }];
-      break;
-    case "spooky-keeper":
-      parts = [{
-        value: stats.hasSpookyKeeperPath ? 1 : 0,
-        label: stats.hasSpookyKeeperPath ? "Spooky path found" : "No spooky path discovered yet"
-      }];
-      break;
-    default:
-      parts = [];
-      break;
-  }
-
+  const parts = typeof milestone?.progress === "function"
+    ? milestone.progress(stats, now)
+    : [];
   return {
     value: averageProgressParts(parts),
-    details: parts.map((part) => part.label).filter(Boolean)
+    details: (Array.isArray(parts) ? parts : []).map((part) => part?.label).filter(Boolean)
   };
 }
-
 function getMilestoneDecorUnlockName(decorKey) {
   const key = normalizeDecorKey(decorKey);
   if (key === "__custom-decor-shop__") {
@@ -1421,14 +1230,18 @@ function buildManagementDecorRow(item) {
   const cost = getDecorPurchaseCost(item.decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
   const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey);
+  const serviceTypes = getDecorBoroughServiceTypes(item);
+  const serviceSeatStatus = serviceTypes.length
+    ? `Seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}`
+    : (grouped ? "Grouped decor" : "Placed in tank");
 
   return `
     <article class="management-browser-item">
-      <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
+      <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
       <div class="management-browser-copy">
         <strong>${escapeHtml(decor.name)}</strong>
         <span>${escapeHtml(`Layer ${getDecorTankLayer(item)} / ${formatDecorScale(item.scale)}`)}</span>
-        <small>${grouped ? "Grouped decor" : "Placed in tank"}</small>
+        <small>${escapeHtml(serviceSeatStatus)}</small>
       </div>
       <div class="management-browser-actions">
         <button class="small-button alt" type="button" data-management-select-decor="${escapeHtml(item.id)}">Select</button>
@@ -1723,7 +1536,7 @@ function renderTutorialSkipConfirmUtilityOverlay() {
       headline: "Are you sure?",
       detail: replayMode
         ? "Skipping exits the replay tutorial right away."
-        : "Skipping restores the full toolbar and digital display right away."
+        : `Skipping restores the full toolbar${DIGITAL_DISPLAY_ENABLED ? " and digital display" : ""} right away.`
     }),
     footer: buildUtilityActionsFooter([
       { label: "Yes", variant: "warn", attribute: "data-confirm-tutorial-skip" },
@@ -2178,6 +1991,16 @@ function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
 }
 
 function handleCaveSettingsUtilityOverlayBodyClick(ctx, target) {
+  const transitTubeColorButton = target?.closest?.("[data-transit-tube-color]");
+  if (transitTubeColorButton) {
+    const item = getDecorSettingsTarget();
+    if (item && isTransitTubeDecorKey(item.decorKey)) {
+      item.transitTubeColor = normalizeDecorColorSetting(transitTubeColorButton.dataset.transitTubeColor || "");
+      saveState();
+      renderUtilityOverlay();
+    }
+    return true;
+  }
   if (target?.closest?.("[data-reset-bubbler-settings]")) {
     resetSelectedBubblerSettings();
     return true;
@@ -3289,7 +3112,9 @@ function renderDecorSettingsOverlay(item) {
       .filter((entry) => entry.item.id !== item.id)
       .map((entry) => `<option value="${escapeHtml(entry.item.id)}" ${linked?.item.id === entry.item.id ? "selected" : ""}>${escapeHtml(getTransitTubeDisplayName(entry.item, entry.tank))} — ${escapeHtml(getTankLabel(entry.tank))}</option>`)
       .join("");
-    return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div></div></div></div>`;
+    const activeColor = normalizeDecorColorSetting(item.transitTubeColor || "");
+    const colorSwatches = getCustomGravelColorChoices().map((choice) => `<button class="custom-gravel-color-swatch bubbler-color-swatch ${activeColor === choice.color ? "is-selected" : ""}" type="button" style="--swatch:${choice.color}" data-transit-tube-color="${choice.color}" aria-pressed="${activeColor === choice.color}" title="${escapeHtml(choice.label)}"></button>`).join("");
+    return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div><div class="bubbler-color-row"><span>Glass color</span><strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong></div><div class="bubbler-color-swatches"><button class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${!activeColor ? "is-selected" : ""}" type="button" data-transit-tube-color="" aria-pressed="${!activeColor}">Original</button>${colorSwatches}</div></div></div></div>`;
   }
 
   const imageSrc = escapeHtml(getDecorThumbnailPath(decor));

@@ -9,7 +9,9 @@
     "build:app": "node scripts/build-app-bundle.cjs",
     "check:app": "node scripts/build-app-bundle.cjs --check",
     "check:mobile": "node scripts/check-mobile-patch.cjs",
-    "test": "npm run check:app && npm run check:mobile && node --check public/app.js && npm --prefix desktop-app test",
+    "check:notifications": "node scripts/check-notification-consolidation.cjs",
+    "check:architecture": "node scripts/check-action-architecture.cjs",
+    "test": "npm run check:app && npm run check:mobile && npm run check:notifications && npm run check:architecture && node --check public/app.js && npm --prefix desktop-app test",
     "generate:assets": "powershell -ExecutionPolicy Bypass -File scripts/generate-assets.ps1",
     "generate:manifest": "powershell -ExecutionPolicy Bypass -File scripts/generate-asset-manifest.ps1"
   }

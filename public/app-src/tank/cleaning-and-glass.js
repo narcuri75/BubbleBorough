@@ -1,6 +1,21 @@
 // Source fragment: tank/cleaning-and-glass.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function queueScrubGlass(x, y) {
+  runtime.pendingScrubPoint = { x, y };
+  if (runtime.scrubFrameHandle) {
+    return;
+  }
+  runtime.scrubFrameHandle = window.requestAnimationFrame(() => {
+    runtime.scrubFrameHandle = 0;
+    const point = runtime.pendingScrubPoint;
+    runtime.pendingScrubPoint = null;
+    if (runtime.cleaningMode && point) {
+      scrubGlass(point.x, point.y);
+    }
+  });
+}
+
 function scrubGlass(x, y) {
   const previousPoint = runtime.lastScrubPoint;
   const points = [];
@@ -21,13 +36,15 @@ function scrubGlass(x, y) {
 
   let changed = false;
   for (const point of points) {
-    changed = markScrubStamp(point.x, point.y) || changed;
+    changed = markScrubStamp(point.x, point.y, { paint: false }) || changed;
   }
   runtime.lastScrubPoint = { x, y };
 
   if (!changed) {
     return;
   }
+
+  recordScrubMaskStroke(previousPoint || { x, y }, { x, y }, SCRUB_BRUSH_RADIUS);
 
   const coverage = getScrubCoverage();
   if (coverage >= getRequiredScrubThreshold()) {
@@ -282,6 +299,10 @@ function markScrubStamp(x, y, options = {}) {
   const endCol = clamp(Math.ceil((scrubX + brushRadius) / cellWidth), 0, SCRUB_GRID_COLS - 1);
   const startRow = clamp(Math.floor((scrubY - brushRadius) / cellHeight), 0, SCRUB_GRID_ROWS - 1);
   const endRow = clamp(Math.ceil((scrubY + brushRadius) / cellHeight), 0, SCRUB_GRID_ROWS - 1);
+  const coverageBounds = runtime.cleaningMode ? getVisibleScrubBounds() : null;
+  if (runtime.cleaningMode) {
+    refreshScrubCoverageCache();
+  }
 
   let changed = false;
   for (let row = startRow; row <= endRow; row += 1) {
@@ -296,20 +317,23 @@ function markScrubStamp(x, y, options = {}) {
       if (!runtime.scrubCells[index] && distance(cellCenterX, cellCenterY, scrubX, scrubY) <= brushRadius) {
         runtime.scrubCells[index] = 1;
         runtime.scrubbedCount += 1;
+        if (coverageBounds && isScrubCellCenterInsideVisibleBounds(cellCenterX, cellCenterY, coverageBounds)) {
+          runtime.scrubbedCleanableCellCount += 1;
+        }
         changed = true;
       }
     }
   }
 
-  const stamp = {
-    x: scrubX,
-    y: scrubY,
-    radius: brushRadius * (0.92 + Math.random() * 0.1)
-  };
-  runtime.scrubStamps.push(stamp);
-  paintScrubMaskStamp(stamp);
-  if (runtime.scrubStamps.length > SCRUB_MAX_STAMPS) {
-    runtime.scrubStamps.splice(0, runtime.scrubStamps.length - SCRUB_MAX_STAMPS);
+  if (changed && options.paint !== false) {
+    recordScrubMaskStroke(
+      { x: scrubX, y: scrubY },
+      { x: scrubX, y: scrubY },
+      brushRadius * (0.92 + Math.random() * 0.1)
+    );
+  }
+  if (changed && !runtime.cleaningMode) {
+    runtime.scrubCoverageCacheKey = "";
   }
 
   return changed;
@@ -341,7 +365,7 @@ function completeCleaning(options = {}) {
 
   state.lastCleanedAt = now;
   state.poops = [];
-  state.coins += cleanReward;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
 
   if (!hasExposedDeadTankFish(now)) {
     resetLivingFishComfortDamageProgress();
@@ -395,6 +419,12 @@ function clearScrubProgress() {
   runtime.scrubCells.fill(0);
   runtime.scrubbedCount = 0;
   runtime.scrubStamps = [];
+  runtime.pendingScrubPoint = null;
+  runtime.scrubMaskRevision += 1;
+  runtime.cleanableScrubCellCount = 0;
+  runtime.scrubbedCleanableCellCount = 0;
+  runtime.scrubCoverageCacheKey = "";
+  runtime.grimeCompositeCacheKey = "";
   runtime.lastScrubPoint = null;
   runtime.scrubAutoCompleteAt = 0;
   resetScrubWipeSoundState();
@@ -405,9 +435,9 @@ function clearScrubProgress() {
 }
 
 function getScrubCoverage() {
-  const cleanableCellCount = getCleanableScrubCellCount();
-  return cleanableCellCount > 0
-    ? Math.min(1, getScrubbedCleanableCellCount() / cleanableCellCount)
+  refreshScrubCoverageCache();
+  return runtime.cleanableScrubCellCount > 0
+    ? Math.min(1, runtime.scrubbedCleanableCellCount / runtime.cleanableScrubCellCount)
     : 0;
 }
 
@@ -469,21 +499,75 @@ function paintScrubMaskStamp(stamp) {
     return;
   }
 
-  const gradient = scrubMaskContext.createRadialGradient(
-    stamp.x,
-    stamp.y,
-    stamp.radius * 0.2,
-    stamp.x,
-    stamp.y,
-    stamp.radius
-  );
-  gradient.addColorStop(0, "rgba(0,0,0,1)");
-  gradient.addColorStop(0.72, "rgba(0,0,0,0.94)");
-  gradient.addColorStop(1, "rgba(0,0,0,0)");
-  scrubMaskContext.fillStyle = gradient;
-  scrubMaskContext.beginPath();
-  scrubMaskContext.arc(stamp.x, stamp.y, stamp.radius, 0, Math.PI * 2);
-  scrubMaskContext.fill();
+  const fromX = Number(stamp.x) || 0;
+  const fromY = Number(stamp.y) || 0;
+  const toX = Number.isFinite(Number(stamp.toX)) ? Number(stamp.toX) : fromX;
+  const toY = Number.isFinite(Number(stamp.toY)) ? Number(stamp.toY) : fromY;
+  const radius = Math.max(4, Number(stamp.radius) || SCRUB_BRUSH_RADIUS);
+  const drawStroke = (width, alpha) => {
+    scrubMaskContext.strokeStyle = `rgba(0,0,0,${alpha})`;
+    scrubMaskContext.fillStyle = `rgba(0,0,0,${alpha})`;
+    scrubMaskContext.lineWidth = width;
+    scrubMaskContext.lineCap = "round";
+    scrubMaskContext.lineJoin = "round";
+    if (Math.abs(toX - fromX) < 0.01 && Math.abs(toY - fromY) < 0.01) {
+      scrubMaskContext.beginPath();
+      scrubMaskContext.arc(fromX, fromY, width / 2, 0, Math.PI * 2);
+      scrubMaskContext.fill();
+      return;
+    }
+    scrubMaskContext.beginPath();
+    scrubMaskContext.moveTo(fromX, fromY);
+    scrubMaskContext.lineTo(toX, toY);
+    scrubMaskContext.stroke();
+  };
+
+  scrubMaskContext.save();
+  drawStroke(radius * 2, 0.34);
+  drawStroke(radius * 1.68, 0.98);
+  scrubMaskContext.restore();
+}
+
+function getScrubCoverageCacheKey() {
+  const bounds = getVisibleScrubBounds();
+  return [
+    getCurrentTank()?.id || "tank",
+    getCurrentTank()?.tankTypeId || "shell",
+    Math.round(bounds.left),
+    Math.round(bounds.top),
+    Math.round(bounds.right),
+    Math.round(bounds.bottom)
+  ].join("|");
+}
+
+function refreshScrubCoverageCache() {
+  const cacheKey = getScrubCoverageCacheKey();
+  if (runtime.scrubCoverageCacheKey === cacheKey && runtime.cleanableScrubCellCount > 0) {
+    return;
+  }
+  runtime.scrubCoverageCacheKey = cacheKey;
+  runtime.cleanableScrubCellCount = getCleanableScrubCellCount();
+  runtime.scrubbedCleanableCellCount = getScrubbedCleanableCellCount();
+}
+
+function recordScrubMaskStroke(fromPoint, toPoint, radius = SCRUB_BRUSH_RADIUS) {
+  if (!fromPoint || !toPoint) {
+    return;
+  }
+  const stamp = {
+    x: Number(fromPoint.x) || 0,
+    y: Number(fromPoint.y) || 0,
+    toX: Number(toPoint.x) || 0,
+    toY: Number(toPoint.y) || 0,
+    radius: clamp(Number(radius) || SCRUB_BRUSH_RADIUS, 4, SCRUB_BRUSH_RADIUS)
+  };
+  runtime.scrubStamps.push(stamp);
+  paintScrubMaskStamp(stamp);
+  runtime.scrubMaskRevision += 1;
+  runtime.grimeCompositeCacheKey = "";
+  if (runtime.scrubStamps.length > SCRUB_MAX_STAMPS) {
+    runtime.scrubStamps.splice(0, runtime.scrubStamps.length - SCRUB_MAX_STAMPS);
+  }
 }
 
 function rebuildScrubMaskCanvas() {
@@ -495,6 +579,7 @@ function rebuildScrubMaskCanvas() {
   for (const stamp of runtime.scrubStamps) {
     paintScrubMaskStamp(stamp);
   }
+  runtime.grimeCompositeCacheKey = "";
 }
 
 function getGrimeBaseCacheKey(dirtiness) {
@@ -531,78 +616,56 @@ function renderGrimeBaseCanvas(dirtiness) {
     return;
   }
 
-  const lightGrime = getLightGrimeVisualIntensity(dirtiness);
-  const severeGrime = getSevereGrimeVisualIntensity(dirtiness);
-  const blurScale = getPortableGrimeBlurScale();
   grimeBaseContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
+  if (visibleDirtiness <= 0) {
+    return;
+  }
+
+  const scaledLevel = visibleDirtiness * GRIME_OVERLAY_ASSET_PATHS.length;
+  const levelPosition = clamp(scaledLevel - 1, 0, GRIME_OVERLAY_ASSET_PATHS.length - 1);
+  const lowerIndex = Math.floor(levelPosition);
+  const upperIndex = Math.ceil(levelPosition);
+  const blend = levelPosition - lowerIndex;
+  const lowerAlpha = scaledLevel < 1 ? scaledLevel : 1 - blend;
+  const upperAlpha = lowerIndex === upperIndex ? 0 : blend;
+
+  drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[lowerIndex], lowerAlpha);
+  if (upperAlpha > 0.001) {
+    drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[upperIndex], upperAlpha);
+  }
+}
+
+function drawGrimeOverlayImage(path, alpha = 1) {
+  const image = runtime.images.get(path);
+  if (!isUsableRuntimeImage(image) || alpha <= 0) {
+    requestRuntimeImageRecovery(path, { kind: "grime", id: path });
+    return;
+  }
+
+  const targetWidth = TANK_WIDTH * GRIME_OVERLAY_OVERSCAN;
+  const targetHeight = TANK_HEIGHT * GRIME_OVERLAY_OVERSCAN;
+  const scale = Math.max(targetWidth / image.width, targetHeight / image.height);
+  const drawWidth = image.width * scale;
+  const drawHeight = image.height * scale;
   grimeBaseContext.save();
-  grimeBaseContext.fillStyle = `rgba(108, 148, 74, ${(lightGrime * 0.16 + severeGrime * 0.18).toFixed(3)})`;
-  grimeBaseContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-
-  const murkGradient = grimeBaseContext.createLinearGradient(0, WATER_SURFACE_Y, 0, TANK_HEIGHT);
-  murkGradient.addColorStop(0, `rgba(170, 210, 78, ${(lightGrime * 0.05 + severeGrime * 0.26).toFixed(3)})`);
-  murkGradient.addColorStop(0.18, `rgba(132, 171, 58, ${(lightGrime * 0.07 + severeGrime * 0.28).toFixed(3)})`);
-  murkGradient.addColorStop(0.62, `rgba(74, 100, 36, ${(lightGrime * 0.06 + severeGrime * 0.2).toFixed(3)})`);
-  murkGradient.addColorStop(1, `rgba(32, 44, 20, ${(lightGrime * 0.02 + severeGrime * 0.16).toFixed(3)})`);
-  grimeBaseContext.fillStyle = murkGradient;
-  grimeBaseContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-
-  const grimeMarks = runtime.scene?.grimeMarks || [];
-  const visibleMarkCount = Math.min(grimeMarks.length, Math.floor(lightGrime * grimeMarks.length));
-  grimeBaseContext.globalAlpha = lightGrime * 0.22 + severeGrime * 0.14;
-  grimeBaseContext.filter = `blur(${((4 + lightGrime * 12 + severeGrime * 20) * blurScale).toFixed(2)}px)`;
-  for (let index = 0; index < visibleMarkCount; index += 1) {
-    const mark = grimeMarks[index];
-    if (!mark) {
-      break;
-    }
-    grimeBaseContext.fillStyle = mark.color;
-    grimeBaseContext.beginPath();
-    grimeBaseContext.ellipse(mark.x * TANK_WIDTH, mark.y * TANK_HEIGHT, mark.rx, mark.ry, mark.rotation, 0, Math.PI * 2);
-    grimeBaseContext.fill();
-  }
-
-  if (severeGrime > 0.01) {
-    grimeBaseContext.globalAlpha = 0.08 + severeGrime * 0.3;
-    grimeBaseContext.filter = `blur(${((22 + severeGrime * 34) * blurScale).toFixed(2)}px)`;
-    for (let index = 0; index < visibleMarkCount; index += 2) {
-      const mark = grimeMarks[index];
-      if (!mark) {
-        break;
-      }
-      const cloudScale = 2.2 + severeGrime * 1.9;
-      grimeBaseContext.fillStyle = index % 4 === 0
-        ? "rgba(88, 130, 40, 0.74)"
-        : "rgba(54, 84, 28, 0.76)";
-      grimeBaseContext.beginPath();
-      grimeBaseContext.ellipse(
-        mark.x * TANK_WIDTH,
-        mark.y * TANK_HEIGHT,
-        mark.rx * cloudScale,
-        mark.ry * cloudScale * 1.18,
-        mark.rotation,
-        0,
-        Math.PI * 2
-      );
-      grimeBaseContext.fill();
-    }
-  }
-
-  grimeBaseContext.filter = "none";
-  const topGlow = grimeBaseContext.createLinearGradient(0, 0, 0, TANK_HEIGHT);
-  topGlow.addColorStop(0, `rgba(236, 255, 223, ${(lightGrime * 0.08 + severeGrime * 0.12).toFixed(3)})`);
-  topGlow.addColorStop(1, "rgba(236, 255, 223, 0)");
-  grimeBaseContext.fillStyle = topGlow;
-  grimeBaseContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  grimeBaseContext.globalAlpha = clamp(alpha, 0, 1);
+  grimeBaseContext.drawImage(
+    image,
+    (TANK_WIDTH - drawWidth) / 2,
+    (TANK_HEIGHT - drawHeight) / 2,
+    drawWidth,
+    drawHeight
+  );
   grimeBaseContext.restore();
 }
 
 function createCleaningSparkles() {
   const sparkleHues = [190, 204, 162, 48, 22, 320, 278];
-  return Array.from({ length: 42 }, (_, index) => ({
+  return Array.from({ length: 14 }, (_, index) => ({
     x: randomBetween(GLASS_MARGIN_X + 46, TANK_WIDTH - GLASS_MARGIN_X - 46),
     y: randomBetween(WATER_SURFACE_Y + 26, FLOOR_Y - 56),
-    size: randomBetween(10, 26),
+    size: randomBetween(6, 15),
     delay: randomBetween(0, 0.68),
     twinkle: randomBetween(0.95, 2.1),
     hue: sparkleHues[index % sparkleHues.length] + randomBetween(-8, 8),

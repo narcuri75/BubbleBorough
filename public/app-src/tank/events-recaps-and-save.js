@@ -19,6 +19,9 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
   if (typeof meta?.type === "string" && meta.type.trim()) {
     eventEntry.type = meta.type.trim();
   }
+  if (["positive", "negative", "neutral"].includes(String(meta?.tone || ""))) {
+    eventEntry.tone = String(meta.tone);
+  }
   if (typeof meta?.fishId === "string" && meta.fishId.trim()) {
     eventEntry.fishId = meta.fishId.trim();
   }
@@ -40,7 +43,78 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
   const events = Array.isArray(targetTank.events) ? targetTank.events : [];
   events.unshift(eventEntry);
   targetTank.events = events.slice(0, MAX_TANK_EVENT_HISTORY);
+  if (!Array.isArray(state.boroughEvents)) {
+    state.boroughEvents = [];
+  }
+  state.boroughEvents.unshift({
+    ...eventEntry,
+    tankId: targetTank.id || "",
+    tankName: getTankLabel(targetTank)
+  });
+  state.boroughEvents = state.boroughEvents.slice(0, MAX_BOROUGH_EVENT_HISTORY);
   publishBoroughActivityEvent(eventEntry, targetTank);
+  return eventEntry;
+}
+
+function recordGameEvent(event, tank = getCurrentTank()) {
+  if (!event) {
+    return null;
+  }
+  if (typeof event === "string") {
+    return pushEvent(event, Date.now(), tank);
+  }
+  const text = String(event.text || event.message || "").trim();
+  if (!text) {
+    return null;
+  }
+  return pushEvent(text, Number.isFinite(Number(event.time)) ? Number(event.time) : Date.now(), event.tank || tank, {
+    ...event,
+    score: event.score ?? event.recapScore
+  });
+}
+
+function playGameActionSound(sound) {
+  if (typeof sound === "function") {
+    sound();
+    return true;
+  }
+  if (sound === "purchase") {
+    playPurchaseSoundEffect();
+    return true;
+  }
+  if (sound === "coin") {
+    playCoinSoundEffect();
+    return true;
+  }
+  if (sound === "button") {
+    playRegularButtonSoundEffect();
+    return true;
+  }
+  return false;
+}
+
+function completeGameAction(options = {}) {
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const events = Array.isArray(options.events) ? options.events : (options.event ? [options.event] : []);
+  const recordedEvents = events.map((event) => recordGameEvent(
+    typeof event === "string" ? { text: event, time: now } : { ...event, time: event?.time ?? now },
+    options.tank
+  )).filter(Boolean);
+  if (options.save !== false) {
+    saveState();
+  }
+  playGameActionSound(options.sound);
+  if (options.render !== false) {
+    renderUi(now, { full: options.render === "partial" ? false : options.full !== false });
+  }
+  if (typeof options.toast === "string" && options.toast) {
+    showToast(options.toast, options.toastOptions || {});
+  }
+  return {
+    ok: true,
+    now,
+    events: recordedEvents
+  };
 }
 
 function getLocalDayKey(timestamp = Date.now()) {
@@ -66,8 +140,7 @@ function getPreviousLocalDayKey(timestamp = Date.now()) {
 }
 
 function getDailyBonusClaimKey(summary, tank = getCurrentTank()) {
-  const tankId = summary?.tankId || tank?.id || state.activeTankId || "";
-  return tankId && summary?.dayKey ? `${tankId}:${summary.dayKey}` : "";
+  return summary?.dayKey ? `${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}` : "";
 }
 
 function isDailyBonusSummaryClaimed(summary, tank = getCurrentTank()) {
@@ -79,12 +152,9 @@ function getActiveDailyBonusSummary(tank = getCurrentTank()) {
   if (!state?.dailyBonus) {
     return null;
   }
-  const tankId = tank?.id || state.activeTankId || "";
-  const summary = state.dailyBonus.summariesByTankId?.[tankId] || (
-    state.dailyBonus.summary?.tankId === tankId || !state.dailyBonus.summary?.tankId
-      ? state.dailyBonus.summary
-      : null
-  );
+  const summary = state.dailyBonus.summariesByTankId?.[BOROUGH_DAILY_RECAP_ID]
+    || state.dailyBonus.summary
+    || null;
   return summary && !isDailyBonusSummaryClaimed(summary, tank) ? summary : null;
 }
 
@@ -106,6 +176,9 @@ function classifyEventForDailyRecap(event) {
     if (score !== 0) {
       return { text: event.text, score, type: event.type || "event", time: event.time };
     }
+  }
+  if (event.tone === "positive" || event.tone === "negative") {
+    return { text: event.text, score: event.tone === "positive" ? 1 : -1, type: event.type || "event", time: event.time };
   }
   const text = String(event.text || "");
   const lower = text.toLowerCase();
@@ -217,26 +290,102 @@ function buildDailyRecapSummary(tank, dayKey, now = Date.now(), options = {}) {
   };
 }
 
+function normalizeBoroughRecapScore(rawScore, fishCount = 0, tankCount = 0) {
+  const divisor = Number(fishCount) > 0 ? Math.max(1, Number(fishCount)) : Math.max(1, Number(tankCount));
+  const scaled = (Number(rawScore) || 0) / divisor;
+  return scaled < 0 ? -Math.round(Math.abs(scaled)) : Math.round(scaled);
+}
+
+function buildBoroughDailyRecapSummary(dayKey, now = Date.now(), options = {}) {
+  const tankSummaries = getAllTanks(state)
+    .map((tank) => buildDailyRecapSummary(tank, dayKey, now, { ...options, force: true }))
+    .filter(Boolean);
+  const fishCount = tankSummaries.reduce((total, summary) => total + (summary.fishCount || 0), 0);
+  const rows = [];
+  for (const summary of tankSummaries) {
+    for (const row of summary.rows || []) {
+      if (row.type === "care" || (row.type === "comfort" && /^The tank averaged/i.test(row.text || ""))) {
+        continue;
+      }
+      rows.push({ ...row, text: `${summary.tankName}: ${row.text}` });
+    }
+  }
+  const averageComfort = fishCount
+    ? Math.round(tankSummaries.reduce((total, summary) => total + ((summary.averageComfort || 0) * (summary.fishCount || 0)), 0) / fishCount)
+    : 0;
+  const endOfDay = getLocalDayStartTimestamp(dayKey) + DAY_MS - 1;
+  if (fishCount && averageComfort >= 80) {
+    rows.push({ text: `The borough averaged ${averageComfort}% comfort.`, score: 1, type: "comfort", time: endOfDay });
+  }
+  if (fishCount && !rows.some((row) => row.score < 0)) {
+    rows.push({ text: "No critical care alerts were recorded across the borough.", score: 1, type: "care", time: endOfDay });
+  }
+  if (!rows.length && !options.force && !fishCount) {
+    return null;
+  }
+
+  const rawScore = rows.reduce((total, row) => total + (Number(row.score) || 0), 0);
+  const score = normalizeBoroughRecapScore(rawScore, fishCount, tankSummaries.length);
+  const cleanPercent = tankSummaries.length
+    ? Math.round(tankSummaries.reduce((total, summary) => total + (summary.cleanPercent || 0), 0) / tankSummaries.length)
+    : 0;
+  return {
+    scope: BOROUGH_DAILY_RECAP_ID,
+    tankId: BOROUGH_DAILY_RECAP_ID,
+    tankName: "Bubble Borough",
+    tankCount: tankSummaries.length,
+    dayKey,
+    generatedAt: now,
+    rows,
+    scoreModel: BOROUGH_RECAP_SCORE_MODEL,
+    rawScore,
+    score,
+    reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+    mealsFed: tankSummaries.reduce((total, summary) => total + (summary.mealsFed || 0), 0),
+    averageComfort,
+    cleanPercent,
+    allMealsSatisfied: fishCount > 0 && tankSummaries.filter((summary) => summary.fishCount > 0).every((summary) => summary.allMealsSatisfied),
+    hasNegativeEvents: rows.some((row) => row.score < 0),
+    hasAttackOrDeath: tankSummaries.some((summary) => summary.hasAttackOrDeath),
+    hasGlassTapStress: tankSummaries.some((summary) => summary.hasGlassTapStress),
+    hasSparklingComfort: tankSummaries.some((summary) => summary.hasSparklingComfort),
+    fishCount,
+    decorCount: tankSummaries.reduce((total, summary) => total + (summary.decorCount || 0), 0),
+    narrative: buildDailyRecapNarrative(rows, null),
+    overall: score >= 8 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
+  };
+}
+
 function storeDailyRecapSummary(summary) {
-  if (!summary?.tankId || !state?.dailyBonus) {
+  if (!summary?.dayKey || !state?.dailyBonus) {
     return false;
   }
-  if (!state.dailyBonus.summariesByTankId || typeof state.dailyBonus.summariesByTankId !== "object") {
-    state.dailyBonus.summariesByTankId = {};
-  }
-  state.dailyBonus.summariesByTankId[summary.tankId] = summary;
+  summary.scope = BOROUGH_DAILY_RECAP_ID;
+  summary.tankId = BOROUGH_DAILY_RECAP_ID;
+  summary.tankName = "Bubble Borough";
+  state.dailyBonus.summariesByTankId = { [BOROUGH_DAILY_RECAP_ID]: summary };
   state.dailyBonus.lastQualifiedDayKey = summary.dayKey;
   state.dailyBonus.lastEvaluatedDayKey = summary.dayKey;
   if (!Array.isArray(state.dailyBonus.recapHistory)) {
     state.dailyBonus.recapHistory = [];
   }
-  const existingIndex = state.dailyBonus.recapHistory.findIndex((entry) => entry.tankId === summary.tankId && entry.dayKey === summary.dayKey);
+  const existingIndex = state.dailyBonus.recapHistory.findIndex((entry) => entry.dayKey === summary.dayKey && (entry.scope === BOROUGH_DAILY_RECAP_ID || entry.tankId === BOROUGH_DAILY_RECAP_ID));
   if (existingIndex >= 0) {
     state.dailyBonus.recapHistory.splice(existingIndex, 1);
   }
   state.dailyBonus.recapHistory.unshift(summary);
   state.dailyBonus.recapHistory = state.dailyBonus.recapHistory.slice(0, DAILY_RECAP_HISTORY_LIMIT);
   syncActiveDailyBonusState();
+  enqueueNotificationCenterEntry({
+    type: "daily_recap",
+    title: "Daily Recap ready",
+    detail: `Bubble Borough · ${summary.reward || 0} coin bonus`,
+    createdAt: summary.generatedAt || Date.now(),
+    signature: `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}`,
+    tankId: "",
+    recapDayKey: summary.dayKey
+  }, { surface: true });
+  applyProgressMilestones(summary, summary.generatedAt || Date.now());
   return true;
 }
 
@@ -244,19 +393,15 @@ function maybeGenerateDailyRecapForTank(tank, now = Date.now(), options = {}) {
   if (!tank || !state?.dailyBonus) {
     return false;
   }
-  if (!state.dailyBonus.lastEvaluatedByTankId || typeof state.dailyBonus.lastEvaluatedByTankId !== "object") {
-    state.dailyBonus.lastEvaluatedByTankId = {};
-  }
   const force = options.force === true;
   const dayKey = force ? getLocalDayKey(now) : getPreviousLocalDayKey(now);
-  const tankId = tank.id || "";
-  const claimedKey = `${tankId}:${dayKey}`;
-  if (!force && state.dailyBonus.lastEvaluatedByTankId[tankId] === dayKey) {
+  const claimedKey = `${BOROUGH_DAILY_RECAP_ID}:${dayKey}`;
+  if (!force && state.dailyBonus.lastEvaluatedDayKey === dayKey) {
     syncActiveDailyBonusState();
     return false;
   }
   if (!force && state.dailyBonus.claimedByTankDay?.[claimedKey]) {
-    state.dailyBonus.lastEvaluatedByTankId[tankId] = dayKey;
+    state.dailyBonus.lastEvaluatedDayKey = dayKey;
     syncActiveDailyBonusState();
     return false;
   }
@@ -264,8 +409,8 @@ function maybeGenerateDailyRecapForTank(tank, now = Date.now(), options = {}) {
     syncActiveDailyBonusState();
     return false;
   }
-  const summary = buildDailyRecapSummary(tank, dayKey, now, { force });
-  state.dailyBonus.lastEvaluatedByTankId[tankId] = dayKey;
+  const summary = buildBoroughDailyRecapSummary(dayKey, now, { force });
+  state.dailyBonus.lastEvaluatedDayKey = dayKey;
   if (!summary) {
     syncActiveDailyBonusState();
     return true;
@@ -515,36 +660,56 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
 }
 
 function applyProgressMilestones(latestSummary = null, now = Date.now()) {
-  if (!state?.dailyBonus) {
+  if (!state?.dailyBonus || runtime.achievementEvaluationActive) {
     return [];
   }
+  runtime.achievementEvaluationActive = true;
   if (!state.dailyBonus.milestones || typeof state.dailyBonus.milestones !== "object") {
     state.dailyBonus.milestones = {};
   }
-  const stats = getMilestoneStats(latestSummary, now);
-  const unlocked = [];
-  for (const milestone of PROGRESSION_MILESTONES) {
-    if (state.dailyBonus.milestones[milestone.id] || !milestone.isMet(stats)) {
-      continue;
-    }
-    state.dailyBonus.milestones[milestone.id] = true;
-    state.coins += milestone.reward;
-    const speciesUnlocked = [];
-    for (const speciesId of milestone.unlocks) {
-      if (unlockFishSpecies(speciesId, now, `${runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)} unlocked from ${milestone.label}.`)) {
-        speciesUnlocked.push(speciesId);
+  try {
+    const stats = getMilestoneStats(latestSummary, now);
+    const unlocked = [];
+    for (const milestone of PROGRESSION_MILESTONES) {
+      if (state.dailyBonus.milestones[milestone.id] || !milestone.isMet(stats)) {
+        continue;
       }
-    }
-    const decorUnlocked = [];
-    for (const decorKey of milestone.decorUnlocks || []) {
-      if (unlockDecorKey(decorKey, now, `${runtime.decorMap.get(decorKey)?.name || titleFromFile(decorKey)} unlocked from ${milestone.label}.`)) {
-        decorUnlocked.push(decorKey);
+      state.dailyBonus.milestones[milestone.id] = true;
+      state.coins = Math.min(MAX_WALLET_COINS, state.coins + milestone.reward);
+      const speciesUnlocked = [];
+      for (const speciesId of milestone.unlocks) {
+        if (unlockFishSpecies(speciesId, now, `${runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)} unlocked from ${milestone.label}.`)) {
+          speciesUnlocked.push(speciesId);
+        }
       }
+      const decorUnlocked = [];
+      for (const decorKey of milestone.decorUnlocks || []) {
+        if (unlockDecorKey(decorKey, now, `${runtime.decorMap.get(decorKey)?.name || titleFromFile(decorKey)} unlocked from ${milestone.label}.`)) {
+          decorUnlocked.push(decorKey);
+        }
+      }
+      const unlockedItems = [
+        ...speciesUnlocked.map((speciesId) => runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)),
+        ...decorUnlocked.map((decorKey) => runtime.decorMap.get(decorKey)?.name || titleFromFile(decorKey))
+      ].filter(Boolean);
+      pushEvent(`${milestone.label} milestone reached. Earned ${milestone.reward} ${pluralize("coin", milestone.reward)}.`, now);
+      enqueueNotificationCenterEntry({
+        type: "achievement",
+        title: `${milestone.label} unlocked!`,
+        detail: unlockedItems.length ? `New rewards: ${unlockedItems.join(", ")}` : "Achievement reward granted immediately.",
+        createdAt: now,
+        signature: `achievement:${milestone.id}`,
+        achievementId: milestone.id,
+        coinReward: milestone.reward,
+        iconPath: getMilestoneIconPath(milestone.id),
+        unlockedItems
+      }, { surface: true, durationMs: 5200 });
+      unlocked.push({ ...milestone, speciesUnlocked, decorUnlocked });
     }
-    pushEvent(`${milestone.label} milestone reached. Earned ${milestone.reward} ${pluralize("coin", milestone.reward)}.`, now);
-    unlocked.push({ ...milestone, speciesUnlocked, decorUnlocked });
+    return unlocked;
+  } finally {
+    runtime.achievementEvaluationActive = false;
   }
-  return unlocked;
 }
 
 function triggerDebugDailyRecap(now = Date.now()) {
@@ -563,9 +728,12 @@ function triggerDebugDailyRecap(now = Date.now()) {
 }
 
 function saveState() {
+  state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   if (!state) {
     return;
   }
+
+  applyProgressMilestones(null, Date.now());
 
   const customDecorPruned = pruneCustomDecorAssets(state);
   const customFishPruned = pruneCustomFishAssets(state);

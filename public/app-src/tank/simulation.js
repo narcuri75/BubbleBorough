@@ -332,14 +332,18 @@ function processBoroughFishTravel(now = Date.now()) {
   const moves = [];
   for (const source of getAllTanks()) {
     const neighbors = getAdjacentAquariumSections(source);
-    if (!neighbors.length) {
-      continue;
-    }
     for (const fish of source.fish) {
       if (!fish || isFishDead(fish) || fish.caveState || runtime.pendingNeighborhoodTravel.has(fish.id)) {
         continue;
       }
       const neededService = getFishNeededBoroughServiceType(fish, source, now);
+      const foodDestination = getTankById(runtime.foodTravelDestinations.get(fish.id));
+      if (foodDestination?.id === source.id) {
+        runtime.foodTravelDestinations.delete(fish.id);
+      }
+      const foodRoute = foodDestination && foodDestination.id !== source.id
+        ? findAquariumSectionRoute(source, foodDestination)
+        : null;
       const serviceRoute = neededService && !getBoroughSectionServiceTypes(source).includes(neededService)
         ? findNearestBoroughServiceRoute(source, neededService)
         : null;
@@ -348,9 +352,12 @@ function processBoroughFishTravel(now = Date.now()) {
         && residenceTank.id !== source.id
         && (isTankLightsOut(now) || getFishNeedValue(fish, "energy", now) <= 52);
       const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
-      const directedRoute = serviceRoute || residenceRoute;
-      const tubeJourney = directedRoute?.destination
-        ? getTransitTubeJourney(source, directedRoute.destination)
+      const directedRoute = foodRoute || serviceRoute || residenceRoute;
+      const tubeJourneyTarget = directedRoute?.tubeDestination || directedRoute?.destination;
+      const tubeJourney = tubeJourneyTarget
+        ? getTransitTubeJourney(source, tubeJourneyTarget)
+        : foodDestination
+          ? getTransitTubeJourney(source, foodDestination)
         : null;
       const minimumMoveDelay = directedRoute ? 25 * 1000 : 2 * MINUTE_MS;
       if (now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0) < minimumMoveDelay) {
@@ -362,7 +369,7 @@ function processBoroughFishTravel(now = Date.now()) {
       if (!serviceRoute && residenceTank?.id === source.id && isTankLightsOut(now)) {
         continue;
       }
-      const shouldTravel = directedRoute || destinationsWithFood.length > 0 || Math.random() < 0.02;
+      const shouldTravel = directedRoute || tubeJourney || destinationsWithFood.length > 0 || (neighbors.length > 0 && Math.random() < 0.02);
       if (!shouldTravel) {
         continue;
       }
@@ -372,8 +379,8 @@ function processBoroughFishTravel(now = Date.now()) {
         fish,
         source,
         destination,
-        neededService,
-        serviceDestination: serviceRoute?.destination || null,
+        neededService: foodDestination ? "food" : neededService,
+        serviceDestination: foodDestination || serviceRoute?.destination || null,
         residenceDestination: !serviceRoute ? residenceRoute?.destination || null : null,
         tubeJourney
       });
@@ -385,51 +392,7 @@ function processBoroughFishTravel(now = Date.now()) {
       changed = beginBoroughEdgeTravel(move, now) || changed;
       continue;
     }
-    const sourceIndex = move.source.fish.findIndex((fish) => fish.id === move.fish.id);
-    if (sourceIndex < 0 || move.destination.fish.some((fish) => fish.id === move.fish.id)) {
-      continue;
-    }
-    move.source.fish.splice(sourceIndex, 1);
-    move.fish.lastNeighborhoodMoveAt = now;
-    const dx = move.destination.gridX - move.source.gridX;
-    const dy = move.destination.gridY - move.source.gridY;
-    if (move.tubeJourney) {
-      const sourceTube = move.tubeJourney.sourceTube;
-      const targetTube = move.tubeJourney.targetTube;
-      move.fish.xNorm = clamp(targetTube.xNorm, 0.06, 0.94);
-      move.fish.yNorm = clamp(targetTube.yNorm - 0.12, 0.1, 0.86);
-      move.fish.targetXNorm = clamp(targetTube.xNorm + (Math.random() - 0.5) * 0.18, 0.1, 0.9);
-      move.fish.targetYNorm = clamp(targetTube.yNorm - 0.24, 0.12, 0.78);
-      runtime.transitTubeBursts.push(
-        { tankId: move.source.id, decorId: sourceTube.id, mode: "enter", startedAt: now, endsAt: now + 1600 },
-        { tankId: move.destination.id, decorId: targetTube.id, mode: "exit", startedAt: now, endsAt: now + 1600 }
-      );
-    } else {
-      move.fish.xNorm = dx > 0 ? 0.04 : dx < 0 ? 0.96 : clamp(move.fish.xNorm, 0.08, 0.92);
-      move.fish.yNorm = dy > 0 ? 0.08 : dy < 0 ? 0.9 : clamp(move.fish.yNorm, 0.1, 0.88);
-      move.fish.targetXNorm = clamp(0.5 + dx * 0.18, 0.12, 0.88);
-      move.fish.targetYNorm = clamp(0.5 + dy * 0.12, 0.14, 0.84);
-    }
-    move.fish.coarseActivity = null;
-    move.fish.lastCoarseSimulatedAt = now;
-    move.fish.visitedNeighborhoodIds = [...new Set([...(move.fish.visitedNeighborhoodIds || []), move.destination.id])].slice(-64);
-    move.destination.fish.push(move.fish);
-    const cause = move.neededService && move.serviceDestination
-      ? `${getBoroughServiceLabel(move.neededService)} in ${getTankLabel(move.serviceDestination)}`
-      : move.residenceDestination
-        ? `home in ${getTankLabel(move.residenceDestination)}`
-      : getTankLabel(move.destination);
-    setFishBehaviorIntent(move.fish, move.neededService || move.residenceDestination ? "travel" : "explore", move.tubeJourney ? `transit tube to ${cause}` : cause, now, { durationMs: 45 * 1000 });
-    pushEvent(`${move.fish.name} used a Transit Tube to ${getTankLabel(move.destination)}.`, now, move.destination, {
-      type: "travel",
-      fishId: move.fish.id,
-      sourceTankId: move.source.id,
-      destinationTankId: move.destination.id,
-      serviceType: move.neededService,
-      travelReason: cause,
-      detail: "Fast travel"
-    });
-    changed = true;
+    changed = beginBoroughTubeTravel(move, now) || changed;
   }
   return changed;
 }
@@ -463,22 +426,47 @@ function findNearestBoroughServiceRoute(sourceTank, serviceType) {
   if (!sourceTank || !serviceType) {
     return null;
   }
-  const visited = new Set([sourceTank.id]);
-  const queue = getAdjacentAquariumSections(sourceTank).map((tank) => ({ tank, firstHop: tank }));
-  for (const entry of queue) {
-    visited.add(entry.tank.id);
-  }
-  while (queue.length) {
-    const entry = queue.shift();
-    if (getBoroughSectionServiceTypes(entry.tank).includes(serviceType)) {
-      return { nextSection: entry.firstHop, destination: entry.tank };
-    }
-    for (const neighbor of getAdjacentAquariumSections(entry.tank)) {
-      if (visited.has(neighbor.id)) {
-        continue;
+  const collectSwimmingComponent = (startTank) => {
+    const visited = new Set([startTank.id]);
+    const entries = [{ tank: startTank, firstHop: null }];
+    const queue = getAdjacentAquariumSections(startTank).map((tank) => ({ tank, firstHop: tank }));
+    for (const entry of queue) visited.add(entry.tank.id);
+    while (queue.length) {
+      const entry = queue.shift();
+      entries.push(entry);
+      for (const neighbor of getAdjacentAquariumSections(entry.tank)) {
+        if (visited.has(neighbor.id)) continue;
+        visited.add(neighbor.id);
+        queue.push({ tank: neighbor, firstHop: entry.firstHop });
       }
-      visited.add(neighbor.id);
-      queue.push({ tank: neighbor, firstHop: entry.firstHop });
+    }
+    return entries;
+  };
+
+  const localComponent = collectSwimmingComponent(sourceTank);
+  const localService = localComponent.slice(1).find((entry) => getBoroughSectionServiceTypes(entry.tank).includes(serviceType));
+  if (localService) {
+    return { nextSection: localService.firstHop, destination: localService.tank };
+  }
+
+  // Search tube exits from every normally reachable tank. This lets a fish
+  // swim along its current row to a tube, take the tube across a wall/row, and
+  // then continue swimming to a service near the destination tube.
+  const tanks = getAllTanks();
+  for (const origin of localComponent) {
+    for (const tubeTarget of tanks) {
+      if (tubeTarget.id === origin.tank.id || !getTransitTubeJourney(origin.tank, tubeTarget)) continue;
+      const remoteService = collectSwimmingComponent(tubeTarget)
+        .find((entry) => getBoroughSectionServiceTypes(entry.tank).includes(serviceType));
+      if (!remoteService) continue;
+      if (origin.tank.id === sourceTank.id) {
+        return {
+          nextSection: null,
+          destination: remoteService.tank,
+          tubeDestination: tubeTarget
+        };
+      }
+      return { nextSection: origin.firstHop, destination: remoteService.tank };
     }
   }
   return null;
@@ -489,7 +477,6 @@ function pruneTankState(now, targetTank = getCurrentTank()) {
     return;
   }
 
-  const historyCutoff = now - 45 * DAY_MS;
   const validResidenceIds = new Set(getAllPlacedDecor().map((item) => item.id));
   for (const fish of targetTank.fish || []) {
     if (getFishResidenceDecorId(fish) && !validResidenceIds.has(fish.residenceDecorId)) {
@@ -498,13 +485,13 @@ function pruneTankState(now, targetTank = getCurrentTank()) {
         fish.favoriteSpot = null;
       }
     }
-  }
-  for (const [key, value] of Object.entries(targetTank.feedHistory || {})) {
-    if (value.fedAt < historyCutoff) {
-      delete targetTank.feedHistory[key];
+    if (fish.boroughServiceTargetDecorId && !validResidenceIds.has(fish.boroughServiceTargetDecorId)) {
+      clearFishBoroughServiceReservation(fish);
+      if (fish.coarseActivity?.targetDecorId && !validResidenceIds.has(fish.coarseActivity.targetDecorId)) {
+        fish.coarseActivity = null;
+      }
     }
   }
-
   targetTank.pendingPoops = targetTank.pendingPoops.filter((poop) => (poop.dueAt || 0) >= now - DAY_MS);
   targetTank.poops = targetTank.poops.filter((poop) => (poop.createdAt || 0) >= targetTank.lastCleanedAt);
   targetTank.fishEggs = (targetTank.fishEggs || []).filter((egg) => !egg.hatchedAt || (egg.shellExpiresAt || 0) > now);
@@ -574,6 +561,12 @@ function pruneState(now, target = state) {
   }
 
   if (Array.isArray(target.tanks)) {
+    const historyCutoff = now - 45 * DAY_MS;
+    for (const [key, value] of Object.entries(target.mealHistory || {})) {
+      if ((Number(value?.fedAt) || 0) < historyCutoff) {
+        delete target.mealHistory[key];
+      }
+    }
     for (const tank of target.tanks) {
       pruneTankState(now, tank);
     }

@@ -791,7 +791,7 @@ function attemptGravelCoinFind(fish, action, now = Date.now()) {
     return false;
   }
 
-  state.coins += 1;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + 1);
   state.lastGravelCoinFoundAt = now;
   pushEvent(`${fish.name || "A fish"} found a coin in the gravel.`, now);
   spawnCoinGlint(action.pickupXNorm * TANK_WIDTH, action.pickupYNorm * TANK_HEIGHT - 8, now);

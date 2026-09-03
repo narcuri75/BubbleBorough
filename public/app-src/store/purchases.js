@@ -1,6 +1,44 @@
 // Source fragment: store/purchases.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function performCoinTransaction(options = {}) {
+  const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
+  const direction = options.direction === "credit" ? "credit" : "debit";
+  if (direction === "debit" && state.coins < amount) {
+    if (options.insufficientMessage) {
+      showToast(options.insufficientMessage);
+    }
+    return { ok: false, reason: "insufficient-coins", amount };
+  }
+
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const previousCoins = state.coins;
+  state.coins = clamp(state.coins + (direction === "credit" ? amount : -amount), 0, MAX_WALLET_COINS);
+  try {
+    const applied = typeof options.apply === "function" ? options.apply(now) : true;
+    if (applied === false) {
+      state.coins = previousCoins;
+      return { ok: false, reason: "not-applied", amount };
+    }
+    const event = typeof options.event === "function" ? options.event(now) : options.event;
+    const toast = typeof options.toast === "function" ? options.toast(now) : options.toast;
+    completeGameAction({
+      now,
+      event,
+      tank: options.tank,
+      toast,
+      toastOptions: options.toastOptions,
+      sound: options.sound || (direction === "credit" ? "coin" : "purchase"),
+      render: options.render,
+      full: options.full
+    });
+    return { ok: true, amount, now };
+  } catch (error) {
+    state.coins = previousCoins;
+    throw error;
+  }
+}
+
 function buyFood(foodKey) {
   const food = getFoodMeta(foodKey);
   if (!food) {
@@ -12,18 +50,15 @@ function buyFood(foodKey) {
     return;
   }
 
-  if (state.coins < food.cost) {
-    showToast("Not enough coins for that food bottle.");
-    return;
-  }
-
-  state.coins -= food.cost;
-  state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
-  pushEvent(`Bought ${food.name} (${food.bottlePellets} pellets).`, Date.now());
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(Date.now());
-  showToast(`${food.name} stocked. +${food.bottlePellets} pellets.`);
+  return performCoinTransaction({
+    amount: food.cost,
+    insufficientMessage: "Not enough coins for that food bottle.",
+    apply: () => {
+      state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
+    },
+    event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} pellets).` },
+    toast: `${food.name} stocked. +${food.bottlePellets} pellets.`
+  });
 }
 
 function buyMedicine(medicineKey) {
@@ -37,18 +72,15 @@ function buyMedicine(medicineKey) {
     return;
   }
 
-  if (state.coins < medicine.cost) {
-    showToast("Not enough coins for that medicine bottle.");
-    return;
-  }
-
-  state.coins -= medicine.cost;
-  state.medicineInventory[medicine.id] = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) + medicine.bottleDrops;
-  pushEvent(`Bought ${medicine.name} (${medicine.bottleDrops} drops).`, Date.now());
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(Date.now());
-  showToast(`${medicine.name} stocked. +${medicine.bottleDrops} drops.`);
+  return performCoinTransaction({
+    amount: medicine.cost,
+    insufficientMessage: "Not enough coins for that medicine bottle.",
+    apply: () => {
+      state.medicineInventory[medicine.id] = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) + medicine.bottleDrops;
+    },
+    event: { type: "purchase", tone: "positive", text: `Bought ${medicine.name} (${medicine.bottleDrops} drops).` },
+    toast: `${medicine.name} stocked. +${medicine.bottleDrops} drops.`
+  });
 }
 
 function selectFoodMode(foodKey, options = {}) {
@@ -116,7 +148,28 @@ function selectMedicineMode(medicineKey) {
   );
 }
 
-function buyFish(speciesId, options = {}) {
+async function ensureFishPurchaseImageReady(fish, species) {
+  if (!fish || !species) {
+    return false;
+  }
+
+  const candidates = [
+    getFishDisplayAssetPath(fish, species, Date.now()),
+    getFishAssetPath(fish, species),
+    species.fallbackAsset,
+    species.asset
+  ].filter((path, index, entries) => Boolean(path) && entries.indexOf(path) === index);
+  await preloadImages(candidates, {
+    maxAttempts: 3,
+    timeoutMs: 8000,
+    retryDelayMs: 350
+  });
+
+  const displayPath = getFishDisplayAssetPath(fish, species, Date.now()) || species.asset;
+  return isUsableRuntimeImage(runtime.images.get(displayPath));
+}
+
+async function buyFish(speciesId, options = {}) {
   if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_ADOPT_FISH)) {
     closeStoreOverlay({ force: true });
     setTutorialStage(TUTORIAL_STAGE_ADOPT_FISH_DONE, { now: Date.now() });
@@ -156,43 +209,83 @@ function buyFish(speciesId, options = {}) {
   const entryStartedAt = options.closeOverlayFirst === true
     ? now + TUTORIAL_STORE_CLOSE_DELAY_MS
     : now;
-  state.coins -= purchaseCost;
   const fish = createFishRecord(speciesId, {
     now,
     entryStartedAt,
     entryDurationMs: FISH_ENTRY_DURATION_MS,
     entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
   });
-  addFishToTank(fish, now);
-  maybeSeedNewFishDiseaseCarrier(fish, now);
-
-  if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
-    setFishNeedValue(fish, "hunger", 82, now);
-    fish.lastAteAt = now;
+  if (!fish) {
+    showToast("Could not prepare that fish.");
+    return { ok: false, reason: "fish-creation-failed" };
   }
 
-  pushEvent(`${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`, fish.acquiredAt);
-  let tutorialChanged = false;
-  if (tutorialPurchase) {
-    closeStoreOverlay({ force: true });
-    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_ADOPT_FISH_DONE, {
-      now,
-      fishId: fish.id
-    }) || tutorialChanged;
+  const pendingKey = `catalog:${speciesId}`;
+  if (runtime.pendingFishPurchases.has(pendingKey)) {
+    return { ok: false, reason: "purchase-pending" };
   }
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`${fish.name} joined the aquarium.`);
-  return {
-    ok: true,
-    fish,
-    species,
-    tutorialChanged
-  };
+  runtime.pendingFishPurchases.add(pendingKey);
+
+  try {
+    if (!await ensureFishPurchaseImageReady(fish, species)) {
+      console.error("Fish purchase blocked because its artwork could not be loaded.", {
+        speciesId,
+        path: getFishDisplayAssetPath(fish, species, Date.now()) || species.asset,
+        failure: runtime.imageLoadFailures.get(getFishDisplayAssetPath(fish, species, Date.now()) || species.asset) || null
+      });
+      showToast("That fish's artwork could not be loaded. Please try again.");
+      return { ok: false, reason: "image-unavailable" };
+    }
+    const purchaseCompletedAt = Date.now();
+    let tutorialChanged = false;
+    const transaction = performCoinTransaction({
+      amount: purchaseCost,
+      now: purchaseCompletedAt,
+      insufficientMessage: `You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`,
+      apply: () => {
+        fish.acquiredAt = purchaseCompletedAt;
+        fish.tankAddedAt = purchaseCompletedAt;
+        fish.entryStartedAt = options.closeOverlayFirst === true
+          ? purchaseCompletedAt + TUTORIAL_STORE_CLOSE_DELAY_MS
+          : purchaseCompletedAt;
+        fish.entrySplashTriggered = false;
+        addFishToTank(fish, purchaseCompletedAt);
+        maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
+        if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
+          setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
+          fish.lastAteAt = purchaseCompletedAt;
+        }
+        if (tutorialPurchase) {
+          closeStoreOverlay({ force: true });
+          tutorialChanged = setTutorialStage(TUTORIAL_STAGE_ADOPT_FISH_DONE, {
+            now: purchaseCompletedAt,
+            fishId: fish.id
+          }) || tutorialChanged;
+        }
+      },
+      event: {
+        type: "fish_added",
+        tone: "positive",
+        fishId: fish.id,
+        text: `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`
+      },
+      toast: `${fish.name} joined the aquarium.`
+    });
+    if (!transaction.ok) {
+      return transaction;
+    }
+    return {
+      ok: true,
+      fish,
+      species,
+      tutorialChanged
+    };
+  } finally {
+    runtime.pendingFishPurchases.delete(pendingKey);
+  }
 }
 
-function buyAnotherCustomFish(fishId) {
+async function buyAnotherCustomFish(fishId) {
   const managed = getManagedFishById(fishId);
   const sourceFish = managed?.fish || null;
   if (!sourceFish || !isCustomFishAssetKey(sourceFish.speciesId)) {
@@ -241,20 +334,45 @@ function buyAnotherCustomFish(fishId) {
     return;
   }
 
-  state.coins -= purchaseCost;
-  addFishToTank(fish, now);
-  maybeSeedNewFishDiseaseCarrier(fish, now);
-
-  if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
-    setFishNeedValue(fish, "hunger", 82, now);
-    fish.lastAteAt = now;
+  const pendingKey = `custom:${sourceFish.speciesId}`;
+  if (runtime.pendingFishPurchases.has(pendingKey)) {
+    return;
   }
+  runtime.pendingFishPurchases.add(pendingKey);
 
-  pushEvent(`${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`, fish.acquiredAt);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`Another ${species.name} joined the aquarium.`);
+  try {
+    if (!await ensureFishPurchaseImageReady(fish, species)) {
+      showToast("That custom fish's artwork could not be loaded. Please try again.");
+      return;
+    }
+    const purchaseCompletedAt = Date.now();
+    return performCoinTransaction({
+      amount: purchaseCost,
+      now: purchaseCompletedAt,
+      insufficientMessage: `You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for another ${species.name}.`,
+      apply: () => {
+        fish.acquiredAt = purchaseCompletedAt;
+        fish.tankAddedAt = purchaseCompletedAt;
+        fish.entryStartedAt = purchaseCompletedAt;
+        fish.entrySplashTriggered = false;
+        addFishToTank(fish, purchaseCompletedAt);
+        maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
+        if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
+          setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
+          fish.lastAteAt = purchaseCompletedAt;
+        }
+      },
+      event: {
+        type: "fish_added",
+        tone: "positive",
+        fishId: fish.id,
+        text: `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`
+      },
+      toast: `Another ${species.name} joined the aquarium.`
+    });
+  } finally {
+    runtime.pendingFishPurchases.delete(pendingKey);
+  }
 }
 
 function buyAnotherFishFromSource(fishId) {
@@ -270,6 +388,32 @@ function buyAnotherFishFromSource(fishId) {
   }
 
   buyFish(fish.speciesId);
+  return true;
+}
+
+function requestCommerceConfirmation(options = {}) {
+  options.prepare?.();
+  const details = options.getDetails?.() || null;
+  const errorMessage = options.validate?.(details) || "";
+  if (!details || errorMessage) {
+    options.clear?.();
+    showToast(errorMessage || options.missingMessage || "That item is no longer available.");
+    return false;
+  }
+  options.open?.(details);
+  return true;
+}
+
+function confirmCommerceAction(options = {}) {
+  const details = options.getDetails?.() || null;
+  const errorMessage = options.validate?.(details) || "";
+  if (!details || errorMessage) {
+    showToast(errorMessage || options.missingMessage || "That item is no longer available.");
+    closeUtilityOverlay();
+    return false;
+  }
+  options.execute?.(details);
+  closeUtilityOverlay();
   return true;
 }
 
@@ -340,115 +484,71 @@ function getPendingFishSellDetails() {
 }
 
 function openFishBuyAnotherConfirmation(fishId) {
-  runtime.pendingFishAction = {
-    type: "buy-another",
-    fishId: String(fishId || "")
-  };
-  const details = getPendingFishBuyAnotherDetails();
-  if (!details) {
-    runtime.pendingFishAction = null;
-    showToast("Choose a fish first.");
-    return;
-  }
-
-  if (details.goreLocked) {
-    runtime.pendingFishAction = null;
-    showToast("Enable Violence & Gore to buy undead fish.");
-    return;
-  }
-
-  if (!details.unlocked) {
-    runtime.pendingFishAction = null;
-    showToast(`${details.baseSpecies.name} has not been unlocked yet.`);
-    return;
-  }
-
-  if (!details.canAfford) {
-    runtime.pendingFishAction = null;
-    showToast(`You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`);
-    return;
-  }
-
-  openFishActionConfirmation({
-    type: "buy-another",
-    fishId: details.fishId
+  return requestCommerceConfirmation({
+    prepare: () => {
+      runtime.pendingFishAction = { type: "buy-another", fishId: String(fishId || "") };
+    },
+    clear: () => {
+      runtime.pendingFishAction = null;
+    },
+    getDetails: getPendingFishBuyAnotherDetails,
+    missingMessage: "Choose a fish first.",
+    validate: (details) => details?.goreLocked
+      ? "Enable Violence & Gore to buy undead fish."
+      : !details?.unlocked
+        ? `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`
+        : !details?.canAfford
+          ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`
+          : "",
+    open: (details) => openFishActionConfirmation({ type: "buy-another", fishId: details.fishId })
   });
 }
 
 function openFishSellConfirmation(fishId) {
-  runtime.pendingFishAction = {
-    type: "sell",
-    fishId: String(fishId || "")
-  };
-  const details = getPendingFishSellDetails();
-  if (!details) {
-    runtime.pendingFishAction = null;
-    showToast("Choose a fish first.");
-    return;
-  }
-
-  if (details.dead) {
-    runtime.pendingFishAction = null;
-    showToast("Dead fish cannot be sold.");
-    return;
-  }
-
-  if (details.juvenile) {
-    runtime.pendingFishAction = null;
-    showToast("Baby fish need time to grow before they can be sold.");
-    return;
-  }
-
-  openFishActionConfirmation({
-    type: "sell",
-    fishId: details.fishId
+  return requestCommerceConfirmation({
+    prepare: () => {
+      runtime.pendingFishAction = { type: "sell", fishId: String(fishId || "") };
+    },
+    clear: () => {
+      runtime.pendingFishAction = null;
+    },
+    getDetails: getPendingFishSellDetails,
+    missingMessage: "Choose a fish first.",
+    validate: (details) => details?.dead
+      ? "Dead fish cannot be sold."
+      : details?.juvenile
+        ? "Baby fish need time to grow before they can be sold."
+        : "",
+    open: (details) => openFishActionConfirmation({ type: "sell", fishId: details.fishId })
   });
 }
 
 function confirmFishBuyAnother() {
-  const details = getPendingFishBuyAnotherDetails();
-  if (!details) {
-    showToast("That fish is no longer available.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (!details.canBuy) {
-    showToast(details.goreLocked
+  return confirmCommerceAction({
+    getDetails: getPendingFishBuyAnotherDetails,
+    missingMessage: "That fish is no longer available.",
+    validate: (details) => !details?.canBuy
+      ? (details?.goreLocked
       ? "Enable Violence & Gore to buy undead fish."
-      : `${details.baseSpecies.name} has not been unlocked yet.`);
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (!details.canAfford) {
-    showToast(`You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`);
-    closeUtilityOverlay();
-    return;
-  }
-
-  buyAnotherFishFromSource(details.fishId);
-  closeUtilityOverlay();
+      : `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`)
+      : !details?.canAfford
+        ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`
+        : "",
+    execute: (details) => buyAnotherFishFromSource(details.fishId)
+  });
 }
 
 function confirmFishSell() {
-  const details = getPendingFishSellDetails();
-  if (!details) {
-    showToast("That fish is no longer available.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (!details.canSell) {
-    showToast(details.dead
+  return confirmCommerceAction({
+    getDetails: getPendingFishSellDetails,
+    missingMessage: "That fish is no longer available.",
+    validate: (details) => !details?.canSell
+      ? (details?.dead
       ? "Dead fish cannot be sold."
-      : "Baby fish need time to grow before they can be sold.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  sellFish(details.fishId);
-  closeUtilityOverlay();
+      : "Baby fish need time to grow before they can be sold.")
+      : "",
+    execute: (details) => sellFish(details.fishId)
+  });
 }
 
 function getDecorPurchaseCost(decorKey) {
@@ -492,30 +592,25 @@ function buyDecor(decorKey, options = {}) {
     return { ok: false, reason: "content-locked" };
   }
 
-  if (state.coins < decor.cost) {
-    showToast(`You need ${decor.cost} coins for ${decor.name}.`);
-    return { ok: false, reason: "insufficient-coins" };
-  }
-
   const now = Date.now();
   const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION);
-  state.coins -= decor.cost;
-  state.decorInventory[decorKey] = (state.decorInventory[decorKey] || 0) + 1;
-  pushEvent(`Bought ${decor.name}.`, now, getCurrentTank(), {
-    type: "decor",
-    decorKey
+  const transaction = performCoinTransaction({
+    amount: decor.cost,
+    now,
+    insufficientMessage: `You need ${decor.cost} coins for ${decor.name}.`,
+    apply: () => {
+      state.decorInventory[decorKey] = (state.decorInventory[decorKey] || 0) + 1;
+      if (tutorialPurchase || options.closeOverlayFirst === true) {
+        closeStoreOverlay({ force: true });
+        setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, { now, decorKey });
+      }
+    },
+    event: { type: "decor", tone: "positive", decorKey, text: `Bought ${decor.name}.` },
+    toast: `${decor.name} is waiting in storage.`
   });
-  if (tutorialPurchase || options.closeOverlayFirst === true) {
-    closeStoreOverlay({ force: true });
-    setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, {
-      now,
-      decorKey
-    });
+  if (!transaction.ok) {
+    return transaction;
   }
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`${decor.name} is waiting in storage.`);
   return {
     ok: true,
     decor,
@@ -542,22 +637,20 @@ function buyAnotherDecor(decorKey) {
   }
 
   const cost = getDecorPurchaseCost(key);
-  if (state.coins < cost) {
-    showToast(`You need ${cost} ${pluralize("coin", cost)} for another ${decor.name}.`);
-    return;
-  }
-
-  state.coins -= cost;
-  state.decorInventory[key] = (state.decorInventory[key] || 0) + 1;
-  const now = Date.now();
-  pushEvent(`Bought another ${decor.name}.`, now, getCurrentTank(), {
-    type: "decor",
-    decorKey: key
+  return performCoinTransaction({
+    amount: cost,
+    insufficientMessage: `You need ${cost} ${pluralize("coin", cost)} for another ${decor.name}.`,
+    apply: () => {
+      state.decorInventory[key] = (state.decorInventory[key] || 0) + 1;
+    },
+    event: {
+      type: "decor",
+      tone: "positive",
+      decorKey: key,
+      text: `Bought another ${decor.name}.`
+    },
+    toast: `Another ${decor.name} is waiting in storage.`
   });
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`Another ${decor.name} is waiting in storage.`);
 }
 
 function getPendingDecorBuyAnotherDetails() {
@@ -608,81 +701,59 @@ function getPendingDecorSellDetails() {
 
 function openDecorBuyAnotherConfirmation(decorKey) {
   const key = String(decorKey || "");
-  const decor = runtime.decorMap.get(key);
-  if (!decor) {
-    showToast("That decor is no longer available.");
-    return;
-  }
-
-  if (!canUseDecorWithCurrentContentSettings(key)) {
-    showToast("Enable Violence & Gore to buy that decor.");
-    return;
-  }
-
-  const cost = getDecorPurchaseCost(key);
-  if (state.coins < cost) {
-    showToast(`You need ${cost} ${pluralize("coin", cost)} for another ${decor.name}.`);
-    return;
-  }
-
-  openDecorActionConfirmation({
-    type: "buy-another",
-    decorKey: key
+  return requestCommerceConfirmation({
+    prepare: () => {
+      runtime.pendingDecorAction = { type: "buy-another", decorKey: key };
+    },
+    clear: () => {
+      runtime.pendingDecorAction = null;
+    },
+    getDetails: getPendingDecorBuyAnotherDetails,
+    missingMessage: "That decor is no longer available.",
+    validate: (details) => !details
+      ? "That decor is no longer available."
+      : !canUseDecorWithCurrentContentSettings(details.decorKey)
+        ? "Enable Violence & Gore to buy that decor."
+        : !details.canAfford
+          ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.decor.name}.`
+          : "",
+    open: (details) => openDecorActionConfirmation({ type: "buy-another", decorKey: details.decorKey })
   });
 }
 
 function openDecorSellConfirmation(placedId) {
-  const item = getPlacedDecorById(placedId);
-  if (!item) {
-    showToast("Select decor first.");
-    return;
-  }
-
-  if (isPlacedDecorGrouped(item)) {
-    showToast("Ungroup that decor before selling it.");
-    return;
-  }
-
-  openDecorActionConfirmation({
-    type: "sell",
-    placedId: item.id
+  return requestCommerceConfirmation({
+    prepare: () => {
+      runtime.pendingDecorAction = { type: "sell", placedId: String(placedId || "") };
+    },
+    clear: () => {
+      runtime.pendingDecorAction = null;
+    },
+    getDetails: getPendingDecorSellDetails,
+    missingMessage: "Select decor first.",
+    validate: (details) => details?.grouped ? "Ungroup that decor before selling it." : "",
+    open: (details) => openDecorActionConfirmation({ type: "sell", placedId: details.placedId })
   });
 }
 
 function confirmDecorBuyAnother() {
-  const details = getPendingDecorBuyAnotherDetails();
-  if (!details) {
-    showToast("That decor is no longer available.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (!details.canAfford) {
-    showToast(`You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.decor.name}.`);
-    closeUtilityOverlay();
-    return;
-  }
-
-  buyAnotherDecor(details.decorKey);
-  closeUtilityOverlay();
+  return confirmCommerceAction({
+    getDetails: getPendingDecorBuyAnotherDetails,
+    missingMessage: "That decor is no longer available.",
+    validate: (details) => !details?.canAfford
+      ? `You need ${details?.cost || 0} ${pluralize("coin", details?.cost || 0)} for another ${details?.decor?.name || "decor"}.`
+      : "",
+    execute: (details) => buyAnotherDecor(details.decorKey)
+  });
 }
 
 function confirmDecorSell() {
-  const details = getPendingDecorSellDetails();
-  if (!details) {
-    showToast("That decor is no longer in the tank.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (details.grouped) {
-    showToast("Ungroup that decor before selling it.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  sellPlacedDecor(details.placedId);
-  closeUtilityOverlay();
+  return confirmCommerceAction({
+    getDetails: getPendingDecorSellDetails,
+    missingMessage: "That decor is no longer in the tank.",
+    validate: (details) => details?.grouped ? "Ungroup that decor before selling it." : "",
+    execute: (details) => sellPlacedDecor(details.placedId)
+  });
 }
 
 function buyBackground(backgroundKey) {
@@ -696,20 +767,16 @@ function buyBackground(backgroundKey) {
     return;
   }
 
-  if (state.coins < background.cost) {
-    showToast(`You need ${background.cost} ${pluralize("coin", background.cost)} for ${background.name}.`);
-    return;
-  }
-
-  const now = Date.now();
-  state.coins -= background.cost;
-  state.ownedBackgroundInventory[backgroundKey] = 1;
-  state.selectedBackground = backgroundKey;
-  pushEvent(`Unlocked the ${background.name} background.`, now);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`${background.name} unlocked and applied.`);
+  return performCoinTransaction({
+    amount: background.cost,
+    insufficientMessage: `You need ${background.cost} ${pluralize("coin", background.cost)} for ${background.name}.`,
+    apply: () => {
+      state.ownedBackgroundInventory[backgroundKey] = 1;
+      state.selectedBackground = backgroundKey;
+    },
+    event: { type: "purchase", tone: "positive", text: `Unlocked the ${background.name} background.` },
+    toast: `${background.name} unlocked and applied.`
+  });
 }
 
 function buyFilter(filterKey) {
@@ -718,27 +785,29 @@ function buyFilter(filterKey) {
     return;
   }
 
-  if (state.coins < filter.cost) {
-    showToast(`You need ${filter.cost} ${pluralize("coin", filter.cost)} for the ${filter.name}.`);
-    return;
-  }
-
   const now = Date.now();
-  state.coins -= filter.cost;
-  state.ownedFilterInventory[filterKey] = (state.ownedFilterInventory[filterKey] || 0) + 1;
-  if (tankSupportsFilters(getCurrentTank()) && getAvailableFilterCount(filterKey) > 0) {
-    preserveTankDirtinessThroughChange(now, () => {
-      state.selectedFilterAsset = filterKey;
-    });
-    pushEvent(`Bought and equipped the ${filter.name}.`, now);
-    showToast(`${filter.name} installed.`);
-  } else {
-    pushEvent(`Bought ${filter.name}.`, now);
-    showToast(`${filter.name} added to tank storage.`);
-  }
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
+  let event = null;
+  let toast = "";
+  return performCoinTransaction({
+    amount: filter.cost,
+    now,
+    insufficientMessage: `You need ${filter.cost} ${pluralize("coin", filter.cost)} for the ${filter.name}.`,
+    apply: () => {
+      state.ownedFilterInventory[filterKey] = (state.ownedFilterInventory[filterKey] || 0) + 1;
+      if (tankSupportsFilters(getCurrentTank()) && getAvailableFilterCount(filterKey) > 0) {
+        preserveTankDirtinessThroughChange(now, () => {
+          state.selectedFilterAsset = filterKey;
+        });
+        event = { type: "purchase", tone: "positive", text: `Bought and equipped the ${filter.name}.` };
+        toast = `${filter.name} installed.`;
+      } else {
+        event = { type: "purchase", tone: "positive", text: `Bought ${filter.name}.` };
+        toast = `${filter.name} added to tank storage.`;
+      }
+    },
+    event: () => event,
+    toast: () => toast
+  });
 }
 
 function buyAutoDispenser() {
@@ -747,22 +816,18 @@ function buyAutoDispenser() {
     return;
   }
 
-  if (state.coins < AUTO_DISPENSER_COST) {
-    showToast(`You need ${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)} for the pellet dispenser.`);
-    return;
-  }
-
-  const now = Date.now();
-  state.coins -= AUTO_DISPENSER_COST;
-  state.autoDispenser = createDefaultAutoDispenserState({
-    ...state.autoDispenser,
-    installed: true
+  return performCoinTransaction({
+    amount: AUTO_DISPENSER_COST,
+    insufficientMessage: `You need ${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)} for the pellet dispenser.`,
+    apply: () => {
+      state.autoDispenser = createDefaultAutoDispenserState({
+        ...state.autoDispenser,
+        installed: true
+      });
+    },
+    event: { type: "equipment", tone: "positive", text: "Installed an automatic pellet dispenser above the waterline." },
+    toast: "Pellet dispenser installed."
   });
-  pushEvent("Installed an automatic pellet dispenser above the waterline.", now);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast("Pellet dispenser installed.");
 }
 
 function buyUvLight() {
@@ -776,21 +841,17 @@ function buyUvLight() {
     return;
   }
 
-  if (state.coins < UV_LIGHT_COST) {
-    showToast(`You need ${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)} for the UV light.`);
-    return;
-  }
-
-  const now = Date.now();
-  state.coins -= UV_LIGHT_COST;
-  state.uvLightOwned = true;
-  state.uvLightInstalled = true;
-  state.uvLightEnabled = true;
-  pushEvent("Installed a UV light for blacklight glow.", now);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast("UV light installed and switched on.");
+  return performCoinTransaction({
+    amount: UV_LIGHT_COST,
+    insufficientMessage: `You need ${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)} for the UV light.`,
+    apply: () => {
+      state.uvLightOwned = true;
+      state.uvLightInstalled = true;
+      state.uvLightEnabled = true;
+    },
+    event: { type: "equipment", tone: "positive", text: "Installed a UV light for blacklight glow." },
+    toast: "UV light installed and switched on."
+  });
 }
 
 function sellFilter(filterKey) {
@@ -807,17 +868,18 @@ function sellFilter(filterKey) {
   }
 
   const resaleValue = getResaleValue(filter.cost);
-  const now = Date.now();
-  const nextCount = Math.max(0, ownedCount - 1);
-  if (nextCount > 0) {
-    state.ownedFilterInventory[filterKey] = nextCount;
-  } else {
-    delete state.ownedFilterInventory[filterKey];
-  }
-  state.coins += resaleValue;
-  pushEvent(`Sold ${filter.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now);
-  showToast(`${filter.name} sold.`);
-  saveState();
-  playCoinSoundEffect();
-  renderUi(now);
+  return performCoinTransaction({
+    direction: "credit",
+    amount: resaleValue,
+    apply: () => {
+      const nextCount = Math.max(0, ownedCount - 1);
+      if (nextCount > 0) {
+        state.ownedFilterInventory[filterKey] = nextCount;
+      } else {
+        delete state.ownedFilterInventory[filterKey];
+      }
+    },
+    event: { type: "sale", tone: "neutral", text: `Sold ${filter.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.` },
+    toast: `${filter.name} sold.`
+  });
 }

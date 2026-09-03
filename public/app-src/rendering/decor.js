@@ -116,10 +116,13 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
   const resolvedMotion = motion || getDecorMotion(item, now);
   context.save();
   context.globalAlpha = clamp(alpha, 0, 1);
-  if (isDecorHorizontallyFlipped(item)) {
-    context.translate(drawX + width, 0);
-    context.scale(-1, 1);
-    drawX = 0;
+  const flipX = isDecorHorizontallyFlipped(item);
+  const flipY = isDecorVerticallyFlipped(item);
+  if (flipX || flipY) {
+    context.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
+    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+    drawX = flipX ? 0 : drawX;
+    drawY = flipY ? 0 : drawY;
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
   drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
@@ -342,6 +345,12 @@ function drawFishProjectedShadow(context, x, objectBottomY, width, height, opaci
 }
 
 function drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion = null, alpha = 1) {
+  if (isTransitTubeDecorKey(item?.decorKey) && normalizeDecorColorSetting(item?.transitTubeColor || "")) {
+    const decor = runtime.decorMap.get(item.decorKey);
+    const imagePath = image === runtime.images.get(decor?.bgPath) ? decor.bgPath : decor?.path;
+    drawDecorColorLayerImageToContext(tankContext, image, imagePath || "", item.transitTubeColor, true, drawX, drawY, width, height, item, now, motion, alpha);
+    return;
+  }
   if (isTankLightsOut(now) && isSpookyDecorItem(item)) {
     tankContext.save();
     tankContext.filter = "brightness(118%) saturate(112%) drop-shadow(0 0 12px rgba(118, 210, 180, 0.28))";
@@ -460,7 +469,7 @@ function drawDecor(layer = null, now = Date.now()) {
 
     let imagePath = decor.path;
 
-    if (isCaveDecorKey(item.decorKey)) {
+    if (isCaveDecorKey(item.decorKey) || isTransitTubeDecorKey(item.decorKey)) {
       if (layer === span.back && decor.bgPath) {
         imagePath = decor.bgPath;
       } else if (layer === span.front) {
@@ -513,8 +522,12 @@ function drawDecor(layer = null, now = Date.now()) {
       continue;
     }
 
-    if (layer === span.back && hasDecorCaveColorLayers(decor)) {
+    if (layer === span.back && (hasDecorCaveColorLayers(decor) || isTransitTubeDecorKey(item.decorKey))) {
       const bgHeight = width * (image.height / Math.max(1, image.width));
+      if (isTransitTubeDecorKey(item.decorKey)) {
+        drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion);
+        continue;
+      }
       if (drawCaveBackgroundLayerToContext(tankContext, item, decor, now, {
         drawX,
         bgDrawY: y - bgHeight,
@@ -576,7 +589,8 @@ function drawDecorPreview() {
     yNorm: runtime.placementPreview.yNorm,
     scale: Number(runtime.placementMode.scale) || getDecorScaleDefault(decor.key),
     tankLayer: previewLayer,
-    flipped: Boolean(runtime.placementMode.flipped)
+    flipped: Boolean(runtime.placementMode.flipped),
+    flippedY: Boolean(runtime.placementMode.flippedY)
   };
   const previewMotion = getDecorMotion(previewItem, Date.now());
   if ((decor.bubbler || isCaveDecorKey(decor.key) || hasDecorCaveColorLayers(decor)) && decor.bgPath) {

@@ -83,9 +83,10 @@
               </div>
             </section>
 
-            <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Daily recap ready"
-              aria-label="Open daily recap">
+            <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Notifications"
+              aria-label="Open notifications">
               <img class="daily-bonus-bell-icon" src="./assets/icons/bell.png" alt="" aria-hidden="true" />
+              <span id="notificationBellBadge" class="notification-bell-badge" hidden aria-hidden="true"></span>
             </button>
 
             <aside id="editQuickRef" class="edit-quick-ref" hidden aria-label="Edit mode quick reference">
@@ -2671,7 +2672,7 @@ function getEffectiveAnimationFpsLimit() {
         );
         normalizedSource = replaceOnce(
           normalizedSource,
-          /const\s+PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT\s*=\s*30\s*;/,
+          /const\s+PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT\s*=\s*96\s*;/,
           "const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 8;",
           "mobile water particle count"
         );
@@ -2683,7 +2684,7 @@ function getEffectiveAnimationFpsLimit() {
         );
         normalizedSource = replaceOnce(
           normalizedSource,
-          /const\s+PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT\s*=\s*30\s*;/,
+          /const\s+PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT\s*=\s*96\s*;/,
           "const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 8;",
           "mobile dirty water particle count"
         );

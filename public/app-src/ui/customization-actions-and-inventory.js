@@ -317,20 +317,21 @@ function renderDailyBonusOverlay() {
         <strong>${row.score > 0 ? "+" : ""}${row.score}</strong>
       </div>
     `).join("")
-    : `<div class="empty-state">Nothing major happened in this tank.</div>`;
+    : `<div class="empty-state">Nothing major happened across the borough.</div>`;
   return `
     <div class="daily-recap-list">
       <div class="compact-heading">
         <h3>Daily Recap!</h3>
-        <p>${escapeHtml(summary.tankName || "Aquarium")} - ${escapeHtml(summary.dayKey || "")}</p>
+        <p>Bubble Borough - ${escapeHtml(summary.dayKey || "")}</p>
       </div>
-      <p class="daily-recap-narrative">${escapeHtml(summary.narrative || buildDailyRecapNarrative(summary.rows || [], getTankById(summary.tankId)))}</p>
+      <p class="daily-recap-narrative">${escapeHtml(summary.narrative || buildDailyRecapNarrative(summary.rows || [], null))}</p>
       ${rows}
     </div>
     <div class="summary-grid bonus-summary-grid">
       <div class="summary-row"><span>Overall</span><strong>${escapeHtml(summary.overall || "Quiet day.")}</strong></div>
       <div class="summary-row"><span>Average Comfort</span><strong>${summary.averageComfort || 0}%</strong></div>
-      <div class="summary-row"><span>Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
+      <div class="summary-row"><span>Normalized Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
+      <div class="summary-row"><span>Activity Score</span><strong>${summary.rawScore > 0 ? "+" : ""}${summary.rawScore || 0}</strong></div>
       <div class="summary-row"><span>Total Bonus</span><strong>${summary.reward || 0} coins</strong></div>
     </div>
   `;
@@ -406,18 +407,15 @@ function claimDailyBonus() {
   const now = Date.now();
   syncActiveDailyBonusState();
   const tank = getCurrentTank();
-  const summary = getActiveDailyBonusSummary(tank);
+  const summary = getActiveDailyBonusSummary();
   if (!state.dailyBonus?.available || !summary) {
     closeUtilityOverlay();
     return;
   }
 
-  const tankId = summary.tankId || tank?.id || "";
-  const claimedKey = tankId && summary.dayKey ? `${tankId}:${summary.dayKey}` : "";
+  const claimedKey = getDailyBonusClaimKey(summary);
   if (claimedKey && state.dailyBonus.claimedByTankDay?.[claimedKey]) {
-    if (state.dailyBonus.summariesByTankId && tankId) {
-      delete state.dailyBonus.summariesByTankId[tankId];
-    }
+    state.dailyBonus.summariesByTankId = {};
     state.dailyBonus.summary = null;
     syncActiveDailyBonusState();
     closeUtilityOverlay();
@@ -429,7 +427,7 @@ function claimDailyBonus() {
 
   const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
   if (reward > 0) {
-    state.coins += reward;
+    state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
   }
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
@@ -437,22 +435,18 @@ function claimDailyBonus() {
   if (claimedKey) {
     state.dailyBonus.claimedByTankDay[claimedKey] = true;
   }
-  if (state.dailyBonus.summariesByTankId && tankId) {
-    delete state.dailyBonus.summariesByTankId[tankId];
-  }
+  state.dailyBonus.summariesByTankId = {};
   state.dailyBonus.summary = null;
   state.dailyBonus.available = false;
   state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
   syncActiveDailyBonusState();
-  const milestones = applyProgressMilestones(summary, now);
   pushEvent(`Claimed a daily recap worth ${reward} ${pluralize("coin", reward)}.`, now, tank, { score: 1, type: "daily_recap", recapEligible: false });
   playToolbarButtonSoundEffect("press");
   playCoinSoundEffect();
   closeUtilityOverlay();
   saveState();
   renderUi(now);
-  const milestoneCoins = milestones.reduce((total, milestone) => total + (Number(milestone.reward) || 0), 0);
-  showToast(`Daily recap claimed. +${reward + milestoneCoins} coins.`);
+  showToast(`Daily recap claimed. +${reward} coins.`);
 }
 
 function renderSettingsOverlay() {
@@ -515,8 +509,10 @@ function renderSettingsOverlay() {
   }
   for (const input of dom.settingsOverlay.querySelectorAll("[data-display-position-choice]")) {
     if (input instanceof HTMLInputElement) {
+      input.disabled = !DIGITAL_DISPLAY_ENABLED;
       input.checked = input.value === uiSettings.displayPosition;
       input.closest(".display-position-option")?.classList.toggle("is-selected", input.checked);
+      input.closest(".display-position-option")?.classList.toggle("is-disabled", !DIGITAL_DISPLAY_ENABLED);
     }
   }
   syncWallpaperScrollControls(dom.settingsOverlay);
@@ -1553,6 +1549,7 @@ function renderEditDecorTray() {
       entry.item ? getDecorTankLayer(entry.item) : "",
       entry.item ? Number(entry.item.scale || 1).toFixed(2) : formatDecorScale(getDecorScaleDefault(entry.decorKey)),
       entry.item && isDecorHorizontallyFlipped(entry.item) ? 1 : 0,
+      entry.item && isDecorVerticallyFlipped(entry.item) ? 1 : 0,
       entry.item?.groupId || ""
     ].join(":"))
   ].join("|");
@@ -1603,7 +1600,7 @@ function renderEditDecorTray() {
                 aria-label="${escapeHtml(actionLabel)}"
               >
                 <span class="edit-decor-tile-surface">
-                  <img class="edit-decor-tile-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${entry.type === "placed" && isDecorHorizontallyFlipped(entry.item) ? ` style="transform: translate(-50%, -50%) scaleX(-1);"` : ""} />
+                  <img class="edit-decor-tile-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${entry.type === "placed" && (isDecorHorizontallyFlipped(entry.item) || isDecorVerticallyFlipped(entry.item)) ? ` style="transform: translate(-50%, -50%) scale(${isDecorHorizontallyFlipped(entry.item) ? -1 : 1}, ${isDecorVerticallyFlipped(entry.item) ? -1 : 1});"` : ""} />
                   <span class="inventory-tray-label">${escapeHtml(decorTypeLabel)}</span>
                   <span class="edit-decor-tile-count">${badge}</span>
                 </span>
@@ -3207,6 +3204,7 @@ function shouldShowSelectedFishNeedsPanel(managed) {
     || runtime.utilityOverlayOpen
     || runtime.settingsOverlayOpen
     || runtime.equipmentOverlayOpen
+    || runtime.fishInspectorSettingsOpen
     || isIntroTutorialActive()
   );
 }

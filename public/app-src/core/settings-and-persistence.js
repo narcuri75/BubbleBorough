@@ -538,6 +538,8 @@ function sanitizeDailyBonusState(rawState) {
       ...summary,
       dayKey: typeof summary.dayKey === "string" ? summary.dayKey : "",
       tankId: typeof summary.tankId === "string" ? summary.tankId : "",
+      scoreModel: typeof summary.scoreModel === "string" ? summary.scoreModel : "",
+      rawScore: Math.round(Number(summary.rawScore ?? summary.score) || 0),
       score: Math.round(Number(summary.score) || 0),
       reward: clamp(Math.floor(Number(summary.reward) || 0), 0, DAILY_RECAP_REWARD_CAP),
       narrative: typeof summary.narrative === "string" ? summary.narrative.slice(0, 600) : "",
@@ -549,6 +551,74 @@ function sanitizeDailyBonusState(rawState) {
       })).filter((row) => row.text) : []
     }
     : null;
+  const combineSummariesForDay = (summaries, dayKey) => {
+    const unique = [];
+    const seen = new Set();
+    for (const summary of summaries.filter((entry) => entry?.dayKey === dayKey)) {
+      const key = `${summary.tankId || ""}:${summary.dayKey}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      unique.push(summary);
+    }
+    const existingBorough = unique.find((summary) => summary.scope === BOROUGH_DAILY_RECAP_ID || summary.tankId === BOROUGH_DAILY_RECAP_ID);
+    if (existingBorough) {
+      const rawScore = existingBorough.scoreModel === BOROUGH_RECAP_SCORE_MODEL
+        ? Number(existingBorough.rawScore) || 0
+        : (existingBorough.rows || []).reduce((total, row) => total + (Number(row.score) || 0), 0);
+      const score = existingBorough.scoreModel === BOROUGH_RECAP_SCORE_MODEL
+        ? Number(existingBorough.score) || 0
+        : normalizeBoroughRecapScore(rawScore, existingBorough.fishCount, existingBorough.tankCount);
+      return {
+        ...existingBorough,
+        scope: BOROUGH_DAILY_RECAP_ID,
+        tankId: BOROUGH_DAILY_RECAP_ID,
+        tankName: "Bubble Borough",
+        scoreModel: BOROUGH_RECAP_SCORE_MODEL,
+        rawScore,
+        score,
+        reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+        overall: score >= 8 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
+      };
+    }
+    const fishCount = unique.reduce((total, summary) => total + (Number(summary.fishCount) || 0), 0);
+    const rows = unique.flatMap((summary) => (summary.rows || []).map((row) => ({
+      ...row,
+      text: `${summary.tankName || "Tank"}: ${row.text}`
+    })));
+    const rawScore = rows.reduce((total, row) => total + (Number(row.score) || 0), 0);
+    const score = normalizeBoroughRecapScore(rawScore, fishCount, unique.length);
+    return {
+      scope: BOROUGH_DAILY_RECAP_ID,
+      tankId: BOROUGH_DAILY_RECAP_ID,
+      tankName: "Bubble Borough",
+      tankCount: unique.length,
+      dayKey,
+      generatedAt: Math.max(...unique.map((summary) => Number(summary.generatedAt) || 0), 0),
+      rows,
+      scoreModel: BOROUGH_RECAP_SCORE_MODEL,
+      rawScore,
+      score,
+      reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+      mealsFed: unique.reduce((total, summary) => total + (Number(summary.mealsFed) || 0), 0),
+      averageComfort: fishCount
+        ? Math.round(unique.reduce((total, summary) => total + ((Number(summary.averageComfort) || 0) * (Number(summary.fishCount) || 0)), 0) / fishCount)
+        : 0,
+      cleanPercent: unique.length
+        ? Math.round(unique.reduce((total, summary) => total + (Number(summary.cleanPercent) || 0), 0) / unique.length)
+        : 0,
+      allMealsSatisfied: fishCount > 0 && unique.filter((summary) => Number(summary.fishCount) > 0).every((summary) => summary.allMealsSatisfied === true),
+      hasNegativeEvents: rows.some((row) => Number(row.score) < 0),
+      hasAttackOrDeath: unique.some((summary) => summary.hasAttackOrDeath === true),
+      hasGlassTapStress: unique.some((summary) => summary.hasGlassTapStress === true),
+      hasSparklingComfort: unique.some((summary) => summary.hasSparklingComfort === true),
+      fishCount,
+      decorCount: unique.reduce((total, summary) => total + (Number(summary.decorCount) || 0), 0),
+      narrative: "A single daily recap covering every tank in Bubble Borough.",
+      overall: score >= 8 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
+    };
+  };
   const summariesByTankId = {};
   const rawSummaries = source.summariesByTankId && typeof source.summariesByTankId === "object" ? source.summariesByTankId : {};
   for (const [tankId, summary] of Object.entries(rawSummaries)) {
@@ -563,20 +633,29 @@ function sanitizeDailyBonusState(rawState) {
   const claimedByTankDay = source.claimedByTankDay && typeof source.claimedByTankDay === "object"
     ? Object.fromEntries(Object.entries(source.claimedByTankDay).map(([key, value]) => [String(key), Boolean(value)]))
     : {};
-  const recapHistory = Array.isArray(source.recapHistory)
-    ? source.recapHistory.map(sanitizeSummary).filter(Boolean).slice(0, DAILY_RECAP_HISTORY_LIMIT)
+  const rawHistory = Array.isArray(source.recapHistory)
+    ? source.recapHistory.map(sanitizeSummary).filter(Boolean)
     : [];
+  const recapHistory = [...new Set(rawHistory.map((summary) => summary.dayKey).filter(Boolean))]
+    .map((dayKey) => combineSummariesForDay(rawHistory, dayKey))
+    .filter(Boolean)
+    .sort((left, right) => (Number(right.generatedAt) || 0) - (Number(left.generatedAt) || 0))
+    .slice(0, DAILY_RECAP_HISTORY_LIMIT);
   const milestones = source.milestones && typeof source.milestones === "object"
     ? Object.fromEntries(Object.entries(source.milestones).map(([key, value]) => [String(key), Boolean(value)]))
     : {};
   const legacySummary = sanitizeSummary(source.summary);
+  const pendingCandidates = [...Object.values(summariesByTankId), legacySummary].filter(Boolean);
+  const latestPendingDayKey = pendingCandidates.map((summary) => summary.dayKey).filter(Boolean).sort().at(-1) || "";
+  const boroughSummary = latestPendingDayKey ? combineSummariesForDay(pendingCandidates, latestPendingDayKey) : null;
+  const boroughSummaries = boroughSummary ? { [BOROUGH_DAILY_RECAP_ID]: boroughSummary } : {};
   return {
-    available: Boolean(source.available && (legacySummary || Object.keys(summariesByTankId).length)),
-    summary: legacySummary,
+    available: Boolean(boroughSummary && !claimedByTankDay[`${BOROUGH_DAILY_RECAP_ID}:${boroughSummary.dayKey}`]),
+    summary: boroughSummary,
     lastQualifiedDayKey: typeof source.lastQualifiedDayKey === "string" ? source.lastQualifiedDayKey : null,
     lastClaimedDayKey: typeof source.lastClaimedDayKey === "string" ? source.lastClaimedDayKey : null,
     lastEvaluatedDayKey: typeof source.lastEvaluatedDayKey === "string" ? source.lastEvaluatedDayKey : null,
-    summariesByTankId,
+    summariesByTankId: boroughSummaries,
     lastEvaluatedByTankId,
     claimedByTankDay,
     recapHistory,
@@ -735,6 +814,7 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     events: Array.isArray(incomingTank.events)
       ? incomingTank.events.map(sanitizeEvent).filter(Boolean).slice(0, MAX_TANK_EVENT_HISTORY)
       : [],
+    lastCorpseSicknessAt: Number.isFinite(Number(incomingTank.lastCorpseSicknessAt)) ? Number(incomingTank.lastCorpseSicknessAt) : null,
     lastGravelCoinFoundAt: Number.isFinite(Number(incomingTank.lastGravelCoinFoundAt)) ? Number(incomingTank.lastGravelCoinFoundAt) : 0,
     foodBuffs: incomingTank.foodBuffs,
     medicineEffects: Array.isArray(incomingTank.medicineEffects) ? incomingTank.medicineEffects : [],
@@ -789,6 +869,7 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     selectedBubbleAsset: incoming?.selectedBubbleAsset,
     lastCleanedAt: incoming?.lastCleanedAt,
     lastSimulatedAt: incoming?.lastSimulatedAt,
+    lastCorpseSicknessAt: incoming?.lastCorpseSicknessAt,
     lastGravelCoinFoundAt: incoming?.lastGravelCoinFoundAt,
     events: incoming?.events
   }, options);
@@ -878,6 +959,37 @@ function applyDefaultStarterTankAppearance(tank) {
   return true;
 }
 
+function mergeUniversalMealHistories(...histories) {
+  const merged = {};
+  for (const history of histories) {
+    for (const [slotKey, entry] of Object.entries(sanitizeHistory(history))) {
+      const existing = merged[slotKey] || { fedAt: 0, offeredAt: 0, coinsEarned: 0, fishIds: [], offeredFishIds: [] };
+      merged[slotKey] = {
+        fedAt: Math.max(existing.fedAt, entry.fedAt),
+        offeredAt: Math.max(existing.offeredAt, entry.offeredAt),
+        coinsEarned: Math.min(FISH_DAILY_FEEDING_CARE_COIN_CAP, existing.coinsEarned + entry.coinsEarned),
+        fishIds: [...new Set([...existing.fishIds, ...entry.fishIds])],
+        offeredFishIds: [...new Set([...existing.offeredFishIds, ...entry.offeredFishIds])]
+      };
+    }
+  }
+  return merged;
+}
+
+function sanitizeBoroughEventHistory(rawEvents, fallbackTanks = []) {
+  const source = Array.isArray(rawEvents) && rawEvents.length
+    ? rawEvents
+    : fallbackTanks.flatMap((tank) => (tank.events || []).map((event) => ({ ...event, tankId: tank.id, tankName: getTankLabel(tank) })));
+  return source.map((entry) => {
+    const event = sanitizeEvent(entry);
+    return event ? {
+      ...event,
+      tankId: typeof entry.tankId === "string" ? entry.tankId : "",
+      tankName: typeof entry.tankName === "string" ? entry.tankName.slice(0, 80) : ""
+    } : null;
+  }).filter(Boolean).sort((left, right) => Number(right.time) - Number(left.time)).slice(0, MAX_BOROUGH_EVENT_HISTORY);
+}
+
 function reconcileState(rawState) {
   const now = Date.now();
   const base = {
@@ -885,7 +997,8 @@ function reconcileState(rawState) {
     healthModelVersion: HEALTH_MODEL_VERSION,
     coins: STARTING_COINS,
     lifetimeDeaths: 0,
-    lastCorpseSicknessAt: null,
+    mealHistory: {},
+    lastGravelCoinFoundAt: 0,
     unlockedFishSpecies: [],
     unlockedDecorKeys: [],
     storedFish: [],
@@ -902,10 +1015,13 @@ function reconcileState(rawState) {
     foodInventory: getDefaultFoodInventory(),
     medicineInventory: getDefaultMedicineInventory(),
     dailyBonus: buildDefaultDailyBonusState(),
+    notificationCenter: buildDefaultNotificationCenterState(),
     tutorial: buildDefaultTutorialState(),
     uiSettings: sanitizeUiSettings(null),
     contentSettings: sanitizeContentSettings(null),
+    boroughTravelWalls: {},
     boroughHappenings: [],
+    boroughEvents: [],
     memorialHistory: [],
     events: []
   };
@@ -927,9 +1043,13 @@ function reconcileState(rawState) {
 
   const nextState = {
     ...base,
-    coins: Number.isFinite(incoming.coins) ? Math.max(0, Math.floor(incoming.coins)) : base.coins,
+    coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
-    lastCorpseSicknessAt: Number.isFinite(incoming.lastCorpseSicknessAt) ? incoming.lastCorpseSicknessAt : null,
+    mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
+    lastGravelCoinFoundAt: Math.max(
+      Number(incoming.lastGravelCoinFoundAt) || 0,
+      ...tanks.map((tank) => Number(tank.lastGravelCoinFoundAt) || 0)
+    ),
     unlockedFishSpecies: sanitizeUnlockedFishSpecies(incoming.unlockedFishSpecies),
     unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
     storedFish: Array.isArray(incoming.storedFish) ? incoming.storedFish.map(sanitizeFishEntry).filter(Boolean) : [],
@@ -965,14 +1085,26 @@ function reconcileState(rawState) {
       ...sanitizeInventory(incoming.medicineInventory)
     },
     dailyBonus: sanitizeDailyBonusState(incoming.dailyBonus),
+    notificationCenter: sanitizeNotificationCenterState(incoming.notificationCenter),
     tutorial: buildDefaultTutorialState(),
     healthModelVersion: HEALTH_MODEL_VERSION,
     uiSettings: sanitizeUiSettings(incoming.uiSettings),
     contentSettings: sanitizeContentSettings(incoming.contentSettings),
+    boroughTravelWalls: incoming.boroughTravelWalls && typeof incoming.boroughTravelWalls === "object"
+      ? Object.fromEntries(Object.entries(incoming.boroughTravelWalls).filter(([, blocked]) => blocked === true))
+      : {},
     boroughHappenings: sanitizeBoroughHappenings(incoming.boroughHappenings),
+    boroughEvents: sanitizeBoroughEventHistory(incoming.boroughEvents, tanks),
     memorialHistory: sanitizeMemorialHistory(incoming.memorialHistory),
     version: STATE_VERSION
   };
+
+  if (Number.isFinite(Number(incoming.lastCorpseSicknessAt)) && !tanks.some((tank) => Number.isFinite(Number(tank.lastCorpseSicknessAt)))) {
+    const legacyTank = tanks.find((tank) => tank.id === incoming.activeTankId) || tanks[0];
+    if (legacyTank) {
+      legacyTank.lastCorpseSicknessAt = Number(incoming.lastCorpseSicknessAt);
+    }
+  }
 
   normalizeTankFilterAssignments(nextState);
   assignFallbackTankNames(nextState);
@@ -1509,14 +1641,8 @@ function resetTransientAquariumUiState() {
   clearEditFishTrayLongPress();
   closeEditFishTrayContextMenu({ render: false });
   clearPrimaryToolModes();
-  if (runtime.toastHandle) {
-    clearTimeout(runtime.toastHandle);
-  }
-  runtime.toastHandle = null;
-  runtime.toastKey = "";
-  runtime.guidanceToastOwner = "";
+  resetToastState();
   runtime.guidanceHintOwner = "";
-  dom.toast?.classList.remove("is-visible");
   resetCompetingOverlayState({ reason: "transient-reset", resetStoreTab: true });
   runtime.tutorialDismissedFeaturePopup = "";
   runtime.tutorialDisplayCollapsed = false;

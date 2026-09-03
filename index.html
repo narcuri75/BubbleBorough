@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260828-pointer-reflection" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260901-startup-recovery" />
 </head>
 
 <body>
@@ -35,6 +35,21 @@
     <div class="loading-overlay-content">
       <img class="loading-overlay-logo" src="assets/misc/bb_logo.png" alt="Bubble Borough" />
       <div class="loading-overlay-text">Loading Aquarium</div>
+      <div class="loading-overlay-error-details" data-loading-error-details hidden></div>
+      <div class="loading-overlay-error-actions" data-loading-error-actions hidden>
+        <button type="button" data-loading-error-copy>Copy error</button>
+        <button type="button" data-loading-error-retry>Retry</button>
+      </div>
+      <button class="loading-overlay-help-button" type="button" data-loading-recovery-help aria-label="Loading help">?</button>
+      <div class="loading-overlay-recovery-dialog" data-loading-recovery-dialog hidden role="dialog" aria-modal="true" aria-labelledby="loadingRecoveryTitle">
+        <strong id="loadingRecoveryTitle">Would you like to try deleting your save data?</strong>
+        <p>This can help when the aquarium works in Incognito but not in your normal browser. A copy of the raw save will be downloaded first, then only Bubble Borough's browser save will be removed.</p>
+        <div class="loading-overlay-recovery-actions">
+          <button type="button" data-loading-recovery-confirm>Yes</button>
+          <button type="button" data-loading-recovery-cancel>No</button>
+        </div>
+        <small data-loading-recovery-status></small>
+      </div>
     </div>
   </div>
 
@@ -49,16 +64,30 @@
           <canvas id="grimeCanvas" width="1280" height="720"></canvas>
           <canvas id="glassCanvas" width="1280" height="720"></canvas>
 
-          <section id="boroughOverview" class="borough-overview" hidden aria-label="Bubble Borough aquarium overview">
+          <section id="boroughOverview" class="borough-overview" hidden aria-label="Bubble Borough overview">
             <div class="borough-overview-header">
               <div>
                 <span class="borough-overview-kicker">Bubble Borough</span>
-                <h2 id="boroughOverviewTitle">Aquarium Overview</h2>
+                <h2 id="boroughOverviewTitle">Borough Overview</h2>
                 <p id="boroughOverviewHint">Choose a neighborhood to visit.</p>
+                <div id="boroughOverviewStatus" class="borough-overview-status" aria-label="Borough status"></div>
               </div>
-              <button id="closeBoroughOverview" class="borough-overview-close" type="button" aria-label="Close overview">&times;</button>
+              <div class="borough-overview-actions">
+                <button id="addBoroughTankButton" class="borough-overview-add" type="button" aria-label="Purchase a new tank" hidden><span aria-hidden="true">+</span><small>Add Tank</small></button>
+                <button id="toggleBoroughEditMode" class="borough-overview-edit" type="button" aria-label="Enable tank rearranging" aria-pressed="false"><span aria-hidden="true">&#9998;</span><small>Edit</small></button>
+                <button id="closeBoroughOverview" class="borough-overview-close" type="button" aria-label="Close overview">&times;</button>
+              </div>
             </div>
-            <div id="boroughGrid" class="borough-grid" role="grid" aria-label="Aquarium neighborhood map"></div>
+            <div class="borough-overview-body">
+              <div id="boroughGrid" class="borough-grid" role="grid" aria-label="Borough neighborhood map"></div>
+              <aside id="boroughOverviewInfo" class="borough-overview-info" aria-label="Borough information">
+                <nav class="borough-overview-info-tabs" aria-label="Overview information">
+                  <button type="button" data-borough-info-tab="borough" aria-pressed="true">Borough</button>
+                  <button type="button" data-borough-info-tab="tank" aria-pressed="false">Neighborhood</button>
+                </nav>
+                <div id="boroughOverviewInfoBody" class="borough-overview-info-body"></div>
+              </aside>
+            </div>
           </section>
 
           <div class="tank-overlay">
@@ -83,7 +112,7 @@
             <section id="fishActionTargetMenu" class="fish-action-target-menu" hidden aria-label="Choose fish target" data-preserve-fish-selection></section>
             <section id="selectedFishNeedsPanel" class="selected-fish-needs-panel" hidden aria-label="Selected fish needs"></section>
 
-            <section class="tank-display">
+            <section class="tank-display" hidden>
               <button id="displayTab" class="display-tab" type="button" title="Hide Display"
                 aria-label="Hide Display">^</button>
               <div class="display-grid">
@@ -102,9 +131,10 @@
               </div>
             </section>
 
-            <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Daily recap ready"
-              aria-label="Open daily recap">
+            <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Notifications"
+              aria-label="Open notifications">
               <img class="daily-bonus-bell-icon" src="./assets/icons/bell.png" alt="" aria-hidden="true" />
+              <span id="notificationBellBadge" class="notification-bell-badge" hidden aria-hidden="true"></span>
             </button>
 
             <aside id="editQuickRef" class="edit-quick-ref" hidden aria-label="Edit mode quick reference">
@@ -378,6 +408,14 @@
               <span id="selectedDecorLayerValue" class="decor-side-control-value">3-4</span>
               <button id="selectedDecorLayerDownButton" class="decor-side-control-button" type="button"
                 title="Move Layer Down" aria-label="Move Decor Layer Down">&darr;</button>
+            </div>
+            <div id="selectedDecorTransformControls" class="decor-side-control-panel decor-transform-controls" hidden
+              aria-label="Selected decor flip controls">
+              <span class="decor-side-control-title">Flip</span>
+              <button id="selectedDecorFlipHorizontalButton" class="decor-side-control-button" type="button"
+                title="Flip Horizontally" aria-label="Flip Decor Horizontally" aria-pressed="false">&harr;</button>
+              <button id="selectedDecorFlipVerticalButton" class="decor-side-control-button" type="button"
+                title="Flip Vertically" aria-label="Flip Decor Vertically" aria-pressed="false">&varr;</button>
             </div>
             <div id="selectedDecorActionBar" class="decor-action-top-bar" hidden aria-label="Selected decor actions">
               <button id="selectedDecorSellButton" class="decor-action-float-button sell-decor-float-button"
@@ -689,7 +727,13 @@
 
                 <div class="settings-panel-body">
                   <section class="settings-section">
-                    <h3>Background</h3>
+                    <div class="equipment-heading">
+                      <h3>Background</h3>
+                      <div class="shop-button-row appearance-clipboard-actions">
+                        <button class="small-button alt" type="button" data-copy-tank-appearance="background">Copy</button>
+                        <button class="small-button alt" type="button" data-paste-tank-appearance="background">Paste</button>
+                      </div>
+                    </div>
                     <p class="settings-section-note">Use a color fill, animated wallpaper, gradient, unlocked backdrop, or a local image
                       for this aquarium.</p>
                     <div id="equipmentBackgroundColorPanel"></div>
@@ -701,7 +745,13 @@
                   </section>
 
                   <section class="settings-section">
-                    <h3>Gravel</h3>
+                    <div class="equipment-heading">
+                      <h3>Gravel</h3>
+                      <div class="shop-button-row appearance-clipboard-actions">
+                        <button class="small-button alt" type="button" data-copy-tank-appearance="gravel">Copy</button>
+                        <button class="small-button alt" type="button" data-paste-tank-appearance="gravel">Paste</button>
+                      </div>
+                    </div>
                     <div id="equipmentCustomGravelPanel"></div>
                   </section>
 
@@ -825,19 +875,18 @@
               <button id="toolbarTab" class="toolbar-tab" type="button" title="Hide Toolbar"
                 aria-label="Hide Toolbar">&gt;</button>
 
+              <div id="toolbarWallet" class="toolbar-wallet" aria-label="Wallet balance">
+                <img src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
+                <strong id="toolbarCoinCount">0</strong>
+              </div>
+
               <!--REG BUTTONS-->
 
-              <button id="openManagementButton" class="dock-button management" type="button" title="Aquarium"
-                aria-label="Aquarium">
-                <img class="dock-button-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
-                  draggable="false" />
-                <span id="aquariumTaskBadge" class="dock-button-badge" hidden aria-hidden="true"></span>
-              </button>
-
-              <button id="overviewButton" class="dock-button borough-control" type="button" title="Aquarium Overview"
-                aria-label="Aquarium Overview" aria-pressed="false">
+              <button id="overviewButton" class="dock-button borough-control" type="button" title="Borough Overview"
+                aria-label="Borough Overview" aria-pressed="false">
                 <img class="dock-button-icon" src="assets/icons/aquarium_overview.png" alt="" aria-hidden="true"
                   draggable="false" />
+                <span id="aquariumTaskBadge" class="dock-button-badge" hidden aria-hidden="true"></span>
               </button>
 
               <button id="feedButton" class="dock-button feed" type="button" title="Feed Fish"
@@ -1163,8 +1212,12 @@
       }
 
       const script = document.createElement("script");
+      const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
+      const appBundleVersion = isLocalDevelopmentHost
+        ? `live-${Date.now()}`
+        : "20260901-live-server";
       script.type = "module";
-      script.src = "./public/app.js?v=20260828-pointer-reflection";
+      script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);
     })();
   </script>

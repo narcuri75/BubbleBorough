@@ -928,6 +928,7 @@ async function init() {
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
     FISH_EGG_SHELL_ASSET_PATH,
+    ...GRIME_OVERLAY_ASSET_PATHS,
     ...WATER_PARTICLE_ASSET_PATHS,
     ...Object.values(TOOL_CURSOR_ICON_PATHS),
     ...runtime.decorCatalog.flatMap((item) => [
@@ -963,7 +964,23 @@ async function init() {
       ...getFishDeathAssetCandidates(fish, "skeleton")
     ])),
     ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
-  ]));
+  ]), { maxAttempts: 1 });
+
+  const criticalFishImagePaths = [...new Set(getAllTankFish(state)
+    .map((fish) => {
+      const species = getSpeciesForFish(fish);
+      return species ? (getFishDisplayAssetPath(fish, species, Date.now()) || species.asset) : "";
+    })
+    .filter(Boolean))];
+  const criticalFishImageResults = await preloadImages(criticalFishImagePaths, {
+    maxAttempts: 3,
+    timeoutMs: 8000,
+    retryDelayMs: 350
+  });
+  const unavailableFishImages = criticalFishImageResults.filter((result) => !result.loaded);
+  if (unavailableFishImages.length) {
+    console.error("Some active fish artwork is unavailable after startup recovery.", unavailableFishImages);
+  }
 
   resizeDisplayCanvases();
   const now = Date.now();
@@ -1193,14 +1210,28 @@ function showLoadingOverlayError(error = null) {
   overlay.classList.remove("is-ready");
   overlay.classList.remove("is-hiding");
   overlay.classList.add("is-error");
-  if (error) {
-    overlay.title = String(error?.message || error || "Aquarium startup failed");
-  }
+  const errorMessage = String(error?.message || error || "Aquarium startup failed");
+  const errorStack = typeof error?.stack === "string" ? error.stack : "";
+  const errorDetails = [errorMessage, errorStack]
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 6000);
+  overlay.title = errorMessage;
+  overlay.dataset.startupError = errorDetails;
   const text = dom.loadingOverlayText || overlay.querySelector(".loading-overlay-text");
   if (text) {
     text.textContent = window.location.protocol === "file:"
       ? "Open with Launch Bubble Borough Web.bat"
-      : "Aquarium failed to load - click to retry";
+      : "Aquarium failed to load";
+  }
+  const details = overlay.querySelector("[data-loading-error-details]");
+  if (details) {
+    details.textContent = errorDetails;
+    details.hidden = !errorDetails;
+  }
+  const actions = overlay.querySelector("[data-loading-error-actions]");
+  if (actions) {
+    actions.hidden = window.location.protocol === "file:";
   }
 }
 

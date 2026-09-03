@@ -20,7 +20,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 40;
+const STATE_VERSION = 41;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -115,6 +115,9 @@ const COMFORT_MEALTIME_BOOST_MS = HOUR_MS;
 const BREEDING_FOOD_BOOST_MS = MINUTE_MS;
 const DAILY_RECAP_REWARD_CAP = 30;
 const DAILY_RECAP_HISTORY_LIMIT = 45;
+const BOROUGH_DAILY_RECAP_ID = "borough";
+const BOROUGH_RECAP_SCORE_MODEL = "borough-normalized-v1";
+const MAX_BOROUGH_EVENT_HISTORY = 400;
 const COMFORT_VERY_LOW_EVENT_MS = 2 * HOUR_MS;
 const TANK_SPACE_FULL_LOAD = 10;
 const TANK_SPACE_MAX_LOAD = 14;
@@ -391,250 +394,334 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "first-care",
     label: "First Care",
+    requirement: "Finish a Daily Recap with score 3+.",
     reward: 3,
     unlocks: ["celestial-pearl-danio", "moor-goldfish", "otocinclus", "molly", "livebearer"],
     decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "rock-arch.png", "treasure-chest_bubbler.png"],
-    isMet: (stats) => stats.latestScore >= 3
+    isMet: (stats) => stats.latestScore >= 3,
+    progress: (stats) => [{ value: (Number(stats.latestScore) || 0) / 3, label: `Latest recap score ${Math.max(0, Number(stats.latestScore) || 0)}/3` }]
   },
   {
     id: "stable-tank",
     label: "Stable Tank",
+    requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
     reward: 8,
     unlocks: ["loach", "swordtail", "betta", "blue-ram", "piranha"],
     decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
-    isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70
+    isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
+    progress: (stats) => [
+      { value: (Number(stats.goodRecaps) || 0) / 3, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 3)}/3` },
+      { value: (Number(stats.recentAverageComfort) || 0) / 70, label: `Recent comfort ${Math.min(Number(stats.recentAverageComfort) || 0, 70)}%/70%` }
+    ]
   },
   {
     id: "happy-habitat",
     label: "Happy Habitat",
+    requirement: "Keep any fish alive for 7 days and recent average comfort at 80%+.",
     reward: 12,
     unlocks: ["wonder-killifish", "rainbowfish", "gourami"],
     decorUnlocks: ["Shipwreck.png", "mushroomcoral_seaweed.png", "Castle-Cave.png", "blue_castle_cave.png", "meteor_cave.png", "volcano-1_bubbler.png", "volcano-2_bubbler.png", "__custom-decor-shop__", "__custom-hide-shop__"],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80,
+    progress: (stats) => [
+      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, WEEK_MS))}/7d` },
+      { value: (Number(stats.recentAverageComfort) || 0) / 80, label: `Recent comfort ${Math.min(Number(stats.recentAverageComfort) || 0, 80)}%/80%` }
+    ]
   },
   {
     id: "master-keeper",
     label: "Master Keeper",
+    requirement: "Go 14 days without a death and have one fish at Sparkling comfort.",
     reward: 18,
     unlocks: ["discus", "angelfish"],
     decorUnlocks: [],
-    isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish
+    isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish,
+    progress: (stats) => [
+      { value: (Number(stats.daysSinceLastDeath) || 0) / 14, label: `No-death streak ${Math.min(Number(stats.daysSinceLastDeath) || 0, 14)}/14d` },
+      { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
+    ]
   },
   {
     id: "marine-curator",
     label: "Marine Curator",
+    requirement: "Own a saltwater fish, finish 5 good recaps, and go 3 days without a death.",
     reward: 20,
     unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish"],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3
+    isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3,
+    progress: (stats) => [
+      { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
+      { value: (Number(stats.goodRecaps) || 0) / 5, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 5)}/5` },
+      { value: (Number(stats.daysSinceLastDeath) || 0) / 3, label: `No-death streak ${Math.min(Number(stats.daysSinceLastDeath) || 0, 3)}/3d` }
+    ]
   },
   {
     id: "clean-start",
     label: "Clean Start",
+    requirement: "Keep cleanliness at 90%+ for 3 daily recaps in a row.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.cleanRecapStreak90 >= 3
+    isMet: (stats) => stats.cleanRecapStreak90 >= 3,
+    progress: (stats) => [{ value: (Number(stats.cleanRecapStreak90) || 0) / 3, label: `90%+ clean recaps ${Math.min(Number(stats.cleanRecapStreak90) || 0, 3)}/3` }]
   },
   {
     id: "crystal-keeper",
     label: "Crystal Keeper",
+    requirement: "Keep cleanliness at 95%+ for 7 daily recaps.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.cleanRecapCount95 >= 7
+    isMet: (stats) => stats.cleanRecapCount95 >= 7,
+    progress: (stats) => [{ value: (Number(stats.cleanRecapCount95) || 0) / 7, label: `95%+ clean recaps ${Math.min(Number(stats.cleanRecapCount95) || 0, 7)}/7` }]
   },
   {
     id: "full-bellies",
     label: "Full Bellies",
+    requirement: "Keep fish from reaching Starving for 3 daily recaps in a row.",
     reward: 6,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.allMealsSatisfiedStreak >= 3
+    isMet: (stats) => stats.allMealsSatisfiedStreak >= 3,
+    progress: (stats) => [{ value: (Number(stats.allMealsSatisfiedStreak) || 0) / 3, label: `No-starving streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 3)}/3` }]
   },
   {
     id: "reliable-feeder",
     label: "Reliable Feeder",
+    requirement: "Keep fish from reaching Starving for 7 daily recaps in a row.",
     reward: 14,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.allMealsSatisfiedStreak >= 7
+    isMet: (stats) => stats.allMealsSatisfiedStreak >= 7,
+    progress: (stats) => [{ value: (Number(stats.allMealsSatisfiedStreak) || 0) / 7, label: `No-starving streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 7)}/7` }]
   },
   {
     id: "cozy-corner",
     label: "Cozy Corner",
+    requirement: "Average 80%+ comfort for 3 daily recaps in a row.",
     reward: 6,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.comfort80Streak >= 3
+    isMet: (stats) => stats.comfort80Streak >= 3,
+    progress: (stats) => [{ value: (Number(stats.comfort80Streak) || 0) / 3, label: `80%+ comfort streak ${Math.min(Number(stats.comfort80Streak) || 0, 3)}/3` }]
   },
   {
     id: "little-paradise",
     label: "Little Paradise",
+    requirement: "Average 90%+ comfort for 3 daily recaps in a row.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.comfort90Streak >= 3
+    isMet: (stats) => stats.comfort90Streak >= 3,
+    progress: (stats) => [{ value: (Number(stats.comfort90Streak) || 0) / 3, label: `90%+ comfort streak ${Math.min(Number(stats.comfort90Streak) || 0, 3)}/3` }]
   },
   {
     id: "perfect-hour",
     label: "Perfect Hour",
+    requirement: "Have any fish reach Sparkling comfort.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasSparklingFish || stats.sparklingComfortEvents >= 1
+    isMet: (stats) => stats.hasSparklingFish || stats.sparklingComfortEvents >= 1,
+    progress: (stats) => [{
+      value: stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0 ? 1 : 0,
+      label: stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0 ? "Sparkling comfort found" : "Needs one Sparkling fish"
+    }]
   },
   {
     id: "perfect-day",
     label: "Perfect Day",
+    requirement: "Have Sparkling comfort during a daily recap with score 8+.",
     reward: 15,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasPerfectDay
+    isMet: (stats) => stats.hasPerfectDay,
+    progress: (stats) => [{ value: stats.hasPerfectDay ? 1 : 0, label: stats.hasPerfectDay ? "Perfect day recorded" : "Needs score 8+ with Sparkling comfort" }]
   },
   {
     id: "no-drama-day",
     label: "No Drama Day",
+    requirement: "Finish a daily recap with no negative events.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.latestNoDramaDay
+    isMet: (stats) => stats.latestNoDramaDay,
+    progress: (stats) => [{ value: stats.latestNoDramaDay ? 1 : 0, label: stats.latestNoDramaDay ? "Latest recap had no drama" : "Needs one no-drama recap" }]
   },
   {
     id: "peaceful-week",
     label: "Peaceful Week",
+    requirement: "Finish 5 recaps in a row with no attacks or deaths.",
     reward: 16,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.noAttackDeathRecapStreak >= 5
+    isMet: (stats) => stats.noAttackDeathRecapStreak >= 5,
+    progress: (stats) => [{ value: (Number(stats.noAttackDeathRecapStreak) || 0) / 5, label: `Peaceful recap streak ${Math.min(Number(stats.noAttackDeathRecapStreak) || 0, 5)}/5` }]
   },
   {
     id: "gentle-keeper",
     label: "Gentle Keeper",
+    requirement: "Finish 3 recaps in a row without stress-tapping fish.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.noGlassTapStressStreak >= 3
+    isMet: (stats) => stats.noGlassTapStressStreak >= 3,
+    progress: (stats) => [{ value: (Number(stats.noGlassTapStressStreak) || 0) / 3, label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 3)}/3` }]
   },
   {
     id: "calm-glass",
     label: "Calm Glass",
+    requirement: "Finish 7 recaps in a row without stress-tapping fish.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.noGlassTapStressStreak >= 7
+    isMet: (stats) => stats.noGlassTapStressStreak >= 7,
+    progress: (stats) => [{ value: (Number(stats.noGlassTapStressStreak) || 0) / 7, label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 7)}/7` }]
   },
   {
     id: "decorator",
     label: "Decorator",
+    requirement: "Place 5 decor items across your aquariums.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.decorPlacedCount >= 5
+    isMet: (stats) => stats.decorPlacedCount >= 5,
+    progress: (stats) => [{ value: (Number(stats.decorPlacedCount) || 0) / 5, label: `Decor placed ${Math.min(Number(stats.decorPlacedCount) || 0, 5)}/5` }]
   },
   {
     id: "habitat-builder",
     label: "Habitat Builder",
+    requirement: "Satisfy 10 total fish comfort needs at once.",
     reward: 10,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.metNeedsCount >= 10
+    isMet: (stats) => stats.metNeedsCount >= 10,
+    progress: (stats) => [{ value: (Number(stats.metNeedsCount) || 0) / 10, label: `Needs satisfied ${Math.min(Number(stats.metNeedsCount) || 0, 10)}/10` }]
   },
   {
     id: "need-expert",
     label: "Need Expert",
+    requirement: "Have every living fish's comfort needs satisfied at once.",
     reward: 15,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasAllLivingNeedsMet
+    isMet: (stats) => stats.hasAllLivingNeedsMet,
+    progress: (stats) => [{ value: stats.hasAllLivingNeedsMet ? 1 : 0, label: stats.hasAllLivingNeedsMet ? "All living needs met" : "Some living fish still need comfort help" }]
   },
   {
     id: "community-tank",
     label: "Community Tank",
+    requirement: "Keep 5 community-safe fish with 70%+ recent comfort and 3 good recaps.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasCommunityTank && stats.goodRecaps >= 3
+    isMet: (stats) => stats.hasCommunityTank && stats.goodRecaps >= 3,
+    progress: (stats) => [
+      { value: stats.hasCommunityTank ? 1 : 0, label: stats.hasCommunityTank ? "Community tank ready" : "Needs 5 peaceful fish and 70%+ recent comfort" },
+      { value: (Number(stats.goodRecaps) || 0) / 3, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 3)}/3` }
+    ]
   },
   {
     id: "big-family",
     label: "Big Family",
+    requirement: "Own 10 living fish across your aquariums.",
     reward: 10,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.livingFishCount >= 10
+    isMet: (stats) => stats.livingFishCount >= 10,
+    progress: (stats) => [{ value: (Number(stats.livingFishCount) || 0) / 10, label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 10)}/10` }]
   },
   {
     id: "careful-curator",
     label: "Careful Curator",
+    requirement: "Own 15 living fish without overcrowding any aquarium.",
     reward: 18,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.livingFishCount >= 15 && stats.noOvercrowdedTanks
+    isMet: (stats) => stats.livingFishCount >= 15 && stats.noOvercrowdedTanks,
+    progress: (stats) => [
+      { value: (Number(stats.livingFishCount) || 0) / 15, label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 15)}/15` },
+      { value: stats.noOvercrowdedTanks ? 1 : 0, label: stats.noOvercrowdedTanks ? "No overcrowded tanks" : "One or more tanks are overcrowded" }
+    ]
   },
   {
     id: "first-generation",
     label: "First Generation",
+    requirement: "Hatch one egg.",
     reward: 8,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hatchedFishEvents >= 1
+    isMet: (stats) => stats.hatchedFishEvents >= 1,
+    progress: (stats) => [{ value: Number(stats.hatchedFishEvents) || 0, label: `Eggs hatched ${Math.min(Number(stats.hatchedFishEvents) || 0, 1)}/1` }]
   },
   {
     id: "nursery-keeper",
     label: "Nursery Keeper",
+    requirement: "Raise 3 baby fish past juvenile stage.",
     reward: 16,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.grownBabyFishCount >= 3
+    isMet: (stats) => stats.grownBabyFishCount >= 3,
+    progress: (stats) => [{ value: (Number(stats.grownBabyFishCount) || 0) / 3, label: `Raised babies ${Math.min(Number(stats.grownBabyFishCount) || 0, 3)}/3` }]
   },
   {
     id: "gravel-luck",
     label: "Gravel Luck",
+    requirement: "Find 5 gravel coins.",
     reward: 5,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.gravelCoinFinds >= 5
+    isMet: (stats) => stats.gravelCoinFinds >= 5,
+    progress: (stats) => [{ value: (Number(stats.gravelCoinFinds) || 0) / 5, label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 5)}/5` }]
   },
   {
     id: "treasure-hunter",
     label: "Treasure Hunter",
+    requirement: "Find 25 gravel coins.",
     reward: 18,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.gravelCoinFinds >= 25
+    isMet: (stats) => stats.gravelCoinFinds >= 25,
+    progress: (stats) => [{ value: (Number(stats.gravelCoinFinds) || 0) / 25, label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 25)}/25` }]
   },
   {
     id: "medicine-cabinet",
     label: "Medicine Cabinet",
+    requirement: "Heal fish or use medicine 3 times.",
     reward: 8,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.healingEvents >= 3
+    isMet: (stats) => stats.healingEvents >= 3,
+    progress: (stats) => [{ value: (Number(stats.healingEvents) || 0) / 3, label: `Healing events ${Math.min(Number(stats.healingEvents) || 0, 3)}/3` }]
   },
   {
     id: "rescue-keeper",
     label: "Rescue Keeper",
+    requirement: "Heal a fish and go 3 days without a death afterward.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasRescueKeeper
+    isMet: (stats) => stats.hasRescueKeeper,
+    progress: (stats) => [{ value: stats.hasRescueKeeper ? 1 : 0, label: stats.hasRescueKeeper ? "Rescue streak complete" : "Needs a heal followed by 3 safe days" }]
   },
   {
     id: "tank-network",
     label: "Tank Network",
+    requirement: "Own 3 aquariums with at least one healthy fish in each.",
     reward: 20,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.healthyTankCount >= 3
+    isMet: (stats) => stats.healthyTankCount >= 3,
+    progress: (stats) => [{ value: (Number(stats.healthyTankCount) || 0) / 3, label: `Healthy tanks ${Math.min(Number(stats.healthyTankCount) || 0, 3)}/3` }]
   },
   ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? [{
     id: "spooky-keeper",
     label: "Spooky Keeper",
+    requirement: "Discover the corpse, zombie, or skeleton care path.",
     reward: 5,
     unlocks: [...ZOMBIE_SKELETON_PROGRESSION_UNLOCKS],
     decorUnlocks: ["gorebag_lure.png", "fishheadeffigy_1.png", "fishheadeffigy_2.png", "fishheadeffigy_3.png"],
-    isMet: (stats) => stats.hasSpookyKeeperPath
+    isMet: (stats) => stats.hasSpookyKeeperPath,
+    progress: (stats) => [{ value: stats.hasSpookyKeeperPath ? 1 : 0, label: stats.hasSpookyKeeperPath ? "Spooky path found" : "No spooky path discovered yet" }]
   }] : [])
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
@@ -684,6 +771,7 @@ const HALLOWEEN_MODE_OPTIONS = Object.freeze([
 const FISH_AGE_MILESTONE_DAYS = Object.freeze([7, 30, 100, 365]);
 const BOROUGH_NOTIFICATION_COOLDOWN_MS = 22 * 1000;
 const BOROUGH_NOTIFICATION_DUPLICATE_MS = 3 * MINUTE_MS;
+const NOTIFICATION_CENTER_HISTORY_LIMIT = 60;
 const CRITICAL_COMFORT_HEALTH_TICK_MS = 6 * HOUR_MS;
 const FISH_DECAY_ZOMBIE_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecayZombieMs;
 const FISH_DECAY_SKELETON_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecaySkeletonMs;
@@ -709,10 +797,18 @@ const SCRUB_AUTO_COMPLETE_GRACE_THRESHOLD = 0.8;
 const SCRUB_AUTO_COMPLETE_GRACE_MS = 5 * 1000;
 const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
-const SCRUB_MAX_STAMPS = 12000;
-const GRIME_CACHE_PRECISION = 1000;
+const SCRUB_MAX_STAMPS = 2400;
+const GRIME_CACHE_PRECISION = 240;
 const GRIME_VISUAL_START_DIRTINESS = 0.1;
 const SEVERE_GRIME_VISUAL_THRESHOLD = 0.72;
+const GRIME_OVERLAY_OVERSCAN = 1.1;
+const GRIME_OVERLAY_ASSET_PATHS = Object.freeze([
+  resolveAppUrl("assets/grime/grime-level-1.webp"),
+  resolveAppUrl("assets/grime/grime-level-2.webp"),
+  resolveAppUrl("assets/grime/grime-level-3.webp"),
+  resolveAppUrl("assets/grime/grime-level-4.webp"),
+  resolveAppUrl("assets/grime/grime-level-5.webp")
+]);
 const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
 const CARE_TASK_COMPLETE_HOLD_MS = 2200;
@@ -1180,9 +1276,9 @@ const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
 const PORTABLE_PERFORMANCE_MAX_FPS = 30;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 30;
+const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 96;
 const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 24;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 30;
+const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 96;
 const PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT = 18;
 const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 32;
 const PORTABLE_PERFORMANCE_RESIZE_DEBOUNCE_MS = 120;
@@ -1375,9 +1471,9 @@ const FISH_GRAVEL_DIG_CHANCE = 0.18;
 const FISH_GRAVEL_DIG_COOLDOWN_MIN_MS = 9000;
 const FISH_GRAVEL_DIG_COOLDOWN_MAX_MS = 18000;
 const FORCED_GRAVEL_DIG_TIMEOUT_MS = 9000;
-const WATER_PARTICLE_COUNT = 30;
+const WATER_PARTICLE_COUNT = 180;
 const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
-const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 30;
+const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 180;
 const WATER_PARTICLE_FISH_FORCE_RADIUS_PX = 90;
 const WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX = 74;
 const WATER_PARTICLE_FILTER_FORCE_RADIUS_PX = 130;
@@ -1397,9 +1493,9 @@ const FOOD_DROP_SPREAD_NORM = 0.03;
 const FOOD_PELLET_SINK_DURATION_MS = 95 * 1000;
 const FOOD_PELLET_SETTLED_LIFETIME_MS = 36 * HOUR_MS;
 const FOOD_PELLET_SETTLED_Y_OFFSET_PX = 5;
-const FOOD_PELLET_SETTLED_OPEN_TARGET_MS = 35 * 1000;
-const FOOD_PELLET_SETTLED_STALE_TARGET_MS = 3 * MINUTE_MS;
-const FOOD_PELLET_SETTLED_NEARBY_TARGET_RADIUS_NORM = 0.14;
+const FOOD_PELLET_SETTLED_OPEN_TARGET_MS = 2 * MINUTE_MS;
+const FOOD_PELLET_SETTLED_STALE_TARGET_MS = 15 * MINUTE_MS;
+const FOOD_PELLET_SETTLED_NEARBY_TARGET_RADIUS_NORM = 0.5;
 const AUTO_DISPENSER_MAX_PELLETS = 99;
 const AUTO_DISPENSER_PORTION_MIN = 0;
 const AUTO_DISPENSER_PORTION_MAX = AUTO_DISPENSER_MAX_PELLETS;
@@ -1465,7 +1561,7 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "lastCleanedAt",
   "lastSimulatedAt",
   "events",
-  "lastGravelCoinFoundAt",
+  "lastCorpseSicknessAt",
   "tankTypeId",
   "waterType",
   "setupPending",
@@ -1546,6 +1642,9 @@ const REGULAR_BUTTON_SOUND_PATH = "assets/sounds/reg_button.mp3";
 const PURCHASE_SOUND_PATH = "assets/sounds/purchase.mp3";
 const COIN_SOUND_PATH = "assets/sounds/coin.mp3";
 const COIN_ICON_PATH = resolveAppUrl("assets/icons/coin.png");
+const MAX_WALLET_COINS = 9999;
+// Keep the legacy digital display implementation available, but ship it off.
+const DIGITAL_DISPLAY_ENABLED = false;
 const DISPENSER_SOUND_PATH = "assets/sounds/dispenser.mp3";
 const TOOLBAR_FAST_TOOLTIP_DELAY_MS = 100;
 const TOOLBAR_FAST_TOOLTIP_OFFSET_PX = 14;
@@ -2193,6 +2292,8 @@ const CUSTOM_FISH_TEMPLATE_IMAGE = resolveAppUrl("assets/misc/fish_template.png"
 
 const dom = {
   coinCount: document.querySelector("#coinCount"),
+  toolbarWallet: document.querySelector("#toolbarWallet"),
+  toolbarCoinCount: document.querySelector("#toolbarCoinCount"),
   cleanlinessLabel: document.querySelector("#cleanlinessLabel"),
   mealWindowLabel: document.querySelector("#mealWindowLabel"),
   tankStatus: document.querySelector("#tankStatus"),
@@ -2253,11 +2354,17 @@ const dom = {
   boroughOverview: document.querySelector("#boroughOverview"),
   boroughOverviewTitle: document.querySelector("#boroughOverviewTitle"),
   boroughOverviewHint: document.querySelector("#boroughOverviewHint"),
+  boroughOverviewStatus: document.querySelector("#boroughOverviewStatus"),
+  boroughOverviewInfo: document.querySelector("#boroughOverviewInfo"),
+  boroughOverviewInfoBody: document.querySelector("#boroughOverviewInfoBody"),
+  toggleBoroughEditMode: document.querySelector("#toggleBoroughEditMode"),
+  addBoroughTankButton: document.querySelector("#addBoroughTankButton"),
   boroughGrid: document.querySelector("#boroughGrid"),
   closeBoroughOverview: document.querySelector("#closeBoroughOverview"),
   overviewButton: document.querySelector("#overviewButton"),
   extendAquariumButton: document.querySelector("#extendAquariumButton"),
   dailyBonusBell: document.querySelector("#dailyBonusBell"),
+  notificationBellBadge: document.querySelector("#notificationBellBadge"),
   placementHint: document.querySelector("#placementHint"),
   placementHintContainer: document.querySelector(".tank-overlay-hints"),
   careTaskPane: document.querySelector("#careTaskPane"),
@@ -2390,6 +2497,9 @@ const dom = {
   selectedDecorResizeIndicator: document.querySelector("#selectedDecorResizeIndicator"),
   selectedDecorResizeCornerHandles: [...document.querySelectorAll("[data-selected-decor-resize-corner]")],
   selectedDecorLayerControls: document.querySelector("#selectedDecorLayerControls"),
+  selectedDecorTransformControls: document.querySelector("#selectedDecorTransformControls"),
+  selectedDecorFlipHorizontalButton: document.querySelector("#selectedDecorFlipHorizontalButton"),
+  selectedDecorFlipVerticalButton: document.querySelector("#selectedDecorFlipVerticalButton"),
   selectedDecorSettingsButton: document.querySelector("#selectedDecorSettingsButton"),
   selectedDecorAssignButton: document.querySelector("#selectedDecorAssignButton"),
   selectedDecorSellButton: document.querySelector("#selectedDecorSellButton"),
@@ -2556,13 +2666,23 @@ const runtime = {
   boroughOverviewFishSampleMs: 2000,
   boroughOverviewFishProxies: new Map(),
   boroughOverviewSnapshotCache: new Map(),
+  boroughOverviewSnapshotRenderedAt: 0,
+  boroughOverviewSnapshotFrameMs: 1500,
   boroughOverviewDraggedTankId: null,
+  boroughOverviewEditMode: false,
+  boroughOverviewInfoTab: "borough",
+  boroughOverviewInfoView: "overview",
+  boroughOverviewInfoTankId: null,
+  boroughOverviewDragPointerId: null,
   transitTubeBursts: [],
   pendingNeighborhoodTravel: new Map(),
+  foodTravelDestinations: new Map(),
+  tankAppearanceClipboard: { background: null, gravel: null },
   boroughEdgeBursts: [],
   boroughActivityNotifications: [],
   boroughNotificationSignatures: new Map(),
   lastBoroughNotificationAt: 0,
+  achievementEvaluationActive: false,
   lastBoroughHappeningAt: 0,
   debugSimulatedNow: null,
   debugTimeScale: 1,
@@ -2651,10 +2771,17 @@ const runtime = {
     contentHeight: TANK_HEIGHT
   },
   lastScrubPoint: null,
+  pendingScrubPoint: null,
+  scrubFrameHandle: 0,
   scrubCells: new Uint8Array(SCRUB_GRID_COLS * SCRUB_GRID_ROWS),
   scrubbedCount: 0,
   scrubStamps: [],
   scrubAutoCompleteAt: 0,
+  scrubMaskRevision: 0,
+  cleanableScrubCellCount: 0,
+  scrubbedCleanableCellCount: 0,
+  scrubCoverageCacheKey: "",
+  grimeCompositeCacheKey: "",
   tankStateDirty: false,
   cleaningTransition: null,
   backgroundCatalog: [],
@@ -2688,6 +2815,11 @@ const runtime = {
   gravelMap: new Map(),
   bubbleMap: new Map(),
   images: new Map(),
+  imageLoadPromises: new Map(),
+  imageLoadFailures: new Map(),
+  imageRecoveryNextAt: new Map(),
+  missingFishImageWarnings: new Set(),
+  pendingFishPurchases: new Set(),
   alphaMaskCache: new Map(),
   bubblerSpoutOriginCache: new Map(),
   maskRegionCache: new Map(),
@@ -3395,7 +3527,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       if (!fish) {
         delete state.customFishAssets[asset.key];
         syncRuntimeCustomFishAssetsFromState(state);
-        state.coins += CUSTOM_FISH_COST;
+        state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
         showToast("Could not add that custom fish to the tank.");
         return false;
       }
@@ -3803,6 +3935,17 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     onFooterClick: createUtilityOverlayActionHandler([
       { selector: "[data-claim-daily-bonus]", run: () => claimDailyBonus() }
     ])
+  },
+  notifications: {
+    id: "notifications",
+    exclusive: true,
+    onOpen: () => markNotificationCenterRead(),
+    render: renderNotificationCenterOverlay,
+    onBodyClick: handleNotificationCenterBodyClick,
+    onFooterClick: createUtilityOverlayActionHandler([
+      { selector: "[data-mark-notifications-read]", run: () => markNotificationCenterRead() },
+      { selector: "[data-clear-notifications]", run: () => clearNotificationCenter() }
+    ])
   }
 });
 // </bundle-source>
@@ -4025,61 +4168,6 @@ function maybeRecordBoroughHappeningFromEvent(event, tank = getCurrentTank()) {
   return source ? recordBoroughHappening(source.text, source, event.time) : null;
 }
 
-function ensureBoroughNotificationHost() {
-  let host = document.querySelector("#boroughActivityNotifications");
-  if (!host) {
-    host = document.createElement("div");
-    host.id = "boroughActivityNotifications";
-    host.className = "borough-activity-notifications";
-    host.setAttribute("aria-live", "polite");
-    host.setAttribute("aria-atomic", "false");
-    document.body.append(host);
-  }
-  return host;
-}
-
-function queueBoroughActivityNotification(title, detail = "", options = {}) {
-  const now = Number.isFinite(Number(options.time)) ? Number(options.time) : Date.now();
-  const signature = String(options.signature || `${title}|${detail}`).toLowerCase();
-  const lastDuplicateAt = Number(runtime.boroughNotificationSignatures.get(signature)) || 0;
-  if (!options.force && (now - runtime.lastBoroughNotificationAt < BOROUGH_NOTIFICATION_COOLDOWN_MS || now - lastDuplicateAt < BOROUGH_NOTIFICATION_DUPLICATE_MS)) {
-    return false;
-  }
-  runtime.lastBoroughNotificationAt = now;
-  runtime.boroughNotificationSignatures.set(signature, now);
-  for (const [key, timestamp] of runtime.boroughNotificationSignatures) {
-    if (now - timestamp > BOROUGH_NOTIFICATION_DUPLICATE_MS * 2) {
-      runtime.boroughNotificationSignatures.delete(key);
-    }
-  }
-  const host = ensureBoroughNotificationHost();
-  const notification = document.createElement("div");
-  notification.className = "borough-activity-notification";
-  notification.innerHTML = `<strong>${escapeHtml(title)}</strong>${detail ? `<span>${escapeHtml(detail)}</span>` : ""}`;
-  host.append(notification);
-  while (host.children.length > 3) {
-    host.firstElementChild?.remove();
-  }
-  requestAnimationFrame(() => notification.classList.add("is-visible"));
-  window.setTimeout(() => {
-    notification.classList.remove("is-visible");
-    window.setTimeout(() => notification.remove(), 350);
-  }, Math.max(2400, Number(options.durationMs) || 4200));
-  return true;
-}
-
-function publishBoroughActivityEvent(event, tank = getCurrentTank()) {
-  const happening = maybeRecordBoroughHappeningFromEvent(event, tank);
-  const type = String(event?.type || "").toLowerCase();
-  if (["travel", "service", "residence", "birthday", "recovery", "birth"].includes(type)) {
-    queueBoroughActivityNotification(event.text, event.detail || "", {
-      time: event.time,
-      signature: `${type}:${event.fishId || ""}:${event.destinationTankId || event.placedDecorId || event.text}`
-    });
-  }
-  return happening;
-}
-
 function getFishAgeDays(fish, now = Date.now()) {
   return Math.max(0, Math.floor((getBoroughReferenceNow(now) - (Number(fish?.acquiredAt) || getBoroughReferenceNow(now))) / DAY_MS));
 }
@@ -4254,14 +4342,18 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
     return false;
   }
   const direction = getBoroughTravelEdgeDirection(move.source, move.destination);
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  if (fish.caveState) abortFishCaveBehavior(fish, now, false);
   if (direction === "right") {
-    fish.targetXNorm = 0.985;
+    fish.targetXNorm = 1.12;
   } else if (direction === "left") {
-    fish.targetXNorm = 0.015;
+    fish.targetXNorm = -0.12;
   } else if (direction === "down") {
-    fish.targetYNorm = 0.94;
+    fish.targetYNorm = 1.12;
   } else {
-    fish.targetYNorm = 0.06;
+    fish.targetYNorm = -0.12;
   }
   fish.lastNeighborhoodMoveAt = now;
   setFishBehaviorIntent(fish, "travel", `heading ${direction} toward ${getTankLabel(move.destination)}`, now, { durationMs: 45 * 1000 });
@@ -4282,12 +4374,137 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
   return true;
 }
 
+function getTransitTubeTravelPoints(tube) {
+  const bounds = getPlacedDecorBounds(tube);
+  if (!tube || !bounds) {
+    const xNorm = clamp(Number(tube?.xNorm) || 0.5, 0.05, 0.95);
+    const openingYNorm = clamp((Number(tube?.yNorm) || 0.5) - 0.16, 0.08, 0.88);
+    return {
+      opening: { xNorm, yNorm: openingYNorm },
+      inside: { xNorm, yNorm: clamp(openingYNorm + 0.07, 0.1, 0.9) },
+      exit: { xNorm, yNorm: clamp(openingYNorm - 0.07, 0.08, 0.84) },
+      below: { xNorm, yNorm: clamp(openingYNorm + 0.3, 0.2, 1.08) },
+      openingRadiusPx: 34
+    };
+  }
+  const width = Math.max(1, bounds.right - bounds.left);
+  const height = Math.max(1, bounds.bottom - bounds.top);
+  const xNorm = clamp((bounds.left + width / 2) / TANK_WIDTH, 0.05, 0.95);
+  // The replacement sprite is a straight, open glass cylinder. Its rim center
+  // sits about 5.5% down from the top of its rendered bounds.
+  const openingYNorm = clamp((bounds.top + height * 0.055) / TANK_HEIGHT, 0.08, 0.88);
+  return {
+    opening: { xNorm, yNorm: openingYNorm },
+    inside: { xNorm, yNorm: clamp((bounds.top + height * 0.3) / TANK_HEIGHT, 0.1, 0.9) },
+    exit: { xNorm, yNorm: (bounds.top - Math.max(55, height * 0.22)) / TANK_HEIGHT },
+    below: { xNorm, yNorm: (bounds.bottom + Math.max(55, height * 0.22)) / TANK_HEIGHT },
+    openingRadiusPx: clamp(width * 0.26, 26, 58)
+  };
+}
+
+function isFishAtTransitTubePoint(fish, point, radiusPx = 34) {
+  if (!fish || !point) {
+    return false;
+  }
+  return Math.hypot(
+    (Number(fish.xNorm) - point.xNorm) * TANK_WIDTH,
+    (Number(fish.yNorm) - point.yNorm) * TANK_HEIGHT
+  ) <= radiusPx;
+}
+
+function beginBoroughTubeTravel(move, now = Date.now()) {
+  const fish = move?.fish;
+  const sourceTube = move?.tubeJourney?.sourceTube;
+  const targetTube = move?.tubeJourney?.targetTube;
+  if (!fish || !move.source || !move.destination || !sourceTube || !targetTube || runtime.pendingNeighborhoodTravel.has(fish.id)) {
+    return false;
+  }
+  const sourcePoints = getTransitTubeTravelPoints(sourceTube);
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  if (fish.caveState) abortFishCaveBehavior(fish, now, false);
+  fish.targetXNorm = sourcePoints.opening.xNorm;
+  fish.targetYNorm = sourcePoints.opening.yNorm;
+  fish.targetAt = now + 60 * 1000;
+  fish.lastNeighborhoodMoveAt = now;
+  setFishBehaviorIntent(fish, "travel", `swimming to ${getTransitTubeDisplayName(sourceTube, move.source)}`, now, { durationMs: 45 * 1000 });
+  runtime.pendingNeighborhoodTravel.set(fish.id, {
+    mode: "tube",
+    fishId: fish.id,
+    sourceTankId: move.source.id,
+    destinationTankId: move.destination.id,
+    sourceTubeId: sourceTube.id,
+    targetTubeId: targetTube.id,
+    phase: "approach",
+    startedAt: now,
+    approachDeadline: now + 18 * 1000,
+    neededService: move.neededService || "",
+    serviceDestinationId: move.serviceDestination?.id || "",
+    residenceDestinationId: move.residenceDestination?.id || ""
+  });
+  return true;
+}
+
+function completeBoroughTubeTravel(pending, now = Date.now()) {
+  const source = getTankById(pending?.sourceTankId);
+  const destination = getTankById(pending?.destinationTankId);
+  const sourceTube = source?.placedDecor?.find((item) => item.id === pending?.sourceTubeId);
+  const targetTube = destination?.placedDecor?.find((item) => item.id === pending?.targetTubeId);
+  const sourceIndex = source?.fish?.findIndex((fish) => fish.id === pending?.fishId) ?? -1;
+  const fish = sourceIndex >= 0 ? source.fish[sourceIndex] : null;
+  if (!fish || !destination || !sourceTube || !targetTube || destination.fish.some((entry) => entry.id === fish.id)) {
+    runtime.pendingNeighborhoodTravel.delete(pending?.fishId);
+    return false;
+  }
+  const targetPoints = getTransitTubeTravelPoints(targetTube);
+  source.fish.splice(sourceIndex, 1);
+  // Start inside the destination cylinder and swim upward through its open
+  // rim. This mirrors the source-side descent instead of popping beside it.
+  fish.xNorm = targetPoints.below.xNorm;
+  fish.yNorm = targetPoints.below.yNorm;
+  fish.targetXNorm = targetPoints.exit.xNorm;
+  fish.targetYNorm = targetPoints.exit.yNorm;
+  fish.targetAt = now + 60 * 1000;
+  fish.coarseActivity = null;
+  fish.lastCoarseSimulatedAt = now;
+  fish.visitedNeighborhoodIds = [...new Set([...(fish.visitedNeighborhoodIds || []), destination.id])].slice(-64);
+  destination.fish.push(fish);
+  if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
+    runtime.foodTravelDestinations.delete(fish.id);
+  }
+  runtime.transitTubeBursts.push(
+    { tankId: destination.id, decorId: targetTube.id, mode: "exit", startedAt: now, endsAt: now + 1600 }
+  );
+  const serviceTank = getTankById(pending.serviceDestinationId);
+  const homeTank = getTankById(pending.residenceDestinationId);
+  const cause = pending.neededService && serviceTank
+    ? `${getBoroughServiceLabel(pending.neededService)} in ${getTankLabel(serviceTank)}`
+    : homeTank
+      ? `home in ${getTankLabel(homeTank)}`
+      : getTankLabel(destination);
+  setFishBehaviorIntent(fish, pending.neededService || homeTank ? "travel" : "explore", `emerging from ${getTransitTubeDisplayName(targetTube, destination)}`, now, { durationMs: 18 * 1000 });
+  pushEvent(`${fish.name} used a Transit Tube to ${getTankLabel(destination)}.`, now, destination, {
+    type: "travel",
+    fishId: fish.id,
+    sourceTankId: source.id,
+    destinationTankId: destination.id,
+    serviceType: pending.neededService,
+    travelReason: cause,
+    detail: "Transit Tube journey"
+  });
+  pending.phase = "emerging";
+  pending.destinationStartedAt = now;
+  pending.emergeDeadline = now + 6500;
+  return true;
+}
+
 function isFishAtBoroughTravelEdge(fish, direction) {
   if (!fish) return false;
-  if (direction === "right") return Number(fish.xNorm) >= 0.94;
-  if (direction === "left") return Number(fish.xNorm) <= 0.06;
-  if (direction === "down") return Number(fish.yNorm) >= 0.88;
-  return Number(fish.yNorm) <= 0.12;
+  if (direction === "right") return Number(fish.xNorm) >= 1.08;
+  if (direction === "left") return Number(fish.xNorm) <= -0.08;
+  if (direction === "down") return Number(fish.yNorm) >= 1.08;
+  return Number(fish.yNorm) <= -0.08;
 }
 
 function completeBoroughEdgeTravel(pending, now = Date.now()) {
@@ -4302,18 +4519,21 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
   source.fish.splice(sourceIndex, 1);
   const direction = pending.direction;
   if (direction === "right") {
-    fish.xNorm = 0.035; fish.targetXNorm = 0.32;
+    fish.xNorm = -0.1; fish.targetXNorm = 0.32;
   } else if (direction === "left") {
-    fish.xNorm = 0.965; fish.targetXNorm = 0.68;
+    fish.xNorm = 1.1; fish.targetXNorm = 0.68;
   } else if (direction === "down") {
-    fish.yNorm = 0.08; fish.targetYNorm = 0.32;
+    fish.yNorm = -0.1; fish.targetYNorm = 0.32;
   } else {
-    fish.yNorm = 0.9; fish.targetYNorm = 0.68;
+    fish.yNorm = 1.1; fish.targetYNorm = 0.68;
   }
   fish.coarseActivity = null;
   fish.lastCoarseSimulatedAt = now;
   fish.visitedNeighborhoodIds = [...new Set([...(fish.visitedNeighborhoodIds || []), destination.id])].slice(-64);
   destination.fish.push(fish);
+  if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
+    runtime.foodTravelDestinations.delete(fish.id);
+  }
   runtime.boroughEdgeBursts.push(
     { tankId: source.id, direction, mode: "depart", startedAt: now, endsAt: now + 1200 },
     { tankId: destination.id, direction, mode: "arrive", startedAt: now, endsAt: now + 1400 }
@@ -4343,12 +4563,70 @@ function processPendingNeighborhoodTravel(now = Date.now()) {
   let changed = false;
   for (const pending of [...runtime.pendingNeighborhoodTravel.values()]) {
     const source = getAllTanks(state).find((tank) => tank.id === pending.sourceTankId);
-    const fish = source?.fish?.find((entry) => entry.id === pending.fishId);
+    const destination = getTankById(pending.destinationTankId);
+    const fishTank = pending.mode === "tube" && pending.phase === "emerging" ? destination : source;
+    const fish = fishTank?.fish?.find((entry) => entry.id === pending.fishId);
     if (!fish || isFishDead(fish)) {
       runtime.pendingNeighborhoodTravel.delete(pending.fishId);
       continue;
     }
-    if (isFishAtBoroughTravelEdge(fish, pending.direction) || now >= pending.transferAfter) {
+    if (pending.mode === "tube") {
+      const sourceTube = source?.placedDecor?.find((item) => item.id === pending.sourceTubeId);
+      const targetTube = destination?.placedDecor?.find((item) => item.id === pending.targetTubeId);
+      if (!sourceTube || !targetTube) {
+        runtime.pendingNeighborhoodTravel.delete(pending.fishId);
+        continue;
+      }
+      const activeTube = pending.phase === "emerging" ? targetTube : sourceTube;
+      const points = getTransitTubeTravelPoints(activeTube);
+      const sourceIsVisible = getCurrentTank()?.id === fishTank?.id && !runtime.boroughOverviewOpen;
+      if (pending.phase === "approach") {
+        fish.targetXNorm = points.opening.xNorm;
+        fish.targetYNorm = points.opening.yNorm;
+        fish.targetAt = now + 60 * 1000;
+        if (isFishAtTransitTubePoint(fish, points.opening, points.openingRadiusPx)
+          || (!sourceIsVisible && now >= pending.approachDeadline)) {
+          if (!sourceIsVisible && !isFishAtTransitTubePoint(fish, points.opening, points.openingRadiusPx)) {
+            fish.xNorm = points.opening.xNorm;
+            fish.yNorm = points.opening.yNorm;
+          }
+          pending.phase = "entering";
+          pending.entryDeadline = now + 6500;
+          fish.targetXNorm = points.below.xNorm;
+          fish.targetYNorm = points.below.yNorm;
+          fish.targetAt = now + 60 * 1000;
+          runtime.transitTubeBursts.push({
+            tankId: source.id,
+            decorId: sourceTube.id,
+            mode: "enter",
+            startedAt: now,
+            endsAt: now + 1600
+          });
+        }
+      } else if (pending.phase === "entering") {
+        fish.targetXNorm = points.below.xNorm;
+        fish.targetYNorm = points.below.yNorm;
+        fish.targetAt = now + 60 * 1000;
+        if (isFishAtTransitTubePoint(fish, points.below, Math.max(24, points.openingRadiusPx * 0.72))
+          || (!sourceIsVisible && now >= pending.entryDeadline)) {
+          pending.phase = "waiting";
+          pending.transferReadyAt = now + 1000;
+        }
+      } else if (pending.phase === "waiting") {
+        fish.xNorm = points.below.xNorm;
+        fish.yNorm = points.below.yNorm;
+        if (now >= pending.transferReadyAt) changed = completeBoroughTubeTravel(pending, now) || changed;
+      } else if (pending.phase === "emerging") {
+        fish.targetXNorm = points.exit.xNorm;
+        fish.targetYNorm = points.exit.yNorm;
+        fish.targetAt = now + 60 * 1000;
+        if (isFishAtTransitTubePoint(fish, points.exit, Math.max(20, points.openingRadiusPx * .55)) || (!sourceIsVisible && now >= pending.emergeDeadline)) {
+          runtime.pendingNeighborhoodTravel.delete(fish.id);
+          fish.targetXNorm = clamp(points.exit.xNorm + randomBetween(-.16, .16), .12, .88);
+          fish.targetYNorm = clamp(points.exit.yNorm - .04, .14, .72);
+        }
+      }
+    } else if (isFishAtBoroughTravelEdge(fish, pending.direction) || now >= pending.transferAfter) {
       changed = completeBoroughEdgeTravel(pending, now) || changed;
     }
   }
@@ -4884,13 +5162,15 @@ function handleLivingBoroughDebugAction(event) {
     recent.slice(0, count).forEach(({ sourceEvent, sourceTank }) => maybeRecordBoroughHappeningFromEvent(sourceEvent, sourceTank));
     runtime.debugLivingBoroughOutput = `${Math.min(count, recent.length)} valid happenings generated from real events.`;
   } else if (action === "happening-clear") state.boroughHappenings = [];
-  else if (action === "notification-test") queueBoroughActivityNotification("Borough notification test", "Cooldown and duplicate suppression active", { force: true });
-  else if (action === "recap-preview" && tank) { const recap = buildDailyRecapSummary(tank, getLocalDayKey(now), now, { force: true }); runtime.debugLivingBoroughOutput = recap?.narrative || "No recap data."; }
+  else if (action === "notification-test") queueBoroughActivityNotification("Borough notification test", "Cooldown and duplicate suppression active", { force: true, persist: false });
+  else if (action === "recap-preview" && tank) { const recap = buildBoroughDailyRecapSummary(getLocalDayKey(now), now, { force: true }); runtime.debugLivingBoroughOutput = recap?.narrative || "No recap data."; }
   else if (action === "recap-generate" && tank) maybeGenerateDailyRecapForTank(tank, now, { force: true });
   else if (action === "simulate-days") { runtime.debugSimulatedNow = now + Number(value) * DAY_MS; syncState(runtime.debugSimulatedNow); }
   else if (action === "structure-info") {
     const item = getSelectedPlacedDecor();
-    runtime.debugLivingBoroughOutput = item ? `${runtime.decorMap.get(item.decorKey)?.name}: ${getDecorResidents(item.id).length}/${getDecorResidenceCapacity(item)} residents; services ${getDecorBoroughServiceTypes(item).join(", ") || "none"}.` : "Select a structure first.";
+    runtime.debugLivingBoroughOutput = item
+      ? `${runtime.decorMap.get(item.decorKey)?.name}: ${getDecorResidents(item.id).length}/${getDecorResidenceCapacity(item)} residents; seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}; services ${getDecorBoroughServiceTypes(item).join(", ") || "none"}.`
+      : "Select a structure first.";
   } else if (action === "structure-fill") {
     const item = getSelectedPlacedDecor();
     if (item) getAllTankFish(state).filter((entry) => !isFishDead(entry)).slice(0, getDecorResidenceCapacity(item)).forEach((entry) => { entry.boroughServiceTargetDecorId = item.id; });
@@ -5282,11 +5562,21 @@ function normalizeDecorFishBehaviorMeta(entry, key = "") {
   const serviceTypes = normalizeStringList(source?.services ?? source?.service)
     .map((value) => value.toLowerCase().replace(/[-_\s]+/g, "-"))
     .filter((value, index, values) => allowedServices.has(value) && values.indexOf(value) === index);
+  const serviceSeats = Array.isArray(source?.serviceSeats)
+    ? source.serviceSeats.map((seat, index) => ({
+      id: typeof seat?.id === "string" && seat.id.trim() ? seat.id.trim() : `seat-${index + 1}`,
+      x: clamp(Number(seat?.x) || 0.5, 0.05, 0.95),
+      y: clamp(Number(seat?.y) || 0.55, 0.05, 0.95),
+      layer: Number.isFinite(Number(seat?.layer)) ? clampTankLayer(Number(seat.layer)) : null,
+      direction: Number(seat?.direction) < 0 ? -1 : 1
+    })).slice(0, 12)
+    : [];
 
   return {
     explicitHangout: normalizedHangout.explicit || Boolean(source),
     hangoutTypes,
     serviceTypes,
+    serviceSeats,
     occupancyLimit: Number.isFinite(Number(source?.occupancyLimit))
       ? Math.max(1, Math.floor(Number(source.occupancyLimit)))
       : null,
@@ -6129,6 +6419,7 @@ function createTankState(options = {}) {
     lastCleanedAt: Number.isFinite(options.lastCleanedAt) ? options.lastCleanedAt : now,
     lastSimulatedAt: Number.isFinite(options.lastSimulatedAt) ? options.lastSimulatedAt : now,
     events: Array.isArray(options.events) ? options.events : [],
+    lastCorpseSicknessAt: Number.isFinite(Number(options.lastCorpseSicknessAt)) ? Number(options.lastCorpseSicknessAt) : null,
     lastGravelCoinFoundAt: Number.isFinite(options.lastGravelCoinFoundAt) ? options.lastGravelCoinFoundAt : 0,
     foodBuffs: {
       upgradedUntil: Number.isFinite(options?.foodBuffs?.upgradedUntil) ? options.foodBuffs.upgradedUntil : 0,
@@ -6175,23 +6466,24 @@ function installTankStateAccessors(targetState) {
 }
 
 function normalizeAquariumSectionGrid(tanks = getAllTanks()) {
+  const orderedTanks = [...tanks].sort((left, right) => {
+    const leftY = Number.isInteger(Number(left?.gridY)) ? Number(left.gridY) : 0;
+    const rightY = Number.isInteger(Number(right?.gridY)) ? Number(right.gridY) : 0;
+    const leftX = Number.isInteger(Number(left?.gridX)) ? Number(left.gridX) : 0;
+    const rightX = Number.isInteger(Number(right?.gridX)) ? Number(right.gridX) : 0;
+    return leftY - rightY || leftX - rightX || Number(left?.createdAt || 0) - Number(right?.createdAt || 0);
+  });
   const occupied = new Set();
-  let fallbackX = 0;
-  for (const [index, tank] of tanks.entries()) {
+  for (const [index, tank] of orderedTanks.entries()) {
     if (/^Aquarium\s+\d+$/i.test(String(tank?.name || "").trim())) {
       tank.name = buildDefaultTankName(index);
     }
-    let x = Number.isInteger(Number(tank?.gridX)) ? Number(tank.gridX) : fallbackX;
-    let y = Number.isInteger(Number(tank?.gridY)) ? Number(tank.gridY) : 0;
-    while (occupied.has(`${x},${y}`)) {
-      fallbackX += 1;
-      x = fallbackX;
-      y = 0;
-    }
-    tank.gridX = x;
-    tank.gridY = y;
-    occupied.add(`${x},${y}`);
-    fallbackX = Math.max(fallbackX, x);
+    let gridX = Number.isInteger(Number(tank.gridX)) ? Number(tank.gridX) : index;
+    let gridY = Number.isInteger(Number(tank.gridY)) ? Number(tank.gridY) : 0;
+    while (occupied.has(`${gridX}:${gridY}`)) gridX += 1;
+    tank.gridX = gridX;
+    tank.gridY = gridY;
+    occupied.add(`${gridX}:${gridY}`);
   }
   return tanks;
 }
@@ -6200,29 +6492,67 @@ function getAquariumSectionAt(gridX, gridY, targetState = state) {
   return getAllTanks(targetState).find((tank) => tank.gridX === gridX && tank.gridY === gridY) || null;
 }
 
-function getAdjacentAquariumSections(tank = getCurrentTank(), targetState = state) {
+function getBoroughTravelWallKey(firstTankId, secondTankId) {
+  return [String(firstTankId || ""), String(secondTankId || "")].sort().join("|");
+}
+
+function isBoroughTravelWallBlocked(firstTank, secondTank, targetState = state) {
+  if (!firstTank || !secondTank) {
+    return false;
+  }
+  return targetState?.boroughTravelWalls?.[getBoroughTravelWallKey(firstTank.id, secondTank.id)] === true;
+}
+
+function toggleBoroughTravelWall(firstTankId, secondTankId) {
+  const firstTank = getTankById(firstTankId);
+  const secondTank = getTankById(secondTankId);
+  if (!firstTank || !secondTank || Math.abs(firstTank.gridX - secondTank.gridX) + Math.abs(firstTank.gridY - secondTank.gridY) !== 1) {
+    return false;
+  }
+  state.boroughTravelWalls ||= {};
+  const key = getBoroughTravelWallKey(firstTank.id, secondTank.id);
+  const blocked = state.boroughTravelWalls[key] !== true;
+  if (blocked) {
+    state.boroughTravelWalls[key] = true;
+  } else {
+    delete state.boroughTravelWalls[key];
+  }
+  for (const pending of [...runtime.pendingNeighborhoodTravel.values()]) {
+    if (pending.mode !== "tube" && getBoroughTravelWallKey(pending.sourceTankId, pending.destinationTankId) === key) {
+      runtime.pendingNeighborhoodTravel.delete(pending.fishId);
+    }
+  }
+  saveState();
+  renderAquariumOverview();
+  showToast(blocked ? "Travel wall closed. Fish must go around or use a Transit Tube." : "Travel wall opened.");
+  return true;
+}
+
+function getAdjacentAquariumSections(tank = getCurrentTank(), targetState = state, options = {}) {
   if (!tank) {
     return [];
   }
-  return [[0, -1], [1, 0], [0, 1], [-1, 0]]
+  // Rows are separate runs of glass. Fish may only cross a shared horizontal
+  // edge; linked transit tubes intentionally bypass this restriction.
+  return [[1, 0], [-1, 0]]
     .map(([dx, dy]) => getAquariumSectionAt(tank.gridX + dx, tank.gridY + dy, targetState))
-    .filter(Boolean);
+    .filter((neighbor) => neighbor && (options.ignoreTravelWalls === true || !isBoroughTravelWallBlocked(tank, neighbor, targetState)));
 }
 
 function getValidAquariumExpansionSpaces(targetState = state) {
-  const spaces = new Map();
-  for (const tank of getAllTanks(targetState)) {
-    // New sections stay side-by-side so their open-water edges connect naturally.
-    // Existing vertical layouts remain readable and traversable for save compatibility.
-    for (const [dx, dy] of [[1, 0], [-1, 0]]) {
+  const tanks = getAllTanks(targetState);
+  if (!tanks.length) {
+    return [];
+  }
+  const candidates = new Map();
+  for (const tank of tanks) {
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
       const gridX = tank.gridX + dx;
       const gridY = tank.gridY + dy;
-      if (!getAquariumSectionAt(gridX, gridY, targetState)) {
-        spaces.set(`${gridX},${gridY}`, { gridX, gridY });
-      }
+      if (!getAquariumSectionAt(gridX, gridY, targetState)) candidates.set(`${gridX}:${gridY}`, { gridX, gridY });
     }
   }
-  return [...spaces.values()];
+  return [...candidates.values()];
 }
 
 function getAquariumExpansionCost(targetState = state) {
@@ -6356,6 +6686,21 @@ function swapAquariumSectionPositions(firstTankId, secondTankId) {
   return true;
 }
 
+function moveAquariumSectionToGrid(tankId, gridX, gridY) {
+  const tank = getTankById(tankId);
+  const x = Number(gridX);
+  const y = Number(gridY);
+  if (!tank || !Number.isInteger(x) || !Number.isInteger(y)) return false;
+  const occupant = getAquariumSectionAt(x, y);
+  if (occupant && occupant.id !== tank.id) return swapAquariumSectionPositions(tank.id, occupant.id);
+  tank.gridX = x;
+  tank.gridY = y;
+  saveState();
+  renderAquariumOverview();
+  showToast(`Moved ${getTankLabel(tank)}.`);
+  return true;
+}
+
 function withActiveTank(tankId, callback, targetState = state) {
   if (!targetState || typeof callback !== "function") {
     return null;
@@ -6384,8 +6729,14 @@ function setActiveTank(tankId, options = {}) {
     return false;
   }
 
-  clearPrimaryToolModes();
-  resetCompetingOverlayState({ reason: "tank-switch" });
+  const preserveHorizontalOverlays = options.preserveHorizontalOverlays === true;
+  if (!preserveHorizontalOverlays) {
+    clearPrimaryToolModes();
+    resetCompetingOverlayState({ reason: "tank-switch" });
+  } else {
+    runtime.selectedDecorIds = [];
+    runtime.selectedPlacedDecorId = null;
+  }
   runtime.selectedFishId = null;
   runtime.fishInspectorSettingsOpen = false;
   runtime.editingTankNameId = null;
@@ -6415,7 +6766,7 @@ function switchTankByOffset(offset) {
 
   const currentIndex = Math.max(0, getCurrentTankIndex());
   const nextIndex = (currentIndex + offset + tanks.length) % tanks.length;
-  return setActiveTank(tanks[nextIndex].id);
+  return setActiveTank(tanks[nextIndex].id, { preserveHorizontalOverlays: true });
 }
 
 function beginAquariumExpansionPurchase() {
@@ -6423,33 +6774,49 @@ function beginAquariumExpansionPurchase() {
 }
 
 function sellCurrentTank() {
-  const tank = getCurrentTank();
+  return sellAquariumTank(getCurrentTank()?.id);
+}
+
+function sellAquariumTank(tankId) {
+  const tank = getTankById(tankId);
   if (!tank) {
-    return;
+    return false;
   }
 
   if (state.tanks.length <= 1) {
     showToast("You need to keep at least one tank.");
-    return;
+    return false;
   }
 
   if (!isTankEmpty(tank)) {
     showToast("Only empty tanks can be sold.");
-    return;
+    return false;
   }
 
   const resaleValue = getTankResaleValue(tank);
-  const currentIndex = getCurrentTankIndex();
+  const currentIndex = state.tanks.findIndex((entry) => entry.id === tank.id);
+  const soldActiveTank = state.activeTankId === tank.id;
   state.tanks = state.tanks.filter((entry) => entry.id !== tank.id);
-  state.coins += resaleValue;
-  const fallbackTank = state.tanks[Math.max(0, currentIndex - 1)] || state.tanks[0];
-  state.activeTankId = fallbackTank?.id || null;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + resaleValue);
+  if (soldActiveTank) {
+    const fallbackTank = state.tanks[Math.max(0, currentIndex - 1)] || state.tanks[0];
+    state.activeTankId = fallbackTank?.id || null;
+  }
+  for (const [key] of Object.entries(state.boroughTravelWalls || {})) {
+    if (key.split("|").includes(tank.id)) delete state.boroughTravelWalls[key];
+  }
+  for (const pending of [...runtime.pendingNeighborhoodTravel.values()]) {
+    if (pending.sourceTankId === tank.id || pending.destinationTankId === tank.id) {
+      runtime.pendingNeighborhoodTravel.delete(pending.fishId);
+    }
+  }
   runtime.editingTankNameId = null;
   runtime.editingTankNameValue = "";
   pushEvent(`Sold ${getTankLabel(tank, currentIndex)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, Date.now());
   saveState();
   playCoinSoundEffect();
   renderUi(Date.now());
+  return true;
 }
 
 function cancelCurrentTankNameEdit() {
@@ -11223,6 +11590,7 @@ async function init() {
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
     FISH_EGG_SHELL_ASSET_PATH,
+    ...GRIME_OVERLAY_ASSET_PATHS,
     ...WATER_PARTICLE_ASSET_PATHS,
     ...Object.values(TOOL_CURSOR_ICON_PATHS),
     ...runtime.decorCatalog.flatMap((item) => [
@@ -11258,7 +11626,23 @@ async function init() {
       ...getFishDeathAssetCandidates(fish, "skeleton")
     ])),
     ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
-  ]));
+  ]), { maxAttempts: 1 });
+
+  const criticalFishImagePaths = [...new Set(getAllTankFish(state)
+    .map((fish) => {
+      const species = getSpeciesForFish(fish);
+      return species ? (getFishDisplayAssetPath(fish, species, Date.now()) || species.asset) : "";
+    })
+    .filter(Boolean))];
+  const criticalFishImageResults = await preloadImages(criticalFishImagePaths, {
+    maxAttempts: 3,
+    timeoutMs: 8000,
+    retryDelayMs: 350
+  });
+  const unavailableFishImages = criticalFishImageResults.filter((result) => !result.loaded);
+  if (unavailableFishImages.length) {
+    console.error("Some active fish artwork is unavailable after startup recovery.", unavailableFishImages);
+  }
 
   resizeDisplayCanvases();
   const now = Date.now();
@@ -11488,14 +11872,28 @@ function showLoadingOverlayError(error = null) {
   overlay.classList.remove("is-ready");
   overlay.classList.remove("is-hiding");
   overlay.classList.add("is-error");
-  if (error) {
-    overlay.title = String(error?.message || error || "Aquarium startup failed");
-  }
+  const errorMessage = String(error?.message || error || "Aquarium startup failed");
+  const errorStack = typeof error?.stack === "string" ? error.stack : "";
+  const errorDetails = [errorMessage, errorStack]
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 6000);
+  overlay.title = errorMessage;
+  overlay.dataset.startupError = errorDetails;
   const text = dom.loadingOverlayText || overlay.querySelector(".loading-overlay-text");
   if (text) {
     text.textContent = window.location.protocol === "file:"
       ? "Open with Launch Bubble Borough Web.bat"
-      : "Aquarium failed to load - click to retry";
+      : "Aquarium failed to load";
+  }
+  const details = overlay.querySelector("[data-loading-error-details]");
+  if (details) {
+    details.textContent = errorDetails;
+    details.hidden = !errorDetails;
+  }
+  const actions = overlay.querySelector("[data-loading-error-actions]");
+  if (actions) {
+    actions.hidden = window.location.protocol === "file:";
   }
 }
 
@@ -12207,15 +12605,13 @@ function bindEvents() {
     const key = keyRaw.toLowerCase();
     if (
       (keyRaw === "ArrowLeft" || keyRaw === "ArrowRight")
-      && !runtime.editTankMode
-      && !runtime.fishEditMode
       && !runtime.storeOverlayOpen
       && !runtime.settingsOverlayOpen
       && !runtime.utilityOverlayOpen
       && !runtime.equipmentOverlayOpen
     ) {
       event.preventDefault();
-      moveCameraToAdjacentSection(keyRaw === "ArrowLeft" ? -1 : 1, 0);
+      moveCameraToAdjacentSection(keyRaw === "ArrowLeft" ? -1 : 1, 0, { preserveHorizontalOverlays: true });
       return;
     }
 
@@ -12274,12 +12670,14 @@ function bindEvents() {
 
     if (key === "f") {
       event.preventDefault();
-      const flipped = toggleActiveDecorFlip();
+      const flipAxis = event.shiftKey ? "vertical" : "horizontal";
+      const flipped = toggleActiveDecorFlip(flipAxis);
       if (flipped !== null) {
+        const axisLabel = flipAxis === "vertical" ? "vertical" : "horizontal";
         showToast(
           isTutorialDecorDoneStep()
-            ? getTutorialDecorDoneToastText(flipped ? "Decor flipped." : "Decor flip cleared.")
-            : (flipped ? "Decor flipped." : "Decor flip cleared."),
+            ? getTutorialDecorDoneToastText(flipped ? `Decor flipped ${axisLabel}.` : `${axisLabel[0].toUpperCase()}${axisLabel.slice(1)} flip cleared.`)
+            : (flipped ? `Decor flipped ${axisLabel}.` : `${axisLabel[0].toUpperCase()}${axisLabel.slice(1)} flip cleared.`),
           {
             durationMs: isTutorialDecorDoneStep() ? 120000 : undefined,
             key: isTutorialDecorDoneStep() ? TUTORIAL_TOAST_DECOR_DONE : ""
@@ -12332,7 +12730,69 @@ function bindEvents() {
     if (dom.loadingOverlay?.classList.contains("is-error")) {
       event.preventDefault();
       event.stopPropagation();
-      window.location.reload();
+      const recoveryDialog = dom.loadingOverlay.querySelector("[data-loading-recovery-dialog]");
+      const recoveryStatus = dom.loadingOverlay.querySelector("[data-loading-recovery-status]");
+      const helpButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-recovery-help]")
+        : null;
+      if (helpButton) {
+        if (recoveryDialog) {
+          recoveryDialog.hidden = !recoveryDialog.hidden;
+        }
+        return;
+      }
+      const cancelRecoveryButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-recovery-cancel]")
+        : null;
+      if (cancelRecoveryButton) {
+        if (recoveryDialog) {
+          recoveryDialog.hidden = true;
+        }
+        return;
+      }
+      const confirmRecoveryButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-recovery-confirm]")
+        : null;
+      if (confirmRecoveryButton) {
+        confirmRecoveryButton.disabled = true;
+        if (recoveryStatus) {
+          recoveryStatus.textContent = "Backing up and removing the Bubble Borough browser save...";
+        }
+        window.setTimeout(() => {
+          try {
+            const rawSave = localStorage.getItem(STORAGE_KEY);
+            if (rawSave) {
+              const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+              downloadTextFile(rawSave, `bubble-borough-recovery-backup-${timestamp}.json`, "application/json");
+            }
+            localStorage.removeItem(STORAGE_KEY);
+            window.location.reload();
+          } catch (error) {
+            console.error("Could not remove Bubble Borough browser save.", error);
+            confirmRecoveryButton.disabled = false;
+            if (recoveryStatus) {
+              recoveryStatus.textContent = error?.message || "The browser would not allow the save to be removed.";
+            }
+          }
+        }, 0);
+        return;
+      }
+      const copyButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-error-copy]")
+        : null;
+      if (copyButton) {
+        const details = dom.loadingOverlay.dataset.startupError || dom.loadingOverlay.title || "Aquarium startup failed";
+        void copyTextToClipboard(details).then((copied) => {
+          copyButton.textContent = copied ? "Copied" : "Select error text above";
+        });
+        return;
+      }
+      const retryButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-error-retry]")
+        : null;
+      if (retryButton) {
+        window.location.reload();
+      }
       return;
     }
     if (!dom.loadingOverlay?.classList.contains("is-ready")) {
@@ -12378,6 +12838,12 @@ function bindEvents() {
 
   dom.prevTankButton?.addEventListener("click", () => switchTankByOffset(-1));
   dom.nextTankButton?.addEventListener("click", () => switchTankByOffset(1));
+  dom.careTaskList?.addEventListener("click", (event) => {
+    const taskButton = event.target instanceof Element ? event.target.closest("[data-care-task-action]") : null;
+    if (taskButton) {
+      runManagementCareTaskAction(taskButton.dataset.careTaskAction, taskButton.dataset.careTaskTankId, taskButton.dataset.careTaskFishId);
+    }
+  });
   dom.overviewButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("overviewButton")) {
       return;
@@ -12385,10 +12851,65 @@ function bindEvents() {
     toggleAquariumOverview();
   });
   dom.closeBoroughOverview?.addEventListener("click", closeAquariumOverview);
+  dom.boroughOverviewInfo?.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+    const tabButton = target.closest("[data-borough-info-tab]");
+    if (tabButton) {
+      runtime.boroughOverviewInfoTab = tabButton.dataset.boroughInfoTab === "tank" ? "tank" : "borough";
+      runtime.boroughOverviewInfoView = "overview";
+      renderAquariumOverview();
+      return;
+    }
+    const viewButton = target.closest("[data-borough-info-view], [data-management-view]");
+    if (viewButton) {
+      runtime.boroughOverviewInfoView = viewButton.dataset.boroughInfoView || "overview";
+      renderAquariumOverview();
+      return;
+    }
+    if (target.closest("[data-toggle-care-task-pane]")) {
+      toggleCareTaskPane();
+      renderAquariumOverview();
+      return;
+    }
+    const careButton = target.closest("[data-borough-care-action]");
+    if (careButton) {
+      closeAquariumOverview();
+      runManagementCareTaskAction(careButton.dataset.boroughCareAction, careButton.dataset.boroughCareTankId, careButton.dataset.boroughCareFishId);
+      return;
+    }
+    const visitButton = target.closest("[data-visit-section]");
+    if (visitButton) {
+      visitAquariumSection(visitButton.dataset.visitSection);
+      return;
+    }
+    const editButton = target.closest("[data-borough-edit-tank]");
+    if (editButton) {
+      setActiveTank(editButton.dataset.boroughEditTank, { announce: false, preserveHorizontalOverlays: true });
+      closeAquariumOverview();
+      toggleEditTankMode(true, { source: "borough-overview", collapseSidebar: true });
+      return;
+    }
+    const selectedTank = getTankById(runtime.boroughOverviewInfoTankId);
+    if (selectedTank) {
+      setActiveTank(selectedTank.id, { announce: false, preserveHorizontalOverlays: true });
+    }
+    if (handleTankManagementUtilityOverlayBodyClick({ source: "borough-overview" }, target)) {
+      if (runtime.boroughOverviewOpen) renderAquariumOverview();
+    }
+  });
   dom.boroughGrid?.addEventListener("click", (event) => {
     const extendButton = event.target.closest("[data-extend-grid-x]");
     if (extendButton) {
       extendAquariumAt(Number(extendButton.dataset.extendGridX), Number(extendButton.dataset.extendGridY));
+      return;
+    }
+    const infoButton = event.target.closest("[data-borough-tank-info]");
+    if (infoButton) {
+      runtime.boroughOverviewInfoTankId = infoButton.dataset.boroughTankInfo;
+      runtime.boroughOverviewInfoTab = "tank";
+      runtime.boroughOverviewInfoView = "overview";
+      renderAquariumOverview();
       return;
     }
     const renameButton = event.target.closest("[data-rename-borough]");
@@ -12413,8 +12934,18 @@ function bindEvents() {
       renderAquariumOverview();
       return;
     }
+    const travelWallButton = event.target.closest("[data-toggle-travel-wall]");
+    if (travelWallButton) {
+      toggleBoroughTravelWall(travelWallButton.dataset.toggleTravelWall, travelWallButton.dataset.toggleTravelWallNeighbor);
+      return;
+    }
+    const sellTankButton = event.target.closest("[data-sell-borough-tank]");
+    if (sellTankButton) {
+      sellAquariumTank(sellTankButton.dataset.sellBoroughTank);
+      return;
+    }
     const sectionButton = event.target.closest("[data-visit-section]");
-    if (sectionButton) {
+    if (sectionButton && !runtime.boroughOverviewEditMode) {
       visitAquariumSection(sectionButton.dataset.visitSection);
     }
   });
@@ -12440,30 +12971,79 @@ function bindEvents() {
   });
   dom.boroughGrid?.addEventListener("dragstart", (event) => {
     const section = event.target.closest("[data-borough-section]");
-    if (!section || event.target.closest("input, button")) {
+    if (!runtime.boroughOverviewEditMode || !section || event.target.closest("input, button:not(.borough-section-preview), [data-toggle-travel-wall]")) {
       event.preventDefault();
       return;
     }
     runtime.boroughOverviewDraggedTankId = section.dataset.boroughSection;
     section.classList.add("is-dragging");
+    section.setAttribute("aria-grabbed", "true");
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+    }
     event.dataTransfer?.setData("text/plain", section.dataset.boroughSection);
   });
   dom.boroughGrid?.addEventListener("dragover", (event) => {
-    if (runtime.boroughOverviewDraggedTankId && event.target.closest("[data-borough-section]")) {
+    if (runtime.boroughOverviewDraggedTankId && event.target.closest("[data-borough-section], [data-borough-drop-grid-x]")) {
       event.preventDefault();
     }
   });
   dom.boroughGrid?.addEventListener("drop", (event) => {
-    const target = event.target.closest("[data-borough-section]");
+    const target = event.target.closest("[data-borough-section], [data-borough-drop-grid-x]");
     if (target && runtime.boroughOverviewDraggedTankId) {
       event.preventDefault();
-      swapAquariumSectionPositions(runtime.boroughOverviewDraggedTankId, target.dataset.boroughSection);
+      if (target.dataset.boroughSection) swapAquariumSectionPositions(runtime.boroughOverviewDraggedTankId, target.dataset.boroughSection);
+      else moveAquariumSectionToGrid(runtime.boroughOverviewDraggedTankId, Number(target.dataset.boroughDropGridX), Number(target.dataset.boroughDropGridY));
     }
     runtime.boroughOverviewDraggedTankId = null;
   });
+  dom.toggleBoroughEditMode?.addEventListener("click", () => {
+    runtime.boroughOverviewEditMode = !runtime.boroughOverviewEditMode;
+    runtime.boroughOverviewDraggedTankId = null;
+    renderAquariumOverview();
+  });
+  dom.addBoroughTankButton?.addEventListener("click", () => {
+    if (!runtime.boroughOverviewEditMode) return;
+    const openSpace = getValidAquariumExpansionSpaces()[0];
+    if (openSpace) extendAquariumAt(openSpace.gridX, openSpace.gridY);
+  });
+  // Pointer dragging works consistently on canvas-heavy tiles and touch input,
+  // unlike the browser's native image/canvas drag gesture.
+  dom.boroughGrid?.addEventListener("pointerdown", (event) => {
+    if (!runtime.boroughOverviewEditMode || event.button !== 0 || event.target.closest("input, button:not(.borough-section-preview), [data-toggle-travel-wall]")) return;
+    const section = event.target.closest("[data-borough-section]");
+    if (!section) return;
+    event.preventDefault();
+    runtime.boroughOverviewDraggedTankId = section.dataset.boroughSection;
+    runtime.boroughOverviewDragPointerId = event.pointerId;
+    section.classList.add("is-dragging");
+    section.setPointerCapture?.(event.pointerId);
+  });
+  dom.boroughGrid?.addEventListener("pointermove", (event) => {
+    if (runtime.boroughOverviewDragPointerId !== event.pointerId || !runtime.boroughOverviewDraggedTankId) return;
+    const hovered = document.elementFromPoint(event.clientX, event.clientY)?.closest?.("[data-borough-section], [data-borough-drop-grid-x]");
+    dom.boroughGrid.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target"));
+    hovered?.classList.add("is-drop-target");
+  });
+  const finishOverviewPointerDrag = (event) => {
+    if (runtime.boroughOverviewDragPointerId !== event.pointerId) return;
+    const tankId = runtime.boroughOverviewDraggedTankId;
+    const hovered = document.elementFromPoint(event.clientX, event.clientY)?.closest?.("[data-borough-section], [data-borough-drop-grid-x]");
+    runtime.boroughOverviewDragPointerId = null;
+    runtime.boroughOverviewDraggedTankId = null;
+    dom.boroughGrid.querySelectorAll(".is-dragging, .is-drop-target").forEach((node) => node.classList.remove("is-dragging", "is-drop-target"));
+    if (!tankId || !hovered) return;
+    if (hovered.dataset.boroughSection && hovered.dataset.boroughSection !== tankId) swapAquariumSectionPositions(tankId, hovered.dataset.boroughSection);
+    else if (hovered.dataset.boroughDropGridX !== undefined) moveAquariumSectionToGrid(tankId, Number(hovered.dataset.boroughDropGridX), Number(hovered.dataset.boroughDropGridY));
+  };
+  dom.boroughGrid?.addEventListener("pointerup", finishOverviewPointerDrag);
+  dom.boroughGrid?.addEventListener("pointercancel", finishOverviewPointerDrag);
   dom.boroughGrid?.addEventListener("dragend", () => {
     runtime.boroughOverviewDraggedTankId = null;
-    dom.boroughGrid?.querySelectorAll(".is-dragging").forEach((element) => element.classList.remove("is-dragging"));
+    dom.boroughGrid?.querySelectorAll(".is-dragging").forEach((element) => {
+      element.classList.remove("is-dragging");
+      element.setAttribute("aria-grabbed", "false");
+    });
   });
   dom.tankStage?.addEventListener("wheel", (event) => {
     if (isTankOverlayTarget(event.target) && !event.target.closest("#boroughOverview")) {
@@ -12503,7 +13083,7 @@ function bindEvents() {
       moveCameraToAdjacentSection(0, dy > 0 ? -1 : 1);
     }
   });
-  dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("daily-bonus"));
+  dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("notifications"));
   dom.toggleDebugMenuButton?.addEventListener("click", () => toggleDebugSidebar());
   dom.debugDailyRecapButton?.addEventListener("click", () => triggerDebugDailyRecap());
   dom.feedButton.addEventListener("click", () => {
@@ -13903,6 +14483,18 @@ function bindEvents() {
   const bindEquipmentSurface = (container) => {
     container?.addEventListener("click", playEquipmentSurfaceClickSound, true);
     container?.addEventListener("click", (event) => {
+      const copyAppearanceButton = event.target.closest("[data-copy-tank-appearance]");
+      if (copyAppearanceButton) {
+        copyTankAppearanceScheme(copyAppearanceButton.dataset.copyTankAppearance);
+        return;
+      }
+
+      const pasteAppearanceButton = event.target.closest("[data-paste-tank-appearance]");
+      if (pasteAppearanceButton) {
+        pasteTankAppearanceScheme(pasteAppearanceButton.dataset.pasteTankAppearance);
+        return;
+      }
+
       const backgroundButton = event.target.closest("[data-select-background]");
       if (backgroundButton) {
         selectBackground(backgroundButton.dataset.selectBackground);
@@ -14295,7 +14887,7 @@ function bindEvents() {
 
     if (runtime.cleaningMode) {
       if (point) {
-        scrubGlass(point.x, point.y);
+        queueScrubGlass(point.x, point.y);
       } else {
         runtime.lastScrubPoint = null;
         resetScrubWipeSoundState();
@@ -14322,6 +14914,7 @@ function bindEvents() {
         tankLayer: runtime.placementMode.tankLayer,
         scale: runtime.placementMode.scale,
         flipped: runtime.placementMode.flipped,
+        flippedY: runtime.placementMode.flippedY,
         applyGravity: true
       }) : null;
     }
@@ -14380,6 +14973,7 @@ function bindEvents() {
     dom.selectedDecorActionBar,
     dom.selectedDecorScaleControls,
     dom.selectedDecorLayerControls,
+    dom.selectedDecorTransformControls,
     dom.selectedDecorResizeHandles
   ]) {
     container?.addEventListener("click", playSelectedDecorActionSound, true);
@@ -14415,6 +15009,24 @@ function bindEvents() {
       setSelectedDecor(placedId);
     }
     performDecorEditShortcutAction("scale-down");
+  });
+  dom.selectedDecorFlipHorizontalButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const placedId = dom.selectedDecorFlipHorizontalButton?.dataset.flipDecor;
+    if (placedId && placedId !== runtime.selectedDecorId) {
+      setSelectedDecor(placedId);
+    }
+    toggleActiveDecorFlip("horizontal");
+  });
+  dom.selectedDecorFlipVerticalButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const placedId = dom.selectedDecorFlipVerticalButton?.dataset.flipDecor;
+    if (placedId && placedId !== runtime.selectedDecorId) {
+      setSelectedDecor(placedId);
+    }
+    toggleActiveDecorFlip("vertical");
   });
   dom.selectedDecorLayerUpButton?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -20342,6 +20954,11 @@ function isDetritusFish(target) {
   return species?.diet === "detritus";
 }
 
+function isBrineShrimpSpecies(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  return species?.id === "brine-shrimp" || species?.behavior === "shrimp";
+}
+
 function isMealFreeFish(target) {
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
   if (
@@ -20463,11 +21080,11 @@ function fishNeedsMealWindow(target) {
 }
 
 function getMealHistoryEntry(slotKey, tank = getCurrentTank()) {
-  if (!tank || !slotKey) {
+  if (!slotKey) {
     return null;
   }
 
-  const entry = tank.feedHistory?.[slotKey];
+  const entry = state.mealHistory?.[slotKey];
   if (!entry || typeof entry !== "object") {
     return null;
   }
@@ -21579,6 +22196,8 @@ function sanitizeDailyBonusState(rawState) {
       ...summary,
       dayKey: typeof summary.dayKey === "string" ? summary.dayKey : "",
       tankId: typeof summary.tankId === "string" ? summary.tankId : "",
+      scoreModel: typeof summary.scoreModel === "string" ? summary.scoreModel : "",
+      rawScore: Math.round(Number(summary.rawScore ?? summary.score) || 0),
       score: Math.round(Number(summary.score) || 0),
       reward: clamp(Math.floor(Number(summary.reward) || 0), 0, DAILY_RECAP_REWARD_CAP),
       narrative: typeof summary.narrative === "string" ? summary.narrative.slice(0, 600) : "",
@@ -21590,6 +22209,74 @@ function sanitizeDailyBonusState(rawState) {
       })).filter((row) => row.text) : []
     }
     : null;
+  const combineSummariesForDay = (summaries, dayKey) => {
+    const unique = [];
+    const seen = new Set();
+    for (const summary of summaries.filter((entry) => entry?.dayKey === dayKey)) {
+      const key = `${summary.tankId || ""}:${summary.dayKey}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      unique.push(summary);
+    }
+    const existingBorough = unique.find((summary) => summary.scope === BOROUGH_DAILY_RECAP_ID || summary.tankId === BOROUGH_DAILY_RECAP_ID);
+    if (existingBorough) {
+      const rawScore = existingBorough.scoreModel === BOROUGH_RECAP_SCORE_MODEL
+        ? Number(existingBorough.rawScore) || 0
+        : (existingBorough.rows || []).reduce((total, row) => total + (Number(row.score) || 0), 0);
+      const score = existingBorough.scoreModel === BOROUGH_RECAP_SCORE_MODEL
+        ? Number(existingBorough.score) || 0
+        : normalizeBoroughRecapScore(rawScore, existingBorough.fishCount, existingBorough.tankCount);
+      return {
+        ...existingBorough,
+        scope: BOROUGH_DAILY_RECAP_ID,
+        tankId: BOROUGH_DAILY_RECAP_ID,
+        tankName: "Bubble Borough",
+        scoreModel: BOROUGH_RECAP_SCORE_MODEL,
+        rawScore,
+        score,
+        reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+        overall: score >= 8 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
+      };
+    }
+    const fishCount = unique.reduce((total, summary) => total + (Number(summary.fishCount) || 0), 0);
+    const rows = unique.flatMap((summary) => (summary.rows || []).map((row) => ({
+      ...row,
+      text: `${summary.tankName || "Tank"}: ${row.text}`
+    })));
+    const rawScore = rows.reduce((total, row) => total + (Number(row.score) || 0), 0);
+    const score = normalizeBoroughRecapScore(rawScore, fishCount, unique.length);
+    return {
+      scope: BOROUGH_DAILY_RECAP_ID,
+      tankId: BOROUGH_DAILY_RECAP_ID,
+      tankName: "Bubble Borough",
+      tankCount: unique.length,
+      dayKey,
+      generatedAt: Math.max(...unique.map((summary) => Number(summary.generatedAt) || 0), 0),
+      rows,
+      scoreModel: BOROUGH_RECAP_SCORE_MODEL,
+      rawScore,
+      score,
+      reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+      mealsFed: unique.reduce((total, summary) => total + (Number(summary.mealsFed) || 0), 0),
+      averageComfort: fishCount
+        ? Math.round(unique.reduce((total, summary) => total + ((Number(summary.averageComfort) || 0) * (Number(summary.fishCount) || 0)), 0) / fishCount)
+        : 0,
+      cleanPercent: unique.length
+        ? Math.round(unique.reduce((total, summary) => total + (Number(summary.cleanPercent) || 0), 0) / unique.length)
+        : 0,
+      allMealsSatisfied: fishCount > 0 && unique.filter((summary) => Number(summary.fishCount) > 0).every((summary) => summary.allMealsSatisfied === true),
+      hasNegativeEvents: rows.some((row) => Number(row.score) < 0),
+      hasAttackOrDeath: unique.some((summary) => summary.hasAttackOrDeath === true),
+      hasGlassTapStress: unique.some((summary) => summary.hasGlassTapStress === true),
+      hasSparklingComfort: unique.some((summary) => summary.hasSparklingComfort === true),
+      fishCount,
+      decorCount: unique.reduce((total, summary) => total + (Number(summary.decorCount) || 0), 0),
+      narrative: "A single daily recap covering every tank in Bubble Borough.",
+      overall: score >= 8 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
+    };
+  };
   const summariesByTankId = {};
   const rawSummaries = source.summariesByTankId && typeof source.summariesByTankId === "object" ? source.summariesByTankId : {};
   for (const [tankId, summary] of Object.entries(rawSummaries)) {
@@ -21604,20 +22291,29 @@ function sanitizeDailyBonusState(rawState) {
   const claimedByTankDay = source.claimedByTankDay && typeof source.claimedByTankDay === "object"
     ? Object.fromEntries(Object.entries(source.claimedByTankDay).map(([key, value]) => [String(key), Boolean(value)]))
     : {};
-  const recapHistory = Array.isArray(source.recapHistory)
-    ? source.recapHistory.map(sanitizeSummary).filter(Boolean).slice(0, DAILY_RECAP_HISTORY_LIMIT)
+  const rawHistory = Array.isArray(source.recapHistory)
+    ? source.recapHistory.map(sanitizeSummary).filter(Boolean)
     : [];
+  const recapHistory = [...new Set(rawHistory.map((summary) => summary.dayKey).filter(Boolean))]
+    .map((dayKey) => combineSummariesForDay(rawHistory, dayKey))
+    .filter(Boolean)
+    .sort((left, right) => (Number(right.generatedAt) || 0) - (Number(left.generatedAt) || 0))
+    .slice(0, DAILY_RECAP_HISTORY_LIMIT);
   const milestones = source.milestones && typeof source.milestones === "object"
     ? Object.fromEntries(Object.entries(source.milestones).map(([key, value]) => [String(key), Boolean(value)]))
     : {};
   const legacySummary = sanitizeSummary(source.summary);
+  const pendingCandidates = [...Object.values(summariesByTankId), legacySummary].filter(Boolean);
+  const latestPendingDayKey = pendingCandidates.map((summary) => summary.dayKey).filter(Boolean).sort().at(-1) || "";
+  const boroughSummary = latestPendingDayKey ? combineSummariesForDay(pendingCandidates, latestPendingDayKey) : null;
+  const boroughSummaries = boroughSummary ? { [BOROUGH_DAILY_RECAP_ID]: boroughSummary } : {};
   return {
-    available: Boolean(source.available && (legacySummary || Object.keys(summariesByTankId).length)),
-    summary: legacySummary,
+    available: Boolean(boroughSummary && !claimedByTankDay[`${BOROUGH_DAILY_RECAP_ID}:${boroughSummary.dayKey}`]),
+    summary: boroughSummary,
     lastQualifiedDayKey: typeof source.lastQualifiedDayKey === "string" ? source.lastQualifiedDayKey : null,
     lastClaimedDayKey: typeof source.lastClaimedDayKey === "string" ? source.lastClaimedDayKey : null,
     lastEvaluatedDayKey: typeof source.lastEvaluatedDayKey === "string" ? source.lastEvaluatedDayKey : null,
-    summariesByTankId,
+    summariesByTankId: boroughSummaries,
     lastEvaluatedByTankId,
     claimedByTankDay,
     recapHistory,
@@ -21776,6 +22472,7 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     events: Array.isArray(incomingTank.events)
       ? incomingTank.events.map(sanitizeEvent).filter(Boolean).slice(0, MAX_TANK_EVENT_HISTORY)
       : [],
+    lastCorpseSicknessAt: Number.isFinite(Number(incomingTank.lastCorpseSicknessAt)) ? Number(incomingTank.lastCorpseSicknessAt) : null,
     lastGravelCoinFoundAt: Number.isFinite(Number(incomingTank.lastGravelCoinFoundAt)) ? Number(incomingTank.lastGravelCoinFoundAt) : 0,
     foodBuffs: incomingTank.foodBuffs,
     medicineEffects: Array.isArray(incomingTank.medicineEffects) ? incomingTank.medicineEffects : [],
@@ -21830,6 +22527,7 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     selectedBubbleAsset: incoming?.selectedBubbleAsset,
     lastCleanedAt: incoming?.lastCleanedAt,
     lastSimulatedAt: incoming?.lastSimulatedAt,
+    lastCorpseSicknessAt: incoming?.lastCorpseSicknessAt,
     lastGravelCoinFoundAt: incoming?.lastGravelCoinFoundAt,
     events: incoming?.events
   }, options);
@@ -21919,6 +22617,37 @@ function applyDefaultStarterTankAppearance(tank) {
   return true;
 }
 
+function mergeUniversalMealHistories(...histories) {
+  const merged = {};
+  for (const history of histories) {
+    for (const [slotKey, entry] of Object.entries(sanitizeHistory(history))) {
+      const existing = merged[slotKey] || { fedAt: 0, offeredAt: 0, coinsEarned: 0, fishIds: [], offeredFishIds: [] };
+      merged[slotKey] = {
+        fedAt: Math.max(existing.fedAt, entry.fedAt),
+        offeredAt: Math.max(existing.offeredAt, entry.offeredAt),
+        coinsEarned: Math.min(FISH_DAILY_FEEDING_CARE_COIN_CAP, existing.coinsEarned + entry.coinsEarned),
+        fishIds: [...new Set([...existing.fishIds, ...entry.fishIds])],
+        offeredFishIds: [...new Set([...existing.offeredFishIds, ...entry.offeredFishIds])]
+      };
+    }
+  }
+  return merged;
+}
+
+function sanitizeBoroughEventHistory(rawEvents, fallbackTanks = []) {
+  const source = Array.isArray(rawEvents) && rawEvents.length
+    ? rawEvents
+    : fallbackTanks.flatMap((tank) => (tank.events || []).map((event) => ({ ...event, tankId: tank.id, tankName: getTankLabel(tank) })));
+  return source.map((entry) => {
+    const event = sanitizeEvent(entry);
+    return event ? {
+      ...event,
+      tankId: typeof entry.tankId === "string" ? entry.tankId : "",
+      tankName: typeof entry.tankName === "string" ? entry.tankName.slice(0, 80) : ""
+    } : null;
+  }).filter(Boolean).sort((left, right) => Number(right.time) - Number(left.time)).slice(0, MAX_BOROUGH_EVENT_HISTORY);
+}
+
 function reconcileState(rawState) {
   const now = Date.now();
   const base = {
@@ -21926,7 +22655,8 @@ function reconcileState(rawState) {
     healthModelVersion: HEALTH_MODEL_VERSION,
     coins: STARTING_COINS,
     lifetimeDeaths: 0,
-    lastCorpseSicknessAt: null,
+    mealHistory: {},
+    lastGravelCoinFoundAt: 0,
     unlockedFishSpecies: [],
     unlockedDecorKeys: [],
     storedFish: [],
@@ -21943,10 +22673,13 @@ function reconcileState(rawState) {
     foodInventory: getDefaultFoodInventory(),
     medicineInventory: getDefaultMedicineInventory(),
     dailyBonus: buildDefaultDailyBonusState(),
+    notificationCenter: buildDefaultNotificationCenterState(),
     tutorial: buildDefaultTutorialState(),
     uiSettings: sanitizeUiSettings(null),
     contentSettings: sanitizeContentSettings(null),
+    boroughTravelWalls: {},
     boroughHappenings: [],
+    boroughEvents: [],
     memorialHistory: [],
     events: []
   };
@@ -21968,9 +22701,13 @@ function reconcileState(rawState) {
 
   const nextState = {
     ...base,
-    coins: Number.isFinite(incoming.coins) ? Math.max(0, Math.floor(incoming.coins)) : base.coins,
+    coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
-    lastCorpseSicknessAt: Number.isFinite(incoming.lastCorpseSicknessAt) ? incoming.lastCorpseSicknessAt : null,
+    mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
+    lastGravelCoinFoundAt: Math.max(
+      Number(incoming.lastGravelCoinFoundAt) || 0,
+      ...tanks.map((tank) => Number(tank.lastGravelCoinFoundAt) || 0)
+    ),
     unlockedFishSpecies: sanitizeUnlockedFishSpecies(incoming.unlockedFishSpecies),
     unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
     storedFish: Array.isArray(incoming.storedFish) ? incoming.storedFish.map(sanitizeFishEntry).filter(Boolean) : [],
@@ -22006,14 +22743,26 @@ function reconcileState(rawState) {
       ...sanitizeInventory(incoming.medicineInventory)
     },
     dailyBonus: sanitizeDailyBonusState(incoming.dailyBonus),
+    notificationCenter: sanitizeNotificationCenterState(incoming.notificationCenter),
     tutorial: buildDefaultTutorialState(),
     healthModelVersion: HEALTH_MODEL_VERSION,
     uiSettings: sanitizeUiSettings(incoming.uiSettings),
     contentSettings: sanitizeContentSettings(incoming.contentSettings),
+    boroughTravelWalls: incoming.boroughTravelWalls && typeof incoming.boroughTravelWalls === "object"
+      ? Object.fromEntries(Object.entries(incoming.boroughTravelWalls).filter(([, blocked]) => blocked === true))
+      : {},
     boroughHappenings: sanitizeBoroughHappenings(incoming.boroughHappenings),
+    boroughEvents: sanitizeBoroughEventHistory(incoming.boroughEvents, tanks),
     memorialHistory: sanitizeMemorialHistory(incoming.memorialHistory),
     version: STATE_VERSION
   };
+
+  if (Number.isFinite(Number(incoming.lastCorpseSicknessAt)) && !tanks.some((tank) => Number.isFinite(Number(tank.lastCorpseSicknessAt)))) {
+    const legacyTank = tanks.find((tank) => tank.id === incoming.activeTankId) || tanks[0];
+    if (legacyTank) {
+      legacyTank.lastCorpseSicknessAt = Number(incoming.lastCorpseSicknessAt);
+    }
+  }
 
   normalizeTankFilterAssignments(nextState);
   assignFallbackTankNames(nextState);
@@ -22550,14 +23299,8 @@ function resetTransientAquariumUiState() {
   clearEditFishTrayLongPress();
   closeEditFishTrayContextMenu({ render: false });
   clearPrimaryToolModes();
-  if (runtime.toastHandle) {
-    clearTimeout(runtime.toastHandle);
-  }
-  runtime.toastHandle = null;
-  runtime.toastKey = "";
-  runtime.guidanceToastOwner = "";
+  resetToastState();
   runtime.guidanceHintOwner = "";
-  dom.toast?.classList.remove("is-visible");
   resetCompetingOverlayState({ reason: "transient-reset", resetStoreTab: true });
   runtime.tutorialDismissedFeaturePopup = "";
   runtime.tutorialDisplayCollapsed = false;
@@ -22928,6 +23671,8 @@ function sanitizeFish(fish, options = {}) {
     boroughServiceTargetDecorId: typeof fish.boroughServiceTargetDecorId === "string" ? fish.boroughServiceTargetDecorId : null,
     boroughServiceType: typeof fish.boroughServiceType === "string" ? fish.boroughServiceType : "",
     boroughServiceStartedAt: Number.isFinite(Number(fish.boroughServiceStartedAt)) ? Math.max(0, Number(fish.boroughServiceStartedAt)) : 0,
+    boroughServiceSeatId: typeof fish.boroughServiceSeatId === "string" ? fish.boroughServiceSeatId : "",
+    boroughServiceSeatUntil: Number.isFinite(Number(fish.boroughServiceSeatUntil)) ? Math.max(0, Number(fish.boroughServiceSeatUntil)) : 0,
     coarseActivity,
     lastCoarseSimulatedAt: Number.isFinite(Number(fish.lastCoarseSimulatedAt)) ? Math.max(0, Number(fish.lastCoarseSimulatedAt)) : 0,
     nextWasteAt: Number.isFinite(Number(fish.nextWasteAt)) ? Math.max(0, Number(fish.nextWasteAt)) : 0,
@@ -23470,7 +24215,8 @@ function sanitizePlacedDecor(item) {
     yNorm: clamp(Number(item.yNorm) || 0.86, 0, 1),
     scale: clamp(Number(item.scale) || resolveDecorBaseScale(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX),
     tankLayer: clampTankLayer(Number(item.tankLayer) || DEFAULT_TANK_LAYER),
-    flipped: item.flipped === true
+    flipped: item.flipped === true,
+    flippedY: item.flippedY === true
   };
   const groupId = normalizeDecorGroupId(item.groupId);
   if (groupId) {
@@ -23496,6 +24242,7 @@ function sanitizePlacedDecor(item) {
   }
   if (decorKey === "transit-tube.png") {
     sanitized.transitTubeName = sanitizeTankName(item.transitTubeName, "Transit Tube");
+    sanitized.transitTubeColor = normalizeDecorColorSetting(item.transitTubeColor || "");
     const linkedId = String(item.transitTubeLinkedId || "").trim();
     if (linkedId && linkedId !== sanitized.id) {
       sanitized.transitTubeLinkedId = linkedId;
@@ -23603,6 +24350,7 @@ function hideSelectedDecorActionButtons() {
     dom.selectedDecorActionBar,
     dom.selectedDecorScaleControls,
     dom.selectedDecorLayerControls,
+    dom.selectedDecorTransformControls,
     dom.selectedDecorResizeHandles,
     dom.selectedDecorResizeIndicator
   ]) {
@@ -23627,7 +24375,9 @@ function hideSelectedDecorActionButtons() {
     dom.selectedDecorScaleUpButton,
     dom.selectedDecorScaleDownButton,
     dom.selectedDecorLayerUpButton,
-    dom.selectedDecorLayerDownButton
+    dom.selectedDecorLayerDownButton,
+    dom.selectedDecorFlipHorizontalButton,
+    dom.selectedDecorFlipVerticalButton
   ]) {
     if (!button) {
       continue;
@@ -23643,6 +24393,7 @@ function hideSelectedDecorActionButtons() {
     delete button.dataset.editDecorSettings;
     delete button.dataset.resizeDecor;
     delete button.dataset.layerDecor;
+    delete button.dataset.flipDecor;
   }
 }
 
@@ -23710,6 +24461,7 @@ function updateSelectedDecorActionButtons() {
   const actionBar = dom.selectedDecorActionBar;
   const scaleControls = dom.selectedDecorScaleControls;
   const layerControls = dom.selectedDecorLayerControls;
+  const transformControls = dom.selectedDecorTransformControls;
   const buyButton = dom.selectedDecorBuyAnotherButton;
   const sellButton = dom.selectedDecorSellButton;
   const storeButton = dom.selectedDecorStoreButton;
@@ -23719,9 +24471,11 @@ function updateSelectedDecorActionButtons() {
   const scaleDownButton = dom.selectedDecorScaleDownButton;
   const layerUpButton = dom.selectedDecorLayerUpButton;
   const layerDownButton = dom.selectedDecorLayerDownButton;
+  const flipHorizontalButton = dom.selectedDecorFlipHorizontalButton;
+  const flipVerticalButton = dom.selectedDecorFlipVerticalButton;
   const resizeHandles = dom.selectedDecorResizeHandles;
   const resizeIndicator = dom.selectedDecorResizeIndicator;
-  if (!buyButton && !sellButton && !storeButton && !assignButton && !settingsButton && !scaleUpButton && !scaleDownButton && !layerUpButton && !layerDownButton && !resizeHandles && !resizeIndicator) {
+  if (!buyButton && !sellButton && !storeButton && !assignButton && !settingsButton && !scaleUpButton && !scaleDownButton && !layerUpButton && !layerDownButton && !flipHorizontalButton && !flipVerticalButton && !resizeHandles && !resizeIndicator) {
     return;
   }
 
@@ -23781,6 +24535,9 @@ function updateSelectedDecorActionButtons() {
     }
     if (layerControls) {
       layerControls.hidden = true;
+    }
+    if (transformControls) {
+      transformControls.hidden = true;
     }
     positionSelectedDecorResizeHandles(item, bounds, stageRect, {
       showHandles: false,
@@ -23877,6 +24634,20 @@ function updateSelectedDecorActionButtons() {
       : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its bottom layer`));
   }
 
+  if (flipHorizontalButton) {
+    flipHorizontalButton.hidden = false;
+    flipHorizontalButton.dataset.flipDecor = item.id;
+    flipHorizontalButton.setAttribute("aria-pressed", String(isDecorHorizontallyFlipped(item)));
+    flipHorizontalButton.title = isDecorHorizontallyFlipped(item) ? "Clear horizontal flip" : "Flip horizontally";
+  }
+
+  if (flipVerticalButton) {
+    flipVerticalButton.hidden = false;
+    flipVerticalButton.dataset.flipDecor = item.id;
+    flipVerticalButton.setAttribute("aria-pressed", String(isDecorVerticallyFlipped(item)));
+    flipVerticalButton.title = isDecorVerticallyFlipped(item) ? "Clear vertical flip" : "Flip vertically";
+  }
+
   if (actionBar) {
     actionBar.hidden = false;
     const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - 24);
@@ -23910,6 +24681,24 @@ function updateSelectedDecorActionButtons() {
       Math.round(layerPoint.y),
       topPadding + layerHalfHeight,
       Math.max(topPadding + layerHalfHeight, Math.round(stageRect.height - topPadding - layerHalfHeight))
+    )}px`;
+  }
+
+  if (transformControls) {
+    transformControls.hidden = false;
+    const transformPoint = tankVirtualPointToStagePx(bounds.left - 34, (bounds.top + bounds.bottom) / 2);
+    const transformRect = transformControls.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const transformHalfWidth = Math.ceil((Number(transformRect.width) || 58) / 2);
+    const transformHalfHeight = Math.ceil((Number(transformRect.height) || 96) / 2);
+    transformControls.style.left = `${clamp(
+      Math.round(transformPoint.x),
+      stagePadding + transformHalfWidth,
+      Math.max(stagePadding + transformHalfWidth, Math.round(stageRect.width - stagePadding - transformHalfWidth))
+    )}px`;
+    transformControls.style.top = `${clamp(
+      Math.round(transformPoint.y),
+      topPadding + transformHalfHeight,
+      Math.max(topPadding + transformHalfHeight, Math.round(stageRect.height - topPadding - transformHalfHeight))
     )}px`;
   }
 
@@ -24670,9 +25459,18 @@ function isDecorHorizontallyFlipped(item) {
   return Boolean(item?.flipped);
 }
 
+function isDecorVerticallyFlipped(item) {
+  return Boolean(item?.flippedY);
+}
+
 function resolveDecorHorizontalUnit(item, unit) {
   const clampedUnit = clamp(Number.isFinite(Number(unit)) ? Number(unit) : 0.5, 0, 1);
   return isDecorHorizontallyFlipped(item) ? 1 - clampedUnit : clampedUnit;
+}
+
+function resolveDecorVerticalUnit(item, unit) {
+  const clampedUnit = clamp(Number.isFinite(Number(unit)) ? Number(unit) : 0.5, 0, 1);
+  return isDecorVerticallyFlipped(item) ? 1 - clampedUnit : clampedUnit;
 }
 
 function isCaveDecorKey(decorKey = "") {
@@ -24792,6 +25590,10 @@ function getDecorFrontLayer(decorKey, layer) {
 function getDecorLayerSpan(decorKey, layer) {
   const frontLayer = getDecorFrontLayer(decorKey, layer);
 
+  if (isTransitTubeDecorKey(decorKey)) {
+    const back = clampTankLayer(frontLayer + 1);
+    return { front: frontLayer, mid: null, back, min: frontLayer, max: back, label: `Layers ${frontLayer}-${back}` };
+  }
   if (!isCaveDecorKey(decorKey)) {
     return {
       front: frontLayer,
@@ -24940,7 +25742,7 @@ function mapDecorLocalPointToTankNorm(item, localX, localY) {
   }
 
   const x = bounds.left + (bounds.right - bounds.left) * resolveDecorHorizontalUnit(item, localX);
-  const y = bounds.top + (bounds.bottom - bounds.top) * clamp(localY, 0, 1);
+  const y = bounds.top + (bounds.bottom - bounds.top) * resolveDecorVerticalUnit(item, localY);
   return {
     xNorm: clamp(x / TANK_WIDTH, 0.08, 0.92),
     yNorm: clamp(y / TANK_HEIGHT, 0.14, 0.8)
@@ -25595,6 +26397,8 @@ function buildCaveNavigationCacheKey(item, frontDescriptor, barrierDescriptor) {
     item.xNorm?.toFixed?.(5) ?? item.xNorm,
     item.yNorm?.toFixed?.(5) ?? item.yNorm,
     getDecorTankLayer(item),
+    isDecorHorizontallyFlipped(item) ? "flip-x" : "normal-x",
+    isDecorVerticallyFlipped(item) ? "flip-y" : "normal-y",
     frontBounds ? [frontBounds.left, frontBounds.top, frontBounds.right, frontBounds.bottom].map((value) => Math.round(value)).join(",") : "front",
     barrierBounds ? [barrierBounds.left, barrierBounds.top, barrierBounds.right, barrierBounds.bottom].map((value) => Math.round(value)).join(",") : "barrier"
   ].join("|");
@@ -26649,6 +27453,9 @@ function sanitizeEvent(entry) {
   if (typeof entry.type === "string" && entry.type.trim()) {
     sanitized.type = entry.type.trim();
   }
+  if (["positive", "negative", "neutral"].includes(String(entry.tone || ""))) {
+    sanitized.tone = String(entry.tone);
+  }
   if (typeof entry.fishId === "string" && entry.fishId.trim()) {
     sanitized.fishId = entry.fishId.trim();
   }
@@ -26658,50 +27465,149 @@ function sanitizeEvent(entry) {
   if (typeof entry.placedDecorId === "string" && entry.placedDecorId.trim()) {
     sanitized.placedDecorId = entry.placedDecorId.trim();
   }
+  for (const key of ["destinationTankId", "sourceTankId", "serviceType", "travelReason", "detail"]) {
+    if (typeof entry[key] === "string" && entry[key].trim()) {
+      sanitized[key] = entry[key].trim().slice(0, 160);
+    }
+  }
   if (entry.recapEligible === false) {
     sanitized.recapEligible = false;
   }
   return sanitized;
 }
 
-function preloadImages(paths) {
-  const preloadTimeoutMs = 12000;
+function isUsableRuntimeImage(image) {
+  return Boolean(image && Number(image.naturalWidth || image.width) > 0 && Number(image.naturalHeight || image.height) > 0);
+}
+
+function loadRuntimeImageAttempt(path, timeoutMs) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    let settled = false;
+    const finish = (loaded, reason = "error") => {
+      if (loaded && isUsableRuntimeImage(image)) {
+        runtime.images.set(path, image);
+        runtime.imageLoadFailures.delete(path);
+        runtime.imageRecoveryNextAt.delete(path);
+      }
+      if (settled) {
+        image.onload = null;
+        image.onerror = null;
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timeoutId);
+      image.onload = null;
+      image.onerror = null;
+      resolve({ loaded: loaded && isUsableRuntimeImage(image), reason });
+    };
+    const timeoutId = window.setTimeout(() => {
+      const pathLabel = String(path).startsWith("data:")
+        ? "embedded custom image"
+        : String(path).slice(0, 180);
+      console.warn(`Image preload timed out: ${pathLabel}`);
+      // Keep the handlers alive after resolving this attempt. Some Chromium
+      // builds finish decoding shortly after the timeout; a late load should
+      // still repair the cache even while a retry is under way.
+      settled = true;
+      resolve({ loaded: false, reason: "timeout" });
+    }, timeoutMs);
+    image.decoding = "async";
+    image.onload = () => finish(true, "loaded");
+    image.onerror = () => finish(false, "error");
+    image.src = path;
+  });
+}
+
+function preloadImagePath(path, options = {}) {
+  if (!path) {
+    return Promise.resolve({ path, loaded: false, reason: "missing-path", attempts: 0 });
+  }
+  if (isUsableRuntimeImage(runtime.images.get(path))) {
+    return Promise.resolve({ path, loaded: true, reason: "cached", attempts: 0 });
+  }
+
+  const existingPromise = runtime.imageLoadPromises.get(path);
+  if (existingPromise) {
+    return existingPromise;
+  }
+
+  const maxAttempts = clamp(Math.floor(Number(options.maxAttempts) || 2), 1, 4);
+  const timeoutMs = clamp(Math.floor(Number(options.timeoutMs) || 12000), 1000, 30000);
+  const retryDelayMs = clamp(Math.floor(Number(options.retryDelayMs) || 250), 0, 5000);
+  const promise = (async () => {
+    let lastReason = "error";
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (isUsableRuntimeImage(runtime.images.get(path))) {
+        return { path, loaded: true, reason: "cached", attempts: attempt - 1 };
+      }
+      const result = await loadRuntimeImageAttempt(path, timeoutMs);
+      lastReason = result.reason;
+      if (result.loaded || isUsableRuntimeImage(runtime.images.get(path))) {
+        return { path, loaded: true, reason: result.reason, attempts: attempt };
+      }
+      if (attempt < maxAttempts && retryDelayMs > 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, retryDelayMs * attempt));
+      }
+    }
+
+    const failure = {
+      path,
+      reason: lastReason,
+      attempts: maxAttempts,
+      lastFailedAt: Date.now()
+    };
+    runtime.imageLoadFailures.set(path, failure);
+    return { ...failure, loaded: false };
+  })().finally(() => {
+    runtime.imageLoadPromises.delete(path);
+  });
+  runtime.imageLoadPromises.set(path, promise);
+  return promise;
+}
+
+function preloadImages(paths, options = {}) {
   return Promise.all(
-    [...new Set(paths)]
+    [...new Set(Array.isArray(paths) ? paths : [])]
       .filter(Boolean)
-      .filter((path) => !runtime.images.has(path))
-      .map(
-        (path) =>
-          new Promise((resolve) => {
-            const image = new Image();
-            let settled = false;
-            const finish = (loaded) => {
-              if (settled) {
-                return;
-              }
-              settled = true;
-              window.clearTimeout(timeoutId);
-              image.onload = null;
-              image.onerror = null;
-              if (loaded) {
-                runtime.images.set(path, image);
-              }
-              resolve();
-            };
-            const timeoutId = window.setTimeout(() => {
-              const pathLabel = String(path).startsWith("data:")
-                ? "embedded custom image"
-                : String(path).slice(0, 180);
-              console.warn(`Image preload timed out: ${pathLabel}`);
-              finish(false);
-            }, preloadTimeoutMs);
-            image.decoding = "async";
-            image.onload = () => finish(true);
-            image.onerror = () => finish(false);
-            image.src = path;
-          })
-      )
+      .map((path) => preloadImagePath(path, options))
   );
+}
+
+function requestRuntimeImageRecovery(path, details = {}) {
+  if (!path || isUsableRuntimeImage(runtime.images.get(path))) {
+    return;
+  }
+
+  const now = Date.now();
+  const nextAttemptAt = Number(runtime.imageRecoveryNextAt.get(path)) || 0;
+  if (runtime.imageLoadPromises.has(path) || now < nextAttemptAt) {
+    return;
+  }
+  runtime.imageRecoveryNextAt.set(path, now + 15000);
+
+  const warningKey = `${details.kind || "asset"}:${details.id || path}`;
+  if (!runtime.missingFishImageWarnings.has(warningKey)) {
+    runtime.missingFishImageWarnings.add(warningKey);
+    console.warn("Recovering missing runtime image.", {
+      path,
+      kind: details.kind || "asset",
+      id: details.id || "",
+      speciesId: details.speciesId || "",
+      previousFailure: runtime.imageLoadFailures.get(path) || null
+    });
+  }
+
+  void preloadImagePath(path, {
+    maxAttempts: 2,
+    timeoutMs: 8000,
+    retryDelayMs: 500
+  }).then((result) => {
+    if (result.loaded && details.kind === "grime") {
+      runtime.grimeBaseCacheKey = "";
+      runtime.grimeCompositeCacheKey = "";
+    }
+  });
 }
 
 function loadImageElement(src) {
@@ -27868,12 +28774,14 @@ function mapMaskRegionToTank(item, imagePath, region) {
   const top = y - height;
   const mappedMinU = resolveDecorHorizontalUnit(item, region.minU);
   const mappedMaxU = resolveDecorHorizontalUnit(item, region.maxU);
+  const mappedMinV = resolveDecorVerticalUnit(item, region.minV);
+  const mappedMaxV = resolveDecorVerticalUnit(item, region.maxV);
   const regionLeft = left + Math.min(mappedMinU, mappedMaxU) * width;
   const regionRight = left + Math.max(mappedMinU, mappedMaxU) * width;
-  const regionTop = top + region.minV * height;
-  const regionBottom = top + region.maxV * height;
+  const regionTop = top + Math.min(mappedMinV, mappedMaxV) * height;
+  const regionBottom = top + Math.max(mappedMinV, mappedMaxV) * height;
   const regionCenterX = left + resolveDecorHorizontalUnit(item, region.centerU) * width;
-  const regionCenterY = top + region.centerV * height;
+  const regionCenterY = top + resolveDecorVerticalUnit(item, region.centerV) * height;
 
   return {
     ...region,
@@ -28674,7 +29582,7 @@ function createDecorShapeDescriptorFromMask(item, decor, imagePath, mask) {
       const rawU = (worldX - left) / width;
       return {
         u: isDecorHorizontallyFlipped(item) ? 1 - rawU : rawU,
-        v: (worldY - top) / height
+        v: resolveDecorVerticalUnit(item, (worldY - top) / height)
       };
     }
   };
@@ -29032,14 +29940,18 @@ function processBoroughFishTravel(now = Date.now()) {
   const moves = [];
   for (const source of getAllTanks()) {
     const neighbors = getAdjacentAquariumSections(source);
-    if (!neighbors.length) {
-      continue;
-    }
     for (const fish of source.fish) {
       if (!fish || isFishDead(fish) || fish.caveState || runtime.pendingNeighborhoodTravel.has(fish.id)) {
         continue;
       }
       const neededService = getFishNeededBoroughServiceType(fish, source, now);
+      const foodDestination = getTankById(runtime.foodTravelDestinations.get(fish.id));
+      if (foodDestination?.id === source.id) {
+        runtime.foodTravelDestinations.delete(fish.id);
+      }
+      const foodRoute = foodDestination && foodDestination.id !== source.id
+        ? findAquariumSectionRoute(source, foodDestination)
+        : null;
       const serviceRoute = neededService && !getBoroughSectionServiceTypes(source).includes(neededService)
         ? findNearestBoroughServiceRoute(source, neededService)
         : null;
@@ -29048,9 +29960,12 @@ function processBoroughFishTravel(now = Date.now()) {
         && residenceTank.id !== source.id
         && (isTankLightsOut(now) || getFishNeedValue(fish, "energy", now) <= 52);
       const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
-      const directedRoute = serviceRoute || residenceRoute;
-      const tubeJourney = directedRoute?.destination
-        ? getTransitTubeJourney(source, directedRoute.destination)
+      const directedRoute = foodRoute || serviceRoute || residenceRoute;
+      const tubeJourneyTarget = directedRoute?.tubeDestination || directedRoute?.destination;
+      const tubeJourney = tubeJourneyTarget
+        ? getTransitTubeJourney(source, tubeJourneyTarget)
+        : foodDestination
+          ? getTransitTubeJourney(source, foodDestination)
         : null;
       const minimumMoveDelay = directedRoute ? 25 * 1000 : 2 * MINUTE_MS;
       if (now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0) < minimumMoveDelay) {
@@ -29062,7 +29977,7 @@ function processBoroughFishTravel(now = Date.now()) {
       if (!serviceRoute && residenceTank?.id === source.id && isTankLightsOut(now)) {
         continue;
       }
-      const shouldTravel = directedRoute || destinationsWithFood.length > 0 || Math.random() < 0.02;
+      const shouldTravel = directedRoute || tubeJourney || destinationsWithFood.length > 0 || (neighbors.length > 0 && Math.random() < 0.02);
       if (!shouldTravel) {
         continue;
       }
@@ -29072,8 +29987,8 @@ function processBoroughFishTravel(now = Date.now()) {
         fish,
         source,
         destination,
-        neededService,
-        serviceDestination: serviceRoute?.destination || null,
+        neededService: foodDestination ? "food" : neededService,
+        serviceDestination: foodDestination || serviceRoute?.destination || null,
         residenceDestination: !serviceRoute ? residenceRoute?.destination || null : null,
         tubeJourney
       });
@@ -29085,51 +30000,7 @@ function processBoroughFishTravel(now = Date.now()) {
       changed = beginBoroughEdgeTravel(move, now) || changed;
       continue;
     }
-    const sourceIndex = move.source.fish.findIndex((fish) => fish.id === move.fish.id);
-    if (sourceIndex < 0 || move.destination.fish.some((fish) => fish.id === move.fish.id)) {
-      continue;
-    }
-    move.source.fish.splice(sourceIndex, 1);
-    move.fish.lastNeighborhoodMoveAt = now;
-    const dx = move.destination.gridX - move.source.gridX;
-    const dy = move.destination.gridY - move.source.gridY;
-    if (move.tubeJourney) {
-      const sourceTube = move.tubeJourney.sourceTube;
-      const targetTube = move.tubeJourney.targetTube;
-      move.fish.xNorm = clamp(targetTube.xNorm, 0.06, 0.94);
-      move.fish.yNorm = clamp(targetTube.yNorm - 0.12, 0.1, 0.86);
-      move.fish.targetXNorm = clamp(targetTube.xNorm + (Math.random() - 0.5) * 0.18, 0.1, 0.9);
-      move.fish.targetYNorm = clamp(targetTube.yNorm - 0.24, 0.12, 0.78);
-      runtime.transitTubeBursts.push(
-        { tankId: move.source.id, decorId: sourceTube.id, mode: "enter", startedAt: now, endsAt: now + 1600 },
-        { tankId: move.destination.id, decorId: targetTube.id, mode: "exit", startedAt: now, endsAt: now + 1600 }
-      );
-    } else {
-      move.fish.xNorm = dx > 0 ? 0.04 : dx < 0 ? 0.96 : clamp(move.fish.xNorm, 0.08, 0.92);
-      move.fish.yNorm = dy > 0 ? 0.08 : dy < 0 ? 0.9 : clamp(move.fish.yNorm, 0.1, 0.88);
-      move.fish.targetXNorm = clamp(0.5 + dx * 0.18, 0.12, 0.88);
-      move.fish.targetYNorm = clamp(0.5 + dy * 0.12, 0.14, 0.84);
-    }
-    move.fish.coarseActivity = null;
-    move.fish.lastCoarseSimulatedAt = now;
-    move.fish.visitedNeighborhoodIds = [...new Set([...(move.fish.visitedNeighborhoodIds || []), move.destination.id])].slice(-64);
-    move.destination.fish.push(move.fish);
-    const cause = move.neededService && move.serviceDestination
-      ? `${getBoroughServiceLabel(move.neededService)} in ${getTankLabel(move.serviceDestination)}`
-      : move.residenceDestination
-        ? `home in ${getTankLabel(move.residenceDestination)}`
-      : getTankLabel(move.destination);
-    setFishBehaviorIntent(move.fish, move.neededService || move.residenceDestination ? "travel" : "explore", move.tubeJourney ? `transit tube to ${cause}` : cause, now, { durationMs: 45 * 1000 });
-    pushEvent(`${move.fish.name} used a Transit Tube to ${getTankLabel(move.destination)}.`, now, move.destination, {
-      type: "travel",
-      fishId: move.fish.id,
-      sourceTankId: move.source.id,
-      destinationTankId: move.destination.id,
-      serviceType: move.neededService,
-      travelReason: cause,
-      detail: "Fast travel"
-    });
-    changed = true;
+    changed = beginBoroughTubeTravel(move, now) || changed;
   }
   return changed;
 }
@@ -29163,22 +30034,47 @@ function findNearestBoroughServiceRoute(sourceTank, serviceType) {
   if (!sourceTank || !serviceType) {
     return null;
   }
-  const visited = new Set([sourceTank.id]);
-  const queue = getAdjacentAquariumSections(sourceTank).map((tank) => ({ tank, firstHop: tank }));
-  for (const entry of queue) {
-    visited.add(entry.tank.id);
-  }
-  while (queue.length) {
-    const entry = queue.shift();
-    if (getBoroughSectionServiceTypes(entry.tank).includes(serviceType)) {
-      return { nextSection: entry.firstHop, destination: entry.tank };
-    }
-    for (const neighbor of getAdjacentAquariumSections(entry.tank)) {
-      if (visited.has(neighbor.id)) {
-        continue;
+  const collectSwimmingComponent = (startTank) => {
+    const visited = new Set([startTank.id]);
+    const entries = [{ tank: startTank, firstHop: null }];
+    const queue = getAdjacentAquariumSections(startTank).map((tank) => ({ tank, firstHop: tank }));
+    for (const entry of queue) visited.add(entry.tank.id);
+    while (queue.length) {
+      const entry = queue.shift();
+      entries.push(entry);
+      for (const neighbor of getAdjacentAquariumSections(entry.tank)) {
+        if (visited.has(neighbor.id)) continue;
+        visited.add(neighbor.id);
+        queue.push({ tank: neighbor, firstHop: entry.firstHop });
       }
-      visited.add(neighbor.id);
-      queue.push({ tank: neighbor, firstHop: entry.firstHop });
+    }
+    return entries;
+  };
+
+  const localComponent = collectSwimmingComponent(sourceTank);
+  const localService = localComponent.slice(1).find((entry) => getBoroughSectionServiceTypes(entry.tank).includes(serviceType));
+  if (localService) {
+    return { nextSection: localService.firstHop, destination: localService.tank };
+  }
+
+  // Search tube exits from every normally reachable tank. This lets a fish
+  // swim along its current row to a tube, take the tube across a wall/row, and
+  // then continue swimming to a service near the destination tube.
+  const tanks = getAllTanks();
+  for (const origin of localComponent) {
+    for (const tubeTarget of tanks) {
+      if (tubeTarget.id === origin.tank.id || !getTransitTubeJourney(origin.tank, tubeTarget)) continue;
+      const remoteService = collectSwimmingComponent(tubeTarget)
+        .find((entry) => getBoroughSectionServiceTypes(entry.tank).includes(serviceType));
+      if (!remoteService) continue;
+      if (origin.tank.id === sourceTank.id) {
+        return {
+          nextSection: null,
+          destination: remoteService.tank,
+          tubeDestination: tubeTarget
+        };
+      }
+      return { nextSection: origin.firstHop, destination: remoteService.tank };
     }
   }
   return null;
@@ -29189,7 +30085,6 @@ function pruneTankState(now, targetTank = getCurrentTank()) {
     return;
   }
 
-  const historyCutoff = now - 45 * DAY_MS;
   const validResidenceIds = new Set(getAllPlacedDecor().map((item) => item.id));
   for (const fish of targetTank.fish || []) {
     if (getFishResidenceDecorId(fish) && !validResidenceIds.has(fish.residenceDecorId)) {
@@ -29198,13 +30093,13 @@ function pruneTankState(now, targetTank = getCurrentTank()) {
         fish.favoriteSpot = null;
       }
     }
-  }
-  for (const [key, value] of Object.entries(targetTank.feedHistory || {})) {
-    if (value.fedAt < historyCutoff) {
-      delete targetTank.feedHistory[key];
+    if (fish.boroughServiceTargetDecorId && !validResidenceIds.has(fish.boroughServiceTargetDecorId)) {
+      clearFishBoroughServiceReservation(fish);
+      if (fish.coarseActivity?.targetDecorId && !validResidenceIds.has(fish.coarseActivity.targetDecorId)) {
+        fish.coarseActivity = null;
+      }
     }
   }
-
   targetTank.pendingPoops = targetTank.pendingPoops.filter((poop) => (poop.dueAt || 0) >= now - DAY_MS);
   targetTank.poops = targetTank.poops.filter((poop) => (poop.createdAt || 0) >= targetTank.lastCleanedAt);
   targetTank.fishEggs = (targetTank.fishEggs || []).filter((egg) => !egg.hatchedAt || (egg.shellExpiresAt || 0) > now);
@@ -29274,6 +30169,12 @@ function pruneState(now, target = state) {
   }
 
   if (Array.isArray(target.tanks)) {
+    const historyCutoff = now - 45 * DAY_MS;
+    for (const [key, value] of Object.entries(target.mealHistory || {})) {
+      if ((Number(value?.fedAt) || 0) < historyCutoff) {
+        delete target.mealHistory[key];
+      }
+    }
     for (const tank of target.tanks) {
       pruneTankState(now, tank);
     }
@@ -29522,12 +30423,12 @@ function canFishTargetFoodPellet(fish, pellet, now = Date.now()) {
 }
 
 function ensureMealHistoryEntry(slotKey, now = Date.now(), tank = getCurrentTank()) {
-  if (!tank || !slotKey) {
+  if (!slotKey) {
     return null;
   }
 
-  if (!tank.feedHistory || typeof tank.feedHistory !== "object") {
-    tank.feedHistory = {};
+  if (!state.mealHistory || typeof state.mealHistory !== "object") {
+    state.mealHistory = {};
   }
 
   const existing = getMealHistoryEntry(slotKey, tank);
@@ -29540,14 +30441,14 @@ function ensureMealHistoryEntry(slotKey, now = Date.now(), tank = getCurrentTank
     return existing;
   }
 
-  tank.feedHistory[slotKey] = {
+  state.mealHistory[slotKey] = {
     fedAt: now,
     offeredAt: 0,
     coinsEarned: 0,
     fishIds: [],
     offeredFishIds: []
   };
-  return tank.feedHistory[slotKey];
+  return state.mealHistory[slotKey];
 }
 
 function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
@@ -29571,7 +30472,7 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   const remainingMealCoins = Math.max(0, FISH_DAILY_FEEDING_CARE_COIN_CAP - (Math.max(0, Number(entry.coinsEarned) || 0)));
   const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0));
   entry.coinsEarned = Math.max(0, Number(entry.coinsEarned) || 0) + mealCoins;
-  state.coins += mealCoins;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + mealCoins);
   return mealCoins;
 }
 
@@ -30166,6 +31067,7 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
   if (createdPellets.length) {
     state.floatingPellets.push(...createdPellets);
     assignFloatingPelletsToHungryFish(now);
+    stageHungryFishTravelToFoodTank(getCurrentTank(), now);
   }
   playDropSoundEffect();
 
@@ -30195,6 +31097,32 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
     pelletId: createdPellets[0]?.id || "",
     tutorialChanged
   };
+}
+
+function stageHungryFishTravelToFoodTank(foodTank = getCurrentTank(), now = Date.now()) {
+  if (!foodTank || getAllTanks().length < 2) {
+    return 0;
+  }
+  let stagedCount = 0;
+  for (const tank of getAllTanks()) {
+    if (tank.id === foodTank.id) {
+      continue;
+    }
+    for (const fish of getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD)) {
+      if (!fish || isFishDead(fish)) {
+        continue;
+      }
+      const route = findAquariumSectionRoute(tank, foodTank);
+      const tubeJourney = getTransitTubeJourney(tank, foodTank);
+      if (!route && !tubeJourney) {
+        continue;
+      }
+      runtime.foodTravelDestinations.set(fish.id, foodTank.id);
+      fish.lastNeighborhoodMoveAt = Math.min(Number(fish.lastNeighborhoodMoveAt) || 0, now - 25 * 1000);
+      stagedCount += 1;
+    }
+  }
+  return stagedCount;
 }
 
 function getNextDayStartTimestamp(timestamp = Date.now()) {
@@ -32816,6 +33744,44 @@ function handleFishActionButtonClick(action) {
 // Source fragment: store/purchases.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function performCoinTransaction(options = {}) {
+  const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
+  const direction = options.direction === "credit" ? "credit" : "debit";
+  if (direction === "debit" && state.coins < amount) {
+    if (options.insufficientMessage) {
+      showToast(options.insufficientMessage);
+    }
+    return { ok: false, reason: "insufficient-coins", amount };
+  }
+
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const previousCoins = state.coins;
+  state.coins = clamp(state.coins + (direction === "credit" ? amount : -amount), 0, MAX_WALLET_COINS);
+  try {
+    const applied = typeof options.apply === "function" ? options.apply(now) : true;
+    if (applied === false) {
+      state.coins = previousCoins;
+      return { ok: false, reason: "not-applied", amount };
+    }
+    const event = typeof options.event === "function" ? options.event(now) : options.event;
+    const toast = typeof options.toast === "function" ? options.toast(now) : options.toast;
+    completeGameAction({
+      now,
+      event,
+      tank: options.tank,
+      toast,
+      toastOptions: options.toastOptions,
+      sound: options.sound || (direction === "credit" ? "coin" : "purchase"),
+      render: options.render,
+      full: options.full
+    });
+    return { ok: true, amount, now };
+  } catch (error) {
+    state.coins = previousCoins;
+    throw error;
+  }
+}
+
 function buyFood(foodKey) {
   const food = getFoodMeta(foodKey);
   if (!food) {
@@ -32827,18 +33793,15 @@ function buyFood(foodKey) {
     return;
   }
 
-  if (state.coins < food.cost) {
-    showToast("Not enough coins for that food bottle.");
-    return;
-  }
-
-  state.coins -= food.cost;
-  state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
-  pushEvent(`Bought ${food.name} (${food.bottlePellets} pellets).`, Date.now());
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(Date.now());
-  showToast(`${food.name} stocked. +${food.bottlePellets} pellets.`);
+  return performCoinTransaction({
+    amount: food.cost,
+    insufficientMessage: "Not enough coins for that food bottle.",
+    apply: () => {
+      state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
+    },
+    event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} pellets).` },
+    toast: `${food.name} stocked. +${food.bottlePellets} pellets.`
+  });
 }
 
 function buyMedicine(medicineKey) {
@@ -32852,18 +33815,15 @@ function buyMedicine(medicineKey) {
     return;
   }
 
-  if (state.coins < medicine.cost) {
-    showToast("Not enough coins for that medicine bottle.");
-    return;
-  }
-
-  state.coins -= medicine.cost;
-  state.medicineInventory[medicine.id] = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) + medicine.bottleDrops;
-  pushEvent(`Bought ${medicine.name} (${medicine.bottleDrops} drops).`, Date.now());
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(Date.now());
-  showToast(`${medicine.name} stocked. +${medicine.bottleDrops} drops.`);
+  return performCoinTransaction({
+    amount: medicine.cost,
+    insufficientMessage: "Not enough coins for that medicine bottle.",
+    apply: () => {
+      state.medicineInventory[medicine.id] = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) + medicine.bottleDrops;
+    },
+    event: { type: "purchase", tone: "positive", text: `Bought ${medicine.name} (${medicine.bottleDrops} drops).` },
+    toast: `${medicine.name} stocked. +${medicine.bottleDrops} drops.`
+  });
 }
 
 function selectFoodMode(foodKey, options = {}) {
@@ -32931,7 +33891,28 @@ function selectMedicineMode(medicineKey) {
   );
 }
 
-function buyFish(speciesId, options = {}) {
+async function ensureFishPurchaseImageReady(fish, species) {
+  if (!fish || !species) {
+    return false;
+  }
+
+  const candidates = [
+    getFishDisplayAssetPath(fish, species, Date.now()),
+    getFishAssetPath(fish, species),
+    species.fallbackAsset,
+    species.asset
+  ].filter((path, index, entries) => Boolean(path) && entries.indexOf(path) === index);
+  await preloadImages(candidates, {
+    maxAttempts: 3,
+    timeoutMs: 8000,
+    retryDelayMs: 350
+  });
+
+  const displayPath = getFishDisplayAssetPath(fish, species, Date.now()) || species.asset;
+  return isUsableRuntimeImage(runtime.images.get(displayPath));
+}
+
+async function buyFish(speciesId, options = {}) {
   if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_ADOPT_FISH)) {
     closeStoreOverlay({ force: true });
     setTutorialStage(TUTORIAL_STAGE_ADOPT_FISH_DONE, { now: Date.now() });
@@ -32971,43 +33952,83 @@ function buyFish(speciesId, options = {}) {
   const entryStartedAt = options.closeOverlayFirst === true
     ? now + TUTORIAL_STORE_CLOSE_DELAY_MS
     : now;
-  state.coins -= purchaseCost;
   const fish = createFishRecord(speciesId, {
     now,
     entryStartedAt,
     entryDurationMs: FISH_ENTRY_DURATION_MS,
     entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
   });
-  addFishToTank(fish, now);
-  maybeSeedNewFishDiseaseCarrier(fish, now);
-
-  if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
-    setFishNeedValue(fish, "hunger", 82, now);
-    fish.lastAteAt = now;
+  if (!fish) {
+    showToast("Could not prepare that fish.");
+    return { ok: false, reason: "fish-creation-failed" };
   }
 
-  pushEvent(`${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`, fish.acquiredAt);
-  let tutorialChanged = false;
-  if (tutorialPurchase) {
-    closeStoreOverlay({ force: true });
-    tutorialChanged = setTutorialStage(TUTORIAL_STAGE_ADOPT_FISH_DONE, {
-      now,
-      fishId: fish.id
-    }) || tutorialChanged;
+  const pendingKey = `catalog:${speciesId}`;
+  if (runtime.pendingFishPurchases.has(pendingKey)) {
+    return { ok: false, reason: "purchase-pending" };
   }
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`${fish.name} joined the aquarium.`);
-  return {
-    ok: true,
-    fish,
-    species,
-    tutorialChanged
-  };
+  runtime.pendingFishPurchases.add(pendingKey);
+
+  try {
+    if (!await ensureFishPurchaseImageReady(fish, species)) {
+      console.error("Fish purchase blocked because its artwork could not be loaded.", {
+        speciesId,
+        path: getFishDisplayAssetPath(fish, species, Date.now()) || species.asset,
+        failure: runtime.imageLoadFailures.get(getFishDisplayAssetPath(fish, species, Date.now()) || species.asset) || null
+      });
+      showToast("That fish's artwork could not be loaded. Please try again.");
+      return { ok: false, reason: "image-unavailable" };
+    }
+    const purchaseCompletedAt = Date.now();
+    let tutorialChanged = false;
+    const transaction = performCoinTransaction({
+      amount: purchaseCost,
+      now: purchaseCompletedAt,
+      insufficientMessage: `You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`,
+      apply: () => {
+        fish.acquiredAt = purchaseCompletedAt;
+        fish.tankAddedAt = purchaseCompletedAt;
+        fish.entryStartedAt = options.closeOverlayFirst === true
+          ? purchaseCompletedAt + TUTORIAL_STORE_CLOSE_DELAY_MS
+          : purchaseCompletedAt;
+        fish.entrySplashTriggered = false;
+        addFishToTank(fish, purchaseCompletedAt);
+        maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
+        if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
+          setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
+          fish.lastAteAt = purchaseCompletedAt;
+        }
+        if (tutorialPurchase) {
+          closeStoreOverlay({ force: true });
+          tutorialChanged = setTutorialStage(TUTORIAL_STAGE_ADOPT_FISH_DONE, {
+            now: purchaseCompletedAt,
+            fishId: fish.id
+          }) || tutorialChanged;
+        }
+      },
+      event: {
+        type: "fish_added",
+        tone: "positive",
+        fishId: fish.id,
+        text: `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`
+      },
+      toast: `${fish.name} joined the aquarium.`
+    });
+    if (!transaction.ok) {
+      return transaction;
+    }
+    return {
+      ok: true,
+      fish,
+      species,
+      tutorialChanged
+    };
+  } finally {
+    runtime.pendingFishPurchases.delete(pendingKey);
+  }
 }
 
-function buyAnotherCustomFish(fishId) {
+async function buyAnotherCustomFish(fishId) {
   const managed = getManagedFishById(fishId);
   const sourceFish = managed?.fish || null;
   if (!sourceFish || !isCustomFishAssetKey(sourceFish.speciesId)) {
@@ -33056,20 +34077,45 @@ function buyAnotherCustomFish(fishId) {
     return;
   }
 
-  state.coins -= purchaseCost;
-  addFishToTank(fish, now);
-  maybeSeedNewFishDiseaseCarrier(fish, now);
-
-  if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
-    setFishNeedValue(fish, "hunger", 82, now);
-    fish.lastAteAt = now;
+  const pendingKey = `custom:${sourceFish.speciesId}`;
+  if (runtime.pendingFishPurchases.has(pendingKey)) {
+    return;
   }
+  runtime.pendingFishPurchases.add(pendingKey);
 
-  pushEvent(`${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`, fish.acquiredAt);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`Another ${species.name} joined the aquarium.`);
+  try {
+    if (!await ensureFishPurchaseImageReady(fish, species)) {
+      showToast("That custom fish's artwork could not be loaded. Please try again.");
+      return;
+    }
+    const purchaseCompletedAt = Date.now();
+    return performCoinTransaction({
+      amount: purchaseCost,
+      now: purchaseCompletedAt,
+      insufficientMessage: `You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for another ${species.name}.`,
+      apply: () => {
+        fish.acquiredAt = purchaseCompletedAt;
+        fish.tankAddedAt = purchaseCompletedAt;
+        fish.entryStartedAt = purchaseCompletedAt;
+        fish.entrySplashTriggered = false;
+        addFishToTank(fish, purchaseCompletedAt);
+        maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
+        if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
+          setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
+          fish.lastAteAt = purchaseCompletedAt;
+        }
+      },
+      event: {
+        type: "fish_added",
+        tone: "positive",
+        fishId: fish.id,
+        text: `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`
+      },
+      toast: `Another ${species.name} joined the aquarium.`
+    });
+  } finally {
+    runtime.pendingFishPurchases.delete(pendingKey);
+  }
 }
 
 function buyAnotherFishFromSource(fishId) {
@@ -33085,6 +34131,32 @@ function buyAnotherFishFromSource(fishId) {
   }
 
   buyFish(fish.speciesId);
+  return true;
+}
+
+function requestCommerceConfirmation(options = {}) {
+  options.prepare?.();
+  const details = options.getDetails?.() || null;
+  const errorMessage = options.validate?.(details) || "";
+  if (!details || errorMessage) {
+    options.clear?.();
+    showToast(errorMessage || options.missingMessage || "That item is no longer available.");
+    return false;
+  }
+  options.open?.(details);
+  return true;
+}
+
+function confirmCommerceAction(options = {}) {
+  const details = options.getDetails?.() || null;
+  const errorMessage = options.validate?.(details) || "";
+  if (!details || errorMessage) {
+    showToast(errorMessage || options.missingMessage || "That item is no longer available.");
+    closeUtilityOverlay();
+    return false;
+  }
+  options.execute?.(details);
+  closeUtilityOverlay();
   return true;
 }
 
@@ -33155,115 +34227,71 @@ function getPendingFishSellDetails() {
 }
 
 function openFishBuyAnotherConfirmation(fishId) {
-  runtime.pendingFishAction = {
-    type: "buy-another",
-    fishId: String(fishId || "")
-  };
-  const details = getPendingFishBuyAnotherDetails();
-  if (!details) {
-    runtime.pendingFishAction = null;
-    showToast("Choose a fish first.");
-    return;
-  }
-
-  if (details.goreLocked) {
-    runtime.pendingFishAction = null;
-    showToast("Enable Violence & Gore to buy undead fish.");
-    return;
-  }
-
-  if (!details.unlocked) {
-    runtime.pendingFishAction = null;
-    showToast(`${details.baseSpecies.name} has not been unlocked yet.`);
-    return;
-  }
-
-  if (!details.canAfford) {
-    runtime.pendingFishAction = null;
-    showToast(`You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`);
-    return;
-  }
-
-  openFishActionConfirmation({
-    type: "buy-another",
-    fishId: details.fishId
+  return requestCommerceConfirmation({
+    prepare: () => {
+      runtime.pendingFishAction = { type: "buy-another", fishId: String(fishId || "") };
+    },
+    clear: () => {
+      runtime.pendingFishAction = null;
+    },
+    getDetails: getPendingFishBuyAnotherDetails,
+    missingMessage: "Choose a fish first.",
+    validate: (details) => details?.goreLocked
+      ? "Enable Violence & Gore to buy undead fish."
+      : !details?.unlocked
+        ? `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`
+        : !details?.canAfford
+          ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`
+          : "",
+    open: (details) => openFishActionConfirmation({ type: "buy-another", fishId: details.fishId })
   });
 }
 
 function openFishSellConfirmation(fishId) {
-  runtime.pendingFishAction = {
-    type: "sell",
-    fishId: String(fishId || "")
-  };
-  const details = getPendingFishSellDetails();
-  if (!details) {
-    runtime.pendingFishAction = null;
-    showToast("Choose a fish first.");
-    return;
-  }
-
-  if (details.dead) {
-    runtime.pendingFishAction = null;
-    showToast("Dead fish cannot be sold.");
-    return;
-  }
-
-  if (details.juvenile) {
-    runtime.pendingFishAction = null;
-    showToast("Baby fish need time to grow before they can be sold.");
-    return;
-  }
-
-  openFishActionConfirmation({
-    type: "sell",
-    fishId: details.fishId
+  return requestCommerceConfirmation({
+    prepare: () => {
+      runtime.pendingFishAction = { type: "sell", fishId: String(fishId || "") };
+    },
+    clear: () => {
+      runtime.pendingFishAction = null;
+    },
+    getDetails: getPendingFishSellDetails,
+    missingMessage: "Choose a fish first.",
+    validate: (details) => details?.dead
+      ? "Dead fish cannot be sold."
+      : details?.juvenile
+        ? "Baby fish need time to grow before they can be sold."
+        : "",
+    open: (details) => openFishActionConfirmation({ type: "sell", fishId: details.fishId })
   });
 }
 
 function confirmFishBuyAnother() {
-  const details = getPendingFishBuyAnotherDetails();
-  if (!details) {
-    showToast("That fish is no longer available.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (!details.canBuy) {
-    showToast(details.goreLocked
+  return confirmCommerceAction({
+    getDetails: getPendingFishBuyAnotherDetails,
+    missingMessage: "That fish is no longer available.",
+    validate: (details) => !details?.canBuy
+      ? (details?.goreLocked
       ? "Enable Violence & Gore to buy undead fish."
-      : `${details.baseSpecies.name} has not been unlocked yet.`);
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (!details.canAfford) {
-    showToast(`You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`);
-    closeUtilityOverlay();
-    return;
-  }
-
-  buyAnotherFishFromSource(details.fishId);
-  closeUtilityOverlay();
+      : `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`)
+      : !details?.canAfford
+        ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`
+        : "",
+    execute: (details) => buyAnotherFishFromSource(details.fishId)
+  });
 }
 
 function confirmFishSell() {
-  const details = getPendingFishSellDetails();
-  if (!details) {
-    showToast("That fish is no longer available.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (!details.canSell) {
-    showToast(details.dead
+  return confirmCommerceAction({
+    getDetails: getPendingFishSellDetails,
+    missingMessage: "That fish is no longer available.",
+    validate: (details) => !details?.canSell
+      ? (details?.dead
       ? "Dead fish cannot be sold."
-      : "Baby fish need time to grow before they can be sold.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  sellFish(details.fishId);
-  closeUtilityOverlay();
+      : "Baby fish need time to grow before they can be sold.")
+      : "",
+    execute: (details) => sellFish(details.fishId)
+  });
 }
 
 function getDecorPurchaseCost(decorKey) {
@@ -33307,30 +34335,25 @@ function buyDecor(decorKey, options = {}) {
     return { ok: false, reason: "content-locked" };
   }
 
-  if (state.coins < decor.cost) {
-    showToast(`You need ${decor.cost} coins for ${decor.name}.`);
-    return { ok: false, reason: "insufficient-coins" };
-  }
-
   const now = Date.now();
   const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION);
-  state.coins -= decor.cost;
-  state.decorInventory[decorKey] = (state.decorInventory[decorKey] || 0) + 1;
-  pushEvent(`Bought ${decor.name}.`, now, getCurrentTank(), {
-    type: "decor",
-    decorKey
+  const transaction = performCoinTransaction({
+    amount: decor.cost,
+    now,
+    insufficientMessage: `You need ${decor.cost} coins for ${decor.name}.`,
+    apply: () => {
+      state.decorInventory[decorKey] = (state.decorInventory[decorKey] || 0) + 1;
+      if (tutorialPurchase || options.closeOverlayFirst === true) {
+        closeStoreOverlay({ force: true });
+        setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, { now, decorKey });
+      }
+    },
+    event: { type: "decor", tone: "positive", decorKey, text: `Bought ${decor.name}.` },
+    toast: `${decor.name} is waiting in storage.`
   });
-  if (tutorialPurchase || options.closeOverlayFirst === true) {
-    closeStoreOverlay({ force: true });
-    setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, {
-      now,
-      decorKey
-    });
+  if (!transaction.ok) {
+    return transaction;
   }
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`${decor.name} is waiting in storage.`);
   return {
     ok: true,
     decor,
@@ -33357,22 +34380,20 @@ function buyAnotherDecor(decorKey) {
   }
 
   const cost = getDecorPurchaseCost(key);
-  if (state.coins < cost) {
-    showToast(`You need ${cost} ${pluralize("coin", cost)} for another ${decor.name}.`);
-    return;
-  }
-
-  state.coins -= cost;
-  state.decorInventory[key] = (state.decorInventory[key] || 0) + 1;
-  const now = Date.now();
-  pushEvent(`Bought another ${decor.name}.`, now, getCurrentTank(), {
-    type: "decor",
-    decorKey: key
+  return performCoinTransaction({
+    amount: cost,
+    insufficientMessage: `You need ${cost} ${pluralize("coin", cost)} for another ${decor.name}.`,
+    apply: () => {
+      state.decorInventory[key] = (state.decorInventory[key] || 0) + 1;
+    },
+    event: {
+      type: "decor",
+      tone: "positive",
+      decorKey: key,
+      text: `Bought another ${decor.name}.`
+    },
+    toast: `Another ${decor.name} is waiting in storage.`
   });
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`Another ${decor.name} is waiting in storage.`);
 }
 
 function getPendingDecorBuyAnotherDetails() {
@@ -33423,81 +34444,59 @@ function getPendingDecorSellDetails() {
 
 function openDecorBuyAnotherConfirmation(decorKey) {
   const key = String(decorKey || "");
-  const decor = runtime.decorMap.get(key);
-  if (!decor) {
-    showToast("That decor is no longer available.");
-    return;
-  }
-
-  if (!canUseDecorWithCurrentContentSettings(key)) {
-    showToast("Enable Violence & Gore to buy that decor.");
-    return;
-  }
-
-  const cost = getDecorPurchaseCost(key);
-  if (state.coins < cost) {
-    showToast(`You need ${cost} ${pluralize("coin", cost)} for another ${decor.name}.`);
-    return;
-  }
-
-  openDecorActionConfirmation({
-    type: "buy-another",
-    decorKey: key
+  return requestCommerceConfirmation({
+    prepare: () => {
+      runtime.pendingDecorAction = { type: "buy-another", decorKey: key };
+    },
+    clear: () => {
+      runtime.pendingDecorAction = null;
+    },
+    getDetails: getPendingDecorBuyAnotherDetails,
+    missingMessage: "That decor is no longer available.",
+    validate: (details) => !details
+      ? "That decor is no longer available."
+      : !canUseDecorWithCurrentContentSettings(details.decorKey)
+        ? "Enable Violence & Gore to buy that decor."
+        : !details.canAfford
+          ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.decor.name}.`
+          : "",
+    open: (details) => openDecorActionConfirmation({ type: "buy-another", decorKey: details.decorKey })
   });
 }
 
 function openDecorSellConfirmation(placedId) {
-  const item = getPlacedDecorById(placedId);
-  if (!item) {
-    showToast("Select decor first.");
-    return;
-  }
-
-  if (isPlacedDecorGrouped(item)) {
-    showToast("Ungroup that decor before selling it.");
-    return;
-  }
-
-  openDecorActionConfirmation({
-    type: "sell",
-    placedId: item.id
+  return requestCommerceConfirmation({
+    prepare: () => {
+      runtime.pendingDecorAction = { type: "sell", placedId: String(placedId || "") };
+    },
+    clear: () => {
+      runtime.pendingDecorAction = null;
+    },
+    getDetails: getPendingDecorSellDetails,
+    missingMessage: "Select decor first.",
+    validate: (details) => details?.grouped ? "Ungroup that decor before selling it." : "",
+    open: (details) => openDecorActionConfirmation({ type: "sell", placedId: details.placedId })
   });
 }
 
 function confirmDecorBuyAnother() {
-  const details = getPendingDecorBuyAnotherDetails();
-  if (!details) {
-    showToast("That decor is no longer available.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (!details.canAfford) {
-    showToast(`You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.decor.name}.`);
-    closeUtilityOverlay();
-    return;
-  }
-
-  buyAnotherDecor(details.decorKey);
-  closeUtilityOverlay();
+  return confirmCommerceAction({
+    getDetails: getPendingDecorBuyAnotherDetails,
+    missingMessage: "That decor is no longer available.",
+    validate: (details) => !details?.canAfford
+      ? `You need ${details?.cost || 0} ${pluralize("coin", details?.cost || 0)} for another ${details?.decor?.name || "decor"}.`
+      : "",
+    execute: (details) => buyAnotherDecor(details.decorKey)
+  });
 }
 
 function confirmDecorSell() {
-  const details = getPendingDecorSellDetails();
-  if (!details) {
-    showToast("That decor is no longer in the tank.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  if (details.grouped) {
-    showToast("Ungroup that decor before selling it.");
-    closeUtilityOverlay();
-    return;
-  }
-
-  sellPlacedDecor(details.placedId);
-  closeUtilityOverlay();
+  return confirmCommerceAction({
+    getDetails: getPendingDecorSellDetails,
+    missingMessage: "That decor is no longer in the tank.",
+    validate: (details) => details?.grouped ? "Ungroup that decor before selling it." : "",
+    execute: (details) => sellPlacedDecor(details.placedId)
+  });
 }
 
 function buyBackground(backgroundKey) {
@@ -33511,20 +34510,16 @@ function buyBackground(backgroundKey) {
     return;
   }
 
-  if (state.coins < background.cost) {
-    showToast(`You need ${background.cost} ${pluralize("coin", background.cost)} for ${background.name}.`);
-    return;
-  }
-
-  const now = Date.now();
-  state.coins -= background.cost;
-  state.ownedBackgroundInventory[backgroundKey] = 1;
-  state.selectedBackground = backgroundKey;
-  pushEvent(`Unlocked the ${background.name} background.`, now);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast(`${background.name} unlocked and applied.`);
+  return performCoinTransaction({
+    amount: background.cost,
+    insufficientMessage: `You need ${background.cost} ${pluralize("coin", background.cost)} for ${background.name}.`,
+    apply: () => {
+      state.ownedBackgroundInventory[backgroundKey] = 1;
+      state.selectedBackground = backgroundKey;
+    },
+    event: { type: "purchase", tone: "positive", text: `Unlocked the ${background.name} background.` },
+    toast: `${background.name} unlocked and applied.`
+  });
 }
 
 function buyFilter(filterKey) {
@@ -33533,27 +34528,29 @@ function buyFilter(filterKey) {
     return;
   }
 
-  if (state.coins < filter.cost) {
-    showToast(`You need ${filter.cost} ${pluralize("coin", filter.cost)} for the ${filter.name}.`);
-    return;
-  }
-
   const now = Date.now();
-  state.coins -= filter.cost;
-  state.ownedFilterInventory[filterKey] = (state.ownedFilterInventory[filterKey] || 0) + 1;
-  if (tankSupportsFilters(getCurrentTank()) && getAvailableFilterCount(filterKey) > 0) {
-    preserveTankDirtinessThroughChange(now, () => {
-      state.selectedFilterAsset = filterKey;
-    });
-    pushEvent(`Bought and equipped the ${filter.name}.`, now);
-    showToast(`${filter.name} installed.`);
-  } else {
-    pushEvent(`Bought ${filter.name}.`, now);
-    showToast(`${filter.name} added to tank storage.`);
-  }
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
+  let event = null;
+  let toast = "";
+  return performCoinTransaction({
+    amount: filter.cost,
+    now,
+    insufficientMessage: `You need ${filter.cost} ${pluralize("coin", filter.cost)} for the ${filter.name}.`,
+    apply: () => {
+      state.ownedFilterInventory[filterKey] = (state.ownedFilterInventory[filterKey] || 0) + 1;
+      if (tankSupportsFilters(getCurrentTank()) && getAvailableFilterCount(filterKey) > 0) {
+        preserveTankDirtinessThroughChange(now, () => {
+          state.selectedFilterAsset = filterKey;
+        });
+        event = { type: "purchase", tone: "positive", text: `Bought and equipped the ${filter.name}.` };
+        toast = `${filter.name} installed.`;
+      } else {
+        event = { type: "purchase", tone: "positive", text: `Bought ${filter.name}.` };
+        toast = `${filter.name} added to tank storage.`;
+      }
+    },
+    event: () => event,
+    toast: () => toast
+  });
 }
 
 function buyAutoDispenser() {
@@ -33562,22 +34559,18 @@ function buyAutoDispenser() {
     return;
   }
 
-  if (state.coins < AUTO_DISPENSER_COST) {
-    showToast(`You need ${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)} for the pellet dispenser.`);
-    return;
-  }
-
-  const now = Date.now();
-  state.coins -= AUTO_DISPENSER_COST;
-  state.autoDispenser = createDefaultAutoDispenserState({
-    ...state.autoDispenser,
-    installed: true
+  return performCoinTransaction({
+    amount: AUTO_DISPENSER_COST,
+    insufficientMessage: `You need ${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)} for the pellet dispenser.`,
+    apply: () => {
+      state.autoDispenser = createDefaultAutoDispenserState({
+        ...state.autoDispenser,
+        installed: true
+      });
+    },
+    event: { type: "equipment", tone: "positive", text: "Installed an automatic pellet dispenser above the waterline." },
+    toast: "Pellet dispenser installed."
   });
-  pushEvent("Installed an automatic pellet dispenser above the waterline.", now);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast("Pellet dispenser installed.");
 }
 
 function buyUvLight() {
@@ -33591,21 +34584,17 @@ function buyUvLight() {
     return;
   }
 
-  if (state.coins < UV_LIGHT_COST) {
-    showToast(`You need ${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)} for the UV light.`);
-    return;
-  }
-
-  const now = Date.now();
-  state.coins -= UV_LIGHT_COST;
-  state.uvLightOwned = true;
-  state.uvLightInstalled = true;
-  state.uvLightEnabled = true;
-  pushEvent("Installed a UV light for blacklight glow.", now);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(now);
-  showToast("UV light installed and switched on.");
+  return performCoinTransaction({
+    amount: UV_LIGHT_COST,
+    insufficientMessage: `You need ${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)} for the UV light.`,
+    apply: () => {
+      state.uvLightOwned = true;
+      state.uvLightInstalled = true;
+      state.uvLightEnabled = true;
+    },
+    event: { type: "equipment", tone: "positive", text: "Installed a UV light for blacklight glow." },
+    toast: "UV light installed and switched on."
+  });
 }
 
 function sellFilter(filterKey) {
@@ -33622,19 +34611,20 @@ function sellFilter(filterKey) {
   }
 
   const resaleValue = getResaleValue(filter.cost);
-  const now = Date.now();
-  const nextCount = Math.max(0, ownedCount - 1);
-  if (nextCount > 0) {
-    state.ownedFilterInventory[filterKey] = nextCount;
-  } else {
-    delete state.ownedFilterInventory[filterKey];
-  }
-  state.coins += resaleValue;
-  pushEvent(`Sold ${filter.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now);
-  showToast(`${filter.name} sold.`);
-  saveState();
-  playCoinSoundEffect();
-  renderUi(now);
+  return performCoinTransaction({
+    direction: "credit",
+    amount: resaleValue,
+    apply: () => {
+      const nextCount = Math.max(0, ownedCount - 1);
+      if (nextCount > 0) {
+        state.ownedFilterInventory[filterKey] = nextCount;
+      } else {
+        delete state.ownedFilterInventory[filterKey];
+      }
+    },
+    event: { type: "sale", tone: "neutral", text: `Sold ${filter.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.` },
+    toast: `${filter.name} sold.`
+  });
 }
 // </bundle-source>
 
@@ -33687,7 +34677,8 @@ function startPlacingDecor(decorKey) {
     decorKey,
     tankLayer: initialLayer,
     scale: getDecorScaleDefault(decorKey),
-    flipped: false
+    flipped: false,
+    flippedY: false
   };
   runtime.placementPreview = runtime.lastTankPoint
     ? clampDecorPlacement(runtime.lastTankPoint.x / TANK_WIDTH, runtime.lastTankPoint.y / TANK_HEIGHT, {
@@ -33695,6 +34686,7 @@ function startPlacingDecor(decorKey) {
       tankLayer: initialLayer,
       scale: runtime.placementMode.scale,
       flipped: runtime.placementMode.flipped,
+      flippedY: runtime.placementMode.flippedY,
       applyGravity: true
     })
     : clampDecorPlacement(0.5, 0.8, {
@@ -33702,6 +34694,7 @@ function startPlacingDecor(decorKey) {
       tankLayer: initialLayer,
       scale: runtime.placementMode.scale,
       flipped: runtime.placementMode.flipped,
+      flippedY: runtime.placementMode.flippedY,
       applyGravity: true
     });
   runtime.cleaningMode = false;
@@ -33747,12 +34740,14 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
   const decor = runtime.decorMap.get(decorKey);
   const scaleBase = clamp(Number(runtime.placementMode?.scale) || getDecorScaleDefault(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const flipped = Boolean(runtime.placementMode?.flipped);
+  const flippedY = Boolean(runtime.placementMode?.flippedY);
   const finalLayer = getDecorFrontLayer(decorKey, tankLayer);
   const placement = clampDecorPlacement(xNorm, yNorm, {
     decorKey,
     tankLayer: finalLayer,
     scale: scaleBase,
     flipped,
+    flippedY,
     applyGravity: true
   });
 
@@ -33768,7 +34763,8 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     yNorm: placement.yNorm,
     scale: scaleBase,
     tankLayer: finalLayer,
-    flipped
+    flipped,
+    flippedY
   };
   if (isCustomBubblerDecorKey(decorKey)) {
     placedItem.bubblerSettings = createDefaultBubblerSettings();
@@ -33981,16 +34977,22 @@ function stepDecorGroupScale(item, step, save = false) {
   return nextScale;
 }
 
-function toggleDecorGroupFlip(item, save = false) {
+function toggleDecorGroupFlip(item, save = false, axis = "horizontal") {
   const groupItems = getDecorGroupTransformItems(item);
   if (groupItems.length <= 1) {
     return null;
   }
 
   const center = getDecorItemsCenter(groupItems);
+  const vertical = axis === "vertical";
   for (const groupItem of groupItems) {
-    groupItem.xNorm = center.xNorm - (groupItem.xNorm - center.xNorm);
-    groupItem.flipped = !Boolean(groupItem.flipped);
+    if (vertical) {
+      groupItem.yNorm = center.yNorm - (groupItem.yNorm - center.yNorm);
+      groupItem.flippedY = !Boolean(groupItem.flippedY);
+    } else {
+      groupItem.xNorm = center.xNorm - (groupItem.xNorm - center.xNorm);
+      groupItem.flipped = !Boolean(groupItem.flipped);
+    }
     const placement = clampDecorPlacement(groupItem.xNorm, groupItem.yNorm, { item: groupItem, applyGravity: true });
     groupItem.xNorm = placement.xNorm;
     groupItem.yNorm = placement.yNorm;
@@ -34034,6 +35036,7 @@ function stepActiveDecorLayer(direction) {
           tankLayer: placementLayer,
           scale: runtime.placementMode.scale,
           flipped: runtime.placementMode.flipped,
+          flippedY: runtime.placementMode.flippedY,
           applyGravity: true
         });
       }
@@ -34137,6 +35140,7 @@ function stepActiveDecorScale(direction) {
           tankLayer: runtime.placementMode.tankLayer,
           scale: placementScale,
           flipped: runtime.placementMode.flipped,
+          flippedY: runtime.placementMode.flippedY,
           applyGravity: true
         });
       }
@@ -34179,25 +35183,29 @@ function stepActiveDecorScale(direction) {
   return nextScale;
 }
 
-function toggleActiveDecorFlip() {
+function toggleActiveDecorFlip(axis = "horizontal") {
   const activeTarget = getActiveDecorShortcutTarget();
   if (!activeTarget) {
     return null;
   }
 
+  const vertical = axis === "vertical";
+  const property = vertical ? "flippedY" : "flipped";
+
   if (activeTarget.mode === "placement") {
-    runtime.placementMode.flipped = !Boolean(runtime.placementMode.flipped);
+    runtime.placementMode[property] = !Boolean(runtime.placementMode[property]);
     if (runtime.placementPreview) {
       runtime.placementPreview = clampDecorPlacement(runtime.placementPreview.xNorm, runtime.placementPreview.yNorm, {
         decorKey: runtime.placementMode.decorKey,
         tankLayer: runtime.placementMode.tankLayer,
         scale: runtime.placementMode.scale,
         flipped: runtime.placementMode.flipped,
+        flippedY: runtime.placementMode.flippedY,
         applyGravity: true
       });
     }
     renderUi(Date.now());
-    return runtime.placementMode.flipped;
+    return runtime.placementMode[property];
   }
 
   const item = activeTarget.item;
@@ -34209,12 +35217,12 @@ function toggleActiveDecorFlip() {
     return null;
   }
 
-  const groupFlip = toggleDecorGroupFlip(item, activeTarget.mode === "selected");
+  const groupFlip = toggleDecorGroupFlip(item, activeTarget.mode === "selected", axis);
   if (groupFlip !== null) {
     return groupFlip;
   }
 
-  item.flipped = !Boolean(item.flipped);
+  item[property] = !Boolean(item[property]);
   const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
   item.xNorm = placement.xNorm;
   item.yNorm = placement.yNorm;
@@ -34223,7 +35231,7 @@ function toggleActiveDecorFlip() {
     saveState();
   }
   renderUi(Date.now());
-  return item.flipped;
+  return item[property];
 }
 
 function performDecorEditShortcutAction(action) {
@@ -35251,6 +36259,7 @@ function storeDecor(placedId) {
 
   const [removed] = state.placedDecor.splice(index, 1);
   clearDecorResidenceAssignments(removed.id, { save: false });
+  clearDecorBoroughServiceReservations(removed.id);
   if (runtime.dragState?.placedId === removed.id) {
     runtime.dragState = null;
   }
@@ -35384,29 +36393,33 @@ function sellFish(fishId) {
 
   const resaleValue = getResaleValue(species.cost);
   const now = Date.now();
-
-  if (isActive) {
-    preserveTankDirtinessThroughChange(now, () => {
-      list.splice(index, 1);
-      state.pendingPoops = state.pendingPoops.filter((poop) => poop.fishId !== fishId);
-      releasePelletsTargetingFishIds(fishId);
-    });
-  } else {
-    list.splice(index, 1);
-    state.pendingPoops = state.pendingPoops.filter((poop) => poop.fishId !== fishId);
-    releasePelletsTargetingFishIds(fishId);
-  }
-
-  if (runtime.selectedFishId === fishId) {
-    runtime.selectedFishId = null;
-  }
-
-  state.coins += resaleValue;
-  pushEvent(`Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now);
-  saveState();
-  playCoinSoundEffect();
-  renderUi(now);
-  showToast(`Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`);
+  return performCoinTransaction({
+    direction: "credit",
+    amount: resaleValue,
+    now,
+    apply: () => {
+      const removeFish = () => {
+        list.splice(index, 1);
+        state.pendingPoops = state.pendingPoops.filter((poop) => poop.fishId !== fishId);
+        releasePelletsTargetingFishIds(fishId);
+      };
+      if (isActive) {
+        preserveTankDirtinessThroughChange(now, removeFish);
+      } else {
+        removeFish();
+      }
+      if (runtime.selectedFishId === fishId) {
+        runtime.selectedFishId = null;
+      }
+    },
+    event: {
+      type: "sale",
+      tone: "neutral",
+      fishId,
+      text: `Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    },
+    toast: `Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+  });
 }
 
 function sellStoredDecor(decorKey) {
@@ -35418,23 +36431,25 @@ function sellStoredDecor(decorKey) {
   const decor = runtime.decorMap.get(decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
 
-  if (count <= 1) {
-    delete state.decorInventory[decorKey];
-  } else {
-    state.decorInventory[decorKey] = count - 1;
-  }
-
-  state.coins += resaleValue;
-
-  const now = Date.now();
-  pushEvent(`Sold ${decor?.name || titleFromFile(decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now, getCurrentTank(), {
-    type: "economy",
-    decorKey
+  const displayName = decor?.name || titleFromFile(decorKey);
+  return performCoinTransaction({
+    direction: "credit",
+    amount: resaleValue,
+    apply: () => {
+      if (count <= 1) {
+        delete state.decorInventory[decorKey];
+      } else {
+        state.decorInventory[decorKey] = count - 1;
+      }
+    },
+    event: {
+      type: "sale",
+      tone: "neutral",
+      decorKey,
+      text: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    },
+    toast: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
   });
-  saveState();
-  playCoinSoundEffect();
-  renderUi(now);
-  showToast(`Sold ${decor?.name || titleFromFile(decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`);
 }
 
 function sellPlacedDecor(placedId) {
@@ -35448,31 +36463,35 @@ function sellPlacedDecor(placedId) {
     return;
   }
 
-  const [removed] = state.placedDecor.splice(index, 1);
-  clearDecorResidenceAssignments(removed.id, { save: false });
-  if (runtime.dragState?.placedId === removed.id) {
-    runtime.dragState = null;
-  }
-  if (runtime.decorResizeState?.placedId === removed.id) {
-    runtime.decorResizeState = null;
-  }
-  clearSelectedDecor(removed.id);
-  state.gravelLivePebbles = [];
-
-  const decor = runtime.decorMap.get(removed.decorKey);
+  const item = state.placedDecor[index];
+  const decor = runtime.decorMap.get(item.decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
-  state.coins += resaleValue;
-
-  const now = Date.now();
-  pushEvent(`Sold ${decor?.name || titleFromFile(removed.decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, now, getCurrentTank(), {
-    type: "economy",
-    decorKey: removed.decorKey,
-    placedDecorId: removed.id
+  const displayName = decor?.name || titleFromFile(item.decorKey);
+  return performCoinTransaction({
+    direction: "credit",
+    amount: resaleValue,
+    apply: () => {
+      const [removed] = state.placedDecor.splice(index, 1);
+      clearDecorResidenceAssignments(removed.id, { save: false });
+      clearDecorBoroughServiceReservations(removed.id);
+      if (runtime.dragState?.placedId === removed.id) {
+        runtime.dragState = null;
+      }
+      if (runtime.decorResizeState?.placedId === removed.id) {
+        runtime.decorResizeState = null;
+      }
+      clearSelectedDecor(removed.id);
+      state.gravelLivePebbles = [];
+    },
+    event: {
+      type: "sale",
+      tone: "neutral",
+      decorKey: item.decorKey,
+      placedDecorId: item.id,
+      text: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    },
+    toast: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
   });
-  saveState();
-  playCoinSoundEffect();
-  renderUi(now);
-  showToast(`Sold ${decor?.name || titleFromFile(removed.decorKey)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`);
 }
 
 function disposeFish(fishId) {
@@ -36985,7 +38004,7 @@ function attemptGravelCoinFind(fish, action, now = Date.now()) {
     return false;
   }
 
-  state.coins += 1;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + 1);
   state.lastGravelCoinFoundAt = now;
   pushEvent(`${fish.name || "A fish"} found a coin in the gravel.`, now);
   spawnCoinGlint(action.pickupXNorm * TANK_WIDTH, action.pickupYNorm * TANK_HEIGHT - 8, now);
@@ -38286,6 +39305,65 @@ function updateInspectorFishSetting(setting, rawValue) {
 // Source fragment: tank/appearance-controls.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function updateTankAppearance(options = {}) {
+  const changes = options.changes && typeof options.changes === "object" ? options.changes : {};
+  const changedEntries = Object.entries(changes).filter(([key, value]) => !Object.is(state[key], value));
+  if (!changedEntries.length && options.force !== true) {
+    return false;
+  }
+  for (const [key, value] of changedEntries) {
+    state[key] = value;
+  }
+  options.apply?.();
+  completeGameAction({
+    now: options.now,
+    event: options.event,
+    toast: options.toast,
+    sound: options.sound,
+    render: options.render,
+    full: options.full
+  });
+  return true;
+}
+
+function copyTankAppearanceScheme(kind) {
+  const tank = getCurrentTank();
+  if (!tank) {
+    return false;
+  }
+  runtime.tankAppearanceClipboard ||= { background: null, gravel: null };
+  if (kind === "gravel") {
+    runtime.tankAppearanceClipboard.gravel = {
+      customGravelLayerColors: [...getActiveCustomGravelLayerColors()]
+    };
+    showToast("Gravel color scheme copied.");
+    return true;
+  }
+  runtime.tankAppearanceClipboard.background = {
+    selectedBackground: tank.selectedBackground
+  };
+  showToast("Wallpaper scheme copied.");
+  return true;
+}
+
+function pasteTankAppearanceScheme(kind) {
+  const clipboard = runtime.tankAppearanceClipboard?.[kind];
+  if (!clipboard) {
+    showToast(`Copy a ${kind === "gravel" ? "gravel color" : "wallpaper"} scheme first.`);
+    return false;
+  }
+  const changes = kind === "gravel"
+    ? {
+        customGravelLayerColors: sanitizeCustomGravelLayerColors(clipboard.customGravelLayerColors)
+      }
+    : { ...clipboard };
+  return updateTankAppearance({
+    changes,
+    toast: kind === "gravel" ? "Gravel color scheme pasted." : "Wallpaper scheme pasted.",
+    full: true
+  });
+}
+
 function setCustomGravelLayerColor(layerIndex, color) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor || !Number.isFinite(layerIndex)) {
@@ -38299,9 +39377,7 @@ function setCustomGravelLayerColor(layerIndex, color) {
   }
 
   nextColors[nextIndex] = normalizedColor;
-  state.customGravelLayerColors = nextColors;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({ changes: { customGravelLayerColors: nextColors } });
 }
 
 function setCustomGravelLayerColorize(layerIndex, colorize) {
@@ -38317,10 +39393,12 @@ function setCustomGravelLayerColorize(layerIndex, colorize) {
   }
 
   nextSettings[nextIndex] = nextColorize;
-  state.customGravelLayerColors = getActiveCustomGravelLayerColors();
-  state.customGravelLayerColorize = nextSettings;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: {
+      customGravelLayerColors: getActiveCustomGravelLayerColors(),
+      customGravelLayerColorize: nextSettings
+    }
+  });
 }
 
 function setSolidBackgroundColor(color) {
@@ -38333,9 +39411,7 @@ function setSolidBackgroundColor(color) {
     return;
   }
 
-  state.solidBackgroundColor = normalizedColor;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({ changes: { solidBackgroundColor: normalizedColor } });
 }
 
 function setGradientBackgroundColor(role, color) {
@@ -38349,9 +39425,7 @@ function setGradientBackgroundColor(role, color) {
     return;
   }
 
-  state[key] = normalizedColor;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({ changes: { [key]: normalizedColor } });
 }
 
 function setAnimatedBackgroundColor(role, color) {
@@ -38385,9 +39459,7 @@ function setAnimatedBackgroundColor(role, color) {
     return;
   }
 
-  state[key] = normalizedColor;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({ changes: { [key]: normalizedColor } });
 }
 
 function resetAnimatedBackgroundColors() {
@@ -38418,18 +39490,20 @@ function resetAnimatedBackgroundColors() {
     return;
   }
 
-  state.animatedBackgroundTopColor = nextDefaults.surface;
-  state.animatedBackgroundMidColor = nextDefaults.mid;
-  state.animatedBackgroundBottomColor = nextDefaults.deep;
-  state.animatedBackgroundSurfaceBloomColor = nextDefaults.surfaceBloom;
-  state.animatedBackgroundShadowBloomColor = nextDefaults.shadowBloom;
-  state.animatedBackgroundAbyssColor = nextDefaults.abyss;
-  state.animatedBackgroundHighlightColor = nextDefaults.highlight;
-  state.animatedBackgroundDriftColorA = nextDefaults.driftA;
-  state.animatedBackgroundDriftColorB = nextDefaults.driftB;
-  state.animatedBackgroundDriftColorC = nextDefaults.driftC;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: {
+      animatedBackgroundTopColor: nextDefaults.surface,
+      animatedBackgroundMidColor: nextDefaults.mid,
+      animatedBackgroundBottomColor: nextDefaults.deep,
+      animatedBackgroundSurfaceBloomColor: nextDefaults.surfaceBloom,
+      animatedBackgroundShadowBloomColor: nextDefaults.shadowBloom,
+      animatedBackgroundAbyssColor: nextDefaults.abyss,
+      animatedBackgroundHighlightColor: nextDefaults.highlight,
+      animatedBackgroundDriftColorA: nextDefaults.driftA,
+      animatedBackgroundDriftColorB: nextDefaults.driftB,
+      animatedBackgroundDriftColorC: nextDefaults.driftC
+    }
+  });
 }
 
 function enableCustomBackgroundMode(mode) {
@@ -38439,10 +39513,12 @@ function enableCustomBackgroundMode(mode) {
     return;
   }
 
-  state.customBackgroundMode = nextMode;
-  state.selectedBackground = NONE_BACKGROUND_ASSET_KEY;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: {
+      customBackgroundMode: nextMode,
+      selectedBackground: NONE_BACKGROUND_ASSET_KEY
+    }
+  });
 }
 
 function disableCustomBackground() {
@@ -38522,10 +39598,14 @@ function selectBackground(backgroundKey) {
     return;
   }
 
-  state.selectedBackground = backgroundKey;
-  pushEvent(`Switched the tank background to ${runtime.backgroundMap.get(backgroundKey).name}.`, Date.now());
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: { selectedBackground: backgroundKey },
+    event: {
+      type: "appearance",
+      tone: "neutral",
+      text: `Switched the tank background to ${runtime.backgroundMap.get(backgroundKey).name}.`
+    }
+  });
 }
 
 function selectTankAsset(tankKey) {
@@ -38533,10 +39613,14 @@ function selectTankAsset(tankKey) {
     return;
   }
 
-  state.selectedTankAsset = tankKey;
-  pushEvent(`Swapped the tank shell to ${runtime.tankMap.get(tankKey).name}.`, Date.now());
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: { selectedTankAsset: tankKey },
+    event: {
+      type: "appearance",
+      tone: "neutral",
+      text: `Swapped the tank shell to ${runtime.tankMap.get(tankKey).name}.`
+    }
+  });
 }
 
 function selectFilterAsset(filterKey) {
@@ -38568,12 +39652,14 @@ function selectFilterAsset(filterKey) {
     state.selectedFilterAsset = filterKey;
   });
   const filter = runtime.filterMap.get(filterKey);
-  pushEvent(
-    `Equipped ${filter.name}. At the current tank load, the tank now takes about ${formatDuration(getFilterMaxDirtyDurationMs(filterKey))} to hit maximum dirtiness.`,
-    now
-  );
-  saveState();
-  renderUi(now);
+  return completeGameAction({
+    now,
+    event: {
+      type: "equipment",
+      tone: "neutral",
+      text: `Equipped ${filter.name}. At the current tank load, the tank now takes about ${formatDuration(getFilterMaxDirtyDurationMs(filterKey))} to hit maximum dirtiness.`
+    }
+  });
 }
 
 function setUvLightInstalled(installed) {
@@ -38592,13 +39678,18 @@ function setUvLightInstalled(installed) {
     return;
   }
 
-  const now = Date.now();
-  state.uvLightInstalled = nextInstalled;
-  state.uvLightEnabled = nextInstalled ? true : false;
-  pushEvent(nextInstalled ? "Added the UV light to this tank." : "Removed the UV light from this tank.", now);
-  saveState();
-  renderUi(now);
-  showToast(nextInstalled ? "UV light added and switched on." : "UV light removed from this tank.");
+  return updateTankAppearance({
+    changes: {
+      uvLightInstalled: nextInstalled,
+      uvLightEnabled: nextInstalled
+    },
+    event: {
+      type: "equipment",
+      tone: "neutral",
+      text: nextInstalled ? "Added the UV light to this tank." : "Removed the UV light from this tank."
+    },
+    toast: nextInstalled ? "UV light added and switched on." : "UV light removed from this tank."
+  });
 }
 
 function toggleUvLightPower(force = null) {
@@ -38617,10 +39708,10 @@ function toggleUvLightPower(force = null) {
     return;
   }
 
-  state.uvLightEnabled = nextEnabled;
-  saveState();
-  renderUi(Date.now());
-  showToast(nextEnabled ? "UV light on." : "UV light off.");
+  return updateTankAppearance({
+    changes: { uvLightEnabled: nextEnabled },
+    toast: nextEnabled ? "UV light on." : "UV light off."
+  });
 }
 
 function toggleLightsOutOverride() {
@@ -38634,15 +39725,14 @@ function toggleLightsOutOverride() {
     : current === LIGHTS_OUT_OVERRIDE_ON
       ? LIGHTS_OUT_OVERRIDE_OFF
       : LIGHTS_OUT_OVERRIDE_AUTO;
-  targetTank.lightsOutOverride = next;
-  const now = Date.now();
-  saveState();
-  renderUi(now);
-  showToast(next === LIGHTS_OUT_OVERRIDE_AUTO
-    ? "Lights Out follows the tank clock."
-    : next === LIGHTS_OUT_OVERRIDE_ON
-      ? "Lights Out on."
-      : "Lights Out off until you switch it back.");
+  return updateTankAppearance({
+    changes: { lightsOutOverride: next },
+    toast: next === LIGHTS_OUT_OVERRIDE_AUTO
+      ? "Lights Out follows the tank clock."
+      : next === LIGHTS_OUT_OVERRIDE_ON
+        ? "Lights Out on."
+        : "Lights Out off until you switch it back."
+  });
 }
 // </bundle-source>
 
@@ -38774,7 +39864,7 @@ function addDebugCoins(amount = 10) {
     return;
   }
 
-  state.coins += coinAmount;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + coinAmount);
   pushEvent(`Debug coins added. +${coinAmount} ${pluralize("coin", coinAmount)}.`, now);
   saveState();
   renderUi(now);
@@ -38827,8 +39917,8 @@ function resetMealsDebug() {
   let cleared = 0;
 
   for (const slot of slots) {
-    if (state.feedHistory[slot.key]) {
-      delete state.feedHistory[slot.key];
+    if (state.mealHistory?.[slot.key]) {
+      delete state.mealHistory[slot.key];
       cleared += 1;
     }
   }
@@ -40489,6 +41579,21 @@ function resetAllProgress() {
 // Source fragment: tank/cleaning-and-glass.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function queueScrubGlass(x, y) {
+  runtime.pendingScrubPoint = { x, y };
+  if (runtime.scrubFrameHandle) {
+    return;
+  }
+  runtime.scrubFrameHandle = window.requestAnimationFrame(() => {
+    runtime.scrubFrameHandle = 0;
+    const point = runtime.pendingScrubPoint;
+    runtime.pendingScrubPoint = null;
+    if (runtime.cleaningMode && point) {
+      scrubGlass(point.x, point.y);
+    }
+  });
+}
+
 function scrubGlass(x, y) {
   const previousPoint = runtime.lastScrubPoint;
   const points = [];
@@ -40509,13 +41614,15 @@ function scrubGlass(x, y) {
 
   let changed = false;
   for (const point of points) {
-    changed = markScrubStamp(point.x, point.y) || changed;
+    changed = markScrubStamp(point.x, point.y, { paint: false }) || changed;
   }
   runtime.lastScrubPoint = { x, y };
 
   if (!changed) {
     return;
   }
+
+  recordScrubMaskStroke(previousPoint || { x, y }, { x, y }, SCRUB_BRUSH_RADIUS);
 
   const coverage = getScrubCoverage();
   if (coverage >= getRequiredScrubThreshold()) {
@@ -40770,6 +41877,10 @@ function markScrubStamp(x, y, options = {}) {
   const endCol = clamp(Math.ceil((scrubX + brushRadius) / cellWidth), 0, SCRUB_GRID_COLS - 1);
   const startRow = clamp(Math.floor((scrubY - brushRadius) / cellHeight), 0, SCRUB_GRID_ROWS - 1);
   const endRow = clamp(Math.ceil((scrubY + brushRadius) / cellHeight), 0, SCRUB_GRID_ROWS - 1);
+  const coverageBounds = runtime.cleaningMode ? getVisibleScrubBounds() : null;
+  if (runtime.cleaningMode) {
+    refreshScrubCoverageCache();
+  }
 
   let changed = false;
   for (let row = startRow; row <= endRow; row += 1) {
@@ -40784,20 +41895,23 @@ function markScrubStamp(x, y, options = {}) {
       if (!runtime.scrubCells[index] && distance(cellCenterX, cellCenterY, scrubX, scrubY) <= brushRadius) {
         runtime.scrubCells[index] = 1;
         runtime.scrubbedCount += 1;
+        if (coverageBounds && isScrubCellCenterInsideVisibleBounds(cellCenterX, cellCenterY, coverageBounds)) {
+          runtime.scrubbedCleanableCellCount += 1;
+        }
         changed = true;
       }
     }
   }
 
-  const stamp = {
-    x: scrubX,
-    y: scrubY,
-    radius: brushRadius * (0.92 + Math.random() * 0.1)
-  };
-  runtime.scrubStamps.push(stamp);
-  paintScrubMaskStamp(stamp);
-  if (runtime.scrubStamps.length > SCRUB_MAX_STAMPS) {
-    runtime.scrubStamps.splice(0, runtime.scrubStamps.length - SCRUB_MAX_STAMPS);
+  if (changed && options.paint !== false) {
+    recordScrubMaskStroke(
+      { x: scrubX, y: scrubY },
+      { x: scrubX, y: scrubY },
+      brushRadius * (0.92 + Math.random() * 0.1)
+    );
+  }
+  if (changed && !runtime.cleaningMode) {
+    runtime.scrubCoverageCacheKey = "";
   }
 
   return changed;
@@ -40829,7 +41943,7 @@ function completeCleaning(options = {}) {
 
   state.lastCleanedAt = now;
   state.poops = [];
-  state.coins += cleanReward;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
 
   if (!hasExposedDeadTankFish(now)) {
     resetLivingFishComfortDamageProgress();
@@ -40883,6 +41997,12 @@ function clearScrubProgress() {
   runtime.scrubCells.fill(0);
   runtime.scrubbedCount = 0;
   runtime.scrubStamps = [];
+  runtime.pendingScrubPoint = null;
+  runtime.scrubMaskRevision += 1;
+  runtime.cleanableScrubCellCount = 0;
+  runtime.scrubbedCleanableCellCount = 0;
+  runtime.scrubCoverageCacheKey = "";
+  runtime.grimeCompositeCacheKey = "";
   runtime.lastScrubPoint = null;
   runtime.scrubAutoCompleteAt = 0;
   resetScrubWipeSoundState();
@@ -40893,9 +42013,9 @@ function clearScrubProgress() {
 }
 
 function getScrubCoverage() {
-  const cleanableCellCount = getCleanableScrubCellCount();
-  return cleanableCellCount > 0
-    ? Math.min(1, getScrubbedCleanableCellCount() / cleanableCellCount)
+  refreshScrubCoverageCache();
+  return runtime.cleanableScrubCellCount > 0
+    ? Math.min(1, runtime.scrubbedCleanableCellCount / runtime.cleanableScrubCellCount)
     : 0;
 }
 
@@ -40957,21 +42077,75 @@ function paintScrubMaskStamp(stamp) {
     return;
   }
 
-  const gradient = scrubMaskContext.createRadialGradient(
-    stamp.x,
-    stamp.y,
-    stamp.radius * 0.2,
-    stamp.x,
-    stamp.y,
-    stamp.radius
-  );
-  gradient.addColorStop(0, "rgba(0,0,0,1)");
-  gradient.addColorStop(0.72, "rgba(0,0,0,0.94)");
-  gradient.addColorStop(1, "rgba(0,0,0,0)");
-  scrubMaskContext.fillStyle = gradient;
-  scrubMaskContext.beginPath();
-  scrubMaskContext.arc(stamp.x, stamp.y, stamp.radius, 0, Math.PI * 2);
-  scrubMaskContext.fill();
+  const fromX = Number(stamp.x) || 0;
+  const fromY = Number(stamp.y) || 0;
+  const toX = Number.isFinite(Number(stamp.toX)) ? Number(stamp.toX) : fromX;
+  const toY = Number.isFinite(Number(stamp.toY)) ? Number(stamp.toY) : fromY;
+  const radius = Math.max(4, Number(stamp.radius) || SCRUB_BRUSH_RADIUS);
+  const drawStroke = (width, alpha) => {
+    scrubMaskContext.strokeStyle = `rgba(0,0,0,${alpha})`;
+    scrubMaskContext.fillStyle = `rgba(0,0,0,${alpha})`;
+    scrubMaskContext.lineWidth = width;
+    scrubMaskContext.lineCap = "round";
+    scrubMaskContext.lineJoin = "round";
+    if (Math.abs(toX - fromX) < 0.01 && Math.abs(toY - fromY) < 0.01) {
+      scrubMaskContext.beginPath();
+      scrubMaskContext.arc(fromX, fromY, width / 2, 0, Math.PI * 2);
+      scrubMaskContext.fill();
+      return;
+    }
+    scrubMaskContext.beginPath();
+    scrubMaskContext.moveTo(fromX, fromY);
+    scrubMaskContext.lineTo(toX, toY);
+    scrubMaskContext.stroke();
+  };
+
+  scrubMaskContext.save();
+  drawStroke(radius * 2, 0.34);
+  drawStroke(radius * 1.68, 0.98);
+  scrubMaskContext.restore();
+}
+
+function getScrubCoverageCacheKey() {
+  const bounds = getVisibleScrubBounds();
+  return [
+    getCurrentTank()?.id || "tank",
+    getCurrentTank()?.tankTypeId || "shell",
+    Math.round(bounds.left),
+    Math.round(bounds.top),
+    Math.round(bounds.right),
+    Math.round(bounds.bottom)
+  ].join("|");
+}
+
+function refreshScrubCoverageCache() {
+  const cacheKey = getScrubCoverageCacheKey();
+  if (runtime.scrubCoverageCacheKey === cacheKey && runtime.cleanableScrubCellCount > 0) {
+    return;
+  }
+  runtime.scrubCoverageCacheKey = cacheKey;
+  runtime.cleanableScrubCellCount = getCleanableScrubCellCount();
+  runtime.scrubbedCleanableCellCount = getScrubbedCleanableCellCount();
+}
+
+function recordScrubMaskStroke(fromPoint, toPoint, radius = SCRUB_BRUSH_RADIUS) {
+  if (!fromPoint || !toPoint) {
+    return;
+  }
+  const stamp = {
+    x: Number(fromPoint.x) || 0,
+    y: Number(fromPoint.y) || 0,
+    toX: Number(toPoint.x) || 0,
+    toY: Number(toPoint.y) || 0,
+    radius: clamp(Number(radius) || SCRUB_BRUSH_RADIUS, 4, SCRUB_BRUSH_RADIUS)
+  };
+  runtime.scrubStamps.push(stamp);
+  paintScrubMaskStamp(stamp);
+  runtime.scrubMaskRevision += 1;
+  runtime.grimeCompositeCacheKey = "";
+  if (runtime.scrubStamps.length > SCRUB_MAX_STAMPS) {
+    runtime.scrubStamps.splice(0, runtime.scrubStamps.length - SCRUB_MAX_STAMPS);
+  }
 }
 
 function rebuildScrubMaskCanvas() {
@@ -40983,6 +42157,7 @@ function rebuildScrubMaskCanvas() {
   for (const stamp of runtime.scrubStamps) {
     paintScrubMaskStamp(stamp);
   }
+  runtime.grimeCompositeCacheKey = "";
 }
 
 function getGrimeBaseCacheKey(dirtiness) {
@@ -41019,78 +42194,56 @@ function renderGrimeBaseCanvas(dirtiness) {
     return;
   }
 
-  const lightGrime = getLightGrimeVisualIntensity(dirtiness);
-  const severeGrime = getSevereGrimeVisualIntensity(dirtiness);
-  const blurScale = getPortableGrimeBlurScale();
   grimeBaseContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
+  if (visibleDirtiness <= 0) {
+    return;
+  }
+
+  const scaledLevel = visibleDirtiness * GRIME_OVERLAY_ASSET_PATHS.length;
+  const levelPosition = clamp(scaledLevel - 1, 0, GRIME_OVERLAY_ASSET_PATHS.length - 1);
+  const lowerIndex = Math.floor(levelPosition);
+  const upperIndex = Math.ceil(levelPosition);
+  const blend = levelPosition - lowerIndex;
+  const lowerAlpha = scaledLevel < 1 ? scaledLevel : 1 - blend;
+  const upperAlpha = lowerIndex === upperIndex ? 0 : blend;
+
+  drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[lowerIndex], lowerAlpha);
+  if (upperAlpha > 0.001) {
+    drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[upperIndex], upperAlpha);
+  }
+}
+
+function drawGrimeOverlayImage(path, alpha = 1) {
+  const image = runtime.images.get(path);
+  if (!isUsableRuntimeImage(image) || alpha <= 0) {
+    requestRuntimeImageRecovery(path, { kind: "grime", id: path });
+    return;
+  }
+
+  const targetWidth = TANK_WIDTH * GRIME_OVERLAY_OVERSCAN;
+  const targetHeight = TANK_HEIGHT * GRIME_OVERLAY_OVERSCAN;
+  const scale = Math.max(targetWidth / image.width, targetHeight / image.height);
+  const drawWidth = image.width * scale;
+  const drawHeight = image.height * scale;
   grimeBaseContext.save();
-  grimeBaseContext.fillStyle = `rgba(108, 148, 74, ${(lightGrime * 0.16 + severeGrime * 0.18).toFixed(3)})`;
-  grimeBaseContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-
-  const murkGradient = grimeBaseContext.createLinearGradient(0, WATER_SURFACE_Y, 0, TANK_HEIGHT);
-  murkGradient.addColorStop(0, `rgba(170, 210, 78, ${(lightGrime * 0.05 + severeGrime * 0.26).toFixed(3)})`);
-  murkGradient.addColorStop(0.18, `rgba(132, 171, 58, ${(lightGrime * 0.07 + severeGrime * 0.28).toFixed(3)})`);
-  murkGradient.addColorStop(0.62, `rgba(74, 100, 36, ${(lightGrime * 0.06 + severeGrime * 0.2).toFixed(3)})`);
-  murkGradient.addColorStop(1, `rgba(32, 44, 20, ${(lightGrime * 0.02 + severeGrime * 0.16).toFixed(3)})`);
-  grimeBaseContext.fillStyle = murkGradient;
-  grimeBaseContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-
-  const grimeMarks = runtime.scene?.grimeMarks || [];
-  const visibleMarkCount = Math.min(grimeMarks.length, Math.floor(lightGrime * grimeMarks.length));
-  grimeBaseContext.globalAlpha = lightGrime * 0.22 + severeGrime * 0.14;
-  grimeBaseContext.filter = `blur(${((4 + lightGrime * 12 + severeGrime * 20) * blurScale).toFixed(2)}px)`;
-  for (let index = 0; index < visibleMarkCount; index += 1) {
-    const mark = grimeMarks[index];
-    if (!mark) {
-      break;
-    }
-    grimeBaseContext.fillStyle = mark.color;
-    grimeBaseContext.beginPath();
-    grimeBaseContext.ellipse(mark.x * TANK_WIDTH, mark.y * TANK_HEIGHT, mark.rx, mark.ry, mark.rotation, 0, Math.PI * 2);
-    grimeBaseContext.fill();
-  }
-
-  if (severeGrime > 0.01) {
-    grimeBaseContext.globalAlpha = 0.08 + severeGrime * 0.3;
-    grimeBaseContext.filter = `blur(${((22 + severeGrime * 34) * blurScale).toFixed(2)}px)`;
-    for (let index = 0; index < visibleMarkCount; index += 2) {
-      const mark = grimeMarks[index];
-      if (!mark) {
-        break;
-      }
-      const cloudScale = 2.2 + severeGrime * 1.9;
-      grimeBaseContext.fillStyle = index % 4 === 0
-        ? "rgba(88, 130, 40, 0.74)"
-        : "rgba(54, 84, 28, 0.76)";
-      grimeBaseContext.beginPath();
-      grimeBaseContext.ellipse(
-        mark.x * TANK_WIDTH,
-        mark.y * TANK_HEIGHT,
-        mark.rx * cloudScale,
-        mark.ry * cloudScale * 1.18,
-        mark.rotation,
-        0,
-        Math.PI * 2
-      );
-      grimeBaseContext.fill();
-    }
-  }
-
-  grimeBaseContext.filter = "none";
-  const topGlow = grimeBaseContext.createLinearGradient(0, 0, 0, TANK_HEIGHT);
-  topGlow.addColorStop(0, `rgba(236, 255, 223, ${(lightGrime * 0.08 + severeGrime * 0.12).toFixed(3)})`);
-  topGlow.addColorStop(1, "rgba(236, 255, 223, 0)");
-  grimeBaseContext.fillStyle = topGlow;
-  grimeBaseContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  grimeBaseContext.globalAlpha = clamp(alpha, 0, 1);
+  grimeBaseContext.drawImage(
+    image,
+    (TANK_WIDTH - drawWidth) / 2,
+    (TANK_HEIGHT - drawHeight) / 2,
+    drawWidth,
+    drawHeight
+  );
   grimeBaseContext.restore();
 }
 
 function createCleaningSparkles() {
   const sparkleHues = [190, 204, 162, 48, 22, 320, 278];
-  return Array.from({ length: 42 }, (_, index) => ({
+  return Array.from({ length: 14 }, (_, index) => ({
     x: randomBetween(GLASS_MARGIN_X + 46, TANK_WIDTH - GLASS_MARGIN_X - 46),
     y: randomBetween(WATER_SURFACE_Y + 26, FLOOR_Y - 56),
-    size: randomBetween(10, 26),
+    size: randomBetween(6, 15),
     delay: randomBetween(0, 0.68),
     twinkle: randomBetween(0.95, 2.1),
     hue: sparkleHues[index % sparkleHues.length] + randomBetween(-8, 8),
@@ -41370,6 +42523,9 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
   if (typeof meta?.type === "string" && meta.type.trim()) {
     eventEntry.type = meta.type.trim();
   }
+  if (["positive", "negative", "neutral"].includes(String(meta?.tone || ""))) {
+    eventEntry.tone = String(meta.tone);
+  }
   if (typeof meta?.fishId === "string" && meta.fishId.trim()) {
     eventEntry.fishId = meta.fishId.trim();
   }
@@ -41391,7 +42547,78 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
   const events = Array.isArray(targetTank.events) ? targetTank.events : [];
   events.unshift(eventEntry);
   targetTank.events = events.slice(0, MAX_TANK_EVENT_HISTORY);
+  if (!Array.isArray(state.boroughEvents)) {
+    state.boroughEvents = [];
+  }
+  state.boroughEvents.unshift({
+    ...eventEntry,
+    tankId: targetTank.id || "",
+    tankName: getTankLabel(targetTank)
+  });
+  state.boroughEvents = state.boroughEvents.slice(0, MAX_BOROUGH_EVENT_HISTORY);
   publishBoroughActivityEvent(eventEntry, targetTank);
+  return eventEntry;
+}
+
+function recordGameEvent(event, tank = getCurrentTank()) {
+  if (!event) {
+    return null;
+  }
+  if (typeof event === "string") {
+    return pushEvent(event, Date.now(), tank);
+  }
+  const text = String(event.text || event.message || "").trim();
+  if (!text) {
+    return null;
+  }
+  return pushEvent(text, Number.isFinite(Number(event.time)) ? Number(event.time) : Date.now(), event.tank || tank, {
+    ...event,
+    score: event.score ?? event.recapScore
+  });
+}
+
+function playGameActionSound(sound) {
+  if (typeof sound === "function") {
+    sound();
+    return true;
+  }
+  if (sound === "purchase") {
+    playPurchaseSoundEffect();
+    return true;
+  }
+  if (sound === "coin") {
+    playCoinSoundEffect();
+    return true;
+  }
+  if (sound === "button") {
+    playRegularButtonSoundEffect();
+    return true;
+  }
+  return false;
+}
+
+function completeGameAction(options = {}) {
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const events = Array.isArray(options.events) ? options.events : (options.event ? [options.event] : []);
+  const recordedEvents = events.map((event) => recordGameEvent(
+    typeof event === "string" ? { text: event, time: now } : { ...event, time: event?.time ?? now },
+    options.tank
+  )).filter(Boolean);
+  if (options.save !== false) {
+    saveState();
+  }
+  playGameActionSound(options.sound);
+  if (options.render !== false) {
+    renderUi(now, { full: options.render === "partial" ? false : options.full !== false });
+  }
+  if (typeof options.toast === "string" && options.toast) {
+    showToast(options.toast, options.toastOptions || {});
+  }
+  return {
+    ok: true,
+    now,
+    events: recordedEvents
+  };
 }
 
 function getLocalDayKey(timestamp = Date.now()) {
@@ -41417,8 +42644,7 @@ function getPreviousLocalDayKey(timestamp = Date.now()) {
 }
 
 function getDailyBonusClaimKey(summary, tank = getCurrentTank()) {
-  const tankId = summary?.tankId || tank?.id || state.activeTankId || "";
-  return tankId && summary?.dayKey ? `${tankId}:${summary.dayKey}` : "";
+  return summary?.dayKey ? `${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}` : "";
 }
 
 function isDailyBonusSummaryClaimed(summary, tank = getCurrentTank()) {
@@ -41430,12 +42656,9 @@ function getActiveDailyBonusSummary(tank = getCurrentTank()) {
   if (!state?.dailyBonus) {
     return null;
   }
-  const tankId = tank?.id || state.activeTankId || "";
-  const summary = state.dailyBonus.summariesByTankId?.[tankId] || (
-    state.dailyBonus.summary?.tankId === tankId || !state.dailyBonus.summary?.tankId
-      ? state.dailyBonus.summary
-      : null
-  );
+  const summary = state.dailyBonus.summariesByTankId?.[BOROUGH_DAILY_RECAP_ID]
+    || state.dailyBonus.summary
+    || null;
   return summary && !isDailyBonusSummaryClaimed(summary, tank) ? summary : null;
 }
 
@@ -41457,6 +42680,9 @@ function classifyEventForDailyRecap(event) {
     if (score !== 0) {
       return { text: event.text, score, type: event.type || "event", time: event.time };
     }
+  }
+  if (event.tone === "positive" || event.tone === "negative") {
+    return { text: event.text, score: event.tone === "positive" ? 1 : -1, type: event.type || "event", time: event.time };
   }
   const text = String(event.text || "");
   const lower = text.toLowerCase();
@@ -41568,26 +42794,102 @@ function buildDailyRecapSummary(tank, dayKey, now = Date.now(), options = {}) {
   };
 }
 
+function normalizeBoroughRecapScore(rawScore, fishCount = 0, tankCount = 0) {
+  const divisor = Number(fishCount) > 0 ? Math.max(1, Number(fishCount)) : Math.max(1, Number(tankCount));
+  const scaled = (Number(rawScore) || 0) / divisor;
+  return scaled < 0 ? -Math.round(Math.abs(scaled)) : Math.round(scaled);
+}
+
+function buildBoroughDailyRecapSummary(dayKey, now = Date.now(), options = {}) {
+  const tankSummaries = getAllTanks(state)
+    .map((tank) => buildDailyRecapSummary(tank, dayKey, now, { ...options, force: true }))
+    .filter(Boolean);
+  const fishCount = tankSummaries.reduce((total, summary) => total + (summary.fishCount || 0), 0);
+  const rows = [];
+  for (const summary of tankSummaries) {
+    for (const row of summary.rows || []) {
+      if (row.type === "care" || (row.type === "comfort" && /^The tank averaged/i.test(row.text || ""))) {
+        continue;
+      }
+      rows.push({ ...row, text: `${summary.tankName}: ${row.text}` });
+    }
+  }
+  const averageComfort = fishCount
+    ? Math.round(tankSummaries.reduce((total, summary) => total + ((summary.averageComfort || 0) * (summary.fishCount || 0)), 0) / fishCount)
+    : 0;
+  const endOfDay = getLocalDayStartTimestamp(dayKey) + DAY_MS - 1;
+  if (fishCount && averageComfort >= 80) {
+    rows.push({ text: `The borough averaged ${averageComfort}% comfort.`, score: 1, type: "comfort", time: endOfDay });
+  }
+  if (fishCount && !rows.some((row) => row.score < 0)) {
+    rows.push({ text: "No critical care alerts were recorded across the borough.", score: 1, type: "care", time: endOfDay });
+  }
+  if (!rows.length && !options.force && !fishCount) {
+    return null;
+  }
+
+  const rawScore = rows.reduce((total, row) => total + (Number(row.score) || 0), 0);
+  const score = normalizeBoroughRecapScore(rawScore, fishCount, tankSummaries.length);
+  const cleanPercent = tankSummaries.length
+    ? Math.round(tankSummaries.reduce((total, summary) => total + (summary.cleanPercent || 0), 0) / tankSummaries.length)
+    : 0;
+  return {
+    scope: BOROUGH_DAILY_RECAP_ID,
+    tankId: BOROUGH_DAILY_RECAP_ID,
+    tankName: "Bubble Borough",
+    tankCount: tankSummaries.length,
+    dayKey,
+    generatedAt: now,
+    rows,
+    scoreModel: BOROUGH_RECAP_SCORE_MODEL,
+    rawScore,
+    score,
+    reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+    mealsFed: tankSummaries.reduce((total, summary) => total + (summary.mealsFed || 0), 0),
+    averageComfort,
+    cleanPercent,
+    allMealsSatisfied: fishCount > 0 && tankSummaries.filter((summary) => summary.fishCount > 0).every((summary) => summary.allMealsSatisfied),
+    hasNegativeEvents: rows.some((row) => row.score < 0),
+    hasAttackOrDeath: tankSummaries.some((summary) => summary.hasAttackOrDeath),
+    hasGlassTapStress: tankSummaries.some((summary) => summary.hasGlassTapStress),
+    hasSparklingComfort: tankSummaries.some((summary) => summary.hasSparklingComfort),
+    fishCount,
+    decorCount: tankSummaries.reduce((total, summary) => total + (summary.decorCount || 0), 0),
+    narrative: buildDailyRecapNarrative(rows, null),
+    overall: score >= 8 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
+  };
+}
+
 function storeDailyRecapSummary(summary) {
-  if (!summary?.tankId || !state?.dailyBonus) {
+  if (!summary?.dayKey || !state?.dailyBonus) {
     return false;
   }
-  if (!state.dailyBonus.summariesByTankId || typeof state.dailyBonus.summariesByTankId !== "object") {
-    state.dailyBonus.summariesByTankId = {};
-  }
-  state.dailyBonus.summariesByTankId[summary.tankId] = summary;
+  summary.scope = BOROUGH_DAILY_RECAP_ID;
+  summary.tankId = BOROUGH_DAILY_RECAP_ID;
+  summary.tankName = "Bubble Borough";
+  state.dailyBonus.summariesByTankId = { [BOROUGH_DAILY_RECAP_ID]: summary };
   state.dailyBonus.lastQualifiedDayKey = summary.dayKey;
   state.dailyBonus.lastEvaluatedDayKey = summary.dayKey;
   if (!Array.isArray(state.dailyBonus.recapHistory)) {
     state.dailyBonus.recapHistory = [];
   }
-  const existingIndex = state.dailyBonus.recapHistory.findIndex((entry) => entry.tankId === summary.tankId && entry.dayKey === summary.dayKey);
+  const existingIndex = state.dailyBonus.recapHistory.findIndex((entry) => entry.dayKey === summary.dayKey && (entry.scope === BOROUGH_DAILY_RECAP_ID || entry.tankId === BOROUGH_DAILY_RECAP_ID));
   if (existingIndex >= 0) {
     state.dailyBonus.recapHistory.splice(existingIndex, 1);
   }
   state.dailyBonus.recapHistory.unshift(summary);
   state.dailyBonus.recapHistory = state.dailyBonus.recapHistory.slice(0, DAILY_RECAP_HISTORY_LIMIT);
   syncActiveDailyBonusState();
+  enqueueNotificationCenterEntry({
+    type: "daily_recap",
+    title: "Daily Recap ready",
+    detail: `Bubble Borough · ${summary.reward || 0} coin bonus`,
+    createdAt: summary.generatedAt || Date.now(),
+    signature: `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}`,
+    tankId: "",
+    recapDayKey: summary.dayKey
+  }, { surface: true });
+  applyProgressMilestones(summary, summary.generatedAt || Date.now());
   return true;
 }
 
@@ -41595,19 +42897,15 @@ function maybeGenerateDailyRecapForTank(tank, now = Date.now(), options = {}) {
   if (!tank || !state?.dailyBonus) {
     return false;
   }
-  if (!state.dailyBonus.lastEvaluatedByTankId || typeof state.dailyBonus.lastEvaluatedByTankId !== "object") {
-    state.dailyBonus.lastEvaluatedByTankId = {};
-  }
   const force = options.force === true;
   const dayKey = force ? getLocalDayKey(now) : getPreviousLocalDayKey(now);
-  const tankId = tank.id || "";
-  const claimedKey = `${tankId}:${dayKey}`;
-  if (!force && state.dailyBonus.lastEvaluatedByTankId[tankId] === dayKey) {
+  const claimedKey = `${BOROUGH_DAILY_RECAP_ID}:${dayKey}`;
+  if (!force && state.dailyBonus.lastEvaluatedDayKey === dayKey) {
     syncActiveDailyBonusState();
     return false;
   }
   if (!force && state.dailyBonus.claimedByTankDay?.[claimedKey]) {
-    state.dailyBonus.lastEvaluatedByTankId[tankId] = dayKey;
+    state.dailyBonus.lastEvaluatedDayKey = dayKey;
     syncActiveDailyBonusState();
     return false;
   }
@@ -41615,8 +42913,8 @@ function maybeGenerateDailyRecapForTank(tank, now = Date.now(), options = {}) {
     syncActiveDailyBonusState();
     return false;
   }
-  const summary = buildDailyRecapSummary(tank, dayKey, now, { force });
-  state.dailyBonus.lastEvaluatedByTankId[tankId] = dayKey;
+  const summary = buildBoroughDailyRecapSummary(dayKey, now, { force });
+  state.dailyBonus.lastEvaluatedDayKey = dayKey;
   if (!summary) {
     syncActiveDailyBonusState();
     return true;
@@ -41866,36 +43164,56 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
 }
 
 function applyProgressMilestones(latestSummary = null, now = Date.now()) {
-  if (!state?.dailyBonus) {
+  if (!state?.dailyBonus || runtime.achievementEvaluationActive) {
     return [];
   }
+  runtime.achievementEvaluationActive = true;
   if (!state.dailyBonus.milestones || typeof state.dailyBonus.milestones !== "object") {
     state.dailyBonus.milestones = {};
   }
-  const stats = getMilestoneStats(latestSummary, now);
-  const unlocked = [];
-  for (const milestone of PROGRESSION_MILESTONES) {
-    if (state.dailyBonus.milestones[milestone.id] || !milestone.isMet(stats)) {
-      continue;
-    }
-    state.dailyBonus.milestones[milestone.id] = true;
-    state.coins += milestone.reward;
-    const speciesUnlocked = [];
-    for (const speciesId of milestone.unlocks) {
-      if (unlockFishSpecies(speciesId, now, `${runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)} unlocked from ${milestone.label}.`)) {
-        speciesUnlocked.push(speciesId);
+  try {
+    const stats = getMilestoneStats(latestSummary, now);
+    const unlocked = [];
+    for (const milestone of PROGRESSION_MILESTONES) {
+      if (state.dailyBonus.milestones[milestone.id] || !milestone.isMet(stats)) {
+        continue;
       }
-    }
-    const decorUnlocked = [];
-    for (const decorKey of milestone.decorUnlocks || []) {
-      if (unlockDecorKey(decorKey, now, `${runtime.decorMap.get(decorKey)?.name || titleFromFile(decorKey)} unlocked from ${milestone.label}.`)) {
-        decorUnlocked.push(decorKey);
+      state.dailyBonus.milestones[milestone.id] = true;
+      state.coins = Math.min(MAX_WALLET_COINS, state.coins + milestone.reward);
+      const speciesUnlocked = [];
+      for (const speciesId of milestone.unlocks) {
+        if (unlockFishSpecies(speciesId, now, `${runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)} unlocked from ${milestone.label}.`)) {
+          speciesUnlocked.push(speciesId);
+        }
       }
+      const decorUnlocked = [];
+      for (const decorKey of milestone.decorUnlocks || []) {
+        if (unlockDecorKey(decorKey, now, `${runtime.decorMap.get(decorKey)?.name || titleFromFile(decorKey)} unlocked from ${milestone.label}.`)) {
+          decorUnlocked.push(decorKey);
+        }
+      }
+      const unlockedItems = [
+        ...speciesUnlocked.map((speciesId) => runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)),
+        ...decorUnlocked.map((decorKey) => runtime.decorMap.get(decorKey)?.name || titleFromFile(decorKey))
+      ].filter(Boolean);
+      pushEvent(`${milestone.label} milestone reached. Earned ${milestone.reward} ${pluralize("coin", milestone.reward)}.`, now);
+      enqueueNotificationCenterEntry({
+        type: "achievement",
+        title: `${milestone.label} unlocked!`,
+        detail: unlockedItems.length ? `New rewards: ${unlockedItems.join(", ")}` : "Achievement reward granted immediately.",
+        createdAt: now,
+        signature: `achievement:${milestone.id}`,
+        achievementId: milestone.id,
+        coinReward: milestone.reward,
+        iconPath: getMilestoneIconPath(milestone.id),
+        unlockedItems
+      }, { surface: true, durationMs: 5200 });
+      unlocked.push({ ...milestone, speciesUnlocked, decorUnlocked });
     }
-    pushEvent(`${milestone.label} milestone reached. Earned ${milestone.reward} ${pluralize("coin", milestone.reward)}.`, now);
-    unlocked.push({ ...milestone, speciesUnlocked, decorUnlocked });
+    return unlocked;
+  } finally {
+    runtime.achievementEvaluationActive = false;
   }
-  return unlocked;
 }
 
 function triggerDebugDailyRecap(now = Date.now()) {
@@ -41914,9 +43232,12 @@ function triggerDebugDailyRecap(now = Date.now()) {
 }
 
 function saveState() {
+  state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   if (!state) {
     return;
   }
+
+  applyProgressMilestones(null, Date.now());
 
   const customDecorPruned = pruneCustomDecorAssets(state);
   const customFishPruned = pruneCustomFishAssets(state);
@@ -43253,6 +44574,7 @@ function playScrubWipeSoundForMovement(fromPoint, toPoint) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderUi(now, options = {}) {
+  state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   const full = options.full !== false;
   syncHalloweenPresentation(now);
   syncTutorialFlow(now);
@@ -43369,6 +44691,7 @@ function renderToolbarPosition() {
     dom.tankBottomDock.setAttribute("aria-expanded", String(!toolbarCollapsed));
   }
   if (dom.tankDisplay) {
+    dom.tankDisplay.hidden = !DIGITAL_DISPLAY_ENABLED;
     dom.tankDisplay.dataset.displayPosition = displayPosition;
     dom.tankDisplay.classList.toggle("is-display-collapsed", displayCollapsed);
     dom.tankDisplay.setAttribute("aria-expanded", String(!displayCollapsed));
@@ -43409,6 +44732,8 @@ function renderHeader(now) {
   const starvingCount = getHungryFishByNeeds(getCurrentTank(), now, FISH_HUNGER_CRITICAL_THRESHOLD).length;
 
   setTextIfChanged(dom.coinCount, formatLcdNumber(state.coins));
+  setTextIfChanged(dom.toolbarCoinCount, String(state.coins));
+  dom.toolbarWallet?.classList.toggle("is-full", state.coins >= MAX_WALLET_COINS);
   setTextIfChanged(dom.cleanlinessLabel, `${cleanliness}%`);
   setTextIfChanged(dom.mealWindowLabel, starvingCount > 0 ? `${starvingCount}! / ${hungryCount}` : String(hungryCount));
 
@@ -43711,12 +45036,7 @@ function renderTankNavigation() {
     dom.nextTankButton.hidden = !visible;
   }
   if (dom.dailyBonusBell) {
-    syncActiveDailyBonusState();
-    const hasRecap = Boolean(state?.dailyBonus?.available);
-    dom.dailyBonusBell.hidden = !hasRecap;
-    dom.dailyBonusBell.classList.toggle("has-daily-recap", hasRecap);
-    dom.dailyBonusBell.title = hasRecap ? "Daily recap ready" : "Daily recap";
-    dom.dailyBonusBell.setAttribute("aria-label", hasRecap ? "Open daily recap" : "Daily recap");
+    syncNotificationBellPresentation();
   }
 }
 
@@ -43746,20 +45066,70 @@ function toggleAquariumOverview() {
 function getBoroughSnapshotSignature(tank) {
   return JSON.stringify({
     tankTypeId: tank?.tankTypeId,
-    backgroundKey: tank?.backgroundKey,
-    gravelKey: tank?.gravelKey,
-    customGravel: tank?.customGravel,
+    selectedBackground: tank?.selectedBackground,
+    customBackgroundMode: tank?.customBackgroundMode,
+    solidBackgroundColor: tank?.solidBackgroundColor,
+    gradientBackgroundStartColor: tank?.gradientBackgroundStartColor,
+    gradientBackgroundEndColor: tank?.gradientBackgroundEndColor,
+    animatedBackgroundColors: getActiveAnimatedBackgroundColors(tank),
+    localBackgroundImageDataUrl: tank?.localBackgroundImageDataUrl,
+    localBackgroundImageRefId: tank?.localBackgroundImageRefId,
+    customGravelEnabled: tank?.customGravelEnabled,
+    customGravelLayerColors: tank?.customGravelLayerColors,
+    customGravelLayerColorize: tank?.customGravelLayerColorize,
+    gravelPalette: tank?.gravelPalette,
+    gravelSeed: tank?.gravelSeed,
+    gravelLivePebbles: tank?.gravelLivePebbles,
+    poops: tank?.poops,
+    lastCleanedAt: tank?.lastCleanedAt,
+    selectedTankAsset: tank?.selectedTankAsset,
+    selectedFilterAsset: tank?.selectedFilterAsset,
     placedDecor: (tank?.placedDecor || []).map((item) => [
-      item.id, item.decorKey, item.xNorm, item.yNorm, item.scale, item.tankLayer, item.flipped,
+      item.id, item.decorKey, item.xNorm, item.yNorm, item.scale, item.tankLayer, item.flipped, item.flippedY,
       item.decorSettings, item.caveColorSettings
     ])
   });
 }
 
+function paintBoroughSnapshotBackground(context, tank, width, height) {
+  context.fillStyle = "#061521";
+  context.fillRect(0, 0, width, height);
+  if (!isAnimatedBackgroundEnabled(tank)) {
+    return;
+  }
+  const colors = getActiveAnimatedBackgroundColors(tank);
+  const gradient = context.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, colors.surface);
+  gradient.addColorStop(0.38, colors.mid);
+  gradient.addColorStop(0.7, colors.deep);
+  gradient.addColorStop(1, colors.abyss);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, width, height);
+
+  const surfaceRgb = hexToRgb(colors.surfaceBloom);
+  const shadowRgb = hexToRgb(colors.shadowBloom);
+  if (surfaceRgb) {
+    const bloom = context.createRadialGradient(width * 0.3, height * 0.2, 0, width * 0.3, height * 0.2, Math.max(width, height) * 0.5);
+    bloom.addColorStop(0, `rgba(${surfaceRgb.r}, ${surfaceRgb.g}, ${surfaceRgb.b}, 0.35)`);
+    bloom.addColorStop(1, "rgba(0, 0, 0, 0)");
+    context.fillStyle = bloom;
+    context.fillRect(0, 0, width, height);
+  }
+  if (shadowRgb) {
+    const shadow = context.createRadialGradient(width * 0.7, height * 0.8, 0, width * 0.7, height * 0.8, Math.max(width, height) * 0.58);
+    shadow.addColorStop(0, `rgba(${shadowRgb.r}, ${shadowRgb.g}, ${shadowRgb.b}, 0.45)`);
+    shadow.addColorStop(1, "rgba(0, 0, 0, 0)");
+    context.fillStyle = shadow;
+    context.fillRect(0, 0, width, height);
+  }
+}
+
 function getBoroughSnapshot(tank, now = Date.now()) {
   const signature = getBoroughSnapshotSignature(tank);
   const cached = runtime.boroughOverviewSnapshotCache.get(tank.id);
-  if (cached?.canvas && (runtime.debugSnapshotCacheFrozen || cached.signature === signature)) {
+  const refreshMs = Math.max(250, Number(runtime.boroughOverviewSnapshotFrameMs) || 1500);
+  const cacheIsFresh = now - Number(cached?.capturedAt || 0) < refreshMs;
+  if (cached?.canvas && (runtime.debugSnapshotCacheFrozen || (cached.signature === signature && cacheIsFresh))) {
     return { ...cached, changed: false };
   }
   const canvas = document.createElement("canvas");
@@ -43771,6 +45141,7 @@ function getBoroughSnapshot(tank, now = Date.now()) {
     try {
       renderTank(now);
       const context = canvas.getContext("2d", { alpha: false });
+      paintBoroughSnapshotBackground(context, tank, canvas.width, canvas.height);
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "low";
       context.drawImage(dom.tankCanvas, 0, 0, canvas.width, canvas.height);
@@ -43780,12 +45151,17 @@ function getBoroughSnapshot(tank, now = Date.now()) {
       tank.fish = previousFish;
     }
   });
-  const entry = { signature, canvas, changed: true };
+  const entry = { signature, canvas, capturedAt: now, changed: true };
   runtime.boroughOverviewSnapshotCache.set(tank.id, entry);
   return entry;
 }
 
-function paintBoroughSnapshots(tanks, now = Date.now()) {
+function paintBoroughSnapshots(tanks, now = Date.now(), options = {}) {
+  const refreshMs = Math.max(250, Number(runtime.boroughOverviewSnapshotFrameMs) || 1500);
+  if (options.force !== true && now - Number(runtime.boroughOverviewSnapshotRenderedAt || 0) < refreshMs) {
+    return false;
+  }
+  runtime.boroughOverviewSnapshotRenderedAt = now;
   let renderedTank = false;
   for (const tank of tanks) {
     const snapshot = getBoroughSnapshot(tank, now);
@@ -43808,6 +45184,117 @@ function paintBoroughSnapshots(tanks, now = Date.now()) {
   if (renderedTank) {
     renderTank(now);
   }
+  return renderedTank;
+}
+
+function getBoroughOverviewSummary(now = Date.now()) {
+  const tanks = getAllTanks();
+  const livingFish = getAllTankFish(state).filter((fish) => fish && !isFishDead(fish));
+  const hungryFish = tanks.reduce((total, tank) => total + getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD).length, 0);
+  const sickFish = livingFish.filter((fish) => isFishDiseaseVisible(fish) && hasActiveFishDisease(fish)).length;
+  const averageCleanliness = tanks.length
+    ? Math.round(tanks.reduce((total, tank) => total + getTankCleanlinessPercentForMilestones(tank, now), 0) / tanks.length)
+    : 100;
+  const tasks = buildUniversalManagementCareQueue(now);
+  const activeTaskCount = tasks.filter((task) => getCareTaskId(task) !== "all-clear").length;
+  return { tanks, livingFish, hungryFish, sickFish, averageCleanliness, tasks, activeTaskCount };
+}
+
+function buildBoroughOverviewCareTaskRow(task = {}) {
+  const action = getManagementCareTaskAction(task);
+  const tagName = action ? "button" : "article";
+  const attributes = action
+    ? ` type="button" data-borough-care-action="${escapeHtml(action)}" data-borough-care-tank-id="${escapeHtml(task.tankId || "")}" data-borough-care-fish-id="${escapeHtml(task.fishId || "")}"`
+    : "";
+  return `<${tagName} class="borough-overview-task management-tone-${escapeHtml(task.tone || "neutral")}"${attributes}><span>${escapeHtml(task.badge || "Task")}</span><strong>${escapeHtml(task.label || "")}</strong><small>${escapeHtml(task.value || "")}</small></${tagName}>`;
+}
+
+function buildBoroughOverviewBoroughPanel(now = Date.now()) {
+  const summary = getBoroughOverviewSummary(now);
+  return `
+    <section class="borough-info-section">
+      <div class="compact-heading"><h3>Borough Care</h3><p>${summary.activeTaskCount ? `${summary.activeTaskCount} active ${pluralize("task", summary.activeTaskCount)} across all neighborhoods.` : "Everything is on track across the borough."}</p></div>
+      <div class="borough-overview-task-list">${summary.tasks.slice(0, 6).map(buildBoroughOverviewCareTaskRow).join("")}</div>
+      <button class="small-button alt" type="button" data-toggle-care-task-pane>${getUiSettings().careTaskPaneOpen === true ? "Hide Pinned Tasks" : "Pin Universal Tasks"}</button>
+    </section>
+    <section class="borough-info-section">
+      <div class="compact-heading"><h3>Borough Happenings</h3><p>Recent moments from every neighborhood.</p></div>
+      ${buildBoroughHappeningsFeedMarkup(3)}
+    </section>
+    <section class="borough-info-section">
+      <div class="compact-heading"><h3>Records</h3></div>
+      <div class="borough-overview-record-grid">
+        <button type="button" data-borough-info-view="milestones"><strong>Milestones</strong><span>Goals, progress, and rewards</span></button>
+        <button type="button" data-borough-info-view="history"><strong>History</strong><span>Events across the borough</span></button>
+      </div>
+    </section>`;
+}
+
+function buildBoroughOverviewNeighborhoodPanel(tank, now = Date.now()) {
+  if (!tank) {
+    return `<div class="empty-state">Choose a neighborhood to inspect.</div>`;
+  }
+  return withActiveTank(tank.id, () => {
+    const stats = getManagementHubStats(now);
+    const status = getManagementTankStatus(stats);
+    const tasks = buildManagementCareQueue(stats);
+    const services = getBoroughSectionServiceTypes(tank);
+    const serviceLabel = services.length ? services.map((type) => getBoroughServiceLabel(type)).join(", ") : "None yet";
+    const healthValue = stats.deadFish > 0 ? `${stats.deadFish} lost` : stats.injuredFish > 0 ? `${stats.injuredFish} healing` : stats.livingFish ? "Stable" : "No fish";
+    return `
+      <section class="borough-info-section borough-neighborhood-summary">
+        <div class="borough-neighborhood-heading"><div><span>Neighborhood</span><h3>${escapeHtml(getTankLabel(tank))}</h3></div><span class="management-status-pill management-tone-${escapeHtml(status.tone)}">${escapeHtml(status.label)}</span></div>
+        <div class="borough-neighborhood-meta"><span>${stats.livingFish} fish</span><span>${stats.placedDecor} decor</span><span>Services: ${escapeHtml(serviceLabel)}</span></div>
+        <div class="borough-neighborhood-actions">
+          <button class="small-button" type="button" data-visit-section="${escapeHtml(tank.id)}">Visit Tank</button>
+          <button class="small-button alt" type="button" data-borough-edit-tank="${escapeHtml(tank.id)}">Edit Tank</button>
+        </div>
+      </section>
+      <section class="borough-info-section">
+        <div class="compact-heading"><h3>Care Snapshot</h3><p>${escapeHtml(status.note)}</p></div>
+        <div class="borough-care-stat-grid">
+          <article><span>Hunger</span><strong>${escapeHtml(stats.mealStatus)}</strong></article>
+          <article><span>Health</span><strong>${escapeHtml(healthValue)}</strong></article>
+          <article><span>Clean</span><strong>${stats.cleanPercent}%</strong></article>
+          <article><span>Waste</span><strong>${stats.wasteCount || stats.pendingWasteCount || 0}</strong></article>
+        </div>
+        <div class="borough-overview-task-list">${tasks.slice(0, 4).map((task) => buildBoroughOverviewCareTaskRow({ ...task, tankId: tank.id })).join("")}</div>
+      </section>
+      <section class="borough-info-section">
+        <div class="borough-overview-record-grid">
+          <button type="button" data-borough-info-view="fish"><strong>Fish (${stats.livingFish})</strong><span>Inspect and manage fish</span></button>
+          <button type="button" data-borough-info-view="decor"><strong>Decor (${stats.placedDecor})</strong><span>Inspect placed decor</span></button>
+        </div>
+      </section>`;
+  });
+}
+
+function renderBoroughOverviewInfoPanel(now = Date.now()) {
+  if (!dom.boroughOverviewInfoBody) {
+    return;
+  }
+  const tanks = getAllTanks();
+  const selectedTank = getTankById(runtime.boroughOverviewInfoTankId) || getCurrentTank() || tanks[0] || null;
+  runtime.boroughOverviewInfoTankId = selectedTank?.id || null;
+  const tab = runtime.boroughOverviewInfoTab === "tank" ? "tank" : "borough";
+  const view = String(runtime.boroughOverviewInfoView || "overview");
+  dom.boroughOverviewInfo?.querySelectorAll?.("[data-borough-info-tab]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.boroughInfoTab === tab));
+  });
+  let markup;
+  if (view === "history") {
+    markup = buildTankManagementHistoryBrowser();
+  } else if (view === "milestones") {
+    markup = buildTankManagementMilestonesBrowser(now);
+  } else if (view === "fish" && selectedTank) {
+    markup = withActiveTank(selectedTank.id, () => buildTankManagementFishBrowser(now));
+  } else if (view === "decor" && selectedTank) {
+    markup = withActiveTank(selectedTank.id, () => buildTankManagementDecorBrowser());
+  } else {
+    runtime.boroughOverviewInfoView = "overview";
+    markup = tab === "tank" ? buildBoroughOverviewNeighborhoodPanel(selectedTank, now) : buildBoroughOverviewBoroughPanel(now);
+  }
+  setMarkupIfChanged("borough-overview-info", dom.boroughOverviewInfoBody, markup);
 }
 
 function renderAquariumOverview() {
@@ -43822,11 +45309,26 @@ function renderAquariumOverview() {
   }
   const tanks = getAllTanks();
   const expansionSpaces = getValidAquariumExpansionSpaces();
+  const editMode = runtime.boroughOverviewEditMode === true;
   const syntheticCount = isDebugModeEnabled() ? Math.max(0, Number(runtime.debugOverviewSyntheticCount) || 0) : 0;
   const syntheticColumns = Math.max(1, Math.ceil(Math.sqrt(syntheticCount)));
-  const cells = syntheticCount > 0
+  let cells = syntheticCount > 0
     ? Array.from({ length: syntheticCount }, (_, index) => ({ id: `debug-preview-${index}`, gridX: index % syntheticColumns, gridY: Math.floor(index / syntheticColumns), cellType: "debug-preview", debugIndex: index + 1 }))
-    : [...tanks.map((tank) => ({ ...tank, cellType: "section" })), ...expansionSpaces.map((space) => ({ ...space, cellType: "expansion" }))];
+    : tanks.map((tank) => ({ ...tank, cellType: "section" }));
+  if (!syntheticCount && editMode) {
+    const occupied = new Set(cells.map((cell) => `${cell.gridX}:${cell.gridY}`));
+    const tankXs = tanks.map((tank) => tank.gridX);
+    const tankYs = tanks.map((tank) => tank.gridY);
+    const minTankX = Math.min(...tankXs) - 1;
+    const maxTankX = Math.max(...tankXs) + 1;
+    const minTankY = Math.min(...tankYs) - 1;
+    const maxTankY = Math.max(...tankYs) + 1;
+    for (let gridY = minTankY; gridY <= maxTankY; gridY += 1) {
+      for (let gridX = minTankX; gridX <= maxTankX; gridX += 1) {
+        if (!occupied.has(`${gridX}:${gridY}`)) cells.push({ gridX, gridY, cellType: "drop" });
+      }
+    }
+  }
   const minX = Math.min(...cells.map((cell) => cell.gridX));
   const maxX = Math.max(...cells.map((cell) => cell.gridX));
   const minY = Math.min(...cells.map((cell) => cell.gridY));
@@ -43834,25 +45336,45 @@ function renderAquariumOverview() {
   const columnCount = maxX - minX + 1;
   const rowCount = maxY - minY + 1;
   const expansionCost = getAquariumExpansionCost();
+  const overviewSummary = getBoroughOverviewSummary(Date.now());
   dom.boroughGrid.style.setProperty("--borough-columns", String(columnCount));
   dom.boroughGrid.style.setProperty("--borough-rows", String(rowCount));
+  dom.boroughGrid.classList.toggle("is-editing", editMode);
+  dom.boroughOverview?.querySelector(".borough-overview-body")?.classList.toggle("is-editing", editMode);
+  if (dom.boroughOverviewInfo) dom.boroughOverviewInfo.hidden = editMode;
+  dom.toggleBoroughEditMode?.setAttribute("aria-pressed", String(editMode));
+  if (dom.toggleBoroughEditMode) dom.toggleBoroughEditMode.querySelector("small").textContent = editMode ? "Done" : "Edit";
+  if (dom.addBoroughTankButton) {
+    dom.addBoroughTankButton.hidden = !editMode;
+    dom.addBoroughTankButton.disabled = state.coins < expansionCost;
+    dom.addBoroughTankButton.querySelector("small").textContent = `Add Tank · ${expansionCost} coins`;
+  }
   const layoutOverride = isDebugModeEnabled() ? String(runtime.debugOverviewLayoutMode || "auto") : "auto";
   dom.boroughGrid.classList.toggle("is-compact", layoutOverride === "compact" || layoutOverride === "micro" || (layoutOverride === "auto" && Math.max(columnCount, rowCount) >= 6));
   dom.boroughGrid.classList.toggle("is-micro", layoutOverride === "micro" || (layoutOverride === "auto" && Math.max(columnCount, rowCount) >= 10));
-  dom.boroughOverviewTitle.textContent = "Aquarium Overview";
+  dom.boroughOverviewTitle.textContent = "Borough Overview";
   const latestHappening = sanitizeBoroughHappenings(state.boroughHappenings)[0];
-  dom.boroughOverviewHint.textContent = latestHappening
-    ? `${latestHappening.text} · Visit, rename, rearrange, or extend the borough.`
-    : `Visit, rename, or drag neighborhoods to rearrange them. Add a section for ${expansionCost} coins.`;
+  dom.boroughOverviewHint.textContent = editMode
+    ? `Drag neighborhoods onto the grid to rearrange them. Add a tank for ${expansionCost} coins.`
+    : latestHappening
+      ? `${latestHappening.text} · Click a tank to visit or use its info button.`
+      : "Click a tank to visit or use its info button for neighborhood details.";
+  if (dom.boroughOverviewStatus) {
+    setMarkupIfChanged("borough-overview-status", dom.boroughOverviewStatus, `
+      <span><strong>${overviewSummary.tanks.length}</strong> ${pluralize("neighborhood", overviewSummary.tanks.length)}</span>
+      <span><strong>${overviewSummary.livingFish.length}</strong> fish</span>
+      <span><strong>${overviewSummary.averageCleanliness}%</strong> average clean</span>
+      <span class="${overviewSummary.activeTaskCount ? "has-alert" : ""}"><strong>${overviewSummary.activeTaskCount}</strong> active ${pluralize("task", overviewSummary.activeTaskCount)}</span>
+    `);
+  }
   const markup = cells.map((cell) => {
     const column = cell.gridX - minX + 1;
     const row = cell.gridY - minY + 1;
     if (cell.cellType === "debug-preview") {
       return `<article class="borough-grid-cell borough-section-cell borough-debug-preview-cell" role="gridcell" style="grid-column:${column};grid-row:${row}"><span class="borough-debug-preview-water"><i></i><i></i><i></i></span><span class="borough-cell-copy"><span class="borough-cell-name"><strong>Preview ${cell.debugIndex}</strong></span><span>Debug-only section</span><span class="borough-cell-identity">Mixed Neighborhood</span></span></article>`;
     }
-    if (cell.cellType === "expansion") {
-      const connectionCount = [[0, -1], [1, 0], [0, 1], [-1, 0]].filter(([dx, dy]) => getAquariumSectionAt(cell.gridX + dx, cell.gridY + dy)).length;
-      return `<button class="borough-grid-cell borough-expansion-cell" type="button" role="gridcell" style="grid-column:${column};grid-row:${row}" data-extend-grid-x="${cell.gridX}" data-extend-grid-y="${cell.gridY}" aria-label="Extend aquarium here, connecting ${connectionCount} neighborhoods"><span>+</span><small>${expansionCost} coins</small></button>`;
+    if (cell.cellType === "drop") {
+      return `<div class="borough-drop-cell" role="gridcell" style="grid-column:${column};grid-row:${row}" data-borough-drop-grid-x="${cell.gridX}" data-borough-drop-grid-y="${cell.gridY}" aria-label="Move tank here"></div>`;
     }
     const active = cell.id === state.activeTankId;
     const fishCount = Array.isArray(cell.fish) ? cell.fish.filter((fish) => !isFishDead(fish)).length : 0;
@@ -43867,19 +45389,33 @@ function renderAquariumOverview() {
     ];
     const serviceMarkup = `<span class="borough-cell-services">${serviceParts.join(" · ")}</span>`;
     const editing = runtime.editingTankNameId === cell.id;
+    const resaleValue = getTankResaleValue(cell);
+    const canSell = tanks.length > 1 && isTankEmpty(cell);
+    const sellTitle = tanks.length <= 1
+      ? "You need to keep at least one tank"
+      : !isTankEmpty(cell)
+        ? "Move all fish and decor out before selling this tank"
+        : `Sell ${getTankLabel(cell)} for ${resaleValue} coins`;
+    const rightNeighbor = getAquariumSectionAt(cell.gridX + 1, cell.gridY);
+    const wallBlocked = rightNeighbor ? isBoroughTravelWallBlocked(cell, rightNeighbor) : false;
+    const wallMarkup = rightNeighbor
+      ? `<button class="borough-travel-wall${wallBlocked ? " is-blocked" : ""}" type="button" data-toggle-travel-wall="${escapeHtml(cell.id)}" data-toggle-travel-wall-neighbor="${escapeHtml(rightNeighbor.id)}" aria-pressed="${wallBlocked}" aria-label="${wallBlocked ? "Allow" : "Block"} swimming between ${escapeHtml(getTankLabel(cell))} and ${escapeHtml(getTankLabel(rightNeighbor))}" title="${wallBlocked ? "Open" : "Close"} fish travel between these tanks">|</button>`
+      : "";
     const nameMarkup = editing
       ? `<span class="borough-name-editor"><input type="text" maxlength="36" value="${escapeHtml(runtime.editingTankNameValue)}" data-borough-name-input="${escapeHtml(cell.id)}" aria-label="Neighborhood name"><button type="button" data-save-borough-name="${escapeHtml(cell.id)}">Save</button><button type="button" data-cancel-borough-name>Cancel</button></span>`
-      : `<strong>${escapeHtml(getTankLabel(cell))}</strong><button class="borough-rename-button" type="button" data-rename-borough="${escapeHtml(cell.id)}" aria-label="Rename ${escapeHtml(getTankLabel(cell))}">&#9998;</button>`;
-    return `<article class="borough-grid-cell borough-section-cell${active ? " is-active" : ""}" role="gridcell" draggable="true" style="grid-column:${column};grid-row:${row}" data-borough-section="${escapeHtml(cell.id)}"><button class="borough-section-preview" type="button" data-visit-section="${escapeHtml(cell.id)}" aria-label="Visit ${escapeHtml(getTankLabel(cell))}"><canvas class="borough-cell-snapshot-canvas" data-borough-snapshot-tank-id="${escapeHtml(cell.id)}" aria-hidden="true"></canvas><canvas class="borough-cell-fish-canvas" data-borough-fish-tank-id="${escapeHtml(cell.id)}" aria-hidden="true"></canvas></button><span class="borough-cell-copy"><span class="borough-cell-name">${nameMarkup}</span><span>${fishCount} fish</span><span class="borough-cell-identity">${escapeHtml(identity.label)}</span>${serviceMarkup}</span></article>`;
+      : `<strong>${escapeHtml(getTankLabel(cell))}</strong>${editMode ? `<button class="borough-rename-button" type="button" data-rename-borough="${escapeHtml(cell.id)}" aria-label="Rename ${escapeHtml(getTankLabel(cell))}">&#9998;</button><button class="borough-sell-button" type="button" data-sell-borough-tank="${escapeHtml(cell.id)}" ${canSell ? "" : "disabled"} aria-label="Sell ${escapeHtml(getTankLabel(cell))} for ${resaleValue} coins" title="${escapeHtml(sellTitle)}"><span aria-hidden="true">&#128465;</span><small>${resaleValue}</small></button>` : `<button class="borough-info-button" type="button" data-borough-tank-info="${escapeHtml(cell.id)}" aria-label="View information for ${escapeHtml(getTankLabel(cell))}">i</button>`}`;
+    const infoSelected = runtime.boroughOverviewInfoTab === "tank" && runtime.boroughOverviewInfoTankId === cell.id;
+    return `<article class="borough-grid-cell borough-section-cell${active ? " is-active" : ""}${infoSelected ? " is-info-selected" : ""}" role="gridcell" draggable="false" style="grid-column:${column};grid-row:${row}" data-borough-section="${escapeHtml(cell.id)}" data-borough-grid-x="${cell.gridX}" data-borough-grid-y="${cell.gridY}"><span class="borough-preview-shell"><button class="borough-section-preview" type="button" data-visit-section="${escapeHtml(cell.id)}" aria-label="Visit ${escapeHtml(getTankLabel(cell))}"><canvas class="borough-cell-snapshot-canvas" data-borough-snapshot-tank-id="${escapeHtml(cell.id)}" aria-hidden="true"></canvas><canvas class="borough-cell-fish-canvas" data-borough-fish-tank-id="${escapeHtml(cell.id)}" aria-hidden="true"></canvas></button>${wallMarkup}</span><span class="borough-cell-copy"><span class="borough-cell-name">${nameMarkup}</span><span class="borough-cell-stats">${fishCount} fish · ${escapeHtml(identity.label)}</span>${serviceMarkup}</span></article>`;
   }).join("");
   setMarkupIfChanged("borough-grid", dom.boroughGrid, markup);
   if (!syntheticCount) {
-    paintBoroughSnapshots(tanks, Date.now());
+    paintBoroughSnapshots(tanks, Date.now(), { force: true });
   }
   runtime.boroughOverviewFishRenderedAt = 0;
   if (!syntheticCount) {
     renderBoroughOverviewFish(Date.now(), { force: true });
   }
+  renderBoroughOverviewInfoPanel(Date.now());
 }
 
 function getBoroughOverviewFishColor(fish) {
@@ -43983,13 +45519,13 @@ function visitAquariumSection(tankId) {
   return changed;
 }
 
-function moveCameraToAdjacentSection(dx, dy) {
+function moveCameraToAdjacentSection(dx, dy, options = {}) {
   const current = getCurrentTank();
   if (!current) {
     return false;
   }
   const target = getAquariumSectionAt(current.gridX + dx, current.gridY + dy);
-  return target ? setActiveTank(target.id) : false;
+  return target ? setActiveTank(target.id, options) : false;
 }
 
 function getFoodAndMedArt(kind, id) {
@@ -44251,14 +45787,6 @@ function getManagementTankStatus(stats) {
     };
   }
 
-  if (!stats.livingFish) {
-    return {
-      label: "Ready To Stock",
-      note: "Buy fish to start this aquarium.",
-      tone: "neutral"
-    };
-  }
-
   if (stats.deadFish > 0) {
     return {
       label: "Needs Care",
@@ -44303,6 +45831,14 @@ function getManagementTankStatus(stats) {
     return {
       label: "Needs Cleaning",
       note: `${stats.pendingWasteCount} more ${pluralize("waste drop", stats.pendingWasteCount)} will settle soon.`,
+      tone: "neutral"
+    };
+  }
+
+  if (!stats.livingFish) {
+    return {
+      label: "Ready To Stock",
+      note: "This neighborhood is clean and ready for fish.",
       tone: "neutral"
     };
   }
@@ -44354,17 +45890,6 @@ function buildIllnessCareTask(now = Date.now()) {
 }
 
 function buildManagementCareQueue(stats) {
-  if (!stats?.livingFish) {
-    return [{
-      id: "stock-aquarium",
-      badge: "On Deck",
-      label: "Stock this aquarium",
-      value: "No fish yet",
-      note: "Buy fish when you are ready to start a new care cycle.",
-      tone: "neutral"
-    }];
-  }
-
   const tasks = [];
   if (stats.deadFish > 0) {
     tasks.push({
@@ -44455,17 +45980,82 @@ function buildManagementCareQueue(stats) {
   }
 
   if (!tasks.length) {
+    const readyToStock = !stats?.livingFish;
     return [{
       id: "all-clear",
-      badge: "On Track",
-      label: "Everything is on track",
-      value: "All clear",
-      note: "Hunger, health, comfort, and cleanup look good.",
-      tone: "good"
+      badge: readyToStock ? "Ready" : "On Track",
+      label: readyToStock ? "Ready to stock" : "Everything is on track",
+      value: readyToStock ? "No fish" : "All clear",
+      note: readyToStock ? "This neighborhood is clean and ready for fish." : "Hunger, health, comfort, and cleanup look good.",
+      tone: readyToStock ? "neutral" : "good"
     }];
   }
 
   return tasks;
+}
+
+function buildUniversalManagementCareQueue(now = Date.now()) {
+  const tasks = [];
+  const hungryFish = [];
+  const injuredFish = [];
+  const diseasedFish = [];
+  for (const tank of getAllTanks()) {
+    const localTasks = withActiveTank(tank.id, () => buildManagementCareQueue(getManagementHubStats(now))) || [];
+    for (const task of localTasks) {
+      const localId = getCareTaskId(task);
+      if (localId === "all-clear") {
+        continue;
+      }
+      let targetFish = null;
+      if (localId === "feed-hungry-fish") {
+        hungryFish.push(...getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD).map((fish) => ({ fish, tank })));
+        continue;
+      } else if (localId === "dose-medicine") {
+        injuredFish.push(...tank.fish.filter((fish) => !isFishDead(fish) && fish.healthUnits < getFishMaxHealthUnits(fish)).map((fish) => ({ fish, tank })));
+        continue;
+      } else if (localId === "illness-care") {
+        diseasedFish.push(...tank.fish.filter((fish) => !isFishDead(fish) && isFishDiseaseVisible(fish) && hasActiveFishDisease(fish)).map((fish) => ({ fish, tank })));
+        continue;
+      } else if (localId.startsWith("comfort:")) {
+        targetFish = tank.fish.find((fish) => String(task.label || "").startsWith(`${fish.name} `)) || null;
+      }
+      tasks.push({
+        ...task,
+        // Fish-care task identity follows the fish, not its current tank. Tank
+        // chores remain tied to the physical section that needs attention.
+        id: targetFish ? localId : `${tank.id}:${localId}`,
+        tankId: tank.id,
+        fishId: targetFish?.id || "",
+        tankLabel: getTankLabel(tank)
+      });
+    }
+  }
+  const pushAggregate = (id, entries, label, badge, valueLabel, tone, actionNote) => {
+    if (!entries.length) return;
+    const first = entries[0];
+    tasks.unshift({
+      id,
+      badge,
+      label,
+      value: `${entries.length} ${valueLabel}`,
+      note: actionNote,
+      tone,
+      tankId: first.tank.id,
+      fishId: first.fish.id,
+      tankLabel: getTankLabel(first.tank)
+    });
+  };
+  pushAggregate("feed-hungry-fish", hungryFish, "Feed hungry fish", "Soon", "hungry", "warn", "Drop food in any reachable neighborhood; hungry fish will travel to it.");
+  pushAggregate("dose-medicine", injuredFish, "Dose medicine", "Now", "healing", "warn", "Select a fish to jump to its current neighborhood.");
+  pushAggregate("illness-care", diseasedFish, diseasedFish.length === 1 ? `${diseasedFish[0].fish.name} looks off-color.` : "Several fish look off-color.", "Care", "sick", "danger", "Select a fish to jump to its current neighborhood.");
+  return tasks.length ? tasks : [{
+    id: "all-clear",
+    badge: "On Track",
+    label: "Everything is on track",
+    value: "All clear",
+    note: "Hunger, health, comfort, and cleanup look good across the borough.",
+    tone: "good"
+  }];
 }
 
 function buildManagementSnapshotStat(label, value, tone = "") {
@@ -44479,7 +46069,8 @@ function buildManagementSnapshotStat(label, value, tone = "") {
 }
 
 function getManagementCareTaskAction(task = {}) {
-  const taskId = getCareTaskId(task);
+  const explicitTaskId = getCareTaskId(task);
+  const taskId = explicitTaskId.includes(":") ? explicitTaskId.slice(explicitTaskId.lastIndexOf(":") + 1) : explicitTaskId;
   if (taskId === "stock-aquarium") {
     return "store-fish";
   }
@@ -44516,8 +46107,16 @@ function buildManagementCompactTaskRow(task = {}) {
   `;
 }
 
-function runManagementCareTaskAction(action) {
+function runManagementCareTaskAction(action, tankId = "", fishId = "") {
+  if (tankId && state.activeTankId !== tankId) {
+    setActiveTank(tankId, { announce: false, preserveHorizontalOverlays: true });
+  }
+  if (fishId && getTankContainingFish(fishId)?.id === state.activeTankId) {
+    openFishInspector(fishId);
+  }
   switch (String(action || "")) {
+    case "focus":
+      return Boolean(tankId || fishId);
     case "store-fish":
       openStoreOverlay("fish");
       return true;
@@ -44566,7 +46165,10 @@ function cloneCareTask(task = {}) {
     label: String(task.label || ""),
     value: String(task.value || ""),
     note: String(task.note || ""),
-    tone: String(task.tone || "")
+    tone: String(task.tone || ""),
+    tankId: String(task.tankId || ""),
+    fishId: String(task.fishId || ""),
+    tankLabel: String(task.tankLabel || "")
   };
 }
 
@@ -44602,7 +46204,7 @@ function scheduleCareTaskPaneCleanup(now = Date.now()) {
 }
 
 function syncCareTaskPaneTasks(tasks = [], now = Date.now()) {
-  const tankId = getCurrentTank()?.id || "";
+  const tankId = "borough";
   const isOpen = getUiSettings().careTaskPaneOpen === true;
   if (!isOpen || runtime.careTaskPaneTankId !== tankId || !runtime.careTaskPaneInitialized) {
     resetCareTaskPaneRuntime(tasks, tankId);
@@ -44640,15 +46242,20 @@ function buildCareTaskPaneRow(task = {}, options = {}) {
   const label = String(task.label || "Task");
   const value = task.value ? `<span class="care-task-value">${escapeHtml(String(task.value))}</span>` : "";
   const badge = task.badge ? `<span class="care-task-badge">${escapeHtml(String(task.badge))}</span>` : "";
+  const action = getManagementCareTaskAction(task) || (task.tankId || task.fishId ? "focus" : "");
+  const tagName = !completed && action ? "button" : "article";
+  const actionAttributes = !completed && action
+    ? ` type="button" data-care-task-action="${escapeHtml(action)}" data-care-task-tank-id="${escapeHtml(task.tankId || "")}" data-care-task-fish-id="${escapeHtml(task.fishId || "")}" title="Go to ${escapeHtml(task.fishId ? label : task.tankLabel || "this task")}"`
+    : "";
   return `
-    <article class="care-task-row${toneClass}${completed ? " is-complete" : ""}" style="--task-letter-count:${Math.max(1, label.length)}">
+    <${tagName} class="care-task-row${toneClass}${completed ? " is-complete" : ""}${action ? " is-actionable" : ""}"${actionAttributes} style="--task-letter-count:${Math.max(1, label.length)}">
       <span class="care-task-box" aria-hidden="true"></span>
       <span class="care-task-label">
-        <span class="care-task-text">${escapeHtml(label)}</span>
+        <span class="care-task-text${task.fishId ? " care-task-fish-link" : ""}">${escapeHtml(label)}</span>
         <span class="care-task-strike" aria-hidden="true"></span>
       </span>
       ${value || badge ? `<span class="care-task-meta">${value}${badge}</span>` : ""}
-    </article>
+    </${tagName}>
   `;
 }
 
@@ -44660,12 +46267,12 @@ function renderCareTaskPane(now = Date.now()) {
   const isOpen = getUiSettings().careTaskPaneOpen === true && !isIntroTutorialActive();
   dom.careTaskPane.hidden = !isOpen;
   if (!isOpen) {
-    resetCareTaskPaneRuntime([], getCurrentTank()?.id || "");
+    resetCareTaskPaneRuntime([], "borough");
     setMarkupIfChanged("care-task-pane-list", dom.careTaskList, "");
     return;
   }
 
-  const tasks = buildManagementCareQueue(getManagementHubStats(now));
+  const tasks = buildUniversalManagementCareQueue(now);
   syncCareTaskPaneTasks(tasks, now);
   const completedRows = Array.from(runtime.careTaskPaneCompletingTasks.values())
     .sort((left, right) => Number(left.completedAt) - Number(right.completedAt))
@@ -44714,72 +46321,8 @@ function getMilestoneIconPath(milestoneId) {
 }
 
 function getMilestoneRequirementText(milestoneId) {
-  switch (String(milestoneId || "")) {
-    case "first-care":
-      return "Claim a Daily Recap with score 3+.";
-    case "stable-tank":
-      return "Claim 3 good recaps and keep recent average comfort at 70%+.";
-    case "happy-habitat":
-      return "Keep any fish alive for 7 days and recent average comfort at 80%+.";
-    case "master-keeper":
-      return "Go 14 days without a death and have one fish at Sparkling comfort.";
-    case "marine-curator":
-      return "Own a saltwater fish, earn 5 good recaps, and go 3 days without a death.";
-    case "clean-start":
-      return "Keep cleanliness at 90%+ for 3 daily recaps in a row.";
-    case "crystal-keeper":
-      return "Keep cleanliness at 95%+ for 7 daily recaps.";
-    case "full-bellies":
-      return "Keep fish from reaching Starving for 3 daily recaps in a row.";
-    case "reliable-feeder":
-      return "Keep fish from reaching Starving for 7 daily recaps in a row.";
-    case "cozy-corner":
-      return "Average 80%+ comfort for 3 daily recaps in a row.";
-    case "little-paradise":
-      return "Average 90%+ comfort for 3 daily recaps in a row.";
-    case "perfect-hour":
-      return "Have any fish reach Sparkling comfort.";
-    case "perfect-day":
-      return "Have Sparkling comfort during a daily recap with score 8+.";
-    case "no-drama-day":
-      return "Claim a daily recap with no negative events.";
-    case "peaceful-week":
-      return "Claim 5 recaps in a row with no attacks or deaths.";
-    case "gentle-keeper":
-      return "Claim 3 recaps in a row without stress-tapping fish.";
-    case "calm-glass":
-      return "Claim 7 recaps in a row without stress-tapping fish.";
-    case "decorator":
-      return "Place 5 decor items across your aquariums.";
-    case "habitat-builder":
-      return "Satisfy 10 total fish comfort needs at once.";
-    case "need-expert":
-      return "Have every living fish's comfort needs satisfied at once.";
-    case "community-tank":
-      return "Keep 5 community-safe fish with 70%+ recent comfort and 3 good recaps.";
-    case "big-family":
-      return "Own 10 living fish across your aquariums.";
-    case "careful-curator":
-      return "Own 15 living fish without overcrowding any aquarium.";
-    case "first-generation":
-      return "Hatch one egg.";
-    case "nursery-keeper":
-      return "Raise 3 baby fish past juvenile stage.";
-    case "gravel-luck":
-      return "Find 5 gravel coins.";
-    case "treasure-hunter":
-      return "Find 25 gravel coins.";
-    case "medicine-cabinet":
-      return "Heal fish or use medicine 3 times.";
-    case "rescue-keeper":
-      return "Heal a fish and go 3 days without a death afterward.";
-    case "tank-network":
-      return "Own 3 aquariums with at least one healthy fish in each.";
-    case "spooky-keeper":
-      return "Discover the corpse, zombie, or skeleton care path.";
-    default:
-      return "Complete the listed care goal.";
-  }
+  const milestone = PROGRESSION_MILESTONES.find((entry) => entry.id === String(milestoneId || ""));
+  return milestone?.requirement || "Complete the listed care goal.";
 }
 
 function averageProgressParts(parts) {
@@ -44799,212 +46342,14 @@ function getMilestoneProgressInfo(milestone, stats = getMilestoneStats(null, Dat
     };
   }
 
-  const latestScore = Number(stats.latestScore) || 0;
-  const goodRecaps = Number(stats.goodRecaps) || 0;
-  const recentAverageComfort = Number(stats.recentAverageComfort) || 0;
-  const oldestAgeMs = Math.max(0, Number(stats.oldestLivingFishAgeMs) || 0);
-  const daysSinceLastDeath = Math.max(0, Number(stats.daysSinceLastDeath) || 0);
-  let parts = [];
-
-  switch (milestone.id) {
-    case "first-care":
-      parts = [{
-        value: latestScore / 3,
-        label: `Latest recap score ${Math.max(0, latestScore)}/3`
-      }];
-      break;
-    case "stable-tank":
-      parts = [
-        { value: goodRecaps / 3, label: `Good recaps ${Math.min(goodRecaps, 3)}/3` },
-        { value: recentAverageComfort / 70, label: `Recent comfort ${Math.min(recentAverageComfort, 70)}%/70%` }
-      ];
-      break;
-    case "happy-habitat":
-      parts = [
-        { value: oldestAgeMs / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(oldestAgeMs, WEEK_MS))}/7d` },
-        { value: recentAverageComfort / 80, label: `Recent comfort ${Math.min(recentAverageComfort, 80)}%/80%` }
-      ];
-      break;
-    case "master-keeper":
-      parts = [
-        { value: daysSinceLastDeath / 14, label: `No-death streak ${Math.min(daysSinceLastDeath, 14)}/14d` },
-        { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
-      ];
-      break;
-    case "marine-curator":
-      parts = [
-        { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
-        { value: goodRecaps / 5, label: `Good recaps ${Math.min(goodRecaps, 5)}/5` },
-        { value: daysSinceLastDeath / 3, label: `No-death streak ${Math.min(daysSinceLastDeath, 3)}/3d` }
-      ];
-      break;
-    case "clean-start":
-      parts = [{
-        value: (Number(stats.cleanRecapStreak90) || 0) / 3,
-        label: `90%+ clean recaps ${Math.min(Number(stats.cleanRecapStreak90) || 0, 3)}/3`
-      }];
-      break;
-    case "crystal-keeper":
-      parts = [{
-        value: (Number(stats.cleanRecapCount95) || 0) / 7,
-        label: `95%+ clean recaps ${Math.min(Number(stats.cleanRecapCount95) || 0, 7)}/7`
-      }];
-      break;
-    case "full-bellies":
-      parts = [{
-        value: (Number(stats.allMealsSatisfiedStreak) || 0) / 3,
-        label: `No-starving streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 3)}/3`
-      }];
-      break;
-    case "reliable-feeder":
-      parts = [{
-        value: (Number(stats.allMealsSatisfiedStreak) || 0) / 7,
-        label: `No-starving streak ${Math.min(Number(stats.allMealsSatisfiedStreak) || 0, 7)}/7`
-      }];
-      break;
-    case "cozy-corner":
-      parts = [{
-        value: (Number(stats.comfort80Streak) || 0) / 3,
-        label: `80%+ comfort streak ${Math.min(Number(stats.comfort80Streak) || 0, 3)}/3`
-      }];
-      break;
-    case "little-paradise":
-      parts = [{
-        value: (Number(stats.comfort90Streak) || 0) / 3,
-        label: `90%+ comfort streak ${Math.min(Number(stats.comfort90Streak) || 0, 3)}/3`
-      }];
-      break;
-    case "perfect-hour":
-      parts = [{
-        value: (stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0) ? 1 : 0,
-        label: (stats.hasSparklingFish || Number(stats.sparklingComfortEvents) > 0) ? "Sparkling comfort found" : "Needs one Sparkling fish"
-      }];
-      break;
-    case "perfect-day":
-      parts = [{
-        value: stats.hasPerfectDay ? 1 : 0,
-        label: stats.hasPerfectDay ? "Perfect day recorded" : "Needs score 8+ with Sparkling comfort"
-      }];
-      break;
-    case "no-drama-day":
-      parts = [{
-        value: stats.latestNoDramaDay ? 1 : 0,
-        label: stats.latestNoDramaDay ? "Latest recap had no drama" : "Needs one no-drama recap"
-      }];
-      break;
-    case "peaceful-week":
-      parts = [{
-        value: (Number(stats.noAttackDeathRecapStreak) || 0) / 5,
-        label: `Peaceful recap streak ${Math.min(Number(stats.noAttackDeathRecapStreak) || 0, 5)}/5`
-      }];
-      break;
-    case "gentle-keeper":
-      parts = [{
-        value: (Number(stats.noGlassTapStressStreak) || 0) / 3,
-        label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 3)}/3`
-      }];
-      break;
-    case "calm-glass":
-      parts = [{
-        value: (Number(stats.noGlassTapStressStreak) || 0) / 7,
-        label: `Quiet glass streak ${Math.min(Number(stats.noGlassTapStressStreak) || 0, 7)}/7`
-      }];
-      break;
-    case "decorator":
-      parts = [{
-        value: (Number(stats.decorPlacedCount) || 0) / 5,
-        label: `Decor placed ${Math.min(Number(stats.decorPlacedCount) || 0, 5)}/5`
-      }];
-      break;
-    case "habitat-builder":
-      parts = [{
-        value: (Number(stats.metNeedsCount) || 0) / 10,
-        label: `Needs satisfied ${Math.min(Number(stats.metNeedsCount) || 0, 10)}/10`
-      }];
-      break;
-    case "need-expert":
-      parts = [{
-        value: stats.hasAllLivingNeedsMet ? 1 : 0,
-        label: stats.hasAllLivingNeedsMet ? "All living needs met" : "Some living fish still need comfort help"
-      }];
-      break;
-    case "community-tank":
-      parts = [
-        { value: stats.hasCommunityTank ? 1 : 0, label: stats.hasCommunityTank ? "Community tank ready" : "Needs 5 peaceful fish and 70%+ recent comfort" },
-        { value: goodRecaps / 3, label: `Good recaps ${Math.min(goodRecaps, 3)}/3` }
-      ];
-      break;
-    case "big-family":
-      parts = [{
-        value: (Number(stats.livingFishCount) || 0) / 10,
-        label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 10)}/10`
-      }];
-      break;
-    case "careful-curator":
-      parts = [
-        { value: (Number(stats.livingFishCount) || 0) / 15, label: `Living fish ${Math.min(Number(stats.livingFishCount) || 0, 15)}/15` },
-        { value: stats.noOvercrowdedTanks ? 1 : 0, label: stats.noOvercrowdedTanks ? "No overcrowded tanks" : "One or more tanks are overcrowded" }
-      ];
-      break;
-    case "first-generation":
-      parts = [{
-        value: (Number(stats.hatchedFishEvents) || 0) / 1,
-        label: `Eggs hatched ${Math.min(Number(stats.hatchedFishEvents) || 0, 1)}/1`
-      }];
-      break;
-    case "nursery-keeper":
-      parts = [{
-        value: (Number(stats.grownBabyFishCount) || 0) / 3,
-        label: `Raised babies ${Math.min(Number(stats.grownBabyFishCount) || 0, 3)}/3`
-      }];
-      break;
-    case "gravel-luck":
-      parts = [{
-        value: (Number(stats.gravelCoinFinds) || 0) / 5,
-        label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 5)}/5`
-      }];
-      break;
-    case "treasure-hunter":
-      parts = [{
-        value: (Number(stats.gravelCoinFinds) || 0) / 25,
-        label: `Gravel coins ${Math.min(Number(stats.gravelCoinFinds) || 0, 25)}/25`
-      }];
-      break;
-    case "medicine-cabinet":
-      parts = [{
-        value: (Number(stats.healingEvents) || 0) / 3,
-        label: `Healing events ${Math.min(Number(stats.healingEvents) || 0, 3)}/3`
-      }];
-      break;
-    case "rescue-keeper":
-      parts = [{
-        value: stats.hasRescueKeeper ? 1 : 0,
-        label: stats.hasRescueKeeper ? "Rescue streak complete" : "Needs a heal followed by 3 safe days"
-      }];
-      break;
-    case "tank-network":
-      parts = [{
-        value: (Number(stats.healthyTankCount) || 0) / 3,
-        label: `Healthy tanks ${Math.min(Number(stats.healthyTankCount) || 0, 3)}/3`
-      }];
-      break;
-    case "spooky-keeper":
-      parts = [{
-        value: stats.hasSpookyKeeperPath ? 1 : 0,
-        label: stats.hasSpookyKeeperPath ? "Spooky path found" : "No spooky path discovered yet"
-      }];
-      break;
-    default:
-      parts = [];
-      break;
-  }
-
+  const parts = typeof milestone?.progress === "function"
+    ? milestone.progress(stats, now)
+    : [];
   return {
     value: averageProgressParts(parts),
-    details: parts.map((part) => part.label).filter(Boolean)
+    details: (Array.isArray(parts) ? parts : []).map((part) => part?.label).filter(Boolean)
   };
 }
-
 function getMilestoneDecorUnlockName(decorKey) {
   const key = normalizeDecorKey(decorKey);
   if (key === "__custom-decor-shop__") {
@@ -45546,14 +46891,18 @@ function buildManagementDecorRow(item) {
   const cost = getDecorPurchaseCost(item.decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
   const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey);
+  const serviceTypes = getDecorBoroughServiceTypes(item);
+  const serviceSeatStatus = serviceTypes.length
+    ? `Seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}`
+    : (grouped ? "Grouped decor" : "Placed in tank");
 
   return `
     <article class="management-browser-item">
-      <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
+      <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
       <div class="management-browser-copy">
         <strong>${escapeHtml(decor.name)}</strong>
         <span>${escapeHtml(`Layer ${getDecorTankLayer(item)} / ${formatDecorScale(item.scale)}`)}</span>
-        <small>${grouped ? "Grouped decor" : "Placed in tank"}</small>
+        <small>${escapeHtml(serviceSeatStatus)}</small>
       </div>
       <div class="management-browser-actions">
         <button class="small-button alt" type="button" data-management-select-decor="${escapeHtml(item.id)}">Select</button>
@@ -45848,7 +47197,7 @@ function renderTutorialSkipConfirmUtilityOverlay() {
       headline: "Are you sure?",
       detail: replayMode
         ? "Skipping exits the replay tutorial right away."
-        : "Skipping restores the full toolbar and digital display right away."
+        : `Skipping restores the full toolbar${DIGITAL_DISPLAY_ENABLED ? " and digital display" : ""} right away.`
     }),
     footer: buildUtilityActionsFooter([
       { label: "Yes", variant: "warn", attribute: "data-confirm-tutorial-skip" },
@@ -46303,6 +47652,16 @@ function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
 }
 
 function handleCaveSettingsUtilityOverlayBodyClick(ctx, target) {
+  const transitTubeColorButton = target?.closest?.("[data-transit-tube-color]");
+  if (transitTubeColorButton) {
+    const item = getDecorSettingsTarget();
+    if (item && isTransitTubeDecorKey(item.decorKey)) {
+      item.transitTubeColor = normalizeDecorColorSetting(transitTubeColorButton.dataset.transitTubeColor || "");
+      saveState();
+      renderUtilityOverlay();
+    }
+    return true;
+  }
   if (target?.closest?.("[data-reset-bubbler-settings]")) {
     resetSelectedBubblerSettings();
     return true;
@@ -47414,7 +48773,9 @@ function renderDecorSettingsOverlay(item) {
       .filter((entry) => entry.item.id !== item.id)
       .map((entry) => `<option value="${escapeHtml(entry.item.id)}" ${linked?.item.id === entry.item.id ? "selected" : ""}>${escapeHtml(getTransitTubeDisplayName(entry.item, entry.tank))} — ${escapeHtml(getTankLabel(entry.tank))}</option>`)
       .join("");
-    return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div></div></div></div>`;
+    const activeColor = normalizeDecorColorSetting(item.transitTubeColor || "");
+    const colorSwatches = getCustomGravelColorChoices().map((choice) => `<button class="custom-gravel-color-swatch bubbler-color-swatch ${activeColor === choice.color ? "is-selected" : ""}" type="button" style="--swatch:${choice.color}" data-transit-tube-color="${choice.color}" aria-pressed="${activeColor === choice.color}" title="${escapeHtml(choice.label)}"></button>`).join("");
+    return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div><div class="bubbler-color-row"><span>Glass color</span><strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong></div><div class="bubbler-color-swatches"><button class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${!activeColor ? "is-selected" : ""}" type="button" data-transit-tube-color="" aria-pressed="${!activeColor}">Original</button>${colorSwatches}</div></div></div></div>`;
   }
 
   const imageSrc = escapeHtml(getDecorThumbnailPath(decor));
@@ -47884,20 +49245,21 @@ function renderDailyBonusOverlay() {
         <strong>${row.score > 0 ? "+" : ""}${row.score}</strong>
       </div>
     `).join("")
-    : `<div class="empty-state">Nothing major happened in this tank.</div>`;
+    : `<div class="empty-state">Nothing major happened across the borough.</div>`;
   return `
     <div class="daily-recap-list">
       <div class="compact-heading">
         <h3>Daily Recap!</h3>
-        <p>${escapeHtml(summary.tankName || "Aquarium")} - ${escapeHtml(summary.dayKey || "")}</p>
+        <p>Bubble Borough - ${escapeHtml(summary.dayKey || "")}</p>
       </div>
-      <p class="daily-recap-narrative">${escapeHtml(summary.narrative || buildDailyRecapNarrative(summary.rows || [], getTankById(summary.tankId)))}</p>
+      <p class="daily-recap-narrative">${escapeHtml(summary.narrative || buildDailyRecapNarrative(summary.rows || [], null))}</p>
       ${rows}
     </div>
     <div class="summary-grid bonus-summary-grid">
       <div class="summary-row"><span>Overall</span><strong>${escapeHtml(summary.overall || "Quiet day.")}</strong></div>
       <div class="summary-row"><span>Average Comfort</span><strong>${summary.averageComfort || 0}%</strong></div>
-      <div class="summary-row"><span>Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
+      <div class="summary-row"><span>Normalized Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
+      <div class="summary-row"><span>Activity Score</span><strong>${summary.rawScore > 0 ? "+" : ""}${summary.rawScore || 0}</strong></div>
       <div class="summary-row"><span>Total Bonus</span><strong>${summary.reward || 0} coins</strong></div>
     </div>
   `;
@@ -47973,18 +49335,15 @@ function claimDailyBonus() {
   const now = Date.now();
   syncActiveDailyBonusState();
   const tank = getCurrentTank();
-  const summary = getActiveDailyBonusSummary(tank);
+  const summary = getActiveDailyBonusSummary();
   if (!state.dailyBonus?.available || !summary) {
     closeUtilityOverlay();
     return;
   }
 
-  const tankId = summary.tankId || tank?.id || "";
-  const claimedKey = tankId && summary.dayKey ? `${tankId}:${summary.dayKey}` : "";
+  const claimedKey = getDailyBonusClaimKey(summary);
   if (claimedKey && state.dailyBonus.claimedByTankDay?.[claimedKey]) {
-    if (state.dailyBonus.summariesByTankId && tankId) {
-      delete state.dailyBonus.summariesByTankId[tankId];
-    }
+    state.dailyBonus.summariesByTankId = {};
     state.dailyBonus.summary = null;
     syncActiveDailyBonusState();
     closeUtilityOverlay();
@@ -47996,7 +49355,7 @@ function claimDailyBonus() {
 
   const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
   if (reward > 0) {
-    state.coins += reward;
+    state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
   }
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
@@ -48004,22 +49363,18 @@ function claimDailyBonus() {
   if (claimedKey) {
     state.dailyBonus.claimedByTankDay[claimedKey] = true;
   }
-  if (state.dailyBonus.summariesByTankId && tankId) {
-    delete state.dailyBonus.summariesByTankId[tankId];
-  }
+  state.dailyBonus.summariesByTankId = {};
   state.dailyBonus.summary = null;
   state.dailyBonus.available = false;
   state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
   syncActiveDailyBonusState();
-  const milestones = applyProgressMilestones(summary, now);
   pushEvent(`Claimed a daily recap worth ${reward} ${pluralize("coin", reward)}.`, now, tank, { score: 1, type: "daily_recap", recapEligible: false });
   playToolbarButtonSoundEffect("press");
   playCoinSoundEffect();
   closeUtilityOverlay();
   saveState();
   renderUi(now);
-  const milestoneCoins = milestones.reduce((total, milestone) => total + (Number(milestone.reward) || 0), 0);
-  showToast(`Daily recap claimed. +${reward + milestoneCoins} coins.`);
+  showToast(`Daily recap claimed. +${reward} coins.`);
 }
 
 function renderSettingsOverlay() {
@@ -48082,8 +49437,10 @@ function renderSettingsOverlay() {
   }
   for (const input of dom.settingsOverlay.querySelectorAll("[data-display-position-choice]")) {
     if (input instanceof HTMLInputElement) {
+      input.disabled = !DIGITAL_DISPLAY_ENABLED;
       input.checked = input.value === uiSettings.displayPosition;
       input.closest(".display-position-option")?.classList.toggle("is-selected", input.checked);
+      input.closest(".display-position-option")?.classList.toggle("is-disabled", !DIGITAL_DISPLAY_ENABLED);
     }
   }
   syncWallpaperScrollControls(dom.settingsOverlay);
@@ -49120,6 +50477,7 @@ function renderEditDecorTray() {
       entry.item ? getDecorTankLayer(entry.item) : "",
       entry.item ? Number(entry.item.scale || 1).toFixed(2) : formatDecorScale(getDecorScaleDefault(entry.decorKey)),
       entry.item && isDecorHorizontallyFlipped(entry.item) ? 1 : 0,
+      entry.item && isDecorVerticallyFlipped(entry.item) ? 1 : 0,
       entry.item?.groupId || ""
     ].join(":"))
   ].join("|");
@@ -49170,7 +50528,7 @@ function renderEditDecorTray() {
                 aria-label="${escapeHtml(actionLabel)}"
               >
                 <span class="edit-decor-tile-surface">
-                  <img class="edit-decor-tile-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${entry.type === "placed" && isDecorHorizontallyFlipped(entry.item) ? ` style="transform: translate(-50%, -50%) scaleX(-1);"` : ""} />
+                  <img class="edit-decor-tile-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${entry.type === "placed" && (isDecorHorizontallyFlipped(entry.item) || isDecorVerticallyFlipped(entry.item)) ? ` style="transform: translate(-50%, -50%) scale(${isDecorHorizontallyFlipped(entry.item) ? -1 : 1}, ${isDecorVerticallyFlipped(entry.item) ? -1 : 1});"` : ""} />
                   <span class="inventory-tray-label">${escapeHtml(decorTypeLabel)}</span>
                   <span class="edit-decor-tile-count">${badge}</span>
                 </span>
@@ -50774,6 +52132,7 @@ function shouldShowSelectedFishNeedsPanel(managed) {
     || runtime.utilityOverlayOpen
     || runtime.settingsOverlayOpen
     || runtime.equipmentOverlayOpen
+    || runtime.fishInspectorSettingsOpen
     || isIntroTutorialActive()
   );
 }
@@ -51365,6 +52724,7 @@ function renderPlacedDecor() {
       Number(item.yNorm).toFixed(4),
       Number(item.scale).toFixed(2),
       isDecorHorizontallyFlipped(item) ? 1 : 0,
+      isDecorVerticallyFlipped(item) ? 1 : 0,
       item.groupId || ""
     ].join(","))
     .concat([
@@ -51418,7 +52778,7 @@ function renderPlacedDecor() {
 
       return `
         <article class="mini-card ${selected ? "is-selected" : ""}">
-          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) ? ` style="transform: scaleX(-1);"` : ""} />
+          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${grouped ? "Grouped decor." : "Placed in the tank."}</div>
@@ -52162,20 +53522,20 @@ function renderControls(now) {
     dom.openSettingsButton.title = runtime.settingsOverlayOpen ? "Settings (Open)" : "Settings";
     dom.openSettingsButton.setAttribute("aria-label", runtime.settingsOverlayOpen ? "Settings open" : "Settings");
   }
-  if (dom.openManagementButton) {
-    const managementOpen = runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management";
+  if (dom.overviewButton) {
+    const overviewOpen = runtime.boroughOverviewOpen === true;
     if (!runtime.toolbarCareTaskCountAt || now - runtime.toolbarCareTaskCountAt >= 1000) {
-      runtime.toolbarCareTaskCount = getCurrentTank()
-        ? buildManagementCareQueue(getManagementHubStats(now)).filter((task) => getCareTaskId(task) !== "all-clear").length
-        : 0;
+      runtime.toolbarCareTaskCount = buildUniversalManagementCareQueue(now)
+        .filter((task) => getCareTaskId(task) !== "all-clear").length;
       runtime.toolbarCareTaskCountAt = now;
     }
     const taskCount = runtime.toolbarCareTaskCount;
-    const aquariumLabel = taskCount
-      ? `Aquarium, ${taskCount} care ${pluralize("task", taskCount)}`
-      : "Aquarium, all clear";
-    dom.openManagementButton.title = managementOpen ? `${aquariumLabel} (Open)` : aquariumLabel;
-    dom.openManagementButton.setAttribute("aria-label", managementOpen ? `${aquariumLabel}, open` : aquariumLabel);
+    const overviewLabel = taskCount
+      ? `Borough Overview, ${taskCount} care ${pluralize("task", taskCount)}`
+      : "Borough Overview, all clear";
+    dom.overviewButton.title = overviewOpen ? `${overviewLabel} (Open)` : overviewLabel;
+    dom.overviewButton.setAttribute("aria-label", overviewOpen ? `${overviewLabel}, open` : overviewLabel);
+    dom.overviewButton.classList.toggle("is-active", overviewOpen);
     if (dom.aquariumTaskBadge) {
       dom.aquariumTaskBadge.hidden = taskCount <= 0;
       dom.aquariumTaskBadge.textContent = taskCount > 9 ? "9+" : String(taskCount);
@@ -52350,6 +53710,7 @@ function animationLoop(frameTime) {
   runtime.lastAnimationUpdateAt = frameTime;
   updateAmbienceAudioLoop();
   if (runtime.boroughOverviewOpen) {
+    paintBoroughSnapshots(getAllTanks(), now);
     renderBoroughOverviewFish(now);
     return;
   }
@@ -54259,6 +55620,8 @@ function updateFishMotion(now, deltaSeconds) {
       continue;
     }
     const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+    const pendingTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
+    const pendingTubeTravel = pendingTravel?.mode === "tube";
     const debugCaveTestFish = isDebugCaveTestFish(fish);
     const breedingRole = activeBreedingSequence
       ? (fish.id === activeBreedingSequence.leftFish.id
@@ -54608,6 +55971,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !fishActionOwnsMovement
         && !debugBehaviorOwnsMovement
         && !diseaseAvoidanceOwnsMovement
+        && !pendingTravel
         && now >= fish.targetAt
       ) {
         if (retargetsThisFrame >= MAX_FISH_RETARGETS_PER_FRAME) {
@@ -54618,14 +55982,23 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
-      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement) {
+      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !pendingTravel) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
       }
     }
 
-    enforceFishLayerBoundary(fish, species);
-    clampFishToMobileViewport(fish, species, now);
+    if (!pendingTravel) {
+      enforceFishLayerBoundary(fish, species);
+      clampFishToMobileViewport(fish, species, now);
+    } else if (pendingTubeTravel) {
+      const tubeId = pendingTravel.phase === "emerging" ? pendingTravel.targetTubeId : pendingTravel.sourceTubeId;
+      const tube = getTankContainingFish(fish.id)?.placedDecor?.find((item) => item.id === tubeId);
+      if (tube) {
+        const span = getDecorLayerSpan(tube.decorKey, getDecorTankLayer(tube));
+        setFishTankLayers(fish, span.back, span.back);
+      }
+    }
 
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
@@ -54652,6 +56025,9 @@ function updateFishMotion(now, deltaSeconds) {
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
           ? 0.9
           : (isFishCriticallyLowHealth(fish) ? 0.22 : 0.08);
+    if (pendingTravel) {
+      motionTarget = Math.max(motionTarget, 0.58);
+    }
     if (zombieLockedOnTarget) {
       motionTarget = Math.max(motionTarget, 0.78);
     } else if (zombieBittenVictim) {
@@ -54689,8 +56065,9 @@ function updateFishMotion(now, deltaSeconds) {
     let handledDirectionThisFrame = false;
 
     if (moveDistance > 0.0001) {
+      const manuallyChasingFood = fish.activity === "feeding" && pellet && pellet.dropStartXNorm == null;
       let speedMultiplier = fish.activity === "feeding"
-        ? FEED_CHASE_MULTIPLIER
+        ? (manuallyChasingFood ? 1 : FEED_CHASE_MULTIPLIER)
         : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
           ? 1.14
           : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -54699,7 +56076,9 @@ function updateFishMotion(now, deltaSeconds) {
 
       if (Number.isFinite(fish.panicUntil)) {
         if (now < fish.panicUntil) {
-          speedMultiplier *= Number(fish.panicSpeedBoost) || 2;
+          if (!manuallyChasingFood) {
+            speedMultiplier *= Number(fish.panicSpeedBoost) || 2;
+          }
         } else {
           fish.panicUntil = null;
           fish.panicSpeedBoost = null;
@@ -54750,24 +56129,33 @@ function updateFishMotion(now, deltaSeconds) {
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.18, 1.4);
       }
       speedMultiplier *= getFishDiseaseSpeedMultiplier(fish, now);
+      if (manuallyChasingFood) {
+        // Manual feeding should redirect normal swimming, not turn it into a
+        // dash. This final cap also prevents another transient behavior from
+        // accidentally stacking a speed boost onto the pellet chase.
+        speedMultiplier = Math.min(1, speedMultiplier);
+      }
 
       const speed = fish.swimSpeed * FISH_MOTION_SCALE * speedMultiplier;
       const step = Math.min(moveDistance, speed * deltaSeconds);
       const previousXNorm = fish.xNorm;
       const previousYNorm = fish.yNorm;
 
-      const nextXNorm = clampFishXNormToMobileViewport(fish.xNorm + (moveDx / moveDistance) * step, fish, species, now);
+      const rawNextXNorm = fish.xNorm + (moveDx / moveDistance) * step;
+      const nextXNorm = pendingTravel ? rawNextXNorm : clampFishXNormToMobileViewport(rawNextXNorm, fish, species, now);
       const movementMaxYNorm = fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? 0.96
         : (fish.activity === "feeding" && pellet?.settled ? 0.9 : 0.8);
       const rawNextYNorm = fish.yNorm + (moveDy / moveDistance) * step;
-      const nextPlacement = effectiveBehavior === "sucker"
+      const nextPlacement = effectiveBehavior === "sucker" && !pendingTravel
         ? clampFishPlacement(nextXNorm, rawNextYNorm, species, {
           fish,
           layer: getSuckerFishGlassLayer(fish)
         })
         : null;
-      const nextYNorm = nextPlacement
+      const nextYNorm = pendingTravel
+        ? rawNextYNorm
+        : nextPlacement
         ? nextPlacement.yNorm
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? clamp(rawNextYNorm, 0.14, movementMaxYNorm)
@@ -54779,7 +56167,7 @@ function updateFishMotion(now, deltaSeconds) {
           { minYNorm: 0.14, maxYNorm: movementMaxYNorm }
         );
 
-      if (effectiveBehavior === "sucker") {
+      if (effectiveBehavior === "sucker" || pendingTravel) {
         fish.xNorm = nextXNorm;
         fish.yNorm = nextYNorm;
       } else {
@@ -55622,12 +57010,104 @@ function getBoroughSectionServiceCandidates(tank, serviceType) {
     .filter((item) => getDecorBoroughServiceTypes(item).includes(serviceType));
 }
 
+function getDecorBoroughServiceSeats(itemOrKey) {
+  const meta = getDecorFishBehaviorMeta(itemOrKey);
+  const capacity = getDecorResidenceCapacity(itemOrKey);
+  if (Array.isArray(meta?.serviceSeats) && meta.serviceSeats.length) {
+    return meta.serviceSeats.slice(0, capacity);
+  }
+  // Future service decor remains functional before bespoke seat coordinates
+  // are authored. The generated seats form a compact row around the artwork's
+  // interaction point and still enforce one fish per seat.
+  return Array.from({ length: capacity }, (_, index) => ({
+    id: `seat-${index + 1}`,
+    x: capacity === 1 ? 0.5 : 0.28 + (index / (capacity - 1)) * 0.44,
+    y: 0.56 + (index % 2) * 0.08,
+    layer: null,
+    direction: index < capacity / 2 ? 1 : -1
+  }));
+}
+
+function getFishReservedBoroughServiceSeatId(fish, decorId = "") {
+  if (!fish || (decorId && fish.boroughServiceTargetDecorId !== decorId)) return "";
+  return typeof fish.boroughServiceSeatId === "string" ? fish.boroughServiceSeatId : "";
+}
+
+function getDecorBoroughServiceSeatReservations(item, tank = getCurrentTank(), requestingFish = null) {
+  const reservations = new Map();
+  if (!item || !tank) return reservations;
+  for (const fish of tank.fish || []) {
+    if (!fish || fish.id === requestingFish?.id || isFishDead(fish)) continue;
+    const targetsDecor = fish.boroughServiceTargetDecorId === item.id
+      || fish.coarseActivity?.targetDecorId === item.id;
+    if (!targetsDecor) continue;
+    const seatId = getFishReservedBoroughServiceSeatId(fish, item.id) || fish.coarseActivity?.serviceSeatId || "";
+    if (seatId) reservations.set(seatId, fish.id);
+  }
+  return reservations;
+}
+
+function getAvailableDecorBoroughServiceSeat(item, tank = getCurrentTank(), fish = null) {
+  const seats = getDecorBoroughServiceSeats(item);
+  const existingId = getFishReservedBoroughServiceSeatId(fish, item?.id);
+  if (existingId) {
+    const existing = seats.find((seat) => seat.id === existingId);
+    if (existing) return existing;
+  }
+  const reservations = getDecorBoroughServiceSeatReservations(item, tank, fish);
+  return seats.find((seat) => !reservations.has(seat.id)) || null;
+}
+
+function getDecorBoroughServiceSeatUsage(item, tank = getTankContainingDecor(item?.id) || getCurrentTank()) {
+  return getDecorBoroughServiceSeatReservations(item, tank).size;
+}
+
+function getDecorBoroughServiceSeatPoint(item, seat) {
+  if (!item || !seat) return null;
+  return mapDecorLocalPointToTankNorm(item, seat.x, seat.y);
+}
+
+function clearFishBoroughServiceReservation(fish) {
+  if (!fish) return false;
+  const hadReservation = Boolean(
+    fish.boroughServiceTargetDecorId
+    || fish.boroughServiceType
+    || fish.boroughServiceSeatId
+    || fish.boroughServiceSeatUntil
+  );
+  fish.boroughServiceTargetDecorId = null;
+  fish.boroughServiceType = "";
+  fish.boroughServiceStartedAt = 0;
+  fish.boroughServiceSeatId = "";
+  fish.boroughServiceSeatUntil = 0;
+  return hadReservation;
+}
+
+function clearDecorBoroughServiceReservations(decorId) {
+  if (!decorId) return 0;
+  let cleared = 0;
+  for (const fish of getAllTankFish()) {
+    const targetsDecor = fish?.boroughServiceTargetDecorId === decorId
+      || fish?.coarseActivity?.targetDecorId === decorId;
+    if (!targetsDecor) continue;
+    if (fish.coarseActivity?.targetDecorId === decorId) {
+      fish.coarseActivity = null;
+    }
+    if (clearFishBoroughServiceReservation(fish)) cleared += 1;
+  }
+  return cleared;
+}
+
 function getDecorServiceSummary(decorOrKey) {
   const types = getDecorBoroughServiceTypes(decorOrKey);
   if (!types.length) {
     return "";
   }
-  return `Borough service: ${types.map(getBoroughServiceLabel).join(", ")}.`;
+  const capacity = getDecorBoroughServiceSeats(decorOrKey).length;
+  const usage = typeof decorOrKey === "object" && decorOrKey?.id
+    ? getDecorBoroughServiceSeatUsage(decorOrKey)
+    : 0;
+  return `Borough service: ${types.map(getBoroughServiceLabel).join(", ")}. Seats ${usage}/${capacity}.`;
 }
 
 function getFishNeededBoroughServiceType(fish, tank = getCurrentTank(), now = Date.now()) {
@@ -55696,9 +57176,7 @@ function applyBoroughStructureService(fish, serviceType, targetTank, now = Date.
   }
   fish.lastBoroughServiceAtByType = sanitizeFishNeedEventMap(fish.lastBoroughServiceAtByType);
   fish.lastBoroughServiceAtByType[serviceType] = now;
-  fish.boroughServiceTargetDecorId = null;
-  fish.boroughServiceType = "";
-  fish.boroughServiceStartedAt = 0;
+  clearFishBoroughServiceReservation(fish);
   setFishBehaviorIntent(fish, "use service", getBoroughServiceLabel(serviceType), now, { durationMs: 20 * 1000 });
   const serviceName = serviceTarget
     ? (runtime.decorMap.get(serviceTarget.decorKey)?.name || getBoroughServiceLabel(serviceType))
@@ -55726,15 +57204,19 @@ function processBoroughStructureServices(now = Date.now(), targetTank = getCurre
     if (!serviceType && getBoroughSectionServiceTypes(targetTank).includes("nursery") && Math.random() < 0.002) {
       serviceType = "nursery";
     }
-    const lastUsedAt = Number(fish.lastBoroughServiceAtByType?.[serviceType]) || 0;
-    if (!serviceType || now - lastUsedAt < 4 * MINUTE_MS) {
+    if (!serviceType) {
+      changed = clearFishBoroughServiceReservation(fish) || changed;
       continue;
     }
-    const candidates = getBoroughSectionServiceCandidates(targetTank, serviceType);
+    const lastUsedAt = Number(fish.lastBoroughServiceAtByType?.[serviceType]) || 0;
+    if (now - lastUsedAt < 4 * MINUTE_MS) {
+      continue;
+    }
+    const candidates = getBoroughSectionServiceCandidates(targetTank, serviceType)
+      .filter((item) => getAvailableDecorBoroughServiceSeat(item, targetTank, fish));
     if (!candidates.length) {
       if (fish.boroughServiceType === serviceType) {
-        fish.boroughServiceTargetDecorId = null;
-        fish.boroughServiceType = "";
+        changed = clearFishBoroughServiceReservation(fish) || changed;
       }
       continue;
     }
@@ -55744,16 +57226,38 @@ function processBoroughStructureServices(now = Date.now(), targetTank = getCurre
       fish.boroughServiceTargetDecorId = structure.id;
       fish.boroughServiceType = serviceType;
       fish.boroughServiceStartedAt = now;
+      fish.boroughServiceSeatId = "";
+      fish.boroughServiceSeatUntil = 0;
       changed = true;
     }
-    const targetX = clamp(Number(structure.xNorm) || 0.5, 0.08, 0.92);
-    const targetY = clamp((Number(structure.yNorm) || 0.72) - 0.08, 0.16, 0.78);
+    const seat = getAvailableDecorBoroughServiceSeat(structure, targetTank, fish);
+    const seatPoint = getDecorBoroughServiceSeatPoint(structure, seat);
+    if (!seat || !seatPoint) continue;
+    if (fish.boroughServiceSeatId !== seat.id) {
+      fish.boroughServiceSeatId = seat.id;
+      fish.boroughServiceSeatUntil = 0;
+      changed = true;
+    }
+    const targetX = clamp(seatPoint.xNorm, 0.08, 0.92);
+    const targetY = clamp(seatPoint.yNorm, 0.16, 0.82);
     fish.targetXNorm = targetX;
     fish.targetYNorm = targetY;
+    if (Number.isFinite(Number(seat.layer))) setFishDesiredTankLayer(fish, seat.layer);
+    const species = getSpeciesForFish(fish);
+    if (species && Math.abs(targetX - fish.xNorm) <= 0.075) {
+      const seatDirection = isDecorHorizontallyFlipped(structure) ? -seat.direction : seat.direction;
+      setFishDirection(fish, seatDirection, species, now);
+    }
     fish.targetAt = now + 25 * 1000;
     setFishBehaviorIntent(fish, "visit", getBoroughServiceLabel(serviceType), now, { durationMs: 30 * 1000 });
     if (Math.hypot(fish.xNorm - targetX, fish.yNorm - targetY) <= 0.075) {
-      changed = applyBoroughStructureService(fish, serviceType, targetTank, now) || changed;
+      if (!fish.boroughServiceSeatUntil) {
+        fish.boroughServiceSeatUntil = now + 6500 + Math.random() * 4500;
+        setFishBehaviorIntent(fish, "using service", getBoroughServiceLabel(serviceType), now, { durationMs: fish.boroughServiceSeatUntil - now });
+        changed = true;
+      } else if (now >= fish.boroughServiceSeatUntil) {
+        changed = applyBoroughStructureService(fish, serviceType, targetTank, now) || changed;
+      }
     }
   }
   return changed;
@@ -55785,6 +57289,7 @@ function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
   let label = "Swimming around the neighborhood";
   let serviceType = getFishNeededBoroughServiceType(fish, targetTank, now);
   let targetDecorId = null;
+  let serviceSeatId = "";
   let toXNorm = randomSwimX();
   let toYNorm = randomSwimY();
 
@@ -55794,14 +57299,23 @@ function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
   const lastUsedAt = Number(fish?.lastBoroughServiceAtByType?.[serviceType]) || 0;
   const candidates = serviceType && now - lastUsedAt >= 4 * MINUTE_MS
     ? getBoroughSectionServiceCandidates(targetTank, serviceType)
+      .filter((item) => getAvailableDecorBoroughServiceSeat(item, targetTank, fish))
     : [];
   if (candidates.length) {
     const structure = candidates[Math.floor(Math.random() * candidates.length)];
+    const seat = getAvailableDecorBoroughServiceSeat(structure, targetTank, fish);
+    const seatPoint = getDecorBoroughServiceSeatPoint(structure, seat);
     type = "service";
     label = `Visiting ${getBoroughServiceLabel(serviceType)}`;
     targetDecorId = structure.id;
-    toXNorm = clamp(Number(structure.xNorm) || 0.5, 0.08, 0.92);
-    toYNorm = clamp((Number(structure.yNorm) || 0.72) - 0.08, 0.16, 0.78);
+    serviceSeatId = seat?.id || "";
+    toXNorm = clamp(Number(seatPoint?.xNorm) || Number(structure.xNorm) || 0.5, 0.08, 0.92);
+    toYNorm = clamp(Number(seatPoint?.yNorm) || (Number(structure.yNorm) || 0.72) - 0.08, 0.16, 0.82);
+    fish.boroughServiceTargetDecorId = structure.id;
+    fish.boroughServiceType = serviceType;
+    fish.boroughServiceStartedAt = now;
+    fish.boroughServiceSeatId = serviceSeatId;
+    fish.boroughServiceSeatUntil = now + 6500 + Math.random() * 4500;
   } else if (getFishNeedValue(fish, "energy", now) <= 48) {
     type = "rest";
     const residence = targetTank?.placedDecor?.find((item) => item.id === getFishResidenceDecorId(fish));
@@ -55830,6 +57344,7 @@ function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
     label,
     serviceType: serviceType || "",
     targetDecorId,
+    serviceSeatId,
     startedAt: now,
     endsAt: now + durationMs,
     fromXNorm,
@@ -55943,6 +57458,7 @@ function renderTank(now) {
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
   //drawLooseGravel(now, { transientOnly: true });
+  drawDirtyWaterTint(dirtiness);
   drawMedicineWaterTint(now);
   drawMedicineClouds(now);
   drawWaterBloodTint();
@@ -55961,11 +57477,8 @@ function renderTank(now) {
   drawCleaningSparkles(now);
   glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
-  const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
-  const lightGrime = getLightGrimeVisualIntensity(dirtiness);
   const severeGrime = getSevereGrimeVisualIntensity(dirtiness);
   const tankBlurScale = getPortableTankBlurScale();
-  const grimeBlurScale = getPortableGrimeBlurScale();
   const tankCanvasFilter = severeGrime > 0
     ? `blur(${(severeGrime * 1.8 * tankBlurScale).toFixed(2)}px) saturate(${(1 - severeGrime * 0.18).toFixed(3)}) brightness(${(1 - severeGrime * 0.12).toFixed(3)})`
     : "none";
@@ -55973,13 +57486,38 @@ function renderTank(now) {
     dom.tankCanvas.style.filter = tankCanvasFilter;
     runtime.lastTankCanvasFilter = tankCanvasFilter;
   }
-  const grimeCanvasFilter = visibleDirtiness > 0
-    ? `blur(${((0.12 + lightGrime * 0.48 + severeGrime * 1.6) * grimeBlurScale).toFixed(2)}px)`
-    : "none";
+  // The authored grime textures already contain soft organic edges. Keeping
+  // this overlay unfiltered avoids forcing the browser to re-blur a large
+  // transparent canvas whenever the animated aquarium behind it changes.
+  const grimeCanvasFilter = "none";
   if (runtime.lastGrimeCanvasFilter !== grimeCanvasFilter) {
     dom.grimeCanvas.style.filter = grimeCanvasFilter;
     runtime.lastGrimeCanvasFilter = grimeCanvasFilter;
   }
+}
+
+function drawDirtyWaterTint(dirtiness = getTankDirtiness(Date.now())) {
+  const tintStrength = Math.pow(clamp((Number(dirtiness) - 0.08) / 0.92, 0, 1), 1.18);
+  if (tintStrength <= 0.002) {
+    return;
+  }
+
+  const visibleBounds = getVisibleTankVirtualBounds();
+  const waterTop = Math.max(WATER_SURFACE_Y, visibleBounds.top);
+  const waterBottom = Math.min(TANK_HEIGHT, visibleBounds.bottom || TANK_HEIGHT);
+  const gradient = tankContext.createLinearGradient(0, waterTop, 0, waterBottom);
+  gradient.addColorStop(0, `rgba(73, 132, 54, ${(0.18 * tintStrength).toFixed(3)})`);
+  gradient.addColorStop(0.48, `rgba(55, 112, 41, ${(0.32 * tintStrength).toFixed(3)})`);
+  gradient.addColorStop(1, `rgba(35, 82, 28, ${(0.46 * tintStrength).toFixed(3)})`);
+
+  tankContext.save();
+  tankContext.globalCompositeOperation = "multiply";
+  tankContext.fillStyle = gradient;
+  tankContext.fillRect(visibleBounds.left, waterTop, visibleBounds.width, Math.max(0, waterBottom - waterTop));
+  tankContext.globalCompositeOperation = "source-over";
+  tankContext.fillStyle = `rgba(82, 126, 42, ${(0.18 * tintStrength).toFixed(3)})`;
+  tankContext.fillRect(visibleBounds.left, waterTop, visibleBounds.width, Math.max(0, waterBottom - waterTop));
+  tankContext.restore();
 }
 
 function drawLightsOutOverlay(now = Date.now()) {
@@ -56732,7 +58270,7 @@ function collectBubblerParticleFields(now = Date.now()) {
         }
       );
       const sourceX = drawX + width * renderedSourceLocation;
-      const sourceY = drawY + height * sourceYOffsetRatio + Math.max(2 * stableScale, itemScale * 2 * stableScale);
+      const sourceY = drawY + height * resolveDecorVerticalUnit(item, sourceYOffsetRatio) + Math.max(2 * stableScale, itemScale * 2 * stableScale);
       const direction = getBubblerDirectionVector(spout.direction);
       const spreadPx = Number.isFinite(Number(spout.spread)) ? Number(spout.spread) : DEFAULT_BUBBLER_SPREAD_PX;
       const distancePx = Number.isFinite(Number(spout.fadeDistance)) ? Number(spout.fadeDistance) : DEFAULT_BUBBLER_FADE_DISTANCE_PX;
@@ -56740,7 +58278,7 @@ function collectBubblerParticleFields(now = Date.now()) {
         x: sourceX,
         y: sourceY,
         directionX: direction.x,
-        directionY: direction.y,
+        directionY: isDecorVerticallyFlipped(item) ? -direction.y : direction.y,
         spread: Math.max(WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX * 0.42, spreadPx * itemScale * stableScale * 0.56),
         distance: Math.max(58, distancePx * stableScale),
         strength: clamp((Number(spout.intensity) || DEFAULT_BUBBLER_INTENSITY) / MAX_BUBBLER_INTENSITY, 0.35, 1.25),
@@ -59106,10 +60644,13 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
   const resolvedMotion = motion || getDecorMotion(item, now);
   context.save();
   context.globalAlpha = clamp(alpha, 0, 1);
-  if (isDecorHorizontallyFlipped(item)) {
-    context.translate(drawX + width, 0);
-    context.scale(-1, 1);
-    drawX = 0;
+  const flipX = isDecorHorizontallyFlipped(item);
+  const flipY = isDecorVerticallyFlipped(item);
+  if (flipX || flipY) {
+    context.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
+    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+    drawX = flipX ? 0 : drawX;
+    drawY = flipY ? 0 : drawY;
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
   drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
@@ -59332,6 +60873,12 @@ function drawFishProjectedShadow(context, x, objectBottomY, width, height, opaci
 }
 
 function drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion = null, alpha = 1) {
+  if (isTransitTubeDecorKey(item?.decorKey) && normalizeDecorColorSetting(item?.transitTubeColor || "")) {
+    const decor = runtime.decorMap.get(item.decorKey);
+    const imagePath = image === runtime.images.get(decor?.bgPath) ? decor.bgPath : decor?.path;
+    drawDecorColorLayerImageToContext(tankContext, image, imagePath || "", item.transitTubeColor, true, drawX, drawY, width, height, item, now, motion, alpha);
+    return;
+  }
   if (isTankLightsOut(now) && isSpookyDecorItem(item)) {
     tankContext.save();
     tankContext.filter = "brightness(118%) saturate(112%) drop-shadow(0 0 12px rgba(118, 210, 180, 0.28))";
@@ -59450,7 +60997,7 @@ function drawDecor(layer = null, now = Date.now()) {
 
     let imagePath = decor.path;
 
-    if (isCaveDecorKey(item.decorKey)) {
+    if (isCaveDecorKey(item.decorKey) || isTransitTubeDecorKey(item.decorKey)) {
       if (layer === span.back && decor.bgPath) {
         imagePath = decor.bgPath;
       } else if (layer === span.front) {
@@ -59503,8 +61050,12 @@ function drawDecor(layer = null, now = Date.now()) {
       continue;
     }
 
-    if (layer === span.back && hasDecorCaveColorLayers(decor)) {
+    if (layer === span.back && (hasDecorCaveColorLayers(decor) || isTransitTubeDecorKey(item.decorKey))) {
       const bgHeight = width * (image.height / Math.max(1, image.width));
+      if (isTransitTubeDecorKey(item.decorKey)) {
+        drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion);
+        continue;
+      }
       if (drawCaveBackgroundLayerToContext(tankContext, item, decor, now, {
         drawX,
         bgDrawY: y - bgHeight,
@@ -59566,7 +61117,8 @@ function drawDecorPreview() {
     yNorm: runtime.placementPreview.yNorm,
     scale: Number(runtime.placementMode.scale) || getDecorScaleDefault(decor.key),
     tankLayer: previewLayer,
-    flipped: Boolean(runtime.placementMode.flipped)
+    flipped: Boolean(runtime.placementMode.flipped),
+    flippedY: Boolean(runtime.placementMode.flippedY)
   };
   const previewMotion = getDecorMotion(previewItem, Date.now());
   if ((decor.bubbler || isCaveDecorKey(decor.key) || hasDecorCaveColorLayers(decor)) && decor.bgPath) {
@@ -60297,6 +61849,37 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
   tankContext.restore();
 }
 
+function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
+  const pose = getFishPose(fish, species, now);
+  const width = Math.max(28, getFishDisplayWidth(fish, species, now));
+  const height = width * 0.46;
+  const bodyColor = normalizeHexColor(getFishColorSetting(fish)) || "#68B9D3";
+  const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
+
+  tankContext.save();
+  tankContext.translate(pose.x + pose.swayX, pose.y);
+  tankContext.scale(pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1), 1);
+  tankContext.rotate(pose.tilt);
+  tankContext.scale(pose.bodyScaleX, pose.bodyScaleY);
+  tankContext.globalAlpha = 0.82;
+  tankContext.fillStyle = bodyColor;
+  tankContext.beginPath();
+  tankContext.ellipse(fishDrawX + width * 0.55, 0, width * 0.34, height * 0.42, 0, 0, Math.PI * 2);
+  tankContext.fill();
+  tankContext.beginPath();
+  tankContext.moveTo(fishDrawX + width * 0.23, 0);
+  tankContext.lineTo(fishDrawX, -height * 0.42);
+  tankContext.lineTo(fishDrawX, height * 0.42);
+  tankContext.closePath();
+  tankContext.fill();
+  tankContext.globalAlpha = 0.9;
+  tankContext.fillStyle = "#102A36";
+  tankContext.beginPath();
+  tankContext.arc(fishDrawX + width * 0.76, -height * 0.08, Math.max(1.5, height * 0.045), 0, Math.PI * 2);
+  tankContext.fill();
+  tankContext.restore();
+}
+
 function drawFish(now, layer = null, options = {}) {
   if (!state.fish.length) {
     return;
@@ -60335,10 +61918,16 @@ function drawFish(now, layer = null, options = {}) {
 
   for (const fish of sortedFish) {
     const species = getSpeciesForFish(fish);
-    clampFishToMobileViewport(fish, species, now);
+    if (!runtime.pendingNeighborhoodTravel.has(fish.id)) clampFishToMobileViewport(fish, species, now);
     const imagePath = getFishDisplayAssetPath(fish, species, now) || species.asset;
     const image = runtime.images.get(imagePath);
-    if (!image) {
+    if (!isUsableRuntimeImage(image)) {
+      requestRuntimeImageRecovery(imagePath, {
+        kind: "fish",
+        id: fish.id,
+        speciesId: fish.speciesId
+      });
+      drawMissingFishArtworkFallback(fish, species, now);
       continue;
     }
     const renderImage = getFishTintedImage(imagePath, image, fish);
@@ -60374,7 +61963,18 @@ function drawFish(now, layer = null, options = {}) {
     } else {
       tankContext.rotate(pose.tilt);
     }
-    tankContext.scale(pose.bodyScaleX, pose.bodyScaleY);
+    const tubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id)?.mode === "tube";
+    let tubeCompression = 1;
+    if (tubeTravel) {
+      const pending = runtime.pendingNeighborhoodTravel.get(fish.id);
+      const tank = getTankContainingFish(fish.id);
+      const tubeId = pending.phase === "emerging" ? pending.targetTubeId : pending.sourceTubeId;
+      const tube = tank?.placedDecor?.find((item) => item.id === tubeId);
+      const tubeBounds = getPlacedDecorBounds(tube);
+      const innerWidth = tubeBounds ? Math.max(12, (tubeBounds.right - tubeBounds.left) * .5) : 34;
+      tubeCompression = Math.min(1, innerWidth / Math.max(1, height));
+    }
+    tankContext.scale(pose.bodyScaleX, pose.bodyScaleY * tubeCompression);
 
     if (
       SUCKER_FISH_GLASS_SHADOW_ENABLED
@@ -60648,15 +62248,27 @@ function drawGlassTapEffects(now) {
 }
 
 function drawGrime(dirtiness) {
-  grimeContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  if (getVisibleGrimeDirtiness(dirtiness) <= 0 && runtime.scrubStamps.length === 0) {
+  const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
+  const grimeBaseCacheKey = getGrimeBaseCacheKey(dirtiness);
+  const compositeCacheKey = [
+    grimeBaseCacheKey,
+    runtime.scrubMaskRevision,
+    dom.grimeCanvas.width,
+    dom.grimeCanvas.height
+  ].join("|");
+  if (runtime.grimeCompositeCacheKey === compositeCacheKey) {
     return;
   }
 
-  const grimeBaseCacheKey = getGrimeBaseCacheKey(dirtiness);
   if (runtime.grimeBaseCacheKey !== grimeBaseCacheKey) {
     renderGrimeBaseCanvas(dirtiness);
     runtime.grimeBaseCacheKey = grimeBaseCacheKey;
+  }
+
+  grimeContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  if (visibleDirtiness <= 0) {
+    runtime.grimeCompositeCacheKey = compositeCacheKey;
+    return;
   }
 
   grimeContext.save();
@@ -60668,6 +62280,7 @@ function drawGrime(dirtiness) {
     grimeContext.drawImage(runtime.scrubMaskCanvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
   }
   grimeContext.restore();
+  runtime.grimeCompositeCacheKey = compositeCacheKey;
 }
 
 function drawCleaningSparkles(now) {
@@ -60706,29 +62319,13 @@ function drawCleaningSparkles(now) {
     }
 
     const size = sparkle.size * (0.86 + pulse * 0.22 + burst * 0.16);
-    const glowRadius = size * (1.8 + sparkle.glow * 0.65);
-    const coreColor = `hsla(${sparkle.hue.toFixed(1)}, 92%, 78%, ${Math.min(0.98, alpha).toFixed(3)})`;
-    const glowGradient = tankContext.createRadialGradient(
-      sparkle.x,
-      sparkle.y,
-      0,
-      sparkle.x,
-      sparkle.y,
-      glowRadius
-    );
-    glowGradient.addColorStop(0, `hsla(${sparkle.hue.toFixed(1)}, 100%, 86%, ${(alpha * 0.34).toFixed(3)})`);
-    glowGradient.addColorStop(0.45, `hsla(${sparkle.hue.toFixed(1)}, 96%, 70%, ${(alpha * 0.2).toFixed(3)})`);
-    glowGradient.addColorStop(1, `hsla(${sparkle.hue.toFixed(1)}, 96%, 60%, 0)`);
-    tankContext.fillStyle = glowGradient;
-    tankContext.beginPath();
-    tankContext.arc(sparkle.x, sparkle.y, glowRadius, 0, Math.PI * 2);
-    tankContext.fill();
+    const coreColor = `hsla(${sparkle.hue.toFixed(1)}, 88%, 82%, ${Math.min(0.72, alpha * 0.74).toFixed(3)})`;
 
     tankContext.save();
     tankContext.translate(sparkle.x, sparkle.y);
     tankContext.rotate(sparkle.rotation + pulse * 0.12);
     tankContext.strokeStyle = coreColor;
-    tankContext.lineWidth = 1.5 + sparkle.glow * 0.85;
+    tankContext.lineWidth = 1.1 + sparkle.glow * 0.42;
     tankContext.beginPath();
     tankContext.moveTo(-size, 0);
     tankContext.lineTo(size, 0);
@@ -60746,21 +62343,11 @@ function drawCleaningSparkles(now) {
     }
     tankContext.restore();
 
-    tankContext.fillStyle = `hsla(${sparkle.hue.toFixed(1)}, 100%, 92%, ${(alpha * 0.92).toFixed(3)})`;
+    tankContext.fillStyle = `hsla(${sparkle.hue.toFixed(1)}, 100%, 92%, ${(alpha * 0.62).toFixed(3)})`;
     tankContext.beginPath();
     tankContext.arc(sparkle.x, sparkle.y, Math.max(1.6, size * 0.18), 0, Math.PI * 2);
     tankContext.fill();
 
-    tankContext.fillStyle = `rgba(255,255,255, ${(alpha * 0.74).toFixed(3)})`;
-    tankContext.beginPath();
-    tankContext.arc(
-      sparkle.x - size * 0.14,
-      sparkle.y - size * 0.18,
-      Math.max(1.1, size * 0.08),
-      0,
-      Math.PI * 2
-    );
-    tankContext.fill();
   }
 
   tankContext.restore();
@@ -60802,6 +62389,24 @@ function getFishPose(fish, species, now) {
     };
   }
 
+  const tubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
+  if (tubeTravel?.mode === "tube" && ["entering", "waiting", "emerging"].includes(tubeTravel.phase)) {
+    const motionClock = Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : now / 380;
+    const wiggle = Math.sin(motionClock + fish.phase * Math.PI * 2) * .3;
+    return {
+      x: fish.xNorm * TANK_WIDTH,
+      y: fish.yNorm * TANK_HEIGHT,
+      direction: 1,
+      facingScaleX: 1,
+      tilt: -Math.PI / 2,
+      wiggle,
+      bodyScaleX: 1 - Math.abs(wiggle) * .025,
+      bodyScaleY: 1 + Math.abs(wiggle) * .02,
+      swayX: 0,
+      isDead: false
+    };
+  }
+
   const motionLevel = clamp(Number(fish.motionLevel) || 0.12, 0.04, 1);
   const sickMotionBoost = isFishCriticallyLowHealth(fish) ? 1.22 : 1;
   const wiggleClock = Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : (now / 1000) * (0.45 + fish.swimSpeed * 14);
@@ -60826,12 +62431,32 @@ function getFishPose(fish, species, now) {
       : normalizeAngle(turnFromAngle + turnDelta * turnProgress);
     const turnLift = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI) * 2.6;
     const crawlTilt = clamp((fish.targetYNorm - fish.yNorm) * 0.18, -0.18, 0.18);
+    const finalAngle = normalizeAngle(turnAngle + (turnProgress === null ? crawlTilt : crawlTilt * 0.35));
+    const image = runtime.images.get(getFishDisplayAssetPath(fish, species, now) || species.asset);
+    const width = getFishDisplayWidth(fish, species, now);
+    const height = width * (image?.width ? image.height / image.width : .34);
+    const pivotX = -width / 2 + width * SUCKER_FISH_FACE_PIVOT_X;
+    const pivotY = -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y;
+    const cos = Math.cos(finalAngle);
+    const sin = Math.sin(finalAngle);
+    const corners = [[-width / 2, -height / 2], [width / 2, -height / 2], [width / 2, height / 2], [-width / 2, height / 2]].map(([x, y]) => ({
+      x: (x - pivotX) * cos - (y - pivotY) * sin + pivotX,
+      y: (x - pivotX) * sin + (y - pivotY) * cos + pivotY
+    }));
+    const minLocalX = Math.min(...corners.map((point) => point.x));
+    const maxLocalX = Math.max(...corners.map((point) => point.x));
+    const minLocalY = Math.min(...corners.map((point) => point.y));
+    const maxLocalY = Math.max(...corners.map((point) => point.y));
+    const unclampedX = fish.xNorm * TANK_WIDTH;
+    const unclampedY = fish.yNorm * TANK_HEIGHT - turnLift;
+    const safeX = clamp(unclampedX, 8 - minLocalX, TANK_WIDTH - 8 - maxLocalX);
+    const safeY = clamp(unclampedY, 8 - minLocalY, TANK_HEIGHT - 8 - maxLocalY);
     return {
-      x: fish.xNorm * TANK_WIDTH,
-      y: fish.yNorm * TANK_HEIGHT - turnLift,
+      x: safeX,
+      y: safeY,
       direction: facing,
       facingScaleX: 1,
-      tilt: normalizeAngle(turnAngle + (turnProgress === null ? crawlTilt : crawlTilt * 0.35)),
+      tilt: finalAngle,
       wiggle: clingWiggle,
       bodyScaleX: 1 - Math.abs(clingWiggle) * 0.008,
       bodyScaleY: 1 + Math.abs(clingWiggle) * 0.006,
@@ -61645,7 +63270,7 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
         horizontalOffsetPx: null
       }
     );
-    const sourceY = drawY + height * sourceYOffsetRatio + Math.max(2 * stableScale, item.scale * 2 * stableScale);
+    const sourceY = drawY + height * resolveDecorVerticalUnit(item, sourceYOffsetRatio) + Math.max(2 * stableScale, item.scale * 2 * stableScale);
     const spoutWidthPx = Math.max(0, spout.spread * item.scale * stableScale);
     const fadeDistancePx = Math.max(24 * stableScale, spout.fadeDistance * stableScale);
     const cadenceMs = getBubblerCadenceFromIntensity(intensity);
@@ -62748,11 +64373,17 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
     : (Object.prototype.hasOwnProperty.call(options, "flipped")
       ? Boolean(options.flipped)
       : Boolean(runtime.placementMode?.flipped));
+  const resolvedFlippedY = options.item && Object.prototype.hasOwnProperty.call(options.item, "flippedY")
+    ? Boolean(options.item.flippedY)
+    : (Object.prototype.hasOwnProperty.call(options, "flippedY")
+      ? Boolean(options.flippedY)
+      : Boolean(runtime.placementMode?.flippedY));
   const candidate = {
     ...(options.item || {}),
     decorKey,
     scale: resolvedScale,
     flipped: resolvedFlipped,
+    flippedY: resolvedFlippedY,
     tankLayer: resolvedLayer,
     xNorm: normalizedX,
     yNorm: normalizedY
@@ -62876,12 +64507,14 @@ function getPlacedDecorOpaqueBoundsForImagePath(item, decor, imagePath) {
   const maxU = (mask.bounds.maxX + 1) / image.width;
   const mappedMinU = resolveDecorHorizontalUnit(item, minU);
   const mappedMaxU = resolveDecorHorizontalUnit(item, maxU);
+  const mappedMinV = resolveDecorVerticalUnit(item, mask.bounds.minY / image.height);
+  const mappedMaxV = resolveDecorVerticalUnit(item, (mask.bounds.maxY + 1) / image.height);
 
   return {
     left: left + Math.min(mappedMinU, mappedMaxU) * width,
     right: left + Math.max(mappedMinU, mappedMaxU) * width,
-    top: top + (mask.bounds.minY / image.height) * height,
-    bottom: top + ((mask.bounds.maxY + 1) / image.height) * height
+    top: top + Math.min(mappedMinV, mappedMaxV) * height,
+    bottom: top + Math.max(mappedMinV, mappedMaxV) * height
   };
 }
 
@@ -64968,6 +66601,16 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
     };
   }
 
+  const pendingTubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
+  if (pendingTubeTravel?.mode === "tube" && blockingCave.item?.id === pendingTubeTravel.sourceTubeId) {
+    return {
+      xNorm: resolvedXNorm,
+      yNorm: resolvedYNorm,
+      blocked: false,
+      blockingCave: null
+    };
+  }
+
   const activePlan = fish.caveState ? getActiveFishCavePlan(fish) : null;
   if (
     activePlan?.debugForced &&
@@ -65255,7 +66898,7 @@ function boundsIntersect(leftBounds, rightBounds) {
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, #debugSidebar, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
   );
 }
 
@@ -66020,6 +67663,309 @@ function mulberry32(seed) {
 // Source fragment: ui/notifications.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function buildDefaultNotificationCenterState() {
+  return { entries: [] };
+}
+
+function sanitizeNotificationCenterEntry(entry) {
+  if (!entry || typeof entry !== "object" || typeof entry.title !== "string" || !entry.title.trim()) {
+    return null;
+  }
+  return {
+    id: String(entry.id || createId("notification")),
+    type: String(entry.type || "activity").slice(0, 40),
+    title: entry.title.trim().slice(0, 180),
+    detail: typeof entry.detail === "string" ? entry.detail.trim().slice(0, 360) : "",
+    createdAt: Number.isFinite(Number(entry.createdAt)) ? Math.max(0, Number(entry.createdAt)) : Date.now(),
+    readAt: Number.isFinite(Number(entry.readAt)) ? Math.max(0, Number(entry.readAt)) : null,
+    signature: typeof entry.signature === "string" ? entry.signature.slice(0, 240) : "",
+    tankId: typeof entry.tankId === "string" ? entry.tankId : "",
+    fishId: typeof entry.fishId === "string" ? entry.fishId : "",
+    achievementId: typeof entry.achievementId === "string" ? entry.achievementId : "",
+    recapDayKey: typeof entry.recapDayKey === "string" ? entry.recapDayKey : "",
+    coinReward: Math.max(0, Math.floor(Number(entry.coinReward) || 0)),
+    iconPath: typeof entry.iconPath === "string" ? entry.iconPath.slice(0, 260) : "",
+    unlockedItems: Array.isArray(entry.unlockedItems)
+      ? entry.unlockedItems.map((value) => String(value).slice(0, 100)).filter(Boolean).slice(0, 20)
+      : []
+  };
+}
+
+function sanitizeNotificationCenterState(rawState) {
+  const entries = Array.isArray(rawState?.entries)
+    ? rawState.entries.map(sanitizeNotificationCenterEntry).filter(Boolean).slice(0, NOTIFICATION_CENTER_HISTORY_LIMIT)
+    : [];
+  return { entries };
+}
+
+function getNotificationCenterEntries() {
+  return Array.isArray(state?.notificationCenter?.entries) ? state.notificationCenter.entries : [];
+}
+
+function enqueueNotificationCenterEntry(entry, options = {}) {
+  if (!state) {
+    return null;
+  }
+  if (!state.notificationCenter || typeof state.notificationCenter !== "object") {
+    state.notificationCenter = buildDefaultNotificationCenterState();
+  }
+  if (!Array.isArray(state.notificationCenter.entries)) {
+    state.notificationCenter.entries = [];
+  }
+  const sanitized = sanitizeNotificationCenterEntry({
+    ...entry,
+    id: entry?.id || createId("notification"),
+    createdAt: Number.isFinite(Number(entry?.createdAt)) ? Number(entry.createdAt) : Date.now()
+  });
+  if (!sanitized) {
+    return null;
+  }
+  if (sanitized.signature) {
+    const existing = state.notificationCenter.entries.find((item) => item?.signature === sanitized.signature);
+    if (existing) {
+      return existing;
+    }
+  }
+  state.notificationCenter.entries.unshift(sanitized);
+  state.notificationCenter.entries = state.notificationCenter.entries.slice(0, NOTIFICATION_CENTER_HISTORY_LIMIT);
+  if (options.surface === true) {
+    queueBoroughActivityNotification(sanitized.title, sanitized.detail, {
+      force: true,
+      persist: false,
+      durationMs: options.durationMs
+    });
+  }
+  return sanitized;
+}
+
+function getUnreadNotificationCount() {
+  return getNotificationCenterEntries().filter((entry) => !entry?.readAt).length;
+}
+
+function getPendingDailyRecapSummaries() {
+  const summary = state?.dailyBonus?.summariesByTankId?.[BOROUGH_DAILY_RECAP_ID]
+    || state?.dailyBonus?.summary
+    || null;
+  return summary?.dayKey && !isDailyBonusSummaryClaimed(summary) ? [summary] : [];
+}
+
+function markNotificationCenterRead(now = Date.now()) {
+  let changed = false;
+  for (const entry of getNotificationCenterEntries()) {
+    if (!entry.readAt) {
+      entry.readAt = now;
+      changed = true;
+    }
+  }
+  if (changed) {
+    saveState();
+    renderUi(now, { full: false });
+  }
+  return changed;
+}
+
+function clearNotificationCenter(now = Date.now()) {
+  if (!state?.notificationCenter) {
+    return false;
+  }
+  const pendingRecapSignatures = new Set(getPendingDailyRecapSummaries()
+    .map((summary) => `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}`));
+  const retained = getNotificationCenterEntries().filter((entry) => pendingRecapSignatures.has(entry.signature));
+  if (retained.length === getNotificationCenterEntries().length) {
+    return false;
+  }
+  state.notificationCenter.entries = retained;
+  saveState();
+  renderUi(now, { full: false });
+  return true;
+}
+
+function ensurePendingRecapNotifications() {
+  if (!state?.dailyBonus) {
+    return false;
+  }
+  let changed = false;
+  const pendingDayKeys = new Set(getPendingDailyRecapSummaries().map((summary) => summary.dayKey));
+  const entriesBeforeCleanup = getNotificationCenterEntries().length;
+  state.notificationCenter.entries = getNotificationCenterEntries().filter((entry) => (
+    entry.type !== "daily_recap"
+    || !pendingDayKeys.has(entry.recapDayKey)
+    || entry.signature === `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${entry.recapDayKey}`
+  ));
+  changed = state.notificationCenter.entries.length !== entriesBeforeCleanup;
+  for (const summary of getPendingDailyRecapSummaries()) {
+    const signature = `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}`;
+    if (getNotificationCenterEntries().some((entry) => entry.signature === signature)) {
+      continue;
+    }
+    changed = Boolean(enqueueNotificationCenterEntry({
+      type: "daily_recap",
+      title: "Daily Recap ready",
+      detail: `Bubble Borough · ${summary.reward || 0} coin bonus`,
+      createdAt: summary.generatedAt || Date.now(),
+      signature,
+      tankId: "",
+      recapDayKey: summary.dayKey || ""
+    })) || changed;
+  }
+  return changed;
+}
+
+function syncNotificationBellPresentation() {
+  if (!dom.dailyBonusBell) {
+    return;
+  }
+  ensurePendingRecapNotifications();
+  const unreadCount = getUnreadNotificationCount();
+  const hasRecap = getPendingDailyRecapSummaries().length > 0;
+  dom.dailyBonusBell.hidden = false;
+  dom.dailyBonusBell.classList.toggle("has-daily-recap", hasRecap);
+  dom.dailyBonusBell.classList.toggle("has-unread-notifications", unreadCount > 0);
+  dom.dailyBonusBell.title = unreadCount > 0 ? `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}` : "Notifications";
+  dom.dailyBonusBell.setAttribute("aria-label", dom.dailyBonusBell.title);
+  if (dom.notificationBellBadge) {
+    dom.notificationBellBadge.hidden = unreadCount <= 0;
+    dom.notificationBellBadge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
+  }
+}
+
+function formatNotificationCenterTime(timestamp) {
+  const value = Number(timestamp) || Date.now();
+  return new Date(value).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function renderNotificationCenterOverlay() {
+  ensurePendingRecapNotifications();
+  const entries = getNotificationCenterEntries();
+  const body = entries.length ? entries.map((entry) => {
+    const inferredFish = entry.fishId
+      ? getAllTankFish(state).find((fish) => fish.id === entry.fishId)
+      : getAllTankFish(state).find((fish) => String(entry.title || "").startsWith(`${fish.name} `));
+    const targetFishId = inferredFish?.id || "";
+    const targetTankId = entry.tankId || getTankContainingFish(targetFishId)?.id || "";
+    const typeLabel = entry.type === "achievement" ? "Achievement" : entry.type === "daily_recap" ? "Daily Recap" : "Borough";
+    const icon = entry.iconPath
+      ? `<img class="notification-center-icon" src="${escapeHtml(entry.iconPath)}" alt="" />`
+      : `<span class="notification-center-symbol" aria-hidden="true">${entry.type === "daily_recap" ? "☀" : "•"}</span>`;
+    const rewards = [
+      entry.coinReward > 0 ? `+${entry.coinReward} coins` : "",
+      ...(entry.unlockedItems || []).slice(0, 4)
+    ].filter(Boolean);
+    const recapPending = entry.type === "daily_recap" && getPendingDailyRecapSummaries().some((summary) => (
+      summary.dayKey === entry.recapDayKey
+    ));
+    return `
+      <article class="notification-center-entry ${entry.readAt ? "is-read" : "is-unread"}${targetTankId || targetFishId ? " is-actionable" : ""}"${targetTankId || targetFishId ? ` data-notification-tank-id="${escapeHtml(targetTankId)}" data-notification-fish-id="${escapeHtml(targetFishId)}" tabindex="0" role="button"` : ""}>
+        ${icon}
+        <div class="notification-center-copy">
+          <div class="notification-center-meta"><span>${escapeHtml(typeLabel)}</span><time>${escapeHtml(formatNotificationCenterTime(entry.createdAt))}</time></div>
+          <strong>${escapeHtml(entry.title)}</strong>
+          ${entry.detail ? `<p>${escapeHtml(entry.detail)}</p>` : ""}
+          ${rewards.length ? `<div class="notification-center-rewards">${rewards.map((reward) => `<span>${escapeHtml(reward)}</span>`).join("")}</div>` : ""}
+          ${recapPending ? `<button class="small-button" type="button" data-open-daily-recap="borough">View Recap</button>` : ""}
+        </div>
+      </article>`;
+  }).join("") : `<div class="empty-state">No recent notifications yet.</div>`;
+  return {
+    kicker: "Borough Inbox",
+    title: "Notifications",
+    body: `<div class="notification-center-list">${body}</div>`,
+    footer: `<button class="small-button alt" type="button" data-mark-notifications-read>Mark all read</button><button class="small-button alt" type="button" data-clear-notifications>Clear history</button>`,
+    closable: true
+  };
+}
+
+function handleNotificationCenterBodyClick(ctx, target) {
+  const recapButton = target?.closest?.("[data-open-daily-recap]");
+  if (recapButton instanceof HTMLElement) {
+    openUtilityOverlay("daily-bonus");
+    return true;
+  }
+  const entry = target?.closest?.("[data-notification-tank-id], [data-notification-fish-id]");
+  if (!(entry instanceof HTMLElement)) {
+    return false;
+  }
+  const tankId = entry.dataset.notificationTankId || getTankContainingFish(entry.dataset.notificationFishId)?.id || "";
+  const fishId = entry.dataset.notificationFishId || "";
+  closeUtilityOverlay();
+  if (tankId && state.activeTankId !== tankId) {
+    setActiveTank(tankId, { announce: false });
+  }
+  if (fishId && getTankContainingFish(fishId)?.id === state.activeTankId) {
+    openFishInspector(fishId);
+  }
+  return true;
+}
+
+function ensureBoroughNotificationHost() {
+  let host = document.querySelector("#boroughActivityNotifications");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "boroughActivityNotifications";
+    host.className = "borough-activity-notifications";
+    host.setAttribute("aria-live", "polite");
+    host.setAttribute("aria-atomic", "false");
+    document.body.append(host);
+  }
+  return host;
+}
+
+function queueBoroughActivityNotification(title, detail = "", options = {}) {
+  const now = Number.isFinite(Number(options.time)) ? Number(options.time) : Date.now();
+  const signature = String(options.signature || `${title}|${detail}`).toLowerCase();
+  const lastDuplicateAt = Number(runtime.boroughNotificationSignatures.get(signature)) || 0;
+  if (!options.force && (now - runtime.lastBoroughNotificationAt < BOROUGH_NOTIFICATION_COOLDOWN_MS || now - lastDuplicateAt < BOROUGH_NOTIFICATION_DUPLICATE_MS)) {
+    return false;
+  }
+  runtime.lastBoroughNotificationAt = now;
+  runtime.boroughNotificationSignatures.set(signature, now);
+  for (const [key, timestamp] of runtime.boroughNotificationSignatures) {
+    if (now - timestamp > BOROUGH_NOTIFICATION_DUPLICATE_MS * 2) {
+      runtime.boroughNotificationSignatures.delete(key);
+    }
+  }
+  if (options.persist !== false) {
+    enqueueNotificationCenterEntry({
+      type: options.type || "borough",
+      title,
+      detail,
+      createdAt: now,
+      signature,
+      tankId: options.tankId || "",
+      fishId: options.fishId || ""
+    });
+  }
+  const host = ensureBoroughNotificationHost();
+  const notification = document.createElement("div");
+  notification.className = "borough-activity-notification";
+  notification.innerHTML = `<strong>${escapeHtml(title)}</strong>${detail ? `<span>${escapeHtml(detail)}</span>` : ""}`;
+  host.append(notification);
+  while (host.children.length > 3) {
+    host.firstElementChild?.remove();
+  }
+  requestAnimationFrame(() => notification.classList.add("is-visible"));
+  window.setTimeout(() => {
+    notification.classList.remove("is-visible");
+    window.setTimeout(() => notification.remove(), 350);
+  }, Math.max(2400, Number(options.durationMs) || 4200));
+  return true;
+}
+
+function publishBoroughActivityEvent(event, tank = getCurrentTank()) {
+  const happening = maybeRecordBoroughHappeningFromEvent(event, tank);
+  const type = String(event?.type || "").toLowerCase();
+  if (["travel", "service", "residence", "birthday", "recovery", "birth"].includes(type)) {
+    queueBoroughActivityNotification(event.text, event.detail || "", {
+      time: event.time,
+      signature: `${type}:${event.fishId || ""}:${event.destinationTankId || event.placedDecorId || event.text}`,
+      type,
+      tankId: tank?.id || "",
+      fishId: event.fishId || ""
+    });
+  }
+  return happening;
+}
+
 function getMessageAnchorRect() {
   return dom.tankDisplay?.getBoundingClientRect?.() || document.querySelector(".tank-display")?.getBoundingClientRect?.() || null;
 }
@@ -66398,6 +68344,16 @@ function hideToast(options = {}) {
   runtime.guidanceToastOwner = "";
   dom.toast?.classList.remove("is-visible");
   return true;
+}
+
+function resetToastState() {
+  if (runtime.toastHandle) {
+    clearTimeout(runtime.toastHandle);
+  }
+  runtime.toastHandle = null;
+  runtime.toastKey = "";
+  runtime.guidanceToastOwner = "";
+  dom.toast?.classList.remove("is-visible");
 }
 
 function showGuidanceToast(owner, message, options = {}) {

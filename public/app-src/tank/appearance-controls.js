@@ -1,6 +1,65 @@
 // Source fragment: tank/appearance-controls.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function updateTankAppearance(options = {}) {
+  const changes = options.changes && typeof options.changes === "object" ? options.changes : {};
+  const changedEntries = Object.entries(changes).filter(([key, value]) => !Object.is(state[key], value));
+  if (!changedEntries.length && options.force !== true) {
+    return false;
+  }
+  for (const [key, value] of changedEntries) {
+    state[key] = value;
+  }
+  options.apply?.();
+  completeGameAction({
+    now: options.now,
+    event: options.event,
+    toast: options.toast,
+    sound: options.sound,
+    render: options.render,
+    full: options.full
+  });
+  return true;
+}
+
+function copyTankAppearanceScheme(kind) {
+  const tank = getCurrentTank();
+  if (!tank) {
+    return false;
+  }
+  runtime.tankAppearanceClipboard ||= { background: null, gravel: null };
+  if (kind === "gravel") {
+    runtime.tankAppearanceClipboard.gravel = {
+      customGravelLayerColors: [...getActiveCustomGravelLayerColors()]
+    };
+    showToast("Gravel color scheme copied.");
+    return true;
+  }
+  runtime.tankAppearanceClipboard.background = {
+    selectedBackground: tank.selectedBackground
+  };
+  showToast("Wallpaper scheme copied.");
+  return true;
+}
+
+function pasteTankAppearanceScheme(kind) {
+  const clipboard = runtime.tankAppearanceClipboard?.[kind];
+  if (!clipboard) {
+    showToast(`Copy a ${kind === "gravel" ? "gravel color" : "wallpaper"} scheme first.`);
+    return false;
+  }
+  const changes = kind === "gravel"
+    ? {
+        customGravelLayerColors: sanitizeCustomGravelLayerColors(clipboard.customGravelLayerColors)
+      }
+    : { ...clipboard };
+  return updateTankAppearance({
+    changes,
+    toast: kind === "gravel" ? "Gravel color scheme pasted." : "Wallpaper scheme pasted.",
+    full: true
+  });
+}
+
 function setCustomGravelLayerColor(layerIndex, color) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor || !Number.isFinite(layerIndex)) {
@@ -14,9 +73,7 @@ function setCustomGravelLayerColor(layerIndex, color) {
   }
 
   nextColors[nextIndex] = normalizedColor;
-  state.customGravelLayerColors = nextColors;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({ changes: { customGravelLayerColors: nextColors } });
 }
 
 function setCustomGravelLayerColorize(layerIndex, colorize) {
@@ -32,10 +89,12 @@ function setCustomGravelLayerColorize(layerIndex, colorize) {
   }
 
   nextSettings[nextIndex] = nextColorize;
-  state.customGravelLayerColors = getActiveCustomGravelLayerColors();
-  state.customGravelLayerColorize = nextSettings;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: {
+      customGravelLayerColors: getActiveCustomGravelLayerColors(),
+      customGravelLayerColorize: nextSettings
+    }
+  });
 }
 
 function setSolidBackgroundColor(color) {
@@ -48,9 +107,7 @@ function setSolidBackgroundColor(color) {
     return;
   }
 
-  state.solidBackgroundColor = normalizedColor;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({ changes: { solidBackgroundColor: normalizedColor } });
 }
 
 function setGradientBackgroundColor(role, color) {
@@ -64,9 +121,7 @@ function setGradientBackgroundColor(role, color) {
     return;
   }
 
-  state[key] = normalizedColor;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({ changes: { [key]: normalizedColor } });
 }
 
 function setAnimatedBackgroundColor(role, color) {
@@ -100,9 +155,7 @@ function setAnimatedBackgroundColor(role, color) {
     return;
   }
 
-  state[key] = normalizedColor;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({ changes: { [key]: normalizedColor } });
 }
 
 function resetAnimatedBackgroundColors() {
@@ -133,18 +186,20 @@ function resetAnimatedBackgroundColors() {
     return;
   }
 
-  state.animatedBackgroundTopColor = nextDefaults.surface;
-  state.animatedBackgroundMidColor = nextDefaults.mid;
-  state.animatedBackgroundBottomColor = nextDefaults.deep;
-  state.animatedBackgroundSurfaceBloomColor = nextDefaults.surfaceBloom;
-  state.animatedBackgroundShadowBloomColor = nextDefaults.shadowBloom;
-  state.animatedBackgroundAbyssColor = nextDefaults.abyss;
-  state.animatedBackgroundHighlightColor = nextDefaults.highlight;
-  state.animatedBackgroundDriftColorA = nextDefaults.driftA;
-  state.animatedBackgroundDriftColorB = nextDefaults.driftB;
-  state.animatedBackgroundDriftColorC = nextDefaults.driftC;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: {
+      animatedBackgroundTopColor: nextDefaults.surface,
+      animatedBackgroundMidColor: nextDefaults.mid,
+      animatedBackgroundBottomColor: nextDefaults.deep,
+      animatedBackgroundSurfaceBloomColor: nextDefaults.surfaceBloom,
+      animatedBackgroundShadowBloomColor: nextDefaults.shadowBloom,
+      animatedBackgroundAbyssColor: nextDefaults.abyss,
+      animatedBackgroundHighlightColor: nextDefaults.highlight,
+      animatedBackgroundDriftColorA: nextDefaults.driftA,
+      animatedBackgroundDriftColorB: nextDefaults.driftB,
+      animatedBackgroundDriftColorC: nextDefaults.driftC
+    }
+  });
 }
 
 function enableCustomBackgroundMode(mode) {
@@ -154,10 +209,12 @@ function enableCustomBackgroundMode(mode) {
     return;
   }
 
-  state.customBackgroundMode = nextMode;
-  state.selectedBackground = NONE_BACKGROUND_ASSET_KEY;
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: {
+      customBackgroundMode: nextMode,
+      selectedBackground: NONE_BACKGROUND_ASSET_KEY
+    }
+  });
 }
 
 function disableCustomBackground() {
@@ -237,10 +294,14 @@ function selectBackground(backgroundKey) {
     return;
   }
 
-  state.selectedBackground = backgroundKey;
-  pushEvent(`Switched the tank background to ${runtime.backgroundMap.get(backgroundKey).name}.`, Date.now());
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: { selectedBackground: backgroundKey },
+    event: {
+      type: "appearance",
+      tone: "neutral",
+      text: `Switched the tank background to ${runtime.backgroundMap.get(backgroundKey).name}.`
+    }
+  });
 }
 
 function selectTankAsset(tankKey) {
@@ -248,10 +309,14 @@ function selectTankAsset(tankKey) {
     return;
   }
 
-  state.selectedTankAsset = tankKey;
-  pushEvent(`Swapped the tank shell to ${runtime.tankMap.get(tankKey).name}.`, Date.now());
-  saveState();
-  renderUi(Date.now());
+  return updateTankAppearance({
+    changes: { selectedTankAsset: tankKey },
+    event: {
+      type: "appearance",
+      tone: "neutral",
+      text: `Swapped the tank shell to ${runtime.tankMap.get(tankKey).name}.`
+    }
+  });
 }
 
 function selectFilterAsset(filterKey) {
@@ -283,12 +348,14 @@ function selectFilterAsset(filterKey) {
     state.selectedFilterAsset = filterKey;
   });
   const filter = runtime.filterMap.get(filterKey);
-  pushEvent(
-    `Equipped ${filter.name}. At the current tank load, the tank now takes about ${formatDuration(getFilterMaxDirtyDurationMs(filterKey))} to hit maximum dirtiness.`,
-    now
-  );
-  saveState();
-  renderUi(now);
+  return completeGameAction({
+    now,
+    event: {
+      type: "equipment",
+      tone: "neutral",
+      text: `Equipped ${filter.name}. At the current tank load, the tank now takes about ${formatDuration(getFilterMaxDirtyDurationMs(filterKey))} to hit maximum dirtiness.`
+    }
+  });
 }
 
 function setUvLightInstalled(installed) {
@@ -307,13 +374,18 @@ function setUvLightInstalled(installed) {
     return;
   }
 
-  const now = Date.now();
-  state.uvLightInstalled = nextInstalled;
-  state.uvLightEnabled = nextInstalled ? true : false;
-  pushEvent(nextInstalled ? "Added the UV light to this tank." : "Removed the UV light from this tank.", now);
-  saveState();
-  renderUi(now);
-  showToast(nextInstalled ? "UV light added and switched on." : "UV light removed from this tank.");
+  return updateTankAppearance({
+    changes: {
+      uvLightInstalled: nextInstalled,
+      uvLightEnabled: nextInstalled
+    },
+    event: {
+      type: "equipment",
+      tone: "neutral",
+      text: nextInstalled ? "Added the UV light to this tank." : "Removed the UV light from this tank."
+    },
+    toast: nextInstalled ? "UV light added and switched on." : "UV light removed from this tank."
+  });
 }
 
 function toggleUvLightPower(force = null) {
@@ -332,10 +404,10 @@ function toggleUvLightPower(force = null) {
     return;
   }
 
-  state.uvLightEnabled = nextEnabled;
-  saveState();
-  renderUi(Date.now());
-  showToast(nextEnabled ? "UV light on." : "UV light off.");
+  return updateTankAppearance({
+    changes: { uvLightEnabled: nextEnabled },
+    toast: nextEnabled ? "UV light on." : "UV light off."
+  });
 }
 
 function toggleLightsOutOverride() {
@@ -349,13 +421,12 @@ function toggleLightsOutOverride() {
     : current === LIGHTS_OUT_OVERRIDE_ON
       ? LIGHTS_OUT_OVERRIDE_OFF
       : LIGHTS_OUT_OVERRIDE_AUTO;
-  targetTank.lightsOutOverride = next;
-  const now = Date.now();
-  saveState();
-  renderUi(now);
-  showToast(next === LIGHTS_OUT_OVERRIDE_AUTO
-    ? "Lights Out follows the tank clock."
-    : next === LIGHTS_OUT_OVERRIDE_ON
-      ? "Lights Out on."
-      : "Lights Out off until you switch it back.");
+  return updateTankAppearance({
+    changes: { lightsOutOverride: next },
+    toast: next === LIGHTS_OUT_OVERRIDE_AUTO
+      ? "Lights Out follows the tank clock."
+      : next === LIGHTS_OUT_OVERRIDE_ON
+        ? "Lights Out on."
+        : "Lights Out off until you switch it back."
+  });
 }

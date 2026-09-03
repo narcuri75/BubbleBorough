@@ -451,6 +451,37 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
   tankContext.restore();
 }
 
+function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
+  const pose = getFishPose(fish, species, now);
+  const width = Math.max(28, getFishDisplayWidth(fish, species, now));
+  const height = width * 0.46;
+  const bodyColor = normalizeHexColor(getFishColorSetting(fish)) || "#68B9D3";
+  const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
+
+  tankContext.save();
+  tankContext.translate(pose.x + pose.swayX, pose.y);
+  tankContext.scale(pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1), 1);
+  tankContext.rotate(pose.tilt);
+  tankContext.scale(pose.bodyScaleX, pose.bodyScaleY);
+  tankContext.globalAlpha = 0.82;
+  tankContext.fillStyle = bodyColor;
+  tankContext.beginPath();
+  tankContext.ellipse(fishDrawX + width * 0.55, 0, width * 0.34, height * 0.42, 0, 0, Math.PI * 2);
+  tankContext.fill();
+  tankContext.beginPath();
+  tankContext.moveTo(fishDrawX + width * 0.23, 0);
+  tankContext.lineTo(fishDrawX, -height * 0.42);
+  tankContext.lineTo(fishDrawX, height * 0.42);
+  tankContext.closePath();
+  tankContext.fill();
+  tankContext.globalAlpha = 0.9;
+  tankContext.fillStyle = "#102A36";
+  tankContext.beginPath();
+  tankContext.arc(fishDrawX + width * 0.76, -height * 0.08, Math.max(1.5, height * 0.045), 0, Math.PI * 2);
+  tankContext.fill();
+  tankContext.restore();
+}
+
 function drawFish(now, layer = null, options = {}) {
   if (!state.fish.length) {
     return;
@@ -489,10 +520,16 @@ function drawFish(now, layer = null, options = {}) {
 
   for (const fish of sortedFish) {
     const species = getSpeciesForFish(fish);
-    clampFishToMobileViewport(fish, species, now);
+    if (!runtime.pendingNeighborhoodTravel.has(fish.id)) clampFishToMobileViewport(fish, species, now);
     const imagePath = getFishDisplayAssetPath(fish, species, now) || species.asset;
     const image = runtime.images.get(imagePath);
-    if (!image) {
+    if (!isUsableRuntimeImage(image)) {
+      requestRuntimeImageRecovery(imagePath, {
+        kind: "fish",
+        id: fish.id,
+        speciesId: fish.speciesId
+      });
+      drawMissingFishArtworkFallback(fish, species, now);
       continue;
     }
     const renderImage = getFishTintedImage(imagePath, image, fish);
@@ -528,7 +565,18 @@ function drawFish(now, layer = null, options = {}) {
     } else {
       tankContext.rotate(pose.tilt);
     }
-    tankContext.scale(pose.bodyScaleX, pose.bodyScaleY);
+    const tubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id)?.mode === "tube";
+    let tubeCompression = 1;
+    if (tubeTravel) {
+      const pending = runtime.pendingNeighborhoodTravel.get(fish.id);
+      const tank = getTankContainingFish(fish.id);
+      const tubeId = pending.phase === "emerging" ? pending.targetTubeId : pending.sourceTubeId;
+      const tube = tank?.placedDecor?.find((item) => item.id === tubeId);
+      const tubeBounds = getPlacedDecorBounds(tube);
+      const innerWidth = tubeBounds ? Math.max(12, (tubeBounds.right - tubeBounds.left) * .5) : 34;
+      tubeCompression = Math.min(1, innerWidth / Math.max(1, height));
+    }
+    tankContext.scale(pose.bodyScaleX, pose.bodyScaleY * tubeCompression);
 
     if (
       SUCKER_FISH_GLASS_SHADOW_ENABLED
@@ -802,15 +850,27 @@ function drawGlassTapEffects(now) {
 }
 
 function drawGrime(dirtiness) {
-  grimeContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  if (getVisibleGrimeDirtiness(dirtiness) <= 0 && runtime.scrubStamps.length === 0) {
+  const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
+  const grimeBaseCacheKey = getGrimeBaseCacheKey(dirtiness);
+  const compositeCacheKey = [
+    grimeBaseCacheKey,
+    runtime.scrubMaskRevision,
+    dom.grimeCanvas.width,
+    dom.grimeCanvas.height
+  ].join("|");
+  if (runtime.grimeCompositeCacheKey === compositeCacheKey) {
     return;
   }
 
-  const grimeBaseCacheKey = getGrimeBaseCacheKey(dirtiness);
   if (runtime.grimeBaseCacheKey !== grimeBaseCacheKey) {
     renderGrimeBaseCanvas(dirtiness);
     runtime.grimeBaseCacheKey = grimeBaseCacheKey;
+  }
+
+  grimeContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  if (visibleDirtiness <= 0) {
+    runtime.grimeCompositeCacheKey = compositeCacheKey;
+    return;
   }
 
   grimeContext.save();
@@ -822,6 +882,7 @@ function drawGrime(dirtiness) {
     grimeContext.drawImage(runtime.scrubMaskCanvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
   }
   grimeContext.restore();
+  runtime.grimeCompositeCacheKey = compositeCacheKey;
 }
 
 function drawCleaningSparkles(now) {
@@ -860,29 +921,13 @@ function drawCleaningSparkles(now) {
     }
 
     const size = sparkle.size * (0.86 + pulse * 0.22 + burst * 0.16);
-    const glowRadius = size * (1.8 + sparkle.glow * 0.65);
-    const coreColor = `hsla(${sparkle.hue.toFixed(1)}, 92%, 78%, ${Math.min(0.98, alpha).toFixed(3)})`;
-    const glowGradient = tankContext.createRadialGradient(
-      sparkle.x,
-      sparkle.y,
-      0,
-      sparkle.x,
-      sparkle.y,
-      glowRadius
-    );
-    glowGradient.addColorStop(0, `hsla(${sparkle.hue.toFixed(1)}, 100%, 86%, ${(alpha * 0.34).toFixed(3)})`);
-    glowGradient.addColorStop(0.45, `hsla(${sparkle.hue.toFixed(1)}, 96%, 70%, ${(alpha * 0.2).toFixed(3)})`);
-    glowGradient.addColorStop(1, `hsla(${sparkle.hue.toFixed(1)}, 96%, 60%, 0)`);
-    tankContext.fillStyle = glowGradient;
-    tankContext.beginPath();
-    tankContext.arc(sparkle.x, sparkle.y, glowRadius, 0, Math.PI * 2);
-    tankContext.fill();
+    const coreColor = `hsla(${sparkle.hue.toFixed(1)}, 88%, 82%, ${Math.min(0.72, alpha * 0.74).toFixed(3)})`;
 
     tankContext.save();
     tankContext.translate(sparkle.x, sparkle.y);
     tankContext.rotate(sparkle.rotation + pulse * 0.12);
     tankContext.strokeStyle = coreColor;
-    tankContext.lineWidth = 1.5 + sparkle.glow * 0.85;
+    tankContext.lineWidth = 1.1 + sparkle.glow * 0.42;
     tankContext.beginPath();
     tankContext.moveTo(-size, 0);
     tankContext.lineTo(size, 0);
@@ -900,21 +945,11 @@ function drawCleaningSparkles(now) {
     }
     tankContext.restore();
 
-    tankContext.fillStyle = `hsla(${sparkle.hue.toFixed(1)}, 100%, 92%, ${(alpha * 0.92).toFixed(3)})`;
+    tankContext.fillStyle = `hsla(${sparkle.hue.toFixed(1)}, 100%, 92%, ${(alpha * 0.62).toFixed(3)})`;
     tankContext.beginPath();
     tankContext.arc(sparkle.x, sparkle.y, Math.max(1.6, size * 0.18), 0, Math.PI * 2);
     tankContext.fill();
 
-    tankContext.fillStyle = `rgba(255,255,255, ${(alpha * 0.74).toFixed(3)})`;
-    tankContext.beginPath();
-    tankContext.arc(
-      sparkle.x - size * 0.14,
-      sparkle.y - size * 0.18,
-      Math.max(1.1, size * 0.08),
-      0,
-      Math.PI * 2
-    );
-    tankContext.fill();
   }
 
   tankContext.restore();
@@ -956,6 +991,24 @@ function getFishPose(fish, species, now) {
     };
   }
 
+  const tubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
+  if (tubeTravel?.mode === "tube" && ["entering", "waiting", "emerging"].includes(tubeTravel.phase)) {
+    const motionClock = Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : now / 380;
+    const wiggle = Math.sin(motionClock + fish.phase * Math.PI * 2) * .3;
+    return {
+      x: fish.xNorm * TANK_WIDTH,
+      y: fish.yNorm * TANK_HEIGHT,
+      direction: 1,
+      facingScaleX: 1,
+      tilt: -Math.PI / 2,
+      wiggle,
+      bodyScaleX: 1 - Math.abs(wiggle) * .025,
+      bodyScaleY: 1 + Math.abs(wiggle) * .02,
+      swayX: 0,
+      isDead: false
+    };
+  }
+
   const motionLevel = clamp(Number(fish.motionLevel) || 0.12, 0.04, 1);
   const sickMotionBoost = isFishCriticallyLowHealth(fish) ? 1.22 : 1;
   const wiggleClock = Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : (now / 1000) * (0.45 + fish.swimSpeed * 14);
@@ -980,12 +1033,32 @@ function getFishPose(fish, species, now) {
       : normalizeAngle(turnFromAngle + turnDelta * turnProgress);
     const turnLift = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI) * 2.6;
     const crawlTilt = clamp((fish.targetYNorm - fish.yNorm) * 0.18, -0.18, 0.18);
+    const finalAngle = normalizeAngle(turnAngle + (turnProgress === null ? crawlTilt : crawlTilt * 0.35));
+    const image = runtime.images.get(getFishDisplayAssetPath(fish, species, now) || species.asset);
+    const width = getFishDisplayWidth(fish, species, now);
+    const height = width * (image?.width ? image.height / image.width : .34);
+    const pivotX = -width / 2 + width * SUCKER_FISH_FACE_PIVOT_X;
+    const pivotY = -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y;
+    const cos = Math.cos(finalAngle);
+    const sin = Math.sin(finalAngle);
+    const corners = [[-width / 2, -height / 2], [width / 2, -height / 2], [width / 2, height / 2], [-width / 2, height / 2]].map(([x, y]) => ({
+      x: (x - pivotX) * cos - (y - pivotY) * sin + pivotX,
+      y: (x - pivotX) * sin + (y - pivotY) * cos + pivotY
+    }));
+    const minLocalX = Math.min(...corners.map((point) => point.x));
+    const maxLocalX = Math.max(...corners.map((point) => point.x));
+    const minLocalY = Math.min(...corners.map((point) => point.y));
+    const maxLocalY = Math.max(...corners.map((point) => point.y));
+    const unclampedX = fish.xNorm * TANK_WIDTH;
+    const unclampedY = fish.yNorm * TANK_HEIGHT - turnLift;
+    const safeX = clamp(unclampedX, 8 - minLocalX, TANK_WIDTH - 8 - maxLocalX);
+    const safeY = clamp(unclampedY, 8 - minLocalY, TANK_HEIGHT - 8 - maxLocalY);
     return {
-      x: fish.xNorm * TANK_WIDTH,
-      y: fish.yNorm * TANK_HEIGHT - turnLift,
+      x: safeX,
+      y: safeY,
       direction: facing,
       facingScaleX: 1,
-      tilt: normalizeAngle(turnAngle + (turnProgress === null ? crawlTilt : crawlTilt * 0.35)),
+      tilt: finalAngle,
       wiggle: clingWiggle,
       bodyScaleX: 1 - Math.abs(clingWiggle) * 0.008,
       bodyScaleY: 1 + Math.abs(clingWiggle) * 0.006,

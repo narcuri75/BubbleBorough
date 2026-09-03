@@ -780,7 +780,7 @@ function createDecorShapeDescriptorFromMask(item, decor, imagePath, mask) {
       const rawU = (worldX - left) / width;
       return {
         u: isDecorHorizontallyFlipped(item) ? 1 - rawU : rawU,
-        v: (worldY - top) / height
+        v: resolveDecorVerticalUnit(item, (worldY - top) / height)
       };
     }
   };

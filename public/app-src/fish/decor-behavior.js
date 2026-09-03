@@ -465,12 +465,104 @@ function getBoroughSectionServiceCandidates(tank, serviceType) {
     .filter((item) => getDecorBoroughServiceTypes(item).includes(serviceType));
 }
 
+function getDecorBoroughServiceSeats(itemOrKey) {
+  const meta = getDecorFishBehaviorMeta(itemOrKey);
+  const capacity = getDecorResidenceCapacity(itemOrKey);
+  if (Array.isArray(meta?.serviceSeats) && meta.serviceSeats.length) {
+    return meta.serviceSeats.slice(0, capacity);
+  }
+  // Future service decor remains functional before bespoke seat coordinates
+  // are authored. The generated seats form a compact row around the artwork's
+  // interaction point and still enforce one fish per seat.
+  return Array.from({ length: capacity }, (_, index) => ({
+    id: `seat-${index + 1}`,
+    x: capacity === 1 ? 0.5 : 0.28 + (index / (capacity - 1)) * 0.44,
+    y: 0.56 + (index % 2) * 0.08,
+    layer: null,
+    direction: index < capacity / 2 ? 1 : -1
+  }));
+}
+
+function getFishReservedBoroughServiceSeatId(fish, decorId = "") {
+  if (!fish || (decorId && fish.boroughServiceTargetDecorId !== decorId)) return "";
+  return typeof fish.boroughServiceSeatId === "string" ? fish.boroughServiceSeatId : "";
+}
+
+function getDecorBoroughServiceSeatReservations(item, tank = getCurrentTank(), requestingFish = null) {
+  const reservations = new Map();
+  if (!item || !tank) return reservations;
+  for (const fish of tank.fish || []) {
+    if (!fish || fish.id === requestingFish?.id || isFishDead(fish)) continue;
+    const targetsDecor = fish.boroughServiceTargetDecorId === item.id
+      || fish.coarseActivity?.targetDecorId === item.id;
+    if (!targetsDecor) continue;
+    const seatId = getFishReservedBoroughServiceSeatId(fish, item.id) || fish.coarseActivity?.serviceSeatId || "";
+    if (seatId) reservations.set(seatId, fish.id);
+  }
+  return reservations;
+}
+
+function getAvailableDecorBoroughServiceSeat(item, tank = getCurrentTank(), fish = null) {
+  const seats = getDecorBoroughServiceSeats(item);
+  const existingId = getFishReservedBoroughServiceSeatId(fish, item?.id);
+  if (existingId) {
+    const existing = seats.find((seat) => seat.id === existingId);
+    if (existing) return existing;
+  }
+  const reservations = getDecorBoroughServiceSeatReservations(item, tank, fish);
+  return seats.find((seat) => !reservations.has(seat.id)) || null;
+}
+
+function getDecorBoroughServiceSeatUsage(item, tank = getTankContainingDecor(item?.id) || getCurrentTank()) {
+  return getDecorBoroughServiceSeatReservations(item, tank).size;
+}
+
+function getDecorBoroughServiceSeatPoint(item, seat) {
+  if (!item || !seat) return null;
+  return mapDecorLocalPointToTankNorm(item, seat.x, seat.y);
+}
+
+function clearFishBoroughServiceReservation(fish) {
+  if (!fish) return false;
+  const hadReservation = Boolean(
+    fish.boroughServiceTargetDecorId
+    || fish.boroughServiceType
+    || fish.boroughServiceSeatId
+    || fish.boroughServiceSeatUntil
+  );
+  fish.boroughServiceTargetDecorId = null;
+  fish.boroughServiceType = "";
+  fish.boroughServiceStartedAt = 0;
+  fish.boroughServiceSeatId = "";
+  fish.boroughServiceSeatUntil = 0;
+  return hadReservation;
+}
+
+function clearDecorBoroughServiceReservations(decorId) {
+  if (!decorId) return 0;
+  let cleared = 0;
+  for (const fish of getAllTankFish()) {
+    const targetsDecor = fish?.boroughServiceTargetDecorId === decorId
+      || fish?.coarseActivity?.targetDecorId === decorId;
+    if (!targetsDecor) continue;
+    if (fish.coarseActivity?.targetDecorId === decorId) {
+      fish.coarseActivity = null;
+    }
+    if (clearFishBoroughServiceReservation(fish)) cleared += 1;
+  }
+  return cleared;
+}
+
 function getDecorServiceSummary(decorOrKey) {
   const types = getDecorBoroughServiceTypes(decorOrKey);
   if (!types.length) {
     return "";
   }
-  return `Borough service: ${types.map(getBoroughServiceLabel).join(", ")}.`;
+  const capacity = getDecorBoroughServiceSeats(decorOrKey).length;
+  const usage = typeof decorOrKey === "object" && decorOrKey?.id
+    ? getDecorBoroughServiceSeatUsage(decorOrKey)
+    : 0;
+  return `Borough service: ${types.map(getBoroughServiceLabel).join(", ")}. Seats ${usage}/${capacity}.`;
 }
 
 function getFishNeededBoroughServiceType(fish, tank = getCurrentTank(), now = Date.now()) {
@@ -539,9 +631,7 @@ function applyBoroughStructureService(fish, serviceType, targetTank, now = Date.
   }
   fish.lastBoroughServiceAtByType = sanitizeFishNeedEventMap(fish.lastBoroughServiceAtByType);
   fish.lastBoroughServiceAtByType[serviceType] = now;
-  fish.boroughServiceTargetDecorId = null;
-  fish.boroughServiceType = "";
-  fish.boroughServiceStartedAt = 0;
+  clearFishBoroughServiceReservation(fish);
   setFishBehaviorIntent(fish, "use service", getBoroughServiceLabel(serviceType), now, { durationMs: 20 * 1000 });
   const serviceName = serviceTarget
     ? (runtime.decorMap.get(serviceTarget.decorKey)?.name || getBoroughServiceLabel(serviceType))
@@ -569,15 +659,19 @@ function processBoroughStructureServices(now = Date.now(), targetTank = getCurre
     if (!serviceType && getBoroughSectionServiceTypes(targetTank).includes("nursery") && Math.random() < 0.002) {
       serviceType = "nursery";
     }
-    const lastUsedAt = Number(fish.lastBoroughServiceAtByType?.[serviceType]) || 0;
-    if (!serviceType || now - lastUsedAt < 4 * MINUTE_MS) {
+    if (!serviceType) {
+      changed = clearFishBoroughServiceReservation(fish) || changed;
       continue;
     }
-    const candidates = getBoroughSectionServiceCandidates(targetTank, serviceType);
+    const lastUsedAt = Number(fish.lastBoroughServiceAtByType?.[serviceType]) || 0;
+    if (now - lastUsedAt < 4 * MINUTE_MS) {
+      continue;
+    }
+    const candidates = getBoroughSectionServiceCandidates(targetTank, serviceType)
+      .filter((item) => getAvailableDecorBoroughServiceSeat(item, targetTank, fish));
     if (!candidates.length) {
       if (fish.boroughServiceType === serviceType) {
-        fish.boroughServiceTargetDecorId = null;
-        fish.boroughServiceType = "";
+        changed = clearFishBoroughServiceReservation(fish) || changed;
       }
       continue;
     }
@@ -587,16 +681,38 @@ function processBoroughStructureServices(now = Date.now(), targetTank = getCurre
       fish.boroughServiceTargetDecorId = structure.id;
       fish.boroughServiceType = serviceType;
       fish.boroughServiceStartedAt = now;
+      fish.boroughServiceSeatId = "";
+      fish.boroughServiceSeatUntil = 0;
       changed = true;
     }
-    const targetX = clamp(Number(structure.xNorm) || 0.5, 0.08, 0.92);
-    const targetY = clamp((Number(structure.yNorm) || 0.72) - 0.08, 0.16, 0.78);
+    const seat = getAvailableDecorBoroughServiceSeat(structure, targetTank, fish);
+    const seatPoint = getDecorBoroughServiceSeatPoint(structure, seat);
+    if (!seat || !seatPoint) continue;
+    if (fish.boroughServiceSeatId !== seat.id) {
+      fish.boroughServiceSeatId = seat.id;
+      fish.boroughServiceSeatUntil = 0;
+      changed = true;
+    }
+    const targetX = clamp(seatPoint.xNorm, 0.08, 0.92);
+    const targetY = clamp(seatPoint.yNorm, 0.16, 0.82);
     fish.targetXNorm = targetX;
     fish.targetYNorm = targetY;
+    if (Number.isFinite(Number(seat.layer))) setFishDesiredTankLayer(fish, seat.layer);
+    const species = getSpeciesForFish(fish);
+    if (species && Math.abs(targetX - fish.xNorm) <= 0.075) {
+      const seatDirection = isDecorHorizontallyFlipped(structure) ? -seat.direction : seat.direction;
+      setFishDirection(fish, seatDirection, species, now);
+    }
     fish.targetAt = now + 25 * 1000;
     setFishBehaviorIntent(fish, "visit", getBoroughServiceLabel(serviceType), now, { durationMs: 30 * 1000 });
     if (Math.hypot(fish.xNorm - targetX, fish.yNorm - targetY) <= 0.075) {
-      changed = applyBoroughStructureService(fish, serviceType, targetTank, now) || changed;
+      if (!fish.boroughServiceSeatUntil) {
+        fish.boroughServiceSeatUntil = now + 6500 + Math.random() * 4500;
+        setFishBehaviorIntent(fish, "using service", getBoroughServiceLabel(serviceType), now, { durationMs: fish.boroughServiceSeatUntil - now });
+        changed = true;
+      } else if (now >= fish.boroughServiceSeatUntil) {
+        changed = applyBoroughStructureService(fish, serviceType, targetTank, now) || changed;
+      }
     }
   }
   return changed;
@@ -628,6 +744,7 @@ function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
   let label = "Swimming around the neighborhood";
   let serviceType = getFishNeededBoroughServiceType(fish, targetTank, now);
   let targetDecorId = null;
+  let serviceSeatId = "";
   let toXNorm = randomSwimX();
   let toYNorm = randomSwimY();
 
@@ -637,14 +754,23 @@ function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
   const lastUsedAt = Number(fish?.lastBoroughServiceAtByType?.[serviceType]) || 0;
   const candidates = serviceType && now - lastUsedAt >= 4 * MINUTE_MS
     ? getBoroughSectionServiceCandidates(targetTank, serviceType)
+      .filter((item) => getAvailableDecorBoroughServiceSeat(item, targetTank, fish))
     : [];
   if (candidates.length) {
     const structure = candidates[Math.floor(Math.random() * candidates.length)];
+    const seat = getAvailableDecorBoroughServiceSeat(structure, targetTank, fish);
+    const seatPoint = getDecorBoroughServiceSeatPoint(structure, seat);
     type = "service";
     label = `Visiting ${getBoroughServiceLabel(serviceType)}`;
     targetDecorId = structure.id;
-    toXNorm = clamp(Number(structure.xNorm) || 0.5, 0.08, 0.92);
-    toYNorm = clamp((Number(structure.yNorm) || 0.72) - 0.08, 0.16, 0.78);
+    serviceSeatId = seat?.id || "";
+    toXNorm = clamp(Number(seatPoint?.xNorm) || Number(structure.xNorm) || 0.5, 0.08, 0.92);
+    toYNorm = clamp(Number(seatPoint?.yNorm) || (Number(structure.yNorm) || 0.72) - 0.08, 0.16, 0.82);
+    fish.boroughServiceTargetDecorId = structure.id;
+    fish.boroughServiceType = serviceType;
+    fish.boroughServiceStartedAt = now;
+    fish.boroughServiceSeatId = serviceSeatId;
+    fish.boroughServiceSeatUntil = now + 6500 + Math.random() * 4500;
   } else if (getFishNeedValue(fish, "energy", now) <= 48) {
     type = "rest";
     const residence = targetTank?.placedDecor?.find((item) => item.id === getFishResidenceDecorId(fish));
@@ -673,6 +799,7 @@ function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
     label,
     serviceType: serviceType || "",
     targetDecorId,
+    serviceSeatId,
     startedAt: now,
     endsAt: now + durationMs,
     fromXNorm,

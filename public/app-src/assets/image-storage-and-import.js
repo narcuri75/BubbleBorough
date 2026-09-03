@@ -388,6 +388,9 @@ function sanitizeEvent(entry) {
   if (typeof entry.type === "string" && entry.type.trim()) {
     sanitized.type = entry.type.trim();
   }
+  if (["positive", "negative", "neutral"].includes(String(entry.tone || ""))) {
+    sanitized.tone = String(entry.tone);
+  }
   if (typeof entry.fishId === "string" && entry.fishId.trim()) {
     sanitized.fishId = entry.fishId.trim();
   }
@@ -397,50 +400,149 @@ function sanitizeEvent(entry) {
   if (typeof entry.placedDecorId === "string" && entry.placedDecorId.trim()) {
     sanitized.placedDecorId = entry.placedDecorId.trim();
   }
+  for (const key of ["destinationTankId", "sourceTankId", "serviceType", "travelReason", "detail"]) {
+    if (typeof entry[key] === "string" && entry[key].trim()) {
+      sanitized[key] = entry[key].trim().slice(0, 160);
+    }
+  }
   if (entry.recapEligible === false) {
     sanitized.recapEligible = false;
   }
   return sanitized;
 }
 
-function preloadImages(paths) {
-  const preloadTimeoutMs = 12000;
+function isUsableRuntimeImage(image) {
+  return Boolean(image && Number(image.naturalWidth || image.width) > 0 && Number(image.naturalHeight || image.height) > 0);
+}
+
+function loadRuntimeImageAttempt(path, timeoutMs) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    let settled = false;
+    const finish = (loaded, reason = "error") => {
+      if (loaded && isUsableRuntimeImage(image)) {
+        runtime.images.set(path, image);
+        runtime.imageLoadFailures.delete(path);
+        runtime.imageRecoveryNextAt.delete(path);
+      }
+      if (settled) {
+        image.onload = null;
+        image.onerror = null;
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timeoutId);
+      image.onload = null;
+      image.onerror = null;
+      resolve({ loaded: loaded && isUsableRuntimeImage(image), reason });
+    };
+    const timeoutId = window.setTimeout(() => {
+      const pathLabel = String(path).startsWith("data:")
+        ? "embedded custom image"
+        : String(path).slice(0, 180);
+      console.warn(`Image preload timed out: ${pathLabel}`);
+      // Keep the handlers alive after resolving this attempt. Some Chromium
+      // builds finish decoding shortly after the timeout; a late load should
+      // still repair the cache even while a retry is under way.
+      settled = true;
+      resolve({ loaded: false, reason: "timeout" });
+    }, timeoutMs);
+    image.decoding = "async";
+    image.onload = () => finish(true, "loaded");
+    image.onerror = () => finish(false, "error");
+    image.src = path;
+  });
+}
+
+function preloadImagePath(path, options = {}) {
+  if (!path) {
+    return Promise.resolve({ path, loaded: false, reason: "missing-path", attempts: 0 });
+  }
+  if (isUsableRuntimeImage(runtime.images.get(path))) {
+    return Promise.resolve({ path, loaded: true, reason: "cached", attempts: 0 });
+  }
+
+  const existingPromise = runtime.imageLoadPromises.get(path);
+  if (existingPromise) {
+    return existingPromise;
+  }
+
+  const maxAttempts = clamp(Math.floor(Number(options.maxAttempts) || 2), 1, 4);
+  const timeoutMs = clamp(Math.floor(Number(options.timeoutMs) || 12000), 1000, 30000);
+  const retryDelayMs = clamp(Math.floor(Number(options.retryDelayMs) || 250), 0, 5000);
+  const promise = (async () => {
+    let lastReason = "error";
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (isUsableRuntimeImage(runtime.images.get(path))) {
+        return { path, loaded: true, reason: "cached", attempts: attempt - 1 };
+      }
+      const result = await loadRuntimeImageAttempt(path, timeoutMs);
+      lastReason = result.reason;
+      if (result.loaded || isUsableRuntimeImage(runtime.images.get(path))) {
+        return { path, loaded: true, reason: result.reason, attempts: attempt };
+      }
+      if (attempt < maxAttempts && retryDelayMs > 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, retryDelayMs * attempt));
+      }
+    }
+
+    const failure = {
+      path,
+      reason: lastReason,
+      attempts: maxAttempts,
+      lastFailedAt: Date.now()
+    };
+    runtime.imageLoadFailures.set(path, failure);
+    return { ...failure, loaded: false };
+  })().finally(() => {
+    runtime.imageLoadPromises.delete(path);
+  });
+  runtime.imageLoadPromises.set(path, promise);
+  return promise;
+}
+
+function preloadImages(paths, options = {}) {
   return Promise.all(
-    [...new Set(paths)]
+    [...new Set(Array.isArray(paths) ? paths : [])]
       .filter(Boolean)
-      .filter((path) => !runtime.images.has(path))
-      .map(
-        (path) =>
-          new Promise((resolve) => {
-            const image = new Image();
-            let settled = false;
-            const finish = (loaded) => {
-              if (settled) {
-                return;
-              }
-              settled = true;
-              window.clearTimeout(timeoutId);
-              image.onload = null;
-              image.onerror = null;
-              if (loaded) {
-                runtime.images.set(path, image);
-              }
-              resolve();
-            };
-            const timeoutId = window.setTimeout(() => {
-              const pathLabel = String(path).startsWith("data:")
-                ? "embedded custom image"
-                : String(path).slice(0, 180);
-              console.warn(`Image preload timed out: ${pathLabel}`);
-              finish(false);
-            }, preloadTimeoutMs);
-            image.decoding = "async";
-            image.onload = () => finish(true);
-            image.onerror = () => finish(false);
-            image.src = path;
-          })
-      )
+      .map((path) => preloadImagePath(path, options))
   );
+}
+
+function requestRuntimeImageRecovery(path, details = {}) {
+  if (!path || isUsableRuntimeImage(runtime.images.get(path))) {
+    return;
+  }
+
+  const now = Date.now();
+  const nextAttemptAt = Number(runtime.imageRecoveryNextAt.get(path)) || 0;
+  if (runtime.imageLoadPromises.has(path) || now < nextAttemptAt) {
+    return;
+  }
+  runtime.imageRecoveryNextAt.set(path, now + 15000);
+
+  const warningKey = `${details.kind || "asset"}:${details.id || path}`;
+  if (!runtime.missingFishImageWarnings.has(warningKey)) {
+    runtime.missingFishImageWarnings.add(warningKey);
+    console.warn("Recovering missing runtime image.", {
+      path,
+      kind: details.kind || "asset",
+      id: details.id || "",
+      speciesId: details.speciesId || "",
+      previousFailure: runtime.imageLoadFailures.get(path) || null
+    });
+  }
+
+  void preloadImagePath(path, {
+    maxAttempts: 2,
+    timeoutMs: 8000,
+    retryDelayMs: 500
+  }).then((result) => {
+    if (result.loaded && details.kind === "grime") {
+      runtime.grimeBaseCacheKey = "";
+      runtime.grimeCompositeCacheKey = "";
+    }
+  });
 }
 
 function loadImageElement(src) {
@@ -1607,12 +1709,14 @@ function mapMaskRegionToTank(item, imagePath, region) {
   const top = y - height;
   const mappedMinU = resolveDecorHorizontalUnit(item, region.minU);
   const mappedMaxU = resolveDecorHorizontalUnit(item, region.maxU);
+  const mappedMinV = resolveDecorVerticalUnit(item, region.minV);
+  const mappedMaxV = resolveDecorVerticalUnit(item, region.maxV);
   const regionLeft = left + Math.min(mappedMinU, mappedMaxU) * width;
   const regionRight = left + Math.max(mappedMinU, mappedMaxU) * width;
-  const regionTop = top + region.minV * height;
-  const regionBottom = top + region.maxV * height;
+  const regionTop = top + Math.min(mappedMinV, mappedMaxV) * height;
+  const regionBottom = top + Math.max(mappedMinV, mappedMaxV) * height;
   const regionCenterX = left + resolveDecorHorizontalUnit(item, region.centerU) * width;
-  const regionCenterY = top + region.centerV * height;
+  const regionCenterY = top + resolveDecorVerticalUnit(item, region.centerV) * height;
 
   return {
     ...region,

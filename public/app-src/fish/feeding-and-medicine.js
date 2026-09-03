@@ -49,12 +49,12 @@ function canFishTargetFoodPellet(fish, pellet, now = Date.now()) {
 }
 
 function ensureMealHistoryEntry(slotKey, now = Date.now(), tank = getCurrentTank()) {
-  if (!tank || !slotKey) {
+  if (!slotKey) {
     return null;
   }
 
-  if (!tank.feedHistory || typeof tank.feedHistory !== "object") {
-    tank.feedHistory = {};
+  if (!state.mealHistory || typeof state.mealHistory !== "object") {
+    state.mealHistory = {};
   }
 
   const existing = getMealHistoryEntry(slotKey, tank);
@@ -67,14 +67,14 @@ function ensureMealHistoryEntry(slotKey, now = Date.now(), tank = getCurrentTank
     return existing;
   }
 
-  tank.feedHistory[slotKey] = {
+  state.mealHistory[slotKey] = {
     fedAt: now,
     offeredAt: 0,
     coinsEarned: 0,
     fishIds: [],
     offeredFishIds: []
   };
-  return tank.feedHistory[slotKey];
+  return state.mealHistory[slotKey];
 }
 
 function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
@@ -98,7 +98,7 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   const remainingMealCoins = Math.max(0, FISH_DAILY_FEEDING_CARE_COIN_CAP - (Math.max(0, Number(entry.coinsEarned) || 0)));
   const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0));
   entry.coinsEarned = Math.max(0, Number(entry.coinsEarned) || 0) + mealCoins;
-  state.coins += mealCoins;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + mealCoins);
   return mealCoins;
 }
 
@@ -693,6 +693,7 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
   if (createdPellets.length) {
     state.floatingPellets.push(...createdPellets);
     assignFloatingPelletsToHungryFish(now);
+    stageHungryFishTravelToFoodTank(getCurrentTank(), now);
   }
   playDropSoundEffect();
 
@@ -722,6 +723,32 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
     pelletId: createdPellets[0]?.id || "",
     tutorialChanged
   };
+}
+
+function stageHungryFishTravelToFoodTank(foodTank = getCurrentTank(), now = Date.now()) {
+  if (!foodTank || getAllTanks().length < 2) {
+    return 0;
+  }
+  let stagedCount = 0;
+  for (const tank of getAllTanks()) {
+    if (tank.id === foodTank.id) {
+      continue;
+    }
+    for (const fish of getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD)) {
+      if (!fish || isFishDead(fish)) {
+        continue;
+      }
+      const route = findAquariumSectionRoute(tank, foodTank);
+      const tubeJourney = getTransitTubeJourney(tank, foodTank);
+      if (!route && !tubeJourney) {
+        continue;
+      }
+      runtime.foodTravelDestinations.set(fish.id, foodTank.id);
+      fish.lastNeighborhoodMoveAt = Math.min(Number(fish.lastNeighborhoodMoveAt) || 0, now - 25 * 1000);
+      stagedCount += 1;
+    }
+  }
+  return stagedCount;
 }
 
 function getNextDayStartTimestamp(timestamp = Date.now()) {

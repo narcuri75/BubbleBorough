@@ -67,11 +67,17 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
     : (Object.prototype.hasOwnProperty.call(options, "flipped")
       ? Boolean(options.flipped)
       : Boolean(runtime.placementMode?.flipped));
+  const resolvedFlippedY = options.item && Object.prototype.hasOwnProperty.call(options.item, "flippedY")
+    ? Boolean(options.item.flippedY)
+    : (Object.prototype.hasOwnProperty.call(options, "flippedY")
+      ? Boolean(options.flippedY)
+      : Boolean(runtime.placementMode?.flippedY));
   const candidate = {
     ...(options.item || {}),
     decorKey,
     scale: resolvedScale,
     flipped: resolvedFlipped,
+    flippedY: resolvedFlippedY,
     tankLayer: resolvedLayer,
     xNorm: normalizedX,
     yNorm: normalizedY
@@ -195,12 +201,14 @@ function getPlacedDecorOpaqueBoundsForImagePath(item, decor, imagePath) {
   const maxU = (mask.bounds.maxX + 1) / image.width;
   const mappedMinU = resolveDecorHorizontalUnit(item, minU);
   const mappedMaxU = resolveDecorHorizontalUnit(item, maxU);
+  const mappedMinV = resolveDecorVerticalUnit(item, mask.bounds.minY / image.height);
+  const mappedMaxV = resolveDecorVerticalUnit(item, (mask.bounds.maxY + 1) / image.height);
 
   return {
     left: left + Math.min(mappedMinU, mappedMaxU) * width,
     right: left + Math.max(mappedMinU, mappedMaxU) * width,
-    top: top + (mask.bounds.minY / image.height) * height,
-    bottom: top + ((mask.bounds.maxY + 1) / image.height) * height
+    top: top + Math.min(mappedMinV, mappedMaxV) * height,
+    bottom: top + Math.max(mappedMinV, mappedMaxV) * height
   };
 }
 

@@ -105,11 +105,21 @@ function normalizeDecorFishBehaviorMeta(entry, key = "") {
   const serviceTypes = normalizeStringList(source?.services ?? source?.service)
     .map((value) => value.toLowerCase().replace(/[-_\s]+/g, "-"))
     .filter((value, index, values) => allowedServices.has(value) && values.indexOf(value) === index);
+  const serviceSeats = Array.isArray(source?.serviceSeats)
+    ? source.serviceSeats.map((seat, index) => ({
+      id: typeof seat?.id === "string" && seat.id.trim() ? seat.id.trim() : `seat-${index + 1}`,
+      x: clamp(Number(seat?.x) || 0.5, 0.05, 0.95),
+      y: clamp(Number(seat?.y) || 0.55, 0.05, 0.95),
+      layer: Number.isFinite(Number(seat?.layer)) ? clampTankLayer(Number(seat.layer)) : null,
+      direction: Number(seat?.direction) < 0 ? -1 : 1
+    })).slice(0, 12)
+    : [];
 
   return {
     explicitHangout: normalizedHangout.explicit || Boolean(source),
     hangoutTypes,
     serviceTypes,
+    serviceSeats,
     occupancyLimit: Number.isFinite(Number(source?.occupancyLimit))
       ? Math.max(1, Math.floor(Number(source.occupancyLimit)))
       : null,

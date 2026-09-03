@@ -42,6 +42,7 @@ function renderTank(now) {
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
   //drawLooseGravel(now, { transientOnly: true });
+  drawDirtyWaterTint(dirtiness);
   drawMedicineWaterTint(now);
   drawMedicineClouds(now);
   drawWaterBloodTint();
@@ -60,11 +61,8 @@ function renderTank(now) {
   drawCleaningSparkles(now);
   glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
-  const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
-  const lightGrime = getLightGrimeVisualIntensity(dirtiness);
   const severeGrime = getSevereGrimeVisualIntensity(dirtiness);
   const tankBlurScale = getPortableTankBlurScale();
-  const grimeBlurScale = getPortableGrimeBlurScale();
   const tankCanvasFilter = severeGrime > 0
     ? `blur(${(severeGrime * 1.8 * tankBlurScale).toFixed(2)}px) saturate(${(1 - severeGrime * 0.18).toFixed(3)}) brightness(${(1 - severeGrime * 0.12).toFixed(3)})`
     : "none";
@@ -72,13 +70,38 @@ function renderTank(now) {
     dom.tankCanvas.style.filter = tankCanvasFilter;
     runtime.lastTankCanvasFilter = tankCanvasFilter;
   }
-  const grimeCanvasFilter = visibleDirtiness > 0
-    ? `blur(${((0.12 + lightGrime * 0.48 + severeGrime * 1.6) * grimeBlurScale).toFixed(2)}px)`
-    : "none";
+  // The authored grime textures already contain soft organic edges. Keeping
+  // this overlay unfiltered avoids forcing the browser to re-blur a large
+  // transparent canvas whenever the animated aquarium behind it changes.
+  const grimeCanvasFilter = "none";
   if (runtime.lastGrimeCanvasFilter !== grimeCanvasFilter) {
     dom.grimeCanvas.style.filter = grimeCanvasFilter;
     runtime.lastGrimeCanvasFilter = grimeCanvasFilter;
   }
+}
+
+function drawDirtyWaterTint(dirtiness = getTankDirtiness(Date.now())) {
+  const tintStrength = Math.pow(clamp((Number(dirtiness) - 0.08) / 0.92, 0, 1), 1.18);
+  if (tintStrength <= 0.002) {
+    return;
+  }
+
+  const visibleBounds = getVisibleTankVirtualBounds();
+  const waterTop = Math.max(WATER_SURFACE_Y, visibleBounds.top);
+  const waterBottom = Math.min(TANK_HEIGHT, visibleBounds.bottom || TANK_HEIGHT);
+  const gradient = tankContext.createLinearGradient(0, waterTop, 0, waterBottom);
+  gradient.addColorStop(0, `rgba(73, 132, 54, ${(0.18 * tintStrength).toFixed(3)})`);
+  gradient.addColorStop(0.48, `rgba(55, 112, 41, ${(0.32 * tintStrength).toFixed(3)})`);
+  gradient.addColorStop(1, `rgba(35, 82, 28, ${(0.46 * tintStrength).toFixed(3)})`);
+
+  tankContext.save();
+  tankContext.globalCompositeOperation = "multiply";
+  tankContext.fillStyle = gradient;
+  tankContext.fillRect(visibleBounds.left, waterTop, visibleBounds.width, Math.max(0, waterBottom - waterTop));
+  tankContext.globalCompositeOperation = "source-over";
+  tankContext.fillStyle = `rgba(82, 126, 42, ${(0.18 * tintStrength).toFixed(3)})`;
+  tankContext.fillRect(visibleBounds.left, waterTop, visibleBounds.width, Math.max(0, waterBottom - waterTop));
+  tankContext.restore();
 }
 
 function drawLightsOutOverlay(now = Date.now()) {
@@ -831,7 +854,7 @@ function collectBubblerParticleFields(now = Date.now()) {
         }
       );
       const sourceX = drawX + width * renderedSourceLocation;
-      const sourceY = drawY + height * sourceYOffsetRatio + Math.max(2 * stableScale, itemScale * 2 * stableScale);
+      const sourceY = drawY + height * resolveDecorVerticalUnit(item, sourceYOffsetRatio) + Math.max(2 * stableScale, itemScale * 2 * stableScale);
       const direction = getBubblerDirectionVector(spout.direction);
       const spreadPx = Number.isFinite(Number(spout.spread)) ? Number(spout.spread) : DEFAULT_BUBBLER_SPREAD_PX;
       const distancePx = Number.isFinite(Number(spout.fadeDistance)) ? Number(spout.fadeDistance) : DEFAULT_BUBBLER_FADE_DISTANCE_PX;
@@ -839,7 +862,7 @@ function collectBubblerParticleFields(now = Date.now()) {
         x: sourceX,
         y: sourceY,
         directionX: direction.x,
-        directionY: direction.y,
+        directionY: isDecorVerticallyFlipped(item) ? -direction.y : direction.y,
         spread: Math.max(WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX * 0.42, spreadPx * itemScale * stableScale * 0.56),
         distance: Math.max(58, distancePx * stableScale),
         strength: clamp((Number(spout.intensity) || DEFAULT_BUBBLER_INTENSITY) / MAX_BUBBLER_INTENSITY, 0.35, 1.25),

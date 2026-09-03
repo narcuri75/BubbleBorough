@@ -125,7 +125,7 @@ function addDebugCoins(amount = 10) {
     return;
   }
 
-  state.coins += coinAmount;
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + coinAmount);
   pushEvent(`Debug coins added. +${coinAmount} ${pluralize("coin", coinAmount)}.`, now);
   saveState();
   renderUi(now);
@@ -178,8 +178,8 @@ function resetMealsDebug() {
   let cleared = 0;
 
   for (const slot of slots) {
-    if (state.feedHistory[slot.key]) {
-      delete state.feedHistory[slot.key];
+    if (state.mealHistory?.[slot.key]) {
+      delete state.mealHistory[slot.key];
       cleared += 1;
     }
   }

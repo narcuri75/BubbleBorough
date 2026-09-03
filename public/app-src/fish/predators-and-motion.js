@@ -1878,6 +1878,8 @@ function updateFishMotion(now, deltaSeconds) {
       continue;
     }
     const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+    const pendingTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
+    const pendingTubeTravel = pendingTravel?.mode === "tube";
     const debugCaveTestFish = isDebugCaveTestFish(fish);
     const breedingRole = activeBreedingSequence
       ? (fish.id === activeBreedingSequence.leftFish.id
@@ -2227,6 +2229,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !fishActionOwnsMovement
         && !debugBehaviorOwnsMovement
         && !diseaseAvoidanceOwnsMovement
+        && !pendingTravel
         && now >= fish.targetAt
       ) {
         if (retargetsThisFrame >= MAX_FISH_RETARGETS_PER_FRAME) {
@@ -2237,14 +2240,23 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
-      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement) {
+      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !pendingTravel) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
       }
     }
 
-    enforceFishLayerBoundary(fish, species);
-    clampFishToMobileViewport(fish, species, now);
+    if (!pendingTravel) {
+      enforceFishLayerBoundary(fish, species);
+      clampFishToMobileViewport(fish, species, now);
+    } else if (pendingTubeTravel) {
+      const tubeId = pendingTravel.phase === "emerging" ? pendingTravel.targetTubeId : pendingTravel.sourceTubeId;
+      const tube = getTankContainingFish(fish.id)?.placedDecor?.find((item) => item.id === tubeId);
+      if (tube) {
+        const span = getDecorLayerSpan(tube.decorKey, getDecorTankLayer(tube));
+        setFishTankLayers(fish, span.back, span.back);
+      }
+    }
 
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
@@ -2271,6 +2283,9 @@ function updateFishMotion(now, deltaSeconds) {
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
           ? 0.9
           : (isFishCriticallyLowHealth(fish) ? 0.22 : 0.08);
+    if (pendingTravel) {
+      motionTarget = Math.max(motionTarget, 0.58);
+    }
     if (zombieLockedOnTarget) {
       motionTarget = Math.max(motionTarget, 0.78);
     } else if (zombieBittenVictim) {
@@ -2308,8 +2323,9 @@ function updateFishMotion(now, deltaSeconds) {
     let handledDirectionThisFrame = false;
 
     if (moveDistance > 0.0001) {
+      const manuallyChasingFood = fish.activity === "feeding" && pellet && pellet.dropStartXNorm == null;
       let speedMultiplier = fish.activity === "feeding"
-        ? FEED_CHASE_MULTIPLIER
+        ? (manuallyChasingFood ? 1 : FEED_CHASE_MULTIPLIER)
         : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
           ? 1.14
           : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -2318,7 +2334,9 @@ function updateFishMotion(now, deltaSeconds) {
 
       if (Number.isFinite(fish.panicUntil)) {
         if (now < fish.panicUntil) {
-          speedMultiplier *= Number(fish.panicSpeedBoost) || 2;
+          if (!manuallyChasingFood) {
+            speedMultiplier *= Number(fish.panicSpeedBoost) || 2;
+          }
         } else {
           fish.panicUntil = null;
           fish.panicSpeedBoost = null;
@@ -2369,24 +2387,33 @@ function updateFishMotion(now, deltaSeconds) {
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.18, 1.4);
       }
       speedMultiplier *= getFishDiseaseSpeedMultiplier(fish, now);
+      if (manuallyChasingFood) {
+        // Manual feeding should redirect normal swimming, not turn it into a
+        // dash. This final cap also prevents another transient behavior from
+        // accidentally stacking a speed boost onto the pellet chase.
+        speedMultiplier = Math.min(1, speedMultiplier);
+      }
 
       const speed = fish.swimSpeed * FISH_MOTION_SCALE * speedMultiplier;
       const step = Math.min(moveDistance, speed * deltaSeconds);
       const previousXNorm = fish.xNorm;
       const previousYNorm = fish.yNorm;
 
-      const nextXNorm = clampFishXNormToMobileViewport(fish.xNorm + (moveDx / moveDistance) * step, fish, species, now);
+      const rawNextXNorm = fish.xNorm + (moveDx / moveDistance) * step;
+      const nextXNorm = pendingTravel ? rawNextXNorm : clampFishXNormToMobileViewport(rawNextXNorm, fish, species, now);
       const movementMaxYNorm = fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? 0.96
         : (fish.activity === "feeding" && pellet?.settled ? 0.9 : 0.8);
       const rawNextYNorm = fish.yNorm + (moveDy / moveDistance) * step;
-      const nextPlacement = effectiveBehavior === "sucker"
+      const nextPlacement = effectiveBehavior === "sucker" && !pendingTravel
         ? clampFishPlacement(nextXNorm, rawNextYNorm, species, {
           fish,
           layer: getSuckerFishGlassLayer(fish)
         })
         : null;
-      const nextYNorm = nextPlacement
+      const nextYNorm = pendingTravel
+        ? rawNextYNorm
+        : nextPlacement
         ? nextPlacement.yNorm
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? clamp(rawNextYNorm, 0.14, movementMaxYNorm)
@@ -2398,7 +2425,7 @@ function updateFishMotion(now, deltaSeconds) {
           { minYNorm: 0.14, maxYNorm: movementMaxYNorm }
         );
 
-      if (effectiveBehavior === "sucker") {
+      if (effectiveBehavior === "sucker" || pendingTravel) {
         fish.xNorm = nextXNorm;
         fish.yNorm = nextYNorm;
       } else {

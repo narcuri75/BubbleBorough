@@ -215,61 +215,6 @@ function maybeRecordBoroughHappeningFromEvent(event, tank = getCurrentTank()) {
   return source ? recordBoroughHappening(source.text, source, event.time) : null;
 }
 
-function ensureBoroughNotificationHost() {
-  let host = document.querySelector("#boroughActivityNotifications");
-  if (!host) {
-    host = document.createElement("div");
-    host.id = "boroughActivityNotifications";
-    host.className = "borough-activity-notifications";
-    host.setAttribute("aria-live", "polite");
-    host.setAttribute("aria-atomic", "false");
-    document.body.append(host);
-  }
-  return host;
-}
-
-function queueBoroughActivityNotification(title, detail = "", options = {}) {
-  const now = Number.isFinite(Number(options.time)) ? Number(options.time) : Date.now();
-  const signature = String(options.signature || `${title}|${detail}`).toLowerCase();
-  const lastDuplicateAt = Number(runtime.boroughNotificationSignatures.get(signature)) || 0;
-  if (!options.force && (now - runtime.lastBoroughNotificationAt < BOROUGH_NOTIFICATION_COOLDOWN_MS || now - lastDuplicateAt < BOROUGH_NOTIFICATION_DUPLICATE_MS)) {
-    return false;
-  }
-  runtime.lastBoroughNotificationAt = now;
-  runtime.boroughNotificationSignatures.set(signature, now);
-  for (const [key, timestamp] of runtime.boroughNotificationSignatures) {
-    if (now - timestamp > BOROUGH_NOTIFICATION_DUPLICATE_MS * 2) {
-      runtime.boroughNotificationSignatures.delete(key);
-    }
-  }
-  const host = ensureBoroughNotificationHost();
-  const notification = document.createElement("div");
-  notification.className = "borough-activity-notification";
-  notification.innerHTML = `<strong>${escapeHtml(title)}</strong>${detail ? `<span>${escapeHtml(detail)}</span>` : ""}`;
-  host.append(notification);
-  while (host.children.length > 3) {
-    host.firstElementChild?.remove();
-  }
-  requestAnimationFrame(() => notification.classList.add("is-visible"));
-  window.setTimeout(() => {
-    notification.classList.remove("is-visible");
-    window.setTimeout(() => notification.remove(), 350);
-  }, Math.max(2400, Number(options.durationMs) || 4200));
-  return true;
-}
-
-function publishBoroughActivityEvent(event, tank = getCurrentTank()) {
-  const happening = maybeRecordBoroughHappeningFromEvent(event, tank);
-  const type = String(event?.type || "").toLowerCase();
-  if (["travel", "service", "residence", "birthday", "recovery", "birth"].includes(type)) {
-    queueBoroughActivityNotification(event.text, event.detail || "", {
-      time: event.time,
-      signature: `${type}:${event.fishId || ""}:${event.destinationTankId || event.placedDecorId || event.text}`
-    });
-  }
-  return happening;
-}
-
 function getFishAgeDays(fish, now = Date.now()) {
   return Math.max(0, Math.floor((getBoroughReferenceNow(now) - (Number(fish?.acquiredAt) || getBoroughReferenceNow(now))) / DAY_MS));
 }
@@ -444,14 +389,18 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
     return false;
   }
   const direction = getBoroughTravelEdgeDirection(move.source, move.destination);
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  if (fish.caveState) abortFishCaveBehavior(fish, now, false);
   if (direction === "right") {
-    fish.targetXNorm = 0.985;
+    fish.targetXNorm = 1.12;
   } else if (direction === "left") {
-    fish.targetXNorm = 0.015;
+    fish.targetXNorm = -0.12;
   } else if (direction === "down") {
-    fish.targetYNorm = 0.94;
+    fish.targetYNorm = 1.12;
   } else {
-    fish.targetYNorm = 0.06;
+    fish.targetYNorm = -0.12;
   }
   fish.lastNeighborhoodMoveAt = now;
   setFishBehaviorIntent(fish, "travel", `heading ${direction} toward ${getTankLabel(move.destination)}`, now, { durationMs: 45 * 1000 });
@@ -472,12 +421,137 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
   return true;
 }
 
+function getTransitTubeTravelPoints(tube) {
+  const bounds = getPlacedDecorBounds(tube);
+  if (!tube || !bounds) {
+    const xNorm = clamp(Number(tube?.xNorm) || 0.5, 0.05, 0.95);
+    const openingYNorm = clamp((Number(tube?.yNorm) || 0.5) - 0.16, 0.08, 0.88);
+    return {
+      opening: { xNorm, yNorm: openingYNorm },
+      inside: { xNorm, yNorm: clamp(openingYNorm + 0.07, 0.1, 0.9) },
+      exit: { xNorm, yNorm: clamp(openingYNorm - 0.07, 0.08, 0.84) },
+      below: { xNorm, yNorm: clamp(openingYNorm + 0.3, 0.2, 1.08) },
+      openingRadiusPx: 34
+    };
+  }
+  const width = Math.max(1, bounds.right - bounds.left);
+  const height = Math.max(1, bounds.bottom - bounds.top);
+  const xNorm = clamp((bounds.left + width / 2) / TANK_WIDTH, 0.05, 0.95);
+  // The replacement sprite is a straight, open glass cylinder. Its rim center
+  // sits about 5.5% down from the top of its rendered bounds.
+  const openingYNorm = clamp((bounds.top + height * 0.055) / TANK_HEIGHT, 0.08, 0.88);
+  return {
+    opening: { xNorm, yNorm: openingYNorm },
+    inside: { xNorm, yNorm: clamp((bounds.top + height * 0.3) / TANK_HEIGHT, 0.1, 0.9) },
+    exit: { xNorm, yNorm: (bounds.top - Math.max(55, height * 0.22)) / TANK_HEIGHT },
+    below: { xNorm, yNorm: (bounds.bottom + Math.max(55, height * 0.22)) / TANK_HEIGHT },
+    openingRadiusPx: clamp(width * 0.26, 26, 58)
+  };
+}
+
+function isFishAtTransitTubePoint(fish, point, radiusPx = 34) {
+  if (!fish || !point) {
+    return false;
+  }
+  return Math.hypot(
+    (Number(fish.xNorm) - point.xNorm) * TANK_WIDTH,
+    (Number(fish.yNorm) - point.yNorm) * TANK_HEIGHT
+  ) <= radiusPx;
+}
+
+function beginBoroughTubeTravel(move, now = Date.now()) {
+  const fish = move?.fish;
+  const sourceTube = move?.tubeJourney?.sourceTube;
+  const targetTube = move?.tubeJourney?.targetTube;
+  if (!fish || !move.source || !move.destination || !sourceTube || !targetTube || runtime.pendingNeighborhoodTravel.has(fish.id)) {
+    return false;
+  }
+  const sourcePoints = getTransitTubeTravelPoints(sourceTube);
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  if (fish.caveState) abortFishCaveBehavior(fish, now, false);
+  fish.targetXNorm = sourcePoints.opening.xNorm;
+  fish.targetYNorm = sourcePoints.opening.yNorm;
+  fish.targetAt = now + 60 * 1000;
+  fish.lastNeighborhoodMoveAt = now;
+  setFishBehaviorIntent(fish, "travel", `swimming to ${getTransitTubeDisplayName(sourceTube, move.source)}`, now, { durationMs: 45 * 1000 });
+  runtime.pendingNeighborhoodTravel.set(fish.id, {
+    mode: "tube",
+    fishId: fish.id,
+    sourceTankId: move.source.id,
+    destinationTankId: move.destination.id,
+    sourceTubeId: sourceTube.id,
+    targetTubeId: targetTube.id,
+    phase: "approach",
+    startedAt: now,
+    approachDeadline: now + 18 * 1000,
+    neededService: move.neededService || "",
+    serviceDestinationId: move.serviceDestination?.id || "",
+    residenceDestinationId: move.residenceDestination?.id || ""
+  });
+  return true;
+}
+
+function completeBoroughTubeTravel(pending, now = Date.now()) {
+  const source = getTankById(pending?.sourceTankId);
+  const destination = getTankById(pending?.destinationTankId);
+  const sourceTube = source?.placedDecor?.find((item) => item.id === pending?.sourceTubeId);
+  const targetTube = destination?.placedDecor?.find((item) => item.id === pending?.targetTubeId);
+  const sourceIndex = source?.fish?.findIndex((fish) => fish.id === pending?.fishId) ?? -1;
+  const fish = sourceIndex >= 0 ? source.fish[sourceIndex] : null;
+  if (!fish || !destination || !sourceTube || !targetTube || destination.fish.some((entry) => entry.id === fish.id)) {
+    runtime.pendingNeighborhoodTravel.delete(pending?.fishId);
+    return false;
+  }
+  const targetPoints = getTransitTubeTravelPoints(targetTube);
+  source.fish.splice(sourceIndex, 1);
+  // Start inside the destination cylinder and swim upward through its open
+  // rim. This mirrors the source-side descent instead of popping beside it.
+  fish.xNorm = targetPoints.below.xNorm;
+  fish.yNorm = targetPoints.below.yNorm;
+  fish.targetXNorm = targetPoints.exit.xNorm;
+  fish.targetYNorm = targetPoints.exit.yNorm;
+  fish.targetAt = now + 60 * 1000;
+  fish.coarseActivity = null;
+  fish.lastCoarseSimulatedAt = now;
+  fish.visitedNeighborhoodIds = [...new Set([...(fish.visitedNeighborhoodIds || []), destination.id])].slice(-64);
+  destination.fish.push(fish);
+  if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
+    runtime.foodTravelDestinations.delete(fish.id);
+  }
+  runtime.transitTubeBursts.push(
+    { tankId: destination.id, decorId: targetTube.id, mode: "exit", startedAt: now, endsAt: now + 1600 }
+  );
+  const serviceTank = getTankById(pending.serviceDestinationId);
+  const homeTank = getTankById(pending.residenceDestinationId);
+  const cause = pending.neededService && serviceTank
+    ? `${getBoroughServiceLabel(pending.neededService)} in ${getTankLabel(serviceTank)}`
+    : homeTank
+      ? `home in ${getTankLabel(homeTank)}`
+      : getTankLabel(destination);
+  setFishBehaviorIntent(fish, pending.neededService || homeTank ? "travel" : "explore", `emerging from ${getTransitTubeDisplayName(targetTube, destination)}`, now, { durationMs: 18 * 1000 });
+  pushEvent(`${fish.name} used a Transit Tube to ${getTankLabel(destination)}.`, now, destination, {
+    type: "travel",
+    fishId: fish.id,
+    sourceTankId: source.id,
+    destinationTankId: destination.id,
+    serviceType: pending.neededService,
+    travelReason: cause,
+    detail: "Transit Tube journey"
+  });
+  pending.phase = "emerging";
+  pending.destinationStartedAt = now;
+  pending.emergeDeadline = now + 6500;
+  return true;
+}
+
 function isFishAtBoroughTravelEdge(fish, direction) {
   if (!fish) return false;
-  if (direction === "right") return Number(fish.xNorm) >= 0.94;
-  if (direction === "left") return Number(fish.xNorm) <= 0.06;
-  if (direction === "down") return Number(fish.yNorm) >= 0.88;
-  return Number(fish.yNorm) <= 0.12;
+  if (direction === "right") return Number(fish.xNorm) >= 1.08;
+  if (direction === "left") return Number(fish.xNorm) <= -0.08;
+  if (direction === "down") return Number(fish.yNorm) >= 1.08;
+  return Number(fish.yNorm) <= -0.08;
 }
 
 function completeBoroughEdgeTravel(pending, now = Date.now()) {
@@ -492,18 +566,21 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
   source.fish.splice(sourceIndex, 1);
   const direction = pending.direction;
   if (direction === "right") {
-    fish.xNorm = 0.035; fish.targetXNorm = 0.32;
+    fish.xNorm = -0.1; fish.targetXNorm = 0.32;
   } else if (direction === "left") {
-    fish.xNorm = 0.965; fish.targetXNorm = 0.68;
+    fish.xNorm = 1.1; fish.targetXNorm = 0.68;
   } else if (direction === "down") {
-    fish.yNorm = 0.08; fish.targetYNorm = 0.32;
+    fish.yNorm = -0.1; fish.targetYNorm = 0.32;
   } else {
-    fish.yNorm = 0.9; fish.targetYNorm = 0.68;
+    fish.yNorm = 1.1; fish.targetYNorm = 0.68;
   }
   fish.coarseActivity = null;
   fish.lastCoarseSimulatedAt = now;
   fish.visitedNeighborhoodIds = [...new Set([...(fish.visitedNeighborhoodIds || []), destination.id])].slice(-64);
   destination.fish.push(fish);
+  if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
+    runtime.foodTravelDestinations.delete(fish.id);
+  }
   runtime.boroughEdgeBursts.push(
     { tankId: source.id, direction, mode: "depart", startedAt: now, endsAt: now + 1200 },
     { tankId: destination.id, direction, mode: "arrive", startedAt: now, endsAt: now + 1400 }
@@ -533,12 +610,70 @@ function processPendingNeighborhoodTravel(now = Date.now()) {
   let changed = false;
   for (const pending of [...runtime.pendingNeighborhoodTravel.values()]) {
     const source = getAllTanks(state).find((tank) => tank.id === pending.sourceTankId);
-    const fish = source?.fish?.find((entry) => entry.id === pending.fishId);
+    const destination = getTankById(pending.destinationTankId);
+    const fishTank = pending.mode === "tube" && pending.phase === "emerging" ? destination : source;
+    const fish = fishTank?.fish?.find((entry) => entry.id === pending.fishId);
     if (!fish || isFishDead(fish)) {
       runtime.pendingNeighborhoodTravel.delete(pending.fishId);
       continue;
     }
-    if (isFishAtBoroughTravelEdge(fish, pending.direction) || now >= pending.transferAfter) {
+    if (pending.mode === "tube") {
+      const sourceTube = source?.placedDecor?.find((item) => item.id === pending.sourceTubeId);
+      const targetTube = destination?.placedDecor?.find((item) => item.id === pending.targetTubeId);
+      if (!sourceTube || !targetTube) {
+        runtime.pendingNeighborhoodTravel.delete(pending.fishId);
+        continue;
+      }
+      const activeTube = pending.phase === "emerging" ? targetTube : sourceTube;
+      const points = getTransitTubeTravelPoints(activeTube);
+      const sourceIsVisible = getCurrentTank()?.id === fishTank?.id && !runtime.boroughOverviewOpen;
+      if (pending.phase === "approach") {
+        fish.targetXNorm = points.opening.xNorm;
+        fish.targetYNorm = points.opening.yNorm;
+        fish.targetAt = now + 60 * 1000;
+        if (isFishAtTransitTubePoint(fish, points.opening, points.openingRadiusPx)
+          || (!sourceIsVisible && now >= pending.approachDeadline)) {
+          if (!sourceIsVisible && !isFishAtTransitTubePoint(fish, points.opening, points.openingRadiusPx)) {
+            fish.xNorm = points.opening.xNorm;
+            fish.yNorm = points.opening.yNorm;
+          }
+          pending.phase = "entering";
+          pending.entryDeadline = now + 6500;
+          fish.targetXNorm = points.below.xNorm;
+          fish.targetYNorm = points.below.yNorm;
+          fish.targetAt = now + 60 * 1000;
+          runtime.transitTubeBursts.push({
+            tankId: source.id,
+            decorId: sourceTube.id,
+            mode: "enter",
+            startedAt: now,
+            endsAt: now + 1600
+          });
+        }
+      } else if (pending.phase === "entering") {
+        fish.targetXNorm = points.below.xNorm;
+        fish.targetYNorm = points.below.yNorm;
+        fish.targetAt = now + 60 * 1000;
+        if (isFishAtTransitTubePoint(fish, points.below, Math.max(24, points.openingRadiusPx * 0.72))
+          || (!sourceIsVisible && now >= pending.entryDeadline)) {
+          pending.phase = "waiting";
+          pending.transferReadyAt = now + 1000;
+        }
+      } else if (pending.phase === "waiting") {
+        fish.xNorm = points.below.xNorm;
+        fish.yNorm = points.below.yNorm;
+        if (now >= pending.transferReadyAt) changed = completeBoroughTubeTravel(pending, now) || changed;
+      } else if (pending.phase === "emerging") {
+        fish.targetXNorm = points.exit.xNorm;
+        fish.targetYNorm = points.exit.yNorm;
+        fish.targetAt = now + 60 * 1000;
+        if (isFishAtTransitTubePoint(fish, points.exit, Math.max(20, points.openingRadiusPx * .55)) || (!sourceIsVisible && now >= pending.emergeDeadline)) {
+          runtime.pendingNeighborhoodTravel.delete(fish.id);
+          fish.targetXNorm = clamp(points.exit.xNorm + randomBetween(-.16, .16), .12, .88);
+          fish.targetYNorm = clamp(points.exit.yNorm - .04, .14, .72);
+        }
+      }
+    } else if (isFishAtBoroughTravelEdge(fish, pending.direction) || now >= pending.transferAfter) {
       changed = completeBoroughEdgeTravel(pending, now) || changed;
     }
   }
@@ -1074,13 +1209,15 @@ function handleLivingBoroughDebugAction(event) {
     recent.slice(0, count).forEach(({ sourceEvent, sourceTank }) => maybeRecordBoroughHappeningFromEvent(sourceEvent, sourceTank));
     runtime.debugLivingBoroughOutput = `${Math.min(count, recent.length)} valid happenings generated from real events.`;
   } else if (action === "happening-clear") state.boroughHappenings = [];
-  else if (action === "notification-test") queueBoroughActivityNotification("Borough notification test", "Cooldown and duplicate suppression active", { force: true });
-  else if (action === "recap-preview" && tank) { const recap = buildDailyRecapSummary(tank, getLocalDayKey(now), now, { force: true }); runtime.debugLivingBoroughOutput = recap?.narrative || "No recap data."; }
+  else if (action === "notification-test") queueBoroughActivityNotification("Borough notification test", "Cooldown and duplicate suppression active", { force: true, persist: false });
+  else if (action === "recap-preview" && tank) { const recap = buildBoroughDailyRecapSummary(getLocalDayKey(now), now, { force: true }); runtime.debugLivingBoroughOutput = recap?.narrative || "No recap data."; }
   else if (action === "recap-generate" && tank) maybeGenerateDailyRecapForTank(tank, now, { force: true });
   else if (action === "simulate-days") { runtime.debugSimulatedNow = now + Number(value) * DAY_MS; syncState(runtime.debugSimulatedNow); }
   else if (action === "structure-info") {
     const item = getSelectedPlacedDecor();
-    runtime.debugLivingBoroughOutput = item ? `${runtime.decorMap.get(item.decorKey)?.name}: ${getDecorResidents(item.id).length}/${getDecorResidenceCapacity(item)} residents; services ${getDecorBoroughServiceTypes(item).join(", ") || "none"}.` : "Select a structure first.";
+    runtime.debugLivingBoroughOutput = item
+      ? `${runtime.decorMap.get(item.decorKey)?.name}: ${getDecorResidents(item.id).length}/${getDecorResidenceCapacity(item)} residents; seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}; services ${getDecorBoroughServiceTypes(item).join(", ") || "none"}.`
+      : "Select a structure first.";
   } else if (action === "structure-fill") {
     const item = getSelectedPlacedDecor();
     if (item) getAllTankFish(state).filter((entry) => !isFishDead(entry)).slice(0, getDecorResidenceCapacity(item)).forEach((entry) => { entry.boroughServiceTargetDecorId = item.id; });

@@ -600,6 +600,12 @@
           "hangout": ["hardscape"],
           "services": ["food"],
           "occupancyLimit": 4,
+          "serviceSeats": [
+            { "id": "counter-left", "x": 0.34, "y": 0.61, "direction": 1 },
+            { "id": "counter-mid-left", "x": 0.45, "y": 0.60, "direction": 1 },
+            { "id": "counter-mid-right", "x": 0.57, "y": 0.60, "direction": -1 },
+            { "id": "counter-right", "x": 0.69, "y": 0.61, "direction": -1 }
+          ],
           "note": "Hungry fish can feed themselves here without an automatic feeder."
         },
         "theme": "Borough"
@@ -615,6 +621,11 @@
           "hangout": ["hide"],
           "services": ["home"],
           "occupancyLimit": 3,
+          "serviceSeats": [
+            { "id": "left-room", "x": 0.38, "y": 0.58, "direction": 1, "layer": 4 },
+            { "id": "center-room", "x": 0.51, "y": 0.53, "direction": 1, "layer": 4 },
+            { "id": "right-room", "x": 0.67, "y": 0.57, "direction": -1, "layer": 4 }
+          ],
           "note": "A sheltered home that restores comfort and energy."
         },
         "theme": "Borough"
@@ -630,6 +641,10 @@
           "hangout": ["hardscape"],
           "services": ["clinic"],
           "occupancyLimit": 2,
+          "serviceSeats": [
+            { "id": "bed-left", "x": 0.45, "y": 0.60, "direction": 1, "layer": 4 },
+            { "id": "bed-right", "x": 0.58, "y": 0.60, "direction": -1, "layer": 4 }
+          ],
           "note": "Injured and ill fish visit for treatment and recovery."
         },
         "theme": "Borough"
@@ -645,6 +660,14 @@
           "hangout": ["bubbler", "hardscape"],
           "services": ["social"],
           "occupancyLimit": 6,
+          "serviceSeats": [
+            { "id": "bench-left-back", "x": 0.28, "y": 0.47, "direction": 1 },
+            { "id": "fountain-left", "x": 0.41, "y": 0.53, "direction": 1 },
+            { "id": "fountain-right", "x": 0.59, "y": 0.53, "direction": -1 },
+            { "id": "bench-right-back", "x": 0.72, "y": 0.47, "direction": -1 },
+            { "id": "bench-left-front", "x": 0.34, "y": 0.68, "direction": 1 },
+            { "id": "bench-right-front", "x": 0.66, "y": 0.68, "direction": -1 }
+          ],
           "note": "A lively gathering place that restores social and stimulation needs."
         },
         "bubbler": {
@@ -686,6 +709,10 @@
           "hangout": ["hide"],
           "services": ["rest"],
           "occupancyLimit": 2,
+          "serviceSeats": [
+            { "id": "moon-left", "x": 0.43, "y": 0.52, "direction": 1, "layer": 4 },
+            { "id": "moon-right", "x": 0.58, "y": 0.52, "direction": -1, "layer": 4 }
+          ],
           "note": "A low-activity retreat for tired or stressed fish."
         },
         "theme": "Borough"
@@ -701,6 +728,12 @@
           "hangout": ["plant"],
           "services": ["nursery"],
           "occupancyLimit": 4,
+          "serviceSeats": [
+            { "id": "nest-left", "x": 0.34, "y": 0.57, "direction": 1 },
+            { "id": "nest-center-left", "x": 0.45, "y": 0.50, "direction": 1 },
+            { "id": "nest-center-right", "x": 0.57, "y": 0.50, "direction": -1 },
+            { "id": "nest-right", "x": 0.68, "y": 0.57, "direction": -1 }
+          ],
           "note": "A protected breeding garden that encourages compatible fish to reproduce."
         },
         "theme": "Borough"

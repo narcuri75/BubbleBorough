@@ -223,7 +223,11 @@
                   },
                   {
                       "key":  "transit-tube.png",
-                      "path":  "assets/decor/transit-tube.png?v=borough-transit-1"
+                      "path":  "assets/decor/transit-tube.png?v=borough-transit-2"
+                  },
+                  {
+                      "key":  "transit-tube_bg.png",
+                      "path":  "assets/decor/transit-tube_bg.png?v=borough-transit-2"
                   },
                   {
                       "key":  "coral-clinic.png",

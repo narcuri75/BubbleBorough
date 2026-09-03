@@ -121,7 +121,7 @@ function mapDecorLocalPointToTankNorm(item, localX, localY) {
   }
 
   const x = bounds.left + (bounds.right - bounds.left) * resolveDecorHorizontalUnit(item, localX);
-  const y = bounds.top + (bounds.bottom - bounds.top) * clamp(localY, 0, 1);
+  const y = bounds.top + (bounds.bottom - bounds.top) * resolveDecorVerticalUnit(item, localY);
   return {
     xNorm: clamp(x / TANK_WIDTH, 0.08, 0.92),
     yNorm: clamp(y / TANK_HEIGHT, 0.14, 0.8)
@@ -776,6 +776,8 @@ function buildCaveNavigationCacheKey(item, frontDescriptor, barrierDescriptor) {
     item.xNorm?.toFixed?.(5) ?? item.xNorm,
     item.yNorm?.toFixed?.(5) ?? item.yNorm,
     getDecorTankLayer(item),
+    isDecorHorizontallyFlipped(item) ? "flip-x" : "normal-x",
+    isDecorVerticallyFlipped(item) ? "flip-y" : "normal-y",
     frontBounds ? [frontBounds.left, frontBounds.top, frontBounds.right, frontBounds.bottom].map((value) => Math.round(value)).join(",") : "front",
     barrierBounds ? [barrierBounds.left, barrierBounds.top, barrierBounds.right, barrierBounds.bottom].map((value) => Math.round(value)).join(",") : "barrier"
   ].join("|");

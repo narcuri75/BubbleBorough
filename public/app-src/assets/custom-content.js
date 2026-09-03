@@ -185,15 +185,13 @@ function bindEvents() {
     const key = keyRaw.toLowerCase();
     if (
       (keyRaw === "ArrowLeft" || keyRaw === "ArrowRight")
-      && !runtime.editTankMode
-      && !runtime.fishEditMode
       && !runtime.storeOverlayOpen
       && !runtime.settingsOverlayOpen
       && !runtime.utilityOverlayOpen
       && !runtime.equipmentOverlayOpen
     ) {
       event.preventDefault();
-      moveCameraToAdjacentSection(keyRaw === "ArrowLeft" ? -1 : 1, 0);
+      moveCameraToAdjacentSection(keyRaw === "ArrowLeft" ? -1 : 1, 0, { preserveHorizontalOverlays: true });
       return;
     }
 
@@ -252,12 +250,14 @@ function bindEvents() {
 
     if (key === "f") {
       event.preventDefault();
-      const flipped = toggleActiveDecorFlip();
+      const flipAxis = event.shiftKey ? "vertical" : "horizontal";
+      const flipped = toggleActiveDecorFlip(flipAxis);
       if (flipped !== null) {
+        const axisLabel = flipAxis === "vertical" ? "vertical" : "horizontal";
         showToast(
           isTutorialDecorDoneStep()
-            ? getTutorialDecorDoneToastText(flipped ? "Decor flipped." : "Decor flip cleared.")
-            : (flipped ? "Decor flipped." : "Decor flip cleared."),
+            ? getTutorialDecorDoneToastText(flipped ? `Decor flipped ${axisLabel}.` : `${axisLabel[0].toUpperCase()}${axisLabel.slice(1)} flip cleared.`)
+            : (flipped ? `Decor flipped ${axisLabel}.` : `${axisLabel[0].toUpperCase()}${axisLabel.slice(1)} flip cleared.`),
           {
             durationMs: isTutorialDecorDoneStep() ? 120000 : undefined,
             key: isTutorialDecorDoneStep() ? TUTORIAL_TOAST_DECOR_DONE : ""
@@ -310,7 +310,69 @@ function bindEvents() {
     if (dom.loadingOverlay?.classList.contains("is-error")) {
       event.preventDefault();
       event.stopPropagation();
-      window.location.reload();
+      const recoveryDialog = dom.loadingOverlay.querySelector("[data-loading-recovery-dialog]");
+      const recoveryStatus = dom.loadingOverlay.querySelector("[data-loading-recovery-status]");
+      const helpButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-recovery-help]")
+        : null;
+      if (helpButton) {
+        if (recoveryDialog) {
+          recoveryDialog.hidden = !recoveryDialog.hidden;
+        }
+        return;
+      }
+      const cancelRecoveryButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-recovery-cancel]")
+        : null;
+      if (cancelRecoveryButton) {
+        if (recoveryDialog) {
+          recoveryDialog.hidden = true;
+        }
+        return;
+      }
+      const confirmRecoveryButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-recovery-confirm]")
+        : null;
+      if (confirmRecoveryButton) {
+        confirmRecoveryButton.disabled = true;
+        if (recoveryStatus) {
+          recoveryStatus.textContent = "Backing up and removing the Bubble Borough browser save...";
+        }
+        window.setTimeout(() => {
+          try {
+            const rawSave = localStorage.getItem(STORAGE_KEY);
+            if (rawSave) {
+              const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+              downloadTextFile(rawSave, `bubble-borough-recovery-backup-${timestamp}.json`, "application/json");
+            }
+            localStorage.removeItem(STORAGE_KEY);
+            window.location.reload();
+          } catch (error) {
+            console.error("Could not remove Bubble Borough browser save.", error);
+            confirmRecoveryButton.disabled = false;
+            if (recoveryStatus) {
+              recoveryStatus.textContent = error?.message || "The browser would not allow the save to be removed.";
+            }
+          }
+        }, 0);
+        return;
+      }
+      const copyButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-error-copy]")
+        : null;
+      if (copyButton) {
+        const details = dom.loadingOverlay.dataset.startupError || dom.loadingOverlay.title || "Aquarium startup failed";
+        void copyTextToClipboard(details).then((copied) => {
+          copyButton.textContent = copied ? "Copied" : "Select error text above";
+        });
+        return;
+      }
+      const retryButton = event.target instanceof Element
+        ? event.target.closest("[data-loading-error-retry]")
+        : null;
+      if (retryButton) {
+        window.location.reload();
+      }
       return;
     }
     if (!dom.loadingOverlay?.classList.contains("is-ready")) {
@@ -356,6 +418,12 @@ function bindEvents() {
 
   dom.prevTankButton?.addEventListener("click", () => switchTankByOffset(-1));
   dom.nextTankButton?.addEventListener("click", () => switchTankByOffset(1));
+  dom.careTaskList?.addEventListener("click", (event) => {
+    const taskButton = event.target instanceof Element ? event.target.closest("[data-care-task-action]") : null;
+    if (taskButton) {
+      runManagementCareTaskAction(taskButton.dataset.careTaskAction, taskButton.dataset.careTaskTankId, taskButton.dataset.careTaskFishId);
+    }
+  });
   dom.overviewButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("overviewButton")) {
       return;
@@ -363,10 +431,65 @@ function bindEvents() {
     toggleAquariumOverview();
   });
   dom.closeBoroughOverview?.addEventListener("click", closeAquariumOverview);
+  dom.boroughOverviewInfo?.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+    const tabButton = target.closest("[data-borough-info-tab]");
+    if (tabButton) {
+      runtime.boroughOverviewInfoTab = tabButton.dataset.boroughInfoTab === "tank" ? "tank" : "borough";
+      runtime.boroughOverviewInfoView = "overview";
+      renderAquariumOverview();
+      return;
+    }
+    const viewButton = target.closest("[data-borough-info-view], [data-management-view]");
+    if (viewButton) {
+      runtime.boroughOverviewInfoView = viewButton.dataset.boroughInfoView || "overview";
+      renderAquariumOverview();
+      return;
+    }
+    if (target.closest("[data-toggle-care-task-pane]")) {
+      toggleCareTaskPane();
+      renderAquariumOverview();
+      return;
+    }
+    const careButton = target.closest("[data-borough-care-action]");
+    if (careButton) {
+      closeAquariumOverview();
+      runManagementCareTaskAction(careButton.dataset.boroughCareAction, careButton.dataset.boroughCareTankId, careButton.dataset.boroughCareFishId);
+      return;
+    }
+    const visitButton = target.closest("[data-visit-section]");
+    if (visitButton) {
+      visitAquariumSection(visitButton.dataset.visitSection);
+      return;
+    }
+    const editButton = target.closest("[data-borough-edit-tank]");
+    if (editButton) {
+      setActiveTank(editButton.dataset.boroughEditTank, { announce: false, preserveHorizontalOverlays: true });
+      closeAquariumOverview();
+      toggleEditTankMode(true, { source: "borough-overview", collapseSidebar: true });
+      return;
+    }
+    const selectedTank = getTankById(runtime.boroughOverviewInfoTankId);
+    if (selectedTank) {
+      setActiveTank(selectedTank.id, { announce: false, preserveHorizontalOverlays: true });
+    }
+    if (handleTankManagementUtilityOverlayBodyClick({ source: "borough-overview" }, target)) {
+      if (runtime.boroughOverviewOpen) renderAquariumOverview();
+    }
+  });
   dom.boroughGrid?.addEventListener("click", (event) => {
     const extendButton = event.target.closest("[data-extend-grid-x]");
     if (extendButton) {
       extendAquariumAt(Number(extendButton.dataset.extendGridX), Number(extendButton.dataset.extendGridY));
+      return;
+    }
+    const infoButton = event.target.closest("[data-borough-tank-info]");
+    if (infoButton) {
+      runtime.boroughOverviewInfoTankId = infoButton.dataset.boroughTankInfo;
+      runtime.boroughOverviewInfoTab = "tank";
+      runtime.boroughOverviewInfoView = "overview";
+      renderAquariumOverview();
       return;
     }
     const renameButton = event.target.closest("[data-rename-borough]");
@@ -391,8 +514,18 @@ function bindEvents() {
       renderAquariumOverview();
       return;
     }
+    const travelWallButton = event.target.closest("[data-toggle-travel-wall]");
+    if (travelWallButton) {
+      toggleBoroughTravelWall(travelWallButton.dataset.toggleTravelWall, travelWallButton.dataset.toggleTravelWallNeighbor);
+      return;
+    }
+    const sellTankButton = event.target.closest("[data-sell-borough-tank]");
+    if (sellTankButton) {
+      sellAquariumTank(sellTankButton.dataset.sellBoroughTank);
+      return;
+    }
     const sectionButton = event.target.closest("[data-visit-section]");
-    if (sectionButton) {
+    if (sectionButton && !runtime.boroughOverviewEditMode) {
       visitAquariumSection(sectionButton.dataset.visitSection);
     }
   });
@@ -418,30 +551,79 @@ function bindEvents() {
   });
   dom.boroughGrid?.addEventListener("dragstart", (event) => {
     const section = event.target.closest("[data-borough-section]");
-    if (!section || event.target.closest("input, button")) {
+    if (!runtime.boroughOverviewEditMode || !section || event.target.closest("input, button:not(.borough-section-preview), [data-toggle-travel-wall]")) {
       event.preventDefault();
       return;
     }
     runtime.boroughOverviewDraggedTankId = section.dataset.boroughSection;
     section.classList.add("is-dragging");
+    section.setAttribute("aria-grabbed", "true");
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+    }
     event.dataTransfer?.setData("text/plain", section.dataset.boroughSection);
   });
   dom.boroughGrid?.addEventListener("dragover", (event) => {
-    if (runtime.boroughOverviewDraggedTankId && event.target.closest("[data-borough-section]")) {
+    if (runtime.boroughOverviewDraggedTankId && event.target.closest("[data-borough-section], [data-borough-drop-grid-x]")) {
       event.preventDefault();
     }
   });
   dom.boroughGrid?.addEventListener("drop", (event) => {
-    const target = event.target.closest("[data-borough-section]");
+    const target = event.target.closest("[data-borough-section], [data-borough-drop-grid-x]");
     if (target && runtime.boroughOverviewDraggedTankId) {
       event.preventDefault();
-      swapAquariumSectionPositions(runtime.boroughOverviewDraggedTankId, target.dataset.boroughSection);
+      if (target.dataset.boroughSection) swapAquariumSectionPositions(runtime.boroughOverviewDraggedTankId, target.dataset.boroughSection);
+      else moveAquariumSectionToGrid(runtime.boroughOverviewDraggedTankId, Number(target.dataset.boroughDropGridX), Number(target.dataset.boroughDropGridY));
     }
     runtime.boroughOverviewDraggedTankId = null;
   });
+  dom.toggleBoroughEditMode?.addEventListener("click", () => {
+    runtime.boroughOverviewEditMode = !runtime.boroughOverviewEditMode;
+    runtime.boroughOverviewDraggedTankId = null;
+    renderAquariumOverview();
+  });
+  dom.addBoroughTankButton?.addEventListener("click", () => {
+    if (!runtime.boroughOverviewEditMode) return;
+    const openSpace = getValidAquariumExpansionSpaces()[0];
+    if (openSpace) extendAquariumAt(openSpace.gridX, openSpace.gridY);
+  });
+  // Pointer dragging works consistently on canvas-heavy tiles and touch input,
+  // unlike the browser's native image/canvas drag gesture.
+  dom.boroughGrid?.addEventListener("pointerdown", (event) => {
+    if (!runtime.boroughOverviewEditMode || event.button !== 0 || event.target.closest("input, button:not(.borough-section-preview), [data-toggle-travel-wall]")) return;
+    const section = event.target.closest("[data-borough-section]");
+    if (!section) return;
+    event.preventDefault();
+    runtime.boroughOverviewDraggedTankId = section.dataset.boroughSection;
+    runtime.boroughOverviewDragPointerId = event.pointerId;
+    section.classList.add("is-dragging");
+    section.setPointerCapture?.(event.pointerId);
+  });
+  dom.boroughGrid?.addEventListener("pointermove", (event) => {
+    if (runtime.boroughOverviewDragPointerId !== event.pointerId || !runtime.boroughOverviewDraggedTankId) return;
+    const hovered = document.elementFromPoint(event.clientX, event.clientY)?.closest?.("[data-borough-section], [data-borough-drop-grid-x]");
+    dom.boroughGrid.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target"));
+    hovered?.classList.add("is-drop-target");
+  });
+  const finishOverviewPointerDrag = (event) => {
+    if (runtime.boroughOverviewDragPointerId !== event.pointerId) return;
+    const tankId = runtime.boroughOverviewDraggedTankId;
+    const hovered = document.elementFromPoint(event.clientX, event.clientY)?.closest?.("[data-borough-section], [data-borough-drop-grid-x]");
+    runtime.boroughOverviewDragPointerId = null;
+    runtime.boroughOverviewDraggedTankId = null;
+    dom.boroughGrid.querySelectorAll(".is-dragging, .is-drop-target").forEach((node) => node.classList.remove("is-dragging", "is-drop-target"));
+    if (!tankId || !hovered) return;
+    if (hovered.dataset.boroughSection && hovered.dataset.boroughSection !== tankId) swapAquariumSectionPositions(tankId, hovered.dataset.boroughSection);
+    else if (hovered.dataset.boroughDropGridX !== undefined) moveAquariumSectionToGrid(tankId, Number(hovered.dataset.boroughDropGridX), Number(hovered.dataset.boroughDropGridY));
+  };
+  dom.boroughGrid?.addEventListener("pointerup", finishOverviewPointerDrag);
+  dom.boroughGrid?.addEventListener("pointercancel", finishOverviewPointerDrag);
   dom.boroughGrid?.addEventListener("dragend", () => {
     runtime.boroughOverviewDraggedTankId = null;
-    dom.boroughGrid?.querySelectorAll(".is-dragging").forEach((element) => element.classList.remove("is-dragging"));
+    dom.boroughGrid?.querySelectorAll(".is-dragging").forEach((element) => {
+      element.classList.remove("is-dragging");
+      element.setAttribute("aria-grabbed", "false");
+    });
   });
   dom.tankStage?.addEventListener("wheel", (event) => {
     if (isTankOverlayTarget(event.target) && !event.target.closest("#boroughOverview")) {
@@ -481,7 +663,7 @@ function bindEvents() {
       moveCameraToAdjacentSection(0, dy > 0 ? -1 : 1);
     }
   });
-  dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("daily-bonus"));
+  dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("notifications"));
   dom.toggleDebugMenuButton?.addEventListener("click", () => toggleDebugSidebar());
   dom.debugDailyRecapButton?.addEventListener("click", () => triggerDebugDailyRecap());
   dom.feedButton.addEventListener("click", () => {
@@ -1881,6 +2063,18 @@ function bindEvents() {
   const bindEquipmentSurface = (container) => {
     container?.addEventListener("click", playEquipmentSurfaceClickSound, true);
     container?.addEventListener("click", (event) => {
+      const copyAppearanceButton = event.target.closest("[data-copy-tank-appearance]");
+      if (copyAppearanceButton) {
+        copyTankAppearanceScheme(copyAppearanceButton.dataset.copyTankAppearance);
+        return;
+      }
+
+      const pasteAppearanceButton = event.target.closest("[data-paste-tank-appearance]");
+      if (pasteAppearanceButton) {
+        pasteTankAppearanceScheme(pasteAppearanceButton.dataset.pasteTankAppearance);
+        return;
+      }
+
       const backgroundButton = event.target.closest("[data-select-background]");
       if (backgroundButton) {
         selectBackground(backgroundButton.dataset.selectBackground);
@@ -2273,7 +2467,7 @@ function bindEvents() {
 
     if (runtime.cleaningMode) {
       if (point) {
-        scrubGlass(point.x, point.y);
+        queueScrubGlass(point.x, point.y);
       } else {
         runtime.lastScrubPoint = null;
         resetScrubWipeSoundState();
@@ -2300,6 +2494,7 @@ function bindEvents() {
         tankLayer: runtime.placementMode.tankLayer,
         scale: runtime.placementMode.scale,
         flipped: runtime.placementMode.flipped,
+        flippedY: runtime.placementMode.flippedY,
         applyGravity: true
       }) : null;
     }
@@ -2358,6 +2553,7 @@ function bindEvents() {
     dom.selectedDecorActionBar,
     dom.selectedDecorScaleControls,
     dom.selectedDecorLayerControls,
+    dom.selectedDecorTransformControls,
     dom.selectedDecorResizeHandles
   ]) {
     container?.addEventListener("click", playSelectedDecorActionSound, true);
@@ -2393,6 +2589,24 @@ function bindEvents() {
       setSelectedDecor(placedId);
     }
     performDecorEditShortcutAction("scale-down");
+  });
+  dom.selectedDecorFlipHorizontalButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const placedId = dom.selectedDecorFlipHorizontalButton?.dataset.flipDecor;
+    if (placedId && placedId !== runtime.selectedDecorId) {
+      setSelectedDecor(placedId);
+    }
+    toggleActiveDecorFlip("horizontal");
+  });
+  dom.selectedDecorFlipVerticalButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const placedId = dom.selectedDecorFlipVerticalButton?.dataset.flipDecor;
+    if (placedId && placedId !== runtime.selectedDecorId) {
+      setSelectedDecor(placedId);
+    }
+    toggleActiveDecorFlip("vertical");
   });
   dom.selectedDecorLayerUpButton?.addEventListener("click", (event) => {
     event.preventDefault();

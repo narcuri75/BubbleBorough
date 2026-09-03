@@ -218,6 +218,8 @@ function sanitizeFish(fish, options = {}) {
     boroughServiceTargetDecorId: typeof fish.boroughServiceTargetDecorId === "string" ? fish.boroughServiceTargetDecorId : null,
     boroughServiceType: typeof fish.boroughServiceType === "string" ? fish.boroughServiceType : "",
     boroughServiceStartedAt: Number.isFinite(Number(fish.boroughServiceStartedAt)) ? Math.max(0, Number(fish.boroughServiceStartedAt)) : 0,
+    boroughServiceSeatId: typeof fish.boroughServiceSeatId === "string" ? fish.boroughServiceSeatId : "",
+    boroughServiceSeatUntil: Number.isFinite(Number(fish.boroughServiceSeatUntil)) ? Math.max(0, Number(fish.boroughServiceSeatUntil)) : 0,
     coarseActivity,
     lastCoarseSimulatedAt: Number.isFinite(Number(fish.lastCoarseSimulatedAt)) ? Math.max(0, Number(fish.lastCoarseSimulatedAt)) : 0,
     nextWasteAt: Number.isFinite(Number(fish.nextWasteAt)) ? Math.max(0, Number(fish.nextWasteAt)) : 0,
@@ -760,7 +762,8 @@ function sanitizePlacedDecor(item) {
     yNorm: clamp(Number(item.yNorm) || 0.86, 0, 1),
     scale: clamp(Number(item.scale) || resolveDecorBaseScale(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX),
     tankLayer: clampTankLayer(Number(item.tankLayer) || DEFAULT_TANK_LAYER),
-    flipped: item.flipped === true
+    flipped: item.flipped === true,
+    flippedY: item.flippedY === true
   };
   const groupId = normalizeDecorGroupId(item.groupId);
   if (groupId) {
@@ -786,6 +789,7 @@ function sanitizePlacedDecor(item) {
   }
   if (decorKey === "transit-tube.png") {
     sanitized.transitTubeName = sanitizeTankName(item.transitTubeName, "Transit Tube");
+    sanitized.transitTubeColor = normalizeDecorColorSetting(item.transitTubeColor || "");
     const linkedId = String(item.transitTubeLinkedId || "").trim();
     if (linkedId && linkedId !== sanitized.id) {
       sanitized.transitTubeLinkedId = linkedId;
@@ -893,6 +897,7 @@ function hideSelectedDecorActionButtons() {
     dom.selectedDecorActionBar,
     dom.selectedDecorScaleControls,
     dom.selectedDecorLayerControls,
+    dom.selectedDecorTransformControls,
     dom.selectedDecorResizeHandles,
     dom.selectedDecorResizeIndicator
   ]) {
@@ -917,7 +922,9 @@ function hideSelectedDecorActionButtons() {
     dom.selectedDecorScaleUpButton,
     dom.selectedDecorScaleDownButton,
     dom.selectedDecorLayerUpButton,
-    dom.selectedDecorLayerDownButton
+    dom.selectedDecorLayerDownButton,
+    dom.selectedDecorFlipHorizontalButton,
+    dom.selectedDecorFlipVerticalButton
   ]) {
     if (!button) {
       continue;
@@ -933,6 +940,7 @@ function hideSelectedDecorActionButtons() {
     delete button.dataset.editDecorSettings;
     delete button.dataset.resizeDecor;
     delete button.dataset.layerDecor;
+    delete button.dataset.flipDecor;
   }
 }
 
@@ -1000,6 +1008,7 @@ function updateSelectedDecorActionButtons() {
   const actionBar = dom.selectedDecorActionBar;
   const scaleControls = dom.selectedDecorScaleControls;
   const layerControls = dom.selectedDecorLayerControls;
+  const transformControls = dom.selectedDecorTransformControls;
   const buyButton = dom.selectedDecorBuyAnotherButton;
   const sellButton = dom.selectedDecorSellButton;
   const storeButton = dom.selectedDecorStoreButton;
@@ -1009,9 +1018,11 @@ function updateSelectedDecorActionButtons() {
   const scaleDownButton = dom.selectedDecorScaleDownButton;
   const layerUpButton = dom.selectedDecorLayerUpButton;
   const layerDownButton = dom.selectedDecorLayerDownButton;
+  const flipHorizontalButton = dom.selectedDecorFlipHorizontalButton;
+  const flipVerticalButton = dom.selectedDecorFlipVerticalButton;
   const resizeHandles = dom.selectedDecorResizeHandles;
   const resizeIndicator = dom.selectedDecorResizeIndicator;
-  if (!buyButton && !sellButton && !storeButton && !assignButton && !settingsButton && !scaleUpButton && !scaleDownButton && !layerUpButton && !layerDownButton && !resizeHandles && !resizeIndicator) {
+  if (!buyButton && !sellButton && !storeButton && !assignButton && !settingsButton && !scaleUpButton && !scaleDownButton && !layerUpButton && !layerDownButton && !flipHorizontalButton && !flipVerticalButton && !resizeHandles && !resizeIndicator) {
     return;
   }
 
@@ -1071,6 +1082,9 @@ function updateSelectedDecorActionButtons() {
     }
     if (layerControls) {
       layerControls.hidden = true;
+    }
+    if (transformControls) {
+      transformControls.hidden = true;
     }
     positionSelectedDecorResizeHandles(item, bounds, stageRect, {
       showHandles: false,
@@ -1167,6 +1181,20 @@ function updateSelectedDecorActionButtons() {
       : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its bottom layer`));
   }
 
+  if (flipHorizontalButton) {
+    flipHorizontalButton.hidden = false;
+    flipHorizontalButton.dataset.flipDecor = item.id;
+    flipHorizontalButton.setAttribute("aria-pressed", String(isDecorHorizontallyFlipped(item)));
+    flipHorizontalButton.title = isDecorHorizontallyFlipped(item) ? "Clear horizontal flip" : "Flip horizontally";
+  }
+
+  if (flipVerticalButton) {
+    flipVerticalButton.hidden = false;
+    flipVerticalButton.dataset.flipDecor = item.id;
+    flipVerticalButton.setAttribute("aria-pressed", String(isDecorVerticallyFlipped(item)));
+    flipVerticalButton.title = isDecorVerticallyFlipped(item) ? "Clear vertical flip" : "Flip vertically";
+  }
+
   if (actionBar) {
     actionBar.hidden = false;
     const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - 24);
@@ -1200,6 +1228,24 @@ function updateSelectedDecorActionButtons() {
       Math.round(layerPoint.y),
       topPadding + layerHalfHeight,
       Math.max(topPadding + layerHalfHeight, Math.round(stageRect.height - topPadding - layerHalfHeight))
+    )}px`;
+  }
+
+  if (transformControls) {
+    transformControls.hidden = false;
+    const transformPoint = tankVirtualPointToStagePx(bounds.left - 34, (bounds.top + bounds.bottom) / 2);
+    const transformRect = transformControls.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const transformHalfWidth = Math.ceil((Number(transformRect.width) || 58) / 2);
+    const transformHalfHeight = Math.ceil((Number(transformRect.height) || 96) / 2);
+    transformControls.style.left = `${clamp(
+      Math.round(transformPoint.x),
+      stagePadding + transformHalfWidth,
+      Math.max(stagePadding + transformHalfWidth, Math.round(stageRect.width - stagePadding - transformHalfWidth))
+    )}px`;
+    transformControls.style.top = `${clamp(
+      Math.round(transformPoint.y),
+      topPadding + transformHalfHeight,
+      Math.max(topPadding + transformHalfHeight, Math.round(stageRect.height - topPadding - transformHalfHeight))
     )}px`;
   }
 
@@ -1960,9 +2006,18 @@ function isDecorHorizontallyFlipped(item) {
   return Boolean(item?.flipped);
 }
 
+function isDecorVerticallyFlipped(item) {
+  return Boolean(item?.flippedY);
+}
+
 function resolveDecorHorizontalUnit(item, unit) {
   const clampedUnit = clamp(Number.isFinite(Number(unit)) ? Number(unit) : 0.5, 0, 1);
   return isDecorHorizontallyFlipped(item) ? 1 - clampedUnit : clampedUnit;
+}
+
+function resolveDecorVerticalUnit(item, unit) {
+  const clampedUnit = clamp(Number.isFinite(Number(unit)) ? Number(unit) : 0.5, 0, 1);
+  return isDecorVerticallyFlipped(item) ? 1 - clampedUnit : clampedUnit;
 }
 
 function isCaveDecorKey(decorKey = "") {
@@ -2082,6 +2137,10 @@ function getDecorFrontLayer(decorKey, layer) {
 function getDecorLayerSpan(decorKey, layer) {
   const frontLayer = getDecorFrontLayer(decorKey, layer);
 
+  if (isTransitTubeDecorKey(decorKey)) {
+    const back = clampTankLayer(frontLayer + 1);
+    return { front: frontLayer, mid: null, back, min: frontLayer, max: back, label: `Layers ${frontLayer}-${back}` };
+  }
   if (!isCaveDecorKey(decorKey)) {
     return {
       front: frontLayer,

@@ -307,6 +307,61 @@ function handleEditDecorTrayWheel(event) {
   syncEditDecorTrayScrollControls();
 }
 
+function normalizeEditOverlayMode(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["fish", "decor", "tank"].includes(normalized) ? normalized : "fish";
+}
+
+function getRememberedEditOverlayMode() {
+  return normalizeEditOverlayMode(getUiSettings().editOverlayMode || runtime.editOverlayMode);
+}
+
+function rememberEditOverlayMode(mode, options = {}) {
+  const normalized = normalizeEditOverlayMode(mode);
+  runtime.editOverlayMode = normalized;
+  const settings = state.uiSettings && typeof state.uiSettings === "object"
+    ? state.uiSettings
+    : (state.uiSettings = {});
+  const changed = settings.editOverlayMode !== normalized;
+  settings.editOverlayMode = normalized;
+  if (changed && options.save !== false) {
+    saveState();
+  }
+  return normalized;
+}
+
+function closeActiveEditOverlay() {
+  if (runtime.fishEditMode) {
+    toggleFishEditMode(false);
+    return true;
+  }
+  if (runtime.editTankMode) {
+    toggleEditTankMode(false);
+    return true;
+  }
+  if (runtime.tankEditMode) {
+    toggleTankEditMode(false);
+    return true;
+  }
+  return false;
+}
+
+function openEditOverlayMode(mode = null, options = {}) {
+  const nextMode = rememberEditOverlayMode(mode || getRememberedEditOverlayMode());
+  const openOptions = {
+    source: options.source || "toolbar",
+    collapseSidebar: options.collapseSidebar !== false
+  };
+  if (nextMode === "decor") {
+    toggleEditTankMode(true, openOptions);
+  } else if (nextMode === "tank") {
+    toggleTankEditMode(true, openOptions);
+  } else {
+    toggleFishEditMode(true, openOptions);
+  }
+  return nextMode;
+}
+
 function toggleEditTankMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.editTankMode;
   clearPrimaryToolModes();
@@ -317,6 +372,7 @@ function toggleEditTankMode(force = null, options = {}) {
   let tutorialChanged = false;
 
   if (nextMode) {
+    rememberEditOverlayMode("decor");
     runtime.editTankMode = true;
     runtime.selectedFishId = null;
     runtime.toolModeSource = options.source || "toolbar";
@@ -402,6 +458,7 @@ function clearPrimaryToolModes() {
   runtime.toolbarActionMenu = "";
   runtime.editTankMode = false;
   runtime.fishEditMode = false;
+  runtime.tankEditMode = false;
   runtime.foodTrayOpen = false;
   runtime.medicineTrayOpen = false;
   runtime.feedingModeFoodKey = "";
@@ -696,6 +753,7 @@ function toggleFishEditMode(force = null, options = {}) {
   let tutorialChanged = false;
 
   if (nextMode) {
+    rememberEditOverlayMode("fish");
     runtime.fishEditMode = true;
     runtime.toolModeSource = options.source || "toolbar";
     if (options.collapseSidebar) {
@@ -709,6 +767,24 @@ function toggleFishEditMode(force = null, options = {}) {
   if (tutorialChanged) {
     saveState();
   }
+  renderUi(now);
+}
+
+function toggleTankEditMode(force = null, options = {}) {
+  const nextMode = typeof force === "boolean" ? force : !runtime.tankEditMode;
+  clearPrimaryToolModes();
+  const now = Date.now();
+
+  if (nextMode) {
+    rememberEditOverlayMode("tank");
+    runtime.tankEditMode = true;
+    runtime.selectedFishId = null;
+    runtime.toolModeSource = options.source || "toolbar";
+    if (options.collapseSidebar) {
+      runtime.sidebarCollapsed = true;
+    }
+  }
+
   renderUi(now);
 }
 
@@ -924,6 +1000,7 @@ async function init() {
     AUTO_DISPENSER_BG_PATH,
     ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
+    CAUSTIC_LIGHT_ASSET_PATH,
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
@@ -963,7 +1040,8 @@ async function init() {
       ...getFishDeathAssetCandidates(fish, "zombie"),
       ...getFishDeathAssetCandidates(fish, "skeleton")
     ])),
-    ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
+    ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path)),
+    ...Object.values(SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
   ]), { maxAttempts: 1 });
 
   const criticalFishImagePaths = [...new Set(getAllTankFish(state)

@@ -2627,28 +2627,65 @@ h2 {
   }
 }
 
+
+.tank-stage.is-decor-edit-framed {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(18, 58, 79, 0.72), transparent 48%),
+    linear-gradient(180deg, #061725 0%, #020912 100%);
+}
+
+.tank-stage.is-decor-edit-framed .tank-stage-background {
+  filter: brightness(0.48) saturate(0.78) blur(1px);
+  transition: filter 420ms ease;
+}
+
+#tankStage > #tankStageBackground {
+  inset: auto;
+  left: var(--tank-render-left, 0px);
+  top: var(--tank-render-top, 0px);
+  width: var(--tank-render-width, 100%);
+  height: var(--tank-render-height, 100%);
+}
+
+.tank-stage.is-decor-edit-framed > #tankStageBackground {
+  clip-path: inset(
+    var(--tank-frame-inset-top, 0px)
+    var(--tank-frame-inset-right, 0px)
+    var(--tank-frame-inset-bottom, 0px)
+    var(--tank-frame-inset-left, 0px)
+    round var(--tank-frame-radius, 0px)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tank-stage.is-decor-edit-framed .tank-stage-background {
+    transition: none;
+  }
+}
+
 .edit-decor-tray {
   position: absolute;
   left: 50%;
   right: auto;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 52px);
-  width: min(75vw, 1440px);
-  max-width: calc(100vw - 36px);
+  width: min(92vw, 1560px);
+  max-width: calc(100vw - 30px);
   transform: translateX(-50%);
   z-index: 9;
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) 40px;
   gap: 8px;
   align-items: center;
-  padding: 7px 9px;
-  border-radius: 22px;
+  padding: 10px 12px 12px;
+  border-radius: 20px;
   background:
-    linear-gradient(180deg, rgba(72, 92, 114, 0.045), rgba(48, 65, 83, 0.035));
-  border: 1px solid rgba(188, 225, 246, 0.08);
+    radial-gradient(circle at 50% 0%, rgba(111, 217, 244, 0.08), transparent 46%),
+    linear-gradient(180deg, rgba(9, 31, 48, 0.9), rgba(5, 19, 31, 0.92));
+  border: 1px solid rgba(188, 225, 246, 0.2);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.012),
-    0 12px 24px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(3px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 18px 38px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px) saturate(1.08);
 }
 
 :root[data-toolbar-position="bottom-center"] .edit-decor-tray {
@@ -2657,6 +2694,67 @@ h2 {
 
 .edit-decor-tray[hidden] {
   display: none !important;
+}
+
+.edit-tray-mode-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.edit-overlay-mode-tabs {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid rgba(188, 225, 246, 0.16);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(16, 43, 61, 0.9), rgba(7, 24, 38, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 20px rgba(0, 0, 0, 0.18);
+}
+
+.edit-overlay-mode-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 1px solid rgba(125, 224, 248, 0.22);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(14, 52, 76, 0.9), rgba(8, 31, 49, 0.94));
+  color: rgba(231, 248, 255, 0.82);
+  font: 800 0.86rem/1 var(--ui-font-stack);
+  cursor: pointer;
+  transition: transform 140ms ease, filter 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.edit-overlay-mode-tab:hover,
+.edit-overlay-mode-tab:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  border-color: rgba(151, 237, 255, 0.54);
+  color: #ffffff;
+}
+
+.edit-overlay-mode-tab.is-active {
+  border-color: rgba(170, 244, 255, 0.82);
+  background: linear-gradient(180deg, rgba(20, 96, 126, 0.96), rgba(11, 58, 84, 0.98));
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(115, 229, 255, 0.16),
+    0 10px 18px rgba(10, 80, 112, 0.22);
+}
+
+.edit-fish-tray .edit-overlay-mode-tab[data-edit-overlay-mode="fish"].is-active,
+.edit-decor-tray .edit-overlay-mode-tab[data-edit-overlay-mode="decor"].is-active {
+  background: linear-gradient(180deg, rgba(25, 113, 145, 0.98), rgba(12, 70, 99, 0.98));
 }
 
 .edit-fish-tray-tabs {
@@ -2675,6 +2773,7 @@ h2 {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .edit-tray-done-button {
@@ -2696,18 +2795,13 @@ h2 {
   filter: brightness(1.14);
 }
 
-#editDecorTray > .edit-tray-done-button,
-#editFishTray > .edit-tray-done-button {
-  grid-column: 1 / -1;
-  justify-self: end;
-}
-
 .edit-decor-tray-header {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .edit-decor-tray-tabs {
@@ -2747,8 +2841,8 @@ h2 {
 
 .edit-decor-tray-tab[data-decor-tone="all"] {
   --decor-tab-border: rgba(188, 225, 246, 0.12);
-  --decor-tab-bg-top: rgba(72, 92, 114, 0.09);
-  --decor-tab-bg-bottom: rgba(48, 65, 83, 0.07);
+  --decor-tab-bg-top: rgba(22, 64, 86, 0.72);
+  --decor-tab-bg-bottom: rgba(10, 38, 57, 0.72);
   --decor-tab-text: rgba(225, 245, 255, 0.82);
   backdrop-filter: blur(3px);
 }
@@ -3051,12 +3145,12 @@ h2 {
 }
 
 .edit-fish-tray .edit-decor-tray-scroller {
-  min-height: 77px;
+  min-height: 98px;
   align-items: center;
 }
 
 #editDecorTray .edit-decor-tray-scroller {
-  min-height: 77px;
+  min-height: 98px;
   align-items: center;
 }
 
@@ -3091,8 +3185,8 @@ h2 {
 
 .edit-decor-tray-arrow {
   width: 40px;
-  height: 70px;
-  border-radius: 22px;
+  height: 92px;
+  border-radius: 16px;
   border: 1px solid rgba(188, 225, 246, 0.16);
   background: linear-gradient(180deg, rgba(10, 24, 37, 0.26), rgba(7, 18, 29, 0.24));
   color: var(--ink);
@@ -3106,9 +3200,9 @@ h2 {
 
 .edit-decor-tile {
   position: relative;
-  min-width: 72px;
-  max-width: 72px;
-  height: 72px;
+  min-width: 92px;
+  max-width: 92px;
+  height: 92px;
   flex: 0 0 auto;
   padding: 0;
   border: 0;
@@ -3183,8 +3277,8 @@ h2 {
   height: 100%;
   display: block;
   overflow: hidden;
-  border-radius: 22px;
-  border: 1px solid rgba(188, 225, 246, 0.14);
+  border-radius: 16px;
+  border: 1px solid rgba(188, 225, 246, 0.18);
   background:
     radial-gradient(circle at 50% 14%, rgba(188, 225, 246, 0.14), transparent 34%),
     linear-gradient(180deg, rgba(88, 109, 131, 0.64), rgba(70, 89, 109, 0.52));
@@ -12385,4 +12479,677 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 .tankazon-store .tankazon-cart-item-price-each {
   font-weight: 700;
+}
+
+
+@media (max-width: 860px) {
+  .edit-tray-mode-header,
+  .edit-decor-tray-header,
+  .edit-fish-tray-header {
+    gap: 8px;
+  }
+
+  .edit-overlay-mode-tabs {
+    flex: 1 1 100%;
+    order: 1;
+  }
+
+  .edit-tray-done-button {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .edit-decor-tray-tabs,
+  .edit-fish-tray-tabs {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
+/* Unified inline tank editor */
+.edit-tank-tray {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.edit-tank-tray .edit-tray-mode-header,
+.edit-tank-tray .edit-tank-tray-header,
+.edit-tank-tray .edit-tank-tray-scroller {
+  grid-column: 1 / -1;
+}
+
+.edit-tank-tray-header {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.edit-tank-tray-tabs {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 1px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.edit-tank-tray-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.edit-tank-tray-tab {
+  flex: 0 0 auto;
+  min-width: 102px;
+  min-height: 28px;
+  padding: 4px 14px;
+  border: 1px solid rgba(188, 225, 246, 0.16);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(21, 55, 78, 0.72), rgba(8, 30, 47, 0.74));
+  color: rgba(224, 244, 255, 0.78);
+  font: 800 0.72rem/1 var(--ui-font-stack);
+  cursor: pointer;
+  transition: transform 140ms ease, filter 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.edit-tank-tray-tab:hover,
+.edit-tank-tray-tab:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(143, 231, 255, 0.54);
+  color: #fff;
+  filter: brightness(1.1);
+}
+
+.edit-tank-tray-tab.is-active {
+  border-color: rgba(185, 244, 255, 0.84);
+  background: linear-gradient(180deg, rgba(23, 107, 139, 0.94), rgba(11, 61, 88, 0.96));
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 12px rgba(99, 221, 255, 0.16);
+}
+
+.edit-tank-tray-scroller {
+  min-width: 0;
+  min-height: 118px;
+  max-height: 196px;
+  overflow: auto;
+  padding: 2px 4px 5px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(188, 225, 246, 0.34) transparent;
+}
+
+.edit-tank-tray-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+.edit-tank-tray-panel[hidden] {
+  display: none !important;
+}
+
+.edit-tank-tray [data-tank-tray-panel="background"] {
+  display: grid;
+  grid-template-columns: minmax(420px, 0.9fr) minmax(520px, 1.35fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.edit-tank-tray [data-tank-tray-panel="gravel"] {
+  display: block;
+}
+
+.edit-tank-tray [data-tank-tray-panel="equipment"] {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.edit-tank-tray #editTankBackgroundColorPanel,
+.edit-tank-tray #editTankCustomGravelPanel,
+.edit-tank-tray #editTankBackgroundList,
+.edit-tank-tray #editTankFilterList,
+.edit-tank-tray #editTankUvLightList {
+  min-width: 0;
+}
+
+.edit-tank-tray .background-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1px 2px 5px;
+}
+
+.edit-tank-tray .background-card {
+  flex: 0 0 210px;
+  min-width: 210px;
+  max-width: 210px;
+  min-height: 106px;
+  padding: 8px;
+}
+
+.edit-tank-tray .background-card .background-thumb,
+.edit-tank-tray .background-card .scene-thumb {
+  max-height: 72px;
+}
+
+.edit-tank-tray .custom-gravel-panel,
+.edit-tank-tray .background-solid-color-panel {
+  margin: 0;
+}
+
+.edit-tank-tray .custom-gravel-layer-grid,
+.edit-tank-tray .background-gradient-grid {
+  gap: 7px;
+}
+
+.edit-tank-tray .custom-gravel-layer-card,
+.edit-tank-tray .background-solid-color-card {
+  padding: 8px;
+}
+
+.edit-tank-tray .custom-gravel-color-swatches {
+  gap: 4px;
+}
+
+@media (max-width: 980px) {
+  .edit-tank-tray [data-tank-tray-panel="background"] {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-tank-tray-scroller {
+    max-height: 230px;
+  }
+}
+
+
+/* Compact unified Fish / Decor / Tank editor */
+#toolbarEditMenu {
+  display: none !important;
+}
+
+.edit-tray-mode-header {
+  justify-content: center;
+  gap: 8px;
+}
+
+.edit-overlay-mode-tabs {
+  flex: 0 1 auto;
+  margin: 0 auto;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 14px;
+}
+
+.edit-overlay-mode-tab {
+  flex: 0 0 auto;
+  min-width: 92px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.74rem;
+}
+
+.edit-overlay-mode-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: 0 0 22px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+}
+
+.edit-tray-done-button {
+  min-width: 58px;
+  min-height: 26px;
+  padding: 4px 11px;
+  font-size: 0.68rem;
+}
+
+.edit-decor-tray-tab,
+.edit-fish-tray-tab,
+.edit-tank-tray-tab {
+  min-height: 23px;
+  padding: 3px 9px;
+  font-size: 0.64rem;
+}
+
+.edit-decor-tray-tab {
+  min-width: 64px;
+}
+
+.edit-fish-tray-tab {
+  min-width: 72px;
+}
+
+.edit-tank-tray-tab {
+  min-width: 76px;
+}
+
+/* Keep Tank editing inside the same-height horizontal tray. */
+.edit-tank-tray {
+  gap: 5px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.edit-tank-tray-header {
+  min-height: 23px;
+  max-height: 23px;
+}
+
+.edit-tank-tray-tabs {
+  gap: 4px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.edit-tank-tray-scroller {
+  min-height: 92px;
+  height: 92px;
+  max-height: 92px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 2px 2px;
+}
+
+.edit-tank-tray-panel {
+  height: 88px;
+  min-height: 88px;
+  max-height: 88px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.edit-tank-tray [data-tank-tray-panel="background"] {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.72fr) minmax(460px, 1.28fr);
+  gap: 6px;
+  align-items: stretch;
+}
+
+.edit-tank-tray [data-tank-tray-panel="gravel"] {
+  display: block;
+}
+
+.edit-tank-tray [data-tank-tray-panel="equipment"] {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.edit-tank-tray #editTankBackgroundColorPanel,
+.edit-tank-tray #editTankCustomGravelPanel,
+.edit-tank-tray #editTankBackgroundList,
+.edit-tank-tray #editTankFilterList,
+.edit-tank-tray #editTankUvLightList {
+  height: 88px;
+  max-height: 88px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.edit-tank-tray .background-grid {
+  height: 88px;
+  gap: 6px;
+  padding: 0 1px 2px;
+  align-items: stretch;
+}
+
+.edit-tank-tray .background-card {
+  flex: 0 0 148px;
+  width: 148px;
+  min-width: 148px;
+  max-width: 148px;
+  height: 82px;
+  min-height: 82px;
+  max-height: 82px;
+  padding: 5px;
+  border-radius: 11px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 23px;
+  gap: 3px 6px;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.edit-tank-tray .background-card.local-background-card {
+  flex-basis: 190px;
+  width: 190px;
+  min-width: 190px;
+  max-width: 190px;
+}
+
+.edit-tank-tray .background-card .background-thumb,
+.edit-tank-tray .background-card .scene-thumb {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 48px;
+  height: 68px;
+  max-height: 68px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.edit-tank-tray .background-card > div:not(.shop-button-row) {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  align-self: end;
+}
+
+.edit-tank-tray .background-card strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.67rem;
+  line-height: 1.05;
+}
+
+.edit-tank-tray .background-card .fish-meta {
+  display: none;
+}
+
+.edit-tank-tray .background-card > button,
+.edit-tank-tray .background-card .shop-button-row {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+}
+
+.edit-tank-tray .background-card button,
+.edit-tank-tray .small-button {
+  min-height: 21px;
+  padding: 2px 6px;
+  border-radius: 7px;
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
+.edit-tank-tray .background-card .shop-button-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  overflow-x: auto;
+}
+
+.edit-tank-tray .background-card .shop-button-row button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.edit-tank-tray .background-color-panel-shell,
+.edit-tank-tray .custom-gravel-panel-shell {
+  height: 88px;
+  max-height: 88px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0;
+}
+
+.edit-tank-tray .settings-toggle-row.background-solid-toggle-row {
+  flex: 0 0 116px;
+  min-height: 36px;
+  height: 36px;
+  padding: 4px 6px;
+  border-radius: 9px;
+  gap: 5px;
+}
+
+.edit-tank-tray .settings-toggle-copy {
+  gap: 0;
+}
+
+.edit-tank-tray .settings-toggle-label {
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.edit-tank-tray .settings-toggle-note,
+.edit-tank-tray .settings-subsection-heading {
+  display: none;
+}
+
+.edit-tank-tray .background-solid-toggle-controls {
+  gap: 4px;
+}
+
+.edit-tank-tray .settings-checkbox {
+  width: 17px;
+  height: 17px;
+}
+
+.edit-tank-tray .background-solid-color-card {
+  flex: 0 0 260px;
+  width: 260px;
+  min-width: 260px;
+  height: 82px;
+  min-height: 82px;
+  max-height: 82px;
+  padding: 5px;
+  overflow: hidden;
+}
+
+.edit-tank-tray .background-color-preview-header,
+.edit-tank-tray .custom-gravel-choice-summary {
+  min-height: 18px;
+  margin: 0;
+  font-size: 0.58rem;
+}
+
+.edit-tank-tray .custom-gravel-layer-list {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  height: 88px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.edit-tank-tray .custom-gravel-layer-card {
+  flex: 0 0 250px;
+  width: 250px;
+  min-width: 250px;
+  height: 82px;
+  min-height: 82px;
+  max-height: 82px;
+  padding: 5px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.edit-tank-tray .custom-gravel-layer-header {
+  min-height: 18px;
+  margin-bottom: 2px;
+}
+
+.edit-tank-tray .custom-gravel-layer-header strong,
+.edit-tank-tray .custom-gravel-choice-summary strong,
+.edit-tank-tray .custom-gravel-choice-summary span,
+.edit-tank-tray .custom-gravel-colorize-toggle {
+  font-size: 0.58rem;
+}
+
+.edit-tank-tray .custom-gravel-swatches {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1px 0;
+}
+
+.edit-tank-tray .custom-gravel-color-swatch {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  border-radius: 5px;
+}
+
+.edit-tank-tray .custom-gravel-colorize-toggle {
+  min-height: 18px;
+  margin-top: 1px;
+}
+
+@media (max-width: 860px) {
+  .edit-overlay-mode-tabs {
+    flex: 0 1 auto;
+    order: 1;
+    margin: 0 auto;
+  }
+
+  .edit-overlay-mode-tab {
+    min-width: 78px;
+    min-height: 28px;
+    padding: 3px 7px;
+    gap: 4px;
+    font-size: 0.68rem;
+  }
+
+  .edit-overlay-mode-icon {
+    width: 19px;
+    height: 19px;
+    flex-basis: 19px;
+  }
+
+  .edit-tank-tray [data-tank-tray-panel="background"] {
+    grid-template-columns: 280px minmax(380px, 1fr);
+  }
+}
+
+
+/* Unified fish-care tray -------------------------------------------------- */
+#toolbarCareMenu {
+  display: none !important;
+}
+
+#medicineTray .edit-decor-tray-scroller {
+  min-height: 98px;
+  align-items: stretch;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.care-tray-content {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: 12px;
+  min-width: max-content;
+  height: 98px;
+  padding: 0 4px;
+}
+
+.care-tray-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.care-tray-medical-items {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.care-tray-section-icon {
+  width: 52px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid rgba(188, 225, 246, 0.16);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(28, 59, 78, 0.78), rgba(10, 31, 47, 0.82));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.care-tray-section-icon img {
+  width: 31px;
+  height: 31px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
+}
+
+.care-tray-divider {
+  width: 1px;
+  align-self: stretch;
+  flex: 0 0 auto;
+  margin: 8px 1px;
+  background: linear-gradient(180deg, transparent, rgba(162, 219, 244, 0.36) 18%, rgba(162, 219, 244, 0.36) 82%, transparent);
+}
+
+.care-tool-tile {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  gap: 3px;
+  padding: 9px 8px 7px;
+  border: 1px solid rgba(188, 225, 246, 0.2);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(163, 226, 250, 0.12), transparent 45%),
+    linear-gradient(180deg, rgba(43, 67, 88, 0.9), rgba(19, 40, 58, 0.92));
+  color: #eefaff;
+  font: 800 0.72rem/1 var(--ui-font-stack);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 140ms ease, border-color 140ms ease, filter 140ms ease;
+}
+
+.care-tool-tile img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.28));
+}
+
+.care-tool-tile:hover,
+.care-tool-tile:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(132, 231, 255, 0.62);
+  filter: brightness(1.08);
+}
+
+.care-tool-tile.is-active {
+  border-color: rgba(255, 222, 117, 0.86);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 2px rgba(255, 207, 71, 0.12),
+    0 0 18px rgba(255, 207, 71, 0.18);
+}
+
+.care-medicine-tile {
+  flex: 0 0 auto;
+}
+
+.care-tray-empty-medical {
+  min-width: 132px;
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  padding: 8px 12px;
+  border: 1px dashed rgba(188, 225, 246, 0.18);
+  border-radius: 14px;
+  color: rgba(218, 240, 252, 0.64);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
 }

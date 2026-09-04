@@ -482,6 +482,78 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
   tankContext.restore();
 }
 
+function getFishDepthLightingStyle(poseY) {
+  const floorBottom = Math.max(WATER_SURFACE_Y + 1, getVisibleTankFloorBottomY());
+  const depth = clamp((Number(poseY) - WATER_SURFACE_Y) / Math.max(1, floorBottom - WATER_SURFACE_Y), 0, 1);
+  const brightnessPercent = Math.round(101 - depth * 5);
+  const saturationPercent = Math.round(101 - depth * 4);
+  const highlightAlpha = 0.085 - depth * 0.04;
+  return {
+    depth,
+    filter: `brightness(${brightnessPercent}%) saturate(${saturationPercent}%)`,
+    highlightAlpha: clamp(highlightAlpha, 0.035, 0.085)
+  };
+}
+
+function getFishTopLightOverlay(image) {
+  if (!isUsableRuntimeImage(image)) {
+    return null;
+  }
+
+  if (!runtime.fishTopLightOverlayCache) {
+    runtime.fishTopLightOverlayCache = new WeakMap();
+  }
+
+  const cached = runtime.fishTopLightOverlayCache.get(image);
+  if (cached) {
+    return cached;
+  }
+
+  const width = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const height = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+  context.globalCompositeOperation = "source-in";
+  const gradient = context.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "rgba(205, 242, 255, 0.95)");
+  gradient.addColorStop(0.18, "rgba(160, 224, 252, 0.72)");
+  gradient.addColorStop(0.42, "rgba(105, 196, 238, 0.28)");
+  gradient.addColorStop(0.68, "rgba(80, 165, 220, 0.05)");
+  gradient.addColorStop(1, "rgba(80, 165, 220, 0)");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, width, height);
+  context.globalCompositeOperation = "source-over";
+
+  runtime.fishTopLightOverlayCache.set(image, canvas);
+  return canvas;
+}
+
+function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now()) {
+  if (isTankLightsOut(now)) {
+    return;
+  }
+
+  const overlay = getFishTopLightOverlay(image);
+  if (!overlay) {
+    return;
+  }
+
+  const lighting = getFishDepthLightingStyle(poseY);
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha = lighting.highlightAlpha;
+  context.filter = "blur(0.22px)";
+  context.drawImage(overlay, fishDrawX, -height / 2, width, height);
+  context.restore();
+}
+
 function drawFish(now, layer = null, options = {}) {
   if (!state.fish.length) {
     return;
@@ -547,6 +619,7 @@ function drawFish(now, layer = null, options = {}) {
       SUCKER_FISH_FACE_PIVOT_ENABLED
       && !pose.isDead
       && effectiveBehavior === "sucker"
+      && !isSuckerFishFreeSwimming(fish, species, now)
     );
     const suckerFacePivotX = useSuckerFacePivot
       ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X
@@ -582,6 +655,7 @@ function drawFish(now, layer = null, options = {}) {
       SUCKER_FISH_GLASS_SHADOW_ENABLED
       && !pose.isDead
       && effectiveBehavior === "sucker"
+      && !isSuckerFishFreeSwimming(fish, species, now)
     ) {
       const shadowWidth = width * SUCKER_FISH_GLASS_SHADOW_SCALE;
       const shadowHeight = height * SUCKER_FISH_GLASS_SHADOW_SCALE;
@@ -598,9 +672,16 @@ function drawFish(now, layer = null, options = {}) {
       );
       tankContext.restore();
     }
-    tankContext.filter = getFishCanvasFilter(fish, healthRatio, now);
+    const fishLighting = getFishDepthLightingStyle(pose.y);
+    const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now);
+    tankContext.filter = fishBaseFilter === "none"
+      ? fishLighting.filter
+      : `${fishBaseFilter} ${fishLighting.filter}`;
     tankContext.drawImage(renderImage, fishDrawX, -height / 2, width, height);
     tankContext.filter = "none";
+    if (!pose.isDead) {
+      drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now);
+    }
     drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
     tankContext.restore();
@@ -856,7 +937,12 @@ function drawGrime(dirtiness) {
     grimeBaseCacheKey,
     runtime.scrubMaskRevision,
     dom.grimeCanvas.width,
-    dom.grimeCanvas.height
+    dom.grimeCanvas.height,
+    (Number(runtime.stageRenderScale) || 0).toFixed(5),
+    (Number(runtime.stageRenderOffsetX) || 0).toFixed(2),
+    (Number(runtime.stageRenderOffsetY) || 0).toFixed(2),
+    getCurrentTank()?.id || "tank",
+    getCurrentTank()?.tankTypeId || "shell"
   ].join("|");
   if (runtime.grimeCompositeCacheKey === compositeCacheKey) {
     return;
@@ -867,7 +953,10 @@ function drawGrime(dirtiness) {
     runtime.grimeBaseCacheKey = grimeBaseCacheKey;
   }
 
-  grimeContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  grimeContext.save();
+  grimeContext.setTransform(1, 0, 0, 1, 0, 0);
+  grimeContext.clearRect(0, 0, dom.grimeCanvas.width, dom.grimeCanvas.height);
+  grimeContext.restore();
   if (visibleDirtiness <= 0) {
     runtime.grimeCompositeCacheKey = compositeCacheKey;
     return;
@@ -995,12 +1084,26 @@ function getFishPose(fish, species, now) {
   if (tubeTravel?.mode === "tube" && ["entering", "waiting", "emerging"].includes(tubeTravel.phase)) {
     const motionClock = Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : now / 380;
     const wiggle = Math.sin(motionClock + fish.phase * Math.PI * 2) * .3;
+    const activeTubeId = tubeTravel.phase === "emerging"
+      ? tubeTravel.targetTubeId
+      : tubeTravel.sourceTubeId;
+    const activeTube = getTankContainingFish(fish.id)?.placedDecor?.find((item) => item.id === activeTubeId);
+    const imageTopToBottomDirection = activeTube && isDecorVerticallyFlipped(activeTube) ? -1 : 1;
+    const travelDirectionY = tubeTravel.phase === "emerging"
+      ? -imageTopToBottomDirection
+      : imageTopToBottomDirection;
+
+    // Fish art faces right at zero rotation. Rotate it vertically so its head
+    // always leads through the tube: toward image-bottom while entering, then
+    // toward image-top while emerging. A vertically flipped tube reverses both
+    // directions automatically.
+    const tubeTilt = travelDirectionY < 0 ? -Math.PI / 2 : Math.PI / 2;
     return {
       x: fish.xNorm * TANK_WIDTH,
       y: fish.yNorm * TANK_HEIGHT,
       direction: 1,
       facingScaleX: 1,
-      tilt: -Math.PI / 2,
+      tilt: tubeTilt,
       wiggle,
       bodyScaleX: 1 - Math.abs(wiggle) * .025,
       bodyScaleY: 1 + Math.abs(wiggle) * .02,
@@ -1082,9 +1185,23 @@ function getFishPose(fish, species, now) {
     ? fish.yNorm
     : fish.entryFromYNorm + (fish.yNorm - fish.entryFromYNorm) * easedEntry;
   const x = fish.xNorm * TANK_WIDTH;
+  const targetDistanceNorm = Math.hypot(
+    (Number(fish.targetXNorm) || fish.xNorm) - fish.xNorm,
+    (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm
+  );
+  const stationaryRaw = 1 - clamp(targetDistanceNorm / 0.025, 0, 1);
+  const stationaryBlend = stationaryRaw * stationaryRaw * (3 - 2 * stationaryRaw);
+  const swimBob =
+    Math.sin(wiggleClock * (0.2 + species.bobSpeed * 0.16) + fish.phase * Math.PI * 2) * (0.9 + motionLevel * 4.4) * sickMotionBoost
+    + glide * (0.45 + motionLevel * 1.35);
+  // Idle vertical drift used to share wiggleClock with movement. That clock
+  // changes rate as motion states transition, which can make stationary fish
+  // visibly hitch up/down. Use a render-time idle clock and blend into it.
+  const idleBobClock = now / 1000;
+  const idleBob = Math.sin(idleBobClock * 0.72 + fish.phase * Math.PI * 2) * (0.72 + motionLevel * 0.72) * sickMotionBoost;
+  const verticalBob = swimBob * (1 - stationaryBlend) + idleBob * stationaryBlend;
   const y = renderYNorm * TANK_HEIGHT
-    + Math.sin(wiggleClock * (0.2 + species.bobSpeed * 0.16) + fish.phase * Math.PI * 2) * (0.9 + motionLevel * 4.4) * sickMotionBoost
-    + glide * (0.45 + motionLevel * 1.35)
+    + verticalBob
     + (entryProgress === null ? 0 : Math.sin(entryProgress * Math.PI * 2.4 + fish.phase * Math.PI) * (1 - entryProgress) * 9);
   const wiggleStretch = 0.008 + motionLevel * 0.018;
   const turnProgress = fish.turnStartedAt && fish.turnDurationMs > 0

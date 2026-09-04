@@ -162,8 +162,12 @@ function normalizeUvLightRenderQuality(value) {
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   return {
-    toolbarPosition: normalizeToolbarPosition(source.toolbarPosition),
-    displayPosition: normalizeDisplayPosition(source.displayPosition),
+    toolbarPosition: TOOLBAR_POSITION_SETTING_ENABLED
+      ? normalizeToolbarPosition(source.toolbarPosition)
+      : DEFAULT_UI_SETTINGS.toolbarPosition,
+    displayPosition: DISPLAY_POSITION_SETTING_ENABLED
+      ? normalizeDisplayPosition(source.displayPosition)
+      : DEFAULT_UI_SETTINGS.displayPosition,
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
     careTaskPaneOpen: source.careTaskPaneOpen === true,
@@ -172,8 +176,13 @@ function sanitizeUiSettings(rawSettings) {
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
+    causticLightingEnabled: source.causticLightingEnabled !== false,
+    decorShadowsEnabled: source.decorShadowsEnabled !== false,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
-    halloweenMode: normalizeHalloweenMode(source.halloweenMode)
+    halloweenMode: normalizeHalloweenMode(source.halloweenMode),
+    editOverlayMode: ["fish", "decor", "tank"].includes(String(source.editOverlayMode || "").trim())
+      ? String(source.editOverlayMode).trim()
+      : DEFAULT_UI_SETTINGS.editOverlayMode
   };
 }
 
@@ -187,6 +196,14 @@ function areAmbientBubblesEnabled() {
 
 function areWaterParticlesEnabled() {
   return getUiSettings().waterParticlesEnabled;
+}
+
+function isCausticLightingEnabled() {
+  return getUiSettings().causticLightingEnabled;
+}
+
+function areDecorShadowsEnabled() {
+  return getUiSettings().decorShadowsEnabled;
 }
 
 function getUvLightRenderQuality() {

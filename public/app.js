@@ -320,12 +320,18 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "cherry-barb": { group: "small-social", personalities: ["social", "shy", "follower", "gentle"], rare: ["curious", "routine-loving", "bold"] },
   "neon-tetra": { group: "small-social", personalities: ["social", "follower", "routine-loving", "shy"], rare: ["curious", "nervous", "night-active"] },
   "celestial-pearl-danio": { group: "small-social", personalities: ["shy", "curious", "nervous", "social"], rare: ["follower", "night-active", "routine-loving"] },
+  "chili-rasbora": { group: "small-social", personalities: ["shy", "social", "follower", "nervous"], rare: ["curious", "routine-loving", "gentle"] },
+  "ember-tetra": { group: "small-social", personalities: ["gentle", "social", "follower", "shy"], rare: ["curious", "routine-loving", "nervous"] },
+  "harlequin-rasbora": { group: "small-social", personalities: ["social", "explorer", "follower", "routine-loving"], rare: ["bold", "curious", "gentle"] },
+  "pencilfish": { group: "small-social", personalities: ["social", "display", "curious", "standoffish"], rare: ["follower", "shy", "routine-loving"] },
+  "rummy-nose-tetra": { group: "small-social", personalities: ["social", "follower", "routine-loving", "nervous"], rare: ["curious", "shy", "explorer"] },
   "otocinclus": { group: "bottom-cleaner", personalities: ["cleaner", "homebody", "night-active", "shy"], rare: ["curious", "sensitive", "digger"], nightActive: true, detritusDiet: true },
   "loach": { group: "bottom-cleaner", personalities: ["digger", "explorer", "cleaner", "night-active"], rare: ["social", "homebody", "curious"], nightActive: true },
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
   "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true }
 });
+const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
 const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
   "open-water-cruiser": ["bold", "explorer", "social", "routine-loving", "curious", "greedy"],
   "slow-graceful": ["display", "gentle", "sensitive", "homebody", "territorial", "routine-loving", "curious"],
@@ -369,6 +375,11 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "neon-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator", "large_fish"] },
   "cherry-barb": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator"] },
   "celestial-pearl-danio": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "large_fish", "aggressive_predator"] },
+  "chili-rasbora": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
+  "ember-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
+  "harlequin-rasbora": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "pencilfish": { mealCoins: 1, unlock: null, needs: ["surface_cover", "school_2_plus"], conflicts: ["aggressive_predator", "fast_eater"] },
+  "rummy-nose-tetra": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
   "moor-goldfish": { mealCoins: 1, unlock: "first-care", needs: ["open_water", "hardscape"], conflicts: ["sharp_decor", "fin_nipper", "overcrowded"] },
   "otocinclus": { mealCoins: 0, unlock: "first-care", needs: ["seaweed_algae", "plants"], conflicts: ["aggressive_predator", "large_fish"] },
   "molly": { mealCoins: 1, unlock: "first-care", needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
@@ -406,7 +417,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Stable Tank",
     requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
     reward: 8,
-    unlocks: ["loach", "swordtail", "betta", "blue-ram", "piranha"],
+    unlocks: ["swordtail", "betta", "blue-ram", "piranha"],
     decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
     progress: (stats) => [
@@ -813,6 +824,10 @@ const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
 const CARE_TASK_COMPLETE_HOLD_MS = 2200;
 const DEFAULT_THEME = "dark";
+// Location selectors are intentionally disabled in the current UI. Keep the
+// underlying settings code available so the feature can be restored later.
+const TOOLBAR_POSITION_SETTING_ENABLED = false;
+const DISPLAY_POSITION_SETTING_ENABLED = false;
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false
 });
@@ -834,8 +849,11 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   tankMouseInputLocked: false,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
+  causticLightingEnabled: true,
+  decorShadowsEnabled: true,
   uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY,
-  halloweenMode: HALLOWEEN_MODE_AUTOMATIC
+  halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
+  editOverlayMode: "fish"
 });
 const CUSTOM_IMAGE_BACKGROUND_ASSET_KEY = "__custom-image-background__";
 const CUSTOM_DECOR_SHOP_KEY = "__custom-decor-shop__";
@@ -1272,12 +1290,13 @@ const CAVE_ENTRY_SIDE_OPTIONS = Object.freeze([
   { id: "both", label: "Both" }
 ]);
 const OPTIONAL_BUBBLE_ORB_ASSET_PATH = "assets/misc/bubble.png";
+const CAUSTIC_LIGHT_ASSET_PATH = resolveAppUrl("assets/misc/caustic_light.png");
 const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
 const PORTABLE_PERFORMANCE_MAX_FPS = 30;
 const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 96;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 24;
+const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
 const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 96;
 const PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT = 18;
 const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 32;
@@ -1354,6 +1373,17 @@ const SUCKER_FISH_COLLISION_PADDING_PX = 4;
 const SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES = Object.freeze({
   otocinclus: "assets/fish/otocinclus_bottom.png"
 });
+const SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES = Object.freeze({
+  otocinclus: "assets/fish/otocinclus_side.png"
+});
+const SUCKER_FISH_FREE_SWIM_DISTANCE_NORM = 0.3;
+const SUCKER_FISH_FREE_SWIM_GRIME_DISTANCE_NORM = 0.26;
+const SUCKER_FISH_FREE_SWIM_ARRIVAL_DISTANCE_NORM = 0.028;
+const SUCKER_FISH_FREE_SWIM_SPEED_MIN = 0.022;
+const SUCKER_FISH_FREE_SWIM_SPEED_MAX = 0.03;
+const SUCKER_FISH_FREE_SWIM_MIN_DURATION_MS = 1700;
+const SUCKER_FISH_FREE_SWIM_MAX_DURATION_MS = 7200;
+const SUCKER_FISH_FREE_SWIM_LAYER = 3;
 const FISH_SURFACE_BREACH_ALLOWANCE_PX = 6;
 const FISH_SURFACE_MOTION_HEADROOM_PX = 10;
 const FISH_SURFACE_HEIGHT_GUARD_MULTIPLIER = 1.08;
@@ -1472,7 +1502,7 @@ const FISH_GRAVEL_DIG_COOLDOWN_MIN_MS = 9000;
 const FISH_GRAVEL_DIG_COOLDOWN_MAX_MS = 18000;
 const FORCED_GRAVEL_DIG_TIMEOUT_MS = 9000;
 const WATER_PARTICLE_COUNT = 180;
-const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
+const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 44;
 const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 180;
 const WATER_PARTICLE_FISH_FORCE_RADIUS_PX = 90;
 const WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX = 74;
@@ -2383,6 +2413,15 @@ const dom = {
   editFishTrayContextMenu: document.querySelector("#editFishTrayContextMenu"),
   editFishTrayPrev: document.querySelector("#editFishTrayPrev"),
   editFishTrayNext: document.querySelector("#editFishTrayNext"),
+  editTankTray: document.querySelector("#editTankTray"),
+  closeEditTankTrayButton: document.querySelector("#closeEditTankTrayButton"),
+  editTankTrayScroller: document.querySelector("#editTankTrayScroller"),
+  editTankBackgroundColorPanel: document.querySelector("#editTankBackgroundColorPanel"),
+  editTankBackgroundList: document.querySelector("#editTankBackgroundList"),
+  editTankCustomGravelPanel: document.querySelector("#editTankCustomGravelPanel"),
+  editTankFilterSection: document.querySelector("#editTankFilterSection"),
+  editTankFilterList: document.querySelector("#editTankFilterList"),
+  editTankUvLightList: document.querySelector("#editTankUvLightList"),
   foodTray: document.querySelector("#foodTray"),
   foodTrayScroller: document.querySelector("#foodTrayScroller"),
   foodTrayPrev: document.querySelector("#foodTrayPrev"),
@@ -2463,6 +2502,8 @@ const dom = {
   uiMuteToggleInput: document.querySelector("#uiMuteToggleInput"),
   ambientBubblesToggleInput: document.querySelector("#ambientBubblesToggleInput"),
   waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
+  causticLightingToggleInput: document.querySelector("#causticLightingToggleInput"),
+  decorShadowsToggleInput: document.querySelector("#decorShadowsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
   uvLightQualitySelect: document.querySelector("#uvLightQualitySelect"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
@@ -2608,6 +2649,9 @@ const runtime = {
   editDecorTrayInTank: false,
   fishEditMode: false,
   fishEditTrayTab: "tank",
+  editOverlayMode: "fish",
+  tankEditMode: false,
+  editTankTrayTab: "background",
   foodTrayOpen: false,
   medicineTrayOpen: false,
   feedingModeFoodKey: "",
@@ -2761,6 +2805,8 @@ const runtime = {
   stageRenderScale: 1,
   stageRenderOffsetX: 0,
   stageRenderOffsetY: 0,
+  stageEditViewAmount: 0,
+  stageRenderViewLastFrameAt: 0,
   playfield: {
     scale: 1,
     left: 0,
@@ -4378,26 +4424,49 @@ function getTransitTubeTravelPoints(tube) {
   const bounds = getPlacedDecorBounds(tube);
   if (!tube || !bounds) {
     const xNorm = clamp(Number(tube?.xNorm) || 0.5, 0.05, 0.95);
-    const openingYNorm = clamp((Number(tube?.yNorm) || 0.5) - 0.16, 0.08, 0.88);
+    const flippedY = isDecorVerticallyFlipped(tube);
+    const openingYNorm = clamp((Number(tube?.yNorm) || 0.5) + (flippedY ? 0.16 : -0.16), 0.08, 0.88);
+    const travelDirection = flippedY ? -1 : 1;
     return {
       opening: { xNorm, yNorm: openingYNorm },
-      inside: { xNorm, yNorm: clamp(openingYNorm + 0.07, 0.1, 0.9) },
-      exit: { xNorm, yNorm: clamp(openingYNorm - 0.07, 0.08, 0.84) },
-      below: { xNorm, yNorm: clamp(openingYNorm + 0.3, 0.2, 1.08) },
+      inside: { xNorm, yNorm: clamp(openingYNorm + travelDirection * 0.07, 0.08, 0.92) },
+      exit: { xNorm, yNorm: openingYNorm - travelDirection * 0.07 },
+      below: { xNorm, yNorm: openingYNorm + travelDirection * 0.3 },
       openingRadiusPx: 34
     };
   }
+
   const width = Math.max(1, bounds.right - bounds.left);
   const height = Math.max(1, bounds.bottom - bounds.top);
   const xNorm = clamp((bounds.left + width / 2) / TANK_WIDTH, 0.05, 0.95);
-  // The replacement sprite is a straight, open glass cylinder. Its rim center
-  // sits about 5.5% down from the top of its rendered bounds.
-  const openingYNorm = clamp((bounds.top + height * 0.055) / TANK_HEIGHT, 0.08, 0.88);
+  const flippedY = isDecorVerticallyFlipped(tube);
+
+  // The transit-tube sprite is a straight cylinder whose usable opening is at
+  // the TOP of the source image. Vertical flipping moves that image-top to the
+  // bottom of the placed sprite, so the entire fish transit path must flip too.
+  // Source travel always runs from image-top through image-bottom and beyond.
+  const openingY = flippedY
+    ? bounds.bottom - height * 0.055
+    : bounds.top + height * 0.055;
+  const insideY = flippedY
+    ? bounds.bottom - height * 0.3
+    : bounds.top + height * 0.3;
+  const farOutsideDistance = Math.max(55, height * 0.22);
+  const farOutsideY = flippedY
+    ? bounds.top - farOutsideDistance
+    : bounds.bottom + farOutsideDistance;
+  const openingOutsideY = flippedY
+    ? bounds.bottom + farOutsideDistance
+    : bounds.top - farOutsideDistance;
+
   return {
-    opening: { xNorm, yNorm: openingYNorm },
-    inside: { xNorm, yNorm: clamp((bounds.top + height * 0.3) / TANK_HEIGHT, 0.1, 0.9) },
-    exit: { xNorm, yNorm: (bounds.top - Math.max(55, height * 0.22)) / TANK_HEIGHT },
-    below: { xNorm, yNorm: (bounds.bottom + Math.max(55, height * 0.22)) / TANK_HEIGHT },
+    opening: { xNorm, yNorm: openingY / TANK_HEIGHT },
+    inside: { xNorm, yNorm: insideY / TANK_HEIGHT },
+    // Destination fish travels from the far end of the tube back out through
+    // the image-top opening. These points therefore reverse automatically when
+    // the decor is vertically flipped.
+    exit: { xNorm, yNorm: openingOutsideY / TANK_HEIGHT },
+    below: { xNorm, yNorm: farOutsideY / TANK_HEIGHT },
     openingRadiusPx: clamp(width * 0.26, 26, 58)
   };
 }
@@ -4697,11 +4766,7 @@ function drawBoroughStructureActivityEffects(now = Date.now()) {
     tankContext.save();
     tankContext.globalAlpha = (isPortablePerformanceModeActive() ? 0.22 : 0.38) + pulse * 0.12;
     if (services.includes("clinic")) {
-      tankContext.strokeStyle = "#9dfff1";
-      tankContext.lineWidth = 4;
-      tankContext.beginPath();
-      tankContext.arc(x, y, 26 + pulse * 10, 0, Math.PI * 2);
-      tankContext.stroke();
+      // Clinic activity remains functional, but no pulsing ring is drawn in the tank.
     } else if (services.includes("rest")) {
       const glow = tankContext.createRadialGradient(x, y, 2, x, y, 58);
       glow.addColorStop(0, "rgba(173,139,255,.5)");
@@ -10969,6 +11034,61 @@ function handleEditDecorTrayWheel(event) {
   syncEditDecorTrayScrollControls();
 }
 
+function normalizeEditOverlayMode(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["fish", "decor", "tank"].includes(normalized) ? normalized : "fish";
+}
+
+function getRememberedEditOverlayMode() {
+  return normalizeEditOverlayMode(getUiSettings().editOverlayMode || runtime.editOverlayMode);
+}
+
+function rememberEditOverlayMode(mode, options = {}) {
+  const normalized = normalizeEditOverlayMode(mode);
+  runtime.editOverlayMode = normalized;
+  const settings = state.uiSettings && typeof state.uiSettings === "object"
+    ? state.uiSettings
+    : (state.uiSettings = {});
+  const changed = settings.editOverlayMode !== normalized;
+  settings.editOverlayMode = normalized;
+  if (changed && options.save !== false) {
+    saveState();
+  }
+  return normalized;
+}
+
+function closeActiveEditOverlay() {
+  if (runtime.fishEditMode) {
+    toggleFishEditMode(false);
+    return true;
+  }
+  if (runtime.editTankMode) {
+    toggleEditTankMode(false);
+    return true;
+  }
+  if (runtime.tankEditMode) {
+    toggleTankEditMode(false);
+    return true;
+  }
+  return false;
+}
+
+function openEditOverlayMode(mode = null, options = {}) {
+  const nextMode = rememberEditOverlayMode(mode || getRememberedEditOverlayMode());
+  const openOptions = {
+    source: options.source || "toolbar",
+    collapseSidebar: options.collapseSidebar !== false
+  };
+  if (nextMode === "decor") {
+    toggleEditTankMode(true, openOptions);
+  } else if (nextMode === "tank") {
+    toggleTankEditMode(true, openOptions);
+  } else {
+    toggleFishEditMode(true, openOptions);
+  }
+  return nextMode;
+}
+
 function toggleEditTankMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.editTankMode;
   clearPrimaryToolModes();
@@ -10979,6 +11099,7 @@ function toggleEditTankMode(force = null, options = {}) {
   let tutorialChanged = false;
 
   if (nextMode) {
+    rememberEditOverlayMode("decor");
     runtime.editTankMode = true;
     runtime.selectedFishId = null;
     runtime.toolModeSource = options.source || "toolbar";
@@ -11064,6 +11185,7 @@ function clearPrimaryToolModes() {
   runtime.toolbarActionMenu = "";
   runtime.editTankMode = false;
   runtime.fishEditMode = false;
+  runtime.tankEditMode = false;
   runtime.foodTrayOpen = false;
   runtime.medicineTrayOpen = false;
   runtime.feedingModeFoodKey = "";
@@ -11358,6 +11480,7 @@ function toggleFishEditMode(force = null, options = {}) {
   let tutorialChanged = false;
 
   if (nextMode) {
+    rememberEditOverlayMode("fish");
     runtime.fishEditMode = true;
     runtime.toolModeSource = options.source || "toolbar";
     if (options.collapseSidebar) {
@@ -11371,6 +11494,24 @@ function toggleFishEditMode(force = null, options = {}) {
   if (tutorialChanged) {
     saveState();
   }
+  renderUi(now);
+}
+
+function toggleTankEditMode(force = null, options = {}) {
+  const nextMode = typeof force === "boolean" ? force : !runtime.tankEditMode;
+  clearPrimaryToolModes();
+  const now = Date.now();
+
+  if (nextMode) {
+    rememberEditOverlayMode("tank");
+    runtime.tankEditMode = true;
+    runtime.selectedFishId = null;
+    runtime.toolModeSource = options.source || "toolbar";
+    if (options.collapseSidebar) {
+      runtime.sidebarCollapsed = true;
+    }
+  }
+
   renderUi(now);
 }
 
@@ -11586,6 +11727,7 @@ async function init() {
     AUTO_DISPENSER_BG_PATH,
     ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
+    CAUSTIC_LIGHT_ASSET_PATH,
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
@@ -11625,7 +11767,8 @@ async function init() {
       ...getFishDeathAssetCandidates(fish, "zombie"),
       ...getFishDeathAssetCandidates(fish, "skeleton")
     ])),
-    ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
+    ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path)),
+    ...Object.values(SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
   ]), { maxAttempts: 1 });
 
   const criticalFishImagePaths = [...new Set(getAllTankFish(state)
@@ -12476,15 +12619,20 @@ function toggleToolbarActionMenu(menuName) {
 
 function handleToolbarGroupButtonClick(menuName) {
   const normalizedName = menuName === "care" || menuName === "edit" ? menuName : "";
-  const editModeActive = runtime.fishEditMode || runtime.editTankMode;
+  const editModeActive = runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode;
 
-  if (normalizedName === "edit" && editModeActive) {
-    runtime.fishEditMode ? toggleFishEditMode(false) : toggleEditTankMode(false);
+  if (normalizedName === "edit") {
+    runtime.toolbarActionMenu = "";
+    if (editModeActive) {
+      closeActiveEditOverlay();
+    } else {
+      openEditOverlayMode(null, { source: "toolbar", collapseSidebar: true });
+    }
     return;
   }
 
   if (normalizedName === "care" && editModeActive) {
-    runtime.fishEditMode ? toggleFishEditMode(false) : toggleEditTankMode(false);
+    closeActiveEditOverlay();
   }
 
   toggleToolbarActionMenu(normalizedName);
@@ -12520,9 +12668,9 @@ function handleToolbarActionMenuKeyDown(event) {
     (activeMenuName === "care" ? dom.careMenuButton : dom.editMenuButton)?.focus?.();
     return;
   }
-  if (runtime.fishEditMode || runtime.editTankMode) {
+  if (runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode) {
     event.preventDefault();
-    runtime.fishEditMode ? toggleFishEditMode(false) : toggleEditTankMode(false);
+    closeActiveEditOverlay();
     dom.editMenuButton?.focus?.();
   }
 }
@@ -12570,7 +12718,7 @@ function bindEvents() {
       return;
     }
 
-    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode) {
+    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode && !runtime.tankEditMode) {
       return;
     }
 
@@ -12615,7 +12763,7 @@ function bindEvents() {
       return;
     }
 
-    if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.boroughOverviewOpen
+    if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.tankEditMode && !runtime.boroughOverviewOpen
       && !runtime.storeOverlayOpen && !runtime.settingsOverlayOpen && !runtime.utilityOverlayOpen && !runtime.equipmentOverlayOpen) {
       const cameraMoves = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
       if (cameraMoves[key]) {
@@ -13092,7 +13240,12 @@ function bindEvents() {
     }
     toggleFoodTray(null, { source: "toolbar", collapseSidebar: true });
   });
-  dom.careMenuButton?.addEventListener("click", () => handleToolbarGroupButtonClick("care"));
+  dom.careMenuButton?.addEventListener("click", () => {
+    // Fish care is a single horizontal tray now. The old care submenu remains
+    // in the markup for compatibility, but is never opened.
+    runtime.toolbarActionMenu = "";
+    toggleMedicineTray(null, { source: "toolbar", collapseSidebar: true });
+  });
   dom.editMenuButton?.addEventListener("click", () => handleToolbarGroupButtonClick("edit"));
   dom.medicineButton?.addEventListener("click", () => {
     if (!hasStockedMedicine()) {
@@ -13319,11 +13472,7 @@ function bindEvents() {
     if (!guardTutorialToolbarControl("openEquipmentButton")) {
       return;
     }
-    if (runtime.equipmentOverlayOpen) {
-      closeEquipmentOverlay();
-      return;
-    }
-    openEquipmentOverlay();
+    toggleTankEditMode(null, { source: "toolbar", collapseSidebar: true });
   });
   dom.openSettingsButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("openSettingsButton")) {
@@ -13355,6 +13504,7 @@ function bindEvents() {
   });
   dom.closeEditDecorTrayButton?.addEventListener("click", () => toggleEditTankMode(false));
   dom.closeEditFishTrayButton?.addEventListener("click", () => toggleFishEditMode(false));
+  dom.closeEditTankTrayButton?.addEventListener("click", () => toggleTankEditMode(false));
   dom.editLayerUpButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-up"));
   dom.editLayerDownButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-down"));
   dom.editScaleUpButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-up"));
@@ -13545,6 +13695,12 @@ function bindEvents() {
   dom.waterParticlesToggleInput?.addEventListener("change", (event) => {
     setWaterParticlesEnabled(event.currentTarget?.checked);
   });
+  dom.causticLightingToggleInput?.addEventListener("change", (event) => {
+    setCausticLightingEnabled(event.currentTarget?.checked);
+  });
+  dom.decorShadowsToggleInput?.addEventListener("change", (event) => {
+    setDecorShadowsEnabled(event.currentTarget?.checked);
+  });
   dom.uvLightQualitySelect?.addEventListener("change", (event) => {
     setUvLightRenderQuality(event.currentTarget?.value);
   });
@@ -13556,13 +13712,13 @@ function bindEvents() {
   });
   dom.settingsOverlay?.addEventListener("change", (event) => {
     const toolbarInput = event.target.closest("[data-toolbar-position-choice]");
-    if (toolbarInput instanceof HTMLInputElement) {
+    if (TOOLBAR_POSITION_SETTING_ENABLED && toolbarInput instanceof HTMLInputElement) {
       setToolbarPosition(toolbarInput.value);
       return;
     }
 
     const displayInput = event.target.closest("[data-display-position-choice]");
-    if (displayInput instanceof HTMLInputElement) {
+    if (DISPLAY_POSITION_SETTING_ENABLED && displayInput instanceof HTMLInputElement) {
       setDisplayPosition(displayInput.value);
     }
   });
@@ -13685,6 +13841,12 @@ function bindEvents() {
   });
   dom.editDecorTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
+    if (overlayModeTab) {
+      const nextMode = overlayModeTab.dataset.editOverlayMode;
+      openEditOverlayMode(nextMode, { source: "tray", collapseSidebar: true });
+      return;
+    }
     const tab = event.target.closest("[data-decor-tray-tab]");
     if (tab) {
       const nextTab = ["caves", "plants", "ornaments", "bubbler", "custom"].includes(tab.dataset.decorTrayTab)
@@ -13907,6 +14069,39 @@ function bindEvents() {
     closeEditDecorTrayContextMenu();
     scrollEditDecorTray(1);
   });
+  dom.editTankTray?.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+  dom.editTankTray?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
+    if (overlayModeTab) {
+      const nextMode = overlayModeTab.dataset.editOverlayMode;
+      openEditOverlayMode(nextMode, { source: "tray", collapseSidebar: true });
+      return;
+    }
+
+    const tankTab = event.target.closest("[data-tank-tray-tab]");
+    if (tankTab) {
+      const nextTab = ["background", "gravel", "equipment"].includes(tankTab.dataset.tankTrayTab)
+        ? tankTab.dataset.tankTrayTab
+        : "background";
+      if (runtime.editTankTrayTab !== nextTab) {
+        runtime.editTankTrayTab = nextTab;
+        if (dom.editTankTrayScroller) {
+          dom.editTankTrayScroller.scrollTop = 0;
+          dom.editTankTrayScroller.scrollLeft = 0;
+        }
+        renderEditTankTray();
+        syncFilterFeatureVisibility();
+      }
+    }
+  });
+  dom.editTankTray?.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
   dom.editFishTray?.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
   });
@@ -13933,6 +14128,12 @@ function bindEvents() {
   });
   dom.editFishTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
+    if (overlayModeTab) {
+      const nextMode = overlayModeTab.dataset.editOverlayMode;
+      openEditOverlayMode(nextMode, { source: "tray", collapseSidebar: true });
+      return;
+    }
     const tab = event.target.closest("[data-fish-tray-tab]");
     if (tab) {
       const nextTab = tab.dataset.fishTrayTab === "storage" ? "storage" : "tank";
@@ -14122,6 +14323,22 @@ function bindEvents() {
   });
   dom.medicineTray?.addEventListener("wheel", handleMedicineTrayWheel, { passive: false });
   dom.medicineTrayScroller?.addEventListener("click", (event) => {
+    const toolButton = event.target.closest("[data-care-tool]");
+    if (toolButton) {
+      event.stopPropagation();
+      playToolbarButtonSoundEffect("press");
+      if (toolButton.dataset.careTool === "scrub") {
+        if (guardTutorialToolbarControl("spongeButton")) {
+          toggleCleaningMode({ source: "care-tray", collapseSidebar: true });
+        }
+      } else if (toolButton.dataset.careTool === "scoop") {
+        if (guardTutorialToolbarControl("scoopButton")) {
+          toggleScoopMode({ source: "care-tray", collapseSidebar: true });
+        }
+      }
+      return;
+    }
+
     const button = event.target.closest("[data-select-medicine]");
     if (button) {
       event.stopPropagation();
@@ -14601,13 +14818,18 @@ function bindEvents() {
   bindEquipmentSurface(dom.backgroundList);
   bindEquipmentSurface(dom.equipmentBackgroundList);
   bindEquipmentSurface(dom.equipmentBackgroundColorPanel);
+  bindEquipmentSurface(dom.editTankBackgroundList);
+  bindEquipmentSurface(dom.editTankBackgroundColorPanel);
   bindEquipmentSurface(dom.tankAssetList);
   bindEquipmentSurface(dom.filterAssetList);
   bindEquipmentSurface(dom.equipmentFilterList);
+  bindEquipmentSurface(dom.editTankFilterList);
   bindEquipmentSurface(dom.uvLightList);
   bindEquipmentSurface(dom.equipmentUvLightList);
+  bindEquipmentSurface(dom.editTankUvLightList);
   bindEquipmentSurface(dom.customGravelPanel);
   bindEquipmentSurface(dom.equipmentCustomGravelPanel);
+  bindEquipmentSurface(dom.editTankCustomGravelPanel);
 
   const shouldCaptureTankDesktopInput = (target) => !isTankMouseInputLocked() && !isTankOverlayTarget(target);
 
@@ -15293,6 +15515,126 @@ function updatePlayfieldCssVariables() {
   dom.tankStage.style.setProperty("--playfield-bottom", `${top + height}px`);
 }
 
+function getStageRenderViewTarget() {
+  const rect = dom.tankStage?.getBoundingClientRect?.();
+  if (!rect?.width || !rect?.height) {
+    return null;
+  }
+
+  const dpr = getStageRenderDevicePixelRatio();
+  const displayWidth = Math.max(1, Math.round(rect.width * dpr));
+  const displayHeight = Math.max(1, Math.round(rect.height * dpr));
+  const coverScale = Math.max(displayWidth / TANK_WIDTH, displayHeight / TANK_HEIGHT);
+  const coverOffsetX = (displayWidth - TANK_WIDTH * coverScale) * 0.5;
+  const coverOffsetY = (displayHeight - TANK_HEIGHT * coverScale) * 0.5;
+
+  const activeEditTray = runtime.editTankMode
+    ? dom.editDecorTray
+    : runtime.fishEditMode
+      ? dom.editFishTray
+      : runtime.tankEditMode
+        ? dom.editTankTray
+        : null;
+  if (!activeEditTray || activeEditTray.hidden) {
+    return {
+      scale: coverScale,
+      offsetX: coverOffsetX,
+      offsetY: coverOffsetY,
+      editAmount: 0
+    };
+  }
+
+  const trayRect = activeEditTray.getBoundingClientRect();
+  const topPaddingCss = Math.max(18, Math.min(34, rect.height * 0.035));
+  const sidePaddingCss = Math.max(28, Math.min(64, rect.width * 0.035));
+  const trayGapCss = 14;
+  const trayTopCss = clamp(trayRect.top - rect.top - trayGapCss, rect.height * 0.42, rect.height - 120);
+  const availableHeightCss = Math.max(220, trayTopCss - topPaddingCss);
+  const availableWidthCss = Math.max(320, rect.width - sidePaddingCss * 2);
+  const editScale = Math.min(
+    coverScale,
+    (availableWidthCss * dpr) / TANK_WIDTH,
+    (availableHeightCss * dpr) / TANK_HEIGHT
+  );
+  const renderedWidth = TANK_WIDTH * editScale;
+  const renderedHeight = TANK_HEIGHT * editScale;
+  const availableTopPx = topPaddingCss * dpr;
+  const availableHeightPx = availableHeightCss * dpr;
+
+  return {
+    scale: editScale,
+    offsetX: (displayWidth - renderedWidth) * 0.5,
+    offsetY: availableTopPx + Math.max(0, (availableHeightPx - renderedHeight) * 0.5),
+    editAmount: 1
+  };
+}
+
+function syncTankStageRenderCssGeometry(scale, offsetX, offsetY) {
+  const stage = dom.tankStage;
+  if (!(stage instanceof HTMLElement)) {
+    return;
+  }
+
+  const dpr = getStageRenderDevicePixelRatio();
+  const cssScale = Math.max(0.0001, Number(scale) || dpr) / dpr;
+  stage.style.setProperty("--tank-render-left", `${(offsetX / dpr).toFixed(3)}px`);
+  stage.style.setProperty("--tank-render-top", `${(offsetY / dpr).toFixed(3)}px`);
+  stage.style.setProperty("--tank-render-width", `${(TANK_WIDTH * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-render-height", `${(TANK_HEIGHT * cssScale).toFixed(3)}px`);
+
+  const frame = getDecorEditTankFrameGeometry();
+  stage.style.setProperty("--tank-frame-inset-left", `${(frame.left * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-frame-inset-top", `${(frame.top * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-frame-inset-right", `${((TANK_WIDTH - frame.right) * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-frame-inset-bottom", `${((TANK_HEIGHT - frame.bottom) * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-frame-radius", `${(frame.radius * cssScale).toFixed(3)}px`);
+}
+
+function applyStageRenderViewTransform(scale, offsetX, offsetY) {
+  runtime.stageRenderScale = scale;
+  runtime.stageRenderOffsetX = offsetX;
+  runtime.stageRenderOffsetY = offsetY;
+  tankContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+  grimeContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+  glassContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+  configureCanvasContext(tankContext);
+  configureCanvasContext(grimeContext);
+  configureCanvasContext(glassContext);
+  syncTankStageRenderCssGeometry(scale, offsetX, offsetY);
+}
+
+function updateStageRenderView(frameTime = performance.now(), options = {}) {
+  const target = getStageRenderViewTarget();
+  if (!target) {
+    return;
+  }
+
+  const previousFrameAt = Number(runtime.stageRenderViewLastFrameAt) || frameTime;
+  const elapsedMs = clamp(frameTime - previousFrameAt, 0, 80);
+  runtime.stageRenderViewLastFrameAt = frameTime;
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  const immediate = options.immediate === true || reduceMotion;
+  const smoothing = immediate ? 1 : 1 - Math.exp(-elapsedMs / 105);
+  const currentScale = Number(runtime.stageRenderScale) || target.scale;
+  const currentOffsetX = Number(runtime.stageRenderOffsetX) || 0;
+  const currentOffsetY = Number(runtime.stageRenderOffsetY) || 0;
+  const currentEditAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  const nextScale = currentScale + (target.scale - currentScale) * smoothing;
+  const nextOffsetX = currentOffsetX + (target.offsetX - currentOffsetX) * smoothing;
+  const nextOffsetY = currentOffsetY + (target.offsetY - currentOffsetY) * smoothing;
+  const nextEditAmount = currentEditAmount + (target.editAmount - currentEditAmount) * smoothing;
+
+  runtime.stageEditViewAmount = Math.abs(nextEditAmount - target.editAmount) < 0.001
+    ? target.editAmount
+    : nextEditAmount;
+  applyStageRenderViewTransform(
+    Math.abs(nextScale - target.scale) < 0.01 ? target.scale : nextScale,
+    Math.abs(nextOffsetX - target.offsetX) < 0.1 ? target.offsetX : nextOffsetX,
+    Math.abs(nextOffsetY - target.offsetY) < 0.1 ? target.offsetY : nextOffsetY
+  );
+  dom.tankStage?.classList.toggle("is-decor-edit-framed", runtime.stageEditViewAmount > 0.02);
+}
+
 function resizeDisplayCanvases() {
   const rect = dom.tankStage.getBoundingClientRect();
   if (!rect.width || !rect.height) {
@@ -15333,6 +15675,7 @@ function resizeDisplayCanvases() {
   runtime.stageRenderScale = stageScale;
   runtime.stageRenderOffsetX = offsetX;
   runtime.stageRenderOffsetY = offsetY;
+  runtime.stageRenderViewLastFrameAt = 0;
   runtime.playfield = {
     scale: 1,
     left: 0,
@@ -15353,6 +15696,7 @@ function resizeDisplayCanvases() {
   configureCanvasContext(tankContext);
   configureCanvasContext(grimeContext);
   configureCanvasContext(glassContext);
+  syncTankStageRenderCssGeometry(stageScale, offsetX, offsetY);
   configureCanvasContext(scrubMaskContext);
   configureCanvasContext(grimeBaseContext);
   positionTransientMessages();
@@ -16875,6 +17219,7 @@ function buildVirtualFishCatalogEntries() {
 function getCustomFishBehaviorProfiles() {
   const profiles = runtime.fishCatalog.filter((species) => (
     species
+    && !HIDDEN_FISH_OPTION_IDS.has(species.id)
     && !species.customUploadProduct
     && !isCustomFishShopKey(species.id)
     && !isCustomFishAssetKey(species.id)
@@ -20617,6 +20962,24 @@ function getSuckerFishFrontGlassAssetPath(species) {
   return assetPath ? resolveAppUrl(assetPath) : null;
 }
 
+function getSuckerFishFreeSwimAssetPath(species) {
+  const assetPath = SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES[species?.id || ""];
+  return assetPath ? resolveAppUrl(assetPath) : null;
+}
+
+function canSuckerFishFreeSwim(species) {
+  return Boolean(species?.behavior === "sucker" && getSuckerFishFreeSwimAssetPath(species));
+}
+
+function isSuckerFishFreeSwimming(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  return Boolean(
+    fish
+    && canSuckerFishFreeSwim(species)
+    && Number.isFinite(Number(fish.suckerFreeSwimUntil))
+    && Number(fish.suckerFreeSwimUntil) > now
+  );
+}
+
 function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date.now()) {
   const widthSpecies = getFishDisplaySourceSpecies(fish, species) || species;
   if (!widthSpecies) {
@@ -20806,12 +21169,15 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   }
 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  const frontGlassAsset = !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
+  const freeSwimAsset = !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
+    ? (getSuckerFishFreeSwimAssetPath(displaySpecies) || getSuckerFishFreeSwimAssetPath(species))
+    : null;
+  const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
     ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
     : null;
   const seasonalAsset = getFishSeasonalAssetPath(fish, displaySpecies, now);
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
-  const preferredBaseAsset = seasonalAsset || (isZombieVariantFish(fish)
+  const preferredBaseAsset = freeSwimAsset || seasonalAsset || (isZombieVariantFish(fish)
     ? getFishZombieVariantAssetPath(fish, displaySpecies)
     : undeadBaseStage
       ? (
@@ -20823,7 +21189,7 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
         || species.fallbackAsset
         || null
       )
-      : (frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
+      : (freeSwimAsset || frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
   const baseAsset = [
     preferredBaseAsset,
     displaySpecies.fallbackAsset,
@@ -21040,6 +21406,9 @@ function getEffectiveFishBehavior(target) {
   });
   if (zombieSkeletonBehavior) {
     return zombieSkeletonBehavior;
+  }
+  if (fish && isSuckerFishFreeSwimming(fish, species)) {
+    return "steady";
   }
   return species.behavior || "steady";
 }
@@ -21820,8 +22189,12 @@ function normalizeUvLightRenderQuality(value) {
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   return {
-    toolbarPosition: normalizeToolbarPosition(source.toolbarPosition),
-    displayPosition: normalizeDisplayPosition(source.displayPosition),
+    toolbarPosition: TOOLBAR_POSITION_SETTING_ENABLED
+      ? normalizeToolbarPosition(source.toolbarPosition)
+      : DEFAULT_UI_SETTINGS.toolbarPosition,
+    displayPosition: DISPLAY_POSITION_SETTING_ENABLED
+      ? normalizeDisplayPosition(source.displayPosition)
+      : DEFAULT_UI_SETTINGS.displayPosition,
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
     careTaskPaneOpen: source.careTaskPaneOpen === true,
@@ -21830,8 +22203,13 @@ function sanitizeUiSettings(rawSettings) {
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
+    causticLightingEnabled: source.causticLightingEnabled !== false,
+    decorShadowsEnabled: source.decorShadowsEnabled !== false,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
-    halloweenMode: normalizeHalloweenMode(source.halloweenMode)
+    halloweenMode: normalizeHalloweenMode(source.halloweenMode),
+    editOverlayMode: ["fish", "decor", "tank"].includes(String(source.editOverlayMode || "").trim())
+      ? String(source.editOverlayMode).trim()
+      : DEFAULT_UI_SETTINGS.editOverlayMode
   };
 }
 
@@ -21845,6 +22223,14 @@ function areAmbientBubblesEnabled() {
 
 function areWaterParticlesEnabled() {
   return getUiSettings().waterParticlesEnabled;
+}
+
+function isCausticLightingEnabled() {
+  return getUiSettings().causticLightingEnabled;
+}
+
+function areDecorShadowsEnabled() {
+  return getUiSettings().decorShadowsEnabled;
 }
 
 function getUvLightRenderQuality() {
@@ -24218,6 +24604,9 @@ function sanitizePlacedDecor(item) {
     flipped: item.flipped === true,
     flippedY: item.flippedY === true
   };
+  if (Object.prototype.hasOwnProperty.call(item, "freePlacementEnabled")) {
+    sanitized.freePlacementEnabled = item.freePlacementEnabled === true;
+  }
   const groupId = normalizeDecorGroupId(item.groupId);
   if (groupId) {
     sanitized.groupId = groupId;
@@ -24326,6 +24715,12 @@ function getViewportPxAsTankVirtual(px) {
   const dpr = getStageRenderDevicePixelRatio();
   const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
   return (Math.max(0, Number(px) || 0) * dpr) / scale;
+}
+
+function getScenePxAsTankVirtual(px) {
+  const dpr = getStageRenderDevicePixelRatio();
+  const referenceScale = getEditAwareViewportStableReferenceScale();
+  return (Math.max(0, Number(px) || 0) * dpr) / Math.max(0.0001, referenceScale);
 }
 
 function getTankVirtualPxAsViewportPx(px) {
@@ -24709,16 +25104,56 @@ function updateSelectedDecorActionButtons() {
   });
 }
 
+function getNormalCoverStageRenderMetrics() {
+  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
+  const width = Number(stageRect?.width) || 0;
+  const height = Number(stageRect?.height) || 0;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
+
+  const dpr = getStageRenderDevicePixelRatio();
+  const displayWidth = Math.max(1, dom.tankCanvas?.width || Math.round(width * dpr));
+  const displayHeight = Math.max(1, dom.tankCanvas?.height || Math.round(height * dpr));
+  const scale = Math.max(displayWidth / TANK_WIDTH, displayHeight / TANK_HEIGHT);
+  const offsetX = (displayWidth - TANK_WIDTH * scale) * 0.5;
+  const offsetY = (displayHeight - TANK_HEIGHT * scale) * 0.5;
+  const left = clamp((-offsetX) / scale, 0, TANK_WIDTH);
+  const top = clamp((-offsetY) / scale, 0, TANK_HEIGHT);
+  const right = clamp((displayWidth - offsetX) / scale, left, TANK_WIDTH);
+  const bottom = clamp((displayHeight - offsetY) / scale, top, TANK_HEIGHT);
+
+  return {
+    dpr,
+    displayWidth,
+    displayHeight,
+    scale,
+    offsetX,
+    offsetY,
+    visibleBounds: { left, top, right, bottom }
+  };
+}
+
+function getEditAwareViewportStableReferenceScale() {
+  const dpr = getStageRenderDevicePixelRatio();
+  const currentScale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
+  if ((Number(runtime.stageEditViewAmount) || 0) <= 0.001) {
+    return currentScale;
+  }
+
+  return Math.max(0.0001, Number(getNormalCoverStageRenderMetrics()?.scale) || currentScale);
+}
+
 function getViewportStableAssetScale() {
   const dpr = getStageRenderDevicePixelRatio();
-  const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
-  return (dpr / scale) * getResponsiveViewportAssetScale();
+  const referenceScale = getEditAwareViewportStableReferenceScale();
+  return (dpr / referenceScale) * getResponsiveViewportAssetScale();
 }
 
 function getViewportStableObjectScale(type = "fish") {
   const dpr = getStageRenderDevicePixelRatio();
-  const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
-  return (dpr / scale) * getResponsiveViewportObjectScale(type);
+  const referenceScale = getEditAwareViewportStableReferenceScale();
+  return (dpr / referenceScale) * getResponsiveViewportObjectScale(type);
 }
 
 function getResponsiveViewportScale(minScale = 1) {
@@ -24803,10 +25238,14 @@ function getAquariumPhysicalAssetScale(type = "fish") {
 }
 
 function getAquariumWorldMetrics() {
-  const visibleBounds = getVisibleTankVirtualBounds();
   const dpr = getStageRenderDevicePixelRatio();
-  const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
-  const offsetY = Number(runtime.stageRenderOffsetY) || 0;
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  const normalView = editAmount > 0.001 ? getNormalCoverStageRenderMetrics() : null;
+  const visibleBounds = normalView?.visibleBounds || getVisibleTankVirtualBounds();
+  const scale = Math.max(0.0001, Number(normalView?.scale) || Number(runtime.stageRenderScale) || dpr);
+  const offsetY = Number.isFinite(Number(normalView?.offsetY))
+    ? Number(normalView.offsetY)
+    : (Number(runtime.stageRenderOffsetY) || 0);
   const waterlineY = clamp(
     (WATER_SURFACE_VIEWPORT_TOP_PX * dpr - offsetY) / scale,
     visibleBounds.top,
@@ -24978,7 +25417,7 @@ function getDecorTopOverhangLimitY(relBounds, shellBounds = getTankShellBounds()
     return shellBounds.innerTop;
   }
 
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const decorHeight = Math.max(1, relBounds.bottom - relBounds.top);
   return Math.max(
     shellBounds.innerTop,
@@ -25354,6 +25793,10 @@ function normalizeSuckerFishGlassLayer(layer) {
 }
 
 function getSuckerFishGlassLayer(fish) {
+  const storedReturnLayer = Number(fish?.suckerFreeSwimReturnLayer);
+  if (Number.isFinite(storedReturnLayer)) {
+    return normalizeSuckerFishGlassLayer(storedReturnLayer);
+  }
   return normalizeSuckerFishGlassLayer(fish?.tankLayer ?? fish?.desiredTankLayer ?? SUCKER_FISH_BACK_GLASS_LAYER);
 }
 
@@ -25414,7 +25857,7 @@ function setFishTankLayers(fish, tankLayer, desiredTankLayer = tankLayer) {
   let nextTankLayer;
   let nextDesiredTankLayer;
 
-  if (species?.behavior === "sucker") {
+  if (getEffectiveFishBehavior(fish, species) === "sucker") {
     nextTankLayer = normalizeSuckerFishGlassLayer(tankLayer);
     nextDesiredTankLayer = normalizeSuckerFishGlassLayer(desiredTankLayer);
   } else {
@@ -32603,6 +33046,15 @@ function getFishActionTargetOptions(action, fish, now = Date.now()) {
   });
 }
 
+function showFishActionUnavailableToast(availability) {
+  const message = (availability?.title || "That action is not available.").replace(/^.*?:\s*/, "");
+  if (message.toLowerCase() === "needs food first") {
+    return false;
+  }
+  showToast(message);
+  return true;
+}
+
 function getFishActionAvailability(action, fish, now = Date.now()) {
   const config = getFishActionConfig(action);
   const baseTitle = config?.title || "Fish action";
@@ -33387,7 +33839,7 @@ function startFishActionQueueItem(fish, item, now = Date.now()) {
   const config = getFishActionConfig(action);
   const availability = getFishActionAvailability(action, fish, now);
   if (!fish || !species || !availability.enabled) {
-    showToast((availability.title || "That action is not available.").replace(/^.*?:\s*/, ""));
+    showFishActionUnavailableToast(availability);
     return false;
   }
   if (config) {
@@ -33557,7 +34009,7 @@ function enqueueFishAction(action, fishId = runtime.fishActionMenuFishId || runt
 
   const availability = getFishActionAvailability(action, fish, now);
   if (!availability.enabled || config.queueable === false) {
-    showToast((availability.title || "That action is not available.").replace(/^.*?:\s*/, ""));
+    showFishActionUnavailableToast(availability);
     renderUi(now, { full: false });
     return false;
   }
@@ -34678,7 +35130,8 @@ function startPlacingDecor(decorKey) {
     tankLayer: initialLayer,
     scale: getDecorScaleDefault(decorKey),
     flipped: false,
-    flippedY: false
+    flippedY: false,
+    freePlacementEnabled: isFreeDecorPlacementEnabled(getCurrentTank())
   };
   runtime.placementPreview = runtime.lastTankPoint
     ? clampDecorPlacement(runtime.lastTankPoint.x / TANK_WIDTH, runtime.lastTankPoint.y / TANK_HEIGHT, {
@@ -34687,6 +35140,7 @@ function startPlacingDecor(decorKey) {
       scale: runtime.placementMode.scale,
       flipped: runtime.placementMode.flipped,
       flippedY: runtime.placementMode.flippedY,
+      freePlacementEnabled: runtime.placementMode.freePlacementEnabled,
       applyGravity: true
     })
     : clampDecorPlacement(0.5, 0.8, {
@@ -34695,6 +35149,7 @@ function startPlacingDecor(decorKey) {
       scale: runtime.placementMode.scale,
       flipped: runtime.placementMode.flipped,
       flippedY: runtime.placementMode.flippedY,
+      freePlacementEnabled: runtime.placementMode.freePlacementEnabled,
       applyGravity: true
     });
   runtime.cleaningMode = false;
@@ -34741,6 +35196,7 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
   const scaleBase = clamp(Number(runtime.placementMode?.scale) || getDecorScaleDefault(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const flipped = Boolean(runtime.placementMode?.flipped);
   const flippedY = Boolean(runtime.placementMode?.flippedY);
+  const freePlacementEnabled = runtime.placementMode?.freePlacementEnabled === true;
   const finalLayer = getDecorFrontLayer(decorKey, tankLayer);
   const placement = clampDecorPlacement(xNorm, yNorm, {
     decorKey,
@@ -34748,6 +35204,7 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     scale: scaleBase,
     flipped,
     flippedY,
+    freePlacementEnabled,
     applyGravity: true
   });
 
@@ -34764,7 +35221,8 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     scale: scaleBase,
     tankLayer: finalLayer,
     flipped,
-    flippedY
+    flippedY,
+    freePlacementEnabled
   };
   if (isCustomBubblerDecorKey(decorKey)) {
     placedItem.bubblerSettings = createDefaultBubblerSettings();
@@ -35918,14 +36376,15 @@ function finalizeDecorDrag() {
 
 function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
   const fish = options.fish || null;
-  const layer = species?.behavior === "sucker"
+  const suckerBehaviorActive = getEffectiveFishBehavior(fish, species) === "sucker";
+  const layer = suckerBehaviorActive
     ? normalizeSuckerFishGlassLayer(options.layer ?? getSuckerFishGlassLayer(fish))
     : clampTankLayer(options.layer ?? getFishTankLayer(fish) ?? DEFAULT_TANK_LAYER);
-  const suckerPlacementOptions = species?.behavior === "sucker"
+  const suckerPlacementOptions = suckerBehaviorActive
     ? getSuckerFishPlacementOptionsForLayer(layer)
     : null;
   const baseXNorm = clampFishXNormToMobileViewport(xNorm, fish, species);
-  const basePlacement = species?.behavior === "sucker"
+  const basePlacement = suckerBehaviorActive
     ? {
       xNorm: baseXNorm,
       yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, suckerPlacementOptions)
@@ -35940,7 +36399,7 @@ function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
   }
 
   const constrained = constrainNormalizedPointToTankShell(basePlacement.xNorm, basePlacement.yNorm, { variant: "inner" });
-  if (species?.behavior === "sucker") {
+  if (suckerBehaviorActive) {
     return {
       xNorm: clampFishXNormToMobileViewport(constrained.xNorm, fish, species),
       yNorm: clampFishYNormToLayer(constrained.yNorm, fish, species, layer, suckerPlacementOptions)
@@ -35976,8 +36435,9 @@ function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
     return changed;
   }
 
-  const currentLayer = species.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish);
-  const targetLayer = species.behavior === "sucker" ? getDesiredSuckerFishGlassLayer(fish) : getDesiredFishTankLayer(fish);
+  const suckerBehaviorActive = getEffectiveFishBehavior(fish, species) === "sucker";
+  const currentLayer = suckerBehaviorActive ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish);
+  const targetLayer = suckerBehaviorActive ? getDesiredSuckerFishGlassLayer(fish) : getDesiredFishTankLayer(fish);
   const position = clampFishPlacement(fish.xNorm, fish.yNorm, species, {
     fish,
     layer: currentLayer
@@ -36959,7 +37419,9 @@ function getFilterMaxDirtyDurationMs(filterKey = state?.selectedFilterAsset, fis
     SUCKER_FISH_CLEAN_DURATION_BONUS_CAP,
     suckerFishCount * SUCKER_FISH_CLEAN_DURATION_BONUS
   );
-  return filterProfile.cleanDays * DAY_MS * (1 + suckerCleanDurationBonus) / Math.max(1, getTankFishDirtinessMultiplier(activeFish));
+  const calculatedDuration = filterProfile.cleanDays * DAY_MS * (1 + suckerCleanDurationBonus)
+    / Math.max(1, getTankFishDirtinessMultiplier(activeFish));
+  return Math.min(7 * DAY_MS, calculatedDuration);
 }
 
 function getFishCriticalHealthTickMs(fish, species = getSpeciesForFish(fish)) {
@@ -38781,13 +39243,16 @@ function isFishSpeciesUnlocked(speciesOrId) {
 
 function getFishShopCatalog() {
   return runtime.fishCatalog.filter((species) => (
-    (isZombieSkeletonModeAvailable() && isGoreEnabled()) || !isUndeadSpecies(species)
+    species
+    && !HIDDEN_FISH_OPTION_IDS.has(species.id)
+    && ((isZombieSkeletonModeAvailable() && isGoreEnabled()) || !isUndeadSpecies(species))
   ));
 }
 
 function getStarterFishSpecies() {
-  const unlockedCatalog = getFishShopCatalog().filter((species) => isFishSpeciesUnlocked(species));
-  return [...(unlockedCatalog.length ? unlockedCatalog : runtime.fishCatalog)]
+  const shopCatalog = getFishShopCatalog();
+  const unlockedCatalog = shopCatalog.filter((species) => isFishSpeciesUnlocked(species));
+  return [...(unlockedCatalog.length ? unlockedCatalog : shopCatalog)]
     .sort(compareFishCatalogBySize)[0] || null;
 }
 
@@ -39124,6 +39589,7 @@ function buyInspectorFish() {
 function getFishInspectorBehaviorProfiles() {
   return runtime.fishCatalog.filter((species) => (
     species
+    && !HIDDEN_FISH_OPTION_IDS.has(species.id)
     && !species.customUploadProduct
     && !isCustomFishShopKey(species.id)
     && !isCustomFishAssetKey(species.id)
@@ -44600,6 +45066,7 @@ function renderUi(now, options = {}) {
   renderEditQuickRef();
   renderEditDecorTray();
   renderEditFishTray();
+  renderEditTankTray();
   renderFoodTray();
   renderMedicineTray();
   renderFishActionFlyout(now);
@@ -44638,6 +45105,7 @@ function shouldAllowTankStageTouchScroll() {
     || runtime.utilityOverlayOpen
     || runtime.settingsOverlayOpen
     || runtime.equipmentOverlayOpen
+    || runtime.tankEditMode
     || !runtime.sidebarCollapsed
     || runtime.foodTrayOpen
     || runtime.medicineTrayOpen
@@ -49404,6 +49872,12 @@ function renderSettingsOverlay() {
   if (dom.waterParticlesToggleInput) {
     dom.waterParticlesToggleInput.checked = uiSettings.waterParticlesEnabled;
   }
+  if (dom.causticLightingToggleInput) {
+    dom.causticLightingToggleInput.checked = uiSettings.causticLightingEnabled;
+  }
+  if (dom.decorShadowsToggleInput) {
+    dom.decorShadowsToggleInput.checked = uiSettings.decorShadowsEnabled;
+  }
   if (dom.halloweenModeSelect instanceof HTMLSelectElement) {
     dom.halloweenModeSelect.value = uiSettings.halloweenMode;
   }
@@ -50208,7 +50682,7 @@ function renderEditDecorTrayContextMenu() {
 }
 
 function hasInlineToolTrayOpen() {
-  return runtime.editTankMode || runtime.fishEditMode || runtime.foodTrayOpen || runtime.medicineTrayOpen;
+  return runtime.editTankMode || runtime.fishEditMode || runtime.tankEditMode || runtime.foodTrayOpen || runtime.medicineTrayOpen;
 }
 
 function getDecorTrayTypeTone(decor, decorKey) {
@@ -50391,6 +50865,36 @@ function handleDecorResidenceUtilityOverlayBodyClick(ctx, target) {
   return false;
 }
 
+function getDecorFreePlacementSelectionState() {
+  const selectedItems = getSelectedPlacedDecorItems();
+  if (selectedItems.length) {
+    const enabledCount = selectedItems.filter((item) => isFreeDecorPlacementEnabled(item, { tank: getCurrentTank() })).length;
+    return {
+      scope: selectedItems.length > 1 ? "selected-many" : "selected-one",
+      checked: enabledCount === selectedItems.length,
+      indeterminate: enabledCount > 0 && enabledCount < selectedItems.length,
+      items: selectedItems
+    };
+  }
+
+  if (runtime.placementMode) {
+    return {
+      scope: "placement-preview",
+      checked: runtime.placementMode.freePlacementEnabled === true,
+      indeterminate: false,
+      items: []
+    };
+  }
+
+  const tank = getCurrentTank();
+  return {
+    scope: "default",
+    checked: tank?.freeDecorPlacement === true,
+    indeterminate: false,
+    items: []
+  };
+}
+
 function setFreeDecorPlacementEnabled(enabled) {
   const tank = getCurrentTank();
   if (!tank) {
@@ -50398,27 +50902,72 @@ function setFreeDecorPlacementEnabled(enabled) {
   }
 
   const nextEnabled = enabled === true;
+  const selectionState = getDecorFreePlacementSelectionState();
+
+  if (selectionState.scope === "placement-preview" && runtime.placementMode) {
+    if (runtime.placementMode.freePlacementEnabled === nextEnabled) {
+      renderEditDecorTray();
+      return false;
+    }
+
+    runtime.placementMode.freePlacementEnabled = nextEnabled;
+    if (runtime.placementPreview) {
+      const placement = clampDecorPlacement(runtime.placementPreview.xNorm, runtime.placementPreview.yNorm, {
+        decorKey: runtime.placementMode.decorKey,
+        tankLayer: runtime.placementMode.tankLayer,
+        scale: runtime.placementMode.scale,
+        flipped: runtime.placementMode.flipped,
+        flippedY: runtime.placementMode.flippedY,
+        freePlacementEnabled: runtime.placementMode.freePlacementEnabled,
+        applyGravity: true,
+        tank
+      });
+      runtime.placementPreview.xNorm = placement.xNorm;
+      runtime.placementPreview.yNorm = placement.yNorm;
+    }
+
+    renderUi(Date.now());
+    showToast(nextEnabled ? "Free Placement set for the decor preview." : "Gravity restored for the decor preview.");
+    return true;
+  }
+
+  if (selectionState.items.length) {
+    const itemsToUpdate = selectionState.items.filter((item) => isFreeDecorPlacementEnabled(item, { tank }) !== nextEnabled);
+    if (!itemsToUpdate.length) {
+      renderEditDecorTray();
+      return false;
+    }
+
+    for (const item of itemsToUpdate) {
+      item.freePlacementEnabled = nextEnabled;
+      if (!nextEnabled) {
+        const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, tank, applyGravity: true });
+        item.xNorm = placement.xNorm;
+        item.yNorm = placement.yNorm;
+        applyDecorGravelInsertion(item);
+      }
+      updatePlacedDecorResizeAnchor(item);
+    }
+
+    saveState();
+    renderUi(Date.now());
+    showToast(nextEnabled
+      ? (itemsToUpdate.length > 1 ? "Free Placement enabled for the selected decor." : "Free Placement enabled for the selected decor piece.")
+      : (itemsToUpdate.length > 1 ? "Gravity restored for the selected decor." : "Gravity restored for the selected decor piece."));
+    return true;
+  }
+
   if (tank.freeDecorPlacement === nextEnabled) {
     renderEditDecorTray();
     return false;
   }
 
   tank.freeDecorPlacement = nextEnabled;
-  if (!nextEnabled) {
-    for (const item of tank.placedDecor || []) {
-      const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, tank, applyGravity: true });
-      item.xNorm = placement.xNorm;
-      item.yNorm = placement.yNorm;
-      updatePlacedDecorResizeAnchor(item);
-      applyDecorGravelInsertion(item);
-    }
-  }
-
   saveState();
-  renderUi(Date.now());
+  renderEditDecorTray();
   showToast(nextEnabled
-    ? "Free Placement on. Grounded decor can now be positioned anywhere."
-    : "Gravity on. Grounded decor dropped to its layer floor.");
+    ? "Free Placement will be used for newly previewed decor by default."
+    : "Gravity will be used for newly previewed decor by default.");
   return true;
 }
 
@@ -50452,7 +51001,16 @@ function renderEditDecorTray() {
   }
   const freePlacementToggle = dom.editDecorTray?.querySelector?.("[data-decor-free-placement-toggle]");
   if (freePlacementToggle) {
-    freePlacementToggle.checked = isFreeDecorPlacementEnabled();
+    const freePlacementState = getDecorFreePlacementSelectionState();
+    freePlacementToggle.checked = Boolean(freePlacementState.checked);
+    freePlacementToggle.indeterminate = Boolean(freePlacementState.indeterminate);
+    freePlacementToggle.setAttribute("aria-checked", freePlacementState.indeterminate ? "mixed" : (freePlacementState.checked ? "true" : "false"));
+  }
+  for (const tab of dom.editDecorTray?.querySelectorAll?.("[data-edit-overlay-mode]") || []) {
+    const selected = tab.dataset.editOverlayMode === "decor";
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
   }
 
   const allTrayEntries = runtime.editDecorTrayInTank ? getInTankDecorTrayEntries() : getDecorTrayEntries();
@@ -50463,7 +51021,7 @@ function renderEditDecorTray() {
     runtime.editTankMode ? "1" : "0",
     runtime.editDecorTrayTab,
     runtime.editDecorTrayInTank ? "tank" : "storage",
-    isFreeDecorPlacementEnabled() ? "free" : "gravity",
+    JSON.stringify(getDecorFreePlacementSelectionState()),
     isViolenceAndGoreEnabled() ? "1" : "0",
     runtime.placementMode?.decorKey || "",
     runtime.selectedDecorId || "",
@@ -50815,6 +51373,12 @@ function renderEditFishTray() {
     tab.setAttribute("aria-selected", selected ? "true" : "false");
     tab.tabIndex = selected ? 0 : -1;
   }
+  for (const tab of dom.editFishTray?.querySelectorAll?.("[data-edit-overlay-mode]") || []) {
+    const selected = tab.dataset.editOverlayMode === "fish";
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
+  }
 
   const trayEntries = getFishTrayEntries();
   const trayRenderNow = Date.now();
@@ -50872,6 +51436,41 @@ function renderEditFishTray() {
   if (!trayEntries.length) {
     dom.editFishTrayPrev.disabled = true;
     dom.editFishTrayNext.disabled = true;
+  }
+}
+
+function renderEditTankTray() {
+  const visible = runtime.tankEditMode;
+  if (dom.editTankTray) {
+    dom.editTankTray.hidden = !visible;
+  }
+  syncTankTrayStageClass();
+
+  if (!visible || !dom.editTankTray) {
+    return;
+  }
+
+  const validTabs = new Set(["background", "gravel", "equipment"]);
+  if (!validTabs.has(runtime.editTankTrayTab)) {
+    runtime.editTankTrayTab = "background";
+  }
+
+  for (const tab of dom.editTankTray.querySelectorAll("[data-edit-overlay-mode]")) {
+    const selected = tab.dataset.editOverlayMode === "tank";
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
+  }
+
+  for (const tab of dom.editTankTray.querySelectorAll("[data-tank-tray-tab]")) {
+    const selected = tab.dataset.tankTrayTab === runtime.editTankTrayTab;
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
+  }
+
+  for (const panel of dom.editTankTray.querySelectorAll("[data-tank-tray-panel]")) {
+    panel.hidden = panel.dataset.tankTrayPanel !== runtime.editTankTrayTab;
   }
 }
 
@@ -50954,14 +51553,14 @@ function renderMedicineTray() {
   ].join("|");
 
   if (shouldRebuildRenderSection("medicine-tray-data", dataKey)) {
-    const markup = items.length
+    const medicineMarkup = items.length
       ? items.map((medicine) => {
         const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
         const active = runtime.medicineModeKey === medicine.id;
         const label = `${medicine.name} - ${quantity} left`;
         return `
           <button
-            class="edit-decor-tile ${active ? "is-active" : ""}"
+            class="edit-decor-tile care-medicine-tile ${active ? "is-active" : ""}"
             type="button"
             data-select-medicine="${medicine.id}"
             data-decor-name="${label}"
@@ -50978,7 +51577,32 @@ function renderMedicineTray() {
           </button>
         `;
       }).join("")
-      : `<div class="edit-decor-tray-empty">No medicine is stocked yet. Open the pharmacy to buy a bottle first.</div>`;
+      : `<div class="care-tray-empty-medical">No medicine stocked</div>`;
+
+    const markup = `
+      <div class="care-tray-content">
+        <section class="care-tray-section care-tray-medical" aria-label="Medical care">
+          <div class="care-tray-section-icon" title="Medical" aria-label="Medical">
+            <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+          </div>
+          <div class="care-tray-medical-items">${medicineMarkup}</div>
+        </section>
+        <div class="care-tray-divider" aria-hidden="true"></div>
+        <section class="care-tray-section care-tray-tool-section" aria-label="Cleaning tool">
+          <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
+            <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+            <span>Scrub</span>
+          </button>
+        </section>
+        <div class="care-tray-divider" aria-hidden="true"></div>
+        <section class="care-tray-section care-tray-tool-section" aria-label="Scoop tool">
+          <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
+            <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+            <span>Scoop</span>
+          </button>
+        </section>
+      </div>
+    `;
 
     setMarkupIfChanged("medicine-tray", dom.medicineTrayScroller, markup);
   }
@@ -51501,7 +52125,7 @@ function openFishActionTargetMenu(action, fishId = runtime.fishActionMenuFishId,
   const config = getFishActionConfig(action);
   const availability = getFishActionAvailability(action, fish, now);
   if (!config || !isFishActionTargeted(action) || !fish || managed.inStorage || isFishDead(fish) || !availability.enabled) {
-    showToast((availability.title || "That action is not available.").replace(/^.*?:\s*/, ""));
+    showFishActionUnavailableToast(availability);
     closeFishActionTargetMenu();
     return false;
   }
@@ -52836,7 +53460,11 @@ function renderBackgrounds() {
     );
   }
 
-  if (dom.equipmentBackgroundList) {
+  const equipmentBackgroundContainers = [
+    ["equipment-background-list", dom.equipmentBackgroundList],
+    ["edit-tank-background-list", dom.editTankBackgroundList]
+  ].filter(([, container]) => container);
+  if (equipmentBackgroundContainers.length) {
     const localImageReady = hasLocalBackgroundImage();
     const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
     const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
@@ -52866,17 +53494,22 @@ function renderBackgrounds() {
         && !isLocalImageBackgroundKey(background.key)
       ))
     )}`;
-    setMarkupIfChanged(
-      "equipment-background-list",
-      dom.equipmentBackgroundList,
-      equipmentMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
-    );
+    for (const [cacheKey, container] of equipmentBackgroundContainers) {
+      setMarkupIfChanged(
+        cacheKey,
+        container,
+        equipmentMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
+      );
+    }
   }
 }
 
 function renderSolidBackgroundControls() {
-  const container = dom.equipmentBackgroundColorPanel;
-  if (!container) {
+  const containers = [
+    ["equipment-background-color-panel", dom.equipmentBackgroundColorPanel],
+    ["edit-tank-background-color-panel", dom.editTankBackgroundColorPanel]
+  ].filter(([, container]) => container);
+  if (!containers.length) {
     return;
   }
 
@@ -53079,17 +53712,21 @@ function renderSolidBackgroundControls() {
     </div>
   `;
 
-  setMarkupIfChanged("equipment-background-color-panel", container, markup);
+  for (const [cacheKey, container] of containers) {
+    setMarkupIfChanged(cacheKey, container, markup);
+  }
 }
 
 function renderFilterAssets() {
   if (!ENABLE_FILTER) {
     setMarkupIfChanged("scene-assets-filter", dom.filterAssetList, "");
     setMarkupIfChanged("equipment-scene-assets-filter", dom.equipmentFilterList, "");
+    setMarkupIfChanged("edit-tank-scene-assets-filter", dom.editTankFilterList, "");
     return;
   }
   renderSceneAssetCards(dom.filterAssetList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped");
   renderSceneAssetCards(dom.equipmentFilterList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped", "equipment-filter-assets");
+  renderSceneAssetCards(dom.editTankFilterList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped", "edit-tank-filter-assets");
 }
 
 function syncFilterFeatureVisibility() {
@@ -53103,11 +53740,17 @@ function syncFilterFeatureVisibility() {
   if (dom.equipmentFilterSection instanceof HTMLElement) {
     dom.equipmentFilterSection.hidden = !showFilterPanels;
   }
+  if (dom.editTankFilterSection instanceof HTMLElement) {
+    dom.editTankFilterSection.hidden = !showFilterPanels || runtime.editTankTrayTab !== "equipment";
+  }
   if (dom.filterAssetList instanceof HTMLElement) {
     dom.filterAssetList.hidden = !filterEnabled;
   }
   if (dom.equipmentFilterList instanceof HTMLElement) {
     dom.equipmentFilterList.hidden = !filterEnabled;
+  }
+  if (dom.editTankFilterList instanceof HTMLElement) {
+    dom.editTankFilterList.hidden = !filterEnabled;
   }
   if (dom.tankFilterSectionTitle) {
     dom.tankFilterSectionTitle.textContent = filterEnabled ? "Filter" : "Lighting";
@@ -53139,7 +53782,8 @@ function syncFilterFeatureVisibility() {
 function renderUvLightControls() {
   const containers = [
     ["uv-light-controls", dom.uvLightList],
-    ["equipment-uv-light-controls", dom.equipmentUvLightList]
+    ["equipment-uv-light-controls", dom.equipmentUvLightList],
+    ["edit-tank-uv-light-controls", dom.editTankUvLightList]
   ].filter(([, container]) => container);
   if (!containers.length) {
     return;
@@ -53184,7 +53828,8 @@ function renderUvLightControls() {
 function renderCustomGravelControls() {
   const containers = [
     ["custom-gravel-panel", dom.customGravelPanel],
-    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel]
+    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel],
+    ["edit-tank-custom-gravel-panel", dom.editTankCustomGravelPanel]
   ].filter(([, container]) => container);
   if (!containers.length) {
     return;
@@ -53440,26 +54085,35 @@ function renderControls(now) {
   dom.scoopButton?.classList.toggle("is-active", runtime.scoopMode);
   dom.feedButton.classList.toggle("is-active", runtime.foodTrayOpen || Boolean(runtime.feedingModeFoodKey));
   dom.medicineButton?.classList.toggle("is-active", runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey));
-  dom.openEquipmentButton?.classList.toggle("is-active", runtime.equipmentOverlayOpen);
+  dom.openEquipmentButton?.classList.toggle("is-active", runtime.equipmentOverlayOpen || runtime.tankEditMode);
   dom.openSettingsButton?.classList.toggle("is-active", runtime.settingsOverlayOpen);
   dom.openManagementButton?.classList.toggle("is-active", runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management");
   dom.careTaskPaneButton?.classList.toggle("is-active", getUiSettings().careTaskPaneOpen === true);
   dom.toggleMouseLockButton?.classList.toggle("is-active", isTankMouseInputLocked());
-  const toolbarCareMenuOpen = runtime.toolbarActionMenu === "care";
-  const toolbarEditMenuOpen = runtime.toolbarActionMenu === "edit";
+  // Legacy popup care submenu is intentionally disabled. Care opens the same
+  // horizontal tray used for medicine, scrub, and scoop controls.
+  const toolbarCareMenuOpen = false;
+  if (runtime.toolbarActionMenu === "care") {
+    runtime.toolbarActionMenu = "";
+  }
+  const toolbarEditMenuOpen = false;
+  if (runtime.toolbarActionMenu === "edit") {
+    runtime.toolbarActionMenu = "";
+  }
   const careToolActive = runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey) || runtime.cleaningMode || runtime.scoopMode;
-  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentOverlayOpen;
+  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode || runtime.equipmentOverlayOpen;
   if (dom.toolbarCareMenu) {
     dom.toolbarCareMenu.hidden = !toolbarCareMenuOpen;
   }
   if (dom.toolbarEditMenu) {
-    dom.toolbarEditMenu.hidden = !toolbarEditMenuOpen;
+    dom.toolbarEditMenu.hidden = true;
+    dom.toolbarEditMenu.setAttribute("aria-hidden", "true");
   }
   dom.careMenuButton?.classList.toggle("is-active", toolbarCareMenuOpen || careToolActive);
   dom.editMenuButton?.classList.toggle("is-active", toolbarEditMenuOpen || editToolActive);
-  dom.careMenuButton?.setAttribute("aria-expanded", String(toolbarCareMenuOpen));
-  dom.editMenuButton?.setAttribute("aria-expanded", String(toolbarEditMenuOpen));
-  dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu || dom.toolbarEditMenu) && (toolbarCareMenuOpen || toolbarEditMenuOpen));
+  dom.careMenuButton?.setAttribute("aria-expanded", String(runtime.medicineTrayOpen));
+  dom.editMenuButton?.setAttribute("aria-expanded", "false");
+  dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu) && toolbarCareMenuOpen);
   if (dom.lightsOutToggleButton) {
     const override = getLightsOutOverride();
     const active = isTankLightsOut(now);
@@ -53515,8 +54169,9 @@ function renderControls(now) {
     dom.displayTab.setAttribute("aria-pressed", String(displayCollapsed));
   }
   if (dom.openEquipmentButton) {
-    dom.openEquipmentButton.title = runtime.equipmentOverlayOpen ? "Edit Tank (Open)" : "Edit Tank";
-    dom.openEquipmentButton.setAttribute("aria-label", runtime.equipmentOverlayOpen ? "Edit Tank open" : "Edit Tank");
+    const tankEditorOpen = runtime.equipmentOverlayOpen || runtime.tankEditMode;
+    dom.openEquipmentButton.title = tankEditorOpen ? "Edit Tank (Active)" : "Edit Tank";
+    dom.openEquipmentButton.setAttribute("aria-label", tankEditorOpen ? "Edit Tank active" : "Edit Tank");
   }
   if (dom.openSettingsButton) {
     dom.openSettingsButton.title = runtime.settingsOverlayOpen ? "Settings (Open)" : "Settings";
@@ -53616,6 +54271,8 @@ function renderControls(now) {
       ? "grabbing"
       : (runtime.editTankMode || runtime.fishEditMode)
         ? "grab"
+        : runtime.tankEditMode
+          ? "default"
         : "default";
   syncToolbarFastTooltipExperiment();
   renderToolCursor();
@@ -53730,6 +54387,7 @@ function animationLoop(frameTime) {
   updateFishMotion(now, deltaSeconds);
   syncDebugFishBehaviorBroadcast(now);
   updateWaterLifeEffects(now, deltaSeconds);
+  updateStageRenderView(frameTime);
   renderTank(now);
   renderFishActionQueueDock(now);
   updateSelectedDecorActionButtons();
@@ -53971,7 +54629,7 @@ function setContentSetting(settingKey, value) {
 }
 
 function setToolbarPosition(toolbarPosition) {
-  if (!state) {
+  if (!state || !TOOLBAR_POSITION_SETTING_ENABLED) {
     return;
   }
 
@@ -53991,7 +54649,7 @@ function setToolbarPosition(toolbarPosition) {
 }
 
 function setDisplayPosition(displayPosition) {
-  if (!state) {
+  if (!state || !DISPLAY_POSITION_SETTING_ENABLED) {
     return;
   }
 
@@ -54139,7 +54797,47 @@ function setWaterParticlesEnabled(value) {
   }
   saveState();
   renderUi(Date.now(), { full: false });
-  showToast(nextSettings.waterParticlesEnabled ? "Water particles on." : "Water particles off.");
+  showToast(nextSettings.waterParticlesEnabled ? "Particle system on." : "Particle system off.");
+}
+
+function setCausticLightingEnabled(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    causticLightingEnabled: Boolean(value)
+  });
+  if (currentSettings.causticLightingEnabled === nextSettings.causticLightingEnabled) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+  showToast(nextSettings.causticLightingEnabled ? "Caustic lighting on." : "Caustic lighting off.");
+}
+
+function setDecorShadowsEnabled(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    decorShadowsEnabled: Boolean(value)
+  });
+  if (currentSettings.decorShadowsEnabled === nextSettings.decorShadowsEnabled) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+  showToast(nextSettings.decorShadowsEnabled ? "Decor shadows on." : "Decor shadows off.");
 }
 
 function clearTankMouseInteractionState() {
@@ -55473,6 +56171,7 @@ function getSuckerFishCollisionEntry(fish, species, now = Date.now()) {
     || !species
     || isFishDead(fish)
     || getEffectiveFishBehavior(fish, species) !== "sucker"
+    || isSuckerFishFreeSwimming(fish, species, now)
   ) {
     return null;
   }
@@ -55592,6 +56291,84 @@ function resolveSuckerFishGlassCollisions(now = Date.now(), options = {}) {
   return changed;
 }
 
+function startSuckerFishFreeSwim(fish, species, targetXNorm, targetYNorm, now = Date.now(), options = {}) {
+  if (!fish || !canSuckerFishFreeSwim(species) || isFishDead(fish)) {
+    return false;
+  }
+
+  const targetX = clamp(Number(targetXNorm), 0.08, 0.92);
+  const targetY = clamp(Number(targetYNorm), 0.14, 0.8);
+  const distanceNorm = Math.hypot(targetX - fish.xNorm, targetY - fish.yNorm);
+  const threshold = Number.isFinite(Number(options.distanceThreshold))
+    ? Math.max(0.05, Number(options.distanceThreshold))
+    : SUCKER_FISH_FREE_SWIM_DISTANCE_NORM;
+  if (distanceNorm < threshold) {
+    return false;
+  }
+
+  const returnLayer = getSuckerFishGlassLayer(fish);
+  const swimSpeed = randomBetween(SUCKER_FISH_FREE_SWIM_SPEED_MIN, SUCKER_FISH_FREE_SWIM_SPEED_MAX);
+  const travelMs = (distanceNorm / Math.max(0.00001, swimSpeed * FISH_MOTION_SCALE)) * 1000;
+  const durationMs = clamp(
+    travelMs * 1.32,
+    SUCKER_FISH_FREE_SWIM_MIN_DURATION_MS,
+    SUCKER_FISH_FREE_SWIM_MAX_DURATION_MS
+  );
+
+  fish.suckerFreeSwimStartedAt = now;
+  fish.suckerFreeSwimUntil = now + durationMs;
+  fish.suckerFreeSwimTargetXNorm = targetX;
+  fish.suckerFreeSwimTargetYNorm = targetY;
+  fish.suckerFreeSwimReturnLayer = returnLayer;
+  fish.swimSpeed = swimSpeed;
+  fish.targetXNorm = targetX;
+  fish.targetYNorm = targetY;
+  fish.targetAt = fish.suckerFreeSwimUntil;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  setFishTankLayers(fish, SUCKER_FISH_FREE_SWIM_LAYER, SUCKER_FISH_FREE_SWIM_LAYER);
+  setFishDirection(fish, targetX >= fish.xNorm ? 1 : -1, species, now);
+  return true;
+}
+
+function finishSuckerFishFreeSwim(fish, species, now = Date.now()) {
+  if (!fish || !species || !Number.isFinite(Number(fish.suckerFreeSwimUntil))) {
+    return false;
+  }
+
+  const returnLayer = normalizeSuckerFishGlassLayer(
+    Number.isFinite(Number(fish.suckerFreeSwimReturnLayer))
+      ? Number(fish.suckerFreeSwimReturnLayer)
+      : SUCKER_FISH_BACK_GLASS_LAYER
+  );
+  delete fish.suckerFreeSwimStartedAt;
+  delete fish.suckerFreeSwimUntil;
+  delete fish.suckerFreeSwimTargetXNorm;
+  delete fish.suckerFreeSwimTargetYNorm;
+  delete fish.suckerFreeSwimReturnLayer;
+  setFishTankLayers(fish, returnLayer, returnLayer);
+  fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
+  fish.targetAt = Math.min(Number(fish.targetAt) || now, now + 450);
+  setSuckerFishAngle(fish, Number(fish.direction) < 0 ? Math.PI : 0, now);
+  return true;
+}
+
+function updateSuckerFishFreeSwimState(fish, species, now = Date.now()) {
+  if (!fish || !species || !Number.isFinite(Number(fish.suckerFreeSwimUntil))) {
+    return false;
+  }
+
+  const targetX = Number(fish.suckerFreeSwimTargetXNorm);
+  const targetY = Number(fish.suckerFreeSwimTargetYNorm);
+  const reachedTarget = Number.isFinite(targetX) && Number.isFinite(targetY)
+    ? Math.hypot(targetX - fish.xNorm, targetY - fish.yNorm) <= SUCKER_FISH_FREE_SWIM_ARRIVAL_DISTANCE_NORM
+    : false;
+  if (now >= Number(fish.suckerFreeSwimUntil) || reachedTarget) {
+    return finishSuckerFishFreeSwim(fish, species, now);
+  }
+  return false;
+}
+
 function updateFishMotion(now, deltaSeconds) {
   if (!state?.fish.length) {
     runtime.fishGravelPebbleActions.clear();
@@ -55618,6 +56395,9 @@ function updateFishMotion(now, deltaSeconds) {
     const species = getSpeciesForFish(fish);
     if (!species) {
       continue;
+    }
+    if (species.behavior === "sucker") {
+      updateSuckerFishFreeSwimState(fish, species, now);
     }
     const effectiveBehavior = getEffectiveFishBehavior(fish, species);
     const pendingTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
@@ -56103,6 +56883,17 @@ function updateFishMotion(now, deltaSeconds) {
       if (isPiranhaSpecies(fish)) {
         speedMultiplier *= getPiranhaTargetCandidate(now) ? 1.2 : 1.04;
       }
+      if (pendingTubeTravel) {
+        if (pendingTravel.phase === "entering" || pendingTravel.phase === "emerging") {
+          // Once the fish is committed to the tube, give it a brisk pneumatic
+          // pull. This is intentionally quick, but still leaves enough travel
+          // time to read the fish moving through the tube rather than warping.
+          speedMultiplier *= 2.35;
+        } else if (pendingTravel.phase === "approach") {
+          speedMultiplier *= 1.12;
+        }
+      }
+
       if (activeFishActionSteering?.type === "zoomies") {
         speedMultiplier *= 2.05;
       }
@@ -56414,8 +57205,13 @@ function assignSwimTarget(fish, species, now) {
     const yRange = getSuckerFishYRange(fish, species, glassLayer);
     const grimeTarget = pickFrontGlassSuckerGrimeTarget(fish, now);
     if (grimeTarget) {
-      const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
       const travelDistance = Math.hypot(grimeTarget.xNorm - fish.xNorm, grimeTarget.yNorm - fish.yNorm);
+      if (startSuckerFishFreeSwim(fish, species, grimeTarget.xNorm, grimeTarget.yNorm, now, {
+        distanceThreshold: SUCKER_FISH_FREE_SWIM_GRIME_DISTANCE_NORM
+      })) {
+        return;
+      }
+      const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
       const travelSeconds = travelDistance / Math.max(0.00001, crawlSpeed * FISH_MOTION_SCALE);
       fish.targetXNorm = grimeTarget.xNorm;
       fish.targetYNorm = grimeTarget.yNorm;
@@ -56460,8 +57256,11 @@ function assignSwimTarget(fish, species, now) {
         layer: glassLayer
       }
     );
-    const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
     const travelDistance = Math.hypot(nextPlacement.xNorm - fish.xNorm, nextPlacement.yNorm - fish.yNorm);
+    if (startSuckerFishFreeSwim(fish, species, nextPlacement.xNorm, nextPlacement.yNorm, now)) {
+      return;
+    }
+    const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
     const travelSeconds = travelDistance / Math.max(0.00001, crawlSpeed * FISH_MOTION_SCALE);
     const lingerMultiplier = shouldReverse ? randomBetween(1.12, 1.34) : randomBetween(1.35, 1.7);
     fish.targetXNorm = nextPlacement.xNorm;
@@ -57419,6 +58218,7 @@ function materializeCoarseFishActivities(targetTank = getCurrentTank(), now = Da
 
 function renderTank(now) {
   const dirtiness = getTankDirtiness(now);
+  clearStageDisplaySurfaces();
   drawTankBackdrop();
   tankContext.save();
   clipToTankShellBounds(tankContext);
@@ -57431,6 +58231,7 @@ function renderTank(now) {
   drawWaterFilter(now);
   drawTankFloor(now);
   drawGravelGrime(now, dirtiness);
+  drawGravelCausticProjection(now);
   drawSedimentClouds(now);
   drawEffectClouds(EFFECT_CLOUD_LAYER_FLOOR);
   drawGravelDigBursts(now);
@@ -57457,6 +58258,8 @@ function renderTank(now) {
   drawBoroughEdgeBursts(now);
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
+  drawUnderwaterLightingPass(now);
+  drawWaterColumnCaustics(now);
   //drawLooseGravel(now, { transientOnly: true });
   drawDirtyWaterTint(dirtiness);
   drawMedicineWaterTint(now);
@@ -57477,6 +58280,7 @@ function renderTank(now) {
   drawCleaningSparkles(now);
   glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
+  drawDecorEditTankBoundary();
   const severeGrime = getSevereGrimeVisualIntensity(dirtiness);
   const tankBlurScale = getPortableTankBlurScale();
   const tankCanvasFilter = severeGrime > 0
@@ -57496,13 +58300,536 @@ function renderTank(now) {
   }
 }
 
+function getCausticLightImage() {
+  const image = runtime.images.get(CAUSTIC_LIGHT_ASSET_PATH) || null;
+  if (image && Number(image.naturalWidth || image.width) > 0 && Number(image.naturalHeight || image.height) > 0) {
+    return image;
+  }
+  requestRuntimeImageRecovery(CAUSTIC_LIGHT_ASSET_PATH, {
+    kind: "caustic-light",
+    id: "underwater-caustics"
+  });
+  return null;
+}
+
+function getCausticHighlightMask() {
+  const image = getCausticLightImage();
+  if (!image) {
+    return null;
+  }
+
+  const width = Number(image.naturalWidth || image.width) || 0;
+  const height = Number(image.naturalHeight || image.height) || 0;
+  const cacheKey = `${width}x${height}`;
+  if (runtime.causticHighlightMaskCanvas && runtime.causticHighlightMaskCacheKey === cacheKey) {
+    return runtime.causticHighlightMaskCanvas;
+  }
+
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = width;
+  sourceCanvas.height = height;
+  const sourceContext = sourceCanvas.getContext("2d", { willReadFrequently: true });
+  sourceContext.clearRect(0, 0, width, height);
+  sourceContext.drawImage(image, 0, 0, width, height);
+
+  const blurCanvas = document.createElement("canvas");
+  blurCanvas.width = width;
+  blurCanvas.height = height;
+  const blurContext = blurCanvas.getContext("2d", { willReadFrequently: true });
+  blurContext.clearRect(0, 0, width, height);
+  blurContext.filter = "blur(9px)";
+  blurContext.drawImage(sourceCanvas, 0, 0);
+  blurContext.filter = "none";
+
+  try {
+    const sourcePixels = sourceContext.getImageData(0, 0, width, height);
+    const blurPixels = blurContext.getImageData(0, 0, width, height);
+    const outputCanvas = document.createElement("canvas");
+    outputCanvas.width = width;
+    outputCanvas.height = height;
+    const outputContext = outputCanvas.getContext("2d");
+    const outputPixels = outputContext.createImageData(width, height);
+
+    const src = sourcePixels.data;
+    const blurred = blurPixels.data;
+    const out = outputPixels.data;
+    for (let index = 0; index < src.length; index += 4) {
+      const sourceAlpha = src[index + 3] / 255;
+      if (sourceAlpha <= 0.002) {
+        continue;
+      }
+
+      const sourceLum = src[index] * 0.2126 + src[index + 1] * 0.7152 + src[index + 2] * 0.0722;
+      const blurLum = blurred[index] * 0.2126 + blurred[index + 1] * 0.7152 + blurred[index + 2] * 0.0722;
+      const localHighlight = Math.max(0, sourceLum - blurLum);
+      const brightnessGate = clamp((sourceLum - 196) / 59, 0, 1);
+      const ridgeStrength = clamp((localHighlight - 1.5) / 24, 0, 1);
+      const alpha = sourceAlpha * brightnessGate * ridgeStrength * 1.45;
+      if (alpha <= 0.004) {
+        continue;
+      }
+
+      out[index] = 242;
+      out[index + 1] = 250;
+      out[index + 2] = 255;
+      out[index + 3] = Math.round(clamp(alpha, 0, 1) * 255);
+    }
+
+    outputContext.putImageData(outputPixels, 0, 0);
+    runtime.causticHighlightMaskCanvas = outputCanvas;
+    runtime.causticHighlightMaskCacheKey = cacheKey;
+    return outputCanvas;
+  } catch (error) {
+    console.warn("Unable to build caustic highlight mask", error);
+    return image;
+  }
+}
+
+function drawCausticProjectedStrip(context, image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height) {
+  if (width <= 0 || height <= 0 || sourceWidth <= 0 || sourceHeight <= 0) {
+    return;
+  }
+  context.drawImage(
+    image,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    x,
+    y,
+    width,
+    height
+  );
+}
+
+function hashCausticNoise(value, seed = 0) {
+  const input = Number(value) * 12.9898 + Number(seed) * 78.233;
+  return (Math.sin(input) * 43758.5453123) % 1;
+}
+
+function normalizedCausticNoise(value, seed = 0) {
+  const noise = hashCausticNoise(value, seed);
+  return noise < 0 ? noise + 1 : noise;
+}
+
+function getRotatedCausticSource(image, now, options = {}) {
+  const imageWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const imageHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const diagonal = Math.max(imageWidth, imageHeight, Math.ceil(Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight)));
+  const scale = Math.max(0.4, Number(options.scale) || 1);
+  const canvasWidth = Math.ceil(diagonal * scale);
+  const canvasHeight = Math.ceil(diagonal * scale);
+  const angle = (Number(now) || 0) * (Number(options.rotationSpeed) || 0) + (Number(options.baseAngle) || 0);
+  const cacheKey = [canvasWidth, canvasHeight, imageWidth, imageHeight].join(":");
+
+  if (!runtime.causticRotatedLayerCache) {
+    runtime.causticRotatedLayerCache = new Map();
+  }
+
+  let entry = runtime.causticRotatedLayerCache.get(cacheKey);
+  if (!entry) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    entry = { canvas, context: canvas.getContext("2d") };
+    runtime.causticRotatedLayerCache.set(cacheKey, entry);
+  }
+
+  const { canvas, context } = entry;
+  if (!context) {
+    return image;
+  }
+
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.save();
+  context.translate(canvas.width * 0.5, canvas.height * 0.5);
+  context.rotate(angle);
+  context.scale(scale, scale);
+  context.filter = "grayscale(0.22) saturate(0.78) brightness(1.08)";
+  context.drawImage(image, -imageWidth * 0.5, -imageHeight * 0.5, imageWidth, imageHeight);
+  context.restore();
+  return canvas;
+}
+
+function buildCausticSpotDescriptor(now, slotIndex, options = {}) {
+  const durationMs = Math.max(2200, Number(options.durationMs) || 5200);
+  const staggerMs = Number(options.staggerMs) || Math.round(durationMs * 0.37);
+  const startMs = (Number(now) || 0) + slotIndex * staggerMs + (Number(options.timeOffsetMs) || 0);
+  const cycleIndex = Math.floor(startMs / durationMs);
+  const localT = ((startMs % durationMs) + durationMs) % durationMs / durationMs;
+  const fade = Math.pow(Math.sin(localT * Math.PI), 1.85);
+  const seed = Number(options.seed) || 0;
+  const xNorm = 0.12 + normalizedCausticNoise(cycleIndex * 13.1 + slotIndex * 2.17 + 0.3, seed + 11) * 0.76;
+  const yNorm = 0.12 + normalizedCausticNoise(cycleIndex * 9.7 + slotIndex * 1.73 + 0.6, seed + 23) * 0.74;
+  const widthNorm = 0.14 + normalizedCausticNoise(cycleIndex * 7.2 + slotIndex * 4.11 + 0.9, seed + 31) * 0.2;
+  const heightNorm = 0.16 + normalizedCausticNoise(cycleIndex * 5.8 + slotIndex * 3.03 + 0.12, seed + 47) * 0.22;
+  const sourcePhaseX = normalizedCausticNoise(cycleIndex * 4.9 + slotIndex * 0.91 + 0.14, seed + 59);
+  const sourcePhaseY = normalizedCausticNoise(cycleIndex * 6.7 + slotIndex * 1.44 + 0.84, seed + 71);
+  const brightness = 0.72 + normalizedCausticNoise(cycleIndex * 8.9 + slotIndex * 2.62 + 0.41, seed + 83) * 0.5;
+  return {
+    fade,
+    xNorm,
+    yNorm,
+    widthNorm,
+    heightNorm,
+    sourcePhaseX,
+    sourcePhaseY,
+    brightness,
+    cycleIndex,
+    localT
+  };
+}
+
+function drawLocalizedGravelCausticPass(context, image, now, options = {}) {
+  const bounds = getTankFloorDrawBounds();
+  const imageWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const imageHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const floorTop = bounds.drawTop;
+  const floorDepth = Math.max(1, bounds.bottom - floorTop);
+  const floorCenterY = floorTop + floorDepth * (Number(options.spotYNorm) || 0.5);
+  const radiusY = floorDepth * Math.max(0.06, Number(options.spotHeightNorm) || 0.2);
+  const centerX = bounds.drawLeft + bounds.drawWidth * (Number(options.spotXNorm) || 0.5);
+  const topWidth = bounds.drawWidth * Math.max(0.08, Number(options.topWidthScale) || 0.2);
+  const bottomWidth = bounds.drawWidth * Math.max(0.1, Number(options.bottomWidthScale) || 0.3);
+  const slices = 54;
+  const sourceWindowScale = clamp(Number(options.sourceWindowScale) || 0.58, 0.28, 1);
+  const sourceWidth = imageWidth * sourceWindowScale;
+  const sourceHeightWindow = imageHeight * clamp(Number(options.sourceHeightScale) || 0.54, 0.28, 1);
+  const maxSourceX = Math.max(0, imageWidth - sourceWidth);
+  const maxSourceY = Math.max(0, imageHeight - sourceHeightWindow);
+  const driftPhase = (Number(now) || 0) * (Number(options.driftSpeed) || 0.00018) + (Number(options.phase) || 0);
+  const sourceX = maxSourceX * ((Number(options.sourcePhaseX) || 0) + 0.5 + Math.sin(driftPhase) * 0.18);
+  const sourceYCenter = maxSourceY * (Number(options.sourcePhaseY) || 0.5);
+  const alphaBase = clamp(Number(options.alpha) || 0.045, 0, 0.18);
+
+  context.save();
+  traceTankFloorMaskPath(context, bounds);
+  context.clip();
+  context.globalCompositeOperation = "screen";
+  context.filter = "blur(0.3px) brightness(1.16)";
+
+  for (let index = 0; index < slices; index += 1) {
+    const t0 = index / slices;
+    const t1 = (index + 1) / slices;
+    const stripCenterY = floorTop + floorDepth * (t0 + t1) * 0.5;
+    const verticalDelta = Math.abs(stripCenterY - floorCenterY);
+    const verticalFalloff = Math.max(0, 1 - Math.pow(verticalDelta / Math.max(24, radiusY), 2));
+    if (verticalFalloff <= 0.015) {
+      continue;
+    }
+
+    const perspectiveT = Math.pow((t0 + t1) * 0.5, 0.92);
+    const projectedWidth = topWidth + (bottomWidth - topWidth) * perspectiveT;
+    const stripWave = Math.sin(driftPhase * 1.25 + perspectiveT * 8.6) * (Number(options.rippleAmount) || 6) * (0.3 + verticalFalloff * 0.7);
+    const projectedX = centerX - projectedWidth * 0.5 + stripWave;
+    const destY = floorTop + t0 * floorDepth;
+    const destHeight = Math.ceil((t1 - t0) * floorDepth) + 1;
+
+    const sourceYOffset = (verticalFalloff - 0.5) * 0.18 * maxSourceY;
+    const sourceY = clamp(sourceYCenter + sourceYOffset + (t0 - 0.5) * imageHeight * 0.18, 0, maxSourceY);
+    const sourceHeight = Math.min(sourceHeightWindow / slices * 2.15, imageHeight - sourceY);
+
+    context.globalAlpha = alphaBase * verticalFalloff * (Number(options.brightness) || 1);
+    drawCausticProjectedStrip(
+      context,
+      image,
+      clamp(sourceX, 0, maxSourceX),
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      projectedX,
+      destY,
+      projectedWidth,
+      destHeight
+    );
+  }
+
+  context.restore();
+}
+
+function drawGravelCausticProjection(now) {
+  if (!isCausticLightingEnabled()) {
+    return;
+  }
+
+  const baseImage = getCausticHighlightMask();
+  if (!baseImage) {
+    return;
+  }
+
+  const layerA = getRotatedCausticSource(baseImage, now, {
+    scale: 1.06,
+    baseAngle: 0,
+    rotationSpeed: 0.000042
+  });
+  const layerB = getRotatedCausticSource(baseImage, now, {
+    scale: 0.92,
+    baseAngle: Math.PI * 0.24,
+    rotationSpeed: -0.000057
+  });
+
+  const layerConfigs = [
+    {
+      image: layerA,
+      seed: 41,
+      spots: 2,
+      alpha: 0.068,
+      topWidthScale: 0.16,
+      bottomWidthScale: 0.28,
+      sourceWindowScale: 0.5,
+      sourceHeightScale: 0.46,
+      driftSpeed: 0.00021,
+      rippleAmount: 6,
+      durationMs: 5400,
+      staggerMs: 2200,
+      phase: 0.2,
+      timeOffsetMs: 0
+    },
+    {
+      image: layerB,
+      seed: 97,
+      spots: 2,
+      alpha: 0.048,
+      topWidthScale: 0.14,
+      bottomWidthScale: 0.24,
+      sourceWindowScale: 0.44,
+      sourceHeightScale: 0.42,
+      driftSpeed: -0.00016,
+      rippleAmount: 4,
+      durationMs: 6200,
+      staggerMs: 2600,
+      phase: 1.7,
+      timeOffsetMs: 1200
+    }
+  ];
+
+  for (const layer of layerConfigs) {
+    for (let index = 0; index < layer.spots; index += 1) {
+      const spot = buildCausticSpotDescriptor(now, index, layer);
+      if (spot.fade <= 0.025) {
+        continue;
+      }
+      drawLocalizedGravelCausticPass(tankContext, layer.image, now, {
+        alpha: layer.alpha * spot.fade,
+        brightness: spot.brightness,
+        topWidthScale: layer.topWidthScale * (0.86 + spot.widthNorm * 0.9),
+        bottomWidthScale: layer.bottomWidthScale * (0.92 + spot.widthNorm),
+        sourceWindowScale: layer.sourceWindowScale,
+        sourceHeightScale: layer.sourceHeightScale,
+        driftSpeed: layer.driftSpeed,
+        rippleAmount: layer.rippleAmount,
+        phase: layer.phase + index * 1.23,
+        spotXNorm: spot.xNorm,
+        spotYNorm: spot.yNorm,
+        spotHeightNorm: spot.heightNorm,
+        sourcePhaseX: spot.sourcePhaseX,
+        sourcePhaseY: spot.sourcePhaseY
+      });
+    }
+  }
+}
+
+function drawWaterColumnCausticLayer(context, image, now, options = {}) {
+  const waterHeight = Math.max(1, getVisibleTankFloorBottomY() - WATER_SURFACE_Y);
+  const scale = Number(options.scale) || 1.18;
+  const width = TANK_WIDTH * scale;
+  const height = waterHeight * scale;
+  const phase = (Number(now) || 0) * (Number(options.speed) || 0.00004) + (Number(options.phase) || 0);
+  const xTravel = Math.max(10, (width - TANK_WIDTH) * 0.42);
+  const yTravel = Math.max(6, (height - waterHeight) * 0.28);
+  const x = (TANK_WIDTH - width) * 0.5 + Math.sin(phase) * xTravel;
+  const y = WATER_SURFACE_Y + (waterHeight - height) * 0.46 + Math.cos(phase * 0.73 + 0.8) * yTravel;
+
+  context.save();
+  context.beginPath();
+  context.rect(GLASS_MARGIN_X, WATER_SURFACE_Y, TANK_WIDTH - GLASS_MARGIN_X * 2, waterHeight);
+  context.clip();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha = clamp(Number(options.alpha) || 0.018, 0, 0.08);
+  context.filter = "grayscale(0.72) saturate(0.42) brightness(1.12)";
+  context.drawImage(image, x, y, width, height);
+  context.restore();
+}
+
+function drawWaterColumnCaustics(now) {
+  // Disabled intentionally. The authored caustic asset contains broad translucent
+  // regions that read as fog when screen-blended through the entire water column.
+  // Caustics now stay on the gravel plane, where the perspective projection reads
+  // as refracted light rather than suspended haze. Keep this function in place so
+  // a dedicated sparse water-column asset can be reintroduced later if desired.
+  void now;
+}
+
+function drawUnderwaterLightingPass(now) {
+  const tankBottom = Math.max(WATER_SURFACE_Y + 24, TANK_HEIGHT);
+  const pulse = 0.985 + Math.sin((Number(now) || 0) * 0.00011) * 0.015;
+
+  // Soft cool illumination from above.
+  tankContext.save();
+  tankContext.globalCompositeOperation = "screen";
+  const topLight = tankContext.createLinearGradient(0, WATER_SURFACE_Y, 0, tankBottom);
+  topLight.addColorStop(0, `rgba(176, 222, 255, ${(0.105 * pulse).toFixed(4)})`);
+  topLight.addColorStop(0.12, `rgba(126, 188, 235, ${(0.055 * pulse).toFixed(4)})`);
+  topLight.addColorStop(0.34, `rgba(84, 146, 208, ${(0.018 * pulse).toFixed(4)})`);
+  topLight.addColorStop(0.58, "rgba(84, 146, 208, 0)");
+  topLight.addColorStop(1, "rgba(84, 146, 208, 0)");
+  tankContext.fillStyle = topLight;
+  tankContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, tankBottom - WATER_SURFACE_Y);
+  tankContext.restore();
+
+  // Gentle depth darkening so the floor area feels deeper without crushing color.
+  tankContext.save();
+  tankContext.globalCompositeOperation = "multiply";
+  const depthShade = tankContext.createLinearGradient(0, WATER_SURFACE_Y, 0, tankBottom);
+  depthShade.addColorStop(0, "rgba(255, 255, 255, 0)");
+  depthShade.addColorStop(0.42, "rgba(233, 241, 252, 0.018)");
+  depthShade.addColorStop(0.72, "rgba(145, 170, 198, 0.06)");
+  depthShade.addColorStop(1, "rgba(26, 44, 68, 0.16)");
+  tankContext.fillStyle = depthShade;
+  tankContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, tankBottom - WATER_SURFACE_Y);
+  tankContext.restore();
+
+  // Tiny bit of bottom ambient occlusion to help the lower tank feel denser.
+  tankContext.save();
+  const floorGlow = tankContext.createLinearGradient(0, tankBottom - 180, 0, tankBottom);
+  floorGlow.addColorStop(0, "rgba(0, 0, 0, 0)");
+  floorGlow.addColorStop(0.5, "rgba(6, 10, 20, 0.028)");
+  floorGlow.addColorStop(1, "rgba(4, 8, 18, 0.055)");
+  tankContext.fillStyle = floorGlow;
+  tankContext.fillRect(0, Math.max(WATER_SURFACE_Y, tankBottom - 180), TANK_WIDTH, 180);
+  tankContext.restore();
+}
+
+function clearStageDisplaySurfaces() {
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  // Tank and glass are animated and are rebuilt every frame. Grime is a
+  // cached overlay, so clearing it here makes it disappear on every frame where
+  // drawGrime() correctly decides that nothing changed. drawGrime() owns its
+  // own clear/redraw cycle instead.
+  for (const [context, canvas] of [
+    [tankContext, dom.tankCanvas],
+    [glassContext, dom.glassCanvas]
+  ]) {
+    if (!context || !canvas) {
+      continue;
+    }
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (context === tankContext && editAmount > 0.001) {
+      const gradient = context.createRadialGradient(
+        canvas.width * 0.5,
+        canvas.height * 0.38,
+        Math.min(canvas.width, canvas.height) * 0.08,
+        canvas.width * 0.5,
+        canvas.height * 0.5,
+        Math.max(canvas.width, canvas.height) * 0.72
+      );
+      gradient.addColorStop(0, `rgba(6, 24, 39, ${(0.72 * editAmount).toFixed(3)})`);
+      gradient.addColorStop(1, `rgba(1, 7, 14, ${(0.94 * editAmount).toFixed(3)})`);
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    context.restore();
+  }
+}
+
+function getDecorEditTankFrameGeometry() {
+  const floorBounds = getTankFloorDrawBounds();
+  const frameInset = Math.max(2, Math.round(getViewportPxAsTankVirtual(4)));
+  const frameBottom = clamp(
+    Math.round(floorBounds.bottom - getViewportPxAsTankVirtual(2)),
+    frameInset + 72,
+    TANK_HEIGHT - frameInset
+  );
+  return {
+    left: frameInset,
+    top: frameInset,
+    right: TANK_WIDTH - frameInset,
+    bottom: frameBottom,
+    width: TANK_WIDTH - frameInset * 2,
+    height: Math.max(40, frameBottom - frameInset),
+    radius: Math.max(10, Math.round(getViewportPxAsTankVirtual(13)))
+  };
+}
+
+function traceDecorEditRoundedTankPath(context = tankContext) {
+  const frame = getDecorEditTankFrameGeometry();
+  context.beginPath();
+  if (typeof context.roundRect === "function") {
+    context.roundRect(frame.left, frame.top, frame.width, frame.height, frame.radius);
+    return frame;
+  }
+
+  const radius = Math.min(frame.radius, frame.width * 0.5, frame.height * 0.5);
+  context.moveTo(frame.left + radius, frame.top);
+  context.lineTo(frame.right - radius, frame.top);
+  context.quadraticCurveTo(frame.right, frame.top, frame.right, frame.top + radius);
+  context.lineTo(frame.right, frame.bottom - radius);
+  context.quadraticCurveTo(frame.right, frame.bottom, frame.right - radius, frame.bottom);
+  context.lineTo(frame.left + radius, frame.bottom);
+  context.quadraticCurveTo(frame.left, frame.bottom, frame.left, frame.bottom - radius);
+  context.lineTo(frame.left, frame.top + radius);
+  context.quadraticCurveTo(frame.left, frame.top, frame.left + radius, frame.top);
+  context.closePath();
+  return frame;
+}
+
+function drawDecorEditTankBoundary() {
+  const amount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  if (amount <= 0.002) {
+    return;
+  }
+
+  const target = getCurrentTank();
+  const shell = getTankShellBounds(target);
+  const frameWidthPx = getViewportPxAsTankVirtual(13.28125);
+  const waterlineWidthPx = getViewportPxAsTankVirtual(1.4);
+
+  glassContext.save();
+  glassContext.globalAlpha = amount;
+  glassContext.lineJoin = "round";
+  glassContext.lineCap = "round";
+  glassContext.shadowColor = `rgba(123, 223, 255, ${(0.5 * amount).toFixed(3)})`;
+  glassContext.shadowBlur = getViewportPxAsTankVirtual(18);
+
+  if (shell.shape === "rectangular") {
+    const frame = getDecorEditTankFrameGeometry();
+    const frameGradient = glassContext.createLinearGradient(frame.left, frame.top, frame.left, frame.bottom);
+    frameGradient.addColorStop(0, `rgba(245, 252, 255, ${(0.88 + amount * 0.05).toFixed(3)})`);
+    frameGradient.addColorStop(0.15, `rgba(192, 240, 255, ${(0.8 + amount * 0.07).toFixed(3)})`);
+    frameGradient.addColorStop(0.5, `rgba(136, 214, 247, ${(0.74 + amount * 0.08).toFixed(3)})`);
+    frameGradient.addColorStop(0.85, `rgba(104, 186, 230, ${(0.76 + amount * 0.06).toFixed(3)})`);
+    frameGradient.addColorStop(1, `rgba(238, 250, 255, ${(0.86 + amount * 0.05).toFixed(3)})`);
+    glassContext.strokeStyle = frameGradient;
+    glassContext.lineWidth = frameWidthPx;
+    traceDecorEditRoundedTankPath(glassContext);
+    glassContext.stroke();
+  } else {
+    glassContext.strokeStyle = `rgba(214, 246, 255, ${(0.8 + amount * 0.08).toFixed(3)})`;
+    glassContext.lineWidth = frameWidthPx;
+    traceTankShellPath(glassContext, { tank: target, variant: "outer" });
+    glassContext.stroke();
+  }
+
+  glassContext.shadowBlur = getViewportPxAsTankVirtual(7);
+  glassContext.strokeStyle = `rgba(226, 249, 255, ${(0.34 * amount).toFixed(3)})`;
+  glassContext.lineWidth = waterlineWidthPx;
+  glassContext.beginPath();
+  glassContext.moveTo(GLASS_MARGIN_X + getViewportPxAsTankVirtual(14), WATER_SURFACE_Y);
+  glassContext.lineTo(TANK_WIDTH - GLASS_MARGIN_X - getViewportPxAsTankVirtual(14), WATER_SURFACE_Y);
+  glassContext.stroke();
+  glassContext.restore();
+}
+
 function drawDirtyWaterTint(dirtiness = getTankDirtiness(Date.now())) {
   const tintStrength = Math.pow(clamp((Number(dirtiness) - 0.08) / 0.92, 0, 1), 1.18);
   if (tintStrength <= 0.002) {
     return;
   }
 
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const waterTop = Math.max(WATER_SURFACE_Y, visibleBounds.top);
   const waterBottom = Math.min(TANK_HEIGHT, visibleBounds.bottom || TANK_HEIGHT);
   const gradient = tankContext.createLinearGradient(0, waterTop, 0, waterBottom);
@@ -57736,6 +59063,12 @@ function getTankShellBounds(target = getCurrentTank()) {
 }
 
 function clipToTankShellBounds(context = tankContext, target = getCurrentTank(), variant = "inner") {
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  if (!isBowlTank(target) && editAmount > 0.002) {
+    traceDecorEditRoundedTankPath(context);
+    context.clip();
+    return;
+  }
   traceTankShellPath(context, { tank: target, variant });
   context.clip();
 }
@@ -57750,11 +59083,19 @@ function drawTankBackdrop() {
     tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
     return;
   }
+
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  tankContext.save();
+  if (editAmount > 0.002) {
+    traceDecorEditRoundedTankPath(tankContext);
+    tankContext.clip();
+  }
   const background = tankContext.createLinearGradient(0, 0, 0, TANK_HEIGHT);
   background.addColorStop(0, "#09121d");
   background.addColorStop(1, "#03080f");
   tankContext.fillStyle = background;
   tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  tankContext.restore();
 }
 
 function drawBackground(now = Date.now()) {
@@ -57970,21 +59311,21 @@ function drawWaterFilter(now) {
   const filterScale = getViewportStableObjectScale("hardware");
   const filterDrawWidth = FILTER_DRAW_BASE_WIDTH * filterScale;
   const filterDrawHeight = FILTER_DRAW_BASE_HEIGHT * filterScale;
-  const streamDistance = getViewportPxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
+  const streamDistance = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
   const spoutLipOffset = 8 * filterScale;
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const groupWidth = streamDistance + filterDrawWidth - spoutLipOffset;
-  const desiredGroupRightX = visibleBounds.right - getViewportPxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
-  const minGroupRightX = visibleBounds.left + groupWidth + getViewportPxAsTankVirtual(8);
-  const maxGroupRightX = visibleBounds.right - getViewportPxAsTankVirtual(8);
+  const desiredGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
+  const minGroupRightX = visibleBounds.left + groupWidth + getScenePxAsTankVirtual(8);
+  const maxGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(8);
   const groupRightX = clamp(desiredGroupRightX, Math.min(minGroupRightX, maxGroupRightX), maxGroupRightX);
   const groupLeftX = groupRightX - groupWidth;
   const spoutX = groupLeftX + streamDistance;
-  const outletX = spoutX + getViewportPxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
+  const outletX = spoutX + getScenePxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
   const filterDrawX = spoutX - spoutLipOffset;
   const filterDrawY = visibleBounds.top;
   // Anchor the flow to the rendered outlet nozzle rather than the full image bounds.
-  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getViewportPxAsTankVirtual(14);
+  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getScenePxAsTankVirtual(14);
   const flowIntensity = 0.86 + filterProfile.flow * 0.22;
   const flowActive = isFilterBubbleFlowActive(now);
 
@@ -58000,7 +59341,7 @@ function drawWaterFilter(now) {
     tankContext.clip();
 
     const bubbleCount = 18 + Math.round(filterProfile.flow * 6);
-    const streamRise = getViewportPxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX);
+    const streamRise = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX);
     for (let index = 0; index < bubbleCount; index += 1) {
       const lane = index % 4;
       const phase = ((now / (150 + lane * 20)) + index * 0.14) % 1;
@@ -58008,10 +59349,10 @@ function drawWaterFilter(now) {
       const riseProgress = clamp((phase - 0.68) / 0.32, 0, 1);
       const riseEase = 1 - (1 - riseProgress) * (1 - riseProgress);
       const fadeOut = 1 - riseEase;
-      const x = outletX - drift + Math.sin(now / 170 + index * 1.7) * getViewportPxAsTankVirtual(1.6 + lane * 0.35);
+      const x = outletX - drift + Math.sin(now / 170 + index * 1.7) * getScenePxAsTankVirtual(1.6 + lane * 0.35);
       const y = outletY
-        + (lane - 1.5) * getViewportPxAsTankVirtual(2.3)
-        + Math.sin(now / 210 + index * 1.35) * getViewportPxAsTankVirtual(0.95)
+        + (lane - 1.5) * getScenePxAsTankVirtual(2.3)
+        + Math.sin(now / 210 + index * 1.35) * getScenePxAsTankVirtual(0.95)
         - streamRise * riseEase;
       const radius = 2.2 + (index % 3) * 0.7 + filterProfile.flow * 0.22;
       const alpha = (0.16 + (1 - phase) * 0.38 * flowIntensity) * fadeOut;
@@ -58023,14 +59364,14 @@ function drawWaterFilter(now) {
       const riseProgress = clamp((pulse - 0.68) / 0.32, 0, 1);
       const riseEase = 1 - (1 - riseProgress) * (1 - riseProgress);
       const x = outletX - pulse * streamDistance;
-      const y = outletY + Math.sin(now / 150 + index * 1.2) * getViewportPxAsTankVirtual(1.1) - streamRise * riseEase;
+      const y = outletY + Math.sin(now / 150 + index * 1.2) * getScenePxAsTankVirtual(1.1) - streamRise * riseEase;
       tankContext.fillStyle = `rgba(214, 247, 255, ${((0.07 + (1 - pulse) * 0.12) * (1 - riseEase)).toFixed(3)})`;
       tankContext.beginPath();
       tankContext.ellipse(
         x,
         y,
-        getViewportPxAsTankVirtual(1.8 + pulse * 1.6),
-        getViewportPxAsTankVirtual(0.9 + pulse * 0.62),
+        getScenePxAsTankVirtual(1.8 + pulse * 1.6),
+        getScenePxAsTankVirtual(0.9 + pulse * 0.62),
         0,
         0,
         Math.PI * 2
@@ -58057,26 +59398,26 @@ function getWaterFilterFlowDescriptor(now = Date.now()) {
   const filterScale = getViewportStableObjectScale("hardware");
   const filterDrawWidth = FILTER_DRAW_BASE_WIDTH * filterScale;
   const filterDrawHeight = FILTER_DRAW_BASE_HEIGHT * filterScale;
-  const streamDistance = getViewportPxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
+  const streamDistance = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
   const spoutLipOffset = 8 * filterScale;
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const groupWidth = streamDistance + filterDrawWidth - spoutLipOffset;
-  const desiredGroupRightX = visibleBounds.right - getViewportPxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
-  const minGroupRightX = visibleBounds.left + groupWidth + getViewportPxAsTankVirtual(8);
-  const maxGroupRightX = visibleBounds.right - getViewportPxAsTankVirtual(8);
+  const desiredGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
+  const minGroupRightX = visibleBounds.left + groupWidth + getScenePxAsTankVirtual(8);
+  const maxGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(8);
   const groupRightX = clamp(desiredGroupRightX, Math.min(minGroupRightX, maxGroupRightX), maxGroupRightX);
   const groupLeftX = groupRightX - groupWidth;
   const spoutX = groupLeftX + streamDistance;
-  const outletX = spoutX + getViewportPxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
+  const outletX = spoutX + getScenePxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
   const filterDrawX = spoutX - spoutLipOffset;
   const filterDrawY = visibleBounds.top;
-  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getViewportPxAsTankVirtual(14);
+  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getScenePxAsTankVirtual(14);
 
   return {
     outletX,
     outletY,
     streamDistance,
-    streamRise: getViewportPxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX),
+    streamRise: getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX),
     intakeX: filterDrawX + filterDrawWidth * 0.58,
     intakeY: filterDrawY + filterDrawHeight * 0.78,
     flow: filterProfile.flow,
@@ -58104,7 +59445,7 @@ function ensureWaterParticles(now = Date.now()) {
 
   const seed = hashStringToUint32(`${tankId}|${tank?.gravelSeed || 1}|water-particles`);
   const rand = mulberry32(seed ^ 0x2f6e2b1);
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const waterTop = Math.max(WATER_SURFACE_Y + 10, visibleBounds.top);
   const waterBottom = Math.min(getVisibleTankFloorBottomY() - 12, visibleBounds.bottom || TANK_HEIGHT);
   const visibleCount = getWaterParticleVisibleCount(now);
@@ -58129,7 +59470,11 @@ function ensureWaterParticles(now = Date.now()) {
       stretch: randomBetweenWith(rand, 0.68, 1.42),
       alphaScale: randomBetweenWith(rand, 0.72, 1.24),
       visibility: index < visibleCount ? 1 : 0,
-      streak: index % 5 === 0
+      streak: index % 5 === 0,
+      hazeLength: randomBetweenWith(rand, 8, 28),
+      hazeWidth: randomBetweenWith(rand, 0.55, 1.45),
+      hazeAlpha: randomBetweenWith(rand, 0.035, 0.085),
+      hazeTilt: randomBetweenWith(rand, -0.42, 0.42)
     };
   });
 }
@@ -58479,7 +59824,7 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
 
   ensureWaterParticles(now);
   const boundedDelta = clamp(Number(deltaSeconds) || 0.016, 0.001, 0.05);
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const waterTop = Math.max(WATER_SURFACE_Y + 8, visibleBounds.top - 12);
   const waterBottom = Math.min(getVisibleTankFloorBottomY() - 8, visibleBounds.bottom + 12);
   const left = Math.max(GLASS_MARGIN_X, visibleBounds.left - 18);
@@ -58514,8 +59859,9 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
     applyFilterForceToParticle(particle, filterFlow, boundedDelta);
     applyFishForceToParticle(particle, fishFields, boundedDelta);
 
-    particle.x += (particle.vx + shimmer * 2.4 * (1 - dirtiness * 0.35)) * cloudyDrift * boundedDelta;
-    particle.y += particle.vy * cloudyDrift * boundedDelta;
+    const depthMotionScale = 0.72 + particle.depth * 0.56;
+    particle.x += (particle.vx + shimmer * 2.4 * (1 - dirtiness * 0.35)) * cloudyDrift * boundedDelta * depthMotionScale;
+    particle.y += particle.vy * cloudyDrift * boundedDelta * depthMotionScale;
     particle.vx *= Math.pow(0.38, boundedDelta);
     particle.vy *= Math.pow(0.42, boundedDelta);
 
@@ -58545,6 +59891,55 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
       particle.spriteIndex = Math.floor(randomBetween(0, WATER_PARTICLE_ASSET_PATHS.length));
     }
   }
+}
+
+function drawWaterAtmosphereStreak(context, particle, now, visibility, dirtiness) {
+  if (!particle?.streak || visibility <= 0.02) {
+    return;
+  }
+
+  const pulse = 0.5 + Math.sin(
+    (Number(now) || 0) / (2800 + particle.depth * 2200) + particle.phase * 1.7
+  ) * 0.5;
+  const presence = Math.pow(clamp((pulse - 0.16) / 0.84, 0, 1), 1.7);
+  if (presence <= 0.02) {
+    return;
+  }
+
+  const depthScale = 0.72 + particle.depth * 0.68;
+  const length = Math.max(5, (Number(particle.hazeLength) || 14) * depthScale);
+  const width = Math.max(0.45, (Number(particle.hazeWidth) || 0.9) * (0.82 + particle.depth * 0.42));
+  const alpha = clamp(
+    (Number(particle.hazeAlpha) || 0.05)
+      * presence
+      * visibility
+      * (0.72 + particle.depth * 0.46)
+      * (0.92 + dirtiness * 0.24),
+    0,
+    0.095
+  );
+  if (alpha <= 0.004) {
+    return;
+  }
+
+  const angle = (Number(particle.hazeTilt) || 0)
+    + Math.sin((Number(now) || 0) / 5200 + particle.phase) * 0.08;
+
+  context.save();
+  context.translate(particle.x, particle.y);
+  context.rotate(angle);
+  context.scale(length, width);
+  context.globalCompositeOperation = "screen";
+  context.filter = "blur(1.35px)";
+  const gradient = context.createRadialGradient(0, 0, 0.02, 0, 0, 1);
+  gradient.addColorStop(0, `rgba(225, 244, 255, ${alpha.toFixed(4)})`);
+  gradient.addColorStop(0.34, `rgba(210, 236, 252, ${(alpha * 0.56).toFixed(4)})`);
+  gradient.addColorStop(1, "rgba(198, 226, 248, 0)");
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, 1, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
 }
 
 function drawWaterParticles(now = Date.now(), layer = null) {
@@ -58594,6 +59989,8 @@ function drawWaterParticles(now = Date.now(), layer = null) {
       : null;
     const drawWidth = size * (particle.stretch || 1);
     const drawHeight = size * (renderSprite?.height && renderSprite?.width ? renderSprite.height / Math.max(1, renderSprite.width) : 1);
+
+    drawWaterAtmosphereStreak(tankContext, particle, now, visibility, dirtiness);
 
     if (uvActive && particle.uvReactive) {
       tankContext.shadowColor = formatRgba(color, alpha * 2.2);
@@ -59540,8 +60937,25 @@ function isCustomGravelUvReactiveColor(color) {
 function drawCustomGravelFloor(bounds, now = Date.now()) {
   const layerColors = getResolvedCustomGravelLayerColors(now);
   const layerColorize = getActiveCustomGravelLayerColorizeSettings();
-  let drewLayer = false;
+  const fallbackPalette = getActiveGravelPalette();
+  const baseColors = Array.from({ length: CUSTOM_GRAVEL_LAYER_COUNT }, (_, index) => (
+    normalizeHexColor(layerColors[index])
+    || normalizeHexColor(fallbackPalette[index])
+    || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR
+  ));
 
+  // The authored gravel textures can contain a little transparent breathing room
+  // near their lower edge. During the edit-mode pullback that transparency lets
+  // the tank background peek through as a blue strip below the gravel. Lay down
+  // a solid gravel-toned base first so the substrate always reaches its floor.
+  const gravelBaseGradient = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.bottom);
+  gravelBaseGradient.addColorStop(0, formatRgba(hexToRgb(baseColors[0] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR), 0.96));
+  gravelBaseGradient.addColorStop(0.52, formatRgba(hexToRgb(baseColors[1] || baseColors[0] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR), 0.98));
+  gravelBaseGradient.addColorStop(1, formatRgba(hexToRgb(baseColors[2] || baseColors[1] || baseColors[0] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR), 1));
+  tankContext.fillStyle = gravelBaseGradient;
+  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, Math.max(1, bounds.bottom - bounds.drawTop + 2));
+
+  let drewLayer = false;
   for (let index = 0; index < runtime.customGravelLayerCatalog.length; index += 1) {
     const layer = runtime.customGravelLayerCatalog[index];
     const tintedLayer = getTintedCustomGravelLayer(
@@ -59575,6 +60989,53 @@ function drawCustomGravelFloor(bounds, now = Date.now()) {
   return drewLayer;
 }
 
+function drawGravelDepthTreatment(bounds) {
+  const floorHeight = Math.max(1, bounds.bottom - bounds.drawTop);
+
+  tankContext.save();
+  traceTankFloorMaskPath(tankContext, bounds);
+  tankContext.clip();
+
+  // Subtle depth darkening lowers the visual competition of the substrate and
+  // makes the lower gravel read as receding away from the lit water column.
+  tankContext.globalCompositeOperation = "multiply";
+  const depthShade = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.bottom);
+  depthShade.addColorStop(0, "rgba(255, 255, 255, 0)");
+  depthShade.addColorStop(0.34, "rgba(238, 242, 248, 0.012)");
+  depthShade.addColorStop(0.68, "rgba(106, 119, 139, 0.055)");
+  depthShade.addColorStop(1, "rgba(30, 37, 50, 0.145)");
+  tankContext.fillStyle = depthShade;
+  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, floorHeight + 2);
+
+  // A narrow feather just inside the gravel crest softens the hard water-to-
+  // substrate seam without painting haze over the open water.
+  const crestBlendHeight = Math.min(70, Math.max(34, floorHeight * 0.24));
+  const crestShade = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.drawTop + crestBlendHeight);
+  crestShade.addColorStop(0, "rgba(39, 51, 67, 0.075)");
+  crestShade.addColorStop(0.32, "rgba(64, 76, 94, 0.038)");
+  crestShade.addColorStop(1, "rgba(255, 255, 255, 0)");
+  tankContext.fillStyle = crestShade;
+  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, crestBlendHeight);
+
+  // Slight edge falloff keeps the saturated gravel from feeling like a flat
+  // banner and reinforces the curved glass/tank depth near the sides.
+  const edgeShade = tankContext.createRadialGradient(
+    bounds.left + bounds.drawWidth * 0.5,
+    bounds.drawTop + floorHeight * 0.32,
+    bounds.drawWidth * 0.16,
+    bounds.left + bounds.drawWidth * 0.5,
+    bounds.drawTop + floorHeight * 0.36,
+    bounds.drawWidth * 0.66
+  );
+  edgeShade.addColorStop(0, "rgba(255, 255, 255, 0)");
+  edgeShade.addColorStop(0.72, "rgba(198, 207, 219, 0.012)");
+  edgeShade.addColorStop(1, "rgba(51, 61, 76, 0.06)");
+  tankContext.fillStyle = edgeShade;
+  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, floorHeight + 2);
+
+  tankContext.restore();
+}
+
 function drawTankFloor(now = Date.now()) {
   const bounds = getTankFloorDrawBounds();
 
@@ -59586,6 +61047,7 @@ function drawTankFloor(now = Date.now()) {
 
   tankContext.restore();
 
+  drawGravelDepthTreatment(bounds);
   drawCustomGravelLoosePebbles(bounds, now);
 }
 
@@ -60820,6 +62282,73 @@ function pruneFishShadowPlaneCache() {
   }
 }
 
+function getDecorContactShadowMetrics(item) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  if (!decor) {
+    return null;
+  }
+
+  const capabilities = getDecorMotionCapabilities(item);
+  if (capabilities.isFloating || capabilities.isLure) {
+    return null;
+  }
+
+  const bounds = getPlacedDecorOpaqueBounds(item);
+  if (!bounds) {
+    return null;
+  }
+
+  const width = Math.max(1, bounds.right - bounds.left);
+  const height = Math.max(1, bounds.bottom - bounds.top);
+  const layerFloorY = getTankLayerBottomBoundaryY(getDecorTankLayer(item));
+  const anchorY = (Number(item.yNorm) || 0) * TANK_HEIGHT;
+  const groundingTolerance = clamp(width * 0.09, 18, 58);
+  const groundingStrength = clamp(1 - Math.abs(layerFloorY - anchorY) / groundingTolerance, 0, 1);
+  if (groundingStrength <= 0.04) {
+    return null;
+  }
+
+  const aspectFootprint = clamp(width / Math.max(width, height), 0.32, 1);
+  const radiusX = clamp(width * (0.255 + aspectFootprint * 0.118), 16, 226);
+  const radiusY = clamp(radiusX * 0.16, 5, 30);
+  const centerX = (bounds.left + bounds.right) * 0.5;
+  const lightOffsetX = clamp(radiusX * 0.075, 2, 12);
+  const shadowY = clamp(
+    layerFloorY + 2,
+    WATER_SURFACE_Y + 20,
+    getVisibleTankFloorBottomY() + 8
+  );
+
+  return {
+    x: centerX + lightOffsetX,
+    y: shadowY,
+    radiusX,
+    radiusY,
+    alpha: 0.30 * groundingStrength
+  };
+}
+
+function drawDecorContactShadow(context, item) {
+  const shadow = getDecorContactShadowMetrics(item);
+  if (!shadow) {
+    return;
+  }
+
+  context.save();
+  context.translate(shadow.x, shadow.y);
+  context.scale(shadow.radiusX, shadow.radiusY);
+  const gradient = context.createRadialGradient(0, 0, 0.04, 0, 0, 1);
+  gradient.addColorStop(0, `rgba(2, 7, 12, ${shadow.alpha.toFixed(3)})`);
+  gradient.addColorStop(0.34, `rgba(3, 9, 15, ${(shadow.alpha * 0.86).toFixed(3)})`);
+  gradient.addColorStop(0.75, `rgba(5, 12, 18, ${(shadow.alpha * 0.34).toFixed(3)})`);
+  gradient.addColorStop(1, "rgba(5, 12, 18, 0)");
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, 1, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
 function drawGroundShadows(now) {
   tankContext.save();
   tankContext.globalCompositeOperation = "multiply";
@@ -60831,6 +62360,11 @@ function drawGroundShadows(now) {
     getVisibleTankFloorBottomY() - WATER_SURFACE_Y + 12
   );
   tankContext.clip();
+  if (areDecorShadowsEnabled()) {
+    for (const item of state.placedDecor) {
+      drawDecorContactShadow(tankContext, item);
+    }
+  }
   pruneFishShadowPlaneCache();
   for (const fish of state.fish) {
     const species = getSpeciesForFish(fish);
@@ -60860,12 +62394,17 @@ function drawGroundShadows(now) {
 function drawFishProjectedShadow(context, x, objectBottomY, width, height, opacity, widthScale, planeY = null) {
   const floorY = Number.isFinite(planeY) ? planeY : getTankFloorSurfaceYAtX(x) + 7;
   const heightAboveFloor = Math.max(0, floorY - objectBottomY);
+  const shadowFadeDistance = clamp(height * 3.2 + 80, 150, 360);
+  const proximity = clamp(1 - heightAboveFloor / shadowFadeDistance, 0, 1);
+  if (proximity <= 0.015) {
+    return;
+  }
   const baseWidth = width * clamp(widthScale, 0.14, 0.3) * 0.82;
-  const altitudeStretch = Math.min(width * 0.04, heightAboveFloor * 0.022);
+  const altitudeStretch = Math.min(width * 0.035, heightAboveFloor * 0.018);
   const shadowWidth = clamp(baseWidth + altitudeStretch, 12, Math.max(26, width * 0.3));
   const shadowHeight = Math.max(5, shadowWidth * 0.14);
   const offsetX = 8 + Math.min(18, heightAboveFloor * 0.045);
-  const alpha = clamp(opacity - heightAboveFloor / 1800, 0.04, opacity * 0.92);
+  const alpha = clamp(opacity * 0.92 * Math.pow(proximity, 1.35), 0, opacity * 0.92);
   context.fillStyle = `rgba(6, 15, 24, ${alpha.toFixed(3)})`;
   context.beginPath();
   context.ellipse(x + offsetX, floorY, shadowWidth, shadowHeight, -0.08, 0, Math.PI * 2);
@@ -61229,11 +62768,11 @@ function drawDecorSwimGuide(now = Date.now()) {
   const clampedGuideY = clamp(guideY, shellBounds.innerTop + 18, shellBounds.innerTop + shellBounds.innerHeight - 6);
 
   tankContext.save();
-  tankContext.lineWidth = 3;
-  tankContext.setLineDash([14, 10]);
+  tankContext.lineWidth = getViewportPxAsTankVirtual(3);
+  tankContext.setLineDash([getViewportPxAsTankVirtual(14), getViewportPxAsTankVirtual(10)]);
   tankContext.strokeStyle = "rgba(255, 72, 72, 0.72)";
   tankContext.shadowColor = "rgba(255, 72, 72, 0.24)";
-  tankContext.shadowBlur = 8;
+  tankContext.shadowBlur = getViewportPxAsTankVirtual(8);
   tankContext.beginPath();
   tankContext.moveTo(startX, clampedGuideY);
   tankContext.lineTo(endX, clampedGuideY);
@@ -61880,6 +63419,78 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
   tankContext.restore();
 }
 
+function getFishDepthLightingStyle(poseY) {
+  const floorBottom = Math.max(WATER_SURFACE_Y + 1, getVisibleTankFloorBottomY());
+  const depth = clamp((Number(poseY) - WATER_SURFACE_Y) / Math.max(1, floorBottom - WATER_SURFACE_Y), 0, 1);
+  const brightnessPercent = Math.round(101 - depth * 5);
+  const saturationPercent = Math.round(101 - depth * 4);
+  const highlightAlpha = 0.085 - depth * 0.04;
+  return {
+    depth,
+    filter: `brightness(${brightnessPercent}%) saturate(${saturationPercent}%)`,
+    highlightAlpha: clamp(highlightAlpha, 0.035, 0.085)
+  };
+}
+
+function getFishTopLightOverlay(image) {
+  if (!isUsableRuntimeImage(image)) {
+    return null;
+  }
+
+  if (!runtime.fishTopLightOverlayCache) {
+    runtime.fishTopLightOverlayCache = new WeakMap();
+  }
+
+  const cached = runtime.fishTopLightOverlayCache.get(image);
+  if (cached) {
+    return cached;
+  }
+
+  const width = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const height = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+  context.globalCompositeOperation = "source-in";
+  const gradient = context.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "rgba(205, 242, 255, 0.95)");
+  gradient.addColorStop(0.18, "rgba(160, 224, 252, 0.72)");
+  gradient.addColorStop(0.42, "rgba(105, 196, 238, 0.28)");
+  gradient.addColorStop(0.68, "rgba(80, 165, 220, 0.05)");
+  gradient.addColorStop(1, "rgba(80, 165, 220, 0)");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, width, height);
+  context.globalCompositeOperation = "source-over";
+
+  runtime.fishTopLightOverlayCache.set(image, canvas);
+  return canvas;
+}
+
+function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now()) {
+  if (isTankLightsOut(now)) {
+    return;
+  }
+
+  const overlay = getFishTopLightOverlay(image);
+  if (!overlay) {
+    return;
+  }
+
+  const lighting = getFishDepthLightingStyle(poseY);
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha = lighting.highlightAlpha;
+  context.filter = "blur(0.22px)";
+  context.drawImage(overlay, fishDrawX, -height / 2, width, height);
+  context.restore();
+}
+
 function drawFish(now, layer = null, options = {}) {
   if (!state.fish.length) {
     return;
@@ -61945,6 +63556,7 @@ function drawFish(now, layer = null, options = {}) {
       SUCKER_FISH_FACE_PIVOT_ENABLED
       && !pose.isDead
       && effectiveBehavior === "sucker"
+      && !isSuckerFishFreeSwimming(fish, species, now)
     );
     const suckerFacePivotX = useSuckerFacePivot
       ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X
@@ -61980,6 +63592,7 @@ function drawFish(now, layer = null, options = {}) {
       SUCKER_FISH_GLASS_SHADOW_ENABLED
       && !pose.isDead
       && effectiveBehavior === "sucker"
+      && !isSuckerFishFreeSwimming(fish, species, now)
     ) {
       const shadowWidth = width * SUCKER_FISH_GLASS_SHADOW_SCALE;
       const shadowHeight = height * SUCKER_FISH_GLASS_SHADOW_SCALE;
@@ -61996,9 +63609,16 @@ function drawFish(now, layer = null, options = {}) {
       );
       tankContext.restore();
     }
-    tankContext.filter = getFishCanvasFilter(fish, healthRatio, now);
+    const fishLighting = getFishDepthLightingStyle(pose.y);
+    const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now);
+    tankContext.filter = fishBaseFilter === "none"
+      ? fishLighting.filter
+      : `${fishBaseFilter} ${fishLighting.filter}`;
     tankContext.drawImage(renderImage, fishDrawX, -height / 2, width, height);
     tankContext.filter = "none";
+    if (!pose.isDead) {
+      drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now);
+    }
     drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
     tankContext.restore();
@@ -62254,7 +63874,12 @@ function drawGrime(dirtiness) {
     grimeBaseCacheKey,
     runtime.scrubMaskRevision,
     dom.grimeCanvas.width,
-    dom.grimeCanvas.height
+    dom.grimeCanvas.height,
+    (Number(runtime.stageRenderScale) || 0).toFixed(5),
+    (Number(runtime.stageRenderOffsetX) || 0).toFixed(2),
+    (Number(runtime.stageRenderOffsetY) || 0).toFixed(2),
+    getCurrentTank()?.id || "tank",
+    getCurrentTank()?.tankTypeId || "shell"
   ].join("|");
   if (runtime.grimeCompositeCacheKey === compositeCacheKey) {
     return;
@@ -62265,7 +63890,10 @@ function drawGrime(dirtiness) {
     runtime.grimeBaseCacheKey = grimeBaseCacheKey;
   }
 
-  grimeContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  grimeContext.save();
+  grimeContext.setTransform(1, 0, 0, 1, 0, 0);
+  grimeContext.clearRect(0, 0, dom.grimeCanvas.width, dom.grimeCanvas.height);
+  grimeContext.restore();
   if (visibleDirtiness <= 0) {
     runtime.grimeCompositeCacheKey = compositeCacheKey;
     return;
@@ -62393,12 +64021,26 @@ function getFishPose(fish, species, now) {
   if (tubeTravel?.mode === "tube" && ["entering", "waiting", "emerging"].includes(tubeTravel.phase)) {
     const motionClock = Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : now / 380;
     const wiggle = Math.sin(motionClock + fish.phase * Math.PI * 2) * .3;
+    const activeTubeId = tubeTravel.phase === "emerging"
+      ? tubeTravel.targetTubeId
+      : tubeTravel.sourceTubeId;
+    const activeTube = getTankContainingFish(fish.id)?.placedDecor?.find((item) => item.id === activeTubeId);
+    const imageTopToBottomDirection = activeTube && isDecorVerticallyFlipped(activeTube) ? -1 : 1;
+    const travelDirectionY = tubeTravel.phase === "emerging"
+      ? -imageTopToBottomDirection
+      : imageTopToBottomDirection;
+
+    // Fish art faces right at zero rotation. Rotate it vertically so its head
+    // always leads through the tube: toward image-bottom while entering, then
+    // toward image-top while emerging. A vertically flipped tube reverses both
+    // directions automatically.
+    const tubeTilt = travelDirectionY < 0 ? -Math.PI / 2 : Math.PI / 2;
     return {
       x: fish.xNorm * TANK_WIDTH,
       y: fish.yNorm * TANK_HEIGHT,
       direction: 1,
       facingScaleX: 1,
-      tilt: -Math.PI / 2,
+      tilt: tubeTilt,
       wiggle,
       bodyScaleX: 1 - Math.abs(wiggle) * .025,
       bodyScaleY: 1 + Math.abs(wiggle) * .02,
@@ -62480,9 +64122,23 @@ function getFishPose(fish, species, now) {
     ? fish.yNorm
     : fish.entryFromYNorm + (fish.yNorm - fish.entryFromYNorm) * easedEntry;
   const x = fish.xNorm * TANK_WIDTH;
+  const targetDistanceNorm = Math.hypot(
+    (Number(fish.targetXNorm) || fish.xNorm) - fish.xNorm,
+    (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm
+  );
+  const stationaryRaw = 1 - clamp(targetDistanceNorm / 0.025, 0, 1);
+  const stationaryBlend = stationaryRaw * stationaryRaw * (3 - 2 * stationaryRaw);
+  const swimBob =
+    Math.sin(wiggleClock * (0.2 + species.bobSpeed * 0.16) + fish.phase * Math.PI * 2) * (0.9 + motionLevel * 4.4) * sickMotionBoost
+    + glide * (0.45 + motionLevel * 1.35);
+  // Idle vertical drift used to share wiggleClock with movement. That clock
+  // changes rate as motion states transition, which can make stationary fish
+  // visibly hitch up/down. Use a render-time idle clock and blend into it.
+  const idleBobClock = now / 1000;
+  const idleBob = Math.sin(idleBobClock * 0.72 + fish.phase * Math.PI * 2) * (0.72 + motionLevel * 0.72) * sickMotionBoost;
+  const verticalBob = swimBob * (1 - stationaryBlend) + idleBob * stationaryBlend;
   const y = renderYNorm * TANK_HEIGHT
-    + Math.sin(wiggleClock * (0.2 + species.bobSpeed * 0.16) + fish.phase * Math.PI * 2) * (0.9 + motionLevel * 4.4) * sickMotionBoost
-    + glide * (0.45 + motionLevel * 1.35)
+    + verticalBob
     + (entryProgress === null ? 0 : Math.sin(entryProgress * Math.PI * 2.4 + fish.phase * Math.PI) * (1 - entryProgress) * 9);
   const wiggleStretch = 0.008 + motionLevel * 0.018;
   const turnProgress = fish.turnStartedAt && fish.turnDurationMs > 0
@@ -63681,7 +65337,7 @@ function getAutoDispenserLayout() {
   const dispenserScale = getViewportStableObjectScale("hardware") * AUTO_DISPENSER_VIEWPORT_SIZE_MULTIPLIER;
   const width = AUTO_DISPENSER_DRAW_WIDTH * dispenserScale;
   const height = AUTO_DISPENSER_DRAW_HEIGHT * dispenserScale;
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const x = TANK_WIDTH * 0.5 - width / 2;
   const y = visibleBounds.top - getViewportPxAsTankVirtual(AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX);
   const screenWidth = width * 0.12;
@@ -64307,8 +65963,34 @@ function formatFishAge(acquiredAt, now = Date.now()) {
 // Source fragment: decor/hit-testing.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
-function isFreeDecorPlacementEnabled(targetTank = getCurrentTank()) {
-  return targetTank?.freeDecorPlacement === true;
+function isFreeDecorPlacementEnabled(target = getCurrentTank(), options = {}) {
+  if (target && typeof target === "object") {
+    if (Object.prototype.hasOwnProperty.call(target, "freePlacementEnabled")) {
+      return target.freePlacementEnabled === true;
+    }
+    if (Object.prototype.hasOwnProperty.call(target, "freeDecorPlacement")) {
+      return target.freeDecorPlacement === true;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(options, "freePlacementEnabled")) {
+    return options.freePlacementEnabled === true;
+  }
+
+  return false;
+}
+
+function getResolvedDecorFreePlacementEnabled(options = {}) {
+  if (options.item && Object.prototype.hasOwnProperty.call(options.item, "freePlacementEnabled")) {
+    return options.item.freePlacementEnabled === true;
+  }
+  if (Object.prototype.hasOwnProperty.call(options, "freePlacementEnabled")) {
+    return options.freePlacementEnabled === true;
+  }
+  if (runtime.placementMode && Object.prototype.hasOwnProperty.call(runtime.placementMode, "freePlacementEnabled")) {
+    return runtime.placementMode.freePlacementEnabled === true;
+  }
+  return isFreeDecorPlacementEnabled(options.tank || getCurrentTank());
 }
 
 function isDecorExemptFromGravity(decorOrKey) {
@@ -64318,7 +66000,7 @@ function isDecorExemptFromGravity(decorOrKey) {
 
 function shouldApplyDecorPlacementGravity(decorKey, options = {}) {
   return options.applyGravity === true
-    && !isFreeDecorPlacementEnabled(options.tank || getCurrentTank())
+    && !getResolvedDecorFreePlacementEnabled(options)
     && !isDecorExemptFromGravity(options.item || decorKey);
 }
 
@@ -66898,7 +68580,7 @@ function boundsIntersect(leftBounds, rightBounds) {
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
   );
 }
 
@@ -66914,6 +68596,7 @@ function hasActiveTankToolOrOverlay() {
     || !runtime.sidebarCollapsed
     || runtime.editTankMode
     || runtime.fishEditMode
+    || runtime.tankEditMode
     || runtime.foodTrayOpen
     || runtime.medicineTrayOpen
     || runtime.feedingModeFoodKey
@@ -66989,6 +68672,7 @@ function finalizeGlassTapGesture(event, now = Date.now()) {
     && pressDuration <= GLASS_TAP_MAX_HOLD_MS
     && !runtime.cleaningMode
     && !runtime.editTankMode
+    && !runtime.tankEditMode
     && !runtime.scoopMode
     && !runtime.placementMode
     && !runtime.dragState
@@ -67194,7 +68878,7 @@ function setSuckerFishAngle(fish, desiredAngle, now) {
 
 function setFishDirection(fish, desiredDirection, species, now) {
   const nextDirection = Number(desiredDirection) < 0 ? -1 : 1;
-  if (species.behavior !== "sucker") {
+  if (getEffectiveFishBehavior(fish, species) !== "sucker") {
     const currentDisplayDirection = getFishFacingDirection(fish);
     const currentDisplayAngle = currentDisplayDirection < 0 ? Math.PI : 0;
     fish.direction = nextDirection;
@@ -67274,6 +68958,16 @@ function getVisibleTankVirtualBounds() {
   };
 }
 
+function getSceneLayoutVisibleTankVirtualBounds() {
+  if ((Number(runtime.stageEditViewAmount) || 0) > 0.001) {
+    const normalView = getNormalCoverStageRenderMetrics();
+    if (normalView?.visibleBounds) {
+      return normalView.visibleBounds;
+    }
+  }
+  return getVisibleTankVirtualBounds();
+}
+
 function normalizeViewportNormRange(min, max, fallbackCenter) {
   if (min <= max) {
     return {
@@ -67299,7 +68993,7 @@ function getMobileViewportSwimBoundsNorm(fish = null, species = getSpeciesForFis
     };
   }
 
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const imagePath = species
     ? (getFishDisplayAssetPath(fish, species, now) || species.asset)
     : null;
@@ -67354,10 +69048,11 @@ function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now 
     return false;
   }
 
-  const currentLayer = species.behavior === "sucker"
+  const suckerBehaviorActive = getEffectiveFishBehavior(fish, species) === "sucker";
+  const currentLayer = suckerBehaviorActive
     ? getSuckerFishGlassLayer(fish)
     : getFishTankLayer(fish);
-  const targetLayer = species.behavior === "sucker"
+  const targetLayer = suckerBehaviorActive
     ? getDesiredSuckerFishGlassLayer(fish)
     : getDesiredFishTankLayer(fish);
   const clampYNorm = (value, layer) => {
@@ -67404,11 +69099,25 @@ function getTargetVisibleGravelHeightPx() {
 }
 
 function getTargetVisibleGravelHeightVirtual() {
-  return getViewportPxAsTankVirtual(getTargetVisibleGravelHeightPx());
+  const targetHeightPx = getTargetVisibleGravelHeightPx();
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  if (editAmount <= 0.001) {
+    return getViewportPxAsTankVirtual(targetHeightPx);
+  }
+
+  // Edit mode is a camera pullback, not a re-layout. Preserve the gravel's
+  // normal-view world height and let the stage transform shrink it together
+  // with every other object in the aquarium.
+  const dpr = getStageRenderDevicePixelRatio();
+  const normalScale = Math.max(
+    0.0001,
+    Number(getNormalCoverStageRenderMetrics()?.scale) || Number(runtime.stageRenderScale) || dpr
+  );
+  return (targetHeightPx * dpr) / normalScale;
 }
 
 function getVisibleTankFloorBottomY() {
-  return getVisibleTankVirtualBounds().bottom;
+  return getSceneLayoutVisibleTankVirtualBounds().bottom;
 }
 
 function getDynamicGravelSurfaceBaseY() {

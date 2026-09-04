@@ -28,6 +28,7 @@ function renderUi(now, options = {}) {
   renderEditQuickRef();
   renderEditDecorTray();
   renderEditFishTray();
+  renderEditTankTray();
   renderFoodTray();
   renderMedicineTray();
   renderFishActionFlyout(now);
@@ -66,6 +67,7 @@ function shouldAllowTankStageTouchScroll() {
     || runtime.utilityOverlayOpen
     || runtime.settingsOverlayOpen
     || runtime.equipmentOverlayOpen
+    || runtime.tankEditMode
     || !runtime.sidebarCollapsed
     || runtime.foodTrayOpen
     || runtime.medicineTrayOpen

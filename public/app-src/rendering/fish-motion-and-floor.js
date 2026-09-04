@@ -174,7 +174,7 @@ function setSuckerFishAngle(fish, desiredAngle, now) {
 
 function setFishDirection(fish, desiredDirection, species, now) {
   const nextDirection = Number(desiredDirection) < 0 ? -1 : 1;
-  if (species.behavior !== "sucker") {
+  if (getEffectiveFishBehavior(fish, species) !== "sucker") {
     const currentDisplayDirection = getFishFacingDirection(fish);
     const currentDisplayAngle = currentDisplayDirection < 0 ? Math.PI : 0;
     fish.direction = nextDirection;
@@ -254,6 +254,16 @@ function getVisibleTankVirtualBounds() {
   };
 }
 
+function getSceneLayoutVisibleTankVirtualBounds() {
+  if ((Number(runtime.stageEditViewAmount) || 0) > 0.001) {
+    const normalView = getNormalCoverStageRenderMetrics();
+    if (normalView?.visibleBounds) {
+      return normalView.visibleBounds;
+    }
+  }
+  return getVisibleTankVirtualBounds();
+}
+
 function normalizeViewportNormRange(min, max, fallbackCenter) {
   if (min <= max) {
     return {
@@ -279,7 +289,7 @@ function getMobileViewportSwimBoundsNorm(fish = null, species = getSpeciesForFis
     };
   }
 
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const imagePath = species
     ? (getFishDisplayAssetPath(fish, species, now) || species.asset)
     : null;
@@ -334,10 +344,11 @@ function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now 
     return false;
   }
 
-  const currentLayer = species.behavior === "sucker"
+  const suckerBehaviorActive = getEffectiveFishBehavior(fish, species) === "sucker";
+  const currentLayer = suckerBehaviorActive
     ? getSuckerFishGlassLayer(fish)
     : getFishTankLayer(fish);
-  const targetLayer = species.behavior === "sucker"
+  const targetLayer = suckerBehaviorActive
     ? getDesiredSuckerFishGlassLayer(fish)
     : getDesiredFishTankLayer(fish);
   const clampYNorm = (value, layer) => {
@@ -384,11 +395,25 @@ function getTargetVisibleGravelHeightPx() {
 }
 
 function getTargetVisibleGravelHeightVirtual() {
-  return getViewportPxAsTankVirtual(getTargetVisibleGravelHeightPx());
+  const targetHeightPx = getTargetVisibleGravelHeightPx();
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  if (editAmount <= 0.001) {
+    return getViewportPxAsTankVirtual(targetHeightPx);
+  }
+
+  // Edit mode is a camera pullback, not a re-layout. Preserve the gravel's
+  // normal-view world height and let the stage transform shrink it together
+  // with every other object in the aquarium.
+  const dpr = getStageRenderDevicePixelRatio();
+  const normalScale = Math.max(
+    0.0001,
+    Number(getNormalCoverStageRenderMetrics()?.scale) || Number(runtime.stageRenderScale) || dpr
+  );
+  return (targetHeightPx * dpr) / normalScale;
 }
 
 function getVisibleTankFloorBottomY() {
-  return getVisibleTankVirtualBounds().bottom;
+  return getSceneLayoutVisibleTankVirtualBounds().bottom;
 }
 
 function getDynamicGravelSurfaceBaseY() {

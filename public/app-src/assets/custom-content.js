@@ -56,15 +56,20 @@ function toggleToolbarActionMenu(menuName) {
 
 function handleToolbarGroupButtonClick(menuName) {
   const normalizedName = menuName === "care" || menuName === "edit" ? menuName : "";
-  const editModeActive = runtime.fishEditMode || runtime.editTankMode;
+  const editModeActive = runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode;
 
-  if (normalizedName === "edit" && editModeActive) {
-    runtime.fishEditMode ? toggleFishEditMode(false) : toggleEditTankMode(false);
+  if (normalizedName === "edit") {
+    runtime.toolbarActionMenu = "";
+    if (editModeActive) {
+      closeActiveEditOverlay();
+    } else {
+      openEditOverlayMode(null, { source: "toolbar", collapseSidebar: true });
+    }
     return;
   }
 
   if (normalizedName === "care" && editModeActive) {
-    runtime.fishEditMode ? toggleFishEditMode(false) : toggleEditTankMode(false);
+    closeActiveEditOverlay();
   }
 
   toggleToolbarActionMenu(normalizedName);
@@ -100,9 +105,9 @@ function handleToolbarActionMenuKeyDown(event) {
     (activeMenuName === "care" ? dom.careMenuButton : dom.editMenuButton)?.focus?.();
     return;
   }
-  if (runtime.fishEditMode || runtime.editTankMode) {
+  if (runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode) {
     event.preventDefault();
-    runtime.fishEditMode ? toggleFishEditMode(false) : toggleEditTankMode(false);
+    closeActiveEditOverlay();
     dom.editMenuButton?.focus?.();
   }
 }
@@ -150,7 +155,7 @@ function bindEvents() {
       return;
     }
 
-    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode) {
+    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode && !runtime.tankEditMode) {
       return;
     }
 
@@ -195,7 +200,7 @@ function bindEvents() {
       return;
     }
 
-    if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.boroughOverviewOpen
+    if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.tankEditMode && !runtime.boroughOverviewOpen
       && !runtime.storeOverlayOpen && !runtime.settingsOverlayOpen && !runtime.utilityOverlayOpen && !runtime.equipmentOverlayOpen) {
       const cameraMoves = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
       if (cameraMoves[key]) {
@@ -672,7 +677,12 @@ function bindEvents() {
     }
     toggleFoodTray(null, { source: "toolbar", collapseSidebar: true });
   });
-  dom.careMenuButton?.addEventListener("click", () => handleToolbarGroupButtonClick("care"));
+  dom.careMenuButton?.addEventListener("click", () => {
+    // Fish care is a single horizontal tray now. The old care submenu remains
+    // in the markup for compatibility, but is never opened.
+    runtime.toolbarActionMenu = "";
+    toggleMedicineTray(null, { source: "toolbar", collapseSidebar: true });
+  });
   dom.editMenuButton?.addEventListener("click", () => handleToolbarGroupButtonClick("edit"));
   dom.medicineButton?.addEventListener("click", () => {
     if (!hasStockedMedicine()) {
@@ -899,11 +909,7 @@ function bindEvents() {
     if (!guardTutorialToolbarControl("openEquipmentButton")) {
       return;
     }
-    if (runtime.equipmentOverlayOpen) {
-      closeEquipmentOverlay();
-      return;
-    }
-    openEquipmentOverlay();
+    toggleTankEditMode(null, { source: "toolbar", collapseSidebar: true });
   });
   dom.openSettingsButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("openSettingsButton")) {
@@ -935,6 +941,7 @@ function bindEvents() {
   });
   dom.closeEditDecorTrayButton?.addEventListener("click", () => toggleEditTankMode(false));
   dom.closeEditFishTrayButton?.addEventListener("click", () => toggleFishEditMode(false));
+  dom.closeEditTankTrayButton?.addEventListener("click", () => toggleTankEditMode(false));
   dom.editLayerUpButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-up"));
   dom.editLayerDownButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-down"));
   dom.editScaleUpButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-up"));
@@ -1125,6 +1132,12 @@ function bindEvents() {
   dom.waterParticlesToggleInput?.addEventListener("change", (event) => {
     setWaterParticlesEnabled(event.currentTarget?.checked);
   });
+  dom.causticLightingToggleInput?.addEventListener("change", (event) => {
+    setCausticLightingEnabled(event.currentTarget?.checked);
+  });
+  dom.decorShadowsToggleInput?.addEventListener("change", (event) => {
+    setDecorShadowsEnabled(event.currentTarget?.checked);
+  });
   dom.uvLightQualitySelect?.addEventListener("change", (event) => {
     setUvLightRenderQuality(event.currentTarget?.value);
   });
@@ -1136,13 +1149,13 @@ function bindEvents() {
   });
   dom.settingsOverlay?.addEventListener("change", (event) => {
     const toolbarInput = event.target.closest("[data-toolbar-position-choice]");
-    if (toolbarInput instanceof HTMLInputElement) {
+    if (TOOLBAR_POSITION_SETTING_ENABLED && toolbarInput instanceof HTMLInputElement) {
       setToolbarPosition(toolbarInput.value);
       return;
     }
 
     const displayInput = event.target.closest("[data-display-position-choice]");
-    if (displayInput instanceof HTMLInputElement) {
+    if (DISPLAY_POSITION_SETTING_ENABLED && displayInput instanceof HTMLInputElement) {
       setDisplayPosition(displayInput.value);
     }
   });
@@ -1265,6 +1278,12 @@ function bindEvents() {
   });
   dom.editDecorTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
+    if (overlayModeTab) {
+      const nextMode = overlayModeTab.dataset.editOverlayMode;
+      openEditOverlayMode(nextMode, { source: "tray", collapseSidebar: true });
+      return;
+    }
     const tab = event.target.closest("[data-decor-tray-tab]");
     if (tab) {
       const nextTab = ["caves", "plants", "ornaments", "bubbler", "custom"].includes(tab.dataset.decorTrayTab)
@@ -1487,6 +1506,39 @@ function bindEvents() {
     closeEditDecorTrayContextMenu();
     scrollEditDecorTray(1);
   });
+  dom.editTankTray?.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+  dom.editTankTray?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
+    if (overlayModeTab) {
+      const nextMode = overlayModeTab.dataset.editOverlayMode;
+      openEditOverlayMode(nextMode, { source: "tray", collapseSidebar: true });
+      return;
+    }
+
+    const tankTab = event.target.closest("[data-tank-tray-tab]");
+    if (tankTab) {
+      const nextTab = ["background", "gravel", "equipment"].includes(tankTab.dataset.tankTrayTab)
+        ? tankTab.dataset.tankTrayTab
+        : "background";
+      if (runtime.editTankTrayTab !== nextTab) {
+        runtime.editTankTrayTab = nextTab;
+        if (dom.editTankTrayScroller) {
+          dom.editTankTrayScroller.scrollTop = 0;
+          dom.editTankTrayScroller.scrollLeft = 0;
+        }
+        renderEditTankTray();
+        syncFilterFeatureVisibility();
+      }
+    }
+  });
+  dom.editTankTray?.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
   dom.editFishTray?.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
   });
@@ -1513,6 +1565,12 @@ function bindEvents() {
   });
   dom.editFishTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
+    if (overlayModeTab) {
+      const nextMode = overlayModeTab.dataset.editOverlayMode;
+      openEditOverlayMode(nextMode, { source: "tray", collapseSidebar: true });
+      return;
+    }
     const tab = event.target.closest("[data-fish-tray-tab]");
     if (tab) {
       const nextTab = tab.dataset.fishTrayTab === "storage" ? "storage" : "tank";
@@ -1702,6 +1760,22 @@ function bindEvents() {
   });
   dom.medicineTray?.addEventListener("wheel", handleMedicineTrayWheel, { passive: false });
   dom.medicineTrayScroller?.addEventListener("click", (event) => {
+    const toolButton = event.target.closest("[data-care-tool]");
+    if (toolButton) {
+      event.stopPropagation();
+      playToolbarButtonSoundEffect("press");
+      if (toolButton.dataset.careTool === "scrub") {
+        if (guardTutorialToolbarControl("spongeButton")) {
+          toggleCleaningMode({ source: "care-tray", collapseSidebar: true });
+        }
+      } else if (toolButton.dataset.careTool === "scoop") {
+        if (guardTutorialToolbarControl("scoopButton")) {
+          toggleScoopMode({ source: "care-tray", collapseSidebar: true });
+        }
+      }
+      return;
+    }
+
     const button = event.target.closest("[data-select-medicine]");
     if (button) {
       event.stopPropagation();
@@ -2181,13 +2255,18 @@ function bindEvents() {
   bindEquipmentSurface(dom.backgroundList);
   bindEquipmentSurface(dom.equipmentBackgroundList);
   bindEquipmentSurface(dom.equipmentBackgroundColorPanel);
+  bindEquipmentSurface(dom.editTankBackgroundList);
+  bindEquipmentSurface(dom.editTankBackgroundColorPanel);
   bindEquipmentSurface(dom.tankAssetList);
   bindEquipmentSurface(dom.filterAssetList);
   bindEquipmentSurface(dom.equipmentFilterList);
+  bindEquipmentSurface(dom.editTankFilterList);
   bindEquipmentSurface(dom.uvLightList);
   bindEquipmentSurface(dom.equipmentUvLightList);
+  bindEquipmentSurface(dom.editTankUvLightList);
   bindEquipmentSurface(dom.customGravelPanel);
   bindEquipmentSurface(dom.equipmentCustomGravelPanel);
+  bindEquipmentSurface(dom.editTankCustomGravelPanel);
 
   const shouldCaptureTankDesktopInput = (target) => !isTankMouseInputLocked() && !isTankOverlayTarget(target);
 
@@ -2873,6 +2952,126 @@ function updatePlayfieldCssVariables() {
   dom.tankStage.style.setProperty("--playfield-bottom", `${top + height}px`);
 }
 
+function getStageRenderViewTarget() {
+  const rect = dom.tankStage?.getBoundingClientRect?.();
+  if (!rect?.width || !rect?.height) {
+    return null;
+  }
+
+  const dpr = getStageRenderDevicePixelRatio();
+  const displayWidth = Math.max(1, Math.round(rect.width * dpr));
+  const displayHeight = Math.max(1, Math.round(rect.height * dpr));
+  const coverScale = Math.max(displayWidth / TANK_WIDTH, displayHeight / TANK_HEIGHT);
+  const coverOffsetX = (displayWidth - TANK_WIDTH * coverScale) * 0.5;
+  const coverOffsetY = (displayHeight - TANK_HEIGHT * coverScale) * 0.5;
+
+  const activeEditTray = runtime.editTankMode
+    ? dom.editDecorTray
+    : runtime.fishEditMode
+      ? dom.editFishTray
+      : runtime.tankEditMode
+        ? dom.editTankTray
+        : null;
+  if (!activeEditTray || activeEditTray.hidden) {
+    return {
+      scale: coverScale,
+      offsetX: coverOffsetX,
+      offsetY: coverOffsetY,
+      editAmount: 0
+    };
+  }
+
+  const trayRect = activeEditTray.getBoundingClientRect();
+  const topPaddingCss = Math.max(18, Math.min(34, rect.height * 0.035));
+  const sidePaddingCss = Math.max(28, Math.min(64, rect.width * 0.035));
+  const trayGapCss = 14;
+  const trayTopCss = clamp(trayRect.top - rect.top - trayGapCss, rect.height * 0.42, rect.height - 120);
+  const availableHeightCss = Math.max(220, trayTopCss - topPaddingCss);
+  const availableWidthCss = Math.max(320, rect.width - sidePaddingCss * 2);
+  const editScale = Math.min(
+    coverScale,
+    (availableWidthCss * dpr) / TANK_WIDTH,
+    (availableHeightCss * dpr) / TANK_HEIGHT
+  );
+  const renderedWidth = TANK_WIDTH * editScale;
+  const renderedHeight = TANK_HEIGHT * editScale;
+  const availableTopPx = topPaddingCss * dpr;
+  const availableHeightPx = availableHeightCss * dpr;
+
+  return {
+    scale: editScale,
+    offsetX: (displayWidth - renderedWidth) * 0.5,
+    offsetY: availableTopPx + Math.max(0, (availableHeightPx - renderedHeight) * 0.5),
+    editAmount: 1
+  };
+}
+
+function syncTankStageRenderCssGeometry(scale, offsetX, offsetY) {
+  const stage = dom.tankStage;
+  if (!(stage instanceof HTMLElement)) {
+    return;
+  }
+
+  const dpr = getStageRenderDevicePixelRatio();
+  const cssScale = Math.max(0.0001, Number(scale) || dpr) / dpr;
+  stage.style.setProperty("--tank-render-left", `${(offsetX / dpr).toFixed(3)}px`);
+  stage.style.setProperty("--tank-render-top", `${(offsetY / dpr).toFixed(3)}px`);
+  stage.style.setProperty("--tank-render-width", `${(TANK_WIDTH * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-render-height", `${(TANK_HEIGHT * cssScale).toFixed(3)}px`);
+
+  const frame = getDecorEditTankFrameGeometry();
+  stage.style.setProperty("--tank-frame-inset-left", `${(frame.left * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-frame-inset-top", `${(frame.top * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-frame-inset-right", `${((TANK_WIDTH - frame.right) * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-frame-inset-bottom", `${((TANK_HEIGHT - frame.bottom) * cssScale).toFixed(3)}px`);
+  stage.style.setProperty("--tank-frame-radius", `${(frame.radius * cssScale).toFixed(3)}px`);
+}
+
+function applyStageRenderViewTransform(scale, offsetX, offsetY) {
+  runtime.stageRenderScale = scale;
+  runtime.stageRenderOffsetX = offsetX;
+  runtime.stageRenderOffsetY = offsetY;
+  tankContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+  grimeContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+  glassContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+  configureCanvasContext(tankContext);
+  configureCanvasContext(grimeContext);
+  configureCanvasContext(glassContext);
+  syncTankStageRenderCssGeometry(scale, offsetX, offsetY);
+}
+
+function updateStageRenderView(frameTime = performance.now(), options = {}) {
+  const target = getStageRenderViewTarget();
+  if (!target) {
+    return;
+  }
+
+  const previousFrameAt = Number(runtime.stageRenderViewLastFrameAt) || frameTime;
+  const elapsedMs = clamp(frameTime - previousFrameAt, 0, 80);
+  runtime.stageRenderViewLastFrameAt = frameTime;
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+  const immediate = options.immediate === true || reduceMotion;
+  const smoothing = immediate ? 1 : 1 - Math.exp(-elapsedMs / 105);
+  const currentScale = Number(runtime.stageRenderScale) || target.scale;
+  const currentOffsetX = Number(runtime.stageRenderOffsetX) || 0;
+  const currentOffsetY = Number(runtime.stageRenderOffsetY) || 0;
+  const currentEditAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  const nextScale = currentScale + (target.scale - currentScale) * smoothing;
+  const nextOffsetX = currentOffsetX + (target.offsetX - currentOffsetX) * smoothing;
+  const nextOffsetY = currentOffsetY + (target.offsetY - currentOffsetY) * smoothing;
+  const nextEditAmount = currentEditAmount + (target.editAmount - currentEditAmount) * smoothing;
+
+  runtime.stageEditViewAmount = Math.abs(nextEditAmount - target.editAmount) < 0.001
+    ? target.editAmount
+    : nextEditAmount;
+  applyStageRenderViewTransform(
+    Math.abs(nextScale - target.scale) < 0.01 ? target.scale : nextScale,
+    Math.abs(nextOffsetX - target.offsetX) < 0.1 ? target.offsetX : nextOffsetX,
+    Math.abs(nextOffsetY - target.offsetY) < 0.1 ? target.offsetY : nextOffsetY
+  );
+  dom.tankStage?.classList.toggle("is-decor-edit-framed", runtime.stageEditViewAmount > 0.02);
+}
+
 function resizeDisplayCanvases() {
   const rect = dom.tankStage.getBoundingClientRect();
   if (!rect.width || !rect.height) {
@@ -2913,6 +3112,7 @@ function resizeDisplayCanvases() {
   runtime.stageRenderScale = stageScale;
   runtime.stageRenderOffsetX = offsetX;
   runtime.stageRenderOffsetY = offsetY;
+  runtime.stageRenderViewLastFrameAt = 0;
   runtime.playfield = {
     scale: 1,
     left: 0,
@@ -2933,6 +3133,7 @@ function resizeDisplayCanvases() {
   configureCanvasContext(tankContext);
   configureCanvasContext(grimeContext);
   configureCanvasContext(glassContext);
+  syncTankStageRenderCssGeometry(stageScale, offsetX, offsetY);
   configureCanvasContext(scrubMaskContext);
   configureCanvasContext(grimeBaseContext);
   positionTransientMessages();
@@ -4455,6 +4656,7 @@ function buildVirtualFishCatalogEntries() {
 function getCustomFishBehaviorProfiles() {
   const profiles = runtime.fishCatalog.filter((species) => (
     species
+    && !HIDDEN_FISH_OPTION_IDS.has(species.id)
     && !species.customUploadProduct
     && !isCustomFishShopKey(species.id)
     && !isCustomFishAssetKey(species.id)

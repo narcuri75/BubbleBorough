@@ -359,8 +359,25 @@ function isCustomGravelUvReactiveColor(color) {
 function drawCustomGravelFloor(bounds, now = Date.now()) {
   const layerColors = getResolvedCustomGravelLayerColors(now);
   const layerColorize = getActiveCustomGravelLayerColorizeSettings();
-  let drewLayer = false;
+  const fallbackPalette = getActiveGravelPalette();
+  const baseColors = Array.from({ length: CUSTOM_GRAVEL_LAYER_COUNT }, (_, index) => (
+    normalizeHexColor(layerColors[index])
+    || normalizeHexColor(fallbackPalette[index])
+    || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR
+  ));
 
+  // The authored gravel textures can contain a little transparent breathing room
+  // near their lower edge. During the edit-mode pullback that transparency lets
+  // the tank background peek through as a blue strip below the gravel. Lay down
+  // a solid gravel-toned base first so the substrate always reaches its floor.
+  const gravelBaseGradient = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.bottom);
+  gravelBaseGradient.addColorStop(0, formatRgba(hexToRgb(baseColors[0] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR), 0.96));
+  gravelBaseGradient.addColorStop(0.52, formatRgba(hexToRgb(baseColors[1] || baseColors[0] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR), 0.98));
+  gravelBaseGradient.addColorStop(1, formatRgba(hexToRgb(baseColors[2] || baseColors[1] || baseColors[0] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR), 1));
+  tankContext.fillStyle = gravelBaseGradient;
+  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, Math.max(1, bounds.bottom - bounds.drawTop + 2));
+
+  let drewLayer = false;
   for (let index = 0; index < runtime.customGravelLayerCatalog.length; index += 1) {
     const layer = runtime.customGravelLayerCatalog[index];
     const tintedLayer = getTintedCustomGravelLayer(
@@ -394,6 +411,53 @@ function drawCustomGravelFloor(bounds, now = Date.now()) {
   return drewLayer;
 }
 
+function drawGravelDepthTreatment(bounds) {
+  const floorHeight = Math.max(1, bounds.bottom - bounds.drawTop);
+
+  tankContext.save();
+  traceTankFloorMaskPath(tankContext, bounds);
+  tankContext.clip();
+
+  // Subtle depth darkening lowers the visual competition of the substrate and
+  // makes the lower gravel read as receding away from the lit water column.
+  tankContext.globalCompositeOperation = "multiply";
+  const depthShade = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.bottom);
+  depthShade.addColorStop(0, "rgba(255, 255, 255, 0)");
+  depthShade.addColorStop(0.34, "rgba(238, 242, 248, 0.012)");
+  depthShade.addColorStop(0.68, "rgba(106, 119, 139, 0.055)");
+  depthShade.addColorStop(1, "rgba(30, 37, 50, 0.145)");
+  tankContext.fillStyle = depthShade;
+  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, floorHeight + 2);
+
+  // A narrow feather just inside the gravel crest softens the hard water-to-
+  // substrate seam without painting haze over the open water.
+  const crestBlendHeight = Math.min(70, Math.max(34, floorHeight * 0.24));
+  const crestShade = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.drawTop + crestBlendHeight);
+  crestShade.addColorStop(0, "rgba(39, 51, 67, 0.075)");
+  crestShade.addColorStop(0.32, "rgba(64, 76, 94, 0.038)");
+  crestShade.addColorStop(1, "rgba(255, 255, 255, 0)");
+  tankContext.fillStyle = crestShade;
+  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, crestBlendHeight);
+
+  // Slight edge falloff keeps the saturated gravel from feeling like a flat
+  // banner and reinforces the curved glass/tank depth near the sides.
+  const edgeShade = tankContext.createRadialGradient(
+    bounds.left + bounds.drawWidth * 0.5,
+    bounds.drawTop + floorHeight * 0.32,
+    bounds.drawWidth * 0.16,
+    bounds.left + bounds.drawWidth * 0.5,
+    bounds.drawTop + floorHeight * 0.36,
+    bounds.drawWidth * 0.66
+  );
+  edgeShade.addColorStop(0, "rgba(255, 255, 255, 0)");
+  edgeShade.addColorStop(0.72, "rgba(198, 207, 219, 0.012)");
+  edgeShade.addColorStop(1, "rgba(51, 61, 76, 0.06)");
+  tankContext.fillStyle = edgeShade;
+  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, floorHeight + 2);
+
+  tankContext.restore();
+}
+
 function drawTankFloor(now = Date.now()) {
   const bounds = getTankFloorDrawBounds();
 
@@ -405,6 +469,7 @@ function drawTankFloor(now = Date.now()) {
 
   tankContext.restore();
 
+  drawGravelDepthTreatment(bounds);
   drawCustomGravelLoosePebbles(bounds, now);
 }
 

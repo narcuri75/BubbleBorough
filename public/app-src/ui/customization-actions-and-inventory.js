@@ -476,6 +476,12 @@ function renderSettingsOverlay() {
   if (dom.waterParticlesToggleInput) {
     dom.waterParticlesToggleInput.checked = uiSettings.waterParticlesEnabled;
   }
+  if (dom.causticLightingToggleInput) {
+    dom.causticLightingToggleInput.checked = uiSettings.causticLightingEnabled;
+  }
+  if (dom.decorShadowsToggleInput) {
+    dom.decorShadowsToggleInput.checked = uiSettings.decorShadowsEnabled;
+  }
   if (dom.halloweenModeSelect instanceof HTMLSelectElement) {
     dom.halloweenModeSelect.value = uiSettings.halloweenMode;
   }
@@ -1280,7 +1286,7 @@ function renderEditDecorTrayContextMenu() {
 }
 
 function hasInlineToolTrayOpen() {
-  return runtime.editTankMode || runtime.fishEditMode || runtime.foodTrayOpen || runtime.medicineTrayOpen;
+  return runtime.editTankMode || runtime.fishEditMode || runtime.tankEditMode || runtime.foodTrayOpen || runtime.medicineTrayOpen;
 }
 
 function getDecorTrayTypeTone(decor, decorKey) {
@@ -1463,6 +1469,36 @@ function handleDecorResidenceUtilityOverlayBodyClick(ctx, target) {
   return false;
 }
 
+function getDecorFreePlacementSelectionState() {
+  const selectedItems = getSelectedPlacedDecorItems();
+  if (selectedItems.length) {
+    const enabledCount = selectedItems.filter((item) => isFreeDecorPlacementEnabled(item, { tank: getCurrentTank() })).length;
+    return {
+      scope: selectedItems.length > 1 ? "selected-many" : "selected-one",
+      checked: enabledCount === selectedItems.length,
+      indeterminate: enabledCount > 0 && enabledCount < selectedItems.length,
+      items: selectedItems
+    };
+  }
+
+  if (runtime.placementMode) {
+    return {
+      scope: "placement-preview",
+      checked: runtime.placementMode.freePlacementEnabled === true,
+      indeterminate: false,
+      items: []
+    };
+  }
+
+  const tank = getCurrentTank();
+  return {
+    scope: "default",
+    checked: tank?.freeDecorPlacement === true,
+    indeterminate: false,
+    items: []
+  };
+}
+
 function setFreeDecorPlacementEnabled(enabled) {
   const tank = getCurrentTank();
   if (!tank) {
@@ -1470,27 +1506,72 @@ function setFreeDecorPlacementEnabled(enabled) {
   }
 
   const nextEnabled = enabled === true;
+  const selectionState = getDecorFreePlacementSelectionState();
+
+  if (selectionState.scope === "placement-preview" && runtime.placementMode) {
+    if (runtime.placementMode.freePlacementEnabled === nextEnabled) {
+      renderEditDecorTray();
+      return false;
+    }
+
+    runtime.placementMode.freePlacementEnabled = nextEnabled;
+    if (runtime.placementPreview) {
+      const placement = clampDecorPlacement(runtime.placementPreview.xNorm, runtime.placementPreview.yNorm, {
+        decorKey: runtime.placementMode.decorKey,
+        tankLayer: runtime.placementMode.tankLayer,
+        scale: runtime.placementMode.scale,
+        flipped: runtime.placementMode.flipped,
+        flippedY: runtime.placementMode.flippedY,
+        freePlacementEnabled: runtime.placementMode.freePlacementEnabled,
+        applyGravity: true,
+        tank
+      });
+      runtime.placementPreview.xNorm = placement.xNorm;
+      runtime.placementPreview.yNorm = placement.yNorm;
+    }
+
+    renderUi(Date.now());
+    showToast(nextEnabled ? "Free Placement set for the decor preview." : "Gravity restored for the decor preview.");
+    return true;
+  }
+
+  if (selectionState.items.length) {
+    const itemsToUpdate = selectionState.items.filter((item) => isFreeDecorPlacementEnabled(item, { tank }) !== nextEnabled);
+    if (!itemsToUpdate.length) {
+      renderEditDecorTray();
+      return false;
+    }
+
+    for (const item of itemsToUpdate) {
+      item.freePlacementEnabled = nextEnabled;
+      if (!nextEnabled) {
+        const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, tank, applyGravity: true });
+        item.xNorm = placement.xNorm;
+        item.yNorm = placement.yNorm;
+        applyDecorGravelInsertion(item);
+      }
+      updatePlacedDecorResizeAnchor(item);
+    }
+
+    saveState();
+    renderUi(Date.now());
+    showToast(nextEnabled
+      ? (itemsToUpdate.length > 1 ? "Free Placement enabled for the selected decor." : "Free Placement enabled for the selected decor piece.")
+      : (itemsToUpdate.length > 1 ? "Gravity restored for the selected decor." : "Gravity restored for the selected decor piece."));
+    return true;
+  }
+
   if (tank.freeDecorPlacement === nextEnabled) {
     renderEditDecorTray();
     return false;
   }
 
   tank.freeDecorPlacement = nextEnabled;
-  if (!nextEnabled) {
-    for (const item of tank.placedDecor || []) {
-      const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, tank, applyGravity: true });
-      item.xNorm = placement.xNorm;
-      item.yNorm = placement.yNorm;
-      updatePlacedDecorResizeAnchor(item);
-      applyDecorGravelInsertion(item);
-    }
-  }
-
   saveState();
-  renderUi(Date.now());
+  renderEditDecorTray();
   showToast(nextEnabled
-    ? "Free Placement on. Grounded decor can now be positioned anywhere."
-    : "Gravity on. Grounded decor dropped to its layer floor.");
+    ? "Free Placement will be used for newly previewed decor by default."
+    : "Gravity will be used for newly previewed decor by default.");
   return true;
 }
 
@@ -1524,7 +1605,16 @@ function renderEditDecorTray() {
   }
   const freePlacementToggle = dom.editDecorTray?.querySelector?.("[data-decor-free-placement-toggle]");
   if (freePlacementToggle) {
-    freePlacementToggle.checked = isFreeDecorPlacementEnabled();
+    const freePlacementState = getDecorFreePlacementSelectionState();
+    freePlacementToggle.checked = Boolean(freePlacementState.checked);
+    freePlacementToggle.indeterminate = Boolean(freePlacementState.indeterminate);
+    freePlacementToggle.setAttribute("aria-checked", freePlacementState.indeterminate ? "mixed" : (freePlacementState.checked ? "true" : "false"));
+  }
+  for (const tab of dom.editDecorTray?.querySelectorAll?.("[data-edit-overlay-mode]") || []) {
+    const selected = tab.dataset.editOverlayMode === "decor";
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
   }
 
   const allTrayEntries = runtime.editDecorTrayInTank ? getInTankDecorTrayEntries() : getDecorTrayEntries();
@@ -1535,7 +1625,7 @@ function renderEditDecorTray() {
     runtime.editTankMode ? "1" : "0",
     runtime.editDecorTrayTab,
     runtime.editDecorTrayInTank ? "tank" : "storage",
-    isFreeDecorPlacementEnabled() ? "free" : "gravity",
+    JSON.stringify(getDecorFreePlacementSelectionState()),
     isViolenceAndGoreEnabled() ? "1" : "0",
     runtime.placementMode?.decorKey || "",
     runtime.selectedDecorId || "",
@@ -1887,6 +1977,12 @@ function renderEditFishTray() {
     tab.setAttribute("aria-selected", selected ? "true" : "false");
     tab.tabIndex = selected ? 0 : -1;
   }
+  for (const tab of dom.editFishTray?.querySelectorAll?.("[data-edit-overlay-mode]") || []) {
+    const selected = tab.dataset.editOverlayMode === "fish";
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
+  }
 
   const trayEntries = getFishTrayEntries();
   const trayRenderNow = Date.now();
@@ -1944,6 +2040,41 @@ function renderEditFishTray() {
   if (!trayEntries.length) {
     dom.editFishTrayPrev.disabled = true;
     dom.editFishTrayNext.disabled = true;
+  }
+}
+
+function renderEditTankTray() {
+  const visible = runtime.tankEditMode;
+  if (dom.editTankTray) {
+    dom.editTankTray.hidden = !visible;
+  }
+  syncTankTrayStageClass();
+
+  if (!visible || !dom.editTankTray) {
+    return;
+  }
+
+  const validTabs = new Set(["background", "gravel", "equipment"]);
+  if (!validTabs.has(runtime.editTankTrayTab)) {
+    runtime.editTankTrayTab = "background";
+  }
+
+  for (const tab of dom.editTankTray.querySelectorAll("[data-edit-overlay-mode]")) {
+    const selected = tab.dataset.editOverlayMode === "tank";
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
+  }
+
+  for (const tab of dom.editTankTray.querySelectorAll("[data-tank-tray-tab]")) {
+    const selected = tab.dataset.tankTrayTab === runtime.editTankTrayTab;
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
+  }
+
+  for (const panel of dom.editTankTray.querySelectorAll("[data-tank-tray-panel]")) {
+    panel.hidden = panel.dataset.tankTrayPanel !== runtime.editTankTrayTab;
   }
 }
 
@@ -2026,14 +2157,14 @@ function renderMedicineTray() {
   ].join("|");
 
   if (shouldRebuildRenderSection("medicine-tray-data", dataKey)) {
-    const markup = items.length
+    const medicineMarkup = items.length
       ? items.map((medicine) => {
         const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
         const active = runtime.medicineModeKey === medicine.id;
         const label = `${medicine.name} - ${quantity} left`;
         return `
           <button
-            class="edit-decor-tile ${active ? "is-active" : ""}"
+            class="edit-decor-tile care-medicine-tile ${active ? "is-active" : ""}"
             type="button"
             data-select-medicine="${medicine.id}"
             data-decor-name="${label}"
@@ -2050,7 +2181,32 @@ function renderMedicineTray() {
           </button>
         `;
       }).join("")
-      : `<div class="edit-decor-tray-empty">No medicine is stocked yet. Open the pharmacy to buy a bottle first.</div>`;
+      : `<div class="care-tray-empty-medical">No medicine stocked</div>`;
+
+    const markup = `
+      <div class="care-tray-content">
+        <section class="care-tray-section care-tray-medical" aria-label="Medical care">
+          <div class="care-tray-section-icon" title="Medical" aria-label="Medical">
+            <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+          </div>
+          <div class="care-tray-medical-items">${medicineMarkup}</div>
+        </section>
+        <div class="care-tray-divider" aria-hidden="true"></div>
+        <section class="care-tray-section care-tray-tool-section" aria-label="Cleaning tool">
+          <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
+            <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+            <span>Scrub</span>
+          </button>
+        </section>
+        <div class="care-tray-divider" aria-hidden="true"></div>
+        <section class="care-tray-section care-tray-tool-section" aria-label="Scoop tool">
+          <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
+            <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+            <span>Scoop</span>
+          </button>
+        </section>
+      </div>
+    `;
 
     setMarkupIfChanged("medicine-tray", dom.medicineTrayScroller, markup);
   }
@@ -2573,7 +2729,7 @@ function openFishActionTargetMenu(action, fishId = runtime.fishActionMenuFishId,
   const config = getFishActionConfig(action);
   const availability = getFishActionAvailability(action, fish, now);
   if (!config || !isFishActionTargeted(action) || !fish || managed.inStorage || isFishDead(fish) || !availability.enabled) {
-    showToast((availability.title || "That action is not available.").replace(/^.*?:\s*/, ""));
+    showFishActionUnavailableToast(availability);
     closeFishActionTargetMenu();
     return false;
   }

@@ -585,6 +585,24 @@ function getSuckerFishFrontGlassAssetPath(species) {
   return assetPath ? resolveAppUrl(assetPath) : null;
 }
 
+function getSuckerFishFreeSwimAssetPath(species) {
+  const assetPath = SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES[species?.id || ""];
+  return assetPath ? resolveAppUrl(assetPath) : null;
+}
+
+function canSuckerFishFreeSwim(species) {
+  return Boolean(species?.behavior === "sucker" && getSuckerFishFreeSwimAssetPath(species));
+}
+
+function isSuckerFishFreeSwimming(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  return Boolean(
+    fish
+    && canSuckerFishFreeSwim(species)
+    && Number.isFinite(Number(fish.suckerFreeSwimUntil))
+    && Number(fish.suckerFreeSwimUntil) > now
+  );
+}
+
 function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date.now()) {
   const widthSpecies = getFishDisplaySourceSpecies(fish, species) || species;
   if (!widthSpecies) {
@@ -774,12 +792,15 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   }
 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  const frontGlassAsset = !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
+  const freeSwimAsset = !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
+    ? (getSuckerFishFreeSwimAssetPath(displaySpecies) || getSuckerFishFreeSwimAssetPath(species))
+    : null;
+  const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
     ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
     : null;
   const seasonalAsset = getFishSeasonalAssetPath(fish, displaySpecies, now);
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
-  const preferredBaseAsset = seasonalAsset || (isZombieVariantFish(fish)
+  const preferredBaseAsset = freeSwimAsset || seasonalAsset || (isZombieVariantFish(fish)
     ? getFishZombieVariantAssetPath(fish, displaySpecies)
     : undeadBaseStage
       ? (
@@ -791,7 +812,7 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
         || species.fallbackAsset
         || null
       )
-      : (frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
+      : (freeSwimAsset || frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
   const baseAsset = [
     preferredBaseAsset,
     displaySpecies.fallbackAsset,
@@ -1008,6 +1029,9 @@ function getEffectiveFishBehavior(target) {
   });
   if (zombieSkeletonBehavior) {
     return zombieSkeletonBehavior;
+  }
+  if (fish && isSuckerFishFreeSwimming(fish, species)) {
+    return "steady";
   }
   return species.behavior || "steady";
 }

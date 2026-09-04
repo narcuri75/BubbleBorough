@@ -506,6 +506,15 @@ function getFishActionTargetOptions(action, fish, now = Date.now()) {
   });
 }
 
+function showFishActionUnavailableToast(availability) {
+  const message = (availability?.title || "That action is not available.").replace(/^.*?:\s*/, "");
+  if (message.toLowerCase() === "needs food first") {
+    return false;
+  }
+  showToast(message);
+  return true;
+}
+
 function getFishActionAvailability(action, fish, now = Date.now()) {
   const config = getFishActionConfig(action);
   const baseTitle = config?.title || "Fish action";
@@ -1290,7 +1299,7 @@ function startFishActionQueueItem(fish, item, now = Date.now()) {
   const config = getFishActionConfig(action);
   const availability = getFishActionAvailability(action, fish, now);
   if (!fish || !species || !availability.enabled) {
-    showToast((availability.title || "That action is not available.").replace(/^.*?:\s*/, ""));
+    showFishActionUnavailableToast(availability);
     return false;
   }
   if (config) {
@@ -1460,7 +1469,7 @@ function enqueueFishAction(action, fishId = runtime.fishActionMenuFishId || runt
 
   const availability = getFishActionAvailability(action, fish, now);
   if (!availability.enabled || config.queueable === false) {
-    showToast((availability.title || "That action is not available.").replace(/^.*?:\s*/, ""));
+    showFishActionUnavailableToast(availability);
     renderUi(now, { full: false });
     return false;
   }

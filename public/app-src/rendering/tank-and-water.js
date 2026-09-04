@@ -3,6 +3,7 @@
 
 function renderTank(now) {
   const dirtiness = getTankDirtiness(now);
+  clearStageDisplaySurfaces();
   drawTankBackdrop();
   tankContext.save();
   clipToTankShellBounds(tankContext);
@@ -15,6 +16,7 @@ function renderTank(now) {
   drawWaterFilter(now);
   drawTankFloor(now);
   drawGravelGrime(now, dirtiness);
+  drawGravelCausticProjection(now);
   drawSedimentClouds(now);
   drawEffectClouds(EFFECT_CLOUD_LAYER_FLOOR);
   drawGravelDigBursts(now);
@@ -41,6 +43,8 @@ function renderTank(now) {
   drawBoroughEdgeBursts(now);
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
+  drawUnderwaterLightingPass(now);
+  drawWaterColumnCaustics(now);
   //drawLooseGravel(now, { transientOnly: true });
   drawDirtyWaterTint(dirtiness);
   drawMedicineWaterTint(now);
@@ -61,6 +65,7 @@ function renderTank(now) {
   drawCleaningSparkles(now);
   glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
+  drawDecorEditTankBoundary();
   const severeGrime = getSevereGrimeVisualIntensity(dirtiness);
   const tankBlurScale = getPortableTankBlurScale();
   const tankCanvasFilter = severeGrime > 0
@@ -80,13 +85,536 @@ function renderTank(now) {
   }
 }
 
+function getCausticLightImage() {
+  const image = runtime.images.get(CAUSTIC_LIGHT_ASSET_PATH) || null;
+  if (image && Number(image.naturalWidth || image.width) > 0 && Number(image.naturalHeight || image.height) > 0) {
+    return image;
+  }
+  requestRuntimeImageRecovery(CAUSTIC_LIGHT_ASSET_PATH, {
+    kind: "caustic-light",
+    id: "underwater-caustics"
+  });
+  return null;
+}
+
+function getCausticHighlightMask() {
+  const image = getCausticLightImage();
+  if (!image) {
+    return null;
+  }
+
+  const width = Number(image.naturalWidth || image.width) || 0;
+  const height = Number(image.naturalHeight || image.height) || 0;
+  const cacheKey = `${width}x${height}`;
+  if (runtime.causticHighlightMaskCanvas && runtime.causticHighlightMaskCacheKey === cacheKey) {
+    return runtime.causticHighlightMaskCanvas;
+  }
+
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = width;
+  sourceCanvas.height = height;
+  const sourceContext = sourceCanvas.getContext("2d", { willReadFrequently: true });
+  sourceContext.clearRect(0, 0, width, height);
+  sourceContext.drawImage(image, 0, 0, width, height);
+
+  const blurCanvas = document.createElement("canvas");
+  blurCanvas.width = width;
+  blurCanvas.height = height;
+  const blurContext = blurCanvas.getContext("2d", { willReadFrequently: true });
+  blurContext.clearRect(0, 0, width, height);
+  blurContext.filter = "blur(9px)";
+  blurContext.drawImage(sourceCanvas, 0, 0);
+  blurContext.filter = "none";
+
+  try {
+    const sourcePixels = sourceContext.getImageData(0, 0, width, height);
+    const blurPixels = blurContext.getImageData(0, 0, width, height);
+    const outputCanvas = document.createElement("canvas");
+    outputCanvas.width = width;
+    outputCanvas.height = height;
+    const outputContext = outputCanvas.getContext("2d");
+    const outputPixels = outputContext.createImageData(width, height);
+
+    const src = sourcePixels.data;
+    const blurred = blurPixels.data;
+    const out = outputPixels.data;
+    for (let index = 0; index < src.length; index += 4) {
+      const sourceAlpha = src[index + 3] / 255;
+      if (sourceAlpha <= 0.002) {
+        continue;
+      }
+
+      const sourceLum = src[index] * 0.2126 + src[index + 1] * 0.7152 + src[index + 2] * 0.0722;
+      const blurLum = blurred[index] * 0.2126 + blurred[index + 1] * 0.7152 + blurred[index + 2] * 0.0722;
+      const localHighlight = Math.max(0, sourceLum - blurLum);
+      const brightnessGate = clamp((sourceLum - 196) / 59, 0, 1);
+      const ridgeStrength = clamp((localHighlight - 1.5) / 24, 0, 1);
+      const alpha = sourceAlpha * brightnessGate * ridgeStrength * 1.45;
+      if (alpha <= 0.004) {
+        continue;
+      }
+
+      out[index] = 242;
+      out[index + 1] = 250;
+      out[index + 2] = 255;
+      out[index + 3] = Math.round(clamp(alpha, 0, 1) * 255);
+    }
+
+    outputContext.putImageData(outputPixels, 0, 0);
+    runtime.causticHighlightMaskCanvas = outputCanvas;
+    runtime.causticHighlightMaskCacheKey = cacheKey;
+    return outputCanvas;
+  } catch (error) {
+    console.warn("Unable to build caustic highlight mask", error);
+    return image;
+  }
+}
+
+function drawCausticProjectedStrip(context, image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height) {
+  if (width <= 0 || height <= 0 || sourceWidth <= 0 || sourceHeight <= 0) {
+    return;
+  }
+  context.drawImage(
+    image,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    x,
+    y,
+    width,
+    height
+  );
+}
+
+function hashCausticNoise(value, seed = 0) {
+  const input = Number(value) * 12.9898 + Number(seed) * 78.233;
+  return (Math.sin(input) * 43758.5453123) % 1;
+}
+
+function normalizedCausticNoise(value, seed = 0) {
+  const noise = hashCausticNoise(value, seed);
+  return noise < 0 ? noise + 1 : noise;
+}
+
+function getRotatedCausticSource(image, now, options = {}) {
+  const imageWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const imageHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const diagonal = Math.max(imageWidth, imageHeight, Math.ceil(Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight)));
+  const scale = Math.max(0.4, Number(options.scale) || 1);
+  const canvasWidth = Math.ceil(diagonal * scale);
+  const canvasHeight = Math.ceil(diagonal * scale);
+  const angle = (Number(now) || 0) * (Number(options.rotationSpeed) || 0) + (Number(options.baseAngle) || 0);
+  const cacheKey = [canvasWidth, canvasHeight, imageWidth, imageHeight].join(":");
+
+  if (!runtime.causticRotatedLayerCache) {
+    runtime.causticRotatedLayerCache = new Map();
+  }
+
+  let entry = runtime.causticRotatedLayerCache.get(cacheKey);
+  if (!entry) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    entry = { canvas, context: canvas.getContext("2d") };
+    runtime.causticRotatedLayerCache.set(cacheKey, entry);
+  }
+
+  const { canvas, context } = entry;
+  if (!context) {
+    return image;
+  }
+
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.save();
+  context.translate(canvas.width * 0.5, canvas.height * 0.5);
+  context.rotate(angle);
+  context.scale(scale, scale);
+  context.filter = "grayscale(0.22) saturate(0.78) brightness(1.08)";
+  context.drawImage(image, -imageWidth * 0.5, -imageHeight * 0.5, imageWidth, imageHeight);
+  context.restore();
+  return canvas;
+}
+
+function buildCausticSpotDescriptor(now, slotIndex, options = {}) {
+  const durationMs = Math.max(2200, Number(options.durationMs) || 5200);
+  const staggerMs = Number(options.staggerMs) || Math.round(durationMs * 0.37);
+  const startMs = (Number(now) || 0) + slotIndex * staggerMs + (Number(options.timeOffsetMs) || 0);
+  const cycleIndex = Math.floor(startMs / durationMs);
+  const localT = ((startMs % durationMs) + durationMs) % durationMs / durationMs;
+  const fade = Math.pow(Math.sin(localT * Math.PI), 1.85);
+  const seed = Number(options.seed) || 0;
+  const xNorm = 0.12 + normalizedCausticNoise(cycleIndex * 13.1 + slotIndex * 2.17 + 0.3, seed + 11) * 0.76;
+  const yNorm = 0.12 + normalizedCausticNoise(cycleIndex * 9.7 + slotIndex * 1.73 + 0.6, seed + 23) * 0.74;
+  const widthNorm = 0.14 + normalizedCausticNoise(cycleIndex * 7.2 + slotIndex * 4.11 + 0.9, seed + 31) * 0.2;
+  const heightNorm = 0.16 + normalizedCausticNoise(cycleIndex * 5.8 + slotIndex * 3.03 + 0.12, seed + 47) * 0.22;
+  const sourcePhaseX = normalizedCausticNoise(cycleIndex * 4.9 + slotIndex * 0.91 + 0.14, seed + 59);
+  const sourcePhaseY = normalizedCausticNoise(cycleIndex * 6.7 + slotIndex * 1.44 + 0.84, seed + 71);
+  const brightness = 0.72 + normalizedCausticNoise(cycleIndex * 8.9 + slotIndex * 2.62 + 0.41, seed + 83) * 0.5;
+  return {
+    fade,
+    xNorm,
+    yNorm,
+    widthNorm,
+    heightNorm,
+    sourcePhaseX,
+    sourcePhaseY,
+    brightness,
+    cycleIndex,
+    localT
+  };
+}
+
+function drawLocalizedGravelCausticPass(context, image, now, options = {}) {
+  const bounds = getTankFloorDrawBounds();
+  const imageWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const imageHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const floorTop = bounds.drawTop;
+  const floorDepth = Math.max(1, bounds.bottom - floorTop);
+  const floorCenterY = floorTop + floorDepth * (Number(options.spotYNorm) || 0.5);
+  const radiusY = floorDepth * Math.max(0.06, Number(options.spotHeightNorm) || 0.2);
+  const centerX = bounds.drawLeft + bounds.drawWidth * (Number(options.spotXNorm) || 0.5);
+  const topWidth = bounds.drawWidth * Math.max(0.08, Number(options.topWidthScale) || 0.2);
+  const bottomWidth = bounds.drawWidth * Math.max(0.1, Number(options.bottomWidthScale) || 0.3);
+  const slices = 54;
+  const sourceWindowScale = clamp(Number(options.sourceWindowScale) || 0.58, 0.28, 1);
+  const sourceWidth = imageWidth * sourceWindowScale;
+  const sourceHeightWindow = imageHeight * clamp(Number(options.sourceHeightScale) || 0.54, 0.28, 1);
+  const maxSourceX = Math.max(0, imageWidth - sourceWidth);
+  const maxSourceY = Math.max(0, imageHeight - sourceHeightWindow);
+  const driftPhase = (Number(now) || 0) * (Number(options.driftSpeed) || 0.00018) + (Number(options.phase) || 0);
+  const sourceX = maxSourceX * ((Number(options.sourcePhaseX) || 0) + 0.5 + Math.sin(driftPhase) * 0.18);
+  const sourceYCenter = maxSourceY * (Number(options.sourcePhaseY) || 0.5);
+  const alphaBase = clamp(Number(options.alpha) || 0.045, 0, 0.18);
+
+  context.save();
+  traceTankFloorMaskPath(context, bounds);
+  context.clip();
+  context.globalCompositeOperation = "screen";
+  context.filter = "blur(0.3px) brightness(1.16)";
+
+  for (let index = 0; index < slices; index += 1) {
+    const t0 = index / slices;
+    const t1 = (index + 1) / slices;
+    const stripCenterY = floorTop + floorDepth * (t0 + t1) * 0.5;
+    const verticalDelta = Math.abs(stripCenterY - floorCenterY);
+    const verticalFalloff = Math.max(0, 1 - Math.pow(verticalDelta / Math.max(24, radiusY), 2));
+    if (verticalFalloff <= 0.015) {
+      continue;
+    }
+
+    const perspectiveT = Math.pow((t0 + t1) * 0.5, 0.92);
+    const projectedWidth = topWidth + (bottomWidth - topWidth) * perspectiveT;
+    const stripWave = Math.sin(driftPhase * 1.25 + perspectiveT * 8.6) * (Number(options.rippleAmount) || 6) * (0.3 + verticalFalloff * 0.7);
+    const projectedX = centerX - projectedWidth * 0.5 + stripWave;
+    const destY = floorTop + t0 * floorDepth;
+    const destHeight = Math.ceil((t1 - t0) * floorDepth) + 1;
+
+    const sourceYOffset = (verticalFalloff - 0.5) * 0.18 * maxSourceY;
+    const sourceY = clamp(sourceYCenter + sourceYOffset + (t0 - 0.5) * imageHeight * 0.18, 0, maxSourceY);
+    const sourceHeight = Math.min(sourceHeightWindow / slices * 2.15, imageHeight - sourceY);
+
+    context.globalAlpha = alphaBase * verticalFalloff * (Number(options.brightness) || 1);
+    drawCausticProjectedStrip(
+      context,
+      image,
+      clamp(sourceX, 0, maxSourceX),
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      projectedX,
+      destY,
+      projectedWidth,
+      destHeight
+    );
+  }
+
+  context.restore();
+}
+
+function drawGravelCausticProjection(now) {
+  if (!isCausticLightingEnabled()) {
+    return;
+  }
+
+  const baseImage = getCausticHighlightMask();
+  if (!baseImage) {
+    return;
+  }
+
+  const layerA = getRotatedCausticSource(baseImage, now, {
+    scale: 1.06,
+    baseAngle: 0,
+    rotationSpeed: 0.000042
+  });
+  const layerB = getRotatedCausticSource(baseImage, now, {
+    scale: 0.92,
+    baseAngle: Math.PI * 0.24,
+    rotationSpeed: -0.000057
+  });
+
+  const layerConfigs = [
+    {
+      image: layerA,
+      seed: 41,
+      spots: 2,
+      alpha: 0.068,
+      topWidthScale: 0.16,
+      bottomWidthScale: 0.28,
+      sourceWindowScale: 0.5,
+      sourceHeightScale: 0.46,
+      driftSpeed: 0.00021,
+      rippleAmount: 6,
+      durationMs: 5400,
+      staggerMs: 2200,
+      phase: 0.2,
+      timeOffsetMs: 0
+    },
+    {
+      image: layerB,
+      seed: 97,
+      spots: 2,
+      alpha: 0.048,
+      topWidthScale: 0.14,
+      bottomWidthScale: 0.24,
+      sourceWindowScale: 0.44,
+      sourceHeightScale: 0.42,
+      driftSpeed: -0.00016,
+      rippleAmount: 4,
+      durationMs: 6200,
+      staggerMs: 2600,
+      phase: 1.7,
+      timeOffsetMs: 1200
+    }
+  ];
+
+  for (const layer of layerConfigs) {
+    for (let index = 0; index < layer.spots; index += 1) {
+      const spot = buildCausticSpotDescriptor(now, index, layer);
+      if (spot.fade <= 0.025) {
+        continue;
+      }
+      drawLocalizedGravelCausticPass(tankContext, layer.image, now, {
+        alpha: layer.alpha * spot.fade,
+        brightness: spot.brightness,
+        topWidthScale: layer.topWidthScale * (0.86 + spot.widthNorm * 0.9),
+        bottomWidthScale: layer.bottomWidthScale * (0.92 + spot.widthNorm),
+        sourceWindowScale: layer.sourceWindowScale,
+        sourceHeightScale: layer.sourceHeightScale,
+        driftSpeed: layer.driftSpeed,
+        rippleAmount: layer.rippleAmount,
+        phase: layer.phase + index * 1.23,
+        spotXNorm: spot.xNorm,
+        spotYNorm: spot.yNorm,
+        spotHeightNorm: spot.heightNorm,
+        sourcePhaseX: spot.sourcePhaseX,
+        sourcePhaseY: spot.sourcePhaseY
+      });
+    }
+  }
+}
+
+function drawWaterColumnCausticLayer(context, image, now, options = {}) {
+  const waterHeight = Math.max(1, getVisibleTankFloorBottomY() - WATER_SURFACE_Y);
+  const scale = Number(options.scale) || 1.18;
+  const width = TANK_WIDTH * scale;
+  const height = waterHeight * scale;
+  const phase = (Number(now) || 0) * (Number(options.speed) || 0.00004) + (Number(options.phase) || 0);
+  const xTravel = Math.max(10, (width - TANK_WIDTH) * 0.42);
+  const yTravel = Math.max(6, (height - waterHeight) * 0.28);
+  const x = (TANK_WIDTH - width) * 0.5 + Math.sin(phase) * xTravel;
+  const y = WATER_SURFACE_Y + (waterHeight - height) * 0.46 + Math.cos(phase * 0.73 + 0.8) * yTravel;
+
+  context.save();
+  context.beginPath();
+  context.rect(GLASS_MARGIN_X, WATER_SURFACE_Y, TANK_WIDTH - GLASS_MARGIN_X * 2, waterHeight);
+  context.clip();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha = clamp(Number(options.alpha) || 0.018, 0, 0.08);
+  context.filter = "grayscale(0.72) saturate(0.42) brightness(1.12)";
+  context.drawImage(image, x, y, width, height);
+  context.restore();
+}
+
+function drawWaterColumnCaustics(now) {
+  // Disabled intentionally. The authored caustic asset contains broad translucent
+  // regions that read as fog when screen-blended through the entire water column.
+  // Caustics now stay on the gravel plane, where the perspective projection reads
+  // as refracted light rather than suspended haze. Keep this function in place so
+  // a dedicated sparse water-column asset can be reintroduced later if desired.
+  void now;
+}
+
+function drawUnderwaterLightingPass(now) {
+  const tankBottom = Math.max(WATER_SURFACE_Y + 24, TANK_HEIGHT);
+  const pulse = 0.985 + Math.sin((Number(now) || 0) * 0.00011) * 0.015;
+
+  // Soft cool illumination from above.
+  tankContext.save();
+  tankContext.globalCompositeOperation = "screen";
+  const topLight = tankContext.createLinearGradient(0, WATER_SURFACE_Y, 0, tankBottom);
+  topLight.addColorStop(0, `rgba(176, 222, 255, ${(0.105 * pulse).toFixed(4)})`);
+  topLight.addColorStop(0.12, `rgba(126, 188, 235, ${(0.055 * pulse).toFixed(4)})`);
+  topLight.addColorStop(0.34, `rgba(84, 146, 208, ${(0.018 * pulse).toFixed(4)})`);
+  topLight.addColorStop(0.58, "rgba(84, 146, 208, 0)");
+  topLight.addColorStop(1, "rgba(84, 146, 208, 0)");
+  tankContext.fillStyle = topLight;
+  tankContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, tankBottom - WATER_SURFACE_Y);
+  tankContext.restore();
+
+  // Gentle depth darkening so the floor area feels deeper without crushing color.
+  tankContext.save();
+  tankContext.globalCompositeOperation = "multiply";
+  const depthShade = tankContext.createLinearGradient(0, WATER_SURFACE_Y, 0, tankBottom);
+  depthShade.addColorStop(0, "rgba(255, 255, 255, 0)");
+  depthShade.addColorStop(0.42, "rgba(233, 241, 252, 0.018)");
+  depthShade.addColorStop(0.72, "rgba(145, 170, 198, 0.06)");
+  depthShade.addColorStop(1, "rgba(26, 44, 68, 0.16)");
+  tankContext.fillStyle = depthShade;
+  tankContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, tankBottom - WATER_SURFACE_Y);
+  tankContext.restore();
+
+  // Tiny bit of bottom ambient occlusion to help the lower tank feel denser.
+  tankContext.save();
+  const floorGlow = tankContext.createLinearGradient(0, tankBottom - 180, 0, tankBottom);
+  floorGlow.addColorStop(0, "rgba(0, 0, 0, 0)");
+  floorGlow.addColorStop(0.5, "rgba(6, 10, 20, 0.028)");
+  floorGlow.addColorStop(1, "rgba(4, 8, 18, 0.055)");
+  tankContext.fillStyle = floorGlow;
+  tankContext.fillRect(0, Math.max(WATER_SURFACE_Y, tankBottom - 180), TANK_WIDTH, 180);
+  tankContext.restore();
+}
+
+function clearStageDisplaySurfaces() {
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  // Tank and glass are animated and are rebuilt every frame. Grime is a
+  // cached overlay, so clearing it here makes it disappear on every frame where
+  // drawGrime() correctly decides that nothing changed. drawGrime() owns its
+  // own clear/redraw cycle instead.
+  for (const [context, canvas] of [
+    [tankContext, dom.tankCanvas],
+    [glassContext, dom.glassCanvas]
+  ]) {
+    if (!context || !canvas) {
+      continue;
+    }
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (context === tankContext && editAmount > 0.001) {
+      const gradient = context.createRadialGradient(
+        canvas.width * 0.5,
+        canvas.height * 0.38,
+        Math.min(canvas.width, canvas.height) * 0.08,
+        canvas.width * 0.5,
+        canvas.height * 0.5,
+        Math.max(canvas.width, canvas.height) * 0.72
+      );
+      gradient.addColorStop(0, `rgba(6, 24, 39, ${(0.72 * editAmount).toFixed(3)})`);
+      gradient.addColorStop(1, `rgba(1, 7, 14, ${(0.94 * editAmount).toFixed(3)})`);
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    context.restore();
+  }
+}
+
+function getDecorEditTankFrameGeometry() {
+  const floorBounds = getTankFloorDrawBounds();
+  const frameInset = Math.max(2, Math.round(getViewportPxAsTankVirtual(4)));
+  const frameBottom = clamp(
+    Math.round(floorBounds.bottom - getViewportPxAsTankVirtual(2)),
+    frameInset + 72,
+    TANK_HEIGHT - frameInset
+  );
+  return {
+    left: frameInset,
+    top: frameInset,
+    right: TANK_WIDTH - frameInset,
+    bottom: frameBottom,
+    width: TANK_WIDTH - frameInset * 2,
+    height: Math.max(40, frameBottom - frameInset),
+    radius: Math.max(10, Math.round(getViewportPxAsTankVirtual(13)))
+  };
+}
+
+function traceDecorEditRoundedTankPath(context = tankContext) {
+  const frame = getDecorEditTankFrameGeometry();
+  context.beginPath();
+  if (typeof context.roundRect === "function") {
+    context.roundRect(frame.left, frame.top, frame.width, frame.height, frame.radius);
+    return frame;
+  }
+
+  const radius = Math.min(frame.radius, frame.width * 0.5, frame.height * 0.5);
+  context.moveTo(frame.left + radius, frame.top);
+  context.lineTo(frame.right - radius, frame.top);
+  context.quadraticCurveTo(frame.right, frame.top, frame.right, frame.top + radius);
+  context.lineTo(frame.right, frame.bottom - radius);
+  context.quadraticCurveTo(frame.right, frame.bottom, frame.right - radius, frame.bottom);
+  context.lineTo(frame.left + radius, frame.bottom);
+  context.quadraticCurveTo(frame.left, frame.bottom, frame.left, frame.bottom - radius);
+  context.lineTo(frame.left, frame.top + radius);
+  context.quadraticCurveTo(frame.left, frame.top, frame.left + radius, frame.top);
+  context.closePath();
+  return frame;
+}
+
+function drawDecorEditTankBoundary() {
+  const amount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  if (amount <= 0.002) {
+    return;
+  }
+
+  const target = getCurrentTank();
+  const shell = getTankShellBounds(target);
+  const frameWidthPx = getViewportPxAsTankVirtual(13.28125);
+  const waterlineWidthPx = getViewportPxAsTankVirtual(1.4);
+
+  glassContext.save();
+  glassContext.globalAlpha = amount;
+  glassContext.lineJoin = "round";
+  glassContext.lineCap = "round";
+  glassContext.shadowColor = `rgba(123, 223, 255, ${(0.5 * amount).toFixed(3)})`;
+  glassContext.shadowBlur = getViewportPxAsTankVirtual(18);
+
+  if (shell.shape === "rectangular") {
+    const frame = getDecorEditTankFrameGeometry();
+    const frameGradient = glassContext.createLinearGradient(frame.left, frame.top, frame.left, frame.bottom);
+    frameGradient.addColorStop(0, `rgba(245, 252, 255, ${(0.88 + amount * 0.05).toFixed(3)})`);
+    frameGradient.addColorStop(0.15, `rgba(192, 240, 255, ${(0.8 + amount * 0.07).toFixed(3)})`);
+    frameGradient.addColorStop(0.5, `rgba(136, 214, 247, ${(0.74 + amount * 0.08).toFixed(3)})`);
+    frameGradient.addColorStop(0.85, `rgba(104, 186, 230, ${(0.76 + amount * 0.06).toFixed(3)})`);
+    frameGradient.addColorStop(1, `rgba(238, 250, 255, ${(0.86 + amount * 0.05).toFixed(3)})`);
+    glassContext.strokeStyle = frameGradient;
+    glassContext.lineWidth = frameWidthPx;
+    traceDecorEditRoundedTankPath(glassContext);
+    glassContext.stroke();
+  } else {
+    glassContext.strokeStyle = `rgba(214, 246, 255, ${(0.8 + amount * 0.08).toFixed(3)})`;
+    glassContext.lineWidth = frameWidthPx;
+    traceTankShellPath(glassContext, { tank: target, variant: "outer" });
+    glassContext.stroke();
+  }
+
+  glassContext.shadowBlur = getViewportPxAsTankVirtual(7);
+  glassContext.strokeStyle = `rgba(226, 249, 255, ${(0.34 * amount).toFixed(3)})`;
+  glassContext.lineWidth = waterlineWidthPx;
+  glassContext.beginPath();
+  glassContext.moveTo(GLASS_MARGIN_X + getViewportPxAsTankVirtual(14), WATER_SURFACE_Y);
+  glassContext.lineTo(TANK_WIDTH - GLASS_MARGIN_X - getViewportPxAsTankVirtual(14), WATER_SURFACE_Y);
+  glassContext.stroke();
+  glassContext.restore();
+}
+
 function drawDirtyWaterTint(dirtiness = getTankDirtiness(Date.now())) {
   const tintStrength = Math.pow(clamp((Number(dirtiness) - 0.08) / 0.92, 0, 1), 1.18);
   if (tintStrength <= 0.002) {
     return;
   }
 
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const waterTop = Math.max(WATER_SURFACE_Y, visibleBounds.top);
   const waterBottom = Math.min(TANK_HEIGHT, visibleBounds.bottom || TANK_HEIGHT);
   const gradient = tankContext.createLinearGradient(0, waterTop, 0, waterBottom);
@@ -320,6 +848,12 @@ function getTankShellBounds(target = getCurrentTank()) {
 }
 
 function clipToTankShellBounds(context = tankContext, target = getCurrentTank(), variant = "inner") {
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  if (!isBowlTank(target) && editAmount > 0.002) {
+    traceDecorEditRoundedTankPath(context);
+    context.clip();
+    return;
+  }
   traceTankShellPath(context, { tank: target, variant });
   context.clip();
 }
@@ -334,11 +868,19 @@ function drawTankBackdrop() {
     tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
     return;
   }
+
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  tankContext.save();
+  if (editAmount > 0.002) {
+    traceDecorEditRoundedTankPath(tankContext);
+    tankContext.clip();
+  }
   const background = tankContext.createLinearGradient(0, 0, 0, TANK_HEIGHT);
   background.addColorStop(0, "#09121d");
   background.addColorStop(1, "#03080f");
   tankContext.fillStyle = background;
   tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  tankContext.restore();
 }
 
 function drawBackground(now = Date.now()) {
@@ -554,21 +1096,21 @@ function drawWaterFilter(now) {
   const filterScale = getViewportStableObjectScale("hardware");
   const filterDrawWidth = FILTER_DRAW_BASE_WIDTH * filterScale;
   const filterDrawHeight = FILTER_DRAW_BASE_HEIGHT * filterScale;
-  const streamDistance = getViewportPxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
+  const streamDistance = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
   const spoutLipOffset = 8 * filterScale;
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const groupWidth = streamDistance + filterDrawWidth - spoutLipOffset;
-  const desiredGroupRightX = visibleBounds.right - getViewportPxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
-  const minGroupRightX = visibleBounds.left + groupWidth + getViewportPxAsTankVirtual(8);
-  const maxGroupRightX = visibleBounds.right - getViewportPxAsTankVirtual(8);
+  const desiredGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
+  const minGroupRightX = visibleBounds.left + groupWidth + getScenePxAsTankVirtual(8);
+  const maxGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(8);
   const groupRightX = clamp(desiredGroupRightX, Math.min(minGroupRightX, maxGroupRightX), maxGroupRightX);
   const groupLeftX = groupRightX - groupWidth;
   const spoutX = groupLeftX + streamDistance;
-  const outletX = spoutX + getViewportPxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
+  const outletX = spoutX + getScenePxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
   const filterDrawX = spoutX - spoutLipOffset;
   const filterDrawY = visibleBounds.top;
   // Anchor the flow to the rendered outlet nozzle rather than the full image bounds.
-  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getViewportPxAsTankVirtual(14);
+  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getScenePxAsTankVirtual(14);
   const flowIntensity = 0.86 + filterProfile.flow * 0.22;
   const flowActive = isFilterBubbleFlowActive(now);
 
@@ -584,7 +1126,7 @@ function drawWaterFilter(now) {
     tankContext.clip();
 
     const bubbleCount = 18 + Math.round(filterProfile.flow * 6);
-    const streamRise = getViewportPxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX);
+    const streamRise = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX);
     for (let index = 0; index < bubbleCount; index += 1) {
       const lane = index % 4;
       const phase = ((now / (150 + lane * 20)) + index * 0.14) % 1;
@@ -592,10 +1134,10 @@ function drawWaterFilter(now) {
       const riseProgress = clamp((phase - 0.68) / 0.32, 0, 1);
       const riseEase = 1 - (1 - riseProgress) * (1 - riseProgress);
       const fadeOut = 1 - riseEase;
-      const x = outletX - drift + Math.sin(now / 170 + index * 1.7) * getViewportPxAsTankVirtual(1.6 + lane * 0.35);
+      const x = outletX - drift + Math.sin(now / 170 + index * 1.7) * getScenePxAsTankVirtual(1.6 + lane * 0.35);
       const y = outletY
-        + (lane - 1.5) * getViewportPxAsTankVirtual(2.3)
-        + Math.sin(now / 210 + index * 1.35) * getViewportPxAsTankVirtual(0.95)
+        + (lane - 1.5) * getScenePxAsTankVirtual(2.3)
+        + Math.sin(now / 210 + index * 1.35) * getScenePxAsTankVirtual(0.95)
         - streamRise * riseEase;
       const radius = 2.2 + (index % 3) * 0.7 + filterProfile.flow * 0.22;
       const alpha = (0.16 + (1 - phase) * 0.38 * flowIntensity) * fadeOut;
@@ -607,14 +1149,14 @@ function drawWaterFilter(now) {
       const riseProgress = clamp((pulse - 0.68) / 0.32, 0, 1);
       const riseEase = 1 - (1 - riseProgress) * (1 - riseProgress);
       const x = outletX - pulse * streamDistance;
-      const y = outletY + Math.sin(now / 150 + index * 1.2) * getViewportPxAsTankVirtual(1.1) - streamRise * riseEase;
+      const y = outletY + Math.sin(now / 150 + index * 1.2) * getScenePxAsTankVirtual(1.1) - streamRise * riseEase;
       tankContext.fillStyle = `rgba(214, 247, 255, ${((0.07 + (1 - pulse) * 0.12) * (1 - riseEase)).toFixed(3)})`;
       tankContext.beginPath();
       tankContext.ellipse(
         x,
         y,
-        getViewportPxAsTankVirtual(1.8 + pulse * 1.6),
-        getViewportPxAsTankVirtual(0.9 + pulse * 0.62),
+        getScenePxAsTankVirtual(1.8 + pulse * 1.6),
+        getScenePxAsTankVirtual(0.9 + pulse * 0.62),
         0,
         0,
         Math.PI * 2
@@ -641,26 +1183,26 @@ function getWaterFilterFlowDescriptor(now = Date.now()) {
   const filterScale = getViewportStableObjectScale("hardware");
   const filterDrawWidth = FILTER_DRAW_BASE_WIDTH * filterScale;
   const filterDrawHeight = FILTER_DRAW_BASE_HEIGHT * filterScale;
-  const streamDistance = getViewportPxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
+  const streamDistance = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
   const spoutLipOffset = 8 * filterScale;
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const groupWidth = streamDistance + filterDrawWidth - spoutLipOffset;
-  const desiredGroupRightX = visibleBounds.right - getViewportPxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
-  const minGroupRightX = visibleBounds.left + groupWidth + getViewportPxAsTankVirtual(8);
-  const maxGroupRightX = visibleBounds.right - getViewportPxAsTankVirtual(8);
+  const desiredGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
+  const minGroupRightX = visibleBounds.left + groupWidth + getScenePxAsTankVirtual(8);
+  const maxGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(8);
   const groupRightX = clamp(desiredGroupRightX, Math.min(minGroupRightX, maxGroupRightX), maxGroupRightX);
   const groupLeftX = groupRightX - groupWidth;
   const spoutX = groupLeftX + streamDistance;
-  const outletX = spoutX + getViewportPxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
+  const outletX = spoutX + getScenePxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
   const filterDrawX = spoutX - spoutLipOffset;
   const filterDrawY = visibleBounds.top;
-  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getViewportPxAsTankVirtual(14);
+  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getScenePxAsTankVirtual(14);
 
   return {
     outletX,
     outletY,
     streamDistance,
-    streamRise: getViewportPxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX),
+    streamRise: getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX),
     intakeX: filterDrawX + filterDrawWidth * 0.58,
     intakeY: filterDrawY + filterDrawHeight * 0.78,
     flow: filterProfile.flow,
@@ -688,7 +1230,7 @@ function ensureWaterParticles(now = Date.now()) {
 
   const seed = hashStringToUint32(`${tankId}|${tank?.gravelSeed || 1}|water-particles`);
   const rand = mulberry32(seed ^ 0x2f6e2b1);
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const waterTop = Math.max(WATER_SURFACE_Y + 10, visibleBounds.top);
   const waterBottom = Math.min(getVisibleTankFloorBottomY() - 12, visibleBounds.bottom || TANK_HEIGHT);
   const visibleCount = getWaterParticleVisibleCount(now);
@@ -713,7 +1255,11 @@ function ensureWaterParticles(now = Date.now()) {
       stretch: randomBetweenWith(rand, 0.68, 1.42),
       alphaScale: randomBetweenWith(rand, 0.72, 1.24),
       visibility: index < visibleCount ? 1 : 0,
-      streak: index % 5 === 0
+      streak: index % 5 === 0,
+      hazeLength: randomBetweenWith(rand, 8, 28),
+      hazeWidth: randomBetweenWith(rand, 0.55, 1.45),
+      hazeAlpha: randomBetweenWith(rand, 0.035, 0.085),
+      hazeTilt: randomBetweenWith(rand, -0.42, 0.42)
     };
   });
 }
@@ -1063,7 +1609,7 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
 
   ensureWaterParticles(now);
   const boundedDelta = clamp(Number(deltaSeconds) || 0.016, 0.001, 0.05);
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const waterTop = Math.max(WATER_SURFACE_Y + 8, visibleBounds.top - 12);
   const waterBottom = Math.min(getVisibleTankFloorBottomY() - 8, visibleBounds.bottom + 12);
   const left = Math.max(GLASS_MARGIN_X, visibleBounds.left - 18);
@@ -1098,8 +1644,9 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
     applyFilterForceToParticle(particle, filterFlow, boundedDelta);
     applyFishForceToParticle(particle, fishFields, boundedDelta);
 
-    particle.x += (particle.vx + shimmer * 2.4 * (1 - dirtiness * 0.35)) * cloudyDrift * boundedDelta;
-    particle.y += particle.vy * cloudyDrift * boundedDelta;
+    const depthMotionScale = 0.72 + particle.depth * 0.56;
+    particle.x += (particle.vx + shimmer * 2.4 * (1 - dirtiness * 0.35)) * cloudyDrift * boundedDelta * depthMotionScale;
+    particle.y += particle.vy * cloudyDrift * boundedDelta * depthMotionScale;
     particle.vx *= Math.pow(0.38, boundedDelta);
     particle.vy *= Math.pow(0.42, boundedDelta);
 
@@ -1129,6 +1676,55 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
       particle.spriteIndex = Math.floor(randomBetween(0, WATER_PARTICLE_ASSET_PATHS.length));
     }
   }
+}
+
+function drawWaterAtmosphereStreak(context, particle, now, visibility, dirtiness) {
+  if (!particle?.streak || visibility <= 0.02) {
+    return;
+  }
+
+  const pulse = 0.5 + Math.sin(
+    (Number(now) || 0) / (2800 + particle.depth * 2200) + particle.phase * 1.7
+  ) * 0.5;
+  const presence = Math.pow(clamp((pulse - 0.16) / 0.84, 0, 1), 1.7);
+  if (presence <= 0.02) {
+    return;
+  }
+
+  const depthScale = 0.72 + particle.depth * 0.68;
+  const length = Math.max(5, (Number(particle.hazeLength) || 14) * depthScale);
+  const width = Math.max(0.45, (Number(particle.hazeWidth) || 0.9) * (0.82 + particle.depth * 0.42));
+  const alpha = clamp(
+    (Number(particle.hazeAlpha) || 0.05)
+      * presence
+      * visibility
+      * (0.72 + particle.depth * 0.46)
+      * (0.92 + dirtiness * 0.24),
+    0,
+    0.095
+  );
+  if (alpha <= 0.004) {
+    return;
+  }
+
+  const angle = (Number(particle.hazeTilt) || 0)
+    + Math.sin((Number(now) || 0) / 5200 + particle.phase) * 0.08;
+
+  context.save();
+  context.translate(particle.x, particle.y);
+  context.rotate(angle);
+  context.scale(length, width);
+  context.globalCompositeOperation = "screen";
+  context.filter = "blur(1.35px)";
+  const gradient = context.createRadialGradient(0, 0, 0.02, 0, 0, 1);
+  gradient.addColorStop(0, `rgba(225, 244, 255, ${alpha.toFixed(4)})`);
+  gradient.addColorStop(0.34, `rgba(210, 236, 252, ${(alpha * 0.56).toFixed(4)})`);
+  gradient.addColorStop(1, "rgba(198, 226, 248, 0)");
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, 1, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
 }
 
 function drawWaterParticles(now = Date.now(), layer = null) {
@@ -1178,6 +1774,8 @@ function drawWaterParticles(now = Date.now(), layer = null) {
       : null;
     const drawWidth = size * (particle.stretch || 1);
     const drawHeight = size * (renderSprite?.height && renderSprite?.width ? renderSprite.height / Math.max(1, renderSprite.width) : 1);
+
+    drawWaterAtmosphereStreak(tankContext, particle, now, visibility, dirtiness);
 
     if (uvActive && particle.uvReactive) {
       tankContext.shadowColor = formatRgba(color, alpha * 2.2);

@@ -317,12 +317,18 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "cherry-barb": { group: "small-social", personalities: ["social", "shy", "follower", "gentle"], rare: ["curious", "routine-loving", "bold"] },
   "neon-tetra": { group: "small-social", personalities: ["social", "follower", "routine-loving", "shy"], rare: ["curious", "nervous", "night-active"] },
   "celestial-pearl-danio": { group: "small-social", personalities: ["shy", "curious", "nervous", "social"], rare: ["follower", "night-active", "routine-loving"] },
+  "chili-rasbora": { group: "small-social", personalities: ["shy", "social", "follower", "nervous"], rare: ["curious", "routine-loving", "gentle"] },
+  "ember-tetra": { group: "small-social", personalities: ["gentle", "social", "follower", "shy"], rare: ["curious", "routine-loving", "nervous"] },
+  "harlequin-rasbora": { group: "small-social", personalities: ["social", "explorer", "follower", "routine-loving"], rare: ["bold", "curious", "gentle"] },
+  "pencilfish": { group: "small-social", personalities: ["social", "display", "curious", "standoffish"], rare: ["follower", "shy", "routine-loving"] },
+  "rummy-nose-tetra": { group: "small-social", personalities: ["social", "follower", "routine-loving", "nervous"], rare: ["curious", "shy", "explorer"] },
   "otocinclus": { group: "bottom-cleaner", personalities: ["cleaner", "homebody", "night-active", "shy"], rare: ["curious", "sensitive", "digger"], nightActive: true, detritusDiet: true },
   "loach": { group: "bottom-cleaner", personalities: ["digger", "explorer", "cleaner", "night-active"], rare: ["social", "homebody", "curious"], nightActive: true },
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
   "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true }
 });
+const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
 const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
   "open-water-cruiser": ["bold", "explorer", "social", "routine-loving", "curious", "greedy"],
   "slow-graceful": ["display", "gentle", "sensitive", "homebody", "territorial", "routine-loving", "curious"],
@@ -366,6 +372,11 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "neon-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator", "large_fish"] },
   "cherry-barb": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator"] },
   "celestial-pearl-danio": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "large_fish", "aggressive_predator"] },
+  "chili-rasbora": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
+  "ember-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
+  "harlequin-rasbora": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "pencilfish": { mealCoins: 1, unlock: null, needs: ["surface_cover", "school_2_plus"], conflicts: ["aggressive_predator", "fast_eater"] },
+  "rummy-nose-tetra": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
   "moor-goldfish": { mealCoins: 1, unlock: "first-care", needs: ["open_water", "hardscape"], conflicts: ["sharp_decor", "fin_nipper", "overcrowded"] },
   "otocinclus": { mealCoins: 0, unlock: "first-care", needs: ["seaweed_algae", "plants"], conflicts: ["aggressive_predator", "large_fish"] },
   "molly": { mealCoins: 1, unlock: "first-care", needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
@@ -403,7 +414,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Stable Tank",
     requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
     reward: 8,
-    unlocks: ["loach", "swordtail", "betta", "blue-ram", "piranha"],
+    unlocks: ["swordtail", "betta", "blue-ram", "piranha"],
     decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
     progress: (stats) => [
@@ -810,6 +821,10 @@ const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
 const CARE_TASK_COMPLETE_HOLD_MS = 2200;
 const DEFAULT_THEME = "dark";
+// Location selectors are intentionally disabled in the current UI. Keep the
+// underlying settings code available so the feature can be restored later.
+const TOOLBAR_POSITION_SETTING_ENABLED = false;
+const DISPLAY_POSITION_SETTING_ENABLED = false;
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false
 });
@@ -831,8 +846,11 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   tankMouseInputLocked: false,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
+  causticLightingEnabled: true,
+  decorShadowsEnabled: true,
   uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY,
-  halloweenMode: HALLOWEEN_MODE_AUTOMATIC
+  halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
+  editOverlayMode: "fish"
 });
 const CUSTOM_IMAGE_BACKGROUND_ASSET_KEY = "__custom-image-background__";
 const CUSTOM_DECOR_SHOP_KEY = "__custom-decor-shop__";
@@ -1269,12 +1287,13 @@ const CAVE_ENTRY_SIDE_OPTIONS = Object.freeze([
   { id: "both", label: "Both" }
 ]);
 const OPTIONAL_BUBBLE_ORB_ASSET_PATH = "assets/misc/bubble.png";
+const CAUSTIC_LIGHT_ASSET_PATH = resolveAppUrl("assets/misc/caustic_light.png");
 const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
 const PORTABLE_PERFORMANCE_MAX_FPS = 30;
 const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 96;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 24;
+const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
 const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 96;
 const PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT = 18;
 const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 32;
@@ -1351,6 +1370,17 @@ const SUCKER_FISH_COLLISION_PADDING_PX = 4;
 const SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES = Object.freeze({
   otocinclus: "assets/fish/otocinclus_bottom.png"
 });
+const SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES = Object.freeze({
+  otocinclus: "assets/fish/otocinclus_side.png"
+});
+const SUCKER_FISH_FREE_SWIM_DISTANCE_NORM = 0.3;
+const SUCKER_FISH_FREE_SWIM_GRIME_DISTANCE_NORM = 0.26;
+const SUCKER_FISH_FREE_SWIM_ARRIVAL_DISTANCE_NORM = 0.028;
+const SUCKER_FISH_FREE_SWIM_SPEED_MIN = 0.022;
+const SUCKER_FISH_FREE_SWIM_SPEED_MAX = 0.03;
+const SUCKER_FISH_FREE_SWIM_MIN_DURATION_MS = 1700;
+const SUCKER_FISH_FREE_SWIM_MAX_DURATION_MS = 7200;
+const SUCKER_FISH_FREE_SWIM_LAYER = 3;
 const FISH_SURFACE_BREACH_ALLOWANCE_PX = 6;
 const FISH_SURFACE_MOTION_HEADROOM_PX = 10;
 const FISH_SURFACE_HEIGHT_GUARD_MULTIPLIER = 1.08;
@@ -1469,7 +1499,7 @@ const FISH_GRAVEL_DIG_COOLDOWN_MIN_MS = 9000;
 const FISH_GRAVEL_DIG_COOLDOWN_MAX_MS = 18000;
 const FORCED_GRAVEL_DIG_TIMEOUT_MS = 9000;
 const WATER_PARTICLE_COUNT = 180;
-const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
+const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 44;
 const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 180;
 const WATER_PARTICLE_FISH_FORCE_RADIUS_PX = 90;
 const WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX = 74;
@@ -2380,6 +2410,15 @@ const dom = {
   editFishTrayContextMenu: document.querySelector("#editFishTrayContextMenu"),
   editFishTrayPrev: document.querySelector("#editFishTrayPrev"),
   editFishTrayNext: document.querySelector("#editFishTrayNext"),
+  editTankTray: document.querySelector("#editTankTray"),
+  closeEditTankTrayButton: document.querySelector("#closeEditTankTrayButton"),
+  editTankTrayScroller: document.querySelector("#editTankTrayScroller"),
+  editTankBackgroundColorPanel: document.querySelector("#editTankBackgroundColorPanel"),
+  editTankBackgroundList: document.querySelector("#editTankBackgroundList"),
+  editTankCustomGravelPanel: document.querySelector("#editTankCustomGravelPanel"),
+  editTankFilterSection: document.querySelector("#editTankFilterSection"),
+  editTankFilterList: document.querySelector("#editTankFilterList"),
+  editTankUvLightList: document.querySelector("#editTankUvLightList"),
   foodTray: document.querySelector("#foodTray"),
   foodTrayScroller: document.querySelector("#foodTrayScroller"),
   foodTrayPrev: document.querySelector("#foodTrayPrev"),
@@ -2460,6 +2499,8 @@ const dom = {
   uiMuteToggleInput: document.querySelector("#uiMuteToggleInput"),
   ambientBubblesToggleInput: document.querySelector("#ambientBubblesToggleInput"),
   waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
+  causticLightingToggleInput: document.querySelector("#causticLightingToggleInput"),
+  decorShadowsToggleInput: document.querySelector("#decorShadowsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
   uvLightQualitySelect: document.querySelector("#uvLightQualitySelect"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
@@ -2605,6 +2646,9 @@ const runtime = {
   editDecorTrayInTank: false,
   fishEditMode: false,
   fishEditTrayTab: "tank",
+  editOverlayMode: "fish",
+  tankEditMode: false,
+  editTankTrayTab: "background",
   foodTrayOpen: false,
   medicineTrayOpen: false,
   feedingModeFoodKey: "",
@@ -2758,6 +2802,8 @@ const runtime = {
   stageRenderScale: 1,
   stageRenderOffsetX: 0,
   stageRenderOffsetY: 0,
+  stageEditViewAmount: 0,
+  stageRenderViewLastFrameAt: 0,
   playfield: {
     scale: 1,
     left: 0,

@@ -425,26 +425,49 @@ function getTransitTubeTravelPoints(tube) {
   const bounds = getPlacedDecorBounds(tube);
   if (!tube || !bounds) {
     const xNorm = clamp(Number(tube?.xNorm) || 0.5, 0.05, 0.95);
-    const openingYNorm = clamp((Number(tube?.yNorm) || 0.5) - 0.16, 0.08, 0.88);
+    const flippedY = isDecorVerticallyFlipped(tube);
+    const openingYNorm = clamp((Number(tube?.yNorm) || 0.5) + (flippedY ? 0.16 : -0.16), 0.08, 0.88);
+    const travelDirection = flippedY ? -1 : 1;
     return {
       opening: { xNorm, yNorm: openingYNorm },
-      inside: { xNorm, yNorm: clamp(openingYNorm + 0.07, 0.1, 0.9) },
-      exit: { xNorm, yNorm: clamp(openingYNorm - 0.07, 0.08, 0.84) },
-      below: { xNorm, yNorm: clamp(openingYNorm + 0.3, 0.2, 1.08) },
+      inside: { xNorm, yNorm: clamp(openingYNorm + travelDirection * 0.07, 0.08, 0.92) },
+      exit: { xNorm, yNorm: openingYNorm - travelDirection * 0.07 },
+      below: { xNorm, yNorm: openingYNorm + travelDirection * 0.3 },
       openingRadiusPx: 34
     };
   }
+
   const width = Math.max(1, bounds.right - bounds.left);
   const height = Math.max(1, bounds.bottom - bounds.top);
   const xNorm = clamp((bounds.left + width / 2) / TANK_WIDTH, 0.05, 0.95);
-  // The replacement sprite is a straight, open glass cylinder. Its rim center
-  // sits about 5.5% down from the top of its rendered bounds.
-  const openingYNorm = clamp((bounds.top + height * 0.055) / TANK_HEIGHT, 0.08, 0.88);
+  const flippedY = isDecorVerticallyFlipped(tube);
+
+  // The transit-tube sprite is a straight cylinder whose usable opening is at
+  // the TOP of the source image. Vertical flipping moves that image-top to the
+  // bottom of the placed sprite, so the entire fish transit path must flip too.
+  // Source travel always runs from image-top through image-bottom and beyond.
+  const openingY = flippedY
+    ? bounds.bottom - height * 0.055
+    : bounds.top + height * 0.055;
+  const insideY = flippedY
+    ? bounds.bottom - height * 0.3
+    : bounds.top + height * 0.3;
+  const farOutsideDistance = Math.max(55, height * 0.22);
+  const farOutsideY = flippedY
+    ? bounds.top - farOutsideDistance
+    : bounds.bottom + farOutsideDistance;
+  const openingOutsideY = flippedY
+    ? bounds.bottom + farOutsideDistance
+    : bounds.top - farOutsideDistance;
+
   return {
-    opening: { xNorm, yNorm: openingYNorm },
-    inside: { xNorm, yNorm: clamp((bounds.top + height * 0.3) / TANK_HEIGHT, 0.1, 0.9) },
-    exit: { xNorm, yNorm: (bounds.top - Math.max(55, height * 0.22)) / TANK_HEIGHT },
-    below: { xNorm, yNorm: (bounds.bottom + Math.max(55, height * 0.22)) / TANK_HEIGHT },
+    opening: { xNorm, yNorm: openingY / TANK_HEIGHT },
+    inside: { xNorm, yNorm: insideY / TANK_HEIGHT },
+    // Destination fish travels from the far end of the tube back out through
+    // the image-top opening. These points therefore reverse automatically when
+    // the decor is vertically flipped.
+    exit: { xNorm, yNorm: openingOutsideY / TANK_HEIGHT },
+    below: { xNorm, yNorm: farOutsideY / TANK_HEIGHT },
     openingRadiusPx: clamp(width * 0.26, 26, 58)
   };
 }
@@ -744,11 +767,7 @@ function drawBoroughStructureActivityEffects(now = Date.now()) {
     tankContext.save();
     tankContext.globalAlpha = (isPortablePerformanceModeActive() ? 0.22 : 0.38) + pulse * 0.12;
     if (services.includes("clinic")) {
-      tankContext.strokeStyle = "#9dfff1";
-      tankContext.lineWidth = 4;
-      tankContext.beginPath();
-      tankContext.arc(x, y, 26 + pulse * 10, 0, Math.PI * 2);
-      tankContext.stroke();
+      // Clinic activity remains functional, but no pulsing ring is drawn in the tank.
     } else if (services.includes("rest")) {
       const glow = tankContext.createRadialGradient(x, y, 2, x, y, 58);
       glow.addColorStop(0, "rgba(173,139,255,.5)");

@@ -301,6 +301,7 @@ function buyInspectorFish() {
 function getFishInspectorBehaviorProfiles() {
   return runtime.fishCatalog.filter((species) => (
     species
+    && !HIDDEN_FISH_OPTION_IDS.has(species.id)
     && !species.customUploadProduct
     && !isCustomFishShopKey(species.id)
     && !isCustomFishAssetKey(species.id)

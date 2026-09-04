@@ -123,7 +123,11 @@ function renderBackgrounds() {
     );
   }
 
-  if (dom.equipmentBackgroundList) {
+  const equipmentBackgroundContainers = [
+    ["equipment-background-list", dom.equipmentBackgroundList],
+    ["edit-tank-background-list", dom.editTankBackgroundList]
+  ].filter(([, container]) => container);
+  if (equipmentBackgroundContainers.length) {
     const localImageReady = hasLocalBackgroundImage();
     const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
     const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
@@ -153,17 +157,22 @@ function renderBackgrounds() {
         && !isLocalImageBackgroundKey(background.key)
       ))
     )}`;
-    setMarkupIfChanged(
-      "equipment-background-list",
-      dom.equipmentBackgroundList,
-      equipmentMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
-    );
+    for (const [cacheKey, container] of equipmentBackgroundContainers) {
+      setMarkupIfChanged(
+        cacheKey,
+        container,
+        equipmentMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
+      );
+    }
   }
 }
 
 function renderSolidBackgroundControls() {
-  const container = dom.equipmentBackgroundColorPanel;
-  if (!container) {
+  const containers = [
+    ["equipment-background-color-panel", dom.equipmentBackgroundColorPanel],
+    ["edit-tank-background-color-panel", dom.editTankBackgroundColorPanel]
+  ].filter(([, container]) => container);
+  if (!containers.length) {
     return;
   }
 
@@ -366,17 +375,21 @@ function renderSolidBackgroundControls() {
     </div>
   `;
 
-  setMarkupIfChanged("equipment-background-color-panel", container, markup);
+  for (const [cacheKey, container] of containers) {
+    setMarkupIfChanged(cacheKey, container, markup);
+  }
 }
 
 function renderFilterAssets() {
   if (!ENABLE_FILTER) {
     setMarkupIfChanged("scene-assets-filter", dom.filterAssetList, "");
     setMarkupIfChanged("equipment-scene-assets-filter", dom.equipmentFilterList, "");
+    setMarkupIfChanged("edit-tank-scene-assets-filter", dom.editTankFilterList, "");
     return;
   }
   renderSceneAssetCards(dom.filterAssetList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped");
   renderSceneAssetCards(dom.equipmentFilterList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped", "equipment-filter-assets");
+  renderSceneAssetCards(dom.editTankFilterList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped", "edit-tank-filter-assets");
 }
 
 function syncFilterFeatureVisibility() {
@@ -390,11 +403,17 @@ function syncFilterFeatureVisibility() {
   if (dom.equipmentFilterSection instanceof HTMLElement) {
     dom.equipmentFilterSection.hidden = !showFilterPanels;
   }
+  if (dom.editTankFilterSection instanceof HTMLElement) {
+    dom.editTankFilterSection.hidden = !showFilterPanels || runtime.editTankTrayTab !== "equipment";
+  }
   if (dom.filterAssetList instanceof HTMLElement) {
     dom.filterAssetList.hidden = !filterEnabled;
   }
   if (dom.equipmentFilterList instanceof HTMLElement) {
     dom.equipmentFilterList.hidden = !filterEnabled;
+  }
+  if (dom.editTankFilterList instanceof HTMLElement) {
+    dom.editTankFilterList.hidden = !filterEnabled;
   }
   if (dom.tankFilterSectionTitle) {
     dom.tankFilterSectionTitle.textContent = filterEnabled ? "Filter" : "Lighting";
@@ -426,7 +445,8 @@ function syncFilterFeatureVisibility() {
 function renderUvLightControls() {
   const containers = [
     ["uv-light-controls", dom.uvLightList],
-    ["equipment-uv-light-controls", dom.equipmentUvLightList]
+    ["equipment-uv-light-controls", dom.equipmentUvLightList],
+    ["edit-tank-uv-light-controls", dom.editTankUvLightList]
   ].filter(([, container]) => container);
   if (!containers.length) {
     return;
@@ -471,7 +491,8 @@ function renderUvLightControls() {
 function renderCustomGravelControls() {
   const containers = [
     ["custom-gravel-panel", dom.customGravelPanel],
-    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel]
+    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel],
+    ["edit-tank-custom-gravel-panel", dom.editTankCustomGravelPanel]
   ].filter(([, container]) => container);
   if (!containers.length) {
     return;
@@ -727,26 +748,35 @@ function renderControls(now) {
   dom.scoopButton?.classList.toggle("is-active", runtime.scoopMode);
   dom.feedButton.classList.toggle("is-active", runtime.foodTrayOpen || Boolean(runtime.feedingModeFoodKey));
   dom.medicineButton?.classList.toggle("is-active", runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey));
-  dom.openEquipmentButton?.classList.toggle("is-active", runtime.equipmentOverlayOpen);
+  dom.openEquipmentButton?.classList.toggle("is-active", runtime.equipmentOverlayOpen || runtime.tankEditMode);
   dom.openSettingsButton?.classList.toggle("is-active", runtime.settingsOverlayOpen);
   dom.openManagementButton?.classList.toggle("is-active", runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management");
   dom.careTaskPaneButton?.classList.toggle("is-active", getUiSettings().careTaskPaneOpen === true);
   dom.toggleMouseLockButton?.classList.toggle("is-active", isTankMouseInputLocked());
-  const toolbarCareMenuOpen = runtime.toolbarActionMenu === "care";
-  const toolbarEditMenuOpen = runtime.toolbarActionMenu === "edit";
+  // Legacy popup care submenu is intentionally disabled. Care opens the same
+  // horizontal tray used for medicine, scrub, and scoop controls.
+  const toolbarCareMenuOpen = false;
+  if (runtime.toolbarActionMenu === "care") {
+    runtime.toolbarActionMenu = "";
+  }
+  const toolbarEditMenuOpen = false;
+  if (runtime.toolbarActionMenu === "edit") {
+    runtime.toolbarActionMenu = "";
+  }
   const careToolActive = runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey) || runtime.cleaningMode || runtime.scoopMode;
-  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentOverlayOpen;
+  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode || runtime.equipmentOverlayOpen;
   if (dom.toolbarCareMenu) {
     dom.toolbarCareMenu.hidden = !toolbarCareMenuOpen;
   }
   if (dom.toolbarEditMenu) {
-    dom.toolbarEditMenu.hidden = !toolbarEditMenuOpen;
+    dom.toolbarEditMenu.hidden = true;
+    dom.toolbarEditMenu.setAttribute("aria-hidden", "true");
   }
   dom.careMenuButton?.classList.toggle("is-active", toolbarCareMenuOpen || careToolActive);
   dom.editMenuButton?.classList.toggle("is-active", toolbarEditMenuOpen || editToolActive);
-  dom.careMenuButton?.setAttribute("aria-expanded", String(toolbarCareMenuOpen));
-  dom.editMenuButton?.setAttribute("aria-expanded", String(toolbarEditMenuOpen));
-  dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu || dom.toolbarEditMenu) && (toolbarCareMenuOpen || toolbarEditMenuOpen));
+  dom.careMenuButton?.setAttribute("aria-expanded", String(runtime.medicineTrayOpen));
+  dom.editMenuButton?.setAttribute("aria-expanded", "false");
+  dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu) && toolbarCareMenuOpen);
   if (dom.lightsOutToggleButton) {
     const override = getLightsOutOverride();
     const active = isTankLightsOut(now);
@@ -802,8 +832,9 @@ function renderControls(now) {
     dom.displayTab.setAttribute("aria-pressed", String(displayCollapsed));
   }
   if (dom.openEquipmentButton) {
-    dom.openEquipmentButton.title = runtime.equipmentOverlayOpen ? "Edit Tank (Open)" : "Edit Tank";
-    dom.openEquipmentButton.setAttribute("aria-label", runtime.equipmentOverlayOpen ? "Edit Tank open" : "Edit Tank");
+    const tankEditorOpen = runtime.equipmentOverlayOpen || runtime.tankEditMode;
+    dom.openEquipmentButton.title = tankEditorOpen ? "Edit Tank (Active)" : "Edit Tank";
+    dom.openEquipmentButton.setAttribute("aria-label", tankEditorOpen ? "Edit Tank active" : "Edit Tank");
   }
   if (dom.openSettingsButton) {
     dom.openSettingsButton.title = runtime.settingsOverlayOpen ? "Settings (Open)" : "Settings";
@@ -903,6 +934,8 @@ function renderControls(now) {
       ? "grabbing"
       : (runtime.editTankMode || runtime.fishEditMode)
         ? "grab"
+        : runtime.tankEditMode
+          ? "default"
         : "default";
   syncToolbarFastTooltipExperiment();
   renderToolCursor();
@@ -1017,6 +1050,7 @@ function animationLoop(frameTime) {
   updateFishMotion(now, deltaSeconds);
   syncDebugFishBehaviorBroadcast(now);
   updateWaterLifeEffects(now, deltaSeconds);
+  updateStageRenderView(frameTime);
   renderTank(now);
   renderFishActionQueueDock(now);
   updateSelectedDecorActionButtons();

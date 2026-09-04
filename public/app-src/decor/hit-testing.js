@@ -1,8 +1,34 @@
 // Source fragment: decor/hit-testing.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
-function isFreeDecorPlacementEnabled(targetTank = getCurrentTank()) {
-  return targetTank?.freeDecorPlacement === true;
+function isFreeDecorPlacementEnabled(target = getCurrentTank(), options = {}) {
+  if (target && typeof target === "object") {
+    if (Object.prototype.hasOwnProperty.call(target, "freePlacementEnabled")) {
+      return target.freePlacementEnabled === true;
+    }
+    if (Object.prototype.hasOwnProperty.call(target, "freeDecorPlacement")) {
+      return target.freeDecorPlacement === true;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(options, "freePlacementEnabled")) {
+    return options.freePlacementEnabled === true;
+  }
+
+  return false;
+}
+
+function getResolvedDecorFreePlacementEnabled(options = {}) {
+  if (options.item && Object.prototype.hasOwnProperty.call(options.item, "freePlacementEnabled")) {
+    return options.item.freePlacementEnabled === true;
+  }
+  if (Object.prototype.hasOwnProperty.call(options, "freePlacementEnabled")) {
+    return options.freePlacementEnabled === true;
+  }
+  if (runtime.placementMode && Object.prototype.hasOwnProperty.call(runtime.placementMode, "freePlacementEnabled")) {
+    return runtime.placementMode.freePlacementEnabled === true;
+  }
+  return isFreeDecorPlacementEnabled(options.tank || getCurrentTank());
 }
 
 function isDecorExemptFromGravity(decorOrKey) {
@@ -12,7 +38,7 @@ function isDecorExemptFromGravity(decorOrKey) {
 
 function shouldApplyDecorPlacementGravity(decorKey, options = {}) {
   return options.applyGravity === true
-    && !isFreeDecorPlacementEnabled(options.tank || getCurrentTank())
+    && !getResolvedDecorFreePlacementEnabled(options)
     && !isDecorExemptFromGravity(options.item || decorKey);
 }
 

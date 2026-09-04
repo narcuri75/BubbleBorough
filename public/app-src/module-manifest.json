@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 47,
-  "functionCount": 2516,
+  "functionCount": 2553,
   "modules": [
     {
       "path": "borough/living-borough.js",
@@ -117,7 +117,7 @@
     },
     {
       "path": "ui/tool-modes-and-debug-panels.js",
-      "functionCount": 80,
+      "functionCount": 86,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -151,7 +151,7 @@
     },
     {
       "path": "assets/custom-content.js",
-      "functionCount": 106,
+      "functionCount": 110,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -172,6 +172,7 @@
         "fish/predators-and-motion.js",
         "fish/undead-and-appearance.js",
         "rendering/gravel-and-effects.js",
+        "rendering/tank-and-water.js",
         "store/catalog.js",
         "store/purchases.js",
         "tank/appearance-controls.js",
@@ -213,7 +214,7 @@
     },
     {
       "path": "fish/undead-and-appearance.js",
-      "functionCount": 81,
+      "functionCount": 84,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -273,7 +274,7 @@
     },
     {
       "path": "decor/layout-and-layers.js",
-      "functionCount": 102,
+      "functionCount": 105,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -439,7 +440,7 @@
     },
     {
       "path": "fish/actions.js",
-      "functionCount": 71,
+      "functionCount": 72,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/utilities.js",
@@ -784,7 +785,7 @@
     },
     {
       "path": "ui/customization-actions-and-inventory.js",
-      "functionCount": 93,
+      "functionCount": 95,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -856,7 +857,7 @@
     },
     {
       "path": "fish/predators-and-motion.js",
-      "functionCount": 61,
+      "functionCount": 64,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -911,7 +912,7 @@
     },
     {
       "path": "rendering/tank-and-water.js",
-      "functionCount": 57,
+      "functionCount": 68,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -955,7 +956,7 @@
     },
     {
       "path": "rendering/decor.js",
-      "functionCount": 31,
+      "functionCount": 33,
       "dependencies": [
         "assets/custom-content.js",
         "core/utilities.js",
@@ -1038,7 +1039,7 @@
     },
     {
       "path": "decor/hit-testing.js",
-      "functionCount": 11,
+      "functionCount": 12,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1083,7 +1084,7 @@
     },
     {
       "path": "rendering/fish-motion-and-floor.js",
-      "functionCount": 27,
+      "functionCount": 28,
       "dependencies": [
         "core/utilities.js",
         "decor/layout-and-layers.js",

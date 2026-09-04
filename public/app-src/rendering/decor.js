@@ -292,6 +292,73 @@ function pruneFishShadowPlaneCache() {
   }
 }
 
+function getDecorContactShadowMetrics(item) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  if (!decor) {
+    return null;
+  }
+
+  const capabilities = getDecorMotionCapabilities(item);
+  if (capabilities.isFloating || capabilities.isLure) {
+    return null;
+  }
+
+  const bounds = getPlacedDecorOpaqueBounds(item);
+  if (!bounds) {
+    return null;
+  }
+
+  const width = Math.max(1, bounds.right - bounds.left);
+  const height = Math.max(1, bounds.bottom - bounds.top);
+  const layerFloorY = getTankLayerBottomBoundaryY(getDecorTankLayer(item));
+  const anchorY = (Number(item.yNorm) || 0) * TANK_HEIGHT;
+  const groundingTolerance = clamp(width * 0.09, 18, 58);
+  const groundingStrength = clamp(1 - Math.abs(layerFloorY - anchorY) / groundingTolerance, 0, 1);
+  if (groundingStrength <= 0.04) {
+    return null;
+  }
+
+  const aspectFootprint = clamp(width / Math.max(width, height), 0.32, 1);
+  const radiusX = clamp(width * (0.255 + aspectFootprint * 0.118), 16, 226);
+  const radiusY = clamp(radiusX * 0.16, 5, 30);
+  const centerX = (bounds.left + bounds.right) * 0.5;
+  const lightOffsetX = clamp(radiusX * 0.075, 2, 12);
+  const shadowY = clamp(
+    layerFloorY + 2,
+    WATER_SURFACE_Y + 20,
+    getVisibleTankFloorBottomY() + 8
+  );
+
+  return {
+    x: centerX + lightOffsetX,
+    y: shadowY,
+    radiusX,
+    radiusY,
+    alpha: 0.30 * groundingStrength
+  };
+}
+
+function drawDecorContactShadow(context, item) {
+  const shadow = getDecorContactShadowMetrics(item);
+  if (!shadow) {
+    return;
+  }
+
+  context.save();
+  context.translate(shadow.x, shadow.y);
+  context.scale(shadow.radiusX, shadow.radiusY);
+  const gradient = context.createRadialGradient(0, 0, 0.04, 0, 0, 1);
+  gradient.addColorStop(0, `rgba(2, 7, 12, ${shadow.alpha.toFixed(3)})`);
+  gradient.addColorStop(0.34, `rgba(3, 9, 15, ${(shadow.alpha * 0.86).toFixed(3)})`);
+  gradient.addColorStop(0.75, `rgba(5, 12, 18, ${(shadow.alpha * 0.34).toFixed(3)})`);
+  gradient.addColorStop(1, "rgba(5, 12, 18, 0)");
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, 1, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
 function drawGroundShadows(now) {
   tankContext.save();
   tankContext.globalCompositeOperation = "multiply";
@@ -303,6 +370,11 @@ function drawGroundShadows(now) {
     getVisibleTankFloorBottomY() - WATER_SURFACE_Y + 12
   );
   tankContext.clip();
+  if (areDecorShadowsEnabled()) {
+    for (const item of state.placedDecor) {
+      drawDecorContactShadow(tankContext, item);
+    }
+  }
   pruneFishShadowPlaneCache();
   for (const fish of state.fish) {
     const species = getSpeciesForFish(fish);
@@ -332,12 +404,17 @@ function drawGroundShadows(now) {
 function drawFishProjectedShadow(context, x, objectBottomY, width, height, opacity, widthScale, planeY = null) {
   const floorY = Number.isFinite(planeY) ? planeY : getTankFloorSurfaceYAtX(x) + 7;
   const heightAboveFloor = Math.max(0, floorY - objectBottomY);
+  const shadowFadeDistance = clamp(height * 3.2 + 80, 150, 360);
+  const proximity = clamp(1 - heightAboveFloor / shadowFadeDistance, 0, 1);
+  if (proximity <= 0.015) {
+    return;
+  }
   const baseWidth = width * clamp(widthScale, 0.14, 0.3) * 0.82;
-  const altitudeStretch = Math.min(width * 0.04, heightAboveFloor * 0.022);
+  const altitudeStretch = Math.min(width * 0.035, heightAboveFloor * 0.018);
   const shadowWidth = clamp(baseWidth + altitudeStretch, 12, Math.max(26, width * 0.3));
   const shadowHeight = Math.max(5, shadowWidth * 0.14);
   const offsetX = 8 + Math.min(18, heightAboveFloor * 0.045);
-  const alpha = clamp(opacity - heightAboveFloor / 1800, 0.04, opacity * 0.92);
+  const alpha = clamp(opacity * 0.92 * Math.pow(proximity, 1.35), 0, opacity * 0.92);
   context.fillStyle = `rgba(6, 15, 24, ${alpha.toFixed(3)})`;
   context.beginPath();
   context.ellipse(x + offsetX, floorY, shadowWidth, shadowHeight, -0.08, 0, Math.PI * 2);
@@ -701,11 +778,11 @@ function drawDecorSwimGuide(now = Date.now()) {
   const clampedGuideY = clamp(guideY, shellBounds.innerTop + 18, shellBounds.innerTop + shellBounds.innerHeight - 6);
 
   tankContext.save();
-  tankContext.lineWidth = 3;
-  tankContext.setLineDash([14, 10]);
+  tankContext.lineWidth = getViewportPxAsTankVirtual(3);
+  tankContext.setLineDash([getViewportPxAsTankVirtual(14), getViewportPxAsTankVirtual(10)]);
   tankContext.strokeStyle = "rgba(255, 72, 72, 0.72)";
   tankContext.shadowColor = "rgba(255, 72, 72, 0.24)";
-  tankContext.shadowBlur = 8;
+  tankContext.shadowBlur = getViewportPxAsTankVirtual(8);
   tankContext.beginPath();
   tankContext.moveTo(startX, clampedGuideY);
   tankContext.lineTo(endX, clampedGuideY);

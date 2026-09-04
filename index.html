@@ -575,65 +575,7 @@
                   <section class="settings-section">
                     <h3>General</h3>
 
-                    <div class="settings-subsection-heading">
-                      <h4>Toolbar Location</h4>
-                    </div>
-                    <div class="toolbar-position-grid">
-                      <label class="toolbar-position-option" for="toolbarPositionLeft">
-                        <input id="toolbarPositionLeft" class="settings-checkbox" type="radio" name="toolbarPosition"
-                          value="left-center" data-toolbar-position-choice />
-                        <span class="settings-toggle-label">Left</span>
-                      </label>
-
-                      <label class="toolbar-position-option" for="toolbarPositionBottom">
-                        <input id="toolbarPositionBottom" class="settings-checkbox" type="radio"
-                          name="toolbarPosition" value="bottom-center" data-toolbar-position-choice />
-                        <span class="settings-toggle-label">Center</span>
-                      </label>
-
-                      <label class="toolbar-position-option" for="toolbarPositionRight">
-                        <input id="toolbarPositionRight" class="settings-checkbox" type="radio" name="toolbarPosition"
-                          value="right-center" data-toolbar-position-choice />
-                        <span class="settings-toggle-label">Right</span>
-                      </label>
-                    </div>
-
-                    <div class="settings-subsection-heading">
-                      <h4>Digital Display Location</h4>
-                    </div>
-                    <div class="display-position-grid">
-                      <label class="display-position-option" for="displayPositionTopLeft">
-                        <input id="displayPositionTopLeft" class="settings-checkbox" type="radio"
-                          name="displayPosition" value="top-left" data-display-position-choice />
-                        <span class="settings-toggle-label">Top Left</span>
-                      </label>
-
-                      <label class="display-position-option" for="displayPositionBottomLeft">
-                        <input id="displayPositionBottomLeft" class="settings-checkbox" type="radio"
-                          name="displayPosition" value="bottom-left" data-display-position-choice />
-                        <span class="settings-toggle-label">Bottom Left</span>
-                      </label>
-
-                      <label class="display-position-option" for="displayPositionTopRight">
-                        <input id="displayPositionTopRight" class="settings-checkbox" type="radio"
-                          name="displayPosition" value="top-right" data-display-position-choice />
-                        <span class="settings-toggle-label">Top Right</span>
-                      </label>
-
-                      <label class="display-position-option" for="displayPositionBottomRight">
-                        <input id="displayPositionBottomRight" class="settings-checkbox" type="radio"
-                          name="displayPosition" value="bottom-right" data-display-position-choice />
-                        <span class="settings-toggle-label">Bottom Right</span>
-                      </label>
-                    </div>
-
-                    <label class="settings-toggle-row" for="violenceGoreToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Gore and Violence</span>
-                        <span class="settings-toggle-note">Toggles graphic effects and aggressive fish behavior.</span>
-                      </div>
-                      <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
+                    <!-- Toolbar and Digital Display location controls are intentionally disabled. -->
 
                     <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
                       <div class="settings-toggle-copy">
@@ -648,6 +590,14 @@
                   <section class="settings-section">
                     <h3>Graphics</h3>
 
+                    <label class="settings-toggle-row" for="violenceGoreToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Gore and Violence</span>
+                        <span class="settings-toggle-note">Toggles graphic effects and aggressive fish behavior.</span>
+                      </div>
+                      <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+
                     <label class="settings-toggle-row" for="ambientBubblesToggleInput">
                       <div class="settings-toggle-copy">
                         <span class="settings-toggle-label">Ambient Bubbles</span>
@@ -658,10 +608,26 @@
 
                     <label class="settings-toggle-row" for="waterParticlesToggleInput">
                       <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Ambient Particles</span>
-                        <span class="settings-toggle-note">Shows suspended particles moving through the water.</span>
+                        <span class="settings-toggle-label">Particle System</span>
+                        <span class="settings-toggle-note">Shows suspended particles and subtle atmospheric particulate streaks.</span>
                       </div>
                       <input id="waterParticlesToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+
+                    <label class="settings-toggle-row" for="causticLightingToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Caustic Lighting</span>
+                        <span class="settings-toggle-note">Shows animated refracted light patterns on the gravel.</span>
+                      </div>
+                      <input id="causticLightingToggleInput" class="settings-checkbox" type="checkbox" />
+                    </label>
+
+                    <label class="settings-toggle-row" for="decorShadowsToggleInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Decor Shadows</span>
+                        <span class="settings-toggle-note">Shows soft contact shadows where decor meets the substrate.</span>
+                      </div>
+                      <input id="decorShadowsToggleInput" class="settings-checkbox" type="checkbox" />
                     </label>
                   </section>
 
@@ -818,6 +784,15 @@
             </section>
 
             <section id="editDecorTray" class="edit-decor-tray" hidden aria-label="Edit decor tray">
+              <div class="edit-tray-mode-header">
+                <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
+                </div>
+                <button id="closeEditDecorTrayButton" class="edit-tray-done-button" type="button"
+                  aria-label="Finish editing decor" title="Done editing decor">Done</button>
+              </div>
               <div class="edit-decor-tray-header">
                 <div class="edit-decor-tray-tabs" role="tablist" aria-label="Decor type">
                   <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="all" data-decor-tone="all">All</button>
@@ -835,8 +810,6 @@
                   <input type="checkbox" data-decor-free-placement-toggle />
                   <span>Free Placement</span>
                 </label>
-                <button id="closeEditDecorTrayButton" class="edit-tray-done-button" type="button"
-                  aria-label="Finish editing decor" title="Done editing decor">Done</button>
               </div>
               <button id="editDecorTrayPrev" class="edit-decor-tray-arrow" type="button"
                 aria-label="Scroll decor tray left">
@@ -851,13 +824,20 @@
             </section>
 
             <section id="editFishTray" class="edit-decor-tray edit-fish-tray" hidden aria-label="Manage fish tray">
+              <div class="edit-tray-mode-header">
+                <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
+                </div>
+                <button id="closeEditFishTrayButton" class="edit-tray-done-button" type="button"
+                  aria-label="Finish managing fish" title="Done managing fish">Done</button>
+              </div>
               <div class="edit-fish-tray-header">
                 <div class="edit-fish-tray-tabs" role="tablist" aria-label="Fish location">
                   <button class="edit-fish-tray-tab" type="button" role="tab" data-fish-tray-tab="tank">Tank</button>
                   <button class="edit-fish-tray-tab" type="button" role="tab" data-fish-tray-tab="storage">Storage</button>
                 </div>
-                <button id="closeEditFishTrayButton" class="edit-tray-done-button" type="button"
-                  aria-label="Finish managing fish" title="Done managing fish">Done</button>
               </div>
               <button id="editFishTrayPrev" class="edit-decor-tray-arrow" type="button"
                 aria-label="Scroll fish tray left">
@@ -869,6 +849,39 @@
                 aria-label="Scroll fish tray right">
                 &#8250;
               </button>
+            </section>
+
+
+            <section id="editTankTray" class="edit-decor-tray edit-tank-tray" hidden aria-label="Edit tank tray">
+              <div class="edit-tray-mode-header">
+                <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
+                </div>
+                <button id="closeEditTankTrayButton" class="edit-tray-done-button" type="button"
+                  aria-label="Finish editing tank" title="Done editing tank">Done</button>
+              </div>
+              <div class="edit-tank-tray-header">
+                <div class="edit-tank-tray-tabs" role="tablist" aria-label="Tank settings category">
+                  <button class="edit-tank-tray-tab" type="button" role="tab" data-tank-tray-tab="background">Background</button>
+                  <button class="edit-tank-tray-tab" type="button" role="tab" data-tank-tray-tab="gravel">Gravel</button>
+                  <button class="edit-tank-tray-tab" type="button" role="tab" data-tank-tray-tab="equipment">Equipment</button>
+                </div>
+              </div>
+              <div id="editTankTrayScroller" class="edit-tank-tray-scroller">
+                <section class="edit-tank-tray-panel" data-tank-tray-panel="background">
+                  <div id="editTankBackgroundColorPanel"></div>
+                  <div id="editTankBackgroundList" class="background-grid edit-tank-background-grid"></div>
+                </section>
+                <section class="edit-tank-tray-panel" data-tank-tray-panel="gravel">
+                  <div id="editTankCustomGravelPanel"></div>
+                </section>
+                <section id="editTankFilterSection" class="edit-tank-tray-panel" data-tank-tray-panel="equipment">
+                  <div id="editTankFilterList" class="background-grid edit-tank-equipment-grid"></div>
+                  <div id="editTankUvLightList" class="background-grid edit-tank-equipment-grid"></div>
+                </section>
+              </div>
             </section>
 
             <section id="foodTray" class="edit-decor-tray" hidden aria-label="Food tray">
@@ -917,13 +930,14 @@
                   draggable="false" />
               </button>
 
-              <button id="careMenuButton" class="dock-button toolbar-group-button care" type="button" title="Care"
-                aria-label="Care tools" aria-haspopup="menu" aria-controls="toolbarCareMenu" aria-expanded="false">
+              <button id="careMenuButton" class="dock-button toolbar-group-button care" type="button" title="Fish Care"
+                aria-label="Fish Care" aria-controls="medicineTray" aria-expanded="false">
                 <img class="dock-button-icon" src="assets/icons/fish_care.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
-              <section id="toolbarCareMenu" class="toolbar-action-menu" role="menu" aria-label="Care tools" hidden>
+              <!-- Legacy care submenu retained for compatibility, but intentionally disabled. -->
+              <section id="toolbarCareMenu" class="toolbar-action-menu" role="menu" aria-label="Care tools" hidden aria-hidden="true">
                 <button id="medicineButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Medicine" aria-label="Medicine">
                   <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
@@ -942,12 +956,12 @@
               </section>
 
               <button id="editMenuButton" class="dock-button toolbar-group-button edit" type="button" title="Edit"
-                aria-label="Edit aquarium" aria-haspopup="menu" aria-controls="toolbarEditMenu" aria-expanded="false">
+                aria-label="Edit aquarium">
                 <img class="dock-button-icon" src="assets/icons/tools.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
-              <section id="toolbarEditMenu" class="toolbar-action-menu" role="menu" aria-label="Edit aquarium" hidden>
+              <section id="toolbarEditMenu" class="toolbar-action-menu" role="menu" aria-label="Edit aquarium" hidden aria-hidden="true">
                 <button id="fishEditModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Manage Fish" aria-label="Manage Fish">
                   <img src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" />

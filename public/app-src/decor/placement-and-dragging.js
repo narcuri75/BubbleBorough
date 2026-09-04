@@ -47,7 +47,8 @@ function startPlacingDecor(decorKey) {
     tankLayer: initialLayer,
     scale: getDecorScaleDefault(decorKey),
     flipped: false,
-    flippedY: false
+    flippedY: false,
+    freePlacementEnabled: isFreeDecorPlacementEnabled(getCurrentTank())
   };
   runtime.placementPreview = runtime.lastTankPoint
     ? clampDecorPlacement(runtime.lastTankPoint.x / TANK_WIDTH, runtime.lastTankPoint.y / TANK_HEIGHT, {
@@ -56,6 +57,7 @@ function startPlacingDecor(decorKey) {
       scale: runtime.placementMode.scale,
       flipped: runtime.placementMode.flipped,
       flippedY: runtime.placementMode.flippedY,
+      freePlacementEnabled: runtime.placementMode.freePlacementEnabled,
       applyGravity: true
     })
     : clampDecorPlacement(0.5, 0.8, {
@@ -64,6 +66,7 @@ function startPlacingDecor(decorKey) {
       scale: runtime.placementMode.scale,
       flipped: runtime.placementMode.flipped,
       flippedY: runtime.placementMode.flippedY,
+      freePlacementEnabled: runtime.placementMode.freePlacementEnabled,
       applyGravity: true
     });
   runtime.cleaningMode = false;
@@ -110,6 +113,7 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
   const scaleBase = clamp(Number(runtime.placementMode?.scale) || getDecorScaleDefault(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const flipped = Boolean(runtime.placementMode?.flipped);
   const flippedY = Boolean(runtime.placementMode?.flippedY);
+  const freePlacementEnabled = runtime.placementMode?.freePlacementEnabled === true;
   const finalLayer = getDecorFrontLayer(decorKey, tankLayer);
   const placement = clampDecorPlacement(xNorm, yNorm, {
     decorKey,
@@ -117,6 +121,7 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     scale: scaleBase,
     flipped,
     flippedY,
+    freePlacementEnabled,
     applyGravity: true
   });
 
@@ -133,7 +138,8 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     scale: scaleBase,
     tankLayer: finalLayer,
     flipped,
-    flippedY
+    flippedY,
+    freePlacementEnabled
   };
   if (isCustomBubblerDecorKey(decorKey)) {
     placedItem.bubblerSettings = createDefaultBubblerSettings();
@@ -1287,14 +1293,15 @@ function finalizeDecorDrag() {
 
 function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
   const fish = options.fish || null;
-  const layer = species?.behavior === "sucker"
+  const suckerBehaviorActive = getEffectiveFishBehavior(fish, species) === "sucker";
+  const layer = suckerBehaviorActive
     ? normalizeSuckerFishGlassLayer(options.layer ?? getSuckerFishGlassLayer(fish))
     : clampTankLayer(options.layer ?? getFishTankLayer(fish) ?? DEFAULT_TANK_LAYER);
-  const suckerPlacementOptions = species?.behavior === "sucker"
+  const suckerPlacementOptions = suckerBehaviorActive
     ? getSuckerFishPlacementOptionsForLayer(layer)
     : null;
   const baseXNorm = clampFishXNormToMobileViewport(xNorm, fish, species);
-  const basePlacement = species?.behavior === "sucker"
+  const basePlacement = suckerBehaviorActive
     ? {
       xNorm: baseXNorm,
       yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, suckerPlacementOptions)
@@ -1309,7 +1316,7 @@ function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
   }
 
   const constrained = constrainNormalizedPointToTankShell(basePlacement.xNorm, basePlacement.yNorm, { variant: "inner" });
-  if (species?.behavior === "sucker") {
+  if (suckerBehaviorActive) {
     return {
       xNorm: clampFishXNormToMobileViewport(constrained.xNorm, fish, species),
       yNorm: clampFishYNormToLayer(constrained.yNorm, fish, species, layer, suckerPlacementOptions)
@@ -1345,8 +1352,9 @@ function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
     return changed;
   }
 
-  const currentLayer = species.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish);
-  const targetLayer = species.behavior === "sucker" ? getDesiredSuckerFishGlassLayer(fish) : getDesiredFishTankLayer(fish);
+  const suckerBehaviorActive = getEffectiveFishBehavior(fish, species) === "sucker";
+  const currentLayer = suckerBehaviorActive ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish);
+  const targetLayer = suckerBehaviorActive ? getDesiredSuckerFishGlassLayer(fish) : getDesiredFishTankLayer(fish);
   const position = clampFishPlacement(fish.xNorm, fish.yNorm, species, {
     fish,
     layer: currentLayer

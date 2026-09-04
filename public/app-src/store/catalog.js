@@ -349,13 +349,16 @@ function isFishSpeciesUnlocked(speciesOrId) {
 
 function getFishShopCatalog() {
   return runtime.fishCatalog.filter((species) => (
-    (isZombieSkeletonModeAvailable() && isGoreEnabled()) || !isUndeadSpecies(species)
+    species
+    && !HIDDEN_FISH_OPTION_IDS.has(species.id)
+    && ((isZombieSkeletonModeAvailable() && isGoreEnabled()) || !isUndeadSpecies(species))
   ));
 }
 
 function getStarterFishSpecies() {
-  const unlockedCatalog = getFishShopCatalog().filter((species) => isFishSpeciesUnlocked(species));
-  return [...(unlockedCatalog.length ? unlockedCatalog : runtime.fishCatalog)]
+  const shopCatalog = getFishShopCatalog();
+  const unlockedCatalog = shopCatalog.filter((species) => isFishSpeciesUnlocked(species));
+  return [...(unlockedCatalog.length ? unlockedCatalog : shopCatalog)]
     .sort(compareFishCatalogBySize)[0] || null;
 }
 

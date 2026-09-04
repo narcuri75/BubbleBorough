@@ -765,6 +765,9 @@ function sanitizePlacedDecor(item) {
     flipped: item.flipped === true,
     flippedY: item.flippedY === true
   };
+  if (Object.prototype.hasOwnProperty.call(item, "freePlacementEnabled")) {
+    sanitized.freePlacementEnabled = item.freePlacementEnabled === true;
+  }
   const groupId = normalizeDecorGroupId(item.groupId);
   if (groupId) {
     sanitized.groupId = groupId;
@@ -873,6 +876,12 @@ function getViewportPxAsTankVirtual(px) {
   const dpr = getStageRenderDevicePixelRatio();
   const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
   return (Math.max(0, Number(px) || 0) * dpr) / scale;
+}
+
+function getScenePxAsTankVirtual(px) {
+  const dpr = getStageRenderDevicePixelRatio();
+  const referenceScale = getEditAwareViewportStableReferenceScale();
+  return (Math.max(0, Number(px) || 0) * dpr) / Math.max(0.0001, referenceScale);
 }
 
 function getTankVirtualPxAsViewportPx(px) {
@@ -1256,16 +1265,56 @@ function updateSelectedDecorActionButtons() {
   });
 }
 
+function getNormalCoverStageRenderMetrics() {
+  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
+  const width = Number(stageRect?.width) || 0;
+  const height = Number(stageRect?.height) || 0;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
+
+  const dpr = getStageRenderDevicePixelRatio();
+  const displayWidth = Math.max(1, dom.tankCanvas?.width || Math.round(width * dpr));
+  const displayHeight = Math.max(1, dom.tankCanvas?.height || Math.round(height * dpr));
+  const scale = Math.max(displayWidth / TANK_WIDTH, displayHeight / TANK_HEIGHT);
+  const offsetX = (displayWidth - TANK_WIDTH * scale) * 0.5;
+  const offsetY = (displayHeight - TANK_HEIGHT * scale) * 0.5;
+  const left = clamp((-offsetX) / scale, 0, TANK_WIDTH);
+  const top = clamp((-offsetY) / scale, 0, TANK_HEIGHT);
+  const right = clamp((displayWidth - offsetX) / scale, left, TANK_WIDTH);
+  const bottom = clamp((displayHeight - offsetY) / scale, top, TANK_HEIGHT);
+
+  return {
+    dpr,
+    displayWidth,
+    displayHeight,
+    scale,
+    offsetX,
+    offsetY,
+    visibleBounds: { left, top, right, bottom }
+  };
+}
+
+function getEditAwareViewportStableReferenceScale() {
+  const dpr = getStageRenderDevicePixelRatio();
+  const currentScale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
+  if ((Number(runtime.stageEditViewAmount) || 0) <= 0.001) {
+    return currentScale;
+  }
+
+  return Math.max(0.0001, Number(getNormalCoverStageRenderMetrics()?.scale) || currentScale);
+}
+
 function getViewportStableAssetScale() {
   const dpr = getStageRenderDevicePixelRatio();
-  const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
-  return (dpr / scale) * getResponsiveViewportAssetScale();
+  const referenceScale = getEditAwareViewportStableReferenceScale();
+  return (dpr / referenceScale) * getResponsiveViewportAssetScale();
 }
 
 function getViewportStableObjectScale(type = "fish") {
   const dpr = getStageRenderDevicePixelRatio();
-  const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
-  return (dpr / scale) * getResponsiveViewportObjectScale(type);
+  const referenceScale = getEditAwareViewportStableReferenceScale();
+  return (dpr / referenceScale) * getResponsiveViewportObjectScale(type);
 }
 
 function getResponsiveViewportScale(minScale = 1) {
@@ -1350,10 +1399,14 @@ function getAquariumPhysicalAssetScale(type = "fish") {
 }
 
 function getAquariumWorldMetrics() {
-  const visibleBounds = getVisibleTankVirtualBounds();
   const dpr = getStageRenderDevicePixelRatio();
-  const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
-  const offsetY = Number(runtime.stageRenderOffsetY) || 0;
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  const normalView = editAmount > 0.001 ? getNormalCoverStageRenderMetrics() : null;
+  const visibleBounds = normalView?.visibleBounds || getVisibleTankVirtualBounds();
+  const scale = Math.max(0.0001, Number(normalView?.scale) || Number(runtime.stageRenderScale) || dpr);
+  const offsetY = Number.isFinite(Number(normalView?.offsetY))
+    ? Number(normalView.offsetY)
+    : (Number(runtime.stageRenderOffsetY) || 0);
   const waterlineY = clamp(
     (WATER_SURFACE_VIEWPORT_TOP_PX * dpr - offsetY) / scale,
     visibleBounds.top,
@@ -1525,7 +1578,7 @@ function getDecorTopOverhangLimitY(relBounds, shellBounds = getTankShellBounds()
     return shellBounds.innerTop;
   }
 
-  const visibleBounds = getVisibleTankVirtualBounds();
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const decorHeight = Math.max(1, relBounds.bottom - relBounds.top);
   return Math.max(
     shellBounds.innerTop,
@@ -1901,6 +1954,10 @@ function normalizeSuckerFishGlassLayer(layer) {
 }
 
 function getSuckerFishGlassLayer(fish) {
+  const storedReturnLayer = Number(fish?.suckerFreeSwimReturnLayer);
+  if (Number.isFinite(storedReturnLayer)) {
+    return normalizeSuckerFishGlassLayer(storedReturnLayer);
+  }
   return normalizeSuckerFishGlassLayer(fish?.tankLayer ?? fish?.desiredTankLayer ?? SUCKER_FISH_BACK_GLASS_LAYER);
 }
 
@@ -1961,7 +2018,7 @@ function setFishTankLayers(fish, tankLayer, desiredTankLayer = tankLayer) {
   let nextTankLayer;
   let nextDesiredTankLayer;
 
-  if (species?.behavior === "sucker") {
+  if (getEffectiveFishBehavior(fish, species) === "sucker") {
     nextTankLayer = normalizeSuckerFishGlassLayer(tankLayer);
     nextDesiredTankLayer = normalizeSuckerFishGlassLayer(desiredTankLayer);
   } else {

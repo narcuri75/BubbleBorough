@@ -229,7 +229,7 @@ function setContentSetting(settingKey, value) {
 }
 
 function setToolbarPosition(toolbarPosition) {
-  if (!state) {
+  if (!state || !TOOLBAR_POSITION_SETTING_ENABLED) {
     return;
   }
 
@@ -249,7 +249,7 @@ function setToolbarPosition(toolbarPosition) {
 }
 
 function setDisplayPosition(displayPosition) {
-  if (!state) {
+  if (!state || !DISPLAY_POSITION_SETTING_ENABLED) {
     return;
   }
 
@@ -397,7 +397,47 @@ function setWaterParticlesEnabled(value) {
   }
   saveState();
   renderUi(Date.now(), { full: false });
-  showToast(nextSettings.waterParticlesEnabled ? "Water particles on." : "Water particles off.");
+  showToast(nextSettings.waterParticlesEnabled ? "Particle system on." : "Particle system off.");
+}
+
+function setCausticLightingEnabled(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    causticLightingEnabled: Boolean(value)
+  });
+  if (currentSettings.causticLightingEnabled === nextSettings.causticLightingEnabled) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+  showToast(nextSettings.causticLightingEnabled ? "Caustic lighting on." : "Caustic lighting off.");
+}
+
+function setDecorShadowsEnabled(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    decorShadowsEnabled: Boolean(value)
+  });
+  if (currentSettings.decorShadowsEnabled === nextSettings.decorShadowsEnabled) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+  showToast(nextSettings.decorShadowsEnabled ? "Decor shadows on." : "Decor shadows off.");
 }
 
 function clearTankMouseInteractionState() {
@@ -1731,6 +1771,7 @@ function getSuckerFishCollisionEntry(fish, species, now = Date.now()) {
     || !species
     || isFishDead(fish)
     || getEffectiveFishBehavior(fish, species) !== "sucker"
+    || isSuckerFishFreeSwimming(fish, species, now)
   ) {
     return null;
   }
@@ -1850,6 +1891,84 @@ function resolveSuckerFishGlassCollisions(now = Date.now(), options = {}) {
   return changed;
 }
 
+function startSuckerFishFreeSwim(fish, species, targetXNorm, targetYNorm, now = Date.now(), options = {}) {
+  if (!fish || !canSuckerFishFreeSwim(species) || isFishDead(fish)) {
+    return false;
+  }
+
+  const targetX = clamp(Number(targetXNorm), 0.08, 0.92);
+  const targetY = clamp(Number(targetYNorm), 0.14, 0.8);
+  const distanceNorm = Math.hypot(targetX - fish.xNorm, targetY - fish.yNorm);
+  const threshold = Number.isFinite(Number(options.distanceThreshold))
+    ? Math.max(0.05, Number(options.distanceThreshold))
+    : SUCKER_FISH_FREE_SWIM_DISTANCE_NORM;
+  if (distanceNorm < threshold) {
+    return false;
+  }
+
+  const returnLayer = getSuckerFishGlassLayer(fish);
+  const swimSpeed = randomBetween(SUCKER_FISH_FREE_SWIM_SPEED_MIN, SUCKER_FISH_FREE_SWIM_SPEED_MAX);
+  const travelMs = (distanceNorm / Math.max(0.00001, swimSpeed * FISH_MOTION_SCALE)) * 1000;
+  const durationMs = clamp(
+    travelMs * 1.32,
+    SUCKER_FISH_FREE_SWIM_MIN_DURATION_MS,
+    SUCKER_FISH_FREE_SWIM_MAX_DURATION_MS
+  );
+
+  fish.suckerFreeSwimStartedAt = now;
+  fish.suckerFreeSwimUntil = now + durationMs;
+  fish.suckerFreeSwimTargetXNorm = targetX;
+  fish.suckerFreeSwimTargetYNorm = targetY;
+  fish.suckerFreeSwimReturnLayer = returnLayer;
+  fish.swimSpeed = swimSpeed;
+  fish.targetXNorm = targetX;
+  fish.targetYNorm = targetY;
+  fish.targetAt = fish.suckerFreeSwimUntil;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  setFishTankLayers(fish, SUCKER_FISH_FREE_SWIM_LAYER, SUCKER_FISH_FREE_SWIM_LAYER);
+  setFishDirection(fish, targetX >= fish.xNorm ? 1 : -1, species, now);
+  return true;
+}
+
+function finishSuckerFishFreeSwim(fish, species, now = Date.now()) {
+  if (!fish || !species || !Number.isFinite(Number(fish.suckerFreeSwimUntil))) {
+    return false;
+  }
+
+  const returnLayer = normalizeSuckerFishGlassLayer(
+    Number.isFinite(Number(fish.suckerFreeSwimReturnLayer))
+      ? Number(fish.suckerFreeSwimReturnLayer)
+      : SUCKER_FISH_BACK_GLASS_LAYER
+  );
+  delete fish.suckerFreeSwimStartedAt;
+  delete fish.suckerFreeSwimUntil;
+  delete fish.suckerFreeSwimTargetXNorm;
+  delete fish.suckerFreeSwimTargetYNorm;
+  delete fish.suckerFreeSwimReturnLayer;
+  setFishTankLayers(fish, returnLayer, returnLayer);
+  fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
+  fish.targetAt = Math.min(Number(fish.targetAt) || now, now + 450);
+  setSuckerFishAngle(fish, Number(fish.direction) < 0 ? Math.PI : 0, now);
+  return true;
+}
+
+function updateSuckerFishFreeSwimState(fish, species, now = Date.now()) {
+  if (!fish || !species || !Number.isFinite(Number(fish.suckerFreeSwimUntil))) {
+    return false;
+  }
+
+  const targetX = Number(fish.suckerFreeSwimTargetXNorm);
+  const targetY = Number(fish.suckerFreeSwimTargetYNorm);
+  const reachedTarget = Number.isFinite(targetX) && Number.isFinite(targetY)
+    ? Math.hypot(targetX - fish.xNorm, targetY - fish.yNorm) <= SUCKER_FISH_FREE_SWIM_ARRIVAL_DISTANCE_NORM
+    : false;
+  if (now >= Number(fish.suckerFreeSwimUntil) || reachedTarget) {
+    return finishSuckerFishFreeSwim(fish, species, now);
+  }
+  return false;
+}
+
 function updateFishMotion(now, deltaSeconds) {
   if (!state?.fish.length) {
     runtime.fishGravelPebbleActions.clear();
@@ -1876,6 +1995,9 @@ function updateFishMotion(now, deltaSeconds) {
     const species = getSpeciesForFish(fish);
     if (!species) {
       continue;
+    }
+    if (species.behavior === "sucker") {
+      updateSuckerFishFreeSwimState(fish, species, now);
     }
     const effectiveBehavior = getEffectiveFishBehavior(fish, species);
     const pendingTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
@@ -2361,6 +2483,17 @@ function updateFishMotion(now, deltaSeconds) {
       if (isPiranhaSpecies(fish)) {
         speedMultiplier *= getPiranhaTargetCandidate(now) ? 1.2 : 1.04;
       }
+      if (pendingTubeTravel) {
+        if (pendingTravel.phase === "entering" || pendingTravel.phase === "emerging") {
+          // Once the fish is committed to the tube, give it a brisk pneumatic
+          // pull. This is intentionally quick, but still leaves enough travel
+          // time to read the fish moving through the tube rather than warping.
+          speedMultiplier *= 2.35;
+        } else if (pendingTravel.phase === "approach") {
+          speedMultiplier *= 1.12;
+        }
+      }
+
       if (activeFishActionSteering?.type === "zoomies") {
         speedMultiplier *= 2.05;
       }
@@ -2672,8 +2805,13 @@ function assignSwimTarget(fish, species, now) {
     const yRange = getSuckerFishYRange(fish, species, glassLayer);
     const grimeTarget = pickFrontGlassSuckerGrimeTarget(fish, now);
     if (grimeTarget) {
-      const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
       const travelDistance = Math.hypot(grimeTarget.xNorm - fish.xNorm, grimeTarget.yNorm - fish.yNorm);
+      if (startSuckerFishFreeSwim(fish, species, grimeTarget.xNorm, grimeTarget.yNorm, now, {
+        distanceThreshold: SUCKER_FISH_FREE_SWIM_GRIME_DISTANCE_NORM
+      })) {
+        return;
+      }
+      const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
       const travelSeconds = travelDistance / Math.max(0.00001, crawlSpeed * FISH_MOTION_SCALE);
       fish.targetXNorm = grimeTarget.xNorm;
       fish.targetYNorm = grimeTarget.yNorm;
@@ -2718,8 +2856,11 @@ function assignSwimTarget(fish, species, now) {
         layer: glassLayer
       }
     );
-    const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
     const travelDistance = Math.hypot(nextPlacement.xNorm - fish.xNorm, nextPlacement.yNorm - fish.yNorm);
+    if (startSuckerFishFreeSwim(fish, species, nextPlacement.xNorm, nextPlacement.yNorm, now)) {
+      return;
+    }
+    const crawlSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
     const travelSeconds = travelDistance / Math.max(0.00001, crawlSpeed * FISH_MOTION_SCALE);
     const lingerMultiplier = shouldReverse ? randomBetween(1.12, 1.34) : randomBetween(1.35, 1.7);
     fish.targetXNorm = nextPlacement.xNorm;

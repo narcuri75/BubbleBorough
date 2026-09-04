@@ -1045,7 +1045,7 @@ function infectFishWithZombieBite(target, attacker, now = Date.now()) {
   makeFishScurryFromAttack(target, attacker, now);
   attacker.lastAteAt = now;
   const mealCoins = recordFishMealCredit(attacker, now);
-  applyFishMealWindowFoodIntake(attacker, now, { satiate: false });
+  applyFishMealWindowFoodIntake(attacker, now, { satiate: false, countBasedOverfeed: true });
   pushEvent(
     mealCoins > 0
       ? `${attacker.name} bit ${target.name} with a zombie bite and earned ${mealCoins} ${pluralize("coin", mealCoins)}.`
@@ -1981,8 +1981,13 @@ function updateFishMotion(now, deltaSeconds) {
     runtime.bettaPassLocks.clear();
     return;
   }
+  rebuildFishFrameLookup();
   pruneFishGravelPebbleRuntimeState(now);
+  const fishActionsProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   processFishActionQueues(now);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("fishActions", fishActionsProfileStartedAt);
+  }
   const activelyDraggedFishId = runtime.fishDragState?.fishId || null;
   const activeFishBreedingSequence = updateFishBreedingSequence(now);
   const activeDebugBreedingSequence = updateDebugBreedingSequence(now);
@@ -2318,26 +2323,30 @@ function updateFishMotion(now, deltaSeconds) {
       const activeQueuedFishAction = getActiveFishActionQueueItem(fish, now);
       const queuedFishActionActive = Boolean(activeQueuedFishAction);
       const queuedPebbleActionActive = activeQueuedFishAction?.action === "pebble";
+      const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
 
-      if (fish.activity === "roam" && !breedingRole && !fish.caveState && !debugCaveTestFish && !queuedFishActionActive) {
+      if (!panicOwnsMovement && fish.activity === "roam" && !breedingRole && !fish.caveState && !debugCaveTestFish && !queuedFishActionActive) {
         maybeStartFishGravelPebbleAction(fish, species, now, deltaSeconds);
       }
 
-      const gravelPebbleOwnsMovement = !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
-      const caveBehaviorOwnsMovement = !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
-      const fishActionOwnsMovement = !breedingRole
+      const gravelPebbleOwnsMovement = !panicOwnsMovement && !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
+      const caveBehaviorOwnsMovement = !panicOwnsMovement && !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
+      const fishActionOwnsMovement = !panicOwnsMovement
+        && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
         && !debugCaveTestFish
         && updateQueuedFishActionControl(fish, species, now);
-      const debugBehaviorOwnsMovement = !breedingRole
+      const debugBehaviorOwnsMovement = !panicOwnsMovement
+        && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
         && !fishActionOwnsMovement
         && fish.activity === "roam"
         && !debugCaveTestFish
         && updateDebugBehaviorSteering(fish, species, now);
-      const diseaseAvoidanceOwnsMovement = !breedingRole
+      const diseaseAvoidanceOwnsMovement = !panicOwnsMovement
+        && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
         && !debugBehaviorOwnsMovement
@@ -2351,6 +2360,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !fishActionOwnsMovement
         && !debugBehaviorOwnsMovement
         && !diseaseAvoidanceOwnsMovement
+        && !panicOwnsMovement
         && !pendingTravel
         && now >= fish.targetAt
       ) {
@@ -2362,7 +2372,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
-      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !pendingTravel) {
+      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !panicOwnsMovement && !pendingTravel) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
       }
@@ -2383,16 +2393,18 @@ function updateFishMotion(now, deltaSeconds) {
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
     const moveDistance = Math.hypot(moveDx, moveDy);
-    const activeDebugSteering = fish.activity === "roam" && !fish.caveState
+    const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
+    const activeDebugSteering = !panicOwnsMovement && fish.activity === "roam" && !fish.caveState
       ? getActiveDebugBehaviorSteering(fish, now)
       : null;
-    const activeFishActionSteering = fish.activity === "roam" && !fish.caveState
+    const activeFishActionSteering = !panicOwnsMovement && fish.activity === "roam" && !fish.caveState
       ? getActiveFishActionSteering(fish, now)
       : null;
     const activeQueuedFishAction = !fish.caveState
       ? getActiveFishActionQueueItem(fish, now)
       : null;
-    const isDirectedSwim = fish.activity === "feeding"
+    const isDirectedSwim = panicOwnsMovement
+      || fish.activity === "feeding"
       || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
       || fish.activity === FISH_GRAVEL_DIG_ACTIVITY
       || Boolean(activeQueuedFishAction)
@@ -2408,7 +2420,9 @@ function updateFishMotion(now, deltaSeconds) {
     if (pendingTravel) {
       motionTarget = Math.max(motionTarget, 0.58);
     }
-    if (zombieLockedOnTarget) {
+    if (panicOwnsMovement) {
+      motionTarget = Math.max(motionTarget, 0.9);
+    } else if (zombieLockedOnTarget) {
       motionTarget = Math.max(motionTarget, 0.78);
     } else if (zombieBittenVictim) {
       motionTarget = Math.max(motionTarget, 0.92);
@@ -2623,11 +2637,11 @@ function updateFishMotion(now, deltaSeconds) {
       if (effectiveBehavior === "sucker") {
         setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
       } else if (!handledDirectionThisFrame) {
-        const debugFaceDirection = getDebugBehaviorFacingDirection(fish, now);
+        const debugFaceDirection = panicOwnsMovement ? null : getDebugBehaviorFacingDirection(fish, now);
         const facingDx = fish.activity === "feeding" && pelletPose
           ? pelletPose.xNorm - fish.xNorm
           : fish.targetXNorm - fish.xNorm;
-        const schoolFollowFacing = fish.activity === "roam"
+        const schoolFollowFacing = !panicOwnsMovement && fish.activity === "roam"
           ? getFishSchoolFollowFacingDirection(fish, species, now, facingDx)
           : null;
         if (debugFaceDirection !== null) {
@@ -2648,7 +2662,7 @@ function updateFishMotion(now, deltaSeconds) {
       }
     }
 
-    const debugFaceDirectionAtRest = !handledDirectionThisFrame
+    const debugFaceDirectionAtRest = !panicOwnsMovement && !handledDirectionThisFrame
       ? getDebugBehaviorFacingDirection(fish, now)
       : null;
     if (debugFaceDirectionAtRest !== null && fish.activity === "roam" && !fish.caveState) {
@@ -2659,6 +2673,7 @@ function updateFishMotion(now, deltaSeconds) {
     if (
       fish.activity === "roam" &&
       !fish.caveState &&
+      !panicOwnsMovement &&
       !handledDirectionThisFrame &&
       !(Number.isFinite(fish.wallAvoidUntil) && now < fish.wallAvoidUntil)
     ) {
@@ -2738,6 +2753,134 @@ function updateFishMotion(now, deltaSeconds) {
   handleBettaPassAttacks(now);
   updateFishPebbleTosses(now);
   updateChumBloodClouds(now);
+}
+
+function getFishProfileRoamSpeed(species, profile, options = {}) {
+  if (!species || !profile) {
+    return normalizeFishSpeed(species);
+  }
+  const speedMin = Number(species.speedMin) || 0;
+  const speedMax = Math.max(speedMin, Number(species.speedMax) || speedMin);
+  const speedRange = Math.max(0, speedMax - speedMin);
+  const useDartSpeed = Boolean(options.dart);
+  const minBlend = useDartSpeed
+    ? clamp(profile.dartSpeedMinBlend, 0, 1)
+    : clamp(profile.speedMinBlend, 0, 1);
+  const maxBlend = useDartSpeed
+    ? 1
+    : clamp(Math.max(minBlend, profile.speedMaxBlend), minBlend, 1);
+  return normalizeFishSpeed(
+    species,
+    speedMin + speedRange * randomBetween(minBlend, maxBlend)
+  );
+}
+
+function getFishProfileRoamY(fish, species, layer, profile) {
+  const range = getLayerSwimYRange(layer, fish, species);
+  const span = Math.max(0, range.max - range.min);
+  const preferredY = clamp(profile.preferredY, 0, 1);
+  const spread = clamp(profile.verticalSpread, 0.06, 1);
+  const center = range.min + span * preferredY;
+  const halfSpread = span * spread * 0.5;
+  return clamp(randomBetween(center - halfSpread, center + halfSpread), range.min, range.max);
+}
+
+function getFishProfileRoamX(fish, species, profile) {
+  const currentX = clamp(Number(fish?.xNorm) || 0.5, 0.08, 0.92);
+  const facingDirection = getFishFacingDirection(fish);
+  const minDistance = clamp(profile.targetDistanceMin, 0.02, 0.7);
+  const maxDistance = clamp(Math.max(minDistance, profile.targetDistanceMax), minDistance, 0.84);
+  const distance = randomBetween(minDistance, maxDistance);
+  let direction = Math.random() < clamp(profile.headingPersistence, 0, 1)
+    ? facingDirection
+    : (Math.random() < 0.5 ? -1 : 1);
+  if (currentX <= 0.13) {
+    direction = 1;
+  } else if (currentX >= 0.87) {
+    direction = -1;
+  }
+  let targetX = currentX + direction * distance;
+  if (targetX < 0.08 || targetX > 0.92) {
+    targetX = currentX - direction * distance * randomBetween(0.78, 1);
+  }
+  return clampFishXNormToMobileViewport(clamp(targetX, 0.08, 0.92), fish, species);
+}
+
+function getFishProfileHomeRoamTarget(fish, species, layer, profile) {
+  if (
+    !fish?.favoriteSpot
+    || !Number.isFinite(Number(fish.favoriteSpot.xNorm))
+    || !Number.isFinite(Number(fish.favoriteSpot.yNorm))
+    || Math.random() > clamp(profile.homeRangeStrength, 0, 1)
+  ) {
+    return null;
+  }
+  const radius = clamp(profile.homeRangeRadius, 0.06, 0.42);
+  const angle = Math.random() * Math.PI * 2;
+  const distance = randomBetween(radius * 0.22, radius);
+  return clampFishPlacement(
+    Number(fish.favoriteSpot.xNorm) + Math.cos(angle) * distance,
+    Number(fish.favoriteSpot.yNorm) + Math.sin(angle) * distance * 0.65,
+    species,
+    { fish, layer }
+  );
+}
+
+function getFishProfileHoverTarget(fish, species, layer, profile) {
+  if (Math.random() > clamp(profile.hoverChance, 0, 0.85)) {
+    return null;
+  }
+  const driftScale = profile.movementPattern === "precision-hover" ? 0.012 : 0.022;
+  const placement = clampFishPlacement(
+    fish.xNorm + randomBetween(-driftScale, driftScale),
+    fish.yNorm + randomBetween(-driftScale * 0.7, driftScale * 0.7),
+    species,
+    { fish, layer }
+  );
+  return {
+    xNorm: placement.xNorm,
+    yNorm: placement.yNorm,
+    targetAt: Date.now() + randomBetween(profile.hoverMinMs, profile.hoverMaxMs),
+    speed: getFishProfileRoamSpeed(species, profile)
+  };
+}
+
+function assignSpeciesRoamTarget(fish, species, now) {
+  const profile = getFishLocomotionProfile(fish || species);
+  const nextRoamLayer = clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
+  const hoverTarget = getFishProfileHoverTarget(fish, species, nextRoamLayer, profile);
+  const homeTarget = hoverTarget ? null : getFishProfileHomeRoamTarget(fish, species, nextRoamLayer, profile);
+  const isDart = !hoverTarget && Math.random() < clamp(profile.dartChance, 0, 0.9);
+  let placement;
+  if (hoverTarget) {
+    placement = hoverTarget;
+  } else if (homeTarget) {
+    placement = homeTarget;
+  } else {
+    placement = clampFishPlacement(
+      getFishProfileRoamX(fish, species, profile),
+      getFishProfileRoamY(fish, species, nextRoamLayer, profile),
+      species,
+      { fish, layer: nextRoamLayer }
+    );
+  }
+
+  fish.targetXNorm = placement.xNorm;
+  fish.targetYNorm = placement.yNorm;
+  if (hoverTarget) {
+    fish.targetAt = now + randomBetween(profile.hoverMinMs, profile.hoverMaxMs);
+  } else if (isFishCriticallyLowHealth(fish)) {
+    fish.targetAt = now + randomBetween(900, Math.max(1400, species.targetMaxMs * 0.45));
+  } else {
+    const durationScale = clamp(profile.targetDurationScale, 0.5, 1.8);
+    fish.targetAt = now + randomBetween(species.targetMinMs, species.targetMaxMs) * durationScale;
+  }
+  setFishDesiredTankLayer(fish, nextRoamLayer);
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.swimSpeed = isFishCriticallyLowHealth(fish)
+    ? normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax))
+    : (hoverTarget?.speed || getFishProfileRoamSpeed(species, profile, { dart: isDart }));
 }
 
 function assignSwimTarget(fish, species, now) {
@@ -2884,9 +3027,17 @@ function assignSwimTarget(fish, species, now) {
     setFishDesiredTankLayer(fish, hangout.targetLayer);
     fish.hangoutDecorId = hangout.decorId;
     fish.hangoutZoneType = hangout.zoneType;
-    if (species.speedMode === "dynamic") {
-      fish.swimSpeed = normalizeFishSpeed(species);
+    const locomotionProfile = getFishLocomotionProfile(fish || species);
+    if (locomotionProfile.homeRangeStrength >= 0.4 && !fish.favoriteSpot && hangout.decorId) {
+      fish.favoriteSpot = {
+        xNorm: hangout.xNorm,
+        yNorm: hangout.yNorm,
+        decorId: hangout.decorId,
+        zoneType: hangout.zoneType || "",
+        assignedAt: now
+      };
     }
+    fish.swimSpeed = getFishProfileRoamSpeed(species, locomotionProfile);
     return;
   }
 
@@ -2897,9 +3048,7 @@ function assignSwimTarget(fish, species, now) {
     fish.targetAt = now + socialFollow.lingerMs;
     setFishDesiredTankLayer(fish, socialFollow.targetLayer);
     fish.hangoutDecorId = null;
-    if (species.speedMode === "dynamic") {
-      fish.swimSpeed = normalizeFishSpeed(species);
-    }
+    fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
     return;
   }
 
@@ -2913,29 +3062,9 @@ function assignSwimTarget(fish, species, now) {
       now
     );
     beginFishCaveBehavior(fish, cavePlan, now);
-    if (species.speedMode === "dynamic") {
-      fish.swimSpeed = normalizeFishSpeed(species);
-    }
+    fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
     return;
   }
 
-  const nextRoamLayer = effectiveBehavior === "sucker"
-    ? getSuckerFishGlassLayer(fish)
-    : clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
-  fish.targetXNorm = randomSwimX();
-  fish.targetYNorm = randomSwimY(nextRoamLayer, fish, species);
-  fish.targetAt = isFishCriticallyLowHealth(fish)
-    ? now + randomBetween(900, Math.max(1400, species.targetMaxMs * 0.45))
-    : now + species.targetMinMs + Math.random() * Math.max(200, species.targetMaxMs - species.targetMinMs);
-  setFishDesiredTankLayer(fish, nextRoamLayer);
-  fish.hangoutDecorId = null;
-  fish.hangoutZoneType = null;
-  if (species.speedMode === "dynamic" || isFishCriticallyLowHealth(fish)) {
-    fish.swimSpeed = normalizeFishSpeed(
-      species,
-      isFishCriticallyLowHealth(fish)
-        ? randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax)
-        : undefined
-    );
-  }
+  assignSpeciesRoamTarget(fish, species, now);
 }

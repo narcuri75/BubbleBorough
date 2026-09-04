@@ -1782,6 +1782,52 @@ function getFishFootprintBoundsAtPose(fish, species, now, pose) {
   };
 }
 
+function getCaveCollisionFrameCandidates(testLayer, now = Date.now()) {
+  const layer = clampTankLayer(testLayer);
+  const placedDecor = Array.isArray(state?.placedDecor) ? state.placedDecor : [];
+  const frameKey = Number(runtime.lastAnimationUpdateAt) || Number(now) || Date.now();
+  const activeTankId = state?.activeTankId || "";
+  let cache = runtime.caveCollisionFrameCache;
+
+  if (
+    !cache
+    || cache.frameKey !== frameKey
+    || cache.activeTankId !== activeTankId
+    || cache.placedDecor !== placedDecor
+    || cache.placedDecorLength !== placedDecor.length
+  ) {
+    const candidatesByLayer = Array.from({ length: TANK_DEPTH_LAYERS + 1 }, () => []);
+    for (const item of placedDecor) {
+      if (!item || !isCaveDecorKey(item.decorKey)) {
+        continue;
+      }
+      const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
+      const layers = span.front === span.back ? [span.front] : [span.front, span.back];
+      for (const candidateLayer of layers) {
+        const normalizedLayer = clampTankLayer(candidateLayer);
+        if (normalizedLayer < 3) {
+          continue;
+        }
+        const descriptor = getCaveBlockingDescriptorForLayer(item, normalizedLayer);
+        if (!descriptor) {
+          continue;
+        }
+        candidatesByLayer[normalizedLayer].push({ item, span, descriptor });
+      }
+    }
+    cache = {
+      frameKey,
+      activeTankId,
+      placedDecor,
+      placedDecorLength: placedDecor.length,
+      candidatesByLayer
+    };
+    runtime.caveCollisionFrameCache = cache;
+  }
+
+  return cache.candidatesByLayer[layer] || [];
+}
+
 function findBlockingCaveForFishPose(fish, species, now, pose, layerOverride = null) {
   if (!fish || !species || species.behavior === "sucker") {
     return null;
@@ -1792,34 +1838,43 @@ function findBlockingCaveForFishPose(fish, species, now, pose, layerOverride = n
     return null;
   }
 
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const fishDescriptor = getFishShapeDescriptor(fish, species, now, pose);
   if (!fishDescriptor) {
+    if (runtime.debugFrameProfilerEnabled) {
+      endDebugFrameProfilerSection("caveCollision", profileStartedAt);
+    }
     return null;
   }
 
-  for (const item of state.placedDecor) {
-    if (!isCaveDecorKey(item.decorKey)) {
-      continue;
-    }
-
+  const candidates = getCaveCollisionFrameCandidates(testLayer, now);
+  if (runtime.debugFrameProfilerEnabled) {
+    incrementDebugFrameProfilerCounter("caveCandidates", candidates.length);
+  }
+  for (const candidate of candidates) {
+    const { item, span, descriptor } = candidate;
     if (isFishUsingOwnCavePath(fish, item)) {
       continue;
     }
 
-    const descriptor = getCaveBlockingDescriptorForLayer(item, testLayer);
-    if (!descriptor) {
+    if (!boundsIntersect(fishDescriptor.bounds, descriptor.bounds)) {
       continue;
     }
 
-    if (boundsIntersect(fishDescriptor.bounds, descriptor.bounds) && shapesOverlapByMaskStrict(fishDescriptor, descriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
-      return {
-        item,
-        span: getDecorLayerSpan(item.decorKey, getDecorTankLayer(item)),
-        descriptor
-      };
+    if (runtime.debugFrameProfilerEnabled) {
+      incrementDebugFrameProfilerCounter("caveStrictChecks", 1);
+    }
+    if (shapesOverlapByMaskStrict(fishDescriptor, descriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
+      if (runtime.debugFrameProfilerEnabled) {
+        endDebugFrameProfilerSection("caveCollision", profileStartedAt);
+      }
+      return { item, span, descriptor };
     }
   }
 
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("caveCollision", profileStartedAt);
+  }
   return null;
 }
 

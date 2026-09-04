@@ -17,7 +17,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 41;
+const STATE_VERSION = 43;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -29,6 +29,8 @@ const DEFAULT_APP_CONFIG = Object.freeze({
   wallpaperEngine: true
 });
 const DESKTOP_PORTABLE_BACKUP_INTERVAL_MS = 10 * 60 * 1000;
+const DEFERRED_STATE_SAVE_MIN_INTERVAL_MS = 4000;
+const DEFERRED_TICK_UI_MIN_INTERVAL_MS = 2500;
 const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
   /swiftshader/i,
   /llvmpipe/i,
@@ -327,6 +329,289 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
   "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true }
+});
+const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
+  movementPattern: "cruise",
+  preferredY: 0.5,
+  verticalSpread: 0.82,
+  targetDistanceMin: 0.16,
+  targetDistanceMax: 0.52,
+  headingPersistence: 0.5,
+  hoverChance: 0.05,
+  hoverMinMs: 700,
+  hoverMaxMs: 1700,
+  schoolStrength: 0.2,
+  schoolSpacingScale: 1,
+  schoolDurationScale: 1,
+  schoolVerticalJitterScale: 1,
+  structureAffinity: 1,
+  caveAffinity: 1,
+  homeRangeStrength: 0,
+  homeRangeRadius: 0.22,
+  startleStrength: 1,
+  startleRecoveryScale: 1,
+  turnDurationScale: 1,
+  speedMinBlend: 0.2,
+  speedMaxBlend: 0.8,
+  dartChance: 0,
+  dartSpeedMinBlend: 0.72,
+  targetDurationScale: 1
+});
+const createFishLocomotionProfile = (overrides = {}) => Object.freeze({
+  ...FISH_LOCOMOTION_PROFILE_DEFAULT,
+  ...overrides
+});
+const FISH_LOCOMOTION_PROFILES = Object.freeze({
+  "blue-tang": createFishLocomotionProfile({
+    movementPattern: "open-water-cruise", preferredY: 0.48, verticalSpread: 0.74,
+    targetDistanceMin: 0.34, targetDistanceMax: 0.72, headingPersistence: 0.8,
+    hoverChance: 0.015, schoolStrength: 0.3, structureAffinity: 0.82, caveAffinity: 0.3,
+    startleStrength: 1.25, startleRecoveryScale: 1.08, turnDurationScale: 0.9,
+    speedMinBlend: 0.62, speedMaxBlend: 0.98, targetDurationScale: 0.88
+  }),
+  "yellow-tang": createFishLocomotionProfile({
+    movementPattern: "patrol-graze", preferredY: 0.54, verticalSpread: 0.72,
+    targetDistanceMin: 0.26, targetDistanceMax: 0.6, headingPersistence: 0.7,
+    hoverChance: 0.1, hoverMinMs: 700, hoverMaxMs: 1900, schoolStrength: 0.16,
+    structureAffinity: 1.28, caveAffinity: 0.25, startleStrength: 1.08,
+    turnDurationScale: 0.95, speedMinBlend: 0.48, speedMaxBlend: 0.86
+  }),
+  "rainbowfish": createFishLocomotionProfile({
+    movementPattern: "fast-school-cruise", preferredY: 0.45, verticalSpread: 0.66,
+    targetDistanceMin: 0.36, targetDistanceMax: 0.74, headingPersistence: 0.84,
+    hoverChance: 0.008, schoolStrength: 0.7, schoolSpacingScale: 0.92,
+    schoolDurationScale: 1.35, schoolVerticalJitterScale: 0.72, structureAffinity: 0.72,
+    startleStrength: 1.22, turnDurationScale: 0.84, speedMinBlend: 0.66,
+    speedMaxBlend: 1, targetDurationScale: 0.82
+  }),
+  "swordtail": createFishLocomotionProfile({
+    movementPattern: "strong-cruise", preferredY: 0.46, verticalSpread: 0.72,
+    targetDistanceMin: 0.3, targetDistanceMax: 0.68, headingPersistence: 0.8,
+    hoverChance: 0.015, schoolStrength: 0.3, schoolDurationScale: 1.08,
+    structureAffinity: 0.88, startleStrength: 0.98, turnDurationScale: 0.88,
+    speedMinBlend: 0.58, speedMaxBlend: 0.96, targetDurationScale: 0.9
+  }),
+  "molly": createFishLocomotionProfile({
+    movementPattern: "social-graze", preferredY: 0.48, verticalSpread: 0.75,
+    targetDistanceMin: 0.18, targetDistanceMax: 0.48, headingPersistence: 0.5,
+    hoverChance: 0.08, schoolStrength: 0.34, schoolSpacingScale: 1.05,
+    structureAffinity: 1.15, startleStrength: 0.92, turnDurationScale: 1.02,
+    speedMinBlend: 0.3, speedMaxBlend: 0.76
+  }),
+  "livebearer": createFishLocomotionProfile({
+    movementPattern: "lively-social", preferredY: 0.38, verticalSpread: 0.66,
+    targetDistanceMin: 0.15, targetDistanceMax: 0.46, headingPersistence: 0.42,
+    hoverChance: 0.035, schoolStrength: 0.38, schoolSpacingScale: 1,
+    structureAffinity: 1.08, startleStrength: 1.05, turnDurationScale: 0.9,
+    speedMinBlend: 0.38, speedMaxBlend: 0.88, dartChance: 0.14, dartSpeedMinBlend: 0.78
+  }),
+  "clownfish": createFishLocomotionProfile({
+    movementPattern: "home-hover", preferredY: 0.5, verticalSpread: 0.52,
+    targetDistanceMin: 0.07, targetDistanceMax: 0.26, headingPersistence: 0.26,
+    hoverChance: 0.28, hoverMinMs: 900, hoverMaxMs: 2600, schoolStrength: 0.2,
+    schoolSpacingScale: 1.15, structureAffinity: 2, caveAffinity: 0.3,
+    homeRangeStrength: 0.92, homeRangeRadius: 0.16, startleStrength: 1.05,
+    turnDurationScale: 1.08, speedMinBlend: 0.1, speedMaxBlend: 0.52,
+    targetDurationScale: 1.2
+  }),
+  "goldfish": createFishLocomotionProfile({
+    movementPattern: "area-forage", preferredY: 0.58, verticalSpread: 0.76,
+    targetDistanceMin: 0.16, targetDistanceMax: 0.42, headingPersistence: 0.42,
+    hoverChance: 0.13, hoverMinMs: 900, hoverMaxMs: 2300, schoolStrength: 0.18,
+    structureAffinity: 1.04, startleStrength: 0.86, turnDurationScale: 1.2,
+    speedMinBlend: 0.08, speedMaxBlend: 0.58, targetDurationScale: 1.12
+  }),
+  "betta": createFishLocomotionProfile({
+    movementPattern: "deliberate-hover", preferredY: 0.42, verticalSpread: 0.58,
+    targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.36,
+    hoverChance: 0.26, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0,
+    structureAffinity: 1.72, caveAffinity: 0.42, homeRangeStrength: 0.45,
+    homeRangeRadius: 0.2, startleStrength: 1.08, startleRecoveryScale: 1.05,
+    turnDurationScale: 1.42, speedMinBlend: 0.04, speedMaxBlend: 0.48,
+    targetDurationScale: 1.22
+  }),
+  "angelfish": createFishLocomotionProfile({
+    movementPattern: "graceful-cruise", preferredY: 0.48, verticalSpread: 0.6,
+    targetDistanceMin: 0.2, targetDistanceMax: 0.5, headingPersistence: 0.62,
+    hoverChance: 0.2, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0.28,
+    schoolSpacingScale: 1.18, structureAffinity: 1.18, caveAffinity: 0.45,
+    startleStrength: 1.02, turnDurationScale: 1.5, speedMinBlend: 0.04,
+    speedMaxBlend: 0.46, targetDurationScale: 1.22
+  }),
+  "discus": createFishLocomotionProfile({
+    movementPattern: "group-hover", preferredY: 0.5, verticalSpread: 0.54,
+    targetDistanceMin: 0.14, targetDistanceMax: 0.38, headingPersistence: 0.44,
+    hoverChance: 0.3, hoverMinMs: 1300, hoverMaxMs: 3400, schoolStrength: 0.56,
+    schoolSpacingScale: 1.16, schoolDurationScale: 1.55, schoolVerticalJitterScale: 0.75,
+    structureAffinity: 1.2, startleStrength: 1.2, startleRecoveryScale: 1.22,
+    turnDurationScale: 1.55, speedMinBlend: 0.02, speedMaxBlend: 0.4,
+    targetDurationScale: 1.28
+  }),
+  "moor-goldfish": createFishLocomotionProfile({
+    movementPattern: "slow-area-forage", preferredY: 0.58, verticalSpread: 0.62,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.26, headingPersistence: 0.3,
+    hoverChance: 0.24, hoverMinMs: 1200, hoverMaxMs: 3100, schoolStrength: 0.12,
+    structureAffinity: 1.12, startleStrength: 0.66, startleRecoveryScale: 1.12,
+    turnDurationScale: 1.6, speedMinBlend: 0, speedMaxBlend: 0.3,
+    targetDurationScale: 1.3
+  }),
+  "gourami": createFishLocomotionProfile({
+    movementPattern: "upper-hover", preferredY: 0.3, verticalSpread: 0.48,
+    targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.38,
+    hoverChance: 0.28, hoverMinMs: 1000, hoverMaxMs: 2900, schoolStrength: 0.08,
+    structureAffinity: 1.68, caveAffinity: 1.18, homeRangeStrength: 0.48,
+    homeRangeRadius: 0.2, startleStrength: 1.14, startleRecoveryScale: 1.1,
+    turnDurationScale: 1.35, speedMinBlend: 0.02, speedMaxBlend: 0.42,
+    targetDurationScale: 1.22
+  }),
+  "blue-ram": createFishLocomotionProfile({
+    movementPattern: "bottom-stop-go", preferredY: 0.84, verticalSpread: 0.34,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.28, headingPersistence: 0.3,
+    hoverChance: 0.28, hoverMinMs: 900, hoverMaxMs: 2600, schoolStrength: 0.04,
+    structureAffinity: 1.7, caveAffinity: 1.65, homeRangeStrength: 0.72,
+    homeRangeRadius: 0.18, startleStrength: 1.16, startleRecoveryScale: 1.12,
+    turnDurationScale: 1.2, speedMinBlend: 0.08, speedMaxBlend: 0.5,
+    dartChance: 0.1, dartSpeedMinBlend: 0.72, targetDurationScale: 1.18
+  }),
+  "royal-gramma": createFishLocomotionProfile({
+    movementPattern: "cave-hover-dart", preferredY: 0.5, verticalSpread: 0.42,
+    targetDistanceMin: 0.06, targetDistanceMax: 0.22, headingPersistence: 0.24,
+    hoverChance: 0.4, hoverMinMs: 1100, hoverMaxMs: 3300, schoolStrength: 0.02,
+    structureAffinity: 2.05, caveAffinity: 2.35, homeRangeStrength: 0.96,
+    homeRangeRadius: 0.14, startleStrength: 1.38, startleRecoveryScale: 1.25,
+    turnDurationScale: 0.92, speedMinBlend: 0.04, speedMaxBlend: 0.42,
+    dartChance: 0.24, dartSpeedMinBlend: 0.8, targetDurationScale: 1.24
+  }),
+  "guppy": createFishLocomotionProfile({
+    movementPattern: "lively-social", preferredY: 0.36, verticalSpread: 0.68,
+    targetDistanceMin: 0.12, targetDistanceMax: 0.44, headingPersistence: 0.34,
+    hoverChance: 0.025, schoolStrength: 0.38, schoolSpacingScale: 0.96,
+    structureAffinity: 1.05, caveAffinity: 0.78, startleStrength: 1.14,
+    turnDurationScale: 0.78, speedMinBlend: 0.3, speedMaxBlend: 0.96,
+    dartChance: 0.2, dartSpeedMinBlend: 0.76, targetDurationScale: 0.85
+  }),
+  "zebra-danio": createFishLocomotionProfile({
+    movementPattern: "fast-school-cruise", preferredY: 0.36, verticalSpread: 0.62,
+    targetDistanceMin: 0.28, targetDistanceMax: 0.7, headingPersistence: 0.72,
+    hoverChance: 0.002, schoolStrength: 0.7, schoolSpacingScale: 0.88,
+    schoolDurationScale: 1.22, schoolVerticalJitterScale: 0.75, structureAffinity: 0.68,
+    caveAffinity: 0.7, startleStrength: 1.28, turnDurationScale: 0.7,
+    speedMinBlend: 0.6, speedMaxBlend: 1, targetDurationScale: 0.72
+  }),
+  "cherry-barb": createFishLocomotionProfile({
+    movementPattern: "calm-shoal", preferredY: 0.56, verticalSpread: 0.58,
+    targetDistanceMin: 0.12, targetDistanceMax: 0.38, headingPersistence: 0.44,
+    hoverChance: 0.13, hoverMinMs: 800, hoverMaxMs: 2200, schoolStrength: 0.44,
+    schoolSpacingScale: 1.08, schoolDurationScale: 1.2, structureAffinity: 1.28,
+    caveAffinity: 0.95, startleStrength: 1.08, turnDurationScale: 1.08,
+    speedMinBlend: 0.22, speedMaxBlend: 0.62, targetDurationScale: 1.1
+  }),
+  "neon-tetra": createFishLocomotionProfile({
+    movementPattern: "school-cruise", preferredY: 0.46, verticalSpread: 0.52,
+    targetDistanceMin: 0.18, targetDistanceMax: 0.5, headingPersistence: 0.58,
+    hoverChance: 0.02, schoolStrength: 0.84, schoolSpacingScale: 0.82,
+    schoolDurationScale: 1.55, schoolVerticalJitterScale: 0.58, structureAffinity: 1.25,
+    caveAffinity: 0.7, startleStrength: 1.36, startleRecoveryScale: 1.14,
+    turnDurationScale: 0.86, speedMinBlend: 0.48, speedMaxBlend: 0.86,
+    dartChance: 0.12, dartSpeedMinBlend: 0.78, targetDurationScale: 0.9
+  }),
+  "celestial-pearl-danio": createFishLocomotionProfile({
+    movementPattern: "hover-dart", preferredY: 0.56, verticalSpread: 0.46,
+    targetDistanceMin: 0.05, targetDistanceMax: 0.2, headingPersistence: 0.18,
+    hoverChance: 0.34, hoverMinMs: 900, hoverMaxMs: 2500, schoolStrength: 0.16,
+    schoolSpacingScale: 1.12, structureAffinity: 1.82, caveAffinity: 0.92,
+    homeRangeStrength: 0.22, homeRangeRadius: 0.18, startleStrength: 1.34,
+    startleRecoveryScale: 1.18, turnDurationScale: 0.78, speedMinBlend: 0.16,
+    speedMaxBlend: 0.52, dartChance: 0.58, dartSpeedMinBlend: 0.8,
+    targetDurationScale: 1.08
+  }),
+  "chili-rasbora": createFishLocomotionProfile({
+    movementPattern: "hover-dart-shoal", preferredY: 0.38, verticalSpread: 0.48,
+    targetDistanceMin: 0.06, targetDistanceMax: 0.24, headingPersistence: 0.24,
+    hoverChance: 0.24, hoverMinMs: 700, hoverMaxMs: 2100, schoolStrength: 0.62,
+    schoolSpacingScale: 0.84, schoolDurationScale: 1.3, schoolVerticalJitterScale: 0.62,
+    structureAffinity: 1.72, startleStrength: 1.45, startleRecoveryScale: 1.22,
+    turnDurationScale: 0.72, speedMinBlend: 0.18, speedMaxBlend: 0.58,
+    dartChance: 0.54, dartSpeedMinBlend: 0.82, targetDurationScale: 0.98
+  }),
+  "ember-tetra": createFishLocomotionProfile({
+    movementPattern: "hover-shoal", preferredY: 0.5, verticalSpread: 0.5,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.28, headingPersistence: 0.34,
+    hoverChance: 0.25, hoverMinMs: 800, hoverMaxMs: 2300, schoolStrength: 0.52,
+    schoolSpacingScale: 0.94, schoolDurationScale: 1.32, schoolVerticalJitterScale: 0.7,
+    structureAffinity: 1.55, startleStrength: 1.3, startleRecoveryScale: 1.14,
+    turnDurationScale: 0.98, speedMinBlend: 0.2, speedMaxBlend: 0.58,
+    targetDurationScale: 1.12
+  }),
+  "harlequin-rasbora": createFishLocomotionProfile({
+    movementPattern: "steady-school-cruise", preferredY: 0.48, verticalSpread: 0.56,
+    targetDistanceMin: 0.22, targetDistanceMax: 0.54, headingPersistence: 0.66,
+    hoverChance: 0.04, schoolStrength: 0.74, schoolSpacingScale: 0.9,
+    schoolDurationScale: 1.5, schoolVerticalJitterScale: 0.62, structureAffinity: 1.08,
+    startleStrength: 1.16, turnDurationScale: 0.92, speedMinBlend: 0.44,
+    speedMaxBlend: 0.82, targetDurationScale: 0.94
+  }),
+  "pencilfish": createFishLocomotionProfile({
+    movementPattern: "upper-glide", preferredY: 0.24, verticalSpread: 0.3,
+    targetDistanceMin: 0.14, targetDistanceMax: 0.4, headingPersistence: 0.72,
+    hoverChance: 0.25, hoverMinMs: 900, hoverMaxMs: 2600, schoolStrength: 0.4,
+    schoolSpacingScale: 1.14, schoolDurationScale: 1.25, schoolVerticalJitterScale: 0.4,
+    structureAffinity: 1.42, startleStrength: 1.16, turnDurationScale: 1.14,
+    speedMinBlend: 0.18, speedMaxBlend: 0.58, targetDurationScale: 1.16
+  }),
+  "rummy-nose-tetra": createFishLocomotionProfile({
+    movementPattern: "tight-school-cruise", preferredY: 0.48, verticalSpread: 0.46,
+    targetDistanceMin: 0.28, targetDistanceMax: 0.62, headingPersistence: 0.78,
+    hoverChance: 0.006, schoolStrength: 1, schoolSpacingScale: 0.7,
+    schoolDurationScale: 1.85, schoolVerticalJitterScale: 0.42, structureAffinity: 0.86,
+    startleStrength: 1.4, startleRecoveryScale: 1.18, turnDurationScale: 0.82,
+    speedMinBlend: 0.56, speedMaxBlend: 0.9, targetDurationScale: 0.82
+  }),
+  "otocinclus": createFishLocomotionProfile({
+    movementPattern: "attached-grazer", preferredY: 0.68, verticalSpread: 0.62,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.28, headingPersistence: 0.3,
+    hoverChance: 0.34, schoolStrength: 0.34, schoolSpacingScale: 1.12,
+    structureAffinity: 2.1, caveAffinity: 0.1, startleStrength: 1.42,
+    startleRecoveryScale: 1.24, turnDurationScale: 1.12, speedMinBlend: 0,
+    speedMaxBlend: 0.5, dartChance: 0.16, dartSpeedMinBlend: 0.78,
+    targetDurationScale: 1.4
+  }),
+  "loach": createFishLocomotionProfile({
+    movementPattern: "bottom-wriggle", preferredY: 0.92, verticalSpread: 0.2,
+    targetDistanceMin: 0.1, targetDistanceMax: 0.4, headingPersistence: 0.4,
+    hoverChance: 0.12, hoverMinMs: 1100, hoverMaxMs: 3600, schoolStrength: 0.24,
+    schoolSpacingScale: 1.16, structureAffinity: 1.85, caveAffinity: 1.7,
+    homeRangeStrength: 0.34, homeRangeRadius: 0.2, startleStrength: 1.32,
+    startleRecoveryScale: 1.2, turnDurationScale: 0.86, speedMinBlend: 0.16,
+    speedMaxBlend: 0.62, dartChance: 0.18, dartSpeedMinBlend: 0.78,
+    targetDurationScale: 1.2
+  }),
+  "piranha": createFishLocomotionProfile({
+    movementPattern: "cautious-shoal", preferredY: 0.5, verticalSpread: 0.56,
+    targetDistanceMin: 0.14, targetDistanceMax: 0.42, headingPersistence: 0.46,
+    hoverChance: 0.1, hoverMinMs: 700, hoverMaxMs: 1900, schoolStrength: 0.68,
+    schoolSpacingScale: 0.8, schoolDurationScale: 1.45, schoolVerticalJitterScale: 0.62,
+    structureAffinity: 0.98, startleStrength: 1.3, startleRecoveryScale: 1.12,
+    turnDurationScale: 0.86, speedMinBlend: 0.08, speedMaxBlend: 0.48,
+    targetDurationScale: 1.18
+  }),
+  "wonder-killifish": createFishLocomotionProfile({
+    movementPattern: "surface-ambush", preferredY: 0.08, verticalSpread: 0.18,
+    targetDistanceMin: 0.05, targetDistanceMax: 0.3, headingPersistence: 0.34,
+    hoverChance: 0.48, hoverMinMs: 1300, hoverMaxMs: 3800, schoolStrength: 0,
+    structureAffinity: 0.9, startleStrength: 1.4, startleRecoveryScale: 1.12,
+    turnDurationScale: 0.78, speedMinBlend: 0.02, speedMaxBlend: 0.34,
+    dartChance: 0.38, dartSpeedMinBlend: 0.88, targetDurationScale: 1.16
+  }),
+  "pufferfish": createFishLocomotionProfile({
+    movementPattern: "precision-hover", preferredY: 0.5, verticalSpread: 0.58,
+    targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.34,
+    hoverChance: 0.36, hoverMinMs: 1100, hoverMaxMs: 3300, schoolStrength: 0,
+    structureAffinity: 1.3, caveAffinity: 0.4, startleStrength: 0.78,
+    startleRecoveryScale: 0.92, turnDurationScale: 1.32, speedMinBlend: 0,
+    speedMaxBlend: 0.42, dartChance: 0.07, dartSpeedMinBlend: 0.86,
+    targetDurationScale: 1.22
+  })
 });
 const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
 const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
@@ -1084,6 +1369,17 @@ const CUSTOM_GRAVEL_COLOR_OPTIONS = Object.freeze([
   { key: "deep-black", label: "Black", color: "#212121", uvReactive: false },
   { key: "black-black", label: "Black Black", color: "#000000", uvReactive: false }
 ]);
+const TANK_ANIMATED_BACKGROUND_PRESETS = Object.freeze([
+  { key: "deep-ocean", label: "Deep Ocean", color: "#1D2A6D" },
+  { key: "lagoon", label: "Lagoon", color: "#00B8A9" },
+  { key: "tropical", label: "Tropical", color: "#42F5A1" },
+  { key: "sunrise", label: "Sunrise", color: "#FF8C42" },
+  { key: "coral-pulse", label: "Coral Pulse", color: "#FF5E78" },
+  { key: "aurora", label: "Aurora", color: "#6D3DFF" },
+  { key: "bioluminescent", label: "Bioluminescent", color: "#18D6FF" },
+  { key: "midnight", label: "Midnight", color: "#4B1D95" }
+]);
+
 const CUSTOM_GRAVEL_UV_REACTIVE_COLOR_KEYS = new Set(
   CUSTOM_GRAVEL_COLOR_OPTIONS
     .filter((choice) => choice.uvReactive !== false)
@@ -1510,7 +1806,13 @@ const WATER_PARTICLE_SPRITE_ALPHA_BOOST = 1.9;
 const WATER_PARTICLE_SPRITE_ALPHA_FLOOR = 18;
 const WATER_PARTICLE_FADE_IN_PER_SECOND = 1.8;
 const WATER_PARTICLE_FADE_OUT_PER_SECOND = 0.42;
-const FISH_SATIATED_MS = 5 * MINUTE_MS;
+const FISH_SATIATED_MS = 30 * MINUTE_MS;
+const FISH_BASIC_MEAL_HUNGER_GAIN = 50;
+const FISH_BASIC_MEAL_HUNGER_FLOOR = 85;
+const FISH_CHUM_MEAL_HUNGER_GAIN = 55;
+const FISH_CHUM_MEAL_HUNGER_FLOOR = 90;
+const FISH_WILLING_TO_EAT_HUNGER_MAX = 82;
+const FISH_OVERFEED_HUNGER_THRESHOLD = 88;
 const FILTERLESS_BASE_TANK_DIRTY_DAYS = 2.4;
 const MEDICINE_HEAL_INTERVAL_MS = 10 * 1000;
 const MEDICINE_HEAL_DURATION_MS = 60 * 1000;
@@ -1536,6 +1838,33 @@ const AUTO_DISPENSER_DROP_DURATION_MS = 850;
 const AUTO_DISPENSER_PELLET_MAX_Y_NORM = 0.28;
 const AUTO_DISPENSER_HOPPER_MAX_DRAWN_PELLETS = AUTO_DISPENSER_MAX_PELLETS;
 const AUTO_DISPENSER_LOW_FOOD_BLINK_MS = 360;
+const MACHINERY_TYPE_SUBMARINE = "submarine";
+const SUBMARINE_COST = 100;
+const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/submarine.png");
+const SUBMARINE_RESOURCE_CAPACITY = 99;
+const SUBMARINE_DRAW_WIDTH_PX = 190;
+const SUBMARINE_CRUISE_SPEED_PX_PER_SECOND = 82;
+const SUBMARINE_MISSION_SPEED_PX_PER_SECOND = 108;
+const SUBMARINE_TRAVEL_SPEED_PX_PER_SECOND = 118;
+const SUBMARINE_MANUAL_SPEED_PX_PER_SECOND = 168;
+const SUBMARINE_MANUAL_ACCELERATION_PX_PER_SECOND2 = 430;
+const SUBMARINE_MANUAL_VERTICAL_ACCELERATION_PX_PER_SECOND2 = 360;
+const SUBMARINE_MANUAL_DRAG_PER_SECOND = 5.2;
+const SUBMARINE_MANUAL_VERTICAL_SPEED_SCALE = 0.82;
+const SUBMARINE_DEFAULT_TANK_LAYER = 2;
+const SUBMARINE_IDLE_BOB_AMPLITUDE_PX = 3.4;
+const SUBMARINE_IDLE_BOB_PERIOD_MS = 2100;
+const SUBMARINE_MANUAL_FOOD_COOLDOWN_MS = 140;
+const SUBMARINE_IDLE_MIN_MS = 3500;
+const SUBMARINE_IDLE_MAX_MS = 11000;
+const SUBMARINE_SCAN_INTERVAL_MS = 1500;
+const SUBMARINE_SERVICE_DISTANCE_PX = 150;
+const SUBMARINE_HUNGER_THRESHOLD = FISH_HUNGER_LOW_THRESHOLD;
+const SUBMARINE_COMFORT_THRESHOLD = 0.35;
+const SUBMARINE_RED_LIGHT_BLINK_MS = 500;
+const SUBMARINE_FOOD_RETRY_MS = 9000;
+const SUBMARINE_MEDICINE_RETRY_MS = 12000;
+const SUBMARINE_SPOTLIGHT_LENGTH_PX = 320;
 const ENABLE_UV_LIGHT = false;
 const UV_LIGHT_COST = 25;
 const UV_LIGHT_IMAGE_PATH = resolveAppUrl("assets/misc/uvlight.png");
@@ -2336,6 +2665,9 @@ const dom = {
   debugMenuFish: document.querySelector("#debugMenuFish"),
   debugMenuDirtiness: document.querySelector("#debugMenuDirtiness"),
   debugMenuBehaviors: document.querySelector("#debugMenuBehaviors"),
+  debugNotificationUiButton: document.querySelector("#debugNotificationUiButton"),
+  debugFishActionIndicatorsButton: document.querySelector("#debugFishActionIndicatorsButton"),
+  debugFrameProfilerButton: document.querySelector("#debugFrameProfilerButton"),
   debugLivingBoroughPanel: document.querySelector("#debugLivingBoroughPanel"),
   resetMealsButton: document.querySelector("#resetMealsButton"),
   addHundredCoinsButton: document.querySelector("#addHundredCoinsButton"),
@@ -2410,6 +2742,9 @@ const dom = {
   editFishTrayContextMenu: document.querySelector("#editFishTrayContextMenu"),
   editFishTrayPrev: document.querySelector("#editFishTrayPrev"),
   editFishTrayNext: document.querySelector("#editFishTrayNext"),
+  editEquipmentTray: document.querySelector("#editEquipmentTray"),
+  closeEditEquipmentTrayButton: document.querySelector("#closeEditEquipmentTrayButton"),
+  editEquipmentTrayScroller: document.querySelector("#editEquipmentTrayScroller"),
   editTankTray: document.querySelector("#editTankTray"),
   closeEditTankTrayButton: document.querySelector("#closeEditTankTrayButton"),
   editTankTrayScroller: document.querySelector("#editTankTrayScroller"),
@@ -2582,6 +2917,7 @@ const dom = {
   toggleFishShop: document.querySelector("#toggleFishShop"),
   fishEditModeDockButton: document.querySelector("#fishEditModeDockButton"),
   editModeDockButton: document.querySelector("#editModeDockButton"),
+  equipmentEditModeDockButton: document.querySelector("#equipmentEditModeDockButton"),
   toggleMouseLockButton: document.querySelector("#toggleMouseLockButton"),
   uvLightToggleButton: document.querySelector("#uvLightToggleButton"),
   editLayerUpButton: document.querySelector("#editLayerUpButton"),
@@ -2647,8 +2983,13 @@ const runtime = {
   fishEditMode: false,
   fishEditTrayTab: "tank",
   editOverlayMode: "fish",
+  equipmentEditMode: false,
+  equipmentEditTrayTab: "storage",
   tankEditMode: false,
   editTankTrayTab: "background",
+  editTankBackgroundMode: "",
+  editTankGravelLayer: 0,
+  tankColorPickerDrag: null,
   foodTrayOpen: false,
   medicineTrayOpen: false,
   feedingModeFoodKey: "",
@@ -2717,12 +3058,50 @@ const runtime = {
   boroughOverviewDragPointerId: null,
   transitTubeBursts: [],
   pendingNeighborhoodTravel: new Map(),
+  pendingMachineryTravel: new Map(),
   foodTravelDestinations: new Map(),
+  selectedMachineryId: null,
+  submarineManualDriveId: "",
+  submarineManualDriveKeys: new Set(),
+  submarineManualDriveStartedAt: 0,
+  submarineManualLastFoodDeployAt: 0,
+  submarineNextGlobalScanAt: 0,
   tankAppearanceClipboard: { background: null, gravel: null },
   boroughEdgeBursts: [],
   boroughActivityNotifications: [],
   boroughNotificationSignatures: new Map(),
   lastBoroughNotificationAt: 0,
+  debugNotificationUiEnabled: false,
+  debugFishActionIndicatorsEnabled: false,
+  debugFrameProfilerEnabled: false,
+  frameProfilerCurrent: null,
+  frameProfilerSamples: [],
+  frameProfilerLongFrameCount: 0,
+  frameProfilerLastOverlayAt: 0,
+  frameProfilerOverlay: null,
+  frameProfilerLastSaveMs: 0,
+  frameProfilerLastUiRenderMs: 0,
+  frameProfilerLastTickMs: 0,
+  frameProfilerLastDeferredUiMs: 0,
+  fishFrameLookupById: new Map(),
+  fishFrameLookupSource: null,
+  fishFrameLookupLength: 0,
+  fishRenderFrameCache: null,
+  fishRenderRecordPool: [],
+  fishRenderLayerBuckets: null,
+  fishSpeciesMergeCache: new Map(),
+  deferredStateSaveDirty: false,
+  deferredStateSaveRequestedAt: 0,
+  deferredStateSaveTimerId: 0,
+  deferredStateSaveIdleId: 0,
+  lastStateSavedAt: 0,
+  deferredTickUiTimerId: 0,
+  deferredTickUiIdleId: 0,
+  deferredTickUiNow: 0,
+  lastDeferredTickUiRefreshAt: 0,
+  caveCollisionFrameCache: null,
+  lastRenderedCoinCount: null,
+  coinGainGlowTimeoutId: 0,
   achievementEvaluationActive: false,
   lastBoroughHappeningAt: 0,
   debugSimulatedNow: null,

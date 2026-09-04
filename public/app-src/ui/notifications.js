@@ -41,7 +41,7 @@ function getNotificationCenterEntries() {
 }
 
 function enqueueNotificationCenterEntry(entry, options = {}) {
-  if (!state) {
+  if (!state || !runtime.debugNotificationUiEnabled) {
     return null;
   }
   if (!state.notificationCenter || typeof state.notificationCenter !== "object") {
@@ -153,6 +153,15 @@ function syncNotificationBellPresentation() {
   if (!dom.dailyBonusBell) {
     return;
   }
+  if (!runtime.debugNotificationUiEnabled) {
+    dom.dailyBonusBell.hidden = true;
+    dom.dailyBonusBell.classList.remove("has-daily-recap", "has-unread-notifications");
+    if (dom.notificationBellBadge) {
+      dom.notificationBellBadge.hidden = true;
+      dom.notificationBellBadge.textContent = "";
+    }
+    return;
+  }
   ensurePendingRecapNotifications();
   const unreadCount = getUnreadNotificationCount();
   const hasRecap = getPendingDailyRecapSummaries().length > 0;
@@ -249,6 +258,9 @@ function ensureBoroughNotificationHost() {
 }
 
 function queueBoroughActivityNotification(title, detail = "", options = {}) {
+  if (!runtime.debugNotificationUiEnabled) {
+    return false;
+  }
   const now = Number.isFinite(Number(options.time)) ? Number(options.time) : Date.now();
   const signature = String(options.signature || `${title}|${detail}`).toLowerCase();
   const lastDuplicateAt = Number(runtime.boroughNotificationSignatures.get(signature)) || 0;
@@ -371,6 +383,7 @@ function getToastAvoidanceRects() {
     dom.tankBottomDock,
     dom.editDecorTray,
     dom.editFishTray,
+    dom.editEquipmentTray,
     dom.foodTray,
     dom.medicineTray,
     dom.placementHintContainer,
@@ -437,6 +450,7 @@ function positionCareTaskPane() {
     getVisibleTransientRect(dom.medicineTray),
     getVisibleTransientRect(dom.editDecorTray),
     getVisibleTransientRect(dom.editFishTray),
+    getVisibleTransientRect(dom.editEquipmentTray),
     getVisibleTransientRect(dom.fishInspector)
   ].filter(Boolean);
   const clampCandidate = (candidate) => ({
@@ -502,6 +516,7 @@ function positionDailyBonusBell() {
     getVisibleTransientRect(dom.medicineTray),
     getVisibleTransientRect(dom.editDecorTray),
     getVisibleTransientRect(dom.editFishTray),
+    getVisibleTransientRect(dom.editEquipmentTray),
     getVisibleTransientRect(dom.placementHintContainer),
     getVisibleTransientRect(dom.fishInspector)
   ].filter(Boolean);
@@ -702,6 +717,12 @@ function showGuidanceToast(owner, message, options = {}) {
 }
 
 function showToast(message, options = {}) {
+  const tutorialMessage = options.tutorialMessage === true || isIntroTutorialActive();
+  if (!tutorialMessage) {
+    hideToast();
+    return false;
+  }
+
   runtime.toastKey = typeof options.key === "string" ? options.key : "";
   runtime.guidanceToastOwner = typeof options.owner === "string" ? options.owner : "toast:general";
   dom.toast.textContent = message;
@@ -719,4 +740,5 @@ function showToast(message, options = {}) {
     runtime.toastKey = "";
     runtime.guidanceToastOwner = "";
   }, durationMs);
+  return true;
 }

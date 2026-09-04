@@ -180,7 +180,7 @@ function sanitizeUiSettings(rawSettings) {
     decorShadowsEnabled: source.decorShadowsEnabled !== false,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
     halloweenMode: normalizeHalloweenMode(source.halloweenMode),
-    editOverlayMode: ["fish", "decor", "tank"].includes(String(source.editOverlayMode || "").trim())
+    editOverlayMode: ["fish", "decor", "equipment", "tank"].includes(String(source.editOverlayMode || "").trim())
       ? String(source.editOverlayMode).trim()
       : DEFAULT_UI_SETTINGS.editOverlayMode
   };
@@ -1025,6 +1025,8 @@ function reconcileState(rawState) {
     decorScaleDefaults: {},
     fishScaleDefaults: {},
     tanks: [createTankState({ now, name: buildDefaultTankName(0) })],
+    machinery: [],
+    submarineOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
     ownedFilterInventory: {},
@@ -1057,6 +1059,7 @@ function reconcileState(rawState) {
     ? incoming.tanks.map((tank) => sanitizeTankStateSnapshot(tank, { now, legacyHealthModel })).filter(Boolean)
     : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel })];
   normalizeAquariumSectionGrid(tanks);
+  const machinery = sanitizeMachineryState(incoming.machinery, tanks, now);
 
   const nextState = {
     ...base,
@@ -1076,6 +1079,8 @@ function reconcileState(rawState) {
     decorScaleDefaults: sanitizeDecorScaleDefaults(incoming.decorScaleDefaults),
     fishScaleDefaults: sanitizeFishScaleDefaults(incoming.fishScaleDefaults),
     tanks,
+    machinery,
+    submarineOwned: incoming.submarineOwned === true || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
     activeTankId: typeof incoming.activeTankId === "string" && tanks.some((tank) => tank.id === incoming.activeTankId)
       ? incoming.activeTankId
       : (tanks[0]?.id || null),
@@ -1141,6 +1146,8 @@ function reconcileState(rawState) {
   }
 
   const hasStartedPlaying = getAllTankFish(nextState).length
+    || nextState.submarineOwned
+    || nextState.machinery.length
     || nextState.storedFish.length
     || getAllPlacedDecor(nextState).length
     || Object.keys(nextState.decorInventory).length

@@ -791,13 +791,18 @@ function tick() {
     return;
   }
 
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const now = advanceDebugSimulationClock(Date.now());
   const tutorialChanged = syncTutorialFlow(now);
   const changed = syncState(now) || runtime.gravelStateDirty || runtime.tankStateDirty || tutorialChanged;
-  renderTickUi(now, { stateChanged: changed });
+  renderTickUi(now, { stateChanged: false });
   if (changed) {
-    saveState();
+    scheduleDeferredTickUiRefresh(now);
+    requestDeferredStateSave();
     runtime.gravelStateDirty = false;
     runtime.tankStateDirty = false;
+  }
+  if (runtime.debugFrameProfilerEnabled) {
+    runtime.frameProfilerLastTickMs = Math.max(0, performance.now() - profileStartedAt);
   }
 }

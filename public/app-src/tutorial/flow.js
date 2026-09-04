@@ -601,9 +601,9 @@ function finishTutorial(options = {}) {
   saveState();
   renderUi(now);
   if (options.skipped) {
-    showToast("Tutorial skipped.");
+    showToast("Tutorial skipped.", { tutorialMessage: true });
   } else {
-    showToast("Congratulations on completing the tutorial. Have fun in Bubble Borough!", { durationMs: 5200 });
+    showToast("Congratulations on completing the tutorial. Have fun in Bubble Borough!", { durationMs: 5200, tutorialMessage: true });
   }
 }
 

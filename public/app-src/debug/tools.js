@@ -1,6 +1,201 @@
 // Source fragment: debug/tools.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function setDebugNotificationUiEnabled(enabled) {
+  runtime.debugNotificationUiEnabled = Boolean(enabled);
+  syncNotificationBellPresentation();
+  renderControls(Date.now());
+  return runtime.debugNotificationUiEnabled;
+}
+
+function toggleDebugNotificationUi() {
+  const enabled = setDebugNotificationUiEnabled(!runtime.debugNotificationUiEnabled);
+  showToast(enabled ? "Notification UI enabled for debugging." : "Notification UI hidden.");
+  return enabled;
+}
+
+function setDebugFishActionIndicatorsEnabled(enabled) {
+  runtime.debugFishActionIndicatorsEnabled = Boolean(enabled);
+  renderFishActionFlyout(Date.now());
+  renderFishActionQueueDock(Date.now());
+  renderControls(Date.now());
+  return runtime.debugFishActionIndicatorsEnabled;
+}
+
+function toggleDebugFishActionIndicators() {
+  const enabled = setDebugFishActionIndicatorsEnabled(!runtime.debugFishActionIndicatorsEnabled);
+  showToast(enabled ? "Fish action indicators enabled for debugging." : "Fish action indicators hidden.");
+  return enabled;
+}
+
+function resetDebugFrameProfiler() {
+  runtime.frameProfilerCurrent = null;
+  runtime.frameProfilerSamples = [];
+  runtime.frameProfilerLongFrameCount = 0;
+  runtime.frameProfilerLastOverlayAt = 0;
+  runtime.frameProfilerLastSaveMs = 0;
+  runtime.frameProfilerLastUiRenderMs = 0;
+  runtime.frameProfilerLastTickMs = 0;
+  runtime.frameProfilerLastDeferredUiMs = 0;
+}
+
+function ensureDebugFrameProfilerOverlay() {
+  if (runtime.frameProfilerOverlay?.isConnected) {
+    return runtime.frameProfilerOverlay;
+  }
+  const overlay = document.createElement("pre");
+  overlay.id = "debugFrameProfilerOverlay";
+  overlay.setAttribute("aria-hidden", "true");
+  Object.assign(overlay.style, {
+    position: "fixed",
+    top: "10px",
+    right: "10px",
+    zIndex: "2147483000",
+    margin: "0",
+    padding: "10px 12px",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,.18)",
+    background: "rgba(5, 12, 18, .86)",
+    color: "rgba(238, 249, 255, .96)",
+    boxShadow: "0 8px 24px rgba(0,0,0,.32)",
+    font: "12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+    minWidth: "260px",
+    whiteSpace: "pre",
+    pointerEvents: "none"
+  });
+  document.body.appendChild(overlay);
+  runtime.frameProfilerOverlay = overlay;
+  return overlay;
+}
+
+function setDebugFrameProfilerEnabled(enabled) {
+  runtime.debugFrameProfilerEnabled = Boolean(enabled);
+  resetDebugFrameProfiler();
+  const overlay = ensureDebugFrameProfilerOverlay();
+  overlay.hidden = !runtime.debugFrameProfilerEnabled;
+  if (runtime.debugFrameProfilerEnabled) {
+    overlay.textContent = "FRAME PROFILER\ncollecting...";
+  }
+  renderControls(Date.now());
+  return runtime.debugFrameProfilerEnabled;
+}
+
+function toggleDebugFrameProfiler() {
+  return setDebugFrameProfilerEnabled(!runtime.debugFrameProfilerEnabled);
+}
+
+function beginDebugFrameProfile(frameTime, rafGapMs = 0) {
+  if (!runtime.debugFrameProfilerEnabled) {
+    runtime.frameProfilerCurrent = null;
+    return null;
+  }
+  const sample = {
+    frameTime: Number(frameTime) || 0,
+    rafGapMs: Math.max(0, Number(rafGapMs) || 0),
+    startedAt: performance.now(),
+    workMs: 0,
+    sections: Object.create(null),
+    counters: Object.create(null)
+  };
+  runtime.frameProfilerCurrent = sample;
+  return sample;
+}
+
+function recordDebugFrameProfilerDuration(name, durationMs) {
+  const sample = runtime.frameProfilerCurrent;
+  if (!sample || !name) {
+    return;
+  }
+  const duration = Math.max(0, Number(durationMs) || 0);
+  sample.sections[name] = (Number(sample.sections[name]) || 0) + duration;
+}
+
+function incrementDebugFrameProfilerCounter(name, amount = 1) {
+  const sample = runtime.frameProfilerCurrent;
+  if (!sample || !name) {
+    return;
+  }
+  sample.counters[name] = (Number(sample.counters[name]) || 0) + (Number(amount) || 0);
+}
+
+function endDebugFrameProfilerSection(name, startedAt) {
+  if (!runtime.frameProfilerCurrent || !Number.isFinite(Number(startedAt))) {
+    return;
+  }
+  recordDebugFrameProfilerDuration(name, performance.now() - Number(startedAt));
+}
+
+function getDebugFrameProfilerAverage(samples, accessor) {
+  if (!samples.length) {
+    return 0;
+  }
+  let total = 0;
+  for (const sample of samples) {
+    total += Number(accessor(sample)) || 0;
+  }
+  return total / samples.length;
+}
+
+function updateDebugFrameProfilerOverlay(force = false) {
+  if (!runtime.debugFrameProfilerEnabled) {
+    if (runtime.frameProfilerOverlay) {
+      runtime.frameProfilerOverlay.hidden = true;
+    }
+    return;
+  }
+  const now = performance.now();
+  if (!force && now - runtime.frameProfilerLastOverlayAt < 250) {
+    return;
+  }
+  runtime.frameProfilerLastOverlayAt = now;
+  const overlay = ensureDebugFrameProfilerOverlay();
+  overlay.hidden = false;
+  const samples = runtime.frameProfilerSamples.slice(-60);
+  if (!samples.length) {
+    overlay.textContent = "FRAME PROFILER\ncollecting...";
+    return;
+  }
+  const latest = samples[samples.length - 1];
+  const avgWork = getDebugFrameProfilerAverage(samples, (sample) => sample.workMs);
+  const avgGap = getDebugFrameProfilerAverage(samples, (sample) => sample.rafGapMs);
+  const fps = avgGap > 0.01 ? Math.min(999, 1000 / avgGap) : 0;
+  const maxWork = Math.max(...samples.map((sample) => Number(sample.workMs) || 0));
+  const sectionAverage = (name) => getDebugFrameProfilerAverage(samples, (sample) => sample.sections?.[name]);
+  const counterAverage = (name) => getDebugFrameProfilerAverage(samples, (sample) => sample.counters?.[name]);
+  const latestSections = Object.entries(latest.sections || {}).sort((left, right) => Number(right[1]) - Number(left[1]));
+  const hottest = latestSections[0] || ["none", 0];
+  overlay.textContent = [
+    "FRAME PROFILER",
+    `FPS ${fps.toFixed(1)} | RAF ${avgGap.toFixed(1)} ms`,
+    `work ${avgWork.toFixed(2)} ms avg | ${maxWork.toFixed(2)} max`,
+    `motion ${sectionAverage("fishMotion").toFixed(2)} | actions ${sectionAverage("fishActions").toFixed(2)}`,
+    `tank ${sectionAverage("tankRender").toFixed(2)} | fish ${sectionAverage("fishDraw").toFixed(2)} | prep ${sectionAverage("fishPrep").toFixed(2)}`,
+    `caves ${sectionAverage("caveCollision").toFixed(2)} | strict ${counterAverage("caveStrictChecks").toFixed(1)}/frame`,
+    `UI ${sectionAverage("uiRender").toFixed(2)} | save ${sectionAverage("saveState").toFixed(2)}`,
+    `last tick ${runtime.frameProfilerLastTickMs.toFixed(2)} | deferred UI ${runtime.frameProfilerLastDeferredUiMs.toFixed(2)}`,
+    `last save ${runtime.frameProfilerLastSaveMs.toFixed(2)} | last full UI ${runtime.frameProfilerLastUiRenderMs.toFixed(2)}`,
+    `long frames ${runtime.frameProfilerLongFrameCount}`,
+    `latest hot: ${hottest[0]} ${Number(hottest[1]).toFixed(2)} ms`
+  ].join("\n");
+}
+
+function finishDebugFrameProfile() {
+  const sample = runtime.frameProfilerCurrent;
+  if (!sample) {
+    return;
+  }
+  sample.workMs = Math.max(0, performance.now() - sample.startedAt);
+  if (sample.workMs >= 20 || sample.rafGapMs >= 25) {
+    runtime.frameProfilerLongFrameCount += 1;
+  }
+  runtime.frameProfilerSamples.push(sample);
+  if (runtime.frameProfilerSamples.length > 240) {
+    runtime.frameProfilerSamples.splice(0, runtime.frameProfilerSamples.length - 180);
+  }
+  runtime.frameProfilerCurrent = null;
+  updateDebugFrameProfilerOverlay();
+}
+
 function toggleCleaningMode(options = {}) {
   const nextMode = !runtime.cleaningMode;
   clearPrimaryToolModes();

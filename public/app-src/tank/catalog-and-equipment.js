@@ -657,7 +657,8 @@ function isTankEmpty(tank = getCurrentTank()) {
 
   const fishCount = Array.isArray(tank.fish) ? tank.fish.length : 0;
   const decorCount = Array.isArray(tank.placedDecor) ? tank.placedDecor.length : 0;
-  return fishCount === 0 && decorCount === 0;
+  const machineryCount = typeof getMachineryForTank === "function" ? getMachineryForTank(tank.id).length : 0;
+  return fishCount === 0 && decorCount === 0 && machineryCount === 0;
 }
 
 function getFoodCatalogEntries() {

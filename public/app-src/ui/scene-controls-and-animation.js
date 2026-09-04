@@ -112,6 +112,11 @@ function renderBackgrounds() {
     })
     .join("");
 
+  const ownedImageBackgrounds = getOwnedBackgroundCatalog().filter((background) => (
+    !isCustomBackgroundKey(background.key)
+    && !isLocalImageBackgroundKey(background.key)
+  ));
+
   if (dom.backgroundList) {
     const sharedMarkup = buildBackgroundCardsMarkup(
       getOwnedBackgroundCatalog().filter((background) => !isCustomBackgroundKey(background.key))
@@ -123,11 +128,7 @@ function renderBackgrounds() {
     );
   }
 
-  const equipmentBackgroundContainers = [
-    ["equipment-background-list", dom.equipmentBackgroundList],
-    ["edit-tank-background-list", dom.editTankBackgroundList]
-  ].filter(([, container]) => container);
-  if (equipmentBackgroundContainers.length) {
+  if (dom.equipmentBackgroundList) {
     const localImageReady = hasLocalBackgroundImage();
     const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
     const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
@@ -151,34 +152,271 @@ function renderBackgrounds() {
         </article>
       `
       : "";
-    const equipmentMarkup = `${localCardMarkup}${buildBackgroundCardsMarkup(
-      getOwnedBackgroundCatalog().filter((background) => (
-        !isCustomBackgroundKey(background.key)
-        && !isLocalImageBackgroundKey(background.key)
-      ))
-    )}`;
-    for (const [cacheKey, container] of equipmentBackgroundContainers) {
-      setMarkupIfChanged(
-        cacheKey,
-        container,
-        equipmentMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
-      );
-    }
+    setMarkupIfChanged(
+      "equipment-background-list",
+      dom.equipmentBackgroundList,
+      `${localCardMarkup}${buildBackgroundCardsMarkup(ownedImageBackgrounds)}`
+        || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
+    );
+  }
+
+  if (dom.editTankBackgroundList) {
+    const localImageReady = hasLocalBackgroundImage();
+    const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
+    const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
+    const localPreview = localImageReady && localBackground
+      ? renderBackgroundPreview(localBackground, "edit-tank-local-image-thumb")
+      : `<span class="edit-tank-local-image-placeholder">+</span>`;
+    const localMarkup = localBackground
+      ? `
+        <article class="edit-tank-local-image-card ${localImageSelected ? "is-selected" : ""}">
+          <div class="edit-tank-local-image-preview">${localPreview}</div>
+          <div class="edit-tank-local-image-copy">
+            <strong>Custom Image</strong>
+            <span>${localImageReady ? "Your uploaded background" : "Upload your own background"}</span>
+          </div>
+          <div class="edit-tank-local-image-actions">
+            <button type="button" data-open-local-background-picker>${localImageReady ? "Replace" : "Choose Image"}</button>
+            ${localImageReady ? `<button class="small-button alt" type="button" data-select-background="${CUSTOM_IMAGE_BACKGROUND_ASSET_KEY}">${localImageSelected ? "Selected" : "Use Image"}</button>` : ""}
+            ${localImageReady ? `<button class="small-button alt" type="button" data-clear-local-background title="Clear custom image" aria-label="Clear custom image">×</button>` : ""}
+          </div>
+        </article>
+      `
+      : "";
+
+    const imageCards = ownedImageBackgrounds.map((background) => {
+      const selected = state.selectedBackground === background.key;
+      return `
+        <button
+          class="edit-tank-image-option ${selected ? "is-selected" : ""}"
+          type="button"
+          data-select-background="${background.key}"
+          aria-pressed="${selected}"
+          title="Use ${escapeHtml(background.name)}">
+          ${renderBackgroundPreview(background, "edit-tank-image-thumb")}
+          <span>${escapeHtml(background.name)}</span>
+        </button>
+      `;
+    }).join("");
+
+    setMarkupIfChanged(
+      "edit-tank-background-list",
+      dom.editTankBackgroundList,
+      `<div class="edit-tank-image-layout">
+        ${localMarkup}
+        <div class="edit-tank-built-in-backgrounds">
+          <div class="edit-tank-built-in-backgrounds-label">Built-in Backgrounds</div>
+          <div class="edit-tank-image-options">${imageCards || `<span class="edit-tank-image-empty">No unlocked image backgrounds.</span>`}</div>
+        </div>
+      </div>`
+    );
   }
 }
 
+function rgbToHsv(rgb) {
+  const red = clamp((Number(rgb?.r) || 0) / 255, 0, 1);
+  const green = clamp((Number(rgb?.g) || 0) / 255, 0, 1);
+  const blue = clamp((Number(rgb?.b) || 0) / 255, 0, 1);
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  let hue = 0;
+  if (delta > 0.000001) {
+    if (max === red) {
+      hue = ((green - blue) / delta) % 6;
+    } else if (max === green) {
+      hue = ((blue - red) / delta) + 2;
+    } else {
+      hue = ((red - green) / delta) + 4;
+    }
+    hue /= 6;
+  }
+  if (hue < 0) {
+    hue += 1;
+  }
+  return {
+    h: normalizeHueUnit(hue),
+    s: max <= 0 ? 0 : delta / max,
+    v: max
+  };
+}
+
+function hsvToRgb(hsv) {
+  const hue = normalizeHueUnit(hsv?.h);
+  const saturation = clamp(Number(hsv?.s) || 0, 0, 1);
+  const value = clamp(Number(hsv?.v) || 0, 0, 1);
+  const scaledHue = hue * 6;
+  const sector = Math.floor(scaledHue) % 6;
+  const fraction = scaledHue - Math.floor(scaledHue);
+  const p = value * (1 - saturation);
+  const q = value * (1 - fraction * saturation);
+  const t = value * (1 - (1 - fraction) * saturation);
+  const channels = [
+    [value, t, p],
+    [q, value, p],
+    [p, value, t],
+    [p, q, value],
+    [t, p, value],
+    [value, p, q]
+  ][sector] || [value, p, q];
+  return {
+    r: Math.round(channels[0] * 255),
+    g: Math.round(channels[1] * 255),
+    b: Math.round(channels[2] * 255)
+  };
+}
+
+function getTankColorPickerModel(color) {
+  const normalizedColor = normalizeHexColor(color) || DEFAULT_SOLID_BACKGROUND_COLOR;
+  const hsv = rgbToHsv(hexToRgb(normalizedColor));
+  const hueColor = rgbToHex(hsvToRgb({ h: hsv.h, s: 1, v: 1 }));
+  return {
+    color: normalizedColor,
+    hue: hsv.h,
+    saturation: hsv.s,
+    value: hsv.v,
+    darkness: 1 - hsv.v,
+    hueColor
+  };
+}
+
+function getTankColorChoiceLabel(color, colorChoices = getSolidBackgroundColorChoices()) {
+  const normalizedColor = normalizeHexColor(color);
+  return colorChoices.find((choice) => normalizeHexColor(choice.color) === normalizedColor)?.label
+    || normalizedColor
+    || "Custom";
+}
+
+function renderTankQuickColorSwatches(context, activeColor, colorChoices = getSolidBackgroundColorChoices()) {
+  const normalizedActive = normalizeHexColor(activeColor);
+  return colorChoices.map((choice) => {
+    const normalizedColor = normalizeHexColor(choice.color);
+    const selected = normalizedColor === normalizedActive;
+    return `
+      <button
+        class="tank-color-picker-quick-swatch ${selected ? "is-selected" : ""}"
+        type="button"
+        data-color-picker-quick="${context}"
+        data-color-picker-color="${normalizedColor}"
+        aria-pressed="${selected}"
+        aria-label="Set color to ${escapeHtml(choice.label)}"
+        title="${escapeHtml(choice.label)}"
+        style="--swatch:${normalizedColor};"></button>
+    `;
+  }).join("");
+}
+
+function renderCompactTankColorPicker(context, color, title, options = {}) {
+  const colorChoices = options.colorChoices || getSolidBackgroundColorChoices();
+  const model = getTankColorPickerModel(color);
+  const label = getTankColorChoiceLabel(model.color, colorChoices);
+  const compactClass = options.compact ? " is-condensed" : "";
+  return `
+    <div
+      class="tank-color-picker${compactClass}"
+      data-color-picker-root="${context}"
+      style="--picker-hue-color:${model.hueColor};--picker-saturation:${(model.saturation * 100).toFixed(2)}%;--picker-darkness:${(model.darkness * 100).toFixed(2)}%;--picker-color:${model.color};">
+      <div class="tank-color-picker-heading">
+        <span>${escapeHtml(title)}</span>
+        <strong data-color-picker-label>${escapeHtml(label)}</strong>
+        ${options.headingAction || ""}
+      </div>
+      <div class="tank-color-picker-body">
+        <div class="tank-color-picker-spectrum-wrap">
+          <div class="tank-color-picker-spectrum" data-color-picker-field="${context}" role="slider" aria-label="${escapeHtml(title)} saturation and darkness">
+            <span class="tank-color-picker-spectrum-marker"></span>
+          </div>
+          <div class="tank-color-picker-hue" data-color-picker-hue="${context}" role="slider" aria-label="${escapeHtml(title)} hue">
+            <span class="tank-color-picker-hue-marker" style="top:${(model.hue * 100).toFixed(2)}%;"></span>
+          </div>
+        </div>
+        <div class="tank-color-picker-sliders">
+          <label>
+            <span>Saturation</span>
+            <input type="range" min="0" max="100" step="1" value="${Math.round(model.saturation * 100)}" data-color-picker-range="${context}" data-color-picker-channel="saturation" />
+          </label>
+          <label>
+            <span>Darkness</span>
+            <input type="range" min="0" max="100" step="1" value="${Math.round(model.darkness * 100)}" data-color-picker-range="${context}" data-color-picker-channel="darkness" />
+          </label>
+          <div class="tank-color-picker-code-row">
+            <span class="tank-color-picker-current" data-color-picker-current style="--swatch:${model.color};"></span>
+            <input class="tank-color-picker-hex" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="7" value="${model.color}" data-color-picker-hex="${context}" aria-label="${escapeHtml(title)} hex color" />
+          </div>
+        </div>
+        <div class="tank-color-picker-quick-area">
+          <span class="tank-color-picker-quick-label">Quick Colors</span>
+          <div class="tank-color-picker-quick-grid" role="group" aria-label="Quick colors for ${escapeHtml(title)}">
+            ${renderTankQuickColorSwatches(context, model.color, colorChoices)}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildAnimatedBackgroundPresetFill(color) {
+  const normalizedColor = normalizeHexColor(color) || DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR;
+  const surface = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.surface, normalizedColor);
+  const mid = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.mid, normalizedColor);
+  const deep = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.deep, normalizedColor);
+  const abyss = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.abyss, normalizedColor);
+  return `linear-gradient(180deg, ${surface} 0%, ${mid} 38%, ${deep} 70%, ${abyss} 100%)`;
+}
+
+function renderCompactAnimatedBackgroundPresets(activeColor) {
+  const normalizedActive = normalizeHexColor(activeColor);
+  return `
+    <div class="edit-tank-animated-presets">
+      <div class="edit-tank-animated-summary">
+        <span>Animated Scheme</span>
+        <strong>${escapeHtml(getTankColorChoiceLabel(normalizedActive))}</strong>
+        <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset</button>
+      </div>
+      <div class="edit-tank-animated-preset-list" role="group" aria-label="Animated background schemes">
+        ${TANK_ANIMATED_BACKGROUND_PRESETS.map((preset) => {
+          const selected = normalizeHexColor(preset.color) === normalizedActive;
+          return `
+            <button
+              class="edit-tank-animated-preset ${selected ? "is-selected" : ""}"
+              type="button"
+              data-animated-background-scheme-color="${preset.color}"
+              aria-pressed="${selected}"
+              title="${escapeHtml(preset.label)}">
+              <span class="edit-tank-animated-preset-preview" style="--animated-preset-fill:${buildAnimatedBackgroundPresetFill(preset.color)};"></span>
+              <span>${escapeHtml(preset.label)}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function renderSolidBackgroundControls() {
-  const containers = [
-    ["equipment-background-color-panel", dom.equipmentBackgroundColorPanel],
-    ["edit-tank-background-color-panel", dom.editTankBackgroundColorPanel]
-  ].filter(([, container]) => container);
-  if (!containers.length) {
+  const hasEquipmentPanel = Boolean(dom.equipmentBackgroundColorPanel);
+  const hasEditTankPanel = Boolean(dom.editTankBackgroundColorPanel);
+  if (!hasEquipmentPanel && !hasEditTankPanel) {
     return;
   }
 
   const solidEnabled = isSolidBackgroundEnabled();
   const gradientEnabled = isGradientBackgroundEnabled();
   const animatedEnabled = isAnimatedBackgroundEnabled();
+  const stateCompactMode = solidEnabled
+    ? "solid"
+    : gradientEnabled
+      ? "gradient"
+      : animatedEnabled
+        ? "animated"
+        : "image";
+  const validCompactModes = new Set(["image", "solid", "gradient", "animated"]);
+  if (hasEditTankPanel && !validCompactModes.has(runtime.editTankBackgroundMode)) {
+    runtime.editTankBackgroundMode = stateCompactMode;
+  }
+  const compactMode = hasEditTankPanel && validCompactModes.has(runtime.editTankBackgroundMode)
+    ? runtime.editTankBackgroundMode
+    : stateCompactMode;
   const colorChoices = getSolidBackgroundColorChoices();
   const activeColor = getActiveSolidBackgroundColor();
   const activeChoice = colorChoices.find((choice) => choice.color === activeColor)
@@ -197,11 +435,11 @@ function renderSolidBackgroundControls() {
       return [group.key, choice];
     })
   );
-  const swatches = solidEnabled
-    ? colorChoices
-      .map((choice) => {
-        const selected = choice.color === activeColor;
-        return `
+
+  const renderSolidSwatches = () => colorChoices
+    .map((choice) => {
+      const selected = choice.color === activeColor;
+      return `
         <button
           class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
           type="button"
@@ -212,9 +450,9 @@ function renderSolidBackgroundControls() {
           style="--swatch:${choice.color};">
         </button>
       `;
-      })
-      .join("")
-    : "";
+    })
+    .join("");
+
   const renderGradientSwatches = (role, activeColorValue) => colorChoices
     .map((choice) => {
       const selected = choice.color === activeColorValue;
@@ -232,6 +470,7 @@ function renderSolidBackgroundControls() {
       `;
     })
     .join("");
+
   const renderAnimatedSwatches = (role, activeColorValue, roleLabel) => colorChoices
     .map((choice) => {
       const selected = choice.color === activeColorValue;
@@ -249,6 +488,7 @@ function renderSolidBackgroundControls() {
       `;
     })
     .join("");
+
   const animatedGroupMarkup = ANIMATED_BACKGROUND_COLOR_GROUPS
     .map((group) => `
       <div class="background-gradient-color-group">
@@ -263,120 +503,158 @@ function renderSolidBackgroundControls() {
     `)
     .join("");
 
-  const markup = `
-    <div class="background-color-panel-shell">
-      <label class="settings-toggle-row background-solid-toggle-row" for="solidBackgroundToggle">
-        <div class="settings-toggle-copy">
-          <span class="settings-toggle-label">Solid Color</span>
-          <span class="settings-toggle-note">Use a flat backdrop instead of an image background.</span>
+  if (hasEquipmentPanel) {
+    const equipmentMarkup = `
+      <div class="background-color-panel-shell">
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentSolidBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Solid Color</span>
+            <span class="settings-toggle-note">Use a flat backdrop instead of an image background.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${solidEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentSolidBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-solid-background
+              ${solidEnabled ? "checked" : ""}
+              aria-label="Use Solid Color background" />
+          </div>
+        </label>
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentGradientBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Gradient Background</span>
+            <span class="settings-toggle-note">Blend two colors diagonally from the top left to the bottom right.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${gradientEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentGradientBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-gradient-background
+              ${gradientEnabled ? "checked" : ""}
+              aria-label="Use Gradient background" />
+          </div>
+        </label>
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentAnimatedBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Animated Background</span>
+            <span class="settings-toggle-note">Use a slow underwater wallpaper effect instead of a still image.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${animatedEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentAnimatedBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-animated-background
+              ${animatedEnabled ? "checked" : ""}
+              aria-label="Use Animated background" />
+          </div>
+        </label>
+        ${(solidEnabled || gradientEnabled || animatedEnabled) ? `
+        <div class="settings-subsection-heading">
+          <h4>Background Colors</h4>
         </div>
-        <div class="background-solid-toggle-controls">
-          ${solidEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
-          <input
-            id="solidBackgroundToggle"
-            class="settings-checkbox"
-            type="checkbox"
-            data-toggle-solid-background
-            ${solidEnabled ? "checked" : ""}
-            aria-label="Use Solid Color background" />
-        </div>
-      </label>
-      <label class="settings-toggle-row background-solid-toggle-row" for="gradientBackgroundToggle">
-        <div class="settings-toggle-copy">
-          <span class="settings-toggle-label">Gradient Background</span>
-          <span class="settings-toggle-note">Blend two colors diagonally from the top left to the bottom right.</span>
-        </div>
-        <div class="background-solid-toggle-controls">
-          ${gradientEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
-          <input
-            id="gradientBackgroundToggle"
-            class="settings-checkbox"
-            type="checkbox"
-            data-toggle-gradient-background
-            ${gradientEnabled ? "checked" : ""}
-            aria-label="Use Gradient background" />
-        </div>
-      </label>
-      <label class="settings-toggle-row background-solid-toggle-row" for="animatedBackgroundToggle">
-        <div class="settings-toggle-copy">
-          <span class="settings-toggle-label">Animated Background</span>
-          <span class="settings-toggle-note">Use a slow underwater wallpaper effect instead of a still image.</span>
-        </div>
-        <div class="background-solid-toggle-controls">
-          ${animatedEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
-          <input
-            id="animatedBackgroundToggle"
-            class="settings-checkbox"
-            type="checkbox"
-            data-toggle-animated-background
-            ${animatedEnabled ? "checked" : ""}
-            aria-label="Use Animated background" />
-        </div>
-      </label>
-      ${(solidEnabled || gradientEnabled || animatedEnabled) ? `
-      <div class="settings-subsection-heading">
-        <h4>Background Colors</h4>
+        ` : ""}
+        ${solidEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="custom-gravel-choice-summary">
+            <span>Selected Color</span>
+            <strong>${activeChoice.label}</strong>
+          </div>
+          <div class="custom-gravel-swatches" role="group" aria-label="Solid background color choices">
+            ${renderSolidSwatches()}
+          </div>
+        </article>
+        ` : ""}
+        ${gradientEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="background-gradient-grid">
+            <div class="background-gradient-color-group">
+              <div class="custom-gravel-choice-summary">
+                <span>Top Left</span>
+                <strong>${gradientStartChoice.label}</strong>
+              </div>
+              <div class="custom-gravel-swatches" role="group" aria-label="Top left gradient color choices">
+                ${renderGradientSwatches("start", gradientColors.start)}
+              </div>
+            </div>
+            <div class="background-gradient-color-group">
+              <div class="custom-gravel-choice-summary">
+                <span>Bottom Right</span>
+                <strong>${gradientEndChoice.label}</strong>
+              </div>
+              <div class="custom-gravel-swatches" role="group" aria-label="Bottom right gradient color choices">
+                ${renderGradientSwatches("end", gradientColors.end)}
+              </div>
+            </div>
+          </div>
+        </article>
+        ` : ""}
+        ${animatedEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="shop-button-row">
+            <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset Scheme</button>
+          </div>
+          <div class="background-gradient-grid">
+            ${animatedGroupMarkup}
+          </div>
+        </article>
+        ` : ""}
       </div>
-      ` : ""}
-      ${solidEnabled ? `
-      <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header background-color-preview-header">
-          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
-        </div>
-        <div class="custom-gravel-choice-summary">
-          <span>Selected Color</span>
-          <strong>${activeChoice.label}</strong>
-        </div>
-        <div class="custom-gravel-swatches" role="group" aria-label="Solid background color choices">
-          ${swatches}
-        </div>
-      </article>
-      ` : ""}
-      ${gradientEnabled ? `
-      <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header background-color-preview-header">
-          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
-        </div>
-        <div class="background-gradient-grid">
-          <div class="background-gradient-color-group">
-            <div class="custom-gravel-choice-summary">
-              <span>Top Left</span>
-              <strong>${gradientStartChoice.label}</strong>
-            </div>
-            <div class="custom-gravel-swatches" role="group" aria-label="Top left gradient color choices">
-              ${renderGradientSwatches("start", gradientColors.start)}
-            </div>
-          </div>
-          <div class="background-gradient-color-group">
-            <div class="custom-gravel-choice-summary">
-              <span>Bottom Right</span>
-              <strong>${gradientEndChoice.label}</strong>
-            </div>
-            <div class="custom-gravel-swatches" role="group" aria-label="Bottom right gradient color choices">
-              ${renderGradientSwatches("end", gradientColors.end)}
-            </div>
-          </div>
-        </div>
-      </article>
-      ` : ""}
-      ${animatedEnabled ? `
-      <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header background-color-preview-header">
-          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
-        </div>
-        <div class="shop-button-row">
-          <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset Scheme</button>
-        </div>
-        <div class="background-gradient-grid">
-          ${animatedGroupMarkup}
-        </div>
-      </article>
-      ` : ""}
-    </div>
-  `;
+    `;
+    setMarkupIfChanged("equipment-background-color-panel", dom.equipmentBackgroundColorPanel, equipmentMarkup);
+  }
 
-  for (const [cacheKey, container] of containers) {
-    setMarkupIfChanged(cacheKey, container, markup);
+  if (hasEditTankPanel) {
+    let compactMarkup = "";
+    if (compactMode === "solid") {
+      compactMarkup = `
+        <div class="edit-tank-background-control is-solid">
+          ${renderCompactTankColorPicker("solid-background", activeColor, "Solid Color")}
+        </div>
+      `;
+    } else if (compactMode === "gradient") {
+      compactMarkup = `
+        <div class="edit-tank-background-control is-gradient">
+          <div class="edit-tank-gradient-picker-grid">
+            ${renderCompactTankColorPicker("gradient-start", gradientColors.start, "Top Color", { compact: true })}
+            ${renderCompactTankColorPicker("gradient-end", gradientColors.end, "Bottom Color", { compact: true })}
+          </div>
+        </div>
+      `;
+    } else if (compactMode === "animated") {
+      const schemeGroup = ANIMATED_BACKGROUND_COLOR_GROUPS[0];
+      compactMarkup = `
+        <div class="edit-tank-background-control is-animated">
+          ${renderCompactAnimatedBackgroundPresets(animatedColors[schemeGroup.key])}
+        </div>
+      `;
+    }
+
+    setMarkupIfChanged("edit-tank-background-color-panel", dom.editTankBackgroundColorPanel, compactMarkup);
+    dom.editTankBackgroundColorPanel.hidden = compactMode === "image";
+    if (dom.editTankBackgroundList) {
+      dom.editTankBackgroundList.hidden = compactMode !== "image";
+    }
+    for (const button of dom.editTankTray?.querySelectorAll("[data-tank-background-mode]") || []) {
+      const selected = button.dataset.tankBackgroundMode === compactMode;
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+      button.tabIndex = selected ? 0 : -1;
+    }
   }
 }
 
@@ -489,12 +767,12 @@ function renderUvLightControls() {
 }
 
 function renderCustomGravelControls() {
-  const containers = [
+  const standardContainers = [
     ["custom-gravel-panel", dom.customGravelPanel],
-    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel],
-    ["edit-tank-custom-gravel-panel", dom.editTankCustomGravelPanel]
+    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel]
   ].filter(([, container]) => container);
-  if (!containers.length) {
+  const editContainer = dom.editTankCustomGravelPanel;
+  if (!standardContainers.length && !editContainer) {
     return;
   }
 
@@ -502,12 +780,12 @@ function renderCustomGravelControls() {
   const layersReady = hasReadyCustomGravelLayers();
 
   if (!layersReady) {
-    for (const [cacheKey, container] of containers) {
-      setMarkupIfChanged(
-        cacheKey,
-        container,
-        `<div class="empty-state">Custom gravel layers were not found. Add the three layer PNGs to <code>assets/gravel</code>.</div>`
-      );
+    const emptyMarkup = `<div class="empty-state">Custom gravel layers were not found. Add the three layer PNGs to <code>assets/gravel</code>.</div>`;
+    for (const [cacheKey, container] of standardContainers) {
+      setMarkupIfChanged(cacheKey, container, emptyMarkup);
+    }
+    if (editContainer) {
+      setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, emptyMarkup);
     }
     return;
   }
@@ -515,8 +793,10 @@ function renderCustomGravelControls() {
   const choices = getCustomGravelColorChoices();
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
-  const layerMarkup = layerCatalog
-    .map((layer, index) => {
+
+  if (standardContainers.length) {
+    const layerMarkup = layerCatalog
+      .map((layer, index) => {
         const activeColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
         const activeChoice = choices.find((choice) => choice.color === activeColor) || { label: activeColor, color: activeColor };
         const colorizeChecked = activeColorizeSettings[index] === true;
@@ -541,9 +821,7 @@ function renderCustomGravelControls() {
         return `
           <article class="custom-gravel-layer-card">
             <div class="custom-gravel-layer-header">
-              <div>
-                <strong>${layer.label}</strong>
-              </div>
+              <div><strong>${layer.label}</strong></div>
               <span class="custom-gravel-layer-swatch" style="--swatch:${activeColor};"></span>
             </div>
             <div class="custom-gravel-choice-summary">
@@ -563,17 +841,79 @@ function renderCustomGravelControls() {
             </label>
           </article>
         `;
-    })
-    .join("");
+      })
+      .join("");
 
-  const markup = `
-    <div class="custom-gravel-panel-shell">
-      <div class="custom-gravel-layer-list">${layerMarkup}</div>
-    </div>
-  `;
+    const markup = `
+      <div class="custom-gravel-panel-shell">
+        <div class="custom-gravel-layer-list">${layerMarkup}</div>
+      </div>
+    `;
+    for (const [cacheKey, container] of standardContainers) {
+      setMarkupIfChanged(cacheKey, container, markup);
+    }
+  }
 
-  for (const [cacheKey, container] of containers) {
-    setMarkupIfChanged(cacheKey, container, markup);
+  if (editContainer) {
+    const activeLayerIndex = clamp(
+      Math.floor(Number(runtime.editTankGravelLayer) || 0),
+      0,
+      Math.max(0, layerCatalog.length - 1)
+    );
+    runtime.editTankGravelLayer = activeLayerIndex;
+    const activeLayer = layerCatalog[activeLayerIndex];
+    const activeColor = activeColors[activeLayerIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+    const colorizeChecked = activeColorizeSettings[activeLayerIndex] === true;
+    const pebbleCatalog = runtime.customGravelPebbleCatalog || [];
+
+    const layerTabs = layerCatalog.map((layer, index) => {
+      const layerColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+      const selected = index === activeLayerIndex;
+      const pebble = pebbleCatalog[index] || pebbleCatalog[0] || null;
+      const pebblePath = pebble?.path || resolveAppUrl(`assets/gravel/pebble_${index + 1}.png`);
+      return `
+        <button
+          class="edit-tank-gravel-layer-tab ${selected ? "is-active" : ""}"
+          type="button"
+          role="tab"
+          data-edit-gravel-layer="${index}"
+          aria-selected="${selected}"
+          aria-label="Edit ${escapeHtml(layer.label)}">
+          <span class="edit-tank-gravel-pebble" style="--pebble-color:${layerColor};--pebble-image:url('${escapeHtml(pebblePath)}');">
+            <img src="${escapeHtml(pebblePath)}" alt="" aria-hidden="true" draggable="false" />
+          </span>
+          <span>${escapeHtml(layer.label.replace(/\s+Layer$/i, ""))}</span>
+        </button>
+      `;
+    }).join("");
+
+    const colorizeMarkup = `
+      <label class="edit-tank-gravel-colorize">
+        <input
+          type="checkbox"
+          data-custom-gravel-layer="${activeLayerIndex}"
+          data-custom-gravel-colorize="true"
+          ${colorizeChecked ? "checked" : ""} />
+        <span>Colorize</span>
+      </label>
+    `;
+
+    const editMarkup = `
+      <div class="edit-tank-gravel-editor">
+        <div class="edit-tank-gravel-layer-tabs" role="tablist" aria-label="Gravel layers">
+          ${layerTabs}
+        </div>
+        <div class="edit-tank-gravel-picker-workspace">
+          ${renderCompactTankColorPicker(
+            `gravel-${activeLayerIndex}`,
+            activeColor,
+            activeLayer?.label || `Layer ${activeLayerIndex + 1}`,
+            { colorChoices: choices, headingAction: colorizeMarkup }
+          )}
+        </div>
+      </div>
+    `;
+    setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
   }
 }
 
@@ -637,6 +977,33 @@ function renderControls(now) {
   }
   if (dom.debugSidebar) {
     dom.debugSidebar.hidden = !debugMode || !runtime.debugSidebarOpen;
+  }
+  if (dom.debugNotificationUiButton) {
+    dom.debugNotificationUiButton.disabled = !debugMode;
+    dom.debugNotificationUiButton.classList.toggle("is-active", runtime.debugNotificationUiEnabled);
+    dom.debugNotificationUiButton.setAttribute("aria-pressed", String(runtime.debugNotificationUiEnabled));
+    dom.debugNotificationUiButton.title = runtime.debugNotificationUiEnabled
+      ? "Debug: Hide notification bell and activity notifications"
+      : "Debug: Show notification bell and activity notifications";
+    dom.debugNotificationUiButton.setAttribute("aria-label", dom.debugNotificationUiButton.title);
+  }
+  if (dom.debugFishActionIndicatorsButton) {
+    dom.debugFishActionIndicatorsButton.disabled = !debugMode;
+    dom.debugFishActionIndicatorsButton.classList.toggle("is-active", runtime.debugFishActionIndicatorsEnabled);
+    dom.debugFishActionIndicatorsButton.setAttribute("aria-pressed", String(runtime.debugFishActionIndicatorsEnabled));
+    dom.debugFishActionIndicatorsButton.title = runtime.debugFishActionIndicatorsEnabled
+      ? "Debug: Hide active fish action indicators"
+      : "Debug: Show active fish action indicators";
+    dom.debugFishActionIndicatorsButton.setAttribute("aria-label", dom.debugFishActionIndicatorsButton.title);
+  }
+  if (dom.debugFrameProfilerButton) {
+    dom.debugFrameProfilerButton.disabled = !debugMode;
+    dom.debugFrameProfilerButton.classList.toggle("is-active", runtime.debugFrameProfilerEnabled);
+    dom.debugFrameProfilerButton.setAttribute("aria-pressed", String(runtime.debugFrameProfilerEnabled));
+    dom.debugFrameProfilerButton.title = runtime.debugFrameProfilerEnabled
+      ? "Debug: Hide live frame profiler"
+      : "Debug: Show live frame profiler";
+    dom.debugFrameProfilerButton.setAttribute("aria-label", dom.debugFrameProfilerButton.title);
   }
   renderLivingBoroughDebugPanel(now);
   dom.resetMealsButton.hidden = !debugMode;
@@ -764,7 +1131,7 @@ function renderControls(now) {
     runtime.toolbarActionMenu = "";
   }
   const careToolActive = runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey) || runtime.cleaningMode || runtime.scoopMode;
-  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode || runtime.equipmentOverlayOpen;
+  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode || runtime.equipmentOverlayOpen;
   if (dom.toolbarCareMenu) {
     dom.toolbarCareMenu.hidden = !toolbarCareMenuOpen;
   }
@@ -885,6 +1252,11 @@ function renderControls(now) {
     dom.editModeDockButton.title = runtime.editTankMode ? "Edit Decor (Active)" : "Edit Decor";
     dom.editModeDockButton.setAttribute("aria-label", runtime.editTankMode ? "Edit Decor (Active)" : "Edit Decor");
   }
+  dom.equipmentEditModeDockButton?.classList.toggle("is-active", runtime.equipmentEditMode);
+  if (dom.equipmentEditModeDockButton) {
+    dom.equipmentEditModeDockButton.title = runtime.equipmentEditMode ? "Equipment (Active)" : "Equipment";
+    dom.equipmentEditModeDockButton.setAttribute("aria-label", runtime.equipmentEditMode ? "Equipment (Active)" : "Equipment");
+  }
   const activeDecorShortcutTarget = getActiveDecorShortcutTarget();
   const activeDecorShortcutKey = activeDecorShortcutTarget?.decorKey || "";
   const hasActiveDecorShortcutTarget = Boolean(activeDecorShortcutKey);
@@ -934,7 +1306,7 @@ function renderControls(now) {
       ? "grabbing"
       : (runtime.editTankMode || runtime.fishEditMode)
         ? "grab"
-        : runtime.tankEditMode
+        : (runtime.equipmentEditMode || runtime.tankEditMode)
           ? "default"
         : "default";
   syncToolbarFastTooltipExperiment();
@@ -1028,10 +1400,16 @@ function animationLoop(frameTime) {
     ? Math.min(0.05, (frameTime - runtime.lastAnimationUpdateAt) / 1000)
     : 0.016;
   runtime.lastAnimationUpdateAt = frameTime;
+  beginDebugFrameProfile(frameTime, rafDeltaSeconds * 1000);
   updateAmbienceAudioLoop();
   if (runtime.boroughOverviewOpen) {
+    const overviewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
     paintBoroughSnapshots(getAllTanks(), now);
     renderBoroughOverviewFish(now);
+    if (runtime.debugFrameProfilerEnabled) {
+      endDebugFrameProfilerSection("boroughOverview", overviewProfileStartedAt);
+    }
+    finishDebugFrameProfile();
     return;
   }
   if (runtime.cleaningMode && runtime.scrubAutoCompleteAt && now >= runtime.scrubAutoCompleteAt) {
@@ -1047,14 +1425,30 @@ function animationLoop(frameTime) {
   updateCleaningTransition(now);
   updateSplashBursts(now);
   updateGlassTapEffects(now);
+  const fishMotionProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   updateFishMotion(now, deltaSeconds);
+  updateMachineryMotion(now, deltaSeconds);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("fishMotion", fishMotionProfileStartedAt);
+  }
   syncDebugFishBehaviorBroadcast(now);
   updateWaterLifeEffects(now, deltaSeconds);
+  const stageViewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   updateStageRenderView(frameTime);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("stageView", stageViewProfileStartedAt);
+  }
+  const tankRenderProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   renderTank(now);
-  renderFishActionQueueDock(now);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("tankRender", tankRenderProfileStartedAt);
+  }
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
   updateSelectedDecorActionButtons();
   renderCustomDecorMotionPreview(now);
   renderCustomHidePreview(now);
   renderDecorSettingsMotionPreview(now);
+  finishDebugFrameProfile();
 }

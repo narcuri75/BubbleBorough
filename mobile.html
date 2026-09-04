@@ -18,7 +18,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260502d" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260904-submarine-manual-controls" />
   <link rel="stylesheet" href="./public/mobile_styles.css?v=20260503u" />
 </head>
 
@@ -710,6 +710,7 @@
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
                 </div>
                 <button id="closeEditDecorTrayButton" class="edit-tray-done-button" type="button"
@@ -742,6 +743,7 @@
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
                 </div>
                 <button id="closeEditFishTrayButton" class="edit-tray-done-button" type="button"
@@ -766,11 +768,31 @@
             </section>
 
 
+            <section id="editEquipmentTray" class="edit-decor-tray edit-equipment-tray" hidden aria-label="Equipment tray">
+              <div class="edit-tray-mode-header">
+                <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
+                </div>
+                <button id="closeEditEquipmentTrayButton" class="edit-tray-done-button" type="button" aria-label="Finish editing equipment" title="Done editing equipment">Done</button>
+              </div>
+              <div class="edit-fish-tray-header">
+                <div class="edit-fish-tray-tabs" role="tablist" aria-label="Equipment location">
+                  <button class="edit-fish-tray-tab" type="button" role="tab" data-equipment-tray-tab="tank">Tank</button>
+                  <button class="edit-fish-tray-tab" type="button" role="tab" data-equipment-tray-tab="storage">Storage</button>
+                </div>
+              </div>
+              <div id="editEquipmentTrayScroller" class="edit-equipment-tray-scroller"></div>
+            </section>
+
             <section id="editTankTray" class="edit-decor-tray edit-tank-tray" hidden aria-label="Edit tank tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
                 </div>
                 <button id="closeEditTankTrayButton" class="edit-tray-done-button" type="button"
@@ -780,20 +802,23 @@
                 <div class="edit-tank-tray-tabs" role="tablist" aria-label="Tank settings category">
                   <button class="edit-tank-tray-tab" type="button" role="tab" data-tank-tray-tab="background">Background</button>
                   <button class="edit-tank-tray-tab" type="button" role="tab" data-tank-tray-tab="gravel">Gravel</button>
-                  <button class="edit-tank-tray-tab" type="button" role="tab" data-tank-tray-tab="equipment">Equipment</button>
                 </div>
               </div>
               <div id="editTankTrayScroller" class="edit-tank-tray-scroller">
-                <section class="edit-tank-tray-panel" data-tank-tray-panel="background">
-                  <div id="editTankBackgroundColorPanel"></div>
-                  <div id="editTankBackgroundList" class="background-grid edit-tank-background-grid"></div>
+                <section class="edit-tank-tray-panel edit-tank-background-panel" data-tank-tray-panel="background">
+                  <div class="edit-tank-background-mode-tabs" role="tablist" aria-label="Background type">
+                    <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="image">Image</button>
+                    <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="solid">Solid</button>
+                    <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="gradient">Gradient</button>
+                    <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="animated">Animated</button>
+                  </div>
+                  <div class="edit-tank-background-workspace">
+                    <div id="editTankBackgroundColorPanel"></div>
+                    <div id="editTankBackgroundList" class="background-grid edit-tank-background-grid"></div>
+                  </div>
                 </section>
                 <section class="edit-tank-tray-panel" data-tank-tray-panel="gravel">
                   <div id="editTankCustomGravelPanel"></div>
-                </section>
-                <section id="editTankFilterSection" class="edit-tank-tray-panel" data-tank-tray-panel="equipment">
-                  <div id="editTankFilterList" class="background-grid edit-tank-equipment-grid"></div>
-                  <div id="editTankUvLightList" class="background-grid edit-tank-equipment-grid"></div>
                 </section>
               </div>
             </section>
@@ -2439,7 +2464,7 @@
       };
       installMobileTutorialToolsBridge();
 
-      const mobileAppScriptUrl = "./public/app.js?v=20260503a";
+      const mobileAppScriptUrl = "./public/app.js?v=20260904-submarine-manual-controls";
       const loadOriginalMobileAppScript = () => {
         const script = document.createElement("script");
         script.type = "module";

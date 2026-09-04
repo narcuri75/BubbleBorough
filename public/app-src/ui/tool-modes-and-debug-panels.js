@@ -309,7 +309,7 @@ function handleEditDecorTrayWheel(event) {
 
 function normalizeEditOverlayMode(value) {
   const normalized = String(value || "").trim().toLowerCase();
-  return ["fish", "decor", "tank"].includes(normalized) ? normalized : "fish";
+  return ["fish", "decor", "equipment", "tank"].includes(normalized) ? normalized : "fish";
 }
 
 function getRememberedEditOverlayMode() {
@@ -339,6 +339,10 @@ function closeActiveEditOverlay() {
     toggleEditTankMode(false);
     return true;
   }
+  if (runtime.equipmentEditMode) {
+    toggleEquipmentEditMode(false);
+    return true;
+  }
   if (runtime.tankEditMode) {
     toggleTankEditMode(false);
     return true;
@@ -354,6 +358,8 @@ function openEditOverlayMode(mode = null, options = {}) {
   };
   if (nextMode === "decor") {
     toggleEditTankMode(true, openOptions);
+  } else if (nextMode === "equipment") {
+    toggleEquipmentEditMode(true, openOptions);
   } else if (nextMode === "tank") {
     toggleTankEditMode(true, openOptions);
   } else {
@@ -455,9 +461,11 @@ function handleMedicineTrayWheel(event) {
 
 function clearPrimaryToolModes() {
   clearGuidanceForModeChange("primary-tools");
+  closeSubmarineManager();
   runtime.toolbarActionMenu = "";
   runtime.editTankMode = false;
   runtime.fishEditMode = false;
+  runtime.equipmentEditMode = false;
   runtime.tankEditMode = false;
   runtime.foodTrayOpen = false;
   runtime.medicineTrayOpen = false;
@@ -770,6 +778,22 @@ function toggleFishEditMode(force = null, options = {}) {
   renderUi(now);
 }
 
+function toggleEquipmentEditMode(force = null, options = {}) {
+  const nextMode = typeof force === "boolean" ? force : !runtime.equipmentEditMode;
+  clearPrimaryToolModes();
+  const now = Date.now();
+
+  if (nextMode) {
+    rememberEditOverlayMode("equipment");
+    runtime.equipmentEditMode = true;
+    runtime.selectedFishId = null;
+    runtime.toolModeSource = options.source || "toolbar";
+    if (options.collapseSidebar) runtime.sidebarCollapsed = true;
+  }
+
+  renderUi(now);
+}
+
 function toggleTankEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.tankEditMode;
   clearPrimaryToolModes();
@@ -779,6 +803,13 @@ function toggleTankEditMode(force = null, options = {}) {
     rememberEditOverlayMode("tank");
     runtime.tankEditMode = true;
     runtime.selectedFishId = null;
+    runtime.editTankBackgroundMode = isSolidBackgroundEnabled()
+      ? "solid"
+      : isGradientBackgroundEnabled()
+        ? "gradient"
+        : isAnimatedBackgroundEnabled()
+          ? "animated"
+          : "image";
     runtime.toolModeSource = options.source || "toolbar";
     if (options.collapseSidebar) {
       runtime.sidebarCollapsed = true;

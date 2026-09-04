@@ -25,11 +25,13 @@ function getCaveBehaviorChance(species, timestamp = Date.now()) {
     return 0;
   }
 
+  const locomotionProfile = getFishLocomotionProfile(species);
+  const caveAffinity = clamp(locomotionProfile.caveAffinity, 0, 2.6);
   if (isCaveNightWindow(timestamp)) {
-    return CAVE_NIGHT_ENTRY_CHANCE;
+    return clamp(CAVE_NIGHT_ENTRY_CHANCE * caveAffinity, 0, 1);
   }
 
-  return CAVE_ENTRY_CHANCE_BY_STYLE[species.swimStyle] || 0.1;
+  return clamp((CAVE_ENTRY_CHANCE_BY_STYLE[species.swimStyle] || 0.1) * caveAffinity, 0, 1);
 }
 
 function getCaveBehaviorProfile(decorKey = "") {

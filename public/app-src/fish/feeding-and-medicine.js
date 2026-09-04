@@ -2,17 +2,23 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function canFishEatFoodPellet(fish, foodKey = "basic", now = Date.now()) {
-  if (
-    !fish
-    || isFishDead(fish)
-    || (Number(fish.foodRefusalUntil) || 0) > now
-  ) {
+  if (!fish || isFishDead(fish)) {
     return false;
   }
-  if ((Number(fish.satiatedUntil) || 0) > now && getFishNeedValue(fish, "hunger", now) > FISH_HUNGER_LOW_THRESHOLD) {
+
+  const hunger = getFishNeedValue(fish, "hunger", now);
+  const criticallyHungry = hunger <= FISH_HUNGER_CRITICAL_THRESHOLD;
+  const visiblyHungry = hunger <= FISH_HUNGER_LOW_THRESHOLD;
+
+  // Hunger is the source of truth. Temporary refusal/satiety timers should never
+  // leave a visibly starving fish parked beside compatible food.
+  if ((Number(fish.foodRefusalUntil) || 0) > now && !criticallyHungry) {
     return false;
   }
-  if (getFishNeedValue(fish, "hunger", now) >= 92) {
+  if ((Number(fish.satiatedUntil) || 0) > now && !visiblyHungry) {
+    return false;
+  }
+  if (hunger >= FISH_WILLING_TO_EAT_HUNGER_MAX) {
     return false;
   }
 
@@ -141,6 +147,26 @@ function scheduleFishPoop(fish, now = Date.now(), tank = getCurrentTank()) {
 function assignPelletToFish(fish, pellet, now = Date.now()) {
   if (!fish || !pellet) {
     return false;
+  }
+
+  // Food pursuit outranks autonomous passive actions. Rest, sleep, hide, and
+  // similar autonomous work must not steal movement back from a hungry fish.
+  // Explicit user-queued actions are preserved.
+  const actionQueue = getFishActionQueueState(fish.id);
+  if (actionQueue) {
+    const activeAction = actionQueue.active;
+    if (
+      activeAction
+      && activeAction.autonomous === true
+      && activeAction.action !== "eat"
+      && activeAction.interruptible !== false
+    ) {
+      finishFishActionQueueItem(fish, activeAction, now, { cancelled: true });
+      actionQueue.active = null;
+      actionQueue.restUntil = 0;
+    }
+    actionQueue.items = actionQueue.items.filter((item) => item?.autonomous !== true || item.action === "eat");
+    trimFishActionQueue(fish.id);
   }
 
   pellet.targetFishId = fish.id;
@@ -523,9 +549,12 @@ function applyFishMealWindowFoodIntake(fish, now = Date.now(), options = {}) {
   }
 
   const canOverfeed = options.allowOverfeed !== false && canFishOverfeed(fish);
-  const previousExtraCount = canOverfeed ? Math.max(0, previousCount - 1) : 0;
-  const nextExtraCount = canOverfeed ? Math.max(0, nextCount - 1) : 0;
-  const damageUnits = Math.max(0, nextExtraCount - previousExtraCount);
+  const countBasedOverfeed = options.countBasedOverfeed === true;
+  const repeatedWhileFull = options.wasAlreadyFull === true && previousCount >= 2;
+  const previousExtraCount = countBasedOverfeed && canOverfeed ? Math.max(0, previousCount - 1) : 0;
+  const nextExtraCount = countBasedOverfeed && canOverfeed ? Math.max(0, nextCount - 1) : 0;
+  const countBasedDamage = Math.max(0, nextExtraCount - previousExtraCount);
+  const damageUnits = canOverfeed ? Math.max(countBasedDamage, repeatedWhileFull ? 1 : 0) : 0;
   if (damageUnits > 0) {
     fish.healthUnits = Math.max(0, Number(fish.healthUnits) - damageUnits);
   }
@@ -561,14 +590,18 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
 
   const mealCoins = recordFishMealCredit(fish, now, targetTank);
   const previousHunger = getFishNeedValue(fish, "hunger", now);
-  adjustFishNeed(fish, "hunger", foodKey === "chum" ? 48 : 42, now);
-  adjustFishNeed(fish, "energy", 4, now);
+  const mealHungerGain = foodKey === "chum" ? FISH_CHUM_MEAL_HUNGER_GAIN : FISH_BASIC_MEAL_HUNGER_GAIN;
+  const mealHungerFloor = foodKey === "chum" ? FISH_CHUM_MEAL_HUNGER_FLOOR : FISH_BASIC_MEAL_HUNGER_FLOOR;
+  setFishNeedValue(fish, "hunger", Math.max(previousHunger + mealHungerGain, mealHungerFloor), now);
+  adjustFishNeed(fish, "energy", 3, now);
   adjustFishNeed(fish, "comfort", previousHunger <= FISH_HUNGER_LOW_THRESHOLD ? 5 : 1, now);
   adjustFishNeed(fish, "stimulation", 2, now);
   fish.needsUpdatedAt = now;
   scheduleFishPoop(fish, now, targetTank);
   applyFoodBuff(foodKey, now, targetTank);
-  const intake = applyFishMealWindowFoodIntake(fish, now);
+  const intake = applyFishMealWindowFoodIntake(fish, now, {
+    wasAlreadyFull: previousHunger >= FISH_OVERFEED_HUNGER_THRESHOLD
+  });
   const announce = options.announce !== false;
   const died = intake.damageUnits > 0 && fish.healthUnits <= 0;
 

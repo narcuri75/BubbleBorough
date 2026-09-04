@@ -4,12 +4,13 @@
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editEquipmentTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .submarine-manager, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
   );
 }
 
 function hasActiveTankToolOrOverlay() {
   const fishInspectorOpen = Boolean(runtime.selectedFishId && dom.fishInspector && !dom.fishInspector.hidden);
+  const submarineManagerOpen = Boolean(runtime.selectedMachineryId);
   return Boolean(
     runtime.storeOverlayOpen
     || runtime.utilityOverlayOpen
@@ -20,6 +21,7 @@ function hasActiveTankToolOrOverlay() {
     || !runtime.sidebarCollapsed
     || runtime.editTankMode
     || runtime.fishEditMode
+    || runtime.equipmentEditMode
     || runtime.tankEditMode
     || runtime.foodTrayOpen
     || runtime.medicineTrayOpen
@@ -33,6 +35,7 @@ function hasActiveTankToolOrOverlay() {
     || runtime.eggDragState
     || runtime.pebbleDragState
     || fishInspectorOpen
+    || submarineManagerOpen
   );
 }
 
@@ -96,6 +99,7 @@ function finalizeGlassTapGesture(event, now = Date.now()) {
     && pressDuration <= GLASS_TAP_MAX_HOLD_MS
     && !runtime.cleaningMode
     && !runtime.editTankMode
+    && !runtime.equipmentEditMode
     && !runtime.tankEditMode
     && !runtime.scoopMode
     && !runtime.placementMode

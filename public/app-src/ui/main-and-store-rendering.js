@@ -2,8 +2,12 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderUi(now, options = {}) {
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   const full = options.full !== false;
+  if (full) {
+    cancelDeferredTickUiRefresh();
+  }
   syncHalloweenPresentation(now);
   syncTutorialFlow(now);
   reconcileTutorialTransientUi();
@@ -28,15 +32,19 @@ function renderUi(now, options = {}) {
   renderEditQuickRef();
   renderEditDecorTray();
   renderEditFishTray();
+  renderEditEquipmentTray();
   renderEditTankTray();
   renderFoodTray();
   renderMedicineTray();
   renderFishActionFlyout(now);
   renderFishActionSubmenu(now);
   renderFishActionTargetMenu(now);
-  renderFishActionQueueDock(now);
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
   renderSelectedFishNeedsPanel(now);
   renderFishInspector(now);
+  renderSubmarineManager();
   syncTankStageTouchScrollState();
   renderControls(now);
   renderTutorialGuidance();
@@ -58,20 +66,28 @@ function renderUi(now, options = {}) {
     renderCollapsibleSections();
   }
   positionTransientMessages();
+  if (runtime.debugFrameProfilerEnabled) {
+    const durationMs = Math.max(0, performance.now() - profileStartedAt);
+    runtime.frameProfilerLastUiRenderMs = durationMs;
+    recordDebugFrameProfilerDuration("uiRender", durationMs);
+  }
 }
 
 function shouldAllowTankStageTouchScroll() {
   const fishInspectorOpen = Boolean(runtime.selectedFishId && dom.fishInspector && !dom.fishInspector.hidden);
+  const submarineManagerOpen = Boolean(runtime.selectedMachineryId);
   return Boolean(
     runtime.storeOverlayOpen
     || runtime.utilityOverlayOpen
     || runtime.settingsOverlayOpen
     || runtime.equipmentOverlayOpen
+    || runtime.equipmentEditMode
     || runtime.tankEditMode
     || !runtime.sidebarCollapsed
     || runtime.foodTrayOpen
     || runtime.medicineTrayOpen
     || fishInspectorOpen
+    || submarineManagerOpen
   );
 }
 
@@ -155,12 +171,34 @@ function renderTabs() {
   }
 }
 
+function triggerCoinGainGlow() {
+  const wallet = dom.toolbarWallet;
+  if (!wallet) {
+    return;
+  }
+  if (runtime.coinGainGlowTimeoutId) {
+    window.clearTimeout(runtime.coinGainGlowTimeoutId);
+  }
+  wallet.classList.remove("is-gaining-coins");
+  void wallet.offsetWidth;
+  wallet.classList.add("is-gaining-coins");
+  runtime.coinGainGlowTimeoutId = window.setTimeout(() => {
+    wallet.classList.remove("is-gaining-coins");
+    runtime.coinGainGlowTimeoutId = 0;
+  }, 1050);
+}
+
 function renderHeader(now) {
   const dirtiness = getTankDirtiness(now);
   const cleanliness = Math.max(0, Math.round((1 - dirtiness) * 100));
   const hungryCount = getHungryFishByNeeds(getCurrentTank(), now, FISH_HUNGER_LOW_THRESHOLD).length;
   const starvingCount = getHungryFishByNeeds(getCurrentTank(), now, FISH_HUNGER_CRITICAL_THRESHOLD).length;
 
+  const renderedCoinCount = runtime.lastRenderedCoinCount;
+  if (Number.isFinite(renderedCoinCount) && state.coins > renderedCoinCount) {
+    triggerCoinGainGlow();
+  }
+  runtime.lastRenderedCoinCount = state.coins;
   setTextIfChanged(dom.coinCount, formatLcdNumber(state.coins));
   setTextIfChanged(dom.toolbarCoinCount, String(state.coins));
   dom.toolbarWallet?.classList.toggle("is-full", state.coins >= MAX_WALLET_COINS);

@@ -37,6 +37,8 @@ function startPlacingDecor(decorKey) {
 
   runtime.editTankMode = true;
   runtime.fishEditMode = false;
+  runtime.equipmentEditMode = false;
+  runtime.tankEditMode = false;
   runtime.selectedFishId = null;
   runtime.selectedDecorId = null;
   runtime.selectedDecorIds = [];

@@ -56,7 +56,7 @@ function toggleToolbarActionMenu(menuName) {
 
 function handleToolbarGroupButtonClick(menuName) {
   const normalizedName = menuName === "care" || menuName === "edit" ? menuName : "";
-  const editModeActive = runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode;
+  const editModeActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode;
 
   if (normalizedName === "edit") {
     runtime.toolbarActionMenu = "";
@@ -105,11 +105,160 @@ function handleToolbarActionMenuKeyDown(event) {
     (activeMenuName === "care" ? dom.careMenuButton : dom.editMenuButton)?.focus?.();
     return;
   }
-  if (runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode) {
+  if (runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode) {
     event.preventDefault();
     closeActiveEditOverlay();
     dom.editMenuButton?.focus?.();
   }
+}
+
+function getTankColorPickerContextColor(context) {
+  const key = String(context || "");
+  if (key === "solid-background") {
+    return getActiveSolidBackgroundColor();
+  }
+  if (key === "gradient-start") {
+    return getActiveGradientBackgroundColors().start;
+  }
+  if (key === "gradient-end") {
+    return getActiveGradientBackgroundColors().end;
+  }
+  if (key === "animated-scheme") {
+    return getActiveAnimatedBackgroundSchemeColor();
+  }
+  const gravelMatch = key.match(/^gravel-(\d+)$/);
+  if (gravelMatch) {
+    const layerIndex = clamp(Number(gravelMatch[1]) || 0, 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
+    return getActiveCustomGravelLayerColors()[layerIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+  }
+  return DEFAULT_SOLID_BACKGROUND_COLOR;
+}
+
+function setTankColorPickerContextColor(context, color, options = {}) {
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor) {
+    return false;
+  }
+  const key = String(context || "");
+  if (key === "solid-background") {
+    return Boolean(setSolidBackgroundColor(normalizedColor, options));
+  }
+  if (key === "gradient-start") {
+    return Boolean(setGradientBackgroundColor("start", normalizedColor, options));
+  }
+  if (key === "gradient-end") {
+    return Boolean(setGradientBackgroundColor("end", normalizedColor, options));
+  }
+  if (key === "animated-scheme") {
+    return Boolean(setAnimatedBackgroundColor("surface", normalizedColor, options));
+  }
+  const gravelMatch = key.match(/^gravel-(\d+)$/);
+  if (gravelMatch) {
+    return Boolean(setCustomGravelLayerColor(Number(gravelMatch[1]), normalizedColor, options));
+  }
+  return false;
+}
+
+function syncTankColorPickerDom(context, color) {
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor || !dom.editTankTray) {
+    return;
+  }
+  const model = getTankColorPickerModel(normalizedColor);
+  const roots = [...dom.editTankTray.querySelectorAll(`[data-color-picker-root="${context}"]`)];
+  for (const root of roots) {
+    root.style.setProperty("--picker-hue-color", model.hueColor);
+    root.style.setProperty("--picker-saturation", `${(model.saturation * 100).toFixed(2)}%`);
+    root.style.setProperty("--picker-darkness", `${(model.darkness * 100).toFixed(2)}%`);
+    root.style.setProperty("--picker-color", model.color);
+    const hueMarker = root.querySelector(".tank-color-picker-hue-marker");
+    if (hueMarker instanceof HTMLElement) {
+      hueMarker.style.top = `${(model.hue * 100).toFixed(2)}%`;
+    }
+    const saturationRange = root.querySelector('[data-color-picker-channel="saturation"]');
+    if (saturationRange instanceof HTMLInputElement) {
+      saturationRange.value = String(Math.round(model.saturation * 100));
+    }
+    const darknessRange = root.querySelector('[data-color-picker-channel="darkness"]');
+    if (darknessRange instanceof HTMLInputElement) {
+      darknessRange.value = String(Math.round(model.darkness * 100));
+    }
+    const hexInput = root.querySelector("[data-color-picker-hex]");
+    if (hexInput instanceof HTMLInputElement && document.activeElement !== hexInput) {
+      hexInput.value = model.color;
+    }
+    const currentSwatch = root.querySelector("[data-color-picker-current]");
+    if (currentSwatch instanceof HTMLElement) {
+      currentSwatch.style.setProperty("--swatch", model.color);
+    }
+    const label = root.querySelector("[data-color-picker-label]");
+    if (label instanceof HTMLElement) {
+      label.textContent = getTankColorChoiceLabel(model.color);
+    }
+    for (const swatch of root.querySelectorAll("[data-color-picker-quick]")) {
+      const selected = normalizeHexColor(swatch.dataset.colorPickerColor) === model.color;
+      swatch.classList.toggle("is-selected", selected);
+      swatch.setAttribute("aria-pressed", String(selected));
+    }
+  }
+
+  const gravelMatch = String(context || "").match(/^gravel-(\d+)$/);
+  if (gravelMatch) {
+    const layerIndex = clamp(Number(gravelMatch[1]) || 0, 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
+    const pebble = dom.editTankTray.querySelector(`[data-edit-gravel-layer="${layerIndex}"] .edit-tank-gravel-pebble`);
+    if (pebble instanceof HTMLElement) {
+      pebble.style.setProperty("--pebble-color", model.color);
+    }
+  }
+}
+
+function applyTankColorPickerLiveColor(context, color) {
+  const changed = setTankColorPickerContextColor(context, color, {
+    save: false,
+    render: false,
+    full: false
+  });
+  if (changed) {
+    requestDeferredStateSave();
+  }
+  syncTankColorPickerDom(context, color);
+  return changed;
+}
+
+function updateTankColorPickerFromPointer(context, control, element, event) {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+  const rect = element.getBoundingClientRect();
+  if (!rect.width || !rect.height) {
+    return false;
+  }
+  const model = getTankColorPickerModel(getTankColorPickerContextColor(context));
+  let hue = model.hue;
+  let saturation = model.saturation;
+  let value = model.value;
+  if (control === "hue") {
+    hue = clamp((event.clientY - rect.top) / rect.height, 0, 1);
+  } else {
+    saturation = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+    value = 1 - clamp((event.clientY - rect.top) / rect.height, 0, 1);
+  }
+  const color = rgbToHex(hsvToRgb({ h: hue, s: saturation, v: value }));
+  applyTankColorPickerLiveColor(context, color);
+  return true;
+}
+
+function finishTankColorPickerDrag(pointerId = null) {
+  const drag = runtime.tankColorPickerDrag;
+  if (!drag) {
+    return false;
+  }
+  if (pointerId !== null && Number.isInteger(drag.pointerId) && drag.pointerId !== pointerId) {
+    return false;
+  }
+  runtime.tankColorPickerDrag = null;
+  requestDeferredStateSave();
+  return true;
 }
 
 function bindEvents() {
@@ -155,7 +304,7 @@ function bindEvents() {
       return;
     }
 
-    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode && !runtime.tankEditMode) {
+    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode && !runtime.equipmentEditMode && !runtime.tankEditMode) {
       return;
     }
 
@@ -188,6 +337,24 @@ function bindEvents() {
     }
 
     const key = keyRaw.toLowerCase();
+    const manualSubmarine = getSubmarine();
+    if (isSubmarineManualDriveActive(manualSubmarine)) {
+      if (["w", "a", "s", "d"].includes(key)) {
+        event.preventDefault();
+        setSubmarineManualDriveKey(key, true);
+        return;
+      }
+      if ((key === "q" || key === "e") && !event.repeat) {
+        event.preventDefault();
+        stepSubmarineDepthLayer(manualSubmarine, key === "q" ? -1 : 1);
+        return;
+      }
+      if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
+        event.preventDefault();
+        deployManualSubmarineFood(manualSubmarine, Date.now());
+        return;
+      }
+    }
     if (
       (keyRaw === "ArrowLeft" || keyRaw === "ArrowRight")
       && !runtime.storeOverlayOpen
@@ -200,7 +367,7 @@ function bindEvents() {
       return;
     }
 
-    if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.tankEditMode && !runtime.boroughOverviewOpen
+    if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.equipmentEditMode && !runtime.tankEditMode && !runtime.boroughOverviewOpen
       && !runtime.storeOverlayOpen && !runtime.settingsOverlayOpen && !runtime.utilityOverlayOpen && !runtime.equipmentOverlayOpen) {
       const cameraMoves = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
       if (cameraMoves[key]) {
@@ -296,6 +463,16 @@ function bindEvents() {
       return;
     }
   });
+  window.addEventListener("keyup", (event) => {
+    const key = String(event.key || "").toLowerCase();
+    if (["w", "a", "s", "d"].includes(key) && setSubmarineManualDriveKey(key, false)) {
+      event.preventDefault();
+    }
+  });
+  window.addEventListener("blur", () => {
+    clearSubmarineManualDriveKeys();
+  });
+
   if (window.ResizeObserver) {
     runtime.resizeObserver?.disconnect?.();
     runtime.resizeObserver = new ResizeObserver(() => refreshViewportLayout());
@@ -671,6 +848,9 @@ function bindEvents() {
   dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("notifications"));
   dom.toggleDebugMenuButton?.addEventListener("click", () => toggleDebugSidebar());
   dom.debugDailyRecapButton?.addEventListener("click", () => triggerDebugDailyRecap());
+  dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
+  dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
+  dom.debugFrameProfilerButton?.addEventListener("click", () => toggleDebugFrameProfiler());
   dom.feedButton.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("feedButton")) {
       return;
@@ -933,6 +1113,9 @@ function bindEvents() {
     }
     toggleEditTankMode(null, { source: "toolbar", collapseSidebar: true });
   });
+  dom.equipmentEditModeDockButton?.addEventListener("click", () => {
+    toggleEquipmentEditMode(null, { source: "toolbar", collapseSidebar: true });
+  });
   dom.fishEditModeDockButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("fishEditModeDockButton")) {
       return;
@@ -941,6 +1124,7 @@ function bindEvents() {
   });
   dom.closeEditDecorTrayButton?.addEventListener("click", () => toggleEditTankMode(false));
   dom.closeEditFishTrayButton?.addEventListener("click", () => toggleFishEditMode(false));
+  dom.closeEditEquipmentTrayButton?.addEventListener("click", () => toggleEquipmentEditMode(false));
   dom.closeEditTankTrayButton?.addEventListener("click", () => toggleTankEditMode(false));
   dom.editLayerUpButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-up"));
   dom.editLayerDownButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-down"));
@@ -1506,8 +1690,77 @@ function bindEvents() {
     closeEditDecorTrayContextMenu();
     scrollEditDecorTray(1);
   });
+  dom.editEquipmentTray?.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+  dom.editEquipmentTray?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
+    if (overlayModeTab) {
+      openEditOverlayMode(overlayModeTab.dataset.editOverlayMode, { source: "tray", collapseSidebar: true });
+      return;
+    }
+    const locationTab = event.target.closest("[data-equipment-tray-tab]");
+    if (locationTab) {
+      const nextTab = locationTab.dataset.equipmentTrayTab === "tank" ? "tank" : "storage";
+      if (runtime.equipmentEditTrayTab !== nextTab) {
+        runtime.equipmentEditTrayTab = nextTab;
+        if (dom.editEquipmentTrayScroller) dom.editEquipmentTrayScroller.scrollLeft = 0;
+        renderEditEquipmentTray();
+      }
+      return;
+    }
+    if (event.target.closest("[data-tray-place-submarine]")) {
+      deploySubmarine(getCurrentTank(), Date.now());
+      return;
+    }
+    const selectSubmarineButton = event.target.closest("[data-tray-select-submarine]");
+    if (selectSubmarineButton) {
+      openSubmarineManager(selectSubmarineButton.dataset.traySelectSubmarine);
+    }
+  });
+  dom.editEquipmentTray?.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
   dom.editTankTray?.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
+    const target = event.target instanceof Element ? event.target : null;
+    const field = target?.closest("[data-color-picker-field]");
+    const hue = target?.closest("[data-color-picker-hue]");
+    const control = field || hue;
+    if (!(control instanceof HTMLElement) || (event.pointerType !== "touch" && event.button !== 0)) {
+      return;
+    }
+    const context = field?.dataset.colorPickerField || hue?.dataset.colorPickerHue || "";
+    if (!context) {
+      return;
+    }
+    event.preventDefault();
+    runtime.tankColorPickerDrag = {
+      pointerId: Number.isInteger(event.pointerId) ? event.pointerId : null,
+      context,
+      control: field ? "field" : "hue",
+      element: control
+    };
+    control.setPointerCapture?.(event.pointerId);
+    updateTankColorPickerFromPointer(context, field ? "field" : "hue", control, event);
+  });
+  dom.editTankTray?.addEventListener("pointermove", (event) => {
+    const drag = runtime.tankColorPickerDrag;
+    if (!drag || (Number.isInteger(drag.pointerId) && drag.pointerId !== event.pointerId)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    updateTankColorPickerFromPointer(drag.context, drag.control, drag.element, event);
+  });
+  dom.editTankTray?.addEventListener("pointerup", (event) => {
+    finishTankColorPickerDrag(event.pointerId);
+  });
+  dom.editTankTray?.addEventListener("pointercancel", (event) => {
+    finishTankColorPickerDrag(event.pointerId);
   });
   dom.editTankTray?.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -1518,9 +1771,59 @@ function bindEvents() {
       return;
     }
 
+    const backgroundModeButton = event.target.closest("[data-tank-background-mode]");
+    if (backgroundModeButton) {
+      const nextMode = ["image", "solid", "gradient", "animated"].includes(backgroundModeButton.dataset.tankBackgroundMode)
+        ? backgroundModeButton.dataset.tankBackgroundMode
+        : "image";
+      runtime.editTankBackgroundMode = nextMode;
+      playToolbarButtonSoundEffect("press");
+      if (nextMode === "solid") {
+        setSolidBackgroundEnabled(true);
+      } else if (nextMode === "gradient") {
+        setGradientBackgroundEnabled(true);
+      } else if (nextMode === "animated") {
+        setAnimatedBackgroundEnabled(true);
+      } else if (isCustomBackgroundEnabled()) {
+        disableCustomBackground();
+      }
+      renderBackgrounds();
+      renderSolidBackgroundControls();
+      return;
+    }
+
+    const gravelLayerTab = event.target.closest("[data-edit-gravel-layer]");
+    if (gravelLayerTab) {
+      runtime.editTankGravelLayer = clamp(
+        Number(gravelLayerTab.dataset.editGravelLayer) || 0,
+        0,
+        CUSTOM_GRAVEL_LAYER_COUNT - 1
+      );
+      playToolbarButtonSoundEffect("press");
+      renderCustomGravelControls();
+      return;
+    }
+
+    const quickColorButton = event.target.closest("[data-color-picker-quick]");
+    if (quickColorButton) {
+      const context = quickColorButton.dataset.colorPickerQuick;
+      const color = quickColorButton.dataset.colorPickerColor;
+      playToolbarButtonSoundEffect("press");
+      applyTankColorPickerLiveColor(context, color);
+      return;
+    }
+
+    const animatedSchemeButton = event.target.closest("[data-animated-background-scheme-color]");
+    if (animatedSchemeButton) {
+      runtime.editTankBackgroundMode = "animated";
+      playToolbarButtonSoundEffect("press");
+      setAnimatedBackgroundColor("surface", animatedSchemeButton.dataset.animatedBackgroundSchemeColor);
+      return;
+    }
+
     const tankTab = event.target.closest("[data-tank-tray-tab]");
     if (tankTab) {
-      const nextTab = ["background", "gravel", "equipment"].includes(tankTab.dataset.tankTrayTab)
+      const nextTab = ["background", "gravel"].includes(tankTab.dataset.tankTrayTab)
         ? tankTab.dataset.tankTrayTab
         : "background";
       if (runtime.editTankTrayTab !== nextTab) {
@@ -1530,9 +1833,56 @@ function bindEvents() {
           dom.editTankTrayScroller.scrollLeft = 0;
         }
         renderEditTankTray();
-        syncFilterFeatureVisibility();
       }
     }
+  });
+  dom.editTankTray?.addEventListener("input", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const range = target?.closest("[data-color-picker-range]");
+    if (!(range instanceof HTMLInputElement)) {
+      return;
+    }
+    event.stopPropagation();
+    const context = range.dataset.colorPickerRange || "";
+    const channel = range.dataset.colorPickerChannel || "";
+    const model = getTankColorPickerModel(getTankColorPickerContextColor(context));
+    let saturation = model.saturation;
+    let value = model.value;
+    if (channel === "saturation") {
+      saturation = clamp((Number(range.value) || 0) / 100, 0, 1);
+    } else if (channel === "darkness") {
+      value = 1 - clamp((Number(range.value) || 0) / 100, 0, 1);
+    } else {
+      return;
+    }
+    const color = rgbToHex(hsvToRgb({ h: model.hue, s: saturation, v: value }));
+    applyTankColorPickerLiveColor(context, color);
+  });
+  dom.editTankTray?.addEventListener("change", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const hexInput = target?.closest("[data-color-picker-hex]");
+    if (!(hexInput instanceof HTMLInputElement)) {
+      return;
+    }
+    event.stopPropagation();
+    const context = hexInput.dataset.colorPickerHex || "";
+    const rawValue = String(hexInput.value || "").trim();
+    const normalizedColor = normalizeHexColor(rawValue.startsWith("#") ? rawValue : `#${rawValue}`);
+    if (!normalizedColor) {
+      hexInput.value = getTankColorPickerContextColor(context);
+      return;
+    }
+    applyTankColorPickerLiveColor(context, normalizedColor);
+    hexInput.value = normalizedColor;
+  });
+  dom.editTankTray?.addEventListener("keydown", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const hexInput = target?.closest("[data-color-picker-hex]");
+    if (!(hexInput instanceof HTMLInputElement) || event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    hexInput.blur();
   });
   dom.editTankTray?.addEventListener("contextmenu", (event) => {
     event.preventDefault();
@@ -1955,6 +2305,18 @@ function bindEvents() {
   });
 
   dom.equipmentShop?.addEventListener("click", (event) => {
+    const buySubmarineButton = event.target.closest("[data-buy-submarine]");
+    if (buySubmarineButton) {
+      buySubmarine();
+      return;
+    }
+
+    const manageSubmarineButton = event.target.closest("[data-manage-submarine]");
+    if (manageSubmarineButton) {
+      openSubmarineManager(manageSubmarineButton.dataset.manageSubmarine);
+      return;
+    }
+
     const backgroundBuyButton = event.target.closest("[data-buy-background]");
     if (backgroundBuyButton) {
       buyBackground(backgroundBuyButton.dataset.buyBackground);
@@ -2362,6 +2724,12 @@ function bindEvents() {
     }
 
     const now = Date.now();
+    const hitMachinery = findMachineryAtPoint(point.x, point.y, now);
+    if (hitMachinery) {
+      runtime.suppressNextTankClick = false;
+      return;
+    }
+
     const hitEgg = findFishEggAtPoint(point.x, point.y, now);
     if (hitEgg) {
       beginFishEggDrag(hitEgg, point, event.pointerId);
@@ -2428,6 +2796,12 @@ function bindEvents() {
       return;
     }
 
+    const hitMachinery = findMachineryAtPoint(point.x, point.y, Date.now());
+    if (hitMachinery) {
+      openSubmarineManager(hitMachinery.id);
+      return;
+    }
+
     const hitFish = findFishAtPoint(point.x, point.y, Date.now());
     if (hitFish) {
       openFishActionMenu(hitFish.id, point);
@@ -2435,6 +2809,7 @@ function bindEvents() {
     }
 
     closeFishActionMenu();
+    closeSubmarineManager();
     if (runtime.selectedFishId || runtime.selectedFishStatusFishId) {
       closeFishInspector();
     }
@@ -2969,9 +3344,11 @@ function getStageRenderViewTarget() {
     ? dom.editDecorTray
     : runtime.fishEditMode
       ? dom.editFishTray
-      : runtime.tankEditMode
-        ? dom.editTankTray
-        : null;
+      : runtime.equipmentEditMode
+        ? dom.editEquipmentTray
+        : runtime.tankEditMode
+          ? dom.editTankTray
+          : null;
   if (!activeEditTray || activeEditTray.hidden) {
     return {
       scale: coverScale,

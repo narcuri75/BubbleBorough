@@ -406,6 +406,7 @@ function setActiveTank(tankId, options = {}) {
     runtime.selectedDecorIds = [];
     runtime.selectedPlacedDecorId = null;
   }
+  closeSubmarineManager();
   runtime.selectedFishId = null;
   runtime.fishInspectorSettingsOpen = false;
   runtime.editingTankNameId = null;

@@ -72,8 +72,10 @@ function getFishTurnDurationMs(fish, species) {
     ? 0.5
     : clamp((currentSpeed - speedMin) / Math.max(0.00001, speedMax - speedMin), 0, 1);
   const slowBias = 1 - speedBlend;
-  const minMs = FISH_TURN_MIN_MS + slowBias * 55;
-  const maxMs = FISH_TURN_MAX_MS + slowBias * 130;
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const turnDurationScale = clamp(locomotionProfile.turnDurationScale, 0.55, 1.9);
+  const minMs = (FISH_TURN_MIN_MS + slowBias * 55) * turnDurationScale;
+  const maxMs = (FISH_TURN_MAX_MS + slowBias * 130) * turnDurationScale;
   return minMs + Math.random() * Math.max(1, maxMs - minMs);
 }
 
@@ -1300,6 +1302,17 @@ function handleAutoDispenserInteractionAtPoint(point, now = Date.now()) {
 }
 
 function scoopTankItemAtPoint(x, y, now = Date.now()) {
+  const machinery = findMachineryAtPoint(x, y, now);
+  if (machinery?.type === MACHINERY_TYPE_SUBMARINE) {
+    if (recallSubmarine(now)) {
+      runtime.equipmentEditTrayTab = "storage";
+      return {
+        kind: "machinery",
+        label: ""
+      };
+    }
+  }
+
   const pellet = findFloatingPelletAtPoint(x, y, now);
   if (pellet) {
     state.floatingPellets = state.floatingPellets.filter((entry) => entry.id !== pellet.id);
@@ -1560,8 +1573,8 @@ function getHungryFishByNeeds(tank = getCurrentTank(), now = Date.now(), thresho
 function getPersonalityNeedModifier(fish, needKey) {
   const personality = getFishPersonality(fish);
   const modifiers = {
-    hunger: { greedy: 1.28, energetic: 1.2, bold: 1.08, lazy: 0.82, gentle: 0.92, nightActive: 0.95 },
-    energy: { energetic: 1.18, nervous: 1.18, lazy: 0.78, chill: 0.85, slowGraceful: 0.82 },
+    hunger: { greedy: 1.15, energetic: 1.08, bold: 1.04, lazy: 0.9, gentle: 0.96, nightActive: 0.98 },
+    energy: { energetic: 1.1, nervous: 1.1, lazy: 0.85, chill: 0.9, slowGraceful: 0.9 },
     social: { social: 1.35, follower: 1.25, shy: 0.72, standoffish: 0.65, territorial: 0.7 },
     stimulation: { curious: 1.35, explorer: 1.25, playful: 1.35, lazy: 0.75, routineLoving: 0.78 },
     comfort: { nervous: 1.3, sensitive: 1.25, shy: 1.18, bold: 0.82, chill: 0.78 },
@@ -1609,8 +1622,8 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   const environmentTarget = getFishEnvironmentNeedTarget(fish, now);
   const socialTarget = getFishSocialNeedTarget(fish);
   const deltas = {
-    hunger: -hours * 5.2 * getPersonalityNeedModifier(fish, "hunger"),
-    energy: -hours * 3.7 * getPersonalityNeedModifier(fish, "energy"),
+    hunger: -hours * 2.5 * getPersonalityNeedModifier(fish, "hunger"),
+    energy: -hours * 2 * getPersonalityNeedModifier(fish, "energy"),
     social: (socialTarget - getFishNeedValue(fish, "social", now)) * Math.min(1, hours * 0.18) - hours * 1.4 * getPersonalityNeedModifier(fish, "social"),
     comfort: (comfortTarget - getFishNeedValue(fish, "comfort", now)) * Math.min(1, hours * 0.45),
     hygiene: (hygieneTarget - getFishNeedValue(fish, "hygiene", now)) * Math.min(1, hours * 0.38),
@@ -1623,19 +1636,23 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
     deltas.stimulation += hours * 2;
   }
   if (fish.activity === "roam" || fish.activity === "feeding" || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY || fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
-    const motionCost = clamp(Number(fish.motionLevel) || 0.2, 0.08, 1) * (fish.activity === "roam" ? 1.5 : 3.2);
+    const motionCost = clamp(Number(fish.motionLevel) || 0.2, 0.08, 1) * (fish.activity === "roam" ? 0.75 : 1.8);
     deltas.energy -= hours * motionCost;
   }
   if (activeQueueItem) {
     switch (activeQueueItem.action) {
       case "zoomies":
-        deltas.energy -= hours * 18;
-        deltas.hunger -= hours * 7;
+        deltas.energy -= hours * 10;
+        deltas.hunger -= hours * 3;
         deltas.stimulation += hours * 22;
         break;
       case "sleep":
+        deltas.energy += hours * 180;
+        deltas.comfort += hours * 8;
+        deltas.stimulation -= hours * 1.5;
+        break;
       case "rest":
-        deltas.energy += hours * 28;
+        deltas.energy += hours * 240;
         deltas.comfort += hours * 8;
         deltas.stimulation -= hours * 1.5;
         break;
@@ -1651,17 +1668,17 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
       case "inspect":
       case "play":
         deltas.stimulation += hours * 14;
-        deltas.energy -= hours * 4;
+        deltas.energy -= hours * 2;
         break;
       case "pebble":
         deltas.environment += hours * 18;
         deltas.stimulation += hours * 10;
-        deltas.energy -= hours * 6;
+        deltas.energy -= hours * 3;
         break;
       case "dig":
         deltas.environment += hours * 20;
         deltas.stimulation += hours * 7;
-        deltas.energy -= hours * 7;
+        deltas.energy -= hours * 3.5;
         break;
       case "waitfood":
         deltas.comfort += hours * 3;
@@ -1672,7 +1689,7 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
         deltas.energy -= hours * 2;
         break;
       case "breed":
-        deltas.energy -= hours * 8;
+        deltas.energy -= hours * 4;
         deltas.social += hours * 6;
         break;
       default:

@@ -586,17 +586,23 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
     runtime.pendingNeighborhoodTravel.delete(pending?.fishId);
     return false;
   }
+
   source.fish.splice(sourceIndex, 1);
   const direction = pending.direction;
   if (direction === "right") {
-    fish.xNorm = -0.1; fish.targetXNorm = 0.32;
+    fish.xNorm = -0.2;
+    fish.targetXNorm = 0.24;
   } else if (direction === "left") {
-    fish.xNorm = 1.1; fish.targetXNorm = 0.68;
+    fish.xNorm = 1.2;
+    fish.targetXNorm = 0.76;
   } else if (direction === "down") {
-    fish.yNorm = -0.1; fish.targetYNorm = 0.32;
+    fish.yNorm = -0.2;
+    fish.targetYNorm = 0.24;
   } else {
-    fish.yNorm = 1.1; fish.targetYNorm = 0.68;
+    fish.yNorm = 1.2;
+    fish.targetYNorm = 0.76;
   }
+  fish.targetAt = now + 60 * 1000;
   fish.coarseActivity = null;
   fish.lastCoarseSimulatedAt = now;
   fish.visitedNeighborhoodIds = [...new Set([...(fish.visitedNeighborhoodIds || []), destination.id])].slice(-64);
@@ -604,10 +610,7 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
   if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
     runtime.foodTravelDestinations.delete(fish.id);
   }
-  runtime.boroughEdgeBursts.push(
-    { tankId: source.id, direction, mode: "depart", startedAt: now, endsAt: now + 1200 },
-    { tankId: destination.id, direction, mode: "arrive", startedAt: now, endsAt: now + 1400 }
-  );
+
   const serviceTank = getAllTanks(state).find((tank) => tank.id === pending.serviceDestinationId);
   const homeTank = getAllTanks(state).find((tank) => tank.id === pending.residenceDestinationId);
   const cause = pending.neededService && serviceTank
@@ -625,7 +628,10 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
     travelReason: cause,
     detail: homeTank ? "Returning home" : pending.neededService ? `Looking for ${getBoroughServiceLabel(pending.neededService).toLowerCase()}` : "Exploring"
   });
-  runtime.pendingNeighborhoodTravel.delete(fish.id);
+
+  pending.phase = "arriving";
+  pending.destinationStartedAt = now;
+  pending.arrivalDeadline = now + 12000;
   return true;
 }
 
@@ -634,12 +640,14 @@ function processPendingNeighborhoodTravel(now = Date.now()) {
   for (const pending of [...runtime.pendingNeighborhoodTravel.values()]) {
     const source = getAllTanks(state).find((tank) => tank.id === pending.sourceTankId);
     const destination = getTankById(pending.destinationTankId);
-    const fishTank = pending.mode === "tube" && pending.phase === "emerging" ? destination : source;
+    const arrivingByEdge = pending.mode !== "tube" && pending.phase === "arriving";
+    const fishTank = (pending.mode === "tube" && pending.phase === "emerging") || arrivingByEdge ? destination : source;
     const fish = fishTank?.fish?.find((entry) => entry.id === pending.fishId);
     if (!fish || isFishDead(fish)) {
       runtime.pendingNeighborhoodTravel.delete(pending.fishId);
       continue;
     }
+
     if (pending.mode === "tube") {
       const sourceTube = source?.placedDecor?.find((item) => item.id === pending.sourceTubeId);
       const targetTube = destination?.placedDecor?.find((item) => item.id === pending.targetTubeId);
@@ -696,38 +704,37 @@ function processPendingNeighborhoodTravel(now = Date.now()) {
           fish.targetYNorm = clamp(points.exit.yNorm - .04, .14, .72);
         }
       }
-    } else if (isFishAtBoroughTravelEdge(fish, pending.direction) || now >= pending.transferAfter) {
+      continue;
+    }
+
+    if (arrivingByEdge) {
+      const destinationIsVisible = getCurrentTank()?.id === destination?.id && !runtime.boroughOverviewOpen;
+      const arrivalReached = pending.direction === "right"
+        ? Number(fish.xNorm) >= 0.22
+        : pending.direction === "left"
+          ? Number(fish.xNorm) <= 0.78
+          : pending.direction === "down"
+            ? Number(fish.yNorm) >= 0.22
+            : Number(fish.yNorm) <= 0.78;
+      if (arrivalReached || (!destinationIsVisible && now >= pending.arrivalDeadline)) {
+        runtime.pendingNeighborhoodTravel.delete(fish.id);
+        fish.targetXNorm = clamp(Number(fish.targetXNorm) || fish.xNorm || 0.5, 0.12, 0.88);
+        fish.targetYNorm = clamp(Number(fish.targetYNorm) || fish.yNorm || 0.5, 0.14, 0.8);
+      }
+      continue;
+    }
+
+    const sourceIsVisible = getCurrentTank()?.id === source?.id && !runtime.boroughOverviewOpen;
+    if (isFishAtBoroughTravelEdge(fish, pending.direction) || (!sourceIsVisible && now >= pending.transferAfter)) {
       changed = completeBoroughEdgeTravel(pending, now) || changed;
     }
   }
-  runtime.boroughEdgeBursts = runtime.boroughEdgeBursts.filter((burst) => burst.endsAt > now);
+  runtime.boroughEdgeBursts = [];
   return changed;
 }
 
 function drawBoroughEdgeBursts(now = Date.now()) {
-  const tank = getCurrentTank();
-  if (!tank || !runtime.boroughEdgeBursts?.length) {
-    return;
-  }
-  const bursts = runtime.boroughEdgeBursts.filter((entry) => entry.tankId === tank.id && entry.endsAt > now);
-  const portable = isPortablePerformanceModeActive();
-  for (const burst of bursts) {
-    const progress = clamp((now - burst.startedAt) / Math.max(1, burst.endsAt - burst.startedAt), 0, 1);
-    const alpha = Math.sin(progress * Math.PI) * (portable ? 0.42 : 0.68);
-    const isArrival = burst.mode === "arrive";
-    const edgeDirection = isArrival
-      ? ({ right: "left", left: "right", down: "up", up: "down" })[burst.direction]
-      : burst.direction;
-    const count = portable ? 4 : 8;
-    for (let index = 0; index < count; index += 1) {
-      const phase = (index + progress * 2.4) / count;
-      const along = 0.34 + (index / Math.max(1, count - 1)) * 0.32;
-      const inward = 10 + Math.sin(phase * Math.PI * 2) * 6;
-      const x = edgeDirection === "left" ? inward : edgeDirection === "right" ? TANK_WIDTH - inward : along * TANK_WIDTH;
-      const y = edgeDirection === "up" ? inward : edgeDirection === "down" ? TANK_HEIGHT - inward : along * TANK_HEIGHT;
-      drawBubbleOrbToContext(tankContext, x, y, 3 + (index % 3) * 1.5, alpha, 1, null, 1);
-    }
-  }
+  runtime.boroughEdgeBursts = [];
 }
 
 function getBoroughStructureOccupants(item, tank = getCurrentTank()) {

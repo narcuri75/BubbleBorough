@@ -1286,7 +1286,7 @@ function renderEditDecorTrayContextMenu() {
 }
 
 function hasInlineToolTrayOpen() {
-  return runtime.editTankMode || runtime.fishEditMode || runtime.tankEditMode || runtime.foodTrayOpen || runtime.medicineTrayOpen;
+  return runtime.editTankMode || runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode || runtime.foodTrayOpen || runtime.medicineTrayOpen;
 }
 
 function getDecorTrayTypeTone(decor, decorKey) {
@@ -2054,7 +2054,7 @@ function renderEditTankTray() {
     return;
   }
 
-  const validTabs = new Set(["background", "gravel", "equipment"]);
+  const validTabs = new Set(["background", "gravel"]);
   if (!validTabs.has(runtime.editTankTrayTab)) {
     runtime.editTankTrayTab = "background";
   }
@@ -2921,8 +2921,11 @@ function renderFishActionFlyout(now = Date.now()) {
     dom.fishActionFlyoutSettings.setAttribute("aria-label", `Open settings for ${fish.name || "fish"}`);
   }
   if (dom.fishActionQueue) {
-    const queuedActions = getFishActionQueueItems(fish.id);
-    dom.fishActionQueue.replaceChildren(...queuedActions.map((item) => {
+    if (!runtime.debugFishActionIndicatorsEnabled) {
+      dom.fishActionQueue.replaceChildren();
+    } else {
+      const queuedActions = getFishActionQueueItems(fish.id);
+      dom.fishActionQueue.replaceChildren(...queuedActions.map((item) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = `fish-action-queue-button${item.active ? " is-active" : ""}${item.cancelling ? " is-cancelling" : ""}`;
@@ -2969,7 +2972,8 @@ function renderFishActionFlyout(now = Date.now()) {
       button.title = item.cancelling ? "Cancelling action" : (item.rest ? "Next action starts soon" : (item.active ? "Cancel current action" : "Remove queued action"));
       button.setAttribute("aria-label", `${button.title}: ${labelText}${phaseText ? `, ${phaseText}` : ""}${remaining ? `, ${remaining} remaining` : ""}`);
       return button;
-    }));
+      }));
+    }
   }
 
   for (const button of flyout.querySelectorAll("[data-fish-action]")) {
@@ -3190,6 +3194,11 @@ function renderFishActionQueueDock(now = Date.now()) {
   if (!dock) {
     return;
   }
+  if (!runtime.debugFishActionIndicatorsEnabled) {
+    dock.hidden = true;
+    dock.replaceChildren();
+    return;
+  }
 
   const groups = [...runtime.fishActionQueuesByFishId.entries()]
     .map(([fishId]) => {
@@ -3332,22 +3341,22 @@ function getSelectedFishNeedsMoodLabel(fish, now = Date.now()) {
     return "Miserable";
   }
   const snapshot = getFishNeedsSnapshot(fish, now);
+  const needs = snapshot.needs;
+
+  // A weighted average must not hide an urgent individual need.
+  if (Number(needs.hunger) <= FISH_HUNGER_CRITICAL_THRESHOLD) return "Starving";
+  if (Number(needs.energy) <= FISH_ENERGY_CRITICAL_THRESHOLD) return "Exhausted";
+  if (Number(needs.hygiene) <= 12) return "Toxic";
+  if (Number(needs.comfort) <= 15) return "Panicked";
+  if (Number(needs.hunger) <= FISH_HUNGER_LOW_THRESHOLD) return "Hungry";
+  if (Number(needs.energy) <= FISH_ENERGY_LOW_THRESHOLD) return "Tired";
+
   const value = Number(snapshot?.mood?.value) || 0;
-  if (value >= 85) {
-    return "Thriving";
-  }
-  if (value >= 70) {
-    return "Good Vibes";
-  }
-  if (value >= 50) {
-    return "Fine";
-  }
-  if (value >= 35) {
-    return "Uneasy";
-  }
-  if (value >= 20) {
-    return "Stressed";
-  }
+  if (value >= 85) return "Thriving";
+  if (value >= 70) return "Good Vibes";
+  if (value >= 50) return "Fine";
+  if (value >= 35) return "Uneasy";
+  if (value >= 20) return "Stressed";
   return "Miserable";
 }
 
@@ -3377,9 +3386,26 @@ function renderSelectedFishNeedsPanel(now = Date.now()) {
     return;
   }
   const fish = managed.fish;
-  const moodSnapshot = getFishNeedsSnapshot(fish, now).mood;
+  const needsSnapshot = getFishNeedsSnapshot(fish, now);
+  const moodSnapshot = needsSnapshot.mood;
   const moodLabel = getSelectedFishNeedsMoodLabel(fish, now);
-  const moodTone = moodSnapshot.value <= 19 ? "danger" : moodSnapshot.value <= 49 ? "warn" : moodSnapshot.value <= 69 ? "okay" : "good";
+  const criticalNeed = Number(needsSnapshot.needs.hunger) <= FISH_HUNGER_CRITICAL_THRESHOLD
+    || Number(needsSnapshot.needs.energy) <= FISH_ENERGY_CRITICAL_THRESHOLD
+    || Number(needsSnapshot.needs.hygiene) <= 12
+    || Number(needsSnapshot.needs.comfort) <= 15;
+  const lowNeed = Number(needsSnapshot.needs.hunger) <= FISH_HUNGER_LOW_THRESHOLD
+    || Number(needsSnapshot.needs.energy) <= FISH_ENERGY_LOW_THRESHOLD;
+  const moodTone = criticalNeed
+    ? "danger"
+    : lowNeed
+      ? "warn"
+      : moodSnapshot.value <= 19
+        ? "danger"
+        : moodSnapshot.value <= 49
+          ? "warn"
+          : moodSnapshot.value <= 69
+            ? "okay"
+            : "good";
   const markup = `
     <div class="selected-fish-needs-header">
       <strong class="selected-fish-needs-name">${escapeHtml(fish.name || "Fish")}</strong>
@@ -3802,29 +3828,7 @@ function renderEquipmentShop() {
     })
     .join("");
 
-  const tankType = getTankTypeMeta("rectangular");
-  const ownedCount = getAllTanks().length;
-  const expansionCost = getAquariumExpansionCost();
-  const affordable = state.coins >= expansionCost;
-  const tankMarkup = `
-    <article class="shop-card">
-      ${renderTankProductImage(tankType.id, "Aquarium")}
-      <div class="shop-meta shop-card-main">
-        <div>
-          <strong>Aquarium Extension</strong>
-          <div class="fish-meta">${ownedCount} connected ${pluralize("section", ownedCount)}</div>
-        </div>
-        <div class="fish-meta">${tankType.description}</div>
-        <div class="mini-note">Adds one full-sized neighborhood to any exposed side of Bubble Borough.</div>
-      </div>
-      <div class="shop-meta shop-card-actions">
-        <span class="price-tag">${expansionCost} ${pluralize("coin", expansionCost)}</span>
-        <div class="shop-button-row">
-          <button class="buy-button" data-extend-aquarium-store ${affordable ? "" : "disabled"}>Extend Aquarium</button>
-        </div>
-      </div>
-    </article>
-  `;
+
 
   const markup = `
     ${ENABLE_FILTER ? `
@@ -3858,11 +3862,11 @@ function renderEquipmentShop() {
     </section>
     <section class="shop-section">
       <div class="shop-section-heading">
-        <h3>Aquariums</h3>
-        <p>Grow one continuous aquarium by choosing where its next neighborhood connects.</p>
+        <h3>Equipment</h3>
+        <p>Purchase equipment for your borough, then deploy owned equipment from the Edit overlay.</p>
       </div>
       <div class="shop-section-cards">
-        ${tankMarkup}
+        ${renderSubmarineShopCard()}
       </div>
     </section>
   `;

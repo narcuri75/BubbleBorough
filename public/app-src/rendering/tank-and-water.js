@@ -36,6 +36,7 @@ function renderTank(now) {
     drawFishEggs(now, layer);
     //drawLooseGravel(now, { surfaceKind: "decor", decorLayer: layer });
     drawFish(now, layer, { excludeBehavior: "sucker" });
+    drawMachinery(now, layer);
   }
   drawCoinGlints(now);
   drawDecorBubbleStreams(now);

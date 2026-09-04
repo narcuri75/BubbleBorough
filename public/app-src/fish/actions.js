@@ -1,22 +1,32 @@
 // Source fragment: fish/actions.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+
+function markFishActionStateDirty(now = Date.now()) {
+  requestDeferredStateSave();
+  if (!runtime.debugFishActionIndicatorsEnabled) {
+    return;
+  }
+  renderFishActionFlyout(now);
+  renderFishActionQueueDock(now);
+}
+
 function getFishActionConfig(action) {
   return {
-    eat: { actionId: "eat", label: "Eat", displayName: "Eat", category: "Needs", targetType: "food", title: "Send this fish to food", durationMs: FISH_ACTION_EAT_DURATION_MS, energyCost: 2, hungerCost: 0, effects: { comfort: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 80 },
-    waitfood: { actionId: "waitfood", label: "Wait for Food", displayName: "Wait for Food", category: "Needs", targetType: "dispenser", title: "Wait near a food service", durationMs: FISH_ACTION_WAIT_FOOD_DURATION_MS, energyCost: 1, hungerCost: 1, effects: { comfort: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 72 },
-    rest: { actionId: "rest", label: "Rest", displayName: "Rest", category: "Needs", targetType: "self", title: "Hover quietly and recover energy", durationMs: FISH_ACTION_REST_DURATION_MS, energyCost: 0, hungerCost: 1, effects: { energy: 20, comfort: 4 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 70 },
-    sleep: { actionId: "sleep", label: "Sleep", displayName: "Sleep", category: "Needs", targetType: "decor", title: "Settle into a sleep spot", durationMs: FISH_ACTION_SLEEP_DURATION_MS, energyCost: 0, hungerCost: 2, effects: { energy: 36, comfort: 8, stimulation: -2 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 76 },
-    zoomies: { actionId: "zoomies", label: "Zoomies", displayName: "Zoomies", category: "Behavior", targetType: "position", title: "Do a quick burst around the tank", durationMs: FISH_ACTION_ZOOMIES_DURATION_MS, energyCost: 18, hungerCost: 5, effects: { stimulation: 18, social: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 35 },
-    greet: { actionId: "greet", label: "Greet", displayName: "Greet", category: "Social", targetType: "fish", title: "Greet another fish", durationMs: FISH_ACTION_GREET_DURATION_MS, energyCost: 3, hungerCost: 1, effects: { social: 12, comfort: 2, stimulation: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 52 },
-    hangout: { actionId: "hangout", label: "Hang Out", displayName: "Hang Out", category: "Social", targetType: "fish", title: "Swim with another fish", durationMs: FISH_ACTION_FOLLOW_DURATION_MS, energyCost: 5, hungerCost: 3, effects: { social: 20, comfort: 4, stimulation: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 50 },
-    play: { actionId: "play", label: "Play", displayName: "Play", category: "Explore", targetType: "decor", title: "Play around the tank", durationMs: FISH_ACTION_PLAY_DURATION_MS, energyCost: 10, hungerCost: 3, effects: { stimulation: 22, social: 3 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 42 },
-    pebble: { actionId: "pebble", label: "Find Pebble", displayName: "Find Pebble", category: "Explore", targetType: "gravel", title: "Pick up and toss a gravel pebble", durationMs: FISH_ACTION_PEBBLE_DURATION_MS, energyCost: 5, hungerCost: 1, effects: { environment: 12, stimulation: 8 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 36 },
-    dig: { actionId: "dig", label: "Dig", displayName: "Dig", category: "Explore", targetType: "gravel", title: "Dig around in the gravel", durationMs: FISH_ACTION_DIG_DURATION_MS, energyCost: 6, hungerCost: 1, effects: { environment: 14, stimulation: 5 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 37 },
-    avoid: { actionId: "avoid", label: "Avoid", displayName: "Avoid", category: "Social", targetType: "fish", title: "Move away from a stressful fish", durationMs: FISH_ACTION_AVOID_DURATION_MS, energyCost: 3, hungerCost: 1, effects: { comfort: 10 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 74 },
-    breed: { actionId: "breed", label: "Mate", displayName: "Mate", category: "Social", targetType: "fish", title: "Try to mate with a ready same-species fish", durationMs: FISH_ACTION_MATE_DURATION_MS, energyCost: 14, hungerCost: 6, effects: { social: 6, stimulation: 6 }, queueable: true, canFail: true, interruptible: false, autonomousAllowed: false, priority: 45 },
-    hide: { actionId: "hide", label: "Hide", displayName: "Hide", category: "Comfort", targetType: "decor", title: "Hide near cover", durationMs: FISH_ACTION_HIDE_DURATION_MS, energyCost: 1, hungerCost: 1, effects: { comfort: 16, energy: 6 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 78 },
-    inspect: { actionId: "inspect", label: "Inspect", displayName: "Inspect", category: "Decor", targetType: "decor", title: "Inspect an interesting tank object", durationMs: FISH_ACTION_INSPECT_DURATION_MS, energyCost: 4, hungerCost: 2, effects: { stimulation: 16, environment: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 38 },
+    eat: { actionId: "eat", label: "Eat", displayName: "Eat", category: "Needs", targetType: "food", title: "Send this fish to food", durationMs: FISH_ACTION_EAT_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { comfort: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 80 },
+    waitfood: { actionId: "waitfood", label: "Wait for Food", displayName: "Wait for Food", category: "Needs", targetType: "dispenser", title: "Wait near a food service", durationMs: FISH_ACTION_WAIT_FOOD_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { comfort: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 72 },
+    rest: { actionId: "rest", label: "Rest", displayName: "Rest", category: "Needs", targetType: "self", title: "Hover quietly and recover energy", durationMs: FISH_ACTION_REST_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { energy: 6, comfort: 4 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 70 },
+    sleep: { actionId: "sleep", label: "Sleep", displayName: "Sleep", category: "Needs", targetType: "decor", title: "Settle into a sleep spot", durationMs: FISH_ACTION_SLEEP_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { energy: 8, comfort: 8, stimulation: -2 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 76 },
+    zoomies: { actionId: "zoomies", label: "Zoomies", displayName: "Zoomies", category: "Behavior", targetType: "position", title: "Do a quick burst around the tank", durationMs: FISH_ACTION_ZOOMIES_DURATION_MS, energyCost: 5, hungerCost: 1, effects: { stimulation: 18, social: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 35 },
+    greet: { actionId: "greet", label: "Greet", displayName: "Greet", category: "Social", targetType: "fish", title: "Greet another fish", durationMs: FISH_ACTION_GREET_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { social: 12, comfort: 2, stimulation: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 52 },
+    hangout: { actionId: "hangout", label: "Hang Out", displayName: "Hang Out", category: "Social", targetType: "fish", title: "Swim with another fish", durationMs: FISH_ACTION_FOLLOW_DURATION_MS, energyCost: 2, hungerCost: 1, effects: { social: 20, comfort: 4, stimulation: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 50 },
+    play: { actionId: "play", label: "Play", displayName: "Play", category: "Explore", targetType: "decor", title: "Play around the tank", durationMs: FISH_ACTION_PLAY_DURATION_MS, energyCost: 3, hungerCost: 1, effects: { stimulation: 22, social: 3 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 42 },
+    pebble: { actionId: "pebble", label: "Find Pebble", displayName: "Find Pebble", category: "Explore", targetType: "gravel", title: "Pick up and toss a gravel pebble", durationMs: FISH_ACTION_PEBBLE_DURATION_MS, energyCost: 2, hungerCost: 0, effects: { environment: 12, stimulation: 8 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 36 },
+    dig: { actionId: "dig", label: "Dig", displayName: "Dig", category: "Explore", targetType: "gravel", title: "Dig around in the gravel", durationMs: FISH_ACTION_DIG_DURATION_MS, energyCost: 2, hungerCost: 0, effects: { environment: 14, stimulation: 5 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 37 },
+    avoid: { actionId: "avoid", label: "Avoid", displayName: "Avoid", category: "Social", targetType: "fish", title: "Move away from a stressful fish", durationMs: FISH_ACTION_AVOID_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { comfort: 10 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 74 },
+    breed: { actionId: "breed", label: "Mate", displayName: "Mate", category: "Social", targetType: "fish", title: "Try to mate with a ready same-species fish", durationMs: FISH_ACTION_MATE_DURATION_MS, energyCost: 5, hungerCost: 2, effects: { social: 6, stimulation: 6 }, queueable: true, canFail: true, interruptible: false, autonomousAllowed: false, priority: 45 },
+    hide: { actionId: "hide", label: "Hide", displayName: "Hide", category: "Comfort", targetType: "decor", title: "Hide near cover", durationMs: FISH_ACTION_HIDE_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { comfort: 16, energy: 6 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 78 },
+    inspect: { actionId: "inspect", label: "Inspect", displayName: "Inspect", category: "Decor", targetType: "decor", title: "Inspect an interesting tank object", durationMs: FISH_ACTION_INSPECT_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { stimulation: 16, environment: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 38 },
     clear: { actionId: "clear", label: "Clear", displayName: "Clear", category: "Special", targetType: "self", title: "Cancel queued actions and return to autonomy", durationMs: 0, queueable: false, canFail: false, interruptible: false, autonomousAllowed: false, priority: 0 }
   }[action] || null;
 }
@@ -210,8 +220,8 @@ function getActiveFishBreedingSequenceFish() {
     return null;
   }
 
-  const leftFish = state.fish.find((fish) => fish.id === sequence.leftFishId) || null;
-  const rightFish = state.fish.find((fish) => fish.id === sequence.rightFishId) || null;
+  const leftFish = getFishByIdFast(sequence.leftFishId);
+  const rightFish = getFishByIdFast(sequence.rightFishId);
   if (
     !leftFish
     || !rightFish
@@ -275,8 +285,7 @@ function updateFishBreedingSequence(now = Date.now()) {
     rightFish.targetAt = now;
     pushEvent(`An egg appeared after ${leftFish.name} and ${rightFish.name} paired up.`, now);
     clearFishBreedingSequence();
-    saveState();
-    renderUi(now);
+    markFishActionStateDirty(now);
     showToast(`${species?.name || "Fish"} egg settled into the gravel.`);
     return null;
   }
@@ -596,8 +605,8 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
   }
 
   if (steering.type === "follow") {
-    const targetFish = state.fish.find((entry) => entry?.id === steering.targetFishId && !isFishDead(entry));
-    if (!targetFish) {
+    const targetFish = getFishByIdFast(steering.targetFishId);
+    if (!targetFish || isFishDead(targetFish)) {
       clearFishActionSteering(fish);
       return false;
     }
@@ -859,6 +868,18 @@ function updateQueuedFishActionControl(fish, species, now = Date.now()) {
     return false;
   }
 
+  // Feeding outranks autonomous passive behavior. Once food has been assigned,
+  // an old Rest/Sleep/Hide/etc. action must not clear the pellet target or stop
+  // the fish on the next frame.
+  if (
+    fish.activity === "feeding"
+    && fish.feedingPelletId
+    && active.autonomous === true
+    && active.action !== "eat"
+  ) {
+    return false;
+  }
+
   if (active.cancelling) {
     fish.activity = "roam";
     fish.feedingPelletId = null;
@@ -951,8 +972,7 @@ function triggerFishActionEat(fish, species, now = Date.now()) {
   prepareFishForUserAction(fish, species, now, { keepFeeding: true });
   assignPelletToFish(fish, pellet, now);
   pushEvent(`${fish.name} was sent to eat.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is going for food.`);
   return true;
 }
@@ -967,8 +987,7 @@ function triggerFishActionRest(fish, species, now = Date.now()) {
     fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
   }
   setFishBehaviorIntent(fish, "rest", "quiet", now, { durationMs });
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is resting.`);
   return true;
 }
@@ -992,8 +1011,7 @@ function triggerFishActionWaitFood(fish, species, now = Date.now()) {
   setFishActionSteering(fish, { type: "waitfood", xNorm, yNorm, durationMs: getFishActionConfig("waitfood")?.durationMs || FISH_ACTION_WAIT_FOOD_DURATION_MS }, now);
   updateFishActionSteering(fish, species, now);
   pushEvent(`${fish.name} is waiting by the food dispenser.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is waiting by the dispenser.`);
   return true;
 }
@@ -1021,8 +1039,7 @@ function triggerFishActionSleep(fish, species, now = Date.now()) {
     debugText: `sleep | ${cover.zoneType || "quiet spot"}`,
     slow: true
   }, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is settling down.`);
   return true;
 }
@@ -1032,8 +1049,7 @@ function triggerFishActionZoomies(fish, species, now = Date.now()) {
   setFishActionSteering(fish, { type: "zoomies", durationMs: FISH_ACTION_ZOOMIES_DURATION_MS }, now);
   updateFishActionSteering(fish, species, now);
   pushEvent(`${fish.name} got the zoomies.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} has the zoomies.`);
   return true;
 }
@@ -1054,8 +1070,7 @@ function triggerFishActionHangout(fish, species, now = Date.now(), item = null) 
   }, now);
   updateFishActionSteering(fish, species, now);
   pushEvent(`${fish.name} went to hang out with ${partner.name}.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is hanging out with ${partner.name}.`);
   return true;
 }
@@ -1106,8 +1121,7 @@ function triggerFishActionPebble(fish, species, now = Date.now(), item = null) {
   }
   setFishBehaviorIntent(fish, "pebble", "gravel", now, { durationMs: getFishActionConfig("pebble")?.durationMs || FISH_ACTION_PEBBLE_DURATION_MS });
   pushEvent(`${fish.name} went pebble picking.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is picking a pebble.`);
   return true;
 }
@@ -1120,8 +1134,7 @@ function triggerFishActionDig(fish, species, now = Date.now(), item = null) {
   }
   setFishBehaviorIntent(fish, "dig", "gravel", now, { durationMs });
   pushEvent(`${fish.name} went digging in the gravel.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is digging.`);
   return true;
 }
@@ -1139,8 +1152,7 @@ function triggerFishActionAvoid(fish, species, now = Date.now(), item = null) {
   fish.targetYNorm = awayY;
   fish.targetAt = now + (getFishActionConfig("avoid")?.durationMs || FISH_ACTION_AVOID_DURATION_MS);
   setFishBehaviorIntent(fish, "avoid", partner.name || "fish", now, { targetId: partner.id, targetName: partner.name || "", durationMs: getFishActionConfig("avoid")?.durationMs || FISH_ACTION_AVOID_DURATION_MS });
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is taking space.`);
   return true;
 }
@@ -1156,27 +1168,17 @@ function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
     return false;
   }
   const mateChance = getFishMateChanceForTarget(fish, partner);
-  const config = getFishActionConfig("breed");
-  const refundMateCost = () => {
-    adjustFishNeed(fish, "energy", Math.max(0, Number(config?.energyCost) || 0), now);
-    adjustFishNeed(fish, "hunger", Math.max(0, Number(config?.hungerCost) || 0), now);
-    fish.needsUpdatedAt = now;
-  };
   if (mateChance.rating < 5) {
-    refundMateCost();
     setFishBehaviorIntent(fish, "refuse mate", partner.name || "partner", now, { targetId: partner.id, targetName: partner.name || "", durationMs: 6000 });
     pushEvent(`${fish.name} tried to mate with ${partner.name}, but the relationship is only ${mateChance.rating}/10.`, now);
-    saveState();
-    renderUi(now);
+    markFishActionStateDirty(now);
     showToast(`${partner.name} is not feeling it. Relationship ${mateChance.rating}/10.`);
     return false;
   }
   if (Math.random() * 100 >= mateChance.chancePercent) {
-    refundMateCost();
     setFishBehaviorIntent(fish, "mate fizzled", partner.name || "partner", now, { targetId: partner.id, targetName: partner.name || "", durationMs: 6000 });
     pushEvent(`${fish.name} and ${partner.name} tried to mate, but it fizzled at ${mateChance.chancePercent}% odds.`, now);
-    saveState();
-    renderUi(now);
+    markFishActionStateDirty(now);
     showToast(`${fish.name} and ${partner.name} did not vibe this time.`);
     return false;
   }
@@ -1218,8 +1220,7 @@ function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
     setFishBehaviorIntent(parent, "mate", parent.id === fish.id ? (partner.name || "partner") : (fish.name || "partner"), now, { durationMs: FISH_ACTION_BREED_HOLD_MS + 30000 });
   }
   pushEvent(`${fish.name} and ${partner.name} are mating after a ${mateChance.rating}/10 relationship check.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} and ${partner.name} are mating.`);
   return true;
 }
@@ -1246,8 +1247,7 @@ function triggerFishActionHide(fish, species, now = Date.now()) {
     debugText: `hide | ${cover.zoneType || "cover"}`,
     slow: true
   }, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is hiding.`);
   return true;
 }
@@ -1257,8 +1257,7 @@ function triggerFishActionInspect(fish, species, now = Date.now(), item = null) 
   if (!beginQueuedFishExploreCycle(fish, species, item, now)) {
     return false;
   }
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is exploring the tank.`);
   return true;
 }
@@ -1302,45 +1301,62 @@ function startFishActionQueueItem(fish, item, now = Date.now()) {
     showFishActionUnavailableToast(availability);
     return false;
   }
-  if (config) {
-    adjustFishNeed(fish, "energy", -Math.max(0, Number(config.energyCost) || 0), now);
-    adjustFishNeed(fish, "hunger", -Math.max(0, Number(config.hungerCost) || 0), now);
-    fish.needsUpdatedAt = now;
-  }
 
+  let started = false;
   switch (action) {
     case "eat":
-      return triggerFishActionEat(fish, species, now);
+      started = triggerFishActionEat(fish, species, now);
+      break;
     case "waitfood":
-      return triggerFishActionWaitFood(fish, species, now);
+      started = triggerFishActionWaitFood(fish, species, now);
+      break;
     case "rest":
-      return triggerFishActionRest(fish, species, now);
+      started = triggerFishActionRest(fish, species, now);
+      break;
     case "sleep":
-      return triggerFishActionSleep(fish, species, now);
+      started = triggerFishActionSleep(fish, species, now);
+      break;
     case "zoomies":
-      return triggerFishActionZoomies(fish, species, now);
+      started = triggerFishActionZoomies(fish, species, now);
+      break;
     case "hangout":
-      return triggerFishActionHangout(fish, species, now, item);
+      started = triggerFishActionHangout(fish, species, now, item);
+      break;
     case "greet":
-      return triggerFishActionGreet(fish, species, now, item);
+      started = triggerFishActionGreet(fish, species, now, item);
+      break;
     case "play":
-      return triggerFishActionPlay(fish, species, now, item);
+      started = triggerFishActionPlay(fish, species, now, item);
+      break;
     case "pebble":
-      return triggerFishActionPebble(fish, species, now, item);
+      started = triggerFishActionPebble(fish, species, now, item);
+      break;
     case "dig":
-      return triggerFishActionDig(fish, species, now, item);
+      started = triggerFishActionDig(fish, species, now, item);
+      break;
     case "avoid":
-      return triggerFishActionAvoid(fish, species, now, item);
+      started = triggerFishActionAvoid(fish, species, now, item);
+      break;
     case "breed":
-      return triggerFishActionBreed(fish, species, now, item);
+      started = triggerFishActionBreed(fish, species, now, item);
+      break;
     case "hide":
-      return triggerFishActionHide(fish, species, now);
+      started = triggerFishActionHide(fish, species, now);
+      break;
     case "inspect":
-      return triggerFishActionInspect(fish, species, now, item);
+      started = triggerFishActionInspect(fish, species, now, item);
+      break;
     default:
       showToast("Unknown fish action.");
       return false;
   }
+
+  if (started && config) {
+    adjustFishNeed(fish, "energy", -Math.max(0, Number(config.energyCost) || 0), now);
+    adjustFishNeed(fish, "hunger", -Math.max(0, Number(config.hungerCost) || 0), now);
+    fish.needsUpdatedAt = now;
+  }
+  return started;
 }
 
 function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
@@ -1374,6 +1390,10 @@ function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
     fish.targetAt = now;
   }
   fish.behaviorIntent = null;
+  requestDeferredStateSave();
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
   if (options.cancelled === true) {
     showToast(`${item.label || getFishActionConfig(item.action)?.label || "Action"} cancelled for ${fish.name}.`);
   }
@@ -1392,6 +1412,13 @@ function promoteNextFishActionQueueItem(fishId, now = Date.now()) {
   const fish = managed?.fish || null;
   if (!fish || managed.inStorage || isFishDead(fish)) {
     runtime.fishActionQueuesByFishId.delete(fishId);
+    return false;
+  }
+  if (Number.isFinite(fish.panicUntil) && now < fish.panicUntil) {
+    // Immediate reactions such as a glass tap temporarily outrank queued
+    // autonomous/user actions. Leave the item queued and start it once the
+    // panic window has finished instead of overwriting the escape target.
+    queue.restUntil = Math.max(Number(queue.restUntil) || 0, fish.panicUntil);
     return false;
   }
 
@@ -1416,19 +1443,41 @@ function promoteNextFishActionQueueItem(fishId, now = Date.now()) {
   }
 
   trimFishActionQueue(fishId);
-  renderUi(now, { full: false });
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
   return false;
 }
 
+function pruneFishActionQueueItemsInPlace(queue, now = Date.now()) {
+  const items = Array.isArray(queue?.items) ? queue.items : [];
+  let writeIndex = 0;
+  for (let readIndex = 0; readIndex < items.length; readIndex += 1) {
+    const item = items[readIndex];
+    if (item?.cancelling && now >= Number(item.cancelEndsAt || 0)) {
+      continue;
+    }
+    items[writeIndex] = item;
+    writeIndex += 1;
+  }
+  if (writeIndex < items.length) {
+    items.length = writeIndex;
+  }
+  if (queue) {
+    queue.items = items;
+  }
+  return items;
+}
+
 function processFishActionQueues(now = Date.now()) {
-  for (const [fishId, queue] of [...runtime.fishActionQueuesByFishId.entries()]) {
-    const fish = state.fish.find((entry) => entry?.id === fishId) || null;
+  for (const [fishId, queue] of runtime.fishActionQueuesByFishId) {
+    const fish = getFishByIdFast(fishId);
     if (!fish || isFishDead(fish)) {
       runtime.fishActionQueuesByFishId.delete(fishId);
       runtime.fishActionQueueCollapsedFishIds.delete(fishId);
       continue;
     }
-    queue.items = (queue.items || []).filter((item) => !item?.cancelling || now < Number(item.cancelEndsAt || 0));
+    pruneFishActionQueueItemsInPlace(queue, now);
     if (queue.active?.cancelling && now >= Number(queue.active.cancelEndsAt || 0)) {
       queue.active = null;
       queue.restUntil = 0;
@@ -1470,7 +1519,10 @@ function enqueueFishAction(action, fishId = runtime.fishActionMenuFishId || runt
   const availability = getFishActionAvailability(action, fish, now);
   if (!availability.enabled || config.queueable === false) {
     showFishActionUnavailableToast(availability);
-    renderUi(now, { full: false });
+    if (runtime.debugFishActionIndicatorsEnabled) {
+      renderFishActionFlyout(now);
+      renderFishActionQueueDock(now);
+    }
     return false;
   }
 
@@ -1493,7 +1545,10 @@ function enqueueFishAction(action, fishId = runtime.fishActionMenuFishId || runt
   const started = queue.active ? false : promoteNextFishActionQueueItem(fish.id, now);
   if (!started) {
     showToast(`${config.label} queued for ${fish.name}.`);
-    renderUi(now, { full: false });
+    if (runtime.debugFishActionIndicatorsEnabled) {
+      renderFishActionFlyout(now);
+      renderFishActionQueueDock(now);
+    }
   }
   closeFishActionMenu({ keepTarget: true });
   return true;
@@ -1534,7 +1589,7 @@ function cancelFishQueuedAction(fishId, itemId, now = Date.now()) {
   if (!queue || !itemId) {
     return false;
   }
-  const fish = state.fish.find((entry) => entry?.id === fishId) || null;
+  const fish = getFishByIdFast(fishId);
   if (queue.active?.id === itemId) {
     if (queue.active.cancelling) {
       return false;
@@ -1546,7 +1601,9 @@ function cancelFishQueuedAction(fishId, itemId, now = Date.now()) {
     queue.active.endsAt = queue.active.cancelEndsAt;
     queue.restUntil = 0;
     trimFishActionQueue(fishId);
-    renderUi(now, { full: false });
+    if (runtime.debugFishActionIndicatorsEnabled) {
+      renderFishActionQueueDock(now);
+    }
     return true;
   }
   const index = queue.items.findIndex((item) => item?.id === itemId);
@@ -1560,7 +1617,9 @@ function cancelFishQueuedAction(fishId, itemId, now = Date.now()) {
     item.cancelEndsAt = now + FISH_ACTION_QUEUE_REST_MS;
     showToast(`${item.label || "Action"} cancelled for ${fish?.name || "fish"}.`);
     trimFishActionQueue(fishId);
-    renderUi(now, { full: false });
+    if (runtime.debugFishActionIndicatorsEnabled) {
+      renderFishActionQueueDock(now);
+    }
     return true;
   }
   return false;

@@ -16,6 +16,7 @@ function updateTankAppearance(options = {}) {
     event: options.event,
     toast: options.toast,
     sound: options.sound,
+    save: options.save,
     render: options.render,
     full: options.full
   });
@@ -60,7 +61,7 @@ function pasteTankAppearanceScheme(kind) {
   });
 }
 
-function setCustomGravelLayerColor(layerIndex, color) {
+function setCustomGravelLayerColor(layerIndex, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor || !Number.isFinite(layerIndex)) {
     return;
@@ -73,7 +74,12 @@ function setCustomGravelLayerColor(layerIndex, color) {
   }
 
   nextColors[nextIndex] = normalizedColor;
-  return updateTankAppearance({ changes: { customGravelLayerColors: nextColors } });
+  return updateTankAppearance({
+    changes: { customGravelLayerColors: nextColors },
+    save: options.save,
+    render: options.render,
+    full: options.full
+  });
 }
 
 function setCustomGravelLayerColorize(layerIndex, colorize) {
@@ -97,7 +103,7 @@ function setCustomGravelLayerColorize(layerIndex, colorize) {
   });
 }
 
-function setSolidBackgroundColor(color) {
+function setSolidBackgroundColor(color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) {
     return;
@@ -107,10 +113,15 @@ function setSolidBackgroundColor(color) {
     return;
   }
 
-  return updateTankAppearance({ changes: { solidBackgroundColor: normalizedColor } });
+  return updateTankAppearance({
+    changes: { solidBackgroundColor: normalizedColor },
+    save: options.save,
+    render: options.render,
+    full: options.full
+  });
 }
 
-function setGradientBackgroundColor(role, color) {
+function setGradientBackgroundColor(role, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) {
     return;
@@ -121,10 +132,15 @@ function setGradientBackgroundColor(role, color) {
     return;
   }
 
-  return updateTankAppearance({ changes: { [key]: normalizedColor } });
+  return updateTankAppearance({
+    changes: { [key]: normalizedColor },
+    save: options.save,
+    render: options.render,
+    full: options.full
+  });
 }
 
-function setAnimatedBackgroundColor(role, color) {
+function setAnimatedBackgroundColor(role, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) {
     return;
@@ -155,7 +171,12 @@ function setAnimatedBackgroundColor(role, color) {
     return;
   }
 
-  return updateTankAppearance({ changes: { [key]: normalizedColor } });
+  return updateTankAppearance({
+    changes: { [key]: normalizedColor },
+    save: options.save,
+    render: options.render,
+    full: options.full
+  });
 }
 
 function resetAnimatedBackgroundColors() {

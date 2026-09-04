@@ -811,12 +811,16 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
       continue;
     }
 
+    const locomotionProfile = getFishLocomotionProfile(fish || species);
+    const startleStrength = clamp(locomotionProfile.startleStrength, 0.55, 1.6);
+    const startleRecoveryScale = clamp(locomotionProfile.startleRecoveryScale, 0.7, 1.5);
+    const effectiveStartleRadius = GLASS_TAP_FISH_STARTLE_RADIUS_PX * clamp(0.82 + startleStrength * 0.18, 0.82, 1.12);
     const fishX = fish.xNorm * TANK_WIDTH;
     const fishY = fish.yNorm * TANK_HEIGHT;
     const dx = fishX - point.x;
     const dy = fishY - point.y;
     const distance = Math.hypot(dx, dy);
-    if (distance > GLASS_TAP_FISH_STARTLE_RADIUS_PX) {
+    if (distance > effectiveStartleRadius) {
       continue;
     }
 
@@ -827,11 +831,11 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
     const fallbackAngle = Math.random() * Math.PI * 2;
     const nx = distance > 0.001 ? dx / distance : Math.cos(fallbackAngle);
     const ny = distance > 0.001 ? dy / distance : Math.sin(fallbackAngle);
-    const proximity = 1 - clamp(distance / GLASS_TAP_FISH_STARTLE_RADIUS_PX, 0, 1);
+    const proximity = 1 - clamp(distance / effectiveStartleRadius, 0, 1);
     const escapeDistance = randomBetween(
       GLASS_TAP_FISH_ESCAPE_MIN_DISTANCE_PX,
       GLASS_TAP_FISH_ESCAPE_MAX_DISTANCE_PX
-    ) * (0.78 + proximity * 0.45);
+    ) * (0.78 + proximity * 0.45) * clamp(0.72 + startleStrength * 0.28, 0.82, 1.18);
     const targetLayer = species.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish);
     const target = clampFishPlacement(
       (fishX + nx * escapeDistance) / TANK_WIDTH,
@@ -859,9 +863,12 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
     fish.hangoutZoneType = null;
     fish.blockedDecorId = null;
     fish.blockedDecorUntil = null;
-    fish.wallAvoidUntil = now + randomBetween(420, 720);
-    fish.panicUntil = now + randomBetween(900, 1700) * (0.85 + proximity * 0.4);
-    fish.panicSpeedBoost = randomBetween(1.45, 2.2);
+    fish.wallAvoidUntil = now + randomBetween(420, 720) * startleRecoveryScale;
+    fish.panicUntil = now
+      + randomBetween(900, 1700)
+      * (0.85 + proximity * 0.4)
+      * startleRecoveryScale;
+    fish.panicSpeedBoost = randomBetween(1.45, 2.2) * clamp(0.78 + startleStrength * 0.22, 0.86, 1.14);
     fish.targetXNorm = target.xNorm;
     fish.targetYNorm = target.yNorm;
     fish.targetAt = fish.panicUntil;

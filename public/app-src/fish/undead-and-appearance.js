@@ -468,7 +468,21 @@ function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
 
 function getSpeciesForFish(fish) {
   const baseSpecies = getBaseSpeciesForFish(fish);
-  return mergeFishBehaviorProfile(baseSpecies, getFishBehaviorProfileSpecies(fish));
+  const profileSpecies = getFishBehaviorProfileSpecies(fish);
+  if (!baseSpecies || !profileSpecies) {
+    return baseSpecies || null;
+  }
+
+  const cacheKey = `${baseSpecies.id || ""}|${profileSpecies.id || ""}`;
+  const cache = runtime.fishSpeciesMergeCache;
+  const cached = cache?.get(cacheKey);
+  if (cached?.baseSpecies === baseSpecies && cached?.profileSpecies === profileSpecies) {
+    return cached.mergedSpecies;
+  }
+
+  const mergedSpecies = mergeFishBehaviorProfile(baseSpecies, profileSpecies);
+  cache?.set(cacheKey, { baseSpecies, profileSpecies, mergedSpecies });
+  return mergedSpecies;
 }
 
 function isCatalogUndeadShopSpecies(species) {

@@ -40,7 +40,7 @@ function finalizePiranhaConsumedFish(fishList, now = Date.now(), options = {}) {
   for (const piranha of getLivingPiranhaFish()) {
     piranha.lastAteAt = now;
     piranhaMealCoins += recordFishMealCredit(piranha, now);
-    const intake = applyFishMealWindowFoodIntake(piranha, now, { satiate: false });
+    const intake = applyFishMealWindowFoodIntake(piranha, now, { satiate: false, countBasedOverfeed: true });
     if (intake.damageUnits > 0) {
       overfedPiranhas.push({ fish: piranha, damageUnits: intake.damageUnits, slot: intake.slot });
       if (piranha.healthUnits <= 0) {

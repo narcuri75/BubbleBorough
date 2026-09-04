@@ -20,7 +20,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 41;
+const STATE_VERSION = 43;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -32,6 +32,8 @@ const DEFAULT_APP_CONFIG = Object.freeze({
   wallpaperEngine: true
 });
 const DESKTOP_PORTABLE_BACKUP_INTERVAL_MS = 10 * 60 * 1000;
+const DEFERRED_STATE_SAVE_MIN_INTERVAL_MS = 4000;
+const DEFERRED_TICK_UI_MIN_INTERVAL_MS = 2500;
 const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
   /swiftshader/i,
   /llvmpipe/i,
@@ -330,6 +332,289 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
   "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true }
+});
+const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
+  movementPattern: "cruise",
+  preferredY: 0.5,
+  verticalSpread: 0.82,
+  targetDistanceMin: 0.16,
+  targetDistanceMax: 0.52,
+  headingPersistence: 0.5,
+  hoverChance: 0.05,
+  hoverMinMs: 700,
+  hoverMaxMs: 1700,
+  schoolStrength: 0.2,
+  schoolSpacingScale: 1,
+  schoolDurationScale: 1,
+  schoolVerticalJitterScale: 1,
+  structureAffinity: 1,
+  caveAffinity: 1,
+  homeRangeStrength: 0,
+  homeRangeRadius: 0.22,
+  startleStrength: 1,
+  startleRecoveryScale: 1,
+  turnDurationScale: 1,
+  speedMinBlend: 0.2,
+  speedMaxBlend: 0.8,
+  dartChance: 0,
+  dartSpeedMinBlend: 0.72,
+  targetDurationScale: 1
+});
+const createFishLocomotionProfile = (overrides = {}) => Object.freeze({
+  ...FISH_LOCOMOTION_PROFILE_DEFAULT,
+  ...overrides
+});
+const FISH_LOCOMOTION_PROFILES = Object.freeze({
+  "blue-tang": createFishLocomotionProfile({
+    movementPattern: "open-water-cruise", preferredY: 0.48, verticalSpread: 0.74,
+    targetDistanceMin: 0.34, targetDistanceMax: 0.72, headingPersistence: 0.8,
+    hoverChance: 0.015, schoolStrength: 0.3, structureAffinity: 0.82, caveAffinity: 0.3,
+    startleStrength: 1.25, startleRecoveryScale: 1.08, turnDurationScale: 0.9,
+    speedMinBlend: 0.62, speedMaxBlend: 0.98, targetDurationScale: 0.88
+  }),
+  "yellow-tang": createFishLocomotionProfile({
+    movementPattern: "patrol-graze", preferredY: 0.54, verticalSpread: 0.72,
+    targetDistanceMin: 0.26, targetDistanceMax: 0.6, headingPersistence: 0.7,
+    hoverChance: 0.1, hoverMinMs: 700, hoverMaxMs: 1900, schoolStrength: 0.16,
+    structureAffinity: 1.28, caveAffinity: 0.25, startleStrength: 1.08,
+    turnDurationScale: 0.95, speedMinBlend: 0.48, speedMaxBlend: 0.86
+  }),
+  "rainbowfish": createFishLocomotionProfile({
+    movementPattern: "fast-school-cruise", preferredY: 0.45, verticalSpread: 0.66,
+    targetDistanceMin: 0.36, targetDistanceMax: 0.74, headingPersistence: 0.84,
+    hoverChance: 0.008, schoolStrength: 0.7, schoolSpacingScale: 0.92,
+    schoolDurationScale: 1.35, schoolVerticalJitterScale: 0.72, structureAffinity: 0.72,
+    startleStrength: 1.22, turnDurationScale: 0.84, speedMinBlend: 0.66,
+    speedMaxBlend: 1, targetDurationScale: 0.82
+  }),
+  "swordtail": createFishLocomotionProfile({
+    movementPattern: "strong-cruise", preferredY: 0.46, verticalSpread: 0.72,
+    targetDistanceMin: 0.3, targetDistanceMax: 0.68, headingPersistence: 0.8,
+    hoverChance: 0.015, schoolStrength: 0.3, schoolDurationScale: 1.08,
+    structureAffinity: 0.88, startleStrength: 0.98, turnDurationScale: 0.88,
+    speedMinBlend: 0.58, speedMaxBlend: 0.96, targetDurationScale: 0.9
+  }),
+  "molly": createFishLocomotionProfile({
+    movementPattern: "social-graze", preferredY: 0.48, verticalSpread: 0.75,
+    targetDistanceMin: 0.18, targetDistanceMax: 0.48, headingPersistence: 0.5,
+    hoverChance: 0.08, schoolStrength: 0.34, schoolSpacingScale: 1.05,
+    structureAffinity: 1.15, startleStrength: 0.92, turnDurationScale: 1.02,
+    speedMinBlend: 0.3, speedMaxBlend: 0.76
+  }),
+  "livebearer": createFishLocomotionProfile({
+    movementPattern: "lively-social", preferredY: 0.38, verticalSpread: 0.66,
+    targetDistanceMin: 0.15, targetDistanceMax: 0.46, headingPersistence: 0.42,
+    hoverChance: 0.035, schoolStrength: 0.38, schoolSpacingScale: 1,
+    structureAffinity: 1.08, startleStrength: 1.05, turnDurationScale: 0.9,
+    speedMinBlend: 0.38, speedMaxBlend: 0.88, dartChance: 0.14, dartSpeedMinBlend: 0.78
+  }),
+  "clownfish": createFishLocomotionProfile({
+    movementPattern: "home-hover", preferredY: 0.5, verticalSpread: 0.52,
+    targetDistanceMin: 0.07, targetDistanceMax: 0.26, headingPersistence: 0.26,
+    hoverChance: 0.28, hoverMinMs: 900, hoverMaxMs: 2600, schoolStrength: 0.2,
+    schoolSpacingScale: 1.15, structureAffinity: 2, caveAffinity: 0.3,
+    homeRangeStrength: 0.92, homeRangeRadius: 0.16, startleStrength: 1.05,
+    turnDurationScale: 1.08, speedMinBlend: 0.1, speedMaxBlend: 0.52,
+    targetDurationScale: 1.2
+  }),
+  "goldfish": createFishLocomotionProfile({
+    movementPattern: "area-forage", preferredY: 0.58, verticalSpread: 0.76,
+    targetDistanceMin: 0.16, targetDistanceMax: 0.42, headingPersistence: 0.42,
+    hoverChance: 0.13, hoverMinMs: 900, hoverMaxMs: 2300, schoolStrength: 0.18,
+    structureAffinity: 1.04, startleStrength: 0.86, turnDurationScale: 1.2,
+    speedMinBlend: 0.08, speedMaxBlend: 0.58, targetDurationScale: 1.12
+  }),
+  "betta": createFishLocomotionProfile({
+    movementPattern: "deliberate-hover", preferredY: 0.42, verticalSpread: 0.58,
+    targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.36,
+    hoverChance: 0.26, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0,
+    structureAffinity: 1.72, caveAffinity: 0.42, homeRangeStrength: 0.45,
+    homeRangeRadius: 0.2, startleStrength: 1.08, startleRecoveryScale: 1.05,
+    turnDurationScale: 1.42, speedMinBlend: 0.04, speedMaxBlend: 0.48,
+    targetDurationScale: 1.22
+  }),
+  "angelfish": createFishLocomotionProfile({
+    movementPattern: "graceful-cruise", preferredY: 0.48, verticalSpread: 0.6,
+    targetDistanceMin: 0.2, targetDistanceMax: 0.5, headingPersistence: 0.62,
+    hoverChance: 0.2, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0.28,
+    schoolSpacingScale: 1.18, structureAffinity: 1.18, caveAffinity: 0.45,
+    startleStrength: 1.02, turnDurationScale: 1.5, speedMinBlend: 0.04,
+    speedMaxBlend: 0.46, targetDurationScale: 1.22
+  }),
+  "discus": createFishLocomotionProfile({
+    movementPattern: "group-hover", preferredY: 0.5, verticalSpread: 0.54,
+    targetDistanceMin: 0.14, targetDistanceMax: 0.38, headingPersistence: 0.44,
+    hoverChance: 0.3, hoverMinMs: 1300, hoverMaxMs: 3400, schoolStrength: 0.56,
+    schoolSpacingScale: 1.16, schoolDurationScale: 1.55, schoolVerticalJitterScale: 0.75,
+    structureAffinity: 1.2, startleStrength: 1.2, startleRecoveryScale: 1.22,
+    turnDurationScale: 1.55, speedMinBlend: 0.02, speedMaxBlend: 0.4,
+    targetDurationScale: 1.28
+  }),
+  "moor-goldfish": createFishLocomotionProfile({
+    movementPattern: "slow-area-forage", preferredY: 0.58, verticalSpread: 0.62,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.26, headingPersistence: 0.3,
+    hoverChance: 0.24, hoverMinMs: 1200, hoverMaxMs: 3100, schoolStrength: 0.12,
+    structureAffinity: 1.12, startleStrength: 0.66, startleRecoveryScale: 1.12,
+    turnDurationScale: 1.6, speedMinBlend: 0, speedMaxBlend: 0.3,
+    targetDurationScale: 1.3
+  }),
+  "gourami": createFishLocomotionProfile({
+    movementPattern: "upper-hover", preferredY: 0.3, verticalSpread: 0.48,
+    targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.38,
+    hoverChance: 0.28, hoverMinMs: 1000, hoverMaxMs: 2900, schoolStrength: 0.08,
+    structureAffinity: 1.68, caveAffinity: 1.18, homeRangeStrength: 0.48,
+    homeRangeRadius: 0.2, startleStrength: 1.14, startleRecoveryScale: 1.1,
+    turnDurationScale: 1.35, speedMinBlend: 0.02, speedMaxBlend: 0.42,
+    targetDurationScale: 1.22
+  }),
+  "blue-ram": createFishLocomotionProfile({
+    movementPattern: "bottom-stop-go", preferredY: 0.84, verticalSpread: 0.34,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.28, headingPersistence: 0.3,
+    hoverChance: 0.28, hoverMinMs: 900, hoverMaxMs: 2600, schoolStrength: 0.04,
+    structureAffinity: 1.7, caveAffinity: 1.65, homeRangeStrength: 0.72,
+    homeRangeRadius: 0.18, startleStrength: 1.16, startleRecoveryScale: 1.12,
+    turnDurationScale: 1.2, speedMinBlend: 0.08, speedMaxBlend: 0.5,
+    dartChance: 0.1, dartSpeedMinBlend: 0.72, targetDurationScale: 1.18
+  }),
+  "royal-gramma": createFishLocomotionProfile({
+    movementPattern: "cave-hover-dart", preferredY: 0.5, verticalSpread: 0.42,
+    targetDistanceMin: 0.06, targetDistanceMax: 0.22, headingPersistence: 0.24,
+    hoverChance: 0.4, hoverMinMs: 1100, hoverMaxMs: 3300, schoolStrength: 0.02,
+    structureAffinity: 2.05, caveAffinity: 2.35, homeRangeStrength: 0.96,
+    homeRangeRadius: 0.14, startleStrength: 1.38, startleRecoveryScale: 1.25,
+    turnDurationScale: 0.92, speedMinBlend: 0.04, speedMaxBlend: 0.42,
+    dartChance: 0.24, dartSpeedMinBlend: 0.8, targetDurationScale: 1.24
+  }),
+  "guppy": createFishLocomotionProfile({
+    movementPattern: "lively-social", preferredY: 0.36, verticalSpread: 0.68,
+    targetDistanceMin: 0.12, targetDistanceMax: 0.44, headingPersistence: 0.34,
+    hoverChance: 0.025, schoolStrength: 0.38, schoolSpacingScale: 0.96,
+    structureAffinity: 1.05, caveAffinity: 0.78, startleStrength: 1.14,
+    turnDurationScale: 0.78, speedMinBlend: 0.3, speedMaxBlend: 0.96,
+    dartChance: 0.2, dartSpeedMinBlend: 0.76, targetDurationScale: 0.85
+  }),
+  "zebra-danio": createFishLocomotionProfile({
+    movementPattern: "fast-school-cruise", preferredY: 0.36, verticalSpread: 0.62,
+    targetDistanceMin: 0.28, targetDistanceMax: 0.7, headingPersistence: 0.72,
+    hoverChance: 0.002, schoolStrength: 0.7, schoolSpacingScale: 0.88,
+    schoolDurationScale: 1.22, schoolVerticalJitterScale: 0.75, structureAffinity: 0.68,
+    caveAffinity: 0.7, startleStrength: 1.28, turnDurationScale: 0.7,
+    speedMinBlend: 0.6, speedMaxBlend: 1, targetDurationScale: 0.72
+  }),
+  "cherry-barb": createFishLocomotionProfile({
+    movementPattern: "calm-shoal", preferredY: 0.56, verticalSpread: 0.58,
+    targetDistanceMin: 0.12, targetDistanceMax: 0.38, headingPersistence: 0.44,
+    hoverChance: 0.13, hoverMinMs: 800, hoverMaxMs: 2200, schoolStrength: 0.44,
+    schoolSpacingScale: 1.08, schoolDurationScale: 1.2, structureAffinity: 1.28,
+    caveAffinity: 0.95, startleStrength: 1.08, turnDurationScale: 1.08,
+    speedMinBlend: 0.22, speedMaxBlend: 0.62, targetDurationScale: 1.1
+  }),
+  "neon-tetra": createFishLocomotionProfile({
+    movementPattern: "school-cruise", preferredY: 0.46, verticalSpread: 0.52,
+    targetDistanceMin: 0.18, targetDistanceMax: 0.5, headingPersistence: 0.58,
+    hoverChance: 0.02, schoolStrength: 0.84, schoolSpacingScale: 0.82,
+    schoolDurationScale: 1.55, schoolVerticalJitterScale: 0.58, structureAffinity: 1.25,
+    caveAffinity: 0.7, startleStrength: 1.36, startleRecoveryScale: 1.14,
+    turnDurationScale: 0.86, speedMinBlend: 0.48, speedMaxBlend: 0.86,
+    dartChance: 0.12, dartSpeedMinBlend: 0.78, targetDurationScale: 0.9
+  }),
+  "celestial-pearl-danio": createFishLocomotionProfile({
+    movementPattern: "hover-dart", preferredY: 0.56, verticalSpread: 0.46,
+    targetDistanceMin: 0.05, targetDistanceMax: 0.2, headingPersistence: 0.18,
+    hoverChance: 0.34, hoverMinMs: 900, hoverMaxMs: 2500, schoolStrength: 0.16,
+    schoolSpacingScale: 1.12, structureAffinity: 1.82, caveAffinity: 0.92,
+    homeRangeStrength: 0.22, homeRangeRadius: 0.18, startleStrength: 1.34,
+    startleRecoveryScale: 1.18, turnDurationScale: 0.78, speedMinBlend: 0.16,
+    speedMaxBlend: 0.52, dartChance: 0.58, dartSpeedMinBlend: 0.8,
+    targetDurationScale: 1.08
+  }),
+  "chili-rasbora": createFishLocomotionProfile({
+    movementPattern: "hover-dart-shoal", preferredY: 0.38, verticalSpread: 0.48,
+    targetDistanceMin: 0.06, targetDistanceMax: 0.24, headingPersistence: 0.24,
+    hoverChance: 0.24, hoverMinMs: 700, hoverMaxMs: 2100, schoolStrength: 0.62,
+    schoolSpacingScale: 0.84, schoolDurationScale: 1.3, schoolVerticalJitterScale: 0.62,
+    structureAffinity: 1.72, startleStrength: 1.45, startleRecoveryScale: 1.22,
+    turnDurationScale: 0.72, speedMinBlend: 0.18, speedMaxBlend: 0.58,
+    dartChance: 0.54, dartSpeedMinBlend: 0.82, targetDurationScale: 0.98
+  }),
+  "ember-tetra": createFishLocomotionProfile({
+    movementPattern: "hover-shoal", preferredY: 0.5, verticalSpread: 0.5,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.28, headingPersistence: 0.34,
+    hoverChance: 0.25, hoverMinMs: 800, hoverMaxMs: 2300, schoolStrength: 0.52,
+    schoolSpacingScale: 0.94, schoolDurationScale: 1.32, schoolVerticalJitterScale: 0.7,
+    structureAffinity: 1.55, startleStrength: 1.3, startleRecoveryScale: 1.14,
+    turnDurationScale: 0.98, speedMinBlend: 0.2, speedMaxBlend: 0.58,
+    targetDurationScale: 1.12
+  }),
+  "harlequin-rasbora": createFishLocomotionProfile({
+    movementPattern: "steady-school-cruise", preferredY: 0.48, verticalSpread: 0.56,
+    targetDistanceMin: 0.22, targetDistanceMax: 0.54, headingPersistence: 0.66,
+    hoverChance: 0.04, schoolStrength: 0.74, schoolSpacingScale: 0.9,
+    schoolDurationScale: 1.5, schoolVerticalJitterScale: 0.62, structureAffinity: 1.08,
+    startleStrength: 1.16, turnDurationScale: 0.92, speedMinBlend: 0.44,
+    speedMaxBlend: 0.82, targetDurationScale: 0.94
+  }),
+  "pencilfish": createFishLocomotionProfile({
+    movementPattern: "upper-glide", preferredY: 0.24, verticalSpread: 0.3,
+    targetDistanceMin: 0.14, targetDistanceMax: 0.4, headingPersistence: 0.72,
+    hoverChance: 0.25, hoverMinMs: 900, hoverMaxMs: 2600, schoolStrength: 0.4,
+    schoolSpacingScale: 1.14, schoolDurationScale: 1.25, schoolVerticalJitterScale: 0.4,
+    structureAffinity: 1.42, startleStrength: 1.16, turnDurationScale: 1.14,
+    speedMinBlend: 0.18, speedMaxBlend: 0.58, targetDurationScale: 1.16
+  }),
+  "rummy-nose-tetra": createFishLocomotionProfile({
+    movementPattern: "tight-school-cruise", preferredY: 0.48, verticalSpread: 0.46,
+    targetDistanceMin: 0.28, targetDistanceMax: 0.62, headingPersistence: 0.78,
+    hoverChance: 0.006, schoolStrength: 1, schoolSpacingScale: 0.7,
+    schoolDurationScale: 1.85, schoolVerticalJitterScale: 0.42, structureAffinity: 0.86,
+    startleStrength: 1.4, startleRecoveryScale: 1.18, turnDurationScale: 0.82,
+    speedMinBlend: 0.56, speedMaxBlend: 0.9, targetDurationScale: 0.82
+  }),
+  "otocinclus": createFishLocomotionProfile({
+    movementPattern: "attached-grazer", preferredY: 0.68, verticalSpread: 0.62,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.28, headingPersistence: 0.3,
+    hoverChance: 0.34, schoolStrength: 0.34, schoolSpacingScale: 1.12,
+    structureAffinity: 2.1, caveAffinity: 0.1, startleStrength: 1.42,
+    startleRecoveryScale: 1.24, turnDurationScale: 1.12, speedMinBlend: 0,
+    speedMaxBlend: 0.5, dartChance: 0.16, dartSpeedMinBlend: 0.78,
+    targetDurationScale: 1.4
+  }),
+  "loach": createFishLocomotionProfile({
+    movementPattern: "bottom-wriggle", preferredY: 0.92, verticalSpread: 0.2,
+    targetDistanceMin: 0.1, targetDistanceMax: 0.4, headingPersistence: 0.4,
+    hoverChance: 0.12, hoverMinMs: 1100, hoverMaxMs: 3600, schoolStrength: 0.24,
+    schoolSpacingScale: 1.16, structureAffinity: 1.85, caveAffinity: 1.7,
+    homeRangeStrength: 0.34, homeRangeRadius: 0.2, startleStrength: 1.32,
+    startleRecoveryScale: 1.2, turnDurationScale: 0.86, speedMinBlend: 0.16,
+    speedMaxBlend: 0.62, dartChance: 0.18, dartSpeedMinBlend: 0.78,
+    targetDurationScale: 1.2
+  }),
+  "piranha": createFishLocomotionProfile({
+    movementPattern: "cautious-shoal", preferredY: 0.5, verticalSpread: 0.56,
+    targetDistanceMin: 0.14, targetDistanceMax: 0.42, headingPersistence: 0.46,
+    hoverChance: 0.1, hoverMinMs: 700, hoverMaxMs: 1900, schoolStrength: 0.68,
+    schoolSpacingScale: 0.8, schoolDurationScale: 1.45, schoolVerticalJitterScale: 0.62,
+    structureAffinity: 0.98, startleStrength: 1.3, startleRecoveryScale: 1.12,
+    turnDurationScale: 0.86, speedMinBlend: 0.08, speedMaxBlend: 0.48,
+    targetDurationScale: 1.18
+  }),
+  "wonder-killifish": createFishLocomotionProfile({
+    movementPattern: "surface-ambush", preferredY: 0.08, verticalSpread: 0.18,
+    targetDistanceMin: 0.05, targetDistanceMax: 0.3, headingPersistence: 0.34,
+    hoverChance: 0.48, hoverMinMs: 1300, hoverMaxMs: 3800, schoolStrength: 0,
+    structureAffinity: 0.9, startleStrength: 1.4, startleRecoveryScale: 1.12,
+    turnDurationScale: 0.78, speedMinBlend: 0.02, speedMaxBlend: 0.34,
+    dartChance: 0.38, dartSpeedMinBlend: 0.88, targetDurationScale: 1.16
+  }),
+  "pufferfish": createFishLocomotionProfile({
+    movementPattern: "precision-hover", preferredY: 0.5, verticalSpread: 0.58,
+    targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.34,
+    hoverChance: 0.36, hoverMinMs: 1100, hoverMaxMs: 3300, schoolStrength: 0,
+    structureAffinity: 1.3, caveAffinity: 0.4, startleStrength: 0.78,
+    startleRecoveryScale: 0.92, turnDurationScale: 1.32, speedMinBlend: 0,
+    speedMaxBlend: 0.42, dartChance: 0.07, dartSpeedMinBlend: 0.86,
+    targetDurationScale: 1.22
+  })
 });
 const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
 const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
@@ -1087,6 +1372,17 @@ const CUSTOM_GRAVEL_COLOR_OPTIONS = Object.freeze([
   { key: "deep-black", label: "Black", color: "#212121", uvReactive: false },
   { key: "black-black", label: "Black Black", color: "#000000", uvReactive: false }
 ]);
+const TANK_ANIMATED_BACKGROUND_PRESETS = Object.freeze([
+  { key: "deep-ocean", label: "Deep Ocean", color: "#1D2A6D" },
+  { key: "lagoon", label: "Lagoon", color: "#00B8A9" },
+  { key: "tropical", label: "Tropical", color: "#42F5A1" },
+  { key: "sunrise", label: "Sunrise", color: "#FF8C42" },
+  { key: "coral-pulse", label: "Coral Pulse", color: "#FF5E78" },
+  { key: "aurora", label: "Aurora", color: "#6D3DFF" },
+  { key: "bioluminescent", label: "Bioluminescent", color: "#18D6FF" },
+  { key: "midnight", label: "Midnight", color: "#4B1D95" }
+]);
+
 const CUSTOM_GRAVEL_UV_REACTIVE_COLOR_KEYS = new Set(
   CUSTOM_GRAVEL_COLOR_OPTIONS
     .filter((choice) => choice.uvReactive !== false)
@@ -1513,7 +1809,13 @@ const WATER_PARTICLE_SPRITE_ALPHA_BOOST = 1.9;
 const WATER_PARTICLE_SPRITE_ALPHA_FLOOR = 18;
 const WATER_PARTICLE_FADE_IN_PER_SECOND = 1.8;
 const WATER_PARTICLE_FADE_OUT_PER_SECOND = 0.42;
-const FISH_SATIATED_MS = 5 * MINUTE_MS;
+const FISH_SATIATED_MS = 30 * MINUTE_MS;
+const FISH_BASIC_MEAL_HUNGER_GAIN = 50;
+const FISH_BASIC_MEAL_HUNGER_FLOOR = 85;
+const FISH_CHUM_MEAL_HUNGER_GAIN = 55;
+const FISH_CHUM_MEAL_HUNGER_FLOOR = 90;
+const FISH_WILLING_TO_EAT_HUNGER_MAX = 82;
+const FISH_OVERFEED_HUNGER_THRESHOLD = 88;
 const FILTERLESS_BASE_TANK_DIRTY_DAYS = 2.4;
 const MEDICINE_HEAL_INTERVAL_MS = 10 * 1000;
 const MEDICINE_HEAL_DURATION_MS = 60 * 1000;
@@ -1539,6 +1841,33 @@ const AUTO_DISPENSER_DROP_DURATION_MS = 850;
 const AUTO_DISPENSER_PELLET_MAX_Y_NORM = 0.28;
 const AUTO_DISPENSER_HOPPER_MAX_DRAWN_PELLETS = AUTO_DISPENSER_MAX_PELLETS;
 const AUTO_DISPENSER_LOW_FOOD_BLINK_MS = 360;
+const MACHINERY_TYPE_SUBMARINE = "submarine";
+const SUBMARINE_COST = 100;
+const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/submarine.png");
+const SUBMARINE_RESOURCE_CAPACITY = 99;
+const SUBMARINE_DRAW_WIDTH_PX = 190;
+const SUBMARINE_CRUISE_SPEED_PX_PER_SECOND = 82;
+const SUBMARINE_MISSION_SPEED_PX_PER_SECOND = 108;
+const SUBMARINE_TRAVEL_SPEED_PX_PER_SECOND = 118;
+const SUBMARINE_MANUAL_SPEED_PX_PER_SECOND = 168;
+const SUBMARINE_MANUAL_ACCELERATION_PX_PER_SECOND2 = 430;
+const SUBMARINE_MANUAL_VERTICAL_ACCELERATION_PX_PER_SECOND2 = 360;
+const SUBMARINE_MANUAL_DRAG_PER_SECOND = 5.2;
+const SUBMARINE_MANUAL_VERTICAL_SPEED_SCALE = 0.82;
+const SUBMARINE_DEFAULT_TANK_LAYER = 2;
+const SUBMARINE_IDLE_BOB_AMPLITUDE_PX = 3.4;
+const SUBMARINE_IDLE_BOB_PERIOD_MS = 2100;
+const SUBMARINE_MANUAL_FOOD_COOLDOWN_MS = 140;
+const SUBMARINE_IDLE_MIN_MS = 3500;
+const SUBMARINE_IDLE_MAX_MS = 11000;
+const SUBMARINE_SCAN_INTERVAL_MS = 1500;
+const SUBMARINE_SERVICE_DISTANCE_PX = 150;
+const SUBMARINE_HUNGER_THRESHOLD = FISH_HUNGER_LOW_THRESHOLD;
+const SUBMARINE_COMFORT_THRESHOLD = 0.35;
+const SUBMARINE_RED_LIGHT_BLINK_MS = 500;
+const SUBMARINE_FOOD_RETRY_MS = 9000;
+const SUBMARINE_MEDICINE_RETRY_MS = 12000;
+const SUBMARINE_SPOTLIGHT_LENGTH_PX = 320;
 const ENABLE_UV_LIGHT = false;
 const UV_LIGHT_COST = 25;
 const UV_LIGHT_IMAGE_PATH = resolveAppUrl("assets/misc/uvlight.png");
@@ -2339,6 +2668,9 @@ const dom = {
   debugMenuFish: document.querySelector("#debugMenuFish"),
   debugMenuDirtiness: document.querySelector("#debugMenuDirtiness"),
   debugMenuBehaviors: document.querySelector("#debugMenuBehaviors"),
+  debugNotificationUiButton: document.querySelector("#debugNotificationUiButton"),
+  debugFishActionIndicatorsButton: document.querySelector("#debugFishActionIndicatorsButton"),
+  debugFrameProfilerButton: document.querySelector("#debugFrameProfilerButton"),
   debugLivingBoroughPanel: document.querySelector("#debugLivingBoroughPanel"),
   resetMealsButton: document.querySelector("#resetMealsButton"),
   addHundredCoinsButton: document.querySelector("#addHundredCoinsButton"),
@@ -2413,6 +2745,9 @@ const dom = {
   editFishTrayContextMenu: document.querySelector("#editFishTrayContextMenu"),
   editFishTrayPrev: document.querySelector("#editFishTrayPrev"),
   editFishTrayNext: document.querySelector("#editFishTrayNext"),
+  editEquipmentTray: document.querySelector("#editEquipmentTray"),
+  closeEditEquipmentTrayButton: document.querySelector("#closeEditEquipmentTrayButton"),
+  editEquipmentTrayScroller: document.querySelector("#editEquipmentTrayScroller"),
   editTankTray: document.querySelector("#editTankTray"),
   closeEditTankTrayButton: document.querySelector("#closeEditTankTrayButton"),
   editTankTrayScroller: document.querySelector("#editTankTrayScroller"),
@@ -2585,6 +2920,7 @@ const dom = {
   toggleFishShop: document.querySelector("#toggleFishShop"),
   fishEditModeDockButton: document.querySelector("#fishEditModeDockButton"),
   editModeDockButton: document.querySelector("#editModeDockButton"),
+  equipmentEditModeDockButton: document.querySelector("#equipmentEditModeDockButton"),
   toggleMouseLockButton: document.querySelector("#toggleMouseLockButton"),
   uvLightToggleButton: document.querySelector("#uvLightToggleButton"),
   editLayerUpButton: document.querySelector("#editLayerUpButton"),
@@ -2650,8 +2986,13 @@ const runtime = {
   fishEditMode: false,
   fishEditTrayTab: "tank",
   editOverlayMode: "fish",
+  equipmentEditMode: false,
+  equipmentEditTrayTab: "storage",
   tankEditMode: false,
   editTankTrayTab: "background",
+  editTankBackgroundMode: "",
+  editTankGravelLayer: 0,
+  tankColorPickerDrag: null,
   foodTrayOpen: false,
   medicineTrayOpen: false,
   feedingModeFoodKey: "",
@@ -2720,12 +3061,50 @@ const runtime = {
   boroughOverviewDragPointerId: null,
   transitTubeBursts: [],
   pendingNeighborhoodTravel: new Map(),
+  pendingMachineryTravel: new Map(),
   foodTravelDestinations: new Map(),
+  selectedMachineryId: null,
+  submarineManualDriveId: "",
+  submarineManualDriveKeys: new Set(),
+  submarineManualDriveStartedAt: 0,
+  submarineManualLastFoodDeployAt: 0,
+  submarineNextGlobalScanAt: 0,
   tankAppearanceClipboard: { background: null, gravel: null },
   boroughEdgeBursts: [],
   boroughActivityNotifications: [],
   boroughNotificationSignatures: new Map(),
   lastBoroughNotificationAt: 0,
+  debugNotificationUiEnabled: false,
+  debugFishActionIndicatorsEnabled: false,
+  debugFrameProfilerEnabled: false,
+  frameProfilerCurrent: null,
+  frameProfilerSamples: [],
+  frameProfilerLongFrameCount: 0,
+  frameProfilerLastOverlayAt: 0,
+  frameProfilerOverlay: null,
+  frameProfilerLastSaveMs: 0,
+  frameProfilerLastUiRenderMs: 0,
+  frameProfilerLastTickMs: 0,
+  frameProfilerLastDeferredUiMs: 0,
+  fishFrameLookupById: new Map(),
+  fishFrameLookupSource: null,
+  fishFrameLookupLength: 0,
+  fishRenderFrameCache: null,
+  fishRenderRecordPool: [],
+  fishRenderLayerBuckets: null,
+  fishSpeciesMergeCache: new Map(),
+  deferredStateSaveDirty: false,
+  deferredStateSaveRequestedAt: 0,
+  deferredStateSaveTimerId: 0,
+  deferredStateSaveIdleId: 0,
+  lastStateSavedAt: 0,
+  deferredTickUiTimerId: 0,
+  deferredTickUiIdleId: 0,
+  deferredTickUiNow: 0,
+  lastDeferredTickUiRefreshAt: 0,
+  caveCollisionFrameCache: null,
+  lastRenderedCoinCount: null,
+  coinGainGlowTimeoutId: 0,
   achievementEvaluationActive: false,
   lastBoroughHappeningAt: 0,
   debugSimulatedNow: null,
@@ -4585,17 +4964,23 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
     runtime.pendingNeighborhoodTravel.delete(pending?.fishId);
     return false;
   }
+
   source.fish.splice(sourceIndex, 1);
   const direction = pending.direction;
   if (direction === "right") {
-    fish.xNorm = -0.1; fish.targetXNorm = 0.32;
+    fish.xNorm = -0.2;
+    fish.targetXNorm = 0.24;
   } else if (direction === "left") {
-    fish.xNorm = 1.1; fish.targetXNorm = 0.68;
+    fish.xNorm = 1.2;
+    fish.targetXNorm = 0.76;
   } else if (direction === "down") {
-    fish.yNorm = -0.1; fish.targetYNorm = 0.32;
+    fish.yNorm = -0.2;
+    fish.targetYNorm = 0.24;
   } else {
-    fish.yNorm = 1.1; fish.targetYNorm = 0.68;
+    fish.yNorm = 1.2;
+    fish.targetYNorm = 0.76;
   }
+  fish.targetAt = now + 60 * 1000;
   fish.coarseActivity = null;
   fish.lastCoarseSimulatedAt = now;
   fish.visitedNeighborhoodIds = [...new Set([...(fish.visitedNeighborhoodIds || []), destination.id])].slice(-64);
@@ -4603,10 +4988,7 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
   if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
     runtime.foodTravelDestinations.delete(fish.id);
   }
-  runtime.boroughEdgeBursts.push(
-    { tankId: source.id, direction, mode: "depart", startedAt: now, endsAt: now + 1200 },
-    { tankId: destination.id, direction, mode: "arrive", startedAt: now, endsAt: now + 1400 }
-  );
+
   const serviceTank = getAllTanks(state).find((tank) => tank.id === pending.serviceDestinationId);
   const homeTank = getAllTanks(state).find((tank) => tank.id === pending.residenceDestinationId);
   const cause = pending.neededService && serviceTank
@@ -4624,7 +5006,10 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
     travelReason: cause,
     detail: homeTank ? "Returning home" : pending.neededService ? `Looking for ${getBoroughServiceLabel(pending.neededService).toLowerCase()}` : "Exploring"
   });
-  runtime.pendingNeighborhoodTravel.delete(fish.id);
+
+  pending.phase = "arriving";
+  pending.destinationStartedAt = now;
+  pending.arrivalDeadline = now + 12000;
   return true;
 }
 
@@ -4633,12 +5018,14 @@ function processPendingNeighborhoodTravel(now = Date.now()) {
   for (const pending of [...runtime.pendingNeighborhoodTravel.values()]) {
     const source = getAllTanks(state).find((tank) => tank.id === pending.sourceTankId);
     const destination = getTankById(pending.destinationTankId);
-    const fishTank = pending.mode === "tube" && pending.phase === "emerging" ? destination : source;
+    const arrivingByEdge = pending.mode !== "tube" && pending.phase === "arriving";
+    const fishTank = (pending.mode === "tube" && pending.phase === "emerging") || arrivingByEdge ? destination : source;
     const fish = fishTank?.fish?.find((entry) => entry.id === pending.fishId);
     if (!fish || isFishDead(fish)) {
       runtime.pendingNeighborhoodTravel.delete(pending.fishId);
       continue;
     }
+
     if (pending.mode === "tube") {
       const sourceTube = source?.placedDecor?.find((item) => item.id === pending.sourceTubeId);
       const targetTube = destination?.placedDecor?.find((item) => item.id === pending.targetTubeId);
@@ -4695,38 +5082,37 @@ function processPendingNeighborhoodTravel(now = Date.now()) {
           fish.targetYNorm = clamp(points.exit.yNorm - .04, .14, .72);
         }
       }
-    } else if (isFishAtBoroughTravelEdge(fish, pending.direction) || now >= pending.transferAfter) {
+      continue;
+    }
+
+    if (arrivingByEdge) {
+      const destinationIsVisible = getCurrentTank()?.id === destination?.id && !runtime.boroughOverviewOpen;
+      const arrivalReached = pending.direction === "right"
+        ? Number(fish.xNorm) >= 0.22
+        : pending.direction === "left"
+          ? Number(fish.xNorm) <= 0.78
+          : pending.direction === "down"
+            ? Number(fish.yNorm) >= 0.22
+            : Number(fish.yNorm) <= 0.78;
+      if (arrivalReached || (!destinationIsVisible && now >= pending.arrivalDeadline)) {
+        runtime.pendingNeighborhoodTravel.delete(fish.id);
+        fish.targetXNorm = clamp(Number(fish.targetXNorm) || fish.xNorm || 0.5, 0.12, 0.88);
+        fish.targetYNorm = clamp(Number(fish.targetYNorm) || fish.yNorm || 0.5, 0.14, 0.8);
+      }
+      continue;
+    }
+
+    const sourceIsVisible = getCurrentTank()?.id === source?.id && !runtime.boroughOverviewOpen;
+    if (isFishAtBoroughTravelEdge(fish, pending.direction) || (!sourceIsVisible && now >= pending.transferAfter)) {
       changed = completeBoroughEdgeTravel(pending, now) || changed;
     }
   }
-  runtime.boroughEdgeBursts = runtime.boroughEdgeBursts.filter((burst) => burst.endsAt > now);
+  runtime.boroughEdgeBursts = [];
   return changed;
 }
 
 function drawBoroughEdgeBursts(now = Date.now()) {
-  const tank = getCurrentTank();
-  if (!tank || !runtime.boroughEdgeBursts?.length) {
-    return;
-  }
-  const bursts = runtime.boroughEdgeBursts.filter((entry) => entry.tankId === tank.id && entry.endsAt > now);
-  const portable = isPortablePerformanceModeActive();
-  for (const burst of bursts) {
-    const progress = clamp((now - burst.startedAt) / Math.max(1, burst.endsAt - burst.startedAt), 0, 1);
-    const alpha = Math.sin(progress * Math.PI) * (portable ? 0.42 : 0.68);
-    const isArrival = burst.mode === "arrive";
-    const edgeDirection = isArrival
-      ? ({ right: "left", left: "right", down: "up", up: "down" })[burst.direction]
-      : burst.direction;
-    const count = portable ? 4 : 8;
-    for (let index = 0; index < count; index += 1) {
-      const phase = (index + progress * 2.4) / count;
-      const along = 0.34 + (index / Math.max(1, count - 1)) * 0.32;
-      const inward = 10 + Math.sin(phase * Math.PI * 2) * 6;
-      const x = edgeDirection === "left" ? inward : edgeDirection === "right" ? TANK_WIDTH - inward : along * TANK_WIDTH;
-      const y = edgeDirection === "up" ? inward : edgeDirection === "down" ? TANK_HEIGHT - inward : along * TANK_HEIGHT;
-      drawBubbleOrbToContext(tankContext, x, y, 3 + (index % 3) * 1.5, alpha, 1, null, 1);
-    }
-  }
+  runtime.boroughEdgeBursts = [];
 }
 
 function getBoroughStructureOccupants(item, tank = getCurrentTank()) {
@@ -6179,7 +6565,8 @@ function isTankEmpty(tank = getCurrentTank()) {
 
   const fishCount = Array.isArray(tank.fish) ? tank.fish.length : 0;
   const decorCount = Array.isArray(tank.placedDecor) ? tank.placedDecor.length : 0;
-  return fishCount === 0 && decorCount === 0;
+  const machineryCount = typeof getMachineryForTank === "function" ? getMachineryForTank(tank.id).length : 0;
+  return fishCount === 0 && decorCount === 0 && machineryCount === 0;
 }
 
 function getFoodCatalogEntries() {
@@ -6802,6 +7189,7 @@ function setActiveTank(tankId, options = {}) {
     runtime.selectedDecorIds = [];
     runtime.selectedPlacedDecorId = null;
   }
+  closeSubmarineManager();
   runtime.selectedFishId = null;
   runtime.fishInspectorSettingsOpen = false;
   runtime.editingTankNameId = null;
@@ -10223,9 +10611,9 @@ function finishTutorial(options = {}) {
   saveState();
   renderUi(now);
   if (options.skipped) {
-    showToast("Tutorial skipped.");
+    showToast("Tutorial skipped.", { tutorialMessage: true });
   } else {
-    showToast("Congratulations on completing the tutorial. Have fun in Bubble Borough!", { durationMs: 5200 });
+    showToast("Congratulations on completing the tutorial. Have fun in Bubble Borough!", { durationMs: 5200, tutorialMessage: true });
   }
 }
 
@@ -11036,7 +11424,7 @@ function handleEditDecorTrayWheel(event) {
 
 function normalizeEditOverlayMode(value) {
   const normalized = String(value || "").trim().toLowerCase();
-  return ["fish", "decor", "tank"].includes(normalized) ? normalized : "fish";
+  return ["fish", "decor", "equipment", "tank"].includes(normalized) ? normalized : "fish";
 }
 
 function getRememberedEditOverlayMode() {
@@ -11066,6 +11454,10 @@ function closeActiveEditOverlay() {
     toggleEditTankMode(false);
     return true;
   }
+  if (runtime.equipmentEditMode) {
+    toggleEquipmentEditMode(false);
+    return true;
+  }
   if (runtime.tankEditMode) {
     toggleTankEditMode(false);
     return true;
@@ -11081,6 +11473,8 @@ function openEditOverlayMode(mode = null, options = {}) {
   };
   if (nextMode === "decor") {
     toggleEditTankMode(true, openOptions);
+  } else if (nextMode === "equipment") {
+    toggleEquipmentEditMode(true, openOptions);
   } else if (nextMode === "tank") {
     toggleTankEditMode(true, openOptions);
   } else {
@@ -11182,9 +11576,11 @@ function handleMedicineTrayWheel(event) {
 
 function clearPrimaryToolModes() {
   clearGuidanceForModeChange("primary-tools");
+  closeSubmarineManager();
   runtime.toolbarActionMenu = "";
   runtime.editTankMode = false;
   runtime.fishEditMode = false;
+  runtime.equipmentEditMode = false;
   runtime.tankEditMode = false;
   runtime.foodTrayOpen = false;
   runtime.medicineTrayOpen = false;
@@ -11497,6 +11893,22 @@ function toggleFishEditMode(force = null, options = {}) {
   renderUi(now);
 }
 
+function toggleEquipmentEditMode(force = null, options = {}) {
+  const nextMode = typeof force === "boolean" ? force : !runtime.equipmentEditMode;
+  clearPrimaryToolModes();
+  const now = Date.now();
+
+  if (nextMode) {
+    rememberEditOverlayMode("equipment");
+    runtime.equipmentEditMode = true;
+    runtime.selectedFishId = null;
+    runtime.toolModeSource = options.source || "toolbar";
+    if (options.collapseSidebar) runtime.sidebarCollapsed = true;
+  }
+
+  renderUi(now);
+}
+
 function toggleTankEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.tankEditMode;
   clearPrimaryToolModes();
@@ -11506,6 +11918,13 @@ function toggleTankEditMode(force = null, options = {}) {
     rememberEditOverlayMode("tank");
     runtime.tankEditMode = true;
     runtime.selectedFishId = null;
+    runtime.editTankBackgroundMode = isSolidBackgroundEnabled()
+      ? "solid"
+      : isGradientBackgroundEnabled()
+        ? "gradient"
+        : isAnimatedBackgroundEnabled()
+          ? "animated"
+          : "image";
     runtime.toolModeSource = options.source || "toolbar";
     if (options.collapseSidebar) {
       runtime.sidebarCollapsed = true;
@@ -12619,7 +13038,7 @@ function toggleToolbarActionMenu(menuName) {
 
 function handleToolbarGroupButtonClick(menuName) {
   const normalizedName = menuName === "care" || menuName === "edit" ? menuName : "";
-  const editModeActive = runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode;
+  const editModeActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode;
 
   if (normalizedName === "edit") {
     runtime.toolbarActionMenu = "";
@@ -12668,11 +13087,160 @@ function handleToolbarActionMenuKeyDown(event) {
     (activeMenuName === "care" ? dom.careMenuButton : dom.editMenuButton)?.focus?.();
     return;
   }
-  if (runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode) {
+  if (runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode) {
     event.preventDefault();
     closeActiveEditOverlay();
     dom.editMenuButton?.focus?.();
   }
+}
+
+function getTankColorPickerContextColor(context) {
+  const key = String(context || "");
+  if (key === "solid-background") {
+    return getActiveSolidBackgroundColor();
+  }
+  if (key === "gradient-start") {
+    return getActiveGradientBackgroundColors().start;
+  }
+  if (key === "gradient-end") {
+    return getActiveGradientBackgroundColors().end;
+  }
+  if (key === "animated-scheme") {
+    return getActiveAnimatedBackgroundSchemeColor();
+  }
+  const gravelMatch = key.match(/^gravel-(\d+)$/);
+  if (gravelMatch) {
+    const layerIndex = clamp(Number(gravelMatch[1]) || 0, 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
+    return getActiveCustomGravelLayerColors()[layerIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+  }
+  return DEFAULT_SOLID_BACKGROUND_COLOR;
+}
+
+function setTankColorPickerContextColor(context, color, options = {}) {
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor) {
+    return false;
+  }
+  const key = String(context || "");
+  if (key === "solid-background") {
+    return Boolean(setSolidBackgroundColor(normalizedColor, options));
+  }
+  if (key === "gradient-start") {
+    return Boolean(setGradientBackgroundColor("start", normalizedColor, options));
+  }
+  if (key === "gradient-end") {
+    return Boolean(setGradientBackgroundColor("end", normalizedColor, options));
+  }
+  if (key === "animated-scheme") {
+    return Boolean(setAnimatedBackgroundColor("surface", normalizedColor, options));
+  }
+  const gravelMatch = key.match(/^gravel-(\d+)$/);
+  if (gravelMatch) {
+    return Boolean(setCustomGravelLayerColor(Number(gravelMatch[1]), normalizedColor, options));
+  }
+  return false;
+}
+
+function syncTankColorPickerDom(context, color) {
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor || !dom.editTankTray) {
+    return;
+  }
+  const model = getTankColorPickerModel(normalizedColor);
+  const roots = [...dom.editTankTray.querySelectorAll(`[data-color-picker-root="${context}"]`)];
+  for (const root of roots) {
+    root.style.setProperty("--picker-hue-color", model.hueColor);
+    root.style.setProperty("--picker-saturation", `${(model.saturation * 100).toFixed(2)}%`);
+    root.style.setProperty("--picker-darkness", `${(model.darkness * 100).toFixed(2)}%`);
+    root.style.setProperty("--picker-color", model.color);
+    const hueMarker = root.querySelector(".tank-color-picker-hue-marker");
+    if (hueMarker instanceof HTMLElement) {
+      hueMarker.style.top = `${(model.hue * 100).toFixed(2)}%`;
+    }
+    const saturationRange = root.querySelector('[data-color-picker-channel="saturation"]');
+    if (saturationRange instanceof HTMLInputElement) {
+      saturationRange.value = String(Math.round(model.saturation * 100));
+    }
+    const darknessRange = root.querySelector('[data-color-picker-channel="darkness"]');
+    if (darknessRange instanceof HTMLInputElement) {
+      darknessRange.value = String(Math.round(model.darkness * 100));
+    }
+    const hexInput = root.querySelector("[data-color-picker-hex]");
+    if (hexInput instanceof HTMLInputElement && document.activeElement !== hexInput) {
+      hexInput.value = model.color;
+    }
+    const currentSwatch = root.querySelector("[data-color-picker-current]");
+    if (currentSwatch instanceof HTMLElement) {
+      currentSwatch.style.setProperty("--swatch", model.color);
+    }
+    const label = root.querySelector("[data-color-picker-label]");
+    if (label instanceof HTMLElement) {
+      label.textContent = getTankColorChoiceLabel(model.color);
+    }
+    for (const swatch of root.querySelectorAll("[data-color-picker-quick]")) {
+      const selected = normalizeHexColor(swatch.dataset.colorPickerColor) === model.color;
+      swatch.classList.toggle("is-selected", selected);
+      swatch.setAttribute("aria-pressed", String(selected));
+    }
+  }
+
+  const gravelMatch = String(context || "").match(/^gravel-(\d+)$/);
+  if (gravelMatch) {
+    const layerIndex = clamp(Number(gravelMatch[1]) || 0, 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
+    const pebble = dom.editTankTray.querySelector(`[data-edit-gravel-layer="${layerIndex}"] .edit-tank-gravel-pebble`);
+    if (pebble instanceof HTMLElement) {
+      pebble.style.setProperty("--pebble-color", model.color);
+    }
+  }
+}
+
+function applyTankColorPickerLiveColor(context, color) {
+  const changed = setTankColorPickerContextColor(context, color, {
+    save: false,
+    render: false,
+    full: false
+  });
+  if (changed) {
+    requestDeferredStateSave();
+  }
+  syncTankColorPickerDom(context, color);
+  return changed;
+}
+
+function updateTankColorPickerFromPointer(context, control, element, event) {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+  const rect = element.getBoundingClientRect();
+  if (!rect.width || !rect.height) {
+    return false;
+  }
+  const model = getTankColorPickerModel(getTankColorPickerContextColor(context));
+  let hue = model.hue;
+  let saturation = model.saturation;
+  let value = model.value;
+  if (control === "hue") {
+    hue = clamp((event.clientY - rect.top) / rect.height, 0, 1);
+  } else {
+    saturation = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+    value = 1 - clamp((event.clientY - rect.top) / rect.height, 0, 1);
+  }
+  const color = rgbToHex(hsvToRgb({ h: hue, s: saturation, v: value }));
+  applyTankColorPickerLiveColor(context, color);
+  return true;
+}
+
+function finishTankColorPickerDrag(pointerId = null) {
+  const drag = runtime.tankColorPickerDrag;
+  if (!drag) {
+    return false;
+  }
+  if (pointerId !== null && Number.isInteger(drag.pointerId) && drag.pointerId !== pointerId) {
+    return false;
+  }
+  runtime.tankColorPickerDrag = null;
+  requestDeferredStateSave();
+  return true;
 }
 
 function bindEvents() {
@@ -12718,7 +13286,7 @@ function bindEvents() {
       return;
     }
 
-    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode && !runtime.tankEditMode) {
+    if (isIntroTutorialActive() && !runtime.editTankMode && !runtime.fishEditMode && !runtime.equipmentEditMode && !runtime.tankEditMode) {
       return;
     }
 
@@ -12751,6 +13319,24 @@ function bindEvents() {
     }
 
     const key = keyRaw.toLowerCase();
+    const manualSubmarine = getSubmarine();
+    if (isSubmarineManualDriveActive(manualSubmarine)) {
+      if (["w", "a", "s", "d"].includes(key)) {
+        event.preventDefault();
+        setSubmarineManualDriveKey(key, true);
+        return;
+      }
+      if ((key === "q" || key === "e") && !event.repeat) {
+        event.preventDefault();
+        stepSubmarineDepthLayer(manualSubmarine, key === "q" ? -1 : 1);
+        return;
+      }
+      if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
+        event.preventDefault();
+        deployManualSubmarineFood(manualSubmarine, Date.now());
+        return;
+      }
+    }
     if (
       (keyRaw === "ArrowLeft" || keyRaw === "ArrowRight")
       && !runtime.storeOverlayOpen
@@ -12763,7 +13349,7 @@ function bindEvents() {
       return;
     }
 
-    if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.tankEditMode && !runtime.boroughOverviewOpen
+    if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.equipmentEditMode && !runtime.tankEditMode && !runtime.boroughOverviewOpen
       && !runtime.storeOverlayOpen && !runtime.settingsOverlayOpen && !runtime.utilityOverlayOpen && !runtime.equipmentOverlayOpen) {
       const cameraMoves = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
       if (cameraMoves[key]) {
@@ -12859,6 +13445,16 @@ function bindEvents() {
       return;
     }
   });
+  window.addEventListener("keyup", (event) => {
+    const key = String(event.key || "").toLowerCase();
+    if (["w", "a", "s", "d"].includes(key) && setSubmarineManualDriveKey(key, false)) {
+      event.preventDefault();
+    }
+  });
+  window.addEventListener("blur", () => {
+    clearSubmarineManualDriveKeys();
+  });
+
   if (window.ResizeObserver) {
     runtime.resizeObserver?.disconnect?.();
     runtime.resizeObserver = new ResizeObserver(() => refreshViewportLayout());
@@ -13234,6 +13830,9 @@ function bindEvents() {
   dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("notifications"));
   dom.toggleDebugMenuButton?.addEventListener("click", () => toggleDebugSidebar());
   dom.debugDailyRecapButton?.addEventListener("click", () => triggerDebugDailyRecap());
+  dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
+  dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
+  dom.debugFrameProfilerButton?.addEventListener("click", () => toggleDebugFrameProfiler());
   dom.feedButton.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("feedButton")) {
       return;
@@ -13496,6 +14095,9 @@ function bindEvents() {
     }
     toggleEditTankMode(null, { source: "toolbar", collapseSidebar: true });
   });
+  dom.equipmentEditModeDockButton?.addEventListener("click", () => {
+    toggleEquipmentEditMode(null, { source: "toolbar", collapseSidebar: true });
+  });
   dom.fishEditModeDockButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("fishEditModeDockButton")) {
       return;
@@ -13504,6 +14106,7 @@ function bindEvents() {
   });
   dom.closeEditDecorTrayButton?.addEventListener("click", () => toggleEditTankMode(false));
   dom.closeEditFishTrayButton?.addEventListener("click", () => toggleFishEditMode(false));
+  dom.closeEditEquipmentTrayButton?.addEventListener("click", () => toggleEquipmentEditMode(false));
   dom.closeEditTankTrayButton?.addEventListener("click", () => toggleTankEditMode(false));
   dom.editLayerUpButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-up"));
   dom.editLayerDownButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-down"));
@@ -14069,8 +14672,77 @@ function bindEvents() {
     closeEditDecorTrayContextMenu();
     scrollEditDecorTray(1);
   });
+  dom.editEquipmentTray?.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+  dom.editEquipmentTray?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
+    if (overlayModeTab) {
+      openEditOverlayMode(overlayModeTab.dataset.editOverlayMode, { source: "tray", collapseSidebar: true });
+      return;
+    }
+    const locationTab = event.target.closest("[data-equipment-tray-tab]");
+    if (locationTab) {
+      const nextTab = locationTab.dataset.equipmentTrayTab === "tank" ? "tank" : "storage";
+      if (runtime.equipmentEditTrayTab !== nextTab) {
+        runtime.equipmentEditTrayTab = nextTab;
+        if (dom.editEquipmentTrayScroller) dom.editEquipmentTrayScroller.scrollLeft = 0;
+        renderEditEquipmentTray();
+      }
+      return;
+    }
+    if (event.target.closest("[data-tray-place-submarine]")) {
+      deploySubmarine(getCurrentTank(), Date.now());
+      return;
+    }
+    const selectSubmarineButton = event.target.closest("[data-tray-select-submarine]");
+    if (selectSubmarineButton) {
+      openSubmarineManager(selectSubmarineButton.dataset.traySelectSubmarine);
+    }
+  });
+  dom.editEquipmentTray?.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
   dom.editTankTray?.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
+    const target = event.target instanceof Element ? event.target : null;
+    const field = target?.closest("[data-color-picker-field]");
+    const hue = target?.closest("[data-color-picker-hue]");
+    const control = field || hue;
+    if (!(control instanceof HTMLElement) || (event.pointerType !== "touch" && event.button !== 0)) {
+      return;
+    }
+    const context = field?.dataset.colorPickerField || hue?.dataset.colorPickerHue || "";
+    if (!context) {
+      return;
+    }
+    event.preventDefault();
+    runtime.tankColorPickerDrag = {
+      pointerId: Number.isInteger(event.pointerId) ? event.pointerId : null,
+      context,
+      control: field ? "field" : "hue",
+      element: control
+    };
+    control.setPointerCapture?.(event.pointerId);
+    updateTankColorPickerFromPointer(context, field ? "field" : "hue", control, event);
+  });
+  dom.editTankTray?.addEventListener("pointermove", (event) => {
+    const drag = runtime.tankColorPickerDrag;
+    if (!drag || (Number.isInteger(drag.pointerId) && drag.pointerId !== event.pointerId)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    updateTankColorPickerFromPointer(drag.context, drag.control, drag.element, event);
+  });
+  dom.editTankTray?.addEventListener("pointerup", (event) => {
+    finishTankColorPickerDrag(event.pointerId);
+  });
+  dom.editTankTray?.addEventListener("pointercancel", (event) => {
+    finishTankColorPickerDrag(event.pointerId);
   });
   dom.editTankTray?.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -14081,9 +14753,59 @@ function bindEvents() {
       return;
     }
 
+    const backgroundModeButton = event.target.closest("[data-tank-background-mode]");
+    if (backgroundModeButton) {
+      const nextMode = ["image", "solid", "gradient", "animated"].includes(backgroundModeButton.dataset.tankBackgroundMode)
+        ? backgroundModeButton.dataset.tankBackgroundMode
+        : "image";
+      runtime.editTankBackgroundMode = nextMode;
+      playToolbarButtonSoundEffect("press");
+      if (nextMode === "solid") {
+        setSolidBackgroundEnabled(true);
+      } else if (nextMode === "gradient") {
+        setGradientBackgroundEnabled(true);
+      } else if (nextMode === "animated") {
+        setAnimatedBackgroundEnabled(true);
+      } else if (isCustomBackgroundEnabled()) {
+        disableCustomBackground();
+      }
+      renderBackgrounds();
+      renderSolidBackgroundControls();
+      return;
+    }
+
+    const gravelLayerTab = event.target.closest("[data-edit-gravel-layer]");
+    if (gravelLayerTab) {
+      runtime.editTankGravelLayer = clamp(
+        Number(gravelLayerTab.dataset.editGravelLayer) || 0,
+        0,
+        CUSTOM_GRAVEL_LAYER_COUNT - 1
+      );
+      playToolbarButtonSoundEffect("press");
+      renderCustomGravelControls();
+      return;
+    }
+
+    const quickColorButton = event.target.closest("[data-color-picker-quick]");
+    if (quickColorButton) {
+      const context = quickColorButton.dataset.colorPickerQuick;
+      const color = quickColorButton.dataset.colorPickerColor;
+      playToolbarButtonSoundEffect("press");
+      applyTankColorPickerLiveColor(context, color);
+      return;
+    }
+
+    const animatedSchemeButton = event.target.closest("[data-animated-background-scheme-color]");
+    if (animatedSchemeButton) {
+      runtime.editTankBackgroundMode = "animated";
+      playToolbarButtonSoundEffect("press");
+      setAnimatedBackgroundColor("surface", animatedSchemeButton.dataset.animatedBackgroundSchemeColor);
+      return;
+    }
+
     const tankTab = event.target.closest("[data-tank-tray-tab]");
     if (tankTab) {
-      const nextTab = ["background", "gravel", "equipment"].includes(tankTab.dataset.tankTrayTab)
+      const nextTab = ["background", "gravel"].includes(tankTab.dataset.tankTrayTab)
         ? tankTab.dataset.tankTrayTab
         : "background";
       if (runtime.editTankTrayTab !== nextTab) {
@@ -14093,9 +14815,56 @@ function bindEvents() {
           dom.editTankTrayScroller.scrollLeft = 0;
         }
         renderEditTankTray();
-        syncFilterFeatureVisibility();
       }
     }
+  });
+  dom.editTankTray?.addEventListener("input", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const range = target?.closest("[data-color-picker-range]");
+    if (!(range instanceof HTMLInputElement)) {
+      return;
+    }
+    event.stopPropagation();
+    const context = range.dataset.colorPickerRange || "";
+    const channel = range.dataset.colorPickerChannel || "";
+    const model = getTankColorPickerModel(getTankColorPickerContextColor(context));
+    let saturation = model.saturation;
+    let value = model.value;
+    if (channel === "saturation") {
+      saturation = clamp((Number(range.value) || 0) / 100, 0, 1);
+    } else if (channel === "darkness") {
+      value = 1 - clamp((Number(range.value) || 0) / 100, 0, 1);
+    } else {
+      return;
+    }
+    const color = rgbToHex(hsvToRgb({ h: model.hue, s: saturation, v: value }));
+    applyTankColorPickerLiveColor(context, color);
+  });
+  dom.editTankTray?.addEventListener("change", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const hexInput = target?.closest("[data-color-picker-hex]");
+    if (!(hexInput instanceof HTMLInputElement)) {
+      return;
+    }
+    event.stopPropagation();
+    const context = hexInput.dataset.colorPickerHex || "";
+    const rawValue = String(hexInput.value || "").trim();
+    const normalizedColor = normalizeHexColor(rawValue.startsWith("#") ? rawValue : `#${rawValue}`);
+    if (!normalizedColor) {
+      hexInput.value = getTankColorPickerContextColor(context);
+      return;
+    }
+    applyTankColorPickerLiveColor(context, normalizedColor);
+    hexInput.value = normalizedColor;
+  });
+  dom.editTankTray?.addEventListener("keydown", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const hexInput = target?.closest("[data-color-picker-hex]");
+    if (!(hexInput instanceof HTMLInputElement) || event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    hexInput.blur();
   });
   dom.editTankTray?.addEventListener("contextmenu", (event) => {
     event.preventDefault();
@@ -14518,6 +15287,18 @@ function bindEvents() {
   });
 
   dom.equipmentShop?.addEventListener("click", (event) => {
+    const buySubmarineButton = event.target.closest("[data-buy-submarine]");
+    if (buySubmarineButton) {
+      buySubmarine();
+      return;
+    }
+
+    const manageSubmarineButton = event.target.closest("[data-manage-submarine]");
+    if (manageSubmarineButton) {
+      openSubmarineManager(manageSubmarineButton.dataset.manageSubmarine);
+      return;
+    }
+
     const backgroundBuyButton = event.target.closest("[data-buy-background]");
     if (backgroundBuyButton) {
       buyBackground(backgroundBuyButton.dataset.buyBackground);
@@ -14925,6 +15706,12 @@ function bindEvents() {
     }
 
     const now = Date.now();
+    const hitMachinery = findMachineryAtPoint(point.x, point.y, now);
+    if (hitMachinery) {
+      runtime.suppressNextTankClick = false;
+      return;
+    }
+
     const hitEgg = findFishEggAtPoint(point.x, point.y, now);
     if (hitEgg) {
       beginFishEggDrag(hitEgg, point, event.pointerId);
@@ -14991,6 +15778,12 @@ function bindEvents() {
       return;
     }
 
+    const hitMachinery = findMachineryAtPoint(point.x, point.y, Date.now());
+    if (hitMachinery) {
+      openSubmarineManager(hitMachinery.id);
+      return;
+    }
+
     const hitFish = findFishAtPoint(point.x, point.y, Date.now());
     if (hitFish) {
       openFishActionMenu(hitFish.id, point);
@@ -14998,6 +15791,7 @@ function bindEvents() {
     }
 
     closeFishActionMenu();
+    closeSubmarineManager();
     if (runtime.selectedFishId || runtime.selectedFishStatusFishId) {
       closeFishInspector();
     }
@@ -15532,9 +16326,11 @@ function getStageRenderViewTarget() {
     ? dom.editDecorTray
     : runtime.fishEditMode
       ? dom.editFishTray
-      : runtime.tankEditMode
-        ? dom.editTankTray
-        : null;
+      : runtime.equipmentEditMode
+        ? dom.editEquipmentTray
+        : runtime.tankEditMode
+          ? dom.editTankTray
+          : null;
   if (!activeEditTray || activeEditTray.hidden) {
     return {
       scale: coverScale,
@@ -17968,6 +18764,35 @@ function getBaseSpeciesForFish(fish) {
   return fish ? runtime.fishMap.get(fish.speciesId) || null : null;
 }
 
+function rebuildFishFrameLookup() {
+  const fishList = Array.isArray(state?.fish) ? state.fish : [];
+  const lookup = runtime.fishFrameLookupById || new Map();
+  lookup.clear();
+  for (const fish of fishList) {
+    if (fish?.id) {
+      lookup.set(fish.id, fish);
+    }
+  }
+  runtime.fishFrameLookupById = lookup;
+  runtime.fishFrameLookupSource = fishList;
+  runtime.fishFrameLookupLength = fishList.length;
+  return lookup;
+}
+
+function getFishByIdFast(fishId) {
+  if (!fishId) {
+    return null;
+  }
+  const fishList = Array.isArray(state?.fish) ? state.fish : [];
+  if (
+    runtime.fishFrameLookupSource !== fishList
+    || runtime.fishFrameLookupLength !== fishList.length
+  ) {
+    rebuildFishFrameLookup();
+  }
+  return runtime.fishFrameLookupById.get(fishId) || null;
+}
+
 function getFishBehaviorProfileSpecies(fish) {
   const profileId = typeof fish?.behaviorSpeciesId === "string" ? fish.behaviorSpeciesId.trim() : "";
   if (!profileId || profileId === fish?.speciesId) {
@@ -18031,6 +18856,30 @@ function getFishBehaviorProfile(speciesOrFish) {
     detritusDiet: Boolean(profile?.detritusDiet) || species?.diet === "detritus",
     predatorDiet: Boolean(profile?.predatorDiet) || behavior === "piranha"
   };
+}
+
+function getFishLocomotionProfile(speciesOrFish) {
+  const species = speciesOrFish?.speciesId
+    ? (getFishBehaviorProfileSpecies(speciesOrFish) || getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
+    : speciesOrFish;
+  const speciesId = typeof species?.id === "string"
+    ? species.id
+    : (typeof speciesOrFish?.speciesId === "string" ? speciesOrFish.speciesId : "");
+  return FISH_LOCOMOTION_PROFILES[speciesId] || FISH_LOCOMOTION_PROFILE_DEFAULT;
+}
+
+function getFishSchoolingStrength(fish, species = getSpeciesForFish(fish)) {
+  const profile = getFishLocomotionProfile(species || fish);
+  const personality = getFishPersonality(fish);
+  let personalityScale = 1;
+  if (personality === "social" || personality === "follower") {
+    personalityScale = 1.16;
+  } else if (personality === "standoffish" || personality === "territorial") {
+    personalityScale = 0.62;
+  } else if (personality === "shy" || personality === "nervous") {
+    personalityScale = 1.06;
+  }
+  return clamp(profile.schoolStrength * personalityScale, 0, 1);
 }
 
 function pickFishPersonality(speciesOrFish) {
@@ -18362,7 +19211,7 @@ function getFishTintedImage(imagePath, sourceImage, fish) {
   }) || sourceImage;
 }
 
-function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now()) {
+function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now(), comfortValueOverride = null) {
   const filters = [];
   const grayscalePercent = Math.round((1 - clamp(Number(healthRatio) || 0, 0, 1)) * 100);
   const colorCycleFilter = getFishColorCycleFilter(fish, now);
@@ -18382,7 +19231,12 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now()) {
     filters.push(`grayscale(${grayscalePercent}%)`);
   }
   if (!isFishDead(fish)) {
-    const comfortValue = getFishComfort(fish, now).value;
+    const hasComfortOverride = comfortValueOverride !== null
+      && comfortValueOverride !== undefined
+      && Number.isFinite(Number(comfortValueOverride));
+    const comfortValue = hasComfortOverride
+      ? Number(comfortValueOverride)
+      : getFishComfort(fish, now).value;
     if (comfortValue <= 0.4) {
       filters.push("brightness(72%) saturate(68%) drop-shadow(0 0 10px rgba(0, 0, 0, 0.62))");
     }
@@ -20288,6 +21142,14 @@ function shouldFishRefuseFoodForComfort(fish, foodKey = "basic", now = Date.now(
   if (!fish || isMealFreeFish(fish) || isUndeadFish(fish)) {
     return false;
   }
+
+  const hunger = getFishNeedValue(fish, "hunger", now);
+  // A critically hungry fish must not get trapped in a refusal loop. Once the
+  // hunger meter reaches the critical range, comfort-based pickiness and an old
+  // refusal cooldown no longer block eating compatible food.
+  if (hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
+    return false;
+  }
   if (Number(fish.foodRefusalUntil) > now) {
     return true;
   }
@@ -20845,7 +21707,21 @@ function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
 
 function getSpeciesForFish(fish) {
   const baseSpecies = getBaseSpeciesForFish(fish);
-  return mergeFishBehaviorProfile(baseSpecies, getFishBehaviorProfileSpecies(fish));
+  const profileSpecies = getFishBehaviorProfileSpecies(fish);
+  if (!baseSpecies || !profileSpecies) {
+    return baseSpecies || null;
+  }
+
+  const cacheKey = `${baseSpecies.id || ""}|${profileSpecies.id || ""}`;
+  const cache = runtime.fishSpeciesMergeCache;
+  const cached = cache?.get(cacheKey);
+  if (cached?.baseSpecies === baseSpecies && cached?.profileSpecies === profileSpecies) {
+    return cached.mergedSpecies;
+  }
+
+  const mergedSpecies = mergeFishBehaviorProfile(baseSpecies, profileSpecies);
+  cache?.set(cacheKey, { baseSpecies, profileSpecies, mergedSpecies });
+  return mergedSpecies;
 }
 
 function isCatalogUndeadShopSpecies(species) {
@@ -22207,7 +23083,7 @@ function sanitizeUiSettings(rawSettings) {
     decorShadowsEnabled: source.decorShadowsEnabled !== false,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
     halloweenMode: normalizeHalloweenMode(source.halloweenMode),
-    editOverlayMode: ["fish", "decor", "tank"].includes(String(source.editOverlayMode || "").trim())
+    editOverlayMode: ["fish", "decor", "equipment", "tank"].includes(String(source.editOverlayMode || "").trim())
       ? String(source.editOverlayMode).trim()
       : DEFAULT_UI_SETTINGS.editOverlayMode
   };
@@ -23052,6 +23928,8 @@ function reconcileState(rawState) {
     decorScaleDefaults: {},
     fishScaleDefaults: {},
     tanks: [createTankState({ now, name: buildDefaultTankName(0) })],
+    machinery: [],
+    submarineOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
     ownedFilterInventory: {},
@@ -23084,6 +23962,7 @@ function reconcileState(rawState) {
     ? incoming.tanks.map((tank) => sanitizeTankStateSnapshot(tank, { now, legacyHealthModel })).filter(Boolean)
     : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel })];
   normalizeAquariumSectionGrid(tanks);
+  const machinery = sanitizeMachineryState(incoming.machinery, tanks, now);
 
   const nextState = {
     ...base,
@@ -23103,6 +23982,8 @@ function reconcileState(rawState) {
     decorScaleDefaults: sanitizeDecorScaleDefaults(incoming.decorScaleDefaults),
     fishScaleDefaults: sanitizeFishScaleDefaults(incoming.fishScaleDefaults),
     tanks,
+    machinery,
+    submarineOwned: incoming.submarineOwned === true || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
     activeTankId: typeof incoming.activeTankId === "string" && tanks.some((tank) => tank.id === incoming.activeTankId)
       ? incoming.activeTankId
       : (tanks[0]?.id || null),
@@ -23168,6 +24049,8 @@ function reconcileState(rawState) {
   }
 
   const hasStartedPlaying = getAllTankFish(nextState).length
+    || nextState.submarineOwned
+    || nextState.machinery.length
     || nextState.storedFish.length
     || getAllPlacedDecor(nextState).length
     || Object.keys(nextState.decorInventory).length
@@ -26089,11 +26972,13 @@ function getCaveBehaviorChance(species, timestamp = Date.now()) {
     return 0;
   }
 
+  const locomotionProfile = getFishLocomotionProfile(species);
+  const caveAffinity = clamp(locomotionProfile.caveAffinity, 0, 2.6);
   if (isCaveNightWindow(timestamp)) {
-    return CAVE_NIGHT_ENTRY_CHANCE;
+    return clamp(CAVE_NIGHT_ENTRY_CHANCE * caveAffinity, 0, 1);
   }
 
-  return CAVE_ENTRY_CHANCE_BY_STYLE[species.swimStyle] || 0.1;
+  return clamp((CAVE_ENTRY_CHANCE_BY_STYLE[species.swimStyle] || 0.1) * caveAffinity, 0, 1);
 }
 
 function getCaveBehaviorProfile(decorKey = "") {
@@ -30036,14 +30921,19 @@ function tick() {
     return;
   }
 
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const now = advanceDebugSimulationClock(Date.now());
   const tutorialChanged = syncTutorialFlow(now);
   const changed = syncState(now) || runtime.gravelStateDirty || runtime.tankStateDirty || tutorialChanged;
-  renderTickUi(now, { stateChanged: changed });
+  renderTickUi(now, { stateChanged: false });
   if (changed) {
-    saveState();
+    scheduleDeferredTickUiRefresh(now);
+    requestDeferredStateSave();
     runtime.gravelStateDirty = false;
     runtime.tankStateDirty = false;
+  }
+  if (runtime.debugFrameProfilerEnabled) {
+    runtime.frameProfilerLastTickMs = Math.max(0, performance.now() - profileStartedAt);
   }
 }
 // </bundle-source>
@@ -30130,6 +31020,64 @@ function renderVisiblePanels(now) {
   if (showingOverviewTab || showingFishTab || showingDecorTab) {
     renderCollapsibleSections();
   }
+}
+
+function cancelDeferredTickUiRefresh() {
+  if (runtime.deferredTickUiTimerId) {
+    window.clearTimeout(runtime.deferredTickUiTimerId);
+    runtime.deferredTickUiTimerId = 0;
+  }
+  if (runtime.deferredTickUiIdleId && typeof window.cancelIdleCallback === "function") {
+    window.cancelIdleCallback(runtime.deferredTickUiIdleId);
+    runtime.deferredTickUiIdleId = 0;
+  }
+  runtime.deferredTickUiNow = 0;
+}
+
+function flushDeferredTickUiRefresh() {
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
+  runtime.deferredTickUiTimerId = 0;
+  runtime.deferredTickUiIdleId = 0;
+  const now = Number(runtime.deferredTickUiNow) || Date.now();
+  runtime.deferredTickUiNow = 0;
+  runtime.lastDeferredTickUiRefreshAt = Date.now();
+  renderSummary(now);
+  renderEvents();
+  renderStoreOverlay();
+  renderVisiblePanels(now);
+  positionTransientMessages();
+  if (runtime.debugFrameProfilerEnabled) {
+    runtime.frameProfilerLastDeferredUiMs = Math.max(0, performance.now() - profileStartedAt);
+  }
+}
+
+function scheduleDeferredTickUiRefresh(now = Date.now()) {
+  runtime.deferredTickUiNow = Math.max(Number(runtime.deferredTickUiNow) || 0, Number(now) || Date.now());
+  if (runtime.deferredTickUiTimerId || runtime.deferredTickUiIdleId) {
+    return;
+  }
+
+  const elapsedSinceRefresh = runtime.lastDeferredTickUiRefreshAt > 0
+    ? Date.now() - runtime.lastDeferredTickUiRefreshAt
+    : DEFERRED_TICK_UI_MIN_INTERVAL_MS;
+  const waitMs = Math.max(0, DEFERRED_TICK_UI_MIN_INTERVAL_MS - elapsedSinceRefresh);
+  if (waitMs > 0) {
+    runtime.deferredTickUiTimerId = window.setTimeout(() => {
+      runtime.deferredTickUiTimerId = 0;
+      scheduleDeferredTickUiRefresh(runtime.deferredTickUiNow || Date.now());
+    }, waitMs);
+    return;
+  }
+
+  if (typeof window.requestIdleCallback === "function") {
+    runtime.deferredTickUiIdleId = window.requestIdleCallback(() => {
+      flushDeferredTickUiRefresh();
+    }, { timeout: 900 });
+    return;
+  }
+  runtime.deferredTickUiTimerId = window.setTimeout(() => {
+    flushDeferredTickUiRefresh();
+  }, 120);
 }
 
 function syncCurrentTankState(now, options = {}) {
@@ -30238,7 +31186,7 @@ function syncCurrentTankState(now, options = {}) {
   const droppedPoops = [];
   state.pendingPoops = state.pendingPoops.filter((poop) => {
     if (poop.dueAt <= now) {
-      const fish = state.fish.find((entry) => entry.id === poop.fishId);
+      const fish = getFishByIdFast(poop.fishId);
       if (!fish || isFishDead(fish)) {
         return false;
       }
@@ -30814,22 +31762,1378 @@ function processDetritusFish(now) {
 }
 // </bundle-source>
 
+// <bundle-source path="machinery/submarine.js">
+// Source fragment: machinery/submarine.js
+// Assembled into ../app.js by scripts/build-app-bundle.cjs.
+
+function normalizeSubmarineResourceCount(value) {
+  return clamp(Math.floor(Number(value) || 0), 0, SUBMARINE_RESOURCE_CAPACITY);
+}
+
+function sanitizeSubmarineInventory(rawInventory) {
+  const source = rawInventory && typeof rawInventory === "object" ? rawInventory : {};
+  return {
+    food: normalizeSubmarineResourceCount(source.food),
+    health: normalizeSubmarineResourceCount(source.health),
+    calming: normalizeSubmarineResourceCount(source.calming)
+  };
+}
+
+function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
+  return {
+    id: typeof options.id === "string" && options.id.trim() ? options.id.trim() : createId("submarine"),
+    type: MACHINERY_TYPE_SUBMARINE,
+    tankId: String(tankId || ""),
+    xNorm: clamp(Number(options.xNorm) || 0.5, 0.08, 0.92),
+    yNorm: clamp(Number(options.yNorm) || 0.48, 0.16, 0.78),
+    targetXNorm: clamp(Number(options.targetXNorm) || 0.68, 0.08, 0.92),
+    targetYNorm: clamp(Number(options.targetYNorm) || 0.46, 0.16, 0.78),
+    direction: Number(options.direction) < 0 ? -1 : 1,
+    tankLayer: clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : SUBMARINE_DEFAULT_TANK_LAYER),
+    manualVelocityXPxPerSecond: Number.isFinite(Number(options.manualVelocityXPxPerSecond)) ? Number(options.manualVelocityXPxPerSecond) : 0,
+    manualVelocityYPxPerSecond: Number.isFinite(Number(options.manualVelocityYPxPerSecond)) ? Number(options.manualVelocityYPxPerSecond) : 0,
+    idleUntil: Math.max(0, Number(options.idleUntil) || 0),
+    targetAt: Math.max(0, Number(options.targetAt) || now),
+    nextScanAt: Math.max(0, Number(options.nextScanAt) || now),
+    createdAt: Math.max(0, Number(options.createdAt) || now),
+    autopilot: options.autopilot !== false,
+    inventory: sanitizeSubmarineInventory(options.inventory),
+    mission: null
+  };
+}
+
+function sanitizeMachineryState(rawMachinery, tanks = getAllTanks(), now = Date.now()) {
+  const validTanks = Array.isArray(tanks) ? tanks.filter(Boolean) : [];
+  const fallbackTankId = validTanks[0]?.id || "";
+  const validTankIds = new Set(validTanks.map((tank) => tank.id));
+  const source = Array.isArray(rawMachinery) ? rawMachinery : [];
+  const sanitized = [];
+  for (const entry of source) {
+    if (!entry || entry.type !== MACHINERY_TYPE_SUBMARINE || sanitized.some((item) => item.type === MACHINERY_TYPE_SUBMARINE)) {
+      continue;
+    }
+    const tankId = validTankIds.has(entry.tankId) ? entry.tankId : fallbackTankId;
+    if (!tankId) {
+      continue;
+    }
+    sanitized.push(createSubmarineMachinery(tankId, now, entry));
+  }
+  return sanitized;
+}
+
+function getMachineryList() {
+  if (!Array.isArray(state?.machinery)) {
+    if (state) state.machinery = [];
+  }
+  return state?.machinery || [];
+}
+
+function getMachineryById(machineryId) {
+  const id = String(machineryId || "");
+  return id ? getMachineryList().find((item) => item?.id === id) || null : null;
+}
+
+function getSubmarine() {
+  return getMachineryList().find((item) => item?.type === MACHINERY_TYPE_SUBMARINE) || null;
+}
+
+function isSubmarineOwned() {
+  return Boolean(state?.submarineOwned || getSubmarine());
+}
+
+function getMachineryForTank(tankId) {
+  const id = String(tankId || "");
+  return getMachineryList().filter((item) => item?.tankId === id);
+}
+
+function getSubmarineTank(submarine = getSubmarine()) {
+  return submarine ? getTankById(submarine.tankId) : null;
+}
+
+function getSubmarineFoodCount(submarine = getSubmarine()) {
+  return normalizeSubmarineResourceCount(submarine?.inventory?.food);
+}
+
+function isSubmarineOutOfResources(submarine = getSubmarine()) {
+  if (!submarine) return false;
+  const inventory = sanitizeSubmarineInventory(submarine.inventory);
+  return inventory.food <= 0 || inventory.health <= 0 || inventory.calming <= 0;
+}
+
+function getSubmarinePlayerFoodCount() {
+  return getFoodCatalog()
+    .filter((food) => shouldShowFoodInStore(food) && food.id !== "upgraded")
+    .reduce((total, food) => total + Math.max(0, Math.floor(Number(state.foodInventory?.[food.id]) || 0)), 0);
+}
+
+function buySubmarine() {
+  if (isSubmarineOwned()) {
+    return false;
+  }
+  return performCoinTransaction({
+    amount: SUBMARINE_COST,
+    insufficientMessage: `You need ${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)} for the Automated Care Submarine.`,
+    apply: () => {
+      state.submarineOwned = true;
+      runtime.equipmentEditTrayTab = "storage";
+    },
+    event: {
+      type: "equipment",
+      tone: "positive",
+      text: "Purchased the Automated Care Submarine. It is ready to deploy from Edit > Equipment."
+    },
+    toast: "Submarine purchased. Deploy it from Edit > Equipment."
+  });
+}
+
+function deploySubmarine(targetTank = getCurrentTank(), now = Date.now()) {
+  if (!isSubmarineOwned() || !targetTank) return false;
+  const existing = getSubmarine();
+  if (existing) return moveSubmarineToTank(targetTank, now);
+  const submarine = createSubmarineMachinery(targetTank.id, now, {
+    xNorm: 0.5,
+    yNorm: 0.46,
+    targetXNorm: 0.68,
+    targetYNorm: 0.44
+  });
+  state.submarineOwned = true;
+  state.machinery = [...getMachineryList(), submarine];
+  runtime.equipmentEditTrayTab = "tank";
+  pushEvent(`Automated Care Submarine deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
+    type: "equipment",
+    detail: "Automated care machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function moveSubmarineToTank(targetTank = getCurrentTank(), now = Date.now()) {
+  const submarine = getSubmarine();
+  if (!submarine || !targetTank) return false;
+  runtime.pendingMachineryTravel.delete(submarine.id);
+  submarine.tankId = targetTank.id;
+  submarine.xNorm = 0.5;
+  submarine.yNorm = 0.46;
+  submarine.targetXNorm = 0.68;
+  submarine.targetYNorm = 0.44;
+  submarine.targetAt = now + 1800;
+  submarine.idleUntil = now + 450;
+  submarine.nextScanAt = now + 900;
+  submarine.mission = null;
+  submarine.manualVelocityXPxPerSecond = 0;
+  submarine.manualVelocityYPxPerSecond = 0;
+  submarine.tankLayer = SUBMARINE_DEFAULT_TANK_LAYER;
+  pushEvent(`Automated Care Submarine moved to ${getTankLabel(targetTank)}.`, now, targetTank, {
+    type: "equipment",
+    detail: "Automated care machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function recallSubmarine(now = Date.now()) {
+  const submarine = getSubmarine();
+  if (!submarine) return false;
+  const tank = getSubmarineTank(submarine);
+  runtime.pendingMachineryTravel.delete(submarine.id);
+  runtime.submarineManualDriveId = "";
+  runtime.submarineManualDriveStartedAt = 0;
+  clearSubmarineManualDriveKeys();
+  if (runtime.selectedMachineryId === submarine.id) closeSubmarineManager();
+  state.machinery = getMachineryList().filter((item) => item?.id !== submarine.id);
+  state.submarineOwned = true;
+  runtime.equipmentEditTrayTab = "storage";
+  pushEvent(`Automated Care Submarine returned to equipment storage${tank ? ` from ${getTankLabel(tank)}` : ""}.`, now, tank || null, {
+    type: "equipment",
+    detail: "Automated care machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function transferFoodIntoSubmarine(submarine = getSubmarine(), requestedAmount = SUBMARINE_RESOURCE_CAPACITY) {
+  if (!submarine) return 0;
+  submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
+  let remainingCapacity = Math.min(
+    SUBMARINE_RESOURCE_CAPACITY - submarine.inventory.food,
+    Math.max(1, Math.floor(Number(requestedAmount) || 1))
+  );
+  if (remainingCapacity <= 0) return 0;
+  let transferred = 0;
+  const preferredKeys = ["basic", "chum", "frisky"];
+  for (const foodKey of preferredKeys) {
+    if (remainingCapacity <= 0) break;
+    const available = Math.max(0, Math.floor(Number(state.foodInventory?.[foodKey]) || 0));
+    if (available <= 0) continue;
+    const amount = Math.min(available, remainingCapacity);
+    state.foodInventory[foodKey] = available - amount;
+    submarine.inventory.food += amount;
+    transferred += amount;
+    remainingCapacity -= amount;
+  }
+  if (transferred > 0) {
+    pushEvent(`Loaded ${transferred} food ${pluralize("ration", transferred)} into the Automated Care Submarine.`, Date.now());
+    saveState();
+    renderSubmarineManager();
+    renderFoodTray();
+    renderFoodShop();
+  }
+  return transferred;
+}
+
+function transferMedicineIntoSubmarine(resourceType, submarine = getSubmarine(), requestedAmount = SUBMARINE_RESOURCE_CAPACITY) {
+  if (!submarine) return 0;
+  submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
+  const normalizedType = resourceType === "calming" ? "calming" : "health";
+  const medicineKey = normalizedType === "calming" ? "betaBlocker" : "firstAid";
+  const available = Math.max(0, Math.floor(Number(state.medicineInventory?.[medicineKey]) || 0));
+  const remainingCapacity = Math.min(
+    SUBMARINE_RESOURCE_CAPACITY - submarine.inventory[normalizedType],
+    Math.max(1, Math.floor(Number(requestedAmount) || 1))
+  );
+  const transferred = Math.min(available, remainingCapacity);
+  if (transferred <= 0) return 0;
+  state.medicineInventory[medicineKey] = available - transferred;
+  submarine.inventory[normalizedType] += transferred;
+  pushEvent(`Loaded ${transferred} ${normalizedType === "calming" ? "calming" : "health"} ${pluralize("drop", transferred)} into the Automated Care Submarine.`, Date.now());
+  saveState();
+  renderSubmarineManager();
+  renderMedicineTray();
+  renderPharmacyShop();
+  return transferred;
+}
+
+
+function isSubmarineAutopilotEnabled(submarine = getSubmarine()) {
+  return submarine?.autopilot !== false;
+}
+
+function isSubmarineManualDriveActive(submarine = getSubmarine()) {
+  return Boolean(
+    submarine?.id
+    && !isSubmarineAutopilotEnabled(submarine)
+    && submarine.tankId === getCurrentTank()?.id
+    && !runtime.boroughOverviewOpen
+    && !runtime.editTankMode
+    && !runtime.fishEditMode
+    && !runtime.equipmentEditMode
+    && !runtime.tankEditMode
+    && !runtime.storeOverlayOpen
+    && !runtime.settingsOverlayOpen
+    && !runtime.utilityOverlayOpen
+    && !runtime.equipmentOverlayOpen
+  );
+}
+
+function clearSubmarineManualDriveKeys() {
+  if (!(runtime.submarineManualDriveKeys instanceof Set)) {
+    runtime.submarineManualDriveKeys = new Set();
+    return;
+  }
+  runtime.submarineManualDriveKeys.clear();
+}
+
+function setSubmarineManualDriveKey(key, isDown) {
+  const normalized = String(key || "").toLowerCase();
+  const submarine = getSubmarine();
+  if (!["w", "a", "s", "d"].includes(normalized) || !submarine) return false;
+  if (!(runtime.submarineManualDriveKeys instanceof Set)) {
+    runtime.submarineManualDriveKeys = new Set();
+  }
+  if (!isDown) {
+    runtime.submarineManualDriveKeys.delete(normalized);
+    return true;
+  }
+  if (!isSubmarineManualDriveActive(submarine)) return false;
+  runtime.submarineManualDriveId = submarine.id;
+  runtime.submarineManualDriveKeys.add(normalized);
+  return true;
+}
+
+function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, options = {}) {
+  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) return false;
+  const nextEnabled = enabled !== false;
+  if (isSubmarineAutopilotEnabled(submarine) === nextEnabled) {
+    if (!nextEnabled && isSubmarineManualDriveActive(submarine)) runtime.submarineManualDriveId = submarine.id;
+    return false;
+  }
+
+  const now = Date.now();
+  submarine.autopilot = nextEnabled;
+  clearSubmarineManualDriveKeys();
+
+  if (nextEnabled) {
+    runtime.submarineManualDriveId = "";
+    runtime.submarineManualDriveStartedAt = 0;
+    submarine.targetXNorm = submarine.xNorm;
+    submarine.targetYNorm = submarine.yNorm;
+    submarine.targetAt = now + 500;
+    submarine.idleUntil = now + 250;
+    submarine.nextScanAt = Math.min(Number(submarine.nextScanAt) || now, now + 350);
+    submarine.manualVelocityXPxPerSecond = 0;
+    submarine.manualVelocityYPxPerSecond = 0;
+  } else {
+    runtime.submarineManualDriveId = submarine.id;
+    runtime.submarineManualDriveStartedAt = now;
+    runtime.pendingMachineryTravel.delete(submarine.id);
+    submarine.xNorm = clamp(Number(submarine.xNorm) || 0.5, 0.08, 0.92);
+    submarine.yNorm = clamp(Number(submarine.yNorm) || 0.48, 0.16, 0.78);
+    submarine.targetXNorm = submarine.xNorm;
+    submarine.targetYNorm = submarine.yNorm;
+    submarine.targetAt = 0;
+    submarine.idleUntil = 0;
+    submarine.manualVelocityXPxPerSecond = 0;
+    submarine.manualVelocityYPxPerSecond = 0;
+  }
+
+  requestDeferredStateSave();
+  if (options.render !== false && runtime.selectedMachineryId === submarine.id) renderSubmarineManager();
+  return true;
+}
+
+function getSubmarineManualInputVector() {
+  const keys = runtime.submarineManualDriveKeys instanceof Set
+    ? runtime.submarineManualDriveKeys
+    : new Set();
+  let x = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0);
+  let y = (keys.has("s") ? 1 : 0) - (keys.has("w") ? 1 : 0);
+  const magnitude = Math.hypot(x, y);
+  if (magnitude > 1) {
+    x /= magnitude;
+    y /= magnitude;
+  }
+  return { x, y };
+}
+
+function stepSubmarineDepthLayer(submarine = getSubmarine(), delta = 0) {
+  if (!isSubmarineManualDriveActive(submarine)) return false;
+  const currentLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
+  const nextLayer = clampTankLayer(currentLayer + Math.sign(Number(delta) || 0));
+  if (nextLayer === currentLayer) return true;
+  submarine.tankLayer = nextLayer;
+  requestDeferredStateSave();
+  if (runtime.selectedMachineryId === submarine.id) renderSubmarineManager();
+  return true;
+}
+
+function deployManualSubmarineFood(submarine = getSubmarine(), now = Date.now()) {
+  if (!isSubmarineManualDriveActive(submarine)) return false;
+  submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
+  if (submarine.inventory.food <= 0) return true;
+  if (now - (Number(runtime.submarineManualLastFoodDeployAt) || 0) < SUBMARINE_MANUAL_FOOD_COOLDOWN_MS) return true;
+  const tank = getSubmarineTank(submarine);
+  if (!tank) return false;
+  let pellet = null;
+  withActiveTank(tank.id, () => {
+    pellet = createDroppedFoodPellet("basic", submarine.xNorm, submarine.yNorm, now);
+    if (pellet) {
+      pellet.tankLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
+      state.floatingPellets.push(pellet);
+    }
+  });
+  if (!pellet) return false;
+  runtime.submarineManualLastFoodDeployAt = now;
+  submarine.inventory.food = normalizeSubmarineResourceCount(submarine.inventory.food - 1);
+  requestDeferredStateSave();
+  if (runtime.selectedMachineryId === submarine.id) renderSubmarineManager();
+  return true;
+}
+
+function updateSubmarineManualDrive(submarine, deltaSeconds = 0.016) {
+  if (!isSubmarineManualDriveActive(submarine)) return false;
+
+  runtime.submarineManualDriveId = submarine.id;
+  const dt = clamp(Number(deltaSeconds) || 0, 0, 0.08);
+  const input = getSubmarineManualInputVector();
+  let velocityX = Number(submarine.manualVelocityXPxPerSecond) || 0;
+  let velocityY = Number(submarine.manualVelocityYPxPerSecond) || 0;
+
+  if (Math.abs(input.x) > 0.001) {
+    velocityX += input.x * SUBMARINE_MANUAL_ACCELERATION_PX_PER_SECOND2 * dt;
+  } else {
+    velocityX *= Math.exp(-SUBMARINE_MANUAL_DRAG_PER_SECOND * dt);
+  }
+  if (Math.abs(input.y) > 0.001) {
+    velocityY += input.y * SUBMARINE_MANUAL_VERTICAL_ACCELERATION_PX_PER_SECOND2 * dt;
+  } else {
+    velocityY *= Math.exp(-SUBMARINE_MANUAL_DRAG_PER_SECOND * dt);
+  }
+
+  const maxX = SUBMARINE_MANUAL_SPEED_PX_PER_SECOND;
+  const maxY = SUBMARINE_MANUAL_SPEED_PX_PER_SECOND * SUBMARINE_MANUAL_VERTICAL_SPEED_SCALE;
+  velocityX = clamp(velocityX, -maxX, maxX);
+  velocityY = clamp(velocityY, -maxY, maxY);
+  if (Math.abs(velocityX) < 0.35) velocityX = 0;
+  if (Math.abs(velocityY) < 0.35) velocityY = 0;
+
+  const previousX = Number(submarine.xNorm) || 0.5;
+  const previousY = Number(submarine.yNorm) || 0.48;
+  const nextX = clamp(previousX + velocityX * dt / TANK_WIDTH, 0.08, 0.92);
+  const nextY = clamp(previousY + velocityY * dt / TANK_HEIGHT, 0.16, 0.78);
+  if (Math.abs(nextX - previousX) < 0.000001 && Math.abs(velocityX) > 0) velocityX = 0;
+  if (Math.abs(nextY - previousY) < 0.000001 && Math.abs(velocityY) > 0) velocityY = 0;
+
+  submarine.xNorm = nextX;
+  submarine.yNorm = nextY;
+  submarine.manualVelocityXPxPerSecond = velocityX;
+  submarine.manualVelocityYPxPerSecond = velocityY;
+  submarine.targetXNorm = submarine.xNorm;
+  submarine.targetYNorm = submarine.yNorm;
+  submarine.idleUntil = 0;
+  if (Math.abs(input.x) > 0.05) submarine.direction = input.x < 0 ? -1 : 1;
+  else if (Math.abs(velocityX) > 8) submarine.direction = velocityX < 0 ? -1 : 1;
+  return true;
+}
+
+function getSubmarineMissionLabel(submarine = getSubmarine()) {
+  if (!submarine?.mission) {
+    const tank = getSubmarineTank(submarine);
+    return tank ? `Patrolling ${getTankLabel(tank)}` : "Idle";
+  }
+  const mission = submarine.mission;
+  const targetTank = getTankById(mission.targetTankId);
+  const targetFish = targetTank?.fish?.find((fish) => fish.id === mission.fishId) || null;
+  const fishName = targetFish?.name || "fish";
+  if (mission.kind === "health") return `Treating ${fishName} in ${getTankLabel(targetTank)}`;
+  if (mission.kind === "calming") return `Calming ${fishName} in ${getTankLabel(targetTank)}`;
+  return `Feeding ${fishName} in ${getTankLabel(targetTank)}`;
+}
+
+function ensureSubmarineManagerElement() {
+  let element = document.querySelector(".submarine-manager");
+  if (element instanceof HTMLElement) {
+    return element;
+  }
+  element = document.createElement("aside");
+  element.className = "submarine-manager";
+  element.hidden = true;
+  element.setAttribute("aria-label", "Automated Care Submarine controls");
+  element.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+    if (target.closest("[data-close-submarine-manager]")) {
+      closeSubmarineManager();
+      return;
+    }
+    const autopilotInput = target.closest("[data-submarine-autopilot]");
+    if (autopilotInput instanceof HTMLInputElement) {
+      setSubmarineAutopilot(getMachineryById(runtime.selectedMachineryId), autopilotInput.checked);
+      return;
+    }
+    const foodButton = target.closest("[data-load-submarine-food]");
+    if (foodButton) {
+      transferFoodIntoSubmarine(
+        getMachineryById(runtime.selectedMachineryId),
+        Number(foodButton.dataset.loadSubmarineFood) || SUBMARINE_RESOURCE_CAPACITY
+      );
+      return;
+    }
+    const medicineButton = target.closest("[data-load-submarine-medicine]");
+    if (medicineButton) {
+      transferMedicineIntoSubmarine(
+        medicineButton.dataset.loadSubmarineMedicine,
+        getMachineryById(runtime.selectedMachineryId),
+        Number(medicineButton.dataset.loadAmount) || SUBMARINE_RESOURCE_CAPACITY
+      );
+    }
+  });
+  document.body.appendChild(element);
+  return element;
+}
+
+function openSubmarineManager(machineryId) {
+  const submarine = getMachineryById(machineryId);
+  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) return false;
+  closeFishActionMenu();
+  if (runtime.selectedFishId || runtime.selectedFishStatusFishId) closeFishInspector();
+  runtime.selectedMachineryId = submarine.id;
+  renderSubmarineManager();
+  return true;
+}
+
+function closeSubmarineManager() {
+  runtime.selectedMachineryId = null;
+  const element = document.querySelector(".submarine-manager");
+  if (element instanceof HTMLElement) element.hidden = true;
+}
+
+function renderSubmarineManager() {
+  const element = ensureSubmarineManagerElement();
+  const submarine = getMachineryById(runtime.selectedMachineryId);
+  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) {
+    element.hidden = true;
+    return;
+  }
+  submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
+  const foodAvailable = getSubmarinePlayerFoodCount();
+  const healthAvailable = Math.max(0, Math.floor(Number(state.medicineInventory?.firstAid) || 0));
+  const calmingAvailable = Math.max(0, Math.floor(Number(state.medicineInventory?.betaBlocker) || 0));
+  const warning = isSubmarineOutOfResources(submarine);
+  const autopilotEnabled = isSubmarineAutopilotEnabled(submarine);
+  const manualDriveActive = isSubmarineManualDriveActive(submarine);
+  const submarineTank = getSubmarineTank(submarine);
+  const driveHint = autopilotEnabled
+    ? "Automatic care is enabled. The submarine controls itself and responds to fish needs."
+    : manualDriveActive
+      ? `Manual control active: WASD drives, Q/E changes depth, and Space drops food. Layer ${clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER)} of ${TANK_DEPTH_LAYERS}.`
+      : `Manual control is enabled. Go to ${escapeHtml(getTankLabel(submarineTank))} to drive with WASD, change depth with Q/E, and drop food with Space.`;
+  element.innerHTML = `
+    <div class="submarine-manager-header">
+      <div class="submarine-manager-title">
+        <img src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <div><strong>Automated Care Submarine</strong><span>${escapeHtml(autopilotEnabled ? getSubmarineMissionLabel(submarine) : "Manual control")}</span></div>
+      </div>
+      <div class="submarine-manager-actions">
+        <button class="small-button alt" type="button" data-close-submarine-manager aria-label="Close submarine controls">Close</button>
+      </div>
+    </div>
+    <label class="submarine-autopilot-toggle">
+      <input type="checkbox" data-submarine-autopilot ${autopilotEnabled ? "checked" : ""} />
+      <span><strong>Autopilot</strong><small>${autopilotEnabled ? "ON" : "OFF"}</small></span>
+    </label>
+    <div class="submarine-manager-warning ${warning ? "is-warning" : ""}">${warning ? "Supply warning: one or more resources are empty." : "All automatic-care supplies stocked."}</div>
+    <div class="submarine-resource-list">
+      <div class="submarine-resource-row">
+        <div><strong>Food <small>${foodAvailable} available</small></strong><span>${submarine.inventory.food}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
+        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.food / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-load-buttons" aria-label="Load food, ${foodAvailable} available">
+          <button class="small-button" type="button" data-load-submarine-food="1" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
+          <button class="small-button" type="button" data-load-submarine-food="10" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
+          <button class="small-button" type="button" data-load-submarine-food="99" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+        </div>
+      </div>
+      <div class="submarine-resource-row">
+        <div><strong>Health Drops <small>${healthAvailable} available</small></strong><span>${submarine.inventory.health}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
+        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.health / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-load-buttons" aria-label="Load health drops, ${healthAvailable} available">
+          <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="1" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
+          <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="10" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
+          <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="99" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+        </div>
+      </div>
+      <div class="submarine-resource-row">
+        <div><strong>Calming Drops <small>${calmingAvailable} available</small></strong><span>${submarine.inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
+        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.calming / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-load-buttons" aria-label="Load calming drops, ${calmingAvailable} available">
+          <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="1" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
+          <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="10" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
+          <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="99" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+        </div>
+      </div>
+    </div>
+    <div class="mini-note submarine-manager-note">${driveHint} Food is stored as universal care rations.</div>
+  `;
+  element.hidden = false;
+}
+
+function renderSubmarineShopCard() {
+  const submarine = getSubmarine();
+  const owned = isSubmarineOwned();
+  const affordable = state.coins >= SUBMARINE_COST;
+  const status = !owned
+    ? "Available"
+    : submarine
+      ? `Sold out | Yours is deployed in ${getTankLabel(getSubmarineTank(submarine))}`
+      : "Sold out | Yours is in equipment storage";
+  return `
+    <article class="shop-card submarine-shop-card ${owned ? "is-sold-out" : ""}">
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+      <div class="shop-meta shop-card-main">
+        <div>
+          <strong>Automated Care Submarine</strong>
+          <div class="fish-meta">${escapeHtml(status)}</div>
+        </div>
+        <div class="fish-meta">Automatic care machinery that travels between connected tanks to feed hungry fish and deploy health or calming medicine when needed.</div>
+        <div class="mini-note">Carries 99 food, 99 health drops, and 99 calming drops. Only one submarine can be purchased.</div>
+      </div>
+      <div class="shop-meta shop-card-actions">
+        <span class="price-tag">${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)}</span>
+        <div class="shop-button-row">
+          <button class="buy-button" data-buy-submarine="true" ${owned || !affordable ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Submarine"}</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderEditEquipmentTray() {
+  const visible = runtime.equipmentEditMode === true;
+  if (dom.editEquipmentTray) dom.editEquipmentTray.hidden = !visible;
+  syncTankTrayStageClass();
+  if (!visible || !dom.editEquipmentTray || !dom.editEquipmentTrayScroller) return;
+
+  for (const tab of dom.editEquipmentTray.querySelectorAll("[data-edit-overlay-mode]")) {
+    const selected = tab.dataset.editOverlayMode === "equipment";
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
+  }
+
+  const activeLocationTab = runtime.equipmentEditTrayTab === "tank" ? "tank" : "storage";
+  for (const tab of dom.editEquipmentTray.querySelectorAll("[data-equipment-tray-tab]")) {
+    const selected = tab.dataset.equipmentTrayTab === activeLocationTab;
+    tab.classList.toggle("is-active", selected);
+    tab.setAttribute("aria-selected", selected ? "true" : "false");
+    tab.tabIndex = selected ? 0 : -1;
+  }
+
+  const submarine = getSubmarine();
+  const owned = isSubmarineOwned();
+  const currentTank = getCurrentTank();
+  const submarineTank = getSubmarineTank(submarine);
+  const deployedHere = Boolean(submarine && currentTank && submarine.tankId === currentTank.id);
+  const stored = Boolean(owned && !submarine);
+  const shouldShowTile = activeLocationTab === "storage" ? stored : deployedHere;
+
+  let markup = "";
+  if (shouldShowTile) {
+    const food = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.food) : 0;
+    const health = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.health) : 0;
+    const calming = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.calming) : 0;
+    const actionLabel = stored
+      ? "Place Automated Care Submarine in this tank"
+      : "Manage Automated Care Submarine";
+    markup = `
+      <article class="edit-decor-tile" data-decor-name="Automated Care Submarine">
+        <button
+          class="edit-decor-tile-primary"
+          type="button"
+          ${stored ? "data-tray-place-submarine=\"true\"" : `data-tray-select-submarine="${escapeHtml(submarine.id)}"`}
+          title="${actionLabel}"
+          aria-label="${actionLabel}"
+        >
+          <span class="edit-decor-tile-surface">
+            <img class="edit-decor-tile-thumb" src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+            <span class="inventory-tray-label">${stored ? "Storage" : "In Tank"}</span>
+          </span>
+        </button>
+        ${submarine ? `<div class="mini-note edit-equipment-resource-note">Food ${food}/99 | Health ${health}/99 | Calm ${calming}/99</div>` : ""}
+      </article>
+    `;
+  } else if (!owned) {
+    markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy the Automated Care Submarine in Tankazon &gt; Equipment.</div>`;
+  } else if (submarine && !deployedHere) {
+    const otherTankLabel = getTankLabel(submarineTank);
+    markup = `<div class="edit-decor-tray-empty">Your submarine is deployed in ${escapeHtml(otherTankLabel)}. Visit that tank and scoop it into storage before placing it here.</div>`;
+  } else {
+    markup = `<div class="edit-decor-tray-empty">${activeLocationTab === "tank" ? "No equipment is deployed in this tank." : "Equipment storage is empty."}</div>`;
+  }
+
+  const dataKey = [
+    activeLocationTab,
+    owned ? "owned" : "not-owned",
+    submarine?.id || "",
+    submarine?.tankId || "",
+    submarine ? normalizeSubmarineResourceCount(submarine.inventory?.food) : 0,
+    submarine ? normalizeSubmarineResourceCount(submarine.inventory?.health) : 0,
+    submarine ? normalizeSubmarineResourceCount(submarine.inventory?.calming) : 0,
+    currentTank?.id || ""
+  ].join("|");
+  if (shouldRebuildRenderSection("edit-equipment-tray-data", dataKey)) {
+    setMarkupIfChanged("edit-equipment-tray", dom.editEquipmentTrayScroller, markup);
+  }
+}
+
+function getSubmarineDrawMetrics(submarine, now = Date.now()) {
+  if (!submarine) return null;
+  const image = runtime.images.get(SUBMARINE_IMAGE_PATH) || null;
+  if (!isUsableRuntimeImage(image)) {
+    requestRuntimeImageRecovery(SUBMARINE_IMAGE_PATH, { kind: "machinery", id: MACHINERY_TYPE_SUBMARINE });
+  }
+  const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 3);
+  const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
+  const tankLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
+  const depthScale = clamp(1 + (SUBMARINE_DEFAULT_TANK_LAYER - tankLayer) * 0.04, 0.86, 1.08);
+  const width = SUBMARINE_DRAW_WIDTH_PX * depthScale;
+  const height = clamp(width * (naturalHeight / naturalWidth), 50, 124);
+  const velocityX = Number(submarine.manualVelocityXPxPerSecond) || 0;
+  const velocityY = Number(submarine.manualVelocityYPxPerSecond) || 0;
+  const speedRatio = clamp(Math.hypot(velocityX, velocityY) / SUBMARINE_MANUAL_SPEED_PX_PER_SECOND, 0, 1);
+  const phase = (hashStringToUint32(String(submarine.id || "submarine")) % 1000) / 1000 * Math.PI * 2;
+  const bobAmplitude = SUBMARINE_IDLE_BOB_AMPLITUDE_PX * (1 - speedRatio * 0.68) * depthScale;
+  const bob = Math.sin(now / SUBMARINE_IDLE_BOB_PERIOD_MS * Math.PI * 2 + phase) * bobAmplitude;
+  const idleRock = Math.sin(now / (SUBMARINE_IDLE_BOB_PERIOD_MS * 1.35) * Math.PI * 2 + phase * 0.7) * (Math.PI / 180) * 0.75 * (1 - speedRatio * 0.72);
+  const verticalTilt = clamp(velocityY / Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND), -1, 1) * (Math.PI / 180) * 2.2;
+  return {
+    image,
+    x: Number(submarine.xNorm) * TANK_WIDTH,
+    y: Number(submarine.yNorm) * TANK_HEIGHT + bob,
+    width,
+    height,
+    direction: Number(submarine.direction) < 0 ? -1 : 1,
+    tankLayer,
+    rotation: idleRock + verticalTilt
+  };
+}
+
+function drawSubmarineSpotlight(submarine, metrics) {
+  if (!submarine?.mission || !metrics || !isSubmarineAutopilotEnabled(submarine)) return;
+  const direction = metrics.direction;
+  const noseX = metrics.x + direction * metrics.width * 0.47;
+  const noseY = metrics.y + metrics.height * 0.05;
+  const endX = noseX + direction * SUBMARINE_SPOTLIGHT_LENGTH_PX;
+  const spread = 105;
+  tankContext.save();
+  tankContext.globalCompositeOperation = "screen";
+  const gradient = tankContext.createLinearGradient(noseX, noseY, endX, noseY);
+  gradient.addColorStop(0, "rgba(210,244,255,0.25)");
+  gradient.addColorStop(0.38, "rgba(176,226,255,0.13)");
+  gradient.addColorStop(1, "rgba(160,220,255,0)");
+  tankContext.fillStyle = gradient;
+  tankContext.beginPath();
+  tankContext.moveTo(noseX, noseY - 10);
+  tankContext.lineTo(endX, noseY - spread);
+  tankContext.lineTo(endX, noseY + spread);
+  tankContext.lineTo(noseX, noseY + 10);
+  tankContext.closePath();
+  tankContext.fill();
+  tankContext.restore();
+}
+
+function drawSubmarineWarningLight(submarine, metrics, now = Date.now()) {
+  if (!isSubmarineOutOfResources(submarine) || !metrics) return;
+  const blinkOn = Math.floor(now / SUBMARINE_RED_LIGHT_BLINK_MS) % 2 === 0;
+  if (!blinkOn) return;
+  const direction = metrics.direction;
+  const lightX = metrics.x - direction * metrics.width * 0.06;
+  const lightY = metrics.y - metrics.height * 0.48;
+  tankContext.save();
+  tankContext.globalCompositeOperation = "screen";
+  const glow = tankContext.createRadialGradient(lightX, lightY, 1, lightX, lightY, 22);
+  glow.addColorStop(0, "rgba(255,245,245,1)");
+  glow.addColorStop(0.2, "rgba(255,70,70,0.95)");
+  glow.addColorStop(1, "rgba(255,0,0,0)");
+  tankContext.fillStyle = glow;
+  tankContext.beginPath();
+  tankContext.arc(lightX, lightY, 22, 0, Math.PI * 2);
+  tankContext.fill();
+  tankContext.fillStyle = "rgba(255,45,45,0.98)";
+  tankContext.beginPath();
+  tankContext.arc(lightX, lightY, 5.5, 0, Math.PI * 2);
+  tankContext.fill();
+  tankContext.restore();
+}
+
+function drawSubmarineBubbleJets(submarine, metrics, now = Date.now()) {
+  if (!submarine || !metrics || !isSubmarineManualDriveActive(submarine)) return;
+  const input = getSubmarineManualInputVector();
+  const horizontalThrust = Math.abs(input.x);
+  const verticalThrust = Math.abs(input.y);
+  if (horizontalThrust <= 0.001 && verticalThrust <= 0.001) return;
+
+  const velocityX = Math.abs(Number(submarine.manualVelocityXPxPerSecond) || 0);
+  const velocityY = Math.abs(Number(submarine.manualVelocityYPxPerSecond) || 0);
+  const horizontalSpeedRatio = clamp(velocityX / SUBMARINE_MANUAL_SPEED_PX_PER_SECOND, 0, 1);
+  const verticalSpeedRatio = clamp(velocityY / Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND * SUBMARINE_MANUAL_VERTICAL_SPEED_SCALE), 0, 1);
+  const item = {
+    id: `${submarine.id}-thruster`,
+    decorKey: "submarine-thruster",
+    xNorm: submarine.xNorm,
+    yNorm: submarine.yNorm,
+    scale: 1,
+    flipped: metrics.direction < 0,
+    flippedY: false
+  };
+  const spouts = [];
+
+  if (horizontalThrust > 0.001) {
+    const rearDirection = metrics.direction > 0 ? "left" : "right";
+    spouts.push({
+      horizontalLocation: 0.055,
+      horizontalOffsetPx: null,
+      intensity: clamp(10 + horizontalSpeedRatio * 13, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
+      spread: 13 + horizontalSpeedRatio * 12,
+      fadeDistance: 92 + horizontalSpeedRatio * 74,
+      bubbleColor: DEFAULT_BUBBLER_BUBBLE_COLOR,
+      bubbleColors: [DEFAULT_BUBBLER_BUBBLE_COLOR],
+      bubbleColorize: false,
+      bubbleSize: 0.8 + horizontalSpeedRatio * 0.32,
+      bubbleOpacity: clamp(DEFAULT_BUBBLER_BUBBLE_OPACITY * 1.06, MIN_CUSTOM_BUBBLER_OPACITY, MAX_CUSTOM_BUBBLER_OPACITY),
+      bubbleFillTintEnabled: DEFAULT_BUBBLER_FILL_TINT_ENABLED,
+      bubbleFillOpacity: DEFAULT_BUBBLER_FILL_OPACITY,
+      bubblePopEnabled: false,
+      bubbleMalformed: DEFAULT_BUBBLER_MALFORMED_ENABLED,
+      bubbleMalformedIntensity: DEFAULT_BUBBLER_MALFORMED_INTENSITY,
+      bubbleMalformedSpeed: DEFAULT_BUBBLER_MALFORMED_SPEED,
+      speed: clamp(2.15 + horizontalSpeedRatio * 1.35, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
+      direction: rearDirection
+    });
+  }
+
+  if (verticalThrust > 0.001) {
+    spouts.push({
+      horizontalLocation: 0.5,
+      horizontalOffsetPx: null,
+      intensity: clamp(3.8 + verticalSpeedRatio * 5.8, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
+      spread: 18 + verticalSpeedRatio * 9,
+      fadeDistance: 70 + verticalSpeedRatio * 48,
+      bubbleColor: DEFAULT_BUBBLER_BUBBLE_COLOR,
+      bubbleColors: [DEFAULT_BUBBLER_BUBBLE_COLOR],
+      bubbleColorize: false,
+      bubbleSize: 0.64 + verticalSpeedRatio * 0.2,
+      bubbleOpacity: clamp(DEFAULT_BUBBLER_BUBBLE_OPACITY * 0.86, MIN_CUSTOM_BUBBLER_OPACITY, MAX_CUSTOM_BUBBLER_OPACITY),
+      bubbleFillTintEnabled: DEFAULT_BUBBLER_FILL_TINT_ENABLED,
+      bubbleFillOpacity: DEFAULT_BUBBLER_FILL_OPACITY,
+      bubblePopEnabled: false,
+      bubbleMalformed: DEFAULT_BUBBLER_MALFORMED_ENABLED,
+      bubbleMalformedIntensity: DEFAULT_BUBBLER_MALFORMED_INTENSITY,
+      bubbleMalformedSpeed: DEFAULT_BUBBLER_MALFORMED_SPEED,
+      speed: clamp(0.78 + verticalSpeedRatio * 0.62, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
+      direction: "up"
+    });
+  }
+
+  if (!spouts.length) return;
+  const decor = {
+    path: SUBMARINE_IMAGE_PATH,
+    bubbler: { spoutQty: spouts.length, spouts }
+  };
+  drawDecorBubblerEffectToContext(tankContext, item, decor, metrics.image, now, {
+    width: metrics.width,
+    height: metrics.height,
+    drawX: metrics.x - metrics.width / 2,
+    drawY: metrics.y - metrics.height / 2,
+    alphaScale: 1,
+    stableScale: getViewportStableAssetScale(),
+    waterSurfaceY: WATER_SURFACE_Y
+  });
+}
+
+function drawMachinery(now, layer = 2) {
+  const tank = getCurrentTank();
+  if (!tank) return;
+  for (const submarine of getMachineryForTank(tank.id)) {
+    if (submarine.type !== MACHINERY_TYPE_SUBMARINE) continue;
+    const metrics = getSubmarineDrawMetrics(submarine, now);
+    if (!metrics || metrics.tankLayer !== layer) continue;
+    drawSubmarineSpotlight(submarine, metrics);
+    drawSubmarineBubbleJets(submarine, metrics, now);
+    tankContext.save();
+    tankContext.translate(metrics.x, metrics.y);
+    tankContext.rotate(metrics.rotation || 0);
+    tankContext.scale(metrics.direction, 1);
+    if (isUsableRuntimeImage(metrics.image)) {
+      tankContext.drawImage(metrics.image, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
+    } else {
+      tankContext.fillStyle = "rgba(28,62,78,0.95)";
+      tankContext.strokeStyle = "rgba(111,224,255,0.85)";
+      tankContext.lineWidth = 3;
+      tankContext.beginPath();
+      tankContext.roundRect(-metrics.width / 2, -metrics.height / 3, metrics.width, metrics.height * 0.66, metrics.height / 3);
+      tankContext.fill();
+      tankContext.stroke();
+    }
+    tankContext.restore();
+    drawSubmarineWarningLight(submarine, metrics, now);
+    if (runtime.selectedMachineryId === submarine.id) {
+      tankContext.save();
+      tankContext.strokeStyle = "rgba(108,236,255,0.9)";
+      tankContext.lineWidth = 3;
+      tankContext.setLineDash([9, 7]);
+      tankContext.strokeRect(metrics.x - metrics.width / 2 - 8, metrics.y - metrics.height / 2 - 8, metrics.width + 16, metrics.height + 16);
+      tankContext.restore();
+    }
+  }
+}
+
+function findMachineryAtPoint(x, y, now = Date.now()) {
+  const tank = getCurrentTank();
+  if (!tank) return null;
+  const candidates = getMachineryForTank(tank.id).slice().reverse();
+  for (const machinery of candidates) {
+    if (machinery.type !== MACHINERY_TYPE_SUBMARINE) continue;
+    const metrics = getSubmarineDrawMetrics(machinery, now);
+    if (!metrics) continue;
+    const padding = 12;
+    if (
+      x >= metrics.x - metrics.width / 2 - padding
+      && x <= metrics.x + metrics.width / 2 + padding
+      && y >= metrics.y - metrics.height / 2 - padding
+      && y <= metrics.y + metrics.height / 2 + padding
+    ) return machinery;
+  }
+  return null;
+}
+
+function getSubmarineTravelNeighbors(tank) {
+  if (!tank) return [];
+  const result = [];
+  const seen = new Set();
+  for (const target of getAllTanks()) {
+    if (!target || target.id === tank.id) continue;
+    const tubeJourney = getTransitTubeJourney(tank, target);
+    if (!tubeJourney) continue;
+    result.push({ tank: target, mode: "tube", tubeJourney });
+    seen.add(target.id);
+  }
+  for (const target of getAdjacentAquariumSections(tank)) {
+    if (!target || seen.has(target.id)) continue;
+    result.push({ tank: target, mode: "edge", tubeJourney: null });
+    seen.add(target.id);
+  }
+  return result;
+}
+
+function findSubmarineTravelRoute(sourceTank, destinationTank) {
+  if (!sourceTank || !destinationTank || sourceTank.id === destinationTank.id) return null;
+  const visited = new Set([sourceTank.id]);
+  const queue = getSubmarineTravelNeighbors(sourceTank).map((leg) => ({ tank: leg.tank, firstLeg: leg }));
+  for (const entry of queue) visited.add(entry.tank.id);
+  while (queue.length) {
+    const entry = queue.shift();
+    if (entry.tank.id === destinationTank.id) return entry.firstLeg;
+    for (const leg of getSubmarineTravelNeighbors(entry.tank)) {
+      if (visited.has(leg.tank.id)) continue;
+      visited.add(leg.tank.id);
+      queue.push({ tank: leg.tank, firstLeg: entry.firstLeg });
+    }
+  }
+  return null;
+}
+
+function beginSubmarineTravelLeg(submarine, destinationTank, now = Date.now()) {
+  if (!submarine || runtime.pendingMachineryTravel.has(submarine.id)) return false;
+  const sourceTank = getSubmarineTank(submarine);
+  const firstLeg = findSubmarineTravelRoute(sourceTank, destinationTank);
+  if (!sourceTank || !firstLeg?.tank) return false;
+  if (firstLeg.mode === "tube" && firstLeg.tubeJourney?.sourceTube && firstLeg.tubeJourney?.targetTube) {
+    const points = getTransitTubeTravelPoints(firstLeg.tubeJourney.sourceTube);
+    submarine.targetXNorm = points.opening.xNorm;
+    submarine.targetYNorm = points.opening.yNorm;
+    submarine.targetAt = now + 60 * 1000;
+    submarine.idleUntil = 0;
+    runtime.pendingMachineryTravel.set(submarine.id, {
+      mode: "tube",
+      phase: "approach",
+      sourceTankId: sourceTank.id,
+      destinationTankId: firstLeg.tank.id,
+      sourceTubeId: firstLeg.tubeJourney.sourceTube.id,
+      targetTubeId: firstLeg.tubeJourney.targetTube.id,
+      startedAt: now
+    });
+    return true;
+  }
+  const direction = getBoroughTravelEdgeDirection(sourceTank, firstLeg.tank);
+  if (direction === "right") submarine.targetXNorm = 1.12;
+  else if (direction === "left") submarine.targetXNorm = -0.12;
+  else if (direction === "down") submarine.targetYNorm = 1.12;
+  else submarine.targetYNorm = -0.12;
+  submarine.targetAt = now + 60 * 1000;
+  submarine.idleUntil = 0;
+  runtime.pendingMachineryTravel.set(submarine.id, {
+    mode: "edge",
+    phase: "leaving",
+    sourceTankId: sourceTank.id,
+    destinationTankId: firstLeg.tank.id,
+    direction,
+    startedAt: now
+  });
+  return true;
+}
+
+function getSubmarineDistanceToPointPx(submarine, xNorm, yNorm) {
+  return Math.hypot(
+    (Number(submarine?.xNorm) - Number(xNorm)) * TANK_WIDTH,
+    (Number(submarine?.yNorm) - Number(yNorm)) * TANK_HEIGHT
+  );
+}
+
+function processSubmarineTravel(submarine, now = Date.now()) {
+  const pending = runtime.pendingMachineryTravel.get(submarine?.id);
+  if (!submarine || !pending) return false;
+  const source = getTankById(pending.sourceTankId);
+  const destination = getTankById(pending.destinationTankId);
+  if (!source || !destination) {
+    runtime.pendingMachineryTravel.delete(submarine.id);
+    return false;
+  }
+  if (pending.mode === "tube") {
+    const sourceTube = source.placedDecor?.find((item) => item.id === pending.sourceTubeId);
+    const targetTube = destination.placedDecor?.find((item) => item.id === pending.targetTubeId);
+    if (!sourceTube || !targetTube) {
+      runtime.pendingMachineryTravel.delete(submarine.id);
+      return false;
+    }
+    if (pending.phase === "approach") {
+      const points = getTransitTubeTravelPoints(sourceTube);
+      submarine.targetXNorm = points.opening.xNorm;
+      submarine.targetYNorm = points.opening.yNorm;
+      if (getSubmarineDistanceToPointPx(submarine, points.opening.xNorm, points.opening.yNorm) <= points.openingRadiusPx) {
+        pending.phase = "entering";
+        submarine.targetXNorm = points.below.xNorm;
+        submarine.targetYNorm = points.below.yNorm;
+      }
+      return true;
+    }
+    if (pending.phase === "entering") {
+      const points = getTransitTubeTravelPoints(sourceTube);
+      submarine.targetXNorm = points.below.xNorm;
+      submarine.targetYNorm = points.below.yNorm;
+      if (getSubmarineDistanceToPointPx(submarine, points.below.xNorm, points.below.yNorm) <= Math.max(26, points.openingRadiusPx * 0.72)) {
+        const targetPoints = getTransitTubeTravelPoints(targetTube);
+        submarine.tankId = destination.id;
+        submarine.xNorm = targetPoints.below.xNorm;
+        submarine.yNorm = targetPoints.below.yNorm;
+        submarine.targetXNorm = targetPoints.exit.xNorm;
+        submarine.targetYNorm = targetPoints.exit.yNorm;
+        pending.phase = "emerging";
+        requestDeferredStateSave();
+      }
+      return true;
+    }
+    const targetPoints = getTransitTubeTravelPoints(targetTube);
+    submarine.targetXNorm = targetPoints.exit.xNorm;
+    submarine.targetYNorm = targetPoints.exit.yNorm;
+    if (getSubmarineDistanceToPointPx(submarine, targetPoints.exit.xNorm, targetPoints.exit.yNorm) <= Math.max(24, targetPoints.openingRadiusPx * 0.62)) {
+      runtime.pendingMachineryTravel.delete(submarine.id);
+      submarine.targetXNorm = clamp(targetPoints.exit.xNorm + randomBetween(-0.12, 0.12), 0.12, 0.88);
+      submarine.targetYNorm = clamp(targetPoints.exit.yNorm + randomBetween(-0.05, 0.08), 0.16, 0.76);
+      requestDeferredStateSave();
+      return false;
+    }
+    return true;
+  }
+
+  if (pending.phase === "leaving") {
+    const reached = pending.direction === "right"
+      ? submarine.xNorm >= 1.08
+      : pending.direction === "left"
+        ? submarine.xNorm <= -0.08
+        : pending.direction === "down"
+          ? submarine.yNorm >= 1.08
+          : submarine.yNorm <= -0.08;
+    if (reached) {
+      submarine.tankId = destination.id;
+      if (pending.direction === "right") {
+        submarine.xNorm = -0.2;
+        submarine.targetXNorm = 0.22;
+      } else if (pending.direction === "left") {
+        submarine.xNorm = 1.2;
+        submarine.targetXNorm = 0.78;
+      } else if (pending.direction === "down") {
+        submarine.yNorm = -0.2;
+        submarine.targetYNorm = 0.23;
+      } else {
+        submarine.yNorm = 1.2;
+        submarine.targetYNorm = 0.76;
+      }
+      pending.phase = "arriving";
+      requestDeferredStateSave();
+    }
+    return true;
+  }
+
+  const arrived = pending.direction === "right"
+    ? submarine.xNorm >= 0.2
+    : pending.direction === "left"
+      ? submarine.xNorm <= 0.8
+      : pending.direction === "down"
+        ? submarine.yNorm >= 0.22
+        : submarine.yNorm <= 0.78;
+  if (arrived) {
+    runtime.pendingMachineryTravel.delete(submarine.id);
+    submarine.xNorm = clamp(submarine.xNorm, 0.08, 0.92);
+    submarine.yNorm = clamp(submarine.yNorm, 0.16, 0.78);
+    requestDeferredStateSave();
+    return false;
+  }
+  return true;
+}
+
+function hasSubmarineMedicineEffect(tank, effectType, now = Date.now()) {
+  if (!tank) return false;
+  return Boolean(withActiveTank(tank.id, () => hasActiveTankMedicineEffect(effectType, now)));
+}
+
+function getSubmarineFishComfort(tank, fish, now = Date.now()) {
+  if (!tank || !fish) return 1;
+  return Number(withActiveTank(tank.id, () => getFishComfort(fish, now).value)) || 0;
+}
+
+function getSubmarineFishHunger(tank, fish, now = Date.now()) {
+  if (!tank || !fish) return 100;
+  return Number(withActiveTank(tank.id, () => getFishNeedValue(fish, "hunger", now))) || 0;
+}
+
+function isTankReachableBySubmarine(submarine, tank) {
+  const source = getSubmarineTank(submarine);
+  return Boolean(source && tank && (source.id === tank.id || findSubmarineTravelRoute(source, tank)));
+}
+
+function findSubmarineCareCandidate(submarine, now = Date.now()) {
+  if (!submarine) return null;
+  const inventory = sanitizeSubmarineInventory(submarine.inventory);
+  let best = null;
+  for (const tank of getAllTanks()) {
+    if (!isTankReachableBySubmarine(submarine, tank)) continue;
+    for (const fish of tank.fish || []) {
+      if (!fish || isFishDead(fish)) continue;
+      const maxHealth = getFishMaxHealthUnits(fish);
+      const health = Math.max(0, Number(fish.healthUnits) || 0);
+      if (inventory.health > 0 && health < maxHealth) {
+        const score = 400 + (1 - health / Math.max(1, maxHealth)) * 120;
+        if (!best || score > best.score) best = { kind: "health", fishId: fish.id, targetTankId: tank.id, score };
+      }
+      const hunger = getSubmarineFishHunger(tank, fish, now);
+      if (inventory.food > 0 && hunger <= SUBMARINE_HUNGER_THRESHOLD) {
+        const score = 300 + (SUBMARINE_HUNGER_THRESHOLD - hunger);
+        if (!best || score > best.score) best = { kind: "food", fishId: fish.id, targetTankId: tank.id, score };
+      }
+      if (inventory.calming > 0 && !hasSubmarineMedicineEffect(tank, "betaBlocker", now)) {
+        const comfort = getSubmarineFishComfort(tank, fish, now);
+        if (comfort <= SUBMARINE_COMFORT_THRESHOLD) {
+          const score = 200 + (SUBMARINE_COMFORT_THRESHOLD - comfort) * 100;
+          if (!best || score > best.score) best = { kind: "calming", fishId: fish.id, targetTankId: tank.id, score };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+function startSubmarineMission(submarine, candidate, now = Date.now()) {
+  if (!submarine || !candidate) return false;
+  submarine.mission = {
+    kind: candidate.kind,
+    fishId: candidate.fishId,
+    targetTankId: candidate.targetTankId,
+    startedAt: now,
+    nextDeployAt: now,
+    pelletId: ""
+  };
+  submarine.idleUntil = 0;
+  submarine.nextScanAt = now + SUBMARINE_SCAN_INTERVAL_MS;
+  renderSubmarineManager();
+  requestDeferredStateSave();
+  return true;
+}
+
+function clearSubmarineMission(submarine, now = Date.now()) {
+  if (!submarine?.mission) return false;
+  submarine.mission = null;
+  submarine.nextScanAt = now + 900;
+  submarine.idleUntil = now + randomBetween(1200, 2600);
+  renderSubmarineManager();
+  requestDeferredStateSave();
+  return true;
+}
+
+function getSubmarineMissionTarget(submarine) {
+  const mission = submarine?.mission;
+  if (!mission) return null;
+  const tank = getTankContainingFish(mission.fishId);
+  const fish = tank?.fish?.find((entry) => entry.id === mission.fishId) || null;
+  if (!tank || !fish || isFishDead(fish)) return null;
+  mission.targetTankId = tank.id;
+  return { mission, tank, fish };
+}
+
+function isSubmarineMissionResolved(submarine, target, now = Date.now()) {
+  if (!submarine?.mission || !target) return true;
+  if (submarine.mission.kind === "health") {
+    return Number(target.fish.healthUnits) >= getFishMaxHealthUnits(target.fish);
+  }
+  if (submarine.mission.kind === "calming") {
+    return hasSubmarineMedicineEffect(target.tank, "betaBlocker", now)
+      || getSubmarineFishComfort(target.tank, target.fish, now) > SUBMARINE_COMFORT_THRESHOLD;
+  }
+  return getSubmarineFishHunger(target.tank, target.fish, now) > SUBMARINE_HUNGER_THRESHOLD;
+}
+
+function deploySubmarineFood(submarine, target, now = Date.now()) {
+  if (!submarine || !target || normalizeSubmarineResourceCount(submarine.inventory?.food) <= 0) return false;
+  let pellet = null;
+  withActiveTank(target.tank.id, () => {
+    const preferredFoodKey = canFoodSatisfyFishMeal(target.fish, "basic") ? "basic" : "chum";
+    pellet = createDroppedFoodPellet(preferredFoodKey, submarine.xNorm, submarine.yNorm, now);
+    if (!pellet) return;
+    state.floatingPellets.push(pellet);
+    assignPelletToFish(target.fish, pellet, now);
+  });
+  if (!pellet) return false;
+  submarine.inventory.food = normalizeSubmarineResourceCount(submarine.inventory.food - 1);
+  submarine.mission.pelletId = pellet.id;
+  submarine.mission.nextDeployAt = now + SUBMARINE_FOOD_RETRY_MS;
+  pushEvent(`Automated Care Submarine deployed food for ${target.fish.name}.`, now, target.tank, {
+    type: "feeding",
+    fishId: target.fish.id,
+    detail: "Automated submarine feeding"
+  });
+  renderSubmarineManager();
+  requestDeferredStateSave();
+  return true;
+}
+
+function deploySubmarineMedicine(submarine, target, medicineKey, resourceType, now = Date.now()) {
+  if (!submarine || !target || normalizeSubmarineResourceCount(submarine.inventory?.[resourceType]) <= 0) return false;
+  const medicine = getMedicineMeta(medicineKey);
+  if (!medicine) return false;
+  withActiveTank(target.tank.id, () => {
+    state.medicineClouds.push({
+      id: createId("med-cloud"),
+      color: medicine.color,
+      xNorm: clamp(submarine.xNorm, 0.08, 0.92),
+      yNorm: clamp(submarine.yNorm, 0.12, 0.78),
+      startedAt: now,
+      endsAt: now + MEDICINE_CLOUD_DURATION_MS
+    });
+    state.medicineWaterTint = {
+      color: medicine.color,
+      startedAt: now,
+      endsAt: now + MEDICINE_VISUAL_DURATION_MS
+    };
+    state.medicineEffects.push({
+      id: createId("med-effect"),
+      type: medicine.id,
+      startedAt: now,
+      endsAt: medicine.id === "betaBlocker" ? getNextDayStartTimestamp(now) : now + MEDICINE_HEAL_DURATION_MS,
+      nextTickAt: now + MEDICINE_HEAL_INTERVAL_MS,
+      resolvedAt: null
+    });
+  });
+  submarine.inventory[resourceType] = normalizeSubmarineResourceCount(submarine.inventory[resourceType] - 1);
+  submarine.mission.nextDeployAt = now + SUBMARINE_MEDICINE_RETRY_MS;
+  pushEvent(`Automated Care Submarine deployed ${medicine.name} for ${target.fish.name}.`, now, target.tank, {
+    type: "care",
+    fishId: target.fish.id,
+    detail: "Automated submarine medicine"
+  });
+  if (getCurrentTank()?.id === target.tank.id) playDropSoundEffect();
+  renderSubmarineManager();
+  requestDeferredStateSave();
+  return true;
+}
+
+function serviceSubmarineMission(submarine, target, now = Date.now()) {
+  if (!submarine?.mission || !target) return false;
+  const mission = submarine.mission;
+  if (mission.kind === "food") {
+    const existingPellet = mission.pelletId
+      ? target.tank.floatingPellets?.find((pellet) => pellet.id === mission.pelletId)
+      : null;
+    if (existingPellet) return true;
+    mission.pelletId = "";
+    if (now >= (Number(mission.nextDeployAt) || 0)) deploySubmarineFood(submarine, target, now);
+    return true;
+  }
+  if (mission.kind === "health") {
+    if (!hasSubmarineMedicineEffect(target.tank, "firstAid", now) && now >= (Number(mission.nextDeployAt) || 0)) {
+      deploySubmarineMedicine(submarine, target, "firstAid", "health", now);
+    }
+    return true;
+  }
+  if (!hasSubmarineMedicineEffect(target.tank, "betaBlocker", now) && now >= (Number(mission.nextDeployAt) || 0)) {
+    deploySubmarineMedicine(submarine, target, "betaBlocker", "calming", now);
+  }
+  return true;
+}
+
+function updateSubmarineMission(submarine, now = Date.now()) {
+  if (!submarine) return false;
+  if (!submarine.mission) {
+    if (now >= (Number(submarine.nextScanAt) || 0)) {
+      submarine.nextScanAt = now + SUBMARINE_SCAN_INTERVAL_MS;
+      const candidate = findSubmarineCareCandidate(submarine, now);
+      if (candidate) return startSubmarineMission(submarine, candidate, now);
+    }
+    return false;
+  }
+  const target = getSubmarineMissionTarget(submarine);
+  if (!target || isSubmarineMissionResolved(submarine, target, now)) {
+    return clearSubmarineMission(submarine, now);
+  }
+  if (runtime.pendingMachineryTravel.has(submarine.id)) return true;
+  const currentTank = getSubmarineTank(submarine);
+  if (!currentTank || currentTank.id !== target.tank.id) {
+    return beginSubmarineTravelLeg(submarine, target.tank, now);
+  }
+
+  // Once it reaches the correct tank, care is tank-level. The submarine should
+  // not tail or crowd an individual fish. Food is dropped from wherever the
+  // submarine currently is and the hungry fish comes to it; medicine already
+  // applies to the tank as a whole.
+  serviceSubmarineMission(submarine, target, now);
+  return true;
+}
+
+function updateSubmarineIdleCruise(submarine, now = Date.now()) {
+  if (!submarine || submarine.mission || runtime.pendingMachineryTravel.has(submarine.id)) return;
+  if (Number(submarine.idleUntil) > now) return;
+  const distance = getSubmarineDistanceToPointPx(submarine, submarine.targetXNorm, submarine.targetYNorm);
+  if (distance <= 14 || now >= (Number(submarine.targetAt) || 0)) {
+    if (Math.random() < 0.48) {
+      submarine.idleUntil = now + randomBetween(SUBMARINE_IDLE_MIN_MS, SUBMARINE_IDLE_MAX_MS);
+      submarine.targetAt = submarine.idleUntil;
+      return;
+    }
+    submarine.targetXNorm = randomBetween(0.14, 0.86);
+    submarine.targetYNorm = randomBetween(0.24, 0.7);
+    submarine.targetAt = now + randomBetween(7000, 15000);
+  }
+}
+
+function moveSubmarineTowardTarget(submarine, deltaSeconds, now = Date.now()) {
+  if (!submarine || (Number(submarine.idleUntil) > now && !submarine.mission && !runtime.pendingMachineryTravel.has(submarine.id))) return;
+  const targetX = Number(submarine.targetXNorm);
+  const targetY = Number(submarine.targetYNorm);
+  if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return;
+  const dxPx = (targetX - submarine.xNorm) * TANK_WIDTH;
+  const dyPx = (targetY - submarine.yNorm) * TANK_HEIGHT;
+  const distancePx = Math.hypot(dxPx, dyPx);
+  if (distancePx <= 0.5) return;
+  if (Math.abs(dxPx) > 2) submarine.direction = dxPx < 0 ? -1 : 1;
+  const pending = runtime.pendingMachineryTravel.has(submarine.id);
+  const speed = pending
+    ? SUBMARINE_TRAVEL_SPEED_PX_PER_SECOND
+    : SUBMARINE_CRUISE_SPEED_PX_PER_SECOND;
+  const stepPx = Math.min(distancePx, Math.max(0, Number(deltaSeconds) || 0) * speed);
+  submarine.xNorm += (dxPx / distancePx) * stepPx / TANK_WIDTH;
+  submarine.yNorm += (dyPx / distancePx) * stepPx / TANK_HEIGHT;
+}
+
+function updateMachineryMotion(now = Date.now(), deltaSeconds = 0.016) {
+  const submarine = getSubmarine();
+  if (!submarine) return;
+  submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
+  if (!getTankById(submarine.tankId)) submarine.tankId = getAllTanks()[0]?.id || "";
+  if (!isSubmarineAutopilotEnabled(submarine)) {
+    if (isSubmarineManualDriveActive(submarine)) updateSubmarineManualDrive(submarine, deltaSeconds);
+    return;
+  }
+  runtime.submarineManualDriveId = "";
+  clearSubmarineManualDriveKeys();
+  processSubmarineTravel(submarine, now);
+  updateSubmarineMission(submarine, now);
+  updateSubmarineIdleCruise(submarine, now);
+  moveSubmarineTowardTarget(submarine, deltaSeconds, now);
+}
+// </bundle-source>
+
 // <bundle-source path="fish/feeding-and-medicine.js">
 // Source fragment: fish/feeding-and-medicine.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function canFishEatFoodPellet(fish, foodKey = "basic", now = Date.now()) {
-  if (
-    !fish
-    || isFishDead(fish)
-    || (Number(fish.foodRefusalUntil) || 0) > now
-  ) {
+  if (!fish || isFishDead(fish)) {
     return false;
   }
-  if ((Number(fish.satiatedUntil) || 0) > now && getFishNeedValue(fish, "hunger", now) > FISH_HUNGER_LOW_THRESHOLD) {
+
+  const hunger = getFishNeedValue(fish, "hunger", now);
+  const criticallyHungry = hunger <= FISH_HUNGER_CRITICAL_THRESHOLD;
+  const visiblyHungry = hunger <= FISH_HUNGER_LOW_THRESHOLD;
+
+  // Hunger is the source of truth. Temporary refusal/satiety timers should never
+  // leave a visibly starving fish parked beside compatible food.
+  if ((Number(fish.foodRefusalUntil) || 0) > now && !criticallyHungry) {
     return false;
   }
-  if (getFishNeedValue(fish, "hunger", now) >= 92) {
+  if ((Number(fish.satiatedUntil) || 0) > now && !visiblyHungry) {
+    return false;
+  }
+  if (hunger >= FISH_WILLING_TO_EAT_HUNGER_MAX) {
     return false;
   }
 
@@ -30958,6 +33262,26 @@ function scheduleFishPoop(fish, now = Date.now(), tank = getCurrentTank()) {
 function assignPelletToFish(fish, pellet, now = Date.now()) {
   if (!fish || !pellet) {
     return false;
+  }
+
+  // Food pursuit outranks autonomous passive actions. Rest, sleep, hide, and
+  // similar autonomous work must not steal movement back from a hungry fish.
+  // Explicit user-queued actions are preserved.
+  const actionQueue = getFishActionQueueState(fish.id);
+  if (actionQueue) {
+    const activeAction = actionQueue.active;
+    if (
+      activeAction
+      && activeAction.autonomous === true
+      && activeAction.action !== "eat"
+      && activeAction.interruptible !== false
+    ) {
+      finishFishActionQueueItem(fish, activeAction, now, { cancelled: true });
+      actionQueue.active = null;
+      actionQueue.restUntil = 0;
+    }
+    actionQueue.items = actionQueue.items.filter((item) => item?.autonomous !== true || item.action === "eat");
+    trimFishActionQueue(fish.id);
   }
 
   pellet.targetFishId = fish.id;
@@ -31340,9 +33664,12 @@ function applyFishMealWindowFoodIntake(fish, now = Date.now(), options = {}) {
   }
 
   const canOverfeed = options.allowOverfeed !== false && canFishOverfeed(fish);
-  const previousExtraCount = canOverfeed ? Math.max(0, previousCount - 1) : 0;
-  const nextExtraCount = canOverfeed ? Math.max(0, nextCount - 1) : 0;
-  const damageUnits = Math.max(0, nextExtraCount - previousExtraCount);
+  const countBasedOverfeed = options.countBasedOverfeed === true;
+  const repeatedWhileFull = options.wasAlreadyFull === true && previousCount >= 2;
+  const previousExtraCount = countBasedOverfeed && canOverfeed ? Math.max(0, previousCount - 1) : 0;
+  const nextExtraCount = countBasedOverfeed && canOverfeed ? Math.max(0, nextCount - 1) : 0;
+  const countBasedDamage = Math.max(0, nextExtraCount - previousExtraCount);
+  const damageUnits = canOverfeed ? Math.max(countBasedDamage, repeatedWhileFull ? 1 : 0) : 0;
   if (damageUnits > 0) {
     fish.healthUnits = Math.max(0, Number(fish.healthUnits) - damageUnits);
   }
@@ -31378,14 +33705,18 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
 
   const mealCoins = recordFishMealCredit(fish, now, targetTank);
   const previousHunger = getFishNeedValue(fish, "hunger", now);
-  adjustFishNeed(fish, "hunger", foodKey === "chum" ? 48 : 42, now);
-  adjustFishNeed(fish, "energy", 4, now);
+  const mealHungerGain = foodKey === "chum" ? FISH_CHUM_MEAL_HUNGER_GAIN : FISH_BASIC_MEAL_HUNGER_GAIN;
+  const mealHungerFloor = foodKey === "chum" ? FISH_CHUM_MEAL_HUNGER_FLOOR : FISH_BASIC_MEAL_HUNGER_FLOOR;
+  setFishNeedValue(fish, "hunger", Math.max(previousHunger + mealHungerGain, mealHungerFloor), now);
+  adjustFishNeed(fish, "energy", 3, now);
   adjustFishNeed(fish, "comfort", previousHunger <= FISH_HUNGER_LOW_THRESHOLD ? 5 : 1, now);
   adjustFishNeed(fish, "stimulation", 2, now);
   fish.needsUpdatedAt = now;
   scheduleFishPoop(fish, now, targetTank);
   applyFoodBuff(foodKey, now, targetTank);
-  const intake = applyFishMealWindowFoodIntake(fish, now);
+  const intake = applyFishMealWindowFoodIntake(fish, now, {
+    wasAlreadyFull: previousHunger >= FISH_OVERFEED_HUNGER_THRESHOLD
+  });
   const announce = options.announce !== false;
   const died = intake.damageUnits > 0 && fish.healthUnits <= 0;
 
@@ -32541,22 +34872,32 @@ function triggerDebugBabySequence() {
 // Source fragment: fish/actions.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+
+function markFishActionStateDirty(now = Date.now()) {
+  requestDeferredStateSave();
+  if (!runtime.debugFishActionIndicatorsEnabled) {
+    return;
+  }
+  renderFishActionFlyout(now);
+  renderFishActionQueueDock(now);
+}
+
 function getFishActionConfig(action) {
   return {
-    eat: { actionId: "eat", label: "Eat", displayName: "Eat", category: "Needs", targetType: "food", title: "Send this fish to food", durationMs: FISH_ACTION_EAT_DURATION_MS, energyCost: 2, hungerCost: 0, effects: { comfort: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 80 },
-    waitfood: { actionId: "waitfood", label: "Wait for Food", displayName: "Wait for Food", category: "Needs", targetType: "dispenser", title: "Wait near a food service", durationMs: FISH_ACTION_WAIT_FOOD_DURATION_MS, energyCost: 1, hungerCost: 1, effects: { comfort: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 72 },
-    rest: { actionId: "rest", label: "Rest", displayName: "Rest", category: "Needs", targetType: "self", title: "Hover quietly and recover energy", durationMs: FISH_ACTION_REST_DURATION_MS, energyCost: 0, hungerCost: 1, effects: { energy: 20, comfort: 4 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 70 },
-    sleep: { actionId: "sleep", label: "Sleep", displayName: "Sleep", category: "Needs", targetType: "decor", title: "Settle into a sleep spot", durationMs: FISH_ACTION_SLEEP_DURATION_MS, energyCost: 0, hungerCost: 2, effects: { energy: 36, comfort: 8, stimulation: -2 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 76 },
-    zoomies: { actionId: "zoomies", label: "Zoomies", displayName: "Zoomies", category: "Behavior", targetType: "position", title: "Do a quick burst around the tank", durationMs: FISH_ACTION_ZOOMIES_DURATION_MS, energyCost: 18, hungerCost: 5, effects: { stimulation: 18, social: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 35 },
-    greet: { actionId: "greet", label: "Greet", displayName: "Greet", category: "Social", targetType: "fish", title: "Greet another fish", durationMs: FISH_ACTION_GREET_DURATION_MS, energyCost: 3, hungerCost: 1, effects: { social: 12, comfort: 2, stimulation: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 52 },
-    hangout: { actionId: "hangout", label: "Hang Out", displayName: "Hang Out", category: "Social", targetType: "fish", title: "Swim with another fish", durationMs: FISH_ACTION_FOLLOW_DURATION_MS, energyCost: 5, hungerCost: 3, effects: { social: 20, comfort: 4, stimulation: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 50 },
-    play: { actionId: "play", label: "Play", displayName: "Play", category: "Explore", targetType: "decor", title: "Play around the tank", durationMs: FISH_ACTION_PLAY_DURATION_MS, energyCost: 10, hungerCost: 3, effects: { stimulation: 22, social: 3 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 42 },
-    pebble: { actionId: "pebble", label: "Find Pebble", displayName: "Find Pebble", category: "Explore", targetType: "gravel", title: "Pick up and toss a gravel pebble", durationMs: FISH_ACTION_PEBBLE_DURATION_MS, energyCost: 5, hungerCost: 1, effects: { environment: 12, stimulation: 8 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 36 },
-    dig: { actionId: "dig", label: "Dig", displayName: "Dig", category: "Explore", targetType: "gravel", title: "Dig around in the gravel", durationMs: FISH_ACTION_DIG_DURATION_MS, energyCost: 6, hungerCost: 1, effects: { environment: 14, stimulation: 5 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 37 },
-    avoid: { actionId: "avoid", label: "Avoid", displayName: "Avoid", category: "Social", targetType: "fish", title: "Move away from a stressful fish", durationMs: FISH_ACTION_AVOID_DURATION_MS, energyCost: 3, hungerCost: 1, effects: { comfort: 10 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 74 },
-    breed: { actionId: "breed", label: "Mate", displayName: "Mate", category: "Social", targetType: "fish", title: "Try to mate with a ready same-species fish", durationMs: FISH_ACTION_MATE_DURATION_MS, energyCost: 14, hungerCost: 6, effects: { social: 6, stimulation: 6 }, queueable: true, canFail: true, interruptible: false, autonomousAllowed: false, priority: 45 },
-    hide: { actionId: "hide", label: "Hide", displayName: "Hide", category: "Comfort", targetType: "decor", title: "Hide near cover", durationMs: FISH_ACTION_HIDE_DURATION_MS, energyCost: 1, hungerCost: 1, effects: { comfort: 16, energy: 6 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 78 },
-    inspect: { actionId: "inspect", label: "Inspect", displayName: "Inspect", category: "Decor", targetType: "decor", title: "Inspect an interesting tank object", durationMs: FISH_ACTION_INSPECT_DURATION_MS, energyCost: 4, hungerCost: 2, effects: { stimulation: 16, environment: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 38 },
+    eat: { actionId: "eat", label: "Eat", displayName: "Eat", category: "Needs", targetType: "food", title: "Send this fish to food", durationMs: FISH_ACTION_EAT_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { comfort: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 80 },
+    waitfood: { actionId: "waitfood", label: "Wait for Food", displayName: "Wait for Food", category: "Needs", targetType: "dispenser", title: "Wait near a food service", durationMs: FISH_ACTION_WAIT_FOOD_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { comfort: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 72 },
+    rest: { actionId: "rest", label: "Rest", displayName: "Rest", category: "Needs", targetType: "self", title: "Hover quietly and recover energy", durationMs: FISH_ACTION_REST_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { energy: 6, comfort: 4 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 70 },
+    sleep: { actionId: "sleep", label: "Sleep", displayName: "Sleep", category: "Needs", targetType: "decor", title: "Settle into a sleep spot", durationMs: FISH_ACTION_SLEEP_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { energy: 8, comfort: 8, stimulation: -2 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 76 },
+    zoomies: { actionId: "zoomies", label: "Zoomies", displayName: "Zoomies", category: "Behavior", targetType: "position", title: "Do a quick burst around the tank", durationMs: FISH_ACTION_ZOOMIES_DURATION_MS, energyCost: 5, hungerCost: 1, effects: { stimulation: 18, social: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 35 },
+    greet: { actionId: "greet", label: "Greet", displayName: "Greet", category: "Social", targetType: "fish", title: "Greet another fish", durationMs: FISH_ACTION_GREET_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { social: 12, comfort: 2, stimulation: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 52 },
+    hangout: { actionId: "hangout", label: "Hang Out", displayName: "Hang Out", category: "Social", targetType: "fish", title: "Swim with another fish", durationMs: FISH_ACTION_FOLLOW_DURATION_MS, energyCost: 2, hungerCost: 1, effects: { social: 20, comfort: 4, stimulation: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 50 },
+    play: { actionId: "play", label: "Play", displayName: "Play", category: "Explore", targetType: "decor", title: "Play around the tank", durationMs: FISH_ACTION_PLAY_DURATION_MS, energyCost: 3, hungerCost: 1, effects: { stimulation: 22, social: 3 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 42 },
+    pebble: { actionId: "pebble", label: "Find Pebble", displayName: "Find Pebble", category: "Explore", targetType: "gravel", title: "Pick up and toss a gravel pebble", durationMs: FISH_ACTION_PEBBLE_DURATION_MS, energyCost: 2, hungerCost: 0, effects: { environment: 12, stimulation: 8 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 36 },
+    dig: { actionId: "dig", label: "Dig", displayName: "Dig", category: "Explore", targetType: "gravel", title: "Dig around in the gravel", durationMs: FISH_ACTION_DIG_DURATION_MS, energyCost: 2, hungerCost: 0, effects: { environment: 14, stimulation: 5 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 37 },
+    avoid: { actionId: "avoid", label: "Avoid", displayName: "Avoid", category: "Social", targetType: "fish", title: "Move away from a stressful fish", durationMs: FISH_ACTION_AVOID_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { comfort: 10 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 74 },
+    breed: { actionId: "breed", label: "Mate", displayName: "Mate", category: "Social", targetType: "fish", title: "Try to mate with a ready same-species fish", durationMs: FISH_ACTION_MATE_DURATION_MS, energyCost: 5, hungerCost: 2, effects: { social: 6, stimulation: 6 }, queueable: true, canFail: true, interruptible: false, autonomousAllowed: false, priority: 45 },
+    hide: { actionId: "hide", label: "Hide", displayName: "Hide", category: "Comfort", targetType: "decor", title: "Hide near cover", durationMs: FISH_ACTION_HIDE_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { comfort: 16, energy: 6 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 78 },
+    inspect: { actionId: "inspect", label: "Inspect", displayName: "Inspect", category: "Decor", targetType: "decor", title: "Inspect an interesting tank object", durationMs: FISH_ACTION_INSPECT_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { stimulation: 16, environment: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 38 },
     clear: { actionId: "clear", label: "Clear", displayName: "Clear", category: "Special", targetType: "self", title: "Cancel queued actions and return to autonomy", durationMs: 0, queueable: false, canFail: false, interruptible: false, autonomousAllowed: false, priority: 0 }
   }[action] || null;
 }
@@ -32750,8 +35091,8 @@ function getActiveFishBreedingSequenceFish() {
     return null;
   }
 
-  const leftFish = state.fish.find((fish) => fish.id === sequence.leftFishId) || null;
-  const rightFish = state.fish.find((fish) => fish.id === sequence.rightFishId) || null;
+  const leftFish = getFishByIdFast(sequence.leftFishId);
+  const rightFish = getFishByIdFast(sequence.rightFishId);
   if (
     !leftFish
     || !rightFish
@@ -32815,8 +35156,7 @@ function updateFishBreedingSequence(now = Date.now()) {
     rightFish.targetAt = now;
     pushEvent(`An egg appeared after ${leftFish.name} and ${rightFish.name} paired up.`, now);
     clearFishBreedingSequence();
-    saveState();
-    renderUi(now);
+    markFishActionStateDirty(now);
     showToast(`${species?.name || "Fish"} egg settled into the gravel.`);
     return null;
   }
@@ -33136,8 +35476,8 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
   }
 
   if (steering.type === "follow") {
-    const targetFish = state.fish.find((entry) => entry?.id === steering.targetFishId && !isFishDead(entry));
-    if (!targetFish) {
+    const targetFish = getFishByIdFast(steering.targetFishId);
+    if (!targetFish || isFishDead(targetFish)) {
       clearFishActionSteering(fish);
       return false;
     }
@@ -33399,6 +35739,18 @@ function updateQueuedFishActionControl(fish, species, now = Date.now()) {
     return false;
   }
 
+  // Feeding outranks autonomous passive behavior. Once food has been assigned,
+  // an old Rest/Sleep/Hide/etc. action must not clear the pellet target or stop
+  // the fish on the next frame.
+  if (
+    fish.activity === "feeding"
+    && fish.feedingPelletId
+    && active.autonomous === true
+    && active.action !== "eat"
+  ) {
+    return false;
+  }
+
   if (active.cancelling) {
     fish.activity = "roam";
     fish.feedingPelletId = null;
@@ -33491,8 +35843,7 @@ function triggerFishActionEat(fish, species, now = Date.now()) {
   prepareFishForUserAction(fish, species, now, { keepFeeding: true });
   assignPelletToFish(fish, pellet, now);
   pushEvent(`${fish.name} was sent to eat.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is going for food.`);
   return true;
 }
@@ -33507,8 +35858,7 @@ function triggerFishActionRest(fish, species, now = Date.now()) {
     fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
   }
   setFishBehaviorIntent(fish, "rest", "quiet", now, { durationMs });
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is resting.`);
   return true;
 }
@@ -33532,8 +35882,7 @@ function triggerFishActionWaitFood(fish, species, now = Date.now()) {
   setFishActionSteering(fish, { type: "waitfood", xNorm, yNorm, durationMs: getFishActionConfig("waitfood")?.durationMs || FISH_ACTION_WAIT_FOOD_DURATION_MS }, now);
   updateFishActionSteering(fish, species, now);
   pushEvent(`${fish.name} is waiting by the food dispenser.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is waiting by the dispenser.`);
   return true;
 }
@@ -33561,8 +35910,7 @@ function triggerFishActionSleep(fish, species, now = Date.now()) {
     debugText: `sleep | ${cover.zoneType || "quiet spot"}`,
     slow: true
   }, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is settling down.`);
   return true;
 }
@@ -33572,8 +35920,7 @@ function triggerFishActionZoomies(fish, species, now = Date.now()) {
   setFishActionSteering(fish, { type: "zoomies", durationMs: FISH_ACTION_ZOOMIES_DURATION_MS }, now);
   updateFishActionSteering(fish, species, now);
   pushEvent(`${fish.name} got the zoomies.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} has the zoomies.`);
   return true;
 }
@@ -33594,8 +35941,7 @@ function triggerFishActionHangout(fish, species, now = Date.now(), item = null) 
   }, now);
   updateFishActionSteering(fish, species, now);
   pushEvent(`${fish.name} went to hang out with ${partner.name}.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is hanging out with ${partner.name}.`);
   return true;
 }
@@ -33646,8 +35992,7 @@ function triggerFishActionPebble(fish, species, now = Date.now(), item = null) {
   }
   setFishBehaviorIntent(fish, "pebble", "gravel", now, { durationMs: getFishActionConfig("pebble")?.durationMs || FISH_ACTION_PEBBLE_DURATION_MS });
   pushEvent(`${fish.name} went pebble picking.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is picking a pebble.`);
   return true;
 }
@@ -33660,8 +36005,7 @@ function triggerFishActionDig(fish, species, now = Date.now(), item = null) {
   }
   setFishBehaviorIntent(fish, "dig", "gravel", now, { durationMs });
   pushEvent(`${fish.name} went digging in the gravel.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is digging.`);
   return true;
 }
@@ -33679,8 +36023,7 @@ function triggerFishActionAvoid(fish, species, now = Date.now(), item = null) {
   fish.targetYNorm = awayY;
   fish.targetAt = now + (getFishActionConfig("avoid")?.durationMs || FISH_ACTION_AVOID_DURATION_MS);
   setFishBehaviorIntent(fish, "avoid", partner.name || "fish", now, { targetId: partner.id, targetName: partner.name || "", durationMs: getFishActionConfig("avoid")?.durationMs || FISH_ACTION_AVOID_DURATION_MS });
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is taking space.`);
   return true;
 }
@@ -33696,27 +36039,17 @@ function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
     return false;
   }
   const mateChance = getFishMateChanceForTarget(fish, partner);
-  const config = getFishActionConfig("breed");
-  const refundMateCost = () => {
-    adjustFishNeed(fish, "energy", Math.max(0, Number(config?.energyCost) || 0), now);
-    adjustFishNeed(fish, "hunger", Math.max(0, Number(config?.hungerCost) || 0), now);
-    fish.needsUpdatedAt = now;
-  };
   if (mateChance.rating < 5) {
-    refundMateCost();
     setFishBehaviorIntent(fish, "refuse mate", partner.name || "partner", now, { targetId: partner.id, targetName: partner.name || "", durationMs: 6000 });
     pushEvent(`${fish.name} tried to mate with ${partner.name}, but the relationship is only ${mateChance.rating}/10.`, now);
-    saveState();
-    renderUi(now);
+    markFishActionStateDirty(now);
     showToast(`${partner.name} is not feeling it. Relationship ${mateChance.rating}/10.`);
     return false;
   }
   if (Math.random() * 100 >= mateChance.chancePercent) {
-    refundMateCost();
     setFishBehaviorIntent(fish, "mate fizzled", partner.name || "partner", now, { targetId: partner.id, targetName: partner.name || "", durationMs: 6000 });
     pushEvent(`${fish.name} and ${partner.name} tried to mate, but it fizzled at ${mateChance.chancePercent}% odds.`, now);
-    saveState();
-    renderUi(now);
+    markFishActionStateDirty(now);
     showToast(`${fish.name} and ${partner.name} did not vibe this time.`);
     return false;
   }
@@ -33758,8 +36091,7 @@ function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
     setFishBehaviorIntent(parent, "mate", parent.id === fish.id ? (partner.name || "partner") : (fish.name || "partner"), now, { durationMs: FISH_ACTION_BREED_HOLD_MS + 30000 });
   }
   pushEvent(`${fish.name} and ${partner.name} are mating after a ${mateChance.rating}/10 relationship check.`, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} and ${partner.name} are mating.`);
   return true;
 }
@@ -33786,8 +36118,7 @@ function triggerFishActionHide(fish, species, now = Date.now()) {
     debugText: `hide | ${cover.zoneType || "cover"}`,
     slow: true
   }, now);
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is hiding.`);
   return true;
 }
@@ -33797,8 +36128,7 @@ function triggerFishActionInspect(fish, species, now = Date.now(), item = null) 
   if (!beginQueuedFishExploreCycle(fish, species, item, now)) {
     return false;
   }
-  saveState();
-  renderUi(now);
+  markFishActionStateDirty(now);
   showToast(`${fish.name} is exploring the tank.`);
   return true;
 }
@@ -33842,45 +36172,62 @@ function startFishActionQueueItem(fish, item, now = Date.now()) {
     showFishActionUnavailableToast(availability);
     return false;
   }
-  if (config) {
-    adjustFishNeed(fish, "energy", -Math.max(0, Number(config.energyCost) || 0), now);
-    adjustFishNeed(fish, "hunger", -Math.max(0, Number(config.hungerCost) || 0), now);
-    fish.needsUpdatedAt = now;
-  }
 
+  let started = false;
   switch (action) {
     case "eat":
-      return triggerFishActionEat(fish, species, now);
+      started = triggerFishActionEat(fish, species, now);
+      break;
     case "waitfood":
-      return triggerFishActionWaitFood(fish, species, now);
+      started = triggerFishActionWaitFood(fish, species, now);
+      break;
     case "rest":
-      return triggerFishActionRest(fish, species, now);
+      started = triggerFishActionRest(fish, species, now);
+      break;
     case "sleep":
-      return triggerFishActionSleep(fish, species, now);
+      started = triggerFishActionSleep(fish, species, now);
+      break;
     case "zoomies":
-      return triggerFishActionZoomies(fish, species, now);
+      started = triggerFishActionZoomies(fish, species, now);
+      break;
     case "hangout":
-      return triggerFishActionHangout(fish, species, now, item);
+      started = triggerFishActionHangout(fish, species, now, item);
+      break;
     case "greet":
-      return triggerFishActionGreet(fish, species, now, item);
+      started = triggerFishActionGreet(fish, species, now, item);
+      break;
     case "play":
-      return triggerFishActionPlay(fish, species, now, item);
+      started = triggerFishActionPlay(fish, species, now, item);
+      break;
     case "pebble":
-      return triggerFishActionPebble(fish, species, now, item);
+      started = triggerFishActionPebble(fish, species, now, item);
+      break;
     case "dig":
-      return triggerFishActionDig(fish, species, now, item);
+      started = triggerFishActionDig(fish, species, now, item);
+      break;
     case "avoid":
-      return triggerFishActionAvoid(fish, species, now, item);
+      started = triggerFishActionAvoid(fish, species, now, item);
+      break;
     case "breed":
-      return triggerFishActionBreed(fish, species, now, item);
+      started = triggerFishActionBreed(fish, species, now, item);
+      break;
     case "hide":
-      return triggerFishActionHide(fish, species, now);
+      started = triggerFishActionHide(fish, species, now);
+      break;
     case "inspect":
-      return triggerFishActionInspect(fish, species, now, item);
+      started = triggerFishActionInspect(fish, species, now, item);
+      break;
     default:
       showToast("Unknown fish action.");
       return false;
   }
+
+  if (started && config) {
+    adjustFishNeed(fish, "energy", -Math.max(0, Number(config.energyCost) || 0), now);
+    adjustFishNeed(fish, "hunger", -Math.max(0, Number(config.hungerCost) || 0), now);
+    fish.needsUpdatedAt = now;
+  }
+  return started;
 }
 
 function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
@@ -33914,6 +36261,10 @@ function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
     fish.targetAt = now;
   }
   fish.behaviorIntent = null;
+  requestDeferredStateSave();
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
   if (options.cancelled === true) {
     showToast(`${item.label || getFishActionConfig(item.action)?.label || "Action"} cancelled for ${fish.name}.`);
   }
@@ -33932,6 +36283,13 @@ function promoteNextFishActionQueueItem(fishId, now = Date.now()) {
   const fish = managed?.fish || null;
   if (!fish || managed.inStorage || isFishDead(fish)) {
     runtime.fishActionQueuesByFishId.delete(fishId);
+    return false;
+  }
+  if (Number.isFinite(fish.panicUntil) && now < fish.panicUntil) {
+    // Immediate reactions such as a glass tap temporarily outrank queued
+    // autonomous/user actions. Leave the item queued and start it once the
+    // panic window has finished instead of overwriting the escape target.
+    queue.restUntil = Math.max(Number(queue.restUntil) || 0, fish.panicUntil);
     return false;
   }
 
@@ -33956,19 +36314,41 @@ function promoteNextFishActionQueueItem(fishId, now = Date.now()) {
   }
 
   trimFishActionQueue(fishId);
-  renderUi(now, { full: false });
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
   return false;
 }
 
+function pruneFishActionQueueItemsInPlace(queue, now = Date.now()) {
+  const items = Array.isArray(queue?.items) ? queue.items : [];
+  let writeIndex = 0;
+  for (let readIndex = 0; readIndex < items.length; readIndex += 1) {
+    const item = items[readIndex];
+    if (item?.cancelling && now >= Number(item.cancelEndsAt || 0)) {
+      continue;
+    }
+    items[writeIndex] = item;
+    writeIndex += 1;
+  }
+  if (writeIndex < items.length) {
+    items.length = writeIndex;
+  }
+  if (queue) {
+    queue.items = items;
+  }
+  return items;
+}
+
 function processFishActionQueues(now = Date.now()) {
-  for (const [fishId, queue] of [...runtime.fishActionQueuesByFishId.entries()]) {
-    const fish = state.fish.find((entry) => entry?.id === fishId) || null;
+  for (const [fishId, queue] of runtime.fishActionQueuesByFishId) {
+    const fish = getFishByIdFast(fishId);
     if (!fish || isFishDead(fish)) {
       runtime.fishActionQueuesByFishId.delete(fishId);
       runtime.fishActionQueueCollapsedFishIds.delete(fishId);
       continue;
     }
-    queue.items = (queue.items || []).filter((item) => !item?.cancelling || now < Number(item.cancelEndsAt || 0));
+    pruneFishActionQueueItemsInPlace(queue, now);
     if (queue.active?.cancelling && now >= Number(queue.active.cancelEndsAt || 0)) {
       queue.active = null;
       queue.restUntil = 0;
@@ -34010,7 +36390,10 @@ function enqueueFishAction(action, fishId = runtime.fishActionMenuFishId || runt
   const availability = getFishActionAvailability(action, fish, now);
   if (!availability.enabled || config.queueable === false) {
     showFishActionUnavailableToast(availability);
-    renderUi(now, { full: false });
+    if (runtime.debugFishActionIndicatorsEnabled) {
+      renderFishActionFlyout(now);
+      renderFishActionQueueDock(now);
+    }
     return false;
   }
 
@@ -34033,7 +36416,10 @@ function enqueueFishAction(action, fishId = runtime.fishActionMenuFishId || runt
   const started = queue.active ? false : promoteNextFishActionQueueItem(fish.id, now);
   if (!started) {
     showToast(`${config.label} queued for ${fish.name}.`);
-    renderUi(now, { full: false });
+    if (runtime.debugFishActionIndicatorsEnabled) {
+      renderFishActionFlyout(now);
+      renderFishActionQueueDock(now);
+    }
   }
   closeFishActionMenu({ keepTarget: true });
   return true;
@@ -34074,7 +36460,7 @@ function cancelFishQueuedAction(fishId, itemId, now = Date.now()) {
   if (!queue || !itemId) {
     return false;
   }
-  const fish = state.fish.find((entry) => entry?.id === fishId) || null;
+  const fish = getFishByIdFast(fishId);
   if (queue.active?.id === itemId) {
     if (queue.active.cancelling) {
       return false;
@@ -34086,7 +36472,9 @@ function cancelFishQueuedAction(fishId, itemId, now = Date.now()) {
     queue.active.endsAt = queue.active.cancelEndsAt;
     queue.restUntil = 0;
     trimFishActionQueue(fishId);
-    renderUi(now, { full: false });
+    if (runtime.debugFishActionIndicatorsEnabled) {
+      renderFishActionQueueDock(now);
+    }
     return true;
   }
   const index = queue.items.findIndex((item) => item?.id === itemId);
@@ -34100,7 +36488,9 @@ function cancelFishQueuedAction(fishId, itemId, now = Date.now()) {
     item.cancelEndsAt = now + FISH_ACTION_QUEUE_REST_MS;
     showToast(`${item.label || "Action"} cancelled for ${fish?.name || "fish"}.`);
     trimFishActionQueue(fishId);
-    renderUi(now, { full: false });
+    if (runtime.debugFishActionIndicatorsEnabled) {
+      renderFishActionQueueDock(now);
+    }
     return true;
   }
   return false;
@@ -35120,6 +37510,8 @@ function startPlacingDecor(decorKey) {
 
   runtime.editTankMode = true;
   runtime.fishEditMode = false;
+  runtime.equipmentEditMode = false;
+  runtime.tankEditMode = false;
   runtime.selectedFishId = null;
   runtime.selectedDecorId = null;
   runtime.selectedDecorIds = [];
@@ -37194,7 +39586,7 @@ function finalizePiranhaConsumedFish(fishList, now = Date.now(), options = {}) {
   for (const piranha of getLivingPiranhaFish()) {
     piranha.lastAteAt = now;
     piranhaMealCoins += recordFishMealCredit(piranha, now);
-    const intake = applyFishMealWindowFoodIntake(piranha, now, { satiate: false });
+    const intake = applyFishMealWindowFoodIntake(piranha, now, { satiate: false, countBasedOverfeed: true });
     if (intake.damageUnits > 0) {
       overfedPiranhas.push({ fish: piranha, damageUnits: intake.damageUnits, slot: intake.slot });
       if (piranha.healthUnits <= 0) {
@@ -37419,9 +39811,7 @@ function getFilterMaxDirtyDurationMs(filterKey = state?.selectedFilterAsset, fis
     SUCKER_FISH_CLEAN_DURATION_BONUS_CAP,
     suckerFishCount * SUCKER_FISH_CLEAN_DURATION_BONUS
   );
-  const calculatedDuration = filterProfile.cleanDays * DAY_MS * (1 + suckerCleanDurationBonus)
-    / Math.max(1, getTankFishDirtinessMultiplier(activeFish));
-  return Math.min(7 * DAY_MS, calculatedDuration);
+  return filterProfile.cleanDays * DAY_MS * (1 + suckerCleanDurationBonus) / Math.max(1, getTankFishDirtinessMultiplier(activeFish));
 }
 
 function getFishCriticalHealthTickMs(fish, species = getSpeciesForFish(fish)) {
@@ -38718,10 +41108,15 @@ function getFishSchoolFollowAnchor(fish, leader) {
   }
 
   const leaderDirection = getFishFacingDirection(leader);
+  const species = getSpeciesForFish(fish);
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const spacingScale = clamp(locomotionProfile.schoolSpacingScale, 0.55, 1.7);
+  const spacingMinNorm = SAME_SPECIES_FOLLOW_SPACING_MIN_NORM * spacingScale;
+  const spacingMaxNorm = SAME_SPECIES_FOLLOW_SPACING_MAX_NORM * spacingScale;
   const spacingNorm = clamp(
-    (Math.max(80, getFishVisualSize(fish)) + Math.max(80, getFishVisualSize(leader))) / TANK_WIDTH * 0.2,
-    SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
-    SAME_SPECIES_FOLLOW_SPACING_MAX_NORM
+    (Math.max(80, getFishVisualSize(fish)) + Math.max(80, getFishVisualSize(leader))) / TANK_WIDTH * 0.2 * spacingScale,
+    spacingMinNorm,
+    spacingMaxNorm
   );
   const leadBlend = clamp(
     Math.hypot(
@@ -38736,13 +41131,15 @@ function getFishSchoolFollowAnchor(fish, leader) {
   const offsetXNorm = Number.isFinite(fish.followOffsetXNorm)
     ? Number(fish.followOffsetXNorm)
     : clamp(
-      -leaderDirection * spacingNorm + randomBetween(-0.012, 0.012),
-      -SAME_SPECIES_FOLLOW_SPACING_MAX_NORM,
-      SAME_SPECIES_FOLLOW_SPACING_MAX_NORM
+      -leaderDirection * spacingNorm + randomBetween(-0.012, 0.012) * spacingScale,
+      -spacingMaxNorm,
+      spacingMaxNorm
     );
+  const verticalJitter = SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM
+    * clamp(locomotionProfile.schoolVerticalJitterScale, 0.25, 1.8);
   const offsetYNorm = Number.isFinite(fish.followOffsetYNorm)
     ? Number(fish.followOffsetYNorm)
-    : randomBetween(-SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM, SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM);
+    : randomBetween(-verticalJitter, verticalJitter);
 
   return {
     xNorm: clamp(anchorXNorm + offsetXNorm, 0.08, 0.92),
@@ -38835,23 +41232,32 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     return null;
   }
 
+  const schoolingStrength = getFishSchoolingStrength(fish, species);
+  if (schoolingStrength <= 0.025) {
+    return null;
+  }
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const followRadiusNorm = SAME_SPECIES_FOLLOW_RADIUS_NORM * (0.76 + schoolingStrength * 0.48);
+
   const nearbySchoolmates = state.fish
     .filter((otherFish) => isFishEligibleSchoolLeader(otherFish, fish, species, now))
     .map((otherFish) => ({
       fish: otherFish,
       distanceNorm: Math.hypot(otherFish.xNorm - fish.xNorm, otherFish.yNorm - fish.yNorm)
     }))
-    .filter((entry) => entry.distanceNorm <= SAME_SPECIES_FOLLOW_RADIUS_NORM)
+    .filter((entry) => entry.distanceNorm <= followRadiusNorm)
     .sort((left, right) => left.distanceNorm - right.distanceNorm);
 
   if (!nearbySchoolmates.length) {
     return null;
   }
 
+  const baseFollowChance = SAME_SPECIES_FOLLOW_BASE_CHANCE
+    + Math.max(0, nearbySchoolmates.length - 1) * SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS;
   const followChance = clamp(
-    SAME_SPECIES_FOLLOW_BASE_CHANCE + Math.max(0, nearbySchoolmates.length - 1) * SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS,
+    baseFollowChance * (0.3 + schoolingStrength * 2.25),
     0,
-    SAME_SPECIES_FOLLOW_MAX_CHANCE
+    Math.max(0.035, 0.12 + schoolingStrength * 0.76)
   );
   if (Math.random() > followChance) {
     return null;
@@ -38867,7 +41273,11 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     return null;
   }
 
-  const followUntil = now + randomBetween(SAME_SPECIES_FOLLOW_MIN_MS, SAME_SPECIES_FOLLOW_MAX_MS);
+  const followDurationScale = clamp(locomotionProfile.schoolDurationScale, 0.55, 2.4);
+  const followUntil = now + randomBetween(
+    SAME_SPECIES_FOLLOW_MIN_MS * followDurationScale,
+    SAME_SPECIES_FOLLOW_MAX_MS * followDurationScale
+  );
   fish.followFishId = leader.id;
   fish.followUntil = followUntil;
   fish.followOffsetXNorm = null;
@@ -39786,6 +42196,7 @@ function updateTankAppearance(options = {}) {
     event: options.event,
     toast: options.toast,
     sound: options.sound,
+    save: options.save,
     render: options.render,
     full: options.full
   });
@@ -39830,7 +42241,7 @@ function pasteTankAppearanceScheme(kind) {
   });
 }
 
-function setCustomGravelLayerColor(layerIndex, color) {
+function setCustomGravelLayerColor(layerIndex, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor || !Number.isFinite(layerIndex)) {
     return;
@@ -39843,7 +42254,12 @@ function setCustomGravelLayerColor(layerIndex, color) {
   }
 
   nextColors[nextIndex] = normalizedColor;
-  return updateTankAppearance({ changes: { customGravelLayerColors: nextColors } });
+  return updateTankAppearance({
+    changes: { customGravelLayerColors: nextColors },
+    save: options.save,
+    render: options.render,
+    full: options.full
+  });
 }
 
 function setCustomGravelLayerColorize(layerIndex, colorize) {
@@ -39867,7 +42283,7 @@ function setCustomGravelLayerColorize(layerIndex, colorize) {
   });
 }
 
-function setSolidBackgroundColor(color) {
+function setSolidBackgroundColor(color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) {
     return;
@@ -39877,10 +42293,15 @@ function setSolidBackgroundColor(color) {
     return;
   }
 
-  return updateTankAppearance({ changes: { solidBackgroundColor: normalizedColor } });
+  return updateTankAppearance({
+    changes: { solidBackgroundColor: normalizedColor },
+    save: options.save,
+    render: options.render,
+    full: options.full
+  });
 }
 
-function setGradientBackgroundColor(role, color) {
+function setGradientBackgroundColor(role, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) {
     return;
@@ -39891,10 +42312,15 @@ function setGradientBackgroundColor(role, color) {
     return;
   }
 
-  return updateTankAppearance({ changes: { [key]: normalizedColor } });
+  return updateTankAppearance({
+    changes: { [key]: normalizedColor },
+    save: options.save,
+    render: options.render,
+    full: options.full
+  });
 }
 
-function setAnimatedBackgroundColor(role, color) {
+function setAnimatedBackgroundColor(role, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) {
     return;
@@ -39925,7 +42351,12 @@ function setAnimatedBackgroundColor(role, color) {
     return;
   }
 
-  return updateTankAppearance({ changes: { [key]: normalizedColor } });
+  return updateTankAppearance({
+    changes: { [key]: normalizedColor },
+    save: options.save,
+    render: options.render,
+    full: options.full
+  });
 }
 
 function resetAnimatedBackgroundColors() {
@@ -40205,6 +42636,201 @@ function toggleLightsOutOverride() {
 // <bundle-source path="debug/tools.js">
 // Source fragment: debug/tools.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
+
+function setDebugNotificationUiEnabled(enabled) {
+  runtime.debugNotificationUiEnabled = Boolean(enabled);
+  syncNotificationBellPresentation();
+  renderControls(Date.now());
+  return runtime.debugNotificationUiEnabled;
+}
+
+function toggleDebugNotificationUi() {
+  const enabled = setDebugNotificationUiEnabled(!runtime.debugNotificationUiEnabled);
+  showToast(enabled ? "Notification UI enabled for debugging." : "Notification UI hidden.");
+  return enabled;
+}
+
+function setDebugFishActionIndicatorsEnabled(enabled) {
+  runtime.debugFishActionIndicatorsEnabled = Boolean(enabled);
+  renderFishActionFlyout(Date.now());
+  renderFishActionQueueDock(Date.now());
+  renderControls(Date.now());
+  return runtime.debugFishActionIndicatorsEnabled;
+}
+
+function toggleDebugFishActionIndicators() {
+  const enabled = setDebugFishActionIndicatorsEnabled(!runtime.debugFishActionIndicatorsEnabled);
+  showToast(enabled ? "Fish action indicators enabled for debugging." : "Fish action indicators hidden.");
+  return enabled;
+}
+
+function resetDebugFrameProfiler() {
+  runtime.frameProfilerCurrent = null;
+  runtime.frameProfilerSamples = [];
+  runtime.frameProfilerLongFrameCount = 0;
+  runtime.frameProfilerLastOverlayAt = 0;
+  runtime.frameProfilerLastSaveMs = 0;
+  runtime.frameProfilerLastUiRenderMs = 0;
+  runtime.frameProfilerLastTickMs = 0;
+  runtime.frameProfilerLastDeferredUiMs = 0;
+}
+
+function ensureDebugFrameProfilerOverlay() {
+  if (runtime.frameProfilerOverlay?.isConnected) {
+    return runtime.frameProfilerOverlay;
+  }
+  const overlay = document.createElement("pre");
+  overlay.id = "debugFrameProfilerOverlay";
+  overlay.setAttribute("aria-hidden", "true");
+  Object.assign(overlay.style, {
+    position: "fixed",
+    top: "10px",
+    right: "10px",
+    zIndex: "2147483000",
+    margin: "0",
+    padding: "10px 12px",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,.18)",
+    background: "rgba(5, 12, 18, .86)",
+    color: "rgba(238, 249, 255, .96)",
+    boxShadow: "0 8px 24px rgba(0,0,0,.32)",
+    font: "12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+    minWidth: "260px",
+    whiteSpace: "pre",
+    pointerEvents: "none"
+  });
+  document.body.appendChild(overlay);
+  runtime.frameProfilerOverlay = overlay;
+  return overlay;
+}
+
+function setDebugFrameProfilerEnabled(enabled) {
+  runtime.debugFrameProfilerEnabled = Boolean(enabled);
+  resetDebugFrameProfiler();
+  const overlay = ensureDebugFrameProfilerOverlay();
+  overlay.hidden = !runtime.debugFrameProfilerEnabled;
+  if (runtime.debugFrameProfilerEnabled) {
+    overlay.textContent = "FRAME PROFILER\ncollecting...";
+  }
+  renderControls(Date.now());
+  return runtime.debugFrameProfilerEnabled;
+}
+
+function toggleDebugFrameProfiler() {
+  return setDebugFrameProfilerEnabled(!runtime.debugFrameProfilerEnabled);
+}
+
+function beginDebugFrameProfile(frameTime, rafGapMs = 0) {
+  if (!runtime.debugFrameProfilerEnabled) {
+    runtime.frameProfilerCurrent = null;
+    return null;
+  }
+  const sample = {
+    frameTime: Number(frameTime) || 0,
+    rafGapMs: Math.max(0, Number(rafGapMs) || 0),
+    startedAt: performance.now(),
+    workMs: 0,
+    sections: Object.create(null),
+    counters: Object.create(null)
+  };
+  runtime.frameProfilerCurrent = sample;
+  return sample;
+}
+
+function recordDebugFrameProfilerDuration(name, durationMs) {
+  const sample = runtime.frameProfilerCurrent;
+  if (!sample || !name) {
+    return;
+  }
+  const duration = Math.max(0, Number(durationMs) || 0);
+  sample.sections[name] = (Number(sample.sections[name]) || 0) + duration;
+}
+
+function incrementDebugFrameProfilerCounter(name, amount = 1) {
+  const sample = runtime.frameProfilerCurrent;
+  if (!sample || !name) {
+    return;
+  }
+  sample.counters[name] = (Number(sample.counters[name]) || 0) + (Number(amount) || 0);
+}
+
+function endDebugFrameProfilerSection(name, startedAt) {
+  if (!runtime.frameProfilerCurrent || !Number.isFinite(Number(startedAt))) {
+    return;
+  }
+  recordDebugFrameProfilerDuration(name, performance.now() - Number(startedAt));
+}
+
+function getDebugFrameProfilerAverage(samples, accessor) {
+  if (!samples.length) {
+    return 0;
+  }
+  let total = 0;
+  for (const sample of samples) {
+    total += Number(accessor(sample)) || 0;
+  }
+  return total / samples.length;
+}
+
+function updateDebugFrameProfilerOverlay(force = false) {
+  if (!runtime.debugFrameProfilerEnabled) {
+    if (runtime.frameProfilerOverlay) {
+      runtime.frameProfilerOverlay.hidden = true;
+    }
+    return;
+  }
+  const now = performance.now();
+  if (!force && now - runtime.frameProfilerLastOverlayAt < 250) {
+    return;
+  }
+  runtime.frameProfilerLastOverlayAt = now;
+  const overlay = ensureDebugFrameProfilerOverlay();
+  overlay.hidden = false;
+  const samples = runtime.frameProfilerSamples.slice(-60);
+  if (!samples.length) {
+    overlay.textContent = "FRAME PROFILER\ncollecting...";
+    return;
+  }
+  const latest = samples[samples.length - 1];
+  const avgWork = getDebugFrameProfilerAverage(samples, (sample) => sample.workMs);
+  const avgGap = getDebugFrameProfilerAverage(samples, (sample) => sample.rafGapMs);
+  const fps = avgGap > 0.01 ? Math.min(999, 1000 / avgGap) : 0;
+  const maxWork = Math.max(...samples.map((sample) => Number(sample.workMs) || 0));
+  const sectionAverage = (name) => getDebugFrameProfilerAverage(samples, (sample) => sample.sections?.[name]);
+  const counterAverage = (name) => getDebugFrameProfilerAverage(samples, (sample) => sample.counters?.[name]);
+  const latestSections = Object.entries(latest.sections || {}).sort((left, right) => Number(right[1]) - Number(left[1]));
+  const hottest = latestSections[0] || ["none", 0];
+  overlay.textContent = [
+    "FRAME PROFILER",
+    `FPS ${fps.toFixed(1)} | RAF ${avgGap.toFixed(1)} ms`,
+    `work ${avgWork.toFixed(2)} ms avg | ${maxWork.toFixed(2)} max`,
+    `motion ${sectionAverage("fishMotion").toFixed(2)} | actions ${sectionAverage("fishActions").toFixed(2)}`,
+    `tank ${sectionAverage("tankRender").toFixed(2)} | fish ${sectionAverage("fishDraw").toFixed(2)} | prep ${sectionAverage("fishPrep").toFixed(2)}`,
+    `caves ${sectionAverage("caveCollision").toFixed(2)} | strict ${counterAverage("caveStrictChecks").toFixed(1)}/frame`,
+    `UI ${sectionAverage("uiRender").toFixed(2)} | save ${sectionAverage("saveState").toFixed(2)}`,
+    `last tick ${runtime.frameProfilerLastTickMs.toFixed(2)} | deferred UI ${runtime.frameProfilerLastDeferredUiMs.toFixed(2)}`,
+    `last save ${runtime.frameProfilerLastSaveMs.toFixed(2)} | last full UI ${runtime.frameProfilerLastUiRenderMs.toFixed(2)}`,
+    `long frames ${runtime.frameProfilerLongFrameCount}`,
+    `latest hot: ${hottest[0]} ${Number(hottest[1]).toFixed(2)} ms`
+  ].join("\n");
+}
+
+function finishDebugFrameProfile() {
+  const sample = runtime.frameProfilerCurrent;
+  if (!sample) {
+    return;
+  }
+  sample.workMs = Math.max(0, performance.now() - sample.startedAt);
+  if (sample.workMs >= 20 || sample.rafGapMs >= 25) {
+    runtime.frameProfilerLongFrameCount += 1;
+  }
+  runtime.frameProfilerSamples.push(sample);
+  if (runtime.frameProfilerSamples.length > 240) {
+    runtime.frameProfilerSamples.splice(0, runtime.frameProfilerSamples.length - 180);
+  }
+  runtime.frameProfilerCurrent = null;
+  updateDebugFrameProfilerOverlay();
+}
 
 function toggleCleaningMode(options = {}) {
   const nextMode = !runtime.cleaningMode;
@@ -42855,12 +45481,16 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
       continue;
     }
 
+    const locomotionProfile = getFishLocomotionProfile(fish || species);
+    const startleStrength = clamp(locomotionProfile.startleStrength, 0.55, 1.6);
+    const startleRecoveryScale = clamp(locomotionProfile.startleRecoveryScale, 0.7, 1.5);
+    const effectiveStartleRadius = GLASS_TAP_FISH_STARTLE_RADIUS_PX * clamp(0.82 + startleStrength * 0.18, 0.82, 1.12);
     const fishX = fish.xNorm * TANK_WIDTH;
     const fishY = fish.yNorm * TANK_HEIGHT;
     const dx = fishX - point.x;
     const dy = fishY - point.y;
     const distance = Math.hypot(dx, dy);
-    if (distance > GLASS_TAP_FISH_STARTLE_RADIUS_PX) {
+    if (distance > effectiveStartleRadius) {
       continue;
     }
 
@@ -42871,11 +45501,11 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
     const fallbackAngle = Math.random() * Math.PI * 2;
     const nx = distance > 0.001 ? dx / distance : Math.cos(fallbackAngle);
     const ny = distance > 0.001 ? dy / distance : Math.sin(fallbackAngle);
-    const proximity = 1 - clamp(distance / GLASS_TAP_FISH_STARTLE_RADIUS_PX, 0, 1);
+    const proximity = 1 - clamp(distance / effectiveStartleRadius, 0, 1);
     const escapeDistance = randomBetween(
       GLASS_TAP_FISH_ESCAPE_MIN_DISTANCE_PX,
       GLASS_TAP_FISH_ESCAPE_MAX_DISTANCE_PX
-    ) * (0.78 + proximity * 0.45);
+    ) * (0.78 + proximity * 0.45) * clamp(0.72 + startleStrength * 0.28, 0.82, 1.18);
     const targetLayer = species.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish);
     const target = clampFishPlacement(
       (fishX + nx * escapeDistance) / TANK_WIDTH,
@@ -42903,9 +45533,12 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
     fish.hangoutZoneType = null;
     fish.blockedDecorId = null;
     fish.blockedDecorUntil = null;
-    fish.wallAvoidUntil = now + randomBetween(420, 720);
-    fish.panicUntil = now + randomBetween(900, 1700) * (0.85 + proximity * 0.4);
-    fish.panicSpeedBoost = randomBetween(1.45, 2.2);
+    fish.wallAvoidUntil = now + randomBetween(420, 720) * startleRecoveryScale;
+    fish.panicUntil = now
+      + randomBetween(900, 1700)
+      * (0.85 + proximity * 0.4)
+      * startleRecoveryScale;
+    fish.panicSpeedBoost = randomBetween(1.45, 2.2) * clamp(0.78 + startleStrength * 0.22, 0.86, 1.14);
     fish.targetXNorm = target.xNorm;
     fish.targetYNorm = target.yNorm;
     fish.targetAt = fish.panicUntil;
@@ -42970,6 +45603,7 @@ function updateCleaningTransition(now) {
 // <bundle-source path="tank/events-recaps-and-save.js">
 // Source fragment: tank/events-recaps-and-save.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
+
 
 function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) {
   const targetTank = tank || getCurrentTank();
@@ -43128,9 +45762,47 @@ function getActiveDailyBonusSummary(tank = getCurrentTank()) {
   return summary && !isDailyBonusSummaryClaimed(summary, tank) ? summary : null;
 }
 
+function grantDailyRecapRewardAutomatically(summary, now = Date.now()) {
+  if (!state?.dailyBonus || !summary?.dayKey) {
+    return false;
+  }
+  const claimedKey = getDailyBonusClaimKey(summary);
+  if (claimedKey && state.dailyBonus.claimedByTankDay?.[claimedKey]) {
+    return false;
+  }
+
+  const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
+  if (reward > 0) {
+    state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
+  }
+  if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
+    state.dailyBonus.claimedByTankDay = {};
+  }
+  if (claimedKey) {
+    state.dailyBonus.claimedByTankDay[claimedKey] = true;
+  }
+  state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
+
+  const eventText = reward > 0
+    ? `Daily recap completed. +${reward} ${pluralize("coin", reward)} added automatically.`
+    : "Daily recap completed. No coin bonus today.";
+  pushEvent(eventText, now, getCurrentTank(), {
+    type: "daily_recap",
+    tone: reward > 0 ? "positive" : "neutral",
+    recapEligible: false
+  });
+  return true;
+}
+
 function syncActiveDailyBonusState() {
   if (!state?.dailyBonus) {
     return;
+  }
+  const pendingSummary = state.dailyBonus.summariesByTankId?.[BOROUGH_DAILY_RECAP_ID]
+    || state.dailyBonus.summary
+    || null;
+  if (pendingSummary && !isDailyBonusSummaryClaimed(pendingSummary)) {
+    grantDailyRecapRewardAutomatically(pendingSummary, Number(pendingSummary.generatedAt) || Date.now());
   }
   const summary = getActiveDailyBonusSummary();
   state.dailyBonus.summary = summary || null;
@@ -43346,15 +46018,6 @@ function storeDailyRecapSummary(summary) {
   state.dailyBonus.recapHistory.unshift(summary);
   state.dailyBonus.recapHistory = state.dailyBonus.recapHistory.slice(0, DAILY_RECAP_HISTORY_LIMIT);
   syncActiveDailyBonusState();
-  enqueueNotificationCenterEntry({
-    type: "daily_recap",
-    title: "Daily Recap ready",
-    detail: `Bubble Borough · ${summary.reward || 0} coin bonus`,
-    createdAt: summary.generatedAt || Date.now(),
-    signature: `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}`,
-    tankId: "",
-    recapDayKey: summary.dayKey
-  }, { surface: true });
   applyProgressMilestones(summary, summary.generatedAt || Date.now());
   return true;
 }
@@ -43697,7 +46360,68 @@ function triggerDebugDailyRecap(now = Date.now()) {
   return true;
 }
 
+function cancelDeferredStateSaveSchedule() {
+  if (runtime.deferredStateSaveTimerId) {
+    window.clearTimeout(runtime.deferredStateSaveTimerId);
+    runtime.deferredStateSaveTimerId = 0;
+  }
+  if (runtime.deferredStateSaveIdleId && typeof window.cancelIdleCallback === "function") {
+    window.cancelIdleCallback(runtime.deferredStateSaveIdleId);
+    runtime.deferredStateSaveIdleId = 0;
+  }
+}
+
+function flushDeferredStateSave() {
+  runtime.deferredStateSaveTimerId = 0;
+  runtime.deferredStateSaveIdleId = 0;
+  if (!runtime.deferredStateSaveDirty) {
+    return false;
+  }
+  saveState();
+  return true;
+}
+
+function requestDeferredStateSave() {
+  if (!runtimeInitialized || !state) {
+    return false;
+  }
+
+  runtime.deferredStateSaveDirty = true;
+  if (!runtime.deferredStateSaveRequestedAt) {
+    runtime.deferredStateSaveRequestedAt = Date.now();
+  }
+  if (runtime.deferredStateSaveTimerId || runtime.deferredStateSaveIdleId) {
+    return true;
+  }
+
+  const now = Date.now();
+  const sinceLastSave = runtime.lastStateSavedAt > 0
+    ? now - runtime.lastStateSavedAt
+    : 0;
+  const delayMs = Math.max(350, DEFERRED_STATE_SAVE_MIN_INTERVAL_MS - sinceLastSave);
+
+  runtime.deferredStateSaveTimerId = window.setTimeout(() => {
+    runtime.deferredStateSaveTimerId = 0;
+    if (!runtime.deferredStateSaveDirty) {
+      return;
+    }
+
+    if (typeof window.requestIdleCallback === "function") {
+      runtime.deferredStateSaveIdleId = window.requestIdleCallback(() => {
+        flushDeferredStateSave();
+      }, { timeout: 1250 });
+      return;
+    }
+
+    runtime.deferredStateSaveTimerId = window.setTimeout(() => {
+      flushDeferredStateSave();
+    }, 500);
+  }, delayMs);
+  return true;
+}
+
 function saveState() {
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   if (!state) {
     return;
@@ -43721,8 +46445,12 @@ function saveState() {
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
+    runtime.lastStateSavedAt = Date.now();
     runtime.gravelStateDirty = false;
     runtime.tankStateDirty = false;
+    runtime.deferredStateSaveDirty = false;
+    runtime.deferredStateSaveRequestedAt = 0;
+    cancelDeferredStateSaveSchedule();
     runtime.saveStateWarningShown = false;
     scheduleCustomImageStorageCleanup();
   } catch (error) {
@@ -43732,6 +46460,12 @@ function saveState() {
       showToast(isDesktopAppRuntime()
         ? "Could not write desktop save. Check that bubbleborough_data is writable."
         : "Save storage is full. Try smaller custom images or clearing old progress.");
+    }
+  } finally {
+    if (runtime.debugFrameProfilerEnabled) {
+      const durationMs = Math.max(0, performance.now() - profileStartedAt);
+      runtime.frameProfilerLastSaveMs = durationMs;
+      recordDebugFrameProfilerDuration("saveState", durationMs);
     }
   }
 }
@@ -45040,8 +47774,12 @@ function playScrubWipeSoundForMovement(fromPoint, toPoint) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderUi(now, options = {}) {
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   const full = options.full !== false;
+  if (full) {
+    cancelDeferredTickUiRefresh();
+  }
   syncHalloweenPresentation(now);
   syncTutorialFlow(now);
   reconcileTutorialTransientUi();
@@ -45066,15 +47804,19 @@ function renderUi(now, options = {}) {
   renderEditQuickRef();
   renderEditDecorTray();
   renderEditFishTray();
+  renderEditEquipmentTray();
   renderEditTankTray();
   renderFoodTray();
   renderMedicineTray();
   renderFishActionFlyout(now);
   renderFishActionSubmenu(now);
   renderFishActionTargetMenu(now);
-  renderFishActionQueueDock(now);
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
   renderSelectedFishNeedsPanel(now);
   renderFishInspector(now);
+  renderSubmarineManager();
   syncTankStageTouchScrollState();
   renderControls(now);
   renderTutorialGuidance();
@@ -45096,20 +47838,28 @@ function renderUi(now, options = {}) {
     renderCollapsibleSections();
   }
   positionTransientMessages();
+  if (runtime.debugFrameProfilerEnabled) {
+    const durationMs = Math.max(0, performance.now() - profileStartedAt);
+    runtime.frameProfilerLastUiRenderMs = durationMs;
+    recordDebugFrameProfilerDuration("uiRender", durationMs);
+  }
 }
 
 function shouldAllowTankStageTouchScroll() {
   const fishInspectorOpen = Boolean(runtime.selectedFishId && dom.fishInspector && !dom.fishInspector.hidden);
+  const submarineManagerOpen = Boolean(runtime.selectedMachineryId);
   return Boolean(
     runtime.storeOverlayOpen
     || runtime.utilityOverlayOpen
     || runtime.settingsOverlayOpen
     || runtime.equipmentOverlayOpen
+    || runtime.equipmentEditMode
     || runtime.tankEditMode
     || !runtime.sidebarCollapsed
     || runtime.foodTrayOpen
     || runtime.medicineTrayOpen
     || fishInspectorOpen
+    || submarineManagerOpen
   );
 }
 
@@ -45193,12 +47943,34 @@ function renderTabs() {
   }
 }
 
+function triggerCoinGainGlow() {
+  const wallet = dom.toolbarWallet;
+  if (!wallet) {
+    return;
+  }
+  if (runtime.coinGainGlowTimeoutId) {
+    window.clearTimeout(runtime.coinGainGlowTimeoutId);
+  }
+  wallet.classList.remove("is-gaining-coins");
+  void wallet.offsetWidth;
+  wallet.classList.add("is-gaining-coins");
+  runtime.coinGainGlowTimeoutId = window.setTimeout(() => {
+    wallet.classList.remove("is-gaining-coins");
+    runtime.coinGainGlowTimeoutId = 0;
+  }, 1050);
+}
+
 function renderHeader(now) {
   const dirtiness = getTankDirtiness(now);
   const cleanliness = Math.max(0, Math.round((1 - dirtiness) * 100));
   const hungryCount = getHungryFishByNeeds(getCurrentTank(), now, FISH_HUNGER_LOW_THRESHOLD).length;
   const starvingCount = getHungryFishByNeeds(getCurrentTank(), now, FISH_HUNGER_CRITICAL_THRESHOLD).length;
 
+  const renderedCoinCount = runtime.lastRenderedCoinCount;
+  if (Number.isFinite(renderedCoinCount) && state.coins > renderedCoinCount) {
+    triggerCoinGainGlow();
+  }
+  runtime.lastRenderedCoinCount = state.coins;
   setTextIfChanged(dom.coinCount, formatLcdNumber(state.coins));
   setTextIfChanged(dom.toolbarCoinCount, String(state.coins));
   dom.toolbarWallet?.classList.toggle("is-full", state.coins >= MAX_WALLET_COINS);
@@ -50682,7 +53454,7 @@ function renderEditDecorTrayContextMenu() {
 }
 
 function hasInlineToolTrayOpen() {
-  return runtime.editTankMode || runtime.fishEditMode || runtime.tankEditMode || runtime.foodTrayOpen || runtime.medicineTrayOpen;
+  return runtime.editTankMode || runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode || runtime.foodTrayOpen || runtime.medicineTrayOpen;
 }
 
 function getDecorTrayTypeTone(decor, decorKey) {
@@ -51450,7 +54222,7 @@ function renderEditTankTray() {
     return;
   }
 
-  const validTabs = new Set(["background", "gravel", "equipment"]);
+  const validTabs = new Set(["background", "gravel"]);
   if (!validTabs.has(runtime.editTankTrayTab)) {
     runtime.editTankTrayTab = "background";
   }
@@ -52317,8 +55089,11 @@ function renderFishActionFlyout(now = Date.now()) {
     dom.fishActionFlyoutSettings.setAttribute("aria-label", `Open settings for ${fish.name || "fish"}`);
   }
   if (dom.fishActionQueue) {
-    const queuedActions = getFishActionQueueItems(fish.id);
-    dom.fishActionQueue.replaceChildren(...queuedActions.map((item) => {
+    if (!runtime.debugFishActionIndicatorsEnabled) {
+      dom.fishActionQueue.replaceChildren();
+    } else {
+      const queuedActions = getFishActionQueueItems(fish.id);
+      dom.fishActionQueue.replaceChildren(...queuedActions.map((item) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = `fish-action-queue-button${item.active ? " is-active" : ""}${item.cancelling ? " is-cancelling" : ""}`;
@@ -52365,7 +55140,8 @@ function renderFishActionFlyout(now = Date.now()) {
       button.title = item.cancelling ? "Cancelling action" : (item.rest ? "Next action starts soon" : (item.active ? "Cancel current action" : "Remove queued action"));
       button.setAttribute("aria-label", `${button.title}: ${labelText}${phaseText ? `, ${phaseText}` : ""}${remaining ? `, ${remaining} remaining` : ""}`);
       return button;
-    }));
+      }));
+    }
   }
 
   for (const button of flyout.querySelectorAll("[data-fish-action]")) {
@@ -52586,6 +55362,11 @@ function renderFishActionQueueDock(now = Date.now()) {
   if (!dock) {
     return;
   }
+  if (!runtime.debugFishActionIndicatorsEnabled) {
+    dock.hidden = true;
+    dock.replaceChildren();
+    return;
+  }
 
   const groups = [...runtime.fishActionQueuesByFishId.entries()]
     .map(([fishId]) => {
@@ -52728,22 +55509,22 @@ function getSelectedFishNeedsMoodLabel(fish, now = Date.now()) {
     return "Miserable";
   }
   const snapshot = getFishNeedsSnapshot(fish, now);
+  const needs = snapshot.needs;
+
+  // A weighted average must not hide an urgent individual need.
+  if (Number(needs.hunger) <= FISH_HUNGER_CRITICAL_THRESHOLD) return "Starving";
+  if (Number(needs.energy) <= FISH_ENERGY_CRITICAL_THRESHOLD) return "Exhausted";
+  if (Number(needs.hygiene) <= 12) return "Toxic";
+  if (Number(needs.comfort) <= 15) return "Panicked";
+  if (Number(needs.hunger) <= FISH_HUNGER_LOW_THRESHOLD) return "Hungry";
+  if (Number(needs.energy) <= FISH_ENERGY_LOW_THRESHOLD) return "Tired";
+
   const value = Number(snapshot?.mood?.value) || 0;
-  if (value >= 85) {
-    return "Thriving";
-  }
-  if (value >= 70) {
-    return "Good Vibes";
-  }
-  if (value >= 50) {
-    return "Fine";
-  }
-  if (value >= 35) {
-    return "Uneasy";
-  }
-  if (value >= 20) {
-    return "Stressed";
-  }
+  if (value >= 85) return "Thriving";
+  if (value >= 70) return "Good Vibes";
+  if (value >= 50) return "Fine";
+  if (value >= 35) return "Uneasy";
+  if (value >= 20) return "Stressed";
   return "Miserable";
 }
 
@@ -52773,9 +55554,26 @@ function renderSelectedFishNeedsPanel(now = Date.now()) {
     return;
   }
   const fish = managed.fish;
-  const moodSnapshot = getFishNeedsSnapshot(fish, now).mood;
+  const needsSnapshot = getFishNeedsSnapshot(fish, now);
+  const moodSnapshot = needsSnapshot.mood;
   const moodLabel = getSelectedFishNeedsMoodLabel(fish, now);
-  const moodTone = moodSnapshot.value <= 19 ? "danger" : moodSnapshot.value <= 49 ? "warn" : moodSnapshot.value <= 69 ? "okay" : "good";
+  const criticalNeed = Number(needsSnapshot.needs.hunger) <= FISH_HUNGER_CRITICAL_THRESHOLD
+    || Number(needsSnapshot.needs.energy) <= FISH_ENERGY_CRITICAL_THRESHOLD
+    || Number(needsSnapshot.needs.hygiene) <= 12
+    || Number(needsSnapshot.needs.comfort) <= 15;
+  const lowNeed = Number(needsSnapshot.needs.hunger) <= FISH_HUNGER_LOW_THRESHOLD
+    || Number(needsSnapshot.needs.energy) <= FISH_ENERGY_LOW_THRESHOLD;
+  const moodTone = criticalNeed
+    ? "danger"
+    : lowNeed
+      ? "warn"
+      : moodSnapshot.value <= 19
+        ? "danger"
+        : moodSnapshot.value <= 49
+          ? "warn"
+          : moodSnapshot.value <= 69
+            ? "okay"
+            : "good";
   const markup = `
     <div class="selected-fish-needs-header">
       <strong class="selected-fish-needs-name">${escapeHtml(fish.name || "Fish")}</strong>
@@ -53198,29 +55996,7 @@ function renderEquipmentShop() {
     })
     .join("");
 
-  const tankType = getTankTypeMeta("rectangular");
-  const ownedCount = getAllTanks().length;
-  const expansionCost = getAquariumExpansionCost();
-  const affordable = state.coins >= expansionCost;
-  const tankMarkup = `
-    <article class="shop-card">
-      ${renderTankProductImage(tankType.id, "Aquarium")}
-      <div class="shop-meta shop-card-main">
-        <div>
-          <strong>Aquarium Extension</strong>
-          <div class="fish-meta">${ownedCount} connected ${pluralize("section", ownedCount)}</div>
-        </div>
-        <div class="fish-meta">${tankType.description}</div>
-        <div class="mini-note">Adds one full-sized neighborhood to any exposed side of Bubble Borough.</div>
-      </div>
-      <div class="shop-meta shop-card-actions">
-        <span class="price-tag">${expansionCost} ${pluralize("coin", expansionCost)}</span>
-        <div class="shop-button-row">
-          <button class="buy-button" data-extend-aquarium-store ${affordable ? "" : "disabled"}>Extend Aquarium</button>
-        </div>
-      </div>
-    </article>
-  `;
+
 
   const markup = `
     ${ENABLE_FILTER ? `
@@ -53254,11 +56030,11 @@ function renderEquipmentShop() {
     </section>
     <section class="shop-section">
       <div class="shop-section-heading">
-        <h3>Aquariums</h3>
-        <p>Grow one continuous aquarium by choosing where its next neighborhood connects.</p>
+        <h3>Equipment</h3>
+        <p>Purchase equipment for your borough, then deploy owned equipment from the Edit overlay.</p>
       </div>
       <div class="shop-section-cards">
-        ${tankMarkup}
+        ${renderSubmarineShopCard()}
       </div>
     </section>
   `;
@@ -53449,6 +56225,11 @@ function renderBackgrounds() {
     })
     .join("");
 
+  const ownedImageBackgrounds = getOwnedBackgroundCatalog().filter((background) => (
+    !isCustomBackgroundKey(background.key)
+    && !isLocalImageBackgroundKey(background.key)
+  ));
+
   if (dom.backgroundList) {
     const sharedMarkup = buildBackgroundCardsMarkup(
       getOwnedBackgroundCatalog().filter((background) => !isCustomBackgroundKey(background.key))
@@ -53460,11 +56241,7 @@ function renderBackgrounds() {
     );
   }
 
-  const equipmentBackgroundContainers = [
-    ["equipment-background-list", dom.equipmentBackgroundList],
-    ["edit-tank-background-list", dom.editTankBackgroundList]
-  ].filter(([, container]) => container);
-  if (equipmentBackgroundContainers.length) {
+  if (dom.equipmentBackgroundList) {
     const localImageReady = hasLocalBackgroundImage();
     const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
     const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
@@ -53488,34 +56265,271 @@ function renderBackgrounds() {
         </article>
       `
       : "";
-    const equipmentMarkup = `${localCardMarkup}${buildBackgroundCardsMarkup(
-      getOwnedBackgroundCatalog().filter((background) => (
-        !isCustomBackgroundKey(background.key)
-        && !isLocalImageBackgroundKey(background.key)
-      ))
-    )}`;
-    for (const [cacheKey, container] of equipmentBackgroundContainers) {
-      setMarkupIfChanged(
-        cacheKey,
-        container,
-        equipmentMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
-      );
-    }
+    setMarkupIfChanged(
+      "equipment-background-list",
+      dom.equipmentBackgroundList,
+      `${localCardMarkup}${buildBackgroundCardsMarkup(ownedImageBackgrounds)}`
+        || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
+    );
+  }
+
+  if (dom.editTankBackgroundList) {
+    const localImageReady = hasLocalBackgroundImage();
+    const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
+    const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
+    const localPreview = localImageReady && localBackground
+      ? renderBackgroundPreview(localBackground, "edit-tank-local-image-thumb")
+      : `<span class="edit-tank-local-image-placeholder">+</span>`;
+    const localMarkup = localBackground
+      ? `
+        <article class="edit-tank-local-image-card ${localImageSelected ? "is-selected" : ""}">
+          <div class="edit-tank-local-image-preview">${localPreview}</div>
+          <div class="edit-tank-local-image-copy">
+            <strong>Custom Image</strong>
+            <span>${localImageReady ? "Your uploaded background" : "Upload your own background"}</span>
+          </div>
+          <div class="edit-tank-local-image-actions">
+            <button type="button" data-open-local-background-picker>${localImageReady ? "Replace" : "Choose Image"}</button>
+            ${localImageReady ? `<button class="small-button alt" type="button" data-select-background="${CUSTOM_IMAGE_BACKGROUND_ASSET_KEY}">${localImageSelected ? "Selected" : "Use Image"}</button>` : ""}
+            ${localImageReady ? `<button class="small-button alt" type="button" data-clear-local-background title="Clear custom image" aria-label="Clear custom image">×</button>` : ""}
+          </div>
+        </article>
+      `
+      : "";
+
+    const imageCards = ownedImageBackgrounds.map((background) => {
+      const selected = state.selectedBackground === background.key;
+      return `
+        <button
+          class="edit-tank-image-option ${selected ? "is-selected" : ""}"
+          type="button"
+          data-select-background="${background.key}"
+          aria-pressed="${selected}"
+          title="Use ${escapeHtml(background.name)}">
+          ${renderBackgroundPreview(background, "edit-tank-image-thumb")}
+          <span>${escapeHtml(background.name)}</span>
+        </button>
+      `;
+    }).join("");
+
+    setMarkupIfChanged(
+      "edit-tank-background-list",
+      dom.editTankBackgroundList,
+      `<div class="edit-tank-image-layout">
+        ${localMarkup}
+        <div class="edit-tank-built-in-backgrounds">
+          <div class="edit-tank-built-in-backgrounds-label">Built-in Backgrounds</div>
+          <div class="edit-tank-image-options">${imageCards || `<span class="edit-tank-image-empty">No unlocked image backgrounds.</span>`}</div>
+        </div>
+      </div>`
+    );
   }
 }
 
+function rgbToHsv(rgb) {
+  const red = clamp((Number(rgb?.r) || 0) / 255, 0, 1);
+  const green = clamp((Number(rgb?.g) || 0) / 255, 0, 1);
+  const blue = clamp((Number(rgb?.b) || 0) / 255, 0, 1);
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  let hue = 0;
+  if (delta > 0.000001) {
+    if (max === red) {
+      hue = ((green - blue) / delta) % 6;
+    } else if (max === green) {
+      hue = ((blue - red) / delta) + 2;
+    } else {
+      hue = ((red - green) / delta) + 4;
+    }
+    hue /= 6;
+  }
+  if (hue < 0) {
+    hue += 1;
+  }
+  return {
+    h: normalizeHueUnit(hue),
+    s: max <= 0 ? 0 : delta / max,
+    v: max
+  };
+}
+
+function hsvToRgb(hsv) {
+  const hue = normalizeHueUnit(hsv?.h);
+  const saturation = clamp(Number(hsv?.s) || 0, 0, 1);
+  const value = clamp(Number(hsv?.v) || 0, 0, 1);
+  const scaledHue = hue * 6;
+  const sector = Math.floor(scaledHue) % 6;
+  const fraction = scaledHue - Math.floor(scaledHue);
+  const p = value * (1 - saturation);
+  const q = value * (1 - fraction * saturation);
+  const t = value * (1 - (1 - fraction) * saturation);
+  const channels = [
+    [value, t, p],
+    [q, value, p],
+    [p, value, t],
+    [p, q, value],
+    [t, p, value],
+    [value, p, q]
+  ][sector] || [value, p, q];
+  return {
+    r: Math.round(channels[0] * 255),
+    g: Math.round(channels[1] * 255),
+    b: Math.round(channels[2] * 255)
+  };
+}
+
+function getTankColorPickerModel(color) {
+  const normalizedColor = normalizeHexColor(color) || DEFAULT_SOLID_BACKGROUND_COLOR;
+  const hsv = rgbToHsv(hexToRgb(normalizedColor));
+  const hueColor = rgbToHex(hsvToRgb({ h: hsv.h, s: 1, v: 1 }));
+  return {
+    color: normalizedColor,
+    hue: hsv.h,
+    saturation: hsv.s,
+    value: hsv.v,
+    darkness: 1 - hsv.v,
+    hueColor
+  };
+}
+
+function getTankColorChoiceLabel(color, colorChoices = getSolidBackgroundColorChoices()) {
+  const normalizedColor = normalizeHexColor(color);
+  return colorChoices.find((choice) => normalizeHexColor(choice.color) === normalizedColor)?.label
+    || normalizedColor
+    || "Custom";
+}
+
+function renderTankQuickColorSwatches(context, activeColor, colorChoices = getSolidBackgroundColorChoices()) {
+  const normalizedActive = normalizeHexColor(activeColor);
+  return colorChoices.map((choice) => {
+    const normalizedColor = normalizeHexColor(choice.color);
+    const selected = normalizedColor === normalizedActive;
+    return `
+      <button
+        class="tank-color-picker-quick-swatch ${selected ? "is-selected" : ""}"
+        type="button"
+        data-color-picker-quick="${context}"
+        data-color-picker-color="${normalizedColor}"
+        aria-pressed="${selected}"
+        aria-label="Set color to ${escapeHtml(choice.label)}"
+        title="${escapeHtml(choice.label)}"
+        style="--swatch:${normalizedColor};"></button>
+    `;
+  }).join("");
+}
+
+function renderCompactTankColorPicker(context, color, title, options = {}) {
+  const colorChoices = options.colorChoices || getSolidBackgroundColorChoices();
+  const model = getTankColorPickerModel(color);
+  const label = getTankColorChoiceLabel(model.color, colorChoices);
+  const compactClass = options.compact ? " is-condensed" : "";
+  return `
+    <div
+      class="tank-color-picker${compactClass}"
+      data-color-picker-root="${context}"
+      style="--picker-hue-color:${model.hueColor};--picker-saturation:${(model.saturation * 100).toFixed(2)}%;--picker-darkness:${(model.darkness * 100).toFixed(2)}%;--picker-color:${model.color};">
+      <div class="tank-color-picker-heading">
+        <span>${escapeHtml(title)}</span>
+        <strong data-color-picker-label>${escapeHtml(label)}</strong>
+        ${options.headingAction || ""}
+      </div>
+      <div class="tank-color-picker-body">
+        <div class="tank-color-picker-spectrum-wrap">
+          <div class="tank-color-picker-spectrum" data-color-picker-field="${context}" role="slider" aria-label="${escapeHtml(title)} saturation and darkness">
+            <span class="tank-color-picker-spectrum-marker"></span>
+          </div>
+          <div class="tank-color-picker-hue" data-color-picker-hue="${context}" role="slider" aria-label="${escapeHtml(title)} hue">
+            <span class="tank-color-picker-hue-marker" style="top:${(model.hue * 100).toFixed(2)}%;"></span>
+          </div>
+        </div>
+        <div class="tank-color-picker-sliders">
+          <label>
+            <span>Saturation</span>
+            <input type="range" min="0" max="100" step="1" value="${Math.round(model.saturation * 100)}" data-color-picker-range="${context}" data-color-picker-channel="saturation" />
+          </label>
+          <label>
+            <span>Darkness</span>
+            <input type="range" min="0" max="100" step="1" value="${Math.round(model.darkness * 100)}" data-color-picker-range="${context}" data-color-picker-channel="darkness" />
+          </label>
+          <div class="tank-color-picker-code-row">
+            <span class="tank-color-picker-current" data-color-picker-current style="--swatch:${model.color};"></span>
+            <input class="tank-color-picker-hex" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="7" value="${model.color}" data-color-picker-hex="${context}" aria-label="${escapeHtml(title)} hex color" />
+          </div>
+        </div>
+        <div class="tank-color-picker-quick-area">
+          <span class="tank-color-picker-quick-label">Quick Colors</span>
+          <div class="tank-color-picker-quick-grid" role="group" aria-label="Quick colors for ${escapeHtml(title)}">
+            ${renderTankQuickColorSwatches(context, model.color, colorChoices)}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildAnimatedBackgroundPresetFill(color) {
+  const normalizedColor = normalizeHexColor(color) || DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR;
+  const surface = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.surface, normalizedColor);
+  const mid = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.mid, normalizedColor);
+  const deep = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.deep, normalizedColor);
+  const abyss = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.abyss, normalizedColor);
+  return `linear-gradient(180deg, ${surface} 0%, ${mid} 38%, ${deep} 70%, ${abyss} 100%)`;
+}
+
+function renderCompactAnimatedBackgroundPresets(activeColor) {
+  const normalizedActive = normalizeHexColor(activeColor);
+  return `
+    <div class="edit-tank-animated-presets">
+      <div class="edit-tank-animated-summary">
+        <span>Animated Scheme</span>
+        <strong>${escapeHtml(getTankColorChoiceLabel(normalizedActive))}</strong>
+        <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset</button>
+      </div>
+      <div class="edit-tank-animated-preset-list" role="group" aria-label="Animated background schemes">
+        ${TANK_ANIMATED_BACKGROUND_PRESETS.map((preset) => {
+          const selected = normalizeHexColor(preset.color) === normalizedActive;
+          return `
+            <button
+              class="edit-tank-animated-preset ${selected ? "is-selected" : ""}"
+              type="button"
+              data-animated-background-scheme-color="${preset.color}"
+              aria-pressed="${selected}"
+              title="${escapeHtml(preset.label)}">
+              <span class="edit-tank-animated-preset-preview" style="--animated-preset-fill:${buildAnimatedBackgroundPresetFill(preset.color)};"></span>
+              <span>${escapeHtml(preset.label)}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function renderSolidBackgroundControls() {
-  const containers = [
-    ["equipment-background-color-panel", dom.equipmentBackgroundColorPanel],
-    ["edit-tank-background-color-panel", dom.editTankBackgroundColorPanel]
-  ].filter(([, container]) => container);
-  if (!containers.length) {
+  const hasEquipmentPanel = Boolean(dom.equipmentBackgroundColorPanel);
+  const hasEditTankPanel = Boolean(dom.editTankBackgroundColorPanel);
+  if (!hasEquipmentPanel && !hasEditTankPanel) {
     return;
   }
 
   const solidEnabled = isSolidBackgroundEnabled();
   const gradientEnabled = isGradientBackgroundEnabled();
   const animatedEnabled = isAnimatedBackgroundEnabled();
+  const stateCompactMode = solidEnabled
+    ? "solid"
+    : gradientEnabled
+      ? "gradient"
+      : animatedEnabled
+        ? "animated"
+        : "image";
+  const validCompactModes = new Set(["image", "solid", "gradient", "animated"]);
+  if (hasEditTankPanel && !validCompactModes.has(runtime.editTankBackgroundMode)) {
+    runtime.editTankBackgroundMode = stateCompactMode;
+  }
+  const compactMode = hasEditTankPanel && validCompactModes.has(runtime.editTankBackgroundMode)
+    ? runtime.editTankBackgroundMode
+    : stateCompactMode;
   const colorChoices = getSolidBackgroundColorChoices();
   const activeColor = getActiveSolidBackgroundColor();
   const activeChoice = colorChoices.find((choice) => choice.color === activeColor)
@@ -53534,11 +56548,11 @@ function renderSolidBackgroundControls() {
       return [group.key, choice];
     })
   );
-  const swatches = solidEnabled
-    ? colorChoices
-      .map((choice) => {
-        const selected = choice.color === activeColor;
-        return `
+
+  const renderSolidSwatches = () => colorChoices
+    .map((choice) => {
+      const selected = choice.color === activeColor;
+      return `
         <button
           class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
           type="button"
@@ -53549,9 +56563,9 @@ function renderSolidBackgroundControls() {
           style="--swatch:${choice.color};">
         </button>
       `;
-      })
-      .join("")
-    : "";
+    })
+    .join("");
+
   const renderGradientSwatches = (role, activeColorValue) => colorChoices
     .map((choice) => {
       const selected = choice.color === activeColorValue;
@@ -53569,6 +56583,7 @@ function renderSolidBackgroundControls() {
       `;
     })
     .join("");
+
   const renderAnimatedSwatches = (role, activeColorValue, roleLabel) => colorChoices
     .map((choice) => {
       const selected = choice.color === activeColorValue;
@@ -53586,6 +56601,7 @@ function renderSolidBackgroundControls() {
       `;
     })
     .join("");
+
   const animatedGroupMarkup = ANIMATED_BACKGROUND_COLOR_GROUPS
     .map((group) => `
       <div class="background-gradient-color-group">
@@ -53600,120 +56616,158 @@ function renderSolidBackgroundControls() {
     `)
     .join("");
 
-  const markup = `
-    <div class="background-color-panel-shell">
-      <label class="settings-toggle-row background-solid-toggle-row" for="solidBackgroundToggle">
-        <div class="settings-toggle-copy">
-          <span class="settings-toggle-label">Solid Color</span>
-          <span class="settings-toggle-note">Use a flat backdrop instead of an image background.</span>
+  if (hasEquipmentPanel) {
+    const equipmentMarkup = `
+      <div class="background-color-panel-shell">
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentSolidBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Solid Color</span>
+            <span class="settings-toggle-note">Use a flat backdrop instead of an image background.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${solidEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentSolidBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-solid-background
+              ${solidEnabled ? "checked" : ""}
+              aria-label="Use Solid Color background" />
+          </div>
+        </label>
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentGradientBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Gradient Background</span>
+            <span class="settings-toggle-note">Blend two colors diagonally from the top left to the bottom right.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${gradientEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentGradientBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-gradient-background
+              ${gradientEnabled ? "checked" : ""}
+              aria-label="Use Gradient background" />
+          </div>
+        </label>
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentAnimatedBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Animated Background</span>
+            <span class="settings-toggle-note">Use a slow underwater wallpaper effect instead of a still image.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${animatedEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentAnimatedBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-animated-background
+              ${animatedEnabled ? "checked" : ""}
+              aria-label="Use Animated background" />
+          </div>
+        </label>
+        ${(solidEnabled || gradientEnabled || animatedEnabled) ? `
+        <div class="settings-subsection-heading">
+          <h4>Background Colors</h4>
         </div>
-        <div class="background-solid-toggle-controls">
-          ${solidEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
-          <input
-            id="solidBackgroundToggle"
-            class="settings-checkbox"
-            type="checkbox"
-            data-toggle-solid-background
-            ${solidEnabled ? "checked" : ""}
-            aria-label="Use Solid Color background" />
-        </div>
-      </label>
-      <label class="settings-toggle-row background-solid-toggle-row" for="gradientBackgroundToggle">
-        <div class="settings-toggle-copy">
-          <span class="settings-toggle-label">Gradient Background</span>
-          <span class="settings-toggle-note">Blend two colors diagonally from the top left to the bottom right.</span>
-        </div>
-        <div class="background-solid-toggle-controls">
-          ${gradientEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
-          <input
-            id="gradientBackgroundToggle"
-            class="settings-checkbox"
-            type="checkbox"
-            data-toggle-gradient-background
-            ${gradientEnabled ? "checked" : ""}
-            aria-label="Use Gradient background" />
-        </div>
-      </label>
-      <label class="settings-toggle-row background-solid-toggle-row" for="animatedBackgroundToggle">
-        <div class="settings-toggle-copy">
-          <span class="settings-toggle-label">Animated Background</span>
-          <span class="settings-toggle-note">Use a slow underwater wallpaper effect instead of a still image.</span>
-        </div>
-        <div class="background-solid-toggle-controls">
-          ${animatedEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
-          <input
-            id="animatedBackgroundToggle"
-            class="settings-checkbox"
-            type="checkbox"
-            data-toggle-animated-background
-            ${animatedEnabled ? "checked" : ""}
-            aria-label="Use Animated background" />
-        </div>
-      </label>
-      ${(solidEnabled || gradientEnabled || animatedEnabled) ? `
-      <div class="settings-subsection-heading">
-        <h4>Background Colors</h4>
+        ` : ""}
+        ${solidEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="custom-gravel-choice-summary">
+            <span>Selected Color</span>
+            <strong>${activeChoice.label}</strong>
+          </div>
+          <div class="custom-gravel-swatches" role="group" aria-label="Solid background color choices">
+            ${renderSolidSwatches()}
+          </div>
+        </article>
+        ` : ""}
+        ${gradientEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="background-gradient-grid">
+            <div class="background-gradient-color-group">
+              <div class="custom-gravel-choice-summary">
+                <span>Top Left</span>
+                <strong>${gradientStartChoice.label}</strong>
+              </div>
+              <div class="custom-gravel-swatches" role="group" aria-label="Top left gradient color choices">
+                ${renderGradientSwatches("start", gradientColors.start)}
+              </div>
+            </div>
+            <div class="background-gradient-color-group">
+              <div class="custom-gravel-choice-summary">
+                <span>Bottom Right</span>
+                <strong>${gradientEndChoice.label}</strong>
+              </div>
+              <div class="custom-gravel-swatches" role="group" aria-label="Bottom right gradient color choices">
+                ${renderGradientSwatches("end", gradientColors.end)}
+              </div>
+            </div>
+          </div>
+        </article>
+        ` : ""}
+        ${animatedEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="shop-button-row">
+            <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset Scheme</button>
+          </div>
+          <div class="background-gradient-grid">
+            ${animatedGroupMarkup}
+          </div>
+        </article>
+        ` : ""}
       </div>
-      ` : ""}
-      ${solidEnabled ? `
-      <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header background-color-preview-header">
-          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
-        </div>
-        <div class="custom-gravel-choice-summary">
-          <span>Selected Color</span>
-          <strong>${activeChoice.label}</strong>
-        </div>
-        <div class="custom-gravel-swatches" role="group" aria-label="Solid background color choices">
-          ${swatches}
-        </div>
-      </article>
-      ` : ""}
-      ${gradientEnabled ? `
-      <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header background-color-preview-header">
-          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
-        </div>
-        <div class="background-gradient-grid">
-          <div class="background-gradient-color-group">
-            <div class="custom-gravel-choice-summary">
-              <span>Top Left</span>
-              <strong>${gradientStartChoice.label}</strong>
-            </div>
-            <div class="custom-gravel-swatches" role="group" aria-label="Top left gradient color choices">
-              ${renderGradientSwatches("start", gradientColors.start)}
-            </div>
-          </div>
-          <div class="background-gradient-color-group">
-            <div class="custom-gravel-choice-summary">
-              <span>Bottom Right</span>
-              <strong>${gradientEndChoice.label}</strong>
-            </div>
-            <div class="custom-gravel-swatches" role="group" aria-label="Bottom right gradient color choices">
-              ${renderGradientSwatches("end", gradientColors.end)}
-            </div>
-          </div>
-        </div>
-      </article>
-      ` : ""}
-      ${animatedEnabled ? `
-      <article class="custom-gravel-layer-card background-solid-color-card">
-        <div class="custom-gravel-layer-header background-color-preview-header">
-          ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
-        </div>
-        <div class="shop-button-row">
-          <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset Scheme</button>
-        </div>
-        <div class="background-gradient-grid">
-          ${animatedGroupMarkup}
-        </div>
-      </article>
-      ` : ""}
-    </div>
-  `;
+    `;
+    setMarkupIfChanged("equipment-background-color-panel", dom.equipmentBackgroundColorPanel, equipmentMarkup);
+  }
 
-  for (const [cacheKey, container] of containers) {
-    setMarkupIfChanged(cacheKey, container, markup);
+  if (hasEditTankPanel) {
+    let compactMarkup = "";
+    if (compactMode === "solid") {
+      compactMarkup = `
+        <div class="edit-tank-background-control is-solid">
+          ${renderCompactTankColorPicker("solid-background", activeColor, "Solid Color")}
+        </div>
+      `;
+    } else if (compactMode === "gradient") {
+      compactMarkup = `
+        <div class="edit-tank-background-control is-gradient">
+          <div class="edit-tank-gradient-picker-grid">
+            ${renderCompactTankColorPicker("gradient-start", gradientColors.start, "Top Color", { compact: true })}
+            ${renderCompactTankColorPicker("gradient-end", gradientColors.end, "Bottom Color", { compact: true })}
+          </div>
+        </div>
+      `;
+    } else if (compactMode === "animated") {
+      const schemeGroup = ANIMATED_BACKGROUND_COLOR_GROUPS[0];
+      compactMarkup = `
+        <div class="edit-tank-background-control is-animated">
+          ${renderCompactAnimatedBackgroundPresets(animatedColors[schemeGroup.key])}
+        </div>
+      `;
+    }
+
+    setMarkupIfChanged("edit-tank-background-color-panel", dom.editTankBackgroundColorPanel, compactMarkup);
+    dom.editTankBackgroundColorPanel.hidden = compactMode === "image";
+    if (dom.editTankBackgroundList) {
+      dom.editTankBackgroundList.hidden = compactMode !== "image";
+    }
+    for (const button of dom.editTankTray?.querySelectorAll("[data-tank-background-mode]") || []) {
+      const selected = button.dataset.tankBackgroundMode === compactMode;
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+      button.tabIndex = selected ? 0 : -1;
+    }
   }
 }
 
@@ -53826,12 +56880,12 @@ function renderUvLightControls() {
 }
 
 function renderCustomGravelControls() {
-  const containers = [
+  const standardContainers = [
     ["custom-gravel-panel", dom.customGravelPanel],
-    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel],
-    ["edit-tank-custom-gravel-panel", dom.editTankCustomGravelPanel]
+    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel]
   ].filter(([, container]) => container);
-  if (!containers.length) {
+  const editContainer = dom.editTankCustomGravelPanel;
+  if (!standardContainers.length && !editContainer) {
     return;
   }
 
@@ -53839,12 +56893,12 @@ function renderCustomGravelControls() {
   const layersReady = hasReadyCustomGravelLayers();
 
   if (!layersReady) {
-    for (const [cacheKey, container] of containers) {
-      setMarkupIfChanged(
-        cacheKey,
-        container,
-        `<div class="empty-state">Custom gravel layers were not found. Add the three layer PNGs to <code>assets/gravel</code>.</div>`
-      );
+    const emptyMarkup = `<div class="empty-state">Custom gravel layers were not found. Add the three layer PNGs to <code>assets/gravel</code>.</div>`;
+    for (const [cacheKey, container] of standardContainers) {
+      setMarkupIfChanged(cacheKey, container, emptyMarkup);
+    }
+    if (editContainer) {
+      setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, emptyMarkup);
     }
     return;
   }
@@ -53852,8 +56906,10 @@ function renderCustomGravelControls() {
   const choices = getCustomGravelColorChoices();
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
-  const layerMarkup = layerCatalog
-    .map((layer, index) => {
+
+  if (standardContainers.length) {
+    const layerMarkup = layerCatalog
+      .map((layer, index) => {
         const activeColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
         const activeChoice = choices.find((choice) => choice.color === activeColor) || { label: activeColor, color: activeColor };
         const colorizeChecked = activeColorizeSettings[index] === true;
@@ -53878,9 +56934,7 @@ function renderCustomGravelControls() {
         return `
           <article class="custom-gravel-layer-card">
             <div class="custom-gravel-layer-header">
-              <div>
-                <strong>${layer.label}</strong>
-              </div>
+              <div><strong>${layer.label}</strong></div>
               <span class="custom-gravel-layer-swatch" style="--swatch:${activeColor};"></span>
             </div>
             <div class="custom-gravel-choice-summary">
@@ -53900,17 +56954,79 @@ function renderCustomGravelControls() {
             </label>
           </article>
         `;
-    })
-    .join("");
+      })
+      .join("");
 
-  const markup = `
-    <div class="custom-gravel-panel-shell">
-      <div class="custom-gravel-layer-list">${layerMarkup}</div>
-    </div>
-  `;
+    const markup = `
+      <div class="custom-gravel-panel-shell">
+        <div class="custom-gravel-layer-list">${layerMarkup}</div>
+      </div>
+    `;
+    for (const [cacheKey, container] of standardContainers) {
+      setMarkupIfChanged(cacheKey, container, markup);
+    }
+  }
 
-  for (const [cacheKey, container] of containers) {
-    setMarkupIfChanged(cacheKey, container, markup);
+  if (editContainer) {
+    const activeLayerIndex = clamp(
+      Math.floor(Number(runtime.editTankGravelLayer) || 0),
+      0,
+      Math.max(0, layerCatalog.length - 1)
+    );
+    runtime.editTankGravelLayer = activeLayerIndex;
+    const activeLayer = layerCatalog[activeLayerIndex];
+    const activeColor = activeColors[activeLayerIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+    const colorizeChecked = activeColorizeSettings[activeLayerIndex] === true;
+    const pebbleCatalog = runtime.customGravelPebbleCatalog || [];
+
+    const layerTabs = layerCatalog.map((layer, index) => {
+      const layerColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+      const selected = index === activeLayerIndex;
+      const pebble = pebbleCatalog[index] || pebbleCatalog[0] || null;
+      const pebblePath = pebble?.path || resolveAppUrl(`assets/gravel/pebble_${index + 1}.png`);
+      return `
+        <button
+          class="edit-tank-gravel-layer-tab ${selected ? "is-active" : ""}"
+          type="button"
+          role="tab"
+          data-edit-gravel-layer="${index}"
+          aria-selected="${selected}"
+          aria-label="Edit ${escapeHtml(layer.label)}">
+          <span class="edit-tank-gravel-pebble" style="--pebble-color:${layerColor};--pebble-image:url('${escapeHtml(pebblePath)}');">
+            <img src="${escapeHtml(pebblePath)}" alt="" aria-hidden="true" draggable="false" />
+          </span>
+          <span>${escapeHtml(layer.label.replace(/\s+Layer$/i, ""))}</span>
+        </button>
+      `;
+    }).join("");
+
+    const colorizeMarkup = `
+      <label class="edit-tank-gravel-colorize">
+        <input
+          type="checkbox"
+          data-custom-gravel-layer="${activeLayerIndex}"
+          data-custom-gravel-colorize="true"
+          ${colorizeChecked ? "checked" : ""} />
+        <span>Colorize</span>
+      </label>
+    `;
+
+    const editMarkup = `
+      <div class="edit-tank-gravel-editor">
+        <div class="edit-tank-gravel-layer-tabs" role="tablist" aria-label="Gravel layers">
+          ${layerTabs}
+        </div>
+        <div class="edit-tank-gravel-picker-workspace">
+          ${renderCompactTankColorPicker(
+            `gravel-${activeLayerIndex}`,
+            activeColor,
+            activeLayer?.label || `Layer ${activeLayerIndex + 1}`,
+            { colorChoices: choices, headingAction: colorizeMarkup }
+          )}
+        </div>
+      </div>
+    `;
+    setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
   }
 }
 
@@ -53974,6 +57090,33 @@ function renderControls(now) {
   }
   if (dom.debugSidebar) {
     dom.debugSidebar.hidden = !debugMode || !runtime.debugSidebarOpen;
+  }
+  if (dom.debugNotificationUiButton) {
+    dom.debugNotificationUiButton.disabled = !debugMode;
+    dom.debugNotificationUiButton.classList.toggle("is-active", runtime.debugNotificationUiEnabled);
+    dom.debugNotificationUiButton.setAttribute("aria-pressed", String(runtime.debugNotificationUiEnabled));
+    dom.debugNotificationUiButton.title = runtime.debugNotificationUiEnabled
+      ? "Debug: Hide notification bell and activity notifications"
+      : "Debug: Show notification bell and activity notifications";
+    dom.debugNotificationUiButton.setAttribute("aria-label", dom.debugNotificationUiButton.title);
+  }
+  if (dom.debugFishActionIndicatorsButton) {
+    dom.debugFishActionIndicatorsButton.disabled = !debugMode;
+    dom.debugFishActionIndicatorsButton.classList.toggle("is-active", runtime.debugFishActionIndicatorsEnabled);
+    dom.debugFishActionIndicatorsButton.setAttribute("aria-pressed", String(runtime.debugFishActionIndicatorsEnabled));
+    dom.debugFishActionIndicatorsButton.title = runtime.debugFishActionIndicatorsEnabled
+      ? "Debug: Hide active fish action indicators"
+      : "Debug: Show active fish action indicators";
+    dom.debugFishActionIndicatorsButton.setAttribute("aria-label", dom.debugFishActionIndicatorsButton.title);
+  }
+  if (dom.debugFrameProfilerButton) {
+    dom.debugFrameProfilerButton.disabled = !debugMode;
+    dom.debugFrameProfilerButton.classList.toggle("is-active", runtime.debugFrameProfilerEnabled);
+    dom.debugFrameProfilerButton.setAttribute("aria-pressed", String(runtime.debugFrameProfilerEnabled));
+    dom.debugFrameProfilerButton.title = runtime.debugFrameProfilerEnabled
+      ? "Debug: Hide live frame profiler"
+      : "Debug: Show live frame profiler";
+    dom.debugFrameProfilerButton.setAttribute("aria-label", dom.debugFrameProfilerButton.title);
   }
   renderLivingBoroughDebugPanel(now);
   dom.resetMealsButton.hidden = !debugMode;
@@ -54101,7 +57244,7 @@ function renderControls(now) {
     runtime.toolbarActionMenu = "";
   }
   const careToolActive = runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey) || runtime.cleaningMode || runtime.scoopMode;
-  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.tankEditMode || runtime.equipmentOverlayOpen;
+  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode || runtime.equipmentOverlayOpen;
   if (dom.toolbarCareMenu) {
     dom.toolbarCareMenu.hidden = !toolbarCareMenuOpen;
   }
@@ -54222,6 +57365,11 @@ function renderControls(now) {
     dom.editModeDockButton.title = runtime.editTankMode ? "Edit Decor (Active)" : "Edit Decor";
     dom.editModeDockButton.setAttribute("aria-label", runtime.editTankMode ? "Edit Decor (Active)" : "Edit Decor");
   }
+  dom.equipmentEditModeDockButton?.classList.toggle("is-active", runtime.equipmentEditMode);
+  if (dom.equipmentEditModeDockButton) {
+    dom.equipmentEditModeDockButton.title = runtime.equipmentEditMode ? "Equipment (Active)" : "Equipment";
+    dom.equipmentEditModeDockButton.setAttribute("aria-label", runtime.equipmentEditMode ? "Equipment (Active)" : "Equipment");
+  }
   const activeDecorShortcutTarget = getActiveDecorShortcutTarget();
   const activeDecorShortcutKey = activeDecorShortcutTarget?.decorKey || "";
   const hasActiveDecorShortcutTarget = Boolean(activeDecorShortcutKey);
@@ -54271,7 +57419,7 @@ function renderControls(now) {
       ? "grabbing"
       : (runtime.editTankMode || runtime.fishEditMode)
         ? "grab"
-        : runtime.tankEditMode
+        : (runtime.equipmentEditMode || runtime.tankEditMode)
           ? "default"
         : "default";
   syncToolbarFastTooltipExperiment();
@@ -54365,10 +57513,16 @@ function animationLoop(frameTime) {
     ? Math.min(0.05, (frameTime - runtime.lastAnimationUpdateAt) / 1000)
     : 0.016;
   runtime.lastAnimationUpdateAt = frameTime;
+  beginDebugFrameProfile(frameTime, rafDeltaSeconds * 1000);
   updateAmbienceAudioLoop();
   if (runtime.boroughOverviewOpen) {
+    const overviewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
     paintBoroughSnapshots(getAllTanks(), now);
     renderBoroughOverviewFish(now);
+    if (runtime.debugFrameProfilerEnabled) {
+      endDebugFrameProfilerSection("boroughOverview", overviewProfileStartedAt);
+    }
+    finishDebugFrameProfile();
     return;
   }
   if (runtime.cleaningMode && runtime.scrubAutoCompleteAt && now >= runtime.scrubAutoCompleteAt) {
@@ -54384,16 +57538,32 @@ function animationLoop(frameTime) {
   updateCleaningTransition(now);
   updateSplashBursts(now);
   updateGlassTapEffects(now);
+  const fishMotionProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   updateFishMotion(now, deltaSeconds);
+  updateMachineryMotion(now, deltaSeconds);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("fishMotion", fishMotionProfileStartedAt);
+  }
   syncDebugFishBehaviorBroadcast(now);
   updateWaterLifeEffects(now, deltaSeconds);
+  const stageViewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   updateStageRenderView(frameTime);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("stageView", stageViewProfileStartedAt);
+  }
+  const tankRenderProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   renderTank(now);
-  renderFishActionQueueDock(now);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("tankRender", tankRenderProfileStartedAt);
+  }
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
   updateSelectedDecorActionButtons();
   renderCustomDecorMotionPreview(now);
   renderCustomHidePreview(now);
   renderDecorSettingsMotionPreview(now);
+  finishDebugFrameProfile();
 }
 // </bundle-source>
 
@@ -55445,7 +58615,7 @@ function infectFishWithZombieBite(target, attacker, now = Date.now()) {
   makeFishScurryFromAttack(target, attacker, now);
   attacker.lastAteAt = now;
   const mealCoins = recordFishMealCredit(attacker, now);
-  applyFishMealWindowFoodIntake(attacker, now, { satiate: false });
+  applyFishMealWindowFoodIntake(attacker, now, { satiate: false, countBasedOverfeed: true });
   pushEvent(
     mealCoins > 0
       ? `${attacker.name} bit ${target.name} with a zombie bite and earned ${mealCoins} ${pluralize("coin", mealCoins)}.`
@@ -56381,8 +59551,13 @@ function updateFishMotion(now, deltaSeconds) {
     runtime.bettaPassLocks.clear();
     return;
   }
+  rebuildFishFrameLookup();
   pruneFishGravelPebbleRuntimeState(now);
+  const fishActionsProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   processFishActionQueues(now);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("fishActions", fishActionsProfileStartedAt);
+  }
   const activelyDraggedFishId = runtime.fishDragState?.fishId || null;
   const activeFishBreedingSequence = updateFishBreedingSequence(now);
   const activeDebugBreedingSequence = updateDebugBreedingSequence(now);
@@ -56718,26 +59893,30 @@ function updateFishMotion(now, deltaSeconds) {
       const activeQueuedFishAction = getActiveFishActionQueueItem(fish, now);
       const queuedFishActionActive = Boolean(activeQueuedFishAction);
       const queuedPebbleActionActive = activeQueuedFishAction?.action === "pebble";
+      const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
 
-      if (fish.activity === "roam" && !breedingRole && !fish.caveState && !debugCaveTestFish && !queuedFishActionActive) {
+      if (!panicOwnsMovement && fish.activity === "roam" && !breedingRole && !fish.caveState && !debugCaveTestFish && !queuedFishActionActive) {
         maybeStartFishGravelPebbleAction(fish, species, now, deltaSeconds);
       }
 
-      const gravelPebbleOwnsMovement = !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
-      const caveBehaviorOwnsMovement = !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
-      const fishActionOwnsMovement = !breedingRole
+      const gravelPebbleOwnsMovement = !panicOwnsMovement && !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
+      const caveBehaviorOwnsMovement = !panicOwnsMovement && !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
+      const fishActionOwnsMovement = !panicOwnsMovement
+        && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
         && !debugCaveTestFish
         && updateQueuedFishActionControl(fish, species, now);
-      const debugBehaviorOwnsMovement = !breedingRole
+      const debugBehaviorOwnsMovement = !panicOwnsMovement
+        && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
         && !fishActionOwnsMovement
         && fish.activity === "roam"
         && !debugCaveTestFish
         && updateDebugBehaviorSteering(fish, species, now);
-      const diseaseAvoidanceOwnsMovement = !breedingRole
+      const diseaseAvoidanceOwnsMovement = !panicOwnsMovement
+        && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
         && !debugBehaviorOwnsMovement
@@ -56751,6 +59930,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !fishActionOwnsMovement
         && !debugBehaviorOwnsMovement
         && !diseaseAvoidanceOwnsMovement
+        && !panicOwnsMovement
         && !pendingTravel
         && now >= fish.targetAt
       ) {
@@ -56762,7 +59942,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
-      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !pendingTravel) {
+      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !panicOwnsMovement && !pendingTravel) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
       }
@@ -56783,16 +59963,18 @@ function updateFishMotion(now, deltaSeconds) {
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
     const moveDistance = Math.hypot(moveDx, moveDy);
-    const activeDebugSteering = fish.activity === "roam" && !fish.caveState
+    const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
+    const activeDebugSteering = !panicOwnsMovement && fish.activity === "roam" && !fish.caveState
       ? getActiveDebugBehaviorSteering(fish, now)
       : null;
-    const activeFishActionSteering = fish.activity === "roam" && !fish.caveState
+    const activeFishActionSteering = !panicOwnsMovement && fish.activity === "roam" && !fish.caveState
       ? getActiveFishActionSteering(fish, now)
       : null;
     const activeQueuedFishAction = !fish.caveState
       ? getActiveFishActionQueueItem(fish, now)
       : null;
-    const isDirectedSwim = fish.activity === "feeding"
+    const isDirectedSwim = panicOwnsMovement
+      || fish.activity === "feeding"
       || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
       || fish.activity === FISH_GRAVEL_DIG_ACTIVITY
       || Boolean(activeQueuedFishAction)
@@ -56808,7 +59990,9 @@ function updateFishMotion(now, deltaSeconds) {
     if (pendingTravel) {
       motionTarget = Math.max(motionTarget, 0.58);
     }
-    if (zombieLockedOnTarget) {
+    if (panicOwnsMovement) {
+      motionTarget = Math.max(motionTarget, 0.9);
+    } else if (zombieLockedOnTarget) {
       motionTarget = Math.max(motionTarget, 0.78);
     } else if (zombieBittenVictim) {
       motionTarget = Math.max(motionTarget, 0.92);
@@ -57023,11 +60207,11 @@ function updateFishMotion(now, deltaSeconds) {
       if (effectiveBehavior === "sucker") {
         setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
       } else if (!handledDirectionThisFrame) {
-        const debugFaceDirection = getDebugBehaviorFacingDirection(fish, now);
+        const debugFaceDirection = panicOwnsMovement ? null : getDebugBehaviorFacingDirection(fish, now);
         const facingDx = fish.activity === "feeding" && pelletPose
           ? pelletPose.xNorm - fish.xNorm
           : fish.targetXNorm - fish.xNorm;
-        const schoolFollowFacing = fish.activity === "roam"
+        const schoolFollowFacing = !panicOwnsMovement && fish.activity === "roam"
           ? getFishSchoolFollowFacingDirection(fish, species, now, facingDx)
           : null;
         if (debugFaceDirection !== null) {
@@ -57048,7 +60232,7 @@ function updateFishMotion(now, deltaSeconds) {
       }
     }
 
-    const debugFaceDirectionAtRest = !handledDirectionThisFrame
+    const debugFaceDirectionAtRest = !panicOwnsMovement && !handledDirectionThisFrame
       ? getDebugBehaviorFacingDirection(fish, now)
       : null;
     if (debugFaceDirectionAtRest !== null && fish.activity === "roam" && !fish.caveState) {
@@ -57059,6 +60243,7 @@ function updateFishMotion(now, deltaSeconds) {
     if (
       fish.activity === "roam" &&
       !fish.caveState &&
+      !panicOwnsMovement &&
       !handledDirectionThisFrame &&
       !(Number.isFinite(fish.wallAvoidUntil) && now < fish.wallAvoidUntil)
     ) {
@@ -57138,6 +60323,134 @@ function updateFishMotion(now, deltaSeconds) {
   handleBettaPassAttacks(now);
   updateFishPebbleTosses(now);
   updateChumBloodClouds(now);
+}
+
+function getFishProfileRoamSpeed(species, profile, options = {}) {
+  if (!species || !profile) {
+    return normalizeFishSpeed(species);
+  }
+  const speedMin = Number(species.speedMin) || 0;
+  const speedMax = Math.max(speedMin, Number(species.speedMax) || speedMin);
+  const speedRange = Math.max(0, speedMax - speedMin);
+  const useDartSpeed = Boolean(options.dart);
+  const minBlend = useDartSpeed
+    ? clamp(profile.dartSpeedMinBlend, 0, 1)
+    : clamp(profile.speedMinBlend, 0, 1);
+  const maxBlend = useDartSpeed
+    ? 1
+    : clamp(Math.max(minBlend, profile.speedMaxBlend), minBlend, 1);
+  return normalizeFishSpeed(
+    species,
+    speedMin + speedRange * randomBetween(minBlend, maxBlend)
+  );
+}
+
+function getFishProfileRoamY(fish, species, layer, profile) {
+  const range = getLayerSwimYRange(layer, fish, species);
+  const span = Math.max(0, range.max - range.min);
+  const preferredY = clamp(profile.preferredY, 0, 1);
+  const spread = clamp(profile.verticalSpread, 0.06, 1);
+  const center = range.min + span * preferredY;
+  const halfSpread = span * spread * 0.5;
+  return clamp(randomBetween(center - halfSpread, center + halfSpread), range.min, range.max);
+}
+
+function getFishProfileRoamX(fish, species, profile) {
+  const currentX = clamp(Number(fish?.xNorm) || 0.5, 0.08, 0.92);
+  const facingDirection = getFishFacingDirection(fish);
+  const minDistance = clamp(profile.targetDistanceMin, 0.02, 0.7);
+  const maxDistance = clamp(Math.max(minDistance, profile.targetDistanceMax), minDistance, 0.84);
+  const distance = randomBetween(minDistance, maxDistance);
+  let direction = Math.random() < clamp(profile.headingPersistence, 0, 1)
+    ? facingDirection
+    : (Math.random() < 0.5 ? -1 : 1);
+  if (currentX <= 0.13) {
+    direction = 1;
+  } else if (currentX >= 0.87) {
+    direction = -1;
+  }
+  let targetX = currentX + direction * distance;
+  if (targetX < 0.08 || targetX > 0.92) {
+    targetX = currentX - direction * distance * randomBetween(0.78, 1);
+  }
+  return clampFishXNormToMobileViewport(clamp(targetX, 0.08, 0.92), fish, species);
+}
+
+function getFishProfileHomeRoamTarget(fish, species, layer, profile) {
+  if (
+    !fish?.favoriteSpot
+    || !Number.isFinite(Number(fish.favoriteSpot.xNorm))
+    || !Number.isFinite(Number(fish.favoriteSpot.yNorm))
+    || Math.random() > clamp(profile.homeRangeStrength, 0, 1)
+  ) {
+    return null;
+  }
+  const radius = clamp(profile.homeRangeRadius, 0.06, 0.42);
+  const angle = Math.random() * Math.PI * 2;
+  const distance = randomBetween(radius * 0.22, radius);
+  return clampFishPlacement(
+    Number(fish.favoriteSpot.xNorm) + Math.cos(angle) * distance,
+    Number(fish.favoriteSpot.yNorm) + Math.sin(angle) * distance * 0.65,
+    species,
+    { fish, layer }
+  );
+}
+
+function getFishProfileHoverTarget(fish, species, layer, profile) {
+  if (Math.random() > clamp(profile.hoverChance, 0, 0.85)) {
+    return null;
+  }
+  const driftScale = profile.movementPattern === "precision-hover" ? 0.012 : 0.022;
+  const placement = clampFishPlacement(
+    fish.xNorm + randomBetween(-driftScale, driftScale),
+    fish.yNorm + randomBetween(-driftScale * 0.7, driftScale * 0.7),
+    species,
+    { fish, layer }
+  );
+  return {
+    xNorm: placement.xNorm,
+    yNorm: placement.yNorm,
+    targetAt: Date.now() + randomBetween(profile.hoverMinMs, profile.hoverMaxMs),
+    speed: getFishProfileRoamSpeed(species, profile)
+  };
+}
+
+function assignSpeciesRoamTarget(fish, species, now) {
+  const profile = getFishLocomotionProfile(fish || species);
+  const nextRoamLayer = clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
+  const hoverTarget = getFishProfileHoverTarget(fish, species, nextRoamLayer, profile);
+  const homeTarget = hoverTarget ? null : getFishProfileHomeRoamTarget(fish, species, nextRoamLayer, profile);
+  const isDart = !hoverTarget && Math.random() < clamp(profile.dartChance, 0, 0.9);
+  let placement;
+  if (hoverTarget) {
+    placement = hoverTarget;
+  } else if (homeTarget) {
+    placement = homeTarget;
+  } else {
+    placement = clampFishPlacement(
+      getFishProfileRoamX(fish, species, profile),
+      getFishProfileRoamY(fish, species, nextRoamLayer, profile),
+      species,
+      { fish, layer: nextRoamLayer }
+    );
+  }
+
+  fish.targetXNorm = placement.xNorm;
+  fish.targetYNorm = placement.yNorm;
+  if (hoverTarget) {
+    fish.targetAt = now + randomBetween(profile.hoverMinMs, profile.hoverMaxMs);
+  } else if (isFishCriticallyLowHealth(fish)) {
+    fish.targetAt = now + randomBetween(900, Math.max(1400, species.targetMaxMs * 0.45));
+  } else {
+    const durationScale = clamp(profile.targetDurationScale, 0.5, 1.8);
+    fish.targetAt = now + randomBetween(species.targetMinMs, species.targetMaxMs) * durationScale;
+  }
+  setFishDesiredTankLayer(fish, nextRoamLayer);
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.swimSpeed = isFishCriticallyLowHealth(fish)
+    ? normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax))
+    : (hoverTarget?.speed || getFishProfileRoamSpeed(species, profile, { dart: isDart }));
 }
 
 function assignSwimTarget(fish, species, now) {
@@ -57284,9 +60597,17 @@ function assignSwimTarget(fish, species, now) {
     setFishDesiredTankLayer(fish, hangout.targetLayer);
     fish.hangoutDecorId = hangout.decorId;
     fish.hangoutZoneType = hangout.zoneType;
-    if (species.speedMode === "dynamic") {
-      fish.swimSpeed = normalizeFishSpeed(species);
+    const locomotionProfile = getFishLocomotionProfile(fish || species);
+    if (locomotionProfile.homeRangeStrength >= 0.4 && !fish.favoriteSpot && hangout.decorId) {
+      fish.favoriteSpot = {
+        xNorm: hangout.xNorm,
+        yNorm: hangout.yNorm,
+        decorId: hangout.decorId,
+        zoneType: hangout.zoneType || "",
+        assignedAt: now
+      };
     }
+    fish.swimSpeed = getFishProfileRoamSpeed(species, locomotionProfile);
     return;
   }
 
@@ -57297,9 +60618,7 @@ function assignSwimTarget(fish, species, now) {
     fish.targetAt = now + socialFollow.lingerMs;
     setFishDesiredTankLayer(fish, socialFollow.targetLayer);
     fish.hangoutDecorId = null;
-    if (species.speedMode === "dynamic") {
-      fish.swimSpeed = normalizeFishSpeed(species);
-    }
+    fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
     return;
   }
 
@@ -57313,31 +60632,11 @@ function assignSwimTarget(fish, species, now) {
       now
     );
     beginFishCaveBehavior(fish, cavePlan, now);
-    if (species.speedMode === "dynamic") {
-      fish.swimSpeed = normalizeFishSpeed(species);
-    }
+    fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
     return;
   }
 
-  const nextRoamLayer = effectiveBehavior === "sucker"
-    ? getSuckerFishGlassLayer(fish)
-    : clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
-  fish.targetXNorm = randomSwimX();
-  fish.targetYNorm = randomSwimY(nextRoamLayer, fish, species);
-  fish.targetAt = isFishCriticallyLowHealth(fish)
-    ? now + randomBetween(900, Math.max(1400, species.targetMaxMs * 0.45))
-    : now + species.targetMinMs + Math.random() * Math.max(200, species.targetMaxMs - species.targetMinMs);
-  setFishDesiredTankLayer(fish, nextRoamLayer);
-  fish.hangoutDecorId = null;
-  fish.hangoutZoneType = null;
-  if (species.speedMode === "dynamic" || isFishCriticallyLowHealth(fish)) {
-    fish.swimSpeed = normalizeFishSpeed(
-      species,
-      isFishCriticallyLowHealth(fish)
-        ? randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax)
-        : undefined
-    );
-  }
+  assignSpeciesRoamTarget(fish, species, now);
 }
 // </bundle-source>
 
@@ -57531,7 +60830,12 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
     steady: 0.46,
     sporadic: 0.34
   };
-  const chanceMultiplier = Number.isFinite(Number(options.chanceMultiplier)) ? Number(options.chanceMultiplier) : 1;
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const baseChanceMultiplier = Number.isFinite(Number(options.chanceMultiplier)) ? Number(options.chanceMultiplier) : 1;
+  const speciesAffinity = options.ignoreSpeciesAffinity
+    ? 1
+    : clamp(locomotionProfile.structureAffinity, 0.2, 2.5);
+  const chanceMultiplier = baseChanceMultiplier * speciesAffinity;
 
   if (
     !state.placedDecor.length
@@ -57587,7 +60891,12 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
     return null;
   }
 
-  const zone = zones[Math.floor(Math.random() * zones.length)];
+  const favoriteZone = fish?.favoriteSpot?.decorId && locomotionProfile.homeRangeStrength > 0
+    ? zones.find((candidate) => candidate.decorId === fish.favoriteSpot.decorId)
+    : null;
+  const zone = favoriteZone && Math.random() < clamp(locomotionProfile.homeRangeStrength, 0, 1)
+    ? favoriteZone
+    : zones[Math.floor(Math.random() * zones.length)];
   const targetLayer = options.preferBackLayer
     ? clampTankLayer(zone.targetLayerMax)
     : clampTankLayer(zone.targetLayerMin + Math.floor(Math.random() * (zone.targetLayerMax - zone.targetLayerMin + 1)));
@@ -58251,6 +61560,7 @@ function renderTank(now) {
     drawFishEggs(now, layer);
     //drawLooseGravel(now, { surfaceKind: "decor", decorLayer: layer });
     drawFish(now, layer, { excludeBehavior: "sucker" });
+    drawMachinery(now, layer);
   }
   drawCoinGlints(now);
   drawDecorBubbleStreams(now);
@@ -63472,7 +66782,7 @@ function getFishTopLightOverlay(image) {
   return canvas;
 }
 
-function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now()) {
+function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now(), lightingOverride = null) {
   if (isTankLightsOut(now)) {
     return;
   }
@@ -63482,7 +66792,7 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
     return;
   }
 
-  const lighting = getFishDepthLightingStyle(poseY);
+  const lighting = lightingOverride || getFishDepthLightingStyle(poseY);
   context.save();
   context.globalCompositeOperation = "screen";
   context.globalAlpha = lighting.highlightAlpha;
@@ -63491,45 +66801,111 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
   context.restore();
 }
 
+function compareFishRenderRecords(left, right) {
+  const priorityDelta = left.priority - right.priority;
+  if (priorityDelta) {
+    return priorityDelta;
+  }
+  return left.yNorm - right.yNorm;
+}
+
+function prepareFishRenderFrameCache(now = Date.now()) {
+  const fishList = Array.isArray(state?.fish) ? state.fish : [];
+  const existing = runtime.fishRenderFrameCache;
+  if (
+    existing
+    && existing.now === now
+    && existing.fishSource === fishList
+    && existing.fishLength === fishList.length
+  ) {
+    return existing;
+  }
+
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
+  let buckets = runtime.fishRenderLayerBuckets;
+  if (!Array.isArray(buckets) || buckets.length !== TANK_DEPTH_LAYERS + 1) {
+    buckets = Array.from({ length: TANK_DEPTH_LAYERS + 1 }, () => []);
+    runtime.fishRenderLayerBuckets = buckets;
+  } else {
+    for (const bucket of buckets) {
+      bucket.length = 0;
+    }
+  }
+
+  const pool = runtime.fishRenderRecordPool;
+  let recordIndex = 0;
+  for (const fish of fishList) {
+    const species = getSpeciesForFish(fish);
+    if (!species) {
+      continue;
+    }
+    const pendingTravel = runtime.pendingNeighborhoodTravel.get(fish.id) || null;
+    if (!pendingTravel) {
+      clampFishToMobileViewport(fish, species, now);
+    }
+    const layer = clampTankLayer(getFishTankLayer(fish));
+    let record = pool[recordIndex];
+    if (!record) {
+      record = {};
+      pool[recordIndex] = record;
+    }
+    record.fish = fish;
+    record.species = species;
+    record.effectiveBehavior = getEffectiveFishBehavior(fish, species);
+    record.pendingTravel = pendingTravel;
+    record.priority = getFishSameLayerRenderPriority(fish);
+    record.yNorm = Number(fish.yNorm) || 0;
+    buckets[layer].push(record);
+    recordIndex += 1;
+  }
+
+  for (let layerIndex = 1; layerIndex <= TANK_DEPTH_LAYERS; layerIndex += 1) {
+    if (buckets[layerIndex].length > 1) {
+      buckets[layerIndex].sort(compareFishRenderRecords);
+    }
+  }
+
+  const shellBounds = getTankShellBounds();
+  const cache = {
+    now,
+    fishSource: fishList,
+    fishLength: fishList.length,
+    recordCount: recordIndex,
+    buckets,
+    stableScale: getViewportStableAssetScale(),
+    topFrameBottomY: shellBounds.outerTop + 28
+  };
+  runtime.fishRenderFrameCache = cache;
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("fishPrep", profileStartedAt);
+  }
+  return cache;
+}
+
 function drawFish(now, layer = null, options = {}) {
   if (!state.fish.length) {
     return;
   }
 
-  const sortedFish = [...state.fish]
-    .filter((fish) => {
-      if (layer !== null && getFishTankLayer(fish) !== layer) {
-        return false;
-      }
+  const cache = prepareFishRenderFrameCache(now);
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
+  const records = layer === null
+    ? cache.buckets.flat()
+    : (cache.buckets[clampTankLayer(layer)] || []);
+  const stableScale = cache.stableScale;
+  const topFrameBottomY = cache.topFrameBottomY;
 
-      const species = getSpeciesForFish(fish);
-      if (!species) {
-        return false;
-      }
+  for (const record of records) {
+    const fish = record.fish;
+    const species = record.species;
+    const effectiveBehavior = record.effectiveBehavior;
+    if (options.onlyBehavior && effectiveBehavior !== options.onlyBehavior) {
+      continue;
+    }
+    if (options.excludeBehavior && effectiveBehavior === options.excludeBehavior) {
+      continue;
+    }
 
-      const effectiveBehavior = getEffectiveFishBehavior(fish);
-      if (options.onlyBehavior && effectiveBehavior !== options.onlyBehavior) {
-        return false;
-      }
-
-      if (options.excludeBehavior && effectiveBehavior === options.excludeBehavior) {
-        return false;
-      }
-
-      return true;
-    })
-    .sort((left, right) => {
-      const priorityDelta = getFishSameLayerRenderPriority(left) - getFishSameLayerRenderPriority(right);
-      if (priorityDelta) {
-        return priorityDelta;
-      }
-
-      return left.yNorm - right.yNorm;
-    });
-
-  for (const fish of sortedFish) {
-    const species = getSpeciesForFish(fish);
-    if (!runtime.pendingNeighborhoodTravel.has(fish.id)) clampFishToMobileViewport(fish, species, now);
     const imagePath = getFishDisplayAssetPath(fish, species, now) || species.asset;
     const image = runtime.images.get(imagePath);
     if (!isUsableRuntimeImage(image)) {
@@ -63542,21 +66918,19 @@ function drawFish(now, layer = null, options = {}) {
       continue;
     }
     const renderImage = getFishTintedImage(imagePath, image, fish);
-
     const pose = getFishPose(fish, species, now);
     const width = getFishDisplayWidth(fish, species, now);
     const height = width * (image.height / image.width);
-    const stableScale = getViewportStableAssetScale();
-    const shellBounds = getTankShellBounds();
-    const topFrameBottomY = shellBounds.outerTop + 28;
-    const effectiveBehavior = getEffectiveFishBehavior(fish, species);
     const healthRatio = getFishHealthRatio(fish, species);
     const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
+    const suckerFreeSwimming = effectiveBehavior === "sucker"
+      ? isSuckerFishFreeSwimming(fish, species, now)
+      : false;
     const useSuckerFacePivot = (
       SUCKER_FISH_FACE_PIVOT_ENABLED
       && !pose.isDead
       && effectiveBehavior === "sucker"
-      && !isSuckerFishFreeSwimming(fish, species, now)
+      && !suckerFreeSwimming
     );
     const suckerFacePivotX = useSuckerFacePivot
       ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X
@@ -63575,12 +66949,13 @@ function drawFish(now, layer = null, options = {}) {
     } else {
       tankContext.rotate(pose.tilt);
     }
-    const tubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id)?.mode === "tube";
+
+    const pendingTravel = record.pendingTravel;
+    const tubeTravel = pendingTravel?.mode === "tube";
     let tubeCompression = 1;
     if (tubeTravel) {
-      const pending = runtime.pendingNeighborhoodTravel.get(fish.id);
       const tank = getTankContainingFish(fish.id);
-      const tubeId = pending.phase === "emerging" ? pending.targetTubeId : pending.sourceTubeId;
+      const tubeId = pendingTravel.phase === "emerging" ? pendingTravel.targetTubeId : pendingTravel.sourceTubeId;
       const tube = tank?.placedDecor?.find((item) => item.id === tubeId);
       const tubeBounds = getPlacedDecorBounds(tube);
       const innerWidth = tubeBounds ? Math.max(12, (tubeBounds.right - tubeBounds.left) * .5) : 34;
@@ -63592,7 +66967,7 @@ function drawFish(now, layer = null, options = {}) {
       SUCKER_FISH_GLASS_SHADOW_ENABLED
       && !pose.isDead
       && effectiveBehavior === "sucker"
-      && !isSuckerFishFreeSwimming(fish, species, now)
+      && !suckerFreeSwimming
     ) {
       const shadowWidth = width * SUCKER_FISH_GLASS_SHADOW_SCALE;
       const shadowHeight = height * SUCKER_FISH_GLASS_SHADOW_SCALE;
@@ -63609,15 +66984,17 @@ function drawFish(now, layer = null, options = {}) {
       );
       tankContext.restore();
     }
+
+    const comfort = !pose.isDead ? getFishComfort(fish, now) : null;
     const fishLighting = getFishDepthLightingStyle(pose.y);
-    const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now);
+    const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now, comfort?.value);
     tankContext.filter = fishBaseFilter === "none"
       ? fishLighting.filter
       : `${fishBaseFilter} ${fishLighting.filter}`;
     tankContext.drawImage(renderImage, fishDrawX, -height / 2, width, height);
     tankContext.filter = "none";
     if (!pose.isDead) {
-      drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now);
+      drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now, fishLighting);
     }
     drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
@@ -63625,7 +67002,7 @@ function drawFish(now, layer = null, options = {}) {
     drawFishDiseaseBubbles(fish, species, pose, width, height, now);
     drawFishBirthdayHat(fish, pose, width, height, now);
 
-    if (!pose.isDead && getFishComfort(fish, now).value >= 0.95) {
+    if (comfort?.value >= 0.95) {
       drawFishComfortSparkles(pose, width, height, now);
     }
 
@@ -63666,6 +67043,10 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.fillText(fish.name, pose.x, labelY + 0.5);
       tankContext.restore();
     }
+  }
+
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("fishDraw", profileStartedAt);
   }
 }
 
@@ -64272,8 +67653,10 @@ function getFishTurnDurationMs(fish, species) {
     ? 0.5
     : clamp((currentSpeed - speedMin) / Math.max(0.00001, speedMax - speedMin), 0, 1);
   const slowBias = 1 - speedBlend;
-  const minMs = FISH_TURN_MIN_MS + slowBias * 55;
-  const maxMs = FISH_TURN_MAX_MS + slowBias * 130;
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const turnDurationScale = clamp(locomotionProfile.turnDurationScale, 0.55, 1.9);
+  const minMs = (FISH_TURN_MIN_MS + slowBias * 55) * turnDurationScale;
+  const maxMs = (FISH_TURN_MAX_MS + slowBias * 130) * turnDurationScale;
   return minMs + Math.random() * Math.max(1, maxMs - minMs);
 }
 
@@ -65337,7 +68720,7 @@ function getAutoDispenserLayout() {
   const dispenserScale = getViewportStableObjectScale("hardware") * AUTO_DISPENSER_VIEWPORT_SIZE_MULTIPLIER;
   const width = AUTO_DISPENSER_DRAW_WIDTH * dispenserScale;
   const height = AUTO_DISPENSER_DRAW_HEIGHT * dispenserScale;
-  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
+  const visibleBounds = getVisibleTankVirtualBounds();
   const x = TANK_WIDTH * 0.5 - width / 2;
   const y = visibleBounds.top - getViewportPxAsTankVirtual(AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX);
   const screenWidth = width * 0.12;
@@ -65500,6 +68883,17 @@ function handleAutoDispenserInteractionAtPoint(point, now = Date.now()) {
 }
 
 function scoopTankItemAtPoint(x, y, now = Date.now()) {
+  const machinery = findMachineryAtPoint(x, y, now);
+  if (machinery?.type === MACHINERY_TYPE_SUBMARINE) {
+    if (recallSubmarine(now)) {
+      runtime.equipmentEditTrayTab = "storage";
+      return {
+        kind: "machinery",
+        label: ""
+      };
+    }
+  }
+
   const pellet = findFloatingPelletAtPoint(x, y, now);
   if (pellet) {
     state.floatingPellets = state.floatingPellets.filter((entry) => entry.id !== pellet.id);
@@ -65760,8 +69154,8 @@ function getHungryFishByNeeds(tank = getCurrentTank(), now = Date.now(), thresho
 function getPersonalityNeedModifier(fish, needKey) {
   const personality = getFishPersonality(fish);
   const modifiers = {
-    hunger: { greedy: 1.28, energetic: 1.2, bold: 1.08, lazy: 0.82, gentle: 0.92, nightActive: 0.95 },
-    energy: { energetic: 1.18, nervous: 1.18, lazy: 0.78, chill: 0.85, slowGraceful: 0.82 },
+    hunger: { greedy: 1.15, energetic: 1.08, bold: 1.04, lazy: 0.9, gentle: 0.96, nightActive: 0.98 },
+    energy: { energetic: 1.1, nervous: 1.1, lazy: 0.85, chill: 0.9, slowGraceful: 0.9 },
     social: { social: 1.35, follower: 1.25, shy: 0.72, standoffish: 0.65, territorial: 0.7 },
     stimulation: { curious: 1.35, explorer: 1.25, playful: 1.35, lazy: 0.75, routineLoving: 0.78 },
     comfort: { nervous: 1.3, sensitive: 1.25, shy: 1.18, bold: 0.82, chill: 0.78 },
@@ -65809,8 +69203,8 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   const environmentTarget = getFishEnvironmentNeedTarget(fish, now);
   const socialTarget = getFishSocialNeedTarget(fish);
   const deltas = {
-    hunger: -hours * 5.2 * getPersonalityNeedModifier(fish, "hunger"),
-    energy: -hours * 3.7 * getPersonalityNeedModifier(fish, "energy"),
+    hunger: -hours * 2.5 * getPersonalityNeedModifier(fish, "hunger"),
+    energy: -hours * 2 * getPersonalityNeedModifier(fish, "energy"),
     social: (socialTarget - getFishNeedValue(fish, "social", now)) * Math.min(1, hours * 0.18) - hours * 1.4 * getPersonalityNeedModifier(fish, "social"),
     comfort: (comfortTarget - getFishNeedValue(fish, "comfort", now)) * Math.min(1, hours * 0.45),
     hygiene: (hygieneTarget - getFishNeedValue(fish, "hygiene", now)) * Math.min(1, hours * 0.38),
@@ -65823,19 +69217,23 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
     deltas.stimulation += hours * 2;
   }
   if (fish.activity === "roam" || fish.activity === "feeding" || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY || fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
-    const motionCost = clamp(Number(fish.motionLevel) || 0.2, 0.08, 1) * (fish.activity === "roam" ? 1.5 : 3.2);
+    const motionCost = clamp(Number(fish.motionLevel) || 0.2, 0.08, 1) * (fish.activity === "roam" ? 0.75 : 1.8);
     deltas.energy -= hours * motionCost;
   }
   if (activeQueueItem) {
     switch (activeQueueItem.action) {
       case "zoomies":
-        deltas.energy -= hours * 18;
-        deltas.hunger -= hours * 7;
+        deltas.energy -= hours * 10;
+        deltas.hunger -= hours * 3;
         deltas.stimulation += hours * 22;
         break;
       case "sleep":
+        deltas.energy += hours * 180;
+        deltas.comfort += hours * 8;
+        deltas.stimulation -= hours * 1.5;
+        break;
       case "rest":
-        deltas.energy += hours * 28;
+        deltas.energy += hours * 240;
         deltas.comfort += hours * 8;
         deltas.stimulation -= hours * 1.5;
         break;
@@ -65851,17 +69249,17 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
       case "inspect":
       case "play":
         deltas.stimulation += hours * 14;
-        deltas.energy -= hours * 4;
+        deltas.energy -= hours * 2;
         break;
       case "pebble":
         deltas.environment += hours * 18;
         deltas.stimulation += hours * 10;
-        deltas.energy -= hours * 6;
+        deltas.energy -= hours * 3;
         break;
       case "dig":
         deltas.environment += hours * 20;
         deltas.stimulation += hours * 7;
-        deltas.energy -= hours * 7;
+        deltas.energy -= hours * 3.5;
         break;
       case "waitfood":
         deltas.comfort += hours * 3;
@@ -65872,7 +69270,7 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
         deltas.energy -= hours * 2;
         break;
       case "breed":
-        deltas.energy -= hours * 8;
+        deltas.energy -= hours * 4;
         deltas.social += hours * 6;
         break;
       default:
@@ -68036,6 +71434,52 @@ function getFishFootprintBoundsAtPose(fish, species, now, pose) {
   };
 }
 
+function getCaveCollisionFrameCandidates(testLayer, now = Date.now()) {
+  const layer = clampTankLayer(testLayer);
+  const placedDecor = Array.isArray(state?.placedDecor) ? state.placedDecor : [];
+  const frameKey = Number(runtime.lastAnimationUpdateAt) || Number(now) || Date.now();
+  const activeTankId = state?.activeTankId || "";
+  let cache = runtime.caveCollisionFrameCache;
+
+  if (
+    !cache
+    || cache.frameKey !== frameKey
+    || cache.activeTankId !== activeTankId
+    || cache.placedDecor !== placedDecor
+    || cache.placedDecorLength !== placedDecor.length
+  ) {
+    const candidatesByLayer = Array.from({ length: TANK_DEPTH_LAYERS + 1 }, () => []);
+    for (const item of placedDecor) {
+      if (!item || !isCaveDecorKey(item.decorKey)) {
+        continue;
+      }
+      const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
+      const layers = span.front === span.back ? [span.front] : [span.front, span.back];
+      for (const candidateLayer of layers) {
+        const normalizedLayer = clampTankLayer(candidateLayer);
+        if (normalizedLayer < 3) {
+          continue;
+        }
+        const descriptor = getCaveBlockingDescriptorForLayer(item, normalizedLayer);
+        if (!descriptor) {
+          continue;
+        }
+        candidatesByLayer[normalizedLayer].push({ item, span, descriptor });
+      }
+    }
+    cache = {
+      frameKey,
+      activeTankId,
+      placedDecor,
+      placedDecorLength: placedDecor.length,
+      candidatesByLayer
+    };
+    runtime.caveCollisionFrameCache = cache;
+  }
+
+  return cache.candidatesByLayer[layer] || [];
+}
+
 function findBlockingCaveForFishPose(fish, species, now, pose, layerOverride = null) {
   if (!fish || !species || species.behavior === "sucker") {
     return null;
@@ -68046,34 +71490,43 @@ function findBlockingCaveForFishPose(fish, species, now, pose, layerOverride = n
     return null;
   }
 
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const fishDescriptor = getFishShapeDescriptor(fish, species, now, pose);
   if (!fishDescriptor) {
+    if (runtime.debugFrameProfilerEnabled) {
+      endDebugFrameProfilerSection("caveCollision", profileStartedAt);
+    }
     return null;
   }
 
-  for (const item of state.placedDecor) {
-    if (!isCaveDecorKey(item.decorKey)) {
-      continue;
-    }
-
+  const candidates = getCaveCollisionFrameCandidates(testLayer, now);
+  if (runtime.debugFrameProfilerEnabled) {
+    incrementDebugFrameProfilerCounter("caveCandidates", candidates.length);
+  }
+  for (const candidate of candidates) {
+    const { item, span, descriptor } = candidate;
     if (isFishUsingOwnCavePath(fish, item)) {
       continue;
     }
 
-    const descriptor = getCaveBlockingDescriptorForLayer(item, testLayer);
-    if (!descriptor) {
+    if (!boundsIntersect(fishDescriptor.bounds, descriptor.bounds)) {
       continue;
     }
 
-    if (boundsIntersect(fishDescriptor.bounds, descriptor.bounds) && shapesOverlapByMaskStrict(fishDescriptor, descriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
-      return {
-        item,
-        span: getDecorLayerSpan(item.decorKey, getDecorTankLayer(item)),
-        descriptor
-      };
+    if (runtime.debugFrameProfilerEnabled) {
+      incrementDebugFrameProfilerCounter("caveStrictChecks", 1);
+    }
+    if (shapesOverlapByMaskStrict(fishDescriptor, descriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
+      if (runtime.debugFrameProfilerEnabled) {
+        endDebugFrameProfilerSection("caveCollision", profileStartedAt);
+      }
+      return { item, span, descriptor };
     }
   }
 
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("caveCollision", profileStartedAt);
+  }
   return null;
 }
 
@@ -68580,12 +72033,13 @@ function boundsIntersect(leftBounds, rightBounds) {
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editEquipmentTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .submarine-manager, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
   );
 }
 
 function hasActiveTankToolOrOverlay() {
   const fishInspectorOpen = Boolean(runtime.selectedFishId && dom.fishInspector && !dom.fishInspector.hidden);
+  const submarineManagerOpen = Boolean(runtime.selectedMachineryId);
   return Boolean(
     runtime.storeOverlayOpen
     || runtime.utilityOverlayOpen
@@ -68596,6 +72050,7 @@ function hasActiveTankToolOrOverlay() {
     || !runtime.sidebarCollapsed
     || runtime.editTankMode
     || runtime.fishEditMode
+    || runtime.equipmentEditMode
     || runtime.tankEditMode
     || runtime.foodTrayOpen
     || runtime.medicineTrayOpen
@@ -68609,6 +72064,7 @@ function hasActiveTankToolOrOverlay() {
     || runtime.eggDragState
     || runtime.pebbleDragState
     || fishInspectorOpen
+    || submarineManagerOpen
   );
 }
 
@@ -68672,6 +72128,7 @@ function finalizeGlassTapGesture(event, now = Date.now()) {
     && pressDuration <= GLASS_TAP_MAX_HOLD_MS
     && !runtime.cleaningMode
     && !runtime.editTankMode
+    && !runtime.equipmentEditMode
     && !runtime.tankEditMode
     && !runtime.scoopMode
     && !runtime.placementMode
@@ -69412,7 +72869,7 @@ function getNotificationCenterEntries() {
 }
 
 function enqueueNotificationCenterEntry(entry, options = {}) {
-  if (!state) {
+  if (!state || !runtime.debugNotificationUiEnabled) {
     return null;
   }
   if (!state.notificationCenter || typeof state.notificationCenter !== "object") {
@@ -69524,6 +72981,15 @@ function syncNotificationBellPresentation() {
   if (!dom.dailyBonusBell) {
     return;
   }
+  if (!runtime.debugNotificationUiEnabled) {
+    dom.dailyBonusBell.hidden = true;
+    dom.dailyBonusBell.classList.remove("has-daily-recap", "has-unread-notifications");
+    if (dom.notificationBellBadge) {
+      dom.notificationBellBadge.hidden = true;
+      dom.notificationBellBadge.textContent = "";
+    }
+    return;
+  }
   ensurePendingRecapNotifications();
   const unreadCount = getUnreadNotificationCount();
   const hasRecap = getPendingDailyRecapSummaries().length > 0;
@@ -69620,6 +73086,9 @@ function ensureBoroughNotificationHost() {
 }
 
 function queueBoroughActivityNotification(title, detail = "", options = {}) {
+  if (!runtime.debugNotificationUiEnabled) {
+    return false;
+  }
   const now = Number.isFinite(Number(options.time)) ? Number(options.time) : Date.now();
   const signature = String(options.signature || `${title}|${detail}`).toLowerCase();
   const lastDuplicateAt = Number(runtime.boroughNotificationSignatures.get(signature)) || 0;
@@ -69742,6 +73211,7 @@ function getToastAvoidanceRects() {
     dom.tankBottomDock,
     dom.editDecorTray,
     dom.editFishTray,
+    dom.editEquipmentTray,
     dom.foodTray,
     dom.medicineTray,
     dom.placementHintContainer,
@@ -69808,6 +73278,7 @@ function positionCareTaskPane() {
     getVisibleTransientRect(dom.medicineTray),
     getVisibleTransientRect(dom.editDecorTray),
     getVisibleTransientRect(dom.editFishTray),
+    getVisibleTransientRect(dom.editEquipmentTray),
     getVisibleTransientRect(dom.fishInspector)
   ].filter(Boolean);
   const clampCandidate = (candidate) => ({
@@ -69873,6 +73344,7 @@ function positionDailyBonusBell() {
     getVisibleTransientRect(dom.medicineTray),
     getVisibleTransientRect(dom.editDecorTray),
     getVisibleTransientRect(dom.editFishTray),
+    getVisibleTransientRect(dom.editEquipmentTray),
     getVisibleTransientRect(dom.placementHintContainer),
     getVisibleTransientRect(dom.fishInspector)
   ].filter(Boolean);
@@ -70073,6 +73545,12 @@ function showGuidanceToast(owner, message, options = {}) {
 }
 
 function showToast(message, options = {}) {
+  const tutorialMessage = options.tutorialMessage === true || isIntroTutorialActive();
+  if (!tutorialMessage) {
+    hideToast();
+    return false;
+  }
+
   runtime.toastKey = typeof options.key === "string" ? options.key : "";
   runtime.guidanceToastOwner = typeof options.owner === "string" ? options.owner : "toast:general";
   dom.toast.textContent = message;
@@ -70090,5 +73568,6 @@ function showToast(message, options = {}) {
     runtime.toastKey = "";
     runtime.guidanceToastOwner = "";
   }, durationMs);
+  return true;
 }
 // </bundle-source>

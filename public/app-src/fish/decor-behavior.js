@@ -187,7 +187,12 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
     steady: 0.46,
     sporadic: 0.34
   };
-  const chanceMultiplier = Number.isFinite(Number(options.chanceMultiplier)) ? Number(options.chanceMultiplier) : 1;
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const baseChanceMultiplier = Number.isFinite(Number(options.chanceMultiplier)) ? Number(options.chanceMultiplier) : 1;
+  const speciesAffinity = options.ignoreSpeciesAffinity
+    ? 1
+    : clamp(locomotionProfile.structureAffinity, 0.2, 2.5);
+  const chanceMultiplier = baseChanceMultiplier * speciesAffinity;
 
   if (
     !state.placedDecor.length
@@ -243,7 +248,12 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
     return null;
   }
 
-  const zone = zones[Math.floor(Math.random() * zones.length)];
+  const favoriteZone = fish?.favoriteSpot?.decorId && locomotionProfile.homeRangeStrength > 0
+    ? zones.find((candidate) => candidate.decorId === fish.favoriteSpot.decorId)
+    : null;
+  const zone = favoriteZone && Math.random() < clamp(locomotionProfile.homeRangeStrength, 0, 1)
+    ? favoriteZone
+    : zones[Math.floor(Math.random() * zones.length)];
   const targetLayer = options.preferBackLayer
     ? clampTankLayer(zone.targetLayerMax)
     : clampTankLayer(zone.targetLayerMin + Math.floor(Math.random() * (zone.targetLayerMax - zone.targetLayerMin + 1)));

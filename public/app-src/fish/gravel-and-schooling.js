@@ -1043,10 +1043,15 @@ function getFishSchoolFollowAnchor(fish, leader) {
   }
 
   const leaderDirection = getFishFacingDirection(leader);
+  const species = getSpeciesForFish(fish);
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const spacingScale = clamp(locomotionProfile.schoolSpacingScale, 0.55, 1.7);
+  const spacingMinNorm = SAME_SPECIES_FOLLOW_SPACING_MIN_NORM * spacingScale;
+  const spacingMaxNorm = SAME_SPECIES_FOLLOW_SPACING_MAX_NORM * spacingScale;
   const spacingNorm = clamp(
-    (Math.max(80, getFishVisualSize(fish)) + Math.max(80, getFishVisualSize(leader))) / TANK_WIDTH * 0.2,
-    SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
-    SAME_SPECIES_FOLLOW_SPACING_MAX_NORM
+    (Math.max(80, getFishVisualSize(fish)) + Math.max(80, getFishVisualSize(leader))) / TANK_WIDTH * 0.2 * spacingScale,
+    spacingMinNorm,
+    spacingMaxNorm
   );
   const leadBlend = clamp(
     Math.hypot(
@@ -1061,13 +1066,15 @@ function getFishSchoolFollowAnchor(fish, leader) {
   const offsetXNorm = Number.isFinite(fish.followOffsetXNorm)
     ? Number(fish.followOffsetXNorm)
     : clamp(
-      -leaderDirection * spacingNorm + randomBetween(-0.012, 0.012),
-      -SAME_SPECIES_FOLLOW_SPACING_MAX_NORM,
-      SAME_SPECIES_FOLLOW_SPACING_MAX_NORM
+      -leaderDirection * spacingNorm + randomBetween(-0.012, 0.012) * spacingScale,
+      -spacingMaxNorm,
+      spacingMaxNorm
     );
+  const verticalJitter = SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM
+    * clamp(locomotionProfile.schoolVerticalJitterScale, 0.25, 1.8);
   const offsetYNorm = Number.isFinite(fish.followOffsetYNorm)
     ? Number(fish.followOffsetYNorm)
-    : randomBetween(-SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM, SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM);
+    : randomBetween(-verticalJitter, verticalJitter);
 
   return {
     xNorm: clamp(anchorXNorm + offsetXNorm, 0.08, 0.92),
@@ -1160,23 +1167,32 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     return null;
   }
 
+  const schoolingStrength = getFishSchoolingStrength(fish, species);
+  if (schoolingStrength <= 0.025) {
+    return null;
+  }
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const followRadiusNorm = SAME_SPECIES_FOLLOW_RADIUS_NORM * (0.76 + schoolingStrength * 0.48);
+
   const nearbySchoolmates = state.fish
     .filter((otherFish) => isFishEligibleSchoolLeader(otherFish, fish, species, now))
     .map((otherFish) => ({
       fish: otherFish,
       distanceNorm: Math.hypot(otherFish.xNorm - fish.xNorm, otherFish.yNorm - fish.yNorm)
     }))
-    .filter((entry) => entry.distanceNorm <= SAME_SPECIES_FOLLOW_RADIUS_NORM)
+    .filter((entry) => entry.distanceNorm <= followRadiusNorm)
     .sort((left, right) => left.distanceNorm - right.distanceNorm);
 
   if (!nearbySchoolmates.length) {
     return null;
   }
 
+  const baseFollowChance = SAME_SPECIES_FOLLOW_BASE_CHANCE
+    + Math.max(0, nearbySchoolmates.length - 1) * SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS;
   const followChance = clamp(
-    SAME_SPECIES_FOLLOW_BASE_CHANCE + Math.max(0, nearbySchoolmates.length - 1) * SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS,
+    baseFollowChance * (0.3 + schoolingStrength * 2.25),
     0,
-    SAME_SPECIES_FOLLOW_MAX_CHANCE
+    Math.max(0.035, 0.12 + schoolingStrength * 0.76)
   );
   if (Math.random() > followChance) {
     return null;
@@ -1192,7 +1208,11 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     return null;
   }
 
-  const followUntil = now + randomBetween(SAME_SPECIES_FOLLOW_MIN_MS, SAME_SPECIES_FOLLOW_MAX_MS);
+  const followDurationScale = clamp(locomotionProfile.schoolDurationScale, 0.55, 2.4);
+  const followUntil = now + randomBetween(
+    SAME_SPECIES_FOLLOW_MIN_MS * followDurationScale,
+    SAME_SPECIES_FOLLOW_MAX_MS * followDurationScale
+  );
   fish.followFishId = leader.id;
   fish.followUntil = followUntil;
   fish.followOffsetXNorm = null;

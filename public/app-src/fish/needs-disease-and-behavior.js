@@ -38,6 +38,35 @@ function getBaseSpeciesForFish(fish) {
   return fish ? runtime.fishMap.get(fish.speciesId) || null : null;
 }
 
+function rebuildFishFrameLookup() {
+  const fishList = Array.isArray(state?.fish) ? state.fish : [];
+  const lookup = runtime.fishFrameLookupById || new Map();
+  lookup.clear();
+  for (const fish of fishList) {
+    if (fish?.id) {
+      lookup.set(fish.id, fish);
+    }
+  }
+  runtime.fishFrameLookupById = lookup;
+  runtime.fishFrameLookupSource = fishList;
+  runtime.fishFrameLookupLength = fishList.length;
+  return lookup;
+}
+
+function getFishByIdFast(fishId) {
+  if (!fishId) {
+    return null;
+  }
+  const fishList = Array.isArray(state?.fish) ? state.fish : [];
+  if (
+    runtime.fishFrameLookupSource !== fishList
+    || runtime.fishFrameLookupLength !== fishList.length
+  ) {
+    rebuildFishFrameLookup();
+  }
+  return runtime.fishFrameLookupById.get(fishId) || null;
+}
+
 function getFishBehaviorProfileSpecies(fish) {
   const profileId = typeof fish?.behaviorSpeciesId === "string" ? fish.behaviorSpeciesId.trim() : "";
   if (!profileId || profileId === fish?.speciesId) {
@@ -101,6 +130,30 @@ function getFishBehaviorProfile(speciesOrFish) {
     detritusDiet: Boolean(profile?.detritusDiet) || species?.diet === "detritus",
     predatorDiet: Boolean(profile?.predatorDiet) || behavior === "piranha"
   };
+}
+
+function getFishLocomotionProfile(speciesOrFish) {
+  const species = speciesOrFish?.speciesId
+    ? (getFishBehaviorProfileSpecies(speciesOrFish) || getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
+    : speciesOrFish;
+  const speciesId = typeof species?.id === "string"
+    ? species.id
+    : (typeof speciesOrFish?.speciesId === "string" ? speciesOrFish.speciesId : "");
+  return FISH_LOCOMOTION_PROFILES[speciesId] || FISH_LOCOMOTION_PROFILE_DEFAULT;
+}
+
+function getFishSchoolingStrength(fish, species = getSpeciesForFish(fish)) {
+  const profile = getFishLocomotionProfile(species || fish);
+  const personality = getFishPersonality(fish);
+  let personalityScale = 1;
+  if (personality === "social" || personality === "follower") {
+    personalityScale = 1.16;
+  } else if (personality === "standoffish" || personality === "territorial") {
+    personalityScale = 0.62;
+  } else if (personality === "shy" || personality === "nervous") {
+    personalityScale = 1.06;
+  }
+  return clamp(profile.schoolStrength * personalityScale, 0, 1);
 }
 
 function pickFishPersonality(speciesOrFish) {
@@ -432,7 +485,7 @@ function getFishTintedImage(imagePath, sourceImage, fish) {
   }) || sourceImage;
 }
 
-function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now()) {
+function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now(), comfortValueOverride = null) {
   const filters = [];
   const grayscalePercent = Math.round((1 - clamp(Number(healthRatio) || 0, 0, 1)) * 100);
   const colorCycleFilter = getFishColorCycleFilter(fish, now);
@@ -452,7 +505,12 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now()) {
     filters.push(`grayscale(${grayscalePercent}%)`);
   }
   if (!isFishDead(fish)) {
-    const comfortValue = getFishComfort(fish, now).value;
+    const hasComfortOverride = comfortValueOverride !== null
+      && comfortValueOverride !== undefined
+      && Number.isFinite(Number(comfortValueOverride));
+    const comfortValue = hasComfortOverride
+      ? Number(comfortValueOverride)
+      : getFishComfort(fish, now).value;
     if (comfortValue <= 0.4) {
       filters.push("brightness(72%) saturate(68%) drop-shadow(0 0 10px rgba(0, 0, 0, 0.62))");
     }
@@ -2356,6 +2414,14 @@ function recordFishFeedingMemory(fish, pellet, now = Date.now()) {
 
 function shouldFishRefuseFoodForComfort(fish, foodKey = "basic", now = Date.now()) {
   if (!fish || isMealFreeFish(fish) || isUndeadFish(fish)) {
+    return false;
+  }
+
+  const hunger = getFishNeedValue(fish, "hunger", now);
+  // A critically hungry fish must not get trapped in a refusal loop. Once the
+  // hunger meter reaches the critical range, comfort-based pickiness and an old
+  // refusal cooldown no longer block eating compatible food.
+  if (hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
     return false;
   }
   if (Number(fish.foodRefusalUntil) > now) {

@@ -1,6 +1,7 @@
 // Source fragment: tank/events-recaps-and-save.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+
 function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) {
   const targetTank = tank || getCurrentTank();
   if (!targetTank) {
@@ -158,9 +159,47 @@ function getActiveDailyBonusSummary(tank = getCurrentTank()) {
   return summary && !isDailyBonusSummaryClaimed(summary, tank) ? summary : null;
 }
 
+function grantDailyRecapRewardAutomatically(summary, now = Date.now()) {
+  if (!state?.dailyBonus || !summary?.dayKey) {
+    return false;
+  }
+  const claimedKey = getDailyBonusClaimKey(summary);
+  if (claimedKey && state.dailyBonus.claimedByTankDay?.[claimedKey]) {
+    return false;
+  }
+
+  const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
+  if (reward > 0) {
+    state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
+  }
+  if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
+    state.dailyBonus.claimedByTankDay = {};
+  }
+  if (claimedKey) {
+    state.dailyBonus.claimedByTankDay[claimedKey] = true;
+  }
+  state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
+
+  const eventText = reward > 0
+    ? `Daily recap completed. +${reward} ${pluralize("coin", reward)} added automatically.`
+    : "Daily recap completed. No coin bonus today.";
+  pushEvent(eventText, now, getCurrentTank(), {
+    type: "daily_recap",
+    tone: reward > 0 ? "positive" : "neutral",
+    recapEligible: false
+  });
+  return true;
+}
+
 function syncActiveDailyBonusState() {
   if (!state?.dailyBonus) {
     return;
+  }
+  const pendingSummary = state.dailyBonus.summariesByTankId?.[BOROUGH_DAILY_RECAP_ID]
+    || state.dailyBonus.summary
+    || null;
+  if (pendingSummary && !isDailyBonusSummaryClaimed(pendingSummary)) {
+    grantDailyRecapRewardAutomatically(pendingSummary, Number(pendingSummary.generatedAt) || Date.now());
   }
   const summary = getActiveDailyBonusSummary();
   state.dailyBonus.summary = summary || null;
@@ -376,15 +415,6 @@ function storeDailyRecapSummary(summary) {
   state.dailyBonus.recapHistory.unshift(summary);
   state.dailyBonus.recapHistory = state.dailyBonus.recapHistory.slice(0, DAILY_RECAP_HISTORY_LIMIT);
   syncActiveDailyBonusState();
-  enqueueNotificationCenterEntry({
-    type: "daily_recap",
-    title: "Daily Recap ready",
-    detail: `Bubble Borough · ${summary.reward || 0} coin bonus`,
-    createdAt: summary.generatedAt || Date.now(),
-    signature: `daily-recap:${BOROUGH_DAILY_RECAP_ID}:${summary.dayKey}`,
-    tankId: "",
-    recapDayKey: summary.dayKey
-  }, { surface: true });
   applyProgressMilestones(summary, summary.generatedAt || Date.now());
   return true;
 }
@@ -727,7 +757,68 @@ function triggerDebugDailyRecap(now = Date.now()) {
   return true;
 }
 
+function cancelDeferredStateSaveSchedule() {
+  if (runtime.deferredStateSaveTimerId) {
+    window.clearTimeout(runtime.deferredStateSaveTimerId);
+    runtime.deferredStateSaveTimerId = 0;
+  }
+  if (runtime.deferredStateSaveIdleId && typeof window.cancelIdleCallback === "function") {
+    window.cancelIdleCallback(runtime.deferredStateSaveIdleId);
+    runtime.deferredStateSaveIdleId = 0;
+  }
+}
+
+function flushDeferredStateSave() {
+  runtime.deferredStateSaveTimerId = 0;
+  runtime.deferredStateSaveIdleId = 0;
+  if (!runtime.deferredStateSaveDirty) {
+    return false;
+  }
+  saveState();
+  return true;
+}
+
+function requestDeferredStateSave() {
+  if (!runtimeInitialized || !state) {
+    return false;
+  }
+
+  runtime.deferredStateSaveDirty = true;
+  if (!runtime.deferredStateSaveRequestedAt) {
+    runtime.deferredStateSaveRequestedAt = Date.now();
+  }
+  if (runtime.deferredStateSaveTimerId || runtime.deferredStateSaveIdleId) {
+    return true;
+  }
+
+  const now = Date.now();
+  const sinceLastSave = runtime.lastStateSavedAt > 0
+    ? now - runtime.lastStateSavedAt
+    : 0;
+  const delayMs = Math.max(350, DEFERRED_STATE_SAVE_MIN_INTERVAL_MS - sinceLastSave);
+
+  runtime.deferredStateSaveTimerId = window.setTimeout(() => {
+    runtime.deferredStateSaveTimerId = 0;
+    if (!runtime.deferredStateSaveDirty) {
+      return;
+    }
+
+    if (typeof window.requestIdleCallback === "function") {
+      runtime.deferredStateSaveIdleId = window.requestIdleCallback(() => {
+        flushDeferredStateSave();
+      }, { timeout: 1250 });
+      return;
+    }
+
+    runtime.deferredStateSaveTimerId = window.setTimeout(() => {
+      flushDeferredStateSave();
+    }, 500);
+  }, delayMs);
+  return true;
+}
+
 function saveState() {
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   if (!state) {
     return;
@@ -751,8 +842,12 @@ function saveState() {
     } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
+    runtime.lastStateSavedAt = Date.now();
     runtime.gravelStateDirty = false;
     runtime.tankStateDirty = false;
+    runtime.deferredStateSaveDirty = false;
+    runtime.deferredStateSaveRequestedAt = 0;
+    cancelDeferredStateSaveSchedule();
     runtime.saveStateWarningShown = false;
     scheduleCustomImageStorageCleanup();
   } catch (error) {
@@ -762,6 +857,12 @@ function saveState() {
       showToast(isDesktopAppRuntime()
         ? "Could not write desktop save. Check that bubbleborough_data is writable."
         : "Save storage is full. Try smaller custom images or clearing old progress.");
+    }
+  } finally {
+    if (runtime.debugFrameProfilerEnabled) {
+      const durationMs = Math.max(0, performance.now() - profileStartedAt);
+      runtime.frameProfilerLastSaveMs = durationMs;
+      recordDebugFrameProfilerDuration("saveState", durationMs);
     }
   }
 }

@@ -81,6 +81,64 @@ function renderVisiblePanels(now) {
   }
 }
 
+function cancelDeferredTickUiRefresh() {
+  if (runtime.deferredTickUiTimerId) {
+    window.clearTimeout(runtime.deferredTickUiTimerId);
+    runtime.deferredTickUiTimerId = 0;
+  }
+  if (runtime.deferredTickUiIdleId && typeof window.cancelIdleCallback === "function") {
+    window.cancelIdleCallback(runtime.deferredTickUiIdleId);
+    runtime.deferredTickUiIdleId = 0;
+  }
+  runtime.deferredTickUiNow = 0;
+}
+
+function flushDeferredTickUiRefresh() {
+  const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
+  runtime.deferredTickUiTimerId = 0;
+  runtime.deferredTickUiIdleId = 0;
+  const now = Number(runtime.deferredTickUiNow) || Date.now();
+  runtime.deferredTickUiNow = 0;
+  runtime.lastDeferredTickUiRefreshAt = Date.now();
+  renderSummary(now);
+  renderEvents();
+  renderStoreOverlay();
+  renderVisiblePanels(now);
+  positionTransientMessages();
+  if (runtime.debugFrameProfilerEnabled) {
+    runtime.frameProfilerLastDeferredUiMs = Math.max(0, performance.now() - profileStartedAt);
+  }
+}
+
+function scheduleDeferredTickUiRefresh(now = Date.now()) {
+  runtime.deferredTickUiNow = Math.max(Number(runtime.deferredTickUiNow) || 0, Number(now) || Date.now());
+  if (runtime.deferredTickUiTimerId || runtime.deferredTickUiIdleId) {
+    return;
+  }
+
+  const elapsedSinceRefresh = runtime.lastDeferredTickUiRefreshAt > 0
+    ? Date.now() - runtime.lastDeferredTickUiRefreshAt
+    : DEFERRED_TICK_UI_MIN_INTERVAL_MS;
+  const waitMs = Math.max(0, DEFERRED_TICK_UI_MIN_INTERVAL_MS - elapsedSinceRefresh);
+  if (waitMs > 0) {
+    runtime.deferredTickUiTimerId = window.setTimeout(() => {
+      runtime.deferredTickUiTimerId = 0;
+      scheduleDeferredTickUiRefresh(runtime.deferredTickUiNow || Date.now());
+    }, waitMs);
+    return;
+  }
+
+  if (typeof window.requestIdleCallback === "function") {
+    runtime.deferredTickUiIdleId = window.requestIdleCallback(() => {
+      flushDeferredTickUiRefresh();
+    }, { timeout: 900 });
+    return;
+  }
+  runtime.deferredTickUiTimerId = window.setTimeout(() => {
+    flushDeferredTickUiRefresh();
+  }, 120);
+}
+
 function syncCurrentTankState(now, options = {}) {
   if (!PIRANHA_BEHAVIOR_ENABLED) {
     for (const fish of state.fish) {
@@ -187,7 +245,7 @@ function syncCurrentTankState(now, options = {}) {
   const droppedPoops = [];
   state.pendingPoops = state.pendingPoops.filter((poop) => {
     if (poop.dueAt <= now) {
-      const fish = state.fish.find((entry) => entry.id === poop.fishId);
+      const fish = getFishByIdFast(poop.fishId);
       if (!fish || isFishDead(fish)) {
         return false;
       }

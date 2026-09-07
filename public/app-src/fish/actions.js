@@ -649,7 +649,11 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
     const focusYNorm = clamp(Number(steering.yNorm) || fish.yNorm || 0.5, 0.12, 0.84);
     const side = (fish.xNorm || 0.5) <= focusXNorm ? -1 : 1;
     fish.targetXNorm = clamp(focusXNorm + side * 0.06, 0.08, 0.92);
-    fish.targetYNorm = clampFishYNormToLayer(focusYNorm + Math.sin(now / 1200 + fish.phase * Math.PI) * 0.02, fish, species, steering.targetLayer || getFishTankLayer(fish), { minYNorm: 0.14, maxYNorm: 0.82 });
+    // Keep the inspect/hangout anchor fixed. The old code sampled a sine wave
+    // only when steering refreshed (every 260 ms), so a fish resting by decor
+    // was given a new vertical target in visible steps. Any idle bob belongs in
+    // the render pose, which updates every animation frame.
+    fish.targetYNorm = clampFishYNormToLayer(focusYNorm, fish, species, steering.targetLayer || getFishTankLayer(fish), { minYNorm: 0.14, maxYNorm: 0.82 });
     fish.targetAt = now + 720;
     fish.hangoutDecorId = steering.decorId || null;
     fish.hangoutZoneType = steering.zoneType || "inspect";

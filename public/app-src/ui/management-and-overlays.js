@@ -1169,7 +1169,6 @@ function buildManagementFishRow(fish, now = Date.now()) {
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
-  const purchaseCost = getFishPurchaseCost(fish.speciesId);
   const canBuyAnother = isCustomFishAssetKey(fish.speciesId) || isFishSpeciesShopUnlocked(baseSpecies);
   const canSell = Boolean(baseSpecies) && !dead && !isFishBeingConsumedByPiranhas(fish, now) && !juvenile;
   const canStore = !dead && !infected;
@@ -1194,7 +1193,7 @@ function buildManagementFishRow(fish, now = Date.now()) {
       <div class="management-browser-actions">
         <button class="small-button alt" type="button" data-management-select-fish="${escapeHtml(fish.id)}">Select</button>
         <button class="small-button alt" type="button" data-management-store-fish="${escapeHtml(fish.id)}" ${canStore ? "" : "disabled"}>Put Away</button>
-        <button class="small-button alt" type="button" data-management-buy-another-fish="${escapeHtml(fish.id)}" ${(canBuyAnother && state.coins >= purchaseCost) ? "" : "disabled"}>Buy Another</button>
+        <button class="small-button alt" type="button" data-management-buy-another-fish="${escapeHtml(fish.id)}" ${canBuyAnother ? "" : "disabled"}>Buy Another</button>
         <button class="small-button warn" type="button" data-management-sell-fish="${escapeHtml(fish.id)}" ${canSell ? "" : "disabled"}>Sell</button>
       </div>
     </article>
@@ -1227,7 +1226,6 @@ function buildManagementDecorRow(item) {
     path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`)
   };
   const grouped = isPlacedDecorGrouped(item);
-  const cost = getDecorPurchaseCost(item.decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
   const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey);
   const serviceTypes = getDecorBoroughServiceTypes(item);
@@ -1246,7 +1244,7 @@ function buildManagementDecorRow(item) {
       <div class="management-browser-actions">
         <button class="small-button alt" type="button" data-management-select-decor="${escapeHtml(item.id)}">Select</button>
         <button class="small-button alt" type="button" data-management-store-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>Put Away</button>
-        <button class="small-button alt" type="button" data-management-buy-another-decor="${escapeHtml(item.decorKey)}" ${(canBuyAnother && state.coins >= cost) ? "" : "disabled"}>Buy Another</button>
+        <button class="small-button alt" type="button" data-management-buy-another-decor="${escapeHtml(item.decorKey)}" ${canBuyAnother ? "" : "disabled"}>Buy Another</button>
         <button class="small-button warn" type="button" data-management-sell-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>Sell</button>
       </div>
     </article>

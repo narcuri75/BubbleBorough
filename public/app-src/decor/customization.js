@@ -305,7 +305,7 @@ function extendAquariumAt(gridX, gridY) {
     return false;
   }
   if (state.coins < expansionCost) {
-    showToast(`You need ${expansionCost} ${pluralize("coin", expansionCost)} to extend the aquarium.`);
+    showToast("Payment method declined. Insufficient Funds.", { force: true, tone: "error" });
     return false;
   }
   state.coins -= expansionCost;
@@ -407,6 +407,8 @@ function setActiveTank(tankId, options = {}) {
     runtime.selectedPlacedDecorId = null;
   }
   closeSubmarineManager();
+  closeEditEquipmentTrayContextMenu();
+  suspendSubmarineManualDrive();
   runtime.selectedFishId = null;
   runtime.fishInspectorSettingsOpen = false;
   runtime.editingTankNameId = null;
@@ -687,12 +689,13 @@ function openExclusiveOverlay(kind, options = {}) {
   }
 }
 
-function openStoreOverlay(tab = "food") {
+function openStoreOverlay(tab = "food", options = {}) {
   if (getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
     showToast("Finish this task first.");
     return;
   }
 
+  if (dom.storeOverlay && options.forceCategory === true) dom.storeOverlay.dataset.requestedCategory = tab;
   openExclusiveOverlay("store", { tab });
 }
 
@@ -2465,6 +2468,8 @@ function formatBubblerSettingReadout(setting, settings) {
       const choice = getCustomGravelColorChoices().find((entry) => entry.color === color);
       return choice?.label || color;
     }
+    case "lightColor":
+      return normalizeHexColor(settings.lightColor) || DEFAULT_BUBBLER_LIGHT_COLOR;
     case "bubbleColorize":
       return settings.bubbleColorize ? "On" : "Off";
     case "bubbleFillOpacity":
@@ -2503,6 +2508,8 @@ function getBubblerSettingControlValue(setting, settings) {
       return settings.distance;
     case "bubbleColor":
       return settings.bubbleColor;
+    case "lightColor":
+      return settings.lightColor;
     case "bubbleColorize":
       return settings.bubbleColorize;
     case "bubbleFillOpacity":
@@ -2596,6 +2603,9 @@ function updateSelectedBubblerSetting(setting, value) {
     case "bubbleColor":
       settings.bubbleColor = normalizeDecorColorSetting(value) || DEFAULT_BUBBLER_BUBBLE_COLOR;
       settings.bubbleColors = [settings.bubbleColor];
+      break;
+    case "lightColor":
+      settings.lightColor = normalizeHexColor(value) || DEFAULT_BUBBLER_LIGHT_COLOR;
       break;
     case "bubbleColorize":
       settings.bubbleColorize = normalizeDecorColorizeSetting(value);

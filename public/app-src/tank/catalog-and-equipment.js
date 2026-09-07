@@ -12,10 +12,17 @@ function normalizeStringList(value) {
     .filter(Boolean);
 }
 
+function isHalloweenDecor(decor) {
+  return /halloween/i.test([decor?.name, decor?.key, decor?.file, decor?.theme].filter(Boolean).join(" "))
+    || normalizeStringList(decor?.categories).some((tag) => tag.toLowerCase() === "halloween");
+}
+
 function deriveDecorCategories(entry, key) {
   const configured = normalizeStringList(entry?.categories || entry?.category);
   if (configured.length) {
-    return configured.map((value) => value.toLowerCase());
+    const categories = configured.map((value) => value.toLowerCase());
+    if (isHalloweenDecor({ ...entry, key }) && !categories.includes("halloween")) categories.push("halloween");
+    return categories;
   }
 
   const bucket = new Set();
@@ -29,7 +36,9 @@ function deriveDecorCategories(entry, key) {
   if (/shell|rock|driftwood|bridge|lantern|chest/.test(haystack)) {
     bucket.add("ornaments");
   }
-  return bucket.size ? [...bucket] : ["ornaments"];
+  if (!bucket.size) bucket.add("ornaments");
+  if (isHalloweenDecor({ ...entry, key })) bucket.add("halloween");
+  return [...bucket];
 }
 
 function normalizeDecorHangoutTypes(value) {
@@ -224,6 +233,191 @@ function isPredatorMealFood(foodKey) {
   return PREDATOR_MEAL_FOOD_KEYS.includes(String(foodKey || ""));
 }
 
+function getFishSpeciesType(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  return typeof species?.type === "string" ? species.type.trim().toLowerCase() : "";
+}
+
+function isWhaleFish(target) {
+  return getFishSpeciesType(target) === "whale";
+}
+
+function getWhaleBreathSurfaceYNorm(fish, species = getSpeciesForFish(fish)) {
+  const halfHeight = getFishVisualHalfHeightPx(fish, species);
+  const fullHeight = halfHeight * 2;
+  const breachHeight = fullHeight * WHALE_BREATH_BREACH_HEIGHT_RATIO;
+  return Math.max(
+    0.04,
+    (WATER_SURFACE_Y + halfHeight - breachHeight) / TANK_HEIGHT
+  );
+}
+
+function getWhaleBreathBlowholeXNorm(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  if (!fish || !species) {
+    return clamp(Number(fish?.xNorm) || 0.5, 0.03, 0.97);
+  }
+  const bodyWidthPx = getFishDisplayWidth(fish, species, now);
+  const facingDirection = getFishFacingDirection(fish);
+  const blowholeX = fish.xNorm * TANK_WIDTH
+    + facingDirection * bodyWidthPx * WHALE_BREATH_BLOWHOLE_FORWARD_OFFSET_RATIO;
+  return clamp(blowholeX / TANK_WIDTH, 0.03, 0.97);
+}
+
+function scheduleNextWhaleBreath(fish, now = Date.now(), options = {}) {
+  if (!fish) {
+    return 0;
+  }
+  const first = options.first === true;
+  const minMs = first ? WHALE_BREATH_FIRST_MIN_MS : WHALE_BREATH_INTERVAL_MIN_MS;
+  const maxMs = first ? WHALE_BREATH_FIRST_MAX_MS : WHALE_BREATH_INTERVAL_MAX_MS;
+  const nextAt = now + randomBetween(minMs, maxMs);
+  fish.whaleNextBreathAt = nextAt;
+  return nextAt;
+}
+
+function isWhaleBreathActive(fish, species = getSpeciesForFish(fish)) {
+  return Boolean(
+    fish
+    && species
+    && isWhaleFish(species)
+    && (fish.whaleBreathState === "ascending" || fish.whaleBreathState === "surface")
+  );
+}
+
+function clearWhaleBreathState(fish, now = Date.now(), options = {}) {
+  if (!fish) {
+    return false;
+  }
+  const hadState = Boolean(fish.whaleBreathState || fish.whaleBreathSurfaceUntil || fish.whaleBreathTargetXNorm);
+  delete fish.whaleBreathState;
+  delete fish.whaleBreathSurfaceUntil;
+  delete fish.whaleBreathTargetXNorm;
+  if (options.reschedule !== false) {
+    scheduleNextWhaleBreath(fish, now);
+  }
+  if (fish.activity === WHALE_BREATH_ACTIVITY) {
+    fish.activity = "roam";
+    fish.targetAt = now;
+  }
+  return hadState;
+}
+
+function startWhaleBreathCycle(fish, species, now = Date.now()) {
+  if (!fish || !species || !isWhaleFish(species) || isFishDead(fish)) {
+    return false;
+  }
+
+  clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+  clearForcedGravelDigPrompt(fish);
+  if (fish.caveState) {
+    abortFishCaveBehavior(fish, now, false);
+  }
+  if (fish.feedingPelletId) {
+    releasePelletsTargetingFishIds(fish.id);
+  }
+  fish.feedingPelletId = null;
+  fish.activity = WHALE_BREATH_ACTIVITY;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.blockedDecorId = null;
+  fish.blockedDecorUntil = null;
+  fish.panicUntil = null;
+  fish.panicSpeedBoost = null;
+  clearFishSchoolFollowState(fish);
+
+  const travelX = clampFishXNormToMobileViewport(
+    clamp(fish.xNorm + randomBetween(-0.12, 0.12), 0.12, 0.88),
+    fish,
+    species,
+    now
+  );
+  fish.whaleBreathState = "ascending";
+  fish.whaleBreathTargetXNorm = travelX;
+  fish.targetXNorm = travelX;
+  fish.targetYNorm = getWhaleBreathSurfaceYNorm(fish, species);
+  fish.targetAt = now + 60 * 1000;
+  fish.swimSpeed = normalizeFishSpeed(
+    species,
+    randomBetween(Math.max(species.speedMin, species.speedMax * 0.78), species.speedMax)
+  );
+  return true;
+}
+
+function updateWhaleBreathBehavior(fish, species, now = Date.now(), options = {}) {
+  if (!fish || !species || !isWhaleFish(species) || isFishDead(fish)) {
+    return false;
+  }
+
+  if (!Number.isFinite(Number(fish.whaleNextBreathAt))) {
+    scheduleNextWhaleBreath(fish, now, { first: true });
+  }
+
+  if (options.paused === true) {
+    return false;
+  }
+
+  if (!isWhaleBreathActive(fish, species) && now >= Number(fish.whaleNextBreathAt)) {
+    startWhaleBreathCycle(fish, species, now);
+  }
+
+  if (!isWhaleBreathActive(fish, species)) {
+    return false;
+  }
+
+  const surfaceYNorm = getWhaleBreathSurfaceYNorm(fish, species);
+  fish.activity = WHALE_BREATH_ACTIVITY;
+  fish.targetYNorm = surfaceYNorm;
+  fish.targetAt = now + 60 * 1000;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  clearFishSchoolFollowState(fish);
+
+  if (fish.whaleBreathState === "ascending") {
+    fish.targetXNorm = clampFishXNormToMobileViewport(
+      Number.isFinite(Number(fish.whaleBreathTargetXNorm)) ? Number(fish.whaleBreathTargetXNorm) : fish.xNorm,
+      fish,
+      species,
+      now
+    );
+    if (fish.yNorm <= surfaceYNorm + WHALE_BREATH_ARRIVAL_NORM) {
+      fish.whaleBreathState = "surface";
+      fish.whaleBreathSurfaceUntil = now + randomBetween(WHALE_BREATH_SURFACE_HOLD_MIN_MS, WHALE_BREATH_SURFACE_HOLD_MAX_MS);
+      fish.targetXNorm = fish.xNorm;
+      fish.targetYNorm = surfaceYNorm;
+      fish.whaleBreathTargetXNorm = fish.xNorm;
+      spawnFishReturnSplash(getWhaleBreathBlowholeXNorm(fish, species, now));
+      playWhaleBreathSoundEffect();
+    }
+    return true;
+  }
+
+  fish.targetXNorm = fish.xNorm;
+  fish.targetYNorm = surfaceYNorm;
+  if (now >= Number(fish.whaleBreathSurfaceUntil || 0)) {
+    clearWhaleBreathState(fish, now);
+    return false;
+  }
+  return true;
+}
+
+function isChumOnlyFish(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  const type = getFishSpeciesType(species);
+  return Boolean(
+    species
+    && (species.diet === "chum" || species.chumOnly === true || type === "shark" || type === "whale")
+  );
+}
+
+function isDesperationPredatorFish(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  const type = getFishSpeciesType(species);
+  return Boolean(
+    species
+    && (species.desperationPredator === true || type === "shark" || type === "whale")
+  );
+}
+
 function isFoodAllowedInAutoDispenser(foodOrKey) {
   const food = typeof foodOrKey === "string" ? getFoodMeta(foodOrKey) : foodOrKey;
   return Boolean(food && food.dispenserAllowed !== false);
@@ -232,6 +426,9 @@ function isFoodAllowedInAutoDispenser(foodOrKey) {
 function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
   if (!fish || isFishDead(fish)) {
     return false;
+  }
+  if (isChumOnlyFish(fish)) {
+    return isPredatorMealFood(foodKey);
   }
   if (isPiranhaSpecies(fish) || isZombieFish(fish) || (isZombieSkeletonModeAvailable() && fish.speciesId === "zombie-fish")) {
     return isPredatorMealFood(foodKey);
@@ -785,6 +982,19 @@ function getFoodDropStyle(foodOrKey) {
     return "pellet";
   }
   return food?.dropStyle === "sprite" ? "sprite" : "pellet";
+}
+
+function getChumSpriteVisualScale(spritePath = "") {
+  const fileName = String(spritePath || "")
+    .split(/[\\/]/)
+    .pop()
+    .toLowerCase();
+  // The three chum images share the same 100x89 canvas, but their visible
+  // painted areas differ. Normalize their apparent mass while preserving
+  // each sprite's natural aspect ratio.
+  if (fileName === "chum_2.png") return 1.03;
+  if (fileName === "chum_3.png") return 1.17;
+  return 1;
 }
 
 function getFoodDropAppearance(foodKey, pellet = null) {

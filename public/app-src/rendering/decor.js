@@ -33,6 +33,110 @@ function drawDecorColorLayerImageToContext(context, sourceImage, imagePath, colo
   return true;
 }
 
+function getTintedBubblerLightImage(imagePath, color, sourceImage = null) {
+  const image = sourceImage || runtime.images.get(imagePath);
+  if (!image) {
+    return null;
+  }
+
+  const resolvedColor = normalizeHexColor(color) || DEFAULT_BUBBLER_LIGHT_COLOR;
+  const cacheKey = `${imagePath}|${resolvedColor}`;
+  const cached = runtime.bubblerLightTintCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const width = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const height = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return image;
+  }
+
+  context.clearRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+  context.globalCompositeOperation = "source-in";
+  const centerX = width * 0.5;
+  const centerY = height * 0.56;
+  const innerRadius = Math.max(1, Math.min(width, height) * 0.025);
+  const outerRadius = Math.max(width, height) * 0.68;
+  const gradient = context.createRadialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius);
+  gradient.addColorStop(0, resolvedColor);
+  gradient.addColorStop(0.32, resolvedColor);
+  gradient.addColorStop(0.68, "#180B05");
+  gradient.addColorStop(1, "#000000");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, width, height);
+  context.globalCompositeOperation = "source-over";
+
+  runtime.bubblerLightTintCache.set(cacheKey, canvas);
+  return canvas;
+}
+
+function getBubblerLightFlickerAlpha(item, now = Date.now()) {
+  const phase = (Number(item?.xNorm) || 0) * 13.7 + (Number(item?.yNorm) || 0) * 8.3;
+  const slowPulse = Math.sin(now / 235 + phase) * 0.075;
+  const quickFlicker = Math.sin(now / 67 + phase * 1.9) * 0.035;
+  const tinyFlicker = Math.sin(now / 31 + phase * 3.1) * 0.018;
+  const occasionalDip = Math.max(0, Math.sin(now / 149 + phase * 2.4) - 0.9) * 0.48;
+  return clamp(0.9 + slowPulse + quickFlicker + tinyFlicker - occasionalDip, 0.68, 1);
+}
+
+function drawBubblerLightLayerToContext(context, item, decor, now = Date.now(), options = {}) {
+  const lightPath = getDecorBubblerLightPath(item);
+  if (!lightPath) {
+    return false;
+  }
+
+  const sourceImage = runtime.images.get(lightPath);
+  if (!sourceImage) {
+    return false;
+  }
+
+  const settings = getPlacedDecorBubblerSettings(item);
+  const lightImage = getTintedBubblerLightImage(
+    lightPath,
+    settings?.lightColor || DEFAULT_BUBBLER_LIGHT_COLOR,
+    sourceImage
+  );
+  if (!lightImage) {
+    return false;
+  }
+
+  const width = Number.isFinite(Number(options.width))
+    ? Number(options.width)
+    : getDecorDisplayWidth(decor, item);
+  const height = Number.isFinite(Number(options.height))
+    ? Number(options.height)
+    : width * ((sourceImage.height || 1) / Math.max(1, sourceImage.width || 1));
+  let drawX = Number.isFinite(Number(options.drawX))
+    ? Number(options.drawX)
+    : item.xNorm * TANK_WIDTH - width / 2;
+  let drawY = Number.isFinite(Number(options.drawY))
+    ? Number(options.drawY)
+    : item.yNorm * TANK_HEIGHT - height;
+  const motion = options.motion || getDecorMotion(item, now);
+  const baseAlpha = Number.isFinite(Number(options.alpha)) ? clamp(Number(options.alpha), 0, 1) : 1;
+  const flickerAlpha = getBubblerLightFlickerAlpha(item, now);
+
+  context.save();
+  context.globalAlpha = baseAlpha * flickerAlpha;
+  const flipX = isDecorHorizontallyFlipped(item);
+  const flipY = isDecorVerticallyFlipped(item);
+  if (flipX || flipY) {
+    context.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
+    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+    drawX = flipX ? 0 : drawX;
+    drawY = flipY ? 0 : drawY;
+  }
+  drawDecorMotionImageToContext(context, lightImage, drawX, drawY, width, height, item, now, motion);
+  context.restore();
+  return true;
+}
+
 function getDecorWarpSliceCount(height) {
   return clamp(
     Math.round(Math.max(1, Number(height) || 1) / DECOR_WARP_SLICE_TARGET_PX),
@@ -125,6 +229,7 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
     drawY = flipY ? 0 : drawY;
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
+  drawDecorCausticLight(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
   drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
   context.restore();
 }
@@ -292,6 +397,34 @@ function pruneFishShadowPlaneCache() {
   }
 }
 
+function getDecorContactSpans(item, decor) {
+  const mask = getImageAlphaMask(decor.path);
+  if (!mask?.bounds || !mask.alpha) return null;
+  if (!runtime.decorContactSpanCache) runtime.decorContactSpanCache = new WeakMap();
+  let variants = runtime.decorContactSpanCache.get(mask);
+  if (!variants) { variants = new Map(); runtime.decorContactSpanCache.set(mask, variants); }
+  const flippedY = isDecorVerticallyFlipped(item);
+  if (variants.has(flippedY)) return variants.get(flippedY);
+  const { minX, maxX, minY, maxY } = mask.bounds;
+  const band = Math.max(2, Math.ceil((maxY - minY + 1) * 0.055));
+  const spans = [];
+  let start = null;
+  for (let x = minX; x <= maxX + 1; x++) {
+    let opaque = false;
+    if (x <= maxX) for (let offset = 0; offset < band; offset++) {
+      const y = flippedY ? minY + offset : maxY - offset;
+      if (mask.alpha[(y * mask.width + x) * 4 + 3] >= ALPHA_HIT_THRESHOLD) { opaque = true; break; }
+    }
+    if (opaque && start === null) start = x;
+    if (!opaque && start !== null) {
+      spans.push({ left: start / mask.width, right: x / mask.width });
+      start = null;
+    }
+  }
+  variants.set(flippedY, spans);
+  return spans;
+}
+
 function getDecorContactShadowMetrics(item) {
   const decor = runtime.decorMap.get(item?.decorKey);
   if (!decor) {
@@ -311,8 +444,8 @@ function getDecorContactShadowMetrics(item) {
   const width = Math.max(1, bounds.right - bounds.left);
   const height = Math.max(1, bounds.bottom - bounds.top);
   const layerFloorY = getTankLayerBottomBoundaryY(getDecorTankLayer(item));
-  const anchorY = (Number(item.yNorm) || 0) * TANK_HEIGHT;
-  const groundingTolerance = clamp(width * 0.09, 18, 58);
+  const anchorY = bounds.bottom;
+  const groundingTolerance = clamp(width * 0.05, 10, 24);
   const groundingStrength = clamp(1 - Math.abs(layerFloorY - anchorY) / groundingTolerance, 0, 1);
   if (groundingStrength <= 0.04) {
     return null;
@@ -324,7 +457,7 @@ function getDecorContactShadowMetrics(item) {
   const centerX = (bounds.left + bounds.right) * 0.5;
   const lightOffsetX = clamp(radiusX * 0.075, 2, 12);
   const shadowY = clamp(
-    layerFloorY + 2,
+    anchorY - 0.5,
     WATER_SURFACE_Y + 20,
     getVisibleTankFloorBottomY() + 8
   );
@@ -334,7 +467,9 @@ function getDecorContactShadowMetrics(item) {
     y: shadowY,
     radiusX,
     radiusY,
-    alpha: 0.30 * groundingStrength
+    alpha: 0.30 * groundingStrength,
+    spans: getDecorContactSpans(item, decor),
+    spriteWidth: getDecorDisplayWidth(decor, item)
   };
 }
 
@@ -345,17 +480,29 @@ function drawDecorContactShadow(context, item) {
   }
 
   context.save();
-  context.translate(shadow.x, shadow.y);
-  context.scale(shadow.radiusX, shadow.radiusY);
-  const gradient = context.createRadialGradient(0, 0, 0.04, 0, 0, 1);
-  gradient.addColorStop(0, `rgba(2, 7, 12, ${shadow.alpha.toFixed(3)})`);
-  gradient.addColorStop(0.34, `rgba(3, 9, 15, ${(shadow.alpha * 0.86).toFixed(3)})`);
-  gradient.addColorStop(0.75, `rgba(5, 12, 18, ${(shadow.alpha * 0.34).toFixed(3)})`);
-  gradient.addColorStop(1, "rgba(5, 12, 18, 0)");
-  context.fillStyle = gradient;
-  context.beginPath();
-  context.arc(0, 0, 1, 0, Math.PI * 2);
-  context.fill();
+  traceTankFloorMaskPath(context, getTankFloorDrawBounds());
+  context.clip();
+  const spans = shadow.spans || [{ left: 0.22, right: 0.78 }];
+  for (const span of spans) {
+    const left = resolveDecorHorizontalUnit(item, span.left);
+    const right = resolveDecorHorizontalUnit(item, span.right);
+    const x = item.xNorm * TANK_WIDTH + ((left + right) / 2 - 0.5) * shadow.spriteWidth;
+    const radius = Math.max(2, Math.abs(right - left) * shadow.spriteWidth / 2);
+    // Local soft occlusion plus a tight core; gaps under arches stay open.
+    for (const core of [false, true]) {
+      context.save();
+      context.translate(x, shadow.y);
+      context.scale(radius * (core ? 1.02 : 1.1), core ? 1.5 : clamp(radius * 0.065, 2, 6));
+      const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * (core ? 0.88 : 0.42)})`);
+      gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.arc(0, 0, 1, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+  }
   context.restore();
 }
 
@@ -584,6 +731,13 @@ function drawDecor(layer = null, now = Date.now()) {
           drawDecorImageLayer(bgImage, drawX, y - bgHeight, width, bgHeight, item, now, motion);
         }
       }
+      drawBubblerLightLayerToContext(tankContext, item, decor, now, {
+        drawX,
+        drawY,
+        width,
+        height,
+        motion
+      });
       drawDecorBubblerEffect(item, decor, image, now);
       if (!isCustomBubblerDecorKey(item.decorKey) || runtime.editTankMode) {
         if (!drawCaveColorLayersToContext(tankContext, item, decor, now, {
@@ -689,6 +843,14 @@ function drawDecorPreview() {
     }
   }
   if (decor.bubbler) {
+    drawBubblerLightLayerToContext(tankContext, previewItem, decor, Date.now(), {
+      drawX: x - width / 2,
+      drawY: y - height,
+      width,
+      height,
+      motion: previewMotion,
+      alpha: 0.72
+    });
     drawDecorBubblerEffect(
       previewItem,
       decor,

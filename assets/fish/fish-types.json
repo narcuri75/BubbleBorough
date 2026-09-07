@@ -1408,6 +1408,296 @@
                 }
             },
             "dislikedTypes": []
+        },
+        {
+            "id": "bull-shark",
+            "name": "Bull Shark",
+            "type": "Shark",
+            "cost": 42,
+            "mealCoins": 3,
+            "asset": "Bull_Shark.png",
+            "description": "A powerful, adaptable cruiser that follows chum and keeps its distance from tankmates until desperation takes over.",
+            "width": 405,
+            "bobSpeed": 1.08,
+            "swimStyle": "steady",
+            "speedMin": 0.032,
+            "speedMax": 0.056,
+            "targetMinMs": 2200,
+            "targetMaxMs": 4800,
+            "behavior": "shark",
+            "diet": "chum",
+            "chumOnly": true,
+            "desperationPredator": true,
+            "heartCount": 10,
+            "defaultNames": [
+                "Bully",
+                "Brackish",
+                "Rumble",
+                "Breaker",
+                "Tide",
+                "Mako",
+                "Riptide",
+                "Muddy",
+                "Brawler",
+                "Jaws"
+            ],
+            "caveEnabled": false,
+            "theme": "Salt Water",
+            "needs": {
+                "decor": [],
+                "friends": {
+                    "min": 0,
+                    "alike": false
+                }
+            },
+            "dislikedTypes": []
+        },
+        {
+            "id": "great-white-shark",
+            "name": "Great White Shark",
+            "type": "Shark",
+            "cost": 55,
+            "mealCoins": 4,
+            "asset": "Great_White_Shark.png",
+            "description": "A calm, deliberate apex cruiser that tracks chum through long patrols and only bites in a true last stand.",
+            "width": 405,
+            "bobSpeed": 0.96,
+            "swimStyle": "steady",
+            "speedMin": 0.034,
+            "speedMax": 0.06,
+            "targetMinMs": 2600,
+            "targetMaxMs": 5600,
+            "behavior": "shark",
+            "diet": "chum",
+            "chumOnly": true,
+            "desperationPredator": true,
+            "heartCount": 10,
+            "defaultNames": [
+                "Whitecap",
+                "Brine",
+                "Glacier",
+                "Silver",
+                "Breaker",
+                "Mistral",
+                "Mariner",
+                "Finley",
+                "Pearl",
+                "Moby"
+            ],
+            "caveEnabled": false,
+            "theme": "Salt Water",
+            "needs": {
+                "decor": [],
+                "friends": {
+                    "min": 0,
+                    "alike": false
+                }
+            },
+            "dislikedTypes": []
+        },
+        {
+            "id": "hammerhead-shark",
+            "name": "Hammerhead Shark",
+            "type": "Shark",
+            "cost": 48,
+            "mealCoins": 3,
+            "asset": "Hammerhead_Shark.png",
+            "description": "A curious, wide-ranging shark that searches the water with patient sweeps and follows chum when it appears.",
+            "width": 405,
+            "bobSpeed": 1.12,
+            "swimStyle": "steady",
+            "speedMin": 0.03,
+            "speedMax": 0.054,
+            "targetMinMs": 2100,
+            "targetMaxMs": 4700,
+            "behavior": "shark",
+            "diet": "chum",
+            "chumOnly": true,
+            "desperationPredator": true,
+            "heartCount": 10,
+            "defaultNames": [
+                "Hammer",
+                "Radar",
+                "Scout",
+                "Wedge",
+                "Sonar",
+                "Banner",
+                "Sweep",
+                "Tally",
+                "Sail",
+                "Echo"
+            ],
+            "caveEnabled": false,
+            "theme": "Salt Water",
+            "needs": {
+                "decor": [],
+                "friends": {
+                    "min": 0,
+                    "alike": false
+                }
+            },
+            "dislikedTypes": []
+        },
+        {
+            "id": "orca",
+            "name": "Orca",
+            "type": "Whale",
+            "cost": 60,
+            "mealCoins": 4,
+            "asset": "Orca.png",
+            "description": "A social pod hunter that communicates through the tank, follows chum, and saves predation for absolute desperation.",
+            "width": 405,
+            "bobSpeed": 1.02,
+            "swimStyle": "steady",
+            "speedMin": 0.032,
+            "speedMax": 0.058,
+            "targetMinMs": 2200,
+            "targetMaxMs": 5000,
+            "behavior": "shark",
+            "diet": "chum",
+            "chumOnly": true,
+            "desperationPredator": true,
+            "heartCount": 10,
+            "defaultNames": [
+                "Koa",
+                "Echo",
+                "Nalu",
+                "Tala",
+                "Pod",
+                "Comet",
+                "Wave",
+                "Rook",
+                "Cedar",
+                "Orion"
+            ],
+            "caveEnabled": false,
+            "theme": "Salt Water",
+            "needs": {
+                "decor": [],
+                "friends": {
+                    "min": 1,
+                    "alike": true
+                }
+            },
+            "dislikedTypes": []
+        },
+        {
+            "id": "sunfish",
+            "name": "Ocean Sunfish",
+            "type": "Fish",
+            "cost": 24,
+            "mealCoins": 2,
+            "asset": "Sunfish.png",
+            "description": "A huge, gentle drifter that takes its time and settles into an unusually peaceful routine.",
+            "width": 330,
+            "bobSpeed": 0.82,
+            "swimStyle": "peaceful",
+            "speedMin": 0.014,
+            "speedMax": 0.024,
+            "targetMinMs": 4200,
+            "targetMaxMs": 8200,
+            "heartCount": 7,
+            "defaultNames": [
+                "Sunny",
+                "Pancake",
+                "Mellow",
+                "Float",
+                "Moon",
+                "Dapple",
+                "Drift",
+                "Sol",
+                "Mochi",
+                "Luma"
+            ],
+            "caveEnabled": false,
+            "theme": "Salt Water",
+            "needs": {
+                "decor": [],
+                "friends": {
+                    "min": 0,
+                    "alike": false
+                }
+            },
+            "dislikedTypes": []
+        },
+        {
+            "id": "seahorse",
+            "name": "Seahorse",
+            "type": "Seahorse",
+            "cost": 18,
+            "mealCoins": 2,
+            "asset": "Seahorse.png",
+            "description": "A slow, careful hoverer that drifts upright and prefers a quiet plant or perch to open-water sprints.",
+            "width": 95,
+            "bobSpeed": 0.74,
+            "swimStyle": "peaceful",
+            "speedMin": 0.012,
+            "speedMax": 0.022,
+            "targetMinMs": 3800,
+            "targetMaxMs": 7600,
+            "renderMotionProfile": "seahorse",
+            "defaultNames": [
+                "Tails",
+                "Pip",
+                "Kelp",
+                "Coral",
+                "Moss",
+                "Sway",
+                "Twig",
+                "Nori",
+                "Wisp",
+                "Dune"
+            ],
+            "caveEnabled": true,
+            "theme": "Salt Water",
+            "needs": {
+                "decor": [
+                    "plants"
+                ],
+                "friends": {
+                    "min": 0,
+                    "alike": false
+                }
+            },
+            "dislikedTypes": []
+        },
+        {
+            "id": "pilot-fish",
+            "name": "Pilot Fish",
+            "type": "Fish",
+            "cost": 24,
+            "mealCoins": 2,
+            "asset": "Pilot_Fish.png",
+            "description": "An active, harmless ocean cruiser that naturally shadows larger animals and investigates whatever they leave behind.",
+            "width": 320,
+            "bobSpeed": 1.28,
+            "swimStyle": "steady",
+            "speedMin": 0.032,
+            "speedMax": 0.052,
+            "targetMinMs": 1900,
+            "targetMaxMs": 4300,
+            "defaultNames": [
+                "Pilot",
+                "Stripe",
+                "Wingman",
+                "Scout",
+                "Shadow",
+                "Skipper",
+                "Escort",
+                "Radar",
+                "Buddy",
+                "Dash"
+            ],
+            "caveEnabled": false,
+            "theme": "Salt Water",
+            "needs": {
+                "decor": [],
+                "friends": {
+                    "min": 0,
+                    "alike": false
+                }
+            },
+            "dislikedTypes": []
         }
     ]
 }

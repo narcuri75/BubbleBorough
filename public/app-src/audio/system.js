@@ -596,6 +596,7 @@ function primeSoundEffects() {
       primeSoundEffectAudio(audio);
     }
   }
+  primeSoundEffectAudio(getSubmarineSonarAudio());
 }
 
 function playSoundEffect(pathOrPaths, options = {}) {
@@ -672,6 +673,87 @@ function stopActiveSoundEffects() {
 
 function playDispenserSoundEffect() {
   playSoundEffect(DISPENSER_SOUND_PATH, { volume: 0.68 });
+}
+
+function getSubmarineSonarAudio() {
+  if (runtime.submarineSonarAudio) {
+    return runtime.submarineSonarAudio;
+  }
+  if (typeof Audio !== "function") {
+    return null;
+  }
+  const audio = new Audio(resolveAppUrl(SUBMARINE_SONAR_SOUND_PATH));
+  audio.loop = true;
+  audio.preload = "auto";
+  audio.volume = 0;
+  runtime.submarineSonarAudio = audio;
+  return audio;
+}
+
+function stopSubmarineSonarSound() {
+  const audio = runtime.submarineSonarAudio;
+  if (!audio) {
+    return false;
+  }
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch (error) {
+    console.debug("Submarine sonar stop skipped.", error);
+  }
+  runtime.activeSoundEffects.delete(audio);
+  return true;
+}
+
+function syncSubmarineSonarSound(submarine = getSubmarine()) {
+  const shouldPlay = Boolean(
+    submarine?.mission
+    && isSubmarineAutopilotEnabled(submarine)
+    && !getUiSettings().soundMuted
+    && !isWallpaperEnginePauseActive()
+  );
+  if (!shouldPlay) {
+    stopSubmarineSonarSound();
+    return false;
+  }
+
+  const audio = getSubmarineSonarAudio();
+  if (!audio) {
+    return false;
+  }
+  audio.loop = true;
+  syncAudioElementMutedState(audio, false, { volumeWhenUnmuted: SUBMARINE_SONAR_SOUND_VOLUME });
+  if (!audio.paused) {
+    runtime.activeSoundEffects.add(audio);
+    return true;
+  }
+
+  runtime.activeSoundEffects.add(audio);
+  const playPromise = audio.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    playPromise.catch((error) => {
+      runtime.activeSoundEffects.delete(audio);
+      if (error?.name === "AbortError") {
+        return;
+      }
+      if (error?.name === "NotAllowedError") {
+        audio.__bbPrimed = false;
+        runtime.soundEffectsPrimed = false;
+        bindSoundEffectsResumeListeners();
+        return;
+      }
+      console.warn("Could not play submarine sonar sound.", error);
+    });
+  }
+  return true;
+}
+
+function playBoatHornSoundEffect() {
+  return playSoundEffect(BOAT_HORN_SOUND_PATH, { volume: 0.82 });
+}
+
+function playWhaleBreathSoundEffect() {
+  return playSoundEffect(WHALE_BREATH_SOUND_PATH, { volume: 0.84 });
 }
 
 function playToolbarButtonSoundEffect(kind = "press") {

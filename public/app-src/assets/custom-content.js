@@ -262,6 +262,9 @@ function finishTankColorPickerDrag(pointerId = null) {
 }
 
 function bindEvents() {
+  document.addEventListener("pointerdown", (event) => {
+    if (!event.target.closest?.("#editEquipmentTray")) closeEditEquipmentTrayContextMenu();
+  }, true);
   syncViewportCssVariables({ resetStable: true });
 
   let viewportLayoutRefreshHandle = 0;
@@ -309,6 +312,14 @@ function bindEvents() {
     }
 
     if (keyRaw === "Escape") {
+      if (runtime.editEquipmentTrayContextMenuState.machineryId) {
+        closeEditEquipmentTrayContextMenu();
+        return;
+      }
+      if (runtime.selectedMachineryId) {
+        closeSubmarineManager();
+        return;
+      }
       if (runtime.boroughOverviewOpen) {
         closeAquariumOverview();
         return;
@@ -337,22 +348,40 @@ function bindEvents() {
     }
 
     const key = keyRaw.toLowerCase();
-    const manualSubmarine = getSubmarine();
-    if (isSubmarineManualDriveActive(manualSubmarine)) {
-      if (["w", "a", "s", "d"].includes(key)) {
-        event.preventDefault();
-        setSubmarineManualDriveKey(key, true);
-        return;
-      }
-      if ((key === "q" || key === "e") && !event.repeat) {
-        event.preventDefault();
-        stepSubmarineDepthLayer(manualSubmarine, key === "q" ? -1 : 1);
-        return;
-      }
-      if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
-        event.preventDefault();
-        deployManualSubmarineFood(manualSubmarine, Date.now());
-        return;
+    const activeManualMachinery = getActiveManualMachinery();
+    if (activeManualMachinery && !event.target?.closest?.("button, a, [role=button], [role=tab]")) {
+      if (activeManualMachinery.type === MACHINERY_TYPE_BOAT) {
+        if (["a", "d"].includes(key)) {
+          event.preventDefault();
+          setBoatManualDriveKey(key, true);
+          return;
+        }
+        if (key === "h" && !event.repeat) {
+          event.preventDefault();
+          playBoatHornSoundEffect();
+          return;
+        }
+        if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
+          event.preventDefault();
+          deployManualBoatChum(activeManualMachinery, Date.now());
+          return;
+        }
+      } else {
+        if (["w", "a", "s", "d"].includes(key)) {
+          event.preventDefault();
+          setSubmarineManualDriveKey(key, true);
+          return;
+        }
+        if ((key === "q" || key === "e") && !event.repeat) {
+          event.preventDefault();
+          stepSubmarineDepthLayer(activeManualMachinery, key === "q" ? -1 : 1);
+          return;
+        }
+        if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
+          event.preventDefault();
+          deployManualSubmarineFood(activeManualMachinery, Date.now());
+          return;
+        }
       }
     }
     if (
@@ -465,12 +494,14 @@ function bindEvents() {
   });
   window.addEventListener("keyup", (event) => {
     const key = String(event.key || "").toLowerCase();
-    if (["w", "a", "s", "d"].includes(key) && setSubmarineManualDriveKey(key, false)) {
+    const releasedSubmarine = ["w", "a", "s", "d"].includes(key) && setSubmarineManualDriveKey(key, false);
+    const releasedBoat = ["a", "d"].includes(key) && setBoatManualDriveKey(key, false);
+    if (releasedSubmarine || releasedBoat) {
       event.preventDefault();
     }
   });
   window.addEventListener("blur", () => {
-    clearSubmarineManualDriveKeys();
+    suspendMachineryManualDrive();
   });
 
   if (window.ResizeObserver) {
@@ -1310,6 +1341,13 @@ function bindEvents() {
   };
   dom.uiMuteToggleInput?.addEventListener("input", handleUiMuteToggleInput);
   dom.uiMuteToggleInput?.addEventListener("change", handleUiMuteToggleInput);
+  dom.toolbarTileColorInput?.addEventListener("input", (event) => {
+    const color = normalizeToolbarTileColor(event.currentTarget?.value);
+    document.documentElement.style.setProperty("--toolbar-tile-color", color);
+  });
+  dom.toolbarTileColorInput?.addEventListener("change", (event) => {
+    setToolbarTileColor(event.currentTarget?.value);
+  });
   dom.ambientBubblesToggleInput?.addEventListener("change", (event) => {
     setAmbientBubblesEnabled(event.currentTarget?.checked);
   });
@@ -1702,6 +1740,7 @@ function bindEvents() {
     }
     const locationTab = event.target.closest("[data-equipment-tray-tab]");
     if (locationTab) {
+      closeEditEquipmentTrayContextMenu({ render: false });
       const nextTab = locationTab.dataset.equipmentTrayTab === "tank" ? "tank" : "storage";
       if (runtime.equipmentEditTrayTab !== nextTab) {
         runtime.equipmentEditTrayTab = nextTab;
@@ -1710,18 +1749,70 @@ function bindEvents() {
       }
       return;
     }
+    const menuButton = event.target.closest("[data-open-equipment-menu]");
+    if (menuButton) {
+      openEditEquipmentTrayContextMenu(menuButton.dataset.openEquipmentMenu, menuButton);
+      return;
+    }
+    const visitButton = event.target.closest("[data-visit-submarine-tank]");
+    if (visitButton) {
+      const tank = getSubmarineTank();
+      if (tank) { setActiveTank(tank.id); renderUi(Date.now()); }
+      return;
+    }
+    const visitBoatButton = event.target.closest("[data-visit-boat-tank]");
+    if (visitBoatButton) {
+      const tank = getBoatTank();
+      if (tank) { setActiveTank(tank.id); renderUi(Date.now()); }
+      return;
+    }
+    const storeSubmarineButton = event.target.closest("[data-tray-store-submarine]");
+    if (storeSubmarineButton) {
+      closeEditEquipmentTrayContextMenu({ render: false });
+      recallSubmarine(Date.now());
+      return;
+    }
+    const storeBoatButton = event.target.closest("[data-tray-store-boat]");
+    if (storeBoatButton) {
+      closeEditEquipmentTrayContextMenu({ render: false });
+      recallBoat(Date.now());
+      return;
+    }
     if (event.target.closest("[data-tray-place-submarine]")) {
+      closeEditEquipmentTrayContextMenu({ render: false });
       deploySubmarine(getCurrentTank(), Date.now());
+      return;
+    }
+    if (event.target.closest("[data-tray-place-boat]")) {
+      closeEditEquipmentTrayContextMenu({ render: false });
+      deployBoat(getCurrentTank(), Date.now());
       return;
     }
     const selectSubmarineButton = event.target.closest("[data-tray-select-submarine]");
     if (selectSubmarineButton) {
+      closeEditEquipmentTrayContextMenu({ render: false });
       openSubmarineManager(selectSubmarineButton.dataset.traySelectSubmarine);
+      return;
+    }
+    const selectBoatButton = event.target.closest("[data-tray-select-boat]");
+    if (selectBoatButton) {
+      closeEditEquipmentTrayContextMenu({ render: false });
+      openSubmarineManager(selectBoatButton.dataset.traySelectBoat);
     }
   });
   dom.editEquipmentTray?.addEventListener("contextmenu", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    const button = event.target.closest("[data-tray-select-submarine], [data-tray-select-boat]")
+      || event.target.closest(".edit-decor-tile")?.querySelector("[data-tray-select-submarine], [data-tray-select-boat]");
+    if (button) {
+      openEditEquipmentTrayContextMenu(button.dataset.traySelectSubmarine || button.dataset.traySelectBoat, event);
+      return;
+    }
+    closeEditEquipmentTrayContextMenu();
+  });
+  dom.editEquipmentTrayScroller?.addEventListener("scroll", () => {
+    closeEditEquipmentTrayContextMenu();
   });
 
   dom.editTankTray?.addEventListener("pointerdown", (event) => {
@@ -1776,7 +1867,9 @@ function bindEvents() {
       const nextMode = ["image", "solid", "gradient", "animated"].includes(backgroundModeButton.dataset.tankBackgroundMode)
         ? backgroundModeButton.dataset.tankBackgroundMode
         : "image";
+      runtime.editTankTrayTab = "background";
       runtime.editTankBackgroundMode = nextMode;
+      renderEditTankTray();
       playToolbarButtonSoundEffect("press");
       if (nextMode === "solid") {
         setSolidBackgroundEnabled(true);
@@ -2088,6 +2181,7 @@ function bindEvents() {
   });
   dom.foodTray?.addEventListener("wheel", handleFoodTrayWheel, { passive: false });
   dom.foodTrayScroller?.addEventListener("click", (event) => {
+    if (handleCareTrayAction(event)) return;
     const button = event.target.closest("[data-select-food]");
     if (button) {
       event.stopPropagation();
@@ -2110,6 +2204,8 @@ function bindEvents() {
   });
   dom.medicineTray?.addEventListener("wheel", handleMedicineTrayWheel, { passive: false });
   dom.medicineTrayScroller?.addEventListener("click", (event) => {
+    if (handleCareTrayAction(event)) return;
+
     const toolButton = event.target.closest("[data-care-tool]");
     if (toolButton) {
       event.stopPropagation();
@@ -2311,9 +2407,21 @@ function bindEvents() {
       return;
     }
 
+    const buyBoatButton = event.target.closest("[data-buy-boat]");
+    if (buyBoatButton) {
+      buyBoat();
+      return;
+    }
+
     const manageSubmarineButton = event.target.closest("[data-manage-submarine]");
     if (manageSubmarineButton) {
       openSubmarineManager(manageSubmarineButton.dataset.manageSubmarine);
+      return;
+    }
+
+    const manageBoatButton = event.target.closest("[data-manage-boat]");
+    if (manageBoatButton) {
+      openSubmarineManager(manageBoatButton.dataset.manageBoat);
       return;
     }
 
@@ -3155,6 +3263,7 @@ function bindEvents() {
     const swatch = target?.closest("[data-inspector-fish-color]");
     if (swatch instanceof HTMLButtonElement) {
       event.preventDefault();
+      event.stopPropagation();
       updateInspectorFishSetting("color", swatch.dataset.inspectorFishColor || "");
     }
   });
@@ -3571,21 +3680,8 @@ async function fetchFishCatalog() {
 }
 
 async function fetchZombieSkeletonFishCatalog() {
-  try {
-    // The catalog also maps normal species to their Halloween artwork.  It is
-    // safe to load this metadata while undead gameplay is disabled; the
-    // gameplay-only species are still excluded when the runtime catalog is
-    // normalized.
-    const response = await fetch(resolveAppUrl(ZOMBIE_SKELETON_FISH_CATALOG_PATH), { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error("Could not load zombie/skeleton fish catalog");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(error);
-    return { fish: [], variants: [] };
-  }
+  // The per-species zombie and skeleton assets have been retired.
+  return { fish: [], variants: [] };
 }
 
 async function fetchDecorCatalog() {
@@ -3801,7 +3897,7 @@ function normalizeDecorMeta(payload) {
       name: typeof entry.name === "string" && entry.name.trim()
         ? entry.name.trim()
         : titleFromFile(key),
-      theme: normalizeCatalogTheme(entry.theme),
+      theme: isHalloweenDecor({ ...entry, key }) ? "Halloween" : normalizeCatalogTheme(entry.theme),
       cost: Number.isFinite(entry.cost) ? entry.cost : 8,
       width: Number.isFinite(entry.width) ? entry.width : 140,
       defaultScale: Number.isFinite(entry.defaultScale) ? entry.defaultScale : DEFAULT_DECOR_SCALE,
@@ -3885,6 +3981,9 @@ function hasBubblerSpoutMetaFields(entry) {
     entry.horizontal,
     entry.x,
     entry.xNorm,
+    entry.verticalLocation,
+    entry.spoutVerticalLocation,
+    entry.yNorm,
     entry.offsetPx,
     entry.horizontalOffsetPx,
     entry.spoutOffsetPx,
@@ -3985,6 +4084,7 @@ function buildDefaultBubblerSpoutMeta(index = 0, spoutQty = DEFAULT_BUBBLER_SPOU
       ? 0.5
       : clamp((index + 1) / (resolvedSpoutQty + 1), 0.05, 0.95),
     horizontalOffsetPx: null,
+    verticalLocation: null,
     intensity: DEFAULT_BUBBLER_INTENSITY,
     spread: DEFAULT_BUBBLER_SPREAD_PX,
     fadeDistance: DEFAULT_BUBBLER_FADE_DISTANCE_PX,
@@ -4043,6 +4143,9 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
     horizontalOffsetPx: Number.isFinite(horizontalPosition.horizontalOffsetPx)
       ? horizontalPosition.horizontalOffsetPx
       : defaultSpout.horizontalOffsetPx,
+    verticalLocation: Number.isFinite(Number(entry.verticalLocation ?? entry.spoutVerticalLocation ?? entry.yNorm))
+      ? clamp(Number(entry.verticalLocation ?? entry.spoutVerticalLocation ?? entry.yNorm), 0, 1)
+      : defaultSpout.verticalLocation,
     intensity: resolvedIntensity,
     spread: clamp(
       Number.isFinite(Number(entry.width))
@@ -4516,6 +4619,10 @@ function getDecorCompanionType(decorKey = "") {
     return "mask";
   }
 
+  if (/_light\.[^.]+$/.test(key)) {
+    return "light";
+  }
+
   if (/_mid\.[^.]+$/.test(key)) {
     return "mid";
   }
@@ -4531,6 +4638,7 @@ function getDecorBaseKey(decorKey = "") {
     .replace(/_(?:seats|seat)(?=\.[^.]+$)/, "")
     .replace(/_bg(?=\.[^.]+$)/, "")
     .replace(/_mask(?=\.[^.]+$)/, "")
+    .replace(/_light(?=\.[^.]+$)/, "")
     .replace(/_mid(?=\.[^.]+$)/, "")
     .replace(/_cave(?=\.[^.]+$)/, "");
 }
@@ -4605,6 +4713,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bg: null,
         mask: null,
         mid: null,
+        light: null,
         color1: null,
         color2: null,
         color3: null,
@@ -4632,6 +4741,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bg: null,
         mask: null,
         mid: null,
+        light: null,
         color1: null,
         color2: null,
         color3: null,
@@ -4656,17 +4766,20 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bgPath: group.bg?.path || null,
         maskPath: group.mask?.path || null,
         midPath: group.mid?.path || null,
+        lightPath: group.light?.path || null,
         triggerPath: group.trigger?.path || null,
         seatsPath: group.seats?.path || null,
         hasBg: Boolean(group.bg),
         hasMask: Boolean(group.mask),
         hasMid: Boolean(group.mid),
+        hasLight: Boolean(group.light),
         hasTrigger: Boolean(group.trigger),
         hasSeats: Boolean(group.seats),
         caveColorLayers,
         hasCaveColorLayers: caveColorLayers.length > 0,
         name: meta.name || titleFromFile(group.base.key),
-        theme: normalizeCatalogTheme(meta.theme),
+        theme: isHalloweenDecor({ ...meta, key: group.base.key }) ? "Halloween" : normalizeCatalogTheme(meta.theme),
+        categories: deriveDecorCategories(meta, group.base.key),
         cost: Number.isFinite(meta.cost) ? meta.cost : 8,
         width: Number.isFinite(meta.width) ? meta.width : 140,
         defaultScale: Number.isFinite(meta.defaultScale) ? meta.defaultScale : DEFAULT_DECOR_SCALE,
@@ -4717,11 +4830,13 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       midPath: null,
+      lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
       hasMid: false,
+      hasLight: false,
       hasTrigger: false,
       hasSeats: false,
       name: "Bubbler",
@@ -4745,11 +4860,13 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       midPath: null,
+      lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
       hasMid: false,
+      hasLight: false,
       hasTrigger: false,
       hasSeats: false,
       name: "Custom Decor",
@@ -4774,11 +4891,13 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       midPath: null,
+      lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
       hasMid: false,
+      hasLight: false,
       hasTrigger: false,
       hasSeats: false,
       name: "Custom Hide",
@@ -4917,11 +5036,13 @@ function buildCustomDecorCatalogEntry(asset) {
     bgPath,
     maskPath: null,
     midPath: null,
+    lightPath: null,
     triggerPath: null,
     seatsPath: null,
     hasBg: isHide,
     hasMask: false,
     hasMid: false,
+    hasLight: false,
     hasTrigger: false,
     hasSeats: false,
     caveColorLayers,
@@ -5150,7 +5271,7 @@ function ensureCustomAssetCost(type) {
   if (state.coins >= typeDef.cost) {
     return true;
   }
-  showToast(`You need ${typeDef.cost} ${pluralize("coin", typeDef.cost)} for ${typeDef.label}.`);
+  showToast("Payment method declined. Insufficient Funds.", { force: true, tone: "error" });
   return false;
 }
 
@@ -5473,6 +5594,9 @@ function buildCustomFishCatalogEntry(asset) {
     targetMaxMs: Math.max(1400, Math.floor(Number(profile?.targetMaxMs) || defaults.targetMaxMs)),
     behavior: typeof profile?.behavior === "string" && profile.behavior.trim() ? profile.behavior : "free",
     diet: typeof profile?.diet === "string" && profile.diet.trim() ? profile.diet : "pellet",
+    type: "Fish",
+    desperationPredator: false,
+    renderMotionProfile: "",
     cleanupMinMs,
     cleanupMaxMs,
     cleanupStrength: clamp(Number(profile?.cleanupStrength) || 0.12, 0.005, 0.45),
@@ -5635,6 +5759,10 @@ function normalizeFishDefinition(entry, index, options = {}) {
     : "fish";
   const behavior = typeof entry.behavior === "string" && entry.behavior.trim() ? entry.behavior.trim().toLowerCase() : "free";
   const diet = typeof entry.diet === "string" && entry.diet.trim() ? entry.diet.trim().toLowerCase() : "pellet";
+  const speciesType = typeof entry.type === "string" && entry.type.trim() ? entry.type.trim() : "Fish";
+  const renderMotionProfile = typeof entry.renderMotionProfile === "string" && entry.renderMotionProfile.trim()
+    ? entry.renderMotionProfile.trim().toLowerCase()
+    : "";
   const explicitHeartCount = Number(entry.heartCount ?? entry.hearts);
   const explicitMealCoinOverride = Number(entry.mealCoinOverride ?? entry.coinsPerMealOverride ?? entry.mealCoins ?? entry.mealcoins);
   const folderAssets = Array.isArray(options.assetFolders?.[assetFolder]) ? options.assetFolders[assetFolder] : [];
@@ -5649,6 +5777,14 @@ function normalizeFishDefinition(entry, index, options = {}) {
       : resolveAppUrl(`assets/fish/${encodeURIComponent(fallbackAssetSource)}`))
     : null;
   const resolvedAsset = resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, fallbackAsset);
+  const overlayAssetFile = [entry.overlayAsset, entry.tentacleAsset, entry.overlayImage]
+    .find((value) => typeof value === "string" && value.trim());
+  const overlayAsset = overlayAssetFile
+    ? resolveFishCatalogAsset(overlayAssetFile.trim(), assetFolder, folderAssets, null, {
+      allowFallback: false,
+      allowDirect: true
+    })
+    : null;
   const assetSourceFiles = collectFishCatalogAssetFiles(assetFile, rawAssetVariantFiles);
   const resolvedAssetVariants = [resolvedAsset, ...rawAssetVariantFiles
     .map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, fallbackAsset))
@@ -5689,6 +5825,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     mealCoins: 0,
     mealCoinOverride: Number.isFinite(explicitMealCoinOverride) ? Math.max(0, Math.round(explicitMealCoinOverride)) : null,
     asset: resolvedAsset,
+    overlayAsset,
     assetVariants: resolvedAssetVariants,
     zombieAssetVariants,
     skeletonAssetVariants,
@@ -5708,6 +5845,10 @@ function normalizeFishDefinition(entry, index, options = {}) {
     targetMaxMs: Math.max(1400, Math.floor(Number(entry.targetMaxMs) || defaults.targetMaxMs)),
     behavior,
     diet,
+    type: speciesType,
+    chumOnly: entry.chumOnly === true,
+    desperationPredator: entry.desperationPredator === true,
+    renderMotionProfile,
     cleanupMinMs: Math.max(60 * 1000, Math.floor(Number(entry.cleanupMinMs) || Number(entry.cleanupMinutesMin) * 60 * 1000 || 12 * 60 * 1000)),
     cleanupMaxMs: Math.max(2 * 60 * 1000, Math.floor(Number(entry.cleanupMaxMs) || Number(entry.cleanupMinutesMax) * 60 * 1000 || 24 * 60 * 1000)),
     cleanupStrength: clamp(Number.isFinite(explicitCleanupStrength) ? explicitCleanupStrength : 0.12, 0.005, 0.45),

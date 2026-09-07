@@ -554,6 +554,52 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
   context.restore();
 }
 
+function drawFishCausticLight(context, image, fish, fishDrawX, width, height, now, worldTransform) {
+  const strength = getCausticLightStrength(now);
+  if (strength <= 0 || width <= 0 || height <= 0) return;
+  const texture = getAnimatedCausticTexture(now);
+  if (!texture) return;
+  if (!runtime.fishCausticCache) runtime.fishCausticCache = new WeakMap();
+  let scratch = runtime.fishCausticCache.get(fish);
+  if (!scratch) {
+    const canvas = document.createElement("canvas");
+    scratch = { canvas, context: canvas.getContext("2d") };
+    runtime.fishCausticCache.set(fish, scratch);
+  }
+  const scale = Math.min(1, 192 / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale));
+  const h = Math.max(1, Math.round(height * scale));
+  // Cancel the entire fish pose, including facing, rotation, body deformation,
+  // and tube compression. The remaining pattern coordinates belong to the tank.
+  const worldToLocal = context.getTransform().inverse().multiply(worldTransform);
+  const localToMask = new DOMMatrix([w / width, 0, 0, h / height, -fishDrawX * w / width, h / 2]);
+  const patternTransform = localToMask.multiply(worldToLocal);
+  const key = [runtime.causticTexture.frame, width, height,
+    patternTransform.a, patternTransform.b, patternTransform.c,
+    patternTransform.d, patternTransform.e, patternTransform.f].join(":");
+  if (scratch.key !== key || scratch.image !== image) {
+    const c = scratch.context;
+    if (scratch.canvas.width !== w) scratch.canvas.width = w;
+    if (scratch.canvas.height !== h) scratch.canvas.height = h;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, w, h);
+    c.globalCompositeOperation = "source-over";
+    c.drawImage(image, 0, 0, w, h);
+    c.globalCompositeOperation = "source-in";
+    const pattern = c.createPattern(texture, "repeat");
+    pattern.setTransform(patternTransform);
+    c.fillStyle = pattern;
+    c.fillRect(0, 0, w, h);
+    scratch.key = key;
+    scratch.image = image;
+  }
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha *= strength * 1.4;
+  context.drawImage(scratch.canvas, fishDrawX, -height / 2, width, height);
+  context.restore();
+}
+
 function compareFishRenderRecords(left, right) {
   const priorityDelta = left.priority - right.priority;
   if (priorityDelta) {
@@ -692,6 +738,7 @@ function drawFish(now, layer = null, options = {}) {
       ? -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y
       : 0;
 
+    const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
     tankContext.translate(pose.x + pose.swayX, pose.y);
     tankContext.scale(pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1), 1);
@@ -748,6 +795,7 @@ function drawFish(now, layer = null, options = {}) {
     tankContext.filter = "none";
     if (!pose.isDead) {
       drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now, fishLighting);
+      drawFishCausticLight(tankContext, image, fish, fishDrawX, width, height, now, fishWorldTransform);
     }
     drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
@@ -1260,7 +1308,14 @@ function getFishPose(fish, species, now) {
     (Number(fish.targetXNorm) || fish.xNorm) - fish.xNorm,
     (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm
   );
-  const stationaryRaw = 1 - clamp(targetDistanceNorm / 0.025, 0, 1);
+  // Once a fish has reached decor, treat it as genuinely stationary instead of
+  // repeatedly blending between swim bob and idle bob as tiny target corrections
+  // come and go. That blend used unrelated phases and could read as a hitch.
+  const settledAtDecor = Boolean(fish.hangoutDecorId)
+    && fish.activity === "roam"
+    && !fish.caveState
+    && targetDistanceNorm <= 0.03;
+  const stationaryRaw = settledAtDecor ? 1 : 1 - clamp(targetDistanceNorm / 0.025, 0, 1);
   const stationaryBlend = stationaryRaw * stationaryRaw * (3 - 2 * stationaryRaw);
   const swimBob =
     Math.sin(wiggleClock * (0.2 + species.bobSpeed * 0.16) + fish.phase * Math.PI * 2) * (0.9 + motionLevel * 4.4) * sickMotionBoost
@@ -1301,6 +1356,11 @@ function getFishPose(fish, species, now) {
   let tilt = entryProgress === null
     ? (forcedDigTilt ?? baseTilt)
     : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
+  if (species.renderMotionProfile === "seahorse") {
+    const verticalDrift = clamp((fish.targetYNorm - fish.yNorm) * 1.35, -0.28, 0.28);
+    const tailSway = Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
+    tilt = clamp(tilt * 0.28 + verticalDrift + tailSway, -0.38, 0.38);
+  }
   const debugPoseSteering = fish.activity === "roam" && !fish.caveState
     ? getActiveDebugBehaviorSteering(fish, now)
     : null;

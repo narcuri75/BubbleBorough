@@ -650,10 +650,10 @@ function renderSolidBackgroundControls() {
       dom.editTankBackgroundList.hidden = compactMode !== "image";
     }
     for (const button of dom.editTankTray?.querySelectorAll("[data-tank-background-mode]") || []) {
-      const selected = button.dataset.tankBackgroundMode === compactMode;
+      const selected = runtime.editTankTrayTab === "background" && button.dataset.tankBackgroundMode === compactMode;
       button.classList.toggle("is-active", selected);
       button.setAttribute("aria-selected", selected ? "true" : "false");
-      button.tabIndex = selected ? 0 : -1;
+      button.tabIndex = 0;
     }
   }
 }
@@ -794,56 +794,56 @@ function renderCustomGravelControls() {
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
 
+  const layerMarkup = layerCatalog
+    .map((layer, index) => {
+      const activeColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+      const activeChoice = choices.find((choice) => choice.color === activeColor) || { label: activeColor, color: activeColor };
+      const colorizeChecked = activeColorizeSettings[index] === true;
+      const swatchMarkup = choices
+        .map((choice) => {
+          const selected = choice.color === activeColor;
+          return `
+            <button
+              class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
+              type="button"
+              data-custom-gravel-layer="${index}"
+              data-custom-gravel-color="${choice.color}"
+              aria-pressed="${selected}"
+              aria-label="Set ${escapeHtml(layer.label)} to ${escapeHtml(choice.label)}"
+              title="${escapeHtml(choice.label)}"
+              style="--swatch:${choice.color};">
+            </button>
+          `;
+        })
+        .join("");
+
+      return `
+        <article class="custom-gravel-layer-card">
+          <div class="custom-gravel-layer-header">
+            <div><strong>${escapeHtml(layer.label)}</strong></div>
+            <span class="custom-gravel-layer-swatch" style="--swatch:${activeColor};"></span>
+          </div>
+          <div class="custom-gravel-choice-summary">
+            <span>Selected Color</span>
+            <strong>${escapeHtml(activeChoice.label)}</strong>
+          </div>
+          <div class="custom-gravel-swatches" role="group" aria-label="${escapeHtml(layer.label)} color choices">
+            ${swatchMarkup}
+          </div>
+          <label class="cave-colorize-toggle custom-gravel-colorize-toggle">
+            <input
+              type="checkbox"
+              data-custom-gravel-layer="${index}"
+              data-custom-gravel-colorize="true"
+              ${colorizeChecked ? "checked" : ""} />
+            <span>Colorize</span>
+          </label>
+        </article>
+      `;
+    })
+    .join("");
+
   if (standardContainers.length) {
-    const layerMarkup = layerCatalog
-      .map((layer, index) => {
-        const activeColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
-        const activeChoice = choices.find((choice) => choice.color === activeColor) || { label: activeColor, color: activeColor };
-        const colorizeChecked = activeColorizeSettings[index] === true;
-        const swatchMarkup = choices
-          .map((choice) => {
-            const selected = choice.color === activeColor;
-            return `
-              <button
-                class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
-                type="button"
-                data-custom-gravel-layer="${index}"
-                data-custom-gravel-color="${choice.color}"
-                aria-pressed="${selected}"
-                aria-label="Set ${layer.label} to ${choice.label}"
-                title="${choice.label}"
-                style="--swatch:${choice.color};">
-              </button>
-            `;
-          })
-          .join("");
-
-        return `
-          <article class="custom-gravel-layer-card">
-            <div class="custom-gravel-layer-header">
-              <div><strong>${layer.label}</strong></div>
-              <span class="custom-gravel-layer-swatch" style="--swatch:${activeColor};"></span>
-            </div>
-            <div class="custom-gravel-choice-summary">
-              <span>Selected Color</span>
-              <strong>${activeChoice.label}</strong>
-            </div>
-            <div class="custom-gravel-swatches" role="group" aria-label="${layer.label} color choices">
-              ${swatchMarkup}
-            </div>
-            <label class="cave-colorize-toggle custom-gravel-colorize-toggle">
-              <input
-                type="checkbox"
-                data-custom-gravel-layer="${index}"
-                data-custom-gravel-colorize="true"
-                ${colorizeChecked ? "checked" : ""} />
-              <span>Colorize</span>
-            </label>
-          </article>
-        `;
-      })
-      .join("");
-
     const markup = `
       <div class="custom-gravel-panel-shell">
         <div class="custom-gravel-layer-list">${layerMarkup}</div>
@@ -855,62 +855,9 @@ function renderCustomGravelControls() {
   }
 
   if (editContainer) {
-    const activeLayerIndex = clamp(
-      Math.floor(Number(runtime.editTankGravelLayer) || 0),
-      0,
-      Math.max(0, layerCatalog.length - 1)
-    );
-    runtime.editTankGravelLayer = activeLayerIndex;
-    const activeLayer = layerCatalog[activeLayerIndex];
-    const activeColor = activeColors[activeLayerIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
-    const colorizeChecked = activeColorizeSettings[activeLayerIndex] === true;
-    const pebbleCatalog = runtime.customGravelPebbleCatalog || [];
-
-    const layerTabs = layerCatalog.map((layer, index) => {
-      const layerColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
-      const selected = index === activeLayerIndex;
-      const pebble = pebbleCatalog[index] || pebbleCatalog[0] || null;
-      const pebblePath = pebble?.path || resolveAppUrl(`assets/gravel/pebble_${index + 1}.png`);
-      return `
-        <button
-          class="edit-tank-gravel-layer-tab ${selected ? "is-active" : ""}"
-          type="button"
-          role="tab"
-          data-edit-gravel-layer="${index}"
-          aria-selected="${selected}"
-          aria-label="Edit ${escapeHtml(layer.label)}">
-          <span class="edit-tank-gravel-pebble" style="--pebble-color:${layerColor};--pebble-image:url('${escapeHtml(pebblePath)}');">
-            <img src="${escapeHtml(pebblePath)}" alt="" aria-hidden="true" draggable="false" />
-          </span>
-          <span>${escapeHtml(layer.label.replace(/\s+Layer$/i, ""))}</span>
-        </button>
-      `;
-    }).join("");
-
-    const colorizeMarkup = `
-      <label class="edit-tank-gravel-colorize">
-        <input
-          type="checkbox"
-          data-custom-gravel-layer="${activeLayerIndex}"
-          data-custom-gravel-colorize="true"
-          ${colorizeChecked ? "checked" : ""} />
-        <span>Colorize</span>
-      </label>
-    `;
-
     const editMarkup = `
-      <div class="edit-tank-gravel-editor">
-        <div class="edit-tank-gravel-layer-tabs" role="tablist" aria-label="Gravel layers">
-          ${layerTabs}
-        </div>
-        <div class="edit-tank-gravel-picker-workspace">
-          ${renderCompactTankColorPicker(
-            `gravel-${activeLayerIndex}`,
-            activeColor,
-            activeLayer?.label || `Layer ${activeLayerIndex + 1}`,
-            { colorChoices: choices, headingAction: colorizeMarkup }
-          )}
-        </div>
+      <div class="custom-gravel-panel-shell edit-tank-gravel-sections">
+        <div class="custom-gravel-layer-list">${layerMarkup}</div>
       </div>
     `;
     setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
@@ -1145,21 +1092,35 @@ function renderControls(now) {
   dom.editMenuButton?.setAttribute("aria-expanded", "false");
   dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu) && toolbarCareMenuOpen);
   if (dom.lightsOutToggleButton) {
-    const override = getLightsOutOverride();
-    const active = isTankLightsOut(now);
-    const modeText = override === LIGHTS_OUT_OVERRIDE_AUTO
-      ? "Auto"
-      : override === LIGHTS_OUT_OVERRIDE_ON
-        ? "On"
-        : "Off";
-    dom.lightsOutToggleButton.hidden = false;
-    dom.lightsOutToggleButton.classList.toggle("is-active", active);
-    dom.lightsOutToggleButton.dataset.mode = override;
-    dom.lightsOutToggleButton.title = `Lights Out: ${modeText}`;
-    dom.lightsOutToggleButton.setAttribute("aria-label", `Lights Out ${modeText}`);
-    dom.lightsOutToggleButton.setAttribute("aria-pressed", String(active));
-    if (dom.lightsOutModeBadge) {
-      dom.lightsOutModeBadge.textContent = override === LIGHTS_OUT_OVERRIDE_AUTO ? "A" : override === LIGHTS_OUT_OVERRIDE_ON ? "ON" : "OFF";
+    if (!LIGHTS_OUT_FEATURE_ENABLED) {
+      dom.lightsOutToggleButton.hidden = true;
+      dom.lightsOutToggleButton.disabled = true;
+      dom.lightsOutToggleButton.classList.remove("is-active");
+      dom.lightsOutToggleButton.dataset.mode = "disabled";
+      dom.lightsOutToggleButton.title = "Lights Out: Disabled";
+      dom.lightsOutToggleButton.setAttribute("aria-label", "Lights Out disabled");
+      dom.lightsOutToggleButton.setAttribute("aria-pressed", "false");
+      if (dom.lightsOutModeBadge) {
+        dom.lightsOutModeBadge.textContent = "OFF";
+      }
+    } else {
+      const override = getLightsOutOverride();
+      const active = isTankLightsOut(now);
+      const modeText = override === LIGHTS_OUT_OVERRIDE_AUTO
+        ? "Auto"
+        : override === LIGHTS_OUT_OVERRIDE_ON
+          ? "On"
+          : "Off";
+      dom.lightsOutToggleButton.hidden = false;
+      dom.lightsOutToggleButton.disabled = false;
+      dom.lightsOutToggleButton.classList.toggle("is-active", active);
+      dom.lightsOutToggleButton.dataset.mode = override;
+      dom.lightsOutToggleButton.title = `Lights Out: ${modeText}`;
+      dom.lightsOutToggleButton.setAttribute("aria-label", `Lights Out ${modeText}`);
+      dom.lightsOutToggleButton.setAttribute("aria-pressed", String(active));
+      if (dom.lightsOutModeBadge) {
+        dom.lightsOutModeBadge.textContent = override === LIGHTS_OUT_OVERRIDE_AUTO ? "A" : override === LIGHTS_OUT_OVERRIDE_ON ? "ON" : "OFF";
+      }
     }
   }
   if (dom.uvLightToggleButton) {

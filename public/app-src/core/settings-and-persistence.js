@@ -159,12 +159,24 @@ function normalizeUvLightRenderQuality(value) {
     : DEFAULT_UV_LIGHT_RENDER_QUALITY;
 }
 
+function normalizeToolbarTileColor(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(normalized)) {
+    return normalized;
+  }
+  if (/^#[0-9a-f]{3}$/.test(normalized)) {
+    return `#${normalized.slice(1).split("").map((character) => character.repeat(2)).join("")}`;
+  }
+  return DEFAULT_UI_SETTINGS.toolbarTileColor;
+}
+
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   return {
     toolbarPosition: TOOLBAR_POSITION_SETTING_ENABLED
       ? normalizeToolbarPosition(source.toolbarPosition)
       : DEFAULT_UI_SETTINGS.toolbarPosition,
+    toolbarTileColor: normalizeToolbarTileColor(source.toolbarTileColor),
     displayPosition: DISPLAY_POSITION_SETTING_ENABLED
       ? normalizeDisplayPosition(source.displayPosition)
       : DEFAULT_UI_SETTINGS.displayPosition,
@@ -180,8 +192,8 @@ function sanitizeUiSettings(rawSettings) {
     decorShadowsEnabled: source.decorShadowsEnabled !== false,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
     halloweenMode: normalizeHalloweenMode(source.halloweenMode),
-    editOverlayMode: ["fish", "decor", "equipment", "tank"].includes(String(source.editOverlayMode || "").trim())
-      ? String(source.editOverlayMode).trim()
+    editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
+      ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
       : DEFAULT_UI_SETTINGS.editOverlayMode
   };
 }
@@ -441,10 +453,7 @@ function shouldPreloadAssetForCurrentContentSettings(path) {
     return false;
   }
   if (isZombieSkeletonAssetPath(path)) {
-    // Halloween only borrows the seasonal artwork; it never enables the
-    // separate undead gameplay system.  Seasonal images therefore need to be
-    // available even when that gameplay feature remains disabled.
-    return isHalloweenModeActive() || isZombieSkeletonModeAvailable();
+    return isZombieSkeletonModeAvailable();
   }
   if (getAssetFileName(path) === "zombie-virus-antidote-drops.png") {
     return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
@@ -470,6 +479,7 @@ function getContentGatedPreloadPaths() {
       item.thumbnailPath,
       item.bgPath,
       item.midPath,
+      item.lightPath,
       item.maskPath,
       item.triggerPath,
       item.seatsPath,
@@ -1026,7 +1036,10 @@ function reconcileState(rawState) {
     fishScaleDefaults: {},
     tanks: [createTankState({ now, name: buildDefaultTankName(0) })],
     machinery: [],
+    storedSubmarine: null,
     submarineOwned: false,
+    storedBoat: null,
+    boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
     ownedFilterInventory: {},
@@ -1060,6 +1073,12 @@ function reconcileState(rawState) {
     : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel })];
   normalizeAquariumSectionGrid(tanks);
   const machinery = sanitizeMachineryState(incoming.machinery, tanks, now);
+  const storedSubmarine = machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE)
+    ? null
+    : sanitizeStoredSubmarineState(incoming.storedSubmarine, now);
+  const storedBoat = machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT)
+    ? null
+    : sanitizeStoredBoatState(incoming.storedBoat, now);
 
   const nextState = {
     ...base,
@@ -1080,7 +1099,10 @@ function reconcileState(rawState) {
     fishScaleDefaults: sanitizeFishScaleDefaults(incoming.fishScaleDefaults),
     tanks,
     machinery,
-    submarineOwned: incoming.submarineOwned === true || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
+    storedSubmarine,
+    submarineOwned: incoming.submarineOwned === true || Boolean(storedSubmarine) || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
+    storedBoat,
+    boatOwned: incoming.boatOwned === true || Boolean(storedBoat) || machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT),
     activeTankId: typeof incoming.activeTankId === "string" && tanks.some((tank) => tank.id === incoming.activeTankId)
       ? incoming.activeTankId
       : (tanks[0]?.id || null),
@@ -1147,6 +1169,7 @@ function reconcileState(rawState) {
 
   const hasStartedPlaying = getAllTankFish(nextState).length
     || nextState.submarineOwned
+    || nextState.boatOwned
     || nextState.machinery.length
     || nextState.storedFish.length
     || getAllPlacedDecor(nextState).length

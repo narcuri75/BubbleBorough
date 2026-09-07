@@ -128,6 +128,7 @@ function renderToolbarPosition() {
   const toolbarCollapsed = tutorialUi ? false : uiSettings.toolbarCollapsed;
   const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, tutorialUi);
   document.documentElement.dataset.toolbarPosition = toolbarPosition;
+  document.documentElement.style.setProperty("--toolbar-tile-color", uiSettings.toolbarTileColor);
   document.documentElement.dataset.displayPosition = displayPosition;
   document.documentElement.dataset.toolbarCollapsed = toolbarCollapsed ? "true" : "false";
   document.documentElement.dataset.displayCollapsed = displayCollapsed ? "true" : "false";
@@ -310,6 +311,23 @@ function formatFishShopBehavior(species) {
     return "Swarm predator";
   }
 
+  const speciesType = getFishSpeciesType(species);
+  if (speciesType === "shark") {
+    return "Chum-tracking shark";
+  }
+  if (speciesType === "whale") {
+    return "Social pod hunter";
+  }
+  if (speciesType === "seahorse") {
+    return "Upright hoverer";
+  }
+  if (speciesType === "cephalopod") {
+    return "Shell drifter";
+  }
+  if (species.id === "sunfish") {
+    return "Gentle drifter";
+  }
+
   if (isUndeadSpecies(species)) {
     return "Undead aggressor";
   }
@@ -379,7 +397,6 @@ function renderFishShop() {
       const locked = !isCustomUploadProduct && !isFishSpeciesShopUnlocked(fish);
       const debugUnlocked = progressLocked && !locked;
       const purchaseCost = getFishPurchaseCost(fish.id);
-      const affordable = !locked && !tutorialPreviewOnly && state.coins >= purchaseCost;
       const maxHealthUnits = getSpeciesMaxHealthUnits(fish);
       const heartCount = Math.ceil(maxHealthUnits / 2);
       const healthDisplay = isCustomUploadProduct
@@ -424,7 +441,7 @@ function renderFishShop() {
           </div>
           <div class="shop-meta">
             <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
-            <button class="buy-button" data-buy-fish="${fish.id}" ${(affordable || tutorialPreviewOnly) ? "" : "disabled"} ${tutorialPreviewOnly ? "disabled" : ""}>
+              <button class="buy-button" data-buy-fish="${fish.id}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
               ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
             </button>
           </div>
@@ -1068,7 +1085,6 @@ function renderFoodShop() {
 
   const catalog = getFoodCatalog().filter((food) => shouldShowFoodInStore(food));
   const cardsMarkup = catalog.map((food) => {
-    const affordable = state.coins >= food.cost;
     const count = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
     return `
       <article class="shop-card">
@@ -1082,7 +1098,7 @@ function renderFoodShop() {
         </div>
         <div class="shop-meta">
           <span class="price-tag">${food.cost} ${pluralize("coin", food.cost)}</span>
-          <button class="buy-button" data-buy-food="${food.id}" ${affordable ? "" : "disabled"}>
+          <button class="buy-button" data-buy-food="${food.id}">
             Buy Bottle (+${food.bottlePellets})
           </button>
         </div>
@@ -1100,7 +1116,6 @@ function renderPharmacyShop() {
 
   const catalog = getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine));
   const cardsMarkup = catalog.map((medicine) => {
-    const affordable = state.coins >= medicine.cost;
     const count = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
     return `
       <article class="shop-card">
@@ -1114,7 +1129,7 @@ function renderPharmacyShop() {
         </div>
         <div class="shop-meta">
           <span class="price-tag">${medicine.cost} ${pluralize("coin", medicine.cost)}</span>
-          <button class="buy-button" data-buy-medicine="${medicine.id}" ${affordable ? "" : "disabled"}>
+          <button class="buy-button" data-buy-medicine="${medicine.id}">
             Buy Bottle (+${medicine.bottleDrops})
           </button>
         </div>

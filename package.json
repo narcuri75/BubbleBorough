@@ -11,8 +11,11 @@
     "check:mobile": "node scripts/check-mobile-patch.cjs",
     "check:notifications": "node scripts/check-notification-consolidation.cjs",
     "check:architecture": "node scripts/check-action-architecture.cjs",
-    "test": "npm run check:app && npm run check:mobile && npm run check:notifications && npm run check:architecture && node --check public/app.js && npm --prefix desktop-app test",
+    "test": "npm run check:app && npm run check:mobile && npm run check:notifications && npm run check:architecture && node --check public/app.js && node --test scripts/feature-regressions.test.cjs",
     "generate:assets": "powershell -ExecutionPolicy Bypass -File scripts/generate-assets.ps1",
     "generate:manifest": "powershell -ExecutionPolicy Bypass -File scripts/generate-asset-manifest.ps1"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
   }
 }

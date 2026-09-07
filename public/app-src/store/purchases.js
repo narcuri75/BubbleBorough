@@ -1,14 +1,22 @@
 // Source fragment: store/purchases.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function getInsufficientFundsMessage() {
+  return "Payment method declined. Insufficient Funds.";
+}
+
 function performCoinTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
   const direction = options.direction === "credit" ? "credit" : "debit";
   if (direction === "debit" && state.coins < amount) {
-    if (options.insufficientMessage) {
-      showToast(options.insufficientMessage);
-    }
-    return { ok: false, reason: "insufficient-coins", amount };
+    const errorMessage = getInsufficientFundsMessage();
+    showToast(errorMessage, { force: true, tone: "error" });
+    return {
+      ok: false,
+      reason: "insufficient-coins",
+      amount,
+      errorMessage
+    };
   }
 
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
@@ -99,8 +107,10 @@ function selectFoodMode(foodKey, options = {}) {
     return { ok: false, reason: "out-of-stock", foodId: food.id };
   }
 
-  runtime.foodTrayOpen = true;
-  runtime.medicineTrayOpen = false;
+  runtime.foodTrayOpen = false;
+  runtime.medicineTrayOpen = true;
+  runtime.cleaningMode = false;
+  runtime.scoopMode = false;
   runtime.medicineModeKey = "";
   runtime.feedingModeFoodKey = runtime.feedingModeFoodKey === food.id ? "" : food.id;
   renderUi(Date.now());
@@ -138,6 +148,8 @@ function selectMedicineMode(medicineKey) {
 
   runtime.medicineTrayOpen = true;
   runtime.foodTrayOpen = false;
+  runtime.cleaningMode = false;
+  runtime.scoopMode = false;
   runtime.feedingModeFoodKey = "";
   runtime.medicineModeKey = runtime.medicineModeKey === medicine.id ? "" : medicine.id;
   renderUi(Date.now());
@@ -200,8 +212,9 @@ async function buyFish(speciesId, options = {}) {
 
   const purchaseCost = getFishPurchaseCost(speciesId);
   if (state.coins < purchaseCost) {
-    showToast(`You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`);
-    return { ok: false, reason: "insufficient-coins" };
+    const errorMessage = getInsufficientFundsMessage();
+    showToast(errorMessage, { force: true, tone: "error" });
+    return { ok: false, reason: "insufficient-coins", errorMessage };
   }
 
   const now = Date.now();
@@ -301,8 +314,9 @@ async function buyAnotherCustomFish(fishId) {
 
   const purchaseCost = getFishPurchaseCost(sourceFish.speciesId);
   if (state.coins < purchaseCost) {
-    showToast(`You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for another ${species.name}.`);
-    return;
+    const errorMessage = getInsufficientFundsMessage();
+    showToast(errorMessage, { force: true, tone: "error" });
+    return { ok: false, reason: "insufficient-coins", errorMessage };
   }
 
   const now = Date.now();
@@ -397,7 +411,8 @@ function requestCommerceConfirmation(options = {}) {
   const errorMessage = options.validate?.(details) || "";
   if (!details || errorMessage) {
     options.clear?.();
-    showToast(errorMessage || options.missingMessage || "That item is no longer available.");
+    const message = errorMessage || options.missingMessage || "That item is no longer available.";
+    showToast(message, message === getInsufficientFundsMessage() ? { force: true, tone: "error" } : {});
     return false;
   }
   options.open?.(details);
@@ -408,7 +423,8 @@ function confirmCommerceAction(options = {}) {
   const details = options.getDetails?.() || null;
   const errorMessage = options.validate?.(details) || "";
   if (!details || errorMessage) {
-    showToast(errorMessage || options.missingMessage || "That item is no longer available.");
+    const message = errorMessage || options.missingMessage || "That item is no longer available.";
+    showToast(message, message === getInsufficientFundsMessage() ? { force: true, tone: "error" } : {});
     closeUtilityOverlay();
     return false;
   }
@@ -498,7 +514,7 @@ function openFishBuyAnotherConfirmation(fishId) {
       : !details?.unlocked
         ? `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`
         : !details?.canAfford
-          ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`
+          ? getInsufficientFundsMessage()
           : "",
     open: (details) => openFishActionConfirmation({ type: "buy-another", fishId: details.fishId })
   });
@@ -532,7 +548,7 @@ function confirmFishBuyAnother() {
       ? "Enable Violence & Gore to buy undead fish."
       : `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`)
       : !details?.canAfford
-        ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`
+        ? getInsufficientFundsMessage()
         : "",
     execute: (details) => buyAnotherFishFromSource(details.fishId)
   });
@@ -715,7 +731,7 @@ function openDecorBuyAnotherConfirmation(decorKey) {
       : !canUseDecorWithCurrentContentSettings(details.decorKey)
         ? "Enable Violence & Gore to buy that decor."
         : !details.canAfford
-          ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.decor.name}.`
+          ? getInsufficientFundsMessage()
           : "",
     open: (details) => openDecorActionConfirmation({ type: "buy-another", decorKey: details.decorKey })
   });
@@ -741,7 +757,7 @@ function confirmDecorBuyAnother() {
     getDetails: getPendingDecorBuyAnotherDetails,
     missingMessage: "That decor is no longer available.",
     validate: (details) => !details?.canAfford
-      ? `You need ${details?.cost || 0} ${pluralize("coin", details?.cost || 0)} for another ${details?.decor?.name || "decor"}.`
+      ? getInsufficientFundsMessage()
       : "",
     execute: (details) => buyAnotherDecor(details.decorKey)
   });

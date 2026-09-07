@@ -695,7 +695,7 @@ function hideToast(options = {}) {
   }
   runtime.toastKey = "";
   runtime.guidanceToastOwner = "";
-  dom.toast?.classList.remove("is-visible");
+  dom.toast?.classList.remove("is-visible", "is-error");
   return true;
 }
 
@@ -706,7 +706,7 @@ function resetToastState() {
   runtime.toastHandle = null;
   runtime.toastKey = "";
   runtime.guidanceToastOwner = "";
-  dom.toast?.classList.remove("is-visible");
+  dom.toast?.classList.remove("is-visible", "is-error");
 }
 
 function showGuidanceToast(owner, message, options = {}) {
@@ -718,7 +718,7 @@ function showGuidanceToast(owner, message, options = {}) {
 
 function showToast(message, options = {}) {
   const tutorialMessage = options.tutorialMessage === true || isIntroTutorialActive();
-  if (!tutorialMessage) {
+  if (!tutorialMessage && options.force !== true) {
     hideToast();
     return false;
   }
@@ -726,6 +726,7 @@ function showToast(message, options = {}) {
   runtime.toastKey = typeof options.key === "string" ? options.key : "";
   runtime.guidanceToastOwner = typeof options.owner === "string" ? options.owner : "toast:general";
   dom.toast.textContent = message;
+  dom.toast.classList.toggle("is-error", options.tone === "error");
   positionToast();
   dom.toast.classList.add("is-visible");
 
@@ -735,7 +736,7 @@ function showToast(message, options = {}) {
 
   const durationMs = Math.max(0, Number.isFinite(Number(options.durationMs)) ? Number(options.durationMs) : 2200);
   runtime.toastHandle = setTimeout(() => {
-    dom.toast.classList.remove("is-visible");
+    dom.toast.classList.remove("is-visible", "is-error");
     runtime.toastHandle = null;
     runtime.toastKey = "";
     runtime.guidanceToastOwner = "";

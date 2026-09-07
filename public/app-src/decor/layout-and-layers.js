@@ -187,6 +187,7 @@ function sanitizeFish(fish, options = {}) {
       : null,
     piranhaAttackStartedAt: null,
     piranhaLastDamageAt: null,
+    sharkLastAttackAt: Number.isFinite(Number(fish.sharkLastAttackAt)) ? Math.max(0, Number(fish.sharkLastAttackAt)) : 0,
     breedCooldownUntil: Number.isFinite(fish.breedCooldownUntil) ? fish.breedCooldownUntil : 0,
     healthUnits: rawHealthUnits === null
       ? maxHealthUnits
@@ -585,6 +586,7 @@ function createDefaultBubblerSettings(seed = null) {
     MAX_CUSTOM_BUBBLER_DISTANCE_PX
   );
   const bubbleColor = normalizeDecorColorSetting(source.bubbleColor ?? source.color) || DEFAULT_BUBBLER_BUBBLE_COLOR;
+  const lightColor = normalizeHexColor(source.lightColor ?? source.bubblerLightColor) || DEFAULT_BUBBLER_LIGHT_COLOR;
   const bubbleColorize = normalizeDecorColorizeSetting(
     source.bubbleColorize
     ?? source.colorize
@@ -658,6 +660,7 @@ function createDefaultBubblerSettings(seed = null) {
     fadeDistance: distance,
     bubbleColor,
     bubbleColors: [bubbleColor],
+    lightColor,
     bubbleColorize,
     bubbleSize,
     bubbleOpacity,
@@ -1106,7 +1109,7 @@ function updateSelectedDecorActionButtons() {
   if (buyButton) {
     buyButton.hidden = false;
     buyButton.dataset.buyAnotherDecor = decorKey;
-    buyButton.disabled = state.coins < cost;
+    buyButton.disabled = false;
     buyButton.textContent = "BUY";
     buyButton.title = `Buy another for ${cost} ${pluralize("coin", cost)}`;
     buyButton.setAttribute("aria-label", state.coins < cost
@@ -2101,6 +2104,19 @@ function isBubblerDecorKey(decorKey = "") {
   return Boolean(getDecorBubblerMeta(decorKey));
 }
 
+function getDecorBubblerLightPath(itemOrKey) {
+  const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
+  const decor = runtime.decorMap.get(decorKey);
+  if (!decor || !canConfigureDecorBubbler(decorKey)) {
+    return null;
+  }
+  return decor.lightPath || null;
+}
+
+function hasDecorBubblerLight(itemOrKey) {
+  return Boolean(getDecorBubblerLightPath(itemOrKey));
+}
+
 function canConfigureDecorBubbler(itemOrKey) {
   const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
   return isCustomBubblerDecorKey(decorKey) || isBubblerDecorKey(decorKey);
@@ -2130,6 +2146,7 @@ function getPlacedDecorBubblerSettings(item) {
     width: item.bubblerSettings?.width ?? firstSpout.spread ?? DEFAULT_BUBBLER_SPREAD_PX,
     distance: item.bubblerSettings?.distance ?? firstSpout.fadeDistance ?? DEFAULT_BUBBLER_FADE_DISTANCE_PX,
     bubbleColor: item.bubblerSettings?.bubbleColor ?? firstSpout.bubbleColor ?? DEFAULT_BUBBLER_BUBBLE_COLOR,
+    lightColor: item.bubblerSettings?.lightColor ?? DEFAULT_BUBBLER_LIGHT_COLOR,
     bubbleColorize: item.bubblerSettings?.bubbleColorize ?? firstSpout.bubbleColorize ?? false,
     bubbleSize: item.bubblerSettings?.bubbleSize ?? firstSpout.bubbleSize ?? DEFAULT_CUSTOM_BUBBLER_BUBBLE_SIZE,
     bubbleOpacity: item.bubblerSettings?.bubbleOpacity ?? firstSpout.bubbleOpacity ?? DEFAULT_BUBBLER_BUBBLE_OPACITY,

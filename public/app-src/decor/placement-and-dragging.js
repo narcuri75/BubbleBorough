@@ -1336,6 +1336,23 @@ function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
     return false;
   }
 
+  if (isWhaleBreathActive(fish, species)) {
+    const minYNorm = getWhaleBreathSurfaceYNorm(fish, species);
+    const xNorm = clampFishXNormToMobileViewport(Number.isFinite(Number(fish.xNorm)) ? fish.xNorm : 0.5, fish, species);
+    const yNorm = clamp(Number.isFinite(Number(fish.yNorm)) ? fish.yNorm : minYNorm, minYNorm, 0.8);
+    const targetXNorm = clampFishXNormToMobileViewport(Number.isFinite(Number(fish.targetXNorm)) ? fish.targetXNorm : xNorm, fish, species);
+    const targetYNorm = clamp(Number.isFinite(Number(fish.targetYNorm)) ? fish.targetYNorm : minYNorm, minYNorm, 0.8);
+    const changed = Math.abs(xNorm - fish.xNorm) > 0.000001
+      || Math.abs(yNorm - fish.yNorm) > 0.000001
+      || Math.abs(targetXNorm - fish.targetXNorm) > 0.000001
+      || Math.abs(targetYNorm - fish.targetYNorm) > 0.000001;
+    fish.xNorm = xNorm;
+    fish.yNorm = yNorm;
+    fish.targetXNorm = targetXNorm;
+    fish.targetYNorm = targetYNorm;
+    return changed;
+  }
+
   if (fish.activity === FISH_GRAVEL_DIG_ACTIVITY && getForcedGravelDigPrompt(fish)) {
     const minYNorm = getFishSurfaceMinYNorm(fish, species, 0.14);
     const maxYNorm = 0.96;

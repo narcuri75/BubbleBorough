@@ -206,7 +206,8 @@ function getDecorVisibleImagePaths(decor) {
   return [...new Set([
     decor.bgPath,
     decor.path,
-    decor.midPath
+    decor.midPath,
+    decor.lightPath
   ].filter(Boolean))];
 }
 

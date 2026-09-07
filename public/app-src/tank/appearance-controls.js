@@ -432,6 +432,9 @@ function toggleUvLightPower(force = null) {
 }
 
 function toggleLightsOutOverride() {
+  if (!LIGHTS_OUT_FEATURE_ENABLED) {
+    return;
+  }
   const targetTank = getCurrentTank();
   if (!targetTank) {
     return;

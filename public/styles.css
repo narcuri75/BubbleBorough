@@ -3922,7 +3922,21 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
 .borough-debug-preview-water i:nth-child(3) { left: 76%; bottom: 25%; animation-delay: -1.6s; }
 @keyframes borough-debug-bubble { to { transform: translateY(-52px); opacity: 0; } }
 .debug-living-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
-.debug-living-controls .debug-menu-button { min-width: 0; padding: 7px 5px; font-size: 0.67rem; }
+.debug-living-controls .debug-menu-button {
+  min-width: 0;
+  padding: 7px 8px;
+  font-size: 0.67rem;
+  min-height: 38px;
+  grid-template-columns: minmax(0, 1fr);
+}
+.debug-living-controls .debug-menu-button .debug-menu-label {
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+}
 .debug-living-controls select { min-width: 0; width: 100%; padding: 6px; color: #fff; border: 1px solid rgba(125, 225, 255, 0.3); border-radius: 7px; background: #092b40; }
 .transit-tube-settings-preview { display: block; width: min(230px, 68vw); max-height: 310px; margin: auto; object-fit: contain; filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.35)); }
 .transit-tube-settings .custom-decor-name-row input { width: 100%; border: 1px solid rgba(114, 226, 255, 0.34); border-radius: 9px; padding: 9px 10px; color: #fff; background: rgba(3, 25, 42, 0.72); }
@@ -7783,6 +7797,27 @@ button.management-task-row {
   align-items: stretch;
 }
 
+.bubbler-light-color-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.bubbler-light-color-row > span,
+.bubbler-light-color-row > .mini-note {
+  grid-column: 1 / -1;
+}
+
+.bubbler-light-color-input {
+  width: 54px;
+  height: 34px;
+  padding: 2px;
+  border: 1px solid rgba(188, 225, 246, 0.24);
+  border-radius: 8px;
+  background: rgba(8, 18, 28, 0.82);
+  cursor: pointer;
+}
+
+
 .bubbler-color-swatches {
   max-height: none;
   overflow: visible;
@@ -9154,6 +9189,13 @@ button.management-task-row {
 .toast.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.toast.is-error {
+  background: #fff1f0;
+  border-color: #d13212;
+  color: #b12704;
+  font-weight: 800;
 }
 
 .empty-state {
@@ -11080,6 +11122,18 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-cart-item-actions .tankazon-cart-remove { margin-left:auto; padding:0 8px; color:#0066c0; border:0; }
 .tankazon-cart-footer { display:grid; gap:12px; padding:16px; border-top:1px solid #d5d9d9; }
 .tankazon-cart-subtotal { font-size:1rem; }
+.tankazon-purchase-error {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid #d13212;
+  border-radius: 8px;
+  background: #fff1f0;
+  color: #b12704;
+  font-size: .86rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.tankazon-purchase-error[hidden] { display: none !important; }
 .tankazon-complete-purchase { min-height:42px; border:1px solid #f2c200; border-radius:8px; background:#ffd814; color:#0f1111; font-weight:900; cursor:pointer; }
 .tankazon-complete-purchase:hover:not(:disabled) { background:#f7ca00; }
 .tankazon-complete-purchase:disabled { opacity:.48; cursor:default; }
@@ -11429,6 +11483,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .shop-card [data-buy-filter],
 .tankazon-store .shop-card [data-buy-background],
 .tankazon-store .shop-card [data-buy-auto-dispenser],
+.tankazon-store .shop-card [data-buy-boat],
 .tankazon-store .shop-card [data-buy-tank] {
   width: 100%;
   min-height: 30px;
@@ -11585,6 +11640,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .shop-card [data-buy-filter],
 .tankazon-store .shop-card [data-buy-background],
 .tankazon-store .shop-card [data-buy-auto-dispenser],
+.tankazon-store .shop-card [data-buy-boat],
 .tankazon-store .shop-card [data-buy-tank] {
   min-height: 30px;
   margin: 0;
@@ -11808,6 +11864,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .shop-card [data-buy-filter],
 .tankazon-store .shop-card [data-buy-background],
 .tankazon-store .shop-card [data-buy-auto-dispenser],
+.tankazon-store .shop-card [data-buy-boat],
 .tankazon-store .shop-card [data-buy-tank] {
   width: 100% !important;
   height: 34px !important;
@@ -12268,6 +12325,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store #equipmentShop .shop-card [data-buy-background],
 .tankazon-store #equipmentShop .shop-card [data-buy-auto-dispenser],
 .tankazon-store #equipmentShop .shop-card [data-buy-submarine],
+.tankazon-store #equipmentShop .shop-card [data-buy-boat],
 .tankazon-store #equipmentShop .shop-card [data-buy-tank] {
   display: block !important;
   visibility: visible !important;
@@ -12280,7 +12338,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* Tankazon keeps one primary purchase action per equipment tile. */
-.tankazon-store #equipmentShop .shop-card .shop-button-row > :not([data-buy-filter]):not([data-buy-background]):not([data-buy-auto-dispenser]):not([data-buy-submarine]):not([data-buy-tank]) {
+.tankazon-store #equipmentShop .shop-card .shop-button-row > :not([data-buy-filter]):not([data-buy-background]):not([data-buy-auto-dispenser]):not([data-buy-submarine]):not([data-buy-boat]):not([data-buy-tank]) {
   display: none !important;
 }
 
@@ -12765,6 +12823,64 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   padding: 0 2px 2px;
 }
 
+/* Every Tank editor view occupies the complete content row. The controls
+   inside it may scroll horizontally, but must never collapse to their
+   intrinsic one-line height. */
+.edit-tank-tray > .edit-tank-tray-scroller {
+  display: flex;
+  align-items: stretch;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.edit-tank-tray > .edit-tank-tray-scroller > .edit-tank-tray-panel {
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+/* Tank mode content must use the tray's full content height.  The shared
+   background-card styles were authored for compact shop rows and otherwise
+   collapse these controls to an 88px strip inside the 218px editor tray. */
+.edit-tank-tray .background-color-panel-shell,
+.edit-tank-tray .custom-gravel-panel-shell,
+.edit-tank-tray .edit-tank-background-control,
+.edit-tank-tray #editTankBackgroundList,
+.edit-tank-tray #editTankBackgroundColorPanel,
+.edit-tank-tray #editTankCustomGravelPanel,
+.edit-tank-tray .custom-gravel-layer-list {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+.edit-tank-tray .background-color-panel-shell,
+.edit-tank-tray .custom-gravel-panel-shell {
+  flex: 1 1 auto;
+}
+
+.edit-tank-tray #editTankBackgroundList .background-card,
+.edit-tank-tray .custom-gravel-layer-card {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: stretch;
+}
+
+.edit-tank-tray [data-tank-tray-panel="background"] .edit-tank-background-workspace,
+.edit-tank-tray [data-tank-tray-panel="gravel"] #editTankCustomGravelPanel,
+.edit-tank-tray [data-tank-tray-panel="gravel"] .custom-gravel-panel-shell,
+.edit-tank-tray [data-tank-tray-panel="gravel"] .custom-gravel-layer-list {
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.edit-tank-tray #editTankBackgroundList,
+.edit-tank-tray #editTankBackgroundColorPanel {
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
 .edit-tank-tray-panel {
   height: 88px;
   min-height: 88px;
@@ -13130,86 +13246,292 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   display: none !important;
 }
 
+#feedButton,
+#foodTray,
+#medicineTray .edit-decor-tray-arrow {
+  display: none !important;
+}
+
+/* Keep the merged care tray at the same height as the current horizontal tray. */
 #medicineTray .edit-decor-tray-scroller {
   min-height: 98px;
   align-items: stretch;
   padding-top: 0;
   padding-bottom: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+#medicineTray .edit-decor-tray-scroller::-webkit-scrollbar {
+  height: 0;
+}
+
+#medicineTray {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+@media (min-width: 861px) {
+  #medicineTray {
+    width: min(92vw, 660px);
+    max-width: calc(100vw - 48px);
+  }
 }
 
 .care-tray-content {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: stretch;
-  gap: 12px;
-  min-width: max-content;
+  flex: 1 0 var(--care-tray-min-width, 631px);
+  width: 100%;
+  min-width: var(--care-tray-min-width, 631px);
   height: 98px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(248px, var(--care-food-min-width, 248px)) 1px minmax(163px, var(--care-medicine-min-width, 163px)) 1px 170px;
+  gap: 10px;
+  align-items: stretch;
   padding: 0 4px;
 }
 
-.care-tray-section {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
+.care-tray-food,
+.care-tray-medical,
+.care-tray-tools {
   min-width: 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 17px minmax(0, 1fr);
+  gap: 3px;
+  padding: 3px 0 2px;
 }
 
-.care-tray-medical-items {
+.care-tray-heading-row {
+  min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
 }
 
-.care-tray-section-icon {
-  width: 52px;
+.care-tray-inline-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.28));
+}
+
+.care-tray-heading {
+  align-self: center;
+  color: rgba(143, 215, 248, 0.86);
+  font: 900 0.58rem/1 var(--ui-font-stack);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.care-tray-food-items,
+.care-tray-medical-items {
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+  overflow: visible;
+  scrollbar-width: none;
+}
+
+.care-tray-food-items::-webkit-scrollbar,
+.care-tray-medical-items::-webkit-scrollbar {
+  display: none;
+}
+
+.care-medicine-card {
+  position: relative;
+  width: 78px;
+  min-width: 78px;
   height: 72px;
+  flex: 0 0 78px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  gap: 1px;
+  padding: 5px 5px 6px;
+  border: 1px solid rgba(188, 225, 246, 0.18);
+  border-radius: 13px;
+  background:
+    radial-gradient(circle at 50% 16%, color-mix(in srgb, var(--tray-accent, #83d8f6) 18%, transparent), transparent 44%),
+    linear-gradient(180deg, rgba(42, 72, 94, 0.82), rgba(15, 37, 55, 0.88));
+  color: #eefaff;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 140ms ease, border-color 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+}
+
+.care-medicine-card-image {
+  width: 37px;
+  height: 37px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.28));
+}
+
+.care-medicine-card-name {
+  width: 100%;
+  overflow: hidden;
+  color: #eefaff;
+  font: 800 0.54rem/1.05 var(--ui-font-stack);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.care-medicine-card-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 20px;
+  height: 18px;
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
-  border: 1px solid rgba(188, 225, 246, 0.16);
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(28, 59, 78, 0.78), rgba(10, 31, 47, 0.82));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 0 5px;
+  border: 1px solid rgba(188, 225, 246, 0.25);
+  border-radius: 999px;
+  background: rgba(5, 25, 42, 0.84);
+  color: rgba(239, 249, 255, 0.92);
+  font: 900 0.49rem/1 var(--ui-font-stack);
+  box-sizing: border-box;
 }
 
-.care-tray-section-icon img {
-  width: 31px;
-  height: 31px;
-  object-fit: contain;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
+.care-medicine-card:hover,
+.care-medicine-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(132, 231, 255, 0.62);
+  filter: brightness(1.08);
+}
+
+.care-medicine-card.is-active {
+  border-color: rgba(255, 222, 117, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 2px rgba(255, 207, 71, 0.12),
+    0 0 16px rgba(255, 207, 71, 0.18);
+}
+
+.care-tray-empty-medical {
+  width: 100%;
+  min-width: 0;
+  height: 72px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px dashed rgba(188, 225, 246, 0.2);
+  border-radius: 13px;
+  color: rgba(172, 208, 228, 0.72);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(110, 194, 230, 0.06), transparent 50%),
+    rgba(2, 18, 31, 0.2);
+}
+
+.care-tray-empty-copy-wrap {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.care-tray-empty-icon {
+  width: 20px;
+  height: 24px;
+  flex: 0 0 auto;
+  opacity: 0.72;
+}
+
+.care-tray-empty-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.care-tray-empty-copy strong {
+  color: rgba(229, 244, 252, 0.78);
+  font: 800 0.6rem/1 var(--ui-font-stack);
+  white-space: nowrap;
+}
+
+.care-tray-empty-copy small {
+  color: rgba(178, 211, 229, 0.58);
+  font: 650 0.48rem/1.08 var(--ui-font-stack);
+}
+
+.care-tray-empty-shop-button {
+  min-width: 94px;
+  min-height: 26px;
+  padding: 5px 10px;
+  border: 1px solid rgba(111, 213, 255, 0.5);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(98, 212, 255, 0.16), transparent 48%),
+    linear-gradient(180deg, rgba(24, 100, 151, 0.9), rgba(9, 55, 91, 0.95));
+  color: #f4fbff;
+  font: 850 0.53rem/1 var(--ui-font-stack);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: transform 140ms ease, border-color 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+}
+
+.care-tray-empty-shop-button:hover,
+.care-tray-empty-shop-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(132, 231, 255, 0.86);
+  filter: brightness(1.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 0 12px rgba(47, 196, 255, 0.16);
 }
 
 .care-tray-divider {
   width: 1px;
   align-self: stretch;
-  flex: 0 0 auto;
-  margin: 8px 1px;
-  background: linear-gradient(180deg, transparent, rgba(162, 219, 244, 0.36) 18%, rgba(162, 219, 244, 0.36) 82%, transparent);
+  margin: 9px 0 6px;
+  background: linear-gradient(180deg, transparent, rgba(162, 219, 244, 0.38) 17%, rgba(162, 219, 244, 0.38) 83%, transparent);
+}
+
+.care-tray-tools {
+  min-width: 170px;
+}
+
+.care-tray-tool-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .care-tool-tile {
-  width: 84px;
-  height: 84px;
+  min-width: 0;
+  height: 72px;
   display: grid;
   grid-template-rows: 1fr auto;
   place-items: center;
-  gap: 3px;
-  padding: 9px 8px 7px;
-  border: 1px solid rgba(188, 225, 246, 0.2);
-  border-radius: 16px;
+  gap: 1px;
+  padding: 5px 6px 6px;
+  border: 1px solid rgba(111, 213, 255, 0.38);
+  border-radius: 14px;
   background:
-    radial-gradient(circle at 50% 18%, rgba(163, 226, 250, 0.12), transparent 45%),
-    linear-gradient(180deg, rgba(43, 67, 88, 0.9), rgba(19, 40, 58, 0.92));
-  color: #eefaff;
-  font: 800 0.72rem/1 var(--ui-font-stack);
+    radial-gradient(circle at 50% 15%, rgba(98, 212, 255, 0.2), transparent 46%),
+    linear-gradient(180deg, rgba(23, 91, 137, 0.82), rgba(10, 48, 82, 0.92));
+  color: #f4fbff;
+  font: 850 0.62rem/1 var(--ui-font-stack);
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: transform 140ms ease, border-color 140ms ease, filter 140ms ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 16px rgba(38, 189, 255, 0.07);
+  transition: transform 140ms ease, border-color 140ms ease, filter 140ms ease, box-shadow 140ms ease;
 }
 
 .care-tool-tile img {
-  width: 46px;
-  height: 46px;
+  width: 43px;
+  height: 43px;
   object-fit: contain;
   filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.28));
 }
@@ -13217,34 +13539,19 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .care-tool-tile:hover,
 .care-tool-tile:focus-visible {
   transform: translateY(-1px);
-  border-color: rgba(132, 231, 255, 0.62);
-  filter: brightness(1.08);
+  border-color: rgba(132, 231, 255, 0.82);
+  filter: brightness(1.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 12px rgba(47, 196, 255, 0.15);
 }
 
 .care-tool-tile.is-active {
-  border-color: rgba(255, 222, 117, 0.86);
+  border-color: rgba(255, 222, 117, 0.92);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
     0 0 0 2px rgba(255, 207, 71, 0.12),
-    0 0 18px rgba(255, 207, 71, 0.18);
-}
-
-.care-medicine-tile {
-  flex: 0 0 auto;
-}
-
-.care-tray-empty-medical {
-  min-width: 132px;
-  min-height: 58px;
-  display: grid;
-  place-items: center;
-  padding: 8px 12px;
-  border: 1px dashed rgba(188, 225, 246, 0.18);
-  border-radius: 14px;
-  color: rgba(218, 240, 252, 0.64);
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
+    0 0 18px rgba(255, 207, 71, 0.2);
 }
 
 /* Shared edit tray dimensions and simplified Tank editor */
@@ -13255,6 +13562,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 #editFishTray,
 #editDecorTray,
+#editEquipmentTray,
 #editTankTray {
   width: var(--bubble-edit-tray-width);
   height: var(--bubble-edit-tray-height);
@@ -14326,14 +14634,19 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .submarine-manager {
   position: absolute;
   z-index: 48;
-  right: clamp(12px, 2.2vw, 34px);
-  bottom: calc(var(--bottom-dock-height, 62px) + 24px);
-  width: min(390px, calc(100vw - 28px));
-  padding: 12px;
-  border: 1px solid rgba(61, 221, 240, 0.72);
+  right: clamp(12px, 2vw, 28px);
+  bottom: calc(var(--bottom-dock-height, 62px) + 20px);
+  width: min(320px, calc(100vw - 24px));
+  padding: 10px;
+  border: 1px solid rgba(61, 221, 240, 0.7);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(5, 35, 49, 0.97), rgba(3, 23, 34, 0.97));
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(123, 229, 244, 0.08);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(38, 171, 221, 0.12), transparent 50%),
+    linear-gradient(180deg, rgba(4, 35, 54, 0.97), rgba(3, 22, 35, 0.98));
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 0 1px rgba(123, 229, 244, 0.08);
   color: #eafaff;
   backdrop-filter: blur(12px);
 }
@@ -14342,124 +14655,310 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   display: none !important;
 }
 
-.submarine-manager-header,
-.submarine-manager-title,
-.submarine-resource-row > div:first-child {
+.submarine-manager-header {
   display: flex;
   align-items: center;
-}
-
-.submarine-manager-header {
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 9px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .submarine-manager-title {
   min-width: 0;
-  gap: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .submarine-manager-title img {
-  width: 66px;
-  height: 34px;
+  width: 54px;
+  height: 26px;
   object-fit: contain;
   flex: 0 0 auto;
 }
 
-.submarine-manager-title > div {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
 .submarine-manager-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f3fbff;
   font-size: 0.78rem;
   line-height: 1.1;
 }
 
-.submarine-manager-title span {
+.submarine-manager-header-actions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.submarine-settings-button {
+  min-height: 28px;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(90, 201, 231, 0.3);
+  background: linear-gradient(180deg, rgba(12, 66, 95, 0.92), rgba(7, 42, 62, 0.94));
+  color: rgba(228, 248, 255, 0.92);
+  font: 900 0.5rem/1 var(--ui-font-stack);
+  letter-spacing: 0.04em;
+}
+
+.submarine-settings-button.is-active {
+  border-color: rgba(137, 235, 255, 0.78);
+  background: linear-gradient(180deg, rgba(15, 111, 154, 0.98), rgba(7, 76, 112, 0.98));
+  color: #fff;
+}
+
+.machinery-settings-panel {
+  margin: 0 0 8px;
+  padding: 0 0 8px;
+}
+
+.machinery-settings-panel .fish-inspector-color-card {
+  background: linear-gradient(180deg, rgba(7, 43, 62, 0.86), rgba(4, 29, 45, 0.9));
+  border-color: rgba(86, 195, 211, 0.18);
+}
+
+.submarine-manager-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(90, 201, 231, 0.3);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(12, 66, 95, 0.92), rgba(7, 42, 62, 0.94));
+  color: rgba(228, 248, 255, 0.92);
+  font: 900 0.98rem/1 var(--ui-font-stack);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.submarine-manager-close:hover,
+.submarine-manager-close:focus-visible {
+  border-color: rgba(137, 235, 255, 0.74);
+  filter: brightness(1.08);
+}
+
+.submarine-autopilot-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(72, 189, 205, 0.28);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(6, 57, 85, 0.8), rgba(4, 42, 66, 0.84));
+  cursor: pointer;
+  user-select: none;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: rgba(208, 241, 249, 0.7);
-  font-size: 0.62rem;
 }
 
-.submarine-manager-warning {
-  margin-bottom: 9px;
-  padding: 6px 8px;
-  border-radius: 9px;
-  border: 1px solid rgba(72, 189, 205, 0.2);
-  background: rgba(12, 75, 89, 0.16);
-  color: rgba(215, 246, 252, 0.72);
-  font-size: 0.61rem;
-  font-weight: 700;
+.submarine-autopilot-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
-.submarine-manager-warning.is-warning {
-  border-color: rgba(255, 87, 87, 0.55);
-  background: rgba(120, 23, 31, 0.28);
-  color: #ffd6d9;
+.submarine-autopilot-copy {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #f3fbff;
+}
+
+.submarine-autopilot-copy strong {
+  font-size: 0.66rem;
+  line-height: 1;
+}
+
+.submarine-autopilot-switch {
+  position: relative;
+  min-width: 86px;
+  height: 28px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(42, 66, 82, 0.92), rgba(28, 53, 69, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  flex: 0 0 auto;
+}
+
+.submarine-autopilot-toggle.is-on .submarine-autopilot-switch {
+  background: linear-gradient(180deg, rgba(2, 85, 123, 0.95), rgba(0, 129, 187, 0.86));
+}
+
+.submarine-autopilot-state {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #f6fdff;
+  font: 900 0.56rem/1 var(--ui-font-stack);
+  letter-spacing: 0.05em;
+}
+
+.submarine-autopilot-toggle.is-on .submarine-autopilot-state {
+  left: 11px;
+}
+
+.submarine-autopilot-toggle.is-off .submarine-autopilot-state {
+  right: 11px;
+}
+
+.submarine-autopilot-switch i {
+  position: absolute;
+  top: 3px;
+  width: 22px;
+  height: 22px;
+  display: block;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #bbfdff, #61eeff);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.24);
+  transition: left 140ms ease, right 140ms ease;
+}
+
+.submarine-autopilot-toggle.is-off .submarine-autopilot-switch i {
+  left: 3px;
+}
+
+.submarine-autopilot-toggle.is-on .submarine-autopilot-switch i {
+  right: 3px;
 }
 
 .submarine-resource-list {
   display: grid;
-  gap: 7px;
+  gap: 6px;
 }
 
 .submarine-resource-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 92px;
-  grid-template-areas:
-    "label button"
-    "meter button";
-  column-gap: 9px;
-  row-gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 7px 8px;
-  border-radius: 10px;
-  background: rgba(9, 48, 62, 0.52);
-  border: 1px solid rgba(86, 195, 211, 0.13);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(7, 43, 62, 0.86), rgba(4, 29, 45, 0.9));
+  border: 1px solid rgba(86, 195, 211, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.submarine-resource-row > div:first-child {
-  grid-area: label;
+.submarine-resource-body {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  gap: 5px;
+}
+
+.submarine-resource-main {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  font-size: 0.62rem;
 }
 
-.submarine-resource-row > div:first-child span {
-  color: rgba(211, 242, 248, 0.72);
+.submarine-resource-identity {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submarine-resource-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.28));
+}
+
+.submarine-resource-copy {
+  min-width: 0;
+}
+
+.submarine-resource-topline {
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.submarine-resource-topline strong {
+  color: #f2fbff;
+  font-size: 0.61rem;
+  line-height: 1;
+}
+
+.submarine-resource-topline small {
+  color: rgba(191, 229, 238, 0.52);
+  font-size: 0.46rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.submarine-resource-count {
+  flex: 0 0 auto;
+  color: rgba(235, 250, 255, 0.9);
+  font: 800 0.62rem/1 var(--ui-font-stack);
   font-variant-numeric: tabular-nums;
 }
 
-.submarine-resource-row > button {
-  grid-area: button;
-  align-self: center;
-  min-height: 30px;
-  padding-inline: 7px;
-  font-size: 0.56rem;
-}
-
 .submarine-resource-meter {
-  grid-area: meter;
-  height: 5px;
+  height: 3px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .submarine-resource-meter i {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #2bb8cf, #6df0d3);
+  background: linear-gradient(90deg, #2fd2ee, #78edd8);
 }
 
-.submarine-manager-note {
-  margin-top: 8px;
-  line-height: 1.25;
+.submarine-load-buttons {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.submarine-load-buttons .small-button {
+  min-width: 28px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(15, 104, 152, 0.98), rgba(8, 71, 106, 0.98));
+  border: 1px solid rgba(89, 201, 233, 0.28);
+  color: #f4fcff;
+  font: 900 0.48rem/1 var(--ui-font-stack);
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.submarine-load-buttons .small-button:hover,
+.submarine-load-buttons .small-button:focus-visible {
+  border-color: rgba(143, 234, 255, 0.76);
+  filter: brightness(1.08);
+}
+
+.submarine-load-buttons .small-button:disabled {
+  opacity: 0.42;
+}
+
+.submarine-load-buttons .submarine-load-button-fill {
+  min-width: 34px;
+  background: linear-gradient(180deg, rgba(28, 129, 183, 0.98), rgba(12, 93, 140, 0.98));
+  border-color: rgba(119, 220, 246, 0.44);
 }
 
 .submarine-shop-thumb {
@@ -14474,8 +14973,17 @@ body.fixed-16-9-aspect-ratio .tank-stage {
     right: 10px;
     bottom: 74px;
     width: calc(100vw - 20px);
-    max-height: min(56vh, 430px);
+    max-height: min(52vh, 420px);
     overflow: auto;
+  }
+
+  .submarine-resource-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .submarine-load-buttons {
+    justify-content: flex-end;
   }
 }
 
@@ -14539,10 +15047,11 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 .edit-equipment-tray-scroller {
   box-sizing: border-box;
-  height: 92px;
-  min-height: 92px;
-  max-height: 92px;
-  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 0 2px 2px;
 }
 
@@ -14647,58 +15156,257 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 
-/* Submarine manual drive controls */
-.submarine-manager-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
+
+
+/* Food tray mirrors the compact Fish Care tray dimensions and simplified layout. */
+#foodTray {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 
-.submarine-manager-actions .small-button.is-active {
-  border-color: rgba(76, 231, 255, 0.95);
-  box-shadow: 0 0 0 1px rgba(76, 231, 255, 0.24), 0 0 16px rgba(39, 206, 255, 0.22);
+#foodTray .edit-decor-tray-arrow {
+  display: none;
 }
 
-
-.submarine-autopilot-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 9px;
-  padding: 7px 9px;
-  border: 1px solid rgba(72, 189, 205, 0.28);
-  border-radius: 10px;
-  background: rgba(8, 56, 72, 0.42);
-  cursor: pointer;
-  user-select: none;
-}
-
-.submarine-autopilot-toggle input {
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  accent-color: #3de3f6;
-  flex: 0 0 auto;
-}
-
-.submarine-autopilot-toggle span {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+#foodTray .edit-decor-tray-scroller {
+  width: 100%;
   min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+@media (min-width: 861px) {
+  #foodTray {
+    width: min(76vw, 640px);
+    max-width: calc(100vw - 48px);
+  }
+
+  #foodTray:has(.food-tray-empty-state) {
+    width: min(84vw, 760px);
+  }
+}
+
+.food-tray-content {
+  flex: 1 0 var(--food-tray-min-width, 540px);
+  width: 100%;
+  min-width: var(--food-tray-min-width, 540px);
+  height: 98px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+  padding: 0 4px;
+}
+
+.food-tray-main {
+  min-width: 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 17px minmax(0, 1fr);
+  gap: 3px;
+  padding: 3px 0 2px;
+}
+
+.food-tray-items {
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+  overflow: visible;
+  scrollbar-width: none;
+}
+
+.food-tray-items::-webkit-scrollbar {
+  display: none;
+}
+
+.food-tray-empty-state .care-tray-empty-copy small {
+  max-width: 260px;
+}
+
+/* Equal editor shells; content scrolls without resizing the menu. */
+#editEquipmentTray { grid-template-rows: auto auto minmax(0, 1fr); }
+#editEquipmentTrayScroller { display: flex; align-items: center; gap: 8px; }
+#editEquipmentTray .edit-decor-tile { flex: 0 0 112px; position: relative; }
+.edit-equipment-resource-note { font-size: 9px; line-height: 1.2; white-space: nowrap; }
+.edit-tank-tray-tabs {
+  overflow-x: auto;
+  max-width: 100%;
+  justify-content: center;
+}
+
+.edit-tank-tray .edit-overlay-mode-tabs,
+.edit-tank-tray .edit-tank-tray-tabs,
+.edit-tank-tray .edit-tank-background-mode-tabs {
+  justify-content: center;
+  margin-inline: auto;
+}
+
+/* Mirror the Tank header so the mode switcher stays centered while Done
+   remains visible and anchored to the right edge. */
+.edit-tank-tray > .edit-tray-mode-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.edit-tank-tray > .edit-tray-mode-header > .edit-overlay-mode-tabs {
+  position: static;
+  grid-column: 2;
+  margin: 0;
+  transform: none;
+  width: max-content;
+  max-width: 100%;
+}
+
+.edit-tank-tray > .edit-tray-mode-header > .edit-tray-done-button {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.edit-tank-tray > .edit-tank-tray-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-tank-tray > .edit-tank-tray-header > .edit-tank-tray-tabs {
+  margin: 0;
+  justify-content: center;
+}
+
+.edit-tank-tray .edit-tank-background-workspace {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+/* The mode buttons now live in the outer Tank tab row.  The background panel
+   therefore has one child workspace and must give that child the full row;
+   retaining the legacy 27px nested-tab row collapses every mode to a strip. */
+.edit-tank-tray .edit-tank-background-panel {
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+
+.edit-tank-tray .edit-tank-background-workspace > #editTankBackgroundColorPanel,
+.edit-tank-tray .edit-tank-background-workspace > #editTankBackgroundList {
   flex: 1 1 auto;
+  width: 100%;
+}
+.edit-tank-tray-tab { flex: 0 0 auto; }
+.submarine-drive-status { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 11px; }
+.submarine-drive-status span { flex: 1; }
+.submarine-touch-controls { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 8px 0; }
+.submarine-touch-controls button { touch-action: none; min-width: 36px; min-height: 36px; border: 1px solid #69b9d1; border-radius: 8px; background: #174258; color: #effcff; }
+.submarine-touch-controls span { font-size: 11px; }
+.submarine-manager { max-height: 82vh; overflow-y: auto; }
+
+/* Stable shared editor navigation. Every editor exposes the same five
+   fixed-width destinations, while Background and Gravel render their own
+   controls below the bar. */
+.edit-decor-tray > .edit-tray-mode-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
 }
 
-.submarine-autopilot-toggle strong {
-  font-size: 0.68rem;
+.edit-decor-tray > .edit-tray-mode-header > .edit-overlay-mode-tabs {
+  grid-column: 2;
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  justify-self: center;
+  overflow-x: auto;
 }
 
-.submarine-autopilot-toggle small {
-  color: rgba(207, 242, 249, 0.62);
-  font-size: 0.55rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+.edit-decor-tray > .edit-tray-mode-header > .edit-tray-done-button {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.edit-overlay-mode-tab {
+  flex: 0 0 112px;
+  width: 112px;
+  min-width: 112px;
+  box-sizing: border-box;
+}
+
+.edit-overlay-mode-glyph {
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.edit-tank-tray {
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+.edit-tank-tray .edit-tank-background-panel {
+  grid-template-rows: 30px minmax(0, 1fr) !important;
+  gap: 5px !important;
+}
+
+.edit-tank-background-type-tabs {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.edit-tank-background-type-tabs .edit-tank-background-mode-tab {
+  flex: 0 0 auto;
+  min-width: 86px;
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid rgba(188, 225, 246, 0.14);
+  border-radius: 999px;
+  background: rgba(8, 25, 39, 0.5);
+  color: rgba(216, 241, 255, 0.74);
+  font: 800 0.62rem/1 var(--ui-font-stack);
+  cursor: pointer;
+}
+
+.edit-tank-background-type-tabs .edit-tank-background-mode-tab.is-active {
+  border-color: rgba(85, 242, 237, 0.72);
+  background: linear-gradient(180deg, rgba(16, 80, 99, 0.82), rgba(7, 47, 69, 0.86));
+  color: #dffffe;
+}
+
+.edit-tank-tray .edit-tank-background-workspace {
+  min-height: 0;
+  height: 100%;
+}
+
+.edit-tank-tray .edit-tank-gravel-sections,
+.edit-tank-tray .edit-tank-gravel-sections .custom-gravel-layer-list {
+  min-height: 0;
+  height: 100%;
+}
+
+@media (max-width: 860px) {
+  .edit-overlay-mode-tab {
+    flex-basis: 82px;
+    width: 82px;
+    min-width: 82px;
+    padding-inline: 4px;
+    gap: 3px;
+    font-size: 0.58rem;
+  }
+
+  .edit-overlay-mode-glyph {
+    font-size: 0.85rem;
+  }
+
+  .edit-tank-background-type-tabs .edit-tank-background-mode-tab {
+    min-width: 74px;
+    padding-inline: 6px;
+    font-size: 0.56rem;
+  }
 }

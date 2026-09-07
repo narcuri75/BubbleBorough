@@ -262,6 +262,7 @@ const DISEASE_SIGNAL_TYPES = Object.freeze([
   "odd_sleep_spot",
   "lingering_near_bubbler"
 ]);
+const LIGHTS_OUT_FEATURE_ENABLED = false;
 const LIGHTS_OUT_OVERRIDE_AUTO = "auto";
 const LIGHTS_OUT_OVERRIDE_ON = "on";
 const LIGHTS_OUT_OVERRIDE_OFF = "off";
@@ -331,7 +332,14 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "loach": { group: "bottom-cleaner", personalities: ["digger", "explorer", "cleaner", "night-active"], rare: ["social", "homebody", "curious"], nightActive: true },
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
-  "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true }
+  "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true },
+  "bull-shark": { group: "shark-cruiser", personalities: ["bold", "explorer", "territorial", "routine-loving"], rare: ["hunter", "curious", "standoffish"], predatorDiet: true, desperationPredator: true },
+  "great-white-shark": { group: "shark-cruiser", personalities: ["hunter", "bold", "explorer", "territorial"], rare: ["curious", "standoffish", "routine-loving"], predatorDiet: true, desperationPredator: true },
+  "hammerhead-shark": { group: "shark-cruiser", personalities: ["curious", "explorer", "bold", "social"], rare: ["hunter", "territorial", "gentle"], predatorDiet: true, desperationPredator: true },
+  "orca": { group: "orca-pod", personalities: ["social", "hunter", "explorer", "bold"], rare: ["curious", "routine-loving", "territorial"], predatorDiet: true, desperationPredator: true },
+  "sunfish": { group: "sunfish-gentle", personalities: ["gentle", "homebody", "routine-loving", "sensitive"], rare: ["shy", "curious", "social"], slowGraceful: true },
+  "seahorse": { group: "seahorse-drifter", personalities: ["gentle", "homebody", "shy", "curious"], rare: ["social", "routine-loving", "sensitive"], slowGraceful: true },
+  "pilot-fish": { group: "pilot-follower", personalities: ["follower", "social", "explorer", "curious"], rare: ["bold", "routine-loving", "shy"] }
 });
 const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   movementPattern: "cruise",
@@ -614,6 +622,60 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     startleRecoveryScale: 0.92, turnDurationScale: 1.32, speedMinBlend: 0,
     speedMaxBlend: 0.42, dartChance: 0.07, dartSpeedMinBlend: 0.86,
     targetDurationScale: 1.22
+  }),
+  "bull-shark": createFishLocomotionProfile({
+    movementPattern: "wide-cruise", preferredY: 0.46, verticalSpread: 0.56,
+    targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.86,
+    hoverChance: 0.015, schoolStrength: 0.08, structureAffinity: 0.64,
+    caveAffinity: 0.1, startleStrength: 0.72, turnDurationScale: 0.72,
+    speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 0.82
+  }),
+  "great-white-shark": createFishLocomotionProfile({
+    movementPattern: "wide-cruise", preferredY: 0.42, verticalSpread: 0.46,
+    targetDistanceMin: 0.38, targetDistanceMax: 0.76, headingPersistence: 0.94,
+    hoverChance: 0.006, schoolStrength: 0, structureAffinity: 0.48,
+    caveAffinity: 0.04, startleStrength: 0.58, turnDurationScale: 0.62,
+    speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 0.78
+  }),
+  "hammerhead-shark": createFishLocomotionProfile({
+    movementPattern: "search-cruise", preferredY: 0.5, verticalSpread: 0.62,
+    targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.72,
+    hoverChance: 0.035, schoolStrength: 0.16, schoolSpacingScale: 1.08,
+    structureAffinity: 0.72, caveAffinity: 0.16, startleStrength: 0.86,
+    turnDurationScale: 0.76, speedMinBlend: 0.5, speedMaxBlend: 0.92,
+    targetDurationScale: 0.9
+  }),
+  "orca": createFishLocomotionProfile({
+    movementPattern: "pod-cruise", preferredY: 0.44, verticalSpread: 0.54,
+    targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.82,
+    hoverChance: 0.02, schoolStrength: 0.78, schoolSpacingScale: 0.9,
+    schoolDurationScale: 1.38, schoolVerticalJitterScale: 0.58, structureAffinity: 0.54,
+    caveAffinity: 0.04, startleStrength: 0.68, turnDurationScale: 0.7,
+    speedMinBlend: 0.56, speedMaxBlend: 0.98, targetDurationScale: 0.84
+  }),
+  "sunfish": createFishLocomotionProfile({
+    movementPattern: "gentle-drift", preferredY: 0.42, verticalSpread: 0.58,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.28, headingPersistence: 0.36,
+    hoverChance: 0.34, hoverMinMs: 1500, hoverMaxMs: 4200, schoolStrength: 0.02,
+    structureAffinity: 0.82, caveAffinity: 0.08, startleStrength: 0.48,
+    startleRecoveryScale: 1.32, turnDurationScale: 1.6, speedMinBlend: 0.02,
+    speedMaxBlend: 0.28, targetDurationScale: 1.42
+  }),
+  "seahorse": createFishLocomotionProfile({
+    movementPattern: "vertical-hover", preferredY: 0.56, verticalSpread: 0.42,
+    targetDistanceMin: 0.04, targetDistanceMax: 0.18, headingPersistence: 0.22,
+    hoverChance: 0.48, hoverMinMs: 1200, hoverMaxMs: 3600, schoolStrength: 0.04,
+    structureAffinity: 1.74, caveAffinity: 0.78, homeRangeStrength: 0.58,
+    homeRangeRadius: 0.14, startleStrength: 0.7, startleRecoveryScale: 1.2,
+    turnDurationScale: 1.5, speedMinBlend: 0, speedMaxBlend: 0.28, targetDurationScale: 1.36
+  }),
+  "pilot-fish": createFishLocomotionProfile({
+    movementPattern: "companion-cruise", preferredY: 0.44, verticalSpread: 0.66,
+    targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.78,
+    hoverChance: 0.015, schoolStrength: 0.42, schoolSpacingScale: 1.02,
+    schoolDurationScale: 1.22, schoolVerticalJitterScale: 0.72, structureAffinity: 0.62,
+    caveAffinity: 0.08, startleStrength: 0.92, turnDurationScale: 0.82,
+    speedMinBlend: 0.56, speedMaxBlend: 0.96, targetDurationScale: 0.88
   })
 });
 const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
@@ -622,7 +684,12 @@ const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
   "slow-graceful": ["display", "gentle", "sensitive", "homebody", "territorial", "routine-loving", "curious"],
   "small-social": ["social", "shy", "follower", "routine-loving", "curious", "nervous"],
   "bottom-cleaner": ["digger", "cleaner", "night-active", "homebody", "curious", "shy"],
-  "special-predator": ["hunter", "bold", "curious", "standoffish", "territorial", "greedy"]
+  "special-predator": ["hunter", "bold", "curious", "standoffish", "territorial", "greedy"],
+  "shark-cruiser": ["bold", "explorer", "territorial", "routine-loving", "curious", "hunter"],
+  "orca-pod": ["social", "hunter", "explorer", "bold", "curious", "routine-loving"],
+  "sunfish-gentle": ["gentle", "homebody", "routine-loving", "sensitive", "curious", "shy"],
+  "seahorse-drifter": ["gentle", "homebody", "shy", "curious", "routine-loving", "nervous"],
+  "pilot-follower": ["follower", "social", "explorer", "curious", "bold", "routine-loving"]
 });
 const COMFORT_NEED_LABELS = Object.freeze({
   plants: "Plants",
@@ -684,7 +751,14 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "royal-gramma": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
   "yellow-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
   "blue-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
-  "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] }
+  "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] },
+  "bull-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
+  "great-white-shark": { mealCoins: 4, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
+  "hammerhead-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
+  "orca": { mealCoins: 4, unlock: "marine-curator", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
+  "sunfish": { mealCoins: 2, unlock: "marine-curator", needs: ["open_water", "surface_cover"], conflicts: ["overcrowded"] },
+  "seahorse": { mealCoins: 2, unlock: "marine-curator", needs: ["plants", "surface_cover"], conflicts: ["fast_eater", "aggressive_predator"] },
+  "pilot-fish": { mealCoins: 2, unlock: "marine-curator", needs: ["open_water"], conflicts: ["overcrowded"] }
 });
 const PROGRESSION_MILESTONES = Object.freeze([
   {
@@ -741,7 +815,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Marine Curator",
     requirement: "Own a saltwater fish, finish 5 good recaps, and go 3 days without a death.",
     reward: 20,
-    unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish"],
+    unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish", "bull-shark", "great-white-shark", "hammerhead-shark", "orca", "sunfish", "seahorse", "pilot-fish"],
     decorUnlocks: [],
     isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3,
     progress: (stats) => [
@@ -1095,15 +1169,13 @@ const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
 const SCRUB_MAX_STAMPS = 2400;
 const GRIME_CACHE_PRECISION = 240;
-const GRIME_VISUAL_START_DIRTINESS = 0.1;
+const GRIME_VISUAL_START_DIRTINESS = 0;
 const SEVERE_GRIME_VISUAL_THRESHOLD = 0.72;
 const GRIME_OVERLAY_OVERSCAN = 1.1;
 const GRIME_OVERLAY_ASSET_PATHS = Object.freeze([
   resolveAppUrl("assets/grime/grime-level-1.webp"),
   resolveAppUrl("assets/grime/grime-level-2.webp"),
-  resolveAppUrl("assets/grime/grime-level-3.webp"),
-  resolveAppUrl("assets/grime/grime-level-4.webp"),
-  resolveAppUrl("assets/grime/grime-level-5.webp")
+  resolveAppUrl("assets/grime/grime-level-3.webp")
 ]);
 const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
@@ -1125,6 +1197,7 @@ const UV_LIGHT_RENDER_QUALITY_OPTIONS = Object.freeze([
 ]);
 const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
+  toolbarTileColor: "#00438a",
   displayPosition: "top-left",
   toolbarCollapsed: false,
   displayCollapsed: false,
@@ -1436,6 +1509,7 @@ const MAX_BUBBLER_INTENSITY = 24;
 const DEFAULT_BUBBLER_SPREAD_PX = 14;
 const DEFAULT_BUBBLER_FADE_DISTANCE_PX = 140;
 const DEFAULT_BUBBLER_BUBBLE_COLOR = "#FFFFFF";
+const DEFAULT_BUBBLER_LIGHT_COLOR = "#FF9A35";
 const DEFAULT_BUBBLER_BUBBLE_OPACITY = 1.35;
 const DEFAULT_BUBBLER_FILL_TINT_ENABLED = true;
 const DEFAULT_BUBBLER_FILL_OPACITY = 0.28;
@@ -1586,7 +1660,8 @@ const CAVE_ENTRY_SIDE_OPTIONS = Object.freeze([
   { id: "both", label: "Both" }
 ]);
 const OPTIONAL_BUBBLE_ORB_ASSET_PATH = "assets/misc/bubble.png";
-const CAUSTIC_LIGHT_ASSET_PATH = resolveAppUrl("assets/misc/caustic_light.png");
+const CAUSTIC_LIGHT_PRIMARY_ASSET_PATH = resolveAppUrl("assets/misc/Caustic_Lighting_1.png");
+const CAUSTIC_LIGHT_SECONDARY_ASSET_PATH = resolveAppUrl("assets/misc/Caustic_Lighting_2.png");
 const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
@@ -1608,7 +1683,7 @@ const FILTER_BUBBLE_STREAM_DISTANCE_PX = 200;
 const FILTER_BUBBLE_STREAM_RISE_PX = 22;
 const FILTER_BUBBLE_OUTLET_X_OFFSET_PX = 14;
 const DEFAULT_FILTER_ASSET_KEY = BASIC_FILTER_KEY;
-const BASE_TANK_DIRTY_DAYS = 3.5;
+const BASE_TANK_DIRTY_DAYS = 14;
 const FISH_DIRTINESS_BONUS_MIN = 0.01;
 const FISH_DIRTINESS_BONUS_MAX = 0.10;
 const SUCKER_FISH_CLEAN_DURATION_BONUS = 0.25;
@@ -1629,6 +1704,28 @@ const FISH_TURN_MIN_SCALE_X = 0.42;
 const FISH_TURN_MAX_SCALE_Y = 1.12;
 const FISH_TURN_MIN_MS = 130;
 const FISH_TURN_MAX_MS = 210;
+const NAUTILUS_STATE_HOVER = "hover";
+const NAUTILUS_STATE_JET = "jet";
+const NAUTILUS_STATE_GLIDE = "glide";
+const NAUTILUS_STATE_APPROACH_REST = "approach-rest";
+const NAUTILUS_STATE_ATTACHING = "attaching";
+const NAUTILUS_STATE_RESTING = "resting";
+const NAUTILUS_STATE_DETACHING = "detaching";
+const NAUTILUS_HOVER_MIN_MS = 1400;
+const NAUTILUS_HOVER_MAX_MS = 4200;
+const NAUTILUS_JET_MIN_MS = 360;
+const NAUTILUS_JET_MAX_MS = 680;
+const NAUTILUS_GLIDE_MIN_MS = 1100;
+const NAUTILUS_GLIDE_MAX_MS = 2600;
+const NAUTILUS_ATTACH_DURATION_MS = 1150;
+const NAUTILUS_DETACH_DURATION_MS = 900;
+const NAUTILUS_REST_MIN_MS = 10000;
+const NAUTILUS_REST_MAX_MS = 28000;
+const NAUTILUS_REST_DECISION_CHANCE = 0.34;
+const NAUTILUS_REST_REACH_WIDTH_RATIO = 0.42;
+const NAUTILUS_REST_APPROACH_EXTRA_PX = 24;
+const NAUTILUS_TENTACLE_PIVOT_X = 0.43;
+const NAUTILUS_TENTACLE_PIVOT_Y = 0.54;
 const CAVE_ALLOWED_OUTSIDE_LAYERS = Object.freeze([1, 2, 5]);
 const MAX_VALID_CAVE_PLANS_PER_EVAL = 2;
 const MAX_FISH_RETARGETS_PER_FRAME = 2;
@@ -1681,6 +1778,18 @@ const SUCKER_FISH_FREE_SWIM_MIN_DURATION_MS = 1700;
 const SUCKER_FISH_FREE_SWIM_MAX_DURATION_MS = 7200;
 const SUCKER_FISH_FREE_SWIM_LAYER = 3;
 const FISH_SURFACE_BREACH_ALLOWANCE_PX = 6;
+const WHALE_BREATH_ACTIVITY = "surface_breathe";
+const WHALE_BREATH_FIRST_MIN_MS = 45 * 1000;
+const WHALE_BREATH_FIRST_MAX_MS = 90 * 1000;
+const WHALE_BREATH_INTERVAL_MIN_MS = 140 * 1000;
+const WHALE_BREATH_INTERVAL_MAX_MS = 240 * 1000;
+const WHALE_BREATH_SURFACE_HOLD_MIN_MS = 1400;
+const WHALE_BREATH_SURFACE_HOLD_MAX_MS = 2200;
+const WHALE_BREATH_BREACH_HEIGHT_RATIO = 0.36;
+// Orca.png faces right. The blowhole sits well forward of the dorsal fin,
+// so position the breach splash roughly 27% of body width ahead of center.
+const WHALE_BREATH_BLOWHOLE_FORWARD_OFFSET_RATIO = 0.27;
+const WHALE_BREATH_ARRIVAL_NORM = 0.012;
 const FISH_SURFACE_MOTION_HEADROOM_PX = 10;
 const FISH_SURFACE_HEIGHT_GUARD_MULTIPLIER = 1.08;
 const DEAD_FISH_SURFACE_FLOAT_INSET_PX = 4;
@@ -1816,7 +1925,7 @@ const FISH_CHUM_MEAL_HUNGER_GAIN = 55;
 const FISH_CHUM_MEAL_HUNGER_FLOOR = 90;
 const FISH_WILLING_TO_EAT_HUNGER_MAX = 82;
 const FISH_OVERFEED_HUNGER_THRESHOLD = 88;
-const FILTERLESS_BASE_TANK_DIRTY_DAYS = 2.4;
+const FILTERLESS_BASE_TANK_DIRTY_DAYS = 14;
 const MEDICINE_HEAL_INTERVAL_MS = 10 * 1000;
 const MEDICINE_HEAL_DURATION_MS = 60 * 1000;
 const MEDICINE_VISUAL_DURATION_MS = 60 * 1000;
@@ -1842,8 +1951,32 @@ const AUTO_DISPENSER_PELLET_MAX_Y_NORM = 0.28;
 const AUTO_DISPENSER_HOPPER_MAX_DRAWN_PELLETS = AUTO_DISPENSER_MAX_PELLETS;
 const AUTO_DISPENSER_LOW_FOOD_BLINK_MS = 360;
 const MACHINERY_TYPE_SUBMARINE = "submarine";
+const MACHINERY_TYPE_BOAT = "boat";
 const SUBMARINE_COST = 100;
 const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/submarine.png");
+const BOAT_COST = 50;
+const BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/boat.png");
+const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Boat.png");
+const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Submarine.png");
+const BOAT_RESOURCE_CAPACITY = 99;
+const BOAT_DRAW_WIDTH_PX = 121;
+const BOAT_CRUISE_SPEED_PX_PER_SECOND = 96;
+const BOAT_MANUAL_SPEED_PX_PER_SECOND = 184;
+const BOAT_MANUAL_ACCELERATION_PX_PER_SECOND2 = 470;
+const BOAT_MANUAL_DRAG_PER_SECOND = 5.8;
+const BOAT_IDLE_BOB_AMPLITUDE_PX = 3.8;
+const BOAT_IDLE_BOB_PERIOD_MS = 1800;
+const BOAT_MANUAL_FOOD_COOLDOWN_MS = 140;
+const BOAT_ENTRY_DURATION_MS = FISH_ENTRY_DURATION_MS;
+const BOAT_ENTRY_FROM_Y_NORM = FISH_ENTRY_FROM_Y_NORM;
+const BOAT_SURFACE_LAYER = 3;
+const BOAT_SURFACE_BOTTOM_GAP_PX = 17;
+const BOAT_REAR_BUBBLE_X_NORM = 0.12;
+const BOAT_REAR_BUBBLE_Y_NORM = 0.925;
+const SUBMARINE_TURN_DURATION_MS = 240;
+const BOAT_TURN_DURATION_MS = 320;
+const SUBMARINE_TURN_LEAN_RADIANS = Math.PI / 180 * 5.5;
+const BOAT_TURN_LEAN_RADIANS = Math.PI / 180 * 4.25;
 const SUBMARINE_RESOURCE_CAPACITY = 99;
 const SUBMARINE_DRAW_WIDTH_PX = 190;
 const SUBMARINE_CRUISE_SPEED_PX_PER_SECOND = 82;
@@ -1858,6 +1991,17 @@ const SUBMARINE_DEFAULT_TANK_LAYER = 2;
 const SUBMARINE_IDLE_BOB_AMPLITUDE_PX = 3.4;
 const SUBMARINE_IDLE_BOB_PERIOD_MS = 2100;
 const SUBMARINE_MANUAL_FOOD_COOLDOWN_MS = 140;
+const SUBMARINE_ENTRY_DURATION_MS = FISH_ENTRY_DURATION_MS;
+const SUBMARINE_ENTRY_FROM_Y_NORM = FISH_ENTRY_FROM_Y_NORM;
+const SUBMARINE_WARNING_LIGHT_X_NORM = 0.6164;
+const SUBMARINE_WARNING_LIGHT_Y_NORM = 0.1745;
+const SUBMARINE_REAR_BUBBLE_X_NORM = 0.048;
+const SUBMARINE_REAR_BUBBLE_Y_NORM = 0.565;
+const SUBMARINE_PRESSURE_BUBBLE_LEFT_X_NORM = 0.46;
+const SUBMARINE_PRESSURE_BUBBLE_RIGHT_X_NORM = 0.67;
+const SUBMARINE_PRESSURE_BUBBLE_Y_NORM = 0.445;
+const SUBMARINE_BUBBLE_EMITTER_SAMPLE_MS = 110;
+const SUBMARINE_BUBBLE_LINGER_PAD_MS = 180;
 const SUBMARINE_IDLE_MIN_MS = 3500;
 const SUBMARINE_IDLE_MAX_MS = 11000;
 const SUBMARINE_SCAN_INTERVAL_MS = 1500;
@@ -1868,6 +2012,8 @@ const SUBMARINE_RED_LIGHT_BLINK_MS = 500;
 const SUBMARINE_FOOD_RETRY_MS = 9000;
 const SUBMARINE_MEDICINE_RETRY_MS = 12000;
 const SUBMARINE_SPOTLIGHT_LENGTH_PX = 320;
+const SHARK_DESPERATION_ATTACK_COOLDOWN_MS = 9000;
+const SHARK_DESPERATION_ATTACK_RANGE_NORM = 0.075;
 const ENABLE_UV_LIGHT = false;
 const UV_LIGHT_COST = 25;
 const UV_LIGHT_IMAGE_PATH = resolveAppUrl("assets/misc/uvlight.png");
@@ -2005,6 +2151,10 @@ const MAX_WALLET_COINS = 9999;
 // Keep the legacy digital display implementation available, but ship it off.
 const DIGITAL_DISPLAY_ENABLED = false;
 const DISPENSER_SOUND_PATH = "assets/sounds/dispenser.mp3";
+const SUBMARINE_SONAR_SOUND_PATH = "assets/sounds/sonar_sound.mp3";
+const BOAT_HORN_SOUND_PATH = "assets/sounds/boat_horn.mp3";
+const WHALE_BREATH_SOUND_PATH = "assets/sounds/whale_breath.mp3";
+const SUBMARINE_SONAR_SOUND_VOLUME = 0.5;
 const TOOLBAR_FAST_TOOLTIP_DELAY_MS = 100;
 const TOOLBAR_FAST_TOOLTIP_OFFSET_PX = 14;
 const TANK_INFO_REGULAR_BUTTON_SOUND_SELECTOR = [
@@ -2044,6 +2194,8 @@ const STORE_REGULAR_BUTTON_SOUND_SELECTOR = [
   "[data-buy-medicine]",
   "[data-buy-fish]",
   "[data-buy-decor]",
+  "[data-buy-submarine]",
+  "[data-buy-boat]",
   "[data-buy-background]",
   "[data-buy-filter]",
   "[data-buy-auto-dispenser]",
@@ -2200,6 +2352,8 @@ const SOUND_EFFECT_PATHS = Object.freeze([
   PURCHASE_SOUND_PATH,
   COIN_SOUND_PATH,
   DISPENSER_SOUND_PATH,
+  BOAT_HORN_SOUND_PATH,
+  WHALE_BREATH_SOUND_PATH,
   ...FISH_SPLASH_SOUND_PATHS,
   ...MEDICINE_DROP_SOUND_PATHS,
   CLEANING_COMPLETE_SOUND_PATH,
@@ -2748,6 +2902,7 @@ const dom = {
   editEquipmentTray: document.querySelector("#editEquipmentTray"),
   closeEditEquipmentTrayButton: document.querySelector("#closeEditEquipmentTrayButton"),
   editEquipmentTrayScroller: document.querySelector("#editEquipmentTrayScroller"),
+  editEquipmentTrayContextMenu: document.querySelector("#editEquipmentTrayContextMenu"),
   editTankTray: document.querySelector("#editTankTray"),
   closeEditTankTrayButton: document.querySelector("#closeEditTankTrayButton"),
   editTankTrayScroller: document.querySelector("#editTankTrayScroller"),
@@ -2829,6 +2984,7 @@ const dom = {
   openStoreButton: document.querySelector("#openStoreButton"),
   openEquipmentButton: document.querySelector("#openEquipmentButton"),
   openSettingsButton: document.querySelector("#openSettingsButton"),
+  toolbarTileColorInput: document.querySelector("#toolbarTileColorInput"),
   openSettingsSidebarButton: document.querySelector("#openSettingsSidebarButton"),
   closeSettingsOverlay: document.querySelector("#closeSettingsOverlay"),
   closeEquipmentOverlay: document.querySelector("#closeEquipmentOverlay"),
@@ -3064,11 +3220,15 @@ const runtime = {
   pendingMachineryTravel: new Map(),
   foodTravelDestinations: new Map(),
   selectedMachineryId: null,
-  submarineManualDriveId: "",
+  machinerySettingsOpen: false,
   submarineManualDriveKeys: new Set(),
-  submarineManualDriveStartedAt: 0,
   submarineManualLastFoodDeployAt: 0,
-  submarineNextGlobalScanAt: 0,
+  boatManualDriveKeys: new Set(),
+  boatManualLastFoodDeployAt: 0,
+  submarineBubbleBursts: [],
+  submarineBubbleEmitterState: new Map(),
+  boatBubbleBursts: [],
+  boatBubbleEmitterState: new Map(),
   tankAppearanceClipboard: { background: null, gravel: null },
   boroughEdgeBursts: [],
   boroughActivityNotifications: [],
@@ -3111,8 +3271,6 @@ const runtime = {
   debugTimeScale: 1,
   debugSimulationPaused: false,
   debugHalloweenModeOverride: null,
-  debugHalloweenRandomSalt: "",
-  debugFishVisualOverrides: new Map(),
   debugBirthdayHatFishIds: new Set(),
   debugAutonomyPausedFishIds: new Set(),
   debugOverviewFishFps: null,
@@ -3167,6 +3325,11 @@ const runtime = {
   suppressEditDecorTrayClickEntryId: null,
   editFishTrayContextMenuState: {
     fishId: null,
+    anchorX: 0,
+    anchorY: 0
+  },
+  editEquipmentTrayContextMenuState: {
+    machineryId: null,
     anchorX: 0,
     anchorY: 0
   },
@@ -3259,6 +3422,7 @@ const runtime = {
   fishBreedingSequence: null,
   gravelTintCache: new Map(),
   caveTintCache: new Map(),
+  bubblerLightTintCache: new Map(),
   caveSourceStats: new Map(),
   bubbleOrbTintCache: new Map(),
   customGravelTintCache: new Map(),
@@ -3328,6 +3492,7 @@ const runtime = {
   ambienceAudioCrossfadeFrame: 0,
   ambienceAudioCrossfade: null,
   activeSoundEffects: new Set(),
+  submarineSonarAudio: null,
   soundEffectAudioContext: null,
   soundEffectPools: new Map(),
   soundEffectPoolIndices: new Map(),
@@ -4402,56 +4567,16 @@ function isHalloweenModeActive(now = Date.now()) {
   return mode === HALLOWEEN_MODE_ON || (mode === HALLOWEEN_MODE_AUTOMATIC && isHalloweenCalendarDate(now));
 }
 
-function getDeterministicHalloweenAppearance(fish) {
-  const stableKey = `${fish?.id || ""}|${fish?.speciesId || ""}|bubble-borough-halloween|${runtime?.debugHalloweenRandomSalt || ""}`;
-  return hashStringToUint32(stableKey) % 2 === 0 ? "skeleton" : "zombie";
+function getMachineryImagePath(type, now = Date.now()) {
+  const isBoat = type === MACHINERY_TYPE_BOAT;
+  if (isHalloweenModeActive(now)) {
+    return isBoat ? HALLOWEEN_BOAT_IMAGE_PATH : HALLOWEEN_SUBMARINE_IMAGE_PATH;
+  }
+  return isBoat ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH;
 }
 
-function getFishSeasonalVisualState(fish, species = getSpeciesForFish(fish), now = Date.now()) {
-  if (!fish || !species || isFishDead(fish)) {
-    return "normal";
-  }
-  const debugOverride = runtime?.debugFishVisualOverrides?.get?.(fish.id);
-  if (["normal", "skeleton", "zombie"].includes(debugOverride)) {
-    return debugOverride;
-  }
-  if (!isHalloweenModeActive(now) || isCustomFishAssetKey(fish.speciesId)) {
-    return "normal";
-  }
-  return getDeterministicHalloweenAppearance(fish);
-}
-
-function getFishSeasonalAssetPath(fish, species = getSpeciesForFish(fish), now = Date.now()) {
-  const stage = getFishSeasonalVisualState(fish, species, now);
-  if (stage === "normal" || !species || isCustomFishAssetKey(fish?.speciesId)) {
-    return null;
-  }
-  const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  const variants = stage === "skeleton" ? displaySpecies.skeletonAssetVariants : displaySpecies.zombieAssetVariants;
-  const candidates = Array.isArray(variants) ? variants.filter(Boolean) : [];
-  if (!candidates.length) {
-    return null;
-  }
-  const variantIndex = hashStringToUint32(`${fish.id}|${stage}|art`) % candidates.length;
-  const preferred = candidates[variantIndex] || candidates[0];
-  return candidates.find((path) => path === preferred && runtime.images.has(path))
-    || candidates.find((path) => runtime.images.has(path))
-    || preferred;
-}
-
-function getFishSeasonalAssetCandidates(species) {
-  return [
-    ...(Array.isArray(species?.zombieAssetVariants) ? species.zombieAssetVariants : []),
-    ...(Array.isArray(species?.skeletonAssetVariants) ? species.skeletonAssetVariants : [])
-  ].filter((path, index, entries) => Boolean(path) && entries.indexOf(path) === index);
-}
-
-function preloadSeasonalFishAssets() {
-  if (!runtime?.fishCatalog?.length) {
-    return Promise.resolve();
-  }
-  const paths = runtime.fishCatalog.flatMap((species) => getFishSeasonalAssetCandidates(species));
-  return preloadImages(paths).then(() => {
+function preloadHalloweenMachineryAssets() {
+  return preloadImages([HALLOWEEN_BOAT_IMAGE_PATH, HALLOWEEN_SUBMARINE_IMAGE_PATH]).then(() => {
     runtime.boroughOverviewSnapshotCache.clear();
     renderUi(Date.now());
   });
@@ -4463,7 +4588,7 @@ function syncHalloweenPresentation(now = Date.now()) {
   document.documentElement.dataset.halloweenMode = getHalloweenModeSetting();
   if (active && runtime.halloweenPresentationActive !== true) {
     runtime.halloweenPresentationActive = true;
-    void preloadSeasonalFishAssets();
+    void preloadHalloweenMachineryAssets();
   } else if (!active) {
     runtime.halloweenPresentationActive = false;
   }
@@ -4484,7 +4609,7 @@ function setHalloweenMode(value) {
   runtime.boroughOverviewFishProxies.clear();
   syncHalloweenPresentation();
   saveState();
-  renderUi(Date.now(), { full: false });
+  renderUi(Date.now());
   showToast(`Halloween Mode: ${nextMode === "automatic" ? "Automatic" : nextMode === "on" ? "On" : "Off"}.`);
   return true;
 }
@@ -4682,7 +4807,6 @@ function clearFishReferencesAfterDeath(fishId) {
   runtime.fishActionQueuesByFishId?.delete?.(fishId);
   runtime.fishActionSteeringByFishId?.delete?.(fishId);
   runtime.boroughOverviewFishProxies?.delete?.(fishId);
-  runtime.debugFishVisualOverrides?.delete?.(fishId);
   runtime.debugBirthdayHatFishIds?.delete?.(fishId);
   runtime.debugAutonomyPausedFishIds?.delete?.(fishId);
   return changed;
@@ -5471,7 +5595,7 @@ function buildLivingBoroughDebugFishStateMarkup(fish, now = Date.now()) {
 }
 
 function buildLivingBoroughDebugButtons(entries) {
-  return entries.map(([action, label, value = ""]) => `<button class="debug-menu-button" type="button" data-debug-borough-action="${escapeHtml(action)}"${value !== "" ? ` data-debug-borough-value="${escapeHtml(value)}"` : ""}><span>${escapeHtml(label)}</span></button>`).join("");
+  return entries.map(([action, label, value = ""]) => `<button class="debug-menu-button" type="button" data-debug-borough-action="${escapeHtml(action)}"${value !== "" ? ` data-debug-borough-value="${escapeHtml(value)}"` : ""}><span class="debug-menu-label">${escapeHtml(label)}</span></button>`).join("");
 }
 
 function buildLivingBoroughDebugSection(title, entries, extra = "") {
@@ -5496,7 +5620,7 @@ function renderLivingBoroughDebugPanel(now = Date.now()) {
   const markup = status
     + buildLivingBoroughDebugFishStateMarkup(fish, now)
     + buildLivingBoroughDebugSection("Global Time", [["time-pause", runtime.debugSimulationPaused ? "Resume" : "Pause"], ["time-scale", "1x", "1"], ["time-scale", "5x", "5"], ["time-scale", "20x", "20"], ["time-scale", "100x", "100"], ["time-add", "+1 hour", String(HOUR_MS)], ["time-add", "+1 day", String(DAY_MS)], ["time-add", "+7 days", String(7 * DAY_MS)]])
-    + buildLivingBoroughDebugSection("Seasonal", [["halloween", "Automatic", "automatic"], ["halloween", "Force On", "on"], ["halloween", "Force Off", "off"], ["fish-visual", "Fish Normal", "normal"], ["fish-visual", "Fish Skeleton", "skeleton"], ["fish-visual", "Fish Zombie", "zombie"], ["halloween-randomize", "Randomize Test Variants"], ["halloween-recalculate", "Deterministic Variants"], ["simulate-date", "October 1", "oct-1"], ["simulate-date", "October 31", "oct-31"], ["simulate-date", "November 1", "nov-1"]])
+    + buildLivingBoroughDebugSection("Seasonal", [["halloween", "Automatic", "automatic"], ["halloween", "Force On", "on"], ["halloween", "Force Off", "off"], ["simulate-date", "October 1", "oct-1"], ["simulate-date", "October 31", "oct-31"], ["simulate-date", "November 1", "nov-1"]])
     + buildLivingBoroughDebugSection("Fish Travel", [["travel", "Force Left", "left"], ["travel", "Force Right", "right"], ["travel", "Force Up", "up"], ["travel", "Force Down", "down"], ["travel-service", "To Food", "food"], ["travel-service", "To Clinic", "clinic"], ["travel-service", "To Social", "social"], ["travel-service", "To Nursery", "nursery"], ["travel-home", "Return Home"], ["travel-random", "Random Explore"], ["travel-complete", "Complete Instantly"], ["travel-cancel", "Cancel Travel"]])
     + buildLivingBoroughDebugSection("Off-screen", [["coarse", "Wandering", "wander"], ["coarse", "Service Visit", "service"], ["coarse", "Resting", "rest"], ["coarse", "Socializing", "social"], ["coarse-materialize", "Materialize"], ["coarse-complete", "Complete Activity"], ["coarse-cancel", "Cancel Activity"]])
     + buildLivingBoroughDebugSection("Fish Inspector", [["action-complete", "Complete Action"], ["action-cancel", "Cancel Action"], ["queue-clear", "Clear Queue"], ["autonomy-force", "Force Decision"], ["autonomy-toggle", runtime.debugAutonomyPausedFishIds.has(fish?.id) ? "Resume Autonomy" : "Pause Autonomy"], ["teleport-center", "Teleport Center"], ["needs", "Needs 0", "0"], ["needs", "Needs 50", "50"], ["needs", "Needs 100", "100"], ["heal", "Heal Fully"], ["damage", "Damage Health"], ["disease", "Apply / Advance Disease"], ["cure", "Cure Disease"], ["age-add", "+1 Day Age", "1"], ["age-add", "+7 Days Age", "7"], ["age-set", "Jump 30 Days", "30"], ["age-set", "Jump 100 Days", "100"], ["age-set", "Jump 365 Days", "365"], ["birthday", "Trigger Birthday"], ["kill", "Kill Fish"], ["revive", "Revive Fish"], ["memorial", "Generate Memorial"]], needsEditor)
@@ -5528,9 +5652,6 @@ function handleLivingBoroughDebugAction(event) {
   else if (action === "time-scale") { runtime.debugTimeScale = Math.max(1, Number(value) || 1); runtime.debugSimulationPaused = false; }
   else if (action === "time-add") { runtime.debugSimulatedNow = now + Number(value); syncState(runtime.debugSimulatedNow); }
   else if (action === "halloween") { runtime.debugHalloweenModeOverride = value; syncHalloweenPresentation(now); }
-  else if (action === "fish-visual" && fish) runtime.debugFishVisualOverrides.set(fish.id, value);
-  else if (action === "halloween-randomize") runtime.debugHalloweenRandomSalt = createId("season");
-  else if (action === "halloween-recalculate") runtime.debugHalloweenRandomSalt = "";
   else if (action === "simulate-date") {
     const year = new Date().getFullYear();
     const parts = value === "oct-31" ? [9, 31] : value === "nov-1" ? [10, 1] : [9, 1];
@@ -5920,10 +6041,17 @@ function normalizeStringList(value) {
     .filter(Boolean);
 }
 
+function isHalloweenDecor(decor) {
+  return /halloween/i.test([decor?.name, decor?.key, decor?.file, decor?.theme].filter(Boolean).join(" "))
+    || normalizeStringList(decor?.categories).some((tag) => tag.toLowerCase() === "halloween");
+}
+
 function deriveDecorCategories(entry, key) {
   const configured = normalizeStringList(entry?.categories || entry?.category);
   if (configured.length) {
-    return configured.map((value) => value.toLowerCase());
+    const categories = configured.map((value) => value.toLowerCase());
+    if (isHalloweenDecor({ ...entry, key }) && !categories.includes("halloween")) categories.push("halloween");
+    return categories;
   }
 
   const bucket = new Set();
@@ -5937,7 +6065,9 @@ function deriveDecorCategories(entry, key) {
   if (/shell|rock|driftwood|bridge|lantern|chest/.test(haystack)) {
     bucket.add("ornaments");
   }
-  return bucket.size ? [...bucket] : ["ornaments"];
+  if (!bucket.size) bucket.add("ornaments");
+  if (isHalloweenDecor({ ...entry, key })) bucket.add("halloween");
+  return [...bucket];
 }
 
 function normalizeDecorHangoutTypes(value) {
@@ -6132,6 +6262,191 @@ function isPredatorMealFood(foodKey) {
   return PREDATOR_MEAL_FOOD_KEYS.includes(String(foodKey || ""));
 }
 
+function getFishSpeciesType(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  return typeof species?.type === "string" ? species.type.trim().toLowerCase() : "";
+}
+
+function isWhaleFish(target) {
+  return getFishSpeciesType(target) === "whale";
+}
+
+function getWhaleBreathSurfaceYNorm(fish, species = getSpeciesForFish(fish)) {
+  const halfHeight = getFishVisualHalfHeightPx(fish, species);
+  const fullHeight = halfHeight * 2;
+  const breachHeight = fullHeight * WHALE_BREATH_BREACH_HEIGHT_RATIO;
+  return Math.max(
+    0.04,
+    (WATER_SURFACE_Y + halfHeight - breachHeight) / TANK_HEIGHT
+  );
+}
+
+function getWhaleBreathBlowholeXNorm(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  if (!fish || !species) {
+    return clamp(Number(fish?.xNorm) || 0.5, 0.03, 0.97);
+  }
+  const bodyWidthPx = getFishDisplayWidth(fish, species, now);
+  const facingDirection = getFishFacingDirection(fish);
+  const blowholeX = fish.xNorm * TANK_WIDTH
+    + facingDirection * bodyWidthPx * WHALE_BREATH_BLOWHOLE_FORWARD_OFFSET_RATIO;
+  return clamp(blowholeX / TANK_WIDTH, 0.03, 0.97);
+}
+
+function scheduleNextWhaleBreath(fish, now = Date.now(), options = {}) {
+  if (!fish) {
+    return 0;
+  }
+  const first = options.first === true;
+  const minMs = first ? WHALE_BREATH_FIRST_MIN_MS : WHALE_BREATH_INTERVAL_MIN_MS;
+  const maxMs = first ? WHALE_BREATH_FIRST_MAX_MS : WHALE_BREATH_INTERVAL_MAX_MS;
+  const nextAt = now + randomBetween(minMs, maxMs);
+  fish.whaleNextBreathAt = nextAt;
+  return nextAt;
+}
+
+function isWhaleBreathActive(fish, species = getSpeciesForFish(fish)) {
+  return Boolean(
+    fish
+    && species
+    && isWhaleFish(species)
+    && (fish.whaleBreathState === "ascending" || fish.whaleBreathState === "surface")
+  );
+}
+
+function clearWhaleBreathState(fish, now = Date.now(), options = {}) {
+  if (!fish) {
+    return false;
+  }
+  const hadState = Boolean(fish.whaleBreathState || fish.whaleBreathSurfaceUntil || fish.whaleBreathTargetXNorm);
+  delete fish.whaleBreathState;
+  delete fish.whaleBreathSurfaceUntil;
+  delete fish.whaleBreathTargetXNorm;
+  if (options.reschedule !== false) {
+    scheduleNextWhaleBreath(fish, now);
+  }
+  if (fish.activity === WHALE_BREATH_ACTIVITY) {
+    fish.activity = "roam";
+    fish.targetAt = now;
+  }
+  return hadState;
+}
+
+function startWhaleBreathCycle(fish, species, now = Date.now()) {
+  if (!fish || !species || !isWhaleFish(species) || isFishDead(fish)) {
+    return false;
+  }
+
+  clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+  clearForcedGravelDigPrompt(fish);
+  if (fish.caveState) {
+    abortFishCaveBehavior(fish, now, false);
+  }
+  if (fish.feedingPelletId) {
+    releasePelletsTargetingFishIds(fish.id);
+  }
+  fish.feedingPelletId = null;
+  fish.activity = WHALE_BREATH_ACTIVITY;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.blockedDecorId = null;
+  fish.blockedDecorUntil = null;
+  fish.panicUntil = null;
+  fish.panicSpeedBoost = null;
+  clearFishSchoolFollowState(fish);
+
+  const travelX = clampFishXNormToMobileViewport(
+    clamp(fish.xNorm + randomBetween(-0.12, 0.12), 0.12, 0.88),
+    fish,
+    species,
+    now
+  );
+  fish.whaleBreathState = "ascending";
+  fish.whaleBreathTargetXNorm = travelX;
+  fish.targetXNorm = travelX;
+  fish.targetYNorm = getWhaleBreathSurfaceYNorm(fish, species);
+  fish.targetAt = now + 60 * 1000;
+  fish.swimSpeed = normalizeFishSpeed(
+    species,
+    randomBetween(Math.max(species.speedMin, species.speedMax * 0.78), species.speedMax)
+  );
+  return true;
+}
+
+function updateWhaleBreathBehavior(fish, species, now = Date.now(), options = {}) {
+  if (!fish || !species || !isWhaleFish(species) || isFishDead(fish)) {
+    return false;
+  }
+
+  if (!Number.isFinite(Number(fish.whaleNextBreathAt))) {
+    scheduleNextWhaleBreath(fish, now, { first: true });
+  }
+
+  if (options.paused === true) {
+    return false;
+  }
+
+  if (!isWhaleBreathActive(fish, species) && now >= Number(fish.whaleNextBreathAt)) {
+    startWhaleBreathCycle(fish, species, now);
+  }
+
+  if (!isWhaleBreathActive(fish, species)) {
+    return false;
+  }
+
+  const surfaceYNorm = getWhaleBreathSurfaceYNorm(fish, species);
+  fish.activity = WHALE_BREATH_ACTIVITY;
+  fish.targetYNorm = surfaceYNorm;
+  fish.targetAt = now + 60 * 1000;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  clearFishSchoolFollowState(fish);
+
+  if (fish.whaleBreathState === "ascending") {
+    fish.targetXNorm = clampFishXNormToMobileViewport(
+      Number.isFinite(Number(fish.whaleBreathTargetXNorm)) ? Number(fish.whaleBreathTargetXNorm) : fish.xNorm,
+      fish,
+      species,
+      now
+    );
+    if (fish.yNorm <= surfaceYNorm + WHALE_BREATH_ARRIVAL_NORM) {
+      fish.whaleBreathState = "surface";
+      fish.whaleBreathSurfaceUntil = now + randomBetween(WHALE_BREATH_SURFACE_HOLD_MIN_MS, WHALE_BREATH_SURFACE_HOLD_MAX_MS);
+      fish.targetXNorm = fish.xNorm;
+      fish.targetYNorm = surfaceYNorm;
+      fish.whaleBreathTargetXNorm = fish.xNorm;
+      spawnFishReturnSplash(getWhaleBreathBlowholeXNorm(fish, species, now));
+      playWhaleBreathSoundEffect();
+    }
+    return true;
+  }
+
+  fish.targetXNorm = fish.xNorm;
+  fish.targetYNorm = surfaceYNorm;
+  if (now >= Number(fish.whaleBreathSurfaceUntil || 0)) {
+    clearWhaleBreathState(fish, now);
+    return false;
+  }
+  return true;
+}
+
+function isChumOnlyFish(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  const type = getFishSpeciesType(species);
+  return Boolean(
+    species
+    && (species.diet === "chum" || species.chumOnly === true || type === "shark" || type === "whale")
+  );
+}
+
+function isDesperationPredatorFish(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  const type = getFishSpeciesType(species);
+  return Boolean(
+    species
+    && (species.desperationPredator === true || type === "shark" || type === "whale")
+  );
+}
+
 function isFoodAllowedInAutoDispenser(foodOrKey) {
   const food = typeof foodOrKey === "string" ? getFoodMeta(foodOrKey) : foodOrKey;
   return Boolean(food && food.dispenserAllowed !== false);
@@ -6140,6 +6455,9 @@ function isFoodAllowedInAutoDispenser(foodOrKey) {
 function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
   if (!fish || isFishDead(fish)) {
     return false;
+  }
+  if (isChumOnlyFish(fish)) {
+    return isPredatorMealFood(foodKey);
   }
   if (isPiranhaSpecies(fish) || isZombieFish(fish) || (isZombieSkeletonModeAvailable() && fish.speciesId === "zombie-fish")) {
     return isPredatorMealFood(foodKey);
@@ -6695,6 +7013,19 @@ function getFoodDropStyle(foodOrKey) {
   return food?.dropStyle === "sprite" ? "sprite" : "pellet";
 }
 
+function getChumSpriteVisualScale(spritePath = "") {
+  const fileName = String(spritePath || "")
+    .split(/[\\/]/)
+    .pop()
+    .toLowerCase();
+  // The three chum images share the same 100x89 canvas, but their visible
+  // painted areas differ. Normalize their apparent mass while preserving
+  // each sprite's natural aspect ratio.
+  if (fileName === "chum_2.png") return 1.03;
+  if (fileName === "chum_3.png") return 1.17;
+  return 1;
+}
+
 function getFoodDropAppearance(foodKey, pellet = null) {
   const food = typeof foodKey === "string" ? getFoodMeta(foodKey) : foodKey;
   const dropStyle = getFoodDropStyle(food);
@@ -7088,7 +7419,7 @@ function extendAquariumAt(gridX, gridY) {
     return false;
   }
   if (state.coins < expansionCost) {
-    showToast(`You need ${expansionCost} ${pluralize("coin", expansionCost)} to extend the aquarium.`);
+    showToast("Payment method declined. Insufficient Funds.", { force: true, tone: "error" });
     return false;
   }
   state.coins -= expansionCost;
@@ -7190,6 +7521,8 @@ function setActiveTank(tankId, options = {}) {
     runtime.selectedPlacedDecorId = null;
   }
   closeSubmarineManager();
+  closeEditEquipmentTrayContextMenu();
+  suspendSubmarineManualDrive();
   runtime.selectedFishId = null;
   runtime.fishInspectorSettingsOpen = false;
   runtime.editingTankNameId = null;
@@ -7470,12 +7803,13 @@ function openExclusiveOverlay(kind, options = {}) {
   }
 }
 
-function openStoreOverlay(tab = "food") {
+function openStoreOverlay(tab = "food", options = {}) {
   if (getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
     showToast("Finish this task first.");
     return;
   }
 
+  if (dom.storeOverlay && options.forceCategory === true) dom.storeOverlay.dataset.requestedCategory = tab;
   openExclusiveOverlay("store", { tab });
 }
 
@@ -9248,6 +9582,8 @@ function formatBubblerSettingReadout(setting, settings) {
       const choice = getCustomGravelColorChoices().find((entry) => entry.color === color);
       return choice?.label || color;
     }
+    case "lightColor":
+      return normalizeHexColor(settings.lightColor) || DEFAULT_BUBBLER_LIGHT_COLOR;
     case "bubbleColorize":
       return settings.bubbleColorize ? "On" : "Off";
     case "bubbleFillOpacity":
@@ -9286,6 +9622,8 @@ function getBubblerSettingControlValue(setting, settings) {
       return settings.distance;
     case "bubbleColor":
       return settings.bubbleColor;
+    case "lightColor":
+      return settings.lightColor;
     case "bubbleColorize":
       return settings.bubbleColorize;
     case "bubbleFillOpacity":
@@ -9379,6 +9717,9 @@ function updateSelectedBubblerSetting(setting, value) {
     case "bubbleColor":
       settings.bubbleColor = normalizeDecorColorSetting(value) || DEFAULT_BUBBLER_BUBBLE_COLOR;
       settings.bubbleColors = [settings.bubbleColor];
+      break;
+    case "lightColor":
+      settings.lightColor = normalizeHexColor(value) || DEFAULT_BUBBLER_LIGHT_COLOR;
       break;
     case "bubbleColorize":
       settings.bubbleColorize = normalizeDecorColorizeSetting(value);
@@ -11424,7 +11765,10 @@ function handleEditDecorTrayWheel(event) {
 
 function normalizeEditOverlayMode(value) {
   const normalized = String(value || "").trim().toLowerCase();
-  return ["fish", "decor", "equipment", "tank"].includes(normalized) ? normalized : "fish";
+  if (normalized === "tank") {
+    return "background";
+  }
+  return ["fish", "decor", "equipment", "background", "gravel"].includes(normalized) ? normalized : "fish";
 }
 
 function getRememberedEditOverlayMode() {
@@ -11475,8 +11819,8 @@ function openEditOverlayMode(mode = null, options = {}) {
     toggleEditTankMode(true, openOptions);
   } else if (nextMode === "equipment") {
     toggleEquipmentEditMode(true, openOptions);
-  } else if (nextMode === "tank") {
-    toggleTankEditMode(true, openOptions);
+  } else if (nextMode === "background" || nextMode === "gravel") {
+    toggleTankEditMode(true, { ...openOptions, tankTab: nextMode });
   } else {
     toggleFishEditMode(true, openOptions);
   }
@@ -11577,6 +11921,8 @@ function handleMedicineTrayWheel(event) {
 function clearPrimaryToolModes() {
   clearGuidanceForModeChange("primary-tools");
   closeSubmarineManager();
+  closeEditEquipmentTrayContextMenu();
+  suspendSubmarineManualDrive();
   runtime.toolbarActionMenu = "";
   runtime.editTankMode = false;
   runtime.fishEditMode = false;
@@ -11915,9 +12261,12 @@ function toggleTankEditMode(force = null, options = {}) {
   const now = Date.now();
 
   if (nextMode) {
-    rememberEditOverlayMode("tank");
+    rememberEditOverlayMode(options.tankTab === "gravel" ? "gravel" : "background");
     runtime.tankEditMode = true;
     runtime.selectedFishId = null;
+    if (options.tankTab === "background" || options.tankTab === "gravel") {
+      runtime.editTankTrayTab = options.tankTab;
+    }
     runtime.editTankBackgroundMode = isSolidBackgroundEnabled()
       ? "solid"
       : isGradientBackgroundEnabled()
@@ -11963,7 +12312,7 @@ function toggleFoodTray(force = null, options = {}) {
   toggleToolbarTrayMode({
     reason: "food-tray",
     forceOpen: () => isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FEED_FISH),
-    isOpen: () => runtime.foodTrayOpen,
+    isOpen: () => runtime.medicineTrayOpen,
     hasSelection: () => Boolean(runtime.feedingModeFoodKey),
     onOpen(now, toggleOptions) {
       let tutorialChanged = false;
@@ -11973,7 +12322,7 @@ function toggleFoodTray(force = null, options = {}) {
         runtime.toolModeSource = null;
         return setTutorialStage(TUTORIAL_STAGE_FEED_FISH_DONE, { now });
       }
-      runtime.foodTrayOpen = true;
+      runtime.medicineTrayOpen = true;
       runtime.toolModeSource = toggleOptions.source || "toolbar";
       if (toggleOptions.collapseSidebar) {
         runtime.sidebarCollapsed = true;
@@ -11987,7 +12336,7 @@ function toggleMedicineTray(force = null, options = {}) {
   toggleToolbarTrayMode({
     reason: "medicine-tray",
     isOpen: () => runtime.medicineTrayOpen,
-    hasSelection: () => Boolean(runtime.medicineModeKey),
+    hasSelection: () => Boolean(runtime.medicineModeKey || runtime.feedingModeFoodKey),
     onOpen(_now, toggleOptions) {
       runtime.medicineTrayOpen = true;
       runtime.toolModeSource = toggleOptions.source || "toolbar";
@@ -12040,6 +12389,7 @@ async function init() {
   installDesktopCloseBackupHandler();
   applyAspectRatioMode();
   setupDebugMenuButtons();
+  exposeDebugConsoleCommands();
   bindEvents();
   syncFilterFeatureVisibility();
   const earlyRawState = loadState();
@@ -12083,11 +12433,8 @@ async function init() {
       allowZombieSkeletonFish: true
     })
     : [];
-  // Seasonal artwork is merged into ordinary species metadata even while the
-  // separate undead gameplay/catalog feature remains disabled. This exposes
-  // images to the display resolver without changing species or behavior.
   const normalizedFishCatalog = [
-    ...mergeZombieSkeletonStageAssets(normalizedBaseFishCatalog, zombieSkeletonFishCatalog, { resolveAppUrl }),
+    ...normalizedBaseFishCatalog,
     ...normalizedZombieSkeletonFishCatalog
   ];
   runtime.fishCatalog = [
@@ -12146,11 +12493,16 @@ async function init() {
     AUTO_DISPENSER_BG_PATH,
     ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
-    CAUSTIC_LIGHT_ASSET_PATH,
+    CAUSTIC_LIGHT_PRIMARY_ASSET_PATH,
+    CAUSTIC_LIGHT_SECONDARY_ASSET_PATH,
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
     FISH_EGG_SHELL_ASSET_PATH,
+    SUBMARINE_IMAGE_PATH,
+    BOAT_IMAGE_PATH,
+    HALLOWEEN_BOAT_IMAGE_PATH,
+    HALLOWEEN_SUBMARINE_IMAGE_PATH,
     ...GRIME_OVERLAY_ASSET_PATHS,
     ...WATER_PARTICLE_ASSET_PATHS,
     ...Object.values(TOOL_CURSOR_ICON_PATHS),
@@ -12159,6 +12511,7 @@ async function init() {
       item.thumbnailPath,
       item.bgPath,
       item.midPath,
+      item.lightPath,
       item.maskPath,
       item.triggerPath,
       item.seatsPath,
@@ -12182,7 +12535,7 @@ async function init() {
     ].filter(Boolean)),
     ...new Set(runtime.fishCatalog.flatMap((fish) => [
       ...getFishAssetVariants(fish),
-      ...getFishSeasonalAssetCandidates(fish),
+      fish.overlayAsset,
       ...getFishDeathAssetCandidates(fish, "zombie"),
       ...getFishDeathAssetCandidates(fish, "skeleton")
     ])),
@@ -13244,6 +13597,9 @@ function finishTankColorPickerDrag(pointerId = null) {
 }
 
 function bindEvents() {
+  document.addEventListener("pointerdown", (event) => {
+    if (!event.target.closest?.("#editEquipmentTray")) closeEditEquipmentTrayContextMenu();
+  }, true);
   syncViewportCssVariables({ resetStable: true });
 
   let viewportLayoutRefreshHandle = 0;
@@ -13291,6 +13647,14 @@ function bindEvents() {
     }
 
     if (keyRaw === "Escape") {
+      if (runtime.editEquipmentTrayContextMenuState.machineryId) {
+        closeEditEquipmentTrayContextMenu();
+        return;
+      }
+      if (runtime.selectedMachineryId) {
+        closeSubmarineManager();
+        return;
+      }
       if (runtime.boroughOverviewOpen) {
         closeAquariumOverview();
         return;
@@ -13319,22 +13683,40 @@ function bindEvents() {
     }
 
     const key = keyRaw.toLowerCase();
-    const manualSubmarine = getSubmarine();
-    if (isSubmarineManualDriveActive(manualSubmarine)) {
-      if (["w", "a", "s", "d"].includes(key)) {
-        event.preventDefault();
-        setSubmarineManualDriveKey(key, true);
-        return;
-      }
-      if ((key === "q" || key === "e") && !event.repeat) {
-        event.preventDefault();
-        stepSubmarineDepthLayer(manualSubmarine, key === "q" ? -1 : 1);
-        return;
-      }
-      if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
-        event.preventDefault();
-        deployManualSubmarineFood(manualSubmarine, Date.now());
-        return;
+    const activeManualMachinery = getActiveManualMachinery();
+    if (activeManualMachinery && !event.target?.closest?.("button, a, [role=button], [role=tab]")) {
+      if (activeManualMachinery.type === MACHINERY_TYPE_BOAT) {
+        if (["a", "d"].includes(key)) {
+          event.preventDefault();
+          setBoatManualDriveKey(key, true);
+          return;
+        }
+        if (key === "h" && !event.repeat) {
+          event.preventDefault();
+          playBoatHornSoundEffect();
+          return;
+        }
+        if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
+          event.preventDefault();
+          deployManualBoatChum(activeManualMachinery, Date.now());
+          return;
+        }
+      } else {
+        if (["w", "a", "s", "d"].includes(key)) {
+          event.preventDefault();
+          setSubmarineManualDriveKey(key, true);
+          return;
+        }
+        if ((key === "q" || key === "e") && !event.repeat) {
+          event.preventDefault();
+          stepSubmarineDepthLayer(activeManualMachinery, key === "q" ? -1 : 1);
+          return;
+        }
+        if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
+          event.preventDefault();
+          deployManualSubmarineFood(activeManualMachinery, Date.now());
+          return;
+        }
       }
     }
     if (
@@ -13447,12 +13829,14 @@ function bindEvents() {
   });
   window.addEventListener("keyup", (event) => {
     const key = String(event.key || "").toLowerCase();
-    if (["w", "a", "s", "d"].includes(key) && setSubmarineManualDriveKey(key, false)) {
+    const releasedSubmarine = ["w", "a", "s", "d"].includes(key) && setSubmarineManualDriveKey(key, false);
+    const releasedBoat = ["a", "d"].includes(key) && setBoatManualDriveKey(key, false);
+    if (releasedSubmarine || releasedBoat) {
       event.preventDefault();
     }
   });
   window.addEventListener("blur", () => {
-    clearSubmarineManualDriveKeys();
+    suspendMachineryManualDrive();
   });
 
   if (window.ResizeObserver) {
@@ -14292,6 +14676,13 @@ function bindEvents() {
   };
   dom.uiMuteToggleInput?.addEventListener("input", handleUiMuteToggleInput);
   dom.uiMuteToggleInput?.addEventListener("change", handleUiMuteToggleInput);
+  dom.toolbarTileColorInput?.addEventListener("input", (event) => {
+    const color = normalizeToolbarTileColor(event.currentTarget?.value);
+    document.documentElement.style.setProperty("--toolbar-tile-color", color);
+  });
+  dom.toolbarTileColorInput?.addEventListener("change", (event) => {
+    setToolbarTileColor(event.currentTarget?.value);
+  });
   dom.ambientBubblesToggleInput?.addEventListener("change", (event) => {
     setAmbientBubblesEnabled(event.currentTarget?.checked);
   });
@@ -14684,6 +15075,7 @@ function bindEvents() {
     }
     const locationTab = event.target.closest("[data-equipment-tray-tab]");
     if (locationTab) {
+      closeEditEquipmentTrayContextMenu({ render: false });
       const nextTab = locationTab.dataset.equipmentTrayTab === "tank" ? "tank" : "storage";
       if (runtime.equipmentEditTrayTab !== nextTab) {
         runtime.equipmentEditTrayTab = nextTab;
@@ -14692,18 +15084,70 @@ function bindEvents() {
       }
       return;
     }
+    const menuButton = event.target.closest("[data-open-equipment-menu]");
+    if (menuButton) {
+      openEditEquipmentTrayContextMenu(menuButton.dataset.openEquipmentMenu, menuButton);
+      return;
+    }
+    const visitButton = event.target.closest("[data-visit-submarine-tank]");
+    if (visitButton) {
+      const tank = getSubmarineTank();
+      if (tank) { setActiveTank(tank.id); renderUi(Date.now()); }
+      return;
+    }
+    const visitBoatButton = event.target.closest("[data-visit-boat-tank]");
+    if (visitBoatButton) {
+      const tank = getBoatTank();
+      if (tank) { setActiveTank(tank.id); renderUi(Date.now()); }
+      return;
+    }
+    const storeSubmarineButton = event.target.closest("[data-tray-store-submarine]");
+    if (storeSubmarineButton) {
+      closeEditEquipmentTrayContextMenu({ render: false });
+      recallSubmarine(Date.now());
+      return;
+    }
+    const storeBoatButton = event.target.closest("[data-tray-store-boat]");
+    if (storeBoatButton) {
+      closeEditEquipmentTrayContextMenu({ render: false });
+      recallBoat(Date.now());
+      return;
+    }
     if (event.target.closest("[data-tray-place-submarine]")) {
+      closeEditEquipmentTrayContextMenu({ render: false });
       deploySubmarine(getCurrentTank(), Date.now());
+      return;
+    }
+    if (event.target.closest("[data-tray-place-boat]")) {
+      closeEditEquipmentTrayContextMenu({ render: false });
+      deployBoat(getCurrentTank(), Date.now());
       return;
     }
     const selectSubmarineButton = event.target.closest("[data-tray-select-submarine]");
     if (selectSubmarineButton) {
+      closeEditEquipmentTrayContextMenu({ render: false });
       openSubmarineManager(selectSubmarineButton.dataset.traySelectSubmarine);
+      return;
+    }
+    const selectBoatButton = event.target.closest("[data-tray-select-boat]");
+    if (selectBoatButton) {
+      closeEditEquipmentTrayContextMenu({ render: false });
+      openSubmarineManager(selectBoatButton.dataset.traySelectBoat);
     }
   });
   dom.editEquipmentTray?.addEventListener("contextmenu", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    const button = event.target.closest("[data-tray-select-submarine], [data-tray-select-boat]")
+      || event.target.closest(".edit-decor-tile")?.querySelector("[data-tray-select-submarine], [data-tray-select-boat]");
+    if (button) {
+      openEditEquipmentTrayContextMenu(button.dataset.traySelectSubmarine || button.dataset.traySelectBoat, event);
+      return;
+    }
+    closeEditEquipmentTrayContextMenu();
+  });
+  dom.editEquipmentTrayScroller?.addEventListener("scroll", () => {
+    closeEditEquipmentTrayContextMenu();
   });
 
   dom.editTankTray?.addEventListener("pointerdown", (event) => {
@@ -14758,7 +15202,9 @@ function bindEvents() {
       const nextMode = ["image", "solid", "gradient", "animated"].includes(backgroundModeButton.dataset.tankBackgroundMode)
         ? backgroundModeButton.dataset.tankBackgroundMode
         : "image";
+      runtime.editTankTrayTab = "background";
       runtime.editTankBackgroundMode = nextMode;
+      renderEditTankTray();
       playToolbarButtonSoundEffect("press");
       if (nextMode === "solid") {
         setSolidBackgroundEnabled(true);
@@ -15070,6 +15516,7 @@ function bindEvents() {
   });
   dom.foodTray?.addEventListener("wheel", handleFoodTrayWheel, { passive: false });
   dom.foodTrayScroller?.addEventListener("click", (event) => {
+    if (handleCareTrayAction(event)) return;
     const button = event.target.closest("[data-select-food]");
     if (button) {
       event.stopPropagation();
@@ -15092,6 +15539,8 @@ function bindEvents() {
   });
   dom.medicineTray?.addEventListener("wheel", handleMedicineTrayWheel, { passive: false });
   dom.medicineTrayScroller?.addEventListener("click", (event) => {
+    if (handleCareTrayAction(event)) return;
+
     const toolButton = event.target.closest("[data-care-tool]");
     if (toolButton) {
       event.stopPropagation();
@@ -15293,9 +15742,21 @@ function bindEvents() {
       return;
     }
 
+    const buyBoatButton = event.target.closest("[data-buy-boat]");
+    if (buyBoatButton) {
+      buyBoat();
+      return;
+    }
+
     const manageSubmarineButton = event.target.closest("[data-manage-submarine]");
     if (manageSubmarineButton) {
       openSubmarineManager(manageSubmarineButton.dataset.manageSubmarine);
+      return;
+    }
+
+    const manageBoatButton = event.target.closest("[data-manage-boat]");
+    if (manageBoatButton) {
+      openSubmarineManager(manageBoatButton.dataset.manageBoat);
       return;
     }
 
@@ -16137,6 +16598,7 @@ function bindEvents() {
     const swatch = target?.closest("[data-inspector-fish-color]");
     if (swatch instanceof HTMLButtonElement) {
       event.preventDefault();
+      event.stopPropagation();
       updateInspectorFishSetting("color", swatch.dataset.inspectorFishColor || "");
     }
   });
@@ -16553,21 +17015,8 @@ async function fetchFishCatalog() {
 }
 
 async function fetchZombieSkeletonFishCatalog() {
-  try {
-    // The catalog also maps normal species to their Halloween artwork.  It is
-    // safe to load this metadata while undead gameplay is disabled; the
-    // gameplay-only species are still excluded when the runtime catalog is
-    // normalized.
-    const response = await fetch(resolveAppUrl(ZOMBIE_SKELETON_FISH_CATALOG_PATH), { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error("Could not load zombie/skeleton fish catalog");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(error);
-    return { fish: [], variants: [] };
-  }
+  // The per-species zombie and skeleton assets have been retired.
+  return { fish: [], variants: [] };
 }
 
 async function fetchDecorCatalog() {
@@ -16783,7 +17232,7 @@ function normalizeDecorMeta(payload) {
       name: typeof entry.name === "string" && entry.name.trim()
         ? entry.name.trim()
         : titleFromFile(key),
-      theme: normalizeCatalogTheme(entry.theme),
+      theme: isHalloweenDecor({ ...entry, key }) ? "Halloween" : normalizeCatalogTheme(entry.theme),
       cost: Number.isFinite(entry.cost) ? entry.cost : 8,
       width: Number.isFinite(entry.width) ? entry.width : 140,
       defaultScale: Number.isFinite(entry.defaultScale) ? entry.defaultScale : DEFAULT_DECOR_SCALE,
@@ -16867,6 +17316,9 @@ function hasBubblerSpoutMetaFields(entry) {
     entry.horizontal,
     entry.x,
     entry.xNorm,
+    entry.verticalLocation,
+    entry.spoutVerticalLocation,
+    entry.yNorm,
     entry.offsetPx,
     entry.horizontalOffsetPx,
     entry.spoutOffsetPx,
@@ -16967,6 +17419,7 @@ function buildDefaultBubblerSpoutMeta(index = 0, spoutQty = DEFAULT_BUBBLER_SPOU
       ? 0.5
       : clamp((index + 1) / (resolvedSpoutQty + 1), 0.05, 0.95),
     horizontalOffsetPx: null,
+    verticalLocation: null,
     intensity: DEFAULT_BUBBLER_INTENSITY,
     spread: DEFAULT_BUBBLER_SPREAD_PX,
     fadeDistance: DEFAULT_BUBBLER_FADE_DISTANCE_PX,
@@ -17025,6 +17478,9 @@ function normalizeBubblerSpoutMeta(entry, index = 0, spoutQty = DEFAULT_BUBBLER_
     horizontalOffsetPx: Number.isFinite(horizontalPosition.horizontalOffsetPx)
       ? horizontalPosition.horizontalOffsetPx
       : defaultSpout.horizontalOffsetPx,
+    verticalLocation: Number.isFinite(Number(entry.verticalLocation ?? entry.spoutVerticalLocation ?? entry.yNorm))
+      ? clamp(Number(entry.verticalLocation ?? entry.spoutVerticalLocation ?? entry.yNorm), 0, 1)
+      : defaultSpout.verticalLocation,
     intensity: resolvedIntensity,
     spread: clamp(
       Number.isFinite(Number(entry.width))
@@ -17498,6 +17954,10 @@ function getDecorCompanionType(decorKey = "") {
     return "mask";
   }
 
+  if (/_light\.[^.]+$/.test(key)) {
+    return "light";
+  }
+
   if (/_mid\.[^.]+$/.test(key)) {
     return "mid";
   }
@@ -17513,6 +17973,7 @@ function getDecorBaseKey(decorKey = "") {
     .replace(/_(?:seats|seat)(?=\.[^.]+$)/, "")
     .replace(/_bg(?=\.[^.]+$)/, "")
     .replace(/_mask(?=\.[^.]+$)/, "")
+    .replace(/_light(?=\.[^.]+$)/, "")
     .replace(/_mid(?=\.[^.]+$)/, "")
     .replace(/_cave(?=\.[^.]+$)/, "");
 }
@@ -17587,6 +18048,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bg: null,
         mask: null,
         mid: null,
+        light: null,
         color1: null,
         color2: null,
         color3: null,
@@ -17614,6 +18076,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bg: null,
         mask: null,
         mid: null,
+        light: null,
         color1: null,
         color2: null,
         color3: null,
@@ -17638,17 +18101,20 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bgPath: group.bg?.path || null,
         maskPath: group.mask?.path || null,
         midPath: group.mid?.path || null,
+        lightPath: group.light?.path || null,
         triggerPath: group.trigger?.path || null,
         seatsPath: group.seats?.path || null,
         hasBg: Boolean(group.bg),
         hasMask: Boolean(group.mask),
         hasMid: Boolean(group.mid),
+        hasLight: Boolean(group.light),
         hasTrigger: Boolean(group.trigger),
         hasSeats: Boolean(group.seats),
         caveColorLayers,
         hasCaveColorLayers: caveColorLayers.length > 0,
         name: meta.name || titleFromFile(group.base.key),
-        theme: normalizeCatalogTheme(meta.theme),
+        theme: isHalloweenDecor({ ...meta, key: group.base.key }) ? "Halloween" : normalizeCatalogTheme(meta.theme),
+        categories: deriveDecorCategories(meta, group.base.key),
         cost: Number.isFinite(meta.cost) ? meta.cost : 8,
         width: Number.isFinite(meta.width) ? meta.width : 140,
         defaultScale: Number.isFinite(meta.defaultScale) ? meta.defaultScale : DEFAULT_DECOR_SCALE,
@@ -17699,11 +18165,13 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       midPath: null,
+      lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
       hasMid: false,
+      hasLight: false,
       hasTrigger: false,
       hasSeats: false,
       name: "Bubbler",
@@ -17727,11 +18195,13 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       midPath: null,
+      lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
       hasMid: false,
+      hasLight: false,
       hasTrigger: false,
       hasSeats: false,
       name: "Custom Decor",
@@ -17756,11 +18226,13 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       midPath: null,
+      lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
       hasMid: false,
+      hasLight: false,
       hasTrigger: false,
       hasSeats: false,
       name: "Custom Hide",
@@ -17899,11 +18371,13 @@ function buildCustomDecorCatalogEntry(asset) {
     bgPath,
     maskPath: null,
     midPath: null,
+    lightPath: null,
     triggerPath: null,
     seatsPath: null,
     hasBg: isHide,
     hasMask: false,
     hasMid: false,
+    hasLight: false,
     hasTrigger: false,
     hasSeats: false,
     caveColorLayers,
@@ -18132,7 +18606,7 @@ function ensureCustomAssetCost(type) {
   if (state.coins >= typeDef.cost) {
     return true;
   }
-  showToast(`You need ${typeDef.cost} ${pluralize("coin", typeDef.cost)} for ${typeDef.label}.`);
+  showToast("Payment method declined. Insufficient Funds.", { force: true, tone: "error" });
   return false;
 }
 
@@ -18455,6 +18929,9 @@ function buildCustomFishCatalogEntry(asset) {
     targetMaxMs: Math.max(1400, Math.floor(Number(profile?.targetMaxMs) || defaults.targetMaxMs)),
     behavior: typeof profile?.behavior === "string" && profile.behavior.trim() ? profile.behavior : "free",
     diet: typeof profile?.diet === "string" && profile.diet.trim() ? profile.diet : "pellet",
+    type: "Fish",
+    desperationPredator: false,
+    renderMotionProfile: "",
     cleanupMinMs,
     cleanupMaxMs,
     cleanupStrength: clamp(Number(profile?.cleanupStrength) || 0.12, 0.005, 0.45),
@@ -18617,6 +19094,10 @@ function normalizeFishDefinition(entry, index, options = {}) {
     : "fish";
   const behavior = typeof entry.behavior === "string" && entry.behavior.trim() ? entry.behavior.trim().toLowerCase() : "free";
   const diet = typeof entry.diet === "string" && entry.diet.trim() ? entry.diet.trim().toLowerCase() : "pellet";
+  const speciesType = typeof entry.type === "string" && entry.type.trim() ? entry.type.trim() : "Fish";
+  const renderMotionProfile = typeof entry.renderMotionProfile === "string" && entry.renderMotionProfile.trim()
+    ? entry.renderMotionProfile.trim().toLowerCase()
+    : "";
   const explicitHeartCount = Number(entry.heartCount ?? entry.hearts);
   const explicitMealCoinOverride = Number(entry.mealCoinOverride ?? entry.coinsPerMealOverride ?? entry.mealCoins ?? entry.mealcoins);
   const folderAssets = Array.isArray(options.assetFolders?.[assetFolder]) ? options.assetFolders[assetFolder] : [];
@@ -18631,6 +19112,14 @@ function normalizeFishDefinition(entry, index, options = {}) {
       : resolveAppUrl(`assets/fish/${encodeURIComponent(fallbackAssetSource)}`))
     : null;
   const resolvedAsset = resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, fallbackAsset);
+  const overlayAssetFile = [entry.overlayAsset, entry.tentacleAsset, entry.overlayImage]
+    .find((value) => typeof value === "string" && value.trim());
+  const overlayAsset = overlayAssetFile
+    ? resolveFishCatalogAsset(overlayAssetFile.trim(), assetFolder, folderAssets, null, {
+      allowFallback: false,
+      allowDirect: true
+    })
+    : null;
   const assetSourceFiles = collectFishCatalogAssetFiles(assetFile, rawAssetVariantFiles);
   const resolvedAssetVariants = [resolvedAsset, ...rawAssetVariantFiles
     .map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, fallbackAsset))
@@ -18671,6 +19160,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     mealCoins: 0,
     mealCoinOverride: Number.isFinite(explicitMealCoinOverride) ? Math.max(0, Math.round(explicitMealCoinOverride)) : null,
     asset: resolvedAsset,
+    overlayAsset,
     assetVariants: resolvedAssetVariants,
     zombieAssetVariants,
     skeletonAssetVariants,
@@ -18690,6 +19180,10 @@ function normalizeFishDefinition(entry, index, options = {}) {
     targetMaxMs: Math.max(1400, Math.floor(Number(entry.targetMaxMs) || defaults.targetMaxMs)),
     behavior,
     diet,
+    type: speciesType,
+    chumOnly: entry.chumOnly === true,
+    desperationPredator: entry.desperationPredator === true,
+    renderMotionProfile,
     cleanupMinMs: Math.max(60 * 1000, Math.floor(Number(entry.cleanupMinMs) || Number(entry.cleanupMinutesMin) * 60 * 1000 || 12 * 60 * 1000)),
     cleanupMaxMs: Math.max(2 * 60 * 1000, Math.floor(Number(entry.cleanupMaxMs) || Number(entry.cleanupMinutesMax) * 60 * 1000 || 24 * 60 * 1000)),
     cleanupStrength: clamp(Number.isFinite(explicitCleanupStrength) ? explicitCleanupStrength : 0.12, 0.005, 0.45),
@@ -20466,6 +20960,9 @@ function getLightsOutOverride(targetTank = getCurrentTank()) {
 }
 
 function isTankLightsOut(now = Date.now(), targetTank = getCurrentTank()) {
+  if (!LIGHTS_OUT_FEATURE_ENABLED) {
+    return false;
+  }
   const override = getLightsOutOverride(targetTank);
   if (override === LIGHTS_OUT_OVERRIDE_ON) {
     return true;
@@ -20629,6 +21126,12 @@ function getRelationshipKindForFish(fish, otherFish) {
   const otherPersonality = getFishPersonality(otherFish);
   const species = getSpeciesForFish(fish);
   const otherSpecies = getSpeciesForFish(otherFish);
+  if (
+    species?.id === "pilot-fish"
+    && ["bull-shark", "great-white-shark", "hammerhead-shark", "orca"].includes(otherSpecies?.id)
+  ) {
+    return "friend";
+  }
   if (personality === "social" || personality === "follower" || getFishBehaviorProfile(species).group === "small-social") {
     if (species?.id === otherSpecies?.id || getFishBehaviorProfile(otherSpecies).group === "small-social") {
       return "friend";
@@ -20843,7 +21346,7 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
   if (options.onlyThreat) {
     return null;
   }
-  if (["social", "follower"].includes(personality) || getFishBehaviorProfile(species).group === "small-social") {
+  if (species?.id === "pilot-fish" || ["social", "follower"].includes(personality) || getFishBehaviorProfile(species).group === "small-social") {
     const friend = nearby.find((entry) => entry.relation.kind === "friend" && entry.distance <= 0.42);
     if (friend && Math.random() < 0.55) {
       return {
@@ -22051,9 +22554,8 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
     ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
     : null;
-  const seasonalAsset = getFishSeasonalAssetPath(fish, displaySpecies, now);
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
-  const preferredBaseAsset = freeSwimAsset || seasonalAsset || (isZombieVariantFish(fish)
+  const preferredBaseAsset = freeSwimAsset || (isZombieVariantFish(fish)
     ? getFishZombieVariantAssetPath(fish, displaySpecies)
     : undeadBaseStage
       ? (
@@ -23062,12 +23564,24 @@ function normalizeUvLightRenderQuality(value) {
     : DEFAULT_UV_LIGHT_RENDER_QUALITY;
 }
 
+function normalizeToolbarTileColor(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(normalized)) {
+    return normalized;
+  }
+  if (/^#[0-9a-f]{3}$/.test(normalized)) {
+    return `#${normalized.slice(1).split("").map((character) => character.repeat(2)).join("")}`;
+  }
+  return DEFAULT_UI_SETTINGS.toolbarTileColor;
+}
+
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   return {
     toolbarPosition: TOOLBAR_POSITION_SETTING_ENABLED
       ? normalizeToolbarPosition(source.toolbarPosition)
       : DEFAULT_UI_SETTINGS.toolbarPosition,
+    toolbarTileColor: normalizeToolbarTileColor(source.toolbarTileColor),
     displayPosition: DISPLAY_POSITION_SETTING_ENABLED
       ? normalizeDisplayPosition(source.displayPosition)
       : DEFAULT_UI_SETTINGS.displayPosition,
@@ -23083,8 +23597,8 @@ function sanitizeUiSettings(rawSettings) {
     decorShadowsEnabled: source.decorShadowsEnabled !== false,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
     halloweenMode: normalizeHalloweenMode(source.halloweenMode),
-    editOverlayMode: ["fish", "decor", "equipment", "tank"].includes(String(source.editOverlayMode || "").trim())
-      ? String(source.editOverlayMode).trim()
+    editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
+      ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
       : DEFAULT_UI_SETTINGS.editOverlayMode
   };
 }
@@ -23344,10 +23858,7 @@ function shouldPreloadAssetForCurrentContentSettings(path) {
     return false;
   }
   if (isZombieSkeletonAssetPath(path)) {
-    // Halloween only borrows the seasonal artwork; it never enables the
-    // separate undead gameplay system.  Seasonal images therefore need to be
-    // available even when that gameplay feature remains disabled.
-    return isHalloweenModeActive() || isZombieSkeletonModeAvailable();
+    return isZombieSkeletonModeAvailable();
   }
   if (getAssetFileName(path) === "zombie-virus-antidote-drops.png") {
     return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
@@ -23373,6 +23884,7 @@ function getContentGatedPreloadPaths() {
       item.thumbnailPath,
       item.bgPath,
       item.midPath,
+      item.lightPath,
       item.maskPath,
       item.triggerPath,
       item.seatsPath,
@@ -23929,7 +24441,10 @@ function reconcileState(rawState) {
     fishScaleDefaults: {},
     tanks: [createTankState({ now, name: buildDefaultTankName(0) })],
     machinery: [],
+    storedSubmarine: null,
     submarineOwned: false,
+    storedBoat: null,
+    boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
     ownedFilterInventory: {},
@@ -23963,6 +24478,12 @@ function reconcileState(rawState) {
     : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel })];
   normalizeAquariumSectionGrid(tanks);
   const machinery = sanitizeMachineryState(incoming.machinery, tanks, now);
+  const storedSubmarine = machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE)
+    ? null
+    : sanitizeStoredSubmarineState(incoming.storedSubmarine, now);
+  const storedBoat = machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT)
+    ? null
+    : sanitizeStoredBoatState(incoming.storedBoat, now);
 
   const nextState = {
     ...base,
@@ -23983,7 +24504,10 @@ function reconcileState(rawState) {
     fishScaleDefaults: sanitizeFishScaleDefaults(incoming.fishScaleDefaults),
     tanks,
     machinery,
-    submarineOwned: incoming.submarineOwned === true || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
+    storedSubmarine,
+    submarineOwned: incoming.submarineOwned === true || Boolean(storedSubmarine) || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
+    storedBoat,
+    boatOwned: incoming.boatOwned === true || Boolean(storedBoat) || machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT),
     activeTankId: typeof incoming.activeTankId === "string" && tanks.some((tank) => tank.id === incoming.activeTankId)
       ? incoming.activeTankId
       : (tanks[0]?.id || null),
@@ -24050,6 +24574,7 @@ function reconcileState(rawState) {
 
   const hasStartedPlaying = getAllTankFish(nextState).length
     || nextState.submarineOwned
+    || nextState.boatOwned
     || nextState.machinery.length
     || nextState.storedFish.length
     || getAllPlacedDecor(nextState).length
@@ -24909,6 +25434,7 @@ function sanitizeFish(fish, options = {}) {
       : null,
     piranhaAttackStartedAt: null,
     piranhaLastDamageAt: null,
+    sharkLastAttackAt: Number.isFinite(Number(fish.sharkLastAttackAt)) ? Math.max(0, Number(fish.sharkLastAttackAt)) : 0,
     breedCooldownUntil: Number.isFinite(fish.breedCooldownUntil) ? fish.breedCooldownUntil : 0,
     healthUnits: rawHealthUnits === null
       ? maxHealthUnits
@@ -25307,6 +25833,7 @@ function createDefaultBubblerSettings(seed = null) {
     MAX_CUSTOM_BUBBLER_DISTANCE_PX
   );
   const bubbleColor = normalizeDecorColorSetting(source.bubbleColor ?? source.color) || DEFAULT_BUBBLER_BUBBLE_COLOR;
+  const lightColor = normalizeHexColor(source.lightColor ?? source.bubblerLightColor) || DEFAULT_BUBBLER_LIGHT_COLOR;
   const bubbleColorize = normalizeDecorColorizeSetting(
     source.bubbleColorize
     ?? source.colorize
@@ -25380,6 +25907,7 @@ function createDefaultBubblerSettings(seed = null) {
     fadeDistance: distance,
     bubbleColor,
     bubbleColors: [bubbleColor],
+    lightColor,
     bubbleColorize,
     bubbleSize,
     bubbleOpacity,
@@ -25828,7 +26356,7 @@ function updateSelectedDecorActionButtons() {
   if (buyButton) {
     buyButton.hidden = false;
     buyButton.dataset.buyAnotherDecor = decorKey;
-    buyButton.disabled = state.coins < cost;
+    buyButton.disabled = false;
     buyButton.textContent = "BUY";
     buyButton.title = `Buy another for ${cost} ${pluralize("coin", cost)}`;
     buyButton.setAttribute("aria-label", state.coins < cost
@@ -26823,6 +27351,19 @@ function isBubblerDecorKey(decorKey = "") {
   return Boolean(getDecorBubblerMeta(decorKey));
 }
 
+function getDecorBubblerLightPath(itemOrKey) {
+  const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
+  const decor = runtime.decorMap.get(decorKey);
+  if (!decor || !canConfigureDecorBubbler(decorKey)) {
+    return null;
+  }
+  return decor.lightPath || null;
+}
+
+function hasDecorBubblerLight(itemOrKey) {
+  return Boolean(getDecorBubblerLightPath(itemOrKey));
+}
+
 function canConfigureDecorBubbler(itemOrKey) {
   const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
   return isCustomBubblerDecorKey(decorKey) || isBubblerDecorKey(decorKey);
@@ -26852,6 +27393,7 @@ function getPlacedDecorBubblerSettings(item) {
     width: item.bubblerSettings?.width ?? firstSpout.spread ?? DEFAULT_BUBBLER_SPREAD_PX,
     distance: item.bubblerSettings?.distance ?? firstSpout.fadeDistance ?? DEFAULT_BUBBLER_FADE_DISTANCE_PX,
     bubbleColor: item.bubblerSettings?.bubbleColor ?? firstSpout.bubbleColor ?? DEFAULT_BUBBLER_BUBBLE_COLOR,
+    lightColor: item.bubblerSettings?.lightColor ?? DEFAULT_BUBBLER_LIGHT_COLOR,
     bubbleColorize: item.bubblerSettings?.bubbleColorize ?? firstSpout.bubbleColorize ?? false,
     bubbleSize: item.bubblerSettings?.bubbleSize ?? firstSpout.bubbleSize ?? DEFAULT_CUSTOM_BUBBLER_BUBBLE_SIZE,
     bubbleOpacity: item.bubblerSettings?.bubbleOpacity ?? firstSpout.bubbleOpacity ?? DEFAULT_BUBBLER_BUBBLE_OPACITY,
@@ -28725,7 +29267,9 @@ function sanitizePellet(pellet) {
   const foodMeta = typeof pellet.foodKey === "string" && getFoodMeta(pellet.foodKey)
     ? getFoodMeta(pellet.foodKey)
     : getFoodMeta(defaultFoodKey);
-  const hasCustomDropStart = Number.isFinite(Number(pellet.dropStartXNorm))
+  const hasCustomDropStart = pellet.dropStartXNorm != null
+    && pellet.dropStartYNorm != null
+    && Number.isFinite(Number(pellet.dropStartXNorm))
     && Number.isFinite(Number(pellet.dropStartYNorm));
   const xNorm = clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92);
   const floorYNorm = clamp(getPelletFloorYNormAtX(xNorm), 0.18, 0.96);
@@ -28755,7 +29299,7 @@ function sanitizePellet(pellet) {
     ),
     sinkDurationMs: clamp(Number(pellet.sinkDurationMs) || FOOD_PELLET_SINK_DURATION_MS, 30 * 1000, 60 * MINUTE_MS),
     dropStartXNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartXNorm), 0.08, 0.92) : null,
-    dropStartYNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartYNorm), 0.02, AUTO_DISPENSER_PELLET_MAX_Y_NORM) : null,
+    dropStartYNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartYNorm), 0.02, floorYNorm) : null,
     dropDurationMs: hasCustomDropStart
       ? clamp(Number(pellet.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS, 120, 3000)
       : null,
@@ -31779,6 +32323,191 @@ function sanitizeSubmarineInventory(rawInventory) {
   };
 }
 
+function normalizeBoatResourceCount(value) {
+  return clamp(Math.floor(Number(value) || 0), 0, BOAT_RESOURCE_CAPACITY);
+}
+
+function sanitizeBoatInventory(rawInventory) {
+  const source = rawInventory && typeof rawInventory === "object" ? rawInventory : {};
+  return {
+    chum: normalizeBoatResourceCount(source.chum)
+  };
+}
+
+function getMachineryColorSetting(machinery) {
+  return normalizeDecorColorSetting(machinery?.machineryColor ?? machinery?.colorSetting ?? "");
+}
+
+function getMachineryColorizeSetting(machinery) {
+  return normalizeDecorColorizeSetting(machinery?.machineryColorize ?? false);
+}
+
+function getMachineryColorCycleFilter(machinery, now = Date.now()) {
+  const color = getMachineryColorSetting(machinery);
+  if (!isDecorRgbColorSetting(color)) return "none";
+  return getMachineryColorizeSetting(machinery)
+    ? getDecorRgbColorizeFilter(now)
+    : getDecorRgbCycleFilter(now);
+}
+
+function getMachineryTintedImage(imagePath, sourceImage, machinery) {
+  const color = getMachineryColorSetting(machinery);
+  if (!color || isDecorRgbColorSetting(color)) return sourceImage;
+  return getTintedCaveLayerImage(imagePath, color, {
+    sourceImage,
+    colorize: getMachineryColorizeSetting(machinery)
+  }) || sourceImage;
+}
+
+function updateMachineryColorSetting(machinery, setting, rawValue) {
+  if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type)) return false;
+  let changed = false;
+  if (setting === "color") {
+    const nextColor = normalizeDecorColorSetting(rawValue);
+    if (getMachineryColorSetting(machinery) !== nextColor) {
+      machinery.machineryColor = nextColor;
+      changed = true;
+    }
+  } else if (setting === "colorize") {
+    const nextColorize = normalizeDecorColorizeSetting(rawValue);
+    if (getMachineryColorizeSetting(machinery) !== nextColorize) {
+      machinery.machineryColorize = nextColorize;
+      changed = true;
+    }
+  }
+  if (changed) saveState();
+  renderSubmarineManager();
+  return changed;
+}
+
+function renderMachineryColorSettingsMarkup(machinery) {
+  const activeColor = getMachineryColorSetting(machinery);
+  const originalSelected = !activeColor;
+  const rgbSelected = isDecorRgbColorSetting(activeColor);
+  const originalTile = `
+    <button
+      class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${originalSelected ? "is-selected" : ""}"
+      type="button"
+      data-machinery-color=""
+      aria-pressed="${originalSelected}"
+      aria-label="Use original machinery color"
+      title="Original color">
+      Original
+    </button>
+  `;
+  const rgbTile = `
+    <button
+      class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile cave-color-rgb-tile ${rgbSelected ? "is-selected" : ""}"
+      type="button"
+      data-machinery-color="${DECOR_RGB_COLOR_SETTING}"
+      aria-pressed="${rgbSelected}"
+      aria-label="Fade machinery through RGB colors"
+      title="RGB color cycle">
+      RGB
+    </button>
+  `;
+  const swatches = getCustomGravelColorChoices().map((choice) => {
+    const selected = activeColor === choice.color;
+    return `
+      <button
+        class="custom-gravel-color-swatch bubbler-color-swatch ${selected ? "is-selected" : ""}"
+        type="button"
+        style="--swatch:${choice.color};"
+        data-machinery-color="${choice.color}"
+        aria-pressed="${selected}"
+        aria-label="Set machinery to ${escapeHtml(choice.label)}"
+        title="${escapeHtml(choice.label)}"></button>
+    `;
+  }).join("");
+  return `
+    <div class="machinery-settings-panel fish-inspector-settings" ${runtime.machinerySettingsOpen ? "" : "hidden"}>
+      <div class="fish-inspector-color-card">
+        <div class="bubbler-color-row cave-color-layer-header">
+          <span>Color</span>
+          <strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong>
+        </div>
+        <div class="bubbler-color-swatches cave-color-swatches fish-inspector-color-swatches" role="group" aria-label="Machinery color choices">
+          <div class="color-choice-mode-row">${originalTile}${rgbTile}</div>
+          <div class="color-choice-swatch-row">${swatches}</div>
+        </div>
+        <label class="cave-colorize-toggle fish-inspector-colorize-toggle">
+          <input type="checkbox" data-machinery-colorize ${getMachineryColorizeSetting(machinery) ? "checked" : ""} />
+          <span>Colorize</span>
+        </label>
+      </div>
+    </div>
+  `;
+}
+
+function sanitizeStoredSubmarineState(rawStoredSubmarine, now = Date.now()) {
+  if (!rawStoredSubmarine || typeof rawStoredSubmarine !== "object") return null;
+  return {
+    id: typeof rawStoredSubmarine.id === "string" && rawStoredSubmarine.id.trim()
+      ? rawStoredSubmarine.id.trim()
+      : createId("submarine"),
+    direction: Number(rawStoredSubmarine.direction) < 0 ? -1 : 1,
+    tankLayer: clampTankLayer(rawStoredSubmarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER),
+    createdAt: Math.max(0, Number(rawStoredSubmarine.createdAt) || now),
+    autopilot: rawStoredSubmarine.autopilot !== false,
+    machineryColor: normalizeDecorColorSetting(rawStoredSubmarine.machineryColor ?? rawStoredSubmarine.colorSetting ?? ""),
+    machineryColorize: normalizeDecorColorizeSetting(rawStoredSubmarine.machineryColorize ?? false),
+    inventory: sanitizeSubmarineInventory(rawStoredSubmarine.inventory)
+  };
+}
+
+function createStoredSubmarineState(submarine, now = Date.now()) {
+  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) return null;
+  return sanitizeStoredSubmarineState({
+    id: submarine.id,
+    direction: submarine.direction,
+    tankLayer: submarine.tankLayer,
+    createdAt: submarine.createdAt,
+    autopilot: submarine.autopilot,
+    machineryColor: getMachineryColorSetting(submarine),
+    machineryColorize: getMachineryColorizeSetting(submarine),
+    inventory: submarine.inventory
+  }, now);
+}
+
+function sanitizeStoredBoatState(rawStoredBoat, now = Date.now()) {
+  if (!rawStoredBoat || typeof rawStoredBoat !== "object") return null;
+  return {
+    id: typeof rawStoredBoat.id === "string" && rawStoredBoat.id.trim()
+      ? rawStoredBoat.id.trim()
+      : createId("boat"),
+    direction: Number(rawStoredBoat.direction) < 0 ? -1 : 1,
+    tankLayer: BOAT_SURFACE_LAYER,
+    createdAt: Math.max(0, Number(rawStoredBoat.createdAt) || now),
+    autopilot: rawStoredBoat.autopilot !== false,
+    machineryColor: normalizeDecorColorSetting(rawStoredBoat.machineryColor ?? rawStoredBoat.colorSetting ?? ""),
+    machineryColorize: normalizeDecorColorizeSetting(rawStoredBoat.machineryColorize ?? false),
+    inventory: sanitizeBoatInventory(rawStoredBoat.inventory)
+  };
+}
+
+function createStoredBoatState(boat, now = Date.now()) {
+  if (!boat || boat.type !== MACHINERY_TYPE_BOAT) return null;
+  return sanitizeStoredBoatState({
+    id: boat.id,
+    direction: boat.direction,
+    createdAt: boat.createdAt,
+    autopilot: boat.autopilot,
+    machineryColor: getMachineryColorSetting(boat),
+    machineryColorize: getMachineryColorizeSetting(boat),
+    inventory: boat.inventory
+  }, now);
+}
+
+function getStoredSubmarineState() {
+  if (!state) return null;
+  return state.storedSubmarine;
+}
+
+function getStoredBoatState() {
+  if (!state) return null;
+  return state.storedBoat;
+}
+
 function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
   return {
     id: typeof options.id === "string" && options.id.trim() ? options.id.trim() : createId("submarine"),
@@ -31789,15 +32518,68 @@ function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
     targetXNorm: clamp(Number(options.targetXNorm) || 0.68, 0.08, 0.92),
     targetYNorm: clamp(Number(options.targetYNorm) || 0.46, 0.16, 0.78),
     direction: Number(options.direction) < 0 ? -1 : 1,
+    displayDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnStartedAt: null,
+    turnDurationMs: 0,
+    turnFromDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnToDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnSpinDirection: Number(options.direction) < 0 ? -1 : 1,
     tankLayer: clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : SUBMARINE_DEFAULT_TANK_LAYER),
     manualVelocityXPxPerSecond: Number.isFinite(Number(options.manualVelocityXPxPerSecond)) ? Number(options.manualVelocityXPxPerSecond) : 0,
     manualVelocityYPxPerSecond: Number.isFinite(Number(options.manualVelocityYPxPerSecond)) ? Number(options.manualVelocityYPxPerSecond) : 0,
+    motionVelocityXPxPerSecond: Number.isFinite(Number(options.motionVelocityXPxPerSecond)) ? Number(options.motionVelocityXPxPerSecond) : 0,
+    motionVelocityYPxPerSecond: Number.isFinite(Number(options.motionVelocityYPxPerSecond)) ? Number(options.motionVelocityYPxPerSecond) : 0,
     idleUntil: Math.max(0, Number(options.idleUntil) || 0),
     targetAt: Math.max(0, Number(options.targetAt) || now),
     nextScanAt: Math.max(0, Number(options.nextScanAt) || now),
     createdAt: Math.max(0, Number(options.createdAt) || now),
     autopilot: options.autopilot !== false,
+    machineryColor: normalizeDecorColorSetting(options.machineryColor ?? options.colorSetting ?? ""),
+    machineryColorize: normalizeDecorColorizeSetting(options.machineryColorize ?? false),
     inventory: sanitizeSubmarineInventory(options.inventory),
+    entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
+    entryDurationMs: Math.max(0, Number(options.entryDurationMs) || 0),
+    entryFromYNorm: Number.isFinite(Number(options.entryFromYNorm))
+      ? clamp(Number(options.entryFromYNorm), 0.02, 0.18)
+      : null,
+    entrySplashTriggered: options.entrySplashTriggered === true,
+    mission: null
+  };
+}
+
+function createBoatMachinery(tankId, now = Date.now(), options = {}) {
+  return {
+    id: typeof options.id === "string" && options.id.trim() ? options.id.trim() : createId("boat"),
+    type: MACHINERY_TYPE_BOAT,
+    tankId: String(tankId || ""),
+    xNorm: clamp(Number(options.xNorm) || 0.5, 0.08, 0.92),
+    yNorm: 0.16,
+    targetXNorm: clamp(Number(options.targetXNorm) || 0.74, 0.08, 0.92),
+    targetYNorm: 0.16,
+    direction: Number(options.direction) < 0 ? -1 : 1,
+    displayDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnStartedAt: null,
+    turnDurationMs: 0,
+    turnFromDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnToDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnSpinDirection: Number(options.direction) < 0 ? -1 : 1,
+    tankLayer: BOAT_SURFACE_LAYER,
+    manualVelocityXPxPerSecond: Number.isFinite(Number(options.manualVelocityXPxPerSecond)) ? Number(options.manualVelocityXPxPerSecond) : 0,
+    motionVelocityXPxPerSecond: Number.isFinite(Number(options.motionVelocityXPxPerSecond)) ? Number(options.motionVelocityXPxPerSecond) : 0,
+    motionVelocityYPxPerSecond: 0,
+    idleUntil: Math.max(0, Number(options.idleUntil) || 0),
+    targetAt: Math.max(0, Number(options.targetAt) || now),
+    createdAt: Math.max(0, Number(options.createdAt) || now),
+    autopilot: options.autopilot !== false,
+    machineryColor: normalizeDecorColorSetting(options.machineryColor ?? options.colorSetting ?? ""),
+    machineryColorize: normalizeDecorColorizeSetting(options.machineryColorize ?? false),
+    inventory: sanitizeBoatInventory(options.inventory),
+    entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
+    entryDurationMs: Math.max(0, Number(options.entryDurationMs) || 0),
+    entryFromYNorm: Number.isFinite(Number(options.entryFromYNorm))
+      ? clamp(Number(options.entryFromYNorm), 0.02, 0.18)
+      : null,
+    entrySplashTriggered: options.entrySplashTriggered === true,
     mission: null
   };
 }
@@ -31809,14 +32591,19 @@ function sanitizeMachineryState(rawMachinery, tanks = getAllTanks(), now = Date.
   const source = Array.isArray(rawMachinery) ? rawMachinery : [];
   const sanitized = [];
   for (const entry of source) {
-    if (!entry || entry.type !== MACHINERY_TYPE_SUBMARINE || sanitized.some((item) => item.type === MACHINERY_TYPE_SUBMARINE)) {
+    if (!entry || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(entry.type)
+      || sanitized.some((item) => item.type === entry.type)) {
       continue;
     }
     const tankId = validTankIds.has(entry.tankId) ? entry.tankId : fallbackTankId;
     if (!tankId) {
       continue;
     }
-    sanitized.push(createSubmarineMachinery(tankId, now, entry));
+    sanitized.push(
+      entry.type === MACHINERY_TYPE_BOAT
+        ? createBoatMachinery(tankId, now, entry)
+        : createSubmarineMachinery(tankId, now, entry)
+    );
   }
   return sanitized;
 }
@@ -31837,8 +32624,16 @@ function getSubmarine() {
   return getMachineryList().find((item) => item?.type === MACHINERY_TYPE_SUBMARINE) || null;
 }
 
+function getBoat() {
+  return getMachineryList().find((item) => item?.type === MACHINERY_TYPE_BOAT) || null;
+}
+
 function isSubmarineOwned() {
-  return Boolean(state?.submarineOwned || getSubmarine());
+  return Boolean(state?.submarineOwned || getSubmarine() || getStoredSubmarineState());
+}
+
+function isBoatOwned() {
+  return Boolean(state?.boatOwned || getBoat() || getStoredBoatState());
 }
 
 function getMachineryForTank(tankId) {
@@ -31848,6 +32643,10 @@ function getMachineryForTank(tankId) {
 
 function getSubmarineTank(submarine = getSubmarine()) {
   return submarine ? getTankById(submarine.tankId) : null;
+}
+
+function getBoatTank(boat = getBoat()) {
+  return boat ? getTankById(boat.tankId) : null;
 }
 
 function getSubmarineFoodCount(submarine = getSubmarine()) {
@@ -31890,13 +32689,23 @@ function deploySubmarine(targetTank = getCurrentTank(), now = Date.now()) {
   if (!isSubmarineOwned() || !targetTank) return false;
   const existing = getSubmarine();
   if (existing) return moveSubmarineToTank(targetTank, now);
+  const storedSubmarine = getStoredSubmarineState();
+  const dropXNorm = randomBetween(0.26, 0.74);
   const submarine = createSubmarineMachinery(targetTank.id, now, {
-    xNorm: 0.5,
+    ...(storedSubmarine || {}),
+    xNorm: dropXNorm,
     yNorm: 0.46,
-    targetXNorm: 0.68,
-    targetYNorm: 0.44
+    targetXNorm: dropXNorm,
+    targetYNorm: 0.46,
+    manualVelocityXPxPerSecond: 0,
+    manualVelocityYPxPerSecond: 0,
+    entryStartedAt: now,
+    entryDurationMs: SUBMARINE_ENTRY_DURATION_MS,
+    entryFromYNorm: SUBMARINE_ENTRY_FROM_Y_NORM,
+    entrySplashTriggered: false
   });
   state.submarineOwned = true;
+  state.storedSubmarine = null;
   state.machinery = [...getMachineryList(), submarine];
   runtime.equipmentEditTrayTab = "tank";
   pushEvent(`Automated Care Submarine deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
@@ -31938,16 +32747,109 @@ function recallSubmarine(now = Date.now()) {
   if (!submarine) return false;
   const tank = getSubmarineTank(submarine);
   runtime.pendingMachineryTravel.delete(submarine.id);
-  runtime.submarineManualDriveId = "";
-  runtime.submarineManualDriveStartedAt = 0;
   clearSubmarineManualDriveKeys();
   if (runtime.selectedMachineryId === submarine.id) closeSubmarineManager();
+  closeEditEquipmentTrayContextMenu({ render: false });
+  state.storedSubmarine = createStoredSubmarineState(submarine, now);
   state.machinery = getMachineryList().filter((item) => item?.id !== submarine.id);
   state.submarineOwned = true;
   runtime.equipmentEditTrayTab = "storage";
   pushEvent(`Automated Care Submarine returned to equipment storage${tank ? ` from ${getTankLabel(tank)}` : ""}.`, now, tank || null, {
     type: "equipment",
     detail: "Automated care machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function buyBoat() {
+  if (isBoatOwned()) {
+    return false;
+  }
+  return performCoinTransaction({
+    amount: BOAT_COST,
+    insufficientMessage: `You need ${BOAT_COST} ${pluralize("coin", BOAT_COST)} for the Chum Skiff.`,
+    apply: () => {
+      state.boatOwned = true;
+      runtime.equipmentEditTrayTab = "storage";
+    },
+    event: {
+      type: "equipment",
+      tone: "positive",
+      text: "Purchased the Chum Skiff. It is ready to deploy from Edit > Equipment."
+    },
+    toast: "Chum Skiff purchased. Deploy it from Edit > Equipment."
+  });
+}
+
+function deployBoat(targetTank = getCurrentTank(), now = Date.now()) {
+  if (!isBoatOwned() || !targetTank) return false;
+  const existing = getBoat();
+  if (existing) return moveBoatToTank(targetTank, now);
+  const storedBoat = getStoredBoatState();
+  const dropXNorm = randomBetween(0.26, 0.74);
+  const boat = createBoatMachinery(targetTank.id, now, {
+    ...(storedBoat || {}),
+    xNorm: dropXNorm,
+    targetXNorm: dropXNorm,
+    manualVelocityXPxPerSecond: 0,
+    entryStartedAt: now,
+    entryDurationMs: BOAT_ENTRY_DURATION_MS,
+    entryFromYNorm: BOAT_ENTRY_FROM_Y_NORM,
+    entrySplashTriggered: false
+  });
+  state.boatOwned = true;
+  state.storedBoat = null;
+  state.machinery = [...getMachineryList(), boat];
+  runtime.equipmentEditTrayTab = "tank";
+  pushEvent(`Chum Skiff deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
+    type: "equipment",
+    detail: "Surface chum machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function moveBoatToTank(targetTank = getCurrentTank(), now = Date.now()) {
+  const boat = getBoat();
+  if (!boat || !targetTank) return false;
+  runtime.pendingMachineryTravel.delete(boat.id);
+  boat.tankId = targetTank.id;
+  boat.xNorm = 0.5;
+  boat.yNorm = 0.16;
+  boat.targetXNorm = 0.72;
+  boat.targetYNorm = 0.16;
+  boat.targetAt = now + 1200;
+  boat.idleUntil = now + 450;
+  boat.manualVelocityXPxPerSecond = 0;
+  boat.motionVelocityXPxPerSecond = 0;
+  boat.tankLayer = BOAT_SURFACE_LAYER;
+  pushEvent(`Chum Skiff moved to ${getTankLabel(targetTank)}.`, now, targetTank, {
+    type: "equipment",
+    detail: "Surface chum machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function recallBoat(now = Date.now()) {
+  const boat = getBoat();
+  if (!boat) return false;
+  const tank = getBoatTank(boat);
+  runtime.pendingMachineryTravel.delete(boat.id);
+  clearBoatManualDriveKeys();
+  if (runtime.selectedMachineryId === boat.id) closeSubmarineManager();
+  closeEditEquipmentTrayContextMenu({ render: false });
+  state.storedBoat = createStoredBoatState(boat, now);
+  state.machinery = getMachineryList().filter((item) => item?.id !== boat.id);
+  state.boatOwned = true;
+  runtime.equipmentEditTrayTab = "storage";
+  pushEvent(`Chum Skiff returned to equipment storage${tank ? ` from ${getTankLabel(tank)}` : ""}.`, now, tank || null, {
+    type: "equipment",
+    detail: "Surface chum machinery"
   });
   saveState();
   renderUi(now);
@@ -31984,6 +32886,30 @@ function transferFoodIntoSubmarine(submarine = getSubmarine(), requestedAmount =
   return transferred;
 }
 
+function getBoatPlayerChumCount() {
+  return Math.max(0, Math.floor(Number(state?.foodInventory?.chum) || 0));
+}
+
+function transferChumIntoBoat(boat = getBoat(), requestedAmount = BOAT_RESOURCE_CAPACITY) {
+  if (!boat) return 0;
+  boat.inventory = sanitizeBoatInventory(boat.inventory);
+  const available = getBoatPlayerChumCount();
+  const remainingCapacity = Math.min(
+    BOAT_RESOURCE_CAPACITY - boat.inventory.chum,
+    Math.max(1, Math.floor(Number(requestedAmount) || 1))
+  );
+  const transferred = Math.min(available, remainingCapacity);
+  if (transferred <= 0) return 0;
+  state.foodInventory.chum = available - transferred;
+  boat.inventory.chum += transferred;
+  pushEvent(`Loaded ${transferred} chum ${pluralize("ration", transferred)} into the Chum Skiff.`, Date.now());
+  saveState();
+  renderSubmarineManager();
+  renderFoodTray();
+  renderFoodShop();
+  return transferred;
+}
+
 function transferMedicineIntoSubmarine(resourceType, submarine = getSubmarine(), requestedAmount = SUBMARINE_RESOURCE_CAPACITY) {
   if (!submarine) return 0;
   submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
@@ -32011,9 +32937,25 @@ function isSubmarineAutopilotEnabled(submarine = getSubmarine()) {
   return submarine?.autopilot !== false;
 }
 
+function getSubmarineEntryProgress(submarine, now = Date.now()) {
+  if (
+    !submarine
+    || !Number.isFinite(Number(submarine.entryStartedAt))
+    || Number(submarine.entryDurationMs) <= 0
+  ) {
+    return null;
+  }
+  return clamp(
+    (now - Number(submarine.entryStartedAt)) / Math.max(1, Number(submarine.entryDurationMs)),
+    0,
+    1
+  );
+}
+
 function isSubmarineManualDriveActive(submarine = getSubmarine()) {
   return Boolean(
     submarine?.id
+    && getSubmarineEntryProgress(submarine) === null
     && !isSubmarineAutopilotEnabled(submarine)
     && submarine.tankId === getCurrentTank()?.id
     && !runtime.boroughOverviewOpen
@@ -32025,7 +32967,30 @@ function isSubmarineManualDriveActive(submarine = getSubmarine()) {
     && !runtime.settingsOverlayOpen
     && !runtime.utilityOverlayOpen
     && !runtime.equipmentOverlayOpen
+    && !runtime.foodTrayOpen && !runtime.medicineTrayOpen
+    && !runtime.cleaningMode && !runtime.scoopMode
   );
+}
+
+function suspendSubmarineManualDrive() {
+  clearSubmarineManualDriveKeys();
+  const sub = getSubmarine();
+  if (!sub) return;
+  sub.manualVelocityXPxPerSecond = sub.manualVelocityYPxPerSecond = 0;
+  sub.motionVelocityXPxPerSecond = sub.motionVelocityYPxPerSecond = 0;
+}
+
+function beginSubmarineManualDrive(submarine = getSubmarine()) {
+  if (!submarine) return false;
+  const tank = getSubmarineTank(submarine);
+  if (!tank) return false;
+  clearPrimaryToolModes();
+  setActiveTank(tank.id);
+  setSubmarineAutopilot(submarine, false, { render: false });
+  openSubmarineManager(submarine.id);
+  renderUi(Date.now());
+  document.activeElement?.blur?.();
+  return true;
 }
 
 function clearSubmarineManualDriveKeys() {
@@ -32048,7 +33013,6 @@ function setSubmarineManualDriveKey(key, isDown) {
     return true;
   }
   if (!isSubmarineManualDriveActive(submarine)) return false;
-  runtime.submarineManualDriveId = submarine.id;
   runtime.submarineManualDriveKeys.add(normalized);
   return true;
 }
@@ -32057,7 +33021,6 @@ function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, optio
   if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) return false;
   const nextEnabled = enabled !== false;
   if (isSubmarineAutopilotEnabled(submarine) === nextEnabled) {
-    if (!nextEnabled && isSubmarineManualDriveActive(submarine)) runtime.submarineManualDriveId = submarine.id;
     return false;
   }
 
@@ -32065,9 +33028,14 @@ function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, optio
   submarine.autopilot = nextEnabled;
   clearSubmarineManualDriveKeys();
 
+  if (!nextEnabled) {
+    const boat = getBoat();
+    if (boat && !isBoatAutopilotEnabled(boat)) {
+      setBoatAutopilot(boat, true, { render: false });
+    }
+  }
+
   if (nextEnabled) {
-    runtime.submarineManualDriveId = "";
-    runtime.submarineManualDriveStartedAt = 0;
     submarine.targetXNorm = submarine.xNorm;
     submarine.targetYNorm = submarine.yNorm;
     submarine.targetAt = now + 500;
@@ -32075,9 +33043,9 @@ function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, optio
     submarine.nextScanAt = Math.min(Number(submarine.nextScanAt) || now, now + 350);
     submarine.manualVelocityXPxPerSecond = 0;
     submarine.manualVelocityYPxPerSecond = 0;
+    submarine.motionVelocityXPxPerSecond = 0;
+    submarine.motionVelocityYPxPerSecond = 0;
   } else {
-    runtime.submarineManualDriveId = submarine.id;
-    runtime.submarineManualDriveStartedAt = now;
     runtime.pendingMachineryTravel.delete(submarine.id);
     submarine.xNorm = clamp(Number(submarine.xNorm) || 0.5, 0.08, 0.92);
     submarine.yNorm = clamp(Number(submarine.yNorm) || 0.48, 0.16, 0.78);
@@ -32087,6 +33055,8 @@ function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, optio
     submarine.idleUntil = 0;
     submarine.manualVelocityXPxPerSecond = 0;
     submarine.manualVelocityYPxPerSecond = 0;
+    submarine.motionVelocityXPxPerSecond = 0;
+    submarine.motionVelocityYPxPerSecond = 0;
   }
 
   requestDeferredStateSave();
@@ -32119,6 +33089,34 @@ function stepSubmarineDepthLayer(submarine = getSubmarine(), delta = 0) {
   return true;
 }
 
+function createSubmarineDroppedFoodPellet(submarine, foodKey = "basic", now = Date.now()) {
+  if (!submarine) return null;
+  const metrics = getSubmarineDrawMetrics(submarine, now);
+  const sourceXNorm = clamp(
+    Number.isFinite(Number(metrics?.x)) ? Number(metrics.x) / TANK_WIDTH : Number(submarine.xNorm),
+    0.08,
+    0.92
+  );
+  const sourceYNorm = clamp(
+    Number.isFinite(Number(metrics?.y)) && Number.isFinite(Number(metrics?.height))
+      ? (Number(metrics.y) + Number(metrics.height) * 0.3) / TANK_HEIGHT
+      : Number(submarine.yNorm),
+    0.09,
+    0.84
+  );
+  const targetYNorm = clamp(sourceYNorm + 0.075, sourceYNorm + 0.025, 0.9);
+  const pellet = createDroppedFoodPellet(foodKey, sourceXNorm, targetYNorm, now, {
+    spreadNorm: 0,
+    dropStartXNorm: sourceXNorm,
+    dropStartYNorm: sourceYNorm,
+    dropDurationMs: 420
+  });
+  if (pellet) {
+    pellet.tankLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
+  }
+  return pellet;
+}
+
 function deployManualSubmarineFood(submarine = getSubmarine(), now = Date.now()) {
   if (!isSubmarineManualDriveActive(submarine)) return false;
   submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
@@ -32128,9 +33126,8 @@ function deployManualSubmarineFood(submarine = getSubmarine(), now = Date.now())
   if (!tank) return false;
   let pellet = null;
   withActiveTank(tank.id, () => {
-    pellet = createDroppedFoodPellet("basic", submarine.xNorm, submarine.yNorm, now);
+    pellet = createSubmarineDroppedFoodPellet(submarine, "basic", now);
     if (pellet) {
-      pellet.tankLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
       state.floatingPellets.push(pellet);
     }
   });
@@ -32142,10 +33139,107 @@ function deployManualSubmarineFood(submarine = getSubmarine(), now = Date.now())
   return true;
 }
 
+function getMachineryFacingDirection(machinery, now = Date.now()) {
+  if (!machinery) return 1;
+  if (machinery.turnStartedAt && Number(machinery.turnDurationMs) > 0) {
+    const progress = clamp((now - Number(machinery.turnStartedAt)) / Number(machinery.turnDurationMs), 0, 1);
+    const fromDirection = Number(machinery.turnFromDirection) < 0 ? -1 : 1;
+    const toDirection = Number(machinery.turnToDirection) < 0 ? -1 : 1;
+    return progress < 0.5 ? fromDirection : toDirection;
+  }
+  return Number(machinery.displayDirection ?? machinery.direction) < 0 ? -1 : 1;
+}
+
+function clearMachineryTurnState(machinery, direction = machinery?.direction) {
+  if (!machinery) return;
+  const settledDirection = Number(direction) < 0 ? -1 : 1;
+  machinery.direction = settledDirection;
+  machinery.displayDirection = settledDirection;
+  machinery.turnStartedAt = null;
+  machinery.turnDurationMs = 0;
+  machinery.turnFromDirection = settledDirection;
+  machinery.turnToDirection = settledDirection;
+  machinery.turnSpinDirection = settledDirection;
+}
+
+function setMachineryDirection(machinery, desiredDirection, now = Date.now(), durationMs = 260) {
+  if (!machinery) return false;
+  const nextDirection = Number(desiredDirection) < 0 ? -1 : 1;
+  const currentDisplayDirection = getMachineryFacingDirection(machinery, now);
+  const activeTurn = Boolean(machinery.turnStartedAt && Number(machinery.turnDurationMs) > 0);
+  machinery.direction = nextDirection;
+
+  if (activeTurn) {
+    const pendingDirection = Number(machinery.turnToDirection) < 0 ? -1 : 1;
+    if (nextDirection === pendingDirection) return false;
+
+    const progress = clamp((now - Number(machinery.turnStartedAt)) / Number(machinery.turnDurationMs), 0, 1);
+    const fromDirection = Number(machinery.turnFromDirection) < 0 ? -1 : 1;
+    if (nextDirection === fromDirection && progress < 0.5) {
+      // The player/autopilot changed its mind before the visual flip. Ease the
+      // current squash back out without ever snapping to the other side.
+      const reverseProgress = 1 - progress;
+      machinery.displayDirection = fromDirection;
+      machinery.turnFromDirection = fromDirection;
+      machinery.turnToDirection = fromDirection;
+      machinery.turnStartedAt = now - reverseProgress * Math.max(1, Number(durationMs) || 1);
+      machinery.turnDurationMs = Math.max(1, Number(durationMs) || 1);
+      machinery.turnSpinDirection = -Number(machinery.turnSpinDirection || fromDirection);
+      return true;
+    }
+  }
+
+  if (!activeTurn && nextDirection === currentDisplayDirection) {
+    clearMachineryTurnState(machinery, nextDirection);
+    return false;
+  }
+
+  machinery.displayDirection = currentDisplayDirection;
+  machinery.turnStartedAt = now;
+  machinery.turnDurationMs = Math.max(1, Number(durationMs) || 1);
+  machinery.turnFromDirection = currentDisplayDirection;
+  machinery.turnToDirection = nextDirection;
+  // Bank consistently toward the new heading instead of choosing a random
+  // roll direction. It reads more like a vehicle carving through water.
+  machinery.turnSpinDirection = nextDirection;
+  return true;
+}
+
+function getMachineryTurnRenderState(machinery, now = Date.now(), leanRadians = 0) {
+  if (!machinery) {
+    return { direction: 1, scaleX: 1, scaleY: 1, lean: 0, swayX: 0 };
+  }
+  if (!machinery.turnStartedAt || Number(machinery.turnDurationMs) <= 0) {
+    const direction = Number(machinery.direction) < 0 ? -1 : 1;
+    machinery.displayDirection = direction;
+    return { direction, scaleX: 1, scaleY: 1, lean: 0, swayX: 0 };
+  }
+
+  const progress = clamp((now - Number(machinery.turnStartedAt)) / Number(machinery.turnDurationMs), 0, 1);
+  if (progress >= 1) {
+    const direction = Number(machinery.direction) < 0 ? -1 : 1;
+    clearMachineryTurnState(machinery, direction);
+    return { direction, scaleX: 1, scaleY: 1, lean: 0, swayX: 0 };
+  }
+
+  const amount = Math.sin(progress * Math.PI);
+  const fromDirection = Number(machinery.turnFromDirection) < 0 ? -1 : 1;
+  const toDirection = Number(machinery.turnToDirection) < 0 ? -1 : 1;
+  const direction = progress < 0.5 ? fromDirection : toDirection;
+  const spinDirection = Number(machinery.turnSpinDirection) < 0 ? -1 : 1;
+  machinery.displayDirection = direction;
+  return {
+    direction,
+    scaleX: 1 - amount * (1 - FISH_TURN_MIN_SCALE_X),
+    scaleY: 1 + amount * (FISH_TURN_MAX_SCALE_Y - 1),
+    lean: spinDirection * amount * Math.max(0, Number(leanRadians) || 0),
+    swayX: spinDirection * amount * 0.8
+  };
+}
+
 function updateSubmarineManualDrive(submarine, deltaSeconds = 0.016) {
   if (!isSubmarineManualDriveActive(submarine)) return false;
 
-  runtime.submarineManualDriveId = submarine.id;
   const dt = clamp(Number(deltaSeconds) || 0, 0, 0.08);
   const input = getSubmarineManualInputVector();
   let velocityX = Number(submarine.manualVelocityXPxPerSecond) || 0;
@@ -32180,12 +33274,211 @@ function updateSubmarineManualDrive(submarine, deltaSeconds = 0.016) {
   submarine.yNorm = nextY;
   submarine.manualVelocityXPxPerSecond = velocityX;
   submarine.manualVelocityYPxPerSecond = velocityY;
+  submarine.motionVelocityXPxPerSecond = dt > 0 ? (nextX - previousX) * TANK_WIDTH / dt : 0;
+  submarine.motionVelocityYPxPerSecond = dt > 0 ? (nextY - previousY) * TANK_HEIGHT / dt : 0;
   submarine.targetXNorm = submarine.xNorm;
   submarine.targetYNorm = submarine.yNorm;
   submarine.idleUntil = 0;
-  if (Math.abs(input.x) > 0.05) submarine.direction = input.x < 0 ? -1 : 1;
-  else if (Math.abs(velocityX) > 8) submarine.direction = velocityX < 0 ? -1 : 1;
+  if (Math.abs(input.x) > 0.05) setMachineryDirection(submarine, input.x < 0 ? -1 : 1, Date.now(), SUBMARINE_TURN_DURATION_MS);
+  else if (Math.abs(velocityX) > 8) setMachineryDirection(submarine, velocityX < 0 ? -1 : 1, Date.now(), SUBMARINE_TURN_DURATION_MS);
   return true;
+}
+
+function getBoatEntryProgress(boat, now = Date.now()) {
+  if (!boat || !Number.isFinite(Number(boat.entryStartedAt)) || Number(boat.entryDurationMs) <= 0) {
+    return null;
+  }
+  return clamp((now - Number(boat.entryStartedAt)) / Math.max(1, Number(boat.entryDurationMs)), 0, 1);
+}
+
+function isBoatAutopilotEnabled(boat = getBoat()) {
+  return boat?.autopilot !== false;
+}
+
+function isMachineryControlOverlayOpen() {
+  return Boolean(
+    runtime.boroughOverviewOpen
+    || runtime.editTankMode
+    || runtime.fishEditMode
+    || runtime.equipmentEditMode
+    || runtime.tankEditMode
+    || runtime.storeOverlayOpen
+    || runtime.settingsOverlayOpen
+    || runtime.utilityOverlayOpen
+    || runtime.equipmentOverlayOpen
+    || runtime.foodTrayOpen
+    || runtime.medicineTrayOpen
+    || runtime.cleaningMode
+    || runtime.scoopMode
+  );
+}
+
+function isBoatManualDriveActive(boat = getBoat()) {
+  return Boolean(
+    boat?.id
+    && getBoatEntryProgress(boat) === null
+    && !isBoatAutopilotEnabled(boat)
+    && boat.tankId === getCurrentTank()?.id
+    && !isMachineryControlOverlayOpen()
+  );
+}
+
+function clearBoatManualDriveKeys() {
+  if (!(runtime.boatManualDriveKeys instanceof Set)) {
+    runtime.boatManualDriveKeys = new Set();
+    return;
+  }
+  runtime.boatManualDriveKeys.clear();
+}
+
+function suspendBoatManualDrive() {
+  clearBoatManualDriveKeys();
+  const boat = getBoat();
+  if (!boat) return;
+  boat.manualVelocityXPxPerSecond = 0;
+  boat.motionVelocityXPxPerSecond = 0;
+}
+
+function beginBoatManualDrive(boat = getBoat()) {
+  if (!boat) return false;
+  const tank = getBoatTank(boat);
+  if (!tank) return false;
+  clearPrimaryToolModes();
+  setActiveTank(tank.id);
+  setBoatAutopilot(boat, false, { render: false });
+  openSubmarineManager(boat.id);
+  renderUi(Date.now());
+  document.activeElement?.blur?.();
+  return true;
+}
+
+function setBoatManualDriveKey(key, isDown) {
+  const normalized = String(key || "").toLowerCase();
+  const boat = getBoat();
+  if (!["a", "d"].includes(normalized) || !boat) return false;
+  if (!(runtime.boatManualDriveKeys instanceof Set)) {
+    runtime.boatManualDriveKeys = new Set();
+  }
+  if (!isDown) {
+    runtime.boatManualDriveKeys.delete(normalized);
+    return true;
+  }
+  if (!isBoatManualDriveActive(boat)) return false;
+  runtime.boatManualDriveKeys.add(normalized);
+  return true;
+}
+
+function setBoatAutopilot(boat = getBoat(), enabled = true, options = {}) {
+  if (!boat || boat.type !== MACHINERY_TYPE_BOAT) return false;
+  const nextEnabled = enabled !== false;
+  if (isBoatAutopilotEnabled(boat) === nextEnabled) return false;
+
+  const now = Date.now();
+  boat.autopilot = nextEnabled;
+  clearBoatManualDriveKeys();
+  if (!nextEnabled) {
+    const submarine = getSubmarine();
+    if (submarine && !isSubmarineAutopilotEnabled(submarine)) {
+      setSubmarineAutopilot(submarine, true, { render: false });
+    }
+    runtime.pendingMachineryTravel.delete(boat.id);
+    boat.xNorm = clamp(Number(boat.xNorm) || 0.5, 0.08, 0.92);
+    boat.targetXNorm = boat.xNorm;
+    boat.targetAt = 0;
+    boat.idleUntil = 0;
+    boat.manualVelocityXPxPerSecond = 0;
+    boat.motionVelocityXPxPerSecond = 0;
+  } else {
+    boat.targetXNorm = boat.xNorm < 0.5 ? 0.82 : 0.18;
+    boat.targetAt = now + 700;
+    boat.idleUntil = now + 150;
+    boat.manualVelocityXPxPerSecond = 0;
+    boat.motionVelocityXPxPerSecond = 0;
+  }
+
+  requestDeferredStateSave();
+  if (options.render !== false && runtime.selectedMachineryId === boat.id) renderSubmarineManager();
+  return true;
+}
+
+function getBoatManualInputVector() {
+  const keys = runtime.boatManualDriveKeys instanceof Set ? runtime.boatManualDriveKeys : new Set();
+  return { x: (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0), y: 0 };
+}
+
+function createBoatDroppedFoodPellet(boat, now = Date.now()) {
+  if (!boat) return null;
+  const metrics = getBoatDrawMetrics(boat, now);
+  const sourceXNorm = clamp(Number.isFinite(Number(metrics?.x)) ? Number(metrics.x) / TANK_WIDTH : Number(boat.xNorm), 0.08, 0.92);
+  const sourceYNorm = clamp(
+    Number.isFinite(Number(metrics?.y)) && Number.isFinite(Number(metrics?.height))
+      ? (Number(metrics.y) + Number(metrics.height) * 0.34) / TANK_HEIGHT
+      : Number(boat.yNorm),
+    0.09,
+    0.84
+  );
+  return createDroppedFoodPellet("chum", sourceXNorm, clamp(sourceYNorm + 0.07, sourceYNorm + 0.025, 0.9), now, {
+    spreadNorm: 0,
+    dropStartXNorm: sourceXNorm,
+    dropStartYNorm: sourceYNorm,
+    dropDurationMs: 420
+  });
+}
+
+function deployManualBoatChum(boat = getBoat(), now = Date.now()) {
+  if (!isBoatManualDriveActive(boat)) return false;
+  boat.inventory = sanitizeBoatInventory(boat.inventory);
+  if (boat.inventory.chum <= 0) return true;
+  if (now - (Number(runtime.boatManualLastFoodDeployAt) || 0) < BOAT_MANUAL_FOOD_COOLDOWN_MS) return true;
+  const tank = getBoatTank(boat);
+  if (!tank) return false;
+  let pellet = null;
+  withActiveTank(tank.id, () => {
+    pellet = createBoatDroppedFoodPellet(boat, now);
+    if (pellet) state.floatingPellets.push(pellet);
+  });
+  if (!pellet) return false;
+  runtime.boatManualLastFoodDeployAt = now;
+  boat.inventory.chum = normalizeBoatResourceCount(boat.inventory.chum - 1);
+  requestDeferredStateSave();
+  if (runtime.selectedMachineryId === boat.id) renderSubmarineManager();
+  return true;
+}
+
+function updateBoatManualDrive(boat, deltaSeconds = 0.016) {
+  if (!isBoatManualDriveActive(boat)) return false;
+  const dt = clamp(Number(deltaSeconds) || 0, 0, 0.08);
+  const input = getBoatManualInputVector();
+  let velocityX = Number(boat.manualVelocityXPxPerSecond) || 0;
+  if (Math.abs(input.x) > 0.001) velocityX += input.x * BOAT_MANUAL_ACCELERATION_PX_PER_SECOND2 * dt;
+  else velocityX *= Math.exp(-BOAT_MANUAL_DRAG_PER_SECOND * dt);
+  velocityX = clamp(velocityX, -BOAT_MANUAL_SPEED_PX_PER_SECOND, BOAT_MANUAL_SPEED_PX_PER_SECOND);
+  if (Math.abs(velocityX) < 0.35) velocityX = 0;
+  const previousX = Number(boat.xNorm) || 0.5;
+  const nextX = clamp(previousX + velocityX * dt / TANK_WIDTH, 0.08, 0.92);
+  if (Math.abs(nextX - previousX) < 0.000001 && Math.abs(velocityX) > 0) velocityX = 0;
+  boat.xNorm = nextX;
+  boat.manualVelocityXPxPerSecond = velocityX;
+  boat.motionVelocityXPxPerSecond = dt > 0 ? (nextX - previousX) * TANK_WIDTH / dt : 0;
+  boat.targetXNorm = boat.xNorm;
+  boat.targetYNorm = 0.16;
+  boat.idleUntil = 0;
+  if (Math.abs(input.x) > 0.05) setMachineryDirection(boat, input.x < 0 ? -1 : 1, Date.now(), BOAT_TURN_DURATION_MS);
+  else if (Math.abs(velocityX) > 8) setMachineryDirection(boat, velocityX < 0 ? -1 : 1, Date.now(), BOAT_TURN_DURATION_MS);
+  return true;
+}
+
+function getActiveManualMachinery() {
+  const submarine = getSubmarine();
+  if (isSubmarineManualDriveActive(submarine)) return submarine;
+  const boat = getBoat();
+  if (isBoatManualDriveActive(boat)) return boat;
+  return null;
+}
+
+function suspendMachineryManualDrive() {
+  suspendSubmarineManualDrive();
+  suspendBoatManualDrive();
 }
 
 function getSubmarineMissionLabel(submarine = getSubmarine()) {
@@ -32200,6 +33493,30 @@ function getSubmarineMissionLabel(submarine = getSubmarine()) {
   if (mission.kind === "health") return `Treating ${fishName} in ${getTankLabel(targetTank)}`;
   if (mission.kind === "calming") return `Calming ${fishName} in ${getTankLabel(targetTank)}`;
   return `Feeding ${fishName} in ${getTankLabel(targetTank)}`;
+}
+
+function getSubmarineControlStatus(submarine = getSubmarine()) {
+  if (getSubmarineEntryProgress(submarine) !== null) return "Entering tank…";
+  if (isSubmarineAutopilotEnabled(submarine)) return getSubmarineMissionLabel(submarine);
+  return isSubmarineManualDriveActive(submarine)
+    ? "WASD move · Q/E depth · Space feed"
+    : "Drive paused · close editing or care tools";
+}
+
+function syncSubmarineControlStatus(submarine) {
+  if (runtime.selectedMachineryId !== submarine?.id) return;
+  const label = document.querySelector(".submarine-drive-status span");
+  const text = getSubmarineControlStatus(submarine);
+  if (label && label.textContent !== text) label.textContent = text;
+}
+
+function syncMachineryControlStatus(machinery) {
+  if (runtime.selectedMachineryId !== machinery?.id) return;
+  const label = document.querySelector(".submarine-drive-status span");
+  const text = machinery.type === MACHINERY_TYPE_BOAT
+    ? getBoatControlStatus(machinery)
+    : getSubmarineControlStatus(machinery);
+  if (label && label.textContent !== text) label.textContent = text;
 }
 
 function ensureSubmarineManagerElement() {
@@ -32218,9 +33535,52 @@ function ensureSubmarineManagerElement() {
       closeSubmarineManager();
       return;
     }
+    if (target.closest("[data-machinery-settings]")) {
+      runtime.machinerySettingsOpen = !runtime.machinerySettingsOpen;
+      renderSubmarineManager();
+      return;
+    }
+    const colorSwatch = target.closest("[data-machinery-color]");
+    if (colorSwatch instanceof HTMLButtonElement) {
+      event.preventDefault();
+      event.stopPropagation();
+      updateMachineryColorSetting(
+        getMachineryById(runtime.selectedMachineryId),
+        "color",
+        colorSwatch.dataset.machineryColor || ""
+      );
+      return;
+    }
+    const colorizeInput = target.closest("[data-machinery-colorize]");
+    if (colorizeInput instanceof HTMLInputElement) {
+      updateMachineryColorSetting(
+        getMachineryById(runtime.selectedMachineryId),
+        "colorize",
+        colorizeInput.checked
+      );
+      return;
+    }
+    if (target.closest("[data-drive-submarine]")) { beginSubmarineManualDrive(); return; }
+    if (target.closest("[data-drive-boat]")) { beginBoatManualDrive(); return; }
+    const command = target.closest("[data-submarine-command]")?.dataset.submarineCommand;
+    if (command) {
+      if (command === "food") deployManualSubmarineFood();
+      else stepSubmarineDepthLayer(getSubmarine(), command === "near" ? -1 : 1);
+      return;
+    }
+    const boatCommand = target.closest("[data-boat-command]")?.dataset.boatCommand;
+    if (boatCommand) {
+      if (boatCommand === "chum") deployManualBoatChum();
+      return;
+    }
     const autopilotInput = target.closest("[data-submarine-autopilot]");
     if (autopilotInput instanceof HTMLInputElement) {
       setSubmarineAutopilot(getMachineryById(runtime.selectedMachineryId), autopilotInput.checked);
+      return;
+    }
+    const boatAutopilotInput = target.closest("[data-boat-autopilot]");
+    if (boatAutopilotInput instanceof HTMLInputElement) {
+      setBoatAutopilot(getMachineryById(runtime.selectedMachineryId), boatAutopilotInput.checked);
       return;
     }
     const foodButton = target.closest("[data-load-submarine-food]");
@@ -32228,6 +33588,14 @@ function ensureSubmarineManagerElement() {
       transferFoodIntoSubmarine(
         getMachineryById(runtime.selectedMachineryId),
         Number(foodButton.dataset.loadSubmarineFood) || SUBMARINE_RESOURCE_CAPACITY
+      );
+      return;
+    }
+    const chumButton = target.closest("[data-load-boat-chum]");
+    if (chumButton) {
+      transferChumIntoBoat(
+        getMachineryById(runtime.selectedMachineryId),
+        Number(chumButton.dataset.loadBoatChum) || BOAT_RESOURCE_CAPACITY
       );
       return;
     }
@@ -32240,99 +33608,239 @@ function ensureSubmarineManagerElement() {
       );
     }
   });
+  element.addEventListener("pointerdown", (event) => {
+    const button = event.target.closest("[data-drive-key]");
+    if (!button || (!isSubmarineManualDriveActive() && !isBoatManualDriveActive())) return;
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    const activeMachinery = getActiveManualMachinery();
+    if (activeMachinery?.type === MACHINERY_TYPE_BOAT) setBoatManualDriveKey(button.dataset.driveKey, true);
+    else setSubmarineManualDriveKey(button.dataset.driveKey, true);
+  });
+  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    element.addEventListener(type, (event) => {
+      const key = event.target.closest("[data-drive-key]")?.dataset.driveKey;
+      if (key) {
+        setSubmarineManualDriveKey(key, false);
+        setBoatManualDriveKey(key, false);
+      }
+    });
+  }
   document.body.appendChild(element);
   return element;
 }
 
 function openSubmarineManager(machineryId) {
-  const submarine = getMachineryById(machineryId);
-  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) return false;
+  const machinery = getMachineryById(machineryId);
+  if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type)) return false;
   closeFishActionMenu();
   if (runtime.selectedFishId || runtime.selectedFishStatusFishId) closeFishInspector();
-  runtime.selectedMachineryId = submarine.id;
+  if (runtime.selectedMachineryId !== machinery.id) runtime.machinerySettingsOpen = false;
+  runtime.selectedMachineryId = machinery.id;
   renderSubmarineManager();
   return true;
 }
 
 function closeSubmarineManager() {
   runtime.selectedMachineryId = null;
+  runtime.machinerySettingsOpen = false;
   const element = document.querySelector(".submarine-manager");
   if (element instanceof HTMLElement) element.hidden = true;
 }
 
 function renderSubmarineManager() {
   const element = ensureSubmarineManagerElement();
-  const submarine = getMachineryById(runtime.selectedMachineryId);
-  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) {
+  const machinery = getMachineryById(runtime.selectedMachineryId);
+  if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type)) {
     element.hidden = true;
     return;
   }
+  if (machinery.type === MACHINERY_TYPE_BOAT) {
+    renderBoatManager(element, machinery);
+    return;
+  }
+  const submarine = machinery;
   submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
   const foodAvailable = getSubmarinePlayerFoodCount();
   const healthAvailable = Math.max(0, Math.floor(Number(state.medicineInventory?.firstAid) || 0));
   const calmingAvailable = Math.max(0, Math.floor(Number(state.medicineInventory?.betaBlocker) || 0));
-  const warning = isSubmarineOutOfResources(submarine);
   const autopilotEnabled = isSubmarineAutopilotEnabled(submarine);
-  const manualDriveActive = isSubmarineManualDriveActive(submarine);
-  const submarineTank = getSubmarineTank(submarine);
-  const driveHint = autopilotEnabled
-    ? "Automatic care is enabled. The submarine controls itself and responds to fish needs."
-    : manualDriveActive
-      ? `Manual control active: WASD drives, Q/E changes depth, and Space drops food. Layer ${clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER)} of ${TANK_DEPTH_LAYERS}.`
-      : `Manual control is enabled. Go to ${escapeHtml(getTankLabel(submarineTank))} to drive with WASD, change depth with Q/E, and drop food with Space.`;
+  const foodIcon = resolveFoodAndMedAssetPath("basic-food.png");
+  const healthIcon = resolveFoodAndMedAssetPath("first-aid-drops.png");
+  const calmingIcon = resolveFoodAndMedAssetPath("calming-serum.png");
+
   element.innerHTML = `
     <div class="submarine-manager-header">
       <div class="submarine-manager-title">
-        <img src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="" onerror="this.src='assets/icons/tools.png'" />
-        <div><strong>Automated Care Submarine</strong><span>${escapeHtml(autopilotEnabled ? getSubmarineMissionLabel(submarine) : "Manual control")}</span></div>
+        <img src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <strong>Care Submarine</strong>
       </div>
-      <div class="submarine-manager-actions">
-        <button class="small-button alt" type="button" data-close-submarine-manager aria-label="Close submarine controls">Close</button>
+      <div class="submarine-manager-header-actions">
+        <button class="small-button submarine-settings-button ${runtime.machinerySettingsOpen ? "is-active" : ""}" type="button" data-machinery-settings aria-expanded="${runtime.machinerySettingsOpen}">SETTINGS</button>
+        <button class="submarine-manager-close" type="button" data-close-submarine-manager aria-label="Close submarine controls">×</button>
       </div>
     </div>
-    <label class="submarine-autopilot-toggle">
-      <input type="checkbox" data-submarine-autopilot ${autopilotEnabled ? "checked" : ""} />
-      <span><strong>Autopilot</strong><small>${autopilotEnabled ? "ON" : "OFF"}</small></span>
+    ${renderMachineryColorSettingsMarkup(submarine)}
+
+    <label class="submarine-autopilot-toggle ${autopilotEnabled ? "is-on" : "is-off"}">
+      <input class="submarine-autopilot-input" type="checkbox" data-submarine-autopilot ${autopilotEnabled ? "checked" : ""} />
+      <span class="submarine-autopilot-copy">
+        <strong>Autopilot</strong>
+      </span>
+      <span class="submarine-autopilot-switch" aria-hidden="true">
+        <span class="submarine-autopilot-state">${autopilotEnabled ? "ON" : "OFF"}</span>
+        <i></i>
+      </span>
     </label>
-    <div class="submarine-manager-warning ${warning ? "is-warning" : ""}">${warning ? "Supply warning: one or more resources are empty." : "All automatic-care supplies stocked."}</div>
+
+    <div class="submarine-drive-status">
+      <span>${escapeHtml(getSubmarineControlStatus(submarine))}</span>
+      <button type="button" class="small-button" data-drive-submarine>Drive</button>
+    </div>
+    ${!autopilotEnabled ? `<div class="submarine-touch-controls" aria-label="Submarine driving controls">
+      <button type="button" data-drive-key="w" aria-label="Move up">↑</button>
+      <button type="button" data-drive-key="a" aria-label="Move left">←</button>
+      <button type="button" data-drive-key="s" aria-label="Move down">↓</button>
+      <button type="button" data-drive-key="d" aria-label="Move right">→</button>
+      <button type="button" data-submarine-command="near">Near</button>
+      <button type="button" data-submarine-command="far">Far</button>
+      <button type="button" data-submarine-command="food">Feed</button>
+      <span>Depth ${clampTankLayer(submarine.tankLayer)} / ${TANK_DEPTH_LAYERS}</span>
+    </div>` : ""}
     <div class="submarine-resource-list">
       <div class="submarine-resource-row">
-        <div><strong>Food <small>${foodAvailable} available</small></strong><span>${submarine.inventory.food}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
-        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.food / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-resource-body">
+          <div class="submarine-resource-main">
+            <div class="submarine-resource-identity">
+              <img class="submarine-resource-icon" src="${escapeHtml(foodIcon)}" alt="" />
+              <div class="submarine-resource-copy">
+                <div class="submarine-resource-topline"><strong>Food</strong><small>${foodAvailable} available</small></div>
+              </div>
+            </div>
+            <span class="submarine-resource-count">${submarine.inventory.food}/${SUBMARINE_RESOURCE_CAPACITY}</span>
+          </div>
+          <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.food / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        </div>
         <div class="submarine-load-buttons" aria-label="Load food, ${foodAvailable} available">
           <button class="small-button" type="button" data-load-submarine-food="1" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
           <button class="small-button" type="button" data-load-submarine-food="10" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
-          <button class="small-button" type="button" data-load-submarine-food="99" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+          <button class="small-button submarine-load-button-fill" type="button" data-load-submarine-food="99" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
         </div>
       </div>
+
       <div class="submarine-resource-row">
-        <div><strong>Health Drops <small>${healthAvailable} available</small></strong><span>${submarine.inventory.health}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
-        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.health / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-resource-body">
+          <div class="submarine-resource-main">
+            <div class="submarine-resource-identity">
+              <img class="submarine-resource-icon" src="${escapeHtml(healthIcon)}" alt="" />
+              <div class="submarine-resource-copy">
+                <div class="submarine-resource-topline"><strong>Health Drops</strong><small>${healthAvailable} available</small></div>
+              </div>
+            </div>
+            <span class="submarine-resource-count">${submarine.inventory.health}/${SUBMARINE_RESOURCE_CAPACITY}</span>
+          </div>
+          <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.health / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        </div>
         <div class="submarine-load-buttons" aria-label="Load health drops, ${healthAvailable} available">
           <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="1" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
           <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="10" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
-          <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="99" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+          <button class="small-button submarine-load-button-fill" type="button" data-load-submarine-medicine="health" data-load-amount="99" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
         </div>
       </div>
+
       <div class="submarine-resource-row">
-        <div><strong>Calming Drops <small>${calmingAvailable} available</small></strong><span>${submarine.inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
-        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.calming / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-resource-body">
+          <div class="submarine-resource-main">
+            <div class="submarine-resource-identity">
+              <img class="submarine-resource-icon" src="${escapeHtml(calmingIcon)}" alt="" />
+              <div class="submarine-resource-copy">
+                <div class="submarine-resource-topline"><strong>Calming Drops</strong><small>${calmingAvailable} available</small></div>
+              </div>
+            </div>
+            <span class="submarine-resource-count">${submarine.inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}</span>
+          </div>
+          <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.calming / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        </div>
         <div class="submarine-load-buttons" aria-label="Load calming drops, ${calmingAvailable} available">
           <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="1" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
           <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="10" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
-          <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="99" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+          <button class="small-button submarine-load-button-fill" type="button" data-load-submarine-medicine="calming" data-load-amount="99" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
         </div>
       </div>
     </div>
-    <div class="mini-note submarine-manager-note">${driveHint} Food is stored as universal care rations.</div>
   `;
   element.hidden = false;
+}
+
+function renderBoatManager(element = ensureSubmarineManagerElement(), boat = getBoat()) {
+  if (!element || !boat || boat.type !== MACHINERY_TYPE_BOAT) {
+    if (element) element.hidden = true;
+    return;
+  }
+  boat.inventory = sanitizeBoatInventory(boat.inventory);
+  const chumAvailable = getBoatPlayerChumCount();
+  const autopilotEnabled = isBoatAutopilotEnabled(boat);
+  const chumIcon = resolveFoodAndMedAssetPath("chum.png");
+  element.innerHTML = `
+    <div class="submarine-manager-header">
+      <div class="submarine-manager-title">
+        <img src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_BOAT))}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <strong>Chum Skiff</strong>
+      </div>
+      <div class="submarine-manager-header-actions">
+        <button class="small-button submarine-settings-button ${runtime.machinerySettingsOpen ? "is-active" : ""}" type="button" data-machinery-settings aria-expanded="${runtime.machinerySettingsOpen}">SETTINGS</button>
+        <button class="submarine-manager-close" type="button" data-close-submarine-manager aria-label="Close boat controls">×</button>
+      </div>
+    </div>
+    ${renderMachineryColorSettingsMarkup(boat)}
+    <label class="submarine-autopilot-toggle ${autopilotEnabled ? "is-on" : "is-off"}">
+      <input class="submarine-autopilot-input" type="checkbox" data-boat-autopilot ${autopilotEnabled ? "checked" : ""} />
+      <span class="submarine-autopilot-copy"><strong>Autopilot</strong></span>
+      <span class="submarine-autopilot-switch" aria-hidden="true"><span class="submarine-autopilot-state">${autopilotEnabled ? "ON" : "OFF"}</span><i></i></span>
+    </label>
+    <div class="submarine-drive-status">
+      <span>${escapeHtml(getBoatControlStatus(boat))}</span>
+      <button type="button" class="small-button" data-drive-boat>Drive</button>
+    </div>
+    ${!autopilotEnabled ? `<div class="submarine-touch-controls" aria-label="Boat driving controls">
+      <button type="button" data-drive-key="a" aria-label="Move left">←</button>
+      <button type="button" data-drive-key="d" aria-label="Move right">→</button>
+      <button type="button" data-boat-command="chum">Drop Chum</button>
+    </div>` : ""}
+    <div class="submarine-resource-list">
+      <div class="submarine-resource-row">
+        <div class="submarine-resource-body">
+          <div class="submarine-resource-main">
+            <div class="submarine-resource-identity">
+              <img class="submarine-resource-icon" src="${escapeHtml(chumIcon)}" alt="" />
+              <div class="submarine-resource-copy"><div class="submarine-resource-topline"><strong>Chum</strong><small>${chumAvailable} available</small></div></div>
+            </div>
+            <span class="submarine-resource-count">${boat.inventory.chum}/${BOAT_RESOURCE_CAPACITY}</span>
+          </div>
+          <div class="submarine-resource-meter"><i style="width:${(boat.inventory.chum / BOAT_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        </div>
+        <div class="submarine-load-buttons" aria-label="Load chum, ${chumAvailable} available">
+          <button class="small-button" type="button" data-load-boat-chum="1" ${chumAvailable <= 0 || boat.inventory.chum >= BOAT_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
+          <button class="small-button" type="button" data-load-boat-chum="10" ${chumAvailable <= 0 || boat.inventory.chum >= BOAT_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
+          <button class="small-button submarine-load-button-fill" type="button" data-load-boat-chum="99" ${chumAvailable <= 0 || boat.inventory.chum >= BOAT_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+        </div>
+      </div>
+    </div>
+  `;
+  element.hidden = false;
+}
+
+function getBoatControlStatus(boat = getBoat()) {
+  if (getBoatEntryProgress(boat) !== null) return "Entering tank…";
+  if (isBoatAutopilotEnabled(boat)) return "Skipping the surface";
+  return isBoatManualDriveActive(boat)
+    ? "A/D move · H horn · Space drop chum"
+    : "Drive paused · close editing or care tools";
 }
 
 function renderSubmarineShopCard() {
   const submarine = getSubmarine();
   const owned = isSubmarineOwned();
-  const affordable = state.coins >= SUBMARINE_COST;
   const status = !owned
     ? "Available"
     : submarine
@@ -32340,7 +33848,7 @@ function renderSubmarineShopCard() {
       : "Sold out | Yours is in equipment storage";
   return `
     <article class="shop-card submarine-shop-card ${owned ? "is-sold-out" : ""}">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
       <div class="shop-meta shop-card-main">
         <div>
           <strong>Automated Care Submarine</strong>
@@ -32352,18 +33860,123 @@ function renderSubmarineShopCard() {
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)}</span>
         <div class="shop-button-row">
-          <button class="buy-button" data-buy-submarine="true" ${owned || !affordable ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Submarine"}</button>
+          <button class="buy-button" data-buy-submarine="true" ${owned ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Submarine"}</button>
         </div>
       </div>
     </article>
   `;
 }
 
+function renderBoatShopCard() {
+  const boat = getBoat();
+  const owned = isBoatOwned();
+  const status = !owned
+    ? "Available"
+    : boat
+      ? `Sold out | Yours is deployed in ${getTankLabel(getBoatTank(boat))}`
+      : "Sold out | Yours is in equipment storage";
+  return `
+    <article class="shop-card boat-shop-card ${owned ? "is-sold-out" : ""}">
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_BOAT))}" alt="Chum Skiff" onerror="this.src='assets/icons/tools.png'" />
+      <div class="shop-meta shop-card-main">
+        <div><strong>Chum Skiff</strong><div class="fish-meta">${escapeHtml(status)}</div></div>
+        <div class="fish-meta">A surface skiff that skips back and forth across the water and drops chum on command.</div>
+        <div class="mini-note">Carries ${BOAT_RESOURCE_CAPACITY} chum. One skiff can be purchased.</div>
+      </div>
+      <div class="shop-meta shop-card-actions">
+        <span class="price-tag">${BOAT_COST} ${pluralize("coin", BOAT_COST)}</span>
+        <div class="shop-button-row"><button class="buy-button" data-buy-boat="true" ${owned ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Boat"}</button></div>
+      </div>
+    </article>
+  `;
+}
+
+function closeEditEquipmentTrayContextMenu(options = {}) {
+  runtime.editEquipmentTrayContextMenuState.machineryId = null;
+  runtime.editEquipmentTrayContextMenuState.anchorX = 0;
+  runtime.editEquipmentTrayContextMenuState.anchorY = 0;
+  if (options.render !== false) renderEditEquipmentTrayContextMenu();
+}
+
+function openEditEquipmentTrayContextMenu(machineryId, anchor = null) {
+  const machinery = getMachineryById(machineryId);
+  const currentTank = getCurrentTank();
+  if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type) || machinery.tankId !== currentTank?.id) {
+    closeEditEquipmentTrayContextMenu();
+    return false;
+  }
+  const nextAnchor = resolveEditTrayContextMenuAnchor(dom.editEquipmentTray, anchor);
+  runtime.editEquipmentTrayContextMenuState.machineryId = machinery.id;
+  runtime.editEquipmentTrayContextMenuState.anchorX = nextAnchor.x;
+  runtime.editEquipmentTrayContextMenuState.anchorY = nextAnchor.y;
+  renderEditEquipmentTrayContextMenu();
+  return true;
+}
+
+function renderEditEquipmentTrayContextMenu() {
+  const tray = dom.editEquipmentTray;
+  const scroller = dom.editEquipmentTrayScroller;
+  const menu = dom.editEquipmentTrayContextMenu;
+  if (!tray || !menu) return;
+
+  const machinery = getMachineryById(runtime.editEquipmentTrayContextMenuState.machineryId);
+  const currentTank = getCurrentTank();
+  const isVisible = Boolean(
+    runtime.equipmentEditMode
+    && !tray.hidden
+    && [MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery?.type)
+    && machinery.tankId === currentTank?.id
+  );
+
+  tray.classList.toggle("has-context-menu", isVisible);
+  if (scroller) {
+    for (const button of scroller.querySelectorAll("[data-tray-select-submarine], [data-tray-select-boat]")) {
+      button.closest(".edit-decor-tile")?.classList.toggle(
+        "is-context-open",
+        isVisible && (button.dataset.traySelectSubmarine || button.dataset.traySelectBoat) === machinery?.id
+      );
+    }
+  }
+
+  if (!isVisible || !machinery) {
+    menu.hidden = true;
+    menu.style.left = "";
+    menu.style.top = "";
+    return;
+  }
+
+  const isBoat = machinery.type === MACHINERY_TYPE_BOAT;
+  const inventory = isBoat ? sanitizeBoatInventory(machinery.inventory) : sanitizeSubmarineInventory(machinery.inventory);
+  const markup = `
+    <div class="edit-fish-tray-context-card">
+      <div class="edit-fish-tray-context-copy"><strong>${isBoat ? "Chum Skiff" : "Automated Care Submarine"}</strong><span>${isBoat ? `Chum ${inventory.chum}/99` : `Food ${inventory.food}/99 | Health ${inventory.health}/99 | Calm ${inventory.calming}/99`}</span></div>
+      <button
+        class="edit-fish-tray-context-action"
+        type="button"
+        ${isBoat ? `data-tray-store-boat="${escapeHtml(machinery.id)}"` : `data-tray-store-submarine="${escapeHtml(machinery.id)}"`}
+      >
+        Put Away
+      </button>
+    </div>
+  `;
+  setMarkupIfChanged("edit-equipment-tray-context-menu", menu, markup);
+  menu.hidden = false;
+  positionEditTrayContextMenu(
+    tray,
+    menu,
+    runtime.editEquipmentTrayContextMenuState.anchorX,
+    runtime.editEquipmentTrayContextMenuState.anchorY
+  );
+}
+
 function renderEditEquipmentTray() {
   const visible = runtime.equipmentEditMode === true;
   if (dom.editEquipmentTray) dom.editEquipmentTray.hidden = !visible;
   syncTankTrayStageClass();
-  if (!visible || !dom.editEquipmentTray || !dom.editEquipmentTrayScroller) return;
+  if (!visible || !dom.editEquipmentTray || !dom.editEquipmentTrayScroller) {
+    closeEditEquipmentTrayContextMenu();
+    return;
+  }
 
   for (const tab of dom.editEquipmentTray.querySelectorAll("[data-edit-overlay-mode]")) {
     const selected = tab.dataset.editOverlayMode === "equipment";
@@ -32381,98 +33994,210 @@ function renderEditEquipmentTray() {
   }
 
   const submarine = getSubmarine();
-  const owned = isSubmarineOwned();
+  const boat = getBoat();
+  const storedSubmarine = getStoredSubmarineState();
+  const storedBoat = getStoredBoatState();
+  const submarineOwned = isSubmarineOwned();
+  const boatOwned = isBoatOwned();
   const currentTank = getCurrentTank();
   const submarineTank = getSubmarineTank(submarine);
-  const deployedHere = Boolean(submarine && currentTank && submarine.tankId === currentTank.id);
-  const stored = Boolean(owned && !submarine);
-  const shouldShowTile = activeLocationTab === "storage" ? stored : deployedHere;
+  const boatTank = getBoatTank(boat);
+  const machineryEntries = activeLocationTab === "storage"
+    ? [
+      storedSubmarine ? { item: storedSubmarine, type: MACHINERY_TYPE_SUBMARINE, stored: true } : null,
+      // A newly purchased machine has ownership but no persisted storage
+      // record until it is deployed once. Show that owned machine here so
+      // purchase immediately exposes the same Place action as a recalled one.
+      !storedSubmarine && !submarine && submarineOwned
+        ? {
+          item: { type: MACHINERY_TYPE_SUBMARINE, inventory: sanitizeSubmarineInventory(null) },
+          type: MACHINERY_TYPE_SUBMARINE,
+          stored: true
+        }
+        : null,
+      storedBoat ? { item: storedBoat, type: MACHINERY_TYPE_BOAT, stored: true } : null,
+      !storedBoat && !boat && boatOwned
+        ? {
+          item: { type: MACHINERY_TYPE_BOAT, inventory: sanitizeBoatInventory(null) },
+          type: MACHINERY_TYPE_BOAT,
+          stored: true
+        }
+        : null
+    ].filter(Boolean)
+    : [
+      submarine && submarine.tankId === currentTank?.id ? { item: submarine, type: MACHINERY_TYPE_SUBMARINE, stored: false } : null,
+      boat && boat.tankId === currentTank?.id ? { item: boat, type: MACHINERY_TYPE_BOAT, stored: false } : null
+    ].filter(Boolean);
 
-  let markup = "";
-  if (shouldShowTile) {
-    const food = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.food) : 0;
-    const health = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.health) : 0;
-    const calming = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.calming) : 0;
-    const actionLabel = stored
-      ? "Place Automated Care Submarine in this tank"
-      : "Manage Automated Care Submarine";
-    markup = `
-      <article class="edit-decor-tile" data-decor-name="Automated Care Submarine">
+  const renderMachineryTile = ({ item, type, stored }) => {
+    const isBoat = type === MACHINERY_TYPE_BOAT;
+    const inventory = isBoat ? sanitizeBoatInventory(item.inventory) : sanitizeSubmarineInventory(item.inventory);
+    const label = isBoat ? "Chum Skiff" : "Automated Care Submarine";
+    const imagePath = isBoat ? getMachineryImagePath(MACHINERY_TYPE_BOAT) : getMachineryImagePath(MACHINERY_TYPE_SUBMARINE);
+    const actionLabel = stored ? `Place ${label} in this tank` : `Manage ${label}`;
+    const selector = stored
+      ? (isBoat ? "data-tray-place-boat=\"true\"" : "data-tray-place-submarine=\"true\"")
+      : (isBoat ? `data-tray-select-boat="${escapeHtml(item.id)}"` : `data-tray-select-submarine="${escapeHtml(item.id)}"`);
+    const resourceNote = isBoat
+      ? `Chum ${inventory.chum}/${BOAT_RESOURCE_CAPACITY}`
+      : `Food ${inventory.food}/${SUBMARINE_RESOURCE_CAPACITY} | Health ${inventory.health}/${SUBMARINE_RESOURCE_CAPACITY} | Calm ${inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}`;
+    return `
+      <article class="edit-decor-tile" data-decor-name="${label}">
+        ${!stored ? `<button class="edit-decor-tile-menu-button" type="button" data-open-equipment-menu="${escapeHtml(item.id)}" aria-label="${label} options">…</button>` : ""}
         <button
           class="edit-decor-tile-primary"
           type="button"
-          ${stored ? "data-tray-place-submarine=\"true\"" : `data-tray-select-submarine="${escapeHtml(submarine.id)}"`}
+          ${selector}
           title="${actionLabel}"
           aria-label="${actionLabel}"
         >
           <span class="edit-decor-tile-surface">
-            <img class="edit-decor-tile-thumb" src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+            <img class="edit-decor-tile-thumb" src="${escapeHtml(imagePath)}" alt="${label}" onerror="this.src='assets/icons/tools.png'" />
             <span class="inventory-tray-label">${stored ? "Storage" : "In Tank"}</span>
           </span>
         </button>
-        ${submarine ? `<div class="mini-note edit-equipment-resource-note">Food ${food}/99 | Health ${health}/99 | Calm ${calming}/99</div>` : ""}
+        <div class="mini-note edit-equipment-resource-note">${resourceNote}</div>
       </article>
     `;
-  } else if (!owned) {
-    markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy the Automated Care Submarine in Tankazon &gt; Equipment.</div>`;
-  } else if (submarine && !deployedHere) {
-    const otherTankLabel = getTankLabel(submarineTank);
-    markup = `<div class="edit-decor-tray-empty">Your submarine is deployed in ${escapeHtml(otherTankLabel)}. Visit that tank and scoop it into storage before placing it here.</div>`;
-  } else {
-    markup = `<div class="edit-decor-tray-empty">${activeLocationTab === "tank" ? "No equipment is deployed in this tank." : "Equipment storage is empty."}</div>`;
+  };
+
+  let markup = machineryEntries.map(renderMachineryTile).join("");
+  if (!markup && activeLocationTab === "storage" && (submarineOwned || boatOwned)) {
+    const foreignMachine = submarine && !machineryEntries.some((entry) => entry.item.id === submarine.id)
+      ? { label: "submarine", tank: submarineTank, visitAttribute: "data-visit-submarine-tank" }
+      : boat && !machineryEntries.some((entry) => entry.item.id === boat.id)
+        ? { label: "boat", tank: boatTank, visitAttribute: "data-visit-boat-tank" }
+        : null;
+    if (foreignMachine?.tank) {
+      markup = `<div class="edit-decor-tray-empty">Your ${foreignMachine.label} is deployed in ${escapeHtml(getTankLabel(foreignMachine.tank))}. Visit that tank to put it into storage. <button type="button" class="small-button" ${foreignMachine.visitAttribute}>Go to tank</button></div>`;
+    }
+  }
+  if (!markup) {
+    if (!submarineOwned && !boatOwned) {
+      markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy a submarine or boat in Tankazon &gt; Equipment.</div>`;
+    } else {
+      markup = `<div class="edit-decor-tray-empty">${activeLocationTab === "tank" ? "No equipment is deployed in this tank." : "Equipment storage is empty."}</div>`;
+    }
   }
 
   const dataKey = [
     activeLocationTab,
-    owned ? "owned" : "not-owned",
+    submarineOwned ? "sub-owned" : "sub-not-owned",
+    boatOwned ? "boat-owned" : "boat-not-owned",
     submarine?.id || "",
     submarine?.tankId || "",
     submarine ? normalizeSubmarineResourceCount(submarine.inventory?.food) : 0,
     submarine ? normalizeSubmarineResourceCount(submarine.inventory?.health) : 0,
     submarine ? normalizeSubmarineResourceCount(submarine.inventory?.calming) : 0,
-    currentTank?.id || ""
+    storedSubmarine ? normalizeSubmarineResourceCount(storedSubmarine.inventory?.food) : 0,
+    storedSubmarine ? normalizeSubmarineResourceCount(storedSubmarine.inventory?.health) : 0,
+    storedSubmarine ? normalizeSubmarineResourceCount(storedSubmarine.inventory?.calming) : 0,
+    currentTank?.id || "",
+    submarineTank?.name || "",
+    boat?.id || "",
+    boat?.tankId || "",
+    boat ? normalizeBoatResourceCount(boat.inventory?.chum) : 0,
+    storedBoat ? normalizeBoatResourceCount(storedBoat.inventory?.chum) : 0,
+    boatTank?.name || ""
   ].join("|");
   if (shouldRebuildRenderSection("edit-equipment-tray-data", dataKey)) {
     setMarkupIfChanged("edit-equipment-tray", dom.editEquipmentTrayScroller, markup);
   }
+  renderEditEquipmentTrayContextMenu();
 }
 
 function getSubmarineDrawMetrics(submarine, now = Date.now()) {
   if (!submarine) return null;
-  const image = runtime.images.get(SUBMARINE_IMAGE_PATH) || null;
+  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE)) || null;
   if (!isUsableRuntimeImage(image)) {
-    requestRuntimeImageRecovery(SUBMARINE_IMAGE_PATH, { kind: "machinery", id: MACHINERY_TYPE_SUBMARINE });
+    requestRuntimeImageRecovery(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE), { kind: "machinery", id: MACHINERY_TYPE_SUBMARINE });
   }
   const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 3);
   const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
   const tankLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
   const depthScale = clamp(1 + (SUBMARINE_DEFAULT_TANK_LAYER - tankLayer) * 0.04, 0.86, 1.08);
-  const width = SUBMARINE_DRAW_WIDTH_PX * depthScale;
-  const height = clamp(width * (naturalHeight / naturalWidth), 50, 124);
-  const velocityX = Number(submarine.manualVelocityXPxPerSecond) || 0;
-  const velocityY = Number(submarine.manualVelocityYPxPerSecond) || 0;
+  const baseWidth = SUBMARINE_DRAW_WIDTH_PX;
+  const baseHeight = clamp(baseWidth * (naturalHeight / naturalWidth), 50, 124);
+  const width = baseWidth * depthScale;
+  const height = baseHeight * depthScale;
+  const velocityX = Number(submarine.motionVelocityXPxPerSecond ?? submarine.manualVelocityXPxPerSecond) || 0;
+  const velocityY = Number(submarine.motionVelocityYPxPerSecond ?? submarine.manualVelocityYPxPerSecond) || 0;
   const speedRatio = clamp(Math.hypot(velocityX, velocityY) / SUBMARINE_MANUAL_SPEED_PX_PER_SECOND, 0, 1);
   const phase = (hashStringToUint32(String(submarine.id || "submarine")) % 1000) / 1000 * Math.PI * 2;
-  const bobAmplitude = SUBMARINE_IDLE_BOB_AMPLITUDE_PX * (1 - speedRatio * 0.68) * depthScale;
+  const entryProgress = getSubmarineEntryProgress(submarine, now);
+  const easedEntry = entryProgress === null ? null : 1 - Math.pow(1 - entryProgress, 3);
+  const renderYNorm = easedEntry === null || !Number.isFinite(Number(submarine.entryFromYNorm))
+    ? Number(submarine.yNorm)
+    : Number(submarine.entryFromYNorm) + (Number(submarine.yNorm) - Number(submarine.entryFromYNorm)) * easedEntry;
+  const bobAmplitude = SUBMARINE_IDLE_BOB_AMPLITUDE_PX * (1 - speedRatio * 0.68) * depthScale * (entryProgress === null ? 1 : entryProgress);
   const bob = Math.sin(now / SUBMARINE_IDLE_BOB_PERIOD_MS * Math.PI * 2 + phase) * bobAmplitude;
   const idleRock = Math.sin(now / (SUBMARINE_IDLE_BOB_PERIOD_MS * 1.35) * Math.PI * 2 + phase * 0.7) * (Math.PI / 180) * 0.75 * (1 - speedRatio * 0.72);
   const verticalTilt = clamp(velocityY / Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND), -1, 1) * (Math.PI / 180) * 2.2;
+  const turn = getMachineryTurnRenderState(submarine, now, SUBMARINE_TURN_LEAN_RADIANS);
   return {
     image,
-    x: Number(submarine.xNorm) * TANK_WIDTH,
-    y: Number(submarine.yNorm) * TANK_HEIGHT + bob,
+    x: Number(submarine.xNorm) * TANK_WIDTH + turn.swayX,
+    y: renderYNorm * TANK_HEIGHT + bob,
     width,
     height,
-    direction: Number(submarine.direction) < 0 ? -1 : 1,
+    direction: turn.direction,
+    turnScaleX: turn.scaleX,
+    turnScaleY: turn.scaleY,
     tankLayer,
-    rotation: idleRock + verticalTilt
+    rotation: idleRock + verticalTilt + turn.lean,
+    entryProgress
+  };
+}
+
+function getBoatDrawMetrics(boat, now = Date.now()) {
+  if (!boat) return null;
+  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_BOAT)) || null;
+  if (!isUsableRuntimeImage(image)) {
+    requestRuntimeImageRecovery(getMachineryImagePath(MACHINERY_TYPE_BOAT), { kind: "machinery", id: MACHINERY_TYPE_BOAT });
+  }
+  const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 1);
+  const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
+  const width = BOAT_DRAW_WIDTH_PX;
+  const height = clamp(width * (naturalHeight / naturalWidth), 86, 240);
+  const velocityX = Number(boat.motionVelocityXPxPerSecond ?? boat.manualVelocityXPxPerSecond) || 0;
+  const speedRatio = clamp(Math.abs(velocityX) / BOAT_MANUAL_SPEED_PX_PER_SECOND, 0, 1);
+  const phase = (hashStringToUint32(String(boat.id || "boat")) % 1000) / 1000 * Math.PI * 2;
+  const entryProgress = getBoatEntryProgress(boat, now);
+  const easedEntry = entryProgress === null ? null : 1 - Math.pow(1 - entryProgress, 3);
+  // The skiff rides low at the surface, with the hull settling below the
+  // waterline while the cabin remains above it.
+  const surfaceCenterY = WATER_SURFACE_Y - height * 0.5 + BOAT_SURFACE_BOTTOM_GAP_PX;
+  const entryFromY = Number.isFinite(Number(boat.entryFromYNorm))
+    ? Number(boat.entryFromYNorm) * TANK_HEIGHT
+    : WATER_SURFACE_Y - height * 0.9;
+  const renderY = easedEntry === null
+    ? surfaceCenterY
+    : entryFromY + (surfaceCenterY - entryFromY) * easedEntry;
+  const bobAmplitude = BOAT_IDLE_BOB_AMPLITUDE_PX * (1 - speedRatio * 0.72) * (entryProgress === null ? 1 : entryProgress);
+  const bob = Math.sin(now / BOAT_IDLE_BOB_PERIOD_MS * Math.PI * 2 + phase) * bobAmplitude;
+  const rock = Math.sin(now / (BOAT_IDLE_BOB_PERIOD_MS * 1.25) * Math.PI * 2 + phase * 0.55)
+    * (Math.PI / 180) * 1.15 * (1 - speedRatio * 0.8);
+  const travelTilt = clamp(velocityX / Math.max(1, BOAT_MANUAL_SPEED_PX_PER_SECOND), -1, 1) * (Math.PI / 180) * 2.2;
+  const turn = getMachineryTurnRenderState(boat, now, BOAT_TURN_LEAN_RADIANS);
+  return {
+    image,
+    x: Number(boat.xNorm) * TANK_WIDTH + turn.swayX,
+    y: renderY + bob,
+    width,
+    height,
+    direction: turn.direction,
+    turnScaleX: turn.scaleX,
+    turnScaleY: turn.scaleY,
+    tankLayer: BOAT_SURFACE_LAYER,
+    rotation: rock + travelTilt + turn.lean,
+    entryProgress
   };
 }
 
 function drawSubmarineSpotlight(submarine, metrics) {
   if (!submarine?.mission || !metrics || !isSubmarineAutopilotEnabled(submarine)) return;
   const direction = metrics.direction;
-  const noseX = metrics.x + direction * metrics.width * 0.47;
+  const noseX = metrics.x + direction * metrics.width * 0.47 * (Number(metrics.turnScaleX) || 1);
   const noseY = metrics.y + metrics.height * 0.05;
   const endX = noseX + direction * SUBMARINE_SPOTLIGHT_LENGTH_PX;
   const spread = 105;
@@ -32497,126 +34222,371 @@ function drawSubmarineWarningLight(submarine, metrics, now = Date.now()) {
   if (!isSubmarineOutOfResources(submarine) || !metrics) return;
   const blinkOn = Math.floor(now / SUBMARINE_RED_LIGHT_BLINK_MS) % 2 === 0;
   if (!blinkOn) return;
-  const direction = metrics.direction;
-  const lightX = metrics.x - direction * metrics.width * 0.06;
-  const lightY = metrics.y - metrics.height * 0.48;
+  const localX = (SUBMARINE_WARNING_LIGHT_X_NORM - 0.5) * metrics.width * metrics.direction * (Number(metrics.turnScaleX) || 1);
+  const localY = (SUBMARINE_WARNING_LIGHT_Y_NORM - 0.5) * metrics.height * (Number(metrics.turnScaleY) || 1);
+  const rotation = Number(metrics.rotation) || 0;
+  const cosRotation = Math.cos(rotation);
+  const sinRotation = Math.sin(rotation);
+  const lightX = metrics.x + localX * cosRotation - localY * sinRotation;
+  const lightY = metrics.y + localX * sinRotation + localY * cosRotation;
   tankContext.save();
   tankContext.globalCompositeOperation = "screen";
-  const glow = tankContext.createRadialGradient(lightX, lightY, 1, lightX, lightY, 22);
+  const glowRadius = clamp(metrics.width * 0.095, 13, 22);
+  const glow = tankContext.createRadialGradient(lightX, lightY, 1, lightX, lightY, glowRadius);
   glow.addColorStop(0, "rgba(255,245,245,1)");
   glow.addColorStop(0.2, "rgba(255,70,70,0.95)");
   glow.addColorStop(1, "rgba(255,0,0,0)");
   tankContext.fillStyle = glow;
   tankContext.beginPath();
-  tankContext.arc(lightX, lightY, 22, 0, Math.PI * 2);
+  tankContext.arc(lightX, lightY, glowRadius, 0, Math.PI * 2);
   tankContext.fill();
   tankContext.fillStyle = "rgba(255,45,45,0.98)";
   tankContext.beginPath();
-  tankContext.arc(lightX, lightY, 5.5, 0, Math.PI * 2);
+  tankContext.arc(lightX, lightY, clamp(metrics.width * 0.018, 3.1, 5.2), 0, Math.PI * 2);
   tankContext.fill();
   tankContext.restore();
 }
 
-function drawSubmarineBubbleJets(submarine, metrics, now = Date.now()) {
-  if (!submarine || !metrics || !isSubmarineManualDriveActive(submarine)) return;
-  const input = getSubmarineManualInputVector();
-  const horizontalThrust = Math.abs(input.x);
-  const verticalThrust = Math.abs(input.y);
-  if (horizontalThrust <= 0.001 && verticalThrust <= 0.001) return;
+function getSubmarineBubbleMotionState(submarine) {
+  if (!submarine) return null;
+  const velocityX = Number(submarine.motionVelocityXPxPerSecond ?? submarine.manualVelocityXPxPerSecond) || 0;
+  const velocityY = Number(submarine.motionVelocityYPxPerSecond ?? submarine.manualVelocityYPxPerSecond) || 0;
 
-  const velocityX = Math.abs(Number(submarine.manualVelocityXPxPerSecond) || 0);
-  const velocityY = Math.abs(Number(submarine.manualVelocityYPxPerSecond) || 0);
-  const horizontalSpeedRatio = clamp(velocityX / SUBMARINE_MANUAL_SPEED_PX_PER_SECOND, 0, 1);
-  const verticalSpeedRatio = clamp(velocityY / Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND * SUBMARINE_MANUAL_VERTICAL_SPEED_SCALE), 0, 1);
-  const item = {
-    id: `${submarine.id}-thruster`,
-    decorKey: "submarine-thruster",
-    xNorm: submarine.xNorm,
-    yNorm: submarine.yNorm,
-    scale: 1,
-    flipped: metrics.direction < 0,
-    flippedY: false
+  if (isSubmarineManualDriveActive(submarine)) {
+    const input = getSubmarineManualInputVector();
+    return {
+      horizontalPower: Math.abs(input.x),
+      verticalPower: Math.abs(input.y),
+      ascending: input.y < 0,
+      velocityX,
+      velocityY
+    };
+  }
+
+  if (!isSubmarineAutopilotEnabled(submarine)) return null;
+  const cruiseReference = Math.max(1, SUBMARINE_CRUISE_SPEED_PX_PER_SECOND);
+  const horizontalPower = Math.abs(velocityX) < 4
+    ? 0
+    : clamp(Math.abs(velocityX) / cruiseReference, 0, 1);
+  const verticalPower = Math.abs(velocityY) < 4
+    ? 0
+    : clamp(Math.abs(velocityY) / cruiseReference, 0, 1);
+  return {
+    horizontalPower,
+    verticalPower,
+    ascending: velocityY < 0,
+    velocityX,
+    velocityY
   };
+}
+
+function buildSubmarineBubbleSpouts(submarine, metrics) {
+  const motion = getSubmarineBubbleMotionState(submarine);
+  if (!motion) return [];
   const spouts = [];
 
-  if (horizontalThrust > 0.001) {
+  if (motion.horizontalPower > 0.001) {
+    const speedRatio = clamp(
+      Math.abs(motion.velocityX) / Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND),
+      0,
+      1
+    );
     const rearDirection = metrics.direction > 0 ? "left" : "right";
-    spouts.push({
-      horizontalLocation: 0.055,
+    spouts.push(buildBubblerSpoutFromSettings({
+      amount: clamp(21 + motion.horizontalPower * 3, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
+      speed: clamp(2.4 + speedRatio * 1.6, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
+      direction: rearDirection,
+      bubblePopEnabled: true,
+      bubbleMalformed: true,
+      bubbleMalformedIntensity: MAX_BUBBLER_MALFORMED_INTENSITY,
+      bubbleMalformedSpeed: 0.5
+    }, {
+      horizontalLocation: SUBMARINE_REAR_BUBBLE_X_NORM,
       horizontalOffsetPx: null,
-      intensity: clamp(10 + horizontalSpeedRatio * 13, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
-      spread: 13 + horizontalSpeedRatio * 12,
-      fadeDistance: 92 + horizontalSpeedRatio * 74,
-      bubbleColor: DEFAULT_BUBBLER_BUBBLE_COLOR,
-      bubbleColors: [DEFAULT_BUBBLER_BUBBLE_COLOR],
-      bubbleColorize: false,
-      bubbleSize: 0.8 + horizontalSpeedRatio * 0.32,
-      bubbleOpacity: clamp(DEFAULT_BUBBLER_BUBBLE_OPACITY * 1.06, MIN_CUSTOM_BUBBLER_OPACITY, MAX_CUSTOM_BUBBLER_OPACITY),
-      bubbleFillTintEnabled: DEFAULT_BUBBLER_FILL_TINT_ENABLED,
-      bubbleFillOpacity: DEFAULT_BUBBLER_FILL_OPACITY,
-      bubblePopEnabled: false,
-      bubbleMalformed: DEFAULT_BUBBLER_MALFORMED_ENABLED,
-      bubbleMalformedIntensity: DEFAULT_BUBBLER_MALFORMED_INTENSITY,
-      bubbleMalformedSpeed: DEFAULT_BUBBLER_MALFORMED_SPEED,
-      speed: clamp(2.15 + horizontalSpeedRatio * 1.35, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
-      direction: rearDirection
-    });
+      verticalLocation: SUBMARINE_REAR_BUBBLE_Y_NORM
+    }));
   }
 
-  if (verticalThrust > 0.001) {
-    spouts.push({
-      horizontalLocation: 0.5,
-      horizontalOffsetPx: null,
-      intensity: clamp(3.8 + verticalSpeedRatio * 5.8, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
-      spread: 18 + verticalSpeedRatio * 9,
-      fadeDistance: 70 + verticalSpeedRatio * 48,
-      bubbleColor: DEFAULT_BUBBLER_BUBBLE_COLOR,
-      bubbleColors: [DEFAULT_BUBBLER_BUBBLE_COLOR],
-      bubbleColorize: false,
-      bubbleSize: 0.64 + verticalSpeedRatio * 0.2,
-      bubbleOpacity: clamp(DEFAULT_BUBBLER_BUBBLE_OPACITY * 0.86, MIN_CUSTOM_BUBBLER_OPACITY, MAX_CUSTOM_BUBBLER_OPACITY),
-      bubbleFillTintEnabled: DEFAULT_BUBBLER_FILL_TINT_ENABLED,
-      bubbleFillOpacity: DEFAULT_BUBBLER_FILL_OPACITY,
-      bubblePopEnabled: false,
-      bubbleMalformed: DEFAULT_BUBBLER_MALFORMED_ENABLED,
-      bubbleMalformedIntensity: DEFAULT_BUBBLER_MALFORMED_INTENSITY,
-      bubbleMalformedSpeed: DEFAULT_BUBBLER_MALFORMED_SPEED,
-      speed: clamp(0.78 + verticalSpeedRatio * 0.62, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
-      direction: "up"
-    });
+  if (motion.verticalPower > 0.001) {
+    const verticalReference = Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND * SUBMARINE_MANUAL_VERTICAL_SPEED_SCALE);
+    const speedRatio = clamp(Math.abs(motion.velocityY) / verticalReference, 0, 1);
+    const intensityFloor = motion.ascending ? 18 : 14;
+    const intensityRange = motion.ascending ? 4 : 4;
+    const pressureSettings = {
+      amount: clamp(intensityFloor + motion.verticalPower * intensityRange, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
+      speed: clamp((motion.ascending ? 1.15 : 0.9) + speedRatio * (motion.ascending ? 0.85 : 0.65), MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
+      direction: "up",
+      bubblePopEnabled: true,
+      bubbleMalformed: true,
+      bubbleMalformedIntensity: MAX_BUBBLER_MALFORMED_INTENSITY,
+      bubbleMalformedSpeed: 0.5
+    };
+    for (const horizontalLocation of [SUBMARINE_PRESSURE_BUBBLE_LEFT_X_NORM, SUBMARINE_PRESSURE_BUBBLE_RIGHT_X_NORM]) {
+      spouts.push(buildBubblerSpoutFromSettings(pressureSettings, {
+        horizontalLocation,
+        horizontalOffsetPx: null,
+        verticalLocation: SUBMARINE_PRESSURE_BUBBLE_Y_NORM
+      }));
+    }
   }
 
-  if (!spouts.length) return;
-  const decor = {
-    path: SUBMARINE_IMAGE_PATH,
-    bubbler: { spoutQty: spouts.length, spouts }
-  };
-  drawDecorBubblerEffectToContext(tankContext, item, decor, metrics.image, now, {
-    width: metrics.width,
-    height: metrics.height,
-    drawX: metrics.x - metrics.width / 2,
-    drawY: metrics.y - metrics.height / 2,
-    alphaScale: 1,
-    stableScale: getViewportStableAssetScale(),
-    waterSurfaceY: WATER_SURFACE_Y
+  return spouts;
+}
+
+function getBoatBubbleMotionState(boat) {
+  if (!boat) return null;
+  const velocityX = Number(boat.motionVelocityXPxPerSecond ?? boat.manualVelocityXPxPerSecond) || 0;
+
+  if (isBoatManualDriveActive(boat)) {
+    const input = getBoatManualInputVector();
+    return {
+      horizontalPower: Math.abs(input.x),
+      velocityX
+    };
+  }
+
+  if (!isBoatAutopilotEnabled(boat)) return null;
+  const cruiseReference = Math.max(1, BOAT_CRUISE_SPEED_PX_PER_SECOND);
+  const horizontalPower = Math.abs(velocityX) < 4
+    ? 0
+    : clamp(Math.abs(velocityX) / cruiseReference, 0, 1);
+  return { horizontalPower, velocityX };
+}
+
+function buildBoatBubbleSpouts(boat, metrics) {
+  const motion = getBoatBubbleMotionState(boat);
+  if (!motion || motion.horizontalPower <= 0.001) return [];
+  const speedRatio = clamp(
+    Math.abs(motion.velocityX) / Math.max(1, BOAT_MANUAL_SPEED_PX_PER_SECOND),
+    0,
+    1
+  );
+  const rearDirection = metrics.direction > 0 ? "left" : "right";
+  return [buildBubblerSpoutFromSettings({
+    amount: clamp(21 + motion.horizontalPower * 3, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
+    speed: clamp(2.4 + speedRatio * 1.6, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
+    direction: rearDirection,
+    bubblePopEnabled: true,
+    bubbleMalformed: true,
+    bubbleMalformedIntensity: MAX_BUBBLER_MALFORMED_INTENSITY,
+    bubbleMalformedSpeed: 0.5
+  }, {
+    horizontalLocation: BOAT_REAR_BUBBLE_X_NORM,
+    horizontalOffsetPx: null,
+    verticalLocation: BOAT_REAR_BUBBLE_Y_NORM
+  })];
+}
+
+function queueBoatBubbleBurst(boat, metrics, now = Date.now()) {
+  if (!boat || !metrics || getBoatEntryProgress(boat, now) !== null) return;
+  if (!(runtime.boatBubbleEmitterState instanceof Map)) {
+    runtime.boatBubbleEmitterState = new Map();
+  }
+  if (!Array.isArray(runtime.boatBubbleBursts)) {
+    runtime.boatBubbleBursts = [];
+  }
+
+  const spouts = buildBoatBubbleSpouts(boat, metrics);
+  const emitterKey = `${boat.id}|${boat.tankId}|${metrics.tankLayer}`;
+  if (!spouts.length) {
+    runtime.boatBubbleEmitterState.delete(emitterKey);
+    return;
+  }
+
+  const previousSampleAt = Number(runtime.boatBubbleEmitterState.get(emitterKey));
+  if (!Number.isFinite(previousSampleAt)) {
+    runtime.boatBubbleEmitterState.set(emitterKey, now);
+    return;
+  }
+  if (now - previousSampleAt < SUBMARINE_BUBBLE_EMITTER_SAMPLE_MS) return;
+
+  const emissionStartedAtMs = previousSampleAt;
+  const emissionEndedAtMs = now;
+  runtime.boatBubbleEmitterState.set(emitterKey, now);
+  const maxTravelDurationMs = Math.max(
+    ...spouts.map((spout) => getBubblerTravelDurationFromSpeed(spout.speed))
+  );
+  runtime.boatBubbleBursts.push({
+    id: `${boat.id}-bubble-jet`,
+    tankId: boat.tankId,
+    tankLayer: metrics.tankLayer,
+    x: metrics.x,
+    y: metrics.y,
+    width: metrics.width * (Number(metrics.turnScaleX) || 1),
+    height: metrics.height * (Number(metrics.turnScaleY) || 1),
+    direction: metrics.direction,
+    emissionStartedAtMs,
+    emissionEndedAtMs,
+    expiresAt: now + maxTravelDurationMs + SUBMARINE_BUBBLE_LINGER_PAD_MS,
+    spouts
   });
+
+  const oldestUsefulTime = now - MAX_BUBBLER_TRAVEL_DURATION_MS - SUBMARINE_BUBBLE_LINGER_PAD_MS;
+  runtime.boatBubbleBursts = runtime.boatBubbleBursts.filter((burst) => (
+    burst
+    && Number(burst.expiresAt) > now
+    && Number(burst.emissionEndedAtMs) >= oldestUsefulTime
+  ));
+}
+
+function drawBoatBubbleBursts(now = Date.now(), layer = BOAT_SURFACE_LAYER) {
+  if (!Array.isArray(runtime.boatBubbleBursts) || !runtime.boatBubbleBursts.length) return;
+  const tank = getCurrentTank();
+  if (!tank) return;
+  runtime.boatBubbleBursts = runtime.boatBubbleBursts.filter((burst) => burst && Number(burst.expiresAt) > now);
+  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_BOAT)) || null;
+  if (!isUsableRuntimeImage(image)) return;
+
+  for (const burst of runtime.boatBubbleBursts) {
+    if (burst.tankId !== tank.id || clampTankLayer(burst.tankLayer) !== layer || !burst.spouts?.length) continue;
+    const item = {
+      id: burst.id,
+      decorKey: "boat-thruster",
+      xNorm: burst.x / TANK_WIDTH,
+      yNorm: burst.y / TANK_HEIGHT,
+      scale: 1,
+      flipped: Number(burst.direction) < 0,
+      flippedY: false
+    };
+    const decor = {
+      path: getMachineryImagePath(MACHINERY_TYPE_BOAT),
+      bubbler: { spoutQty: burst.spouts.length, spouts: burst.spouts }
+    };
+    drawDecorBubblerEffectToContext(tankContext, item, decor, image, now, {
+      width: burst.width,
+      height: burst.height,
+      drawX: burst.x - burst.width / 2,
+      drawY: burst.y - burst.height / 2,
+      alphaScale: 1,
+      stableScale: getViewportStableAssetScale(),
+      waterSurfaceY: WATER_SURFACE_Y,
+      emissionStartedAtMs: burst.emissionStartedAtMs,
+      emissionEndedAtMs: burst.emissionEndedAtMs,
+      straightDirectionalTravel: true
+    });
+  }
+}
+
+function queueSubmarineBubbleBurst(submarine, metrics, now = Date.now()) {
+  if (!submarine || !metrics || getSubmarineEntryProgress(submarine, now) !== null) return;
+  if (!(runtime.submarineBubbleEmitterState instanceof Map)) {
+    runtime.submarineBubbleEmitterState = new Map();
+  }
+  if (!Array.isArray(runtime.submarineBubbleBursts)) {
+    runtime.submarineBubbleBursts = [];
+  }
+
+  const spouts = buildSubmarineBubbleSpouts(submarine, metrics);
+  const emitterKey = `${submarine.id}|${submarine.tankId}|${metrics.tankLayer}`;
+  if (!spouts.length) {
+    runtime.submarineBubbleEmitterState.delete(emitterKey);
+    return;
+  }
+
+  const previousSampleAt = Number(runtime.submarineBubbleEmitterState.get(emitterKey));
+  if (!Number.isFinite(previousSampleAt)) {
+    runtime.submarineBubbleEmitterState.set(emitterKey, now);
+    return;
+  }
+  if (now - previousSampleAt < SUBMARINE_BUBBLE_EMITTER_SAMPLE_MS) return;
+
+  const emissionStartedAtMs = previousSampleAt;
+  const emissionEndedAtMs = now;
+  runtime.submarineBubbleEmitterState.set(emitterKey, now);
+  const maxTravelDurationMs = Math.max(
+    ...spouts.map((spout) => getBubblerTravelDurationFromSpeed(spout.speed))
+  );
+  runtime.submarineBubbleBursts.push({
+    id: `${submarine.id}-bubble-jet`,
+    tankId: submarine.tankId,
+    tankLayer: metrics.tankLayer,
+    x: metrics.x,
+    y: metrics.y,
+    width: metrics.width * (Number(metrics.turnScaleX) || 1),
+    height: metrics.height * (Number(metrics.turnScaleY) || 1),
+    direction: metrics.direction,
+    emissionStartedAtMs,
+    emissionEndedAtMs,
+    expiresAt: now + maxTravelDurationMs + SUBMARINE_BUBBLE_LINGER_PAD_MS,
+    spouts
+  });
+
+  const oldestUsefulTime = now - MAX_BUBBLER_TRAVEL_DURATION_MS - SUBMARINE_BUBBLE_LINGER_PAD_MS;
+  runtime.submarineBubbleBursts = runtime.submarineBubbleBursts.filter((burst) => (
+    burst
+    && Number(burst.expiresAt) > now
+    && Number(burst.emissionEndedAtMs) >= oldestUsefulTime
+  ));
+}
+
+function drawSubmarineBubbleBursts(now = Date.now(), layer = 2) {
+  if (!Array.isArray(runtime.submarineBubbleBursts) || !runtime.submarineBubbleBursts.length) return;
+  const tank = getCurrentTank();
+  if (!tank) return;
+  runtime.submarineBubbleBursts = runtime.submarineBubbleBursts.filter((burst) => burst && Number(burst.expiresAt) > now);
+  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE)) || null;
+  if (!isUsableRuntimeImage(image)) return;
+
+  for (const burst of runtime.submarineBubbleBursts) {
+    if (burst.tankId !== tank.id || clampTankLayer(burst.tankLayer) !== layer || !burst.spouts?.length) continue;
+    const item = {
+      id: burst.id,
+      decorKey: "submarine-thruster",
+      xNorm: burst.x / TANK_WIDTH,
+      yNorm: burst.y / TANK_HEIGHT,
+      scale: 1,
+      flipped: Number(burst.direction) < 0,
+      flippedY: false
+    };
+    const decor = {
+      path: getMachineryImagePath(MACHINERY_TYPE_SUBMARINE),
+      bubbler: { spoutQty: burst.spouts.length, spouts: burst.spouts }
+    };
+    drawDecorBubblerEffectToContext(tankContext, item, decor, image, now, {
+      width: burst.width,
+      height: burst.height,
+      drawX: burst.x - burst.width / 2,
+      drawY: burst.y - burst.height / 2,
+      alphaScale: 1,
+      stableScale: getViewportStableAssetScale(),
+      waterSurfaceY: WATER_SURFACE_Y,
+      emissionStartedAtMs: burst.emissionStartedAtMs,
+      emissionEndedAtMs: burst.emissionEndedAtMs,
+      smoothDirectionalTurn: true
+    });
+  }
 }
 
 function drawMachinery(now, layer = 2) {
   const tank = getCurrentTank();
   if (!tank) return;
-  for (const submarine of getMachineryForTank(tank.id)) {
-    if (submarine.type !== MACHINERY_TYPE_SUBMARINE) continue;
-    const metrics = getSubmarineDrawMetrics(submarine, now);
+  const machineryForLayer = [];
+  for (const machinery of getMachineryForTank(tank.id)) {
+    const metrics = machinery.type === MACHINERY_TYPE_BOAT
+      ? getBoatDrawMetrics(machinery, now)
+      : machinery.type === MACHINERY_TYPE_SUBMARINE
+        ? getSubmarineDrawMetrics(machinery, now)
+        : null;
     if (!metrics || metrics.tankLayer !== layer) continue;
-    drawSubmarineSpotlight(submarine, metrics);
-    drawSubmarineBubbleJets(submarine, metrics, now);
+    if (machinery.type === MACHINERY_TYPE_SUBMARINE) queueSubmarineBubbleBurst(machinery, metrics, now);
+    if (machinery.type === MACHINERY_TYPE_BOAT) queueBoatBubbleBurst(machinery, metrics, now);
+    machineryForLayer.push({ machinery, metrics });
+  }
+  drawSubmarineBubbleBursts(now, layer);
+  drawBoatBubbleBursts(now, layer);
+  for (const { machinery, metrics } of machineryForLayer) {
+    const isBoat = machinery.type === MACHINERY_TYPE_BOAT;
+    if (!isBoat) drawSubmarineSpotlight(machinery, metrics);
     tankContext.save();
     tankContext.translate(metrics.x, metrics.y);
     tankContext.rotate(metrics.rotation || 0);
-    tankContext.scale(metrics.direction, 1);
+    tankContext.scale(metrics.direction * (Number(metrics.turnScaleX) || 1), Number(metrics.turnScaleY) || 1);
     if (isUsableRuntimeImage(metrics.image)) {
-      tankContext.drawImage(metrics.image, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
+      const imagePath = isBoat ? getMachineryImagePath(MACHINERY_TYPE_BOAT) : getMachineryImagePath(MACHINERY_TYPE_SUBMARINE);
+      const drawImage = getMachineryTintedImage(imagePath, metrics.image, machinery);
+      const colorFilter = getMachineryColorCycleFilter(machinery, now);
+      if (colorFilter !== "none") tankContext.filter = colorFilter;
+      tankContext.drawImage(drawImage, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
     } else {
       tankContext.fillStyle = "rgba(28,62,78,0.95)";
       tankContext.strokeStyle = "rgba(111,224,255,0.85)";
@@ -32627,8 +34597,8 @@ function drawMachinery(now, layer = 2) {
       tankContext.stroke();
     }
     tankContext.restore();
-    drawSubmarineWarningLight(submarine, metrics, now);
-    if (runtime.selectedMachineryId === submarine.id) {
+    if (!isBoat) drawSubmarineWarningLight(machinery, metrics, now);
+    if (runtime.selectedMachineryId === machinery.id) {
       tankContext.save();
       tankContext.strokeStyle = "rgba(108,236,255,0.9)";
       tankContext.lineWidth = 3;
@@ -32644,8 +34614,10 @@ function findMachineryAtPoint(x, y, now = Date.now()) {
   if (!tank) return null;
   const candidates = getMachineryForTank(tank.id).slice().reverse();
   for (const machinery of candidates) {
-    if (machinery.type !== MACHINERY_TYPE_SUBMARINE) continue;
-    const metrics = getSubmarineDrawMetrics(machinery, now);
+    if (![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type)) continue;
+    const metrics = machinery.type === MACHINERY_TYPE_BOAT
+      ? getBoatDrawMetrics(machinery, now)
+      : getSubmarineDrawMetrics(machinery, now);
     if (!metrics) continue;
     const padding = 12;
     if (
@@ -32873,7 +34845,7 @@ function findSubmarineCareCandidate(submarine, now = Date.now()) {
       if (!fish || isFishDead(fish)) continue;
       const maxHealth = getFishMaxHealthUnits(fish);
       const health = Math.max(0, Number(fish.healthUnits) || 0);
-      if (inventory.health > 0 && health < maxHealth) {
+      if (inventory.health > 0 && health < maxHealth && !hasSubmarineMedicineEffect(tank, "firstAid", now)) {
         const score = 400 + (1 - health / Math.max(1, maxHealth)) * 120;
         if (!best || score > best.score) best = { kind: "health", fishId: fish.id, targetTankId: tank.id, score };
       }
@@ -32934,7 +34906,8 @@ function getSubmarineMissionTarget(submarine) {
 function isSubmarineMissionResolved(submarine, target, now = Date.now()) {
   if (!submarine?.mission || !target) return true;
   if (submarine.mission.kind === "health") {
-    return Number(target.fish.healthUnits) >= getFishMaxHealthUnits(target.fish);
+    return hasSubmarineMedicineEffect(target.tank, "firstAid", now)
+      || Number(target.fish.healthUnits) >= getFishMaxHealthUnits(target.fish);
   }
   if (submarine.mission.kind === "calming") {
     return hasSubmarineMedicineEffect(target.tank, "betaBlocker", now)
@@ -32948,7 +34921,7 @@ function deploySubmarineFood(submarine, target, now = Date.now()) {
   let pellet = null;
   withActiveTank(target.tank.id, () => {
     const preferredFoodKey = canFoodSatisfyFishMeal(target.fish, "basic") ? "basic" : "chum";
-    pellet = createDroppedFoodPellet(preferredFoodKey, submarine.xNorm, submarine.yNorm, now);
+    pellet = createSubmarineDroppedFoodPellet(submarine, preferredFoodKey, now);
     if (!pellet) return;
     state.floatingPellets.push(pellet);
     assignPelletToFish(target.fish, pellet, now);
@@ -33016,7 +34989,9 @@ function serviceSubmarineMission(submarine, target, now = Date.now()) {
       : null;
     if (existingPellet) return true;
     mission.pelletId = "";
-    if (now >= (Number(mission.nextDeployAt) || 0)) deploySubmarineFood(submarine, target, now);
+    if (now >= (Number(mission.nextDeployAt) || 0) && !deploySubmarineFood(submarine, target, now)) {
+      mission.nextDeployAt = now + SUBMARINE_FOOD_RETRY_MS;
+    }
     return true;
   }
   if (mission.kind === "health") {
@@ -33042,6 +35017,22 @@ function updateSubmarineMission(submarine, now = Date.now()) {
     return false;
   }
   const target = getSubmarineMissionTarget(submarine);
+  const resource = submarine.mission.kind === "health" ? "health" : submarine.mission.kind === "calming" ? "calming" : "food";
+  if (!target || !isTankReachableBySubmarine(submarine, target.tank)
+    || normalizeSubmarineResourceCount(submarine.inventory?.[resource]) <= 0) {
+    runtime.pendingMachineryTravel.delete(submarine.id);
+    submarine.targetXNorm = submarine.xNorm;
+    submarine.targetYNorm = submarine.yNorm;
+    return clearSubmarineMission(submarine, now);
+  }
+  if (now >= (Number(submarine.nextScanAt) || 0)) {
+    submarine.nextScanAt = now + SUBMARINE_SCAN_INTERVAL_MS;
+    const urgent = findSubmarineCareCandidate(submarine, now);
+    if (urgent?.kind === "health" && submarine.mission.kind !== "health") {
+      runtime.pendingMachineryTravel.delete(submarine.id);
+      return startSubmarineMission(submarine, urgent, now);
+    }
+  }
   if (!target || isSubmarineMissionResolved(submarine, target, now)) {
     return clearSubmarineMission(submarine, now);
   }
@@ -33076,7 +35067,10 @@ function updateSubmarineIdleCruise(submarine, now = Date.now()) {
 }
 
 function moveSubmarineTowardTarget(submarine, deltaSeconds, now = Date.now()) {
-  if (!submarine || (Number(submarine.idleUntil) > now && !submarine.mission && !runtime.pendingMachineryTravel.has(submarine.id))) return;
+  if (!submarine) return;
+  submarine.motionVelocityXPxPerSecond = 0;
+  submarine.motionVelocityYPxPerSecond = 0;
+  if (Number(submarine.idleUntil) > now && !submarine.mission && !runtime.pendingMachineryTravel.has(submarine.id)) return;
   const targetX = Number(submarine.targetXNorm);
   const targetY = Number(submarine.targetYNorm);
   if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return;
@@ -33084,31 +35078,157 @@ function moveSubmarineTowardTarget(submarine, deltaSeconds, now = Date.now()) {
   const dyPx = (targetY - submarine.yNorm) * TANK_HEIGHT;
   const distancePx = Math.hypot(dxPx, dyPx);
   if (distancePx <= 0.5) return;
-  if (Math.abs(dxPx) > 2) submarine.direction = dxPx < 0 ? -1 : 1;
+  if (Math.abs(dxPx) > 2) setMachineryDirection(submarine, dxPx < 0 ? -1 : 1, now, SUBMARINE_TURN_DURATION_MS);
   const pending = runtime.pendingMachineryTravel.has(submarine.id);
   const speed = pending
     ? SUBMARINE_TRAVEL_SPEED_PX_PER_SECOND
     : SUBMARINE_CRUISE_SPEED_PX_PER_SECOND;
-  const stepPx = Math.min(distancePx, Math.max(0, Number(deltaSeconds) || 0) * speed);
-  submarine.xNorm += (dxPx / distancePx) * stepPx / TANK_WIDTH;
-  submarine.yNorm += (dyPx / distancePx) * stepPx / TANK_HEIGHT;
+  const dt = Math.max(0, Number(deltaSeconds) || 0);
+  const stepPx = Math.min(distancePx, dt * speed);
+  if (stepPx <= 0 || dt <= 0) return;
+  const moveXPx = (dxPx / distancePx) * stepPx;
+  const moveYPx = (dyPx / distancePx) * stepPx;
+  submarine.xNorm += moveXPx / TANK_WIDTH;
+  submarine.yNorm += moveYPx / TANK_HEIGHT;
+  submarine.motionVelocityXPxPerSecond = moveXPx / dt;
+  submarine.motionVelocityYPxPerSecond = moveYPx / dt;
+}
+
+function updateSubmarineEntry(submarine, now = Date.now()) {
+  const entryProgress = getSubmarineEntryProgress(submarine, now);
+  if (entryProgress === null) return false;
+
+  submarine.manualVelocityXPxPerSecond = 0;
+  submarine.manualVelocityYPxPerSecond = 0;
+  submarine.motionVelocityXPxPerSecond = 0;
+  submarine.motionVelocityYPxPerSecond = 0;
+  clearSubmarineManualDriveKeys();
+
+  const metrics = getSubmarineDrawMetrics(submarine, now);
+  const hitWaterline = metrics
+    ? metrics.y + metrics.height * 0.5 >= WATER_SURFACE_Y
+    : entryProgress >= FISH_ENTRY_SPLASH_PROGRESS;
+  if (!submarine.entrySplashTriggered && hitWaterline) {
+    playFishEntrySplashSoundIfNeeded(submarine);
+    submarine.entrySplashTriggered = true;
+    spawnFishReturnSplash(submarine.xNorm);
+  }
+
+  if (entryProgress < 1) return true;
+
+  submarine.entryStartedAt = null;
+  submarine.entryDurationMs = 0;
+  submarine.entryFromYNorm = null;
+  submarine.entrySplashTriggered = false;
+  submarine.idleUntil = now + 450;
+  submarine.targetXNorm = submarine.xNorm;
+  submarine.targetYNorm = submarine.yNorm;
+  submarine.targetAt = now + 1200;
+  submarine.nextScanAt = Math.max(Number(submarine.nextScanAt) || 0, now + 700);
+  requestDeferredStateSave();
+  return false;
+}
+
+function updateBoatIdleCruise(boat, now = Date.now()) {
+  if (!boat || runtime.pendingMachineryTravel.has(boat.id)) return;
+  if (Number(boat.idleUntil) > now) return;
+  const distance = Math.abs((Number(boat.targetXNorm) || boat.xNorm) - (Number(boat.xNorm) || 0.5)) * TANK_WIDTH;
+  if (distance <= 14 || now >= (Number(boat.targetAt) || 0)) {
+    if (Math.random() < 0.22) {
+      boat.idleUntil = now + randomBetween(900, 2200);
+      boat.targetAt = boat.idleUntil;
+      return;
+    }
+    boat.targetXNorm = boat.xNorm < 0.5 ? randomBetween(0.72, 0.9) : randomBetween(0.1, 0.28);
+    boat.targetYNorm = 0.16;
+    boat.targetAt = now + randomBetween(6000, 11000);
+  }
+}
+
+function moveBoatTowardTarget(boat, deltaSeconds, now = Date.now()) {
+  if (!boat) return;
+  boat.motionVelocityXPxPerSecond = 0;
+  boat.motionVelocityYPxPerSecond = 0;
+  if (Number(boat.idleUntil) > now) return;
+  const targetX = Number(boat.targetXNorm);
+  if (!Number.isFinite(targetX)) return;
+  const dxPx = (targetX - boat.xNorm) * TANK_WIDTH;
+  if (Math.abs(dxPx) <= 0.5) return;
+  setMachineryDirection(boat, dxPx < 0 ? -1 : 1, now, BOAT_TURN_DURATION_MS);
+  const dt = Math.max(0, Number(deltaSeconds) || 0);
+  const stepPx = Math.min(Math.abs(dxPx), dt * BOAT_CRUISE_SPEED_PX_PER_SECOND);
+  if (stepPx <= 0 || dt <= 0) return;
+  const moveXPx = Math.sign(dxPx) * stepPx;
+  boat.xNorm = clamp(boat.xNorm + moveXPx / TANK_WIDTH, 0.08, 0.92);
+  boat.motionVelocityXPxPerSecond = moveXPx / dt;
+}
+
+function updateBoatEntry(boat, now = Date.now()) {
+  const entryProgress = getBoatEntryProgress(boat, now);
+  if (entryProgress === null) return false;
+
+  boat.manualVelocityXPxPerSecond = 0;
+  boat.motionVelocityXPxPerSecond = 0;
+  clearBoatManualDriveKeys();
+  const metrics = getBoatDrawMetrics(boat, now);
+  const hitWaterline = metrics
+    ? metrics.y + metrics.height * 0.5 >= WATER_SURFACE_Y
+    : entryProgress >= FISH_ENTRY_SPLASH_PROGRESS;
+  if (!boat.entrySplashTriggered && hitWaterline) {
+    playFishEntrySplashSoundIfNeeded(boat);
+    boat.entrySplashTriggered = true;
+    spawnFishReturnSplash(boat.xNorm);
+  }
+  if (entryProgress < 1) return true;
+
+  boat.entryStartedAt = null;
+  boat.entryDurationMs = 0;
+  boat.entryFromYNorm = null;
+  boat.entrySplashTriggered = false;
+  boat.tankLayer = BOAT_SURFACE_LAYER;
+  boat.yNorm = 0.16;
+  boat.targetYNorm = 0.16;
+  boat.idleUntil = now + 450;
+  boat.targetXNorm = boat.xNorm;
+  boat.targetAt = now + 1200;
+  requestDeferredStateSave();
+  return false;
 }
 
 function updateMachineryMotion(now = Date.now(), deltaSeconds = 0.016) {
   const submarine = getSubmarine();
-  if (!submarine) return;
-  submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
-  if (!getTankById(submarine.tankId)) submarine.tankId = getAllTanks()[0]?.id || "";
-  if (!isSubmarineAutopilotEnabled(submarine)) {
-    if (isSubmarineManualDriveActive(submarine)) updateSubmarineManualDrive(submarine, deltaSeconds);
+  if (submarine) {
+    syncMachineryControlStatus(submarine);
+    if (!getTankById(submarine.tankId)) submarine.tankId = getAllTanks()[0]?.id || "";
+    if (!updateSubmarineEntry(submarine, now)) {
+      if (!isSubmarineAutopilotEnabled(submarine)) {
+        if (isSubmarineManualDriveActive(submarine)) updateSubmarineManualDrive(submarine, deltaSeconds);
+        else suspendSubmarineManualDrive();
+      } else {
+        clearSubmarineManualDriveKeys();
+        processSubmarineTravel(submarine, now);
+        updateSubmarineMission(submarine, now);
+        updateSubmarineIdleCruise(submarine, now);
+        moveSubmarineTowardTarget(submarine, deltaSeconds, now);
+      }
+    }
+  }
+  syncSubmarineSonarSound(submarine);
+
+  const boat = getBoat();
+  if (!boat) return;
+  syncMachineryControlStatus(boat);
+  if (!getTankById(boat.tankId)) boat.tankId = getAllTanks()[0]?.id || "";
+  boat.tankLayer = BOAT_SURFACE_LAYER;
+  if (updateBoatEntry(boat, now)) return;
+  if (!isBoatAutopilotEnabled(boat)) {
+    if (isBoatManualDriveActive(boat)) updateBoatManualDrive(boat, deltaSeconds);
+    else suspendBoatManualDrive();
     return;
   }
-  runtime.submarineManualDriveId = "";
-  clearSubmarineManualDriveKeys();
-  processSubmarineTravel(submarine, now);
-  updateSubmarineMission(submarine, now);
-  updateSubmarineIdleCruise(submarine, now);
-  moveSubmarineTowardTarget(submarine, deltaSeconds, now);
+  clearBoatManualDriveKeys();
+  updateBoatIdleCruise(boat, now);
+  moveBoatTowardTarget(boat, deltaSeconds, now);
 }
 // </bundle-source>
 
@@ -33402,9 +35522,19 @@ function releasePelletsTargetingFishIds(fishIds) {
 function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), options = {}) {
   const food = getFoodMeta(foodKey);
   const dropStyle = getFoodDropStyle(food);
-  const spread = FOOD_DROP_SPREAD_NORM;
+  const spread = Number.isFinite(Number(options.spreadNorm))
+    ? Math.max(0, Number(options.spreadNorm))
+    : FOOD_DROP_SPREAD_NORM;
+  const hasCustomDropStart = options.dropStartXNorm != null
+    && options.dropStartYNorm != null
+    && Number.isFinite(Number(options.dropStartXNorm))
+    && Number.isFinite(Number(options.dropStartYNorm));
   const dropXNorm = clamp(Number(xNorm) + randomBetween(-spread, spread), 0.08, 0.92);
-  const dropYNorm = clamp(Number(yNorm), WATER_SURFACE_Y / TANK_HEIGHT + 0.1, 0.72);
+  const dropYNorm = clamp(
+    Number(yNorm),
+    hasCustomDropStart ? 0.09 : WATER_SURFACE_Y / TANK_HEIGHT + 0.1,
+    hasCustomDropStart ? 0.9 : 0.72
+  );
   return sanitizePellet({
     id: createId("pellet"),
     foodKey,
@@ -33417,6 +35547,9 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     rotation: dropStyle === "sprite" ? randomBetween(-0.95, 0.95) : randomBetween(-0.22, 0.22),
     scale: dropStyle === "sprite" ? randomBetween(0.92, 1.18) : randomBetween(0.94, 1.08),
     sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
+    dropStartXNorm: hasCustomDropStart ? Number(options.dropStartXNorm) : null,
+    dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
+    dropDurationMs: hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null,
     createdAt: now,
     expiresAt: now + FOOD_PELLET_SETTLED_LIFETIME_MS
   });
@@ -34142,6 +36275,7 @@ function createFishRecord(speciesId, options = {}) {
     piranhaLastBloodAt: null,
     piranhaAttackStartedAt: null,
     piranhaLastDamageAt: null,
+    sharkLastAttackAt: Number.isFinite(Number(options.sharkLastAttackAt)) ? Number(options.sharkLastAttackAt) : 0,
     breedCooldownUntil: Number.isFinite(Number(options.breedCooldownUntil)) ? Number(options.breedCooldownUntil) : 0,
     healthUnits: clamp(
       Number.isFinite(Number(options.healthUnits)) ? Number(options.healthUnits) : getSpeciesMaxHealthUnits(species),
@@ -35520,7 +37654,11 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
     const focusYNorm = clamp(Number(steering.yNorm) || fish.yNorm || 0.5, 0.12, 0.84);
     const side = (fish.xNorm || 0.5) <= focusXNorm ? -1 : 1;
     fish.targetXNorm = clamp(focusXNorm + side * 0.06, 0.08, 0.92);
-    fish.targetYNorm = clampFishYNormToLayer(focusYNorm + Math.sin(now / 1200 + fish.phase * Math.PI) * 0.02, fish, species, steering.targetLayer || getFishTankLayer(fish), { minYNorm: 0.14, maxYNorm: 0.82 });
+    // Keep the inspect/hangout anchor fixed. The old code sampled a sine wave
+    // only when steering refreshed (every 260 ms), so a fish resting by decor
+    // was given a new vertical target in visible steps. Any idle bob belongs in
+    // the render pose, which updates every animation frame.
+    fish.targetYNorm = clampFishYNormToLayer(focusYNorm, fish, species, steering.targetLayer || getFishTankLayer(fish), { minYNorm: 0.14, maxYNorm: 0.82 });
     fish.targetAt = now + 720;
     fish.hangoutDecorId = steering.decorId || null;
     fish.hangoutZoneType = steering.zoneType || "inspect";
@@ -36586,14 +38724,22 @@ function handleFishActionButtonClick(action) {
 // Source fragment: store/purchases.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function getInsufficientFundsMessage() {
+  return "Payment method declined. Insufficient Funds.";
+}
+
 function performCoinTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
   const direction = options.direction === "credit" ? "credit" : "debit";
   if (direction === "debit" && state.coins < amount) {
-    if (options.insufficientMessage) {
-      showToast(options.insufficientMessage);
-    }
-    return { ok: false, reason: "insufficient-coins", amount };
+    const errorMessage = getInsufficientFundsMessage();
+    showToast(errorMessage, { force: true, tone: "error" });
+    return {
+      ok: false,
+      reason: "insufficient-coins",
+      amount,
+      errorMessage
+    };
   }
 
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
@@ -36684,8 +38830,10 @@ function selectFoodMode(foodKey, options = {}) {
     return { ok: false, reason: "out-of-stock", foodId: food.id };
   }
 
-  runtime.foodTrayOpen = true;
-  runtime.medicineTrayOpen = false;
+  runtime.foodTrayOpen = false;
+  runtime.medicineTrayOpen = true;
+  runtime.cleaningMode = false;
+  runtime.scoopMode = false;
   runtime.medicineModeKey = "";
   runtime.feedingModeFoodKey = runtime.feedingModeFoodKey === food.id ? "" : food.id;
   renderUi(Date.now());
@@ -36723,6 +38871,8 @@ function selectMedicineMode(medicineKey) {
 
   runtime.medicineTrayOpen = true;
   runtime.foodTrayOpen = false;
+  runtime.cleaningMode = false;
+  runtime.scoopMode = false;
   runtime.feedingModeFoodKey = "";
   runtime.medicineModeKey = runtime.medicineModeKey === medicine.id ? "" : medicine.id;
   renderUi(Date.now());
@@ -36785,8 +38935,9 @@ async function buyFish(speciesId, options = {}) {
 
   const purchaseCost = getFishPurchaseCost(speciesId);
   if (state.coins < purchaseCost) {
-    showToast(`You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`);
-    return { ok: false, reason: "insufficient-coins" };
+    const errorMessage = getInsufficientFundsMessage();
+    showToast(errorMessage, { force: true, tone: "error" });
+    return { ok: false, reason: "insufficient-coins", errorMessage };
   }
 
   const now = Date.now();
@@ -36886,8 +39037,9 @@ async function buyAnotherCustomFish(fishId) {
 
   const purchaseCost = getFishPurchaseCost(sourceFish.speciesId);
   if (state.coins < purchaseCost) {
-    showToast(`You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for another ${species.name}.`);
-    return;
+    const errorMessage = getInsufficientFundsMessage();
+    showToast(errorMessage, { force: true, tone: "error" });
+    return { ok: false, reason: "insufficient-coins", errorMessage };
   }
 
   const now = Date.now();
@@ -36982,7 +39134,8 @@ function requestCommerceConfirmation(options = {}) {
   const errorMessage = options.validate?.(details) || "";
   if (!details || errorMessage) {
     options.clear?.();
-    showToast(errorMessage || options.missingMessage || "That item is no longer available.");
+    const message = errorMessage || options.missingMessage || "That item is no longer available.";
+    showToast(message, message === getInsufficientFundsMessage() ? { force: true, tone: "error" } : {});
     return false;
   }
   options.open?.(details);
@@ -36993,7 +39146,8 @@ function confirmCommerceAction(options = {}) {
   const details = options.getDetails?.() || null;
   const errorMessage = options.validate?.(details) || "";
   if (!details || errorMessage) {
-    showToast(errorMessage || options.missingMessage || "That item is no longer available.");
+    const message = errorMessage || options.missingMessage || "That item is no longer available.";
+    showToast(message, message === getInsufficientFundsMessage() ? { force: true, tone: "error" } : {});
     closeUtilityOverlay();
     return false;
   }
@@ -37083,7 +39237,7 @@ function openFishBuyAnotherConfirmation(fishId) {
       : !details?.unlocked
         ? `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`
         : !details?.canAfford
-          ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`
+          ? getInsufficientFundsMessage()
           : "",
     open: (details) => openFishActionConfirmation({ type: "buy-another", fishId: details.fishId })
   });
@@ -37117,7 +39271,7 @@ function confirmFishBuyAnother() {
       ? "Enable Violence & Gore to buy undead fish."
       : `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`)
       : !details?.canAfford
-        ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.baseSpecies.name}.`
+        ? getInsufficientFundsMessage()
         : "",
     execute: (details) => buyAnotherFishFromSource(details.fishId)
   });
@@ -37300,7 +39454,7 @@ function openDecorBuyAnotherConfirmation(decorKey) {
       : !canUseDecorWithCurrentContentSettings(details.decorKey)
         ? "Enable Violence & Gore to buy that decor."
         : !details.canAfford
-          ? `You need ${details.cost} ${pluralize("coin", details.cost)} for another ${details.decor.name}.`
+          ? getInsufficientFundsMessage()
           : "",
     open: (details) => openDecorActionConfirmation({ type: "buy-another", decorKey: details.decorKey })
   });
@@ -37326,7 +39480,7 @@ function confirmDecorBuyAnother() {
     getDetails: getPendingDecorBuyAnotherDetails,
     missingMessage: "That decor is no longer available.",
     validate: (details) => !details?.canAfford
-      ? `You need ${details?.cost || 0} ${pluralize("coin", details?.cost || 0)} for another ${details?.decor?.name || "decor"}.`
+      ? getInsufficientFundsMessage()
       : "",
     execute: (details) => buyAnotherDecor(details.decorKey)
   });
@@ -38809,6 +40963,23 @@ function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
     return false;
   }
 
+  if (isWhaleBreathActive(fish, species)) {
+    const minYNorm = getWhaleBreathSurfaceYNorm(fish, species);
+    const xNorm = clampFishXNormToMobileViewport(Number.isFinite(Number(fish.xNorm)) ? fish.xNorm : 0.5, fish, species);
+    const yNorm = clamp(Number.isFinite(Number(fish.yNorm)) ? fish.yNorm : minYNorm, minYNorm, 0.8);
+    const targetXNorm = clampFishXNormToMobileViewport(Number.isFinite(Number(fish.targetXNorm)) ? fish.targetXNorm : xNorm, fish, species);
+    const targetYNorm = clamp(Number.isFinite(Number(fish.targetYNorm)) ? fish.targetYNorm : minYNorm, minYNorm, 0.8);
+    const changed = Math.abs(xNorm - fish.xNorm) > 0.000001
+      || Math.abs(yNorm - fish.yNorm) > 0.000001
+      || Math.abs(targetXNorm - fish.targetXNorm) > 0.000001
+      || Math.abs(targetYNorm - fish.targetYNorm) > 0.000001;
+    fish.xNorm = xNorm;
+    fish.yNorm = yNorm;
+    fish.targetXNorm = targetXNorm;
+    fish.targetYNorm = targetYNorm;
+    return changed;
+  }
+
   if (fish.activity === FISH_GRAVEL_DIG_ACTIVITY && getForcedGravelDigPrompt(fish)) {
     const minYNorm = getFishSurfaceMinYNorm(fish, species, 0.14);
     const maxYNorm = 0.96;
@@ -39984,6 +42155,7 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
   fish.zombieReviveSourceId = null;
   fish.piranhaAttackStartedAt = null;
   fish.piranhaLastDamageAt = null;
+  fish.sharkLastAttackAt = 0;
   fish.piranhaConsumptionStartedAt = null;
   fish.piranhaConsumptionEndsAt = null;
   fish.piranhaLastBloodAt = null;
@@ -42173,6 +44345,14 @@ function updateInspectorFishSetting(setting, rawValue) {
     return;
   }
   saveState();
+  if (setting === "color" || setting === "colorize") {
+    // Color changes are live previews. Keep the settings panel mounted so
+    // users can compare several colors without the inspector being rebuilt
+    // or dismissed between picks. The tank renderer reads the fish state on
+    // the next frame, so a full UI render is unnecessary here.
+    updateInspectorFishReadouts(fish);
+    return;
+  }
   renderUi(now);
 }
 // </bundle-source>
@@ -42612,6 +44792,9 @@ function toggleUvLightPower(force = null) {
 }
 
 function toggleLightsOutOverride() {
+  if (!LIGHTS_OUT_FEATURE_ENABLED) {
+    return;
+  }
   const targetTank = getCurrentTank();
   if (!targetTank) {
     return;
@@ -42855,6 +45038,7 @@ function toggleCleaningMode(options = {}) {
     }
   }
 
+  if (options.source === "care-tray") runtime.medicineTrayOpen = true;
   renderToolCursor();
   if (tutorialChanged) {
     saveState();
@@ -42874,6 +45058,7 @@ function toggleScoopMode(options = {}) {
     }
   }
 
+  if (options.source === "care-tray") runtime.medicineTrayOpen = true;
   renderToolCursor();
   renderUi(Date.now());
 }
@@ -42947,6 +45132,37 @@ function maxTankDirtinessDebug() {
     (nextCleanliness) => `Debug tank dirtiness maxed. Tank cleanliness dropped to ${nextCleanliness}%.`,
     () => "Tank dirtiness maxed."
   );
+}
+
+function forceAllWhalesToBreatheDebug(now = Date.now()) {
+  const tank = getCurrentTank();
+  const whales = Array.isArray(tank?.fish)
+    ? tank.fish.filter((fish) => fish && !isFishDead(fish) && isWhaleFish(fish))
+    : [];
+
+  let started = 0;
+  for (const fish of whales) {
+    clearWhaleBreathState(fish, now, { reschedule: false });
+    fish.whaleNextBreathAt = now;
+    if (startWhaleBreathCycle(fish, getSpeciesForFish(fish), now)) {
+      started += 1;
+    }
+  }
+
+  if (started > 0) {
+    showToast(`${started} ${pluralize("whale", started)} heading up for air.`);
+  } else {
+    showToast("No living whales in this tank.");
+  }
+  return started;
+}
+
+function exposeDebugConsoleCommands() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  window.debugWhalesBreathe = forceAllWhalesToBreatheDebug;
+  return true;
 }
 
 function addDebugCoins(amount = 10) {
@@ -45269,7 +47485,7 @@ function getVisibleGrimeDirtiness(dirtiness) {
 }
 
 function getLightGrimeVisualIntensity(dirtiness) {
-  return Math.pow(getVisibleGrimeDirtiness(dirtiness), 1.35);
+  return getVisibleGrimeDirtiness(dirtiness);
 }
 
 function getSevereGrimeVisualIntensity(dirtiness) {
@@ -45292,17 +47508,14 @@ function renderGrimeBaseCanvas(dirtiness) {
     return;
   }
 
-  const scaledLevel = visibleDirtiness * GRIME_OVERLAY_ASSET_PATHS.length;
-  const levelPosition = clamp(scaledLevel - 1, 0, GRIME_OVERLAY_ASSET_PATHS.length - 1);
-  const lowerIndex = Math.floor(levelPosition);
-  const upperIndex = Math.ceil(levelPosition);
-  const blend = levelPosition - lowerIndex;
-  const lowerAlpha = scaledLevel < 1 ? scaledLevel : 1 - blend;
-  const upperAlpha = lowerIndex === upperIndex ? 0 : blend;
-
-  drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[lowerIndex], lowerAlpha);
-  if (upperAlpha > 0.001) {
-    drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[upperIndex], upperAlpha);
+  // Grime is cumulative: each layer stays at full opacity after its third
+  // of the fourteen-day cycle, while only the newest layer fades in.
+  const layerCount = GRIME_OVERLAY_ASSET_PATHS.length;
+  const segment = 1 / layerCount;
+  for (let index = 0; index < layerCount; index += 1) {
+    const layerStart = index * segment;
+    const layerAlpha = clamp((visibleDirtiness - layerStart) / segment, 0, 1);
+    if (layerAlpha > 0.001) drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[index], layerAlpha);
   }
 }
 
@@ -47070,6 +49283,7 @@ function primeSoundEffects() {
       primeSoundEffectAudio(audio);
     }
   }
+  primeSoundEffectAudio(getSubmarineSonarAudio());
 }
 
 function playSoundEffect(pathOrPaths, options = {}) {
@@ -47146,6 +49360,87 @@ function stopActiveSoundEffects() {
 
 function playDispenserSoundEffect() {
   playSoundEffect(DISPENSER_SOUND_PATH, { volume: 0.68 });
+}
+
+function getSubmarineSonarAudio() {
+  if (runtime.submarineSonarAudio) {
+    return runtime.submarineSonarAudio;
+  }
+  if (typeof Audio !== "function") {
+    return null;
+  }
+  const audio = new Audio(resolveAppUrl(SUBMARINE_SONAR_SOUND_PATH));
+  audio.loop = true;
+  audio.preload = "auto";
+  audio.volume = 0;
+  runtime.submarineSonarAudio = audio;
+  return audio;
+}
+
+function stopSubmarineSonarSound() {
+  const audio = runtime.submarineSonarAudio;
+  if (!audio) {
+    return false;
+  }
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch (error) {
+    console.debug("Submarine sonar stop skipped.", error);
+  }
+  runtime.activeSoundEffects.delete(audio);
+  return true;
+}
+
+function syncSubmarineSonarSound(submarine = getSubmarine()) {
+  const shouldPlay = Boolean(
+    submarine?.mission
+    && isSubmarineAutopilotEnabled(submarine)
+    && !getUiSettings().soundMuted
+    && !isWallpaperEnginePauseActive()
+  );
+  if (!shouldPlay) {
+    stopSubmarineSonarSound();
+    return false;
+  }
+
+  const audio = getSubmarineSonarAudio();
+  if (!audio) {
+    return false;
+  }
+  audio.loop = true;
+  syncAudioElementMutedState(audio, false, { volumeWhenUnmuted: SUBMARINE_SONAR_SOUND_VOLUME });
+  if (!audio.paused) {
+    runtime.activeSoundEffects.add(audio);
+    return true;
+  }
+
+  runtime.activeSoundEffects.add(audio);
+  const playPromise = audio.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    playPromise.catch((error) => {
+      runtime.activeSoundEffects.delete(audio);
+      if (error?.name === "AbortError") {
+        return;
+      }
+      if (error?.name === "NotAllowedError") {
+        audio.__bbPrimed = false;
+        runtime.soundEffectsPrimed = false;
+        bindSoundEffectsResumeListeners();
+        return;
+      }
+      console.warn("Could not play submarine sonar sound.", error);
+    });
+  }
+  return true;
+}
+
+function playBoatHornSoundEffect() {
+  return playSoundEffect(BOAT_HORN_SOUND_PATH, { volume: 0.82 });
+}
+
+function playWhaleBreathSoundEffect() {
+  return playSoundEffect(WHALE_BREATH_SOUND_PATH, { volume: 0.84 });
 }
 
 function playToolbarButtonSoundEffect(kind = "press") {
@@ -47900,6 +50195,7 @@ function renderToolbarPosition() {
   const toolbarCollapsed = tutorialUi ? false : uiSettings.toolbarCollapsed;
   const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, tutorialUi);
   document.documentElement.dataset.toolbarPosition = toolbarPosition;
+  document.documentElement.style.setProperty("--toolbar-tile-color", uiSettings.toolbarTileColor);
   document.documentElement.dataset.displayPosition = displayPosition;
   document.documentElement.dataset.toolbarCollapsed = toolbarCollapsed ? "true" : "false";
   document.documentElement.dataset.displayCollapsed = displayCollapsed ? "true" : "false";
@@ -48082,6 +50378,23 @@ function formatFishShopBehavior(species) {
     return "Swarm predator";
   }
 
+  const speciesType = getFishSpeciesType(species);
+  if (speciesType === "shark") {
+    return "Chum-tracking shark";
+  }
+  if (speciesType === "whale") {
+    return "Social pod hunter";
+  }
+  if (speciesType === "seahorse") {
+    return "Upright hoverer";
+  }
+  if (speciesType === "cephalopod") {
+    return "Shell drifter";
+  }
+  if (species.id === "sunfish") {
+    return "Gentle drifter";
+  }
+
   if (isUndeadSpecies(species)) {
     return "Undead aggressor";
   }
@@ -48151,7 +50464,6 @@ function renderFishShop() {
       const locked = !isCustomUploadProduct && !isFishSpeciesShopUnlocked(fish);
       const debugUnlocked = progressLocked && !locked;
       const purchaseCost = getFishPurchaseCost(fish.id);
-      const affordable = !locked && !tutorialPreviewOnly && state.coins >= purchaseCost;
       const maxHealthUnits = getSpeciesMaxHealthUnits(fish);
       const heartCount = Math.ceil(maxHealthUnits / 2);
       const healthDisplay = isCustomUploadProduct
@@ -48196,7 +50508,7 @@ function renderFishShop() {
           </div>
           <div class="shop-meta">
             <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
-            <button class="buy-button" data-buy-fish="${fish.id}" ${(affordable || tutorialPreviewOnly) ? "" : "disabled"} ${tutorialPreviewOnly ? "disabled" : ""}>
+              <button class="buy-button" data-buy-fish="${fish.id}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
               ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
             </button>
           </div>
@@ -48840,7 +51152,6 @@ function renderFoodShop() {
 
   const catalog = getFoodCatalog().filter((food) => shouldShowFoodInStore(food));
   const cardsMarkup = catalog.map((food) => {
-    const affordable = state.coins >= food.cost;
     const count = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
     return `
       <article class="shop-card">
@@ -48854,7 +51165,7 @@ function renderFoodShop() {
         </div>
         <div class="shop-meta">
           <span class="price-tag">${food.cost} ${pluralize("coin", food.cost)}</span>
-          <button class="buy-button" data-buy-food="${food.id}" ${affordable ? "" : "disabled"}>
+          <button class="buy-button" data-buy-food="${food.id}">
             Buy Bottle (+${food.bottlePellets})
           </button>
         </div>
@@ -48872,7 +51183,6 @@ function renderPharmacyShop() {
 
   const catalog = getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine));
   const cardsMarkup = catalog.map((medicine) => {
-    const affordable = state.coins >= medicine.cost;
     const count = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
     return `
       <article class="shop-card">
@@ -48886,7 +51196,7 @@ function renderPharmacyShop() {
         </div>
         <div class="shop-meta">
           <span class="price-tag">${medicine.cost} ${pluralize("coin", medicine.cost)}</span>
-          <button class="buy-button" data-buy-medicine="${medicine.id}" ${affordable ? "" : "disabled"}>
+          <button class="buy-button" data-buy-medicine="${medicine.id}">
             Buy Bottle (+${medicine.bottleDrops})
           </button>
         </div>
@@ -50070,7 +52380,6 @@ function buildManagementFishRow(fish, now = Date.now()) {
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
-  const purchaseCost = getFishPurchaseCost(fish.speciesId);
   const canBuyAnother = isCustomFishAssetKey(fish.speciesId) || isFishSpeciesShopUnlocked(baseSpecies);
   const canSell = Boolean(baseSpecies) && !dead && !isFishBeingConsumedByPiranhas(fish, now) && !juvenile;
   const canStore = !dead && !infected;
@@ -50095,7 +52404,7 @@ function buildManagementFishRow(fish, now = Date.now()) {
       <div class="management-browser-actions">
         <button class="small-button alt" type="button" data-management-select-fish="${escapeHtml(fish.id)}">Select</button>
         <button class="small-button alt" type="button" data-management-store-fish="${escapeHtml(fish.id)}" ${canStore ? "" : "disabled"}>Put Away</button>
-        <button class="small-button alt" type="button" data-management-buy-another-fish="${escapeHtml(fish.id)}" ${(canBuyAnother && state.coins >= purchaseCost) ? "" : "disabled"}>Buy Another</button>
+        <button class="small-button alt" type="button" data-management-buy-another-fish="${escapeHtml(fish.id)}" ${canBuyAnother ? "" : "disabled"}>Buy Another</button>
         <button class="small-button warn" type="button" data-management-sell-fish="${escapeHtml(fish.id)}" ${canSell ? "" : "disabled"}>Sell</button>
       </div>
     </article>
@@ -50128,7 +52437,6 @@ function buildManagementDecorRow(item) {
     path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`)
   };
   const grouped = isPlacedDecorGrouped(item);
-  const cost = getDecorPurchaseCost(item.decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
   const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey);
   const serviceTypes = getDecorBoroughServiceTypes(item);
@@ -50147,7 +52455,7 @@ function buildManagementDecorRow(item) {
       <div class="management-browser-actions">
         <button class="small-button alt" type="button" data-management-select-decor="${escapeHtml(item.id)}">Select</button>
         <button class="small-button alt" type="button" data-management-store-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>Put Away</button>
-        <button class="small-button alt" type="button" data-management-buy-another-decor="${escapeHtml(item.decorKey)}" ${(canBuyAnother && state.coins >= cost) ? "" : "disabled"}>Buy Another</button>
+        <button class="small-button alt" type="button" data-management-buy-another-decor="${escapeHtml(item.decorKey)}" ${canBuyAnother ? "" : "disabled"}>Buy Another</button>
         <button class="small-button warn" type="button" data-management-sell-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>Sell</button>
       </div>
     </article>
@@ -52323,6 +54631,21 @@ function renderBubblerSettingsOverlay(item) {
     .join("");
   const rawBubbleFillOpacity = Number(settings.bubbleFillOpacity);
   const bubbleFillOpacity = clamp(Number.isFinite(rawBubbleFillOpacity) ? rawBubbleFillOpacity : DEFAULT_BUBBLER_FILL_OPACITY, 0, 1);
+  const hasLightLayer = hasDecorBubblerLight(item);
+  const lightColor = normalizeHexColor(settings.lightColor) || DEFAULT_BUBBLER_LIGHT_COLOR;
+  const lightColorControls = hasLightLayer
+    ? `
+      <label class="bubbler-control-row bubbler-light-color-row">
+        <span>Light Color <strong data-bubbler-setting-value="lightColor">${escapeHtml(lightColor)}</strong></span>
+        <input
+          class="bubbler-light-color-input"
+          type="color"
+          value="${escapeHtml(lightColor)}"
+          data-bubbler-setting="lightColor"
+          aria-label="Bubbler light color" />
+        <div class="mini-note">The center uses this color, fades to black at the edges, and flickers automatically like candlelight.</div>
+      </label>`
+    : "";
 
   return `
     <div class="bubbler-settings-panel">
@@ -52361,6 +54684,7 @@ function renderBubblerSettingsOverlay(item) {
           <span>Colorize</span>
         </label>
       </div>
+      ${lightColorControls}
       <label class="bubbler-control-row">
         <span>Inside Fill <strong data-bubbler-setting-value="bubbleFillOpacity">${Math.round(bubbleFillOpacity * 100)}%</strong></span>
         <input type="range" min="0" max="1" step="0.05" value="${bubbleFillOpacity}" data-bubbler-setting="bubbleFillOpacity" />
@@ -52637,6 +54961,9 @@ function renderSettingsOverlay() {
   }
   if (dom.uiMuteToggleInput) {
     dom.uiMuteToggleInput.checked = uiSettings.uiSoundsMuted;
+  }
+  if (dom.toolbarTileColorInput instanceof HTMLInputElement) {
+    dom.toolbarTileColorInput.value = uiSettings.toolbarTileColor;
   }
   if (dom.ambientBubblesToggleInput) {
     dom.ambientBubblesToggleInput.checked = uiSettings.ambientBubblesEnabled;
@@ -53001,7 +55328,7 @@ function renderTutorialGuidance() {
       button: dom.careMenuButton,
       menu: dom.toolbarCareMenu,
       menuName: "care",
-      childIds: ["medicineButton", "spongeButton", "scoopButton"]
+      childIds: ["feedButton", "medicineButton", "spongeButton", "scoopButton"]
     },
     {
       button: dom.editMenuButton,
@@ -53370,7 +55697,6 @@ function renderEditDecorTrayContextMenu() {
   const purchaseCost = getDecorPurchaseCost(decorKey);
   const decorTypeTone = getDecorTrayTypeTone(decor, decorKey);
   const canBuyAnotherDecor = entry.type === "stored";
-  const canAffordAnotherDecor = state.coins >= purchaseCost;
   const grouped = entry.type === "placed" && isPlacedDecorGrouped(entry.item);
   const detailText = entry.type === "placed"
     ? `${grouped ? "Grouped - " : ""}Layer ${getDecorTankLayer(entry.item)} - ${formatDecorScale(entry.item.scale)}`
@@ -53428,7 +55754,6 @@ function renderEditDecorTrayContextMenu() {
             type="button"
             data-tray-buy-another-decor="${escapeHtml(decorKey)}"
             title="Buy Another"
-            ${canAffordAnotherDecor ? "" : "disabled"}
           >
             Buy Another ${purchaseCost} ${pluralize("coin", purchaseCost)}
           </button>
@@ -54228,7 +56553,7 @@ function renderEditTankTray() {
   }
 
   for (const tab of dom.editTankTray.querySelectorAll("[data-edit-overlay-mode]")) {
-    const selected = tab.dataset.editOverlayMode === "tank";
+    const selected = tab.dataset.editOverlayMode === runtime.editTankTrayTab;
     tab.classList.toggle("is-active", selected);
     tab.setAttribute("aria-selected", selected ? "true" : "false");
     tab.tabIndex = selected ? 0 : -1;
@@ -54241,65 +56566,33 @@ function renderEditTankTray() {
     tab.tabIndex = selected ? 0 : -1;
   }
 
+  for (const tab of dom.editTankTray.querySelectorAll("[data-tank-background-mode]")) {
+    const active = runtime.editTankTrayTab === "background" && tab.dataset.tankBackgroundMode === runtime.editTankBackgroundMode;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = 0;
+  }
   for (const panel of dom.editTankTray.querySelectorAll("[data-tank-tray-panel]")) {
     panel.hidden = panel.dataset.tankTrayPanel !== runtime.editTankTrayTab;
   }
 }
 
 function renderFoodTray() {
-  const visible = runtime.foodTrayOpen;
-  if (dom.foodTray) {
-    dom.foodTray.hidden = !visible;
-  }
-  syncTankTrayStageClass();
+  // Compatibility for older tutorial callers: all care lives in one tray.
+  if (runtime.foodTrayOpen) { runtime.medicineTrayOpen = true; runtime.foodTrayOpen = false; }
+  if (dom.foodTray) dom.foodTray.hidden = true;
+}
 
-  if (!visible || !dom.foodTrayScroller) {
-    syncFoodTrayScrollControls();
-    return;
-  }
-
-  const items = getFoodCatalog().filter((food) => (
-    shouldShowFoodInStore(food)
-    && food.id !== "upgraded"
-    && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
-  ));
-  const dataKey = [
-    runtime.foodTrayOpen ? "1" : "0",
-    runtime.feedingModeFoodKey || "",
-    ...getFoodCatalog().filter((food) => shouldShowFoodInStore(food)).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`)
-  ].join("|");
-
-  if (shouldRebuildRenderSection("food-tray-data", dataKey)) {
-    const markup = items.length
-      ? items.map((food) => {
-        const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
-        const active = runtime.feedingModeFoodKey === food.id;
-        const label = `${food.name} - ${quantity} left`;
-        return `
-          <button
-            class="edit-decor-tile ${active ? "is-active" : ""}"
-            type="button"
-            data-select-food="${food.id}"
-            data-decor-name="${label}"
-            title="${label}"
-            aria-label="${active ? `Selected ${food.name}` : `Select ${food.name}`}"
-            ${quantity > 0 ? "" : "disabled"}
-            style="--tray-accent: #E0B24C;"
-          >
-            <span class="edit-decor-tile-surface inventory-tray-tile-surface">
-              ${renderFoodAndMedImage("food", food.id, food.name, "edit-decor-tile-thumb inventory-tray-thumb")}
-              <span class="inventory-tray-label">${food.name.replace(" Food", "")}</span>
-              <span class="edit-decor-tile-count">x${quantity}</span>
-            </span>
-          </button>
-        `;
-      }).join("")
-      : `<div class="edit-decor-tray-empty">No food is stocked yet. Open the store to buy a bottle first.</div>`;
-
-    setMarkupIfChanged("food-tray", dom.foodTrayScroller, markup);
-  }
-
-  syncFoodTrayScrollControls();
+function handleCareTrayAction(event) {
+  const target = event.target;
+  const food = target.closest("[data-select-food]");
+  const store = target.closest("[data-food-open-store], [data-care-open-pharmacy]");
+  if (!food && !store) return false;
+  event.stopPropagation();
+  playToolbarButtonSoundEffect("press");
+  if (food) selectFoodMode(food.dataset.selectFood);
+  else openStoreOverlay(store.hasAttribute("data-care-open-pharmacy") ? "pharmacy" : "food", { forceCategory: true });
+  return true;
 }
 
 function renderMedicineTray() {
@@ -54314,64 +56607,133 @@ function renderMedicineTray() {
     return;
   }
 
-  const items = getMedicineCatalog().filter((medicine) => (
+  const foodItems = getFoodCatalog().filter((food) => (
+    shouldShowFoodInStore(food)
+    && food.id !== "upgraded"
+    && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
+  ));
+  const medicineItems = getMedicineCatalog().filter((medicine) => (
     shouldShowMedicineInStore(medicine)
     && Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) > 0
   ));
+
   const dataKey = [
     runtime.medicineTrayOpen ? "1" : "0",
+    runtime.feedingModeFoodKey || "",
     runtime.medicineModeKey || "",
-    ...getMedicineCatalog().map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
+    runtime.cleaningMode ? "scrub" : "",
+    runtime.scoopMode ? "scoop" : "",
+    ...getFoodCatalog().filter((food) => shouldShowFoodInStore(food)).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
+    ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
 
   if (shouldRebuildRenderSection("medicine-tray-data", dataKey)) {
-    const medicineMarkup = items.length
-      ? items.map((medicine) => {
+    const foodMarkup = foodItems.length
+      ? foodItems.map((food) => {
+        const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
+        const active = runtime.feedingModeFoodKey === food.id;
+        const label = `${food.name} - ${quantity} left`;
+        return `
+          <button
+            class="care-medicine-card ${active ? "is-active" : ""}"
+            type="button"
+            data-select-food="${food.id}"
+            title="${label}"
+            aria-label="${active ? `Selected ${food.name}` : `Select ${food.name}` }"
+            style="--tray-accent: #E0B24C;"
+          >
+            ${renderFoodAndMedImage("food", food.id, food.name, "care-medicine-card-image")}
+            <span class="care-medicine-card-name">${food.name.replace(" Food", "")}</span>
+            <span class="care-medicine-card-count">x${quantity}</span>
+          </button>
+        `;
+      }).join("")
+      : `
+        <div class="care-tray-empty-medical care-tray-section-empty" role="group" aria-label="No food stocked">
+          <div class="care-tray-empty-copy-wrap">
+            <svg class="care-tray-empty-icon" viewBox="0 0 32 38" aria-hidden="true" focusable="false">
+              <path d="M11 2h10v7l4 4v20c0 2-1.5 3-3.5 3h-11C8.5 36 7 35 7 33V13l4-4V2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M11 9h10M9 17h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="care-tray-empty-copy">
+              <strong>No food stocked</strong>
+              <small>Open Tankazon food to buy more.</small>
+            </span>
+          </div>
+          <button class="care-tray-empty-shop-button" type="button" data-food-open-store>Buy Food</button>
+        </div>
+      `;
+
+    const medicineMarkup = medicineItems.length
+      ? medicineItems.map((medicine) => {
         const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
         const active = runtime.medicineModeKey === medicine.id;
         const label = `${medicine.name} - ${quantity} left`;
         return `
           <button
-            class="edit-decor-tile care-medicine-tile ${active ? "is-active" : ""}"
+            class="care-medicine-card ${active ? "is-active" : ""}"
             type="button"
             data-select-medicine="${medicine.id}"
-            data-decor-name="${label}"
             title="${label}"
-            aria-label="${active ? `Selected ${medicine.name}` : `Select ${medicine.name}`}"
-            ${quantity > 0 ? "" : "disabled"}
+            aria-label="${active ? `Selected ${medicine.name}` : `Select ${medicine.name}` }"
             style="--tray-accent: ${medicine.color};"
           >
-            <span class="edit-decor-tile-surface inventory-tray-tile-surface">
-              ${renderFoodAndMedImage("medicine", medicine.id, medicine.name, "edit-decor-tile-thumb inventory-tray-thumb")}
-              <span class="inventory-tray-label">${medicine.name.replace(" Drops", "")}</span>
-              <span class="edit-decor-tile-count">x${quantity}</span>
-            </span>
+            ${renderFoodAndMedImage("medicine", medicine.id, medicine.name, "care-medicine-card-image")}
+            <span class="care-medicine-card-name">${medicine.name.replace(" Drops", "")}</span>
+            <span class="care-medicine-card-count">x${quantity}</span>
           </button>
         `;
       }).join("")
-      : `<div class="care-tray-empty-medical">No medicine stocked</div>`;
+      : `
+        <div class="care-tray-empty-medical care-tray-section-empty" role="group" aria-label="No medicine stocked">
+          <div class="care-tray-empty-copy-wrap">
+            <svg class="care-tray-empty-icon" viewBox="0 0 32 38" aria-hidden="true" focusable="false">
+              <path d="M11 2h10v7l4 4v20c0 2-1.5 3-3.5 3h-11C8.5 36 7 35 7 33V13l4-4V2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M11 9h10M9 17h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="care-tray-empty-copy">
+              <strong>No medicine stocked</strong>
+              <small>Open Tankazon pharmacy to buy more.</small>
+            </span>
+          </div>
+          <button class="care-tray-empty-shop-button" type="button" data-care-open-pharmacy>Buy Meds</button>
+        </div>
+      `;
 
     const markup = `
-      <div class="care-tray-content">
-        <section class="care-tray-section care-tray-medical" aria-label="Medical care">
-          <div class="care-tray-section-icon" title="Medical" aria-label="Medical">
-            <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tray-min-width: 631px;">
+        <section class="care-tray-food" aria-label="Food">
+          <div class="care-tray-heading-row">
+            <img class="care-tray-inline-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
+            <div class="care-tray-heading">Food</div>
+          </div>
+          <div class="care-tray-food-items">${foodMarkup}</div>
+        </section>
+
+        <div class="care-tray-divider" aria-hidden="true"></div>
+
+        <section class="care-tray-medical" aria-label="Medication">
+          <div class="care-tray-heading-row">
+            <img class="care-tray-inline-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+            <div class="care-tray-heading">Medication</div>
           </div>
           <div class="care-tray-medical-items">${medicineMarkup}</div>
         </section>
+
         <div class="care-tray-divider" aria-hidden="true"></div>
-        <section class="care-tray-section care-tray-tool-section" aria-label="Cleaning tool">
-          <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
-            <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
-            <span>Scrub</span>
-          </button>
-        </section>
-        <div class="care-tray-divider" aria-hidden="true"></div>
-        <section class="care-tray-section care-tray-tool-section" aria-label="Scoop tool">
-          <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
-            <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
-            <span>Scoop</span>
-          </button>
+
+        <section class="care-tray-tools" aria-label="Care tools">
+          <div class="care-tray-heading">Tools</div>
+          <div class="care-tray-tool-row">
+            <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
+              <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+              <span>Scrub</span>
+            </button>
+            <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
+              <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+              <span>Scoop</span>
+            </button>
+          </div>
         </section>
       </div>
     `;
@@ -55736,7 +58098,7 @@ function renderFishInspector(now) {
 
   if (dom.inspectorBuyAnotherFish) {
     dom.inspectorBuyAnotherFish.hidden = !canBuyAnother;
-    dom.inspectorBuyAnotherFish.disabled = canBuyAnother && state.coins < purchaseCost;
+    dom.inspectorBuyAnotherFish.disabled = false;
     if (canBuyAnother) {
       dom.inspectorBuyAnotherFish.dataset.buyAnotherFish = fish.id;
       dom.inspectorBuyAnotherFish.textContent = "BUY";
@@ -55817,44 +58179,52 @@ function renderDecorShop() {
     );
     return;
   }
-  const cardsMarkup = catalog
-    .map((decor) => {
-      const progressLocked = !isDecorProgressUnlocked(decor);
-      const locked = !isDecorShopUnlocked(decor);
-      const debugUnlocked = progressLocked && !locked;
-      const affordable = !locked && !tutorialPreviewOnly && state.coins >= decor.cost;
-      const owned = state.decorInventory[decor.key] || 0;
-      const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
-      const isCustomHideUpload = isCustomHideShopKey(decor.key);
-      const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
-      const statusLabel = locked
-        ? `Unlocks at ${lockedRequirementLabel}`
-        : debugUnlocked
-          ? `Debug unlocked (${lockedRequirementLabel})`
-          : `${owned} in storage`;
-      const serviceSummary = getDecorServiceSummary(decor.key);
-      return `
-        <article class="shop-card ${locked ? "is-locked" : ""}">
-          <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
-          <div class="shop-meta">
-            <div>
-              <strong>${decor.name}</strong>
-              ${renderShopThemePill(decor.theme)}
-              <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
-              ${serviceSummary ? `<div class="mini-note borough-service-note">${escapeHtml(serviceSummary)}</div>` : ""}
-            </div>
-            <div class="fish-meta"></div>
+  const renderCard = (decor) => {
+    const progressLocked = !isDecorProgressUnlocked(decor);
+    const locked = !isDecorShopUnlocked(decor);
+    const debugUnlocked = progressLocked && !locked;
+    const owned = state.decorInventory[decor.key] || 0;
+    const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
+    const isCustomHideUpload = isCustomHideShopKey(decor.key);
+    const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
+    const statusLabel = locked
+      ? `Unlocks at ${lockedRequirementLabel}`
+      : debugUnlocked
+        ? `Debug unlocked (${lockedRequirementLabel})`
+        : `${owned} in storage`;
+    const serviceSummary = getDecorServiceSummary(decor.key);
+    return `
+      <article class="shop-card ${locked ? "is-locked" : ""}">
+        <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
+        <div class="shop-meta">
+          <div>
+            <strong>${decor.name}</strong>
+            ${renderShopThemePill(decor.theme)}
+            <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
+            ${serviceSummary ? `<div class="mini-note borough-service-note">${escapeHtml(serviceSummary)}</div>` : ""}
           </div>
-          <div class="shop-meta">
-            <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
-            <button class="buy-button" data-buy-decor="${decor.key}" ${(affordable || tutorialPreviewOnly) ? "" : "disabled"} ${tutorialPreviewOnly ? "disabled" : ""}>
-              ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
-            </button>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+          <div class="fish-meta"></div>
+        </div>
+        <div class="shop-meta">
+          <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
+          <button class="buy-button" data-buy-decor="${decor.key}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+            ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
+          </button>
+        </div>
+      </article>
+    `;
+  };
+  const regularMarkup = catalog.filter((decor) => !isHalloweenDecor(decor)).map(renderCard).join("");
+  const seasonalMarkup = catalog.filter(isHalloweenDecor).map(renderCard).join("");
+  const cardsMarkup = regularMarkup + (seasonalMarkup ? `
+    <section class="shop-section decor-seasonal-section" aria-labelledby="decorSeasonalHeading">
+      <div class="shop-section-heading">
+        <h3 id="decorSeasonalHeading">Seasonal</h3>
+        <p>Halloween decor, available all year.</p>
+      </div>
+      <div class="shop-section-cards">${seasonalMarkup}</div>
+    </section>
+  ` : "");
 
   setMarkupIfChanged(
     "decor-shop",
@@ -55871,7 +58241,6 @@ function renderEquipmentShop() {
   const dispenserInstalled = hasAutoDispenserInstalled();
   const dispenserLoadedCount = getAutoDispenserLoadedCount(state.autoDispenser);
   const dispenserPortion = clamp(Number(state.autoDispenser?.mealPortion) || 0, 0, AUTO_DISPENSER_PORTION_MAX);
-  const dispenserAffordable = state.coins >= AUTO_DISPENSER_COST;
   const shopFilters = ENABLE_FILTER
     ? runtime.filterCatalog.filter((filter) => filter.purchasable && filter.key !== BASIC_FILTER_KEY)
     : [];
@@ -55880,7 +58249,6 @@ function renderEquipmentShop() {
     const equippedCount = getFilterAssignmentCount(filter.key);
     const unusedCount = getUnusedFilterCount(filter.key);
     const equippedHere = state.selectedFilterAsset === filter.key;
-    const affordable = state.coins >= filter.cost;
     const resaleValue = getResaleValue(filter.cost);
     const buyLabel = ownedCount > 0 ? "Buy Another" : "Buy & Equip";
     const statusBits = [
@@ -55903,7 +58271,7 @@ function renderEquipmentShop() {
         <div class="shop-meta shop-card-actions">
           <span class="price-tag">${filter.cost} ${pluralize("coin", filter.cost)}</span>
           <div class="shop-button-row">
-            <button class="buy-button" data-buy-filter="${filter.key}" ${affordable ? "" : "disabled"}>${buyLabel}</button>
+            <button class="buy-button" data-buy-filter="${filter.key}">${buyLabel}</button>
             <button class="small-button alt" data-sell-filter="${filter.key}" ${unusedCount > 0 ? "" : "disabled"}>Sell Spare (${resaleValue})</button>
           </div>
         </div>
@@ -55925,7 +58293,7 @@ function renderEquipmentShop() {
         <div class="shop-meta shop-card-actions">
           <span class="price-tag">${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)}</span>
           <div class="shop-button-row">
-            <button class="buy-button" data-buy-auto-dispenser="true" ${dispenserInstalled || !dispenserAffordable ? "disabled" : ""}>${dispenserInstalled ? "Installed" : "Buy & Install"}</button>
+            <button class="buy-button" data-buy-auto-dispenser="true" ${dispenserInstalled ? "disabled" : ""}>${dispenserInstalled ? "Installed" : "Buy & Install"}</button>
           </div>
         </div>
       </article>
@@ -55936,7 +58304,6 @@ function renderEquipmentShop() {
       const uvLightOwned = isUvLightOwned();
       const uvLightInstalled = isUvLightInstalled();
       const uvLightActive = isUvLightActive();
-      const uvLightAffordable = state.coins >= UV_LIGHT_COST;
       return `
       <article class="shop-card">
         <img class="shop-thumb uv-light-shop-thumb" src="${UV_LIGHT_IMAGE_PATH}" alt="UV light" />
@@ -55951,7 +58318,7 @@ function renderEquipmentShop() {
         <div class="shop-meta shop-card-actions">
           <span class="price-tag">${uvLightOwned ? "Unlocked" : `${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)}`}</span>
           <div class="shop-button-row">
-            <button class="buy-button" data-buy-uv-light="true" ${uvLightOwned || !uvLightAffordable ? "disabled" : ""}>${uvLightOwned ? "Owned" : "Buy & Add"}</button>
+            <button class="buy-button" data-buy-uv-light="true" ${uvLightOwned ? "disabled" : ""}>${uvLightOwned ? "Owned" : "Buy & Add"}</button>
           </div>
         </div>
       </article>
@@ -55964,7 +58331,6 @@ function renderEquipmentShop() {
     .map((background) => {
       const owned = isBackgroundOwned(background.key);
       const selected = state.selectedBackground === background.key;
-      const affordable = state.coins >= background.cost;
       const statusLabel = background.defaultUnlocked
         ? "Unlocked by default"
         : owned
@@ -55988,7 +58354,7 @@ function renderEquipmentShop() {
           <div class="shop-button-row">
             ${owned
           ? `<button class="small-button alt" data-use-background-shop="${background.key}">${selected ? "Using This Background" : "Use Now"}</button>`
-          : `<button class="buy-button" data-buy-background="${background.key}" ${affordable ? "" : "disabled"}>Unlock & Use</button>`}
+          : `<button class="buy-button" data-buy-background="${background.key}">Unlock & Use</button>`}
           </div>
         </div>
       </article>
@@ -56035,6 +58401,7 @@ function renderEquipmentShop() {
       </div>
       <div class="shop-section-cards">
         ${renderSubmarineShopCard()}
+        ${renderBoatShopCard()}
       </div>
     </section>
   `;
@@ -56763,10 +59130,10 @@ function renderSolidBackgroundControls() {
       dom.editTankBackgroundList.hidden = compactMode !== "image";
     }
     for (const button of dom.editTankTray?.querySelectorAll("[data-tank-background-mode]") || []) {
-      const selected = button.dataset.tankBackgroundMode === compactMode;
+      const selected = runtime.editTankTrayTab === "background" && button.dataset.tankBackgroundMode === compactMode;
       button.classList.toggle("is-active", selected);
       button.setAttribute("aria-selected", selected ? "true" : "false");
-      button.tabIndex = selected ? 0 : -1;
+      button.tabIndex = 0;
     }
   }
 }
@@ -56907,56 +59274,56 @@ function renderCustomGravelControls() {
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
 
+  const layerMarkup = layerCatalog
+    .map((layer, index) => {
+      const activeColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+      const activeChoice = choices.find((choice) => choice.color === activeColor) || { label: activeColor, color: activeColor };
+      const colorizeChecked = activeColorizeSettings[index] === true;
+      const swatchMarkup = choices
+        .map((choice) => {
+          const selected = choice.color === activeColor;
+          return `
+            <button
+              class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
+              type="button"
+              data-custom-gravel-layer="${index}"
+              data-custom-gravel-color="${choice.color}"
+              aria-pressed="${selected}"
+              aria-label="Set ${escapeHtml(layer.label)} to ${escapeHtml(choice.label)}"
+              title="${escapeHtml(choice.label)}"
+              style="--swatch:${choice.color};">
+            </button>
+          `;
+        })
+        .join("");
+
+      return `
+        <article class="custom-gravel-layer-card">
+          <div class="custom-gravel-layer-header">
+            <div><strong>${escapeHtml(layer.label)}</strong></div>
+            <span class="custom-gravel-layer-swatch" style="--swatch:${activeColor};"></span>
+          </div>
+          <div class="custom-gravel-choice-summary">
+            <span>Selected Color</span>
+            <strong>${escapeHtml(activeChoice.label)}</strong>
+          </div>
+          <div class="custom-gravel-swatches" role="group" aria-label="${escapeHtml(layer.label)} color choices">
+            ${swatchMarkup}
+          </div>
+          <label class="cave-colorize-toggle custom-gravel-colorize-toggle">
+            <input
+              type="checkbox"
+              data-custom-gravel-layer="${index}"
+              data-custom-gravel-colorize="true"
+              ${colorizeChecked ? "checked" : ""} />
+            <span>Colorize</span>
+          </label>
+        </article>
+      `;
+    })
+    .join("");
+
   if (standardContainers.length) {
-    const layerMarkup = layerCatalog
-      .map((layer, index) => {
-        const activeColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
-        const activeChoice = choices.find((choice) => choice.color === activeColor) || { label: activeColor, color: activeColor };
-        const colorizeChecked = activeColorizeSettings[index] === true;
-        const swatchMarkup = choices
-          .map((choice) => {
-            const selected = choice.color === activeColor;
-            return `
-              <button
-                class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
-                type="button"
-                data-custom-gravel-layer="${index}"
-                data-custom-gravel-color="${choice.color}"
-                aria-pressed="${selected}"
-                aria-label="Set ${layer.label} to ${choice.label}"
-                title="${choice.label}"
-                style="--swatch:${choice.color};">
-              </button>
-            `;
-          })
-          .join("");
-
-        return `
-          <article class="custom-gravel-layer-card">
-            <div class="custom-gravel-layer-header">
-              <div><strong>${layer.label}</strong></div>
-              <span class="custom-gravel-layer-swatch" style="--swatch:${activeColor};"></span>
-            </div>
-            <div class="custom-gravel-choice-summary">
-              <span>Selected Color</span>
-              <strong>${activeChoice.label}</strong>
-            </div>
-            <div class="custom-gravel-swatches" role="group" aria-label="${layer.label} color choices">
-              ${swatchMarkup}
-            </div>
-            <label class="cave-colorize-toggle custom-gravel-colorize-toggle">
-              <input
-                type="checkbox"
-                data-custom-gravel-layer="${index}"
-                data-custom-gravel-colorize="true"
-                ${colorizeChecked ? "checked" : ""} />
-              <span>Colorize</span>
-            </label>
-          </article>
-        `;
-      })
-      .join("");
-
     const markup = `
       <div class="custom-gravel-panel-shell">
         <div class="custom-gravel-layer-list">${layerMarkup}</div>
@@ -56968,62 +59335,9 @@ function renderCustomGravelControls() {
   }
 
   if (editContainer) {
-    const activeLayerIndex = clamp(
-      Math.floor(Number(runtime.editTankGravelLayer) || 0),
-      0,
-      Math.max(0, layerCatalog.length - 1)
-    );
-    runtime.editTankGravelLayer = activeLayerIndex;
-    const activeLayer = layerCatalog[activeLayerIndex];
-    const activeColor = activeColors[activeLayerIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
-    const colorizeChecked = activeColorizeSettings[activeLayerIndex] === true;
-    const pebbleCatalog = runtime.customGravelPebbleCatalog || [];
-
-    const layerTabs = layerCatalog.map((layer, index) => {
-      const layerColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
-      const selected = index === activeLayerIndex;
-      const pebble = pebbleCatalog[index] || pebbleCatalog[0] || null;
-      const pebblePath = pebble?.path || resolveAppUrl(`assets/gravel/pebble_${index + 1}.png`);
-      return `
-        <button
-          class="edit-tank-gravel-layer-tab ${selected ? "is-active" : ""}"
-          type="button"
-          role="tab"
-          data-edit-gravel-layer="${index}"
-          aria-selected="${selected}"
-          aria-label="Edit ${escapeHtml(layer.label)}">
-          <span class="edit-tank-gravel-pebble" style="--pebble-color:${layerColor};--pebble-image:url('${escapeHtml(pebblePath)}');">
-            <img src="${escapeHtml(pebblePath)}" alt="" aria-hidden="true" draggable="false" />
-          </span>
-          <span>${escapeHtml(layer.label.replace(/\s+Layer$/i, ""))}</span>
-        </button>
-      `;
-    }).join("");
-
-    const colorizeMarkup = `
-      <label class="edit-tank-gravel-colorize">
-        <input
-          type="checkbox"
-          data-custom-gravel-layer="${activeLayerIndex}"
-          data-custom-gravel-colorize="true"
-          ${colorizeChecked ? "checked" : ""} />
-        <span>Colorize</span>
-      </label>
-    `;
-
     const editMarkup = `
-      <div class="edit-tank-gravel-editor">
-        <div class="edit-tank-gravel-layer-tabs" role="tablist" aria-label="Gravel layers">
-          ${layerTabs}
-        </div>
-        <div class="edit-tank-gravel-picker-workspace">
-          ${renderCompactTankColorPicker(
-            `gravel-${activeLayerIndex}`,
-            activeColor,
-            activeLayer?.label || `Layer ${activeLayerIndex + 1}`,
-            { colorChoices: choices, headingAction: colorizeMarkup }
-          )}
-        </div>
+      <div class="custom-gravel-panel-shell edit-tank-gravel-sections">
+        <div class="custom-gravel-layer-list">${layerMarkup}</div>
       </div>
     `;
     setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
@@ -57258,21 +59572,35 @@ function renderControls(now) {
   dom.editMenuButton?.setAttribute("aria-expanded", "false");
   dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu) && toolbarCareMenuOpen);
   if (dom.lightsOutToggleButton) {
-    const override = getLightsOutOverride();
-    const active = isTankLightsOut(now);
-    const modeText = override === LIGHTS_OUT_OVERRIDE_AUTO
-      ? "Auto"
-      : override === LIGHTS_OUT_OVERRIDE_ON
-        ? "On"
-        : "Off";
-    dom.lightsOutToggleButton.hidden = false;
-    dom.lightsOutToggleButton.classList.toggle("is-active", active);
-    dom.lightsOutToggleButton.dataset.mode = override;
-    dom.lightsOutToggleButton.title = `Lights Out: ${modeText}`;
-    dom.lightsOutToggleButton.setAttribute("aria-label", `Lights Out ${modeText}`);
-    dom.lightsOutToggleButton.setAttribute("aria-pressed", String(active));
-    if (dom.lightsOutModeBadge) {
-      dom.lightsOutModeBadge.textContent = override === LIGHTS_OUT_OVERRIDE_AUTO ? "A" : override === LIGHTS_OUT_OVERRIDE_ON ? "ON" : "OFF";
+    if (!LIGHTS_OUT_FEATURE_ENABLED) {
+      dom.lightsOutToggleButton.hidden = true;
+      dom.lightsOutToggleButton.disabled = true;
+      dom.lightsOutToggleButton.classList.remove("is-active");
+      dom.lightsOutToggleButton.dataset.mode = "disabled";
+      dom.lightsOutToggleButton.title = "Lights Out: Disabled";
+      dom.lightsOutToggleButton.setAttribute("aria-label", "Lights Out disabled");
+      dom.lightsOutToggleButton.setAttribute("aria-pressed", "false");
+      if (dom.lightsOutModeBadge) {
+        dom.lightsOutModeBadge.textContent = "OFF";
+      }
+    } else {
+      const override = getLightsOutOverride();
+      const active = isTankLightsOut(now);
+      const modeText = override === LIGHTS_OUT_OVERRIDE_AUTO
+        ? "Auto"
+        : override === LIGHTS_OUT_OVERRIDE_ON
+          ? "On"
+          : "Off";
+      dom.lightsOutToggleButton.hidden = false;
+      dom.lightsOutToggleButton.disabled = false;
+      dom.lightsOutToggleButton.classList.toggle("is-active", active);
+      dom.lightsOutToggleButton.dataset.mode = override;
+      dom.lightsOutToggleButton.title = `Lights Out: ${modeText}`;
+      dom.lightsOutToggleButton.setAttribute("aria-label", `Lights Out ${modeText}`);
+      dom.lightsOutToggleButton.setAttribute("aria-pressed", String(active));
+      if (dom.lightsOutModeBadge) {
+        dom.lightsOutModeBadge.textContent = override === LIGHTS_OUT_OVERRIDE_AUTO ? "A" : override === LIGHTS_OUT_OVERRIDE_ON ? "ON" : "OFF";
+      }
     }
   }
   if (dom.uvLightToggleButton) {
@@ -57816,6 +60144,25 @@ function setToolbarPosition(toolbarPosition) {
   runtime.toolbarActionMenu = "";
   saveState();
   renderUi(Date.now());
+}
+
+function setToolbarTileColor(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    toolbarTileColor: value
+  });
+  if (currentSettings.toolbarTileColor === nextSettings.toolbarTileColor) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
 }
 
 function setDisplayPosition(displayPosition) {
@@ -58914,6 +61261,92 @@ function handleBettaPassAttacks(now) {
   showToast(landedMessages.length === 1 ? landedMessages[0] : `${landedMessages.length} attacks landed.`);
 }
 
+function getSharkDesperationTarget(attacker, now = Date.now()) {
+  if (!attacker || !Array.isArray(state?.fish)) {
+    return null;
+  }
+  const draggedFishId = runtime.fishDragState?.fishId || null;
+  return state.fish
+    .filter((fish) => (
+      fish
+      && fish.id !== attacker.id
+      && fish.id !== draggedFishId
+      && !isFishDead(fish)
+      && !isUndeadFish(fish)
+      && !isDesperationPredatorFish(fish)
+      && !isFishProtectedFromPredators(fish, now)
+      && !hasZombieBiteInfection(fish)
+    ))
+    .sort((left, right) => (
+      Math.hypot(left.xNorm - attacker.xNorm, left.yNorm - attacker.yNorm)
+      - Math.hypot(right.xNorm - attacker.xNorm, right.yNorm - attacker.yNorm)
+    ))[0] || null;
+}
+
+function handleSharkDesperationAttacks(now = Date.now()) {
+  if (!state?.fish?.length || !isViolenceEnabled()) {
+    return;
+  }
+
+  const landedMessages = [];
+  for (const attacker of state.fish) {
+    const species = getSpeciesForFish(attacker);
+    if (
+      !species
+      || isFishDead(attacker)
+      || !isDesperationPredatorFish(species)
+      || getFishNeedValue(attacker, "hunger", now) > FISH_HUNGER_CRITICAL_THRESHOLD
+      || Number(attacker.healthUnits) > 2
+      || now - (Number(attacker.sharkLastAttackAt) || 0) < SHARK_DESPERATION_ATTACK_COOLDOWN_MS
+      || attacker.activity !== "roam"
+    ) {
+      continue;
+    }
+
+    const target = getSharkDesperationTarget(attacker, now);
+    if (!target || Math.hypot(attacker.xNorm - target.xNorm, attacker.yNorm - target.yNorm) > SHARK_DESPERATION_ATTACK_RANGE_NORM) {
+      continue;
+    }
+
+    const outcome = applyFishDamage(
+      target,
+      1,
+      now,
+      `${attacker.name} made a desperate bite at ${target.name}.`,
+      `${attacker.name} killed ${target.name} in desperation.`
+    );
+    if (!outcome.changed) {
+      continue;
+    }
+
+    attacker.sharkLastAttackAt = now;
+    attacker.lastAteAt = now;
+    const previousHunger = getFishNeedValue(attacker, "hunger", now);
+    setFishNeedValue(
+      attacker,
+      "hunger",
+      Math.max(previousHunger + FISH_CHUM_MEAL_HUNGER_GAIN, FISH_CHUM_MEAL_HUNGER_FLOOR),
+      now
+    );
+    attacker.needsUpdatedAt = now;
+    if (!outcome.dead) {
+      makeFishScurryFromAttack(target, attacker, now);
+    } else {
+      spawnBloodCloud(target.xNorm, target.yNorm, 1.25);
+    }
+    landedMessages.push(outcome.dead
+      ? `${attacker.name} killed ${target.name} in desperation.`
+      : `${attacker.name} made a desperate bite at ${target.name}.`);
+  }
+
+  if (!landedMessages.length) {
+    return;
+  }
+  saveState();
+  renderUi(now);
+  showToast(landedMessages.length === 1 ? landedMessages[0] : `${landedMessages.length} desperate bites landed.`);
+}
+
 function getEffectCloudPreset(presetKey = "gravelDust") {
   return EFFECT_CLOUD_PRESETS[presetKey] || EFFECT_CLOUD_PRESETS.gravelDust;
 }
@@ -59594,6 +62027,9 @@ function updateFishMotion(now, deltaSeconds) {
     let pelletBounds = null;
 
     if (fish.id === activelyDraggedFishId) {
+      if (isWhaleBreathActive(fish, species)) {
+        clearWhaleBreathState(fish, now);
+      }
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
       fish.activity = "roam";
@@ -59613,6 +62049,7 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     if (isFishDead(fish)) {
+      clearWhaleBreathState(fish, now, { reschedule: false });
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
       fish.activity = "dead";
@@ -59755,7 +62192,22 @@ function updateFishMotion(now, deltaSeconds) {
       fish.targetAt = now + 900 + Math.random() * 1400;
     }
 
-    if (zombieLockedOnTarget) {
+    const whaleBreathOwnsMovement = updateWhaleBreathBehavior(fish, species, now, {
+      paused: Boolean(pendingTravel)
+    });
+
+    if (whaleBreathOwnsMovement) {
+      clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+      clearForcedGravelDigPrompt(fish);
+      if (fish.caveState) {
+        abortFishCaveBehavior(fish, now, false);
+      }
+      fish.feedingPelletId = null;
+      fish.hangoutDecorId = null;
+      fish.hangoutZoneType = null;
+      fish.panicUntil = null;
+      fish.panicSpeedBoost = null;
+    } else if (zombieLockedOnTarget) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
       if (fish.caveState) {
@@ -59974,6 +62426,7 @@ function updateFishMotion(now, deltaSeconds) {
       ? getActiveFishActionQueueItem(fish, now)
       : null;
     const isDirectedSwim = panicOwnsMovement
+      || whaleBreathOwnsMovement
       || fish.activity === "feeding"
       || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
       || fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -59982,6 +62435,8 @@ function updateFishMotion(now, deltaSeconds) {
       || Boolean(activeDebugSteering);
     let motionTarget = fish.activity === "feeding"
       ? 1
+      : whaleBreathOwnsMovement
+        ? (fish.whaleBreathState === "surface" ? 0.12 : 0.72)
       : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
         ? 0.76
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -60032,6 +62487,8 @@ function updateFishMotion(now, deltaSeconds) {
       const manuallyChasingFood = fish.activity === "feeding" && pellet && pellet.dropStartXNorm == null;
       let speedMultiplier = fish.activity === "feeding"
         ? (manuallyChasingFood ? 1 : FEED_CHASE_MULTIPLIER)
+        : whaleBreathOwnsMovement
+          ? (fish.whaleBreathState === "surface" ? 0.16 : 1.12)
         : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
           ? 1.14
           : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -60132,6 +62589,8 @@ function updateFishMotion(now, deltaSeconds) {
         ? rawNextYNorm
         : nextPlacement
         ? nextPlacement.yNorm
+        : whaleBreathOwnsMovement
+        ? clamp(rawNextYNorm, getWhaleBreathSurfaceYNorm(fish, species), movementMaxYNorm)
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? clamp(rawNextYNorm, 0.14, movementMaxYNorm)
         : clampFishYNormToLayer(
@@ -60142,7 +62601,7 @@ function updateFishMotion(now, deltaSeconds) {
           { minYNorm: 0.14, maxYNorm: movementMaxYNorm }
         );
 
-      if (effectiveBehavior === "sucker" || pendingTravel) {
+      if (effectiveBehavior === "sucker" || pendingTravel || whaleBreathOwnsMovement) {
         fish.xNorm = nextXNorm;
         fish.yNorm = nextYNorm;
       } else {
@@ -60321,6 +62780,7 @@ function updateFishMotion(now, deltaSeconds) {
   handlePiranhaSwarm(now, deltaSeconds);
   handleZombieBiteAttacks(now);
   handleBettaPassAttacks(now);
+  handleSharkDesperationAttacks(now);
   updateFishPebbleTosses(now);
   updateChumBloodClouds(now);
 }
@@ -61569,7 +64029,6 @@ function renderTank(now) {
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
   drawUnderwaterLightingPass(now);
-  drawWaterColumnCaustics(now);
   //drawLooseGravel(now, { transientOnly: true });
   drawDirtyWaterTint(dirtiness);
   drawMedicineWaterTint(now);
@@ -61610,365 +64069,221 @@ function renderTank(now) {
   }
 }
 
-function getCausticLightImage() {
-  const image = runtime.images.get(CAUSTIC_LIGHT_ASSET_PATH) || null;
-  if (image && Number(image.naturalWidth || image.width) > 0 && Number(image.naturalHeight || image.height) > 0) {
-    return image;
-  }
-  requestRuntimeImageRecovery(CAUSTIC_LIGHT_ASSET_PATH, {
-    kind: "caustic-light",
-    id: "underwater-caustics"
-  });
-  return null;
+function getCausticLightStrength(now) {
+  if (!isCausticLightingEnabled() || isTankLightsOut(now)) return 0;
+  return 0.42 * (1 - clamp(getTankDirtiness(now), 0, 1) * 0.55);
 }
 
-function getCausticHighlightMask() {
-  const image = getCausticLightImage();
-  if (!image) {
-    return null;
-  }
-
-  const width = Number(image.naturalWidth || image.width) || 0;
-  const height = Number(image.naturalHeight || image.height) || 0;
-  const cacheKey = `${width}x${height}`;
-  if (runtime.causticHighlightMaskCanvas && runtime.causticHighlightMaskCacheKey === cacheKey) {
-    return runtime.causticHighlightMaskCanvas;
-  }
-
-  const sourceCanvas = document.createElement("canvas");
-  sourceCanvas.width = width;
-  sourceCanvas.height = height;
-  const sourceContext = sourceCanvas.getContext("2d", { willReadFrequently: true });
-  sourceContext.clearRect(0, 0, width, height);
-  sourceContext.drawImage(image, 0, 0, width, height);
-
-  const blurCanvas = document.createElement("canvas");
-  blurCanvas.width = width;
-  blurCanvas.height = height;
-  const blurContext = blurCanvas.getContext("2d", { willReadFrequently: true });
-  blurContext.clearRect(0, 0, width, height);
-  blurContext.filter = "blur(9px)";
-  blurContext.drawImage(sourceCanvas, 0, 0);
-  blurContext.filter = "none";
-
-  try {
-    const sourcePixels = sourceContext.getImageData(0, 0, width, height);
-    const blurPixels = blurContext.getImageData(0, 0, width, height);
-    const outputCanvas = document.createElement("canvas");
-    outputCanvas.width = width;
-    outputCanvas.height = height;
-    const outputContext = outputCanvas.getContext("2d");
-    const outputPixels = outputContext.createImageData(width, height);
-
-    const src = sourcePixels.data;
-    const blurred = blurPixels.data;
-    const out = outputPixels.data;
-    for (let index = 0; index < src.length; index += 4) {
-      const sourceAlpha = src[index + 3] / 255;
-      if (sourceAlpha <= 0.002) {
-        continue;
-      }
-
-      const sourceLum = src[index] * 0.2126 + src[index + 1] * 0.7152 + src[index + 2] * 0.0722;
-      const blurLum = blurred[index] * 0.2126 + blurred[index + 1] * 0.7152 + blurred[index + 2] * 0.0722;
-      const localHighlight = Math.max(0, sourceLum - blurLum);
-      const brightnessGate = clamp((sourceLum - 196) / 59, 0, 1);
-      const ridgeStrength = clamp((localHighlight - 1.5) / 24, 0, 1);
-      const alpha = sourceAlpha * brightnessGate * ridgeStrength * 1.45;
-      if (alpha <= 0.004) {
-        continue;
-      }
-
-      out[index] = 242;
-      out[index + 1] = 250;
-      out[index + 2] = 255;
-      out[index + 3] = Math.round(clamp(alpha, 0, 1) * 255);
-    }
-
-    outputContext.putImageData(outputPixels, 0, 0);
-    runtime.causticHighlightMaskCanvas = outputCanvas;
-    runtime.causticHighlightMaskCacheKey = cacheKey;
-    return outputCanvas;
-  } catch (error) {
-    console.warn("Unable to build caustic highlight mask", error);
-    return image;
-  }
+function getCausticRidgeAlpha(red, green, blue, alpha) {
+  // These authored maps encode their connected light strands in alpha, while
+  // most visible RGB values are nearly white. RGB high-pass filtering erases
+  // that pattern. Retain the alpha structure and lift its softer connections.
+  return Math.round(255 * Math.pow(clamp(alpha / 255, 0, 1), 0.9));
 }
 
-function drawCausticProjectedStrip(context, image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height) {
-  if (width <= 0 || height <= 0 || sourceWidth <= 0 || sourceHeight <= 0) {
-    return;
-  }
-  context.drawImage(
-    image,
-    sourceX,
-    sourceY,
-    sourceWidth,
-    sourceHeight,
-    x,
-    y,
-    width,
-    height
-  );
+function getCausticRidgeMask(image, size) {
+  // Kept for compatibility with the previous renderer inventory. The clean
+  // renderer uses the prepared color source below instead of a per-frame mask.
+  const prepared = getPreparedCausticSource(image);
+  if (!prepared) return null;
+  const mask = document.createElement("canvas");
+  mask.width = mask.height = size;
+  const context = mask.getContext("2d");
+  context.drawImage(prepared, 0, 0, size, size);
+  return context.getImageData(0, 0, size, size).data;
 }
 
-function hashCausticNoise(value, seed = 0) {
-  const input = Number(value) * 12.9898 + Number(seed) * 78.233;
-  return (Math.sin(input) * 43758.5453123) % 1;
-}
+function getPreparedCausticSource(image) {
+  if (!isUsableRuntimeImage(image)) return null;
+  if (!runtime.causticPreparedSources) runtime.causticPreparedSources = new WeakMap();
+  const cached = runtime.causticPreparedSources.get(image);
+  if (cached) return cached;
 
-function normalizedCausticNoise(value, seed = 0) {
-  const noise = hashCausticNoise(value, seed);
-  return noise < 0 ? noise + 1 : noise;
-}
+  // Prepare the authored transparency once, preserving warm/cool source RGB.
+  const naturalWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const naturalHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const maxSide = 768;
+  const scale = Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight));
+  const width = Math.max(1, Math.round(naturalWidth * scale));
+  const height = Math.max(1, Math.round(naturalHeight * scale));
 
-function getRotatedCausticSource(image, now, options = {}) {
-  const imageWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
-  const imageHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
-  const diagonal = Math.max(imageWidth, imageHeight, Math.ceil(Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight)));
-  const scale = Math.max(0.4, Number(options.scale) || 1);
-  const canvasWidth = Math.ceil(diagonal * scale);
-  const canvasHeight = Math.ceil(diagonal * scale);
-  const angle = (Number(now) || 0) * (Number(options.rotationSpeed) || 0) + (Number(options.baseAngle) || 0);
-  const cacheKey = [canvasWidth, canvasHeight, imageWidth, imageHeight].join(":");
+  const source = document.createElement("canvas");
+  source.width = width;
+  source.height = height;
+  const context = source.getContext("2d", { willReadFrequently: true });
+  context.drawImage(image, 0, 0, width, height);
 
-  if (!runtime.causticRotatedLayerCache) {
-    runtime.causticRotatedLayerCache = new Map();
-  }
-
-  let entry = runtime.causticRotatedLayerCache.get(cacheKey);
-  if (!entry) {
-    const canvas = document.createElement("canvas");
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    entry = { canvas, context: canvas.getContext("2d") };
-    runtime.causticRotatedLayerCache.set(cacheKey, entry);
-  }
-
-  const { canvas, context } = entry;
-  if (!context) {
-    return image;
-  }
-
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.save();
-  context.translate(canvas.width * 0.5, canvas.height * 0.5);
-  context.rotate(angle);
-  context.scale(scale, scale);
-  context.filter = "grayscale(0.22) saturate(0.78) brightness(1.08)";
-  context.drawImage(image, -imageWidth * 0.5, -imageHeight * 0.5, imageWidth, imageHeight);
-  context.restore();
-  return canvas;
-}
-
-function buildCausticSpotDescriptor(now, slotIndex, options = {}) {
-  const durationMs = Math.max(2200, Number(options.durationMs) || 5200);
-  const staggerMs = Number(options.staggerMs) || Math.round(durationMs * 0.37);
-  const startMs = (Number(now) || 0) + slotIndex * staggerMs + (Number(options.timeOffsetMs) || 0);
-  const cycleIndex = Math.floor(startMs / durationMs);
-  const localT = ((startMs % durationMs) + durationMs) % durationMs / durationMs;
-  const fade = Math.pow(Math.sin(localT * Math.PI), 1.85);
-  const seed = Number(options.seed) || 0;
-  const xNorm = 0.12 + normalizedCausticNoise(cycleIndex * 13.1 + slotIndex * 2.17 + 0.3, seed + 11) * 0.76;
-  const yNorm = 0.12 + normalizedCausticNoise(cycleIndex * 9.7 + slotIndex * 1.73 + 0.6, seed + 23) * 0.74;
-  const widthNorm = 0.14 + normalizedCausticNoise(cycleIndex * 7.2 + slotIndex * 4.11 + 0.9, seed + 31) * 0.2;
-  const heightNorm = 0.16 + normalizedCausticNoise(cycleIndex * 5.8 + slotIndex * 3.03 + 0.12, seed + 47) * 0.22;
-  const sourcePhaseX = normalizedCausticNoise(cycleIndex * 4.9 + slotIndex * 0.91 + 0.14, seed + 59);
-  const sourcePhaseY = normalizedCausticNoise(cycleIndex * 6.7 + slotIndex * 1.44 + 0.84, seed + 71);
-  const brightness = 0.72 + normalizedCausticNoise(cycleIndex * 8.9 + slotIndex * 2.62 + 0.41, seed + 83) * 0.5;
-  return {
-    fade,
-    xNorm,
-    yNorm,
-    widthNorm,
-    heightNorm,
-    sourcePhaseX,
-    sourcePhaseY,
-    brightness,
-    cycleIndex,
-    localT
-  };
-}
-
-function drawLocalizedGravelCausticPass(context, image, now, options = {}) {
-  const bounds = getTankFloorDrawBounds();
-  const imageWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
-  const imageHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
-  const floorTop = bounds.drawTop;
-  const floorDepth = Math.max(1, bounds.bottom - floorTop);
-  const floorCenterY = floorTop + floorDepth * (Number(options.spotYNorm) || 0.5);
-  const radiusY = floorDepth * Math.max(0.06, Number(options.spotHeightNorm) || 0.2);
-  const centerX = bounds.drawLeft + bounds.drawWidth * (Number(options.spotXNorm) || 0.5);
-  const topWidth = bounds.drawWidth * Math.max(0.08, Number(options.topWidthScale) || 0.2);
-  const bottomWidth = bounds.drawWidth * Math.max(0.1, Number(options.bottomWidthScale) || 0.3);
-  const slices = 54;
-  const sourceWindowScale = clamp(Number(options.sourceWindowScale) || 0.58, 0.28, 1);
-  const sourceWidth = imageWidth * sourceWindowScale;
-  const sourceHeightWindow = imageHeight * clamp(Number(options.sourceHeightScale) || 0.54, 0.28, 1);
-  const maxSourceX = Math.max(0, imageWidth - sourceWidth);
-  const maxSourceY = Math.max(0, imageHeight - sourceHeightWindow);
-  const driftPhase = (Number(now) || 0) * (Number(options.driftSpeed) || 0.00018) + (Number(options.phase) || 0);
-  const sourceX = maxSourceX * ((Number(options.sourcePhaseX) || 0) + 0.5 + Math.sin(driftPhase) * 0.18);
-  const sourceYCenter = maxSourceY * (Number(options.sourcePhaseY) || 0.5);
-  const alphaBase = clamp(Number(options.alpha) || 0.045, 0, 0.18);
-
-  context.save();
-  traceTankFloorMaskPath(context, bounds);
-  context.clip();
-  context.globalCompositeOperation = "screen";
-  context.filter = "blur(0.3px) brightness(1.16)";
-
-  for (let index = 0; index < slices; index += 1) {
-    const t0 = index / slices;
-    const t1 = (index + 1) / slices;
-    const stripCenterY = floorTop + floorDepth * (t0 + t1) * 0.5;
-    const verticalDelta = Math.abs(stripCenterY - floorCenterY);
-    const verticalFalloff = Math.max(0, 1 - Math.pow(verticalDelta / Math.max(24, radiusY), 2));
-    if (verticalFalloff <= 0.015) {
-      continue;
-    }
-
-    const perspectiveT = Math.pow((t0 + t1) * 0.5, 0.92);
-    const projectedWidth = topWidth + (bottomWidth - topWidth) * perspectiveT;
-    const stripWave = Math.sin(driftPhase * 1.25 + perspectiveT * 8.6) * (Number(options.rippleAmount) || 6) * (0.3 + verticalFalloff * 0.7);
-    const projectedX = centerX - projectedWidth * 0.5 + stripWave;
-    const destY = floorTop + t0 * floorDepth;
-    const destHeight = Math.ceil((t1 - t0) * floorDepth) + 1;
-
-    const sourceYOffset = (verticalFalloff - 0.5) * 0.18 * maxSourceY;
-    const sourceY = clamp(sourceYCenter + sourceYOffset + (t0 - 0.5) * imageHeight * 0.18, 0, maxSourceY);
-    const sourceHeight = Math.min(sourceHeightWindow / slices * 2.15, imageHeight - sourceY);
-
-    context.globalAlpha = alphaBase * verticalFalloff * (Number(options.brightness) || 1);
-    drawCausticProjectedStrip(
-      context,
-      image,
-      clamp(sourceX, 0, maxSourceX),
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      projectedX,
-      destY,
-      projectedWidth,
-      destHeight
+  const pixels = context.getImageData(0, 0, width, height);
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    pixels.data[i + 3] = getCausticRidgeAlpha(
+      pixels.data[i], pixels.data[i + 1], pixels.data[i + 2], pixels.data[i + 3]
     );
   }
+  context.putImageData(pixels, 0, 0);
+  runtime.causticPreparedSources.set(image, source);
+  return source;
+}
 
+function drawCausticSourceIntoField(context, source, seconds, primary) {
+  if (!context || !source) return;
+  const pattern = context.createPattern(source, "repeat");
+  if (!pattern) return;
+  const tau = Math.PI * 2;
+  const baseScale = 512 / source.width;
+  // The live renderer uses Date.now(), so unbounded offsets reach billions of
+  // pixels and lose precision inside CanvasPattern. Repetition makes wrapping
+  // by one tile visually identical while keeping browser transforms accurate.
+  const driftX = ((seconds * (primary ? 10.0 : -7.5)) % 512 + 512) % 512;
+  const driftY = ((seconds * (primary ? 3.5 : 5.0)) % 512 + 512) % 512;
+  const phase = primary ? 0.8 : 2.35;
+  const strips = 128;
+  const stripHeight = 512 / strips;
+
+  context.globalAlpha = primary ? 0.76 : 0.48;
+  for (let i = 0; i < strips; i += 1) {
+    const rowPhase = i / strips * tau;
+    const warpX = Math.sin(seconds * (primary ? 1.05 : 1.25) + rowPhase * 2 + phase) * (primary ? 7.0 : 8.0)
+      + Math.sin(seconds * (primary ? 0.19 : 0.31) + rowPhase * 3 + phase * 0.7) * 1.7;
+    const warpY = Math.sin(seconds * (primary ? 0.28 : 0.39) + rowPhase * 2 + phase) * (primary ? 1.2 : 1.7);
+    pattern.setTransform(new DOMMatrix([
+      baseScale, 0, 0, baseScale,
+      driftX + warpX,
+      driftY + warpY
+    ]));
+    const y = i * stripHeight;
+    context.save();
+    context.beginPath();
+    context.rect(0, y, 512, stripHeight);
+    context.clip();
+    context.fillStyle = pattern;
+    context.fillRect(0, y, 512, stripHeight + 1);
+    context.restore();
+  }
+}
+
+function getAnimatedCausticTexture(now) {
+  const primaryImage = runtime.images.get(CAUSTIC_LIGHT_PRIMARY_ASSET_PATH);
+  const secondaryImage = runtime.images.get(CAUSTIC_LIGHT_SECONDARY_ASSET_PATH);
+  const primaryReady = isUsableRuntimeImage(primaryImage);
+  const secondaryReady = isUsableRuntimeImage(secondaryImage);
+
+  if (!primaryReady) requestRuntimeImageRecovery(CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, { kind: "caustic-light-primary" });
+  if (!secondaryReady) requestRuntimeImageRecovery(CAUSTIC_LIGHT_SECONDARY_ASSET_PATH, { kind: "caustic-light-secondary" });
+  if (!primaryReady && !secondaryReady) return null;
+
+  // Both maps flow and deform independently in a shared 30 FPS light field.
+  const frame = Math.floor((Number(now) || 0) / 33.333333);
+  let cache = runtime.causticTexture;
+  if (cache?.frame === frame && cache.primaryImage === primaryImage && cache.secondaryImage === secondaryImage) {
+    return cache.canvas;
+  }
+  if (!cache || cache.canvas.width !== 512) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 512;
+    cache = runtime.causticTexture = {
+      canvas,
+      context: canvas.getContext("2d"),
+      frame: -1,
+      primaryImage: null,
+      secondaryImage: null
+    };
+  }
+
+  const context = cache.context;
+  context.save();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, 512, 512);
+  const seconds = frame / 30;
+  const primarySource = primaryReady ? getPreparedCausticSource(primaryImage) : null;
+  const secondarySource = secondaryReady ? getPreparedCausticSource(secondaryImage) : null;
+
+  context.globalCompositeOperation = "source-over";
+  drawCausticSourceIntoField(context, primarySource || secondarySource, seconds, true);
+  context.globalCompositeOperation = "screen";
+  drawCausticSourceIntoField(context, secondarySource || primarySource, seconds, false);
   context.restore();
+
+  cache.frame = frame;
+  cache.primaryImage = primaryImage;
+  cache.secondaryImage = secondaryImage;
+  return cache.canvas;
 }
 
 function drawGravelCausticProjection(now) {
-  if (!isCausticLightingEnabled()) {
-    return;
+  const strength = getCausticLightStrength(now);
+  if (strength <= 0) return;
+  const texture = getAnimatedCausticTexture(now);
+  if (!texture) return;
+  let projection = runtime.causticFloorTexture;
+  if (!projection) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 768; canvas.height = 256;
+    projection = runtime.causticFloorTexture = { canvas, context: canvas.getContext("2d"), frame: -1 };
   }
-
-  const baseImage = getCausticHighlightMask();
-  if (!baseImage) {
-    return;
+  if (projection.frame !== runtime.causticTexture.frame) {
+    projection.context.clearRect(0, 0, 768, 256);
+    projection.context.fillStyle = projection.context.createPattern(texture, "repeat");
+    projection.context.fillRect(0, 0, 768, 256);
+    projection.frame = runtime.causticTexture.frame;
   }
-
-  const layerA = getRotatedCausticSource(baseImage, now, {
-    scale: 1.06,
-    baseAngle: 0,
-    rotationSpeed: 0.000042
-  });
-  const layerB = getRotatedCausticSource(baseImage, now, {
-    scale: 0.92,
-    baseAngle: Math.PI * 0.24,
-    rotationSpeed: -0.000057
-  });
-
-  const layerConfigs = [
-    {
-      image: layerA,
-      seed: 41,
-      spots: 2,
-      alpha: 0.068,
-      topWidthScale: 0.16,
-      bottomWidthScale: 0.28,
-      sourceWindowScale: 0.5,
-      sourceHeightScale: 0.46,
-      driftSpeed: 0.00021,
-      rippleAmount: 6,
-      durationMs: 5400,
-      staggerMs: 2200,
-      phase: 0.2,
-      timeOffsetMs: 0
-    },
-    {
-      image: layerB,
-      seed: 97,
-      spots: 2,
-      alpha: 0.048,
-      topWidthScale: 0.14,
-      bottomWidthScale: 0.24,
-      sourceWindowScale: 0.44,
-      sourceHeightScale: 0.42,
-      driftSpeed: -0.00016,
-      rippleAmount: 4,
-      durationMs: 6200,
-      staggerMs: 2600,
-      phase: 1.7,
-      timeOffsetMs: 1200
-    }
-  ];
-
-  for (const layer of layerConfigs) {
-    for (let index = 0; index < layer.spots; index += 1) {
-      const spot = buildCausticSpotDescriptor(now, index, layer);
-      if (spot.fade <= 0.025) {
-        continue;
-      }
-      drawLocalizedGravelCausticPass(tankContext, layer.image, now, {
-        alpha: layer.alpha * spot.fade,
-        brightness: spot.brightness,
-        topWidthScale: layer.topWidthScale * (0.86 + spot.widthNorm * 0.9),
-        bottomWidthScale: layer.bottomWidthScale * (0.92 + spot.widthNorm),
-        sourceWindowScale: layer.sourceWindowScale,
-        sourceHeightScale: layer.sourceHeightScale,
-        driftSpeed: layer.driftSpeed,
-        rippleAmount: layer.rippleAmount,
-        phase: layer.phase + index * 1.23,
-        spotXNorm: spot.xNorm,
-        spotYNorm: spot.yNorm,
-        spotHeightNorm: spot.heightNorm,
-        sourcePhaseX: spot.sourcePhaseX,
-        sourcePhaseY: spot.sourcePhaseY
-      });
-    }
+  const bounds = getTankFloorDrawBounds();
+  const depth = Math.max(1, bounds.bottom - bounds.drawTop);
+  tankContext.save();
+  traceTankFloorMaskPath(tankContext, bounds);
+  tankContext.clip();
+  tankContext.globalCompositeOperation = "lighter";
+  tankContext.globalAlpha *= Math.min(1, strength * 1.8);
+  const strips = 40;
+  for (let i = 0; i < strips; i++) {
+    const t = i / strips;
+    // Overscan the distant rows so perspective does not leave unlit side wedges.
+    const width = bounds.drawWidth * (1 + t * 0.26);
+    tankContext.drawImage(projection.canvas, 0, t * 256, 768, 256 / strips,
+      bounds.left + (bounds.drawWidth - width) / 2, bounds.drawTop + t * depth,
+      width, depth / strips);
   }
+  tankContext.restore();
 }
 
-function drawWaterColumnCausticLayer(context, image, now, options = {}) {
-  const waterHeight = Math.max(1, getVisibleTankFloorBottomY() - WATER_SURFACE_Y);
-  const scale = Number(options.scale) || 1.18;
-  const width = TANK_WIDTH * scale;
-  const height = waterHeight * scale;
-  const phase = (Number(now) || 0) * (Number(options.speed) || 0.00004) + (Number(options.phase) || 0);
-  const xTravel = Math.max(10, (width - TANK_WIDTH) * 0.42);
-  const yTravel = Math.max(6, (height - waterHeight) * 0.28);
-  const x = (TANK_WIDTH - width) * 0.5 + Math.sin(phase) * xTravel;
-  const y = WATER_SURFACE_Y + (waterHeight - height) * 0.46 + Math.cos(phase * 0.73 + 0.8) * yTravel;
-
+function drawDecorCausticLight(context, image, drawX, drawY, width, height, item, now, motion) {
+  const strength = getCausticLightStrength(now);
+  if (!strength || width <= 0 || height <= 0) return;
+  const texture = getAnimatedCausticTexture(now);
+  if (!texture) return;
+  // Weak ownership releases masks with removed decor; update only at light cadence.
+  if (!runtime.decorCausticCache) runtime.decorCausticCache = new WeakMap();
+  let scratch = runtime.decorCausticCache.get(item);
+  if (!scratch) {
+    const canvas = document.createElement("canvas");
+    scratch = { canvas, context: canvas.getContext("2d") };
+    runtime.decorCausticCache.set(item, scratch);
+  }
+  const scale = Math.min(1, 192 / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
+  const c = scratch.context;
+  const key = [runtime.causticTexture.frame, width, height, item.xNorm, item.yNorm].join(":");
+  if (scratch.key !== key || scratch.image !== image) {
+  if (scratch.canvas.width !== w) scratch.canvas.width = w;
+  if (scratch.canvas.height !== h) scratch.canvas.height = h;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, w, h);
+  c.globalCompositeOperation = "source-over";
+  c.drawImage(image, 0, 0, w, h);
+  c.globalCompositeOperation = "source-in";
+  c.fillStyle = c.createPattern(texture, "repeat");
+  c.save();
+  c.scale(scale, scale);
+  c.translate(-item.xNorm * TANK_WIDTH + width / 2, -item.yNorm * TANK_HEIGHT + height);
+  c.fillRect(item.xNorm * TANK_WIDTH - width / 2, item.yNorm * TANK_HEIGHT - height, width, height);
+  c.restore();
+  scratch.key = key;
+  scratch.image = image;
+  }
   context.save();
-  context.beginPath();
-  context.rect(GLASS_MARGIN_X, WATER_SURFACE_Y, TANK_WIDTH - GLASS_MARGIN_X * 2, waterHeight);
-  context.clip();
   context.globalCompositeOperation = "screen";
-  context.globalAlpha = clamp(Number(options.alpha) || 0.018, 0, 0.08);
-  context.filter = "grayscale(0.72) saturate(0.42) brightness(1.12)";
-  context.drawImage(image, x, y, width, height);
+  context.globalAlpha *= strength * 1.1;
+  drawDecorMotionImageToContext(context, scratch.canvas, drawX, drawY, width, height, item, now, motion);
   context.restore();
-}
-
-function drawWaterColumnCaustics(now) {
-  // Disabled intentionally. The authored caustic asset contains broad translucent
-  // regions that read as fog when screen-blended through the entire water column.
-  // Caustics now stay on the gravel plane, where the perspective projection reads
-  // as refracted light rather than suspended haze. Keep this function in place so
-  // a dedicated sparse water-column asset can be reintroduced later if desired.
-  void now;
 }
 
 function drawUnderwaterLightingPass(now) {
@@ -63483,7 +65798,9 @@ function drawFoodSpritePieceToContext(context, x, y, pellet, spritePath) {
   }
 
   const stableScale = getViewportStableAssetScale();
-  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale;
+  const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
+  const variantScale = pellet?.foodKey === "chum" ? getChumSpriteVisualScale(spritePath) : 1;
+  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale * chumScale * variantScale;
   const fitScale = Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height));
   const drawWidth = Math.max(10 * stableScale, image.width * fitScale);
   const drawHeight = Math.max(10 * stableScale, image.height * fitScale);
@@ -63758,7 +66075,8 @@ function drawFoodPelletPiece(x, y, pellet, appearance) {
     return;
   }
 
-  const scale = clamp(Number(pellet?.scale) || 1, 0.75, 1.35) * getViewportStableAssetScale();
+  const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
+  const scale = clamp(Number(pellet?.scale) || 1, 0.75, 1.35) * getViewportStableAssetScale() * chumScale;
   const size = 9.8 * scale;
   const drawWidth = size;
   const drawHeight = size * (sprite.height / Math.max(1, sprite.width));
@@ -63772,7 +66090,7 @@ function drawFoodPelletPiece(x, y, pellet, appearance) {
 }
 
 function drawFallbackChumPiece(x, y, pellet) {
-  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.35) * getViewportStableAssetScale();
+  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.35) * getViewportStableAssetScale() * 2;
 
   tankContext.save();
   tankContext.translate(x, y);
@@ -63804,7 +66122,9 @@ function drawFoodSpritePiece(x, y, pellet, spritePath) {
   }
 
   const stableScale = getViewportStableAssetScale();
-  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale;
+  const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
+  const variantScale = pellet?.foodKey === "chum" ? getChumSpriteVisualScale(spritePath) : 1;
+  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale * chumScale * variantScale;
   const fitScale = Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height));
   const drawWidth = Math.max(10 * stableScale, image.width * fitScale);
   const drawHeight = Math.max(10 * stableScale, image.height * fitScale);
@@ -65333,6 +67653,110 @@ function drawDecorColorLayerImageToContext(context, sourceImage, imagePath, colo
   return true;
 }
 
+function getTintedBubblerLightImage(imagePath, color, sourceImage = null) {
+  const image = sourceImage || runtime.images.get(imagePath);
+  if (!image) {
+    return null;
+  }
+
+  const resolvedColor = normalizeHexColor(color) || DEFAULT_BUBBLER_LIGHT_COLOR;
+  const cacheKey = `${imagePath}|${resolvedColor}`;
+  const cached = runtime.bubblerLightTintCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const width = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const height = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return image;
+  }
+
+  context.clearRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+  context.globalCompositeOperation = "source-in";
+  const centerX = width * 0.5;
+  const centerY = height * 0.56;
+  const innerRadius = Math.max(1, Math.min(width, height) * 0.025);
+  const outerRadius = Math.max(width, height) * 0.68;
+  const gradient = context.createRadialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius);
+  gradient.addColorStop(0, resolvedColor);
+  gradient.addColorStop(0.32, resolvedColor);
+  gradient.addColorStop(0.68, "#180B05");
+  gradient.addColorStop(1, "#000000");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, width, height);
+  context.globalCompositeOperation = "source-over";
+
+  runtime.bubblerLightTintCache.set(cacheKey, canvas);
+  return canvas;
+}
+
+function getBubblerLightFlickerAlpha(item, now = Date.now()) {
+  const phase = (Number(item?.xNorm) || 0) * 13.7 + (Number(item?.yNorm) || 0) * 8.3;
+  const slowPulse = Math.sin(now / 235 + phase) * 0.075;
+  const quickFlicker = Math.sin(now / 67 + phase * 1.9) * 0.035;
+  const tinyFlicker = Math.sin(now / 31 + phase * 3.1) * 0.018;
+  const occasionalDip = Math.max(0, Math.sin(now / 149 + phase * 2.4) - 0.9) * 0.48;
+  return clamp(0.9 + slowPulse + quickFlicker + tinyFlicker - occasionalDip, 0.68, 1);
+}
+
+function drawBubblerLightLayerToContext(context, item, decor, now = Date.now(), options = {}) {
+  const lightPath = getDecorBubblerLightPath(item);
+  if (!lightPath) {
+    return false;
+  }
+
+  const sourceImage = runtime.images.get(lightPath);
+  if (!sourceImage) {
+    return false;
+  }
+
+  const settings = getPlacedDecorBubblerSettings(item);
+  const lightImage = getTintedBubblerLightImage(
+    lightPath,
+    settings?.lightColor || DEFAULT_BUBBLER_LIGHT_COLOR,
+    sourceImage
+  );
+  if (!lightImage) {
+    return false;
+  }
+
+  const width = Number.isFinite(Number(options.width))
+    ? Number(options.width)
+    : getDecorDisplayWidth(decor, item);
+  const height = Number.isFinite(Number(options.height))
+    ? Number(options.height)
+    : width * ((sourceImage.height || 1) / Math.max(1, sourceImage.width || 1));
+  let drawX = Number.isFinite(Number(options.drawX))
+    ? Number(options.drawX)
+    : item.xNorm * TANK_WIDTH - width / 2;
+  let drawY = Number.isFinite(Number(options.drawY))
+    ? Number(options.drawY)
+    : item.yNorm * TANK_HEIGHT - height;
+  const motion = options.motion || getDecorMotion(item, now);
+  const baseAlpha = Number.isFinite(Number(options.alpha)) ? clamp(Number(options.alpha), 0, 1) : 1;
+  const flickerAlpha = getBubblerLightFlickerAlpha(item, now);
+
+  context.save();
+  context.globalAlpha = baseAlpha * flickerAlpha;
+  const flipX = isDecorHorizontallyFlipped(item);
+  const flipY = isDecorVerticallyFlipped(item);
+  if (flipX || flipY) {
+    context.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
+    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+    drawX = flipX ? 0 : drawX;
+    drawY = flipY ? 0 : drawY;
+  }
+  drawDecorMotionImageToContext(context, lightImage, drawX, drawY, width, height, item, now, motion);
+  context.restore();
+  return true;
+}
+
 function getDecorWarpSliceCount(height) {
   return clamp(
     Math.round(Math.max(1, Number(height) || 1) / DECOR_WARP_SLICE_TARGET_PX),
@@ -65425,6 +67849,7 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
     drawY = flipY ? 0 : drawY;
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
+  drawDecorCausticLight(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
   drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
   context.restore();
 }
@@ -65592,6 +68017,34 @@ function pruneFishShadowPlaneCache() {
   }
 }
 
+function getDecorContactSpans(item, decor) {
+  const mask = getImageAlphaMask(decor.path);
+  if (!mask?.bounds || !mask.alpha) return null;
+  if (!runtime.decorContactSpanCache) runtime.decorContactSpanCache = new WeakMap();
+  let variants = runtime.decorContactSpanCache.get(mask);
+  if (!variants) { variants = new Map(); runtime.decorContactSpanCache.set(mask, variants); }
+  const flippedY = isDecorVerticallyFlipped(item);
+  if (variants.has(flippedY)) return variants.get(flippedY);
+  const { minX, maxX, minY, maxY } = mask.bounds;
+  const band = Math.max(2, Math.ceil((maxY - minY + 1) * 0.055));
+  const spans = [];
+  let start = null;
+  for (let x = minX; x <= maxX + 1; x++) {
+    let opaque = false;
+    if (x <= maxX) for (let offset = 0; offset < band; offset++) {
+      const y = flippedY ? minY + offset : maxY - offset;
+      if (mask.alpha[(y * mask.width + x) * 4 + 3] >= ALPHA_HIT_THRESHOLD) { opaque = true; break; }
+    }
+    if (opaque && start === null) start = x;
+    if (!opaque && start !== null) {
+      spans.push({ left: start / mask.width, right: x / mask.width });
+      start = null;
+    }
+  }
+  variants.set(flippedY, spans);
+  return spans;
+}
+
 function getDecorContactShadowMetrics(item) {
   const decor = runtime.decorMap.get(item?.decorKey);
   if (!decor) {
@@ -65611,8 +68064,8 @@ function getDecorContactShadowMetrics(item) {
   const width = Math.max(1, bounds.right - bounds.left);
   const height = Math.max(1, bounds.bottom - bounds.top);
   const layerFloorY = getTankLayerBottomBoundaryY(getDecorTankLayer(item));
-  const anchorY = (Number(item.yNorm) || 0) * TANK_HEIGHT;
-  const groundingTolerance = clamp(width * 0.09, 18, 58);
+  const anchorY = bounds.bottom;
+  const groundingTolerance = clamp(width * 0.05, 10, 24);
   const groundingStrength = clamp(1 - Math.abs(layerFloorY - anchorY) / groundingTolerance, 0, 1);
   if (groundingStrength <= 0.04) {
     return null;
@@ -65624,7 +68077,7 @@ function getDecorContactShadowMetrics(item) {
   const centerX = (bounds.left + bounds.right) * 0.5;
   const lightOffsetX = clamp(radiusX * 0.075, 2, 12);
   const shadowY = clamp(
-    layerFloorY + 2,
+    anchorY - 0.5,
     WATER_SURFACE_Y + 20,
     getVisibleTankFloorBottomY() + 8
   );
@@ -65634,7 +68087,9 @@ function getDecorContactShadowMetrics(item) {
     y: shadowY,
     radiusX,
     radiusY,
-    alpha: 0.30 * groundingStrength
+    alpha: 0.30 * groundingStrength,
+    spans: getDecorContactSpans(item, decor),
+    spriteWidth: getDecorDisplayWidth(decor, item)
   };
 }
 
@@ -65645,17 +68100,29 @@ function drawDecorContactShadow(context, item) {
   }
 
   context.save();
-  context.translate(shadow.x, shadow.y);
-  context.scale(shadow.radiusX, shadow.radiusY);
-  const gradient = context.createRadialGradient(0, 0, 0.04, 0, 0, 1);
-  gradient.addColorStop(0, `rgba(2, 7, 12, ${shadow.alpha.toFixed(3)})`);
-  gradient.addColorStop(0.34, `rgba(3, 9, 15, ${(shadow.alpha * 0.86).toFixed(3)})`);
-  gradient.addColorStop(0.75, `rgba(5, 12, 18, ${(shadow.alpha * 0.34).toFixed(3)})`);
-  gradient.addColorStop(1, "rgba(5, 12, 18, 0)");
-  context.fillStyle = gradient;
-  context.beginPath();
-  context.arc(0, 0, 1, 0, Math.PI * 2);
-  context.fill();
+  traceTankFloorMaskPath(context, getTankFloorDrawBounds());
+  context.clip();
+  const spans = shadow.spans || [{ left: 0.22, right: 0.78 }];
+  for (const span of spans) {
+    const left = resolveDecorHorizontalUnit(item, span.left);
+    const right = resolveDecorHorizontalUnit(item, span.right);
+    const x = item.xNorm * TANK_WIDTH + ((left + right) / 2 - 0.5) * shadow.spriteWidth;
+    const radius = Math.max(2, Math.abs(right - left) * shadow.spriteWidth / 2);
+    // Local soft occlusion plus a tight core; gaps under arches stay open.
+    for (const core of [false, true]) {
+      context.save();
+      context.translate(x, shadow.y);
+      context.scale(radius * (core ? 1.02 : 1.1), core ? 1.5 : clamp(radius * 0.065, 2, 6));
+      const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * (core ? 0.88 : 0.42)})`);
+      gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.arc(0, 0, 1, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+  }
   context.restore();
 }
 
@@ -65884,6 +68351,13 @@ function drawDecor(layer = null, now = Date.now()) {
           drawDecorImageLayer(bgImage, drawX, y - bgHeight, width, bgHeight, item, now, motion);
         }
       }
+      drawBubblerLightLayerToContext(tankContext, item, decor, now, {
+        drawX,
+        drawY,
+        width,
+        height,
+        motion
+      });
       drawDecorBubblerEffect(item, decor, image, now);
       if (!isCustomBubblerDecorKey(item.decorKey) || runtime.editTankMode) {
         if (!drawCaveColorLayersToContext(tankContext, item, decor, now, {
@@ -65989,6 +68463,14 @@ function drawDecorPreview() {
     }
   }
   if (decor.bubbler) {
+    drawBubblerLightLayerToContext(tankContext, previewItem, decor, Date.now(), {
+      drawX: x - width / 2,
+      drawY: y - height,
+      width,
+      height,
+      motion: previewMotion,
+      alpha: 0.72
+    });
     drawDecorBubblerEffect(
       previewItem,
       decor,
@@ -66801,6 +69283,52 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
   context.restore();
 }
 
+function drawFishCausticLight(context, image, fish, fishDrawX, width, height, now, worldTransform) {
+  const strength = getCausticLightStrength(now);
+  if (strength <= 0 || width <= 0 || height <= 0) return;
+  const texture = getAnimatedCausticTexture(now);
+  if (!texture) return;
+  if (!runtime.fishCausticCache) runtime.fishCausticCache = new WeakMap();
+  let scratch = runtime.fishCausticCache.get(fish);
+  if (!scratch) {
+    const canvas = document.createElement("canvas");
+    scratch = { canvas, context: canvas.getContext("2d") };
+    runtime.fishCausticCache.set(fish, scratch);
+  }
+  const scale = Math.min(1, 192 / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale));
+  const h = Math.max(1, Math.round(height * scale));
+  // Cancel the entire fish pose, including facing, rotation, body deformation,
+  // and tube compression. The remaining pattern coordinates belong to the tank.
+  const worldToLocal = context.getTransform().inverse().multiply(worldTransform);
+  const localToMask = new DOMMatrix([w / width, 0, 0, h / height, -fishDrawX * w / width, h / 2]);
+  const patternTransform = localToMask.multiply(worldToLocal);
+  const key = [runtime.causticTexture.frame, width, height,
+    patternTransform.a, patternTransform.b, patternTransform.c,
+    patternTransform.d, patternTransform.e, patternTransform.f].join(":");
+  if (scratch.key !== key || scratch.image !== image) {
+    const c = scratch.context;
+    if (scratch.canvas.width !== w) scratch.canvas.width = w;
+    if (scratch.canvas.height !== h) scratch.canvas.height = h;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, w, h);
+    c.globalCompositeOperation = "source-over";
+    c.drawImage(image, 0, 0, w, h);
+    c.globalCompositeOperation = "source-in";
+    const pattern = c.createPattern(texture, "repeat");
+    pattern.setTransform(patternTransform);
+    c.fillStyle = pattern;
+    c.fillRect(0, 0, w, h);
+    scratch.key = key;
+    scratch.image = image;
+  }
+  context.save();
+  context.globalCompositeOperation = "screen";
+  context.globalAlpha *= strength * 1.4;
+  context.drawImage(scratch.canvas, fishDrawX, -height / 2, width, height);
+  context.restore();
+}
+
 function compareFishRenderRecords(left, right) {
   const priorityDelta = left.priority - right.priority;
   if (priorityDelta) {
@@ -66939,6 +69467,7 @@ function drawFish(now, layer = null, options = {}) {
       ? -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y
       : 0;
 
+    const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
     tankContext.translate(pose.x + pose.swayX, pose.y);
     tankContext.scale(pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1), 1);
@@ -66995,6 +69524,7 @@ function drawFish(now, layer = null, options = {}) {
     tankContext.filter = "none";
     if (!pose.isDead) {
       drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now, fishLighting);
+      drawFishCausticLight(tankContext, image, fish, fishDrawX, width, height, now, fishWorldTransform);
     }
     drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
@@ -67507,7 +70037,14 @@ function getFishPose(fish, species, now) {
     (Number(fish.targetXNorm) || fish.xNorm) - fish.xNorm,
     (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm
   );
-  const stationaryRaw = 1 - clamp(targetDistanceNorm / 0.025, 0, 1);
+  // Once a fish has reached decor, treat it as genuinely stationary instead of
+  // repeatedly blending between swim bob and idle bob as tiny target corrections
+  // come and go. That blend used unrelated phases and could read as a hitch.
+  const settledAtDecor = Boolean(fish.hangoutDecorId)
+    && fish.activity === "roam"
+    && !fish.caveState
+    && targetDistanceNorm <= 0.03;
+  const stationaryRaw = settledAtDecor ? 1 : 1 - clamp(targetDistanceNorm / 0.025, 0, 1);
   const stationaryBlend = stationaryRaw * stationaryRaw * (3 - 2 * stationaryRaw);
   const swimBob =
     Math.sin(wiggleClock * (0.2 + species.bobSpeed * 0.16) + fish.phase * Math.PI * 2) * (0.9 + motionLevel * 4.4) * sickMotionBoost
@@ -67548,6 +70085,11 @@ function getFishPose(fish, species, now) {
   let tilt = entryProgress === null
     ? (forcedDigTilt ?? baseTilt)
     : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
+  if (species.renderMotionProfile === "seahorse") {
+    const verticalDrift = clamp((fish.targetYNorm - fish.yNorm) * 1.35, -0.28, 0.28);
+    const tailSway = Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
+    tilt = clamp(tilt * 0.28 + verticalDrift + tailSway, -0.38, 0.38);
+  }
   const debugPoseSteering = fish.activity === "roam" && !fish.caveState
     ? getActiveDebugBehaviorSteering(fish, now)
     : null;
@@ -67821,7 +70363,7 @@ function getPelletPose(pellet, now) {
   const floatingY = clamp(startYNorm + (floorYNorm - startYNorm) * easedSink + bobY, 0.09, floorYNorm);
   if (hasCustomDropStart) {
     const startXNorm = clamp(Number(pellet.dropStartXNorm), 0.08, 0.92);
-    const dropStartYNorm = clamp(Number(pellet.dropStartYNorm), 0.02, AUTO_DISPENSER_PELLET_MAX_Y_NORM);
+    const dropStartYNorm = clamp(Number(pellet.dropStartYNorm), 0.02, floorYNorm);
     return {
       xNorm: clamp(startXNorm + (floatingXNorm - startXNorm) * easedDrop, 0.08, 0.92),
       yNorm: clamp(
@@ -67846,8 +70388,10 @@ function getPelletHitBounds(pellet, now = Date.now()) {
   const x = pose.xNorm * TANK_WIDTH;
   const y = pose.yNorm * TANK_HEIGHT;
   const stableScale = getViewportStableAssetScale();
-  const scale = clamp(Number(pellet.scale) || 1, 0.75, 1.4) * stableScale;
+  const chumScale = pellet.foodKey === "chum" ? 2 : 1;
   const appearance = getFoodDropAppearance(pellet.foodKey, pellet);
+  const variantScale = pellet.foodKey === "chum" ? getChumSpriteVisualScale(appearance.spritePath) : 1;
+  const scale = clamp(Number(pellet.scale) || 1, 0.75, 1.4) * stableScale * chumScale * variantScale;
   if (appearance.dropStyle === "sprite") {
     const image = appearance.spritePath ? runtime.images.get(appearance.spritePath) : null;
     const fitScale = image
@@ -68299,16 +70843,20 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
     const speed = clamp(Number(spout.speed) || DEFAULT_BUBBLER_SPEED, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED);
     const direction = normalizeBubblerDirection(spout.direction);
     const isStraightUpStream = direction === "up";
+    const straightDirectionalTravel = options.straightDirectionalTravel === true
+      && (direction === "left" || direction === "right");
     const sourceLocation = getBubblerSpoutHorizontalLocation(spout, image);
     const renderedSourceLocation = resolveDecorHorizontalUnit(item, sourceLocation);
     const sourceX = drawX + width * renderedSourceLocation;
-    const sourceYOffsetRatio = getBubblerSpoutSourceOffsetRatio(
-      decor.path,
-      {
-        horizontalLocation: sourceLocation,
-        horizontalOffsetPx: null
-      }
-    );
+    const sourceYOffsetRatio = Number.isFinite(Number(spout.verticalLocation))
+      ? clamp(Number(spout.verticalLocation), 0, 1)
+      : getBubblerSpoutSourceOffsetRatio(
+        decor.path,
+        {
+          horizontalLocation: sourceLocation,
+          horizontalOffsetPx: null
+        }
+      );
     const sourceY = drawY + height * resolveDecorVerticalUnit(item, sourceYOffsetRatio) + Math.max(2 * stableScale, item.scale * 2 * stableScale);
     const spoutWidthPx = Math.max(0, spout.spread * item.scale * stableScale);
     const fadeDistancePx = Math.max(24 * stableScale, spout.fadeDistance * stableScale);
@@ -68321,11 +70869,20 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
     );
     const wobblePx = Math.min(2.1, 0.55 + intensity * 0.06) * stableScale;
     const waterlineStopY = waterSurfaceY + Math.max(2 * stableScale, 2);
-    const availableTravelPx = Math.max(24, sourceY - waterlineStopY);
+    const availableTravelPx = straightDirectionalTravel
+      ? fadeDistancePx
+      : Math.max(24, sourceY - waterlineStopY);
     const renderedBubbles = [];
     const streamSeed = hashStringToUint32(`${item.id}|${item.decorKey}|${spoutIndex}|stream`);
     const streamRand = mulberry32(streamSeed ^ 0x9e3779b9);
-    const streamTimeMs = now + randomBetweenWith(streamRand, 0, cadenceMs);
+    const streamOffsetMs = randomBetweenWith(streamRand, 0, cadenceMs);
+    const streamTimeMs = now + streamOffsetMs;
+    const emissionStartedAtMs = Number.isFinite(Number(options.emissionStartedAtMs))
+      ? Number(options.emissionStartedAtMs) + streamOffsetMs
+      : null;
+    const emissionEndedAtMs = Number.isFinite(Number(options.emissionEndedAtMs))
+      ? Number(options.emissionEndedAtMs) + streamOffsetMs
+      : null;
     const latestEmissionCycle = Math.floor(streamTimeMs / cadenceMs);
 
     for (let slotIndex = 0; slotIndex < totalBubbleCount; slotIndex += 1) {
@@ -68340,6 +70897,12 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
       const originRand = mulberry32(emissionSeed ^ 0x165667b1);
       const jitterRatio = clamp((intensity - MIN_CUSTOM_BUBBLER_AMOUNT) / 8, 0, 0.14);
       const emittedAtMs = emissionCycle * cadenceMs + randomBetweenWith(motionRand, -jitterRatio, jitterRatio) * cadenceMs;
+      if (emissionStartedAtMs !== null && emittedAtMs < emissionStartedAtMs) {
+        continue;
+      }
+      if (emissionEndedAtMs !== null && emittedAtMs > emissionEndedAtMs) {
+        continue;
+      }
       const ageMs = streamTimeMs - emittedAtMs;
       if (ageMs < 0 || ageMs > travelDurationMs) {
         continue;
@@ -68368,39 +70931,62 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
         now / (slotWobbleCadenceMs + wobbleCadenceOffsetMs) + wobblePhase + spoutIndex * 0.9
       ) * depthWobblePx
         + Math.sin(phase * 10.2 + wobblePhase * 0.47) * depthWobblePx * 0.28;
-      const reachesWaterline = fadeDistancePx >= availableTravelPx - 1 * stableScale;
-      const travelPx = reachesWaterline
-        ? availableTravelPx
-        : Math.min(
-          fadeDistancePx * randomBetweenWith(emissionRand, 0.88, 1.06),
-          availableTravelPx
-        );
-      // Straight-up streams should lift immediately so they do not appear to pool at the spout.
+      const reachesWaterline = straightDirectionalTravel
+        ? false
+        : fadeDistancePx >= availableTravelPx - 1 * stableScale;
+      const travelPx = straightDirectionalTravel
+        ? fadeDistancePx * randomBetweenWith(emissionRand, 0.88, 1.06)
+        : reachesWaterline
+          ? availableTravelPx
+          : Math.min(
+            fadeDistancePx * randomBetweenWith(emissionRand, 0.88, 1.06),
+            availableTravelPx
+          );
+      // Straight-up streams lift immediately. Directional streams normally travel
+      // outward, then rise. Submarine thrusters can opt into a continuous curved
+      // trajectory so the stream never forms a visible hard L-shaped corner.
+      const smoothDirectionalTurn = options.smoothDirectionalTurn === true && !isStraightUpStream && !straightDirectionalTravel;
       const turnRatio = isStraightUpStream ? 0 : clamp(0.16 + speed * 0.1, 0.2, 0.56);
       const turnProgress = isStraightUpStream
         ? 0
         : clamp(riseProgress / Math.max(0.0001, turnRatio), 0, 1);
-      const upwardProgress = isStraightUpStream
-        ? riseProgress
-        : Math.pow(
-          clamp((riseProgress - turnRatio) / Math.max(0.0001, 1 - turnRatio), 0, 1),
-          0.86
-        );
-      const turnDistancePx = isStraightUpStream
+      const upwardProgress = straightDirectionalTravel
         ? 0
-        : Math.min(
-          travelPx * turnRatio,
-          (20 + speed * 26) * stableScale
-        );
+        : isStraightUpStream
+          ? riseProgress
+          : smoothDirectionalTurn
+            ? Math.pow(riseProgress, 1.55)
+            : Math.pow(
+              clamp((riseProgress - turnRatio) / Math.max(0.0001, 1 - turnRatio), 0, 1),
+              0.86
+            );
+      const turnDistancePx = straightDirectionalTravel
+        ? travelPx
+        : isStraightUpStream
+          ? 0
+          : Math.min(
+            travelPx * turnRatio,
+            (20 + speed * 26) * stableScale
+          );
       const directionVector = getBubblerDirectionVector(direction);
-      const directionEase = isStraightUpStream ? 0 : Math.sin(turnProgress * Math.PI * 0.5);
+      const directionEase = straightDirectionalTravel
+        ? riseProgress
+        : isStraightUpStream
+          ? 0
+          : smoothDirectionalTurn
+            ? 1 - Math.pow(1 - riseProgress, 2.1)
+            : Math.sin(turnProgress * Math.PI * 0.5);
       const directionalX = directionVector.x * turnDistancePx * directionEase;
-      const directionalY = directionVector.y * turnDistancePx * directionEase;
-      const upwardTravelPx = upwardProgress * (
-        isStraightUpStream
-          ? travelPx
-          : (travelPx + Math.max(0, directionalY))
-      );
+      const directionalY = straightDirectionalTravel
+        ? 0
+        : directionVector.y * turnDistancePx * directionEase;
+      const upwardTravelPx = straightDirectionalTravel
+        ? 0
+        : upwardProgress * (
+          isStraightUpStream
+            ? travelPx
+            : (travelPx + Math.max(0, directionalY))
+        );
       const x = sourceX + spawnOffsetX + directionalX + trajectoryDriftPx * riseProgress + sway * (0.5 + upwardProgress * 0.34);
       const y = sourceY + directionalY - upwardTravelPx;
 
@@ -68886,6 +71472,15 @@ function scoopTankItemAtPoint(x, y, now = Date.now()) {
   const machinery = findMachineryAtPoint(x, y, now);
   if (machinery?.type === MACHINERY_TYPE_SUBMARINE) {
     if (recallSubmarine(now)) {
+      runtime.equipmentEditTrayTab = "storage";
+      return {
+        kind: "machinery",
+        label: ""
+      };
+    }
+  }
+  if (machinery?.type === MACHINERY_TYPE_BOAT) {
+    if (recallBoat(now)) {
       runtime.equipmentEditTrayTab = "storage";
       return {
         kind: "machinery",
@@ -69566,7 +72161,8 @@ function getDecorVisibleImagePaths(decor) {
   return [...new Set([
     decor.bgPath,
     decor.path,
-    decor.midPath
+    decor.midPath,
+    decor.lightPath
   ].filter(Boolean))];
 }
 
@@ -72513,6 +75109,10 @@ function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now 
     ? getDesiredSuckerFishGlassLayer(fish)
     : getDesiredFishTankLayer(fish);
   const clampYNorm = (value, layer) => {
+    if (isWhaleBreathActive(fish, species)) {
+      const minYNorm = getWhaleBreathSurfaceYNorm(fish, species);
+      return clamp(Number.isFinite(Number(value)) ? Number(value) : minYNorm, minYNorm, 0.8);
+    }
     if (fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
       const viewportBounds = getMobileViewportSwimBoundsNorm(fish, species, now);
       const minYNorm = Math.max(0.14, viewportBounds.minY);
@@ -73523,7 +76123,7 @@ function hideToast(options = {}) {
   }
   runtime.toastKey = "";
   runtime.guidanceToastOwner = "";
-  dom.toast?.classList.remove("is-visible");
+  dom.toast?.classList.remove("is-visible", "is-error");
   return true;
 }
 
@@ -73534,7 +76134,7 @@ function resetToastState() {
   runtime.toastHandle = null;
   runtime.toastKey = "";
   runtime.guidanceToastOwner = "";
-  dom.toast?.classList.remove("is-visible");
+  dom.toast?.classList.remove("is-visible", "is-error");
 }
 
 function showGuidanceToast(owner, message, options = {}) {
@@ -73546,7 +76146,7 @@ function showGuidanceToast(owner, message, options = {}) {
 
 function showToast(message, options = {}) {
   const tutorialMessage = options.tutorialMessage === true || isIntroTutorialActive();
-  if (!tutorialMessage) {
+  if (!tutorialMessage && options.force !== true) {
     hideToast();
     return false;
   }
@@ -73554,6 +76154,7 @@ function showToast(message, options = {}) {
   runtime.toastKey = typeof options.key === "string" ? options.key : "";
   runtime.guidanceToastOwner = typeof options.owner === "string" ? options.owner : "toast:general";
   dom.toast.textContent = message;
+  dom.toast.classList.toggle("is-error", options.tone === "error");
   positionToast();
   dom.toast.classList.add("is-visible");
 
@@ -73563,7 +76164,7 @@ function showToast(message, options = {}) {
 
   const durationMs = Math.max(0, Number.isFinite(Number(options.durationMs)) ? Number(options.durationMs) : 2200);
   runtime.toastHandle = setTimeout(() => {
-    dom.toast.classList.remove("is-visible");
+    dom.toast.classList.remove("is-visible", "is-error");
     runtime.toastHandle = null;
     runtime.toastKey = "";
     runtime.guidanceToastOwner = "";

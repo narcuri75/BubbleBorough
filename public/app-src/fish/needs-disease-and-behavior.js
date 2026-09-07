@@ -1740,6 +1740,9 @@ function getLightsOutOverride(targetTank = getCurrentTank()) {
 }
 
 function isTankLightsOut(now = Date.now(), targetTank = getCurrentTank()) {
+  if (!LIGHTS_OUT_FEATURE_ENABLED) {
+    return false;
+  }
   const override = getLightsOutOverride(targetTank);
   if (override === LIGHTS_OUT_OVERRIDE_ON) {
     return true;
@@ -1903,6 +1906,12 @@ function getRelationshipKindForFish(fish, otherFish) {
   const otherPersonality = getFishPersonality(otherFish);
   const species = getSpeciesForFish(fish);
   const otherSpecies = getSpeciesForFish(otherFish);
+  if (
+    species?.id === "pilot-fish"
+    && ["bull-shark", "great-white-shark", "hammerhead-shark", "orca"].includes(otherSpecies?.id)
+  ) {
+    return "friend";
+  }
   if (personality === "social" || personality === "follower" || getFishBehaviorProfile(species).group === "small-social") {
     if (species?.id === otherSpecies?.id || getFishBehaviorProfile(otherSpecies).group === "small-social") {
       return "friend";
@@ -2117,7 +2126,7 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
   if (options.onlyThreat) {
     return null;
   }
-  if (["social", "follower"].includes(personality) || getFishBehaviorProfile(species).group === "small-social") {
+  if (species?.id === "pilot-fish" || ["social", "follower"].includes(personality) || getFishBehaviorProfile(species).group === "small-social") {
     const friend = nearby.find((entry) => entry.relation.kind === "friend" && entry.distance <= 0.42);
     if (friend && Math.random() < 0.55) {
       return {

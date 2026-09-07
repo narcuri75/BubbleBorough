@@ -599,7 +599,7 @@ function getVisibleGrimeDirtiness(dirtiness) {
 }
 
 function getLightGrimeVisualIntensity(dirtiness) {
-  return Math.pow(getVisibleGrimeDirtiness(dirtiness), 1.35);
+  return getVisibleGrimeDirtiness(dirtiness);
 }
 
 function getSevereGrimeVisualIntensity(dirtiness) {
@@ -622,17 +622,14 @@ function renderGrimeBaseCanvas(dirtiness) {
     return;
   }
 
-  const scaledLevel = visibleDirtiness * GRIME_OVERLAY_ASSET_PATHS.length;
-  const levelPosition = clamp(scaledLevel - 1, 0, GRIME_OVERLAY_ASSET_PATHS.length - 1);
-  const lowerIndex = Math.floor(levelPosition);
-  const upperIndex = Math.ceil(levelPosition);
-  const blend = levelPosition - lowerIndex;
-  const lowerAlpha = scaledLevel < 1 ? scaledLevel : 1 - blend;
-  const upperAlpha = lowerIndex === upperIndex ? 0 : blend;
-
-  drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[lowerIndex], lowerAlpha);
-  if (upperAlpha > 0.001) {
-    drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[upperIndex], upperAlpha);
+  // Grime is cumulative: each layer stays at full opacity after its third
+  // of the fourteen-day cycle, while only the newest layer fades in.
+  const layerCount = GRIME_OVERLAY_ASSET_PATHS.length;
+  const segment = 1 / layerCount;
+  for (let index = 0; index < layerCount; index += 1) {
+    const layerStart = index * segment;
+    const layerAlpha = clamp((visibleDirtiness - layerStart) / segment, 0, 1);
+    if (layerAlpha > 0.001) drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[index], layerAlpha);
   }
 }
 

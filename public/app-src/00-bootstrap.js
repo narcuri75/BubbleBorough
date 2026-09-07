@@ -259,6 +259,7 @@ const DISEASE_SIGNAL_TYPES = Object.freeze([
   "odd_sleep_spot",
   "lingering_near_bubbler"
 ]);
+const LIGHTS_OUT_FEATURE_ENABLED = false;
 const LIGHTS_OUT_OVERRIDE_AUTO = "auto";
 const LIGHTS_OUT_OVERRIDE_ON = "on";
 const LIGHTS_OUT_OVERRIDE_OFF = "off";
@@ -328,7 +329,14 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "loach": { group: "bottom-cleaner", personalities: ["digger", "explorer", "cleaner", "night-active"], rare: ["social", "homebody", "curious"], nightActive: true },
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
-  "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true }
+  "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true },
+  "bull-shark": { group: "shark-cruiser", personalities: ["bold", "explorer", "territorial", "routine-loving"], rare: ["hunter", "curious", "standoffish"], predatorDiet: true, desperationPredator: true },
+  "great-white-shark": { group: "shark-cruiser", personalities: ["hunter", "bold", "explorer", "territorial"], rare: ["curious", "standoffish", "routine-loving"], predatorDiet: true, desperationPredator: true },
+  "hammerhead-shark": { group: "shark-cruiser", personalities: ["curious", "explorer", "bold", "social"], rare: ["hunter", "territorial", "gentle"], predatorDiet: true, desperationPredator: true },
+  "orca": { group: "orca-pod", personalities: ["social", "hunter", "explorer", "bold"], rare: ["curious", "routine-loving", "territorial"], predatorDiet: true, desperationPredator: true },
+  "sunfish": { group: "sunfish-gentle", personalities: ["gentle", "homebody", "routine-loving", "sensitive"], rare: ["shy", "curious", "social"], slowGraceful: true },
+  "seahorse": { group: "seahorse-drifter", personalities: ["gentle", "homebody", "shy", "curious"], rare: ["social", "routine-loving", "sensitive"], slowGraceful: true },
+  "pilot-fish": { group: "pilot-follower", personalities: ["follower", "social", "explorer", "curious"], rare: ["bold", "routine-loving", "shy"] }
 });
 const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   movementPattern: "cruise",
@@ -611,6 +619,60 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     startleRecoveryScale: 0.92, turnDurationScale: 1.32, speedMinBlend: 0,
     speedMaxBlend: 0.42, dartChance: 0.07, dartSpeedMinBlend: 0.86,
     targetDurationScale: 1.22
+  }),
+  "bull-shark": createFishLocomotionProfile({
+    movementPattern: "wide-cruise", preferredY: 0.46, verticalSpread: 0.56,
+    targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.86,
+    hoverChance: 0.015, schoolStrength: 0.08, structureAffinity: 0.64,
+    caveAffinity: 0.1, startleStrength: 0.72, turnDurationScale: 0.72,
+    speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 0.82
+  }),
+  "great-white-shark": createFishLocomotionProfile({
+    movementPattern: "wide-cruise", preferredY: 0.42, verticalSpread: 0.46,
+    targetDistanceMin: 0.38, targetDistanceMax: 0.76, headingPersistence: 0.94,
+    hoverChance: 0.006, schoolStrength: 0, structureAffinity: 0.48,
+    caveAffinity: 0.04, startleStrength: 0.58, turnDurationScale: 0.62,
+    speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 0.78
+  }),
+  "hammerhead-shark": createFishLocomotionProfile({
+    movementPattern: "search-cruise", preferredY: 0.5, verticalSpread: 0.62,
+    targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.72,
+    hoverChance: 0.035, schoolStrength: 0.16, schoolSpacingScale: 1.08,
+    structureAffinity: 0.72, caveAffinity: 0.16, startleStrength: 0.86,
+    turnDurationScale: 0.76, speedMinBlend: 0.5, speedMaxBlend: 0.92,
+    targetDurationScale: 0.9
+  }),
+  "orca": createFishLocomotionProfile({
+    movementPattern: "pod-cruise", preferredY: 0.44, verticalSpread: 0.54,
+    targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.82,
+    hoverChance: 0.02, schoolStrength: 0.78, schoolSpacingScale: 0.9,
+    schoolDurationScale: 1.38, schoolVerticalJitterScale: 0.58, structureAffinity: 0.54,
+    caveAffinity: 0.04, startleStrength: 0.68, turnDurationScale: 0.7,
+    speedMinBlend: 0.56, speedMaxBlend: 0.98, targetDurationScale: 0.84
+  }),
+  "sunfish": createFishLocomotionProfile({
+    movementPattern: "gentle-drift", preferredY: 0.42, verticalSpread: 0.58,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.28, headingPersistence: 0.36,
+    hoverChance: 0.34, hoverMinMs: 1500, hoverMaxMs: 4200, schoolStrength: 0.02,
+    structureAffinity: 0.82, caveAffinity: 0.08, startleStrength: 0.48,
+    startleRecoveryScale: 1.32, turnDurationScale: 1.6, speedMinBlend: 0.02,
+    speedMaxBlend: 0.28, targetDurationScale: 1.42
+  }),
+  "seahorse": createFishLocomotionProfile({
+    movementPattern: "vertical-hover", preferredY: 0.56, verticalSpread: 0.42,
+    targetDistanceMin: 0.04, targetDistanceMax: 0.18, headingPersistence: 0.22,
+    hoverChance: 0.48, hoverMinMs: 1200, hoverMaxMs: 3600, schoolStrength: 0.04,
+    structureAffinity: 1.74, caveAffinity: 0.78, homeRangeStrength: 0.58,
+    homeRangeRadius: 0.14, startleStrength: 0.7, startleRecoveryScale: 1.2,
+    turnDurationScale: 1.5, speedMinBlend: 0, speedMaxBlend: 0.28, targetDurationScale: 1.36
+  }),
+  "pilot-fish": createFishLocomotionProfile({
+    movementPattern: "companion-cruise", preferredY: 0.44, verticalSpread: 0.66,
+    targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.78,
+    hoverChance: 0.015, schoolStrength: 0.42, schoolSpacingScale: 1.02,
+    schoolDurationScale: 1.22, schoolVerticalJitterScale: 0.72, structureAffinity: 0.62,
+    caveAffinity: 0.08, startleStrength: 0.92, turnDurationScale: 0.82,
+    speedMinBlend: 0.56, speedMaxBlend: 0.96, targetDurationScale: 0.88
   })
 });
 const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
@@ -619,7 +681,12 @@ const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
   "slow-graceful": ["display", "gentle", "sensitive", "homebody", "territorial", "routine-loving", "curious"],
   "small-social": ["social", "shy", "follower", "routine-loving", "curious", "nervous"],
   "bottom-cleaner": ["digger", "cleaner", "night-active", "homebody", "curious", "shy"],
-  "special-predator": ["hunter", "bold", "curious", "standoffish", "territorial", "greedy"]
+  "special-predator": ["hunter", "bold", "curious", "standoffish", "territorial", "greedy"],
+  "shark-cruiser": ["bold", "explorer", "territorial", "routine-loving", "curious", "hunter"],
+  "orca-pod": ["social", "hunter", "explorer", "bold", "curious", "routine-loving"],
+  "sunfish-gentle": ["gentle", "homebody", "routine-loving", "sensitive", "curious", "shy"],
+  "seahorse-drifter": ["gentle", "homebody", "shy", "curious", "routine-loving", "nervous"],
+  "pilot-follower": ["follower", "social", "explorer", "curious", "bold", "routine-loving"]
 });
 const COMFORT_NEED_LABELS = Object.freeze({
   plants: "Plants",
@@ -681,7 +748,14 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "royal-gramma": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
   "yellow-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
   "blue-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
-  "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] }
+  "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] },
+  "bull-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
+  "great-white-shark": { mealCoins: 4, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
+  "hammerhead-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
+  "orca": { mealCoins: 4, unlock: "marine-curator", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
+  "sunfish": { mealCoins: 2, unlock: "marine-curator", needs: ["open_water", "surface_cover"], conflicts: ["overcrowded"] },
+  "seahorse": { mealCoins: 2, unlock: "marine-curator", needs: ["plants", "surface_cover"], conflicts: ["fast_eater", "aggressive_predator"] },
+  "pilot-fish": { mealCoins: 2, unlock: "marine-curator", needs: ["open_water"], conflicts: ["overcrowded"] }
 });
 const PROGRESSION_MILESTONES = Object.freeze([
   {
@@ -738,7 +812,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Marine Curator",
     requirement: "Own a saltwater fish, finish 5 good recaps, and go 3 days without a death.",
     reward: 20,
-    unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish"],
+    unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish", "bull-shark", "great-white-shark", "hammerhead-shark", "orca", "sunfish", "seahorse", "pilot-fish"],
     decorUnlocks: [],
     isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3,
     progress: (stats) => [
@@ -1092,15 +1166,13 @@ const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
 const SCRUB_MAX_STAMPS = 2400;
 const GRIME_CACHE_PRECISION = 240;
-const GRIME_VISUAL_START_DIRTINESS = 0.1;
+const GRIME_VISUAL_START_DIRTINESS = 0;
 const SEVERE_GRIME_VISUAL_THRESHOLD = 0.72;
 const GRIME_OVERLAY_OVERSCAN = 1.1;
 const GRIME_OVERLAY_ASSET_PATHS = Object.freeze([
   resolveAppUrl("assets/grime/grime-level-1.webp"),
   resolveAppUrl("assets/grime/grime-level-2.webp"),
-  resolveAppUrl("assets/grime/grime-level-3.webp"),
-  resolveAppUrl("assets/grime/grime-level-4.webp"),
-  resolveAppUrl("assets/grime/grime-level-5.webp")
+  resolveAppUrl("assets/grime/grime-level-3.webp")
 ]);
 const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
@@ -1122,6 +1194,7 @@ const UV_LIGHT_RENDER_QUALITY_OPTIONS = Object.freeze([
 ]);
 const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
+  toolbarTileColor: "#00438a",
   displayPosition: "top-left",
   toolbarCollapsed: false,
   displayCollapsed: false,
@@ -1433,6 +1506,7 @@ const MAX_BUBBLER_INTENSITY = 24;
 const DEFAULT_BUBBLER_SPREAD_PX = 14;
 const DEFAULT_BUBBLER_FADE_DISTANCE_PX = 140;
 const DEFAULT_BUBBLER_BUBBLE_COLOR = "#FFFFFF";
+const DEFAULT_BUBBLER_LIGHT_COLOR = "#FF9A35";
 const DEFAULT_BUBBLER_BUBBLE_OPACITY = 1.35;
 const DEFAULT_BUBBLER_FILL_TINT_ENABLED = true;
 const DEFAULT_BUBBLER_FILL_OPACITY = 0.28;
@@ -1583,7 +1657,8 @@ const CAVE_ENTRY_SIDE_OPTIONS = Object.freeze([
   { id: "both", label: "Both" }
 ]);
 const OPTIONAL_BUBBLE_ORB_ASSET_PATH = "assets/misc/bubble.png";
-const CAUSTIC_LIGHT_ASSET_PATH = resolveAppUrl("assets/misc/caustic_light.png");
+const CAUSTIC_LIGHT_PRIMARY_ASSET_PATH = resolveAppUrl("assets/misc/Caustic_Lighting_1.png");
+const CAUSTIC_LIGHT_SECONDARY_ASSET_PATH = resolveAppUrl("assets/misc/Caustic_Lighting_2.png");
 const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
@@ -1605,7 +1680,7 @@ const FILTER_BUBBLE_STREAM_DISTANCE_PX = 200;
 const FILTER_BUBBLE_STREAM_RISE_PX = 22;
 const FILTER_BUBBLE_OUTLET_X_OFFSET_PX = 14;
 const DEFAULT_FILTER_ASSET_KEY = BASIC_FILTER_KEY;
-const BASE_TANK_DIRTY_DAYS = 3.5;
+const BASE_TANK_DIRTY_DAYS = 14;
 const FISH_DIRTINESS_BONUS_MIN = 0.01;
 const FISH_DIRTINESS_BONUS_MAX = 0.10;
 const SUCKER_FISH_CLEAN_DURATION_BONUS = 0.25;
@@ -1626,6 +1701,28 @@ const FISH_TURN_MIN_SCALE_X = 0.42;
 const FISH_TURN_MAX_SCALE_Y = 1.12;
 const FISH_TURN_MIN_MS = 130;
 const FISH_TURN_MAX_MS = 210;
+const NAUTILUS_STATE_HOVER = "hover";
+const NAUTILUS_STATE_JET = "jet";
+const NAUTILUS_STATE_GLIDE = "glide";
+const NAUTILUS_STATE_APPROACH_REST = "approach-rest";
+const NAUTILUS_STATE_ATTACHING = "attaching";
+const NAUTILUS_STATE_RESTING = "resting";
+const NAUTILUS_STATE_DETACHING = "detaching";
+const NAUTILUS_HOVER_MIN_MS = 1400;
+const NAUTILUS_HOVER_MAX_MS = 4200;
+const NAUTILUS_JET_MIN_MS = 360;
+const NAUTILUS_JET_MAX_MS = 680;
+const NAUTILUS_GLIDE_MIN_MS = 1100;
+const NAUTILUS_GLIDE_MAX_MS = 2600;
+const NAUTILUS_ATTACH_DURATION_MS = 1150;
+const NAUTILUS_DETACH_DURATION_MS = 900;
+const NAUTILUS_REST_MIN_MS = 10000;
+const NAUTILUS_REST_MAX_MS = 28000;
+const NAUTILUS_REST_DECISION_CHANCE = 0.34;
+const NAUTILUS_REST_REACH_WIDTH_RATIO = 0.42;
+const NAUTILUS_REST_APPROACH_EXTRA_PX = 24;
+const NAUTILUS_TENTACLE_PIVOT_X = 0.43;
+const NAUTILUS_TENTACLE_PIVOT_Y = 0.54;
 const CAVE_ALLOWED_OUTSIDE_LAYERS = Object.freeze([1, 2, 5]);
 const MAX_VALID_CAVE_PLANS_PER_EVAL = 2;
 const MAX_FISH_RETARGETS_PER_FRAME = 2;
@@ -1678,6 +1775,18 @@ const SUCKER_FISH_FREE_SWIM_MIN_DURATION_MS = 1700;
 const SUCKER_FISH_FREE_SWIM_MAX_DURATION_MS = 7200;
 const SUCKER_FISH_FREE_SWIM_LAYER = 3;
 const FISH_SURFACE_BREACH_ALLOWANCE_PX = 6;
+const WHALE_BREATH_ACTIVITY = "surface_breathe";
+const WHALE_BREATH_FIRST_MIN_MS = 45 * 1000;
+const WHALE_BREATH_FIRST_MAX_MS = 90 * 1000;
+const WHALE_BREATH_INTERVAL_MIN_MS = 140 * 1000;
+const WHALE_BREATH_INTERVAL_MAX_MS = 240 * 1000;
+const WHALE_BREATH_SURFACE_HOLD_MIN_MS = 1400;
+const WHALE_BREATH_SURFACE_HOLD_MAX_MS = 2200;
+const WHALE_BREATH_BREACH_HEIGHT_RATIO = 0.36;
+// Orca.png faces right. The blowhole sits well forward of the dorsal fin,
+// so position the breach splash roughly 27% of body width ahead of center.
+const WHALE_BREATH_BLOWHOLE_FORWARD_OFFSET_RATIO = 0.27;
+const WHALE_BREATH_ARRIVAL_NORM = 0.012;
 const FISH_SURFACE_MOTION_HEADROOM_PX = 10;
 const FISH_SURFACE_HEIGHT_GUARD_MULTIPLIER = 1.08;
 const DEAD_FISH_SURFACE_FLOAT_INSET_PX = 4;
@@ -1813,7 +1922,7 @@ const FISH_CHUM_MEAL_HUNGER_GAIN = 55;
 const FISH_CHUM_MEAL_HUNGER_FLOOR = 90;
 const FISH_WILLING_TO_EAT_HUNGER_MAX = 82;
 const FISH_OVERFEED_HUNGER_THRESHOLD = 88;
-const FILTERLESS_BASE_TANK_DIRTY_DAYS = 2.4;
+const FILTERLESS_BASE_TANK_DIRTY_DAYS = 14;
 const MEDICINE_HEAL_INTERVAL_MS = 10 * 1000;
 const MEDICINE_HEAL_DURATION_MS = 60 * 1000;
 const MEDICINE_VISUAL_DURATION_MS = 60 * 1000;
@@ -1839,8 +1948,32 @@ const AUTO_DISPENSER_PELLET_MAX_Y_NORM = 0.28;
 const AUTO_DISPENSER_HOPPER_MAX_DRAWN_PELLETS = AUTO_DISPENSER_MAX_PELLETS;
 const AUTO_DISPENSER_LOW_FOOD_BLINK_MS = 360;
 const MACHINERY_TYPE_SUBMARINE = "submarine";
+const MACHINERY_TYPE_BOAT = "boat";
 const SUBMARINE_COST = 100;
 const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/submarine.png");
+const BOAT_COST = 50;
+const BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/boat.png");
+const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Boat.png");
+const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Submarine.png");
+const BOAT_RESOURCE_CAPACITY = 99;
+const BOAT_DRAW_WIDTH_PX = 121;
+const BOAT_CRUISE_SPEED_PX_PER_SECOND = 96;
+const BOAT_MANUAL_SPEED_PX_PER_SECOND = 184;
+const BOAT_MANUAL_ACCELERATION_PX_PER_SECOND2 = 470;
+const BOAT_MANUAL_DRAG_PER_SECOND = 5.8;
+const BOAT_IDLE_BOB_AMPLITUDE_PX = 3.8;
+const BOAT_IDLE_BOB_PERIOD_MS = 1800;
+const BOAT_MANUAL_FOOD_COOLDOWN_MS = 140;
+const BOAT_ENTRY_DURATION_MS = FISH_ENTRY_DURATION_MS;
+const BOAT_ENTRY_FROM_Y_NORM = FISH_ENTRY_FROM_Y_NORM;
+const BOAT_SURFACE_LAYER = 3;
+const BOAT_SURFACE_BOTTOM_GAP_PX = 17;
+const BOAT_REAR_BUBBLE_X_NORM = 0.12;
+const BOAT_REAR_BUBBLE_Y_NORM = 0.925;
+const SUBMARINE_TURN_DURATION_MS = 240;
+const BOAT_TURN_DURATION_MS = 320;
+const SUBMARINE_TURN_LEAN_RADIANS = Math.PI / 180 * 5.5;
+const BOAT_TURN_LEAN_RADIANS = Math.PI / 180 * 4.25;
 const SUBMARINE_RESOURCE_CAPACITY = 99;
 const SUBMARINE_DRAW_WIDTH_PX = 190;
 const SUBMARINE_CRUISE_SPEED_PX_PER_SECOND = 82;
@@ -1855,6 +1988,17 @@ const SUBMARINE_DEFAULT_TANK_LAYER = 2;
 const SUBMARINE_IDLE_BOB_AMPLITUDE_PX = 3.4;
 const SUBMARINE_IDLE_BOB_PERIOD_MS = 2100;
 const SUBMARINE_MANUAL_FOOD_COOLDOWN_MS = 140;
+const SUBMARINE_ENTRY_DURATION_MS = FISH_ENTRY_DURATION_MS;
+const SUBMARINE_ENTRY_FROM_Y_NORM = FISH_ENTRY_FROM_Y_NORM;
+const SUBMARINE_WARNING_LIGHT_X_NORM = 0.6164;
+const SUBMARINE_WARNING_LIGHT_Y_NORM = 0.1745;
+const SUBMARINE_REAR_BUBBLE_X_NORM = 0.048;
+const SUBMARINE_REAR_BUBBLE_Y_NORM = 0.565;
+const SUBMARINE_PRESSURE_BUBBLE_LEFT_X_NORM = 0.46;
+const SUBMARINE_PRESSURE_BUBBLE_RIGHT_X_NORM = 0.67;
+const SUBMARINE_PRESSURE_BUBBLE_Y_NORM = 0.445;
+const SUBMARINE_BUBBLE_EMITTER_SAMPLE_MS = 110;
+const SUBMARINE_BUBBLE_LINGER_PAD_MS = 180;
 const SUBMARINE_IDLE_MIN_MS = 3500;
 const SUBMARINE_IDLE_MAX_MS = 11000;
 const SUBMARINE_SCAN_INTERVAL_MS = 1500;
@@ -1865,6 +2009,8 @@ const SUBMARINE_RED_LIGHT_BLINK_MS = 500;
 const SUBMARINE_FOOD_RETRY_MS = 9000;
 const SUBMARINE_MEDICINE_RETRY_MS = 12000;
 const SUBMARINE_SPOTLIGHT_LENGTH_PX = 320;
+const SHARK_DESPERATION_ATTACK_COOLDOWN_MS = 9000;
+const SHARK_DESPERATION_ATTACK_RANGE_NORM = 0.075;
 const ENABLE_UV_LIGHT = false;
 const UV_LIGHT_COST = 25;
 const UV_LIGHT_IMAGE_PATH = resolveAppUrl("assets/misc/uvlight.png");
@@ -2002,6 +2148,10 @@ const MAX_WALLET_COINS = 9999;
 // Keep the legacy digital display implementation available, but ship it off.
 const DIGITAL_DISPLAY_ENABLED = false;
 const DISPENSER_SOUND_PATH = "assets/sounds/dispenser.mp3";
+const SUBMARINE_SONAR_SOUND_PATH = "assets/sounds/sonar_sound.mp3";
+const BOAT_HORN_SOUND_PATH = "assets/sounds/boat_horn.mp3";
+const WHALE_BREATH_SOUND_PATH = "assets/sounds/whale_breath.mp3";
+const SUBMARINE_SONAR_SOUND_VOLUME = 0.5;
 const TOOLBAR_FAST_TOOLTIP_DELAY_MS = 100;
 const TOOLBAR_FAST_TOOLTIP_OFFSET_PX = 14;
 const TANK_INFO_REGULAR_BUTTON_SOUND_SELECTOR = [
@@ -2041,6 +2191,8 @@ const STORE_REGULAR_BUTTON_SOUND_SELECTOR = [
   "[data-buy-medicine]",
   "[data-buy-fish]",
   "[data-buy-decor]",
+  "[data-buy-submarine]",
+  "[data-buy-boat]",
   "[data-buy-background]",
   "[data-buy-filter]",
   "[data-buy-auto-dispenser]",
@@ -2197,6 +2349,8 @@ const SOUND_EFFECT_PATHS = Object.freeze([
   PURCHASE_SOUND_PATH,
   COIN_SOUND_PATH,
   DISPENSER_SOUND_PATH,
+  BOAT_HORN_SOUND_PATH,
+  WHALE_BREATH_SOUND_PATH,
   ...FISH_SPLASH_SOUND_PATHS,
   ...MEDICINE_DROP_SOUND_PATHS,
   CLEANING_COMPLETE_SOUND_PATH,
@@ -2745,6 +2899,7 @@ const dom = {
   editEquipmentTray: document.querySelector("#editEquipmentTray"),
   closeEditEquipmentTrayButton: document.querySelector("#closeEditEquipmentTrayButton"),
   editEquipmentTrayScroller: document.querySelector("#editEquipmentTrayScroller"),
+  editEquipmentTrayContextMenu: document.querySelector("#editEquipmentTrayContextMenu"),
   editTankTray: document.querySelector("#editTankTray"),
   closeEditTankTrayButton: document.querySelector("#closeEditTankTrayButton"),
   editTankTrayScroller: document.querySelector("#editTankTrayScroller"),
@@ -2826,6 +2981,7 @@ const dom = {
   openStoreButton: document.querySelector("#openStoreButton"),
   openEquipmentButton: document.querySelector("#openEquipmentButton"),
   openSettingsButton: document.querySelector("#openSettingsButton"),
+  toolbarTileColorInput: document.querySelector("#toolbarTileColorInput"),
   openSettingsSidebarButton: document.querySelector("#openSettingsSidebarButton"),
   closeSettingsOverlay: document.querySelector("#closeSettingsOverlay"),
   closeEquipmentOverlay: document.querySelector("#closeEquipmentOverlay"),
@@ -3061,11 +3217,15 @@ const runtime = {
   pendingMachineryTravel: new Map(),
   foodTravelDestinations: new Map(),
   selectedMachineryId: null,
-  submarineManualDriveId: "",
+  machinerySettingsOpen: false,
   submarineManualDriveKeys: new Set(),
-  submarineManualDriveStartedAt: 0,
   submarineManualLastFoodDeployAt: 0,
-  submarineNextGlobalScanAt: 0,
+  boatManualDriveKeys: new Set(),
+  boatManualLastFoodDeployAt: 0,
+  submarineBubbleBursts: [],
+  submarineBubbleEmitterState: new Map(),
+  boatBubbleBursts: [],
+  boatBubbleEmitterState: new Map(),
   tankAppearanceClipboard: { background: null, gravel: null },
   boroughEdgeBursts: [],
   boroughActivityNotifications: [],
@@ -3108,8 +3268,6 @@ const runtime = {
   debugTimeScale: 1,
   debugSimulationPaused: false,
   debugHalloweenModeOverride: null,
-  debugHalloweenRandomSalt: "",
-  debugFishVisualOverrides: new Map(),
   debugBirthdayHatFishIds: new Set(),
   debugAutonomyPausedFishIds: new Set(),
   debugOverviewFishFps: null,
@@ -3164,6 +3322,11 @@ const runtime = {
   suppressEditDecorTrayClickEntryId: null,
   editFishTrayContextMenuState: {
     fishId: null,
+    anchorX: 0,
+    anchorY: 0
+  },
+  editEquipmentTrayContextMenuState: {
+    machineryId: null,
     anchorX: 0,
     anchorY: 0
   },
@@ -3256,6 +3419,7 @@ const runtime = {
   fishBreedingSequence: null,
   gravelTintCache: new Map(),
   caveTintCache: new Map(),
+  bubblerLightTintCache: new Map(),
   caveSourceStats: new Map(),
   bubbleOrbTintCache: new Map(),
   customGravelTintCache: new Map(),
@@ -3325,6 +3489,7 @@ const runtime = {
   ambienceAudioCrossfadeFrame: 0,
   ambienceAudioCrossfade: null,
   activeSoundEffects: new Set(),
+  submarineSonarAudio: null,
   soundEffectAudioContext: null,
   soundEffectPools: new Map(),
   soundEffectPoolIndices: new Map(),

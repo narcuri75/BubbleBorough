@@ -3,7 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
-const ts = require("../desktop-app/node_modules/typescript");
+const ts = require("typescript");
 
 const projectRoot = path.resolve(__dirname, "..");
 const mobileHtml = fs.readFileSync(path.join(projectRoot, "mobile.html"), "utf8");

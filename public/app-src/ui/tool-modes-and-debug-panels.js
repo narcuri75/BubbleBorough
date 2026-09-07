@@ -309,7 +309,10 @@ function handleEditDecorTrayWheel(event) {
 
 function normalizeEditOverlayMode(value) {
   const normalized = String(value || "").trim().toLowerCase();
-  return ["fish", "decor", "equipment", "tank"].includes(normalized) ? normalized : "fish";
+  if (normalized === "tank") {
+    return "background";
+  }
+  return ["fish", "decor", "equipment", "background", "gravel"].includes(normalized) ? normalized : "fish";
 }
 
 function getRememberedEditOverlayMode() {
@@ -360,8 +363,8 @@ function openEditOverlayMode(mode = null, options = {}) {
     toggleEditTankMode(true, openOptions);
   } else if (nextMode === "equipment") {
     toggleEquipmentEditMode(true, openOptions);
-  } else if (nextMode === "tank") {
-    toggleTankEditMode(true, openOptions);
+  } else if (nextMode === "background" || nextMode === "gravel") {
+    toggleTankEditMode(true, { ...openOptions, tankTab: nextMode });
   } else {
     toggleFishEditMode(true, openOptions);
   }
@@ -462,6 +465,8 @@ function handleMedicineTrayWheel(event) {
 function clearPrimaryToolModes() {
   clearGuidanceForModeChange("primary-tools");
   closeSubmarineManager();
+  closeEditEquipmentTrayContextMenu();
+  suspendSubmarineManualDrive();
   runtime.toolbarActionMenu = "";
   runtime.editTankMode = false;
   runtime.fishEditMode = false;
@@ -800,9 +805,12 @@ function toggleTankEditMode(force = null, options = {}) {
   const now = Date.now();
 
   if (nextMode) {
-    rememberEditOverlayMode("tank");
+    rememberEditOverlayMode(options.tankTab === "gravel" ? "gravel" : "background");
     runtime.tankEditMode = true;
     runtime.selectedFishId = null;
+    if (options.tankTab === "background" || options.tankTab === "gravel") {
+      runtime.editTankTrayTab = options.tankTab;
+    }
     runtime.editTankBackgroundMode = isSolidBackgroundEnabled()
       ? "solid"
       : isGradientBackgroundEnabled()
@@ -848,7 +856,7 @@ function toggleFoodTray(force = null, options = {}) {
   toggleToolbarTrayMode({
     reason: "food-tray",
     forceOpen: () => isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_FEED_FISH),
-    isOpen: () => runtime.foodTrayOpen,
+    isOpen: () => runtime.medicineTrayOpen,
     hasSelection: () => Boolean(runtime.feedingModeFoodKey),
     onOpen(now, toggleOptions) {
       let tutorialChanged = false;
@@ -858,7 +866,7 @@ function toggleFoodTray(force = null, options = {}) {
         runtime.toolModeSource = null;
         return setTutorialStage(TUTORIAL_STAGE_FEED_FISH_DONE, { now });
       }
-      runtime.foodTrayOpen = true;
+      runtime.medicineTrayOpen = true;
       runtime.toolModeSource = toggleOptions.source || "toolbar";
       if (toggleOptions.collapseSidebar) {
         runtime.sidebarCollapsed = true;
@@ -872,7 +880,7 @@ function toggleMedicineTray(force = null, options = {}) {
   toggleToolbarTrayMode({
     reason: "medicine-tray",
     isOpen: () => runtime.medicineTrayOpen,
-    hasSelection: () => Boolean(runtime.medicineModeKey),
+    hasSelection: () => Boolean(runtime.medicineModeKey || runtime.feedingModeFoodKey),
     onOpen(_now, toggleOptions) {
       runtime.medicineTrayOpen = true;
       runtime.toolModeSource = toggleOptions.source || "toolbar";
@@ -925,6 +933,7 @@ async function init() {
   installDesktopCloseBackupHandler();
   applyAspectRatioMode();
   setupDebugMenuButtons();
+  exposeDebugConsoleCommands();
   bindEvents();
   syncFilterFeatureVisibility();
   const earlyRawState = loadState();
@@ -968,11 +977,8 @@ async function init() {
       allowZombieSkeletonFish: true
     })
     : [];
-  // Seasonal artwork is merged into ordinary species metadata even while the
-  // separate undead gameplay/catalog feature remains disabled. This exposes
-  // images to the display resolver without changing species or behavior.
   const normalizedFishCatalog = [
-    ...mergeZombieSkeletonStageAssets(normalizedBaseFishCatalog, zombieSkeletonFishCatalog, { resolveAppUrl }),
+    ...normalizedBaseFishCatalog,
     ...normalizedZombieSkeletonFishCatalog
   ];
   runtime.fishCatalog = [
@@ -1031,11 +1037,16 @@ async function init() {
     AUTO_DISPENSER_BG_PATH,
     ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
-    CAUSTIC_LIGHT_ASSET_PATH,
+    CAUSTIC_LIGHT_PRIMARY_ASSET_PATH,
+    CAUSTIC_LIGHT_SECONDARY_ASSET_PATH,
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
     FISH_EGG_SHELL_ASSET_PATH,
+    SUBMARINE_IMAGE_PATH,
+    BOAT_IMAGE_PATH,
+    HALLOWEEN_BOAT_IMAGE_PATH,
+    HALLOWEEN_SUBMARINE_IMAGE_PATH,
     ...GRIME_OVERLAY_ASSET_PATHS,
     ...WATER_PARTICLE_ASSET_PATHS,
     ...Object.values(TOOL_CURSOR_ICON_PATHS),
@@ -1044,6 +1055,7 @@ async function init() {
       item.thumbnailPath,
       item.bgPath,
       item.midPath,
+      item.lightPath,
       item.maskPath,
       item.triggerPath,
       item.seatsPath,
@@ -1067,7 +1079,7 @@ async function init() {
     ].filter(Boolean)),
     ...new Set(runtime.fishCatalog.flatMap((fish) => [
       ...getFishAssetVariants(fish),
-      ...getFishSeasonalAssetCandidates(fish),
+      fish.overlayAsset,
       ...getFishDeathAssetCandidates(fish, "zombie"),
       ...getFishDeathAssetCandidates(fish, "skeleton")
     ])),

@@ -287,9 +287,19 @@ function releasePelletsTargetingFishIds(fishIds) {
 function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), options = {}) {
   const food = getFoodMeta(foodKey);
   const dropStyle = getFoodDropStyle(food);
-  const spread = FOOD_DROP_SPREAD_NORM;
+  const spread = Number.isFinite(Number(options.spreadNorm))
+    ? Math.max(0, Number(options.spreadNorm))
+    : FOOD_DROP_SPREAD_NORM;
+  const hasCustomDropStart = options.dropStartXNorm != null
+    && options.dropStartYNorm != null
+    && Number.isFinite(Number(options.dropStartXNorm))
+    && Number.isFinite(Number(options.dropStartYNorm));
   const dropXNorm = clamp(Number(xNorm) + randomBetween(-spread, spread), 0.08, 0.92);
-  const dropYNorm = clamp(Number(yNorm), WATER_SURFACE_Y / TANK_HEIGHT + 0.1, 0.72);
+  const dropYNorm = clamp(
+    Number(yNorm),
+    hasCustomDropStart ? 0.09 : WATER_SURFACE_Y / TANK_HEIGHT + 0.1,
+    hasCustomDropStart ? 0.9 : 0.72
+  );
   return sanitizePellet({
     id: createId("pellet"),
     foodKey,
@@ -302,6 +312,9 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     rotation: dropStyle === "sprite" ? randomBetween(-0.95, 0.95) : randomBetween(-0.22, 0.22),
     scale: dropStyle === "sprite" ? randomBetween(0.92, 1.18) : randomBetween(0.94, 1.08),
     sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
+    dropStartXNorm: hasCustomDropStart ? Number(options.dropStartXNorm) : null,
+    dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
+    dropDurationMs: hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null,
     createdAt: now,
     expiresAt: now + FOOD_PELLET_SETTLED_LIFETIME_MS
   });

@@ -24,56 +24,16 @@ function isHalloweenModeActive(now = Date.now()) {
   return mode === HALLOWEEN_MODE_ON || (mode === HALLOWEEN_MODE_AUTOMATIC && isHalloweenCalendarDate(now));
 }
 
-function getDeterministicHalloweenAppearance(fish) {
-  const stableKey = `${fish?.id || ""}|${fish?.speciesId || ""}|bubble-borough-halloween|${runtime?.debugHalloweenRandomSalt || ""}`;
-  return hashStringToUint32(stableKey) % 2 === 0 ? "skeleton" : "zombie";
+function getMachineryImagePath(type, now = Date.now()) {
+  const isBoat = type === MACHINERY_TYPE_BOAT;
+  if (isHalloweenModeActive(now)) {
+    return isBoat ? HALLOWEEN_BOAT_IMAGE_PATH : HALLOWEEN_SUBMARINE_IMAGE_PATH;
+  }
+  return isBoat ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH;
 }
 
-function getFishSeasonalVisualState(fish, species = getSpeciesForFish(fish), now = Date.now()) {
-  if (!fish || !species || isFishDead(fish)) {
-    return "normal";
-  }
-  const debugOverride = runtime?.debugFishVisualOverrides?.get?.(fish.id);
-  if (["normal", "skeleton", "zombie"].includes(debugOverride)) {
-    return debugOverride;
-  }
-  if (!isHalloweenModeActive(now) || isCustomFishAssetKey(fish.speciesId)) {
-    return "normal";
-  }
-  return getDeterministicHalloweenAppearance(fish);
-}
-
-function getFishSeasonalAssetPath(fish, species = getSpeciesForFish(fish), now = Date.now()) {
-  const stage = getFishSeasonalVisualState(fish, species, now);
-  if (stage === "normal" || !species || isCustomFishAssetKey(fish?.speciesId)) {
-    return null;
-  }
-  const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  const variants = stage === "skeleton" ? displaySpecies.skeletonAssetVariants : displaySpecies.zombieAssetVariants;
-  const candidates = Array.isArray(variants) ? variants.filter(Boolean) : [];
-  if (!candidates.length) {
-    return null;
-  }
-  const variantIndex = hashStringToUint32(`${fish.id}|${stage}|art`) % candidates.length;
-  const preferred = candidates[variantIndex] || candidates[0];
-  return candidates.find((path) => path === preferred && runtime.images.has(path))
-    || candidates.find((path) => runtime.images.has(path))
-    || preferred;
-}
-
-function getFishSeasonalAssetCandidates(species) {
-  return [
-    ...(Array.isArray(species?.zombieAssetVariants) ? species.zombieAssetVariants : []),
-    ...(Array.isArray(species?.skeletonAssetVariants) ? species.skeletonAssetVariants : [])
-  ].filter((path, index, entries) => Boolean(path) && entries.indexOf(path) === index);
-}
-
-function preloadSeasonalFishAssets() {
-  if (!runtime?.fishCatalog?.length) {
-    return Promise.resolve();
-  }
-  const paths = runtime.fishCatalog.flatMap((species) => getFishSeasonalAssetCandidates(species));
-  return preloadImages(paths).then(() => {
+function preloadHalloweenMachineryAssets() {
+  return preloadImages([HALLOWEEN_BOAT_IMAGE_PATH, HALLOWEEN_SUBMARINE_IMAGE_PATH]).then(() => {
     runtime.boroughOverviewSnapshotCache.clear();
     renderUi(Date.now());
   });
@@ -85,7 +45,7 @@ function syncHalloweenPresentation(now = Date.now()) {
   document.documentElement.dataset.halloweenMode = getHalloweenModeSetting();
   if (active && runtime.halloweenPresentationActive !== true) {
     runtime.halloweenPresentationActive = true;
-    void preloadSeasonalFishAssets();
+    void preloadHalloweenMachineryAssets();
   } else if (!active) {
     runtime.halloweenPresentationActive = false;
   }
@@ -106,7 +66,7 @@ function setHalloweenMode(value) {
   runtime.boroughOverviewFishProxies.clear();
   syncHalloweenPresentation();
   saveState();
-  renderUi(Date.now(), { full: false });
+  renderUi(Date.now());
   showToast(`Halloween Mode: ${nextMode === "automatic" ? "Automatic" : nextMode === "on" ? "On" : "Off"}.`);
   return true;
 }
@@ -304,7 +264,6 @@ function clearFishReferencesAfterDeath(fishId) {
   runtime.fishActionQueuesByFishId?.delete?.(fishId);
   runtime.fishActionSteeringByFishId?.delete?.(fishId);
   runtime.boroughOverviewFishProxies?.delete?.(fishId);
-  runtime.debugFishVisualOverrides?.delete?.(fishId);
   runtime.debugBirthdayHatFishIds?.delete?.(fishId);
   runtime.debugAutonomyPausedFishIds?.delete?.(fishId);
   return changed;
@@ -1093,7 +1052,7 @@ function buildLivingBoroughDebugFishStateMarkup(fish, now = Date.now()) {
 }
 
 function buildLivingBoroughDebugButtons(entries) {
-  return entries.map(([action, label, value = ""]) => `<button class="debug-menu-button" type="button" data-debug-borough-action="${escapeHtml(action)}"${value !== "" ? ` data-debug-borough-value="${escapeHtml(value)}"` : ""}><span>${escapeHtml(label)}</span></button>`).join("");
+  return entries.map(([action, label, value = ""]) => `<button class="debug-menu-button" type="button" data-debug-borough-action="${escapeHtml(action)}"${value !== "" ? ` data-debug-borough-value="${escapeHtml(value)}"` : ""}><span class="debug-menu-label">${escapeHtml(label)}</span></button>`).join("");
 }
 
 function buildLivingBoroughDebugSection(title, entries, extra = "") {
@@ -1118,7 +1077,7 @@ function renderLivingBoroughDebugPanel(now = Date.now()) {
   const markup = status
     + buildLivingBoroughDebugFishStateMarkup(fish, now)
     + buildLivingBoroughDebugSection("Global Time", [["time-pause", runtime.debugSimulationPaused ? "Resume" : "Pause"], ["time-scale", "1x", "1"], ["time-scale", "5x", "5"], ["time-scale", "20x", "20"], ["time-scale", "100x", "100"], ["time-add", "+1 hour", String(HOUR_MS)], ["time-add", "+1 day", String(DAY_MS)], ["time-add", "+7 days", String(7 * DAY_MS)]])
-    + buildLivingBoroughDebugSection("Seasonal", [["halloween", "Automatic", "automatic"], ["halloween", "Force On", "on"], ["halloween", "Force Off", "off"], ["fish-visual", "Fish Normal", "normal"], ["fish-visual", "Fish Skeleton", "skeleton"], ["fish-visual", "Fish Zombie", "zombie"], ["halloween-randomize", "Randomize Test Variants"], ["halloween-recalculate", "Deterministic Variants"], ["simulate-date", "October 1", "oct-1"], ["simulate-date", "October 31", "oct-31"], ["simulate-date", "November 1", "nov-1"]])
+    + buildLivingBoroughDebugSection("Seasonal", [["halloween", "Automatic", "automatic"], ["halloween", "Force On", "on"], ["halloween", "Force Off", "off"], ["simulate-date", "October 1", "oct-1"], ["simulate-date", "October 31", "oct-31"], ["simulate-date", "November 1", "nov-1"]])
     + buildLivingBoroughDebugSection("Fish Travel", [["travel", "Force Left", "left"], ["travel", "Force Right", "right"], ["travel", "Force Up", "up"], ["travel", "Force Down", "down"], ["travel-service", "To Food", "food"], ["travel-service", "To Clinic", "clinic"], ["travel-service", "To Social", "social"], ["travel-service", "To Nursery", "nursery"], ["travel-home", "Return Home"], ["travel-random", "Random Explore"], ["travel-complete", "Complete Instantly"], ["travel-cancel", "Cancel Travel"]])
     + buildLivingBoroughDebugSection("Off-screen", [["coarse", "Wandering", "wander"], ["coarse", "Service Visit", "service"], ["coarse", "Resting", "rest"], ["coarse", "Socializing", "social"], ["coarse-materialize", "Materialize"], ["coarse-complete", "Complete Activity"], ["coarse-cancel", "Cancel Activity"]])
     + buildLivingBoroughDebugSection("Fish Inspector", [["action-complete", "Complete Action"], ["action-cancel", "Cancel Action"], ["queue-clear", "Clear Queue"], ["autonomy-force", "Force Decision"], ["autonomy-toggle", runtime.debugAutonomyPausedFishIds.has(fish?.id) ? "Resume Autonomy" : "Pause Autonomy"], ["teleport-center", "Teleport Center"], ["needs", "Needs 0", "0"], ["needs", "Needs 50", "50"], ["needs", "Needs 100", "100"], ["heal", "Heal Fully"], ["damage", "Damage Health"], ["disease", "Apply / Advance Disease"], ["cure", "Cure Disease"], ["age-add", "+1 Day Age", "1"], ["age-add", "+7 Days Age", "7"], ["age-set", "Jump 30 Days", "30"], ["age-set", "Jump 100 Days", "100"], ["age-set", "Jump 365 Days", "365"], ["birthday", "Trigger Birthday"], ["kill", "Kill Fish"], ["revive", "Revive Fish"], ["memorial", "Generate Memorial"]], needsEditor)
@@ -1150,9 +1109,6 @@ function handleLivingBoroughDebugAction(event) {
   else if (action === "time-scale") { runtime.debugTimeScale = Math.max(1, Number(value) || 1); runtime.debugSimulationPaused = false; }
   else if (action === "time-add") { runtime.debugSimulatedNow = now + Number(value); syncState(runtime.debugSimulatedNow); }
   else if (action === "halloween") { runtime.debugHalloweenModeOverride = value; syncHalloweenPresentation(now); }
-  else if (action === "fish-visual" && fish) runtime.debugFishVisualOverrides.set(fish.id, value);
-  else if (action === "halloween-randomize") runtime.debugHalloweenRandomSalt = createId("season");
-  else if (action === "halloween-recalculate") runtime.debugHalloweenRandomSalt = "";
   else if (action === "simulate-date") {
     const year = new Date().getFullYear();
     const parts = value === "oct-31" ? [9, 31] : value === "nov-1" ? [10, 1] : [9, 1];

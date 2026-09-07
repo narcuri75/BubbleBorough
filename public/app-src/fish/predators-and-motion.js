@@ -248,6 +248,25 @@ function setToolbarPosition(toolbarPosition) {
   renderUi(Date.now());
 }
 
+function setToolbarTileColor(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    toolbarTileColor: value
+  });
+  if (currentSettings.toolbarTileColor === nextSettings.toolbarTileColor) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+}
+
 function setDisplayPosition(displayPosition) {
   if (!state || !DISPLAY_POSITION_SETTING_ENABLED) {
     return;
@@ -1344,6 +1363,92 @@ function handleBettaPassAttacks(now) {
   showToast(landedMessages.length === 1 ? landedMessages[0] : `${landedMessages.length} attacks landed.`);
 }
 
+function getSharkDesperationTarget(attacker, now = Date.now()) {
+  if (!attacker || !Array.isArray(state?.fish)) {
+    return null;
+  }
+  const draggedFishId = runtime.fishDragState?.fishId || null;
+  return state.fish
+    .filter((fish) => (
+      fish
+      && fish.id !== attacker.id
+      && fish.id !== draggedFishId
+      && !isFishDead(fish)
+      && !isUndeadFish(fish)
+      && !isDesperationPredatorFish(fish)
+      && !isFishProtectedFromPredators(fish, now)
+      && !hasZombieBiteInfection(fish)
+    ))
+    .sort((left, right) => (
+      Math.hypot(left.xNorm - attacker.xNorm, left.yNorm - attacker.yNorm)
+      - Math.hypot(right.xNorm - attacker.xNorm, right.yNorm - attacker.yNorm)
+    ))[0] || null;
+}
+
+function handleSharkDesperationAttacks(now = Date.now()) {
+  if (!state?.fish?.length || !isViolenceEnabled()) {
+    return;
+  }
+
+  const landedMessages = [];
+  for (const attacker of state.fish) {
+    const species = getSpeciesForFish(attacker);
+    if (
+      !species
+      || isFishDead(attacker)
+      || !isDesperationPredatorFish(species)
+      || getFishNeedValue(attacker, "hunger", now) > FISH_HUNGER_CRITICAL_THRESHOLD
+      || Number(attacker.healthUnits) > 2
+      || now - (Number(attacker.sharkLastAttackAt) || 0) < SHARK_DESPERATION_ATTACK_COOLDOWN_MS
+      || attacker.activity !== "roam"
+    ) {
+      continue;
+    }
+
+    const target = getSharkDesperationTarget(attacker, now);
+    if (!target || Math.hypot(attacker.xNorm - target.xNorm, attacker.yNorm - target.yNorm) > SHARK_DESPERATION_ATTACK_RANGE_NORM) {
+      continue;
+    }
+
+    const outcome = applyFishDamage(
+      target,
+      1,
+      now,
+      `${attacker.name} made a desperate bite at ${target.name}.`,
+      `${attacker.name} killed ${target.name} in desperation.`
+    );
+    if (!outcome.changed) {
+      continue;
+    }
+
+    attacker.sharkLastAttackAt = now;
+    attacker.lastAteAt = now;
+    const previousHunger = getFishNeedValue(attacker, "hunger", now);
+    setFishNeedValue(
+      attacker,
+      "hunger",
+      Math.max(previousHunger + FISH_CHUM_MEAL_HUNGER_GAIN, FISH_CHUM_MEAL_HUNGER_FLOOR),
+      now
+    );
+    attacker.needsUpdatedAt = now;
+    if (!outcome.dead) {
+      makeFishScurryFromAttack(target, attacker, now);
+    } else {
+      spawnBloodCloud(target.xNorm, target.yNorm, 1.25);
+    }
+    landedMessages.push(outcome.dead
+      ? `${attacker.name} killed ${target.name} in desperation.`
+      : `${attacker.name} made a desperate bite at ${target.name}.`);
+  }
+
+  if (!landedMessages.length) {
+    return;
+  }
+  saveState();
+  renderUi(now);
+  showToast(landedMessages.length === 1 ? landedMessages[0] : `${landedMessages.length} desperate bites landed.`);
+}
+
 function getEffectCloudPreset(presetKey = "gravelDust") {
   return EFFECT_CLOUD_PRESETS[presetKey] || EFFECT_CLOUD_PRESETS.gravelDust;
 }
@@ -2024,6 +2129,9 @@ function updateFishMotion(now, deltaSeconds) {
     let pelletBounds = null;
 
     if (fish.id === activelyDraggedFishId) {
+      if (isWhaleBreathActive(fish, species)) {
+        clearWhaleBreathState(fish, now);
+      }
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
       fish.activity = "roam";
@@ -2043,6 +2151,7 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     if (isFishDead(fish)) {
+      clearWhaleBreathState(fish, now, { reschedule: false });
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
       fish.activity = "dead";
@@ -2185,7 +2294,22 @@ function updateFishMotion(now, deltaSeconds) {
       fish.targetAt = now + 900 + Math.random() * 1400;
     }
 
-    if (zombieLockedOnTarget) {
+    const whaleBreathOwnsMovement = updateWhaleBreathBehavior(fish, species, now, {
+      paused: Boolean(pendingTravel)
+    });
+
+    if (whaleBreathOwnsMovement) {
+      clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
+      clearForcedGravelDigPrompt(fish);
+      if (fish.caveState) {
+        abortFishCaveBehavior(fish, now, false);
+      }
+      fish.feedingPelletId = null;
+      fish.hangoutDecorId = null;
+      fish.hangoutZoneType = null;
+      fish.panicUntil = null;
+      fish.panicSpeedBoost = null;
+    } else if (zombieLockedOnTarget) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
       if (fish.caveState) {
@@ -2404,6 +2528,7 @@ function updateFishMotion(now, deltaSeconds) {
       ? getActiveFishActionQueueItem(fish, now)
       : null;
     const isDirectedSwim = panicOwnsMovement
+      || whaleBreathOwnsMovement
       || fish.activity === "feeding"
       || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
       || fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -2412,6 +2537,8 @@ function updateFishMotion(now, deltaSeconds) {
       || Boolean(activeDebugSteering);
     let motionTarget = fish.activity === "feeding"
       ? 1
+      : whaleBreathOwnsMovement
+        ? (fish.whaleBreathState === "surface" ? 0.12 : 0.72)
       : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
         ? 0.76
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -2462,6 +2589,8 @@ function updateFishMotion(now, deltaSeconds) {
       const manuallyChasingFood = fish.activity === "feeding" && pellet && pellet.dropStartXNorm == null;
       let speedMultiplier = fish.activity === "feeding"
         ? (manuallyChasingFood ? 1 : FEED_CHASE_MULTIPLIER)
+        : whaleBreathOwnsMovement
+          ? (fish.whaleBreathState === "surface" ? 0.16 : 1.12)
         : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
           ? 1.14
           : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -2562,6 +2691,8 @@ function updateFishMotion(now, deltaSeconds) {
         ? rawNextYNorm
         : nextPlacement
         ? nextPlacement.yNorm
+        : whaleBreathOwnsMovement
+        ? clamp(rawNextYNorm, getWhaleBreathSurfaceYNorm(fish, species), movementMaxYNorm)
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? clamp(rawNextYNorm, 0.14, movementMaxYNorm)
         : clampFishYNormToLayer(
@@ -2572,7 +2703,7 @@ function updateFishMotion(now, deltaSeconds) {
           { minYNorm: 0.14, maxYNorm: movementMaxYNorm }
         );
 
-      if (effectiveBehavior === "sucker" || pendingTravel) {
+      if (effectiveBehavior === "sucker" || pendingTravel || whaleBreathOwnsMovement) {
         fish.xNorm = nextXNorm;
         fish.yNorm = nextYNorm;
       } else {
@@ -2751,6 +2882,7 @@ function updateFishMotion(now, deltaSeconds) {
   handlePiranhaSwarm(now, deltaSeconds);
   handleZombieBiteAttacks(now);
   handleBettaPassAttacks(now);
+  handleSharkDesperationAttacks(now);
   updateFishPebbleTosses(now);
   updateChumBloodClouds(now);
 }

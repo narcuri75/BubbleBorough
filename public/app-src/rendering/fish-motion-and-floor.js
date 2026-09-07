@@ -352,6 +352,10 @@ function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now 
     ? getDesiredSuckerFishGlassLayer(fish)
     : getDesiredFishTankLayer(fish);
   const clampYNorm = (value, layer) => {
+    if (isWhaleBreathActive(fish, species)) {
+      const minYNorm = getWhaleBreathSurfaceYNorm(fish, species);
+      return clamp(Number.isFinite(Number(value)) ? Number(value) : minYNorm, minYNorm, 0.8);
+    }
     if (fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
       const viewportBounds = getMobileViewportSwimBoundsNorm(fish, species, now);
       const minYNorm = Math.max(0.14, viewportBounds.minY);

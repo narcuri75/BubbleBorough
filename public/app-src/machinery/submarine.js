@@ -14,6 +14,191 @@ function sanitizeSubmarineInventory(rawInventory) {
   };
 }
 
+function normalizeBoatResourceCount(value) {
+  return clamp(Math.floor(Number(value) || 0), 0, BOAT_RESOURCE_CAPACITY);
+}
+
+function sanitizeBoatInventory(rawInventory) {
+  const source = rawInventory && typeof rawInventory === "object" ? rawInventory : {};
+  return {
+    chum: normalizeBoatResourceCount(source.chum)
+  };
+}
+
+function getMachineryColorSetting(machinery) {
+  return normalizeDecorColorSetting(machinery?.machineryColor ?? machinery?.colorSetting ?? "");
+}
+
+function getMachineryColorizeSetting(machinery) {
+  return normalizeDecorColorizeSetting(machinery?.machineryColorize ?? false);
+}
+
+function getMachineryColorCycleFilter(machinery, now = Date.now()) {
+  const color = getMachineryColorSetting(machinery);
+  if (!isDecorRgbColorSetting(color)) return "none";
+  return getMachineryColorizeSetting(machinery)
+    ? getDecorRgbColorizeFilter(now)
+    : getDecorRgbCycleFilter(now);
+}
+
+function getMachineryTintedImage(imagePath, sourceImage, machinery) {
+  const color = getMachineryColorSetting(machinery);
+  if (!color || isDecorRgbColorSetting(color)) return sourceImage;
+  return getTintedCaveLayerImage(imagePath, color, {
+    sourceImage,
+    colorize: getMachineryColorizeSetting(machinery)
+  }) || sourceImage;
+}
+
+function updateMachineryColorSetting(machinery, setting, rawValue) {
+  if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type)) return false;
+  let changed = false;
+  if (setting === "color") {
+    const nextColor = normalizeDecorColorSetting(rawValue);
+    if (getMachineryColorSetting(machinery) !== nextColor) {
+      machinery.machineryColor = nextColor;
+      changed = true;
+    }
+  } else if (setting === "colorize") {
+    const nextColorize = normalizeDecorColorizeSetting(rawValue);
+    if (getMachineryColorizeSetting(machinery) !== nextColorize) {
+      machinery.machineryColorize = nextColorize;
+      changed = true;
+    }
+  }
+  if (changed) saveState();
+  renderSubmarineManager();
+  return changed;
+}
+
+function renderMachineryColorSettingsMarkup(machinery) {
+  const activeColor = getMachineryColorSetting(machinery);
+  const originalSelected = !activeColor;
+  const rgbSelected = isDecorRgbColorSetting(activeColor);
+  const originalTile = `
+    <button
+      class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${originalSelected ? "is-selected" : ""}"
+      type="button"
+      data-machinery-color=""
+      aria-pressed="${originalSelected}"
+      aria-label="Use original machinery color"
+      title="Original color">
+      Original
+    </button>
+  `;
+  const rgbTile = `
+    <button
+      class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile cave-color-rgb-tile ${rgbSelected ? "is-selected" : ""}"
+      type="button"
+      data-machinery-color="${DECOR_RGB_COLOR_SETTING}"
+      aria-pressed="${rgbSelected}"
+      aria-label="Fade machinery through RGB colors"
+      title="RGB color cycle">
+      RGB
+    </button>
+  `;
+  const swatches = getCustomGravelColorChoices().map((choice) => {
+    const selected = activeColor === choice.color;
+    return `
+      <button
+        class="custom-gravel-color-swatch bubbler-color-swatch ${selected ? "is-selected" : ""}"
+        type="button"
+        style="--swatch:${choice.color};"
+        data-machinery-color="${choice.color}"
+        aria-pressed="${selected}"
+        aria-label="Set machinery to ${escapeHtml(choice.label)}"
+        title="${escapeHtml(choice.label)}"></button>
+    `;
+  }).join("");
+  return `
+    <div class="machinery-settings-panel fish-inspector-settings" ${runtime.machinerySettingsOpen ? "" : "hidden"}>
+      <div class="fish-inspector-color-card">
+        <div class="bubbler-color-row cave-color-layer-header">
+          <span>Color</span>
+          <strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong>
+        </div>
+        <div class="bubbler-color-swatches cave-color-swatches fish-inspector-color-swatches" role="group" aria-label="Machinery color choices">
+          <div class="color-choice-mode-row">${originalTile}${rgbTile}</div>
+          <div class="color-choice-swatch-row">${swatches}</div>
+        </div>
+        <label class="cave-colorize-toggle fish-inspector-colorize-toggle">
+          <input type="checkbox" data-machinery-colorize ${getMachineryColorizeSetting(machinery) ? "checked" : ""} />
+          <span>Colorize</span>
+        </label>
+      </div>
+    </div>
+  `;
+}
+
+function sanitizeStoredSubmarineState(rawStoredSubmarine, now = Date.now()) {
+  if (!rawStoredSubmarine || typeof rawStoredSubmarine !== "object") return null;
+  return {
+    id: typeof rawStoredSubmarine.id === "string" && rawStoredSubmarine.id.trim()
+      ? rawStoredSubmarine.id.trim()
+      : createId("submarine"),
+    direction: Number(rawStoredSubmarine.direction) < 0 ? -1 : 1,
+    tankLayer: clampTankLayer(rawStoredSubmarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER),
+    createdAt: Math.max(0, Number(rawStoredSubmarine.createdAt) || now),
+    autopilot: rawStoredSubmarine.autopilot !== false,
+    machineryColor: normalizeDecorColorSetting(rawStoredSubmarine.machineryColor ?? rawStoredSubmarine.colorSetting ?? ""),
+    machineryColorize: normalizeDecorColorizeSetting(rawStoredSubmarine.machineryColorize ?? false),
+    inventory: sanitizeSubmarineInventory(rawStoredSubmarine.inventory)
+  };
+}
+
+function createStoredSubmarineState(submarine, now = Date.now()) {
+  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) return null;
+  return sanitizeStoredSubmarineState({
+    id: submarine.id,
+    direction: submarine.direction,
+    tankLayer: submarine.tankLayer,
+    createdAt: submarine.createdAt,
+    autopilot: submarine.autopilot,
+    machineryColor: getMachineryColorSetting(submarine),
+    machineryColorize: getMachineryColorizeSetting(submarine),
+    inventory: submarine.inventory
+  }, now);
+}
+
+function sanitizeStoredBoatState(rawStoredBoat, now = Date.now()) {
+  if (!rawStoredBoat || typeof rawStoredBoat !== "object") return null;
+  return {
+    id: typeof rawStoredBoat.id === "string" && rawStoredBoat.id.trim()
+      ? rawStoredBoat.id.trim()
+      : createId("boat"),
+    direction: Number(rawStoredBoat.direction) < 0 ? -1 : 1,
+    tankLayer: BOAT_SURFACE_LAYER,
+    createdAt: Math.max(0, Number(rawStoredBoat.createdAt) || now),
+    autopilot: rawStoredBoat.autopilot !== false,
+    machineryColor: normalizeDecorColorSetting(rawStoredBoat.machineryColor ?? rawStoredBoat.colorSetting ?? ""),
+    machineryColorize: normalizeDecorColorizeSetting(rawStoredBoat.machineryColorize ?? false),
+    inventory: sanitizeBoatInventory(rawStoredBoat.inventory)
+  };
+}
+
+function createStoredBoatState(boat, now = Date.now()) {
+  if (!boat || boat.type !== MACHINERY_TYPE_BOAT) return null;
+  return sanitizeStoredBoatState({
+    id: boat.id,
+    direction: boat.direction,
+    createdAt: boat.createdAt,
+    autopilot: boat.autopilot,
+    machineryColor: getMachineryColorSetting(boat),
+    machineryColorize: getMachineryColorizeSetting(boat),
+    inventory: boat.inventory
+  }, now);
+}
+
+function getStoredSubmarineState() {
+  if (!state) return null;
+  return state.storedSubmarine;
+}
+
+function getStoredBoatState() {
+  if (!state) return null;
+  return state.storedBoat;
+}
+
 function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
   return {
     id: typeof options.id === "string" && options.id.trim() ? options.id.trim() : createId("submarine"),
@@ -24,15 +209,68 @@ function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
     targetXNorm: clamp(Number(options.targetXNorm) || 0.68, 0.08, 0.92),
     targetYNorm: clamp(Number(options.targetYNorm) || 0.46, 0.16, 0.78),
     direction: Number(options.direction) < 0 ? -1 : 1,
+    displayDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnStartedAt: null,
+    turnDurationMs: 0,
+    turnFromDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnToDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnSpinDirection: Number(options.direction) < 0 ? -1 : 1,
     tankLayer: clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : SUBMARINE_DEFAULT_TANK_LAYER),
     manualVelocityXPxPerSecond: Number.isFinite(Number(options.manualVelocityXPxPerSecond)) ? Number(options.manualVelocityXPxPerSecond) : 0,
     manualVelocityYPxPerSecond: Number.isFinite(Number(options.manualVelocityYPxPerSecond)) ? Number(options.manualVelocityYPxPerSecond) : 0,
+    motionVelocityXPxPerSecond: Number.isFinite(Number(options.motionVelocityXPxPerSecond)) ? Number(options.motionVelocityXPxPerSecond) : 0,
+    motionVelocityYPxPerSecond: Number.isFinite(Number(options.motionVelocityYPxPerSecond)) ? Number(options.motionVelocityYPxPerSecond) : 0,
     idleUntil: Math.max(0, Number(options.idleUntil) || 0),
     targetAt: Math.max(0, Number(options.targetAt) || now),
     nextScanAt: Math.max(0, Number(options.nextScanAt) || now),
     createdAt: Math.max(0, Number(options.createdAt) || now),
     autopilot: options.autopilot !== false,
+    machineryColor: normalizeDecorColorSetting(options.machineryColor ?? options.colorSetting ?? ""),
+    machineryColorize: normalizeDecorColorizeSetting(options.machineryColorize ?? false),
     inventory: sanitizeSubmarineInventory(options.inventory),
+    entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
+    entryDurationMs: Math.max(0, Number(options.entryDurationMs) || 0),
+    entryFromYNorm: Number.isFinite(Number(options.entryFromYNorm))
+      ? clamp(Number(options.entryFromYNorm), 0.02, 0.18)
+      : null,
+    entrySplashTriggered: options.entrySplashTriggered === true,
+    mission: null
+  };
+}
+
+function createBoatMachinery(tankId, now = Date.now(), options = {}) {
+  return {
+    id: typeof options.id === "string" && options.id.trim() ? options.id.trim() : createId("boat"),
+    type: MACHINERY_TYPE_BOAT,
+    tankId: String(tankId || ""),
+    xNorm: clamp(Number(options.xNorm) || 0.5, 0.08, 0.92),
+    yNorm: 0.16,
+    targetXNorm: clamp(Number(options.targetXNorm) || 0.74, 0.08, 0.92),
+    targetYNorm: 0.16,
+    direction: Number(options.direction) < 0 ? -1 : 1,
+    displayDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnStartedAt: null,
+    turnDurationMs: 0,
+    turnFromDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnToDirection: Number(options.direction) < 0 ? -1 : 1,
+    turnSpinDirection: Number(options.direction) < 0 ? -1 : 1,
+    tankLayer: BOAT_SURFACE_LAYER,
+    manualVelocityXPxPerSecond: Number.isFinite(Number(options.manualVelocityXPxPerSecond)) ? Number(options.manualVelocityXPxPerSecond) : 0,
+    motionVelocityXPxPerSecond: Number.isFinite(Number(options.motionVelocityXPxPerSecond)) ? Number(options.motionVelocityXPxPerSecond) : 0,
+    motionVelocityYPxPerSecond: 0,
+    idleUntil: Math.max(0, Number(options.idleUntil) || 0),
+    targetAt: Math.max(0, Number(options.targetAt) || now),
+    createdAt: Math.max(0, Number(options.createdAt) || now),
+    autopilot: options.autopilot !== false,
+    machineryColor: normalizeDecorColorSetting(options.machineryColor ?? options.colorSetting ?? ""),
+    machineryColorize: normalizeDecorColorizeSetting(options.machineryColorize ?? false),
+    inventory: sanitizeBoatInventory(options.inventory),
+    entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
+    entryDurationMs: Math.max(0, Number(options.entryDurationMs) || 0),
+    entryFromYNorm: Number.isFinite(Number(options.entryFromYNorm))
+      ? clamp(Number(options.entryFromYNorm), 0.02, 0.18)
+      : null,
+    entrySplashTriggered: options.entrySplashTriggered === true,
     mission: null
   };
 }
@@ -44,14 +282,19 @@ function sanitizeMachineryState(rawMachinery, tanks = getAllTanks(), now = Date.
   const source = Array.isArray(rawMachinery) ? rawMachinery : [];
   const sanitized = [];
   for (const entry of source) {
-    if (!entry || entry.type !== MACHINERY_TYPE_SUBMARINE || sanitized.some((item) => item.type === MACHINERY_TYPE_SUBMARINE)) {
+    if (!entry || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(entry.type)
+      || sanitized.some((item) => item.type === entry.type)) {
       continue;
     }
     const tankId = validTankIds.has(entry.tankId) ? entry.tankId : fallbackTankId;
     if (!tankId) {
       continue;
     }
-    sanitized.push(createSubmarineMachinery(tankId, now, entry));
+    sanitized.push(
+      entry.type === MACHINERY_TYPE_BOAT
+        ? createBoatMachinery(tankId, now, entry)
+        : createSubmarineMachinery(tankId, now, entry)
+    );
   }
   return sanitized;
 }
@@ -72,8 +315,16 @@ function getSubmarine() {
   return getMachineryList().find((item) => item?.type === MACHINERY_TYPE_SUBMARINE) || null;
 }
 
+function getBoat() {
+  return getMachineryList().find((item) => item?.type === MACHINERY_TYPE_BOAT) || null;
+}
+
 function isSubmarineOwned() {
-  return Boolean(state?.submarineOwned || getSubmarine());
+  return Boolean(state?.submarineOwned || getSubmarine() || getStoredSubmarineState());
+}
+
+function isBoatOwned() {
+  return Boolean(state?.boatOwned || getBoat() || getStoredBoatState());
 }
 
 function getMachineryForTank(tankId) {
@@ -83,6 +334,10 @@ function getMachineryForTank(tankId) {
 
 function getSubmarineTank(submarine = getSubmarine()) {
   return submarine ? getTankById(submarine.tankId) : null;
+}
+
+function getBoatTank(boat = getBoat()) {
+  return boat ? getTankById(boat.tankId) : null;
 }
 
 function getSubmarineFoodCount(submarine = getSubmarine()) {
@@ -125,13 +380,23 @@ function deploySubmarine(targetTank = getCurrentTank(), now = Date.now()) {
   if (!isSubmarineOwned() || !targetTank) return false;
   const existing = getSubmarine();
   if (existing) return moveSubmarineToTank(targetTank, now);
+  const storedSubmarine = getStoredSubmarineState();
+  const dropXNorm = randomBetween(0.26, 0.74);
   const submarine = createSubmarineMachinery(targetTank.id, now, {
-    xNorm: 0.5,
+    ...(storedSubmarine || {}),
+    xNorm: dropXNorm,
     yNorm: 0.46,
-    targetXNorm: 0.68,
-    targetYNorm: 0.44
+    targetXNorm: dropXNorm,
+    targetYNorm: 0.46,
+    manualVelocityXPxPerSecond: 0,
+    manualVelocityYPxPerSecond: 0,
+    entryStartedAt: now,
+    entryDurationMs: SUBMARINE_ENTRY_DURATION_MS,
+    entryFromYNorm: SUBMARINE_ENTRY_FROM_Y_NORM,
+    entrySplashTriggered: false
   });
   state.submarineOwned = true;
+  state.storedSubmarine = null;
   state.machinery = [...getMachineryList(), submarine];
   runtime.equipmentEditTrayTab = "tank";
   pushEvent(`Automated Care Submarine deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
@@ -173,16 +438,109 @@ function recallSubmarine(now = Date.now()) {
   if (!submarine) return false;
   const tank = getSubmarineTank(submarine);
   runtime.pendingMachineryTravel.delete(submarine.id);
-  runtime.submarineManualDriveId = "";
-  runtime.submarineManualDriveStartedAt = 0;
   clearSubmarineManualDriveKeys();
   if (runtime.selectedMachineryId === submarine.id) closeSubmarineManager();
+  closeEditEquipmentTrayContextMenu({ render: false });
+  state.storedSubmarine = createStoredSubmarineState(submarine, now);
   state.machinery = getMachineryList().filter((item) => item?.id !== submarine.id);
   state.submarineOwned = true;
   runtime.equipmentEditTrayTab = "storage";
   pushEvent(`Automated Care Submarine returned to equipment storage${tank ? ` from ${getTankLabel(tank)}` : ""}.`, now, tank || null, {
     type: "equipment",
     detail: "Automated care machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function buyBoat() {
+  if (isBoatOwned()) {
+    return false;
+  }
+  return performCoinTransaction({
+    amount: BOAT_COST,
+    insufficientMessage: `You need ${BOAT_COST} ${pluralize("coin", BOAT_COST)} for the Chum Skiff.`,
+    apply: () => {
+      state.boatOwned = true;
+      runtime.equipmentEditTrayTab = "storage";
+    },
+    event: {
+      type: "equipment",
+      tone: "positive",
+      text: "Purchased the Chum Skiff. It is ready to deploy from Edit > Equipment."
+    },
+    toast: "Chum Skiff purchased. Deploy it from Edit > Equipment."
+  });
+}
+
+function deployBoat(targetTank = getCurrentTank(), now = Date.now()) {
+  if (!isBoatOwned() || !targetTank) return false;
+  const existing = getBoat();
+  if (existing) return moveBoatToTank(targetTank, now);
+  const storedBoat = getStoredBoatState();
+  const dropXNorm = randomBetween(0.26, 0.74);
+  const boat = createBoatMachinery(targetTank.id, now, {
+    ...(storedBoat || {}),
+    xNorm: dropXNorm,
+    targetXNorm: dropXNorm,
+    manualVelocityXPxPerSecond: 0,
+    entryStartedAt: now,
+    entryDurationMs: BOAT_ENTRY_DURATION_MS,
+    entryFromYNorm: BOAT_ENTRY_FROM_Y_NORM,
+    entrySplashTriggered: false
+  });
+  state.boatOwned = true;
+  state.storedBoat = null;
+  state.machinery = [...getMachineryList(), boat];
+  runtime.equipmentEditTrayTab = "tank";
+  pushEvent(`Chum Skiff deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
+    type: "equipment",
+    detail: "Surface chum machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function moveBoatToTank(targetTank = getCurrentTank(), now = Date.now()) {
+  const boat = getBoat();
+  if (!boat || !targetTank) return false;
+  runtime.pendingMachineryTravel.delete(boat.id);
+  boat.tankId = targetTank.id;
+  boat.xNorm = 0.5;
+  boat.yNorm = 0.16;
+  boat.targetXNorm = 0.72;
+  boat.targetYNorm = 0.16;
+  boat.targetAt = now + 1200;
+  boat.idleUntil = now + 450;
+  boat.manualVelocityXPxPerSecond = 0;
+  boat.motionVelocityXPxPerSecond = 0;
+  boat.tankLayer = BOAT_SURFACE_LAYER;
+  pushEvent(`Chum Skiff moved to ${getTankLabel(targetTank)}.`, now, targetTank, {
+    type: "equipment",
+    detail: "Surface chum machinery"
+  });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function recallBoat(now = Date.now()) {
+  const boat = getBoat();
+  if (!boat) return false;
+  const tank = getBoatTank(boat);
+  runtime.pendingMachineryTravel.delete(boat.id);
+  clearBoatManualDriveKeys();
+  if (runtime.selectedMachineryId === boat.id) closeSubmarineManager();
+  closeEditEquipmentTrayContextMenu({ render: false });
+  state.storedBoat = createStoredBoatState(boat, now);
+  state.machinery = getMachineryList().filter((item) => item?.id !== boat.id);
+  state.boatOwned = true;
+  runtime.equipmentEditTrayTab = "storage";
+  pushEvent(`Chum Skiff returned to equipment storage${tank ? ` from ${getTankLabel(tank)}` : ""}.`, now, tank || null, {
+    type: "equipment",
+    detail: "Surface chum machinery"
   });
   saveState();
   renderUi(now);
@@ -219,6 +577,30 @@ function transferFoodIntoSubmarine(submarine = getSubmarine(), requestedAmount =
   return transferred;
 }
 
+function getBoatPlayerChumCount() {
+  return Math.max(0, Math.floor(Number(state?.foodInventory?.chum) || 0));
+}
+
+function transferChumIntoBoat(boat = getBoat(), requestedAmount = BOAT_RESOURCE_CAPACITY) {
+  if (!boat) return 0;
+  boat.inventory = sanitizeBoatInventory(boat.inventory);
+  const available = getBoatPlayerChumCount();
+  const remainingCapacity = Math.min(
+    BOAT_RESOURCE_CAPACITY - boat.inventory.chum,
+    Math.max(1, Math.floor(Number(requestedAmount) || 1))
+  );
+  const transferred = Math.min(available, remainingCapacity);
+  if (transferred <= 0) return 0;
+  state.foodInventory.chum = available - transferred;
+  boat.inventory.chum += transferred;
+  pushEvent(`Loaded ${transferred} chum ${pluralize("ration", transferred)} into the Chum Skiff.`, Date.now());
+  saveState();
+  renderSubmarineManager();
+  renderFoodTray();
+  renderFoodShop();
+  return transferred;
+}
+
 function transferMedicineIntoSubmarine(resourceType, submarine = getSubmarine(), requestedAmount = SUBMARINE_RESOURCE_CAPACITY) {
   if (!submarine) return 0;
   submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
@@ -246,9 +628,25 @@ function isSubmarineAutopilotEnabled(submarine = getSubmarine()) {
   return submarine?.autopilot !== false;
 }
 
+function getSubmarineEntryProgress(submarine, now = Date.now()) {
+  if (
+    !submarine
+    || !Number.isFinite(Number(submarine.entryStartedAt))
+    || Number(submarine.entryDurationMs) <= 0
+  ) {
+    return null;
+  }
+  return clamp(
+    (now - Number(submarine.entryStartedAt)) / Math.max(1, Number(submarine.entryDurationMs)),
+    0,
+    1
+  );
+}
+
 function isSubmarineManualDriveActive(submarine = getSubmarine()) {
   return Boolean(
     submarine?.id
+    && getSubmarineEntryProgress(submarine) === null
     && !isSubmarineAutopilotEnabled(submarine)
     && submarine.tankId === getCurrentTank()?.id
     && !runtime.boroughOverviewOpen
@@ -260,7 +658,30 @@ function isSubmarineManualDriveActive(submarine = getSubmarine()) {
     && !runtime.settingsOverlayOpen
     && !runtime.utilityOverlayOpen
     && !runtime.equipmentOverlayOpen
+    && !runtime.foodTrayOpen && !runtime.medicineTrayOpen
+    && !runtime.cleaningMode && !runtime.scoopMode
   );
+}
+
+function suspendSubmarineManualDrive() {
+  clearSubmarineManualDriveKeys();
+  const sub = getSubmarine();
+  if (!sub) return;
+  sub.manualVelocityXPxPerSecond = sub.manualVelocityYPxPerSecond = 0;
+  sub.motionVelocityXPxPerSecond = sub.motionVelocityYPxPerSecond = 0;
+}
+
+function beginSubmarineManualDrive(submarine = getSubmarine()) {
+  if (!submarine) return false;
+  const tank = getSubmarineTank(submarine);
+  if (!tank) return false;
+  clearPrimaryToolModes();
+  setActiveTank(tank.id);
+  setSubmarineAutopilot(submarine, false, { render: false });
+  openSubmarineManager(submarine.id);
+  renderUi(Date.now());
+  document.activeElement?.blur?.();
+  return true;
 }
 
 function clearSubmarineManualDriveKeys() {
@@ -283,7 +704,6 @@ function setSubmarineManualDriveKey(key, isDown) {
     return true;
   }
   if (!isSubmarineManualDriveActive(submarine)) return false;
-  runtime.submarineManualDriveId = submarine.id;
   runtime.submarineManualDriveKeys.add(normalized);
   return true;
 }
@@ -292,7 +712,6 @@ function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, optio
   if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) return false;
   const nextEnabled = enabled !== false;
   if (isSubmarineAutopilotEnabled(submarine) === nextEnabled) {
-    if (!nextEnabled && isSubmarineManualDriveActive(submarine)) runtime.submarineManualDriveId = submarine.id;
     return false;
   }
 
@@ -300,9 +719,14 @@ function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, optio
   submarine.autopilot = nextEnabled;
   clearSubmarineManualDriveKeys();
 
+  if (!nextEnabled) {
+    const boat = getBoat();
+    if (boat && !isBoatAutopilotEnabled(boat)) {
+      setBoatAutopilot(boat, true, { render: false });
+    }
+  }
+
   if (nextEnabled) {
-    runtime.submarineManualDriveId = "";
-    runtime.submarineManualDriveStartedAt = 0;
     submarine.targetXNorm = submarine.xNorm;
     submarine.targetYNorm = submarine.yNorm;
     submarine.targetAt = now + 500;
@@ -310,9 +734,9 @@ function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, optio
     submarine.nextScanAt = Math.min(Number(submarine.nextScanAt) || now, now + 350);
     submarine.manualVelocityXPxPerSecond = 0;
     submarine.manualVelocityYPxPerSecond = 0;
+    submarine.motionVelocityXPxPerSecond = 0;
+    submarine.motionVelocityYPxPerSecond = 0;
   } else {
-    runtime.submarineManualDriveId = submarine.id;
-    runtime.submarineManualDriveStartedAt = now;
     runtime.pendingMachineryTravel.delete(submarine.id);
     submarine.xNorm = clamp(Number(submarine.xNorm) || 0.5, 0.08, 0.92);
     submarine.yNorm = clamp(Number(submarine.yNorm) || 0.48, 0.16, 0.78);
@@ -322,6 +746,8 @@ function setSubmarineAutopilot(submarine = getSubmarine(), enabled = true, optio
     submarine.idleUntil = 0;
     submarine.manualVelocityXPxPerSecond = 0;
     submarine.manualVelocityYPxPerSecond = 0;
+    submarine.motionVelocityXPxPerSecond = 0;
+    submarine.motionVelocityYPxPerSecond = 0;
   }
 
   requestDeferredStateSave();
@@ -354,6 +780,34 @@ function stepSubmarineDepthLayer(submarine = getSubmarine(), delta = 0) {
   return true;
 }
 
+function createSubmarineDroppedFoodPellet(submarine, foodKey = "basic", now = Date.now()) {
+  if (!submarine) return null;
+  const metrics = getSubmarineDrawMetrics(submarine, now);
+  const sourceXNorm = clamp(
+    Number.isFinite(Number(metrics?.x)) ? Number(metrics.x) / TANK_WIDTH : Number(submarine.xNorm),
+    0.08,
+    0.92
+  );
+  const sourceYNorm = clamp(
+    Number.isFinite(Number(metrics?.y)) && Number.isFinite(Number(metrics?.height))
+      ? (Number(metrics.y) + Number(metrics.height) * 0.3) / TANK_HEIGHT
+      : Number(submarine.yNorm),
+    0.09,
+    0.84
+  );
+  const targetYNorm = clamp(sourceYNorm + 0.075, sourceYNorm + 0.025, 0.9);
+  const pellet = createDroppedFoodPellet(foodKey, sourceXNorm, targetYNorm, now, {
+    spreadNorm: 0,
+    dropStartXNorm: sourceXNorm,
+    dropStartYNorm: sourceYNorm,
+    dropDurationMs: 420
+  });
+  if (pellet) {
+    pellet.tankLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
+  }
+  return pellet;
+}
+
 function deployManualSubmarineFood(submarine = getSubmarine(), now = Date.now()) {
   if (!isSubmarineManualDriveActive(submarine)) return false;
   submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
@@ -363,9 +817,8 @@ function deployManualSubmarineFood(submarine = getSubmarine(), now = Date.now())
   if (!tank) return false;
   let pellet = null;
   withActiveTank(tank.id, () => {
-    pellet = createDroppedFoodPellet("basic", submarine.xNorm, submarine.yNorm, now);
+    pellet = createSubmarineDroppedFoodPellet(submarine, "basic", now);
     if (pellet) {
-      pellet.tankLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
       state.floatingPellets.push(pellet);
     }
   });
@@ -377,10 +830,107 @@ function deployManualSubmarineFood(submarine = getSubmarine(), now = Date.now())
   return true;
 }
 
+function getMachineryFacingDirection(machinery, now = Date.now()) {
+  if (!machinery) return 1;
+  if (machinery.turnStartedAt && Number(machinery.turnDurationMs) > 0) {
+    const progress = clamp((now - Number(machinery.turnStartedAt)) / Number(machinery.turnDurationMs), 0, 1);
+    const fromDirection = Number(machinery.turnFromDirection) < 0 ? -1 : 1;
+    const toDirection = Number(machinery.turnToDirection) < 0 ? -1 : 1;
+    return progress < 0.5 ? fromDirection : toDirection;
+  }
+  return Number(machinery.displayDirection ?? machinery.direction) < 0 ? -1 : 1;
+}
+
+function clearMachineryTurnState(machinery, direction = machinery?.direction) {
+  if (!machinery) return;
+  const settledDirection = Number(direction) < 0 ? -1 : 1;
+  machinery.direction = settledDirection;
+  machinery.displayDirection = settledDirection;
+  machinery.turnStartedAt = null;
+  machinery.turnDurationMs = 0;
+  machinery.turnFromDirection = settledDirection;
+  machinery.turnToDirection = settledDirection;
+  machinery.turnSpinDirection = settledDirection;
+}
+
+function setMachineryDirection(machinery, desiredDirection, now = Date.now(), durationMs = 260) {
+  if (!machinery) return false;
+  const nextDirection = Number(desiredDirection) < 0 ? -1 : 1;
+  const currentDisplayDirection = getMachineryFacingDirection(machinery, now);
+  const activeTurn = Boolean(machinery.turnStartedAt && Number(machinery.turnDurationMs) > 0);
+  machinery.direction = nextDirection;
+
+  if (activeTurn) {
+    const pendingDirection = Number(machinery.turnToDirection) < 0 ? -1 : 1;
+    if (nextDirection === pendingDirection) return false;
+
+    const progress = clamp((now - Number(machinery.turnStartedAt)) / Number(machinery.turnDurationMs), 0, 1);
+    const fromDirection = Number(machinery.turnFromDirection) < 0 ? -1 : 1;
+    if (nextDirection === fromDirection && progress < 0.5) {
+      // The player/autopilot changed its mind before the visual flip. Ease the
+      // current squash back out without ever snapping to the other side.
+      const reverseProgress = 1 - progress;
+      machinery.displayDirection = fromDirection;
+      machinery.turnFromDirection = fromDirection;
+      machinery.turnToDirection = fromDirection;
+      machinery.turnStartedAt = now - reverseProgress * Math.max(1, Number(durationMs) || 1);
+      machinery.turnDurationMs = Math.max(1, Number(durationMs) || 1);
+      machinery.turnSpinDirection = -Number(machinery.turnSpinDirection || fromDirection);
+      return true;
+    }
+  }
+
+  if (!activeTurn && nextDirection === currentDisplayDirection) {
+    clearMachineryTurnState(machinery, nextDirection);
+    return false;
+  }
+
+  machinery.displayDirection = currentDisplayDirection;
+  machinery.turnStartedAt = now;
+  machinery.turnDurationMs = Math.max(1, Number(durationMs) || 1);
+  machinery.turnFromDirection = currentDisplayDirection;
+  machinery.turnToDirection = nextDirection;
+  // Bank consistently toward the new heading instead of choosing a random
+  // roll direction. It reads more like a vehicle carving through water.
+  machinery.turnSpinDirection = nextDirection;
+  return true;
+}
+
+function getMachineryTurnRenderState(machinery, now = Date.now(), leanRadians = 0) {
+  if (!machinery) {
+    return { direction: 1, scaleX: 1, scaleY: 1, lean: 0, swayX: 0 };
+  }
+  if (!machinery.turnStartedAt || Number(machinery.turnDurationMs) <= 0) {
+    const direction = Number(machinery.direction) < 0 ? -1 : 1;
+    machinery.displayDirection = direction;
+    return { direction, scaleX: 1, scaleY: 1, lean: 0, swayX: 0 };
+  }
+
+  const progress = clamp((now - Number(machinery.turnStartedAt)) / Number(machinery.turnDurationMs), 0, 1);
+  if (progress >= 1) {
+    const direction = Number(machinery.direction) < 0 ? -1 : 1;
+    clearMachineryTurnState(machinery, direction);
+    return { direction, scaleX: 1, scaleY: 1, lean: 0, swayX: 0 };
+  }
+
+  const amount = Math.sin(progress * Math.PI);
+  const fromDirection = Number(machinery.turnFromDirection) < 0 ? -1 : 1;
+  const toDirection = Number(machinery.turnToDirection) < 0 ? -1 : 1;
+  const direction = progress < 0.5 ? fromDirection : toDirection;
+  const spinDirection = Number(machinery.turnSpinDirection) < 0 ? -1 : 1;
+  machinery.displayDirection = direction;
+  return {
+    direction,
+    scaleX: 1 - amount * (1 - FISH_TURN_MIN_SCALE_X),
+    scaleY: 1 + amount * (FISH_TURN_MAX_SCALE_Y - 1),
+    lean: spinDirection * amount * Math.max(0, Number(leanRadians) || 0),
+    swayX: spinDirection * amount * 0.8
+  };
+}
+
 function updateSubmarineManualDrive(submarine, deltaSeconds = 0.016) {
   if (!isSubmarineManualDriveActive(submarine)) return false;
 
-  runtime.submarineManualDriveId = submarine.id;
   const dt = clamp(Number(deltaSeconds) || 0, 0, 0.08);
   const input = getSubmarineManualInputVector();
   let velocityX = Number(submarine.manualVelocityXPxPerSecond) || 0;
@@ -415,12 +965,211 @@ function updateSubmarineManualDrive(submarine, deltaSeconds = 0.016) {
   submarine.yNorm = nextY;
   submarine.manualVelocityXPxPerSecond = velocityX;
   submarine.manualVelocityYPxPerSecond = velocityY;
+  submarine.motionVelocityXPxPerSecond = dt > 0 ? (nextX - previousX) * TANK_WIDTH / dt : 0;
+  submarine.motionVelocityYPxPerSecond = dt > 0 ? (nextY - previousY) * TANK_HEIGHT / dt : 0;
   submarine.targetXNorm = submarine.xNorm;
   submarine.targetYNorm = submarine.yNorm;
   submarine.idleUntil = 0;
-  if (Math.abs(input.x) > 0.05) submarine.direction = input.x < 0 ? -1 : 1;
-  else if (Math.abs(velocityX) > 8) submarine.direction = velocityX < 0 ? -1 : 1;
+  if (Math.abs(input.x) > 0.05) setMachineryDirection(submarine, input.x < 0 ? -1 : 1, Date.now(), SUBMARINE_TURN_DURATION_MS);
+  else if (Math.abs(velocityX) > 8) setMachineryDirection(submarine, velocityX < 0 ? -1 : 1, Date.now(), SUBMARINE_TURN_DURATION_MS);
   return true;
+}
+
+function getBoatEntryProgress(boat, now = Date.now()) {
+  if (!boat || !Number.isFinite(Number(boat.entryStartedAt)) || Number(boat.entryDurationMs) <= 0) {
+    return null;
+  }
+  return clamp((now - Number(boat.entryStartedAt)) / Math.max(1, Number(boat.entryDurationMs)), 0, 1);
+}
+
+function isBoatAutopilotEnabled(boat = getBoat()) {
+  return boat?.autopilot !== false;
+}
+
+function isMachineryControlOverlayOpen() {
+  return Boolean(
+    runtime.boroughOverviewOpen
+    || runtime.editTankMode
+    || runtime.fishEditMode
+    || runtime.equipmentEditMode
+    || runtime.tankEditMode
+    || runtime.storeOverlayOpen
+    || runtime.settingsOverlayOpen
+    || runtime.utilityOverlayOpen
+    || runtime.equipmentOverlayOpen
+    || runtime.foodTrayOpen
+    || runtime.medicineTrayOpen
+    || runtime.cleaningMode
+    || runtime.scoopMode
+  );
+}
+
+function isBoatManualDriveActive(boat = getBoat()) {
+  return Boolean(
+    boat?.id
+    && getBoatEntryProgress(boat) === null
+    && !isBoatAutopilotEnabled(boat)
+    && boat.tankId === getCurrentTank()?.id
+    && !isMachineryControlOverlayOpen()
+  );
+}
+
+function clearBoatManualDriveKeys() {
+  if (!(runtime.boatManualDriveKeys instanceof Set)) {
+    runtime.boatManualDriveKeys = new Set();
+    return;
+  }
+  runtime.boatManualDriveKeys.clear();
+}
+
+function suspendBoatManualDrive() {
+  clearBoatManualDriveKeys();
+  const boat = getBoat();
+  if (!boat) return;
+  boat.manualVelocityXPxPerSecond = 0;
+  boat.motionVelocityXPxPerSecond = 0;
+}
+
+function beginBoatManualDrive(boat = getBoat()) {
+  if (!boat) return false;
+  const tank = getBoatTank(boat);
+  if (!tank) return false;
+  clearPrimaryToolModes();
+  setActiveTank(tank.id);
+  setBoatAutopilot(boat, false, { render: false });
+  openSubmarineManager(boat.id);
+  renderUi(Date.now());
+  document.activeElement?.blur?.();
+  return true;
+}
+
+function setBoatManualDriveKey(key, isDown) {
+  const normalized = String(key || "").toLowerCase();
+  const boat = getBoat();
+  if (!["a", "d"].includes(normalized) || !boat) return false;
+  if (!(runtime.boatManualDriveKeys instanceof Set)) {
+    runtime.boatManualDriveKeys = new Set();
+  }
+  if (!isDown) {
+    runtime.boatManualDriveKeys.delete(normalized);
+    return true;
+  }
+  if (!isBoatManualDriveActive(boat)) return false;
+  runtime.boatManualDriveKeys.add(normalized);
+  return true;
+}
+
+function setBoatAutopilot(boat = getBoat(), enabled = true, options = {}) {
+  if (!boat || boat.type !== MACHINERY_TYPE_BOAT) return false;
+  const nextEnabled = enabled !== false;
+  if (isBoatAutopilotEnabled(boat) === nextEnabled) return false;
+
+  const now = Date.now();
+  boat.autopilot = nextEnabled;
+  clearBoatManualDriveKeys();
+  if (!nextEnabled) {
+    const submarine = getSubmarine();
+    if (submarine && !isSubmarineAutopilotEnabled(submarine)) {
+      setSubmarineAutopilot(submarine, true, { render: false });
+    }
+    runtime.pendingMachineryTravel.delete(boat.id);
+    boat.xNorm = clamp(Number(boat.xNorm) || 0.5, 0.08, 0.92);
+    boat.targetXNorm = boat.xNorm;
+    boat.targetAt = 0;
+    boat.idleUntil = 0;
+    boat.manualVelocityXPxPerSecond = 0;
+    boat.motionVelocityXPxPerSecond = 0;
+  } else {
+    boat.targetXNorm = boat.xNorm < 0.5 ? 0.82 : 0.18;
+    boat.targetAt = now + 700;
+    boat.idleUntil = now + 150;
+    boat.manualVelocityXPxPerSecond = 0;
+    boat.motionVelocityXPxPerSecond = 0;
+  }
+
+  requestDeferredStateSave();
+  if (options.render !== false && runtime.selectedMachineryId === boat.id) renderSubmarineManager();
+  return true;
+}
+
+function getBoatManualInputVector() {
+  const keys = runtime.boatManualDriveKeys instanceof Set ? runtime.boatManualDriveKeys : new Set();
+  return { x: (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0), y: 0 };
+}
+
+function createBoatDroppedFoodPellet(boat, now = Date.now()) {
+  if (!boat) return null;
+  const metrics = getBoatDrawMetrics(boat, now);
+  const sourceXNorm = clamp(Number.isFinite(Number(metrics?.x)) ? Number(metrics.x) / TANK_WIDTH : Number(boat.xNorm), 0.08, 0.92);
+  const sourceYNorm = clamp(
+    Number.isFinite(Number(metrics?.y)) && Number.isFinite(Number(metrics?.height))
+      ? (Number(metrics.y) + Number(metrics.height) * 0.34) / TANK_HEIGHT
+      : Number(boat.yNorm),
+    0.09,
+    0.84
+  );
+  return createDroppedFoodPellet("chum", sourceXNorm, clamp(sourceYNorm + 0.07, sourceYNorm + 0.025, 0.9), now, {
+    spreadNorm: 0,
+    dropStartXNorm: sourceXNorm,
+    dropStartYNorm: sourceYNorm,
+    dropDurationMs: 420
+  });
+}
+
+function deployManualBoatChum(boat = getBoat(), now = Date.now()) {
+  if (!isBoatManualDriveActive(boat)) return false;
+  boat.inventory = sanitizeBoatInventory(boat.inventory);
+  if (boat.inventory.chum <= 0) return true;
+  if (now - (Number(runtime.boatManualLastFoodDeployAt) || 0) < BOAT_MANUAL_FOOD_COOLDOWN_MS) return true;
+  const tank = getBoatTank(boat);
+  if (!tank) return false;
+  let pellet = null;
+  withActiveTank(tank.id, () => {
+    pellet = createBoatDroppedFoodPellet(boat, now);
+    if (pellet) state.floatingPellets.push(pellet);
+  });
+  if (!pellet) return false;
+  runtime.boatManualLastFoodDeployAt = now;
+  boat.inventory.chum = normalizeBoatResourceCount(boat.inventory.chum - 1);
+  requestDeferredStateSave();
+  if (runtime.selectedMachineryId === boat.id) renderSubmarineManager();
+  return true;
+}
+
+function updateBoatManualDrive(boat, deltaSeconds = 0.016) {
+  if (!isBoatManualDriveActive(boat)) return false;
+  const dt = clamp(Number(deltaSeconds) || 0, 0, 0.08);
+  const input = getBoatManualInputVector();
+  let velocityX = Number(boat.manualVelocityXPxPerSecond) || 0;
+  if (Math.abs(input.x) > 0.001) velocityX += input.x * BOAT_MANUAL_ACCELERATION_PX_PER_SECOND2 * dt;
+  else velocityX *= Math.exp(-BOAT_MANUAL_DRAG_PER_SECOND * dt);
+  velocityX = clamp(velocityX, -BOAT_MANUAL_SPEED_PX_PER_SECOND, BOAT_MANUAL_SPEED_PX_PER_SECOND);
+  if (Math.abs(velocityX) < 0.35) velocityX = 0;
+  const previousX = Number(boat.xNorm) || 0.5;
+  const nextX = clamp(previousX + velocityX * dt / TANK_WIDTH, 0.08, 0.92);
+  if (Math.abs(nextX - previousX) < 0.000001 && Math.abs(velocityX) > 0) velocityX = 0;
+  boat.xNorm = nextX;
+  boat.manualVelocityXPxPerSecond = velocityX;
+  boat.motionVelocityXPxPerSecond = dt > 0 ? (nextX - previousX) * TANK_WIDTH / dt : 0;
+  boat.targetXNorm = boat.xNorm;
+  boat.targetYNorm = 0.16;
+  boat.idleUntil = 0;
+  if (Math.abs(input.x) > 0.05) setMachineryDirection(boat, input.x < 0 ? -1 : 1, Date.now(), BOAT_TURN_DURATION_MS);
+  else if (Math.abs(velocityX) > 8) setMachineryDirection(boat, velocityX < 0 ? -1 : 1, Date.now(), BOAT_TURN_DURATION_MS);
+  return true;
+}
+
+function getActiveManualMachinery() {
+  const submarine = getSubmarine();
+  if (isSubmarineManualDriveActive(submarine)) return submarine;
+  const boat = getBoat();
+  if (isBoatManualDriveActive(boat)) return boat;
+  return null;
+}
+
+function suspendMachineryManualDrive() {
+  suspendSubmarineManualDrive();
+  suspendBoatManualDrive();
 }
 
 function getSubmarineMissionLabel(submarine = getSubmarine()) {
@@ -435,6 +1184,30 @@ function getSubmarineMissionLabel(submarine = getSubmarine()) {
   if (mission.kind === "health") return `Treating ${fishName} in ${getTankLabel(targetTank)}`;
   if (mission.kind === "calming") return `Calming ${fishName} in ${getTankLabel(targetTank)}`;
   return `Feeding ${fishName} in ${getTankLabel(targetTank)}`;
+}
+
+function getSubmarineControlStatus(submarine = getSubmarine()) {
+  if (getSubmarineEntryProgress(submarine) !== null) return "Entering tank…";
+  if (isSubmarineAutopilotEnabled(submarine)) return getSubmarineMissionLabel(submarine);
+  return isSubmarineManualDriveActive(submarine)
+    ? "WASD move · Q/E depth · Space feed"
+    : "Drive paused · close editing or care tools";
+}
+
+function syncSubmarineControlStatus(submarine) {
+  if (runtime.selectedMachineryId !== submarine?.id) return;
+  const label = document.querySelector(".submarine-drive-status span");
+  const text = getSubmarineControlStatus(submarine);
+  if (label && label.textContent !== text) label.textContent = text;
+}
+
+function syncMachineryControlStatus(machinery) {
+  if (runtime.selectedMachineryId !== machinery?.id) return;
+  const label = document.querySelector(".submarine-drive-status span");
+  const text = machinery.type === MACHINERY_TYPE_BOAT
+    ? getBoatControlStatus(machinery)
+    : getSubmarineControlStatus(machinery);
+  if (label && label.textContent !== text) label.textContent = text;
 }
 
 function ensureSubmarineManagerElement() {
@@ -453,9 +1226,52 @@ function ensureSubmarineManagerElement() {
       closeSubmarineManager();
       return;
     }
+    if (target.closest("[data-machinery-settings]")) {
+      runtime.machinerySettingsOpen = !runtime.machinerySettingsOpen;
+      renderSubmarineManager();
+      return;
+    }
+    const colorSwatch = target.closest("[data-machinery-color]");
+    if (colorSwatch instanceof HTMLButtonElement) {
+      event.preventDefault();
+      event.stopPropagation();
+      updateMachineryColorSetting(
+        getMachineryById(runtime.selectedMachineryId),
+        "color",
+        colorSwatch.dataset.machineryColor || ""
+      );
+      return;
+    }
+    const colorizeInput = target.closest("[data-machinery-colorize]");
+    if (colorizeInput instanceof HTMLInputElement) {
+      updateMachineryColorSetting(
+        getMachineryById(runtime.selectedMachineryId),
+        "colorize",
+        colorizeInput.checked
+      );
+      return;
+    }
+    if (target.closest("[data-drive-submarine]")) { beginSubmarineManualDrive(); return; }
+    if (target.closest("[data-drive-boat]")) { beginBoatManualDrive(); return; }
+    const command = target.closest("[data-submarine-command]")?.dataset.submarineCommand;
+    if (command) {
+      if (command === "food") deployManualSubmarineFood();
+      else stepSubmarineDepthLayer(getSubmarine(), command === "near" ? -1 : 1);
+      return;
+    }
+    const boatCommand = target.closest("[data-boat-command]")?.dataset.boatCommand;
+    if (boatCommand) {
+      if (boatCommand === "chum") deployManualBoatChum();
+      return;
+    }
     const autopilotInput = target.closest("[data-submarine-autopilot]");
     if (autopilotInput instanceof HTMLInputElement) {
       setSubmarineAutopilot(getMachineryById(runtime.selectedMachineryId), autopilotInput.checked);
+      return;
+    }
+    const boatAutopilotInput = target.closest("[data-boat-autopilot]");
+    if (boatAutopilotInput instanceof HTMLInputElement) {
+      setBoatAutopilot(getMachineryById(runtime.selectedMachineryId), boatAutopilotInput.checked);
       return;
     }
     const foodButton = target.closest("[data-load-submarine-food]");
@@ -463,6 +1279,14 @@ function ensureSubmarineManagerElement() {
       transferFoodIntoSubmarine(
         getMachineryById(runtime.selectedMachineryId),
         Number(foodButton.dataset.loadSubmarineFood) || SUBMARINE_RESOURCE_CAPACITY
+      );
+      return;
+    }
+    const chumButton = target.closest("[data-load-boat-chum]");
+    if (chumButton) {
+      transferChumIntoBoat(
+        getMachineryById(runtime.selectedMachineryId),
+        Number(chumButton.dataset.loadBoatChum) || BOAT_RESOURCE_CAPACITY
       );
       return;
     }
@@ -475,99 +1299,239 @@ function ensureSubmarineManagerElement() {
       );
     }
   });
+  element.addEventListener("pointerdown", (event) => {
+    const button = event.target.closest("[data-drive-key]");
+    if (!button || (!isSubmarineManualDriveActive() && !isBoatManualDriveActive())) return;
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    const activeMachinery = getActiveManualMachinery();
+    if (activeMachinery?.type === MACHINERY_TYPE_BOAT) setBoatManualDriveKey(button.dataset.driveKey, true);
+    else setSubmarineManualDriveKey(button.dataset.driveKey, true);
+  });
+  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    element.addEventListener(type, (event) => {
+      const key = event.target.closest("[data-drive-key]")?.dataset.driveKey;
+      if (key) {
+        setSubmarineManualDriveKey(key, false);
+        setBoatManualDriveKey(key, false);
+      }
+    });
+  }
   document.body.appendChild(element);
   return element;
 }
 
 function openSubmarineManager(machineryId) {
-  const submarine = getMachineryById(machineryId);
-  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) return false;
+  const machinery = getMachineryById(machineryId);
+  if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type)) return false;
   closeFishActionMenu();
   if (runtime.selectedFishId || runtime.selectedFishStatusFishId) closeFishInspector();
-  runtime.selectedMachineryId = submarine.id;
+  if (runtime.selectedMachineryId !== machinery.id) runtime.machinerySettingsOpen = false;
+  runtime.selectedMachineryId = machinery.id;
   renderSubmarineManager();
   return true;
 }
 
 function closeSubmarineManager() {
   runtime.selectedMachineryId = null;
+  runtime.machinerySettingsOpen = false;
   const element = document.querySelector(".submarine-manager");
   if (element instanceof HTMLElement) element.hidden = true;
 }
 
 function renderSubmarineManager() {
   const element = ensureSubmarineManagerElement();
-  const submarine = getMachineryById(runtime.selectedMachineryId);
-  if (!submarine || submarine.type !== MACHINERY_TYPE_SUBMARINE) {
+  const machinery = getMachineryById(runtime.selectedMachineryId);
+  if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type)) {
     element.hidden = true;
     return;
   }
+  if (machinery.type === MACHINERY_TYPE_BOAT) {
+    renderBoatManager(element, machinery);
+    return;
+  }
+  const submarine = machinery;
   submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
   const foodAvailable = getSubmarinePlayerFoodCount();
   const healthAvailable = Math.max(0, Math.floor(Number(state.medicineInventory?.firstAid) || 0));
   const calmingAvailable = Math.max(0, Math.floor(Number(state.medicineInventory?.betaBlocker) || 0));
-  const warning = isSubmarineOutOfResources(submarine);
   const autopilotEnabled = isSubmarineAutopilotEnabled(submarine);
-  const manualDriveActive = isSubmarineManualDriveActive(submarine);
-  const submarineTank = getSubmarineTank(submarine);
-  const driveHint = autopilotEnabled
-    ? "Automatic care is enabled. The submarine controls itself and responds to fish needs."
-    : manualDriveActive
-      ? `Manual control active: WASD drives, Q/E changes depth, and Space drops food. Layer ${clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER)} of ${TANK_DEPTH_LAYERS}.`
-      : `Manual control is enabled. Go to ${escapeHtml(getTankLabel(submarineTank))} to drive with WASD, change depth with Q/E, and drop food with Space.`;
+  const foodIcon = resolveFoodAndMedAssetPath("basic-food.png");
+  const healthIcon = resolveFoodAndMedAssetPath("first-aid-drops.png");
+  const calmingIcon = resolveFoodAndMedAssetPath("calming-serum.png");
+
   element.innerHTML = `
     <div class="submarine-manager-header">
       <div class="submarine-manager-title">
-        <img src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="" onerror="this.src='assets/icons/tools.png'" />
-        <div><strong>Automated Care Submarine</strong><span>${escapeHtml(autopilotEnabled ? getSubmarineMissionLabel(submarine) : "Manual control")}</span></div>
+        <img src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <strong>Care Submarine</strong>
       </div>
-      <div class="submarine-manager-actions">
-        <button class="small-button alt" type="button" data-close-submarine-manager aria-label="Close submarine controls">Close</button>
+      <div class="submarine-manager-header-actions">
+        <button class="small-button submarine-settings-button ${runtime.machinerySettingsOpen ? "is-active" : ""}" type="button" data-machinery-settings aria-expanded="${runtime.machinerySettingsOpen}">SETTINGS</button>
+        <button class="submarine-manager-close" type="button" data-close-submarine-manager aria-label="Close submarine controls">×</button>
       </div>
     </div>
-    <label class="submarine-autopilot-toggle">
-      <input type="checkbox" data-submarine-autopilot ${autopilotEnabled ? "checked" : ""} />
-      <span><strong>Autopilot</strong><small>${autopilotEnabled ? "ON" : "OFF"}</small></span>
+    ${renderMachineryColorSettingsMarkup(submarine)}
+
+    <label class="submarine-autopilot-toggle ${autopilotEnabled ? "is-on" : "is-off"}">
+      <input class="submarine-autopilot-input" type="checkbox" data-submarine-autopilot ${autopilotEnabled ? "checked" : ""} />
+      <span class="submarine-autopilot-copy">
+        <strong>Autopilot</strong>
+      </span>
+      <span class="submarine-autopilot-switch" aria-hidden="true">
+        <span class="submarine-autopilot-state">${autopilotEnabled ? "ON" : "OFF"}</span>
+        <i></i>
+      </span>
     </label>
-    <div class="submarine-manager-warning ${warning ? "is-warning" : ""}">${warning ? "Supply warning: one or more resources are empty." : "All automatic-care supplies stocked."}</div>
+
+    <div class="submarine-drive-status">
+      <span>${escapeHtml(getSubmarineControlStatus(submarine))}</span>
+      <button type="button" class="small-button" data-drive-submarine>Drive</button>
+    </div>
+    ${!autopilotEnabled ? `<div class="submarine-touch-controls" aria-label="Submarine driving controls">
+      <button type="button" data-drive-key="w" aria-label="Move up">↑</button>
+      <button type="button" data-drive-key="a" aria-label="Move left">←</button>
+      <button type="button" data-drive-key="s" aria-label="Move down">↓</button>
+      <button type="button" data-drive-key="d" aria-label="Move right">→</button>
+      <button type="button" data-submarine-command="near">Near</button>
+      <button type="button" data-submarine-command="far">Far</button>
+      <button type="button" data-submarine-command="food">Feed</button>
+      <span>Depth ${clampTankLayer(submarine.tankLayer)} / ${TANK_DEPTH_LAYERS}</span>
+    </div>` : ""}
     <div class="submarine-resource-list">
       <div class="submarine-resource-row">
-        <div><strong>Food <small>${foodAvailable} available</small></strong><span>${submarine.inventory.food}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
-        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.food / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-resource-body">
+          <div class="submarine-resource-main">
+            <div class="submarine-resource-identity">
+              <img class="submarine-resource-icon" src="${escapeHtml(foodIcon)}" alt="" />
+              <div class="submarine-resource-copy">
+                <div class="submarine-resource-topline"><strong>Food</strong><small>${foodAvailable} available</small></div>
+              </div>
+            </div>
+            <span class="submarine-resource-count">${submarine.inventory.food}/${SUBMARINE_RESOURCE_CAPACITY}</span>
+          </div>
+          <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.food / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        </div>
         <div class="submarine-load-buttons" aria-label="Load food, ${foodAvailable} available">
           <button class="small-button" type="button" data-load-submarine-food="1" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
           <button class="small-button" type="button" data-load-submarine-food="10" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
-          <button class="small-button" type="button" data-load-submarine-food="99" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+          <button class="small-button submarine-load-button-fill" type="button" data-load-submarine-food="99" ${foodAvailable <= 0 || submarine.inventory.food >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
         </div>
       </div>
+
       <div class="submarine-resource-row">
-        <div><strong>Health Drops <small>${healthAvailable} available</small></strong><span>${submarine.inventory.health}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
-        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.health / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-resource-body">
+          <div class="submarine-resource-main">
+            <div class="submarine-resource-identity">
+              <img class="submarine-resource-icon" src="${escapeHtml(healthIcon)}" alt="" />
+              <div class="submarine-resource-copy">
+                <div class="submarine-resource-topline"><strong>Health Drops</strong><small>${healthAvailable} available</small></div>
+              </div>
+            </div>
+            <span class="submarine-resource-count">${submarine.inventory.health}/${SUBMARINE_RESOURCE_CAPACITY}</span>
+          </div>
+          <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.health / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        </div>
         <div class="submarine-load-buttons" aria-label="Load health drops, ${healthAvailable} available">
           <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="1" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
           <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="10" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
-          <button class="small-button" type="button" data-load-submarine-medicine="health" data-load-amount="99" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+          <button class="small-button submarine-load-button-fill" type="button" data-load-submarine-medicine="health" data-load-amount="99" ${healthAvailable <= 0 || submarine.inventory.health >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
         </div>
       </div>
+
       <div class="submarine-resource-row">
-        <div><strong>Calming Drops <small>${calmingAvailable} available</small></strong><span>${submarine.inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}</span></div>
-        <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.calming / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        <div class="submarine-resource-body">
+          <div class="submarine-resource-main">
+            <div class="submarine-resource-identity">
+              <img class="submarine-resource-icon" src="${escapeHtml(calmingIcon)}" alt="" />
+              <div class="submarine-resource-copy">
+                <div class="submarine-resource-topline"><strong>Calming Drops</strong><small>${calmingAvailable} available</small></div>
+              </div>
+            </div>
+            <span class="submarine-resource-count">${submarine.inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}</span>
+          </div>
+          <div class="submarine-resource-meter"><i style="width:${(submarine.inventory.calming / SUBMARINE_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        </div>
         <div class="submarine-load-buttons" aria-label="Load calming drops, ${calmingAvailable} available">
           <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="1" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
           <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="10" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
-          <button class="small-button" type="button" data-load-submarine-medicine="calming" data-load-amount="99" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+          <button class="small-button submarine-load-button-fill" type="button" data-load-submarine-medicine="calming" data-load-amount="99" ${calmingAvailable <= 0 || submarine.inventory.calming >= SUBMARINE_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
         </div>
       </div>
     </div>
-    <div class="mini-note submarine-manager-note">${driveHint} Food is stored as universal care rations.</div>
   `;
   element.hidden = false;
+}
+
+function renderBoatManager(element = ensureSubmarineManagerElement(), boat = getBoat()) {
+  if (!element || !boat || boat.type !== MACHINERY_TYPE_BOAT) {
+    if (element) element.hidden = true;
+    return;
+  }
+  boat.inventory = sanitizeBoatInventory(boat.inventory);
+  const chumAvailable = getBoatPlayerChumCount();
+  const autopilotEnabled = isBoatAutopilotEnabled(boat);
+  const chumIcon = resolveFoodAndMedAssetPath("chum.png");
+  element.innerHTML = `
+    <div class="submarine-manager-header">
+      <div class="submarine-manager-title">
+        <img src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_BOAT))}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <strong>Chum Skiff</strong>
+      </div>
+      <div class="submarine-manager-header-actions">
+        <button class="small-button submarine-settings-button ${runtime.machinerySettingsOpen ? "is-active" : ""}" type="button" data-machinery-settings aria-expanded="${runtime.machinerySettingsOpen}">SETTINGS</button>
+        <button class="submarine-manager-close" type="button" data-close-submarine-manager aria-label="Close boat controls">×</button>
+      </div>
+    </div>
+    ${renderMachineryColorSettingsMarkup(boat)}
+    <label class="submarine-autopilot-toggle ${autopilotEnabled ? "is-on" : "is-off"}">
+      <input class="submarine-autopilot-input" type="checkbox" data-boat-autopilot ${autopilotEnabled ? "checked" : ""} />
+      <span class="submarine-autopilot-copy"><strong>Autopilot</strong></span>
+      <span class="submarine-autopilot-switch" aria-hidden="true"><span class="submarine-autopilot-state">${autopilotEnabled ? "ON" : "OFF"}</span><i></i></span>
+    </label>
+    <div class="submarine-drive-status">
+      <span>${escapeHtml(getBoatControlStatus(boat))}</span>
+      <button type="button" class="small-button" data-drive-boat>Drive</button>
+    </div>
+    ${!autopilotEnabled ? `<div class="submarine-touch-controls" aria-label="Boat driving controls">
+      <button type="button" data-drive-key="a" aria-label="Move left">←</button>
+      <button type="button" data-drive-key="d" aria-label="Move right">→</button>
+      <button type="button" data-boat-command="chum">Drop Chum</button>
+    </div>` : ""}
+    <div class="submarine-resource-list">
+      <div class="submarine-resource-row">
+        <div class="submarine-resource-body">
+          <div class="submarine-resource-main">
+            <div class="submarine-resource-identity">
+              <img class="submarine-resource-icon" src="${escapeHtml(chumIcon)}" alt="" />
+              <div class="submarine-resource-copy"><div class="submarine-resource-topline"><strong>Chum</strong><small>${chumAvailable} available</small></div></div>
+            </div>
+            <span class="submarine-resource-count">${boat.inventory.chum}/${BOAT_RESOURCE_CAPACITY}</span>
+          </div>
+          <div class="submarine-resource-meter"><i style="width:${(boat.inventory.chum / BOAT_RESOURCE_CAPACITY * 100).toFixed(1)}%"></i></div>
+        </div>
+        <div class="submarine-load-buttons" aria-label="Load chum, ${chumAvailable} available">
+          <button class="small-button" type="button" data-load-boat-chum="1" ${chumAvailable <= 0 || boat.inventory.chum >= BOAT_RESOURCE_CAPACITY ? "disabled" : ""}>+1</button>
+          <button class="small-button" type="button" data-load-boat-chum="10" ${chumAvailable <= 0 || boat.inventory.chum >= BOAT_RESOURCE_CAPACITY ? "disabled" : ""}>+10</button>
+          <button class="small-button submarine-load-button-fill" type="button" data-load-boat-chum="99" ${chumAvailable <= 0 || boat.inventory.chum >= BOAT_RESOURCE_CAPACITY ? "disabled" : ""}>Fill</button>
+        </div>
+      </div>
+    </div>
+  `;
+  element.hidden = false;
+}
+
+function getBoatControlStatus(boat = getBoat()) {
+  if (getBoatEntryProgress(boat) !== null) return "Entering tank…";
+  if (isBoatAutopilotEnabled(boat)) return "Skipping the surface";
+  return isBoatManualDriveActive(boat)
+    ? "A/D move · H horn · Space drop chum"
+    : "Drive paused · close editing or care tools";
 }
 
 function renderSubmarineShopCard() {
   const submarine = getSubmarine();
   const owned = isSubmarineOwned();
-  const affordable = state.coins >= SUBMARINE_COST;
   const status = !owned
     ? "Available"
     : submarine
@@ -575,7 +1539,7 @@ function renderSubmarineShopCard() {
       : "Sold out | Yours is in equipment storage";
   return `
     <article class="shop-card submarine-shop-card ${owned ? "is-sold-out" : ""}">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
       <div class="shop-meta shop-card-main">
         <div>
           <strong>Automated Care Submarine</strong>
@@ -587,18 +1551,123 @@ function renderSubmarineShopCard() {
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)}</span>
         <div class="shop-button-row">
-          <button class="buy-button" data-buy-submarine="true" ${owned || !affordable ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Submarine"}</button>
+          <button class="buy-button" data-buy-submarine="true" ${owned ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Submarine"}</button>
         </div>
       </div>
     </article>
   `;
 }
 
+function renderBoatShopCard() {
+  const boat = getBoat();
+  const owned = isBoatOwned();
+  const status = !owned
+    ? "Available"
+    : boat
+      ? `Sold out | Yours is deployed in ${getTankLabel(getBoatTank(boat))}`
+      : "Sold out | Yours is in equipment storage";
+  return `
+    <article class="shop-card boat-shop-card ${owned ? "is-sold-out" : ""}">
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_BOAT))}" alt="Chum Skiff" onerror="this.src='assets/icons/tools.png'" />
+      <div class="shop-meta shop-card-main">
+        <div><strong>Chum Skiff</strong><div class="fish-meta">${escapeHtml(status)}</div></div>
+        <div class="fish-meta">A surface skiff that skips back and forth across the water and drops chum on command.</div>
+        <div class="mini-note">Carries ${BOAT_RESOURCE_CAPACITY} chum. One skiff can be purchased.</div>
+      </div>
+      <div class="shop-meta shop-card-actions">
+        <span class="price-tag">${BOAT_COST} ${pluralize("coin", BOAT_COST)}</span>
+        <div class="shop-button-row"><button class="buy-button" data-buy-boat="true" ${owned ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Boat"}</button></div>
+      </div>
+    </article>
+  `;
+}
+
+function closeEditEquipmentTrayContextMenu(options = {}) {
+  runtime.editEquipmentTrayContextMenuState.machineryId = null;
+  runtime.editEquipmentTrayContextMenuState.anchorX = 0;
+  runtime.editEquipmentTrayContextMenuState.anchorY = 0;
+  if (options.render !== false) renderEditEquipmentTrayContextMenu();
+}
+
+function openEditEquipmentTrayContextMenu(machineryId, anchor = null) {
+  const machinery = getMachineryById(machineryId);
+  const currentTank = getCurrentTank();
+  if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type) || machinery.tankId !== currentTank?.id) {
+    closeEditEquipmentTrayContextMenu();
+    return false;
+  }
+  const nextAnchor = resolveEditTrayContextMenuAnchor(dom.editEquipmentTray, anchor);
+  runtime.editEquipmentTrayContextMenuState.machineryId = machinery.id;
+  runtime.editEquipmentTrayContextMenuState.anchorX = nextAnchor.x;
+  runtime.editEquipmentTrayContextMenuState.anchorY = nextAnchor.y;
+  renderEditEquipmentTrayContextMenu();
+  return true;
+}
+
+function renderEditEquipmentTrayContextMenu() {
+  const tray = dom.editEquipmentTray;
+  const scroller = dom.editEquipmentTrayScroller;
+  const menu = dom.editEquipmentTrayContextMenu;
+  if (!tray || !menu) return;
+
+  const machinery = getMachineryById(runtime.editEquipmentTrayContextMenuState.machineryId);
+  const currentTank = getCurrentTank();
+  const isVisible = Boolean(
+    runtime.equipmentEditMode
+    && !tray.hidden
+    && [MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery?.type)
+    && machinery.tankId === currentTank?.id
+  );
+
+  tray.classList.toggle("has-context-menu", isVisible);
+  if (scroller) {
+    for (const button of scroller.querySelectorAll("[data-tray-select-submarine], [data-tray-select-boat]")) {
+      button.closest(".edit-decor-tile")?.classList.toggle(
+        "is-context-open",
+        isVisible && (button.dataset.traySelectSubmarine || button.dataset.traySelectBoat) === machinery?.id
+      );
+    }
+  }
+
+  if (!isVisible || !machinery) {
+    menu.hidden = true;
+    menu.style.left = "";
+    menu.style.top = "";
+    return;
+  }
+
+  const isBoat = machinery.type === MACHINERY_TYPE_BOAT;
+  const inventory = isBoat ? sanitizeBoatInventory(machinery.inventory) : sanitizeSubmarineInventory(machinery.inventory);
+  const markup = `
+    <div class="edit-fish-tray-context-card">
+      <div class="edit-fish-tray-context-copy"><strong>${isBoat ? "Chum Skiff" : "Automated Care Submarine"}</strong><span>${isBoat ? `Chum ${inventory.chum}/99` : `Food ${inventory.food}/99 | Health ${inventory.health}/99 | Calm ${inventory.calming}/99`}</span></div>
+      <button
+        class="edit-fish-tray-context-action"
+        type="button"
+        ${isBoat ? `data-tray-store-boat="${escapeHtml(machinery.id)}"` : `data-tray-store-submarine="${escapeHtml(machinery.id)}"`}
+      >
+        Put Away
+      </button>
+    </div>
+  `;
+  setMarkupIfChanged("edit-equipment-tray-context-menu", menu, markup);
+  menu.hidden = false;
+  positionEditTrayContextMenu(
+    tray,
+    menu,
+    runtime.editEquipmentTrayContextMenuState.anchorX,
+    runtime.editEquipmentTrayContextMenuState.anchorY
+  );
+}
+
 function renderEditEquipmentTray() {
   const visible = runtime.equipmentEditMode === true;
   if (dom.editEquipmentTray) dom.editEquipmentTray.hidden = !visible;
   syncTankTrayStageClass();
-  if (!visible || !dom.editEquipmentTray || !dom.editEquipmentTrayScroller) return;
+  if (!visible || !dom.editEquipmentTray || !dom.editEquipmentTrayScroller) {
+    closeEditEquipmentTrayContextMenu();
+    return;
+  }
 
   for (const tab of dom.editEquipmentTray.querySelectorAll("[data-edit-overlay-mode]")) {
     const selected = tab.dataset.editOverlayMode === "equipment";
@@ -616,98 +1685,210 @@ function renderEditEquipmentTray() {
   }
 
   const submarine = getSubmarine();
-  const owned = isSubmarineOwned();
+  const boat = getBoat();
+  const storedSubmarine = getStoredSubmarineState();
+  const storedBoat = getStoredBoatState();
+  const submarineOwned = isSubmarineOwned();
+  const boatOwned = isBoatOwned();
   const currentTank = getCurrentTank();
   const submarineTank = getSubmarineTank(submarine);
-  const deployedHere = Boolean(submarine && currentTank && submarine.tankId === currentTank.id);
-  const stored = Boolean(owned && !submarine);
-  const shouldShowTile = activeLocationTab === "storage" ? stored : deployedHere;
+  const boatTank = getBoatTank(boat);
+  const machineryEntries = activeLocationTab === "storage"
+    ? [
+      storedSubmarine ? { item: storedSubmarine, type: MACHINERY_TYPE_SUBMARINE, stored: true } : null,
+      // A newly purchased machine has ownership but no persisted storage
+      // record until it is deployed once. Show that owned machine here so
+      // purchase immediately exposes the same Place action as a recalled one.
+      !storedSubmarine && !submarine && submarineOwned
+        ? {
+          item: { type: MACHINERY_TYPE_SUBMARINE, inventory: sanitizeSubmarineInventory(null) },
+          type: MACHINERY_TYPE_SUBMARINE,
+          stored: true
+        }
+        : null,
+      storedBoat ? { item: storedBoat, type: MACHINERY_TYPE_BOAT, stored: true } : null,
+      !storedBoat && !boat && boatOwned
+        ? {
+          item: { type: MACHINERY_TYPE_BOAT, inventory: sanitizeBoatInventory(null) },
+          type: MACHINERY_TYPE_BOAT,
+          stored: true
+        }
+        : null
+    ].filter(Boolean)
+    : [
+      submarine && submarine.tankId === currentTank?.id ? { item: submarine, type: MACHINERY_TYPE_SUBMARINE, stored: false } : null,
+      boat && boat.tankId === currentTank?.id ? { item: boat, type: MACHINERY_TYPE_BOAT, stored: false } : null
+    ].filter(Boolean);
 
-  let markup = "";
-  if (shouldShowTile) {
-    const food = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.food) : 0;
-    const health = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.health) : 0;
-    const calming = submarine ? normalizeSubmarineResourceCount(submarine.inventory?.calming) : 0;
-    const actionLabel = stored
-      ? "Place Automated Care Submarine in this tank"
-      : "Manage Automated Care Submarine";
-    markup = `
-      <article class="edit-decor-tile" data-decor-name="Automated Care Submarine">
+  const renderMachineryTile = ({ item, type, stored }) => {
+    const isBoat = type === MACHINERY_TYPE_BOAT;
+    const inventory = isBoat ? sanitizeBoatInventory(item.inventory) : sanitizeSubmarineInventory(item.inventory);
+    const label = isBoat ? "Chum Skiff" : "Automated Care Submarine";
+    const imagePath = isBoat ? getMachineryImagePath(MACHINERY_TYPE_BOAT) : getMachineryImagePath(MACHINERY_TYPE_SUBMARINE);
+    const actionLabel = stored ? `Place ${label} in this tank` : `Manage ${label}`;
+    const selector = stored
+      ? (isBoat ? "data-tray-place-boat=\"true\"" : "data-tray-place-submarine=\"true\"")
+      : (isBoat ? `data-tray-select-boat="${escapeHtml(item.id)}"` : `data-tray-select-submarine="${escapeHtml(item.id)}"`);
+    const resourceNote = isBoat
+      ? `Chum ${inventory.chum}/${BOAT_RESOURCE_CAPACITY}`
+      : `Food ${inventory.food}/${SUBMARINE_RESOURCE_CAPACITY} | Health ${inventory.health}/${SUBMARINE_RESOURCE_CAPACITY} | Calm ${inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}`;
+    return `
+      <article class="edit-decor-tile" data-decor-name="${label}">
+        ${!stored ? `<button class="edit-decor-tile-menu-button" type="button" data-open-equipment-menu="${escapeHtml(item.id)}" aria-label="${label} options">…</button>` : ""}
         <button
           class="edit-decor-tile-primary"
           type="button"
-          ${stored ? "data-tray-place-submarine=\"true\"" : `data-tray-select-submarine="${escapeHtml(submarine.id)}"`}
+          ${selector}
           title="${actionLabel}"
           aria-label="${actionLabel}"
         >
           <span class="edit-decor-tile-surface">
-            <img class="edit-decor-tile-thumb" src="${escapeHtml(SUBMARINE_IMAGE_PATH)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+            <img class="edit-decor-tile-thumb" src="${escapeHtml(imagePath)}" alt="${label}" onerror="this.src='assets/icons/tools.png'" />
             <span class="inventory-tray-label">${stored ? "Storage" : "In Tank"}</span>
           </span>
         </button>
-        ${submarine ? `<div class="mini-note edit-equipment-resource-note">Food ${food}/99 | Health ${health}/99 | Calm ${calming}/99</div>` : ""}
+        <div class="mini-note edit-equipment-resource-note">${resourceNote}</div>
       </article>
     `;
-  } else if (!owned) {
-    markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy the Automated Care Submarine in Tankazon &gt; Equipment.</div>`;
-  } else if (submarine && !deployedHere) {
-    const otherTankLabel = getTankLabel(submarineTank);
-    markup = `<div class="edit-decor-tray-empty">Your submarine is deployed in ${escapeHtml(otherTankLabel)}. Visit that tank and scoop it into storage before placing it here.</div>`;
-  } else {
-    markup = `<div class="edit-decor-tray-empty">${activeLocationTab === "tank" ? "No equipment is deployed in this tank." : "Equipment storage is empty."}</div>`;
+  };
+
+  let markup = machineryEntries.map(renderMachineryTile).join("");
+  if (!markup && activeLocationTab === "storage" && (submarineOwned || boatOwned)) {
+    const foreignMachine = submarine && !machineryEntries.some((entry) => entry.item.id === submarine.id)
+      ? { label: "submarine", tank: submarineTank, visitAttribute: "data-visit-submarine-tank" }
+      : boat && !machineryEntries.some((entry) => entry.item.id === boat.id)
+        ? { label: "boat", tank: boatTank, visitAttribute: "data-visit-boat-tank" }
+        : null;
+    if (foreignMachine?.tank) {
+      markup = `<div class="edit-decor-tray-empty">Your ${foreignMachine.label} is deployed in ${escapeHtml(getTankLabel(foreignMachine.tank))}. Visit that tank to put it into storage. <button type="button" class="small-button" ${foreignMachine.visitAttribute}>Go to tank</button></div>`;
+    }
+  }
+  if (!markup) {
+    if (!submarineOwned && !boatOwned) {
+      markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy a submarine or boat in Tankazon &gt; Equipment.</div>`;
+    } else {
+      markup = `<div class="edit-decor-tray-empty">${activeLocationTab === "tank" ? "No equipment is deployed in this tank." : "Equipment storage is empty."}</div>`;
+    }
   }
 
   const dataKey = [
     activeLocationTab,
-    owned ? "owned" : "not-owned",
+    submarineOwned ? "sub-owned" : "sub-not-owned",
+    boatOwned ? "boat-owned" : "boat-not-owned",
     submarine?.id || "",
     submarine?.tankId || "",
     submarine ? normalizeSubmarineResourceCount(submarine.inventory?.food) : 0,
     submarine ? normalizeSubmarineResourceCount(submarine.inventory?.health) : 0,
     submarine ? normalizeSubmarineResourceCount(submarine.inventory?.calming) : 0,
-    currentTank?.id || ""
+    storedSubmarine ? normalizeSubmarineResourceCount(storedSubmarine.inventory?.food) : 0,
+    storedSubmarine ? normalizeSubmarineResourceCount(storedSubmarine.inventory?.health) : 0,
+    storedSubmarine ? normalizeSubmarineResourceCount(storedSubmarine.inventory?.calming) : 0,
+    currentTank?.id || "",
+    submarineTank?.name || "",
+    boat?.id || "",
+    boat?.tankId || "",
+    boat ? normalizeBoatResourceCount(boat.inventory?.chum) : 0,
+    storedBoat ? normalizeBoatResourceCount(storedBoat.inventory?.chum) : 0,
+    boatTank?.name || ""
   ].join("|");
   if (shouldRebuildRenderSection("edit-equipment-tray-data", dataKey)) {
     setMarkupIfChanged("edit-equipment-tray", dom.editEquipmentTrayScroller, markup);
   }
+  renderEditEquipmentTrayContextMenu();
 }
 
 function getSubmarineDrawMetrics(submarine, now = Date.now()) {
   if (!submarine) return null;
-  const image = runtime.images.get(SUBMARINE_IMAGE_PATH) || null;
+  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE)) || null;
   if (!isUsableRuntimeImage(image)) {
-    requestRuntimeImageRecovery(SUBMARINE_IMAGE_PATH, { kind: "machinery", id: MACHINERY_TYPE_SUBMARINE });
+    requestRuntimeImageRecovery(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE), { kind: "machinery", id: MACHINERY_TYPE_SUBMARINE });
   }
   const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 3);
   const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
   const tankLayer = clampTankLayer(submarine.tankLayer ?? SUBMARINE_DEFAULT_TANK_LAYER);
   const depthScale = clamp(1 + (SUBMARINE_DEFAULT_TANK_LAYER - tankLayer) * 0.04, 0.86, 1.08);
-  const width = SUBMARINE_DRAW_WIDTH_PX * depthScale;
-  const height = clamp(width * (naturalHeight / naturalWidth), 50, 124);
-  const velocityX = Number(submarine.manualVelocityXPxPerSecond) || 0;
-  const velocityY = Number(submarine.manualVelocityYPxPerSecond) || 0;
+  const baseWidth = SUBMARINE_DRAW_WIDTH_PX;
+  const baseHeight = clamp(baseWidth * (naturalHeight / naturalWidth), 50, 124);
+  const width = baseWidth * depthScale;
+  const height = baseHeight * depthScale;
+  const velocityX = Number(submarine.motionVelocityXPxPerSecond ?? submarine.manualVelocityXPxPerSecond) || 0;
+  const velocityY = Number(submarine.motionVelocityYPxPerSecond ?? submarine.manualVelocityYPxPerSecond) || 0;
   const speedRatio = clamp(Math.hypot(velocityX, velocityY) / SUBMARINE_MANUAL_SPEED_PX_PER_SECOND, 0, 1);
   const phase = (hashStringToUint32(String(submarine.id || "submarine")) % 1000) / 1000 * Math.PI * 2;
-  const bobAmplitude = SUBMARINE_IDLE_BOB_AMPLITUDE_PX * (1 - speedRatio * 0.68) * depthScale;
+  const entryProgress = getSubmarineEntryProgress(submarine, now);
+  const easedEntry = entryProgress === null ? null : 1 - Math.pow(1 - entryProgress, 3);
+  const renderYNorm = easedEntry === null || !Number.isFinite(Number(submarine.entryFromYNorm))
+    ? Number(submarine.yNorm)
+    : Number(submarine.entryFromYNorm) + (Number(submarine.yNorm) - Number(submarine.entryFromYNorm)) * easedEntry;
+  const bobAmplitude = SUBMARINE_IDLE_BOB_AMPLITUDE_PX * (1 - speedRatio * 0.68) * depthScale * (entryProgress === null ? 1 : entryProgress);
   const bob = Math.sin(now / SUBMARINE_IDLE_BOB_PERIOD_MS * Math.PI * 2 + phase) * bobAmplitude;
   const idleRock = Math.sin(now / (SUBMARINE_IDLE_BOB_PERIOD_MS * 1.35) * Math.PI * 2 + phase * 0.7) * (Math.PI / 180) * 0.75 * (1 - speedRatio * 0.72);
   const verticalTilt = clamp(velocityY / Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND), -1, 1) * (Math.PI / 180) * 2.2;
+  const turn = getMachineryTurnRenderState(submarine, now, SUBMARINE_TURN_LEAN_RADIANS);
   return {
     image,
-    x: Number(submarine.xNorm) * TANK_WIDTH,
-    y: Number(submarine.yNorm) * TANK_HEIGHT + bob,
+    x: Number(submarine.xNorm) * TANK_WIDTH + turn.swayX,
+    y: renderYNorm * TANK_HEIGHT + bob,
     width,
     height,
-    direction: Number(submarine.direction) < 0 ? -1 : 1,
+    direction: turn.direction,
+    turnScaleX: turn.scaleX,
+    turnScaleY: turn.scaleY,
     tankLayer,
-    rotation: idleRock + verticalTilt
+    rotation: idleRock + verticalTilt + turn.lean,
+    entryProgress
+  };
+}
+
+function getBoatDrawMetrics(boat, now = Date.now()) {
+  if (!boat) return null;
+  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_BOAT)) || null;
+  if (!isUsableRuntimeImage(image)) {
+    requestRuntimeImageRecovery(getMachineryImagePath(MACHINERY_TYPE_BOAT), { kind: "machinery", id: MACHINERY_TYPE_BOAT });
+  }
+  const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 1);
+  const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
+  const width = BOAT_DRAW_WIDTH_PX;
+  const height = clamp(width * (naturalHeight / naturalWidth), 86, 240);
+  const velocityX = Number(boat.motionVelocityXPxPerSecond ?? boat.manualVelocityXPxPerSecond) || 0;
+  const speedRatio = clamp(Math.abs(velocityX) / BOAT_MANUAL_SPEED_PX_PER_SECOND, 0, 1);
+  const phase = (hashStringToUint32(String(boat.id || "boat")) % 1000) / 1000 * Math.PI * 2;
+  const entryProgress = getBoatEntryProgress(boat, now);
+  const easedEntry = entryProgress === null ? null : 1 - Math.pow(1 - entryProgress, 3);
+  // The skiff rides low at the surface, with the hull settling below the
+  // waterline while the cabin remains above it.
+  const surfaceCenterY = WATER_SURFACE_Y - height * 0.5 + BOAT_SURFACE_BOTTOM_GAP_PX;
+  const entryFromY = Number.isFinite(Number(boat.entryFromYNorm))
+    ? Number(boat.entryFromYNorm) * TANK_HEIGHT
+    : WATER_SURFACE_Y - height * 0.9;
+  const renderY = easedEntry === null
+    ? surfaceCenterY
+    : entryFromY + (surfaceCenterY - entryFromY) * easedEntry;
+  const bobAmplitude = BOAT_IDLE_BOB_AMPLITUDE_PX * (1 - speedRatio * 0.72) * (entryProgress === null ? 1 : entryProgress);
+  const bob = Math.sin(now / BOAT_IDLE_BOB_PERIOD_MS * Math.PI * 2 + phase) * bobAmplitude;
+  const rock = Math.sin(now / (BOAT_IDLE_BOB_PERIOD_MS * 1.25) * Math.PI * 2 + phase * 0.55)
+    * (Math.PI / 180) * 1.15 * (1 - speedRatio * 0.8);
+  const travelTilt = clamp(velocityX / Math.max(1, BOAT_MANUAL_SPEED_PX_PER_SECOND), -1, 1) * (Math.PI / 180) * 2.2;
+  const turn = getMachineryTurnRenderState(boat, now, BOAT_TURN_LEAN_RADIANS);
+  return {
+    image,
+    x: Number(boat.xNorm) * TANK_WIDTH + turn.swayX,
+    y: renderY + bob,
+    width,
+    height,
+    direction: turn.direction,
+    turnScaleX: turn.scaleX,
+    turnScaleY: turn.scaleY,
+    tankLayer: BOAT_SURFACE_LAYER,
+    rotation: rock + travelTilt + turn.lean,
+    entryProgress
   };
 }
 
 function drawSubmarineSpotlight(submarine, metrics) {
   if (!submarine?.mission || !metrics || !isSubmarineAutopilotEnabled(submarine)) return;
   const direction = metrics.direction;
-  const noseX = metrics.x + direction * metrics.width * 0.47;
+  const noseX = metrics.x + direction * metrics.width * 0.47 * (Number(metrics.turnScaleX) || 1);
   const noseY = metrics.y + metrics.height * 0.05;
   const endX = noseX + direction * SUBMARINE_SPOTLIGHT_LENGTH_PX;
   const spread = 105;
@@ -732,126 +1913,371 @@ function drawSubmarineWarningLight(submarine, metrics, now = Date.now()) {
   if (!isSubmarineOutOfResources(submarine) || !metrics) return;
   const blinkOn = Math.floor(now / SUBMARINE_RED_LIGHT_BLINK_MS) % 2 === 0;
   if (!blinkOn) return;
-  const direction = metrics.direction;
-  const lightX = metrics.x - direction * metrics.width * 0.06;
-  const lightY = metrics.y - metrics.height * 0.48;
+  const localX = (SUBMARINE_WARNING_LIGHT_X_NORM - 0.5) * metrics.width * metrics.direction * (Number(metrics.turnScaleX) || 1);
+  const localY = (SUBMARINE_WARNING_LIGHT_Y_NORM - 0.5) * metrics.height * (Number(metrics.turnScaleY) || 1);
+  const rotation = Number(metrics.rotation) || 0;
+  const cosRotation = Math.cos(rotation);
+  const sinRotation = Math.sin(rotation);
+  const lightX = metrics.x + localX * cosRotation - localY * sinRotation;
+  const lightY = metrics.y + localX * sinRotation + localY * cosRotation;
   tankContext.save();
   tankContext.globalCompositeOperation = "screen";
-  const glow = tankContext.createRadialGradient(lightX, lightY, 1, lightX, lightY, 22);
+  const glowRadius = clamp(metrics.width * 0.095, 13, 22);
+  const glow = tankContext.createRadialGradient(lightX, lightY, 1, lightX, lightY, glowRadius);
   glow.addColorStop(0, "rgba(255,245,245,1)");
   glow.addColorStop(0.2, "rgba(255,70,70,0.95)");
   glow.addColorStop(1, "rgba(255,0,0,0)");
   tankContext.fillStyle = glow;
   tankContext.beginPath();
-  tankContext.arc(lightX, lightY, 22, 0, Math.PI * 2);
+  tankContext.arc(lightX, lightY, glowRadius, 0, Math.PI * 2);
   tankContext.fill();
   tankContext.fillStyle = "rgba(255,45,45,0.98)";
   tankContext.beginPath();
-  tankContext.arc(lightX, lightY, 5.5, 0, Math.PI * 2);
+  tankContext.arc(lightX, lightY, clamp(metrics.width * 0.018, 3.1, 5.2), 0, Math.PI * 2);
   tankContext.fill();
   tankContext.restore();
 }
 
-function drawSubmarineBubbleJets(submarine, metrics, now = Date.now()) {
-  if (!submarine || !metrics || !isSubmarineManualDriveActive(submarine)) return;
-  const input = getSubmarineManualInputVector();
-  const horizontalThrust = Math.abs(input.x);
-  const verticalThrust = Math.abs(input.y);
-  if (horizontalThrust <= 0.001 && verticalThrust <= 0.001) return;
+function getSubmarineBubbleMotionState(submarine) {
+  if (!submarine) return null;
+  const velocityX = Number(submarine.motionVelocityXPxPerSecond ?? submarine.manualVelocityXPxPerSecond) || 0;
+  const velocityY = Number(submarine.motionVelocityYPxPerSecond ?? submarine.manualVelocityYPxPerSecond) || 0;
 
-  const velocityX = Math.abs(Number(submarine.manualVelocityXPxPerSecond) || 0);
-  const velocityY = Math.abs(Number(submarine.manualVelocityYPxPerSecond) || 0);
-  const horizontalSpeedRatio = clamp(velocityX / SUBMARINE_MANUAL_SPEED_PX_PER_SECOND, 0, 1);
-  const verticalSpeedRatio = clamp(velocityY / Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND * SUBMARINE_MANUAL_VERTICAL_SPEED_SCALE), 0, 1);
-  const item = {
-    id: `${submarine.id}-thruster`,
-    decorKey: "submarine-thruster",
-    xNorm: submarine.xNorm,
-    yNorm: submarine.yNorm,
-    scale: 1,
-    flipped: metrics.direction < 0,
-    flippedY: false
+  if (isSubmarineManualDriveActive(submarine)) {
+    const input = getSubmarineManualInputVector();
+    return {
+      horizontalPower: Math.abs(input.x),
+      verticalPower: Math.abs(input.y),
+      ascending: input.y < 0,
+      velocityX,
+      velocityY
+    };
+  }
+
+  if (!isSubmarineAutopilotEnabled(submarine)) return null;
+  const cruiseReference = Math.max(1, SUBMARINE_CRUISE_SPEED_PX_PER_SECOND);
+  const horizontalPower = Math.abs(velocityX) < 4
+    ? 0
+    : clamp(Math.abs(velocityX) / cruiseReference, 0, 1);
+  const verticalPower = Math.abs(velocityY) < 4
+    ? 0
+    : clamp(Math.abs(velocityY) / cruiseReference, 0, 1);
+  return {
+    horizontalPower,
+    verticalPower,
+    ascending: velocityY < 0,
+    velocityX,
+    velocityY
   };
+}
+
+function buildSubmarineBubbleSpouts(submarine, metrics) {
+  const motion = getSubmarineBubbleMotionState(submarine);
+  if (!motion) return [];
   const spouts = [];
 
-  if (horizontalThrust > 0.001) {
+  if (motion.horizontalPower > 0.001) {
+    const speedRatio = clamp(
+      Math.abs(motion.velocityX) / Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND),
+      0,
+      1
+    );
     const rearDirection = metrics.direction > 0 ? "left" : "right";
-    spouts.push({
-      horizontalLocation: 0.055,
+    spouts.push(buildBubblerSpoutFromSettings({
+      amount: clamp(21 + motion.horizontalPower * 3, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
+      speed: clamp(2.4 + speedRatio * 1.6, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
+      direction: rearDirection,
+      bubblePopEnabled: true,
+      bubbleMalformed: true,
+      bubbleMalformedIntensity: MAX_BUBBLER_MALFORMED_INTENSITY,
+      bubbleMalformedSpeed: 0.5
+    }, {
+      horizontalLocation: SUBMARINE_REAR_BUBBLE_X_NORM,
       horizontalOffsetPx: null,
-      intensity: clamp(10 + horizontalSpeedRatio * 13, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
-      spread: 13 + horizontalSpeedRatio * 12,
-      fadeDistance: 92 + horizontalSpeedRatio * 74,
-      bubbleColor: DEFAULT_BUBBLER_BUBBLE_COLOR,
-      bubbleColors: [DEFAULT_BUBBLER_BUBBLE_COLOR],
-      bubbleColorize: false,
-      bubbleSize: 0.8 + horizontalSpeedRatio * 0.32,
-      bubbleOpacity: clamp(DEFAULT_BUBBLER_BUBBLE_OPACITY * 1.06, MIN_CUSTOM_BUBBLER_OPACITY, MAX_CUSTOM_BUBBLER_OPACITY),
-      bubbleFillTintEnabled: DEFAULT_BUBBLER_FILL_TINT_ENABLED,
-      bubbleFillOpacity: DEFAULT_BUBBLER_FILL_OPACITY,
-      bubblePopEnabled: false,
-      bubbleMalformed: DEFAULT_BUBBLER_MALFORMED_ENABLED,
-      bubbleMalformedIntensity: DEFAULT_BUBBLER_MALFORMED_INTENSITY,
-      bubbleMalformedSpeed: DEFAULT_BUBBLER_MALFORMED_SPEED,
-      speed: clamp(2.15 + horizontalSpeedRatio * 1.35, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
-      direction: rearDirection
-    });
+      verticalLocation: SUBMARINE_REAR_BUBBLE_Y_NORM
+    }));
   }
 
-  if (verticalThrust > 0.001) {
-    spouts.push({
-      horizontalLocation: 0.5,
-      horizontalOffsetPx: null,
-      intensity: clamp(3.8 + verticalSpeedRatio * 5.8, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
-      spread: 18 + verticalSpeedRatio * 9,
-      fadeDistance: 70 + verticalSpeedRatio * 48,
-      bubbleColor: DEFAULT_BUBBLER_BUBBLE_COLOR,
-      bubbleColors: [DEFAULT_BUBBLER_BUBBLE_COLOR],
-      bubbleColorize: false,
-      bubbleSize: 0.64 + verticalSpeedRatio * 0.2,
-      bubbleOpacity: clamp(DEFAULT_BUBBLER_BUBBLE_OPACITY * 0.86, MIN_CUSTOM_BUBBLER_OPACITY, MAX_CUSTOM_BUBBLER_OPACITY),
-      bubbleFillTintEnabled: DEFAULT_BUBBLER_FILL_TINT_ENABLED,
-      bubbleFillOpacity: DEFAULT_BUBBLER_FILL_OPACITY,
-      bubblePopEnabled: false,
-      bubbleMalformed: DEFAULT_BUBBLER_MALFORMED_ENABLED,
-      bubbleMalformedIntensity: DEFAULT_BUBBLER_MALFORMED_INTENSITY,
-      bubbleMalformedSpeed: DEFAULT_BUBBLER_MALFORMED_SPEED,
-      speed: clamp(0.78 + verticalSpeedRatio * 0.62, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
-      direction: "up"
-    });
+  if (motion.verticalPower > 0.001) {
+    const verticalReference = Math.max(1, SUBMARINE_MANUAL_SPEED_PX_PER_SECOND * SUBMARINE_MANUAL_VERTICAL_SPEED_SCALE);
+    const speedRatio = clamp(Math.abs(motion.velocityY) / verticalReference, 0, 1);
+    const intensityFloor = motion.ascending ? 18 : 14;
+    const intensityRange = motion.ascending ? 4 : 4;
+    const pressureSettings = {
+      amount: clamp(intensityFloor + motion.verticalPower * intensityRange, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
+      speed: clamp((motion.ascending ? 1.15 : 0.9) + speedRatio * (motion.ascending ? 0.85 : 0.65), MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
+      direction: "up",
+      bubblePopEnabled: true,
+      bubbleMalformed: true,
+      bubbleMalformedIntensity: MAX_BUBBLER_MALFORMED_INTENSITY,
+      bubbleMalformedSpeed: 0.5
+    };
+    for (const horizontalLocation of [SUBMARINE_PRESSURE_BUBBLE_LEFT_X_NORM, SUBMARINE_PRESSURE_BUBBLE_RIGHT_X_NORM]) {
+      spouts.push(buildBubblerSpoutFromSettings(pressureSettings, {
+        horizontalLocation,
+        horizontalOffsetPx: null,
+        verticalLocation: SUBMARINE_PRESSURE_BUBBLE_Y_NORM
+      }));
+    }
   }
 
-  if (!spouts.length) return;
-  const decor = {
-    path: SUBMARINE_IMAGE_PATH,
-    bubbler: { spoutQty: spouts.length, spouts }
-  };
-  drawDecorBubblerEffectToContext(tankContext, item, decor, metrics.image, now, {
-    width: metrics.width,
-    height: metrics.height,
-    drawX: metrics.x - metrics.width / 2,
-    drawY: metrics.y - metrics.height / 2,
-    alphaScale: 1,
-    stableScale: getViewportStableAssetScale(),
-    waterSurfaceY: WATER_SURFACE_Y
+  return spouts;
+}
+
+function getBoatBubbleMotionState(boat) {
+  if (!boat) return null;
+  const velocityX = Number(boat.motionVelocityXPxPerSecond ?? boat.manualVelocityXPxPerSecond) || 0;
+
+  if (isBoatManualDriveActive(boat)) {
+    const input = getBoatManualInputVector();
+    return {
+      horizontalPower: Math.abs(input.x),
+      velocityX
+    };
+  }
+
+  if (!isBoatAutopilotEnabled(boat)) return null;
+  const cruiseReference = Math.max(1, BOAT_CRUISE_SPEED_PX_PER_SECOND);
+  const horizontalPower = Math.abs(velocityX) < 4
+    ? 0
+    : clamp(Math.abs(velocityX) / cruiseReference, 0, 1);
+  return { horizontalPower, velocityX };
+}
+
+function buildBoatBubbleSpouts(boat, metrics) {
+  const motion = getBoatBubbleMotionState(boat);
+  if (!motion || motion.horizontalPower <= 0.001) return [];
+  const speedRatio = clamp(
+    Math.abs(motion.velocityX) / Math.max(1, BOAT_MANUAL_SPEED_PX_PER_SECOND),
+    0,
+    1
+  );
+  const rearDirection = metrics.direction > 0 ? "left" : "right";
+  return [buildBubblerSpoutFromSettings({
+    amount: clamp(21 + motion.horizontalPower * 3, MIN_CUSTOM_BUBBLER_AMOUNT, MAX_BUBBLER_INTENSITY),
+    speed: clamp(2.4 + speedRatio * 1.6, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED),
+    direction: rearDirection,
+    bubblePopEnabled: true,
+    bubbleMalformed: true,
+    bubbleMalformedIntensity: MAX_BUBBLER_MALFORMED_INTENSITY,
+    bubbleMalformedSpeed: 0.5
+  }, {
+    horizontalLocation: BOAT_REAR_BUBBLE_X_NORM,
+    horizontalOffsetPx: null,
+    verticalLocation: BOAT_REAR_BUBBLE_Y_NORM
+  })];
+}
+
+function queueBoatBubbleBurst(boat, metrics, now = Date.now()) {
+  if (!boat || !metrics || getBoatEntryProgress(boat, now) !== null) return;
+  if (!(runtime.boatBubbleEmitterState instanceof Map)) {
+    runtime.boatBubbleEmitterState = new Map();
+  }
+  if (!Array.isArray(runtime.boatBubbleBursts)) {
+    runtime.boatBubbleBursts = [];
+  }
+
+  const spouts = buildBoatBubbleSpouts(boat, metrics);
+  const emitterKey = `${boat.id}|${boat.tankId}|${metrics.tankLayer}`;
+  if (!spouts.length) {
+    runtime.boatBubbleEmitterState.delete(emitterKey);
+    return;
+  }
+
+  const previousSampleAt = Number(runtime.boatBubbleEmitterState.get(emitterKey));
+  if (!Number.isFinite(previousSampleAt)) {
+    runtime.boatBubbleEmitterState.set(emitterKey, now);
+    return;
+  }
+  if (now - previousSampleAt < SUBMARINE_BUBBLE_EMITTER_SAMPLE_MS) return;
+
+  const emissionStartedAtMs = previousSampleAt;
+  const emissionEndedAtMs = now;
+  runtime.boatBubbleEmitterState.set(emitterKey, now);
+  const maxTravelDurationMs = Math.max(
+    ...spouts.map((spout) => getBubblerTravelDurationFromSpeed(spout.speed))
+  );
+  runtime.boatBubbleBursts.push({
+    id: `${boat.id}-bubble-jet`,
+    tankId: boat.tankId,
+    tankLayer: metrics.tankLayer,
+    x: metrics.x,
+    y: metrics.y,
+    width: metrics.width * (Number(metrics.turnScaleX) || 1),
+    height: metrics.height * (Number(metrics.turnScaleY) || 1),
+    direction: metrics.direction,
+    emissionStartedAtMs,
+    emissionEndedAtMs,
+    expiresAt: now + maxTravelDurationMs + SUBMARINE_BUBBLE_LINGER_PAD_MS,
+    spouts
   });
+
+  const oldestUsefulTime = now - MAX_BUBBLER_TRAVEL_DURATION_MS - SUBMARINE_BUBBLE_LINGER_PAD_MS;
+  runtime.boatBubbleBursts = runtime.boatBubbleBursts.filter((burst) => (
+    burst
+    && Number(burst.expiresAt) > now
+    && Number(burst.emissionEndedAtMs) >= oldestUsefulTime
+  ));
+}
+
+function drawBoatBubbleBursts(now = Date.now(), layer = BOAT_SURFACE_LAYER) {
+  if (!Array.isArray(runtime.boatBubbleBursts) || !runtime.boatBubbleBursts.length) return;
+  const tank = getCurrentTank();
+  if (!tank) return;
+  runtime.boatBubbleBursts = runtime.boatBubbleBursts.filter((burst) => burst && Number(burst.expiresAt) > now);
+  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_BOAT)) || null;
+  if (!isUsableRuntimeImage(image)) return;
+
+  for (const burst of runtime.boatBubbleBursts) {
+    if (burst.tankId !== tank.id || clampTankLayer(burst.tankLayer) !== layer || !burst.spouts?.length) continue;
+    const item = {
+      id: burst.id,
+      decorKey: "boat-thruster",
+      xNorm: burst.x / TANK_WIDTH,
+      yNorm: burst.y / TANK_HEIGHT,
+      scale: 1,
+      flipped: Number(burst.direction) < 0,
+      flippedY: false
+    };
+    const decor = {
+      path: getMachineryImagePath(MACHINERY_TYPE_BOAT),
+      bubbler: { spoutQty: burst.spouts.length, spouts: burst.spouts }
+    };
+    drawDecorBubblerEffectToContext(tankContext, item, decor, image, now, {
+      width: burst.width,
+      height: burst.height,
+      drawX: burst.x - burst.width / 2,
+      drawY: burst.y - burst.height / 2,
+      alphaScale: 1,
+      stableScale: getViewportStableAssetScale(),
+      waterSurfaceY: WATER_SURFACE_Y,
+      emissionStartedAtMs: burst.emissionStartedAtMs,
+      emissionEndedAtMs: burst.emissionEndedAtMs,
+      straightDirectionalTravel: true
+    });
+  }
+}
+
+function queueSubmarineBubbleBurst(submarine, metrics, now = Date.now()) {
+  if (!submarine || !metrics || getSubmarineEntryProgress(submarine, now) !== null) return;
+  if (!(runtime.submarineBubbleEmitterState instanceof Map)) {
+    runtime.submarineBubbleEmitterState = new Map();
+  }
+  if (!Array.isArray(runtime.submarineBubbleBursts)) {
+    runtime.submarineBubbleBursts = [];
+  }
+
+  const spouts = buildSubmarineBubbleSpouts(submarine, metrics);
+  const emitterKey = `${submarine.id}|${submarine.tankId}|${metrics.tankLayer}`;
+  if (!spouts.length) {
+    runtime.submarineBubbleEmitterState.delete(emitterKey);
+    return;
+  }
+
+  const previousSampleAt = Number(runtime.submarineBubbleEmitterState.get(emitterKey));
+  if (!Number.isFinite(previousSampleAt)) {
+    runtime.submarineBubbleEmitterState.set(emitterKey, now);
+    return;
+  }
+  if (now - previousSampleAt < SUBMARINE_BUBBLE_EMITTER_SAMPLE_MS) return;
+
+  const emissionStartedAtMs = previousSampleAt;
+  const emissionEndedAtMs = now;
+  runtime.submarineBubbleEmitterState.set(emitterKey, now);
+  const maxTravelDurationMs = Math.max(
+    ...spouts.map((spout) => getBubblerTravelDurationFromSpeed(spout.speed))
+  );
+  runtime.submarineBubbleBursts.push({
+    id: `${submarine.id}-bubble-jet`,
+    tankId: submarine.tankId,
+    tankLayer: metrics.tankLayer,
+    x: metrics.x,
+    y: metrics.y,
+    width: metrics.width * (Number(metrics.turnScaleX) || 1),
+    height: metrics.height * (Number(metrics.turnScaleY) || 1),
+    direction: metrics.direction,
+    emissionStartedAtMs,
+    emissionEndedAtMs,
+    expiresAt: now + maxTravelDurationMs + SUBMARINE_BUBBLE_LINGER_PAD_MS,
+    spouts
+  });
+
+  const oldestUsefulTime = now - MAX_BUBBLER_TRAVEL_DURATION_MS - SUBMARINE_BUBBLE_LINGER_PAD_MS;
+  runtime.submarineBubbleBursts = runtime.submarineBubbleBursts.filter((burst) => (
+    burst
+    && Number(burst.expiresAt) > now
+    && Number(burst.emissionEndedAtMs) >= oldestUsefulTime
+  ));
+}
+
+function drawSubmarineBubbleBursts(now = Date.now(), layer = 2) {
+  if (!Array.isArray(runtime.submarineBubbleBursts) || !runtime.submarineBubbleBursts.length) return;
+  const tank = getCurrentTank();
+  if (!tank) return;
+  runtime.submarineBubbleBursts = runtime.submarineBubbleBursts.filter((burst) => burst && Number(burst.expiresAt) > now);
+  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE)) || null;
+  if (!isUsableRuntimeImage(image)) return;
+
+  for (const burst of runtime.submarineBubbleBursts) {
+    if (burst.tankId !== tank.id || clampTankLayer(burst.tankLayer) !== layer || !burst.spouts?.length) continue;
+    const item = {
+      id: burst.id,
+      decorKey: "submarine-thruster",
+      xNorm: burst.x / TANK_WIDTH,
+      yNorm: burst.y / TANK_HEIGHT,
+      scale: 1,
+      flipped: Number(burst.direction) < 0,
+      flippedY: false
+    };
+    const decor = {
+      path: getMachineryImagePath(MACHINERY_TYPE_SUBMARINE),
+      bubbler: { spoutQty: burst.spouts.length, spouts: burst.spouts }
+    };
+    drawDecorBubblerEffectToContext(tankContext, item, decor, image, now, {
+      width: burst.width,
+      height: burst.height,
+      drawX: burst.x - burst.width / 2,
+      drawY: burst.y - burst.height / 2,
+      alphaScale: 1,
+      stableScale: getViewportStableAssetScale(),
+      waterSurfaceY: WATER_SURFACE_Y,
+      emissionStartedAtMs: burst.emissionStartedAtMs,
+      emissionEndedAtMs: burst.emissionEndedAtMs,
+      smoothDirectionalTurn: true
+    });
+  }
 }
 
 function drawMachinery(now, layer = 2) {
   const tank = getCurrentTank();
   if (!tank) return;
-  for (const submarine of getMachineryForTank(tank.id)) {
-    if (submarine.type !== MACHINERY_TYPE_SUBMARINE) continue;
-    const metrics = getSubmarineDrawMetrics(submarine, now);
+  const machineryForLayer = [];
+  for (const machinery of getMachineryForTank(tank.id)) {
+    const metrics = machinery.type === MACHINERY_TYPE_BOAT
+      ? getBoatDrawMetrics(machinery, now)
+      : machinery.type === MACHINERY_TYPE_SUBMARINE
+        ? getSubmarineDrawMetrics(machinery, now)
+        : null;
     if (!metrics || metrics.tankLayer !== layer) continue;
-    drawSubmarineSpotlight(submarine, metrics);
-    drawSubmarineBubbleJets(submarine, metrics, now);
+    if (machinery.type === MACHINERY_TYPE_SUBMARINE) queueSubmarineBubbleBurst(machinery, metrics, now);
+    if (machinery.type === MACHINERY_TYPE_BOAT) queueBoatBubbleBurst(machinery, metrics, now);
+    machineryForLayer.push({ machinery, metrics });
+  }
+  drawSubmarineBubbleBursts(now, layer);
+  drawBoatBubbleBursts(now, layer);
+  for (const { machinery, metrics } of machineryForLayer) {
+    const isBoat = machinery.type === MACHINERY_TYPE_BOAT;
+    if (!isBoat) drawSubmarineSpotlight(machinery, metrics);
     tankContext.save();
     tankContext.translate(metrics.x, metrics.y);
     tankContext.rotate(metrics.rotation || 0);
-    tankContext.scale(metrics.direction, 1);
+    tankContext.scale(metrics.direction * (Number(metrics.turnScaleX) || 1), Number(metrics.turnScaleY) || 1);
     if (isUsableRuntimeImage(metrics.image)) {
-      tankContext.drawImage(metrics.image, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
+      const imagePath = isBoat ? getMachineryImagePath(MACHINERY_TYPE_BOAT) : getMachineryImagePath(MACHINERY_TYPE_SUBMARINE);
+      const drawImage = getMachineryTintedImage(imagePath, metrics.image, machinery);
+      const colorFilter = getMachineryColorCycleFilter(machinery, now);
+      if (colorFilter !== "none") tankContext.filter = colorFilter;
+      tankContext.drawImage(drawImage, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
     } else {
       tankContext.fillStyle = "rgba(28,62,78,0.95)";
       tankContext.strokeStyle = "rgba(111,224,255,0.85)";
@@ -862,8 +2288,8 @@ function drawMachinery(now, layer = 2) {
       tankContext.stroke();
     }
     tankContext.restore();
-    drawSubmarineWarningLight(submarine, metrics, now);
-    if (runtime.selectedMachineryId === submarine.id) {
+    if (!isBoat) drawSubmarineWarningLight(machinery, metrics, now);
+    if (runtime.selectedMachineryId === machinery.id) {
       tankContext.save();
       tankContext.strokeStyle = "rgba(108,236,255,0.9)";
       tankContext.lineWidth = 3;
@@ -879,8 +2305,10 @@ function findMachineryAtPoint(x, y, now = Date.now()) {
   if (!tank) return null;
   const candidates = getMachineryForTank(tank.id).slice().reverse();
   for (const machinery of candidates) {
-    if (machinery.type !== MACHINERY_TYPE_SUBMARINE) continue;
-    const metrics = getSubmarineDrawMetrics(machinery, now);
+    if (![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type)) continue;
+    const metrics = machinery.type === MACHINERY_TYPE_BOAT
+      ? getBoatDrawMetrics(machinery, now)
+      : getSubmarineDrawMetrics(machinery, now);
     if (!metrics) continue;
     const padding = 12;
     if (
@@ -1108,7 +2536,7 @@ function findSubmarineCareCandidate(submarine, now = Date.now()) {
       if (!fish || isFishDead(fish)) continue;
       const maxHealth = getFishMaxHealthUnits(fish);
       const health = Math.max(0, Number(fish.healthUnits) || 0);
-      if (inventory.health > 0 && health < maxHealth) {
+      if (inventory.health > 0 && health < maxHealth && !hasSubmarineMedicineEffect(tank, "firstAid", now)) {
         const score = 400 + (1 - health / Math.max(1, maxHealth)) * 120;
         if (!best || score > best.score) best = { kind: "health", fishId: fish.id, targetTankId: tank.id, score };
       }
@@ -1169,7 +2597,8 @@ function getSubmarineMissionTarget(submarine) {
 function isSubmarineMissionResolved(submarine, target, now = Date.now()) {
   if (!submarine?.mission || !target) return true;
   if (submarine.mission.kind === "health") {
-    return Number(target.fish.healthUnits) >= getFishMaxHealthUnits(target.fish);
+    return hasSubmarineMedicineEffect(target.tank, "firstAid", now)
+      || Number(target.fish.healthUnits) >= getFishMaxHealthUnits(target.fish);
   }
   if (submarine.mission.kind === "calming") {
     return hasSubmarineMedicineEffect(target.tank, "betaBlocker", now)
@@ -1183,7 +2612,7 @@ function deploySubmarineFood(submarine, target, now = Date.now()) {
   let pellet = null;
   withActiveTank(target.tank.id, () => {
     const preferredFoodKey = canFoodSatisfyFishMeal(target.fish, "basic") ? "basic" : "chum";
-    pellet = createDroppedFoodPellet(preferredFoodKey, submarine.xNorm, submarine.yNorm, now);
+    pellet = createSubmarineDroppedFoodPellet(submarine, preferredFoodKey, now);
     if (!pellet) return;
     state.floatingPellets.push(pellet);
     assignPelletToFish(target.fish, pellet, now);
@@ -1251,7 +2680,9 @@ function serviceSubmarineMission(submarine, target, now = Date.now()) {
       : null;
     if (existingPellet) return true;
     mission.pelletId = "";
-    if (now >= (Number(mission.nextDeployAt) || 0)) deploySubmarineFood(submarine, target, now);
+    if (now >= (Number(mission.nextDeployAt) || 0) && !deploySubmarineFood(submarine, target, now)) {
+      mission.nextDeployAt = now + SUBMARINE_FOOD_RETRY_MS;
+    }
     return true;
   }
   if (mission.kind === "health") {
@@ -1277,6 +2708,22 @@ function updateSubmarineMission(submarine, now = Date.now()) {
     return false;
   }
   const target = getSubmarineMissionTarget(submarine);
+  const resource = submarine.mission.kind === "health" ? "health" : submarine.mission.kind === "calming" ? "calming" : "food";
+  if (!target || !isTankReachableBySubmarine(submarine, target.tank)
+    || normalizeSubmarineResourceCount(submarine.inventory?.[resource]) <= 0) {
+    runtime.pendingMachineryTravel.delete(submarine.id);
+    submarine.targetXNorm = submarine.xNorm;
+    submarine.targetYNorm = submarine.yNorm;
+    return clearSubmarineMission(submarine, now);
+  }
+  if (now >= (Number(submarine.nextScanAt) || 0)) {
+    submarine.nextScanAt = now + SUBMARINE_SCAN_INTERVAL_MS;
+    const urgent = findSubmarineCareCandidate(submarine, now);
+    if (urgent?.kind === "health" && submarine.mission.kind !== "health") {
+      runtime.pendingMachineryTravel.delete(submarine.id);
+      return startSubmarineMission(submarine, urgent, now);
+    }
+  }
   if (!target || isSubmarineMissionResolved(submarine, target, now)) {
     return clearSubmarineMission(submarine, now);
   }
@@ -1311,7 +2758,10 @@ function updateSubmarineIdleCruise(submarine, now = Date.now()) {
 }
 
 function moveSubmarineTowardTarget(submarine, deltaSeconds, now = Date.now()) {
-  if (!submarine || (Number(submarine.idleUntil) > now && !submarine.mission && !runtime.pendingMachineryTravel.has(submarine.id))) return;
+  if (!submarine) return;
+  submarine.motionVelocityXPxPerSecond = 0;
+  submarine.motionVelocityYPxPerSecond = 0;
+  if (Number(submarine.idleUntil) > now && !submarine.mission && !runtime.pendingMachineryTravel.has(submarine.id)) return;
   const targetX = Number(submarine.targetXNorm);
   const targetY = Number(submarine.targetYNorm);
   if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return;
@@ -1319,29 +2769,155 @@ function moveSubmarineTowardTarget(submarine, deltaSeconds, now = Date.now()) {
   const dyPx = (targetY - submarine.yNorm) * TANK_HEIGHT;
   const distancePx = Math.hypot(dxPx, dyPx);
   if (distancePx <= 0.5) return;
-  if (Math.abs(dxPx) > 2) submarine.direction = dxPx < 0 ? -1 : 1;
+  if (Math.abs(dxPx) > 2) setMachineryDirection(submarine, dxPx < 0 ? -1 : 1, now, SUBMARINE_TURN_DURATION_MS);
   const pending = runtime.pendingMachineryTravel.has(submarine.id);
   const speed = pending
     ? SUBMARINE_TRAVEL_SPEED_PX_PER_SECOND
     : SUBMARINE_CRUISE_SPEED_PX_PER_SECOND;
-  const stepPx = Math.min(distancePx, Math.max(0, Number(deltaSeconds) || 0) * speed);
-  submarine.xNorm += (dxPx / distancePx) * stepPx / TANK_WIDTH;
-  submarine.yNorm += (dyPx / distancePx) * stepPx / TANK_HEIGHT;
+  const dt = Math.max(0, Number(deltaSeconds) || 0);
+  const stepPx = Math.min(distancePx, dt * speed);
+  if (stepPx <= 0 || dt <= 0) return;
+  const moveXPx = (dxPx / distancePx) * stepPx;
+  const moveYPx = (dyPx / distancePx) * stepPx;
+  submarine.xNorm += moveXPx / TANK_WIDTH;
+  submarine.yNorm += moveYPx / TANK_HEIGHT;
+  submarine.motionVelocityXPxPerSecond = moveXPx / dt;
+  submarine.motionVelocityYPxPerSecond = moveYPx / dt;
+}
+
+function updateSubmarineEntry(submarine, now = Date.now()) {
+  const entryProgress = getSubmarineEntryProgress(submarine, now);
+  if (entryProgress === null) return false;
+
+  submarine.manualVelocityXPxPerSecond = 0;
+  submarine.manualVelocityYPxPerSecond = 0;
+  submarine.motionVelocityXPxPerSecond = 0;
+  submarine.motionVelocityYPxPerSecond = 0;
+  clearSubmarineManualDriveKeys();
+
+  const metrics = getSubmarineDrawMetrics(submarine, now);
+  const hitWaterline = metrics
+    ? metrics.y + metrics.height * 0.5 >= WATER_SURFACE_Y
+    : entryProgress >= FISH_ENTRY_SPLASH_PROGRESS;
+  if (!submarine.entrySplashTriggered && hitWaterline) {
+    playFishEntrySplashSoundIfNeeded(submarine);
+    submarine.entrySplashTriggered = true;
+    spawnFishReturnSplash(submarine.xNorm);
+  }
+
+  if (entryProgress < 1) return true;
+
+  submarine.entryStartedAt = null;
+  submarine.entryDurationMs = 0;
+  submarine.entryFromYNorm = null;
+  submarine.entrySplashTriggered = false;
+  submarine.idleUntil = now + 450;
+  submarine.targetXNorm = submarine.xNorm;
+  submarine.targetYNorm = submarine.yNorm;
+  submarine.targetAt = now + 1200;
+  submarine.nextScanAt = Math.max(Number(submarine.nextScanAt) || 0, now + 700);
+  requestDeferredStateSave();
+  return false;
+}
+
+function updateBoatIdleCruise(boat, now = Date.now()) {
+  if (!boat || runtime.pendingMachineryTravel.has(boat.id)) return;
+  if (Number(boat.idleUntil) > now) return;
+  const distance = Math.abs((Number(boat.targetXNorm) || boat.xNorm) - (Number(boat.xNorm) || 0.5)) * TANK_WIDTH;
+  if (distance <= 14 || now >= (Number(boat.targetAt) || 0)) {
+    if (Math.random() < 0.22) {
+      boat.idleUntil = now + randomBetween(900, 2200);
+      boat.targetAt = boat.idleUntil;
+      return;
+    }
+    boat.targetXNorm = boat.xNorm < 0.5 ? randomBetween(0.72, 0.9) : randomBetween(0.1, 0.28);
+    boat.targetYNorm = 0.16;
+    boat.targetAt = now + randomBetween(6000, 11000);
+  }
+}
+
+function moveBoatTowardTarget(boat, deltaSeconds, now = Date.now()) {
+  if (!boat) return;
+  boat.motionVelocityXPxPerSecond = 0;
+  boat.motionVelocityYPxPerSecond = 0;
+  if (Number(boat.idleUntil) > now) return;
+  const targetX = Number(boat.targetXNorm);
+  if (!Number.isFinite(targetX)) return;
+  const dxPx = (targetX - boat.xNorm) * TANK_WIDTH;
+  if (Math.abs(dxPx) <= 0.5) return;
+  setMachineryDirection(boat, dxPx < 0 ? -1 : 1, now, BOAT_TURN_DURATION_MS);
+  const dt = Math.max(0, Number(deltaSeconds) || 0);
+  const stepPx = Math.min(Math.abs(dxPx), dt * BOAT_CRUISE_SPEED_PX_PER_SECOND);
+  if (stepPx <= 0 || dt <= 0) return;
+  const moveXPx = Math.sign(dxPx) * stepPx;
+  boat.xNorm = clamp(boat.xNorm + moveXPx / TANK_WIDTH, 0.08, 0.92);
+  boat.motionVelocityXPxPerSecond = moveXPx / dt;
+}
+
+function updateBoatEntry(boat, now = Date.now()) {
+  const entryProgress = getBoatEntryProgress(boat, now);
+  if (entryProgress === null) return false;
+
+  boat.manualVelocityXPxPerSecond = 0;
+  boat.motionVelocityXPxPerSecond = 0;
+  clearBoatManualDriveKeys();
+  const metrics = getBoatDrawMetrics(boat, now);
+  const hitWaterline = metrics
+    ? metrics.y + metrics.height * 0.5 >= WATER_SURFACE_Y
+    : entryProgress >= FISH_ENTRY_SPLASH_PROGRESS;
+  if (!boat.entrySplashTriggered && hitWaterline) {
+    playFishEntrySplashSoundIfNeeded(boat);
+    boat.entrySplashTriggered = true;
+    spawnFishReturnSplash(boat.xNorm);
+  }
+  if (entryProgress < 1) return true;
+
+  boat.entryStartedAt = null;
+  boat.entryDurationMs = 0;
+  boat.entryFromYNorm = null;
+  boat.entrySplashTriggered = false;
+  boat.tankLayer = BOAT_SURFACE_LAYER;
+  boat.yNorm = 0.16;
+  boat.targetYNorm = 0.16;
+  boat.idleUntil = now + 450;
+  boat.targetXNorm = boat.xNorm;
+  boat.targetAt = now + 1200;
+  requestDeferredStateSave();
+  return false;
 }
 
 function updateMachineryMotion(now = Date.now(), deltaSeconds = 0.016) {
   const submarine = getSubmarine();
-  if (!submarine) return;
-  submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
-  if (!getTankById(submarine.tankId)) submarine.tankId = getAllTanks()[0]?.id || "";
-  if (!isSubmarineAutopilotEnabled(submarine)) {
-    if (isSubmarineManualDriveActive(submarine)) updateSubmarineManualDrive(submarine, deltaSeconds);
+  if (submarine) {
+    syncMachineryControlStatus(submarine);
+    if (!getTankById(submarine.tankId)) submarine.tankId = getAllTanks()[0]?.id || "";
+    if (!updateSubmarineEntry(submarine, now)) {
+      if (!isSubmarineAutopilotEnabled(submarine)) {
+        if (isSubmarineManualDriveActive(submarine)) updateSubmarineManualDrive(submarine, deltaSeconds);
+        else suspendSubmarineManualDrive();
+      } else {
+        clearSubmarineManualDriveKeys();
+        processSubmarineTravel(submarine, now);
+        updateSubmarineMission(submarine, now);
+        updateSubmarineIdleCruise(submarine, now);
+        moveSubmarineTowardTarget(submarine, deltaSeconds, now);
+      }
+    }
+  }
+  syncSubmarineSonarSound(submarine);
+
+  const boat = getBoat();
+  if (!boat) return;
+  syncMachineryControlStatus(boat);
+  if (!getTankById(boat.tankId)) boat.tankId = getAllTanks()[0]?.id || "";
+  boat.tankLayer = BOAT_SURFACE_LAYER;
+  if (updateBoatEntry(boat, now)) return;
+  if (!isBoatAutopilotEnabled(boat)) {
+    if (isBoatManualDriveActive(boat)) updateBoatManualDrive(boat, deltaSeconds);
+    else suspendBoatManualDrive();
     return;
   }
-  runtime.submarineManualDriveId = "";
-  clearSubmarineManualDriveKeys();
-  processSubmarineTravel(submarine, now);
-  updateSubmarineMission(submarine, now);
-  updateSubmarineIdleCruise(submarine, now);
-  moveSubmarineTowardTarget(submarine, deltaSeconds, now);
+  clearBoatManualDriveKeys();
+  updateBoatIdleCruise(boat, now);
+  moveBoatTowardTarget(boat, deltaSeconds, now);
 }

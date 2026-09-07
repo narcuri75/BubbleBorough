@@ -332,7 +332,9 @@ function sanitizePellet(pellet) {
   const foodMeta = typeof pellet.foodKey === "string" && getFoodMeta(pellet.foodKey)
     ? getFoodMeta(pellet.foodKey)
     : getFoodMeta(defaultFoodKey);
-  const hasCustomDropStart = Number.isFinite(Number(pellet.dropStartXNorm))
+  const hasCustomDropStart = pellet.dropStartXNorm != null
+    && pellet.dropStartYNorm != null
+    && Number.isFinite(Number(pellet.dropStartXNorm))
     && Number.isFinite(Number(pellet.dropStartYNorm));
   const xNorm = clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92);
   const floorYNorm = clamp(getPelletFloorYNormAtX(xNorm), 0.18, 0.96);
@@ -362,7 +364,7 @@ function sanitizePellet(pellet) {
     ),
     sinkDurationMs: clamp(Number(pellet.sinkDurationMs) || FOOD_PELLET_SINK_DURATION_MS, 30 * 1000, 60 * MINUTE_MS),
     dropStartXNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartXNorm), 0.08, 0.92) : null,
-    dropStartYNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartYNorm), 0.02, AUTO_DISPENSER_PELLET_MAX_Y_NORM) : null,
+    dropStartYNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartYNorm), 0.02, floorYNorm) : null,
     dropDurationMs: hasCustomDropStart
       ? clamp(Number(pellet.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS, 120, 3000)
       : null,

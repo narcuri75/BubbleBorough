@@ -126,6 +126,7 @@ function createFishRecord(speciesId, options = {}) {
     piranhaLastBloodAt: null,
     piranhaAttackStartedAt: null,
     piranhaLastDamageAt: null,
+    sharkLastAttackAt: Number.isFinite(Number(options.sharkLastAttackAt)) ? Number(options.sharkLastAttackAt) : 0,
     breedCooldownUntil: Number.isFinite(Number(options.breedCooldownUntil)) ? Number(options.breedCooldownUntil) : 0,
     healthUnits: clamp(
       Number.isFinite(Number(options.healthUnits)) ? Number(options.healthUnits) : getSpeciesMaxHealthUnits(species),

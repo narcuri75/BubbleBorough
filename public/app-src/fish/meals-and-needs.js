@@ -240,7 +240,7 @@ function getPelletPose(pellet, now) {
   const floatingY = clamp(startYNorm + (floorYNorm - startYNorm) * easedSink + bobY, 0.09, floorYNorm);
   if (hasCustomDropStart) {
     const startXNorm = clamp(Number(pellet.dropStartXNorm), 0.08, 0.92);
-    const dropStartYNorm = clamp(Number(pellet.dropStartYNorm), 0.02, AUTO_DISPENSER_PELLET_MAX_Y_NORM);
+    const dropStartYNorm = clamp(Number(pellet.dropStartYNorm), 0.02, floorYNorm);
     return {
       xNorm: clamp(startXNorm + (floatingXNorm - startXNorm) * easedDrop, 0.08, 0.92),
       yNorm: clamp(
@@ -265,8 +265,10 @@ function getPelletHitBounds(pellet, now = Date.now()) {
   const x = pose.xNorm * TANK_WIDTH;
   const y = pose.yNorm * TANK_HEIGHT;
   const stableScale = getViewportStableAssetScale();
-  const scale = clamp(Number(pellet.scale) || 1, 0.75, 1.4) * stableScale;
+  const chumScale = pellet.foodKey === "chum" ? 2 : 1;
   const appearance = getFoodDropAppearance(pellet.foodKey, pellet);
+  const variantScale = pellet.foodKey === "chum" ? getChumSpriteVisualScale(appearance.spritePath) : 1;
+  const scale = clamp(Number(pellet.scale) || 1, 0.75, 1.4) * stableScale * chumScale * variantScale;
   if (appearance.dropStyle === "sprite") {
     const image = appearance.spritePath ? runtime.images.get(appearance.spritePath) : null;
     const fitScale = image
@@ -718,16 +720,20 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
     const speed = clamp(Number(spout.speed) || DEFAULT_BUBBLER_SPEED, MIN_BUBBLER_SPEED, MAX_BUBBLER_SPEED);
     const direction = normalizeBubblerDirection(spout.direction);
     const isStraightUpStream = direction === "up";
+    const straightDirectionalTravel = options.straightDirectionalTravel === true
+      && (direction === "left" || direction === "right");
     const sourceLocation = getBubblerSpoutHorizontalLocation(spout, image);
     const renderedSourceLocation = resolveDecorHorizontalUnit(item, sourceLocation);
     const sourceX = drawX + width * renderedSourceLocation;
-    const sourceYOffsetRatio = getBubblerSpoutSourceOffsetRatio(
-      decor.path,
-      {
-        horizontalLocation: sourceLocation,
-        horizontalOffsetPx: null
-      }
-    );
+    const sourceYOffsetRatio = Number.isFinite(Number(spout.verticalLocation))
+      ? clamp(Number(spout.verticalLocation), 0, 1)
+      : getBubblerSpoutSourceOffsetRatio(
+        decor.path,
+        {
+          horizontalLocation: sourceLocation,
+          horizontalOffsetPx: null
+        }
+      );
     const sourceY = drawY + height * resolveDecorVerticalUnit(item, sourceYOffsetRatio) + Math.max(2 * stableScale, item.scale * 2 * stableScale);
     const spoutWidthPx = Math.max(0, spout.spread * item.scale * stableScale);
     const fadeDistancePx = Math.max(24 * stableScale, spout.fadeDistance * stableScale);
@@ -740,11 +746,20 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
     );
     const wobblePx = Math.min(2.1, 0.55 + intensity * 0.06) * stableScale;
     const waterlineStopY = waterSurfaceY + Math.max(2 * stableScale, 2);
-    const availableTravelPx = Math.max(24, sourceY - waterlineStopY);
+    const availableTravelPx = straightDirectionalTravel
+      ? fadeDistancePx
+      : Math.max(24, sourceY - waterlineStopY);
     const renderedBubbles = [];
     const streamSeed = hashStringToUint32(`${item.id}|${item.decorKey}|${spoutIndex}|stream`);
     const streamRand = mulberry32(streamSeed ^ 0x9e3779b9);
-    const streamTimeMs = now + randomBetweenWith(streamRand, 0, cadenceMs);
+    const streamOffsetMs = randomBetweenWith(streamRand, 0, cadenceMs);
+    const streamTimeMs = now + streamOffsetMs;
+    const emissionStartedAtMs = Number.isFinite(Number(options.emissionStartedAtMs))
+      ? Number(options.emissionStartedAtMs) + streamOffsetMs
+      : null;
+    const emissionEndedAtMs = Number.isFinite(Number(options.emissionEndedAtMs))
+      ? Number(options.emissionEndedAtMs) + streamOffsetMs
+      : null;
     const latestEmissionCycle = Math.floor(streamTimeMs / cadenceMs);
 
     for (let slotIndex = 0; slotIndex < totalBubbleCount; slotIndex += 1) {
@@ -759,6 +774,12 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
       const originRand = mulberry32(emissionSeed ^ 0x165667b1);
       const jitterRatio = clamp((intensity - MIN_CUSTOM_BUBBLER_AMOUNT) / 8, 0, 0.14);
       const emittedAtMs = emissionCycle * cadenceMs + randomBetweenWith(motionRand, -jitterRatio, jitterRatio) * cadenceMs;
+      if (emissionStartedAtMs !== null && emittedAtMs < emissionStartedAtMs) {
+        continue;
+      }
+      if (emissionEndedAtMs !== null && emittedAtMs > emissionEndedAtMs) {
+        continue;
+      }
       const ageMs = streamTimeMs - emittedAtMs;
       if (ageMs < 0 || ageMs > travelDurationMs) {
         continue;
@@ -787,39 +808,62 @@ function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date
         now / (slotWobbleCadenceMs + wobbleCadenceOffsetMs) + wobblePhase + spoutIndex * 0.9
       ) * depthWobblePx
         + Math.sin(phase * 10.2 + wobblePhase * 0.47) * depthWobblePx * 0.28;
-      const reachesWaterline = fadeDistancePx >= availableTravelPx - 1 * stableScale;
-      const travelPx = reachesWaterline
-        ? availableTravelPx
-        : Math.min(
-          fadeDistancePx * randomBetweenWith(emissionRand, 0.88, 1.06),
-          availableTravelPx
-        );
-      // Straight-up streams should lift immediately so they do not appear to pool at the spout.
+      const reachesWaterline = straightDirectionalTravel
+        ? false
+        : fadeDistancePx >= availableTravelPx - 1 * stableScale;
+      const travelPx = straightDirectionalTravel
+        ? fadeDistancePx * randomBetweenWith(emissionRand, 0.88, 1.06)
+        : reachesWaterline
+          ? availableTravelPx
+          : Math.min(
+            fadeDistancePx * randomBetweenWith(emissionRand, 0.88, 1.06),
+            availableTravelPx
+          );
+      // Straight-up streams lift immediately. Directional streams normally travel
+      // outward, then rise. Submarine thrusters can opt into a continuous curved
+      // trajectory so the stream never forms a visible hard L-shaped corner.
+      const smoothDirectionalTurn = options.smoothDirectionalTurn === true && !isStraightUpStream && !straightDirectionalTravel;
       const turnRatio = isStraightUpStream ? 0 : clamp(0.16 + speed * 0.1, 0.2, 0.56);
       const turnProgress = isStraightUpStream
         ? 0
         : clamp(riseProgress / Math.max(0.0001, turnRatio), 0, 1);
-      const upwardProgress = isStraightUpStream
-        ? riseProgress
-        : Math.pow(
-          clamp((riseProgress - turnRatio) / Math.max(0.0001, 1 - turnRatio), 0, 1),
-          0.86
-        );
-      const turnDistancePx = isStraightUpStream
+      const upwardProgress = straightDirectionalTravel
         ? 0
-        : Math.min(
-          travelPx * turnRatio,
-          (20 + speed * 26) * stableScale
-        );
+        : isStraightUpStream
+          ? riseProgress
+          : smoothDirectionalTurn
+            ? Math.pow(riseProgress, 1.55)
+            : Math.pow(
+              clamp((riseProgress - turnRatio) / Math.max(0.0001, 1 - turnRatio), 0, 1),
+              0.86
+            );
+      const turnDistancePx = straightDirectionalTravel
+        ? travelPx
+        : isStraightUpStream
+          ? 0
+          : Math.min(
+            travelPx * turnRatio,
+            (20 + speed * 26) * stableScale
+          );
       const directionVector = getBubblerDirectionVector(direction);
-      const directionEase = isStraightUpStream ? 0 : Math.sin(turnProgress * Math.PI * 0.5);
+      const directionEase = straightDirectionalTravel
+        ? riseProgress
+        : isStraightUpStream
+          ? 0
+          : smoothDirectionalTurn
+            ? 1 - Math.pow(1 - riseProgress, 2.1)
+            : Math.sin(turnProgress * Math.PI * 0.5);
       const directionalX = directionVector.x * turnDistancePx * directionEase;
-      const directionalY = directionVector.y * turnDistancePx * directionEase;
-      const upwardTravelPx = upwardProgress * (
-        isStraightUpStream
-          ? travelPx
-          : (travelPx + Math.max(0, directionalY))
-      );
+      const directionalY = straightDirectionalTravel
+        ? 0
+        : directionVector.y * turnDistancePx * directionEase;
+      const upwardTravelPx = straightDirectionalTravel
+        ? 0
+        : upwardProgress * (
+          isStraightUpStream
+            ? travelPx
+            : (travelPx + Math.max(0, directionalY))
+        );
       const x = sourceX + spawnOffsetX + directionalX + trajectoryDriftPx * riseProgress + sway * (0.5 + upwardProgress * 0.34);
       const y = sourceY + directionalY - upwardTravelPx;
 
@@ -1305,6 +1349,15 @@ function scoopTankItemAtPoint(x, y, now = Date.now()) {
   const machinery = findMachineryAtPoint(x, y, now);
   if (machinery?.type === MACHINERY_TYPE_SUBMARINE) {
     if (recallSubmarine(now)) {
+      runtime.equipmentEditTrayTab = "storage";
+      return {
+        kind: "machinery",
+        label: ""
+      };
+    }
+  }
+  if (machinery?.type === MACHINERY_TYPE_BOAT) {
+    if (recallBoat(now)) {
       runtime.equipmentEditTrayTab = "storage";
       return {
         kind: "machinery",

@@ -1,742 +1,1177 @@
-  {
-    "decor": [
-      {
-        "file": "seaweed-bunch.png",
-        "name": "Seaweed Bunch",
-        "cost": 2,
-        "width": 298,
-        "defaultScale": 1,
-        "theme": "Regular"
+{
+  "decor": [
+    {
+      "file": "seaweed-bunch.png",
+      "name": "Seaweed Bunch",
+      "cost": 2,
+      "width": 298,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "mushroomcoral_seaweed.png",
+      "name": "Mushroom Coral",
+      "cost": 15,
+      "width": 510,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "floatingseaweed_1.png",
+      "name": "Floating Seaweed",
+      "cost": 4,
+      "width": 220,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "seaweed_1.png",
+      "name": "Seaweed",
+      "cost": 4,
+      "width": 280,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "anubia-rock_seaweed.png",
+      "name": "Anubias Rock",
+      "cost": 4,
+      "width": 495,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "rock-arch.png",
+      "name": "Rock Arch",
+      "cost": 8,
+      "width": 595,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "moss-bridge.png",
+      "name": "Moss Bridge",
+      "cost": 10,
+      "width": 698,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "driftwood-root.png",
+      "name": "Driftwood Root",
+      "cost": 10,
+      "width": 660,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "slate-cave.png",
+      "name": "Slate Cave",
+      "cost": 12,
+      "width": 620,
+      "defaultScale": 1,
+      "caveSettings": {
+        "entryCount": 1,
+        "entries": [
+          {
+            "id": "main-front",
+            "x": 0.51,
+            "y": 0.67,
+            "side": "front"
+          }
+        ],
+        "seatCount": 2,
+        "seats": [
+          {
+            "id": "left-seat",
+            "x": 0.42,
+            "y": 0.64,
+            "facing": "right"
+          },
+          {
+            "id": "right-seat",
+            "x": 0.6,
+            "y": 0.64,
+            "facing": "left"
+          }
+        ]
       },
-      {
-        "file": "mushroomcoral_seaweed.png",
-        "name": "Mushroom Coral",
-        "cost": 15,
-        "width": 510,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "caveBehavior": {
+        "portals": [
+          {
+            "id": "main_front",
+            "approachX": 0.5,
+            "approachY": 0.77,
+            "mouthX": 0.5,
+            "mouthY": 0.67,
+            "outsideLayer": 2,
+            "insideLayer": 4,
+            "path": [
+              {
+                "x": 0.5,
+                "y": 0.61
+              },
+              {
+                "x": 0.5,
+                "y": 0.56
+              }
+            ]
+          }
+        ],
+        "insideSlots": [
+          {
+            "id": "center",
+            "x": 0.5,
+            "y": 0.53,
+            "layer": 4,
+            "portalIds": [
+              "main_front"
+            ]
+          }
+        ]
       },
-      {
-        "file": "floatingseaweed_1.png",
-        "name": "Floating Seaweed",
-        "cost": 4,
-        "width": 220,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "theme": "Regular"
+    },
+    {
+      "file": "Shipwreck.png",
+      "name": "Shipwreck",
+      "cost": 15,
+      "width": 616,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "hide"
       },
-      {
-        "file": "seaweed_1.png",
-        "name": "Seaweed",
-        "cost": 4,
-        "width": 280,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "theme": "Regular"
+    },
+    {
+      "file": "Castle-Cave.png",
+      "name": "Castle Cave 2",
+      "cost": 16,
+      "width": 600,
+      "defaultScale": 1,
+      "caveSettings": {
+        "entryCount": 3,
+        "entries": [
+          {
+            "id": "main-both",
+            "x": 0.49,
+            "y": 0.69,
+            "side": "both"
+          },
+          {
+            "id": "right-front",
+            "x": 0.76,
+            "y": 0.84,
+            "side": "front"
+          },
+          {
+            "id": "far-right-front",
+            "x": 0.92,
+            "y": 0.89,
+            "side": "front"
+          }
+        ],
+        "seatCount": 3,
+        "seats": [
+          {
+            "id": "main-upper",
+            "x": 0.5,
+            "y": 0.74,
+            "facing": "right"
+          },
+          {
+            "id": "right-seat",
+            "x": 0.76,
+            "y": 0.84,
+            "facing": "left"
+          },
+          {
+            "id": "main-lower",
+            "x": 0.51,
+            "y": 0.78,
+            "facing": "left"
+          }
+        ]
       },
-      {
-        "file": "anubia-rock_seaweed.png",
-        "name": "Anubias Rock",
-        "cost": 4,
-        "width": 495,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "caveBehavior": {
+        "portals": [
+          {
+            "id": "main_front",
+            "approachX": 0.49,
+            "approachY": 0.76,
+            "mouthX": 0.5,
+            "mouthY": 0.67,
+            "outsideLayer": 2,
+            "insideLayer": 4,
+            "path": [
+              {
+                "x": 0.5,
+                "y": 0.6
+              },
+              {
+                "x": 0.49,
+                "y": 0.55
+              }
+            ]
+          },
+          {
+            "id": "side_layer4",
+            "approachX": 0.74,
+            "approachY": 0.62,
+            "mouthX": 0.69,
+            "mouthY": 0.6,
+            "outsideLayer": 4,
+            "insideLayer": 4,
+            "path": [
+              {
+                "x": 0.63,
+                "y": 0.57
+              },
+              {
+                "x": 0.56,
+                "y": 0.54
+              }
+            ]
+          }
+        ],
+        "insideSlots": [
+          {
+            "id": "main_chamber",
+            "x": 0.52,
+            "y": 0.52,
+            "layer": 4,
+            "portalIds": [
+              "main_front",
+              "side_layer4"
+            ]
+          }
+        ]
       },
-      {
-        "file": "rock-arch.png",
-        "name": "Rock Arch",
-        "cost": 8,
-        "width": 595,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "theme": "Fantasy"
+    },
+    {
+      "file": "Plane-wreck.png",
+      "name": "Plane Crash",
+      "cost": 12,
+      "width": 613,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "hide"
       },
-      {
-        "file": "moss-bridge.png",
-        "name": "Moss Bridge",
-        "cost": 10,
-        "width": 698,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "theme": "Regular"
+    },
+    {
+      "file": "blue_castle_cave.png",
+      "name": "Castle Cave 1",
+      "cost": 16,
+      "width": 595,
+      "defaultScale": 1,
+      "caveSettings": {
+        "entryCount": 3,
+        "entries": [
+          {
+            "id": "left-front",
+            "x": 0.24,
+            "y": 0.82,
+            "side": "front"
+          },
+          {
+            "id": "center-front",
+            "x": 0.44,
+            "y": 0.65,
+            "side": "front"
+          },
+          {
+            "id": "right-front",
+            "x": 0.62,
+            "y": 0.84,
+            "side": "front"
+          }
+        ],
+        "seatCount": 3,
+        "seats": [
+          {
+            "id": "left-seat",
+            "x": 0.24,
+            "y": 0.82
+          },
+          {
+            "id": "center-seat",
+            "x": 0.44,
+            "y": 0.65
+          },
+          {
+            "id": "right-seat",
+            "x": 0.62,
+            "y": 0.84
+          }
+        ]
       },
-      {
-        "file": "driftwood-root.png",
-        "name": "Driftwood Root",
-        "cost": 10,
-        "width": 660,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "theme": "Fantasy"
+    },
+    {
+      "file": "meteor_cave.png",
+      "name": "Meteor Cave",
+      "cost": 16,
+      "width": 585,
+      "defaultScale": 1,
+      "caveSettings": {
+        "entryCount": 1,
+        "entries": [
+          {
+            "id": "main-front",
+            "x": 0.56,
+            "y": 0.67,
+            "side": "front"
+          }
+        ],
+        "seatCount": 2,
+        "seats": [
+          {
+            "id": "upper-seat",
+            "x": 0.5,
+            "y": 0.55,
+            "facing": "right"
+          },
+          {
+            "id": "lower-seat",
+            "x": 0.49,
+            "y": 0.72,
+            "facing": "right"
+          }
+        ]
       },
-      {
-        "file": "slate-cave.png",
-        "name": "Slate Cave",
-        "cost": 12,
-        "width": 620,
-        "defaultScale": 1,
-        "caveSettings": {
-          "entryCount": 1,
-          "entries": [
-            {
-              "id": "main-front",
-              "x": 0.51,
-              "y": 0.67,
-              "side": "front"
-            }
-          ],
-          "seatCount": 2,
-          "seats": [
-            {
-              "id": "left-seat",
-              "x": 0.42,
-              "y": 0.64,
-              "facing": "right"
-            },
-            {
-              "id": "right-seat",
-              "x": 0.6,
-              "y": 0.64,
-              "facing": "left"
-            }
-          ]
-        },
-        "caveBehavior": {
-          "portals": [
-            {
-              "id": "main_front",
-              "approachX": 0.5,
-              "approachY": 0.77,
-              "mouthX": 0.5,
-              "mouthY": 0.67,
-              "outsideLayer": 2,
-              "insideLayer": 4,
-              "path": [
-                {
-                  "x": 0.5,
-                  "y": 0.61
-                },
-                {
-                  "x": 0.5,
-                  "y": 0.56
-                }
-              ]
-            }
-          ],
-          "insideSlots": [
-            {
-              "id": "center",
-              "x": 0.5,
-              "y": 0.53,
-              "layer": 4,
-              "portalIds": [
-                "main_front"
-              ]
-            }
-          ]
-        },
-        "theme": "Regular"
+      "theme": "Regular"
+    },
+    {
+      "file": "driftwood.png",
+      "name": "Driftwood",
+      "cost": 10,
+      "width": 675,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "fishing_lure.png",
+      "name": "Fishing Lure",
+      "cost": 6,
+      "width": 255,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
       },
-      {
-        "file": "Shipwreck.png",
-        "name": "Shipwreck",
-        "cost": 15,
-        "width": 616,
-        "defaultScale": 1,
-        "fishBehavior": {
-          "hangout": "hide"
-        },
-        "theme": "Regular"
+      "theme": "Regular"
+    },
+    {
+      "file": "gorebag_lure.png",
+      "name": "Gorbag",
+      "cost": 10,
+      "width": 200,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
       },
-      {
-        "file": "Castle-Cave.png",
-        "name": "Castle Cave 2",
-        "cost": 16,
-        "width": 600,
-        "defaultScale": 1,
-        "caveSettings": {
-          "entryCount": 3,
-          "entries": [
-            {
-              "id": "main-both",
-              "x": 0.49,
-              "y": 0.69,
-              "side": "both"
-            },
-            {
-              "id": "right-front",
-              "x": 0.76,
-              "y": 0.84,
-              "side": "front"
-            },
-            {
-              "id": "far-right-front",
-              "x": 0.92,
-              "y": 0.89,
-              "side": "front"
-            }
-          ],
-          "seatCount": 3,
-          "seats": [
-            {
-              "id": "main-upper",
-              "x": 0.5,
-              "y": 0.74,
-              "facing": "right"
-            },
-            {
-              "id": "right-seat",
-              "x": 0.76,
-              "y": 0.84,
-              "facing": "left"
-            },
-            {
-              "id": "main-lower",
-              "x": 0.51,
-              "y": 0.78,
-              "facing": "left"
-            }
-          ]
-        },
-        "caveBehavior": {
-          "portals": [
-            {
-              "id": "main_front",
-              "approachX": 0.49,
-              "approachY": 0.76,
-              "mouthX": 0.5,
-              "mouthY": 0.67,
-              "outsideLayer": 2,
-              "insideLayer": 4,
-              "path": [
-                {
-                  "x": 0.5,
-                  "y": 0.6
-                },
-                {
-                  "x": 0.49,
-                  "y": 0.55
-                }
-              ]
-            },
-            {
-              "id": "side_layer4",
-              "approachX": 0.74,
-              "approachY": 0.62,
-              "mouthX": 0.69,
-              "mouthY": 0.6,
-              "outsideLayer": 4,
-              "insideLayer": 4,
-              "path": [
-                {
-                  "x": 0.63,
-                  "y": 0.57
-                },
-                {
-                  "x": 0.56,
-                  "y": 0.54
-                }
-              ]
-            }
-          ],
-          "insideSlots": [
-            {
-              "id": "main_chamber",
-              "x": 0.52,
-              "y": 0.52,
-              "layer": 4,
-              "portalIds": [
-                "main_front",
-                "side_layer4"
-              ]
-            }
-          ]
-        },
-        "theme": "Fantasy"
+      "theme": "Spooky"
+    },
+    {
+      "file": "fishheadeffigy_1.png",
+      "name": "Neon Fish Head Effigy",
+      "cost": 3,
+      "width": 70,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "spooky",
+        "occupancyLimit": 1
       },
-      {
-        "file": "Plane-wreck.png",
-        "name": "Plane Crash",
-        "cost": 12,
-        "width": 613,
-        "defaultScale": 1,
-        "fishBehavior": {
-          "hangout": "hide"
-        },
-        "theme": "Regular"
+      "theme": "Spooky"
+    },
+    {
+      "file": "fishheadeffigy_2.png",
+      "name": "Guppy Fish Head Effigy",
+      "cost": 3,
+      "width": 70,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "spooky",
+        "occupancyLimit": 1
       },
-
-      {
-        "file": "blue_castle_cave.png",
-        "name": "Castle Cave 1",
-        "cost": 16,
-        "width": 595,
-        "defaultScale": 1,
-        "caveSettings": {
-          "entryCount": 3,
-          "entries": [
-            {
-              "id": "left-front",
-              "x": 0.24,
-              "y": 0.82,
-              "side": "front"
-            },
-            {
-              "id": "center-front",
-              "x": 0.44,
-              "y": 0.65,
-              "side": "front"
-            },
-            {
-              "id": "right-front",
-              "x": 0.62,
-              "y": 0.84,
-              "side": "front"
-            }
-          ],
-          "seatCount": 3,
-          "seats": [
-            {
-              "id": "left-seat",
-              "x": 0.24,
-              "y": 0.82
-            },
-            {
-              "id": "center-seat",
-              "x": 0.44,
-              "y": 0.65
-            },
-            {
-              "id": "right-seat",
-              "x": 0.62,
-              "y": 0.84
-            }
-          ]
-        },
-        "theme": "Fantasy"
+      "theme": "Spooky"
+    },
+    {
+      "file": "fishheadeffigy_3.png",
+      "name": "Danio Fish Head Effigy",
+      "cost": 3,
+      "width": 70,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "spooky",
+        "occupancyLimit": 1
       },
-
-      {
-        "file": "meteor_cave.png",
-        "name": "Meteor Cave",
-        "cost": 16,
-        "width": 585,
-        "defaultScale": 1,
-        "caveSettings": {
-          "entryCount": 1,
-          "entries": [
-            {
-              "id": "main-front",
-              "x": 0.56,
-              "y": 0.67,
-              "side": "front"
-            }
-          ],
-          "seatCount": 2,
-          "seats": [
-            {
-              "id": "upper-seat",
-              "x": 0.5,
-              "y": 0.55,
-              "facing": "right"
-            },
-            {
-              "id": "lower-seat",
-              "x": 0.49,
-              "y": 0.72,
-              "facing": "right"
-            }
-          ]
-        },
-        "theme": "Regular"
+      "theme": "Spooky"
+    },
+    {
+      "file": "rock_1_bricks.png",
+      "name": "Rock 1",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "rock_2_bricks.png",
+      "name": "Rock 2",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "rock_3_bricks.png",
+      "name": "Rock 3",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "rock_4_bricks.png",
+      "name": "Rock 4",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "rock_5_bricks.png",
+      "name": "Rock 5",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "volcanic_rock_1_bricks.png",
+      "name": "Volcanic Rock 1",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "volcanic_rock_2_bricks.png",
+      "name": "Volcanic Rock 2",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "volcanic_rock_3_bricks.png",
+      "name": "Volcanic Rock 3",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "volcanic_rock_4_bricks.png",
+      "name": "Volcanic Rock 4",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "Regular"
+    },
+    {
+      "file": "volcano-1_bubbler.png",
+      "name": "Volcano Bubbler 1",
+      "cost": 16,
+      "width": 390,
+      "defaultScale": 1,
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
+            "horizontalLocation": 0.5,
+            "intensity": 15,
+            "speed": 2,
+            "spread": 40,
+            "fadeDistance": 250,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
       },
-      {
-        "file": "driftwood.png",
-        "name": "Driftwood",
-        "cost": 10,
-        "width": 675,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "theme": "Regular"
+    },
+    {
+      "file": "volcano-2_bubbler.png",
+      "name": "Volcano Bubbler 2",
+      "cost": 18,
+      "width": 375,
+      "defaultScale": 1,
+      "bubbler": {
+        "spoutQty": 2,
+        "spouts": [
+          {
+            "horizontalLocation": 0.3,
+            "intensity": 15,
+            "speed": 2,
+            "spread": 20,
+            "fadeDistance": 200,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          },
+          {
+            "horizontalLocation": 0.6,
+            "intensity": 10,
+            "speed": 2,
+            "spread": 20,
+            "fadeDistance": 200,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
       },
-      {
-        "file": "fishing_lure.png",
-        "name": "Fishing Lure",
-        "cost": 6,
-        "width": 255,
-        "defaultScale": 1,
-        "fishBehavior": {
-          "hangout": "lure",
-          "occupancyLimit": 1
-        },
-        "theme": "Regular"
+      "theme": "Regular"
+    },
+    {
+      "file": "treasure-chest_bubbler.png",
+      "name": "Treasure Chest Bubbler",
+      "cost": 8,
+      "width": 233,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": [
+          "hardscape"
+        ]
       },
-      {
-        "file": "gorebag_lure.png",
-        "name": "Gorbag",
-        "cost": 10,
-        "width": 200,
-        "defaultScale": 1,
-        "fishBehavior": {
-          "hangout": "lure",
-          "occupancyLimit": 1
-        },
-        "theme": "Spooky"
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
+            "horizontalLocation": 0.5,
+            "intensity": 4,
+            "speed": 1,
+            "spread": 50,
+            "fadeDistance": 200,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
       },
-      {
-        "file": "fishheadeffigy_1.png",
-        "name": "Neon Fish Head Effigy",
-        "cost": 3,
-        "width": 70,
-        "defaultScale": 1,
-        "fishBehavior": {
-          "hangout": "spooky",
-          "occupancyLimit": 1
-        },
-        "theme": "Spooky"
+      "theme": "Regular"
+    },
+    {
+      "file": "floating_swampmoss_1.png",
+      "name": "Floating Swamp Moss",
+      "theme": "Spooky",
+      "cost": 5,
+      "width": 510,
+      "defaultScale": 1
+    },
+    {
+      "file": "kelp-cafe.png",
+      "name": "Kelp Cafe",
+      "cost": 28,
+      "width": 560,
+      "defaultScale": 0.8,
+      "categories": [
+        "ornaments",
+        "services"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "hardscape"
+        ],
+        "services": [
+          "food"
+        ],
+        "occupancyLimit": 4,
+        "serviceSeats": [
+          {
+            "id": "counter-left",
+            "x": 0.34,
+            "y": 0.61,
+            "direction": 1
+          },
+          {
+            "id": "counter-mid-left",
+            "x": 0.45,
+            "y": 0.6,
+            "direction": 1
+          },
+          {
+            "id": "counter-mid-right",
+            "x": 0.57,
+            "y": 0.6,
+            "direction": -1
+          },
+          {
+            "id": "counter-right",
+            "x": 0.69,
+            "y": 0.61,
+            "direction": -1
+          }
+        ],
+        "note": "Hungry fish can feed themselves here without an automatic feeder."
       },
-      {
-        "file": "fishheadeffigy_2.png",
-        "name": "Guppy Fish Head Effigy",
-        "cost": 3,
-        "width": 70,
-        "defaultScale": 1,
-        "fishBehavior": {
-          "hangout": "spooky",
-          "occupancyLimit": 1
-        },
-        "theme": "Spooky"
+      "theme": "Borough"
+    },
+    {
+      "file": "shell-house.png",
+      "name": "Shell House",
+      "cost": 24,
+      "width": 500,
+      "defaultScale": 0.78,
+      "categories": [
+        "caves",
+        "services"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "hide"
+        ],
+        "services": [
+          "home"
+        ],
+        "occupancyLimit": 3,
+        "serviceSeats": [
+          {
+            "id": "left-room",
+            "x": 0.38,
+            "y": 0.58,
+            "direction": 1,
+            "layer": 4
+          },
+          {
+            "id": "center-room",
+            "x": 0.51,
+            "y": 0.53,
+            "direction": 1,
+            "layer": 4
+          },
+          {
+            "id": "right-room",
+            "x": 0.67,
+            "y": 0.57,
+            "direction": -1,
+            "layer": 4
+          }
+        ],
+        "note": "A sheltered home that restores comfort and energy."
       },
-      {
-        "file": "fishheadeffigy_3.png",
-        "name": "Danio Fish Head Effigy",
-        "cost": 3,
-        "width": 70,
-        "defaultScale": 1,
-        "fishBehavior": {
-          "hangout": "spooky",
-          "occupancyLimit": 1
-        },
-        "theme": "Spooky"
+      "theme": "Borough"
+    },
+    {
+      "file": "coral-clinic.png",
+      "name": "Coral Clinic",
+      "cost": 42,
+      "width": 520,
+      "defaultScale": 0.78,
+      "categories": [
+        "ornaments",
+        "services"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "hardscape"
+        ],
+        "services": [
+          "clinic"
+        ],
+        "occupancyLimit": 2,
+        "serviceSeats": [
+          {
+            "id": "bed-left",
+            "x": 0.45,
+            "y": 0.6,
+            "direction": 1,
+            "layer": 4
+          },
+          {
+            "id": "bed-right",
+            "x": 0.58,
+            "y": 0.6,
+            "direction": -1,
+            "layer": 4
+          }
+        ],
+        "note": "Injured and ill fish visit for treatment and recovery."
       },
-      {
-        "file": "rock_1_bricks.png",
-        "name": "Rock 1",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
+      "theme": "Borough"
+    },
+    {
+      "file": "bubble-plaza.png",
+      "name": "Bubble Plaza",
+      "cost": 34,
+      "width": 600,
+      "defaultScale": 0.76,
+      "categories": [
+        "bubbler",
+        "services"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "bubbler",
+          "hardscape"
+        ],
+        "services": [
+          "social"
+        ],
+        "occupancyLimit": 6,
+        "serviceSeats": [
+          {
+            "id": "bench-left-back",
+            "x": 0.28,
+            "y": 0.47,
+            "direction": 1
+          },
+          {
+            "id": "fountain-left",
+            "x": 0.41,
+            "y": 0.53,
+            "direction": 1
+          },
+          {
+            "id": "fountain-right",
+            "x": 0.59,
+            "y": 0.53,
+            "direction": -1
+          },
+          {
+            "id": "bench-right-back",
+            "x": 0.72,
+            "y": 0.47,
+            "direction": -1
+          },
+          {
+            "id": "bench-left-front",
+            "x": 0.34,
+            "y": 0.68,
+            "direction": 1
+          },
+          {
+            "id": "bench-right-front",
+            "x": 0.66,
+            "y": 0.68,
+            "direction": -1
+          }
+        ],
+        "note": "A lively gathering place that restores social and stimulation needs."
       },
-      {
-        "file": "rock_2_bricks.png",
-        "name": "Rock 2",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
-      },
-      {
-        "file": "rock_3_bricks.png",
-        "name": "Rock 3",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
-      },
-      {
-        "file": "rock_4_bricks.png",
-        "name": "Rock 4",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
-      },
-      {
-        "file": "rock_5_bricks.png",
-        "name": "Rock 5",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
-      },
-      {
-        "file": "volcanic_rock_1_bricks.png",
-        "name": "Volcanic Rock 1",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
-      },
-      {
-        "file": "volcanic_rock_2_bricks.png",
-        "name": "Volcanic Rock 2",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
-      },
-      {
-        "file": "volcanic_rock_3_bricks.png",
-        "name": "Volcanic Rock 3",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
-      },
-      {
-        "file": "volcanic_rock_4_bricks.png",
-        "name": "Volcanic Rock 4",
-        "cost": 1,
-        "width": 100,
-        "defaultScale": 1,
-        "theme": "Regular"
-      },
-      {
-        "file": "volcano-1_bubbler.png",
-        "name": "Volcano Bubbler 1",
-        "cost": 16,
-        "width": 390,
-        "defaultScale": 1,
-        "bubbler": {
-          "spoutQty": 1,
-          "spouts": [
-            {
-              "horizontalLocation": 0.5,
-              "intensity": 15,
-              "speed": 2,
-              "spread": 40,
-              "fadeDistance": 250,
-              "bubbleColor": [
-                "",
-                "",
-                ""
-              ],
-              "bubbleOpacity": 3
-            }
-          ]
-        },
-        "theme": "Regular"
-      },
-      {
-        "file": "volcano-2_bubbler.png",
-        "name": "Volcano Bubbler 2",
-        "cost": 18,
-        "width": 375,
-        "defaultScale": 1,
-        "bubbler": {
-          "spoutQty": 2,
-          "spouts": [
-            {
-              "horizontalLocation": 0.3,
-              "intensity": 15,
-              "speed": 2,
-              "spread": 20,
-              "fadeDistance": 200,
-              "bubbleColor": [
-                "",
-                "",
-                ""
-              ],
-              "bubbleOpacity": 3
-            },
-            {
-              "horizontalLocation": 0.6,
-              "intensity": 10,
-              "speed": 2,
-              "spread": 20,
-              "fadeDistance": 200,
-              "bubbleColor": [
-                "",
-                "",
-                ""
-              ],
-              "bubbleOpacity": 3
-            }
-          ]
-        },
-        "theme": "Regular"
-      },
-      {
-        "file": "treasure-chest_bubbler.png",
-        "name": "Treasure Chest Bubbler",
-        "cost": 8,
-        "width": 233,
-        "defaultScale": 1,
-        "fishBehavior": {
-          "hangout": [
-            "hardscape"
-          ]
-        },
-        "bubbler": {
-          "spoutQty": 1,
-          "spouts": [
-            {
-              "horizontalLocation": 0.5,
-              "intensity": 4,
-              "speed": 1,
-              "spread": 50,
-              "fadeDistance": 200,
-              "bubbleColor": [
-                "",
-                "",
-                ""
-              ],
-              "bubbleOpacity": 3
-            }
-          ]
-        },
-        "theme": "Regular"
-      },
-      {
-        "file": "floating_swampmoss_1.png",
-        "name": "Floating Swamp Moss",
-        "theme": "Spooky",
-        "cost": 5,
-        "width": 510,
-        "defaultScale": 1
-      },
-      {
-        "file": "kelp-cafe.png",
-        "name": "Kelp Cafe",
-        "cost": 28,
-        "width": 560,
-        "defaultScale": 0.8,
-        "categories": ["ornaments", "services"],
-        "fishBehavior": {
-          "hangout": ["hardscape"],
-          "services": ["food"],
-          "occupancyLimit": 4,
-          "serviceSeats": [
-            { "id": "counter-left", "x": 0.34, "y": 0.61, "direction": 1 },
-            { "id": "counter-mid-left", "x": 0.45, "y": 0.60, "direction": 1 },
-            { "id": "counter-mid-right", "x": 0.57, "y": 0.60, "direction": -1 },
-            { "id": "counter-right", "x": 0.69, "y": 0.61, "direction": -1 }
-          ],
-          "note": "Hungry fish can feed themselves here without an automatic feeder."
-        },
-        "theme": "Borough"
-      },
-      {
-        "file": "shell-house.png",
-        "name": "Shell House",
-        "cost": 24,
-        "width": 500,
-        "defaultScale": 0.78,
-        "categories": ["caves", "services"],
-        "fishBehavior": {
-          "hangout": ["hide"],
-          "services": ["home"],
-          "occupancyLimit": 3,
-          "serviceSeats": [
-            { "id": "left-room", "x": 0.38, "y": 0.58, "direction": 1, "layer": 4 },
-            { "id": "center-room", "x": 0.51, "y": 0.53, "direction": 1, "layer": 4 },
-            { "id": "right-room", "x": 0.67, "y": 0.57, "direction": -1, "layer": 4 }
-          ],
-          "note": "A sheltered home that restores comfort and energy."
-        },
-        "theme": "Borough"
-      },
-      {
-        "file": "coral-clinic.png",
-        "name": "Coral Clinic",
-        "cost": 42,
-        "width": 520,
-        "defaultScale": 0.78,
-        "categories": ["ornaments", "services"],
-        "fishBehavior": {
-          "hangout": ["hardscape"],
-          "services": ["clinic"],
-          "occupancyLimit": 2,
-          "serviceSeats": [
-            { "id": "bed-left", "x": 0.45, "y": 0.60, "direction": 1, "layer": 4 },
-            { "id": "bed-right", "x": 0.58, "y": 0.60, "direction": -1, "layer": 4 }
-          ],
-          "note": "Injured and ill fish visit for treatment and recovery."
-        },
-        "theme": "Borough"
-      },
-      {
-        "file": "bubble-plaza.png",
-        "name": "Bubble Plaza",
-        "cost": 34,
-        "width": 600,
-        "defaultScale": 0.76,
-        "categories": ["bubbler", "services"],
-        "fishBehavior": {
-          "hangout": ["bubbler", "hardscape"],
-          "services": ["social"],
-          "occupancyLimit": 6,
-          "serviceSeats": [
-            { "id": "bench-left-back", "x": 0.28, "y": 0.47, "direction": 1 },
-            { "id": "fountain-left", "x": 0.41, "y": 0.53, "direction": 1 },
-            { "id": "fountain-right", "x": 0.59, "y": 0.53, "direction": -1 },
-            { "id": "bench-right-back", "x": 0.72, "y": 0.47, "direction": -1 },
-            { "id": "bench-left-front", "x": 0.34, "y": 0.68, "direction": 1 },
-            { "id": "bench-right-front", "x": 0.66, "y": 0.68, "direction": -1 }
-          ],
-          "note": "A lively gathering place that restores social and stimulation needs."
-        },
-        "bubbler": {
-          "spoutQty": 1,
-          "spouts": [{
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
             "horizontalLocation": 0.5,
             "intensity": 8,
             "speed": 1,
             "spread": 36,
             "fadeDistance": 260,
-            "bubbleColor": ["", "", ""],
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
             "bubbleOpacity": 3
-          }]
-        },
-        "theme": "Borough"
+          }
+        ]
       },
-      {
-        "file": "transit-tube.png",
-        "name": "Borough Transit Tube",
-        "cost": 28,
-        "width": 230,
-        "defaultScale": 0.58,
-        "categories": ["ornaments", "services"],
-        "fishBehavior": {
-          "hangout": ["hardscape"],
-          "occupancyLimit": 1,
-          "note": "Name and link two tubes to give fish a fast route between neighborhoods. It only bubbles while in use."
-        },
-        "theme": "Borough"
+      "theme": "Borough"
+    },
+    {
+      "file": "transit-tube.png",
+      "name": "Borough Transit Tube",
+      "cost": 28,
+      "width": 230,
+      "defaultScale": 0.58,
+      "categories": [
+        "ornaments",
+        "services"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "hardscape"
+        ],
+        "occupancyLimit": 1,
+        "note": "Name and link two tubes to give fish a fast route between neighborhoods. It only bubbles while in use."
       },
-      {
-        "file": "moonstone-grotto.png",
-        "name": "Moonstone Grotto",
-        "cost": 30,
-        "width": 470,
-        "defaultScale": 0.8,
-        "categories": ["caves", "services"],
-        "fishBehavior": {
-          "hangout": ["hide"],
-          "services": ["rest"],
-          "occupancyLimit": 2,
-          "serviceSeats": [
-            { "id": "moon-left", "x": 0.43, "y": 0.52, "direction": 1, "layer": 4 },
-            { "id": "moon-right", "x": 0.58, "y": 0.52, "direction": -1, "layer": 4 }
-          ],
-          "note": "A low-activity retreat for tired or stressed fish."
-        },
-        "theme": "Borough"
+      "theme": "Borough"
+    },
+    {
+      "file": "moonstone-grotto.png",
+      "name": "Moonstone Grotto",
+      "cost": 30,
+      "width": 470,
+      "defaultScale": 0.8,
+      "categories": [
+        "caves",
+        "services"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "hide"
+        ],
+        "services": [
+          "rest"
+        ],
+        "occupancyLimit": 2,
+        "serviceSeats": [
+          {
+            "id": "moon-left",
+            "x": 0.43,
+            "y": 0.52,
+            "direction": 1,
+            "layer": 4
+          },
+          {
+            "id": "moon-right",
+            "x": 0.58,
+            "y": 0.52,
+            "direction": -1,
+            "layer": 4
+          }
+        ],
+        "note": "A low-activity retreat for tired or stressed fish."
       },
-      {
-        "file": "nursery-garden.png",
-        "name": "Nursery Garden",
-        "cost": 48,
-        "width": 560,
-        "defaultScale": 0.78,
-        "categories": ["plants", "services"],
-        "fishBehavior": {
-          "hangout": ["plant"],
-          "services": ["nursery"],
-          "occupancyLimit": 4,
-          "serviceSeats": [
-            { "id": "nest-left", "x": 0.34, "y": 0.57, "direction": 1 },
-            { "id": "nest-center-left", "x": 0.45, "y": 0.50, "direction": 1 },
-            { "id": "nest-center-right", "x": 0.57, "y": 0.50, "direction": -1 },
-            { "id": "nest-right", "x": 0.68, "y": 0.57, "direction": -1 }
-          ],
-          "note": "A protected breeding garden that encourages compatible fish to reproduce."
-        },
-        "theme": "Borough"
-      }
-    ]
-  }
+      "theme": "Borough"
+    },
+    {
+      "file": "nursery-garden.png",
+      "name": "Nursery Garden",
+      "cost": 48,
+      "width": 560,
+      "defaultScale": 0.78,
+      "categories": [
+        "plants",
+        "services"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "plant"
+        ],
+        "services": [
+          "nursery"
+        ],
+        "occupancyLimit": 4,
+        "serviceSeats": [
+          {
+            "id": "nest-left",
+            "x": 0.34,
+            "y": 0.57,
+            "direction": 1
+          },
+          {
+            "id": "nest-center-left",
+            "x": 0.45,
+            "y": 0.5,
+            "direction": 1
+          },
+          {
+            "id": "nest-center-right",
+            "x": 0.57,
+            "y": 0.5,
+            "direction": -1
+          },
+          {
+            "id": "nest-right",
+            "x": 0.68,
+            "y": 0.57,
+            "direction": -1
+          }
+        ],
+        "note": "A protected breeding garden that encourages compatible fish to reproduce."
+      },
+      "theme": "Borough"
+    },
+    {
+      "file": "Floating_Halloween_Ghost.png",
+      "name": "Floating Ghost",
+      "width": 170,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "spooky"
+        ],
+        "occupancyLimit": 1
+      },
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Cauldron_Bubbler.png",
+      "name": "Haunted Cauldron Bubbler",
+      "width": 250,
+      "defaultScale": 1,
+      "categories": [
+        "bubbler",
+        "ornaments",
+        "halloween"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "bubbler",
+          "hardscape"
+        ]
+      },
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
+            "horizontalLocation": 0.5,
+            "verticalLocation": 0.17,
+            "intensity": 5,
+            "speed": 1,
+            "spread": 48,
+            "fadeDistance": 210,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
+      },
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Crypt_Cave.png",
+      "name": "Crypt Cave",
+      "width": 590,
+      "defaultScale": 1,
+      "categories": [
+        "caves",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Floatingseaweed.png",
+      "name": "Haunted Floating Seaweed",
+      "width": 210,
+      "defaultScale": 1,
+      "categories": [
+        "plants",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Ghost_Ship.png",
+      "name": "Ghost Ship",
+      "width": 600,
+      "defaultScale": 1,
+      "categories": [
+        "caves",
+        "ornaments",
+        "halloween"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "hide",
+          "spooky"
+        ]
+      },
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Gravestone_1.png",
+      "name": "Gravestone 1",
+      "width": 120,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Gravestone_2.png",
+      "name": "Gravestone 2",
+      "width": 120,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Gravestone_3.png",
+      "name": "Gravestone 3",
+      "width": 120,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Gravestone_4.png",
+      "name": "Gravestone 4",
+      "width": 120,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Gravestone_5.png",
+      "name": "Gravestone 5",
+      "width": 120,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Haunted_House_Cave.png",
+      "name": "Haunted House Cave",
+      "width": 590,
+      "defaultScale": 1,
+      "categories": [
+        "caves",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Haunted_Tree.png",
+      "name": "Haunted Tree",
+      "width": 300,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "spooky",
+          "hardscape"
+        ]
+      },
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_JackOLantern_bubbler.png",
+      "name": "Jack-o'-Lantern Bubbler",
+      "width": 250,
+      "defaultScale": 1,
+      "categories": [
+        "bubbler",
+        "ornaments",
+        "halloween"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "bubbler",
+          "hardscape"
+        ]
+      },
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
+            "horizontalLocation": 0.5,
+            "verticalLocation": 0.16,
+            "intensity": 4,
+            "speed": 1,
+            "spread": 46,
+            "fadeDistance": 205,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
+      },
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Seaweed.png",
+      "name": "Haunted Seaweed",
+      "width": 230,
+      "defaultScale": 1,
+      "categories": [
+        "plants",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_Spider.png",
+      "name": "Aquarium Spider",
+      "width": 150,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "spooky"
+        ],
+        "occupancyLimit": 1
+      },
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_skeleton_lure.png",
+      "name": "Fish Skeleton Lure",
+      "width": 220,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "lure",
+          "spooky"
+        ],
+        "occupancyLimit": 1
+      },
+      "theme": "Halloween"
+    },
+    {
+      "file": "Halloween_webs.png",
+      "name": "Aquarium Webs",
+      "width": 175,
+      "defaultScale": 1,
+      "categories": [
+        "ornaments",
+        "halloween"
+      ],
+      "theme": "Halloween"
+    }
+  ]
+}

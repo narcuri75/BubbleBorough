@@ -438,6 +438,7 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
   fish.zombieReviveSourceId = null;
   fish.piranhaAttackStartedAt = null;
   fish.piranhaLastDamageAt = null;
+  fish.sharkLastAttackAt = 0;
   fish.piranhaConsumptionStartedAt = null;
   fish.piranhaConsumptionEndsAt = null;
   fish.piranhaLastBloodAt = null;

@@ -812,9 +812,8 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
     ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
     : null;
-  const seasonalAsset = getFishSeasonalAssetPath(fish, displaySpecies, now);
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
-  const preferredBaseAsset = freeSwimAsset || seasonalAsset || (isZombieVariantFish(fish)
+  const preferredBaseAsset = freeSwimAsset || (isZombieVariantFish(fish)
     ? getFishZombieVariantAssetPath(fish, displaySpecies)
     : undeadBaseStage
       ? (

@@ -45,7 +45,6 @@ function renderTank(now) {
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
   drawUnderwaterLightingPass(now);
-  drawWaterColumnCaustics(now);
   //drawLooseGravel(now, { transientOnly: true });
   drawDirtyWaterTint(dirtiness);
   drawMedicineWaterTint(now);
@@ -86,365 +85,221 @@ function renderTank(now) {
   }
 }
 
-function getCausticLightImage() {
-  const image = runtime.images.get(CAUSTIC_LIGHT_ASSET_PATH) || null;
-  if (image && Number(image.naturalWidth || image.width) > 0 && Number(image.naturalHeight || image.height) > 0) {
-    return image;
-  }
-  requestRuntimeImageRecovery(CAUSTIC_LIGHT_ASSET_PATH, {
-    kind: "caustic-light",
-    id: "underwater-caustics"
-  });
-  return null;
+function getCausticLightStrength(now) {
+  if (!isCausticLightingEnabled() || isTankLightsOut(now)) return 0;
+  return 0.42 * (1 - clamp(getTankDirtiness(now), 0, 1) * 0.55);
 }
 
-function getCausticHighlightMask() {
-  const image = getCausticLightImage();
-  if (!image) {
-    return null;
-  }
-
-  const width = Number(image.naturalWidth || image.width) || 0;
-  const height = Number(image.naturalHeight || image.height) || 0;
-  const cacheKey = `${width}x${height}`;
-  if (runtime.causticHighlightMaskCanvas && runtime.causticHighlightMaskCacheKey === cacheKey) {
-    return runtime.causticHighlightMaskCanvas;
-  }
-
-  const sourceCanvas = document.createElement("canvas");
-  sourceCanvas.width = width;
-  sourceCanvas.height = height;
-  const sourceContext = sourceCanvas.getContext("2d", { willReadFrequently: true });
-  sourceContext.clearRect(0, 0, width, height);
-  sourceContext.drawImage(image, 0, 0, width, height);
-
-  const blurCanvas = document.createElement("canvas");
-  blurCanvas.width = width;
-  blurCanvas.height = height;
-  const blurContext = blurCanvas.getContext("2d", { willReadFrequently: true });
-  blurContext.clearRect(0, 0, width, height);
-  blurContext.filter = "blur(9px)";
-  blurContext.drawImage(sourceCanvas, 0, 0);
-  blurContext.filter = "none";
-
-  try {
-    const sourcePixels = sourceContext.getImageData(0, 0, width, height);
-    const blurPixels = blurContext.getImageData(0, 0, width, height);
-    const outputCanvas = document.createElement("canvas");
-    outputCanvas.width = width;
-    outputCanvas.height = height;
-    const outputContext = outputCanvas.getContext("2d");
-    const outputPixels = outputContext.createImageData(width, height);
-
-    const src = sourcePixels.data;
-    const blurred = blurPixels.data;
-    const out = outputPixels.data;
-    for (let index = 0; index < src.length; index += 4) {
-      const sourceAlpha = src[index + 3] / 255;
-      if (sourceAlpha <= 0.002) {
-        continue;
-      }
-
-      const sourceLum = src[index] * 0.2126 + src[index + 1] * 0.7152 + src[index + 2] * 0.0722;
-      const blurLum = blurred[index] * 0.2126 + blurred[index + 1] * 0.7152 + blurred[index + 2] * 0.0722;
-      const localHighlight = Math.max(0, sourceLum - blurLum);
-      const brightnessGate = clamp((sourceLum - 196) / 59, 0, 1);
-      const ridgeStrength = clamp((localHighlight - 1.5) / 24, 0, 1);
-      const alpha = sourceAlpha * brightnessGate * ridgeStrength * 1.45;
-      if (alpha <= 0.004) {
-        continue;
-      }
-
-      out[index] = 242;
-      out[index + 1] = 250;
-      out[index + 2] = 255;
-      out[index + 3] = Math.round(clamp(alpha, 0, 1) * 255);
-    }
-
-    outputContext.putImageData(outputPixels, 0, 0);
-    runtime.causticHighlightMaskCanvas = outputCanvas;
-    runtime.causticHighlightMaskCacheKey = cacheKey;
-    return outputCanvas;
-  } catch (error) {
-    console.warn("Unable to build caustic highlight mask", error);
-    return image;
-  }
+function getCausticRidgeAlpha(red, green, blue, alpha) {
+  // These authored maps encode their connected light strands in alpha, while
+  // most visible RGB values are nearly white. RGB high-pass filtering erases
+  // that pattern. Retain the alpha structure and lift its softer connections.
+  return Math.round(255 * Math.pow(clamp(alpha / 255, 0, 1), 0.9));
 }
 
-function drawCausticProjectedStrip(context, image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height) {
-  if (width <= 0 || height <= 0 || sourceWidth <= 0 || sourceHeight <= 0) {
-    return;
-  }
-  context.drawImage(
-    image,
-    sourceX,
-    sourceY,
-    sourceWidth,
-    sourceHeight,
-    x,
-    y,
-    width,
-    height
-  );
+function getCausticRidgeMask(image, size) {
+  // Kept for compatibility with the previous renderer inventory. The clean
+  // renderer uses the prepared color source below instead of a per-frame mask.
+  const prepared = getPreparedCausticSource(image);
+  if (!prepared) return null;
+  const mask = document.createElement("canvas");
+  mask.width = mask.height = size;
+  const context = mask.getContext("2d");
+  context.drawImage(prepared, 0, 0, size, size);
+  return context.getImageData(0, 0, size, size).data;
 }
 
-function hashCausticNoise(value, seed = 0) {
-  const input = Number(value) * 12.9898 + Number(seed) * 78.233;
-  return (Math.sin(input) * 43758.5453123) % 1;
-}
+function getPreparedCausticSource(image) {
+  if (!isUsableRuntimeImage(image)) return null;
+  if (!runtime.causticPreparedSources) runtime.causticPreparedSources = new WeakMap();
+  const cached = runtime.causticPreparedSources.get(image);
+  if (cached) return cached;
 
-function normalizedCausticNoise(value, seed = 0) {
-  const noise = hashCausticNoise(value, seed);
-  return noise < 0 ? noise + 1 : noise;
-}
+  // Prepare the authored transparency once, preserving warm/cool source RGB.
+  const naturalWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const naturalHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const maxSide = 768;
+  const scale = Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight));
+  const width = Math.max(1, Math.round(naturalWidth * scale));
+  const height = Math.max(1, Math.round(naturalHeight * scale));
 
-function getRotatedCausticSource(image, now, options = {}) {
-  const imageWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
-  const imageHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
-  const diagonal = Math.max(imageWidth, imageHeight, Math.ceil(Math.sqrt(imageWidth * imageWidth + imageHeight * imageHeight)));
-  const scale = Math.max(0.4, Number(options.scale) || 1);
-  const canvasWidth = Math.ceil(diagonal * scale);
-  const canvasHeight = Math.ceil(diagonal * scale);
-  const angle = (Number(now) || 0) * (Number(options.rotationSpeed) || 0) + (Number(options.baseAngle) || 0);
-  const cacheKey = [canvasWidth, canvasHeight, imageWidth, imageHeight].join(":");
+  const source = document.createElement("canvas");
+  source.width = width;
+  source.height = height;
+  const context = source.getContext("2d", { willReadFrequently: true });
+  context.drawImage(image, 0, 0, width, height);
 
-  if (!runtime.causticRotatedLayerCache) {
-    runtime.causticRotatedLayerCache = new Map();
-  }
-
-  let entry = runtime.causticRotatedLayerCache.get(cacheKey);
-  if (!entry) {
-    const canvas = document.createElement("canvas");
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    entry = { canvas, context: canvas.getContext("2d") };
-    runtime.causticRotatedLayerCache.set(cacheKey, entry);
-  }
-
-  const { canvas, context } = entry;
-  if (!context) {
-    return image;
-  }
-
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.save();
-  context.translate(canvas.width * 0.5, canvas.height * 0.5);
-  context.rotate(angle);
-  context.scale(scale, scale);
-  context.filter = "grayscale(0.22) saturate(0.78) brightness(1.08)";
-  context.drawImage(image, -imageWidth * 0.5, -imageHeight * 0.5, imageWidth, imageHeight);
-  context.restore();
-  return canvas;
-}
-
-function buildCausticSpotDescriptor(now, slotIndex, options = {}) {
-  const durationMs = Math.max(2200, Number(options.durationMs) || 5200);
-  const staggerMs = Number(options.staggerMs) || Math.round(durationMs * 0.37);
-  const startMs = (Number(now) || 0) + slotIndex * staggerMs + (Number(options.timeOffsetMs) || 0);
-  const cycleIndex = Math.floor(startMs / durationMs);
-  const localT = ((startMs % durationMs) + durationMs) % durationMs / durationMs;
-  const fade = Math.pow(Math.sin(localT * Math.PI), 1.85);
-  const seed = Number(options.seed) || 0;
-  const xNorm = 0.12 + normalizedCausticNoise(cycleIndex * 13.1 + slotIndex * 2.17 + 0.3, seed + 11) * 0.76;
-  const yNorm = 0.12 + normalizedCausticNoise(cycleIndex * 9.7 + slotIndex * 1.73 + 0.6, seed + 23) * 0.74;
-  const widthNorm = 0.14 + normalizedCausticNoise(cycleIndex * 7.2 + slotIndex * 4.11 + 0.9, seed + 31) * 0.2;
-  const heightNorm = 0.16 + normalizedCausticNoise(cycleIndex * 5.8 + slotIndex * 3.03 + 0.12, seed + 47) * 0.22;
-  const sourcePhaseX = normalizedCausticNoise(cycleIndex * 4.9 + slotIndex * 0.91 + 0.14, seed + 59);
-  const sourcePhaseY = normalizedCausticNoise(cycleIndex * 6.7 + slotIndex * 1.44 + 0.84, seed + 71);
-  const brightness = 0.72 + normalizedCausticNoise(cycleIndex * 8.9 + slotIndex * 2.62 + 0.41, seed + 83) * 0.5;
-  return {
-    fade,
-    xNorm,
-    yNorm,
-    widthNorm,
-    heightNorm,
-    sourcePhaseX,
-    sourcePhaseY,
-    brightness,
-    cycleIndex,
-    localT
-  };
-}
-
-function drawLocalizedGravelCausticPass(context, image, now, options = {}) {
-  const bounds = getTankFloorDrawBounds();
-  const imageWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
-  const imageHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
-  const floorTop = bounds.drawTop;
-  const floorDepth = Math.max(1, bounds.bottom - floorTop);
-  const floorCenterY = floorTop + floorDepth * (Number(options.spotYNorm) || 0.5);
-  const radiusY = floorDepth * Math.max(0.06, Number(options.spotHeightNorm) || 0.2);
-  const centerX = bounds.drawLeft + bounds.drawWidth * (Number(options.spotXNorm) || 0.5);
-  const topWidth = bounds.drawWidth * Math.max(0.08, Number(options.topWidthScale) || 0.2);
-  const bottomWidth = bounds.drawWidth * Math.max(0.1, Number(options.bottomWidthScale) || 0.3);
-  const slices = 54;
-  const sourceWindowScale = clamp(Number(options.sourceWindowScale) || 0.58, 0.28, 1);
-  const sourceWidth = imageWidth * sourceWindowScale;
-  const sourceHeightWindow = imageHeight * clamp(Number(options.sourceHeightScale) || 0.54, 0.28, 1);
-  const maxSourceX = Math.max(0, imageWidth - sourceWidth);
-  const maxSourceY = Math.max(0, imageHeight - sourceHeightWindow);
-  const driftPhase = (Number(now) || 0) * (Number(options.driftSpeed) || 0.00018) + (Number(options.phase) || 0);
-  const sourceX = maxSourceX * ((Number(options.sourcePhaseX) || 0) + 0.5 + Math.sin(driftPhase) * 0.18);
-  const sourceYCenter = maxSourceY * (Number(options.sourcePhaseY) || 0.5);
-  const alphaBase = clamp(Number(options.alpha) || 0.045, 0, 0.18);
-
-  context.save();
-  traceTankFloorMaskPath(context, bounds);
-  context.clip();
-  context.globalCompositeOperation = "screen";
-  context.filter = "blur(0.3px) brightness(1.16)";
-
-  for (let index = 0; index < slices; index += 1) {
-    const t0 = index / slices;
-    const t1 = (index + 1) / slices;
-    const stripCenterY = floorTop + floorDepth * (t0 + t1) * 0.5;
-    const verticalDelta = Math.abs(stripCenterY - floorCenterY);
-    const verticalFalloff = Math.max(0, 1 - Math.pow(verticalDelta / Math.max(24, radiusY), 2));
-    if (verticalFalloff <= 0.015) {
-      continue;
-    }
-
-    const perspectiveT = Math.pow((t0 + t1) * 0.5, 0.92);
-    const projectedWidth = topWidth + (bottomWidth - topWidth) * perspectiveT;
-    const stripWave = Math.sin(driftPhase * 1.25 + perspectiveT * 8.6) * (Number(options.rippleAmount) || 6) * (0.3 + verticalFalloff * 0.7);
-    const projectedX = centerX - projectedWidth * 0.5 + stripWave;
-    const destY = floorTop + t0 * floorDepth;
-    const destHeight = Math.ceil((t1 - t0) * floorDepth) + 1;
-
-    const sourceYOffset = (verticalFalloff - 0.5) * 0.18 * maxSourceY;
-    const sourceY = clamp(sourceYCenter + sourceYOffset + (t0 - 0.5) * imageHeight * 0.18, 0, maxSourceY);
-    const sourceHeight = Math.min(sourceHeightWindow / slices * 2.15, imageHeight - sourceY);
-
-    context.globalAlpha = alphaBase * verticalFalloff * (Number(options.brightness) || 1);
-    drawCausticProjectedStrip(
-      context,
-      image,
-      clamp(sourceX, 0, maxSourceX),
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      projectedX,
-      destY,
-      projectedWidth,
-      destHeight
+  const pixels = context.getImageData(0, 0, width, height);
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    pixels.data[i + 3] = getCausticRidgeAlpha(
+      pixels.data[i], pixels.data[i + 1], pixels.data[i + 2], pixels.data[i + 3]
     );
   }
+  context.putImageData(pixels, 0, 0);
+  runtime.causticPreparedSources.set(image, source);
+  return source;
+}
 
+function drawCausticSourceIntoField(context, source, seconds, primary) {
+  if (!context || !source) return;
+  const pattern = context.createPattern(source, "repeat");
+  if (!pattern) return;
+  const tau = Math.PI * 2;
+  const baseScale = 512 / source.width;
+  // The live renderer uses Date.now(), so unbounded offsets reach billions of
+  // pixels and lose precision inside CanvasPattern. Repetition makes wrapping
+  // by one tile visually identical while keeping browser transforms accurate.
+  const driftX = ((seconds * (primary ? 10.0 : -7.5)) % 512 + 512) % 512;
+  const driftY = ((seconds * (primary ? 3.5 : 5.0)) % 512 + 512) % 512;
+  const phase = primary ? 0.8 : 2.35;
+  const strips = 128;
+  const stripHeight = 512 / strips;
+
+  context.globalAlpha = primary ? 0.76 : 0.48;
+  for (let i = 0; i < strips; i += 1) {
+    const rowPhase = i / strips * tau;
+    const warpX = Math.sin(seconds * (primary ? 1.05 : 1.25) + rowPhase * 2 + phase) * (primary ? 7.0 : 8.0)
+      + Math.sin(seconds * (primary ? 0.19 : 0.31) + rowPhase * 3 + phase * 0.7) * 1.7;
+    const warpY = Math.sin(seconds * (primary ? 0.28 : 0.39) + rowPhase * 2 + phase) * (primary ? 1.2 : 1.7);
+    pattern.setTransform(new DOMMatrix([
+      baseScale, 0, 0, baseScale,
+      driftX + warpX,
+      driftY + warpY
+    ]));
+    const y = i * stripHeight;
+    context.save();
+    context.beginPath();
+    context.rect(0, y, 512, stripHeight);
+    context.clip();
+    context.fillStyle = pattern;
+    context.fillRect(0, y, 512, stripHeight + 1);
+    context.restore();
+  }
+}
+
+function getAnimatedCausticTexture(now) {
+  const primaryImage = runtime.images.get(CAUSTIC_LIGHT_PRIMARY_ASSET_PATH);
+  const secondaryImage = runtime.images.get(CAUSTIC_LIGHT_SECONDARY_ASSET_PATH);
+  const primaryReady = isUsableRuntimeImage(primaryImage);
+  const secondaryReady = isUsableRuntimeImage(secondaryImage);
+
+  if (!primaryReady) requestRuntimeImageRecovery(CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, { kind: "caustic-light-primary" });
+  if (!secondaryReady) requestRuntimeImageRecovery(CAUSTIC_LIGHT_SECONDARY_ASSET_PATH, { kind: "caustic-light-secondary" });
+  if (!primaryReady && !secondaryReady) return null;
+
+  // Both maps flow and deform independently in a shared 30 FPS light field.
+  const frame = Math.floor((Number(now) || 0) / 33.333333);
+  let cache = runtime.causticTexture;
+  if (cache?.frame === frame && cache.primaryImage === primaryImage && cache.secondaryImage === secondaryImage) {
+    return cache.canvas;
+  }
+  if (!cache || cache.canvas.width !== 512) {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 512;
+    cache = runtime.causticTexture = {
+      canvas,
+      context: canvas.getContext("2d"),
+      frame: -1,
+      primaryImage: null,
+      secondaryImage: null
+    };
+  }
+
+  const context = cache.context;
+  context.save();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, 512, 512);
+  const seconds = frame / 30;
+  const primarySource = primaryReady ? getPreparedCausticSource(primaryImage) : null;
+  const secondarySource = secondaryReady ? getPreparedCausticSource(secondaryImage) : null;
+
+  context.globalCompositeOperation = "source-over";
+  drawCausticSourceIntoField(context, primarySource || secondarySource, seconds, true);
+  context.globalCompositeOperation = "screen";
+  drawCausticSourceIntoField(context, secondarySource || primarySource, seconds, false);
   context.restore();
+
+  cache.frame = frame;
+  cache.primaryImage = primaryImage;
+  cache.secondaryImage = secondaryImage;
+  return cache.canvas;
 }
 
 function drawGravelCausticProjection(now) {
-  if (!isCausticLightingEnabled()) {
-    return;
+  const strength = getCausticLightStrength(now);
+  if (strength <= 0) return;
+  const texture = getAnimatedCausticTexture(now);
+  if (!texture) return;
+  let projection = runtime.causticFloorTexture;
+  if (!projection) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 768; canvas.height = 256;
+    projection = runtime.causticFloorTexture = { canvas, context: canvas.getContext("2d"), frame: -1 };
   }
-
-  const baseImage = getCausticHighlightMask();
-  if (!baseImage) {
-    return;
+  if (projection.frame !== runtime.causticTexture.frame) {
+    projection.context.clearRect(0, 0, 768, 256);
+    projection.context.fillStyle = projection.context.createPattern(texture, "repeat");
+    projection.context.fillRect(0, 0, 768, 256);
+    projection.frame = runtime.causticTexture.frame;
   }
-
-  const layerA = getRotatedCausticSource(baseImage, now, {
-    scale: 1.06,
-    baseAngle: 0,
-    rotationSpeed: 0.000042
-  });
-  const layerB = getRotatedCausticSource(baseImage, now, {
-    scale: 0.92,
-    baseAngle: Math.PI * 0.24,
-    rotationSpeed: -0.000057
-  });
-
-  const layerConfigs = [
-    {
-      image: layerA,
-      seed: 41,
-      spots: 2,
-      alpha: 0.068,
-      topWidthScale: 0.16,
-      bottomWidthScale: 0.28,
-      sourceWindowScale: 0.5,
-      sourceHeightScale: 0.46,
-      driftSpeed: 0.00021,
-      rippleAmount: 6,
-      durationMs: 5400,
-      staggerMs: 2200,
-      phase: 0.2,
-      timeOffsetMs: 0
-    },
-    {
-      image: layerB,
-      seed: 97,
-      spots: 2,
-      alpha: 0.048,
-      topWidthScale: 0.14,
-      bottomWidthScale: 0.24,
-      sourceWindowScale: 0.44,
-      sourceHeightScale: 0.42,
-      driftSpeed: -0.00016,
-      rippleAmount: 4,
-      durationMs: 6200,
-      staggerMs: 2600,
-      phase: 1.7,
-      timeOffsetMs: 1200
-    }
-  ];
-
-  for (const layer of layerConfigs) {
-    for (let index = 0; index < layer.spots; index += 1) {
-      const spot = buildCausticSpotDescriptor(now, index, layer);
-      if (spot.fade <= 0.025) {
-        continue;
-      }
-      drawLocalizedGravelCausticPass(tankContext, layer.image, now, {
-        alpha: layer.alpha * spot.fade,
-        brightness: spot.brightness,
-        topWidthScale: layer.topWidthScale * (0.86 + spot.widthNorm * 0.9),
-        bottomWidthScale: layer.bottomWidthScale * (0.92 + spot.widthNorm),
-        sourceWindowScale: layer.sourceWindowScale,
-        sourceHeightScale: layer.sourceHeightScale,
-        driftSpeed: layer.driftSpeed,
-        rippleAmount: layer.rippleAmount,
-        phase: layer.phase + index * 1.23,
-        spotXNorm: spot.xNorm,
-        spotYNorm: spot.yNorm,
-        spotHeightNorm: spot.heightNorm,
-        sourcePhaseX: spot.sourcePhaseX,
-        sourcePhaseY: spot.sourcePhaseY
-      });
-    }
+  const bounds = getTankFloorDrawBounds();
+  const depth = Math.max(1, bounds.bottom - bounds.drawTop);
+  tankContext.save();
+  traceTankFloorMaskPath(tankContext, bounds);
+  tankContext.clip();
+  tankContext.globalCompositeOperation = "lighter";
+  tankContext.globalAlpha *= Math.min(1, strength * 1.8);
+  const strips = 40;
+  for (let i = 0; i < strips; i++) {
+    const t = i / strips;
+    // Overscan the distant rows so perspective does not leave unlit side wedges.
+    const width = bounds.drawWidth * (1 + t * 0.26);
+    tankContext.drawImage(projection.canvas, 0, t * 256, 768, 256 / strips,
+      bounds.left + (bounds.drawWidth - width) / 2, bounds.drawTop + t * depth,
+      width, depth / strips);
   }
+  tankContext.restore();
 }
 
-function drawWaterColumnCausticLayer(context, image, now, options = {}) {
-  const waterHeight = Math.max(1, getVisibleTankFloorBottomY() - WATER_SURFACE_Y);
-  const scale = Number(options.scale) || 1.18;
-  const width = TANK_WIDTH * scale;
-  const height = waterHeight * scale;
-  const phase = (Number(now) || 0) * (Number(options.speed) || 0.00004) + (Number(options.phase) || 0);
-  const xTravel = Math.max(10, (width - TANK_WIDTH) * 0.42);
-  const yTravel = Math.max(6, (height - waterHeight) * 0.28);
-  const x = (TANK_WIDTH - width) * 0.5 + Math.sin(phase) * xTravel;
-  const y = WATER_SURFACE_Y + (waterHeight - height) * 0.46 + Math.cos(phase * 0.73 + 0.8) * yTravel;
-
+function drawDecorCausticLight(context, image, drawX, drawY, width, height, item, now, motion) {
+  const strength = getCausticLightStrength(now);
+  if (!strength || width <= 0 || height <= 0) return;
+  const texture = getAnimatedCausticTexture(now);
+  if (!texture) return;
+  // Weak ownership releases masks with removed decor; update only at light cadence.
+  if (!runtime.decorCausticCache) runtime.decorCausticCache = new WeakMap();
+  let scratch = runtime.decorCausticCache.get(item);
+  if (!scratch) {
+    const canvas = document.createElement("canvas");
+    scratch = { canvas, context: canvas.getContext("2d") };
+    runtime.decorCausticCache.set(item, scratch);
+  }
+  const scale = Math.min(1, 192 / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
+  const c = scratch.context;
+  const key = [runtime.causticTexture.frame, width, height, item.xNorm, item.yNorm].join(":");
+  if (scratch.key !== key || scratch.image !== image) {
+  if (scratch.canvas.width !== w) scratch.canvas.width = w;
+  if (scratch.canvas.height !== h) scratch.canvas.height = h;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, w, h);
+  c.globalCompositeOperation = "source-over";
+  c.drawImage(image, 0, 0, w, h);
+  c.globalCompositeOperation = "source-in";
+  c.fillStyle = c.createPattern(texture, "repeat");
+  c.save();
+  c.scale(scale, scale);
+  c.translate(-item.xNorm * TANK_WIDTH + width / 2, -item.yNorm * TANK_HEIGHT + height);
+  c.fillRect(item.xNorm * TANK_WIDTH - width / 2, item.yNorm * TANK_HEIGHT - height, width, height);
+  c.restore();
+  scratch.key = key;
+  scratch.image = image;
+  }
   context.save();
-  context.beginPath();
-  context.rect(GLASS_MARGIN_X, WATER_SURFACE_Y, TANK_WIDTH - GLASS_MARGIN_X * 2, waterHeight);
-  context.clip();
   context.globalCompositeOperation = "screen";
-  context.globalAlpha = clamp(Number(options.alpha) || 0.018, 0, 0.08);
-  context.filter = "grayscale(0.72) saturate(0.42) brightness(1.12)";
-  context.drawImage(image, x, y, width, height);
+  context.globalAlpha *= strength * 1.1;
+  drawDecorMotionImageToContext(context, scratch.canvas, drawX, drawY, width, height, item, now, motion);
   context.restore();
-}
-
-function drawWaterColumnCaustics(now) {
-  // Disabled intentionally. The authored caustic asset contains broad translucent
-  // regions that read as fog when screen-blended through the entire water column.
-  // Caustics now stay on the gravel plane, where the perspective projection reads
-  // as refracted light rather than suspended haze. Keep this function in place so
-  // a dedicated sparse water-column asset can be reintroduced later if desired.
-  void now;
 }
 
 function drawUnderwaterLightingPass(now) {
@@ -1959,7 +1814,9 @@ function drawFoodSpritePieceToContext(context, x, y, pellet, spritePath) {
   }
 
   const stableScale = getViewportStableAssetScale();
-  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale;
+  const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
+  const variantScale = pellet?.foodKey === "chum" ? getChumSpriteVisualScale(spritePath) : 1;
+  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale * chumScale * variantScale;
   const fitScale = Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height));
   const drawWidth = Math.max(10 * stableScale, image.width * fitScale);
   const drawHeight = Math.max(10 * stableScale, image.height * fitScale);
@@ -2234,7 +2091,8 @@ function drawFoodPelletPiece(x, y, pellet, appearance) {
     return;
   }
 
-  const scale = clamp(Number(pellet?.scale) || 1, 0.75, 1.35) * getViewportStableAssetScale();
+  const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
+  const scale = clamp(Number(pellet?.scale) || 1, 0.75, 1.35) * getViewportStableAssetScale() * chumScale;
   const size = 9.8 * scale;
   const drawWidth = size;
   const drawHeight = size * (sprite.height / Math.max(1, sprite.width));
@@ -2248,7 +2106,7 @@ function drawFoodPelletPiece(x, y, pellet, appearance) {
 }
 
 function drawFallbackChumPiece(x, y, pellet) {
-  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.35) * getViewportStableAssetScale();
+  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.35) * getViewportStableAssetScale() * 2;
 
   tankContext.save();
   tankContext.translate(x, y);
@@ -2280,7 +2138,9 @@ function drawFoodSpritePiece(x, y, pellet, spritePath) {
   }
 
   const stableScale = getViewportStableAssetScale();
-  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale;
+  const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
+  const variantScale = pellet?.foodKey === "chum" ? getChumSpriteVisualScale(spritePath) : 1;
+  const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale * chumScale * variantScale;
   const fitScale = Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height));
   const drawWidth = Math.max(10 * stableScale, image.width * fitScale);
   const drawHeight = Math.max(10 * stableScale, image.height * fitScale);

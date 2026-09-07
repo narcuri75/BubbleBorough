@@ -17,7 +17,14 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260904-submarine-manual-controls" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260906-whale-breath-splash-v3" />
+  <style>
+    #lightsOutToggleButton:disabled {
+      opacity: 0.38;
+      filter: grayscale(0.75) saturate(0.35);
+      cursor: not-allowed;
+    }
+  </style>
 </head>
 
 <body>
@@ -502,6 +509,7 @@
                     </div>
                     <div class="tankazon-cart-footer">
                       <div class="tankazon-cart-subtotal">Subtotal: <strong class="tankazon-subtotal-value"><img src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" /><span id="tankazonCartSubtotal">0</span></strong></div>
+                      <div id="tankazonPurchaseError" class="tankazon-purchase-error" role="alert" aria-live="assertive" hidden></div>
                       <button id="tankazonCompletePurchase" class="tankazon-complete-purchase" type="button" disabled>Complete Purchase</button>
                     </div>
                   </aside>
@@ -577,6 +585,14 @@
 
                     <!-- Toolbar and Digital Display location controls are intentionally disabled. -->
 
+                    <label class="settings-toolbar-color-row" for="toolbarTileColorInput">
+                      <div class="settings-toggle-copy">
+                        <span class="settings-toggle-label">Toolbar Tile Color</span>
+                        <span class="settings-toggle-note">Changes the color of the tile behind each toolbar icon.</span>
+                      </div>
+                      <input id="toolbarTileColorInput" class="settings-color-input" type="color" value="#00438a" />
+                    </label>
+
                     <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
                       <div class="settings-toggle-copy">
                         <span class="settings-toggle-label">Tank Mouse Input</span>
@@ -636,7 +652,7 @@
                     <label class="settings-toggle-row" for="halloweenModeSelect">
                       <div class="settings-toggle-copy">
                         <span class="settings-toggle-label">Halloween Mode</span>
-                        <span class="settings-toggle-note">Automatic uses local time and runs October 1–31. This changes artwork only.</span>
+                        <span class="settings-toggle-note">Changes the boat and submarine artwork. Automatic runs October 1–31 in local time.</span>
                       </div>
                       <select id="halloweenModeSelect" class="settings-select" aria-label="Halloween Mode">
                         <option value="automatic">Automatic</option>
@@ -789,7 +805,8 @@
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
                 <button id="closeEditDecorTrayButton" class="edit-tray-done-button" type="button"
                   aria-label="Finish editing decor" title="Done editing decor">Done</button>
@@ -830,7 +847,8 @@
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
                 <button id="closeEditFishTrayButton" class="edit-tray-done-button" type="button"
                   aria-label="Finish managing fish" title="Done managing fish">Done</button>
@@ -860,7 +878,8 @@
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
                 <button id="closeEditEquipmentTrayButton" class="edit-tray-done-button" type="button"
                   aria-label="Finish editing equipment" title="Done editing equipment">Done</button>
@@ -871,7 +890,8 @@
                   <button class="edit-fish-tray-tab" type="button" role="tab" data-equipment-tray-tab="storage">Storage</button>
                 </div>
               </div>
-              <div id="editEquipmentTrayScroller" class="edit-equipment-tray-scroller"></div>
+              <div id="editEquipmentTrayScroller" class="edit-decor-tray-scroller edit-equipment-tray-scroller"></div>
+              <div id="editEquipmentTrayContextMenu" class="edit-fish-tray-context-menu" hidden></div>
             </section>
 
             <section id="editTankTray" class="edit-decor-tray edit-tank-tray" hidden aria-label="Edit tank tray">
@@ -880,22 +900,17 @@
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="tank"><img class="edit-overlay-mode-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" /><span>Tank</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
                 <button id="closeEditTankTrayButton" class="edit-tray-done-button" type="button"
                   aria-label="Finish editing tank" title="Done editing tank">Done</button>
               </div>
-              <div class="edit-tank-tray-header">
-                <div class="edit-tank-tray-tabs" role="tablist" aria-label="Tank settings category">
-                  <button class="edit-tank-tray-tab" type="button" role="tab" data-tank-tray-tab="background">Background</button>
-                  <button class="edit-tank-tray-tab" type="button" role="tab" data-tank-tray-tab="gravel">Gravel</button>
-                </div>
-              </div>
               <div id="editTankTrayScroller" class="edit-tank-tray-scroller">
                 <section class="edit-tank-tray-panel edit-tank-background-panel" data-tank-tray-panel="background">
-                  <div class="edit-tank-background-mode-tabs" role="tablist" aria-label="Background type">
+                  <div class="edit-tank-background-type-tabs" role="tablist" aria-label="Background type">
                     <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="image">Image</button>
-                    <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="solid">Solid</button>
+                    <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="solid">Solid Color</button>
                     <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="gradient">Gradient</button>
                     <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="animated">Animated</button>
                   </div>
@@ -920,16 +935,8 @@
               </button>
             </section>
 
-            <section id="medicineTray" class="edit-decor-tray" hidden aria-label="Medicine tray">
-              <button id="medicineTrayPrev" class="edit-decor-tray-arrow" type="button"
-                aria-label="Scroll medicine tray left">
-                &#8249;
-              </button>
+            <section id="medicineTray" class="edit-decor-tray" hidden aria-label="Food and fish care">
               <div id="medicineTrayScroller" class="edit-decor-tray-scroller"></div>
-              <button id="medicineTrayNext" class="edit-decor-tray-arrow" type="button"
-                aria-label="Scroll medicine tray right">
-                &#8250;
-              </button>
             </section>
 
             <div class="tank-bottom-dock toolbar-fast-tooltip-experiment">
@@ -983,7 +990,7 @@
 
               <button id="editMenuButton" class="dock-button toolbar-group-button edit" type="button" title="Edit"
                 aria-label="Edit aquarium">
-                <img class="dock-button-icon" src="assets/icons/tools.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -1032,10 +1039,10 @@
                 aria-label="Care Tips">❔</button>
 
 
-              <button id="lightsOutToggleButton" class="dock-button lights-out" type="button" title="Lights Out: Auto"
-                aria-label="Lights Out Auto" aria-pressed="false">
+              <button id="lightsOutToggleButton" class="dock-button lights-out" type="button" title="Lights Out: Disabled"
+                aria-label="Lights Out disabled" aria-pressed="false" disabled hidden>
                 <span class="dock-button-night-icon" aria-hidden="true"></span>
-                <span id="lightsOutModeBadge" class="dock-button-mode-badge" aria-hidden="true">A</span>
+                <span id="lightsOutModeBadge" class="dock-button-mode-badge" aria-hidden="true">OFF</span>
               </button>
 
               <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
@@ -1085,7 +1092,9 @@
 
               <button id="toggleDebugMenuButton" class="dock-button debug" type="button" hidden
                 title="Debug Menu" aria-label="Debug Menu" aria-controls="debugSidebar" aria-expanded="false"
-                data-preserve-fish-selection>&#128296;</button>
+                data-preserve-fish-selection>
+                <img class="dock-button-icon" src="assets/icons/debug.png" alt="" aria-hidden="true" draggable="false" />
+              </button>
 
             </div>
             <div id="toolbarFastTooltip" class="toolbar-fast-tooltip" role="tooltip" hidden></div>
@@ -1290,6 +1299,7 @@
       let allCategoriesMode = true;
       let lastTankazonCategory = "all";
       let completingPurchase = false;
+      let purchaseErrorMessage = "";
       let committedSearchQuery = "";
       let committedSearchScrollTop = 0;
       let allCategoriesScrollTop = 0;
@@ -1446,7 +1456,7 @@
       function normalizeTankazonPurchaseButtons() {
         if (completingPurchase) return;
         document.querySelectorAll(
-          "#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-tank]"
+          "#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]"
         ).forEach((button) => {
           const currentLabel = button.textContent.trim();
           if (button.dataset.tankazonOriginalLabel === undefined) button.dataset.tankazonOriginalLabel = currentLabel;
@@ -1478,7 +1488,7 @@
           ["buyFood", "food", "buyFood"], ["buyMedicine", "pharmacy", "buyMedicine"], ["buyFish", "fish", "buyFish"],
           ["buyDecor", "decor", "buyDecor"], ["buyFilter", "equipment", "buyFilter"], ["buyBackground", "equipment", "buyBackground"],
           ["buyTank", "equipment", "buyTank"], ["buyAutoDispenser", "equipment", "buyAutoDispenser"],
-          ["buySubmarine", "equipment", "buySubmarine"]
+          ["buySubmarine", "equipment", "buySubmarine"], ["buyBoat", "equipment", "buyBoat"]
         ];
         for (const [datasetKey, category, fnName] of mappings) {
           if (button.dataset[datasetKey] !== undefined) {
@@ -1497,7 +1507,7 @@
               name,
               image,
               cost,
-              maxQuantity: fnName === "buySubmarine" ? 1 : undefined
+              maxQuantity: ["buySubmarine", "buyBoat"].includes(fnName) ? 1 : undefined
             };
           }
         }
@@ -1509,12 +1519,18 @@
         const countEl = document.getElementById("tankazonCartCount");
         const subtotalEl = document.getElementById("tankazonCartSubtotal");
         const complete = document.getElementById("tankazonCompletePurchase");
+        const error = document.getElementById("tankazonPurchaseError");
         const items = [...cart.values()];
         const count = items.reduce((sum, item) => sum + item.quantity, 0);
         const subtotal = items.reduce((sum, item) => sum + item.cost * item.quantity, 0);
+        if (count === 0) purchaseErrorMessage = "";
         if (countEl) countEl.textContent = String(count);
         if (subtotalEl) subtotalEl.textContent = String(subtotal);
         if (complete) complete.disabled = count === 0;
+        if (error) {
+          error.textContent = purchaseErrorMessage;
+          error.hidden = !purchaseErrorMessage;
+        }
         if (!itemsEl) return;
         if (!items.length) {
           itemsEl.innerHTML = '<div class="tankazon-cart-empty">Your cart is empty.</div>';
@@ -1542,6 +1558,7 @@
       }
 
       function addToCart(descriptor) {
+        purchaseErrorMessage = "";
         const current = cart.get(descriptor.key);
         const maxQuantity = descriptor.maxQuantity != null && Number.isFinite(Number(descriptor.maxQuantity))
           ? Math.max(1, Math.floor(Number(descriptor.maxQuantity)))
@@ -1653,6 +1670,16 @@
         );
       }
 
+      function showTankazonPurchaseError(message = "Payment method declined. Insufficient Funds.") {
+        purchaseErrorMessage = String(message || "Payment method declined. Insufficient Funds.");
+        const error = document.getElementById("tankazonPurchaseError");
+        if (error) {
+          error.textContent = purchaseErrorMessage;
+          error.hidden = false;
+        }
+        return purchaseErrorMessage;
+      }
+
       function getTankazonCategoryTab(category) {
         if (category === "food") return document.getElementById("storeFoodTab");
         if (category === "pharmacy") return document.getElementById("storePharmacyTab");
@@ -1672,6 +1699,7 @@
           "#storeOverlay [data-buy-background]",
           "#storeOverlay [data-buy-auto-dispenser]",
           "#storeOverlay [data-buy-submarine]",
+          "#storeOverlay [data-buy-boat]",
           "#storeOverlay [data-buy-tank]"
         ].join(", ");
 
@@ -1730,6 +1758,11 @@
         }
 
         const beforeCoins = getTankazonCoinBalance();
+        if (Number.isFinite(beforeCoins) && Number(item.cost) > beforeCoins) {
+          const error = new Error("Payment method declined. Insufficient Funds.");
+          error.code = "insufficient-funds";
+          throw error;
+        }
 
         // completingPurchase=true makes Tankazon's capture listener stand aside,
         // so this click reaches Bubble Borough's real purchase handler.
@@ -1737,6 +1770,12 @@
 
         const changed = await waitForTankazonCoinChange(beforeCoins, Number(item.cost) || 0);
         if (!changed) {
+          const afterCoins = getTankazonCoinBalance();
+          if (Number.isFinite(afterCoins) && Number(item.cost) > afterCoins) {
+            const error = new Error("Payment method declined. Insufficient Funds.");
+            error.code = "insufficient-funds";
+            throw error;
+          }
           throw new Error(`${item.name} did not complete its native purchase.`);
         }
 
@@ -1751,11 +1790,11 @@
         const balance = getTankazonCoinBalance();
 
         if (Number.isFinite(balance) && subtotal > balance) {
-          if (typeof window.showToast === "function") {
-            window.showToast("Not enough coins to complete this purchase.");
-          }
+          showTankazonPurchaseError();
           return;
         }
+
+        purchaseErrorMessage = "";
 
         completingPurchase = true;
         if (button) {
@@ -1786,7 +1825,9 @@
         } catch (error) {
           console.error("Tankazon checkout failed", error);
 
-          if (typeof window.showToast === "function") {
+          if (error?.code === "insufficient-funds") {
+            showTankazonPurchaseError();
+          } else if (typeof window.showToast === "function") {
             window.showToast(error?.message || "Purchase could not be completed.");
           }
 
@@ -1801,7 +1842,7 @@
       }
 
       document.addEventListener("click", (event) => {
-        const purchaseButton = event.target.closest?.("#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-tank]");
+        const purchaseButton = event.target.closest?.("#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]");
         if (purchaseButton && !completingPurchase) {
           event.preventDefault();
           event.stopPropagation();
@@ -1901,7 +1942,8 @@
           if (!isStoreOpen) return;
 
           if (justOpened) {
-            const savedView = restoreTankazonView();
+            const savedView = storeOverlay.dataset.requestedCategory || restoreTankazonView();
+            delete storeOverlay.dataset.requestedCategory;
 
             // Let Bubble Borough finish its normal Food-store opening first.
             // Then use the real category tab so the native store renderer
@@ -1990,7 +2032,7 @@
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost
         ? `live-${Date.now()}`
-        : "20260904-submarine-manual-controls";
+        : "20260906-whale-breath-splash-v3";
       script.type = "module";
       script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);

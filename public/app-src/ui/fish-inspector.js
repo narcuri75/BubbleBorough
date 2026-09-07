@@ -475,5 +475,13 @@ function updateInspectorFishSetting(setting, rawValue) {
     return;
   }
   saveState();
+  if (setting === "color" || setting === "colorize") {
+    // Color changes are live previews. Keep the settings panel mounted so
+    // users can compare several colors without the inspector being rebuilt
+    // or dismissed between picks. The tank renderer reads the fish state on
+    // the next frame, so a full UI render is unnecessary here.
+    updateInspectorFishReadouts(fish);
+    return;
+  }
   renderUi(now);
 }

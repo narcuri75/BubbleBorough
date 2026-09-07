@@ -219,6 +219,7 @@ function toggleCleaningMode(options = {}) {
     }
   }
 
+  if (options.source === "care-tray") runtime.medicineTrayOpen = true;
   renderToolCursor();
   if (tutorialChanged) {
     saveState();
@@ -238,6 +239,7 @@ function toggleScoopMode(options = {}) {
     }
   }
 
+  if (options.source === "care-tray") runtime.medicineTrayOpen = true;
   renderToolCursor();
   renderUi(Date.now());
 }
@@ -311,6 +313,37 @@ function maxTankDirtinessDebug() {
     (nextCleanliness) => `Debug tank dirtiness maxed. Tank cleanliness dropped to ${nextCleanliness}%.`,
     () => "Tank dirtiness maxed."
   );
+}
+
+function forceAllWhalesToBreatheDebug(now = Date.now()) {
+  const tank = getCurrentTank();
+  const whales = Array.isArray(tank?.fish)
+    ? tank.fish.filter((fish) => fish && !isFishDead(fish) && isWhaleFish(fish))
+    : [];
+
+  let started = 0;
+  for (const fish of whales) {
+    clearWhaleBreathState(fish, now, { reschedule: false });
+    fish.whaleNextBreathAt = now;
+    if (startWhaleBreathCycle(fish, getSpeciesForFish(fish), now)) {
+      started += 1;
+    }
+  }
+
+  if (started > 0) {
+    showToast(`${started} ${pluralize("whale", started)} heading up for air.`);
+  } else {
+    showToast("No living whales in this tank.");
+  }
+  return started;
+}
+
+function exposeDebugConsoleCommands() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  window.debugWhalesBreathe = forceAllWhalesToBreatheDebug;
+  return true;
 }
 
 function addDebugCoins(amount = 10) {
@@ -2029,3 +2062,4 @@ function resetAllProgress() {
   syncAmbienceAudio();
   showToast("All progress reset.");
 }
+

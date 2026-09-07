@@ -155,6 +155,21 @@ function renderBubblerSettingsOverlay(item) {
     .join("");
   const rawBubbleFillOpacity = Number(settings.bubbleFillOpacity);
   const bubbleFillOpacity = clamp(Number.isFinite(rawBubbleFillOpacity) ? rawBubbleFillOpacity : DEFAULT_BUBBLER_FILL_OPACITY, 0, 1);
+  const hasLightLayer = hasDecorBubblerLight(item);
+  const lightColor = normalizeHexColor(settings.lightColor) || DEFAULT_BUBBLER_LIGHT_COLOR;
+  const lightColorControls = hasLightLayer
+    ? `
+      <label class="bubbler-control-row bubbler-light-color-row">
+        <span>Light Color <strong data-bubbler-setting-value="lightColor">${escapeHtml(lightColor)}</strong></span>
+        <input
+          class="bubbler-light-color-input"
+          type="color"
+          value="${escapeHtml(lightColor)}"
+          data-bubbler-setting="lightColor"
+          aria-label="Bubbler light color" />
+        <div class="mini-note">The center uses this color, fades to black at the edges, and flickers automatically like candlelight.</div>
+      </label>`
+    : "";
 
   return `
     <div class="bubbler-settings-panel">
@@ -193,6 +208,7 @@ function renderBubblerSettingsOverlay(item) {
           <span>Colorize</span>
         </label>
       </div>
+      ${lightColorControls}
       <label class="bubbler-control-row">
         <span>Inside Fill <strong data-bubbler-setting-value="bubbleFillOpacity">${Math.round(bubbleFillOpacity * 100)}%</strong></span>
         <input type="range" min="0" max="1" step="0.05" value="${bubbleFillOpacity}" data-bubbler-setting="bubbleFillOpacity" />
@@ -469,6 +485,9 @@ function renderSettingsOverlay() {
   }
   if (dom.uiMuteToggleInput) {
     dom.uiMuteToggleInput.checked = uiSettings.uiSoundsMuted;
+  }
+  if (dom.toolbarTileColorInput instanceof HTMLInputElement) {
+    dom.toolbarTileColorInput.value = uiSettings.toolbarTileColor;
   }
   if (dom.ambientBubblesToggleInput) {
     dom.ambientBubblesToggleInput.checked = uiSettings.ambientBubblesEnabled;
@@ -833,7 +852,7 @@ function renderTutorialGuidance() {
       button: dom.careMenuButton,
       menu: dom.toolbarCareMenu,
       menuName: "care",
-      childIds: ["medicineButton", "spongeButton", "scoopButton"]
+      childIds: ["feedButton", "medicineButton", "spongeButton", "scoopButton"]
     },
     {
       button: dom.editMenuButton,
@@ -1202,7 +1221,6 @@ function renderEditDecorTrayContextMenu() {
   const purchaseCost = getDecorPurchaseCost(decorKey);
   const decorTypeTone = getDecorTrayTypeTone(decor, decorKey);
   const canBuyAnotherDecor = entry.type === "stored";
-  const canAffordAnotherDecor = state.coins >= purchaseCost;
   const grouped = entry.type === "placed" && isPlacedDecorGrouped(entry.item);
   const detailText = entry.type === "placed"
     ? `${grouped ? "Grouped - " : ""}Layer ${getDecorTankLayer(entry.item)} - ${formatDecorScale(entry.item.scale)}`
@@ -1260,7 +1278,6 @@ function renderEditDecorTrayContextMenu() {
             type="button"
             data-tray-buy-another-decor="${escapeHtml(decorKey)}"
             title="Buy Another"
-            ${canAffordAnotherDecor ? "" : "disabled"}
           >
             Buy Another ${purchaseCost} ${pluralize("coin", purchaseCost)}
           </button>
@@ -2060,7 +2077,7 @@ function renderEditTankTray() {
   }
 
   for (const tab of dom.editTankTray.querySelectorAll("[data-edit-overlay-mode]")) {
-    const selected = tab.dataset.editOverlayMode === "tank";
+    const selected = tab.dataset.editOverlayMode === runtime.editTankTrayTab;
     tab.classList.toggle("is-active", selected);
     tab.setAttribute("aria-selected", selected ? "true" : "false");
     tab.tabIndex = selected ? 0 : -1;
@@ -2073,65 +2090,33 @@ function renderEditTankTray() {
     tab.tabIndex = selected ? 0 : -1;
   }
 
+  for (const tab of dom.editTankTray.querySelectorAll("[data-tank-background-mode]")) {
+    const active = runtime.editTankTrayTab === "background" && tab.dataset.tankBackgroundMode === runtime.editTankBackgroundMode;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = 0;
+  }
   for (const panel of dom.editTankTray.querySelectorAll("[data-tank-tray-panel]")) {
     panel.hidden = panel.dataset.tankTrayPanel !== runtime.editTankTrayTab;
   }
 }
 
 function renderFoodTray() {
-  const visible = runtime.foodTrayOpen;
-  if (dom.foodTray) {
-    dom.foodTray.hidden = !visible;
-  }
-  syncTankTrayStageClass();
+  // Compatibility for older tutorial callers: all care lives in one tray.
+  if (runtime.foodTrayOpen) { runtime.medicineTrayOpen = true; runtime.foodTrayOpen = false; }
+  if (dom.foodTray) dom.foodTray.hidden = true;
+}
 
-  if (!visible || !dom.foodTrayScroller) {
-    syncFoodTrayScrollControls();
-    return;
-  }
-
-  const items = getFoodCatalog().filter((food) => (
-    shouldShowFoodInStore(food)
-    && food.id !== "upgraded"
-    && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
-  ));
-  const dataKey = [
-    runtime.foodTrayOpen ? "1" : "0",
-    runtime.feedingModeFoodKey || "",
-    ...getFoodCatalog().filter((food) => shouldShowFoodInStore(food)).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`)
-  ].join("|");
-
-  if (shouldRebuildRenderSection("food-tray-data", dataKey)) {
-    const markup = items.length
-      ? items.map((food) => {
-        const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
-        const active = runtime.feedingModeFoodKey === food.id;
-        const label = `${food.name} - ${quantity} left`;
-        return `
-          <button
-            class="edit-decor-tile ${active ? "is-active" : ""}"
-            type="button"
-            data-select-food="${food.id}"
-            data-decor-name="${label}"
-            title="${label}"
-            aria-label="${active ? `Selected ${food.name}` : `Select ${food.name}`}"
-            ${quantity > 0 ? "" : "disabled"}
-            style="--tray-accent: #E0B24C;"
-          >
-            <span class="edit-decor-tile-surface inventory-tray-tile-surface">
-              ${renderFoodAndMedImage("food", food.id, food.name, "edit-decor-tile-thumb inventory-tray-thumb")}
-              <span class="inventory-tray-label">${food.name.replace(" Food", "")}</span>
-              <span class="edit-decor-tile-count">x${quantity}</span>
-            </span>
-          </button>
-        `;
-      }).join("")
-      : `<div class="edit-decor-tray-empty">No food is stocked yet. Open the store to buy a bottle first.</div>`;
-
-    setMarkupIfChanged("food-tray", dom.foodTrayScroller, markup);
-  }
-
-  syncFoodTrayScrollControls();
+function handleCareTrayAction(event) {
+  const target = event.target;
+  const food = target.closest("[data-select-food]");
+  const store = target.closest("[data-food-open-store], [data-care-open-pharmacy]");
+  if (!food && !store) return false;
+  event.stopPropagation();
+  playToolbarButtonSoundEffect("press");
+  if (food) selectFoodMode(food.dataset.selectFood);
+  else openStoreOverlay(store.hasAttribute("data-care-open-pharmacy") ? "pharmacy" : "food", { forceCategory: true });
+  return true;
 }
 
 function renderMedicineTray() {
@@ -2146,64 +2131,133 @@ function renderMedicineTray() {
     return;
   }
 
-  const items = getMedicineCatalog().filter((medicine) => (
+  const foodItems = getFoodCatalog().filter((food) => (
+    shouldShowFoodInStore(food)
+    && food.id !== "upgraded"
+    && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
+  ));
+  const medicineItems = getMedicineCatalog().filter((medicine) => (
     shouldShowMedicineInStore(medicine)
     && Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) > 0
   ));
+
   const dataKey = [
     runtime.medicineTrayOpen ? "1" : "0",
+    runtime.feedingModeFoodKey || "",
     runtime.medicineModeKey || "",
-    ...getMedicineCatalog().map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
+    runtime.cleaningMode ? "scrub" : "",
+    runtime.scoopMode ? "scoop" : "",
+    ...getFoodCatalog().filter((food) => shouldShowFoodInStore(food)).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
+    ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
 
   if (shouldRebuildRenderSection("medicine-tray-data", dataKey)) {
-    const medicineMarkup = items.length
-      ? items.map((medicine) => {
+    const foodMarkup = foodItems.length
+      ? foodItems.map((food) => {
+        const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
+        const active = runtime.feedingModeFoodKey === food.id;
+        const label = `${food.name} - ${quantity} left`;
+        return `
+          <button
+            class="care-medicine-card ${active ? "is-active" : ""}"
+            type="button"
+            data-select-food="${food.id}"
+            title="${label}"
+            aria-label="${active ? `Selected ${food.name}` : `Select ${food.name}` }"
+            style="--tray-accent: #E0B24C;"
+          >
+            ${renderFoodAndMedImage("food", food.id, food.name, "care-medicine-card-image")}
+            <span class="care-medicine-card-name">${food.name.replace(" Food", "")}</span>
+            <span class="care-medicine-card-count">x${quantity}</span>
+          </button>
+        `;
+      }).join("")
+      : `
+        <div class="care-tray-empty-medical care-tray-section-empty" role="group" aria-label="No food stocked">
+          <div class="care-tray-empty-copy-wrap">
+            <svg class="care-tray-empty-icon" viewBox="0 0 32 38" aria-hidden="true" focusable="false">
+              <path d="M11 2h10v7l4 4v20c0 2-1.5 3-3.5 3h-11C8.5 36 7 35 7 33V13l4-4V2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M11 9h10M9 17h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="care-tray-empty-copy">
+              <strong>No food stocked</strong>
+              <small>Open Tankazon food to buy more.</small>
+            </span>
+          </div>
+          <button class="care-tray-empty-shop-button" type="button" data-food-open-store>Buy Food</button>
+        </div>
+      `;
+
+    const medicineMarkup = medicineItems.length
+      ? medicineItems.map((medicine) => {
         const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
         const active = runtime.medicineModeKey === medicine.id;
         const label = `${medicine.name} - ${quantity} left`;
         return `
           <button
-            class="edit-decor-tile care-medicine-tile ${active ? "is-active" : ""}"
+            class="care-medicine-card ${active ? "is-active" : ""}"
             type="button"
             data-select-medicine="${medicine.id}"
-            data-decor-name="${label}"
             title="${label}"
-            aria-label="${active ? `Selected ${medicine.name}` : `Select ${medicine.name}`}"
-            ${quantity > 0 ? "" : "disabled"}
+            aria-label="${active ? `Selected ${medicine.name}` : `Select ${medicine.name}` }"
             style="--tray-accent: ${medicine.color};"
           >
-            <span class="edit-decor-tile-surface inventory-tray-tile-surface">
-              ${renderFoodAndMedImage("medicine", medicine.id, medicine.name, "edit-decor-tile-thumb inventory-tray-thumb")}
-              <span class="inventory-tray-label">${medicine.name.replace(" Drops", "")}</span>
-              <span class="edit-decor-tile-count">x${quantity}</span>
-            </span>
+            ${renderFoodAndMedImage("medicine", medicine.id, medicine.name, "care-medicine-card-image")}
+            <span class="care-medicine-card-name">${medicine.name.replace(" Drops", "")}</span>
+            <span class="care-medicine-card-count">x${quantity}</span>
           </button>
         `;
       }).join("")
-      : `<div class="care-tray-empty-medical">No medicine stocked</div>`;
+      : `
+        <div class="care-tray-empty-medical care-tray-section-empty" role="group" aria-label="No medicine stocked">
+          <div class="care-tray-empty-copy-wrap">
+            <svg class="care-tray-empty-icon" viewBox="0 0 32 38" aria-hidden="true" focusable="false">
+              <path d="M11 2h10v7l4 4v20c0 2-1.5 3-3.5 3h-11C8.5 36 7 35 7 33V13l4-4V2Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M11 9h10M9 17h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="care-tray-empty-copy">
+              <strong>No medicine stocked</strong>
+              <small>Open Tankazon pharmacy to buy more.</small>
+            </span>
+          </div>
+          <button class="care-tray-empty-shop-button" type="button" data-care-open-pharmacy>Buy Meds</button>
+        </div>
+      `;
 
     const markup = `
-      <div class="care-tray-content">
-        <section class="care-tray-section care-tray-medical" aria-label="Medical care">
-          <div class="care-tray-section-icon" title="Medical" aria-label="Medical">
-            <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tray-min-width: 631px;">
+        <section class="care-tray-food" aria-label="Food">
+          <div class="care-tray-heading-row">
+            <img class="care-tray-inline-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
+            <div class="care-tray-heading">Food</div>
+          </div>
+          <div class="care-tray-food-items">${foodMarkup}</div>
+        </section>
+
+        <div class="care-tray-divider" aria-hidden="true"></div>
+
+        <section class="care-tray-medical" aria-label="Medication">
+          <div class="care-tray-heading-row">
+            <img class="care-tray-inline-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+            <div class="care-tray-heading">Medication</div>
           </div>
           <div class="care-tray-medical-items">${medicineMarkup}</div>
         </section>
+
         <div class="care-tray-divider" aria-hidden="true"></div>
-        <section class="care-tray-section care-tray-tool-section" aria-label="Cleaning tool">
-          <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
-            <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
-            <span>Scrub</span>
-          </button>
-        </section>
-        <div class="care-tray-divider" aria-hidden="true"></div>
-        <section class="care-tray-section care-tray-tool-section" aria-label="Scoop tool">
-          <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
-            <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
-            <span>Scoop</span>
-          </button>
+
+        <section class="care-tray-tools" aria-label="Care tools">
+          <div class="care-tray-heading">Tools</div>
+          <div class="care-tray-tool-row">
+            <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
+              <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+              <span>Scrub</span>
+            </button>
+            <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
+              <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+              <span>Scoop</span>
+            </button>
+          </div>
         </section>
       </div>
     `;
@@ -3568,7 +3622,7 @@ function renderFishInspector(now) {
 
   if (dom.inspectorBuyAnotherFish) {
     dom.inspectorBuyAnotherFish.hidden = !canBuyAnother;
-    dom.inspectorBuyAnotherFish.disabled = canBuyAnother && state.coins < purchaseCost;
+    dom.inspectorBuyAnotherFish.disabled = false;
     if (canBuyAnother) {
       dom.inspectorBuyAnotherFish.dataset.buyAnotherFish = fish.id;
       dom.inspectorBuyAnotherFish.textContent = "BUY";
@@ -3649,44 +3703,52 @@ function renderDecorShop() {
     );
     return;
   }
-  const cardsMarkup = catalog
-    .map((decor) => {
-      const progressLocked = !isDecorProgressUnlocked(decor);
-      const locked = !isDecorShopUnlocked(decor);
-      const debugUnlocked = progressLocked && !locked;
-      const affordable = !locked && !tutorialPreviewOnly && state.coins >= decor.cost;
-      const owned = state.decorInventory[decor.key] || 0;
-      const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
-      const isCustomHideUpload = isCustomHideShopKey(decor.key);
-      const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
-      const statusLabel = locked
-        ? `Unlocks at ${lockedRequirementLabel}`
-        : debugUnlocked
-          ? `Debug unlocked (${lockedRequirementLabel})`
-          : `${owned} in storage`;
-      const serviceSummary = getDecorServiceSummary(decor.key);
-      return `
-        <article class="shop-card ${locked ? "is-locked" : ""}">
-          <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
-          <div class="shop-meta">
-            <div>
-              <strong>${decor.name}</strong>
-              ${renderShopThemePill(decor.theme)}
-              <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
-              ${serviceSummary ? `<div class="mini-note borough-service-note">${escapeHtml(serviceSummary)}</div>` : ""}
-            </div>
-            <div class="fish-meta"></div>
+  const renderCard = (decor) => {
+    const progressLocked = !isDecorProgressUnlocked(decor);
+    const locked = !isDecorShopUnlocked(decor);
+    const debugUnlocked = progressLocked && !locked;
+    const owned = state.decorInventory[decor.key] || 0;
+    const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
+    const isCustomHideUpload = isCustomHideShopKey(decor.key);
+    const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
+    const statusLabel = locked
+      ? `Unlocks at ${lockedRequirementLabel}`
+      : debugUnlocked
+        ? `Debug unlocked (${lockedRequirementLabel})`
+        : `${owned} in storage`;
+    const serviceSummary = getDecorServiceSummary(decor.key);
+    return `
+      <article class="shop-card ${locked ? "is-locked" : ""}">
+        <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
+        <div class="shop-meta">
+          <div>
+            <strong>${decor.name}</strong>
+            ${renderShopThemePill(decor.theme)}
+            <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
+            ${serviceSummary ? `<div class="mini-note borough-service-note">${escapeHtml(serviceSummary)}</div>` : ""}
           </div>
-          <div class="shop-meta">
-            <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
-            <button class="buy-button" data-buy-decor="${decor.key}" ${(affordable || tutorialPreviewOnly) ? "" : "disabled"} ${tutorialPreviewOnly ? "disabled" : ""}>
-              ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
-            </button>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+          <div class="fish-meta"></div>
+        </div>
+        <div class="shop-meta">
+          <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
+          <button class="buy-button" data-buy-decor="${decor.key}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+            ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
+          </button>
+        </div>
+      </article>
+    `;
+  };
+  const regularMarkup = catalog.filter((decor) => !isHalloweenDecor(decor)).map(renderCard).join("");
+  const seasonalMarkup = catalog.filter(isHalloweenDecor).map(renderCard).join("");
+  const cardsMarkup = regularMarkup + (seasonalMarkup ? `
+    <section class="shop-section decor-seasonal-section" aria-labelledby="decorSeasonalHeading">
+      <div class="shop-section-heading">
+        <h3 id="decorSeasonalHeading">Seasonal</h3>
+        <p>Halloween decor, available all year.</p>
+      </div>
+      <div class="shop-section-cards">${seasonalMarkup}</div>
+    </section>
+  ` : "");
 
   setMarkupIfChanged(
     "decor-shop",
@@ -3703,7 +3765,6 @@ function renderEquipmentShop() {
   const dispenserInstalled = hasAutoDispenserInstalled();
   const dispenserLoadedCount = getAutoDispenserLoadedCount(state.autoDispenser);
   const dispenserPortion = clamp(Number(state.autoDispenser?.mealPortion) || 0, 0, AUTO_DISPENSER_PORTION_MAX);
-  const dispenserAffordable = state.coins >= AUTO_DISPENSER_COST;
   const shopFilters = ENABLE_FILTER
     ? runtime.filterCatalog.filter((filter) => filter.purchasable && filter.key !== BASIC_FILTER_KEY)
     : [];
@@ -3712,7 +3773,6 @@ function renderEquipmentShop() {
     const equippedCount = getFilterAssignmentCount(filter.key);
     const unusedCount = getUnusedFilterCount(filter.key);
     const equippedHere = state.selectedFilterAsset === filter.key;
-    const affordable = state.coins >= filter.cost;
     const resaleValue = getResaleValue(filter.cost);
     const buyLabel = ownedCount > 0 ? "Buy Another" : "Buy & Equip";
     const statusBits = [
@@ -3735,7 +3795,7 @@ function renderEquipmentShop() {
         <div class="shop-meta shop-card-actions">
           <span class="price-tag">${filter.cost} ${pluralize("coin", filter.cost)}</span>
           <div class="shop-button-row">
-            <button class="buy-button" data-buy-filter="${filter.key}" ${affordable ? "" : "disabled"}>${buyLabel}</button>
+            <button class="buy-button" data-buy-filter="${filter.key}">${buyLabel}</button>
             <button class="small-button alt" data-sell-filter="${filter.key}" ${unusedCount > 0 ? "" : "disabled"}>Sell Spare (${resaleValue})</button>
           </div>
         </div>
@@ -3757,7 +3817,7 @@ function renderEquipmentShop() {
         <div class="shop-meta shop-card-actions">
           <span class="price-tag">${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)}</span>
           <div class="shop-button-row">
-            <button class="buy-button" data-buy-auto-dispenser="true" ${dispenserInstalled || !dispenserAffordable ? "disabled" : ""}>${dispenserInstalled ? "Installed" : "Buy & Install"}</button>
+            <button class="buy-button" data-buy-auto-dispenser="true" ${dispenserInstalled ? "disabled" : ""}>${dispenserInstalled ? "Installed" : "Buy & Install"}</button>
           </div>
         </div>
       </article>
@@ -3768,7 +3828,6 @@ function renderEquipmentShop() {
       const uvLightOwned = isUvLightOwned();
       const uvLightInstalled = isUvLightInstalled();
       const uvLightActive = isUvLightActive();
-      const uvLightAffordable = state.coins >= UV_LIGHT_COST;
       return `
       <article class="shop-card">
         <img class="shop-thumb uv-light-shop-thumb" src="${UV_LIGHT_IMAGE_PATH}" alt="UV light" />
@@ -3783,7 +3842,7 @@ function renderEquipmentShop() {
         <div class="shop-meta shop-card-actions">
           <span class="price-tag">${uvLightOwned ? "Unlocked" : `${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)}`}</span>
           <div class="shop-button-row">
-            <button class="buy-button" data-buy-uv-light="true" ${uvLightOwned || !uvLightAffordable ? "disabled" : ""}>${uvLightOwned ? "Owned" : "Buy & Add"}</button>
+            <button class="buy-button" data-buy-uv-light="true" ${uvLightOwned ? "disabled" : ""}>${uvLightOwned ? "Owned" : "Buy & Add"}</button>
           </div>
         </div>
       </article>
@@ -3796,7 +3855,6 @@ function renderEquipmentShop() {
     .map((background) => {
       const owned = isBackgroundOwned(background.key);
       const selected = state.selectedBackground === background.key;
-      const affordable = state.coins >= background.cost;
       const statusLabel = background.defaultUnlocked
         ? "Unlocked by default"
         : owned
@@ -3820,7 +3878,7 @@ function renderEquipmentShop() {
           <div class="shop-button-row">
             ${owned
           ? `<button class="small-button alt" data-use-background-shop="${background.key}">${selected ? "Using This Background" : "Use Now"}</button>`
-          : `<button class="buy-button" data-buy-background="${background.key}" ${affordable ? "" : "disabled"}>Unlock & Use</button>`}
+          : `<button class="buy-button" data-buy-background="${background.key}">Unlock & Use</button>`}
           </div>
         </div>
       </article>
@@ -3867,6 +3925,7 @@ function renderEquipmentShop() {
       </div>
       <div class="shop-section-cards">
         ${renderSubmarineShopCard()}
+        ${renderBoatShopCard()}
       </div>
     </section>
   `;

@@ -400,7 +400,7 @@ body.mobile-page .tank-bottom-dock.is-toolbar-collapsed {
   border-radius: 16px 16px 0 0;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.01)),
-    rgba(0, 0, 0, 0.1);
+    var(--toolbar-shell-color);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.32),
     inset 0 -1px 0 rgba(0, 0, 0, 0.22),
@@ -423,6 +423,12 @@ body.mobile-page .tank-nav-button {
 
 body.mobile-page .tank-bottom-dock > .dock-button {
   display: none !important;
+}
+
+/* The desktop toolbar uses tiled icon buttons. Mobile keeps its compact dock layout. */
+body.mobile-page .tank-bottom-dock > .dock-button::before,
+body.mobile-page .tank-bottom-dock > .dock-button::after {
+  content: none !important;
 }
 
 body.mobile-page .tank-bottom-dock > :is(
@@ -808,7 +814,7 @@ body.mobile-page .edit-decor-tray {
   font-size: 0.52rem;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray):has(.edit-decor-tray-tabs, .edit-fish-tray-tabs, .edit-decor-tray-header) {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray):has(.edit-decor-tray-tabs, .edit-fish-tray-tabs, .edit-decor-tray-header) {
   max-height: 86px;
 }
 
@@ -891,14 +897,14 @@ body.mobile-page .edit-decor-tray-scroller::-webkit-scrollbar {
   display: none;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tray-scroller {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray, #foodTray, #medicineTray) .edit-decor-tray-scroller {
   align-items: center;
   gap: 5px;
   min-height: 42px;
   padding: 0;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray, #foodTray, #medicineTray) .edit-decor-tile {
   width: 42px;
   min-width: 42px;
   max-width: 42px;
@@ -906,17 +912,17 @@ body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .e
   min-height: 42px;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile::before,
-body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-menu-button {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray, #foodTray, #medicineTray) .edit-decor-tile::before,
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray, #foodTray, #medicineTray) .edit-decor-tile-menu-button {
   display: none !important;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-primary {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray, #foodTray, #medicineTray) .edit-decor-tile-primary {
   touch-action: pan-x;
   -webkit-touch-callout: none;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-surface {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray, #foodTray, #medicineTray) .edit-decor-tile-surface {
   border-radius: 10px;
   border-color: rgba(225, 239, 255, 0.18);
   background:
@@ -927,44 +933,44 @@ body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .e
     inset 0 -1px 0 rgba(0, 0, 0, 0.14);
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-thumb {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray, #foodTray, #medicineTray) .edit-decor-tile-thumb {
   width: calc(100% - 5px);
   height: calc(100% - 5px);
   max-width: 100%;
   max-height: 100%;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray, #foodTray, #medicineTray) .edit-decor-tile-count {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray, #foodTray, #medicineTray) .edit-decor-tile-count {
   right: 3px;
   bottom: 2px;
   font-size: 0.44rem;
   line-height: 1;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-menu {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray) .edit-fish-tray-context-menu {
   z-index: 31;
   min-width: 126px;
   max-width: min(164px, calc(100vw - 32px));
   pointer-events: auto;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-card {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray) .edit-fish-tray-context-card {
   gap: 4px;
   padding: 6px;
   border-radius: 10px;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-copy strong {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray) .edit-fish-tray-context-copy strong {
   font-size: 0.54rem;
   line-height: 1.08;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-copy span {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray) .edit-fish-tray-context-copy span {
   font-size: 0.46rem;
   line-height: 1.08;
 }
 
-body.mobile-page :is(#editDecorTray, #editFishTray) .edit-fish-tray-context-action {
+body.mobile-page :is(#editDecorTray, #editFishTray, #editEquipmentTray) .edit-fish-tray-context-action {
   min-height: 22px;
   padding: 4px 7px;
   font-size: 0.5rem;
@@ -3770,4 +3776,268 @@ body.mobile-page :is(
   #utilityOverlay + .mobile-management-tabs .mobile-management-tab-button
 ) {
   border-radius: var(--mobile-glass-radius) !important;
+}
+
+/* Fish-care tray keeps the mobile tray's existing compact height. */
+body.mobile-page #medicineTray {
+  min-height: 42px;
+  max-height: 58px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+body.mobile-page #medicineTray .edit-decor-tray-scroller {
+  min-height: 42px;
+  height: 42px;
+  align-items: stretch;
+  padding: 0;
+}
+
+body.mobile-page #medicineTray .care-tray-content {
+  flex: 1 0 760px;
+  width: 100%;
+  min-width: 760px;
+  height: 42px;
+  grid-template-columns: 166px minmax(292px, 1fr) 1px 166px;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+body.mobile-page #medicineTray .care-tray-category {
+  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  place-items: initial;
+  align-items: center;
+  align-content: normal;
+  gap: 6px;
+  padding: 3px 7px;
+  border-radius: 10px;
+}
+
+body.mobile-page #medicineTray .care-tray-category-icon {
+  width: 34px;
+  height: 34px;
+}
+
+body.mobile-page #medicineTray .care-tray-category-copy {
+  display: grid;
+  gap: 2px;
+  align-content: center;
+}
+
+body.mobile-page #medicineTray .care-tray-category-copy strong {
+  font-size: 0.63rem;
+}
+
+body.mobile-page #medicineTray .care-tray-category-copy small {
+  font-size: 0.41rem;
+}
+
+body.mobile-page #medicineTray :is(.care-tray-medical, .care-tray-tools) {
+  grid-template-rows: 8px minmax(0, 1fr);
+  gap: 1px;
+  padding: 1px 0;
+}
+
+body.mobile-page #medicineTray .care-tray-heading {
+  font-size: 0.38rem;
+  letter-spacing: 0.08em;
+}
+
+body.mobile-page #medicineTray .care-tray-medical-items {
+  gap: 4px;
+}
+
+body.mobile-page #medicineTray .care-medicine-card {
+  width: 48px;
+  min-width: 48px;
+  height: 31px;
+  flex-basis: 48px;
+  grid-template-columns: 20px minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  gap: 2px;
+  padding: 2px 3px;
+  border-radius: 8px;
+}
+
+body.mobile-page #medicineTray .care-medicine-card-image {
+  width: 20px;
+  height: 20px;
+}
+
+body.mobile-page #medicineTray .care-medicine-card-name {
+  font-size: 0.38rem;
+  text-align: left;
+}
+
+body.mobile-page #medicineTray .care-medicine-card-count {
+  top: 1px;
+  right: 1px;
+  min-width: 13px;
+  height: 11px;
+  padding: 0 2px;
+  font-size: 0.32rem;
+}
+
+body.mobile-page #medicineTray .care-tray-empty-medical {
+  height: 31px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px;
+  padding: 2px 5px;
+  border-radius: 8px;
+}
+
+body.mobile-page #medicineTray .care-tray-empty-icon {
+  width: 15px;
+  height: 18px;
+}
+
+body.mobile-page #medicineTray .care-tray-empty-copy {
+  gap: 1px;
+}
+
+body.mobile-page #medicineTray .care-tray-empty-copy strong {
+  font-size: 0.43rem;
+}
+
+body.mobile-page #medicineTray .care-tray-empty-copy small {
+  font-size: 0.33rem;
+  white-space: nowrap;
+}
+
+
+body.mobile-page #medicineTray .care-tray-empty-shop-button {
+  min-width: 88px;
+  min-height: 24px;
+  padding: 3px 6px;
+  border-radius: 7px;
+  font-size: 0.36rem;
+}
+
+body.mobile-page #medicineTray .care-tray-divider {
+  margin: 4px 0 2px;
+}
+
+body.mobile-page #medicineTray .care-tray-tools {
+  min-width: 166px;
+}
+
+body.mobile-page #medicineTray .care-tray-tool-row {
+  gap: 4px;
+}
+
+body.mobile-page #medicineTray .care-tool-tile {
+  height: 31px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  gap: 2px;
+  padding: 2px 5px;
+  border-radius: 8px;
+  font-size: 0.42rem;
+}
+
+body.mobile-page #medicineTray .care-tool-tile img {
+  width: 23px;
+  height: 23px;
+}
+
+/* One size contract for every editor tab on narrow screens. */
+body.mobile-page :is(#editFishTray, #editDecorTray, #editEquipmentTray, #editTankTray) {
+  height: 180px !important; min-height: 180px !important; max-height: 180px !important;
+}
+body.mobile-page #editEquipmentTray { grid-template-columns: minmax(0, 1fr); }
+body.mobile-page #editEquipmentTray .edit-decor-tile-menu-button { display: block; }
+body.mobile-page .submarine-touch-controls button { min-width: 40px; min-height: 40px; }
+
+body.mobile-page #editTankTray > .edit-tank-tray-scroller {
+  display: flex !important;
+  align-items: stretch !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+body.mobile-page #editTankTray .edit-tank-tray-panel,
+body.mobile-page #editTankTray .edit-tank-background-workspace,
+body.mobile-page #editTankTray #editTankCustomGravelPanel,
+body.mobile-page #editTankTray .custom-gravel-panel-shell,
+body.mobile-page #editTankTray .custom-gravel-layer-list,
+body.mobile-page #editTankTray #editTankBackgroundList,
+body.mobile-page #editTankTray #editTankBackgroundColorPanel {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+/* Mode panels inherit compact shop-row limits elsewhere in the stylesheet;
+   clear those limits so every Tank editor control fills its tray. */
+body.mobile-page #editTankTray .background-color-panel-shell,
+body.mobile-page #editTankTray .custom-gravel-panel-shell,
+body.mobile-page #editTankTray .edit-tank-background-control,
+body.mobile-page #editTankTray #editTankBackgroundList .background-card,
+body.mobile-page #editTankTray .custom-gravel-layer-card {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-self: stretch;
+}
+
+body.mobile-page #editTankTray > .edit-tray-mode-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+body.mobile-page #editTankTray > .edit-tray-mode-header > .edit-overlay-mode-tabs {
+  position: static;
+  grid-column: 2;
+  margin: 0;
+  transform: none;
+  width: max-content;
+  max-width: 100%;
+}
+
+body.mobile-page #editTankTray > .edit-tray-mode-header > .edit-tray-done-button {
+  grid-column: 3;
+  justify-self: end;
+}
+
+body.mobile-page #editTankTray > .edit-tank-tray-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Keep the shared five-tab navigation identical on the mobile editor trays. */
+body.mobile-page .edit-decor-tray > .edit-tray-mode-header {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  align-items: center !important;
+}
+
+body.mobile-page .edit-decor-tray > .edit-tray-mode-header > .edit-overlay-mode-tabs {
+  grid-column: 2 !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  justify-self: center !important;
+}
+
+body.mobile-page .edit-decor-tray > .edit-tray-mode-header > .edit-tray-done-button {
+  grid-column: 3 !important;
+  justify-self: end !important;
+}
+
+body.mobile-page .edit-overlay-mode-tab {
+  flex: 0 0 82px !important;
+  width: 82px !important;
+  min-width: 82px !important;
+  padding-inline: 4px !important;
+  gap: 3px !important;
+  font-size: 0.58rem !important;
+}
+
+body.mobile-page .edit-tank-tray {
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+body.mobile-page .edit-tank-background-panel {
+  grid-template-rows: 27px minmax(0, 1fr) !important;
 }

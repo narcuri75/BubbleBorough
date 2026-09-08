@@ -1593,6 +1593,7 @@ function setFishNeedValue(fish, needKey, value, now = Date.now()) {
     return false;
   }
   fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
+  if (needKey !== "hunger") return false;
   const previous = fish.needs[needKey];
   fish.needs[needKey] = clamp(Number(value) || 0, 0, 100);
   return Math.abs(previous - fish.needs[needKey]) > 0.001;
@@ -1604,8 +1605,62 @@ function adjustFishNeed(fish, needKey, delta, now = Date.now()) {
 
 function getFishNeedsSnapshot(fish, now = Date.now()) {
   const needs = sanitizeFishNeeds(fish?.needs, fish, now);
-  const mood = getFishNeedsMood(needs);
-  return { needs, mood };
+  const care = getFishCareStatus(fish, now, needs);
+  const disposition = getFishDisposition(fish, now);
+  const mood = { ...getFishNeedsMood(needs), label: disposition.mood, tone: care?.tone || "good" };
+  return { needs, mood, care, activity: disposition.activity };
+}
+
+function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fish?.needs, fish, now)) {
+  if (!fish || isFishDead(fish) || isUndeadFish(fish)) return null;
+  if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
+    return { tone: "danger", text: "Very hungry. Drop some food into the tank." };
+  }
+  if (isFishDiseaseVisible(fish)) return { tone: "danger", text: "Feeling unwell. Check their health in Details." };
+  if (getTankDirtiness(now) >= 0.45) return { tone: "warn", text: "The tank could use a clean." };
+  if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_LOW_THRESHOLD) {
+    return { tone: "warn", text: "Ready for a meal. Drop some food into the tank." };
+  }
+  const conflict = getFishConflictStatus(fish, getCurrentTank(), now).find(item => item.active);
+  if (conflict) return { tone: "warn", text: conflict.tag === "overcrowded"
+    ? "Looking for more swimming room. Try a roomier tank."
+    : conflict.tag === "sharp_decor" ? "Sharp decor is making this fish uncomfortable."
+    : "Tankmates are making this fish uneasy. Check compatibility in Details." };
+  const missing = getFishNeedsStatus(fish, getCurrentTank(), now).find(item => !item.met);
+  if (!missing) return null;
+  const hints = {
+    plants: "Looking for a leafy corner. Add a plant.",
+    cave: "Looking for somewhere to hide. Add a cave.",
+    open_water: "Looking for more open swimming space.",
+    school_2_plus: "Would enjoy a companion of the same species.",
+    surface_cover: "Would enjoy some cover near the surface.",
+    hardscape: "Would enjoy a rock or another sheltered spot.",
+    driftwood: "Would enjoy a piece of driftwood.",
+    coral: "Would enjoy some coral.",
+    seaweed_algae: "Would enjoy some seaweed or algae to graze on."
+  };
+  return { tone: "okay", text: hints[missing.tag] || "Would enjoy " + missing.label.toLowerCase() + " in the tank." };
+}
+
+function getFishDisposition(fish, now = Date.now()) {
+  const active = getActiveFishActionQueueItem(fish, now);
+  const intent = sanitizeBehaviorIntent(fish?.behaviorIntent, now);
+  const action = active?.action || intent?.type || "";
+  const partnerId = active?.targetId || intent?.targetId || runtime.fishActionSteeringByFishId.get(fish?.id)?.targetFishId;
+  const partner = partnerId ? getManagedFishById(partnerId)?.fish : null;
+  if (fish?.activity === "feeding" || action === "eat") return { mood: "Content", activity: "Enjoying a meal" };
+  if (action === "waitfood") return { mood: "Hopeful", activity: "Watching the food dispenser" };
+  if (/sleep|rest/.test(action)) return { mood: "Sleepy", activity: "Settling into a quiet spot" };
+  if (/zoomies|play|pebble/.test(action) || fish?.activity === FISH_GRAVEL_PEBBLE_ACTIVITY) return { mood: "Playful", activity: /pebble/.test(action) ? "Tossing a little pebble" : "Having a little fun" };
+  if (/hangout|greet|follow|school/.test(action)) return { mood: "Sociable", activity: partner ? "Hanging out with " + (partner.name || "a friend") : "Swimming with the neighbors" };
+  if (/avoid|flee/.test(action)) return { mood: "Shy", activity: "Taking a little space" };
+  if (/hide|home|guard/.test(action) || fish?.caveState) return { mood: "Cozy", activity: "Tucked into a favorite corner" };
+  if (/inspect|explor|dig|forage|graze/.test(action)) return { mood: "Curious", activity: "Investigating the neighborhood" };
+  if (/breed|mate/.test(action)) return { mood: "Affectionate", activity: "Spending time with a partner" };
+  const personality = getFishPersonality(fish);
+  if (["curious", "explorer"].includes(personality)) return { mood: "Curious", activity: "Looking around the tank" };
+  if (["shy", "nervous", "standoffish"].includes(personality)) return { mood: "Shy", activity: "Enjoying some time to themselves" };
+  return { mood: "Content", activity: "Watching the world drift by" };
 }
 
 function getFishHungerLabel(fish, now = Date.now()) {
@@ -1664,92 +1719,14 @@ function getFishSocialNeedTarget(fish) {
 
 function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   const species = getSpeciesForFish(fish);
-  if (!fish || !species || isFishDead(fish) || isUndeadFish(fish)) {
-    return null;
-  }
+  if (!fish || !species || isFishDead(fish) || isUndeadFish(fish)) return null;
   const hours = Math.max(0, elapsedMs) / HOUR_MS;
-  const activeQueueItem = getActiveFishActionQueueItem(fish, now);
-  const dirtiness = getTankDirtiness(now);
-  const comfortTarget = getFishComfort(fish, now).value * 100;
-  const hygieneTarget = clamp((1 - dirtiness * getPersonalityNeedModifier(fish, "hygiene")) * 100, 0, 100);
-  const environmentTarget = getFishEnvironmentNeedTarget(fish, now);
-  const socialTarget = getFishSocialNeedTarget(fish);
-  const deltas = {
-    hunger: -hours * 2.5 * getPersonalityNeedModifier(fish, "hunger"),
-    energy: -hours * 2 * getPersonalityNeedModifier(fish, "energy"),
-    social: (socialTarget - getFishNeedValue(fish, "social", now)) * Math.min(1, hours * 0.18) - hours * 1.4 * getPersonalityNeedModifier(fish, "social"),
-    comfort: (comfortTarget - getFishNeedValue(fish, "comfort", now)) * Math.min(1, hours * 0.45),
-    hygiene: (hygieneTarget - getFishNeedValue(fish, "hygiene", now)) * Math.min(1, hours * 0.38),
-    environment: (environmentTarget - getFishNeedValue(fish, "environment", now)) * Math.min(1, hours * 0.22),
-    stimulation: -hours * 4.4 * getPersonalityNeedModifier(fish, "stimulation")
+  // Food is the only depleting individual resource. The tank supplies comfort
+  // and clean water; ordinary rest, company and play take care of themselves.
+  return {
+    hunger: isMealFreeFish(fish) ? 0 : -hours * 2.5 * getPersonalityNeedModifier(fish, "hunger"),
+    energy: 0, social: 0, comfort: 0, hygiene: 0, environment: 0, stimulation: 0
   };
-
-  if (fish.activity === "feeding") {
-    deltas.energy -= hours * 2;
-    deltas.stimulation += hours * 2;
-  }
-  if (fish.activity === "roam" || fish.activity === "feeding" || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY || fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
-    const motionCost = clamp(Number(fish.motionLevel) || 0.2, 0.08, 1) * (fish.activity === "roam" ? 0.75 : 1.8);
-    deltas.energy -= hours * motionCost;
-  }
-  if (activeQueueItem) {
-    switch (activeQueueItem.action) {
-      case "zoomies":
-        deltas.energy -= hours * 10;
-        deltas.hunger -= hours * 3;
-        deltas.stimulation += hours * 22;
-        break;
-      case "sleep":
-        deltas.energy += hours * 180;
-        deltas.comfort += hours * 8;
-        deltas.stimulation -= hours * 1.5;
-        break;
-      case "rest":
-        deltas.energy += hours * 240;
-        deltas.comfort += hours * 8;
-        deltas.stimulation -= hours * 1.5;
-        break;
-      case "hide":
-        deltas.energy += hours * 8;
-        deltas.comfort += hours * 12;
-        break;
-      case "hangout":
-      case "greet":
-        deltas.social += hours * 18;
-        deltas.stimulation += hours * 6;
-        break;
-      case "inspect":
-      case "play":
-        deltas.stimulation += hours * 14;
-        deltas.energy -= hours * 2;
-        break;
-      case "pebble":
-        deltas.environment += hours * 18;
-        deltas.stimulation += hours * 10;
-        deltas.energy -= hours * 3;
-        break;
-      case "dig":
-        deltas.environment += hours * 20;
-        deltas.stimulation += hours * 7;
-        deltas.energy -= hours * 3.5;
-        break;
-      case "waitfood":
-        deltas.comfort += hours * 3;
-        deltas.stimulation += hours * 2;
-        break;
-      case "avoid":
-        deltas.comfort += hours * 12;
-        deltas.energy -= hours * 2;
-        break;
-      case "breed":
-        deltas.energy -= hours * 4;
-        deltas.social += hours * 6;
-        break;
-      default:
-        break;
-    }
-  }
-  return deltas;
 }
 
 function updateFishNeeds(now = Date.now()) {
@@ -1772,7 +1749,7 @@ function updateFishNeeds(now = Date.now()) {
       changed = setFishNeedValue(fish, key, fish.needs[key] + (Number(deltas[key]) || 0), now) || changed;
     }
     fish.needsUpdatedAt = now;
-    if (fish.needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
+    if (!isMealFreeFish(fish) && fish.needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
       maybeRecordFishNeedEvent(fish, "starving", `${fish.name} is starving.`, now, 2 * HOUR_MS);
       fish.lastNeedEventAtByType = sanitizeFishNeedEventMap(fish.lastNeedEventAtByType);
       if (now - (Number(fish.lastNeedEventAtByType["starve-damage"]) || 0) >= 2 * HOUR_MS) {
@@ -1785,9 +1762,6 @@ function updateFishNeeds(now = Date.now()) {
         }
         changed = true;
       }
-    }
-    if (fish.needs.energy <= FISH_ENERGY_CRITICAL_THRESHOLD) {
-      maybeRecordFishNeedEvent(fish, "exhausted", `${fish.name} is exhausted.`, now, 2 * HOUR_MS);
     }
   }
   return changed;

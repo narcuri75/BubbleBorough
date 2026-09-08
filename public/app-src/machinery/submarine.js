@@ -142,6 +142,7 @@ function sanitizeStoredSubmarineState(rawStoredSubmarine, now = Date.now()) {
     autopilot: rawStoredSubmarine.autopilot !== false,
     machineryColor: normalizeDecorColorSetting(rawStoredSubmarine.machineryColor ?? rawStoredSubmarine.colorSetting ?? ""),
     machineryColorize: normalizeDecorColorizeSetting(rawStoredSubmarine.machineryColorize ?? false),
+    appearanceVariantKey: typeof rawStoredSubmarine.appearanceVariantKey === "string" ? rawStoredSubmarine.appearanceVariantKey : null,
     inventory: sanitizeSubmarineInventory(rawStoredSubmarine.inventory)
   };
 }
@@ -156,6 +157,7 @@ function createStoredSubmarineState(submarine, now = Date.now()) {
     autopilot: submarine.autopilot,
     machineryColor: getMachineryColorSetting(submarine),
     machineryColorize: getMachineryColorizeSetting(submarine),
+    appearanceVariantKey: submarine.appearanceVariantKey,
     inventory: submarine.inventory
   }, now);
 }
@@ -172,6 +174,7 @@ function sanitizeStoredBoatState(rawStoredBoat, now = Date.now()) {
     autopilot: rawStoredBoat.autopilot !== false,
     machineryColor: normalizeDecorColorSetting(rawStoredBoat.machineryColor ?? rawStoredBoat.colorSetting ?? ""),
     machineryColorize: normalizeDecorColorizeSetting(rawStoredBoat.machineryColorize ?? false),
+    appearanceVariantKey: typeof rawStoredBoat.appearanceVariantKey === "string" ? rawStoredBoat.appearanceVariantKey : null,
     inventory: sanitizeBoatInventory(rawStoredBoat.inventory)
   };
 }
@@ -185,18 +188,35 @@ function createStoredBoatState(boat, now = Date.now()) {
     autopilot: boat.autopilot,
     machineryColor: getMachineryColorSetting(boat),
     machineryColorize: getMachineryColorizeSetting(boat),
+    appearanceVariantKey: boat.appearanceVariantKey,
     inventory: boat.inventory
   }, now);
 }
 
 function getStoredSubmarineState() {
   if (!state) return null;
-  return state.storedSubmarine;
+  return getStoredSubmarineStates()[0] || null;
+}
+
+function getStoredSubmarineStates() {
+  if (!state) return [];
+  if (!Array.isArray(state.storedSubmarines)) {
+    state.storedSubmarines = state.storedSubmarine ? [state.storedSubmarine] : [];
+  }
+  return state.storedSubmarines;
 }
 
 function getStoredBoatState() {
   if (!state) return null;
-  return state.storedBoat;
+  return getStoredBoatStates()[0] || null;
+}
+
+function getStoredBoatStates() {
+  if (!state) return [];
+  if (!Array.isArray(state.storedBoats)) {
+    state.storedBoats = state.storedBoat ? [state.storedBoat] : [];
+  }
+  return state.storedBoats;
 }
 
 function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
@@ -227,6 +247,7 @@ function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
     autopilot: options.autopilot !== false,
     machineryColor: normalizeDecorColorSetting(options.machineryColor ?? options.colorSetting ?? ""),
     machineryColorize: normalizeDecorColorizeSetting(options.machineryColorize ?? false),
+    appearanceVariantKey: typeof options.appearanceVariantKey === "string" ? options.appearanceVariantKey : null,
     inventory: sanitizeSubmarineInventory(options.inventory),
     entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
     entryDurationMs: Math.max(0, Number(options.entryDurationMs) || 0),
@@ -264,6 +285,7 @@ function createBoatMachinery(tankId, now = Date.now(), options = {}) {
     autopilot: options.autopilot !== false,
     machineryColor: normalizeDecorColorSetting(options.machineryColor ?? options.colorSetting ?? ""),
     machineryColorize: normalizeDecorColorizeSetting(options.machineryColorize ?? false),
+    appearanceVariantKey: typeof options.appearanceVariantKey === "string" ? options.appearanceVariantKey : null,
     inventory: sanitizeBoatInventory(options.inventory),
     entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
     entryDurationMs: Math.max(0, Number(options.entryDurationMs) || 0),
@@ -282,8 +304,7 @@ function sanitizeMachineryState(rawMachinery, tanks = getAllTanks(), now = Date.
   const source = Array.isArray(rawMachinery) ? rawMachinery : [];
   const sanitized = [];
   for (const entry of source) {
-    if (!entry || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(entry.type)
-      || sanitized.some((item) => item.type === entry.type)) {
+    if (!entry || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(entry.type)) {
       continue;
     }
     const tankId = validTankIds.has(entry.tankId) ? entry.tankId : fallbackTankId;
@@ -356,8 +377,11 @@ function getSubmarinePlayerFoodCount() {
     .reduce((total, food) => total + Math.max(0, Math.floor(Number(state.foodInventory?.[food.id]) || 0)), 0);
 }
 
-function buySubmarine() {
-  if (isSubmarineOwned()) {
+function buySubmarine(options = {}) {
+  const variant = getMachineryAppearanceVariants(MACHINERY_TYPE_SUBMARINE)
+    .find((entry) => entry.key === options.appearanceVariantKey);
+  if (options.appearanceVariantKey && !variant) {
+    showToast("That submarine appearance is no longer available.", { tone: "error" });
     return false;
   }
   return performCoinTransaction({
@@ -365,6 +389,9 @@ function buySubmarine() {
     insufficientMessage: `You need ${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)} for the Automated Care Submarine.`,
     apply: () => {
       state.submarineOwned = true;
+      const stored = sanitizeStoredSubmarineState({ appearanceVariantKey: variant?.key, inventory: null }, Date.now());
+      state.storedSubmarines = [...getStoredSubmarineStates(), stored];
+      state.storedSubmarine = state.storedSubmarines[0] || null;
       runtime.equipmentEditTrayTab = "storage";
     },
     event: {
@@ -378,9 +405,9 @@ function buySubmarine() {
 
 function deploySubmarine(targetTank = getCurrentTank(), now = Date.now()) {
   if (!isSubmarineOwned() || !targetTank) return false;
-  const existing = getSubmarine();
-  if (existing) return moveSubmarineToTank(targetTank, now);
   const storedSubmarine = getStoredSubmarineState();
+  const existing = getSubmarine();
+  if (!storedSubmarine && existing) return moveSubmarineToTank(targetTank, now);
   const dropXNorm = randomBetween(0.26, 0.74);
   const submarine = createSubmarineMachinery(targetTank.id, now, {
     ...(storedSubmarine || {}),
@@ -396,7 +423,8 @@ function deploySubmarine(targetTank = getCurrentTank(), now = Date.now()) {
     entrySplashTriggered: false
   });
   state.submarineOwned = true;
-  state.storedSubmarine = null;
+  state.storedSubmarines = getStoredSubmarineStates().slice(1);
+  state.storedSubmarine = state.storedSubmarines[0] || null;
   state.machinery = [...getMachineryList(), submarine];
   runtime.equipmentEditTrayTab = "tank";
   pushEvent(`Automated Care Submarine deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
@@ -441,7 +469,8 @@ function recallSubmarine(now = Date.now()) {
   clearSubmarineManualDriveKeys();
   if (runtime.selectedMachineryId === submarine.id) closeSubmarineManager();
   closeEditEquipmentTrayContextMenu({ render: false });
-  state.storedSubmarine = createStoredSubmarineState(submarine, now);
+  state.storedSubmarines = [...getStoredSubmarineStates(), createStoredSubmarineState(submarine, now)];
+  state.storedSubmarine = state.storedSubmarines[0] || null;
   state.machinery = getMachineryList().filter((item) => item?.id !== submarine.id);
   state.submarineOwned = true;
   runtime.equipmentEditTrayTab = "storage";
@@ -454,8 +483,11 @@ function recallSubmarine(now = Date.now()) {
   return true;
 }
 
-function buyBoat() {
-  if (isBoatOwned()) {
+function buyBoat(options = {}) {
+  const variant = getMachineryAppearanceVariants(MACHINERY_TYPE_BOAT)
+    .find((entry) => entry.key === options.appearanceVariantKey);
+  if (options.appearanceVariantKey && !variant) {
+    showToast("That boat appearance is no longer available.", { tone: "error" });
     return false;
   }
   return performCoinTransaction({
@@ -463,6 +495,9 @@ function buyBoat() {
     insufficientMessage: `You need ${BOAT_COST} ${pluralize("coin", BOAT_COST)} for the Chum Skiff.`,
     apply: () => {
       state.boatOwned = true;
+      const stored = sanitizeStoredBoatState({ appearanceVariantKey: variant?.key, inventory: null }, Date.now());
+      state.storedBoats = [...getStoredBoatStates(), stored];
+      state.storedBoat = state.storedBoats[0] || null;
       runtime.equipmentEditTrayTab = "storage";
     },
     event: {
@@ -476,9 +511,9 @@ function buyBoat() {
 
 function deployBoat(targetTank = getCurrentTank(), now = Date.now()) {
   if (!isBoatOwned() || !targetTank) return false;
-  const existing = getBoat();
-  if (existing) return moveBoatToTank(targetTank, now);
   const storedBoat = getStoredBoatState();
+  const existing = getBoat();
+  if (!storedBoat && existing) return moveBoatToTank(targetTank, now);
   const dropXNorm = randomBetween(0.26, 0.74);
   const boat = createBoatMachinery(targetTank.id, now, {
     ...(storedBoat || {}),
@@ -491,7 +526,8 @@ function deployBoat(targetTank = getCurrentTank(), now = Date.now()) {
     entrySplashTriggered: false
   });
   state.boatOwned = true;
-  state.storedBoat = null;
+  state.storedBoats = getStoredBoatStates().slice(1);
+  state.storedBoat = state.storedBoats[0] || null;
   state.machinery = [...getMachineryList(), boat];
   runtime.equipmentEditTrayTab = "tank";
   pushEvent(`Chum Skiff deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
@@ -534,7 +570,8 @@ function recallBoat(now = Date.now()) {
   clearBoatManualDriveKeys();
   if (runtime.selectedMachineryId === boat.id) closeSubmarineManager();
   closeEditEquipmentTrayContextMenu({ render: false });
-  state.storedBoat = createStoredBoatState(boat, now);
+  state.storedBoats = [...getStoredBoatStates(), createStoredBoatState(boat, now)];
+  state.storedBoat = state.storedBoats[0] || null;
   state.machinery = getMachineryList().filter((item) => item?.id !== boat.id);
   state.boatOwned = true;
   runtime.equipmentEditTrayTab = "storage";
@@ -1530,28 +1567,24 @@ function getBoatControlStatus(boat = getBoat()) {
 }
 
 function renderSubmarineShopCard() {
-  const submarine = getSubmarine();
-  const owned = isSubmarineOwned();
-  const status = !owned
-    ? "Available"
-    : submarine
-      ? `Sold out | Yours is deployed in ${getTankLabel(getSubmarineTank(submarine))}`
-      : "Sold out | Yours is in equipment storage";
+  const count = getMachineryList().filter((item) => item.type === MACHINERY_TYPE_SUBMARINE).length + getStoredSubmarineStates().length;
+  const variants = getMachineryAppearanceVariants(MACHINERY_TYPE_SUBMARINE);
+  const mainImage = variants[0]?.image || SUBMARINE_IMAGE_PATH;
   return `
-    <article class="shop-card submarine-shop-card ${owned ? "is-sold-out" : ""}">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+    <article class="shop-card submarine-shop-card">
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(mainImage)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
       <div class="shop-meta shop-card-main">
         <div>
           <strong>Automated Care Submarine</strong>
-          <div class="fish-meta">${escapeHtml(status)}</div>
+          <div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div>
         </div>
         <div class="fish-meta">Automatic care machinery that travels between connected tanks to feed hungry fish and deploy health or calming medicine when needed.</div>
-        <div class="mini-note">Carries 99 food, 99 health drops, and 99 calming drops. Only one submarine can be purchased.</div>
+        <div class="mini-note">Carries 99 food, 99 health drops, and 99 calming drops. Choose an appearance and buy as many as you need.</div>
       </div>
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)}</span>
         <div class="shop-button-row">
-          <button class="buy-button" data-buy-submarine="true" ${owned ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Submarine"}</button>
+          <button class="buy-button" data-buy-submarine="true" data-machinery-variants="${escapeHtml(JSON.stringify(variants))}">Buy Submarine</button>
         </div>
       </div>
     </article>
@@ -1559,24 +1592,20 @@ function renderSubmarineShopCard() {
 }
 
 function renderBoatShopCard() {
-  const boat = getBoat();
-  const owned = isBoatOwned();
-  const status = !owned
-    ? "Available"
-    : boat
-      ? `Sold out | Yours is deployed in ${getTankLabel(getBoatTank(boat))}`
-      : "Sold out | Yours is in equipment storage";
+  const count = getMachineryList().filter((item) => item.type === MACHINERY_TYPE_BOAT).length + getStoredBoatStates().length;
+  const variants = getMachineryAppearanceVariants(MACHINERY_TYPE_BOAT);
+  const mainImage = variants[0]?.image || BOAT_IMAGE_PATH;
   return `
-    <article class="shop-card boat-shop-card ${owned ? "is-sold-out" : ""}">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_BOAT))}" alt="Chum Skiff" onerror="this.src='assets/icons/tools.png'" />
+    <article class="shop-card boat-shop-card">
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(mainImage)}" alt="Chum Skiff" onerror="this.src='assets/icons/tools.png'" />
       <div class="shop-meta shop-card-main">
-        <div><strong>Chum Skiff</strong><div class="fish-meta">${escapeHtml(status)}</div></div>
+        <div><strong>Chum Skiff</strong><div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div></div>
         <div class="fish-meta">A surface skiff that skips back and forth across the water and drops chum on command.</div>
-        <div class="mini-note">Carries ${BOAT_RESOURCE_CAPACITY} chum. One skiff can be purchased.</div>
+        <div class="mini-note">Carries ${BOAT_RESOURCE_CAPACITY} chum. Choose an appearance and buy as many as you need.</div>
       </div>
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${BOAT_COST} ${pluralize("coin", BOAT_COST)}</span>
-        <div class="shop-button-row"><button class="buy-button" data-buy-boat="true" ${owned ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Boat"}</button></div>
+        <div class="shop-button-row"><button class="buy-button" data-buy-boat="true" data-machinery-variants="${escapeHtml(JSON.stringify(variants))}">Buy Boat</button></div>
       </div>
     </article>
   `;
@@ -1688,6 +1717,8 @@ function renderEditEquipmentTray() {
   const boat = getBoat();
   const storedSubmarine = getStoredSubmarineState();
   const storedBoat = getStoredBoatState();
+  const storedSubmarines = getStoredSubmarineStates();
+  const storedBoats = getStoredBoatStates();
   const submarineOwned = isSubmarineOwned();
   const boatOwned = isBoatOwned();
   const currentTank = getCurrentTank();
@@ -1695,7 +1726,7 @@ function renderEditEquipmentTray() {
   const boatTank = getBoatTank(boat);
   const machineryEntries = activeLocationTab === "storage"
     ? [
-      storedSubmarine ? { item: storedSubmarine, type: MACHINERY_TYPE_SUBMARINE, stored: true } : null,
+      ...storedSubmarines.map((item) => ({ item, type: MACHINERY_TYPE_SUBMARINE, stored: true })),
       // A newly purchased machine has ownership but no persisted storage
       // record until it is deployed once. Show that owned machine here so
       // purchase immediately exposes the same Place action as a recalled one.
@@ -1706,7 +1737,7 @@ function renderEditEquipmentTray() {
           stored: true
         }
         : null,
-      storedBoat ? { item: storedBoat, type: MACHINERY_TYPE_BOAT, stored: true } : null,
+      ...storedBoats.map((item) => ({ item, type: MACHINERY_TYPE_BOAT, stored: true })),
       !storedBoat && !boat && boatOwned
         ? {
           item: { type: MACHINERY_TYPE_BOAT, inventory: sanitizeBoatInventory(null) },
@@ -1716,15 +1747,17 @@ function renderEditEquipmentTray() {
         : null
     ].filter(Boolean)
     : [
-      submarine && submarine.tankId === currentTank?.id ? { item: submarine, type: MACHINERY_TYPE_SUBMARINE, stored: false } : null,
-      boat && boat.tankId === currentTank?.id ? { item: boat, type: MACHINERY_TYPE_BOAT, stored: false } : null
+      ...getMachineryList().filter((item) => item.type === MACHINERY_TYPE_SUBMARINE && item.tankId === currentTank?.id)
+        .map((item) => ({ item, type: MACHINERY_TYPE_SUBMARINE, stored: false })),
+      ...getMachineryList().filter((item) => item.type === MACHINERY_TYPE_BOAT && item.tankId === currentTank?.id)
+        .map((item) => ({ item, type: MACHINERY_TYPE_BOAT, stored: false }))
     ].filter(Boolean);
 
   const renderMachineryTile = ({ item, type, stored }) => {
     const isBoat = type === MACHINERY_TYPE_BOAT;
     const inventory = isBoat ? sanitizeBoatInventory(item.inventory) : sanitizeSubmarineInventory(item.inventory);
     const label = isBoat ? "Chum Skiff" : "Automated Care Submarine";
-    const imagePath = isBoat ? getMachineryImagePath(MACHINERY_TYPE_BOAT) : getMachineryImagePath(MACHINERY_TYPE_SUBMARINE);
+    const imagePath = getMachineryImagePath(type, Date.now(), item);
     const actionLabel = stored ? `Place ${label} in this tank` : `Manage ${label}`;
     const selector = stored
       ? (isBoat ? "data-tray-place-boat=\"true\"" : "data-tray-place-submarine=\"true\"")
@@ -1799,9 +1832,10 @@ function renderEditEquipmentTray() {
 
 function getSubmarineDrawMetrics(submarine, now = Date.now()) {
   if (!submarine) return null;
-  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE)) || null;
+  const imagePath = getMachineryImagePath(MACHINERY_TYPE_SUBMARINE, now, submarine);
+  const image = runtime.images.get(imagePath) || null;
   if (!isUsableRuntimeImage(image)) {
-    requestRuntimeImageRecovery(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE), { kind: "machinery", id: MACHINERY_TYPE_SUBMARINE });
+    requestRuntimeImageRecovery(imagePath, { kind: "machinery", id: submarine.id });
   }
   const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 3);
   const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
@@ -1842,9 +1876,10 @@ function getSubmarineDrawMetrics(submarine, now = Date.now()) {
 
 function getBoatDrawMetrics(boat, now = Date.now()) {
   if (!boat) return null;
-  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_BOAT)) || null;
+  const imagePath = getMachineryImagePath(MACHINERY_TYPE_BOAT, now, boat);
+  const image = runtime.images.get(imagePath) || null;
   if (!isUsableRuntimeImage(image)) {
-    requestRuntimeImageRecovery(getMachineryImagePath(MACHINERY_TYPE_BOAT), { kind: "machinery", id: MACHINERY_TYPE_BOAT });
+    requestRuntimeImageRecovery(imagePath, { kind: "machinery", id: boat.id });
   }
   const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 1);
   const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
@@ -2521,6 +2556,12 @@ function getSubmarineFishHunger(tank, fish, now = Date.now()) {
   return Number(withActiveTank(tank.id, () => getFishNeedValue(fish, "hunger", now))) || 0;
 }
 
+function isSubmarineCalmingNeed(fish, comfort, now = Date.now()) {
+  // A recent food refusal is an active distress signal. Sending another
+  // pellet only repeats the failed interaction; settle the tank first.
+  return Number(fish?.foodRefusalUntil) > now || comfort <= SUBMARINE_COMFORT_THRESHOLD;
+}
+
 function isTankReachableBySubmarine(submarine, tank) {
   const source = getSubmarineTank(submarine);
   return Boolean(source && tank && (source.id === tank.id || findSubmarineTravelRoute(source, tank)));
@@ -2540,17 +2581,18 @@ function findSubmarineCareCandidate(submarine, now = Date.now()) {
         const score = 400 + (1 - health / Math.max(1, maxHealth)) * 120;
         if (!best || score > best.score) best = { kind: "health", fishId: fish.id, targetTankId: tank.id, score };
       }
+      if (inventory.calming > 0 && !hasSubmarineMedicineEffect(tank, "betaBlocker", now)) {
+        const comfort = getSubmarineFishComfort(tank, fish, now);
+        if (isSubmarineCalmingNeed(fish, comfort, now)) {
+          const refusedFood = Number(fish.foodRefusalUntil) > now;
+          const score = (refusedFood ? 520 : 200) + (SUBMARINE_COMFORT_THRESHOLD - comfort) * 100;
+          if (!best || score > best.score) best = { kind: "calming", fishId: fish.id, targetTankId: tank.id, score };
+        }
+      }
       const hunger = getSubmarineFishHunger(tank, fish, now);
       if (inventory.food > 0 && hunger <= SUBMARINE_HUNGER_THRESHOLD) {
         const score = 300 + (SUBMARINE_HUNGER_THRESHOLD - hunger);
         if (!best || score > best.score) best = { kind: "food", fishId: fish.id, targetTankId: tank.id, score };
-      }
-      if (inventory.calming > 0 && !hasSubmarineMedicineEffect(tank, "betaBlocker", now)) {
-        const comfort = getSubmarineFishComfort(tank, fish, now);
-        if (comfort <= SUBMARINE_COMFORT_THRESHOLD) {
-          const score = 200 + (SUBMARINE_COMFORT_THRESHOLD - comfort) * 100;
-          if (!best || score > best.score) best = { kind: "calming", fishId: fish.id, targetTankId: tank.id, score };
-        }
       }
     }
   }

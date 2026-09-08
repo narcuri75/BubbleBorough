@@ -788,8 +788,9 @@ function buildTutorialActionMarkup(actions) {
 }
 
 function createTutorialUiStateConfig(options = {}) {
-  const toolbarVisible = options.toolbarVisible !== false;
+  const toolbarVisible = true;
   const visibleButtons = new Set(Array.isArray(options.visibleButtons) ? options.visibleButtons : []);
+  visibleButtons.add("openSettingsButton");
   return {
     toolbarVisible,
     displayVisible: options.displayVisible !== false,
@@ -950,6 +951,9 @@ function getEffectiveDisplayCollapsed(uiSettings = getUiSettings(), tutorialUi =
 }
 
 function canUseTutorialToolbarControl(controlId) {
+  if (controlId === "openSettingsButton") {
+    return true;
+  }
   const tutorialState = getActiveTutorialStageRuntime(Date.now());
   if (!tutorialState) {
     return true;

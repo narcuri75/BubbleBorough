@@ -171,6 +171,7 @@ function grantDailyRecapRewardAutomatically(summary, now = Date.now()) {
   const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
   if (reward > 0) {
     state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
+    recordWalletTransaction({ amount: reward, direction: "credit", now, label: "Daily Award", place: "Bubble Borough" });
   }
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
@@ -706,6 +707,7 @@ function applyProgressMilestones(latestSummary = null, now = Date.now()) {
       }
       state.dailyBonus.milestones[milestone.id] = true;
       state.coins = Math.min(MAX_WALLET_COINS, state.coins + milestone.reward);
+      recordWalletTransaction({ amount: milestone.reward, direction: "credit", now, label: `${milestone.label} milestone`, place: "Bubble Borough" });
       const speciesUnlocked = [];
       for (const speciesId of milestone.unlocks) {
         if (unlockFishSpecies(speciesId, now, `${runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)} unlocked from ${milestone.label}.`)) {
@@ -819,10 +821,16 @@ function requestDeferredStateSave() {
 
 function saveState() {
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
-  state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   if (!state) {
     return;
   }
+  if (runtime.freshGameSaveLocked && state?.tutorial?.completed !== true) {
+    return;
+  }
+  if (state?.tutorial?.completed === true) {
+    runtime.freshGameSaveLocked = false;
+  }
+  state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
 
   applyProgressMilestones(null, Date.now());
 
@@ -843,6 +851,8 @@ function saveState() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
     runtime.lastStateSavedAt = Date.now();
+    recordLocalSaveForCloud(runtime.lastStateSavedAt);
+    scheduleCloudSave();
     runtime.gravelStateDirty = false;
     runtime.tankStateDirty = false;
     runtime.deferredStateSaveDirty = false;

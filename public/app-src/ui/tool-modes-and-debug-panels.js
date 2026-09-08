@@ -937,6 +937,9 @@ async function init() {
   bindEvents();
   syncFilterFeatureVisibility();
   const earlyRawState = loadState();
+  runtime.hadLocalSaveAtStartup = Boolean(earlyRawState);
+  runtime.freshGameSaveLocked = !earlyRawState;
+  initializeCloudSaveRuntime();
   applyLoadingOverlayBackground(getSavedActiveTankCandidate(earlyRawState));
 
   const [backgroundResponse, tankResponse, filterResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, filterCatalogMeta, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
@@ -981,6 +984,7 @@ async function init() {
     ...normalizedBaseFishCatalog,
     ...normalizedZombieSkeletonFishCatalog
   ];
+  await discoverFishAppearanceVariants(normalizedFishCatalog);
   runtime.fishCatalog = [
     ...normalizedFishCatalog,
     ...buildVirtualFishCatalogEntries()
@@ -1043,8 +1047,8 @@ async function init() {
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
     FISH_EGG_SHELL_ASSET_PATH,
-    SUBMARINE_IMAGE_PATH,
-    BOAT_IMAGE_PATH,
+    ...SUBMARINE_VARIANT_IMAGE_PATHS,
+    ...BOAT_VARIANT_IMAGE_PATHS,
     HALLOWEEN_BOAT_IMAGE_PATH,
     HALLOWEEN_SUBMARINE_IMAGE_PATH,
     ...GRIME_OVERLAY_ASSET_PATHS,
@@ -1131,7 +1135,7 @@ function showLoadingOverlayReadyState() {
     overlay.classList.remove("is-ready");
     overlay.classList.remove("is-error");
     if (dom.loadingOverlayText) {
-      dom.loadingOverlayText.textContent = "Loading Aquarium";
+      dom.loadingOverlayText.textContent = "Loading";
     }
     return;
   }
@@ -1139,8 +1143,9 @@ function showLoadingOverlayReadyState() {
   overlay.classList.remove("is-error");
   overlay.classList.add("is-ready");
   if (dom.loadingOverlayText) {
-    dom.loadingOverlayText.textContent = isWallpaperEngineModeEnabled() ? "Starting Aquarium" : "Click to play";
+    dom.loadingOverlayText.textContent = isWallpaperEngineModeEnabled() ? "Starting Aquarium" : "Welcome to Bubble Borough";
   }
+  renderStartupActions();
 
   if (isWallpaperEngineModeEnabled()) {
     primeSoundEffects();

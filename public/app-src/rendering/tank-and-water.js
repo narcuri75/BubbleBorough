@@ -87,7 +87,9 @@ function renderTank(now) {
 
 function getCausticLightStrength(now) {
   if (!isCausticLightingEnabled() || isTankLightsOut(now)) return 0;
-  return 0.42 * (1 - clamp(getTankDirtiness(now), 0, 1) * 0.55);
+  // Keep the authored light map readable without turning the whole tank into
+  // a bright projected texture. Individual passes add their own small gain.
+  return 0.16 * (1 - clamp(getTankDirtiness(now), 0, 1) * 0.55);
 }
 
 function getCausticRidgeAlpha(red, green, blue, alpha) {
@@ -248,7 +250,7 @@ function drawGravelCausticProjection(now) {
   traceTankFloorMaskPath(tankContext, bounds);
   tankContext.clip();
   tankContext.globalCompositeOperation = "lighter";
-  tankContext.globalAlpha *= Math.min(1, strength * 1.8);
+  tankContext.globalAlpha *= Math.min(1, strength * 1.15);
   const strips = 40;
   for (let i = 0; i < strips; i++) {
     const t = i / strips;
@@ -296,8 +298,13 @@ function drawDecorCausticLight(context, image, drawX, drawY, width, height, item
   scratch.image = image;
   }
   context.save();
+  // Lighting only exists below the water surface. Clipping here, at tank
+  // coordinates, also handles decorations that straddle the waterline.
+  context.beginPath();
+  context.rect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
+  context.clip();
   context.globalCompositeOperation = "screen";
-  context.globalAlpha *= strength * 1.1;
+  context.globalAlpha *= strength * 0.65;
   drawDecorMotionImageToContext(context, scratch.canvas, drawX, drawY, width, height, item, now, motion);
   context.restore();
 }

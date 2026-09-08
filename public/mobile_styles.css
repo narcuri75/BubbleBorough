@@ -4041,3 +4041,4 @@ body.mobile-page .edit-tank-tray {
 body.mobile-page .edit-tank-background-panel {
   grid-template-rows: 27px minmax(0, 1fr) !important;
 }
+.startup-actions { width: min(340px, 88vw); }

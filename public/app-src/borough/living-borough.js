@@ -12,7 +12,17 @@ function getBoroughReferenceNow(now = Date.now()) {
 
 function isHalloweenCalendarDate(now = Date.now()) {
   const date = new Date(getBoroughReferenceNow(now));
-  return date.getMonth() === 9 && date.getDate() >= 1 && date.getDate() <= 31;
+  return date.getMonth() === 9;
+}
+
+function syncSeasonalBubbleBoroughLogos(now = Date.now()) {
+  if (typeof document === "undefined") return;
+  const source = isHalloweenModeActive(now)
+    ? "assets/misc/Halloween_bb_logo.png"
+    : "assets/misc/bb_logo.png";
+  for (const logo of document.querySelectorAll("[data-seasonal-bb-logo]")) {
+    if (logo.getAttribute("src") !== source) logo.setAttribute("src", source);
+  }
 }
 
 function getHalloweenModeSetting() {
@@ -24,12 +34,33 @@ function isHalloweenModeActive(now = Date.now()) {
   return mode === HALLOWEEN_MODE_ON || (mode === HALLOWEEN_MODE_AUTOMATIC && isHalloweenCalendarDate(now));
 }
 
-function getMachineryImagePath(type, now = Date.now()) {
+function getMachineryAppearanceVariants(type) {
+  const variants = type === MACHINERY_TYPE_BOAT
+    ? (typeof BOAT_VARIANT_IMAGE_PATHS === "undefined" ? [BOAT_IMAGE_PATH] : BOAT_VARIANT_IMAGE_PATHS)
+    : (typeof SUBMARINE_VARIANT_IMAGE_PATHS === "undefined" ? [SUBMARINE_IMAGE_PATH] : SUBMARINE_VARIANT_IMAGE_PATHS);
+  return variants.map((path, index) => ({
+    key: path.split("/").pop(),
+    label: index === 0 ? "Main" : index === variants.length - 1 ? "Halloween" : `Variant ${index}`,
+    image: path
+  }));
+}
+
+function getMachineryImagePath(type, now = Date.now(), machinery = null) {
+  // Keep this self-contained because this resolver also runs during startup,
+  // before the store helpers have necessarily been initialized.
+  const variants = type === MACHINERY_TYPE_BOAT
+    ? (typeof BOAT_VARIANT_IMAGE_PATHS === "undefined" ? null : BOAT_VARIANT_IMAGE_PATHS)
+    : (typeof SUBMARINE_VARIANT_IMAGE_PATHS === "undefined" ? null : SUBMARINE_VARIANT_IMAGE_PATHS);
+  const normalizedVariants = (Array.isArray(variants) && variants.length ? variants : [
+    type === MACHINERY_TYPE_BOAT ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH
+  ]).map((image) => ({ key: String(image).split("/").pop(), image }));
+  const selected = normalizedVariants.find((variant) => variant.key === machinery?.appearanceVariantKey);
+  if (selected) return selected.image;
   const isBoat = type === MACHINERY_TYPE_BOAT;
   if (isHalloweenModeActive(now)) {
     return isBoat ? HALLOWEEN_BOAT_IMAGE_PATH : HALLOWEEN_SUBMARINE_IMAGE_PATH;
   }
-  return isBoat ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH;
+  return normalizedVariants[0]?.image || (isBoat ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH);
 }
 
 function preloadHalloweenMachineryAssets() {
@@ -43,6 +74,7 @@ function syncHalloweenPresentation(now = Date.now()) {
   const active = isHalloweenModeActive(now);
   document.documentElement.classList.toggle("halloween-mode", active);
   document.documentElement.dataset.halloweenMode = getHalloweenModeSetting();
+  syncSeasonalBubbleBoroughLogos(now);
   if (active && runtime.halloweenPresentationActive !== true) {
     runtime.halloweenPresentationActive = true;
     void preloadHalloweenMachineryAssets();

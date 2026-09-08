@@ -269,6 +269,8 @@ function sanitizeFish(fish, options = {}) {
     motionLevel: clamp(Number(fish.motionLevel) || 0.18, 0.04, 1),
     wiggleClock: Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : Math.random() * Math.PI * 2,
     appearanceVariant: normalizeFishAppearanceVariantIndex(fish.appearanceVariant, species, fish),
+    appearanceVariantKey: typeof fish.appearanceVariantKey === "string" ? fish.appearanceVariantKey : null,
+    appearanceAssetPath: typeof fish.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null,
     scale: clamp(Number(fish.scale) || resolveFishBaseScale(fish.speciesId), FISH_SCALE_MIN, FISH_SCALE_MAX),
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(fish.behaviorSpeciesId, fish.speciesId),
     fishColor: normalizeDecorColorSetting(fish.fishColor ?? fish.colorSetting ?? ""),

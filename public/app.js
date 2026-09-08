@@ -2,6 +2,12 @@
 
 // <bundle-source path="00-bootstrap.js">
 const STORAGE_KEY = "bubble-borough-save-v1";
+const SUPABASE_URL = "https://idljwswasrxtifbkioyg.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qxhGQH_faz0TDw4_AbYsGw_iYljA_9s";
+const CLOUD_AUTH_SESSION_KEY = "bubble-borough-cloud-auth-v1";
+const CLOUD_SAVE_META_KEY = "bubble-borough-cloud-meta-v1";
+const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1";
+const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 import {
   ZOMBIE_SKELETON_BEHAVIOR_CONFIG,
@@ -1956,8 +1962,21 @@ const SUBMARINE_COST = 100;
 const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/submarine.png");
 const BOAT_COST = 50;
 const BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/boat.png");
-const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Boat.png");
-const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Submarine.png");
+// The original Halloween vehicle files were renamed to their shared fifth
+// appearance slot, so seasonal presentation and the purchasable choice use
+// the same real asset.
+const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Boat_5.png");
+const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Submarine_5.png");
+const BOAT_VARIANT_IMAGE_PATHS = [
+  BOAT_IMAGE_PATH,
+  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/fish/boat_${number}.png`)),
+  HALLOWEEN_BOAT_IMAGE_PATH
+];
+const SUBMARINE_VARIANT_IMAGE_PATHS = [
+  SUBMARINE_IMAGE_PATH,
+  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/fish/submarine_${number}.png`)),
+  HALLOWEEN_SUBMARINE_IMAGE_PATH
+];
 const BOAT_RESOURCE_CAPACITY = 99;
 const BOAT_DRAW_WIDTH_PX = 121;
 const BOAT_CRUISE_SPEED_PX_PER_SECOND = 96;
@@ -2080,19 +2099,19 @@ const DEBUG_BREEDING_HOLD_MS = 60 * 1000;
 const DEBUG_BREEDING_REACHED_DISTANCE_NORM = 0.024;
 const FISH_ACTION_STEER_REFRESH_MS = 260;
 const FISH_ACTION_EAT_DURATION_MS = 45 * 1000;
-const FISH_ACTION_WAIT_FOOD_DURATION_MS = 60 * 1000;
-const FISH_ACTION_REST_DURATION_MS = 3 * MINUTE_MS;
-const FISH_ACTION_SLEEP_DURATION_MS = 10 * MINUTE_MS;
-const FISH_ACTION_HIDE_DURATION_MS = 2 * MINUTE_MS;
-const FISH_ACTION_GREET_DURATION_MS = 45 * 1000;
-const FISH_ACTION_FOLLOW_DURATION_MS = 3 * MINUTE_MS;
+const FISH_ACTION_WAIT_FOOD_DURATION_MS = 25 * 1000;
+const FISH_ACTION_REST_DURATION_MS = 35 * 1000;
+const FISH_ACTION_SLEEP_DURATION_MS = 90 * 1000;
+const FISH_ACTION_HIDE_DURATION_MS = 40 * 1000;
+const FISH_ACTION_GREET_DURATION_MS = 12 * 1000;
+const FISH_ACTION_FOLLOW_DURATION_MS = 45 * 1000;
 const FISH_ACTION_AVOID_DURATION_MS = 60 * 1000;
 const FISH_ACTION_MATE_DURATION_MS = 2 * MINUTE_MS;
-const FISH_ACTION_INSPECT_DURATION_MS = 90 * 1000;
-const FISH_ACTION_DIG_DURATION_MS = 75 * 1000;
-const FISH_ACTION_PEBBLE_DURATION_MS = 60 * 1000;
-const FISH_ACTION_ZOOMIES_DURATION_MS = 20 * 1000;
-const FISH_ACTION_PLAY_DURATION_MS = 2 * MINUTE_MS;
+const FISH_ACTION_INSPECT_DURATION_MS = 18 * 1000;
+const FISH_ACTION_DIG_DURATION_MS = 20 * 1000;
+const FISH_ACTION_PEBBLE_DURATION_MS = 20 * 1000;
+const FISH_ACTION_ZOOMIES_DURATION_MS = 12 * 1000;
+const FISH_ACTION_PLAY_DURATION_MS = 20 * 1000;
 const FISH_ACTION_BREED_HOLD_MS = 2 * MINUTE_MS;
 const FISH_ACTION_QUEUE_REST_MS = 2 * 1000;
 const BETTA_ATTACK_PASS_CHANCE = 0.001;
@@ -2788,7 +2807,11 @@ const DECOR_META = {
 
 const DECOR_KEY_ALIASES = Object.freeze({
   "anubia-rock.png": "anubia-rock_seaweed.png",
-  "anubias-rock.png": "anubia-rock_seaweed.png"
+  "anubias-rock.png": "anubia-rock_seaweed.png",
+  "Halloween_Cauldron.png": "Halloween_Cauldron_Bubbler.png",
+  "halloween_cauldron.png": "Halloween_Cauldron_Bubbler.png",
+  "Halloween_JackOLantern.png": "Halloween_JackOLantern_bubbler.png",
+  "halloween_jackolantern.png": "Halloween_JackOLantern_bubbler.png"
 });
 const DECOR_RGB_COLOR_SETTING = "rgb";
 const DECOR_COLORIZE_SETTING_SUFFIX = "Colorize";
@@ -2807,6 +2830,7 @@ const dom = {
   coinCount: document.querySelector("#coinCount"),
   toolbarWallet: document.querySelector("#toolbarWallet"),
   toolbarCoinCount: document.querySelector("#toolbarCoinCount"),
+  walletTransactionMenu: document.querySelector("#walletTransactionMenu"),
   cleanlinessLabel: document.querySelector("#cleanlinessLabel"),
   mealWindowLabel: document.querySelector("#mealWindowLabel"),
   tankStatus: document.querySelector("#tankStatus"),
@@ -4555,7 +4579,17 @@ function getBoroughReferenceNow(now = Date.now()) {
 
 function isHalloweenCalendarDate(now = Date.now()) {
   const date = new Date(getBoroughReferenceNow(now));
-  return date.getMonth() === 9 && date.getDate() >= 1 && date.getDate() <= 31;
+  return date.getMonth() === 9;
+}
+
+function syncSeasonalBubbleBoroughLogos(now = Date.now()) {
+  if (typeof document === "undefined") return;
+  const source = isHalloweenModeActive(now)
+    ? "assets/misc/Halloween_bb_logo.png"
+    : "assets/misc/bb_logo.png";
+  for (const logo of document.querySelectorAll("[data-seasonal-bb-logo]")) {
+    if (logo.getAttribute("src") !== source) logo.setAttribute("src", source);
+  }
 }
 
 function getHalloweenModeSetting() {
@@ -4567,12 +4601,33 @@ function isHalloweenModeActive(now = Date.now()) {
   return mode === HALLOWEEN_MODE_ON || (mode === HALLOWEEN_MODE_AUTOMATIC && isHalloweenCalendarDate(now));
 }
 
-function getMachineryImagePath(type, now = Date.now()) {
+function getMachineryAppearanceVariants(type) {
+  const variants = type === MACHINERY_TYPE_BOAT
+    ? (typeof BOAT_VARIANT_IMAGE_PATHS === "undefined" ? [BOAT_IMAGE_PATH] : BOAT_VARIANT_IMAGE_PATHS)
+    : (typeof SUBMARINE_VARIANT_IMAGE_PATHS === "undefined" ? [SUBMARINE_IMAGE_PATH] : SUBMARINE_VARIANT_IMAGE_PATHS);
+  return variants.map((path, index) => ({
+    key: path.split("/").pop(),
+    label: index === 0 ? "Main" : index === variants.length - 1 ? "Halloween" : `Variant ${index}`,
+    image: path
+  }));
+}
+
+function getMachineryImagePath(type, now = Date.now(), machinery = null) {
+  // Keep this self-contained because this resolver also runs during startup,
+  // before the store helpers have necessarily been initialized.
+  const variants = type === MACHINERY_TYPE_BOAT
+    ? (typeof BOAT_VARIANT_IMAGE_PATHS === "undefined" ? null : BOAT_VARIANT_IMAGE_PATHS)
+    : (typeof SUBMARINE_VARIANT_IMAGE_PATHS === "undefined" ? null : SUBMARINE_VARIANT_IMAGE_PATHS);
+  const normalizedVariants = (Array.isArray(variants) && variants.length ? variants : [
+    type === MACHINERY_TYPE_BOAT ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH
+  ]).map((image) => ({ key: String(image).split("/").pop(), image }));
+  const selected = normalizedVariants.find((variant) => variant.key === machinery?.appearanceVariantKey);
+  if (selected) return selected.image;
   const isBoat = type === MACHINERY_TYPE_BOAT;
   if (isHalloweenModeActive(now)) {
     return isBoat ? HALLOWEEN_BOAT_IMAGE_PATH : HALLOWEEN_SUBMARINE_IMAGE_PATH;
   }
-  return isBoat ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH;
+  return normalizedVariants[0]?.image || (isBoat ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH);
 }
 
 function preloadHalloweenMachineryAssets() {
@@ -4586,6 +4641,7 @@ function syncHalloweenPresentation(now = Date.now()) {
   const active = isHalloweenModeActive(now);
   document.documentElement.classList.toggle("halloween-mode", active);
   document.documentElement.dataset.halloweenMode = getHalloweenModeSetting();
+  syncSeasonalBubbleBoroughLogos(now);
   if (active && runtime.halloweenPresentationActive !== true) {
     runtime.halloweenPresentationActive = true;
     void preloadHalloweenMachineryAssets();
@@ -7809,7 +7865,12 @@ function openStoreOverlay(tab = "food", options = {}) {
     return;
   }
 
-  if (dom.storeOverlay && options.forceCategory === true) dom.storeOverlay.dataset.requestedCategory = tab;
+  // Tankazon normally restores the shopper's last category. A tutorial task
+  // must always open the category it teaches, including when its toolbar
+  // button calls this function without an explicit option.
+  if (dom.storeOverlay && (options.forceCategory === true || getActiveTutorial())) {
+    dom.storeOverlay.dataset.requestedCategory = tab;
+  }
   openExclusiveOverlay("store", { tab });
 }
 
@@ -11139,8 +11200,9 @@ function buildTutorialActionMarkup(actions) {
 }
 
 function createTutorialUiStateConfig(options = {}) {
-  const toolbarVisible = options.toolbarVisible !== false;
+  const toolbarVisible = true;
   const visibleButtons = new Set(Array.isArray(options.visibleButtons) ? options.visibleButtons : []);
+  visibleButtons.add("openSettingsButton");
   return {
     toolbarVisible,
     displayVisible: options.displayVisible !== false,
@@ -11301,6 +11363,9 @@ function getEffectiveDisplayCollapsed(uiSettings = getUiSettings(), tutorialUi =
 }
 
 function canUseTutorialToolbarControl(controlId) {
+  if (controlId === "openSettingsButton") {
+    return true;
+  }
   const tutorialState = getActiveTutorialStageRuntime(Date.now());
   if (!tutorialState) {
     return true;
@@ -12393,6 +12458,9 @@ async function init() {
   bindEvents();
   syncFilterFeatureVisibility();
   const earlyRawState = loadState();
+  runtime.hadLocalSaveAtStartup = Boolean(earlyRawState);
+  runtime.freshGameSaveLocked = !earlyRawState;
+  initializeCloudSaveRuntime();
   applyLoadingOverlayBackground(getSavedActiveTankCandidate(earlyRawState));
 
   const [backgroundResponse, tankResponse, filterResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, filterCatalogMeta, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
@@ -12437,6 +12505,7 @@ async function init() {
     ...normalizedBaseFishCatalog,
     ...normalizedZombieSkeletonFishCatalog
   ];
+  await discoverFishAppearanceVariants(normalizedFishCatalog);
   runtime.fishCatalog = [
     ...normalizedFishCatalog,
     ...buildVirtualFishCatalogEntries()
@@ -12499,8 +12568,8 @@ async function init() {
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
     FISH_EGG_SHELL_ASSET_PATH,
-    SUBMARINE_IMAGE_PATH,
-    BOAT_IMAGE_PATH,
+    ...SUBMARINE_VARIANT_IMAGE_PATHS,
+    ...BOAT_VARIANT_IMAGE_PATHS,
     HALLOWEEN_BOAT_IMAGE_PATH,
     HALLOWEEN_SUBMARINE_IMAGE_PATH,
     ...GRIME_OVERLAY_ASSET_PATHS,
@@ -12587,7 +12656,7 @@ function showLoadingOverlayReadyState() {
     overlay.classList.remove("is-ready");
     overlay.classList.remove("is-error");
     if (dom.loadingOverlayText) {
-      dom.loadingOverlayText.textContent = "Loading Aquarium";
+      dom.loadingOverlayText.textContent = "Loading";
     }
     return;
   }
@@ -12595,8 +12664,9 @@ function showLoadingOverlayReadyState() {
   overlay.classList.remove("is-error");
   overlay.classList.add("is-ready");
   if (dom.loadingOverlayText) {
-    dom.loadingOverlayText.textContent = isWallpaperEngineModeEnabled() ? "Starting Aquarium" : "Click to play";
+    dom.loadingOverlayText.textContent = isWallpaperEngineModeEnabled() ? "Starting Aquarium" : "Welcome to Bubble Borough";
   }
+  renderStartupActions();
 
   if (isWallpaperEngineModeEnabled()) {
     primeSoundEffects();
@@ -13429,6 +13499,18 @@ function handleToolbarActionMenuDocumentClick(event) {
   closeToolbarActionMenu();
 }
 
+function toggleWalletTransactionMenu() {
+  runtime.walletTransactionMenuOpen = runtime.walletTransactionMenuOpen !== true;
+  renderWalletTransactionMenu();
+}
+
+function handleWalletTransactionMenuDocumentClick(event) {
+  if (runtime.walletTransactionMenuOpen !== true || !(event.target instanceof Element)) return;
+  if (event.target.closest("#toolbarWallet, #walletTransactionMenu")) return;
+  runtime.walletTransactionMenuOpen = false;
+  renderWalletTransactionMenu();
+}
+
 function handleToolbarActionMenuKeyDown(event) {
   if (event.key !== "Escape") {
     return;
@@ -13853,6 +13935,8 @@ function bindEvents() {
   document.addEventListener("pointerup", finishSoundRangeDrag, true);
   document.addEventListener("pointercancel", finishSoundRangeDrag, true);
   document.addEventListener("click", handleToolbarActionMenuDocumentClick);
+  document.addEventListener("click", handleWalletTransactionMenuDocumentClick);
+  dom.toolbarWallet?.addEventListener("click", toggleWalletTransactionMenu);
   document.addEventListener("keydown", handleToolbarActionMenuKeyDown);
   dom.loadingOverlay?.addEventListener("click", (event) => {
     if (dom.loadingOverlay?.classList.contains("is-error")) {
@@ -13923,18 +14007,9 @@ function bindEvents() {
       }
       return;
     }
-    if (!dom.loadingOverlay?.classList.contains("is-ready")) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    if (isHardwareAccelerationNoticeBlockingStart()) {
-      return;
-    }
-    primeSoundEffects();
-    playRegularButtonSoundEffect();
-    hideLoadingOverlay();
+    // Ready-state actions own their click handlers. Background clicks are
+    // deliberately inert so the start screen has no invisible full-page button.
+    if (!dom.loadingOverlay?.classList.contains("is-ready")) return;
   });
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", () => {
@@ -14247,6 +14322,9 @@ function bindEvents() {
   dom.importDataInput?.addEventListener("change", (event) => {
     void importSaveDataFromPicker(event);
   });
+  document.querySelector("[data-cloud-account-panel]")?.addEventListener("click", (event) => {
+    void handleCloudSettingsClick(event);
+  });
   dom.localBackgroundInput?.addEventListener("change", (event) => {
     void importLocalBackgroundFromPicker(event);
   });
@@ -14353,6 +14431,27 @@ function bindEvents() {
   });
   dom.toolbarTab?.addEventListener("click", () => toggleToolbarCollapsed());
   dom.displayTab?.addEventListener("click", () => toggleDisplayCollapsed());
+  dom.selectedFishNeedsPanel?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-fish-companion]") : null;
+    if (!(button instanceof HTMLButtonElement)) return;
+    event.preventDefault();
+    // Rendering can replace this button. Do not let the detached click bubble
+    // into the aquarium and get mistaken for a glass tap / deselection.
+    event.stopPropagation();
+    const fishId = runtime.selectedFishStatusFishId || runtime.selectedFishId;
+    const action = button.dataset.fishCompanion;
+    if (action === "close") {
+      runtime.selectedFishStatusFishId = null;
+      runtime.selectedFishId = null;
+      closeFishActionMenu();
+    } else if (action === "details") {
+      closeFishActionMenu();
+      openFishInspector(fishId);
+    } else {
+      offerFishInteraction(action, fishId);
+    }
+    renderUi(Date.now(), { full: false });
+  });
   dom.fishActionFlyout?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
     const cancelButton = target?.closest("[data-cancel-fish-action]");
@@ -15591,6 +15690,12 @@ function bindEvents() {
   }
 
   dom.fishShop.addEventListener("click", (event) => {
+    // Tankazon owns its purchase clicks. If this legacy listener runs first,
+    // it calls buyFish with only the species id and silently buys Main before
+    // Tankazon can pass the selected appearance key.
+    if (event.target instanceof Element && event.target.closest("#storeOverlay")) {
+      return;
+    }
     const button = event.target.closest("[data-buy-fish]");
     if (button) {
       buyFish(button.dataset.buyFish);
@@ -15737,13 +15842,13 @@ function bindEvents() {
 
   dom.equipmentShop?.addEventListener("click", (event) => {
     const buySubmarineButton = event.target.closest("[data-buy-submarine]");
-    if (buySubmarineButton) {
+    if (buySubmarineButton && !event.target.closest("#storeOverlay")) {
       buySubmarine();
       return;
     }
 
     const buyBoatButton = event.target.closest("[data-buy-boat]");
-    if (buyBoatButton) {
+    if (buyBoatButton && !event.target.closest("#storeOverlay")) {
       buyBoat();
       return;
     }
@@ -18035,6 +18140,16 @@ function buildDecorCaveColorLayers(group) {
   ];
 }
 
+function getExpectedCaveCompanionPaths(baseItem, meta = {}) {
+  if (!baseItem?.key || !meta?.caveSettings) return [];
+  const extensionMatch = baseItem.key.match(/(\.[^.]+)$/);
+  if (!extensionMatch) return [];
+  const stem = baseItem.key.slice(0, -extensionMatch[1].length);
+  return ["_bg", "_color2"].map((suffix) => resolveAppUrl(
+    `assets/decor/${encodeURIComponent(`${stem}${suffix}${extensionMatch[1]}`)}`
+  ));
+}
+
 function buildDecorCatalog(items, catalogMeta = {}) {
   const grouped = new Map();
 
@@ -18094,6 +18209,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
 
       const meta = runtime.decorMeta[group.base.key] || runtime.decorMeta[baseKey] || {};
       const caveColorLayers = buildDecorCaveColorLayers(group);
+      const expectedCaveCompanionPaths = getExpectedCaveCompanionPaths(group.base, meta);
 
       return {
         key: group.base.key,
@@ -18112,6 +18228,10 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         hasSeats: Boolean(group.seats),
         caveColorLayers,
         hasCaveColorLayers: caveColorLayers.length > 0,
+        // Cave assets may arrive in separate drops. Keep their conventional
+        // companion URLs registered even before the files are present; when
+        // added to the manifest they join the existing layer resolver.
+        expectedCaveCompanionPaths,
         name: meta.name || titleFromFile(group.base.key),
         theme: isHalloweenDecor({ ...meta, key: group.base.key }) ? "Halloween" : normalizeCatalogTheme(meta.theme),
         categories: deriveDecorCategories(meta, group.base.key),
@@ -19254,6 +19374,58 @@ function getFishAssetVariants(species) {
     : (typeof species.asset === "string" && species.asset ? [species.asset] : []);
 }
 
+function getFishAppearanceVariantKey(path) {
+  return typeof path === "string" ? path.split(/[?#]/)[0].split("/").pop() : "";
+}
+
+function getFishStoreVariants(species) {
+  return getFishAssetVariants(species).map((path, index) => ({
+    key: getFishAppearanceVariantKey(path),
+    image: path,
+    label: index === 0 ? "Main" : `Variant ${path.match(/_([1-5])\.[^./?]+(?:[?#].*)?$/)?.[1] || index}`
+  }));
+}
+
+async function discoverFishAppearanceVariants(catalog) {
+  await Promise.all(catalog.map(async (species) => {
+    const base = species.asset;
+    if (!base || /^(data:|blob:)/i.test(base)) return;
+    const match = base.match(/^(.*)(\.[^./?#]+)([?#].*)?$/);
+    if (!match) return;
+    const existing = getFishAssetVariants(species);
+    const existingKeys = new Set(existing.map((path) => getFishAppearanceVariantKey(path)));
+    const discovered = await Promise.all([1, 2, 3, 4, 5].map(async (number) => {
+      const path = `${match[1]}_${number}${match[2]}${match[3] || ""}`;
+      // Catalog URLs can have a cache query while the probed URL does not.
+      // They are the same appearance, so compare filenames rather than raw
+      // URLs and never add a second thumbnail for it.
+      if (existingKeys.has(getFishAppearanceVariantKey(path))) return null;
+      return new Promise((resolve) => {
+        const image = new Image();
+        const finish = (loaded) => {
+          clearTimeout(timeout);
+          image.onload = image.onerror = null;
+          if (loaded) runtime.images.set(path, image);
+          resolve(loaded ? path : null);
+        };
+        const timeout = setTimeout(() => finish(false), 2500);
+        image.onload = () => finish(image.naturalWidth > 0);
+        image.onerror = () => finish(false);
+        image.src = path;
+      });
+    }));
+    // Append to preserve numeric indices in existing saves; new purchases also
+    // save a stable filename key. Dedupe cache-busted and plain URLs together.
+    const seenKeys = new Set();
+    species.assetVariants = [base, ...existing, ...discovered.filter(Boolean)].filter((path) => {
+      const key = getFishAppearanceVariantKey(path);
+      if (!key || seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    });
+  }));
+}
+
 function getBaseSpeciesForFish(fish) {
   return fish ? runtime.fishMap.get(fish.speciesId) || null : null;
 }
@@ -19580,19 +19752,9 @@ function getFishNeedLabel(needKey, value) {
 
 function getFishNeedsMood(needs) {
   const safeNeeds = sanitizeFishNeeds(needs);
-  const score = FISH_NEED_KEYS.reduce((total, key) => total + safeNeeds[key] * (FISH_NEED_MOOD_WEIGHTS[key] || 0), 0);
-  const label = score >= 85
-    ? "Thriving"
-    : score >= 70
-      ? "Good Vibes"
-      : score >= 50
-        ? "Fine"
-        : score >= 35
-          ? "Uneasy"
-          : score >= 20
-            ? "Stressed"
-            : "Miserable";
-  return { value: clamp(score, 0, 100), label };
+  const score = safeNeeds.hunger * 0.35 + safeNeeds.comfort * 0.3
+    + safeNeeds.hygiene * 0.2 + safeNeeds.environment * 0.15;
+  return { value: clamp(score, 0, 100), label: "Content" };
 }
 
 function getDerivedFishNeedDefaults(fish, now = Date.now()) {
@@ -19622,9 +19784,12 @@ function getDerivedFishNeedDefaults(fish, now = Date.now()) {
 function sanitizeFishNeeds(value, fish = null, now = Date.now()) {
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const defaults = fish ? getDerivedFishNeedDefaults(fish, now) : FISH_NEED_DEFAULTS;
-  return Object.fromEntries(FISH_NEED_KEYS.map((key) => [
-    key,
-    clamp(Number.isFinite(Number(source[key])) ? Number(source[key]) : defaults[key], 0, 100)
+  // Keep the old save shape, but retire the three daily maintenance meters.
+  // Habitat values reflect the tank immediately, rather than action bonuses.
+  return Object.fromEntries(FISH_NEED_KEYS.map((key) => [key,
+    ["energy", "social", "stimulation"].includes(key) ? 80
+      : fish && ["comfort", "hygiene", "environment"].includes(key) ? defaults[key]
+      : clamp(Number.isFinite(Number(source[key])) ? Number(source[key]) : defaults[key], 0, 100)
   ]));
 }
 
@@ -22409,6 +22574,13 @@ function getFishAssetPath(fish, species = getSpeciesForFish(fish)) {
     return species?.asset || species?.fallbackAsset || null;
   }
 
+  const purchasedAssetKey = getFishAppearanceVariantKey(fish?.appearanceAssetPath);
+  const purchasedAsset = variants.find((path) => getFishAppearanceVariantKey(path) === purchasedAssetKey);
+  if (purchasedAsset) return purchasedAsset;
+
+  const chosen = variants.find((path) => getFishAppearanceVariantKey(path) === fish?.appearanceVariantKey);
+  if (chosen) return chosen;
+
   return variants[normalizeFishAppearanceVariantIndex(fish?.appearanceVariant, species, fish)] || variants[0] || species?.fallbackAsset || species?.asset || null;
 }
 
@@ -22548,10 +22720,12 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   }
 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  const freeSwimAsset = !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
+  const selectedAlternate = Boolean(fish?.appearanceVariantKey && fish.appearanceVariantKey !== getFishAppearanceVariantKey(displaySpecies.asset));
+  const selectedFishAsset = getFishAssetPath(fish, displaySpecies);
+  const freeSwimAsset = !selectedAlternate && !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
     ? (getSuckerFishFreeSwimAssetPath(displaySpecies) || getSuckerFishFreeSwimAssetPath(species))
     : null;
-  const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
+  const frontGlassAsset = !selectedAlternate && !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
     ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
     : null;
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
@@ -22568,13 +22742,15 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
         || null
       )
       : (freeSwimAsset || frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
-  const baseAsset = [
-    preferredBaseAsset,
-    displaySpecies.fallbackAsset,
-    displaySpecies.asset,
-    species.fallbackAsset,
-    species.asset
-  ].find((path) => path && runtime.images.has(path)) || preferredBaseAsset;
+  const baseAsset = selectedAlternate && selectedFishAsset
+    ? selectedFishAsset
+    : [
+      preferredBaseAsset,
+      displaySpecies.fallbackAsset,
+      displaySpecies.asset,
+      species.fallbackAsset,
+      species.asset
+    ].find((path) => path && runtime.images.has(path)) || preferredBaseAsset;
   const stage = isGoreEnabled() ? getFishDecayStage(fish, now) : null;
   if (
     !stage
@@ -24428,6 +24604,7 @@ function reconcileState(rawState) {
     version: STATE_VERSION,
     healthModelVersion: HEALTH_MODEL_VERSION,
     coins: STARTING_COINS,
+    walletTransactions: [],
     lifetimeDeaths: 0,
     mealHistory: {},
     lastGravelCoinFoundAt: 0,
@@ -24442,8 +24619,10 @@ function reconcileState(rawState) {
     tanks: [createTankState({ now, name: buildDefaultTankName(0) })],
     machinery: [],
     storedSubmarine: null,
+    storedSubmarines: [],
     submarineOwned: false,
     storedBoat: null,
+    storedBoats: [],
     boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
@@ -24478,16 +24657,30 @@ function reconcileState(rawState) {
     : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel })];
   normalizeAquariumSectionGrid(tanks);
   const machinery = sanitizeMachineryState(incoming.machinery, tanks, now);
-  const storedSubmarine = machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE)
-    ? null
-    : sanitizeStoredSubmarineState(incoming.storedSubmarine, now);
-  const storedBoat = machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT)
-    ? null
-    : sanitizeStoredBoatState(incoming.storedBoat, now);
+  const storedSubmarines = (Array.isArray(incoming.storedSubmarines)
+    ? incoming.storedSubmarines
+    : [incoming.storedSubmarine]
+  ).map((item) => sanitizeStoredSubmarineState(item, now)).filter(Boolean);
+  const storedBoats = (Array.isArray(incoming.storedBoats)
+    ? incoming.storedBoats
+    : [incoming.storedBoat]
+  ).map((item) => sanitizeStoredBoatState(item, now)).filter(Boolean);
+  const storedSubmarine = storedSubmarines[0] || null;
+  const storedBoat = storedBoats[0] || null;
 
   const nextState = {
     ...base,
     coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
+    walletTransactions: Array.isArray(incoming.walletTransactions)
+      ? incoming.walletTransactions.map((entry) => ({
+        id: typeof entry?.id === "string" ? entry.id.slice(0, 80) : createId("receipt"),
+        amount: clamp(Math.floor(Math.abs(Number(entry?.amount) || 0)), 0, MAX_WALLET_COINS),
+        direction: entry?.direction === "debit" ? "debit" : "credit",
+        label: typeof entry?.label === "string" ? entry.label.slice(0, 180) : "Aquarium activity",
+        place: typeof entry?.place === "string" ? entry.place.slice(0, 80) : "Aquarium",
+        time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now
+      })).filter((entry) => entry.amount > 0).sort((left, right) => right.time - left.time).slice(0, 60)
+      : base.walletTransactions,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     lastGravelCoinFoundAt: Math.max(
@@ -24505,9 +24698,11 @@ function reconcileState(rawState) {
     tanks,
     machinery,
     storedSubmarine,
-    submarineOwned: incoming.submarineOwned === true || Boolean(storedSubmarine) || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
+    storedSubmarines,
+    submarineOwned: incoming.submarineOwned === true || storedSubmarines.length > 0 || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
     storedBoat,
-    boatOwned: incoming.boatOwned === true || Boolean(storedBoat) || machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT),
+    storedBoats,
+    boatOwned: incoming.boatOwned === true || storedBoats.length > 0 || machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT),
     activeTankId: typeof incoming.activeTankId === "string" && tanks.some((tank) => tank.id === incoming.activeTankId)
       ? incoming.activeTankId
       : (tanks[0]?.id || null),
@@ -25516,6 +25711,8 @@ function sanitizeFish(fish, options = {}) {
     motionLevel: clamp(Number(fish.motionLevel) || 0.18, 0.04, 1),
     wiggleClock: Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : Math.random() * Math.PI * 2,
     appearanceVariant: normalizeFishAppearanceVariantIndex(fish.appearanceVariant, species, fish),
+    appearanceVariantKey: typeof fish.appearanceVariantKey === "string" ? fish.appearanceVariantKey : null,
+    appearanceAssetPath: typeof fish.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null,
     scale: clamp(Number(fish.scale) || resolveFishBaseScale(fish.speciesId), FISH_SCALE_MIN, FISH_SCALE_MAX),
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(fish.behaviorSpeciesId, fish.speciesId),
     fishColor: normalizeDecorColorSetting(fish.fishColor ?? fish.colorSetting ?? ""),
@@ -32451,6 +32648,7 @@ function sanitizeStoredSubmarineState(rawStoredSubmarine, now = Date.now()) {
     autopilot: rawStoredSubmarine.autopilot !== false,
     machineryColor: normalizeDecorColorSetting(rawStoredSubmarine.machineryColor ?? rawStoredSubmarine.colorSetting ?? ""),
     machineryColorize: normalizeDecorColorizeSetting(rawStoredSubmarine.machineryColorize ?? false),
+    appearanceVariantKey: typeof rawStoredSubmarine.appearanceVariantKey === "string" ? rawStoredSubmarine.appearanceVariantKey : null,
     inventory: sanitizeSubmarineInventory(rawStoredSubmarine.inventory)
   };
 }
@@ -32465,6 +32663,7 @@ function createStoredSubmarineState(submarine, now = Date.now()) {
     autopilot: submarine.autopilot,
     machineryColor: getMachineryColorSetting(submarine),
     machineryColorize: getMachineryColorizeSetting(submarine),
+    appearanceVariantKey: submarine.appearanceVariantKey,
     inventory: submarine.inventory
   }, now);
 }
@@ -32481,6 +32680,7 @@ function sanitizeStoredBoatState(rawStoredBoat, now = Date.now()) {
     autopilot: rawStoredBoat.autopilot !== false,
     machineryColor: normalizeDecorColorSetting(rawStoredBoat.machineryColor ?? rawStoredBoat.colorSetting ?? ""),
     machineryColorize: normalizeDecorColorizeSetting(rawStoredBoat.machineryColorize ?? false),
+    appearanceVariantKey: typeof rawStoredBoat.appearanceVariantKey === "string" ? rawStoredBoat.appearanceVariantKey : null,
     inventory: sanitizeBoatInventory(rawStoredBoat.inventory)
   };
 }
@@ -32494,18 +32694,35 @@ function createStoredBoatState(boat, now = Date.now()) {
     autopilot: boat.autopilot,
     machineryColor: getMachineryColorSetting(boat),
     machineryColorize: getMachineryColorizeSetting(boat),
+    appearanceVariantKey: boat.appearanceVariantKey,
     inventory: boat.inventory
   }, now);
 }
 
 function getStoredSubmarineState() {
   if (!state) return null;
-  return state.storedSubmarine;
+  return getStoredSubmarineStates()[0] || null;
+}
+
+function getStoredSubmarineStates() {
+  if (!state) return [];
+  if (!Array.isArray(state.storedSubmarines)) {
+    state.storedSubmarines = state.storedSubmarine ? [state.storedSubmarine] : [];
+  }
+  return state.storedSubmarines;
 }
 
 function getStoredBoatState() {
   if (!state) return null;
-  return state.storedBoat;
+  return getStoredBoatStates()[0] || null;
+}
+
+function getStoredBoatStates() {
+  if (!state) return [];
+  if (!Array.isArray(state.storedBoats)) {
+    state.storedBoats = state.storedBoat ? [state.storedBoat] : [];
+  }
+  return state.storedBoats;
 }
 
 function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
@@ -32536,6 +32753,7 @@ function createSubmarineMachinery(tankId, now = Date.now(), options = {}) {
     autopilot: options.autopilot !== false,
     machineryColor: normalizeDecorColorSetting(options.machineryColor ?? options.colorSetting ?? ""),
     machineryColorize: normalizeDecorColorizeSetting(options.machineryColorize ?? false),
+    appearanceVariantKey: typeof options.appearanceVariantKey === "string" ? options.appearanceVariantKey : null,
     inventory: sanitizeSubmarineInventory(options.inventory),
     entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
     entryDurationMs: Math.max(0, Number(options.entryDurationMs) || 0),
@@ -32573,6 +32791,7 @@ function createBoatMachinery(tankId, now = Date.now(), options = {}) {
     autopilot: options.autopilot !== false,
     machineryColor: normalizeDecorColorSetting(options.machineryColor ?? options.colorSetting ?? ""),
     machineryColorize: normalizeDecorColorizeSetting(options.machineryColorize ?? false),
+    appearanceVariantKey: typeof options.appearanceVariantKey === "string" ? options.appearanceVariantKey : null,
     inventory: sanitizeBoatInventory(options.inventory),
     entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
     entryDurationMs: Math.max(0, Number(options.entryDurationMs) || 0),
@@ -32591,8 +32810,7 @@ function sanitizeMachineryState(rawMachinery, tanks = getAllTanks(), now = Date.
   const source = Array.isArray(rawMachinery) ? rawMachinery : [];
   const sanitized = [];
   for (const entry of source) {
-    if (!entry || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(entry.type)
-      || sanitized.some((item) => item.type === entry.type)) {
+    if (!entry || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(entry.type)) {
       continue;
     }
     const tankId = validTankIds.has(entry.tankId) ? entry.tankId : fallbackTankId;
@@ -32665,8 +32883,11 @@ function getSubmarinePlayerFoodCount() {
     .reduce((total, food) => total + Math.max(0, Math.floor(Number(state.foodInventory?.[food.id]) || 0)), 0);
 }
 
-function buySubmarine() {
-  if (isSubmarineOwned()) {
+function buySubmarine(options = {}) {
+  const variant = getMachineryAppearanceVariants(MACHINERY_TYPE_SUBMARINE)
+    .find((entry) => entry.key === options.appearanceVariantKey);
+  if (options.appearanceVariantKey && !variant) {
+    showToast("That submarine appearance is no longer available.", { tone: "error" });
     return false;
   }
   return performCoinTransaction({
@@ -32674,6 +32895,9 @@ function buySubmarine() {
     insufficientMessage: `You need ${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)} for the Automated Care Submarine.`,
     apply: () => {
       state.submarineOwned = true;
+      const stored = sanitizeStoredSubmarineState({ appearanceVariantKey: variant?.key, inventory: null }, Date.now());
+      state.storedSubmarines = [...getStoredSubmarineStates(), stored];
+      state.storedSubmarine = state.storedSubmarines[0] || null;
       runtime.equipmentEditTrayTab = "storage";
     },
     event: {
@@ -32687,9 +32911,9 @@ function buySubmarine() {
 
 function deploySubmarine(targetTank = getCurrentTank(), now = Date.now()) {
   if (!isSubmarineOwned() || !targetTank) return false;
-  const existing = getSubmarine();
-  if (existing) return moveSubmarineToTank(targetTank, now);
   const storedSubmarine = getStoredSubmarineState();
+  const existing = getSubmarine();
+  if (!storedSubmarine && existing) return moveSubmarineToTank(targetTank, now);
   const dropXNorm = randomBetween(0.26, 0.74);
   const submarine = createSubmarineMachinery(targetTank.id, now, {
     ...(storedSubmarine || {}),
@@ -32705,7 +32929,8 @@ function deploySubmarine(targetTank = getCurrentTank(), now = Date.now()) {
     entrySplashTriggered: false
   });
   state.submarineOwned = true;
-  state.storedSubmarine = null;
+  state.storedSubmarines = getStoredSubmarineStates().slice(1);
+  state.storedSubmarine = state.storedSubmarines[0] || null;
   state.machinery = [...getMachineryList(), submarine];
   runtime.equipmentEditTrayTab = "tank";
   pushEvent(`Automated Care Submarine deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
@@ -32750,7 +32975,8 @@ function recallSubmarine(now = Date.now()) {
   clearSubmarineManualDriveKeys();
   if (runtime.selectedMachineryId === submarine.id) closeSubmarineManager();
   closeEditEquipmentTrayContextMenu({ render: false });
-  state.storedSubmarine = createStoredSubmarineState(submarine, now);
+  state.storedSubmarines = [...getStoredSubmarineStates(), createStoredSubmarineState(submarine, now)];
+  state.storedSubmarine = state.storedSubmarines[0] || null;
   state.machinery = getMachineryList().filter((item) => item?.id !== submarine.id);
   state.submarineOwned = true;
   runtime.equipmentEditTrayTab = "storage";
@@ -32763,8 +32989,11 @@ function recallSubmarine(now = Date.now()) {
   return true;
 }
 
-function buyBoat() {
-  if (isBoatOwned()) {
+function buyBoat(options = {}) {
+  const variant = getMachineryAppearanceVariants(MACHINERY_TYPE_BOAT)
+    .find((entry) => entry.key === options.appearanceVariantKey);
+  if (options.appearanceVariantKey && !variant) {
+    showToast("That boat appearance is no longer available.", { tone: "error" });
     return false;
   }
   return performCoinTransaction({
@@ -32772,6 +33001,9 @@ function buyBoat() {
     insufficientMessage: `You need ${BOAT_COST} ${pluralize("coin", BOAT_COST)} for the Chum Skiff.`,
     apply: () => {
       state.boatOwned = true;
+      const stored = sanitizeStoredBoatState({ appearanceVariantKey: variant?.key, inventory: null }, Date.now());
+      state.storedBoats = [...getStoredBoatStates(), stored];
+      state.storedBoat = state.storedBoats[0] || null;
       runtime.equipmentEditTrayTab = "storage";
     },
     event: {
@@ -32785,9 +33017,9 @@ function buyBoat() {
 
 function deployBoat(targetTank = getCurrentTank(), now = Date.now()) {
   if (!isBoatOwned() || !targetTank) return false;
-  const existing = getBoat();
-  if (existing) return moveBoatToTank(targetTank, now);
   const storedBoat = getStoredBoatState();
+  const existing = getBoat();
+  if (!storedBoat && existing) return moveBoatToTank(targetTank, now);
   const dropXNorm = randomBetween(0.26, 0.74);
   const boat = createBoatMachinery(targetTank.id, now, {
     ...(storedBoat || {}),
@@ -32800,7 +33032,8 @@ function deployBoat(targetTank = getCurrentTank(), now = Date.now()) {
     entrySplashTriggered: false
   });
   state.boatOwned = true;
-  state.storedBoat = null;
+  state.storedBoats = getStoredBoatStates().slice(1);
+  state.storedBoat = state.storedBoats[0] || null;
   state.machinery = [...getMachineryList(), boat];
   runtime.equipmentEditTrayTab = "tank";
   pushEvent(`Chum Skiff deployed in ${getTankLabel(targetTank)}.`, now, targetTank, {
@@ -32843,7 +33076,8 @@ function recallBoat(now = Date.now()) {
   clearBoatManualDriveKeys();
   if (runtime.selectedMachineryId === boat.id) closeSubmarineManager();
   closeEditEquipmentTrayContextMenu({ render: false });
-  state.storedBoat = createStoredBoatState(boat, now);
+  state.storedBoats = [...getStoredBoatStates(), createStoredBoatState(boat, now)];
+  state.storedBoat = state.storedBoats[0] || null;
   state.machinery = getMachineryList().filter((item) => item?.id !== boat.id);
   state.boatOwned = true;
   runtime.equipmentEditTrayTab = "storage";
@@ -33839,28 +34073,24 @@ function getBoatControlStatus(boat = getBoat()) {
 }
 
 function renderSubmarineShopCard() {
-  const submarine = getSubmarine();
-  const owned = isSubmarineOwned();
-  const status = !owned
-    ? "Available"
-    : submarine
-      ? `Sold out | Yours is deployed in ${getTankLabel(getSubmarineTank(submarine))}`
-      : "Sold out | Yours is in equipment storage";
+  const count = getMachineryList().filter((item) => item.type === MACHINERY_TYPE_SUBMARINE).length + getStoredSubmarineStates().length;
+  const variants = getMachineryAppearanceVariants(MACHINERY_TYPE_SUBMARINE);
+  const mainImage = variants[0]?.image || SUBMARINE_IMAGE_PATH;
   return `
-    <article class="shop-card submarine-shop-card ${owned ? "is-sold-out" : ""}">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+    <article class="shop-card submarine-shop-card">
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(mainImage)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
       <div class="shop-meta shop-card-main">
         <div>
           <strong>Automated Care Submarine</strong>
-          <div class="fish-meta">${escapeHtml(status)}</div>
+          <div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div>
         </div>
         <div class="fish-meta">Automatic care machinery that travels between connected tanks to feed hungry fish and deploy health or calming medicine when needed.</div>
-        <div class="mini-note">Carries 99 food, 99 health drops, and 99 calming drops. Only one submarine can be purchased.</div>
+        <div class="mini-note">Carries 99 food, 99 health drops, and 99 calming drops. Choose an appearance and buy as many as you need.</div>
       </div>
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)}</span>
         <div class="shop-button-row">
-          <button class="buy-button" data-buy-submarine="true" ${owned ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Submarine"}</button>
+          <button class="buy-button" data-buy-submarine="true" data-machinery-variants="${escapeHtml(JSON.stringify(variants))}">Buy Submarine</button>
         </div>
       </div>
     </article>
@@ -33868,24 +34098,20 @@ function renderSubmarineShopCard() {
 }
 
 function renderBoatShopCard() {
-  const boat = getBoat();
-  const owned = isBoatOwned();
-  const status = !owned
-    ? "Available"
-    : boat
-      ? `Sold out | Yours is deployed in ${getTankLabel(getBoatTank(boat))}`
-      : "Sold out | Yours is in equipment storage";
+  const count = getMachineryList().filter((item) => item.type === MACHINERY_TYPE_BOAT).length + getStoredBoatStates().length;
+  const variants = getMachineryAppearanceVariants(MACHINERY_TYPE_BOAT);
+  const mainImage = variants[0]?.image || BOAT_IMAGE_PATH;
   return `
-    <article class="shop-card boat-shop-card ${owned ? "is-sold-out" : ""}">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_BOAT))}" alt="Chum Skiff" onerror="this.src='assets/icons/tools.png'" />
+    <article class="shop-card boat-shop-card">
+      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(mainImage)}" alt="Chum Skiff" onerror="this.src='assets/icons/tools.png'" />
       <div class="shop-meta shop-card-main">
-        <div><strong>Chum Skiff</strong><div class="fish-meta">${escapeHtml(status)}</div></div>
+        <div><strong>Chum Skiff</strong><div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div></div>
         <div class="fish-meta">A surface skiff that skips back and forth across the water and drops chum on command.</div>
-        <div class="mini-note">Carries ${BOAT_RESOURCE_CAPACITY} chum. One skiff can be purchased.</div>
+        <div class="mini-note">Carries ${BOAT_RESOURCE_CAPACITY} chum. Choose an appearance and buy as many as you need.</div>
       </div>
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${BOAT_COST} ${pluralize("coin", BOAT_COST)}</span>
-        <div class="shop-button-row"><button class="buy-button" data-buy-boat="true" ${owned ? "disabled" : ""}>${owned ? "Sold Out" : "Buy Boat"}</button></div>
+        <div class="shop-button-row"><button class="buy-button" data-buy-boat="true" data-machinery-variants="${escapeHtml(JSON.stringify(variants))}">Buy Boat</button></div>
       </div>
     </article>
   `;
@@ -33997,6 +34223,8 @@ function renderEditEquipmentTray() {
   const boat = getBoat();
   const storedSubmarine = getStoredSubmarineState();
   const storedBoat = getStoredBoatState();
+  const storedSubmarines = getStoredSubmarineStates();
+  const storedBoats = getStoredBoatStates();
   const submarineOwned = isSubmarineOwned();
   const boatOwned = isBoatOwned();
   const currentTank = getCurrentTank();
@@ -34004,7 +34232,7 @@ function renderEditEquipmentTray() {
   const boatTank = getBoatTank(boat);
   const machineryEntries = activeLocationTab === "storage"
     ? [
-      storedSubmarine ? { item: storedSubmarine, type: MACHINERY_TYPE_SUBMARINE, stored: true } : null,
+      ...storedSubmarines.map((item) => ({ item, type: MACHINERY_TYPE_SUBMARINE, stored: true })),
       // A newly purchased machine has ownership but no persisted storage
       // record until it is deployed once. Show that owned machine here so
       // purchase immediately exposes the same Place action as a recalled one.
@@ -34015,7 +34243,7 @@ function renderEditEquipmentTray() {
           stored: true
         }
         : null,
-      storedBoat ? { item: storedBoat, type: MACHINERY_TYPE_BOAT, stored: true } : null,
+      ...storedBoats.map((item) => ({ item, type: MACHINERY_TYPE_BOAT, stored: true })),
       !storedBoat && !boat && boatOwned
         ? {
           item: { type: MACHINERY_TYPE_BOAT, inventory: sanitizeBoatInventory(null) },
@@ -34025,15 +34253,17 @@ function renderEditEquipmentTray() {
         : null
     ].filter(Boolean)
     : [
-      submarine && submarine.tankId === currentTank?.id ? { item: submarine, type: MACHINERY_TYPE_SUBMARINE, stored: false } : null,
-      boat && boat.tankId === currentTank?.id ? { item: boat, type: MACHINERY_TYPE_BOAT, stored: false } : null
+      ...getMachineryList().filter((item) => item.type === MACHINERY_TYPE_SUBMARINE && item.tankId === currentTank?.id)
+        .map((item) => ({ item, type: MACHINERY_TYPE_SUBMARINE, stored: false })),
+      ...getMachineryList().filter((item) => item.type === MACHINERY_TYPE_BOAT && item.tankId === currentTank?.id)
+        .map((item) => ({ item, type: MACHINERY_TYPE_BOAT, stored: false }))
     ].filter(Boolean);
 
   const renderMachineryTile = ({ item, type, stored }) => {
     const isBoat = type === MACHINERY_TYPE_BOAT;
     const inventory = isBoat ? sanitizeBoatInventory(item.inventory) : sanitizeSubmarineInventory(item.inventory);
     const label = isBoat ? "Chum Skiff" : "Automated Care Submarine";
-    const imagePath = isBoat ? getMachineryImagePath(MACHINERY_TYPE_BOAT) : getMachineryImagePath(MACHINERY_TYPE_SUBMARINE);
+    const imagePath = getMachineryImagePath(type, Date.now(), item);
     const actionLabel = stored ? `Place ${label} in this tank` : `Manage ${label}`;
     const selector = stored
       ? (isBoat ? "data-tray-place-boat=\"true\"" : "data-tray-place-submarine=\"true\"")
@@ -34108,9 +34338,10 @@ function renderEditEquipmentTray() {
 
 function getSubmarineDrawMetrics(submarine, now = Date.now()) {
   if (!submarine) return null;
-  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE)) || null;
+  const imagePath = getMachineryImagePath(MACHINERY_TYPE_SUBMARINE, now, submarine);
+  const image = runtime.images.get(imagePath) || null;
   if (!isUsableRuntimeImage(image)) {
-    requestRuntimeImageRecovery(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE), { kind: "machinery", id: MACHINERY_TYPE_SUBMARINE });
+    requestRuntimeImageRecovery(imagePath, { kind: "machinery", id: submarine.id });
   }
   const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 3);
   const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
@@ -34151,9 +34382,10 @@ function getSubmarineDrawMetrics(submarine, now = Date.now()) {
 
 function getBoatDrawMetrics(boat, now = Date.now()) {
   if (!boat) return null;
-  const image = runtime.images.get(getMachineryImagePath(MACHINERY_TYPE_BOAT)) || null;
+  const imagePath = getMachineryImagePath(MACHINERY_TYPE_BOAT, now, boat);
+  const image = runtime.images.get(imagePath) || null;
   if (!isUsableRuntimeImage(image)) {
-    requestRuntimeImageRecovery(getMachineryImagePath(MACHINERY_TYPE_BOAT), { kind: "machinery", id: MACHINERY_TYPE_BOAT });
+    requestRuntimeImageRecovery(imagePath, { kind: "machinery", id: boat.id });
   }
   const naturalWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 1);
   const naturalHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
@@ -34830,6 +35062,12 @@ function getSubmarineFishHunger(tank, fish, now = Date.now()) {
   return Number(withActiveTank(tank.id, () => getFishNeedValue(fish, "hunger", now))) || 0;
 }
 
+function isSubmarineCalmingNeed(fish, comfort, now = Date.now()) {
+  // A recent food refusal is an active distress signal. Sending another
+  // pellet only repeats the failed interaction; settle the tank first.
+  return Number(fish?.foodRefusalUntil) > now || comfort <= SUBMARINE_COMFORT_THRESHOLD;
+}
+
 function isTankReachableBySubmarine(submarine, tank) {
   const source = getSubmarineTank(submarine);
   return Boolean(source && tank && (source.id === tank.id || findSubmarineTravelRoute(source, tank)));
@@ -34849,17 +35087,18 @@ function findSubmarineCareCandidate(submarine, now = Date.now()) {
         const score = 400 + (1 - health / Math.max(1, maxHealth)) * 120;
         if (!best || score > best.score) best = { kind: "health", fishId: fish.id, targetTankId: tank.id, score };
       }
+      if (inventory.calming > 0 && !hasSubmarineMedicineEffect(tank, "betaBlocker", now)) {
+        const comfort = getSubmarineFishComfort(tank, fish, now);
+        if (isSubmarineCalmingNeed(fish, comfort, now)) {
+          const refusedFood = Number(fish.foodRefusalUntil) > now;
+          const score = (refusedFood ? 520 : 200) + (SUBMARINE_COMFORT_THRESHOLD - comfort) * 100;
+          if (!best || score > best.score) best = { kind: "calming", fishId: fish.id, targetTankId: tank.id, score };
+        }
+      }
       const hunger = getSubmarineFishHunger(tank, fish, now);
       if (inventory.food > 0 && hunger <= SUBMARINE_HUNGER_THRESHOLD) {
         const score = 300 + (SUBMARINE_HUNGER_THRESHOLD - hunger);
         if (!best || score > best.score) best = { kind: "food", fishId: fish.id, targetTankId: tank.id, score };
-      }
-      if (inventory.calming > 0 && !hasSubmarineMedicineEffect(tank, "betaBlocker", now)) {
-        const comfort = getSubmarineFishComfort(tank, fish, now);
-        if (comfort <= SUBMARINE_COMFORT_THRESHOLD) {
-          const score = 200 + (SUBMARINE_COMFORT_THRESHOLD - comfort) * 100;
-          if (!best || score > best.score) best = { kind: "calming", fishId: fish.id, targetTankId: tank.id, score };
-        }
       }
     }
   }
@@ -36339,6 +36578,8 @@ function createFishRecord(speciesId, options = {}) {
     motionLevel: 0.2,
     wiggleClock: Math.random() * Math.PI * 2,
     appearanceVariant,
+    appearanceVariantKey: typeof options.appearanceVariantKey === "string" ? options.appearanceVariantKey : null,
+    appearanceAssetPath: typeof options.appearanceAssetPath === "string" ? options.appearanceAssetPath : null,
     scale,
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(options.behaviorSpeciesId, speciesId),
     fishColor: normalizeDecorColorSetting(options.fishColor ?? options.colorSetting ?? ""),
@@ -37381,18 +37622,24 @@ function canCreateFishActionMealPellet(fish, now = Date.now()) {
     fish
     && !isMealFreeFish(fish)
     && getFishNeedValue(fish, "hunger", now) < 92
-    && canFishEatFoodPellet(fish, "basic", now)
-    && canFoodSatisfyFishMeal(fish, "basic")
+    && getFishActionMealFoodKey(fish, now)
   );
+}
+
+function getFishActionMealFoodKey(fish, now = Date.now()) {
+  const keys = [...new Set([runtime.feedingModeFoodKey, ...Object.keys(state.foodInventory || {})])];
+  return keys.find(key => key && Number(state.foodInventory?.[key]) >= 1
+    && getFoodMeta(key) && canFoodSatisfyFishMeal(fish, key) && canFishEatFoodPellet(fish, key, now)) || "";
 }
 
 function createFishActionMealPellet(fish, now = Date.now()) {
   if (!canCreateFishActionMealPellet(fish, now)) {
     return null;
   }
+  const foodKey = getFishActionMealFoodKey(fish, now);
   const pellet = sanitizePellet({
     id: createId("fish-action-pellet"),
-    foodKey: "basic",
+    foodKey,
     targetFishId: fish.id,
     xNorm: clamp((fish.xNorm || 0.5) + (fish.direction || 1) * 0.075, 0.12, 0.88),
     yNorm: clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.13 + Math.random() * 0.06, 0.24, 0.4),
@@ -37404,6 +37651,7 @@ function createFishActionMealPellet(fish, now = Date.now()) {
   if (!pellet) {
     return null;
   }
+  state.foodInventory[foodKey] -= 1;
   state.floatingPellets.push(pellet);
   const mealEntry = ensureMealHistoryEntry(`feeding-care-${getLocalDayKey(now)}`, now);
   if (mealEntry) {
@@ -37545,9 +37793,6 @@ function getFishActionAvailability(action, fish, now = Date.now()) {
   }
   if (action !== "clear" && getFishNeedValue(fish, "hunger", now) <= FISH_HUNGER_CRITICAL_THRESHOLD && action !== "eat" && action !== "waitfood") {
     return { enabled: false, title: `${baseTitle}: needs food first` };
-  }
-  if (["zoomies", "play", "breed"].includes(action) && getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_LOW_THRESHOLD) {
-    return { enabled: false, title: `${baseTitle}: too tired` };
   }
 
   switch (action) {
@@ -37975,14 +38220,14 @@ function updateQueuedFishActionControl(fish, species, now = Date.now()) {
 function triggerFishActionEat(fish, species, now = Date.now()) {
   const pellet = findExistingFishActionFoodPellet(fish, now) || createFishActionMealPellet(fish, now);
   if (!pellet) {
-    showToast("No valid food is available for this fish.");
+    showFishRoutineToast(fish, "No valid food is available for this fish.");
     return false;
   }
   prepareFishForUserAction(fish, species, now, { keepFeeding: true });
   assignPelletToFish(fish, pellet, now);
-  pushEvent(`${fish.name} was sent to eat.`, now);
+  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} was sent to eat.`, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is going for food.`);
+  showFishRoutineToast(fish, `${fish.name} is going for food.`);
   return true;
 }
 
@@ -37997,13 +38242,13 @@ function triggerFishActionRest(fish, species, now = Date.now()) {
   }
   setFishBehaviorIntent(fish, "rest", "quiet", now, { durationMs });
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is resting.`);
+  showFishRoutineToast(fish, `${fish.name} is resting.`);
   return true;
 }
 
 function triggerFishActionWaitFood(fish, species, now = Date.now()) {
   if (!hasAutoDispenserInstalled()) {
-    showToast("Add the pellet dispenser first.");
+    showFishRoutineToast(fish, "Add the pellet dispenser first.");
     return false;
   }
   prepareFishForUserAction(fish, species, now);
@@ -38019,9 +38264,9 @@ function triggerFishActionWaitFood(fish, species, now = Date.now()) {
   }, now);
   setFishActionSteering(fish, { type: "waitfood", xNorm, yNorm, durationMs: getFishActionConfig("waitfood")?.durationMs || FISH_ACTION_WAIT_FOOD_DURATION_MS }, now);
   updateFishActionSteering(fish, species, now);
-  pushEvent(`${fish.name} is waiting by the food dispenser.`, now);
+  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} is waiting by the food dispenser.`, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is waiting by the dispenser.`);
+  showFishRoutineToast(fish, `${fish.name} is waiting by the dispenser.`);
   return true;
 }
 
@@ -38049,7 +38294,7 @@ function triggerFishActionSleep(fish, species, now = Date.now()) {
     slow: true
   }, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is settling down.`);
+  showFishRoutineToast(fish, `${fish.name} is settling down.`);
   return true;
 }
 
@@ -38057,20 +38302,22 @@ function triggerFishActionZoomies(fish, species, now = Date.now()) {
   prepareFishForUserAction(fish, species, now);
   setFishActionSteering(fish, { type: "zoomies", durationMs: FISH_ACTION_ZOOMIES_DURATION_MS }, now);
   updateFishActionSteering(fish, species, now);
-  pushEvent(`${fish.name} got the zoomies.`, now);
+  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} got the zoomies.`, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} has the zoomies.`);
+  showFishRoutineToast(fish, `${fish.name} has the zoomies.`);
   return true;
 }
 
 function triggerFishActionHangout(fish, species, now = Date.now(), item = null) {
   const partner = getFishActionTargetPartner(fish, item?.targetId || "", { now });
   if (!partner) {
-    showToast("Add another living fish first.");
+    showFishRoutineToast(fish, "Add another living fish first.");
     return false;
   }
   prepareFishForUserAction(fish, species, now);
-  setDebugFishRelationship(fish, partner, "friend", now);
+  if (["friend", "neutral"].includes(fish.relationships?.[partner.id]?.kind || getRelationshipKindForFish(fish, partner))) {
+    setDebugFishRelationship(fish, partner, "friend", now);
+  }
   setFishActionSteering(fish, {
     type: "follow",
     targetFishId: partner.id,
@@ -38078,22 +38325,21 @@ function triggerFishActionHangout(fish, species, now = Date.now(), item = null) 
     durationMs: FISH_ACTION_FOLLOW_DURATION_MS
   }, now);
   updateFishActionSteering(fish, species, now);
-  pushEvent(`${fish.name} went to hang out with ${partner.name}.`, now);
+  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} went to hang out with ${partner.name}.`, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is hanging out with ${partner.name}.`);
+  showFishRoutineToast(fish, `${fish.name} is hanging out with ${partner.name}.`);
   return true;
 }
 
 function triggerFishActionGreet(fish, species, now = Date.now(), item = null) {
   const partner = getFishActionTargetPartner(fish, item?.targetId || "", { now });
   if (!partner) {
-    showToast("Add another living fish first.");
+    showFishRoutineToast(fish, "Add another living fish first.");
     return false;
   }
   const started = triggerFishActionHangout(fish, species, now, item);
   if (started) {
     setFishBehaviorIntent(fish, "greet", partner.name || "friend", now, { targetId: partner.id, targetName: partner.name || "", durationMs: getFishActionConfig("greet")?.durationMs || FISH_ACTION_GREET_DURATION_MS });
-    setDebugFishRelationship(fish, partner, "friend", now);
   }
   return started;
 }
@@ -38102,7 +38348,7 @@ function triggerFishActionPlay(fish, species, now = Date.now(), item = null) {
   if (hasDebugDecorHangoutZone(["lure", "bubbler", "spooky", "hardscape", "plant"])) {
     const started = triggerFishActionInspect(fish, species, now, item);
     if (started) {
-      item.playUsesExplore = true;
+      if (item) item.playUsesExplore = true;
       const durationMs = getFishActionConfig("play")?.durationMs || FISH_ACTION_PLAY_DURATION_MS;
       const steering = runtime.fishActionSteeringByFishId.get(fish.id);
       if (steering) {
@@ -38111,7 +38357,7 @@ function triggerFishActionPlay(fish, species, now = Date.now(), item = null) {
       }
       fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + durationMs);
       setFishBehaviorIntent(fish, "play", "decor", now, { durationMs });
-      showToast(`${fish.name} is playing.`);
+      showFishRoutineToast(fish, `${fish.name} is playing.`);
     }
     return started;
   }
@@ -38125,33 +38371,33 @@ function triggerFishActionPlay(fish, species, now = Date.now(), item = null) {
 function triggerFishActionPebble(fish, species, now = Date.now(), item = null) {
   prepareFishForUserAction(fish, species, now);
   if (!beginQueuedFishPebbleCycle(fish, species, item, now)) {
-    showToast("This fish cannot pick a pebble right now.");
+    showFishRoutineToast(fish, "This fish cannot pick a pebble right now.");
     return false;
   }
   setFishBehaviorIntent(fish, "pebble", "gravel", now, { durationMs: getFishActionConfig("pebble")?.durationMs || FISH_ACTION_PEBBLE_DURATION_MS });
-  pushEvent(`${fish.name} went pebble picking.`, now);
+  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} went pebble picking.`, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is picking a pebble.`);
+  showFishRoutineToast(fish, `${fish.name} is picking a pebble.`);
   return true;
 }
 
 function triggerFishActionDig(fish, species, now = Date.now(), item = null) {
   prepareFishForUserAction(fish, species, now);
   if (!beginQueuedFishDigCycle(fish, species, item, now)) {
-    showToast("This fish cannot dig right now.");
+    showFishRoutineToast(fish, "This fish cannot dig right now.");
     return false;
   }
   setFishBehaviorIntent(fish, "dig", "gravel", now, { durationMs });
-  pushEvent(`${fish.name} went digging in the gravel.`, now);
+  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} went digging in the gravel.`, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is digging.`);
+  showFishRoutineToast(fish, `${fish.name} is digging.`);
   return true;
 }
 
 function triggerFishActionAvoid(fish, species, now = Date.now(), item = null) {
   const partner = getFishActionTargetPartner(fish, item?.targetId || "", { now, preferNegative: true });
   if (!partner) {
-    showToast("Add another living fish first.");
+    showFishRoutineToast(fish, "Add another living fish first.");
     return false;
   }
   prepareFishForUserAction(fish, species, now);
@@ -38162,18 +38408,18 @@ function triggerFishActionAvoid(fish, species, now = Date.now(), item = null) {
   fish.targetAt = now + (getFishActionConfig("avoid")?.durationMs || FISH_ACTION_AVOID_DURATION_MS);
   setFishBehaviorIntent(fish, "avoid", partner.name || "fish", now, { targetId: partner.id, targetName: partner.name || "", durationMs: getFishActionConfig("avoid")?.durationMs || FISH_ACTION_AVOID_DURATION_MS });
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is taking space.`);
+  showFishRoutineToast(fish, `${fish.name} is taking space.`);
   return true;
 }
 
 function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
   if (!isFishAdult(fish, now) || !hasFishBeenInTankLongEnoughToBreed(fish, now) || (Number(fish.breedCooldownUntil) || 0) > now || isUndeadFish(fish)) {
-    showToast(`${fish.name} is not ready to mate.`);
+    showFishRoutineToast(fish, `${fish.name} is not ready to mate.`);
     return false;
   }
   const partner = getFishActionTargetPartner(fish, item?.targetId || "", { sameSpeciesOnly: true, requireBreedReady: true, now });
   if (!partner) {
-    showToast("This fish needs a ready adult partner of the same species.");
+    showFishRoutineToast(fish, "This fish needs a ready adult partner of the same species.");
     return false;
   }
   const mateChance = getFishMateChanceForTarget(fish, partner);
@@ -38181,14 +38427,14 @@ function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
     setFishBehaviorIntent(fish, "refuse mate", partner.name || "partner", now, { targetId: partner.id, targetName: partner.name || "", durationMs: 6000 });
     pushEvent(`${fish.name} tried to mate with ${partner.name}, but the relationship is only ${mateChance.rating}/10.`, now);
     markFishActionStateDirty(now);
-    showToast(`${partner.name} is not feeling it. Relationship ${mateChance.rating}/10.`);
+    showFishRoutineToast(fish, `${partner.name} is not feeling it. Relationship ${mateChance.rating}/10.`);
     return false;
   }
   if (Math.random() * 100 >= mateChance.chancePercent) {
     setFishBehaviorIntent(fish, "mate fizzled", partner.name || "partner", now, { targetId: partner.id, targetName: partner.name || "", durationMs: 6000 });
     pushEvent(`${fish.name} and ${partner.name} tried to mate, but it fizzled at ${mateChance.chancePercent}% odds.`, now);
     markFishActionStateDirty(now);
-    showToast(`${fish.name} and ${partner.name} did not vibe this time.`);
+    showFishRoutineToast(fish, `${fish.name} and ${partner.name} did not vibe this time.`);
     return false;
   }
   const parents = [fish, partner].sort((left, right) => String(left.id).localeCompare(String(right.id)));
@@ -38228,9 +38474,9 @@ function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
     parent.targetAt = now;
     setFishBehaviorIntent(parent, "mate", parent.id === fish.id ? (partner.name || "partner") : (fish.name || "partner"), now, { durationMs: FISH_ACTION_BREED_HOLD_MS + 30000 });
   }
-  pushEvent(`${fish.name} and ${partner.name} are mating after a ${mateChance.rating}/10 relationship check.`, now);
+  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} and ${partner.name} are mating after a ${mateChance.rating}/10 relationship check.`, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} and ${partner.name} are mating.`);
+  showFishRoutineToast(fish, `${fish.name} and ${partner.name} are mating.`);
   return true;
 }
 
@@ -38243,7 +38489,7 @@ function triggerFishActionHide(fish, species, now = Date.now()) {
     preferBackLayer: true
   });
   if (!cover) {
-    showToast("Add plants, caves, or spooky decor first.");
+    showFishRoutineToast(fish, "Add plants, caves, or spooky decor first.");
     return false;
   }
   prepareFishForUserAction(fish, species, now);
@@ -38257,7 +38503,7 @@ function triggerFishActionHide(fish, species, now = Date.now()) {
     slow: true
   }, now);
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is hiding.`);
+  showFishRoutineToast(fish, `${fish.name} is hiding.`);
   return true;
 }
 
@@ -38267,7 +38513,7 @@ function triggerFishActionInspect(fish, species, now = Date.now(), item = null) 
     return false;
   }
   markFishActionStateDirty(now);
-  showToast(`${fish.name} is exploring the tank.`);
+  showFishRoutineToast(fish, `${fish.name} is exploring the tank.`);
   return true;
 }
 
@@ -38307,7 +38553,7 @@ function startFishActionQueueItem(fish, item, now = Date.now()) {
   const config = getFishActionConfig(action);
   const availability = getFishActionAvailability(action, fish, now);
   if (!fish || !species || !availability.enabled) {
-    showFishActionUnavailableToast(availability);
+    if (!item?.autonomous) showFishActionUnavailableToast(availability);
     return false;
   }
 
@@ -38360,11 +38606,6 @@ function startFishActionQueueItem(fish, item, now = Date.now()) {
       return false;
   }
 
-  if (started && config) {
-    adjustFishNeed(fish, "energy", -Math.max(0, Number(config.energyCost) || 0), now);
-    adjustFishNeed(fish, "hunger", -Math.max(0, Number(config.hungerCost) || 0), now);
-    fish.needsUpdatedAt = now;
-  }
   return started;
 }
 
@@ -38372,13 +38613,7 @@ function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
   if (!fish || !item) {
     return;
   }
-  if (options.cancelled !== true) {
-    const effects = getFishActionConfig(item.action)?.effects || {};
-    for (const [needKey, delta] of Object.entries(effects)) {
-      adjustFishNeed(fish, needKey, Number(delta) || 0, now);
-    }
-    fish.needsUpdatedAt = now;
-  }
+  // Completing a routine does not fill meters or change the feeding clock.
   if (item.action === "breed" && isFishInActiveUserBreedingSequence(fish)) {
     clearFishBreedingSequence();
   }
@@ -38403,7 +38638,7 @@ function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
   if (runtime.debugFishActionIndicatorsEnabled) {
     renderFishActionQueueDock(now);
   }
-  if (options.cancelled === true) {
+  if (options.cancelled === true && options.silent !== true && !item.autonomous) {
     showToast(`${item.label || getFishActionConfig(item.action)?.label || "Action"} cancelled for ${fish.name}.`);
   }
 }
@@ -38636,74 +38871,103 @@ function cancelFishQueuedAction(fishId, itemId, now = Date.now()) {
 
 function pickAutonomousFishAction(fish, now = Date.now(), options = {}) {
   const needs = sanitizeFishNeeds(fish.needs, fish, now);
-  const emergency = options.emergency === true;
-  if (needs.hunger <= (emergency ? FISH_HUNGER_CRITICAL_THRESHOLD : FISH_HUNGER_LOW_THRESHOLD)) {
-    if (findExistingFishActionFoodPellet(fish, now)) {
-      return "eat";
-    }
-    if (getFishActionAvailability("waitfood", fish, now).enabled) {
-      return "waitfood";
-    }
+  if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_LOW_THRESHOLD) {
+    if (findExistingFishActionFoodPellet(fish, now)) return "eat";
+    if (getFishActionAvailability("waitfood", fish, now).enabled) return "waitfood";
   }
-  if (needs.energy <= (emergency ? FISH_ENERGY_CRITICAL_THRESHOLD : FISH_ENERGY_LOW_THRESHOLD)) {
-    return getFishActionAvailability("rest", fish, now).enabled ? "rest" : "sleep";
+  if (options.emergency) return "";
+  if (isTankLightsOut(now) && !isNightActiveFish(fish)) return "sleep";
+  const personality = getFishPersonality(fish);
+  const choices = ["", "", "inspect", "rest"];
+  if (["curious", "explorer", "hunter"].includes(personality)) choices.push("inspect", "inspect", "play");
+  if (["playful", "energetic", "bold"].includes(personality)) choices.push("play", "zoomies", "pebble");
+  if (["lazy", "chill", "slow-graceful"].includes(personality)) choices.push("rest", "rest", "");
+  if (["homebody", "routine-loving", "shy", "nervous"].includes(personality)) choices.push("hide", "hide");
+  if (["digger", "cleaner"].includes(personality)) choices.push("dig", "pebble");
+  if (["social", "follower", "gentle"].includes(personality)) {
+    const partner = getFishActionPartner(fish);
+    const relation = partner && (fish.relationships?.[partner.id]?.kind || getRelationshipKindForFish(fish, partner));
+    if (["friend", "neutral"].includes(relation)) choices.push("hangout", "hangout", "greet");
   }
-  if (needs.comfort <= 35) {
-    if (getFishActionAvailability("hide", fish, now).enabled) {
-      return "hide";
-    }
-    if (getFishActionAvailability("avoid", fish, now).enabled) {
-      return "avoid";
-    }
-  }
-  if (!emergency && needs.social <= 38 && getFishActionAvailability("greet", fish, now).enabled) {
-    return "greet";
-  }
-  if (!emergency && needs.stimulation <= 35) {
-    if (getFishActionAvailability("play", fish, now).enabled) {
-      return "play";
-    }
-    if (getFishActionAvailability("inspect", fish, now).enabled) {
-      return "inspect";
-    }
-  }
-  return "";
+  const available = choices.filter(action => !action || getFishActionAvailability(action, fish, now).enabled);
+  return available[Math.floor(Math.random() * available.length)] || "";
 }
 
 function processFishNeedsAutonomy(now = Date.now()) {
   let changed = false;
-  for (const fish of getLivingTankFish()) {
-    if (runtime.fishDragState?.fishId === fish.id || isUndeadFish(fish) || runtime.debugAutonomyPausedFishIds?.has?.(fish.id)) {
+  const nextDecisions = runtime.fishRoutineNextAtById || (runtime.fishRoutineNextAtById = new Map());
+  const living = getLivingTankFish();
+  const livingIds = new Set(living.map(fish => fish.id));
+  for (const id of nextDecisions.keys()) if (!livingIds.has(id)) nextDecisions.delete(id);
+  for (const fish of living) {
+    if (runtime.fishDragState?.fishId === fish.id || fish.caveState || fish.activity !== "roam"
+      || Number(fish.panicUntil) > now || isUndeadFish(fish) || runtime.debugAutonomyPausedFishIds?.has?.(fish.id)) continue;
+    const queue = getFishActionQueueState(fish.id);
+    // Feeding interrupts passive routines through the existing feeding system.
+    // Never repeatedly cancel an active behavior while waiting for a meal.
+    if (queue?.active || queue?.items.length || Number(queue?.restUntil) > now) continue;
+    if (!nextDecisions.has(fish.id)) {
+      nextDecisions.set(fish.id, now + randomBetween(5, 25) * 1000);
       continue;
     }
-    const queue = getFishActionQueueState(fish.id, { create: true });
-    const needs = sanitizeFishNeeds(fish.needs, fish, now);
-    const emergency = needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD || needs.energy <= FISH_ENERGY_CRITICAL_THRESHOLD || needs.comfort <= 15 || needs.hygiene <= 12;
-    if (queue.active || queue.items.length || (Number(queue.restUntil) || 0) > now) {
-      if (!emergency || queue.active?.interruptible === false || queue.active?.cancelling) {
-        trimFishActionQueue(fish.id);
-        continue;
-      }
-      finishFishActionQueueItem(fish, queue.active, now, { cancelled: true });
-      queue.active = null;
-      queue.items = [];
-      queue.restUntil = 0;
-    }
-    const action = pickAutonomousFishAction(fish, now, { emergency });
-    if (!action) {
-      trimFishActionQueue(fish.id);
-      continue;
-    }
-    const config = getFishActionConfig(action);
-    const item = createFishActionQueueItem(action, config, now, { autonomous: true });
-    if (!item) {
-      continue;
-    }
-    queue.items.push(item);
-    promoteNextFishActionQueueItem(fish.id, now);
-    changed = true;
+    if (nextDecisions.get(fish.id) > now) continue;
+    nextDecisions.set(fish.id, now + randomBetween(35, 85) * 1000);
+    const action = pickAutonomousFishAction(fish, now, {
+      emergency: !isMealFreeFish(fish) && getFishNeedValue(fish, "hunger", now) <= FISH_HUNGER_CRITICAL_THRESHOLD
+    });
+    if (!action || !getFishActionAvailability(action, fish, now).enabled) continue;
+    const item = createFishActionQueueItem(action, getFishActionConfig(action), now, { autonomous: true });
+    if (!item) continue;
+    getFishActionQueueState(fish.id, { create: true }).items.push(item);
+    changed = promoteNextFishActionQueueItem(fish.id, now) || changed;
   }
   return changed;
+}
+
+function showFishRoutineToast(fish, message) {
+  if (getFishActionQueueState(fish?.id)?.active?.autonomous) return;
+  showToast(message);
+}
+
+function offerFishInteraction(interaction, fishId, now = Date.now()) {
+  const managed = getManagedFishById(fishId);
+  const fish = managed?.fish;
+  if (!fish || managed.inStorage || isFishDead(fish)) return false;
+  const queue = getFishActionQueueState(fishId);
+  if (queue?.active && (!queue.active.autonomous || queue.active.interruptible === false)) {
+    showToast(fish.name + " is busy for a moment.");
+    return false;
+  }
+  let action = interaction === "treat" ? "eat" : "play";
+  if (interaction !== "treat" && interaction !== "play") return false;
+  if (interaction === "play") {
+    const personality = getFishPersonality(fish);
+    if (["sleep", "rest", "hide"].includes(queue?.active?.action)
+      || (["shy", "lazy", "standoffish"].includes(personality) && Math.random() < 0.35)) {
+      showToast(fish.name + " is enjoying a quiet moment. Try again later.");
+      return false;
+    }
+    if (["energetic", "bold", "playful"].includes(personality)) action = "zoomies";
+    else if (["curious", "explorer"].includes(personality)) action = "inspect";
+  }
+  const availability = getFishActionAvailability(action, fish, now);
+  if (!availability.enabled) {
+    showToast(interaction === "treat"
+      ? isMealFreeFish(fish) ? fish.name + " finds their own food in the tank."
+        : getFishNeedValue(fish, "hunger", now) >= 92 ? fish.name + " is full and content."
+        : "Add suitable food from the food tray first."
+      : fish.name + " isn't ready to play just now.");
+    return false;
+  }
+  if (queue?.active) {
+    finishFishActionQueueItem(fish, queue.active, now, { cancelled: true, silent: true });
+    queue.active = null;
+  }
+  const targetQueue = getFishActionQueueState(fishId, { create: true });
+  targetQueue.items = [];
+  targetQueue.restUntil = 0;
+  targetQueue.items.push(createFishActionQueueItem(action, getFishActionConfig(action), now));
+  return promoteNextFishActionQueueItem(fishId, now);
 }
 
 function triggerFishAction(action, fishId = runtime.fishActionMenuFishId || runtime.selectedFishId, options = {}) {
@@ -38726,6 +38990,25 @@ function handleFishActionButtonClick(action) {
 
 function getInsufficientFundsMessage() {
   return "Payment method declined. Insufficient Funds.";
+}
+
+function setStorePurchaseSoundBatch(active = false) {
+  runtime.storePurchaseSoundBatch = active === true;
+}
+
+function recordWalletTransaction(options = {}) {
+  const amount = Math.max(0, Math.floor(Math.abs(Number(options.amount) || 0)));
+  if (!state || amount <= 0) return false;
+  if (!Array.isArray(state.walletTransactions)) state.walletTransactions = [];
+  state.walletTransactions.unshift({
+    id: createId("receipt"), amount,
+    direction: options.direction === "debit" ? "debit" : "credit",
+    label: String(options.label || "Aquarium activity").slice(0, 180),
+    place: String(options.place || "Aquarium").slice(0, 80),
+    time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now()
+  });
+  state.walletTransactions = state.walletTransactions.slice(0, 60);
+  return true;
 }
 
 function performCoinTransaction(options = {}) {
@@ -38753,13 +39036,18 @@ function performCoinTransaction(options = {}) {
     }
     const event = typeof options.event === "function" ? options.event(now) : options.event;
     const toast = typeof options.toast === "function" ? options.toast(now) : options.toast;
+    recordWalletTransaction({ amount, direction, now,
+      place: options.place || (direction === "debit" ? "Tankazon" : "Aquarium"),
+      label: options.receiptLabel || event?.text || toast || (direction === "debit" ? "Purchase" : "Coin award") });
     completeGameAction({
       now,
       event,
       tank: options.tank,
       toast,
       toastOptions: options.toastOptions,
-      sound: options.sound || (direction === "credit" ? "coin" : "purchase"),
+      sound: options.sound === false
+        ? null
+        : (runtime.storePurchaseSoundBatch ? null : (options.sound || (direction === "credit" ? "coin" : "purchase"))),
       render: options.render,
       full: options.full
     });
@@ -38888,9 +39176,13 @@ async function ensureFishPurchaseImageReady(fish, species) {
     return false;
   }
 
+  // The chosen appearance is part of the purchased fish, not a visual preference.
+  // Load it first and validate that exact path so a slow variant request can never
+  // silently turn the purchase into the base appearance.
+  const selectedAsset = getFishAssetPath(fish, species);
   const candidates = [
+    selectedAsset,
     getFishDisplayAssetPath(fish, species, Date.now()),
-    getFishAssetPath(fish, species),
     species.fallbackAsset,
     species.asset
   ].filter((path, index, entries) => Boolean(path) && entries.indexOf(path) === index);
@@ -38900,8 +39192,7 @@ async function ensureFishPurchaseImageReady(fish, species) {
     retryDelayMs: 350
   });
 
-  const displayPath = getFishDisplayAssetPath(fish, species, Date.now()) || species.asset;
-  return isUsableRuntimeImage(runtime.images.get(displayPath));
+  return isUsableRuntimeImage(runtime.images.get(selectedAsset));
 }
 
 async function buyFish(speciesId, options = {}) {
@@ -38942,10 +39233,23 @@ async function buyFish(speciesId, options = {}) {
 
   const now = Date.now();
   const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_ADOPT_FISH);
+  const variants = getFishAssetVariants(species);
+  const selectedVariant = options.appearanceVariantKey
+    ? variants.findIndex((path) => getFishAppearanceVariantKey(path) === options.appearanceVariantKey)
+    : Math.max(0, variants.indexOf(getFishAssetPath({ appearanceVariant: options.appearanceVariant ?? 0 }, species)));
+  if (selectedVariant < 0) {
+    return { ok: false, reason: "variant-unavailable", errorMessage: "That fish variant is no longer available." };
+  }
   const entryStartedAt = options.closeOverlayFirst === true
     ? now + TUTORIAL_STORE_CLOSE_DELAY_MS
     : now;
   const fish = createFishRecord(speciesId, {
+    appearanceVariant: selectedVariant,
+    appearanceVariantKey: getFishAppearanceVariantKey(variants[selectedVariant]),
+    // Persist the resolved selected asset as well as its filename key. This
+    // prevents a later catalog refresh or cache query from changing a fish
+    // that has already been purchased.
+    appearanceAssetPath: variants[selectedVariant],
     now,
     entryStartedAt,
     entryDurationMs: FISH_ENTRY_DURATION_MS,
@@ -38963,15 +39267,16 @@ async function buyFish(speciesId, options = {}) {
   runtime.pendingFishPurchases.add(pendingKey);
 
   try {
-    if (!await ensureFishPurchaseImageReady(fish, species)) {
-      console.error("Fish purchase blocked because its artwork could not be loaded.", {
-        speciesId,
-        path: getFishDisplayAssetPath(fish, species, Date.now()) || species.asset,
-        failure: runtime.imageLoadFailures.get(getFishDisplayAssetPath(fish, species, Date.now()) || species.asset) || null
+    // Do not make a paid adoption wait for an independent image decode. The
+    // selected asset is saved on the record and recovery keeps retrying it.
+    void ensureFishPurchaseImageReady(fish, species).then((loaded) => {
+      if (loaded) return;
+      requestRuntimeImageRecovery(getFishAssetPath(fish, species), {
+        kind: "fish-appearance",
+        id: fish.id,
+        speciesId
       });
-      showToast("That fish's artwork could not be loaded. Please try again.");
-      return { ok: false, reason: "image-unavailable" };
-    }
+    });
     const purchaseCompletedAt = Date.now();
     let tutorialChanged = false;
     const transaction = performCoinTransaction({
@@ -39124,7 +39429,7 @@ function buyAnotherFishFromSource(fishId) {
     return true;
   }
 
-  buyFish(fish.speciesId);
+  buyFish(fish.speciesId, { appearanceVariantKey: getFishAppearanceVariantKey(getFishAssetPath(fish)) });
   return true;
 }
 
@@ -47252,6 +47557,9 @@ function completeCleaning(options = {}) {
   state.lastCleanedAt = now;
   state.poops = [];
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
+  if (cleanReward > 0) {
+    recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Deep tank cleaning", place: getTankLabel() });
+  }
 
   if (!hasExposedDeadTankFish(now)) {
     resetLivingFishComfortDamageProgress();
@@ -47987,6 +48295,7 @@ function grantDailyRecapRewardAutomatically(summary, now = Date.now()) {
   const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
   if (reward > 0) {
     state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
+    recordWalletTransaction({ amount: reward, direction: "credit", now, label: "Daily Award", place: "Bubble Borough" });
   }
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
@@ -48522,6 +48831,7 @@ function applyProgressMilestones(latestSummary = null, now = Date.now()) {
       }
       state.dailyBonus.milestones[milestone.id] = true;
       state.coins = Math.min(MAX_WALLET_COINS, state.coins + milestone.reward);
+      recordWalletTransaction({ amount: milestone.reward, direction: "credit", now, label: `${milestone.label} milestone`, place: "Bubble Borough" });
       const speciesUnlocked = [];
       for (const speciesId of milestone.unlocks) {
         if (unlockFishSpecies(speciesId, now, `${runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)} unlocked from ${milestone.label}.`)) {
@@ -48635,10 +48945,16 @@ function requestDeferredStateSave() {
 
 function saveState() {
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
-  state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   if (!state) {
     return;
   }
+  if (runtime.freshGameSaveLocked && state?.tutorial?.completed !== true) {
+    return;
+  }
+  if (state?.tutorial?.completed === true) {
+    runtime.freshGameSaveLocked = false;
+  }
+  state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
 
   applyProgressMilestones(null, Date.now());
 
@@ -48659,6 +48975,8 @@ function saveState() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
     runtime.lastStateSavedAt = Date.now();
+    recordLocalSaveForCloud(runtime.lastStateSavedAt);
+    scheduleCloudSave();
     runtime.gravelStateDirty = false;
     runtime.tankStateDirty = false;
     runtime.deferredStateSaveDirty = false;
@@ -50069,6 +50387,17 @@ function playScrubWipeSoundForMovement(fromPoint, toPoint) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderUi(now, options = {}) {
+  // Tankazon is rendered by the page shell while gameplay lives in this ES
+  // module. Publish the small, variant-aware purchase bridge once rendering
+  // begins so the shell never falls back to clicking a hidden legacy card.
+  if (typeof window !== "undefined" && window.buyFish !== buyFish) {
+    window.buyFish = buyFish;
+    window.buySubmarine = buySubmarine;
+    window.buyBoat = buyBoat;
+    window.showToast = showToast;
+    window.setStorePurchaseSoundBatch = setStorePurchaseSoundBatch;
+    window.playPurchaseSoundEffect = playPurchaseSoundEffect;
+  }
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   const full = options.full !== false;
@@ -50270,12 +50599,29 @@ function renderHeader(now) {
   setTextIfChanged(dom.coinCount, formatLcdNumber(state.coins));
   setTextIfChanged(dom.toolbarCoinCount, String(state.coins));
   dom.toolbarWallet?.classList.toggle("is-full", state.coins >= MAX_WALLET_COINS);
+  renderWalletTransactionMenu();
   setTextIfChanged(dom.cleanlinessLabel, `${cleanliness}%`);
   setTextIfChanged(dom.mealWindowLabel, starvingCount > 0 ? `${starvingCount}! / ${hungryCount}` : String(hungryCount));
 
   if (dom.nextMealCountdownMirror) {
     setTextIfChanged(dom.nextMealCountdownMirror, hungryCount > 0 ? `${hungryCount} hungry` : "All fish fed");
   }
+}
+
+function renderWalletTransactionMenu() {
+  const menu = dom.walletTransactionMenu;
+  if (!menu) return;
+  const entries = Array.isArray(state.walletTransactions) ? state.walletTransactions.slice(0, 60) : [];
+  menu.hidden = runtime.walletTransactionMenuOpen !== true;
+  dom.toolbarWallet?.setAttribute("aria-expanded", String(runtime.walletTransactionMenuOpen === true));
+  const receipts = entries.length
+    ? entries.map((entry) => {
+      const debit = entry.direction === "debit";
+      const time = new Date(Number(entry.time) || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      return `<article class="wallet-receipt ${debit ? "is-debit" : "is-credit"}"><strong>${debit ? "−" : "+"}${entry.amount} <img src="assets/icons/coin.png" alt="coin" /></strong><span>${escapeHtml(entry.place)} · ${escapeHtml(entry.label)}</span><time>${escapeHtml(time)}</time></article>`;
+    }).join("")
+    : `<p class="wallet-receipt-empty">No receipts yet.</p>`;
+  setMarkupIfChanged("wallet-transactions", menu, `<header><strong>Recent receipts</strong></header><div class="wallet-receipt-list">${receipts}</div>`);
 }
 
 function renderMealTrack(now) {
@@ -50508,7 +50854,7 @@ function renderFishShop() {
           </div>
           <div class="shop-meta">
             <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
-              <button class="buy-button" data-buy-fish="${fish.id}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+              <button class="buy-button" data-buy-fish="${fish.id}" data-fish-variants="${escapeHtml(JSON.stringify(getFishStoreVariants(fish)))}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
               ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
             </button>
           </div>
@@ -50554,6 +50900,16 @@ function renderStoreOverlay() {
   dom.storeFishTab.setAttribute("aria-selected", String(showingFish));
   dom.storeDecorTab.setAttribute("aria-selected", String(showingDecor));
   dom.storeEquipmentTab?.setAttribute("aria-selected", String(showingEquipment));
+
+  // The Tankazon shell owns its catalogue filtering. Keep it in lockstep with
+  // gameplay changes such as a tutorial advancing from Fish to Decor; merely
+  // changing the selected tab otherwise leaves the old catalogue on screen.
+  if (runtime.storeOverlayOpen && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+    dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
+    window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
+      detail: { category: runtime.storeTab }
+    }));
+  }
 
   if (dom.storeCoinCounter) {
     const currentCoins = formatStoreCoinCounterValue(state.coins);
@@ -56233,12 +56589,8 @@ function getFishTrayEntries() {
 }
 
 function getFishTrayMoodTone(fish, now = Date.now()) {
-  if (!fish || isFishDead(fish)) {
-    return "danger";
+    return getFishCareStatus(fish, now)?.tone || "good";
   }
-  const moodValue = Number(getFishNeedsSnapshot(fish, now)?.mood?.value) || 0;
-  return moodValue <= 19 ? "danger" : moodValue <= 49 ? "warn" : moodValue <= 69 ? "okay" : "good";
-}
 
 function syncEditFishTrayScrollControls() {
   if (!dom.editFishTrayScroller || !dom.editFishTrayPrev || !dom.editFishTrayNext) {
@@ -56493,7 +56845,7 @@ function renderEditFishTray() {
         const label = `${fish.name}${displaySpeciesName ? ` - ${displaySpeciesName}` : ""}`;
         const moodTone = !inStorage && !dead ? getFishTrayMoodTone(fish, trayRenderNow) : "";
         const actionLabel = !inStorage && !dead
-          ? `Open behavior menu for ${fish.name}`
+          ? `Meet ${fish.name}`
           : dead
           ? `Dispose of ${fish.name}`
           : `Place ${fish.name} in the tank`;
@@ -57292,7 +57644,9 @@ function openFishActionMenu(fishId, point = null) {
   runtime.selectedFishStatusFishId = fish.id;
   runtime.fishInspectorSettingsOpen = false;
   clearFishInspectorDisplayDocking();
-  holdFishForActionMenu(fish);
+  releaseFishActionMenuHold();
+  closeFishActionSubmenu();
+  closeFishActionTargetMenu();
   renderUi(Date.now(), { full: false });
 }
 
@@ -57408,135 +57762,12 @@ function updateFishInspectorDisplayDocking() {
 }
 
 function renderFishActionFlyout(now = Date.now()) {
-  const flyout = dom.fishActionFlyout;
-  if (!flyout) {
-    return;
+    // The companion card owns selection. Opening it never stops the fish.
+    if (dom.fishActionFlyout) dom.fishActionFlyout.hidden = true;
+    if (dom.fishActionQueue) dom.fishActionQueue.replaceChildren();
+    closeFishActionSubmenu();
+    closeFishActionTargetMenu();
   }
-
-  const managed = getManagedFishById(runtime.fishActionMenuFishId);
-  const fish = managed?.fish || null;
-  if (!fish || managed.inStorage || isFishDead(fish)) {
-    runtime.fishActionMenuFishId = null;
-    runtime.fishActionMenuPoint = null;
-    releaseFishActionMenuHold();
-    flyout.hidden = true;
-    dom.fishActionQueue?.replaceChildren();
-    return;
-  }
-
-  const anchor = { xNorm: fish.xNorm, yNorm: fish.yNorm };
-  const stagePoint = getTankNormStagePoint(anchor.xNorm, anchor.yNorm);
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const maxWidth = stageRect?.width || TANK_WIDTH;
-  const maxHeight = stageRect?.height || TANK_HEIGHT;
-  const halfWidth = Math.min(300, Math.max(0, maxWidth / 2 - 10));
-  const halfHeight = Math.min(185, Math.max(0, maxHeight / 2 - 10));
-  const x = maxWidth > halfWidth * 2
-    ? clamp(stagePoint.x, halfWidth + 10, maxWidth - halfWidth - 10)
-    : maxWidth / 2;
-  const y = maxHeight > halfHeight * 2
-    ? clamp(stagePoint.y, halfHeight + 10, maxHeight - halfHeight - 10)
-    : maxHeight / 2;
-  flyout.style.setProperty("--fish-action-x", `${Math.round(x)}px`);
-  flyout.style.setProperty("--fish-action-y", `${Math.round(y)}px`);
-  flyout.hidden = false;
-
-  if (dom.fishActionFlyoutName) {
-    dom.fishActionFlyoutName.textContent = fish.name || "Fish";
-    dom.fishActionFlyoutName.title = `Open details for ${fish.name || "fish"}`;
-    dom.fishActionFlyoutName.setAttribute("aria-label", `Open details for ${fish.name || "fish"}`);
-  }
-  if (dom.fishActionFlyoutSettings) {
-    dom.fishActionFlyoutSettings.title = `Open settings for ${fish.name || "fish"}`;
-    dom.fishActionFlyoutSettings.setAttribute("aria-label", `Open settings for ${fish.name || "fish"}`);
-  }
-  if (dom.fishActionQueue) {
-    if (!runtime.debugFishActionIndicatorsEnabled) {
-      dom.fishActionQueue.replaceChildren();
-    } else {
-      const queuedActions = getFishActionQueueItems(fish.id);
-      dom.fishActionQueue.replaceChildren(...queuedActions.map((item) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = `fish-action-queue-button${item.active ? " is-active" : ""}${item.cancelling ? " is-cancelling" : ""}`;
-      if (!item.rest && !item.cancelling) {
-        button.dataset.cancelFishAction = item.id;
-      } else {
-        button.disabled = true;
-      }
-      const remaining = item.active || item.cancelling
-        ? formatFishActionRemaining((Number(item.cancelEndsAt || item.endsAt) || now) - now)
-        : "";
-      const labelText = item.label || getFishActionConfig(item.action)?.label || "Action";
-      const phaseText = getFishActionPhaseLabel(item);
-      const content = document.createElement("span");
-      content.className = "fish-action-queue-button-content";
-      const primary = document.createElement("span");
-      primary.className = "fish-action-queue-button-primary";
-      const label = document.createElement("span");
-      label.textContent = labelText;
-      const time = document.createElement("span");
-      time.className = "fish-action-queue-button-time";
-      time.textContent = remaining;
-      primary.append(label, time);
-      content.append(primary);
-      if (phaseText) {
-        const phase = document.createElement("span");
-        phase.className = "fish-action-queue-phase";
-        phase.textContent = phaseText;
-        content.append(phase);
-      }
-      const progress = document.createElement("span");
-      progress.className = "fish-action-progress";
-      progress.setAttribute("role", "progressbar");
-      progress.setAttribute("aria-label", `${labelText} time remaining`);
-      progress.setAttribute("aria-valuemin", "0");
-      progress.setAttribute("aria-valuemax", "100");
-      const remainingPercent = Math.round(getFishActionRemainingRatio(item, now) * 100);
-      progress.setAttribute("aria-valuenow", String(remainingPercent));
-      const fill = document.createElement("span");
-      fill.className = "fish-action-progress-fill";
-      fill.style.setProperty("--fish-action-progress", String(remainingPercent / 100));
-      progress.append(fill);
-      button.append(content, progress);
-      button.title = item.cancelling ? "Cancelling action" : (item.rest ? "Next action starts soon" : (item.active ? "Cancel current action" : "Remove queued action"));
-      button.setAttribute("aria-label", `${button.title}: ${labelText}${phaseText ? `, ${phaseText}` : ""}${remaining ? `, ${remaining} remaining` : ""}`);
-      return button;
-      }));
-    }
-  }
-
-  for (const button of flyout.querySelectorAll("[data-fish-action]")) {
-    if (!(button instanceof HTMLButtonElement)) {
-      continue;
-    }
-    const action = button.dataset.fishAction || "";
-    const config = getFishActionConfig(action);
-    const availability = getFishActionAvailability(action, fish, now);
-    button.hidden = !availability.enabled;
-    button.disabled = false;
-    button.textContent = config?.label || action;
-    button.title = availability.title || config?.title || "Fish action";
-    button.setAttribute("aria-label", button.title);
-  }
-  for (const button of flyout.querySelectorAll("[data-fish-action-category]")) {
-    if (!(button instanceof HTMLButtonElement)) {
-      continue;
-    }
-    const categoryId = button.dataset.fishActionCategory || "";
-    const category = getFishActionMenuCategory(categoryId);
-    const availableActions = getAvailableFishActionsForCategory(categoryId, fish, now);
-    button.hidden = !category || availableActions.length <= 0;
-    button.disabled = false;
-    button.textContent = getFishActionCategoryLabel(category) || categoryId;
-    button.classList.toggle("is-active-folder", runtime.fishActionCategory === categoryId);
-    button.title = category
-      ? `${category.label}: ${availableActions.map((action) => getFishActionConfig(action)?.label || action).join(", ")}`
-      : "Fish action folder";
-    button.setAttribute("aria-label", button.title);
-  }
-  updateFishActionFlyoutBranchLayout(flyout);
-}
 
 function renderFishActionSubmenu(now = Date.now()) {
   const menu = dom.fishActionSubmenu;
@@ -57720,107 +57951,10 @@ function updateFishActionFlyoutBranchLayout(flyout) {
 }
 
 function renderFishActionQueueDock(now = Date.now()) {
-  const dock = dom.fishActionQueueDock;
-  if (!dock) {
-    return;
+    if (!dom.fishActionQueueDock) return;
+    dom.fishActionQueueDock.hidden = true;
+    dom.fishActionQueueDock.replaceChildren();
   }
-  if (!runtime.debugFishActionIndicatorsEnabled) {
-    dock.hidden = true;
-    dock.replaceChildren();
-    return;
-  }
-
-  const groups = [...runtime.fishActionQueuesByFishId.entries()]
-    .map(([fishId]) => {
-      const fish = state.fish.find((entry) => entry?.id === fishId && !isFishDead(entry)) || null;
-      const items = getFishActionQueueItems(fishId);
-      return fish && items.length ? { fish, items } : null;
-    })
-    .filter(Boolean)
-    .sort((left, right) => String(left.fish.name || "").localeCompare(String(right.fish.name || "")));
-
-  if (!groups.length) {
-    dock.hidden = true;
-    dock.replaceChildren();
-    return;
-  }
-
-  dock.hidden = false;
-  dock.replaceChildren(...groups.map(({ fish, items }) => {
-    const collapsed = runtime.fishActionQueueCollapsedFishIds.has(fish.id);
-    const group = document.createElement("article");
-    group.className = "fish-action-queue-group";
-
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "fish-action-queue-group-toggle";
-    toggle.dataset.toggleFishActionQueue = fish.id;
-    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-    toggle.title = collapsed ? `Show ${fish.name || "fish"} actions` : `Hide ${fish.name || "fish"} actions`;
-
-    const name = document.createElement("span");
-    name.textContent = fish.name || "Fish";
-    const count = document.createElement("span");
-    count.className = "fish-action-queue-count";
-    count.textContent = String(items.length);
-    toggle.append(name, count);
-    group.append(toggle);
-
-    if (!collapsed) {
-      const list = document.createElement("div");
-      list.className = "fish-action-queue-list";
-      list.append(...items.map((item) => {
-        const chip = document.createElement("button");
-        chip.type = "button";
-        chip.className = `fish-action-queue-chip${item.active ? " is-active" : ""}${item.cancelling ? " is-cancelling" : ""}`;
-        if (!item.rest && !item.cancelling) {
-          chip.dataset.fishId = fish.id;
-          chip.dataset.cancelFishAction = item.id;
-        } else if (item.rest) {
-          chip.disabled = true;
-        }
-        chip.title = item.cancelling ? "Cancelling action" : (item.rest ? "Next action starts soon" : (item.active ? "Cancel current action" : "Remove queued action"));
-        chip.setAttribute("aria-label", chip.title);
-
-        const label = document.createElement("span");
-        label.textContent = item.label || getFishActionConfig(item.action)?.label || "Action";
-        const time = document.createElement("span");
-        time.className = "fish-action-queue-chip-time";
-        time.textContent = item.active || item.cancelling
-          ? formatFishActionRemaining((Number(item.cancelEndsAt || item.endsAt) || now) - now)
-          : formatFishActionRemaining(item.durationMs);
-        const primary = document.createElement("span");
-        primary.className = "fish-action-queue-chip-primary";
-        primary.append(label, time);
-        chip.append(primary);
-        const phaseText = getFishActionPhaseLabel(item);
-        if (phaseText) {
-          const phase = document.createElement("span");
-          phase.className = "fish-action-queue-phase";
-          phase.textContent = phaseText;
-          chip.append(phase);
-        }
-        const progress = document.createElement("span");
-        progress.className = "fish-action-progress";
-        progress.setAttribute("role", "progressbar");
-        progress.setAttribute("aria-label", `${label.textContent} time remaining`);
-        progress.setAttribute("aria-valuemin", "0");
-        progress.setAttribute("aria-valuemax", "100");
-        const remainingPercent = Math.round(getFishActionRemainingRatio(item, now) * 100);
-        progress.setAttribute("aria-valuenow", String(remainingPercent));
-        const fill = document.createElement("span");
-        fill.className = "fish-action-progress-fill";
-        fill.style.setProperty("--fish-action-progress", String(remainingPercent / 100));
-        progress.append(fill);
-        chip.append(progress);
-        chip.setAttribute("aria-label", `${chip.title}: ${label.textContent}${phaseText ? `, ${phaseText}` : ""}, ${time.textContent} remaining`);
-        return chip;
-      }));
-      group.append(list);
-    }
-    return group;
-  }));
-}
 
 function renderFishNeedsBars(fish, now = Date.now()) {
   if (!fish || isFishDead(fish)) {
@@ -57867,28 +58001,8 @@ function renderFishNeedsBars(fish, now = Date.now()) {
 }
 
 function getSelectedFishNeedsMoodLabel(fish, now = Date.now()) {
-  if (!fish || isFishDead(fish)) {
-    return "Miserable";
+    return fish && !isFishDead(fish) ? getFishDisposition(fish, now).mood : "";
   }
-  const snapshot = getFishNeedsSnapshot(fish, now);
-  const needs = snapshot.needs;
-
-  // A weighted average must not hide an urgent individual need.
-  if (Number(needs.hunger) <= FISH_HUNGER_CRITICAL_THRESHOLD) return "Starving";
-  if (Number(needs.energy) <= FISH_ENERGY_CRITICAL_THRESHOLD) return "Exhausted";
-  if (Number(needs.hygiene) <= 12) return "Toxic";
-  if (Number(needs.comfort) <= 15) return "Panicked";
-  if (Number(needs.hunger) <= FISH_HUNGER_LOW_THRESHOLD) return "Hungry";
-  if (Number(needs.energy) <= FISH_ENERGY_LOW_THRESHOLD) return "Tired";
-
-  const value = Number(snapshot?.mood?.value) || 0;
-  if (value >= 85) return "Thriving";
-  if (value >= 70) return "Good Vibes";
-  if (value >= 50) return "Fine";
-  if (value >= 35) return "Uneasy";
-  if (value >= 20) return "Stressed";
-  return "Miserable";
-}
 
 function shouldShowSelectedFishNeedsPanel(managed) {
   if (!dom.selectedFishNeedsPanel || !managed?.fish || managed.inStorage || isFishDead(managed.fish)) {
@@ -57905,49 +58019,46 @@ function shouldShowSelectedFishNeedsPanel(managed) {
 }
 
 function renderSelectedFishNeedsPanel(now = Date.now()) {
-  const panel = dom.selectedFishNeedsPanel;
-  if (!panel) {
-    return;
+    const panel = dom.selectedFishNeedsPanel;
+    if (!panel) return;
+    const managed = getManagedFishById(runtime.selectedFishStatusFishId || runtime.selectedFishId);
+    if (!shouldShowSelectedFishNeedsPanel(managed)) {
+      panel.hidden = true;
+      setMarkupIfChanged("selected-fish-needs-panel", panel, "");
+      return;
+    }
+    const fish = managed.fish;
+    const snapshot = getFishNeedsSnapshot(fish, now);
+    const preferences = getFishNeedsStatus(fish, getCurrentTank(), now);
+    const preference = preferences.find(item => item.met) || preferences[0];
+    const likes = {
+      plants: "Loves leafy corners", cave: "Loves a cozy hideaway", open_water: "Loves room to roam",
+      school_2_plus: "Loves swimming with their own kind", surface_cover: "Loves shade near the surface",
+      hardscape: "Loves rocky hideaways", driftwood: "Loves driftwood", coral: "Loves the coral",
+      seaweed_algae: "Loves a little grazing spot"
+    };
+    const preferenceText = preference ? likes[preference.tag] || `Enjoys ${preference.label.toLowerCase()}` : "Making this tank their home";
+    const busy = getActiveFishActionQueueItem(fish, now);
+    const playing = busy && !busy.autonomous;
+    const markup = `
+      <div class="selected-fish-needs-header">
+        <strong class="selected-fish-needs-name">${escapeHtml(fish.name || "Fish")}</strong>
+        <span class="selected-fish-mood-pill" data-mood-tone="good">${escapeHtml(snapshot.mood.label)}</span>
+        <button type="button" class="fish-companion-close" data-fish-companion="close" aria-label="Close fish card">×</button>
+      </div>
+      <p class="fish-companion-activity">${escapeHtml(snapshot.activity)}</p>
+      <p class="fish-companion-preference">${escapeHtml(preferenceText)}</p>
+      ${snapshot.care ? `<p class="fish-companion-hint" data-care-tone="${snapshot.care.tone}">${escapeHtml(snapshot.care.text)}</p>` : ""}
+      <div class="fish-companion-actions">
+        <button type="button" data-fish-companion="treat" ${playing ? "disabled" : ""} title="Offer a bite of suitable food from your supplies">Offer treat</button>
+        <button type="button" data-fish-companion="play" ${playing ? "disabled" : ""} title="Invite this fish to play">Play</button>
+        <button type="button" data-fish-companion="details">Details</button>
+      </div>`;
+    panel.hidden = false;
+    panel.setAttribute("aria-label", "Fish companion");
+    panel.setAttribute("data-preserve-fish-selection", "");
+    setMarkupIfChanged("selected-fish-needs-panel", panel, markup);
   }
-  const managed = getManagedFishById(runtime.selectedFishStatusFishId || runtime.selectedFishId);
-  if (!shouldShowSelectedFishNeedsPanel(managed)) {
-    panel.hidden = true;
-    setMarkupIfChanged("selected-fish-needs-panel", panel, "");
-    return;
-  }
-  const fish = managed.fish;
-  const needsSnapshot = getFishNeedsSnapshot(fish, now);
-  const moodSnapshot = needsSnapshot.mood;
-  const moodLabel = getSelectedFishNeedsMoodLabel(fish, now);
-  const criticalNeed = Number(needsSnapshot.needs.hunger) <= FISH_HUNGER_CRITICAL_THRESHOLD
-    || Number(needsSnapshot.needs.energy) <= FISH_ENERGY_CRITICAL_THRESHOLD
-    || Number(needsSnapshot.needs.hygiene) <= 12
-    || Number(needsSnapshot.needs.comfort) <= 15;
-  const lowNeed = Number(needsSnapshot.needs.hunger) <= FISH_HUNGER_LOW_THRESHOLD
-    || Number(needsSnapshot.needs.energy) <= FISH_ENERGY_LOW_THRESHOLD;
-  const moodTone = criticalNeed
-    ? "danger"
-    : lowNeed
-      ? "warn"
-      : moodSnapshot.value <= 19
-        ? "danger"
-        : moodSnapshot.value <= 49
-          ? "warn"
-          : moodSnapshot.value <= 69
-            ? "okay"
-            : "good";
-  const markup = `
-    <div class="selected-fish-needs-header">
-      <strong class="selected-fish-needs-name">${escapeHtml(fish.name || "Fish")}</strong>
-      <span class="selected-fish-mood-pill" data-mood-tone="${moodTone}">${escapeHtml(moodLabel)}</span>
-    </div>
-    <div class="fish-needs-bars selected-fish-needs-bars">
-      ${renderFishNeedsBars(fish, now)}
-    </div>
-  `;
-  panel.hidden = false;
-  setMarkupIfChanged("selected-fish-needs-panel", panel, markup);
-}
 
 function renderFishInspector(now) {
   const managed = getManagedFishById(runtime.selectedFishId);
@@ -58003,7 +58114,7 @@ function renderFishInspector(now) {
       ? (dead ? `${corpseLabel} in storage` : "Stored safely")
       : dead
         ? corpseLabel
-        : `${needsSnapshot.mood.label} (${Math.round(needsSnapshot.mood.value)}%)`
+        : needsSnapshot.mood.label
   );
   if (dom.inspectorNeedsBars) {
     dom.inspectorNeedsBars.hidden = true;
@@ -64071,7 +64182,9 @@ function renderTank(now) {
 
 function getCausticLightStrength(now) {
   if (!isCausticLightingEnabled() || isTankLightsOut(now)) return 0;
-  return 0.42 * (1 - clamp(getTankDirtiness(now), 0, 1) * 0.55);
+  // Keep the authored light map readable without turning the whole tank into
+  // a bright projected texture. Individual passes add their own small gain.
+  return 0.16 * (1 - clamp(getTankDirtiness(now), 0, 1) * 0.55);
 }
 
 function getCausticRidgeAlpha(red, green, blue, alpha) {
@@ -64232,7 +64345,7 @@ function drawGravelCausticProjection(now) {
   traceTankFloorMaskPath(tankContext, bounds);
   tankContext.clip();
   tankContext.globalCompositeOperation = "lighter";
-  tankContext.globalAlpha *= Math.min(1, strength * 1.8);
+  tankContext.globalAlpha *= Math.min(1, strength * 1.15);
   const strips = 40;
   for (let i = 0; i < strips; i++) {
     const t = i / strips;
@@ -64280,8 +64393,13 @@ function drawDecorCausticLight(context, image, drawX, drawY, width, height, item
   scratch.image = image;
   }
   context.save();
+  // Lighting only exists below the water surface. Clipping here, at tank
+  // coordinates, also handles decorations that straddle the waterline.
+  context.beginPath();
+  context.rect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
+  context.clip();
   context.globalCompositeOperation = "screen";
-  context.globalAlpha *= strength * 1.1;
+  context.globalAlpha *= strength * 0.65;
   drawDecorMotionImageToContext(context, scratch.canvas, drawX, drawY, width, height, item, now, motion);
   context.restore();
 }
@@ -69323,8 +69441,17 @@ function drawFishCausticLight(context, image, fish, fishDrawX, width, height, no
     scratch.image = image;
   }
   context.save();
+  // The fish canvas is currently in its pose transform. Establish the clip in
+  // tank space first, then restore that pose so partially surfaced fish only
+  // receive the light below the actual waterline.
+  const fishTransform = context.getTransform();
+  context.setTransform(worldTransform);
+  context.beginPath();
+  context.rect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
+  context.clip();
+  context.setTransform(fishTransform);
   context.globalCompositeOperation = "screen";
-  context.globalAlpha *= strength * 1.4;
+  context.globalAlpha *= strength * 0.72;
   context.drawImage(scratch.canvas, fishDrawX, -height / 2, width, height);
   context.restore();
 }
@@ -71716,6 +71843,7 @@ function setFishNeedValue(fish, needKey, value, now = Date.now()) {
     return false;
   }
   fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
+  if (needKey !== "hunger") return false;
   const previous = fish.needs[needKey];
   fish.needs[needKey] = clamp(Number(value) || 0, 0, 100);
   return Math.abs(previous - fish.needs[needKey]) > 0.001;
@@ -71727,8 +71855,62 @@ function adjustFishNeed(fish, needKey, delta, now = Date.now()) {
 
 function getFishNeedsSnapshot(fish, now = Date.now()) {
   const needs = sanitizeFishNeeds(fish?.needs, fish, now);
-  const mood = getFishNeedsMood(needs);
-  return { needs, mood };
+  const care = getFishCareStatus(fish, now, needs);
+  const disposition = getFishDisposition(fish, now);
+  const mood = { ...getFishNeedsMood(needs), label: disposition.mood, tone: care?.tone || "good" };
+  return { needs, mood, care, activity: disposition.activity };
+}
+
+function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fish?.needs, fish, now)) {
+  if (!fish || isFishDead(fish) || isUndeadFish(fish)) return null;
+  if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
+    return { tone: "danger", text: "Very hungry. Drop some food into the tank." };
+  }
+  if (isFishDiseaseVisible(fish)) return { tone: "danger", text: "Feeling unwell. Check their health in Details." };
+  if (getTankDirtiness(now) >= 0.45) return { tone: "warn", text: "The tank could use a clean." };
+  if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_LOW_THRESHOLD) {
+    return { tone: "warn", text: "Ready for a meal. Drop some food into the tank." };
+  }
+  const conflict = getFishConflictStatus(fish, getCurrentTank(), now).find(item => item.active);
+  if (conflict) return { tone: "warn", text: conflict.tag === "overcrowded"
+    ? "Looking for more swimming room. Try a roomier tank."
+    : conflict.tag === "sharp_decor" ? "Sharp decor is making this fish uncomfortable."
+    : "Tankmates are making this fish uneasy. Check compatibility in Details." };
+  const missing = getFishNeedsStatus(fish, getCurrentTank(), now).find(item => !item.met);
+  if (!missing) return null;
+  const hints = {
+    plants: "Looking for a leafy corner. Add a plant.",
+    cave: "Looking for somewhere to hide. Add a cave.",
+    open_water: "Looking for more open swimming space.",
+    school_2_plus: "Would enjoy a companion of the same species.",
+    surface_cover: "Would enjoy some cover near the surface.",
+    hardscape: "Would enjoy a rock or another sheltered spot.",
+    driftwood: "Would enjoy a piece of driftwood.",
+    coral: "Would enjoy some coral.",
+    seaweed_algae: "Would enjoy some seaweed or algae to graze on."
+  };
+  return { tone: "okay", text: hints[missing.tag] || "Would enjoy " + missing.label.toLowerCase() + " in the tank." };
+}
+
+function getFishDisposition(fish, now = Date.now()) {
+  const active = getActiveFishActionQueueItem(fish, now);
+  const intent = sanitizeBehaviorIntent(fish?.behaviorIntent, now);
+  const action = active?.action || intent?.type || "";
+  const partnerId = active?.targetId || intent?.targetId || runtime.fishActionSteeringByFishId.get(fish?.id)?.targetFishId;
+  const partner = partnerId ? getManagedFishById(partnerId)?.fish : null;
+  if (fish?.activity === "feeding" || action === "eat") return { mood: "Content", activity: "Enjoying a meal" };
+  if (action === "waitfood") return { mood: "Hopeful", activity: "Watching the food dispenser" };
+  if (/sleep|rest/.test(action)) return { mood: "Sleepy", activity: "Settling into a quiet spot" };
+  if (/zoomies|play|pebble/.test(action) || fish?.activity === FISH_GRAVEL_PEBBLE_ACTIVITY) return { mood: "Playful", activity: /pebble/.test(action) ? "Tossing a little pebble" : "Having a little fun" };
+  if (/hangout|greet|follow|school/.test(action)) return { mood: "Sociable", activity: partner ? "Hanging out with " + (partner.name || "a friend") : "Swimming with the neighbors" };
+  if (/avoid|flee/.test(action)) return { mood: "Shy", activity: "Taking a little space" };
+  if (/hide|home|guard/.test(action) || fish?.caveState) return { mood: "Cozy", activity: "Tucked into a favorite corner" };
+  if (/inspect|explor|dig|forage|graze/.test(action)) return { mood: "Curious", activity: "Investigating the neighborhood" };
+  if (/breed|mate/.test(action)) return { mood: "Affectionate", activity: "Spending time with a partner" };
+  const personality = getFishPersonality(fish);
+  if (["curious", "explorer"].includes(personality)) return { mood: "Curious", activity: "Looking around the tank" };
+  if (["shy", "nervous", "standoffish"].includes(personality)) return { mood: "Shy", activity: "Enjoying some time to themselves" };
+  return { mood: "Content", activity: "Watching the world drift by" };
 }
 
 function getFishHungerLabel(fish, now = Date.now()) {
@@ -71787,92 +71969,14 @@ function getFishSocialNeedTarget(fish) {
 
 function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   const species = getSpeciesForFish(fish);
-  if (!fish || !species || isFishDead(fish) || isUndeadFish(fish)) {
-    return null;
-  }
+  if (!fish || !species || isFishDead(fish) || isUndeadFish(fish)) return null;
   const hours = Math.max(0, elapsedMs) / HOUR_MS;
-  const activeQueueItem = getActiveFishActionQueueItem(fish, now);
-  const dirtiness = getTankDirtiness(now);
-  const comfortTarget = getFishComfort(fish, now).value * 100;
-  const hygieneTarget = clamp((1 - dirtiness * getPersonalityNeedModifier(fish, "hygiene")) * 100, 0, 100);
-  const environmentTarget = getFishEnvironmentNeedTarget(fish, now);
-  const socialTarget = getFishSocialNeedTarget(fish);
-  const deltas = {
-    hunger: -hours * 2.5 * getPersonalityNeedModifier(fish, "hunger"),
-    energy: -hours * 2 * getPersonalityNeedModifier(fish, "energy"),
-    social: (socialTarget - getFishNeedValue(fish, "social", now)) * Math.min(1, hours * 0.18) - hours * 1.4 * getPersonalityNeedModifier(fish, "social"),
-    comfort: (comfortTarget - getFishNeedValue(fish, "comfort", now)) * Math.min(1, hours * 0.45),
-    hygiene: (hygieneTarget - getFishNeedValue(fish, "hygiene", now)) * Math.min(1, hours * 0.38),
-    environment: (environmentTarget - getFishNeedValue(fish, "environment", now)) * Math.min(1, hours * 0.22),
-    stimulation: -hours * 4.4 * getPersonalityNeedModifier(fish, "stimulation")
+  // Food is the only depleting individual resource. The tank supplies comfort
+  // and clean water; ordinary rest, company and play take care of themselves.
+  return {
+    hunger: isMealFreeFish(fish) ? 0 : -hours * 2.5 * getPersonalityNeedModifier(fish, "hunger"),
+    energy: 0, social: 0, comfort: 0, hygiene: 0, environment: 0, stimulation: 0
   };
-
-  if (fish.activity === "feeding") {
-    deltas.energy -= hours * 2;
-    deltas.stimulation += hours * 2;
-  }
-  if (fish.activity === "roam" || fish.activity === "feeding" || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY || fish.activity === FISH_GRAVEL_DIG_ACTIVITY) {
-    const motionCost = clamp(Number(fish.motionLevel) || 0.2, 0.08, 1) * (fish.activity === "roam" ? 0.75 : 1.8);
-    deltas.energy -= hours * motionCost;
-  }
-  if (activeQueueItem) {
-    switch (activeQueueItem.action) {
-      case "zoomies":
-        deltas.energy -= hours * 10;
-        deltas.hunger -= hours * 3;
-        deltas.stimulation += hours * 22;
-        break;
-      case "sleep":
-        deltas.energy += hours * 180;
-        deltas.comfort += hours * 8;
-        deltas.stimulation -= hours * 1.5;
-        break;
-      case "rest":
-        deltas.energy += hours * 240;
-        deltas.comfort += hours * 8;
-        deltas.stimulation -= hours * 1.5;
-        break;
-      case "hide":
-        deltas.energy += hours * 8;
-        deltas.comfort += hours * 12;
-        break;
-      case "hangout":
-      case "greet":
-        deltas.social += hours * 18;
-        deltas.stimulation += hours * 6;
-        break;
-      case "inspect":
-      case "play":
-        deltas.stimulation += hours * 14;
-        deltas.energy -= hours * 2;
-        break;
-      case "pebble":
-        deltas.environment += hours * 18;
-        deltas.stimulation += hours * 10;
-        deltas.energy -= hours * 3;
-        break;
-      case "dig":
-        deltas.environment += hours * 20;
-        deltas.stimulation += hours * 7;
-        deltas.energy -= hours * 3.5;
-        break;
-      case "waitfood":
-        deltas.comfort += hours * 3;
-        deltas.stimulation += hours * 2;
-        break;
-      case "avoid":
-        deltas.comfort += hours * 12;
-        deltas.energy -= hours * 2;
-        break;
-      case "breed":
-        deltas.energy -= hours * 4;
-        deltas.social += hours * 6;
-        break;
-      default:
-        break;
-    }
-  }
-  return deltas;
 }
 
 function updateFishNeeds(now = Date.now()) {
@@ -71895,7 +71999,7 @@ function updateFishNeeds(now = Date.now()) {
       changed = setFishNeedValue(fish, key, fish.needs[key] + (Number(deltas[key]) || 0), now) || changed;
     }
     fish.needsUpdatedAt = now;
-    if (fish.needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
+    if (!isMealFreeFish(fish) && fish.needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
       maybeRecordFishNeedEvent(fish, "starving", `${fish.name} is starving.`, now, 2 * HOUR_MS);
       fish.lastNeedEventAtByType = sanitizeFishNeedEventMap(fish.lastNeedEventAtByType);
       if (now - (Number(fish.lastNeedEventAtByType["starve-damage"]) || 0) >= 2 * HOUR_MS) {
@@ -71908,9 +72012,6 @@ function updateFishNeeds(now = Date.now()) {
         }
         changed = true;
       }
-    }
-    if (fish.needs.energy <= FISH_ENERGY_CRITICAL_THRESHOLD) {
-      maybeRecordFishNeedEvent(fish, "exhausted", `${fish.name} is exhausted.`, now, 2 * HOUR_MS);
     }
   }
   return changed;
@@ -76170,5 +76271,631 @@ function showToast(message, options = {}) {
     runtime.guidanceToastOwner = "";
   }, durationMs);
   return true;
+}
+// </bundle-source>
+
+// <bundle-source path="core/cloud-save.js">
+// Source fragment: core/cloud-save.js
+// Assembled into ../app.js by scripts/build-app-bundle.cjs.
+
+function getCloudSession() {
+  try {
+    const raw = localStorage.getItem(CLOUD_AUTH_SESSION_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" && parsed.access_token ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistCloudSession(session) {
+  if (!session || !session.access_token) {
+    localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
+    runtime.cloudSession = null;
+    return null;
+  }
+  const expiresIn = Math.max(30, Number(session.expires_in) || 3600);
+  const normalized = {
+    access_token: String(session.access_token || ""),
+    refresh_token: String(session.refresh_token || ""),
+    token_type: String(session.token_type || "bearer"),
+    expires_at: Number(session.expires_at) || (Date.now() + expiresIn * 1000),
+    user: session.user || runtime.cloudSession?.user || null
+  };
+  localStorage.setItem(CLOUD_AUTH_SESSION_KEY, JSON.stringify(normalized));
+  runtime.cloudSession = normalized;
+  return normalized;
+}
+
+function clearCloudSession() {
+  localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
+  runtime.cloudSession = null;
+  runtime.cloudWritesAllowed = false;
+  runtime.cloudChecked = false;
+  setCloudSyncStatus("signed-out", "Not signed in");
+  renderCloudAccountPanel();
+  renderStartupActions();
+}
+
+function getCloudMeta() {
+  try {
+    const raw = localStorage.getItem(CLOUD_SAVE_META_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function setCloudMeta(patch = {}) {
+  const next = { ...getCloudMeta(), ...(patch || {}) };
+  localStorage.setItem(CLOUD_SAVE_META_KEY, JSON.stringify(next));
+  return next;
+}
+
+function recordLocalSaveForCloud(savedAt = Date.now()) {
+  setCloudMeta({ localSavedAt: savedAt });
+}
+
+function setCloudSyncStatus(status, label = "") {
+  runtime.cloudSyncStatus = status;
+  runtime.cloudSyncLabel = label;
+  document.querySelectorAll("[data-cloud-sync-status]").forEach((element) => {
+    element.dataset.status = status;
+    const text = element.querySelector("[data-cloud-sync-text]");
+    if (text) {
+      text.textContent = label || ({
+        syncing: "Syncing...",
+        synced: "Synced",
+        offline: "Offline",
+        error: "Sync failed",
+        checking: "Checking cloud save...",
+        "signed-out": "Not signed in"
+      }[status] || "Cloud save");
+    }
+  });
+}
+
+function isCloudSessionCached() {
+  return Boolean(getCloudSession());
+}
+
+async function supabaseAuthFetch(path, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}${path}`, {
+    method: options.method || "POST",
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      "Content-Type": "application/json",
+      ...(options.accessToken ? { Authorization: `Bearer ${options.accessToken}` } : {})
+    },
+    body: options.body === undefined ? undefined : JSON.stringify(options.body)
+  });
+  const text = await response.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (!response.ok) {
+    throw new Error(data?.msg || data?.message || data?.error_description || data?.error || `Cloud request failed (${response.status}).`);
+  }
+  return data;
+}
+
+async function refreshCloudSessionIfNeeded() {
+  let session = runtime.cloudSession || getCloudSession();
+  if (!session) return null;
+  if (Number(session.expires_at) - Date.now() > 60000) {
+    runtime.cloudSession = session;
+    return session;
+  }
+  if (!session.refresh_token) {
+    clearCloudSession();
+    return null;
+  }
+  try {
+    const refreshed = await supabaseAuthFetch("/auth/v1/token?grant_type=refresh_token", {
+      body: { refresh_token: session.refresh_token }
+    });
+    return persistCloudSession(refreshed);
+  } catch (error) {
+    console.error("Could not refresh cloud session.", error);
+    clearCloudSession();
+    return null;
+  }
+}
+
+async function createCloudAccount(email, password) {
+  const result = await supabaseAuthFetch("/auth/v1/signup", { body: { email, password } });
+  if (result?.access_token) {
+    persistCloudSession(result);
+    await resolveCloudAfterLogin({ source: "signup" });
+    return { signedIn: true };
+  }
+  return { signedIn: false, needsConfirmation: true };
+}
+
+async function signInCloudAccount(email, password) {
+  const result = await supabaseAuthFetch("/auth/v1/token?grant_type=password", { body: { email, password } });
+  persistCloudSession(result);
+  await resolveCloudAfterLogin({ source: "signin" });
+  return true;
+}
+
+async function signOutCloudAccount() {
+  const session = await refreshCloudSessionIfNeeded();
+  if (session?.access_token) {
+    try {
+      await supabaseAuthFetch("/auth/v1/logout", { accessToken: session.access_token, body: {} });
+    } catch (error) {
+      console.warn("Cloud sign out request failed; local session will still be cleared.", error);
+    }
+  }
+  clearCloudSession();
+  return true;
+}
+
+async function supabaseSaveFetch(query = "", options = {}) {
+  const session = await refreshCloudSessionIfNeeded();
+  if (!session?.access_token) throw new Error("You are not signed in.");
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/game_saves${query}`, {
+    method: options.method || "GET",
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+      ...(options.prefer ? { Prefer: options.prefer } : {})
+    },
+    body: options.body === undefined ? undefined : JSON.stringify(options.body)
+  });
+  const text = await response.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (!response.ok) {
+    throw new Error(data?.message || data?.hint || data?.details || `Cloud save request failed (${response.status}).`);
+  }
+  return data;
+}
+
+async function getCloudSaveRecord() {
+  const session = await refreshCloudSessionIfNeeded();
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("Your cloud session is missing its user ID. Please sign in again.");
+  const rows = await supabaseSaveFetch(`?user_id=eq.${encodeURIComponent(userId)}&select=user_id,save_data,save_version,revision,updated_at`);
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+async function createCloudSavePayload(timestamp = Date.now()) {
+  const exportState = await createPortableExportState(state);
+  return {
+    format: SAVE_FILE_FORMAT,
+    exportVersion: SAVE_FILE_EXPORT_VERSION,
+    exportedAt: timestamp,
+    state: exportState
+  };
+}
+
+function validateCloudSavePayload(payload) {
+  const rawState = extractImportedSaveState(payload);
+  if (!isLikelySaveStateObject(rawState)) throw new Error("The cloud save does not contain valid aquarium data.");
+  return rawState;
+}
+
+async function backupCurrentLocalBeforeReplacement(reason = "before-cloud-load") {
+  if (!state) return false;
+  try {
+    const payload = await createCloudSavePayload(Date.now());
+    localStorage.setItem(CLOUD_REPLACEMENT_BACKUP_KEY, JSON.stringify({ reason, createdAt: Date.now(), payload }));
+    return true;
+  } catch (error) {
+    console.warn("Could not create automatic local replacement backup.", error);
+    return false;
+  }
+}
+
+async function downloadCloudPayload(payload, prefix = "bubble-borough-cloud-save") {
+  if (!payload) return false;
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  downloadTextFile(JSON.stringify(payload, null, 2), `${prefix}-${timestamp}.json`, "application/json");
+  return true;
+}
+
+async function applyCloudSaveRecord(record) {
+  if (!record?.save_data) throw new Error("No cloud aquarium was found.");
+  const rawState = validateCloudSavePayload(record.save_data);
+  const hasMeaningfulLocalSave = Boolean(runtime.hadLocalSaveAtStartup && !runtime.freshGameSaveLocked);
+  if (hasMeaningfulLocalSave) {
+    const backedUp = await backupCurrentLocalBeforeReplacement("before-cloud-load");
+    if (!backedUp && runtime.localBackupDownloadConfirmed !== true) {
+      throw new Error("The existing device save could not be backed up safely. Download the local save first, then try again.");
+    }
+  }
+  runtime.freshGameSaveLocked = false;
+  runtime.applyingCloudSave = true;
+  try {
+    await applyImportedSaveData(rawState);
+  } finally {
+    runtime.applyingCloudSave = false;
+  }
+  const now = Date.now();
+  setCloudMeta({
+    cloudRevision: Number(record.revision) || 1,
+    cloudUpdatedAt: record.updated_at || "",
+    lastCloudSyncedAt: now,
+    localSavedAt: now
+  });
+  runtime.cloudRevision = Number(record.revision) || 1;
+  runtime.cloudWritesAllowed = true;
+  runtime.cloudChecked = true;
+  setCloudSyncStatus("synced", "Synced");
+  renderCloudAccountPanel();
+  return true;
+}
+
+async function uploadCurrentSaveToCloud(options = {}) {
+  if (!state || runtime.applyingCloudSave || runtime.freshGameSaveLocked) return false;
+  if (!runtime.cloudWritesAllowed && options.force !== true) return false;
+  const session = await refreshCloudSessionIfNeeded();
+  const userId = session?.user?.id;
+  if (!userId) return false;
+  const meta = getCloudMeta();
+  const nextRevision = Math.max(1, Number(runtime.cloudRevision) || Number(meta.cloudRevision) || 0) + 1;
+  setCloudSyncStatus("syncing", "Syncing...");
+  try {
+    const payload = await createCloudSavePayload(Date.now());
+    const rows = await supabaseSaveFetch("?on_conflict=user_id", {
+      method: "POST",
+      prefer: "resolution=merge-duplicates,return=representation",
+      body: {
+        user_id: userId,
+        save_data: payload,
+        save_version: Number(state.version) || 1,
+        revision: nextRevision,
+        updated_at: new Date().toISOString()
+      }
+    });
+    const row = Array.isArray(rows) ? rows[0] : null;
+    const syncedAt = Date.now();
+    runtime.cloudRevision = Number(row?.revision) || nextRevision;
+    setCloudMeta({
+      cloudRevision: runtime.cloudRevision,
+      cloudUpdatedAt: row?.updated_at || new Date(syncedAt).toISOString(),
+      lastCloudSyncedAt: syncedAt,
+      localSavedAt: Number(meta.localSavedAt) || syncedAt
+    });
+    setCloudSyncStatus("synced", "Synced");
+    renderCloudAccountPanel();
+    return true;
+  } catch (error) {
+    console.error("Cloud save failed.", error);
+    setCloudSyncStatus(navigator.onLine === false ? "offline" : "error", navigator.onLine === false ? "Offline, saved locally" : "Sync failed, saved locally");
+    renderCloudAccountPanel();
+    if (options.showToast !== false) showToast("Cloud sync failed. Your aquarium is still saved on this device.");
+    return false;
+  }
+}
+
+function scheduleCloudSave() {
+  if (!runtime.cloudWritesAllowed || runtime.freshGameSaveLocked || !getCloudSession()) return false;
+  if (runtime.cloudSaveTimerId) window.clearTimeout(runtime.cloudSaveTimerId);
+  setCloudSyncStatus("syncing", "Syncing...");
+  runtime.cloudSaveTimerId = window.setTimeout(() => {
+    runtime.cloudSaveTimerId = 0;
+    void uploadCurrentSaveToCloud({ showToast: false });
+  }, CLOUD_SYNC_DEBOUNCE_MS);
+  return true;
+}
+
+async function resolveCloudAfterLogin(options = {}) {
+  runtime.cloudWritesAllowed = false;
+  runtime.cloudChecked = false;
+  setCloudSyncStatus("checking", "Checking cloud save...");
+  renderCloudAccountPanel();
+  try {
+    const cloud = await getCloudSaveRecord();
+    runtime.cloudChecked = true;
+    if (!cloud) {
+      runtime.cloudRevision = 0;
+      runtime.cloudWritesAllowed = !runtime.freshGameSaveLocked;
+      if (!runtime.freshGameSaveLocked && runtime.hadLocalSaveAtStartup !== false) {
+        await uploadCurrentSaveToCloud({ force: true, showToast: options.source !== "startup" });
+      } else {
+        setCloudSyncStatus("synced", "Cloud ready");
+      }
+      renderStartupActions();
+      renderCloudAccountPanel();
+      return { kind: "empty" };
+    }
+
+    runtime.cloudRevision = Number(cloud.revision) || 1;
+    const hasLocal = Boolean(runtime.hadLocalSaveAtStartup || (!runtime.freshGameSaveLocked && state?.tutorial?.completed));
+    const meta = getCloudMeta();
+    const knownCloudRevision = Number(meta.cloudRevision) || 0;
+    const localChangedAfterSync = Number(meta.localSavedAt) > Number(meta.lastCloudSyncedAt || 0);
+
+    if (!hasLocal) {
+      await applyCloudSaveRecord(cloud);
+      renderStartupActions();
+      return { kind: "cloud-loaded" };
+    }
+
+    if (knownCloudRevision && knownCloudRevision === runtime.cloudRevision) {
+      runtime.cloudWritesAllowed = true;
+      if (localChangedAfterSync) await uploadCurrentSaveToCloud({ force: true, showToast: false });
+      else setCloudSyncStatus("synced", "Synced");
+      renderStartupActions();
+      renderCloudAccountPanel();
+      return { kind: "matched" };
+    }
+
+    await showCloudConflictDialog(cloud);
+    return { kind: "conflict" };
+  } catch (error) {
+    console.error("Could not check cloud save.", error);
+    runtime.cloudWritesAllowed = false;
+    runtime.cloudChecked = false;
+    setCloudSyncStatus(navigator.onLine === false ? "offline" : "error", navigator.onLine === false ? "Offline, cloud locked" : "Cloud check failed, cloud locked");
+    renderCloudAccountPanel();
+    renderStartupActions();
+    if (options.source !== "startup") showToast("Could not safely check your cloud save. Cloud writes are locked.");
+    return { kind: "error", error };
+  }
+}
+
+async function chooseLocalForCloudConflict(cloud) {
+  await downloadCloudPayload(cloud?.save_data, "bubble-borough-cloud-backup");
+  runtime.cloudWritesAllowed = true;
+  const uploaded = await uploadCurrentSaveToCloud({ force: true });
+  if (!uploaded) throw new Error("Your device save could not be uploaded. Please try again.");
+  finishCloudConflictSelection();
+}
+
+async function chooseCloudForCloudConflict(cloud) {
+  await applyCloudSaveRecord(cloud);
+  finishCloudConflictSelection();
+}
+
+function finishCloudConflictSelection() {
+  closeCloudDialog();
+  renderStartupActions();
+  // The user already pressed Continue to reach this decision. Do not strand
+  // them on the start screen after their selection has safely completed.
+  primeSoundEffects();
+  playRegularButtonSoundEffect();
+  hideLoadingOverlay();
+}
+
+function closeCloudDialog() {
+  const dialog = document.querySelector("[data-cloud-dialog]");
+  if (dialog) dialog.remove();
+}
+
+async function showCloudConflictDialog(cloud) {
+  closeCloudDialog();
+  const localMeta = getCloudMeta();
+  const wrapper = document.createElement("div");
+  wrapper.className = "cloud-dialog-backdrop";
+  wrapper.dataset.cloudDialog = "conflict";
+  const cloudDate = cloud?.updated_at ? new Date(cloud.updated_at).toLocaleString() : "Unknown";
+  const localDate = localMeta.localSavedAt ? new Date(localMeta.localSavedAt).toLocaleString() : "This device";
+  wrapper.innerHTML = `
+    <div class="cloud-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudConflictTitle">
+      <h2 id="cloudConflictTitle">Two aquariums were found</h2>
+      <p>Nothing will be overwritten until you choose which aquarium to keep.</p>
+      <div class="cloud-conflict-grid">
+        <section><strong>This Device</strong><span>Last saved: ${escapeHtml(localDate)}</span><button type="button" class="small-button" data-cloud-use-local>Use This Device</button><button type="button" class="small-button alt" data-cloud-download-local>Download Local</button></section>
+        <section><strong>Cloud Save</strong><span>Last saved: ${escapeHtml(cloudDate)}</span><button type="button" class="small-button" data-cloud-use-cloud>Use Cloud Save</button><button type="button" class="small-button alt" data-cloud-download-cloud>Download Cloud</button></section>
+      </div>
+      <p class="settings-section-note" data-cloud-conflict-message role="alert" hidden></p>
+      <button type="button" class="small-button alt" data-cloud-conflict-later>Decide Later</button>
+    </div>`;
+  document.body.appendChild(wrapper);
+  wrapper.querySelector("[data-cloud-download-local]")?.addEventListener("click", () => {
+    void exportSaveData({ openOverlay: false }).then((downloaded) => {
+      if (downloaded) runtime.localBackupDownloadConfirmed = true;
+    });
+  });
+  wrapper.querySelector("[data-cloud-download-cloud]")?.addEventListener("click", () => void downloadCloudPayload(cloud.save_data));
+  const runChoice = async (action) => {
+    const buttons = [...wrapper.querySelectorAll("button")];
+    const message = wrapper.querySelector("[data-cloud-conflict-message]");
+    buttons.forEach((button) => { button.disabled = true; });
+    if (message) {
+      message.hidden = false;
+      message.textContent = "Loading aquarium...";
+    }
+    try {
+      await action();
+    } catch (error) {
+      console.error("Cloud conflict selection failed.", error);
+      if (message) message.textContent = error?.message || "Could not load that aquarium. Please try again.";
+      buttons.forEach((button) => { button.disabled = false; });
+    }
+  };
+  wrapper.querySelector("[data-cloud-use-local]")?.addEventListener("click", () => void runChoice(() => chooseLocalForCloudConflict(cloud)));
+  wrapper.querySelector("[data-cloud-use-cloud]")?.addEventListener("click", () => void runChoice(() => chooseCloudForCloudConflict(cloud)));
+  wrapper.querySelector("[data-cloud-conflict-later]")?.addEventListener("click", closeCloudDialog);
+}
+
+function ensureStartupActions() {
+  const content = dom.loadingOverlay?.querySelector(".loading-overlay-content");
+  if (!content) return null;
+  let actions = content.querySelector("[data-startup-actions]");
+  if (actions) return actions;
+  actions = document.createElement("div");
+  actions.className = "startup-actions";
+  actions.dataset.startupActions = "true";
+  actions.innerHTML = `
+    <div data-startup-buttons></div>
+    <div class="startup-auth" data-startup-auth hidden>
+      <label>Email<input type="email" autocomplete="email" data-startup-email></label>
+      <label>Password<input type="password" autocomplete="current-password" data-startup-password></label>
+      <div class="startup-auth-actions"><button class="small-button" type="button" data-startup-signin-submit>Sign In</button><button class="small-button alt" type="button" data-startup-create-submit>Create Account</button><button class="small-button alt" type="button" data-startup-auth-cancel>Back</button></div>
+      <small data-startup-auth-status></small>
+    </div>`;
+  content.appendChild(actions);
+  actions.addEventListener("click", handleStartupActionClick);
+  return actions;
+}
+
+function renderStartupActions() {
+  const actions = ensureStartupActions();
+  if (!actions || !dom.loadingOverlay?.classList.contains("is-ready")) return;
+  const buttons = actions.querySelector("[data-startup-buttons]");
+  const auth = actions.querySelector("[data-startup-auth]");
+  if (!buttons || !auth) return;
+  if (!auth.hidden) return;
+  const hasLocal = Boolean(runtime.hadLocalSaveAtStartup);
+  const signedIn = Boolean(getCloudSession());
+  buttons.innerHTML = (hasLocal || signedIn)
+    ? `<button class="startup-primary-button" type="button" data-startup-continue>Continue</button>`
+    : `<button class="startup-primary-button" type="button" data-startup-new>Start New Aquarium</button><button class="startup-secondary-button" type="button" data-startup-signin>Sign In</button>`;
+  // The logo establishes the start screen. Keep the live-status node empty so
+  // it does not render as a misleading, non-actionable welcome button.
+  if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
+}
+
+function showStartupAuth() {
+  const actions = ensureStartupActions();
+  const buttons = actions?.querySelector("[data-startup-buttons]");
+  const auth = actions?.querySelector("[data-startup-auth]");
+  if (buttons) buttons.innerHTML = "";
+  if (auth) auth.hidden = false;
+  actions?.querySelector("[data-startup-email]")?.focus();
+}
+
+async function handleStartupAuthSubmit(createAccount = false) {
+  const actions = ensureStartupActions();
+  const email = String(actions?.querySelector("[data-startup-email]")?.value || "").trim();
+  const password = String(actions?.querySelector("[data-startup-password]")?.value || "");
+  const status = actions?.querySelector("[data-startup-auth-status]");
+  if (!email || password.length < 6) {
+    if (status) status.textContent = "Enter your email and a password with at least 6 characters.";
+    return;
+  }
+  if (status) status.textContent = createAccount ? "Creating account..." : "Signing in...";
+  try {
+    if (createAccount) {
+      const result = await createCloudAccount(email, password);
+      if (result.needsConfirmation) {
+        if (status) status.textContent = "Account created. Check your email to confirm it, then sign in.";
+        return;
+      }
+    } else {
+      await signInCloudAccount(email, password);
+    }
+    if (status) status.textContent = "Signed in.";
+    const auth = actions?.querySelector("[data-startup-auth]");
+    if (auth) auth.hidden = true;
+    renderStartupActions();
+  } catch (error) {
+    if (status) status.textContent = error?.message || "Could not sign in.";
+  }
+}
+
+function handleStartupActionClick(event) {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target) return;
+  if (target.closest("[data-startup-signin]")) { showStartupAuth(); return; }
+  if (target.closest("[data-startup-auth-cancel]")) {
+    const auth = ensureStartupActions()?.querySelector("[data-startup-auth]");
+    if (auth) auth.hidden = true;
+    renderStartupActions();
+    return;
+  }
+  if (target.closest("[data-startup-signin-submit]")) { void handleStartupAuthSubmit(false); return; }
+  if (target.closest("[data-startup-create-submit]")) { void handleStartupAuthSubmit(true); return; }
+  if (target.closest("[data-startup-new]")) {
+    const button = target.closest("[data-startup-new]");
+    showStartupLoadingState(button, "Starting aquarium...");
+    runtime.freshGameSaveLocked = true;
+    primeSoundEffects();
+    playRegularButtonSoundEffect();
+    window.setTimeout(hideLoadingOverlay, 130);
+    return;
+  }
+  if (target.closest("[data-startup-continue]")) {
+    void continueFromStartup();
+  }
+}
+
+function showStartupLoadingState(button, label) {
+  const actions = ensureStartupActions();
+  const buttons = actions?.querySelector("[data-startup-buttons]");
+  if (!actions || !buttons || actions.dataset.startupPending === "true") return;
+  actions.dataset.startupPending = "true";
+  if (button) {
+    button.disabled = true;
+    button.classList.add("is-pressed");
+  }
+  window.setTimeout(() => {
+    buttons.innerHTML = `<div class="startup-loading-indicator" role="status"><span aria-hidden="true"></span>${escapeHtml(label)}</div>`;
+  }, 90);
+}
+
+async function continueFromStartup() {
+  const button = ensureStartupActions()?.querySelector("[data-startup-continue]");
+  showStartupLoadingState(button, "Loading aquarium...");
+  if (getCloudSession()) await resolveCloudAfterLogin({ source: "startup" });
+  if (document.querySelector("[data-cloud-dialog]")) {
+    const actions = ensureStartupActions();
+    if (actions) delete actions.dataset.startupPending;
+    renderStartupActions();
+    return;
+  }
+  primeSoundEffects();
+  playRegularButtonSoundEffect();
+  hideLoadingOverlay();
+}
+
+function renderCloudAccountPanel() {
+  const container = document.querySelector("[data-cloud-account-panel]");
+  if (!container) return;
+  const session = runtime.cloudSession || getCloudSession();
+  const email = session?.user?.email || "";
+  if (!session) {
+    container.innerHTML = `<p class="settings-section-note">Sign in to automatically back up this aquarium and load it on another device.</p><div class="cloud-settings-auth"><input type="email" placeholder="Email" autocomplete="email" data-cloud-settings-email><input type="password" placeholder="Password" autocomplete="current-password" data-cloud-settings-password><div class="overview-actions"><button class="small-button" type="button" data-cloud-settings-signin>Sign In</button><button class="small-button alt" type="button" data-cloud-settings-create>Create Account</button></div><small data-cloud-settings-message></small></div>`;
+  } else {
+    container.innerHTML = `<p><strong>${escapeHtml(email || "Signed in")}</strong></p><div class="cloud-sync-row" data-cloud-sync-status data-status="${escapeHtml(runtime.cloudSyncStatus || "checking")}"><span class="cloud-bubble-spinner" aria-hidden="true"><i></i><i></i><i></i></span><span data-cloud-sync-text>${escapeHtml(runtime.cloudSyncLabel || "Checking cloud save...")}</span></div><div class="overview-actions"><button class="small-button" type="button" data-cloud-sync-now>Sync Now</button><button class="small-button alt" type="button" data-cloud-download-save>Download Save</button><button class="small-button alt" type="button" data-cloud-signout>Sign Out</button></div><small data-cloud-settings-message></small>`;
+  }
+}
+
+async function handleCloudSettingsClick(event) {
+  const target = event.target instanceof Element ? event.target : null;
+  const panel = target?.closest("[data-cloud-account-panel]");
+  if (!panel) return false;
+  const message = panel.querySelector("[data-cloud-settings-message]");
+  const email = String(panel.querySelector("[data-cloud-settings-email]")?.value || "").trim();
+  const password = String(panel.querySelector("[data-cloud-settings-password]")?.value || "");
+  try {
+    if (target.closest("[data-cloud-settings-signin]")) {
+      if (message) message.textContent = "Signing in...";
+      await signInCloudAccount(email, password);
+      renderCloudAccountPanel();
+      return true;
+    }
+    if (target.closest("[data-cloud-settings-create]")) {
+      if (message) message.textContent = "Creating account...";
+      const result = await createCloudAccount(email, password);
+      if (result.needsConfirmation) {
+        if (message) message.textContent = "Account created. Check your email to confirm it, then sign in.";
+      } else renderCloudAccountPanel();
+      return true;
+    }
+    if (target.closest("[data-cloud-sync-now]")) { await uploadCurrentSaveToCloud({ force: true }); return true; }
+    if (target.closest("[data-cloud-download-save]")) { await exportSaveData({ openOverlay: false }); return true; }
+    if (target.closest("[data-cloud-signout]")) { await signOutCloudAccount(); return true; }
+  } catch (error) {
+    console.error(error);
+    if (message) message.textContent = error?.message || "Cloud account action failed.";
+    return true;
+  }
+  return false;
+}
+
+function initializeCloudSaveRuntime() {
+  runtime.cloudSession = getCloudSession();
+  runtime.cloudWritesAllowed = false;
+  runtime.cloudChecked = false;
+  runtime.cloudRevision = Number(getCloudMeta().cloudRevision) || 0;
+  setCloudSyncStatus(runtime.cloudSession ? "checking" : "signed-out", runtime.cloudSession ? "Cloud check pending" : "Not signed in");
+  renderCloudAccountPanel();
 }
 // </bundle-source>

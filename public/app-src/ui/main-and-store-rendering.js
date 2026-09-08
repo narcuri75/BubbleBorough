@@ -2,6 +2,17 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderUi(now, options = {}) {
+  // Tankazon is rendered by the page shell while gameplay lives in this ES
+  // module. Publish the small, variant-aware purchase bridge once rendering
+  // begins so the shell never falls back to clicking a hidden legacy card.
+  if (typeof window !== "undefined" && window.buyFish !== buyFish) {
+    window.buyFish = buyFish;
+    window.buySubmarine = buySubmarine;
+    window.buyBoat = buyBoat;
+    window.showToast = showToast;
+    window.setStorePurchaseSoundBatch = setStorePurchaseSoundBatch;
+    window.playPurchaseSoundEffect = playPurchaseSoundEffect;
+  }
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
   const full = options.full !== false;
@@ -203,12 +214,29 @@ function renderHeader(now) {
   setTextIfChanged(dom.coinCount, formatLcdNumber(state.coins));
   setTextIfChanged(dom.toolbarCoinCount, String(state.coins));
   dom.toolbarWallet?.classList.toggle("is-full", state.coins >= MAX_WALLET_COINS);
+  renderWalletTransactionMenu();
   setTextIfChanged(dom.cleanlinessLabel, `${cleanliness}%`);
   setTextIfChanged(dom.mealWindowLabel, starvingCount > 0 ? `${starvingCount}! / ${hungryCount}` : String(hungryCount));
 
   if (dom.nextMealCountdownMirror) {
     setTextIfChanged(dom.nextMealCountdownMirror, hungryCount > 0 ? `${hungryCount} hungry` : "All fish fed");
   }
+}
+
+function renderWalletTransactionMenu() {
+  const menu = dom.walletTransactionMenu;
+  if (!menu) return;
+  const entries = Array.isArray(state.walletTransactions) ? state.walletTransactions.slice(0, 60) : [];
+  menu.hidden = runtime.walletTransactionMenuOpen !== true;
+  dom.toolbarWallet?.setAttribute("aria-expanded", String(runtime.walletTransactionMenuOpen === true));
+  const receipts = entries.length
+    ? entries.map((entry) => {
+      const debit = entry.direction === "debit";
+      const time = new Date(Number(entry.time) || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      return `<article class="wallet-receipt ${debit ? "is-debit" : "is-credit"}"><strong>${debit ? "−" : "+"}${entry.amount} <img src="assets/icons/coin.png" alt="coin" /></strong><span>${escapeHtml(entry.place)} · ${escapeHtml(entry.label)}</span><time>${escapeHtml(time)}</time></article>`;
+    }).join("")
+    : `<p class="wallet-receipt-empty">No receipts yet.</p>`;
+  setMarkupIfChanged("wallet-transactions", menu, `<header><strong>Recent receipts</strong></header><div class="wallet-receipt-list">${receipts}</div>`);
 }
 
 function renderMealTrack(now) {
@@ -441,7 +469,7 @@ function renderFishShop() {
           </div>
           <div class="shop-meta">
             <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
-              <button class="buy-button" data-buy-fish="${fish.id}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+              <button class="buy-button" data-buy-fish="${fish.id}" data-fish-variants="${escapeHtml(JSON.stringify(getFishStoreVariants(fish)))}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
               ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
             </button>
           </div>
@@ -487,6 +515,16 @@ function renderStoreOverlay() {
   dom.storeFishTab.setAttribute("aria-selected", String(showingFish));
   dom.storeDecorTab.setAttribute("aria-selected", String(showingDecor));
   dom.storeEquipmentTab?.setAttribute("aria-selected", String(showingEquipment));
+
+  // The Tankazon shell owns its catalogue filtering. Keep it in lockstep with
+  // gameplay changes such as a tutorial advancing from Fish to Decor; merely
+  // changing the selected tab otherwise leaves the old catalogue on screen.
+  if (runtime.storeOverlayOpen && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+    dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
+    window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
+      detail: { category: runtime.storeTab }
+    }));
+  }
 
   if (dom.storeCoinCounter) {
     const currentCoins = formatStoreCoinCounterValue(state.coins);

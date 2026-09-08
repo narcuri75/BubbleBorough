@@ -94,6 +94,18 @@ function handleToolbarActionMenuDocumentClick(event) {
   closeToolbarActionMenu();
 }
 
+function toggleWalletTransactionMenu() {
+  runtime.walletTransactionMenuOpen = runtime.walletTransactionMenuOpen !== true;
+  renderWalletTransactionMenu();
+}
+
+function handleWalletTransactionMenuDocumentClick(event) {
+  if (runtime.walletTransactionMenuOpen !== true || !(event.target instanceof Element)) return;
+  if (event.target.closest("#toolbarWallet, #walletTransactionMenu")) return;
+  runtime.walletTransactionMenuOpen = false;
+  renderWalletTransactionMenu();
+}
+
 function handleToolbarActionMenuKeyDown(event) {
   if (event.key !== "Escape") {
     return;
@@ -518,6 +530,8 @@ function bindEvents() {
   document.addEventListener("pointerup", finishSoundRangeDrag, true);
   document.addEventListener("pointercancel", finishSoundRangeDrag, true);
   document.addEventListener("click", handleToolbarActionMenuDocumentClick);
+  document.addEventListener("click", handleWalletTransactionMenuDocumentClick);
+  dom.toolbarWallet?.addEventListener("click", toggleWalletTransactionMenu);
   document.addEventListener("keydown", handleToolbarActionMenuKeyDown);
   dom.loadingOverlay?.addEventListener("click", (event) => {
     if (dom.loadingOverlay?.classList.contains("is-error")) {
@@ -588,18 +602,9 @@ function bindEvents() {
       }
       return;
     }
-    if (!dom.loadingOverlay?.classList.contains("is-ready")) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    if (isHardwareAccelerationNoticeBlockingStart()) {
-      return;
-    }
-    primeSoundEffects();
-    playRegularButtonSoundEffect();
-    hideLoadingOverlay();
+    // Ready-state actions own their click handlers. Background clicks are
+    // deliberately inert so the start screen has no invisible full-page button.
+    if (!dom.loadingOverlay?.classList.contains("is-ready")) return;
   });
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", () => {
@@ -912,6 +917,9 @@ function bindEvents() {
   dom.importDataInput?.addEventListener("change", (event) => {
     void importSaveDataFromPicker(event);
   });
+  document.querySelector("[data-cloud-account-panel]")?.addEventListener("click", (event) => {
+    void handleCloudSettingsClick(event);
+  });
   dom.localBackgroundInput?.addEventListener("change", (event) => {
     void importLocalBackgroundFromPicker(event);
   });
@@ -1018,6 +1026,27 @@ function bindEvents() {
   });
   dom.toolbarTab?.addEventListener("click", () => toggleToolbarCollapsed());
   dom.displayTab?.addEventListener("click", () => toggleDisplayCollapsed());
+  dom.selectedFishNeedsPanel?.addEventListener("click", (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-fish-companion]") : null;
+    if (!(button instanceof HTMLButtonElement)) return;
+    event.preventDefault();
+    // Rendering can replace this button. Do not let the detached click bubble
+    // into the aquarium and get mistaken for a glass tap / deselection.
+    event.stopPropagation();
+    const fishId = runtime.selectedFishStatusFishId || runtime.selectedFishId;
+    const action = button.dataset.fishCompanion;
+    if (action === "close") {
+      runtime.selectedFishStatusFishId = null;
+      runtime.selectedFishId = null;
+      closeFishActionMenu();
+    } else if (action === "details") {
+      closeFishActionMenu();
+      openFishInspector(fishId);
+    } else {
+      offerFishInteraction(action, fishId);
+    }
+    renderUi(Date.now(), { full: false });
+  });
   dom.fishActionFlyout?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
     const cancelButton = target?.closest("[data-cancel-fish-action]");
@@ -2256,6 +2285,12 @@ function bindEvents() {
   }
 
   dom.fishShop.addEventListener("click", (event) => {
+    // Tankazon owns its purchase clicks. If this legacy listener runs first,
+    // it calls buyFish with only the species id and silently buys Main before
+    // Tankazon can pass the selected appearance key.
+    if (event.target instanceof Element && event.target.closest("#storeOverlay")) {
+      return;
+    }
     const button = event.target.closest("[data-buy-fish]");
     if (button) {
       buyFish(button.dataset.buyFish);
@@ -2402,13 +2437,13 @@ function bindEvents() {
 
   dom.equipmentShop?.addEventListener("click", (event) => {
     const buySubmarineButton = event.target.closest("[data-buy-submarine]");
-    if (buySubmarineButton) {
+    if (buySubmarineButton && !event.target.closest("#storeOverlay")) {
       buySubmarine();
       return;
     }
 
     const buyBoatButton = event.target.closest("[data-buy-boat]");
-    if (buyBoatButton) {
+    if (buyBoatButton && !event.target.closest("#storeOverlay")) {
       buyBoat();
       return;
     }
@@ -4700,6 +4735,16 @@ function buildDecorCaveColorLayers(group) {
   ];
 }
 
+function getExpectedCaveCompanionPaths(baseItem, meta = {}) {
+  if (!baseItem?.key || !meta?.caveSettings) return [];
+  const extensionMatch = baseItem.key.match(/(\.[^.]+)$/);
+  if (!extensionMatch) return [];
+  const stem = baseItem.key.slice(0, -extensionMatch[1].length);
+  return ["_bg", "_color2"].map((suffix) => resolveAppUrl(
+    `assets/decor/${encodeURIComponent(`${stem}${suffix}${extensionMatch[1]}`)}`
+  ));
+}
+
 function buildDecorCatalog(items, catalogMeta = {}) {
   const grouped = new Map();
 
@@ -4759,6 +4804,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
 
       const meta = runtime.decorMeta[group.base.key] || runtime.decorMeta[baseKey] || {};
       const caveColorLayers = buildDecorCaveColorLayers(group);
+      const expectedCaveCompanionPaths = getExpectedCaveCompanionPaths(group.base, meta);
 
       return {
         key: group.base.key,
@@ -4777,6 +4823,10 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         hasSeats: Boolean(group.seats),
         caveColorLayers,
         hasCaveColorLayers: caveColorLayers.length > 0,
+        // Cave assets may arrive in separate drops. Keep their conventional
+        // companion URLs registered even before the files are present; when
+        // added to the manifest they join the existing layer resolver.
+        expectedCaveCompanionPaths,
         name: meta.name || titleFromFile(group.base.key),
         theme: isHalloweenDecor({ ...meta, key: group.base.key }) ? "Halloween" : normalizeCatalogTheme(meta.theme),
         categories: deriveDecorCategories(meta, group.base.key),

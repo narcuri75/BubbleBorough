@@ -1,4 +1,10 @@
 const STORAGE_KEY = "bubble-borough-save-v1";
+const SUPABASE_URL = "https://idljwswasrxtifbkioyg.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qxhGQH_faz0TDw4_AbYsGw_iYljA_9s";
+const CLOUD_AUTH_SESSION_KEY = "bubble-borough-cloud-auth-v1";
+const CLOUD_SAVE_META_KEY = "bubble-borough-cloud-meta-v1";
+const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1";
+const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 import {
   ZOMBIE_SKELETON_BEHAVIOR_CONFIG,
@@ -1953,8 +1959,21 @@ const SUBMARINE_COST = 100;
 const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/submarine.png");
 const BOAT_COST = 50;
 const BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/boat.png");
-const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Boat.png");
-const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Submarine.png");
+// The original Halloween vehicle files were renamed to their shared fifth
+// appearance slot, so seasonal presentation and the purchasable choice use
+// the same real asset.
+const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Boat_5.png");
+const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Submarine_5.png");
+const BOAT_VARIANT_IMAGE_PATHS = [
+  BOAT_IMAGE_PATH,
+  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/fish/boat_${number}.png`)),
+  HALLOWEEN_BOAT_IMAGE_PATH
+];
+const SUBMARINE_VARIANT_IMAGE_PATHS = [
+  SUBMARINE_IMAGE_PATH,
+  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/fish/submarine_${number}.png`)),
+  HALLOWEEN_SUBMARINE_IMAGE_PATH
+];
 const BOAT_RESOURCE_CAPACITY = 99;
 const BOAT_DRAW_WIDTH_PX = 121;
 const BOAT_CRUISE_SPEED_PX_PER_SECOND = 96;
@@ -2077,19 +2096,19 @@ const DEBUG_BREEDING_HOLD_MS = 60 * 1000;
 const DEBUG_BREEDING_REACHED_DISTANCE_NORM = 0.024;
 const FISH_ACTION_STEER_REFRESH_MS = 260;
 const FISH_ACTION_EAT_DURATION_MS = 45 * 1000;
-const FISH_ACTION_WAIT_FOOD_DURATION_MS = 60 * 1000;
-const FISH_ACTION_REST_DURATION_MS = 3 * MINUTE_MS;
-const FISH_ACTION_SLEEP_DURATION_MS = 10 * MINUTE_MS;
-const FISH_ACTION_HIDE_DURATION_MS = 2 * MINUTE_MS;
-const FISH_ACTION_GREET_DURATION_MS = 45 * 1000;
-const FISH_ACTION_FOLLOW_DURATION_MS = 3 * MINUTE_MS;
+const FISH_ACTION_WAIT_FOOD_DURATION_MS = 25 * 1000;
+const FISH_ACTION_REST_DURATION_MS = 35 * 1000;
+const FISH_ACTION_SLEEP_DURATION_MS = 90 * 1000;
+const FISH_ACTION_HIDE_DURATION_MS = 40 * 1000;
+const FISH_ACTION_GREET_DURATION_MS = 12 * 1000;
+const FISH_ACTION_FOLLOW_DURATION_MS = 45 * 1000;
 const FISH_ACTION_AVOID_DURATION_MS = 60 * 1000;
 const FISH_ACTION_MATE_DURATION_MS = 2 * MINUTE_MS;
-const FISH_ACTION_INSPECT_DURATION_MS = 90 * 1000;
-const FISH_ACTION_DIG_DURATION_MS = 75 * 1000;
-const FISH_ACTION_PEBBLE_DURATION_MS = 60 * 1000;
-const FISH_ACTION_ZOOMIES_DURATION_MS = 20 * 1000;
-const FISH_ACTION_PLAY_DURATION_MS = 2 * MINUTE_MS;
+const FISH_ACTION_INSPECT_DURATION_MS = 18 * 1000;
+const FISH_ACTION_DIG_DURATION_MS = 20 * 1000;
+const FISH_ACTION_PEBBLE_DURATION_MS = 20 * 1000;
+const FISH_ACTION_ZOOMIES_DURATION_MS = 12 * 1000;
+const FISH_ACTION_PLAY_DURATION_MS = 20 * 1000;
 const FISH_ACTION_BREED_HOLD_MS = 2 * MINUTE_MS;
 const FISH_ACTION_QUEUE_REST_MS = 2 * 1000;
 const BETTA_ATTACK_PASS_CHANCE = 0.001;
@@ -2785,7 +2804,11 @@ const DECOR_META = {
 
 const DECOR_KEY_ALIASES = Object.freeze({
   "anubia-rock.png": "anubia-rock_seaweed.png",
-  "anubias-rock.png": "anubia-rock_seaweed.png"
+  "anubias-rock.png": "anubia-rock_seaweed.png",
+  "Halloween_Cauldron.png": "Halloween_Cauldron_Bubbler.png",
+  "halloween_cauldron.png": "Halloween_Cauldron_Bubbler.png",
+  "Halloween_JackOLantern.png": "Halloween_JackOLantern_bubbler.png",
+  "halloween_jackolantern.png": "Halloween_JackOLantern_bubbler.png"
 });
 const DECOR_RGB_COLOR_SETTING = "rgb";
 const DECOR_COLORIZE_SETTING_SUFFIX = "Colorize";
@@ -2804,6 +2827,7 @@ const dom = {
   coinCount: document.querySelector("#coinCount"),
   toolbarWallet: document.querySelector("#toolbarWallet"),
   toolbarCoinCount: document.querySelector("#toolbarCoinCount"),
+  walletTransactionMenu: document.querySelector("#walletTransactionMenu"),
   cleanlinessLabel: document.querySelector("#cleanlinessLabel"),
   mealWindowLabel: document.querySelector("#mealWindowLabel"),
   tankStatus: document.querySelector("#tankStatus"),

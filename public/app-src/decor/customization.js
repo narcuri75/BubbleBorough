@@ -695,7 +695,12 @@ function openStoreOverlay(tab = "food", options = {}) {
     return;
   }
 
-  if (dom.storeOverlay && options.forceCategory === true) dom.storeOverlay.dataset.requestedCategory = tab;
+  // Tankazon normally restores the shopper's last category. A tutorial task
+  // must always open the category it teaches, including when its toolbar
+  // button calls this function without an explicit option.
+  if (dom.storeOverlay && (options.forceCategory === true || getActiveTutorial())) {
+    dom.storeOverlay.dataset.requestedCategory = tab;
+  }
   openExclusiveOverlay("store", { tab });
 }
 

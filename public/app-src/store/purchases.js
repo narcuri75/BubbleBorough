@@ -5,6 +5,25 @@ function getInsufficientFundsMessage() {
   return "Payment method declined. Insufficient Funds.";
 }
 
+function setStorePurchaseSoundBatch(active = false) {
+  runtime.storePurchaseSoundBatch = active === true;
+}
+
+function recordWalletTransaction(options = {}) {
+  const amount = Math.max(0, Math.floor(Math.abs(Number(options.amount) || 0)));
+  if (!state || amount <= 0) return false;
+  if (!Array.isArray(state.walletTransactions)) state.walletTransactions = [];
+  state.walletTransactions.unshift({
+    id: createId("receipt"), amount,
+    direction: options.direction === "debit" ? "debit" : "credit",
+    label: String(options.label || "Aquarium activity").slice(0, 180),
+    place: String(options.place || "Aquarium").slice(0, 80),
+    time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now()
+  });
+  state.walletTransactions = state.walletTransactions.slice(0, 60);
+  return true;
+}
+
 function performCoinTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
   const direction = options.direction === "credit" ? "credit" : "debit";
@@ -30,13 +49,18 @@ function performCoinTransaction(options = {}) {
     }
     const event = typeof options.event === "function" ? options.event(now) : options.event;
     const toast = typeof options.toast === "function" ? options.toast(now) : options.toast;
+    recordWalletTransaction({ amount, direction, now,
+      place: options.place || (direction === "debit" ? "Tankazon" : "Aquarium"),
+      label: options.receiptLabel || event?.text || toast || (direction === "debit" ? "Purchase" : "Coin award") });
     completeGameAction({
       now,
       event,
       tank: options.tank,
       toast,
       toastOptions: options.toastOptions,
-      sound: options.sound || (direction === "credit" ? "coin" : "purchase"),
+      sound: options.sound === false
+        ? null
+        : (runtime.storePurchaseSoundBatch ? null : (options.sound || (direction === "credit" ? "coin" : "purchase"))),
       render: options.render,
       full: options.full
     });
@@ -165,9 +189,13 @@ async function ensureFishPurchaseImageReady(fish, species) {
     return false;
   }
 
+  // The chosen appearance is part of the purchased fish, not a visual preference.
+  // Load it first and validate that exact path so a slow variant request can never
+  // silently turn the purchase into the base appearance.
+  const selectedAsset = getFishAssetPath(fish, species);
   const candidates = [
+    selectedAsset,
     getFishDisplayAssetPath(fish, species, Date.now()),
-    getFishAssetPath(fish, species),
     species.fallbackAsset,
     species.asset
   ].filter((path, index, entries) => Boolean(path) && entries.indexOf(path) === index);
@@ -177,8 +205,7 @@ async function ensureFishPurchaseImageReady(fish, species) {
     retryDelayMs: 350
   });
 
-  const displayPath = getFishDisplayAssetPath(fish, species, Date.now()) || species.asset;
-  return isUsableRuntimeImage(runtime.images.get(displayPath));
+  return isUsableRuntimeImage(runtime.images.get(selectedAsset));
 }
 
 async function buyFish(speciesId, options = {}) {
@@ -219,10 +246,23 @@ async function buyFish(speciesId, options = {}) {
 
   const now = Date.now();
   const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_ADOPT_FISH);
+  const variants = getFishAssetVariants(species);
+  const selectedVariant = options.appearanceVariantKey
+    ? variants.findIndex((path) => getFishAppearanceVariantKey(path) === options.appearanceVariantKey)
+    : Math.max(0, variants.indexOf(getFishAssetPath({ appearanceVariant: options.appearanceVariant ?? 0 }, species)));
+  if (selectedVariant < 0) {
+    return { ok: false, reason: "variant-unavailable", errorMessage: "That fish variant is no longer available." };
+  }
   const entryStartedAt = options.closeOverlayFirst === true
     ? now + TUTORIAL_STORE_CLOSE_DELAY_MS
     : now;
   const fish = createFishRecord(speciesId, {
+    appearanceVariant: selectedVariant,
+    appearanceVariantKey: getFishAppearanceVariantKey(variants[selectedVariant]),
+    // Persist the resolved selected asset as well as its filename key. This
+    // prevents a later catalog refresh or cache query from changing a fish
+    // that has already been purchased.
+    appearanceAssetPath: variants[selectedVariant],
     now,
     entryStartedAt,
     entryDurationMs: FISH_ENTRY_DURATION_MS,
@@ -240,15 +280,16 @@ async function buyFish(speciesId, options = {}) {
   runtime.pendingFishPurchases.add(pendingKey);
 
   try {
-    if (!await ensureFishPurchaseImageReady(fish, species)) {
-      console.error("Fish purchase blocked because its artwork could not be loaded.", {
-        speciesId,
-        path: getFishDisplayAssetPath(fish, species, Date.now()) || species.asset,
-        failure: runtime.imageLoadFailures.get(getFishDisplayAssetPath(fish, species, Date.now()) || species.asset) || null
+    // Do not make a paid adoption wait for an independent image decode. The
+    // selected asset is saved on the record and recovery keeps retrying it.
+    void ensureFishPurchaseImageReady(fish, species).then((loaded) => {
+      if (loaded) return;
+      requestRuntimeImageRecovery(getFishAssetPath(fish, species), {
+        kind: "fish-appearance",
+        id: fish.id,
+        speciesId
       });
-      showToast("That fish's artwork could not be loaded. Please try again.");
-      return { ok: false, reason: "image-unavailable" };
-    }
+    });
     const purchaseCompletedAt = Date.now();
     let tutorialChanged = false;
     const transaction = performCoinTransaction({
@@ -401,7 +442,7 @@ function buyAnotherFishFromSource(fishId) {
     return true;
   }
 
-  buyFish(fish.speciesId);
+  buyFish(fish.speciesId, { appearanceVariantKey: getFishAppearanceVariantKey(getFishAssetPath(fish)) });
   return true;
 }
 

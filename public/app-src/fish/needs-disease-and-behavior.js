@@ -34,6 +34,58 @@ function getFishAssetVariants(species) {
     : (typeof species.asset === "string" && species.asset ? [species.asset] : []);
 }
 
+function getFishAppearanceVariantKey(path) {
+  return typeof path === "string" ? path.split(/[?#]/)[0].split("/").pop() : "";
+}
+
+function getFishStoreVariants(species) {
+  return getFishAssetVariants(species).map((path, index) => ({
+    key: getFishAppearanceVariantKey(path),
+    image: path,
+    label: index === 0 ? "Main" : `Variant ${path.match(/_([1-5])\.[^./?]+(?:[?#].*)?$/)?.[1] || index}`
+  }));
+}
+
+async function discoverFishAppearanceVariants(catalog) {
+  await Promise.all(catalog.map(async (species) => {
+    const base = species.asset;
+    if (!base || /^(data:|blob:)/i.test(base)) return;
+    const match = base.match(/^(.*)(\.[^./?#]+)([?#].*)?$/);
+    if (!match) return;
+    const existing = getFishAssetVariants(species);
+    const existingKeys = new Set(existing.map((path) => getFishAppearanceVariantKey(path)));
+    const discovered = await Promise.all([1, 2, 3, 4, 5].map(async (number) => {
+      const path = `${match[1]}_${number}${match[2]}${match[3] || ""}`;
+      // Catalog URLs can have a cache query while the probed URL does not.
+      // They are the same appearance, so compare filenames rather than raw
+      // URLs and never add a second thumbnail for it.
+      if (existingKeys.has(getFishAppearanceVariantKey(path))) return null;
+      return new Promise((resolve) => {
+        const image = new Image();
+        const finish = (loaded) => {
+          clearTimeout(timeout);
+          image.onload = image.onerror = null;
+          if (loaded) runtime.images.set(path, image);
+          resolve(loaded ? path : null);
+        };
+        const timeout = setTimeout(() => finish(false), 2500);
+        image.onload = () => finish(image.naturalWidth > 0);
+        image.onerror = () => finish(false);
+        image.src = path;
+      });
+    }));
+    // Append to preserve numeric indices in existing saves; new purchases also
+    // save a stable filename key. Dedupe cache-busted and plain URLs together.
+    const seenKeys = new Set();
+    species.assetVariants = [base, ...existing, ...discovered.filter(Boolean)].filter((path) => {
+      const key = getFishAppearanceVariantKey(path);
+      if (!key || seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    });
+  }));
+}
+
 function getBaseSpeciesForFish(fish) {
   return fish ? runtime.fishMap.get(fish.speciesId) || null : null;
 }
@@ -360,19 +412,9 @@ function getFishNeedLabel(needKey, value) {
 
 function getFishNeedsMood(needs) {
   const safeNeeds = sanitizeFishNeeds(needs);
-  const score = FISH_NEED_KEYS.reduce((total, key) => total + safeNeeds[key] * (FISH_NEED_MOOD_WEIGHTS[key] || 0), 0);
-  const label = score >= 85
-    ? "Thriving"
-    : score >= 70
-      ? "Good Vibes"
-      : score >= 50
-        ? "Fine"
-        : score >= 35
-          ? "Uneasy"
-          : score >= 20
-            ? "Stressed"
-            : "Miserable";
-  return { value: clamp(score, 0, 100), label };
+  const score = safeNeeds.hunger * 0.35 + safeNeeds.comfort * 0.3
+    + safeNeeds.hygiene * 0.2 + safeNeeds.environment * 0.15;
+  return { value: clamp(score, 0, 100), label: "Content" };
 }
 
 function getDerivedFishNeedDefaults(fish, now = Date.now()) {
@@ -402,9 +444,12 @@ function getDerivedFishNeedDefaults(fish, now = Date.now()) {
 function sanitizeFishNeeds(value, fish = null, now = Date.now()) {
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const defaults = fish ? getDerivedFishNeedDefaults(fish, now) : FISH_NEED_DEFAULTS;
-  return Object.fromEntries(FISH_NEED_KEYS.map((key) => [
-    key,
-    clamp(Number.isFinite(Number(source[key])) ? Number(source[key]) : defaults[key], 0, 100)
+  // Keep the old save shape, but retire the three daily maintenance meters.
+  // Habitat values reflect the tank immediately, rather than action bonuses.
+  return Object.fromEntries(FISH_NEED_KEYS.map((key) => [key,
+    ["energy", "social", "stimulation"].includes(key) ? 80
+      : fish && ["comfort", "hygiene", "environment"].includes(key) ? defaults[key]
+      : clamp(Number.isFinite(Number(source[key])) ? Number(source[key]) : defaults[key], 0, 100)
   ]));
 }
 

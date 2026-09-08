@@ -594,8 +594,17 @@ function drawFishCausticLight(context, image, fish, fishDrawX, width, height, no
     scratch.image = image;
   }
   context.save();
+  // The fish canvas is currently in its pose transform. Establish the clip in
+  // tank space first, then restore that pose so partially surfaced fish only
+  // receive the light below the actual waterline.
+  const fishTransform = context.getTransform();
+  context.setTransform(worldTransform);
+  context.beginPath();
+  context.rect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
+  context.clip();
+  context.setTransform(fishTransform);
   context.globalCompositeOperation = "screen";
-  context.globalAlpha *= strength * 1.4;
+  context.globalAlpha *= strength * 0.72;
   context.drawImage(scratch.canvas, fishDrawX, -height / 2, width, height);
   context.restore();
 }

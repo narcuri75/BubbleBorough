@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'" />
+    content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob: https://idljwswasrxtifbkioyg.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#031429" />
@@ -40,8 +40,8 @@
     <div id="loadingOverlayBackground" class="tank-stage-background loading-overlay-background" aria-hidden="true"></div>
     <div id="loadingOverlayUnderwater" class="tank-stage-underwater loading-overlay-underwater" aria-hidden="true"></div>
     <div class="loading-overlay-content">
-      <img class="loading-overlay-logo" src="assets/misc/bb_logo.png" alt="Bubble Borough" />
-      <div class="loading-overlay-text">Loading Aquarium</div>
+      <img class="loading-overlay-logo" src="assets/misc/bb_logo.png" data-seasonal-bb-logo alt="Bubble Borough" />
+      <div class="loading-overlay-text">Loading</div>
       <div class="loading-overlay-error-details" data-loading-error-details hidden></div>
       <div class="loading-overlay-error-actions" data-loading-error-actions hidden>
         <button type="button" data-loading-error-copy>Copy error</button>
@@ -98,26 +98,10 @@
           </section>
 
           <div class="tank-overlay">
-            <section id="fishActionFlyout" class="fish-action-flyout" hidden aria-label="Fish action menu" data-preserve-fish-selection>
-              <div class="fish-action-flyout-branch fish-action-flyout-left">
-                <button class="fish-action-flyout-button" type="button" data-fish-action-category="food">Food</button>
-                <button class="fish-action-flyout-button" type="button" data-fish-action-category="rest">Rest</button>
-                <button class="fish-action-flyout-button" type="button" data-fish-action-category="social">Social</button>
-              </div>
-              <button id="fishActionFlyoutName" class="fish-action-flyout-name" type="button">Fish</button>
-              <button id="fishActionFlyoutSettings" class="fish-action-flyout-settings" type="button" aria-label="Open fish details">Settings</button>
-              <div id="fishActionQueue" class="fish-action-queue" aria-label="Queued fish actions"></div>
-              <div class="fish-action-flyout-branch fish-action-flyout-right">
-                <button class="fish-action-flyout-button" type="button" data-fish-action-category="explore">Explore</button>
-                <button class="fish-action-flyout-button" type="button" data-fish-action-category="play">Play</button>
-                <button class="fish-action-flyout-button is-clear" type="button" data-fish-action-category="system">Manage</button>
-              </div>
-            </section>
-
             <section id="fishActionQueueDock" class="fish-action-queue-dock" hidden aria-label="Queued fish actions" data-preserve-fish-selection></section>
             <section id="fishActionSubmenu" class="fish-action-submenu" hidden aria-label="Fish action folder" data-preserve-fish-selection></section>
             <section id="fishActionTargetMenu" class="fish-action-target-menu" hidden aria-label="Choose fish target" data-preserve-fish-selection></section>
-            <section id="selectedFishNeedsPanel" class="selected-fish-needs-panel" hidden aria-label="Selected fish needs"></section>
+            <section id="selectedFishNeedsPanel" class="selected-fish-needs-panel" hidden aria-label="Fish companion" data-preserve-fish-selection></section>
 
             <section class="tank-display" hidden>
               <button id="displayTab" class="display-tab" type="button" title="Hide Display"
@@ -494,6 +478,33 @@
 
                 <div class="store-panel-body tankazon-body">
                   <main id="tankazonCatalogArea" class="tankazon-catalog-area">
+                    <section id="tankazonItemPage" class="tankazon-item-page" aria-labelledby="tankazonItemTitle" hidden>
+                      <button id="tankazonItemBack" class="tankazon-item-back" type="button">← Back to results</button>
+                      <div id="tankazonItemCategory" class="tankazon-item-category"></div>
+                      <div class="tankazon-item-layout">
+                        <div class="tankazon-item-gallery">
+                          <div id="tankazonItemImage" class="tankazon-item-image"></div>
+                          <p id="tankazonItemVariantLabel" class="tankazon-item-variant-label" hidden></p>
+                          <div id="tankazonItemVariants" class="tankazon-item-variants" role="group" aria-label="Choose fish appearance" hidden></div>
+                        </div>
+                        <div class="tankazon-item-description">
+                          <h1 id="tankazonItemTitle" tabindex="-1"></h1>
+                          <p class="tankazon-item-brand">Visit the Tankazon Store</p>
+                          <div id="tankazonItemPrice" class="tankazon-item-price"></div>
+                          <h2>About this item</h2>
+                          <div id="tankazonItemDetails" class="tankazon-item-details"></div>
+                        </div>
+                        <aside class="tankazon-item-buybox" aria-label="Purchase this item">
+                          <div id="tankazonItemBuyPrice" class="tankazon-item-price"></div>
+                          <p id="tankazonItemAvailability" class="tankazon-item-availability"></p>
+                          <p class="tankazon-item-delivery">Delivery to your aquarium</p>
+                          <button id="tankazonItemAdd" class="tankazon-item-add" type="button">Add to Cart</button>
+                          <button id="tankazonItemBuy" class="tankazon-item-buy" type="button">Buy Now</button>
+                          <p id="tankazonItemStatus" class="tankazon-item-status" role="status" aria-live="polite"></p>
+                          <div class="tankazon-item-seller"><span>Sold by</span><strong>Tankazon</strong><span>Payment</span><strong>Aquarium coins</strong></div>
+                        </aside>
+                      </div>
+                    </section>
                     <div id="foodShop" class="shop-drawer store-drawer" data-tankazon-category="food" hidden></div>
                     <div id="pharmacyShop" class="shop-drawer store-drawer" data-tankazon-category="pharmacy" hidden></div>
                     <div id="fishShop" class="shop-drawer store-drawer" data-tankazon-category="fish" hidden></div>
@@ -510,7 +521,7 @@
                     <div class="tankazon-cart-footer">
                       <div class="tankazon-cart-subtotal">Subtotal: <strong class="tankazon-subtotal-value"><img src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" /><span id="tankazonCartSubtotal">0</span></strong></div>
                       <div id="tankazonPurchaseError" class="tankazon-purchase-error" role="alert" aria-live="assertive" hidden></div>
-                      <button id="tankazonCompletePurchase" class="tankazon-complete-purchase" type="button" disabled>Complete Purchase</button>
+                      <button id="tankazonCompletePurchase" class="tankazon-complete-purchase" type="button" disabled>Buy</button>
                     </div>
                   </aside>
                   <div id="tankazonDeliveryComplete" class="tankazon-delivery-complete" hidden aria-live="polite">
@@ -563,6 +574,13 @@
 
                 <div class="wallpaper-scroll-shell settings-scroll-shell">
                   <div class="settings-panel-body" data-wallpaper-scroll-target="settings">
+                  <section class="settings-section">
+                    <h3>Account / Cloud Save</h3>
+                    <div data-cloud-account-panel>
+                      <p class="settings-section-note">Cloud account controls are loading.</p>
+                    </div>
+                  </section>
+
                   <section class="settings-section">
                     <h3>Data</h3>
                     <p class="settings-section-note">Export, import, or reset your aquarium save.</p>
@@ -779,7 +797,7 @@
             <section id="introTutorialOverlay" class="tutorial-overlay" hidden aria-label="Tutorial" role="region">
               <div id="introTutorialSplash" class="tutorial-splash" hidden aria-hidden="true">
                 <div class="loading-overlay-content tutorial-splash-content">
-                  <img class="loading-overlay-logo tutorial-splash-logo" src="assets/misc/bb_logo.png"
+                  <img class="loading-overlay-logo tutorial-splash-logo" src="assets/misc/bb_logo.png" data-seasonal-bb-logo
                     alt="Bubble Borough" />
                 </div>
               </div>
@@ -943,10 +961,11 @@
               <button id="toolbarTab" class="toolbar-tab" type="button" title="Hide Toolbar"
                 aria-label="Hide Toolbar">&gt;</button>
 
-              <div id="toolbarWallet" class="toolbar-wallet" aria-label="Wallet balance">
+              <button id="toolbarWallet" class="toolbar-wallet" type="button" aria-label="Wallet balance and recent receipts" aria-expanded="false" aria-controls="walletTransactionMenu">
                 <img src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
                 <strong id="toolbarCoinCount">0</strong>
-              </div>
+              </button>
+              <section id="walletTransactionMenu" class="wallet-transaction-menu" aria-label="Recent receipts" hidden></section>
 
               <!--REG BUTTONS-->
 
@@ -1303,6 +1322,8 @@
       let committedSearchQuery = "";
       let committedSearchScrollTop = 0;
       let allCategoriesScrollTop = 0;
+      let selectedItem = null;
+      let itemReturnScrollTop = 0;
 
       const overlay = () => document.getElementById("storeOverlay");
       const drawers = () => CATEGORY_IDS.map((id) => document.querySelector(`[data-tankazon-category="${id}"]`)).filter(Boolean);
@@ -1365,6 +1386,7 @@
       }
 
       function commitTankazonSearch() {
+        closeTankazonItem(false);
         committedSearchQuery = typedQuery();
         committedSearchScrollTop = 0;
         applySearch({ preserveScroll: false });
@@ -1403,6 +1425,12 @@
           const costText = `${costAmount} coins`;
           card.dataset.tankazonTitle = name;
           card.dataset.tankazonCost = costText;
+          const preview = card.querySelector(".shop-thumb, .decor-thumb");
+          if (preview) {
+            preview.setAttribute("role", "button");
+            preview.tabIndex = 0;
+            preview.setAttribute("aria-label", `View ${name}`);
+          }
 
           let info = card.querySelector(":scope > .tankazon-tile-info");
           if (!info) {
@@ -1469,7 +1497,6 @@
             return;
           }
           button.classList.remove("tankazon-out-of-stock");
-          button.disabled = false;
           if (button.textContent !== "Add to Cart") button.textContent = "Add to Cart";
         });
         document.querySelectorAll("#storeOverlay button").forEach((button) => {
@@ -1481,6 +1508,114 @@
         });
         useBackgroundCatalogImages();
         normalizeTankazonTiles();
+        syncTankazonItem();
+      }
+
+      function getTankazonCardPurchaseButton(card) {
+        return [...card.querySelectorAll("button")].find((button) => getButtonDescriptor(button));
+      }
+
+      function openTankazonItem(preview) {
+        if (completingPurchase) return;
+        const card = preview.closest(".shop-card");
+        const button = getTankazonCardPurchaseButton(card);
+        const descriptor = button ? getButtonDescriptor(button) : {
+          key: `preview:${card.dataset.tankazonTitle}`,
+          name: card.dataset.tankazonTitle || preview.getAttribute("alt") || "Aquarium item",
+          category: card.closest("[data-tankazon-category]")?.dataset.tankazonCategory || "equipment",
+          cost: Number((card.dataset.tankazonCost || "").match(/\d+/)?.[0] || 0),
+          previewOnly: true
+        };
+        const catalog = document.getElementById("tankazonCatalogArea");
+        itemReturnScrollTop = catalog.scrollTop;
+        selectedItem = descriptor;
+        const image = preview.cloneNode(true);
+        image.removeAttribute("tabindex");
+        image.removeAttribute("role");
+        image.removeAttribute("aria-label");
+        image.className = "tankazon-item-art";
+        document.getElementById("tankazonItemImage").replaceChildren(image);
+        document.getElementById("tankazonItemImage").classList.toggle("is-fish-preview", descriptor.category === "fish");
+        renderTankazonVariants(descriptor);
+        document.getElementById("tankazonItemTitle").textContent = descriptor.baseName || descriptor.name;
+        document.getElementById("tankazonItemCategory").textContent = `Tankazon › ${categoryLabels[descriptor.category]}`;
+        const details = document.getElementById("tankazonItemDetails");
+        details.replaceChildren();
+        // Reuse the real catalog's descriptions, care stats and unlock requirements.
+        card.querySelectorAll(":scope > .shop-card-main, :scope > .shop-meta:not(:last-child):not(.shop-card-main)").forEach((source) => {
+          const copy = source.cloneNode(true);
+          copy.querySelectorAll("button, .price-tag, strong, [id]").forEach((node) => node.remove());
+          if (descriptor.fnName === "buyBackground") {
+            copy.querySelectorAll(".fish-meta").forEach((node) => {
+              if (node.textContent.trim() === "Locked") node.textContent = "Unlock this backdrop to customize your aquarium.";
+            });
+          }
+          copy.className = "tankazon-item-facts";
+          details.append(copy);
+        });
+        if (!details.textContent.trim()) details.textContent = `${descriptor.name} for your aquarium.`;
+        document.getElementById("tankazonItemStatus").textContent = "";
+        document.getElementById("tankazonItemPage").hidden = false;
+        overlay().classList.add("tankazon-item-open");
+        syncTankazonItem();
+        catalog.scrollTop = 0;
+        document.getElementById("tankazonItemTitle").focus({ preventScroll: true });
+      }
+
+      function closeTankazonItem(restore = true) {
+        if (!selectedItem) return;
+        const previous = selectedItem;
+        selectedItem = null;
+        document.getElementById("tankazonItemPage").hidden = true;
+        overlay().classList.remove("tankazon-item-open");
+        if (restore) {
+          if (allCategoriesMode) allCategoriesScrollTop = itemReturnScrollTop;
+          if (query()) committedSearchScrollTop = itemReturnScrollTop;
+          applySearch({ preserveScroll: false });
+          const preview = findTankazonNativePurchaseButton(previous)?.closest(".shop-card")?.querySelector(".shop-thumb, .decor-thumb");
+          preview?.focus({ preventScroll: true });
+          document.getElementById("tankazonCatalogArea").scrollTop = itemReturnScrollTop;
+        }
+      }
+
+      function syncTankazonItem() {
+        if (!selectedItem) return;
+        const button = findTankazonNativePurchaseButton(selectedItem);
+        const current = button && getButtonDescriptor(button);
+        const variantExists = !selectedItem.variantKey || current?.variants?.some((variant) => variant.key === selectedItem.variantKey);
+        if (current && variantExists) selectedItem = selectTankazonFishVariant(current, selectedItem.variantKey);
+        const available = Boolean(button && !button.disabled && variantExists);
+        const price = selectedItem.previewOnly ? "Not for purchase" : selectedItem.cost === 0 ? "Free" : `${selectedItem.cost.toLocaleString()} coins`;
+        for (const id of ["tankazonItemPrice", "tankazonItemBuyPrice"]) {
+          const node = document.getElementById(id);
+          if (node.textContent !== price) node.textContent = price;
+        }
+        const availability = document.getElementById("tankazonItemAvailability");
+        const label = available ? "Available" : "Currently unavailable";
+        if (availability.textContent !== label) availability.textContent = label;
+        const guided = window.isGuidedTutorialActive?.();
+        document.getElementById("tankazonItemAdd").disabled = !available || completingPurchase || guided;
+        document.getElementById("tankazonItemBuy").disabled = !available || completingPurchase;
+      }
+
+      async function buyTankazonItemNow() {
+        if (!selectedItem || completingPurchase) return;
+        const item = { ...selectedItem };
+        const status = document.getElementById("tankazonItemStatus");
+        completingPurchase = true;
+        syncTankazonItem();
+        status.textContent = "Buying…";
+        try {
+          await executeTankazonNativePurchase(item);
+          status.textContent = `${item.name} purchased!`;
+        } catch (error) {
+          status.textContent = error?.code === "insufficient-funds"
+            ? "Not enough coins to buy this item."
+            : (error?.message || "Purchase could not be completed.");
+        } finally {
+          completingPurchase = false;
+          normalizeTankazonPurchaseButtons();
+        }
       }
 
       function getButtonDescriptor(button) {
@@ -1499,7 +1634,9 @@
             const cost = Number((priceText.match(/\d+/) || [0])[0]);
             const name = card?.querySelector(".shop-card-main strong, strong")?.textContent?.trim() || button.textContent.trim();
             const image = card?.querySelector("img")?.getAttribute("src") || "assets/icons/Store_Icon.png";
-            return {
+            let variants = [];
+            try { variants = JSON.parse(button.dataset.fishVariants || button.dataset.machineryVariants || "[]"); } catch { /* Older catalog markup has no variants. */ }
+            const descriptor = {
               key: `${fnName}:${id}`,
               fnName,
               id,
@@ -1507,11 +1644,53 @@
               name,
               image,
               cost,
-              maxQuantity: ["buySubmarine", "buyBoat"].includes(fnName) ? 1 : undefined
+              maxQuantity: undefined
             };
+            if (["buyFish", "buySubmarine", "buyBoat"].includes(fnName) && variants.length) {
+              descriptor.variants = variants;
+              descriptor.baseName = name;
+              return selectTankazonFishVariant(descriptor, variants[0].key);
+            }
+            return descriptor;
           }
         }
         return null;
+      }
+
+      function selectTankazonFishVariant(item, variantKey) {
+        const variant = item.variants?.find((entry) => entry.key === variantKey);
+        if (!variant) return item;
+        return {
+          ...item,
+          key: `${item.fnName}:${item.id}:variant:${variant.key}`,
+          variantKey: variant.key,
+          variantLabel: variant.label,
+          image: variant.image,
+          name: item.variants.length > 1 ? `${item.baseName} (${variant.label})` : item.baseName
+        };
+      }
+
+      function renderTankazonVariants(item) {
+        const gallery = document.getElementById("tankazonItemVariants");
+        const label = document.getElementById("tankazonItemVariantLabel");
+        gallery.replaceChildren();
+        const variants = item.variants || [];
+        gallery.hidden = label.hidden = variants.length <= 1;
+        if (variants.length <= 1) return;
+        label.textContent = `Appearance: ${item.variantLabel || "Main"}`;
+        variants.forEach((variant) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.dataset.tankazonVariant = variant.key;
+          button.setAttribute("aria-label", `Select ${variant.label}`);
+          button.setAttribute("aria-pressed", String(variant.key === item.variantKey));
+          const image = document.createElement("img");
+          image.src = variant.image;
+          image.alt = variant.label;
+          button.append(image);
+          gallery.append(button);
+        });
+        document.querySelector("#tankazonItemImage img")?.setAttribute("src", item.image);
       }
 
       function renderCart() {
@@ -1586,6 +1765,7 @@
       }
 
       function applySearch(options = {}) {
+        if (selectedItem) return;
         const catalog = document.getElementById("tankazonCatalogArea");
         const restoreTop = allCategoriesMode
           ? allCategoriesScrollTop
@@ -1625,7 +1805,7 @@
         });
         if (catalog && options.preserveScroll !== false) {
           requestAnimationFrame(() => {
-            catalog.scrollTop = restoreTop;
+            if (!selectedItem) catalog.scrollTop = restoreTop;
           });
         }
       }
@@ -1645,6 +1825,7 @@
       }
 
       function showAllCategories() {
+        closeTankazonItem(false);
         allCategoriesMode = true;
         allCategoriesScrollTop = 0;
         saveTankazonView("all");
@@ -1705,7 +1886,7 @@
 
         return [...document.querySelectorAll(selector)].find((button) => {
           const descriptor = getButtonDescriptor(button);
-          return descriptor?.key === item.key;
+          return descriptor?.fnName === item.fnName && descriptor?.id === item.id;
         }) || null;
       }
 
@@ -1748,6 +1929,26 @@
       }
 
       async function executeTankazonNativePurchase(item) {
+        // Fish have a complete variant-aware purchase API. Call it before
+        // looking up the catalog card: item pages can keep that card hidden or
+        // tutorial-disabled even though the selected product is purchasable.
+        if (item.fnName === "buyFish" && typeof window.buyFish === "function") {
+          const beforeCoins = getTankazonCoinBalance();
+          if (Number.isFinite(beforeCoins) && Number(item.cost) > beforeCoins) {
+            const error = new Error("Payment method declined. Insufficient Funds.");
+            error.code = "insufficient-funds";
+            throw error;
+          }
+          const result = await window.buyFish(item.id, { appearanceVariantKey: item.variantKey });
+          if (!result?.ok) {
+            const error = new Error(result?.errorMessage || `${item.name} could not be purchased.`);
+            if (result?.reason === "insufficient-coins") error.code = "insufficient-funds";
+            throw error;
+          }
+          await waitForTankazonRender();
+          return;
+        }
+
         const button = await ensureTankazonNativePurchaseButton(item);
         if (!button) {
           throw new Error(`Could not find the native purchase control for ${item.name}.`);
@@ -1762,6 +1963,18 @@
           const error = new Error("Payment method declined. Insufficient Funds.");
           error.code = "insufficient-funds";
           throw error;
+        }
+
+        if (item.fnName === "buySubmarine" && typeof window.buySubmarine === "function") {
+          if (!window.buySubmarine({ appearanceVariantKey: item.variantKey })) throw new Error(`${item.name} could not be purchased.`);
+          await waitForTankazonRender();
+          return;
+        }
+
+        if (item.fnName === "buyBoat" && typeof window.buyBoat === "function") {
+          if (!window.buyBoat({ appearanceVariantKey: item.variantKey })) throw new Error(`${item.name} could not be purchased.`);
+          await waitForTankazonRender();
+          return;
         }
 
         // completingPurchase=true makes Tankazon's capture listener stand aside,
@@ -1799,17 +2012,31 @@
         completingPurchase = true;
         if (button) {
           button.disabled = true;
-          button.textContent = "Completing...";
+          button.textContent = "Buying...";
         }
 
         try {
-          const items = [...cart.values()];
+          const items = [...cart.values()].map((item) => ({ ...item }));
 
-          for (const item of items) {
-            for (let i = 0; i < item.quantity; i += 1) {
-              await executeTankazonNativePurchase(item);
+          window.setStorePurchaseSoundBatch?.(true);
+          try {
+            for (const item of items) {
+              for (let i = 0; i < item.quantity; i += 1) {
+                await executeTankazonNativePurchase(item);
+                const remaining = cart.get(item.key);
+                if (remaining) {
+                  remaining.quantity -= 1;
+                  if (remaining.quantity <= 0) cart.delete(item.key);
+                }
+                saveTankazonCart();
+                renderCart();
+              }
             }
+          } finally {
+            window.setStorePurchaseSoundBatch?.(false);
           }
+
+          window.playPurchaseSoundEffect?.();
 
           cart.clear();
           saveTankazonCart();
@@ -1820,7 +2047,13 @@
 
           setTimeout(() => {
             if (delivery) delivery.hidden = true;
-            document.getElementById("closeStoreOverlay")?.click();
+            // Guided purchases close the store themselves before moving to the
+            // next task. Do not click a hidden close button later: on the next
+            // task that click is interpreted as a request to skip the tutorial.
+            const store = overlay();
+            if (store && !store.hidden && store.classList.contains("is-open")) {
+              document.getElementById("closeStoreOverlay")?.click();
+            }
           }, 1250);
         } catch (error) {
           console.error("Tankazon checkout failed", error);
@@ -1833,17 +2066,58 @@
 
           if (button) {
             button.disabled = false;
-            button.textContent = "Complete Purchase";
+            button.textContent = "Buy";
           }
         } finally {
           completingPurchase = false;
+          if (button) {
+            button.textContent = "Buy";
+            button.disabled = cart.size === 0;
+          }
           queueMicrotask(normalizeTankazonPurchaseButtons);
         }
       }
 
+      window.addEventListener("bubbleborough:store-tab", (event) => {
+        const category = event.detail?.category;
+        if (!category || !getTankazonCategoryTab(category)) return;
+        if (selectedItem) closeTankazonItem(false);
+        allCategoriesMode = false;
+        document.getElementById("tankazonAllCategories")?.classList.remove("is-active");
+        document.getElementById("tankazonAllCategories")?.setAttribute("aria-pressed", "false");
+        const select = document.getElementById("tankazonSearchScope");
+        if (select) select.value = category;
+        saveTankazonView(category);
+        applySearch({ preserveScroll: false });
+      });
+
       document.addEventListener("click", (event) => {
+        const variantButton = event.target.closest?.("[data-tankazon-variant]");
+        if (variantButton && selectedItem && !completingPurchase) {
+          selectedItem = selectTankazonFishVariant(selectedItem, variantButton.dataset.tankazonVariant);
+          document.querySelector("#tankazonItemImage img")?.setAttribute("src", selectedItem.image);
+          document.getElementById("tankazonItemVariantLabel").textContent = `Appearance: ${selectedItem.variantLabel}`;
+          document.getElementById("tankazonItemStatus").textContent = "";
+          document.querySelectorAll("[data-tankazon-variant]").forEach((button) => {
+            button.setAttribute("aria-pressed", String(button.dataset.tankazonVariant === selectedItem.variantKey));
+          });
+          syncTankazonItem();
+          return;
+        }
+        const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb");
+        if (preview) { event.preventDefault(); openTankazonItem(preview); return; }
+        if (event.target.closest?.("#tankazonItemBack")) { closeTankazonItem(); return; }
+        if (event.target.closest?.("#tankazonItemBuy")) { buyTankazonItemNow(); return; }
+        if (event.target.closest?.("#tankazonItemAdd")) {
+          syncTankazonItem();
+          if (selectedItem && !document.getElementById("tankazonItemAdd").disabled) {
+            addToCart(selectedItem);
+            document.getElementById("tankazonItemStatus").textContent = `${selectedItem.name} in cart (${cart.get(selectedItem.key).quantity}).`;
+          }
+          return;
+        }
         const purchaseButton = event.target.closest?.("#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]");
-        if (purchaseButton && !completingPurchase) {
+        if (purchaseButton && !completingPurchase && !window.isGuidedTutorialActive?.()) {
           event.preventDefault();
           event.stopPropagation();
           event.stopImmediatePropagation();
@@ -1887,6 +2161,7 @@
         }
         const tab = event.target.closest?.(".store-tab-button");
         if (tab) {
+          closeTankazonItem(false);
           allCategoriesMode = false;
           document.getElementById("tankazonAllCategories")?.classList.remove("is-active");
           document.getElementById("tankazonAllCategories")?.setAttribute("aria-pressed", "false");
@@ -1899,12 +2174,19 @@
       }, true);
 
       document.addEventListener("keydown", (event) => {
+        const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb");
+        if (preview && ["Enter", " "].includes(event.key)) {
+          event.preventDefault();
+          openTankazonItem(preview);
+          return;
+        }
         if (event.target?.id !== "tankazonSearchInput" || event.key !== "Enter") return;
         event.preventDefault();
         commitTankazonSearch();
       });
       document.addEventListener("change", (event) => {
         if (event.target?.id !== "tankazonSearchScope") return;
+        closeTankazonItem(false);
         allCategoriesMode = event.target.value === "all";
         saveTankazonView(event.target.value);
         syncTankazonNavState();
@@ -1914,6 +2196,7 @@
 
       const catalogArea = document.getElementById("tankazonCatalogArea");
       catalogArea?.addEventListener("scroll", () => {
+        if (selectedItem) return;
         if (allCategoriesMode) {
           allCategoriesScrollTop = catalogArea.scrollTop;
         } else if (query()) {
@@ -1939,7 +2222,7 @@
           const justOpened = isStoreOpen && !wasStoreOpen;
           wasStoreOpen = isStoreOpen;
 
-          if (!isStoreOpen) return;
+          if (!isStoreOpen) { closeTankazonItem(false); return; }
 
           if (justOpened) {
             const savedView = storeOverlay.dataset.requestedCategory || restoreTankazonView();

@@ -190,6 +190,8 @@ function createFishRecord(speciesId, options = {}) {
     motionLevel: 0.2,
     wiggleClock: Math.random() * Math.PI * 2,
     appearanceVariant,
+    appearanceVariantKey: typeof options.appearanceVariantKey === "string" ? options.appearanceVariantKey : null,
+    appearanceAssetPath: typeof options.appearanceAssetPath === "string" ? options.appearanceAssetPath : null,
     scale,
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(options.behaviorSpeciesId, speciesId),
     fishColor: normalizeDecorColorSetting(options.fishColor ?? options.colorSetting ?? ""),

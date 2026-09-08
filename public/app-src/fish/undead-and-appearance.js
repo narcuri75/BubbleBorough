@@ -667,6 +667,13 @@ function getFishAssetPath(fish, species = getSpeciesForFish(fish)) {
     return species?.asset || species?.fallbackAsset || null;
   }
 
+  const purchasedAssetKey = getFishAppearanceVariantKey(fish?.appearanceAssetPath);
+  const purchasedAsset = variants.find((path) => getFishAppearanceVariantKey(path) === purchasedAssetKey);
+  if (purchasedAsset) return purchasedAsset;
+
+  const chosen = variants.find((path) => getFishAppearanceVariantKey(path) === fish?.appearanceVariantKey);
+  if (chosen) return chosen;
+
   return variants[normalizeFishAppearanceVariantIndex(fish?.appearanceVariant, species, fish)] || variants[0] || species?.fallbackAsset || species?.asset || null;
 }
 
@@ -806,10 +813,12 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   }
 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  const freeSwimAsset = !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
+  const selectedAlternate = Boolean(fish?.appearanceVariantKey && fish.appearanceVariantKey !== getFishAppearanceVariantKey(displaySpecies.asset));
+  const selectedFishAsset = getFishAssetPath(fish, displaySpecies);
+  const freeSwimAsset = !selectedAlternate && !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
     ? (getSuckerFishFreeSwimAssetPath(displaySpecies) || getSuckerFishFreeSwimAssetPath(species))
     : null;
-  const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
+  const frontGlassAsset = !selectedAlternate && !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
     ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
     : null;
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
@@ -826,13 +835,15 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
         || null
       )
       : (freeSwimAsset || frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
-  const baseAsset = [
-    preferredBaseAsset,
-    displaySpecies.fallbackAsset,
-    displaySpecies.asset,
-    species.fallbackAsset,
-    species.asset
-  ].find((path) => path && runtime.images.has(path)) || preferredBaseAsset;
+  const baseAsset = selectedAlternate && selectedFishAsset
+    ? selectedFishAsset
+    : [
+      preferredBaseAsset,
+      displaySpecies.fallbackAsset,
+      displaySpecies.asset,
+      species.fallbackAsset,
+      species.asset
+    ].find((path) => path && runtime.images.has(path)) || preferredBaseAsset;
   const stage = isGoreEnabled() ? getFishDecayStage(fish, now) : null;
   if (
     !stage

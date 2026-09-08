@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'" />
+    content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob: https://idljwswasrxtifbkioyg.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#031429" />
@@ -43,7 +43,7 @@
     <div id="loadingOverlayUnderwater" class="tank-stage-underwater loading-overlay-underwater" aria-hidden="true"></div>
     <div class="loading-overlay-content">
       <img class="loading-overlay-logo" src="assets/misc/bb_logo.png" alt="Bubble Borough" />
-      <div class="loading-overlay-text">Loading Aquarium</div>
+      <div class="loading-overlay-text">Loading</div>
     </div>
   </div>
 
@@ -71,6 +71,7 @@
             </section>
 
           <div class="tank-overlay">
+            <section id="selectedFishNeedsPanel" class="selected-fish-needs-panel" hidden aria-label="Fish companion" data-preserve-fish-selection></section>
             <section class="tank-display">
               <button id="displayTab" class="display-tab" type="button" title="Hide Display"
                 aria-label="Hide Display">^</button>
@@ -505,6 +506,13 @@
 
                 <div class="wallpaper-scroll-shell settings-scroll-shell">
                   <div class="settings-panel-body" data-wallpaper-scroll-target="settings">
+                  <section class="settings-section">
+                    <h3>Account / Cloud Save</h3>
+                    <div data-cloud-account-panel>
+                      <p class="settings-section-note">Cloud account controls are loading.</p>
+                    </div>
+                  </section>
+
                   <section class="settings-section">
                     <h3>Data</h3>
                     <p class="settings-section-note">Export, import, or reset your aquarium save.</p>
@@ -1805,7 +1813,7 @@
           document.querySelector("#closeUtilityOverlay")?.click();
           const loadingText = document.querySelector(".loading-overlay-text");
           if (loadingText) {
-            loadingText.textContent = "Loading Aquarium";
+            loadingText.textContent = "Loading";
           }
           document.querySelector("#loadingOverlay")?.classList.remove("is-hiding");
           window.setTimeout(() => window.location.reload(), 80);

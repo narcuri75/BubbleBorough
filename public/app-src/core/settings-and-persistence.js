@@ -1023,6 +1023,7 @@ function reconcileState(rawState) {
     version: STATE_VERSION,
     healthModelVersion: HEALTH_MODEL_VERSION,
     coins: STARTING_COINS,
+    walletTransactions: [],
     lifetimeDeaths: 0,
     mealHistory: {},
     lastGravelCoinFoundAt: 0,
@@ -1037,8 +1038,10 @@ function reconcileState(rawState) {
     tanks: [createTankState({ now, name: buildDefaultTankName(0) })],
     machinery: [],
     storedSubmarine: null,
+    storedSubmarines: [],
     submarineOwned: false,
     storedBoat: null,
+    storedBoats: [],
     boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
@@ -1073,16 +1076,30 @@ function reconcileState(rawState) {
     : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel })];
   normalizeAquariumSectionGrid(tanks);
   const machinery = sanitizeMachineryState(incoming.machinery, tanks, now);
-  const storedSubmarine = machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE)
-    ? null
-    : sanitizeStoredSubmarineState(incoming.storedSubmarine, now);
-  const storedBoat = machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT)
-    ? null
-    : sanitizeStoredBoatState(incoming.storedBoat, now);
+  const storedSubmarines = (Array.isArray(incoming.storedSubmarines)
+    ? incoming.storedSubmarines
+    : [incoming.storedSubmarine]
+  ).map((item) => sanitizeStoredSubmarineState(item, now)).filter(Boolean);
+  const storedBoats = (Array.isArray(incoming.storedBoats)
+    ? incoming.storedBoats
+    : [incoming.storedBoat]
+  ).map((item) => sanitizeStoredBoatState(item, now)).filter(Boolean);
+  const storedSubmarine = storedSubmarines[0] || null;
+  const storedBoat = storedBoats[0] || null;
 
   const nextState = {
     ...base,
     coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
+    walletTransactions: Array.isArray(incoming.walletTransactions)
+      ? incoming.walletTransactions.map((entry) => ({
+        id: typeof entry?.id === "string" ? entry.id.slice(0, 80) : createId("receipt"),
+        amount: clamp(Math.floor(Math.abs(Number(entry?.amount) || 0)), 0, MAX_WALLET_COINS),
+        direction: entry?.direction === "debit" ? "debit" : "credit",
+        label: typeof entry?.label === "string" ? entry.label.slice(0, 180) : "Aquarium activity",
+        place: typeof entry?.place === "string" ? entry.place.slice(0, 80) : "Aquarium",
+        time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now
+      })).filter((entry) => entry.amount > 0).sort((left, right) => right.time - left.time).slice(0, 60)
+      : base.walletTransactions,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     lastGravelCoinFoundAt: Math.max(
@@ -1100,9 +1117,11 @@ function reconcileState(rawState) {
     tanks,
     machinery,
     storedSubmarine,
-    submarineOwned: incoming.submarineOwned === true || Boolean(storedSubmarine) || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
+    storedSubmarines,
+    submarineOwned: incoming.submarineOwned === true || storedSubmarines.length > 0 || machinery.some((item) => item?.type === MACHINERY_TYPE_SUBMARINE),
     storedBoat,
-    boatOwned: incoming.boatOwned === true || Boolean(storedBoat) || machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT),
+    storedBoats,
+    boatOwned: incoming.boatOwned === true || storedBoats.length > 0 || machinery.some((item) => item?.type === MACHINERY_TYPE_BOAT),
     activeTankId: typeof incoming.activeTankId === "string" && tanks.some((tank) => tank.id === incoming.activeTankId)
       ? incoming.activeTankId
       : (tanks[0]?.id || null),

@@ -7,6 +7,81 @@ const vm = require("node:vm");
 const ts = require("typescript");
 const root = path.join(__dirname, "../public/app-src");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function loadTankazonFunctions(names, bindings) {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
+    .map(match => match[1]).find(source => source.includes("const TANKAZON_CART_STORAGE_KEY"));
+  const parsed = ts.createSourceFile("tankazon.js", script, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  assert.equal(parsed.parseDiagnostics.length, 0);
+  const context = vm.createContext({ ...bindings });
+  const visit = node => {
+    if (ts.isFunctionDeclaration(node) && names.includes(node.name?.text)) vm.runInContext(node.getText(parsed), context);
+    ts.forEachChild(node, visit);
+  };
+  visit(parsed);
+  return context;
+}
+
+test("Tankazon Buy Now purchases only the selected item and ignores repeated clicks while pending", async () => {
+  const status = { textContent: "" };
+  const cart = new Map([["food", { quantity: 3 }]]);
+  let finishPurchase;
+  const purchased = [];
+  const c = loadTankazonFunctions(["buyTankazonItemNow"], {
+    selectedItem: { key: "fish:danio", name: "Danio", cost: 3 }, completingPurchase: false, cart,
+    document: { getElementById: () => status }, syncTankazonItem() {}, normalizeTankazonPurchaseButtons() {},
+    executeTankazonNativePurchase: item => { purchased.push(item); return new Promise(resolve => { finishPurchase = resolve; }); }
+  });
+  const pending = c.buyTankazonItemNow();
+  await c.buyTankazonItemNow();
+  assert.equal(purchased.length, 1);
+  assert.equal(purchased[0].key, "fish:danio");
+  assert.equal(c.completingPurchase, true);
+  finishPurchase();
+  await pending;
+  assert.equal(c.completingPurchase, false);
+  assert.equal(status.textContent, "Danio purchased!");
+  assert.equal(cart.get("food").quantity, 3);
+});
+
+test("Tankazon Buy Now reports insufficient funds and releases purchase controls", async () => {
+  const status = { textContent: "" };
+  let nativeClicks = 0;
+  const c = loadTankazonFunctions(["buyTankazonItemNow", "executeTankazonNativePurchase"], {
+    selectedItem: { key: "fish:danio", name: "Danio", cost: 3 }, completingPurchase: false,
+    document: { getElementById: () => status }, syncTankazonItem() {}, normalizeTankazonPurchaseButtons() {},
+    ensureTankazonNativePurchaseButton: async () => ({ disabled: false, textContent: "Buy", click() { nativeClicks++; } }),
+    getTankazonCoinBalance: () => 2
+  });
+  await c.buyTankazonItemNow();
+  assert.equal(nativeClicks, 0);
+  assert.equal(c.completingPurchase, false);
+  assert.match(status.textContent, /Not enough coins/);
+});
+
+test("Tankazon back restores the prior scroll and focus without resetting search", () => {
+  const catalog = { scrollTop: 0 };
+  const page = { hidden: false };
+  let focused = false;
+  let searched = false;
+  const c = loadTankazonFunctions(["closeTankazonItem"], {
+    selectedItem: { key: "fish:danio" }, itemReturnScrollTop: 640,
+    allCategoriesMode: true, allCategoriesScrollTop: 0, committedSearchScrollTop: 0,
+    query: () => "danio", applySearch: () => { searched = true; },
+    document: { getElementById: id => id === "tankazonItemPage" ? page : catalog },
+    overlay: () => ({ classList: { remove() {} } }),
+    findTankazonNativePurchaseButton: () => ({ closest: () => ({ querySelector: () => ({ focus: () => { focused = true; } }) }) })
+  });
+  c.closeTankazonItem();
+  assert.equal(page.hidden, true);
+  assert.equal(c.selectedItem, null);
+  assert.equal(catalog.scrollTop, 640);
+  assert.equal(c.allCategoriesScrollTop, 640);
+  assert.equal(c.committedSearchScrollTop, 640);
+  assert.equal(focused && searched, true);
+  assert.equal(c.query(), "danio");
+});
+
 function load(file, names, bindings = {}) {
   const source = fs.readFileSync(path.join(root, file), "utf8");
   const parsed = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
@@ -16,6 +91,251 @@ function load(file, names, bindings = {}) {
   }
   return context;
 }
+
+test("legacy needs preserve hunger while retired meters and habitat recover without chores", () => {
+  const keys = ["hunger", "energy", "social", "comfort", "hygiene", "environment", "stimulation"];
+  const defaults = { hunger: 68, energy: 80, social: 80, comfort: 94, hygiene: 100, environment: 100, stimulation: 80 };
+  const c = load("fish/needs-disease-and-behavior.js", ["sanitizeFishNeeds", "getFishNeedsMood"], {
+    FISH_NEED_KEYS: keys, FISH_NEED_DEFAULTS: defaults, getDerivedFishNeedDefaults: () => defaults
+  });
+  const legacy = Object.fromEntries(keys.map(key => [key, 0]));
+  legacy.hunger = 41;
+  const restored = c.sanitizeFishNeeds(legacy, { id: "old-fish" });
+  assert.equal(restored.hunger, 41);
+  for (const key of ["energy", "social", "stimulation"]) assert.equal(restored[key], 80);
+  assert.equal(restored.hygiene, 100);
+  assert.equal(restored.comfort, 94);
+  const other = { ...restored, energy: 0, social: 0, stimulation: 0 };
+  assert.equal(c.getFishNeedsMood(other).value, c.getFishNeedsMood(restored).value);
+  assert.equal(legacy.energy, 0, "reading a save must not mutate its source object");
+});
+
+test("six hours of ordinary activity only depletes food, and grazers do not lose hunger", () => {
+  const c = load("fish/meals-and-needs.js", ["calculateFishNeedDeltas"], {
+    HOUR_MS: 3600000, getSpeciesForFish: () => ({}), isFishDead: () => false,
+    isUndeadFish: () => false, isMealFreeFish: fish => fish.grazer,
+    getPersonalityNeedModifier: () => 1
+  });
+  const deltas = c.calculateFishNeedDeltas({ activity: "roam", motionLevel: 1 }, 0, 6 * 3600000);
+  assert.equal(deltas.hunger, -15);
+  for (const key of ["energy", "social", "comfort", "hygiene", "environment", "stimulation"]) assert.equal(deltas[key], 0);
+  assert.equal(c.calculateFishNeedDeltas({ grazer: true }, 0, 6 * 3600000).hunger, 0);
+});
+
+test("routine effects cannot refill habitat or reintroduce a retired meter", () => {
+  const c = load("fish/meals-and-needs.js", ["setFishNeedValue"], {
+    FISH_NEED_KEYS: ["hunger", "energy", "comfort"], sanitizeFishNeeds: value => ({ ...value })
+  });
+  const fish = { needs: { hunger: 45, energy: 80, comfort: 40 } };
+  assert.equal(c.setFishNeedValue(fish, "energy", 0), false);
+  assert.equal(c.setFishNeedValue(fish, "comfort", 100), false);
+  assert.equal(fish.needs.comfort, 40);
+  assert.equal(c.setFishNeedValue(fish, "hunger", 95), true);
+});
+
+test("sleep is expressive while care hints remain specific and prioritize urgent food", () => {
+  const fish = { id: "pebble", personality: "shy" };
+  let dirty = 0;
+  let missing = [];
+  const c = load("fish/meals-and-needs.js", ["getFishCareStatus", "getFishDisposition"], {
+    FISH_HUNGER_LOW_THRESHOLD: 55, FISH_HUNGER_CRITICAL_THRESHOLD: 14,
+    FISH_GRAVEL_PEBBLE_ACTIVITY: "pebble", isFishDead: () => false, isUndeadFish: () => false,
+    isMealFreeFish: f => f.grazer, isFishDiseaseVisible: () => false,
+    getTankDirtiness: () => dirty, getCurrentTank: () => ({}), getFishConflictStatus: () => [],
+    getFishNeedsStatus: () => missing, getActiveFishActionQueueItem: () => ({ action: "sleep" }),
+    sanitizeBehaviorIntent: () => null, runtime: { fishActionSteeringByFishId: new Map() }
+  });
+  assert.equal(c.getFishDisposition(fish).mood, "Sleepy");
+  assert.equal(c.getFishCareStatus(fish, 0, { hunger: 90, energy: 0 }), null);
+  dirty = 0.8;
+  assert.match(c.getFishCareStatus(fish, 0, { hunger: 90 }).text, /tank.*clean/);
+  assert.match(c.getFishCareStatus(fish, 0, { hunger: 0 }).text, /Very hungry/);
+  dirty = 0;
+  missing = [{ tag: "cave", label: "Cave", met: false }];
+  assert.match(c.getFishCareStatus(fish, 0, { hunger: 90 }).text, /Add a cave/);
+  missing = [];
+  assert.equal(c.getFishCareStatus({ grazer: true }, 0, { hunger: 0 }), null);
+});
+
+test("fed fish choose personality routines without waiting for depleted meters", () => {
+  const random = Object.create(Math);
+  random.random = () => 0.999;
+  const c = load("fish/actions.js", ["pickAutonomousFishAction"], {
+    Math: random, sanitizeFishNeeds: () => ({ hunger: 90 }), isMealFreeFish: () => false,
+    FISH_HUNGER_LOW_THRESHOLD: 55, isTankLightsOut: () => false,
+    getFishPersonality: fish => fish.personality, getFishActionAvailability: () => ({ enabled: true }),
+    getFishActionPartner: () => ({ id: "pip" }), getRelationshipKindForFish: () => "neutral"
+  });
+  assert.equal(c.pickAutonomousFishAction({ personality: "playful" }), "pebble");
+  assert.equal(c.pickAutonomousFishAction({ personality: "curious" }), "play");
+  assert.equal(c.pickAutonomousFishAction({ personality: "social" }), "greet");
+  assert.equal(c.pickAutonomousFishAction({ personality: "social", relationships: { pip: { kind: "fear" } } }), "rest");
+  c.isTankLightsOut = () => true;
+  c.isNightActiveFish = () => false;
+  assert.equal(c.pickAutonomousFishAction({}), "sleep");
+});
+
+test("autonomy spaces decisions and leaves active routines and feeding alone", () => {
+  const fish = { id: "a", activity: "roam" };
+  const queues = new Map();
+  let starts = 0;
+  const c = load("fish/actions.js", ["processFishNeedsAutonomy"], {
+    runtime: {}, getLivingTankFish: () => [fish], isUndeadFish: () => false,
+    randomBetween: a => a, isMealFreeFish: () => false, getFishNeedValue: () => 0,
+    FISH_HUNGER_CRITICAL_THRESHOLD: 14, pickAutonomousFishAction: () => "rest",
+    getFishActionAvailability: () => ({ enabled: true }), getFishActionConfig: () => ({}),
+    createFishActionQueueItem: () => ({ action: "rest", autonomous: true }),
+    getFishActionQueueState: (id, options) => {
+      if (!queues.has(id) && options?.create) queues.set(id, { active: null, items: [] });
+      return queues.get(id);
+    },
+    promoteNextFishActionQueueItem: id => { starts++; const q = queues.get(id); q.active = q.items.shift(); return true; }
+  });
+  c.processFishNeedsAutonomy(1000);
+  c.processFishNeedsAutonomy(2000);
+  assert.equal(starts, 0);
+  c.processFishNeedsAutonomy(6000);
+  assert.equal(starts, 1);
+  c.processFishNeedsAutonomy(100000);
+  assert.equal(starts, 1, "critical hunger must not cancel and restart a routine every update");
+  queues.clear();
+  fish.activity = "feeding";
+  c.processFishNeedsAutonomy(200000);
+  assert.equal(starts, 1);
+});
+
+test("repeated invitations cannot build an invisible player queue", () => {
+  const queue = { active: { action: "play", autonomous: false }, items: [] };
+  const messages = [];
+  const c = load("fish/actions.js", ["offerFishInteraction"], {
+    getManagedFishById: () => ({ fish: { id: "a", name: "Pip" } }), isFishDead: () => false,
+    getFishActionQueueState: () => queue, showToast: text => messages.push(text)
+  });
+  assert.equal(c.offerFishInteraction("play", "a"), false);
+  assert.equal(c.offerFishInteraction("treat", "a"), false);
+  assert.equal(queue.items.length, 0);
+  assert.equal(messages.length, 2);
+});
+
+test("offering a treat uses compatible inventory and cannot create free food", () => {
+  const c = load("fish/actions.js", ["getFishActionMealFoodKey", "canCreateFishActionMealPellet", "createFishActionMealPellet"], {
+    state: { foodInventory: { basic: 0, flakes: 1, chum: 4 }, floatingPellets: [] }, runtime: {},
+    isMealFreeFish: () => false, getFishNeedValue: () => 50, getFoodMeta: key => ({ id: key }),
+    canFoodSatisfyFishMeal: (fish, key) => key !== "chum", canFishEatFoodPellet: () => true,
+    sanitizePellet: value => value, createId: () => "bite", WATER_SURFACE_Y: 100, TANK_HEIGHT: 1000,
+    FOOD_PELLET_SINK_DURATION_MS: 1000, FOOD_PELLET_SETTLED_LIFETIME_MS: 10000,
+    randomBetween: a => a, ensureMealHistoryEntry: () => null, getLocalDayKey: () => "today"
+  });
+  const fish = { id: "a" };
+  assert.equal(c.getFishActionMealFoodKey(fish), "flakes");
+  assert.equal(c.createFishActionMealPellet(fish).foodKey, "flakes");
+  assert.equal(c.state.foodInventory.flakes, 0);
+  assert.equal(c.createFishActionMealPellet(fish), null);
+  assert.equal(c.state.floatingPellets.length, 1);
+  assert.equal(c.state.foodInventory.chum, 4);
+});
+
+test("opening the companion card keeps a fish's movement and current meal intact", () => {
+  const fish = { id: "a", activity: "feeding", feedingPelletId: "lunch", targetAt: 3000, xNorm: 0.5, yNorm: 0.5 };
+  const before = JSON.stringify(fish);
+  const c = load("ui/customization-actions-and-inventory.js", ["openFishActionMenu"], {
+    runtime: {}, getManagedFishById: () => ({ fish }), isFishDead: () => false,
+    clearFishInspectorDisplayDocking() {}, releaseFishActionMenuHold() {},
+    closeFishActionSubmenu() {}, closeFishActionTargetMenu() {}, renderUi() {}
+  });
+  c.openFishActionMenu("a");
+  assert.equal(JSON.stringify(fish), before);
+  assert.equal(c.runtime.selectedFishStatusFishId, "a");
+});
+
+test("fish discovers numbered artwork through _5 with gaps, and ignores absent variants", async () => {
+  const requests = [];
+  const available = new Set(["assets/fish/guppy_1.png", "assets/fish/guppy_3.png", "assets/fish/guppy_5.png"]);
+  class TestImage {
+    set src(path) {
+      requests.push(path);
+      this.naturalWidth = available.has(path) ? 100 : 0;
+      queueMicrotask(() => this.naturalWidth ? this.onload?.() : this.onerror?.());
+    }
+  }
+  const c = load("fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishStoreVariants", "getFishAppearanceVariantKey", "discoverFishAppearanceVariants"], {
+    Image: TestImage, runtime: { images: new Map() }, setTimeout, clearTimeout
+  });
+  const fish = { asset: "assets/fish/guppy.png" };
+  const plain = { asset: "assets/fish/goldfish.png" };
+  await c.discoverFishAppearanceVariants([fish, plain]);
+  assert.deepEqual(Array.from(fish.assetVariants), [fish.asset, ...available]);
+  assert.deepEqual(Array.from(plain.assetVariants), [plain.asset]);
+  assert.equal(requests.length, 10);
+  assert.deepEqual(Array.from(c.getFishStoreVariants(fish), entry => entry.label), ["Main", "Variant 1", "Variant 3", "Variant 5"]);
+});
+
+test("a saved fish keeps its chosen artwork when new variants change numeric indices", () => {
+  const helpers = load("fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishAppearanceVariantKey"]);
+  const species = { asset: "guppy.png", assetVariants: ["guppy.png", "guppy_1.png", "guppy_3.png"] };
+  const c = load("fish/undead-and-appearance.js", ["getFishAssetPath", "normalizeFishAppearanceVariantIndex"], {
+    getFishAssetVariants: helpers.getFishAssetVariants, getFishAppearanceVariantKey: helpers.getFishAppearanceVariantKey,
+    getFishAppearanceVariantSeed: () => 0
+  });
+  const fish = JSON.parse(JSON.stringify({ appearanceVariant: 1, appearanceVariantKey: "guppy_3.png", appearanceAssetPath: "guppy_3.png" }));
+  assert.equal(c.getFishAssetPath(fish, species), "guppy_3.png");
+  species.assetVariants.splice(2, 0, "guppy_2.png");
+  assert.equal(c.getFishAssetPath(fish, species), "guppy_3.png");
+  assert.equal(c.getFishAssetPath({ appearanceVariant: 1 }, species), "guppy_1.png");
+});
+
+test("fish purchases save the selected version per fish, default to main, and reject missing variants", async () => {
+  const helpers = load("fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishAppearanceVariantKey"]);
+  const species = { id: "guppy", name: "Guppy", asset: "guppy.png", assetVariants: ["guppy.png", "guppy_3.png"] };
+  const state = { coins: 20 };
+  const fish = [];
+  const c = load("store/purchases.js", ["buyFish"], {
+    state, runtime: { fishMap: new Map([["guppy", species]]), pendingFishPurchases: new Set() },
+    ...Object.fromEntries(["isInfoOnlyTutorialActive", "isCustomFishShopKey", "isUndeadSpecies", "isGuidedTutorialActive"].map(name => [name, () => false])),
+    isFishSpeciesShopUnlocked: () => true, getFishPurchaseCost: () => 4,
+    getFishAssetVariants: helpers.getFishAssetVariants, getFishAppearanceVariantKey: helpers.getFishAppearanceVariantKey,
+    getFishAssetPath: (record, entry) => entry.assetVariants[record.appearanceVariant],
+    FISH_ENTRY_DURATION_MS: 100, FISH_ENTRY_FROM_Y_NORM: 0,
+    createFishRecord: (speciesId, options) => ({ ...options, speciesId, id: String(fish.length), name: "Gup" }),
+    ensureFishPurchaseImageReady: async () => true,
+    performCoinTransaction: transaction => { state.coins -= transaction.amount; transaction.apply(); return { ok: true }; },
+    addFishToTank: record => fish.push(record), maybeSeedNewFishDiseaseCarrier() {}, isMealFreeFish: () => true,
+    getFishDisplaySpeciesName: () => "Guppy", pluralize: word => word
+  });
+  assert.equal((await c.buyFish("guppy", { appearanceVariantKey: "guppy_3.png" })).ok, true);
+  assert.equal((await c.buyFish("guppy")).ok, true);
+  assert.equal(fish[0].appearanceVariantKey, "guppy_3.png");
+  assert.equal(fish[0].appearanceAssetPath, "guppy_3.png");
+  assert.equal(fish[0].appearanceVariant, 1);
+  assert.equal(fish[1].appearanceVariantKey, "guppy.png");
+  assert.equal(state.coins, 12);
+  assert.equal((await c.buyFish("guppy", { appearanceVariantKey: "guppy_4.png" })).reason, "variant-unavailable");
+  assert.equal(state.coins, 12);
+  assert.equal(fish.length, 2);
+});
+
+test("Tankazon keeps different fish variants in separate cart entries and forwards the exact selection", async () => {
+  const bought = [];
+  const c = loadTankazonFunctions(["selectTankazonFishVariant", "executeTankazonNativePurchase", "addToCart"], {
+    cart: new Map(), purchaseErrorMessage: "", saveTankazonCart() {}, renderCart() {},
+    ensureTankazonNativePurchaseButton: async () => ({ disabled: false, textContent: "Buy" }),
+    getTankazonCoinBalance: () => 20, waitForTankazonRender: async () => {},
+    window: { buyFish: async (id, options) => { bought.push({ id, ...options }); return { ok: true }; } }
+  });
+  const item = { fnName: "buyFish", id: "guppy", cost: 4, baseName: "Guppy", variants: [
+    { key: "guppy.png", image: "guppy.png", label: "Main" },
+    { key: "guppy_3.png", image: "guppy_3.png", label: "Variant 3" }
+  ] };
+  const main = c.selectTankazonFishVariant(item, "guppy.png");
+  const variant = c.selectTankazonFishVariant(item, "guppy_3.png");
+  c.addToCart(main); c.addToCart(variant); c.addToCart(variant);
+  assert.equal(c.cart.size, 2);
+  assert.equal(c.cart.get(main.key).quantity, 1);
+  assert.equal(c.cart.get(variant.key).quantity, 2);
+  assert.equal(variant.name, "Guppy (Variant 3)");
+  await c.executeTankazonNativePurchase(variant);
+  assert.deepEqual(bought, [{ id: "guppy", appearanceVariantKey: "guppy_3.png" }]);
+});
 
 test("Halloween switches both machines and respects local October boundaries", () => {
   const state = { uiSettings: { halloweenMode: "automatic" } };
@@ -157,6 +477,20 @@ test("failed food deployment backs off instead of retrying every frame", () => {
   assert.equal(calls, 1);
 });
 
+test("submarine calms a fish that recently refused food before trying another pellet", () => {
+  const c = load("machinery/submarine.js", ["findSubmarineCareCandidate", "isSubmarineCalmingNeed", "normalizeSubmarineResourceCount"], {
+    SUBMARINE_RESOURCE_CAPACITY: 99, SUBMARINE_COMFORT_THRESHOLD: .45, SUBMARINE_HUNGER_THRESHOLD: 40,
+    sanitizeSubmarineInventory: value => value,
+    getAllTanks: () => [{ id: "tank", fish: [{ id: "orca", healthUnits: 8, foodRefusalUntil: 20000 }] }],
+    isTankReachableBySubmarine: () => true, isFishDead: () => false,
+    getFishMaxHealthUnits: () => 8, hasSubmarineMedicineEffect: () => false,
+    getSubmarineFishComfort: () => .9, getSubmarineFishHunger: () => 15
+  });
+  const candidate = c.findSubmarineCareCandidate({ inventory: { food: 5, health: 0, calming: 2 } }, 10000);
+  assert.equal(candidate.kind, "calming");
+  assert.equal(candidate.fishId, "orca");
+});
+
 test("stored submarine roundtrip preserves supplies and controls", () => {
   const c = load("machinery/submarine.js", [
     "normalizeSubmarineResourceCount",
@@ -276,6 +610,10 @@ test("insufficient purchases use the red payment error and Tankazon exposes the 
   const machinery = fs.readFileSync(path.join(root, "machinery/submarine.js"), "utf8");
   assert.match(html, /data-buy-boat/);
   assert.match(machinery, /data-buy-boat="true"/);
+  assert.match(source, /function setStorePurchaseSoundBatch/);
+  assert.match(html, /window\.setStorePurchaseSoundBatch\?\.\(true\)/);
+  assert.match(html, /window\.playPurchaseSoundEffect\?\.\(\)/);
+  assert.match(html, />Buy<\/button>/);
 });
 
 test("pilot fish remains while axolotl and nautilus are absent", () => {
@@ -478,13 +816,13 @@ test("fish caustics stay at the same world point through movement, turns, and ca
   const camera=new Matrix([1.8,0,0,1.8,-30,24]);
   const c = load("rendering/fish-and-effects.js", ["drawFishCausticLight"], {
     DOMMatrix:Matrix, runtime:{causticTexture:{frame:1}},
-    getCausticLightStrength:()=>.24, getAnimatedCausticTexture:()=>({}),
+    getCausticLightStrength:()=>.24, getAnimatedCausticTexture:()=>({}), WATER_SURFACE_Y: 60, TANK_WIDTH: 1600, TANK_HEIGHT: 900,
     document:{createElement:()=>({getContext:()=>({
       setTransform(){},clearRect(){},drawImage(){},
       createPattern:()=>({setTransform:m=>{patternTransform=m;}}), fillRect:()=>fills++
     })})}
   });
-  const context={getTransform:()=>camera.multiply(pose),save(){},restore(){},drawImage(){},globalAlpha:1};
+  const context={getTransform:()=>camera.multiply(pose),setTransform(){},beginPath(){},rect(){},clip(){},save(){},restore(){},drawImage(){},globalAlpha:1};
   const fish={},image={};
   const fixtures=[new Matrix([1,0,0,1,120,150]),new Matrix([1,0,0,1,140,170]),
     new Matrix([-1,0,0,1,140,170]),new Matrix([.8,.6,-.6,.8,140,170]),new Matrix([.6,0,0,1.2,140,170])];
@@ -503,6 +841,31 @@ test("fish caustics stay at the same world point through movement, turns, and ca
   const before=fills;
   c.drawFishCausticLight(context,image,fish,-50,100,80,1000,camera);
   assert.equal(fills,before,"identical pose and light frame reuse the mask");
+});
+
+test("tutorial store openings preserve the task category and bypass the cart layer", () => {
+  const source = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  assert.match(source, /options\.forceCategory === true \|\| getActiveTutorial\(\)/);
+  assert.match(html, /!window\.isGuidedTutorialActive\?\.\(\)/);
+});
+
+test("cloud conflict choices show failures and continue from startup after a successful choice", () => {
+  const source = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
+  assert.match(source, /const runChoice = async/);
+  assert.match(source, /data-cloud-conflict-message/);
+  assert.match(source, /Cloud conflict selection failed/);
+  assert.match(source, /function finishCloudConflictSelection/);
+  assert.match(source, /hideLoadingOverlay\(\)/);
+});
+
+test("wallet receipts persist purchases and expose a compact toolbar history", () => {
+  const purchases = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  assert.match(purchases, /function recordWalletTransaction/);
+  assert.match(rendering, /function renderWalletTransactionMenu/);
+  assert.match(html, /id="walletTransactionMenu"/);
 });
 
 test("caustic pattern transforms remain bounded at real calendar timestamps", () => {

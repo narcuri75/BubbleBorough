@@ -2,12 +2,12 @@
   "formatVersion": 2,
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
-  "moduleCount": 48,
-  "functionCount": 2777,
+  "moduleCount": 49,
+  "functionCount": 2834,
   "modules": [
     {
       "path": "borough/living-borough.js",
-      "functionCount": 53,
+      "functionCount": 55,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/settings-and-persistence.js",
@@ -130,6 +130,7 @@
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
         "audio/system.js",
+        "core/cloud-save.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -159,11 +160,12 @@
     },
     {
       "path": "assets/custom-content.js",
-      "functionCount": 116,
+      "functionCount": 119,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
         "borough/living-borough.js",
+        "core/cloud-save.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -202,7 +204,7 @@
     },
     {
       "path": "fish/needs-disease-and-behavior.js",
-      "functionCount": 124,
+      "functionCount": 127,
       "dependencies": [
         "assets/custom-content.js",
         "core/settings-and-persistence.js",
@@ -403,7 +405,7 @@
     },
     {
       "path": "machinery/submarine.js",
-      "functionCount": 130,
+      "functionCount": 133,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -427,6 +429,7 @@
         "ui/customization-actions-and-inventory.js",
         "ui/fish-inspector.js",
         "ui/main-and-store-rendering.js",
+        "ui/notifications.js",
         "ui/tool-modes-and-debug-panels.js"
       ]
     },
@@ -481,7 +484,7 @@
     },
     {
       "path": "fish/actions.js",
-      "functionCount": 74,
+      "functionCount": 77,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/utilities.js",
@@ -508,7 +511,7 @@
     },
     {
       "path": "store/purchases.js",
-      "functionCount": 33,
+      "functionCount": 35,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -725,6 +728,7 @@
         "fish/undead-and-appearance.js",
         "rendering/fish-motion-and-floor.js",
         "rendering/tank-and-water.js",
+        "store/purchases.js",
         "tank/catalog-and-equipment.js",
         "tank/events-recaps-and-save.js",
         "tutorial/flow.js",
@@ -741,6 +745,7 @@
         "assets/image-storage-and-import.js",
         "audio/system.js",
         "borough/living-borough.js",
+        "core/cloud-save.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -750,6 +755,7 @@
         "fish/meals-and-needs.js",
         "fish/undead-and-appearance.js",
         "store/catalog.js",
+        "store/purchases.js",
         "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js",
         "tank/simulation.js",
@@ -770,7 +776,7 @@
     },
     {
       "path": "ui/main-and-store-rendering.js",
-      "functionCount": 48,
+      "functionCount": 49,
       "dependencies": [
         "assets/custom-content.js",
         "borough/living-borough.js",
@@ -1058,7 +1064,7 @@
     },
     {
       "path": "fish/meals-and-needs.js",
-      "functionCount": 61,
+      "functionCount": 63,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1170,6 +1176,18 @@
         "ui/customization-actions-and-inventory.js",
         "ui/fish-inspector.js",
         "ui/main-and-store-rendering.js"
+      ]
+    },
+    {
+      "path": "core/cloud-save.js",
+      "functionCount": 38,
+      "dependencies": [
+        "assets/image-storage-and-import.js",
+        "audio/system.js",
+        "core/settings-and-persistence.js",
+        "tank/catalog-and-equipment.js",
+        "ui/notifications.js",
+        "ui/tool-modes-and-debug-panels.js"
       ]
     }
   ]

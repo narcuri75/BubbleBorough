@@ -1757,12 +1757,8 @@ function getFishTrayEntries() {
 }
 
 function getFishTrayMoodTone(fish, now = Date.now()) {
-  if (!fish || isFishDead(fish)) {
-    return "danger";
+    return getFishCareStatus(fish, now)?.tone || "good";
   }
-  const moodValue = Number(getFishNeedsSnapshot(fish, now)?.mood?.value) || 0;
-  return moodValue <= 19 ? "danger" : moodValue <= 49 ? "warn" : moodValue <= 69 ? "okay" : "good";
-}
 
 function syncEditFishTrayScrollControls() {
   if (!dom.editFishTrayScroller || !dom.editFishTrayPrev || !dom.editFishTrayNext) {
@@ -2017,7 +2013,7 @@ function renderEditFishTray() {
         const label = `${fish.name}${displaySpeciesName ? ` - ${displaySpeciesName}` : ""}`;
         const moodTone = !inStorage && !dead ? getFishTrayMoodTone(fish, trayRenderNow) : "";
         const actionLabel = !inStorage && !dead
-          ? `Open behavior menu for ${fish.name}`
+          ? `Meet ${fish.name}`
           : dead
           ? `Dispose of ${fish.name}`
           : `Place ${fish.name} in the tank`;
@@ -2816,7 +2812,9 @@ function openFishActionMenu(fishId, point = null) {
   runtime.selectedFishStatusFishId = fish.id;
   runtime.fishInspectorSettingsOpen = false;
   clearFishInspectorDisplayDocking();
-  holdFishForActionMenu(fish);
+  releaseFishActionMenuHold();
+  closeFishActionSubmenu();
+  closeFishActionTargetMenu();
   renderUi(Date.now(), { full: false });
 }
 
@@ -2932,135 +2930,12 @@ function updateFishInspectorDisplayDocking() {
 }
 
 function renderFishActionFlyout(now = Date.now()) {
-  const flyout = dom.fishActionFlyout;
-  if (!flyout) {
-    return;
+    // The companion card owns selection. Opening it never stops the fish.
+    if (dom.fishActionFlyout) dom.fishActionFlyout.hidden = true;
+    if (dom.fishActionQueue) dom.fishActionQueue.replaceChildren();
+    closeFishActionSubmenu();
+    closeFishActionTargetMenu();
   }
-
-  const managed = getManagedFishById(runtime.fishActionMenuFishId);
-  const fish = managed?.fish || null;
-  if (!fish || managed.inStorage || isFishDead(fish)) {
-    runtime.fishActionMenuFishId = null;
-    runtime.fishActionMenuPoint = null;
-    releaseFishActionMenuHold();
-    flyout.hidden = true;
-    dom.fishActionQueue?.replaceChildren();
-    return;
-  }
-
-  const anchor = { xNorm: fish.xNorm, yNorm: fish.yNorm };
-  const stagePoint = getTankNormStagePoint(anchor.xNorm, anchor.yNorm);
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const maxWidth = stageRect?.width || TANK_WIDTH;
-  const maxHeight = stageRect?.height || TANK_HEIGHT;
-  const halfWidth = Math.min(300, Math.max(0, maxWidth / 2 - 10));
-  const halfHeight = Math.min(185, Math.max(0, maxHeight / 2 - 10));
-  const x = maxWidth > halfWidth * 2
-    ? clamp(stagePoint.x, halfWidth + 10, maxWidth - halfWidth - 10)
-    : maxWidth / 2;
-  const y = maxHeight > halfHeight * 2
-    ? clamp(stagePoint.y, halfHeight + 10, maxHeight - halfHeight - 10)
-    : maxHeight / 2;
-  flyout.style.setProperty("--fish-action-x", `${Math.round(x)}px`);
-  flyout.style.setProperty("--fish-action-y", `${Math.round(y)}px`);
-  flyout.hidden = false;
-
-  if (dom.fishActionFlyoutName) {
-    dom.fishActionFlyoutName.textContent = fish.name || "Fish";
-    dom.fishActionFlyoutName.title = `Open details for ${fish.name || "fish"}`;
-    dom.fishActionFlyoutName.setAttribute("aria-label", `Open details for ${fish.name || "fish"}`);
-  }
-  if (dom.fishActionFlyoutSettings) {
-    dom.fishActionFlyoutSettings.title = `Open settings for ${fish.name || "fish"}`;
-    dom.fishActionFlyoutSettings.setAttribute("aria-label", `Open settings for ${fish.name || "fish"}`);
-  }
-  if (dom.fishActionQueue) {
-    if (!runtime.debugFishActionIndicatorsEnabled) {
-      dom.fishActionQueue.replaceChildren();
-    } else {
-      const queuedActions = getFishActionQueueItems(fish.id);
-      dom.fishActionQueue.replaceChildren(...queuedActions.map((item) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = `fish-action-queue-button${item.active ? " is-active" : ""}${item.cancelling ? " is-cancelling" : ""}`;
-      if (!item.rest && !item.cancelling) {
-        button.dataset.cancelFishAction = item.id;
-      } else {
-        button.disabled = true;
-      }
-      const remaining = item.active || item.cancelling
-        ? formatFishActionRemaining((Number(item.cancelEndsAt || item.endsAt) || now) - now)
-        : "";
-      const labelText = item.label || getFishActionConfig(item.action)?.label || "Action";
-      const phaseText = getFishActionPhaseLabel(item);
-      const content = document.createElement("span");
-      content.className = "fish-action-queue-button-content";
-      const primary = document.createElement("span");
-      primary.className = "fish-action-queue-button-primary";
-      const label = document.createElement("span");
-      label.textContent = labelText;
-      const time = document.createElement("span");
-      time.className = "fish-action-queue-button-time";
-      time.textContent = remaining;
-      primary.append(label, time);
-      content.append(primary);
-      if (phaseText) {
-        const phase = document.createElement("span");
-        phase.className = "fish-action-queue-phase";
-        phase.textContent = phaseText;
-        content.append(phase);
-      }
-      const progress = document.createElement("span");
-      progress.className = "fish-action-progress";
-      progress.setAttribute("role", "progressbar");
-      progress.setAttribute("aria-label", `${labelText} time remaining`);
-      progress.setAttribute("aria-valuemin", "0");
-      progress.setAttribute("aria-valuemax", "100");
-      const remainingPercent = Math.round(getFishActionRemainingRatio(item, now) * 100);
-      progress.setAttribute("aria-valuenow", String(remainingPercent));
-      const fill = document.createElement("span");
-      fill.className = "fish-action-progress-fill";
-      fill.style.setProperty("--fish-action-progress", String(remainingPercent / 100));
-      progress.append(fill);
-      button.append(content, progress);
-      button.title = item.cancelling ? "Cancelling action" : (item.rest ? "Next action starts soon" : (item.active ? "Cancel current action" : "Remove queued action"));
-      button.setAttribute("aria-label", `${button.title}: ${labelText}${phaseText ? `, ${phaseText}` : ""}${remaining ? `, ${remaining} remaining` : ""}`);
-      return button;
-      }));
-    }
-  }
-
-  for (const button of flyout.querySelectorAll("[data-fish-action]")) {
-    if (!(button instanceof HTMLButtonElement)) {
-      continue;
-    }
-    const action = button.dataset.fishAction || "";
-    const config = getFishActionConfig(action);
-    const availability = getFishActionAvailability(action, fish, now);
-    button.hidden = !availability.enabled;
-    button.disabled = false;
-    button.textContent = config?.label || action;
-    button.title = availability.title || config?.title || "Fish action";
-    button.setAttribute("aria-label", button.title);
-  }
-  for (const button of flyout.querySelectorAll("[data-fish-action-category]")) {
-    if (!(button instanceof HTMLButtonElement)) {
-      continue;
-    }
-    const categoryId = button.dataset.fishActionCategory || "";
-    const category = getFishActionMenuCategory(categoryId);
-    const availableActions = getAvailableFishActionsForCategory(categoryId, fish, now);
-    button.hidden = !category || availableActions.length <= 0;
-    button.disabled = false;
-    button.textContent = getFishActionCategoryLabel(category) || categoryId;
-    button.classList.toggle("is-active-folder", runtime.fishActionCategory === categoryId);
-    button.title = category
-      ? `${category.label}: ${availableActions.map((action) => getFishActionConfig(action)?.label || action).join(", ")}`
-      : "Fish action folder";
-    button.setAttribute("aria-label", button.title);
-  }
-  updateFishActionFlyoutBranchLayout(flyout);
-}
 
 function renderFishActionSubmenu(now = Date.now()) {
   const menu = dom.fishActionSubmenu;
@@ -3244,107 +3119,10 @@ function updateFishActionFlyoutBranchLayout(flyout) {
 }
 
 function renderFishActionQueueDock(now = Date.now()) {
-  const dock = dom.fishActionQueueDock;
-  if (!dock) {
-    return;
+    if (!dom.fishActionQueueDock) return;
+    dom.fishActionQueueDock.hidden = true;
+    dom.fishActionQueueDock.replaceChildren();
   }
-  if (!runtime.debugFishActionIndicatorsEnabled) {
-    dock.hidden = true;
-    dock.replaceChildren();
-    return;
-  }
-
-  const groups = [...runtime.fishActionQueuesByFishId.entries()]
-    .map(([fishId]) => {
-      const fish = state.fish.find((entry) => entry?.id === fishId && !isFishDead(entry)) || null;
-      const items = getFishActionQueueItems(fishId);
-      return fish && items.length ? { fish, items } : null;
-    })
-    .filter(Boolean)
-    .sort((left, right) => String(left.fish.name || "").localeCompare(String(right.fish.name || "")));
-
-  if (!groups.length) {
-    dock.hidden = true;
-    dock.replaceChildren();
-    return;
-  }
-
-  dock.hidden = false;
-  dock.replaceChildren(...groups.map(({ fish, items }) => {
-    const collapsed = runtime.fishActionQueueCollapsedFishIds.has(fish.id);
-    const group = document.createElement("article");
-    group.className = "fish-action-queue-group";
-
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "fish-action-queue-group-toggle";
-    toggle.dataset.toggleFishActionQueue = fish.id;
-    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-    toggle.title = collapsed ? `Show ${fish.name || "fish"} actions` : `Hide ${fish.name || "fish"} actions`;
-
-    const name = document.createElement("span");
-    name.textContent = fish.name || "Fish";
-    const count = document.createElement("span");
-    count.className = "fish-action-queue-count";
-    count.textContent = String(items.length);
-    toggle.append(name, count);
-    group.append(toggle);
-
-    if (!collapsed) {
-      const list = document.createElement("div");
-      list.className = "fish-action-queue-list";
-      list.append(...items.map((item) => {
-        const chip = document.createElement("button");
-        chip.type = "button";
-        chip.className = `fish-action-queue-chip${item.active ? " is-active" : ""}${item.cancelling ? " is-cancelling" : ""}`;
-        if (!item.rest && !item.cancelling) {
-          chip.dataset.fishId = fish.id;
-          chip.dataset.cancelFishAction = item.id;
-        } else if (item.rest) {
-          chip.disabled = true;
-        }
-        chip.title = item.cancelling ? "Cancelling action" : (item.rest ? "Next action starts soon" : (item.active ? "Cancel current action" : "Remove queued action"));
-        chip.setAttribute("aria-label", chip.title);
-
-        const label = document.createElement("span");
-        label.textContent = item.label || getFishActionConfig(item.action)?.label || "Action";
-        const time = document.createElement("span");
-        time.className = "fish-action-queue-chip-time";
-        time.textContent = item.active || item.cancelling
-          ? formatFishActionRemaining((Number(item.cancelEndsAt || item.endsAt) || now) - now)
-          : formatFishActionRemaining(item.durationMs);
-        const primary = document.createElement("span");
-        primary.className = "fish-action-queue-chip-primary";
-        primary.append(label, time);
-        chip.append(primary);
-        const phaseText = getFishActionPhaseLabel(item);
-        if (phaseText) {
-          const phase = document.createElement("span");
-          phase.className = "fish-action-queue-phase";
-          phase.textContent = phaseText;
-          chip.append(phase);
-        }
-        const progress = document.createElement("span");
-        progress.className = "fish-action-progress";
-        progress.setAttribute("role", "progressbar");
-        progress.setAttribute("aria-label", `${label.textContent} time remaining`);
-        progress.setAttribute("aria-valuemin", "0");
-        progress.setAttribute("aria-valuemax", "100");
-        const remainingPercent = Math.round(getFishActionRemainingRatio(item, now) * 100);
-        progress.setAttribute("aria-valuenow", String(remainingPercent));
-        const fill = document.createElement("span");
-        fill.className = "fish-action-progress-fill";
-        fill.style.setProperty("--fish-action-progress", String(remainingPercent / 100));
-        progress.append(fill);
-        chip.append(progress);
-        chip.setAttribute("aria-label", `${chip.title}: ${label.textContent}${phaseText ? `, ${phaseText}` : ""}, ${time.textContent} remaining`);
-        return chip;
-      }));
-      group.append(list);
-    }
-    return group;
-  }));
-}
 
 function renderFishNeedsBars(fish, now = Date.now()) {
   if (!fish || isFishDead(fish)) {
@@ -3391,28 +3169,8 @@ function renderFishNeedsBars(fish, now = Date.now()) {
 }
 
 function getSelectedFishNeedsMoodLabel(fish, now = Date.now()) {
-  if (!fish || isFishDead(fish)) {
-    return "Miserable";
+    return fish && !isFishDead(fish) ? getFishDisposition(fish, now).mood : "";
   }
-  const snapshot = getFishNeedsSnapshot(fish, now);
-  const needs = snapshot.needs;
-
-  // A weighted average must not hide an urgent individual need.
-  if (Number(needs.hunger) <= FISH_HUNGER_CRITICAL_THRESHOLD) return "Starving";
-  if (Number(needs.energy) <= FISH_ENERGY_CRITICAL_THRESHOLD) return "Exhausted";
-  if (Number(needs.hygiene) <= 12) return "Toxic";
-  if (Number(needs.comfort) <= 15) return "Panicked";
-  if (Number(needs.hunger) <= FISH_HUNGER_LOW_THRESHOLD) return "Hungry";
-  if (Number(needs.energy) <= FISH_ENERGY_LOW_THRESHOLD) return "Tired";
-
-  const value = Number(snapshot?.mood?.value) || 0;
-  if (value >= 85) return "Thriving";
-  if (value >= 70) return "Good Vibes";
-  if (value >= 50) return "Fine";
-  if (value >= 35) return "Uneasy";
-  if (value >= 20) return "Stressed";
-  return "Miserable";
-}
 
 function shouldShowSelectedFishNeedsPanel(managed) {
   if (!dom.selectedFishNeedsPanel || !managed?.fish || managed.inStorage || isFishDead(managed.fish)) {
@@ -3429,49 +3187,46 @@ function shouldShowSelectedFishNeedsPanel(managed) {
 }
 
 function renderSelectedFishNeedsPanel(now = Date.now()) {
-  const panel = dom.selectedFishNeedsPanel;
-  if (!panel) {
-    return;
+    const panel = dom.selectedFishNeedsPanel;
+    if (!panel) return;
+    const managed = getManagedFishById(runtime.selectedFishStatusFishId || runtime.selectedFishId);
+    if (!shouldShowSelectedFishNeedsPanel(managed)) {
+      panel.hidden = true;
+      setMarkupIfChanged("selected-fish-needs-panel", panel, "");
+      return;
+    }
+    const fish = managed.fish;
+    const snapshot = getFishNeedsSnapshot(fish, now);
+    const preferences = getFishNeedsStatus(fish, getCurrentTank(), now);
+    const preference = preferences.find(item => item.met) || preferences[0];
+    const likes = {
+      plants: "Loves leafy corners", cave: "Loves a cozy hideaway", open_water: "Loves room to roam",
+      school_2_plus: "Loves swimming with their own kind", surface_cover: "Loves shade near the surface",
+      hardscape: "Loves rocky hideaways", driftwood: "Loves driftwood", coral: "Loves the coral",
+      seaweed_algae: "Loves a little grazing spot"
+    };
+    const preferenceText = preference ? likes[preference.tag] || `Enjoys ${preference.label.toLowerCase()}` : "Making this tank their home";
+    const busy = getActiveFishActionQueueItem(fish, now);
+    const playing = busy && !busy.autonomous;
+    const markup = `
+      <div class="selected-fish-needs-header">
+        <strong class="selected-fish-needs-name">${escapeHtml(fish.name || "Fish")}</strong>
+        <span class="selected-fish-mood-pill" data-mood-tone="good">${escapeHtml(snapshot.mood.label)}</span>
+        <button type="button" class="fish-companion-close" data-fish-companion="close" aria-label="Close fish card">×</button>
+      </div>
+      <p class="fish-companion-activity">${escapeHtml(snapshot.activity)}</p>
+      <p class="fish-companion-preference">${escapeHtml(preferenceText)}</p>
+      ${snapshot.care ? `<p class="fish-companion-hint" data-care-tone="${snapshot.care.tone}">${escapeHtml(snapshot.care.text)}</p>` : ""}
+      <div class="fish-companion-actions">
+        <button type="button" data-fish-companion="treat" ${playing ? "disabled" : ""} title="Offer a bite of suitable food from your supplies">Offer treat</button>
+        <button type="button" data-fish-companion="play" ${playing ? "disabled" : ""} title="Invite this fish to play">Play</button>
+        <button type="button" data-fish-companion="details">Details</button>
+      </div>`;
+    panel.hidden = false;
+    panel.setAttribute("aria-label", "Fish companion");
+    panel.setAttribute("data-preserve-fish-selection", "");
+    setMarkupIfChanged("selected-fish-needs-panel", panel, markup);
   }
-  const managed = getManagedFishById(runtime.selectedFishStatusFishId || runtime.selectedFishId);
-  if (!shouldShowSelectedFishNeedsPanel(managed)) {
-    panel.hidden = true;
-    setMarkupIfChanged("selected-fish-needs-panel", panel, "");
-    return;
-  }
-  const fish = managed.fish;
-  const needsSnapshot = getFishNeedsSnapshot(fish, now);
-  const moodSnapshot = needsSnapshot.mood;
-  const moodLabel = getSelectedFishNeedsMoodLabel(fish, now);
-  const criticalNeed = Number(needsSnapshot.needs.hunger) <= FISH_HUNGER_CRITICAL_THRESHOLD
-    || Number(needsSnapshot.needs.energy) <= FISH_ENERGY_CRITICAL_THRESHOLD
-    || Number(needsSnapshot.needs.hygiene) <= 12
-    || Number(needsSnapshot.needs.comfort) <= 15;
-  const lowNeed = Number(needsSnapshot.needs.hunger) <= FISH_HUNGER_LOW_THRESHOLD
-    || Number(needsSnapshot.needs.energy) <= FISH_ENERGY_LOW_THRESHOLD;
-  const moodTone = criticalNeed
-    ? "danger"
-    : lowNeed
-      ? "warn"
-      : moodSnapshot.value <= 19
-        ? "danger"
-        : moodSnapshot.value <= 49
-          ? "warn"
-          : moodSnapshot.value <= 69
-            ? "okay"
-            : "good";
-  const markup = `
-    <div class="selected-fish-needs-header">
-      <strong class="selected-fish-needs-name">${escapeHtml(fish.name || "Fish")}</strong>
-      <span class="selected-fish-mood-pill" data-mood-tone="${moodTone}">${escapeHtml(moodLabel)}</span>
-    </div>
-    <div class="fish-needs-bars selected-fish-needs-bars">
-      ${renderFishNeedsBars(fish, now)}
-    </div>
-  `;
-  panel.hidden = false;
-  setMarkupIfChanged("selected-fish-needs-panel", panel, markup);
-}
 
 function renderFishInspector(now) {
   const managed = getManagedFishById(runtime.selectedFishId);
@@ -3527,7 +3282,7 @@ function renderFishInspector(now) {
       ? (dead ? `${corpseLabel} in storage` : "Stored safely")
       : dead
         ? corpseLabel
-        : `${needsSnapshot.mood.label} (${Math.round(needsSnapshot.mood.value)}%)`
+        : needsSnapshot.mood.label
   );
   if (dom.inspectorNeedsBars) {
     dom.inspectorNeedsBars.hidden = true;

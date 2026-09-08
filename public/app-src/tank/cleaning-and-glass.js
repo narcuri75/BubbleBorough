@@ -366,6 +366,9 @@ function completeCleaning(options = {}) {
   state.lastCleanedAt = now;
   state.poops = [];
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
+  if (cleanReward > 0) {
+    recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Deep tank cleaning", place: getTankLabel() });
+  }
 
   if (!hasExposedDeadTankFish(now)) {
     resetLivingFishComfortDamageProgress();

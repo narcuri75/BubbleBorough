@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "b99be0ce-36f3-4c64-bbb6-7d1c030617c7",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "27c11e97-c2b5-4d35-bbce-14f2ca04fe1a",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_3.png"
+        },
+        {
+          "id": "a1ae9ef7-ac2f-4d71-b29f-bb4b66c22f46",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_2.png"
+        },
+        {
+          "id": "31f1d4c6-0251-4805-aa26-af5e2c866c39",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_1.png"
+        },
+        {
+          "id": "a8d3d9a8-60e5-4452-82a1-07692c2c3810",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish.png"
+        },
+        {
+          "id": "c28a33a8-20c4-4cdc-aa62-80fe2a7ecd37",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_4.png"
+        }
+      ]
+    }
+  ]
+}

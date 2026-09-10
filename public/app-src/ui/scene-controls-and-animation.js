@@ -65,7 +65,7 @@ function renderPlacedDecor() {
 
       return `
         <article class="mini-card ${selected ? "is-selected" : ""}">
-          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
+          <img class="decor-thumb" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${grouped ? "Grouped decor." : "Placed in the tank."}</div>
@@ -658,66 +658,16 @@ function renderSolidBackgroundControls() {
   }
 }
 
-function renderFilterAssets() {
-  if (!ENABLE_FILTER) {
-    setMarkupIfChanged("scene-assets-filter", dom.filterAssetList, "");
-    setMarkupIfChanged("equipment-scene-assets-filter", dom.equipmentFilterList, "");
-    setMarkupIfChanged("edit-tank-scene-assets-filter", dom.editTankFilterList, "");
-    return;
-  }
-  renderSceneAssetCards(dom.filterAssetList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped");
-  renderSceneAssetCards(dom.equipmentFilterList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped", "equipment-filter-assets");
-  renderSceneAssetCards(dom.editTankFilterList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped", "edit-tank-filter-assets");
-}
 
-function syncFilterFeatureVisibility() {
-  const filterEnabled = ENABLE_FILTER;
-  const uvLightEnabled = isUvLightFeatureEnabled();
-  const showFilterPanels = filterEnabled || uvLightEnabled;
-
-  if (dom.tankFilterSection instanceof HTMLElement) {
-    dom.tankFilterSection.hidden = !showFilterPanels;
+function syncLightingFeatureVisibility() {
+  const enabled = isUvLightFeatureEnabled();
+  for (const section of [dom.tankLightingSection, dom.equipmentLightingSection]) {
+    if (section) section.hidden = !enabled;
   }
-  if (dom.equipmentFilterSection instanceof HTMLElement) {
-    dom.equipmentFilterSection.hidden = !showFilterPanels;
-  }
-  if (dom.editTankFilterSection instanceof HTMLElement) {
-    dom.editTankFilterSection.hidden = !showFilterPanels || runtime.editTankTrayTab !== "equipment";
-  }
-  if (dom.filterAssetList instanceof HTMLElement) {
-    dom.filterAssetList.hidden = !filterEnabled;
-  }
-  if (dom.equipmentFilterList instanceof HTMLElement) {
-    dom.equipmentFilterList.hidden = !filterEnabled;
-  }
-  if (dom.editTankFilterList instanceof HTMLElement) {
-    dom.editTankFilterList.hidden = !filterEnabled;
-  }
-  if (dom.tankFilterSectionTitle) {
-    dom.tankFilterSectionTitle.textContent = filterEnabled ? "Filter" : "Lighting";
-  }
-  if (dom.tankFilterSectionNote) {
-    dom.tankFilterSectionNote.textContent = filterEnabled
-      ? "Equip owned filters here. Buy stronger ones from the tank shop."
-      : "Add or remove a UV light here. Buy tank gear from the tank shop.";
-  }
-  if (dom.equipmentFilterSectionTitle) {
-    dom.equipmentFilterSectionTitle.textContent = filterEnabled ? "Change Filter" : "Lighting";
-  }
-  if (dom.equipmentFilterSectionNote) {
-    dom.equipmentFilterSectionNote.textContent = filterEnabled
-      ? "Equip owned filters here and buy stronger ones from the tank shop."
-      : "Add or remove a UV light here. Buy tank gear from the tank shop.";
-  }
-  if (dom.equipmentPanelDescription) {
-    dom.equipmentPanelDescription.textContent = filterEnabled
-      ? (uvLightEnabled
-        ? "Adjust the current aquarium's background, gravel, filter, and UV light."
-        : "Adjust the current aquarium's background, gravel, and filter.")
-      : (uvLightEnabled
-        ? "Adjust the current aquarium's background, gravel, and UV light."
-        : "Adjust the current aquarium's background and gravel.");
-  }
+  if (dom.editTankLightingSection) dom.editTankLightingSection.hidden = !enabled || runtime.editTankTrayTab !== "equipment";
+  if (dom.equipmentPanelDescription) dom.equipmentPanelDescription.textContent = enabled
+    ? "Adjust the current aquarium's background, gravel, and UV light."
+    : "Adjust the current aquarium's background and gravel.";
 }
 
 function renderUvLightControls() {
@@ -749,7 +699,7 @@ function renderUvLightControls() {
   const markup = owned
     ? `
       <article class="background-card uv-light-card ${installed ? "is-selected" : ""}">
-        <img class="scene-thumb" src="${UV_LIGHT_IMAGE_PATH}" alt="UV light" />
+        <img class="scene-thumb" ${assetImageAttributes(UV_LIGHT_IMAGE_PATH)} alt="UV light" />
         <div>
           <strong>UV Light</strong>
           <div class="fish-meta">${installed ? `Added to this tank. Toolbar switch is ${active ? "on" : "off"}.` : "Owned and ready to add."}</div>
@@ -879,7 +829,7 @@ function renderSceneAssetCards(container, items, selectedKey, attributeName, use
       const selected = selectedKey === item.key;
       return `
         <article class="background-card ${selected ? "is-selected" : ""}">
-          <img class="scene-thumb" src="${item.path}" alt="${item.name}" />
+          <img class="scene-thumb" ${assetImageAttributes(item.path)} alt="${item.name}" />
           <div>
             <strong>${item.name}</strong>
             <div class="fish-meta">${item.blurb}</div>
@@ -1170,28 +1120,18 @@ function renderControls(now) {
   }
   if (dom.overviewButton) {
     const overviewOpen = runtime.boroughOverviewOpen === true;
-    if (!runtime.toolbarCareTaskCountAt || now - runtime.toolbarCareTaskCountAt >= 1000) {
-      runtime.toolbarCareTaskCount = buildUniversalManagementCareQueue(now)
-        .filter((task) => getCareTaskId(task) !== "all-clear").length;
-      runtime.toolbarCareTaskCountAt = now;
-    }
-    const taskCount = runtime.toolbarCareTaskCount;
-    const overviewLabel = taskCount
-      ? `Borough Overview, ${taskCount} care ${pluralize("task", taskCount)}`
-      : "Borough Overview, all clear";
+    const overviewLabel = "Borough Overview";
     dom.overviewButton.title = overviewOpen ? `${overviewLabel} (Open)` : overviewLabel;
     dom.overviewButton.setAttribute("aria-label", overviewOpen ? `${overviewLabel}, open` : overviewLabel);
     dom.overviewButton.classList.toggle("is-active", overviewOpen);
     if (dom.aquariumTaskBadge) {
-      dom.aquariumTaskBadge.hidden = taskCount <= 0;
-      dom.aquariumTaskBadge.textContent = taskCount > 9 ? "9+" : String(taskCount);
+      dom.aquariumTaskBadge.hidden = true;
+      dom.aquariumTaskBadge.textContent = "";
     }
   }
   if (dom.careTaskPaneButton) {
-    const tasksOpen = getUiSettings().careTaskPaneOpen === true;
-    dom.careTaskPaneButton.title = tasksOpen ? "Hide Tasks" : "Show Tasks";
-    dom.careTaskPaneButton.setAttribute("aria-label", tasksOpen ? "Hide Tasks" : "Show Tasks");
-    dom.careTaskPaneButton.setAttribute("aria-pressed", String(tasksOpen));
+    dom.careTaskPaneButton.hidden = true;
+    dom.careTaskPaneButton.disabled = true;
   }
   if (dom.toggleMouseLockButton) {
     const mouseLockAvailable = isTankMouseLockFeatureEnabled();
@@ -1293,8 +1233,8 @@ function renderToolCursor() {
       image.setAttribute("aria-hidden", "true");
       dom.toolCursor.replaceChildren(image);
     }
-    if (image.getAttribute("src") !== iconPath) {
-      image.setAttribute("src", iconPath);
+    if ((image.getAttribute("data-sprite-src") || image.getAttribute("src")) !== iconPath) {
+      void setAssetImageSource(image, iconPath);
     }
   } else {
     dom.toolCursor.replaceChildren();
@@ -1337,6 +1277,11 @@ function renderScrubProgress() {
 
 function animationLoop(frameTime) {
   window.requestAnimationFrame(animationLoop);
+  if (document.hidden) {
+    runtime.lastAnimationFrameAt = frameTime;
+    runtime.lastAnimationUpdateAt = frameTime;
+    return;
+  }
   const rafDeltaSeconds = runtime.lastAnimationFrameAt
     ? Math.min(1, (frameTime - runtime.lastAnimationFrameAt) / 1000)
     : 0.016;

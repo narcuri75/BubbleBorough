@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "62562312-42d5-4c60-a767-74e59cd61e5e",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "376c5347-fde3-4e87-b174-28c9af5aa427",
+          "width": 512,
+          "height": 282,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Gourami.png"
+        },
+        {
+          "id": "49187a57-e81e-49f9-928f-f411fbcbfd78",
+          "width": 512,
+          "height": 282,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Gourami_1.png"
+        },
+        {
+          "id": "a447a0f9-688f-449b-a4cc-f0bf0f2cc48a",
+          "width": 512,
+          "height": 282,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Gourami_2.png"
+        },
+        {
+          "id": "5682a3ea-62a0-4e7e-9baf-91f2820ac3fd",
+          "width": 512,
+          "height": 282,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Gourami_3.png"
+        },
+        {
+          "id": "3790d24f-bd87-47fa-b4e1-b24a90ec61c8",
+          "width": 512,
+          "height": 282,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Gourami_4.png"
+        }
+      ]
+    }
+  ]
+}

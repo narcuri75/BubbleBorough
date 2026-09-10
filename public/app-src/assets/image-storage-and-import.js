@@ -56,7 +56,7 @@ function applyLocalGravelDisturbance(originX, originY, options = {}) {
 }
 
 function applyDecorGravelInsertion(item) {
-  const bounds = getPlacedDecorBounds(item);
+  const bounds = getPlacedDecorGroundBounds(item);
   if (!bounds) {
     return;
   }
@@ -418,6 +418,7 @@ function isUsableRuntimeImage(image) {
 }
 
 function loadRuntimeImageAttempt(path, timeoutMs) {
+  if (getSpriteAssetFrame(path)) return loadSpriteRuntimeImage(path, timeoutMs);
   return new Promise((resolve) => {
     const image = new Image();
     let settled = false;
@@ -548,6 +549,12 @@ function requestRuntimeImageRecovery(path, details = {}) {
 }
 
 function loadImageElement(src) {
+  if (getSpriteAssetFrame(src)) {
+    return preloadImagePath(src).then((result) => {
+      if (!result.loaded) throw new Error("Could not load the selected sprite.");
+      return runtime.images.get(src);
+    });
+  }
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);

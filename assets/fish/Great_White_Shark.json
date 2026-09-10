@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "67eeaf40-ddf1-4043-bfce-7d40c4872cca",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "46f33c29-8ffc-4eb0-9cee-5374a5727134",
+          "width": 512,
+          "height": 259,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Great_White_Shark_4.png"
+        },
+        {
+          "id": "e934a84c-8c25-456e-9b8e-e119a511663f",
+          "width": 512,
+          "height": 259,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Great_White_Shark.png"
+        },
+        {
+          "id": "9395e95f-95d6-4bd6-bd52-b273896960d9",
+          "width": 512,
+          "height": 259,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Great_White_Shark_1.png"
+        },
+        {
+          "id": "04a272d6-e9ff-4b0c-bf4d-3c9e82d0a125",
+          "width": 512,
+          "height": 259,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Great_White_Shark_2.png"
+        },
+        {
+          "id": "e0269fa1-0b6c-44a2-8b72-fda0ec8ea7d2",
+          "width": 512,
+          "height": 259,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Great_White_Shark_3.png"
+        }
+      ]
+    }
+  ]
+}

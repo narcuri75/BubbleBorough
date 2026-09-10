@@ -18,8 +18,8 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260906-whale-breath-splash-v3" />
-  <link rel="stylesheet" href="./public/mobile_styles.css?v=20260906-whale-breath-splash-v3" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260909-store-care" />
+  <link rel="stylesheet" href="./public/mobile_styles.css?v=20260909-store-care" />
   <style>
     #lightsOutToggleButton:disabled {
       opacity: 0.38;
@@ -93,7 +93,7 @@
 
             <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Notifications"
               aria-label="Open notifications">
-              <img class="daily-bonus-bell-icon" src="./assets/icons/bell.png" alt="" aria-hidden="true" />
+              <img class="daily-bonus-bell-icon" data-sprite-src="./assets/icons/bell.png" alt="" aria-hidden="true" />
               <span id="notificationBellBadge" class="notification-bell-badge" hidden aria-hidden="true"></span>
             </button>
 
@@ -156,7 +156,6 @@
                       <li>🌿 Move decor between tank and storage.</li>
                       <li>🎨 Customize your tank.</li>
                       <li>🛒 Buy fish, decor, customizations, and equipment.</li>
-                      <li>❔ Review tips for fish comfort.</li>
                       <li>⚙️ Change Settings, Export/Import save data, and Reset game data.</li>
 
                     </ul>
@@ -169,7 +168,7 @@
                       <li>💖 4 meals in a row restore half a heart.</li>
                       <li>💩 Fish poop 1 to 3 hours after eating and it settles on the gravel.</li>
                       <li>🏚️ Bigger fish and more fish make grime build up faster.</li>
-                      <li>🐠 Sucker fish and better filters help slow grime build-up.</li>
+                      <li>🐠 Sucker fish help slow grime build-up.</li>
                     </ul>
                   </section>
 
@@ -307,22 +306,21 @@
                       </div>
                     </section>
 
-                    <section id="tankFilterSection" class="info-card full-span collapsible-section" data-collapsible-section="decorFilter">
+                    <section id="tankLightingSection" class="info-card full-span collapsible-section" data-collapsible-section="decorLighting">
                       <div class="collapsible-header">
-                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorFilter"
+                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorLighting"
                           aria-expanded="true">
-                          <span id="tankFilterSectionTitle" class="collapsible-title">Filter</span>
+                          <span id="tankLightingSectionTitle" class="collapsible-title">Lighting</span>
                           <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
                         </button>
                       </div>
                       <div data-collapsible-body>
                         <div class="compact-heading equipment-heading">
-                          <p id="tankFilterSectionNote">Equip owned filters here. Buy stronger ones from the tank shop.</p>
+                          <p id="tankLightingSectionNote">Add or remove a UV light here.</p>
                           <button id="openEquipmentShopButton" class="small-button alt" type="button">
                             Tank Shop
                           </button>
                         </div>
-                        <div id="filterAssetList" class="background-grid"></div>
                       </div>
                     </section>
 
@@ -354,10 +352,6 @@
               <div id="placementHint" class="placement-hint"></div>
             </div>
 
-            <section id="careTaskPane" class="care-task-pane" hidden aria-live="polite">
-              <div class="care-task-heading">Tasks:</div>
-              <div id="careTaskList" class="care-task-list"></div>
-            </section>
 
             <div id="toolCursor" class="tool-cursor" hidden aria-hidden="true"></div>
             <div id="selectedDecorLayerControls" class="decor-side-control-panel decor-layer-controls" hidden
@@ -398,7 +392,7 @@
                 <div class="store-panel-header">
                   <div class="store-panel-actions">
                     <div id="storeCoinCounter" class="store-coin-counter" aria-label="Current coins: 0">
-                      <img class="coin-symbol store-coin-icon store-coin-counter-icon" src="assets/icons/coin.png"
+                      <img class="coin-symbol store-coin-icon store-coin-counter-icon" data-sprite-src="assets/icons/coin.png"
                         alt="" aria-hidden="true" draggable="false" />
                       <span class="store-coin-counter-value">0</span>
                     </div>
@@ -426,27 +420,27 @@
             <div class="store-panel-tabs" role="tablist" aria-label="Store Tabs">
               <button id="storeFoodTab" class="store-tab-button" type="button" role="tab" aria-selected="true"
                 aria-controls="foodShop" aria-label="Food" title="Food">
-                <img class="store-tab-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
+                <img class="store-tab-icon" data-sprite-src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
               <button id="storePharmacyTab" class="store-tab-button" type="button" role="tab"
                 aria-selected="false" aria-controls="pharmacyShop" aria-label="Medicine" title="Medicine">
-                <img class="store-tab-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true"
+                <img class="store-tab-icon" data-sprite-src="assets/icons/medicine.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
               <button id="storeFishTab" class="store-tab-button" type="button" role="tab" aria-selected="false"
                 aria-controls="fishShop" aria-label="Fish" title="Fish">
-                <img class="store-tab-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true"
+                <img class="store-tab-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
               <button id="storeDecorTab" class="store-tab-button" type="button" role="tab" aria-selected="false"
                 aria-controls="decorShop" aria-label="Decor" title="Decor">
-                <img class="store-tab-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true"
+                <img class="store-tab-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
               <button id="storeEquipmentTab" class="store-tab-button" type="button" role="tab"
                 aria-selected="false" aria-controls="equipmentShop" aria-label="Equipment" title="Equipment">
-                <img class="store-tab-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
+                <img class="store-tab-icon" data-sprite-src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
             </div>
@@ -473,17 +467,17 @@
             <div id="mobileManagementTabs" class="mobile-management-tabs" role="tablist" aria-label="Tank Info Tabs" hidden>
               <button class="mobile-management-tab-button" type="button" role="tab" data-mobile-management-tab="tanks"
                 aria-selected="true" aria-label="Tanks" title="Tanks">
-                <img class="mobile-management-tab-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
+                <img class="mobile-management-tab-icon" data-sprite-src="assets/icons/tank_info.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
               <button class="mobile-management-tab-button" type="button" role="tab" data-mobile-management-tab="fish"
                 aria-selected="false" aria-label="Fish" title="Fish">
-                <img class="mobile-management-tab-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true"
+                <img class="mobile-management-tab-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
               <button class="mobile-management-tab-button" type="button" role="tab" data-mobile-management-tab="decor"
                 aria-selected="false" aria-label="Decor" title="Decor">
-                <img class="mobile-management-tab-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true"
+                <img class="mobile-management-tab-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
             </div>
@@ -653,7 +647,7 @@
                 <div class="settings-panel-header">
                   <div class="settings-panel-copy">
                     <h2 id="equipmentTitle">Edit Tank</h2>
-                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel, and filter.</p>
+                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background and gravel.</p>
                   </div>
 
                   <button id="closeEquipmentOverlay" class="store-close-button" type="button" title="Close Edit Tank"
@@ -680,18 +674,16 @@
                     <div id="equipmentCustomGravelPanel"></div>
                   </section>
 
-                  <section id="equipmentFilterSection" class="settings-section">
+                  <section id="equipmentLightingSection" class="settings-section">
                     <div class="equipment-heading">
                       <div>
-                        <h3 id="equipmentFilterSectionTitle">Change Filter</h3>
-                        <p id="equipmentFilterSectionNote" class="settings-section-note">Equip owned filters here and buy stronger ones from the
-                          tank shop.</p>
+                        <h3 id="equipmentLightingSectionTitle">Lighting</h3>
+                        <p id="equipmentLightingSectionNote" class="settings-section-note">Add or remove a UV light here.</p>
                       </div>
                       <button id="openEquipmentStoreButton" class="small-button alt" type="button">
                         Tank Shop
                       </button>
                     </div>
-                    <div id="equipmentFilterList" class="background-grid"></div>
                   </section>
                 </div>
               </div>
@@ -723,9 +715,9 @@
             <section id="editDecorTray" class="edit-decor-tray" hidden aria-label="Edit decor tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
@@ -757,9 +749,9 @@
             <section id="editFishTray" class="edit-decor-tray edit-fish-tray" hidden aria-label="Edit fish tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
@@ -788,9 +780,9 @@
             <section id="editEquipmentTray" class="edit-decor-tray edit-equipment-tray" hidden aria-label="Equipment tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
@@ -809,9 +801,9 @@
             <section id="editTankTray" class="edit-decor-tray edit-tank-tray" hidden aria-label="Edit tank tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
@@ -859,72 +851,67 @@
 
               <button id="openManagementButton" class="dock-button management" type="button" title="Tank Info"
                 aria-label="Tank Info">
-                <img class="dock-button-icon" src="assets/icons/tank_info.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/tank_info.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="overviewButton" class="dock-button borough-control" type="button" title="Aquarium Overview"
                 aria-label="Aquarium Overview" aria-pressed="false">
-                <img class="dock-button-icon" src="assets/icons/aquarium_overview.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/aquarium_overview.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="mobileFishCareButton" class="dock-button mobile-menu-dock-button fish-care" type="button"
                 title="Fish Care" aria-label="Fish Care" data-mobile-menu-target="mobileFishCareMenu">
-                <img class="dock-button-icon" src="assets/icons/fish_care.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/fish_care.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
-              <button id="careTaskPaneButton" class="dock-button care-tasks" type="button" title="Tasks"
-                aria-label="Tasks" aria-pressed="false">
-                <img class="dock-button-icon" src="assets/icons/tasks.png" alt="" aria-hidden="true"
-                  draggable="false" />
-              </button>
 
               <button id="feedButton" class="dock-button feed" type="button" title="Feed Fish"
                 aria-label="Feed Fish">
-                <img class="dock-button-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="medicineButton" class="dock-button medicine" type="button" title="Medicine"
                 aria-label="Medicine">
-                <img class="dock-button-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/medicine.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="spongeButton" class="dock-button sponge" type="button" title="Clean Tank"
                 aria-label="Clean Tank">
-                <img class="dock-button-icon" src="assets/icons/sponge.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/sponge.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="scoopButton" class="dock-button scoop" type="button" title="Scoop" aria-label="Scoop">
-                <img class="dock-button-icon" src="assets/icons/scoop.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/scoop.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="mobileToolsButton" class="dock-button mobile-menu-dock-button tools" type="button"
                 title="Tools" aria-label="Tools" data-mobile-menu-target="mobileToolsMenu">
-                <img class="dock-button-icon" src="assets/icons/tools.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="fishEditModeDockButton" class="dock-button edit" type="button" title="Manage Fish"
                 aria-label="Manage Fish">
-                <img class="dock-button-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="editModeDockButton" class="dock-button edit" type="button" title="Edit Decor"
                 aria-label="Edit Decor">
-                <img class="dock-button-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="mobileEditTankButton" class="dock-button mobile-menu-dock-button edit-tank" type="button"
                 title="Edit Tank" aria-label="Edit Tank" data-mobile-menu-target="mobileEditTankMenu">
-                <img class="dock-button-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -942,23 +929,21 @@
 
               <button id="openEquipmentButton" class="dock-button settings" type="button" title="Edit Tank"
                 aria-label="Edit Tank">
-                <img class="dock-button-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="openStoreButton" class="dock-button shop" type="button" title="Store"
                 aria-label="Store">
-                <img class="dock-button-icon" src="assets/icons/store.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/store.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
-              <button id="tipsButton" class="dock-button tips" type="button" title="Care Tips" hidden
-                aria-label="Care Tips">❔</button>
 
 
               <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
                 aria-label="Settings">
-                <img class="dock-button-icon" src="assets/icons/settings.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -974,7 +959,7 @@
 
               <button id="addCoinsButton" class="dock-button debug" type="button" title="Debug: Add 10 coins"
                 aria-label="Debug: Add 10 coins">
-                <img class="dock-button-icon coin-symbol" src="assets/icons/coin.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon coin-symbol" data-sprite-src="assets/icons/coin.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -1012,7 +997,7 @@
               <button id="toggleDebugMenuButton" class="dock-button debug" type="button" hidden
                 title="Debug Menu" aria-label="Debug Menu" aria-controls="debugSidebar" aria-expanded="false"
                 data-preserve-fish-selection>
-                <img class="dock-button-icon" src="assets/icons/debug.png" alt="" aria-hidden="true" draggable="false" />
+                <img class="dock-button-icon" data-sprite-src="assets/icons/debug.png" alt="" aria-hidden="true" draggable="false" />
               </button>
 
             </div>
@@ -1181,37 +1166,37 @@
 
   <section id="mobileFishCareMenu" class="mobile-popout-menu" hidden aria-label="Fish Care">
     <button class="mobile-popout-action" type="button" aria-label="Food" title="Food" data-mobile-proxy-click="#feedButton">
-      <img src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
+      <img data-sprite-src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
       <span>Food</span>
     </button>
     <button class="mobile-popout-action" type="button" aria-label="Medication" title="Medication" data-mobile-proxy-click="#medicineButton">
-      <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+      <img data-sprite-src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
       <span>Medication</span>
     </button>
   </section>
 
   <section id="mobileToolsMenu" class="mobile-popout-menu" hidden aria-label="Tools">
     <button class="mobile-popout-action" type="button" aria-label="Scoop" title="Scoop" data-mobile-proxy-click="#scoopButton">
-      <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+      <img data-sprite-src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
       <span>Scoop</span>
     </button>
     <button class="mobile-popout-action" type="button" aria-label="Sponge" title="Sponge" data-mobile-proxy-click="#spongeButton">
-      <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+      <img data-sprite-src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
       <span>Sponge</span>
     </button>
   </section>
 
   <section id="mobileEditTankMenu" class="mobile-popout-menu" hidden aria-label="Edit Tank">
     <button class="mobile-popout-action" type="button" aria-label="Manage Fish" title="Manage Fish" data-mobile-proxy-click="#fishEditModeDockButton">
-      <img src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" />
+      <img data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" />
       <span>Manage Fish</span>
     </button>
     <button class="mobile-popout-action" type="button" aria-label="Edit Decor" title="Edit Decor" data-mobile-proxy-click="#editModeDockButton">
-      <img src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" />
+      <img data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" />
       <span>Edit Decor</span>
     </button>
     <button class="mobile-popout-action" type="button" aria-label="Edit Tank" title="Edit Tank" data-mobile-proxy-click="#openEquipmentButton">
-      <img src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" />
+      <img data-sprite-src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" />
       <span>Edit Tank</span>
     </button>
   </section>
@@ -1331,7 +1316,7 @@
 
           counter.setAttribute("aria-label", `Current coins: ${amount}`);
           counter.innerHTML = `
-            <img class="coin-symbol store-coin-icon store-coin-counter-icon" src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
+            <img class="coin-symbol store-coin-icon store-coin-counter-icon" data-sprite-src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
             <span class="store-coin-counter-value">${amount}</span>
           `;
         };
@@ -1449,7 +1434,7 @@
 
           const icon = document.createElement("img");
           icon.className = "mobile-price-buy-icon";
-          icon.src = "assets/icons/coin.png";
+          icon.setAttribute("data-sprite-src", "assets/icons/coin.png");
           icon.alt = "";
           icon.setAttribute("aria-hidden", "true");
           icon.draggable = false;
@@ -1635,21 +1620,21 @@
           statusStrip.dataset.mobileTankStatusKey = statusKey;
           statusStrip.innerHTML = `
             <article class="mobile-tank-status-cell">
-              <img class="mobile-tank-status-icon" src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+              <img class="mobile-tank-status-icon" data-sprite-src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
               <span class="mobile-tank-status-copy">
                 <span class="mobile-tank-status-label">Cleanliness</span>
                 <strong>${escapeText(cleanliness)}</strong>
               </span>
             </article>
             <article class="mobile-tank-status-cell">
-              <img class="mobile-tank-status-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
+              <img class="mobile-tank-status-icon" data-sprite-src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
               <span class="mobile-tank-status-copy">
                 <span class="mobile-tank-status-label">Meals Served</span>
                 <strong>${escapeText(mealsServed)}</strong>
               </span>
             </article>
             <article class="mobile-tank-status-cell">
-              <img class="mobile-tank-status-icon" src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
+              <img class="mobile-tank-status-icon" data-sprite-src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
               <span class="mobile-tank-status-copy">
                 <span class="mobile-tank-status-label">Coins</span>
                 <strong>${escapeText(coins)}</strong>
@@ -2472,7 +2457,7 @@
       };
       installMobileTutorialToolsBridge();
 
-      const mobileAppScriptUrl = "./public/app.js?v=20260906-whale-breath-splash-v3";
+      const mobileAppScriptUrl = "./public/app.js?v=20260909-store-care";
       const loadOriginalMobileAppScript = () => {
         const script = document.createElement("script");
         script.type = "module";
@@ -2938,6 +2923,8 @@ function getEffectiveAnimationFpsLimit() {
       loadMobileAppScript();
     })();
   </script>
+  <script src="public/store-facets.js?v=20260909"></script>
+  <script src="public/store-variants.js?v=20260909"></script>
 </body>
 
 </html>

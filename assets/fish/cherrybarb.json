@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "af2dfd4e-0b79-4255-955d-7477646f81a9",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "9ed908f1-9f70-4270-b303-bb784fd4237b",
+          "width": 512,
+          "height": 212,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cherrybarb.png"
+        },
+        {
+          "id": "2f89173f-5beb-444b-a0dd-80f8c10ef061",
+          "width": 512,
+          "height": 212,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cherrybarb_1.png"
+        },
+        {
+          "id": "03abf1f5-f876-4b0a-9590-9497068f5b39",
+          "width": 512,
+          "height": 212,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cherrybarb_2.png"
+        },
+        {
+          "id": "cdf947cd-24dd-4940-b02d-61bef279d416",
+          "width": 512,
+          "height": 212,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cherrybarb_3.png"
+        },
+        {
+          "id": "2be39e01-ad18-451c-82cc-ae5d87cb0dc0",
+          "width": 512,
+          "height": 212,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cherrybarb_4.png"
+        }
+      ]
+    }
+  ]
+}

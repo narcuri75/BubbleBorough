@@ -322,12 +322,15 @@ function getFishSameLayerRenderPriority(fish) {
   return 1;
 }
 
-function drawFishPebbleTosses(now) {
+function drawFishPebbleTosses(now, layer = null) {
   if (!runtime.fishPebbleTosses.length) {
     return;
   }
 
   for (const toss of runtime.fishPebbleTosses) {
+    if (layer !== null && Number(toss.endLayer) !== Number(layer)) {
+      continue;
+    }
     const sprite = getCustomGravelPebbleSpriteByPath(toss.assetPath, toss.color, { colorize: toss.colorize });
     if (!sprite?.width || !sprite?.height) {
       continue;
@@ -352,30 +355,6 @@ function drawFishPebbleTosses(now) {
     );
     tankContext.restore();
   }
-}
-
-function drawFishComfortSparkles(pose, width, height, now = Date.now()) {
-  const stableScale = getViewportStableAssetScale();
-  const sparkleCount = 7;
-  tankContext.save();
-  tankContext.translate(pose.x + pose.swayX, pose.y);
-  tankContext.lineWidth = Math.max(1, stableScale * 1.4);
-  for (let index = 0; index < sparkleCount; index += 1) {
-    const angle = (now / 850 + index * 2.399) % (Math.PI * 2);
-    const orbitX = Math.cos(angle) * width * randomBetweenWith(mulberry32(index + 42), 0.28, 0.55);
-    const orbitY = Math.sin(angle * 1.3) * height * randomBetweenWith(mulberry32(index + 84), 0.22, 0.48);
-    const pulse = 0.55 + 0.45 * Math.sin(now / 260 + index);
-    const size = stableScale * (3.5 + pulse * 3);
-    tankContext.globalAlpha = 0.36 + pulse * 0.42;
-    tankContext.strokeStyle = "rgba(255, 245, 151, 0.96)";
-    tankContext.beginPath();
-    tankContext.moveTo(orbitX - size, orbitY);
-    tankContext.lineTo(orbitX + size, orbitY);
-    tankContext.moveTo(orbitX, orbitY - size);
-    tankContext.lineTo(orbitX, orbitY + size);
-    tankContext.stroke();
-  }
-  tankContext.restore();
 }
 
 function fitDebugFishBehaviorLine(text, maxWidth) {
@@ -812,10 +791,6 @@ function drawFish(now, layer = null, options = {}) {
     drawFishDiseaseBubbles(fish, species, pose, width, height, now);
     drawFishBirthdayHat(fish, pose, width, height, now);
 
-    if (comfort?.value >= 0.95) {
-      drawFishComfortSparkles(pose, width, height, now);
-    }
-
     if ((!pose.isBeingConsumed && pose.isDead) || fish.healthUnits === 1) {
       const statusY = Math.max(topFrameBottomY + 12 * stableScale, pose.y - height * 0.72);
       tankContext.save();
@@ -832,25 +807,62 @@ function drawFish(now, layer = null, options = {}) {
 
     drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
 
-    if (runtime.selectedFishId === fish.id) {
+    if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
       tankContext.save();
-      tankContext.font = `600 ${13 * stableScale}px Trebuchet MS`;
+      const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
+      const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Okay");
+      const moodTone = pose.isDead ? "danger" : (snapshot?.mood?.tone || "good");
+      const heartCount = Math.max(0, (Number(fish.healthUnits) || 0) / 2);
+      const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
+      const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
+      const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;
+      const fontSize = 11 * stableScale;
+      const rowHeight = 18 * stableScale;
+      const rowGap = 2 * stableScale;
+      const totalHeight = rowHeight * 3 + rowGap * 2;
+      const radius = 8 * stableScale;
+      tankContext.font = `700 ${fontSize}px Trebuchet MS`;
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
-      const labelWidth = Math.ceil(tankContext.measureText(fish.name).width) + 18 * stableScale;
-      const labelHeight = 22 * stableScale;
-      const labelY = pose.isDead
-        ? Math.max(topFrameBottomY + labelHeight / 2 + 18 * stableScale, pose.y - height * 0.62)
-        : pose.y - height * 0.62;
-      tankContext.fillStyle = "rgba(5, 14, 22, 0.5)";
-      tankContext.beginPath();
-      tankContext.roundRect(pose.x - labelWidth / 2, labelY - labelHeight / 2, labelWidth, labelHeight, 11 * stableScale);
-      tankContext.fill();
-      tankContext.strokeStyle = "rgba(232, 247, 255, 0.16)";
-      tankContext.lineWidth = stableScale;
-      tankContext.stroke();
-      tankContext.fillStyle = "rgba(240, 251, 255, 0.92)";
-      tankContext.fillText(fish.name, pose.x, labelY + 0.5);
+      const nameWidth = tankContext.measureText(fish.name || "Fish").width;
+      const moodWidth = tankContext.measureText(moodLabel).width;
+      const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
+      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, moodWidth, heartWidth) + 18 * stableScale));
+      const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
+      const desiredBottomY = pose.y - height * 0.58;
+      const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
+      const moodStroke = moodTone === "danger"
+        ? "rgba(255, 116, 137, 0.82)"
+        : moodTone === "warn"
+          ? "rgba(255, 202, 102, 0.82)"
+          : "rgba(89, 229, 203, 0.82)";
+
+      for (let row = 0; row < 3; row += 1) {
+        const y = topY + row * (rowHeight + rowGap);
+        tankContext.fillStyle = "rgba(5, 25, 38, 0.78)";
+        tankContext.beginPath();
+        tankContext.roundRect(labelX - labelWidth / 2, y, labelWidth, rowHeight, radius);
+        tankContext.fill();
+        tankContext.strokeStyle = row === 2 ? moodStroke : "rgba(94, 220, 239, 0.72)";
+        tankContext.lineWidth = Math.max(1, stableScale);
+        tankContext.stroke();
+      }
+
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.fillText(fish.name || "Fish", labelX, topY + rowHeight / 2 + 0.5);
+
+      const heartCenterY = topY + rowHeight + rowGap + rowHeight / 2 + 0.5;
+      const heartGap = 4 * stableScale;
+      tankContext.fillStyle = "#ff627d";
+      tankContext.textAlign = "right";
+      tankContext.fillText("♥", labelX - heartGap / 2, heartCenterY);
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.textAlign = "left";
+      tankContext.fillText(heartLabel, labelX + heartGap / 2, heartCenterY);
+
+      tankContext.textAlign = "center";
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.fillText(moodLabel, labelX, topY + (rowHeight + rowGap) * 2 + rowHeight / 2 + 0.5);
       tankContext.restore();
     }
   }
@@ -1317,24 +1329,16 @@ function getFishPose(fish, species, now) {
     (Number(fish.targetXNorm) || fish.xNorm) - fish.xNorm,
     (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm
   );
-  // Once a fish has reached decor, treat it as genuinely stationary instead of
-  // repeatedly blending between swim bob and idle bob as tiny target corrections
-  // come and go. That blend used unrelated phases and could read as a hitch.
-  const settledAtDecor = Boolean(fish.hangoutDecorId)
-    && fish.activity === "roam"
-    && !fish.caveState
-    && targetDistanceNorm <= 0.03;
-  const stationaryRaw = settledAtDecor ? 1 : 1 - clamp(targetDistanceNorm / 0.025, 0, 1);
-  const stationaryBlend = stationaryRaw * stationaryRaw * (3 - 2 * stationaryRaw);
-  const swimBob =
-    Math.sin(wiggleClock * (0.2 + species.bobSpeed * 0.16) + fish.phase * Math.PI * 2) * (0.9 + motionLevel * 4.4) * sickMotionBoost
-    + glide * (0.45 + motionLevel * 1.35);
-  // Idle vertical drift used to share wiggleClock with movement. That clock
-  // changes rate as motion states transition, which can make stationary fish
-  // visibly hitch up/down. Use a render-time idle clock and blend into it.
-  const idleBobClock = now / 1000;
-  const idleBob = Math.sin(idleBobClock * 0.72 + fish.phase * Math.PI * 2) * (0.72 + motionLevel * 0.72) * sickMotionBoost;
-  const verticalBob = swimBob * (1 - stationaryBlend) + idleBob * stationaryBlend;
+  // The old pose blended a wiggle-clock bob into a wall-clock bob when a fish
+  // arrived. Those clocks have unrelated phases, so normal settling could jump
+  // up or down. One render-time clock keeps every vertical movement continuous;
+  // only its smoothly changing amplitude reflects the current swim effort.
+  const bobClock = now / 1000;
+  const movementBlend = clamp(targetDistanceNorm / 0.055, 0, 1);
+  const bobAmplitude = (0.7 + motionLevel * (0.8 + movementBlend * 3.2)) * sickMotionBoost;
+  const verticalBob =
+    Math.sin(bobClock * (0.72 + species.bobSpeed * 0.22) + fish.phase * Math.PI * 2) * bobAmplitude
+    + Math.sin(bobClock * 0.42 + fish.phase * Math.PI * 1.4) * bobAmplitude * 0.18;
   const y = renderYNorm * TANK_HEIGHT
     + verticalBob
     + (entryProgress === null ? 0 : Math.sin(entryProgress * Math.PI * 2.4 + fish.phase * Math.PI) * (1 - entryProgress) * 9);

@@ -1,0 +1,491 @@
+{
+  "version": 1,
+  "previewSize": 384,
+  "sheets": {
+    "assets/fish/Angelfish.webp": {
+      "version": "de415196f10e-v1",
+      "files": {
+        "assets/generated/sprites/fish/Angelfish/angelfish_3.png.thumb.webp": "46ea21a8ec1ae103bb87235a8d225f205ea8eb25aa28f3d744bdd94441538600",
+        "assets/generated/sprites/fish/Angelfish/angelfish_2.png.thumb.webp": "68c037c96adb7e83f93db165be855c683466b18e67966201ef38f5b698591bdf",
+        "assets/generated/sprites/fish/Angelfish/angelfish_1.png.thumb.webp": "50bf015e3a96260ff182fcd2fcf8fd50d3d83b716cac0f2001b082165a342327",
+        "assets/generated/sprites/fish/Angelfish/angelfish.png.thumb.webp": "f24120b09100b0f29f0c2444c39e2c02d78b909228c696b8c1c74333cae9d7e7",
+        "assets/generated/sprites/fish/Angelfish/angelfish_4.png.thumb.webp": "aed2c3c53a69eefbd6f4e2b0f288d7f9f4a7b70aebe3f4980bdeda1804c285c6"
+      }
+    },
+    "assets/fish/Betta.webp": {
+      "version": "e36c49fed52c-v1",
+      "files": {
+        "assets/generated/sprites/fish/Betta/betta_4.png.thumb.webp": "9759dc865b7ec4a41dba30dddcc5f55a71a077f67f1da7c8f8595a2d4f44ab13",
+        "assets/generated/sprites/fish/Betta/betta_1.png.thumb.webp": "f8f0979e9a4c3e14d17edb094e2ca6d3123e58d5f36019fceb57293b8569ad4e",
+        "assets/generated/sprites/fish/Betta/betta.png.thumb.webp": "604f31218983f2ae3437f51519e0de533a3a969984df3f2a7781f2e6135cfe68",
+        "assets/generated/sprites/fish/Betta/betta_3.png.thumb.webp": "b99b06811e40244e07c5f882b484d396750029fe4663e1934db1fbfb3e87eec9",
+        "assets/generated/sprites/fish/Betta/betta_2.png.thumb.webp": "da717cf8153a2a67318d215763f46eda0f33a287d193bc04fa5a1dd529618193"
+      }
+    },
+    "assets/fish/BlueRam.webp": {
+      "version": "5e741b695c9f-v1",
+      "files": {
+        "assets/generated/sprites/fish/BlueRam/BlueRam.png.thumb.webp": "a49bb897e256783e2c555e59530c99506424b1d83302226bd30e13d606e920ab",
+        "assets/generated/sprites/fish/BlueRam/BlueRam_1.png.thumb.webp": "d28a2edc688d728713dbb23f9ec74ce5a884632a31d5ce38e981ed8e1d1d7496",
+        "assets/generated/sprites/fish/BlueRam/BlueRam_2.png.thumb.webp": "2499e6fbe97089e9d55f83f38ac802d8b7a0bc068052971dfc3a07e7ece3f317",
+        "assets/generated/sprites/fish/BlueRam/BlueRam_3.png.thumb.webp": "ff0608fffb0a8e453194c92d6a5c82fa0c388d75c6e93d41a6d2fe1bf016817a",
+        "assets/generated/sprites/fish/BlueRam/BlueRam_4.png.thumb.webp": "a4efc0546df0d5f2ef1b4ec2ecfe7d752e74066c9640b4ca6066f65689eae397"
+      }
+    },
+    "assets/fish/Boat.webp": {
+      "version": "4e2808e4140c-v1",
+      "files": {
+        "assets/generated/sprites/fish/Boat/boat.png.thumb.webp": "998d487cf5950c59167e9c8fac630ceaaee50903537302b3a2fa0b0bc0814ded",
+        "assets/generated/sprites/fish/Boat/Halloween_Boat_5.png.thumb.webp": "1bcb06b50b9d2f4a48b8ee7f0ee7408a7ca21ac47f50e0806ee476242b0df687",
+        "assets/generated/sprites/fish/Boat/boat_3.png.thumb.webp": "af8f2c406eeed323b445eb3c25494072649c15d7415c61b6aea072894b1b9bba",
+        "assets/generated/sprites/fish/Boat/boat_1.png.thumb.webp": "34f7f96cdba540281f7d278472852361b5e2d263252f1ad0e1249982743fa385",
+        "assets/generated/sprites/fish/Boat/boat_4.png.thumb.webp": "579f419d819e73432421c270a151fd1bf4d93317d22198e5973e2790b33da247",
+        "assets/generated/sprites/fish/Boat/boat_2.png.thumb.webp": "f5e0151ec18a714df59bdca9194f0ee6f76e1b51d42940211fa3b7e1a683239a"
+      }
+    },
+    "assets/fish/Bull_Shark.webp": {
+      "version": "0f9f12d46c99-v1",
+      "files": {
+        "assets/generated/sprites/fish/Bull_Shark/Bull_Shark_3.png.thumb.webp": "581c189700b7f4b1d9680da574fb625a604708d89c796b6ef63cefedac07b15a",
+        "assets/generated/sprites/fish/Bull_Shark/Bull_Shark_2.png.thumb.webp": "e836a5ace1cb1cfcc6e1522450a91796dc6596252ac0e38d8412136f48470631",
+        "assets/generated/sprites/fish/Bull_Shark/Bull_Shark_1.png.thumb.webp": "190100a88d6c246e5f6beff8d6040534df31a0d841ca99be357f4eae141fe6f8",
+        "assets/generated/sprites/fish/Bull_Shark/Bull_Shark_4.png.thumb.webp": "1fc23c2a2bd04d0a1392bfe0f9bf712f515563946afe1ff00826243a4065d93d",
+        "assets/generated/sprites/fish/Bull_Shark/Bull_Shark.png.thumb.webp": "f16494f22d20c97517383d0bbae77e5f58db861d277536eafb9944d1afd36f13"
+      }
+    },
+    "assets/fish/CelestialPearlDanio.webp": {
+      "version": "6344a7a14a99-v1",
+      "files": {
+        "assets/generated/sprites/fish/CelestialPearlDanio/CelestialPearlDanio.png.thumb.webp": "8ea276f4c033df4347046503fea33a8f87207ec988020f7729f8d6aa37ad4810",
+        "assets/generated/sprites/fish/CelestialPearlDanio/CelestialPearlDanio_2.png.thumb.webp": "8764cbe09d27bfb292a0617391b0aca1aed3bb5e431c2bc1e4713ab9d8ae55be",
+        "assets/generated/sprites/fish/CelestialPearlDanio/CelestialPearlDanio_3.png.thumb.webp": "9726504cf8f037ba98abc7cadedf2de8b3bee38ce4d8e9b539b7af8e9e07c094",
+        "assets/generated/sprites/fish/CelestialPearlDanio/CelestialPearlDanio_4.png.thumb.webp": "8ce31347da233e168675dddbd74646e09a6d4f6771e2e9c681baa3c8e53f9313",
+        "assets/generated/sprites/fish/CelestialPearlDanio/CelestialPearlDanio_1.png.thumb.webp": "7b34c8cc3667c714dc7c96afa433faa0ded59c73bd7dfa664e417b132660f510"
+      }
+    },
+    "assets/fish/ChiliRasbora.webp": {
+      "version": "9aa9d42eaeb2-v1",
+      "files": {
+        "assets/generated/sprites/fish/ChiliRasbora/ChiliRasbora_1.png.thumb.webp": "d790ec1f03589691913f202a8fab437bd94a8a85bdfc56262ecc7a472bccaf67",
+        "assets/generated/sprites/fish/ChiliRasbora/ChiliRasbora.png.thumb.webp": "ada4795783b3bac73ae508b26b75ab69321c9097917aaf7799e2a0ac2799bc09",
+        "assets/generated/sprites/fish/ChiliRasbora/ChiliRasbora_4.png.thumb.webp": "84d5b6477bcba1493d055d6c10b3f50dab1014291f2ee3b66d542d5ac9510a0f",
+        "assets/generated/sprites/fish/ChiliRasbora/ChiliRasbora_3.png.thumb.webp": "db6c6f892895bb51efc850c4a282292b27310706c807063c804996ad26ee2e36",
+        "assets/generated/sprites/fish/ChiliRasbora/ChiliRasbora_2.png.thumb.webp": "2e0f519c68bb5a266184e334a3340d978281d01c33877c052d458cef767cedaf"
+      }
+    },
+    "assets/fish/Embertetra.webp": {
+      "version": "dd03ffcd5044-v1",
+      "files": {
+        "assets/generated/sprites/fish/Embertetra/embertetra.png.thumb.webp": "36f6b4d77a76d841b191bc59fe68daedd7e50903a66aca54c781cdbfbcb1697d",
+        "assets/generated/sprites/fish/Embertetra/embertetra_3.png.thumb.webp": "a2f75bba190c6c69c361162f138a937aa49fb20f3115e84e4412050ba601e8b0",
+        "assets/generated/sprites/fish/Embertetra/embertetra_2.png.thumb.webp": "31cf177192c142b3edd97542bb306b5341dbbe0db14b0e8732766e6f6b78236c",
+        "assets/generated/sprites/fish/Embertetra/embertetra_4.png.thumb.webp": "96de705a3fa1d9b25af1b42a564abee010a97600375b5e294a4240762a4fc866",
+        "assets/generated/sprites/fish/Embertetra/embertetra_1.png.thumb.webp": "788653a536bd2bf9534a012c049ecca8545a06d7dbc166bc8284d7bad360f4f3"
+      }
+    },
+    "assets/fish/Gourami.webp": {
+      "version": "82d84ff64088-v1",
+      "files": {
+        "assets/generated/sprites/fish/Gourami/Gourami.png.thumb.webp": "006d26ea84b35f109aae3ee399e11ba72be88dcbe6634a076c4dca552c4fb291",
+        "assets/generated/sprites/fish/Gourami/Gourami_1.png.thumb.webp": "5f92bf2564dad651e600b57f457e32152e73c4bab18e709dd3e2b98c3bc85695",
+        "assets/generated/sprites/fish/Gourami/Gourami_2.png.thumb.webp": "5538364e3869601641f29b546caa1f64838e24b365627b6e55346401af20c2a7",
+        "assets/generated/sprites/fish/Gourami/Gourami_3.png.thumb.webp": "d7b05c78438d71d52f5cc2c241815facab1defb9b60ce548f73d9b1f356c64bd",
+        "assets/generated/sprites/fish/Gourami/Gourami_4.png.thumb.webp": "ed66a84da86e93d5001d6d292881420830789b32f60209f322f33e5f04a2e65f"
+      }
+    },
+    "assets/fish/Great_White_Shark.webp": {
+      "version": "bee11c41c587-v1",
+      "files": {
+        "assets/generated/sprites/fish/Great_White_Shark/Great_White_Shark_4.png.thumb.webp": "d4a640aae58c08458b8817f50ac80c1e04cd0060f782e2c3c7af2ce3f288b3ba",
+        "assets/generated/sprites/fish/Great_White_Shark/Great_White_Shark.png.thumb.webp": "97a9a552fa545c6a0fe2c8ee9fc1d4f378efce488bc2c5d81817f1da9c84423a",
+        "assets/generated/sprites/fish/Great_White_Shark/Great_White_Shark_1.png.thumb.webp": "f1e58f2c322d7dff408ad413d357b67bd13bfc5a80c6730dc3e1db8ec23d9577",
+        "assets/generated/sprites/fish/Great_White_Shark/Great_White_Shark_2.png.thumb.webp": "6f0b7ab2a755c11ff753a2704a340292a9dd2575bbf391aef17ff8250043f98f",
+        "assets/generated/sprites/fish/Great_White_Shark/Great_White_Shark_3.png.thumb.webp": "1af72ef29bfab64029a92de20e0d4ba62c19dc6ffe58b1fe8b4b2ef36143a422"
+      }
+    },
+    "assets/fish/Hammerhead_Shark.webp": {
+      "version": "5c9579854c3a-v1",
+      "files": {
+        "assets/generated/sprites/fish/Hammerhead_Shark/Hammerhead_Shark.png.thumb.webp": "c9e9863f6c33fc57f801936bd29f060e2d6e0e45d2c694bf4161bdf8ad1eaf37",
+        "assets/generated/sprites/fish/Hammerhead_Shark/Hammerhead_Shark_1.png.thumb.webp": "ef0f5a1ac74ddfb9bcb405dee29c00e3b45bd850d058f9ac088b8d1e10109376",
+        "assets/generated/sprites/fish/Hammerhead_Shark/Hammerhead_Shark_2.png.thumb.webp": "b0c82e5aed043d7aa1277186a39fe02ab9e8966abd6fb35644b74afa53bcabf6",
+        "assets/generated/sprites/fish/Hammerhead_Shark/Hammerhead_Shark_3.png.thumb.webp": "27ac5ea9d3fcd610432bacfed9fe176abbe47dc21556603629e568ca97105bba",
+        "assets/generated/sprites/fish/Hammerhead_Shark/Hammerhead_Shark_4.png.thumb.webp": "8f8d5fea26e1b48b259a35bbd3541b1c1d21ac56c1691bd149cbc2107fc66908",
+        "assets/generated/sprites/fish/Hammerhead_Shark/Hammerhead_Shark_5.png.thumb.webp": "7960950e42d30183c387ff3472115d35ec01102eeb74c49ff22527f483446c2b"
+      }
+    },
+    "assets/fish/HarlequinRasbora.webp": {
+      "version": "87976d1cab1c-v1",
+      "files": {
+        "assets/generated/sprites/fish/HarlequinRasbora/HarlequinRasbora_2.png.thumb.webp": "89ca5a6eeb6a2cafc23ee4cab8db480272e6a931e86342ebb84c3c3a9e962fc9",
+        "assets/generated/sprites/fish/HarlequinRasbora/HarlequinRasbora_3.png.thumb.webp": "89be4f60e438cf211dd9c87e22c5aa997180d4a79c05e867be98218c73f57f49",
+        "assets/generated/sprites/fish/HarlequinRasbora/HarlequinRasbora_4.png.thumb.webp": "3ab97396efd6f7f1414ade8e2fc4080fcf84797fdaf09428b21f36abadfe1506",
+        "assets/generated/sprites/fish/HarlequinRasbora/HarlequinRasbora_1.png.thumb.webp": "f9b3aa556367096032a9b68ab42800a83a213232aef28e792b8cb5034e36c4da",
+        "assets/generated/sprites/fish/HarlequinRasbora/HarlequinRasbora.png.thumb.webp": "5e0603eef820c6bb61a35c9f440af38a3d761693cb106a4bc7104335765b4886"
+      }
+    },
+    "assets/fish/Livebearer.webp": {
+      "version": "6ebc4a082427-v1",
+      "files": {
+        "assets/generated/sprites/fish/Livebearer/Livebearer.png.thumb.webp": "170c4a56f687a86875ae7ea67633880c040c910b098d63e2512bbf3dfb1fcb33",
+        "assets/generated/sprites/fish/Livebearer/Livebearer_1.png.thumb.webp": "c148665f0959ea251a94011e9a745097b70dd009e3b0a2ede97cc0c7907bb115",
+        "assets/generated/sprites/fish/Livebearer/Livebearer_2.png.thumb.webp": "6eceaf1123812109a55102e7d6103d69f7daa3d04823f441a20747a0101028b8",
+        "assets/generated/sprites/fish/Livebearer/Livebearer_3.png.thumb.webp": "5bab5830c7e8df2c6f73e72c0a745e2d05ae4bece92c212f15c40b8d880d3dbc",
+        "assets/generated/sprites/fish/Livebearer/Livebearer_4.png.thumb.webp": "e683287578ef55e4c82bdc947bc9de12b76a53d8c207b6b1bf86be76dce6f505"
+      }
+    },
+    "assets/fish/Moorgoldfish.webp": {
+      "version": "6e1bde44da1f-v1",
+      "files": {
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish.png.thumb.webp": "10f10cdc7b0faa4c5b257f6377db752cab397bf3cba8a063c910acd55926b23e",
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_1.png.thumb.webp": "6aa4e3a74d496f8dba882723c29b143345a3228944923362f0998ab729dc434c",
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_2.png.thumb.webp": "8fc6213f5190ae227422435d40667c9f1705445266d35774b5215890994bcf1a",
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_3.png.thumb.webp": "7a0f4caa412c4d3480a4658e25833f0786d0e1ba41c4f79667c82e8f6c69b09b",
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_4.png.thumb.webp": "b15f8c82f5b0c68bcf53f9c0bd591086c30db6afc87309b112c97d97d8d1c973"
+      }
+    },
+    "assets/fish/NeonTetra.webp": {
+      "version": "efdb53fde50c-v1",
+      "files": {
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra.png.thumb.webp": "bf950c929669e469de2bc048b41e8d46f12f78e989b3b73695a0f7481642ead9",
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra_1.png.thumb.webp": "64f8444e8a4430e6394af7207a9cb6cdefd04b56132bcf5f9deb0c30f1cf2ad9",
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra_2.png.thumb.webp": "36a24f5ac1308e08d56e8ca83f002d689e0ccad703b65667ce54207b7676010d",
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra_3.png.thumb.webp": "63adb7abfe13cb68f64ec05d8d620efd37c606dd2840e43e6923c2b6b6049079",
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra_4.png.thumb.webp": "e562a337cf3d9eebe279da1e54d9ace80669f356590c4c8185d7c15ebc01cac8"
+      }
+    },
+    "assets/fish/Orca.webp": {
+      "version": "70c262ba40d9-v1",
+      "files": {
+        "assets/generated/sprites/fish/Orca/Orca.png.thumb.webp": "c1f5919a1773e470264a747730d13326e18d1df29dcb4f9593adc661fb3d404b",
+        "assets/generated/sprites/fish/Orca/Orca_1.png.thumb.webp": "8a8a757aa0a4b41195678551c8b5cfb5247e2a1774c0d0c78abe6f8f08fdfb2d",
+        "assets/generated/sprites/fish/Orca/Orca_2.png.thumb.webp": "51fe96c9a338e30baee578c1b8d92c77a4940ce656f6a4a2ed6abfd928b5ff68",
+        "assets/generated/sprites/fish/Orca/Orca_3.png.thumb.webp": "7ddf6566b582cd01e22b155b91ed8c177cd24d8cba397300ef19e5304497b864",
+        "assets/generated/sprites/fish/Orca/Orca_4.png.thumb.webp": "f13378aef3a1d6cb4d10e27115620e3515a55b115947e98c7d2d61f66b92f957"
+      }
+    },
+    "assets/fish/Otocinclus.webp": {
+      "version": "9c5424459440-v1",
+      "files": {
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_0.png.thumb.webp": "31cf1bde5229fd7d3e6655c2d6f8a42ee77c9c415e44525a2751f27b10d54705",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_0_bottom.png.thumb.webp": "e78c91b23433120ee8fcc661dc1926f81fe26dd32c95779ebc4e8cfcd3a1116e",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_0_side.png.thumb.webp": "8d3f8471e4d5f00afd412ceafe7d3d7cb2e9b2530a0c685a33c3e14d1e40e7ed",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_1.png.thumb.webp": "603fe2ef2afec9586b2b4f4df8a58e92531f3edc24a03acac3e829e036dd58ca",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_1_bottom.png.thumb.webp": "f2b2f9e6bdb40b64b0b27a2ba137af8251191fbd122621170d8d0ecd5ffccc17",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_1_side.png.thumb.webp": "a929607980c1bc30b8d1255b5810cbd83922b73727ca110d92b94fd7a535dd8f",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_2.png.thumb.webp": "173c3f418a2f874c26dd7898e1e8e783db580e6fcbf229ec1c387310ee5a9c0b",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_2_bottom.png.thumb.webp": "2b30ca36bbab0a6922c315c45d8cac39fe1ef527e7e94301785711704a1d266d",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_2_side.png.thumb.webp": "509442150e25fce707c45a1b5d30eae93579623df3771b8a197a0bf7dfd84377",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_3.png.thumb.webp": "ec318a43c176d5c90e81d7b17c7f1a103d0908971f3d389961542b18c2b1fb29",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_3_bottom.png.thumb.webp": "efe6ffaf12e96a66b333afee76d21f0423d8cc0b69f2d2cdf391aaf9a4048490",
+        "assets/generated/sprites/fish/Otocinclus/otocinclus_3_side.png.thumb.webp": "5edcad1f59cfe436a45eaffbd09636e75d6d2e6caff2215e68eb062e1fd8a4f6"
+      }
+    },
+    "assets/fish/Pencilfish.webp": {
+      "version": "8c90bb806129-v1",
+      "files": {
+        "assets/generated/sprites/fish/Pencilfish/Pencilfish_4.png.thumb.webp": "048b1e6d7c06cb7e9e5d2e73627f82a37f2ceaa63140129e07aaf772e6433c75",
+        "assets/generated/sprites/fish/Pencilfish/Pencilfish_3.png.thumb.webp": "5bf6838d982cd3a8e2640adeee4e33569f021712382ede8c0dde33c639ab9f80",
+        "assets/generated/sprites/fish/Pencilfish/Pencilfish_2.png.thumb.webp": "3c45d856797caef4e9198422cdbafb03d5184a43c646dce2979d0b8099c6950f",
+        "assets/generated/sprites/fish/Pencilfish/Pencilfish_1.png.thumb.webp": "2957d33a8d1a171e61c82fa032b7b266f2d3f27f6ea2e87b7016589da5f13e60",
+        "assets/generated/sprites/fish/Pencilfish/Pencilfish.png.thumb.webp": "40df1db23d49678482ea82d3ba992f578863ae35d3aa79a3ee8f48f61bbddcdd"
+      }
+    },
+    "assets/fish/Pilot_Fish.webp": {
+      "version": "e867a6c57c58-v1",
+      "files": {
+        "assets/generated/sprites/fish/Pilot_Fish/Pilot_Fish.png.thumb.webp": "0a227682bd5e9d2e4ad9558a7e0f876c4a7fe8bfa4db8ae2a457f46ca078090e",
+        "assets/generated/sprites/fish/Pilot_Fish/Pilot_Fish_2.png.thumb.webp": "96da7024932ffc83adb97065afac77b0e542bb04024ebcbc72252acfa3148a4f",
+        "assets/generated/sprites/fish/Pilot_Fish/Pilot_Fish_1.png.thumb.webp": "99b8fac2fac8cdf791e6ee7e58ead262bf164fd186bc494c29977a94ed01bad8",
+        "assets/generated/sprites/fish/Pilot_Fish/Pilot_Fish_3.png.thumb.webp": "b94264f298e59449bb9f58e8255bd93bc8b93b9c9474a4d25f54612df57c5fed",
+        "assets/generated/sprites/fish/Pilot_Fish/Pilot_Fish_4.png.thumb.webp": "22d40b0820295edf3011b2acc3766b558e6f0c5b470ad3e8a4c5406fcc27f17e"
+      }
+    },
+    "assets/fish/RummyNoseTetra.webp": {
+      "version": "13e8532f7e67-v1",
+      "files": {
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra.png.thumb.webp": "60eb891c95964a419e93086be2ecf9edda2a59272dc625726fdf544ae380b809",
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_4.png.thumb.webp": "a27f99eb61e176b9fb0ca63b856a4168fb54d82fec57fb4cd3ebc3236ab61e25",
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_3.png.thumb.webp": "7e88fd9a8ef6530021b72117110a0ed7738b2a9ffc03d3c3a9ba361c51495b5c",
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_2.png.thumb.webp": "46887feadbb9b6ba66a712d3aeec26adff45ee2fa8f4b361b164c88c48c272ca",
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_1.png.thumb.webp": "351e163e892d789f70c9648cc9bf42c32a8db57a0ad678953517492b7e70d125"
+      }
+    },
+    "assets/fish/Seahorse.webp": {
+      "version": "0e3bcc85d985-v1",
+      "files": {
+        "assets/generated/sprites/fish/Seahorse/Seahorse.png.thumb.webp": "8d2392d122a84435f9a9eba6b035591ea22c1162a8e240dd8b32ac360cdee2e2",
+        "assets/generated/sprites/fish/Seahorse/Seahorse_1.png.thumb.webp": "a717c98d7717a2c880b858af25d163a5af8277416ea403a7089e11a7809fa170",
+        "assets/generated/sprites/fish/Seahorse/Seahorse_2.png.thumb.webp": "5e8c283e535cfc2ead9d0be6e033142bcdf9756b361756c7ebf3f078ff94fe08",
+        "assets/generated/sprites/fish/Seahorse/Seahorse_3.png.thumb.webp": "3a79d122e6f6dabc437e5cffafa6f76ba01e0847d6f3ef9f335c35897dceb3f4",
+        "assets/generated/sprites/fish/Seahorse/Seahorse_4.png.thumb.webp": "dbd34a381c36a8082f2fc119fe9333844f72dad0d159880a2be8de1a7a85178e"
+      }
+    },
+    "assets/fish/Submarine.webp": {
+      "version": "615de5f4a424-v1",
+      "files": {
+        "assets/generated/sprites/fish/Submarine/submarine_1.png.thumb.webp": "5d35850225920498346ad616e7b2485522874327454111722d5bbe75784f8fee",
+        "assets/generated/sprites/fish/Submarine/submarine.png.thumb.webp": "f413281a5512a3c777481768b0d48f27d40cf136c09dd05c88c5d2e370b733a1",
+        "assets/generated/sprites/fish/Submarine/submarine_2.png.thumb.webp": "b06568a7bec5e2d7dc1a799e96194b2c89196ac7e3c90eb015766e93190aed3f",
+        "assets/generated/sprites/fish/Submarine/submarine_3.png.thumb.webp": "30108929c62fb1783cc3bd0c396681d713113214a3e749a72c6f3575e755f9ff",
+        "assets/generated/sprites/fish/Submarine/Halloween_Submarine_5.png.thumb.webp": "fd4cdddc2762d6f6725f0f648db66a2be1e99b6d8648ab7d4de1911a8ebcbe64",
+        "assets/generated/sprites/fish/Submarine/submarine_4.png.thumb.webp": "6a11c2f99a96c32c7304dc473717619547ab4d8fa47f1880216c1ae86a976eb1"
+      }
+    },
+    "assets/fish/Sunfish.webp": {
+      "version": "c81ea7e5c47b-v1",
+      "files": {
+        "assets/generated/sprites/fish/Sunfish/Sunfish.png.thumb.webp": "d0e2a138fd7e66c1d0127eb913232a45bd205ee885d21b73d9b93fa680f709a6",
+        "assets/generated/sprites/fish/Sunfish/Sunfish_1.png.thumb.webp": "440f5e74865224587df8336c4e2d3ea5a321d7945b55aa82a774efb14d12e4a7",
+        "assets/generated/sprites/fish/Sunfish/Sunfish_2.png.thumb.webp": "7a1e07cff7cb81465d40d4b728d1ddb867ebe69b8860740eb2ea676bebdc38b1",
+        "assets/generated/sprites/fish/Sunfish/Sunfish_3.png.thumb.webp": "dd333be61bd9149711c8ea6ad690c9f6f4675c2e6f641fce31de94378e917d59",
+        "assets/generated/sprites/fish/Sunfish/Sunfish_4.png.thumb.webp": "aa88e1444d1a369cfeb0543a803bfcba50f42cce739160e6402d4354a1c33983"
+      }
+    },
+    "assets/fish/Swordtail.webp": {
+      "version": "464bb6c71c12-v1",
+      "files": {
+        "assets/generated/sprites/fish/Swordtail/Swordtail.png.thumb.webp": "0e35e38bb57661ee99d1319f06e8f2d81eb2a18180d93ff54a78f5cafff556b7",
+        "assets/generated/sprites/fish/Swordtail/Swordtail_1.png.thumb.webp": "6c9c829de66eaa23a2a4f898ace4a24ccc64ad8bb95148523ce80e5e891909c9",
+        "assets/generated/sprites/fish/Swordtail/Swordtail_2.png.thumb.webp": "e35b3ae91b9a0633d43452593a665879d67fddbe2fa62102925d541669e7ab97",
+        "assets/generated/sprites/fish/Swordtail/Swordtail_3.png.thumb.webp": "d95f1133939c5c059003fabc2563472417dbb0b46c7d7098b18ee4c519cc5dfd",
+        "assets/generated/sprites/fish/Swordtail/Swordtail_4.png.thumb.webp": "30d05511c49efbe607f87e18d051a770e86115e42507163a5a5e0a433c5b0126"
+      }
+    },
+    "assets/fish/bluetang.webp": {
+      "version": "4a6c75fcadfa-v1",
+      "files": {
+        "assets/generated/sprites/fish/bluetang/bluetang.png.thumb.webp": "ef7e3f8650ad63c09e647565b91c3881ce58c3c5c74a62edb3e531ec2e794c0f",
+        "assets/generated/sprites/fish/bluetang/bluetang_1.png.thumb.webp": "7f5abfff4cba8bfb7322101f658a890fd3ca4c3382e3ba0978defbc2d4b4cba2",
+        "assets/generated/sprites/fish/bluetang/bluetang_2.png.thumb.webp": "48641bf6e2beaa9daaab39839e68b06b0d60adfcbd882178bee7df472238bd2a",
+        "assets/generated/sprites/fish/bluetang/bluetang_3.png.thumb.webp": "c3a4e70d8b531674a5fc8eabecc3ef841ac3856e569f7d037e74080a3e677f3f",
+        "assets/generated/sprites/fish/bluetang/bluetang_4.png.thumb.webp": "9abe5c4c052ede575a84b0b72b5c410354147cfb31ca38d72cd548d7f30ac701"
+      }
+    },
+    "assets/fish/cherrybarb.webp": {
+      "version": "5924ecdac823-v1",
+      "files": {
+        "assets/generated/sprites/fish/cherrybarb/cherrybarb.png.thumb.webp": "b3ba47628fe9ba726f0ff071516cc077cffdf397f3b333539980f420ba6e3074",
+        "assets/generated/sprites/fish/cherrybarb/cherrybarb_1.png.thumb.webp": "a428780cbaff2edac2f49114b7641370727b3ca2fd02effd5ed9946147f0d9fc",
+        "assets/generated/sprites/fish/cherrybarb/cherrybarb_2.png.thumb.webp": "ffe5e70c26735d082f20f2d169d30ece5ea4c982140d1e8461a2d6af3ee93bc4",
+        "assets/generated/sprites/fish/cherrybarb/cherrybarb_3.png.thumb.webp": "54eb381867039ffe6e6503624bbe2214121c15d6370920bea27e78c6bc887f88",
+        "assets/generated/sprites/fish/cherrybarb/cherrybarb_4.png.thumb.webp": "680c8bcc451fb6da4a752f547e8d77d2bbd9611e9b6c0263874a2f7dda3081bb"
+      }
+    },
+    "assets/fish/clownfish.webp": {
+      "version": "88dbfbf320de-v1",
+      "files": {
+        "assets/generated/sprites/fish/clownfish/clownfish.png.thumb.webp": "3bc1772322876b0776daaf53479308abb76dcf0e4782c94e0d681eefc1ee9eab",
+        "assets/generated/sprites/fish/clownfish/clownfish_1.png.thumb.webp": "0ca019e805e25df7c174b6659e9cbe6ee727b312291656e730cfc650f9114d7c",
+        "assets/generated/sprites/fish/clownfish/clownfish_2.png.thumb.webp": "e1a047d797129620ff4a92c775b1c33a7d12da79f0bf0a2a760fc18504a01fa7",
+        "assets/generated/sprites/fish/clownfish/clownfish_3.png.thumb.webp": "1393cf5936d70cbaa6b91991486968730d51cabe5ff70a1c01cafaac41a52470",
+        "assets/generated/sprites/fish/clownfish/clownfish_4.png.thumb.webp": "bb6d68a1bb43c7e7699efe1ed5eeb095cc8477ab298f5d03aeabd4d6000c8b77"
+      }
+    },
+    "assets/fish/discus.webp": {
+      "version": "f0d406c37c3f-v1",
+      "files": {
+        "assets/generated/sprites/fish/discus/discus.png.thumb.webp": "6c4c6afc3fb372a9a3c8b81a17eac9c717dc894e6edb40e8d147e24b37bd0636",
+        "assets/generated/sprites/fish/discus/discus_1.png.thumb.webp": "a8a1fac28843906d9d1b34b6acf9e70f9bb56c7d1f1f5d6f8f4c33691fd685ea",
+        "assets/generated/sprites/fish/discus/discus_2.png.thumb.webp": "313a5b7f5e1b23d9c9c968f60ecbdbc30b1b888f6affe3a31e03387af44f047b",
+        "assets/generated/sprites/fish/discus/discus_3.png.thumb.webp": "7ee16e4e3947f5c94101a937a21fb6bb85f624dc05884573f593272dd7051588",
+        "assets/generated/sprites/fish/discus/discus_4.png.thumb.webp": "352155637e1ebf4df83e76b0ae7ceaa9296db491b701b6fa22e4e679aea253ea"
+      }
+    },
+    "assets/fish/goldfish.webp": {
+      "version": "b7ad3517f347-v1",
+      "files": {
+        "assets/generated/sprites/fish/goldfish/goldfish.png.thumb.webp": "6ba368d38c91ba4413c2fe13a69c12dc1add33beee6dcea903dd93e22d4f7fda",
+        "assets/generated/sprites/fish/goldfish/goldfish_1.png.thumb.webp": "d0652668254a1e2d7733764ac4720fc8592fb91b3c782fd03d3dccf2a6f57c1c",
+        "assets/generated/sprites/fish/goldfish/goldfish_2.png.thumb.webp": "bb61cfeecfd788c135428d903436e283f4e7079ef73ad204ab6c207fc419e289",
+        "assets/generated/sprites/fish/goldfish/goldfish_3.png.thumb.webp": "3dbc016c57b484845098856a728aca27fa2c9ccdd00919d95c35cc62d870a603",
+        "assets/generated/sprites/fish/goldfish/goldfish_4.png.thumb.webp": "cbb39a038663b34e6d6c002173db9990fd1d567f6343294dacfd789968a8a8b2"
+      }
+    },
+    "assets/fish/guppy.webp": {
+      "version": "35c4870ddb8b-v1",
+      "files": {
+        "assets/generated/sprites/fish/guppy/guppy.png.thumb.webp": "de074ea59fdc31e46f65f45045977da9adbe51d7eb119fa1ca7071664121400d",
+        "assets/generated/sprites/fish/guppy/guppy_1.png.thumb.webp": "e81060d973b0421ebf2ac464ab2d0dc6700e0d7c4691669e1195b85307250b7b",
+        "assets/generated/sprites/fish/guppy/guppy_2.png.thumb.webp": "9c1c31480309e0119119dbb13c627acaeb1be586bc692ef059389d51f4e13c69",
+        "assets/generated/sprites/fish/guppy/guppy_3.png.thumb.webp": "062672d97cf31bd632862c55210db3e4e94b45cd7e4f01cdb17909506d9ade37",
+        "assets/generated/sprites/fish/guppy/guppy_4.png.thumb.webp": "954433e286d081c6983e8495ad7962c6c9fd0fc74660a16c82c48860ff39aba1"
+      }
+    },
+    "assets/fish/molly.webp": {
+      "version": "593da5769561-v1",
+      "files": {
+        "assets/generated/sprites/fish/molly/molly.png.thumb.webp": "00ee74b0b53153b3d508218d12bda467fb9e866a605c946a4f4690fbc956874d",
+        "assets/generated/sprites/fish/molly/molly_1.png.thumb.webp": "852d1449861b267d4906431131ba8954da49edb892ca132d887f4ffbb9386256",
+        "assets/generated/sprites/fish/molly/molly_2.png.thumb.webp": "9da558828c14677536c1910f9c34e86ba1f3aaa7e737b4ca00cb0a223055c172",
+        "assets/generated/sprites/fish/molly/molly_3.png.thumb.webp": "9f121e439e5b0c139ddbace495b56ed9551ec447a9a4cf4d89bd2672d2e54934",
+        "assets/generated/sprites/fish/molly/molly_4.png.thumb.webp": "52a3c52c51ac46c86ed0f797b4b6d4df12bae23b230096a49345e98f8b7eb532"
+      }
+    },
+    "assets/fish/piranha.webp": {
+      "version": "a87ff1d71f68-v1",
+      "files": {
+        "assets/generated/sprites/fish/piranha/piranha.png.thumb.webp": "8fa8194fa6df6c8065bf083db92e431e6cd8b700e9faee590b3c650ab20680f1",
+        "assets/generated/sprites/fish/piranha/piranha_1.png.thumb.webp": "659a955ec83144ae58e2ce3629beadd597af67b7895efafe125820c821aa2cb7",
+        "assets/generated/sprites/fish/piranha/piranha_2.png.thumb.webp": "49cf8d94777c4e38470a69db9a8ba2387fb3896a753dcc3d93d9972c0bc35f6b",
+        "assets/generated/sprites/fish/piranha/piranha_3.png.thumb.webp": "262c9fb60391dccc29cc1b5216cc2d2a49457ac3bf23edd722a0584349ae73a0",
+        "assets/generated/sprites/fish/piranha/piranha_4.png.thumb.webp": "e4ef888ff6481e5f829cd73a46bf87650756dc5c044dc8ed066ffcb1a0ce1314"
+      }
+    },
+    "assets/fish/pufferfish.webp": {
+      "version": "5613d775ea98-v1",
+      "files": {
+        "assets/generated/sprites/fish/pufferfish/pufferfish.png.thumb.webp": "5d45f2e97e24ddf6620ca84a865b882a1c8719a74090dcf8f26ba002cdbf0ee1",
+        "assets/generated/sprites/fish/pufferfish/pufferfish_1.png.thumb.webp": "197fe5a17df7b5d86083fd03134d899df8ab6fec4ac0f980ebd247efa6ba2b3c",
+        "assets/generated/sprites/fish/pufferfish/pufferfish_2.png.thumb.webp": "e06ffe6ddcecd2ea19886c7c42e12e59dbece1dc76860de08cffc5f84ff43b32",
+        "assets/generated/sprites/fish/pufferfish/pufferfish_3.png.thumb.webp": "b2884a3faea814cd44a647b13e0cf513f3833ce9b1d7e20e2417c53e81aafaf8",
+        "assets/generated/sprites/fish/pufferfish/pufferfish_4.png.thumb.webp": "7d2786ec7e7f3dbf24f3f4824f32e5a1c5b8f81c942577812d99098aad48da85"
+      }
+    },
+    "assets/fish/rainbowfish.webp": {
+      "version": "5d5171fe1048-v1",
+      "files": {
+        "assets/generated/sprites/fish/rainbowfish/rainbowfish.png.thumb.webp": "bc499cdadae97cb8acc41aea2b9b62783dd09c44ce094d0cafd96232674d8356",
+        "assets/generated/sprites/fish/rainbowfish/rainbowfish_1.png.thumb.webp": "bb302326717c2eceec0f13ff198ef728498e0d177a1482d1f241e687ef9d12f8",
+        "assets/generated/sprites/fish/rainbowfish/rainbowfish_2.png.thumb.webp": "245a221a7ac3637a534ff514cb6162a4858bf550b30709156ae0cb55958b646f",
+        "assets/generated/sprites/fish/rainbowfish/rainbowfish_3.png.thumb.webp": "205bbdef6a3601e57bda0263f32379d163c466530149a72fa580144b7d3d015e",
+        "assets/generated/sprites/fish/rainbowfish/rainbowfish_4.png.thumb.webp": "fb1a04846e5cff4862dcc66100ad82ecd5f68d8541dbdcded0eb44197d0906df"
+      }
+    },
+    "assets/fish/royalgramma.webp": {
+      "version": "102f665de3bd-v1",
+      "files": {
+        "assets/generated/sprites/fish/royalgramma/royalgramma.png.thumb.webp": "2feb21b1bde12439284ce87247585162b3f5f668dc8152263c51d9e65beec41a",
+        "assets/generated/sprites/fish/royalgramma/royalgramma_1.png.thumb.webp": "1a7111608bc6bd847b3c0efe2fb2f0d1430ca88687da6c240f5feb9a94ef92bb",
+        "assets/generated/sprites/fish/royalgramma/royalgramma_2.png.thumb.webp": "01590189e19f092f7242494f0ddec755bfb118de6bad4cdf397c97803ebd8de7",
+        "assets/generated/sprites/fish/royalgramma/royalgramma_3.png.thumb.webp": "e677265e027932273672f1c5a7d0e53115daa2ce53b8286467728ae49970fc3d",
+        "assets/generated/sprites/fish/royalgramma/royalgramma_4.png.thumb.webp": "011bef94b5c7f79450c89460dc471e7974edcb8f187c7dd9f0bf8f2415fe8db4"
+      }
+    },
+    "assets/fish/wonderkillifish.webp": {
+      "version": "7e87ecc8ee3c-v1",
+      "files": {
+        "assets/generated/sprites/fish/wonderkillifish/wonderkillifish.png.thumb.webp": "483f99c2e62729b620579462b3328bd27b7c623011b9407c8cc6acd3665bc9c6",
+        "assets/generated/sprites/fish/wonderkillifish/wonderkillifish_1.png.thumb.webp": "49c4bebfc9fee9f924dde28174f0f0c4b0dc76d7e18e9ea3687f971652cf8c48",
+        "assets/generated/sprites/fish/wonderkillifish/wonderkillifish_2.png.thumb.webp": "35835e522e1939b7364571c2cda432a3ce6b99785194f92d858983db1059c471",
+        "assets/generated/sprites/fish/wonderkillifish/wonderkillifish_3.png.thumb.webp": "dc7817897a3be63d4432773f222beb89f3d0232230cc0f1f78bc2a77f2858f82",
+        "assets/generated/sprites/fish/wonderkillifish/wonderkillifish_4.png.thumb.webp": "64612cd39899899e345eae7b8824c816696635ddae68f9fb63312e37575b1e27"
+      }
+    },
+    "assets/fish/yellowtang.webp": {
+      "version": "99d8869766f2-v1",
+      "files": {
+        "assets/generated/sprites/fish/yellowtang/yellowtang.png.thumb.webp": "876cdee4baff1cc36823e8dc66c5cabf7056c20ccca6abcdf16d9cb3c772d369",
+        "assets/generated/sprites/fish/yellowtang/yellowtang_1.png.thumb.webp": "2cc6a153bee50e2c0c7247a069488087d05a613159052206e97579d737be331f",
+        "assets/generated/sprites/fish/yellowtang/yellowtang_2.png.thumb.webp": "d9fc18acc4de2775b3b48f792169fc6f8f89e4b89e4392f7e51ad5261e83dac9",
+        "assets/generated/sprites/fish/yellowtang/yellowtang_3.png.thumb.webp": "cbefd934e32b8a41c4c2861378305e6b33b9e222b7699f6b044b9889d334e08a",
+        "assets/generated/sprites/fish/yellowtang/yellowtang_4.png.thumb.webp": "6d2c70d2e5ba2f51b2986ed4474bb33326a18ab46e8d8ebe10b5f2d407de8a9f"
+      }
+    },
+    "assets/fish/zebradanio.webp": {
+      "version": "7ec070d27a74-v1",
+      "files": {
+        "assets/generated/sprites/fish/zebradanio/zebradanio_4.png.thumb.webp": "96282b1ffc86f96eba4c865496c9fe6b12ab48203555e5d21d758acca2101568",
+        "assets/generated/sprites/fish/zebradanio/zebradanio.png.thumb.webp": "f88810f8c4c354e7def32a738e4ff67a5f75a61f53de0bc17273bcea0d8f429d",
+        "assets/generated/sprites/fish/zebradanio/zebradanio_1.png.thumb.webp": "f2884af501b4865ec141a5b682c6002f13ca0cefbc4d99f4e93af1a74b8ae425",
+        "assets/generated/sprites/fish/zebradanio/zebradanio_2.png.thumb.webp": "beb65a3065829ac1279dbb035c30d6be409751d37bf71e64e2e946171396ba3e",
+        "assets/generated/sprites/fish/zebradanio/zebradanio_3.png.thumb.webp": "cc117ee333d837576be8de6f700cb0ec9925250bdee9615039ba029712e00e04"
+      }
+    },
+    "assets/foodandmeds/Food.webp": {
+      "version": "20dd1d38beb2-v1",
+      "files": {
+        "assets/generated/sprites/foodandmeds/Food/basic-food.png.thumb.webp": "e04f2dbe84ed4d490c824b41bc535f54f0eda3f8767d59b436cc88aa4c54d05a",
+        "assets/generated/sprites/foodandmeds/Food/chum-food.png.thumb.webp": "72a2dce214f0e844ceece111d2c4087ae006be199aff703e6017cf445729e57d",
+        "assets/generated/sprites/foodandmeds/Food/frisky-food.png.thumb.webp": "84c36e9b93061f4d13598ab6daf03afb79affb523ff52db3278278ea21d3fafe",
+        "assets/generated/sprites/foodandmeds/Food/upgraded-food.png.thumb.webp": "9cb1234839baf5f68d542bc4a6fc6bf0307a938cababe5093de15b2a10d7a792"
+      }
+    },
+    "assets/foodandmeds/Food_Morsels.webp": {
+      "version": "4ce13e1cf3ec-v1",
+      "files": {
+        "assets/generated/sprites/foodandmeds/Food_Morsels/pellet.png.thumb.webp": "e6e76b8bee633ae4db967df4566ef218e1dc783adbd0684f4792ad8fb878637f",
+        "assets/generated/sprites/foodandmeds/Food_Morsels/chum_1.png.thumb.webp": "852c87f11fc9760d104d961d57e2d7e7b8cbf97ee763fc2118a4ee5b35f2d07e",
+        "assets/generated/sprites/foodandmeds/Food_Morsels/chum_2.png.thumb.webp": "160f2338497fd2f67f8516bf6e67649fd6acfdfe513878b89b7d3548482ece73",
+        "assets/generated/sprites/foodandmeds/Food_Morsels/chum_3.png.thumb.webp": "5c3584b7dc1650750b6f33eda571ba5f2d70a1dc2407f2dcdde9ea0c9a8d7071"
+      }
+    },
+    "assets/foodandmeds/Halloween_Candy.webp": {
+      "version": "ee3002412301-v1",
+      "files": {
+        "assets/generated/sprites/foodandmeds/Halloween_Candy/Halloween_candy_1.png.thumb.webp": "de17f9b1f22559d1e1eb29616586fb76717b0887ff934382567baf1547693bb2",
+        "assets/generated/sprites/foodandmeds/Halloween_Candy/Halloween_candy_2.png.thumb.webp": "b7f7dc29b4a810876ea185e4bc1ff8e38623aac6fdacc3352b61ef71de10da06",
+        "assets/generated/sprites/foodandmeds/Halloween_Candy/Halloween_Candy_Pile.png.thumb.webp": "c0532b78921a314891cd37fcfc9446476bcfc07a01c941ee9a6a64b40d53ab18"
+      }
+    },
+    "assets/foodandmeds/Medicine.webp": {
+      "version": "aeb89b7586f8-v1",
+      "files": {
+        "assets/generated/sprites/foodandmeds/Medicine/first-aid-drops.png.thumb.webp": "f8618495f3cfc8a6c89fdead8e50cb20e703495b5e3260e5dca367976a373d1b",
+        "assets/generated/sprites/foodandmeds/Medicine/calming-serum.png.thumb.webp": "51a3460b73a6a7512e513df03301c86dac5e3fc7270e6846640c467c9ce61d56"
+      }
+    },
+    "assets/grime/Grime.webp": {
+      "version": "7e0a7da6ef39-v1",
+      "files": {
+        "assets/generated/sprites/grime/Grime/grime-level-1.webp.thumb.webp": "71e99c271ae06b53dc44d06f7460e0f304ab4d523fffaddc7f4930ff36682284",
+        "assets/generated/sprites/grime/Grime/grime-level-2.webp.thumb.webp": "dd9e7edbbd5472935b8407a2148c5447b201784ae4ed21af8662f25f0a852189",
+        "assets/generated/sprites/grime/Grime/grime-level-3.webp.thumb.webp": "cf5a514d59a05b943662851c09a3929b68913bfef6e00d47b834d65217a65a1f"
+      }
+    },
+    "assets/icons/Icons.webp": {
+      "version": "8cf498811d9f-v1",
+      "files": {
+        "assets/generated/sprites/icons/Icons/debug.png.thumb.webp": "5358c3e27c92e4d1ecf382e18e39be3d8a35e0fb483c8c5656618e327f7650cb",
+        "assets/generated/sprites/icons/Icons/fish_care.png.thumb.webp": "de256e8210a5cead4df78be4e5545a2d5fa393968d243c073e2b096926ca6f60",
+        "assets/generated/sprites/icons/Icons/edit_tank.png.thumb.webp": "b6d81ad93fe876ab5e617171bd2620a1af98df72cecca88b93814c7cf36b2546",
+        "assets/generated/sprites/icons/Icons/aquarium_overview.png.thumb.webp": "139f955f3de7286376ba6968a22d335e57a1cfd302e06f97251ef970b7507cd2",
+        "assets/generated/sprites/icons/Icons/Store_Icon.png.thumb.webp": "e3347ea577828c13e8fce76c33ceec6c556921ecdac59057400893315262232b",
+        "assets/generated/sprites/icons/Icons/scoop.png.thumb.webp": "a436e43996290462d7772da455ba9d20a6b465e52a90bc4674e17a0fac634998",
+        "assets/generated/sprites/icons/Icons/store.png.thumb.webp": "4d6c23894ee0b029fb75824dc59e02e027ac5bad82acde3b672a7abaebf3fecb",
+        "assets/generated/sprites/icons/Icons/fish_box.png.thumb.webp": "2e69d9074bd9e313bab80c24d406269a954b30d36f0d90efa1446bbcace9d2a7",
+        "assets/generated/sprites/icons/Icons/feed_fish.png.thumb.webp": "829b151bd366d9024114e74560ce53581591fbc968a270e60476d525f97b2d33",
+        "assets/generated/sprites/icons/Icons/sponge.png.thumb.webp": "b3428ecf10df8a94906a241c0258ac69dd7b2831493199a13e263645b371fd74",
+        "assets/generated/sprites/icons/Icons/medicine.png.thumb.webp": "74699dc523f5b5300c9bd7de3a6c571ef991479b3a1242e852d1901d59b345ad",
+        "assets/generated/sprites/icons/Icons/settings.png.thumb.webp": "af9083b1905aeabbcb3cd27e036d00e236b3a1271770f4d6b05ba85ac7ad559c",
+        "assets/generated/sprites/icons/Icons/tasks.png.thumb.webp": "3c8f649cb30f197f7e011800067d664fb952208535cb1f9313d3c90ba9d667bd",
+        "assets/generated/sprites/icons/Icons/coin.png.thumb.webp": "8ab52f531e254f3ba1da70632539910a38ce38806a21a672665688edc03fd995",
+        "assets/generated/sprites/icons/Icons/tank_info.png.thumb.webp": "c4322fed076fc46526b1c9b102b668bce516cd069633fdb970a1ef4394f73005",
+        "assets/generated/sprites/icons/Icons/tools.png.thumb.webp": "9e9ef7efaade549fc936c978b06d1886a9f42c562baef2a6db0e18b5d686dc70",
+        "assets/generated/sprites/icons/Icons/decor_box.png.thumb.webp": "80f4506aa87b18346ec1468a5235d34ada6acd17bdd336482b59db13275c0563",
+        "assets/generated/sprites/icons/Icons/bell.png.thumb.webp": "8c584069612cc0e6c26486a37775013c87ec45ba75bb91b8a7c3e6338160fd8b"
+      }
+    },
+    "assets/misc/Egg.webp": {
+      "version": "39b4216c4d39-v1",
+      "files": {
+        "assets/generated/sprites/misc/Egg/fish_egg.png.thumb.webp": "ecdd7c1b38bbb246f7b3be652b28ff18effcd253fbf8503541ce5e43f17654c5",
+        "assets/generated/sprites/misc/Egg/fish_egg_cracked.png.thumb.webp": "da02303159809aa9a83ea8d71678a8d199ae41d76f3c92e22855f89dfac30ccf",
+        "assets/generated/sprites/misc/Egg/fish_egg_shell.png.thumb.webp": "73a6d78e9b265c463b01ca69c280215d00a24abe12d726628e6eb8cf171e3263"
+      }
+    },
+    "assets/misc/Hats.webp": {
+      "version": "799bb14231a6-v1",
+      "files": {
+        "assets/generated/sprites/misc/Hats/Birthday_hat.png.thumb.webp": "f553f0366e15964aa830fe60c991333baa3dfac87fe0e5399949b9f154cad6c8",
+        "assets/generated/sprites/misc/Hats/Christmas_hat.png.thumb.webp": "d0c3fa05296b71ce61fcae10dcbdf1e87bbf1d84cc944fed177d2a237922061e",
+        "assets/generated/sprites/misc/Hats/NewYears_hat.png.thumb.webp": "b10020463fc62fcb0ff56fa20ed505ece3fd6fe07d7a19dd1e39c02f27c5ce07"
+      }
+    },
+    "assets/misc/Particles.webp": {
+      "version": "3df6080e5987-v1",
+      "files": {
+        "assets/generated/sprites/misc/Particles/particle10.png.thumb.webp": "e44c8f5beeefb5019f66348cbcd856020bbae2ca50457f7bef114f55781d5aea",
+        "assets/generated/sprites/misc/Particles/particle1.png.thumb.webp": "604739efd9d87e2646b596feb37ab72bdd25df1edc440a3dc5be8d2ac8374a2d",
+        "assets/generated/sprites/misc/Particles/particle2.png.thumb.webp": "76e1720b86a92e055c2767ba0cade80e38164c344cb5f1a8b78529698c169c57",
+        "assets/generated/sprites/misc/Particles/particle3.png.thumb.webp": "2251590faaab99219733e70e05eb3f1dca9200bcbf9ee7ac26ed4aa37c315ac5",
+        "assets/generated/sprites/misc/Particles/particle4.png.thumb.webp": "45204c644f160b34507433dce139ae97f2d20e4dc75284d2c99a31f28a3d5581",
+        "assets/generated/sprites/misc/Particles/particle5.png.thumb.webp": "48ce88ee055068f377494eff5289e9f9c109734cbf8909d7ae4b821cea97c294",
+        "assets/generated/sprites/misc/Particles/particle6.png.thumb.webp": "73b55a0d9a670e9ce96e02759648695b81b62b13a443e519515a0535f9f386d9",
+        "assets/generated/sprites/misc/Particles/particle7.png.thumb.webp": "6b23aa6cf827f0422d93c4ab80557be3f932ebc9ed6cdeecfd1d8f2876ee3b80",
+        "assets/generated/sprites/misc/Particles/particle8.png.thumb.webp": "24ff40b0abb5391241752d253ea21dd8e13a4d319aa93073ae328e5c9eaa6f57",
+        "assets/generated/sprites/misc/Particles/particle9.png.thumb.webp": "89662524c90d19222beeb451720ac98a3d9df280ff4fa531489523799d5f460b"
+      }
+    }
+  }
+}

@@ -1,0 +1,418 @@
+{
+  "Castle-Cave.png": {
+    "sourceHash": "dd36333c85dc722377d3742ac85a5bf0bb8d423741dbc201501c195ac0ed91d0",
+    "outputHash": "08570c28bdc7125a2c3b30eb4a09e70f31aba91206e6e0c54da5b7693d360eb8"
+  },
+  "Castle-Cave_bg.png": {
+    "sourceHash": "ff22af53c03ccd5cf136e0a61f3b992ddfcd48e05d094148a41d45f7b37af3f0",
+    "outputHash": "f1e6d5aea1abf7607a006ac3ab2f575c3f9eb83bc03e39d00aae1b27a870fe7d"
+  },
+  "Castle-Cave_color2.png": {
+    "sourceHash": "30f90db64f460c6b988d88ca89601ea258e1975fa844feb317b2a48d53096462",
+    "outputHash": "90ae44a56cd874419da649b82240abd34705886bbbe2873a9006819c95053846"
+  },
+  "Castle-Cave_color3.png": {
+    "sourceHash": "b7c3b66e30e9b92d72ac84227bcf2f89ff39421f855cad237a623b1b41c605bb",
+    "outputHash": "8a39b3d70bc49ffea9e7441897215accf7688d414ed06643f254193731586423"
+  },
+  "Floating_Halloween_Ghost.png": {
+    "sourceHash": "cd1860caa9983d48aedb8073f54570ad666c454ff7a369e68f5ceb4d4a9a469f",
+    "outputHash": "b244a37ef069efd1e800f947aa2d52c5e4096a9956c25e38bd8a332fad71be59"
+  },
+  "Frozen_Anchor.png": {
+    "sourceHash": "452e885969a1117274d74b6648d8ff7beae70f5955f5ba485aa84f74ec44492b",
+    "outputHash": "fe9ae219b5214e69de664e22685f033f6428f4dff82a116f5bc306be7179a627"
+  },
+  "Frozen_Arch.png": {
+    "sourceHash": "b23024adfe9d83178d1e680c39b42d8e49fd8a0879dc27838d2520df8f56e935",
+    "outputHash": "13683c873d366761199191662ac4d9176d4653e84140c42ace806e4893157296"
+  },
+  "Frozen_Arch_2.png": {
+    "sourceHash": "7c2dee8a698b8a39b8e6cea261d3f00b0a5556d85d675dc47a23f9b9725afef5",
+    "outputHash": "71860c12c11d7837c5ab38432818b986e54b7456935eca8bc29867cfbc032014"
+  },
+  "Frozen_Bubbler.png": {
+    "sourceHash": "7d9a351228d6607214ddbd62078ece8d7d23604162af449605ee1fcf4d165bd7",
+    "outputHash": "d1c3250b590690d559ba9970ce19c435e0314178362f3e108ada8bc57da51c07"
+  },
+  "Frozen_Cave_1.png": {
+    "sourceHash": "6936e3daa078fe530dd64f14ed8f6e6e058fb4fda9cd44fe5dee5c24dbf6ca39",
+    "outputHash": "b7ea02c7587ce4c21f650ca3f5b1015f5a7f386724b68d95c9db65909a2ccf67"
+  },
+  "Frozen_Cave_2.png": {
+    "sourceHash": "f9416516d8164599a8561fa0bf5486db1b4101515839e710c2cce2afcac9fc36",
+    "outputHash": "e43fbbc66d0dea3bbc81b64e117d4541b60ba87ed2d2f3c912024852939560ae"
+  },
+  "Frozen_Column_1.png": {
+    "sourceHash": "8e70213e72cf3cf4bbf14db46c4f82b45f255399c275bef1cd95fafc62aa8015",
+    "outputHash": "6f5e4efbaeb5b15cb9dd6950e4eedf76cecb1409cce851af9f1cbf8c42e63897"
+  },
+  "Frozen_Column_2.png": {
+    "sourceHash": "a0a1960ea417fedc9aeddeb111e5b502519f65f32eb243c6aff8444818f169eb",
+    "outputHash": "853bd7e205c5276a536d970d51e3ccd8512e17805d6136a1dddb103415b9749e"
+  },
+  "Frozen_Column_3.png": {
+    "sourceHash": "c9e5b2e022378dec5213d5d9c040495029af254e35bf2c96c02dcfbcf855eae6",
+    "outputHash": "9446bb82c0bf383121a826191ce9d3ed3234998a75f9c21a76b3c1646f0011be"
+  },
+  "Frozen_Crystals.png": {
+    "sourceHash": "2e562c6da9ce424ec8a65012c61bab62b8065d90095e95e060ca1dc9c40fe35e",
+    "outputHash": "73a2607883dcd169a838e0f187f3057d8fcd0ebacd649a857dc9e3e5b23e8032"
+  },
+  "Frozen_Floating_Glacier.png": {
+    "sourceHash": "9e511cc6d7959ba1ef8b866800182b5d7c849bb48789aacc57ef6b8f58db77a9",
+    "outputHash": "a73ad3f4e0d6a8e697c54739ac5a6c6ff2a897987bd0b747679c8e992cc71257"
+  },
+  "Frozen_Floating_Iceberg.png": {
+    "sourceHash": "9d7afcb254b09ef1b0b302738c6f34e40ddd2498a854db8dd1fe1eeece028be6",
+    "outputHash": "893104717288d534ea319dc18aaa2a8dc809104bb5caec9268c0c687abe6564b"
+  },
+  "Frozen_Fossil.png": {
+    "sourceHash": "f61123842e15882d313309461b21f28b8ab021149c1c2ba6d29d34d8150f8951",
+    "outputHash": "f0d838deb5798a8299d1bdba46f69c07691c99db698e4870d5481672c5907e54"
+  },
+  "Frozen_Penguin.png": {
+    "sourceHash": "3d1c6b774907ade9188716fcaa013568aa02e6f73c80009159fd738cfbadc2e7",
+    "outputHash": "0628e2b5f996902650afa5a3ed9f73207103844f4b387745609396e5b73a3920"
+  },
+  "Frozen_Plant_1.png": {
+    "sourceHash": "6b299ff15b75030bd86efe1178d18f5ec11bb1e7f82190e6b78ee99d10fbdf2f",
+    "outputHash": "ee30f31e044250ea7889c2da697d2cae8c9fc2a33228678fcce5fe815925ca8c"
+  },
+  "Frozen_Plant_2.png": {
+    "sourceHash": "1694fcfb7ae051f98f3ff88a85f5616a6262a0b909285a8f8d07b8f4864e903f",
+    "outputHash": "5a1185e3dd89f9973a812631055444a892725f55de2dd471fbde1381469c996d"
+  },
+  "Frozen_Plant_3.png": {
+    "sourceHash": "cef449980ad5e85cb6b164d967b94862e0345d5581720f5e6b264edafbf91f73",
+    "outputHash": "a8b738de351a4f6e99e47028d11b2d8d7cea22e5f960a8d567d86f06dd997e9a"
+  },
+  "Frozen_Plant_4.png": {
+    "sourceHash": "5212b12f5f4aeb05705805c27a017829dcac5268331e6d233691751a58be5dc0",
+    "outputHash": "83ba4d12a27492290dec7b9e8766cb65fa94cd579446f7089409fae85b682123"
+  },
+  "Frozen_Plant_5.png": {
+    "sourceHash": "257f3e72228adada35ff6193a55ca9c6aa7413c09a4e663d2fbe76ae244fa74e",
+    "outputHash": "d29847343fba0b69fd256837c58afc20ef5f56d06a28f8e75e1b393f79cbf532"
+  },
+  "Frozen_Rock_1.png": {
+    "sourceHash": "84f20645083775fdb1196340da1334df92d09848464ddecf30216565db3980b6",
+    "outputHash": "637e3dc77bd8ae5f8f82f8ea87145aa43cd527b72eb9bb6672b0e269fd9227d4"
+  },
+  "Frozen_Rock_2.png": {
+    "sourceHash": "b5b92b29ecb4c6b24591e3146e5822f2d33061cd0800d29021d7866fb17c88e5",
+    "outputHash": "9cfc00ec4d75229a6d2233b112e61a7b1a641038c16797e64fba76af43f6b33d"
+  },
+  "Frozen_Root.png": {
+    "sourceHash": "163c91b5a4e28019cfb34aa15276389aed7e982eba892884a6462dc6e189cff1",
+    "outputHash": "39b717ea8e2f2f46f5d9c71e95ce8ae9f0c63d114ba83d33372ffb2cd1dbc6c5"
+  },
+  "Frozen_Ship.png": {
+    "sourceHash": "427b146f0cd26da2db91568bf9ebfa803f3a2ca8c6dab2223202ad4cbd63f3f0",
+    "outputHash": "b16851b47c20e64660ea556e0b1c9e4e534d989be8672b07c3899291a1bc3b6e"
+  },
+  "Frozen_Sunken_Submarine.png": {
+    "sourceHash": "4028eeccbd240543f619c78a0c30d2c6dc83985b69d43cac41d6f638d8c257a2",
+    "outputHash": "c9641cfb2da9c8738bd77154fe443eac62ed7388e6afe0c490ad3b2d1ae42517"
+  },
+  "Frozen_Treasure.png": {
+    "sourceHash": "6e3618a67538f79aeedc63d9540042d97677de23c3622c41703bee6313a7e2d1",
+    "outputHash": "e571b8e3e319e07753a45e9d391363a9f15f89dce6f68f0962e10df27b7b1f43"
+  },
+  "Frozen_UFO.png": {
+    "sourceHash": "69774438e812f7de3953b89fb026e1fd368e2a16726963e5c2e63ec411e1fef7",
+    "outputHash": "123d58b71fc7b0512a257284e951ba1f3e7c9eae965e80ce032207d47cf2c57f"
+  },
+  "Halloween_Cauldron_Bubbler.png": {
+    "sourceHash": "e059a7a1e9c99c10673ec9d0b2c8f195c7b5ceb4189ecbf3e95dd35455673c9c",
+    "outputHash": "0f747dbf5fbbfa2bae0a657f66d0616ed2dade3651e2bcb10f56e508b6c501e9"
+  },
+  "Halloween_Cauldron_bubbler_bg.png": {
+    "sourceHash": "f04129908421c907ec86eafd86af9f2009b9050aa87b3581140f2bb594a5c19d",
+    "outputHash": "add69759374e2483dcb2736694c4d4f0ca53a2aeeea215a708ba56a309148bc8"
+  },
+  "Halloween_Crypt_Cave.png": {
+    "sourceHash": "024a40f3f75627e7e06ae74dc96f2442ec386574c67ac24bc543f347564374dd",
+    "outputHash": "1a6dbd458cf1415efbad7edd60d37405e6c9c8e016285b3e7076c9ad555aeb5d"
+  },
+  "Halloween_Crypt_Cave_bg.png": {
+    "sourceHash": "136e33ef1988b0b7c55e7922e46e1e02cd50fb38b421980e0b5afab1e4d0d565",
+    "outputHash": "2a9078d656643189eca2d2abc95c0cf87c792222ab1aab8875445f844e9baab6"
+  },
+  "Halloween_Crypt_Cave_color2.png": {
+    "sourceHash": "28f0cd9701e8c8dd5dd112fca263fac0206d5abad2c47194f02648497c4f9ced",
+    "outputHash": "e42f1e773f6f7c91486a39de7ece96ee58663cd00b88743d049a4ed12d981c4a"
+  },
+  "Halloween_Floatingseaweed.png": {
+    "sourceHash": "0834353b842ee16f8552068b515c0d1bbcce671dc42c3dcb9ed190f08c8df0df",
+    "outputHash": "13f5866c246f56248d0fa08902777a5f5ad0e9322fca95778c2f49b1b609e697"
+  },
+  "Halloween_Ghost_Ship.png": {
+    "sourceHash": "e2350cf68b254da43dd4cf143d3e5afa9763639ccd674f80e206da4266c6d571",
+    "outputHash": "a12e3d851e962d0f6edc2ec42c45b6b9cef1080ecd8be48926c5a03f02741549"
+  },
+  "Halloween_Gravestone_1.png": {
+    "sourceHash": "d0b8807455ef0815be4043d3ffaec001cb85e951e217298c39bdbe59b9b1f6b9",
+    "outputHash": "d3587a062ab0bf8bbdb24311caf214f0bdddd118ecb389883032a3100e526451"
+  },
+  "Halloween_Gravestone_1_color2.png": {
+    "sourceHash": "c9296a14e6a915a19ed5ae67ff1535e8b406bee7166595ba11481fcc97792107",
+    "outputHash": "e3ea2bc2733636536f7ffef3270f715f4cc68b548da353649c1fd7789760cc78"
+  },
+  "Halloween_Gravestone_2.png": {
+    "sourceHash": "3c6197130c6cffc8a538e7953fc9e606f3684566c6fead47ba8ececfe4ff9cfa",
+    "outputHash": "540ab6dded54cacb715d99049f82b8b270bc12c17ff8b2b719b41a7ba367a0bb"
+  },
+  "Halloween_Gravestone_2_color2.png": {
+    "sourceHash": "859bd2e29e8aea8689a384383d330b1a21be1a04036de3c8ad92442419ef4eda",
+    "outputHash": "7eeecd1be40f9328924e3b1421a4d6fd273d2ce35196e534e1a508a721d8482a"
+  },
+  "Halloween_Gravestone_3.png": {
+    "sourceHash": "7b0bd25042a83a337fca0d84d8351297d3d674bcacf576b23493c137788f30dd",
+    "outputHash": "457fae25b2d100a58891ec5e242ffc868f322a8fa4a853bb6de5913f84f2e528"
+  },
+  "Halloween_Gravestone_3_color2.png": {
+    "sourceHash": "47b7d27f53630ede29f7106aa54a128b4282ce2a50463c1acee090e4b229566c",
+    "outputHash": "55c44399086deae310ff55f5f9eab4b5aceb27a5d0c6c9f9cf2fe67ccd5d2deb"
+  },
+  "Halloween_Gravestone_4.png": {
+    "sourceHash": "10f21da7a386381f847c7d324bc120d854630d81e6898f591efccdce8bc646ed",
+    "outputHash": "4c44aa8f4b02bb2767ba453bd517c23a28d1eeb20189585e8d54c5100045dc28"
+  },
+  "Halloween_Gravestone_4_color2.png": {
+    "sourceHash": "f0c3596551cab90ae3ac03e6d6abe90f8af669d0a2641e41143a923fc4619a9f",
+    "outputHash": "a37c191bf0a3658c757c54b2ffaaafb5dfd1d84daa10d9eb9689d2d21cdd3e2e"
+  },
+  "Halloween_Gravestone_5.png": {
+    "sourceHash": "2cad2f14504846ee41b1655c1ff9bdab899b70d79199b46407d7533b71cbaace",
+    "outputHash": "9c6efaefc39536889409bbf7b6b2c650234899a7c0840199c893894b54767f0d"
+  },
+  "Halloween_Gravestone_5_color2.png": {
+    "sourceHash": "a49d5fc53bc773bff2cbdb08ffe203b59b3400a1eaeb5dd0f3793c799fab14ad",
+    "outputHash": "ee1ea531d9bf109df4820b02da7bbd4355f91e227d6c48f91b38361df4081008"
+  },
+  "Halloween_Haunted_House_Cave.png": {
+    "sourceHash": "808e09ef158fe36939496b559b2763e935048742ec405dafe02cee1fc661a4f4",
+    "outputHash": "ba79d275a513ff685ff83780efe4706e73a520e52b91b2f0ce4a2690020353b2"
+  },
+  "Halloween_Haunted_House_Cave_bg.png": {
+    "sourceHash": "d6b92695dd9650af65f5cec52ef017e446201a657d1b987bc32dac710f06a79d",
+    "outputHash": "a412b7f6557eab5b966972b3dc8993a22a68c35f0d8836c48883701910a2018e"
+  },
+  "Halloween_Haunted_House_Cave_color2.png": {
+    "sourceHash": "b51bf42b841fa68c0379cc65da0d4ec04d1528d411b57549b0d30db8fa680a14",
+    "outputHash": "9517f5842b9e72d4440120c8c86db775a777a2b97f4295ceee08845ae8c77733"
+  },
+  "Halloween_Haunted_House_Cave_color3.png": {
+    "sourceHash": "27abf0550d2fbac4afb0cec923ce2ea95d300de273062422e2258b42d9b0d568",
+    "outputHash": "56cb4ea6cb8a2ed1b1842c8c628f6cbdc99064605c386e720e3fba2cad431bf7"
+  },
+  "Halloween_Haunted_Tree.png": {
+    "sourceHash": "b7adaecf227754d9e4cad85b8ada64f4ca1c77773d299b009125af8edfbd2473",
+    "outputHash": "1da8f9d2894cd67ed2df868a8de84211f5bbeceecdede1cc0a7a9ecde5b09336"
+  },
+  "Halloween_JackOLantern_bubbler.png": {
+    "sourceHash": "404057e58d018d894f1efa4983de5f930c5054078cb4b43853b8b6fe804bcfce",
+    "outputHash": "ca48991aab37168b9dffbda7e996815d63a499cb612f77e559036aee4ab955c7"
+  },
+  "Halloween_JackOLantern_bubbler_Light.png": {
+    "sourceHash": "ac56be531883b6c27752dec61d510e34d9379a4abe57848a89d196b61cf3a52f",
+    "outputHash": "bd1d9c076b3492b0d6792cb6b77e5f47cb1a0a27d0f8211aa966942d36ef0ded"
+  },
+  "Halloween_JackOLantern_bubbler_bg.png": {
+    "sourceHash": "c4dedb9774b09a57f3c47e852aca2d7c377bd27bc893c67ffcacaa8eae1b84ca",
+    "outputHash": "56acbb244990bd59d13b75b2465bcc4042291c3a57598764e050abb8fc41bc41"
+  },
+  "Halloween_Seaweed.png": {
+    "sourceHash": "f940c68f70429d9bb014ef92eb92e5ce00729b942c819f575d36a62310cc332a",
+    "outputHash": "ef46b6700e2aadab75d87cbe10b8e9f01939eafb1f7e93cfd0fce32e0979878f"
+  },
+  "Halloween_Spider.png": {
+    "sourceHash": "208d6e83b55ef59dc0d2b4e3a188e351627dfe4e287cf300befcaddb0e9ec332",
+    "outputHash": "fa9dd4adec1c9466e2d47cfa66dadaa8ba246c3039907bb66b32db8c84e55f28"
+  },
+  "Halloween_skeleton_lure.png": {
+    "sourceHash": "0497c452eb0591033924b2e6505521970a5ad8c11409796b13872bac74f4c1a4",
+    "outputHash": "5d5e1a918a1eae04f76afd7559a5ab7418fe613c68d20a6d83f31162008be428"
+  },
+  "Halloween_webs.png": {
+    "sourceHash": "2a7d8dcb7babfa5364a72235ca8fc2c5609299f5da44aeb2099e2f6360db6773",
+    "outputHash": "a616aa6a590e3d9f1f626201ee16f081457409e7e3abdb3bb5241970c6ec6373"
+  },
+  "Plane-wreck.png": {
+    "sourceHash": "dd46d8a9ec0923e82bac18035dba77b1581c46d7f026901e18e0ac563519f2a2",
+    "outputHash": "63d752881d9b9cfd2ee4796c6239b417402004a8d6469534568b9fde3bed7f37"
+  },
+  "Shipwreck.png": {
+    "sourceHash": "870d9a1158641a3b0475d6867416f148b5bdd4892c72441b5c565531dd59447f",
+    "outputHash": "62b2614e2cf595e570f277b7811505123fd8858ab0ab95387e2e9c64a8491eb1"
+  },
+  "anubia-rock_seaweed.png": {
+    "sourceHash": "104bc4b2780c74e84017ef0344599a53b07c0b2d545c567053b47c816756d520",
+    "outputHash": "2ad47535976e8cbbaa68e6a284e285a37afebab6d2934712cccf5b9f364662aa"
+  },
+  "anubia-rock_seaweed_color2.png": {
+    "sourceHash": "50b4ce1ce7c4ac3f7a183bcb72efbcea673e31370e40dec678ee5585f0f4c1c2",
+    "outputHash": "28db7cc426e92da2e797f3db9bc9689e008677e73e56cf7630ec058ed0bbeeaa"
+  },
+  "blue_castle_bg.png": {
+    "sourceHash": "1a3dff13352792ecbbc1a749197d0417c5b80bceef130d45bd998a51cade0709",
+    "outputHash": "2f66b7871712ff21dbfdcf0381ca80370ade161a2341c48739415613ba5324da"
+  },
+  "blue_castle_cave.png": {
+    "sourceHash": "e820fcd71f5666cc9322e321705862e2d93cb5af716b640ccb3de2f64f3581d1",
+    "outputHash": "a1b580f35b491416468188845857b7d88c3c938ebac84beba420bc4b2750f301"
+  },
+  "blue_castle_color2.png": {
+    "sourceHash": "65e24b9b9ae4062ec310ef1c0406951dc8945be60d9f2b1cea78b5a26085eb13",
+    "outputHash": "6b8ea3b2f511f0b1baf72d7efd494cff61d33209d953c111a141617e46ce320d"
+  },
+  "blue_castle_color3.png": {
+    "sourceHash": "972e0ef98cbeab8c5eec641444d4b43bd288afa36ab08d23a49cea7a4e80adb2",
+    "outputHash": "35a1c03a83cc99486507977e46f6006f1e9dd5a9d40f8e5407c69c6dfb580fa9"
+  },
+  "driftwood-root.png": {
+    "sourceHash": "d0ebf0eee9c733f466f27acefb30dbb473fc47c38215253ad849b37ef235fa8e",
+    "outputHash": "4a3fc2160e576b4f9860083b4ded088914fef2198f9f2bb0743839ae87f0ad04"
+  },
+  "driftwood-root_color2.png": {
+    "sourceHash": "3ef46aa8294954a7cd8796d1c54187f70355a59be2f41ae0d18a941dc8acd728",
+    "outputHash": "b1e8982d0b8def3682cc9f48c2feb6bccc84ae7b6f6ec2abbcce545ccebd1ca5"
+  },
+  "driftwood.png": {
+    "sourceHash": "473e068d36974fe2a40e3179d666b462bdc49b8abbce1b1174ae181a8b3a3c30",
+    "outputHash": "0b9fdf2feb4159620bc66c46e77f592a3bb00df95bcd166a3e6f3e19c8e8959b"
+  },
+  "fishheadeffigy_1.png": {
+    "sourceHash": "582692427b4f2db875c65d51c399e7ad21217959bda2bc0ebb118f946f657b5f",
+    "outputHash": "64fd46fe74572bf9c4499a22bf0cf8f4f10f5750f05c3a567612193044c51c46"
+  },
+  "fishheadeffigy_2.png": {
+    "sourceHash": "2beb430419ded8315c4a95aa3d93ccc46d39736093eb5dd002a961f52ae08efb",
+    "outputHash": "574dc545ee9cc969b6659829b0d17da98cde1898e67da73b8c2ac28bf3e4659d"
+  },
+  "fishheadeffigy_3.png": {
+    "sourceHash": "e64c60ad07d102e7ab03b9d76169760b19160fdeb8da29ac7096e8f4f32b6178",
+    "outputHash": "b49308f5bb1889633ec2af541dd54c16acb0cdbf9db3925e18ec17ee60abd0a5"
+  },
+  "fishing_lure.png": {
+    "sourceHash": "24dff376ae577bb429f8bbe466f8d814ba2cb1abfcfc1d2e9a35c980b665725f",
+    "outputHash": "893bd97caf46524d4bc3a13ebb450a8bfdc6807d9cb55a8ef0932b06d09a5f2c"
+  },
+  "floating_swampmoss_1.png": {
+    "sourceHash": "8b65d3b4f3bd4f60a96a560a865015642d67d999f12a60fb686818d549a9c0a9",
+    "outputHash": "28770557715418e90d6be72b70b2051d4accfad2947eb196aed96899094eea02"
+  },
+  "floatingseaweed_1.png": {
+    "sourceHash": "75a4ead3ab9f51cf739fc439cf647edc22173296289476bb1afc9be74fea4a7a",
+    "outputHash": "eab4b6bcebf34a5cdcad68c64725d3377e114834adfda2d77529a8636ff5dd2f"
+  },
+  "gorebag_lure.png": {
+    "sourceHash": "afd1d901502a6626fad105e4a6a864049bfaeee8f5518aaf8e8dd8f06ee9232e",
+    "outputHash": "6bed9c0961ac83d461af5029373c29d6b213a047ba482b7fee557b44d638c232"
+  },
+  "meteor_cave.png": {
+    "sourceHash": "f1050fee4ecd69776da7564c2637bb286cd06e8b434778933868c3255e6c6d65",
+    "outputHash": "91549860c816af946aca7ca30e946fc06e790e88f12905ca81523fb72df43f2b"
+  },
+  "meteor_cave_bg.png": {
+    "sourceHash": "861e371dbadc987ac9d56fce9dfe365c73b0298936b3c365981ee28ab10eb8c0",
+    "outputHash": "cf795abe1727e9ede96f8af45d20599c0d19ec2376bab8aad1be2c965aeb21c7"
+  },
+  "meteor_cave_color2.png": {
+    "sourceHash": "64b075d05dcb6dc01f9952f1fbbd534bd0947cd91b5e5ab0c4fcf556c0f54365",
+    "outputHash": "1b5db92c6fd936b514e8ae4cc2a9b44028c90a7a83f88b84ddf632fb3c7d0585"
+  },
+  "moss-bridge.png": {
+    "sourceHash": "ea8719df0e040c227d9d908b18f7303b5d1295ad7d4c1b3398690efe61628cdd",
+    "outputHash": "a48114ed15117b1ead4b1f86f126c1ad99e77772f062224418454003716720d0"
+  },
+  "mushroomcoral_seaweed.png": {
+    "sourceHash": "50bc3ff88c329bfb10e7ee718ddb305b0f7aaf64172639ae960772ddcc37b401",
+    "outputHash": "e2432a9eda1ebd7ff435595ceb3b39e43322e6a899594e1c4b4ef13761cf6ff9"
+  },
+  "rock_1_bricks.png": {
+    "sourceHash": "774ae20506a577d26cd7f2f3ade992ea83d5aa9b6f1aab5613826fc6d35aac20",
+    "outputHash": "47ef05afbb566faa77161b331d3323fac79a4eca2a019d68565d901532d56464"
+  },
+  "rock_2_bricks.png": {
+    "sourceHash": "6ec16be9996de31ad95a4d5ccbecce9fc4cc4704efaf163c6325041fe471f899",
+    "outputHash": "bab512670c678690097931b44ed62be77ed9e3731d151ab42557e973be0ea340"
+  },
+  "rock_3_bricks.png": {
+    "sourceHash": "eb4fa197115278841a2bfa16246110c260b893c6edec64229f140bc4e2920a09",
+    "outputHash": "c7d5647e6649096d3a78e04e4e00ee6aa7d1b67d13ea97681318e87458f4482d"
+  },
+  "rock_4_bricks.png": {
+    "sourceHash": "89458174170ee9c9a34defce068c8fe72fa159e6849d0af97a0b4f15526f812c",
+    "outputHash": "1862106b62b86bad3c1e2442eb272bbc89c2abb54b25689c3165d3896cf53824"
+  },
+  "rock_5_bricks.png": {
+    "sourceHash": "a752d1c224d01e9f822d3b439d5e6d7b67967ef5943abf0590575a94ab21de28",
+    "outputHash": "10f84f1bb36e05d9351f03889a43369f82484ce97385fb3b21be9d0f7744f3ee"
+  },
+  "seaweed-bunch.png": {
+    "sourceHash": "939193260b913b1f05976f17121ff64fa2b2ab4990985365d7055a511d783be6",
+    "outputHash": "075fdb738c30c0293075c7a6f0d978ccc16f076e018d7c4d675fde34d2e13230"
+  },
+  "seaweed_1.png": {
+    "sourceHash": "376e6de059c71b60778d4545f449ffaa8d4d8ef1b42064945391d2aca1f715ba",
+    "outputHash": "d22ac6a42a2460bebba72c1181bf0787b4d560d23341a5046ec8f3e082e06fe3"
+  },
+  "slate-cave.png": {
+    "sourceHash": "3125966d6fa8be1b1e45fec5b0949fb01688db1265ea5a413ef06c4f9bbc7ca1",
+    "outputHash": "443574a3e1d120d819b67bfd6e4ea0824b3a4d95e38ac3f3fba7c7e3d4dc8f67"
+  },
+  "slate-cave_bg.png": {
+    "sourceHash": "55f1fbbdb5128e1d100ae6a46df4118a216a99a02708ec6c1ad1ea20e75ff5b0",
+    "outputHash": "f674a6371caac5fbe2ffa94346a4e3b912a52172e239c693e199035dde53050d"
+  },
+  "transit-tube.png": {
+    "sourceHash": "b63708cc9953352a537fa6e66d37ab7b3ee2cf164db7e1e7f7b2d73e37792cf2",
+    "outputHash": "e2608862f74dd13e84f3222545d676f408c33ac1a2d62fa4ff6a51274af85210"
+  },
+  "transit-tube_bg.png": {
+    "sourceHash": "c78d7720b6aed110a440fe33514177ff20bb9a20446f3f0ec928a3c4a6752bbb",
+    "outputHash": "bc0b6db14b2cdd5edadd567aae806e606c337be9c5960f9cc61df3a353bfd104"
+  },
+  "treasure-chest_bubbler.png": {
+    "sourceHash": "a14c5c6526e937f58d3122e0729a291803f56f46163c3404e0bc578292cdb690",
+    "outputHash": "6918825c30403ed1ab1de01022840ca156148063a5f522ec3ec9ae70d8b40ec5"
+  },
+  "treasure-chest_bubbler_bg.png": {
+    "sourceHash": "e67f2473c682acf5c7d0675d0f20a9a842bb058ab54d0dd31b0c4e83c0bc2d3e",
+    "outputHash": "8a7862d9464cec8cf887e34d6bd4c248a0ca98fbc335faeb46453ca7efa9bad9"
+  },
+  "volcanic_rock_1_bricks.png": {
+    "sourceHash": "a3426258b34e90969546ccd9424be23191c283ab3f63deceeac2336d995a8b22",
+    "outputHash": "41525fdb10b1d6d68483e2dccfcfac7dc9543294f773a1c885ddb688d5d61bde"
+  },
+  "volcanic_rock_2_bricks.png": {
+    "sourceHash": "ab6c9fe12f8396a06599030ce0c433dfa4d4ecafab27b906f67fb6afefaf7469",
+    "outputHash": "aba21af96bbdbd9ac03bde3ba14f6a365e6a86dd729c337ad0f6105cd0fa8a31"
+  },
+  "volcanic_rock_3_bricks.png": {
+    "sourceHash": "ad9c623aceb338993f8810183d484fdf3dcf5af96cb4508295eee468e418c305",
+    "outputHash": "0007de5f6a2c60456e3a468469bd6a8e69647e0d9b8b2e002e7c5528356486d5"
+  },
+  "volcanic_rock_4_bricks.png": {
+    "sourceHash": "27135c2a59b1051de4db5cff3b006d92347e58095cf0f7199225ef5420259c44",
+    "outputHash": "54af5ef677773dfc3931946f1e95aef2c46680111474ace755720d33c2c2a88f"
+  },
+  "volcano-1_bubbler.png": {
+    "sourceHash": "fc4cbc4b7dd9816f89bbafa8638d66caba5742c5116be95322f7776dc8c6a650",
+    "outputHash": "cc3e7ea447d29533f8b53c0b896511692f3bc472557389c00963e667649b9885"
+  },
+  "volcano-1_bubbler_bg.png": {
+    "sourceHash": "809b46b11c832f321c5086a9989ad7281e636a2c58f2a7227ef7d970b8772c1a",
+    "outputHash": "07b5b130cfa39d78523399c5e4bef3a268a2aff93756a3eeeed72654cd29017e"
+  },
+  "volcano-2_bubbler.png": {
+    "sourceHash": "de49772caac11c77c1f7e5de4254764fa0988b97b815c40f40ebeaa1d7f894fc",
+    "outputHash": "cde1caa700386300f4e10c9614ebda768f267280bd52bd03ad6146f642588a5a"
+  },
+  "volcano-2_bubbler_bg.png": {
+    "sourceHash": "58738fda1c5d62d72a8836bb0b15be466bc254e2146ed591500d6474e5cfc76c",
+    "outputHash": "3f8d1971ae9815fa59aa33a988451c4f08e3f6281797ea0fef1f5c0b75566d94"
+  }
+}

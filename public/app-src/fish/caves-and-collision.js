@@ -1719,7 +1719,7 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
 }
 
 function getCaveBarrierDescriptor(item) {
-  if (!item || !isCaveDecorKey(item.decorKey)) {
+  if (!item || (!isCaveDecorKey(item.decorKey) && !isTransitTubeDecorKey(item.decorKey))) {
     return null;
   }
 
@@ -1798,14 +1798,14 @@ function getCaveCollisionFrameCandidates(testLayer, now = Date.now()) {
   ) {
     const candidatesByLayer = Array.from({ length: TANK_DEPTH_LAYERS + 1 }, () => []);
     for (const item of placedDecor) {
-      if (!item || !isCaveDecorKey(item.decorKey)) {
+      if (!item || (!isCaveDecorKey(item.decorKey) && !isTransitTubeDecorKey(item.decorKey))) {
         continue;
       }
       const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
       const layers = span.front === span.back ? [span.front] : [span.front, span.back];
       for (const candidateLayer of layers) {
         const normalizedLayer = clampTankLayer(candidateLayer);
-        if (normalizedLayer < 3) {
+        if (normalizedLayer < 3 && !isTransitTubeDecorKey(item.decorKey)) {
           continue;
         }
         const descriptor = getCaveBlockingDescriptorForLayer(item, normalizedLayer);
@@ -1834,10 +1834,6 @@ function findBlockingCaveForFishPose(fish, species, now, pose, layerOverride = n
   }
 
   const testLayer = clampTankLayer(layerOverride ?? getFishTankLayer(fish));
-  if (testLayer < 3) {
-    return null;
-  }
-
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const fishDescriptor = getFishShapeDescriptor(fish, species, now, pose);
   if (!fishDescriptor) {

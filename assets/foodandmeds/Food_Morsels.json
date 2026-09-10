@@ -1,0 +1,69 @@
+{
+  "version": 2,
+  "columns": 4,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "58ab2963-4da1-4e2b-82b8-a6ee4394036e",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "e248a7cc-4459-466d-8307-7b03c7db6a1a",
+          "width": 100,
+          "height": 97,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "pellet.png"
+        },
+        {
+          "id": "75ce94c4-2e06-4707-8025-260950588140",
+          "width": 100,
+          "height": 89,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chum_1.png"
+        },
+        {
+          "id": "2e50d70e-56ea-4c0b-9fb9-6b5a16bc3044",
+          "width": 100,
+          "height": 89,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chum_2.png"
+        },
+        {
+          "id": "4366c29d-7cb2-4901-afc2-bcff6baa8577",
+          "width": 100,
+          "height": 89,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chum_3.png"
+        }
+      ]
+    }
+  ]
+}

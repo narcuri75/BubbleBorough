@@ -189,7 +189,7 @@ function getCaveFrontDescriptor(item) {
 }
 
 function getCaveShellDescriptor(item) {
-  if (!item || !isCaveDecorKey(item.decorKey)) {
+  if (!item || (!isCaveDecorKey(item.decorKey) && !isTransitTubeDecorKey(item.decorKey))) {
     return null;
   }
 
@@ -207,7 +207,7 @@ function getCaveShellDescriptor(item) {
 }
 
 function getCaveBlockingDescriptorForLayer(item, layer) {
-  if (!item || !isCaveDecorKey(item.decorKey)) {
+  if (!item || (!isCaveDecorKey(item.decorKey) && !isTransitTubeDecorKey(item.decorKey))) {
     return null;
   }
 
@@ -1161,7 +1161,7 @@ function getDecorPebbleProfile(decorKey = "") {
 }
 
 function getDecorPebbleSurfacePose(item, anchorRatio = 0.5, desiredLiftPx = 0) {
-  const bounds = getPlacedDecorBounds(item);
+  const bounds = getPlacedDecorGroundBounds(item);
   if (!bounds) {
     return null;
   }
@@ -1229,7 +1229,7 @@ function getPebbleDropTarget(x, startY) {
   };
 
   for (const item of state.placedDecor) {
-    const bounds = getPlacedDecorBounds(item);
+    const bounds = getPlacedDecorGroundBounds(item);
     if (!bounds) {
       continue;
     }

@@ -182,14 +182,14 @@ function sanitizeUiSettings(rawSettings) {
       : DEFAULT_UI_SETTINGS.displayPosition,
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
-    careTaskPaneOpen: source.careTaskPaneOpen === true,
+    careTaskPaneOpen: false,
     soundMuted: source.soundMuted === true,
     uiSoundsMuted: source.uiSoundsMuted === true,
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
-    causticLightingEnabled: source.causticLightingEnabled !== false,
-    decorShadowsEnabled: source.decorShadowsEnabled !== false,
+    causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled === true,
+    decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
     halloweenMode: normalizeHalloweenMode(source.halloweenMode),
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
@@ -211,11 +211,11 @@ function areWaterParticlesEnabled() {
 }
 
 function isCausticLightingEnabled() {
-  return getUiSettings().causticLightingEnabled;
+  return CAUSTIC_LIGHTING_SETTING_ENABLED && getUiSettings().causticLightingEnabled;
 }
 
 function areDecorShadowsEnabled() {
-  return getUiSettings().decorShadowsEnabled;
+  return DECOR_SHADOWS_SETTING_ENABLED && getUiSettings().decorShadowsEnabled;
 }
 
 function getUvLightRenderQuality() {
@@ -474,22 +474,7 @@ function isContentGatedAssetPath(path) {
 
 function getContentGatedPreloadPaths() {
   const paths = [
-    ...runtime.decorCatalog.flatMap((item) => [
-      item.path,
-      item.thumbnailPath,
-      item.bgPath,
-      item.midPath,
-      item.lightPath,
-      item.maskPath,
-      item.triggerPath,
-      item.seatsPath,
-      ...(Array.isArray(item.caveColorLayers)
-        ? item.caveColorLayers.flatMap((layer) => [
-          ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
-          ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])
-        ])
-        : [])
-    ].filter(Boolean)),
+    ...getPlacedDecorPreloadPaths(),
     ...(isZombieSkeletonModeAvailable()
       ? runtime.fishCatalog.flatMap((fish) => [
         ...getFishDeathAssetCandidates(fish, "zombie"),
@@ -518,13 +503,6 @@ function shouldPersistReconciledState(rawState) {
   return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION;
 }
 
-function tankSupportsFilters(target = getCurrentTank()) {
-  return ENABLE_FILTER && getTankTypeMeta(target?.tankTypeId)?.supportsFilters !== false;
-}
-
-function getTankDefaultFilterSelection(target = getCurrentTank()) {
-  return tankSupportsFilters(target) ? getDefaultFilterKey() : null;
-}
 
 function getSpeciesWaterType(speciesOrFish) {
   const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
@@ -690,38 +668,6 @@ function sanitizeDailyBonusState(rawState) {
   };
 }
 
-function sanitizeOwnedFilterInventory(rawInventory, fallbackSelectedKey = null) {
-  const counts = {};
-  const sourceObject = rawInventory && typeof rawInventory === "object" && !Array.isArray(rawInventory) ? rawInventory : null;
-  const sourceArray = Array.isArray(rawInventory) ? rawInventory : Array.isArray(rawInventory?.filters) ? rawInventory.filters : null;
-
-  if (sourceObject) {
-    for (const [key, value] of Object.entries(sourceObject)) {
-      if (!runtime.filterMap.has(key) || key === getDefaultFilterKey()) {
-        continue;
-      }
-      const count = Math.max(0, Math.floor(Number(value) || 0));
-      if (count > 0) {
-        counts[key] = count;
-      }
-    }
-  }
-
-  if (sourceArray) {
-    for (const key of sourceArray) {
-      if (!runtime.filterMap.has(key) || key === getDefaultFilterKey()) {
-        continue;
-      }
-      counts[key] = (counts[key] || 0) + 1;
-    }
-  }
-
-  if (runtime.filterMap.has(fallbackSelectedKey) && fallbackSelectedKey !== getDefaultFilterKey()) {
-    counts[fallbackSelectedKey] = Math.max(1, counts[fallbackSelectedKey] || 0);
-  }
-
-  return counts;
-}
 
 function sanitizeOwnedBackgroundInventory(rawInventory, fallbackSelectedKeys = []) {
   const counts = {};
@@ -774,9 +720,6 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
   const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel });
   const incomingTank = rawTank && typeof rawTank === "object" ? rawTank : {};
   const typeId = getTankTypeMeta("rectangular").id;
-  const selectedFilterAsset = tankSupportsFilters({ tankTypeId: typeId }) && runtime.filterMap.has(incomingTank.selectedFilterAsset)
-    ? incomingTank.selectedFilterAsset
-    : getTankDefaultFilterSelection({ tankTypeId: typeId });
   const localBackgroundImageDataUrl = typeof incomingTank.localBackgroundImageDataUrl === "string"
     ? incomingTank.localBackgroundImageDataUrl
     : "";
@@ -828,7 +771,6 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     localBackgroundImageDataUrl,
     localBackgroundImageRefId,
     selectedTankAsset: runtime.tankMap.has(incomingTank.selectedTankAsset) ? incomingTank.selectedTankAsset : null,
-    selectedFilterAsset,
     autoDispenser: createDefaultAutoDispenserState(incomingTank.autoDispenser),
     uvLightInstalled: false,
     uvLightEnabled: false,
@@ -889,7 +831,6 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     localBackgroundImageDataUrl: incoming?.localBackgroundImageDataUrl,
     localBackgroundImageRefId: incoming?.localBackgroundImageRefId,
     selectedTankAsset: incoming?.selectedTankAsset,
-    selectedFilterAsset: incoming?.selectedFilterAsset ?? getTankDefaultFilterSelection({ tankTypeId: incoming?.tankTypeId }),
     autoDispenser: incoming?.autoDispenser,
     uvLightInstalled: incoming?.uvLightInstalled,
     uvLightEnabled: incoming?.uvLightEnabled,
@@ -902,37 +843,8 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
   }, options);
 }
 
-function normalizeTankFilterAssignments(targetState) {
-  const available = { ...(targetState?.ownedFilterInventory || {}) };
 
-  for (const tank of getAllTanks(targetState)) {
-    if (!tankSupportsFilters(tank)) {
-      tank.selectedFilterAsset = null;
-      continue;
-    }
-
-    const filterKey = tank.selectedFilterAsset;
-    if (!filterKey || filterKey === getDefaultFilterKey()) {
-      tank.selectedFilterAsset = getTankDefaultFilterSelection(tank);
-      continue;
-    }
-
-    if (!runtime.filterMap.has(filterKey)) {
-      tank.selectedFilterAsset = getTankDefaultFilterSelection(tank);
-      continue;
-    }
-
-    const remaining = Math.max(0, Math.floor(Number(available[filterKey]) || 0));
-    if (remaining <= 0) {
-      tank.selectedFilterAsset = getTankDefaultFilterSelection(tank);
-      continue;
-    }
-
-    available[filterKey] = remaining - 1;
-  }
-}
-
-function matchesLegacyDefaultStarterTankAppearance(tank, index, defaultFilterKey = getDefaultFilterKey()) {
+function matchesLegacyDefaultStarterTankAppearance(tank, index) {
   if (!tank) {
     return false;
   }
@@ -952,7 +864,6 @@ function matchesLegacyDefaultStarterTankAppearance(tank, index, defaultFilterKey
     && Array.isArray(tank.floatingPellets) && tank.floatingPellets.length === 0
     && Object.keys(tank.feedHistory || {}).length === 0
     && !tank.selectedTankAsset
-    && tank.selectedFilterAsset === defaultFilterKey
     && !tank.uvLightInstalled
     && tank.selectedBackground === defaultBackgroundKey
     && normalizeCustomBackgroundMode(tank.customBackgroundMode) === CUSTOM_BACKGROUND_MODE_SOLID
@@ -1031,6 +942,7 @@ function reconcileState(rawState) {
     unlockedDecorKeys: [],
     storedFish: [],
     decorInventory: {},
+    savedDecorLayouts: [],
     customDecorAssets: {},
     customFishAssets: {},
     decorScaleDefaults: {},
@@ -1045,7 +957,6 @@ function reconcileState(rawState) {
     boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
-    ownedFilterInventory: {},
     uvLightOwned: false,
     foodInventory: getDefaultFoodInventory(),
     medicineInventory: getDefaultMedicineInventory(),
@@ -1094,11 +1005,11 @@ function reconcileState(rawState) {
       ? incoming.walletTransactions.map((entry) => ({
         id: typeof entry?.id === "string" ? entry.id.slice(0, 80) : createId("receipt"),
         amount: clamp(Math.floor(Math.abs(Number(entry?.amount) || 0)), 0, MAX_WALLET_COINS),
-        direction: entry?.direction === "debit" ? "debit" : "credit",
+        direction: entry?.direction === "debit" ? "debit" : entry?.direction === "neutral" ? "neutral" : "credit",
         label: typeof entry?.label === "string" ? entry.label.slice(0, 180) : "Aquarium activity",
-        place: typeof entry?.place === "string" ? entry.place.slice(0, 80) : "Aquarium",
+        place: typeof entry?.place === "string" ? entry.place.replace(/tankazon/ig, "BubbleBodega").slice(0, 80) : "Aquarium",
         time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now
-      })).filter((entry) => entry.amount > 0).sort((left, right) => right.time - left.time).slice(0, 60)
+      })).filter((entry) => entry.amount > 0 || entry.direction === "neutral").sort((left, right) => right.time - left.time).slice(0, 60)
       : base.walletTransactions,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
@@ -1110,6 +1021,7 @@ function reconcileState(rawState) {
     unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
     storedFish: Array.isArray(incoming.storedFish) ? incoming.storedFish.map(sanitizeFishEntry).filter(Boolean) : [],
     decorInventory: sanitizeDecorInventory(incoming.decorInventory),
+    savedDecorLayouts: sanitizeSavedDecorLayouts(incoming.savedDecorLayouts),
     customDecorAssets: incomingCustomDecorAssets,
     customFishAssets: incomingCustomFishAssets,
     decorScaleDefaults: sanitizeDecorScaleDefaults(incoming.decorScaleDefaults),
@@ -1128,10 +1040,6 @@ function reconcileState(rawState) {
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(
       incoming.ownedBackgroundInventory ?? incoming.ownedBackgrounds,
       tanks.map((tank) => tank.selectedBackground)
-    ),
-    ownedFilterInventory: sanitizeOwnedFilterInventory(
-      incoming.ownedFilterInventory ?? incoming.ownedFilterAssets,
-      incoming.selectedFilterAsset
     ),
     uvLightOwned: ENABLE_UV_LIGHT && Boolean(
       incoming.uvLightOwned
@@ -1169,7 +1077,6 @@ function reconcileState(rawState) {
     }
   }
 
-  normalizeTankFilterAssignments(nextState);
   assignFallbackTankNames(nextState);
   installTankStateAccessors(nextState);
 
@@ -1197,11 +1104,9 @@ function reconcileState(rawState) {
       Object.keys(tank.feedHistory || {}).length
       || tank.pendingPoops.length
       || tank.poops.length
-      || tank.selectedFilterAsset && tank.selectedFilterAsset !== getDefaultFilterKey()
       || tank.uvLightInstalled
     ))
     || Object.keys(nextState.ownedBackgroundInventory).some((key) => !DEFAULT_OWNED_BACKGROUND_KEYS.includes(key))
-    || Object.values(nextState.ownedFilterInventory).some((count) => count > 0)
     || nextState.uvLightOwned
     || Object.values(nextState.foodInventory).some((count) => count > 0)
     || Object.values(nextState.medicineInventory).some((count) => count > 0);
@@ -1241,6 +1146,8 @@ function reconcileState(rawState) {
     );
   }
 
+  nextState.decorScaleDefaults = migrateLegacyHalloweenDecorScaleDefaults(nextState.decorScaleDefaults, incomingVersion);
+
   if (incomingHealthModelVersion < HEALTH_MODEL_VERSION) {
     for (const tank of nextState.tanks) {
       tank.fish = tank.fish.map((fish) => rebalanceFishHealthForCurrentModel(fish));
@@ -1249,10 +1156,9 @@ function reconcileState(rawState) {
   }
 
   if (incomingVersion < 36) {
-    const defaultFilterKey = getDefaultFilterKey();
     nextState.tanks.forEach((tank, index) => {
       // Refresh untouched starter tanks that still match the old or partially-updated visual defaults.
-      if (matchesLegacyDefaultStarterTankAppearance(tank, index, defaultFilterKey)) {
+      if (matchesLegacyDefaultStarterTankAppearance(tank, index)) {
         applyDefaultStarterTankAppearance(tank);
       }
     });
@@ -1289,7 +1195,6 @@ function reconcileState(rawState) {
     ];
   }
 
-  normalizeTankFilterAssignments(nextState);
   pruneState(now, nextState);
   installTankStateAccessors(nextState);
   return nextState;
@@ -1760,7 +1665,9 @@ async function applyImportedSaveData(rawState) {
   syncRuntimeCustomFishAssetsFromState(state);
   syncRuntimeCustomDecorAssetsFromState(state);
   restoreTutorialRuntimeState(now);
-  void preloadImages([
+  await preloadImages([
+    ...getPlacedDecorPreloadPaths(),
+    ...getOwnedFishPreloadPaths(),
     ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
     ...getCustomDecorCatalogEntries(state).flatMap((item) => [item.path, item.bgPath].filter(Boolean)),
     ...getCustomFishCatalogEntries(state).map((item) => item.asset)

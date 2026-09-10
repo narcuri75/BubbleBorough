@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "c14327f8-78f4-4b8c-a969-a964feefc952",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "3bccf2eb-8b9e-4b6b-bb87-bf93aacb50e2",
+          "width": 512,
+          "height": 269,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Hammerhead_Shark.png"
+        },
+        {
+          "id": "6cdc53cd-779c-4d1a-818c-64d2d2c6b5e8",
+          "width": 512,
+          "height": 269,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Hammerhead_Shark_1.png"
+        },
+        {
+          "id": "b260e473-13c2-4ac4-a620-a72aa4ef7864",
+          "width": 512,
+          "height": 269,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Hammerhead_Shark_2.png"
+        },
+        {
+          "id": "0089a72a-3e12-425f-8236-620ea5f761c0",
+          "width": 512,
+          "height": 269,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Hammerhead_Shark_3.png"
+        },
+        {
+          "id": "121747f2-c6c4-409c-80ce-5dea3b2a7bf9",
+          "width": 512,
+          "height": 269,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Hammerhead_Shark_4.png"
+        },
+        {
+          "id": "f86edc8f-035d-4ef3-b8f5-1224c4c0b988",
+          "width": 512,
+          "height": 269,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Hammerhead_Shark_5.png"
+        }
+      ]
+    }
+  ]
+}

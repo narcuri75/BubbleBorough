@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "b85c1309-60e1-45ee-bf9d-dcb946b5bf3c",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "60b0f7c0-d943-48ee-b5cc-13240e270d9a",
+          "width": 512,
+          "height": 283,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy.png"
+        },
+        {
+          "id": "03a69df6-340b-43b6-9622-4ea2bcda90fb",
+          "width": 512,
+          "height": 283,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_1.png"
+        },
+        {
+          "id": "7cf950c0-486c-4757-a195-01c719398ab1",
+          "width": 512,
+          "height": 283,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_2.png"
+        },
+        {
+          "id": "ee754d8e-c1e5-4dd0-83c9-90641fe91773",
+          "width": 512,
+          "height": 283,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_3.png"
+        },
+        {
+          "id": "e8992dcf-24f4-423a-91e6-249855cf65c2",
+          "width": 512,
+          "height": 283,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_4.png"
+        }
+      ]
+    }
+  ]
+}

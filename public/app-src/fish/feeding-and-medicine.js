@@ -6,6 +6,8 @@ function canFishEatFoodPellet(fish, foodKey = "basic", now = Date.now()) {
     return false;
   }
 
+  if (foodKey === "halloweenCandy") return !hasActiveCandyBoost(fish, now);
+
   const hunger = getFishNeedValue(fish, "hunger", now);
   const criticallyHungry = hunger <= FISH_HUNGER_CRITICAL_THRESHOLD;
   const visiblyHungry = hunger <= FISH_HUNGER_LOW_THRESHOLD;
@@ -105,6 +107,15 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0));
   entry.coinsEarned = Math.max(0, Number(entry.coinsEarned) || 0) + mealCoins;
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + mealCoins);
+  const fishLabel = String(fish.name || getSpeciesForFish(fish)?.name || "Fish");
+  recordWalletTransaction({
+    amount: mealCoins,
+    allowZero: true,
+    direction: mealCoins > 0 ? "credit" : "neutral",
+    now,
+    place: getTankLabel(tank),
+    label: mealCoins > 0 ? `Fed ${fishLabel}` : `Fed ${fishLabel} (no coin reward)`
+  });
   return mealCoins;
 }
 
@@ -588,6 +599,19 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
   const targetTank = options.tank || getCurrentTank();
   const species = getSpeciesForFish(fish);
   const foodKey = pellet.foodKey || "basic";
+  if (foodKey === "halloweenCandy") {
+    fish.candyBoostUntil = now + DAY_MS;
+    fish.healthUnits = getFishMaxHealthUnits(fish);
+    fish.needs = Object.fromEntries(FISH_NEED_KEYS.map(key => [key, 100]));
+    fish.needsUpdatedAt = now;
+    fish.lastAteAt = now;
+    fish.foodRefusalUntil = 0;
+    fish.missedMealsInRow = 0;
+    fish.comfortDamageProgressMs = 0;
+    if (options.announce !== false) pushEvent(
+      fish.name + " enjoyed Halloween candy! All stats are full for 24 hours.", now, targetTank);
+    return { foodKey, mealCoins: 0, damageUnits: 0, died: false };
+  }
   const forcedRefusal = typeof pellet.diseaseRefusalFishId === "string" && pellet.diseaseRefusalFishId === fish.id;
   const refusalPrechecked = typeof pellet.refusalPrecheckedFishId === "string" && pellet.refusalPrecheckedFishId === fish.id;
   if (options.allowRefusal !== false && (forcedRefusal || (!refusalPrechecked && shouldFishRefuseFoodForDisease(fish, foodKey, now)))) {
@@ -645,6 +669,29 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
 
 function handleFishEatFoodPellet(fish, pellet, now = Date.now()) {
   return applyFoodPelletToFish(fish, pellet, now, { announce: true });
+}
+
+function consumeOffscreenFishFoodPellet(fish, pelletId, targetTank, now = Date.now()) {
+  const pellet = targetTank.floatingPellets.find((entry) => entry.id === pelletId);
+  if (!pellet || pellet.expiresAt <= now || fish.caveState || isFishDead(fish)
+    || fish.feedingPelletId !== pellet.id || !canFishTargetFoodPellet(fish, pellet, now)) return false;
+
+  const forcedRefusal = pellet.diseaseRefusalFishId === fish.id;
+  const prechecked = pellet.refusalPrecheckedFishId === fish.id;
+  if (forcedRefusal || (!prechecked && shouldFishRefuseFoodForComfort(fish, pellet.foodKey, now))) {
+    return handleFishRefuseFoodPellet(fish, pellet, now);
+  }
+  const result = applyFoodPelletToFish(fish, pellet, now, { tank: targetTank, announce: true });
+  if (!result || result.refused) return Boolean(result?.refused);
+  targetTank.floatingPellets = targetTank.floatingPellets.filter((entry) => entry.id !== pellet.id);
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  if (!isFishDead(fish)) {
+    fish.activity = "roam";
+    fish.targetAt = now + 1200;
+  }
+  return true;
 }
 
 function processSmartAutoFeeder(now = Date.now(), options = {}) {

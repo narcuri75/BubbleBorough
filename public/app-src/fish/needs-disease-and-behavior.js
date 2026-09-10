@@ -41,12 +41,13 @@ function getFishAppearanceVariantKey(path) {
 function getFishStoreVariants(species) {
   return getFishAssetVariants(species).map((path, index) => ({
     key: getFishAppearanceVariantKey(path),
-    image: path,
+    image: species?.behavior === "sucker" ? (getFishDirectionalSpritePath(path, "side") || path) : path,
     label: index === 0 ? "Main" : `Variant ${path.match(/_([1-5])\.[^./?]+(?:[?#].*)?$/)?.[1] || index}`
   }));
 }
 
-async function discoverFishAppearanceVariants(catalog) {
+async function discoverFishAppearanceVariants(catalog, availableAssets = null) {
+  const availableKeys = Array.isArray(availableAssets) ? new Set(availableAssets.map((asset) => asset.key.toLowerCase())) : null;
   await Promise.all(catalog.map(async (species) => {
     const base = species.asset;
     if (!base || /^(data:|blob:)/i.test(base)) return;
@@ -60,6 +61,8 @@ async function discoverFishAppearanceVariants(catalog) {
       // They are the same appearance, so compare filenames rather than raw
       // URLs and never add a second thumbnail for it.
       if (existingKeys.has(getFishAppearanceVariantKey(path))) return null;
+      if (getSpriteAssetFrame(path)) return path;
+      if (availableKeys && !availableKeys.has(getFishAppearanceVariantKey(path).toLowerCase())) return null;
       return new Promise((resolve) => {
         const image = new Image();
         const finish = (loaded) => {
@@ -442,6 +445,7 @@ function getDerivedFishNeedDefaults(fish, now = Date.now()) {
 }
 
 function sanitizeFishNeeds(value, fish = null, now = Date.now()) {
+  if (hasActiveCandyBoost(fish, now)) return Object.fromEntries(FISH_NEED_KEYS.map(key => [key, 100]));
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const defaults = fish ? getDerivedFishNeedDefaults(fish, now) : FISH_NEED_DEFAULTS;
   // Keep the old save shape, but retire the three daily maintenance meters.
@@ -1110,6 +1114,7 @@ function pushDiseaseSignalHistoryEvent(fish, signalType, now = Date.now()) {
 }
 
 function shouldFishRefuseFoodForDisease(fish, foodKey = "basic", now = Date.now()) {
+  if (foodKey === "halloweenCandy" || hasActiveCandyBoost(fish, now)) return false;
   if (!fish || isFishDead(fish) || isMealFreeFish(fish) || isUndeadFish(fish)) {
     return false;
   }
@@ -2135,19 +2140,19 @@ function getAvoidanceEscapeTarget(fish, species, threatFish, options = {}) {
 
 function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options = {}) {
   const relationships = sanitizeFishRelationships(fish?.relationships);
-  if (!Object.keys(relationships).length) {
+  if (!fish || !species) {
     return null;
   }
   const personality = getFishPersonality(fish);
-  const nearby = state.fish
+  const nearbyAll = state.fish
     .filter((otherFish) => otherFish && otherFish.id !== fish.id && !isFishDead(otherFish))
     .map((otherFish) => ({
       fish: otherFish,
       relation: relationships[otherFish.id],
       distance: Math.hypot((fish.xNorm || 0.5) - (otherFish.xNorm || 0.5), (fish.yNorm || 0.5) - (otherFish.yNorm || 0.5))
     }))
-    .filter((entry) => entry.relation)
     .sort((left, right) => left.distance - right.distance);
+  const nearby = nearbyAll.filter((entry) => entry.relation);
   const threat = nearby.find((entry) => ["fear", "dislike", "rival"].includes(entry.relation.kind) && entry.distance <= 0.34);
   if (threat) {
     const escape = getAvoidanceEscapeTarget(fish, species, threat.fish, {
@@ -2168,15 +2173,62 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
       debugText: `avoid ${threat.fish.name} | ${threat.relation.kind}`
     };
   }
+  // "Large fish" is a spatial comfort issue, so the affected fish should
+  // react when a large body gets within roughly one combined body length,
+  // even if the two fish do not have a relationship record yet.
+  const avoidsLargeFish = getSpeciesConflictTags(species).includes("large_fish");
+  const nearbyLargeFish = avoidsLargeFish
+    ? nearbyAll.find((entry) => {
+      const otherSpecies = getSpeciesForFish(entry.fish);
+      if ((Number(otherSpecies?.width) || 0) < 220) return false;
+      const bodyLengthNorm = (getFishDisplayWidth(fish, species, now) + getFishDisplayWidth(entry.fish, otherSpecies, now)) * 0.55 / TANK_WIDTH;
+      return entry.distance <= clamp(bodyLengthNorm, 0.07, 0.22);
+    })
+    : null;
+  if (nearbyLargeFish) {
+    const refuge = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["hide", "plant"],
+      chanceMultiplier: 2.2,
+      lingerMultiplier: 1.35,
+      preferBackLayer: true
+    });
+    if (refuge) {
+      return {
+        ...refuge,
+        intentType: "hide",
+        intentCause: `large fish ${nearbyLargeFish.fish.name}`,
+        intentTargetId: nearbyLargeFish.fish.id,
+        intentTargetName: nearbyLargeFish.fish.name,
+        signalType: "avoid_large_fish",
+        debugText: `hide from ${nearbyLargeFish.fish.name}`
+      };
+    }
+    const escape = getAvoidanceEscapeTarget(fish, species, nearbyLargeFish.fish, { retreatNorm: randomBetween(0.14, 0.22), verticalScale: 0.72 });
+    return {
+      xNorm: escape?.xNorm ?? fish.xNorm,
+      yNorm: escape?.yNorm ?? fish.yNorm,
+      targetLayer: escape?.targetLayer ?? getFishTankLayer(fish),
+      targetAt: now + randomBetween(1800, 3400),
+      intentType: "avoid",
+      intentCause: `large fish ${nearbyLargeFish.fish.name}`,
+      intentTargetId: nearbyLargeFish.fish.id,
+      intentTargetName: nearbyLargeFish.fish.name,
+      signalType: "avoid_large_fish",
+      debugText: `avoid ${nearbyLargeFish.fish.name} | large fish`
+    };
+  }
   if (options.onlyThreat) {
     return null;
   }
   if (species?.id === "pilot-fish" || ["social", "follower"].includes(personality) || getFishBehaviorProfile(species).group === "small-social") {
     const friend = nearby.find((entry) => entry.relation.kind === "friend" && entry.distance <= 0.42);
-    if (friend && Math.random() < 0.55) {
+    // Social fish still occasionally swim near a friend, but this is a
+    // background behavior. A high chance here made unrelated fish repeatedly
+    // shadow one another instead of exploring the tank.
+    if (friend && Math.random() < 0.045) {
       return {
-        xNorm: clamp(friend.fish.xNorm + randomBetween(-0.05, 0.05), 0.08, 0.92),
-        yNorm: clamp(friend.fish.yNorm + randomBetween(-0.04, 0.04), 0.14, 0.8),
+        xNorm: clamp(friend.fish.xNorm + randomBetween(-0.1, 0.1), 0.08, 0.92),
+        yNorm: clamp(friend.fish.yNorm + randomBetween(-0.075, 0.075), 0.14, 0.8),
         targetLayer: getFishTankLayer(friend.fish),
         targetAt: now + randomBetween(3200, 7200),
         intentType: "follow",
@@ -2467,6 +2519,7 @@ function recordFishFeedingMemory(fish, pellet, now = Date.now()) {
 }
 
 function shouldFishRefuseFoodForComfort(fish, foodKey = "basic", now = Date.now()) {
+  if (foodKey === "halloweenCandy" || hasActiveCandyBoost(fish, now)) return false;
   if (!fish || isMealFreeFish(fish) || isUndeadFish(fish)) {
     return false;
   }

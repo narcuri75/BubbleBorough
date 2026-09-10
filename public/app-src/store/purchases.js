@@ -11,17 +11,37 @@ function setStorePurchaseSoundBatch(active = false) {
 
 function recordWalletTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Math.abs(Number(options.amount) || 0)));
-  if (!state || amount <= 0) return false;
+  const allowZero = options.allowZero === true || options.direction === "neutral";
+  if (!state || (!allowZero && amount <= 0)) return false;
   if (!Array.isArray(state.walletTransactions)) state.walletTransactions = [];
+  const direction = options.direction === "debit"
+    ? "debit"
+    : options.direction === "neutral" || amount <= 0
+      ? "neutral"
+      : "credit";
   state.walletTransactions.unshift({
     id: createId("receipt"), amount,
-    direction: options.direction === "debit" ? "debit" : "credit",
+    direction,
     label: String(options.label || "Aquarium activity").slice(0, 180),
-    place: String(options.place || "Aquarium").slice(0, 80),
+    place: String(options.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega").slice(0, 80),
     time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now()
   });
   state.walletTransactions = state.walletTransactions.slice(0, 60);
   return true;
+}
+
+function resolvePurchasedDecorKey(decorKey, appearanceVariantKey = "") {
+  const key = normalizeDecorKey(decorKey);
+  const decor = runtime.decorMap.get(key);
+  if (!decor) {
+    return key;
+  }
+  const variants = getDecorStoreVariantEntries(decor);
+  if (!variants.length) {
+    return key;
+  }
+  const match = variants.find((entry) => entry.key === appearanceVariantKey);
+  return (match || variants[0] || decor).key;
 }
 
 function performCoinTransaction(options = {}) {
@@ -50,7 +70,7 @@ function performCoinTransaction(options = {}) {
     const event = typeof options.event === "function" ? options.event(now) : options.event;
     const toast = typeof options.toast === "function" ? options.toast(now) : options.toast;
     recordWalletTransaction({ amount, direction, now,
-      place: options.place || (direction === "debit" ? "Tankazon" : "Aquarium"),
+      place: options.place || (direction === "debit" ? "BubbleBodega" : "Aquarium"),
       label: options.receiptLabel || event?.text || toast || (direction === "debit" ? "Purchase" : "Coin award") });
     completeGameAction({
       now,
@@ -88,8 +108,8 @@ function buyFood(foodKey) {
     apply: () => {
       state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
     },
-    event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} pellets).` },
-    toast: `${food.name} stocked. +${food.bottlePellets} pellets.`
+    event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}).` },
+    toast: `${food.name} stocked. +${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}.`
   });
 }
 
@@ -195,6 +215,9 @@ async function ensureFishPurchaseImageReady(fish, species) {
   const selectedAsset = getFishAssetPath(fish, species);
   const candidates = [
     selectedAsset,
+    getFishDirectionalSpritePath(selectedAsset, "bottom"),
+    getFishDirectionalSpritePath(selectedAsset, "side"),
+    species.overlayAsset,
     getFishDisplayAssetPath(fish, species, Date.now()),
     species.fallbackAsset,
     species.asset
@@ -609,25 +632,34 @@ function confirmFishSell() {
 }
 
 function getDecorPurchaseCost(decorKey) {
-  const decor = runtime.decorMap.get(decorKey);
+  const resolvedKey = typeof normalizeDecorKey === "function" ? normalizeDecorKey(decorKey) : decorKey;
+  const decor = runtime.decorMap.get(resolvedKey);
   return Math.max(0, Math.floor(Number(decor?.cost) || 0));
 }
 
 function buyDecor(decorKey, options = {}) {
+  const resolvedDecorKey = typeof resolvePurchasedDecorKey === "function"
+    ? resolvePurchasedDecorKey(decorKey, options.appearanceVariantKey)
+    : (typeof normalizeDecorKey === "function" ? normalizeDecorKey(decorKey) : decorKey);
   if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
     closeStoreOverlay({ force: true });
     setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION_DONE, {
       now: Date.now(),
-      decorKey: String(decorKey || "")
+      decorKey: String(resolvedDecorKey || decorKey || "")
     });
     saveState();
     renderUi(Date.now());
     return { ok: true, previewOnly: true };
   }
 
-  const decor = runtime.decorMap.get(decorKey);
+  const decor = runtime.decorMap.get(resolvedDecorKey) || runtime.decorMap.get(decorKey);
   if (!decor) {
     return { ok: false, reason: "missing-decor" };
+  }
+
+  if (!isSeasonalDecorAvailable(decor)) {
+    showToast(`${decor.name} is only available during its season.`);
+    return { ok: false, reason: "out-of-season" };
   }
 
   if (!isDecorShopUnlocked(decor)) {
@@ -656,13 +688,13 @@ function buyDecor(decorKey, options = {}) {
     now,
     insufficientMessage: `You need ${decor.cost} coins for ${decor.name}.`,
     apply: () => {
-      state.decorInventory[decorKey] = (state.decorInventory[decorKey] || 0) + 1;
+      state.decorInventory[resolvedDecorKey] = (state.decorInventory[resolvedDecorKey] || 0) + 1;
       if (tutorialPurchase || options.closeOverlayFirst === true) {
         closeStoreOverlay({ force: true });
-        setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, { now, decorKey });
+        setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, { now, decorKey: resolvedDecorKey });
       }
     },
-    event: { type: "decor", tone: "positive", decorKey, text: `Bought ${decor.name}.` },
+    event: { type: "decor", tone: "positive", decorKey: resolvedDecorKey, text: `Bought ${decor.name}.` },
     toast: `${decor.name} is waiting in storage.`
   });
   if (!transaction.ok) {
@@ -681,6 +713,11 @@ function buyAnotherDecor(decorKey) {
   if (!decor) {
     showToast("That decor is no longer available.");
     return;
+  }
+
+  if (!isSeasonalDecorAvailable(decor)) {
+    showToast(`${decor.name} is only available during its season.`);
+    return { ok: false, reason: "out-of-season" };
   }
 
   if (!canUseDecorWithCurrentContentSettings(key)) {
@@ -836,36 +873,6 @@ function buyBackground(backgroundKey) {
   });
 }
 
-function buyFilter(filterKey) {
-  const filter = runtime.filterMap.get(filterKey);
-  if (!filter || !filter.purchasable) {
-    return;
-  }
-
-  const now = Date.now();
-  let event = null;
-  let toast = "";
-  return performCoinTransaction({
-    amount: filter.cost,
-    now,
-    insufficientMessage: `You need ${filter.cost} ${pluralize("coin", filter.cost)} for the ${filter.name}.`,
-    apply: () => {
-      state.ownedFilterInventory[filterKey] = (state.ownedFilterInventory[filterKey] || 0) + 1;
-      if (tankSupportsFilters(getCurrentTank()) && getAvailableFilterCount(filterKey) > 0) {
-        preserveTankDirtinessThroughChange(now, () => {
-          state.selectedFilterAsset = filterKey;
-        });
-        event = { type: "purchase", tone: "positive", text: `Bought and equipped the ${filter.name}.` };
-        toast = `${filter.name} installed.`;
-      } else {
-        event = { type: "purchase", tone: "positive", text: `Bought ${filter.name}.` };
-        toast = `${filter.name} added to tank storage.`;
-      }
-    },
-    event: () => event,
-    toast: () => toast
-  });
-}
 
 function buyAutoDispenser() {
   if (hasAutoDispenserInstalled()) {
@@ -908,35 +915,5 @@ function buyUvLight() {
     },
     event: { type: "equipment", tone: "positive", text: "Installed a UV light for blacklight glow." },
     toast: "UV light installed and switched on."
-  });
-}
-
-function sellFilter(filterKey) {
-  const filter = runtime.filterMap.get(filterKey);
-  if (!filter || !filter.purchasable) {
-    return;
-  }
-
-  const ownedCount = Math.max(0, Math.floor(Number(state?.ownedFilterInventory?.[filterKey]) || 0));
-  const unusedCount = getUnusedFilterCount(filterKey);
-  if (ownedCount <= 0 || unusedCount <= 0) {
-    showToast("Only unused filters can be sold.");
-    return;
-  }
-
-  const resaleValue = getResaleValue(filter.cost);
-  return performCoinTransaction({
-    direction: "credit",
-    amount: resaleValue,
-    apply: () => {
-      const nextCount = Math.max(0, ownedCount - 1);
-      if (nextCount > 0) {
-        state.ownedFilterInventory[filterKey] = nextCount;
-      } else {
-        delete state.ownedFilterInventory[filterKey];
-      }
-    },
-    event: { type: "sale", tone: "neutral", text: `Sold ${filter.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.` },
-    toast: `${filter.name} sold.`
   });
 }

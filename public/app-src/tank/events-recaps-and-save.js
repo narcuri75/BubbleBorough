@@ -461,17 +461,7 @@ function getTankCleanlinessPercentForMilestones(tank = getCurrentTank(), now = D
 
   const fishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
   const deadFishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && isFishDead(fish) && !isFishBeingConsumedByPiranhas(fish, now));
-  const typeMeta = getTankTypeMeta(tank.tankTypeId);
-  const baseCleanDays = tankSupportsFilters(tank)
-    ? BASE_TANK_DIRTY_DAYS
-    : Math.max(1.2, Number(typeMeta.baseCleanDays) || FILTERLESS_BASE_TANK_DIRTY_DAYS);
-  const filter = tankSupportsFilters(tank)
-    ? runtime.filterMap.get(tank.selectedFilterAsset || getDefaultFilterKey())
-    : null;
-  const cleanDays = filter
-    ? Math.max(BASE_TANK_DIRTY_DAYS, Number(filter.cleanDays) || BASE_TANK_DIRTY_DAYS)
-    : baseCleanDays;
-  const duration = cleanDays * DAY_MS / Math.max(1, getTankFishDirtinessMultiplier(fishList, deadFishList));
+  const duration = getTankMaxDirtyDurationMs(fishList, tank, deadFishList);
   const dirtiness = clamp((now - (Number(tank.lastCleanedAt) || now)) / Math.max(1, duration), 0, 1);
   return Math.max(0, Math.round((1 - dirtiness) * 100));
 }
@@ -824,6 +814,7 @@ function saveState() {
   if (!state) {
     return;
   }
+  if (typeof commitDecorEditHistory === "function") commitDecorEditHistory();
   if (runtime.freshGameSaveLocked && state?.tutorial?.completed !== true) {
     return;
   }

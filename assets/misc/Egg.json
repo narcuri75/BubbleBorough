@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "columns": 4,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "e0a3f0d0-c754-40d6-9465-6b3040a48370",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "5f2bb774-1d4e-41c9-876c-6f65616305c9",
+          "width": 100,
+          "height": 99,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "fish_egg.png"
+        },
+        {
+          "id": "36244d38-2945-4575-9576-a4974df8cbb3",
+          "width": 100,
+          "height": 99,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "fish_egg_cracked.png"
+        },
+        {
+          "id": "57088800-f0e1-4691-8e3a-2bee90ee8d3b",
+          "width": 100,
+          "height": 99,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "fish_egg_shell.png"
+        }
+      ]
+    }
+  ]
+}

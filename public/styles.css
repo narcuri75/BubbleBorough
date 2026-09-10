@@ -170,6 +170,22 @@ html.halloween-mode .loading-overlay-logo { filter: drop-shadow(0 0 10px rgba(12
   width: min(100%, 520px);
 }
 
+.loading-overlay-trivia {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(18px, 5vh, 76px);
+  width: min(88vw, 620px);
+  margin: 0;
+  color: rgba(238, 249, 255, 0.9);
+  font-size: clamp(.78rem, 1.15vw, 1rem);
+  font-style: italic;
+  line-height: 1.45;
+  text-align: center;
+  text-shadow: 0 2px 12px rgba(0, 20, 60, .9);
+  transform: translateX(-50%);
+  white-space: pre-line;
+}
+
 .loading-overlay.is-ready .loading-overlay-text,
 .loading-overlay.is-error .loading-overlay-text {
   padding: 14px 22px;
@@ -186,6 +202,8 @@ html.halloween-mode .loading-overlay-logo { filter: drop-shadow(0 0 10px rgba(12
 .loading-overlay.is-ready .loading-overlay-text {
   display: none;
 }
+.loading-overlay.is-ready .loading-overlay-trivia,
+.loading-overlay.is-error .loading-overlay-trivia { display: none; }
 
 .loading-overlay.is-error .loading-overlay-text {
   background: linear-gradient(180deg, rgba(116, 30, 55, 0.9), rgba(62, 15, 38, 0.94));
@@ -2731,8 +2749,7 @@ h2 {
 }
 
 .tank-stage.is-decor-edit-framed .tank-stage-background {
-  filter: brightness(0.48) saturate(0.78) blur(1px);
-  transition: filter 420ms ease;
+  filter: none;
 }
 
 #tankStage > #tankStageBackground {
@@ -3778,8 +3795,11 @@ h2 {
 
 .tank-bottom-dock {
   --toolbar-edge-gap: 22px;
-  --toolbar-collapse-peek: 16px;
   --toolbar-taskbar-clearance: 8px;
+  --toolbar-shell-color: color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 34%, #03080b);
+  --toolbar-shell-border-color: color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 42%, #0d171c);
+  --toolbar-tab-overlap: 2px;
+  --toolbar-tab-thickness: 18px;
   --toolbar-open-transform: translateY(-50%);
   --toolbar-collapsed-transform: translateY(-50%) translateX(calc(100% + var(--toolbar-edge-gap)));
   position: absolute;
@@ -3791,13 +3811,9 @@ h2 {
   gap: 9px;
   padding: 9px 8px;
   border-radius: 14px;
-  background:
-    linear-gradient(color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 34%, #0b1e2b), color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 24%, #07141f)),
-    url("assets/icons/tile.png") center / 52px 52px repeat;
-  background-blend-mode: color, normal;
-  border: 1px solid color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 42%, rgba(203, 240, 255, .24));
+  background: var(--toolbar-shell-color);
+  border: 1px solid var(--toolbar-shell-border-color);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(14px);
   z-index: 7;
   overflow: visible;
   transition:
@@ -3808,7 +3824,7 @@ h2 {
     padding 160ms ease;
   will-change: transform;
 }
-.toolbar-wallet { height: 46px; min-width: 118px; box-sizing: border-box; display: grid; grid-template-columns: 38px 1fr; align-items: center; padding: 4px 12px 4px 5px; border: 1px solid color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, rgba(232, 251, 255, .34)); border-radius: 10px; color: #eefbff; background: linear-gradient(color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, #102a3a), color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 35%, #07141f)), url("assets/icons/tile.png") center / 46px 46px repeat; background-blend-mode: color, normal; box-shadow: inset 0 0 14px rgba(37,125,161,.12); }
+.toolbar-wallet { height: 46px; min-width: 118px; box-sizing: border-box; display: grid; grid-template-columns: 38px 1fr; align-items: center; padding: 4px 12px 4px 5px; border: 1px solid color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, rgba(232, 251, 255, .34)); border-radius: 10px; color: #eefbff; background: linear-gradient(color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, #102a3a), color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 35%, #07141f)), var(--sprite-icon-tile, none) center / 46px 46px repeat; background-blend-mode: color, normal; box-shadow: inset 0 0 14px rgba(37,125,161,.12); }
 .toolbar-wallet.is-gaining-coins { animation: toolbar-wallet-coin-gain 1s ease-out; }
 @keyframes toolbar-wallet-coin-gain {
   0% { border-color: rgba(87, 255, 135, .32); box-shadow: inset 0 0 14px rgba(37,125,161,.12), 0 0 0 rgba(87,255,135,0); }
@@ -4078,7 +4094,7 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
 
 :root[data-toolbar-position="bottom-center"] .tank-bottom-dock {
   --toolbar-open-transform: translateX(-50%);
-  --toolbar-collapsed-transform: translateX(-50%) translateY(calc(100% + var(--toolbar-edge-gap) - var(--toolbar-collapse-peek)));
+  --toolbar-collapsed-transform: translateX(-50%) translateY(calc(100% + var(--toolbar-taskbar-clearance)));
   left: 50%;
   right: auto;
   top: auto;
@@ -4091,38 +4107,38 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
 
 .toolbar-tab {
   position: absolute;
-  right: calc(100% - 1px);
+  right: calc(100% - var(--toolbar-tab-overlap));
   top: 50%;
-  width: 16px;
+  width: var(--toolbar-tab-thickness);
   height: 52px;
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(173, 225, 255, 0.16);
+  box-sizing: border-box;
+  border: 1px solid var(--toolbar-shell-border-color);
   border-right: 0;
   border-radius: 12px 0 0 12px;
-  background: rgba(5, 17, 27, 0.72);
+  background: var(--toolbar-shell-color);
   color: rgba(232, 247, 255, 0.82);
   font-size: 0.7rem;
   font-weight: 900;
   line-height: 1;
   transform: translateY(-50%);
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
+  box-shadow: none;
   z-index: 2;
 }
 
 .toolbar-tab:hover,
 .toolbar-tab:focus-visible {
-  background: rgba(11, 31, 47, 0.9);
+  background: var(--toolbar-shell-color);
   color: #fff;
 }
 
 :root[data-toolbar-position="left-center"] .toolbar-tab {
-  left: calc(100% - 1px);
+  left: calc(100% - var(--toolbar-tab-overlap));
   right: auto;
-  border-right: 1px solid rgba(173, 225, 255, 0.16);
+  border-right: 1px solid var(--toolbar-shell-border-color);
   border-left: 0;
   border-radius: 0 12px 12px 0;
 }
@@ -4131,13 +4147,24 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
   left: 50%;
   right: auto;
   top: auto;
-  bottom: calc(100% - 1px);
+  bottom: calc(100% - var(--toolbar-tab-overlap));
   width: 52px;
-  height: 16px;
-  border: 1px solid rgba(173, 225, 255, 0.16);
+  height: var(--toolbar-tab-thickness);
+  border: 1px solid var(--toolbar-shell-border-color);
   border-bottom: 0;
   border-radius: 12px 12px 0 0;
   transform: translateX(-50%);
+}
+
+:root[data-toolbar-position="bottom-center"] .toolbar-tab::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  bottom: calc(-1 * var(--toolbar-tab-overlap));
+  height: calc(var(--toolbar-tab-overlap) + 1px);
+  background: var(--toolbar-shell-color);
+  pointer-events: none;
 }
 
 .toolbar-fast-tooltip {
@@ -4146,7 +4173,7 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
   top: 0;
   z-index: 80;
   max-width: min(220px, calc(100vw - 24px));
-  padding: 5px 8px;
+  padding: 8px 12px;
   border: 1px solid rgba(173, 225, 255, 0.2);
   border-radius: 6px;
   background: rgba(5, 17, 27, 0.94);
@@ -4197,7 +4224,7 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
   display: grid;
   place-items: center;
   font-size: 1.35rem;
-  background: linear-gradient(color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 74%, #163448), color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, #081722)), url("assets/icons/tile.png") center / 45px 45px no-repeat;
+  background: linear-gradient(color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 74%, #163448), color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, #081722)), var(--sprite-icon-tile, none) center / 45px 45px no-repeat;
   background-blend-mode: color, normal;
   color: #fff;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -6583,7 +6610,7 @@ html[data-hardware-acceleration-notice-open="true"] .utility-overlay[data-utilit
 
 .management-care-body {
   display: grid;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto;
   gap: 10px;
   align-content: start;
   min-height: 0;
@@ -6593,8 +6620,6 @@ html[data-hardware-acceleration-notice-open="true"] .utility-overlay[data-utilit
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(173, 225, 255, 0.08);
 }
 
 .management-snapshot-stat {
@@ -9787,7 +9812,7 @@ button.management-task-row {
   :root[data-toolbar-position="bottom-center"] .tank-bottom-dock {
     --toolbar-edge-gap: env(safe-area-inset-bottom, 0px);
     --toolbar-open-transform: none;
-    --toolbar-collapsed-transform: translateY(calc(100% + var(--toolbar-edge-gap) - var(--toolbar-collapse-peek)));
+    --toolbar-collapsed-transform: translateY(calc(100% + env(safe-area-inset-bottom, 0px)));
     position: fixed;
     left: 0;
     right: 0;
@@ -10214,7 +10239,7 @@ button.management-task-row {
   :root[data-toolbar-position="bottom-center"] .tank-bottom-dock {
     --toolbar-edge-gap: 0px;
     --toolbar-open-transform: none;
-    --toolbar-collapsed-transform: translateY(calc(100% - var(--toolbar-collapse-peek)));
+    --toolbar-collapsed-transform: translateY(100%);
     left: 0;
     right: 0;
     top: auto;
@@ -10486,7 +10511,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
   .tank-bottom-dock {
     --toolbar-open-transform: none;
-    --toolbar-collapsed-transform: translateY(calc(100% - var(--toolbar-collapse-peek)));
+    --toolbar-collapsed-transform: translateY(calc(100% + env(safe-area-inset-bottom, 0px)));
     position: fixed;
     left: env(safe-area-inset-left, 0px);
     right: env(safe-area-inset-right, 0px);
@@ -10531,10 +10556,10 @@ body.fixed-16-9-aspect-ratio .tank-stage {
     left: 50%;
     right: auto;
     top: auto;
-    bottom: calc(100% - 1px);
+    bottom: calc(100% - var(--toolbar-tab-overlap));
     width: 44px;
-    height: 12px;
-    border: 1px solid rgba(173, 225, 255, 0.16);
+    height: 14px;
+    border: 1px solid var(--toolbar-shell-border-color);
     border-bottom: 0;
     border-radius: 10px 10px 0 0;
     font-size: 0.56rem;
@@ -10986,7 +11011,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon store redesign                                                   */
+/* BubbleBodega store redesign                                                   */
 /* ========================================================================== */
 .tankazon-store {
   padding: clamp(14px, 2vw, 28px);
@@ -11255,7 +11280,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-complete-purchase:disabled { opacity:.48; cursor:default; }
 .tankazon-delivery-complete { position:absolute; inset:0; z-index:20; display:grid; place-items:center; align-content:center; gap:16px; background:rgba(255,255,255,.98); color:#0f1111; font-size:1.65rem; font-weight:900; }
 .tankazon-delivery-complete[hidden] { display:none !important; }
-.tankazon-delivery-complete img { width:150px; height:150px; object-fit:contain; animation:tankazon-box-jiggle .12s ease-in-out 6 alternate; transform-origin:50% 65%; }
+.store-delivery-box { width:150px; height:150px; background: url("../assets/misc/Box.png") center / contain no-repeat; animation:tankazon-box-jiggle .12s ease-in-out 6 alternate; transform-origin:50% 65%; }
 @keyframes tankazon-box-jiggle { from { transform:rotate(-7deg) translateX(-3px); } to { transform:rotate(7deg) translateX(3px); } }
 
 .tankazon-store .store-drawer {
@@ -11428,7 +11453,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   box-shadow: 0 2px 5px rgba(15,17,17,.18);
 }
 
-/* Store toolbar icon: use the user's Tankazon package tile. */
+/* Store toolbar icon: use the user's BubbleBodega package tile. */
 #openStoreButton .dock-button-icon { object-fit: contain; }
 
 @media (max-width: 1180px) {
@@ -11479,7 +11504,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 
 /* ========================================================================== */
-/* Tankazon layout corrections 2026-09-03                                    */
+/* BubbleBodega layout corrections 2026-09-03                                    */
 /* ========================================================================== */
 .tankazon-store .tankazon-panel {
   width: min(1520px, calc(100vw - 28px));
@@ -11662,7 +11687,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon simplification pass 2026-09-03                                    */
+/* BubbleBodega simplification pass 2026-09-03                                    */
 /* ========================================================================== */
 
 /* Hidden categories must actually stay hidden. The earlier grid !important
@@ -11843,9 +11868,9 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 
 /* ========================================================================== */
-/* Tankazon header + search corrections 2026-09-03                            */
+/* BubbleBodega header + search corrections 2026-09-03                            */
 /* ========================================================================== */
-/* Force the Tankazon header to occupy one full-width row. Some of the base
+/* Force the BubbleBodega header to occupy one full-width row. Some of the base
    responsive store rules give .store-panel-header a two-column grid, which
    could leave the main bar/nav occupying only the left portion of the modal. */
 .tankazon-store .tankazon-panel {
@@ -11885,7 +11910,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon uniform product tiles 2026-09-03                                  */
+/* BubbleBodega uniform product tiles 2026-09-03                                  */
 /* Product browsing cards are intentionally limited to image, title, action. */
 /* ========================================================================== */
 .tankazon-store .store-drawer,
@@ -12013,7 +12038,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon tile content correction 2026-09-03                                */
+/* BubbleBodega tile content correction 2026-09-03                                */
 /* Exact card layout: image, item name, item cost, Add to Cart.                */
 /* ========================================================================== */
 .tankazon-store .shop-card {
@@ -12112,7 +12137,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon product tile no-scroll correction 2026-09-03                      */
+/* BubbleBodega product tile no-scroll correction 2026-09-03                      */
 /* Tiles must contain all visible content without any internal scrolling.      */
 /* ========================================================================== */
 .tankazon-store .shop-card {
@@ -12175,7 +12200,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon product tile hard no-scroll fix 2026-09-03                       */
+/* BubbleBodega product tile hard no-scroll fix 2026-09-03                       */
 /* Product cards are fixed visual tiles. Only the main catalog may scroll.    */
 /* ========================================================================== */
 .tankazon-store .shop-card {
@@ -12242,7 +12267,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon definitive tile scrolling fix                                     */
+/* BubbleBodega definitive tile scrolling fix                                     */
 /* Only #tankazonCatalogArea may scroll vertically in the product region.     */
 /* ========================================================================== */
 .tankazon-store .shop-card,
@@ -12276,7 +12301,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon tile fit correction: cards contain their content, never scroll.   */
+/* BubbleBodega tile fit correction: cards contain their content, never scroll.   */
 /* ========================================================================== */
 .tankazon-store .shop-card {
   box-sizing: border-box !important;
@@ -12311,7 +12336,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* The original descriptive markup is source data only. It cannot create a
-   nested layout/scrolling surface inside the normalized Tankazon card. */
+   nested layout/scrolling surface inside the normalized BubbleBodega card. */
 .tankazon-store .shop-card > .shop-meta:not(.shop-card-actions),
 .tankazon-store .shop-card > .shop-card-main {
   display: none !important;
@@ -12411,13 +12436,13 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   height: 0 !important;
 }
 
-/* Tankazon item name readability tweak */
+/* BubbleBodega item name readability tweak */
 .tankazon-store .tankazon-tile-title {
   font-size: 0.88rem !important;
   font-weight: 700 !important;
 }
 
-/* Tankazon equipment purchase button visibility fix */
+/* BubbleBodega equipment purchase button visibility fix */
 .tankazon-store #equipmentShop .shop-card > .shop-card-actions {
   display: grid !important;
   visibility: visible !important;
@@ -12457,13 +12482,13 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   margin: 0 !important;
 }
 
-/* Tankazon keeps one primary purchase action per equipment tile. */
+/* BubbleBodega keeps one primary purchase action per equipment tile. */
 .tankazon-store #equipmentShop .shop-card .shop-button-row > :not([data-buy-filter]):not([data-buy-background]):not([data-buy-auto-dispenser]):not([data-buy-submarine]):not([data-buy-boat]):not([data-buy-tank]) {
   display: none !important;
 }
 
 
-/* Tankazon tile price uses the in-game coin icon plus numeric cost. */
+/* BubbleBodega tile price uses the in-game coin icon plus numeric cost. */
 .tankazon-store .tankazon-tile-cost {
   display: inline-flex !important;
   align-items: center !important;
@@ -12488,7 +12513,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* Tankazon logo/header visibility refinement 2026-09-03                     */
+/* BubbleBodega logo/header visibility refinement 2026-09-03                     */
 /* ========================================================================== */
 .tankazon-store .tankazon-mainbar {
   grid-template-columns: 250px minmax(360px, 1fr) auto !important;
@@ -12514,7 +12539,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 
-/* Tankazon larger centered logo */
+/* BubbleBodega larger centered logo */
 .tankazon-store .tankazon-mainbar {
   grid-template-columns: 300px minmax(360px, 1fr) auto !important;
 }
@@ -12538,7 +12563,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 
-/* Tankazon committed search results: product matches only. */
+/* BubbleBodega committed search results: product matches only. */
 .tankazon-store .store-drawer.tankazon-search-results > .shop-toolbar,
 .tankazon-store .store-drawer.tankazon-search-results > .shop-section-heading,
 .tankazon-store .store-drawer.tankazon-search-results > .empty-state {
@@ -12546,7 +12571,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 
-/* Tankazon cart subtotal coin icon */
+/* BubbleBodega cart subtotal coin icon */
 .tankazon-store .tankazon-subtotal-value {
   display: inline-flex;
   align-items: center;
@@ -12561,7 +12586,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 
-/* Tankazon exact-search visibility.
+/* BubbleBodega exact-search visibility.
    Explicit class beats legacy card display rules. */
 .tankazon-store .shop-card.tankazon-search-hidden {
   display: none !important;
@@ -12584,7 +12609,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 
-/* Tankazon subtotal alignment */
+/* BubbleBodega subtotal alignment */
 .tankazon-store .tankazon-cart-subtotal {
   display: flex !important;
   align-items: center !important;
@@ -12615,7 +12640,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 
-/* Tankazon catalog scrolling consistency
+/* BubbleBodega catalog scrolling consistency
    Names, prices, coin icons and buttons must not block wheel scrolling. */
 .tankazon-store #tankazonCatalogArea,
 .tankazon-store #tankazonCatalogArea * {
@@ -12639,7 +12664,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 
-/* Tankazon cart item coin-price treatment */
+/* BubbleBodega cart item coin-price treatment */
 .tankazon-store .tankazon-cart-item-price {
   display: inline-flex !important;
   align-items: center !important;
@@ -13393,7 +13418,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 @media (min-width: 861px) {
   #medicineTray {
-    width: min(92vw, 660px);
+    width: min(92vw, 740px);
     max-width: calc(100vw - 48px);
   }
 }
@@ -13405,7 +13430,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   height: 98px;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(248px, var(--care-food-min-width, 248px)) 1px minmax(163px, var(--care-medicine-min-width, 163px)) 1px 170px;
+  grid-template-columns: minmax(248px, var(--care-food-min-width, 248px)) 1px minmax(163px, var(--care-medicine-min-width, 163px)) 1px minmax(248px, var(--care-tools-min-width, 248px));
   gap: 10px;
   align-items: stretch;
   padding: 0 4px;
@@ -13617,13 +13642,13 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .care-tray-tools {
-  min-width: 170px;
+  min-width: var(--care-tools-min-width, 248px);
 }
 
 .care-tray-tool-row {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -13649,10 +13674,15 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   transition: transform 140ms ease, border-color 140ms ease, filter 140ms ease, box-shadow 140ms ease;
 }
 
-.care-tool-tile img {
+.care-tool-tile img,
+.care-tool-emoji {
   width: 43px;
   height: 43px;
+  display: grid;
+  place-items: center;
   object-fit: contain;
+  font-size: 2rem;
+  line-height: 1;
   filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.28));
 }
 
@@ -15579,7 +15609,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .cloud-conflict-grid section { display: grid; gap: 9px; padding: 14px; border-radius: 14px; background: #e6f5ff; }
 .cloud-conflict-grid span { font-size: 13px; }
 @media (max-width: 620px) { .cloud-conflict-grid { grid-template-columns: 1fr; } }
-/* Tankazon product detail view. Keep the catalog mounted for back navigation. */
+/* BubbleBodega product detail view. Keep the catalog mounted for back navigation. */
 .tankazon-store.tankazon-item-open .tankazon-body { grid-template-columns: minmax(0, 1fr) 340px; }
 .tankazon-store.tankazon-item-open .tankazon-catalog-area > .store-drawer { display: none !important; }
 @media (max-width: 900px) {
@@ -15642,4 +15672,160 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   .tankazon-item-gallery { grid-row: auto; }
   .tankazon-item-image { min-height: 180px; }
   .tankazon-store .tankazon-item-art { height: 220px; }
+}
+.decor-history-controls {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+#editDecorTray:has(.decor-history-controls) {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  height: calc(var(--bubble-edit-tray-height) + 44px);
+  min-height: calc(var(--bubble-edit-tray-height) + 44px);
+  max-height: calc(var(--bubble-edit-tray-height) + 44px);
+}
+.decor-history-controls button:disabled { opacity: .4; cursor: default; }
+.decor-layout-dialog {
+  box-sizing: border-box;
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid #49758c;
+  border-radius: 20px;
+  background: #0b2333;
+  color: #ecf8ff;
+  box-shadow: 0 24px 80px #0008;
+}
+.decor-layout-dialog::backdrop { background: #00101baf; backdrop-filter: blur(4px); }
+.decor-layout-heading, .decor-layout-actions, .decor-layout-save > div {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.decor-layout-heading { justify-content: space-between; }
+.decor-layout-heading h2 { margin: 0; }
+.decor-layout-dialog p { font-size: .9rem; line-height: 1.5; color: #bdd7e7; }
+.decor-layout-save label { display: block; margin-bottom: 6px; }
+.decor-layout-save input {
+  flex: 1; min-width: 100px; padding: 10px; color: #ecf8ff; background: #041622;
+  border: 1px solid #49758c; border-radius: 8px; font: inherit;
+}
+.decor-layout-dialog button { min-height: 40px; }
+.decor-layout-dialog button:focus-visible, .decor-layout-dialog input:focus-visible { outline: 2px solid #8be0ff; outline-offset: 3px; }
+.decor-layout-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.decor-layout-list button { overflow-wrap: anywhere; max-width: 100%; white-space: normal; }
+.decor-layout-detail { border-top: 1px solid #49758c; margin-top: 16px; padding-top: 8px; }
+.decor-layout-detail h3 { overflow-wrap: anywhere; }
+.store-facets { min-width: 0; padding: 16px; color: #18303f; background: #fff; overflow-y: auto; border-right: 1px solid #d6dfe5; }
+.store-facets summary { font-size: 16px; font-weight: 750; cursor: pointer; }
+.store-facets fieldset { min-width: 0; padding: 0; margin: 20px 0 0; border: 0; }
+.store-facets legend { padding: 0; margin-bottom: 8px; font-size: 14px; font-weight: 750; }
+.store-facets label { display: flex; align-items: flex-start; gap: 7px; margin: 7px 0; cursor: pointer; font-size: 13px; line-height: 1.4; }
+.store-facets input { flex: 0 0 15px; width: 15px; height: 15px; margin: 2px 0 0; accent-color: #147593; }
+.store-facets small { color: #627681; margin-left: auto; }
+.store-facets input:focus-visible { outline: 2px solid #147593; outline-offset: 3px; }
+.store-facet-count { font-size: 13px; margin: 10px 0; }
+.store-overlay .shop-toolbar-summary { display: none; }
+.store-facet-clear { padding: 0; border: 0; color: #096b85; background: transparent; text-decoration: underline; cursor: pointer; font-size: 13px; }
+.store-facet-clear:disabled { opacity: .5; cursor: default; }
+.store-overlay .shop-card.store-facet-hidden, .store-overlay .store-facet-empty-section { display: none !important; }
+.store-facet-empty { padding: 28px; color: #365369; }
+.tankazon-store .tankazon-body { grid-template-columns: 205px minmax(0, 1fr) 300px; }
+.tankazon-store.tankazon-item-open .store-facets, .tankazon-store.tankazon-item-open .store-facet-empty { display: none; }
+.store-overlay:not(.tankazon-store) .store-facets { border-radius: 12px; margin-bottom: 14px; max-height: 38vh; }
+@media (max-width: 1100px) {
+  .tankazon-store .tankazon-body { grid-template-columns: 160px minmax(0, 1fr) 240px; }
+}
+@media (max-width: 900px) {
+  .tankazon-store .tankazon-body { grid-template-columns: 160px minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .tankazon-store .tankazon-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .tankazon-store .store-facets { max-height: 28vh; border-right: 0; border-bottom: 1px solid #d6dfe5; padding: 10px 14px; }
+  .store-facets fieldset { display: inline-block; vertical-align: top; min-width: 140px; margin-right: 18px; }
+}
+.decor-layout-preview {
+  position: relative; overflow: hidden; border-radius: 12px; border: 1px solid #49758c;
+  background: linear-gradient(#205775, #102d42 82%, #393b39 83%, #262b2a);
+}
+.decor-layout-preview img { position: absolute; object-fit: fill; pointer-events: none; }
+@media (max-width: 480px) {
+  .decor-layout-dialog { padding: 14px; }
+  .decor-history-controls { justify-content: center; }
+  .decor-history-controls button { min-height: 32px; }
+}
+
+/* Photo variant selectors stay anchored to the image at every catalog size. */
+#storeOverlay .shop-card { position: relative; }
+#storeOverlay .shop-variant-dots {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 28px;
+  box-sizing: border-box;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(transparent, rgba(3, 28, 43, .45));
+}
+#storeOverlay .shop-variant-dots button {
+  display: grid;
+  place-items: center;
+  flex: 0 1 24px;
+  min-width: 12px;
+  width: 24px;
+  height: 28px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+#storeOverlay .shop-variant-dots button::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(255, 255, 255, .95);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+}
+#storeOverlay .shop-variant-dots button[aria-pressed="true"]::before {
+  background: #ffcf35;
+  border-color: #ffcf35;
+  transform: scale(1.2);
+}
+#storeOverlay .shop-variant-dots button:focus-visible {
+  outline: 2px solid #ffcf35;
+  outline-offset: -2px;
+}
+
+/* The tank overview uses the full canvas at every viewport size. */
+.borough-overview-body,
+.borough-overview-body.is-editing {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+.borough-overview-info { display: none; }
+.borough-grid { place-content: safe center; }
+
+@keyframes borough-overview-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.borough-overview:not([hidden]) {
+  animation: borough-overview-reveal 220ms ease-out;
+}
+.borough-cell-snapshot-canvas {
+  opacity: 0;
+  transition: opacity 320ms ease-out;
+}
+.borough-cell-snapshot-canvas.is-ready { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .borough-overview:not([hidden]) { animation: none; }
+  .borough-cell-snapshot-canvas { transition: none; }
 }

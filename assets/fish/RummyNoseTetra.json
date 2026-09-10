@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "92791349-cd6e-4a73-b7a8-ac160b24bf1b",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "7f110ad6-54f9-4678-a8fb-8b401c9e13b6",
+          "width": 496,
+          "height": 233,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "RummyNoseTetra.png"
+        },
+        {
+          "id": "176de771-4074-49ae-aff0-7c79ec0df1d9",
+          "width": 496,
+          "height": 233,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "RummyNoseTetra_4.png"
+        },
+        {
+          "id": "1d8bd30d-9b9e-4a2a-8412-72bafb5e871d",
+          "width": 496,
+          "height": 233,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "RummyNoseTetra_3.png"
+        },
+        {
+          "id": "6e3e4943-dd06-4292-b5e7-64ffcfc52561",
+          "width": 496,
+          "height": 233,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "RummyNoseTetra_2.png"
+        },
+        {
+          "id": "328bef07-32bf-4940-963f-ce2b31535342",
+          "width": 496,
+          "height": 233,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "RummyNoseTetra_1.png"
+        }
+      ]
+    }
+  ]
+}

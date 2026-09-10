@@ -1,7 +1,16 @@
 // Source fragment: fish/health.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function hasActiveCandyBoost(fish, now = Date.now()) {
+  return Boolean(fish && fish.activity !== "dead" && !Number.isFinite(fish.deadAt)
+    && Number.isFinite(Number(fish.candyBoostUntil)) && Number(fish.candyBoostUntil) > now);
+}
+
 function isFishDead(fish) {
+  if (hasActiveCandyBoost(fish)) {
+    fish.healthUnits = getFishMaxHealthUnits(fish);
+    return false;
+  }
   return !fish || fish.healthUnits <= 0;
 }
 
@@ -207,6 +216,7 @@ function getFishMaxHealthUnits(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishHealthRatio(fish, species = getSpeciesForFish(fish)) {
+  if (hasActiveCandyBoost(fish)) return 1;
   return clamp((Number(fish?.healthUnits) || 0) / Math.max(1, getFishMaxHealthUnits(fish, species)), 0, 1);
 }
 
@@ -257,15 +267,15 @@ function getTankFishDirtinessMultiplier(fishList = getLivingTankFish(), deadFish
     + getDeadFishDirtinessBonus(deadFishList));
 }
 
-function getFilterMaxDirtyDurationMs(filterKey = state?.selectedFilterAsset, fishList = getLivingTankFish()) {
-  const filterProfile = getFilterProfile(filterKey);
+function getTankMaxDirtyDurationMs(fishList = getLivingTankFish(), targetTank = getCurrentTank(), deadFishList = getExposedDeadTankFish()) {
+  const cleanDays = Math.max(1.2, Number(getTankTypeMeta(targetTank?.tankTypeId).baseCleanDays) || DEFAULT_TANK_DIRTY_DAYS);
   const activeFish = Array.isArray(fishList) ? fishList.filter((fish) => fish && !isFishDead(fish)) : [];
   const suckerFishCount = activeFish.filter((fish) => getSpeciesForFish(fish)?.behavior === "sucker").length;
   const suckerCleanDurationBonus = Math.min(
     SUCKER_FISH_CLEAN_DURATION_BONUS_CAP,
     suckerFishCount * SUCKER_FISH_CLEAN_DURATION_BONUS
   );
-  return filterProfile.cleanDays * DAY_MS * (1 + suckerCleanDurationBonus) / Math.max(1, getTankFishDirtinessMultiplier(activeFish));
+  return cleanDays * DAY_MS * (1 + suckerCleanDurationBonus) / Math.max(1, getTankFishDirtinessMultiplier(activeFish, deadFishList));
 }
 
 function getFishCriticalHealthTickMs(fish, species = getSpeciesForFish(fish)) {
@@ -284,7 +294,7 @@ function resetLivingFishComfortDamageProgress() {
 }
 
 function rebaseTankDirtiness(now, dirtiness = getBaseTankDirtiness(now)) {
-  state.lastCleanedAt = now - clamp(dirtiness, 0, 1) * getFilterMaxDirtyDurationMs(state.selectedFilterAsset, getLivingTankFish());
+  state.lastCleanedAt = now - clamp(dirtiness, 0, 1) * getTankMaxDirtyDurationMs(getLivingTankFish());
 }
 
 function preserveTankDirtinessThroughChange(now, applyChange) {
@@ -416,6 +426,10 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
     return false;
   }
 
+  if (hasActiveCandyBoost(fish, now)) {
+    fish.healthUnits = getFishMaxHealthUnits(fish);
+    return false;
+  }
   const alreadyDead = fish.activity === "dead" || isFishDead(fish);
   if (
     !alreadyDead

@@ -10,7 +10,6 @@ function renderTickUi(now, options = {}) {
   renderControls(now);
   renderIntroTutorial();
   renderTutorialGuidance();
-  renderCareTaskPane(now);
   if (stateChanged) {
     renderSummary(now);
     renderEvents();
@@ -69,12 +68,11 @@ function renderVisiblePanels(now) {
   if (runtime.equipmentOverlayOpen) {
     renderBackgrounds();
     renderSolidBackgroundControls();
-    renderFilterAssets();
     renderUvLightControls();
     renderCustomGravelControls();
   }
 
-  syncFilterFeatureVisibility();
+  syncLightingFeatureVisibility();
 
   if (showingOverviewTab || showingFishTab || showingDecorTab) {
     renderCollapsibleSections();
@@ -179,8 +177,6 @@ function syncCurrentTankState(now, options = {}) {
     changed = materializeCoarseFishActivities(targetTank, now) || changed;
     changed = processBoroughStructureServices(now, targetTank) || changed;
     changed = processFishNeedsAutonomy(now) || changed;
-  } else {
-    changed = advanceCoarseFishActivities(now, targetTank) || changed;
   }
 
   const completedSlots = [];
@@ -287,6 +283,10 @@ function syncCurrentTankState(now, options = {}) {
     }
   }
   changed = assignFloatingPelletsToHungryFish(now) || changed;
+  // Resolve expired pellets and feeding targets before advancing offscreen fish.
+  if (!detailedSimulation) {
+    changed = advanceCoarseFishActivities(now, targetTank) || changed;
+  }
   changed = changed || pelletMotionChanged || pelletsBefore !== state.floatingPellets.length;
 
   changed = processTankMedicineEffects(now) || changed;
@@ -571,6 +571,9 @@ function pruneCustomDecorAssets(target = state) {
 
   let changed = false;
   const usedKeys = new Set();
+  for (const layout of target.savedDecorLayouts || []) {
+    for (const item of layout.items || []) usedKeys.add(item.decorKey);
+  }
   for (const [key, count] of Object.entries(target.decorInventory || {})) {
     if (isCustomDecorAssetKey(key) && Math.max(0, Number(count) || 0) > 0) {
       usedKeys.add(key);
@@ -646,7 +649,7 @@ function getCriticalTankConditionStartAt(now) {
   }
 
   if (!isTutorialTankDirtinessLocked()) {
-    const dirtyAt = state.lastCleanedAt + getFilterMaxDirtyDurationMs();
+    const dirtyAt = state.lastCleanedAt + getTankMaxDirtyDurationMs();
     if (dirtyAt <= now) {
       startCandidates.push(dirtyAt);
     }
@@ -679,7 +682,14 @@ function applyCriticalComfortHealthEffects(now) {
   const corpsesPresent = hasExposedDeadTankFish(now);
 
   for (const fish of livingFish) {
-    fish.comfortDamageProgressMs = Math.max(0, Number(fish.comfortDamageProgressMs) || 0) + exposureMs;
+    const unboostedExposureMs = Number(fish.candyBoostUntil) > 0
+      ? Math.min(exposureMs, Math.max(0, now - fish.candyBoostUntil)) : exposureMs;
+    if (hasActiveCandyBoost(fish, now)) {
+      fish.healthUnits = getFishMaxHealthUnits(fish);
+      fish.comfortDamageProgressMs = 0;
+      continue;
+    }
+    fish.comfortDamageProgressMs = Math.max(0, Number(fish.comfortDamageProgressMs) || 0) + unboostedExposureMs;
     const damageTickMs = getFishCriticalHealthTickMs(fish);
     const damageUnits = Math.min(
       fish.healthUnits,

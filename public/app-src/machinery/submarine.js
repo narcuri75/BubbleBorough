@@ -1400,7 +1400,7 @@ function renderSubmarineManager() {
   element.innerHTML = `
     <div class="submarine-manager-header">
       <div class="submarine-manager-title">
-        <img src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <img ${assetImageAttributes(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))} alt="" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
         <strong>Care Submarine</strong>
       </div>
       <div class="submarine-manager-header-actions">
@@ -1440,7 +1440,7 @@ function renderSubmarineManager() {
         <div class="submarine-resource-body">
           <div class="submarine-resource-main">
             <div class="submarine-resource-identity">
-              <img class="submarine-resource-icon" src="${escapeHtml(foodIcon)}" alt="" />
+              <img class="submarine-resource-icon" ${assetImageAttributes(foodIcon)} alt="" />
               <div class="submarine-resource-copy">
                 <div class="submarine-resource-topline"><strong>Food</strong><small>${foodAvailable} available</small></div>
               </div>
@@ -1460,7 +1460,7 @@ function renderSubmarineManager() {
         <div class="submarine-resource-body">
           <div class="submarine-resource-main">
             <div class="submarine-resource-identity">
-              <img class="submarine-resource-icon" src="${escapeHtml(healthIcon)}" alt="" />
+              <img class="submarine-resource-icon" ${assetImageAttributes(healthIcon)} alt="" />
               <div class="submarine-resource-copy">
                 <div class="submarine-resource-topline"><strong>Health Drops</strong><small>${healthAvailable} available</small></div>
               </div>
@@ -1480,7 +1480,7 @@ function renderSubmarineManager() {
         <div class="submarine-resource-body">
           <div class="submarine-resource-main">
             <div class="submarine-resource-identity">
-              <img class="submarine-resource-icon" src="${escapeHtml(calmingIcon)}" alt="" />
+              <img class="submarine-resource-icon" ${assetImageAttributes(calmingIcon)} alt="" />
               <div class="submarine-resource-copy">
                 <div class="submarine-resource-topline"><strong>Calming Drops</strong><small>${calmingAvailable} available</small></div>
               </div>
@@ -1508,11 +1508,11 @@ function renderBoatManager(element = ensureSubmarineManagerElement(), boat = get
   boat.inventory = sanitizeBoatInventory(boat.inventory);
   const chumAvailable = getBoatPlayerChumCount();
   const autopilotEnabled = isBoatAutopilotEnabled(boat);
-  const chumIcon = resolveFoodAndMedAssetPath("chum.png");
+  const chumIcon = resolveFoodAndMedAssetPath("chum-food.png");
   element.innerHTML = `
     <div class="submarine-manager-header">
       <div class="submarine-manager-title">
-        <img src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_BOAT))}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <img ${assetImageAttributes(getMachineryImagePath(MACHINERY_TYPE_BOAT))} alt="" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
         <strong>Chum Skiff</strong>
       </div>
       <div class="submarine-manager-header-actions">
@@ -1540,7 +1540,7 @@ function renderBoatManager(element = ensureSubmarineManagerElement(), boat = get
         <div class="submarine-resource-body">
           <div class="submarine-resource-main">
             <div class="submarine-resource-identity">
-              <img class="submarine-resource-icon" src="${escapeHtml(chumIcon)}" alt="" />
+              <img class="submarine-resource-icon" ${assetImageAttributes(chumIcon)} alt="" />
               <div class="submarine-resource-copy"><div class="submarine-resource-topline"><strong>Chum</strong><small>${chumAvailable} available</small></div></div>
             </div>
             <span class="submarine-resource-count">${boat.inventory.chum}/${BOAT_RESOURCE_CAPACITY}</span>
@@ -1572,7 +1572,7 @@ function renderSubmarineShopCard() {
   const mainImage = variants[0]?.image || SUBMARINE_IMAGE_PATH;
   return `
     <article class="shop-card submarine-shop-card">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(mainImage)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+      <img class="shop-thumb submarine-shop-thumb" ${assetImageAttributes(mainImage)} alt="Automated Care Submarine" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
       <div class="shop-meta shop-card-main">
         <div>
           <strong>Automated Care Submarine</strong>
@@ -1597,7 +1597,7 @@ function renderBoatShopCard() {
   const mainImage = variants[0]?.image || BOAT_IMAGE_PATH;
   return `
     <article class="shop-card boat-shop-card">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(mainImage)}" alt="Chum Skiff" onerror="this.src='assets/icons/tools.png'" />
+      <img class="shop-thumb submarine-shop-thumb" ${assetImageAttributes(mainImage)} alt="Chum Skiff" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
       <div class="shop-meta shop-card-main">
         <div><strong>Chum Skiff</strong><div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div></div>
         <div class="fish-meta">A surface skiff that skips back and forth across the water and drops chum on command.</div>
@@ -1776,7 +1776,7 @@ function renderEditEquipmentTray() {
           aria-label="${actionLabel}"
         >
           <span class="edit-decor-tile-surface">
-            <img class="edit-decor-tile-thumb" src="${escapeHtml(imagePath)}" alt="${label}" onerror="this.src='assets/icons/tools.png'" />
+            <img class="edit-decor-tile-thumb" ${assetImageAttributes(imagePath)} alt="${label}" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
             <span class="inventory-tray-label">${stored ? "Storage" : "In Tank"}</span>
           </span>
         </button>
@@ -1798,7 +1798,7 @@ function renderEditEquipmentTray() {
   }
   if (!markup) {
     if (!submarineOwned && !boatOwned) {
-      markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy a submarine or boat in Tankazon &gt; Equipment.</div>`;
+      markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy a submarine or boat in BubbleBodega &gt; Equipment.</div>`;
     } else {
       markup = `<div class="edit-decor-tray-empty">${activeLocationTab === "tank" ? "No equipment is deployed in this tank." : "Equipment storage is empty."}</div>`;
     }
@@ -1923,22 +1923,47 @@ function getBoatDrawMetrics(boat, now = Date.now()) {
 function drawSubmarineSpotlight(submarine, metrics) {
   if (!submarine?.mission || !metrics || !isSubmarineAutopilotEnabled(submarine)) return;
   const direction = metrics.direction;
-  const noseX = metrics.x + direction * metrics.width * 0.47 * (Number(metrics.turnScaleX) || 1);
-  const noseY = metrics.y + metrics.height * 0.05;
-  const endX = noseX + direction * SUBMARINE_SPOTLIGHT_LENGTH_PX;
-  const spread = 105;
+  const turnScaleX = Number(metrics.turnScaleX) || 1;
+  const turnScaleY = Number(metrics.turnScaleY) || 1;
+  const localX = (SUBMARINE_SPOTLIGHT_LAMP_X_NORM - 0.5) * metrics.width * direction * turnScaleX;
+  const localY = (SUBMARINE_SPOTLIGHT_LAMP_Y_NORM - 0.5) * metrics.height * turnScaleY;
+  const rotation = (Number(metrics.rotation) || 0) + (direction < 0 ? Math.PI : 0);
+  const cosRotation = Math.cos(Number(metrics.rotation) || 0);
+  const sinRotation = Math.sin(Number(metrics.rotation) || 0);
+  const lampX = metrics.x + localX * cosRotation - localY * sinRotation;
+  const lampY = metrics.y + localX * sinRotation + localY * cosRotation;
+  const length = SUBMARINE_SPOTLIGHT_LENGTH_PX;
+  const outerSpread = 84;
+  const innerSpread = 42;
   tankContext.save();
   tankContext.globalCompositeOperation = "screen";
-  const gradient = tankContext.createLinearGradient(noseX, noseY, endX, noseY);
-  gradient.addColorStop(0, "rgba(210,244,255,0.25)");
-  gradient.addColorStop(0.38, "rgba(176,226,255,0.13)");
-  gradient.addColorStop(1, "rgba(160,220,255,0)");
-  tankContext.fillStyle = gradient;
+  tankContext.translate(lampX, lampY);
+  tankContext.rotate(rotation);
+
+  const outerGlow = tankContext.createRadialGradient(0, 0, 1, length * 0.24, 0, length);
+  outerGlow.addColorStop(0, "rgba(205,241,255,0.2)");
+  outerGlow.addColorStop(0.22, "rgba(176,224,255,0.1)");
+  outerGlow.addColorStop(0.68, "rgba(149,211,255,0.028)");
+  outerGlow.addColorStop(1, "rgba(149,211,255,0)");
+  tankContext.fillStyle = outerGlow;
   tankContext.beginPath();
-  tankContext.moveTo(noseX, noseY - 10);
-  tankContext.lineTo(endX, noseY - spread);
-  tankContext.lineTo(endX, noseY + spread);
-  tankContext.lineTo(noseX, noseY + 10);
+  tankContext.moveTo(0, -7);
+  tankContext.quadraticCurveTo(length * 0.5, -outerSpread * 0.72, length, -outerSpread);
+  tankContext.lineTo(length, outerSpread);
+  tankContext.quadraticCurveTo(length * 0.5, outerSpread * 0.72, 0, 7);
+  tankContext.closePath();
+  tankContext.fill();
+
+  const coreGlow = tankContext.createLinearGradient(0, 0, length, 0);
+  coreGlow.addColorStop(0, "rgba(234,251,255,0.24)");
+  coreGlow.addColorStop(0.34, "rgba(203,239,255,0.1)");
+  coreGlow.addColorStop(1, "rgba(181,229,255,0)");
+  tankContext.fillStyle = coreGlow;
+  tankContext.beginPath();
+  tankContext.moveTo(0, -4);
+  tankContext.quadraticCurveTo(length * 0.52, -innerSpread * 0.7, length, -innerSpread);
+  tankContext.lineTo(length, innerSpread);
+  tankContext.quadraticCurveTo(length * 0.52, innerSpread * 0.7, 0, 4);
   tankContext.closePath();
   tankContext.fill();
   tankContext.restore();

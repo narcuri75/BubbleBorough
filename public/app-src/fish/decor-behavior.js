@@ -750,6 +750,15 @@ function getCoarseFishActivityPosition(fish, now = Date.now()) {
 function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
   const fromXNorm = clamp(Number(fish?.xNorm) || 0.5, 0.08, 0.92);
   const fromYNorm = clamp(Number(fish?.yNorm) || 0.5, 0.14, 0.8);
+  const pellet = targetTank?.floatingPellets?.find((entry) => entry.id === fish.feedingPelletId);
+  if (pellet && pellet.expiresAt > now && canFishTargetFoodPellet(fish, pellet, now)) {
+    const distance = Math.hypot(pellet.xNorm - fromXNorm, pellet.yNorm - fromYNorm);
+    return {
+      type: "feeding", label: "Swimming to food", targetPelletId: pellet.id,
+      startedAt: now, endsAt: now + clamp(distance * 42000, 3000, 30000),
+      fromXNorm, fromYNorm, toXNorm: pellet.xNorm, toYNorm: pellet.yNorm
+    };
+  }
   let type = "wander";
   let label = "Swimming around the neighborhood";
   let serviceType = getFishNeededBoroughServiceType(fish, targetTank, now);
@@ -829,6 +838,20 @@ function advanceCoarseFishActivities(now = Date.now(), targetTank = getCurrentTa
       continue;
     }
     let activity = fish.coarseActivity;
+    if (fish.feedingPelletId && (activity?.type !== "feeding" || activity.targetPelletId !== fish.feedingPelletId)) {
+      activity = fish.coarseActivity = null;
+      changed = true;
+    }
+    if (activity?.type === "feeding") {
+      const pellet = targetTank.floatingPellets?.find((entry) => entry.id === activity.targetPelletId);
+      if (!pellet || fish.feedingPelletId !== pellet.id || !canFishTargetFoodPellet(fish, pellet, now)) {
+        activity = fish.coarseActivity = null;
+        changed = true;
+      } else {
+        activity.toXNorm = pellet.xNorm;
+        activity.toYNorm = pellet.yNorm;
+      }
+    }
     if (activity) {
       const position = getCoarseFishActivityPosition(fish, now);
       fish.xNorm = clamp(position.xNorm, 0.08, 0.92);
@@ -840,11 +863,15 @@ function advanceCoarseFishActivities(now = Date.now(), targetTank = getCurrentTa
         if (activity.type === "service" && activity.serviceType) {
           changed = applyBoroughStructureService(fish, activity.serviceType, targetTank, activity.endsAt) || changed;
         }
+        if (activity.type === "feeding") {
+          changed = consumeOffscreenFishFoodPellet(fish, activity.targetPelletId, targetTank, now) || changed;
+        }
         fish.coarseActivity = null;
         activity = null;
         changed = true;
       }
     }
+    if (isFishDead(fish)) continue;
     if (!activity) {
       fish.coarseActivity = createCoarseFishActivity(fish, targetTank, now);
       setFishBehaviorIntent(fish, "offscreen", fish.coarseActivity.label, now, { durationMs: fish.coarseActivity.endsAt - now });

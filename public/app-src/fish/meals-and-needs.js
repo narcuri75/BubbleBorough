@@ -20,33 +20,9 @@ function getBaseTankDirtiness(now) {
   if (isTutorialTankDirtinessLocked()) {
     return 0;
   }
-  return clamp((now - state.lastCleanedAt) / getFilterMaxDirtyDurationMs(), 0, 1);
+  return clamp((now - state.lastCleanedAt) / getTankMaxDirtyDurationMs(), 0, 1);
 }
 
-function getFilterProfile(filterKey = state?.selectedFilterAsset) {
-  const currentTank = getCurrentTank();
-  if (!tankSupportsFilters(currentTank)) {
-    return {
-      cleanDays: Math.max(1.2, Number(getTankTypeMeta(currentTank?.tankTypeId).baseCleanDays) || FILTERLESS_BASE_TANK_DIRTY_DAYS),
-      comfortBoost: 0,
-      cost: 0,
-      flow: 0.9,
-      purchasable: false,
-      tier: -1
-    };
-  }
-
-  const fallbackFilterKey = getDefaultFilterKey();
-  const filter = runtime.filterMap.get(filterKey || fallbackFilterKey) || runtime.filterMap.get(fallbackFilterKey) || {};
-  return {
-    cleanDays: Math.max(BASE_TANK_DIRTY_DAYS, Number(filter.cleanDays) || BASE_TANK_DIRTY_DAYS),
-    comfortBoost: clamp(Number(filter.comfortBoost) || 0, 0, 0.25),
-    cost: Math.max(0, Math.floor(Number(filter.cost) || 0)),
-    flow: clamp(Number(filter.flow) || 1, 0.8, 1.3),
-    purchasable: Boolean(filter.purchasable),
-    tier: Math.max(0, Math.floor(Number(filter.tier) || 0))
-  };
-}
 
 function normalizeFishSpeed(species, explicitValue) {
   if (Number.isFinite(explicitValue)) {
@@ -1515,6 +1491,7 @@ function updateComfortHistoryEvents(now = Date.now()) {
 }
 
 function getFishComfort(fish, now) {
+  if (hasActiveCandyBoost(fish, now)) return { value: 1, label: "Candy boost" };
   if (isFishDead(fish)) {
     return { value: 0, label: "Deceased" };
   }
@@ -1593,7 +1570,7 @@ function setFishNeedValue(fish, needKey, value, now = Date.now()) {
     return false;
   }
   fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
-  if (needKey !== "hunger") return false;
+  if (needKey !== "hunger" || hasActiveCandyBoost(fish, now)) return false;
   const previous = fish.needs[needKey];
   fish.needs[needKey] = clamp(Number(value) || 0, 0, 100);
   return Math.abs(previous - fish.needs[needKey]) > 0.001;
@@ -1613,6 +1590,7 @@ function getFishNeedsSnapshot(fish, now = Date.now()) {
 
 function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fish?.needs, fish, now)) {
   if (!fish || isFishDead(fish) || isUndeadFish(fish)) return null;
+  if (hasActiveCandyBoost(fish, now)) return { tone: "good", text: "Candy boost: all stats full for " + formatDuration(fish.candyBoostUntil - now) + "." };
   if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
     return { tone: "danger", text: "Very hungry. Drop some food into the tank." };
   }
@@ -1720,7 +1698,9 @@ function getFishSocialNeedTarget(fish) {
 function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   const species = getSpeciesForFish(fish);
   if (!fish || !species || isFishDead(fish) || isUndeadFish(fish)) return null;
-  const hours = Math.max(0, elapsedMs) / HOUR_MS;
+  const unboostedMs = Number(fish.candyBoostUntil) > 0
+    ? Math.min(elapsedMs, Math.max(0, now - Number(fish.candyBoostUntil))) : elapsedMs;
+  const hours = Math.max(0, unboostedMs) / HOUR_MS;
   // Food is the only depleting individual resource. The tank supplies comfort
   // and clean water; ordinary rest, company and play take care of themselves.
   return {

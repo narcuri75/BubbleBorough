@@ -15,14 +15,14 @@ function loadTankazonFunctions(names, bindings) {
   assert.equal(parsed.parseDiagnostics.length, 0);
   const context = vm.createContext({ ...bindings });
   const visit = node => {
-    if (ts.isFunctionDeclaration(node) && names.includes(node.name?.text)) vm.runInContext(node.getText(parsed), context);
+    if (ts.isFunctionDeclaration(node) && [...names, "isTankazonCustomProduct"].includes(node.name?.text)) vm.runInContext(node.getText(parsed), context);
     ts.forEachChild(node, visit);
   };
   visit(parsed);
   return context;
 }
 
-test("Tankazon Buy Now purchases only the selected item and ignores repeated clicks while pending", async () => {
+test("BubbleBodega Buy Now purchases only the selected item and ignores repeated clicks while pending", async () => {
   const status = { textContent: "" };
   const cart = new Map([["food", { quantity: 3 }]]);
   let finishPurchase;
@@ -44,7 +44,7 @@ test("Tankazon Buy Now purchases only the selected item and ignores repeated cli
   assert.equal(cart.get("food").quantity, 3);
 });
 
-test("Tankazon Buy Now reports insufficient funds and releases purchase controls", async () => {
+test("BubbleBodega Buy Now reports insufficient funds and releases purchase controls", async () => {
   const status = { textContent: "" };
   let nativeClicks = 0;
   const c = loadTankazonFunctions(["buyTankazonItemNow", "executeTankazonNativePurchase"], {
@@ -59,7 +59,51 @@ test("Tankazon Buy Now reports insufficient funds and releases purchase controls
   assert.match(status.textContent, /Not enough coins/);
 });
 
-test("Tankazon back restores the prior scroll and focus without resetting search", () => {
+test("custom products open configuration synchronously without entering the cart or reporting a purchase", async () => {
+  for (const [fnName, id] of [["buyFish", "__custom-fish-shop__"], ["buyDecor", "__custom-decor-shop__"], ["buyDecor", "__custom-hide-shop__"]]) {
+    const item = { key: `${fnName}:${id}`, fnName, id, cost: 10, name: "Custom" };
+    const status = { textContent: "" };
+    let opened = 0;
+    const cart = new Map();
+    const button = { disabled: false, click: () => { assert.equal(c.completingPurchase, true); opened++; } };
+    const c = loadTankazonFunctions(["addToCart", "buyTankazonItemNow", "beginTankazonCustomization", "executeTankazonNativePurchase"], {
+      selectedItem: item, completingPurchase: false, cart,
+      document: { getElementById: () => status }, findTankazonNativePurchaseButton: () => button,
+      window: { buyFish: () => { opened++; return Promise.resolve({ ok: false, reason: "custom-upload" }); } },
+      closeTankazonItem() {}, normalizeTankazonPurchaseButtons() {},
+      saveTankazonCart: () => assert.fail("Customization must not change cart"),
+      executeUnexpectedPurchase: () => assert.fail("No transaction before configuration")
+    });
+    c.addToCart(item);
+    assert.equal(opened, 1);
+    assert.equal(cart.size, 0);
+    const pending = c.buyTankazonItemNow();
+    assert.equal(opened, 2, "Picker must open before any await loses the user gesture");
+    await pending;
+    assert.equal(c.completingPurchase, false);
+    assert.equal(status.textContent, "");
+    await assert.rejects(c.executeTankazonNativePurchase(item), /Customize/);
+    assert.equal(opened, 2);
+    button.disabled = true;
+    c.addToCart(item);
+    assert.equal(opened, 2);
+  }
+});
+
+test("restored carts discard unconfigured placeholders and preserve actual custom assets", () => {
+  const placeholders = ["__custom-fish-shop__", "__custom-decor-shop__", "__custom-hide-shop__"].map((id, index) => ({
+    id, fnName: index ? "buyDecor" : "buyFish", key: id, quantity: 1
+  }));
+  const actual = { key: "custom-fish-owned", id: "custom-fish-owned", fnName: "buyFish", quantity: 2 };
+  const cart = new Map();
+  const c = loadTankazonFunctions(["restoreTankazonCart"], { cart, TANKAZON_CART_STORAGE_KEY: "cart", console,
+    localStorage: { getItem: () => JSON.stringify([...placeholders, actual]) } });
+  c.restoreTankazonCart();
+  assert.equal(cart.size, 1);
+  assert.equal(cart.get(actual.key).quantity, 2);
+});
+
+test("BubbleBodega back restores the prior scroll and focus without resetting search", () => {
   const catalog = { scrollTop: 0 };
   const page = { hidden: false };
   let focused = false;
@@ -85,12 +129,139 @@ test("Tankazon back restores the prior scroll and focus without resetting search
 function load(file, names, bindings = {}) {
   const source = fs.readFileSync(path.join(root, file), "utf8");
   const parsed = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-  const context = vm.createContext({ Math, Number, Date, Set, Map, WeakMap, clamp, ...bindings });
+  const context = vm.createContext({ Math, Number, Date, Set, Map, WeakMap, clamp, renderStoreFacetAttributes: () => "", hasActiveCandyBoost: (fish, now = Date.now()) => Boolean(fish && fish.activity !== 'dead' && Number(fish.candyBoostUntil) > now), ...bindings });
   for (const node of parsed.statements) {
     if (ts.isFunctionDeclaration(node) && names.includes(node.name?.text)) vm.runInContext(node.getText(parsed), context);
   }
   return context;
 }
+
+function loadDecorLayoutHarness() {
+  const tank = { id: "tank-a", tankTypeId: "rectangle", placedDecor: [] };
+  const state = { tanks: [tank], coins: 100, decorInventory: { plant: 4, cave: 1 }, savedDecorLayouts: [], fish: [{ id: "fish-a", health: 8 }] };
+  Object.defineProperty(state, "placedDecor", { get: () => tank.placedDecor, set: (value) => { tank.placedDecor = value; } });
+  let sequence = 0;
+  const runtime = { decorMap: new Map([["plant", { name: "Plant" }], ["cave", { name: "Cave" }]]), editTankMode: true };
+  const file = "decor/history-and-layouts.js";
+  const source = ts.createSourceFile(file, fs.readFileSync(path.join(root, file), "utf8"), ts.ScriptTarget.Latest, true);
+  const names = source.statements.filter(ts.isFunctionDeclaration).map((node) => node.name.text);
+  const c = load(file, names, { state, runtime, dom: {}, getCurrentTank: () => tank,
+    createId: prefix => `${prefix}-${++sequence}`, canUseDecorWithCurrentContentSettings: () => true,
+    canDecorLiveInCurrentTank: () => true, titleFromFile: key => key, showToast() {}, renderUi() {},
+    clearSelectedDecor() {}, clearDecorResidenceAssignments() {}, clearDecorBoroughServiceReservations() {},
+    updatePlacedDecorResizeAnchor() {}, sanitizePlacedDecor: item => item?.decorKey ? structuredClone(item) : null,
+    saveState() {} });
+  c.saveState = () => c.commitDecorEditHistory();
+  c.tank = tank;
+  return c;
+}
+
+test("decor history treats a continuous group drag as one edit and supports redo and branching", () => {
+  const c = loadDecorLayoutHarness();
+  c.state.placedDecor = ["a", "b"].map((id, index) => ({ id, decorKey: "plant", xNorm: .2 + index * .2, yNorm: .8, scale: 1, tankLayer: 3, groupId: "g" }));
+  const before = JSON.stringify(c.state.placedDecor);
+  c.beginDecorEditHistory("Move group");
+  c.runtime.dragState = { placedId: "a" };
+  for (let step = 0; step < 10; step++) {
+    c.state.placedDecor.forEach(item => { item.xNorm += .01; });
+    c.commitDecorEditHistory();
+  }
+  assert.equal(c.getDecorEditHistory().undo.length, 0);
+  assert.equal(c.replayDecorEdit("undo"), false);
+  c.runtime.dragState = null;
+  c.commitDecorEditHistory();
+  const after = JSON.stringify(c.state.placedDecor);
+  assert.equal(c.getDecorEditHistory().undo.length, 1);
+  assert.equal(c.replayDecorEdit("undo"), true);
+  assert.equal(JSON.stringify(c.state.placedDecor), before);
+  assert.equal(c.replayDecorEdit("redo"), true);
+  assert.equal(JSON.stringify(c.state.placedDecor), after);
+  c.replayDecorEdit("undo");
+  c.beginDecorEditHistory("Flip");
+  c.state.placedDecor[0].flipped = true;
+  c.commitDecorEditHistory();
+  assert.equal(c.getDecorEditHistory().redo.length, 0);
+  assert.equal(c.state.coins, 100);
+  assert.equal(c.state.fish[0].health, 8);
+});
+
+test("layout application conserves inventory, reuses resident IDs, and can be undone after a purchase", () => {
+  const c = loadDecorLayoutHarness();
+  c.state.placedDecor = [{ id: "resident", decorKey: "plant", xNorm: .2, yNorm: .7, scale: 1, tankLayer: 3 },
+    { id: "old-cave", decorKey: "cave", xNorm: .5, yNorm: .8, scale: 1, tankLayer: 3 }];
+  const before = JSON.stringify(c.state.placedDecor);
+  c.state.savedDecorLayouts = [{ id: "layout", name: "Garden", tankTypeId: "rectangle", items: [
+    { id: "elsewhere-a", decorKey: "plant", xNorm: .4, yNorm: .8, scale: 1.5, tankLayer: 2, flipped: true, groupId: "old-group" },
+    { id: "elsewhere-b", decorKey: "plant", xNorm: .7, yNorm: .8, scale: 1, tankLayer: 4, groupId: "old-group" }] }];
+  assert.equal(c.applySavedDecorLayout("layout", "tank-a"), "");
+  assert.equal(c.state.placedDecor[0].id, "resident");
+  assert.notEqual(c.state.placedDecor[1].id, "elsewhere-b");
+  assert.equal(c.state.placedDecor[0].groupId, c.state.placedDecor[1].groupId);
+  assert.notEqual(c.state.placedDecor[0].groupId, "old-group");
+  assert.equal(c.state.decorInventory.plant, 3);
+  assert.equal(c.state.decorInventory.cave, 2);
+  c.state.decorInventory.plant += 2;
+  assert.equal(c.replayDecorEdit("undo"), true);
+  assert.equal(JSON.stringify(c.state.placedDecor), before);
+  assert.equal(c.state.decorInventory.plant, 6);
+  assert.equal(c.state.decorInventory.cave, 1);
+  assert.equal(c.replayDecorEdit("redo"), true);
+  assert.equal(c.state.decorInventory.plant, 5);
+  assert.equal(c.state.decorInventory.cave, 2);
+});
+
+test("layouts reject missing stock, disabled decor, wrong tank type, and a changed preview tank without mutation", () => {
+  const c = loadDecorLayoutHarness();
+  const layout = { id: "layout", name: "Garden", tankTypeId: "rectangle", items: Array.from({ length: 5 }, (_, i) => ({ id: `${i}`, decorKey: "plant" })) };
+  c.state.savedDecorLayouts = [layout];
+  const before = JSON.stringify(c.state);
+  assert.match(c.applySavedDecorLayout("layout", "tank-a"), /Missing 1/);
+  assert.equal(JSON.stringify(c.state), before);
+  layout.items = layout.items.slice(0, 1);
+  c.canUseDecorWithCurrentContentSettings = () => false;
+  assert.match(c.applySavedDecorLayout("layout", "tank-a"), /unavailable/);
+  c.canUseDecorWithCurrentContentSettings = () => true;
+  layout.tankTypeId = "bowl";
+  assert.match(c.applySavedDecorLayout("layout", "tank-a"), /same tank type/);
+  assert.match(c.applySavedDecorLayout("layout", "another-tank"), /tank changed/);
+  assert.equal(c.getDecorEditHistory().undo.length, 0);
+});
+
+test("named layouts survive JSON reload without live links, preserve zero positions, and validate names", () => {
+  const c = loadDecorLayoutHarness();
+  c.state.placedDecor = [{ id: "a", decorKey: "plant", xNorm: 0, yNorm: 0, scale: 1, transitTubeLinkedId: "external" }];
+  assert.match(c.saveNamedDecorLayout(" "), /Enter a name/);
+  assert.equal(c.saveNamedDecorLayout("  Halloween  "), "");
+  c.state.placedDecor[0].xNorm = .8;
+  const restored = c.sanitizeSavedDecorLayouts(JSON.parse(JSON.stringify(c.state.savedDecorLayouts)));
+  assert.equal(restored[0].name, "Halloween");
+  assert.equal(restored[0].items[0].xNorm, 0);
+  assert.equal(restored[0].items[0].yNorm, 0);
+  assert.equal(restored[0].items[0].transitTubeLinkedId, undefined);
+  assert.match(c.saveNamedDecorLayout("HALLOWEEN"), /already used/);
+  assert.equal(c.sanitizeSavedDecorLayouts(null).length, 0);
+  assert.equal(c.sanitizeSavedDecorLayouts([...restored, ...restored]).length, 1);
+});
+
+test("history is bounded, excludes no-op edits, isolates tanks, and rejects stale item state", () => {
+  const c = loadDecorLayoutHarness();
+  c.state.placedDecor = [{ id: "a", decorKey: "plant", xNorm: .1 }];
+  c.beginDecorEditHistory(); c.commitDecorEditHistory();
+  assert.equal(c.getDecorEditHistory().undo.length, 0);
+  for (let i = 0; i < 60; i++) {
+    c.beginDecorEditHistory(); c.state.placedDecor[0].xNorm += .001; c.commitDecorEditHistory();
+  }
+  assert.equal(c.getDecorEditHistory().undo.length, 50);
+  const oldGetTank = c.getCurrentTank;
+  const otherTank = { id: "b" };
+  c.getCurrentTank = () => otherTank;
+  assert.equal(c.getDecorEditHistory().undo.length, 0);
+  c.getCurrentTank = oldGetTank;
+  c.state.placedDecor[0].xNorm = .99;
+  assert.equal(c.replayDecorEdit("undo"), false);
+  assert.equal(c.state.placedDecor[0].xNorm, .99);
+  assert.equal(c.getDecorEditHistory().undo.length, 0);
+});
 
 test("legacy needs preserve hunger while retired meters and habitat recover without chores", () => {
   const keys = ["hunger", "energy", "social", "comfort", "hygiene", "environment", "stimulation"];
@@ -259,7 +430,7 @@ test("fish discovers numbered artwork through _5 with gaps, and ignores absent v
     }
   }
   const c = load("fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishStoreVariants", "getFishAppearanceVariantKey", "discoverFishAppearanceVariants"], {
-    Image: TestImage, runtime: { images: new Map() }, setTimeout, clearTimeout
+    Image: TestImage, runtime: { images: new Map() }, setTimeout, clearTimeout, getSpriteAssetFrame: () => null
   });
   const fish = { asset: "assets/fish/guppy.png" };
   const plain = { asset: "assets/fish/goldfish.png" };
@@ -314,7 +485,20 @@ test("fish purchases save the selected version per fish, default to main, and re
   assert.equal(fish.length, 2);
 });
 
-test("Tankazon keeps different fish variants in separate cart entries and forwards the exact selection", async () => {
+test("catalog dot selections flow into item/cart descriptors and stale selections fall back to Main", () => {
+  const variants = [{ key: "otocinclus.png", image: "otocinclus_side.png", label: "Main" }, { key: "otocinclus_2.png", image: "otocinclus_2_side.png", label: "Variant 2" }];
+  const card = { querySelector: selector => selector === ".price-tag" ? { textContent: "6 coins" } : selector === "img" ? { getAttribute: () => "otocinclus_side.png" } : { textContent: "Catfish" } };
+  const button = { dataset: { buyFish: "otocinclus", fishVariants: JSON.stringify(variants), shopVariantKey: "otocinclus_2.png" }, closest: () => card };
+  const c = loadTankazonFunctions(["getButtonDescriptor", "selectTankazonFishVariant"], {});
+  const selected = c.getButtonDescriptor(button);
+  assert.equal(selected.variantKey, "otocinclus_2.png");
+  assert.equal(selected.image, "otocinclus_2_side.png");
+  assert.equal(selected.key, "buyFish:otocinclus:variant:otocinclus_2.png");
+  button.dataset.shopVariantKey = "removed.png";
+  assert.equal(c.getButtonDescriptor(button).variantKey, "otocinclus.png");
+});
+
+test("BubbleBodega keeps different fish variants in separate cart entries and forwards the exact selection", async () => {
   const bought = [];
   const c = loadTankazonFunctions(["selectTankazonFishVariant", "executeTankazonNativePurchase", "addToCart"], {
     cart: new Map(), purchaseErrorMessage: "", saveTankazonCart() {}, renderCart() {},
@@ -371,7 +555,10 @@ test("living fish keep normal artwork even with Halloween and legacy variants", 
 test("every Halloween decor file is registered and gets a Halloween tag without losing its categories", () => {
   const c = load("tank/catalog-and-equipment.js", ["normalizeStringList", "isHalloweenDecor", "deriveDecorCategories"]);
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "../../assets/asset-manifest.json"), "utf8"));
-  const files = fs.readdirSync(path.join(root, "../../assets/decor")).filter(file => /halloween/i.test(file));
+  const sheets = require("./generate-sprite-sheets.cjs").buildDefinitions();
+  const sheetFiles = new Set(sheets.map(sheet => path.basename(sheet.path)));
+  const looseFiles = fs.readdirSync(path.join(root, "../../assets/decor")).filter(file => /\.png$/i.test(file) && !sheetFiles.has(file));
+  const files = [...new Set([...looseFiles, ...sheets.filter(sheet => sheet.path.startsWith("assets/decor/")).flatMap(sheet => Object.keys(sheet.frames))])].filter(file => /halloween/i.test(file));
   assert.ok(files.length > 0);
   for (const key of files) {
     assert.ok(manifest.decor.some(item => item.key === key), key);
@@ -384,7 +571,7 @@ test("every Halloween decor file is registered and gets a Halloween tag without 
   for (const key of ["Halloween_Boat.png", "Halloween_Submarine.png"]) assert.ok(manifest.fish.some(item => item.key === key));
 });
 
-test("Seasonal decor stays purchasable with Halloween off and supports store search", () => {
+test("Seasonal decor is only listed while its season is active", () => {
   const helpers = load("tank/catalog-and-equipment.js", ["normalizeStringList", "isHalloweenDecor"]);
   let markup = "";
   let query = "";
@@ -399,14 +586,17 @@ test("Seasonal decor stays purchasable with Halloween off and supports store sea
     getDecorUnlockRequirementLabel: () => "", getDecorServiceSummary: () => "", getDecorThumbnailPath: decor => decor.key,
     renderShopThemePill: theme => theme || "", pluralize: word => word, escapeHtml: value => value,
     renderShopToolbar: () => "", isHalloweenDecor: helpers.isHalloweenDecor,
+    assetImageAttributes: path => `src="${path}"`,
+    isSeasonalDecor: helpers.isHalloweenDecor,
+    isSeasonalDecorAvailable: decor => !helpers.isHalloweenDecor(decor),
     setMarkupIfChanged: (_key, _target, value) => { markup = value; }
   });
   c.renderDecorShop();
-  const sectionStart = markup.indexOf('<section');
-  assert.ok(sectionStart > markup.indexOf('data-buy-decor="rock.png"'));
-  assert.ok(sectionStart < markup.indexOf('data-buy-decor="Halloween_Ghost.png"'));
-  assert.match(markup, />Seasonal<\/h3>/);
+  assert.match(markup, /data-buy-decor="rock.png"/);
+  assert.doesNotMatch(markup, /data-buy-decor="Halloween_Ghost.png"/);
+  assert.doesNotMatch(markup, />Seasonal<\/h3>/);
   assert.doesNotMatch(markup, / disabled/);
+  c.isSeasonalDecorAvailable = () => true;
   query = "halloween";
   c.renderDecorShop();
   assert.match(markup, /Seasonal/);
@@ -552,6 +742,70 @@ test("machinery turns squash, flip at midpoint, and settle cleanly", () => {
   assert.equal(vehicle.turnStartedAt, null);
 });
 
+test("submarine spotlight starts at the tower lamp and uses a soft two-layer beam", () => {
+  const calls = [];
+  const gradient = { addColorStop(...args) { calls.push(["stop", ...args]); } };
+  const c = load("machinery/submarine.js", ["drawSubmarineSpotlight"], {
+    SUBMARINE_SPOTLIGHT_LENGTH_PX: 320,
+    SUBMARINE_SPOTLIGHT_LAMP_X_NORM: 0.744,
+    SUBMARINE_SPOTLIGHT_LAMP_Y_NORM: 0.2,
+    isSubmarineAutopilotEnabled: () => true,
+    tankContext: {
+      save() { calls.push(["save"]); }, restore() { calls.push(["restore"]); },
+      translate(...args) { calls.push(["translate", ...args]); }, rotate(value) { calls.push(["rotate", value]); },
+      createRadialGradient() { calls.push(["radial"]); return gradient; },
+      createLinearGradient() { calls.push(["linear"]); return gradient; },
+      beginPath() { calls.push(["begin"]); }, moveTo(...args) { calls.push(["move", ...args]); },
+      quadraticCurveTo(...args) { calls.push(["curve", ...args]); }, lineTo(...args) { calls.push(["line", ...args]); },
+      closePath() { calls.push(["close"]); }, fill() { calls.push(["fill"]); }
+    }
+  });
+  c.drawSubmarineSpotlight({ mission: { type: "food" } }, {
+    x: 500, y: 300, width: 190, height: 95, direction: 1,
+    turnScaleX: 1, turnScaleY: 1, rotation: 0
+  });
+  const translate = calls.find(call => call[0] === "translate");
+  assert.ok(Math.abs(translate[1] - 546.36) < 0.001);
+  assert.ok(Math.abs(translate[2] - 271.5) < 0.001);
+  assert.equal(calls.filter(call => call[0] === "radial").length, 1);
+  assert.equal(calls.filter(call => call[0] === "linear").length, 1);
+  assert.equal(calls.filter(call => call[0] === "curve").length, 4);
+});
+
+test("school followers cannot form a chain behind another follower", () => {
+  const c = load("fish/gravel-and-schooling.js", ["isFishEligibleSchoolLeader"], {
+    isFishDead: () => false,
+    isFishDiseaseAvoidanceSource: () => false,
+    isFishSickOrDying: () => false
+  });
+  const now = Date.now();
+  const follower = { id: "follower", speciesId: "neon-tetra" };
+  const leader = {
+    id: "middle", speciesId: "neon-tetra", activity: "roam",
+    followFishId: "front", followUntil: now + 1000
+  };
+  assert.equal(c.isFishEligibleSchoolLeader(leader, follower, { behavior: "peaceful" }, now), false);
+  leader.followUntil = now - 1;
+  assert.equal(c.isFishEligibleSchoolLeader(leader, follower, { behavior: "peaceful" }, now), true);
+});
+
+test("idle hover holds its simulation position for render-time bobbing", () => {
+  const deterministicMath = Object.create(Math);
+  deterministicMath.random = () => 0;
+  const c = load("fish/predators-and-motion.js", ["getFishProfileHoverTarget"], {
+    Math: deterministicMath,
+    clampFishPlacement: (xNorm, yNorm) => ({ xNorm, yNorm }),
+    getFishProfileRoamSpeed: () => 0.04,
+    randomBetween: (min, max) => (min + max) / 2
+  });
+  const fish = { xNorm: 0.42, yNorm: 0.58 };
+  const target = c.getFishProfileHoverTarget(fish, {}, 2, {
+    hoverChance: 1, hoverMinMs: 700, hoverMaxMs: 1200, movementPattern: "hover"
+  });
+  assert.equal(target.xNorm, fish.xNorm);
+  assert.equal(target.yNorm, fish.yNorm);
+});
+
 test("contact footprint preserves the gap under an arch", () => {
   const alpha = new Uint8ClampedArray(10 * 10 * 4);
   for (let y = 8; y < 10; y++) for (const x of [0, 1, 8, 9]) alpha[(y * 10 + x) * 4 + 3] = 255;
@@ -590,7 +844,7 @@ test("grime layers accumulate across three equal thirds", () => {
   assert.deepEqual(layerAlphas(1), [1, 1, 1]);
 });
 
-test("insufficient purchases use the red payment error and Tankazon exposes the skiff", () => {
+test("insufficient purchases use the red payment error and BubbleBodega exposes the skiff", () => {
   const source = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
   const c = load("store/purchases.js", ["getInsufficientFundsMessage", "performCoinTransaction"], {
     state: { coins: 0 },
@@ -765,7 +1019,7 @@ test("decor contact shadows track the opaque base instead of a separated layer p
   const c = load("rendering/decor.js", ["getDecorContactShadowMetrics"], {
     runtime: { decorMap: new Map([["arch", {path: "arch"}]]) },
     getDecorMotionCapabilities: () => ({}),
-    getPlacedDecorOpaqueBounds: () => ({left: 100, right: 300, top: 500, bottom: 795}),
+    getPlacedDecorGroundBounds: () => ({left: 100, right: 300, top: 500, bottom: 795}),
     getTankLayerBottomBoundaryY: () => 803, getDecorTankLayer: () => 2,
     WATER_SURFACE_Y: 60, getVisibleTankFloorBottomY: () => 900,
     getDecorContactSpans: () => [], getDecorDisplayWidth: () => 200
@@ -857,6 +1111,126 @@ test("cloud conflict choices show failures and continue from startup after a suc
   assert.match(source, /Cloud conflict selection failed/);
   assert.match(source, /function finishCloudConflictSelection/);
   assert.match(source, /hideLoadingOverlay\(\)/);
+  assert.match(source, /return=minimal/);
+  assert.match(source, /runtime\.cloudUploadPromise/);
+  assert.match(source, /CLOUD_SYNC_MIN_INTERVAL_MS/);
+});
+
+test("canvas caches evict and release their oldest backing stores", () => {
+  const c = load("core/utilities.js", ["getCachedCanvasBytes", "releaseCachedCanvasValue", "setBoundedCanvasCache"]);
+  const makeCanvas = () => ({ width: 100, height: 100, getContext() {} });
+  const cache = new Map();
+  const first = makeCanvas();
+  c.setBoundedCanvasCache(cache, "first", first, { maxEntries: 2, maxBytes: 80000 });
+  c.setBoundedCanvasCache(cache, "second", makeCanvas(), { maxEntries: 2, maxBytes: 80000 });
+  c.setBoundedCanvasCache(cache, "third", makeCanvas(), { maxEntries: 2, maxBytes: 80000 });
+  assert.equal(cache.size, 2);
+  assert.equal(cache.has("first"), false);
+  assert.equal(first.width, 0);
+  assert.equal(first.height, 0);
+});
+
+test("closed stores release catalog markup and startup only preloads selected backgrounds", () => {
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const startup = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  assert.match(rendering, /function releaseStoreCatalogMarkup\(\)/);
+  assert.match(rendering, /if \(runtime\.storeOverlayOpen\)/);
+  assert.match(startup, /selectedBackgroundKeys\.has\(item\.key\)/);
+});
+
+test("decor grounding uses visible primary pixels instead of transparent PNG padding", () => {
+  const runtime = {
+    decorMap: new Map([["rock", { key: "rock", path: "rock.png", width: 100 }]]),
+    images: new Map([["rock.png", { width: 100, height: 100 }]])
+  };
+  const mask = { width: 100, height: 100, bounds: { minX: 20, minY: 10, maxX: 79, maxY: 59 } };
+  const c = load("decor/hit-testing.js", [
+    "getPlacedDecorBounds",
+    "getPlacedDecorOpaqueBoundsForImagePath",
+    "getPlacedDecorOpaqueBounds",
+    "getPlacedDecorGroundBounds"
+  ], {
+    runtime, TANK_WIDTH: 1000, TANK_HEIGHT: 1000,
+    getDecorDisplayWidth: () => 100, getImageAlphaMask: () => mask,
+    resolveDecorHorizontalUnit: (_item, value) => value,
+    resolveDecorVerticalUnit: (_item, value) => value
+  });
+  const item = { decorKey: "rock", xNorm: 0.5, yNorm: 0.5, scale: 1 };
+  const full = c.getPlacedDecorBounds(item);
+  const ground = c.getPlacedDecorGroundBounds(item);
+  assert.equal(full.bottom, 500);
+  assert.equal(ground.bottom, 460, "40px transparent bottom padding is ignored");
+  assert.equal(ground.left, 470);
+  assert.equal(ground.right, 530);
+
+  const layout = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
+  const gravel = fs.readFileSync(path.join(root, "assets/image-storage-and-import.js"), "utf8");
+  const caveNavigation = fs.readFileSync(path.join(root, "fish/cave-navigation.js"), "utf8");
+  const decorRendering = fs.readFileSync(path.join(root, "rendering/decor.js"), "utf8");
+  assert.match(layout, /getPlacedDecorGroundBounds\(item\)/);
+  assert.match(gravel, /function applyDecorGravelInsertion\(item\) \{\s*const bounds = getPlacedDecorGroundBounds\(item\)/);
+  assert.match(caveNavigation, /function getDecorPebbleSurfacePose[\s\S]*?const bounds = getPlacedDecorGroundBounds\(item\)/);
+  assert.match(decorRendering, /const previewGroundBounds = getPlacedDecorGroundBounds\(previewItem\)/);
+});
+
+test("decor placement defaults anchor ordinary decor and ceiling-mount transit tubes and lures", () => {
+  const placement = fs.readFileSync(path.join(root, "decor/placement-and-dragging.js"), "utf8");
+  const hitTesting = fs.readFileSync(path.join(root, "decor/hit-testing.js"), "utf8");
+  assert.match(placement, /flippedY: isTransitTube/);
+  assert.match(placement, /freePlacementEnabled: Boolean\(motionCapabilities\.isFloating && !motionCapabilities\.isLure\)/);
+  assert.match(hitTesting, /attachToCeiling = \(isTransitTubeDecorKey\(decorKey\) \|\| getDecorMotionCapabilities\(decorKey\)\.isLure\)/);
+  assert.match(hitTesting, /attachToCeiling \? minAnchorY/);
+});
+
+test("disabled lighting controls stay implemented while caustics and decor shadows remain off", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  const decorRendering = fs.readFileSync(path.join(root, "rendering/decor.js"), "utf8");
+  const waterRendering = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+  assert.match(bootstrap, /CAUSTIC_LIGHTING_SETTING_ENABLED = false/);
+  assert.match(bootstrap, /DECOR_SHADOWS_SETTING_ENABLED = false/);
+  assert.match(settings, /CAUSTIC_LIGHTING_SETTING_ENABLED && getUiSettings\(\)\.causticLightingEnabled/);
+  assert.match(settings, /DECOR_SHADOWS_SETTING_ENABLED && getUiSettings\(\)\.decorShadowsEnabled/);
+  const startup = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  assert.match(startup, /CAUSTIC_LIGHTING_SETTING_ENABLED \? \[CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, CAUSTIC_LIGHT_SECONDARY_ASSET_PATH\] : \[\]/);
+  assert.match(decorRendering, /function drawDecorContactShadow/);
+  assert.match(waterRendering, /function drawDecorCausticLight/);
+});
+
+test("transit tubes participate in both layers of cave-style collision", () => {
+  const navigation = fs.readFileSync(path.join(root, "fish/cave-navigation.js"), "utf8");
+  const collision = fs.readFileSync(path.join(root, "fish/caves-and-collision.js"), "utf8");
+  assert.match(navigation, /!isCaveDecorKey\(item\.decorKey\) && !isTransitTubeDecorKey\(item\.decorKey\)/);
+  assert.match(collision, /!isCaveDecorKey\(item\.decorKey\) && !isTransitTubeDecorKey\(item\.decorKey\)/);
+  assert.match(collision, /normalizedLayer < 3 && !isTransitTubeDecorKey\(item\.decorKey\)/);
+  assert.match(navigation, /testLayer !== span\.front && testLayer !== span\.back/);
+});
+
+test("decor edit mode avoids a full unrelated UI rebuild", () => {
+  const source = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  const body = source.match(/function toggleEditTankMode[\s\S]*?\n}\n/)?.[0] || "";
+  assert.match(body, /renderUi\(now, \{ full: false \}\)/);
+  assert.match(body, /renderEditDecorTray\(\)/);
+});
+
+test("decor edit thumbnails stay small and the zoomed background is not darkened", () => {
+  const source = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const styles = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
+  assert.match(source, /assets\/generated\/previews\/decor/);
+  assert.match(styles, /\.tank-stage\.is-decor-edit-framed \.tank-stage-background \{\s*filter: none;/);
+});
+
+test("decor and gravel bypass sprite atlases while other sprite categories remain available", () => {
+  const source = fs.readFileSync(path.join(root, "assets/sprite-sheets.js"), "utf8");
+  assert.match(source, /assets\\\/\(decor\|gravel\)\\\//);
+  assert.match(source, /return null/);
+  assert.match(source, /for \(const sheet of getSpriteSheetDefinitions\(\)\)/);
+});
+
+test("tank rendering caps DPR at 1.25 and idles at 30 FPS", () => {
+  const source = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  assert.match(source, /return Math\.min\(dpr, PORTABLE_PERFORMANCE_MAX_RENDER_DPR\)/);
+  assert.match(source, /const idleLimit = interacting \? 0 : 30/);
 });
 
 test("wallet receipts persist purchases and expose a compact toolbar history", () => {
@@ -887,8 +1261,102 @@ test("caustic pattern transforms remain bounded at real calendar timestamps", ()
   }
 });
 
+test("Halloween placement uses corrected sizes with catalog loading and offline fallback", async () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, "../../assets/decor/decor_types.json"), "utf8"));
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "../../assets/asset-manifest.json"), "utf8"));
+  const expected = { "Halloween_Seaweed.png": 1, "Halloween_Floatingseaweed.png": 1, "Halloween_Ghost_Ship.png": 1.5,
+    "Halloween_Haunted_Tree.png": 2, "Halloween_Cauldron_Bubbler.png": 1, "Halloween_JackOLantern_bubbler.png": 1,
+    "Halloween_Gravestone_1.png": 1, "Halloween_Gravestone_2.png": 1, "Halloween_Gravestone_3.png": 1,
+    "Halloween_Gravestone_4.png": 1, "Halloween_Gravestone_5.png": 1 };
+  for (const offline of [false, true]) {
+    const runtime = { decorPlacementLayer: 3, images: new Map() };
+    const state = { decorScaleDefaults: {}, decorInventory: {}, placedDecor: [] };
+    const c = vm.createContext({ Math, Number, Date, Map, Set, clamp, runtime, state,
+      DEFAULT_DECOR_SCALE: 1.5, DECOR_SCALE_MIN: .5, DECOR_SCALE_MAX: 6,
+      DECOR_CATALOG_PATH: "decor.json", TANK_WIDTH: 1280, TANK_HEIGHT: 720,
+      fetch: async () => { if (offline) throw new Error("offline"); return { ok: true, json: async () => catalog }; },
+      console: { error() {} }, resolveAppUrl: value => value, normalizeDecorKey: value => value,
+      titleFromFile: value => value, isHalloweenDecor: () => true, normalizeCatalogTheme: value => value,
+      deriveDecorCategories: entry => entry.categories || [], normalizeStringList: () => [],
+      normalizeWaterType: value => value, normalizeDecorFishBehaviorMeta: () => null,
+      normalizeCaveBehaviorMeta: () => null, sanitizePlacedCaveSettings: value => value,
+      hasBubblerMetaFields: () => false, normalizeBubblerMeta: () => null,
+      isInfoOnlyTutorialActive: () => false, isGuidedTutorialActive: () => false,
+      canUseDecorWithCurrentContentSettings: () => true, canDecorLiveInCurrentTank: () => true,
+      getDecorFrontLayer: (key, layer) => layer, getDecorLayerSpan: () => ({ label: "3" }),
+      isTransitTubeDecorKey: () => false, getDecorMotionCapabilities: key => ({ isFloating: String(key).toLowerCase().includes("floating") }),
+      isFreeDecorPlacementEnabled: () => false, getCurrentTank: () => ({}),
+      clampDecorPlacement: (xNorm, yNorm, options) => ({ xNorm, yNorm, scale: options.scale }),
+      renderUi() {}, showToast() {}, isBubblerDecorKey: () => false, isCaveDecorKey: () => false,
+      isCustomBubblerDecorKey: () => false, createId: () => "placed", updatePlacedDecorResizeAnchor() {},
+      applyDecorGravelInsertion() {}, getViewportStableObjectScale: () => 1, getAquariumPhysicalAssetScale: () => 1,
+      isCustomHideAssetKey: () => false, clampTankLayer: value => clamp(value, 1, 5),
+      isUsableRuntimeImage: () => true
+    });
+    const bootstrap = ts.createSourceFile("bootstrap.js", fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8"), ts.ScriptTarget.Latest, true);
+    const fallback = bootstrap.statements.find(node => ts.isVariableStatement(node) && node.declarationList.declarations.some(decl => decl.name.getText(bootstrap) === "DECOR_META"));
+    vm.runInContext(fallback.getText(bootstrap), c);
+    const modules = {
+      "assets/custom-content.js": ["fetchDecorCatalog", "normalizeDecorMeta", "getDecorCompanionType", "getDecorBaseKey", "buildDecorCaveColorLayers", "getExpectedCaveCompanionPaths", "buildDecorCatalog"],
+      "fish/needs-disease-and-behavior.js": ["resolveDecorBaseScale", "getDecorScaleDefault"],
+      "decor/layout-and-layers.js": ["migrateLegacyHalloweenDecorScaleDefaults", "getDecorDisplayWidth", "isCaveDecorKey"],
+      "tank/catalog-and-equipment.js": ["normalizeStringList", "normalizeDecorHangoutTypes", "normalizeDecorFishBehaviorMeta", "getTankComfortDecorTags"],
+      "decor/placement-and-dragging.js": ["startPlacingDecor", "createPlacedDecor"]
+    };
+    for (const [file, names] of Object.entries(modules)) {
+      const parsed = ts.createSourceFile(file, fs.readFileSync(path.join(root, file), "utf8"), ts.ScriptTarget.Latest, true);
+      for (const node of parsed.statements) {
+        if (ts.isFunctionDeclaration(node) && names.includes(node.name?.text)) vm.runInContext(node.getText(parsed), c);
+      }
+    }
+    runtime.decorMeta = c.normalizeDecorMeta(await c.fetchDecorCatalog());
+    runtime.decorMap = new Map(c.buildDecorCatalog(manifest.decor, runtime.decorMeta).map(item => [item.key, item]));
+    const expectedWidths = {
+      "Halloween_Seaweed.png": 644, "Halloween_Floatingseaweed.png": 525,
+      "Halloween_Cauldron_Bubbler.png": 125, "Halloween_JackOLantern_bubbler.png": 125,
+      "Halloween_Gravestone_1.png": 288, "Halloween_Gravestone_2.png": 288, "Halloween_Gravestone_3.png": 288,
+      "Halloween_Gravestone_4.png": 288, "Halloween_Gravestone_5.png": 288
+    };
+    for (const [key, width] of Object.entries(expectedWidths)) assert.equal(runtime.decorMap.get(key)?.width, width, `${key} base width, offline=${offline}`);
+    const shipKey = "Halloween_Ghost_Ship.png";
+    assert.equal(c.isCaveDecorKey(shipKey), false, `Ghost Ship is an ornament, offline=${offline}`);
+    assert.deepEqual(Array.from(runtime.decorMeta[shipKey].fishBehavior.hangoutTypes), ["hardscape", "spooky"]);
+    const shipTags = c.getTankComfortDecorTags({ placedDecor: [{ decorKey: shipKey }] });
+    assert.equal(shipTags.has("cave"), false);
+    assert.equal(shipTags.has("hardscape"), true);
+    state.decorScaleDefaults = c.migrateLegacyHalloweenDecorScaleDefaults({ "Halloween_Seaweed.png": 1.3, "Halloween_Floatingseaweed.png": 1.34, "Halloween_Ghost_Ship.png": 1,
+      "Halloween_Haunted_Tree.png": 1.2, "Halloween_Cauldron_Bubbler.png": .72, "Halloween_JackOLantern_bubbler.png": .68 }, 43);
+    for (const [key, scale] of Object.entries(expected)) {
+      state.decorInventory[key] = 1;
+      c.startPlacingDecor(key);
+      assert.equal(runtime.placementMode.scale, scale, `${key} preview, offline=${offline}`);
+      assert.equal(runtime.placementPreview.scale, scale);
+      const { decor, placedItem } = c.createPlacedDecor(key, .5, .8);
+      assert.equal(placedItem.scale, scale, `${key} placement, offline=${offline}`);
+      assert.equal(c.getDecorDisplayWidth(decor, placedItem), catalog.decor.find(item => item.file === key).width * scale);
+    }
+    const custom = { "Halloween_Seaweed.png": 2, "Halloween_Floatingseaweed.png": .8, "other.png": 1 };
+    assert.deepEqual({ ...c.migrateLegacyHalloweenDecorScaleDefaults(custom, 43) }, custom);
+    const intentional = { "Halloween_Seaweed.png": 1.3, "Halloween_Floatingseaweed.png": 1.34, "Halloween_Ghost_Ship.png": 1 };
+    assert.deepEqual({ ...c.migrateLegacyHalloweenDecorScaleDefaults(intentional, 44) }, intentional);
+    const previousDefaults = { "Halloween_Haunted_Tree.png": 1.2, "Halloween_Cauldron_Bubbler.png": .72, "Halloween_JackOLantern_bubbler.png": .68 };
+    assert.deepEqual({ ...c.migrateLegacyHalloweenDecorScaleDefaults(previousDefaults, 44) }, {});
+    assert.deepEqual({ ...c.migrateLegacyHalloweenDecorScaleDefaults(previousDefaults, 45) }, previousDefaults);
+    const version45StockDefaults = { "Halloween_Seaweed.png": 1.55, "Halloween_Floatingseaweed.png": 1.15,
+      "Halloween_Cauldron_Bubbler.png": .7, "Halloween_JackOLantern_bubbler.png": .7 };
+    assert.deepEqual({ ...c.migrateLegacyHalloweenDecorScaleDefaults(version45StockDefaults, 45) }, {});
+    assert.deepEqual({ ...c.migrateLegacyHalloweenDecorScaleDefaults(version45StockDefaults, 46) }, version45StockDefaults);
+    const customNewDefaults = { "Halloween_Haunted_Tree.png": 2.5, "Halloween_Cauldron_Bubbler.png": .6, "Halloween_JackOLantern_bubbler.png": .8 };
+    assert.deepEqual({ ...c.migrateLegacyHalloweenDecorScaleDefaults(customNewDefaults, 44) }, customNewDefaults);
+  }
+});
+
 test("decor assets keep explicit sizing and bubbler light textures remain optional companions", () => {
-  const c = load("assets/custom-content.js", ["getDecorCompanionType", "getDecorBaseKey"]);
+  const c = load(
+    "assets/custom-content.js",
+    ["getDecorCompanionType", "getDecorBaseKey", "getExpectedCaveCompanionPaths"],
+    { resolveAppUrl: path => path }
+  );
   assert.equal(c.getDecorCompanionType("Halloween_JackOLantern_bubbler_Light.png"), "light");
   assert.equal(c.getDecorBaseKey("Halloween_JackOLantern_bubbler_Light.png"), "halloween_jackolantern_bubbler.png");
   assert.equal(c.getDecorCompanionType("Halloween_Cauldron_Bubbler.png"), "base");
@@ -896,8 +1364,14 @@ test("decor assets keep explicit sizing and bubbler light textures remain option
   const decorDir = path.join(root, "../../assets/decor");
   const metadata = JSON.parse(fs.readFileSync(path.join(decorDir, "decor_types.json"), "utf8"));
   const byFile = new Map((metadata.decor || []).map(entry => [entry.file, entry]));
+  const retiredLooseDecor = new Set([
+    "bubble-plaza.png", "coral-clinic.png", "kelp-cafe.png", "moonstone-grotto.png",
+    "nursery-garden.png", "rock-arch.png", "shell-house.png"
+  ]);
   const baseFiles = fs.readdirSync(decorDir).filter(file => {
     if (!/\.png$/i.test(file)) return false;
+    if (/^Frozen_/i.test(file)) return false;
+    if (retiredLooseDecor.has(file)) return false;
     if (/_color[123]\.png$/i.test(file)) return false;
     return !/_(?:bg|mid|fg|light|mask|trigger|triggers|seat|seats)\.png$/i.test(file);
   });
@@ -911,4 +1385,209 @@ test("decor assets keep explicit sizing and bubbler light textures remain option
   assert.ok(byFile.has("Halloween_Cauldron_Bubbler.png"));
   assert.ok(byFile.has("Halloween_JackOLantern_bubbler.png"));
   assert.ok(!byFile.has("Halloween_JackOLantern_bubbler_Light.png"));
+
+  const hauntedHouse = byFile.get("Halloween_Haunted_House_Cave.png");
+  assert.equal(hauntedHouse.caveSettings.entries.length, 3);
+  assert.deepEqual(
+    Array.from(c.getExpectedCaveCompanionPaths({ key: hauntedHouse.file }, hauntedHouse)),
+    [
+      "assets/decor/Halloween_Haunted_House_Cave_bg.png",
+      "assets/decor/Halloween_Haunted_House_Cave_color2.png",
+      "assets/decor/Halloween_Haunted_House_Cave_color3.png"
+    ]
+  );
+});
+
+test("borough expansion fills at most five columns and three rows, including negative coordinates", () => {
+  const state = { tanks: [{ id: "first", gridX: -2, gridY: -1 }] };
+  const c = load("decor/customization.js", ["fitsBoroughTankGrid", "getAquariumSectionAt", "getValidAquariumExpansionSpaces"], {
+    state, getAllTanks: (target = state) => target.tanks
+  });
+  while (state.tanks.length < 15) {
+    const spaces = c.getValidAquariumExpansionSpaces();
+    assert.ok(spaces.length > 0);
+    for (const space of spaces) assert.equal(c.fitsBoroughTankGrid([...state.tanks, space]), true);
+    state.tanks.push({ id: String(state.tanks.length), ...spaces[0] });
+  }
+  assert.equal(c.getValidAquariumExpansionSpaces().length, 0);
+  assert.equal(c.fitsBoroughTankGrid([{ gridX: 0, gridY: 0 }, { gridX: 5, gridY: 0 }]), false);
+  assert.equal(c.fitsBoroughTankGrid([{ gridX: 0, gridY: 0 }, { gridX: 0, gridY: 3 }]), false);
+});
+
+test("out-of-bounds tank moves leave coordinates and saves untouched", () => {
+  const tanks = [{ id: "a", gridX: 0, gridY: 0 }, { id: "b", gridX: 1, gridY: 0 }];
+  let saves = 0;
+  const c = load("decor/customization.js", ["fitsBoroughTankGrid", "moveAquariumSectionToGrid"], {
+    getAllTanks: () => tanks, getTankById: id => tanks.find(tank => tank.id === id),
+    getAquariumSectionAt: (x, y) => tanks.find(tank => tank.gridX === x && tank.gridY === y),
+    saveState: () => saves++, renderAquariumOverview() {}, showToast() {}, getTankLabel: tank => tank.id
+  });
+  assert.equal(c.moveAquariumSectionToGrid("b", 5, 0), false);
+  assert.equal(c.moveAquariumSectionToGrid("b", 0, 3), false);
+  assert.equal(saves, 0);
+  assert.equal(tanks[1].gridX, 1);
+  assert.equal(c.moveAquariumSectionToGrid("b", 4, 2), true);
+  assert.equal(saves, 1);
+});
+
+test("overview opens from cached previews and refreshes at most one tank per frame", () => {
+  const tanks = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const cache = new Map([["a", { canvas: {}, changed: false }]]);
+  const runtime = { boroughOverviewSnapshotCache: cache };
+  const captured = [];
+  let draws = 0;
+  const targets = new Map(tanks.map(tank => [tank.id, {
+    clientWidth: 384, clientHeight: 216, width: 384, height: 216,
+    classList: { add() {} }, getContext: () => ({ drawImage() { draws++; } })
+  }]));
+  const c = load("ui/main-and-store-rendering.js", ["paintBoroughSnapshots"], {
+    runtime, CSS: { escape: value => value }, window: { devicePixelRatio: 1 },
+    dom: { boroughGrid: { querySelector: selector => targets.get(selector.match(/id="(.*?)"/)[1]) } },
+    getBoroughSnapshot(tank) {
+      captured.push(tank.id);
+      const entry = { canvas: {}, changed: true };
+      cache.set(tank.id, entry);
+      return entry;
+    }, renderTank() {}
+  });
+  c.paintBoroughSnapshots(tanks, 10000, { force: true, cachedOnly: true });
+  assert.equal(captured.length, 0, "opening never renders full tank scenery");
+  assert.equal(draws, 1, "cached scenery appears immediately");
+  for (let frame = 1; frame <= 3; frame++) {
+    c.paintBoroughSnapshots(tanks, 10000 + frame * 16);
+    assert.equal(captured.length, frame);
+  }
+  assert.deepEqual(captured, ["a", "b", "c"]);
+  const settledDraws = draws;
+  c.paintBoroughSnapshots(tanks, 10100);
+  assert.equal(draws, settledDraws, "settled previews do no extra painting between refreshes");
+});
+
+test("selected fish status uses compact in-tank badge without a Fish Care interact button", () => {
+  const uiSource = fs.readFileSync(path.join(root, "../../public/app-src/ui/customization-actions-and-inventory.js"), "utf8");
+  const renderingSource = fs.readFileSync(path.join(root, "../../public/app-src/rendering/fish-and-effects.js"), "utf8");
+  const inputSource = fs.readFileSync(path.join(root, "../../public/app-src/assets/custom-content.js"), "utf8");
+  assert.doesNotMatch(uiSource, /data-care-tool="interact"/);
+  assert.doesNotMatch(uiSource, /care-tool-emoji[^>]*>💬</);
+  assert.doesNotMatch(uiSource, />Offer treat</);
+  assert.match(renderingSource, /runtime\.selectedFishStatusFishId === fish\.id/);
+  assert.match(renderingSource, /heartLabel/);
+  assert.match(renderingSource, /moodLabel/);
+  assert.doesNotMatch(inputSource, /careTool === "interact"/);
+});
+
+test("Chum Skiff resource icon uses the existing chum food art", () => {
+  const source = fs.readFileSync(path.join(root, "../../public/app-src/machinery/submarine.js"), "utf8");
+  assert.match(source, /const chumIcon = resolveFoodAndMedAssetPath\("chum-food\.png"\)/);
+  assert.doesNotMatch(source, /resolveFoodAndMedAssetPath\("chum\.png"\)/);
+});
+
+
+test("toolbar shell follows the selected tile color with a clearly darker muted derived shade", () => {
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(css, /--toolbar-shell-color:\s*color-mix\(in srgb, var\(--toolbar-tile-color[^;]*34%[^;]*#03080b\)/);
+  assert.match(css, /--toolbar-shell-border-color:\s*color-mix\(in srgb, var\(--toolbar-tile-color[^;]*42%[^;]*#0d171c\)/);
+  assert.match(css, /background:\s*var\(--toolbar-shell-color\)/);
+});
+
+test("borough edit overview never renders beyond the real 5 by 3 limit", () => {
+  const source = fs.readFileSync(path.join(root, "../../public/app-src/ui/main-and-store-rendering.js"), "utf8");
+  assert.match(source, /editFrame = \{ minX: frameMinX, maxX: frameMinX \+ 4, minY: frameMinY, maxY: frameMinY \+ 2 \}/);
+  assert.match(source, /const columnCount = Math\.min\(5,/);
+  assert.match(source, /const rowCount = Math\.min\(3,/);
+});
+
+test("decor gravity may place the invisible PNG anchor below the tank so visible pixels reach the floor", () => {
+  const c = load("decor/hit-testing.js", ["clampDecorPlacement"], {
+    runtime: { placementMode: null, decorPlacementLayer: 1 },
+    TANK_WIDTH: 1000,
+    TANK_HEIGHT: 1000,
+    DEFAULT_TANK_LAYER: 1,
+    DECOR_SCALE_MIN: 0.5,
+    DECOR_SCALE_MAX: 6,
+    getTankShellBounds: () => ({ innerLeft: 0, innerTop: 0, innerWidth: 1000, innerHeight: 1000 }),
+    getDecorFrontLayer: () => 1,
+    getTankLayerBottomBoundaryY: () => 940,
+    shouldApplyDecorPlacementGravity: () => true,
+    isTransitTubeDecorKey: () => false,
+    getDecorMotionCapabilities: () => ({ isLure: false }),
+    getResolvedDecorFreePlacementEnabled: () => false,
+    getDecorScaleDefault: () => 1,
+    getPlacedDecorPlacementBounds: (item) => ({
+      left: item.xNorm * 1000 - 100,
+      right: item.xNorm * 1000 + 100,
+      top: item.yNorm * 1000 - 300,
+      // 120px of transparent PNG exists below the visible art.
+      bottom: item.yNorm * 1000 - 120
+    }),
+    getDecorTopOverhangLimitY: () => 0,
+    constrainNormalizedPointToTankShell: (xNorm, yNorm) => ({ xNorm, yNorm, inside: true })
+  });
+
+  const placement = c.clampDecorPlacement(0.5, 0.8, {
+    decorKey: "padded-rock.png",
+    tankLayer: 1,
+    scale: 1,
+    applyGravity: true
+  });
+  assert.equal(placement.yNorm, 1.06, "raw PNG anchor is allowed below 1.0");
+  assert.equal(placement.yNorm * 1000 - 120, 940, "visible bottom lands exactly on the layer floor");
+});
+
+test("decor placement ignores transparent top padding as well as bottom padding", () => {
+  const source = fs.readFileSync(path.join(root, "../../public/app-src/decor/layout-and-layers.js"), "utf8");
+  assert.match(source, /top:\s*groundBounds\.top/);
+  assert.match(source, /bottom:\s*groundBounds\.bottom/);
+});
+
+test("Frozen decor never uses plant sway", () => {
+  const source = fs.readFileSync(path.join(root, "../../public/app-src/decor/customization.js"), "utf8");
+  assert.match(source, /const frozenDecor =/);
+  assert.match(source, /hasSway:\s*!frozenDecor/);
+  assert.match(source, /const isSeaweed = !frozenDecor/);
+});
+
+test("Lure decor is tank-top locked until Free Placement is explicitly enabled", () => {
+  const placementSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/placement-and-dragging.js"), "utf8");
+  const hitSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/hit-testing.js"), "utf8");
+  const customizationSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/customization.js"), "utf8");
+  assert.match(placementSource, /freePlacementEnabled:\s*Boolean\(motionCapabilities\.isFloating && !motionCapabilities\.isLure\)/);
+  assert.match(hitSource, /isTransitTubeDecorKey\(decorKey\) \|\| getDecorMotionCapabilities\(decorKey\)\.isLure/);
+  assert.match(hitSource, /&& !getResolvedDecorFreePlacementEnabled\(options\)/);
+  assert.match(customizationSource, /\\blure\\b/i);
+});
+
+test("checkout delivery animation uses Box.png outside the sprite image system", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(html, /class="store-delivery-box"[^>]*data-store-delivery-box/);
+  assert.doesNotMatch(html, /data-store-delivery-box[^>]*data-sprite-src/);
+  assert.match(css, /\.store-delivery-box[^}]*Box\.png/s);
+});
+
+test("BubbleBodega replaces the old standalone store name in live UI copy", () => {
+  const files = [
+    path.join(__dirname, "../index.html"),
+    path.join(root, "store/purchases.js"),
+    path.join(root, "machinery/submarine.js"),
+    path.join(root, "ui/main-and-store-rendering.js"),
+    path.join(root, "ui/customization-actions-and-inventory.js")
+  ];
+  for (const file of files) {
+    assert.doesNotMatch(fs.readFileSync(file, "utf8"), /\bTankazon\b/, `${path.basename(file)} should say BubbleBodega`);
+  }
+});
+
+test("retired loose Borough decor no longer appears in catalogs or unlock metadata", () => {
+  const retired = ["bubble-plaza.png", "coral-clinic.png", "kelp-cafe.png", "moonstone-grotto.png", "nursery-garden.png", "rock-arch.png", "shell-house.png"];
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/decor/decor_types.json"), "utf8"));
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/asset-manifest.json"), "utf8"));
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const catalogFiles = new Set((catalog.decor || []).map(item => item.file));
+  const manifestFiles = new Set((manifest.decor || []).map(item => item.key));
+  for (const file of retired) {
+    assert.equal(catalogFiles.has(file), false, `${file} removed from decor catalog`);
+    assert.equal(manifestFiles.has(file), false, `${file} removed from asset manifest`);
+    assert.equal(bootstrap.includes(`"${file}"`), false, `${file} removed from bootstrap metadata`);
+  }
 });

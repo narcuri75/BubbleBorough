@@ -78,7 +78,6 @@ function createTankState(options = {}) {
     localBackgroundImageDataUrl: typeof options.localBackgroundImageDataUrl === "string" ? options.localBackgroundImageDataUrl : "",
     localBackgroundImageRefId: sanitizeCustomImageRefId(options.localBackgroundImageRefId),
     selectedTankAsset: options.selectedTankAsset ?? null,
-    selectedFilterAsset: options.selectedFilterAsset ?? getTankDefaultFilterSelection({ tankTypeId: typeMeta.id }),
     autoDispenser: createDefaultAutoDispenserState(options.autoDispenser),
     uvLightInstalled: false,
     uvLightEnabled: false,
@@ -208,9 +207,18 @@ function getAdjacentAquariumSections(tank = getCurrentTank(), targetState = stat
     .filter((neighbor) => neighbor && (options.ignoreTravelWalls === true || !isBoroughTravelWallBlocked(tank, neighbor, targetState)));
 }
 
+function fitsBoroughTankGrid(tanks) {
+  if (!tanks.length) return true;
+  const xs = tanks.map((tank) => tank.gridX);
+  const ys = tanks.map((tank) => tank.gridY);
+  return tanks.length <= 15 && xs.every(Number.isInteger) && ys.every(Number.isInteger)
+    && Math.max(...xs) - Math.min(...xs) < 5
+    && Math.max(...ys) - Math.min(...ys) < 3;
+}
+
 function getValidAquariumExpansionSpaces(targetState = state) {
   const tanks = getAllTanks(targetState);
-  if (!tanks.length) {
+  if (!tanks.length || tanks.length >= 15) {
     return [];
   }
   const candidates = new Map();
@@ -218,7 +226,9 @@ function getValidAquariumExpansionSpaces(targetState = state) {
     for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
       const gridX = tank.gridX + dx;
       const gridY = tank.gridY + dy;
-      if (!getAquariumSectionAt(gridX, gridY, targetState)) candidates.set(`${gridX}:${gridY}`, { gridX, gridY });
+      if (!getAquariumSectionAt(gridX, gridY, targetState) && fitsBoroughTankGrid([...tanks, { gridX, gridY }])) {
+        candidates.set(`${gridX}:${gridY}`, { gridX, gridY });
+      }
     }
   }
   return [...candidates.values()];
@@ -301,7 +311,7 @@ function extendAquariumAt(gridX, gridY) {
   const valid = getValidAquariumExpansionSpaces().some((space) => space.gridX === x && space.gridY === y);
   const expansionCost = getAquariumExpansionCost();
   if (!valid || getAquariumSectionAt(x, y)) {
-    showToast("That section must connect to the left or right side of a neighborhood.");
+    showToast("Choose an adjacent space within the borough limit: 3 rows, 5 columns, 15 tanks.");
     return false;
   }
   if (state.coins < expansionCost) {
@@ -309,6 +319,7 @@ function extendAquariumAt(gridX, gridY) {
     return false;
   }
   state.coins -= expansionCost;
+  recordWalletTransaction({ amount: expansionCost, direction: "debit", now: Date.now(), place: "BubbleBodega", label: "Aquarium expansion" });
   const section = createTankState({ now: Date.now(), name: getNextAvailableTankName(), gridX: x, gridY: y });
   state.tanks.push(section);
   state.activeTankId = section.id;
@@ -362,6 +373,10 @@ function moveAquariumSectionToGrid(tankId, gridX, gridY) {
   if (!tank || !Number.isInteger(x) || !Number.isInteger(y)) return false;
   const occupant = getAquariumSectionAt(x, y);
   if (occupant && occupant.id !== tank.id) return swapAquariumSectionPositions(tank.id, occupant.id);
+  if (!fitsBoroughTankGrid(getAllTanks().map((entry) => entry.id === tank.id ? { gridX: x, gridY: y } : entry))) {
+    showToast("Tanks must fit within 3 rows and 5 columns.");
+    return false;
+  }
   tank.gridX = x;
   tank.gridY = y;
   saveState();
@@ -470,6 +485,7 @@ function sellAquariumTank(tankId) {
   const soldActiveTank = state.activeTankId === tank.id;
   state.tanks = state.tanks.filter((entry) => entry.id !== tank.id);
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + resaleValue);
+  recordWalletTransaction({ amount: resaleValue, direction: "credit", now: Date.now(), place: getTankLabel(tank), label: `Sold ${getTankLabel(tank)}` });
   if (soldActiveTank) {
     const fallbackTank = state.tanks[Math.max(0, currentIndex - 1)] || state.tanks[0];
     state.activeTankId = fallbackTank?.id || null;
@@ -695,7 +711,7 @@ function openStoreOverlay(tab = "food", options = {}) {
     return;
   }
 
-  // Tankazon normally restores the shopper's last category. A tutorial task
+  // BubbleBodega normally restores the shopper's last category. A tutorial task
   // must always open the category it teaches, including when its toolbar
   // button calls this function without an explicit option.
   if (dom.storeOverlay && (options.forceCategory === true || getActiveTutorial())) {
@@ -827,12 +843,21 @@ function isDecorSeaweedKey(decorKey = "") {
 }
 
 function isDecorLureKey(decorKey = "") {
-  return String(decorKey || "").toLowerCase().includes("lure");
+  const normalizedKey = String(decorKey || "").toLowerCase();
+  if (normalizedKey.includes("lure")) {
+    return true;
+  }
+
+  const decor = typeof runtime !== "undefined" ? runtime.decorMap?.get?.(decorKey) : null;
+  return /\blure\b/i.test(String(decor?.name || ""));
 }
 
 function getDecorMotionCapabilities(itemOrKey) {
   const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
   const decor = runtime.decorMap.get(decorKey);
+  const frozenDecor = /(^|[_\s-])frozen([_\s.-]|$)/i.test(String(decorKey || ""))
+    || /^frozen\b/i.test(String(decor?.name || ""))
+    || String(decor?.theme || "").trim().toLowerCase() === "frozen";
   const customMotionType = isCustomDecorAssetKey(decorKey)
     ? normalizeCustomDecorMotionType(decor?.motionType)
     : "";
@@ -841,10 +866,10 @@ function getDecorMotionCapabilities(itemOrKey) {
     return {
       motionType: customMotionType,
       hasBob: Boolean(motionConfig.hasBob),
-      hasSway: Boolean(motionConfig.hasSway),
+      hasSway: !frozenDecor && Boolean(motionConfig.hasSway),
       isLure: false,
       isFloating: Boolean(motionConfig.hasBob),
-      isSeaweed: Boolean(motionConfig.hasSway),
+      isSeaweed: !frozenDecor && Boolean(motionConfig.hasSway),
       label: motionConfig.label,
       summary: motionConfig.summary,
       defaultSwaySplitY: sanitizeCustomDecorMotionSplit(decor?.motionSplitY),
@@ -855,7 +880,7 @@ function getDecorMotionCapabilities(itemOrKey) {
 
   const isLure = isDecorLureKey(decorKey);
   const isFloating = isDecorFloatingKey(decorKey) || isLure;
-  const isSeaweed = isDecorSeaweedKey(decorKey) || isLure;
+  const isSeaweed = !frozenDecor && (isDecorSeaweedKey(decorKey) || isLure);
   return {
     motionType: "",
     hasBob: isFloating,

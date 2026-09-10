@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260906-whale-breath-splash-v3" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260909-store-care" />
   <style>
     #lightsOutToggleButton:disabled {
       opacity: 0.38;
@@ -42,6 +42,7 @@
     <div class="loading-overlay-content">
       <img class="loading-overlay-logo" src="assets/misc/bb_logo.png" data-seasonal-bb-logo alt="Bubble Borough" />
       <div class="loading-overlay-text">Loading</div>
+      <p class="loading-overlay-trivia" data-loading-trivia>The whole world decays<br>I retreat beneath the glass<br>Digital fish swim</p>
       <div class="loading-overlay-error-details" data-loading-error-details hidden></div>
       <div class="loading-overlay-error-actions" data-loading-error-actions hidden>
         <button type="button" data-loading-error-copy>Copy error</button>
@@ -124,7 +125,7 @@
 
             <button id="dailyBonusBell" class="daily-bonus-bell" type="button" hidden title="Notifications"
               aria-label="Open notifications">
-              <img class="daily-bonus-bell-icon" src="./assets/icons/bell.png" alt="" aria-hidden="true" />
+              <img class="daily-bonus-bell-icon" data-sprite-src="./assets/icons/bell.png" alt="" aria-hidden="true" />
               <span id="notificationBellBadge" class="notification-bell-badge" hidden aria-hidden="true"></span>
             </button>
 
@@ -187,7 +188,6 @@
                       <li>🌿 Move decor between tank and storage.</li>
                       <li>🎨 Customize your tank.</li>
                       <li>🛒 Buy fish, decor, customizations, and equipment.</li>
-                      <li>❔ Review tips for fish comfort.</li>
                       <li>⚙️ Change Settings, Export/Import save data, and Reset game data.</li>
 
                     </ul>
@@ -200,7 +200,7 @@
                       <li>💖 Fed fish recover and stay in better moods.</li>
                       <li>💩 Fish poop 1 to 3 hours after eating and it settles on the gravel.</li>
                       <li>🏚️ Bigger fish and more fish make grime build up faster.</li>
-                      <li>🐠 Sucker fish and better filters help slow grime build-up.</li>
+                      <li>🐠 Sucker fish help slow grime build-up.</li>
                     </ul>
                   </section>
 
@@ -338,22 +338,21 @@
                       </div>
                     </section>
 
-                    <section id="tankFilterSection" class="info-card full-span collapsible-section" data-collapsible-section="decorFilter">
+                    <section id="tankLightingSection" class="info-card full-span collapsible-section" data-collapsible-section="decorLighting">
                       <div class="collapsible-header">
-                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorFilter"
+                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorLighting"
                           aria-expanded="true">
-                          <span id="tankFilterSectionTitle" class="collapsible-title">Filter</span>
+                          <span id="tankLightingSectionTitle" class="collapsible-title">Lighting</span>
                           <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
                         </button>
                       </div>
                       <div data-collapsible-body>
                         <div class="compact-heading equipment-heading">
-                          <p id="tankFilterSectionNote">Equip owned filters here. Buy stronger ones from the tank shop.</p>
+                          <p id="tankLightingSectionNote">Add or remove a UV light here.</p>
                           <button id="openEquipmentShopButton" class="small-button alt" type="button">
                             Tank Shop
                           </button>
                         </div>
-                        <div id="filterAssetList" class="background-grid"></div>
                       </div>
                     </section>
 
@@ -385,10 +384,6 @@
               <div id="placementHint" class="placement-hint"></div>
             </div>
 
-            <section id="careTaskPane" class="care-task-pane" hidden aria-live="polite">
-              <div class="care-task-heading">Tasks:</div>
-              <div id="careTaskList" class="care-task-list"></div>
-            </section>
 
             <div id="toolCursor" class="tool-cursor" hidden aria-hidden="true"></div>
             <div id="selectedDecorLayerControls" class="decor-side-control-panel decor-layer-controls" hidden
@@ -432,12 +427,12 @@
             </div>
             <div id="selectedDecorResizeIndicator" class="decor-resize-indicator" hidden>100%</div>
 
-            <section id="storeOverlay" class="store-overlay tankazon-store" hidden aria-label="Tankazon Store">
+            <section id="storeOverlay" class="store-overlay tankazon-store" hidden aria-label="BubbleBodega Store">
               <div class="store-panel tankazon-panel">
                 <header class="store-panel-header tankazon-header">
                   <div class="tankazon-mainbar">
-                    <img class="tankazon-logo" src="assets/misc/Store_Logo.png" alt="Tankazon" draggable="false" />
-                    <label class="tankazon-search" aria-label="Search Tankazon">
+                    <img class="tankazon-logo" src="assets/misc/Store_Logo.png" alt="BubbleBodega" draggable="false" />
+                    <label class="tankazon-search" aria-label="Search BubbleBodega">
                       <select id="tankazonSearchScope" class="tankazon-search-scope" aria-label="Search category">
                         <option value="all">All</option>
                         <option value="food">Food</option>
@@ -451,18 +446,18 @@
                     </label>
                     <div class="store-panel-actions">
                       <div id="storeCoinCounter" class="store-coin-counter" aria-label="Current coins: 0">
-                        <img class="coin-symbol store-coin-icon store-coin-counter-icon" src="assets/icons/coin.png"
+                        <img class="coin-symbol store-coin-icon store-coin-counter-icon" data-sprite-src="assets/icons/coin.png"
                           alt="" aria-hidden="true" draggable="false" />
                         <span class="store-coin-counter-value">0</span>
                       </div>
-                      <button id="closeStoreOverlay" class="store-close-button" type="button" title="Close Tankazon"
-                        aria-label="Close Tankazon">&times;</button>
+                      <button id="closeStoreOverlay" class="store-close-button" type="button" title="Close BubbleBodega"
+                        aria-label="Close BubbleBodega">&times;</button>
                     </div>
                   </div>
 
                   <div class="tankazon-navrow">
                     <button id="tankazonAllCategories" class="tankazon-all-categories" type="button">☰&nbsp; All Categories</button>
-                    <div class="store-panel-tabs" role="tablist" aria-label="Tankazon Categories">
+                    <div class="store-panel-tabs" role="tablist" aria-label="BubbleBodega Categories">
                       <button id="storeFoodTab" class="store-tab-button" type="button" role="tab" aria-selected="true" aria-controls="foodShop">Food</button>
                       <button id="storePharmacyTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="pharmacyShop">Pharmacy</button>
                       <button id="storeFishTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="fishShop">Fish</button>
@@ -489,7 +484,7 @@
                         </div>
                         <div class="tankazon-item-description">
                           <h1 id="tankazonItemTitle" tabindex="-1"></h1>
-                          <p class="tankazon-item-brand">Visit the Tankazon Store</p>
+                          <p class="tankazon-item-brand">Visit the BubbleBodega Store</p>
                           <div id="tankazonItemPrice" class="tankazon-item-price"></div>
                           <h2>About this item</h2>
                           <div id="tankazonItemDetails" class="tankazon-item-details"></div>
@@ -501,7 +496,7 @@
                           <button id="tankazonItemAdd" class="tankazon-item-add" type="button">Add to Cart</button>
                           <button id="tankazonItemBuy" class="tankazon-item-buy" type="button">Buy Now</button>
                           <p id="tankazonItemStatus" class="tankazon-item-status" role="status" aria-live="polite"></p>
-                          <div class="tankazon-item-seller"><span>Sold by</span><strong>Tankazon</strong><span>Payment</span><strong>Aquarium coins</strong></div>
+                          <div class="tankazon-item-seller"><span>Sold by</span><strong>BubbleBodega</strong><span>Payment</span><strong>Aquarium coins</strong></div>
                         </aside>
                       </div>
                     </section>
@@ -525,7 +520,7 @@
                     </div>
                   </aside>
                   <div id="tankazonDeliveryComplete" class="tankazon-delivery-complete" hidden aria-live="polite">
-                    <img src="assets/icons/Store_Icon.png" alt="" draggable="false" />
+                    <div class="store-delivery-box" data-store-delivery-box aria-hidden="true"></div>
                     <strong>Delivery Completed!</strong>
                   </div>
                 </div>
@@ -669,10 +664,10 @@
                     <h3>Seasonal</h3>
                     <label class="settings-toggle-row" for="halloweenModeSelect">
                       <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Halloween Mode</span>
-                        <span class="settings-toggle-note">Changes the boat and submarine artwork. Automatic runs October 1–31 in local time.</span>
+                        <span class="settings-toggle-label">Seasonal Mode</span>
+                        <span class="settings-toggle-note">Changes seasonal artwork. Automatic runs Halloween content October 1–31 in local time.</span>
                       </div>
-                      <select id="halloweenModeSelect" class="settings-select" aria-label="Halloween Mode">
+                      <select id="halloweenModeSelect" class="settings-select" aria-label="Seasonal Mode">
                         <option value="automatic">Automatic</option>
                         <option value="on">On</option>
                         <option value="off">Off</option>
@@ -738,7 +733,7 @@
                 <div class="settings-panel-header">
                   <div class="settings-panel-copy">
                     <h2 id="equipmentTitle">Edit Tank</h2>
-                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background, gravel, and filter.</p>
+                    <p id="equipmentPanelDescription">Adjust the current aquarium&apos;s background and gravel.</p>
                   </div>
 
                   <button id="closeEquipmentOverlay" class="store-close-button" type="button" title="Close Edit Tank"
@@ -777,18 +772,16 @@
                     <div id="equipmentCustomGravelPanel"></div>
                   </section>
 
-                  <section id="equipmentFilterSection" class="settings-section">
+                  <section id="equipmentLightingSection" class="settings-section">
                     <div class="equipment-heading">
                       <div>
-                        <h3 id="equipmentFilterSectionTitle">Change Filter</h3>
-                        <p id="equipmentFilterSectionNote" class="settings-section-note">Equip owned filters here and buy stronger ones from the
-                          tank shop.</p>
+                        <h3 id="equipmentLightingSectionTitle">Lighting</h3>
+                        <p id="equipmentLightingSectionNote" class="settings-section-note">Add or remove a UV light here.</p>
                       </div>
                       <button id="openEquipmentStoreButton" class="small-button alt" type="button">
                         Tank Shop
                       </button>
                     </div>
-                    <div id="equipmentFilterList" class="background-grid"></div>
                   </section>
                 </div>
               </div>
@@ -820,9 +813,9 @@
             <section id="editDecorTray" class="edit-decor-tray" hidden aria-label="Edit decor tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
@@ -862,9 +855,9 @@
             <section id="editFishTray" class="edit-decor-tray edit-fish-tray" hidden aria-label="Manage fish tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
@@ -893,9 +886,9 @@
             <section id="editEquipmentTray" class="edit-decor-tray edit-equipment-tray" hidden aria-label="Equipment tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
@@ -915,9 +908,9 @@
             <section id="editTankTray" class="edit-decor-tray edit-tank-tray" hidden aria-label="Edit tank tray">
               <div class="edit-tray-mode-header">
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
-                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
                 </div>
@@ -962,7 +955,7 @@
                 aria-label="Hide Toolbar">&gt;</button>
 
               <button id="toolbarWallet" class="toolbar-wallet" type="button" aria-label="Wallet balance and recent receipts" aria-expanded="false" aria-controls="walletTransactionMenu">
-                <img src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
+                <img data-sprite-src="assets/icons/coin.png" alt="" aria-hidden="true" draggable="false" />
                 <strong id="toolbarCoinCount">0</strong>
               </button>
               <section id="walletTransactionMenu" class="wallet-transaction-menu" aria-label="Recent receipts" hidden></section>
@@ -971,20 +964,19 @@
 
               <button id="overviewButton" class="dock-button borough-control" type="button" title="Borough Overview"
                 aria-label="Borough Overview" aria-pressed="false">
-                <img class="dock-button-icon" src="assets/icons/aquarium_overview.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/aquarium_overview.png" alt="" aria-hidden="true"
                   draggable="false" />
-                <span id="aquariumTaskBadge" class="dock-button-badge" hidden aria-hidden="true"></span>
               </button>
 
               <button id="feedButton" class="dock-button feed" type="button" title="Feed Fish"
                 aria-label="Feed Fish">
-                <img class="dock-button-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/feed_fish.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <button id="careMenuButton" class="dock-button toolbar-group-button care" type="button" title="Fish Care"
                 aria-label="Fish Care" aria-controls="medicineTray" aria-expanded="false">
-                <img class="dock-button-icon" src="assets/icons/fish_care.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/fish_care.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -992,46 +984,46 @@
               <section id="toolbarCareMenu" class="toolbar-action-menu" role="menu" aria-label="Care tools" hidden aria-hidden="true">
                 <button id="medicineButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Medicine" aria-label="Medicine">
-                  <img src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+                  <img data-sprite-src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
                   <span>Medicine</span>
                 </button>
                 <button id="spongeButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Clean Tank" aria-label="Clean Tank">
-                  <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+                  <img data-sprite-src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
                   <span>Scrub</span>
                 </button>
                 <button id="scoopButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Scoop" aria-label="Scoop">
-                  <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+                  <img data-sprite-src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
                   <span>Scoop</span>
                 </button>
               </section>
 
               <button id="editMenuButton" class="dock-button toolbar-group-button edit" type="button" title="Edit"
                 aria-label="Edit aquarium">
-                <img class="dock-button-icon" src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
               <section id="toolbarEditMenu" class="toolbar-action-menu" role="menu" aria-label="Edit aquarium" hidden aria-hidden="true">
                 <button id="fishEditModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Manage Fish" aria-label="Manage Fish">
-                  <img src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" />
+                  <img data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" />
                   <span>Fish</span>
                 </button>
                 <button id="editModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Edit Decor" aria-label="Edit Decor">
-                  <img src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" />
+                  <img data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" />
                   <span>Decor</span>
                 </button>
                 <button id="equipmentEditModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Equipment" aria-label="Equipment">
-                  <img src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" />
+                  <img data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" />
                   <span>Equipment</span>
                 </button>
                 <button id="openEquipmentButton" class="toolbar-action-menu-button" type="button" role="menuitem"
                   title="Edit Tank" aria-label="Edit Tank">
-                  <img src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" />
+                  <img data-sprite-src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" />
                   <span>Tank</span>
                 </button>
               </section>
@@ -1050,12 +1042,10 @@
 
               <button id="openStoreButton" class="dock-button shop" type="button" title="Store"
                 aria-label="Store">
-                <img class="dock-button-icon" src="assets/icons/Store_Icon.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/Store_Icon.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
-              <button id="tipsButton" class="dock-button tips" type="button" title="Care Tips" hidden
-                aria-label="Care Tips">❔</button>
 
 
               <button id="lightsOutToggleButton" class="dock-button lights-out" type="button" title="Lights Out: Disabled"
@@ -1066,7 +1056,7 @@
 
               <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
                 aria-label="Settings">
-                <img class="dock-button-icon" src="assets/icons/settings.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon" data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -1074,7 +1064,7 @@
 
               <button id="addCoinsButton" class="dock-button debug" type="button" title="Debug: Add 10 coins"
                 aria-label="Debug: Add 10 coins">
-                <img class="dock-button-icon coin-symbol" src="assets/icons/coin.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon coin-symbol" data-sprite-src="assets/icons/coin.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
 
@@ -1112,7 +1102,7 @@
               <button id="toggleDebugMenuButton" class="dock-button debug" type="button" hidden
                 title="Debug Menu" aria-label="Debug Menu" aria-controls="debugSidebar" aria-expanded="false"
                 data-preserve-fish-selection>
-                <img class="dock-button-icon" src="assets/icons/debug.png" alt="" aria-hidden="true" draggable="false" />
+                <img class="dock-button-icon" data-sprite-src="assets/icons/debug.png" alt="" aria-hidden="true" draggable="false" />
               </button>
 
             </div>
@@ -1335,7 +1325,7 @@
         try {
           localStorage.setItem(TANKAZON_CART_STORAGE_KEY, JSON.stringify([...cart.values()]));
         } catch (error) {
-          console.debug("Tankazon cart save skipped.", error);
+          console.debug("BubbleBodega cart save skipped.", error);
         }
       }
 
@@ -1345,14 +1335,14 @@
           if (!Array.isArray(saved)) return;
           cart.clear();
           saved.forEach((item) => {
-            if (!item || typeof item.key !== "string") return;
+            if (!item || typeof item.key !== "string" || isTankazonCustomProduct(item)) return;
             cart.set(item.key, {
               ...item,
               quantity: Math.max(1, Math.floor(Number(item.quantity) || 1))
             });
           });
         } catch (error) {
-          console.debug("Tankazon cart restore skipped.", error);
+          console.debug("BubbleBodega cart restore skipped.", error);
         }
       }
 
@@ -1362,7 +1352,7 @@
         try {
           localStorage.setItem(TANKAZON_VIEW_STORAGE_KEY, normalized);
         } catch (error) {
-          console.debug("Tankazon view save skipped.", error);
+          console.debug("BubbleBodega view save skipped.", error);
         }
       }
 
@@ -1396,6 +1386,7 @@
 
       function useBackgroundCatalogImages() {
         document.querySelectorAll("#storeOverlay .shop-card img.shop-thumb, #storeOverlay .shop-card img.decor-thumb").forEach((img) => {
+          if (img.hasAttribute("data-sprite-src")) return;
           const src = img.getAttribute("src") || "";
           if (!src || /_bg(?:\.[a-z0-9]+)(?:[?#].*)?$/i.test(src) || img.dataset.tankazonBgChecked === src) return;
           img.dataset.tankazonBgChecked = src;
@@ -1484,7 +1475,7 @@
       function normalizeTankazonPurchaseButtons() {
         if (completingPurchase) return;
         document.querySelectorAll(
-          "#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]"
+          "#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]"
         ).forEach((button) => {
           const currentLabel = button.textContent.trim();
           if (button.dataset.tankazonOriginalLabel === undefined) button.dataset.tankazonOriginalLabel = currentLabel;
@@ -1497,7 +1488,8 @@
             return;
           }
           button.classList.remove("tankazon-out-of-stock");
-          if (button.textContent !== "Add to Cart") button.textContent = "Add to Cart";
+          const label = isTankazonCustomProduct(getButtonDescriptor(button)) ? "Customize" : "Add to Cart";
+          if (button.textContent !== label) button.textContent = label;
         });
         document.querySelectorAll("#storeOverlay button").forEach((button) => {
           if (/^locked$/i.test(button.textContent.trim())) {
@@ -1538,9 +1530,19 @@
         document.getElementById("tankazonItemImage").classList.toggle("is-fish-preview", descriptor.category === "fish");
         renderTankazonVariants(descriptor);
         document.getElementById("tankazonItemTitle").textContent = descriptor.baseName || descriptor.name;
-        document.getElementById("tankazonItemCategory").textContent = `Tankazon › ${categoryLabels[descriptor.category]}`;
+        document.getElementById("tankazonItemCategory").textContent = `BubbleBodega › ${categoryLabels[descriptor.category]}`;
         const details = document.getElementById("tankazonItemDetails");
         details.replaceChildren();
+        const summary = document.createElement("p");
+        summary.className = "tankazon-item-summary";
+        summary.textContent = {
+          fish: "A living aquarium companion with its own needs, behavior, and appearance.",
+          food: "A pantry item that helps keep your aquarium residents fed.",
+          pharmacy: "A care item for treating and supporting your aquarium residents.",
+          decor: "A display piece that adds character and useful places for fish to explore.",
+          equipment: "An aquarium upgrade built to support life in the tank."
+        }[descriptor.category] || "A useful addition for your aquarium.";
+        details.append(summary);
         // Reuse the real catalog's descriptions, care stats and unlock requirements.
         card.querySelectorAll(":scope > .shop-card-main, :scope > .shop-meta:not(:last-child):not(.shop-card-main)").forEach((source) => {
           const copy = source.cloneNode(true);
@@ -1594,13 +1596,23 @@
         const label = available ? "Available" : "Currently unavailable";
         if (availability.textContent !== label) availability.textContent = label;
         const guided = window.isGuidedTutorialActive?.();
-        document.getElementById("tankazonItemAdd").disabled = !available || completingPurchase || guided;
-        document.getElementById("tankazonItemBuy").disabled = !available || completingPurchase;
+        const custom = isTankazonCustomProduct(selectedItem);
+        const addButton = document.getElementById("tankazonItemAdd");
+        addButton.hidden = custom;
+        addButton.disabled = custom || !available || completingPurchase || guided;
+        const buyButton = document.getElementById("tankazonItemBuy");
+        const buyLabel = custom ? "Customize" : "Buy Now";
+        if (buyButton.textContent !== buyLabel) buyButton.textContent = buyLabel;
+        buyButton.disabled = !available || completingPurchase;
       }
 
       async function buyTankazonItemNow() {
         if (!selectedItem || completingPurchase) return;
         const item = { ...selectedItem };
+        if (isTankazonCustomProduct(item)) {
+          beginTankazonCustomization(item);
+          return;
+        }
         const status = document.getElementById("tankazonItemStatus");
         completingPurchase = true;
         syncTankazonItem();
@@ -1618,10 +1630,34 @@
         }
       }
 
+      function isTankazonCustomProduct(item) {
+        return Boolean(item && (
+          (item.fnName === "buyFish" && item.id === "__custom-fish-shop__")
+          || (item.fnName === "buyDecor" && ["__custom-decor-shop__", "__custom-hide-shop__"].includes(item.id))
+        ));
+      }
+
+      function beginTankazonCustomization(item) {
+        if (completingPurchase || !isTankazonCustomProduct(item)) return;
+        const button = findTankazonNativePurchaseButton(item);
+        if (!button || button.disabled) return;
+        // Keep the file picker on the original user gesture. The native flow
+        // charges only after the player has finished choosing their content.
+        completingPurchase = true;
+        try {
+          closeTankazonItem();
+          if (item.fnName === "buyFish") window.buyFish(item.id);
+          else button.click();
+        } finally {
+          completingPurchase = false;
+          normalizeTankazonPurchaseButtons();
+        }
+      }
+
       function getButtonDescriptor(button) {
         const mappings = [
           ["buyFood", "food", "buyFood"], ["buyMedicine", "pharmacy", "buyMedicine"], ["buyFish", "fish", "buyFish"],
-          ["buyDecor", "decor", "buyDecor"], ["buyFilter", "equipment", "buyFilter"], ["buyBackground", "equipment", "buyBackground"],
+          ["buyDecor", "decor", "buyDecor"], ["buyBackground", "equipment", "buyBackground"],
           ["buyTank", "equipment", "buyTank"], ["buyAutoDispenser", "equipment", "buyAutoDispenser"],
           ["buySubmarine", "equipment", "buySubmarine"], ["buyBoat", "equipment", "buyBoat"]
         ];
@@ -1633,9 +1669,10 @@
             const priceText = card?.querySelector(".price-tag")?.textContent || "0";
             const cost = Number((priceText.match(/\d+/) || [0])[0]);
             const name = card?.querySelector(".shop-card-main strong, strong")?.textContent?.trim() || button.textContent.trim();
-            const image = card?.querySelector("img")?.getAttribute("src") || "assets/icons/Store_Icon.png";
+            const thumbnail = card?.querySelector("img");
+            const image = thumbnail?.getAttribute("data-sprite-src") || thumbnail?.getAttribute("src") || "assets/icons/Store_Icon.png";
             let variants = [];
-            try { variants = JSON.parse(button.dataset.fishVariants || button.dataset.machineryVariants || "[]"); } catch { /* Older catalog markup has no variants. */ }
+            try { variants = JSON.parse(button.dataset.fishVariants || button.dataset.decorVariants || button.dataset.machineryVariants || "[]"); } catch { /* Older catalog markup has no variants. */ }
             const descriptor = {
               key: `${fnName}:${id}`,
               fnName,
@@ -1646,10 +1683,12 @@
               cost,
               maxQuantity: undefined
             };
-            if (["buyFish", "buySubmarine", "buyBoat"].includes(fnName) && variants.length) {
+            if (["buyFish", "buyDecor", "buySubmarine", "buyBoat"].includes(fnName) && variants.length) {
               descriptor.variants = variants;
               descriptor.baseName = name;
-              return selectTankazonFishVariant(descriptor, variants[0].key);
+              const selectedKey = variants.some(variant => variant.key === button.dataset.shopVariantKey)
+                ? button.dataset.shopVariantKey : variants[0].key;
+              return selectTankazonFishVariant(descriptor, selectedKey);
             }
             return descriptor;
           }
@@ -1685,12 +1724,12 @@
           button.setAttribute("aria-label", `Select ${variant.label}`);
           button.setAttribute("aria-pressed", String(variant.key === item.variantKey));
           const image = document.createElement("img");
-          image.src = variant.image;
+          image.setAttribute("data-sprite-src", variant.image);
           image.alt = variant.label;
           button.append(image);
           gallery.append(button);
         });
-        document.querySelector("#tankazonItemImage img")?.setAttribute("src", item.image);
+        document.querySelector("#tankazonItemImage img")?.setAttribute("data-sprite-src", item.image);
       }
 
       function renderCart() {
@@ -1717,7 +1756,7 @@
         }
         itemsEl.innerHTML = items.map((item) => `
           <article class="tankazon-cart-item" data-cart-key="${item.key}">
-            <img src="${item.image}" alt="" />
+            <img data-sprite-src="${item.image}" alt="" />
             <div>
               <strong>${item.name}</strong>
               <small>${categoryLabels[item.category]}</small>
@@ -1737,6 +1776,10 @@
       }
 
       function addToCart(descriptor) {
+        if (isTankazonCustomProduct(descriptor)) {
+          beginTankazonCustomization(descriptor);
+          return;
+        }
         purchaseErrorMessage = "";
         const current = cart.get(descriptor.key);
         const maxQuantity = descriptor.maxQuantity != null && Number.isFinite(Number(descriptor.maxQuantity))
@@ -1784,7 +1827,7 @@
             const visible = matchesScope && matchesText;
 
             // Do not rely on the HTML hidden attribute here because older
-            // Tankazon card CSS contains explicit display rules.
+            // BubbleBodega card CSS contains explicit display rules.
             card.classList.toggle("tankazon-search-hidden", !visible);
             card.hidden = false;
 
@@ -1803,6 +1846,7 @@
           drawer.classList.toggle("tankazon-all-section", inAllView && !q);
           drawer.classList.toggle("tankazon-search-results", Boolean(q));
         });
+        window.refreshStoreFacets?.(selectedScope);
         if (catalog && options.preserveScroll !== false) {
           requestAnimationFrame(() => {
             if (!selectedItem) catalog.scrollTop = restoreTop;
@@ -1876,7 +1920,6 @@
           "#storeOverlay [data-buy-food]",
           "#storeOverlay [data-buy-medicine]",
           "#storeOverlay [data-buy-decor]",
-          "#storeOverlay [data-buy-filter]",
           "#storeOverlay [data-buy-background]",
           "#storeOverlay [data-buy-auto-dispenser]",
           "#storeOverlay [data-buy-submarine]",
@@ -1929,6 +1972,9 @@
       }
 
       async function executeTankazonNativePurchase(item) {
+        if (isTankazonCustomProduct(item)) {
+          throw new Error("Open this item's Customize button to choose its images first.");
+        }
         // Fish have a complete variant-aware purchase API. Call it before
         // looking up the catalog card: item pages can keep that card hidden or
         // tutorial-disabled even though the selected product is purchasable.
@@ -1940,6 +1986,23 @@
             throw error;
           }
           const result = await window.buyFish(item.id, { appearanceVariantKey: item.variantKey });
+          if (!result?.ok) {
+            const error = new Error(result?.errorMessage || `${item.name} could not be purchased.`);
+            if (result?.reason === "insufficient-coins") error.code = "insufficient-funds";
+            throw error;
+          }
+          await waitForTankazonRender();
+          return;
+        }
+
+        if (item.fnName === "buyDecor" && typeof window.buyDecor === "function") {
+          const beforeCoins = getTankazonCoinBalance();
+          if (Number.isFinite(beforeCoins) && Number(item.cost) > beforeCoins) {
+            const error = new Error("Payment method declined. Insufficient Funds.");
+            error.code = "insufficient-funds";
+            throw error;
+          }
+          const result = await window.buyDecor(item.id, { appearanceVariantKey: item.variantKey });
           if (!result?.ok) {
             const error = new Error(result?.errorMessage || `${item.name} could not be purchased.`);
             if (result?.reason === "insufficient-coins") error.code = "insufficient-funds";
@@ -1977,7 +2040,7 @@
           return;
         }
 
-        // completingPurchase=true makes Tankazon's capture listener stand aside,
+        // completingPurchase=true makes BubbleBodega's capture listener stand aside,
         // so this click reaches Bubble Borough's real purchase handler.
         button.click();
 
@@ -2043,6 +2106,7 @@
           renderCart();
 
           const delivery = document.getElementById("tankazonDeliveryComplete");
+          // Delivery art is a CSS background, outside the sprite image observer.
           if (delivery) delivery.hidden = false;
 
           setTimeout(() => {
@@ -2056,7 +2120,7 @@
             }
           }, 1250);
         } catch (error) {
-          console.error("Tankazon checkout failed", error);
+          console.error("BubbleBodega checkout failed", error);
 
           if (error?.code === "insufficient-funds") {
             showTankazonPurchaseError();
@@ -2095,7 +2159,7 @@
         const variantButton = event.target.closest?.("[data-tankazon-variant]");
         if (variantButton && selectedItem && !completingPurchase) {
           selectedItem = selectTankazonFishVariant(selectedItem, variantButton.dataset.tankazonVariant);
-          document.querySelector("#tankazonItemImage img")?.setAttribute("src", selectedItem.image);
+          document.querySelector("#tankazonItemImage img")?.setAttribute("data-sprite-src", selectedItem.image);
           document.getElementById("tankazonItemVariantLabel").textContent = `Appearance: ${selectedItem.variantLabel}`;
           document.getElementById("tankazonItemStatus").textContent = "";
           document.querySelectorAll("[data-tankazon-variant]").forEach((button) => {
@@ -2116,7 +2180,7 @@
           }
           return;
         }
-        const purchaseButton = event.target.closest?.("#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-filter], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]");
+        const purchaseButton = event.target.closest?.("#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]");
         if (purchaseButton && !completingPurchase && !window.isGuidedTutorialActive?.()) {
           event.preventDefault();
           event.stopPropagation();
@@ -2315,12 +2379,14 @@
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost
         ? `live-${Date.now()}`
-        : "20260906-whale-breath-splash-v3";
+        : "20260909-store-care";
       script.type = "module";
       script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);
     })();
   </script>
+  <script src="public/store-facets.js?v=20260909"></script>
+  <script src="public/store-variants.js?v=20260909"></script>
 </body>
 
 </html>

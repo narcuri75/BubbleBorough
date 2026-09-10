@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "e92c0475-9b87-40f1-9b43-c939738f4083",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "d1adc224-ed5c-4d17-80cf-7309dea8593f",
+          "width": 512,
+          "height": 256,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbowfish.png"
+        },
+        {
+          "id": "b3398587-3336-4041-94b5-24a3e4015b52",
+          "width": 512,
+          "height": 256,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbowfish_1.png"
+        },
+        {
+          "id": "e3442bfa-4327-4903-aefa-d15cf425de1c",
+          "width": 512,
+          "height": 256,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbowfish_2.png"
+        },
+        {
+          "id": "527e7b9a-75e5-4641-8a42-541ce5def7e2",
+          "width": 512,
+          "height": 256,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbowfish_3.png"
+        },
+        {
+          "id": "945e3232-1c36-42dc-855d-672fa0534a2f",
+          "width": 512,
+          "height": 256,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbowfish_4.png"
+        }
+      ]
+    }
+  ]
+}

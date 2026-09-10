@@ -252,7 +252,7 @@ async function applyCloudSaveRecord(record) {
   return true;
 }
 
-async function uploadCurrentSaveToCloud(options = {}) {
+async function performCloudSaveUpload(options = {}) {
   if (!state || runtime.applyingCloudSave || runtime.freshGameSaveLocked) return false;
   if (!runtime.cloudWritesAllowed && options.force !== true) return false;
   const session = await refreshCloudSessionIfNeeded();
@@ -263,9 +263,9 @@ async function uploadCurrentSaveToCloud(options = {}) {
   setCloudSyncStatus("syncing", "Syncing...");
   try {
     const payload = await createCloudSavePayload(Date.now());
-    const rows = await supabaseSaveFetch("?on_conflict=user_id", {
+    await supabaseSaveFetch("?on_conflict=user_id", {
       method: "POST",
-      prefer: "resolution=merge-duplicates,return=representation",
+      prefer: "resolution=merge-duplicates,return=minimal",
       body: {
         user_id: userId,
         save_data: payload,
@@ -274,12 +274,11 @@ async function uploadCurrentSaveToCloud(options = {}) {
         updated_at: new Date().toISOString()
       }
     });
-    const row = Array.isArray(rows) ? rows[0] : null;
     const syncedAt = Date.now();
-    runtime.cloudRevision = Number(row?.revision) || nextRevision;
+    runtime.cloudRevision = nextRevision;
     setCloudMeta({
       cloudRevision: runtime.cloudRevision,
-      cloudUpdatedAt: row?.updated_at || new Date(syncedAt).toISOString(),
+      cloudUpdatedAt: new Date(syncedAt).toISOString(),
       lastCloudSyncedAt: syncedAt,
       localSavedAt: Number(meta.localSavedAt) || syncedAt
     });
@@ -295,14 +294,31 @@ async function uploadCurrentSaveToCloud(options = {}) {
   }
 }
 
+function uploadCurrentSaveToCloud(options = {}) {
+  if (runtime.cloudUploadPromise) {
+    runtime.cloudUploadQueued = true;
+    return runtime.cloudUploadPromise;
+  }
+  runtime.cloudUploadPromise = performCloudSaveUpload(options).finally(() => {
+    runtime.cloudUploadPromise = null;
+    if (runtime.cloudUploadQueued) {
+      runtime.cloudUploadQueued = false;
+      scheduleCloudSave();
+    }
+  });
+  return runtime.cloudUploadPromise;
+}
+
 function scheduleCloudSave() {
   if (!runtime.cloudWritesAllowed || runtime.freshGameSaveLocked || !getCloudSession()) return false;
   if (runtime.cloudSaveTimerId) window.clearTimeout(runtime.cloudSaveTimerId);
-  setCloudSyncStatus("syncing", "Syncing...");
+  setCloudSyncStatus("syncing", "Pending sync...");
+  const lastSyncedAt = Number(getCloudMeta().lastCloudSyncedAt) || 0;
+  const minimumDelay = Math.max(0, CLOUD_SYNC_MIN_INTERVAL_MS - (Date.now() - lastSyncedAt));
   runtime.cloudSaveTimerId = window.setTimeout(() => {
     runtime.cloudSaveTimerId = 0;
     void uploadCurrentSaveToCloud({ showToast: false });
-  }, CLOUD_SYNC_DEBOUNCE_MS);
+  }, Math.max(CLOUD_SYNC_DEBOUNCE_MS, minimumDelay));
   return true;
 }
 
@@ -544,6 +560,17 @@ function showStartupLoadingState(button, label) {
   const buttons = actions?.querySelector("[data-startup-buttons]");
   if (!actions || !buttons || actions.dataset.startupPending === "true") return;
   actions.dataset.startupPending = "true";
+  const trivia = document.querySelector("[data-loading-trivia]");
+  if (trivia) {
+    const messages = [
+      "The whole world decays\nI retreat beneath the glass\nDigital fish swim",
+      "Goldfish can recognize familiar people.",
+      "Angelfish communicate with posture and color.",
+      "A school of fish can move as one without a leader.",
+      "A clean tank is a happier neighborhood."
+    ];
+    trivia.textContent = messages[Math.floor(Math.random() * messages.length)];
+  }
   if (button) {
     button.disabled = true;
     button.classList.add("is-pressed");

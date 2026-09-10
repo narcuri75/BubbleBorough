@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "c829b9ef-2be9-4484-beff-ccfe0b7a9298",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "9d3386da-264b-4fea-bec6-c74d1f870d43",
+          "width": 512,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Livebearer.png"
+        },
+        {
+          "id": "3eea2b1c-160f-4302-88a1-bc8027386491",
+          "width": 512,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Livebearer_1.png"
+        },
+        {
+          "id": "c266fbf9-aaff-405a-a8eb-74b8afa50f65",
+          "width": 512,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Livebearer_2.png"
+        },
+        {
+          "id": "7ab127ba-3caa-443b-b6bd-c8a4ce7c7d33",
+          "width": 512,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Livebearer_3.png"
+        },
+        {
+          "id": "bef77e31-678b-43f9-9a23-1a0b5290ac5f",
+          "width": 512,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Livebearer_4.png"
+        }
+      ]
+    }
+  ]
+}

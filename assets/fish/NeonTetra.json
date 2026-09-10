@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "ad382768-ccb4-40cb-a34d-e6fdca0fc06f",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "9ca05511-76d7-4420-8d15-2308a52246f2",
+          "width": 501,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "NeonTetra.png"
+        },
+        {
+          "id": "fe1e035a-2963-4316-bd3b-2ca38c036d1a",
+          "width": 501,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "NeonTetra_1.png"
+        },
+        {
+          "id": "ba67ca37-b1c0-40a4-97be-11f5faef700e",
+          "width": 501,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "NeonTetra_2.png"
+        },
+        {
+          "id": "02500646-11c3-4a31-800a-9bdcdef6451c",
+          "width": 501,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "NeonTetra_3.png"
+        },
+        {
+          "id": "21102947-37a7-436f-a479-03a835ed0a00",
+          "width": 501,
+          "height": 209,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "NeonTetra_4.png"
+        }
+      ]
+    }
+  ]
+}

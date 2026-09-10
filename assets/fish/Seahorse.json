@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "a5651f9f-4f0e-419a-bcf2-78d8954e9e50",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "46df7fbe-d359-4188-9de8-70bb200f0fa0",
+          "width": 315,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Seahorse.png"
+        },
+        {
+          "id": "1975d64d-117e-4adb-bf2f-4d84d126805c",
+          "width": 315,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Seahorse_1.png"
+        },
+        {
+          "id": "99820b9d-da5c-4308-ac7f-c981d368fb9f",
+          "width": 315,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Seahorse_2.png"
+        },
+        {
+          "id": "0e071eb7-29f5-491a-a9c1-d5dbdd5826a9",
+          "width": 315,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Seahorse_3.png"
+        },
+        {
+          "id": "a6df86f0-c5a0-4102-92e8-edc721e2d079",
+          "width": 315,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Seahorse_4.png"
+        }
+      ]
+    }
+  ]
+}

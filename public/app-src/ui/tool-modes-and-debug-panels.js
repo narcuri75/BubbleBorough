@@ -393,7 +393,9 @@ function toggleEditTankMode(force = null, options = {}) {
   if (tutorialChanged) {
     saveState();
   }
-  renderUi(now);
+  renderUi(now, { full: false });
+  renderEditDecorTray();
+  renderPlacedDecor();
 }
 
 function handleEditFishTrayWheel(event) {
@@ -463,6 +465,7 @@ function handleMedicineTrayWheel(event) {
 }
 
 function clearPrimaryToolModes() {
+  runtime.pendingDecorPlacementKey = null;
   clearGuidanceForModeChange("primary-tools");
   closeSubmarineManager();
   closeEditEquipmentTrayContextMenu();
@@ -594,6 +597,7 @@ function syncSelectedDecorIds() {
 }
 
 function groupSelectedDecor() {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Group decorations");
   const selectedItems = getSelectedPlacedDecorItems();
   if (selectedItems.length < 2) {
     showToast("Shift-click at least two decor pieces first.");
@@ -624,6 +628,7 @@ function groupSelectedDecor() {
 }
 
 function ungroupSelectedDecor() {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Ungroup decorations");
   const selectedItems = getSelectedPlacedDecorItems();
   const groupIds = getDecorGroupIdsForItems(selectedItems);
   if (!groupIds.length) {
@@ -928,6 +933,7 @@ function renderCollapsibleSections() {
 }
 
 async function init() {
+  initializeSpriteImages();
   await loadAppConfig();
   await prepareDesktopSaveStorage();
   installDesktopCloseBackupHandler();
@@ -935,17 +941,16 @@ async function init() {
   setupDebugMenuButtons();
   exposeDebugConsoleCommands();
   bindEvents();
-  syncFilterFeatureVisibility();
+  syncLightingFeatureVisibility();
   const earlyRawState = loadState();
   runtime.hadLocalSaveAtStartup = Boolean(earlyRawState);
   runtime.freshGameSaveLocked = !earlyRawState;
   initializeCloudSaveRuntime();
   applyLoadingOverlayBackground(getSavedActiveTankCandidate(earlyRawState));
 
-  const [backgroundResponse, tankResponse, filterResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, filterCatalogMeta, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
+  const [backgroundResponse, tankResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
     fetchAssetList("backgrounds"),
     fetchAssetList("tank"),
-    fetchAssetList("filter"),
     fetchAssetList("fish"),
     fetchAssetList("gravel"),
     fetchAssetList("bubbles"),
@@ -954,7 +959,6 @@ async function init() {
     fetchFishCatalog(),
     fetchZombieSkeletonFishCatalog(),
     fetchDecorCatalog(),
-    fetchFilterCatalogMeta(),
     fetchBackgroundCatalogMeta(),
     fetchFoodAndMedCatalog()
   ]);
@@ -962,7 +966,6 @@ async function init() {
   runtime.suckerFishCatalog = suckerFishResponse;
   const baseFishResponse = fishResponse.filter((item) => !isZombieSkeletonAssetFile(item));
   const normalizedDecorMeta = normalizeDecorMeta(decorCatalog);
-  const normalizedFilterMeta = normalizeFilterMeta(filterCatalogMeta);
   runtime.decorMeta = normalizedDecorMeta;
   runtime.foodAndMedCatalog = normalizeFoodAndMedCatalog(foodAndMedCatalog);
   const normalizedBaseFishCatalog = normalizeFishCatalog(fishCatalog, {
@@ -984,7 +987,7 @@ async function init() {
     ...normalizedBaseFishCatalog,
     ...normalizedZombieSkeletonFishCatalog
   ];
-  await discoverFishAppearanceVariants(normalizedFishCatalog);
+  await discoverFishAppearanceVariants(normalizedFishCatalog, [...baseFishResponse, ...suckerFishResponse]);
   runtime.fishCatalog = [
     ...normalizedFishCatalog,
     ...buildVirtualFishCatalogEntries()
@@ -995,7 +998,6 @@ async function init() {
   const normalizedBackgroundMeta = normalizeBackgroundMeta(backgroundCatalogMeta);
   runtime.backgroundCatalog = buildBackgroundCatalog(backgroundResponse, normalizedBackgroundMeta);
   runtime.tankCatalog = buildSimpleAssetCatalog(tankResponse, {}, "");
-  runtime.filterCatalog = buildFilterCatalog(filterResponse, normalizedFilterMeta);
   runtime.customGravelLayerCatalog = buildCustomGravelLayerCatalog(gravelResponse);
   runtime.customGravelPebbleCatalog = buildCustomGravelPebbleCatalog(gravelResponse);
   runtime.gravelCatalog = [...runtime.customGravelPebbleCatalog];
@@ -1006,7 +1008,6 @@ async function init() {
   ];
   runtime.backgroundMap = new Map(runtime.backgroundCatalog.map((item) => [item.key, item]));
   runtime.tankMap = new Map(runtime.tankCatalog.map((item) => [item.key, item]));
-  runtime.filterMap = new Map(runtime.filterCatalog.map((item) => [item.key, item]));
   runtime.gravelMap = new Map(runtime.gravelCatalog.map((item) => [item.key, item]));
   runtime.bubbleMap = new Map(runtime.bubbleCatalog.map((item) => [item.key, item]));
   runtime.decorMap = new Map(runtime.decorCatalog.map((item) => [item.key, item]));
@@ -1026,13 +1027,13 @@ async function init() {
   const tutorialResumeChanged = restoreTutorialRuntimeState(Date.now());
   applyContentSettingsEffects(Date.now());
 
+  const selectedBackgroundKeys = new Set(getAllTanks().map((tank) => tank.selectedBackground).filter(Boolean));
   await preloadImages(filterPreloadPathsForCurrentContentSettings([
     ...runtime.backgroundCatalog
-      .filter((item) => !isLocalImageBackgroundKey(item.key))
+      .filter((item) => selectedBackgroundKeys.has(item.key) && !isLocalImageBackgroundKey(item.key))
       .map((item) => item.path),
     ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
     ...runtime.tankCatalog.map((item) => item.path),
-    ...runtime.filterCatalog.map((item) => item.path),
     ...runtime.gravelCatalog.map((item) => item.path),
     ...runtime.customGravelLayerCatalog.map((item) => item.path),
     ...runtime.customGravelPebbleCatalog.map((item) => item.path),
@@ -1041,8 +1042,7 @@ async function init() {
     AUTO_DISPENSER_BG_PATH,
     ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
-    CAUSTIC_LIGHT_PRIMARY_ASSET_PATH,
-    CAUSTIC_LIGHT_SECONDARY_ASSET_PATH,
+    ...(CAUSTIC_LIGHTING_SETTING_ENABLED ? [CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, CAUSTIC_LIGHT_SECONDARY_ASSET_PATH] : []),
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
@@ -1054,22 +1054,7 @@ async function init() {
     ...GRIME_OVERLAY_ASSET_PATHS,
     ...WATER_PARTICLE_ASSET_PATHS,
     ...Object.values(TOOL_CURSOR_ICON_PATHS),
-    ...runtime.decorCatalog.flatMap((item) => [
-      item.path,
-      item.thumbnailPath,
-      item.bgPath,
-      item.midPath,
-      item.lightPath,
-      item.maskPath,
-      item.triggerPath,
-      item.seatsPath,
-      ...(Array.isArray(item.caveColorLayers)
-        ? item.caveColorLayers.flatMap((layer) => [
-          ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
-          ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])
-        ])
-        : [])
-    ].filter(Boolean)),
+    ...getPlacedDecorPreloadPaths(),
     ...getCustomDecorCatalogEntries(state).flatMap((item) => [item.path, item.bgPath].filter(Boolean)),
     ...getCustomFishCatalogEntries(state).map((item) => item.asset),
     runtime.foodAndMedCatalog?.fallbackImage,
@@ -1081,14 +1066,11 @@ async function init() {
     ...Object.values(runtime.foodAndMedCatalog?.items?.medicine || {}).flatMap((entry) => [
       entry.image ? resolveFoodAndMedAssetPath(entry.image) : ""
     ].filter(Boolean)),
+    ...getOwnedFishPreloadPaths(),
     ...new Set(runtime.fishCatalog.flatMap((fish) => [
-      ...getFishAssetVariants(fish),
-      fish.overlayAsset,
       ...getFishDeathAssetCandidates(fish, "zombie"),
       ...getFishDeathAssetCandidates(fish, "skeleton")
-    ])),
-    ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path)),
-    ...Object.values(SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
+    ]))
   ]), { maxAttempts: 1 });
 
   const criticalFishImagePaths = [...new Set(getAllTankFish(state)
@@ -1817,18 +1799,28 @@ function isPortablePerformanceModeActive() {
 
 function getStageRenderDevicePixelRatio() {
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  return isPortablePerformanceModeActive()
-    ? Math.min(dpr, PORTABLE_PERFORMANCE_MAX_RENDER_DPR)
-    : dpr;
+  return Math.min(dpr, PORTABLE_PERFORMANCE_MAX_RENDER_DPR);
 }
 
 function getEffectiveAnimationFpsLimit() {
   const portableLimit = isPortablePerformanceModeActive() ? PORTABLE_PERFORMANCE_MAX_FPS : 0;
+  const overlayLimit = runtime.storeOverlayOpen || runtime.utilityOverlayOpen || runtime.settingsOverlayOpen ? 30 : 0;
+  const interacting = Boolean(
+    runtime.dragState
+    || runtime.decorResizeState
+    || runtime.fishDragState
+    || runtime.eggDragState
+    || runtime.pebbleDragState
+    || runtime.placementMode
+    || runtime.cleaningMode
+    || runtime.scoopMode
+    || runtime.feedingModeFoodKey
+    || runtime.medicineModeKey
+  );
+  const idleLimit = interacting ? 0 : 30;
   const wallpaperLimit = Math.max(0, Number(runtime.wallpaperEngineFpsLimit) || 0);
-  if (portableLimit > 0 && wallpaperLimit > 0) {
-    return Math.min(portableLimit, wallpaperLimit);
-  }
-  return portableLimit || wallpaperLimit;
+  const limits = [portableLimit, overlayLimit, idleLimit, wallpaperLimit].filter(limit => limit > 0);
+  return limits.length ? Math.min(...limits) : 0;
 }
 
 function getWaterParticleTargetCount() {

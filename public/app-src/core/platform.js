@@ -190,7 +190,8 @@ function isWallpaperEngineModeEnabled() {
 }
 
 function isIntroTutorialEnabled() {
-  return true;
+  // The guided flow depends on task checklists, which are disabled.
+  return false;
 }
 
 function shouldUseExternalLinkPrompt() {

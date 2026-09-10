@@ -38,6 +38,20 @@
         "chum_2.png",
         "chum_3.png"
       ]
+    },
+    "halloweenCandy": {
+      "id": "halloweenCandy",
+      "name": "Halloween Candy Pile",
+      "description": "10 candies. Each candy keeps one fish’s health and all care stats full for 24 hours. Sold during Halloween season.",
+      "bottlePellets": 10,
+      "cost": 10,
+      "image": "Halloween_Candy_Pile.png",
+      "dropStyle": "sprite",
+      "dropImages": [
+        "Halloween_candy_1.png",
+        "Halloween_candy_2.png"
+      ],
+      "dispenserAllowed": false
     }
   },
   "medicine": {

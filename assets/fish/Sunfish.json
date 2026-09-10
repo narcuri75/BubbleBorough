@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "a3ca8689-f777-4e4f-ba13-78ffaaeff959",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "5503f886-e702-4e92-ae10-ba51fd6042d4",
+          "width": 364,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Sunfish.png"
+        },
+        {
+          "id": "71743a29-f379-4349-9023-a72020be0373",
+          "width": 364,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Sunfish_1.png"
+        },
+        {
+          "id": "94ba8a03-c606-48ba-9351-dbd185d9ca35",
+          "width": 364,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Sunfish_2.png"
+        },
+        {
+          "id": "4402f552-f469-465e-aea2-9fbe076c5acc",
+          "width": 364,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Sunfish_3.png"
+        },
+        {
+          "id": "c4c76012-adc2-47d3-ac76-6c6c30f66473",
+          "width": 364,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Sunfish_4.png"
+        }
+      ]
+    }
+  ]
+}

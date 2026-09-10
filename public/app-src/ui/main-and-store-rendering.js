@@ -2,11 +2,12 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderUi(now, options = {}) {
-  // Tankazon is rendered by the page shell while gameplay lives in this ES
+  // BubbleBodega is rendered by the page shell while gameplay lives in this ES
   // module. Publish the small, variant-aware purchase bridge once rendering
   // begins so the shell never falls back to clicking a hidden legacy card.
   if (typeof window !== "undefined" && window.buyFish !== buyFish) {
     window.buyFish = buyFish;
+    window.buyDecor = buyDecor;
     window.buySubmarine = buySubmarine;
     window.buyBoat = buyBoat;
     window.showToast = showToast;
@@ -59,20 +60,22 @@ function renderUi(now, options = {}) {
   syncTankStageTouchScrollState();
   renderControls(now);
   renderTutorialGuidance();
-  renderCareTaskPane(now);
   if (full) {
     renderTankManagement();
-    renderFoodShop();
-    renderPharmacyShop();
-    renderFishShop();
+    if (runtime.storeOverlayOpen) {
+      renderFoodShop();
+      renderPharmacyShop();
+      renderFishShop();
+      renderDecorShop();
+      renderEquipmentShop();
+    } else {
+      releaseStoreCatalogMarkup();
+    }
     renderFishList(now);
-    renderDecorShop();
-    renderEquipmentShop();
     renderDecorInventory();
     renderPlacedDecor();
     renderBackgrounds();
     renderSolidBackgroundControls();
-    renderFilterAssets();
     renderCustomGravelControls();
     renderCollapsibleSections();
   }
@@ -82,6 +85,16 @@ function renderUi(now, options = {}) {
     runtime.frameProfilerLastUiRenderMs = durationMs;
     recordDebugFrameProfilerDuration("uiRender", durationMs);
   }
+}
+
+function releaseStoreCatalogMarkup() {
+  [
+    ["food-shop", dom.foodShop],
+    ["pharmacy-shop", dom.pharmacyShop],
+    ["fish-shop", dom.fishShop],
+    ["decor-shop", dom.decorShop],
+    ["equipment-shop", dom.equipmentShop]
+  ].forEach(([cacheKey, element]) => setMarkupIfChanged(cacheKey, element, ""));
 }
 
 function shouldAllowTankStageTouchScroll() {
@@ -232,8 +245,13 @@ function renderWalletTransactionMenu() {
   const receipts = entries.length
     ? entries.map((entry) => {
       const debit = entry.direction === "debit";
+      const neutral = entry.direction === "neutral" || Number(entry.amount) <= 0;
       const time = new Date(Number(entry.time) || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-      return `<article class="wallet-receipt ${debit ? "is-debit" : "is-credit"}"><strong>${debit ? "−" : "+"}${entry.amount} <img src="assets/icons/coin.png" alt="coin" /></strong><span>${escapeHtml(entry.place)} · ${escapeHtml(entry.label)}</span><time>${escapeHtml(time)}</time></article>`;
+      const place = String(entry.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega");
+      const amountMarkup = neutral
+        ? "•"
+        : `${debit ? "−" : "+"}${Math.max(0, Number(entry.amount) || 0)} <img ${assetImageAttributes("assets/icons/coin.png")} alt="coin" />`;
+      return `<article class="wallet-receipt ${neutral ? "is-neutral" : debit ? "is-debit" : "is-credit"}"><strong>${amountMarkup}</strong><span>${escapeHtml(place)} · ${escapeHtml(entry.label)}</span><time>${escapeHtml(time)}</time></article>`;
     }).join("")
     : `<p class="wallet-receipt-empty">No receipts yet.</p>`;
   setMarkupIfChanged("wallet-transactions", menu, `<header><strong>Recent receipts</strong></header><div class="wallet-receipt-list">${receipts}</div>`);
@@ -269,7 +287,7 @@ function buildSummaryMarkup(now) {
   ), 0);
   const lowHealthCount = state.fish.filter((fish) => !isFishDead(fish) && fish.healthUnits < getFishMaxHealthUnits(fish)).length;
   const grimeLoad = Math.round((getTankFishDirtinessMultiplier() - 1) * 100);
-  const maxDirtyIn = formatDuration(getFilterMaxDirtyDurationMs());
+  const maxDirtyIn = formatDuration(getTankMaxDirtyDurationMs());
 
   const rows = [
     { label: "Fish in Tank", value: state.fish.filter((fish) => !isFishDead(fish)).length },
@@ -438,7 +456,7 @@ function renderFishShop() {
       const dirtinessLoadPercent = isCustomUploadProduct
         ? null
         : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
-      const fishAsset = getFishCatalogAssetPath(fish) || fish.asset;
+      const fishAsset = getFishStoreVariants(fish)[0]?.image || getFishCatalogAssetPath(fish) || fish.asset;
       const needChips = renderNeutralComfortTagChips(getSpeciesNeedTags(fish));
       const conflictChips = renderNeutralComfortTagChips(getSpeciesConflictTags(fish));
       const lockedRequirementLabel = getUnlockRequirementLabel(fish.unlockRequirement);
@@ -448,8 +466,8 @@ function renderFishShop() {
           ? `Debug unlocked (${lockedRequirementLabel})`
           : "Unlocked";
       return `
-        <article class="shop-card ${locked ? "is-locked" : ""}">
-          <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${fishAsset}" alt="${fish.name}" />
+        <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
+          <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
           <div class="shop-meta shop-card-main">
             <div>
               <strong>${fish.name}</strong>
@@ -516,7 +534,7 @@ function renderStoreOverlay() {
   dom.storeDecorTab.setAttribute("aria-selected", String(showingDecor));
   dom.storeEquipmentTab?.setAttribute("aria-selected", String(showingEquipment));
 
-  // The Tankazon shell owns its catalogue filtering. Keep it in lockstep with
+  // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
   if (runtime.storeOverlayOpen && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
@@ -606,7 +624,6 @@ function getBoroughSnapshotSignature(tank) {
     poops: tank?.poops,
     lastCleanedAt: tank?.lastCleanedAt,
     selectedTankAsset: tank?.selectedTankAsset,
-    selectedFilterAsset: tank?.selectedFilterAsset,
     placedDecor: (tank?.placedDecor || []).map((item) => [
       item.id, item.decorKey, item.xNorm, item.yNorm, item.scale, item.tankLayer, item.flipped, item.flippedY,
       item.decorSettings, item.caveColorSettings
@@ -681,14 +698,22 @@ function getBoroughSnapshot(tank, now = Date.now()) {
 
 function paintBoroughSnapshots(tanks, now = Date.now(), options = {}) {
   const refreshMs = Math.max(250, Number(runtime.boroughOverviewSnapshotFrameMs) || 1500);
-  if (options.force !== true && now - Number(runtime.boroughOverviewSnapshotRenderedAt || 0) < refreshMs) {
-    return false;
+  // Spread full tank renders across frames. Opening only copies cached previews,
+  // so the overview shell can paint before the first expensive snapshot.
+  if (options.force === true || (!runtime.boroughOverviewSnapshotQueue?.length
+    && now - Number(runtime.boroughOverviewSnapshotRenderedAt || 0) >= refreshMs)) {
+    runtime.boroughOverviewSnapshotQueue = tanks.map((tank) => tank.id);
+    runtime.boroughOverviewSnapshotRenderedAt = now;
   }
-  runtime.boroughOverviewSnapshotRenderedAt = now;
+  if (options.force !== true && !runtime.boroughOverviewSnapshotQueue?.length) return false;
   let renderedTank = false;
+  const nextId = options.cachedOnly ? null : runtime.boroughOverviewSnapshotQueue?.shift();
   for (const tank of tanks) {
-    const snapshot = getBoroughSnapshot(tank, now);
-    renderedTank = renderedTank || snapshot.changed;
+    const snapshot = tank.id === nextId
+      ? getBoroughSnapshot(tank, now)
+      : runtime.boroughOverviewSnapshotCache.get(tank.id);
+    if (!snapshot?.canvas) continue;
+    renderedTank = renderedTank || (tank.id === nextId && snapshot.changed);
     const target = dom.boroughGrid.querySelector(`canvas[data-borough-snapshot-tank-id="${CSS.escape(tank.id)}"]`);
     const context = target?.getContext?.("2d", { alpha: false });
     if (!target || !context) {
@@ -703,6 +728,7 @@ function paintBoroughSnapshots(tanks, now = Date.now(), options = {}) {
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "low";
     context.drawImage(snapshot.canvas, 0, 0, width, height);
+    target.classList.add("is-ready");
   }
   if (renderedTank) {
     renderTank(now);
@@ -718,9 +744,7 @@ function getBoroughOverviewSummary(now = Date.now()) {
   const averageCleanliness = tanks.length
     ? Math.round(tanks.reduce((total, tank) => total + getTankCleanlinessPercentForMilestones(tank, now), 0) / tanks.length)
     : 100;
-  const tasks = buildUniversalManagementCareQueue(now);
-  const activeTaskCount = tasks.filter((task) => getCareTaskId(task) !== "all-clear").length;
-  return { tanks, livingFish, hungryFish, sickFish, averageCleanliness, tasks, activeTaskCount };
+  return { tanks, livingFish, hungryFish, sickFish, averageCleanliness };
 }
 
 function buildBoroughOverviewCareTaskRow(task = {}) {
@@ -733,13 +757,7 @@ function buildBoroughOverviewCareTaskRow(task = {}) {
 }
 
 function buildBoroughOverviewBoroughPanel(now = Date.now()) {
-  const summary = getBoroughOverviewSummary(now);
   return `
-    <section class="borough-info-section">
-      <div class="compact-heading"><h3>Borough Care</h3><p>${summary.activeTaskCount ? `${summary.activeTaskCount} active ${pluralize("task", summary.activeTaskCount)} across all neighborhoods.` : "Everything is on track across the borough."}</p></div>
-      <div class="borough-overview-task-list">${summary.tasks.slice(0, 6).map(buildBoroughOverviewCareTaskRow).join("")}</div>
-      <button class="small-button alt" type="button" data-toggle-care-task-pane>${getUiSettings().careTaskPaneOpen === true ? "Hide Pinned Tasks" : "Pin Universal Tasks"}</button>
-    </section>
     <section class="borough-info-section">
       <div class="compact-heading"><h3>Borough Happenings</h3><p>Recent moments from every neighborhood.</p></div>
       ${buildBoroughHappeningsFeedMarkup(3)}
@@ -760,7 +778,6 @@ function buildBoroughOverviewNeighborhoodPanel(tank, now = Date.now()) {
   return withActiveTank(tank.id, () => {
     const stats = getManagementHubStats(now);
     const status = getManagementTankStatus(stats);
-    const tasks = buildManagementCareQueue(stats);
     const services = getBoroughSectionServiceTypes(tank);
     const serviceLabel = services.length ? services.map((type) => getBoroughServiceLabel(type)).join(", ") : "None yet";
     const healthValue = stats.deadFish > 0 ? `${stats.deadFish} lost` : stats.injuredFish > 0 ? `${stats.injuredFish} healing` : stats.livingFish ? "Stable" : "No fish";
@@ -781,7 +798,6 @@ function buildBoroughOverviewNeighborhoodPanel(tank, now = Date.now()) {
           <article><span>Clean</span><strong>${stats.cleanPercent}%</strong></article>
           <article><span>Waste</span><strong>${stats.wasteCount || stats.pendingWasteCount || 0}</strong></article>
         </div>
-        <div class="borough-overview-task-list">${tasks.slice(0, 4).map((task) => buildBoroughOverviewCareTaskRow({ ...task, tankId: tank.id })).join("")}</div>
       </section>
       <section class="borough-info-section">
         <div class="borough-overview-record-grid">
@@ -838,56 +854,68 @@ function renderAquariumOverview() {
   let cells = syntheticCount > 0
     ? Array.from({ length: syntheticCount }, (_, index) => ({ id: `debug-preview-${index}`, gridX: index % syntheticColumns, gridY: Math.floor(index / syntheticColumns), cellType: "debug-preview", debugIndex: index + 1 }))
     : tanks.map((tank) => ({ ...tank, cellType: "section" }));
+  let editFrame = null;
   if (!syntheticCount && editMode) {
     const occupied = new Set(cells.map((cell) => `${cell.gridX}:${cell.gridY}`));
     const tankXs = tanks.map((tank) => tank.gridX);
     const tankYs = tanks.map((tank) => tank.gridY);
-    const minTankX = Math.min(...tankXs) - 1;
-    const maxTankX = Math.max(...tankXs) + 1;
-    const minTankY = Math.min(...tankYs) - 1;
-    const maxTankY = Math.max(...tankYs) + 1;
-    for (let gridY = minTankY; gridY <= maxTankY; gridY += 1) {
-      for (let gridX = minTankX; gridX <= maxTankX; gridX += 1) {
-        if (!occupied.has(`${gridX}:${gridY}`)) cells.push({ gridX, gridY, cellType: "drop" });
+    const occupiedMinX = Math.min(...tankXs);
+    const occupiedMaxX = Math.max(...tankXs);
+    const occupiedMinY = Math.min(...tankYs);
+    const occupiedMaxY = Math.max(...tankYs);
+    const expansionTarget = expansionSpaces[0] || null;
+
+    let frameMinX = Math.min(occupiedMinX, Number.isInteger(expansionTarget?.gridX) ? expansionTarget.gridX : occupiedMinX);
+    let frameMaxX = Math.max(occupiedMaxX, Number.isInteger(expansionTarget?.gridX) ? expansionTarget.gridX : occupiedMaxX);
+    let frameMinY = Math.min(occupiedMinY, Number.isInteger(expansionTarget?.gridY) ? expansionTarget.gridY : occupiedMinY);
+    let frameMaxY = Math.max(occupiedMaxY, Number.isInteger(expansionTarget?.gridY) ? expansionTarget.gridY : occupiedMaxY);
+
+    while (frameMaxX - frameMinX + 1 < 5) frameMaxX += 1;
+    while (frameMaxY - frameMinY + 1 < 3) frameMaxY += 1;
+    if (frameMaxX - frameMinX + 1 > 5) frameMinX = frameMaxX - 4;
+    if (frameMaxY - frameMinY + 1 > 3) frameMinY = frameMaxY - 2;
+    editFrame = { minX: frameMinX, maxX: frameMinX + 4, minY: frameMinY, maxY: frameMinY + 2 };
+
+    for (let gridY = editFrame.minY; gridY <= editFrame.maxY; gridY += 1) {
+      for (let gridX = editFrame.minX; gridX <= editFrame.maxX; gridX += 1) {
+        if (!occupied.has(`${gridX}:${gridY}`) && tanks.some((moving) => fitsBoroughTankGrid(tanks.map((tank) => tank.id === moving.id ? { gridX, gridY } : tank)))) {
+          cells.push({ gridX, gridY, cellType: "drop" });
+        }
       }
     }
   }
-  const minX = Math.min(...cells.map((cell) => cell.gridX));
-  const maxX = Math.max(...cells.map((cell) => cell.gridX));
-  const minY = Math.min(...cells.map((cell) => cell.gridY));
-  const maxY = Math.max(...cells.map((cell) => cell.gridY));
-  const columnCount = maxX - minX + 1;
-  const rowCount = maxY - minY + 1;
+  const minX = editFrame?.minX ?? Math.min(...cells.map((cell) => cell.gridX));
+  const maxX = editFrame?.maxX ?? Math.max(...cells.map((cell) => cell.gridX));
+  const minY = editFrame?.minY ?? Math.min(...cells.map((cell) => cell.gridY));
+  const maxY = editFrame?.maxY ?? Math.max(...cells.map((cell) => cell.gridY));
+  const columnCount = Math.min(5, maxX - minX + 1);
+  const rowCount = Math.min(3, maxY - minY + 1);
   const expansionCost = getAquariumExpansionCost();
   const overviewSummary = getBoroughOverviewSummary(Date.now());
   dom.boroughGrid.style.setProperty("--borough-columns", String(columnCount));
   dom.boroughGrid.style.setProperty("--borough-rows", String(rowCount));
   dom.boroughGrid.classList.toggle("is-editing", editMode);
   dom.boroughOverview?.querySelector(".borough-overview-body")?.classList.toggle("is-editing", editMode);
-  if (dom.boroughOverviewInfo) dom.boroughOverviewInfo.hidden = editMode;
+  if (dom.boroughOverviewInfo) dom.boroughOverviewInfo.hidden = true;
   dom.toggleBoroughEditMode?.setAttribute("aria-pressed", String(editMode));
   if (dom.toggleBoroughEditMode) dom.toggleBoroughEditMode.querySelector("small").textContent = editMode ? "Done" : "Edit";
   if (dom.addBoroughTankButton) {
     dom.addBoroughTankButton.hidden = !editMode;
-    dom.addBoroughTankButton.disabled = state.coins < expansionCost;
-    dom.addBoroughTankButton.querySelector("small").textContent = `Add Tank · ${expansionCost} coins`;
+    dom.addBoroughTankButton.disabled = !expansionSpaces.length || state.coins < expansionCost;
+    dom.addBoroughTankButton.querySelector("small").textContent = expansionSpaces.length ? `Add Tank · ${expansionCost} coins` : "Borough full · 15 tanks max";
   }
   const layoutOverride = isDebugModeEnabled() ? String(runtime.debugOverviewLayoutMode || "auto") : "auto";
   dom.boroughGrid.classList.toggle("is-compact", layoutOverride === "compact" || layoutOverride === "micro" || (layoutOverride === "auto" && Math.max(columnCount, rowCount) >= 6));
   dom.boroughGrid.classList.toggle("is-micro", layoutOverride === "micro" || (layoutOverride === "auto" && Math.max(columnCount, rowCount) >= 10));
   dom.boroughOverviewTitle.textContent = "Borough Overview";
-  const latestHappening = sanitizeBoroughHappenings(state.boroughHappenings)[0];
   dom.boroughOverviewHint.textContent = editMode
-    ? `Drag neighborhoods onto the grid to rearrange them. Add a tank for ${expansionCost} coins.`
-    : latestHappening
-      ? `${latestHappening.text} · Click a tank to visit or use its info button.`
-      : "Click a tank to visit or use its info button for neighborhood details.";
+    ? "Drag tanks to rearrange them. Maximum 3 rows × 5 columns (15 tanks)."
+    : "Click a tank to visit. Use Edit to expand or rearrange your borough.";
   if (dom.boroughOverviewStatus) {
     setMarkupIfChanged("borough-overview-status", dom.boroughOverviewStatus, `
-      <span><strong>${overviewSummary.tanks.length}</strong> ${pluralize("neighborhood", overviewSummary.tanks.length)}</span>
+      <span><strong>${overviewSummary.tanks.length} / 15</strong> tanks</span>
       <span><strong>${overviewSummary.livingFish.length}</strong> fish</span>
       <span><strong>${overviewSummary.averageCleanliness}%</strong> average clean</span>
-      <span class="${overviewSummary.activeTaskCount ? "has-alert" : ""}"><strong>${overviewSummary.activeTaskCount}</strong> active ${pluralize("task", overviewSummary.activeTaskCount)}</span>
     `);
   }
   const markup = cells.map((cell) => {
@@ -926,19 +954,18 @@ function renderAquariumOverview() {
       : "";
     const nameMarkup = editing
       ? `<span class="borough-name-editor"><input type="text" maxlength="36" value="${escapeHtml(runtime.editingTankNameValue)}" data-borough-name-input="${escapeHtml(cell.id)}" aria-label="Neighborhood name"><button type="button" data-save-borough-name="${escapeHtml(cell.id)}">Save</button><button type="button" data-cancel-borough-name>Cancel</button></span>`
-      : `<strong>${escapeHtml(getTankLabel(cell))}</strong>${editMode ? `<button class="borough-rename-button" type="button" data-rename-borough="${escapeHtml(cell.id)}" aria-label="Rename ${escapeHtml(getTankLabel(cell))}">&#9998;</button><button class="borough-sell-button" type="button" data-sell-borough-tank="${escapeHtml(cell.id)}" ${canSell ? "" : "disabled"} aria-label="Sell ${escapeHtml(getTankLabel(cell))} for ${resaleValue} coins" title="${escapeHtml(sellTitle)}"><span aria-hidden="true">&#128465;</span><small>${resaleValue}</small></button>` : `<button class="borough-info-button" type="button" data-borough-tank-info="${escapeHtml(cell.id)}" aria-label="View information for ${escapeHtml(getTankLabel(cell))}">i</button>`}`;
-    const infoSelected = runtime.boroughOverviewInfoTab === "tank" && runtime.boroughOverviewInfoTankId === cell.id;
+      : `<strong>${escapeHtml(getTankLabel(cell))}</strong>${editMode ? `<button class="borough-rename-button" type="button" data-rename-borough="${escapeHtml(cell.id)}" aria-label="Rename ${escapeHtml(getTankLabel(cell))}">&#9998;</button><button class="borough-sell-button" type="button" data-sell-borough-tank="${escapeHtml(cell.id)}" ${canSell ? "" : "disabled"} aria-label="Sell ${escapeHtml(getTankLabel(cell))} for ${resaleValue} coins" title="${escapeHtml(sellTitle)}"><span aria-hidden="true">&#128465;</span><small>${resaleValue}</small></button>` : ""}`;
+    const infoSelected = false;
     return `<article class="borough-grid-cell borough-section-cell${active ? " is-active" : ""}${infoSelected ? " is-info-selected" : ""}" role="gridcell" draggable="false" style="grid-column:${column};grid-row:${row}" data-borough-section="${escapeHtml(cell.id)}" data-borough-grid-x="${cell.gridX}" data-borough-grid-y="${cell.gridY}"><span class="borough-preview-shell"><button class="borough-section-preview" type="button" data-visit-section="${escapeHtml(cell.id)}" aria-label="Visit ${escapeHtml(getTankLabel(cell))}"><canvas class="borough-cell-snapshot-canvas" data-borough-snapshot-tank-id="${escapeHtml(cell.id)}" aria-hidden="true"></canvas><canvas class="borough-cell-fish-canvas" data-borough-fish-tank-id="${escapeHtml(cell.id)}" aria-hidden="true"></canvas></button>${wallMarkup}</span><span class="borough-cell-copy"><span class="borough-cell-name">${nameMarkup}</span><span class="borough-cell-stats">${fishCount} fish · ${escapeHtml(identity.label)}</span>${serviceMarkup}</span></article>`;
   }).join("");
   setMarkupIfChanged("borough-grid", dom.boroughGrid, markup);
   if (!syntheticCount) {
-    paintBoroughSnapshots(tanks, Date.now(), { force: true });
+    paintBoroughSnapshots(tanks, Date.now(), { force: true, cachedOnly: true });
   }
   runtime.boroughOverviewFishRenderedAt = 0;
   if (!syntheticCount) {
     renderBoroughOverviewFish(Date.now(), { force: true });
   }
-  renderBoroughOverviewInfoPanel(Date.now());
 }
 
 function getBoroughOverviewFishColor(fish) {
@@ -1067,13 +1094,13 @@ function getFoodAndMedArt(kind, id) {
 
 function renderFoodAndMedImage(kind, id, alt, className = "shop-thumb") {
   const { imagePath, fallbackPath } = getFoodAndMedArt(kind, id);
-  return `<img class="${className}" src="${imagePath}" alt="${alt}" onerror="this.onerror=null;this.src='${fallbackPath}'" />`;
+  return `<img class="${className}" ${assetImageAttributes(imagePath)} alt="${alt}" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','${fallbackPath}')" />`;
 }
 
 function renderTankProductImage(tankTypeId, alt, className = "shop-thumb") {
   const imagePath = getTankProductImagePath(tankTypeId);
   const fallbackPath = getTankProductImageFallback(tankTypeId);
-  return `<img class="${className}" src="${imagePath}" alt="${alt}" onerror="this.onerror=null;this.src='${fallbackPath}'" />`;
+  return `<img class="${className}" ${assetImageAttributes(imagePath)} alt="${alt}" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','${fallbackPath}')" />`;
 }
 
 function getCustomBackgroundPreviewClasses(baseClassName = "background-thumb", target = getCurrentTank()) {
@@ -1109,11 +1136,11 @@ function renderBackgroundPreview(background, className = "background-thumb") {
   if (isLocalImageBackgroundKey(background.key)) {
     const dataUrl = getLocalBackgroundImageDataUrl();
     return dataUrl
-      ? `<img class="${className}" src="${dataUrl}" alt="${escapeHtml(background.name)}" />`
+      ? `<img class="${className}" ${assetImageAttributes(dataUrl)} alt="${escapeHtml(background.name)}" />`
       : "";
   }
 
-  return `<img class="${className}" src="${background.path}" alt="${escapeHtml(background.name)}" />`;
+  return `<img class="${className}" ${assetImageAttributes(background.path)} alt="${escapeHtml(background.name)}" />`;
 }
 
 function renderFoodShop() {
@@ -1125,19 +1152,19 @@ function renderFoodShop() {
   const cardsMarkup = catalog.map((food) => {
     const count = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
     return `
-      <article class="shop-card">
+      <article class="shop-card" ${renderStoreFacetAttributes("food", food)}>
         ${renderFoodAndMedImage("food", food.id, food.name)}
         <div class="shop-meta shop-card-main">
           <div>
             <strong>${food.name}</strong>
             <div class="fish-meta">${food.description}</div>
           </div>
-          <div class="fish-meta">${count} pellet${count === 1 ? "" : "s"} owned</div>
+          <div class="fish-meta">${count} ${food.id === "halloweenCandy" ? "candies" : "pellets"} owned</div>
         </div>
         <div class="shop-meta">
           <span class="price-tag">${food.cost} ${pluralize("coin", food.cost)}</span>
           <button class="buy-button" data-buy-food="${food.id}">
-            Buy Bottle (+${food.bottlePellets})
+            ${food.id === "halloweenCandy" ? "Buy Pile" : "Buy Bottle"} (+${food.bottlePellets})
           </button>
         </div>
       </article>
@@ -1156,7 +1183,7 @@ function renderPharmacyShop() {
   const cardsMarkup = catalog.map((medicine) => {
     const count = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
     return `
-      <article class="shop-card">
+      <article class="shop-card" ${renderStoreFacetAttributes("pharmacy", medicine)}>
         ${renderFoodAndMedImage("medicine", medicine.id, medicine.name)}
         <div class="shop-meta shop-card-main">
           <div>

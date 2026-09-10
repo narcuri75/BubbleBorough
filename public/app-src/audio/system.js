@@ -757,6 +757,7 @@ function playWhaleBreathSoundEffect() {
 }
 
 function playToolbarButtonSoundEffect(kind = "press") {
+  if (runtime.storeOverlayOpen) return;
   const path = kind === "exit" ? TOOLBAR_BUTTON_EXIT_SOUND_PATH : TOOLBAR_BUTTON_PRESS_SOUND_PATH;
   playUiSoundEffect(path, { volume: 0.58 });
 }
@@ -778,6 +779,7 @@ function playUiCollapseToggleSound(collapsed) {
 }
 
 function playRegularButtonSoundEffect() {
+  if (runtime.storeOverlayOpen) return;
   playUiSoundEffect(REGULAR_BUTTON_SOUND_PATH, { volume: 0.58 });
 }
 
@@ -987,17 +989,6 @@ function playUtilityOverlayChangeSound(event) {
   }
 }
 
-function playStoreActionClickSound(event) {
-  if (playRegularButtonSoundForAction(event, STORE_REGULAR_BUTTON_SOUND_SELECTOR)) {
-    return;
-  }
-
-  playToolbarButtonPressSoundForAction(event, STORE_FILTER_CONTROL_SOUND_SELECTOR);
-}
-
-function playStoreFilterChangeSound(event) {
-  playToolbarButtonPressSoundForAction(event, STORE_FILTER_CONTROL_SOUND_SELECTOR);
-}
 
 function playEquipmentSurfaceClickSound(event) {
   if (playRegularButtonSoundForAction(event, EQUIPMENT_REGULAR_BUTTON_SOUND_SELECTOR)) {
@@ -1087,7 +1078,6 @@ function isToolbarFastTooltipExperimentEnabled() {
   return Boolean(
     dom.tankBottomDock
     && dom.toolbarFastTooltip
-    && dom.tankBottomDock.classList.contains("toolbar-fast-tooltip-experiment")
     && !dom.tankBottomDock.classList.contains("is-toolbar-collapsed")
     && !dom.tankBottomDock.classList.contains("is-tutorial-hidden")
   );
@@ -1098,7 +1088,7 @@ function getToolbarFastTooltipButton(target) {
     return null;
   }
 
-  const button = target.closest(".dock-button");
+  const button = target.closest(".dock-button, .toolbar-action-menu-button");
   return button && dom.tankBottomDock.contains(button) && !button.disabled && !button.hidden
     ? button
     : null;
@@ -1120,7 +1110,7 @@ function syncToolbarFastTooltipExperiment() {
   }
 
   const enabled = isToolbarFastTooltipExperimentEnabled();
-  const buttons = dock.querySelectorAll(".dock-button");
+  const buttons = dock.querySelectorAll(".dock-button, .toolbar-action-menu-button");
   for (const button of buttons) {
     if (enabled) {
       const currentTitle = button.getAttribute("title");
@@ -1163,16 +1153,11 @@ function positionToolbarFastTooltip(clientX = null, clientY = null, button = run
     return;
   }
 
-  let x = Number(clientX);
-  let y = Number(clientY);
-  if ((!Number.isFinite(x) || !Number.isFinite(y)) && button instanceof HTMLElement) {
-    const rect = button.getBoundingClientRect();
-    x = rect.left + rect.width / 2;
-    y = rect.top;
-  }
-  if (!Number.isFinite(x) || !Number.isFinite(y)) {
-    return;
-  }
+  if (!(button instanceof HTMLElement)) return;
+  const rect = button.getBoundingClientRect();
+  const menu = button.closest(".toolbar-action-menu") || dom.tankBottomDock;
+  const x = rect.left + rect.width / 2;
+  const y = Math.min(rect.top, menu.getBoundingClientRect().top);
 
   const viewportPadding = 8;
   const tooltipRect = tooltip.getBoundingClientRect();

@@ -28,13 +28,13 @@ function renderCustomFishCreationOverlay() {
           <div class="custom-fish-size-stage">
             <img
               class="custom-fish-template-overlay"
-              src="${escapeHtml(CUSTOM_FISH_TEMPLATE_IMAGE)}"
+              ${assetImageAttributes(CUSTOM_FISH_TEMPLATE_IMAGE)}
               alt=""
               aria-hidden="true"
               draggable="false" />
             <img
               class="custom-fish-upload-preview"
-              src="${escapeHtml(pending.dataUrl)}"
+              ${assetImageAttributes(pending.dataUrl)}
               alt="Uploaded custom fish preview"
               style="width: ${width}px; aspect-ratio: ${escapeHtml(aspectRatio)}; transform: ${escapeHtml(transform)};"
               data-custom-fish-preview />
@@ -258,7 +258,7 @@ function renderBubblerSettingsOverlay(item) {
 
 function renderFoodInventoryOverlay() {
   const cards = getFoodCatalog().filter((food) => (
-    shouldShowFoodInStore(food)
+    (food.id === "halloweenCandy" || shouldShowFoodInStore(food))
     && food.id !== "upgraded"
     && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
   )).map((food) => {
@@ -270,7 +270,7 @@ function renderFoodInventoryOverlay() {
         <div>
           <strong>${food.name}</strong>
           <div class="fish-meta">${food.description}</div>
-          <div class="mini-note">${quantity} pellet${quantity === 1 ? "" : "s"} remaining</div>
+          <div class="mini-note">${quantity} ${food.id === "halloweenCandy" ? "candies" : "pellets"} remaining</div>
         </div>
         <button class="small-button ${active ? "" : "alt"}" data-select-food="${food.id}" ${quantity > 0 ? "" : "disabled"}>
           ${active ? "Selected" : "Select"}
@@ -306,17 +306,7 @@ function renderMedicineInventoryOverlay() {
 }
 
 function renderTipsOverlay() {
-  const suggestions = buildCurrentTankCareSuggestions(Date.now());
-  if (!suggestions.length) {
-    return `<div class="empty-state">No care issues are being suggested for this tank right now.</div>`;
-  }
-
-  return suggestions.map((suggestion) => `
-    <label class="checklist-row ${suggestion.fulfilled ? "is-fulfilled" : ""}">
-      <input type="checkbox" disabled ${suggestion.fulfilled ? "checked" : ""} />
-      <span>${suggestion.label}</span>
-    </label>
-  `).join("");
+  return "";
 }
 
 function renderDailyBonusOverlay() {
@@ -354,69 +344,7 @@ function renderDailyBonusOverlay() {
 }
 
 function buildCurrentTankCareSuggestions(now = Date.now()) {
-  const tank = getCurrentTank();
-  if (!tank) {
-    return [];
-  }
-
-  const livingFish = tank.fish.filter((fish) => !isFishDead(fish));
-  if (!livingFish.length) {
-    return [];
-  }
-
-  const suggestions = new Map();
-  const putSuggestion = (key, label, fulfilled) => {
-    const existing = suggestions.get(key);
-    if (existing) {
-      existing.fulfilled = existing.fulfilled && fulfilled;
-      return;
-    }
-    suggestions.set(key, { key, label, fulfilled });
-  };
-
-  for (const fish of livingFish) {
-    const species = getSpeciesForFish(fish);
-    if (!species) {
-      continue;
-    }
-    const speciesName = getFishDisplaySpeciesName(fish, species);
-    if (getFishGlassTapStressPenalty(fish, now) > 0) {
-      putSuggestion(`glass_tap_stress:${fish.id}`, `Give ${fish.name} some quiet time after glass tapping.`, false);
-    }
-
-    for (const need of getFishNeedsStatus(fish, tank, now)) {
-      if (need.met) {
-        continue;
-      }
-      const needPhrase = need.tag === "school_2_plus"
-        ? `another ${speciesName} nearby`
-        : need.tag === "open_water"
-          ? "more open swimming space"
-          : `${need.label.toLowerCase()} in the tank`;
-      putSuggestion(`need:${fish.id}:${need.tag}`, `${fish.name} would love ${needPhrase}.`, false);
-    }
-
-    for (const conflict of getFishConflictStatus(fish, tank, now).filter((entry) => entry.active)) {
-      const conflictLabel = conflict.label.toLowerCase();
-      const label = conflict.tag === "community_fish" && fish.speciesId === "betta"
-        ? `${fish.name} the ${speciesName} is not very popular in this tank. Consider giving them their own space.`
-        : conflict.tag === "betta_present"
-          ? `${fish.name} is stressed by a betta in this tank.`
-          : conflict.tag === "overcrowded"
-            ? `${fish.name} needs a roomier tank setup.`
-            : conflict.tag === "sharp_decor"
-              ? `${fish.name} is uneasy around sharp decor.`
-              : `${fish.name} is bothered by ${conflictLabel}.`;
-      putSuggestion(`conflict:${fish.id}:${conflict.tag}`, label, false);
-    }
-
-    const comfort = getFishComfort(fish, now);
-    if (comfort.value < 0.45) {
-      putSuggestion(`comfort:${fish.id}`, `${fish.name}'s comfort is low.`, false);
-    }
-  }
-
-  return [...suggestions.values()].sort((left, right) => Number(left.fulfilled) - Number(right.fulfilled) || left.label.localeCompare(right.label));
+  return [];
 }
 
 function claimDailyBonus() {
@@ -444,6 +372,7 @@ function claimDailyBonus() {
   const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
   if (reward > 0) {
     state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
+    recordWalletTransaction({ amount: reward, direction: "credit", now, place: "Bubble Borough", label: "Daily recap claimed" });
   }
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
@@ -497,9 +426,11 @@ function renderSettingsOverlay() {
   }
   if (dom.causticLightingToggleInput) {
     dom.causticLightingToggleInput.checked = uiSettings.causticLightingEnabled;
+    dom.causticLightingToggleInput.closest(".settings-toggle-row")?.toggleAttribute("hidden", !CAUSTIC_LIGHTING_SETTING_ENABLED);
   }
   if (dom.decorShadowsToggleInput) {
     dom.decorShadowsToggleInput.checked = uiSettings.decorShadowsEnabled;
+    dom.decorShadowsToggleInput.closest(".settings-toggle-row")?.toggleAttribute("hidden", !DECOR_SHADOWS_SETTING_ENABLED);
   }
   if (dom.halloweenModeSelect instanceof HTMLSelectElement) {
     dom.halloweenModeSelect.value = uiSettings.halloweenMode;
@@ -1363,7 +1294,7 @@ function renderResidenceFishCard(fish, item, options = {}) {
   const resident = options.resident === true;
   return `
     <article class="residence-fish-card ${resident ? "is-resident" : "is-nomadic"}">
-      <img class="residence-fish-thumb" src="${escapeHtml(fishAsset)}" alt="${escapeHtml(fish.name)}" />
+      <img class="residence-fish-thumb" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
       <div class="residence-fish-copy">
         <strong>${escapeHtml(fish.name)}</strong>
         <span>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</span>
@@ -1553,6 +1484,7 @@ function setFreeDecorPlacementEnabled(enabled) {
   }
 
   if (selectionState.items.length) {
+    if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Change free placement");
     const itemsToUpdate = selectionState.items.filter((item) => isFreeDecorPlacementEnabled(item, { tank }) !== nextEnabled);
     if (!itemsToUpdate.length) {
       renderEditDecorTray();
@@ -1594,6 +1526,7 @@ function setFreeDecorPlacementEnabled(enabled) {
 
 function renderEditDecorTray() {
   const visible = runtime.editTankMode;
+  if (typeof renderDecorHistoryControls === "function") renderDecorHistoryControls();
   if (dom.editDecorTray) {
     dom.editDecorTray.hidden = !visible;
   }
@@ -1707,7 +1640,7 @@ function renderEditDecorTray() {
                 aria-label="${escapeHtml(actionLabel)}"
               >
                 <span class="edit-decor-tile-surface">
-                  <img class="edit-decor-tile-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${entry.type === "placed" && (isDecorHorizontallyFlipped(entry.item) || isDecorVerticallyFlipped(entry.item)) ? ` style="transform: translate(-50%, -50%) scale(${isDecorHorizontallyFlipped(entry.item) ? -1 : 1}, ${isDecorVerticallyFlipped(entry.item) ? -1 : 1});"` : ""} />
+                  <img class="edit-decor-tile-thumb" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}"${entry.type === "placed" && (isDecorHorizontallyFlipped(entry.item) || isDecorVerticallyFlipped(entry.item)) ? ` style="transform: translate(-50%, -50%) scale(${isDecorHorizontallyFlipped(entry.item) ? -1 : 1}, ${isDecorVerticallyFlipped(entry.item) ? -1 : 1});"` : ""} />
                   <span class="inventory-tray-label">${escapeHtml(decorTypeLabel)}</span>
                   <span class="edit-decor-tile-count">${badge}</span>
                 </span>
@@ -2036,7 +1969,7 @@ function renderEditFishTray() {
               aria-label="${actionLabel}"
             >
               <span class="edit-decor-tile-surface">
-                <img class="edit-decor-tile-thumb" src="${getFishDisplayAssetPath(fish, species) || species?.asset || ""}" alt="${label}" />
+                <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${label}" />
                 <span class="inventory-tray-label">${!inStorage && !dead ? escapeHtml(fish.name || "Fish") : dead ? (inStorage ? "Dead In Storage" : "Dead In Tank") : "Storage"}</span>
               </span>
             </button>
@@ -2128,7 +2061,7 @@ function renderMedicineTray() {
   }
 
   const foodItems = getFoodCatalog().filter((food) => (
-    shouldShowFoodInStore(food)
+    (food.id === "halloweenCandy" || shouldShowFoodInStore(food))
     && food.id !== "upgraded"
     && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
   ));
@@ -2143,7 +2076,7 @@ function renderMedicineTray() {
     runtime.medicineModeKey || "",
     runtime.cleaningMode ? "scrub" : "",
     runtime.scoopMode ? "scoop" : "",
-    ...getFoodCatalog().filter((food) => shouldShowFoodInStore(food)).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
+    ...getFoodCatalog().filter((food) => (food.id === "halloweenCandy" || shouldShowFoodInStore(food))).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
     ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
 
@@ -2177,7 +2110,7 @@ function renderMedicineTray() {
             </svg>
             <span class="care-tray-empty-copy">
               <strong>No food stocked</strong>
-              <small>Open Tankazon food to buy more.</small>
+              <small>Open BubbleBodega food to buy more.</small>
             </span>
           </div>
           <button class="care-tray-empty-shop-button" type="button" data-food-open-store>Buy Food</button>
@@ -2213,7 +2146,7 @@ function renderMedicineTray() {
             </svg>
             <span class="care-tray-empty-copy">
               <strong>No medicine stocked</strong>
-              <small>Open Tankazon pharmacy to buy more.</small>
+              <small>Open BubbleBodega pharmacy to buy more.</small>
             </span>
           </div>
           <button class="care-tray-empty-shop-button" type="button" data-care-open-pharmacy>Buy Meds</button>
@@ -2221,10 +2154,10 @@ function renderMedicineTray() {
       `;
 
     const markup = `
-      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tray-min-width: 631px;">
+      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tools-min-width: 248px; --care-tray-min-width: 709px;">
         <section class="care-tray-food" aria-label="Food">
           <div class="care-tray-heading-row">
-            <img class="care-tray-inline-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
+            <img class="care-tray-inline-icon" ${assetImageAttributes("assets/icons/feed_fish.png")} alt="" aria-hidden="true" draggable="false" />
             <div class="care-tray-heading">Food</div>
           </div>
           <div class="care-tray-food-items">${foodMarkup}</div>
@@ -2234,7 +2167,7 @@ function renderMedicineTray() {
 
         <section class="care-tray-medical" aria-label="Medication">
           <div class="care-tray-heading-row">
-            <img class="care-tray-inline-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+            <img class="care-tray-inline-icon" ${assetImageAttributes("assets/icons/medicine.png")} alt="" aria-hidden="true" draggable="false" />
             <div class="care-tray-heading">Medication</div>
           </div>
           <div class="care-tray-medical-items">${medicineMarkup}</div>
@@ -2246,11 +2179,11 @@ function renderMedicineTray() {
           <div class="care-tray-heading">Tools</div>
           <div class="care-tray-tool-row">
             <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
-              <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+              <img ${assetImageAttributes("assets/icons/sponge.png")} alt="" aria-hidden="true" draggable="false" />
               <span>Scrub</span>
             </button>
             <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
-              <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+              <img ${assetImageAttributes("assets/icons/scoop.png")} alt="" aria-hidden="true" draggable="false" />
               <span>Scoop</span>
             </button>
           </div>
@@ -2277,7 +2210,6 @@ function renderFishList(now) {
     runtime.collapsedSections.fishTank ? 1 : 0,
     runtime.collapsedSections.fishDead ? 1 : 0,
     runtime.collapsedSections.fishStorage ? 1 : 0,
-    state.selectedFilterAsset,
     state.fish.map((fish) => [
       fish.id,
       fish.name,
@@ -2530,7 +2462,7 @@ function renderManagedFishCard(fish, now, options = {}) {
 
   return `
     <article class="fish-card">
-      <img class="fish-thumb" src="${fishAsset}" alt="${fish.name}" />
+      <img class="fish-thumb" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
       <div class="fish-card-main">
         <div class="fish-card-heading">
           <div class="fish-card-title">
@@ -3050,7 +2982,7 @@ function renderFishActionTargetMenu(now = Date.now()) {
 
     const image = document.createElement("img");
     image.className = "fish-action-target-thumb";
-    image.src = getFishDisplayAssetPath(targetFish, targetSpecies, now) || targetSpecies?.asset || "";
+    void setAssetImageSource(image, getFishDisplayAssetPath(targetFish, targetSpecies, now) || targetSpecies?.asset || "");
     image.alt = "";
     image.setAttribute("aria-hidden", "true");
 
@@ -3189,43 +3121,10 @@ function shouldShowSelectedFishNeedsPanel(managed) {
 function renderSelectedFishNeedsPanel(now = Date.now()) {
     const panel = dom.selectedFishNeedsPanel;
     if (!panel) return;
-    const managed = getManagedFishById(runtime.selectedFishStatusFishId || runtime.selectedFishId);
-    if (!shouldShowSelectedFishNeedsPanel(managed)) {
-      panel.hidden = true;
-      setMarkupIfChanged("selected-fish-needs-panel", panel, "");
-      return;
-    }
-    const fish = managed.fish;
-    const snapshot = getFishNeedsSnapshot(fish, now);
-    const preferences = getFishNeedsStatus(fish, getCurrentTank(), now);
-    const preference = preferences.find(item => item.met) || preferences[0];
-    const likes = {
-      plants: "Loves leafy corners", cave: "Loves a cozy hideaway", open_water: "Loves room to roam",
-      school_2_plus: "Loves swimming with their own kind", surface_cover: "Loves shade near the surface",
-      hardscape: "Loves rocky hideaways", driftwood: "Loves driftwood", coral: "Loves the coral",
-      seaweed_algae: "Loves a little grazing spot"
-    };
-    const preferenceText = preference ? likes[preference.tag] || `Enjoys ${preference.label.toLowerCase()}` : "Making this tank their home";
-    const busy = getActiveFishActionQueueItem(fish, now);
-    const playing = busy && !busy.autonomous;
-    const markup = `
-      <div class="selected-fish-needs-header">
-        <strong class="selected-fish-needs-name">${escapeHtml(fish.name || "Fish")}</strong>
-        <span class="selected-fish-mood-pill" data-mood-tone="good">${escapeHtml(snapshot.mood.label)}</span>
-        <button type="button" class="fish-companion-close" data-fish-companion="close" aria-label="Close fish card">×</button>
-      </div>
-      <p class="fish-companion-activity">${escapeHtml(snapshot.activity)}</p>
-      <p class="fish-companion-preference">${escapeHtml(preferenceText)}</p>
-      ${snapshot.care ? `<p class="fish-companion-hint" data-care-tone="${snapshot.care.tone}">${escapeHtml(snapshot.care.text)}</p>` : ""}
-      <div class="fish-companion-actions">
-        <button type="button" data-fish-companion="treat" ${playing ? "disabled" : ""} title="Offer a bite of suitable food from your supplies">Offer treat</button>
-        <button type="button" data-fish-companion="play" ${playing ? "disabled" : ""} title="Invite this fish to play">Play</button>
-        <button type="button" data-fish-companion="details">Details</button>
-      </div>`;
-    panel.hidden = false;
-    panel.setAttribute("aria-label", "Fish companion");
-    panel.setAttribute("data-preserve-fish-selection", "");
-    setMarkupIfChanged("selected-fish-needs-panel", panel, markup);
+    // The old fixed companion card has been replaced by the compact status
+    // badge drawn directly above the selected fish in the aquarium.
+    panel.hidden = true;
+    setMarkupIfChanged("selected-fish-needs-panel", panel, "");
   }
 
 function renderFishInspector(now) {
@@ -3419,7 +3318,7 @@ function renderDecorShop() {
   }
 
   const searchQuery = tutorialRestriction ? "" : getStoreSearchQuery("decor");
-  const allCatalog = sortCatalogEntries(
+  const rawCatalog = sortCatalogEntries(
     runtime.decorCatalog
       .filter((decor) => canUseDecorWithCurrentContentSettings(decor))
       .filter((decor) => {
@@ -3440,6 +3339,7 @@ function renderDecorShop() {
       }),
     runtime.storeSorts.decor
   );
+  const allCatalog = typeof getDecorStoreCatalogEntries === "function" ? getDecorStoreCatalogEntries(rawCatalog) : rawCatalog;
   if (!allCatalog.length) {
     setMarkupIfChanged(
       "decor-shop",
@@ -3448,7 +3348,9 @@ function renderDecorShop() {
     );
     return;
   }
-  const catalog = allCatalog.filter((decor) => matchesShopSearchQuery(getDecorShopSearchHaystack(decor), searchQuery));
+  const catalog = allCatalog
+    .filter((decor) => isSeasonalDecorAvailable(decor))
+    .filter((decor) => matchesShopSearchQuery(getDecorShopSearchHaystack(decor), searchQuery));
   const tutorialPreviewOnly = tutorialRestriction?.previewOnly === true;
   if (!catalog.length) {
     setMarkupIfChanged(
@@ -3462,7 +3364,10 @@ function renderDecorShop() {
     const progressLocked = !isDecorProgressUnlocked(decor);
     const locked = !isDecorShopUnlocked(decor);
     const debugUnlocked = progressLocked && !locked;
-    const owned = state.decorInventory[decor.key] || 0;
+    const decorVariants = typeof getDecorStoreVariants === "function"
+      ? getDecorStoreVariants(decor, runtime.decorCatalog)
+      : [{ key: decor.key, image: decor.path || getDecorThumbnailPath(decor), label: "Main" }];
+    const owned = decorVariants.reduce((sum, variant) => sum + (state.decorInventory[variant.key] || 0), 0);
     const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
     const isCustomHideUpload = isCustomHideShopKey(decor.key);
     const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
@@ -3472,9 +3377,12 @@ function renderDecorShop() {
         ? `Debug unlocked (${lockedRequirementLabel})`
         : `${owned} in storage`;
     const serviceSummary = getDecorServiceSummary(decor.key);
+    const variantsAttribute = decorVariants.length > 1
+      ? ` data-decor-variants="${escapeHtml(JSON.stringify(decorVariants))}" data-shop-variant-key="${escapeHtml(decorVariants[0].key)}"`
+      : "";
     return `
-      <article class="shop-card ${locked ? "is-locked" : ""}">
-        <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
+      <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("decor", decor)}>
+        <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}" />
         <div class="shop-meta">
           <div>
             <strong>${decor.name}</strong>
@@ -3486,20 +3394,20 @@ function renderDecorShop() {
         </div>
         <div class="shop-meta">
           <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
-          <button class="buy-button" data-buy-decor="${decor.key}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+          <button class="buy-button" data-buy-decor="${decor.key}"${variantsAttribute} ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
             ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
           </button>
         </div>
       </article>
     `;
   };
-  const regularMarkup = catalog.filter((decor) => !isHalloweenDecor(decor)).map(renderCard).join("");
-  const seasonalMarkup = catalog.filter(isHalloweenDecor).map(renderCard).join("");
+  const regularMarkup = catalog.filter((decor) => !isSeasonalDecor(decor)).map(renderCard).join("");
+  const seasonalMarkup = catalog.filter(isSeasonalDecor).map(renderCard).join("");
   const cardsMarkup = regularMarkup + (seasonalMarkup ? `
     <section class="shop-section decor-seasonal-section" aria-labelledby="decorSeasonalHeading">
       <div class="shop-section-heading">
         <h3 id="decorSeasonalHeading">Seasonal</h3>
-        <p>Halloween decor, available all year.</p>
+        <p>Holiday items appear only during their season.</p>
       </div>
       <div class="shop-section-cards">${seasonalMarkup}</div>
     </section>
@@ -3520,47 +3428,9 @@ function renderEquipmentShop() {
   const dispenserInstalled = hasAutoDispenserInstalled();
   const dispenserLoadedCount = getAutoDispenserLoadedCount(state.autoDispenser);
   const dispenserPortion = clamp(Number(state.autoDispenser?.mealPortion) || 0, 0, AUTO_DISPENSER_PORTION_MAX);
-  const shopFilters = ENABLE_FILTER
-    ? runtime.filterCatalog.filter((filter) => filter.purchasable && filter.key !== BASIC_FILTER_KEY)
-    : [];
-  const filterMarkup = shopFilters.map((filter) => {
-    const ownedCount = Math.max(0, Number(state.ownedFilterInventory?.[filter.key]) || 0);
-    const equippedCount = getFilterAssignmentCount(filter.key);
-    const unusedCount = getUnusedFilterCount(filter.key);
-    const equippedHere = state.selectedFilterAsset === filter.key;
-    const resaleValue = getResaleValue(filter.cost);
-    const buyLabel = ownedCount > 0 ? "Buy Another" : "Buy & Equip";
-    const statusBits = [
-      `${ownedCount} owned`,
-      equippedCount > 0 ? `${equippedCount} in use` : "none in use",
-      unusedCount > 0 ? `${unusedCount} spare` : "no spare copies"
-    ];
-    return `
-      <article class="shop-card">
-        <img class="shop-thumb" src="${filter.path}" alt="${filter.name}" />
-        <div class="shop-meta shop-card-main">
-          <div>
-            <strong>${filter.name}</strong>
-            <div class="fish-meta">${statusBits.join(" | ")}</div>
-          </div>
-          <div class="fish-meta">${filter.blurb}</div>
-          <div class="fish-meta">Empty tank max grime: ${formatDuration(filter.cleanDays * DAY_MS)}. Mood boost: +${Math.round(filter.comfortBoost * 100)}%.</div>
-          ${equippedHere ? `<div class="mini-note">Currently installed in this tank.</div>` : ""}
-        </div>
-        <div class="shop-meta shop-card-actions">
-          <span class="price-tag">${filter.cost} ${pluralize("coin", filter.cost)}</span>
-          <div class="shop-button-row">
-            <button class="buy-button" data-buy-filter="${filter.key}">${buyLabel}</button>
-            <button class="small-button alt" data-sell-filter="${filter.key}" ${unusedCount > 0 ? "" : "disabled"}>Sell Spare (${resaleValue})</button>
-          </div>
-        </div>
-      </article>
-    `;
-  }).join("");
-
   const dispenserMarkup = `
       <article class="shop-card">
-        <img class="shop-thumb" src="${AUTO_DISPENSER_IMAGE_PATH}" alt="Automatic pellet dispenser" />
+        <img class="shop-thumb" ${assetImageAttributes(AUTO_DISPENSER_IMAGE_PATH)} alt="Automatic pellet dispenser" />
         <div class="shop-meta shop-card-main">
           <div>
             <strong>Pellet Dispenser</strong>
@@ -3585,7 +3455,7 @@ function renderEquipmentShop() {
       const uvLightActive = isUvLightActive();
       return `
       <article class="shop-card">
-        <img class="shop-thumb uv-light-shop-thumb" src="${UV_LIGHT_IMAGE_PATH}" alt="UV light" />
+        <img class="shop-thumb uv-light-shop-thumb" ${assetImageAttributes(UV_LIGHT_IMAGE_PATH)} alt="UV light" />
         <div class="shop-meta shop-card-main">
           <div>
             <strong>UV Light</strong>
@@ -3642,18 +3512,7 @@ function renderEquipmentShop() {
     .join("");
 
 
-
   const markup = `
-    ${ENABLE_FILTER ? `
-    <section class="shop-section">
-      <div class="shop-section-heading">
-        <h3>Filters</h3>
-        <p>Buy multiple filters, equip them per tank, and sell unused ones for 75% back.</p>
-      </div>
-      <div class="shop-section-cards">
-        ${filterMarkup || `<div class="empty-state">No filter upgrades are available yet.</div>`}
-      </div>
-    </section>` : ""}
     ${uvLightMarkup ? `
     <section class="shop-section">
       <div class="shop-section-heading">
@@ -3730,7 +3589,7 @@ function renderDecorInventory() {
 
       return `
         <article class="mini-card">
-          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
+          <img class="decor-thumb" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}" />
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${count} in storage.</div>

@@ -11,6 +11,9 @@ const manifestPath = path.join(sourceRoot, "module-manifest.json");
 const inventoryPath = path.join(sourceRoot, "function-inventory.json");
 const outputPath = path.join(projectRoot, "public", "app.js");
 const checkOnly = process.argv.includes("--check");
+require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-sprite-delivery.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
+require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-loose-decor-previews.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
+require("./generate-sprite-sheets.cjs").generate(checkOnly);
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");

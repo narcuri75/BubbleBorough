@@ -1,0 +1,69 @@
+{
+  "version": 2,
+  "columns": 4,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "9f1b386c-6b40-4c5b-9489-497d22082232",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "15febe16-26af-40cc-a373-05d360d42d15",
+          "width": 173,
+          "height": 300,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "basic-food.png"
+        },
+        {
+          "id": "288deb47-0d18-4070-8ccc-c238030e7a99",
+          "width": 173,
+          "height": 300,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chum-food.png"
+        },
+        {
+          "id": "47936f9a-81a7-41be-a164-5047c5edd369",
+          "width": 173,
+          "height": 300,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "frisky-food.png"
+        },
+        {
+          "id": "bb12eca9-d76e-4536-8407-9b8e948ffdfd",
+          "width": 173,
+          "height": 300,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "upgraded-food.png"
+        }
+      ]
+    }
+  ]
+}

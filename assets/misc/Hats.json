@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "columns": 4,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "7ecbe0eb-a32e-4387-92a1-abd6aa16371c",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "02534a88-79ef-4b34-8dfa-9e7a5de748e1",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Birthday_hat.png"
+        },
+        {
+          "id": "1ecd3d00-634c-4930-9f3c-44d5f5a0142b",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Christmas_hat.png"
+        },
+        {
+          "id": "766a23dc-9b7a-49f8-9aa8-be0daff7f61e",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "NewYears_hat.png"
+        }
+      ]
+    }
+  ]
+}

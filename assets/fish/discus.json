@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "1c4586f8-fd5e-43f6-a1c2-8a7f48f1d706",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "47d025b7-82be-46d4-b72b-9c83243c3d70",
+          "width": 512,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus.png"
+        },
+        {
+          "id": "0233093a-18c2-444a-bb0e-ec9777e74fc6",
+          "width": 512,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_1.png"
+        },
+        {
+          "id": "e8ddd47b-1b64-4f32-aa31-bdf7d0f2878f",
+          "width": 512,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_2.png"
+        },
+        {
+          "id": "0c2d284d-0a14-4047-92a7-4d892bc39d41",
+          "width": 512,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_3.png"
+        },
+        {
+          "id": "3effd1f9-e03c-48d7-9c99-7bc91ebcf88d",
+          "width": 512,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_4.png"
+        }
+      ]
+    }
+  ]
+}

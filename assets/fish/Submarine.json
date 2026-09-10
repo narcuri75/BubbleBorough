@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "c7db6087-ec64-4ca1-a1db-3672924726cf",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "b6772197-f364-41d6-8e43-a9ec7d1cb5b1",
+          "width": 512,
+          "height": 247,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "submarine_1.png"
+        },
+        {
+          "id": "6b1b4bee-6a1f-4040-8469-19f58513b38a",
+          "width": 512,
+          "height": 247,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "submarine.png"
+        },
+        {
+          "id": "94023c91-0479-4f94-b5c5-bf88d08927dc",
+          "width": 512,
+          "height": 247,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "submarine_2.png"
+        },
+        {
+          "id": "0106bc03-b766-4303-8c88-7e523159a304",
+          "width": 512,
+          "height": 247,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "submarine_3.png"
+        },
+        {
+          "id": "c8c313ff-c562-43f4-8d2a-c9824d98ac58",
+          "width": 512,
+          "height": 247,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Halloween_Submarine_5.png"
+        },
+        {
+          "id": "db2506ab-8774-4b7d-a9ca-ea4be63e029d",
+          "width": 512,
+          "height": 247,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "submarine_4.png"
+        }
+      ]
+    }
+  ]
+}

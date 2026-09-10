@@ -9,11 +9,9 @@ function renderTank(now) {
   clipToTankShellBounds(tankContext);
   drawBackground(now);
   drawUvLightAtmosphere(now, "back");
-  drawFishPebbleTosses(now);
   drawWaterParticles(now, TANK_DEPTH_LAYERS);
   drawFish(now, TANK_DEPTH_LAYERS, { onlyBehavior: "sucker" });
   drawAmbientBubbles(now, 1);
-  drawWaterFilter(now);
   drawTankFloor(now);
   drawGravelGrime(now, dirtiness);
   drawGravelCausticProjection(now);
@@ -36,6 +34,9 @@ function renderTank(now) {
     drawFishEggs(now, layer);
     //drawLooseGravel(now, { surfaceKind: "decor", decorLayer: layer });
     drawFish(now, layer, { excludeBehavior: "sucker" });
+    // A tossed pebble belongs with the layer where it will land and disturb
+    // gravel, rather than being painted behind every fish and ornament.
+    drawFishPebbleTosses(now, layer);
     drawMachinery(now, layer);
   }
   drawCoinGlints(now);
@@ -943,135 +944,6 @@ function getAmbientBubbleLayerProfile(layer = 3) {
   return profiles[layer] || profiles[3];
 }
 
-function drawWaterFilter(now) {
-  tankContext.save();
-  if (!tankSupportsFilters(getCurrentTank())) {
-    tankContext.restore();
-    return;
-  }
-  const filterAsset = runtime.filterMap.get(state.selectedFilterAsset);
-  const filterImage = filterAsset ? runtime.images.get(filterAsset.path) : null;
-  if (!filterImage) {
-    tankContext.restore();
-    return;
-  }
-  const filterProfile = getFilterProfile();
-  const filterScale = getViewportStableObjectScale("hardware");
-  const filterDrawWidth = FILTER_DRAW_BASE_WIDTH * filterScale;
-  const filterDrawHeight = FILTER_DRAW_BASE_HEIGHT * filterScale;
-  const streamDistance = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
-  const spoutLipOffset = 8 * filterScale;
-  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
-  const groupWidth = streamDistance + filterDrawWidth - spoutLipOffset;
-  const desiredGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
-  const minGroupRightX = visibleBounds.left + groupWidth + getScenePxAsTankVirtual(8);
-  const maxGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(8);
-  const groupRightX = clamp(desiredGroupRightX, Math.min(minGroupRightX, maxGroupRightX), maxGroupRightX);
-  const groupLeftX = groupRightX - groupWidth;
-  const spoutX = groupLeftX + streamDistance;
-  const outletX = spoutX + getScenePxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
-  const filterDrawX = spoutX - spoutLipOffset;
-  const filterDrawY = visibleBounds.top;
-  // Anchor the flow to the rendered outlet nozzle rather than the full image bounds.
-  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getScenePxAsTankVirtual(14);
-  const flowIntensity = 0.86 + filterProfile.flow * 0.22;
-  const flowActive = isFilterBubbleFlowActive(now);
-
-  if (flowActive) {
-    tankContext.save();
-    tankContext.beginPath();
-    tankContext.rect(
-      GLASS_MARGIN_X,
-      WATER_SURFACE_Y - 10,
-      TANK_WIDTH - GLASS_MARGIN_X * 2,
-      TANK_HEIGHT - WATER_SURFACE_Y - GLASS_MARGIN_BOTTOM + 10
-    );
-    tankContext.clip();
-
-    const bubbleCount = 18 + Math.round(filterProfile.flow * 6);
-    const streamRise = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX);
-    for (let index = 0; index < bubbleCount; index += 1) {
-      const lane = index % 4;
-      const phase = ((now / (150 + lane * 20)) + index * 0.14) % 1;
-      const drift = phase * streamDistance;
-      const riseProgress = clamp((phase - 0.68) / 0.32, 0, 1);
-      const riseEase = 1 - (1 - riseProgress) * (1 - riseProgress);
-      const fadeOut = 1 - riseEase;
-      const x = outletX - drift + Math.sin(now / 170 + index * 1.7) * getScenePxAsTankVirtual(1.6 + lane * 0.35);
-      const y = outletY
-        + (lane - 1.5) * getScenePxAsTankVirtual(2.3)
-        + Math.sin(now / 210 + index * 1.35) * getScenePxAsTankVirtual(0.95)
-        - streamRise * riseEase;
-      const radius = 2.2 + (index % 3) * 0.7 + filterProfile.flow * 0.22;
-      const alpha = (0.16 + (1 - phase) * 0.38 * flowIntensity) * fadeOut;
-      drawBubbleOrb(x, y, radius, alpha, 1 + lane * 0.03);
-    }
-
-    for (let index = 0; index < 7; index += 1) {
-      const pulse = ((now / 120) + index * 0.21) % 1;
-      const riseProgress = clamp((pulse - 0.68) / 0.32, 0, 1);
-      const riseEase = 1 - (1 - riseProgress) * (1 - riseProgress);
-      const x = outletX - pulse * streamDistance;
-      const y = outletY + Math.sin(now / 150 + index * 1.2) * getScenePxAsTankVirtual(1.1) - streamRise * riseEase;
-      tankContext.fillStyle = `rgba(214, 247, 255, ${((0.07 + (1 - pulse) * 0.12) * (1 - riseEase)).toFixed(3)})`;
-      tankContext.beginPath();
-      tankContext.ellipse(
-        x,
-        y,
-        getScenePxAsTankVirtual(1.8 + pulse * 1.6),
-        getScenePxAsTankVirtual(0.9 + pulse * 0.62),
-        0,
-        0,
-        Math.PI * 2
-      );
-      tankContext.fill();
-    }
-    tankContext.restore();
-  }
-
-  if (filterImage) {
-    tankContext.globalAlpha = 1;
-    tankContext.drawImage(filterImage, filterDrawX, filterDrawY, filterDrawWidth, filterDrawHeight);
-    tankContext.globalAlpha = 1;
-  }
-  tankContext.restore();
-}
-
-function getWaterFilterFlowDescriptor(now = Date.now()) {
-  if (!tankSupportsFilters(getCurrentTank())) {
-    return null;
-  }
-
-  const filterProfile = getFilterProfile();
-  const filterScale = getViewportStableObjectScale("hardware");
-  const filterDrawWidth = FILTER_DRAW_BASE_WIDTH * filterScale;
-  const filterDrawHeight = FILTER_DRAW_BASE_HEIGHT * filterScale;
-  const streamDistance = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
-  const spoutLipOffset = 8 * filterScale;
-  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
-  const groupWidth = streamDistance + filterDrawWidth - spoutLipOffset;
-  const desiredGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
-  const minGroupRightX = visibleBounds.left + groupWidth + getScenePxAsTankVirtual(8);
-  const maxGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(8);
-  const groupRightX = clamp(desiredGroupRightX, Math.min(minGroupRightX, maxGroupRightX), maxGroupRightX);
-  const groupLeftX = groupRightX - groupWidth;
-  const spoutX = groupLeftX + streamDistance;
-  const outletX = spoutX + getScenePxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
-  const filterDrawX = spoutX - spoutLipOffset;
-  const filterDrawY = visibleBounds.top;
-  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getScenePxAsTankVirtual(14);
-
-  return {
-    outletX,
-    outletY,
-    streamDistance,
-    streamRise: getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX),
-    intakeX: filterDrawX + filterDrawWidth * 0.58,
-    intakeY: filterDrawY + filterDrawHeight * 0.78,
-    flow: filterProfile.flow,
-    flowActive: isFilterBubbleFlowActive(now)
-  };
-}
 
 function getWaterParticleVisibleCount(now = Date.now()) {
   const dirtiness = getTankDirtiness(now);
@@ -1231,7 +1103,7 @@ function getTintedWaterParticleSprite(spritePath, sprite, tintRgb) {
     console.debug("Water particle tint alpha boost skipped.", error);
   }
 
-  runtime.waterParticleTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.waterParticleTintCache, cacheKey, canvas, { maxEntries: 16, maxBytes: 4 * 1024 * 1024 });
   return canvas;
 }
 
@@ -1381,38 +1253,6 @@ function getWaterParticleTankLayer(particle) {
   return clampTankLayer(1 + Math.floor(depth * TANK_DEPTH_LAYERS));
 }
 
-function applyFilterForceToParticle(particle, filterFlow, deltaSeconds) {
-  if (!filterFlow) {
-    return;
-  }
-
-  const intakeDx = filterFlow.intakeX - particle.x;
-  const intakeDy = filterFlow.intakeY - particle.y;
-  const intakeDistance = Math.hypot(intakeDx, intakeDy);
-  if (intakeDistance < WATER_PARTICLE_FILTER_FORCE_RADIUS_PX) {
-    const pull = Math.pow(1 - intakeDistance / WATER_PARTICLE_FILTER_FORCE_RADIUS_PX, 1.6) * filterFlow.flow;
-    const safeDistance = Math.max(1, intakeDistance);
-    particle.vx += (intakeDx / safeDistance) * 96 * pull * deltaSeconds;
-    particle.vy += (intakeDy / safeDistance) * 96 * pull * deltaSeconds;
-  }
-
-  if (!filterFlow.flowActive) {
-    return;
-  }
-
-  const progress = clamp((filterFlow.outletX - particle.x) / Math.max(1, filterFlow.streamDistance), 0, 1);
-  const streamY = filterFlow.outletY - filterFlow.streamRise * Math.pow(clamp((progress - 0.68) / 0.32, 0, 1), 2);
-  const streamDx = particle.x - filterFlow.outletX;
-  const streamDy = particle.y - streamY;
-  const inStream = streamDx <= 22 && streamDx >= -filterFlow.streamDistance - 24 && Math.abs(streamDy) < WATER_PARTICLE_FILTER_FORCE_RADIUS_PX * 0.34;
-  if (inStream) {
-    const push = Math.pow(1 - Math.abs(streamDy) / (WATER_PARTICLE_FILTER_FORCE_RADIUS_PX * 0.34), 1.2)
-      * (0.35 + (1 - progress) * 0.65)
-      * filterFlow.flow;
-    particle.vx -= 96 * push * deltaSeconds;
-    particle.vy -= 18 * push * deltaSeconds;
-  }
-}
 
 function getParticleFishFields(now = Date.now()) {
   const fields = [];
@@ -1480,7 +1320,6 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
   const dirtiness = getTankDirtiness(now);
   const bubblerFields = collectBubblerParticleFields(now);
   const ambientBubbleFields = collectAmbientBubbleParticleFields(now);
-  const filterFlow = getWaterFilterFlowDescriptor(now);
   const fishFields = getParticleFishFields(now);
   const visibleCount = getWaterParticleVisibleCount(now);
 
@@ -1504,7 +1343,6 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
       applyBubblerForceToParticle(particle, field, now, boundedDelta);
     }
     applyAmbientBubbleForceToParticle(particle, ambientBubbleFields, boundedDelta);
-    applyFilterForceToParticle(particle, filterFlow, boundedDelta);
     applyFishForceToParticle(particle, fishFields, boundedDelta);
 
     const depthMotionScale = 0.72 + particle.depth * 0.56;
@@ -1689,9 +1527,6 @@ function drawWaterParticles(now = Date.now(), layer = null) {
   tankContext.restore();
 }
 
-function isFilterBubbleFlowActive(now = Date.now()) {
-  return getBaseTankDirtiness(now) < CRITICAL_TANK_DIRTINESS;
-}
 
 function drawAutoDispenserButton(bounds, label, options = {}) {
   tankContext.save();
@@ -2057,7 +1892,7 @@ function getTintedFoodPelletSprite(appearance) {
   }
 
   context.putImageData(imageData, 0, 0);
-  runtime.foodPelletTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.foodPelletTintCache, cacheKey, canvas, { maxEntries: 24, maxBytes: 8 * 1024 * 1024 });
   return canvas;
 }
 

@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "19bbc227-6a0b-439f-8676-494e8f95d370",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "5689954d-6987-428e-b6a0-bc94e7f9f789",
+          "width": 118,
+          "height": 300,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "first-aid-drops.png"
+        },
+        {
+          "id": "b9871519-11b6-45f6-af2b-25f504775481",
+          "width": 118,
+          "height": 300,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "calming-serum.png"
+        }
+      ]
+    }
+  ]
+}

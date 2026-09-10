@@ -251,9 +251,7 @@ function getFishBodySizePx(fish, species) {
     return null;
   }
 
-  const catalogWidth = Number.isFinite(Number(displaySpecies.width))
-    ? Number(displaySpecies.width)
-    : (Number.isFinite(Number(species.width)) ? Number(species.width) : FISH_CATALOG_WIDTH_MIN);
+  const catalogWidth = getFishVisualCatalogWidth(displaySpecies || species);
   const width = catalogWidth * getFishAdultScale(fish, species) * getFishDisplayScaleForSpecies(displaySpecies);
   const height = width * (image.height / image.width);
   return {

@@ -49,7 +49,12 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
   const minYNorm = shellBounds.innerTop / TANK_HEIGHT;
   const maxYNorm = (shellBounds.innerTop + shellBounds.innerHeight) / TANK_HEIGHT;
   const normalizedX = clamp(Number.isFinite(Number(xNorm)) ? Number(xNorm) : 0.5, 0, 1);
-  const normalizedY = clamp(Number.isFinite(Number(yNorm)) ? Number(yNorm) : 0.8, 0, 1);
+  // yNorm is the raw PNG bottom anchor, not necessarily the visible artwork's
+  // bottom. When an image has transparent padding below the art, correctly
+  // grounding its visible pixels can require this invisible anchor to sit below
+  // the tank's normalized 1.0 edge. Keep corrupt values bounded, but do not
+  // clamp valid placement math back into the visible shell.
+  const normalizedY = clamp(Number.isFinite(Number(yNorm)) ? Number(yNorm) : 0.8, 0, 4);
   const decorKey = options.item?.decorKey || options.decorKey || runtime.placementMode?.decorKey || null;
   const resolvedLayer = decorKey
     ? getDecorFrontLayer(
@@ -65,6 +70,8 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
   const layerBoundaryYNorm = layerBoundaryY / TANK_HEIGHT;
   const effectiveMaxYNorm = Math.max(minYNorm, Math.min(maxYNorm, layerBoundaryYNorm));
   const applyGravity = shouldApplyDecorPlacementGravity(decorKey, options);
+  const attachToCeiling = (isTransitTubeDecorKey(decorKey) || getDecorMotionCapabilities(decorKey).isLure)
+    && !getResolvedDecorFreePlacementEnabled(options);
 
   if (!decorKey) {
     const constrained = constrainNormalizedPointToTankShell(
@@ -138,7 +145,7 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
     ? clamp(anchorX, minAnchorX, maxAnchorX)
     : (minAnchorX + maxAnchorX) / 2;
   const clampedY = minAnchorY <= maxAnchorY
-    ? (applyGravity ? maxAnchorY : clamp(anchorY, minAnchorY, maxAnchorY))
+    ? (attachToCeiling ? minAnchorY : (applyGravity ? maxAnchorY : clamp(anchorY, minAnchorY, maxAnchorY)))
     : maxAnchorY;
 
   const constrained = constrainNormalizedPointToTankShell(
@@ -147,7 +154,10 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
   );
   return {
     xNorm: clamp(constrained.xNorm, minXNorm, maxXNorm),
-    yNorm: clamp(clampedY / TANK_HEIGHT, minYNorm, maxYNorm)
+    // clampedY already constrains the *visible* placement bounds to the tank and
+    // active layer floor. Do not clamp the invisible PNG anchor to maxYNorm here,
+    // or transparent bottom padding becomes an artificial gap above the floor.
+    yNorm: clamp(clampedY / TANK_HEIGHT, 0, 4)
   };
 }
 
@@ -175,7 +185,7 @@ function getCustomBubblerHitBounds(item) {
     return null;
   }
 
-  return expandBoundsAroundCenter(getPlacedDecorBounds(item), CUSTOM_BUBBLER_HIT_SCALE);
+  return expandBoundsAroundCenter(getPlacedDecorGroundBounds(item), CUSTOM_BUBBLER_HIT_SCALE);
 }
 
 function getPlacedDecorBounds(item) {
@@ -271,6 +281,21 @@ function getPlacedDecorOpaqueBounds(item, imagePathOverride = null) {
   }
 
   return mergedBounds || getPlacedDecorBounds(item);
+}
+
+function getPlacedDecorGroundBounds(item) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  if (!decor) {
+    return null;
+  }
+
+  // Grounding is based on the visible pixels of the primary decor artwork, not
+  // the transparent PNG rectangle or optional companion/effect layers.
+  // This makes the visible bottom of the object the physical foot everywhere.
+  const primaryBounds = decor.path
+    ? getPlacedDecorOpaqueBounds(item, decor.path)
+    : null;
+  return primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
 }
 
 function getDecorShapeDescriptor(item, imagePathOverride = null) {

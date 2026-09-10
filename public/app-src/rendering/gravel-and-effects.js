@@ -99,7 +99,7 @@ function getTintedCustomGravelAsset(asset, color, options = {}) {
   }
 
   context.putImageData(imageData, 0, 0);
-  runtime.customGravelTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.customGravelTintCache, cacheKey, canvas, { maxEntries: 18, maxBytes: 32 * 1024 * 1024 });
   return canvas;
 }
 
@@ -1214,7 +1214,7 @@ function getTintedGravelPebbleSprite(spritePath, color, variantIndex = 0) {
 
   context.putImageData(imageData, 0, 0);
 
-  runtime.gravelTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.gravelTintCache, cacheKey, canvas, { maxEntries: 32, maxBytes: 24 * 1024 * 1024 });
   return canvas;
 }
 
@@ -1404,6 +1404,6 @@ function getTintedCaveLayerImage(imagePath, color, options = {}) {
   }
 
   context.putImageData(imageData, 0, 0);
-  runtime.caveTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.caveTintCache, cacheKey, canvas, { maxEntries: 24, maxBytes: 48 * 1024 * 1024 });
   return canvas;
 }

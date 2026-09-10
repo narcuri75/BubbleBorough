@@ -105,12 +105,6 @@ function getCatalogDefaultKey(catalog, preferredKey) {
   return catalog.find((item) => item.key === preferredKey)?.key || catalog[0]?.key || null;
 }
 
-function getDefaultFilterKey() {
-  if (!ENABLE_FILTER) {
-    return null;
-  }
-  return getCatalogDefaultKey(runtime.filterCatalog, DEFAULT_FILTER_ASSET_KEY);
-}
 
 function normalizeCustomBackgroundMode(value) {
   if (value === CUSTOM_BACKGROUND_MODE_GRADIENT) {
@@ -371,66 +365,4 @@ function getPreferredImageBackgroundKey() {
   return ownedBackgrounds.find((item) => item.key === DEFAULT_BACKGROUND_ASSET_KEY)?.key
     || ownedBackgrounds[0]?.key
     || null;
-}
-
-function getFilterAssignmentCount(filterKey, excludingTankId = null) {
-  if (!filterKey || filterKey === getDefaultFilterKey()) {
-    return 0;
-  }
-
-  return getAllTanks().filter((tank) => tank.id !== excludingTankId && tank.selectedFilterAsset === filterKey).length;
-}
-
-function getUnusedFilterCount(filterKey) {
-  if (!filterKey || filterKey === getDefaultFilterKey()) {
-    return 0;
-  }
-
-  const ownedCount = Math.max(0, Math.floor(Number(state?.ownedFilterInventory?.[filterKey]) || 0));
-  return Math.max(0, ownedCount - getFilterAssignmentCount(filterKey));
-}
-
-function getAvailableFilterCount(filterKey, tankId = getCurrentTank()?.id || null) {
-  if (!filterKey) {
-    return 0;
-  }
-  if (filterKey === getDefaultFilterKey()) {
-    return tankSupportsFilters(getCurrentTank()) ? Number.POSITIVE_INFINITY : 0;
-  }
-
-  const ownedCount = Math.max(0, Math.floor(Number(state?.ownedFilterInventory?.[filterKey]) || 0));
-  const activeElsewhere = getFilterAssignmentCount(filterKey, tankId);
-  return Math.max(0, ownedCount - activeElsewhere);
-}
-
-function isFilterOwned(filterKey) {
-  if (!filterKey) {
-    return false;
-  }
-  if (filterKey === getDefaultFilterKey()) {
-    return true;
-  }
-  return Math.max(0, Math.floor(Number(state?.ownedFilterInventory?.[filterKey]) || 0)) > 0;
-}
-
-function getOwnedFilterCatalog() {
-  if (!ENABLE_FILTER) {
-    return [];
-  }
-
-  const currentTank = getCurrentTank();
-  const filterKeys = new Set();
-  if (tankSupportsFilters(currentTank)) {
-    filterKeys.add(getDefaultFilterKey());
-  }
-  for (const [key, count] of Object.entries(state?.ownedFilterInventory || {})) {
-    if (count > 0) {
-      filterKeys.add(key);
-    }
-  }
-  if (currentTank?.selectedFilterAsset) {
-    filterKeys.add(currentTank.selectedFilterAsset);
-  }
-
-  return runtime.filterCatalog.filter((item) => filterKeys.has(item.key));
 }

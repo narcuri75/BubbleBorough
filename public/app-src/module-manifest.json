@@ -2,9 +2,27 @@
   "formatVersion": 2,
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
-  "moduleCount": 49,
-  "functionCount": 2834,
+  "moduleCount": 52,
+  "functionCount": 2855,
   "modules": [
+    {
+      "path": "decor/history-and-layouts.js",
+      "functionCount": 16,
+      "dependencies": [
+        "assets/custom-content.js",
+        "assets/sprite-sheets.js",
+        "core/settings-and-persistence.js",
+        "core/utilities.js",
+        "decor/hit-testing.js",
+        "decor/layout-and-layers.js",
+        "fish/decor-behavior.js",
+        "tank/catalog-and-equipment.js",
+        "tank/events-recaps-and-save.js",
+        "ui/main-and-store-rendering.js",
+        "ui/notifications.js",
+        "ui/tool-modes-and-debug-panels.js"
+      ]
+    },
     {
       "path": "borough/living-borough.js",
       "functionCount": 55,
@@ -43,10 +61,12 @@
     },
     {
       "path": "tank/catalog-and-equipment.js",
-      "functionCount": 91,
+      "functionCount": 94,
       "dependencies": [
         "assets/custom-content.js",
+        "assets/sprite-sheets.js",
         "audio/system.js",
+        "borough/living-borough.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -68,7 +88,7 @@
     },
     {
       "path": "decor/customization.js",
-      "functionCount": 159,
+      "functionCount": 160,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -129,6 +149,7 @@
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "audio/system.js",
         "core/cloud-save.js",
         "core/platform.js",
@@ -136,6 +157,7 @@
         "core/utilities.js",
         "debug/tools.js",
         "decor/customization.js",
+        "decor/history-and-layouts.js",
         "decor/layout-and-layers.js",
         "decor/placement-and-dragging.js",
         "fish/gravel-and-schooling.js",
@@ -160,7 +182,7 @@
     },
     {
       "path": "assets/custom-content.js",
-      "functionCount": 119,
+      "functionCount": 116,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -171,6 +193,7 @@
         "core/utilities.js",
         "debug/tools.js",
         "decor/customization.js",
+        "decor/history-and-layouts.js",
         "decor/hit-testing.js",
         "decor/layout-and-layers.js",
         "decor/placement-and-dragging.js",
@@ -207,6 +230,7 @@
       "functionCount": 127,
       "dependencies": [
         "assets/custom-content.js",
+        "assets/sprite-sheets.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
@@ -226,9 +250,10 @@
     },
     {
       "path": "fish/undead-and-appearance.js",
-      "functionCount": 84,
+      "functionCount": 85,
       "dependencies": [
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -244,10 +269,9 @@
     },
     {
       "path": "tank/backgrounds-and-catalogs.js",
-      "functionCount": 40,
+      "functionCount": 34,
       "dependencies": [
         "assets/image-storage-and-import.js",
-        "core/settings-and-persistence.js",
         "core/utilities.js",
         "fish/undead-and-appearance.js",
         "tank/catalog-and-equipment.js"
@@ -255,15 +279,17 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 105,
+      "functionCount": 101,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "audio/system.js",
         "borough/living-borough.js",
         "core/platform.js",
         "core/utilities.js",
         "decor/customization.js",
+        "decor/history-and-layouts.js",
         "decor/layout-and-layers.js",
         "fish/health.js",
         "fish/needs-disease-and-behavior.js",
@@ -286,7 +312,7 @@
     },
     {
       "path": "decor/layout-and-layers.js",
-      "functionCount": 107,
+      "functionCount": 108,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -338,6 +364,7 @@
       "functionCount": 64,
       "dependencies": [
         "assets/custom-content.js",
+        "assets/sprite-sheets.js",
         "core/utilities.js",
         "decor/hit-testing.js",
         "decor/layout-and-layers.js",
@@ -409,6 +436,7 @@
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "audio/system.js",
         "borough/living-borough.js",
         "core/platform.js",
@@ -435,7 +463,7 @@
     },
     {
       "path": "fish/feeding-and-medicine.js",
-      "functionCount": 29,
+      "functionCount": 30,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -511,10 +539,11 @@
     },
     {
       "path": "store/purchases.js",
-      "functionCount": 35,
+      "functionCount": 33,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
@@ -543,10 +572,12 @@
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "debug/tools.js",
         "decor/customization.js",
+        "decor/history-and-layouts.js",
         "decor/hit-testing.js",
         "decor/layout-and-layers.js",
         "fish/cave-navigation.js",
@@ -576,7 +607,7 @@
     },
     {
       "path": "fish/health.js",
-      "functionCount": 42,
+      "functionCount": 43,
       "dependencies": [
         "assets/custom-content.js",
         "borough/living-borough.js",
@@ -620,13 +651,14 @@
     },
     {
       "path": "store/catalog.js",
-      "functionCount": 31,
+      "functionCount": 33,
       "dependencies": [
         "assets/custom-content.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/layout-and-layers.js",
+        "fish/decor-behavior.js",
         "fish/undead-and-appearance.js",
         "tank/catalog-and-equipment.js",
         "tank/events-recaps-and-save.js",
@@ -660,13 +692,12 @@
     },
     {
       "path": "tank/appearance-controls.js",
-      "functionCount": 21,
+      "functionCount": 20,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
-        "fish/health.js",
         "fish/needs-disease-and-behavior.js",
         "fish/undead-and-appearance.js",
         "tank/backgrounds-and-catalogs.js",
@@ -751,12 +782,12 @@
         "core/utilities.js",
         "debug/tools.js",
         "decor/customization.js",
+        "decor/history-and-layouts.js",
         "fish/health.js",
         "fish/meals-and-needs.js",
         "fish/undead-and-appearance.js",
         "store/catalog.js",
         "store/purchases.js",
-        "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js",
         "tank/simulation.js",
         "ui/main-and-store-rendering.js",
@@ -766,7 +797,7 @@
     },
     {
       "path": "audio/system.js",
-      "functionCount": 94,
+      "functionCount": 92,
       "dependencies": [
         "core/platform.js",
         "core/settings-and-persistence.js",
@@ -776,9 +807,10 @@
     },
     {
       "path": "ui/main-and-store-rendering.js",
-      "functionCount": 49,
+      "functionCount": 50,
       "dependencies": [
         "assets/custom-content.js",
+        "assets/sprite-sheets.js",
         "borough/living-borough.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
@@ -811,11 +843,11 @@
       "functionCount": 111,
       "dependencies": [
         "assets/custom-content.js",
+        "assets/sprite-sheets.js",
         "borough/living-borough.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
-        "debug/tools.js",
         "decor/customization.js",
         "decor/layout-and-layers.js",
         "decor/placement-and-dragging.js",
@@ -833,7 +865,6 @@
         "ui/customization-actions-and-inventory.js",
         "ui/fish-inspector.js",
         "ui/main-and-store-rendering.js",
-        "ui/notifications.js",
         "ui/tool-modes-and-debug-panels.js"
       ]
     },
@@ -843,6 +874,7 @@
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "audio/system.js",
         "borough/living-borough.js",
         "core/platform.js",
@@ -850,6 +882,7 @@
         "core/utilities.js",
         "debug/tools.js",
         "decor/customization.js",
+        "decor/history-and-layouts.js",
         "decor/hit-testing.js",
         "decor/layout-and-layers.js",
         "decor/placement-and-dragging.js",
@@ -869,7 +902,6 @@
         "store/purchases.js",
         "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js",
-        "tank/cleaning-and-glass.js",
         "tank/events-recaps-and-save.js",
         "tutorial/flow.js",
         "ui/fish-inspector.js",
@@ -880,9 +912,10 @@
     },
     {
       "path": "ui/scene-controls-and-animation.js",
-      "functionCount": 21,
+      "functionCount": 20,
       "dependencies": [
         "assets/custom-content.js",
+        "assets/sprite-sheets.js",
         "audio/system.js",
         "borough/living-borough.js",
         "core/platform.js",
@@ -907,7 +940,6 @@
         "tutorial/flow.js",
         "ui/customization-actions-and-inventory.js",
         "ui/main-and-store-rendering.js",
-        "ui/management-and-overlays.js",
         "ui/tool-modes-and-debug-panels.js"
       ]
     },
@@ -968,7 +1000,7 @@
     },
     {
       "path": "rendering/tank-and-water.js",
-      "functionCount": 71,
+      "functionCount": 67,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -1017,6 +1049,7 @@
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
@@ -1037,7 +1070,7 @@
     },
     {
       "path": "rendering/fish-and-effects.js",
-      "functionCount": 29,
+      "functionCount": 28,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -1064,7 +1097,7 @@
     },
     {
       "path": "fish/meals-and-needs.js",
-      "functionCount": 63,
+      "functionCount": 62,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1099,7 +1132,7 @@
     },
     {
       "path": "decor/hit-testing.js",
-      "functionCount": 12,
+      "functionCount": 13,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1156,7 +1189,7 @@
     },
     {
       "path": "core/utilities.js",
-      "functionCount": 15,
+      "functionCount": 18,
       "dependencies": [
         "ui/tool-modes-and-debug-panels.js"
       ]
@@ -1165,6 +1198,7 @@
       "path": "ui/notifications.js",
       "functionCount": 32,
       "dependencies": [
+        "assets/sprite-sheets.js",
         "borough/living-borough.js",
         "core/utilities.js",
         "decor/customization.js",
@@ -1180,7 +1214,7 @@
     },
     {
       "path": "core/cloud-save.js",
-      "functionCount": 38,
+      "functionCount": 39,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -1188,6 +1222,22 @@
         "tank/catalog-and-equipment.js",
         "ui/notifications.js",
         "ui/tool-modes-and-debug-panels.js"
+      ]
+    },
+    {
+      "path": "assets/sprite-sheet-definitions.js",
+      "functionCount": 1,
+      "dependencies": []
+    },
+    {
+      "path": "assets/sprite-sheets.js",
+      "functionCount": 13,
+      "dependencies": [
+        "assets/image-storage-and-import.js",
+        "assets/sprite-sheet-definitions.js",
+        "core/platform.js",
+        "fish/undead-and-appearance.js",
+        "tank/catalog-and-equipment.js"
       ]
     }
   ]

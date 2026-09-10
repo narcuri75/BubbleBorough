@@ -98,7 +98,7 @@ function sanitizeFish(fish, options = {}) {
   const species = getBaseSpeciesForFish(fish);
   const legacyHealthModel = Boolean(options.legacyHealthModel);
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
-  const rawHealthUnits = Number.isFinite(Number(fish.healthUnits))
+  const rawHealthUnits = hasActiveCandyBoost(fish, now) ? maxHealthUnits : Number.isFinite(Number(fish.healthUnits))
     ? Math.round(Number(fish.healthUnits))
     : null;
   const spawnX = clamp(Number(fish.xNorm) || randomSwimX(), 0.08, 0.92);
@@ -138,12 +138,13 @@ function sanitizeFish(fish, options = {}) {
     && Number.isFinite(Number(storedCoarseActivity.startedAt))
     && Number.isFinite(Number(storedCoarseActivity.endsAt))
     ? {
-        type: ["wander", "service", "rest", "social"].includes(storedCoarseActivity.type)
+        type: ["wander", "service", "rest", "social", "feeding"].includes(storedCoarseActivity.type)
           ? storedCoarseActivity.type
           : "wander",
         label: typeof storedCoarseActivity.label === "string" ? storedCoarseActivity.label.slice(0, 64) : "Swimming",
         serviceType: typeof storedCoarseActivity.serviceType === "string" ? storedCoarseActivity.serviceType : "",
         targetDecorId: typeof storedCoarseActivity.targetDecorId === "string" ? storedCoarseActivity.targetDecorId : null,
+        targetPelletId: typeof storedCoarseActivity.targetPelletId === "string" ? storedCoarseActivity.targetPelletId : null,
         startedAt: Math.max(0, Number(storedCoarseActivity.startedAt)),
         endsAt: Math.max(Number(storedCoarseActivity.startedAt), Number(storedCoarseActivity.endsAt)),
         fromXNorm: clamp(Number(storedCoarseActivity.fromXNorm) || spawnX, 0.08, 0.92),
@@ -197,6 +198,7 @@ function sanitizeFish(fish, options = {}) {
     fedStreak: clamp(Math.round(Number(fish.fedStreak) || 0), 0, 999),
     missedMealsInRow: clamp(Math.round(Number(fish.missedMealsInRow) || 0), 0, 999),
     lastAteAt: Number.isFinite(Number(fish.lastAteAt)) ? Number(fish.lastAteAt) : 0,
+    candyBoostUntil: Number.isFinite(Number(fish.candyBoostUntil)) ? Math.max(0, Number(fish.candyBoostUntil)) : 0,
     satiatedUntil: Number.isFinite(Number(fish.satiatedUntil)) ? Math.max(0, Number(fish.satiatedUntil)) : 0,
     personality: storedPersonality || pickedPersonality.personality,
     personalityRarity: storedPersonality ? sanitizePersonalityRarity(fish.personalityRarity) : pickedPersonality.rarity,
@@ -544,6 +546,35 @@ function sanitizeDecorScaleDefaults(defaults) {
       continue;
     }
     nextDefaults[decorKey] = clamp(Number(value) || resolveDecorBaseScale(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+  }
+  return nextDefaults;
+}
+
+function migrateLegacyHalloweenDecorScaleDefaults(defaults, incomingVersion) {
+  if (incomingVersion >= 46) return defaults;
+  const legacyScales = {
+    ...(incomingVersion < 44 ? {
+      "Halloween_Seaweed.png": [1, 1.3],
+      "Halloween_Floatingseaweed.png": [1, 1.34],
+      "Halloween_Ghost_Ship.png": [1]
+    } : {}),
+    ...(incomingVersion < 45 ? {
+      "Halloween_Haunted_Tree.png": [1, 1.2],
+      "Halloween_Cauldron_Bubbler.png": [1, 0.72],
+      "Halloween_JackOLantern_bubbler.png": [1, 0.68]
+    } : {}),
+    "Halloween_Seaweed.png": [...(incomingVersion < 44 ? [1, 1.3] : []), 1.55],
+    "Halloween_Floatingseaweed.png": [...(incomingVersion < 44 ? [1, 1.34] : []), 1.15],
+    "Halloween_Cauldron_Bubbler.png": [...(incomingVersion < 45 ? [1, 0.72] : []), 0.7],
+    "Halloween_JackOLantern_bubbler.png": [...(incomingVersion < 45 ? [1, 0.68] : []), 0.7]
+  };
+  const nextDefaults = { ...defaults };
+  for (const [key, scales] of Object.entries(legacyScales)) {
+    // Remove only old stock sizes, so placement reads the current catalog.
+    // Later saves may deliberately use these sizes again.
+    if (scales.some(scale => Math.abs(Number(nextDefaults[key]) - scale) < 0.0001)) {
+      delete nextDefaults[key];
+    }
   }
   return nextDefaults;
 }
@@ -1518,20 +1549,24 @@ function getPlacedDecorRelativeOpaqueBounds(item) {
 
 function getPlacedDecorPlacementBounds(item) {
   const fullBounds = getPlacedDecorBounds(item);
-  const opaqueBounds = getPlacedDecorOpaqueBounds(item) || fullBounds;
-  if (!opaqueBounds) {
+  const groundBounds = getPlacedDecorGroundBounds(item) || fullBounds;
+  if (!groundBounds) {
     return fullBounds;
   }
   if (!fullBounds) {
-    return opaqueBounds;
+    return groundBounds;
   }
 
   return {
-    left: opaqueBounds.left,
-    right: opaqueBounds.right,
-    top: fullBounds.top,
-    // Use the visible art as the placement foot; some decor PNGs have transparent bottom padding.
-    bottom: opaqueBounds.bottom
+    left: groundBounds.left,
+    right: groundBounds.right,
+    // Transparent padding above the artwork should not create an invisible wall.
+    // The visible top is the actual top for placement, just as the visible bottom
+    // is the physical foot. This matters most for large floating decor.
+    top: groundBounds.top,
+    // The visible bottom of the primary artwork is the physical placement foot.
+    // Transparent padding below the art no longer changes where decor rests.
+    bottom: groundBounds.bottom
   };
 }
 
@@ -2087,10 +2122,17 @@ function isCaveDecorKey(decorKey = "") {
   if (/_bubbler\.[^.]+$/.test(key)) {
     return false;
   }
-  if (isCustomHideAssetKey(decorKey) || runtime.decorMap.get(decorKey)?.customType === "hide") {
+  const decor = runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[decorKey] || null;
+  const categories = Array.isArray(decor?.categories) ? decor.categories.map((entry) => String(entry).toLowerCase()) : [];
+  if (isCustomHideAssetKey(decorKey) || decor?.customType === "hide") {
     return true;
   }
-  return key.includes("cave") && !key.includes("_bg") && !key.includes("_mid");
+  // Several real hides are named houses, ships, arches, or castles. Limiting
+  // this to filenames containing "cave" silently excluded them from cave
+  // navigation even though their catalog declares the Caves category.
+  return (key.includes("cave") || categories.includes("caves"))
+    && !key.includes("_bg")
+    && !key.includes("_mid");
 }
 
 function getDecorBubblerMeta(decorKey = "") {

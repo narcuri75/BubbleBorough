@@ -3,7 +3,7 @@
 function copyDecorEditItem(item) {
   const keys = ["id", "decorKey", "xNorm", "yNorm", "scale", "tankLayer", "flipped", "flippedY",
     "freePlacementEnabled", "groupId", "xAnchorMode", "xCenterOffsetWorld", "yAnchorMode", "yAnchorValue",
-    "bubblerSettings", "decorSettings", "caveSettings", "caveColorSettings", "transitTubeName", "transitTubeColor"];
+    "bubblerSettings", "decorSettings", "caveSettings", "caveColorSettings", "transitTubeName", "transitTubeColor", "transitTubeLinkedId"];
   return JSON.parse(JSON.stringify(Object.fromEntries(keys.filter((key) => item[key] !== undefined).map((key) => [key, item[key]]))));
 }
 
@@ -96,7 +96,7 @@ function replayDecorEdit(direction) {
 }
 
 function finishDecorLayoutChange() {
-  clearSelectedDecor();
+  if (runtime.selectedDecorId && !state.placedDecor.some((item) => item.id === runtime.selectedDecorId)) clearSelectedDecor();
   state.gravelLivePebbles = [];
   runtime.boroughOverviewSnapshotCache?.clear();
   saveState();
@@ -106,11 +106,18 @@ function finishDecorLayoutChange() {
 function sanitizeSavedDecorLayouts(value) {
   const seen = new Set();
   return (Array.isArray(value) ? value : []).slice(0, 30).flatMap((layout) => {
-    if (!layout || typeof layout.id !== "string" || seen.has(layout.id) || !Array.isArray(layout.items)) return [];
-    seen.add(layout.id);
+    if (!layout || typeof layout.id !== "string" || !layout.id.trim() || seen.has(layout.id.slice(0, 100)) || !Array.isArray(layout.items)) return [];
+    seen.add(layout.id.slice(0, 100));
     return [{ id: layout.id.slice(0, 100), name: String(layout.name || "Untitled layout").trim().slice(0, 40) || "Untitled layout",
       tankTypeId: String(layout.tankTypeId || ""),
-      items: layout.items.slice(0, 500).map(sanitizePlacedDecor).filter(Boolean).map(copyDecorEditItem) }];
+      items: layout.items.slice(0, 500).map((source) => {
+        const item = sanitizePlacedDecor(source);
+        if (!item) return null;
+        if (Number.isFinite(Number(source.xNorm))) item.xNorm = clamp(Number(source.xNorm), 0, 1);
+        if (Number.isFinite(Number(source.yNorm))) item.yNorm = clamp(Number(source.yNorm), 0, 1);
+        delete item.transitTubeLinkedId;
+        return copyDecorEditItem(item);
+      }).filter(Boolean) }];
   });
 }
 
@@ -123,7 +130,11 @@ function saveNamedDecorLayout(name) {
   if (state.savedDecorLayouts.some((layout) => layout.name.toLowerCase() === cleanName.toLowerCase())) return "That name is already used. Choose a different name.";
   if (state.placedDecor.length > 500) return "Layouts can contain up to 500 decorations.";
   state.savedDecorLayouts.push({ id: createId("layout"), name: cleanName, tankTypeId: getCurrentTank().tankTypeId,
-    items: state.placedDecor.map(copyDecorEditItem) });
+    items: state.placedDecor.map((source) => {
+      const item = copyDecorEditItem(source);
+      delete item.transitTubeLinkedId;
+      return item;
+    }) });
   saveState();
   return "";
 }
@@ -155,7 +166,11 @@ function applySavedDecorLayout(layoutId, tankId) {
     let index = remaining.findIndex((item) => item.id === saved.id && item.decorKey === saved.decorKey);
     if (index < 0) index = remaining.findIndex((item) => item.decorKey === saved.decorKey);
     const existing = index >= 0 ? remaining.splice(index, 1)[0] : null;
-    const item = { ...existing, ...copyDecorEditItem(saved), id: existing?.id || createId("placed") };
+    const item = { ...existing };
+    for (const key of Object.keys(copyDecorEditItem(item))) {
+      if (key !== "transitTubeLinkedId") delete item[key];
+    }
+    Object.assign(item, copyDecorEditItem(saved), { id: existing?.id || createId("placed") });
     delete item.groupId;
     if (saved.groupId) {
       if (!groups.has(saved.groupId)) groups.set(saved.groupId, createId("decor-group"));
@@ -200,7 +215,9 @@ function renderDecorHistoryControls() {
     const direction = button.dataset.decorHistory;
     const entry = history?.[direction]?.at(-1);
     button.disabled = decorEditIsBusy() || !entry;
-    button.title = entry ? `${direction === "undo" ? "Undo" : "Redo"}: ${entry.label}` : `Nothing to ${direction}`;
+    const shortcut = direction === "undo" ? "Ctrl/Cmd+Z" : "Ctrl/Cmd+Shift+Z or Ctrl+Y";
+    button.setAttribute("aria-keyshortcuts", direction === "undo" ? "Control+Z Meta+Z" : "Control+Shift+Z Meta+Shift+Z Control+Y");
+    button.title = `${entry ? `${direction === "undo" ? "Undo" : "Redo"}: ${entry.label}` : `Nothing to ${direction}`} (${shortcut})`;
   }
   controls.querySelector("[data-decor-layouts]").disabled = decorEditIsBusy();
 }
@@ -261,13 +278,13 @@ function renderSavedDecorLayoutPreview(dialog, layout, tankId) {
     <div class="decor-layout-actions"><button type="button" class="small-button" data-layout-apply ${plan.errors.length ? "disabled" : ""}>Apply layout</button><button type="button" class="small-button alt" data-layout-delete>Delete layout</button></div>`;
   const preview = detail.querySelector(".decor-layout-preview");
   preview.style.aspectRatio = `${TANK_WIDTH} / ${TANK_HEIGHT}`;
-  for (const item of [...layout.items].sort((a, b) => a.tankLayer - b.tankLayer)) {
+  for (const item of [...layout.items].sort((a, b) => b.tankLayer - a.tankLayer || a.yNorm - b.yNorm)) {
     const decor = runtime.decorMap.get(item.decorKey);
     if (!decor) continue;
     const bounds = getPlacedDecorBounds(item);
     if (!bounds) continue;
     const img = document.createElement("img");
-    img.src = getDecorThumbnailPath(decor);
+    void setAssetImageSource(img, getDecorThumbnailPath(decor));
     img.alt = decor.name || titleFromFile(item.decorKey);
     img.style.cssText = `left:${bounds.left / TANK_WIDTH * 100}%;top:${bounds.top / TANK_HEIGHT * 100}%;width:${(bounds.right - bounds.left) / TANK_WIDTH * 100}%;height:${(bounds.bottom - bounds.top) / TANK_HEIGHT * 100}%;transform:scale(${item.flipped ? -1 : 1},${item.flippedY ? -1 : 1})`;
     preview.append(img);
@@ -289,4 +306,5 @@ function renderSavedDecorLayoutPreview(dialog, layout, tankId) {
     dialog.querySelector("[data-layout-status]").textContent = `Deleted ${layout.name}.`;
     renderSavedDecorLayoutList(dialog, tankId);
   };
+  detail.scrollIntoView({ block: "nearest" });
 }

@@ -792,6 +792,7 @@ function attemptGravelCoinFind(fish, action, now = Date.now()) {
   }
 
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + 1);
+  recordWalletTransaction({ amount: 1, direction: "credit", now, place: getTankLabel(), label: `${fish.name || "A fish"} found a coin` });
   state.lastGravelCoinFoundAt = now;
   pushEvent(`${fish.name || "A fish"} found a coin in the gravel.`, now);
   spawnCoinGlint(action.pickupXNorm * TANK_WIDTH, action.pickupYNorm * TANK_HEIGHT - 8, now);
@@ -1026,7 +1027,10 @@ function isFishEligibleSchoolLeader(leader, follower, species, now = Date.now())
     return false;
   }
 
-  if (Number.isFinite(leader.followUntil) && now < leader.followUntil && leader.followFishId === follower.id) {
+  // A formation follows one independently roaming leader. Letting followers
+  // become leaders creates long queues where fast fish continually overshoot
+  // a slower fish's moving anchor.
+  if (Number.isFinite(leader.followUntil) && now < leader.followUntil) {
     return false;
   }
 
@@ -1192,7 +1196,7 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   const followChance = clamp(
     baseFollowChance * (0.3 + schoolingStrength * 2.25),
     0,
-    Math.max(0.035, 0.12 + schoolingStrength * 0.76)
+    SAME_SPECIES_FOLLOW_MAX_CHANCE
   );
   if (Math.random() > followChance) {
     return null;

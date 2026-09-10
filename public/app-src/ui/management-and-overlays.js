@@ -28,10 +28,6 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
     ? sectionServices.map((serviceType) => getBoroughServiceLabel(serviceType)).join(", ")
     : "None yet";
   const resaleValue = getTankResaleValue(tank);
-  const filterLabel = ENABLE_FILTER ? (runtime.filterMap.get(tank.selectedFilterAsset)?.name || "Basic Filter") : "None";
-  const filterSummaryRow = ENABLE_FILTER
-    ? `<div class="summary-row"><span>Filter</span><strong>${filterLabel}</strong></div>`
-    : "";
   const tankMemoryNote = "All neighborhoods are connected. Fish can travel throughout Bubble Borough.";
   const editingName = runtime.editingTankNameId === tank.id;
   const tankLabel = getTankLabel(tank, currentTankIndex);
@@ -90,7 +86,6 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
       <div class="summary-row tank-name-summary-row"><span>Tank Name</span>${nameMarkup}</div>
       <div class="summary-row"><span>Neighborhood</span><strong>${currentTankIndex + 1} of ${tankCount}</strong></div>
       <div class="summary-row"><span>Services</span><strong>${escapeHtml(sectionServiceLabel)}</strong></div>
-      ${filterSummaryRow}
       <div class="summary-row"><span>Fish</span><strong>${livingFish}</strong></div>
       <div class="summary-row"><span>Decor</span><strong>${decorCount}</strong></div>
     </div>
@@ -190,211 +185,16 @@ function getManagementTankStatus(stats) {
 }
 
 function buildIllnessCareTask(now = Date.now()) {
-  if (!state?.fish?.length) {
-    return null;
-  }
-
-  const affectedFish = state.fish
-    .filter((fish) => fish && !isFishDead(fish) && isFishDiseaseVisible(fish) && hasActiveFishDisease(fish))
-    .sort((left, right) => Number(left.diseaseInfectedAt || 0) - Number(right.diseaseInfectedAt || 0));
-  if (!affectedFish.length) {
-    return null;
-  }
-
-  const count = affectedFish.length;
-  const hasSevere = affectedFish.some((fish) => sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_SEVERE);
-  const allRecovering = affectedFish.every((fish) => sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_RECOVERING);
-  const firstFish = affectedFish[0];
-  const label = count === 1
-    ? allRecovering
-      ? `${firstFish.name} is recovering.`
-      : `${firstFish.name} looks off-color.`
-    : allRecovering
-      ? "Several fish are recovering."
-      : "Several fish look off-color.";
-  const note = allRecovering
-    ? "Keep conditions steady until normal routines return."
-    : count === 1
-      ? "Give them quiet space and medicine if you can."
-      : "Keep the tank calm, clean the water, and dose medicine if you can.";
-
-  return {
-    id: "illness-care",
-    badge: hasSevere ? "Now" : "Care",
-    label,
-    value: count === 1 ? "Care" : `${count} fish`,
-    note,
-    tone: hasSevere ? "danger" : "warn"
-  };
+  return null;
 }
 
 function buildManagementCareQueue(stats) {
-  const tasks = [];
-  if (stats.deadFish > 0) {
-    tasks.push({
-      id: "dispose-dead-fish",
-      badge: "Now",
-      label: "Dispose dead fish",
-      value: `${stats.deadFish} waiting`,
-      note: "Open the tank and scoop them out now.",
-      tone: "danger"
-    });
-  }
-
-  if (stats.injuredFish > 0) {
-    tasks.push({
-      id: "dose-medicine",
-      badge: tasks.length ? "Soon" : "Now",
-      label: "Dose medicine",
-      value: `${stats.injuredFish} healing`,
-      note: "Use medicine to speed recovery.",
-      tone: "warn"
-    });
-  }
-
-  if (stats.hungryFish > 0) {
-    tasks.push({
-      id: "feed-hungry-fish",
-      badge: tasks.length ? "Soon" : "Now",
-      label: "Feed hungry fish",
-      value: `${stats.hungryFish} hungry`,
-      note: stats.mealNote,
-      tone: "warn"
-    });
-  }
-
-  if (stats.cleanPercent <= 45) {
-    tasks.push({
-      id: "clean-tank",
-      badge: tasks.length ? "Soon" : "Now",
-      label: stats.cleanPercent <= 20 ? "Clean the tank" : "Schedule a scrub",
-      value: `${stats.cleanPercent}% clean`,
-      note: `Max grime in ${stats.maxDirtyIn}.`,
-      tone: stats.cleanPercent <= 20 ? "danger" : "warn"
-    });
-  }
-
-  if (stats.wasteCount > 0) {
-    tasks.push({
-      id: "scoop-floor",
-      badge: tasks.length ? "Soon" : "Heads Up",
-      label: "Scoop the floor",
-      value: `${stats.wasteCount} waste`,
-      note: stats.pendingWasteCount > 0
-        ? `${stats.pendingWasteCount} more ${pluralize("drop", stats.pendingWasteCount)} pending soon.`
-        : "Once scooped, the gravel is clear again.",
-      tone: "warn"
-    });
-  }
-
-  const illnessCareTask = buildIllnessCareTask(stats.now || Date.now());
-  if (illnessCareTask && tasks.length < 6) {
-    tasks.push({
-      ...illnessCareTask,
-      badge: tasks.length ? illnessCareTask.badge : (illnessCareTask.tone === "danger" ? "Now" : "Care")
-    });
-  }
-
-  const comfortSuggestions = buildCurrentTankCareSuggestions(stats.now || Date.now())
-    .filter((suggestion) => suggestion && suggestion.fulfilled !== true);
-  for (const suggestion of comfortSuggestions) {
-    if (tasks.length >= 6) {
-      break;
-    }
-    const key = String(suggestion.key || "");
-    const isNeedSuggestion = key.startsWith("need:");
-    const isGlassStressSuggestion = key.startsWith("glass_tap_stress:");
-    tasks.push({
-      id: `comfort:${key || suggestion.label}`,
-      badge: tasks.length ? "Comfort" : "Now",
-      label: suggestion.label,
-      value: isNeedSuggestion ? "Need" : isGlassStressSuggestion ? "Stress" : "Conflict",
-      note: isGlassStressSuggestion
-        ? "Avoid tapping nearby glass until the stress fades."
-        : isNeedSuggestion
-        ? "Add matching decor, space, or tankmates to satisfy this need."
-        : "Adjust tankmates or decor to remove this comfort penalty.",
-      tone: isNeedSuggestion ? "neutral" : "warn"
-    });
-  }
-
-  if (!tasks.length) {
-    const readyToStock = !stats?.livingFish;
-    return [{
-      id: "all-clear",
-      badge: readyToStock ? "Ready" : "On Track",
-      label: readyToStock ? "Ready to stock" : "Everything is on track",
-      value: readyToStock ? "No fish" : "All clear",
-      note: readyToStock ? "This neighborhood is clean and ready for fish." : "Hunger, health, comfort, and cleanup look good.",
-      tone: readyToStock ? "neutral" : "good"
-    }];
-  }
-
-  return tasks;
+  // Care tasks are disabled; tank conditions remain available in the snapshot.
+  return [];
 }
 
 function buildUniversalManagementCareQueue(now = Date.now()) {
-  const tasks = [];
-  const hungryFish = [];
-  const injuredFish = [];
-  const diseasedFish = [];
-  for (const tank of getAllTanks()) {
-    const localTasks = withActiveTank(tank.id, () => buildManagementCareQueue(getManagementHubStats(now))) || [];
-    for (const task of localTasks) {
-      const localId = getCareTaskId(task);
-      if (localId === "all-clear") {
-        continue;
-      }
-      let targetFish = null;
-      if (localId === "feed-hungry-fish") {
-        hungryFish.push(...getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD).map((fish) => ({ fish, tank })));
-        continue;
-      } else if (localId === "dose-medicine") {
-        injuredFish.push(...tank.fish.filter((fish) => !isFishDead(fish) && fish.healthUnits < getFishMaxHealthUnits(fish)).map((fish) => ({ fish, tank })));
-        continue;
-      } else if (localId === "illness-care") {
-        diseasedFish.push(...tank.fish.filter((fish) => !isFishDead(fish) && isFishDiseaseVisible(fish) && hasActiveFishDisease(fish)).map((fish) => ({ fish, tank })));
-        continue;
-      } else if (localId.startsWith("comfort:")) {
-        targetFish = tank.fish.find((fish) => String(task.label || "").startsWith(`${fish.name} `)) || null;
-      }
-      tasks.push({
-        ...task,
-        // Fish-care task identity follows the fish, not its current tank. Tank
-        // chores remain tied to the physical section that needs attention.
-        id: targetFish ? localId : `${tank.id}:${localId}`,
-        tankId: tank.id,
-        fishId: targetFish?.id || "",
-        tankLabel: getTankLabel(tank)
-      });
-    }
-  }
-  const pushAggregate = (id, entries, label, badge, valueLabel, tone, actionNote) => {
-    if (!entries.length) return;
-    const first = entries[0];
-    tasks.unshift({
-      id,
-      badge,
-      label,
-      value: `${entries.length} ${valueLabel}`,
-      note: actionNote,
-      tone,
-      tankId: first.tank.id,
-      fishId: first.fish.id,
-      tankLabel: getTankLabel(first.tank)
-    });
-  };
-  pushAggregate("feed-hungry-fish", hungryFish, "Feed hungry fish", "Soon", "hungry", "warn", "Drop food in any reachable neighborhood; hungry fish will travel to it.");
-  pushAggregate("dose-medicine", injuredFish, "Dose medicine", "Now", "healing", "warn", "Select a fish to jump to its current neighborhood.");
-  pushAggregate("illness-care", diseasedFish, diseasedFish.length === 1 ? `${diseasedFish[0].fish.name} looks off-color.` : "Several fish look off-color.", "Care", "sick", "danger", "Select a fish to jump to its current neighborhood.");
-  return tasks.length ? tasks : [{
-    id: "all-clear",
-    badge: "On Track",
-    label: "Everything is on track",
-    value: "All clear",
-    note: "Hunger, health, comfort, and cleanup look good across the borough.",
-    tone: "good"
-  }];
+  return [];
 }
 
 function buildManagementSnapshotStat(label, value, tone = "") {
@@ -447,42 +247,7 @@ function buildManagementCompactTaskRow(task = {}) {
 }
 
 function runManagementCareTaskAction(action, tankId = "", fishId = "") {
-  if (tankId && state.activeTankId !== tankId) {
-    setActiveTank(tankId, { announce: false, preserveHorizontalOverlays: true });
-  }
-  if (fishId && getTankContainingFish(fishId)?.id === state.activeTankId) {
-    openFishInspector(fishId);
-  }
-  switch (String(action || "")) {
-    case "focus":
-      return Boolean(tankId || fishId);
-    case "store-fish":
-      openStoreOverlay("fish");
-      return true;
-    case "feed":
-      closeUtilityOverlay();
-      toggleFoodTray(true, { source: "management", collapseSidebar: true });
-      return true;
-    case "medicine":
-      if (!hasStockedMedicine()) {
-        openStoreOverlay("pharmacy");
-        showToast("No medicine is stocked. Opening the pharmacy.");
-        return true;
-      }
-      closeUtilityOverlay();
-      toggleMedicineTray(true, { source: "management", collapseSidebar: true });
-      return true;
-    case "clean":
-      closeUtilityOverlay();
-      toggleCleaningMode({ source: "management", collapseSidebar: true });
-      return true;
-    case "scoop":
-      closeUtilityOverlay();
-      toggleScoopMode({ source: "management", collapseSidebar: true });
-      return true;
-    default:
-      return false;
-  }
+  return false;
 }
 
 function getCareTaskId(task = {}) {
@@ -599,51 +364,15 @@ function buildCareTaskPaneRow(task = {}, options = {}) {
 }
 
 function renderCareTaskPane(now = Date.now()) {
-  if (!dom.careTaskPane || !dom.careTaskList) {
-    return;
-  }
-
-  const isOpen = getUiSettings().careTaskPaneOpen === true && !isIntroTutorialActive();
-  dom.careTaskPane.hidden = !isOpen;
-  if (!isOpen) {
-    resetCareTaskPaneRuntime([], "borough");
-    setMarkupIfChanged("care-task-pane-list", dom.careTaskList, "");
-    return;
-  }
-
-  const tasks = buildUniversalManagementCareQueue(now);
-  syncCareTaskPaneTasks(tasks, now);
-  const completedRows = Array.from(runtime.careTaskPaneCompletingTasks.values())
-    .sort((left, right) => Number(left.completedAt) - Number(right.completedAt))
-    .map((entry) => buildCareTaskPaneRow(entry.task, { completed: true }));
-  const noActiveTasks = tasks.length === 1 && getCareTaskId(tasks[0]) === "all-clear";
-  const activeTasks = noActiveTasks
-    ? []
-    : tasks;
-  const activeRows = activeTasks.map((task) => buildCareTaskPaneRow(task));
-  const emptyMarkup = !completedRows.length && noActiveTasks
-    ? `<div class="care-task-empty">No tasks to display</div>`
-    : "";
-  setMarkupIfChanged("care-task-pane-list", dom.careTaskList, [...completedRows, ...activeRows, emptyMarkup].join(""));
+  if (dom.careTaskPane) dom.careTaskPane.hidden = true;
+  if (dom.careTaskList) dom.careTaskList.textContent = "";
+  resetCareTaskPaneRuntime([], "borough");
 }
 
 function setCareTaskPaneOpen(open) {
-  if (!state) {
-    return;
-  }
-
-  const currentSettings = getUiSettings();
-  const nextSettings = sanitizeUiSettings({
-    ...currentSettings,
-    careTaskPaneOpen: Boolean(open)
-  });
-  if (currentSettings.careTaskPaneOpen === nextSettings.careTaskPaneOpen) {
-    return;
-  }
-
-  state.uiSettings = nextSettings;
-  saveState();
-  renderUi(Date.now(), { full: false });
+  // Ignore legacy saved preferences and callers that attempt to reopen tasks.
+  if (state?.uiSettings) state.uiSettings.careTaskPaneOpen = false;
+  renderCareTaskPane();
 }
 
 function toggleCareTaskPane() {
@@ -734,7 +463,7 @@ function buildTankManagementMilestonesBrowser(now = Date.now()) {
     const unlockLabels = getMilestoneUnlockLabels(milestone);
     return `
       <article class="management-milestone-card ${unlocked ? "is-complete" : "is-locked"}">
-        <img class="management-milestone-icon" src="${escapeHtml(getMilestoneIconPath(milestone.id))}" alt="${escapeHtml(`${milestone.label} medal`)}" />
+        <img class="management-milestone-icon" ${assetImageAttributes(getMilestoneIconPath(milestone.id))} alt="${escapeHtml(`${milestone.label} medal`)}" />
         <div class="management-milestone-copy">
           <div class="management-milestone-topline">
             <strong>${escapeHtml(milestone.label)}</strong>
@@ -1184,7 +913,7 @@ function buildManagementFishRow(fish, now = Date.now()) {
 
   return `
     <article class="management-browser-item">
-      <img class="management-browser-thumb management-browser-thumb-fish" src="${escapeHtml(fishAsset)}" alt="${escapeHtml(fish.name)}" />
+      <img class="management-browser-thumb management-browser-thumb-fish" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
       <div class="management-browser-copy">
         <strong>${escapeHtml(fish.name)}</strong>
         <span>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</span>
@@ -1227,7 +956,8 @@ function buildManagementDecorRow(item) {
   };
   const grouped = isPlacedDecorGrouped(item);
   const resaleValue = getResaleValue(decor?.cost || 0);
-  const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey);
+  const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey)
+    && isDecorShopUnlocked(item.decorKey) && isSeasonalDecorAvailable(decor);
   const serviceTypes = getDecorBoroughServiceTypes(item);
   const serviceSeatStatus = serviceTypes.length
     ? `Seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}`
@@ -1235,7 +965,7 @@ function buildManagementDecorRow(item) {
 
   return `
     <article class="management-browser-item">
-      <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
+      <img class="management-browser-thumb management-browser-thumb-decor" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
       <div class="management-browser-copy">
         <strong>${escapeHtml(decor.name)}</strong>
         <span>${escapeHtml(`Layer ${getDecorTankLayer(item)} / ${formatDecorScale(item.scale)}`)}</span>
@@ -1282,9 +1012,8 @@ function getManagementHubStats(now = Date.now()) {
   const storedDecor = Object.values(state.decorInventory || {}).reduce((total, count) => total + Math.max(0, Math.floor(Number(count) || 0)), 0);
   const dirtiness = getTankDirtiness(now);
   const cleanPercent = Math.round((1 - dirtiness) * 100);
-  const maxDirtyInMs = Math.max(0, (1 - dirtiness) * getFilterMaxDirtyDurationMs());
+  const maxDirtyInMs = Math.max(0, (1 - dirtiness) * getTankMaxDirtyDurationMs());
   const grimeLoad = Math.round((getTankFishDirtinessMultiplier() - 1) * 100);
-  const filterLabel = ENABLE_FILTER ? (runtime.filterMap.get(state.selectedFilterAsset)?.name || "Basic Filter") : "None";
   const feedingCareCoins = getLivingTankFish().reduce((total, fish) => (
     total + (isMealFreeFish(fish) ? 0 : (getSpeciesForFish(fish)?.mealCoins || 0))
   ), 0);
@@ -1307,7 +1036,6 @@ function getManagementHubStats(now = Date.now()) {
     coinsPerMeal: feedingCareCoins,
     currentMealServed: hungerStable,
     deadFish,
-    filterLabel,
     grimeLoad,
     hungryFish,
     starvingFish,
@@ -1347,7 +1075,6 @@ function buildTankManagementOverlayBody(now = Date.now()) {
   }
 
   const stats = getManagementHubStats(now);
-  const careQueue = buildManagementCareQueue(stats);
   const cleanlinessTone = stats.cleanPercent <= 20 ? "danger" : stats.cleanPercent <= 45 ? "warn" : "good";
   const mealsTone = !stats.livingFish ? "neutral" : stats.hungryFish > 0 ? "warn" : stats.currentMealServed ? "good" : "neutral";
   const healthTone = stats.deadFish > 0 ? "danger" : stats.injuredFish > 0 ? "warn" : stats.livingFish ? "good" : "neutral";
@@ -1373,9 +1100,6 @@ function buildTankManagementOverlayBody(now = Date.now()) {
       <section class="settings-section management-care-panel">
         <div class="compact-heading management-care-heading">
           <h3>Care Snapshot</h3>
-          <button class="small-button alt" type="button" data-toggle-care-task-pane>
-            ${getUiSettings().careTaskPaneOpen === true ? "Hide Pinned Tasks" : "Pin Tasks"}
-          </button>
         </div>
         <div class="management-care-body">
           <div class="management-snapshot-stats">
@@ -1383,12 +1107,6 @@ function buildTankManagementOverlayBody(now = Date.now()) {
             ${buildManagementSnapshotStat("Health", healthValue, healthTone)}
             ${buildManagementSnapshotStat("Cleanliness", `${stats.cleanPercent}%`, cleanlinessTone)}
             ${buildManagementSnapshotStat("Waste", wasteValue, stats.wasteCount > 0 ? "warn" : stats.pendingWasteCount > 0 ? "neutral" : "")}
-          </div>
-          <div class="management-task-stack">
-            <div class="management-task-heading">Suggested Tasks</div>
-            <div class="management-task-list">
-              ${careQueue.map((task) => buildManagementCompactTaskRow(task)).join("")}
-            </div>
           </div>
         </div>
       </section>
@@ -2582,7 +2300,7 @@ function renderCustomDecorNameOverlay() {
                   aria-label="Uploaded custom decor animated preview"></canvas>
                 <img
                   class="custom-decor-motion-source"
-                  src="${previewImageSrc}"
+                  ${assetImageAttributes(previewImageSrc)}
                   alt="Uploaded custom decor preview"
                   data-custom-decor-preview />
                 ${usesSplit ? `<div class="custom-decor-motion-split-line" style="top: ${(splitY * 100).toFixed(2)}%;" data-custom-decor-split-line></div>` : ""}
@@ -2763,7 +2481,7 @@ function renderCustomHideBackgroundPrompt() {
     <div class="custom-decor-name-panel">
       <div class="custom-decor-upload-preview">
         <img
-          src="${escapeHtml(pending.frontDataUrl)}"
+          ${assetImageAttributes(pending.frontDataUrl)}
           alt="Uploaded custom hide front preview"
           style="aspect-ratio: ${escapeHtml(aspectRatio)};" />
       </div>
@@ -2808,7 +2526,7 @@ function renderCustomHideCreationOverlay() {
         data-choose-custom-hide-front>
         <span class="custom-hide-upload-label">Front</span>
         ${hasFrontImage
-          ? `<img src="${escapeHtml(pending.frontDataUrl)}" alt="Uploaded custom hide front preview" style="aspect-ratio: ${escapeHtml(frontAspectRatio)};" />`
+          ? `<img ${assetImageAttributes(pending.frontDataUrl)} alt="Uploaded custom hide front preview" style="aspect-ratio: ${escapeHtml(frontAspectRatio)};" />`
           : `<span class="custom-hide-upload-empty">Choose front image</span>`}
       </button>
       <button
@@ -2818,7 +2536,7 @@ function renderCustomHideCreationOverlay() {
         ${hasFrontImage ? "" : "disabled"}>
         <span class="custom-hide-upload-label">Background</span>
         ${hasBackgroundImage
-          ? `<img src="${escapeHtml(pending.bgDataUrl)}" alt="Uploaded custom hide background preview" style="aspect-ratio: ${escapeHtml(bgAspectRatio)};" />`
+          ? `<img ${assetImageAttributes(pending.bgDataUrl)} alt="Uploaded custom hide background preview" style="aspect-ratio: ${escapeHtml(bgAspectRatio)};" />`
           : `<span class="custom-hide-upload-empty">${hasFrontImage ? "Choose background image" : "Choose front first"}</span>`}
       </button>
     </div>
@@ -2837,12 +2555,12 @@ function renderCustomHideCreationOverlay() {
               aria-label="Uploaded custom hide preview"></canvas>
             <img
               class="custom-decor-motion-source custom-hide-overlay-image custom-hide-overlay-bg"
-              src="${escapeHtml(pending.bgDataUrl)}"
+              ${assetImageAttributes(pending.bgDataUrl)}
               alt="Uploaded custom hide background preview"
               data-custom-hide-bg-preview />
             <img
               class="custom-decor-motion-source custom-hide-overlay-image custom-hide-overlay-front"
-              src="${escapeHtml(pending.frontDataUrl)}"
+              ${assetImageAttributes(pending.frontDataUrl)}
               alt="Uploaded custom hide front preview"
               data-custom-hide-front-preview />
             <div
@@ -3112,7 +2830,7 @@ function renderDecorSettingsOverlay(item) {
       .join("");
     const activeColor = normalizeDecorColorSetting(item.transitTubeColor || "");
     const colorSwatches = getCustomGravelColorChoices().map((choice) => `<button class="custom-gravel-color-swatch bubbler-color-swatch ${activeColor === choice.color ? "is-selected" : ""}" type="button" style="--swatch:${choice.color}" data-transit-tube-color="${choice.color}" aria-pressed="${activeColor === choice.color}" title="${escapeHtml(choice.label)}"></button>`).join("");
-    return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div><div class="bubbler-color-row"><span>Glass color</span><strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong></div><div class="bubbler-color-swatches"><button class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${!activeColor ? "is-selected" : ""}" type="button" data-transit-tube-color="" aria-pressed="${!activeColor}">Original</button>${colorSwatches}</div></div></div></div>`;
+    return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div><div class="bubbler-color-row"><span>Glass color</span><strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong></div><div class="bubbler-color-swatches"><button class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${!activeColor ? "is-selected" : ""}" type="button" data-transit-tube-color="" aria-pressed="${!activeColor}">Original</button>${colorSwatches}</div></div></div></div>`;
   }
 
   const imageSrc = escapeHtml(getDecorThumbnailPath(decor));
@@ -3242,7 +2960,7 @@ function renderDecorSettingsOverlay(item) {
                   aria-label="Selected decor animated preview"></canvas>
                 <img
                   class="custom-decor-motion-source"
-                  src="${imageSrc}"
+                  ${assetImageAttributes(imageSrc)}
                   alt="Selected decor preview"
                   data-decor-settings-preview />
                 ${capabilities.hasSway ? `<div class="custom-decor-motion-split-line" style="top: ${(motionSettings.swaySplitY * 100).toFixed(2)}%;" data-decor-settings-split-line></div>` : ""}

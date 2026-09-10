@@ -8,6 +8,7 @@ const CLOUD_AUTH_SESSION_KEY = "bubble-borough-cloud-auth-v1";
 const CLOUD_SAVE_META_KEY = "bubble-borough-cloud-meta-v1";
 const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1";
 const CLOUD_SYNC_DEBOUNCE_MS = 3000;
+const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 import {
   ZOMBIE_SKELETON_BEHAVIOR_CONFIG,
@@ -26,7 +27,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 43;
+const STATE_VERSION = 46;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -773,7 +774,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     requirement: "Finish a Daily Recap with score 3+.",
     reward: 3,
     unlocks: ["celestial-pearl-danio", "moor-goldfish", "otocinclus", "molly", "livebearer"],
-    decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "rock-arch.png", "treasure-chest_bubbler.png"],
+    decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "treasure-chest_bubbler.png"],
     isMet: (stats) => stats.latestScore >= 3,
     progress: (stats) => [{ value: (Number(stats.latestScore) || 0) / 3, label: `Latest recap score ${Math.max(0, Number(stats.latestScore) || 0)}/3` }]
   },
@@ -1101,19 +1102,14 @@ const PROGRESSION_MILESTONES = Object.freeze([
   }] : [])
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
-  "rock-arch.png": "first-care",
   "fishing_lure.png": "first-care",
   "treasure-chest_bubbler.png": "first-care",
   "floating_swampmoss_1.png": "first-care",
-  "kelp-cafe.png": "first-care",
-  "shell-house.png": "first-care",
   "driftwood-root.png": "stable-tank",
   "driftwood.png": "stable-tank",
   "moss-bridge.png": "stable-tank",
   "slate-cave.png": "stable-tank",
   "Plane-wreck.png": "stable-tank",
-  "bubble-plaza.png": "stable-tank",
-  "moonstone-grotto.png": "stable-tank",
   "Shipwreck.png": "happy-habitat",
   "mushroomcoral_seaweed.png": "happy-habitat",
   "Castle-Cave.png": "happy-habitat",
@@ -1121,8 +1117,6 @@ const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
   "meteor_cave.png": "happy-habitat",
   "volcano-1_bubbler.png": "happy-habitat",
   "volcano-2_bubbler.png": "happy-habitat",
-  "coral-clinic.png": "happy-habitat",
-  "nursery-garden.png": "happy-habitat",
   "__custom-decor-shop__": "happy-habitat",
   "__custom-hide-shop__": "happy-habitat",
   ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? {
@@ -1191,6 +1185,8 @@ const DEFAULT_THEME = "dark";
 // underlying settings code available so the feature can be restored later.
 const TOOLBAR_POSITION_SETTING_ENABLED = false;
 const DISPLAY_POSITION_SETTING_ENABLED = false;
+const CAUSTIC_LIGHTING_SETTING_ENABLED = false;
+const DECOR_SHADOWS_SETTING_ENABLED = false;
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false
 });
@@ -1213,8 +1209,8 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   tankMouseInputLocked: false,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
-  causticLightingEnabled: true,
-  decorShadowsEnabled: true,
+  causticLightingEnabled: false,
+  decorShadowsEnabled: false,
   uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
@@ -1680,16 +1676,8 @@ const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 32;
 const PORTABLE_PERFORMANCE_RESIZE_DEBOUNCE_MS = 120;
 const PORTABLE_PERFORMANCE_TANK_BLUR_SCALE = 0.55;
 const PORTABLE_PERFORMANCE_GRIME_BLUR_SCALE = 0.5;
-const ENABLE_FILTER = false;
-const BASIC_FILTER_KEY = "basic-filter.png";
-const FILTER_DRAW_BASE_WIDTH = 250;
-const FILTER_DRAW_BASE_HEIGHT = FILTER_DRAW_BASE_WIDTH * (220 / 148);
-const FILTER_GROUP_RIGHT_MARGIN_PX = 0;
-const FILTER_BUBBLE_STREAM_DISTANCE_PX = 200;
-const FILTER_BUBBLE_STREAM_RISE_PX = 22;
-const FILTER_BUBBLE_OUTLET_X_OFFSET_PX = 14;
-const DEFAULT_FILTER_ASSET_KEY = BASIC_FILTER_KEY;
-const BASE_TANK_DIRTY_DAYS = 14;
+
+
 const FISH_DIRTINESS_BONUS_MIN = 0.01;
 const FISH_DIRTINESS_BONUS_MAX = 0.10;
 const SUCKER_FISH_CLEAN_DURATION_BONUS = 0.25;
@@ -1739,7 +1727,9 @@ const AUTO_DISPENSER_DRAW_WIDTH = 252;
 const AUTO_DISPENSER_DRAW_HEIGHT = Math.round(AUTO_DISPENSER_DRAW_WIDTH * (340 / 943));
 const AUTO_DISPENSER_VIEWPORT_SIZE_MULTIPLIER = 1.5;
 const AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX = 18;
-const FISH_MOTION_SCALE = 3.35;
+// Normal aquarium travel should leave room for fish to feel observably alive.
+// Emergency behavior stacks its own multiplier on top of this base pace.
+const FISH_MOTION_SCALE = 1.62;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
 const SUCKER_FISH_FACE_PIVOT_ENABLED = true;
@@ -1808,15 +1798,15 @@ const FISH_ENTRY_NOSE_DIVE_TILT = Math.PI * 0.5;
 const FEED_CHASE_MULTIPLIER = 2.5;
 const DECOR_HANGOUT_DEFAULT_OCCUPANCY_LIMIT = 2;
 const DECOR_HANGOUT_SICK_OCCUPANCY_LIMIT = 1;
-const SAME_SPECIES_FOLLOW_RADIUS_NORM = 0.34;
-const SAME_SPECIES_FOLLOW_BASE_CHANCE = 0.08;
-const SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS = 0.035;
-const SAME_SPECIES_FOLLOW_MAX_CHANCE = 0.42;
-const SAME_SPECIES_FOLLOW_MIN_MS = 2200;
-const SAME_SPECIES_FOLLOW_MAX_MS = 4800;
-const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.024;
-const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.07;
-const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.03;
+const SAME_SPECIES_FOLLOW_RADIUS_NORM = 0.16;
+const SAME_SPECIES_FOLLOW_BASE_CHANCE = 0.006;
+const SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS = 0.003;
+const SAME_SPECIES_FOLLOW_MAX_CHANCE = 0.035;
+const SAME_SPECIES_FOLLOW_MIN_MS = 650;
+const SAME_SPECIES_FOLLOW_MAX_MS = 1250;
+const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.04;
+const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.095;
+const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.05;
 const BABY_FISH_SCALE_MULTIPLIER = 0.25;
 const BABY_FISH_GROWTH_DURATION_MS = 3 * DAY_MS;
 const BREEDING_MIN_TANK_TIME_MS = 3 * DAY_MS;
@@ -1917,7 +1907,7 @@ const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 44;
 const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 180;
 const WATER_PARTICLE_FISH_FORCE_RADIUS_PX = 90;
 const WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX = 74;
-const WATER_PARTICLE_FILTER_FORCE_RADIUS_PX = 130;
+
 const WATER_PARTICLE_SPRITE_SIZE_MIN_PX = 0.75;
 const WATER_PARTICLE_SPRITE_SIZE_MAX_PX = 2.45;
 const WATER_PARTICLE_SPRITE_ALPHA_BOOST = 1.9;
@@ -1931,7 +1921,7 @@ const FISH_CHUM_MEAL_HUNGER_GAIN = 55;
 const FISH_CHUM_MEAL_HUNGER_FLOOR = 90;
 const FISH_WILLING_TO_EAT_HUNGER_MAX = 82;
 const FISH_OVERFEED_HUNGER_THRESHOLD = 88;
-const FILTERLESS_BASE_TANK_DIRTY_DAYS = 14;
+const DEFAULT_TANK_DIRTY_DAYS = 14;
 const MEDICINE_HEAL_INTERVAL_MS = 10 * 1000;
 const MEDICINE_HEAL_DURATION_MS = 60 * 1000;
 const MEDICINE_VISUAL_DURATION_MS = 60 * 1000;
@@ -2031,6 +2021,8 @@ const SUBMARINE_RED_LIGHT_BLINK_MS = 500;
 const SUBMARINE_FOOD_RETRY_MS = 9000;
 const SUBMARINE_MEDICINE_RETRY_MS = 12000;
 const SUBMARINE_SPOTLIGHT_LENGTH_PX = 320;
+const SUBMARINE_SPOTLIGHT_LAMP_X_NORM = 0.744;
+const SUBMARINE_SPOTLIGHT_LAMP_Y_NORM = 0.2;
 const SHARK_DESPERATION_ATTACK_COOLDOWN_MS = 9000;
 const SHARK_DESPERATION_ATTACK_RANGE_NORM = 0.075;
 const ENABLE_UV_LIGHT = false;
@@ -2076,7 +2068,6 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "localBackgroundImageDataUrl",
   "localBackgroundImageRefId",
   "selectedTankAsset",
-  "selectedFilterAsset",
   "autoDispenser",
   "uvLightInstalled",
   "uvLightEnabled",
@@ -2142,18 +2133,18 @@ const CAVE_NIGHT_ENTRY_CHANCE = 0.5;
 const CAVE_NIGHT_START_HOUR = 21;
 const CAVE_NIGHT_END_HOUR = 4;
 const CAVE_ENTRY_CHANCE_BY_STYLE = {
-  peaceful: 0.1,
-  steady: 0.1,
-  sporadic: 0.1
+  peaceful: 0.22,
+  steady: 0.22,
+  sporadic: 0.2
 };
 const STATIC_ASSET_MANIFEST = "assets/asset-manifest.json";
 const FISH_CATALOG_PATH = "assets/fish/fish-types.json";
-const DECOR_CATALOG_PATH = "assets/decor/decor_types.json";
-const FILTER_CATALOG_PATH = "assets/filter/filter.json";
+const DECOR_CATALOG_PATH = "assets/decor/decor_types.json?v=20260908-halloween-sizing-3";
+
 const BACKGROUND_CATALOG_PATH = "assets/backgrounds/backgrounds.json";
 const FOOD_AND_MEDS_CATALOG_PATH = "assets/foodandmeds/food-and-meds.json";
 const FOOD_AND_MEDS_FALLBACK_IMAGE_NAME = "basic-food.png";
-const FOOD_AND_MEDS_ASSET_VERSION = "2026-04-01";
+const FOOD_AND_MEDS_ASSET_VERSION = "2026-09-09";
 const AMBIENCE_AUDIO_PATH = "assets/sounds/ambience.mp3";
 const AMBIENCE_AUDIO_VOLUME = 0.55;
 const AMBIENCE_AUDIO_FADE_IN_MS = 2000;
@@ -2203,28 +2194,8 @@ const TANK_INFO_TOOLBAR_RELEASE_BUTTON_SOUND_SELECTOR = [
 ].join(",");
 const FEED_TRAY_ITEM_SOUND_SELECTOR = "[data-select-food]";
 const MEDICINE_TRAY_ITEM_SOUND_SELECTOR = "[data-select-medicine]";
-const STORE_REGULAR_BUTTON_SOUND_SELECTOR = [
-  "#storeFoodTab",
-  "#storePharmacyTab",
-  "#storeFishTab",
-  "#storeDecorTab",
-  "#storeEquipmentTab",
-  "[data-buy-food]",
-  "[data-buy-medicine]",
-  "[data-buy-fish]",
-  "[data-buy-decor]",
-  "[data-buy-submarine]",
-  "[data-buy-boat]",
-  "[data-buy-background]",
-  "[data-buy-filter]",
-  "[data-buy-auto-dispenser]",
-  "[data-buy-uv-light]",
-  "[data-extend-aquarium-store]"
-].join(",");
-const STORE_FILTER_CONTROL_SOUND_SELECTOR = [
-  "[data-shop-sort]",
-  "[data-shop-filter]"
-].join(",");
+
+
 const EQUIPMENT_REGULAR_BUTTON_SOUND_SELECTOR = [
   "[data-reset-animated-background-colors]",
   "[data-open-local-background-picker]",
@@ -2590,48 +2561,6 @@ const FISH_TYPES = [
   },
 ];
 
-const FILTER_META = {
-  "basic-filter.png": {
-    name: "Basic Filter",
-    blurb: "Scrub cycle: 3.5 days",
-    cleanDays: BASE_TANK_DIRTY_DAYS,
-    comfortBoost: 0,
-    cost: 0,
-    purchasable: false,
-    tier: 0,
-    flow: 1
-  },
-  "charcoal-filter.png": {
-    name: "Charcoal Filter",
-    blurb: "Scrub cycle: 5.25 days",
-    cleanDays: 5.25,
-    comfortBoost: 0.04,
-    cost: 30,
-    purchasable: true,
-    tier: 1,
-    flow: 1.04
-  },
-  "porcelain-filter.png": {
-    name: "Porcelain Filter",
-    blurb: "Scrub cycle: 7 days",
-    cleanDays: 7,
-    comfortBoost: 0.08,
-    cost: 40,
-    purchasable: true,
-    tier: 2,
-    flow: 1.08
-  },
-  "reef-filter.png": {
-    name: "Reef Filter",
-    blurb: "Scrub cycle: 10.5 days",
-    cleanDays: 10.5,
-    comfortBoost: 0.12,
-    cost: 50,
-    purchasable: true,
-    tier: 3,
-    flow: 1.14
-  }
-};
 
 const WATER_TYPE_META = Object.freeze({
   freshwater: {
@@ -2649,12 +2578,11 @@ const TANK_TYPE_META = Object.freeze({
     id: "rectangular",
     name: "Aquarium",
     shortName: "Aquarium",
-    description: "A full-size aquarium with room for fish, decor, and filters.",
+    description: "A full-size aquarium with room for fish and decor.",
     cost: 65,
-    supportsFilters: true,
     waterTypes: ["freshwater", "saltwater"],
     defaultWaterType: "freshwater",
-    baseCleanDays: FILTERLESS_BASE_TANK_DIRTY_DAYS,
+    baseCleanDays: DEFAULT_TANK_DIRTY_DAYS,
     visual: "rectangular"
   }
 });
@@ -2737,6 +2665,87 @@ const SWIM_STYLE_DEFAULTS = {
 };
 
 const DECOR_META = {
+  "Halloween_Haunted_Tree.png": {
+    name: "Haunted Tree",
+    width: 300,
+    defaultScale: 2,
+    categories: ["ornaments", "halloween"],
+    fishBehavior: { hangout: ["spooky", "hardscape"] },
+    theme: "Halloween"
+  },
+  "Halloween_Cauldron_Bubbler.png": {
+    name: "Haunted Cauldron Bubbler",
+    width: 125,
+    defaultScale: 1,
+    categories: ["bubbler", "ornaments", "halloween"],
+    fishBehavior: { hangout: ["bubbler", "hardscape"] },
+    theme: "Halloween"
+  },
+  "Halloween_JackOLantern_bubbler.png": {
+    name: "Jack-o'-Lantern Bubbler",
+    width: 125,
+    defaultScale: 1,
+    categories: ["bubbler", "ornaments", "halloween"],
+    fishBehavior: { hangout: ["bubbler", "hardscape"] },
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_1.png": {
+    name: "Gravestone 1",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_2.png": {
+    name: "Gravestone 2",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_3.png": {
+    name: "Gravestone 3",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_4.png": {
+    name: "Gravestone 4",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_5.png": {
+    name: "Gravestone 5",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Seaweed.png": {
+    name: "Haunted Seaweed",
+    width: 644,
+    defaultScale: 1,
+    categories: ["plants", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Floatingseaweed.png": {
+    name: "Haunted Floating Seaweed",
+    width: 525,
+    defaultScale: 1,
+    categories: ["plants", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Ghost_Ship.png": {
+    name: "Ghost Ship",
+    width: 600,
+    defaultScale: 1.5,
+    categories: ["ornaments", "halloween"],
+    fishBehavior: { hangout: ["hardscape", "spooky"] },
+    theme: "Halloween"
+  },
   "castle-tower.png": {
     name: "Castle Ruin",
     cost: 16,
@@ -2748,12 +2757,6 @@ const DECOR_META = {
     cost: 6,
     width: 140,
     defaultScale: DEFAULT_DECOR_SCALE
-  },
-  "rock-arch.png": {
-    name: "Rock Arch",
-    cost: 9,
-    width: 595,
-    defaultScale: 1
   },
   "seaweed-bunch.png": {
     name: "Seaweed Bunch",
@@ -2811,7 +2814,9 @@ const DECOR_KEY_ALIASES = Object.freeze({
   "Halloween_Cauldron.png": "Halloween_Cauldron_Bubbler.png",
   "halloween_cauldron.png": "Halloween_Cauldron_Bubbler.png",
   "Halloween_JackOLantern.png": "Halloween_JackOLantern_bubbler.png",
-  "halloween_jackolantern.png": "Halloween_JackOLantern_bubbler.png"
+  "halloween_jackolantern.png": "Halloween_JackOLantern_bubbler.png",
+  "Halloween_skeleton_lure.png": "Halloween_Floating_skeleton.png",
+  "halloween_skeleton_lure.png": "Halloween_Floating_skeleton.png"
 });
 const DECOR_RGB_COLOR_SETTING = "rgb";
 const DECOR_COLORIZE_SETTING_SUFFIX = "Colorize";
@@ -2933,8 +2938,7 @@ const dom = {
   editTankBackgroundColorPanel: document.querySelector("#editTankBackgroundColorPanel"),
   editTankBackgroundList: document.querySelector("#editTankBackgroundList"),
   editTankCustomGravelPanel: document.querySelector("#editTankCustomGravelPanel"),
-  editTankFilterSection: document.querySelector("#editTankFilterSection"),
-  editTankFilterList: document.querySelector("#editTankFilterList"),
+  editTankLightingSection: document.querySelector("#editTankLightingSection"),
   editTankUvLightList: document.querySelector("#editTankUvLightList"),
   foodTray: document.querySelector("#foodTray"),
   foodTrayScroller: document.querySelector("#foodTrayScroller"),
@@ -2961,10 +2965,10 @@ const dom = {
   localFishInput: document.querySelector("#localFishInput"),
   tankManagementCard: document.querySelector("#tankManagementCard"),
   tankWaterActionList: document.querySelector("#tankWaterActionList"),
-  tankFilterActionList: document.querySelector("#tankFilterActionList"),
-  tankFilterSection: document.querySelector("#tankFilterSection"),
-  tankFilterSectionTitle: document.querySelector("#tankFilterSectionTitle"),
-  tankFilterSectionNote: document.querySelector("#tankFilterSectionNote"),
+  tankLightingActionList: document.querySelector("#tankLightingActionList"),
+  tankLightingSection: document.querySelector("#tankLightingSection"),
+  tankLightingSectionTitle: document.querySelector("#tankLightingSectionTitle"),
+  tankLightingSectionNote: document.querySelector("#tankLightingSectionNote"),
   uvLightList: document.querySelector("#uvLightList"),
   foodShop: document.querySelector("#foodShop"),
   pharmacyShop: document.querySelector("#pharmacyShop"),
@@ -2985,9 +2989,9 @@ const dom = {
   settingsOverlay: document.querySelector("#settingsOverlay"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
-  equipmentFilterSection: document.querySelector("#equipmentFilterSection"),
-  equipmentFilterSectionTitle: document.querySelector("#equipmentFilterSectionTitle"),
-  equipmentFilterSectionNote: document.querySelector("#equipmentFilterSectionNote"),
+  equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
+  equipmentLightingSectionTitle: document.querySelector("#equipmentLightingSectionTitle"),
+  equipmentLightingSectionNote: document.querySelector("#equipmentLightingSectionNote"),
   introTutorialOverlay: document.querySelector("#introTutorialOverlay"),
   introTutorialSplash: document.querySelector("#introTutorialSplash"),
   introTutorialPanel: document.querySelector("#introTutorialPanel"),
@@ -3030,8 +3034,6 @@ const dom = {
   equipmentBackgroundList: document.querySelector("#equipmentBackgroundList"),
   equipmentBackgroundColorPanel: document.querySelector("#equipmentBackgroundColorPanel"),
   tankAssetList: document.querySelector("#tankAssetList"),
-  filterAssetList: document.querySelector("#filterAssetList"),
-  equipmentFilterList: document.querySelector("#equipmentFilterList"),
   equipmentUvLightList: document.querySelector("#equipmentUvLightList"),
   //gravelPaletteSlots: document.querySelector("#gravelPaletteSlots"),
   //gravelPaletteChoices: document.querySelector("#gravelPaletteChoices"),
@@ -3398,7 +3400,6 @@ const runtime = {
   cleaningTransition: null,
   backgroundCatalog: [],
   tankCatalog: [],
-  filterCatalog: [],
   gravelCatalog: [],
   customGravelLayerCatalog: [],
   customGravelPebbleCatalog: [],
@@ -3423,13 +3424,14 @@ const runtime = {
   decorMap: new Map(),
   backgroundMap: new Map(),
   tankMap: new Map(),
-  filterMap: new Map(),
   gravelMap: new Map(),
   bubbleMap: new Map(),
   images: new Map(),
   imageLoadPromises: new Map(),
   imageLoadFailures: new Map(),
   imageRecoveryNextAt: new Map(),
+  cloudUploadPromise: null,
+  cloudUploadQueued: false,
   missingFishImageWarnings: new Set(),
   pendingFishPurchases: new Set(),
   alphaMaskCache: new Map(),
@@ -3555,7 +3557,7 @@ const runtime = {
     decorStorage: true,
     decorBackgrounds: true,
     decorTankShell: true,
-    decorFilter: true,
+    decorLighting: true,
     decorGravel: true,
     decorCustomGravel: true
   },
@@ -3935,6 +3937,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       }
       setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
       state.coins -= CUSTOM_DECOR_COST;
+      recordWalletTransaction({ amount: CUSTOM_DECOR_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom decor ${asset.name}.` });
       if (!state.customDecorAssets || typeof state.customDecorAssets !== "object") {
         state.customDecorAssets = {};
       }
@@ -4050,6 +4053,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       setRuntimeImageSource(asset, "runtimePath", frontImage.runtimeUrl);
       setRuntimeImageSource(asset, "runtimeBgPath", backgroundImage.runtimeUrl);
       state.coins -= CUSTOM_HIDE_COST;
+      recordWalletTransaction({ amount: CUSTOM_HIDE_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom hide ${asset.name}.` });
       if (!state.customDecorAssets || typeof state.customDecorAssets !== "object") {
         state.customDecorAssets = {};
       }
@@ -4125,6 +4129,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       }
       setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
       state.coins -= CUSTOM_FISH_COST;
+      recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
       if (!state.customFishAssets || typeof state.customFishAssets !== "object") {
         state.customFishAssets = {};
       }
@@ -4142,6 +4147,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         delete state.customFishAssets[asset.key];
         syncRuntimeCustomFishAssetsFromState(state);
         state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
+        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "credit", now, place: "Bubble Borough", label: `Refunded custom fish ${asset.name}.` });
         showToast("Could not add that custom fish to the tank.");
         return false;
       }
@@ -4562,6 +4568,319 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     ])
   }
 });
+// </bundle-source>
+
+// <bundle-source path="decor/history-and-layouts.js">
+// Decoration history and reusable layouts. History is session-only; layouts travel with saves.
+
+function copyDecorEditItem(item) {
+  const keys = ["id", "decorKey", "xNorm", "yNorm", "scale", "tankLayer", "flipped", "flippedY",
+    "freePlacementEnabled", "groupId", "xAnchorMode", "xCenterOffsetWorld", "yAnchorMode", "yAnchorValue",
+    "bubblerSettings", "decorSettings", "caveSettings", "caveColorSettings", "transitTubeName", "transitTubeColor", "transitTubeLinkedId"];
+  return JSON.parse(JSON.stringify(Object.fromEntries(keys.filter((key) => item[key] !== undefined).map((key) => [key, item[key]]))));
+}
+
+function getDecorEditHistory() {
+  const tank = getCurrentTank();
+  if (!tank) return null;
+  runtime.decorEditHistories ||= new WeakMap();
+  if (!runtime.decorEditHistories.has(tank)) runtime.decorEditHistories.set(tank, { undo: [], redo: [], pending: null });
+  return runtime.decorEditHistories.get(tank);
+}
+
+function beginDecorEditHistory(label = "Edit decorations") {
+  const history = getDecorEditHistory();
+  if (!history || history.applying) return;
+  if (history.pending && (runtime.dragState || runtime.decorResizeState)) return;
+  commitDecorEditHistory();
+  history.pending = { label, before: state.placedDecor.map(copyDecorEditItem) };
+}
+
+function commitDecorEditHistory() {
+  const history = getDecorEditHistory();
+  if (!history?.pending || history.applying || runtime.dragState || runtime.decorResizeState) return;
+  const { label, before } = history.pending;
+  history.pending = null;
+  const after = state.placedDecor.map(copyDecorEditItem);
+  const ids = new Set([...before, ...after].map((item) => item.id));
+  const changes = [...ids].map((id) => ({ before: before.find((item) => item.id === id), after: after.find((item) => item.id === id) }))
+    .filter((change) => JSON.stringify(change.before) !== JSON.stringify(change.after));
+  if (!changes.length) return;
+  history.undo.push({ label, changes });
+  history.undo = history.undo.slice(-50);
+  history.redo = [];
+}
+
+function decorEditIsBusy() {
+  return Boolean(runtime.dragState || runtime.decorResizeState || runtime.placementMode);
+}
+
+function replayDecorEdit(direction) {
+  if (decorEditIsBusy()) return false;
+  commitDecorEditHistory();
+  const history = getDecorEditHistory();
+  const entry = history?.[direction]?.at(-1);
+  if (!entry) return false;
+  const undo = direction === "undo";
+  const inventory = { ...state.decorInventory };
+  const changes = entry.changes.map((change) => ({ from: undo ? change.after : change.before, to: undo ? change.before : change.after }));
+  for (const { from, to } of changes) {
+    const current = state.placedDecor.find((item) => item.id === (from || to).id);
+    // An item removed or edited outside this history must never be resurrected or overwritten.
+    if (from ? !current || JSON.stringify(copyDecorEditItem(current)) !== JSON.stringify(from) : current) {
+      history.undo = []; history.redo = [];
+      showToast("Decorations changed outside the editor. Start a new edit to use undo.");
+      renderDecorHistoryControls();
+      return false;
+    }
+    if (from && !to) inventory[from.decorKey] = (inventory[from.decorKey] || 0) + 1;
+    if (to && !from) inventory[to.decorKey] = (inventory[to.decorKey] || 0) - 1;
+  }
+  if (Object.values(inventory).some((count) => count < 0) || changes.some(({ to }) => to &&
+    (!runtime.decorMap.has(to.decorKey) || !canUseDecorWithCurrentContentSettings(to.decorKey) || !canDecorLiveInCurrentTank(to.decorKey)))) {
+    showToast("This edit needs decorations that are no longer available in this tank.");
+    return false;
+  }
+  history.applying = true;
+  try {
+    for (const { from, to } of changes) {
+      const index = state.placedDecor.findIndex((item) => item.id === (from || to).id);
+      if (!to) {
+        clearDecorResidenceAssignments(from.id, { save: false });
+        clearDecorBoroughServiceReservations(from.id);
+        state.placedDecor.splice(index, 1);
+      } else if (index < 0) {
+        state.placedDecor.push(copyDecorEditItem(to));
+      } else {
+        const item = state.placedDecor[index];
+        for (const key of Object.keys(copyDecorEditItem(item))) if (!(key in to)) delete item[key];
+        Object.assign(item, copyDecorEditItem(to));
+      }
+    }
+    state.decorInventory = Object.fromEntries(Object.entries(inventory).filter(([, count]) => count > 0));
+    history[direction].pop();
+    history[undo ? "redo" : "undo"].push(entry);
+    finishDecorLayoutChange();
+    showToast(`${undo ? "Undid" : "Redid"}: ${entry.label}.`);
+  } finally {
+    history.applying = false;
+  }
+  return true;
+}
+
+function finishDecorLayoutChange() {
+  if (runtime.selectedDecorId && !state.placedDecor.some((item) => item.id === runtime.selectedDecorId)) clearSelectedDecor();
+  state.gravelLivePebbles = [];
+  runtime.boroughOverviewSnapshotCache?.clear();
+  saveState();
+  renderUi(Date.now());
+}
+
+function sanitizeSavedDecorLayouts(value) {
+  const seen = new Set();
+  return (Array.isArray(value) ? value : []).slice(0, 30).flatMap((layout) => {
+    if (!layout || typeof layout.id !== "string" || !layout.id.trim() || seen.has(layout.id.slice(0, 100)) || !Array.isArray(layout.items)) return [];
+    seen.add(layout.id.slice(0, 100));
+    return [{ id: layout.id.slice(0, 100), name: String(layout.name || "Untitled layout").trim().slice(0, 40) || "Untitled layout",
+      tankTypeId: String(layout.tankTypeId || ""),
+      items: layout.items.slice(0, 500).map((source) => {
+        const item = sanitizePlacedDecor(source);
+        if (!item) return null;
+        if (Number.isFinite(Number(source.xNorm))) item.xNorm = clamp(Number(source.xNorm), 0, 1);
+        if (Number.isFinite(Number(source.yNorm))) item.yNorm = clamp(Number(source.yNorm), 0, 1);
+        delete item.transitTubeLinkedId;
+        return copyDecorEditItem(item);
+      }).filter(Boolean) }];
+  });
+}
+
+function saveNamedDecorLayout(name) {
+  const cleanName = String(name || "").trim().slice(0, 40);
+  if (!cleanName) return "Enter a name for this layout.";
+  if (decorEditIsBusy()) return "Finish placing or moving decorations first.";
+  state.savedDecorLayouts ||= [];
+  if (state.savedDecorLayouts.length >= 30) return "You can save 30 layouts. Delete one to make room.";
+  if (state.savedDecorLayouts.some((layout) => layout.name.toLowerCase() === cleanName.toLowerCase())) return "That name is already used. Choose a different name.";
+  if (state.placedDecor.length > 500) return "Layouts can contain up to 500 decorations.";
+  state.savedDecorLayouts.push({ id: createId("layout"), name: cleanName, tankTypeId: getCurrentTank().tankTypeId,
+    items: state.placedDecor.map((source) => {
+      const item = copyDecorEditItem(source);
+      delete item.transitTubeLinkedId;
+      return item;
+    }) });
+  saveState();
+  return "";
+}
+
+function planSavedDecorLayout(layout) {
+  const errors = [];
+  if (layout.tankTypeId !== getCurrentTank().tankTypeId) errors.push("Use this layout in the same tank type it was saved from.");
+  const available = { ...state.decorInventory };
+  for (const item of state.placedDecor) available[item.decorKey] = (available[item.decorKey] || 0) + 1;
+  const required = new Map();
+  for (const item of layout.items) required.set(item.decorKey, (required.get(item.decorKey) || 0) + 1);
+  for (const [key, count] of required) {
+    const name = runtime.decorMap.get(key)?.name || titleFromFile(key);
+    if (!runtime.decorMap.has(key) || !canUseDecorWithCurrentContentSettings(key) || !canDecorLiveInCurrentTank(key)) errors.push(`${name} is unavailable in this tank.`);
+    else if ((available[key] || 0) < count) errors.push(`Missing ${count - (available[key] || 0)} × ${name}.`);
+  }
+  return { errors, available, required };
+}
+
+function applySavedDecorLayout(layoutId, tankId) {
+  if (getCurrentTank()?.id !== tankId || decorEditIsBusy()) return "The tank changed. Close this preview and try again.";
+  const layout = state.savedDecorLayouts?.find((entry) => entry.id === layoutId);
+  if (!layout) return "This layout is no longer available.";
+  const plan = planSavedDecorLayout(layout);
+  if (plan.errors.length) return plan.errors.join(" ");
+  const remaining = [...state.placedDecor];
+  const groups = new Map();
+  const placed = layout.items.map((saved) => {
+    let index = remaining.findIndex((item) => item.id === saved.id && item.decorKey === saved.decorKey);
+    if (index < 0) index = remaining.findIndex((item) => item.decorKey === saved.decorKey);
+    const existing = index >= 0 ? remaining.splice(index, 1)[0] : null;
+    const item = { ...existing };
+    for (const key of Object.keys(copyDecorEditItem(item))) {
+      if (key !== "transitTubeLinkedId") delete item[key];
+    }
+    Object.assign(item, copyDecorEditItem(saved), { id: existing?.id || createId("placed") });
+    delete item.groupId;
+    if (saved.groupId) {
+      if (!groups.has(saved.groupId)) groups.set(saved.groupId, createId("decor-group"));
+      item.groupId = groups.get(saved.groupId);
+    }
+    // Anchors are relative to the destination tank's current dimensions.
+    updatePlacedDecorResizeAnchor(item);
+    return item;
+  });
+  beginDecorEditHistory(`Apply ${layout.name}`);
+  for (const item of remaining) {
+    clearDecorResidenceAssignments(item.id, { save: false });
+    clearDecorBoroughServiceReservations(item.id);
+  }
+  state.placedDecor = placed;
+  state.decorInventory = Object.fromEntries(Object.entries(plan.available)
+    .map(([key, count]) => [key, count - (plan.required.get(key) || 0)]).filter(([, count]) => count > 0));
+  commitDecorEditHistory();
+  finishDecorLayoutChange();
+  showToast(`Applied ${layout.name}. You can undo this layout.`);
+  return "";
+}
+
+function renderDecorHistoryControls() {
+  const tray = dom.editDecorTray;
+  if (!tray?.querySelector || !runtime.editTankMode) return;
+  let controls = tray.querySelector(".decor-history-controls");
+  if (!controls) {
+    controls = document.createElement("div");
+    controls.className = "decor-history-controls";
+    controls.setAttribute("aria-label", "Decoration history and layouts");
+    controls.innerHTML = '<button type="button" class="small-button alt" data-decor-history="undo">↶ Undo</button><button type="button" class="small-button alt" data-decor-history="redo">↷ Redo</button><button type="button" class="small-button" data-decor-layouts>Saved layouts</button>';
+    tray.querySelector(".edit-decor-tray-header").after(controls);
+    controls.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (button?.dataset.decorHistory) replayDecorEdit(button.dataset.decorHistory);
+      if (button?.hasAttribute("data-decor-layouts")) openDecorLayoutsDialog();
+    });
+  }
+  const history = getDecorEditHistory();
+  for (const button of controls.querySelectorAll("[data-decor-history]")) {
+    const direction = button.dataset.decorHistory;
+    const entry = history?.[direction]?.at(-1);
+    button.disabled = decorEditIsBusy() || !entry;
+    const shortcut = direction === "undo" ? "Ctrl/Cmd+Z" : "Ctrl/Cmd+Shift+Z or Ctrl+Y";
+    button.setAttribute("aria-keyshortcuts", direction === "undo" ? "Control+Z Meta+Z" : "Control+Shift+Z Meta+Shift+Z Control+Y");
+    button.title = `${entry ? `${direction === "undo" ? "Undo" : "Redo"}: ${entry.label}` : `Nothing to ${direction}`} (${shortcut})`;
+  }
+  controls.querySelector("[data-decor-layouts]").disabled = decorEditIsBusy();
+}
+
+function handleDecorHistoryKey(event) {
+  if (!runtime.editTankMode || !(event.ctrlKey || event.metaKey) || event.altKey) return false;
+  if (document.querySelector(".decor-layout-dialog[open]")) return false;
+  const key = String(event.key).toLowerCase();
+  if (key !== "z" && key !== "y") return false;
+  event.preventDefault();
+  replayDecorEdit(key === "y" || event.shiftKey ? "redo" : "undo");
+  return true;
+}
+
+function openDecorLayoutsDialog() {
+  if (decorEditIsBusy() || document.querySelector(".decor-layout-dialog")) return;
+  const tankId = getCurrentTank().id;
+  const dialog = document.createElement("dialog");
+  dialog.className = "decor-layout-dialog";
+  dialog.setAttribute("aria-labelledby", "decor-layout-title");
+  dialog.innerHTML = `<div class="decor-layout-heading"><h2 id="decor-layout-title">Saved layouts</h2><button class="small-button alt" type="button" data-layout-close aria-label="Close saved layouts">Close</button></div>
+    <p>Save decoration positions, sizes, flips, layers, and appearance. Apply a layout using decorations in this tank and your inventory. Extra decorations return to storage.</p>
+    <form class="decor-layout-save"><label for="decor-layout-name">Layout name</label><div><input id="decor-layout-name" maxlength="40" required placeholder="e.g. Planted retreat"><button class="small-button" type="submit">Save current layout</button></div></form>
+    <p data-layout-status role="status" aria-live="polite"></p><div class="decor-layout-list"></div><section class="decor-layout-detail" hidden></section>`;
+  document.body.append(dialog);
+  dialog.addEventListener("close", () => { dialog.remove(); dom.editDecorTray?.querySelector("[data-decor-layouts]")?.focus(); });
+  dialog.querySelector("[data-layout-close]").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("keydown", (event) => event.stopPropagation());
+  dialog.querySelector("form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = dialog.querySelector("input");
+    const error = getCurrentTank().id !== tankId ? "The tank changed. Reopen saved layouts." : saveNamedDecorLayout(input.value);
+    dialog.querySelector("[data-layout-status]").textContent = error || `Saved ${input.value.trim()}.`;
+    if (!error) { input.value = ""; renderSavedDecorLayoutList(dialog, tankId); }
+  });
+  renderSavedDecorLayoutList(dialog, tankId);
+  dialog.showModal();
+}
+
+function renderSavedDecorLayoutList(dialog, tankId) {
+  const list = dialog.querySelector(".decor-layout-list");
+  const layouts = state.savedDecorLayouts || [];
+  list.innerHTML = layouts.length ? layouts.map((layout) => `<button class="small-button alt" type="button" data-layout-preview="${escapeHtml(layout.id)}">${escapeHtml(layout.name)} <span>(${layout.items.length})</span></button>`).join("") : '<p>No saved layouts yet. Name your current arrangement to keep it.</p>';
+  list.onclick = (event) => {
+    const button = event.target.closest("[data-layout-preview]");
+    const layout = layouts.find((entry) => entry.id === button?.dataset.layoutPreview);
+    if (layout) renderSavedDecorLayoutPreview(dialog, layout, tankId);
+  };
+}
+
+function renderSavedDecorLayoutPreview(dialog, layout, tankId) {
+  const detail = dialog.querySelector(".decor-layout-detail");
+  const plan = planSavedDecorLayout(layout);
+  detail.hidden = false;
+  detail.innerHTML = `<h3>${escapeHtml(layout.name)}</h3><div class="decor-layout-preview" role="img" aria-label="Decoration arrangement preview"></div>
+    <p>Decoration preview · ${layout.items.length} items. Fish, equipment, background, and gravel stay as they are.</p>
+    <div data-layout-errors role="status">${plan.errors.map((error) => `<p>${escapeHtml(error)}</p>`).join("")}</div>
+    <div class="decor-layout-actions"><button type="button" class="small-button" data-layout-apply ${plan.errors.length ? "disabled" : ""}>Apply layout</button><button type="button" class="small-button alt" data-layout-delete>Delete layout</button></div>`;
+  const preview = detail.querySelector(".decor-layout-preview");
+  preview.style.aspectRatio = `${TANK_WIDTH} / ${TANK_HEIGHT}`;
+  for (const item of [...layout.items].sort((a, b) => b.tankLayer - a.tankLayer || a.yNorm - b.yNorm)) {
+    const decor = runtime.decorMap.get(item.decorKey);
+    if (!decor) continue;
+    const bounds = getPlacedDecorBounds(item);
+    if (!bounds) continue;
+    const img = document.createElement("img");
+    void setAssetImageSource(img, getDecorThumbnailPath(decor));
+    img.alt = decor.name || titleFromFile(item.decorKey);
+    img.style.cssText = `left:${bounds.left / TANK_WIDTH * 100}%;top:${bounds.top / TANK_HEIGHT * 100}%;width:${(bounds.right - bounds.left) / TANK_WIDTH * 100}%;height:${(bounds.bottom - bounds.top) / TANK_HEIGHT * 100}%;transform:scale(${item.flipped ? -1 : 1},${item.flippedY ? -1 : 1})`;
+    preview.append(img);
+  }
+  detail.querySelector("[data-layout-apply]").onclick = () => {
+    const error = applySavedDecorLayout(layout.id, tankId);
+    if (error) detail.querySelector("[data-layout-errors]").textContent = error;
+    else dialog.close();
+  };
+  detail.querySelector("[data-layout-delete]").onclick = (event) => {
+    if (event.target.dataset.confirm !== "yes") {
+      event.target.dataset.confirm = "yes";
+      event.target.textContent = "Confirm delete";
+      return;
+    }
+    state.savedDecorLayouts = state.savedDecorLayouts.filter((entry) => entry.id !== layout.id);
+    saveState();
+    detail.hidden = true;
+    dialog.querySelector("[data-layout-status]").textContent = `Deleted ${layout.name}.`;
+    renderSavedDecorLayoutList(dialog, tankId);
+  };
+  detail.scrollIntoView({ block: "nearest" });
+}
 // </bundle-source>
 
 // <bundle-source path="borough/living-borough.js">
@@ -6032,7 +6351,8 @@ function isWallpaperEngineModeEnabled() {
 }
 
 function isIntroTutorialEnabled() {
-  return true;
+  // The guided flow depends on task checklists, which are disabled.
+  return false;
 }
 
 function shouldUseExternalLinkPrompt() {
@@ -6100,6 +6420,27 @@ function normalizeStringList(value) {
 function isHalloweenDecor(decor) {
   return /halloween/i.test([decor?.name, decor?.key, decor?.file, decor?.theme].filter(Boolean).join(" "))
     || normalizeStringList(decor?.categories).some((tag) => tag.toLowerCase() === "halloween");
+}
+
+function isChristmasDecor(decor) {
+  return /christmas|xmas|new[ _-]?year/i.test([decor?.name, decor?.key, decor?.file, decor?.theme].filter(Boolean).join(" "))
+    || normalizeStringList(decor?.categories).some((tag) => ["christmas", "xmas", "new-year"].includes(tag.toLowerCase()));
+}
+
+function isSeasonalDecor(decor) {
+  return isHalloweenDecor(decor) || isChristmasDecor(decor);
+}
+
+function isSeasonalDecorAvailable(decor, now = Date.now()) {
+  // Calendar availability is independent of the visual-mode override: players
+  // can preview a theme in settings, but seasonal goods only sell in season.
+  if (isHalloweenDecor(decor)) {
+    return isHalloweenCalendarDate(now);
+  }
+  if (isChristmasDecor(decor)) {
+    return new Date(getBoroughReferenceNow(now)).getMonth() === 11;
+  }
+  return true;
 }
 
 function deriveDecorCategories(entry, key) {
@@ -6509,6 +6850,7 @@ function isFoodAllowedInAutoDispenser(foodOrKey) {
 }
 
 function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
+  if (foodKey === "halloweenCandy") return Boolean(fish);
   if (!fish || isFishDead(fish)) {
     return false;
   }
@@ -6591,7 +6933,7 @@ function getTankComfortDecorTags(tank = getCurrentTank()) {
         tags.add("hardscape");
       }
     }
-    if (decor.caveSettings || decor.caveBehavior || /cave|hide|wreck|castle|ship|plane|arch/.test(decorKey)) {
+    if (decor.caveSettings || decor.caveBehavior || /cave|hide|wreck|castle|plane|arch/.test(decorKey)) {
       tags.add("cave");
       tags.add("hardscape");
     }
@@ -6790,7 +7132,7 @@ function buildCoinIconMarkup(className = "", options = {}) {
   const decorative = options.decorative === true;
   const ariaHidden = decorative ? ' aria-hidden="true"' : "";
   const altText = decorative ? "" : "coin";
-  return `<img class="${escapeHtml(classes)}" src="${escapeHtml(COIN_ICON_PATH)}" alt="${altText}"${ariaHidden} draggable="false" />`;
+  return `<img class="${escapeHtml(classes)}" ${assetImageAttributes(COIN_ICON_PATH)} alt="${altText}"${ariaHidden} draggable="false" />`;
 }
 
 function buildCoinAmountMarkup(value, options = {}) {
@@ -6963,7 +7305,7 @@ function shouldShowFoodInStore(food) {
   if (!food) {
     return false;
   }
-  return food.id !== "upgraded";
+  return food.id !== "upgraded" && (food.id !== "halloweenCandy" || isHalloweenCalendarDate(Date.now()));
 }
 
 function shouldShowMedicineInStore(medicine) {
@@ -7248,7 +7590,6 @@ function createTankState(options = {}) {
     localBackgroundImageDataUrl: typeof options.localBackgroundImageDataUrl === "string" ? options.localBackgroundImageDataUrl : "",
     localBackgroundImageRefId: sanitizeCustomImageRefId(options.localBackgroundImageRefId),
     selectedTankAsset: options.selectedTankAsset ?? null,
-    selectedFilterAsset: options.selectedFilterAsset ?? getTankDefaultFilterSelection({ tankTypeId: typeMeta.id }),
     autoDispenser: createDefaultAutoDispenserState(options.autoDispenser),
     uvLightInstalled: false,
     uvLightEnabled: false,
@@ -7378,9 +7719,18 @@ function getAdjacentAquariumSections(tank = getCurrentTank(), targetState = stat
     .filter((neighbor) => neighbor && (options.ignoreTravelWalls === true || !isBoroughTravelWallBlocked(tank, neighbor, targetState)));
 }
 
+function fitsBoroughTankGrid(tanks) {
+  if (!tanks.length) return true;
+  const xs = tanks.map((tank) => tank.gridX);
+  const ys = tanks.map((tank) => tank.gridY);
+  return tanks.length <= 15 && xs.every(Number.isInteger) && ys.every(Number.isInteger)
+    && Math.max(...xs) - Math.min(...xs) < 5
+    && Math.max(...ys) - Math.min(...ys) < 3;
+}
+
 function getValidAquariumExpansionSpaces(targetState = state) {
   const tanks = getAllTanks(targetState);
-  if (!tanks.length) {
+  if (!tanks.length || tanks.length >= 15) {
     return [];
   }
   const candidates = new Map();
@@ -7388,7 +7738,9 @@ function getValidAquariumExpansionSpaces(targetState = state) {
     for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
       const gridX = tank.gridX + dx;
       const gridY = tank.gridY + dy;
-      if (!getAquariumSectionAt(gridX, gridY, targetState)) candidates.set(`${gridX}:${gridY}`, { gridX, gridY });
+      if (!getAquariumSectionAt(gridX, gridY, targetState) && fitsBoroughTankGrid([...tanks, { gridX, gridY }])) {
+        candidates.set(`${gridX}:${gridY}`, { gridX, gridY });
+      }
     }
   }
   return [...candidates.values()];
@@ -7471,7 +7823,7 @@ function extendAquariumAt(gridX, gridY) {
   const valid = getValidAquariumExpansionSpaces().some((space) => space.gridX === x && space.gridY === y);
   const expansionCost = getAquariumExpansionCost();
   if (!valid || getAquariumSectionAt(x, y)) {
-    showToast("That section must connect to the left or right side of a neighborhood.");
+    showToast("Choose an adjacent space within the borough limit: 3 rows, 5 columns, 15 tanks.");
     return false;
   }
   if (state.coins < expansionCost) {
@@ -7479,6 +7831,7 @@ function extendAquariumAt(gridX, gridY) {
     return false;
   }
   state.coins -= expansionCost;
+  recordWalletTransaction({ amount: expansionCost, direction: "debit", now: Date.now(), place: "BubbleBodega", label: "Aquarium expansion" });
   const section = createTankState({ now: Date.now(), name: getNextAvailableTankName(), gridX: x, gridY: y });
   state.tanks.push(section);
   state.activeTankId = section.id;
@@ -7532,6 +7885,10 @@ function moveAquariumSectionToGrid(tankId, gridX, gridY) {
   if (!tank || !Number.isInteger(x) || !Number.isInteger(y)) return false;
   const occupant = getAquariumSectionAt(x, y);
   if (occupant && occupant.id !== tank.id) return swapAquariumSectionPositions(tank.id, occupant.id);
+  if (!fitsBoroughTankGrid(getAllTanks().map((entry) => entry.id === tank.id ? { gridX: x, gridY: y } : entry))) {
+    showToast("Tanks must fit within 3 rows and 5 columns.");
+    return false;
+  }
   tank.gridX = x;
   tank.gridY = y;
   saveState();
@@ -7640,6 +7997,7 @@ function sellAquariumTank(tankId) {
   const soldActiveTank = state.activeTankId === tank.id;
   state.tanks = state.tanks.filter((entry) => entry.id !== tank.id);
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + resaleValue);
+  recordWalletTransaction({ amount: resaleValue, direction: "credit", now: Date.now(), place: getTankLabel(tank), label: `Sold ${getTankLabel(tank)}` });
   if (soldActiveTank) {
     const fallbackTank = state.tanks[Math.max(0, currentIndex - 1)] || state.tanks[0];
     state.activeTankId = fallbackTank?.id || null;
@@ -7865,7 +8223,7 @@ function openStoreOverlay(tab = "food", options = {}) {
     return;
   }
 
-  // Tankazon normally restores the shopper's last category. A tutorial task
+  // BubbleBodega normally restores the shopper's last category. A tutorial task
   // must always open the category it teaches, including when its toolbar
   // button calls this function without an explicit option.
   if (dom.storeOverlay && (options.forceCategory === true || getActiveTutorial())) {
@@ -7997,12 +8355,21 @@ function isDecorSeaweedKey(decorKey = "") {
 }
 
 function isDecorLureKey(decorKey = "") {
-  return String(decorKey || "").toLowerCase().includes("lure");
+  const normalizedKey = String(decorKey || "").toLowerCase();
+  if (normalizedKey.includes("lure")) {
+    return true;
+  }
+
+  const decor = typeof runtime !== "undefined" ? runtime.decorMap?.get?.(decorKey) : null;
+  return /\blure\b/i.test(String(decor?.name || ""));
 }
 
 function getDecorMotionCapabilities(itemOrKey) {
   const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
   const decor = runtime.decorMap.get(decorKey);
+  const frozenDecor = /(^|[_\s-])frozen([_\s.-]|$)/i.test(String(decorKey || ""))
+    || /^frozen\b/i.test(String(decor?.name || ""))
+    || String(decor?.theme || "").trim().toLowerCase() === "frozen";
   const customMotionType = isCustomDecorAssetKey(decorKey)
     ? normalizeCustomDecorMotionType(decor?.motionType)
     : "";
@@ -8011,10 +8378,10 @@ function getDecorMotionCapabilities(itemOrKey) {
     return {
       motionType: customMotionType,
       hasBob: Boolean(motionConfig.hasBob),
-      hasSway: Boolean(motionConfig.hasSway),
+      hasSway: !frozenDecor && Boolean(motionConfig.hasSway),
       isLure: false,
       isFloating: Boolean(motionConfig.hasBob),
-      isSeaweed: Boolean(motionConfig.hasSway),
+      isSeaweed: !frozenDecor && Boolean(motionConfig.hasSway),
       label: motionConfig.label,
       summary: motionConfig.summary,
       defaultSwaySplitY: sanitizeCustomDecorMotionSplit(decor?.motionSplitY),
@@ -8025,7 +8392,7 @@ function getDecorMotionCapabilities(itemOrKey) {
 
   const isLure = isDecorLureKey(decorKey);
   const isFloating = isDecorFloatingKey(decorKey) || isLure;
-  const isSeaweed = isDecorSeaweedKey(decorKey) || isLure;
+  const isSeaweed = !frozenDecor && (isDecorSeaweedKey(decorKey) || isLure);
   return {
     motionType: "",
     hasBob: isFloating,
@@ -11914,7 +12281,9 @@ function toggleEditTankMode(force = null, options = {}) {
   if (tutorialChanged) {
     saveState();
   }
-  renderUi(now);
+  renderUi(now, { full: false });
+  renderEditDecorTray();
+  renderPlacedDecor();
 }
 
 function handleEditFishTrayWheel(event) {
@@ -11984,6 +12353,7 @@ function handleMedicineTrayWheel(event) {
 }
 
 function clearPrimaryToolModes() {
+  runtime.pendingDecorPlacementKey = null;
   clearGuidanceForModeChange("primary-tools");
   closeSubmarineManager();
   closeEditEquipmentTrayContextMenu();
@@ -12115,6 +12485,7 @@ function syncSelectedDecorIds() {
 }
 
 function groupSelectedDecor() {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Group decorations");
   const selectedItems = getSelectedPlacedDecorItems();
   if (selectedItems.length < 2) {
     showToast("Shift-click at least two decor pieces first.");
@@ -12145,6 +12516,7 @@ function groupSelectedDecor() {
 }
 
 function ungroupSelectedDecor() {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Ungroup decorations");
   const selectedItems = getSelectedPlacedDecorItems();
   const groupIds = getDecorGroupIdsForItems(selectedItems);
   if (!groupIds.length) {
@@ -12449,6 +12821,7 @@ function renderCollapsibleSections() {
 }
 
 async function init() {
+  initializeSpriteImages();
   await loadAppConfig();
   await prepareDesktopSaveStorage();
   installDesktopCloseBackupHandler();
@@ -12456,17 +12829,16 @@ async function init() {
   setupDebugMenuButtons();
   exposeDebugConsoleCommands();
   bindEvents();
-  syncFilterFeatureVisibility();
+  syncLightingFeatureVisibility();
   const earlyRawState = loadState();
   runtime.hadLocalSaveAtStartup = Boolean(earlyRawState);
   runtime.freshGameSaveLocked = !earlyRawState;
   initializeCloudSaveRuntime();
   applyLoadingOverlayBackground(getSavedActiveTankCandidate(earlyRawState));
 
-  const [backgroundResponse, tankResponse, filterResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, filterCatalogMeta, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
+  const [backgroundResponse, tankResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
     fetchAssetList("backgrounds"),
     fetchAssetList("tank"),
-    fetchAssetList("filter"),
     fetchAssetList("fish"),
     fetchAssetList("gravel"),
     fetchAssetList("bubbles"),
@@ -12475,7 +12847,6 @@ async function init() {
     fetchFishCatalog(),
     fetchZombieSkeletonFishCatalog(),
     fetchDecorCatalog(),
-    fetchFilterCatalogMeta(),
     fetchBackgroundCatalogMeta(),
     fetchFoodAndMedCatalog()
   ]);
@@ -12483,7 +12854,6 @@ async function init() {
   runtime.suckerFishCatalog = suckerFishResponse;
   const baseFishResponse = fishResponse.filter((item) => !isZombieSkeletonAssetFile(item));
   const normalizedDecorMeta = normalizeDecorMeta(decorCatalog);
-  const normalizedFilterMeta = normalizeFilterMeta(filterCatalogMeta);
   runtime.decorMeta = normalizedDecorMeta;
   runtime.foodAndMedCatalog = normalizeFoodAndMedCatalog(foodAndMedCatalog);
   const normalizedBaseFishCatalog = normalizeFishCatalog(fishCatalog, {
@@ -12505,7 +12875,7 @@ async function init() {
     ...normalizedBaseFishCatalog,
     ...normalizedZombieSkeletonFishCatalog
   ];
-  await discoverFishAppearanceVariants(normalizedFishCatalog);
+  await discoverFishAppearanceVariants(normalizedFishCatalog, [...baseFishResponse, ...suckerFishResponse]);
   runtime.fishCatalog = [
     ...normalizedFishCatalog,
     ...buildVirtualFishCatalogEntries()
@@ -12516,7 +12886,6 @@ async function init() {
   const normalizedBackgroundMeta = normalizeBackgroundMeta(backgroundCatalogMeta);
   runtime.backgroundCatalog = buildBackgroundCatalog(backgroundResponse, normalizedBackgroundMeta);
   runtime.tankCatalog = buildSimpleAssetCatalog(tankResponse, {}, "");
-  runtime.filterCatalog = buildFilterCatalog(filterResponse, normalizedFilterMeta);
   runtime.customGravelLayerCatalog = buildCustomGravelLayerCatalog(gravelResponse);
   runtime.customGravelPebbleCatalog = buildCustomGravelPebbleCatalog(gravelResponse);
   runtime.gravelCatalog = [...runtime.customGravelPebbleCatalog];
@@ -12527,7 +12896,6 @@ async function init() {
   ];
   runtime.backgroundMap = new Map(runtime.backgroundCatalog.map((item) => [item.key, item]));
   runtime.tankMap = new Map(runtime.tankCatalog.map((item) => [item.key, item]));
-  runtime.filterMap = new Map(runtime.filterCatalog.map((item) => [item.key, item]));
   runtime.gravelMap = new Map(runtime.gravelCatalog.map((item) => [item.key, item]));
   runtime.bubbleMap = new Map(runtime.bubbleCatalog.map((item) => [item.key, item]));
   runtime.decorMap = new Map(runtime.decorCatalog.map((item) => [item.key, item]));
@@ -12547,13 +12915,13 @@ async function init() {
   const tutorialResumeChanged = restoreTutorialRuntimeState(Date.now());
   applyContentSettingsEffects(Date.now());
 
+  const selectedBackgroundKeys = new Set(getAllTanks().map((tank) => tank.selectedBackground).filter(Boolean));
   await preloadImages(filterPreloadPathsForCurrentContentSettings([
     ...runtime.backgroundCatalog
-      .filter((item) => !isLocalImageBackgroundKey(item.key))
+      .filter((item) => selectedBackgroundKeys.has(item.key) && !isLocalImageBackgroundKey(item.key))
       .map((item) => item.path),
     ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
     ...runtime.tankCatalog.map((item) => item.path),
-    ...runtime.filterCatalog.map((item) => item.path),
     ...runtime.gravelCatalog.map((item) => item.path),
     ...runtime.customGravelLayerCatalog.map((item) => item.path),
     ...runtime.customGravelPebbleCatalog.map((item) => item.path),
@@ -12562,8 +12930,7 @@ async function init() {
     AUTO_DISPENSER_BG_PATH,
     ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
-    CAUSTIC_LIGHT_PRIMARY_ASSET_PATH,
-    CAUSTIC_LIGHT_SECONDARY_ASSET_PATH,
+    ...(CAUSTIC_LIGHTING_SETTING_ENABLED ? [CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, CAUSTIC_LIGHT_SECONDARY_ASSET_PATH] : []),
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
@@ -12575,22 +12942,7 @@ async function init() {
     ...GRIME_OVERLAY_ASSET_PATHS,
     ...WATER_PARTICLE_ASSET_PATHS,
     ...Object.values(TOOL_CURSOR_ICON_PATHS),
-    ...runtime.decorCatalog.flatMap((item) => [
-      item.path,
-      item.thumbnailPath,
-      item.bgPath,
-      item.midPath,
-      item.lightPath,
-      item.maskPath,
-      item.triggerPath,
-      item.seatsPath,
-      ...(Array.isArray(item.caveColorLayers)
-        ? item.caveColorLayers.flatMap((layer) => [
-          ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
-          ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])
-        ])
-        : [])
-    ].filter(Boolean)),
+    ...getPlacedDecorPreloadPaths(),
     ...getCustomDecorCatalogEntries(state).flatMap((item) => [item.path, item.bgPath].filter(Boolean)),
     ...getCustomFishCatalogEntries(state).map((item) => item.asset),
     runtime.foodAndMedCatalog?.fallbackImage,
@@ -12602,14 +12954,11 @@ async function init() {
     ...Object.values(runtime.foodAndMedCatalog?.items?.medicine || {}).flatMap((entry) => [
       entry.image ? resolveFoodAndMedAssetPath(entry.image) : ""
     ].filter(Boolean)),
+    ...getOwnedFishPreloadPaths(),
     ...new Set(runtime.fishCatalog.flatMap((fish) => [
-      ...getFishAssetVariants(fish),
-      fish.overlayAsset,
       ...getFishDeathAssetCandidates(fish, "zombie"),
       ...getFishDeathAssetCandidates(fish, "skeleton")
-    ])),
-    ...Object.values(SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path)),
-    ...Object.values(SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES).map((path) => resolveAppUrl(path))
+    ]))
   ]), { maxAttempts: 1 });
 
   const criticalFishImagePaths = [...new Set(getAllTankFish(state)
@@ -13338,18 +13687,28 @@ function isPortablePerformanceModeActive() {
 
 function getStageRenderDevicePixelRatio() {
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  return isPortablePerformanceModeActive()
-    ? Math.min(dpr, PORTABLE_PERFORMANCE_MAX_RENDER_DPR)
-    : dpr;
+  return Math.min(dpr, PORTABLE_PERFORMANCE_MAX_RENDER_DPR);
 }
 
 function getEffectiveAnimationFpsLimit() {
   const portableLimit = isPortablePerformanceModeActive() ? PORTABLE_PERFORMANCE_MAX_FPS : 0;
+  const overlayLimit = runtime.storeOverlayOpen || runtime.utilityOverlayOpen || runtime.settingsOverlayOpen ? 30 : 0;
+  const interacting = Boolean(
+    runtime.dragState
+    || runtime.decorResizeState
+    || runtime.fishDragState
+    || runtime.eggDragState
+    || runtime.pebbleDragState
+    || runtime.placementMode
+    || runtime.cleaningMode
+    || runtime.scoopMode
+    || runtime.feedingModeFoodKey
+    || runtime.medicineModeKey
+  );
+  const idleLimit = interacting ? 0 : 30;
   const wallpaperLimit = Math.max(0, Number(runtime.wallpaperEngineFpsLimit) || 0);
-  if (portableLimit > 0 && wallpaperLimit > 0) {
-    return Math.min(portableLimit, wallpaperLimit);
-  }
-  return portableLimit || wallpaperLimit;
+  const limits = [portableLimit, overlayLimit, idleLimit, wallpaperLimit].filter(limit => limit > 0);
+  return limits.length ? Math.min(...limits) : 0;
 }
 
 function getWaterParticleTargetCount() {
@@ -13720,6 +14079,7 @@ function bindEvents() {
     }
 
     const keyRaw = String(event.key || "");
+    if (handleDecorHistoryKey(event)) return;
     if (handleHiddenKeySequence(event, keyRaw)) {
       return;
     }
@@ -14248,18 +14608,6 @@ function bindEvents() {
       element.setAttribute("aria-grabbed", "false");
     });
   });
-  dom.tankStage?.addEventListener("wheel", (event) => {
-    if (isTankOverlayTarget(event.target) && !event.target.closest("#boroughOverview")) {
-      return;
-    }
-    if (event.deltaY > 0 && !runtime.boroughOverviewOpen) {
-      event.preventDefault();
-      openAquariumOverview(false);
-    } else if (event.deltaY < 0 && runtime.boroughOverviewOpen) {
-      event.preventDefault();
-      closeAquariumOverview();
-    }
-  }, { passive: false });
   dom.tankStage?.addEventListener("pointerdown", (event) => {
     if (event.button !== 1 || runtime.boroughOverviewOpen || isTankOverlayTarget(event.target)) {
       return;
@@ -14596,11 +14944,7 @@ function bindEvents() {
   dom.editScaleUpButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-up"));
   dom.editScaleDownButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-down"));
   dom.closeStoreOverlay.addEventListener("click", () => {
-    const wasOpen = runtime.storeOverlayOpen;
-    const closed = closeStoreOverlay();
-    if (wasOpen && closed !== false && !runtime.storeOverlayOpen) {
-      playToolbarButtonExitSoundEffect();
-    }
+    closeStoreOverlay();
   });
   dom.storeOverlay?.addEventListener("wheel", handleOverlayWheelScroll, { passive: false });
   dom.storeOverlay?.addEventListener("scroll", syncWallpaperEngineStoreScrollControls, true);
@@ -14658,15 +15002,9 @@ function bindEvents() {
       clearStoreScrollPointer();
     }
   });
-  dom.storeOverlay?.addEventListener("click", playStoreActionClickSound, true);
-  dom.storeOverlay?.addEventListener("change", playStoreFilterChangeSound, true);
   dom.storeOverlay?.addEventListener("click", (event) => {
     if (event.target === dom.storeOverlay) {
-      const wasOpen = runtime.storeOverlayOpen;
-      const closed = closeStoreOverlay();
-      if (wasOpen && closed !== false && !runtime.storeOverlayOpen) {
-        playToolbarButtonExitSoundEffect();
-      }
+      closeStoreOverlay();
     }
   });
   dom.closeUtilityOverlay?.addEventListener("click", () => {
@@ -15690,9 +16028,9 @@ function bindEvents() {
   }
 
   dom.fishShop.addEventListener("click", (event) => {
-    // Tankazon owns its purchase clicks. If this legacy listener runs first,
+    // BubbleBodega owns its purchase clicks. If this legacy listener runs first,
     // it calls buyFish with only the species id and silently buys Main before
-    // Tankazon can pass the selected appearance key.
+    // BubbleBodega can pass the selected appearance key.
     if (event.target instanceof Element && event.target.closest("#storeOverlay")) {
       return;
     }
@@ -15877,11 +16215,6 @@ function bindEvents() {
       return;
     }
 
-    const buyButton = event.target.closest("[data-buy-filter]");
-    if (buyButton) {
-      buyFilter(buyButton.dataset.buyFilter);
-      return;
-    }
 
     const buyAutoDispenserButton = event.target.closest("[data-buy-auto-dispenser]");
     if (buyAutoDispenserButton) {
@@ -15895,11 +16228,6 @@ function bindEvents() {
       return;
     }
 
-    const sellButton = event.target.closest("[data-sell-filter]");
-    if (sellButton) {
-      sellFilter(sellButton.dataset.sellFilter);
-      return;
-    }
 
     const tankButton = event.target.closest("[data-extend-aquarium-store]");
     if (tankButton) {
@@ -15907,10 +16235,6 @@ function bindEvents() {
       return;
     }
 
-    const equipButton = event.target.closest("[data-equip-filter]");
-    if (equipButton) {
-      selectFilterAsset(equipButton.dataset.equipFilter);
-    }
   });
 
   dom.decorWorkspace.addEventListener("click", (event) => {
@@ -16110,11 +16434,6 @@ function bindEvents() {
         return;
       }
 
-      const filterButton = event.target.closest("[data-select-filter]");
-      if (filterButton) {
-        selectFilterAsset(filterButton.dataset.selectFilter);
-        return;
-      }
 
       const uvLightButton = event.target.closest("[data-toggle-uv-light-install]");
       if (uvLightButton) {
@@ -16168,9 +16487,6 @@ function bindEvents() {
   bindEquipmentSurface(dom.editTankBackgroundList);
   bindEquipmentSurface(dom.editTankBackgroundColorPanel);
   bindEquipmentSurface(dom.tankAssetList);
-  bindEquipmentSurface(dom.filterAssetList);
-  bindEquipmentSurface(dom.equipmentFilterList);
-  bindEquipmentSurface(dom.editTankFilterList);
   bindEquipmentSurface(dom.uvLightList);
   bindEquipmentSurface(dom.equipmentUvLightList);
   bindEquipmentSurface(dom.editTankUvLightList);
@@ -17143,24 +17459,6 @@ async function fetchDecorCatalog() {
   }
 }
 
-async function fetchFilterCatalogMeta() {
-  try {
-    const response = await fetch(resolveAppUrl(FILTER_CATALOG_PATH), { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error("Could not load filter catalog");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(error);
-    return {
-      filters: Object.entries(FILTER_META).map(([key, meta]) => ({
-        key,
-        ...meta
-      }))
-    };
-  }
-}
 
 async function fetchBackgroundCatalogMeta() {
   try {
@@ -17361,43 +17659,6 @@ function normalizeDecorMeta(payload) {
   return map;
 }
 
-function normalizeFilterMeta(payload) {
-  const entries = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.filters)
-      ? payload.filters
-      : [];
-
-  const map = {};
-
-  for (const entry of entries) {
-    if (!entry || typeof entry !== "object") {
-      continue;
-    }
-
-    const key = String(entry.key || entry.file || "").trim();
-    if (!key) {
-      continue;
-    }
-
-    map[key] = {
-      name: typeof entry.name === "string" && entry.name.trim()
-        ? entry.name.trim()
-        : titleFromFile(key),
-      blurb: typeof entry.blurb === "string" && entry.blurb.trim()
-        ? entry.blurb.trim()
-        : "",
-      cleanDays: Math.max(1.2, Number(entry.cleanDays) || BASE_TANK_DIRTY_DAYS),
-      comfortBoost: clamp(Number(entry.comfortBoost) || 0, 0, 0.25),
-      cost: Math.max(0, Math.floor(Number(entry.cost) || 0)),
-      purchasable: entry.purchasable === true,
-      tier: Math.max(0, Math.floor(Number(entry.tier) || 0)),
-      flow: clamp(Number(entry.flow) || 1, 0.8, 1.3)
-    };
-  }
-
-  return map;
-}
 
 function hasBubblerMetaFields(entry) {
   if (!entry || typeof entry !== "object") {
@@ -17946,36 +18207,6 @@ function buildCustomGravelPebbleCatalog(items = []) {
   }));
 }
 
-function buildFilterCatalog(items, metaMap = {}) {
-  const itemMap = new Map(
-    (Array.isArray(items) ? items : [])
-      .filter((item) => item?.key)
-      .map((item) => [String(item.key), item])
-  );
-
-  return [...new Set([...itemMap.keys(), ...Object.keys(metaMap)])]
-    .map((key) => {
-      const details = metaMap[key] || {};
-      return {
-        key,
-        path: itemMap.get(key)?.path || resolveAppUrl(`assets/filter/${encodeURIComponent(key)}`),
-        name: details.name || titleFromFile(key),
-        blurb: details.blurb || (key === BASIC_FILTER_KEY ? "Starter filtration for a new aquarium." : "A filter upgrade."),
-        cleanDays: Math.max(1.2, Number(details.cleanDays) || BASE_TANK_DIRTY_DAYS),
-        comfortBoost: clamp(Number(details.comfortBoost) || 0, 0, 0.25),
-        cost: Math.max(0, Math.floor(Number(details.cost) || 0)),
-        purchasable: details.purchasable === true,
-        tier: Math.max(0, Math.floor(Number(details.tier) || 0)),
-        flow: clamp(Number(details.flow) || 1, 0.8, 1.3)
-      };
-    })
-    .sort((left, right) => {
-      if (left.tier !== right.tier) {
-        return left.tier - right.tier;
-      }
-      return left.name.localeCompare(right.name);
-    });
-}
 
 function buildFishSizeRange(entries = runtime.fishCatalog) {
   const sizes = (Array.isArray(entries) ? entries : [])
@@ -18145,7 +18376,7 @@ function getExpectedCaveCompanionPaths(baseItem, meta = {}) {
   const extensionMatch = baseItem.key.match(/(\.[^.]+)$/);
   if (!extensionMatch) return [];
   const stem = baseItem.key.slice(0, -extensionMatch[1].length);
-  return ["_bg", "_color2"].map((suffix) => resolveAppUrl(
+  return ["_bg", "_color2", "_color3"].map((suffix) => resolveAppUrl(
     `assets/decor/${encodeURIComponent(`${stem}${suffix}${extensionMatch[1]}`)}`
   ));
 }
@@ -18273,7 +18504,12 @@ function isCustomBubblerDecorKey(decorKey = "") {
 }
 
 function getDecorThumbnailPath(decor) {
-  return decor?.thumbnailPath || decor?.path || "";
+  if (decor?.thumbnailPath) return decor.thumbnailPath;
+  const path = String(decor?.path || "");
+  const match = path.match(/(?:^|\/)assets\/decor\/([^/?#]+\.png)(?:[?#].*)?$/i);
+  return match
+    ? `assets/generated/previews/decor/${match[1]}.webp`
+    : path;
 }
 
 function buildVirtualDecorCatalogEntries() {
@@ -19290,6 +19526,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
       ? entry.description.trim()
       : "A custom fish from your fish catalog.",
     width: clamp(Number(entry.width) || 128, FISH_CATALOG_WIDTH_MIN, FISH_CATALOG_WIDTH_MAX),
+    displayWidth: clamp(Number(entry.displayWidth) || Number(entry.width) || 128, FISH_CATALOG_WIDTH_MIN, FISH_CATALOG_WIDTH_MAX),
     cycleSeconds: clamp(Number(entry.cycleSeconds) || 26, 12, 60),
     bobSpeed: clamp(Number(entry.bobSpeed) || 1.2, 0.6, 2.2),
     swimStyle,
@@ -19381,12 +19618,13 @@ function getFishAppearanceVariantKey(path) {
 function getFishStoreVariants(species) {
   return getFishAssetVariants(species).map((path, index) => ({
     key: getFishAppearanceVariantKey(path),
-    image: path,
+    image: species?.behavior === "sucker" ? (getFishDirectionalSpritePath(path, "side") || path) : path,
     label: index === 0 ? "Main" : `Variant ${path.match(/_([1-5])\.[^./?]+(?:[?#].*)?$/)?.[1] || index}`
   }));
 }
 
-async function discoverFishAppearanceVariants(catalog) {
+async function discoverFishAppearanceVariants(catalog, availableAssets = null) {
+  const availableKeys = Array.isArray(availableAssets) ? new Set(availableAssets.map((asset) => asset.key.toLowerCase())) : null;
   await Promise.all(catalog.map(async (species) => {
     const base = species.asset;
     if (!base || /^(data:|blob:)/i.test(base)) return;
@@ -19400,6 +19638,8 @@ async function discoverFishAppearanceVariants(catalog) {
       // They are the same appearance, so compare filenames rather than raw
       // URLs and never add a second thumbnail for it.
       if (existingKeys.has(getFishAppearanceVariantKey(path))) return null;
+      if (getSpriteAssetFrame(path)) return path;
+      if (availableKeys && !availableKeys.has(getFishAppearanceVariantKey(path).toLowerCase())) return null;
       return new Promise((resolve) => {
         const image = new Image();
         const finish = (loaded) => {
@@ -19782,6 +20022,7 @@ function getDerivedFishNeedDefaults(fish, now = Date.now()) {
 }
 
 function sanitizeFishNeeds(value, fish = null, now = Date.now()) {
+  if (hasActiveCandyBoost(fish, now)) return Object.fromEntries(FISH_NEED_KEYS.map(key => [key, 100]));
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const defaults = fish ? getDerivedFishNeedDefaults(fish, now) : FISH_NEED_DEFAULTS;
   // Keep the old save shape, but retire the three daily maintenance meters.
@@ -20450,6 +20691,7 @@ function pushDiseaseSignalHistoryEvent(fish, signalType, now = Date.now()) {
 }
 
 function shouldFishRefuseFoodForDisease(fish, foodKey = "basic", now = Date.now()) {
+  if (foodKey === "halloweenCandy" || hasActiveCandyBoost(fish, now)) return false;
   if (!fish || isFishDead(fish) || isMealFreeFish(fish) || isUndeadFish(fish)) {
     return false;
   }
@@ -21475,19 +21717,19 @@ function getAvoidanceEscapeTarget(fish, species, threatFish, options = {}) {
 
 function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options = {}) {
   const relationships = sanitizeFishRelationships(fish?.relationships);
-  if (!Object.keys(relationships).length) {
+  if (!fish || !species) {
     return null;
   }
   const personality = getFishPersonality(fish);
-  const nearby = state.fish
+  const nearbyAll = state.fish
     .filter((otherFish) => otherFish && otherFish.id !== fish.id && !isFishDead(otherFish))
     .map((otherFish) => ({
       fish: otherFish,
       relation: relationships[otherFish.id],
       distance: Math.hypot((fish.xNorm || 0.5) - (otherFish.xNorm || 0.5), (fish.yNorm || 0.5) - (otherFish.yNorm || 0.5))
     }))
-    .filter((entry) => entry.relation)
     .sort((left, right) => left.distance - right.distance);
+  const nearby = nearbyAll.filter((entry) => entry.relation);
   const threat = nearby.find((entry) => ["fear", "dislike", "rival"].includes(entry.relation.kind) && entry.distance <= 0.34);
   if (threat) {
     const escape = getAvoidanceEscapeTarget(fish, species, threat.fish, {
@@ -21508,15 +21750,62 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
       debugText: `avoid ${threat.fish.name} | ${threat.relation.kind}`
     };
   }
+  // "Large fish" is a spatial comfort issue, so the affected fish should
+  // react when a large body gets within roughly one combined body length,
+  // even if the two fish do not have a relationship record yet.
+  const avoidsLargeFish = getSpeciesConflictTags(species).includes("large_fish");
+  const nearbyLargeFish = avoidsLargeFish
+    ? nearbyAll.find((entry) => {
+      const otherSpecies = getSpeciesForFish(entry.fish);
+      if ((Number(otherSpecies?.width) || 0) < 220) return false;
+      const bodyLengthNorm = (getFishDisplayWidth(fish, species, now) + getFishDisplayWidth(entry.fish, otherSpecies, now)) * 0.55 / TANK_WIDTH;
+      return entry.distance <= clamp(bodyLengthNorm, 0.07, 0.22);
+    })
+    : null;
+  if (nearbyLargeFish) {
+    const refuge = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["hide", "plant"],
+      chanceMultiplier: 2.2,
+      lingerMultiplier: 1.35,
+      preferBackLayer: true
+    });
+    if (refuge) {
+      return {
+        ...refuge,
+        intentType: "hide",
+        intentCause: `large fish ${nearbyLargeFish.fish.name}`,
+        intentTargetId: nearbyLargeFish.fish.id,
+        intentTargetName: nearbyLargeFish.fish.name,
+        signalType: "avoid_large_fish",
+        debugText: `hide from ${nearbyLargeFish.fish.name}`
+      };
+    }
+    const escape = getAvoidanceEscapeTarget(fish, species, nearbyLargeFish.fish, { retreatNorm: randomBetween(0.14, 0.22), verticalScale: 0.72 });
+    return {
+      xNorm: escape?.xNorm ?? fish.xNorm,
+      yNorm: escape?.yNorm ?? fish.yNorm,
+      targetLayer: escape?.targetLayer ?? getFishTankLayer(fish),
+      targetAt: now + randomBetween(1800, 3400),
+      intentType: "avoid",
+      intentCause: `large fish ${nearbyLargeFish.fish.name}`,
+      intentTargetId: nearbyLargeFish.fish.id,
+      intentTargetName: nearbyLargeFish.fish.name,
+      signalType: "avoid_large_fish",
+      debugText: `avoid ${nearbyLargeFish.fish.name} | large fish`
+    };
+  }
   if (options.onlyThreat) {
     return null;
   }
   if (species?.id === "pilot-fish" || ["social", "follower"].includes(personality) || getFishBehaviorProfile(species).group === "small-social") {
     const friend = nearby.find((entry) => entry.relation.kind === "friend" && entry.distance <= 0.42);
-    if (friend && Math.random() < 0.55) {
+    // Social fish still occasionally swim near a friend, but this is a
+    // background behavior. A high chance here made unrelated fish repeatedly
+    // shadow one another instead of exploring the tank.
+    if (friend && Math.random() < 0.045) {
       return {
-        xNorm: clamp(friend.fish.xNorm + randomBetween(-0.05, 0.05), 0.08, 0.92),
-        yNorm: clamp(friend.fish.yNorm + randomBetween(-0.04, 0.04), 0.14, 0.8),
+        xNorm: clamp(friend.fish.xNorm + randomBetween(-0.1, 0.1), 0.08, 0.92),
+        yNorm: clamp(friend.fish.yNorm + randomBetween(-0.075, 0.075), 0.14, 0.8),
         targetLayer: getFishTankLayer(friend.fish),
         targetAt: now + randomBetween(3200, 7200),
         intentType: "follow",
@@ -21807,6 +22096,7 @@ function recordFishFeedingMemory(fish, pellet, now = Date.now()) {
 }
 
 function shouldFishRefuseFoodForComfort(fish, foodKey = "basic", now = Date.now()) {
+  if (foodKey === "halloweenCandy" || hasActiveCandyBoost(fish, now)) return false;
   if (!fish || isMealFreeFish(fish) || isUndeadFish(fish)) {
     return false;
   }
@@ -22114,7 +22404,7 @@ function getUvGlowMaskImage(sourceImage, profile = "default") {
     tight: lowCostMode ? null : createUvGlowBlurCanvas(coreCanvas, 3, 8),
     soft: createUvGlowBlurCanvas(coreCanvas, lowCostMode ? 8 : 10, lowCostMode ? 18 : 22)
   };
-  runtime.uvGlowMaskCache.set(cacheKey, result);
+  setBoundedCanvasCache(runtime.uvGlowMaskCache, cacheKey, result, { maxEntries: 16, maxBytes: 48 * 1024 * 1024 });
   return result;
 }
 
@@ -22476,6 +22766,14 @@ function getFishDisplayScaleForSpecies(species = null) {
   return getViewportStableObjectScale("fish") * getAquariumPhysicalAssetScale("fish");
 }
 
+function getFishVisualCatalogWidth(species = null) {
+  return clamp(
+    Number(species?.displayWidth) || Number(species?.width) || FISH_CATALOG_WIDTH_MIN,
+    FISH_CATALOG_WIDTH_MIN,
+    FISH_CATALOG_WIDTH_MAX
+  );
+}
+
 function getFishLayerDepthScaleForLayer(layer) {
   return 1 + Math.max(0, TANK_DEPTH_LAYERS - clampTankLayer(layer)) * FISH_LAYER_DEPTH_SCALE_STEP;
 }
@@ -22501,12 +22799,24 @@ function getFishLayerDepthScaleMultiplier(fish, now = Date.now()) {
   return transition.fromScale + (transition.toScale - transition.fromScale) * eased;
 }
 
-function getSuckerFishFrontGlassAssetPath(species) {
+function getSuckerFishFrontGlassAssetPath(species, fish = null) {
+  if (fish) {
+    const selected = getFishAssetPath(fish, species);
+    const directional = getFishDirectionalSpritePath(selected, "bottom");
+    if (directional) return directional;
+    if (selected && selected !== species?.asset) return null;
+  }
   const assetPath = SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES[species?.id || ""];
   return assetPath ? resolveAppUrl(assetPath) : null;
 }
 
-function getSuckerFishFreeSwimAssetPath(species) {
+function getSuckerFishFreeSwimAssetPath(species, fish = null) {
+  if (fish) {
+    const selected = getFishAssetPath(fish, species);
+    const directional = getFishDirectionalSpritePath(selected, "side");
+    if (directional) return directional;
+    if (selected && selected !== species?.asset) return null;
+  }
   const assetPath = SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES[species?.id || ""];
   return assetPath ? resolveAppUrl(assetPath) : null;
 }
@@ -22533,7 +22843,7 @@ function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date
       * getMobileViewportObjectScaleMultiplier("fish");
   }
 
-  return widthSpecies.width
+  return getFishVisualCatalogWidth(widthSpecies)
     * getFishEffectiveScale(fish, species, now)
     * getFishDisplayScaleForSpecies(widthSpecies)
     * getFishLayerDepthScaleMultiplier(fish, now)
@@ -22722,11 +23032,11 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
   const selectedAlternate = Boolean(fish?.appearanceVariantKey && fish.appearanceVariantKey !== getFishAppearanceVariantKey(displaySpecies.asset));
   const selectedFishAsset = getFishAssetPath(fish, displaySpecies);
-  const freeSwimAsset = !selectedAlternate && !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
-    ? (getSuckerFishFreeSwimAssetPath(displaySpecies) || getSuckerFishFreeSwimAssetPath(species))
+  const freeSwimAsset = !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
+    ? (getSuckerFishFreeSwimAssetPath(displaySpecies, fish) || getSuckerFishFreeSwimAssetPath(species, fish))
     : null;
-  const frontGlassAsset = !selectedAlternate && !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
-    ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
+  const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
+    ? (getSuckerFishFrontGlassAssetPath(displaySpecies, fish) || getSuckerFishFrontGlassAssetPath(species, fish))
     : null;
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
   const preferredBaseAsset = freeSwimAsset || (isZombieVariantFish(fish)
@@ -22743,7 +23053,7 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
       )
       : (freeSwimAsset || frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
   const baseAsset = selectedAlternate && selectedFishAsset
-    ? selectedFishAsset
+    ? (freeSwimAsset || frontGlassAsset || selectedFishAsset)
     : [
       preferredBaseAsset,
       displaySpecies.fallbackAsset,
@@ -23247,12 +23557,6 @@ function getCatalogDefaultKey(catalog, preferredKey) {
   return catalog.find((item) => item.key === preferredKey)?.key || catalog[0]?.key || null;
 }
 
-function getDefaultFilterKey() {
-  if (!ENABLE_FILTER) {
-    return null;
-  }
-  return getCatalogDefaultKey(runtime.filterCatalog, DEFAULT_FILTER_ASSET_KEY);
-}
 
 function normalizeCustomBackgroundMode(value) {
   if (value === CUSTOM_BACKGROUND_MODE_GRADIENT) {
@@ -23514,68 +23818,6 @@ function getPreferredImageBackgroundKey() {
     || ownedBackgrounds[0]?.key
     || null;
 }
-
-function getFilterAssignmentCount(filterKey, excludingTankId = null) {
-  if (!filterKey || filterKey === getDefaultFilterKey()) {
-    return 0;
-  }
-
-  return getAllTanks().filter((tank) => tank.id !== excludingTankId && tank.selectedFilterAsset === filterKey).length;
-}
-
-function getUnusedFilterCount(filterKey) {
-  if (!filterKey || filterKey === getDefaultFilterKey()) {
-    return 0;
-  }
-
-  const ownedCount = Math.max(0, Math.floor(Number(state?.ownedFilterInventory?.[filterKey]) || 0));
-  return Math.max(0, ownedCount - getFilterAssignmentCount(filterKey));
-}
-
-function getAvailableFilterCount(filterKey, tankId = getCurrentTank()?.id || null) {
-  if (!filterKey) {
-    return 0;
-  }
-  if (filterKey === getDefaultFilterKey()) {
-    return tankSupportsFilters(getCurrentTank()) ? Number.POSITIVE_INFINITY : 0;
-  }
-
-  const ownedCount = Math.max(0, Math.floor(Number(state?.ownedFilterInventory?.[filterKey]) || 0));
-  const activeElsewhere = getFilterAssignmentCount(filterKey, tankId);
-  return Math.max(0, ownedCount - activeElsewhere);
-}
-
-function isFilterOwned(filterKey) {
-  if (!filterKey) {
-    return false;
-  }
-  if (filterKey === getDefaultFilterKey()) {
-    return true;
-  }
-  return Math.max(0, Math.floor(Number(state?.ownedFilterInventory?.[filterKey]) || 0)) > 0;
-}
-
-function getOwnedFilterCatalog() {
-  if (!ENABLE_FILTER) {
-    return [];
-  }
-
-  const currentTank = getCurrentTank();
-  const filterKeys = new Set();
-  if (tankSupportsFilters(currentTank)) {
-    filterKeys.add(getDefaultFilterKey());
-  }
-  for (const [key, count] of Object.entries(state?.ownedFilterInventory || {})) {
-    if (count > 0) {
-      filterKeys.add(key);
-    }
-  }
-  if (currentTank?.selectedFilterAsset) {
-    filterKeys.add(currentTank.selectedFilterAsset);
-  }
-
-  return runtime.filterCatalog.filter((item) => filterKeys.has(item.key));
-}
 // </bundle-source>
 
 // <bundle-source path="core/settings-and-persistence.js">
@@ -23763,14 +24005,14 @@ function sanitizeUiSettings(rawSettings) {
       : DEFAULT_UI_SETTINGS.displayPosition,
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
-    careTaskPaneOpen: source.careTaskPaneOpen === true,
+    careTaskPaneOpen: false,
     soundMuted: source.soundMuted === true,
     uiSoundsMuted: source.uiSoundsMuted === true,
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
-    causticLightingEnabled: source.causticLightingEnabled !== false,
-    decorShadowsEnabled: source.decorShadowsEnabled !== false,
+    causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled === true,
+    decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
     halloweenMode: normalizeHalloweenMode(source.halloweenMode),
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
@@ -23792,11 +24034,11 @@ function areWaterParticlesEnabled() {
 }
 
 function isCausticLightingEnabled() {
-  return getUiSettings().causticLightingEnabled;
+  return CAUSTIC_LIGHTING_SETTING_ENABLED && getUiSettings().causticLightingEnabled;
 }
 
 function areDecorShadowsEnabled() {
-  return getUiSettings().decorShadowsEnabled;
+  return DECOR_SHADOWS_SETTING_ENABLED && getUiSettings().decorShadowsEnabled;
 }
 
 function getUvLightRenderQuality() {
@@ -24055,22 +24297,7 @@ function isContentGatedAssetPath(path) {
 
 function getContentGatedPreloadPaths() {
   const paths = [
-    ...runtime.decorCatalog.flatMap((item) => [
-      item.path,
-      item.thumbnailPath,
-      item.bgPath,
-      item.midPath,
-      item.lightPath,
-      item.maskPath,
-      item.triggerPath,
-      item.seatsPath,
-      ...(Array.isArray(item.caveColorLayers)
-        ? item.caveColorLayers.flatMap((layer) => [
-          ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
-          ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])
-        ])
-        : [])
-    ].filter(Boolean)),
+    ...getPlacedDecorPreloadPaths(),
     ...(isZombieSkeletonModeAvailable()
       ? runtime.fishCatalog.flatMap((fish) => [
         ...getFishDeathAssetCandidates(fish, "zombie"),
@@ -24099,13 +24326,6 @@ function shouldPersistReconciledState(rawState) {
   return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION;
 }
 
-function tankSupportsFilters(target = getCurrentTank()) {
-  return ENABLE_FILTER && getTankTypeMeta(target?.tankTypeId)?.supportsFilters !== false;
-}
-
-function getTankDefaultFilterSelection(target = getCurrentTank()) {
-  return tankSupportsFilters(target) ? getDefaultFilterKey() : null;
-}
 
 function getSpeciesWaterType(speciesOrFish) {
   const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
@@ -24271,38 +24491,6 @@ function sanitizeDailyBonusState(rawState) {
   };
 }
 
-function sanitizeOwnedFilterInventory(rawInventory, fallbackSelectedKey = null) {
-  const counts = {};
-  const sourceObject = rawInventory && typeof rawInventory === "object" && !Array.isArray(rawInventory) ? rawInventory : null;
-  const sourceArray = Array.isArray(rawInventory) ? rawInventory : Array.isArray(rawInventory?.filters) ? rawInventory.filters : null;
-
-  if (sourceObject) {
-    for (const [key, value] of Object.entries(sourceObject)) {
-      if (!runtime.filterMap.has(key) || key === getDefaultFilterKey()) {
-        continue;
-      }
-      const count = Math.max(0, Math.floor(Number(value) || 0));
-      if (count > 0) {
-        counts[key] = count;
-      }
-    }
-  }
-
-  if (sourceArray) {
-    for (const key of sourceArray) {
-      if (!runtime.filterMap.has(key) || key === getDefaultFilterKey()) {
-        continue;
-      }
-      counts[key] = (counts[key] || 0) + 1;
-    }
-  }
-
-  if (runtime.filterMap.has(fallbackSelectedKey) && fallbackSelectedKey !== getDefaultFilterKey()) {
-    counts[fallbackSelectedKey] = Math.max(1, counts[fallbackSelectedKey] || 0);
-  }
-
-  return counts;
-}
 
 function sanitizeOwnedBackgroundInventory(rawInventory, fallbackSelectedKeys = []) {
   const counts = {};
@@ -24355,9 +24543,6 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
   const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel });
   const incomingTank = rawTank && typeof rawTank === "object" ? rawTank : {};
   const typeId = getTankTypeMeta("rectangular").id;
-  const selectedFilterAsset = tankSupportsFilters({ tankTypeId: typeId }) && runtime.filterMap.has(incomingTank.selectedFilterAsset)
-    ? incomingTank.selectedFilterAsset
-    : getTankDefaultFilterSelection({ tankTypeId: typeId });
   const localBackgroundImageDataUrl = typeof incomingTank.localBackgroundImageDataUrl === "string"
     ? incomingTank.localBackgroundImageDataUrl
     : "";
@@ -24409,7 +24594,6 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     localBackgroundImageDataUrl,
     localBackgroundImageRefId,
     selectedTankAsset: runtime.tankMap.has(incomingTank.selectedTankAsset) ? incomingTank.selectedTankAsset : null,
-    selectedFilterAsset,
     autoDispenser: createDefaultAutoDispenserState(incomingTank.autoDispenser),
     uvLightInstalled: false,
     uvLightEnabled: false,
@@ -24470,7 +24654,6 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     localBackgroundImageDataUrl: incoming?.localBackgroundImageDataUrl,
     localBackgroundImageRefId: incoming?.localBackgroundImageRefId,
     selectedTankAsset: incoming?.selectedTankAsset,
-    selectedFilterAsset: incoming?.selectedFilterAsset ?? getTankDefaultFilterSelection({ tankTypeId: incoming?.tankTypeId }),
     autoDispenser: incoming?.autoDispenser,
     uvLightInstalled: incoming?.uvLightInstalled,
     uvLightEnabled: incoming?.uvLightEnabled,
@@ -24483,37 +24666,8 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
   }, options);
 }
 
-function normalizeTankFilterAssignments(targetState) {
-  const available = { ...(targetState?.ownedFilterInventory || {}) };
 
-  for (const tank of getAllTanks(targetState)) {
-    if (!tankSupportsFilters(tank)) {
-      tank.selectedFilterAsset = null;
-      continue;
-    }
-
-    const filterKey = tank.selectedFilterAsset;
-    if (!filterKey || filterKey === getDefaultFilterKey()) {
-      tank.selectedFilterAsset = getTankDefaultFilterSelection(tank);
-      continue;
-    }
-
-    if (!runtime.filterMap.has(filterKey)) {
-      tank.selectedFilterAsset = getTankDefaultFilterSelection(tank);
-      continue;
-    }
-
-    const remaining = Math.max(0, Math.floor(Number(available[filterKey]) || 0));
-    if (remaining <= 0) {
-      tank.selectedFilterAsset = getTankDefaultFilterSelection(tank);
-      continue;
-    }
-
-    available[filterKey] = remaining - 1;
-  }
-}
-
-function matchesLegacyDefaultStarterTankAppearance(tank, index, defaultFilterKey = getDefaultFilterKey()) {
+function matchesLegacyDefaultStarterTankAppearance(tank, index) {
   if (!tank) {
     return false;
   }
@@ -24533,7 +24687,6 @@ function matchesLegacyDefaultStarterTankAppearance(tank, index, defaultFilterKey
     && Array.isArray(tank.floatingPellets) && tank.floatingPellets.length === 0
     && Object.keys(tank.feedHistory || {}).length === 0
     && !tank.selectedTankAsset
-    && tank.selectedFilterAsset === defaultFilterKey
     && !tank.uvLightInstalled
     && tank.selectedBackground === defaultBackgroundKey
     && normalizeCustomBackgroundMode(tank.customBackgroundMode) === CUSTOM_BACKGROUND_MODE_SOLID
@@ -24612,6 +24765,7 @@ function reconcileState(rawState) {
     unlockedDecorKeys: [],
     storedFish: [],
     decorInventory: {},
+    savedDecorLayouts: [],
     customDecorAssets: {},
     customFishAssets: {},
     decorScaleDefaults: {},
@@ -24626,7 +24780,6 @@ function reconcileState(rawState) {
     boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
-    ownedFilterInventory: {},
     uvLightOwned: false,
     foodInventory: getDefaultFoodInventory(),
     medicineInventory: getDefaultMedicineInventory(),
@@ -24675,11 +24828,11 @@ function reconcileState(rawState) {
       ? incoming.walletTransactions.map((entry) => ({
         id: typeof entry?.id === "string" ? entry.id.slice(0, 80) : createId("receipt"),
         amount: clamp(Math.floor(Math.abs(Number(entry?.amount) || 0)), 0, MAX_WALLET_COINS),
-        direction: entry?.direction === "debit" ? "debit" : "credit",
+        direction: entry?.direction === "debit" ? "debit" : entry?.direction === "neutral" ? "neutral" : "credit",
         label: typeof entry?.label === "string" ? entry.label.slice(0, 180) : "Aquarium activity",
-        place: typeof entry?.place === "string" ? entry.place.slice(0, 80) : "Aquarium",
+        place: typeof entry?.place === "string" ? entry.place.replace(/tankazon/ig, "BubbleBodega").slice(0, 80) : "Aquarium",
         time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now
-      })).filter((entry) => entry.amount > 0).sort((left, right) => right.time - left.time).slice(0, 60)
+      })).filter((entry) => entry.amount > 0 || entry.direction === "neutral").sort((left, right) => right.time - left.time).slice(0, 60)
       : base.walletTransactions,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
@@ -24691,6 +24844,7 @@ function reconcileState(rawState) {
     unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
     storedFish: Array.isArray(incoming.storedFish) ? incoming.storedFish.map(sanitizeFishEntry).filter(Boolean) : [],
     decorInventory: sanitizeDecorInventory(incoming.decorInventory),
+    savedDecorLayouts: sanitizeSavedDecorLayouts(incoming.savedDecorLayouts),
     customDecorAssets: incomingCustomDecorAssets,
     customFishAssets: incomingCustomFishAssets,
     decorScaleDefaults: sanitizeDecorScaleDefaults(incoming.decorScaleDefaults),
@@ -24709,10 +24863,6 @@ function reconcileState(rawState) {
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(
       incoming.ownedBackgroundInventory ?? incoming.ownedBackgrounds,
       tanks.map((tank) => tank.selectedBackground)
-    ),
-    ownedFilterInventory: sanitizeOwnedFilterInventory(
-      incoming.ownedFilterInventory ?? incoming.ownedFilterAssets,
-      incoming.selectedFilterAsset
     ),
     uvLightOwned: ENABLE_UV_LIGHT && Boolean(
       incoming.uvLightOwned
@@ -24750,7 +24900,6 @@ function reconcileState(rawState) {
     }
   }
 
-  normalizeTankFilterAssignments(nextState);
   assignFallbackTankNames(nextState);
   installTankStateAccessors(nextState);
 
@@ -24778,11 +24927,9 @@ function reconcileState(rawState) {
       Object.keys(tank.feedHistory || {}).length
       || tank.pendingPoops.length
       || tank.poops.length
-      || tank.selectedFilterAsset && tank.selectedFilterAsset !== getDefaultFilterKey()
       || tank.uvLightInstalled
     ))
     || Object.keys(nextState.ownedBackgroundInventory).some((key) => !DEFAULT_OWNED_BACKGROUND_KEYS.includes(key))
-    || Object.values(nextState.ownedFilterInventory).some((count) => count > 0)
     || nextState.uvLightOwned
     || Object.values(nextState.foodInventory).some((count) => count > 0)
     || Object.values(nextState.medicineInventory).some((count) => count > 0);
@@ -24822,6 +24969,8 @@ function reconcileState(rawState) {
     );
   }
 
+  nextState.decorScaleDefaults = migrateLegacyHalloweenDecorScaleDefaults(nextState.decorScaleDefaults, incomingVersion);
+
   if (incomingHealthModelVersion < HEALTH_MODEL_VERSION) {
     for (const tank of nextState.tanks) {
       tank.fish = tank.fish.map((fish) => rebalanceFishHealthForCurrentModel(fish));
@@ -24830,10 +24979,9 @@ function reconcileState(rawState) {
   }
 
   if (incomingVersion < 36) {
-    const defaultFilterKey = getDefaultFilterKey();
     nextState.tanks.forEach((tank, index) => {
       // Refresh untouched starter tanks that still match the old or partially-updated visual defaults.
-      if (matchesLegacyDefaultStarterTankAppearance(tank, index, defaultFilterKey)) {
+      if (matchesLegacyDefaultStarterTankAppearance(tank, index)) {
         applyDefaultStarterTankAppearance(tank);
       }
     });
@@ -24870,7 +25018,6 @@ function reconcileState(rawState) {
     ];
   }
 
-  normalizeTankFilterAssignments(nextState);
   pruneState(now, nextState);
   installTankStateAccessors(nextState);
   return nextState;
@@ -25341,7 +25488,9 @@ async function applyImportedSaveData(rawState) {
   syncRuntimeCustomFishAssetsFromState(state);
   syncRuntimeCustomDecorAssetsFromState(state);
   restoreTutorialRuntimeState(now);
-  void preloadImages([
+  await preloadImages([
+    ...getPlacedDecorPreloadPaths(),
+    ...getOwnedFishPreloadPaths(),
     ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
     ...getCustomDecorCatalogEntries(state).flatMap((item) => [item.path, item.bgPath].filter(Boolean)),
     ...getCustomFishCatalogEntries(state).map((item) => item.asset)
@@ -25540,7 +25689,7 @@ function sanitizeFish(fish, options = {}) {
   const species = getBaseSpeciesForFish(fish);
   const legacyHealthModel = Boolean(options.legacyHealthModel);
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
-  const rawHealthUnits = Number.isFinite(Number(fish.healthUnits))
+  const rawHealthUnits = hasActiveCandyBoost(fish, now) ? maxHealthUnits : Number.isFinite(Number(fish.healthUnits))
     ? Math.round(Number(fish.healthUnits))
     : null;
   const spawnX = clamp(Number(fish.xNorm) || randomSwimX(), 0.08, 0.92);
@@ -25580,12 +25729,13 @@ function sanitizeFish(fish, options = {}) {
     && Number.isFinite(Number(storedCoarseActivity.startedAt))
     && Number.isFinite(Number(storedCoarseActivity.endsAt))
     ? {
-        type: ["wander", "service", "rest", "social"].includes(storedCoarseActivity.type)
+        type: ["wander", "service", "rest", "social", "feeding"].includes(storedCoarseActivity.type)
           ? storedCoarseActivity.type
           : "wander",
         label: typeof storedCoarseActivity.label === "string" ? storedCoarseActivity.label.slice(0, 64) : "Swimming",
         serviceType: typeof storedCoarseActivity.serviceType === "string" ? storedCoarseActivity.serviceType : "",
         targetDecorId: typeof storedCoarseActivity.targetDecorId === "string" ? storedCoarseActivity.targetDecorId : null,
+        targetPelletId: typeof storedCoarseActivity.targetPelletId === "string" ? storedCoarseActivity.targetPelletId : null,
         startedAt: Math.max(0, Number(storedCoarseActivity.startedAt)),
         endsAt: Math.max(Number(storedCoarseActivity.startedAt), Number(storedCoarseActivity.endsAt)),
         fromXNorm: clamp(Number(storedCoarseActivity.fromXNorm) || spawnX, 0.08, 0.92),
@@ -25639,6 +25789,7 @@ function sanitizeFish(fish, options = {}) {
     fedStreak: clamp(Math.round(Number(fish.fedStreak) || 0), 0, 999),
     missedMealsInRow: clamp(Math.round(Number(fish.missedMealsInRow) || 0), 0, 999),
     lastAteAt: Number.isFinite(Number(fish.lastAteAt)) ? Number(fish.lastAteAt) : 0,
+    candyBoostUntil: Number.isFinite(Number(fish.candyBoostUntil)) ? Math.max(0, Number(fish.candyBoostUntil)) : 0,
     satiatedUntil: Number.isFinite(Number(fish.satiatedUntil)) ? Math.max(0, Number(fish.satiatedUntil)) : 0,
     personality: storedPersonality || pickedPersonality.personality,
     personalityRarity: storedPersonality ? sanitizePersonalityRarity(fish.personalityRarity) : pickedPersonality.rarity,
@@ -25986,6 +26137,35 @@ function sanitizeDecorScaleDefaults(defaults) {
       continue;
     }
     nextDefaults[decorKey] = clamp(Number(value) || resolveDecorBaseScale(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+  }
+  return nextDefaults;
+}
+
+function migrateLegacyHalloweenDecorScaleDefaults(defaults, incomingVersion) {
+  if (incomingVersion >= 46) return defaults;
+  const legacyScales = {
+    ...(incomingVersion < 44 ? {
+      "Halloween_Seaweed.png": [1, 1.3],
+      "Halloween_Floatingseaweed.png": [1, 1.34],
+      "Halloween_Ghost_Ship.png": [1]
+    } : {}),
+    ...(incomingVersion < 45 ? {
+      "Halloween_Haunted_Tree.png": [1, 1.2],
+      "Halloween_Cauldron_Bubbler.png": [1, 0.72],
+      "Halloween_JackOLantern_bubbler.png": [1, 0.68]
+    } : {}),
+    "Halloween_Seaweed.png": [...(incomingVersion < 44 ? [1, 1.3] : []), 1.55],
+    "Halloween_Floatingseaweed.png": [...(incomingVersion < 44 ? [1, 1.34] : []), 1.15],
+    "Halloween_Cauldron_Bubbler.png": [...(incomingVersion < 45 ? [1, 0.72] : []), 0.7],
+    "Halloween_JackOLantern_bubbler.png": [...(incomingVersion < 45 ? [1, 0.68] : []), 0.7]
+  };
+  const nextDefaults = { ...defaults };
+  for (const [key, scales] of Object.entries(legacyScales)) {
+    // Remove only old stock sizes, so placement reads the current catalog.
+    // Later saves may deliberately use these sizes again.
+    if (scales.some(scale => Math.abs(Number(nextDefaults[key]) - scale) < 0.0001)) {
+      delete nextDefaults[key];
+    }
   }
   return nextDefaults;
 }
@@ -26960,20 +27140,24 @@ function getPlacedDecorRelativeOpaqueBounds(item) {
 
 function getPlacedDecorPlacementBounds(item) {
   const fullBounds = getPlacedDecorBounds(item);
-  const opaqueBounds = getPlacedDecorOpaqueBounds(item) || fullBounds;
-  if (!opaqueBounds) {
+  const groundBounds = getPlacedDecorGroundBounds(item) || fullBounds;
+  if (!groundBounds) {
     return fullBounds;
   }
   if (!fullBounds) {
-    return opaqueBounds;
+    return groundBounds;
   }
 
   return {
-    left: opaqueBounds.left,
-    right: opaqueBounds.right,
-    top: fullBounds.top,
-    // Use the visible art as the placement foot; some decor PNGs have transparent bottom padding.
-    bottom: opaqueBounds.bottom
+    left: groundBounds.left,
+    right: groundBounds.right,
+    // Transparent padding above the artwork should not create an invisible wall.
+    // The visible top is the actual top for placement, just as the visible bottom
+    // is the physical foot. This matters most for large floating decor.
+    top: groundBounds.top,
+    // The visible bottom of the primary artwork is the physical placement foot.
+    // Transparent padding below the art no longer changes where decor rests.
+    bottom: groundBounds.bottom
   };
 }
 
@@ -27529,10 +27713,17 @@ function isCaveDecorKey(decorKey = "") {
   if (/_bubbler\.[^.]+$/.test(key)) {
     return false;
   }
-  if (isCustomHideAssetKey(decorKey) || runtime.decorMap.get(decorKey)?.customType === "hide") {
+  const decor = runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[decorKey] || null;
+  const categories = Array.isArray(decor?.categories) ? decor.categories.map((entry) => String(entry).toLowerCase()) : [];
+  if (isCustomHideAssetKey(decorKey) || decor?.customType === "hide") {
     return true;
   }
-  return key.includes("cave") && !key.includes("_bg") && !key.includes("_mid");
+  // Several real hides are named houses, ships, arches, or castles. Limiting
+  // this to filenames containing "cave" silently excluded them from cave
+  // navigation even though their catalog declares the Caves category.
+  return (key.includes("cave") || categories.includes("caves"))
+    && !key.includes("_bg")
+    && !key.includes("_mid");
 }
 
 function getDecorBubblerMeta(decorKey = "") {
@@ -27875,7 +28066,7 @@ function getCaveFrontDescriptor(item) {
 }
 
 function getCaveShellDescriptor(item) {
-  if (!item || !isCaveDecorKey(item.decorKey)) {
+  if (!item || (!isCaveDecorKey(item.decorKey) && !isTransitTubeDecorKey(item.decorKey))) {
     return null;
   }
 
@@ -27893,7 +28084,7 @@ function getCaveShellDescriptor(item) {
 }
 
 function getCaveBlockingDescriptorForLayer(item, layer) {
-  if (!item || !isCaveDecorKey(item.decorKey)) {
+  if (!item || (!isCaveDecorKey(item.decorKey) && !isTransitTubeDecorKey(item.decorKey))) {
     return null;
   }
 
@@ -28847,7 +29038,7 @@ function getDecorPebbleProfile(decorKey = "") {
 }
 
 function getDecorPebbleSurfacePose(item, anchorRatio = 0.5, desiredLiftPx = 0) {
-  const bounds = getPlacedDecorBounds(item);
+  const bounds = getPlacedDecorGroundBounds(item);
   if (!bounds) {
     return null;
   }
@@ -28915,7 +29106,7 @@ function getPebbleDropTarget(x, startY) {
   };
 
   for (const item of state.placedDecor) {
-    const bounds = getPlacedDecorBounds(item);
+    const bounds = getPlacedDecorGroundBounds(item);
     if (!bounds) {
       continue;
     }
@@ -29188,7 +29379,7 @@ function applyLocalGravelDisturbance(originX, originY, options = {}) {
 }
 
 function applyDecorGravelInsertion(item) {
-  const bounds = getPlacedDecorBounds(item);
+  const bounds = getPlacedDecorGroundBounds(item);
   if (!bounds) {
     return;
   }
@@ -29550,6 +29741,7 @@ function isUsableRuntimeImage(image) {
 }
 
 function loadRuntimeImageAttempt(path, timeoutMs) {
+  if (getSpriteAssetFrame(path)) return loadSpriteRuntimeImage(path, timeoutMs);
   return new Promise((resolve) => {
     const image = new Image();
     let settled = false;
@@ -29680,6 +29872,12 @@ function requestRuntimeImageRecovery(path, details = {}) {
 }
 
 function loadImageElement(src) {
+  if (getSpriteAssetFrame(src)) {
+    return preloadImagePath(src).then((result) => {
+      if (!result.loaded) throw new Error("Could not load the selected sprite.");
+      return runtime.images.get(src);
+    });
+  }
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
@@ -31122,9 +31320,7 @@ function getFishBodySizePx(fish, species) {
     return null;
   }
 
-  const catalogWidth = Number.isFinite(Number(displaySpecies.width))
-    ? Number(displaySpecies.width)
-    : (Number.isFinite(Number(species.width)) ? Number(species.width) : FISH_CATALOG_WIDTH_MIN);
+  const catalogWidth = getFishVisualCatalogWidth(displaySpecies || species);
   const width = catalogWidth * getFishAdultScale(fish, species) * getFishDisplayScaleForSpecies(displaySpecies);
   const height = width * (image.height / image.width);
   return {
@@ -31692,7 +31888,6 @@ function renderTickUi(now, options = {}) {
   renderControls(now);
   renderIntroTutorial();
   renderTutorialGuidance();
-  renderCareTaskPane(now);
   if (stateChanged) {
     renderSummary(now);
     renderEvents();
@@ -31751,12 +31946,11 @@ function renderVisiblePanels(now) {
   if (runtime.equipmentOverlayOpen) {
     renderBackgrounds();
     renderSolidBackgroundControls();
-    renderFilterAssets();
     renderUvLightControls();
     renderCustomGravelControls();
   }
 
-  syncFilterFeatureVisibility();
+  syncLightingFeatureVisibility();
 
   if (showingOverviewTab || showingFishTab || showingDecorTab) {
     renderCollapsibleSections();
@@ -31861,8 +32055,6 @@ function syncCurrentTankState(now, options = {}) {
     changed = materializeCoarseFishActivities(targetTank, now) || changed;
     changed = processBoroughStructureServices(now, targetTank) || changed;
     changed = processFishNeedsAutonomy(now) || changed;
-  } else {
-    changed = advanceCoarseFishActivities(now, targetTank) || changed;
   }
 
   const completedSlots = [];
@@ -31969,6 +32161,10 @@ function syncCurrentTankState(now, options = {}) {
     }
   }
   changed = assignFloatingPelletsToHungryFish(now) || changed;
+  // Resolve expired pellets and feeding targets before advancing offscreen fish.
+  if (!detailedSimulation) {
+    changed = advanceCoarseFishActivities(now, targetTank) || changed;
+  }
   changed = changed || pelletMotionChanged || pelletsBefore !== state.floatingPellets.length;
 
   changed = processTankMedicineEffects(now) || changed;
@@ -32253,6 +32449,9 @@ function pruneCustomDecorAssets(target = state) {
 
   let changed = false;
   const usedKeys = new Set();
+  for (const layout of target.savedDecorLayouts || []) {
+    for (const item of layout.items || []) usedKeys.add(item.decorKey);
+  }
   for (const [key, count] of Object.entries(target.decorInventory || {})) {
     if (isCustomDecorAssetKey(key) && Math.max(0, Number(count) || 0) > 0) {
       usedKeys.add(key);
@@ -32328,7 +32527,7 @@ function getCriticalTankConditionStartAt(now) {
   }
 
   if (!isTutorialTankDirtinessLocked()) {
-    const dirtyAt = state.lastCleanedAt + getFilterMaxDirtyDurationMs();
+    const dirtyAt = state.lastCleanedAt + getTankMaxDirtyDurationMs();
     if (dirtyAt <= now) {
       startCandidates.push(dirtyAt);
     }
@@ -32361,7 +32560,14 @@ function applyCriticalComfortHealthEffects(now) {
   const corpsesPresent = hasExposedDeadTankFish(now);
 
   for (const fish of livingFish) {
-    fish.comfortDamageProgressMs = Math.max(0, Number(fish.comfortDamageProgressMs) || 0) + exposureMs;
+    const unboostedExposureMs = Number(fish.candyBoostUntil) > 0
+      ? Math.min(exposureMs, Math.max(0, now - fish.candyBoostUntil)) : exposureMs;
+    if (hasActiveCandyBoost(fish, now)) {
+      fish.healthUnits = getFishMaxHealthUnits(fish);
+      fish.comfortDamageProgressMs = 0;
+      continue;
+    }
+    fish.comfortDamageProgressMs = Math.max(0, Number(fish.comfortDamageProgressMs) || 0) + unboostedExposureMs;
     const damageTickMs = getFishCriticalHealthTickMs(fish);
     const damageUnits = Math.min(
       fish.healthUnits,
@@ -33906,7 +34112,7 @@ function renderSubmarineManager() {
   element.innerHTML = `
     <div class="submarine-manager-header">
       <div class="submarine-manager-title">
-        <img src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <img ${assetImageAttributes(getMachineryImagePath(MACHINERY_TYPE_SUBMARINE))} alt="" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
         <strong>Care Submarine</strong>
       </div>
       <div class="submarine-manager-header-actions">
@@ -33946,7 +34152,7 @@ function renderSubmarineManager() {
         <div class="submarine-resource-body">
           <div class="submarine-resource-main">
             <div class="submarine-resource-identity">
-              <img class="submarine-resource-icon" src="${escapeHtml(foodIcon)}" alt="" />
+              <img class="submarine-resource-icon" ${assetImageAttributes(foodIcon)} alt="" />
               <div class="submarine-resource-copy">
                 <div class="submarine-resource-topline"><strong>Food</strong><small>${foodAvailable} available</small></div>
               </div>
@@ -33966,7 +34172,7 @@ function renderSubmarineManager() {
         <div class="submarine-resource-body">
           <div class="submarine-resource-main">
             <div class="submarine-resource-identity">
-              <img class="submarine-resource-icon" src="${escapeHtml(healthIcon)}" alt="" />
+              <img class="submarine-resource-icon" ${assetImageAttributes(healthIcon)} alt="" />
               <div class="submarine-resource-copy">
                 <div class="submarine-resource-topline"><strong>Health Drops</strong><small>${healthAvailable} available</small></div>
               </div>
@@ -33986,7 +34192,7 @@ function renderSubmarineManager() {
         <div class="submarine-resource-body">
           <div class="submarine-resource-main">
             <div class="submarine-resource-identity">
-              <img class="submarine-resource-icon" src="${escapeHtml(calmingIcon)}" alt="" />
+              <img class="submarine-resource-icon" ${assetImageAttributes(calmingIcon)} alt="" />
               <div class="submarine-resource-copy">
                 <div class="submarine-resource-topline"><strong>Calming Drops</strong><small>${calmingAvailable} available</small></div>
               </div>
@@ -34014,11 +34220,11 @@ function renderBoatManager(element = ensureSubmarineManagerElement(), boat = get
   boat.inventory = sanitizeBoatInventory(boat.inventory);
   const chumAvailable = getBoatPlayerChumCount();
   const autopilotEnabled = isBoatAutopilotEnabled(boat);
-  const chumIcon = resolveFoodAndMedAssetPath("chum.png");
+  const chumIcon = resolveFoodAndMedAssetPath("chum-food.png");
   element.innerHTML = `
     <div class="submarine-manager-header">
       <div class="submarine-manager-title">
-        <img src="${escapeHtml(getMachineryImagePath(MACHINERY_TYPE_BOAT))}" alt="" onerror="this.src='assets/icons/tools.png'" />
+        <img ${assetImageAttributes(getMachineryImagePath(MACHINERY_TYPE_BOAT))} alt="" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
         <strong>Chum Skiff</strong>
       </div>
       <div class="submarine-manager-header-actions">
@@ -34046,7 +34252,7 @@ function renderBoatManager(element = ensureSubmarineManagerElement(), boat = get
         <div class="submarine-resource-body">
           <div class="submarine-resource-main">
             <div class="submarine-resource-identity">
-              <img class="submarine-resource-icon" src="${escapeHtml(chumIcon)}" alt="" />
+              <img class="submarine-resource-icon" ${assetImageAttributes(chumIcon)} alt="" />
               <div class="submarine-resource-copy"><div class="submarine-resource-topline"><strong>Chum</strong><small>${chumAvailable} available</small></div></div>
             </div>
             <span class="submarine-resource-count">${boat.inventory.chum}/${BOAT_RESOURCE_CAPACITY}</span>
@@ -34078,7 +34284,7 @@ function renderSubmarineShopCard() {
   const mainImage = variants[0]?.image || SUBMARINE_IMAGE_PATH;
   return `
     <article class="shop-card submarine-shop-card">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(mainImage)}" alt="Automated Care Submarine" onerror="this.src='assets/icons/tools.png'" />
+      <img class="shop-thumb submarine-shop-thumb" ${assetImageAttributes(mainImage)} alt="Automated Care Submarine" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
       <div class="shop-meta shop-card-main">
         <div>
           <strong>Automated Care Submarine</strong>
@@ -34103,7 +34309,7 @@ function renderBoatShopCard() {
   const mainImage = variants[0]?.image || BOAT_IMAGE_PATH;
   return `
     <article class="shop-card boat-shop-card">
-      <img class="shop-thumb submarine-shop-thumb" src="${escapeHtml(mainImage)}" alt="Chum Skiff" onerror="this.src='assets/icons/tools.png'" />
+      <img class="shop-thumb submarine-shop-thumb" ${assetImageAttributes(mainImage)} alt="Chum Skiff" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
       <div class="shop-meta shop-card-main">
         <div><strong>Chum Skiff</strong><div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div></div>
         <div class="fish-meta">A surface skiff that skips back and forth across the water and drops chum on command.</div>
@@ -34282,7 +34488,7 @@ function renderEditEquipmentTray() {
           aria-label="${actionLabel}"
         >
           <span class="edit-decor-tile-surface">
-            <img class="edit-decor-tile-thumb" src="${escapeHtml(imagePath)}" alt="${label}" onerror="this.src='assets/icons/tools.png'" />
+            <img class="edit-decor-tile-thumb" ${assetImageAttributes(imagePath)} alt="${label}" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
             <span class="inventory-tray-label">${stored ? "Storage" : "In Tank"}</span>
           </span>
         </button>
@@ -34304,7 +34510,7 @@ function renderEditEquipmentTray() {
   }
   if (!markup) {
     if (!submarineOwned && !boatOwned) {
-      markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy a submarine or boat in Tankazon &gt; Equipment.</div>`;
+      markup = `<div class="edit-decor-tray-empty">No equipment owned. Buy a submarine or boat in BubbleBodega &gt; Equipment.</div>`;
     } else {
       markup = `<div class="edit-decor-tray-empty">${activeLocationTab === "tank" ? "No equipment is deployed in this tank." : "Equipment storage is empty."}</div>`;
     }
@@ -34429,22 +34635,47 @@ function getBoatDrawMetrics(boat, now = Date.now()) {
 function drawSubmarineSpotlight(submarine, metrics) {
   if (!submarine?.mission || !metrics || !isSubmarineAutopilotEnabled(submarine)) return;
   const direction = metrics.direction;
-  const noseX = metrics.x + direction * metrics.width * 0.47 * (Number(metrics.turnScaleX) || 1);
-  const noseY = metrics.y + metrics.height * 0.05;
-  const endX = noseX + direction * SUBMARINE_SPOTLIGHT_LENGTH_PX;
-  const spread = 105;
+  const turnScaleX = Number(metrics.turnScaleX) || 1;
+  const turnScaleY = Number(metrics.turnScaleY) || 1;
+  const localX = (SUBMARINE_SPOTLIGHT_LAMP_X_NORM - 0.5) * metrics.width * direction * turnScaleX;
+  const localY = (SUBMARINE_SPOTLIGHT_LAMP_Y_NORM - 0.5) * metrics.height * turnScaleY;
+  const rotation = (Number(metrics.rotation) || 0) + (direction < 0 ? Math.PI : 0);
+  const cosRotation = Math.cos(Number(metrics.rotation) || 0);
+  const sinRotation = Math.sin(Number(metrics.rotation) || 0);
+  const lampX = metrics.x + localX * cosRotation - localY * sinRotation;
+  const lampY = metrics.y + localX * sinRotation + localY * cosRotation;
+  const length = SUBMARINE_SPOTLIGHT_LENGTH_PX;
+  const outerSpread = 84;
+  const innerSpread = 42;
   tankContext.save();
   tankContext.globalCompositeOperation = "screen";
-  const gradient = tankContext.createLinearGradient(noseX, noseY, endX, noseY);
-  gradient.addColorStop(0, "rgba(210,244,255,0.25)");
-  gradient.addColorStop(0.38, "rgba(176,226,255,0.13)");
-  gradient.addColorStop(1, "rgba(160,220,255,0)");
-  tankContext.fillStyle = gradient;
+  tankContext.translate(lampX, lampY);
+  tankContext.rotate(rotation);
+
+  const outerGlow = tankContext.createRadialGradient(0, 0, 1, length * 0.24, 0, length);
+  outerGlow.addColorStop(0, "rgba(205,241,255,0.2)");
+  outerGlow.addColorStop(0.22, "rgba(176,224,255,0.1)");
+  outerGlow.addColorStop(0.68, "rgba(149,211,255,0.028)");
+  outerGlow.addColorStop(1, "rgba(149,211,255,0)");
+  tankContext.fillStyle = outerGlow;
   tankContext.beginPath();
-  tankContext.moveTo(noseX, noseY - 10);
-  tankContext.lineTo(endX, noseY - spread);
-  tankContext.lineTo(endX, noseY + spread);
-  tankContext.lineTo(noseX, noseY + 10);
+  tankContext.moveTo(0, -7);
+  tankContext.quadraticCurveTo(length * 0.5, -outerSpread * 0.72, length, -outerSpread);
+  tankContext.lineTo(length, outerSpread);
+  tankContext.quadraticCurveTo(length * 0.5, outerSpread * 0.72, 0, 7);
+  tankContext.closePath();
+  tankContext.fill();
+
+  const coreGlow = tankContext.createLinearGradient(0, 0, length, 0);
+  coreGlow.addColorStop(0, "rgba(234,251,255,0.24)");
+  coreGlow.addColorStop(0.34, "rgba(203,239,255,0.1)");
+  coreGlow.addColorStop(1, "rgba(181,229,255,0)");
+  tankContext.fillStyle = coreGlow;
+  tankContext.beginPath();
+  tankContext.moveTo(0, -4);
+  tankContext.quadraticCurveTo(length * 0.52, -innerSpread * 0.7, length, -innerSpread);
+  tankContext.lineTo(length, innerSpread);
+  tankContext.quadraticCurveTo(length * 0.52, innerSpread * 0.7, 0, 4);
   tankContext.closePath();
   tankContext.fill();
   tankContext.restore();
@@ -35480,6 +35711,8 @@ function canFishEatFoodPellet(fish, foodKey = "basic", now = Date.now()) {
     return false;
   }
 
+  if (foodKey === "halloweenCandy") return !hasActiveCandyBoost(fish, now);
+
   const hunger = getFishNeedValue(fish, "hunger", now);
   const criticallyHungry = hunger <= FISH_HUNGER_CRITICAL_THRESHOLD;
   const visiblyHungry = hunger <= FISH_HUNGER_LOW_THRESHOLD;
@@ -35579,6 +35812,15 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0));
   entry.coinsEarned = Math.max(0, Number(entry.coinsEarned) || 0) + mealCoins;
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + mealCoins);
+  const fishLabel = String(fish.name || getSpeciesForFish(fish)?.name || "Fish");
+  recordWalletTransaction({
+    amount: mealCoins,
+    allowZero: true,
+    direction: mealCoins > 0 ? "credit" : "neutral",
+    now,
+    place: getTankLabel(tank),
+    label: mealCoins > 0 ? `Fed ${fishLabel}` : `Fed ${fishLabel} (no coin reward)`
+  });
   return mealCoins;
 }
 
@@ -36062,6 +36304,19 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
   const targetTank = options.tank || getCurrentTank();
   const species = getSpeciesForFish(fish);
   const foodKey = pellet.foodKey || "basic";
+  if (foodKey === "halloweenCandy") {
+    fish.candyBoostUntil = now + DAY_MS;
+    fish.healthUnits = getFishMaxHealthUnits(fish);
+    fish.needs = Object.fromEntries(FISH_NEED_KEYS.map(key => [key, 100]));
+    fish.needsUpdatedAt = now;
+    fish.lastAteAt = now;
+    fish.foodRefusalUntil = 0;
+    fish.missedMealsInRow = 0;
+    fish.comfortDamageProgressMs = 0;
+    if (options.announce !== false) pushEvent(
+      fish.name + " enjoyed Halloween candy! All stats are full for 24 hours.", now, targetTank);
+    return { foodKey, mealCoins: 0, damageUnits: 0, died: false };
+  }
   const forcedRefusal = typeof pellet.diseaseRefusalFishId === "string" && pellet.diseaseRefusalFishId === fish.id;
   const refusalPrechecked = typeof pellet.refusalPrecheckedFishId === "string" && pellet.refusalPrecheckedFishId === fish.id;
   if (options.allowRefusal !== false && (forcedRefusal || (!refusalPrechecked && shouldFishRefuseFoodForDisease(fish, foodKey, now)))) {
@@ -36119,6 +36374,29 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
 
 function handleFishEatFoodPellet(fish, pellet, now = Date.now()) {
   return applyFoodPelletToFish(fish, pellet, now, { announce: true });
+}
+
+function consumeOffscreenFishFoodPellet(fish, pelletId, targetTank, now = Date.now()) {
+  const pellet = targetTank.floatingPellets.find((entry) => entry.id === pelletId);
+  if (!pellet || pellet.expiresAt <= now || fish.caveState || isFishDead(fish)
+    || fish.feedingPelletId !== pellet.id || !canFishTargetFoodPellet(fish, pellet, now)) return false;
+
+  const forcedRefusal = pellet.diseaseRefusalFishId === fish.id;
+  const prechecked = pellet.refusalPrecheckedFishId === fish.id;
+  if (forcedRefusal || (!prechecked && shouldFishRefuseFoodForComfort(fish, pellet.foodKey, now))) {
+    return handleFishRefuseFoodPellet(fish, pellet, now);
+  }
+  const result = applyFoodPelletToFish(fish, pellet, now, { tank: targetTank, announce: true });
+  if (!result || result.refused) return Boolean(result?.refused);
+  targetTank.floatingPellets = targetTank.floatingPellets.filter((entry) => entry.id !== pellet.id);
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  if (!isFishDead(fish)) {
+    fish.activity = "roam";
+    fish.targetAt = now + 1200;
+  }
+  return true;
 }
 
 function processSmartAutoFeeder(now = Date.now(), options = {}) {
@@ -37265,7 +37543,7 @@ function getFishActionConfig(action) {
     sleep: { actionId: "sleep", label: "Sleep", displayName: "Sleep", category: "Needs", targetType: "decor", title: "Settle into a sleep spot", durationMs: FISH_ACTION_SLEEP_DURATION_MS, energyCost: 0, hungerCost: 0, effects: { energy: 8, comfort: 8, stimulation: -2 }, queueable: true, canFail: false, interruptible: true, autonomousAllowed: true, priority: 76 },
     zoomies: { actionId: "zoomies", label: "Zoomies", displayName: "Zoomies", category: "Behavior", targetType: "position", title: "Do a quick burst around the tank", durationMs: FISH_ACTION_ZOOMIES_DURATION_MS, energyCost: 5, hungerCost: 1, effects: { stimulation: 18, social: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 35 },
     greet: { actionId: "greet", label: "Greet", displayName: "Greet", category: "Social", targetType: "fish", title: "Greet another fish", durationMs: FISH_ACTION_GREET_DURATION_MS, energyCost: 1, hungerCost: 0, effects: { social: 12, comfort: 2, stimulation: 2 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 52 },
-    hangout: { actionId: "hangout", label: "Hang Out", displayName: "Hang Out", category: "Social", targetType: "fish", title: "Swim with another fish", durationMs: FISH_ACTION_FOLLOW_DURATION_MS, energyCost: 2, hungerCost: 1, effects: { social: 20, comfort: 4, stimulation: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 50 },
+    hangout: { actionId: "hangout", label: "Hang Out", displayName: "Hang Out", category: "Social", targetType: "fish", title: "Swim with another fish", durationMs: FISH_ACTION_FOLLOW_DURATION_MS, energyCost: 2, hungerCost: 1, effects: { social: 20, comfort: 4, stimulation: 4 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 50 },
     play: { actionId: "play", label: "Play", displayName: "Play", category: "Explore", targetType: "decor", title: "Play around the tank", durationMs: FISH_ACTION_PLAY_DURATION_MS, energyCost: 3, hungerCost: 1, effects: { stimulation: 22, social: 3 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: true, priority: 42 },
     pebble: { actionId: "pebble", label: "Find Pebble", displayName: "Find Pebble", category: "Explore", targetType: "gravel", title: "Pick up and toss a gravel pebble", durationMs: FISH_ACTION_PEBBLE_DURATION_MS, energyCost: 2, hungerCost: 0, effects: { environment: 12, stimulation: 8 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 36 },
     dig: { actionId: "dig", label: "Dig", displayName: "Dig", category: "Explore", targetType: "gravel", title: "Dig around in the gravel", durationMs: FISH_ACTION_DIG_DURATION_MS, energyCost: 2, hungerCost: 0, effects: { environment: 14, stimulation: 5 }, queueable: true, canFail: true, interruptible: true, autonomousAllowed: false, priority: 37 },
@@ -38998,17 +39276,37 @@ function setStorePurchaseSoundBatch(active = false) {
 
 function recordWalletTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Math.abs(Number(options.amount) || 0)));
-  if (!state || amount <= 0) return false;
+  const allowZero = options.allowZero === true || options.direction === "neutral";
+  if (!state || (!allowZero && amount <= 0)) return false;
   if (!Array.isArray(state.walletTransactions)) state.walletTransactions = [];
+  const direction = options.direction === "debit"
+    ? "debit"
+    : options.direction === "neutral" || amount <= 0
+      ? "neutral"
+      : "credit";
   state.walletTransactions.unshift({
     id: createId("receipt"), amount,
-    direction: options.direction === "debit" ? "debit" : "credit",
+    direction,
     label: String(options.label || "Aquarium activity").slice(0, 180),
-    place: String(options.place || "Aquarium").slice(0, 80),
+    place: String(options.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega").slice(0, 80),
     time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now()
   });
   state.walletTransactions = state.walletTransactions.slice(0, 60);
   return true;
+}
+
+function resolvePurchasedDecorKey(decorKey, appearanceVariantKey = "") {
+  const key = normalizeDecorKey(decorKey);
+  const decor = runtime.decorMap.get(key);
+  if (!decor) {
+    return key;
+  }
+  const variants = getDecorStoreVariantEntries(decor);
+  if (!variants.length) {
+    return key;
+  }
+  const match = variants.find((entry) => entry.key === appearanceVariantKey);
+  return (match || variants[0] || decor).key;
 }
 
 function performCoinTransaction(options = {}) {
@@ -39037,7 +39335,7 @@ function performCoinTransaction(options = {}) {
     const event = typeof options.event === "function" ? options.event(now) : options.event;
     const toast = typeof options.toast === "function" ? options.toast(now) : options.toast;
     recordWalletTransaction({ amount, direction, now,
-      place: options.place || (direction === "debit" ? "Tankazon" : "Aquarium"),
+      place: options.place || (direction === "debit" ? "BubbleBodega" : "Aquarium"),
       label: options.receiptLabel || event?.text || toast || (direction === "debit" ? "Purchase" : "Coin award") });
     completeGameAction({
       now,
@@ -39075,8 +39373,8 @@ function buyFood(foodKey) {
     apply: () => {
       state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
     },
-    event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} pellets).` },
-    toast: `${food.name} stocked. +${food.bottlePellets} pellets.`
+    event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}).` },
+    toast: `${food.name} stocked. +${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}.`
   });
 }
 
@@ -39182,6 +39480,9 @@ async function ensureFishPurchaseImageReady(fish, species) {
   const selectedAsset = getFishAssetPath(fish, species);
   const candidates = [
     selectedAsset,
+    getFishDirectionalSpritePath(selectedAsset, "bottom"),
+    getFishDirectionalSpritePath(selectedAsset, "side"),
+    species.overlayAsset,
     getFishDisplayAssetPath(fish, species, Date.now()),
     species.fallbackAsset,
     species.asset
@@ -39596,25 +39897,34 @@ function confirmFishSell() {
 }
 
 function getDecorPurchaseCost(decorKey) {
-  const decor = runtime.decorMap.get(decorKey);
+  const resolvedKey = typeof normalizeDecorKey === "function" ? normalizeDecorKey(decorKey) : decorKey;
+  const decor = runtime.decorMap.get(resolvedKey);
   return Math.max(0, Math.floor(Number(decor?.cost) || 0));
 }
 
 function buyDecor(decorKey, options = {}) {
+  const resolvedDecorKey = typeof resolvePurchasedDecorKey === "function"
+    ? resolvePurchasedDecorKey(decorKey, options.appearanceVariantKey)
+    : (typeof normalizeDecorKey === "function" ? normalizeDecorKey(decorKey) : decorKey);
   if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
     closeStoreOverlay({ force: true });
     setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION_DONE, {
       now: Date.now(),
-      decorKey: String(decorKey || "")
+      decorKey: String(resolvedDecorKey || decorKey || "")
     });
     saveState();
     renderUi(Date.now());
     return { ok: true, previewOnly: true };
   }
 
-  const decor = runtime.decorMap.get(decorKey);
+  const decor = runtime.decorMap.get(resolvedDecorKey) || runtime.decorMap.get(decorKey);
   if (!decor) {
     return { ok: false, reason: "missing-decor" };
+  }
+
+  if (!isSeasonalDecorAvailable(decor)) {
+    showToast(`${decor.name} is only available during its season.`);
+    return { ok: false, reason: "out-of-season" };
   }
 
   if (!isDecorShopUnlocked(decor)) {
@@ -39643,13 +39953,13 @@ function buyDecor(decorKey, options = {}) {
     now,
     insufficientMessage: `You need ${decor.cost} coins for ${decor.name}.`,
     apply: () => {
-      state.decorInventory[decorKey] = (state.decorInventory[decorKey] || 0) + 1;
+      state.decorInventory[resolvedDecorKey] = (state.decorInventory[resolvedDecorKey] || 0) + 1;
       if (tutorialPurchase || options.closeOverlayFirst === true) {
         closeStoreOverlay({ force: true });
-        setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, { now, decorKey });
+        setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, { now, decorKey: resolvedDecorKey });
       }
     },
-    event: { type: "decor", tone: "positive", decorKey, text: `Bought ${decor.name}.` },
+    event: { type: "decor", tone: "positive", decorKey: resolvedDecorKey, text: `Bought ${decor.name}.` },
     toast: `${decor.name} is waiting in storage.`
   });
   if (!transaction.ok) {
@@ -39668,6 +39978,11 @@ function buyAnotherDecor(decorKey) {
   if (!decor) {
     showToast("That decor is no longer available.");
     return;
+  }
+
+  if (!isSeasonalDecorAvailable(decor)) {
+    showToast(`${decor.name} is only available during its season.`);
+    return { ok: false, reason: "out-of-season" };
   }
 
   if (!canUseDecorWithCurrentContentSettings(key)) {
@@ -39823,36 +40138,6 @@ function buyBackground(backgroundKey) {
   });
 }
 
-function buyFilter(filterKey) {
-  const filter = runtime.filterMap.get(filterKey);
-  if (!filter || !filter.purchasable) {
-    return;
-  }
-
-  const now = Date.now();
-  let event = null;
-  let toast = "";
-  return performCoinTransaction({
-    amount: filter.cost,
-    now,
-    insufficientMessage: `You need ${filter.cost} ${pluralize("coin", filter.cost)} for the ${filter.name}.`,
-    apply: () => {
-      state.ownedFilterInventory[filterKey] = (state.ownedFilterInventory[filterKey] || 0) + 1;
-      if (tankSupportsFilters(getCurrentTank()) && getAvailableFilterCount(filterKey) > 0) {
-        preserveTankDirtinessThroughChange(now, () => {
-          state.selectedFilterAsset = filterKey;
-        });
-        event = { type: "purchase", tone: "positive", text: `Bought and equipped the ${filter.name}.` };
-        toast = `${filter.name} installed.`;
-      } else {
-        event = { type: "purchase", tone: "positive", text: `Bought ${filter.name}.` };
-        toast = `${filter.name} added to tank storage.`;
-      }
-    },
-    event: () => event,
-    toast: () => toast
-  });
-}
 
 function buyAutoDispenser() {
   if (hasAutoDispenserInstalled()) {
@@ -39897,36 +40182,6 @@ function buyUvLight() {
     toast: "UV light installed and switched on."
   });
 }
-
-function sellFilter(filterKey) {
-  const filter = runtime.filterMap.get(filterKey);
-  if (!filter || !filter.purchasable) {
-    return;
-  }
-
-  const ownedCount = Math.max(0, Math.floor(Number(state?.ownedFilterInventory?.[filterKey]) || 0));
-  const unusedCount = getUnusedFilterCount(filterKey);
-  if (ownedCount <= 0 || unusedCount <= 0) {
-    showToast("Only unused filters can be sold.");
-    return;
-  }
-
-  const resaleValue = getResaleValue(filter.cost);
-  return performCoinTransaction({
-    direction: "credit",
-    amount: resaleValue,
-    apply: () => {
-      const nextCount = Math.max(0, ownedCount - 1);
-      if (nextCount > 0) {
-        state.ownedFilterInventory[filterKey] = nextCount;
-      } else {
-        delete state.ownedFilterInventory[filterKey];
-      }
-    },
-    event: { type: "sale", tone: "neutral", text: `Sold ${filter.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.` },
-    toast: `${filter.name} sold.`
-  });
-}
 // </bundle-source>
 
 // <bundle-source path="decor/placement-and-dragging.js">
@@ -39934,6 +40189,7 @@ function sellFilter(filterKey) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function startPlacingDecor(decorKey) {
+  runtime.pendingDecorPlacementKey = decorKey;
   if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
     setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION_DONE, {
       now: Date.now(),
@@ -39964,8 +40220,24 @@ function startPlacingDecor(decorKey) {
     return;
   }
 
+  const decor = runtime.decorMap.get(decorKey);
+  if (decor?.path && !isUsableRuntimeImage(runtime.images.get(decor.path))) {
+    if (runtime.loadingDecorPlacementKey === decorKey) return;
+    runtime.loadingDecorPlacementKey = decorKey;
+    void preloadDecorArtwork(decor).then(loaded => {
+      if (runtime.loadingDecorPlacementKey === decorKey) runtime.loadingDecorPlacementKey = null;
+      if (runtime.pendingDecorPlacementKey !== decorKey) return;
+      runtime.pendingDecorPlacementKey = null;
+      if (loaded) startPlacingDecor(decorKey);
+      else showToast("Couldn't load that decor. Please try again.");
+    });
+    return;
+  }
+  runtime.pendingDecorPlacementKey = null;
   const initialLayer = getDecorFrontLayer(decorKey, runtime.decorPlacementLayer);
   const span = getDecorLayerSpan(decorKey, initialLayer);
+  const isTransitTube = isTransitTubeDecorKey(decorKey);
+  const motionCapabilities = getDecorMotionCapabilities(decorKey);
 
   runtime.editTankMode = true;
   runtime.fishEditMode = false;
@@ -39981,8 +40253,10 @@ function startPlacingDecor(decorKey) {
     tankLayer: initialLayer,
     scale: getDecorScaleDefault(decorKey),
     flipped: false,
-    flippedY: false,
-    freePlacementEnabled: isFreeDecorPlacementEnabled(getCurrentTank())
+    flippedY: isTransitTube,
+    // Floating decor can still start in free placement, but lures behave like
+    // suspended tank-top objects until Free Placement is explicitly enabled.
+    freePlacementEnabled: Boolean(motionCapabilities.isFloating && !motionCapabilities.isLure)
   };
   runtime.placementPreview = runtime.lastTankPoint
     ? clampDecorPlacement(runtime.lastTankPoint.x / TANK_WIDTH, runtime.lastTankPoint.y / TANK_HEIGHT, {
@@ -40031,6 +40305,7 @@ function startPlacingDecor(decorKey) {
 }
 
 function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placementMode?.tankLayer ?? runtime.decorPlacementLayer) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Place decoration");
   if (!state.decorInventory[decorKey]) {
     return null;
   }
@@ -40217,6 +40492,7 @@ function getDecorItemsCenter(items) {
 }
 
 function stepDecorGroupLayer(item, step, save = false) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Change decoration layer");
   const groupItems = getDecorGroupTransformItems(item);
   if (groupItems.length <= 1) {
     return null;
@@ -40256,6 +40532,7 @@ function stepDecorGroupLayer(item, step, save = false) {
 }
 
 function stepDecorGroupScale(item, step, save = false) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decorations");
   const groupItems = getDecorGroupTransformItems(item);
   if (groupItems.length <= 1) {
     return null;
@@ -40287,6 +40564,7 @@ function stepDecorGroupScale(item, step, save = false) {
 }
 
 function toggleDecorGroupFlip(item, save = false, axis = "horizontal") {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Flip decorations");
   const groupItems = getDecorGroupTransformItems(item);
   if (groupItems.length <= 1) {
     return null;
@@ -40316,6 +40594,7 @@ function toggleDecorGroupFlip(item, save = false, axis = "horizontal") {
 }
 
 function stepActiveDecorLayer(direction) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Change decoration layer");
   const step = Math.sign(Number(direction) || 0);
   if (!step) {
     return { changed: false, layer: runtime.decorPlacementLayer, atLimit: false };
@@ -40423,6 +40702,7 @@ function stepActiveDecorLayer(direction) {
 }
 
 function stepActiveDecorScale(direction) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decorations");
   const step = Number(direction) || 0;
   if (!step) {
     return null;
@@ -40493,6 +40773,7 @@ function stepActiveDecorScale(direction) {
 }
 
 function toggleActiveDecorFlip(axis = "horizontal") {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Flip decorations");
   const activeTarget = getActiveDecorShortcutTarget();
   if (!activeTarget) {
     return null;
@@ -40941,6 +41222,7 @@ function snapDecorScaleToStep(value) {
 }
 
 function beginDecorCornerResize(item, corner, point, pointerId) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decoration");
   const resizeCorner = normalizeDecorResizeCorner(corner);
   const bounds = getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
   if (!item || !resizeCorner || !point || !bounds) {
@@ -41041,6 +41323,7 @@ function finalizeDecorCornerResize() {
 }
 
 function beginDecorDrag(item, point, pointerId, options = {}) {
+  if (typeof beginDecorEditHistory === "function" && !options.isNewPlacement) beginDecorEditHistory("Move decorations");
   runtime.pointerDown = true;
   runtime.suppressNextTankClick = true;
   setSelectedDecor(item.id);
@@ -41575,6 +41858,7 @@ function finalizeFishEggDrag() {
 }
 
 function storeDecor(placedId) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Store decoration");
   const index = state.placedDecor.findIndex((item) => item.id === placedId);
   if (index === -1) {
     return;
@@ -41974,6 +42258,7 @@ function adjustDecorDefaultSize(decorKey, direction) {
 }
 
 function adjustPlacedDecorSize(placedId, direction) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decoration");
   const item = state.placedDecor.find((entry) => entry.id === placedId);
   if (!item) {
     return;
@@ -42023,7 +42308,16 @@ function getManagedFishById(fishId) {
 // Source fragment: fish/health.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function hasActiveCandyBoost(fish, now = Date.now()) {
+  return Boolean(fish && fish.activity !== "dead" && !Number.isFinite(fish.deadAt)
+    && Number.isFinite(Number(fish.candyBoostUntil)) && Number(fish.candyBoostUntil) > now);
+}
+
 function isFishDead(fish) {
+  if (hasActiveCandyBoost(fish)) {
+    fish.healthUnits = getFishMaxHealthUnits(fish);
+    return false;
+  }
   return !fish || fish.healthUnits <= 0;
 }
 
@@ -42229,6 +42523,7 @@ function getFishMaxHealthUnits(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishHealthRatio(fish, species = getSpeciesForFish(fish)) {
+  if (hasActiveCandyBoost(fish)) return 1;
   return clamp((Number(fish?.healthUnits) || 0) / Math.max(1, getFishMaxHealthUnits(fish, species)), 0, 1);
 }
 
@@ -42279,15 +42574,15 @@ function getTankFishDirtinessMultiplier(fishList = getLivingTankFish(), deadFish
     + getDeadFishDirtinessBonus(deadFishList));
 }
 
-function getFilterMaxDirtyDurationMs(filterKey = state?.selectedFilterAsset, fishList = getLivingTankFish()) {
-  const filterProfile = getFilterProfile(filterKey);
+function getTankMaxDirtyDurationMs(fishList = getLivingTankFish(), targetTank = getCurrentTank(), deadFishList = getExposedDeadTankFish()) {
+  const cleanDays = Math.max(1.2, Number(getTankTypeMeta(targetTank?.tankTypeId).baseCleanDays) || DEFAULT_TANK_DIRTY_DAYS);
   const activeFish = Array.isArray(fishList) ? fishList.filter((fish) => fish && !isFishDead(fish)) : [];
   const suckerFishCount = activeFish.filter((fish) => getSpeciesForFish(fish)?.behavior === "sucker").length;
   const suckerCleanDurationBonus = Math.min(
     SUCKER_FISH_CLEAN_DURATION_BONUS_CAP,
     suckerFishCount * SUCKER_FISH_CLEAN_DURATION_BONUS
   );
-  return filterProfile.cleanDays * DAY_MS * (1 + suckerCleanDurationBonus) / Math.max(1, getTankFishDirtinessMultiplier(activeFish));
+  return cleanDays * DAY_MS * (1 + suckerCleanDurationBonus) / Math.max(1, getTankFishDirtinessMultiplier(activeFish, deadFishList));
 }
 
 function getFishCriticalHealthTickMs(fish, species = getSpeciesForFish(fish)) {
@@ -42306,7 +42601,7 @@ function resetLivingFishComfortDamageProgress() {
 }
 
 function rebaseTankDirtiness(now, dirtiness = getBaseTankDirtiness(now)) {
-  state.lastCleanedAt = now - clamp(dirtiness, 0, 1) * getFilterMaxDirtyDurationMs(state.selectedFilterAsset, getLivingTankFish());
+  state.lastCleanedAt = now - clamp(dirtiness, 0, 1) * getTankMaxDirtyDurationMs(getLivingTankFish());
 }
 
 function preserveTankDirtinessThroughChange(now, applyChange) {
@@ -42438,6 +42733,10 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
     return false;
   }
 
+  if (hasActiveCandyBoost(fish, now)) {
+    fish.healthUnits = getFishMaxHealthUnits(fish);
+    return false;
+  }
   const alreadyDead = fish.activity === "dead" || isFishDead(fish);
   if (
     !alreadyDead
@@ -43334,6 +43633,7 @@ function attemptGravelCoinFind(fish, action, now = Date.now()) {
   }
 
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + 1);
+  recordWalletTransaction({ amount: 1, direction: "credit", now, place: getTankLabel(), label: `${fish.name || "A fish"} found a coin` });
   state.lastGravelCoinFoundAt = now;
   pushEvent(`${fish.name || "A fish"} found a coin in the gravel.`, now);
   spawnCoinGlint(action.pickupXNorm * TANK_WIDTH, action.pickupYNorm * TANK_HEIGHT - 8, now);
@@ -43568,7 +43868,10 @@ function isFishEligibleSchoolLeader(leader, follower, species, now = Date.now())
     return false;
   }
 
-  if (Number.isFinite(leader.followUntil) && now < leader.followUntil && leader.followFishId === follower.id) {
+  // A formation follows one independently roaming leader. Letting followers
+  // become leaders creates long queues where fast fish continually overshoot
+  // a slower fish's moving anchor.
+  if (Number.isFinite(leader.followUntil) && now < leader.followUntil) {
     return false;
   }
 
@@ -43734,7 +44037,7 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   const followChance = clamp(
     baseFollowChance * (0.3 + schoolingStrength * 2.25),
     0,
-    Math.max(0.035, 0.12 + schoolingStrength * 0.76)
+    SAME_SPECIES_FOLLOW_MAX_CHANCE
   );
   if (Math.random() > followChance) {
     return null;
@@ -43784,6 +44087,35 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
 
 function getOwnedFishCount() {
   return getAllTankFish().length + state.storedFish.length;
+}
+
+function getStoreProductFacets(kind, entry) {
+  if (kind === "fish") {
+    return {
+      Availability: [isFishSpeciesShopUnlocked(entry) ? "Available now" : "Locked"],
+      Type: [entry.behavior === "free" ? "Free swimming" : entry.behavior || "custom", ...(entry.caveEnabled ? ["Cave fish"] : [])],
+      "Water type": [entry.waterType || "freshwater"],
+      Diet: [entry.diet || "omnivore"]
+    };
+  }
+  if (kind === "decor") {
+    const categories = normalizeStringList(entry.categories);
+    const behavior = getDecorFishBehaviorMeta(entry.key) || {};
+    return {
+      Availability: [isDecorShopUnlocked(entry) && isSeasonalDecorAvailable(entry) ? "Available now" : isSeasonalDecor(entry) && !isSeasonalDecorAvailable(entry) ? "Out of season" : "Locked"],
+      Type: categories,
+      Theme: [getCatalogThemeLabel(entry.theme)],
+      Tag: [...new Set([...categories, ...getTankComfortDecorTags({ placedDecor: [{ decorKey: entry.key }] }), ...normalizeStringList(entry.tags)])],
+      "Hangout type": normalizeStringList(behavior.hangoutTypes),
+      Service: getDecorBoroughServiceTypes(entry.key)
+    };
+  }
+  return { Type: [kind === "food" ? entry.id === "halloweenCandy" ? "Candy" : "Fish food" : "Medicine"],
+    Availability: ["Available now"] };
+}
+
+function renderStoreFacetAttributes(kind, entry) {
+  return `data-store-facets="${escapeHtml(JSON.stringify(getStoreProductFacets(kind, entry)))}"`;
 }
 
 function compareFishCatalogBySize(left, right) {
@@ -43988,6 +44320,69 @@ function getFishShopSearchHaystack(fish) {
   ].filter(Boolean).join(" ");
 }
 
+function getDecorAppearanceVariantKey(pathOrKey) {
+  return typeof pathOrKey === "string" ? pathOrKey.split(/[?#]/)[0].split("/").pop() : "";
+}
+
+function getDecorVariantGroupId(decorOrKey) {
+  const decor = typeof decorOrKey === "string" ? runtime.decorMap.get(normalizeDecorKey(decorOrKey)) : decorOrKey;
+  const explicit = typeof decor?.variantGroup === "string" ? decor.variantGroup.trim() : "";
+  return explicit || "";
+}
+
+function compareDecorVariantEntries(left, right) {
+  const leftKey = getDecorAppearanceVariantKey(left?.key || left?.path || "");
+  const rightKey = getDecorAppearanceVariantKey(right?.key || right?.path || "");
+  const leftMatch = leftKey.match(/^(.*?)(?:_(\d+))?(\.[^./?#]+)?$/i);
+  const rightMatch = rightKey.match(/^(.*?)(?:_(\d+))?(\.[^./?#]+)?$/i);
+  const leftBaseRank = leftMatch?.[2] ? Number(leftMatch[2]) : 0;
+  const rightBaseRank = rightMatch?.[2] ? Number(rightMatch[2]) : 0;
+  return leftBaseRank - rightBaseRank
+    || String(left?.name || "").localeCompare(String(right?.name || ""))
+    || leftKey.localeCompare(rightKey);
+}
+
+function getDecorStoreVariantEntries(decorOrKey, catalogEntries = null) {
+  const decor = typeof decorOrKey === "string" ? runtime.decorMap.get(normalizeDecorKey(decorOrKey)) : decorOrKey;
+  if (!decor) {
+    return [];
+  }
+
+  const groupId = getDecorVariantGroupId(decor);
+  if (!groupId) {
+    return [decor];
+  }
+
+  const source = Array.isArray(catalogEntries) ? catalogEntries : runtime.decorCatalog;
+  const variants = source.filter((entry) => getDecorVariantGroupId(entry) === groupId);
+  return (variants.length ? variants : [decor]).slice().sort(compareDecorVariantEntries);
+}
+
+function getDecorStoreVariants(decorOrKey, catalogEntries = null) {
+  const variants = getDecorStoreVariantEntries(decorOrKey, catalogEntries);
+  return variants.map((entry, index) => ({
+    key: entry.key,
+    image: entry.path,
+    label: index === 0 ? "Main" : `Variant ${index}`
+  }));
+}
+
+function isDecorStoreRepresentative(decorOrKey, catalogEntries = null) {
+  const decor = typeof decorOrKey === "string" ? runtime.decorMap.get(normalizeDecorKey(decorOrKey)) : decorOrKey;
+  if (!decor) {
+    return false;
+  }
+  const variants = getDecorStoreVariantEntries(decor, catalogEntries);
+  return (variants[0]?.key || "") === decor.key;
+}
+
+function getDecorStoreCatalogEntries(entries) {
+  return (Array.isArray(entries) ? entries : []).filter((decor) => {
+    const groupId = getDecorVariantGroupId(decor);
+    return !groupId || isDecorStoreRepresentative(decor, entries);
+  });
+}
+
 function getDecorShopSearchHaystack(decor) {
   return [
     decor?.name,
@@ -44045,15 +44440,6 @@ function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
             <option value="theme" ${selectedSort === "theme" ? "selected" : ""}>Theme</option>
           </select>
         </label>
-        ${shopKind === "fish" ? `
-          <label class="shop-sort-control">
-            <span>Filter</span>
-            <select class="shop-sort-select" data-shop-filter="fish" aria-label="Filter fish shop">
-              <option value="all" ${selectedFilter === "all" ? "selected" : ""}>All Fish</option>
-              <option value="cave" ${selectedFilter === "cave" ? "selected" : ""}>Cave Fish</option>
-            </select>
-          </label>
-        ` : ""}
       </div>
     </div>
   `;
@@ -45005,44 +45391,6 @@ function selectTankAsset(tankKey) {
   });
 }
 
-function selectFilterAsset(filterKey) {
-  if (!runtime.filterMap.has(filterKey)) {
-    return;
-  }
-
-  if (!tankSupportsFilters(getCurrentTank())) {
-    showToast("This tank does not support filters.");
-    return;
-  }
-
-  if (!isFilterOwned(filterKey)) {
-    showToast("Buy this filter in the Tank shop first.");
-    return;
-  }
-
-  if (state.selectedFilterAsset === filterKey) {
-    return;
-  }
-
-  if (filterKey !== getDefaultFilterKey() && getAvailableFilterCount(filterKey) <= 0) {
-    showToast("All copies of that filter are already in use.");
-    return;
-  }
-
-  const now = Date.now();
-  preserveTankDirtinessThroughChange(now, () => {
-    state.selectedFilterAsset = filterKey;
-  });
-  const filter = runtime.filterMap.get(filterKey);
-  return completeGameAction({
-    now,
-    event: {
-      type: "equipment",
-      tone: "neutral",
-      text: `Equipped ${filter.name}. At the current tank load, the tank now takes about ${formatDuration(getFilterMaxDirtyDurationMs(filterKey))} to hit maximum dirtiness.`
-    }
-  });
-}
 
 function setUvLightInstalled(installed) {
   if (!isUvLightFeatureEnabled()) {
@@ -47557,9 +47905,14 @@ function completeCleaning(options = {}) {
   state.lastCleanedAt = now;
   state.poops = [];
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
-  if (cleanReward > 0) {
-    recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Deep tank cleaning", place: getTankLabel() });
-  }
+  recordWalletTransaction({
+    amount: cleanReward,
+    allowZero: true,
+    direction: cleanReward > 0 ? "credit" : "neutral",
+    now,
+    label: cleanReward > 0 ? "Deep tank cleaning" : "Tank cleaned",
+    place: getTankLabel()
+  });
 
   if (!hasExposedDeadTankFish(now)) {
     resetLivingFishComfortDamageProgress();
@@ -48585,17 +48938,7 @@ function getTankCleanlinessPercentForMilestones(tank = getCurrentTank(), now = D
 
   const fishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
   const deadFishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && isFishDead(fish) && !isFishBeingConsumedByPiranhas(fish, now));
-  const typeMeta = getTankTypeMeta(tank.tankTypeId);
-  const baseCleanDays = tankSupportsFilters(tank)
-    ? BASE_TANK_DIRTY_DAYS
-    : Math.max(1.2, Number(typeMeta.baseCleanDays) || FILTERLESS_BASE_TANK_DIRTY_DAYS);
-  const filter = tankSupportsFilters(tank)
-    ? runtime.filterMap.get(tank.selectedFilterAsset || getDefaultFilterKey())
-    : null;
-  const cleanDays = filter
-    ? Math.max(BASE_TANK_DIRTY_DAYS, Number(filter.cleanDays) || BASE_TANK_DIRTY_DAYS)
-    : baseCleanDays;
-  const duration = cleanDays * DAY_MS / Math.max(1, getTankFishDirtinessMultiplier(fishList, deadFishList));
+  const duration = getTankMaxDirtyDurationMs(fishList, tank, deadFishList);
   const dirtiness = clamp((now - (Number(tank.lastCleanedAt) || now)) / Math.max(1, duration), 0, 1);
   return Math.max(0, Math.round((1 - dirtiness) * 100));
 }
@@ -48948,6 +49291,7 @@ function saveState() {
   if (!state) {
     return;
   }
+  if (typeof commitDecorEditHistory === "function") commitDecorEditHistory();
   if (runtime.freshGameSaveLocked && state?.tutorial?.completed !== true) {
     return;
   }
@@ -49762,6 +50106,7 @@ function playWhaleBreathSoundEffect() {
 }
 
 function playToolbarButtonSoundEffect(kind = "press") {
+  if (runtime.storeOverlayOpen) return;
   const path = kind === "exit" ? TOOLBAR_BUTTON_EXIT_SOUND_PATH : TOOLBAR_BUTTON_PRESS_SOUND_PATH;
   playUiSoundEffect(path, { volume: 0.58 });
 }
@@ -49783,6 +50128,7 @@ function playUiCollapseToggleSound(collapsed) {
 }
 
 function playRegularButtonSoundEffect() {
+  if (runtime.storeOverlayOpen) return;
   playUiSoundEffect(REGULAR_BUTTON_SOUND_PATH, { volume: 0.58 });
 }
 
@@ -49992,17 +50338,6 @@ function playUtilityOverlayChangeSound(event) {
   }
 }
 
-function playStoreActionClickSound(event) {
-  if (playRegularButtonSoundForAction(event, STORE_REGULAR_BUTTON_SOUND_SELECTOR)) {
-    return;
-  }
-
-  playToolbarButtonPressSoundForAction(event, STORE_FILTER_CONTROL_SOUND_SELECTOR);
-}
-
-function playStoreFilterChangeSound(event) {
-  playToolbarButtonPressSoundForAction(event, STORE_FILTER_CONTROL_SOUND_SELECTOR);
-}
 
 function playEquipmentSurfaceClickSound(event) {
   if (playRegularButtonSoundForAction(event, EQUIPMENT_REGULAR_BUTTON_SOUND_SELECTOR)) {
@@ -50092,7 +50427,6 @@ function isToolbarFastTooltipExperimentEnabled() {
   return Boolean(
     dom.tankBottomDock
     && dom.toolbarFastTooltip
-    && dom.tankBottomDock.classList.contains("toolbar-fast-tooltip-experiment")
     && !dom.tankBottomDock.classList.contains("is-toolbar-collapsed")
     && !dom.tankBottomDock.classList.contains("is-tutorial-hidden")
   );
@@ -50103,7 +50437,7 @@ function getToolbarFastTooltipButton(target) {
     return null;
   }
 
-  const button = target.closest(".dock-button");
+  const button = target.closest(".dock-button, .toolbar-action-menu-button");
   return button && dom.tankBottomDock.contains(button) && !button.disabled && !button.hidden
     ? button
     : null;
@@ -50125,7 +50459,7 @@ function syncToolbarFastTooltipExperiment() {
   }
 
   const enabled = isToolbarFastTooltipExperimentEnabled();
-  const buttons = dock.querySelectorAll(".dock-button");
+  const buttons = dock.querySelectorAll(".dock-button, .toolbar-action-menu-button");
   for (const button of buttons) {
     if (enabled) {
       const currentTitle = button.getAttribute("title");
@@ -50168,16 +50502,11 @@ function positionToolbarFastTooltip(clientX = null, clientY = null, button = run
     return;
   }
 
-  let x = Number(clientX);
-  let y = Number(clientY);
-  if ((!Number.isFinite(x) || !Number.isFinite(y)) && button instanceof HTMLElement) {
-    const rect = button.getBoundingClientRect();
-    x = rect.left + rect.width / 2;
-    y = rect.top;
-  }
-  if (!Number.isFinite(x) || !Number.isFinite(y)) {
-    return;
-  }
+  if (!(button instanceof HTMLElement)) return;
+  const rect = button.getBoundingClientRect();
+  const menu = button.closest(".toolbar-action-menu") || dom.tankBottomDock;
+  const x = rect.left + rect.width / 2;
+  const y = Math.min(rect.top, menu.getBoundingClientRect().top);
 
   const viewportPadding = 8;
   const tooltipRect = tooltip.getBoundingClientRect();
@@ -50387,11 +50716,12 @@ function playScrubWipeSoundForMovement(fromPoint, toPoint) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderUi(now, options = {}) {
-  // Tankazon is rendered by the page shell while gameplay lives in this ES
+  // BubbleBodega is rendered by the page shell while gameplay lives in this ES
   // module. Publish the small, variant-aware purchase bridge once rendering
   // begins so the shell never falls back to clicking a hidden legacy card.
   if (typeof window !== "undefined" && window.buyFish !== buyFish) {
     window.buyFish = buyFish;
+    window.buyDecor = buyDecor;
     window.buySubmarine = buySubmarine;
     window.buyBoat = buyBoat;
     window.showToast = showToast;
@@ -50444,20 +50774,22 @@ function renderUi(now, options = {}) {
   syncTankStageTouchScrollState();
   renderControls(now);
   renderTutorialGuidance();
-  renderCareTaskPane(now);
   if (full) {
     renderTankManagement();
-    renderFoodShop();
-    renderPharmacyShop();
-    renderFishShop();
+    if (runtime.storeOverlayOpen) {
+      renderFoodShop();
+      renderPharmacyShop();
+      renderFishShop();
+      renderDecorShop();
+      renderEquipmentShop();
+    } else {
+      releaseStoreCatalogMarkup();
+    }
     renderFishList(now);
-    renderDecorShop();
-    renderEquipmentShop();
     renderDecorInventory();
     renderPlacedDecor();
     renderBackgrounds();
     renderSolidBackgroundControls();
-    renderFilterAssets();
     renderCustomGravelControls();
     renderCollapsibleSections();
   }
@@ -50467,6 +50799,16 @@ function renderUi(now, options = {}) {
     runtime.frameProfilerLastUiRenderMs = durationMs;
     recordDebugFrameProfilerDuration("uiRender", durationMs);
   }
+}
+
+function releaseStoreCatalogMarkup() {
+  [
+    ["food-shop", dom.foodShop],
+    ["pharmacy-shop", dom.pharmacyShop],
+    ["fish-shop", dom.fishShop],
+    ["decor-shop", dom.decorShop],
+    ["equipment-shop", dom.equipmentShop]
+  ].forEach(([cacheKey, element]) => setMarkupIfChanged(cacheKey, element, ""));
 }
 
 function shouldAllowTankStageTouchScroll() {
@@ -50617,8 +50959,13 @@ function renderWalletTransactionMenu() {
   const receipts = entries.length
     ? entries.map((entry) => {
       const debit = entry.direction === "debit";
+      const neutral = entry.direction === "neutral" || Number(entry.amount) <= 0;
       const time = new Date(Number(entry.time) || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-      return `<article class="wallet-receipt ${debit ? "is-debit" : "is-credit"}"><strong>${debit ? "−" : "+"}${entry.amount} <img src="assets/icons/coin.png" alt="coin" /></strong><span>${escapeHtml(entry.place)} · ${escapeHtml(entry.label)}</span><time>${escapeHtml(time)}</time></article>`;
+      const place = String(entry.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega");
+      const amountMarkup = neutral
+        ? "•"
+        : `${debit ? "−" : "+"}${Math.max(0, Number(entry.amount) || 0)} <img ${assetImageAttributes("assets/icons/coin.png")} alt="coin" />`;
+      return `<article class="wallet-receipt ${neutral ? "is-neutral" : debit ? "is-debit" : "is-credit"}"><strong>${amountMarkup}</strong><span>${escapeHtml(place)} · ${escapeHtml(entry.label)}</span><time>${escapeHtml(time)}</time></article>`;
     }).join("")
     : `<p class="wallet-receipt-empty">No receipts yet.</p>`;
   setMarkupIfChanged("wallet-transactions", menu, `<header><strong>Recent receipts</strong></header><div class="wallet-receipt-list">${receipts}</div>`);
@@ -50654,7 +51001,7 @@ function buildSummaryMarkup(now) {
   ), 0);
   const lowHealthCount = state.fish.filter((fish) => !isFishDead(fish) && fish.healthUnits < getFishMaxHealthUnits(fish)).length;
   const grimeLoad = Math.round((getTankFishDirtinessMultiplier() - 1) * 100);
-  const maxDirtyIn = formatDuration(getFilterMaxDirtyDurationMs());
+  const maxDirtyIn = formatDuration(getTankMaxDirtyDurationMs());
 
   const rows = [
     { label: "Fish in Tank", value: state.fish.filter((fish) => !isFishDead(fish)).length },
@@ -50823,7 +51170,7 @@ function renderFishShop() {
       const dirtinessLoadPercent = isCustomUploadProduct
         ? null
         : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
-      const fishAsset = getFishCatalogAssetPath(fish) || fish.asset;
+      const fishAsset = getFishStoreVariants(fish)[0]?.image || getFishCatalogAssetPath(fish) || fish.asset;
       const needChips = renderNeutralComfortTagChips(getSpeciesNeedTags(fish));
       const conflictChips = renderNeutralComfortTagChips(getSpeciesConflictTags(fish));
       const lockedRequirementLabel = getUnlockRequirementLabel(fish.unlockRequirement);
@@ -50833,8 +51180,8 @@ function renderFishShop() {
           ? `Debug unlocked (${lockedRequirementLabel})`
           : "Unlocked";
       return `
-        <article class="shop-card ${locked ? "is-locked" : ""}">
-          <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${fishAsset}" alt="${fish.name}" />
+        <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
+          <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
           <div class="shop-meta shop-card-main">
             <div>
               <strong>${fish.name}</strong>
@@ -50901,7 +51248,7 @@ function renderStoreOverlay() {
   dom.storeDecorTab.setAttribute("aria-selected", String(showingDecor));
   dom.storeEquipmentTab?.setAttribute("aria-selected", String(showingEquipment));
 
-  // The Tankazon shell owns its catalogue filtering. Keep it in lockstep with
+  // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
   if (runtime.storeOverlayOpen && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
@@ -50991,7 +51338,6 @@ function getBoroughSnapshotSignature(tank) {
     poops: tank?.poops,
     lastCleanedAt: tank?.lastCleanedAt,
     selectedTankAsset: tank?.selectedTankAsset,
-    selectedFilterAsset: tank?.selectedFilterAsset,
     placedDecor: (tank?.placedDecor || []).map((item) => [
       item.id, item.decorKey, item.xNorm, item.yNorm, item.scale, item.tankLayer, item.flipped, item.flippedY,
       item.decorSettings, item.caveColorSettings
@@ -51066,14 +51412,22 @@ function getBoroughSnapshot(tank, now = Date.now()) {
 
 function paintBoroughSnapshots(tanks, now = Date.now(), options = {}) {
   const refreshMs = Math.max(250, Number(runtime.boroughOverviewSnapshotFrameMs) || 1500);
-  if (options.force !== true && now - Number(runtime.boroughOverviewSnapshotRenderedAt || 0) < refreshMs) {
-    return false;
+  // Spread full tank renders across frames. Opening only copies cached previews,
+  // so the overview shell can paint before the first expensive snapshot.
+  if (options.force === true || (!runtime.boroughOverviewSnapshotQueue?.length
+    && now - Number(runtime.boroughOverviewSnapshotRenderedAt || 0) >= refreshMs)) {
+    runtime.boroughOverviewSnapshotQueue = tanks.map((tank) => tank.id);
+    runtime.boroughOverviewSnapshotRenderedAt = now;
   }
-  runtime.boroughOverviewSnapshotRenderedAt = now;
+  if (options.force !== true && !runtime.boroughOverviewSnapshotQueue?.length) return false;
   let renderedTank = false;
+  const nextId = options.cachedOnly ? null : runtime.boroughOverviewSnapshotQueue?.shift();
   for (const tank of tanks) {
-    const snapshot = getBoroughSnapshot(tank, now);
-    renderedTank = renderedTank || snapshot.changed;
+    const snapshot = tank.id === nextId
+      ? getBoroughSnapshot(tank, now)
+      : runtime.boroughOverviewSnapshotCache.get(tank.id);
+    if (!snapshot?.canvas) continue;
+    renderedTank = renderedTank || (tank.id === nextId && snapshot.changed);
     const target = dom.boroughGrid.querySelector(`canvas[data-borough-snapshot-tank-id="${CSS.escape(tank.id)}"]`);
     const context = target?.getContext?.("2d", { alpha: false });
     if (!target || !context) {
@@ -51088,6 +51442,7 @@ function paintBoroughSnapshots(tanks, now = Date.now(), options = {}) {
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "low";
     context.drawImage(snapshot.canvas, 0, 0, width, height);
+    target.classList.add("is-ready");
   }
   if (renderedTank) {
     renderTank(now);
@@ -51103,9 +51458,7 @@ function getBoroughOverviewSummary(now = Date.now()) {
   const averageCleanliness = tanks.length
     ? Math.round(tanks.reduce((total, tank) => total + getTankCleanlinessPercentForMilestones(tank, now), 0) / tanks.length)
     : 100;
-  const tasks = buildUniversalManagementCareQueue(now);
-  const activeTaskCount = tasks.filter((task) => getCareTaskId(task) !== "all-clear").length;
-  return { tanks, livingFish, hungryFish, sickFish, averageCleanliness, tasks, activeTaskCount };
+  return { tanks, livingFish, hungryFish, sickFish, averageCleanliness };
 }
 
 function buildBoroughOverviewCareTaskRow(task = {}) {
@@ -51118,13 +51471,7 @@ function buildBoroughOverviewCareTaskRow(task = {}) {
 }
 
 function buildBoroughOverviewBoroughPanel(now = Date.now()) {
-  const summary = getBoroughOverviewSummary(now);
   return `
-    <section class="borough-info-section">
-      <div class="compact-heading"><h3>Borough Care</h3><p>${summary.activeTaskCount ? `${summary.activeTaskCount} active ${pluralize("task", summary.activeTaskCount)} across all neighborhoods.` : "Everything is on track across the borough."}</p></div>
-      <div class="borough-overview-task-list">${summary.tasks.slice(0, 6).map(buildBoroughOverviewCareTaskRow).join("")}</div>
-      <button class="small-button alt" type="button" data-toggle-care-task-pane>${getUiSettings().careTaskPaneOpen === true ? "Hide Pinned Tasks" : "Pin Universal Tasks"}</button>
-    </section>
     <section class="borough-info-section">
       <div class="compact-heading"><h3>Borough Happenings</h3><p>Recent moments from every neighborhood.</p></div>
       ${buildBoroughHappeningsFeedMarkup(3)}
@@ -51145,7 +51492,6 @@ function buildBoroughOverviewNeighborhoodPanel(tank, now = Date.now()) {
   return withActiveTank(tank.id, () => {
     const stats = getManagementHubStats(now);
     const status = getManagementTankStatus(stats);
-    const tasks = buildManagementCareQueue(stats);
     const services = getBoroughSectionServiceTypes(tank);
     const serviceLabel = services.length ? services.map((type) => getBoroughServiceLabel(type)).join(", ") : "None yet";
     const healthValue = stats.deadFish > 0 ? `${stats.deadFish} lost` : stats.injuredFish > 0 ? `${stats.injuredFish} healing` : stats.livingFish ? "Stable" : "No fish";
@@ -51166,7 +51512,6 @@ function buildBoroughOverviewNeighborhoodPanel(tank, now = Date.now()) {
           <article><span>Clean</span><strong>${stats.cleanPercent}%</strong></article>
           <article><span>Waste</span><strong>${stats.wasteCount || stats.pendingWasteCount || 0}</strong></article>
         </div>
-        <div class="borough-overview-task-list">${tasks.slice(0, 4).map((task) => buildBoroughOverviewCareTaskRow({ ...task, tankId: tank.id })).join("")}</div>
       </section>
       <section class="borough-info-section">
         <div class="borough-overview-record-grid">
@@ -51223,56 +51568,68 @@ function renderAquariumOverview() {
   let cells = syntheticCount > 0
     ? Array.from({ length: syntheticCount }, (_, index) => ({ id: `debug-preview-${index}`, gridX: index % syntheticColumns, gridY: Math.floor(index / syntheticColumns), cellType: "debug-preview", debugIndex: index + 1 }))
     : tanks.map((tank) => ({ ...tank, cellType: "section" }));
+  let editFrame = null;
   if (!syntheticCount && editMode) {
     const occupied = new Set(cells.map((cell) => `${cell.gridX}:${cell.gridY}`));
     const tankXs = tanks.map((tank) => tank.gridX);
     const tankYs = tanks.map((tank) => tank.gridY);
-    const minTankX = Math.min(...tankXs) - 1;
-    const maxTankX = Math.max(...tankXs) + 1;
-    const minTankY = Math.min(...tankYs) - 1;
-    const maxTankY = Math.max(...tankYs) + 1;
-    for (let gridY = minTankY; gridY <= maxTankY; gridY += 1) {
-      for (let gridX = minTankX; gridX <= maxTankX; gridX += 1) {
-        if (!occupied.has(`${gridX}:${gridY}`)) cells.push({ gridX, gridY, cellType: "drop" });
+    const occupiedMinX = Math.min(...tankXs);
+    const occupiedMaxX = Math.max(...tankXs);
+    const occupiedMinY = Math.min(...tankYs);
+    const occupiedMaxY = Math.max(...tankYs);
+    const expansionTarget = expansionSpaces[0] || null;
+
+    let frameMinX = Math.min(occupiedMinX, Number.isInteger(expansionTarget?.gridX) ? expansionTarget.gridX : occupiedMinX);
+    let frameMaxX = Math.max(occupiedMaxX, Number.isInteger(expansionTarget?.gridX) ? expansionTarget.gridX : occupiedMaxX);
+    let frameMinY = Math.min(occupiedMinY, Number.isInteger(expansionTarget?.gridY) ? expansionTarget.gridY : occupiedMinY);
+    let frameMaxY = Math.max(occupiedMaxY, Number.isInteger(expansionTarget?.gridY) ? expansionTarget.gridY : occupiedMaxY);
+
+    while (frameMaxX - frameMinX + 1 < 5) frameMaxX += 1;
+    while (frameMaxY - frameMinY + 1 < 3) frameMaxY += 1;
+    if (frameMaxX - frameMinX + 1 > 5) frameMinX = frameMaxX - 4;
+    if (frameMaxY - frameMinY + 1 > 3) frameMinY = frameMaxY - 2;
+    editFrame = { minX: frameMinX, maxX: frameMinX + 4, minY: frameMinY, maxY: frameMinY + 2 };
+
+    for (let gridY = editFrame.minY; gridY <= editFrame.maxY; gridY += 1) {
+      for (let gridX = editFrame.minX; gridX <= editFrame.maxX; gridX += 1) {
+        if (!occupied.has(`${gridX}:${gridY}`) && tanks.some((moving) => fitsBoroughTankGrid(tanks.map((tank) => tank.id === moving.id ? { gridX, gridY } : tank)))) {
+          cells.push({ gridX, gridY, cellType: "drop" });
+        }
       }
     }
   }
-  const minX = Math.min(...cells.map((cell) => cell.gridX));
-  const maxX = Math.max(...cells.map((cell) => cell.gridX));
-  const minY = Math.min(...cells.map((cell) => cell.gridY));
-  const maxY = Math.max(...cells.map((cell) => cell.gridY));
-  const columnCount = maxX - minX + 1;
-  const rowCount = maxY - minY + 1;
+  const minX = editFrame?.minX ?? Math.min(...cells.map((cell) => cell.gridX));
+  const maxX = editFrame?.maxX ?? Math.max(...cells.map((cell) => cell.gridX));
+  const minY = editFrame?.minY ?? Math.min(...cells.map((cell) => cell.gridY));
+  const maxY = editFrame?.maxY ?? Math.max(...cells.map((cell) => cell.gridY));
+  const columnCount = Math.min(5, maxX - minX + 1);
+  const rowCount = Math.min(3, maxY - minY + 1);
   const expansionCost = getAquariumExpansionCost();
   const overviewSummary = getBoroughOverviewSummary(Date.now());
   dom.boroughGrid.style.setProperty("--borough-columns", String(columnCount));
   dom.boroughGrid.style.setProperty("--borough-rows", String(rowCount));
   dom.boroughGrid.classList.toggle("is-editing", editMode);
   dom.boroughOverview?.querySelector(".borough-overview-body")?.classList.toggle("is-editing", editMode);
-  if (dom.boroughOverviewInfo) dom.boroughOverviewInfo.hidden = editMode;
+  if (dom.boroughOverviewInfo) dom.boroughOverviewInfo.hidden = true;
   dom.toggleBoroughEditMode?.setAttribute("aria-pressed", String(editMode));
   if (dom.toggleBoroughEditMode) dom.toggleBoroughEditMode.querySelector("small").textContent = editMode ? "Done" : "Edit";
   if (dom.addBoroughTankButton) {
     dom.addBoroughTankButton.hidden = !editMode;
-    dom.addBoroughTankButton.disabled = state.coins < expansionCost;
-    dom.addBoroughTankButton.querySelector("small").textContent = `Add Tank · ${expansionCost} coins`;
+    dom.addBoroughTankButton.disabled = !expansionSpaces.length || state.coins < expansionCost;
+    dom.addBoroughTankButton.querySelector("small").textContent = expansionSpaces.length ? `Add Tank · ${expansionCost} coins` : "Borough full · 15 tanks max";
   }
   const layoutOverride = isDebugModeEnabled() ? String(runtime.debugOverviewLayoutMode || "auto") : "auto";
   dom.boroughGrid.classList.toggle("is-compact", layoutOverride === "compact" || layoutOverride === "micro" || (layoutOverride === "auto" && Math.max(columnCount, rowCount) >= 6));
   dom.boroughGrid.classList.toggle("is-micro", layoutOverride === "micro" || (layoutOverride === "auto" && Math.max(columnCount, rowCount) >= 10));
   dom.boroughOverviewTitle.textContent = "Borough Overview";
-  const latestHappening = sanitizeBoroughHappenings(state.boroughHappenings)[0];
   dom.boroughOverviewHint.textContent = editMode
-    ? `Drag neighborhoods onto the grid to rearrange them. Add a tank for ${expansionCost} coins.`
-    : latestHappening
-      ? `${latestHappening.text} · Click a tank to visit or use its info button.`
-      : "Click a tank to visit or use its info button for neighborhood details.";
+    ? "Drag tanks to rearrange them. Maximum 3 rows × 5 columns (15 tanks)."
+    : "Click a tank to visit. Use Edit to expand or rearrange your borough.";
   if (dom.boroughOverviewStatus) {
     setMarkupIfChanged("borough-overview-status", dom.boroughOverviewStatus, `
-      <span><strong>${overviewSummary.tanks.length}</strong> ${pluralize("neighborhood", overviewSummary.tanks.length)}</span>
+      <span><strong>${overviewSummary.tanks.length} / 15</strong> tanks</span>
       <span><strong>${overviewSummary.livingFish.length}</strong> fish</span>
       <span><strong>${overviewSummary.averageCleanliness}%</strong> average clean</span>
-      <span class="${overviewSummary.activeTaskCount ? "has-alert" : ""}"><strong>${overviewSummary.activeTaskCount}</strong> active ${pluralize("task", overviewSummary.activeTaskCount)}</span>
     `);
   }
   const markup = cells.map((cell) => {
@@ -51311,19 +51668,18 @@ function renderAquariumOverview() {
       : "";
     const nameMarkup = editing
       ? `<span class="borough-name-editor"><input type="text" maxlength="36" value="${escapeHtml(runtime.editingTankNameValue)}" data-borough-name-input="${escapeHtml(cell.id)}" aria-label="Neighborhood name"><button type="button" data-save-borough-name="${escapeHtml(cell.id)}">Save</button><button type="button" data-cancel-borough-name>Cancel</button></span>`
-      : `<strong>${escapeHtml(getTankLabel(cell))}</strong>${editMode ? `<button class="borough-rename-button" type="button" data-rename-borough="${escapeHtml(cell.id)}" aria-label="Rename ${escapeHtml(getTankLabel(cell))}">&#9998;</button><button class="borough-sell-button" type="button" data-sell-borough-tank="${escapeHtml(cell.id)}" ${canSell ? "" : "disabled"} aria-label="Sell ${escapeHtml(getTankLabel(cell))} for ${resaleValue} coins" title="${escapeHtml(sellTitle)}"><span aria-hidden="true">&#128465;</span><small>${resaleValue}</small></button>` : `<button class="borough-info-button" type="button" data-borough-tank-info="${escapeHtml(cell.id)}" aria-label="View information for ${escapeHtml(getTankLabel(cell))}">i</button>`}`;
-    const infoSelected = runtime.boroughOverviewInfoTab === "tank" && runtime.boroughOverviewInfoTankId === cell.id;
+      : `<strong>${escapeHtml(getTankLabel(cell))}</strong>${editMode ? `<button class="borough-rename-button" type="button" data-rename-borough="${escapeHtml(cell.id)}" aria-label="Rename ${escapeHtml(getTankLabel(cell))}">&#9998;</button><button class="borough-sell-button" type="button" data-sell-borough-tank="${escapeHtml(cell.id)}" ${canSell ? "" : "disabled"} aria-label="Sell ${escapeHtml(getTankLabel(cell))} for ${resaleValue} coins" title="${escapeHtml(sellTitle)}"><span aria-hidden="true">&#128465;</span><small>${resaleValue}</small></button>` : ""}`;
+    const infoSelected = false;
     return `<article class="borough-grid-cell borough-section-cell${active ? " is-active" : ""}${infoSelected ? " is-info-selected" : ""}" role="gridcell" draggable="false" style="grid-column:${column};grid-row:${row}" data-borough-section="${escapeHtml(cell.id)}" data-borough-grid-x="${cell.gridX}" data-borough-grid-y="${cell.gridY}"><span class="borough-preview-shell"><button class="borough-section-preview" type="button" data-visit-section="${escapeHtml(cell.id)}" aria-label="Visit ${escapeHtml(getTankLabel(cell))}"><canvas class="borough-cell-snapshot-canvas" data-borough-snapshot-tank-id="${escapeHtml(cell.id)}" aria-hidden="true"></canvas><canvas class="borough-cell-fish-canvas" data-borough-fish-tank-id="${escapeHtml(cell.id)}" aria-hidden="true"></canvas></button>${wallMarkup}</span><span class="borough-cell-copy"><span class="borough-cell-name">${nameMarkup}</span><span class="borough-cell-stats">${fishCount} fish · ${escapeHtml(identity.label)}</span>${serviceMarkup}</span></article>`;
   }).join("");
   setMarkupIfChanged("borough-grid", dom.boroughGrid, markup);
   if (!syntheticCount) {
-    paintBoroughSnapshots(tanks, Date.now(), { force: true });
+    paintBoroughSnapshots(tanks, Date.now(), { force: true, cachedOnly: true });
   }
   runtime.boroughOverviewFishRenderedAt = 0;
   if (!syntheticCount) {
     renderBoroughOverviewFish(Date.now(), { force: true });
   }
-  renderBoroughOverviewInfoPanel(Date.now());
 }
 
 function getBoroughOverviewFishColor(fish) {
@@ -51452,13 +51808,13 @@ function getFoodAndMedArt(kind, id) {
 
 function renderFoodAndMedImage(kind, id, alt, className = "shop-thumb") {
   const { imagePath, fallbackPath } = getFoodAndMedArt(kind, id);
-  return `<img class="${className}" src="${imagePath}" alt="${alt}" onerror="this.onerror=null;this.src='${fallbackPath}'" />`;
+  return `<img class="${className}" ${assetImageAttributes(imagePath)} alt="${alt}" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','${fallbackPath}')" />`;
 }
 
 function renderTankProductImage(tankTypeId, alt, className = "shop-thumb") {
   const imagePath = getTankProductImagePath(tankTypeId);
   const fallbackPath = getTankProductImageFallback(tankTypeId);
-  return `<img class="${className}" src="${imagePath}" alt="${alt}" onerror="this.onerror=null;this.src='${fallbackPath}'" />`;
+  return `<img class="${className}" ${assetImageAttributes(imagePath)} alt="${alt}" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','${fallbackPath}')" />`;
 }
 
 function getCustomBackgroundPreviewClasses(baseClassName = "background-thumb", target = getCurrentTank()) {
@@ -51494,11 +51850,11 @@ function renderBackgroundPreview(background, className = "background-thumb") {
   if (isLocalImageBackgroundKey(background.key)) {
     const dataUrl = getLocalBackgroundImageDataUrl();
     return dataUrl
-      ? `<img class="${className}" src="${dataUrl}" alt="${escapeHtml(background.name)}" />`
+      ? `<img class="${className}" ${assetImageAttributes(dataUrl)} alt="${escapeHtml(background.name)}" />`
       : "";
   }
 
-  return `<img class="${className}" src="${background.path}" alt="${escapeHtml(background.name)}" />`;
+  return `<img class="${className}" ${assetImageAttributes(background.path)} alt="${escapeHtml(background.name)}" />`;
 }
 
 function renderFoodShop() {
@@ -51510,19 +51866,19 @@ function renderFoodShop() {
   const cardsMarkup = catalog.map((food) => {
     const count = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
     return `
-      <article class="shop-card">
+      <article class="shop-card" ${renderStoreFacetAttributes("food", food)}>
         ${renderFoodAndMedImage("food", food.id, food.name)}
         <div class="shop-meta shop-card-main">
           <div>
             <strong>${food.name}</strong>
             <div class="fish-meta">${food.description}</div>
           </div>
-          <div class="fish-meta">${count} pellet${count === 1 ? "" : "s"} owned</div>
+          <div class="fish-meta">${count} ${food.id === "halloweenCandy" ? "candies" : "pellets"} owned</div>
         </div>
         <div class="shop-meta">
           <span class="price-tag">${food.cost} ${pluralize("coin", food.cost)}</span>
           <button class="buy-button" data-buy-food="${food.id}">
-            Buy Bottle (+${food.bottlePellets})
+            ${food.id === "halloweenCandy" ? "Buy Pile" : "Buy Bottle"} (+${food.bottlePellets})
           </button>
         </div>
       </article>
@@ -51541,7 +51897,7 @@ function renderPharmacyShop() {
   const cardsMarkup = catalog.map((medicine) => {
     const count = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
     return `
-      <article class="shop-card">
+      <article class="shop-card" ${renderStoreFacetAttributes("pharmacy", medicine)}>
         ${renderFoodAndMedImage("medicine", medicine.id, medicine.name)}
         <div class="shop-meta shop-card-main">
           <div>
@@ -51595,10 +51951,6 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
     ? sectionServices.map((serviceType) => getBoroughServiceLabel(serviceType)).join(", ")
     : "None yet";
   const resaleValue = getTankResaleValue(tank);
-  const filterLabel = ENABLE_FILTER ? (runtime.filterMap.get(tank.selectedFilterAsset)?.name || "Basic Filter") : "None";
-  const filterSummaryRow = ENABLE_FILTER
-    ? `<div class="summary-row"><span>Filter</span><strong>${filterLabel}</strong></div>`
-    : "";
   const tankMemoryNote = "All neighborhoods are connected. Fish can travel throughout Bubble Borough.";
   const editingName = runtime.editingTankNameId === tank.id;
   const tankLabel = getTankLabel(tank, currentTankIndex);
@@ -51657,7 +52009,6 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
       <div class="summary-row tank-name-summary-row"><span>Tank Name</span>${nameMarkup}</div>
       <div class="summary-row"><span>Neighborhood</span><strong>${currentTankIndex + 1} of ${tankCount}</strong></div>
       <div class="summary-row"><span>Services</span><strong>${escapeHtml(sectionServiceLabel)}</strong></div>
-      ${filterSummaryRow}
       <div class="summary-row"><span>Fish</span><strong>${livingFish}</strong></div>
       <div class="summary-row"><span>Decor</span><strong>${decorCount}</strong></div>
     </div>
@@ -51757,211 +52108,16 @@ function getManagementTankStatus(stats) {
 }
 
 function buildIllnessCareTask(now = Date.now()) {
-  if (!state?.fish?.length) {
-    return null;
-  }
-
-  const affectedFish = state.fish
-    .filter((fish) => fish && !isFishDead(fish) && isFishDiseaseVisible(fish) && hasActiveFishDisease(fish))
-    .sort((left, right) => Number(left.diseaseInfectedAt || 0) - Number(right.diseaseInfectedAt || 0));
-  if (!affectedFish.length) {
-    return null;
-  }
-
-  const count = affectedFish.length;
-  const hasSevere = affectedFish.some((fish) => sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_SEVERE);
-  const allRecovering = affectedFish.every((fish) => sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_RECOVERING);
-  const firstFish = affectedFish[0];
-  const label = count === 1
-    ? allRecovering
-      ? `${firstFish.name} is recovering.`
-      : `${firstFish.name} looks off-color.`
-    : allRecovering
-      ? "Several fish are recovering."
-      : "Several fish look off-color.";
-  const note = allRecovering
-    ? "Keep conditions steady until normal routines return."
-    : count === 1
-      ? "Give them quiet space and medicine if you can."
-      : "Keep the tank calm, clean the water, and dose medicine if you can.";
-
-  return {
-    id: "illness-care",
-    badge: hasSevere ? "Now" : "Care",
-    label,
-    value: count === 1 ? "Care" : `${count} fish`,
-    note,
-    tone: hasSevere ? "danger" : "warn"
-  };
+  return null;
 }
 
 function buildManagementCareQueue(stats) {
-  const tasks = [];
-  if (stats.deadFish > 0) {
-    tasks.push({
-      id: "dispose-dead-fish",
-      badge: "Now",
-      label: "Dispose dead fish",
-      value: `${stats.deadFish} waiting`,
-      note: "Open the tank and scoop them out now.",
-      tone: "danger"
-    });
-  }
-
-  if (stats.injuredFish > 0) {
-    tasks.push({
-      id: "dose-medicine",
-      badge: tasks.length ? "Soon" : "Now",
-      label: "Dose medicine",
-      value: `${stats.injuredFish} healing`,
-      note: "Use medicine to speed recovery.",
-      tone: "warn"
-    });
-  }
-
-  if (stats.hungryFish > 0) {
-    tasks.push({
-      id: "feed-hungry-fish",
-      badge: tasks.length ? "Soon" : "Now",
-      label: "Feed hungry fish",
-      value: `${stats.hungryFish} hungry`,
-      note: stats.mealNote,
-      tone: "warn"
-    });
-  }
-
-  if (stats.cleanPercent <= 45) {
-    tasks.push({
-      id: "clean-tank",
-      badge: tasks.length ? "Soon" : "Now",
-      label: stats.cleanPercent <= 20 ? "Clean the tank" : "Schedule a scrub",
-      value: `${stats.cleanPercent}% clean`,
-      note: `Max grime in ${stats.maxDirtyIn}.`,
-      tone: stats.cleanPercent <= 20 ? "danger" : "warn"
-    });
-  }
-
-  if (stats.wasteCount > 0) {
-    tasks.push({
-      id: "scoop-floor",
-      badge: tasks.length ? "Soon" : "Heads Up",
-      label: "Scoop the floor",
-      value: `${stats.wasteCount} waste`,
-      note: stats.pendingWasteCount > 0
-        ? `${stats.pendingWasteCount} more ${pluralize("drop", stats.pendingWasteCount)} pending soon.`
-        : "Once scooped, the gravel is clear again.",
-      tone: "warn"
-    });
-  }
-
-  const illnessCareTask = buildIllnessCareTask(stats.now || Date.now());
-  if (illnessCareTask && tasks.length < 6) {
-    tasks.push({
-      ...illnessCareTask,
-      badge: tasks.length ? illnessCareTask.badge : (illnessCareTask.tone === "danger" ? "Now" : "Care")
-    });
-  }
-
-  const comfortSuggestions = buildCurrentTankCareSuggestions(stats.now || Date.now())
-    .filter((suggestion) => suggestion && suggestion.fulfilled !== true);
-  for (const suggestion of comfortSuggestions) {
-    if (tasks.length >= 6) {
-      break;
-    }
-    const key = String(suggestion.key || "");
-    const isNeedSuggestion = key.startsWith("need:");
-    const isGlassStressSuggestion = key.startsWith("glass_tap_stress:");
-    tasks.push({
-      id: `comfort:${key || suggestion.label}`,
-      badge: tasks.length ? "Comfort" : "Now",
-      label: suggestion.label,
-      value: isNeedSuggestion ? "Need" : isGlassStressSuggestion ? "Stress" : "Conflict",
-      note: isGlassStressSuggestion
-        ? "Avoid tapping nearby glass until the stress fades."
-        : isNeedSuggestion
-        ? "Add matching decor, space, or tankmates to satisfy this need."
-        : "Adjust tankmates or decor to remove this comfort penalty.",
-      tone: isNeedSuggestion ? "neutral" : "warn"
-    });
-  }
-
-  if (!tasks.length) {
-    const readyToStock = !stats?.livingFish;
-    return [{
-      id: "all-clear",
-      badge: readyToStock ? "Ready" : "On Track",
-      label: readyToStock ? "Ready to stock" : "Everything is on track",
-      value: readyToStock ? "No fish" : "All clear",
-      note: readyToStock ? "This neighborhood is clean and ready for fish." : "Hunger, health, comfort, and cleanup look good.",
-      tone: readyToStock ? "neutral" : "good"
-    }];
-  }
-
-  return tasks;
+  // Care tasks are disabled; tank conditions remain available in the snapshot.
+  return [];
 }
 
 function buildUniversalManagementCareQueue(now = Date.now()) {
-  const tasks = [];
-  const hungryFish = [];
-  const injuredFish = [];
-  const diseasedFish = [];
-  for (const tank of getAllTanks()) {
-    const localTasks = withActiveTank(tank.id, () => buildManagementCareQueue(getManagementHubStats(now))) || [];
-    for (const task of localTasks) {
-      const localId = getCareTaskId(task);
-      if (localId === "all-clear") {
-        continue;
-      }
-      let targetFish = null;
-      if (localId === "feed-hungry-fish") {
-        hungryFish.push(...getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD).map((fish) => ({ fish, tank })));
-        continue;
-      } else if (localId === "dose-medicine") {
-        injuredFish.push(...tank.fish.filter((fish) => !isFishDead(fish) && fish.healthUnits < getFishMaxHealthUnits(fish)).map((fish) => ({ fish, tank })));
-        continue;
-      } else if (localId === "illness-care") {
-        diseasedFish.push(...tank.fish.filter((fish) => !isFishDead(fish) && isFishDiseaseVisible(fish) && hasActiveFishDisease(fish)).map((fish) => ({ fish, tank })));
-        continue;
-      } else if (localId.startsWith("comfort:")) {
-        targetFish = tank.fish.find((fish) => String(task.label || "").startsWith(`${fish.name} `)) || null;
-      }
-      tasks.push({
-        ...task,
-        // Fish-care task identity follows the fish, not its current tank. Tank
-        // chores remain tied to the physical section that needs attention.
-        id: targetFish ? localId : `${tank.id}:${localId}`,
-        tankId: tank.id,
-        fishId: targetFish?.id || "",
-        tankLabel: getTankLabel(tank)
-      });
-    }
-  }
-  const pushAggregate = (id, entries, label, badge, valueLabel, tone, actionNote) => {
-    if (!entries.length) return;
-    const first = entries[0];
-    tasks.unshift({
-      id,
-      badge,
-      label,
-      value: `${entries.length} ${valueLabel}`,
-      note: actionNote,
-      tone,
-      tankId: first.tank.id,
-      fishId: first.fish.id,
-      tankLabel: getTankLabel(first.tank)
-    });
-  };
-  pushAggregate("feed-hungry-fish", hungryFish, "Feed hungry fish", "Soon", "hungry", "warn", "Drop food in any reachable neighborhood; hungry fish will travel to it.");
-  pushAggregate("dose-medicine", injuredFish, "Dose medicine", "Now", "healing", "warn", "Select a fish to jump to its current neighborhood.");
-  pushAggregate("illness-care", diseasedFish, diseasedFish.length === 1 ? `${diseasedFish[0].fish.name} looks off-color.` : "Several fish look off-color.", "Care", "sick", "danger", "Select a fish to jump to its current neighborhood.");
-  return tasks.length ? tasks : [{
-    id: "all-clear",
-    badge: "On Track",
-    label: "Everything is on track",
-    value: "All clear",
-    note: "Hunger, health, comfort, and cleanup look good across the borough.",
-    tone: "good"
-  }];
+  return [];
 }
 
 function buildManagementSnapshotStat(label, value, tone = "") {
@@ -52014,42 +52170,7 @@ function buildManagementCompactTaskRow(task = {}) {
 }
 
 function runManagementCareTaskAction(action, tankId = "", fishId = "") {
-  if (tankId && state.activeTankId !== tankId) {
-    setActiveTank(tankId, { announce: false, preserveHorizontalOverlays: true });
-  }
-  if (fishId && getTankContainingFish(fishId)?.id === state.activeTankId) {
-    openFishInspector(fishId);
-  }
-  switch (String(action || "")) {
-    case "focus":
-      return Boolean(tankId || fishId);
-    case "store-fish":
-      openStoreOverlay("fish");
-      return true;
-    case "feed":
-      closeUtilityOverlay();
-      toggleFoodTray(true, { source: "management", collapseSidebar: true });
-      return true;
-    case "medicine":
-      if (!hasStockedMedicine()) {
-        openStoreOverlay("pharmacy");
-        showToast("No medicine is stocked. Opening the pharmacy.");
-        return true;
-      }
-      closeUtilityOverlay();
-      toggleMedicineTray(true, { source: "management", collapseSidebar: true });
-      return true;
-    case "clean":
-      closeUtilityOverlay();
-      toggleCleaningMode({ source: "management", collapseSidebar: true });
-      return true;
-    case "scoop":
-      closeUtilityOverlay();
-      toggleScoopMode({ source: "management", collapseSidebar: true });
-      return true;
-    default:
-      return false;
-  }
+  return false;
 }
 
 function getCareTaskId(task = {}) {
@@ -52166,51 +52287,15 @@ function buildCareTaskPaneRow(task = {}, options = {}) {
 }
 
 function renderCareTaskPane(now = Date.now()) {
-  if (!dom.careTaskPane || !dom.careTaskList) {
-    return;
-  }
-
-  const isOpen = getUiSettings().careTaskPaneOpen === true && !isIntroTutorialActive();
-  dom.careTaskPane.hidden = !isOpen;
-  if (!isOpen) {
-    resetCareTaskPaneRuntime([], "borough");
-    setMarkupIfChanged("care-task-pane-list", dom.careTaskList, "");
-    return;
-  }
-
-  const tasks = buildUniversalManagementCareQueue(now);
-  syncCareTaskPaneTasks(tasks, now);
-  const completedRows = Array.from(runtime.careTaskPaneCompletingTasks.values())
-    .sort((left, right) => Number(left.completedAt) - Number(right.completedAt))
-    .map((entry) => buildCareTaskPaneRow(entry.task, { completed: true }));
-  const noActiveTasks = tasks.length === 1 && getCareTaskId(tasks[0]) === "all-clear";
-  const activeTasks = noActiveTasks
-    ? []
-    : tasks;
-  const activeRows = activeTasks.map((task) => buildCareTaskPaneRow(task));
-  const emptyMarkup = !completedRows.length && noActiveTasks
-    ? `<div class="care-task-empty">No tasks to display</div>`
-    : "";
-  setMarkupIfChanged("care-task-pane-list", dom.careTaskList, [...completedRows, ...activeRows, emptyMarkup].join(""));
+  if (dom.careTaskPane) dom.careTaskPane.hidden = true;
+  if (dom.careTaskList) dom.careTaskList.textContent = "";
+  resetCareTaskPaneRuntime([], "borough");
 }
 
 function setCareTaskPaneOpen(open) {
-  if (!state) {
-    return;
-  }
-
-  const currentSettings = getUiSettings();
-  const nextSettings = sanitizeUiSettings({
-    ...currentSettings,
-    careTaskPaneOpen: Boolean(open)
-  });
-  if (currentSettings.careTaskPaneOpen === nextSettings.careTaskPaneOpen) {
-    return;
-  }
-
-  state.uiSettings = nextSettings;
-  saveState();
-  renderUi(Date.now(), { full: false });
+  // Ignore legacy saved preferences and callers that attempt to reopen tasks.
+  if (state?.uiSettings) state.uiSettings.careTaskPaneOpen = false;
+  renderCareTaskPane();
 }
 
 function toggleCareTaskPane() {
@@ -52301,7 +52386,7 @@ function buildTankManagementMilestonesBrowser(now = Date.now()) {
     const unlockLabels = getMilestoneUnlockLabels(milestone);
     return `
       <article class="management-milestone-card ${unlocked ? "is-complete" : "is-locked"}">
-        <img class="management-milestone-icon" src="${escapeHtml(getMilestoneIconPath(milestone.id))}" alt="${escapeHtml(`${milestone.label} medal`)}" />
+        <img class="management-milestone-icon" ${assetImageAttributes(getMilestoneIconPath(milestone.id))} alt="${escapeHtml(`${milestone.label} medal`)}" />
         <div class="management-milestone-copy">
           <div class="management-milestone-topline">
             <strong>${escapeHtml(milestone.label)}</strong>
@@ -52751,7 +52836,7 @@ function buildManagementFishRow(fish, now = Date.now()) {
 
   return `
     <article class="management-browser-item">
-      <img class="management-browser-thumb management-browser-thumb-fish" src="${escapeHtml(fishAsset)}" alt="${escapeHtml(fish.name)}" />
+      <img class="management-browser-thumb management-browser-thumb-fish" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
       <div class="management-browser-copy">
         <strong>${escapeHtml(fish.name)}</strong>
         <span>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</span>
@@ -52794,7 +52879,8 @@ function buildManagementDecorRow(item) {
   };
   const grouped = isPlacedDecorGrouped(item);
   const resaleValue = getResaleValue(decor?.cost || 0);
-  const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey);
+  const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey)
+    && isDecorShopUnlocked(item.decorKey) && isSeasonalDecorAvailable(decor);
   const serviceTypes = getDecorBoroughServiceTypes(item);
   const serviceSeatStatus = serviceTypes.length
     ? `Seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}`
@@ -52802,7 +52888,7 @@ function buildManagementDecorRow(item) {
 
   return `
     <article class="management-browser-item">
-      <img class="management-browser-thumb management-browser-thumb-decor" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
+      <img class="management-browser-thumb management-browser-thumb-decor" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
       <div class="management-browser-copy">
         <strong>${escapeHtml(decor.name)}</strong>
         <span>${escapeHtml(`Layer ${getDecorTankLayer(item)} / ${formatDecorScale(item.scale)}`)}</span>
@@ -52849,9 +52935,8 @@ function getManagementHubStats(now = Date.now()) {
   const storedDecor = Object.values(state.decorInventory || {}).reduce((total, count) => total + Math.max(0, Math.floor(Number(count) || 0)), 0);
   const dirtiness = getTankDirtiness(now);
   const cleanPercent = Math.round((1 - dirtiness) * 100);
-  const maxDirtyInMs = Math.max(0, (1 - dirtiness) * getFilterMaxDirtyDurationMs());
+  const maxDirtyInMs = Math.max(0, (1 - dirtiness) * getTankMaxDirtyDurationMs());
   const grimeLoad = Math.round((getTankFishDirtinessMultiplier() - 1) * 100);
-  const filterLabel = ENABLE_FILTER ? (runtime.filterMap.get(state.selectedFilterAsset)?.name || "Basic Filter") : "None";
   const feedingCareCoins = getLivingTankFish().reduce((total, fish) => (
     total + (isMealFreeFish(fish) ? 0 : (getSpeciesForFish(fish)?.mealCoins || 0))
   ), 0);
@@ -52874,7 +52959,6 @@ function getManagementHubStats(now = Date.now()) {
     coinsPerMeal: feedingCareCoins,
     currentMealServed: hungerStable,
     deadFish,
-    filterLabel,
     grimeLoad,
     hungryFish,
     starvingFish,
@@ -52914,7 +52998,6 @@ function buildTankManagementOverlayBody(now = Date.now()) {
   }
 
   const stats = getManagementHubStats(now);
-  const careQueue = buildManagementCareQueue(stats);
   const cleanlinessTone = stats.cleanPercent <= 20 ? "danger" : stats.cleanPercent <= 45 ? "warn" : "good";
   const mealsTone = !stats.livingFish ? "neutral" : stats.hungryFish > 0 ? "warn" : stats.currentMealServed ? "good" : "neutral";
   const healthTone = stats.deadFish > 0 ? "danger" : stats.injuredFish > 0 ? "warn" : stats.livingFish ? "good" : "neutral";
@@ -52940,9 +53023,6 @@ function buildTankManagementOverlayBody(now = Date.now()) {
       <section class="settings-section management-care-panel">
         <div class="compact-heading management-care-heading">
           <h3>Care Snapshot</h3>
-          <button class="small-button alt" type="button" data-toggle-care-task-pane>
-            ${getUiSettings().careTaskPaneOpen === true ? "Hide Pinned Tasks" : "Pin Tasks"}
-          </button>
         </div>
         <div class="management-care-body">
           <div class="management-snapshot-stats">
@@ -52950,12 +53030,6 @@ function buildTankManagementOverlayBody(now = Date.now()) {
             ${buildManagementSnapshotStat("Health", healthValue, healthTone)}
             ${buildManagementSnapshotStat("Cleanliness", `${stats.cleanPercent}%`, cleanlinessTone)}
             ${buildManagementSnapshotStat("Waste", wasteValue, stats.wasteCount > 0 ? "warn" : stats.pendingWasteCount > 0 ? "neutral" : "")}
-          </div>
-          <div class="management-task-stack">
-            <div class="management-task-heading">Suggested Tasks</div>
-            <div class="management-task-list">
-              ${careQueue.map((task) => buildManagementCompactTaskRow(task)).join("")}
-            </div>
           </div>
         </div>
       </section>
@@ -54149,7 +54223,7 @@ function renderCustomDecorNameOverlay() {
                   aria-label="Uploaded custom decor animated preview"></canvas>
                 <img
                   class="custom-decor-motion-source"
-                  src="${previewImageSrc}"
+                  ${assetImageAttributes(previewImageSrc)}
                   alt="Uploaded custom decor preview"
                   data-custom-decor-preview />
                 ${usesSplit ? `<div class="custom-decor-motion-split-line" style="top: ${(splitY * 100).toFixed(2)}%;" data-custom-decor-split-line></div>` : ""}
@@ -54330,7 +54404,7 @@ function renderCustomHideBackgroundPrompt() {
     <div class="custom-decor-name-panel">
       <div class="custom-decor-upload-preview">
         <img
-          src="${escapeHtml(pending.frontDataUrl)}"
+          ${assetImageAttributes(pending.frontDataUrl)}
           alt="Uploaded custom hide front preview"
           style="aspect-ratio: ${escapeHtml(aspectRatio)};" />
       </div>
@@ -54375,7 +54449,7 @@ function renderCustomHideCreationOverlay() {
         data-choose-custom-hide-front>
         <span class="custom-hide-upload-label">Front</span>
         ${hasFrontImage
-          ? `<img src="${escapeHtml(pending.frontDataUrl)}" alt="Uploaded custom hide front preview" style="aspect-ratio: ${escapeHtml(frontAspectRatio)};" />`
+          ? `<img ${assetImageAttributes(pending.frontDataUrl)} alt="Uploaded custom hide front preview" style="aspect-ratio: ${escapeHtml(frontAspectRatio)};" />`
           : `<span class="custom-hide-upload-empty">Choose front image</span>`}
       </button>
       <button
@@ -54385,7 +54459,7 @@ function renderCustomHideCreationOverlay() {
         ${hasFrontImage ? "" : "disabled"}>
         <span class="custom-hide-upload-label">Background</span>
         ${hasBackgroundImage
-          ? `<img src="${escapeHtml(pending.bgDataUrl)}" alt="Uploaded custom hide background preview" style="aspect-ratio: ${escapeHtml(bgAspectRatio)};" />`
+          ? `<img ${assetImageAttributes(pending.bgDataUrl)} alt="Uploaded custom hide background preview" style="aspect-ratio: ${escapeHtml(bgAspectRatio)};" />`
           : `<span class="custom-hide-upload-empty">${hasFrontImage ? "Choose background image" : "Choose front first"}</span>`}
       </button>
     </div>
@@ -54404,12 +54478,12 @@ function renderCustomHideCreationOverlay() {
               aria-label="Uploaded custom hide preview"></canvas>
             <img
               class="custom-decor-motion-source custom-hide-overlay-image custom-hide-overlay-bg"
-              src="${escapeHtml(pending.bgDataUrl)}"
+              ${assetImageAttributes(pending.bgDataUrl)}
               alt="Uploaded custom hide background preview"
               data-custom-hide-bg-preview />
             <img
               class="custom-decor-motion-source custom-hide-overlay-image custom-hide-overlay-front"
-              src="${escapeHtml(pending.frontDataUrl)}"
+              ${assetImageAttributes(pending.frontDataUrl)}
               alt="Uploaded custom hide front preview"
               data-custom-hide-front-preview />
             <div
@@ -54679,7 +54753,7 @@ function renderDecorSettingsOverlay(item) {
       .join("");
     const activeColor = normalizeDecorColorSetting(item.transitTubeColor || "");
     const colorSwatches = getCustomGravelColorChoices().map((choice) => `<button class="custom-gravel-color-swatch bubbler-color-swatch ${activeColor === choice.color ? "is-selected" : ""}" type="button" style="--swatch:${choice.color}" data-transit-tube-color="${choice.color}" aria-pressed="${activeColor === choice.color}" title="${escapeHtml(choice.label)}"></button>`).join("");
-    return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div><div class="bubbler-color-row"><span>Glass color</span><strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong></div><div class="bubbler-color-swatches"><button class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${!activeColor ? "is-selected" : ""}" type="button" data-transit-tube-color="" aria-pressed="${!activeColor}">Original</button>${colorSwatches}</div></div></div></div>`;
+    return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div><div class="bubbler-color-row"><span>Glass color</span><strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong></div><div class="bubbler-color-swatches"><button class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${!activeColor ? "is-selected" : ""}" type="button" data-transit-tube-color="" aria-pressed="${!activeColor}">Original</button>${colorSwatches}</div></div></div></div>`;
   }
 
   const imageSrc = escapeHtml(getDecorThumbnailPath(decor));
@@ -54809,7 +54883,7 @@ function renderDecorSettingsOverlay(item) {
                   aria-label="Selected decor animated preview"></canvas>
                 <img
                   class="custom-decor-motion-source"
-                  src="${imageSrc}"
+                  ${assetImageAttributes(imageSrc)}
                   alt="Selected decor preview"
                   data-decor-settings-preview />
                 ${capabilities.hasSway ? `<div class="custom-decor-motion-split-line" style="top: ${(motionSettings.swaySplitY * 100).toFixed(2)}%;" data-decor-settings-split-line></div>` : ""}
@@ -54860,13 +54934,13 @@ function renderCustomFishCreationOverlay() {
           <div class="custom-fish-size-stage">
             <img
               class="custom-fish-template-overlay"
-              src="${escapeHtml(CUSTOM_FISH_TEMPLATE_IMAGE)}"
+              ${assetImageAttributes(CUSTOM_FISH_TEMPLATE_IMAGE)}
               alt=""
               aria-hidden="true"
               draggable="false" />
             <img
               class="custom-fish-upload-preview"
-              src="${escapeHtml(pending.dataUrl)}"
+              ${assetImageAttributes(pending.dataUrl)}
               alt="Uploaded custom fish preview"
               style="width: ${width}px; aspect-ratio: ${escapeHtml(aspectRatio)}; transform: ${escapeHtml(transform)};"
               data-custom-fish-preview />
@@ -55090,7 +55164,7 @@ function renderBubblerSettingsOverlay(item) {
 
 function renderFoodInventoryOverlay() {
   const cards = getFoodCatalog().filter((food) => (
-    shouldShowFoodInStore(food)
+    (food.id === "halloweenCandy" || shouldShowFoodInStore(food))
     && food.id !== "upgraded"
     && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
   )).map((food) => {
@@ -55102,7 +55176,7 @@ function renderFoodInventoryOverlay() {
         <div>
           <strong>${food.name}</strong>
           <div class="fish-meta">${food.description}</div>
-          <div class="mini-note">${quantity} pellet${quantity === 1 ? "" : "s"} remaining</div>
+          <div class="mini-note">${quantity} ${food.id === "halloweenCandy" ? "candies" : "pellets"} remaining</div>
         </div>
         <button class="small-button ${active ? "" : "alt"}" data-select-food="${food.id}" ${quantity > 0 ? "" : "disabled"}>
           ${active ? "Selected" : "Select"}
@@ -55138,17 +55212,7 @@ function renderMedicineInventoryOverlay() {
 }
 
 function renderTipsOverlay() {
-  const suggestions = buildCurrentTankCareSuggestions(Date.now());
-  if (!suggestions.length) {
-    return `<div class="empty-state">No care issues are being suggested for this tank right now.</div>`;
-  }
-
-  return suggestions.map((suggestion) => `
-    <label class="checklist-row ${suggestion.fulfilled ? "is-fulfilled" : ""}">
-      <input type="checkbox" disabled ${suggestion.fulfilled ? "checked" : ""} />
-      <span>${suggestion.label}</span>
-    </label>
-  `).join("");
+  return "";
 }
 
 function renderDailyBonusOverlay() {
@@ -55186,69 +55250,7 @@ function renderDailyBonusOverlay() {
 }
 
 function buildCurrentTankCareSuggestions(now = Date.now()) {
-  const tank = getCurrentTank();
-  if (!tank) {
-    return [];
-  }
-
-  const livingFish = tank.fish.filter((fish) => !isFishDead(fish));
-  if (!livingFish.length) {
-    return [];
-  }
-
-  const suggestions = new Map();
-  const putSuggestion = (key, label, fulfilled) => {
-    const existing = suggestions.get(key);
-    if (existing) {
-      existing.fulfilled = existing.fulfilled && fulfilled;
-      return;
-    }
-    suggestions.set(key, { key, label, fulfilled });
-  };
-
-  for (const fish of livingFish) {
-    const species = getSpeciesForFish(fish);
-    if (!species) {
-      continue;
-    }
-    const speciesName = getFishDisplaySpeciesName(fish, species);
-    if (getFishGlassTapStressPenalty(fish, now) > 0) {
-      putSuggestion(`glass_tap_stress:${fish.id}`, `Give ${fish.name} some quiet time after glass tapping.`, false);
-    }
-
-    for (const need of getFishNeedsStatus(fish, tank, now)) {
-      if (need.met) {
-        continue;
-      }
-      const needPhrase = need.tag === "school_2_plus"
-        ? `another ${speciesName} nearby`
-        : need.tag === "open_water"
-          ? "more open swimming space"
-          : `${need.label.toLowerCase()} in the tank`;
-      putSuggestion(`need:${fish.id}:${need.tag}`, `${fish.name} would love ${needPhrase}.`, false);
-    }
-
-    for (const conflict of getFishConflictStatus(fish, tank, now).filter((entry) => entry.active)) {
-      const conflictLabel = conflict.label.toLowerCase();
-      const label = conflict.tag === "community_fish" && fish.speciesId === "betta"
-        ? `${fish.name} the ${speciesName} is not very popular in this tank. Consider giving them their own space.`
-        : conflict.tag === "betta_present"
-          ? `${fish.name} is stressed by a betta in this tank.`
-          : conflict.tag === "overcrowded"
-            ? `${fish.name} needs a roomier tank setup.`
-            : conflict.tag === "sharp_decor"
-              ? `${fish.name} is uneasy around sharp decor.`
-              : `${fish.name} is bothered by ${conflictLabel}.`;
-      putSuggestion(`conflict:${fish.id}:${conflict.tag}`, label, false);
-    }
-
-    const comfort = getFishComfort(fish, now);
-    if (comfort.value < 0.45) {
-      putSuggestion(`comfort:${fish.id}`, `${fish.name}'s comfort is low.`, false);
-    }
-  }
-
-  return [...suggestions.values()].sort((left, right) => Number(left.fulfilled) - Number(right.fulfilled) || left.label.localeCompare(right.label));
+  return [];
 }
 
 function claimDailyBonus() {
@@ -55276,6 +55278,7 @@ function claimDailyBonus() {
   const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
   if (reward > 0) {
     state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
+    recordWalletTransaction({ amount: reward, direction: "credit", now, place: "Bubble Borough", label: "Daily recap claimed" });
   }
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
@@ -55329,9 +55332,11 @@ function renderSettingsOverlay() {
   }
   if (dom.causticLightingToggleInput) {
     dom.causticLightingToggleInput.checked = uiSettings.causticLightingEnabled;
+    dom.causticLightingToggleInput.closest(".settings-toggle-row")?.toggleAttribute("hidden", !CAUSTIC_LIGHTING_SETTING_ENABLED);
   }
   if (dom.decorShadowsToggleInput) {
     dom.decorShadowsToggleInput.checked = uiSettings.decorShadowsEnabled;
+    dom.decorShadowsToggleInput.closest(".settings-toggle-row")?.toggleAttribute("hidden", !DECOR_SHADOWS_SETTING_ENABLED);
   }
   if (dom.halloweenModeSelect instanceof HTMLSelectElement) {
     dom.halloweenModeSelect.value = uiSettings.halloweenMode;
@@ -56195,7 +56200,7 @@ function renderResidenceFishCard(fish, item, options = {}) {
   const resident = options.resident === true;
   return `
     <article class="residence-fish-card ${resident ? "is-resident" : "is-nomadic"}">
-      <img class="residence-fish-thumb" src="${escapeHtml(fishAsset)}" alt="${escapeHtml(fish.name)}" />
+      <img class="residence-fish-thumb" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
       <div class="residence-fish-copy">
         <strong>${escapeHtml(fish.name)}</strong>
         <span>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</span>
@@ -56385,6 +56390,7 @@ function setFreeDecorPlacementEnabled(enabled) {
   }
 
   if (selectionState.items.length) {
+    if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Change free placement");
     const itemsToUpdate = selectionState.items.filter((item) => isFreeDecorPlacementEnabled(item, { tank }) !== nextEnabled);
     if (!itemsToUpdate.length) {
       renderEditDecorTray();
@@ -56426,6 +56432,7 @@ function setFreeDecorPlacementEnabled(enabled) {
 
 function renderEditDecorTray() {
   const visible = runtime.editTankMode;
+  if (typeof renderDecorHistoryControls === "function") renderDecorHistoryControls();
   if (dom.editDecorTray) {
     dom.editDecorTray.hidden = !visible;
   }
@@ -56539,7 +56546,7 @@ function renderEditDecorTray() {
                 aria-label="${escapeHtml(actionLabel)}"
               >
                 <span class="edit-decor-tile-surface">
-                  <img class="edit-decor-tile-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${entry.type === "placed" && (isDecorHorizontallyFlipped(entry.item) || isDecorVerticallyFlipped(entry.item)) ? ` style="transform: translate(-50%, -50%) scale(${isDecorHorizontallyFlipped(entry.item) ? -1 : 1}, ${isDecorVerticallyFlipped(entry.item) ? -1 : 1});"` : ""} />
+                  <img class="edit-decor-tile-thumb" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}"${entry.type === "placed" && (isDecorHorizontallyFlipped(entry.item) || isDecorVerticallyFlipped(entry.item)) ? ` style="transform: translate(-50%, -50%) scale(${isDecorHorizontallyFlipped(entry.item) ? -1 : 1}, ${isDecorVerticallyFlipped(entry.item) ? -1 : 1});"` : ""} />
                   <span class="inventory-tray-label">${escapeHtml(decorTypeLabel)}</span>
                   <span class="edit-decor-tile-count">${badge}</span>
                 </span>
@@ -56868,7 +56875,7 @@ function renderEditFishTray() {
               aria-label="${actionLabel}"
             >
               <span class="edit-decor-tile-surface">
-                <img class="edit-decor-tile-thumb" src="${getFishDisplayAssetPath(fish, species) || species?.asset || ""}" alt="${label}" />
+                <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${label}" />
                 <span class="inventory-tray-label">${!inStorage && !dead ? escapeHtml(fish.name || "Fish") : dead ? (inStorage ? "Dead In Storage" : "Dead In Tank") : "Storage"}</span>
               </span>
             </button>
@@ -56960,7 +56967,7 @@ function renderMedicineTray() {
   }
 
   const foodItems = getFoodCatalog().filter((food) => (
-    shouldShowFoodInStore(food)
+    (food.id === "halloweenCandy" || shouldShowFoodInStore(food))
     && food.id !== "upgraded"
     && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
   ));
@@ -56975,7 +56982,7 @@ function renderMedicineTray() {
     runtime.medicineModeKey || "",
     runtime.cleaningMode ? "scrub" : "",
     runtime.scoopMode ? "scoop" : "",
-    ...getFoodCatalog().filter((food) => shouldShowFoodInStore(food)).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
+    ...getFoodCatalog().filter((food) => (food.id === "halloweenCandy" || shouldShowFoodInStore(food))).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
     ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
 
@@ -57009,7 +57016,7 @@ function renderMedicineTray() {
             </svg>
             <span class="care-tray-empty-copy">
               <strong>No food stocked</strong>
-              <small>Open Tankazon food to buy more.</small>
+              <small>Open BubbleBodega food to buy more.</small>
             </span>
           </div>
           <button class="care-tray-empty-shop-button" type="button" data-food-open-store>Buy Food</button>
@@ -57045,7 +57052,7 @@ function renderMedicineTray() {
             </svg>
             <span class="care-tray-empty-copy">
               <strong>No medicine stocked</strong>
-              <small>Open Tankazon pharmacy to buy more.</small>
+              <small>Open BubbleBodega pharmacy to buy more.</small>
             </span>
           </div>
           <button class="care-tray-empty-shop-button" type="button" data-care-open-pharmacy>Buy Meds</button>
@@ -57053,10 +57060,10 @@ function renderMedicineTray() {
       `;
 
     const markup = `
-      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tray-min-width: 631px;">
+      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tools-min-width: 248px; --care-tray-min-width: 709px;">
         <section class="care-tray-food" aria-label="Food">
           <div class="care-tray-heading-row">
-            <img class="care-tray-inline-icon" src="assets/icons/feed_fish.png" alt="" aria-hidden="true" draggable="false" />
+            <img class="care-tray-inline-icon" ${assetImageAttributes("assets/icons/feed_fish.png")} alt="" aria-hidden="true" draggable="false" />
             <div class="care-tray-heading">Food</div>
           </div>
           <div class="care-tray-food-items">${foodMarkup}</div>
@@ -57066,7 +57073,7 @@ function renderMedicineTray() {
 
         <section class="care-tray-medical" aria-label="Medication">
           <div class="care-tray-heading-row">
-            <img class="care-tray-inline-icon" src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
+            <img class="care-tray-inline-icon" ${assetImageAttributes("assets/icons/medicine.png")} alt="" aria-hidden="true" draggable="false" />
             <div class="care-tray-heading">Medication</div>
           </div>
           <div class="care-tray-medical-items">${medicineMarkup}</div>
@@ -57078,11 +57085,11 @@ function renderMedicineTray() {
           <div class="care-tray-heading">Tools</div>
           <div class="care-tray-tool-row">
             <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
-              <img src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
+              <img ${assetImageAttributes("assets/icons/sponge.png")} alt="" aria-hidden="true" draggable="false" />
               <span>Scrub</span>
             </button>
             <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
-              <img src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
+              <img ${assetImageAttributes("assets/icons/scoop.png")} alt="" aria-hidden="true" draggable="false" />
               <span>Scoop</span>
             </button>
           </div>
@@ -57109,7 +57116,6 @@ function renderFishList(now) {
     runtime.collapsedSections.fishTank ? 1 : 0,
     runtime.collapsedSections.fishDead ? 1 : 0,
     runtime.collapsedSections.fishStorage ? 1 : 0,
-    state.selectedFilterAsset,
     state.fish.map((fish) => [
       fish.id,
       fish.name,
@@ -57362,7 +57368,7 @@ function renderManagedFishCard(fish, now, options = {}) {
 
   return `
     <article class="fish-card">
-      <img class="fish-thumb" src="${fishAsset}" alt="${fish.name}" />
+      <img class="fish-thumb" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
       <div class="fish-card-main">
         <div class="fish-card-heading">
           <div class="fish-card-title">
@@ -57882,7 +57888,7 @@ function renderFishActionTargetMenu(now = Date.now()) {
 
     const image = document.createElement("img");
     image.className = "fish-action-target-thumb";
-    image.src = getFishDisplayAssetPath(targetFish, targetSpecies, now) || targetSpecies?.asset || "";
+    void setAssetImageSource(image, getFishDisplayAssetPath(targetFish, targetSpecies, now) || targetSpecies?.asset || "");
     image.alt = "";
     image.setAttribute("aria-hidden", "true");
 
@@ -58021,43 +58027,10 @@ function shouldShowSelectedFishNeedsPanel(managed) {
 function renderSelectedFishNeedsPanel(now = Date.now()) {
     const panel = dom.selectedFishNeedsPanel;
     if (!panel) return;
-    const managed = getManagedFishById(runtime.selectedFishStatusFishId || runtime.selectedFishId);
-    if (!shouldShowSelectedFishNeedsPanel(managed)) {
-      panel.hidden = true;
-      setMarkupIfChanged("selected-fish-needs-panel", panel, "");
-      return;
-    }
-    const fish = managed.fish;
-    const snapshot = getFishNeedsSnapshot(fish, now);
-    const preferences = getFishNeedsStatus(fish, getCurrentTank(), now);
-    const preference = preferences.find(item => item.met) || preferences[0];
-    const likes = {
-      plants: "Loves leafy corners", cave: "Loves a cozy hideaway", open_water: "Loves room to roam",
-      school_2_plus: "Loves swimming with their own kind", surface_cover: "Loves shade near the surface",
-      hardscape: "Loves rocky hideaways", driftwood: "Loves driftwood", coral: "Loves the coral",
-      seaweed_algae: "Loves a little grazing spot"
-    };
-    const preferenceText = preference ? likes[preference.tag] || `Enjoys ${preference.label.toLowerCase()}` : "Making this tank their home";
-    const busy = getActiveFishActionQueueItem(fish, now);
-    const playing = busy && !busy.autonomous;
-    const markup = `
-      <div class="selected-fish-needs-header">
-        <strong class="selected-fish-needs-name">${escapeHtml(fish.name || "Fish")}</strong>
-        <span class="selected-fish-mood-pill" data-mood-tone="good">${escapeHtml(snapshot.mood.label)}</span>
-        <button type="button" class="fish-companion-close" data-fish-companion="close" aria-label="Close fish card">×</button>
-      </div>
-      <p class="fish-companion-activity">${escapeHtml(snapshot.activity)}</p>
-      <p class="fish-companion-preference">${escapeHtml(preferenceText)}</p>
-      ${snapshot.care ? `<p class="fish-companion-hint" data-care-tone="${snapshot.care.tone}">${escapeHtml(snapshot.care.text)}</p>` : ""}
-      <div class="fish-companion-actions">
-        <button type="button" data-fish-companion="treat" ${playing ? "disabled" : ""} title="Offer a bite of suitable food from your supplies">Offer treat</button>
-        <button type="button" data-fish-companion="play" ${playing ? "disabled" : ""} title="Invite this fish to play">Play</button>
-        <button type="button" data-fish-companion="details">Details</button>
-      </div>`;
-    panel.hidden = false;
-    panel.setAttribute("aria-label", "Fish companion");
-    panel.setAttribute("data-preserve-fish-selection", "");
-    setMarkupIfChanged("selected-fish-needs-panel", panel, markup);
+    // The old fixed companion card has been replaced by the compact status
+    // badge drawn directly above the selected fish in the aquarium.
+    panel.hidden = true;
+    setMarkupIfChanged("selected-fish-needs-panel", panel, "");
   }
 
 function renderFishInspector(now) {
@@ -58251,7 +58224,7 @@ function renderDecorShop() {
   }
 
   const searchQuery = tutorialRestriction ? "" : getStoreSearchQuery("decor");
-  const allCatalog = sortCatalogEntries(
+  const rawCatalog = sortCatalogEntries(
     runtime.decorCatalog
       .filter((decor) => canUseDecorWithCurrentContentSettings(decor))
       .filter((decor) => {
@@ -58272,6 +58245,7 @@ function renderDecorShop() {
       }),
     runtime.storeSorts.decor
   );
+  const allCatalog = typeof getDecorStoreCatalogEntries === "function" ? getDecorStoreCatalogEntries(rawCatalog) : rawCatalog;
   if (!allCatalog.length) {
     setMarkupIfChanged(
       "decor-shop",
@@ -58280,7 +58254,9 @@ function renderDecorShop() {
     );
     return;
   }
-  const catalog = allCatalog.filter((decor) => matchesShopSearchQuery(getDecorShopSearchHaystack(decor), searchQuery));
+  const catalog = allCatalog
+    .filter((decor) => isSeasonalDecorAvailable(decor))
+    .filter((decor) => matchesShopSearchQuery(getDecorShopSearchHaystack(decor), searchQuery));
   const tutorialPreviewOnly = tutorialRestriction?.previewOnly === true;
   if (!catalog.length) {
     setMarkupIfChanged(
@@ -58294,7 +58270,10 @@ function renderDecorShop() {
     const progressLocked = !isDecorProgressUnlocked(decor);
     const locked = !isDecorShopUnlocked(decor);
     const debugUnlocked = progressLocked && !locked;
-    const owned = state.decorInventory[decor.key] || 0;
+    const decorVariants = typeof getDecorStoreVariants === "function"
+      ? getDecorStoreVariants(decor, runtime.decorCatalog)
+      : [{ key: decor.key, image: decor.path || getDecorThumbnailPath(decor), label: "Main" }];
+    const owned = decorVariants.reduce((sum, variant) => sum + (state.decorInventory[variant.key] || 0), 0);
     const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
     const isCustomHideUpload = isCustomHideShopKey(decor.key);
     const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
@@ -58304,9 +58283,12 @@ function renderDecorShop() {
         ? `Debug unlocked (${lockedRequirementLabel})`
         : `${owned} in storage`;
     const serviceSummary = getDecorServiceSummary(decor.key);
+    const variantsAttribute = decorVariants.length > 1
+      ? ` data-decor-variants="${escapeHtml(JSON.stringify(decorVariants))}" data-shop-variant-key="${escapeHtml(decorVariants[0].key)}"`
+      : "";
     return `
-      <article class="shop-card ${locked ? "is-locked" : ""}">
-        <img class="shop-thumb ${locked ? "is-locked" : ""}" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
+      <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("decor", decor)}>
+        <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}" />
         <div class="shop-meta">
           <div>
             <strong>${decor.name}</strong>
@@ -58318,20 +58300,20 @@ function renderDecorShop() {
         </div>
         <div class="shop-meta">
           <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
-          <button class="buy-button" data-buy-decor="${decor.key}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+          <button class="buy-button" data-buy-decor="${decor.key}"${variantsAttribute} ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
             ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
           </button>
         </div>
       </article>
     `;
   };
-  const regularMarkup = catalog.filter((decor) => !isHalloweenDecor(decor)).map(renderCard).join("");
-  const seasonalMarkup = catalog.filter(isHalloweenDecor).map(renderCard).join("");
+  const regularMarkup = catalog.filter((decor) => !isSeasonalDecor(decor)).map(renderCard).join("");
+  const seasonalMarkup = catalog.filter(isSeasonalDecor).map(renderCard).join("");
   const cardsMarkup = regularMarkup + (seasonalMarkup ? `
     <section class="shop-section decor-seasonal-section" aria-labelledby="decorSeasonalHeading">
       <div class="shop-section-heading">
         <h3 id="decorSeasonalHeading">Seasonal</h3>
-        <p>Halloween decor, available all year.</p>
+        <p>Holiday items appear only during their season.</p>
       </div>
       <div class="shop-section-cards">${seasonalMarkup}</div>
     </section>
@@ -58352,47 +58334,9 @@ function renderEquipmentShop() {
   const dispenserInstalled = hasAutoDispenserInstalled();
   const dispenserLoadedCount = getAutoDispenserLoadedCount(state.autoDispenser);
   const dispenserPortion = clamp(Number(state.autoDispenser?.mealPortion) || 0, 0, AUTO_DISPENSER_PORTION_MAX);
-  const shopFilters = ENABLE_FILTER
-    ? runtime.filterCatalog.filter((filter) => filter.purchasable && filter.key !== BASIC_FILTER_KEY)
-    : [];
-  const filterMarkup = shopFilters.map((filter) => {
-    const ownedCount = Math.max(0, Number(state.ownedFilterInventory?.[filter.key]) || 0);
-    const equippedCount = getFilterAssignmentCount(filter.key);
-    const unusedCount = getUnusedFilterCount(filter.key);
-    const equippedHere = state.selectedFilterAsset === filter.key;
-    const resaleValue = getResaleValue(filter.cost);
-    const buyLabel = ownedCount > 0 ? "Buy Another" : "Buy & Equip";
-    const statusBits = [
-      `${ownedCount} owned`,
-      equippedCount > 0 ? `${equippedCount} in use` : "none in use",
-      unusedCount > 0 ? `${unusedCount} spare` : "no spare copies"
-    ];
-    return `
-      <article class="shop-card">
-        <img class="shop-thumb" src="${filter.path}" alt="${filter.name}" />
-        <div class="shop-meta shop-card-main">
-          <div>
-            <strong>${filter.name}</strong>
-            <div class="fish-meta">${statusBits.join(" | ")}</div>
-          </div>
-          <div class="fish-meta">${filter.blurb}</div>
-          <div class="fish-meta">Empty tank max grime: ${formatDuration(filter.cleanDays * DAY_MS)}. Mood boost: +${Math.round(filter.comfortBoost * 100)}%.</div>
-          ${equippedHere ? `<div class="mini-note">Currently installed in this tank.</div>` : ""}
-        </div>
-        <div class="shop-meta shop-card-actions">
-          <span class="price-tag">${filter.cost} ${pluralize("coin", filter.cost)}</span>
-          <div class="shop-button-row">
-            <button class="buy-button" data-buy-filter="${filter.key}">${buyLabel}</button>
-            <button class="small-button alt" data-sell-filter="${filter.key}" ${unusedCount > 0 ? "" : "disabled"}>Sell Spare (${resaleValue})</button>
-          </div>
-        </div>
-      </article>
-    `;
-  }).join("");
-
   const dispenserMarkup = `
       <article class="shop-card">
-        <img class="shop-thumb" src="${AUTO_DISPENSER_IMAGE_PATH}" alt="Automatic pellet dispenser" />
+        <img class="shop-thumb" ${assetImageAttributes(AUTO_DISPENSER_IMAGE_PATH)} alt="Automatic pellet dispenser" />
         <div class="shop-meta shop-card-main">
           <div>
             <strong>Pellet Dispenser</strong>
@@ -58417,7 +58361,7 @@ function renderEquipmentShop() {
       const uvLightActive = isUvLightActive();
       return `
       <article class="shop-card">
-        <img class="shop-thumb uv-light-shop-thumb" src="${UV_LIGHT_IMAGE_PATH}" alt="UV light" />
+        <img class="shop-thumb uv-light-shop-thumb" ${assetImageAttributes(UV_LIGHT_IMAGE_PATH)} alt="UV light" />
         <div class="shop-meta shop-card-main">
           <div>
             <strong>UV Light</strong>
@@ -58474,18 +58418,7 @@ function renderEquipmentShop() {
     .join("");
 
 
-
   const markup = `
-    ${ENABLE_FILTER ? `
-    <section class="shop-section">
-      <div class="shop-section-heading">
-        <h3>Filters</h3>
-        <p>Buy multiple filters, equip them per tank, and sell unused ones for 75% back.</p>
-      </div>
-      <div class="shop-section-cards">
-        ${filterMarkup || `<div class="empty-state">No filter upgrades are available yet.</div>`}
-      </div>
-    </section>` : ""}
     ${uvLightMarkup ? `
     <section class="shop-section">
       <div class="shop-section-heading">
@@ -58562,7 +58495,7 @@ function renderDecorInventory() {
 
       return `
         <article class="mini-card">
-          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}" />
+          <img class="decor-thumb" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}" />
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${count} in storage.</div>
@@ -58656,7 +58589,7 @@ function renderPlacedDecor() {
 
       return `
         <article class="mini-card ${selected ? "is-selected" : ""}">
-          <img class="decor-thumb" src="${escapeHtml(getDecorThumbnailPath(decor))}" alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
+          <img class="decor-thumb" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${grouped ? "Grouped decor." : "Placed in the tank."}</div>
@@ -59249,66 +59182,16 @@ function renderSolidBackgroundControls() {
   }
 }
 
-function renderFilterAssets() {
-  if (!ENABLE_FILTER) {
-    setMarkupIfChanged("scene-assets-filter", dom.filterAssetList, "");
-    setMarkupIfChanged("equipment-scene-assets-filter", dom.equipmentFilterList, "");
-    setMarkupIfChanged("edit-tank-scene-assets-filter", dom.editTankFilterList, "");
-    return;
-  }
-  renderSceneAssetCards(dom.filterAssetList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped");
-  renderSceneAssetCards(dom.equipmentFilterList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped", "equipment-filter-assets");
-  renderSceneAssetCards(dom.editTankFilterList, getOwnedFilterCatalog(), state.selectedFilterAsset, "data-select-filter", "Equip Filter", "Equipped", "edit-tank-filter-assets");
-}
 
-function syncFilterFeatureVisibility() {
-  const filterEnabled = ENABLE_FILTER;
-  const uvLightEnabled = isUvLightFeatureEnabled();
-  const showFilterPanels = filterEnabled || uvLightEnabled;
-
-  if (dom.tankFilterSection instanceof HTMLElement) {
-    dom.tankFilterSection.hidden = !showFilterPanels;
+function syncLightingFeatureVisibility() {
+  const enabled = isUvLightFeatureEnabled();
+  for (const section of [dom.tankLightingSection, dom.equipmentLightingSection]) {
+    if (section) section.hidden = !enabled;
   }
-  if (dom.equipmentFilterSection instanceof HTMLElement) {
-    dom.equipmentFilterSection.hidden = !showFilterPanels;
-  }
-  if (dom.editTankFilterSection instanceof HTMLElement) {
-    dom.editTankFilterSection.hidden = !showFilterPanels || runtime.editTankTrayTab !== "equipment";
-  }
-  if (dom.filterAssetList instanceof HTMLElement) {
-    dom.filterAssetList.hidden = !filterEnabled;
-  }
-  if (dom.equipmentFilterList instanceof HTMLElement) {
-    dom.equipmentFilterList.hidden = !filterEnabled;
-  }
-  if (dom.editTankFilterList instanceof HTMLElement) {
-    dom.editTankFilterList.hidden = !filterEnabled;
-  }
-  if (dom.tankFilterSectionTitle) {
-    dom.tankFilterSectionTitle.textContent = filterEnabled ? "Filter" : "Lighting";
-  }
-  if (dom.tankFilterSectionNote) {
-    dom.tankFilterSectionNote.textContent = filterEnabled
-      ? "Equip owned filters here. Buy stronger ones from the tank shop."
-      : "Add or remove a UV light here. Buy tank gear from the tank shop.";
-  }
-  if (dom.equipmentFilterSectionTitle) {
-    dom.equipmentFilterSectionTitle.textContent = filterEnabled ? "Change Filter" : "Lighting";
-  }
-  if (dom.equipmentFilterSectionNote) {
-    dom.equipmentFilterSectionNote.textContent = filterEnabled
-      ? "Equip owned filters here and buy stronger ones from the tank shop."
-      : "Add or remove a UV light here. Buy tank gear from the tank shop.";
-  }
-  if (dom.equipmentPanelDescription) {
-    dom.equipmentPanelDescription.textContent = filterEnabled
-      ? (uvLightEnabled
-        ? "Adjust the current aquarium's background, gravel, filter, and UV light."
-        : "Adjust the current aquarium's background, gravel, and filter.")
-      : (uvLightEnabled
-        ? "Adjust the current aquarium's background, gravel, and UV light."
-        : "Adjust the current aquarium's background and gravel.");
-  }
+  if (dom.editTankLightingSection) dom.editTankLightingSection.hidden = !enabled || runtime.editTankTrayTab !== "equipment";
+  if (dom.equipmentPanelDescription) dom.equipmentPanelDescription.textContent = enabled
+    ? "Adjust the current aquarium's background, gravel, and UV light."
+    : "Adjust the current aquarium's background and gravel.";
 }
 
 function renderUvLightControls() {
@@ -59340,7 +59223,7 @@ function renderUvLightControls() {
   const markup = owned
     ? `
       <article class="background-card uv-light-card ${installed ? "is-selected" : ""}">
-        <img class="scene-thumb" src="${UV_LIGHT_IMAGE_PATH}" alt="UV light" />
+        <img class="scene-thumb" ${assetImageAttributes(UV_LIGHT_IMAGE_PATH)} alt="UV light" />
         <div>
           <strong>UV Light</strong>
           <div class="fish-meta">${installed ? `Added to this tank. Toolbar switch is ${active ? "on" : "off"}.` : "Owned and ready to add."}</div>
@@ -59470,7 +59353,7 @@ function renderSceneAssetCards(container, items, selectedKey, attributeName, use
       const selected = selectedKey === item.key;
       return `
         <article class="background-card ${selected ? "is-selected" : ""}">
-          <img class="scene-thumb" src="${item.path}" alt="${item.name}" />
+          <img class="scene-thumb" ${assetImageAttributes(item.path)} alt="${item.name}" />
           <div>
             <strong>${item.name}</strong>
             <div class="fish-meta">${item.blurb}</div>
@@ -59761,28 +59644,18 @@ function renderControls(now) {
   }
   if (dom.overviewButton) {
     const overviewOpen = runtime.boroughOverviewOpen === true;
-    if (!runtime.toolbarCareTaskCountAt || now - runtime.toolbarCareTaskCountAt >= 1000) {
-      runtime.toolbarCareTaskCount = buildUniversalManagementCareQueue(now)
-        .filter((task) => getCareTaskId(task) !== "all-clear").length;
-      runtime.toolbarCareTaskCountAt = now;
-    }
-    const taskCount = runtime.toolbarCareTaskCount;
-    const overviewLabel = taskCount
-      ? `Borough Overview, ${taskCount} care ${pluralize("task", taskCount)}`
-      : "Borough Overview, all clear";
+    const overviewLabel = "Borough Overview";
     dom.overviewButton.title = overviewOpen ? `${overviewLabel} (Open)` : overviewLabel;
     dom.overviewButton.setAttribute("aria-label", overviewOpen ? `${overviewLabel}, open` : overviewLabel);
     dom.overviewButton.classList.toggle("is-active", overviewOpen);
     if (dom.aquariumTaskBadge) {
-      dom.aquariumTaskBadge.hidden = taskCount <= 0;
-      dom.aquariumTaskBadge.textContent = taskCount > 9 ? "9+" : String(taskCount);
+      dom.aquariumTaskBadge.hidden = true;
+      dom.aquariumTaskBadge.textContent = "";
     }
   }
   if (dom.careTaskPaneButton) {
-    const tasksOpen = getUiSettings().careTaskPaneOpen === true;
-    dom.careTaskPaneButton.title = tasksOpen ? "Hide Tasks" : "Show Tasks";
-    dom.careTaskPaneButton.setAttribute("aria-label", tasksOpen ? "Hide Tasks" : "Show Tasks");
-    dom.careTaskPaneButton.setAttribute("aria-pressed", String(tasksOpen));
+    dom.careTaskPaneButton.hidden = true;
+    dom.careTaskPaneButton.disabled = true;
   }
   if (dom.toggleMouseLockButton) {
     const mouseLockAvailable = isTankMouseLockFeatureEnabled();
@@ -59884,8 +59757,8 @@ function renderToolCursor() {
       image.setAttribute("aria-hidden", "true");
       dom.toolCursor.replaceChildren(image);
     }
-    if (image.getAttribute("src") !== iconPath) {
-      image.setAttribute("src", iconPath);
+    if ((image.getAttribute("data-sprite-src") || image.getAttribute("src")) !== iconPath) {
+      void setAssetImageSource(image, iconPath);
     }
   } else {
     dom.toolCursor.replaceChildren();
@@ -59928,6 +59801,11 @@ function renderScrubProgress() {
 
 function animationLoop(frameTime) {
   window.requestAnimationFrame(animationLoop);
+  if (document.hidden) {
+    runtime.lastAnimationFrameAt = frameTime;
+    runtime.lastAnimationUpdateAt = frameTime;
+    return;
+  }
   const rafDeltaSeconds = runtime.lastAnimationFrameAt
     ? Math.min(1, (frameTime - runtime.lastAnimationFrameAt) / 1000)
     : 0.016;
@@ -62568,7 +62446,7 @@ function updateFishMotion(now, deltaSeconds) {
       const followDistance = Number(activeFishActionSteering.distanceNorm) || moveDistance;
       motionTarget = Math.max(motionTarget, followDistance > DEBUG_BEHAVIOR_FOLLOW_CLOSE_NORM ? 0.54 : 0.28);
     } else if (activeFishActionSteering?.type === "inspect") {
-      motionTarget = Math.max(motionTarget, 0.5);
+      motionTarget = Math.max(motionTarget, moveDistance > 0.045 ? 0.5 : 0.12);
     } else if (activeFishActionSteering?.type === "waitfood") {
       motionTarget = Math.max(motionTarget, 0.18);
     } else if (activeQueuedFishAction?.cancelling) {
@@ -62649,6 +62527,16 @@ function updateFishMotion(now, deltaSeconds) {
       if (activeFishActionSteering?.type === "zoomies") {
         speedMultiplier *= 2.05;
       }
+      if (activeFishActionSteering?.type === "inspect") {
+        // Ease into an inspection position. The anchor stays fixed while the
+        // action refreshes, so this turns the last few pixels into a calm
+        // settle instead of repeatedly arriving and snapping back into motion.
+        const arrivalProgress = clamp(moveDistance / 0.075, 0, 1);
+        const arrivalEase = arrivalProgress * arrivalProgress * (3 - 2 * arrivalProgress);
+        const launchProgress = clamp((now - Number(activeFishActionSteering.startedAt || now)) / 420, 0, 1);
+        const launchEase = launchProgress * launchProgress * (3 - 2 * launchProgress);
+        speedMultiplier *= (0.16 + arrivalEase * 0.84) * (0.32 + launchEase * 0.68);
+      }
       if (activeFishActionSteering?.type === "follow") {
         const followDistance = Number(activeFishActionSteering.distanceNorm) || moveDistance;
         const leaderSpeed = Math.max(0.00001, Number(activeFishActionSteering.leaderSwimSpeed) || fish.swimSpeed);
@@ -62659,6 +62547,24 @@ function updateFishMotion(now, deltaSeconds) {
             ? 0.96
             : (activeFishActionSteering.leaderMoving ? 0.78 : 0.42);
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.2, 1.35);
+      }
+      if (Number.isFinite(fish.followUntil) && now < fish.followUntil) {
+        const leader = getFishSchoolFollowLeader(fish);
+        if (isFishEligibleSchoolLeader(leader, fish, species, now)) {
+          const leaderSpeed = Math.max(0.00001, Number(leader.swimSpeed) || fish.swimSpeed);
+          const currentSpeed = Math.max(0.00001, Number(fish.swimSpeed) || leaderSpeed);
+          const leaderTargetDistance = Math.hypot(
+            (Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm,
+            (Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm
+          );
+          const formationDistance = Math.hypot(fish.targetXNorm - fish.xNorm, fish.targetYNorm - fish.yNorm);
+          const matchFactor = formationDistance > 0.11
+            ? 1.18
+            : formationDistance > 0.052
+              ? 0.92
+              : (leaderTargetDistance > 0.018 ? 0.76 : 0.34);
+          speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.16, 1.3);
+        }
       }
       if (activeDebugSteering?.type === "follow") {
         const followDistance = Number(activeDebugSteering.distanceNorm) || moveDistance;
@@ -62680,16 +62586,63 @@ function updateFishMotion(now, deltaSeconds) {
       }
 
       const speed = fish.swimSpeed * FISH_MOTION_SCALE * speedMultiplier;
-      const step = Math.min(moveDistance, speed * deltaSeconds);
+      // Roaming and inspection used to move in a straight fixed-size step, then
+      // stop on the exact target. That made the position and the bob animation
+      // visibly snap at the end of every little movement. Keep responsive,
+      // direct movement for urgent work, but give passive swimming a small
+      // velocity state so it accelerates, coasts, and settles naturally.
+      const usesPassiveMotion = fish.activity === "roam"
+        && !pendingTravel
+        && !panicOwnsMovement
+        && !whaleBreathOwnsMovement
+        && !fish.caveState
+        && !activeQueuedFishAction
+        && !activeDebugSteering
+        && (!activeFishActionSteering || activeFishActionSteering.type === "inspect");
+      let step;
+      let stepXNorm;
+      let stepYNorm;
+      if (usesPassiveMotion) {
+        const arrival = clamp(moveDistance / 0.09, 0, 1);
+        const arrivalEase = arrival * arrival * (3 - 2 * arrival);
+        const desiredSpeed = speed * (0.1 + arrivalEase * 0.9);
+        const desiredVelocityX = (moveDx / moveDistance) * desiredSpeed;
+        const desiredVelocityY = (moveDy / moveDistance) * desiredSpeed;
+        const response = 1 - Math.exp(-deltaSeconds * 5.6);
+        const velocityX = (Number(fish.motionVelocityXNorm) || 0) + (desiredVelocityX - (Number(fish.motionVelocityXNorm) || 0)) * response;
+        const velocityY = (Number(fish.motionVelocityYNorm) || 0) + (desiredVelocityY - (Number(fish.motionVelocityYNorm) || 0)) * response;
+        const candidateStepX = velocityX * deltaSeconds;
+        const candidateStepY = velocityY * deltaSeconds;
+        const candidateStep = Math.hypot(candidateStepX, candidateStepY);
+        if (candidateStep >= moveDistance || moveDistance <= 0.00055) {
+          stepXNorm = moveDx;
+          stepYNorm = moveDy;
+          step = moveDistance;
+          fish.motionVelocityXNorm = 0;
+          fish.motionVelocityYNorm = 0;
+        } else {
+          stepXNorm = candidateStepX;
+          stepYNorm = candidateStepY;
+          step = candidateStep;
+          fish.motionVelocityXNorm = velocityX;
+          fish.motionVelocityYNorm = velocityY;
+        }
+      } else {
+        step = Math.min(moveDistance, speed * deltaSeconds);
+        stepXNorm = (moveDx / moveDistance) * step;
+        stepYNorm = (moveDy / moveDistance) * step;
+        fish.motionVelocityXNorm = 0;
+        fish.motionVelocityYNorm = 0;
+      }
       const previousXNorm = fish.xNorm;
       const previousYNorm = fish.yNorm;
 
-      const rawNextXNorm = fish.xNorm + (moveDx / moveDistance) * step;
+      const rawNextXNorm = fish.xNorm + stepXNorm;
       const nextXNorm = pendingTravel ? rawNextXNorm : clampFishXNormToMobileViewport(rawNextXNorm, fish, species, now);
       const movementMaxYNorm = fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? 0.96
         : (fish.activity === "feeding" && pellet?.settled ? 0.9 : 0.8);
-      const rawNextYNorm = fish.yNorm + (moveDy / moveDistance) * step;
+      const rawNextYNorm = fish.yNorm + stepYNorm;
       const nextPlacement = effectiveBehavior === "sucker" && !pendingTravel
         ? clampFishPlacement(nextXNorm, rawNextYNorm, species, {
           fish,
@@ -62971,10 +62924,12 @@ function getFishProfileHoverTarget(fish, species, layer, profile) {
   if (Math.random() > clamp(profile.hoverChance, 0, 0.85)) {
     return null;
   }
-  const driftScale = profile.movementPattern === "precision-hover" ? 0.012 : 0.022;
+  // Physical micro-targets made an idle fish repeatedly move, stop, and move
+  // again. Keep its simulation position stable; getFishPose supplies the
+  // continuous visual bob each frame.
   const placement = clampFishPlacement(
-    fish.xNorm + randomBetween(-driftScale, driftScale),
-    fish.yNorm + randomBetween(-driftScale * 0.7, driftScale * 0.7),
+    fish.xNorm,
+    fish.yNorm,
     species,
     { fish, layer }
   );
@@ -62989,7 +62944,8 @@ function getFishProfileHoverTarget(fish, species, layer, profile) {
 function assignSpeciesRoamTarget(fish, species, now) {
   const profile = getFishLocomotionProfile(fish || species);
   const nextRoamLayer = clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
-  const hoverTarget = getFishProfileHoverTarget(fish, species, nextRoamLayer, profile);
+  const hoverTarget = getFishProfileHoverTarget(fish, species, getFishTankLayer(fish), profile);
+  const targetLayer = hoverTarget ? getFishTankLayer(fish) : nextRoamLayer;
   const homeTarget = hoverTarget ? null : getFishProfileHomeRoamTarget(fish, species, nextRoamLayer, profile);
   const isDart = !hoverTarget && Math.random() < clamp(profile.dartChance, 0, 0.9);
   let placement;
@@ -63016,7 +62972,7 @@ function assignSpeciesRoamTarget(fish, species, now) {
     const durationScale = clamp(profile.targetDurationScale, 0.5, 1.8);
     fish.targetAt = now + randomBetween(species.targetMinMs, species.targetMaxMs) * durationScale;
   }
-  setFishDesiredTankLayer(fish, nextRoamLayer);
+  setFishDesiredTankLayer(fish, targetLayer);
   fish.hangoutDecorId = null;
   fish.hangoutZoneType = null;
   fish.swimSpeed = isFishCriticallyLowHealth(fish)
@@ -63964,6 +63920,15 @@ function getCoarseFishActivityPosition(fish, now = Date.now()) {
 function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
   const fromXNorm = clamp(Number(fish?.xNorm) || 0.5, 0.08, 0.92);
   const fromYNorm = clamp(Number(fish?.yNorm) || 0.5, 0.14, 0.8);
+  const pellet = targetTank?.floatingPellets?.find((entry) => entry.id === fish.feedingPelletId);
+  if (pellet && pellet.expiresAt > now && canFishTargetFoodPellet(fish, pellet, now)) {
+    const distance = Math.hypot(pellet.xNorm - fromXNorm, pellet.yNorm - fromYNorm);
+    return {
+      type: "feeding", label: "Swimming to food", targetPelletId: pellet.id,
+      startedAt: now, endsAt: now + clamp(distance * 42000, 3000, 30000),
+      fromXNorm, fromYNorm, toXNorm: pellet.xNorm, toYNorm: pellet.yNorm
+    };
+  }
   let type = "wander";
   let label = "Swimming around the neighborhood";
   let serviceType = getFishNeededBoroughServiceType(fish, targetTank, now);
@@ -64043,6 +64008,20 @@ function advanceCoarseFishActivities(now = Date.now(), targetTank = getCurrentTa
       continue;
     }
     let activity = fish.coarseActivity;
+    if (fish.feedingPelletId && (activity?.type !== "feeding" || activity.targetPelletId !== fish.feedingPelletId)) {
+      activity = fish.coarseActivity = null;
+      changed = true;
+    }
+    if (activity?.type === "feeding") {
+      const pellet = targetTank.floatingPellets?.find((entry) => entry.id === activity.targetPelletId);
+      if (!pellet || fish.feedingPelletId !== pellet.id || !canFishTargetFoodPellet(fish, pellet, now)) {
+        activity = fish.coarseActivity = null;
+        changed = true;
+      } else {
+        activity.toXNorm = pellet.xNorm;
+        activity.toYNorm = pellet.yNorm;
+      }
+    }
     if (activity) {
       const position = getCoarseFishActivityPosition(fish, now);
       fish.xNorm = clamp(position.xNorm, 0.08, 0.92);
@@ -64054,11 +64033,15 @@ function advanceCoarseFishActivities(now = Date.now(), targetTank = getCurrentTa
         if (activity.type === "service" && activity.serviceType) {
           changed = applyBoroughStructureService(fish, activity.serviceType, targetTank, activity.endsAt) || changed;
         }
+        if (activity.type === "feeding") {
+          changed = consumeOffscreenFishFoodPellet(fish, activity.targetPelletId, targetTank, now) || changed;
+        }
         fish.coarseActivity = null;
         activity = null;
         changed = true;
       }
     }
+    if (isFishDead(fish)) continue;
     if (!activity) {
       fish.coarseActivity = createCoarseFishActivity(fish, targetTank, now);
       setFishBehaviorIntent(fish, "offscreen", fish.coarseActivity.label, now, { durationMs: fish.coarseActivity.endsAt - now });
@@ -64104,11 +64087,9 @@ function renderTank(now) {
   clipToTankShellBounds(tankContext);
   drawBackground(now);
   drawUvLightAtmosphere(now, "back");
-  drawFishPebbleTosses(now);
   drawWaterParticles(now, TANK_DEPTH_LAYERS);
   drawFish(now, TANK_DEPTH_LAYERS, { onlyBehavior: "sucker" });
   drawAmbientBubbles(now, 1);
-  drawWaterFilter(now);
   drawTankFloor(now);
   drawGravelGrime(now, dirtiness);
   drawGravelCausticProjection(now);
@@ -64131,6 +64112,9 @@ function renderTank(now) {
     drawFishEggs(now, layer);
     //drawLooseGravel(now, { surfaceKind: "decor", decorLayer: layer });
     drawFish(now, layer, { excludeBehavior: "sucker" });
+    // A tossed pebble belongs with the layer where it will land and disturb
+    // gravel, rather than being painted behind every fish and ornament.
+    drawFishPebbleTosses(now, layer);
     drawMachinery(now, layer);
   }
   drawCoinGlints(now);
@@ -65038,135 +65022,6 @@ function getAmbientBubbleLayerProfile(layer = 3) {
   return profiles[layer] || profiles[3];
 }
 
-function drawWaterFilter(now) {
-  tankContext.save();
-  if (!tankSupportsFilters(getCurrentTank())) {
-    tankContext.restore();
-    return;
-  }
-  const filterAsset = runtime.filterMap.get(state.selectedFilterAsset);
-  const filterImage = filterAsset ? runtime.images.get(filterAsset.path) : null;
-  if (!filterImage) {
-    tankContext.restore();
-    return;
-  }
-  const filterProfile = getFilterProfile();
-  const filterScale = getViewportStableObjectScale("hardware");
-  const filterDrawWidth = FILTER_DRAW_BASE_WIDTH * filterScale;
-  const filterDrawHeight = FILTER_DRAW_BASE_HEIGHT * filterScale;
-  const streamDistance = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
-  const spoutLipOffset = 8 * filterScale;
-  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
-  const groupWidth = streamDistance + filterDrawWidth - spoutLipOffset;
-  const desiredGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
-  const minGroupRightX = visibleBounds.left + groupWidth + getScenePxAsTankVirtual(8);
-  const maxGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(8);
-  const groupRightX = clamp(desiredGroupRightX, Math.min(minGroupRightX, maxGroupRightX), maxGroupRightX);
-  const groupLeftX = groupRightX - groupWidth;
-  const spoutX = groupLeftX + streamDistance;
-  const outletX = spoutX + getScenePxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
-  const filterDrawX = spoutX - spoutLipOffset;
-  const filterDrawY = visibleBounds.top;
-  // Anchor the flow to the rendered outlet nozzle rather than the full image bounds.
-  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getScenePxAsTankVirtual(14);
-  const flowIntensity = 0.86 + filterProfile.flow * 0.22;
-  const flowActive = isFilterBubbleFlowActive(now);
-
-  if (flowActive) {
-    tankContext.save();
-    tankContext.beginPath();
-    tankContext.rect(
-      GLASS_MARGIN_X,
-      WATER_SURFACE_Y - 10,
-      TANK_WIDTH - GLASS_MARGIN_X * 2,
-      TANK_HEIGHT - WATER_SURFACE_Y - GLASS_MARGIN_BOTTOM + 10
-    );
-    tankContext.clip();
-
-    const bubbleCount = 18 + Math.round(filterProfile.flow * 6);
-    const streamRise = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX);
-    for (let index = 0; index < bubbleCount; index += 1) {
-      const lane = index % 4;
-      const phase = ((now / (150 + lane * 20)) + index * 0.14) % 1;
-      const drift = phase * streamDistance;
-      const riseProgress = clamp((phase - 0.68) / 0.32, 0, 1);
-      const riseEase = 1 - (1 - riseProgress) * (1 - riseProgress);
-      const fadeOut = 1 - riseEase;
-      const x = outletX - drift + Math.sin(now / 170 + index * 1.7) * getScenePxAsTankVirtual(1.6 + lane * 0.35);
-      const y = outletY
-        + (lane - 1.5) * getScenePxAsTankVirtual(2.3)
-        + Math.sin(now / 210 + index * 1.35) * getScenePxAsTankVirtual(0.95)
-        - streamRise * riseEase;
-      const radius = 2.2 + (index % 3) * 0.7 + filterProfile.flow * 0.22;
-      const alpha = (0.16 + (1 - phase) * 0.38 * flowIntensity) * fadeOut;
-      drawBubbleOrb(x, y, radius, alpha, 1 + lane * 0.03);
-    }
-
-    for (let index = 0; index < 7; index += 1) {
-      const pulse = ((now / 120) + index * 0.21) % 1;
-      const riseProgress = clamp((pulse - 0.68) / 0.32, 0, 1);
-      const riseEase = 1 - (1 - riseProgress) * (1 - riseProgress);
-      const x = outletX - pulse * streamDistance;
-      const y = outletY + Math.sin(now / 150 + index * 1.2) * getScenePxAsTankVirtual(1.1) - streamRise * riseEase;
-      tankContext.fillStyle = `rgba(214, 247, 255, ${((0.07 + (1 - pulse) * 0.12) * (1 - riseEase)).toFixed(3)})`;
-      tankContext.beginPath();
-      tankContext.ellipse(
-        x,
-        y,
-        getScenePxAsTankVirtual(1.8 + pulse * 1.6),
-        getScenePxAsTankVirtual(0.9 + pulse * 0.62),
-        0,
-        0,
-        Math.PI * 2
-      );
-      tankContext.fill();
-    }
-    tankContext.restore();
-  }
-
-  if (filterImage) {
-    tankContext.globalAlpha = 1;
-    tankContext.drawImage(filterImage, filterDrawX, filterDrawY, filterDrawWidth, filterDrawHeight);
-    tankContext.globalAlpha = 1;
-  }
-  tankContext.restore();
-}
-
-function getWaterFilterFlowDescriptor(now = Date.now()) {
-  if (!tankSupportsFilters(getCurrentTank())) {
-    return null;
-  }
-
-  const filterProfile = getFilterProfile();
-  const filterScale = getViewportStableObjectScale("hardware");
-  const filterDrawWidth = FILTER_DRAW_BASE_WIDTH * filterScale;
-  const filterDrawHeight = FILTER_DRAW_BASE_HEIGHT * filterScale;
-  const streamDistance = getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_DISTANCE_PX + filterProfile.flow * 18);
-  const spoutLipOffset = 8 * filterScale;
-  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
-  const groupWidth = streamDistance + filterDrawWidth - spoutLipOffset;
-  const desiredGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(FILTER_GROUP_RIGHT_MARGIN_PX);
-  const minGroupRightX = visibleBounds.left + groupWidth + getScenePxAsTankVirtual(8);
-  const maxGroupRightX = visibleBounds.right - getScenePxAsTankVirtual(8);
-  const groupRightX = clamp(desiredGroupRightX, Math.min(minGroupRightX, maxGroupRightX), maxGroupRightX);
-  const groupLeftX = groupRightX - groupWidth;
-  const spoutX = groupLeftX + streamDistance;
-  const outletX = spoutX + getScenePxAsTankVirtual(FILTER_BUBBLE_OUTLET_X_OFFSET_PX);
-  const filterDrawX = spoutX - spoutLipOffset;
-  const filterDrawY = visibleBounds.top;
-  const outletY = filterDrawY + filterDrawHeight * (88 / 260) + getScenePxAsTankVirtual(14);
-
-  return {
-    outletX,
-    outletY,
-    streamDistance,
-    streamRise: getScenePxAsTankVirtual(FILTER_BUBBLE_STREAM_RISE_PX),
-    intakeX: filterDrawX + filterDrawWidth * 0.58,
-    intakeY: filterDrawY + filterDrawHeight * 0.78,
-    flow: filterProfile.flow,
-    flowActive: isFilterBubbleFlowActive(now)
-  };
-}
 
 function getWaterParticleVisibleCount(now = Date.now()) {
   const dirtiness = getTankDirtiness(now);
@@ -65326,7 +65181,7 @@ function getTintedWaterParticleSprite(spritePath, sprite, tintRgb) {
     console.debug("Water particle tint alpha boost skipped.", error);
   }
 
-  runtime.waterParticleTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.waterParticleTintCache, cacheKey, canvas, { maxEntries: 16, maxBytes: 4 * 1024 * 1024 });
   return canvas;
 }
 
@@ -65476,38 +65331,6 @@ function getWaterParticleTankLayer(particle) {
   return clampTankLayer(1 + Math.floor(depth * TANK_DEPTH_LAYERS));
 }
 
-function applyFilterForceToParticle(particle, filterFlow, deltaSeconds) {
-  if (!filterFlow) {
-    return;
-  }
-
-  const intakeDx = filterFlow.intakeX - particle.x;
-  const intakeDy = filterFlow.intakeY - particle.y;
-  const intakeDistance = Math.hypot(intakeDx, intakeDy);
-  if (intakeDistance < WATER_PARTICLE_FILTER_FORCE_RADIUS_PX) {
-    const pull = Math.pow(1 - intakeDistance / WATER_PARTICLE_FILTER_FORCE_RADIUS_PX, 1.6) * filterFlow.flow;
-    const safeDistance = Math.max(1, intakeDistance);
-    particle.vx += (intakeDx / safeDistance) * 96 * pull * deltaSeconds;
-    particle.vy += (intakeDy / safeDistance) * 96 * pull * deltaSeconds;
-  }
-
-  if (!filterFlow.flowActive) {
-    return;
-  }
-
-  const progress = clamp((filterFlow.outletX - particle.x) / Math.max(1, filterFlow.streamDistance), 0, 1);
-  const streamY = filterFlow.outletY - filterFlow.streamRise * Math.pow(clamp((progress - 0.68) / 0.32, 0, 1), 2);
-  const streamDx = particle.x - filterFlow.outletX;
-  const streamDy = particle.y - streamY;
-  const inStream = streamDx <= 22 && streamDx >= -filterFlow.streamDistance - 24 && Math.abs(streamDy) < WATER_PARTICLE_FILTER_FORCE_RADIUS_PX * 0.34;
-  if (inStream) {
-    const push = Math.pow(1 - Math.abs(streamDy) / (WATER_PARTICLE_FILTER_FORCE_RADIUS_PX * 0.34), 1.2)
-      * (0.35 + (1 - progress) * 0.65)
-      * filterFlow.flow;
-    particle.vx -= 96 * push * deltaSeconds;
-    particle.vy -= 18 * push * deltaSeconds;
-  }
-}
 
 function getParticleFishFields(now = Date.now()) {
   const fields = [];
@@ -65575,7 +65398,6 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
   const dirtiness = getTankDirtiness(now);
   const bubblerFields = collectBubblerParticleFields(now);
   const ambientBubbleFields = collectAmbientBubbleParticleFields(now);
-  const filterFlow = getWaterFilterFlowDescriptor(now);
   const fishFields = getParticleFishFields(now);
   const visibleCount = getWaterParticleVisibleCount(now);
 
@@ -65599,7 +65421,6 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
       applyBubblerForceToParticle(particle, field, now, boundedDelta);
     }
     applyAmbientBubbleForceToParticle(particle, ambientBubbleFields, boundedDelta);
-    applyFilterForceToParticle(particle, filterFlow, boundedDelta);
     applyFishForceToParticle(particle, fishFields, boundedDelta);
 
     const depthMotionScale = 0.72 + particle.depth * 0.56;
@@ -65784,9 +65605,6 @@ function drawWaterParticles(now = Date.now(), layer = null) {
   tankContext.restore();
 }
 
-function isFilterBubbleFlowActive(now = Date.now()) {
-  return getBaseTankDirtiness(now) < CRITICAL_TANK_DIRTINESS;
-}
 
 function drawAutoDispenserButton(bounds, label, options = {}) {
   tankContext.save();
@@ -66152,7 +65970,7 @@ function getTintedFoodPelletSprite(appearance) {
   }
 
   context.putImageData(imageData, 0, 0);
-  runtime.foodPelletTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.foodPelletTintCache, cacheKey, canvas, { maxEntries: 24, maxBytes: 8 * 1024 * 1024 });
   return canvas;
 }
 
@@ -66425,7 +66243,7 @@ function getTintedCustomGravelAsset(asset, color, options = {}) {
   }
 
   context.putImageData(imageData, 0, 0);
-  runtime.customGravelTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.customGravelTintCache, cacheKey, canvas, { maxEntries: 18, maxBytes: 32 * 1024 * 1024 });
   return canvas;
 }
 
@@ -67540,7 +67358,7 @@ function getTintedGravelPebbleSprite(spritePath, color, variantIndex = 0) {
 
   context.putImageData(imageData, 0, 0);
 
-  runtime.gravelTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.gravelTintCache, cacheKey, canvas, { maxEntries: 32, maxBytes: 24 * 1024 * 1024 });
   return canvas;
 }
 
@@ -67730,7 +67548,7 @@ function getTintedCaveLayerImage(imagePath, color, options = {}) {
   }
 
   context.putImageData(imageData, 0, 0);
-  runtime.caveTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.caveTintCache, cacheKey, canvas, { maxEntries: 24, maxBytes: 48 * 1024 * 1024 });
   return canvas;
 }
 // </bundle-source>
@@ -67810,7 +67628,7 @@ function getTintedBubblerLightImage(imagePath, color, sourceImage = null) {
   context.fillRect(0, 0, width, height);
   context.globalCompositeOperation = "source-over";
 
-  runtime.bubblerLightTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.bubblerLightTintCache, cacheKey, canvas, { maxEntries: 12, maxBytes: 24 * 1024 * 1024 });
   return canvas;
 }
 
@@ -68174,7 +67992,7 @@ function getDecorContactShadowMetrics(item) {
     return null;
   }
 
-  const bounds = getPlacedDecorOpaqueBounds(item);
+  const bounds = getPlacedDecorGroundBounds(item);
   if (!bounds) {
     return null;
   }
@@ -68427,6 +68245,10 @@ function drawDecor(layer = null, now = Date.now()) {
       continue;
     }
 
+    if (getDecorArtworkPaths(decor).some(path => !isUsableRuntimeImage(runtime.images.get(path)))) {
+      void preloadDecorArtwork(decor);
+    }
+
     const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
 
     let imagePath = decor.path;
@@ -68545,12 +68367,6 @@ function drawDecorPreview() {
   const y = runtime.placementPreview.yNorm * TANK_HEIGHT;
   const previewLayer = runtime.placementMode.tankLayer || runtime.decorPlacementLayer;
 
-  tankContext.save();
-  tankContext.globalAlpha = 0.72;
-  tankContext.fillStyle = "rgba(120, 215, 235, 0.18)";
-  tankContext.beginPath();
-  tankContext.ellipse(x, y + 3, width * 0.34, Math.max(10, width * 0.08), 0, 0, Math.PI * 2);
-  tankContext.fill();
   const previewItem = {
     id: "placement-preview",
     decorKey: decor.key,
@@ -68561,6 +68377,18 @@ function drawDecorPreview() {
     flipped: Boolean(runtime.placementMode.flipped),
     flippedY: Boolean(runtime.placementMode.flippedY)
   };
+  const previewGroundBounds = getPlacedDecorGroundBounds(previewItem);
+  const previewFootX = previewGroundBounds
+    ? (previewGroundBounds.left + previewGroundBounds.right) * 0.5
+    : x;
+  const previewFootY = previewGroundBounds?.bottom ?? y;
+
+  tankContext.save();
+  tankContext.globalAlpha = 0.72;
+  tankContext.fillStyle = "rgba(120, 215, 235, 0.18)";
+  tankContext.beginPath();
+  tankContext.ellipse(previewFootX, previewFootY + 3, width * 0.34, Math.max(10, width * 0.08), 0, 0, Math.PI * 2);
+  tankContext.fill();
   const previewMotion = getDecorMotion(previewItem, Date.now());
   if ((decor.bubbler || isCaveDecorKey(decor.key) || hasDecorCaveColorLayers(decor)) && decor.bgPath) {
     if (hasDecorCaveColorLayers(decor)) {
@@ -69169,12 +68997,15 @@ function getFishSameLayerRenderPriority(fish) {
   return 1;
 }
 
-function drawFishPebbleTosses(now) {
+function drawFishPebbleTosses(now, layer = null) {
   if (!runtime.fishPebbleTosses.length) {
     return;
   }
 
   for (const toss of runtime.fishPebbleTosses) {
+    if (layer !== null && Number(toss.endLayer) !== Number(layer)) {
+      continue;
+    }
     const sprite = getCustomGravelPebbleSpriteByPath(toss.assetPath, toss.color, { colorize: toss.colorize });
     if (!sprite?.width || !sprite?.height) {
       continue;
@@ -69199,30 +69030,6 @@ function drawFishPebbleTosses(now) {
     );
     tankContext.restore();
   }
-}
-
-function drawFishComfortSparkles(pose, width, height, now = Date.now()) {
-  const stableScale = getViewportStableAssetScale();
-  const sparkleCount = 7;
-  tankContext.save();
-  tankContext.translate(pose.x + pose.swayX, pose.y);
-  tankContext.lineWidth = Math.max(1, stableScale * 1.4);
-  for (let index = 0; index < sparkleCount; index += 1) {
-    const angle = (now / 850 + index * 2.399) % (Math.PI * 2);
-    const orbitX = Math.cos(angle) * width * randomBetweenWith(mulberry32(index + 42), 0.28, 0.55);
-    const orbitY = Math.sin(angle * 1.3) * height * randomBetweenWith(mulberry32(index + 84), 0.22, 0.48);
-    const pulse = 0.55 + 0.45 * Math.sin(now / 260 + index);
-    const size = stableScale * (3.5 + pulse * 3);
-    tankContext.globalAlpha = 0.36 + pulse * 0.42;
-    tankContext.strokeStyle = "rgba(255, 245, 151, 0.96)";
-    tankContext.beginPath();
-    tankContext.moveTo(orbitX - size, orbitY);
-    tankContext.lineTo(orbitX + size, orbitY);
-    tankContext.moveTo(orbitX, orbitY - size);
-    tankContext.lineTo(orbitX, orbitY + size);
-    tankContext.stroke();
-  }
-  tankContext.restore();
 }
 
 function fitDebugFishBehaviorLine(text, maxWidth) {
@@ -69659,10 +69466,6 @@ function drawFish(now, layer = null, options = {}) {
     drawFishDiseaseBubbles(fish, species, pose, width, height, now);
     drawFishBirthdayHat(fish, pose, width, height, now);
 
-    if (comfort?.value >= 0.95) {
-      drawFishComfortSparkles(pose, width, height, now);
-    }
-
     if ((!pose.isBeingConsumed && pose.isDead) || fish.healthUnits === 1) {
       const statusY = Math.max(topFrameBottomY + 12 * stableScale, pose.y - height * 0.72);
       tankContext.save();
@@ -69679,25 +69482,62 @@ function drawFish(now, layer = null, options = {}) {
 
     drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
 
-    if (runtime.selectedFishId === fish.id) {
+    if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
       tankContext.save();
-      tankContext.font = `600 ${13 * stableScale}px Trebuchet MS`;
+      const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
+      const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Okay");
+      const moodTone = pose.isDead ? "danger" : (snapshot?.mood?.tone || "good");
+      const heartCount = Math.max(0, (Number(fish.healthUnits) || 0) / 2);
+      const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
+      const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
+      const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;
+      const fontSize = 11 * stableScale;
+      const rowHeight = 18 * stableScale;
+      const rowGap = 2 * stableScale;
+      const totalHeight = rowHeight * 3 + rowGap * 2;
+      const radius = 8 * stableScale;
+      tankContext.font = `700 ${fontSize}px Trebuchet MS`;
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
-      const labelWidth = Math.ceil(tankContext.measureText(fish.name).width) + 18 * stableScale;
-      const labelHeight = 22 * stableScale;
-      const labelY = pose.isDead
-        ? Math.max(topFrameBottomY + labelHeight / 2 + 18 * stableScale, pose.y - height * 0.62)
-        : pose.y - height * 0.62;
-      tankContext.fillStyle = "rgba(5, 14, 22, 0.5)";
-      tankContext.beginPath();
-      tankContext.roundRect(pose.x - labelWidth / 2, labelY - labelHeight / 2, labelWidth, labelHeight, 11 * stableScale);
-      tankContext.fill();
-      tankContext.strokeStyle = "rgba(232, 247, 255, 0.16)";
-      tankContext.lineWidth = stableScale;
-      tankContext.stroke();
-      tankContext.fillStyle = "rgba(240, 251, 255, 0.92)";
-      tankContext.fillText(fish.name, pose.x, labelY + 0.5);
+      const nameWidth = tankContext.measureText(fish.name || "Fish").width;
+      const moodWidth = tankContext.measureText(moodLabel).width;
+      const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
+      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, moodWidth, heartWidth) + 18 * stableScale));
+      const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
+      const desiredBottomY = pose.y - height * 0.58;
+      const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
+      const moodStroke = moodTone === "danger"
+        ? "rgba(255, 116, 137, 0.82)"
+        : moodTone === "warn"
+          ? "rgba(255, 202, 102, 0.82)"
+          : "rgba(89, 229, 203, 0.82)";
+
+      for (let row = 0; row < 3; row += 1) {
+        const y = topY + row * (rowHeight + rowGap);
+        tankContext.fillStyle = "rgba(5, 25, 38, 0.78)";
+        tankContext.beginPath();
+        tankContext.roundRect(labelX - labelWidth / 2, y, labelWidth, rowHeight, radius);
+        tankContext.fill();
+        tankContext.strokeStyle = row === 2 ? moodStroke : "rgba(94, 220, 239, 0.72)";
+        tankContext.lineWidth = Math.max(1, stableScale);
+        tankContext.stroke();
+      }
+
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.fillText(fish.name || "Fish", labelX, topY + rowHeight / 2 + 0.5);
+
+      const heartCenterY = topY + rowHeight + rowGap + rowHeight / 2 + 0.5;
+      const heartGap = 4 * stableScale;
+      tankContext.fillStyle = "#ff627d";
+      tankContext.textAlign = "right";
+      tankContext.fillText("♥", labelX - heartGap / 2, heartCenterY);
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.textAlign = "left";
+      tankContext.fillText(heartLabel, labelX + heartGap / 2, heartCenterY);
+
+      tankContext.textAlign = "center";
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.fillText(moodLabel, labelX, topY + (rowHeight + rowGap) * 2 + rowHeight / 2 + 0.5);
       tankContext.restore();
     }
   }
@@ -70164,24 +70004,16 @@ function getFishPose(fish, species, now) {
     (Number(fish.targetXNorm) || fish.xNorm) - fish.xNorm,
     (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm
   );
-  // Once a fish has reached decor, treat it as genuinely stationary instead of
-  // repeatedly blending between swim bob and idle bob as tiny target corrections
-  // come and go. That blend used unrelated phases and could read as a hitch.
-  const settledAtDecor = Boolean(fish.hangoutDecorId)
-    && fish.activity === "roam"
-    && !fish.caveState
-    && targetDistanceNorm <= 0.03;
-  const stationaryRaw = settledAtDecor ? 1 : 1 - clamp(targetDistanceNorm / 0.025, 0, 1);
-  const stationaryBlend = stationaryRaw * stationaryRaw * (3 - 2 * stationaryRaw);
-  const swimBob =
-    Math.sin(wiggleClock * (0.2 + species.bobSpeed * 0.16) + fish.phase * Math.PI * 2) * (0.9 + motionLevel * 4.4) * sickMotionBoost
-    + glide * (0.45 + motionLevel * 1.35);
-  // Idle vertical drift used to share wiggleClock with movement. That clock
-  // changes rate as motion states transition, which can make stationary fish
-  // visibly hitch up/down. Use a render-time idle clock and blend into it.
-  const idleBobClock = now / 1000;
-  const idleBob = Math.sin(idleBobClock * 0.72 + fish.phase * Math.PI * 2) * (0.72 + motionLevel * 0.72) * sickMotionBoost;
-  const verticalBob = swimBob * (1 - stationaryBlend) + idleBob * stationaryBlend;
+  // The old pose blended a wiggle-clock bob into a wall-clock bob when a fish
+  // arrived. Those clocks have unrelated phases, so normal settling could jump
+  // up or down. One render-time clock keeps every vertical movement continuous;
+  // only its smoothly changing amplitude reflects the current swim effort.
+  const bobClock = now / 1000;
+  const movementBlend = clamp(targetDistanceNorm / 0.055, 0, 1);
+  const bobAmplitude = (0.7 + motionLevel * (0.8 + movementBlend * 3.2)) * sickMotionBoost;
+  const verticalBob =
+    Math.sin(bobClock * (0.72 + species.bobSpeed * 0.22) + fish.phase * Math.PI * 2) * bobAmplitude
+    + Math.sin(bobClock * 0.42 + fish.phase * Math.PI * 1.4) * bobAmplitude * 0.18;
   const y = renderYNorm * TANK_HEIGHT
     + verticalBob
     + (entryProgress === null ? 0 : Math.sin(entryProgress * Math.PI * 2.4 + fish.phase * Math.PI) * (1 - entryProgress) * 9);
@@ -70270,33 +70102,9 @@ function getBaseTankDirtiness(now) {
   if (isTutorialTankDirtinessLocked()) {
     return 0;
   }
-  return clamp((now - state.lastCleanedAt) / getFilterMaxDirtyDurationMs(), 0, 1);
+  return clamp((now - state.lastCleanedAt) / getTankMaxDirtyDurationMs(), 0, 1);
 }
 
-function getFilterProfile(filterKey = state?.selectedFilterAsset) {
-  const currentTank = getCurrentTank();
-  if (!tankSupportsFilters(currentTank)) {
-    return {
-      cleanDays: Math.max(1.2, Number(getTankTypeMeta(currentTank?.tankTypeId).baseCleanDays) || FILTERLESS_BASE_TANK_DIRTY_DAYS),
-      comfortBoost: 0,
-      cost: 0,
-      flow: 0.9,
-      purchasable: false,
-      tier: -1
-    };
-  }
-
-  const fallbackFilterKey = getDefaultFilterKey();
-  const filter = runtime.filterMap.get(filterKey || fallbackFilterKey) || runtime.filterMap.get(fallbackFilterKey) || {};
-  return {
-    cleanDays: Math.max(BASE_TANK_DIRTY_DAYS, Number(filter.cleanDays) || BASE_TANK_DIRTY_DAYS),
-    comfortBoost: clamp(Number(filter.comfortBoost) || 0, 0, 0.25),
-    cost: Math.max(0, Math.floor(Number(filter.cost) || 0)),
-    flow: clamp(Number(filter.flow) || 1, 0.8, 1.3),
-    purchasable: Boolean(filter.purchasable),
-    tier: Math.max(0, Math.floor(Number(filter.tier) || 0))
-  };
-}
 
 function normalizeFishSpeed(species, explicitValue) {
   if (Number.isFinite(explicitValue)) {
@@ -71765,6 +71573,7 @@ function updateComfortHistoryEvents(now = Date.now()) {
 }
 
 function getFishComfort(fish, now) {
+  if (hasActiveCandyBoost(fish, now)) return { value: 1, label: "Candy boost" };
   if (isFishDead(fish)) {
     return { value: 0, label: "Deceased" };
   }
@@ -71843,7 +71652,7 @@ function setFishNeedValue(fish, needKey, value, now = Date.now()) {
     return false;
   }
   fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
-  if (needKey !== "hunger") return false;
+  if (needKey !== "hunger" || hasActiveCandyBoost(fish, now)) return false;
   const previous = fish.needs[needKey];
   fish.needs[needKey] = clamp(Number(value) || 0, 0, 100);
   return Math.abs(previous - fish.needs[needKey]) > 0.001;
@@ -71863,6 +71672,7 @@ function getFishNeedsSnapshot(fish, now = Date.now()) {
 
 function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fish?.needs, fish, now)) {
   if (!fish || isFishDead(fish) || isUndeadFish(fish)) return null;
+  if (hasActiveCandyBoost(fish, now)) return { tone: "good", text: "Candy boost: all stats full for " + formatDuration(fish.candyBoostUntil - now) + "." };
   if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
     return { tone: "danger", text: "Very hungry. Drop some food into the tank." };
   }
@@ -71970,7 +71780,9 @@ function getFishSocialNeedTarget(fish) {
 function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   const species = getSpeciesForFish(fish);
   if (!fish || !species || isFishDead(fish) || isUndeadFish(fish)) return null;
-  const hours = Math.max(0, elapsedMs) / HOUR_MS;
+  const unboostedMs = Number(fish.candyBoostUntil) > 0
+    ? Math.min(elapsedMs, Math.max(0, now - Number(fish.candyBoostUntil))) : elapsedMs;
+  const hours = Math.max(0, unboostedMs) / HOUR_MS;
   // Food is the only depleting individual resource. The tank supplies comfort
   // and clean water; ordinary rest, company and play take care of themselves.
   return {
@@ -72105,7 +71917,12 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
   const minYNorm = shellBounds.innerTop / TANK_HEIGHT;
   const maxYNorm = (shellBounds.innerTop + shellBounds.innerHeight) / TANK_HEIGHT;
   const normalizedX = clamp(Number.isFinite(Number(xNorm)) ? Number(xNorm) : 0.5, 0, 1);
-  const normalizedY = clamp(Number.isFinite(Number(yNorm)) ? Number(yNorm) : 0.8, 0, 1);
+  // yNorm is the raw PNG bottom anchor, not necessarily the visible artwork's
+  // bottom. When an image has transparent padding below the art, correctly
+  // grounding its visible pixels can require this invisible anchor to sit below
+  // the tank's normalized 1.0 edge. Keep corrupt values bounded, but do not
+  // clamp valid placement math back into the visible shell.
+  const normalizedY = clamp(Number.isFinite(Number(yNorm)) ? Number(yNorm) : 0.8, 0, 4);
   const decorKey = options.item?.decorKey || options.decorKey || runtime.placementMode?.decorKey || null;
   const resolvedLayer = decorKey
     ? getDecorFrontLayer(
@@ -72121,6 +71938,8 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
   const layerBoundaryYNorm = layerBoundaryY / TANK_HEIGHT;
   const effectiveMaxYNorm = Math.max(minYNorm, Math.min(maxYNorm, layerBoundaryYNorm));
   const applyGravity = shouldApplyDecorPlacementGravity(decorKey, options);
+  const attachToCeiling = (isTransitTubeDecorKey(decorKey) || getDecorMotionCapabilities(decorKey).isLure)
+    && !getResolvedDecorFreePlacementEnabled(options);
 
   if (!decorKey) {
     const constrained = constrainNormalizedPointToTankShell(
@@ -72194,7 +72013,7 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
     ? clamp(anchorX, minAnchorX, maxAnchorX)
     : (minAnchorX + maxAnchorX) / 2;
   const clampedY = minAnchorY <= maxAnchorY
-    ? (applyGravity ? maxAnchorY : clamp(anchorY, minAnchorY, maxAnchorY))
+    ? (attachToCeiling ? minAnchorY : (applyGravity ? maxAnchorY : clamp(anchorY, minAnchorY, maxAnchorY)))
     : maxAnchorY;
 
   const constrained = constrainNormalizedPointToTankShell(
@@ -72203,7 +72022,10 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
   );
   return {
     xNorm: clamp(constrained.xNorm, minXNorm, maxXNorm),
-    yNorm: clamp(clampedY / TANK_HEIGHT, minYNorm, maxYNorm)
+    // clampedY already constrains the *visible* placement bounds to the tank and
+    // active layer floor. Do not clamp the invisible PNG anchor to maxYNorm here,
+    // or transparent bottom padding becomes an artificial gap above the floor.
+    yNorm: clamp(clampedY / TANK_HEIGHT, 0, 4)
   };
 }
 
@@ -72231,7 +72053,7 @@ function getCustomBubblerHitBounds(item) {
     return null;
   }
 
-  return expandBoundsAroundCenter(getPlacedDecorBounds(item), CUSTOM_BUBBLER_HIT_SCALE);
+  return expandBoundsAroundCenter(getPlacedDecorGroundBounds(item), CUSTOM_BUBBLER_HIT_SCALE);
 }
 
 function getPlacedDecorBounds(item) {
@@ -72327,6 +72149,21 @@ function getPlacedDecorOpaqueBounds(item, imagePathOverride = null) {
   }
 
   return mergedBounds || getPlacedDecorBounds(item);
+}
+
+function getPlacedDecorGroundBounds(item) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  if (!decor) {
+    return null;
+  }
+
+  // Grounding is based on the visible pixels of the primary decor artwork, not
+  // the transparent PNG rectangle or optional companion/effect layers.
+  // This makes the visible bottom of the object the physical foot everywhere.
+  const primaryBounds = decor.path
+    ? getPlacedDecorOpaqueBounds(item, decor.path)
+    : null;
+  return primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
 }
 
 function getDecorShapeDescriptor(item, imagePathOverride = null) {
@@ -74068,7 +73905,7 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
 }
 
 function getCaveBarrierDescriptor(item) {
-  if (!item || !isCaveDecorKey(item.decorKey)) {
+  if (!item || (!isCaveDecorKey(item.decorKey) && !isTransitTubeDecorKey(item.decorKey))) {
     return null;
   }
 
@@ -74147,14 +73984,14 @@ function getCaveCollisionFrameCandidates(testLayer, now = Date.now()) {
   ) {
     const candidatesByLayer = Array.from({ length: TANK_DEPTH_LAYERS + 1 }, () => []);
     for (const item of placedDecor) {
-      if (!item || !isCaveDecorKey(item.decorKey)) {
+      if (!item || (!isCaveDecorKey(item.decorKey) && !isTransitTubeDecorKey(item.decorKey))) {
         continue;
       }
       const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
       const layers = span.front === span.back ? [span.front] : [span.front, span.back];
       for (const candidateLayer of layers) {
         const normalizedLayer = clampTankLayer(candidateLayer);
-        if (normalizedLayer < 3) {
+        if (normalizedLayer < 3 && !isTransitTubeDecorKey(item.decorKey)) {
           continue;
         }
         const descriptor = getCaveBlockingDescriptorForLayer(item, normalizedLayer);
@@ -74183,10 +74020,6 @@ function findBlockingCaveForFishPose(fish, species, now, pose, layerOverride = n
   }
 
   const testLayer = clampTankLayer(layerOverride ?? getFishTankLayer(fish));
-  if (testLayer < 3) {
-    return null;
-  }
-
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const fishDescriptor = getFishShapeDescriptor(fish, species, now, pose);
   if (!fishDescriptor) {
@@ -75524,6 +75357,42 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+function getCachedCanvasBytes(value) {
+  if (!value) return 0;
+  if (Number(value.width) > 0 && Number(value.height) > 0) return Number(value.width) * Number(value.height) * 4;
+  if (typeof value === "object") return [...new Set(Object.values(value))].reduce((sum, child) => sum + getCachedCanvasBytes(child), 0);
+  return 0;
+}
+
+function releaseCachedCanvasValue(value) {
+  if (!value) return;
+  if (typeof value.getContext === "function" && "width" in value && "height" in value) {
+    value.width = 0;
+    value.height = 0;
+    return;
+  }
+  if (typeof value === "object") for (const child of new Set(Object.values(value))) releaseCachedCanvasValue(child);
+}
+
+function setBoundedCanvasCache(cache, key, value, options = {}) {
+  if (!(cache instanceof Map)) return value;
+  if (cache.has(key)) releaseCachedCanvasValue(cache.get(key));
+  cache.delete(key);
+  cache.set(key, value);
+  const maxEntries = Math.max(1, Math.floor(Number(options.maxEntries) || 24));
+  const maxBytes = Math.max(1024 * 1024, Number(options.maxBytes) || 48 * 1024 * 1024);
+  let bytes = 0;
+  for (const cached of cache.values()) bytes += getCachedCanvasBytes(cached);
+  while (cache.size > maxEntries || bytes > maxBytes) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) break;
+    const oldest = cache.get(oldestKey);
+    bytes -= getCachedCanvasBytes(oldest);
+    cache.delete(oldestKey);
+    releaseCachedCanvasValue(oldest);
+  }
+  return value;
+}
 // </bundle-source>
 
 // <bundle-source path="ui/notifications.js">
@@ -75721,7 +75590,7 @@ function renderNotificationCenterOverlay() {
     const targetTankId = entry.tankId || getTankContainingFish(targetFishId)?.id || "";
     const typeLabel = entry.type === "achievement" ? "Achievement" : entry.type === "daily_recap" ? "Daily Recap" : "Borough";
     const icon = entry.iconPath
-      ? `<img class="notification-center-icon" src="${escapeHtml(entry.iconPath)}" alt="" />`
+      ? `<img class="notification-center-icon" ${assetImageAttributes(entry.iconPath)} alt="" />`
       : `<span class="notification-center-symbol" aria-hidden="true">${entry.type === "daily_recap" ? "☀" : "•"}</span>`;
     const rewards = [
       entry.coinReward > 0 ? `+${entry.coinReward} coins` : "",
@@ -76529,7 +76398,7 @@ async function applyCloudSaveRecord(record) {
   return true;
 }
 
-async function uploadCurrentSaveToCloud(options = {}) {
+async function performCloudSaveUpload(options = {}) {
   if (!state || runtime.applyingCloudSave || runtime.freshGameSaveLocked) return false;
   if (!runtime.cloudWritesAllowed && options.force !== true) return false;
   const session = await refreshCloudSessionIfNeeded();
@@ -76540,9 +76409,9 @@ async function uploadCurrentSaveToCloud(options = {}) {
   setCloudSyncStatus("syncing", "Syncing...");
   try {
     const payload = await createCloudSavePayload(Date.now());
-    const rows = await supabaseSaveFetch("?on_conflict=user_id", {
+    await supabaseSaveFetch("?on_conflict=user_id", {
       method: "POST",
-      prefer: "resolution=merge-duplicates,return=representation",
+      prefer: "resolution=merge-duplicates,return=minimal",
       body: {
         user_id: userId,
         save_data: payload,
@@ -76551,12 +76420,11 @@ async function uploadCurrentSaveToCloud(options = {}) {
         updated_at: new Date().toISOString()
       }
     });
-    const row = Array.isArray(rows) ? rows[0] : null;
     const syncedAt = Date.now();
-    runtime.cloudRevision = Number(row?.revision) || nextRevision;
+    runtime.cloudRevision = nextRevision;
     setCloudMeta({
       cloudRevision: runtime.cloudRevision,
-      cloudUpdatedAt: row?.updated_at || new Date(syncedAt).toISOString(),
+      cloudUpdatedAt: new Date(syncedAt).toISOString(),
       lastCloudSyncedAt: syncedAt,
       localSavedAt: Number(meta.localSavedAt) || syncedAt
     });
@@ -76572,14 +76440,31 @@ async function uploadCurrentSaveToCloud(options = {}) {
   }
 }
 
+function uploadCurrentSaveToCloud(options = {}) {
+  if (runtime.cloudUploadPromise) {
+    runtime.cloudUploadQueued = true;
+    return runtime.cloudUploadPromise;
+  }
+  runtime.cloudUploadPromise = performCloudSaveUpload(options).finally(() => {
+    runtime.cloudUploadPromise = null;
+    if (runtime.cloudUploadQueued) {
+      runtime.cloudUploadQueued = false;
+      scheduleCloudSave();
+    }
+  });
+  return runtime.cloudUploadPromise;
+}
+
 function scheduleCloudSave() {
   if (!runtime.cloudWritesAllowed || runtime.freshGameSaveLocked || !getCloudSession()) return false;
   if (runtime.cloudSaveTimerId) window.clearTimeout(runtime.cloudSaveTimerId);
-  setCloudSyncStatus("syncing", "Syncing...");
+  setCloudSyncStatus("syncing", "Pending sync...");
+  const lastSyncedAt = Number(getCloudMeta().lastCloudSyncedAt) || 0;
+  const minimumDelay = Math.max(0, CLOUD_SYNC_MIN_INTERVAL_MS - (Date.now() - lastSyncedAt));
   runtime.cloudSaveTimerId = window.setTimeout(() => {
     runtime.cloudSaveTimerId = 0;
     void uploadCurrentSaveToCloud({ showToast: false });
-  }, CLOUD_SYNC_DEBOUNCE_MS);
+  }, Math.max(CLOUD_SYNC_DEBOUNCE_MS, minimumDelay));
   return true;
 }
 
@@ -76821,6 +76706,17 @@ function showStartupLoadingState(button, label) {
   const buttons = actions?.querySelector("[data-startup-buttons]");
   if (!actions || !buttons || actions.dataset.startupPending === "true") return;
   actions.dataset.startupPending = "true";
+  const trivia = document.querySelector("[data-loading-trivia]");
+  if (trivia) {
+    const messages = [
+      "The whole world decays\nI retreat beneath the glass\nDigital fish swim",
+      "Goldfish can recognize familiar people.",
+      "Angelfish communicate with posture and color.",
+      "A school of fish can move as one without a leader.",
+      "A clean tank is a happier neighborhood."
+    ];
+    trivia.textContent = messages[Math.floor(Math.random() * messages.length)];
+  }
   if (button) {
     button.disabled = true;
     button.classList.add("is-pressed");
@@ -76897,5 +76793,2355 @@ function initializeCloudSaveRuntime() {
   runtime.cloudRevision = Number(getCloudMeta().cloudRevision) || 0;
   setCloudSyncStatus(runtime.cloudSession ? "checking" : "signed-out", runtime.cloudSession ? "Cloud check pending" : "Not signed in");
   renderCloudAccountPanel();
+}
+// </bundle-source>
+
+// <bundle-source path="assets/sprite-sheet-definitions.js">
+// Generated by scripts/generate-sprite-sheets.cjs. Do not edit.
+function getSpriteSheetDefinitions() {
+  return [
+    {
+      "path": "assets/fish/Angelfish.webp",
+      "version": "cf44c0c61579",
+      "width": 1024,
+      "height": 1536,
+      "frames": {
+        "angelfish_3.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "angelfish_2.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "angelfish_1.png": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "angelfish.png": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "angelfish_4.png": [
+          0,
+          1024,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Angelfish",
+        "version": "de415196f10e-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Betta.webp",
+      "version": "3428f556fac7",
+      "width": 1024,
+      "height": 1338,
+      "frames": {
+        "betta_4.png": [
+          0,
+          0,
+          512,
+          446
+        ],
+        "betta_1.png": [
+          512,
+          0,
+          512,
+          446
+        ],
+        "betta.png": [
+          0,
+          446,
+          512,
+          446
+        ],
+        "betta_3.png": [
+          512,
+          446,
+          512,
+          446
+        ],
+        "betta_2.png": [
+          0,
+          892,
+          512,
+          446
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Betta",
+        "version": "e36c49fed52c-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/BlueRam.webp",
+      "version": "e1d026822e8f",
+      "width": 1024,
+      "height": 1023,
+      "frames": {
+        "BlueRam.png": [
+          0,
+          0,
+          512,
+          341
+        ],
+        "BlueRam_1.png": [
+          512,
+          0,
+          512,
+          341
+        ],
+        "BlueRam_2.png": [
+          0,
+          341,
+          512,
+          341
+        ],
+        "BlueRam_3.png": [
+          512,
+          341,
+          512,
+          341
+        ],
+        "BlueRam_4.png": [
+          0,
+          682,
+          512,
+          341
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/BlueRam",
+        "version": "5e741b695c9f-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Boat.webp",
+      "version": "bb54f0722cc2",
+      "width": 990,
+      "height": 975,
+      "frames": {
+        "boat.png": [
+          0,
+          0,
+          495,
+          325
+        ],
+        "Halloween_Boat_5.png": [
+          495,
+          0,
+          495,
+          325
+        ],
+        "boat_3.png": [
+          0,
+          325,
+          495,
+          325
+        ],
+        "boat_1.png": [
+          495,
+          325,
+          495,
+          325
+        ],
+        "boat_4.png": [
+          0,
+          650,
+          495,
+          325
+        ],
+        "boat_2.png": [
+          495,
+          650,
+          495,
+          325
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Boat",
+        "version": "4e2808e4140c-v1",
+        "standalone": false
+      },
+      "aliases": {
+        "Halloween_Boat.png": "Halloween_Boat_5.png"
+      }
+    },
+    {
+      "path": "assets/fish/Bull_Shark.webp",
+      "version": "5029dc65c1d6",
+      "width": 1024,
+      "height": 837,
+      "frames": {
+        "Bull_Shark_3.png": [
+          0,
+          0,
+          512,
+          279
+        ],
+        "Bull_Shark_2.png": [
+          512,
+          0,
+          512,
+          279
+        ],
+        "Bull_Shark_1.png": [
+          0,
+          279,
+          512,
+          279
+        ],
+        "Bull_Shark_4.png": [
+          512,
+          279,
+          512,
+          279
+        ],
+        "Bull_Shark.png": [
+          0,
+          558,
+          512,
+          279
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Bull_Shark",
+        "version": "0f9f12d46c99-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/CelestialPearlDanio.webp",
+      "version": "8afdbe5878f0",
+      "width": 1024,
+      "height": 672,
+      "frames": {
+        "CelestialPearlDanio.png": [
+          0,
+          0,
+          512,
+          224
+        ],
+        "CelestialPearlDanio_2.png": [
+          512,
+          0,
+          512,
+          224
+        ],
+        "CelestialPearlDanio_3.png": [
+          0,
+          224,
+          512,
+          224
+        ],
+        "CelestialPearlDanio_4.png": [
+          512,
+          224,
+          512,
+          224
+        ],
+        "CelestialPearlDanio_1.png": [
+          0,
+          448,
+          512,
+          224
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/CelestialPearlDanio",
+        "version": "6344a7a14a99-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/ChiliRasbora.webp",
+      "version": "57017e250caf",
+      "width": 972,
+      "height": 615,
+      "frames": {
+        "ChiliRasbora_1.png": [
+          0,
+          0,
+          486,
+          205
+        ],
+        "ChiliRasbora.png": [
+          486,
+          0,
+          486,
+          205
+        ],
+        "ChiliRasbora_4.png": [
+          0,
+          205,
+          486,
+          205
+        ],
+        "ChiliRasbora_3.png": [
+          486,
+          205,
+          486,
+          205
+        ],
+        "ChiliRasbora_2.png": [
+          0,
+          410,
+          486,
+          205
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/ChiliRasbora",
+        "version": "9aa9d42eaeb2-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Embertetra.webp",
+      "version": "1b06ea654eea",
+      "width": 1024,
+      "height": 750,
+      "frames": {
+        "embertetra.png": [
+          0,
+          0,
+          512,
+          250
+        ],
+        "embertetra_3.png": [
+          512,
+          0,
+          512,
+          250
+        ],
+        "embertetra_2.png": [
+          0,
+          250,
+          512,
+          250
+        ],
+        "embertetra_4.png": [
+          512,
+          250,
+          512,
+          250
+        ],
+        "embertetra_1.png": [
+          0,
+          500,
+          512,
+          250
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Embertetra",
+        "version": "dd03ffcd5044-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Gourami.webp",
+      "version": "0ca338cdaeae",
+      "width": 1024,
+      "height": 846,
+      "frames": {
+        "Gourami.png": [
+          0,
+          0,
+          512,
+          282
+        ],
+        "Gourami_1.png": [
+          512,
+          0,
+          512,
+          282
+        ],
+        "Gourami_2.png": [
+          0,
+          282,
+          512,
+          282
+        ],
+        "Gourami_3.png": [
+          512,
+          282,
+          512,
+          282
+        ],
+        "Gourami_4.png": [
+          0,
+          564,
+          512,
+          282
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Gourami",
+        "version": "82d84ff64088-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Great_White_Shark.webp",
+      "version": "fb61539824a2",
+      "width": 1024,
+      "height": 777,
+      "frames": {
+        "Great_White_Shark_4.png": [
+          0,
+          0,
+          512,
+          259
+        ],
+        "Great_White_Shark.png": [
+          512,
+          0,
+          512,
+          259
+        ],
+        "Great_White_Shark_1.png": [
+          0,
+          259,
+          512,
+          259
+        ],
+        "Great_White_Shark_2.png": [
+          512,
+          259,
+          512,
+          259
+        ],
+        "Great_White_Shark_3.png": [
+          0,
+          518,
+          512,
+          259
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Great_White_Shark",
+        "version": "bee11c41c587-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Hammerhead_Shark.webp",
+      "version": "2b40a2419017",
+      "width": 1024,
+      "height": 807,
+      "frames": {
+        "Hammerhead_Shark.png": [
+          0,
+          0,
+          512,
+          269
+        ],
+        "Hammerhead_Shark_1.png": [
+          512,
+          0,
+          512,
+          269
+        ],
+        "Hammerhead_Shark_2.png": [
+          0,
+          269,
+          512,
+          269
+        ],
+        "Hammerhead_Shark_3.png": [
+          512,
+          269,
+          512,
+          269
+        ],
+        "Hammerhead_Shark_4.png": [
+          0,
+          538,
+          512,
+          269
+        ],
+        "Hammerhead_Shark_5.png": [
+          512,
+          538,
+          512,
+          269
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Hammerhead_Shark",
+        "version": "5c9579854c3a-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/HarlequinRasbora.webp",
+      "version": "86c1f3dba937",
+      "width": 1024,
+      "height": 747,
+      "frames": {
+        "HarlequinRasbora_2.png": [
+          0,
+          0,
+          512,
+          249
+        ],
+        "HarlequinRasbora_3.png": [
+          512,
+          0,
+          512,
+          249
+        ],
+        "HarlequinRasbora_4.png": [
+          0,
+          249,
+          512,
+          249
+        ],
+        "HarlequinRasbora_1.png": [
+          512,
+          249,
+          512,
+          249
+        ],
+        "HarlequinRasbora.png": [
+          0,
+          498,
+          512,
+          249
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/HarlequinRasbora",
+        "version": "87976d1cab1c-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Livebearer.webp",
+      "version": "9501e11d282f",
+      "width": 1024,
+      "height": 627,
+      "frames": {
+        "Livebearer.png": [
+          0,
+          0,
+          512,
+          209
+        ],
+        "Livebearer_1.png": [
+          512,
+          0,
+          512,
+          209
+        ],
+        "Livebearer_2.png": [
+          0,
+          209,
+          512,
+          209
+        ],
+        "Livebearer_3.png": [
+          512,
+          209,
+          512,
+          209
+        ],
+        "Livebearer_4.png": [
+          0,
+          418,
+          512,
+          209
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Livebearer",
+        "version": "6ebc4a082427-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Moorgoldfish.webp",
+      "version": "714515184fe2",
+      "width": 1024,
+      "height": 1152,
+      "frames": {
+        "moorgoldfish.png": [
+          0,
+          0,
+          512,
+          384
+        ],
+        "moorgoldfish_1.png": [
+          512,
+          0,
+          512,
+          384
+        ],
+        "moorgoldfish_2.png": [
+          0,
+          384,
+          512,
+          384
+        ],
+        "moorgoldfish_3.png": [
+          512,
+          384,
+          512,
+          384
+        ],
+        "moorgoldfish_4.png": [
+          0,
+          768,
+          512,
+          384
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Moorgoldfish",
+        "version": "6e1bde44da1f-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/NeonTetra.webp",
+      "version": "b1d13f054d7b",
+      "width": 1002,
+      "height": 627,
+      "frames": {
+        "NeonTetra.png": [
+          0,
+          0,
+          501,
+          209
+        ],
+        "NeonTetra_1.png": [
+          501,
+          0,
+          501,
+          209
+        ],
+        "NeonTetra_2.png": [
+          0,
+          209,
+          501,
+          209
+        ],
+        "NeonTetra_3.png": [
+          501,
+          209,
+          501,
+          209
+        ],
+        "NeonTetra_4.png": [
+          0,
+          418,
+          501,
+          209
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/NeonTetra",
+        "version": "efdb53fde50c-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Orca.webp",
+      "version": "1a36efff9123",
+      "width": 1024,
+      "height": 714,
+      "frames": {
+        "Orca.png": [
+          0,
+          0,
+          512,
+          238
+        ],
+        "Orca_1.png": [
+          512,
+          0,
+          512,
+          238
+        ],
+        "Orca_2.png": [
+          0,
+          238,
+          512,
+          238
+        ],
+        "Orca_3.png": [
+          512,
+          238,
+          512,
+          238
+        ],
+        "Orca_4.png": [
+          0,
+          476,
+          512,
+          238
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Orca",
+        "version": "70c262ba40d9-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Otocinclus.webp",
+      "version": "8bf3b2b0ac6f",
+      "width": 1500,
+      "height": 712,
+      "frames": {
+        "otocinclus_0.png": [
+          0,
+          0,
+          500,
+          159
+        ],
+        "otocinclus_0_bottom.png": [
+          500,
+          0,
+          500,
+          159
+        ],
+        "otocinclus_0_side.png": [
+          1000,
+          0,
+          500,
+          178
+        ],
+        "otocinclus_1.png": [
+          0,
+          178,
+          500,
+          159
+        ],
+        "otocinclus_1_bottom.png": [
+          500,
+          178,
+          500,
+          159
+        ],
+        "otocinclus_1_side.png": [
+          1000,
+          178,
+          500,
+          178
+        ],
+        "otocinclus_2.png": [
+          0,
+          356,
+          500,
+          159
+        ],
+        "otocinclus_2_bottom.png": [
+          500,
+          356,
+          500,
+          159
+        ],
+        "otocinclus_2_side.png": [
+          1000,
+          356,
+          500,
+          178
+        ],
+        "otocinclus_3.png": [
+          0,
+          534,
+          500,
+          159
+        ],
+        "otocinclus_3_bottom.png": [
+          500,
+          534,
+          500,
+          159
+        ],
+        "otocinclus_3_side.png": [
+          1000,
+          534,
+          500,
+          178
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Otocinclus",
+        "version": "9c5424459440-v1",
+        "standalone": false
+      },
+      "aliases": {
+        "otocinclus.png": "otocinclus_0.png",
+        "otocinclus_bottom.png": "otocinclus_0_bottom.png",
+        "otocinclus_front.png": "otocinclus_0_bottom.png",
+        "otocinclus_side.png": "otocinclus_0_side.png"
+      }
+    },
+    {
+      "path": "assets/fish/Pencilfish.webp",
+      "version": "1a26409449dd",
+      "width": 988,
+      "height": 477,
+      "frames": {
+        "Pencilfish_4.png": [
+          0,
+          0,
+          494,
+          159
+        ],
+        "Pencilfish_3.png": [
+          494,
+          0,
+          494,
+          159
+        ],
+        "Pencilfish_2.png": [
+          0,
+          159,
+          494,
+          159
+        ],
+        "Pencilfish_1.png": [
+          494,
+          159,
+          494,
+          159
+        ],
+        "Pencilfish.png": [
+          0,
+          318,
+          494,
+          159
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Pencilfish",
+        "version": "8c90bb806129-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Pilot_Fish.webp",
+      "version": "c60b6f42e59c",
+      "width": 1024,
+      "height": 798,
+      "frames": {
+        "Pilot_Fish.png": [
+          0,
+          0,
+          512,
+          266
+        ],
+        "Pilot_Fish_2.png": [
+          512,
+          0,
+          512,
+          266
+        ],
+        "Pilot_Fish_1.png": [
+          0,
+          266,
+          512,
+          266
+        ],
+        "Pilot_Fish_3.png": [
+          512,
+          266,
+          512,
+          266
+        ],
+        "Pilot_Fish_4.png": [
+          0,
+          532,
+          512,
+          266
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Pilot_Fish",
+        "version": "e867a6c57c58-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/RummyNoseTetra.webp",
+      "version": "00a0901d0225",
+      "width": 992,
+      "height": 699,
+      "frames": {
+        "RummyNoseTetra.png": [
+          0,
+          0,
+          496,
+          233
+        ],
+        "RummyNoseTetra_4.png": [
+          496,
+          0,
+          496,
+          233
+        ],
+        "RummyNoseTetra_3.png": [
+          0,
+          233,
+          496,
+          233
+        ],
+        "RummyNoseTetra_2.png": [
+          496,
+          233,
+          496,
+          233
+        ],
+        "RummyNoseTetra_1.png": [
+          0,
+          466,
+          496,
+          233
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/RummyNoseTetra",
+        "version": "13e8532f7e67-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Seahorse.webp",
+      "version": "4b2c3a73ea04",
+      "width": 630,
+      "height": 1536,
+      "frames": {
+        "Seahorse.png": [
+          0,
+          0,
+          315,
+          512
+        ],
+        "Seahorse_1.png": [
+          315,
+          0,
+          315,
+          512
+        ],
+        "Seahorse_2.png": [
+          0,
+          512,
+          315,
+          512
+        ],
+        "Seahorse_3.png": [
+          315,
+          512,
+          315,
+          512
+        ],
+        "Seahorse_4.png": [
+          0,
+          1024,
+          315,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Seahorse",
+        "version": "0e3bcc85d985-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Submarine.webp",
+      "version": "f252e74db63d",
+      "width": 1024,
+      "height": 741,
+      "frames": {
+        "submarine_1.png": [
+          0,
+          0,
+          512,
+          247
+        ],
+        "submarine.png": [
+          512,
+          0,
+          512,
+          247
+        ],
+        "submarine_2.png": [
+          0,
+          247,
+          512,
+          247
+        ],
+        "submarine_3.png": [
+          512,
+          247,
+          512,
+          247
+        ],
+        "Halloween_Submarine_5.png": [
+          0,
+          494,
+          512,
+          247
+        ],
+        "submarine_4.png": [
+          512,
+          494,
+          512,
+          247
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Submarine",
+        "version": "615de5f4a424-v1",
+        "standalone": false
+      },
+      "aliases": {
+        "Halloween_Submarine.png": "Halloween_Submarine_5.png"
+      }
+    },
+    {
+      "path": "assets/fish/Sunfish.webp",
+      "version": "114464f81971",
+      "width": 728,
+      "height": 1152,
+      "frames": {
+        "Sunfish.png": [
+          0,
+          0,
+          364,
+          384
+        ],
+        "Sunfish_1.png": [
+          364,
+          0,
+          364,
+          384
+        ],
+        "Sunfish_2.png": [
+          0,
+          384,
+          364,
+          384
+        ],
+        "Sunfish_3.png": [
+          364,
+          384,
+          364,
+          384
+        ],
+        "Sunfish_4.png": [
+          0,
+          768,
+          364,
+          384
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Sunfish",
+        "version": "c81ea7e5c47b-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/Swordtail.webp",
+      "version": "07b9120d369b",
+      "width": 990,
+      "height": 540,
+      "frames": {
+        "Swordtail.png": [
+          0,
+          0,
+          495,
+          180
+        ],
+        "Swordtail_1.png": [
+          495,
+          0,
+          495,
+          180
+        ],
+        "Swordtail_2.png": [
+          0,
+          180,
+          495,
+          180
+        ],
+        "Swordtail_3.png": [
+          495,
+          180,
+          495,
+          180
+        ],
+        "Swordtail_4.png": [
+          0,
+          360,
+          495,
+          180
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/Swordtail",
+        "version": "464bb6c71c12-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/bluetang.webp",
+      "version": "9d8c302ddfa1",
+      "width": 1024,
+      "height": 702,
+      "frames": {
+        "bluetang.png": [
+          0,
+          0,
+          512,
+          234
+        ],
+        "bluetang_1.png": [
+          512,
+          0,
+          512,
+          234
+        ],
+        "bluetang_2.png": [
+          0,
+          234,
+          512,
+          234
+        ],
+        "bluetang_3.png": [
+          512,
+          234,
+          512,
+          234
+        ],
+        "bluetang_4.png": [
+          0,
+          468,
+          512,
+          234
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/bluetang",
+        "version": "4a6c75fcadfa-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/cherrybarb.webp",
+      "version": "be06e0e1353c",
+      "width": 1024,
+      "height": 636,
+      "frames": {
+        "cherrybarb.png": [
+          0,
+          0,
+          512,
+          212
+        ],
+        "cherrybarb_1.png": [
+          512,
+          0,
+          512,
+          212
+        ],
+        "cherrybarb_2.png": [
+          0,
+          212,
+          512,
+          212
+        ],
+        "cherrybarb_3.png": [
+          512,
+          212,
+          512,
+          212
+        ],
+        "cherrybarb_4.png": [
+          0,
+          424,
+          512,
+          212
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/cherrybarb",
+        "version": "5924ecdac823-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/clownfish.webp",
+      "version": "38f9bf3113fb",
+      "width": 1024,
+      "height": 948,
+      "frames": {
+        "clownfish.png": [
+          0,
+          0,
+          512,
+          316
+        ],
+        "clownfish_1.png": [
+          512,
+          0,
+          512,
+          316
+        ],
+        "clownfish_2.png": [
+          0,
+          316,
+          512,
+          316
+        ],
+        "clownfish_3.png": [
+          512,
+          316,
+          512,
+          316
+        ],
+        "clownfish_4.png": [
+          0,
+          632,
+          512,
+          316
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/clownfish",
+        "version": "88dbfbf320de-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/discus.webp",
+      "version": "0cc979dea35b",
+      "width": 1024,
+      "height": 1281,
+      "frames": {
+        "discus.png": [
+          0,
+          0,
+          512,
+          427
+        ],
+        "discus_1.png": [
+          512,
+          0,
+          512,
+          427
+        ],
+        "discus_2.png": [
+          0,
+          427,
+          512,
+          427
+        ],
+        "discus_3.png": [
+          512,
+          427,
+          512,
+          427
+        ],
+        "discus_4.png": [
+          0,
+          854,
+          512,
+          427
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/discus",
+        "version": "f0d406c37c3f-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/goldfish.webp",
+      "version": "872e4ab1a4e3",
+      "width": 1024,
+      "height": 921,
+      "frames": {
+        "goldfish.png": [
+          0,
+          0,
+          512,
+          307
+        ],
+        "goldfish_1.png": [
+          512,
+          0,
+          512,
+          307
+        ],
+        "goldfish_2.png": [
+          0,
+          307,
+          512,
+          307
+        ],
+        "goldfish_3.png": [
+          512,
+          307,
+          512,
+          307
+        ],
+        "goldfish_4.png": [
+          0,
+          614,
+          512,
+          307
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/goldfish",
+        "version": "b7ad3517f347-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/guppy.webp",
+      "version": "72ef30d797be",
+      "width": 1024,
+      "height": 849,
+      "frames": {
+        "guppy.png": [
+          0,
+          0,
+          512,
+          283
+        ],
+        "guppy_1.png": [
+          512,
+          0,
+          512,
+          283
+        ],
+        "guppy_2.png": [
+          0,
+          283,
+          512,
+          283
+        ],
+        "guppy_3.png": [
+          512,
+          283,
+          512,
+          283
+        ],
+        "guppy_4.png": [
+          0,
+          566,
+          512,
+          283
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/guppy",
+        "version": "35c4870ddb8b-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/molly.webp",
+      "version": "19bb77f48e81",
+      "width": 1024,
+      "height": 864,
+      "frames": {
+        "molly.png": [
+          0,
+          0,
+          512,
+          288
+        ],
+        "molly_1.png": [
+          512,
+          0,
+          512,
+          288
+        ],
+        "molly_2.png": [
+          0,
+          288,
+          512,
+          288
+        ],
+        "molly_3.png": [
+          512,
+          288,
+          512,
+          288
+        ],
+        "molly_4.png": [
+          0,
+          576,
+          512,
+          288
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/molly",
+        "version": "593da5769561-v1",
+        "standalone": false
+      },
+      "aliases": {
+        "molly1.png": "molly_1.png",
+        "molly2.png": "molly_2.png"
+      }
+    },
+    {
+      "path": "assets/fish/piranha.webp",
+      "version": "6f66fd9eee60",
+      "width": 1024,
+      "height": 843,
+      "frames": {
+        "piranha.png": [
+          0,
+          0,
+          512,
+          281
+        ],
+        "piranha_1.png": [
+          512,
+          0,
+          512,
+          281
+        ],
+        "piranha_2.png": [
+          0,
+          281,
+          512,
+          281
+        ],
+        "piranha_3.png": [
+          512,
+          281,
+          512,
+          281
+        ],
+        "piranha_4.png": [
+          0,
+          562,
+          512,
+          281
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/piranha",
+        "version": "a87ff1d71f68-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/pufferfish.webp",
+      "version": "76be80087f84",
+      "width": 1024,
+      "height": 906,
+      "frames": {
+        "pufferfish.png": [
+          0,
+          0,
+          512,
+          302
+        ],
+        "pufferfish_1.png": [
+          512,
+          0,
+          512,
+          302
+        ],
+        "pufferfish_2.png": [
+          0,
+          302,
+          512,
+          302
+        ],
+        "pufferfish_3.png": [
+          512,
+          302,
+          512,
+          302
+        ],
+        "pufferfish_4.png": [
+          0,
+          604,
+          512,
+          302
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/pufferfish",
+        "version": "5613d775ea98-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/rainbowfish.webp",
+      "version": "3f340b6fb3ce",
+      "width": 1024,
+      "height": 768,
+      "frames": {
+        "rainbowfish.png": [
+          0,
+          0,
+          512,
+          256
+        ],
+        "rainbowfish_1.png": [
+          512,
+          0,
+          512,
+          256
+        ],
+        "rainbowfish_2.png": [
+          0,
+          256,
+          512,
+          256
+        ],
+        "rainbowfish_3.png": [
+          512,
+          256,
+          512,
+          256
+        ],
+        "rainbowfish_4.png": [
+          0,
+          512,
+          512,
+          256
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/rainbowfish",
+        "version": "5d5171fe1048-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/royalgramma.webp",
+      "version": "14c53fd3e356",
+      "width": 1024,
+      "height": 768,
+      "frames": {
+        "royalgramma.png": [
+          0,
+          0,
+          512,
+          256
+        ],
+        "royalgramma_1.png": [
+          512,
+          0,
+          512,
+          256
+        ],
+        "royalgramma_2.png": [
+          0,
+          256,
+          512,
+          256
+        ],
+        "royalgramma_3.png": [
+          512,
+          256,
+          512,
+          256
+        ],
+        "royalgramma_4.png": [
+          0,
+          512,
+          512,
+          256
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/royalgramma",
+        "version": "102f665de3bd-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/wonderkillifish.webp",
+      "version": "fc89623cc903",
+      "width": 1024,
+      "height": 585,
+      "frames": {
+        "wonderkillifish.png": [
+          0,
+          0,
+          512,
+          195
+        ],
+        "wonderkillifish_1.png": [
+          512,
+          0,
+          512,
+          195
+        ],
+        "wonderkillifish_2.png": [
+          0,
+          195,
+          512,
+          195
+        ],
+        "wonderkillifish_3.png": [
+          512,
+          195,
+          512,
+          195
+        ],
+        "wonderkillifish_4.png": [
+          0,
+          390,
+          512,
+          195
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/wonderkillifish",
+        "version": "7e87ecc8ee3c-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/yellowtang.webp",
+      "version": "995f1ae488ff",
+      "width": 996,
+      "height": 1170,
+      "frames": {
+        "yellowtang.png": [
+          0,
+          0,
+          498,
+          390
+        ],
+        "yellowtang_1.png": [
+          498,
+          0,
+          498,
+          390
+        ],
+        "yellowtang_2.png": [
+          0,
+          390,
+          498,
+          390
+        ],
+        "yellowtang_3.png": [
+          498,
+          390,
+          498,
+          390
+        ],
+        "yellowtang_4.png": [
+          0,
+          780,
+          498,
+          390
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/yellowtang",
+        "version": "99d8869766f2-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/zebradanio.webp",
+      "version": "b4fad5c0c61d",
+      "width": 1024,
+      "height": 504,
+      "frames": {
+        "zebradanio_4.png": [
+          0,
+          0,
+          512,
+          168
+        ],
+        "zebradanio.png": [
+          512,
+          0,
+          512,
+          168
+        ],
+        "zebradanio_1.png": [
+          0,
+          168,
+          512,
+          168
+        ],
+        "zebradanio_2.png": [
+          512,
+          168,
+          512,
+          168
+        ],
+        "zebradanio_3.png": [
+          0,
+          336,
+          512,
+          168
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/zebradanio",
+        "version": "7ec070d27a74-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/foodandmeds/Food.webp",
+      "version": "6360129573f5",
+      "width": 692,
+      "height": 300,
+      "frames": {
+        "basic-food.png": [
+          0,
+          0,
+          173,
+          300
+        ],
+        "chum-food.png": [
+          173,
+          0,
+          173,
+          300
+        ],
+        "frisky-food.png": [
+          346,
+          0,
+          173,
+          300
+        ],
+        "upgraded-food.png": [
+          519,
+          0,
+          173,
+          300
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/foodandmeds/Food",
+        "version": "20dd1d38beb2-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/foodandmeds/Food_Morsels.webp",
+      "version": "e5d736c41a0e",
+      "width": 400,
+      "height": 97,
+      "frames": {
+        "pellet.png": [
+          0,
+          0,
+          100,
+          97
+        ],
+        "chum_1.png": [
+          100,
+          0,
+          100,
+          89
+        ],
+        "chum_2.png": [
+          200,
+          0,
+          100,
+          89
+        ],
+        "chum_3.png": [
+          300,
+          0,
+          100,
+          89
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/foodandmeds/Food_Morsels",
+        "version": "4ce13e1cf3ec-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/foodandmeds/Halloween_Candy.webp",
+      "version": "475140259726",
+      "width": 1200,
+      "height": 224,
+      "frames": {
+        "Halloween_candy_1.png": [
+          14,
+          48,
+          271,
+          128
+        ],
+        "Halloween_candy_2.png": [
+          314,
+          48,
+          271,
+          128
+        ],
+        "Halloween_Candy_Pile.png": [
+          600,
+          0,
+          300,
+          224
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/foodandmeds/Halloween_Candy",
+        "version": "ee3002412301-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/foodandmeds/Medicine.webp",
+      "version": "e21e3c7a4b2e",
+      "width": 236,
+      "height": 300,
+      "frames": {
+        "first-aid-drops.png": [
+          0,
+          0,
+          118,
+          300
+        ],
+        "calming-serum.png": [
+          118,
+          0,
+          118,
+          300
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/foodandmeds/Medicine",
+        "version": "aeb89b7586f8-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/grime/Grime.webp",
+      "version": "b667792805a5",
+      "width": 3344,
+      "height": 1882,
+      "frames": {
+        "grime-level-1.webp": [
+          0,
+          0,
+          1672,
+          941
+        ],
+        "grime-level-2.webp": [
+          1672,
+          0,
+          1672,
+          941
+        ],
+        "grime-level-3.webp": [
+          0,
+          941,
+          1672,
+          941
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/grime/Grime",
+        "version": "7e0a7da6ef39-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/icons/Icons.webp",
+      "version": "fcd517497f9f",
+      "width": 400,
+      "height": 500,
+      "frames": {
+        "debug.png": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "fish_care.png": [
+          100,
+          0,
+          100,
+          100
+        ],
+        "edit_tank.png": [
+          200,
+          0,
+          100,
+          100
+        ],
+        "aquarium_overview.png": [
+          300,
+          0,
+          100,
+          100
+        ],
+        "Store_Icon.png": [
+          0,
+          100,
+          100,
+          100
+        ],
+        "scoop.png": [
+          100,
+          100,
+          100,
+          100
+        ],
+        "store.png": [
+          200,
+          100,
+          100,
+          100
+        ],
+        "fish_box.png": [
+          300,
+          100,
+          100,
+          100
+        ],
+        "feed_fish.png": [
+          0,
+          200,
+          100,
+          100
+        ],
+        "sponge.png": [
+          100,
+          200,
+          100,
+          100
+        ],
+        "medicine.png": [
+          200,
+          200,
+          100,
+          100
+        ],
+        "settings.png": [
+          300,
+          200,
+          100,
+          100
+        ],
+        "tasks.png": [
+          0,
+          300,
+          100,
+          100
+        ],
+        "coin.png": [
+          100,
+          300,
+          100,
+          100
+        ],
+        "tank_info.png": [
+          200,
+          300,
+          100,
+          100
+        ],
+        "tools.png": [
+          300,
+          300,
+          100,
+          100
+        ],
+        "decor_box.png": [
+          0,
+          400,
+          100,
+          100
+        ],
+        "bell.png": [
+          100,
+          400,
+          100,
+          100
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/icons/Icons",
+        "version": "8cf498811d9f-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/misc/Egg.webp",
+      "version": "750c69769f07",
+      "width": 400,
+      "height": 99,
+      "frames": {
+        "fish_egg.png": [
+          0,
+          0,
+          100,
+          99
+        ],
+        "fish_egg_cracked.png": [
+          100,
+          0,
+          100,
+          99
+        ],
+        "fish_egg_shell.png": [
+          200,
+          0,
+          100,
+          99
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/misc/Egg",
+        "version": "39b4216c4d39-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/misc/Hats.webp",
+      "version": "6be9161b460d",
+      "width": 512,
+      "height": 128,
+      "frames": {
+        "Birthday_hat.png": [
+          0,
+          0,
+          128,
+          128
+        ],
+        "Christmas_hat.png": [
+          128,
+          0,
+          128,
+          128
+        ],
+        "NewYears_hat.png": [
+          256,
+          0,
+          128,
+          128
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/misc/Hats",
+        "version": "799bb14231a6-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/misc/Particles.webp",
+      "version": "c12a8a78dd5f",
+      "width": 96,
+      "height": 72,
+      "frames": {
+        "particle10.png": [
+          0,
+          0,
+          24,
+          24
+        ],
+        "particle1.png": [
+          24,
+          0,
+          24,
+          24
+        ],
+        "particle2.png": [
+          48,
+          0,
+          24,
+          24
+        ],
+        "particle3.png": [
+          72,
+          0,
+          24,
+          24
+        ],
+        "particle4.png": [
+          0,
+          24,
+          24,
+          24
+        ],
+        "particle5.png": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "particle6.png": [
+          48,
+          24,
+          24,
+          24
+        ],
+        "particle7.png": [
+          72,
+          24,
+          24,
+          24
+        ],
+        "particle8.png": [
+          0,
+          48,
+          24,
+          24
+        ],
+        "particle9.png": [
+          24,
+          48,
+          24,
+          24
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/misc/Particles",
+        "version": "3df6080e5987-v1",
+        "standalone": false
+      }
+    }
+  ];
+}
+// </bundle-source>
+
+// <bundle-source path="assets/sprite-sheets.js">
+// Build-time DOM previews, standalone decor and shared sheets for other game art.
+// Logical filenames stay stable for catalogs, saved appearances and custom art.
+function getSpriteAssetFrame(path) {
+  if (!path || /^(data:|blob:)/i.test(path)) return null;
+  // Decor and substrate artwork deliberately use loose files. Their atlases
+  // are large enough that decoding or cropping them costs more than the
+  // request reduction is worth during editing and tank changes.
+  const normalizedPath = String(path).replace(/\\/g, "/").toLowerCase();
+  if (/(^|\/)assets\/(decor|gravel)\//.test(normalizedPath)) return null;
+  if (!getSpriteAssetFrame.frames) {
+    getSpriteAssetFrame.frames = new Map();
+    for (const sheet of getSpriteSheetDefinitions()) {
+      const directory = sheet.path.slice(0, sheet.path.lastIndexOf("/") + 1);
+      for (const [name, rect] of Object.entries(sheet.frames)) {
+        const key = new URL(resolveAppUrl(directory + name));
+        getSpriteAssetFrame.frames.set(key.href.toLowerCase(), { sheet, name, rect, key: key.href.toLowerCase() });
+      }
+      for (const [legacy, name] of Object.entries(sheet.aliases || {})) {
+        const targetKey = resolveAppUrl(directory + name).toLowerCase();
+        getSpriteAssetFrame.frames.set(resolveAppUrl(directory + legacy).toLowerCase(), getSpriteAssetFrame.frames.get(targetKey));
+      }
+    }
+  }
+  try {
+    const url = new URL(resolveAppUrl(path));
+    url.search = "";
+    url.hash = "";
+    return getSpriteAssetFrame.frames.get(url.href.toLowerCase()) || null;
+  } catch { return null; }
+}
+
+function getFishDirectionalSpritePath(path, view) {
+  if (!path || !["bottom", "side"].includes(view) || /^(data:|blob:)/i.test(path)) return null;
+  const candidate = path.replace(/(\.[^./?#]+)([?#].*)?$/, `_${view}$1$2`);
+  return getSpriteAssetFrame(candidate) ? candidate : null;
+}
+
+async function loadSpriteRuntimeImage(path, timeoutMs) {
+  const frame = getSpriteAssetFrame(path);
+  if (frame.sheet.delivery.standalone) {
+    const assetPath = getSpriteDeliveryUrl(frame, false);
+    const result = await preloadImagePath(assetPath, { timeoutMs, maxAttempts: 1 });
+    if (!result.loaded) return result;
+    runtime.images.set(path, runtime.images.get(assetPath));
+    runtime.imageLoadFailures.delete(path);
+    runtime.imageRecoveryNextAt.delete(path);
+    return { loaded: true, reason: "standalone-sprite" };
+  }
+  const cache = loadSpriteRuntimeImage.frames || (loadSpriteRuntimeImage.frames = new Map());
+  let canvas = cache.get(frame.key);
+  if (!canvas) {
+    const sheetPath = resolveAppUrl(`${frame.sheet.path}?v=${frame.sheet.version}`);
+    const sheets = loadSpriteRuntimeImage.sheets || (loadSpriteRuntimeImage.sheets = new Map());
+    const readers = sheets.get(sheetPath) || { count: 0, promise: loadTemporarySpriteSheet(sheetPath, timeoutMs) };
+    readers.count += 1;
+    sheets.set(sheetPath, readers);
+    try {
+      const result = await readers.promise;
+      if (!result.loaded) return result;
+      readers.image = result.image;
+      // Another alias may have finished while the shared sheet was loading.
+      canvas = cache.get(frame.key);
+      if (!canvas) {
+        const sheet = result.image;
+        if (sheet.naturalWidth !== frame.sheet.width || sheet.naturalHeight !== frame.sheet.height) return { loaded: false, reason: "sprite-sheet-size" };
+        const [x, y, width, height] = frame.rect;
+        canvas = document.createElement("canvas");
+        canvas.width = canvas.naturalWidth = width;
+        canvas.height = canvas.naturalHeight = height;
+        canvas.complete = true;
+        canvas.getContext("2d").drawImage(sheet, x, y, width, height, 0, 0, width, height);
+        cache.set(frame.key, canvas);
+      }
+    } finally {
+      readers.count -= 1;
+      if (!readers.count) {
+        // Crops own their pixels. Release the duplicate atlas only after every
+        // concurrent crop has finished; later variants can decode it again.
+        readers.image?.removeAttribute?.("src");
+        sheets.delete(sheetPath);
+      }
+    }
+  }
+  runtime.images.set(path, canvas);
+  runtime.imageLoadFailures.delete(path);
+  runtime.imageRecoveryNextAt.delete(path);
+  return { loaded: true, reason: "sprite-sheet" };
+}
+
+function loadTemporarySpriteSheet(path, timeoutMs) {
+  return new Promise(resolve => {
+    const image = new Image();
+    const finish = (loaded, reason) => {
+      window.clearTimeout(timer);
+      image.onload = image.onerror = null;
+      if (!loaded) image.removeAttribute?.("src");
+      resolve(loaded ? { loaded, reason, image } : { loaded, reason });
+    };
+    const timer = window.setTimeout(() => finish(false, "timeout"), timeoutMs);
+    image.decoding = "async";
+    image.onload = () => finish(isUsableRuntimeImage(image), "loaded");
+    image.onerror = () => finish(false, "error");
+    image.src = path;
+  });
+}
+
+function getOwnedFishPreloadPaths(targetState = state) {
+  return [...new Set(getAllTankFish(targetState).flatMap(fish => {
+    const species = getSpeciesForFish(fish);
+    if (!species) return [];
+    const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
+    const asset = getFishAssetPath(fish, displaySpecies);
+    return [asset, getFishDisplayAssetPath(fish, species),
+      getFishDirectionalSpritePath(asset, "bottom"), getFishDirectionalSpritePath(asset, "side"),
+      displaySpecies.overlayAsset, species.overlayAsset,
+      displaySpecies.fallbackAsset, species.fallbackAsset];
+  }).filter(Boolean))];
+}
+
+function getSpriteImageUrl(path) {
+  const frame = getSpriteAssetFrame(path);
+  return frame ? getSpriteDeliveryUrl(frame, true) : path;
+}
+
+function getSpriteDeliveryUrl(frame, preview = true) {
+  return resolveAppUrl(`${frame.sheet.delivery.root}/${encodeURIComponent(frame.name)}${preview ? ".thumb" : ""}.webp?v=${frame.sheet.delivery.version}`);
+}
+
+function assetImageAttributes(path) {
+  if (!getSpriteAssetFrame(path)) return `src="${escapeHtml(path || "")}"`;
+  const url = getSpriteImageUrl(path);
+  return `data-sprite-src="${escapeHtml(path)}" src="${escapeHtml(url)}" loading="lazy" decoding="async"`;
+}
+
+async function setAssetImageSource(image, path) {
+  if (!getSpriteAssetFrame(path)) {
+    image.removeAttribute("data-sprite-src");
+    image.src = path;
+    return;
+  }
+  if (image.getAttribute("data-sprite-src") !== path) {
+    image.removeAttribute("src");
+    image.setAttribute("data-sprite-src", path);
+  }
+  // DOM previews never load a source sheet or full-resolution tank artwork.
+  image.decoding = "async";
+  if (image.closest?.("#storeOverlay")) image.loading = "lazy";
+  const source = getSpriteImageUrl(path);
+  if (image.getAttribute("src") !== source) image.src = source;
+}
+
+function initializeSpriteImages() {
+  if (initializeSpriteImages.observer) return;
+  const hydrate = (node) => {
+    if (node.nodeType !== 1) return;
+    const images = [...node.querySelectorAll("img[data-sprite-src]")];
+    if (node.matches("img[data-sprite-src]")) images.unshift(node);
+    for (const image of images) void setAssetImageSource(image, image.getAttribute("data-sprite-src"));
+  };
+  initializeSpriteImages.observer = new MutationObserver((records) => {
+    for (const record of records) {
+      if (record.type === "attributes") hydrate(record.target);
+      else for (const node of record.addedNodes) hydrate(node);
+    }
+  });
+  initializeSpriteImages.observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-sprite-src"] });
+  hydrate(document.body);
+  for (const name of ["sponge", "feed_fish", "coin", "tile"]) {
+    const path = `assets/icons/${name}.png`;
+    if (!getSpriteAssetFrame(path)) continue;
+    document.documentElement.style.setProperty(`--sprite-icon-${name}`, `url("${getSpriteImageUrl(path)}")`);
+  }
+}
+
+function getDecorArtworkPaths(decor) {
+  if (!decor) return [];
+  return [...new Set([
+    decor.path, decor.bgPath, decor.midPath, decor.lightPath, decor.maskPath,
+    decor.triggerPath, decor.seatsPath,
+    ...(Array.isArray(decor.caveColorLayers) ? decor.caveColorLayers.flatMap(layer => [
+      ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
+      ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])
+    ]) : [])
+  ].filter(Boolean))];
+}
+
+function getPlacedDecorPreloadPaths(targetState = state) {
+  const keys = new Set();
+  for (const tank of getAllTanks(targetState)) {
+    for (const item of tank.placedDecor || []) keys.add(item.decorKey);
+  }
+  return [...keys].flatMap(key => getDecorArtworkPaths(runtime.decorMap.get(key)));
+}
+
+function preloadDecorArtwork(decor) {
+  const paths = getDecorArtworkPaths(decor);
+  if (paths.every(path => isUsableRuntimeImage(runtime.images.get(path)))) return Promise.resolve(true);
+  const pending = preloadDecorArtwork.pending || (preloadDecorArtwork.pending = new Map());
+  const retryAt = preloadDecorArtwork.retryAt || (preloadDecorArtwork.retryAt = new Map());
+  const key = paths.join("|");
+  if (pending.has(key)) return pending.get(key);
+  if ((retryAt.get(key) || 0) > Date.now()) return Promise.resolve(false);
+  const promise = preloadImages(paths).then(results => {
+    // Rebuild derived geometry if a layout introduced art after initialization.
+    runtime.decorHangoutZonesKey = "";
+    if (results.some(result => !result.loaded)) retryAt.set(key, Date.now() + 15000);
+    else retryAt.delete(key);
+    return !decor?.path || isUsableRuntimeImage(runtime.images.get(decor.path));
+  }).finally(() => pending.delete(key));
+  pending.set(key, promise);
+  return promise;
 }
 // </bundle-source>

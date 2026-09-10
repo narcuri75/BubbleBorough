@@ -207,7 +207,7 @@ function getUvGlowMaskImage(sourceImage, profile = "default") {
     tight: lowCostMode ? null : createUvGlowBlurCanvas(coreCanvas, 3, 8),
     soft: createUvGlowBlurCanvas(coreCanvas, lowCostMode ? 8 : 10, lowCostMode ? 18 : 22)
   };
-  runtime.uvGlowMaskCache.set(cacheKey, result);
+  setBoundedCanvasCache(runtime.uvGlowMaskCache, cacheKey, result, { maxEntries: 16, maxBytes: 48 * 1024 * 1024 });
   return result;
 }
 
@@ -569,6 +569,14 @@ function getFishDisplayScaleForSpecies(species = null) {
   return getViewportStableObjectScale("fish") * getAquariumPhysicalAssetScale("fish");
 }
 
+function getFishVisualCatalogWidth(species = null) {
+  return clamp(
+    Number(species?.displayWidth) || Number(species?.width) || FISH_CATALOG_WIDTH_MIN,
+    FISH_CATALOG_WIDTH_MIN,
+    FISH_CATALOG_WIDTH_MAX
+  );
+}
+
 function getFishLayerDepthScaleForLayer(layer) {
   return 1 + Math.max(0, TANK_DEPTH_LAYERS - clampTankLayer(layer)) * FISH_LAYER_DEPTH_SCALE_STEP;
 }
@@ -594,12 +602,24 @@ function getFishLayerDepthScaleMultiplier(fish, now = Date.now()) {
   return transition.fromScale + (transition.toScale - transition.fromScale) * eased;
 }
 
-function getSuckerFishFrontGlassAssetPath(species) {
+function getSuckerFishFrontGlassAssetPath(species, fish = null) {
+  if (fish) {
+    const selected = getFishAssetPath(fish, species);
+    const directional = getFishDirectionalSpritePath(selected, "bottom");
+    if (directional) return directional;
+    if (selected && selected !== species?.asset) return null;
+  }
   const assetPath = SUCKER_FISH_FRONT_GLASS_ASSET_BY_SPECIES[species?.id || ""];
   return assetPath ? resolveAppUrl(assetPath) : null;
 }
 
-function getSuckerFishFreeSwimAssetPath(species) {
+function getSuckerFishFreeSwimAssetPath(species, fish = null) {
+  if (fish) {
+    const selected = getFishAssetPath(fish, species);
+    const directional = getFishDirectionalSpritePath(selected, "side");
+    if (directional) return directional;
+    if (selected && selected !== species?.asset) return null;
+  }
   const assetPath = SUCKER_FISH_FREE_SWIM_ASSET_BY_SPECIES[species?.id || ""];
   return assetPath ? resolveAppUrl(assetPath) : null;
 }
@@ -626,7 +646,7 @@ function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date
       * getMobileViewportObjectScaleMultiplier("fish");
   }
 
-  return widthSpecies.width
+  return getFishVisualCatalogWidth(widthSpecies)
     * getFishEffectiveScale(fish, species, now)
     * getFishDisplayScaleForSpecies(widthSpecies)
     * getFishLayerDepthScaleMultiplier(fish, now)
@@ -815,11 +835,11 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
   const selectedAlternate = Boolean(fish?.appearanceVariantKey && fish.appearanceVariantKey !== getFishAppearanceVariantKey(displaySpecies.asset));
   const selectedFishAsset = getFishAssetPath(fish, displaySpecies);
-  const freeSwimAsset = !selectedAlternate && !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
-    ? (getSuckerFishFreeSwimAssetPath(displaySpecies) || getSuckerFishFreeSwimAssetPath(species))
+  const freeSwimAsset = !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
+    ? (getSuckerFishFreeSwimAssetPath(displaySpecies, fish) || getSuckerFishFreeSwimAssetPath(species, fish))
     : null;
-  const frontGlassAsset = !selectedAlternate && !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
-    ? (getSuckerFishFrontGlassAssetPath(displaySpecies) || getSuckerFishFrontGlassAssetPath(species))
+  const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
+    ? (getSuckerFishFrontGlassAssetPath(displaySpecies, fish) || getSuckerFishFrontGlassAssetPath(species, fish))
     : null;
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
   const preferredBaseAsset = freeSwimAsset || (isZombieVariantFish(fish)
@@ -836,7 +856,7 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
       )
       : (freeSwimAsset || frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
   const baseAsset = selectedAlternate && selectedFishAsset
-    ? selectedFishAsset
+    ? (freeSwimAsset || frontGlassAsset || selectedFishAsset)
     : [
       preferredBaseAsset,
       displaySpecies.fallbackAsset,

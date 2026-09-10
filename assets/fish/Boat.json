@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "228fbce1-a26a-45a8-993b-7e48e6fcb0a5",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "4a4cb0e9-d417-408a-908c-004d26ec83b7",
+          "width": 495,
+          "height": 325,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "boat.png"
+        },
+        {
+          "id": "efb57b1b-aa77-471c-aaa8-76500d4f61cc",
+          "width": 495,
+          "height": 325,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Halloween_Boat_5.png"
+        },
+        {
+          "id": "bb448ae3-6ca4-478b-828d-055058caf7a4",
+          "width": 495,
+          "height": 325,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "boat_3.png"
+        },
+        {
+          "id": "ef3b156b-e54c-4ee6-9c2f-693e01667f12",
+          "width": 495,
+          "height": 325,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "boat_1.png"
+        },
+        {
+          "id": "e9430424-c629-4831-ad32-42fe7367c358",
+          "width": 495,
+          "height": 325,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "boat_4.png"
+        },
+        {
+          "id": "d97fe220-1c38-49f4-843d-96d67b33bfe6",
+          "width": 495,
+          "height": 325,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "boat_2.png"
+        }
+      ]
+    }
+  ]
+}

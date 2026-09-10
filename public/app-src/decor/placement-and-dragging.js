@@ -2,6 +2,7 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function startPlacingDecor(decorKey) {
+  runtime.pendingDecorPlacementKey = decorKey;
   if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
     setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION_DONE, {
       now: Date.now(),
@@ -32,8 +33,24 @@ function startPlacingDecor(decorKey) {
     return;
   }
 
+  const decor = runtime.decorMap.get(decorKey);
+  if (decor?.path && !isUsableRuntimeImage(runtime.images.get(decor.path))) {
+    if (runtime.loadingDecorPlacementKey === decorKey) return;
+    runtime.loadingDecorPlacementKey = decorKey;
+    void preloadDecorArtwork(decor).then(loaded => {
+      if (runtime.loadingDecorPlacementKey === decorKey) runtime.loadingDecorPlacementKey = null;
+      if (runtime.pendingDecorPlacementKey !== decorKey) return;
+      runtime.pendingDecorPlacementKey = null;
+      if (loaded) startPlacingDecor(decorKey);
+      else showToast("Couldn't load that decor. Please try again.");
+    });
+    return;
+  }
+  runtime.pendingDecorPlacementKey = null;
   const initialLayer = getDecorFrontLayer(decorKey, runtime.decorPlacementLayer);
   const span = getDecorLayerSpan(decorKey, initialLayer);
+  const isTransitTube = isTransitTubeDecorKey(decorKey);
+  const motionCapabilities = getDecorMotionCapabilities(decorKey);
 
   runtime.editTankMode = true;
   runtime.fishEditMode = false;
@@ -49,8 +66,10 @@ function startPlacingDecor(decorKey) {
     tankLayer: initialLayer,
     scale: getDecorScaleDefault(decorKey),
     flipped: false,
-    flippedY: false,
-    freePlacementEnabled: isFreeDecorPlacementEnabled(getCurrentTank())
+    flippedY: isTransitTube,
+    // Floating decor can still start in free placement, but lures behave like
+    // suspended tank-top objects until Free Placement is explicitly enabled.
+    freePlacementEnabled: Boolean(motionCapabilities.isFloating && !motionCapabilities.isLure)
   };
   runtime.placementPreview = runtime.lastTankPoint
     ? clampDecorPlacement(runtime.lastTankPoint.x / TANK_WIDTH, runtime.lastTankPoint.y / TANK_HEIGHT, {
@@ -99,6 +118,7 @@ function startPlacingDecor(decorKey) {
 }
 
 function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placementMode?.tankLayer ?? runtime.decorPlacementLayer) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Place decoration");
   if (!state.decorInventory[decorKey]) {
     return null;
   }
@@ -285,6 +305,7 @@ function getDecorItemsCenter(items) {
 }
 
 function stepDecorGroupLayer(item, step, save = false) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Change decoration layer");
   const groupItems = getDecorGroupTransformItems(item);
   if (groupItems.length <= 1) {
     return null;
@@ -324,6 +345,7 @@ function stepDecorGroupLayer(item, step, save = false) {
 }
 
 function stepDecorGroupScale(item, step, save = false) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decorations");
   const groupItems = getDecorGroupTransformItems(item);
   if (groupItems.length <= 1) {
     return null;
@@ -355,6 +377,7 @@ function stepDecorGroupScale(item, step, save = false) {
 }
 
 function toggleDecorGroupFlip(item, save = false, axis = "horizontal") {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Flip decorations");
   const groupItems = getDecorGroupTransformItems(item);
   if (groupItems.length <= 1) {
     return null;
@@ -384,6 +407,7 @@ function toggleDecorGroupFlip(item, save = false, axis = "horizontal") {
 }
 
 function stepActiveDecorLayer(direction) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Change decoration layer");
   const step = Math.sign(Number(direction) || 0);
   if (!step) {
     return { changed: false, layer: runtime.decorPlacementLayer, atLimit: false };
@@ -491,6 +515,7 @@ function stepActiveDecorLayer(direction) {
 }
 
 function stepActiveDecorScale(direction) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decorations");
   const step = Number(direction) || 0;
   if (!step) {
     return null;
@@ -561,6 +586,7 @@ function stepActiveDecorScale(direction) {
 }
 
 function toggleActiveDecorFlip(axis = "horizontal") {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Flip decorations");
   const activeTarget = getActiveDecorShortcutTarget();
   if (!activeTarget) {
     return null;
@@ -1009,6 +1035,7 @@ function snapDecorScaleToStep(value) {
 }
 
 function beginDecorCornerResize(item, corner, point, pointerId) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decoration");
   const resizeCorner = normalizeDecorResizeCorner(corner);
   const bounds = getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
   if (!item || !resizeCorner || !point || !bounds) {
@@ -1109,6 +1136,7 @@ function finalizeDecorCornerResize() {
 }
 
 function beginDecorDrag(item, point, pointerId, options = {}) {
+  if (typeof beginDecorEditHistory === "function" && !options.isNewPlacement) beginDecorEditHistory("Move decorations");
   runtime.pointerDown = true;
   runtime.suppressNextTankClick = true;
   setSelectedDecor(item.id);
@@ -1643,6 +1671,7 @@ function finalizeFishEggDrag() {
 }
 
 function storeDecor(placedId) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Store decoration");
   const index = state.placedDecor.findIndex((item) => item.id === placedId);
   if (index === -1) {
     return;
@@ -2042,6 +2071,7 @@ function adjustDecorDefaultSize(decorKey, direction) {
 }
 
 function adjustPlacedDecorSize(placedId, direction) {
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decoration");
   const item = state.placedDecor.find((entry) => entry.id === placedId);
   if (!item) {
     return;

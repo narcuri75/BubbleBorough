@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "columns": 4,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "45cf617b-1b74-4225-8d03-7e400745b78e",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "e90514a4-0257-4888-8fb0-0748562d5f47",
+          "width": 271,
+          "height": 128,
+          "x": 14,
+          "y": 48,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Halloween_candy_1.png"
+        },
+        {
+          "id": "a9e73b2f-1733-40ab-92b0-d7e90b3e5a2d",
+          "width": 271,
+          "height": 128,
+          "x": 14,
+          "y": 48,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Halloween_candy_2.png"
+        },
+        {
+          "id": "06adc48f-2b27-4309-9412-3acca84ba05d",
+          "width": 300,
+          "height": 224,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Halloween_Candy_Pile.png"
+        }
+      ]
+    }
+  ]
+}

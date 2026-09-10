@@ -315,6 +315,7 @@ function bindEvents() {
     }
 
     const keyRaw = String(event.key || "");
+    if (handleDecorHistoryKey(event)) return;
     if (handleHiddenKeySequence(event, keyRaw)) {
       return;
     }
@@ -843,18 +844,6 @@ function bindEvents() {
       element.setAttribute("aria-grabbed", "false");
     });
   });
-  dom.tankStage?.addEventListener("wheel", (event) => {
-    if (isTankOverlayTarget(event.target) && !event.target.closest("#boroughOverview")) {
-      return;
-    }
-    if (event.deltaY > 0 && !runtime.boroughOverviewOpen) {
-      event.preventDefault();
-      openAquariumOverview(false);
-    } else if (event.deltaY < 0 && runtime.boroughOverviewOpen) {
-      event.preventDefault();
-      closeAquariumOverview();
-    }
-  }, { passive: false });
   dom.tankStage?.addEventListener("pointerdown", (event) => {
     if (event.button !== 1 || runtime.boroughOverviewOpen || isTankOverlayTarget(event.target)) {
       return;
@@ -1191,11 +1180,7 @@ function bindEvents() {
   dom.editScaleUpButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-up"));
   dom.editScaleDownButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-down"));
   dom.closeStoreOverlay.addEventListener("click", () => {
-    const wasOpen = runtime.storeOverlayOpen;
-    const closed = closeStoreOverlay();
-    if (wasOpen && closed !== false && !runtime.storeOverlayOpen) {
-      playToolbarButtonExitSoundEffect();
-    }
+    closeStoreOverlay();
   });
   dom.storeOverlay?.addEventListener("wheel", handleOverlayWheelScroll, { passive: false });
   dom.storeOverlay?.addEventListener("scroll", syncWallpaperEngineStoreScrollControls, true);
@@ -1253,15 +1238,9 @@ function bindEvents() {
       clearStoreScrollPointer();
     }
   });
-  dom.storeOverlay?.addEventListener("click", playStoreActionClickSound, true);
-  dom.storeOverlay?.addEventListener("change", playStoreFilterChangeSound, true);
   dom.storeOverlay?.addEventListener("click", (event) => {
     if (event.target === dom.storeOverlay) {
-      const wasOpen = runtime.storeOverlayOpen;
-      const closed = closeStoreOverlay();
-      if (wasOpen && closed !== false && !runtime.storeOverlayOpen) {
-        playToolbarButtonExitSoundEffect();
-      }
+      closeStoreOverlay();
     }
   });
   dom.closeUtilityOverlay?.addEventListener("click", () => {
@@ -2285,9 +2264,9 @@ function bindEvents() {
   }
 
   dom.fishShop.addEventListener("click", (event) => {
-    // Tankazon owns its purchase clicks. If this legacy listener runs first,
+    // BubbleBodega owns its purchase clicks. If this legacy listener runs first,
     // it calls buyFish with only the species id and silently buys Main before
-    // Tankazon can pass the selected appearance key.
+    // BubbleBodega can pass the selected appearance key.
     if (event.target instanceof Element && event.target.closest("#storeOverlay")) {
       return;
     }
@@ -2472,11 +2451,6 @@ function bindEvents() {
       return;
     }
 
-    const buyButton = event.target.closest("[data-buy-filter]");
-    if (buyButton) {
-      buyFilter(buyButton.dataset.buyFilter);
-      return;
-    }
 
     const buyAutoDispenserButton = event.target.closest("[data-buy-auto-dispenser]");
     if (buyAutoDispenserButton) {
@@ -2490,11 +2464,6 @@ function bindEvents() {
       return;
     }
 
-    const sellButton = event.target.closest("[data-sell-filter]");
-    if (sellButton) {
-      sellFilter(sellButton.dataset.sellFilter);
-      return;
-    }
 
     const tankButton = event.target.closest("[data-extend-aquarium-store]");
     if (tankButton) {
@@ -2502,10 +2471,6 @@ function bindEvents() {
       return;
     }
 
-    const equipButton = event.target.closest("[data-equip-filter]");
-    if (equipButton) {
-      selectFilterAsset(equipButton.dataset.equipFilter);
-    }
   });
 
   dom.decorWorkspace.addEventListener("click", (event) => {
@@ -2705,11 +2670,6 @@ function bindEvents() {
         return;
       }
 
-      const filterButton = event.target.closest("[data-select-filter]");
-      if (filterButton) {
-        selectFilterAsset(filterButton.dataset.selectFilter);
-        return;
-      }
 
       const uvLightButton = event.target.closest("[data-toggle-uv-light-install]");
       if (uvLightButton) {
@@ -2763,9 +2723,6 @@ function bindEvents() {
   bindEquipmentSurface(dom.editTankBackgroundList);
   bindEquipmentSurface(dom.editTankBackgroundColorPanel);
   bindEquipmentSurface(dom.tankAssetList);
-  bindEquipmentSurface(dom.filterAssetList);
-  bindEquipmentSurface(dom.equipmentFilterList);
-  bindEquipmentSurface(dom.editTankFilterList);
   bindEquipmentSurface(dom.uvLightList);
   bindEquipmentSurface(dom.equipmentUvLightList);
   bindEquipmentSurface(dom.editTankUvLightList);
@@ -3738,24 +3695,6 @@ async function fetchDecorCatalog() {
   }
 }
 
-async function fetchFilterCatalogMeta() {
-  try {
-    const response = await fetch(resolveAppUrl(FILTER_CATALOG_PATH), { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error("Could not load filter catalog");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(error);
-    return {
-      filters: Object.entries(FILTER_META).map(([key, meta]) => ({
-        key,
-        ...meta
-      }))
-    };
-  }
-}
 
 async function fetchBackgroundCatalogMeta() {
   try {
@@ -3956,43 +3895,6 @@ function normalizeDecorMeta(payload) {
   return map;
 }
 
-function normalizeFilterMeta(payload) {
-  const entries = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.filters)
-      ? payload.filters
-      : [];
-
-  const map = {};
-
-  for (const entry of entries) {
-    if (!entry || typeof entry !== "object") {
-      continue;
-    }
-
-    const key = String(entry.key || entry.file || "").trim();
-    if (!key) {
-      continue;
-    }
-
-    map[key] = {
-      name: typeof entry.name === "string" && entry.name.trim()
-        ? entry.name.trim()
-        : titleFromFile(key),
-      blurb: typeof entry.blurb === "string" && entry.blurb.trim()
-        ? entry.blurb.trim()
-        : "",
-      cleanDays: Math.max(1.2, Number(entry.cleanDays) || BASE_TANK_DIRTY_DAYS),
-      comfortBoost: clamp(Number(entry.comfortBoost) || 0, 0, 0.25),
-      cost: Math.max(0, Math.floor(Number(entry.cost) || 0)),
-      purchasable: entry.purchasable === true,
-      tier: Math.max(0, Math.floor(Number(entry.tier) || 0)),
-      flow: clamp(Number(entry.flow) || 1, 0.8, 1.3)
-    };
-  }
-
-  return map;
-}
 
 function hasBubblerMetaFields(entry) {
   if (!entry || typeof entry !== "object") {
@@ -4541,36 +4443,6 @@ function buildCustomGravelPebbleCatalog(items = []) {
   }));
 }
 
-function buildFilterCatalog(items, metaMap = {}) {
-  const itemMap = new Map(
-    (Array.isArray(items) ? items : [])
-      .filter((item) => item?.key)
-      .map((item) => [String(item.key), item])
-  );
-
-  return [...new Set([...itemMap.keys(), ...Object.keys(metaMap)])]
-    .map((key) => {
-      const details = metaMap[key] || {};
-      return {
-        key,
-        path: itemMap.get(key)?.path || resolveAppUrl(`assets/filter/${encodeURIComponent(key)}`),
-        name: details.name || titleFromFile(key),
-        blurb: details.blurb || (key === BASIC_FILTER_KEY ? "Starter filtration for a new aquarium." : "A filter upgrade."),
-        cleanDays: Math.max(1.2, Number(details.cleanDays) || BASE_TANK_DIRTY_DAYS),
-        comfortBoost: clamp(Number(details.comfortBoost) || 0, 0, 0.25),
-        cost: Math.max(0, Math.floor(Number(details.cost) || 0)),
-        purchasable: details.purchasable === true,
-        tier: Math.max(0, Math.floor(Number(details.tier) || 0)),
-        flow: clamp(Number(details.flow) || 1, 0.8, 1.3)
-      };
-    })
-    .sort((left, right) => {
-      if (left.tier !== right.tier) {
-        return left.tier - right.tier;
-      }
-      return left.name.localeCompare(right.name);
-    });
-}
 
 function buildFishSizeRange(entries = runtime.fishCatalog) {
   const sizes = (Array.isArray(entries) ? entries : [])
@@ -4740,7 +4612,7 @@ function getExpectedCaveCompanionPaths(baseItem, meta = {}) {
   const extensionMatch = baseItem.key.match(/(\.[^.]+)$/);
   if (!extensionMatch) return [];
   const stem = baseItem.key.slice(0, -extensionMatch[1].length);
-  return ["_bg", "_color2"].map((suffix) => resolveAppUrl(
+  return ["_bg", "_color2", "_color3"].map((suffix) => resolveAppUrl(
     `assets/decor/${encodeURIComponent(`${stem}${suffix}${extensionMatch[1]}`)}`
   ));
 }
@@ -4868,7 +4740,12 @@ function isCustomBubblerDecorKey(decorKey = "") {
 }
 
 function getDecorThumbnailPath(decor) {
-  return decor?.thumbnailPath || decor?.path || "";
+  if (decor?.thumbnailPath) return decor.thumbnailPath;
+  const path = String(decor?.path || "");
+  const match = path.match(/(?:^|\/)assets\/decor\/([^/?#]+\.png)(?:[?#].*)?$/i);
+  return match
+    ? `assets/generated/previews/decor/${match[1]}.webp`
+    : path;
 }
 
 function buildVirtualDecorCatalogEntries() {
@@ -5885,6 +5762,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
       ? entry.description.trim()
       : "A custom fish from your fish catalog.",
     width: clamp(Number(entry.width) || 128, FISH_CATALOG_WIDTH_MIN, FISH_CATALOG_WIDTH_MAX),
+    displayWidth: clamp(Number(entry.displayWidth) || Number(entry.width) || 128, FISH_CATALOG_WIDTH_MIN, FISH_CATALOG_WIDTH_MAX),
     cycleSeconds: clamp(Number(entry.cycleSeconds) || 26, 12, 60),
     bobSpeed: clamp(Number(entry.bobSpeed) || 1.2, 0.6, 2.2),
     swimStyle,

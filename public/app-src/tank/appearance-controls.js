@@ -340,44 +340,6 @@ function selectTankAsset(tankKey) {
   });
 }
 
-function selectFilterAsset(filterKey) {
-  if (!runtime.filterMap.has(filterKey)) {
-    return;
-  }
-
-  if (!tankSupportsFilters(getCurrentTank())) {
-    showToast("This tank does not support filters.");
-    return;
-  }
-
-  if (!isFilterOwned(filterKey)) {
-    showToast("Buy this filter in the Tank shop first.");
-    return;
-  }
-
-  if (state.selectedFilterAsset === filterKey) {
-    return;
-  }
-
-  if (filterKey !== getDefaultFilterKey() && getAvailableFilterCount(filterKey) <= 0) {
-    showToast("All copies of that filter are already in use.");
-    return;
-  }
-
-  const now = Date.now();
-  preserveTankDirtinessThroughChange(now, () => {
-    state.selectedFilterAsset = filterKey;
-  });
-  const filter = runtime.filterMap.get(filterKey);
-  return completeGameAction({
-    now,
-    event: {
-      type: "equipment",
-      tone: "neutral",
-      text: `Equipped ${filter.name}. At the current tank load, the tank now takes about ${formatDuration(getFilterMaxDirtyDurationMs(filterKey))} to hit maximum dirtiness.`
-    }
-  });
-}
 
 function setUvLightInstalled(installed) {
   if (!isUvLightFeatureEnabled()) {

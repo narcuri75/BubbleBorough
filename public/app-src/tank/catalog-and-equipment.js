@@ -17,6 +17,27 @@ function isHalloweenDecor(decor) {
     || normalizeStringList(decor?.categories).some((tag) => tag.toLowerCase() === "halloween");
 }
 
+function isChristmasDecor(decor) {
+  return /christmas|xmas|new[ _-]?year/i.test([decor?.name, decor?.key, decor?.file, decor?.theme].filter(Boolean).join(" "))
+    || normalizeStringList(decor?.categories).some((tag) => ["christmas", "xmas", "new-year"].includes(tag.toLowerCase()));
+}
+
+function isSeasonalDecor(decor) {
+  return isHalloweenDecor(decor) || isChristmasDecor(decor);
+}
+
+function isSeasonalDecorAvailable(decor, now = Date.now()) {
+  // Calendar availability is independent of the visual-mode override: players
+  // can preview a theme in settings, but seasonal goods only sell in season.
+  if (isHalloweenDecor(decor)) {
+    return isHalloweenCalendarDate(now);
+  }
+  if (isChristmasDecor(decor)) {
+    return new Date(getBoroughReferenceNow(now)).getMonth() === 11;
+  }
+  return true;
+}
+
 function deriveDecorCategories(entry, key) {
   const configured = normalizeStringList(entry?.categories || entry?.category);
   if (configured.length) {
@@ -424,6 +445,7 @@ function isFoodAllowedInAutoDispenser(foodOrKey) {
 }
 
 function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
+  if (foodKey === "halloweenCandy") return Boolean(fish);
   if (!fish || isFishDead(fish)) {
     return false;
   }
@@ -506,7 +528,7 @@ function getTankComfortDecorTags(tank = getCurrentTank()) {
         tags.add("hardscape");
       }
     }
-    if (decor.caveSettings || decor.caveBehavior || /cave|hide|wreck|castle|ship|plane|arch/.test(decorKey)) {
+    if (decor.caveSettings || decor.caveBehavior || /cave|hide|wreck|castle|plane|arch/.test(decorKey)) {
       tags.add("cave");
       tags.add("hardscape");
     }
@@ -705,7 +727,7 @@ function buildCoinIconMarkup(className = "", options = {}) {
   const decorative = options.decorative === true;
   const ariaHidden = decorative ? ' aria-hidden="true"' : "";
   const altText = decorative ? "" : "coin";
-  return `<img class="${escapeHtml(classes)}" src="${escapeHtml(COIN_ICON_PATH)}" alt="${altText}"${ariaHidden} draggable="false" />`;
+  return `<img class="${escapeHtml(classes)}" ${assetImageAttributes(COIN_ICON_PATH)} alt="${altText}"${ariaHidden} draggable="false" />`;
 }
 
 function buildCoinAmountMarkup(value, options = {}) {
@@ -878,7 +900,7 @@ function shouldShowFoodInStore(food) {
   if (!food) {
     return false;
   }
-  return food.id !== "upgraded";
+  return food.id !== "upgraded" && (food.id !== "halloweenCandy" || isHalloweenCalendarDate(Date.now()));
 }
 
 function shouldShowMedicineInStore(medicine) {

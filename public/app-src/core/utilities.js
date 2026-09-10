@@ -160,3 +160,39 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+function getCachedCanvasBytes(value) {
+  if (!value) return 0;
+  if (Number(value.width) > 0 && Number(value.height) > 0) return Number(value.width) * Number(value.height) * 4;
+  if (typeof value === "object") return [...new Set(Object.values(value))].reduce((sum, child) => sum + getCachedCanvasBytes(child), 0);
+  return 0;
+}
+
+function releaseCachedCanvasValue(value) {
+  if (!value) return;
+  if (typeof value.getContext === "function" && "width" in value && "height" in value) {
+    value.width = 0;
+    value.height = 0;
+    return;
+  }
+  if (typeof value === "object") for (const child of new Set(Object.values(value))) releaseCachedCanvasValue(child);
+}
+
+function setBoundedCanvasCache(cache, key, value, options = {}) {
+  if (!(cache instanceof Map)) return value;
+  if (cache.has(key)) releaseCachedCanvasValue(cache.get(key));
+  cache.delete(key);
+  cache.set(key, value);
+  const maxEntries = Math.max(1, Math.floor(Number(options.maxEntries) || 24));
+  const maxBytes = Math.max(1024 * 1024, Number(options.maxBytes) || 48 * 1024 * 1024);
+  let bytes = 0;
+  for (const cached of cache.values()) bytes += getCachedCanvasBytes(cached);
+  while (cache.size > maxEntries || bytes > maxBytes) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) break;
+    const oldest = cache.get(oldestKey);
+    bytes -= getCachedCanvasBytes(oldest);
+    cache.delete(oldestKey);
+    releaseCachedCanvasValue(oldest);
+  }
+  return value;
+}

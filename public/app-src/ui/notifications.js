@@ -192,7 +192,7 @@ function renderNotificationCenterOverlay() {
     const targetTankId = entry.tankId || getTankContainingFish(targetFishId)?.id || "";
     const typeLabel = entry.type === "achievement" ? "Achievement" : entry.type === "daily_recap" ? "Daily Recap" : "Borough";
     const icon = entry.iconPath
-      ? `<img class="notification-center-icon" src="${escapeHtml(entry.iconPath)}" alt="" />`
+      ? `<img class="notification-center-icon" ${assetImageAttributes(entry.iconPath)} alt="" />`
       : `<span class="notification-center-symbol" aria-hidden="true">${entry.type === "daily_recap" ? "☀" : "•"}</span>`;
     const rewards = [
       entry.coinReward > 0 ? `+${entry.coinReward} coins` : "",

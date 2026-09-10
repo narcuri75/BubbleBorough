@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "76bfc29c-8773-483b-849f-0f8a04082548",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "da7049dd-cf5f-45ed-bcc4-52e1e6b48f31",
+          "width": 512,
+          "height": 341,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "BlueRam.png"
+        },
+        {
+          "id": "6136bb9d-d594-4b9f-a0a8-95802bf1349d",
+          "width": 512,
+          "height": 341,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "BlueRam_1.png"
+        },
+        {
+          "id": "b09242e0-fbf4-42c4-a6a4-e52077ba6f70",
+          "width": 512,
+          "height": 341,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "BlueRam_2.png"
+        },
+        {
+          "id": "72a93ff4-aa7f-4930-a5ae-740430745027",
+          "width": 512,
+          "height": 341,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "BlueRam_3.png"
+        },
+        {
+          "id": "d24ffb99-ec20-4ff7-a738-71d78562f47b",
+          "width": 512,
+          "height": 341,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "BlueRam_4.png"
+        }
+      ]
+    }
+  ]
+}

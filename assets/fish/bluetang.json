@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "0088cbec-ba43-44c4-bc75-479a1e60bdc4",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "56983567-1ff5-4f23-8a8d-4a1ceabd90e2",
+          "width": 512,
+          "height": 234,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "bluetang.png"
+        },
+        {
+          "id": "95b91bc2-9ccb-4cc3-ab39-19b08f8f3252",
+          "width": 512,
+          "height": 234,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "bluetang_1.png"
+        },
+        {
+          "id": "347fd412-8bfb-43c3-a2e0-33f45a89a16f",
+          "width": 512,
+          "height": 234,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "bluetang_2.png"
+        },
+        {
+          "id": "b2cd2557-331b-43f5-8bef-7b2c3b5a6be3",
+          "width": 512,
+          "height": 234,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "bluetang_3.png"
+        },
+        {
+          "id": "ae2190ef-374c-40e7-9893-0d0ad538e759",
+          "width": 512,
+          "height": 234,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "bluetang_4.png"
+        }
+      ]
+    }
+  ]
+}

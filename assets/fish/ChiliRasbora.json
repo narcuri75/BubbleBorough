@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "660df4a7-7e24-4a6d-af47-2f6bfceed476",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "9d4fba0e-9c10-4041-9c3d-6d52cdf0c0fd",
+          "width": 486,
+          "height": 205,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "ChiliRasbora_1.png"
+        },
+        {
+          "id": "f1ce8476-6c69-4e9f-a8a9-fe02d44565bd",
+          "width": 486,
+          "height": 205,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "ChiliRasbora.png"
+        },
+        {
+          "id": "ae19cc31-badb-4f38-8669-09c94478ac44",
+          "width": 486,
+          "height": 205,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "ChiliRasbora_4.png"
+        },
+        {
+          "id": "d89e5037-e188-4872-b667-20c4e211343d",
+          "width": 486,
+          "height": 205,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "ChiliRasbora_3.png"
+        },
+        {
+          "id": "3524517d-4321-4d39-b4f7-d4c1cc4d2a6e",
+          "width": 486,
+          "height": 205,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "ChiliRasbora_2.png"
+        }
+      ]
+    }
+  ]
+}

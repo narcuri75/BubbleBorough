@@ -5,6 +5,7 @@ const CLOUD_AUTH_SESSION_KEY = "bubble-borough-cloud-auth-v1";
 const CLOUD_SAVE_META_KEY = "bubble-borough-cloud-meta-v1";
 const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1";
 const CLOUD_SYNC_DEBOUNCE_MS = 3000;
+const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 import {
   ZOMBIE_SKELETON_BEHAVIOR_CONFIG,
@@ -23,7 +24,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 43;
+const STATE_VERSION = 46;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -770,7 +771,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     requirement: "Finish a Daily Recap with score 3+.",
     reward: 3,
     unlocks: ["celestial-pearl-danio", "moor-goldfish", "otocinclus", "molly", "livebearer"],
-    decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "rock-arch.png", "treasure-chest_bubbler.png"],
+    decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "treasure-chest_bubbler.png"],
     isMet: (stats) => stats.latestScore >= 3,
     progress: (stats) => [{ value: (Number(stats.latestScore) || 0) / 3, label: `Latest recap score ${Math.max(0, Number(stats.latestScore) || 0)}/3` }]
   },
@@ -1098,19 +1099,14 @@ const PROGRESSION_MILESTONES = Object.freeze([
   }] : [])
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
-  "rock-arch.png": "first-care",
   "fishing_lure.png": "first-care",
   "treasure-chest_bubbler.png": "first-care",
   "floating_swampmoss_1.png": "first-care",
-  "kelp-cafe.png": "first-care",
-  "shell-house.png": "first-care",
   "driftwood-root.png": "stable-tank",
   "driftwood.png": "stable-tank",
   "moss-bridge.png": "stable-tank",
   "slate-cave.png": "stable-tank",
   "Plane-wreck.png": "stable-tank",
-  "bubble-plaza.png": "stable-tank",
-  "moonstone-grotto.png": "stable-tank",
   "Shipwreck.png": "happy-habitat",
   "mushroomcoral_seaweed.png": "happy-habitat",
   "Castle-Cave.png": "happy-habitat",
@@ -1118,8 +1114,6 @@ const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
   "meteor_cave.png": "happy-habitat",
   "volcano-1_bubbler.png": "happy-habitat",
   "volcano-2_bubbler.png": "happy-habitat",
-  "coral-clinic.png": "happy-habitat",
-  "nursery-garden.png": "happy-habitat",
   "__custom-decor-shop__": "happy-habitat",
   "__custom-hide-shop__": "happy-habitat",
   ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? {
@@ -1188,6 +1182,8 @@ const DEFAULT_THEME = "dark";
 // underlying settings code available so the feature can be restored later.
 const TOOLBAR_POSITION_SETTING_ENABLED = false;
 const DISPLAY_POSITION_SETTING_ENABLED = false;
+const CAUSTIC_LIGHTING_SETTING_ENABLED = false;
+const DECOR_SHADOWS_SETTING_ENABLED = false;
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false
 });
@@ -1210,8 +1206,8 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   tankMouseInputLocked: false,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
-  causticLightingEnabled: true,
-  decorShadowsEnabled: true,
+  causticLightingEnabled: false,
+  decorShadowsEnabled: false,
   uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
@@ -1677,16 +1673,8 @@ const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 32;
 const PORTABLE_PERFORMANCE_RESIZE_DEBOUNCE_MS = 120;
 const PORTABLE_PERFORMANCE_TANK_BLUR_SCALE = 0.55;
 const PORTABLE_PERFORMANCE_GRIME_BLUR_SCALE = 0.5;
-const ENABLE_FILTER = false;
-const BASIC_FILTER_KEY = "basic-filter.png";
-const FILTER_DRAW_BASE_WIDTH = 250;
-const FILTER_DRAW_BASE_HEIGHT = FILTER_DRAW_BASE_WIDTH * (220 / 148);
-const FILTER_GROUP_RIGHT_MARGIN_PX = 0;
-const FILTER_BUBBLE_STREAM_DISTANCE_PX = 200;
-const FILTER_BUBBLE_STREAM_RISE_PX = 22;
-const FILTER_BUBBLE_OUTLET_X_OFFSET_PX = 14;
-const DEFAULT_FILTER_ASSET_KEY = BASIC_FILTER_KEY;
-const BASE_TANK_DIRTY_DAYS = 14;
+
+
 const FISH_DIRTINESS_BONUS_MIN = 0.01;
 const FISH_DIRTINESS_BONUS_MAX = 0.10;
 const SUCKER_FISH_CLEAN_DURATION_BONUS = 0.25;
@@ -1736,7 +1724,9 @@ const AUTO_DISPENSER_DRAW_WIDTH = 252;
 const AUTO_DISPENSER_DRAW_HEIGHT = Math.round(AUTO_DISPENSER_DRAW_WIDTH * (340 / 943));
 const AUTO_DISPENSER_VIEWPORT_SIZE_MULTIPLIER = 1.5;
 const AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX = 18;
-const FISH_MOTION_SCALE = 3.35;
+// Normal aquarium travel should leave room for fish to feel observably alive.
+// Emergency behavior stacks its own multiplier on top of this base pace.
+const FISH_MOTION_SCALE = 1.62;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
 const SUCKER_FISH_FACE_PIVOT_ENABLED = true;
@@ -1805,15 +1795,15 @@ const FISH_ENTRY_NOSE_DIVE_TILT = Math.PI * 0.5;
 const FEED_CHASE_MULTIPLIER = 2.5;
 const DECOR_HANGOUT_DEFAULT_OCCUPANCY_LIMIT = 2;
 const DECOR_HANGOUT_SICK_OCCUPANCY_LIMIT = 1;
-const SAME_SPECIES_FOLLOW_RADIUS_NORM = 0.34;
-const SAME_SPECIES_FOLLOW_BASE_CHANCE = 0.08;
-const SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS = 0.035;
-const SAME_SPECIES_FOLLOW_MAX_CHANCE = 0.42;
-const SAME_SPECIES_FOLLOW_MIN_MS = 2200;
-const SAME_SPECIES_FOLLOW_MAX_MS = 4800;
-const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.024;
-const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.07;
-const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.03;
+const SAME_SPECIES_FOLLOW_RADIUS_NORM = 0.16;
+const SAME_SPECIES_FOLLOW_BASE_CHANCE = 0.006;
+const SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS = 0.003;
+const SAME_SPECIES_FOLLOW_MAX_CHANCE = 0.035;
+const SAME_SPECIES_FOLLOW_MIN_MS = 650;
+const SAME_SPECIES_FOLLOW_MAX_MS = 1250;
+const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.04;
+const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.095;
+const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.05;
 const BABY_FISH_SCALE_MULTIPLIER = 0.25;
 const BABY_FISH_GROWTH_DURATION_MS = 3 * DAY_MS;
 const BREEDING_MIN_TANK_TIME_MS = 3 * DAY_MS;
@@ -1914,7 +1904,7 @@ const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 44;
 const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 180;
 const WATER_PARTICLE_FISH_FORCE_RADIUS_PX = 90;
 const WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX = 74;
-const WATER_PARTICLE_FILTER_FORCE_RADIUS_PX = 130;
+
 const WATER_PARTICLE_SPRITE_SIZE_MIN_PX = 0.75;
 const WATER_PARTICLE_SPRITE_SIZE_MAX_PX = 2.45;
 const WATER_PARTICLE_SPRITE_ALPHA_BOOST = 1.9;
@@ -1928,7 +1918,7 @@ const FISH_CHUM_MEAL_HUNGER_GAIN = 55;
 const FISH_CHUM_MEAL_HUNGER_FLOOR = 90;
 const FISH_WILLING_TO_EAT_HUNGER_MAX = 82;
 const FISH_OVERFEED_HUNGER_THRESHOLD = 88;
-const FILTERLESS_BASE_TANK_DIRTY_DAYS = 14;
+const DEFAULT_TANK_DIRTY_DAYS = 14;
 const MEDICINE_HEAL_INTERVAL_MS = 10 * 1000;
 const MEDICINE_HEAL_DURATION_MS = 60 * 1000;
 const MEDICINE_VISUAL_DURATION_MS = 60 * 1000;
@@ -2028,6 +2018,8 @@ const SUBMARINE_RED_LIGHT_BLINK_MS = 500;
 const SUBMARINE_FOOD_RETRY_MS = 9000;
 const SUBMARINE_MEDICINE_RETRY_MS = 12000;
 const SUBMARINE_SPOTLIGHT_LENGTH_PX = 320;
+const SUBMARINE_SPOTLIGHT_LAMP_X_NORM = 0.744;
+const SUBMARINE_SPOTLIGHT_LAMP_Y_NORM = 0.2;
 const SHARK_DESPERATION_ATTACK_COOLDOWN_MS = 9000;
 const SHARK_DESPERATION_ATTACK_RANGE_NORM = 0.075;
 const ENABLE_UV_LIGHT = false;
@@ -2073,7 +2065,6 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "localBackgroundImageDataUrl",
   "localBackgroundImageRefId",
   "selectedTankAsset",
-  "selectedFilterAsset",
   "autoDispenser",
   "uvLightInstalled",
   "uvLightEnabled",
@@ -2139,18 +2130,18 @@ const CAVE_NIGHT_ENTRY_CHANCE = 0.5;
 const CAVE_NIGHT_START_HOUR = 21;
 const CAVE_NIGHT_END_HOUR = 4;
 const CAVE_ENTRY_CHANCE_BY_STYLE = {
-  peaceful: 0.1,
-  steady: 0.1,
-  sporadic: 0.1
+  peaceful: 0.22,
+  steady: 0.22,
+  sporadic: 0.2
 };
 const STATIC_ASSET_MANIFEST = "assets/asset-manifest.json";
 const FISH_CATALOG_PATH = "assets/fish/fish-types.json";
-const DECOR_CATALOG_PATH = "assets/decor/decor_types.json";
-const FILTER_CATALOG_PATH = "assets/filter/filter.json";
+const DECOR_CATALOG_PATH = "assets/decor/decor_types.json?v=20260908-halloween-sizing-3";
+
 const BACKGROUND_CATALOG_PATH = "assets/backgrounds/backgrounds.json";
 const FOOD_AND_MEDS_CATALOG_PATH = "assets/foodandmeds/food-and-meds.json";
 const FOOD_AND_MEDS_FALLBACK_IMAGE_NAME = "basic-food.png";
-const FOOD_AND_MEDS_ASSET_VERSION = "2026-04-01";
+const FOOD_AND_MEDS_ASSET_VERSION = "2026-09-09";
 const AMBIENCE_AUDIO_PATH = "assets/sounds/ambience.mp3";
 const AMBIENCE_AUDIO_VOLUME = 0.55;
 const AMBIENCE_AUDIO_FADE_IN_MS = 2000;
@@ -2200,28 +2191,8 @@ const TANK_INFO_TOOLBAR_RELEASE_BUTTON_SOUND_SELECTOR = [
 ].join(",");
 const FEED_TRAY_ITEM_SOUND_SELECTOR = "[data-select-food]";
 const MEDICINE_TRAY_ITEM_SOUND_SELECTOR = "[data-select-medicine]";
-const STORE_REGULAR_BUTTON_SOUND_SELECTOR = [
-  "#storeFoodTab",
-  "#storePharmacyTab",
-  "#storeFishTab",
-  "#storeDecorTab",
-  "#storeEquipmentTab",
-  "[data-buy-food]",
-  "[data-buy-medicine]",
-  "[data-buy-fish]",
-  "[data-buy-decor]",
-  "[data-buy-submarine]",
-  "[data-buy-boat]",
-  "[data-buy-background]",
-  "[data-buy-filter]",
-  "[data-buy-auto-dispenser]",
-  "[data-buy-uv-light]",
-  "[data-extend-aquarium-store]"
-].join(",");
-const STORE_FILTER_CONTROL_SOUND_SELECTOR = [
-  "[data-shop-sort]",
-  "[data-shop-filter]"
-].join(",");
+
+
 const EQUIPMENT_REGULAR_BUTTON_SOUND_SELECTOR = [
   "[data-reset-animated-background-colors]",
   "[data-open-local-background-picker]",
@@ -2587,48 +2558,6 @@ const FISH_TYPES = [
   },
 ];
 
-const FILTER_META = {
-  "basic-filter.png": {
-    name: "Basic Filter",
-    blurb: "Scrub cycle: 3.5 days",
-    cleanDays: BASE_TANK_DIRTY_DAYS,
-    comfortBoost: 0,
-    cost: 0,
-    purchasable: false,
-    tier: 0,
-    flow: 1
-  },
-  "charcoal-filter.png": {
-    name: "Charcoal Filter",
-    blurb: "Scrub cycle: 5.25 days",
-    cleanDays: 5.25,
-    comfortBoost: 0.04,
-    cost: 30,
-    purchasable: true,
-    tier: 1,
-    flow: 1.04
-  },
-  "porcelain-filter.png": {
-    name: "Porcelain Filter",
-    blurb: "Scrub cycle: 7 days",
-    cleanDays: 7,
-    comfortBoost: 0.08,
-    cost: 40,
-    purchasable: true,
-    tier: 2,
-    flow: 1.08
-  },
-  "reef-filter.png": {
-    name: "Reef Filter",
-    blurb: "Scrub cycle: 10.5 days",
-    cleanDays: 10.5,
-    comfortBoost: 0.12,
-    cost: 50,
-    purchasable: true,
-    tier: 3,
-    flow: 1.14
-  }
-};
 
 const WATER_TYPE_META = Object.freeze({
   freshwater: {
@@ -2646,12 +2575,11 @@ const TANK_TYPE_META = Object.freeze({
     id: "rectangular",
     name: "Aquarium",
     shortName: "Aquarium",
-    description: "A full-size aquarium with room for fish, decor, and filters.",
+    description: "A full-size aquarium with room for fish and decor.",
     cost: 65,
-    supportsFilters: true,
     waterTypes: ["freshwater", "saltwater"],
     defaultWaterType: "freshwater",
-    baseCleanDays: FILTERLESS_BASE_TANK_DIRTY_DAYS,
+    baseCleanDays: DEFAULT_TANK_DIRTY_DAYS,
     visual: "rectangular"
   }
 });
@@ -2734,6 +2662,87 @@ const SWIM_STYLE_DEFAULTS = {
 };
 
 const DECOR_META = {
+  "Halloween_Haunted_Tree.png": {
+    name: "Haunted Tree",
+    width: 300,
+    defaultScale: 2,
+    categories: ["ornaments", "halloween"],
+    fishBehavior: { hangout: ["spooky", "hardscape"] },
+    theme: "Halloween"
+  },
+  "Halloween_Cauldron_Bubbler.png": {
+    name: "Haunted Cauldron Bubbler",
+    width: 125,
+    defaultScale: 1,
+    categories: ["bubbler", "ornaments", "halloween"],
+    fishBehavior: { hangout: ["bubbler", "hardscape"] },
+    theme: "Halloween"
+  },
+  "Halloween_JackOLantern_bubbler.png": {
+    name: "Jack-o'-Lantern Bubbler",
+    width: 125,
+    defaultScale: 1,
+    categories: ["bubbler", "ornaments", "halloween"],
+    fishBehavior: { hangout: ["bubbler", "hardscape"] },
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_1.png": {
+    name: "Gravestone 1",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_2.png": {
+    name: "Gravestone 2",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_3.png": {
+    name: "Gravestone 3",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_4.png": {
+    name: "Gravestone 4",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Gravestone_5.png": {
+    name: "Gravestone 5",
+    width: 288,
+    defaultScale: 1,
+    categories: ["ornaments", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Seaweed.png": {
+    name: "Haunted Seaweed",
+    width: 644,
+    defaultScale: 1,
+    categories: ["plants", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Floatingseaweed.png": {
+    name: "Haunted Floating Seaweed",
+    width: 525,
+    defaultScale: 1,
+    categories: ["plants", "halloween"],
+    theme: "Halloween"
+  },
+  "Halloween_Ghost_Ship.png": {
+    name: "Ghost Ship",
+    width: 600,
+    defaultScale: 1.5,
+    categories: ["ornaments", "halloween"],
+    fishBehavior: { hangout: ["hardscape", "spooky"] },
+    theme: "Halloween"
+  },
   "castle-tower.png": {
     name: "Castle Ruin",
     cost: 16,
@@ -2745,12 +2754,6 @@ const DECOR_META = {
     cost: 6,
     width: 140,
     defaultScale: DEFAULT_DECOR_SCALE
-  },
-  "rock-arch.png": {
-    name: "Rock Arch",
-    cost: 9,
-    width: 595,
-    defaultScale: 1
   },
   "seaweed-bunch.png": {
     name: "Seaweed Bunch",
@@ -2808,7 +2811,9 @@ const DECOR_KEY_ALIASES = Object.freeze({
   "Halloween_Cauldron.png": "Halloween_Cauldron_Bubbler.png",
   "halloween_cauldron.png": "Halloween_Cauldron_Bubbler.png",
   "Halloween_JackOLantern.png": "Halloween_JackOLantern_bubbler.png",
-  "halloween_jackolantern.png": "Halloween_JackOLantern_bubbler.png"
+  "halloween_jackolantern.png": "Halloween_JackOLantern_bubbler.png",
+  "Halloween_skeleton_lure.png": "Halloween_Floating_skeleton.png",
+  "halloween_skeleton_lure.png": "Halloween_Floating_skeleton.png"
 });
 const DECOR_RGB_COLOR_SETTING = "rgb";
 const DECOR_COLORIZE_SETTING_SUFFIX = "Colorize";
@@ -2930,8 +2935,7 @@ const dom = {
   editTankBackgroundColorPanel: document.querySelector("#editTankBackgroundColorPanel"),
   editTankBackgroundList: document.querySelector("#editTankBackgroundList"),
   editTankCustomGravelPanel: document.querySelector("#editTankCustomGravelPanel"),
-  editTankFilterSection: document.querySelector("#editTankFilterSection"),
-  editTankFilterList: document.querySelector("#editTankFilterList"),
+  editTankLightingSection: document.querySelector("#editTankLightingSection"),
   editTankUvLightList: document.querySelector("#editTankUvLightList"),
   foodTray: document.querySelector("#foodTray"),
   foodTrayScroller: document.querySelector("#foodTrayScroller"),
@@ -2958,10 +2962,10 @@ const dom = {
   localFishInput: document.querySelector("#localFishInput"),
   tankManagementCard: document.querySelector("#tankManagementCard"),
   tankWaterActionList: document.querySelector("#tankWaterActionList"),
-  tankFilterActionList: document.querySelector("#tankFilterActionList"),
-  tankFilterSection: document.querySelector("#tankFilterSection"),
-  tankFilterSectionTitle: document.querySelector("#tankFilterSectionTitle"),
-  tankFilterSectionNote: document.querySelector("#tankFilterSectionNote"),
+  tankLightingActionList: document.querySelector("#tankLightingActionList"),
+  tankLightingSection: document.querySelector("#tankLightingSection"),
+  tankLightingSectionTitle: document.querySelector("#tankLightingSectionTitle"),
+  tankLightingSectionNote: document.querySelector("#tankLightingSectionNote"),
   uvLightList: document.querySelector("#uvLightList"),
   foodShop: document.querySelector("#foodShop"),
   pharmacyShop: document.querySelector("#pharmacyShop"),
@@ -2982,9 +2986,9 @@ const dom = {
   settingsOverlay: document.querySelector("#settingsOverlay"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
-  equipmentFilterSection: document.querySelector("#equipmentFilterSection"),
-  equipmentFilterSectionTitle: document.querySelector("#equipmentFilterSectionTitle"),
-  equipmentFilterSectionNote: document.querySelector("#equipmentFilterSectionNote"),
+  equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
+  equipmentLightingSectionTitle: document.querySelector("#equipmentLightingSectionTitle"),
+  equipmentLightingSectionNote: document.querySelector("#equipmentLightingSectionNote"),
   introTutorialOverlay: document.querySelector("#introTutorialOverlay"),
   introTutorialSplash: document.querySelector("#introTutorialSplash"),
   introTutorialPanel: document.querySelector("#introTutorialPanel"),
@@ -3027,8 +3031,6 @@ const dom = {
   equipmentBackgroundList: document.querySelector("#equipmentBackgroundList"),
   equipmentBackgroundColorPanel: document.querySelector("#equipmentBackgroundColorPanel"),
   tankAssetList: document.querySelector("#tankAssetList"),
-  filterAssetList: document.querySelector("#filterAssetList"),
-  equipmentFilterList: document.querySelector("#equipmentFilterList"),
   equipmentUvLightList: document.querySelector("#equipmentUvLightList"),
   //gravelPaletteSlots: document.querySelector("#gravelPaletteSlots"),
   //gravelPaletteChoices: document.querySelector("#gravelPaletteChoices"),
@@ -3395,7 +3397,6 @@ const runtime = {
   cleaningTransition: null,
   backgroundCatalog: [],
   tankCatalog: [],
-  filterCatalog: [],
   gravelCatalog: [],
   customGravelLayerCatalog: [],
   customGravelPebbleCatalog: [],
@@ -3420,13 +3421,14 @@ const runtime = {
   decorMap: new Map(),
   backgroundMap: new Map(),
   tankMap: new Map(),
-  filterMap: new Map(),
   gravelMap: new Map(),
   bubbleMap: new Map(),
   images: new Map(),
   imageLoadPromises: new Map(),
   imageLoadFailures: new Map(),
   imageRecoveryNextAt: new Map(),
+  cloudUploadPromise: null,
+  cloudUploadQueued: false,
   missingFishImageWarnings: new Set(),
   pendingFishPurchases: new Set(),
   alphaMaskCache: new Map(),
@@ -3552,7 +3554,7 @@ const runtime = {
     decorStorage: true,
     decorBackgrounds: true,
     decorTankShell: true,
-    decorFilter: true,
+    decorLighting: true,
     decorGravel: true,
     decorCustomGravel: true
   },
@@ -3932,6 +3934,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       }
       setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
       state.coins -= CUSTOM_DECOR_COST;
+      recordWalletTransaction({ amount: CUSTOM_DECOR_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom decor ${asset.name}.` });
       if (!state.customDecorAssets || typeof state.customDecorAssets !== "object") {
         state.customDecorAssets = {};
       }
@@ -4047,6 +4050,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       setRuntimeImageSource(asset, "runtimePath", frontImage.runtimeUrl);
       setRuntimeImageSource(asset, "runtimeBgPath", backgroundImage.runtimeUrl);
       state.coins -= CUSTOM_HIDE_COST;
+      recordWalletTransaction({ amount: CUSTOM_HIDE_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom hide ${asset.name}.` });
       if (!state.customDecorAssets || typeof state.customDecorAssets !== "object") {
         state.customDecorAssets = {};
       }
@@ -4122,6 +4126,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       }
       setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
       state.coins -= CUSTOM_FISH_COST;
+      recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
       if (!state.customFishAssets || typeof state.customFishAssets !== "object") {
         state.customFishAssets = {};
       }
@@ -4139,6 +4144,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         delete state.customFishAssets[asset.key];
         syncRuntimeCustomFishAssetsFromState(state);
         state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
+        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "credit", now, place: "Bubble Borough", label: `Refunded custom fish ${asset.name}.` });
         showToast("Could not add that custom fish to the tank.");
         return false;
       }

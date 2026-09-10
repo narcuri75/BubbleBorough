@@ -323,16 +323,16 @@ body.mobile-page .display-cell::before {
   align-self: center;
   width: 18px;
   height: 18px;
-  background: url("../assets/icons/sponge.png") center / contain no-repeat;
+  background: var(--sprite-icon-sponge, none) center / contain no-repeat;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.28));
 }
 
 body.mobile-page .display-cell:nth-child(2)::before {
-  background-image: url("../assets/icons/feed_fish.png");
+  background-image: var(--sprite-icon-feed_fish, none);
 }
 
 body.mobile-page .display-cell:nth-child(3)::before {
-  background-image: url("../assets/icons/coin.png");
+  background-image: var(--sprite-icon-coin, none);
 }
 
 body.mobile-page .display-label {
@@ -3919,7 +3919,7 @@ body.mobile-page #medicineTray .care-tray-divider {
 }
 
 body.mobile-page #medicineTray .care-tray-tools {
-  min-width: 166px;
+  min-width: 190px;
 }
 
 body.mobile-page #medicineTray .care-tray-tool-row {
@@ -3936,9 +3936,11 @@ body.mobile-page #medicineTray .care-tool-tile {
   font-size: 0.42rem;
 }
 
-body.mobile-page #medicineTray .care-tool-tile img {
-  width: 23px;
-  height: 23px;
+body.mobile-page #medicineTray .care-tool-tile img,
+body.mobile-page #medicineTray .care-tool-emoji {
+  width: 20px;
+  height: 20px;
+  font-size: 1rem;
 }
 
 /* One size contract for every editor tab on narrow screens. */
@@ -4042,3 +4044,10 @@ body.mobile-page .edit-tank-background-panel {
   grid-template-rows: 27px minmax(0, 1fr) !important;
 }
 .startup-actions { width: min(340px, 88vw); }
+body.mobile-page #editDecorTray:has(.decor-history-controls) {
+  max-height: min(52dvh, 230px) !important;
+  grid-template-rows: auto auto auto minmax(0, 1fr) !important;
+}
+body.mobile-page .decor-history-controls { gap: 4px; justify-content: center; }
+body.mobile-page .decor-history-controls button { min-height: 28px; padding: 4px 10px; font-size: .7rem; }
+body.mobile-page .decor-layout-dialog .small-button { min-height: 40px; font-size: .875rem; padding: 8px 14px; }

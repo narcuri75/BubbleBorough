@@ -2559,7 +2559,7 @@ function updateFishMotion(now, deltaSeconds) {
       const followDistance = Number(activeFishActionSteering.distanceNorm) || moveDistance;
       motionTarget = Math.max(motionTarget, followDistance > DEBUG_BEHAVIOR_FOLLOW_CLOSE_NORM ? 0.54 : 0.28);
     } else if (activeFishActionSteering?.type === "inspect") {
-      motionTarget = Math.max(motionTarget, 0.5);
+      motionTarget = Math.max(motionTarget, moveDistance > 0.045 ? 0.5 : 0.12);
     } else if (activeFishActionSteering?.type === "waitfood") {
       motionTarget = Math.max(motionTarget, 0.18);
     } else if (activeQueuedFishAction?.cancelling) {
@@ -2640,6 +2640,16 @@ function updateFishMotion(now, deltaSeconds) {
       if (activeFishActionSteering?.type === "zoomies") {
         speedMultiplier *= 2.05;
       }
+      if (activeFishActionSteering?.type === "inspect") {
+        // Ease into an inspection position. The anchor stays fixed while the
+        // action refreshes, so this turns the last few pixels into a calm
+        // settle instead of repeatedly arriving and snapping back into motion.
+        const arrivalProgress = clamp(moveDistance / 0.075, 0, 1);
+        const arrivalEase = arrivalProgress * arrivalProgress * (3 - 2 * arrivalProgress);
+        const launchProgress = clamp((now - Number(activeFishActionSteering.startedAt || now)) / 420, 0, 1);
+        const launchEase = launchProgress * launchProgress * (3 - 2 * launchProgress);
+        speedMultiplier *= (0.16 + arrivalEase * 0.84) * (0.32 + launchEase * 0.68);
+      }
       if (activeFishActionSteering?.type === "follow") {
         const followDistance = Number(activeFishActionSteering.distanceNorm) || moveDistance;
         const leaderSpeed = Math.max(0.00001, Number(activeFishActionSteering.leaderSwimSpeed) || fish.swimSpeed);
@@ -2650,6 +2660,24 @@ function updateFishMotion(now, deltaSeconds) {
             ? 0.96
             : (activeFishActionSteering.leaderMoving ? 0.78 : 0.42);
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.2, 1.35);
+      }
+      if (Number.isFinite(fish.followUntil) && now < fish.followUntil) {
+        const leader = getFishSchoolFollowLeader(fish);
+        if (isFishEligibleSchoolLeader(leader, fish, species, now)) {
+          const leaderSpeed = Math.max(0.00001, Number(leader.swimSpeed) || fish.swimSpeed);
+          const currentSpeed = Math.max(0.00001, Number(fish.swimSpeed) || leaderSpeed);
+          const leaderTargetDistance = Math.hypot(
+            (Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm,
+            (Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm
+          );
+          const formationDistance = Math.hypot(fish.targetXNorm - fish.xNorm, fish.targetYNorm - fish.yNorm);
+          const matchFactor = formationDistance > 0.11
+            ? 1.18
+            : formationDistance > 0.052
+              ? 0.92
+              : (leaderTargetDistance > 0.018 ? 0.76 : 0.34);
+          speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.16, 1.3);
+        }
       }
       if (activeDebugSteering?.type === "follow") {
         const followDistance = Number(activeDebugSteering.distanceNorm) || moveDistance;
@@ -2671,16 +2699,63 @@ function updateFishMotion(now, deltaSeconds) {
       }
 
       const speed = fish.swimSpeed * FISH_MOTION_SCALE * speedMultiplier;
-      const step = Math.min(moveDistance, speed * deltaSeconds);
+      // Roaming and inspection used to move in a straight fixed-size step, then
+      // stop on the exact target. That made the position and the bob animation
+      // visibly snap at the end of every little movement. Keep responsive,
+      // direct movement for urgent work, but give passive swimming a small
+      // velocity state so it accelerates, coasts, and settles naturally.
+      const usesPassiveMotion = fish.activity === "roam"
+        && !pendingTravel
+        && !panicOwnsMovement
+        && !whaleBreathOwnsMovement
+        && !fish.caveState
+        && !activeQueuedFishAction
+        && !activeDebugSteering
+        && (!activeFishActionSteering || activeFishActionSteering.type === "inspect");
+      let step;
+      let stepXNorm;
+      let stepYNorm;
+      if (usesPassiveMotion) {
+        const arrival = clamp(moveDistance / 0.09, 0, 1);
+        const arrivalEase = arrival * arrival * (3 - 2 * arrival);
+        const desiredSpeed = speed * (0.1 + arrivalEase * 0.9);
+        const desiredVelocityX = (moveDx / moveDistance) * desiredSpeed;
+        const desiredVelocityY = (moveDy / moveDistance) * desiredSpeed;
+        const response = 1 - Math.exp(-deltaSeconds * 5.6);
+        const velocityX = (Number(fish.motionVelocityXNorm) || 0) + (desiredVelocityX - (Number(fish.motionVelocityXNorm) || 0)) * response;
+        const velocityY = (Number(fish.motionVelocityYNorm) || 0) + (desiredVelocityY - (Number(fish.motionVelocityYNorm) || 0)) * response;
+        const candidateStepX = velocityX * deltaSeconds;
+        const candidateStepY = velocityY * deltaSeconds;
+        const candidateStep = Math.hypot(candidateStepX, candidateStepY);
+        if (candidateStep >= moveDistance || moveDistance <= 0.00055) {
+          stepXNorm = moveDx;
+          stepYNorm = moveDy;
+          step = moveDistance;
+          fish.motionVelocityXNorm = 0;
+          fish.motionVelocityYNorm = 0;
+        } else {
+          stepXNorm = candidateStepX;
+          stepYNorm = candidateStepY;
+          step = candidateStep;
+          fish.motionVelocityXNorm = velocityX;
+          fish.motionVelocityYNorm = velocityY;
+        }
+      } else {
+        step = Math.min(moveDistance, speed * deltaSeconds);
+        stepXNorm = (moveDx / moveDistance) * step;
+        stepYNorm = (moveDy / moveDistance) * step;
+        fish.motionVelocityXNorm = 0;
+        fish.motionVelocityYNorm = 0;
+      }
       const previousXNorm = fish.xNorm;
       const previousYNorm = fish.yNorm;
 
-      const rawNextXNorm = fish.xNorm + (moveDx / moveDistance) * step;
+      const rawNextXNorm = fish.xNorm + stepXNorm;
       const nextXNorm = pendingTravel ? rawNextXNorm : clampFishXNormToMobileViewport(rawNextXNorm, fish, species, now);
       const movementMaxYNorm = fish.activity === FISH_GRAVEL_DIG_ACTIVITY
         ? 0.96
         : (fish.activity === "feeding" && pellet?.settled ? 0.9 : 0.8);
-      const rawNextYNorm = fish.yNorm + (moveDy / moveDistance) * step;
+      const rawNextYNorm = fish.yNorm + stepYNorm;
       const nextPlacement = effectiveBehavior === "sucker" && !pendingTravel
         ? clampFishPlacement(nextXNorm, rawNextYNorm, species, {
           fish,
@@ -2962,10 +3037,12 @@ function getFishProfileHoverTarget(fish, species, layer, profile) {
   if (Math.random() > clamp(profile.hoverChance, 0, 0.85)) {
     return null;
   }
-  const driftScale = profile.movementPattern === "precision-hover" ? 0.012 : 0.022;
+  // Physical micro-targets made an idle fish repeatedly move, stop, and move
+  // again. Keep its simulation position stable; getFishPose supplies the
+  // continuous visual bob each frame.
   const placement = clampFishPlacement(
-    fish.xNorm + randomBetween(-driftScale, driftScale),
-    fish.yNorm + randomBetween(-driftScale * 0.7, driftScale * 0.7),
+    fish.xNorm,
+    fish.yNorm,
     species,
     { fish, layer }
   );
@@ -2980,7 +3057,8 @@ function getFishProfileHoverTarget(fish, species, layer, profile) {
 function assignSpeciesRoamTarget(fish, species, now) {
   const profile = getFishLocomotionProfile(fish || species);
   const nextRoamLayer = clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
-  const hoverTarget = getFishProfileHoverTarget(fish, species, nextRoamLayer, profile);
+  const hoverTarget = getFishProfileHoverTarget(fish, species, getFishTankLayer(fish), profile);
+  const targetLayer = hoverTarget ? getFishTankLayer(fish) : nextRoamLayer;
   const homeTarget = hoverTarget ? null : getFishProfileHomeRoamTarget(fish, species, nextRoamLayer, profile);
   const isDart = !hoverTarget && Math.random() < clamp(profile.dartChance, 0, 0.9);
   let placement;
@@ -3007,7 +3085,7 @@ function assignSpeciesRoamTarget(fish, species, now) {
     const durationScale = clamp(profile.targetDurationScale, 0.5, 1.8);
     fish.targetAt = now + randomBetween(species.targetMinMs, species.targetMaxMs) * durationScale;
   }
-  setFishDesiredTankLayer(fish, nextRoamLayer);
+  setFishDesiredTankLayer(fish, targetLayer);
   fish.hangoutDecorId = null;
   fish.hangoutZoneType = null;
   fish.swimSpeed = isFishCriticallyLowHealth(fish)

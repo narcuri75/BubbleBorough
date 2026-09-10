@@ -72,7 +72,7 @@ function getTintedBubblerLightImage(imagePath, color, sourceImage = null) {
   context.fillRect(0, 0, width, height);
   context.globalCompositeOperation = "source-over";
 
-  runtime.bubblerLightTintCache.set(cacheKey, canvas);
+  setBoundedCanvasCache(runtime.bubblerLightTintCache, cacheKey, canvas, { maxEntries: 12, maxBytes: 24 * 1024 * 1024 });
   return canvas;
 }
 
@@ -436,7 +436,7 @@ function getDecorContactShadowMetrics(item) {
     return null;
   }
 
-  const bounds = getPlacedDecorOpaqueBounds(item);
+  const bounds = getPlacedDecorGroundBounds(item);
   if (!bounds) {
     return null;
   }
@@ -689,6 +689,10 @@ function drawDecor(layer = null, now = Date.now()) {
       continue;
     }
 
+    if (getDecorArtworkPaths(decor).some(path => !isUsableRuntimeImage(runtime.images.get(path)))) {
+      void preloadDecorArtwork(decor);
+    }
+
     const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
 
     let imagePath = decor.path;
@@ -807,12 +811,6 @@ function drawDecorPreview() {
   const y = runtime.placementPreview.yNorm * TANK_HEIGHT;
   const previewLayer = runtime.placementMode.tankLayer || runtime.decorPlacementLayer;
 
-  tankContext.save();
-  tankContext.globalAlpha = 0.72;
-  tankContext.fillStyle = "rgba(120, 215, 235, 0.18)";
-  tankContext.beginPath();
-  tankContext.ellipse(x, y + 3, width * 0.34, Math.max(10, width * 0.08), 0, 0, Math.PI * 2);
-  tankContext.fill();
   const previewItem = {
     id: "placement-preview",
     decorKey: decor.key,
@@ -823,6 +821,18 @@ function drawDecorPreview() {
     flipped: Boolean(runtime.placementMode.flipped),
     flippedY: Boolean(runtime.placementMode.flippedY)
   };
+  const previewGroundBounds = getPlacedDecorGroundBounds(previewItem);
+  const previewFootX = previewGroundBounds
+    ? (previewGroundBounds.left + previewGroundBounds.right) * 0.5
+    : x;
+  const previewFootY = previewGroundBounds?.bottom ?? y;
+
+  tankContext.save();
+  tankContext.globalAlpha = 0.72;
+  tankContext.fillStyle = "rgba(120, 215, 235, 0.18)";
+  tankContext.beginPath();
+  tankContext.ellipse(previewFootX, previewFootY + 3, width * 0.34, Math.max(10, width * 0.08), 0, 0, Math.PI * 2);
+  tankContext.fill();
   const previewMotion = getDecorMotion(previewItem, Date.now());
   if ((decor.bubbler || isCaveDecorKey(decor.key) || hasDecorCaveColorLayers(decor)) && decor.bgPath) {
     if (hasDecorCaveColorLayers(decor)) {

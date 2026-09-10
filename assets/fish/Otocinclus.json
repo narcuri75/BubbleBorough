@@ -1,0 +1,157 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "130a7fb6-c174-4cd2-84c9-009424fc97a7",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "5a8a63d6-7666-48a8-ae63-bcea4b1b49ed",
+          "width": 500,
+          "height": 159,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_0.png"
+        },
+        {
+          "id": "3b51a40e-271c-4684-909f-2d7af5dc1e3d",
+          "width": 500,
+          "height": 159,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_0_bottom.png"
+        },
+        {
+          "id": "d5bd7041-5e55-4f40-9d8b-019ce814252d",
+          "width": 500,
+          "height": 178,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_0_side.png"
+        },
+        {
+          "id": "db14c47a-5861-40c8-9b32-22ddba677a02",
+          "width": 500,
+          "height": 159,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_1.png"
+        },
+        {
+          "id": "8f2e1170-9526-4894-817c-8cb7f6d769af",
+          "width": 500,
+          "height": 159,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_1_bottom.png"
+        },
+        {
+          "id": "7de89003-206b-43f3-af20-ae58d8ca1a58",
+          "width": 500,
+          "height": 178,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_1_side.png"
+        },
+        {
+          "id": "b4363b53-e94f-4c76-917e-adabc28443c2",
+          "width": 500,
+          "height": 159,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_2.png"
+        },
+        {
+          "id": "855909af-ff48-4563-b807-645068cf7969",
+          "width": 500,
+          "height": 159,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_2_bottom.png"
+        },
+        {
+          "id": "d374ed17-6f4f-458b-8602-cfe592794ebe",
+          "width": 500,
+          "height": 178,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_2_side.png"
+        },
+        {
+          "id": "ee3522ae-9770-49ba-87dd-5d8cd6c72c55",
+          "width": 500,
+          "height": 159,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_3.png"
+        },
+        {
+          "id": "6d26e1bf-c81b-41ba-a522-f0e9055d0c3b",
+          "width": 500,
+          "height": 159,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_3_bottom.png"
+        },
+        {
+          "id": "fc785038-7e6f-4d7f-ab7b-fcc2007a9c95",
+          "width": 500,
+          "height": 178,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "otocinclus_3_side.png"
+        }
+      ]
+    }
+  ]
+}

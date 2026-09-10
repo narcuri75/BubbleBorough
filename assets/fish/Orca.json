@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "0a469958-7f9c-453e-8aaa-d1c1be1abbb9",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "02a3369c-1312-4dd0-9a39-2ef912712c24",
+          "width": 512,
+          "height": 238,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Orca.png"
+        },
+        {
+          "id": "7827dab5-6eb6-41a7-b129-11abfa718056",
+          "width": 512,
+          "height": 238,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Orca_1.png"
+        },
+        {
+          "id": "8d22f3a7-d7ea-4c7f-ade4-48d6cd6d9707",
+          "width": 512,
+          "height": 238,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Orca_2.png"
+        },
+        {
+          "id": "4e0e147f-883f-4627-a286-d605fca9c59e",
+          "width": 512,
+          "height": 238,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Orca_3.png"
+        },
+        {
+          "id": "fac44cde-dff6-45f8-a1ef-26fdcdbf1195",
+          "width": 512,
+          "height": 238,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Orca_4.png"
+        }
+      ]
+    }
+  ]
+}

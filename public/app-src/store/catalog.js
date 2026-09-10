@@ -5,6 +5,35 @@ function getOwnedFishCount() {
   return getAllTankFish().length + state.storedFish.length;
 }
 
+function getStoreProductFacets(kind, entry) {
+  if (kind === "fish") {
+    return {
+      Availability: [isFishSpeciesShopUnlocked(entry) ? "Available now" : "Locked"],
+      Type: [entry.behavior === "free" ? "Free swimming" : entry.behavior || "custom", ...(entry.caveEnabled ? ["Cave fish"] : [])],
+      "Water type": [entry.waterType || "freshwater"],
+      Diet: [entry.diet || "omnivore"]
+    };
+  }
+  if (kind === "decor") {
+    const categories = normalizeStringList(entry.categories);
+    const behavior = getDecorFishBehaviorMeta(entry.key) || {};
+    return {
+      Availability: [isDecorShopUnlocked(entry) && isSeasonalDecorAvailable(entry) ? "Available now" : isSeasonalDecor(entry) && !isSeasonalDecorAvailable(entry) ? "Out of season" : "Locked"],
+      Type: categories,
+      Theme: [getCatalogThemeLabel(entry.theme)],
+      Tag: [...new Set([...categories, ...getTankComfortDecorTags({ placedDecor: [{ decorKey: entry.key }] }), ...normalizeStringList(entry.tags)])],
+      "Hangout type": normalizeStringList(behavior.hangoutTypes),
+      Service: getDecorBoroughServiceTypes(entry.key)
+    };
+  }
+  return { Type: [kind === "food" ? entry.id === "halloweenCandy" ? "Candy" : "Fish food" : "Medicine"],
+    Availability: ["Available now"] };
+}
+
+function renderStoreFacetAttributes(kind, entry) {
+  return `data-store-facets="${escapeHtml(JSON.stringify(getStoreProductFacets(kind, entry)))}"`;
+}
+
 function compareFishCatalogBySize(left, right) {
   const leftWidth = Number.isFinite(left?.width) ? left.width : Number.MAX_SAFE_INTEGER;
   const rightWidth = Number.isFinite(right?.width) ? right.width : Number.MAX_SAFE_INTEGER;
@@ -207,6 +236,69 @@ function getFishShopSearchHaystack(fish) {
   ].filter(Boolean).join(" ");
 }
 
+function getDecorAppearanceVariantKey(pathOrKey) {
+  return typeof pathOrKey === "string" ? pathOrKey.split(/[?#]/)[0].split("/").pop() : "";
+}
+
+function getDecorVariantGroupId(decorOrKey) {
+  const decor = typeof decorOrKey === "string" ? runtime.decorMap.get(normalizeDecorKey(decorOrKey)) : decorOrKey;
+  const explicit = typeof decor?.variantGroup === "string" ? decor.variantGroup.trim() : "";
+  return explicit || "";
+}
+
+function compareDecorVariantEntries(left, right) {
+  const leftKey = getDecorAppearanceVariantKey(left?.key || left?.path || "");
+  const rightKey = getDecorAppearanceVariantKey(right?.key || right?.path || "");
+  const leftMatch = leftKey.match(/^(.*?)(?:_(\d+))?(\.[^./?#]+)?$/i);
+  const rightMatch = rightKey.match(/^(.*?)(?:_(\d+))?(\.[^./?#]+)?$/i);
+  const leftBaseRank = leftMatch?.[2] ? Number(leftMatch[2]) : 0;
+  const rightBaseRank = rightMatch?.[2] ? Number(rightMatch[2]) : 0;
+  return leftBaseRank - rightBaseRank
+    || String(left?.name || "").localeCompare(String(right?.name || ""))
+    || leftKey.localeCompare(rightKey);
+}
+
+function getDecorStoreVariantEntries(decorOrKey, catalogEntries = null) {
+  const decor = typeof decorOrKey === "string" ? runtime.decorMap.get(normalizeDecorKey(decorOrKey)) : decorOrKey;
+  if (!decor) {
+    return [];
+  }
+
+  const groupId = getDecorVariantGroupId(decor);
+  if (!groupId) {
+    return [decor];
+  }
+
+  const source = Array.isArray(catalogEntries) ? catalogEntries : runtime.decorCatalog;
+  const variants = source.filter((entry) => getDecorVariantGroupId(entry) === groupId);
+  return (variants.length ? variants : [decor]).slice().sort(compareDecorVariantEntries);
+}
+
+function getDecorStoreVariants(decorOrKey, catalogEntries = null) {
+  const variants = getDecorStoreVariantEntries(decorOrKey, catalogEntries);
+  return variants.map((entry, index) => ({
+    key: entry.key,
+    image: entry.path,
+    label: index === 0 ? "Main" : `Variant ${index}`
+  }));
+}
+
+function isDecorStoreRepresentative(decorOrKey, catalogEntries = null) {
+  const decor = typeof decorOrKey === "string" ? runtime.decorMap.get(normalizeDecorKey(decorOrKey)) : decorOrKey;
+  if (!decor) {
+    return false;
+  }
+  const variants = getDecorStoreVariantEntries(decor, catalogEntries);
+  return (variants[0]?.key || "") === decor.key;
+}
+
+function getDecorStoreCatalogEntries(entries) {
+  return (Array.isArray(entries) ? entries : []).filter((decor) => {
+    const groupId = getDecorVariantGroupId(decor);
+    return !groupId || isDecorStoreRepresentative(decor, entries);
+  });
+}
+
 function getDecorShopSearchHaystack(decor) {
   return [
     decor?.name,
@@ -264,15 +356,6 @@ function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
             <option value="theme" ${selectedSort === "theme" ? "selected" : ""}>Theme</option>
           </select>
         </label>
-        ${shopKind === "fish" ? `
-          <label class="shop-sort-control">
-            <span>Filter</span>
-            <select class="shop-sort-select" data-shop-filter="fish" aria-label="Filter fish shop">
-              <option value="all" ${selectedFilter === "all" ? "selected" : ""}>All Fish</option>
-              <option value="cave" ${selectedFilter === "cave" ? "selected" : ""}>Cave Fish</option>
-            </select>
-          </label>
-        ` : ""}
       </div>
     </div>
   `;

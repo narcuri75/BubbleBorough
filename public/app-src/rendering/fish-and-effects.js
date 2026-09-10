@@ -1015,8 +1015,77 @@ function drawGlassTapEffects(now) {
   glassContext.restore();
 }
 
+function drawRearGrime(dirtiness) {
+  const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
+  if (visibleDirtiness <= 0.002) return;
+
+  const baseKey = getGrimeBaseCacheKey(dirtiness);
+  if (runtime.grimeBaseCacheKey !== baseKey) {
+    renderGrimeBaseCanvas(dirtiness);
+    runtime.grimeBaseCacheKey = baseKey;
+    runtime.rearGrimeTextureKey = "";
+    runtime.rearGrimeCacheKey = "";
+  }
+  const bounds = getTankFloorDrawBounds();
+  const bottom = bounds.baseTop + bounds.floorHeight * 0.5;
+  // Rear grime is deliberately tiny because it is soft, out-of-focus depth art.
+  const width = Math.max(1, Math.ceil(TANK_WIDTH / 5));
+  const height = Math.max(1, Math.ceil(TANK_HEIGHT / 5));
+  const textureKey = [baseKey, bottom.toFixed(1), getCurrentTank()?.id].join("|");
+  const cacheKey = [textureKey, runtime.scrubMaskRevision].join("|");
+  if (!runtime.rearGrimeCanvas) {
+    runtime.rearGrimeCanvas = document.createElement("canvas");
+    runtime.rearGrimeCanvas.width = width;
+    runtime.rearGrimeCanvas.height = height;
+    runtime.rearGrimeTextureCanvas = document.createElement("canvas");
+    runtime.rearGrimeTextureCanvas.width = width;
+    runtime.rearGrimeTextureCanvas.height = height;
+  }
+  if (runtime.rearGrimeTextureKey !== textureKey) {
+    const context = runtime.rearGrimeTextureCanvas.getContext("2d");
+    context.clearRect(0, 0, width, height);
+    context.save();
+    context.translate(width, 0);
+    context.scale(-1, 1);
+    context.drawImage(runtime.grimeBaseCanvas, 0, 0, width, bottom * height / TANK_HEIGHT);
+    context.restore();
+    runtime.rearGrimeTextureKey = textureKey;
+  }
+  if (runtime.rearGrimeCacheKey !== cacheKey) {
+    const context = runtime.rearGrimeCanvas.getContext("2d");
+    context.clearRect(0, 0, width, height);
+    context.drawImage(runtime.rearGrimeTextureCanvas, 0, 0);
+    if (runtime.scrubStamps.length) {
+      context.save();
+      context.globalCompositeOperation = "destination-out";
+      context.drawImage(runtime.scrubMaskCanvas, 0, 0, width, height);
+      context.restore();
+    }
+    runtime.rearGrimeCacheKey = cacheKey;
+  }
+  tankContext.save();
+  clipToTankShellBounds(tankContext, getCurrentTank(), "inner");
+  tankContext.globalAlpha = visibleDirtiness;
+  tankContext.drawImage(runtime.rearGrimeCanvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
+  tankContext.restore();
+}
+
 function drawGrime(dirtiness) {
   const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
+  const opacity = visibleDirtiness <= 0.002 ? "0" : visibleDirtiness.toFixed(3);
+  const visibility = visibleDirtiness <= 0.002 ? "hidden" : "visible";
+  if (runtime.lastGrimeCanvasOpacity !== opacity) {
+    dom.grimeCanvas.style.opacity = opacity;
+    runtime.lastGrimeCanvasOpacity = opacity;
+  }
+  if (runtime.lastGrimeCanvasVisibility !== visibility) {
+    dom.grimeCanvas.style.visibility = visibility;
+    runtime.lastGrimeCanvasVisibility = visibility;
+  }
+  if (visibleDirtiness <= 0.002) {
+    return;
+  }
+
   const grimeBaseCacheKey = getGrimeBaseCacheKey(dirtiness);
   const compositeCacheKey = [
     grimeBaseCacheKey,
@@ -1026,6 +1095,7 @@ function drawGrime(dirtiness) {
     (Number(runtime.stageRenderScale) || 0).toFixed(5),
     (Number(runtime.stageRenderOffsetX) || 0).toFixed(2),
     (Number(runtime.stageRenderOffsetY) || 0).toFixed(2),
+    WATER_SURFACE_Y.toFixed(2),
     getCurrentTank()?.id || "tank",
     getCurrentTank()?.tankTypeId || "shell"
   ].join("|");
@@ -1042,10 +1112,6 @@ function drawGrime(dirtiness) {
   grimeContext.setTransform(1, 0, 0, 1, 0, 0);
   grimeContext.clearRect(0, 0, dom.grimeCanvas.width, dom.grimeCanvas.height);
   grimeContext.restore();
-  if (visibleDirtiness <= 0) {
-    runtime.grimeCompositeCacheKey = compositeCacheKey;
-    return;
-  }
 
   grimeContext.save();
   clipToTankShellBounds(grimeContext, getCurrentTank(), "outer");
@@ -1054,7 +1120,12 @@ function drawGrime(dirtiness) {
   if (runtime.scrubStamps.length) {
     grimeContext.globalCompositeOperation = "destination-out";
     grimeContext.drawImage(runtime.scrubMaskCanvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
+    grimeContext.globalCompositeOperation = "source-over";
   }
+
+  // Full-strength water haze lives on this cached layer. The canvas opacity above
+  // fades both the haze and grime together across the full dirtiness timeline.
+  drawDirtyWaterTintToContext(grimeContext, 1);
   grimeContext.restore();
   runtime.grimeCompositeCacheKey = compositeCacheKey;
 }

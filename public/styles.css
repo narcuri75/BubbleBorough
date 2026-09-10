@@ -13418,7 +13418,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 @media (min-width: 861px) {
   #medicineTray {
-    width: min(92vw, 740px);
+    width: min(92vw, 655px);
     max-width: calc(100vw - 48px);
   }
 }
@@ -13430,7 +13430,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   height: 98px;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(248px, var(--care-food-min-width, 248px)) 1px minmax(163px, var(--care-medicine-min-width, 163px)) 1px minmax(248px, var(--care-tools-min-width, 248px));
+  grid-template-columns: minmax(248px, var(--care-food-min-width, 248px)) 1px minmax(163px, var(--care-medicine-min-width, 163px)) 1px minmax(163px, var(--care-tools-min-width, 163px));
   gap: 10px;
   align-items: stretch;
   padding: 0 4px;
@@ -13642,13 +13642,13 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .care-tray-tools {
-  min-width: var(--care-tools-min-width, 248px);
+  min-width: var(--care-tools-min-width, 163px);
 }
 
 .care-tray-tool-row {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -15381,6 +15381,19 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 #editEquipmentTray { grid-template-rows: auto auto minmax(0, 1fr); }
 #editEquipmentTrayScroller { display: flex; align-items: center; gap: 8px; }
 #editEquipmentTray .edit-decor-tile { flex: 0 0 112px; position: relative; }
+#editEquipmentTray .edit-decor-tile::before {
+  top: 28px;
+  bottom: auto;
+  left: 4px;
+  right: 4px;
+  z-index: 4;
+  padding: 5px;
+  border-radius: 8px;
+  white-space: normal;
+  text-align: center;
+  font-size: 0.65rem;
+  transform: none;
+}
 .edit-equipment-resource-note { font-size: 9px; line-height: 1.2; white-space: nowrap; }
 .edit-tank-tray-tabs {
   overflow-x: auto;

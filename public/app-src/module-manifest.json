@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2866,
+  "functionCount": 2872,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -435,7 +435,7 @@
     },
     {
       "path": "machinery/submarine.js",
-      "functionCount": 133,
+      "functionCount": 135,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1006,7 +1006,7 @@
     },
     {
       "path": "rendering/tank-and-water.js",
-      "functionCount": 69,
+      "functionCount": 71,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -1032,7 +1032,7 @@
     },
     {
       "path": "rendering/gravel-and-effects.js",
-      "functionCount": 41,
+      "functionCount": 42,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1046,7 +1046,8 @@
         "fish/undead-and-appearance.js",
         "rendering/fish-motion-and-floor.js",
         "rendering/tank-and-water.js",
-        "tank/backgrounds-and-catalogs.js"
+        "tank/backgrounds-and-catalogs.js",
+        "tank/catalog-and-equipment.js"
       ]
     },
     {
@@ -1076,7 +1077,7 @@
     },
     {
       "path": "rendering/fish-and-effects.js",
-      "functionCount": 27,
+      "functionCount": 28,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",

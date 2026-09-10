@@ -1166,13 +1166,12 @@ const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
 const SCRUB_MAX_STAMPS = 2400;
 const GRIME_CACHE_PRECISION = 240;
+const GRIME_CANVAS_RENDER_SCALE = 0.5;
 const GRIME_VISUAL_START_DIRTINESS = 0;
 const SEVERE_GRIME_VISUAL_THRESHOLD = 0.72;
 const GRIME_OVERLAY_OVERSCAN = 1.1;
 const GRIME_OVERLAY_ASSET_PATHS = Object.freeze([
-  resolveAppUrl("assets/grime/grime-level-1.webp"),
-  resolveAppUrl("assets/grime/grime-level-2.webp"),
-  resolveAppUrl("assets/grime/grime-level-3.webp")
+  resolveAppUrl("assets/grime/grime-level-1.webp")
 ]);
 const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
@@ -1665,9 +1664,9 @@ const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
 const PORTABLE_PERFORMANCE_MAX_FPS = 30;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 96;
+const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 30;
 const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 96;
+const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 30;
 const PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT = 18;
 const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 32;
 const PORTABLE_PERFORMANCE_RESIZE_DEBOUNCE_MS = 120;
@@ -1746,10 +1745,12 @@ const SUCKER_FISH_FRONT_GLASS_MIN_Y_NORM = 0.18;
 const SUCKER_FISH_FRONT_GLASS_MAX_Y_NORM = 0.96;
 const SUCKER_FISH_FRONT_GLASS_SCRUB_RADIUS = 7;
 const SUCKER_FISH_FRONT_GLASS_SCRUB_MOUTH_INSET_RATIO = 0.075;
-const SUCKER_FISH_FRONT_GLASS_SCRUB_COOLDOWN_MS = 16;
-const SUCKER_FISH_FRONT_GLASS_SCRUB_MAX_INTERVAL_MS = 33;
-const SUCKER_FISH_FRONT_GLASS_SCRUB_MIN_DISTANCE_PX = 0.35;
-const SUCKER_FISH_FRONT_GLASS_SCRUB_STROKE_STEP_PX = 2.5;
+// Automatic sucker-fish cleaning is visually continuous, but batching the mask
+// updates prevents a dirty tank from rebuilding the grime overlay every frame.
+const SUCKER_FISH_FRONT_GLASS_SCRUB_COOLDOWN_MS = 160;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_MAX_INTERVAL_MS = 240;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_MIN_DISTANCE_PX = 1.5;
+const SUCKER_FISH_FRONT_GLASS_SCRUB_STROKE_STEP_PX = 5.5;
 const SUCKER_FISH_FRONT_GLASS_DIRTINESS_REDUCTION_PER_SCRUB_COVERAGE = 0.45;
 const SUCKER_FISH_FRONT_GLASS_GRIME_TARGET_CHANCE = 0.72;
 const SUCKER_FISH_COLLISION_ITERATIONS = 3;
@@ -1831,6 +1832,7 @@ const SEDIMENT_WAKE_MIN_SPEED_PX_PER_SECOND = 90;
 const SEDIMENT_WAKE_COOLDOWN_MS = 1300;
 const MAX_EFFECT_CLOUD_PARTICLES = 520;
 const EFFECT_CLOUD_LAYER_FLOOR = "floor";
+const EFFECT_CLOUD_LAYER_FOOD = "food";
 const EFFECT_CLOUD_LAYER_FRONT = "front";
 const BLOOD_CLOUD_COLOR_STOPS = Object.freeze([
   { offset: 0, rgb: "110, 0, 0", alpha: 1.15 },
@@ -1899,9 +1901,9 @@ const FISH_GRAVEL_DIG_CHANCE = 0.18;
 const FISH_GRAVEL_DIG_COOLDOWN_MIN_MS = 9000;
 const FISH_GRAVEL_DIG_COOLDOWN_MAX_MS = 18000;
 const FORCED_GRAVEL_DIG_TIMEOUT_MS = 9000;
-const WATER_PARTICLE_COUNT = 180;
+const WATER_PARTICLE_COUNT = 44;
 const WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 44;
-const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 180;
+const WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 44;
 const WATER_PARTICLE_FISH_FORCE_RADIUS_PX = 90;
 const WATER_PARTICLE_BUBBLER_FORCE_RADIUS_PX = 74;
 
@@ -3393,6 +3395,8 @@ const runtime = {
   scrubbedCleanableCellCount: 0,
   scrubCoverageCacheKey: "",
   grimeCompositeCacheKey: "",
+  lastGrimeCanvasOpacity: "",
+  lastGrimeCanvasVisibility: "",
   tankStateDirty: false,
   cleaningTransition: null,
   backgroundCatalog: [],
@@ -3476,6 +3480,7 @@ const runtime = {
   coinGlints: [],
   waterParticles: [],
   waterParticleTankId: null,
+  waterAtmosphereStreakSprite: null,
   waterEffectFishSamples: new Map(),
   renderedMarkup: Object.create(null),
   renderedDataKeys: Object.create(null),

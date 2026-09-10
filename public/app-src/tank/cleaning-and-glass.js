@@ -586,10 +586,9 @@ function rebuildScrubMaskCanvas() {
 }
 
 function getGrimeBaseCacheKey(dirtiness) {
-  return [
-    Math.round(getVisibleGrimeDirtiness(dirtiness) * GRIME_CACHE_PRECISION),
-    WATER_SURFACE_Y.toFixed(2)
-  ].join("|");
+  // The grime art itself is static. Dirtiness is applied as compositor opacity,
+  // so the expensive texture never needs to be rebuilt as the tank gets dirtier.
+  return [GRIME_OVERLAY_ASSET_PATHS[0], WATER_SURFACE_Y.toFixed(2)].join("|");
 }
 
 function getVisibleGrimeDirtiness(dirtiness) {
@@ -620,20 +619,12 @@ function renderGrimeBaseCanvas(dirtiness) {
   }
 
   grimeBaseContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  const visibleDirtiness = getVisibleGrimeDirtiness(dirtiness);
-  if (visibleDirtiness <= 0) {
+  if (getVisibleGrimeDirtiness(dirtiness) <= 0) {
     return;
   }
-
-  // Grime is cumulative: each layer stays at full opacity after its third
-  // of the fourteen-day cycle, while only the newest layer fades in.
-  const layerCount = GRIME_OVERLAY_ASSET_PATHS.length;
-  const segment = 1 / layerCount;
-  for (let index = 0; index < layerCount; index += 1) {
-    const layerStart = index * segment;
-    const layerAlpha = clamp((visibleDirtiness - layerStart) / segment, 0, 1);
-    if (layerAlpha > 0.001) drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[index], layerAlpha);
-  }
+  // Level 1 is the only grime art. Keep one full-strength cached copy and fade
+  // the display layer instead of re-rasterizing this image as dirtiness changes.
+  drawGrimeOverlayImage(GRIME_OVERLAY_ASSET_PATHS[0], 1);
 }
 
 function drawGrimeOverlayImage(path, alpha = 1) {

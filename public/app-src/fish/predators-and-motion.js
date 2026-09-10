@@ -1551,7 +1551,11 @@ function updateChumBloodClouds(now = Date.now()) {
     }
 
     const pose = getPelletPose(pellet, now);
-    spawnBloodCloud(pose.xNorm, pose.yNorm, randomBetween(0.38, 0.58));
+    spawnEffectCloud(pose.xNorm, pose.yNorm, {
+      preset: "blood",
+      intensity: randomBetween(0.38, 0.58),
+      layer: EFFECT_CLOUD_LAYER_FOOD
+    });
     runtime.bloodWaterTint = clamp(runtime.bloodWaterTint + 0.012, 0, 1);
     runtime.chumBloodCloudAtByPelletId.set(
       pellet.id,

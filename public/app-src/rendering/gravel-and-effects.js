@@ -478,22 +478,46 @@ function getGravelGrimeIntensity(dirtiness = getTankDirtiness(Date.now())) {
 }
 
 function drawGravelGrime(now = Date.now(), dirtiness = getTankDirtiness(now)) {
-  const intensity = getGravelGrimeIntensity(dirtiness);
+  const intensity = Math.round(getGravelGrimeIntensity(dirtiness) * 120) / 120;
   if (intensity <= 0.01) {
     return;
   }
 
   const bounds = getTankFloorDrawBounds();
+  const tank = getCurrentTank();
+  const key = [intensity, state.gravelSeed, tank?.id, tank?.gravelHillSeed,
+    getGravelFloorLayoutKey(), bounds.left, bounds.right, bounds.baseTop.toFixed(1), bounds.bottom.toFixed(1)].join("|");
+  if (!runtime.gravelGrimeCanvas) {
+    runtime.gravelGrimeCanvas = document.createElement("canvas");
+    runtime.gravelGrimeCanvas.width = Math.ceil(TANK_WIDTH / 2);
+    runtime.gravelGrimeCanvas.height = Math.ceil(TANK_HEIGHT / 2);
+  }
+  if (runtime.gravelGrimeCacheKey !== key) {
+    const context = runtime.gravelGrimeCanvas.getContext("2d");
+    context.clearRect(0, 0, runtime.gravelGrimeCanvas.width, runtime.gravelGrimeCanvas.height);
+    context.save();
+    context.scale(runtime.gravelGrimeCanvas.width / TANK_WIDTH, runtime.gravelGrimeCanvas.height / TANK_HEIGHT);
+    renderGravelGrimeTexture(context, intensity, bounds);
+    context.restore();
+    runtime.gravelGrimeCacheKey = key;
+  }
+  tankContext.save();
+  tankContext.globalCompositeOperation = "multiply";
+  tankContext.drawImage(runtime.gravelGrimeCanvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
+  tankContext.restore();
+}
+
+function renderGravelGrimeTexture(context, intensity, bounds) {
   const seed = (Number(state.gravelSeed) || 1) ^ 0x51ed1eaf;
   const rand = mulberry32(seed >>> 0);
   const blotchCount = Math.round(58 + intensity * 118);
 
-  tankContext.save();
-  traceTankFloorMaskPath(tankContext, bounds);
-  tankContext.clip();
-  tankContext.globalCompositeOperation = "multiply";
-  tankContext.fillStyle = `rgba(84, 66, 34, ${(0.035 + intensity * 0.09).toFixed(3)})`;
-  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, bounds.drawHeight);
+  context.save();
+  traceTankFloorMaskPath(context, bounds);
+  context.clip();
+  context.globalCompositeOperation = "multiply";
+  context.fillStyle = `rgba(84, 66, 34, ${(0.035 + intensity * 0.09).toFixed(3)})`;
+  context.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, bounds.drawHeight);
 
   for (let index = 0; index < blotchCount; index += 1) {
     const x = bounds.left + rand() * bounds.drawWidth;
@@ -503,11 +527,11 @@ function drawGravelGrime(now = Date.now(), dirtiness = getTankDirtiness(now)) {
     const radius = randomBetweenWith(rand, 6, 26) * (0.72 + intensity * 0.62);
     const greenBias = rand();
     const alpha = (0.012 + rand() * 0.026) * intensity;
-    tankContext.fillStyle = greenBias > 0.5
+    context.fillStyle = greenBias > 0.5
       ? `rgba(42, 74, 38, ${alpha.toFixed(3)})`
       : `rgba(112, 77, 34, ${alpha.toFixed(3)})`;
-    tankContext.beginPath();
-    tankContext.ellipse(
+    context.beginPath();
+    context.ellipse(
       x,
       y,
       radius * randomBetweenWith(rand, 0.7, 1.55),
@@ -516,10 +540,10 @@ function drawGravelGrime(now = Date.now(), dirtiness = getTankDirtiness(now)) {
       0,
       Math.PI * 2
     );
-    tankContext.fill();
+    context.fill();
   }
 
-  tankContext.restore();
+  context.restore();
 }
 
 function drawSedimentClouds(now = Date.now()) {

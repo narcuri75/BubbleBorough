@@ -136,6 +136,136 @@ function load(file, names, bindings = {}) {
   return context;
 }
 
+test("manual machinery separates feeding from nearby travel and ignores held action keys", () => {
+  const calls = [];
+  const c = load("machinery/submarine.js", ["handleManualMachineryActionKey"], {
+    MACHINERY_TYPE_BOAT: "boat",
+    useNearbyMachineryTravel: m => calls.push(`travel:${m.type}`),
+    deployManualBoatChum: () => calls.push("chum"),
+    deployManualSubmarineFood: () => calls.push("food")
+  });
+  for (const type of ["boat", "submarine"]) {
+    for (const key of ["F", " "]) {
+      let prevented = false;
+      const event = { key, preventDefault() { prevented = true; } };
+      assert.equal(c.handleManualMachineryActionKey({ type }, event), true);
+      assert.equal(prevented, true);
+      c.handleManualMachineryActionKey({ type }, { ...event, repeat: true });
+    }
+  }
+  assert.deepEqual(calls, ["chum", "travel:boat", "food", "travel:submarine"]);
+});
+
+test("manual travel requires proximity, follows linked tubes and preserves manual control", () => {
+  for (const type of ["boat", "submarine"]) {
+    const source = { id: "a" }, target = { id: "b" };
+    const machinery = { id: "m", type, tankId: "a", xNorm: 0.5, yNorm: 0.16, autopilot: false };
+    let tubes = [], direction = "right", camera = "a";
+    const c = load("machinery/submarine.js", ["useNearbyMachineryTravel", "getSubmarineDistanceToPointPx"], {
+      MACHINERY_TYPE_BOAT: "boat", TANK_WIDTH: 1000, TANK_HEIGHT: 700,
+      runtime: { pendingMachineryTravel: new Map() },
+      isBoatManualDriveActive: () => true, isSubmarineManualDriveActive: () => true,
+      getTankById: () => source, getAllTransitTubes: () => tubes,
+      getAdjacentAquariumSections: () => [target], getBoroughTravelEdgeDirection: () => direction,
+      getTransitTubeTravelPoints: () => ({ opening: { xNorm: 0.5, yNorm: 0.16 }, openingRadiusPx: 34, exit: { xNorm: 0.6, yNorm: 0.4 } }),
+      clearBoatManualDriveKeys() {}, clearSubmarineManualDriveKeys() {},
+      setActiveTank: id => { camera = id; }, openSubmarineManager() {}, requestDeferredStateSave() {}
+    });
+    assert.equal(c.useNearbyMachineryTravel(machinery), false);
+    assert.equal(camera, "a");
+    machinery.xNorm = 0.92;
+    assert.equal(c.useNearbyMachineryTravel(machinery), true);
+    assert.equal(machinery.xNorm, 0.12);
+    assert.equal(camera, "b");
+    assert.equal(machinery.autopilot, false);
+    machinery.tankId = "a"; machinery.xNorm = 0.5;
+    tubes = [{ tank: source, item: { id: "t1", transitTubeLinkedId: "t2" } },
+      { tank: target, item: { id: "t2", transitTubeLinkedId: "t1" } }];
+    assert.equal(c.useNearbyMachineryTravel(machinery), true);
+    assert.equal(machinery.xNorm, 0.6);
+    assert.equal(machinery.yNorm, type === "boat" ? 0.16 : 0.4);
+    machinery.tankId = "a"; machinery.xNorm = 0.5; machinery.yNorm = 0.16;
+    tubes[1].item.transitTubeLinkedId = "unlinked";
+    assert.equal(c.useNearbyMachineryTravel(machinery), false);
+  }
+});
+
+test("chum clouds render with food before decor while other blood keeps its front layer", () => {
+  const clouds = [];
+  const c = load("fish/predators-and-motion.js", ["updateChumBloodClouds", "spawnBloodCloud"], {
+    runtime: { chumBloodCloudAtByPelletId: new Map(), bloodWaterTint: 0 },
+    state: { floatingPellets: [{ id: "chum", foodKey: "chum" }] },
+    isGoreEnabled: () => true, getPelletPose: () => ({ xNorm: 0.4, yNorm: 0.6 }),
+    randomBetween: (a, b) => (a + b) / 2, CHUM_BLOOD_CLOUD_INTERVAL_MS: 1000,
+    EFFECT_CLOUD_LAYER_FOOD: "food", EFFECT_CLOUD_LAYER_FRONT: "front",
+    spawnEffectCloud: (x, y, options) => clouds.push(options)
+  });
+  c.updateChumBloodClouds(1000);
+  c.spawnBloodCloud(0.5, 0.5);
+  assert.deepEqual(clouds.map(cloud => cloud.layer), ["food", "front"]);
+  const source = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+  assert.ok(source.indexOf("drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD)") > source.indexOf("drawPellets(now)"));
+  assert.ok(source.indexOf("drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD)") < source.indexOf("drawDecor(layer, now)"));
+});
+
+test("rear grime mirrors a tiny cached texture, shares scrub strokes, and avoids per-frame blur rebuilds", () => {
+  const calls = [];
+  const context = {
+    clearRect() { calls.push("clear"); }, save() {}, restore() {},
+    translate() {}, scale(x, y) { calls.push(["scale", x, y]); },
+    drawImage(image, ...rect) { calls.push(["draw", image, ...rect]); }
+  };
+  const runtime = { grimeBaseCanvas: "base", scrubMaskCanvas: "mask", scrubStamps: [{}], scrubMaskRevision: 1 };
+  const c = load("rendering/fish-and-effects.js", ["drawRearGrime"], {
+    runtime, TANK_WIDTH: 1000, TANK_HEIGHT: 700,
+    getVisibleGrimeDirtiness: value => value, getGrimeBaseCacheKey: () => "level-1",
+    renderGrimeBaseCanvas() {}, getTankFloorDrawBounds: () => ({ baseTop: 500, floorHeight: 200 }),
+    getCurrentTank: () => ({ id: "tank" }), clipToTankShellBounds() {},
+    document: { createElement: () => ({ getContext: () => context }) },
+    tankContext: { save() {}, restore() {}, drawImage() {} }
+  });
+  c.drawRearGrime(0.5);
+  assert.equal(context.filter, undefined, "rear grime should not invoke a blur filter");
+  assert.equal(runtime.rearGrimeCanvas.width * runtime.rearGrimeCanvas.height, 1000 * 700 / 25);
+  assert.ok(calls.some(call => Array.isArray(call) && call[0] === "scale" && call[1] === -1));
+  assert.deepEqual(calls.filter(call => Array.isArray(call) && call[0] === "draw"), [
+    ["draw", "base", 0, 0, 200, 120], ["draw", runtime.rearGrimeTextureCanvas, 0, 0], ["draw", "mask", 0, 0, 200, 140]
+  ]);
+  const previousCount = calls.length;
+  c.drawRearGrime(0.5);
+  assert.equal(calls.length, previousCount, "unchanged rear grime must reuse its cached texture");
+  runtime.scrubMaskRevision++;
+  c.drawRearGrime(0.5);
+  assert.ok(calls.length > previousCount);
+  assert.equal(calls.filter(call => Array.isArray(call) && call[0] === "scale").length, 1, "scrubbing must not rebuild the mirrored base texture");
+  const scrubbedCount = calls.length;
+  c.drawRearGrime(0);
+  assert.equal(calls.length, scrubbedCount);
+});
+
+test("maximum gravel grime is generated once across repeated frames and invalidates on layout or dirt changes", () => {
+  let builds = 0, draws = 0, layout = "initial";
+  const c = load("rendering/gravel-and-effects.js", ["drawGravelGrime", "getGravelGrimeIntensity"], {
+    runtime: {}, state: { gravelSeed: 1 }, TANK_WIDTH: 1000, TANK_HEIGHT: 700,
+    getCurrentTank: () => ({ id: "tank", gravelHillSeed: 2 }),
+    getTankFloorDrawBounds: () => ({ left: 20, right: 980, baseTop: 500, bottom: 700 }),
+    getGravelFloorLayoutKey: () => layout,
+    document: { createElement: () => ({ getContext: () => ({ clearRect() {}, save() {}, scale() {}, restore() {} }) }) },
+    renderGravelGrimeTexture: () => { builds++; },
+    tankContext: { save() {}, restore() {}, drawImage() { draws++; } }
+  });
+  for (let frame = 0; frame < 120; frame++) c.drawGravelGrime(frame, 1);
+  assert.equal(builds, 1);
+  assert.equal(draws, 120);
+  layout = "resized";
+  c.drawGravelGrime(121, 1);
+  assert.equal(builds, 2);
+  c.drawGravelGrime(122, 0.5);
+  assert.equal(builds, 3);
+  c.drawGravelGrime(123, 0);
+  assert.equal(draws, 122);
+});
+
 function loadDecorLayoutHarness() {
   const tank = { id: "tank-a", tankTypeId: "rectangle", placedDecor: [] };
   const state = { tanks: [tank], coins: 100, decorInventory: { plant: 4, cave: 1 }, savedDecorLayouts: [], fish: [{ id: "fish-a", health: 8 }] };
@@ -817,21 +947,43 @@ test("contact footprint preserves the gap under an arch", () => {
   assert.equal(spans[1].left, .8);
 });
 
-test("grime layers accumulate across three equal thirds", () => {
-  const c = load("tank/cleaning-and-glass.js", ["getVisibleGrimeDirtiness"], {
-    GRIME_VISUAL_START_DIRTINESS: 0
+test("grime uses one full-strength cached texture and dirty water is a cached overlay pass", () => {
+  const images = [];
+  const c = load("tank/cleaning-and-glass.js", ["getVisibleGrimeDirtiness", "renderGrimeBaseCanvas", "getGrimeBaseCacheKey"], {
+    GRIME_VISUAL_START_DIRTINESS: 0, TANK_WIDTH: 1000, TANK_HEIGHT: 700, WATER_SURFACE_Y: 20,
+    GRIME_OVERLAY_ASSET_PATHS: ["level-1", "level-2", "level-3"],
+    grimeBaseContext: { clearRect() {} },
+    drawGrimeOverlayImage: (path, alpha) => images.push([path, alpha])
   });
-  const layerAlphas = (dirtiness) => {
-    const p = c.getVisibleGrimeDirtiness(dirtiness);
-    return [0, 1, 2].map(index => Number(clamp((p - index / 3) / (1 / 3), 0, 1).toFixed(6)));
+  for (const dirt of [0, 1 / 6, 1 / 3, 0.5, 1]) c.renderGrimeBaseCanvas(dirt);
+  assert.deepEqual(images, [["level-1", 1], ["level-1", 1], ["level-1", 1], ["level-1", 1]]);
+  assert.equal(c.getGrimeBaseCacheKey(0.1), c.getGrimeBaseCacheKey(1), "dirtiness must not invalidate the base grime texture");
+
+  const fills = [];
+  const gradientStops = [];
+  const context = {
+    save() {}, restore() {},
+    createLinearGradient() { return { addColorStop(offset, color) { gradientStops.push([offset, color]); } }; },
+    fillRect(x, y, width, height) {
+      assert.ok(Number.isFinite(width) && width > 0);
+      assert.ok(Number.isFinite(height) && height > 0);
+      fills.push([x, y, width, height, this.globalAlpha]);
+    }
   };
-  assert.deepEqual(layerAlphas(0), [0, 0, 0]);
-  assert.deepEqual(layerAlphas(1 / 6), [0.5, 0, 0]);
-  assert.deepEqual(layerAlphas(1 / 3), [1, 0, 0]);
-  assert.deepEqual(layerAlphas(0.5), [1, 0.5, 0]);
-  assert.deepEqual(layerAlphas(2 / 3), [1, 1, 0]);
-  assert.deepEqual(layerAlphas(5 / 6), [1, 1, 0.5]);
-  assert.deepEqual(layerAlphas(1), [1, 1, 1]);
+  const water = load("rendering/tank-and-water.js", ["drawDirtyWaterTintToContext"], {
+    TANK_HEIGHT: 700, WATER_SURFACE_Y: 20,
+    getSceneLayoutVisibleTankVirtualBounds: () => ({ top: 0, bottom: 700, left: 0, right: 1000 })
+  });
+  water.drawDirtyWaterTintToContext(context, 0);
+  assert.equal(fills.length, 0);
+  water.drawDirtyWaterTintToContext(context, 1);
+  assert.equal(fills.length, 1);
+  assert.equal(context.globalCompositeOperation, "source-over");
+  assert.equal(gradientStops.length, 3);
+
+  const renderSource = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+  const renderTankSource = renderSource.slice(renderSource.indexOf("function renderTank"), renderSource.indexOf("function getProceduralCausticTexture"));
+  assert.equal(renderTankSource.includes("drawDirtyWaterTint(dirtiness)"), false, "dirty water must not be repainted in the animated tank every frame");
 });
 
 test("insufficient purchases use the red payment error and BubbleBodega exposes the skiff", () => {

@@ -8,20 +8,22 @@ function renderTank(now) {
   tankContext.save();
   clipToTankShellBounds(tankContext);
   drawBackground(now);
+  // Rear-pane grime belongs above the background and below every moving object.
+  drawRearGrime(dirtiness);
   beginLightweightCausticMask();
   drawUvLightAtmosphere(now, "back");
   drawWaterParticles(now, TANK_DEPTH_LAYERS);
-  drawFish(now, TANK_DEPTH_LAYERS, { onlyBehavior: "sucker" });
   drawAmbientBubbles(now, 1);
   drawTankFloor(now);
+  drawFish(now, TANK_DEPTH_LAYERS, { onlyBehavior: "sucker" });
   markLightweightCausticFloor();
-  drawGravelGrime(now, dirtiness);
   drawSedimentClouds(now);
   drawEffectClouds(EFFECT_CLOUD_LAYER_FLOOR);
   drawGravelDigBursts(now);
   //drawLooseGravelCap();
   drawGroundShadows(now);
   drawPellets(now);
+  drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD);
   //drawLooseGravel(now, { surfaceKind: "floor" });
   for (let layer = TANK_DEPTH_LAYERS; layer >= 1; layer -= 1) {
     if (layer === 3) {
@@ -49,7 +51,7 @@ function renderTank(now) {
   drawUnderwaterLightingPass(now);
   drawLightweightCausticOverlay(now);
   //drawLooseGravel(now, { transientOnly: true });
-  drawDirtyWaterTint(dirtiness);
+  // Dirty-water color is cached into grimeCanvas instead of painted every frame.
   drawMedicineWaterTint(now);
   drawMedicineClouds(now);
   drawWaterBloodTint();
@@ -69,11 +71,9 @@ function renderTank(now) {
   glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
   drawDecorEditTankBoundary();
-  const severeGrime = getSevereGrimeVisualIntensity(dirtiness);
-  const tankBlurScale = getPortableTankBlurScale();
-  const tankCanvasFilter = severeGrime > 0
-    ? `blur(${(severeGrime * 1.8 * tankBlurScale).toFixed(2)}px) saturate(${(1 - severeGrime * 0.18).toFixed(3)}) brightness(${(1 - severeGrime * 0.12).toFixed(3)})`
-    : "none";
+  // Grime textures supply the haze; filtering the moving tank forces a
+  // full-surface GPU pass on every frame, especially costly at high DPI.
+  const tankCanvasFilter = "none";
   if (runtime.lastTankCanvasFilter !== tankCanvasFilter) {
     dom.tankCanvas.style.filter = tankCanvasFilter;
     runtime.lastTankCanvasFilter = tankCanvasFilter;
@@ -435,28 +435,38 @@ function drawDecorEditTankBoundary() {
   glassContext.restore();
 }
 
-function drawDirtyWaterTint(dirtiness = getTankDirtiness(Date.now())) {
-  const tintStrength = Math.pow(clamp((Number(dirtiness) - 0.08) / 0.92, 0, 1), 1.18);
-  if (tintStrength <= 0.002) {
+function drawDirtyWaterTintToContext(context, strength = 1) {
+  const tintStrength = clamp(Number(strength) || 0, 0, 1);
+  if (!context || tintStrength <= 0.002) {
     return;
   }
 
   const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
   const waterTop = Math.max(WATER_SURFACE_Y, visibleBounds.top);
   const waterBottom = Math.min(TANK_HEIGHT, visibleBounds.bottom || TANK_HEIGHT);
-  const gradient = tankContext.createLinearGradient(0, waterTop, 0, waterBottom);
-  gradient.addColorStop(0, `rgba(73, 132, 54, ${(0.18 * tintStrength).toFixed(3)})`);
-  gradient.addColorStop(0.48, `rgba(55, 112, 41, ${(0.32 * tintStrength).toFixed(3)})`);
-  gradient.addColorStop(1, `rgba(35, 82, 28, ${(0.46 * tintStrength).toFixed(3)})`);
+  if (waterBottom <= waterTop) {
+    return;
+  }
 
-  tankContext.save();
-  tankContext.globalCompositeOperation = "multiply";
-  tankContext.fillStyle = gradient;
-  tankContext.fillRect(visibleBounds.left, waterTop, visibleBounds.width, Math.max(0, waterBottom - waterTop));
-  tankContext.globalCompositeOperation = "source-over";
-  tankContext.fillStyle = `rgba(82, 126, 42, ${(0.18 * tintStrength).toFixed(3)})`;
-  tankContext.fillRect(visibleBounds.left, waterTop, visibleBounds.width, Math.max(0, waterBottom - waterTop));
-  tankContext.restore();
+  context.save();
+  context.globalCompositeOperation = "source-over";
+  context.globalAlpha = tintStrength;
+  const gradient = context.createLinearGradient(0, waterTop, 0, waterBottom);
+  gradient.addColorStop(0, "rgba(137, 144, 94, 0.10)");
+  gradient.addColorStop(0.52, "rgba(105, 121, 72, 0.20)");
+  gradient.addColorStop(1, "rgba(76, 98, 55, 0.30)");
+  context.fillStyle = gradient;
+  context.fillRect(
+    visibleBounds.left,
+    waterTop,
+    Math.max(0, visibleBounds.right - visibleBounds.left),
+    waterBottom - waterTop
+  );
+  context.restore();
+}
+
+function drawDirtyWaterTint(dirtiness = getTankDirtiness(Date.now())) {
+  drawDirtyWaterTintToContext(tankContext, getVisibleGrimeDirtiness(dirtiness));
 }
 
 function drawLightsOutOverlay(now = Date.now()) {
@@ -909,13 +919,8 @@ function getAmbientBubbleLayerProfile(layer = 3) {
 
 
 function getWaterParticleVisibleCount(now = Date.now()) {
-  const dirtiness = getTankDirtiness(now);
-  const cleanVisibleCount = getWaterParticleCleanVisibleCount();
-  const dirtyVisibleCount = getWaterParticleDirtyVisibleCount();
-  return Math.round(
-    cleanVisibleCount
-    + (dirtyVisibleCount - cleanVisibleCount) * Math.pow(dirtiness, 0.88)
-  );
+  // Grime must never raise the particle budget.
+  return getWaterParticleCleanVisibleCount();
 }
 
 function ensureWaterParticles(now = Date.now()) {
@@ -973,12 +978,8 @@ function getWaterParticleDrawColor(particle, dirtiness, uvActive) {
     return { r: 255, g: 116, b: 229 };
   }
 
-  if (dirtiness > 0.38 && particle?.tone > 0.36) {
-    return particle.tone > 0.68
-      ? { r: 126, g: 164, b: 103 }
-      : { r: 178, g: 144, b: 92 };
-  }
-
+  // Dirty-water color comes from the static grime overlay, not new particle
+  // tint variants that have to be generated and cached at high dirtiness.
   return { r: 218, g: 248, b: 255 };
 }
 
@@ -1280,7 +1281,6 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
   const waterBottom = Math.min(getVisibleTankFloorBottomY() - 8, visibleBounds.bottom + 12);
   const left = Math.max(GLASS_MARGIN_X, visibleBounds.left - 18);
   const right = Math.min(TANK_WIDTH - GLASS_MARGIN_X, visibleBounds.right + 18);
-  const dirtiness = getTankDirtiness(now);
   const bubblerFields = collectBubblerParticleFields(now);
   const ambientBubbleFields = collectAmbientBubbleParticleFields(now);
   const fishFields = getParticleFishFields(now);
@@ -1299,9 +1299,9 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
     );
 
     const shimmer = Math.sin(now / (900 + particle.depth * 700) + particle.phase);
-    const cloudyDrift = 0.65 + dirtiness * 0.8;
+    const cloudyDrift = 0.82;
     particle.vx += (Math.sin(now / 1800 + particle.phase) * 1.8 + (particle.depth - 0.5) * 1.1) * boundedDelta;
-    particle.vy += (Math.cos(now / 2300 + particle.phase) * 1.1 - 1.1 + dirtiness * 0.55) * boundedDelta;
+    particle.vy += (Math.cos(now / 2300 + particle.phase) * 1.1 - 1.1) * boundedDelta;
     for (const field of bubblerFields) {
       applyBubblerForceToParticle(particle, field, now, boundedDelta);
     }
@@ -1309,7 +1309,7 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
     applyFishForceToParticle(particle, fishFields, boundedDelta);
 
     const depthMotionScale = 0.72 + particle.depth * 0.56;
-    particle.x += (particle.vx + shimmer * 2.4 * (1 - dirtiness * 0.35)) * cloudyDrift * boundedDelta * depthMotionScale;
+    particle.x += (particle.vx + shimmer * 2.4) * cloudyDrift * boundedDelta * depthMotionScale;
     particle.y += particle.vy * cloudyDrift * boundedDelta * depthMotionScale;
     particle.vx *= Math.pow(0.38, boundedDelta);
     particle.vy *= Math.pow(0.42, boundedDelta);
@@ -1342,6 +1342,31 @@ function updateWaterParticles(now = Date.now(), deltaSeconds = 0.016) {
   }
 }
 
+function getWaterAtmosphereStreakSprite() {
+  if (runtime.waterAtmosphereStreakSprite) {
+    return runtime.waterAtmosphereStreakSprite;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 96;
+  canvas.height = 28;
+  const context = canvas.getContext("2d");
+  context.save();
+  context.translate(48, 14);
+  context.scale(46, 11);
+  const gradient = context.createRadialGradient(0, 0, 0.02, 0, 0, 1);
+  gradient.addColorStop(0, "rgba(225, 244, 255, 1)");
+  gradient.addColorStop(0.34, "rgba(210, 236, 252, 0.56)");
+  gradient.addColorStop(1, "rgba(198, 226, 248, 0)");
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, 1, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+  runtime.waterAtmosphereStreakSprite = canvas;
+  return canvas;
+}
+
 function drawWaterAtmosphereStreak(context, particle, now, visibility, dirtiness) {
   if (!particle?.streak || visibility <= 0.02) {
     return;
@@ -1362,8 +1387,7 @@ function drawWaterAtmosphereStreak(context, particle, now, visibility, dirtiness
     (Number(particle.hazeAlpha) || 0.05)
       * presence
       * visibility
-      * (0.72 + particle.depth * 0.46)
-      * (0.92 + dirtiness * 0.24),
+      * (0.72 + particle.depth * 0.46),
     0,
     0.095
   );
@@ -1374,20 +1398,13 @@ function drawWaterAtmosphereStreak(context, particle, now, visibility, dirtiness
   const angle = (Number(particle.hazeTilt) || 0)
     + Math.sin((Number(now) || 0) / 5200 + particle.phase) * 0.08;
 
+  const sprite = getWaterAtmosphereStreakSprite();
   context.save();
   context.translate(particle.x, particle.y);
   context.rotate(angle);
-  context.scale(length, width);
   context.globalCompositeOperation = "screen";
-  context.filter = "blur(1.35px)";
-  const gradient = context.createRadialGradient(0, 0, 0.02, 0, 0, 1);
-  gradient.addColorStop(0, `rgba(225, 244, 255, ${alpha.toFixed(4)})`);
-  gradient.addColorStop(0.34, `rgba(210, 236, 252, ${(alpha * 0.56).toFixed(4)})`);
-  gradient.addColorStop(1, "rgba(198, 226, 248, 0)");
-  context.fillStyle = gradient;
-  context.beginPath();
-  context.arc(0, 0, 1, 0, Math.PI * 2);
-  context.fill();
+  context.globalAlpha = alpha;
+  context.drawImage(sprite, -length, -width, length * 2, width * 2);
   context.restore();
 }
 
@@ -1400,7 +1417,6 @@ function drawWaterParticles(now = Date.now(), layer = null) {
   const targetLayer = Number.isFinite(Number(layer)) ? clampTankLayer(layer) : null;
   const dirtiness = getTankDirtiness(now);
   const uvActive = isUvLightActive() && UV_LIGHT_WATER_PARTICLE_GLOW_ENABLED;
-  const cleanShimmer = 1 - dirtiness;
 
   tankContext.save();
   tankContext.globalCompositeOperation = "source-over";
@@ -1417,12 +1433,12 @@ function drawWaterParticles(now = Date.now(), layer = null) {
 
     const twinkle = 0.55 + Math.sin(now / (520 + particle.depth * 260) + particle.phase) * 0.45;
     const size = clamp(
-      (WATER_PARTICLE_SPRITE_SIZE_MIN_PX + particle.depth * 1.05 + dirtiness * 0.48) * particle.size,
+      (WATER_PARTICLE_SPRITE_SIZE_MIN_PX + particle.depth * 1.05) * particle.size,
       WATER_PARTICLE_SPRITE_SIZE_MIN_PX,
       WATER_PARTICLE_SPRITE_SIZE_MAX_PX
     );
     const alpha = clamp(
-      (0.18 + particle.depth * 0.16 + dirtiness * 0.24) * (0.62 + twinkle * 0.38) * (particle.alphaScale || 1),
+      (0.18 + particle.depth * 0.16) * (0.62 + twinkle * 0.38) * (particle.alphaScale || 1),
       0.1,
       0.72
     ) * visibility;
@@ -1448,7 +1464,7 @@ function drawWaterParticles(now = Date.now(), layer = null) {
       tankContext.strokeStyle = tankContext.fillStyle;
     } else {
       tankContext.shadowBlur = 0;
-      const cleanAlphaBoost = color.r === 218 && color.g === 248 ? 0.86 + cleanShimmer * 1.05 : 0.9 + dirtiness;
+      const cleanAlphaBoost = color.r === 218 && color.g === 248 ? 1.45 : 0.9;
       tankContext.fillStyle = formatRgba(color, alpha * cleanAlphaBoost);
       tankContext.strokeStyle = tankContext.fillStyle;
     }

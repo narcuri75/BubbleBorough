@@ -363,6 +363,7 @@ function bindEvents() {
     const key = keyRaw.toLowerCase();
     const activeManualMachinery = getActiveManualMachinery();
     if (activeManualMachinery && !event.target?.closest?.("button, a, [role=button], [role=tab]")) {
+      if (handleManualMachineryActionKey(activeManualMachinery, event)) return;
       if (activeManualMachinery.type === MACHINERY_TYPE_BOAT) {
         if (["a", "d"].includes(key)) {
           event.preventDefault();
@@ -374,11 +375,6 @@ function bindEvents() {
           playBoatHornSoundEffect();
           return;
         }
-        if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
-          event.preventDefault();
-          deployManualBoatChum(activeManualMachinery, Date.now());
-          return;
-        }
       } else {
         if (["w", "a", "s", "d"].includes(key)) {
           event.preventDefault();
@@ -388,11 +384,6 @@ function bindEvents() {
         if ((key === "q" || key === "e") && !event.repeat) {
           event.preventDefault();
           stepSubmarineDepthLayer(activeManualMachinery, key === "q" ? -1 : 1);
-          return;
-        }
-        if ((event.code === "Space" || keyRaw === " " || keyRaw === "Spacebar") && !event.repeat) {
-          event.preventDefault();
-          deployManualSubmarineFood(activeManualMachinery, Date.now());
           return;
         }
       }
@@ -3520,7 +3511,14 @@ function applyStageRenderViewTransform(scale, offsetX, offsetY) {
   runtime.stageRenderOffsetX = offsetX;
   runtime.stageRenderOffsetY = offsetY;
   tankContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
-  grimeContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+  grimeContext.setTransform(
+    scale * GRIME_CANVAS_RENDER_SCALE,
+    0,
+    0,
+    scale * GRIME_CANVAS_RENDER_SCALE,
+    offsetX * GRIME_CANVAS_RENDER_SCALE,
+    offsetY * GRIME_CANVAS_RENDER_SCALE
+  );
   glassContext.setTransform(scale, 0, 0, scale, offsetX, offsetY);
   configureCanvasContext(tankContext);
   configureCanvasContext(grimeContext);
@@ -3590,9 +3588,12 @@ function resizeDisplayCanvases() {
     dom.tankCanvas.width = displayWidth;
     dom.tankCanvas.height = displayHeight;
   }
-  if (dom.grimeCanvas.width !== displayWidth || dom.grimeCanvas.height !== displayHeight) {
-    dom.grimeCanvas.width = displayWidth;
-    dom.grimeCanvas.height = displayHeight;
+  const grimeDisplayWidth = Math.max(1, Math.round(displayWidth * GRIME_CANVAS_RENDER_SCALE));
+  const grimeDisplayHeight = Math.max(1, Math.round(displayHeight * GRIME_CANVAS_RENDER_SCALE));
+  if (dom.grimeCanvas.width !== grimeDisplayWidth || dom.grimeCanvas.height !== grimeDisplayHeight) {
+    dom.grimeCanvas.width = grimeDisplayWidth;
+    dom.grimeCanvas.height = grimeDisplayHeight;
+    runtime.grimeCompositeCacheKey = "";
   }
   if (dom.glassCanvas.width !== displayWidth || dom.glassCanvas.height !== displayHeight) {
     dom.glassCanvas.width = displayWidth;
@@ -3629,7 +3630,14 @@ function resizeDisplayCanvases() {
   const waterSurfaceChanged = syncViewportAnchoredWaterSurface();
 
   tankContext.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
-  grimeContext.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
+  grimeContext.setTransform(
+    stageScale * GRIME_CANVAS_RENDER_SCALE,
+    0,
+    0,
+    stageScale * GRIME_CANVAS_RENDER_SCALE,
+    offsetX * GRIME_CANVAS_RENDER_SCALE,
+    offsetY * GRIME_CANVAS_RENDER_SCALE
+  );
   glassContext.setTransform(stageScale, 0, 0, stageScale, offsetX, offsetY);
   scrubMaskContext?.setTransform(1, 0, 0, 1, 0, 0);
   grimeBaseContext?.setTransform(1, 0, 0, 1, 0, 0);

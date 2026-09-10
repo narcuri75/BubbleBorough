@@ -1196,6 +1196,69 @@ function updateBoatManualDrive(boat, deltaSeconds = 0.016) {
   return true;
 }
 
+function handleManualMachineryActionKey(machinery, event) {
+  const key = String(event.key || "").toLowerCase();
+  const useNearby = event.code === "Space" || key === " " || key === "spacebar";
+  if (!useNearby && key !== "f") return false;
+  event.preventDefault();
+  if (event.repeat) return true;
+  if (useNearby) useNearbyMachineryTravel(machinery);
+  else if (machinery.type === MACHINERY_TYPE_BOAT) deployManualBoatChum(machinery);
+  else deployManualSubmarineFood(machinery);
+  return true;
+}
+
+function useNearbyMachineryTravel(machinery = getActiveManualMachinery()) {
+  const isBoat = machinery?.type === MACHINERY_TYPE_BOAT;
+  if (!(isBoat ? isBoatManualDriveActive(machinery) : isSubmarineManualDriveActive(machinery))) return false;
+  if (runtime.pendingMachineryTravel.has(machinery.id)) return false;
+  const source = getTankById(machinery.tankId);
+  if (!source) return false;
+  const candidates = [];
+  const tubes = getAllTransitTubes();
+  for (const entry of tubes) {
+    if (entry.tank.id !== source.id) continue;
+    const target = tubes.find(other => other.item.id === entry.item.transitTubeLinkedId
+      && other.item.transitTubeLinkedId === entry.item.id && other.tank.id !== source.id);
+    if (!target) continue;
+    const points = getTransitTubeTravelPoints(entry.item);
+    const distance = getSubmarineDistanceToPointPx(machinery, points.opening.xNorm, points.opening.yNorm);
+    if (distance <= Math.max(70, points.openingRadiusPx + 40)) {
+      candidates.push({ tank: target.tank, distance, exit: getTransitTubeTravelPoints(target.item).exit });
+    }
+  }
+  // Use the manual movement bounds so each edge is reachable by the pilot.
+  for (const tank of getAdjacentAquariumSections(source)) {
+    const direction = getBoroughTravelEdgeDirection(source, tank);
+    if (isBoat && direction !== "left" && direction !== "right") continue;
+    const distance = direction === "left" ? Math.abs(machinery.xNorm - 0.08) * TANK_WIDTH
+      : direction === "right" ? Math.abs(machinery.xNorm - 0.92) * TANK_WIDTH
+      : direction === "up" ? Math.abs(machinery.yNorm - 0.16) * TANK_HEIGHT
+      : Math.abs(machinery.yNorm - 0.78) * TANK_HEIGHT;
+    if (distance > 55) continue;
+    candidates.push({ tank, distance, exit: {
+      xNorm: direction === "left" ? 0.88 : direction === "right" ? 0.12 : machinery.xNorm,
+      yNorm: direction === "up" ? 0.74 : direction === "down" ? 0.2 : machinery.yNorm
+    } });
+  }
+  candidates.sort((a, b) => a.distance - b.distance);
+  const destination = candidates[0];
+  if (!destination) return false;
+  clearBoatManualDriveKeys();
+  clearSubmarineManualDriveKeys();
+  machinery.tankId = destination.tank.id;
+  machinery.xNorm = clamp(destination.exit.xNorm, 0.08, 0.92);
+  machinery.yNorm = isBoat ? 0.16 : clamp(destination.exit.yNorm, 0.16, 0.78);
+  machinery.targetXNorm = machinery.xNorm;
+  machinery.targetYNorm = machinery.yNorm;
+  machinery.manualVelocityXPxPerSecond = machinery.manualVelocityYPxPerSecond = 0;
+  machinery.motionVelocityXPxPerSecond = machinery.motionVelocityYPxPerSecond = 0;
+  setActiveTank(destination.tank.id);
+  openSubmarineManager(machinery.id);
+  requestDeferredStateSave();
+  return true;
+}
+
 function getActiveManualMachinery() {
   const submarine = getSubmarine();
   if (isSubmarineManualDriveActive(submarine)) return submarine;
@@ -1227,7 +1290,7 @@ function getSubmarineControlStatus(submarine = getSubmarine()) {
   if (getSubmarineEntryProgress(submarine) !== null) return "Entering tank…";
   if (isSubmarineAutopilotEnabled(submarine)) return getSubmarineMissionLabel(submarine);
   return isSubmarineManualDriveActive(submarine)
-    ? "WASD move · Q/E depth · Space feed"
+    ? "WASD move · Q/E depth · F feed · Space use nearby"
     : "Drive paused · close editing or care tools";
 }
 
@@ -1562,7 +1625,7 @@ function getBoatControlStatus(boat = getBoat()) {
   if (getBoatEntryProgress(boat) !== null) return "Entering tank…";
   if (isBoatAutopilotEnabled(boat)) return "Skipping the surface";
   return isBoatManualDriveActive(boat)
-    ? "A/D move · H horn · Space drop chum"
+    ? "A/D move · H horn · F feed · Space use nearby"
     : "Drive paused · close editing or care tools";
 }
 

@@ -2176,7 +2176,7 @@ function renderMedicineTray() {
       `;
 
     const markup = `
-      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tools-min-width: 248px; --care-tray-min-width: 709px;">
+      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tools-min-width: 163px; --care-tray-min-width: 624px;">
         <section class="care-tray-food" aria-label="Food">
           <div class="care-tray-heading-row">
             <img class="care-tray-inline-icon" ${assetImageAttributes("assets/icons/feed_fish.png")} alt="" aria-hidden="true" draggable="false" />

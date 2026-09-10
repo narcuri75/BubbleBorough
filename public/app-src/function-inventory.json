@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 2866,
+  "functionCount": 2872,
   "functions": [
     {
       "name": "syncViewportCssVariables",
@@ -192,8 +192,8 @@
       "module": "assets/custom-content.js",
       "sourceLine": 276,
       "originalLine": 10034,
-      "characters": 120310,
-      "sourceHash": "4af9397c84663d1e559c9b0e088bd3a625a8648bcebb2928e1457dc94643af00",
+      "characters": 119927,
+      "sourceHash": "ecba0f911a9e20c6d0cd195ae1f99cceb1fafb730623c1c8ec7f43ffe88fe701",
       "calls": [
         "addDebugCoins",
         "adjustDecorDefaultSize",
@@ -250,8 +250,6 @@
         "cureSelectedFishDebug",
         "damageSelectedFish",
         "deployBoat",
-        "deployManualBoatChum",
-        "deployManualSubmarineFood",
         "deploySubmarine",
         "disableCustomBackground",
         "dispatchUtilityOverlayPointerEvent",
@@ -300,6 +298,7 @@
         "handleFishActionButtonClick",
         "handleHiddenKeySequence",
         "handleLivingBoroughDebugAction",
+        "handleManualMachineryActionKey",
         "handleScoopAtPoint",
         "handleTankManagementUtilityOverlayBodyClick",
         "handleToolbarGroupButtonClick",
@@ -512,7 +511,7 @@
     {
       "name": "configureCanvasContext",
       "module": "assets/custom-content.js",
-      "sourceLine": 3407,
+      "sourceLine": 3398,
       "originalLine": 12281,
       "characters": 211,
       "sourceHash": "71dcf201d1e75c2f1b7ce26d0baa4643e4b1fb8978d83e197954e2e39d71b140",
@@ -521,7 +520,7 @@
     {
       "name": "updatePlayfieldCssVariables",
       "module": "assets/custom-content.js",
-      "sourceLine": 3418,
+      "sourceLine": 3409,
       "originalLine": 12292,
       "characters": 758,
       "sourceHash": "9d0907a1dfee08a4db179b7b0f54c0c980ceffbff783e64dfae8440dd385b2b0",
@@ -530,7 +529,7 @@
     {
       "name": "getStageRenderViewTarget",
       "module": "assets/custom-content.js",
-      "sourceLine": 3436,
+      "sourceLine": 3427,
       "originalLine": null,
       "characters": 2031,
       "sourceHash": "8df87813cb874f1e0093b74c3485783a293a7a0f8c433270388b8e54d7222c9b",
@@ -542,7 +541,7 @@
     {
       "name": "syncTankStageRenderCssGeometry",
       "module": "assets/custom-content.js",
-      "sourceLine": 3492,
+      "sourceLine": 3483,
       "originalLine": null,
       "characters": 1193,
       "sourceHash": "dbdbc4633965714184bde33eb8deec40c61518b84772ce555364661b91f03294",
@@ -554,10 +553,10 @@
     {
       "name": "applyStageRenderViewTransform",
       "module": "assets/custom-content.js",
-      "sourceLine": 3513,
+      "sourceLine": 3504,
       "originalLine": null,
-      "characters": 713,
-      "sourceHash": "dc1d2f1052d47eb70b35ac3381773392de7db9e1461a4a6da13312f8c55877e1",
+      "characters": 853,
+      "sourceHash": "f7043bf8ff53de48261dd80de0e59625cee956316730fb29e90a31023ab23cb3",
       "calls": [
         "configureCanvasContext",
         "syncTankStageRenderCssGeometry"
@@ -566,7 +565,7 @@
     {
       "name": "updateStageRenderView",
       "module": "assets/custom-content.js",
-      "sourceLine": 3531,
+      "sourceLine": 3529,
       "originalLine": null,
       "characters": 2354,
       "sourceHash": "94566c85938ab0a917b35e1735b739b43773994c2f6bbcaf629c05976fd88fe3",
@@ -579,10 +578,10 @@
     {
       "name": "resizeDisplayCanvases",
       "module": "assets/custom-content.js",
-      "sourceLine": 3577,
+      "sourceLine": 3575,
       "originalLine": 12310,
-      "characters": 3052,
-      "sourceHash": "7fa752119c884480e7a5f961e591dc5dfd3518f9746c9d71fe7f78e8deb5b93b",
+      "characters": 3445,
+      "sourceHash": "f745971694feb226a13f600af7120edac07c4b5953033150526c04a4a3596208",
       "calls": [
         "configureCanvasContext",
         "getStageRenderDevicePixelRatio",
@@ -598,7 +597,7 @@
     {
       "name": "fetchAssetList",
       "module": "assets/custom-content.js",
-      "sourceLine": 3656,
+      "sourceLine": 3664,
       "originalLine": 12386,
       "characters": 225,
       "sourceHash": "59e5b178cd07e703c64285936581c7b373ccc60baac2f5d27322e5a4b8ffd9c3",
@@ -609,7 +608,7 @@
     {
       "name": "fetchAssetManifest",
       "module": "assets/custom-content.js",
-      "sourceLine": 3666,
+      "sourceLine": 3674,
       "originalLine": 12396,
       "characters": 536,
       "sourceHash": "d52a5940966523097a3804951a8b44d9be2ca1b1699e805fc0c9402f124a6740",
@@ -620,7 +619,7 @@
     {
       "name": "fetchFishCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 3685,
+      "sourceLine": 3693,
       "originalLine": 12415,
       "characters": 338,
       "sourceHash": "9831d6e79eb2e440ca52557caf2727cd18f8d4e94ae11713ed4052adae1ad360",
@@ -631,7 +630,7 @@
     {
       "name": "fetchZombieSkeletonFishCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 3699,
+      "sourceLine": 3707,
       "originalLine": 12429,
       "characters": 155,
       "sourceHash": "f07348764fcc9158d323e560ba0df71a3c6cf8e6c2abc33378356cfa0d8bd0fe",
@@ -640,7 +639,7 @@
     {
       "name": "fetchDecorCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 3704,
+      "sourceLine": 3712,
       "originalLine": 12447,
       "characters": 433,
       "sourceHash": "e07abf2244149eb0aa07d81f0c26887a5696faec8105ab2bd9d5e8b29eeab3bf",
@@ -651,7 +650,7 @@
     {
       "name": "fetchBackgroundCatalogMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 3724,
+      "sourceLine": 3732,
       "originalLine": 12485,
       "characters": 359,
       "sourceHash": "3b37a60b69aff644611e7620ef2fe119cff0c9dd209b90d81c698e52858899f3",
@@ -662,7 +661,7 @@
     {
       "name": "fetchFoodAndMedCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 3738,
+      "sourceLine": 3746,
       "originalLine": 12499,
       "characters": 444,
       "sourceHash": "d33b34d64d780bf56f4042816aaa627bc307df45f65566ecc82cd76fb1435d15",
@@ -673,7 +672,7 @@
     {
       "name": "normalizeFoodAndMedCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 3756,
+      "sourceLine": 3764,
       "originalLine": 12517,
       "characters": 3879,
       "sourceHash": "0c6e9ef7cbf699f475828dbec1cf1b9b98464539d17d586922a03037005a5fce",
@@ -687,7 +686,7 @@
     {
       "name": "normalizeBackgroundMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 3844,
+      "sourceLine": 3852,
       "originalLine": 12606,
       "characters": 770,
       "sourceHash": "3dd5fabb262a28c16987c810515eabd6c2142be7566cf7ef045f7f59ee84b8c5",
@@ -698,7 +697,7 @@
     {
       "name": "normalizeDecorMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 3876,
+      "sourceLine": 3884,
       "originalLine": 12638,
       "characters": 1619,
       "sourceHash": "63aa36e9279021c417615fd8dbda81991cbc8c063469b852c8055605353d727f",
@@ -721,7 +720,7 @@
     {
       "name": "hasBubblerMetaFields",
       "module": "assets/custom-content.js",
-      "sourceLine": 3924,
+      "sourceLine": 3932,
       "originalLine": 12723,
       "characters": 282,
       "sourceHash": "74116a3a5b4bbbb24278527e0b28e10473dcd5897c31187409fae838f9f5ba58",
@@ -732,7 +731,7 @@
     {
       "name": "hasBubblerSpoutMetaFields",
       "module": "assets/custom-content.js",
-      "sourceLine": 3935,
+      "sourceLine": 3943,
       "originalLine": 12734,
       "characters": 958,
       "sourceHash": "bcd11b853c04f5f0f1fb4b98b32442690c26901f0acfcdba9392cb2d123880a6",
@@ -741,7 +740,7 @@
     {
       "name": "isBubblerDecorFileKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 3977,
+      "sourceLine": 3985,
       "originalLine": 12773,
       "characters": 115,
       "sourceHash": "9a479531512024c7531be00c88cd8e735dae2e6cdd7768d0b8198b768af88ce5",
@@ -750,7 +749,7 @@
     {
       "name": "normalizeBubblerHorizontalPosition",
       "module": "assets/custom-content.js",
-      "sourceLine": 3981,
+      "sourceLine": 3989,
       "originalLine": 12777,
       "characters": 866,
       "sourceHash": "b578cc71edeb806bb0010e554538a77ce2a0f9d705781e3be48b7f874406222b",
@@ -761,7 +760,7 @@
     {
       "name": "getBubblerCadenceFromIntensity",
       "module": "assets/custom-content.js",
-      "sourceLine": 4017,
+      "sourceLine": 4025,
       "originalLine": 12813,
       "characters": 649,
       "sourceHash": "a9c65e18fb56d34ff8b26628719620d06cf52426d84a8cf4db4c5167b5a26a86",
@@ -772,7 +771,7 @@
     {
       "name": "getBubblerTravelDurationFromSpeed",
       "module": "assets/custom-content.js",
-      "sourceLine": 4033,
+      "sourceLine": 4041,
       "originalLine": 12829,
       "characters": 334,
       "sourceHash": "506911fddf466e02195bf0147481e545512d60f9d960eb4f5c82c4fb69236dd4",
@@ -783,7 +782,7 @@
     {
       "name": "buildDefaultBubblerSpoutMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4042,
+      "sourceLine": 4050,
       "originalLine": 12838,
       "characters": 1177,
       "sourceHash": "7bb38e7e6d096adca15bb9554ecf39e4dc497a44ff61f626778709a62d03991c",
@@ -794,7 +793,7 @@
     {
       "name": "normalizeBubblerSpoutMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4069,
+      "sourceLine": 4077,
       "originalLine": 12864,
       "characters": 6076,
       "sourceHash": "2280e2e9bcde63f189da9e331276a3dc1dc1da70a5a29e3d4c2b0f01d293fae3",
@@ -811,7 +810,7 @@
     {
       "name": "normalizeBubblerMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4228,
+      "sourceLine": 4236,
       "originalLine": 13020,
       "characters": 1010,
       "sourceHash": "7fb0f7b9d45cd54859630941b7b037834458168030367803eab8085b8d98fae6",
@@ -824,7 +823,7 @@
     {
       "name": "normalizeCavePortalMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4264,
+      "sourceLine": 4272,
       "originalLine": 13056,
       "characters": 1525,
       "sourceHash": "2d59a9729085681a9c5d68104c66e9642a8152dbc7a99c3bece8aad0b98f2457",
@@ -837,7 +836,7 @@
     {
       "name": "normalizeCaveInsideSlotMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4311,
+      "sourceLine": 4319,
       "originalLine": 13103,
       "characters": 974,
       "sourceHash": "4b7fff8ee984788cda055dc3fe9684741db1859a0d83539ddc94f2c7950ea136",
@@ -851,7 +850,7 @@
     {
       "name": "normalizeCaveBehaviorMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4341,
+      "sourceLine": 4349,
       "originalLine": 13133,
       "characters": 1464,
       "sourceHash": "b7dd49e5905ca5285a9280a83262b948d2baf1bb274a3858dd19d893d2cd7b1b",
@@ -865,7 +864,7 @@
     {
       "name": "buildBackgroundCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4389,
+      "sourceLine": 4397,
       "originalLine": 13181,
       "characters": 1336,
       "sourceHash": "1fcf076d8dc9c50d1a01ef80ea03f13815dd944ac9ee4dfa78b18c1ff53f85f2",
@@ -877,7 +876,7 @@
     {
       "name": "buildSimpleAssetCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4422,
+      "sourceLine": 4430,
       "originalLine": 13214,
       "characters": 322,
       "sourceHash": "28785b6d251a925986b1603c362764493d833e7ae2c79ffde3f15c60165c747e",
@@ -888,7 +887,7 @@
     {
       "name": "buildCustomGravelAssetCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4435,
+      "sourceLine": 4443,
       "originalLine": 13231,
       "characters": 660,
       "sourceHash": "6f9d83a24f4aef9036cdf5c7a5058013c905f542308e1d101790d70fa7f374bb",
@@ -899,7 +898,7 @@
     {
       "name": "buildCustomGravelLayerCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4457,
+      "sourceLine": 4465,
       "originalLine": 13253,
       "characters": 195,
       "sourceHash": "45a89f9622517b62d9b2fab945acf94db384cfae5f8c2709bcc00ed1aa328be6",
@@ -910,7 +909,7 @@
     {
       "name": "buildCustomGravelPebbleCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4464,
+      "sourceLine": 4472,
       "originalLine": 13260,
       "characters": 204,
       "sourceHash": "6aa5a212a9b18f9ab35b31ce8377be5b9bf1d5d60c86914de57d4b124fefe893",
@@ -921,7 +920,7 @@
     {
       "name": "buildFishSizeRange",
       "module": "assets/custom-content.js",
-      "sourceLine": 4472,
+      "sourceLine": 4480,
       "originalLine": 13298,
       "characters": 426,
       "sourceHash": "30e921dc5fd627bc402f3f9955753eec473b76daacc87cb3183c1052a25abc82",
@@ -932,7 +931,7 @@
     {
       "name": "buildFishCostRange",
       "module": "assets/custom-content.js",
-      "sourceLine": 4486,
+      "sourceLine": 4494,
       "originalLine": 13312,
       "characters": 351,
       "sourceHash": "cf28d8cffbf14e9de4032e0da4bd0404020fc0ca6cbafaa083fc3e905cd930c2",
@@ -941,7 +940,7 @@
     {
       "name": "resolveSpeciesMealCoins",
       "module": "assets/custom-content.js",
-      "sourceLine": 4500,
+      "sourceLine": 4508,
       "originalLine": 13326,
       "characters": 681,
       "sourceHash": "844a7f533f1fc8f02e799a353fb328e7c7a9c794d5039570181c360c24d15f87",
@@ -954,7 +953,7 @@
     {
       "name": "getDecorCompanionType",
       "module": "assets/custom-content.js",
-      "sourceLine": 4523,
+      "sourceLine": 4531,
       "originalLine": 13349,
       "characters": 688,
       "sourceHash": "2d51e9bc8c2e64e4a42c9e7783dea6864fd7eac77f2d0b1ac0ff23fc5784d2ec",
@@ -963,7 +962,7 @@
     {
       "name": "getDecorBaseKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4565,
+      "sourceLine": 4573,
       "originalLine": 13387,
       "characters": 443,
       "sourceHash": "59708e5bc026b4b8ad64f5943aa89aeb1c0bbb1fe9fc42aa657b94f6819791d0",
@@ -972,7 +971,7 @@
     {
       "name": "buildDecorCaveColorLayers",
       "module": "assets/custom-content.js",
-      "sourceLine": 4578,
+      "sourceLine": 4586,
       "originalLine": 13399,
       "characters": 1578,
       "sourceHash": "51936442ce9d745f64f6b2ec7ab4e792b061c0babd34f0f221a9731022c43093",
@@ -981,7 +980,7 @@
     {
       "name": "getExpectedCaveCompanionPaths",
       "module": "assets/custom-content.js",
-      "sourceLine": 4635,
+      "sourceLine": 4643,
       "originalLine": null,
       "characters": 434,
       "sourceHash": "2e4c07970bdd5a8a5441d51d12e2dc1887da2e3231cb030746cadb71dd89a141",
@@ -992,7 +991,7 @@
     {
       "name": "buildDecorCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4645,
+      "sourceLine": 4653,
       "originalLine": 13456,
       "characters": 3076,
       "sourceHash": "1765c2721f6e03b690ce7eeef35015e9930765be63a88ff9970323a1b00726c5",
@@ -1012,7 +1011,7 @@
     {
       "name": "isCustomDecorShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4741,
+      "sourceLine": 4749,
       "originalLine": 13542,
       "characters": 107,
       "sourceHash": "59212ced33995b5fb2de11bc39c053bf6de13de5133d6941431ff9b3b9015118",
@@ -1021,7 +1020,7 @@
     {
       "name": "isCustomHideShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4745,
+      "sourceLine": 4753,
       "originalLine": 13546,
       "characters": 105,
       "sourceHash": "781c9e3cdf569c437a1127f7c599be6d51df3236dc801f303d0e3f421e42f4dd",
@@ -1030,7 +1029,7 @@
     {
       "name": "isCustomDecorUploadShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4749,
+      "sourceLine": 4757,
       "originalLine": 13550,
       "characters": 128,
       "sourceHash": "f536a73d9e8778a61763ce069c66e0f1711e434e58d4b9063daaf715da9b83c5",
@@ -1042,7 +1041,7 @@
     {
       "name": "isCustomHideAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4753,
+      "sourceLine": 4761,
       "originalLine": 13554,
       "characters": 167,
       "sourceHash": "edaae036a959a58d6b0a9869957b414fcb6b2c0254ba80fdee6e0d01433ae499",
@@ -1051,7 +1050,7 @@
     {
       "name": "isCustomDecorAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4758,
+      "sourceLine": 4766,
       "originalLine": 13559,
       "characters": 201,
       "sourceHash": "e745d9a72c8b6e67fb0a0c4169b1a8a1db47875e04e0f06546aa2411f7de92a6",
@@ -1062,7 +1061,7 @@
     {
       "name": "isCustomBubblerDecorKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4763,
+      "sourceLine": 4771,
       "originalLine": 13564,
       "characters": 113,
       "sourceHash": "7fbb5e6610e286ff3624c12d70f2d48781f84fb8512a64ab7b6e324277c6854e",
@@ -1071,7 +1070,7 @@
     {
       "name": "getDecorThumbnailPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 4767,
+      "sourceLine": 4775,
       "originalLine": 13568,
       "characters": 305,
       "sourceHash": "96b8f79418bdcdec9867c9e6375f95ad62f87fe9c5f27442d52008e491fc4d4f",
@@ -1080,7 +1079,7 @@
     {
       "name": "buildVirtualDecorCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 4776,
+      "sourceLine": 4784,
       "originalLine": 13572,
       "characters": 2410,
       "sourceHash": "b81f98b4bb550c3c3df5be16acbc2213aee8ceeb5fe1de65db1b56971caeaf48",
@@ -1092,7 +1091,7 @@
     {
       "name": "sanitizeCustomDecorAssetEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 4875,
+      "sourceLine": 4883,
       "originalLine": 13665,
       "characters": 2681,
       "sourceHash": "7f1cea7b5b498ec5121f6ccdec812c3285f1ceefd438396f66c330bb6a998e6c",
@@ -1113,7 +1112,7 @@
     {
       "name": "sanitizeCustomDecorAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 4939,
+      "sourceLine": 4947,
       "originalLine": 13729,
       "characters": 336,
       "sourceHash": "2c805a853a9ea657e55c9cd6f7f7fe3014a6008d4a58a93b8e59d2ec6bfdbb2e",
@@ -1124,7 +1123,7 @@
     {
       "name": "buildCustomDecorColorLayers",
       "module": "assets/custom-content.js",
-      "sourceLine": 4954,
+      "sourceLine": 4962,
       "originalLine": 13744,
       "characters": 464,
       "sourceHash": "9ce3d52287e2f68d9dbb4ca1aa605bd2e61c6acf6520e7534d4d7f93ac79b137",
@@ -1136,7 +1135,7 @@
     {
       "name": "buildCustomDecorCatalogEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 4978,
+      "sourceLine": 4986,
       "originalLine": 13768,
       "characters": 2123,
       "sourceHash": "5e4b82d696b10f60713da7ee15cbe3dd8133f22d9905ac59d81a3d21a7039ce0",
@@ -1157,7 +1156,7 @@
     {
       "name": "getCustomDecorCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 5027,
+      "sourceLine": 5035,
       "originalLine": 13815,
       "characters": 202,
       "sourceHash": "73a208bb0f6c4f0f458710e60ec1c48879dfa739f1532477f88fa4c0026e706f",
@@ -1168,7 +1167,7 @@
     {
       "name": "syncRuntimeCustomDecorAssetsFromState",
       "module": "assets/custom-content.js",
-      "sourceLine": 5033,
+      "sourceLine": 5041,
       "originalLine": 13821,
       "characters": 323,
       "sourceHash": "24134b3f519b812fdc66b420c60daf5d4885f7114313580e37c765ecdba6608f",
@@ -1180,7 +1179,7 @@
     {
       "name": "isCustomFishShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5045,
+      "sourceLine": 5053,
       "originalLine": 13833,
       "characters": 107,
       "sourceHash": "0a9e41ab8a35a1bbea1847c927a00113c03d92c9ae185a2899b7e67c9a735453",
@@ -1189,7 +1188,7 @@
     {
       "name": "isCustomFishAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5049,
+      "sourceLine": 5057,
       "originalLine": 13837,
       "characters": 169,
       "sourceHash": "54aef44fb55bdf6992f5ef98b22bee2e7b9a9213ebcb3984d9ece8d09efcd3a8",
@@ -1198,7 +1197,7 @@
     {
       "name": "buildVirtualFishCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 5054,
+      "sourceLine": 5062,
       "originalLine": 13842,
       "characters": 1525,
       "sourceHash": "6cc4bd00c3db48fa8eafeec8bc1ffea607956e61d00a3ac937bc31bd4e3ed50c",
@@ -1207,7 +1206,7 @@
     {
       "name": "getCustomFishBehaviorProfiles",
       "module": "assets/custom-content.js",
-      "sourceLine": 5106,
+      "sourceLine": 5114,
       "originalLine": 13894,
       "characters": 497,
       "sourceHash": "cbb1d080986c7e956088ffc69d238bbf8714523fe0c9d1264cde53ed16969c92",
@@ -1220,7 +1219,7 @@
     {
       "name": "getCustomFishBehaviorKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5125,
+      "sourceLine": 5133,
       "originalLine": 13912,
       "characters": 510,
       "sourceHash": "fa19c315ff0769e383ec32d4e65d5548cb558300414b12faf9f8539b55fca2a4",
@@ -1229,7 +1228,7 @@
     {
       "name": "formatCustomFishBehaviorLabel",
       "module": "assets/custom-content.js",
-      "sourceLine": 5138,
+      "sourceLine": 5146,
       "originalLine": 13925,
       "characters": 198,
       "sourceHash": "5c9e9411dd03b42e3f5b4fe48f75517c4d16601adef8dc69009e6afba0869811",
@@ -1240,7 +1239,7 @@
     {
       "name": "getDefaultCustomFishBehaviorProfile",
       "module": "assets/custom-content.js",
-      "sourceLine": 5145,
+      "sourceLine": 5153,
       "originalLine": 13932,
       "characters": 191,
       "sourceHash": "591e403c3a26d728a368525a6c164a9ff3f13ad42e4d122e27fff00ad3fd5161",
@@ -1251,7 +1250,7 @@
     {
       "name": "getCustomFishBehaviorProfile",
       "module": "assets/custom-content.js",
-      "sourceLine": 5151,
+      "sourceLine": 5159,
       "originalLine": 13938,
       "characters": 249,
       "sourceHash": "4285ad35d4481475ae9563562640857226629c7d601a8b856d915544d9bf3b95",
@@ -1262,7 +1261,7 @@
     {
       "name": "normalizeCustomFishBehaviorProfileId",
       "module": "assets/custom-content.js",
-      "sourceLine": 5160,
+      "sourceLine": 5168,
       "originalLine": 13947,
       "characters": 165,
       "sourceHash": "a5e0e9d223dae258c1734b157aa4bc45df7e8e7ddeefe98b1afd757b1a1da7da",
@@ -1274,7 +1273,7 @@
     {
       "name": "sanitizeCustomFishName",
       "module": "assets/custom-content.js",
-      "sourceLine": 5166,
+      "sourceLine": 5174,
       "originalLine": 13953,
       "characters": 291,
       "sourceHash": "f348044eca25392e6ee35a499753256b5fd83fe89e523cfe70f8d518b531d046",
@@ -1283,7 +1282,7 @@
     {
       "name": "formatCustomFishBehaviorOption",
       "module": "assets/custom-content.js",
-      "sourceLine": 5174,
+      "sourceLine": 5182,
       "originalLine": 13961,
       "characters": 168,
       "sourceHash": "b694d2b1790c5b12c76a77ab87b1394c70e88c53509d51f61b00e68786d04fc8",
@@ -1294,7 +1293,7 @@
     {
       "name": "openCustomFishCreationOverlay",
       "module": "assets/custom-content.js",
-      "sourceLine": 5182,
+      "sourceLine": 5190,
       "originalLine": 13969,
       "characters": 731,
       "sourceHash": "6d869fadb4eef4273dcc7117a0901df3b36da8a6e3aef6683b631d3fdf521649",
@@ -1308,7 +1307,7 @@
     {
       "name": "getCustomAssetTypeDef",
       "module": "assets/custom-content.js",
-      "sourceLine": 5198,
+      "sourceLine": 5206,
       "originalLine": 13985,
       "characters": 225,
       "sourceHash": "df12239a39e6603a678a65e50be13e2532d4791ba62d44526d75eeb053465e0d",
@@ -1317,7 +1316,7 @@
     {
       "name": "getCustomAssetInput",
       "module": "assets/custom-content.js",
-      "sourceLine": 5205,
+      "sourceLine": 5213,
       "originalLine": 13992,
       "characters": 231,
       "sourceHash": "d40dbd168e3d6fe56a6c8582afb2c852150b75cf47e0a1bab5d8e0ee4a78f9fb",
@@ -1328,7 +1327,7 @@
     {
       "name": "resetCustomAssetInput",
       "module": "assets/custom-content.js",
-      "sourceLine": 5212,
+      "sourceLine": 5220,
       "originalLine": 13999,
       "characters": 110,
       "sourceHash": "0add18bd74677ec4fe3dbf2898f0705da8be502704ae9fa27c470724451e58b3",
@@ -1337,7 +1336,7 @@
     {
       "name": "ensureCustomAssetCost",
       "module": "assets/custom-content.js",
-      "sourceLine": 5218,
+      "sourceLine": 5226,
       "originalLine": 14005,
       "characters": 340,
       "sourceHash": "2096774417aceaf612b86e9105c8cf85c7147c1ab0caad7a58ee072bb4b7748d",
@@ -1349,7 +1348,7 @@
     {
       "name": "getPendingCustomAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 5230,
+      "sourceLine": 5238,
       "originalLine": 14017,
       "characters": 147,
       "sourceHash": "0cee3b04624db290bdb1fc3424ba16e9b94e1e14fc56d86fde6aeedfc232e2a0",
@@ -1360,7 +1359,7 @@
     {
       "name": "finalizeCustomAssetCreation",
       "module": "assets/custom-content.js",
-      "sourceLine": 5235,
+      "sourceLine": 5243,
       "originalLine": 14022,
       "characters": 627,
       "sourceHash": "47314aaf3761a0079552c25631b2c5152441cbb9deb56f3cdc655ead0e2f4f57",
@@ -1377,7 +1376,7 @@
     {
       "name": "openCustomAssetPicker",
       "module": "assets/custom-content.js",
-      "sourceLine": 5255,
+      "sourceLine": 5263,
       "originalLine": 14042,
       "characters": 642,
       "sourceHash": "2170aca8c5cf8b07b7382958709e801beac30312d53cedc3e28e1e9141957404",
@@ -1392,7 +1391,7 @@
     {
       "name": "importCustomAssetFromPicker",
       "module": "assets/custom-content.js",
-      "sourceLine": 5277,
+      "sourceLine": 5285,
       "originalLine": 14064,
       "characters": 860,
       "sourceHash": "2eaa28b50d6fdec5c72792c0524103e07827604ebc4f850719fcb82c5a5680e5",
@@ -1407,7 +1406,7 @@
     {
       "name": "savePendingCustomAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 5311,
+      "sourceLine": 5319,
       "originalLine": 14098,
       "characters": 676,
       "sourceHash": "ce4f0fd77b18aab9b2e18632a67ae08a26f5eb5780833387409b44275afaa0de",
@@ -1421,7 +1420,7 @@
     {
       "name": "sanitizeCustomFishRotation",
       "module": "assets/custom-content.js",
-      "sourceLine": 5338,
+      "sourceLine": 5346,
       "originalLine": 14411,
       "characters": 178,
       "sourceHash": "9a471d43b4adb464c2936381d39be7f3f84947daa5463855683e501c6d57757e",
@@ -1432,7 +1431,7 @@
     {
       "name": "getPendingCustomFishTransform",
       "module": "assets/custom-content.js",
-      "sourceLine": 5346,
+      "sourceLine": 5354,
       "originalLine": 14419,
       "characters": 210,
       "sourceHash": "cb449045b2e4eac26d8733ae2283600facb9e0c1e9f7e7d0950e05687a6a0cda",
@@ -1443,7 +1442,7 @@
     {
       "name": "updatePendingCustomFishTransformControls",
       "module": "assets/custom-content.js",
-      "sourceLine": 5352,
+      "sourceLine": 5360,
       "originalLine": 14425,
       "characters": 798,
       "sourceHash": "4985914bd851b6a16f836fe3fefdda3c748ad07e93f83ebc0ae5f6026cf57e03",
@@ -1454,7 +1453,7 @@
     {
       "name": "getPendingCustomFishOutputDataUrl",
       "module": "assets/custom-content.js",
-      "sourceLine": 5370,
+      "sourceLine": 5378,
       "originalLine": 14443,
       "characters": 1373,
       "sourceHash": "d6c2310e3100bf75a396d145ed4681d64736538508a3385c2750d4311611ac8f",
@@ -1467,7 +1466,7 @@
     {
       "name": "updatePendingCustomFishPreview",
       "module": "assets/custom-content.js",
-      "sourceLine": 5406,
+      "sourceLine": 5414,
       "originalLine": 14479,
       "characters": 972,
       "sourceHash": "217189daedbd0f93a8739f1eb8c67142168a66fbff4285e0ec578869f2608ea6",
@@ -1480,7 +1479,7 @@
     {
       "name": "updatePendingCustomFishSize",
       "module": "assets/custom-content.js",
-      "sourceLine": 5429,
+      "sourceLine": 5437,
       "originalLine": 14502,
       "characters": 309,
       "sourceHash": "a34d93b02f1c66aa235d707a043bcdc3072bb2a0a93a4bd51b69830b0f55f2fd",
@@ -1492,7 +1491,7 @@
     {
       "name": "updatePendingCustomFishFlip",
       "module": "assets/custom-content.js",
-      "sourceLine": 5442,
+      "sourceLine": 5450,
       "originalLine": 14515,
       "characters": 200,
       "sourceHash": "aa9414eadf0889978929ce66d86d9ee77ac5957a34711861a5958d27d6b4fb08",
@@ -1503,7 +1502,7 @@
     {
       "name": "updatePendingCustomFishRotation",
       "module": "assets/custom-content.js",
-      "sourceLine": 5451,
+      "sourceLine": 5459,
       "originalLine": 14524,
       "characters": 226,
       "sourceHash": "a8c26ea4af3d63ed85913922a8da30475726f846215361e57a628981485fc9f7",
@@ -1515,7 +1514,7 @@
     {
       "name": "sanitizeCustomFishAssetEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 5460,
+      "sourceLine": 5468,
       "originalLine": 14533,
       "characters": 1105,
       "sourceHash": "eb7010f7176a1b1e4a8a7b904eb82f2eb7322bf52319ddf795f2f69637b3b1fc",
@@ -1530,7 +1529,7 @@
     {
       "name": "sanitizeCustomFishAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 5495,
+      "sourceLine": 5503,
       "originalLine": 14568,
       "characters": 334,
       "sourceHash": "d54ba0e596670ee64468a950d40ffaebcbad1ab1ed24136dfbd4ee0242222b33",
@@ -1541,7 +1540,7 @@
     {
       "name": "buildCustomFishCatalogEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 5510,
+      "sourceLine": 5518,
       "originalLine": 14583,
       "characters": 3346,
       "sourceHash": "fe5fb7d0bca3343d71abed66857efeab717a6945855de17d44a54b91f59d776e",
@@ -1556,7 +1555,7 @@
     {
       "name": "getCustomFishCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 5580,
+      "sourceLine": 5588,
       "originalLine": 14650,
       "characters": 199,
       "sourceHash": "0dbda8e3f45a6af1d400e48c16ad293844c532e96ca2e285d1aadf787b994f3f",
@@ -1567,7 +1566,7 @@
     {
       "name": "syncRuntimeCustomFishAssetsFromState",
       "module": "assets/custom-content.js",
-      "sourceLine": 5586,
+      "sourceLine": 5594,
       "originalLine": 14656,
       "characters": 316,
       "sourceHash": "1eb6a3caa937747f5e3e17f1617b54ada23ef67363f2222464359f14803120c9",
@@ -1579,7 +1578,7 @@
     {
       "name": "savePendingCustomFishUpload",
       "module": "assets/custom-content.js",
-      "sourceLine": 5598,
+      "sourceLine": 5606,
       "originalLine": 14668,
       "characters": 175,
       "sourceHash": "6a59fb6bc9b774c9e9da0b7bba63a218fc319cb3f4fd5e0f9ed45fc899c12faf",
@@ -1591,7 +1590,7 @@
     {
       "name": "normalizeFishCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 5604,
+      "sourceLine": 5612,
       "originalLine": 14674,
       "characters": 460,
       "sourceHash": "77b71eac4c513f710c4f4e5d8f234d05af41a4c4575664537577fe1f82d36bed",
@@ -1602,7 +1601,7 @@
     {
       "name": "collectFishCatalogAssetFiles",
       "module": "assets/custom-content.js",
-      "sourceLine": 5618,
+      "sourceLine": 5626,
       "originalLine": 14688,
       "characters": 254,
       "sourceHash": "eb15555367a9f8260a8c4aa729dc40a67df11d3d87887e78a666a94b97e2cd6d",
@@ -1613,7 +1612,7 @@
     {
       "name": "normalizeCatalogAssetLookupKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5625,
+      "sourceLine": 5633,
       "originalLine": 14695,
       "characters": 174,
       "sourceHash": "8c7c8c31ceb9694de7847a0a04e2154df3e2598d1a9511f7e6ddb03a57c15703",
@@ -1622,7 +1621,7 @@
     {
       "name": "findCatalogAssetManifestItem",
       "module": "assets/custom-content.js",
-      "sourceLine": 5633,
+      "sourceLine": 5641,
       "originalLine": 14703,
       "characters": 602,
       "sourceHash": "1d0b81f783d03158097f0e2e2de6c50a82e4476576438690514059a207c0b0d8",
@@ -1633,7 +1632,7 @@
     {
       "name": "resolveFishCatalogAssetFolderPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 5650,
+      "sourceLine": 5658,
       "originalLine": 14720,
       "characters": 363,
       "sourceHash": "72a99e7e1dd7c7a99624fe53cbf98584886b45d5eb313be796274b246dd0e7e8",
@@ -1642,7 +1641,7 @@
     {
       "name": "encodeCatalogAssetPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 5659,
+      "sourceLine": 5667,
       "originalLine": 14729,
       "characters": 161,
       "sourceHash": "52f99bc09661cec2d9b8f173ba1bc9e0261b2cceb8755dbce26107a49c9b05f6",
@@ -1651,7 +1650,7 @@
     {
       "name": "resolveFishCatalogAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 5666,
+      "sourceLine": 5674,
       "originalLine": 14736,
       "characters": 826,
       "sourceHash": "d0eebd4c3f83245efcc23361f983d012bef670f65957fa69cfa521408cb0a6cc",
@@ -1665,7 +1664,7 @@
     {
       "name": "resolveFishCatalogStageAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 5682,
+      "sourceLine": 5690,
       "originalLine": 14752,
       "characters": 604,
       "sourceHash": "4be6ec40922bbd88c36abcd5733356da345faf18bd3c1d3a632784a8b7c80c5c",
@@ -1678,7 +1677,7 @@
     {
       "name": "normalizeFishDefinition",
       "module": "assets/custom-content.js",
-      "sourceLine": 5697,
+      "sourceLine": 5705,
       "originalLine": 14767,
       "characters": 8365,
       "sourceHash": "6e87a91b7bb0f86532c22322bfeabab414227033418a94dfd93ad2635e7a9fef",
@@ -20966,20 +20965,20 @@
       "module": "fish/predators-and-motion.js",
       "sourceLine": 1529,
       "originalLine": 50707,
-      "characters": 1150,
-      "sourceHash": "463c184810e132ea80bdfcdf72a2062c87db0817c90dc852c26d23e882077613",
+      "characters": 1237,
+      "sourceHash": "fdbb97436fa2a053cb86f42cc4158cee48c1591da923c777f6a65a9bb19d2b55",
       "calls": [
         "clamp",
         "getPelletPose",
         "isGoreEnabled",
         "randomBetween",
-        "spawnBloodCloud"
+        "spawnEffectCloud"
       ]
     },
     {
       "name": "updateBloodWaterTint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1563,
+      "sourceLine": 1567,
       "originalLine": 50741,
       "characters": 267,
       "sourceHash": "89f62dceaf75de384ac3bc0d66d6e7f06392c2c65f01f26fab4af53c5d1a751f",
@@ -20992,7 +20991,7 @@
     {
       "name": "updateEffectClouds",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1573,
+      "sourceLine": 1577,
       "originalLine": 50751,
       "characters": 969,
       "sourceHash": "008144a3087371aef6d2ffebe82c98bfc2bd381d0bd71ea1add0e019a769c059",
@@ -21003,7 +21002,7 @@
     {
       "name": "drawWaterBloodTint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1612,
+      "sourceLine": 1616,
       "originalLine": 50790,
       "characters": 1385,
       "sourceHash": "7b589a2a76a99587ecb00f5bbaaed05ec4343bb464f0afeeafef9a4a65f437be",
@@ -21014,7 +21013,7 @@
     {
       "name": "drawEffectClouds",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1649,
+      "sourceLine": 1653,
       "originalLine": 50827,
       "characters": 1161,
       "sourceHash": "65c1413d7474b9ca6bc41eaad8de397cf51031ec691775962139ae28be49503c",
@@ -21026,7 +21025,7 @@
     {
       "name": "drawMedicineWaterTint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1686,
+      "sourceLine": 1690,
       "originalLine": 50864,
       "characters": 826,
       "sourceHash": "b55a222e0c6253eca18e43817a46141ed9fbc1ebd3a4e60ca2d5122b9a4c974a",
@@ -21038,7 +21037,7 @@
     {
       "name": "drawMedicineClouds",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1714,
+      "sourceLine": 1718,
       "originalLine": 50892,
       "characters": 1164,
       "sourceHash": "eff450091d130fa04daa82b1831579b8b8d64b3ea58f795320592cc2eb0f4480",
@@ -21050,7 +21049,7 @@
     {
       "name": "makeFishScurryFromAttack",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1748,
+      "sourceLine": 1752,
       "originalLine": 50926,
       "characters": 1338,
       "sourceHash": "19f933c161e3912b216b9f8807cb1fcac744f727e4af0c1efd64640608b2acee",
@@ -21067,7 +21066,7 @@
     {
       "name": "retargetFishAfterBlockedMove",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1790,
+      "sourceLine": 1794,
       "originalLine": 50968,
       "characters": 2725,
       "sourceHash": "6fddc0b1921ec652f0a154db8f03aeae3f5164bf7b9ca731d8dd9152b7ec9664",
@@ -21085,7 +21084,7 @@
     {
       "name": "getSuckerFishCollisionEntry",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1873,
+      "sourceLine": 1877,
       "originalLine": 51051,
       "characters": 948,
       "sourceHash": "ea63fcd94535b900ff328d2b554f3cef2de8735d6b5743ed62a8c8c60e9fe84a",
@@ -21102,7 +21101,7 @@
     {
       "name": "moveSuckerFishCollisionEntry",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1900,
+      "sourceLine": 1904,
       "originalLine": 51077,
       "characters": 1267,
       "sourceHash": "cd514b2a0653760cd20e2d4385a3a1a6a3d363816eef8bc27146685461302d47",
@@ -21114,7 +21113,7 @@
     {
       "name": "resolveSuckerFishGlassCollisions",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1939,
+      "sourceLine": 1943,
       "originalLine": 51116,
       "characters": 2538,
       "sourceHash": "ba2afd49f90fa3d71a859d863451e1655d167fb55c1dbc4c27eedbc2da371f8f",
@@ -21127,7 +21126,7 @@
     {
       "name": "startSuckerFishFreeSwim",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 1999,
+      "sourceLine": 2003,
       "originalLine": null,
       "characters": 1598,
       "sourceHash": "6995066e5dd143e39688ecc803ea28c2393aa14bdbf13b817f7643b442d9b06c",
@@ -21144,7 +21143,7 @@
     {
       "name": "finishSuckerFishFreeSwim",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2039,
+      "sourceLine": 2043,
       "originalLine": null,
       "characters": 884,
       "sourceHash": "2acab104b4611bff2e77dc4526302cecbd3378b161426505c695ed44dcf5a729",
@@ -21159,7 +21158,7 @@
     {
       "name": "updateSuckerFishFreeSwimState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2061,
+      "sourceLine": 2065,
       "originalLine": null,
       "characters": 636,
       "sourceHash": "fbd71c31d5eeb039a7342a7e10611197e6f1b990c18a5ebe38c3adf1f5621b5b",
@@ -21170,7 +21169,7 @@
     {
       "name": "updateFishMotion",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2077,
+      "sourceLine": 2081,
       "originalLine": 51176,
       "characters": 39199,
       "sourceHash": "fa477b251aacee31c5c0c1f18bf464955eec80ec9776dd9bbd9a3279ea03945e",
@@ -21286,7 +21285,7 @@
     {
       "name": "getFishProfileRoamSpeed",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2965,
+      "sourceLine": 2969,
       "originalLine": null,
       "characters": 707,
       "sourceHash": "51cc43e6d0c5c080695f65c1240656d0dbcdbb0010925fedb357136eff39de1c",
@@ -21299,7 +21298,7 @@
     {
       "name": "getFishProfileRoamY",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2985,
+      "sourceLine": 2989,
       "originalLine": null,
       "characters": 468,
       "sourceHash": "04978c318da4d0739f738cd7ff94a540d01493713f3541c852561d72cda0416d",
@@ -21312,7 +21311,7 @@
     {
       "name": "getFishProfileRoamX",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2995,
+      "sourceLine": 2999,
       "originalLine": null,
       "characters": 890,
       "sourceHash": "a1b7cf390db3a66c8792a679c54cdd735038a69e1d718d45cc383ad72efea74a",
@@ -21326,7 +21325,7 @@
     {
       "name": "getFishProfileHomeRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3016,
+      "sourceLine": 3020,
       "originalLine": null,
       "characters": 675,
       "sourceHash": "e0b3ee3da671ecc36eb20de677e0e9593d6f0df4a7a32739bfb97c1e148eec98",
@@ -21339,7 +21338,7 @@
     {
       "name": "getFishProfileHoverTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3036,
+      "sourceLine": 3040,
       "originalLine": null,
       "characters": 659,
       "sourceHash": "4a1c639b1f32fcc3d8dfee62d1fdf743b5e23b384e4d34cedf0a2e52fa140ce2",
@@ -21353,7 +21352,7 @@
     {
       "name": "assignSpeciesRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3057,
+      "sourceLine": 3061,
       "originalLine": null,
       "characters": 1797,
       "sourceHash": "125b5f12dfc4e8b58ae7bcb4446994897a2b697e885faf320470eef04dd6b248",
@@ -21377,7 +21376,7 @@
     {
       "name": "assignSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3096,
+      "sourceLine": 3100,
       "originalLine": 51906,
       "characters": 7273,
       "sourceHash": "e1345ceb73b71c99b6e16ae5b71731fe27ab4f0d0199a78a841bb8a52c890c43",
@@ -23461,9 +23460,47 @@
       ]
     },
     {
-      "name": "getActiveManualMachinery",
+      "name": "handleManualMachineryActionKey",
       "module": "machinery/submarine.js",
       "sourceLine": 1199,
+      "originalLine": null,
+      "characters": 499,
+      "sourceHash": "6c670a1c721aa88866a453b0ccb17e4e1e8797922145ff5f7e5240be3fb24da4",
+      "calls": [
+        "deployManualBoatChum",
+        "deployManualSubmarineFood",
+        "useNearbyMachineryTravel"
+      ]
+    },
+    {
+      "name": "useNearbyMachineryTravel",
+      "module": "machinery/submarine.js",
+      "sourceLine": 1211,
+      "originalLine": null,
+      "characters": 2683,
+      "sourceHash": "302711f35734b3705c469a72215899b08eb258705be235ff31db2003bdf26d75",
+      "calls": [
+        "clamp",
+        "clearBoatManualDriveKeys",
+        "clearSubmarineManualDriveKeys",
+        "getActiveManualMachinery",
+        "getAdjacentAquariumSections",
+        "getAllTransitTubes",
+        "getBoroughTravelEdgeDirection",
+        "getSubmarineDistanceToPointPx",
+        "getTankById",
+        "getTransitTubeTravelPoints",
+        "isBoatManualDriveActive",
+        "isSubmarineManualDriveActive",
+        "openSubmarineManager",
+        "requestDeferredStateSave",
+        "setActiveTank"
+      ]
+    },
+    {
+      "name": "getActiveManualMachinery",
+      "module": "machinery/submarine.js",
+      "sourceLine": 1262,
       "originalLine": null,
       "characters": 231,
       "sourceHash": "298fea8ff28cc55f78f1b9d185ff28309ca6378e12cef58106121f1cefd227e7",
@@ -23477,7 +23514,7 @@
     {
       "name": "suspendMachineryManualDrive",
       "module": "machinery/submarine.js",
-      "sourceLine": 1207,
+      "sourceLine": 1270,
       "originalLine": null,
       "characters": 103,
       "sourceHash": "9279221b01ed3d3247da6d97570e45c4409261efbbb5cd627c50030f1e596ba0",
@@ -23489,7 +23526,7 @@
     {
       "name": "getSubmarineMissionLabel",
       "module": "machinery/submarine.js",
-      "sourceLine": 1212,
+      "sourceLine": 1275,
       "originalLine": null,
       "characters": 691,
       "sourceHash": "7d698a6d65d33230ae125c16ec8edd26c4ee7107586b20de582a95f35473e1da",
@@ -23503,10 +23540,10 @@
     {
       "name": "getSubmarineControlStatus",
       "module": "machinery/submarine.js",
-      "sourceLine": 1226,
+      "sourceLine": 1289,
       "originalLine": null,
-      "characters": 378,
-      "sourceHash": "2fe158b7a85b7e55146d872dac8c98070168de39ff5c87aaeef287e9f2374f4c",
+      "characters": 393,
+      "sourceHash": "68aeeafb2424a441cf6e50c13819f12eca953e0f322624eebb812beda5bba67b",
       "calls": [
         "getSubmarine",
         "getSubmarineEntryProgress",
@@ -23518,7 +23555,7 @@
     {
       "name": "syncSubmarineControlStatus",
       "module": "machinery/submarine.js",
-      "sourceLine": 1234,
+      "sourceLine": 1297,
       "originalLine": null,
       "characters": 305,
       "sourceHash": "6b61347c8af51809c0b4a1829c98898d94c68cd1ea0a74720eeea900ac031902",
@@ -23529,7 +23566,7 @@
     {
       "name": "syncMachineryControlStatus",
       "module": "machinery/submarine.js",
-      "sourceLine": 1241,
+      "sourceLine": 1304,
       "originalLine": null,
       "characters": 388,
       "sourceHash": "e5364a7bb839f290ead19edf804aef395eb4889a636e89ffc0f4c1dd82ddda5c",
@@ -23541,7 +23578,7 @@
     {
       "name": "ensureSubmarineManagerElement",
       "module": "machinery/submarine.js",
-      "sourceLine": 1250,
+      "sourceLine": 1313,
       "originalLine": null,
       "characters": 4397,
       "sourceHash": "61f24e13ba036def09d0930809f069df28d0f7cb65b610a1a17838e072498cf6",
@@ -23571,7 +23608,7 @@
     {
       "name": "openSubmarineManager",
       "module": "machinery/submarine.js",
-      "sourceLine": 1361,
+      "sourceLine": 1424,
       "originalLine": null,
       "characters": 499,
       "sourceHash": "65173fd450895b6e5df816f888a5685bf960035a1e91f278f763542a48255e19",
@@ -23585,7 +23622,7 @@
     {
       "name": "closeSubmarineManager",
       "module": "machinery/submarine.js",
-      "sourceLine": 1372,
+      "sourceLine": 1435,
       "originalLine": null,
       "characters": 240,
       "sourceHash": "5f5a0639e4ecaeaff85cbe2ea3c4cdd7eb3a86aa3e3b1861aac4fbbb19c2b54d",
@@ -23594,7 +23631,7 @@
     {
       "name": "renderSubmarineManager",
       "module": "machinery/submarine.js",
-      "sourceLine": 1379,
+      "sourceLine": 1442,
       "originalLine": null,
       "characters": 8357,
       "sourceHash": "930389d7ab1fc636ee5b9d87498aff3c649fc1dad5a6743dd621b980a3b01e11",
@@ -23617,7 +23654,7 @@
     {
       "name": "renderBoatManager",
       "module": "machinery/submarine.js",
-      "sourceLine": 1503,
+      "sourceLine": 1566,
       "originalLine": null,
       "characters": 3829,
       "sourceHash": "81cd226c8192328f4af67e9d5c9da7726c475cbda52bd77b3b92080755b8933f",
@@ -23638,10 +23675,10 @@
     {
       "name": "getBoatControlStatus",
       "module": "machinery/submarine.js",
-      "sourceLine": 1561,
+      "sourceLine": 1624,
       "originalLine": null,
-      "characters": 321,
-      "sourceHash": "2e8e26635ad8ebf3a6b09e5821765db3f7f69d99488ff6c0e5040739bcf8e278",
+      "characters": 331,
+      "sourceHash": "3996a00811c210336d567679ba0702e402ed5862d2d5056a616b12885ecae9f4",
       "calls": [
         "getBoat",
         "getBoatEntryProgress",
@@ -23652,7 +23689,7 @@
     {
       "name": "renderSubmarineShopCard",
       "module": "machinery/submarine.js",
-      "sourceLine": 1569,
+      "sourceLine": 1632,
       "originalLine": null,
       "characters": 1534,
       "sourceHash": "8a178120c94df8ec760b6a9aedceb6ddde834fe40d3e7c8a82253db2a76d704a",
@@ -23668,7 +23705,7 @@
     {
       "name": "renderBoatShopCard",
       "module": "machinery/submarine.js",
-      "sourceLine": 1594,
+      "sourceLine": 1657,
       "originalLine": null,
       "characters": 1342,
       "sourceHash": "f8eeeb4075ed72222f07b8a05d47852833ea2e4062065bb7ddcde9a83d1205c0",
@@ -23684,7 +23721,7 @@
     {
       "name": "closeEditEquipmentTrayContextMenu",
       "module": "machinery/submarine.js",
-      "sourceLine": 1614,
+      "sourceLine": 1677,
       "originalLine": null,
       "characters": 308,
       "sourceHash": "ded5e24e68e19fd00766dc8fb9fa886a2da02c51b148b8455e0c2e99d7a1d5a6",
@@ -23695,7 +23732,7 @@
     {
       "name": "openEditEquipmentTrayContextMenu",
       "module": "machinery/submarine.js",
-      "sourceLine": 1621,
+      "sourceLine": 1684,
       "originalLine": null,
       "characters": 713,
       "sourceHash": "61a48c0858ca7a3f8d9baf395e62b42a9ce6da7c101010c15012eb39a5badc69",
@@ -23710,7 +23747,7 @@
     {
       "name": "renderEditEquipmentTrayContextMenu",
       "module": "machinery/submarine.js",
-      "sourceLine": 1636,
+      "sourceLine": 1699,
       "originalLine": null,
       "characters": 2133,
       "sourceHash": "b7e833f568af18a61ec10ae885b19c45bb8e1490a9836241f24a7c3d9cf5e426",
@@ -23727,7 +23764,7 @@
     {
       "name": "renderEditEquipmentTray",
       "module": "machinery/submarine.js",
-      "sourceLine": 1692,
+      "sourceLine": 1755,
       "originalLine": null,
       "characters": 7303,
       "sourceHash": "75b9d4baf7ac2a1fa8d3849000c4472a5d403beddf6acce4522999b23c77758c",
@@ -23762,7 +23799,7 @@
     {
       "name": "getSubmarineDrawMetrics",
       "module": "machinery/submarine.js",
-      "sourceLine": 1833,
+      "sourceLine": 1896,
       "originalLine": null,
       "characters": 2686,
       "sourceHash": "5e47d3ad8dd7faf869b74c969aae07830d70d37a8db3f1f62b78d61b19a7c31c",
@@ -23780,7 +23817,7 @@
     {
       "name": "getBoatDrawMetrics",
       "module": "machinery/submarine.js",
-      "sourceLine": 1877,
+      "sourceLine": 1940,
       "originalLine": null,
       "characters": 2401,
       "sourceHash": "370d351e995e081e908e3d50f0c1a034ba01903e41fa958fc0948c196fdeb838",
@@ -23797,7 +23834,7 @@
     {
       "name": "drawSubmarineSpotlight",
       "module": "machinery/submarine.js",
-      "sourceLine": 1923,
+      "sourceLine": 1986,
       "originalLine": null,
       "characters": 2339,
       "sourceHash": "579dc8212ed3f54dacebea20b71acee2ba0f1b33bcfdb5f3ccbf7ec3f06f0266",
@@ -23808,7 +23845,7 @@
     {
       "name": "drawSubmarineWarningLight",
       "module": "machinery/submarine.js",
-      "sourceLine": 1972,
+      "sourceLine": 2035,
       "originalLine": null,
       "characters": 1489,
       "sourceHash": "2ffd54f2794a8789b56f873ebc3d1aa3f389ccd1a4623c51dd7b1cd7c0505bac",
@@ -23820,7 +23857,7 @@
     {
       "name": "getSubmarineBubbleMotionState",
       "module": "machinery/submarine.js",
-      "sourceLine": 2001,
+      "sourceLine": 2064,
       "originalLine": null,
       "characters": 1059,
       "sourceHash": "df6b0698e8c919f99022c18ad0d0fecd9497e754d87396ada2e465e99b155274",
@@ -23834,7 +23871,7 @@
     {
       "name": "buildSubmarineBubbleSpouts",
       "module": "machinery/submarine.js",
-      "sourceLine": 2034,
+      "sourceLine": 2097,
       "originalLine": null,
       "characters": 2182,
       "sourceHash": "ff968f965c7817e9b9abb203d91c4d93df4eef7679b1502ecd97a1c7c156a1be",
@@ -23847,7 +23884,7 @@
     {
       "name": "getBoatBubbleMotionState",
       "module": "machinery/submarine.js",
-      "sourceLine": 2087,
+      "sourceLine": 2150,
       "originalLine": null,
       "characters": 618,
       "sourceHash": "64e047f421f07a352f5c0817a11bbbb3555efd7cc126fd325a5ef463b17a89b3",
@@ -23861,7 +23898,7 @@
     {
       "name": "buildBoatBubbleSpouts",
       "module": "machinery/submarine.js",
-      "sourceLine": 2107,
+      "sourceLine": 2170,
       "originalLine": null,
       "characters": 891,
       "sourceHash": "43b04d63637da7399c13e624a971aa9fec124101099dcd397b9c9e5e89142698",
@@ -23874,7 +23911,7 @@
     {
       "name": "queueBoatBubbleBurst",
       "module": "machinery/submarine.js",
-      "sourceLine": 2131,
+      "sourceLine": 2194,
       "originalLine": null,
       "characters": 1846,
       "sourceHash": "c89b9edb31144901870ec8393641f44620080224f3c438c6bd1684efb48bf2a0",
@@ -23887,7 +23924,7 @@
     {
       "name": "drawBoatBubbleBursts",
       "module": "machinery/submarine.js",
-      "sourceLine": 2183,
+      "sourceLine": 2246,
       "originalLine": null,
       "characters": 1495,
       "sourceHash": "df5d5ebbe5927c2d1da9d91a0a0f07065b3aae6d8188a0422126b1d2ba117405",
@@ -23903,7 +23940,7 @@
     {
       "name": "queueSubmarineBubbleBurst",
       "module": "machinery/submarine.js",
-      "sourceLine": 2221,
+      "sourceLine": 2284,
       "originalLine": null,
       "characters": 1956,
       "sourceHash": "f0a6eb2751ca3f78f8c60e85c4b604bfd7a0cb35c50d2587e3cd8508280b604f",
@@ -23916,7 +23953,7 @@
     {
       "name": "drawSubmarineBubbleBursts",
       "module": "machinery/submarine.js",
-      "sourceLine": 2273,
+      "sourceLine": 2336,
       "originalLine": null,
       "characters": 1519,
       "sourceHash": "d2d995782d75db1ffb2036ae82ea456bc9a28ca4f5062e09d7f3c49fd5aaa93d",
@@ -23932,7 +23969,7 @@
     {
       "name": "drawMachinery",
       "module": "machinery/submarine.js",
-      "sourceLine": 2311,
+      "sourceLine": 2374,
       "originalLine": null,
       "characters": 2585,
       "sourceHash": "e422315d04c649da24e1a16fc6f8c980b4915afa28c5207bb5bca11b97e9ebe3",
@@ -23956,7 +23993,7 @@
     {
       "name": "findMachineryAtPoint",
       "module": "machinery/submarine.js",
-      "sourceLine": 2363,
+      "sourceLine": 2426,
       "originalLine": null,
       "characters": 788,
       "sourceHash": "f467ff143d8a9e12d1a78cd27d36ec0cc2ecbf384a4334c8bf51770f321506e7",
@@ -23970,7 +24007,7 @@
     {
       "name": "getSubmarineTravelNeighbors",
       "module": "machinery/submarine.js",
-      "sourceLine": 2384,
+      "sourceLine": 2447,
       "originalLine": null,
       "characters": 617,
       "sourceHash": "9c3ae00cb75a0fc548886408aa424ba6b0ad31e415433fa03bb8910193919207",
@@ -23983,7 +24020,7 @@
     {
       "name": "findSubmarineTravelRoute",
       "module": "machinery/submarine.js",
-      "sourceLine": 2403,
+      "sourceLine": 2466,
       "originalLine": null,
       "characters": 725,
       "sourceHash": "a59aaa86f3d525a6917d2f62421354f60b276de65bd2f100313b044865c42050",
@@ -23994,7 +24031,7 @@
     {
       "name": "beginSubmarineTravelLeg",
       "module": "machinery/submarine.js",
-      "sourceLine": 2420,
+      "sourceLine": 2483,
       "originalLine": null,
       "characters": 1630,
       "sourceHash": "e119f0505e28abb9c0af0150b2d37a5d90962fbbf9d1336709bd89f211328968",
@@ -24008,7 +24045,7 @@
     {
       "name": "getSubmarineDistanceToPointPx",
       "module": "machinery/submarine.js",
-      "sourceLine": 2460,
+      "sourceLine": 2523,
       "originalLine": null,
       "characters": 215,
       "sourceHash": "91778e2e9d4d1119dcd10b3640fcd200d2c10cd6dcb553f6501d590452e274a9",
@@ -24017,7 +24054,7 @@
     {
       "name": "processSubmarineTravel",
       "module": "machinery/submarine.js",
-      "sourceLine": 2467,
+      "sourceLine": 2530,
       "originalLine": null,
       "characters": 4112,
       "sourceHash": "26ca69446ec015880fe98397df5744159b161e74d0ba18b9d47fde4b7912c34c",
@@ -24033,7 +24070,7 @@
     {
       "name": "hasSubmarineMedicineEffect",
       "module": "machinery/submarine.js",
-      "sourceLine": 2569,
+      "sourceLine": 2632,
       "originalLine": null,
       "characters": 197,
       "sourceHash": "d7bb3473419f19d968ee8c762c39aef3a5053b2f5d5426005a17211bfdc0d44f",
@@ -24045,7 +24082,7 @@
     {
       "name": "getSubmarineFishComfort",
       "module": "machinery/submarine.js",
-      "sourceLine": 2574,
+      "sourceLine": 2637,
       "originalLine": null,
       "characters": 184,
       "sourceHash": "892034aabe2b4304ab0a011bfe4bf5f04cbd2c41f51ebc495053f3053e720658",
@@ -24057,7 +24094,7 @@
     {
       "name": "getSubmarineFishHunger",
       "module": "machinery/submarine.js",
-      "sourceLine": 2579,
+      "sourceLine": 2642,
       "originalLine": null,
       "characters": 191,
       "sourceHash": "9b944a78488fa022f13563f69d2b9ea301e1813b3325b725e8825b30158f4cae",
@@ -24069,7 +24106,7 @@
     {
       "name": "isSubmarineCalmingNeed",
       "module": "machinery/submarine.js",
-      "sourceLine": 2584,
+      "sourceLine": 2647,
       "originalLine": null,
       "characters": 302,
       "sourceHash": "4433ec0f4e3fc9825e320aff7f1fe70f9140cf13659df1e514340fd93667e6b4",
@@ -24078,7 +24115,7 @@
     {
       "name": "isTankReachableBySubmarine",
       "module": "machinery/submarine.js",
-      "sourceLine": 2590,
+      "sourceLine": 2653,
       "originalLine": null,
       "characters": 205,
       "sourceHash": "afecd433b3a3130b85ed0e039fc96d73a221f788a8cb1e57b8ac36fc1abb72f1",
@@ -24090,7 +24127,7 @@
     {
       "name": "findSubmarineCareCandidate",
       "module": "machinery/submarine.js",
-      "sourceLine": 2595,
+      "sourceLine": 2658,
       "originalLine": null,
       "characters": 1667,
       "sourceHash": "e38194a410716ba7d118b32ed2ee8d3909df26d2b8d524b0f11bc6cd8b771d76",
@@ -24109,7 +24146,7 @@
     {
       "name": "startSubmarineMission",
       "module": "machinery/submarine.js",
-      "sourceLine": 2627,
+      "sourceLine": 2690,
       "originalLine": null,
       "characters": 466,
       "sourceHash": "eb27f64c2bef179a07a8b9079dbb5b007f10d88233151d5b4d37cbca4e324ffe",
@@ -24121,7 +24158,7 @@
     {
       "name": "clearSubmarineMission",
       "module": "machinery/submarine.js",
-      "sourceLine": 2644,
+      "sourceLine": 2707,
       "originalLine": null,
       "characters": 298,
       "sourceHash": "e5fa30ee79814ee2d52f11e1bc16ff8bc2d38269ace0324d11b5c51a213bfc73",
@@ -24134,7 +24171,7 @@
     {
       "name": "getSubmarineMissionTarget",
       "module": "machinery/submarine.js",
-      "sourceLine": 2654,
+      "sourceLine": 2717,
       "originalLine": null,
       "characters": 374,
       "sourceHash": "6df60a130c4482a07b63f29516940c1cb8ee8ccabef23ac654d3830aef509ee7",
@@ -24146,7 +24183,7 @@
     {
       "name": "isSubmarineMissionResolved",
       "module": "machinery/submarine.js",
-      "sourceLine": 2664,
+      "sourceLine": 2727,
       "originalLine": null,
       "characters": 633,
       "sourceHash": "4944e72c680aa4b5c3804fe88c4d3a036ed60ef5cd2e809cd86c69873b8ed7e7",
@@ -24160,7 +24197,7 @@
     {
       "name": "deploySubmarineFood",
       "module": "machinery/submarine.js",
-      "sourceLine": 2677,
+      "sourceLine": 2740,
       "originalLine": null,
       "characters": 1035,
       "sourceHash": "91fd6744d1e6414d7bf61632280784ef0699d3dce1992c75126f12d146fd7941",
@@ -24178,7 +24215,7 @@
     {
       "name": "deploySubmarineMedicine",
       "module": "machinery/submarine.js",
-      "sourceLine": 2701,
+      "sourceLine": 2764,
       "originalLine": null,
       "characters": 1590,
       "sourceHash": "8b4657a3dd14bb686f9e82f97542a98fe2bf8065713dd6e6482446abd7042c78",
@@ -24199,7 +24236,7 @@
     {
       "name": "serviceSubmarineMission",
       "module": "machinery/submarine.js",
-      "sourceLine": 2741,
+      "sourceLine": 2804,
       "originalLine": null,
       "characters": 1060,
       "sourceHash": "20b34c96dfd3278dcfb0f20d4871b48335efae4982419dd258f8671e16718cd3",
@@ -24212,7 +24249,7 @@
     {
       "name": "updateSubmarineMission",
       "module": "machinery/submarine.js",
-      "sourceLine": 2767,
+      "sourceLine": 2830,
       "originalLine": null,
       "characters": 2040,
       "sourceHash": "8beff190e5afed9b33f59db0e6293f7a50878455324bf1d9342721c8a4394ebd",
@@ -24232,7 +24269,7 @@
     {
       "name": "updateSubmarineIdleCruise",
       "module": "machinery/submarine.js",
-      "sourceLine": 2811,
+      "sourceLine": 2874,
       "originalLine": null,
       "characters": 757,
       "sourceHash": "a2ec6ec86a8e03039334bee0d5f684f945834384d28ab02f8b3de9b6a94b2e14",
@@ -24244,7 +24281,7 @@
     {
       "name": "moveSubmarineTowardTarget",
       "module": "machinery/submarine.js",
-      "sourceLine": 2827,
+      "sourceLine": 2890,
       "originalLine": null,
       "characters": 1406,
       "sourceHash": "66aa6fddcf86bdf4098845cca0bb8f54ee90f28dec184d339c2bd671070e7dc3",
@@ -24255,7 +24292,7 @@
     {
       "name": "updateSubmarineEntry",
       "module": "machinery/submarine.js",
-      "sourceLine": 2855,
+      "sourceLine": 2918,
       "originalLine": null,
       "characters": 1250,
       "sourceHash": "3583224ad7601953d60954a777c821dcafe53d082f809d08879bd91b6ebfcb35",
@@ -24271,7 +24308,7 @@
     {
       "name": "updateBoatIdleCruise",
       "module": "machinery/submarine.js",
-      "sourceLine": 2890,
+      "sourceLine": 2953,
       "originalLine": null,
       "characters": 673,
       "sourceHash": "14ebb251a2f322c442a69c794b239218a2354a1fed882eaea85b1afccae9e715",
@@ -24282,7 +24319,7 @@
     {
       "name": "moveBoatTowardTarget",
       "module": "machinery/submarine.js",
-      "sourceLine": 2906,
+      "sourceLine": 2969,
       "originalLine": null,
       "characters": 801,
       "sourceHash": "937a95795ef22ae7e2142f9d72206ccc95d359633f8c781ab787479e67fa8e5d",
@@ -24294,7 +24331,7 @@
     {
       "name": "updateBoatEntry",
       "module": "machinery/submarine.js",
-      "sourceLine": 2924,
+      "sourceLine": 2987,
       "originalLine": null,
       "characters": 1018,
       "sourceHash": "86c73a5f275746d9b3ceb09b9534851e9d3ec03d8fae2bff7228edbf33e4bf60",
@@ -24310,7 +24347,7 @@
     {
       "name": "updateMachineryMotion",
       "module": "machinery/submarine.js",
-      "sourceLine": 2956,
+      "sourceLine": 3019,
       "originalLine": null,
       "characters": 1361,
       "sourceHash": "e50d39f6747a3558fd1955aec6fef3fe23f913c0d7fb73ac2f6110f1b040651c",
@@ -25513,14 +25550,31 @@
       ]
     },
     {
-      "name": "drawGrime",
+      "name": "drawRearGrime",
       "module": "rendering/fish-and-effects.js",
       "sourceLine": 1018,
-      "originalLine": 57194,
-      "characters": 1512,
-      "sourceHash": "e269522df74b282597e9f7ffbe4b4b6bebcd8dd0dcd9cebbff3246099bc94de4",
+      "originalLine": null,
+      "characters": 2343,
+      "sourceHash": "53abb52d78dfe8037eea446f8766a26d0d51fd9f1c95c05c3b2ce980f03dbb6d",
       "calls": [
         "clipToTankShellBounds",
+        "getCurrentTank",
+        "getGrimeBaseCacheKey",
+        "getTankFloorDrawBounds",
+        "getVisibleGrimeDirtiness",
+        "renderGrimeBaseCanvas"
+      ]
+    },
+    {
+      "name": "drawGrime",
+      "module": "rendering/fish-and-effects.js",
+      "sourceLine": 1073,
+      "originalLine": 57194,
+      "characters": 2228,
+      "sourceHash": "2b50b41fc4edfbfbb976f040d6cc8940a036b628d3d7d160f02ab5fdb71e74d1",
+      "calls": [
+        "clipToTankShellBounds",
+        "drawDirtyWaterTintToContext",
         "getCurrentTank",
         "getGrimeBaseCacheKey",
         "getVisibleGrimeDirtiness",
@@ -25530,7 +25584,7 @@
     {
       "name": "drawCleaningSparkles",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1062,
+      "sourceLine": 1133,
       "originalLine": 57217,
       "characters": 2419,
       "sourceHash": "54ab38ef5b67f07b37a530c954732173d03f361e689c92d885fbd33bdeea7057",
@@ -25543,7 +25597,7 @@
     {
       "name": "getFishPose",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1132,
+      "sourceLine": 1203,
       "originalLine": 57313,
       "characters": 10666,
       "sourceHash": "45f959dad619257295d92fbf76a1f08e0ff33ae4bd9963d78053f8eb9b0c92c1",
@@ -26168,12 +26222,25 @@
       "module": "rendering/gravel-and-effects.js",
       "sourceLine": 480,
       "originalLine": 54607,
-      "characters": 1627,
-      "sourceHash": "88b98ca34cc02cacd1050fcf598c81329993da7cb89bd46be89d10790184365e",
+      "characters": 1362,
+      "sourceHash": "af55d8c1f6cfc39ddc88a0cf74690843e18538ed38fadb44b78c386da1871048",
       "calls": [
+        "getCurrentTank",
+        "getGravelFloorLayoutKey",
         "getGravelGrimeIntensity",
         "getTankDirtiness",
         "getTankFloorDrawBounds",
+        "renderGravelGrimeTexture"
+      ]
+    },
+    {
+      "name": "renderGravelGrimeTexture",
+      "module": "rendering/gravel-and-effects.js",
+      "sourceLine": 510,
+      "originalLine": null,
+      "characters": 1424,
+      "sourceHash": "c8a5aab85ba0bc831e84fae3791cb6562e3d16169f7d6536106d29e666dda65d",
+      "calls": [
         "getTankFloorMaskSurfaceYAtX",
         "mulberry32",
         "randomBetweenWith",
@@ -26183,7 +26250,7 @@
     {
       "name": "drawSedimentClouds",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 525,
+      "sourceLine": 549,
       "originalLine": 54652,
       "characters": 1901,
       "sourceHash": "0a13ea7598cff122b1efd252c9f6c01bf58a2770aff5ccf283c141b0d5a9df65",
@@ -26197,7 +26264,7 @@
     {
       "name": "drawGravelDigBursts",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 570,
+      "sourceLine": 594,
       "originalLine": 54697,
       "characters": 2695,
       "sourceHash": "f551e0b271dd1b355e011a5af61c982f0fd09aaf8c1a4d271d85b632376419c5",
@@ -26211,7 +26278,7 @@
     {
       "name": "drawCoinGlints",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 631,
+      "sourceLine": 655,
       "originalLine": 54758,
       "characters": 1254,
       "sourceHash": "34667f832adc57ed2802016d4bda9296a5084342380b8777474f9366be40b6ec",
@@ -26222,7 +26289,7 @@
     {
       "name": "invalidateGravelBedCache",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 665,
+      "sourceLine": 689,
       "originalLine": 54792,
       "characters": 227,
       "sourceHash": "1db61660f60b4b391dee81a4dc8d40e2a256e9232ac44d6206887627c701df13",
@@ -26231,7 +26298,7 @@
     {
       "name": "ensureGravelLayouts",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 674,
+      "sourceLine": 698,
       "originalLine": 54801,
       "characters": 5451,
       "sourceHash": "aa372dd5d10ff1f1986a1efa712be72aeda451300b115288af143aa509b53c2e",
@@ -26247,7 +26314,7 @@
     {
       "name": "getGravelBedCacheKey",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 835,
+      "sourceLine": 859,
       "originalLine": 54962,
       "characters": 335,
       "sourceHash": "9328e1393a932710b0ef4e210f26665d09a74865331a3836b983b41319dac935",
@@ -26260,7 +26327,7 @@
     {
       "name": "getGravelBedCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 842,
+      "sourceLine": 866,
       "originalLine": 54969,
       "characters": 1209,
       "sourceHash": "dd6eff3e8fd5a2c08e037e592f6034a9ce54c20237b85fbcfd9bb970de9f0c96",
@@ -26276,7 +26343,7 @@
     {
       "name": "getGravelCapCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 881,
+      "sourceLine": 905,
       "originalLine": 55008,
       "characters": 119,
       "sourceHash": "180bcd200e6562fb2af90d49b460fc2e9875c5496404475f4d20d21d7745fd16",
@@ -26287,7 +26354,7 @@
     {
       "name": "getGravelCacheDimensions",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 888,
+      "sourceLine": 912,
       "originalLine": 55015,
       "characters": 364,
       "sourceHash": "c8abe8b832681cfff16e066929ad3c224f71bdaa06c89a5f49caef45433319e7",
@@ -26296,7 +26363,7 @@
     {
       "name": "renderGravelBedToCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 897,
+      "sourceLine": 921,
       "originalLine": 55024,
       "characters": 639,
       "sourceHash": "25568a13e92160f9ffd29733487bca83a005c9e57a0bd37c0586f8e55d1bef09",
@@ -26309,7 +26376,7 @@
     {
       "name": "renderGravelCapToCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 927,
+      "sourceLine": 951,
       "originalLine": 55054,
       "characters": 650,
       "sourceHash": "386c1db4c1249aaaddcaae17c6afc755abbb214829917e2a906077a7086cae56",
@@ -26322,7 +26389,7 @@
     {
       "name": "drawLooseGravel",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 957,
+      "sourceLine": 981,
       "originalLine": 55084,
       "characters": 2014,
       "sourceHash": "3a72eb0b4af29755dc8cdcd088ef078fbaa1bb463d0a2e4fc36554dd4ed4cb53",
@@ -26338,7 +26405,7 @@
     {
       "name": "drawLoosePebbleGrounding",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1023,
+      "sourceLine": 1047,
       "originalLine": 55150,
       "characters": 713,
       "sourceHash": "f01c8cff2323caea3d39791be3ab320e6021bda2101f192c818f767f825d4f0d",
@@ -26349,7 +26416,7 @@
     {
       "name": "drawLooseGravelCap",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1044,
+      "sourceLine": 1068,
       "originalLine": 55171,
       "characters": 294,
       "sourceHash": "51f5e735288bdf7aa94489ac02bb99d4c1e2f59ad4f0b31d425fefa326e31d1e",
@@ -26361,7 +26428,7 @@
     {
       "name": "drawGravelPebbleSprite",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1057,
+      "sourceLine": 1081,
       "originalLine": 55184,
       "characters": 654,
       "sourceHash": "de54e0f2d652cbcbc1c2f636d8386ffc3f44fced5405e0ccbacaaa88d1a95a78",
@@ -26374,7 +26441,7 @@
     {
       "name": "getGravelPebbleAsset",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1074,
+      "sourceLine": 1098,
       "originalLine": 55201,
       "characters": 356,
       "sourceHash": "942d1d8c1a7f5d29ed59a156911726c343a4758d1e7a538d4310bb5a839dcfc5",
@@ -26383,7 +26450,7 @@
     {
       "name": "getPebbleShapeDescriptor",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1085,
+      "sourceLine": 1109,
       "originalLine": 55212,
       "characters": 1695,
       "sourceHash": "9a62ee8c729413ea3166fc07edff0393fefe99c81fce66427f34b28163a5e5b8",
@@ -26397,7 +26464,7 @@
     {
       "name": "getTintedGravelPebbleSprite",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1143,
+      "sourceLine": 1167,
       "originalLine": 55270,
       "characters": 2787,
       "sourceHash": "5b2f4a36e9794275d0762e8a9440271a0728e42f88b6139bf173b2a29bc7194a",
@@ -26416,7 +26483,7 @@
     {
       "name": "getPebbleSourceStats",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1221,
+      "sourceLine": 1245,
       "originalLine": 55348,
       "characters": 1495,
       "sourceHash": "1bcbd57cc21bfcd698dc52c28c027f052b9be28ea477ad92bd7e284ed7e18da1",
@@ -26428,7 +26495,7 @@
     {
       "name": "getCaveLayerSourceStats",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1276,
+      "sourceLine": 1300,
       "originalLine": 55403,
       "characters": 1492,
       "sourceHash": "55eff79f648cb24788849d7524509aed71d9130eb1881260c9287edfae0c2023",
@@ -26440,7 +26507,7 @@
     {
       "name": "getTintedCaveLayerImage",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1331,
+      "sourceLine": 1355,
       "originalLine": 55458,
       "characters": 2856,
       "sourceHash": "0a7a4ffecc4a4b5e14dbeff6f72eaa24192dbe7c035a45280ce6544c7f88a3f9",
@@ -26461,8 +26528,8 @@
       "module": "rendering/tank-and-water.js",
       "sourceLine": 4,
       "originalLine": 52459,
-      "characters": 3327,
-      "sourceHash": "85ed78a7805c7d4388321a230176d7c2661ed5adb24bca8f183a730ab15e57e0",
+      "characters": 3337,
+      "sourceHash": "3722fce476d99eabca1d304037c22331bcf8b0b6dc3ad34c6540f91ece2190cb",
       "calls": [
         "beginLightweightCausticMask",
         "clearStageDisplaySurfaces",
@@ -26479,14 +26546,12 @@
         "drawDecorEditTankBoundary",
         "drawDecorPreview",
         "drawDecorSwimGuide",
-        "drawDirtyWaterTint",
         "drawEffectClouds",
         "drawFish",
         "drawFishEggs",
         "drawFishPebbleTosses",
         "drawGlassTapEffects",
         "drawGravelDigBursts",
-        "drawGravelGrime",
         "drawGrime",
         "drawGroundShadows",
         "drawLightsOutOverlay",
@@ -26496,6 +26561,7 @@
         "drawMedicineWaterTint",
         "drawPellets",
         "drawPoops",
+        "drawRearGrime",
         "drawSedimentClouds",
         "drawSplashBursts",
         "drawTankBackdrop",
@@ -26506,8 +26572,6 @@
         "drawWaterBloodTint",
         "drawWaterParticles",
         "drawWaterSurface",
-        "getPortableTankBlurScale",
-        "getSevereGrimeVisualIntensity",
         "getTankDirtiness",
         "markLightweightCausticFloor"
       ]
@@ -26678,22 +26742,34 @@
       ]
     },
     {
-      "name": "drawDirtyWaterTint",
+      "name": "drawDirtyWaterTintToContext",
       "module": "rendering/tank-and-water.js",
       "sourceLine": 438,
       "originalLine": null,
-      "characters": 1264,
-      "sourceHash": "6567a252ed4cee4ca534791c428a6abf5e06f0d6804e415ffddc03c567429165",
+      "characters": 1002,
+      "sourceHash": "05667ad204f4737755e4b154acf295b2528a647d43b43e06516a73cbccc53ce9",
       "calls": [
         "clamp",
-        "getSceneLayoutVisibleTankVirtualBounds",
-        "getTankDirtiness"
+        "getSceneLayoutVisibleTankVirtualBounds"
+      ]
+    },
+    {
+      "name": "drawDirtyWaterTint",
+      "module": "rendering/tank-and-water.js",
+      "sourceLine": 468,
+      "originalLine": null,
+      "characters": 154,
+      "sourceHash": "2e298951883ace39cec3edbb71f6eb1d8b3a2e5dc080ab1baf82a0d42a00f430",
+      "calls": [
+        "drawDirtyWaterTintToContext",
+        "getTankDirtiness",
+        "getVisibleGrimeDirtiness"
       ]
     },
     {
       "name": "drawLightsOutOverlay",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 462,
+      "sourceLine": 472,
       "originalLine": 52537,
       "characters": 812,
       "sourceHash": "783c1d54a5da72e3164ed40d8974e64d3dc79489861270a330feb2f079cc1750",
@@ -26705,7 +26781,7 @@
     {
       "name": "getScaledTankShellPoints",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 483,
+      "sourceLine": 493,
       "originalLine": 52558,
       "characters": 153,
       "sourceHash": "1ee3b948d3b3657ce18a5d08af4f9b4e0b8ca129b694b12418cf9cd29ea3d565",
@@ -26714,7 +26790,7 @@
     {
       "name": "getTankShellPointSet",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 490,
+      "sourceLine": 500,
       "originalLine": 52565,
       "characters": 235,
       "sourceHash": "1fff058c599e5a2f4686416f8bb3514f33e822dca26c63d06b83692fd7950b42",
@@ -26727,7 +26803,7 @@
     {
       "name": "getPolygonBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 497,
+      "sourceLine": 507,
       "originalLine": 52572,
       "characters": 551,
       "sourceHash": "dbde7714b10d31ad9afe160cc3e2f23dfb639c7bfecf3a93b07374cd5d23530c",
@@ -26736,7 +26812,7 @@
     {
       "name": "tracePolygonPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 525,
+      "sourceLine": 535,
       "originalLine": 52600,
       "characters": 299,
       "sourceHash": "80d2a55a0f71696f039c875311a2d812f957636a4cc59eda6b936005ba4f8398",
@@ -26745,7 +26821,7 @@
     {
       "name": "traceTankShellPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 538,
+      "sourceLine": 548,
       "originalLine": 52613,
       "characters": 706,
       "sourceHash": "26b73fb97ec2aa32494a82edda49fd4f30529d5d9a1ca35a4b1d915aeac6c695",
@@ -26759,7 +26835,7 @@
     {
       "name": "pointInPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 557,
+      "sourceLine": 567,
       "originalLine": 52632,
       "characters": 620,
       "sourceHash": "167fc23c0ef90b05c64b202fe35bc5907d245ed4061b2c41de0ad2af2ca24d24",
@@ -26768,7 +26844,7 @@
     {
       "name": "projectPointIntoPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 575,
+      "sourceLine": 585,
       "originalLine": 52650,
       "characters": 791,
       "sourceHash": "2b2abe9d9bbd54414f6adf01056dd7dbc07efba086ab0b14c348f899b4540320",
@@ -26780,7 +26856,7 @@
     {
       "name": "constrainPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 613,
+      "sourceLine": 623,
       "originalLine": 52688,
       "characters": 506,
       "sourceHash": "6ab69c3390974258b0d4d46ed2a7fcc11d34ab46eab991205f144aeee7ddf230",
@@ -26794,7 +26870,7 @@
     {
       "name": "constrainNormalizedPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 630,
+      "sourceLine": 640,
       "originalLine": 52705,
       "characters": 333,
       "sourceHash": "b4875454c7060544fa29cb4bebdce2c38bee742b5ecec71c36b0014fb31fb4ec",
@@ -26805,7 +26881,7 @@
     {
       "name": "getTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 643,
+      "sourceLine": 653,
       "originalLine": 52718,
       "characters": 918,
       "sourceHash": "2760c8d79eb3ef8fb60c45988b023626666163d678953abd0f4b15b5242a18e5",
@@ -26818,7 +26894,7 @@
     {
       "name": "clipToTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 677,
+      "sourceLine": 687,
       "originalLine": 52752,
       "characters": 386,
       "sourceHash": "37b620c2a788f969e10220906f3df1aa3783db00f16e7dc65cfca772484c19db",
@@ -26833,7 +26909,7 @@
     {
       "name": "drawTankBackdrop",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 688,
+      "sourceLine": 698,
       "originalLine": 52757,
       "characters": 753,
       "sourceHash": "508f1944cc8f7026f577952713ab93e0afab4c02d0d3eff121afccc9b2135882",
@@ -26847,7 +26923,7 @@
     {
       "name": "drawBackground",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 713,
+      "sourceLine": 723,
       "originalLine": 52774,
       "characters": 3140,
       "sourceHash": "aeb55a43ce81445122f47ec9fa6a2e994346e1045f2ef41bdd8ebe094906335f",
@@ -26864,7 +26940,7 @@
     {
       "name": "drawAmbientBubbles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 785,
+      "sourceLine": 795,
       "originalLine": 52846,
       "characters": 4120,
       "sourceHash": "542edc48b79c0381a0e8e345f0669216e0782de78ca42907ba6ffb0751a0878d",
@@ -26884,7 +26960,7 @@
     {
       "name": "getAmbientBubbleRenderPass",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 893,
+      "sourceLine": 903,
       "originalLine": 52954,
       "characters": 193,
       "sourceHash": "a2fb8353dfd7ecb1a092eb5125c6cc3a35e26c87fff2dfa09ac4457c5ea017a3",
@@ -26895,7 +26971,7 @@
     {
       "name": "getAmbientBubbleLayerProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 901,
+      "sourceLine": 911,
       "originalLine": 52962,
       "characters": 415,
       "sourceHash": "e6f4b68e80421fc47d438551702a8bb782acdd68b12946d75f2c6f9fde55316e",
@@ -26904,20 +26980,18 @@
     {
       "name": "getWaterParticleVisibleCount",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 911,
+      "sourceLine": 921,
       "originalLine": 53101,
-      "characters": 354,
-      "sourceHash": "85f277b63bb50df280dc738ad47c700101ab2bec269579bdb251e34b2e060e2a",
+      "characters": 154,
+      "sourceHash": "60e89ed6c0a6f6d04ce47727463025a92fb738f8ec76c81cd62b7f6831558e5e",
       "calls": [
-        "getTankDirtiness",
-        "getWaterParticleCleanVisibleCount",
-        "getWaterParticleDirtyVisibleCount"
+        "getWaterParticleCleanVisibleCount"
       ]
     },
     {
       "name": "ensureWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 921,
+      "sourceLine": 926,
       "originalLine": 53111,
       "characters": 2172,
       "sourceHash": "0ee37fdf9de1d7a957947e32c45fb233516629ae0a0cad49190358da18dfb5cb",
@@ -26937,16 +27011,16 @@
     {
       "name": "getWaterParticleDrawColor",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 965,
+      "sourceLine": 970,
       "originalLine": 53151,
-      "characters": 507,
-      "sourceHash": "ef970cb1621d0e8025c558a3115f1db96a186db6e209756f45c8b99bcb549a3d",
+      "characters": 501,
+      "sourceHash": "f2a56fcf25457ef5848a9a64f5870051ea42c52692a9f79b06053c1e9a18cc2b",
       "calls": []
     },
     {
       "name": "formatRgb",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 985,
+      "sourceLine": 986,
       "originalLine": 53171,
       "characters": 117,
       "sourceHash": "02811baecb616084daf778efe9f4830df8448f6cfc2e9a9a312f24f5b258ae2e",
@@ -26955,7 +27029,7 @@
     {
       "name": "formatRgba",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 989,
+      "sourceLine": 990,
       "originalLine": 53175,
       "characters": 160,
       "sourceHash": "011537d4df3dc1513654f81959b9f447371285f675f53d34a58b274f1f4163f6",
@@ -26966,7 +27040,7 @@
     {
       "name": "getWaterParticleSpriteBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 993,
+      "sourceLine": 994,
       "originalLine": 53179,
       "characters": 762,
       "sourceHash": "e6efd0be55fc716e777e28df1846bf92fd866c684c9cba5f176e35eefdcbe543",
@@ -26978,7 +27052,7 @@
     {
       "name": "getTintedWaterParticleSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1014,
+      "sourceLine": 1015,
       "originalLine": 53200,
       "characters": 1810,
       "sourceHash": "7b777740d57097e1000e560d241c9663cd417875b3881149684410d38acc85e2",
@@ -26992,7 +27066,7 @@
     {
       "name": "collectBubblerParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1073,
+      "sourceLine": 1074,
       "originalLine": 53259,
       "characters": 2303,
       "sourceHash": "226f46a1c72a7032fbb5300ea339340607d1e16047e164d09b5bb7f9c7c12bd9",
@@ -27012,7 +27086,7 @@
     {
       "name": "applyBubblerForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1120,
+      "sourceLine": 1121,
       "originalLine": 53306,
       "characters": 920,
       "sourceHash": "f7707f33609141e9b87fb582fc606e1af9047251fe03d2186ecb4a9ec07c8ea2",
@@ -27023,7 +27097,7 @@
     {
       "name": "getAmbientBubbleParticleLayers",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1139,
+      "sourceLine": 1140,
       "originalLine": 53325,
       "characters": 166,
       "sourceHash": "6b0de811cc87c926469888fd134092b088aa47051e56e531dbd767471a6b72e3",
@@ -27032,7 +27106,7 @@
     {
       "name": "collectAmbientBubbleParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1149,
+      "sourceLine": 1150,
       "originalLine": 53335,
       "characters": 1431,
       "sourceHash": "2388c00a21b07016f96655135ae8c4ddce90e3397d16d530811c54283027d8f6",
@@ -27049,7 +27123,7 @@
     {
       "name": "applyAmbientBubbleForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1189,
+      "sourceLine": 1190,
       "originalLine": 53375,
       "characters": 775,
       "sourceHash": "de023cc1e0644fd07fc473adabe924f6b0cdbfba8a9bf11053cc12fb51b9aef6",
@@ -27060,7 +27134,7 @@
     {
       "name": "getWaterParticleTankLayer",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1210,
+      "sourceLine": 1211,
       "originalLine": 53396,
       "characters": 277,
       "sourceHash": "f0108e9d9871ebf60b20414034aaddc125604460a4a0ee466e9babc170227d94",
@@ -27072,7 +27146,7 @@
     {
       "name": "getParticleFishFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1220,
+      "sourceLine": 1221,
       "originalLine": 53438,
       "characters": 751,
       "sourceHash": "1693df92c68fe81f833ac80880e92f36de07d093656b4dd4b854adf39af60340",
@@ -27087,7 +27161,7 @@
     {
       "name": "applyFishForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1245,
+      "sourceLine": 1246,
       "originalLine": 53463,
       "characters": 933,
       "sourceHash": "a1d17a3a4fa522df5320a4a8a8de1eb1f337c762f6773e50940aa8de7ae5a878",
@@ -27099,10 +27173,10 @@
     {
       "name": "updateWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1271,
+      "sourceLine": 1272,
       "originalLine": 53489,
-      "characters": 3382,
-      "sourceHash": "2cc1cb0ec138cf0b4626c6da28beb5a0e12aad390a8046df2c899ce8f46fe4f2",
+      "characters": 3277,
+      "sourceHash": "c7d4e0bda20e984d9320866b6f03306c08dccf3ec4c918faccf1e14363b671f1",
       "calls": [
         "applyAmbientBubbleForceToParticle",
         "applyBubblerForceToParticle",
@@ -27114,7 +27188,6 @@
         "ensureWaterParticles",
         "getParticleFishFields",
         "getSceneLayoutVisibleTankVirtualBounds",
-        "getTankDirtiness",
         "getTankFloorMaskSurfaceYAtX",
         "getVisibleTankFloorBottomY",
         "getWaterParticleVisibleCount",
@@ -27122,23 +27195,33 @@
       ]
     },
     {
-      "name": "drawWaterAtmosphereStreak",
+      "name": "getWaterAtmosphereStreakSprite",
       "module": "rendering/tank-and-water.js",
       "sourceLine": 1345,
       "originalLine": null,
-      "characters": 1589,
-      "sourceHash": "4e6650043098e3c20648f2114d78ebedf06a2ac7cc464b08024de04a7632ec63",
+      "characters": 789,
+      "sourceHash": "d96a56cd535b0115930539d8472968c7b107836df0873a1125eb10dbbbd41fcd",
+      "calls": []
+    },
+    {
+      "name": "drawWaterAtmosphereStreak",
+      "module": "rendering/tank-and-water.js",
+      "sourceLine": 1370,
+      "originalLine": null,
+      "characters": 1246,
+      "sourceHash": "10e52a97060fcb37b8b9036904a16353a54157c3532b9521b122ec2bc3e01223",
       "calls": [
-        "clamp"
+        "clamp",
+        "getWaterAtmosphereStreakSprite"
       ]
     },
     {
       "name": "drawWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1394,
+      "sourceLine": 1411,
       "originalLine": 53564,
-      "characters": 4065,
-      "sourceHash": "621ffabeab162752e9383cdacc48aaf83d9814e1b39054fcb2d80898dedec9a3",
+      "characters": 3955,
+      "sourceHash": "d225e785110d9af0c8aeec1688f961ee78248a5054a5ff75d21576034d586155",
       "calls": [
         "areWaterParticlesEnabled",
         "clamp",
@@ -27158,7 +27241,7 @@
     {
       "name": "drawAutoDispenserButton",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1494,
+      "sourceLine": 1510,
       "originalLine": 53665,
       "characters": 2696,
       "sourceHash": "a89dc4f2a9a7e34def46ddf8a973cd5a62d1496f4201494ce409e368a1d1792c",
@@ -27169,7 +27252,7 @@
     {
       "name": "getAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1557,
+      "sourceLine": 1573,
       "originalLine": 53728,
       "characters": 242,
       "sourceHash": "47d63588814b89a503e7e217884f7d77424685052a411bdc5f03ad7a4946ae41",
@@ -27178,7 +27261,7 @@
     {
       "name": "getAutoDispenserHopperCacheKey",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1567,
+      "sourceLine": 1583,
       "originalLine": 53738,
       "characters": 409,
       "sourceHash": "2d3b52c239f11ce09564058775dfa18c02de7b18f6821ed20420aa15f4250e7f",
@@ -27189,7 +27272,7 @@
     {
       "name": "drawFoodPelletPieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1580,
+      "sourceLine": 1596,
       "originalLine": 53751,
       "characters": 1284,
       "sourceHash": "596531a028ac14859caeaf1ab4c141df13cedfe24ba8d460644bdf41a125e71a",
@@ -27202,7 +27285,7 @@
     {
       "name": "drawFoodSpritePieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1615,
+      "sourceLine": 1631,
       "originalLine": 53786,
       "characters": 991,
       "sourceHash": "1555da48513c9df3b8ea2d4749b183f99dcf7ca4d546d78e67fe3435e5899ec0",
@@ -27215,7 +27298,7 @@
     {
       "name": "buildAutoDispenserHopperPile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1638,
+      "sourceLine": 1654,
       "originalLine": 53807,
       "characters": 1800,
       "sourceHash": "a43ce334c4102195a505999974a667a42c52d53624df781145952c13ce123001",
@@ -27232,7 +27315,7 @@
     {
       "name": "renderAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1687,
+      "sourceLine": 1703,
       "originalLine": 53856,
       "characters": 1593,
       "sourceHash": "377abbcb73cb6cd3c523352fc7dc8d69f678ba0b2f624b742ff786153438beee",
@@ -27248,7 +27331,7 @@
     {
       "name": "drawAutoDispenser",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1723,
+      "sourceLine": 1739,
       "originalLine": 53892,
       "characters": 3306,
       "sourceHash": "6abbbf039fa76385948aea4aba7dd4a83e8c1f726d8115cb4cf630f33587905c",
@@ -27265,7 +27348,7 @@
     {
       "name": "getTintedFoodPelletSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1804,
+      "sourceLine": 1820,
       "originalLine": 53973,
       "characters": 2084,
       "sourceHash": "e798a796eabeb409cbd42e3012c1007c02c9dfcbffd4a24ed3a53fe2950e4280",
@@ -27278,7 +27361,7 @@
     {
       "name": "drawProceduralFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1862,
+      "sourceLine": 1878,
       "originalLine": 54031,
       "characters": 1077,
       "sourceHash": "01e5495f0d5cc73a1d8c7498180cc03c688ffc35e325c464854c94fa9241ac42",
@@ -27290,7 +27373,7 @@
     {
       "name": "drawFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1892,
+      "sourceLine": 1908,
       "originalLine": 54062,
       "characters": 763,
       "sourceHash": "2551c2cd00bf5ca942facdd4e625fc2553828d66bdbb828858ff0457e47d3959",
@@ -27304,7 +27387,7 @@
     {
       "name": "drawFallbackChumPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1913,
+      "sourceLine": 1929,
       "originalLine": 54083,
       "characters": 868,
       "sourceHash": "bcdbe6b9f780481629d90c9d01c522b850065e7612a8adbf8fcfdc1e942de4f5",
@@ -27316,7 +27399,7 @@
     {
       "name": "drawFoodSpritePiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1939,
+      "sourceLine": 1955,
       "originalLine": 54109,
       "characters": 997,
       "sourceHash": "a2865d18e9dd0dc6ec5b64509d72fea6d7e64e931a7dde41cb4f0c2f411b3288",
@@ -27329,7 +27412,7 @@
     {
       "name": "drawPellets",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1962,
+      "sourceLine": 1978,
       "originalLine": 54130,
       "characters": 748,
       "sourceHash": "546e479c3c41d7d3e628f9b9c307be1e9698824aef21f729f570b5aa538edb81",
@@ -27345,7 +27428,7 @@
     {
       "name": "getTankFloorDrawBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1986,
+      "sourceLine": 2002,
       "originalLine": 54154,
       "characters": 449,
       "sourceHash": "f24215c9f218214d6960c75c6ebdccb67344f878272d876e808cea26ea18772a",
@@ -27357,7 +27440,7 @@
     {
       "name": "getTankFloorMaskSurfaceYAtX",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2005,
+      "sourceLine": 2021,
       "originalLine": 54173,
       "characters": 569,
       "sourceHash": "c7c7fcaa954c09970a22bce5eb71c1c6c1f587ce137cb3409ebd8b332bb356e1",
@@ -27370,7 +27453,7 @@
     {
       "name": "getTankFloorMaskHillProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2015,
+      "sourceLine": 2031,
       "originalLine": null,
       "characters": 900,
       "sourceHash": "667e5a171665fb75306e9ee5ac18851afcd0911f7fcc4fe60852cbe44f358228",
@@ -27381,7 +27464,7 @@
     {
       "name": "traceTankFloorMaskPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2038,
+      "sourceLine": 2054,
       "originalLine": 54182,
       "characters": 345,
       "sourceHash": "e6b792d3de236bece492cd2acb2e116de380b9b1dcb673c8a1d0e226c3a6115d",
@@ -30473,16 +30556,14 @@
       "module": "tank/cleaning-and-glass.js",
       "sourceLine": 588,
       "originalLine": 38365,
-      "characters": 178,
-      "sourceHash": "7990afc20f31fae5dd92209ecda57fc5a67b22dc8e4ff5a28f8facfcbe85a769",
-      "calls": [
-        "getVisibleGrimeDirtiness"
-      ]
+      "characters": 286,
+      "sourceHash": "4445aa35d207f7c713a5a2455f849a3aa673168a59b3bb6de565a6f2772a5856",
+      "calls": []
     },
     {
       "name": "getVisibleGrimeDirtiness",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 595,
+      "sourceLine": 594,
       "originalLine": 38372,
       "characters": 259,
       "sourceHash": "389f1012ac89ef5cacc94d9a07710ff1f7838e9ba4584d1ddff15b98e588cf11",
@@ -30493,7 +30574,7 @@
     {
       "name": "getLightGrimeVisualIntensity",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 604,
+      "sourceLine": 603,
       "originalLine": 38381,
       "characters": 98,
       "sourceHash": "d2aa18601d60899d522db19523515bc21618e76309de5ebb4a6e6a33773d7010",
@@ -30504,7 +30585,7 @@
     {
       "name": "getSevereGrimeVisualIntensity",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 608,
+      "sourceLine": 607,
       "originalLine": 38385,
       "characters": 266,
       "sourceHash": "6664ebdb2002fc40c45d61fa1a5894b308995d9b7dde8ad747f3948c948f6f6d",
@@ -30516,12 +30597,11 @@
     {
       "name": "renderGrimeBaseCanvas",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 617,
+      "sourceLine": 616,
       "originalLine": 38394,
-      "characters": 772,
-      "sourceHash": "668401eccee6991b9564c6b9aaad380750bdb0ea3bbc5977e9f002f9d3e1fc90",
+      "characters": 436,
+      "sourceHash": "52649bc80a3b29113988bdbd6f3549ce34e7b2c71babb42843a458e707b4b6cc",
       "calls": [
-        "clamp",
         "drawGrimeOverlayImage",
         "getVisibleGrimeDirtiness"
       ]
@@ -30529,7 +30609,7 @@
     {
       "name": "drawGrimeOverlayImage",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 639,
+      "sourceLine": 630,
       "originalLine": null,
       "characters": 772,
       "sourceHash": "7419adc2afdfeb68ba1ac5c640e0999cbfe0c5faebe4474fa4ae86f3f47681e6",
@@ -30542,7 +30622,7 @@
     {
       "name": "createCleaningSparkles",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 663,
+      "sourceLine": 654,
       "originalLine": 38465,
       "characters": 581,
       "sourceHash": "7d83f4f86b2fe389dcfdab12083a3331590fbbe682404d7a4fdcf34f5895c93c",
@@ -30553,7 +30633,7 @@
     {
       "name": "updateSplashBursts",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 678,
+      "sourceLine": 669,
       "originalLine": 38480,
       "characters": 122,
       "sourceHash": "d7bb0d237a43f871c284588451da7073cf8d268441770644592a90c8d21f4935",
@@ -30562,7 +30642,7 @@
     {
       "name": "updateGlassTapEffects",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 682,
+      "sourceLine": 673,
       "originalLine": 38484,
       "characters": 133,
       "sourceHash": "58e5a08594c99f2bc9ca3facf94a9f6a6058e5394b89aa1b8a54cfb994f2ea9c",
@@ -30571,7 +30651,7 @@
     {
       "name": "getActiveGlassTapStressEnds",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 686,
+      "sourceLine": 677,
       "originalLine": 38488,
       "characters": 346,
       "sourceHash": "2e513c08997b72518b7a445c1a5554746fc417aca991dceabaa81eca39d69552",
@@ -30580,7 +30660,7 @@
     {
       "name": "getFishGlassTapStressPenalty",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 696,
+      "sourceLine": 687,
       "originalLine": 38498,
       "characters": 148,
       "sourceHash": "0db1cae851331c37e7d2daf73773e35bc0214c6ec7d98509067f458657ef499c",
@@ -30591,7 +30671,7 @@
     {
       "name": "hasTankGlassTapStressEventToday",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 700,
+      "sourceLine": 691,
       "originalLine": 38502,
       "characters": 393,
       "sourceHash": "fd57e159978af90f389ffd6ebb69c98eaf4dd379a0fe4d2cd1e3bb7581292ef4",
@@ -30602,7 +30682,7 @@
     {
       "name": "recordGlassTapStressForFish",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 715,
+      "sourceLine": 706,
       "originalLine": 38517,
       "characters": 1253,
       "sourceHash": "5c8a5eb8a88a919af8d15772f2f254174f62144662d96877dffda57965fefdb6",
@@ -30617,7 +30697,7 @@
     {
       "name": "spawnGlassTapEffect",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 753,
+      "sourceLine": 744,
       "originalLine": 38555,
       "characters": 1154,
       "sourceHash": "26671a4e52ff8a7e0ec512aaaab166e6685d74328a88111e26b6fac3ee27f29f",
@@ -30633,7 +30713,7 @@
     {
       "name": "scareNearbyFishFromGlassTap",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 792,
+      "sourceLine": 783,
       "originalLine": 38594,
       "characters": 3680,
       "sourceHash": "819453bc78566fde27e013e57577ef834b60bdb29d05179b0bbc5cb13e0b6cc6",
@@ -30659,7 +30739,7 @@
     {
       "name": "spawnFishReturnSplash",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 894,
+      "sourceLine": 885,
       "originalLine": 38689,
       "characters": 848,
       "sourceHash": "7d6cf5a0e34eb922544652043dee02e5f22b7ecc8316cd22c865e05becc9eceb",
@@ -30672,7 +30752,7 @@
     {
       "name": "updateCleaningTransition",
       "module": "tank/cleaning-and-glass.js",
-      "sourceLine": 920,
+      "sourceLine": 911,
       "originalLine": 38715,
       "characters": 241,
       "sourceHash": "5c4543df1be17f6048aa26103d5c7ea6bcd9d35a62cba4aa11fb2e06b8b2cced",
@@ -33347,7 +33427,7 @@
       "sourceLine": 2073,
       "originalLine": 46622,
       "characters": 7275,
-      "sourceHash": "559cfbe450ebb14305917d6c1d7eba160de39d3ce58c1f27157fb810a7c8934e",
+      "sourceHash": "9d4dcfbf68241b1eea8a0094d36806d3004dff509807f1237f8260f60ce463f1",
       "calls": [
         "assetImageAttributes",
         "getFoodCatalog",

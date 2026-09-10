@@ -1347,8 +1347,86 @@ function applyAspectRatioMode() {
   document.body.classList.toggle("fixed-16-9-aspect-ratio", aspectRatioLocked);
 }
 
+function getDebugAccountUserId() {
+  const session = runtime.cloudSession || getCloudSession();
+  return String(session?.user?.id || "");
+}
+
+function isDebugAccountAuthorized() {
+  return getDebugAccountUserId() === DEBUG_AUTHORIZED_USER_ID;
+}
+
+function getDebugToolsPreference() {
+  if (!isDebugAccountAuthorized()) {
+    return false;
+  }
+
+  try {
+    const raw = localStorage.getItem(`${DEBUG_TOOLS_PREFERENCE_KEY}:${DEBUG_AUTHORIZED_USER_ID}`);
+    return raw === null ? true : raw === "1";
+  } catch {
+    return true;
+  }
+}
+
+function syncDebugSettingsControls() {
+  const authorized = isDebugAccountAuthorized();
+  if (dom.debugModeSettingsSection) {
+    dom.debugModeSettingsSection.hidden = !authorized;
+  }
+  if (dom.debugModeToggleInput) {
+    dom.debugModeToggleInput.disabled = !authorized;
+    dom.debugModeToggleInput.checked = authorized && runtime.debugToolsEnabled === true;
+  }
+}
+
+function syncDebugToolsAuthorization() {
+  const enabled = isDebugAccountAuthorized() && getDebugToolsPreference();
+  const changed = runtime.debugToolsEnabled !== enabled;
+  runtime.debugToolsEnabled = enabled;
+
+  if (!enabled) {
+    runtime.debugSidebarOpen = false;
+    resetDebugFishBehaviorBroadcastState();
+  }
+
+  if (changed) {
+    runtime.uvGlowMaskCache.clear();
+  }
+
+  syncDebugSettingsControls();
+  return enabled;
+}
+
+function setDebugToolsEnabled(enabled) {
+  if (!isDebugAccountAuthorized()) {
+    runtime.debugToolsEnabled = false;
+    runtime.debugSidebarOpen = false;
+    syncDebugSettingsControls();
+    return false;
+  }
+
+  const nextEnabled = Boolean(enabled);
+  try {
+    localStorage.setItem(`${DEBUG_TOOLS_PREFERENCE_KEY}:${DEBUG_AUTHORIZED_USER_ID}`, nextEnabled ? "1" : "0");
+  } catch {
+    // Debug access still works for this session if local storage is unavailable.
+  }
+
+  runtime.debugToolsEnabled = nextEnabled;
+  if (!nextEnabled) {
+    runtime.debugSidebarOpen = false;
+    resetDebugFishBehaviorBroadcastState();
+  }
+  runtime.uvGlowMaskCache.clear();
+  syncDebugSettingsControls();
+  renderUi(Date.now());
+  showToast(nextEnabled ? "Debug tools enabled." : "Debug tools hidden.");
+  return nextEnabled;
+}
+
 function isDebugModeEnabled() {
-  return runtime.debugToolsEnabled === true;
+  return isDebugAccountAuthorized() && runtime.debugToolsEnabled === true;
 }
 
 function setupDebugMenuButtons() {
@@ -1723,17 +1801,6 @@ function downloadDebugFishBehaviorLog() {
   showToast("Fish behavior log download started.");
 }
 
-function toggleDebugTools() {
-  runtime.debugToolsEnabled = !runtime.debugToolsEnabled;
-  if (!runtime.debugToolsEnabled) {
-    runtime.debugSidebarOpen = false;
-    resetDebugFishBehaviorBroadcastState();
-  }
-  runtime.uvGlowMaskCache.clear();
-  renderUi(Date.now());
-  showToast(runtime.debugToolsEnabled ? "Debug tools enabled." : "Debug tools hidden.");
-}
-
 function toggleAspectRatioLock() {
   runtime.aspectRatioLocked = !runtime.aspectRatioLocked;
   applyAspectRatioMode();
@@ -1754,13 +1821,6 @@ function handleHiddenKeySequence(event, keyRaw) {
   }
 
   runtime.hiddenKeySequenceBuffer = `${runtime.hiddenKeySequenceBuffer}${key}`.slice(-HIDDEN_KEY_SEQUENCE_BUFFER_LENGTH);
-  if (runtime.hiddenKeySequenceBuffer.endsWith(DEBUG_UNLOCK_SEQUENCE)) {
-    runtime.hiddenKeySequenceBuffer = "";
-    toggleDebugTools();
-    event.preventDefault();
-    return true;
-  }
-
   if (runtime.hiddenKeySequenceBuffer.endsWith(VIEW_LOCK_SEQUENCE)) {
     runtime.hiddenKeySequenceBuffer = "";
     toggleAspectRatioLock();

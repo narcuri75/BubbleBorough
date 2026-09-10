@@ -49,7 +49,8 @@ const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
   /\bwarp\b/i
 ]);
 let appConfig = DEFAULT_APP_CONFIG;
-const DEBUG_MODE = false;
+const DEBUG_AUTHORIZED_USER_ID = "37128461-efc9-4997-bdc9-b5e55d6c02df";
+const DEBUG_TOOLS_PREFERENCE_KEY = "bubble-borough-debug-tools-v1";
 // Toggle this to keep zombie/skeleton fish behavior and assets out of the main catalog.
 const ZOMBIE_SKELETON_BEHAVIOR_ENABLED = ZOMBIE_SKELETON_FEATURE_DEFAULT_ENABLED;
 const DEBUG_FISH_BEHAVIOR_LOG_LIMIT = 600;
@@ -94,9 +95,8 @@ const TUTORIAL_TOOLBAR_REVEAL_SETTLE_MS = 700;
 const TUTORIAL_BASIC_FOOD_REWARD_COUNT = 5;
 const TUTORIAL_BASIC_FOOD_KEY = "basic";
 const TUTORIAL_TOAST_DECOR_DONE = "tutorial-decor-done";
-const DEBUG_UNLOCK_SEQUENCE = "bbtools";
 const VIEW_LOCK_SEQUENCE = "viewlock";
-const HIDDEN_KEY_SEQUENCE_BUFFER_LENGTH = Math.max(DEBUG_UNLOCK_SEQUENCE.length, VIEW_LOCK_SEQUENCE.length);
+const HIDDEN_KEY_SEQUENCE_BUFFER_LENGTH = VIEW_LOCK_SEQUENCE.length;
 // Set true to letterbox/pillarbox the aquarium at 16:9 instead of filling the viewport.
 const FIXED_16_9_ASPECT_RATIO = false;
 const PIRANHA_BEHAVIOR_ENABLED = true;
@@ -2990,6 +2990,8 @@ const dom = {
   utilityOverlayFooter: document.querySelector("#utilityOverlayFooter"),
   closeUtilityOverlay: document.querySelector("#closeUtilityOverlay"),
   settingsOverlay: document.querySelector("#settingsOverlay"),
+  debugModeSettingsSection: document.querySelector("#debugModeSettingsSection"),
+  debugModeToggleInput: document.querySelector("#debugModeToggleInput"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -3496,7 +3498,7 @@ const runtime = {
   saveStateWarningShown: false,
   lastAnimationFrameAt: 0,
   lastAnimationUpdateAt: 0,
-  debugToolsEnabled: DEBUG_MODE,
+  debugToolsEnabled: false,
   debugSidebarOpen: false,
   aspectRatioLocked: FIXED_16_9_ASPECT_RATIO,
   hiddenKeySequenceBuffer: "",
@@ -13277,8 +13279,86 @@ function applyAspectRatioMode() {
   document.body.classList.toggle("fixed-16-9-aspect-ratio", aspectRatioLocked);
 }
 
+function getDebugAccountUserId() {
+  const session = runtime.cloudSession || getCloudSession();
+  return String(session?.user?.id || "");
+}
+
+function isDebugAccountAuthorized() {
+  return getDebugAccountUserId() === DEBUG_AUTHORIZED_USER_ID;
+}
+
+function getDebugToolsPreference() {
+  if (!isDebugAccountAuthorized()) {
+    return false;
+  }
+
+  try {
+    const raw = localStorage.getItem(`${DEBUG_TOOLS_PREFERENCE_KEY}:${DEBUG_AUTHORIZED_USER_ID}`);
+    return raw === null ? true : raw === "1";
+  } catch {
+    return true;
+  }
+}
+
+function syncDebugSettingsControls() {
+  const authorized = isDebugAccountAuthorized();
+  if (dom.debugModeSettingsSection) {
+    dom.debugModeSettingsSection.hidden = !authorized;
+  }
+  if (dom.debugModeToggleInput) {
+    dom.debugModeToggleInput.disabled = !authorized;
+    dom.debugModeToggleInput.checked = authorized && runtime.debugToolsEnabled === true;
+  }
+}
+
+function syncDebugToolsAuthorization() {
+  const enabled = isDebugAccountAuthorized() && getDebugToolsPreference();
+  const changed = runtime.debugToolsEnabled !== enabled;
+  runtime.debugToolsEnabled = enabled;
+
+  if (!enabled) {
+    runtime.debugSidebarOpen = false;
+    resetDebugFishBehaviorBroadcastState();
+  }
+
+  if (changed) {
+    runtime.uvGlowMaskCache.clear();
+  }
+
+  syncDebugSettingsControls();
+  return enabled;
+}
+
+function setDebugToolsEnabled(enabled) {
+  if (!isDebugAccountAuthorized()) {
+    runtime.debugToolsEnabled = false;
+    runtime.debugSidebarOpen = false;
+    syncDebugSettingsControls();
+    return false;
+  }
+
+  const nextEnabled = Boolean(enabled);
+  try {
+    localStorage.setItem(`${DEBUG_TOOLS_PREFERENCE_KEY}:${DEBUG_AUTHORIZED_USER_ID}`, nextEnabled ? "1" : "0");
+  } catch {
+    // Debug access still works for this session if local storage is unavailable.
+  }
+
+  runtime.debugToolsEnabled = nextEnabled;
+  if (!nextEnabled) {
+    runtime.debugSidebarOpen = false;
+    resetDebugFishBehaviorBroadcastState();
+  }
+  runtime.uvGlowMaskCache.clear();
+  syncDebugSettingsControls();
+  renderUi(Date.now());
+  showToast(nextEnabled ? "Debug tools enabled." : "Debug tools hidden.");
+  return nextEnabled;
+}
+
 function isDebugModeEnabled() {
-  return runtime.debugToolsEnabled === true;
+  return isDebugAccountAuthorized() && runtime.debugToolsEnabled === true;
 }
 
 function setupDebugMenuButtons() {
@@ -13653,17 +13733,6 @@ function downloadDebugFishBehaviorLog() {
   showToast("Fish behavior log download started.");
 }
 
-function toggleDebugTools() {
-  runtime.debugToolsEnabled = !runtime.debugToolsEnabled;
-  if (!runtime.debugToolsEnabled) {
-    runtime.debugSidebarOpen = false;
-    resetDebugFishBehaviorBroadcastState();
-  }
-  runtime.uvGlowMaskCache.clear();
-  renderUi(Date.now());
-  showToast(runtime.debugToolsEnabled ? "Debug tools enabled." : "Debug tools hidden.");
-}
-
 function toggleAspectRatioLock() {
   runtime.aspectRatioLocked = !runtime.aspectRatioLocked;
   applyAspectRatioMode();
@@ -13684,13 +13753,6 @@ function handleHiddenKeySequence(event, keyRaw) {
   }
 
   runtime.hiddenKeySequenceBuffer = `${runtime.hiddenKeySequenceBuffer}${key}`.slice(-HIDDEN_KEY_SEQUENCE_BUFFER_LENGTH);
-  if (runtime.hiddenKeySequenceBuffer.endsWith(DEBUG_UNLOCK_SEQUENCE)) {
-    runtime.hiddenKeySequenceBuffer = "";
-    toggleDebugTools();
-    event.preventDefault();
-    return true;
-  }
-
   if (runtime.hiddenKeySequenceBuffer.endsWith(VIEW_LOCK_SEQUENCE)) {
     runtime.hiddenKeySequenceBuffer = "";
     toggleAspectRatioLock();
@@ -15172,6 +15234,9 @@ function bindEvents() {
   });
   dom.tankMouseLockToggleInput?.addEventListener("change", (event) => {
     setTankMouseInputLocked(event.currentTarget?.checked);
+  });
+  dom.debugModeToggleInput?.addEventListener("change", (event) => {
+    setDebugToolsEnabled(event.currentTarget?.checked);
   });
   dom.settingsOverlay?.addEventListener("change", (event) => {
     const toolbarInput = event.target.closest("[data-toolbar-position-choice]");
@@ -55388,6 +55453,7 @@ function renderSettingsOverlay() {
   const mouseLockRow = dom.tankMouseLockToggleInput?.closest(".settings-toggle-row");
   dom.settingsOverlay.hidden = !runtime.settingsOverlayOpen;
   dom.settingsOverlay.classList.toggle("is-open", runtime.settingsOverlayOpen);
+  syncDebugToolsAuthorization();
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
   }
@@ -76300,6 +76366,7 @@ function persistCloudSession(session) {
   if (!session || !session.access_token) {
     localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
     runtime.cloudSession = null;
+    syncDebugToolsAuthorization();
     return null;
   }
   const expiresIn = Math.max(30, Number(session.expires_in) || 3600);
@@ -76312,12 +76379,14 @@ function persistCloudSession(session) {
   };
   localStorage.setItem(CLOUD_AUTH_SESSION_KEY, JSON.stringify(normalized));
   runtime.cloudSession = normalized;
+  syncDebugToolsAuthorization();
   return normalized;
 }
 
 function clearCloudSession() {
   localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
   runtime.cloudSession = null;
+  syncDebugToolsAuthorization();
   runtime.cloudWritesAllowed = false;
   runtime.cloudChecked = false;
   setCloudSyncStatus("signed-out", "Not signed in");
@@ -76392,6 +76461,7 @@ async function refreshCloudSessionIfNeeded() {
   if (!session) return null;
   if (Number(session.expires_at) - Date.now() > 60000) {
     runtime.cloudSession = session;
+    syncDebugToolsAuthorization();
     return session;
   }
   if (!session.refresh_token) {
@@ -76927,6 +76997,7 @@ async function handleCloudSettingsClick(event) {
 
 function initializeCloudSaveRuntime() {
   runtime.cloudSession = getCloudSession();
+  syncDebugToolsAuthorization();
   runtime.cloudWritesAllowed = false;
   runtime.cloudChecked = false;
   runtime.cloudRevision = Number(getCloudMeta().cloudRevision) || 0;

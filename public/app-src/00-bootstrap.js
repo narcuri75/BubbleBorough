@@ -46,7 +46,8 @@ const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
   /\bwarp\b/i
 ]);
 let appConfig = DEFAULT_APP_CONFIG;
-const DEBUG_MODE = false;
+const DEBUG_AUTHORIZED_USER_ID = "37128461-efc9-4997-bdc9-b5e55d6c02df";
+const DEBUG_TOOLS_PREFERENCE_KEY = "bubble-borough-debug-tools-v1";
 // Toggle this to keep zombie/skeleton fish behavior and assets out of the main catalog.
 const ZOMBIE_SKELETON_BEHAVIOR_ENABLED = ZOMBIE_SKELETON_FEATURE_DEFAULT_ENABLED;
 const DEBUG_FISH_BEHAVIOR_LOG_LIMIT = 600;
@@ -91,9 +92,8 @@ const TUTORIAL_TOOLBAR_REVEAL_SETTLE_MS = 700;
 const TUTORIAL_BASIC_FOOD_REWARD_COUNT = 5;
 const TUTORIAL_BASIC_FOOD_KEY = "basic";
 const TUTORIAL_TOAST_DECOR_DONE = "tutorial-decor-done";
-const DEBUG_UNLOCK_SEQUENCE = "bbtools";
 const VIEW_LOCK_SEQUENCE = "viewlock";
-const HIDDEN_KEY_SEQUENCE_BUFFER_LENGTH = Math.max(DEBUG_UNLOCK_SEQUENCE.length, VIEW_LOCK_SEQUENCE.length);
+const HIDDEN_KEY_SEQUENCE_BUFFER_LENGTH = VIEW_LOCK_SEQUENCE.length;
 // Set true to letterbox/pillarbox the aquarium at 16:9 instead of filling the viewport.
 const FIXED_16_9_ASPECT_RATIO = false;
 const PIRANHA_BEHAVIOR_ENABLED = true;
@@ -2987,6 +2987,8 @@ const dom = {
   utilityOverlayFooter: document.querySelector("#utilityOverlayFooter"),
   closeUtilityOverlay: document.querySelector("#closeUtilityOverlay"),
   settingsOverlay: document.querySelector("#settingsOverlay"),
+  debugModeSettingsSection: document.querySelector("#debugModeSettingsSection"),
+  debugModeToggleInput: document.querySelector("#debugModeToggleInput"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -3493,7 +3495,7 @@ const runtime = {
   saveStateWarningShown: false,
   lastAnimationFrameAt: 0,
   lastAnimationUpdateAt: 0,
-  debugToolsEnabled: DEBUG_MODE,
+  debugToolsEnabled: false,
   debugSidebarOpen: false,
   aspectRatioLocked: FIXED_16_9_ASPECT_RATIO,
   hiddenKeySequenceBuffer: "",

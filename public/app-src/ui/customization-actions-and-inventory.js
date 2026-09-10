@@ -406,6 +406,7 @@ function renderSettingsOverlay() {
   const mouseLockRow = dom.tankMouseLockToggleInput?.closest(".settings-toggle-row");
   dom.settingsOverlay.hidden = !runtime.settingsOverlayOpen;
   dom.settingsOverlay.classList.toggle("is-open", runtime.settingsOverlayOpen);
+  syncDebugToolsAuthorization();
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
   }

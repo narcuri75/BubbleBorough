@@ -1368,6 +1368,9 @@ function bindEvents() {
   dom.tankMouseLockToggleInput?.addEventListener("change", (event) => {
     setTankMouseInputLocked(event.currentTarget?.checked);
   });
+  dom.debugModeToggleInput?.addEventListener("change", (event) => {
+    setDebugToolsEnabled(event.currentTarget?.checked);
+  });
   dom.settingsOverlay?.addEventListener("change", (event) => {
     const toolbarInput = event.target.closest("[data-toolbar-position-choice]");
     if (TOOLBAR_POSITION_SETTING_ENABLED && toolbarInput instanceof HTMLInputElement) {

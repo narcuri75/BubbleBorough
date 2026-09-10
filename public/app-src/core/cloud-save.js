@@ -15,6 +15,7 @@ function persistCloudSession(session) {
   if (!session || !session.access_token) {
     localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
     runtime.cloudSession = null;
+    syncDebugToolsAuthorization();
     return null;
   }
   const expiresIn = Math.max(30, Number(session.expires_in) || 3600);
@@ -27,12 +28,14 @@ function persistCloudSession(session) {
   };
   localStorage.setItem(CLOUD_AUTH_SESSION_KEY, JSON.stringify(normalized));
   runtime.cloudSession = normalized;
+  syncDebugToolsAuthorization();
   return normalized;
 }
 
 function clearCloudSession() {
   localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
   runtime.cloudSession = null;
+  syncDebugToolsAuthorization();
   runtime.cloudWritesAllowed = false;
   runtime.cloudChecked = false;
   setCloudSyncStatus("signed-out", "Not signed in");
@@ -107,6 +110,7 @@ async function refreshCloudSessionIfNeeded() {
   if (!session) return null;
   if (Number(session.expires_at) - Date.now() > 60000) {
     runtime.cloudSession = session;
+    syncDebugToolsAuthorization();
     return session;
   }
   if (!session.refresh_token) {
@@ -642,6 +646,7 @@ async function handleCloudSettingsClick(event) {
 
 function initializeCloudSaveRuntime() {
   runtime.cloudSession = getCloudSession();
+  syncDebugToolsAuthorization();
   runtime.cloudWritesAllowed = false;
   runtime.cloudChecked = false;
   runtime.cloudRevision = Number(getCloudMeta().cloudRevision) || 0;

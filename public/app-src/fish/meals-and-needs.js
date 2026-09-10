@@ -96,19 +96,6 @@ function buildMealSlot(startDate) {
   };
 }
 
-function getCompletedMealSlots(startTs, endTs) {
-  const slots = [];
-  let boundary = getNextMealBoundary(startTs);
-  while (boundary.getTime() <= endTs) {
-    const slotStart = new Date(boundary);
-    slotStart.setHours(slotStart.getHours() - 12, 0, 0, 0);
-    slots.push(buildMealSlot(slotStart));
-    boundary = new Date(boundary);
-    boundary.setHours(boundary.getHours() + 12, 0, 0, 0);
-  }
-  return slots;
-}
-
 function getNextMealBoundary(timestamp) {
   const date = new Date(timestamp);
   const boundary = new Date(date);

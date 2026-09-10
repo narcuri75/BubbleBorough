@@ -208,7 +208,14 @@ test("decor startup loads only placed artwork and companions, while inventory us
     ["placed", { path: "placed.png", maskPath: "mask.png", triggerPath: "trigger.png", seatsPath: "seats.png", caveColorLayers: [{ paths: ["color.png"], legacyPaths: ["legacy.png"] }] }],
     ["unowned", { path: "unowned.png" }]
   ]);
-  const paths = Array.from(c.getPlacedDecorPreloadPaths({ decorInventory: { owned: 1, unowned: 0 }, tanks: [{ placedDecor: [{ decorKey: "placed" }] }] }));
+  const paths = Array.from(c.getPlacedDecorPreloadPaths({
+    activeTankId: "active",
+    decorInventory: { owned: 1, unowned: 0 },
+    tanks: [
+      { id: "inactive", placedDecor: [{ decorKey: "owned" }] },
+      { id: "active", placedDecor: [{ decorKey: "placed" }] }
+    ]
+  }));
   assert.deepEqual(paths, ["placed.png", "mask.png", "trigger.png", "seats.png", "color.png", "legacy.png"]);
   const decor = c.runtime.decorMap.get("placed");
   const first = c.preloadDecorArtwork(decor);

@@ -20,20 +20,28 @@ function beginDecorEditHistory(label = "Edit decorations") {
   if (!history || history.applying) return;
   if (history.pending && (runtime.dragState || runtime.decorResizeState)) return;
   commitDecorEditHistory();
-  history.pending = { label, before: state.placedDecor.map(copyDecorEditItem) };
+  history.pending = {
+    label,
+    before: state.placedDecor.map(copyDecorEditItem),
+    beforeGravelHillSeed: Number(getCurrentTank()?.gravelHillSeed) || null
+  };
 }
 
 function commitDecorEditHistory() {
   const history = getDecorEditHistory();
   if (!history?.pending || history.applying || runtime.dragState || runtime.decorResizeState) return;
-  const { label, before } = history.pending;
+  const { label, before, beforeGravelHillSeed } = history.pending;
   history.pending = null;
   const after = state.placedDecor.map(copyDecorEditItem);
   const ids = new Set([...before, ...after].map((item) => item.id));
   const changes = [...ids].map((id) => ({ before: before.find((item) => item.id === id), after: after.find((item) => item.id === id) }))
     .filter((change) => JSON.stringify(change.before) !== JSON.stringify(change.after));
-  if (!changes.length) return;
-  history.undo.push({ label, changes });
+  const afterGravelHillSeed = Number(getCurrentTank()?.gravelHillSeed) || null;
+  const gravelHillChange = beforeGravelHillSeed === afterGravelHillSeed
+    ? null
+    : { before: beforeGravelHillSeed, after: afterGravelHillSeed };
+  if (!changes.length && !gravelHillChange) return;
+  history.undo.push({ label, changes, gravelHillChange });
   history.undo = history.undo.slice(-50);
   history.redo = [];
 }
@@ -51,6 +59,14 @@ function replayDecorEdit(direction) {
   const undo = direction === "undo";
   const inventory = { ...state.decorInventory };
   const changes = entry.changes.map((change) => ({ from: undo ? change.after : change.before, to: undo ? change.before : change.after }));
+  const hillFrom = undo ? entry.gravelHillChange?.after : entry.gravelHillChange?.before;
+  const hillTo = undo ? entry.gravelHillChange?.before : entry.gravelHillChange?.after;
+  if (entry.gravelHillChange && (Number(getCurrentTank()?.gravelHillSeed) || null) !== hillFrom) {
+    history.undo = []; history.redo = [];
+    showToast("The gravel hill changed outside the editor. Start a new edit to use undo.");
+    renderDecorHistoryControls();
+    return false;
+  }
   for (const { from, to } of changes) {
     const current = state.placedDecor.find((item) => item.id === (from || to).id);
     // An item removed or edited outside this history must never be resurrected or overwritten.
@@ -85,6 +101,10 @@ function replayDecorEdit(direction) {
       }
     }
     state.decorInventory = Object.fromEntries(Object.entries(inventory).filter(([, count]) => count > 0));
+    if (entry.gravelHillChange) {
+      getCurrentTank().gravelHillSeed = hillTo;
+      runtime.gravelHillProfile = null;
+    }
     history[direction].pop();
     history[undo ? "redo" : "undo"].push(entry);
     finishDecorLayoutChange();
@@ -203,7 +223,7 @@ function renderDecorHistoryControls() {
     controls.className = "decor-history-controls";
     controls.setAttribute("aria-label", "Decoration history and layouts");
     controls.innerHTML = '<button type="button" class="small-button alt" data-decor-history="undo">↶ Undo</button><button type="button" class="small-button alt" data-decor-history="redo">↷ Redo</button><button type="button" class="small-button" data-decor-layouts>Saved layouts</button>';
-    tray.querySelector(".edit-decor-tray-header").after(controls);
+    tray.querySelector(".edit-decor-tray-header").append(controls);
     controls.addEventListener("click", (event) => {
       const button = event.target.closest("button");
       if (button?.dataset.decorHistory) replayDecorEdit(button.dataset.decorHistory);

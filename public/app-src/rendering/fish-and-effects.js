@@ -533,61 +533,6 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
   context.restore();
 }
 
-function drawFishCausticLight(context, image, fish, fishDrawX, width, height, now, worldTransform) {
-  const strength = getCausticLightStrength(now);
-  if (strength <= 0 || width <= 0 || height <= 0) return;
-  const texture = getAnimatedCausticTexture(now);
-  if (!texture) return;
-  if (!runtime.fishCausticCache) runtime.fishCausticCache = new WeakMap();
-  let scratch = runtime.fishCausticCache.get(fish);
-  if (!scratch) {
-    const canvas = document.createElement("canvas");
-    scratch = { canvas, context: canvas.getContext("2d") };
-    runtime.fishCausticCache.set(fish, scratch);
-  }
-  const scale = Math.min(1, 192 / Math.max(width, height));
-  const w = Math.max(1, Math.round(width * scale));
-  const h = Math.max(1, Math.round(height * scale));
-  // Cancel the entire fish pose, including facing, rotation, body deformation,
-  // and tube compression. The remaining pattern coordinates belong to the tank.
-  const worldToLocal = context.getTransform().inverse().multiply(worldTransform);
-  const localToMask = new DOMMatrix([w / width, 0, 0, h / height, -fishDrawX * w / width, h / 2]);
-  const patternTransform = localToMask.multiply(worldToLocal);
-  const key = [runtime.causticTexture.frame, width, height,
-    patternTransform.a, patternTransform.b, patternTransform.c,
-    patternTransform.d, patternTransform.e, patternTransform.f].join(":");
-  if (scratch.key !== key || scratch.image !== image) {
-    const c = scratch.context;
-    if (scratch.canvas.width !== w) scratch.canvas.width = w;
-    if (scratch.canvas.height !== h) scratch.canvas.height = h;
-    c.setTransform(1, 0, 0, 1, 0, 0);
-    c.clearRect(0, 0, w, h);
-    c.globalCompositeOperation = "source-over";
-    c.drawImage(image, 0, 0, w, h);
-    c.globalCompositeOperation = "source-in";
-    const pattern = c.createPattern(texture, "repeat");
-    pattern.setTransform(patternTransform);
-    c.fillStyle = pattern;
-    c.fillRect(0, 0, w, h);
-    scratch.key = key;
-    scratch.image = image;
-  }
-  context.save();
-  // The fish canvas is currently in its pose transform. Establish the clip in
-  // tank space first, then restore that pose so partially surfaced fish only
-  // receive the light below the actual waterline.
-  const fishTransform = context.getTransform();
-  context.setTransform(worldTransform);
-  context.beginPath();
-  context.rect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
-  context.clip();
-  context.setTransform(fishTransform);
-  context.globalCompositeOperation = "screen";
-  context.globalAlpha *= strength * 0.72;
-  context.drawImage(scratch.canvas, fishDrawX, -height / 2, width, height);
-  context.restore();
-}
-
 function compareFishRenderRecords(left, right) {
   const priorityDelta = left.priority - right.priority;
   if (priorityDelta) {
@@ -780,10 +725,10 @@ function drawFish(now, layer = null, options = {}) {
       ? fishLighting.filter
       : `${fishBaseFilter} ${fishLighting.filter}`;
     tankContext.drawImage(renderImage, fishDrawX, -height / 2, width, height);
+    markLightweightCausticImage(tankContext, renderImage, fishDrawX, -height / 2, width, height);
     tankContext.filter = "none";
     if (!pose.isDead) {
       drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now, fishLighting);
-      drawFishCausticLight(tankContext, image, fish, fishDrawX, width, height, now, fishWorldTransform);
     }
     drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);

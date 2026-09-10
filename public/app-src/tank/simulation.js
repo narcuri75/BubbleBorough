@@ -138,6 +138,9 @@ function scheduleDeferredTickUiRefresh(now = Date.now()) {
 }
 
 function syncCurrentTankState(now, options = {}) {
+  if (!state) {
+    return false;
+  }
   if (!PIRANHA_BEHAVIOR_ENABLED) {
     for (const fish of state.fish) {
       fish.piranhaConsumptionStartedAt = null;
@@ -151,10 +154,6 @@ function syncCurrentTankState(now, options = {}) {
     clearBloodEffectClouds();
     runtime.bloodWaterTint = 0;
   }
-  if (!state) {
-    return false;
-  }
-
   let changed = false;
   if (now < state.lastSimulatedAt) {
     state.lastSimulatedAt = now;
@@ -177,63 +176,6 @@ function syncCurrentTankState(now, options = {}) {
     changed = materializeCoarseFishActivities(targetTank, now) || changed;
     changed = processBoroughStructureServices(now, targetTank) || changed;
     changed = processFishNeedsAutonomy(now) || changed;
-  }
-
-  const completedSlots = [];
-  for (const slot of completedSlots) {
-    const wasFed = isMealSlotServed(slot, targetTank);
-    let missedCount = 0;
-    let starvationDamageCount = 0;
-    let starvationDamageUnits = 0;
-    let recoveredCount = 0;
-    let deathCount = 0;
-
-    for (const fish of state.fish) {
-      if (fish.acquiredAt > slot.start || isFishDead(fish) || !fishNeedsMealWindow(fish)) {
-        continue;
-      }
-
-      if (wasFed) {
-        fish.fedStreak += 1;
-        fish.missedMealsInRow = 0;
-        if (fish.healthUnits < getFishMaxHealthUnits(fish) && fish.fedStreak >= RECOVERY_FEED_STREAK) {
-          fish.healthUnits += 1;
-          fish.fedStreak = 0;
-          recoveredCount += 1;
-        }
-      } else {
-        fish.fedStreak = 0;
-        fish.missedMealsInRow = Math.max(0, Number(fish.missedMealsInRow) || 0) + 1;
-        missedCount += 1;
-
-        if (fish.missedMealsInRow >= STARVATION_DAMAGE_MISSED_MEALS_THRESHOLD) {
-          fish.healthUnits = Math.max(0, fish.healthUnits - 1);
-          starvationDamageCount += 1;
-          starvationDamageUnits += 1;
-          if (fish.healthUnits <= 0 && markFishAsDead(fish, slot.end, `${fish.name} died after going unfed for too long.`)) {
-            deathCount += 1;
-          }
-        }
-      }
-    }
-
-    if (!wasFed && missedCount > 0) {
-      pushEvent(`${missedCount} fish missed the ${slot.label.toLowerCase()} meal.`, slot.end);
-    }
-
-    if (!wasFed && starvationDamageCount > 0) {
-      pushEvent(`${starvationDamageCount} fish went too long without food and lost ${starvationDamageUnits} half-heart ${pluralize("step", starvationDamageUnits)}.`, slot.end);
-    }
-
-    if (wasFed && recoveredCount > 0) {
-      pushEvent(`${recoveredCount} fish recovered half a heart thanks to regular feeding.`, slot.end);
-    }
-
-    if (deathCount > 0) {
-      pushEvent(`${deathCount} ${pluralize("fish", deathCount)} died and floated to the surface.`, slot.end);
-    }
-
-    changed = changed || missedCount > 0 || starvationDamageCount > 0 || recoveredCount > 0 || deathCount > 0;
   }
 
   changed = processFishEggs(now) || changed;
@@ -302,7 +244,7 @@ function syncCurrentTankState(now, options = {}) {
 
   pruneTankState(now, getCurrentTank());
   state.lastSimulatedAt = now;
-  return changed || completedSlots.length > 0;
+  return changed;
 }
 
 function normalizeCurrentTankShellState() {
@@ -410,13 +352,14 @@ function processBoroughFishTravel(now = Date.now()) {
         && residenceTank.id !== source.id
         && (isTankLightsOut(now) || getFishNeedValue(fish, "energy", now) <= 52);
       const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
+      const residenceTubeJourney = shouldReturnHome ? getTransitTubeJourney(source, residenceTank) : null;
       const directedRoute = foodRoute || serviceRoute || residenceRoute;
       const tubeJourneyTarget = directedRoute?.tubeDestination || directedRoute?.destination;
       const tubeJourney = tubeJourneyTarget
         ? getTransitTubeJourney(source, tubeJourneyTarget)
         : foodDestination
           ? getTransitTubeJourney(source, foodDestination)
-        : null;
+          : residenceTubeJourney;
       const minimumMoveDelay = directedRoute ? 25 * 1000 : 2 * MINUTE_MS;
       if (now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0) < minimumMoveDelay) {
         continue;
@@ -427,12 +370,23 @@ function processBoroughFishTravel(now = Date.now()) {
       if (!serviceRoute && residenceTank?.id === source.id && isTankLightsOut(now)) {
         continue;
       }
-      const shouldTravel = directedRoute || tubeJourney || destinationsWithFood.length > 0 || (neighbors.length > 0 && Math.random() < 0.02);
+      const ambientTubeJourneys = !directedRoute && !tubeJourney
+        ? getAllTanks().flatMap((target) => {
+          const journey = getTransitTubeJourney(source, target);
+          return journey ? [journey] : [];
+        })
+        : [];
+      const ambientTravelRequested = (neighbors.length > 0 || ambientTubeJourneys.length > 0) && Math.random() < 0.02;
+      const ambientTubeJourney = ambientTravelRequested && ambientTubeJourneys.length
+        ? ambientTubeJourneys[Math.floor(Math.random() * ambientTubeJourneys.length)]
+        : null;
+      const selectedTubeJourney = tubeJourney || ambientTubeJourney;
+      const shouldTravel = directedRoute || selectedTubeJourney || destinationsWithFood.length > 0 || ambientTravelRequested;
       if (!shouldTravel) {
         continue;
       }
       const choices = destinationsWithFood.length ? destinationsWithFood : neighbors;
-      const destination = tubeJourney?.targetTank || directedRoute?.nextSection || choices[Math.floor(Math.random() * choices.length)];
+      const destination = selectedTubeJourney?.targetTank || directedRoute?.nextSection || choices[Math.floor(Math.random() * choices.length)];
       moves.push({
         fish,
         source,
@@ -440,7 +394,7 @@ function processBoroughFishTravel(now = Date.now()) {
         neededService: foodDestination ? "food" : neededService,
         serviceDestination: foodDestination || serviceRoute?.destination || null,
         residenceDestination: !serviceRoute ? residenceRoute?.destination || null : null,
-        tubeJourney
+        tubeJourney: selectedTubeJourney
       });
       break;
     }

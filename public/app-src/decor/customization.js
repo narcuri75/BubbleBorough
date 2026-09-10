@@ -32,6 +32,12 @@ function createTankState(options = {}) {
     driftB: options.animatedBackgroundDriftColorB,
     driftC: options.animatedBackgroundDriftColorC
   });
+  const gravelSeed = Number.isFinite(options.gravelSeed)
+    ? Math.abs(Math.floor(options.gravelSeed))
+    : Math.floor(Math.random() * 0x7fffffff);
+  const gravelHillSeed = Number.isFinite(options.gravelHillSeed)
+    ? Math.abs(Math.floor(options.gravelHillSeed))
+    : ((gravelSeed ^ 0x4a39b70d) >>> 0);
 
   return {
     id: String(options.id || createId("tank")),
@@ -57,7 +63,8 @@ function createTankState(options = {}) {
       ? options.customGravelLayerColorize
       : getDefaultCustomGravelLayerColorizeSettings(),
     gravelPalette: Array.isArray(options.gravelPalette) ? options.gravelPalette : getDefaultGravelPalette(),
-    gravelSeed: Number.isFinite(options.gravelSeed) ? Math.abs(Math.floor(options.gravelSeed)) : Math.floor(Math.random() * 0x7fffffff),
+    gravelSeed,
+    gravelHillSeed,
     gravelLivePebbles: Array.isArray(options.gravelLivePebbles) ? options.gravelLivePebbles : [],
     floatingPellets: Array.isArray(options.floatingPellets) ? options.floatingPellets : [],
     selectedBackground: options.selectedBackground ?? getCatalogDefaultKey(runtime.backgroundCatalog, DEFAULT_TANK_BACKGROUND_ASSET_KEY),
@@ -437,6 +444,15 @@ function setActiveTank(tankId, options = {}) {
   runtime.gravelDigBursts = [];
   materializeCoarseFishActivities(nextTank, Date.now());
   state.activeTankId = nextTank.id;
+  const assetLoadGeneration = ++runtime.activeTankAssetLoadGeneration;
+  releaseInactiveDecorImages(state);
+  void preloadImages(getPlacedDecorPreloadPaths(state)).then(() => {
+    if (assetLoadGeneration !== runtime.activeTankAssetLoadGeneration) {
+      releaseInactiveDecorImages(state);
+      return;
+    }
+    renderTank(Date.now());
+  });
   renderUi(Date.now());
   saveState();
   if (options.announce !== false) {

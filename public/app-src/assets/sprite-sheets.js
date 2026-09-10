@@ -69,7 +69,7 @@ async function loadSpriteRuntimeImage(path, timeoutMs) {
         canvas.height = canvas.naturalHeight = height;
         canvas.complete = true;
         canvas.getContext("2d").drawImage(sheet, x, y, width, height, 0, 0, width, height);
-        cache.set(frame.key, canvas);
+        setBoundedSpriteFrameCache(cache, frame.key, canvas);
       }
     } finally {
       readers.count -= 1;
@@ -85,6 +85,24 @@ async function loadSpriteRuntimeImage(path, timeoutMs) {
   runtime.imageLoadFailures.delete(path);
   runtime.imageRecoveryNextAt.delete(path);
   return { loaded: true, reason: "sprite-sheet" };
+}
+
+function setBoundedSpriteFrameCache(cache, key, canvas) {
+  if (cache.has(key)) cache.delete(key);
+  cache.set(key, canvas);
+  let bytes = 0;
+  for (const value of cache.values()) bytes += (value.width || 0) * (value.height || 0) * 4;
+  while (cache.size > 96 || bytes > 96 * 1024 * 1024) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === key && cache.size === 1) break;
+    const oldest = cache.get(oldestKey);
+    cache.delete(oldestKey);
+    for (const [assetPath, image] of runtime.images) {
+      if (image === oldest) runtime.images.delete(assetPath);
+    }
+    bytes -= (oldest?.width || 0) * (oldest?.height || 0) * 4;
+    releaseCachedCanvasValue(oldest);
+  }
 }
 
 function loadTemporarySpriteSheet(path, timeoutMs) {
@@ -186,10 +204,40 @@ function getDecorArtworkPaths(decor) {
 
 function getPlacedDecorPreloadPaths(targetState = state) {
   const keys = new Set();
-  for (const tank of getAllTanks(targetState)) {
-    for (const item of tank.placedDecor || []) keys.add(item.decorKey);
-  }
+  const tanks = Array.isArray(targetState?.tanks) ? targetState.tanks : [];
+  const tank = tanks.find(candidate => candidate.id === targetState?.activeTankId) || tanks[0];
+  for (const item of tank?.placedDecor || []) keys.add(item.decorKey);
   return [...keys].flatMap(key => getDecorArtworkPaths(runtime.decorMap.get(key)));
+}
+
+function releaseInactiveDecorImages(targetState = state) {
+  const keep = new Set(getPlacedDecorPreloadPaths(targetState));
+  const knownDecorPaths = new Set([...runtime.decorMap.values()].flatMap(getDecorArtworkPaths));
+  const placementDecor = runtime.placementMode?.decorKey
+    ? runtime.decorMap.get(runtime.placementMode.decorKey)
+    : null;
+  for (const path of getDecorArtworkPaths(placementDecor)) keep.add(path);
+  for (const [path, image] of runtime.images) {
+    const normalized = String(path).replace(/\\/g, "/").toLowerCase();
+    const isDecorArtwork = /(^|\/)assets\/decor\//.test(normalized) || knownDecorPaths.has(path);
+    if (!isDecorArtwork || keep.has(path)) continue;
+    image?.removeAttribute?.("src");
+    runtime.images.delete(path);
+    runtime.imageLoadFailures.delete(path);
+    runtime.imageRecoveryNextAt.delete(path);
+    runtime.alphaMaskCache.delete(path);
+    for (const cacheKey of runtime.maskRegionCache.keys()) {
+      if (cacheKey === path || cacheKey.startsWith(`${path}|`)) runtime.maskRegionCache.delete(cacheKey);
+    }
+  }
+  runtime.caveInteriorMaskCache.clear();
+  runtime.caveShellMaskCache.clear();
+  runtime.caveTriggerMaskCache.clear();
+  runtime.caveNavCache.clear();
+  runtime.caveTintCache.clear();
+  runtime.caveCollisionFrameCache = null;
+  runtime.decorHangoutZonesKey = "";
+  runtime.decorHangoutZones = [];
 }
 
 function preloadDecorArtwork(decor) {

@@ -1265,7 +1265,12 @@ function getDecorTrayTypeLabel(tone) {
 }
 
 function syncTankTrayStageClass() {
-  dom.tankStage?.classList.toggle("has-edit-decor-tray", hasInlineToolTrayOpen());
+  const open = hasInlineToolTrayOpen();
+  if (dom.tankStage?.classList.contains("has-edit-decor-tray") !== open) {
+    dom.tankStage?.classList.toggle("has-edit-decor-tray", open);
+    runtime.stageRenderViewTarget = null;
+    runtime.stageRenderViewLastFrameAt = 0;
+  }
 }
 
 function getResidenceAssignmentTarget() {
@@ -2028,6 +2033,23 @@ function renderEditTankTray() {
   for (const panel of dom.editTankTray.querySelectorAll("[data-tank-tray-panel]")) {
     panel.hidden = panel.dataset.tankTrayPanel !== runtime.editTankTrayTab;
   }
+  const randomizeHillButton = dom.editTankTray.querySelector("[data-randomize-gravel-hill]");
+  if (randomizeHillButton) randomizeHillButton.hidden = runtime.editTankTrayTab !== "gravel";
+}
+
+function randomizeCurrentTankGravelHill() {
+  const tank = getCurrentTank();
+  if (!tank) return false;
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Randomize gravel hill");
+  const previousSeed = Math.abs(Math.floor(Number(tank.gravelHillSeed) || Number(tank.gravelSeed) || 1)) >>> 0;
+  let nextSeed = previousSeed;
+  while (nextSeed === previousSeed) nextSeed = Math.floor(Math.random() * 0x7fffffff);
+  tank.gravelHillSeed = nextSeed;
+  runtime.gravelHillProfile = null;
+  if (typeof commitDecorEditHistory === "function") commitDecorEditHistory();
+  saveState();
+  showToast("Gravel hill randomized.");
+  return true;
 }
 
 function renderFoodTray() {

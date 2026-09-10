@@ -16,12 +16,21 @@ async function run() {
   const previous = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, "utf8")) : {};
   const next = {};
   if (!checkOnly) fs.mkdirSync(outputDir, { recursive: true });
+  const expectedOutputs = new Set(sources.map(name => `${name}.webp`));
+  const obsoleteOutputs = fs.existsSync(outputDir)
+    ? fs.readdirSync(outputDir).filter(name => /\.webp$/i.test(name) && !expectedOutputs.has(name))
+    : [];
+  if (checkOnly && obsoleteOutputs.length) {
+    throw new Error(`Obsolete decor previews: ${obsoleteOutputs.join(", ")}. Run npm run build:app.`);
+  }
   for (const name of sources) {
     const source = fs.readFileSync(path.join(sourceDir, name));
     const sourceHash = hash(source);
     const outputName = `${name}.webp`;
     const outputPath = path.join(outputDir, outputName);
-    if (previous[name]?.sourceHash === sourceHash && fs.existsSync(outputPath)) {
+    const outputExists = fs.existsSync(outputPath);
+    const outputHash = outputExists ? hash(fs.readFileSync(outputPath)) : "";
+    if (previous[name]?.sourceHash === sourceHash && previous[name]?.outputHash === outputHash) {
       next[name] = previous[name];
       continue;
     }
@@ -31,7 +40,10 @@ async function run() {
     fs.writeFileSync(outputPath, preview);
     next[name] = { sourceHash, outputHash: hash(preview) };
   }
-  if (!checkOnly) fs.writeFileSync(manifestPath, `${JSON.stringify(next, null, 2)}\n`);
+  if (!checkOnly) {
+    for (const name of obsoleteOutputs) fs.unlinkSync(path.join(outputDir, name));
+    fs.writeFileSync(manifestPath, `${JSON.stringify(next, null, 2)}\n`);
+  }
   console.log(`Loose decor previews: ${sources.length} checked.`);
 }
 

@@ -817,16 +817,6 @@ test("contact footprint preserves the gap under an arch", () => {
   assert.equal(spans[1].left, .8);
 });
 
-test("lights-out and disabled caustics produce no caustic illumination", () => {
-  let lightsOut = false, enabled = true;
-  const c = load("rendering/tank-and-water.js", ["getCausticLightStrength"], {
-    isCausticLightingEnabled: () => enabled, isTankLightsOut: () => lightsOut, getTankDirtiness: () => 0
-  });
-  assert.ok(c.getCausticLightStrength(0) > 0);
-  lightsOut = true; assert.equal(c.getCausticLightStrength(0), 0);
-  lightsOut = false; enabled = false; assert.equal(c.getCausticLightStrength(0), 0);
-});
-
 test("grime layers accumulate across three equal thirds", () => {
   const c = load("tank/cleaning-and-glass.js", ["getVisibleGrimeDirtiness"], {
     GRIME_VISUAL_START_DIRTINESS: 0
@@ -997,24 +987,6 @@ test("boat reuses submarine-style bubbles from the lower rear with a horizontal 
   assert.match(meals, /upwardTravelPx = straightDirectionalTravel[\s\S]*\? 0/);
 });
 
-test("gravel caustics project finite coordinates across the real floor bounds", () => {
-  const draws = [];
-  const context = { save() {}, restore() {}, clip() {}, globalAlpha: 1,
-    drawImage: (...args) => draws.push(args) };
-  const c = load("rendering/tank-and-water.js", ["drawGravelCausticProjection", "getTankFloorDrawBounds"], {
-    runtime: { causticTexture: { frame: 1 }, causticFloorTexture: { frame: 1, canvas: {} } },
-    tankContext: context, getCausticLightStrength: () => .24, getAnimatedCausticTexture: () => ({}),
-    GLASS_MARGIN_X: 20, TANK_WIDTH: 1600, getVisibleTankFloorBottomY: () => 900,
-    getTankFloorSurfaceYAtX: () => 780, traceTankFloorMaskPath() {}
-  });
-  c.drawGravelCausticProjection(1000);
-  assert.equal(draws.length, 40);
-  for (const args of draws) {
-    assert.ok(args.slice(1).every(Number.isFinite), "all source and destination coordinates must be finite");
-    assert.ok(args[5] <= 20 && args[5] + args[7] >= 1580, "projection covers both floor edges");
-  }
-});
-
 test("decor contact shadows track the opaque base instead of a separated layer plane", () => {
   const c = load("rendering/decor.js", ["getDecorContactShadowMetrics"], {
     runtime: { decorMap: new Map([["arch", {path: "arch"}]]) },
@@ -1027,74 +999,6 @@ test("decor contact shadows track the opaque base instead of a separated layer p
   const shadow = c.getDecorContactShadowMetrics({decorKey: "arch"});
   assert.ok(shadow);
   assert.ok(Math.abs(shadow.y - 795) <= 1, "shadow must touch the visible base");
-});
-
-test("fish caustics skip drawing when lighting is disabled", () => {
-  const c = load("rendering/fish-and-effects.js", ["drawFishCausticLight"], {
-    getCausticLightStrength: () => 0,
-    getAnimatedCausticTexture: () => { throw new Error("disabled light should not allocate texture"); }
-  });
-  c.drawFishCausticLight({}, {}, {}, -50, 100, 50, 1000);
-});
-
-test("caustic field uses both authored maps without per-frame pixel deformation", () => {
-  const source = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
-  const start = source.indexOf("function getAnimatedCausticTexture");
-  const end = source.indexOf("function drawGravelCausticProjection", start);
-  const animationSource = source.slice(start, end);
-  assert.match(animationSource, /CAUSTIC_LIGHT_PRIMARY_ASSET_PATH/);
-  assert.match(animationSource, /CAUSTIC_LIGHT_SECONDARY_ASSET_PATH/);
-  assert.match(animationSource, /primarySource/);
-  assert.match(animationSource, /secondarySource/);
-  assert.doesNotMatch(animationSource, /getImageData|putImageData/);
-  assert.match(animationSource, /drawCausticSourceIntoField/);
-});
-
-test("caustics preserve the authored alpha strands even when source RGB is uniform", () => {
-  const c=load("rendering/tank-and-water.js",["getCausticRidgeAlpha"]);
-  assert.equal(c.getCausticRidgeAlpha(255,255,255,0),0);
-  assert.equal(c.getCausticRidgeAlpha(255,255,255,255),255);
-  assert.ok(c.getCausticRidgeAlpha(248,249,241,128)>=128,"translucent connections must not be erased");
-  assert.ok(c.getCausticRidgeAlpha(248,249,241,64)>60);
-});
-
-test("fish caustics stay at the same world point through movement, turns, and camera scaling", () => {
-  class Matrix {
-    constructor(v=[1,0,0,1,0,0]) { [this.a,this.b,this.c,this.d,this.e,this.f]=v; }
-    multiply(m) { const {a,b,c,d,e,f}=this; return new Matrix([
-      a*m.a+c*m.b,b*m.a+d*m.b,a*m.c+c*m.d,b*m.c+d*m.d,a*m.e+c*m.f+e,b*m.e+d*m.f+f]); }
-    inverse() { const {a,b,c,d,e,f}=this,k=a*d-b*c; return new Matrix([d/k,-b/k,-c/k,a/k,(c*f-d*e)/k,(b*e-a*f)/k]); }
-    point(x,y) { return [this.a*x+this.c*y+this.e,this.b*x+this.d*y+this.f]; }
-  }
-  let patternTransform, fills=0, pose=new Matrix();
-  const camera=new Matrix([1.8,0,0,1.8,-30,24]);
-  const c = load("rendering/fish-and-effects.js", ["drawFishCausticLight"], {
-    DOMMatrix:Matrix, runtime:{causticTexture:{frame:1}},
-    getCausticLightStrength:()=>.24, getAnimatedCausticTexture:()=>({}), WATER_SURFACE_Y: 60, TANK_WIDTH: 1600, TANK_HEIGHT: 900,
-    document:{createElement:()=>({getContext:()=>({
-      setTransform(){},clearRect(){},drawImage(){},
-      createPattern:()=>({setTransform:m=>{patternTransform=m;}}), fillRect:()=>fills++
-    })})}
-  });
-  const context={getTransform:()=>camera.multiply(pose),setTransform(){},beginPath(){},rect(){},clip(){},save(){},restore(){},drawImage(){},globalAlpha:1};
-  const fish={},image={};
-  const fixtures=[new Matrix([1,0,0,1,120,150]),new Matrix([1,0,0,1,140,170]),
-    new Matrix([-1,0,0,1,140,170]),new Matrix([.8,.6,-.6,.8,140,170]),new Matrix([.6,0,0,1.2,140,170])];
-  for(const next of fixtures){
-    pose=next;
-    const before=fills;
-    c.drawFishCausticLight(context,image,fish,-50,100,80,1000,camera);
-    assert.equal(fills,before+1,"pose changes must refresh the mask even within the same light frame");
-    // A fixed tank-space light point must map to that same point after the
-    // mask is drawn through the fish pose; no body-attached phase is allowed.
-    const maskPoint=patternTransform.point(155,165);
-    const worldPoint=pose.point(maskPoint[0]-50,maskPoint[1]-40);
-    assert.ok(Math.abs(worldPoint[0]-155)<1e-8);
-    assert.ok(Math.abs(worldPoint[1]-165)<1e-8);
-  }
-  const before=fills;
-  c.drawFishCausticLight(context,image,fish,-50,100,80,1000,camera);
-  assert.equal(fills,before,"identical pose and light frame reuse the mask");
 });
 
 test("tutorial store openings preserve the task category and bypass the cart layer", () => {
@@ -1182,19 +1086,55 @@ test("decor placement defaults anchor ordinary decor and ceiling-mount transit t
   assert.match(hitTesting, /attachToCeiling \? minAnchorY/);
 });
 
-test("disabled lighting controls stay implemented while caustics and decor shadows remain off", () => {
+test("settings control only the procedural foreground caustics", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const decorRendering = fs.readFileSync(path.join(root, "rendering/decor.js"), "utf8");
   const waterRendering = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
-  assert.match(bootstrap, /CAUSTIC_LIGHTING_SETTING_ENABLED = false/);
+  assert.match(bootstrap, /CAUSTIC_LIGHTING_SETTING_ENABLED = true/);
+  assert.doesNotMatch(bootstrap, /CAUSTIC_LIGHT_(PRIMARY|SECONDARY)_ASSET_PATH/);
   assert.match(bootstrap, /DECOR_SHADOWS_SETTING_ENABLED = false/);
   assert.match(settings, /CAUSTIC_LIGHTING_SETTING_ENABLED && getUiSettings\(\)\.causticLightingEnabled/);
   assert.match(settings, /DECOR_SHADOWS_SETTING_ENABLED && getUiSettings\(\)\.decorShadowsEnabled/);
   const startup = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
-  assert.match(startup, /CAUSTIC_LIGHTING_SETTING_ENABLED \? \[CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, CAUSTIC_LIGHT_SECONDARY_ASSET_PATH\] : \[\]/);
+  assert.doesNotMatch(startup, /CAUSTIC_LIGHT_(PRIMARY|SECONDARY)_ASSET_PATH/);
   assert.match(decorRendering, /function drawDecorContactShadow/);
-  assert.match(waterRendering, /function drawDecorCausticLight/);
+  assert.doesNotMatch(waterRendering, /function (drawDecorCausticLight|drawGravelCausticProjection|getAnimatedCausticTexture)/);
+  assert.match(waterRendering, /function drawLightweightCausticOverlay/);
+  assert.match(waterRendering, /drawUnderwaterLightingPass\(now\);\s*drawLightweightCausticOverlay\(now\);/);
+  assert.match(waterRendering, /globalCompositeOperation = "destination-in"/);
+  assert.match(waterRendering, /const drift = .*Math\.sin/);
+  assert.doesNotMatch(waterRendering, /wrapped\(seconds \* 8\.5/);
+  assert.match(decorRendering, /markLightweightCausticDecorImage/);
+  assert.match(fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8"), /markLightweightCausticImage/);
+});
+
+test("each tank seed gets a stable, subtly different gravel hill mask", () => {
+  const tank = { gravelSeed: 101, gravelHillSeed: 303 };
+  const c = load("rendering/tank-and-water.js", ["getTankFloorMaskHillProfile", "getTankFloorMaskSurfaceYAtX"], {
+    runtime: {}, clamp, TANK_WIDTH: 1600, getCurrentTank: () => tank
+  });
+  const bounds = { left: 40, right: 1560, baseTop: 760 };
+  const xs = Array.from({ length: 17 }, (_, index) => bounds.left + index * 95);
+  const first = xs.map(x => c.getTankFloorMaskSurfaceYAtX(x, bounds));
+  assert.deepEqual(xs.map(x => c.getTankFloorMaskSurfaceYAtX(x, bounds)), first);
+  tank.gravelHillSeed = 404;
+  const second = xs.map(x => c.getTankFloorMaskSurfaceYAtX(x, bounds));
+  assert.notDeepEqual(second, first);
+  for (const y of [...first, ...second]) assert.ok(Math.abs(y - bounds.baseTop) < 18);
+});
+
+test("the gravel editor exposes a fixed-height persisted hill randomizer", () => {
+  const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
+  const css = fs.readFileSync(path.join(root, "../../public/styles.css"), "utf8");
+  const customization = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  assert.match(html, /data-randomize-gravel-hill[^>]*>Randomize Gravel Hill</);
+  assert.match(customization, /tank\.gravelHillSeed = nextSeed/);
+  assert.match(customization, /beginDecorEditHistory\("Randomize gravel hill"\)/);
+  assert.match(persistence, /gravelHillSeed: Number\.isFinite\(incomingTank\.gravelHillSeed\)/);
+  assert.match(css, /#editDecorTray:has\(\.decor-history-controls\)[\s\S]*height: var\(--bubble-edit-tray-height\)/);
+  assert.match(css, /\.randomize-gravel-hill-button[\s\S]*position: absolute/);
 });
 
 test("transit tubes participate in both layers of cave-style collision", () => {
@@ -1204,6 +1144,15 @@ test("transit tubes participate in both layers of cave-style collision", () => {
   assert.match(collision, /!isCaveDecorKey\(item\.decorKey\) && !isTransitTubeDecorKey\(item\.decorKey\)/);
   assert.match(collision, /normalizedLayer < 3 && !isTransitTubeDecorKey\(item\.decorKey\)/);
   assert.match(navigation, /testLayer !== span\.front && testLayer !== span\.back/);
+  assert.match(collision, /movingThroughTubeExterior[\s\S]*clamp\(nextYNorm, -0\.35, 1\.35\)/);
+  assert.match(collision, /Only the committed traveler gets[\s\S]*tube remains solid for every other fish/);
+});
+
+test("linked tubes support homecoming and occasional ordinary travel", () => {
+  const simulation = fs.readFileSync(path.join(root, "tank/simulation.js"), "utf8");
+  assert.match(simulation, /residenceTubeJourney = shouldReturnHome \? getTransitTubeJourney\(source, residenceTank\)/);
+  assert.match(simulation, /ambientTubeJourneys[\s\S]*getTransitTubeJourney\(source, target\)/);
+  assert.match(simulation, /tubeJourney: selectedTubeJourney/);
 });
 
 test("decor edit mode avoids a full unrelated UI rebuild", () => {
@@ -1240,25 +1189,6 @@ test("wallet receipts persist purchases and expose a compact toolbar history", (
   assert.match(purchases, /function recordWalletTransaction/);
   assert.match(rendering, /function renderWalletTransactionMenu/);
   assert.match(html, /id="walletTransactionMenu"/);
-});
-
-test("caustic pattern transforms remain bounded at real calendar timestamps", () => {
-  const transforms=[];
-  const context={createPattern:()=>({setTransform:m=>transforms.push(m)}),
-    save(){},restore(){},beginPath(){},rect(){},clip(){},fillRect(){}};
-  const c=load("rendering/tank-and-water.js",["drawCausticSourceIntoField"],{
-    DOMMatrix:class {constructor(values){this.values=values;}}
-  });
-  for(const now of [Date.UTC(2026,8,7),Date.UTC(2040,0,1)])for(const primary of [true,false]){
-    transforms.length=0;
-    c.drawCausticSourceIntoField(context,{width:768},now/1000,primary);
-    assert.ok(transforms.length>0);
-    for(const m of transforms){
-      assert.ok(m.values.every(Number.isFinite));
-      assert.ok(Math.abs(m.values[4])<530 && Math.abs(m.values[5])<530,
-        "wall-clock time must not create billion-pixel CanvasPattern offsets");
-    }
-  }
 });
 
 test("Halloween placement uses corrected sizes with catalog loading and offline fallback", async () => {
@@ -1461,6 +1391,15 @@ test("overview opens from cached previews and refreshes at most one tank per fra
   const settledDraws = draws;
   c.paintBoroughSnapshots(tanks, 10100);
   assert.equal(draws, settledDraws, "settled previews do no extra painting between refreshes");
+});
+
+test("borough overview fish are hard-capped at 12 FPS", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  assert.match(bootstrap, /BOROUGH_OVERVIEW_FISH_FPS = 12/);
+  assert.match(bootstrap, /BOROUGH_OVERVIEW_FISH_FRAME_MS = 1000 \/ BOROUGH_OVERVIEW_FISH_FPS/);
+  assert.match(rendering, /< BOROUGH_OVERVIEW_FISH_FRAME_MS/);
+  assert.doesNotMatch(rendering, /debugOverviewFishFps/);
 });
 
 test("selected fish status uses compact in-tank badge without a Fish Care interact button", () => {

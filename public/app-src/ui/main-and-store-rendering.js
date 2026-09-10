@@ -620,6 +620,7 @@ function getBoroughSnapshotSignature(tank) {
     customGravelLayerColorize: tank?.customGravelLayerColorize,
     gravelPalette: tank?.gravelPalette,
     gravelSeed: tank?.gravelSeed,
+    gravelHillSeed: tank?.gravelHillSeed,
     gravelLivePebbles: tank?.gravelLivePebbles,
     poops: tank?.poops,
     lastCleanedAt: tank?.lastCleanedAt,
@@ -1005,11 +1006,7 @@ function renderBoroughOverviewFish(now = Date.now(), options = {}) {
     return false;
   }
   const force = options.force === true;
-  const debugFps = Number(runtime.debugOverviewFishFps);
-  const frameMs = Number.isFinite(debugFps) && debugFps > 0
-    ? Math.max(16, 1000 / debugFps)
-    : Math.max(50, Number(runtime.boroughOverviewFishFrameMs) || (1000 / 12));
-  if (!force && now - (Number(runtime.boroughOverviewFishRenderedAt) || 0) < frameMs) {
+  if (!force && now - (Number(runtime.boroughOverviewFishRenderedAt) || 0) < BOROUGH_OVERVIEW_FISH_FRAME_MS) {
     return false;
   }
   runtime.boroughOverviewFishRenderedAt = now;

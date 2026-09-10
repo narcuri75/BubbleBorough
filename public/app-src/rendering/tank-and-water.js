@@ -8,13 +8,14 @@ function renderTank(now) {
   tankContext.save();
   clipToTankShellBounds(tankContext);
   drawBackground(now);
+  beginLightweightCausticMask();
   drawUvLightAtmosphere(now, "back");
   drawWaterParticles(now, TANK_DEPTH_LAYERS);
   drawFish(now, TANK_DEPTH_LAYERS, { onlyBehavior: "sucker" });
   drawAmbientBubbles(now, 1);
   drawTankFloor(now);
+  markLightweightCausticFloor();
   drawGravelGrime(now, dirtiness);
-  drawGravelCausticProjection(now);
   drawSedimentClouds(now);
   drawEffectClouds(EFFECT_CLOUD_LAYER_FLOOR);
   drawGravelDigBursts(now);
@@ -46,6 +47,7 @@ function renderTank(now) {
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
   drawUnderwaterLightingPass(now);
+  drawLightweightCausticOverlay(now);
   //drawLooseGravel(now, { transientOnly: true });
   drawDirtyWaterTint(dirtiness);
   drawMedicineWaterTint(now);
@@ -86,228 +88,189 @@ function renderTank(now) {
   }
 }
 
-function getCausticLightStrength(now) {
-  if (!isCausticLightingEnabled() || isTankLightsOut(now)) return 0;
-  // Keep the authored light map readable without turning the whole tank into
-  // a bright projected texture. Individual passes add their own small gain.
-  return 0.16 * (1 - clamp(getTankDirtiness(now), 0, 1) * 0.55);
-}
+function getProceduralCausticTexture() {
+  if (runtime.proceduralCausticTexture) return runtime.proceduralCausticTexture;
+  const size = 160;
+  const points = [];
+  let seed = 0x62b0a7;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  for (let index = 0; index < 34; index += 1) {
+    points.push({ x: random() * size, y: random() * size });
+  }
 
-function getCausticRidgeAlpha(red, green, blue, alpha) {
-  // These authored maps encode their connected light strands in alpha, while
-  // most visible RGB values are nearly white. RGB high-pass filtering erases
-  // that pattern. Retain the alpha structure and lift its softer connections.
-  return Math.round(255 * Math.pow(clamp(alpha / 255, 0, 1), 0.9));
-}
-
-function getCausticRidgeMask(image, size) {
-  // Kept for compatibility with the previous renderer inventory. The clean
-  // renderer uses the prepared color source below instead of a per-frame mask.
-  const prepared = getPreparedCausticSource(image);
-  if (!prepared) return null;
-  const mask = document.createElement("canvas");
-  mask.width = mask.height = size;
-  const context = mask.getContext("2d");
-  context.drawImage(prepared, 0, 0, size, size);
-  return context.getImageData(0, 0, size, size).data;
-}
-
-function getPreparedCausticSource(image) {
-  if (!isUsableRuntimeImage(image)) return null;
-  if (!runtime.causticPreparedSources) runtime.causticPreparedSources = new WeakMap();
-  const cached = runtime.causticPreparedSources.get(image);
-  if (cached) return cached;
-
-  // Prepare the authored transparency once, preserving warm/cool source RGB.
-  const naturalWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
-  const naturalHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
-  const maxSide = 768;
-  const scale = Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight));
-  const width = Math.max(1, Math.round(naturalWidth * scale));
-  const height = Math.max(1, Math.round(naturalHeight * scale));
-
-  const source = document.createElement("canvas");
-  source.width = width;
-  source.height = height;
-  const context = source.getContext("2d", { willReadFrequently: true });
-  context.drawImage(image, 0, 0, width, height);
-
-  const pixels = context.getImageData(0, 0, width, height);
-  for (let i = 0; i < pixels.data.length; i += 4) {
-    pixels.data[i + 3] = getCausticRidgeAlpha(
-      pixels.data[i], pixels.data[i + 1], pixels.data[i + 2], pixels.data[i + 3]
-    );
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext("2d");
+  const pixels = context.createImageData(size, size);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      let nearest = Infinity;
+      let secondNearest = Infinity;
+      for (const point of points) {
+        const rawX = Math.abs(x - point.x);
+        const rawY = Math.abs(y - point.y);
+        const dx = Math.min(rawX, size - rawX);
+        const dy = Math.min(rawY, size - rawY);
+        const distance = dx * dx + dy * dy;
+        if (distance < nearest) {
+          secondNearest = nearest;
+          nearest = distance;
+        } else if (distance < secondNearest) {
+          secondNearest = distance;
+        }
+      }
+      const ridgeDistance = Math.sqrt(secondNearest) - Math.sqrt(nearest);
+      const ridge = Math.exp(-ridgeDistance * ridgeDistance * 0.16);
+      const shimmer = 0.86 + 0.14 * Math.sin(x * 0.17 + y * 0.11);
+      const offset = (y * size + x) * 4;
+      pixels.data[offset] = 190;
+      pixels.data[offset + 1] = 232;
+      pixels.data[offset + 2] = 255;
+      pixels.data[offset + 3] = Math.round(255 * Math.pow(ridge, 2.1) * shimmer);
+    }
   }
   context.putImageData(pixels, 0, 0);
-  runtime.causticPreparedSources.set(image, source);
-  return source;
+  runtime.proceduralCausticTexture = canvas;
+  runtime.proceduralCausticPatterns = new WeakMap();
+  return canvas;
 }
 
-function drawCausticSourceIntoField(context, source, seconds, primary) {
-  if (!context || !source) return;
-  const pattern = context.createPattern(source, "repeat");
-  if (!pattern) return;
-  const tau = Math.PI * 2;
-  const baseScale = 512 / source.width;
-  // The live renderer uses Date.now(), so unbounded offsets reach billions of
-  // pixels and lose precision inside CanvasPattern. Repetition makes wrapping
-  // by one tile visually identical while keeping browser transforms accurate.
-  const driftX = ((seconds * (primary ? 10.0 : -7.5)) % 512 + 512) % 512;
-  const driftY = ((seconds * (primary ? 3.5 : 5.0)) % 512 + 512) % 512;
-  const phase = primary ? 0.8 : 2.35;
-  const strips = 128;
-  const stripHeight = 512 / strips;
-
-  context.globalAlpha = primary ? 0.76 : 0.48;
-  for (let i = 0; i < strips; i += 1) {
-    const rowPhase = i / strips * tau;
-    const warpX = Math.sin(seconds * (primary ? 1.05 : 1.25) + rowPhase * 2 + phase) * (primary ? 7.0 : 8.0)
-      + Math.sin(seconds * (primary ? 0.19 : 0.31) + rowPhase * 3 + phase * 0.7) * 1.7;
-    const warpY = Math.sin(seconds * (primary ? 0.28 : 0.39) + rowPhase * 2 + phase) * (primary ? 1.2 : 1.7);
-    pattern.setTransform(new DOMMatrix([
-      baseScale, 0, 0, baseScale,
-      driftX + warpX,
-      driftY + warpY
-    ]));
-    const y = i * stripHeight;
-    context.save();
-    context.beginPath();
-    context.rect(0, y, 512, stripHeight);
-    context.clip();
-    context.fillStyle = pattern;
-    context.fillRect(0, y, 512, stripHeight + 1);
-    context.restore();
+function getProceduralCausticPattern(context) {
+  const texture = getProceduralCausticTexture();
+  let pattern = runtime.proceduralCausticPatterns?.get(context);
+  if (!pattern) {
+    pattern = context.createPattern(texture, "repeat");
+    if (pattern) runtime.proceduralCausticPatterns.set(context, pattern);
   }
+  return pattern;
 }
 
-function getAnimatedCausticTexture(now) {
-  const primaryImage = runtime.images.get(CAUSTIC_LIGHT_PRIMARY_ASSET_PATH);
-  const secondaryImage = runtime.images.get(CAUSTIC_LIGHT_SECONDARY_ASSET_PATH);
-  const primaryReady = isUsableRuntimeImage(primaryImage);
-  const secondaryReady = isUsableRuntimeImage(secondaryImage);
-
-  if (!primaryReady) requestRuntimeImageRecovery(CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, { kind: "caustic-light-primary" });
-  if (!secondaryReady) requestRuntimeImageRecovery(CAUSTIC_LIGHT_SECONDARY_ASSET_PATH, { kind: "caustic-light-secondary" });
-  if (!primaryReady && !secondaryReady) return null;
-
-  // Both maps flow and deform independently in a shared 30 FPS light field.
-  const frame = Math.floor((Number(now) || 0) / 33.333333);
-  let cache = runtime.causticTexture;
-  if (cache?.frame === frame && cache.primaryImage === primaryImage && cache.secondaryImage === secondaryImage) {
-    return cache.canvas;
-  }
-  if (!cache || cache.canvas.width !== 512) {
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 512;
-    cache = runtime.causticTexture = {
-      canvas,
-      context: canvas.getContext("2d"),
-      frame: -1,
-      primaryImage: null,
-      secondaryImage: null
-    };
-  }
-
-  const context = cache.context;
-  context.save();
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, 512, 512);
-  const seconds = frame / 30;
-  const primarySource = primaryReady ? getPreparedCausticSource(primaryImage) : null;
-  const secondarySource = secondaryReady ? getPreparedCausticSource(secondaryImage) : null;
-
-  context.globalCompositeOperation = "source-over";
-  drawCausticSourceIntoField(context, primarySource || secondarySource, seconds, true);
-  context.globalCompositeOperation = "screen";
-  drawCausticSourceIntoField(context, secondarySource || primarySource, seconds, false);
-  context.restore();
-
-  cache.frame = frame;
-  cache.primaryImage = primaryImage;
-  cache.secondaryImage = secondaryImage;
-  return cache.canvas;
+function getLightweightCausticMask() {
+  if (runtime.lightweightCausticMask) return runtime.lightweightCausticMask;
+  const scale = 0.25;
+  const mask = document.createElement("canvas");
+  mask.width = Math.round(TANK_WIDTH * scale);
+  mask.height = Math.round(TANK_HEIGHT * scale);
+  runtime.lightweightCausticMask = {
+    canvas: mask,
+    context: mask.getContext("2d"),
+    scale
+  };
+  return runtime.lightweightCausticMask;
 }
 
-function drawGravelCausticProjection(now) {
-  const strength = getCausticLightStrength(now);
-  if (strength <= 0) return;
-  const texture = getAnimatedCausticTexture(now);
-  if (!texture) return;
-  let projection = runtime.causticFloorTexture;
-  if (!projection) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 768; canvas.height = 256;
-    projection = runtime.causticFloorTexture = { canvas, context: canvas.getContext("2d"), frame: -1 };
-  }
-  if (projection.frame !== runtime.causticTexture.frame) {
-    projection.context.clearRect(0, 0, 768, 256);
-    projection.context.fillStyle = projection.context.createPattern(texture, "repeat");
-    projection.context.fillRect(0, 0, 768, 256);
-    projection.frame = runtime.causticTexture.frame;
-  }
+function beginLightweightCausticMask() {
+  runtime.lightweightCausticFrameEnabled = isCausticLightingEnabled();
+  if (!runtime.lightweightCausticFrameEnabled) return;
+  const mask = getLightweightCausticMask();
+  mask.context.setTransform(1, 0, 0, 1, 0, 0);
+  mask.context.clearRect(0, 0, mask.canvas.width, mask.canvas.height);
+}
+
+function setLightweightCausticMaskTransform(sourceContext = tankContext) {
+  const mask = getLightweightCausticMask();
+  const source = sourceContext.getTransform();
+  const base = new DOMMatrix([
+    runtime.stageRenderScale, 0, 0, runtime.stageRenderScale,
+    runtime.stageRenderOffsetX, runtime.stageRenderOffsetY
+  ]);
+  let local = source;
+  try {
+    local = base.inverse().multiply(source);
+  } catch { }
+  mask.context.setTransform(
+    local.a * mask.scale,
+    local.b * mask.scale,
+    local.c * mask.scale,
+    local.d * mask.scale,
+    local.e * mask.scale,
+    local.f * mask.scale
+  );
+  mask.context.globalAlpha = 1;
+  mask.context.globalCompositeOperation = "source-over";
+  return mask.context;
+}
+
+function markLightweightCausticImage(sourceContext, image, x, y, width, height) {
+  if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
+  const context = setLightweightCausticMaskTransform(sourceContext);
+  context.drawImage(image, x, y, width, height);
+}
+
+function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, width, height, item, now, motion) {
+  if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
+  const context = setLightweightCausticMaskTransform(sourceContext);
+  drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, motion);
+}
+
+function markLightweightCausticFloor() {
+  if (!runtime.lightweightCausticFrameEnabled) return;
+  const mask = getLightweightCausticMask();
   const bounds = getTankFloorDrawBounds();
-  const depth = Math.max(1, bounds.bottom - bounds.drawTop);
-  tankContext.save();
-  traceTankFloorMaskPath(tankContext, bounds);
-  tankContext.clip();
-  tankContext.globalCompositeOperation = "lighter";
-  tankContext.globalAlpha *= Math.min(1, strength * 1.15);
-  const strips = 40;
-  for (let i = 0; i < strips; i++) {
-    const t = i / strips;
-    // Overscan the distant rows so perspective does not leave unlit side wedges.
-    const width = bounds.drawWidth * (1 + t * 0.26);
-    tankContext.drawImage(projection.canvas, 0, t * 256, 768, 256 / strips,
-      bounds.left + (bounds.drawWidth - width) / 2, bounds.drawTop + t * depth,
-      width, depth / strips);
-  }
-  tankContext.restore();
+  mask.context.setTransform(mask.scale, 0, 0, mask.scale, 0, 0);
+  mask.context.globalCompositeOperation = "source-over";
+  mask.context.fillStyle = "#fff";
+  mask.context.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, Math.max(1, bounds.bottom - bounds.drawTop));
 }
 
-function drawDecorCausticLight(context, image, drawX, drawY, width, height, item, now, motion) {
-  const strength = getCausticLightStrength(now);
-  if (!strength || width <= 0 || height <= 0) return;
-  const texture = getAnimatedCausticTexture(now);
-  if (!texture) return;
-  // Weak ownership releases masks with removed decor; update only at light cadence.
-  if (!runtime.decorCausticCache) runtime.decorCausticCache = new WeakMap();
-  let scratch = runtime.decorCausticCache.get(item);
-  if (!scratch) {
+function drawLightweightCausticOverlay(now) {
+  if (!isCausticLightingEnabled() || isTankLightsOut(now)) return;
+  const seconds = (Number(now) || 0) / 1000;
+  const dirtFade = 1 - clamp(getTankDirtiness(now), 0, 1) * 0.58;
+  const width = TANK_WIDTH;
+  const height = TANK_HEIGHT - WATER_SURFACE_Y;
+  // Bounded sine motion keeps the pattern moving without a modulo seam. Each
+  // component rejoins with the same position and velocity at the end of its cycle.
+  const drift = (rate, distance, phase = 0) => Math.sin(seconds * rate + phase) * distance;
+  const mask = getLightweightCausticMask();
+  let field = runtime.lightweightCausticField;
+  if (!field) {
     const canvas = document.createElement("canvas");
-    scratch = { canvas, context: canvas.getContext("2d") };
-    runtime.decorCausticCache.set(item, scratch);
+    canvas.width = mask.canvas.width;
+    canvas.height = mask.canvas.height;
+    field = runtime.lightweightCausticField = { canvas, context: canvas.getContext("2d") };
   }
-  const scale = Math.min(1, 192 / Math.max(width, height));
-  const w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
-  const c = scratch.context;
-  const key = [runtime.causticTexture.frame, width, height, item.xNorm, item.yNorm].join(":");
-  if (scratch.key !== key || scratch.image !== image) {
-  if (scratch.canvas.width !== w) scratch.canvas.width = w;
-  if (scratch.canvas.height !== h) scratch.canvas.height = h;
-  c.setTransform(1, 0, 0, 1, 0, 0);
-  c.clearRect(0, 0, w, h);
-  c.globalCompositeOperation = "source-over";
-  c.drawImage(image, 0, 0, w, h);
-  c.globalCompositeOperation = "source-in";
-  c.fillStyle = c.createPattern(texture, "repeat");
-  c.save();
-  c.scale(scale, scale);
-  c.translate(-item.xNorm * TANK_WIDTH + width / 2, -item.yNorm * TANK_HEIGHT + height);
-  c.fillRect(item.xNorm * TANK_WIDTH - width / 2, item.yNorm * TANK_HEIGHT - height, width, height);
-  c.restore();
-  scratch.key = key;
-  scratch.image = image;
-  }
-  context.save();
-  // Lighting only exists below the water surface. Clipping here, at tank
-  // coordinates, also handles decorations that straddle the waterline.
-  context.beginPath();
-  context.rect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
-  context.clip();
-  context.globalCompositeOperation = "screen";
-  context.globalAlpha *= strength * 0.65;
-  drawDecorMotionImageToContext(context, scratch.canvas, drawX, drawY, width, height, item, now, motion);
-  context.restore();
+  const context = field.context;
+  const pattern = getProceduralCausticPattern(context);
+  if (!pattern) return;
+  const fieldScale = mask.scale;
+  const fieldWaterY = WATER_SURFACE_Y * fieldScale;
+  const fieldHeight = height * fieldScale;
+
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, field.canvas.width, field.canvas.height);
+  context.globalCompositeOperation = "source-over";
+  context.fillStyle = pattern;
+
+  pattern.setTransform(new DOMMatrix([
+    1.42 * fieldScale, 0.035 * fieldScale, -0.025 * fieldScale, 1.18 * fieldScale,
+    drift(0.19, 72) * fieldScale, drift(0.13, 44, 0.7) * fieldScale
+  ]));
+  context.globalAlpha = 0.105 * dirtFade;
+  context.fillRect(0, fieldWaterY, field.canvas.width, fieldHeight);
+
+  pattern.setTransform(new DOMMatrix([
+    2.05 * fieldScale, -0.045 * fieldScale, 0.06 * fieldScale, 1.72 * fieldScale,
+    drift(0.11, 96, 2.1) * fieldScale, drift(0.17, 58, 1.4) * fieldScale
+  ]));
+  context.globalAlpha = 0.052 * dirtFade;
+  context.fillRect(0, fieldWaterY, field.canvas.width, fieldHeight);
+  context.globalAlpha = 1;
+  context.globalCompositeOperation = "destination-in";
+  context.drawImage(mask.canvas, 0, 0);
+
+  tankContext.save();
+  clipToTankShellBounds(tankContext);
+  tankContext.beginPath();
+  tankContext.rect(0, WATER_SURFACE_Y, width, height);
+  tankContext.clip();
+  tankContext.globalCompositeOperation = "screen";
+  tankContext.globalAlpha = 1;
+  tankContext.drawImage(field.canvas, 0, 0, field.canvas.width, field.canvas.height, 0, 0, width, TANK_HEIGHT);
+  tankContext.restore();
 }
 
 function drawUnderwaterLightingPass(now) {
@@ -2042,10 +2005,34 @@ function getTankFloorDrawBounds() {
 function getTankFloorMaskSurfaceYAtX(x, bounds = getTankFloorDrawBounds()) {
   const { left, right, baseTop } = bounds;
   const t = clamp((x - left) / Math.max(1, right - left), 0, 1);
-  const wave1 = Math.sin(t * Math.PI * 2 * 1.2) * 8;
-  const wave2 = Math.sin(t * Math.PI * 2 * 3.4 + 0.8) * 3;
-  const crestBias = Math.sin(t * Math.PI) * 4;
+  const profile = getTankFloorMaskHillProfile();
+  const wave1 = Math.sin(t * Math.PI * 2 * profile.longFrequency + profile.longPhase) * profile.longAmplitude;
+  const wave2 = Math.sin(t * Math.PI * 2 * profile.shortFrequency + profile.shortPhase) * profile.shortAmplitude;
+  const crestBias = Math.sin(t * Math.PI) * profile.crestBias;
   return baseTop + wave1 + wave2 - crestBias;
+}
+
+function getTankFloorMaskHillProfile() {
+  const tank = getCurrentTank();
+  const seed = Math.abs(Math.floor(Number(tank?.gravelHillSeed) || Number(tank?.gravelSeed) || 1)) >>> 0;
+  if (runtime.gravelHillProfile?.seed === seed) return runtime.gravelHillProfile;
+  const unit = (salt) => {
+    let value = (seed ^ salt) >>> 0;
+    value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+    value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+    return ((value ^ (value >>> 16)) >>> 0) / 4294967296;
+  };
+  runtime.gravelHillProfile = {
+    seed,
+    longFrequency: 1.05 + unit(0x1357) * 0.3,
+    longPhase: unit(0x2468) * Math.PI * 2,
+    longAmplitude: 6.5 + unit(0x369a) * 2.5,
+    shortFrequency: 3.05 + unit(0x48bc) * 0.7,
+    shortPhase: unit(0x5ade) * Math.PI * 2,
+    shortAmplitude: 2.1 + unit(0x6cf0) * 1.4,
+    crestBias: 2.5 + unit(0x7e12) * 2.5
+  };
+  return runtime.gravelHillProfile;
 }
 
 function traceTankFloorMaskPath(context, bounds = getTankFloorDrawBounds()) {

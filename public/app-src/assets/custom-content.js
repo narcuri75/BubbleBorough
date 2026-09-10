@@ -1863,6 +1863,11 @@ function bindEvents() {
   });
   dom.editTankTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    if (event.target.closest("[data-randomize-gravel-hill]")) {
+      randomizeCurrentTankGravelHill();
+      playToolbarButtonSoundEffect("press");
+      return;
+    }
     const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
     if (overlayModeTab) {
       const nextMode = overlayModeTab.dataset.editOverlayMode;
@@ -3506,6 +3511,11 @@ function syncTankStageRenderCssGeometry(scale, offsetX, offsetY) {
 }
 
 function applyStageRenderViewTransform(scale, offsetX, offsetY) {
+  if (runtime.stageRenderScale === scale
+    && runtime.stageRenderOffsetX === offsetX
+    && runtime.stageRenderOffsetY === offsetY) {
+    return;
+  }
   runtime.stageRenderScale = scale;
   runtime.stageRenderOffsetX = offsetX;
   runtime.stageRenderOffsetY = offsetY;
@@ -3519,7 +3529,21 @@ function applyStageRenderViewTransform(scale, offsetX, offsetY) {
 }
 
 function updateStageRenderView(frameTime = performance.now(), options = {}) {
-  const target = getStageRenderViewTarget();
+  const viewKey = runtime.editTankMode
+    ? `decor:${dom.editDecorTray?.hidden !== true}`
+    : runtime.fishEditMode
+      ? `fish:${dom.editFishTray?.hidden !== true}`
+      : runtime.equipmentEditMode
+        ? `equipment:${dom.editEquipmentTray?.hidden !== true}`
+        : runtime.tankEditMode
+          ? `tank:${dom.editTankTray?.hidden !== true}`
+          : "view";
+  if (runtime.stageRenderViewTargetKey !== viewKey) {
+    runtime.stageRenderViewTargetKey = viewKey;
+    runtime.stageRenderViewTarget = null;
+    runtime.stageRenderViewLastFrameAt = 0;
+  }
+  const target = runtime.stageRenderViewTarget || (runtime.stageRenderViewTarget = getStageRenderViewTarget());
   if (!target) {
     return;
   }
@@ -3559,6 +3583,7 @@ function resizeDisplayCanvases() {
   const dpr = getStageRenderDevicePixelRatio();
   const displayWidth = Math.max(1, Math.round(rect.width * dpr));
   const displayHeight = Math.max(1, Math.round(rect.height * dpr));
+  runtime.stageRenderViewTarget = null;
 
   const tankSizeChanged = dom.tankCanvas.width !== displayWidth || dom.tankCanvas.height !== displayHeight;
   if (tankSizeChanged) {

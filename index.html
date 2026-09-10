@@ -907,6 +907,7 @@
 
             <section id="editTankTray" class="edit-decor-tray edit-tank-tray" hidden aria-label="Edit tank tray">
               <div class="edit-tray-mode-header">
+                <button class="randomize-gravel-hill-button" type="button" data-randomize-gravel-hill hidden>Randomize Gravel Hill</button>
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
@@ -2356,21 +2357,9 @@
 
   <script>
     (() => {
-      const phoneScreenQuery = "(hover: none) and (pointer: coarse) and (max-width: 767px)";
-      const phoneLandscapeQuery = "(hover: none) and (pointer: coarse) and (max-width: 932px) and (max-height: 500px) and (orientation: landscape)";
-      const phoneAgentPattern = /Android.*Mobile|iPhone|iPod|IEMobile|Windows Phone|webOS|BlackBerry|Opera Mini/i;
-      const shouldUseMobilePage =
-        window.matchMedia?.(phoneScreenQuery)?.matches
-        || window.matchMedia?.(phoneLandscapeQuery)?.matches
-        || phoneAgentPattern.test(navigator.userAgent || "");
-
-      if (shouldUseMobilePage) {
-        window.location.replace("./mobile.html");
-        return;
-      }
-
-      const unsupportedScreenQuery = "(max-width: 767px), (max-width: 1180px) and (max-height: 620px)";
-      if (window.matchMedia?.(unsupportedScreenQuery)?.matches) {
+      const mobileDeviceQuery = "(hover: none) and (pointer: coarse), (max-width: 767px), (max-width: 1180px) and (max-height: 620px)";
+      const mobileAgentPattern = /Android.*Mobile|iPhone|iPod|IEMobile|Windows Phone|webOS|BlackBerry|Opera Mini/i;
+      if (window.matchMedia?.(mobileDeviceQuery)?.matches || mobileAgentPattern.test(navigator.userAgent || "")) {
         document.documentElement.dataset.unsupportedMobileDevice = "true";
         return;
       }

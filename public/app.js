@@ -1185,7 +1185,7 @@ const DEFAULT_THEME = "dark";
 // underlying settings code available so the feature can be restored later.
 const TOOLBAR_POSITION_SETTING_ENABLED = false;
 const DISPLAY_POSITION_SETTING_ENABLED = false;
-const CAUSTIC_LIGHTING_SETTING_ENABLED = false;
+const CAUSTIC_LIGHTING_SETTING_ENABLED = true;
 const DECOR_SHADOWS_SETTING_ENABLED = false;
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false
@@ -1209,12 +1209,14 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   tankMouseInputLocked: false,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
-  causticLightingEnabled: false,
+  causticLightingEnabled: true,
   decorShadowsEnabled: false,
   uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
+const BOROUGH_OVERVIEW_FISH_FPS = 12;
+const BOROUGH_OVERVIEW_FISH_FRAME_MS = 1000 / BOROUGH_OVERVIEW_FISH_FPS;
 const CUSTOM_IMAGE_BACKGROUND_ASSET_KEY = "__custom-image-background__";
 const CUSTOM_DECOR_SHOP_KEY = "__custom-decor-shop__";
 const CUSTOM_DECOR_KEY_PREFIX = "__custom-decor-";
@@ -1662,8 +1664,6 @@ const CAVE_ENTRY_SIDE_OPTIONS = Object.freeze([
   { id: "both", label: "Both" }
 ]);
 const OPTIONAL_BUBBLE_ORB_ASSET_PATH = "assets/misc/bubble.png";
-const CAUSTIC_LIGHT_PRIMARY_ASSET_PATH = resolveAppUrl("assets/misc/Caustic_Lighting_1.png");
-const CAUSTIC_LIGHT_SECONDARY_ASSET_PATH = resolveAppUrl("assets/misc/Caustic_Lighting_2.png");
 const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
@@ -2048,6 +2048,7 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "customGravelLayerColorize",
   "gravelPalette",
   "gravelSeed",
+  "gravelHillSeed",
   "gravelLivePebbles",
   "floatingPellets",
   "selectedBackground",
@@ -3229,7 +3230,6 @@ const runtime = {
   boroughPanStartX: 0,
   boroughPanStartY: 0,
   boroughOverviewFishRenderedAt: 0,
-  boroughOverviewFishFrameMs: 1000 / 12,
   boroughOverviewFishSampleMs: 2000,
   boroughOverviewFishProxies: new Map(),
   boroughOverviewSnapshotCache: new Map(),
@@ -3430,6 +3430,7 @@ const runtime = {
   imageLoadPromises: new Map(),
   imageLoadFailures: new Map(),
   imageRecoveryNextAt: new Map(),
+  activeTankAssetLoadGeneration: 0,
   cloudUploadPromise: null,
   cloudUploadQueued: false,
   missingFishImageWarnings: new Set(),
@@ -4593,20 +4594,28 @@ function beginDecorEditHistory(label = "Edit decorations") {
   if (!history || history.applying) return;
   if (history.pending && (runtime.dragState || runtime.decorResizeState)) return;
   commitDecorEditHistory();
-  history.pending = { label, before: state.placedDecor.map(copyDecorEditItem) };
+  history.pending = {
+    label,
+    before: state.placedDecor.map(copyDecorEditItem),
+    beforeGravelHillSeed: Number(getCurrentTank()?.gravelHillSeed) || null
+  };
 }
 
 function commitDecorEditHistory() {
   const history = getDecorEditHistory();
   if (!history?.pending || history.applying || runtime.dragState || runtime.decorResizeState) return;
-  const { label, before } = history.pending;
+  const { label, before, beforeGravelHillSeed } = history.pending;
   history.pending = null;
   const after = state.placedDecor.map(copyDecorEditItem);
   const ids = new Set([...before, ...after].map((item) => item.id));
   const changes = [...ids].map((id) => ({ before: before.find((item) => item.id === id), after: after.find((item) => item.id === id) }))
     .filter((change) => JSON.stringify(change.before) !== JSON.stringify(change.after));
-  if (!changes.length) return;
-  history.undo.push({ label, changes });
+  const afterGravelHillSeed = Number(getCurrentTank()?.gravelHillSeed) || null;
+  const gravelHillChange = beforeGravelHillSeed === afterGravelHillSeed
+    ? null
+    : { before: beforeGravelHillSeed, after: afterGravelHillSeed };
+  if (!changes.length && !gravelHillChange) return;
+  history.undo.push({ label, changes, gravelHillChange });
   history.undo = history.undo.slice(-50);
   history.redo = [];
 }
@@ -4624,6 +4633,14 @@ function replayDecorEdit(direction) {
   const undo = direction === "undo";
   const inventory = { ...state.decorInventory };
   const changes = entry.changes.map((change) => ({ from: undo ? change.after : change.before, to: undo ? change.before : change.after }));
+  const hillFrom = undo ? entry.gravelHillChange?.after : entry.gravelHillChange?.before;
+  const hillTo = undo ? entry.gravelHillChange?.before : entry.gravelHillChange?.after;
+  if (entry.gravelHillChange && (Number(getCurrentTank()?.gravelHillSeed) || null) !== hillFrom) {
+    history.undo = []; history.redo = [];
+    showToast("The gravel hill changed outside the editor. Start a new edit to use undo.");
+    renderDecorHistoryControls();
+    return false;
+  }
   for (const { from, to } of changes) {
     const current = state.placedDecor.find((item) => item.id === (from || to).id);
     // An item removed or edited outside this history must never be resurrected or overwritten.
@@ -4658,6 +4675,10 @@ function replayDecorEdit(direction) {
       }
     }
     state.decorInventory = Object.fromEntries(Object.entries(inventory).filter(([, count]) => count > 0));
+    if (entry.gravelHillChange) {
+      getCurrentTank().gravelHillSeed = hillTo;
+      runtime.gravelHillProfile = null;
+    }
     history[direction].pop();
     history[undo ? "redo" : "undo"].push(entry);
     finishDecorLayoutChange();
@@ -4776,7 +4797,7 @@ function renderDecorHistoryControls() {
     controls.className = "decor-history-controls";
     controls.setAttribute("aria-label", "Decoration history and layouts");
     controls.innerHTML = '<button type="button" class="small-button alt" data-decor-history="undo">↶ Undo</button><button type="button" class="small-button alt" data-decor-history="redo">↷ Redo</button><button type="button" class="small-button" data-decor-layouts>Saved layouts</button>';
-    tray.querySelector(".edit-decor-tray-header").after(controls);
+    tray.querySelector(".edit-decor-tray-header").append(controls);
     controls.addEventListener("click", (event) => {
       const button = event.target.closest("button");
       if (button?.dataset.decorHistory) replayDecorEdit(button.dataset.decorHistory);
@@ -7544,6 +7565,12 @@ function createTankState(options = {}) {
     driftB: options.animatedBackgroundDriftColorB,
     driftC: options.animatedBackgroundDriftColorC
   });
+  const gravelSeed = Number.isFinite(options.gravelSeed)
+    ? Math.abs(Math.floor(options.gravelSeed))
+    : Math.floor(Math.random() * 0x7fffffff);
+  const gravelHillSeed = Number.isFinite(options.gravelHillSeed)
+    ? Math.abs(Math.floor(options.gravelHillSeed))
+    : ((gravelSeed ^ 0x4a39b70d) >>> 0);
 
   return {
     id: String(options.id || createId("tank")),
@@ -7569,7 +7596,8 @@ function createTankState(options = {}) {
       ? options.customGravelLayerColorize
       : getDefaultCustomGravelLayerColorizeSettings(),
     gravelPalette: Array.isArray(options.gravelPalette) ? options.gravelPalette : getDefaultGravelPalette(),
-    gravelSeed: Number.isFinite(options.gravelSeed) ? Math.abs(Math.floor(options.gravelSeed)) : Math.floor(Math.random() * 0x7fffffff),
+    gravelSeed,
+    gravelHillSeed,
     gravelLivePebbles: Array.isArray(options.gravelLivePebbles) ? options.gravelLivePebbles : [],
     floatingPellets: Array.isArray(options.floatingPellets) ? options.floatingPellets : [],
     selectedBackground: options.selectedBackground ?? getCatalogDefaultKey(runtime.backgroundCatalog, DEFAULT_TANK_BACKGROUND_ASSET_KEY),
@@ -7949,6 +7977,15 @@ function setActiveTank(tankId, options = {}) {
   runtime.gravelDigBursts = [];
   materializeCoarseFishActivities(nextTank, Date.now());
   state.activeTankId = nextTank.id;
+  const assetLoadGeneration = ++runtime.activeTankAssetLoadGeneration;
+  releaseInactiveDecorImages(state);
+  void preloadImages(getPlacedDecorPreloadPaths(state)).then(() => {
+    if (assetLoadGeneration !== runtime.activeTankAssetLoadGeneration) {
+      releaseInactiveDecorImages(state);
+      return;
+    }
+    renderTank(Date.now());
+  });
   renderUi(Date.now());
   saveState();
   if (options.announce !== false) {
@@ -12930,7 +12967,6 @@ async function init() {
     AUTO_DISPENSER_BG_PATH,
     ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
-    ...(CAUSTIC_LIGHTING_SETTING_ENABLED ? [CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, CAUSTIC_LIGHT_SECONDARY_ASSET_PATH] : []),
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
@@ -15627,6 +15663,11 @@ function bindEvents() {
   });
   dom.editTankTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    if (event.target.closest("[data-randomize-gravel-hill]")) {
+      randomizeCurrentTankGravelHill();
+      playToolbarButtonSoundEffect("press");
+      return;
+    }
     const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
     if (overlayModeTab) {
       const nextMode = overlayModeTab.dataset.editOverlayMode;
@@ -17270,6 +17311,11 @@ function syncTankStageRenderCssGeometry(scale, offsetX, offsetY) {
 }
 
 function applyStageRenderViewTransform(scale, offsetX, offsetY) {
+  if (runtime.stageRenderScale === scale
+    && runtime.stageRenderOffsetX === offsetX
+    && runtime.stageRenderOffsetY === offsetY) {
+    return;
+  }
   runtime.stageRenderScale = scale;
   runtime.stageRenderOffsetX = offsetX;
   runtime.stageRenderOffsetY = offsetY;
@@ -17283,7 +17329,21 @@ function applyStageRenderViewTransform(scale, offsetX, offsetY) {
 }
 
 function updateStageRenderView(frameTime = performance.now(), options = {}) {
-  const target = getStageRenderViewTarget();
+  const viewKey = runtime.editTankMode
+    ? `decor:${dom.editDecorTray?.hidden !== true}`
+    : runtime.fishEditMode
+      ? `fish:${dom.editFishTray?.hidden !== true}`
+      : runtime.equipmentEditMode
+        ? `equipment:${dom.editEquipmentTray?.hidden !== true}`
+        : runtime.tankEditMode
+          ? `tank:${dom.editTankTray?.hidden !== true}`
+          : "view";
+  if (runtime.stageRenderViewTargetKey !== viewKey) {
+    runtime.stageRenderViewTargetKey = viewKey;
+    runtime.stageRenderViewTarget = null;
+    runtime.stageRenderViewLastFrameAt = 0;
+  }
+  const target = runtime.stageRenderViewTarget || (runtime.stageRenderViewTarget = getStageRenderViewTarget());
   if (!target) {
     return;
   }
@@ -17323,6 +17383,7 @@ function resizeDisplayCanvases() {
   const dpr = getStageRenderDevicePixelRatio();
   const displayWidth = Math.max(1, Math.round(rect.width * dpr));
   const displayHeight = Math.max(1, Math.round(rect.height * dpr));
+  runtime.stageRenderViewTarget = null;
 
   const tankSizeChanged = dom.tankCanvas.width !== displayWidth || dom.tankCanvas.height !== displayHeight;
   if (tankSizeChanged) {
@@ -24011,7 +24072,7 @@ function sanitizeUiSettings(rawSettings) {
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
-    causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled === true,
+    causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
     halloweenMode: normalizeHalloweenMode(source.halloweenMode),
@@ -24575,6 +24636,7 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     customGravelLayerColorize: sanitizeCustomGravelLayerColorizeSettings(incomingTank.customGravelLayerColorize),
     gravelPalette: sanitizeGravelPalette(incomingTank.gravelPalette),
     gravelSeed: Number.isFinite(incomingTank.gravelSeed) ? Math.abs(Math.floor(incomingTank.gravelSeed)) : undefined,
+    gravelHillSeed: Number.isFinite(incomingTank.gravelHillSeed) ? Math.abs(Math.floor(incomingTank.gravelHillSeed)) : undefined,
     floatingPellets: Array.isArray(incomingTank.floatingPellets) ? incomingTank.floatingPellets.map(sanitizePellet).filter(Boolean) : [],
     selectedBackground,
     customBackgroundMode: normalizeCustomBackgroundMode(incomingTank.customBackgroundMode),
@@ -24635,6 +24697,7 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     customGravelLayerColorize: incoming?.customGravelLayerColorize,
     gravelPalette: incoming?.gravelPalette,
     gravelSeed: incoming?.gravelSeed,
+    gravelHillSeed: incoming?.gravelHillSeed,
     floatingPellets: incoming?.floatingPellets,
     selectedBackground: incoming?.selectedBackground,
     customBackgroundMode: incoming?.customBackgroundMode,
@@ -32016,6 +32079,9 @@ function scheduleDeferredTickUiRefresh(now = Date.now()) {
 }
 
 function syncCurrentTankState(now, options = {}) {
+  if (!state) {
+    return false;
+  }
   if (!PIRANHA_BEHAVIOR_ENABLED) {
     for (const fish of state.fish) {
       fish.piranhaConsumptionStartedAt = null;
@@ -32029,10 +32095,6 @@ function syncCurrentTankState(now, options = {}) {
     clearBloodEffectClouds();
     runtime.bloodWaterTint = 0;
   }
-  if (!state) {
-    return false;
-  }
-
   let changed = false;
   if (now < state.lastSimulatedAt) {
     state.lastSimulatedAt = now;
@@ -32055,63 +32117,6 @@ function syncCurrentTankState(now, options = {}) {
     changed = materializeCoarseFishActivities(targetTank, now) || changed;
     changed = processBoroughStructureServices(now, targetTank) || changed;
     changed = processFishNeedsAutonomy(now) || changed;
-  }
-
-  const completedSlots = [];
-  for (const slot of completedSlots) {
-    const wasFed = isMealSlotServed(slot, targetTank);
-    let missedCount = 0;
-    let starvationDamageCount = 0;
-    let starvationDamageUnits = 0;
-    let recoveredCount = 0;
-    let deathCount = 0;
-
-    for (const fish of state.fish) {
-      if (fish.acquiredAt > slot.start || isFishDead(fish) || !fishNeedsMealWindow(fish)) {
-        continue;
-      }
-
-      if (wasFed) {
-        fish.fedStreak += 1;
-        fish.missedMealsInRow = 0;
-        if (fish.healthUnits < getFishMaxHealthUnits(fish) && fish.fedStreak >= RECOVERY_FEED_STREAK) {
-          fish.healthUnits += 1;
-          fish.fedStreak = 0;
-          recoveredCount += 1;
-        }
-      } else {
-        fish.fedStreak = 0;
-        fish.missedMealsInRow = Math.max(0, Number(fish.missedMealsInRow) || 0) + 1;
-        missedCount += 1;
-
-        if (fish.missedMealsInRow >= STARVATION_DAMAGE_MISSED_MEALS_THRESHOLD) {
-          fish.healthUnits = Math.max(0, fish.healthUnits - 1);
-          starvationDamageCount += 1;
-          starvationDamageUnits += 1;
-          if (fish.healthUnits <= 0 && markFishAsDead(fish, slot.end, `${fish.name} died after going unfed for too long.`)) {
-            deathCount += 1;
-          }
-        }
-      }
-    }
-
-    if (!wasFed && missedCount > 0) {
-      pushEvent(`${missedCount} fish missed the ${slot.label.toLowerCase()} meal.`, slot.end);
-    }
-
-    if (!wasFed && starvationDamageCount > 0) {
-      pushEvent(`${starvationDamageCount} fish went too long without food and lost ${starvationDamageUnits} half-heart ${pluralize("step", starvationDamageUnits)}.`, slot.end);
-    }
-
-    if (wasFed && recoveredCount > 0) {
-      pushEvent(`${recoveredCount} fish recovered half a heart thanks to regular feeding.`, slot.end);
-    }
-
-    if (deathCount > 0) {
-      pushEvent(`${deathCount} ${pluralize("fish", deathCount)} died and floated to the surface.`, slot.end);
-    }
-
-    changed = changed || missedCount > 0 || starvationDamageCount > 0 || recoveredCount > 0 || deathCount > 0;
   }
 
   changed = processFishEggs(now) || changed;
@@ -32180,7 +32185,7 @@ function syncCurrentTankState(now, options = {}) {
 
   pruneTankState(now, getCurrentTank());
   state.lastSimulatedAt = now;
-  return changed || completedSlots.length > 0;
+  return changed;
 }
 
 function normalizeCurrentTankShellState() {
@@ -32288,13 +32293,14 @@ function processBoroughFishTravel(now = Date.now()) {
         && residenceTank.id !== source.id
         && (isTankLightsOut(now) || getFishNeedValue(fish, "energy", now) <= 52);
       const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
+      const residenceTubeJourney = shouldReturnHome ? getTransitTubeJourney(source, residenceTank) : null;
       const directedRoute = foodRoute || serviceRoute || residenceRoute;
       const tubeJourneyTarget = directedRoute?.tubeDestination || directedRoute?.destination;
       const tubeJourney = tubeJourneyTarget
         ? getTransitTubeJourney(source, tubeJourneyTarget)
         : foodDestination
           ? getTransitTubeJourney(source, foodDestination)
-        : null;
+          : residenceTubeJourney;
       const minimumMoveDelay = directedRoute ? 25 * 1000 : 2 * MINUTE_MS;
       if (now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0) < minimumMoveDelay) {
         continue;
@@ -32305,12 +32311,23 @@ function processBoroughFishTravel(now = Date.now()) {
       if (!serviceRoute && residenceTank?.id === source.id && isTankLightsOut(now)) {
         continue;
       }
-      const shouldTravel = directedRoute || tubeJourney || destinationsWithFood.length > 0 || (neighbors.length > 0 && Math.random() < 0.02);
+      const ambientTubeJourneys = !directedRoute && !tubeJourney
+        ? getAllTanks().flatMap((target) => {
+          const journey = getTransitTubeJourney(source, target);
+          return journey ? [journey] : [];
+        })
+        : [];
+      const ambientTravelRequested = (neighbors.length > 0 || ambientTubeJourneys.length > 0) && Math.random() < 0.02;
+      const ambientTubeJourney = ambientTravelRequested && ambientTubeJourneys.length
+        ? ambientTubeJourneys[Math.floor(Math.random() * ambientTubeJourneys.length)]
+        : null;
+      const selectedTubeJourney = tubeJourney || ambientTubeJourney;
+      const shouldTravel = directedRoute || selectedTubeJourney || destinationsWithFood.length > 0 || ambientTravelRequested;
       if (!shouldTravel) {
         continue;
       }
       const choices = destinationsWithFood.length ? destinationsWithFood : neighbors;
-      const destination = tubeJourney?.targetTank || directedRoute?.nextSection || choices[Math.floor(Math.random() * choices.length)];
+      const destination = selectedTubeJourney?.targetTank || directedRoute?.nextSection || choices[Math.floor(Math.random() * choices.length)];
       moves.push({
         fish,
         source,
@@ -32318,7 +32335,7 @@ function processBoroughFishTravel(now = Date.now()) {
         neededService: foodDestination ? "food" : neededService,
         serviceDestination: foodDestination || serviceRoute?.destination || null,
         residenceDestination: !serviceRoute ? residenceRoute?.destination || null : null,
-        tubeJourney
+        tubeJourney: selectedTubeJourney
       });
       break;
     }
@@ -47905,14 +47922,9 @@ function completeCleaning(options = {}) {
   state.lastCleanedAt = now;
   state.poops = [];
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
-  recordWalletTransaction({
-    amount: cleanReward,
-    allowZero: true,
-    direction: cleanReward > 0 ? "credit" : "neutral",
-    now,
-    label: cleanReward > 0 ? "Deep tank cleaning" : "Tank cleaned",
-    place: getTankLabel()
-  });
+  if (cleanReward > 0) {
+    recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Deep tank cleaning", place: getTankLabel() });
+  }
 
   if (!hasExposedDeadTankFish(now)) {
     resetLivingFishComfortDamageProgress();
@@ -51334,6 +51346,7 @@ function getBoroughSnapshotSignature(tank) {
     customGravelLayerColorize: tank?.customGravelLayerColorize,
     gravelPalette: tank?.gravelPalette,
     gravelSeed: tank?.gravelSeed,
+    gravelHillSeed: tank?.gravelHillSeed,
     gravelLivePebbles: tank?.gravelLivePebbles,
     poops: tank?.poops,
     lastCleanedAt: tank?.lastCleanedAt,
@@ -51719,11 +51732,7 @@ function renderBoroughOverviewFish(now = Date.now(), options = {}) {
     return false;
   }
   const force = options.force === true;
-  const debugFps = Number(runtime.debugOverviewFishFps);
-  const frameMs = Number.isFinite(debugFps) && debugFps > 0
-    ? Math.max(16, 1000 / debugFps)
-    : Math.max(50, Number(runtime.boroughOverviewFishFrameMs) || (1000 / 12));
-  if (!force && now - (Number(runtime.boroughOverviewFishRenderedAt) || 0) < frameMs) {
+  if (!force && now - (Number(runtime.boroughOverviewFishRenderedAt) || 0) < BOROUGH_OVERVIEW_FISH_FRAME_MS) {
     return false;
   }
   runtime.boroughOverviewFishRenderedAt = now;
@@ -56171,7 +56180,12 @@ function getDecorTrayTypeLabel(tone) {
 }
 
 function syncTankTrayStageClass() {
-  dom.tankStage?.classList.toggle("has-edit-decor-tray", hasInlineToolTrayOpen());
+  const open = hasInlineToolTrayOpen();
+  if (dom.tankStage?.classList.contains("has-edit-decor-tray") !== open) {
+    dom.tankStage?.classList.toggle("has-edit-decor-tray", open);
+    runtime.stageRenderViewTarget = null;
+    runtime.stageRenderViewLastFrameAt = 0;
+  }
 }
 
 function getResidenceAssignmentTarget() {
@@ -56934,6 +56948,23 @@ function renderEditTankTray() {
   for (const panel of dom.editTankTray.querySelectorAll("[data-tank-tray-panel]")) {
     panel.hidden = panel.dataset.tankTrayPanel !== runtime.editTankTrayTab;
   }
+  const randomizeHillButton = dom.editTankTray.querySelector("[data-randomize-gravel-hill]");
+  if (randomizeHillButton) randomizeHillButton.hidden = runtime.editTankTrayTab !== "gravel";
+}
+
+function randomizeCurrentTankGravelHill() {
+  const tank = getCurrentTank();
+  if (!tank) return false;
+  if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Randomize gravel hill");
+  const previousSeed = Math.abs(Math.floor(Number(tank.gravelHillSeed) || Number(tank.gravelSeed) || 1)) >>> 0;
+  let nextSeed = previousSeed;
+  while (nextSeed === previousSeed) nextSeed = Math.floor(Math.random() * 0x7fffffff);
+  tank.gravelHillSeed = nextSeed;
+  runtime.gravelHillProfile = null;
+  if (typeof commitDecorEditHistory === "function") commitDecorEditHistory();
+  saveState();
+  showToast("Gravel hill randomized.");
+  return true;
 }
 
 function renderFoodTray() {
@@ -64086,13 +64117,14 @@ function renderTank(now) {
   tankContext.save();
   clipToTankShellBounds(tankContext);
   drawBackground(now);
+  beginLightweightCausticMask();
   drawUvLightAtmosphere(now, "back");
   drawWaterParticles(now, TANK_DEPTH_LAYERS);
   drawFish(now, TANK_DEPTH_LAYERS, { onlyBehavior: "sucker" });
   drawAmbientBubbles(now, 1);
   drawTankFloor(now);
+  markLightweightCausticFloor();
   drawGravelGrime(now, dirtiness);
-  drawGravelCausticProjection(now);
   drawSedimentClouds(now);
   drawEffectClouds(EFFECT_CLOUD_LAYER_FLOOR);
   drawGravelDigBursts(now);
@@ -64124,6 +64156,7 @@ function renderTank(now) {
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
   drawUnderwaterLightingPass(now);
+  drawLightweightCausticOverlay(now);
   //drawLooseGravel(now, { transientOnly: true });
   drawDirtyWaterTint(dirtiness);
   drawMedicineWaterTint(now);
@@ -64164,228 +64197,189 @@ function renderTank(now) {
   }
 }
 
-function getCausticLightStrength(now) {
-  if (!isCausticLightingEnabled() || isTankLightsOut(now)) return 0;
-  // Keep the authored light map readable without turning the whole tank into
-  // a bright projected texture. Individual passes add their own small gain.
-  return 0.16 * (1 - clamp(getTankDirtiness(now), 0, 1) * 0.55);
-}
+function getProceduralCausticTexture() {
+  if (runtime.proceduralCausticTexture) return runtime.proceduralCausticTexture;
+  const size = 160;
+  const points = [];
+  let seed = 0x62b0a7;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  for (let index = 0; index < 34; index += 1) {
+    points.push({ x: random() * size, y: random() * size });
+  }
 
-function getCausticRidgeAlpha(red, green, blue, alpha) {
-  // These authored maps encode their connected light strands in alpha, while
-  // most visible RGB values are nearly white. RGB high-pass filtering erases
-  // that pattern. Retain the alpha structure and lift its softer connections.
-  return Math.round(255 * Math.pow(clamp(alpha / 255, 0, 1), 0.9));
-}
-
-function getCausticRidgeMask(image, size) {
-  // Kept for compatibility with the previous renderer inventory. The clean
-  // renderer uses the prepared color source below instead of a per-frame mask.
-  const prepared = getPreparedCausticSource(image);
-  if (!prepared) return null;
-  const mask = document.createElement("canvas");
-  mask.width = mask.height = size;
-  const context = mask.getContext("2d");
-  context.drawImage(prepared, 0, 0, size, size);
-  return context.getImageData(0, 0, size, size).data;
-}
-
-function getPreparedCausticSource(image) {
-  if (!isUsableRuntimeImage(image)) return null;
-  if (!runtime.causticPreparedSources) runtime.causticPreparedSources = new WeakMap();
-  const cached = runtime.causticPreparedSources.get(image);
-  if (cached) return cached;
-
-  // Prepare the authored transparency once, preserving warm/cool source RGB.
-  const naturalWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
-  const naturalHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
-  const maxSide = 768;
-  const scale = Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight));
-  const width = Math.max(1, Math.round(naturalWidth * scale));
-  const height = Math.max(1, Math.round(naturalHeight * scale));
-
-  const source = document.createElement("canvas");
-  source.width = width;
-  source.height = height;
-  const context = source.getContext("2d", { willReadFrequently: true });
-  context.drawImage(image, 0, 0, width, height);
-
-  const pixels = context.getImageData(0, 0, width, height);
-  for (let i = 0; i < pixels.data.length; i += 4) {
-    pixels.data[i + 3] = getCausticRidgeAlpha(
-      pixels.data[i], pixels.data[i + 1], pixels.data[i + 2], pixels.data[i + 3]
-    );
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const context = canvas.getContext("2d");
+  const pixels = context.createImageData(size, size);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      let nearest = Infinity;
+      let secondNearest = Infinity;
+      for (const point of points) {
+        const rawX = Math.abs(x - point.x);
+        const rawY = Math.abs(y - point.y);
+        const dx = Math.min(rawX, size - rawX);
+        const dy = Math.min(rawY, size - rawY);
+        const distance = dx * dx + dy * dy;
+        if (distance < nearest) {
+          secondNearest = nearest;
+          nearest = distance;
+        } else if (distance < secondNearest) {
+          secondNearest = distance;
+        }
+      }
+      const ridgeDistance = Math.sqrt(secondNearest) - Math.sqrt(nearest);
+      const ridge = Math.exp(-ridgeDistance * ridgeDistance * 0.16);
+      const shimmer = 0.86 + 0.14 * Math.sin(x * 0.17 + y * 0.11);
+      const offset = (y * size + x) * 4;
+      pixels.data[offset] = 190;
+      pixels.data[offset + 1] = 232;
+      pixels.data[offset + 2] = 255;
+      pixels.data[offset + 3] = Math.round(255 * Math.pow(ridge, 2.1) * shimmer);
+    }
   }
   context.putImageData(pixels, 0, 0);
-  runtime.causticPreparedSources.set(image, source);
-  return source;
+  runtime.proceduralCausticTexture = canvas;
+  runtime.proceduralCausticPatterns = new WeakMap();
+  return canvas;
 }
 
-function drawCausticSourceIntoField(context, source, seconds, primary) {
-  if (!context || !source) return;
-  const pattern = context.createPattern(source, "repeat");
-  if (!pattern) return;
-  const tau = Math.PI * 2;
-  const baseScale = 512 / source.width;
-  // The live renderer uses Date.now(), so unbounded offsets reach billions of
-  // pixels and lose precision inside CanvasPattern. Repetition makes wrapping
-  // by one tile visually identical while keeping browser transforms accurate.
-  const driftX = ((seconds * (primary ? 10.0 : -7.5)) % 512 + 512) % 512;
-  const driftY = ((seconds * (primary ? 3.5 : 5.0)) % 512 + 512) % 512;
-  const phase = primary ? 0.8 : 2.35;
-  const strips = 128;
-  const stripHeight = 512 / strips;
-
-  context.globalAlpha = primary ? 0.76 : 0.48;
-  for (let i = 0; i < strips; i += 1) {
-    const rowPhase = i / strips * tau;
-    const warpX = Math.sin(seconds * (primary ? 1.05 : 1.25) + rowPhase * 2 + phase) * (primary ? 7.0 : 8.0)
-      + Math.sin(seconds * (primary ? 0.19 : 0.31) + rowPhase * 3 + phase * 0.7) * 1.7;
-    const warpY = Math.sin(seconds * (primary ? 0.28 : 0.39) + rowPhase * 2 + phase) * (primary ? 1.2 : 1.7);
-    pattern.setTransform(new DOMMatrix([
-      baseScale, 0, 0, baseScale,
-      driftX + warpX,
-      driftY + warpY
-    ]));
-    const y = i * stripHeight;
-    context.save();
-    context.beginPath();
-    context.rect(0, y, 512, stripHeight);
-    context.clip();
-    context.fillStyle = pattern;
-    context.fillRect(0, y, 512, stripHeight + 1);
-    context.restore();
+function getProceduralCausticPattern(context) {
+  const texture = getProceduralCausticTexture();
+  let pattern = runtime.proceduralCausticPatterns?.get(context);
+  if (!pattern) {
+    pattern = context.createPattern(texture, "repeat");
+    if (pattern) runtime.proceduralCausticPatterns.set(context, pattern);
   }
+  return pattern;
 }
 
-function getAnimatedCausticTexture(now) {
-  const primaryImage = runtime.images.get(CAUSTIC_LIGHT_PRIMARY_ASSET_PATH);
-  const secondaryImage = runtime.images.get(CAUSTIC_LIGHT_SECONDARY_ASSET_PATH);
-  const primaryReady = isUsableRuntimeImage(primaryImage);
-  const secondaryReady = isUsableRuntimeImage(secondaryImage);
-
-  if (!primaryReady) requestRuntimeImageRecovery(CAUSTIC_LIGHT_PRIMARY_ASSET_PATH, { kind: "caustic-light-primary" });
-  if (!secondaryReady) requestRuntimeImageRecovery(CAUSTIC_LIGHT_SECONDARY_ASSET_PATH, { kind: "caustic-light-secondary" });
-  if (!primaryReady && !secondaryReady) return null;
-
-  // Both maps flow and deform independently in a shared 30 FPS light field.
-  const frame = Math.floor((Number(now) || 0) / 33.333333);
-  let cache = runtime.causticTexture;
-  if (cache?.frame === frame && cache.primaryImage === primaryImage && cache.secondaryImage === secondaryImage) {
-    return cache.canvas;
-  }
-  if (!cache || cache.canvas.width !== 512) {
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 512;
-    cache = runtime.causticTexture = {
-      canvas,
-      context: canvas.getContext("2d"),
-      frame: -1,
-      primaryImage: null,
-      secondaryImage: null
-    };
-  }
-
-  const context = cache.context;
-  context.save();
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, 512, 512);
-  const seconds = frame / 30;
-  const primarySource = primaryReady ? getPreparedCausticSource(primaryImage) : null;
-  const secondarySource = secondaryReady ? getPreparedCausticSource(secondaryImage) : null;
-
-  context.globalCompositeOperation = "source-over";
-  drawCausticSourceIntoField(context, primarySource || secondarySource, seconds, true);
-  context.globalCompositeOperation = "screen";
-  drawCausticSourceIntoField(context, secondarySource || primarySource, seconds, false);
-  context.restore();
-
-  cache.frame = frame;
-  cache.primaryImage = primaryImage;
-  cache.secondaryImage = secondaryImage;
-  return cache.canvas;
+function getLightweightCausticMask() {
+  if (runtime.lightweightCausticMask) return runtime.lightweightCausticMask;
+  const scale = 0.25;
+  const mask = document.createElement("canvas");
+  mask.width = Math.round(TANK_WIDTH * scale);
+  mask.height = Math.round(TANK_HEIGHT * scale);
+  runtime.lightweightCausticMask = {
+    canvas: mask,
+    context: mask.getContext("2d"),
+    scale
+  };
+  return runtime.lightweightCausticMask;
 }
 
-function drawGravelCausticProjection(now) {
-  const strength = getCausticLightStrength(now);
-  if (strength <= 0) return;
-  const texture = getAnimatedCausticTexture(now);
-  if (!texture) return;
-  let projection = runtime.causticFloorTexture;
-  if (!projection) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 768; canvas.height = 256;
-    projection = runtime.causticFloorTexture = { canvas, context: canvas.getContext("2d"), frame: -1 };
-  }
-  if (projection.frame !== runtime.causticTexture.frame) {
-    projection.context.clearRect(0, 0, 768, 256);
-    projection.context.fillStyle = projection.context.createPattern(texture, "repeat");
-    projection.context.fillRect(0, 0, 768, 256);
-    projection.frame = runtime.causticTexture.frame;
-  }
+function beginLightweightCausticMask() {
+  runtime.lightweightCausticFrameEnabled = isCausticLightingEnabled();
+  if (!runtime.lightweightCausticFrameEnabled) return;
+  const mask = getLightweightCausticMask();
+  mask.context.setTransform(1, 0, 0, 1, 0, 0);
+  mask.context.clearRect(0, 0, mask.canvas.width, mask.canvas.height);
+}
+
+function setLightweightCausticMaskTransform(sourceContext = tankContext) {
+  const mask = getLightweightCausticMask();
+  const source = sourceContext.getTransform();
+  const base = new DOMMatrix([
+    runtime.stageRenderScale, 0, 0, runtime.stageRenderScale,
+    runtime.stageRenderOffsetX, runtime.stageRenderOffsetY
+  ]);
+  let local = source;
+  try {
+    local = base.inverse().multiply(source);
+  } catch { }
+  mask.context.setTransform(
+    local.a * mask.scale,
+    local.b * mask.scale,
+    local.c * mask.scale,
+    local.d * mask.scale,
+    local.e * mask.scale,
+    local.f * mask.scale
+  );
+  mask.context.globalAlpha = 1;
+  mask.context.globalCompositeOperation = "source-over";
+  return mask.context;
+}
+
+function markLightweightCausticImage(sourceContext, image, x, y, width, height) {
+  if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
+  const context = setLightweightCausticMaskTransform(sourceContext);
+  context.drawImage(image, x, y, width, height);
+}
+
+function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, width, height, item, now, motion) {
+  if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
+  const context = setLightweightCausticMaskTransform(sourceContext);
+  drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, motion);
+}
+
+function markLightweightCausticFloor() {
+  if (!runtime.lightweightCausticFrameEnabled) return;
+  const mask = getLightweightCausticMask();
   const bounds = getTankFloorDrawBounds();
-  const depth = Math.max(1, bounds.bottom - bounds.drawTop);
-  tankContext.save();
-  traceTankFloorMaskPath(tankContext, bounds);
-  tankContext.clip();
-  tankContext.globalCompositeOperation = "lighter";
-  tankContext.globalAlpha *= Math.min(1, strength * 1.15);
-  const strips = 40;
-  for (let i = 0; i < strips; i++) {
-    const t = i / strips;
-    // Overscan the distant rows so perspective does not leave unlit side wedges.
-    const width = bounds.drawWidth * (1 + t * 0.26);
-    tankContext.drawImage(projection.canvas, 0, t * 256, 768, 256 / strips,
-      bounds.left + (bounds.drawWidth - width) / 2, bounds.drawTop + t * depth,
-      width, depth / strips);
-  }
-  tankContext.restore();
+  mask.context.setTransform(mask.scale, 0, 0, mask.scale, 0, 0);
+  mask.context.globalCompositeOperation = "source-over";
+  mask.context.fillStyle = "#fff";
+  mask.context.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, Math.max(1, bounds.bottom - bounds.drawTop));
 }
 
-function drawDecorCausticLight(context, image, drawX, drawY, width, height, item, now, motion) {
-  const strength = getCausticLightStrength(now);
-  if (!strength || width <= 0 || height <= 0) return;
-  const texture = getAnimatedCausticTexture(now);
-  if (!texture) return;
-  // Weak ownership releases masks with removed decor; update only at light cadence.
-  if (!runtime.decorCausticCache) runtime.decorCausticCache = new WeakMap();
-  let scratch = runtime.decorCausticCache.get(item);
-  if (!scratch) {
+function drawLightweightCausticOverlay(now) {
+  if (!isCausticLightingEnabled() || isTankLightsOut(now)) return;
+  const seconds = (Number(now) || 0) / 1000;
+  const dirtFade = 1 - clamp(getTankDirtiness(now), 0, 1) * 0.58;
+  const width = TANK_WIDTH;
+  const height = TANK_HEIGHT - WATER_SURFACE_Y;
+  // Bounded sine motion keeps the pattern moving without a modulo seam. Each
+  // component rejoins with the same position and velocity at the end of its cycle.
+  const drift = (rate, distance, phase = 0) => Math.sin(seconds * rate + phase) * distance;
+  const mask = getLightweightCausticMask();
+  let field = runtime.lightweightCausticField;
+  if (!field) {
     const canvas = document.createElement("canvas");
-    scratch = { canvas, context: canvas.getContext("2d") };
-    runtime.decorCausticCache.set(item, scratch);
+    canvas.width = mask.canvas.width;
+    canvas.height = mask.canvas.height;
+    field = runtime.lightweightCausticField = { canvas, context: canvas.getContext("2d") };
   }
-  const scale = Math.min(1, 192 / Math.max(width, height));
-  const w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
-  const c = scratch.context;
-  const key = [runtime.causticTexture.frame, width, height, item.xNorm, item.yNorm].join(":");
-  if (scratch.key !== key || scratch.image !== image) {
-  if (scratch.canvas.width !== w) scratch.canvas.width = w;
-  if (scratch.canvas.height !== h) scratch.canvas.height = h;
-  c.setTransform(1, 0, 0, 1, 0, 0);
-  c.clearRect(0, 0, w, h);
-  c.globalCompositeOperation = "source-over";
-  c.drawImage(image, 0, 0, w, h);
-  c.globalCompositeOperation = "source-in";
-  c.fillStyle = c.createPattern(texture, "repeat");
-  c.save();
-  c.scale(scale, scale);
-  c.translate(-item.xNorm * TANK_WIDTH + width / 2, -item.yNorm * TANK_HEIGHT + height);
-  c.fillRect(item.xNorm * TANK_WIDTH - width / 2, item.yNorm * TANK_HEIGHT - height, width, height);
-  c.restore();
-  scratch.key = key;
-  scratch.image = image;
-  }
-  context.save();
-  // Lighting only exists below the water surface. Clipping here, at tank
-  // coordinates, also handles decorations that straddle the waterline.
-  context.beginPath();
-  context.rect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
-  context.clip();
-  context.globalCompositeOperation = "screen";
-  context.globalAlpha *= strength * 0.65;
-  drawDecorMotionImageToContext(context, scratch.canvas, drawX, drawY, width, height, item, now, motion);
-  context.restore();
+  const context = field.context;
+  const pattern = getProceduralCausticPattern(context);
+  if (!pattern) return;
+  const fieldScale = mask.scale;
+  const fieldWaterY = WATER_SURFACE_Y * fieldScale;
+  const fieldHeight = height * fieldScale;
+
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, field.canvas.width, field.canvas.height);
+  context.globalCompositeOperation = "source-over";
+  context.fillStyle = pattern;
+
+  pattern.setTransform(new DOMMatrix([
+    1.42 * fieldScale, 0.035 * fieldScale, -0.025 * fieldScale, 1.18 * fieldScale,
+    drift(0.19, 72) * fieldScale, drift(0.13, 44, 0.7) * fieldScale
+  ]));
+  context.globalAlpha = 0.105 * dirtFade;
+  context.fillRect(0, fieldWaterY, field.canvas.width, fieldHeight);
+
+  pattern.setTransform(new DOMMatrix([
+    2.05 * fieldScale, -0.045 * fieldScale, 0.06 * fieldScale, 1.72 * fieldScale,
+    drift(0.11, 96, 2.1) * fieldScale, drift(0.17, 58, 1.4) * fieldScale
+  ]));
+  context.globalAlpha = 0.052 * dirtFade;
+  context.fillRect(0, fieldWaterY, field.canvas.width, fieldHeight);
+  context.globalAlpha = 1;
+  context.globalCompositeOperation = "destination-in";
+  context.drawImage(mask.canvas, 0, 0);
+
+  tankContext.save();
+  clipToTankShellBounds(tankContext);
+  tankContext.beginPath();
+  tankContext.rect(0, WATER_SURFACE_Y, width, height);
+  tankContext.clip();
+  tankContext.globalCompositeOperation = "screen";
+  tankContext.globalAlpha = 1;
+  tankContext.drawImage(field.canvas, 0, 0, field.canvas.width, field.canvas.height, 0, 0, width, TANK_HEIGHT);
+  tankContext.restore();
 }
 
 function drawUnderwaterLightingPass(now) {
@@ -66120,10 +66114,34 @@ function getTankFloorDrawBounds() {
 function getTankFloorMaskSurfaceYAtX(x, bounds = getTankFloorDrawBounds()) {
   const { left, right, baseTop } = bounds;
   const t = clamp((x - left) / Math.max(1, right - left), 0, 1);
-  const wave1 = Math.sin(t * Math.PI * 2 * 1.2) * 8;
-  const wave2 = Math.sin(t * Math.PI * 2 * 3.4 + 0.8) * 3;
-  const crestBias = Math.sin(t * Math.PI) * 4;
+  const profile = getTankFloorMaskHillProfile();
+  const wave1 = Math.sin(t * Math.PI * 2 * profile.longFrequency + profile.longPhase) * profile.longAmplitude;
+  const wave2 = Math.sin(t * Math.PI * 2 * profile.shortFrequency + profile.shortPhase) * profile.shortAmplitude;
+  const crestBias = Math.sin(t * Math.PI) * profile.crestBias;
   return baseTop + wave1 + wave2 - crestBias;
+}
+
+function getTankFloorMaskHillProfile() {
+  const tank = getCurrentTank();
+  const seed = Math.abs(Math.floor(Number(tank?.gravelHillSeed) || Number(tank?.gravelSeed) || 1)) >>> 0;
+  if (runtime.gravelHillProfile?.seed === seed) return runtime.gravelHillProfile;
+  const unit = (salt) => {
+    let value = (seed ^ salt) >>> 0;
+    value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+    value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+    return ((value ^ (value >>> 16)) >>> 0) / 4294967296;
+  };
+  runtime.gravelHillProfile = {
+    seed,
+    longFrequency: 1.05 + unit(0x1357) * 0.3,
+    longPhase: unit(0x2468) * Math.PI * 2,
+    longAmplitude: 6.5 + unit(0x369a) * 2.5,
+    shortFrequency: 3.05 + unit(0x48bc) * 0.7,
+    shortPhase: unit(0x5ade) * Math.PI * 2,
+    shortAmplitude: 2.1 + unit(0x6cf0) * 1.4,
+    crestBias: 2.5 + unit(0x7e12) * 2.5
+  };
+  return runtime.gravelHillProfile;
 }
 
 function traceTankFloorMaskPath(context, bounds = getTankFloorDrawBounds()) {
@@ -67785,7 +67803,7 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
     drawY = flipY ? 0 : drawY;
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
-  drawDecorCausticLight(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
+  markLightweightCausticDecorImage(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
   drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
   context.restore();
 }
@@ -69208,61 +69226,6 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
   context.restore();
 }
 
-function drawFishCausticLight(context, image, fish, fishDrawX, width, height, now, worldTransform) {
-  const strength = getCausticLightStrength(now);
-  if (strength <= 0 || width <= 0 || height <= 0) return;
-  const texture = getAnimatedCausticTexture(now);
-  if (!texture) return;
-  if (!runtime.fishCausticCache) runtime.fishCausticCache = new WeakMap();
-  let scratch = runtime.fishCausticCache.get(fish);
-  if (!scratch) {
-    const canvas = document.createElement("canvas");
-    scratch = { canvas, context: canvas.getContext("2d") };
-    runtime.fishCausticCache.set(fish, scratch);
-  }
-  const scale = Math.min(1, 192 / Math.max(width, height));
-  const w = Math.max(1, Math.round(width * scale));
-  const h = Math.max(1, Math.round(height * scale));
-  // Cancel the entire fish pose, including facing, rotation, body deformation,
-  // and tube compression. The remaining pattern coordinates belong to the tank.
-  const worldToLocal = context.getTransform().inverse().multiply(worldTransform);
-  const localToMask = new DOMMatrix([w / width, 0, 0, h / height, -fishDrawX * w / width, h / 2]);
-  const patternTransform = localToMask.multiply(worldToLocal);
-  const key = [runtime.causticTexture.frame, width, height,
-    patternTransform.a, patternTransform.b, patternTransform.c,
-    patternTransform.d, patternTransform.e, patternTransform.f].join(":");
-  if (scratch.key !== key || scratch.image !== image) {
-    const c = scratch.context;
-    if (scratch.canvas.width !== w) scratch.canvas.width = w;
-    if (scratch.canvas.height !== h) scratch.canvas.height = h;
-    c.setTransform(1, 0, 0, 1, 0, 0);
-    c.clearRect(0, 0, w, h);
-    c.globalCompositeOperation = "source-over";
-    c.drawImage(image, 0, 0, w, h);
-    c.globalCompositeOperation = "source-in";
-    const pattern = c.createPattern(texture, "repeat");
-    pattern.setTransform(patternTransform);
-    c.fillStyle = pattern;
-    c.fillRect(0, 0, w, h);
-    scratch.key = key;
-    scratch.image = image;
-  }
-  context.save();
-  // The fish canvas is currently in its pose transform. Establish the clip in
-  // tank space first, then restore that pose so partially surfaced fish only
-  // receive the light below the actual waterline.
-  const fishTransform = context.getTransform();
-  context.setTransform(worldTransform);
-  context.beginPath();
-  context.rect(0, WATER_SURFACE_Y, TANK_WIDTH, TANK_HEIGHT - WATER_SURFACE_Y);
-  context.clip();
-  context.setTransform(fishTransform);
-  context.globalCompositeOperation = "screen";
-  context.globalAlpha *= strength * 0.72;
-  context.drawImage(scratch.canvas, fishDrawX, -height / 2, width, height);
-  context.restore();
-}
-
 function compareFishRenderRecords(left, right) {
   const priorityDelta = left.priority - right.priority;
   if (priorityDelta) {
@@ -69455,10 +69418,10 @@ function drawFish(now, layer = null, options = {}) {
       ? fishLighting.filter
       : `${fishBaseFilter} ${fishLighting.filter}`;
     tankContext.drawImage(renderImage, fishDrawX, -height / 2, width, height);
+    markLightweightCausticImage(tankContext, renderImage, fishDrawX, -height / 2, width, height);
     tankContext.filter = "none";
     if (!pose.isDead) {
       drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now, fishLighting);
-      drawFishCausticLight(tankContext, image, fish, fishDrawX, width, height, now, fishWorldTransform);
     }
     drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
@@ -70176,19 +70139,6 @@ function buildMealSlot(startDate) {
     start: start.getTime(),
     end: end.getTime()
   };
-}
-
-function getCompletedMealSlots(startTs, endTs) {
-  const slots = [];
-  let boundary = getNextMealBoundary(startTs);
-  while (boundary.getTime() <= endTs) {
-    const slotStart = new Date(boundary);
-    slotStart.setHours(slotStart.getHours() - 12, 0, 0, 0);
-    slots.push(buildMealSlot(slotStart));
-    boundary = new Date(boundary);
-    boundary.setHours(boundary.getHours() + 12, 0, 0, 0);
-  }
-  return slots;
 }
 
 function getNextMealBoundary(timestamp) {
@@ -74235,8 +74185,16 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
   const effectiveLayer = currentLayer;
   const startXNorm = fish.xNorm;
   const startYNorm = fish.yNorm;
+  const pendingTubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
+  const movingThroughTubeExterior = pendingTubeTravel?.mode === "tube"
+    && ["entering", "waiting", "emerging"].includes(pendingTubeTravel.phase);
   let resolvedXNorm = clampFishXNormToMobileViewport(nextXNorm, fish, species, now);
-  let resolvedYNorm = clamp(nextYNorm, 0.14, 0.8);
+  // A ceiling-mounted tube has to pull the fish briefly beyond the normal
+  // water bounds before transferring it. Only the committed traveler gets
+  // this wider range; the tube remains solid for every other fish.
+  let resolvedYNorm = movingThroughTubeExterior
+    ? clamp(nextYNorm, -0.35, 1.35)
+    : clamp(nextYNorm, 0.14, 0.8);
 
   if (effectiveLayer < 3) {
     return {
@@ -74266,7 +74224,6 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
     };
   }
 
-  const pendingTubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
   if (pendingTubeTravel?.mode === "tube" && blockingCave.item?.id === pendingTubeTravel.sourceTubeId) {
     return {
       xNorm: resolvedXNorm,
@@ -79003,7 +78960,7 @@ async function loadSpriteRuntimeImage(path, timeoutMs) {
         canvas.height = canvas.naturalHeight = height;
         canvas.complete = true;
         canvas.getContext("2d").drawImage(sheet, x, y, width, height, 0, 0, width, height);
-        cache.set(frame.key, canvas);
+        setBoundedSpriteFrameCache(cache, frame.key, canvas);
       }
     } finally {
       readers.count -= 1;
@@ -79019,6 +78976,24 @@ async function loadSpriteRuntimeImage(path, timeoutMs) {
   runtime.imageLoadFailures.delete(path);
   runtime.imageRecoveryNextAt.delete(path);
   return { loaded: true, reason: "sprite-sheet" };
+}
+
+function setBoundedSpriteFrameCache(cache, key, canvas) {
+  if (cache.has(key)) cache.delete(key);
+  cache.set(key, canvas);
+  let bytes = 0;
+  for (const value of cache.values()) bytes += (value.width || 0) * (value.height || 0) * 4;
+  while (cache.size > 96 || bytes > 96 * 1024 * 1024) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === key && cache.size === 1) break;
+    const oldest = cache.get(oldestKey);
+    cache.delete(oldestKey);
+    for (const [assetPath, image] of runtime.images) {
+      if (image === oldest) runtime.images.delete(assetPath);
+    }
+    bytes -= (oldest?.width || 0) * (oldest?.height || 0) * 4;
+    releaseCachedCanvasValue(oldest);
+  }
 }
 
 function loadTemporarySpriteSheet(path, timeoutMs) {
@@ -79120,10 +79095,40 @@ function getDecorArtworkPaths(decor) {
 
 function getPlacedDecorPreloadPaths(targetState = state) {
   const keys = new Set();
-  for (const tank of getAllTanks(targetState)) {
-    for (const item of tank.placedDecor || []) keys.add(item.decorKey);
-  }
+  const tanks = Array.isArray(targetState?.tanks) ? targetState.tanks : [];
+  const tank = tanks.find(candidate => candidate.id === targetState?.activeTankId) || tanks[0];
+  for (const item of tank?.placedDecor || []) keys.add(item.decorKey);
   return [...keys].flatMap(key => getDecorArtworkPaths(runtime.decorMap.get(key)));
+}
+
+function releaseInactiveDecorImages(targetState = state) {
+  const keep = new Set(getPlacedDecorPreloadPaths(targetState));
+  const knownDecorPaths = new Set([...runtime.decorMap.values()].flatMap(getDecorArtworkPaths));
+  const placementDecor = runtime.placementMode?.decorKey
+    ? runtime.decorMap.get(runtime.placementMode.decorKey)
+    : null;
+  for (const path of getDecorArtworkPaths(placementDecor)) keep.add(path);
+  for (const [path, image] of runtime.images) {
+    const normalized = String(path).replace(/\\/g, "/").toLowerCase();
+    const isDecorArtwork = /(^|\/)assets\/decor\//.test(normalized) || knownDecorPaths.has(path);
+    if (!isDecorArtwork || keep.has(path)) continue;
+    image?.removeAttribute?.("src");
+    runtime.images.delete(path);
+    runtime.imageLoadFailures.delete(path);
+    runtime.imageRecoveryNextAt.delete(path);
+    runtime.alphaMaskCache.delete(path);
+    for (const cacheKey of runtime.maskRegionCache.keys()) {
+      if (cacheKey === path || cacheKey.startsWith(`${path}|`)) runtime.maskRegionCache.delete(cacheKey);
+    }
+  }
+  runtime.caveInteriorMaskCache.clear();
+  runtime.caveShellMaskCache.clear();
+  runtime.caveTriggerMaskCache.clear();
+  runtime.caveNavCache.clear();
+  runtime.caveTintCache.clear();
+  runtime.caveCollisionFrameCache = null;
+  runtime.decorHangoutZonesKey = "";
+  runtime.decorHangoutZones = [];
 }
 
 function preloadDecorArtwork(decor) {

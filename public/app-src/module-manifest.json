@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2855,
+  "functionCount": 2866,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -92,6 +92,7 @@
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "audio/system.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -107,6 +108,8 @@
         "fish/undead-and-appearance.js",
         "machinery/submarine.js",
         "rendering/decor.js",
+        "rendering/tank-and-water.js",
+        "store/purchases.js",
         "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js",
         "tank/events-recaps-and-save.js",
@@ -475,6 +478,7 @@
         "fish/meals-and-needs.js",
         "fish/needs-disease-and-behavior.js",
         "fish/undead-and-appearance.js",
+        "store/purchases.js",
         "tank/catalog-and-equipment.js",
         "tank/events-recaps-and-save.js",
         "tank/simulation.js",
@@ -539,7 +543,7 @@
     },
     {
       "path": "store/purchases.js",
-      "functionCount": 33,
+      "functionCount": 34,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -645,13 +649,15 @@
         "rendering/fish-motion-and-floor.js",
         "rendering/gravel-and-effects.js",
         "rendering/tank-and-water.js",
+        "store/purchases.js",
+        "tank/catalog-and-equipment.js",
         "tank/events-recaps-and-save.js",
         "ui/main-and-store-rendering.js"
       ]
     },
     {
       "path": "store/catalog.js",
-      "functionCount": 33,
+      "functionCount": 40,
       "dependencies": [
         "assets/custom-content.js",
         "core/platform.js",
@@ -870,7 +876,7 @@
     },
     {
       "path": "ui/customization-actions-and-inventory.js",
-      "functionCount": 96,
+      "functionCount": 97,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1000,7 +1006,7 @@
     },
     {
       "path": "rendering/tank-and-water.js",
-      "functionCount": 67,
+      "functionCount": 69,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -1070,7 +1076,7 @@
     },
     {
       "path": "rendering/fish-and-effects.js",
-      "functionCount": 28,
+      "functionCount": 27,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -1097,7 +1103,7 @@
     },
     {
       "path": "fish/meals-and-needs.js",
-      "functionCount": 62,
+      "functionCount": 61,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1231,11 +1237,12 @@
     },
     {
       "path": "assets/sprite-sheets.js",
-      "functionCount": 13,
+      "functionCount": 15,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "assets/sprite-sheet-definitions.js",
         "core/platform.js",
+        "core/utilities.js",
         "fish/undead-and-appearance.js",
         "tank/catalog-and-equipment.js"
       ]

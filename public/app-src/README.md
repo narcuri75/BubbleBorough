@@ -13,8 +13,9 @@ the pixels. `npm run build:app` validates each pair and regenerates
 PNGs in the editor JSON are never downloaded by the game. Unsupported layouts
 or mismatched image dimensions stop the build instead of silently miscropping.
 
-The build also generates delivery WebPs under `assets/generated/sprites/`:
-384-pixel previews for all frames and lossless full-resolution images for decor.
+The build also generates delivery WebPs under `assets/generated/sprites/` for
+sheet-backed assets and 256-pixel decor previews under
+`assets/generated/previews/decor/`. Decor and gravel render from their loose PNGs.
 Commit these generated files with the sources. Install build dependencies with
 `npm ci`; Sharp performs conversion during the build, never in the browser.
 The delivery manifest checks content hashes and skips unchanged sheets.
@@ -27,8 +28,8 @@ names to cached canvas crops. Unmapped paths still load as loose images.
 Atlas images are temporary: concurrent crops share a decode, then release the
 source image. Later variants can decode the atlas again without replacing
 existing crops. Failed or timed-out decodes cannot leave late atlas cache entries.
-Startup loads only the selected appearances and poses of resident fish across
-all tanks, plus placed decor. Inventory decor loads its artwork and companion
+Startup loads the selected appearances and poses of resident fish across all
+tanks, plus placed decor for the active tank. Inventory decor loads its artwork and companion
 layers when selected for placement; fish purchases load the chosen poses.
 DOM images use prebuilt previews,
 with lazy loading in the shop, without decoding sheets or encoding PNG data URLs.

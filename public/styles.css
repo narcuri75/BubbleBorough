@@ -15674,17 +15674,25 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   .tankazon-store .tankazon-item-art { height: 220px; }
 }
 .decor-history-controls {
-  grid-column: 1 / -1;
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
 }
 #editDecorTray:has(.decor-history-controls) {
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  height: calc(var(--bubble-edit-tray-height) + 44px);
-  min-height: calc(var(--bubble-edit-tray-height) + 44px);
-  max-height: calc(var(--bubble-edit-tray-height) + 44px);
+  grid-template-rows: auto 25px minmax(0, 1fr);
+  height: var(--bubble-edit-tray-height);
+  min-height: var(--bubble-edit-tray-height);
+  max-height: var(--bubble-edit-tray-height);
+}
+.decor-history-controls .small-button {
+  min-height: 23px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.61rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 .decor-history-controls button:disabled { opacity: .4; cursor: default; }
 .decor-layout-dialog {
@@ -15754,6 +15762,62 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   .decor-layout-dialog { padding: 14px; }
   .decor-history-controls { justify-content: center; }
   .decor-history-controls button { min-height: 32px; }
+}
+
+/* Editing modes share one fixed-height horizontal tray. */
+#editDecorTray .edit-decor-tray-header {
+  min-height: 25px;
+  max-height: 25px;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+#editDecorTray .edit-decor-tray-tabs {
+  gap: 3px;
+  overflow: hidden;
+}
+#editDecorTray .edit-decor-tray-tab {
+  min-width: 55px;
+  min-height: 23px;
+  padding: 2px 7px;
+  font-size: 0.61rem;
+}
+#editDecorTray .edit-decor-in-tank-toggle {
+  min-height: 23px;
+  padding: 2px 7px;
+  gap: 4px;
+  font-size: 0.61rem;
+}
+#editDecorTray .edit-decor-in-tank-toggle input {
+  width: 13px;
+  height: 13px;
+}
+.edit-tank-tray .edit-tray-mode-header {
+  position: relative;
+}
+.randomize-gravel-hill-button {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: 1;
+  min-height: 26px;
+  padding: 4px 10px;
+  transform: translateY(-50%);
+  border: 1px solid rgba(125, 224, 248, 0.48);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(18, 75, 93, 0.94), rgba(8, 42, 58, 0.96));
+  color: #e8fbff;
+  font: 800 0.64rem/1 var(--ui-font-stack);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.randomize-gravel-hill-button[hidden] {
+  display: none !important;
+}
+.randomize-gravel-hill-button:hover,
+.randomize-gravel-hill-button:focus-visible {
+  border-color: rgba(160, 238, 255, 0.9);
+  filter: brightness(1.14);
 }
 
 /* Photo variant selectors stay anchored to the image at every catalog size. */

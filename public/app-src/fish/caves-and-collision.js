@@ -2049,8 +2049,16 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
   const effectiveLayer = currentLayer;
   const startXNorm = fish.xNorm;
   const startYNorm = fish.yNorm;
+  const pendingTubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
+  const movingThroughTubeExterior = pendingTubeTravel?.mode === "tube"
+    && ["entering", "waiting", "emerging"].includes(pendingTubeTravel.phase);
   let resolvedXNorm = clampFishXNormToMobileViewport(nextXNorm, fish, species, now);
-  let resolvedYNorm = clamp(nextYNorm, 0.14, 0.8);
+  // A ceiling-mounted tube has to pull the fish briefly beyond the normal
+  // water bounds before transferring it. Only the committed traveler gets
+  // this wider range; the tube remains solid for every other fish.
+  let resolvedYNorm = movingThroughTubeExterior
+    ? clamp(nextYNorm, -0.35, 1.35)
+    : clamp(nextYNorm, 0.14, 0.8);
 
   if (effectiveLayer < 3) {
     return {
@@ -2080,7 +2088,6 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
     };
   }
 
-  const pendingTubeTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
   if (pendingTubeTravel?.mode === "tube" && blockingCave.item?.id === pendingTubeTravel.sourceTubeId) {
     return {
       xNorm: resolvedXNorm,

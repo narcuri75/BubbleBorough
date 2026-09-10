@@ -1182,7 +1182,7 @@ const DEFAULT_THEME = "dark";
 // underlying settings code available so the feature can be restored later.
 const TOOLBAR_POSITION_SETTING_ENABLED = false;
 const DISPLAY_POSITION_SETTING_ENABLED = false;
-const CAUSTIC_LIGHTING_SETTING_ENABLED = false;
+const CAUSTIC_LIGHTING_SETTING_ENABLED = true;
 const DECOR_SHADOWS_SETTING_ENABLED = false;
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false
@@ -1206,12 +1206,14 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   tankMouseInputLocked: false,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
-  causticLightingEnabled: false,
+  causticLightingEnabled: true,
   decorShadowsEnabled: false,
   uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
+const BOROUGH_OVERVIEW_FISH_FPS = 12;
+const BOROUGH_OVERVIEW_FISH_FRAME_MS = 1000 / BOROUGH_OVERVIEW_FISH_FPS;
 const CUSTOM_IMAGE_BACKGROUND_ASSET_KEY = "__custom-image-background__";
 const CUSTOM_DECOR_SHOP_KEY = "__custom-decor-shop__";
 const CUSTOM_DECOR_KEY_PREFIX = "__custom-decor-";
@@ -1659,8 +1661,6 @@ const CAVE_ENTRY_SIDE_OPTIONS = Object.freeze([
   { id: "both", label: "Both" }
 ]);
 const OPTIONAL_BUBBLE_ORB_ASSET_PATH = "assets/misc/bubble.png";
-const CAUSTIC_LIGHT_PRIMARY_ASSET_PATH = resolveAppUrl("assets/misc/Caustic_Lighting_1.png");
-const CAUSTIC_LIGHT_SECONDARY_ASSET_PATH = resolveAppUrl("assets/misc/Caustic_Lighting_2.png");
 const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
 const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
 const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
@@ -2045,6 +2045,7 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "customGravelLayerColorize",
   "gravelPalette",
   "gravelSeed",
+  "gravelHillSeed",
   "gravelLivePebbles",
   "floatingPellets",
   "selectedBackground",
@@ -3226,7 +3227,6 @@ const runtime = {
   boroughPanStartX: 0,
   boroughPanStartY: 0,
   boroughOverviewFishRenderedAt: 0,
-  boroughOverviewFishFrameMs: 1000 / 12,
   boroughOverviewFishSampleMs: 2000,
   boroughOverviewFishProxies: new Map(),
   boroughOverviewSnapshotCache: new Map(),
@@ -3427,6 +3427,7 @@ const runtime = {
   imageLoadPromises: new Map(),
   imageLoadFailures: new Map(),
   imageRecoveryNextAt: new Map(),
+  activeTankAssetLoadGeneration: 0,
   cloudUploadPromise: null,
   cloudUploadQueued: false,
   missingFishImageWarnings: new Set(),

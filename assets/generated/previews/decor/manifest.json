@@ -143,6 +143,10 @@
     "sourceHash": "28f0cd9701e8c8dd5dd112fca263fac0206d5abad2c47194f02648497c4f9ced",
     "outputHash": "e42f1e773f6f7c91486a39de7ece96ee58663cd00b88743d049a4ed12d981c4a"
   },
+  "Halloween_Floating_skeleton.png": {
+    "sourceHash": "0497c452eb0591033924b2e6505521970a5ad8c11409796b13872bac74f4c1a4",
+    "outputHash": "5d5e1a918a1eae04f76afd7559a5ab7418fe613c68d20a6d83f31162008be428"
+  },
   "Halloween_Floatingseaweed.png": {
     "sourceHash": "0834353b842ee16f8552068b515c0d1bbcce671dc42c3dcb9ed190f08c8df0df",
     "outputHash": "13f5866c246f56248d0fa08902777a5f5ad0e9322fca95778c2f49b1b609e697"
@@ -231,10 +235,6 @@
     "sourceHash": "208d6e83b55ef59dc0d2b4e3a188e351627dfe4e287cf300befcaddb0e9ec332",
     "outputHash": "fa9dd4adec1c9466e2d47cfa66dadaa8ba246c3039907bb66b32db8c84e55f28"
   },
-  "Halloween_skeleton_lure.png": {
-    "sourceHash": "0497c452eb0591033924b2e6505521970a5ad8c11409796b13872bac74f4c1a4",
-    "outputHash": "5d5e1a918a1eae04f76afd7559a5ab7418fe613c68d20a6d83f31162008be428"
-  },
   "Halloween_webs.png": {
     "sourceHash": "2a7d8dcb7babfa5364a72235ca8fc2c5609299f5da44aeb2099e2f6360db6773",
     "outputHash": "a616aa6a590e3d9f1f626201ee16f081457409e7e3abdb3bb5241970c6ec6373"
@@ -298,6 +298,30 @@
   "fishing_lure.png": {
     "sourceHash": "24dff376ae577bb429f8bbe466f8d814ba2cb1abfcfc1d2e9a35c980b665725f",
     "outputHash": "893bd97caf46524d4bc3a13ebb450a8bfdc6807d9cb55a8ef0932b06d09a5f2c"
+  },
+  "fishing_lure_1.png": {
+    "sourceHash": "606bce2160a47d26d751e140a1cb984616cf66f9557aafb004938d86d10b261d",
+    "outputHash": "aad2c33a11f9d65c0b45b914f797c7b481d92b8acaa3de3982673ca7787a0560"
+  },
+  "fishing_lure_2.png": {
+    "sourceHash": "93fab1f7c1ec7ee7c09f3d15306e61d7bb6eb4ba2207730c3cf2aad2f22c6b10",
+    "outputHash": "71fbf3b2a1c3adb60181d232af72c473fdc0eb8d374f825894d765c18cc785bf"
+  },
+  "fishing_lure_3.png": {
+    "sourceHash": "2fedcd0a8787b60a938f1236cc4c49f22e92d03474009e040ef0ed9cfe225173",
+    "outputHash": "265921d087635adae8832fa4c7f7eaf4bafe9c767122f59b5f5b6d0230339304"
+  },
+  "fishing_lure_4.png": {
+    "sourceHash": "cbe531151a2b3485ede855e336574efa1f947468f4b2f6c55aa92a6721c101d6",
+    "outputHash": "5adae44117113894f027b9cb58ffd87d4b50d8b01b94fcf04f57f0c5f269a0c6"
+  },
+  "fishing_lure_5.png": {
+    "sourceHash": "c2302ea02e27ff411f9c016d723c9f182fe121be0fd86f66e68d07f003c2f123",
+    "outputHash": "0fd18b4b27b7e23520a2c8f8b77972f4381a34d5ed41d8f78e19ee441675972f"
+  },
+  "fishing_lure_6.png": {
+    "sourceHash": "a25c34b11f578275ed893fdab9c16e9db8e9225d47e7fdea68e41df46b77a034",
+    "outputHash": "767ca9df0604e4ee23e3fa6ab6cf552e62e7a9000a8cf5a80ba69487f09ad760"
   },
   "floating_swampmoss_1.png": {
     "sourceHash": "8b65d3b4f3bd4f60a96a560a865015642d67d999f12a60fb686818d549a9c0a9",

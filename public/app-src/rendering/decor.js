@@ -229,7 +229,7 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
     drawY = flipY ? 0 : drawY;
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
-  drawDecorCausticLight(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
+  markLightweightCausticDecorImage(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
   drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
   context.restore();
 }

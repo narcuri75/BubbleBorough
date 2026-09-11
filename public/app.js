@@ -4,6 +4,7 @@
 const STORAGE_KEY = "bubble-borough-save-v1";
 const SUPABASE_URL = "https://idljwswasrxtifbkioyg.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qxhGQH_faz0TDw4_AbYsGw_iYljA_9s";
+const INVITE_FRIEND_ENABLED = false;
 const CLOUD_AUTH_SESSION_KEY = "bubble-borough-cloud-auth-v1";
 const CLOUD_SAVE_META_KEY = "bubble-borough-cloud-meta-v1";
 const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1";
@@ -3085,6 +3086,7 @@ const dom = {
   fishNameKeyboard: document.querySelector("#fishNameKeyboard"),
   inspectorSpecies: document.querySelector("#inspectorSpecies"),
   inspectorHealth: document.querySelector("#inspectorHealth"),
+  inspectorActivity: document.querySelector("#inspectorActivity"),
   inspectorComfort: document.querySelector("#inspectorComfort"),
   inspectorNeeds: document.querySelector("#inspectorNeeds"),
   inspectorNeedsBars: document.querySelector("#inspectorNeedsBars"),
@@ -5746,9 +5748,10 @@ function buildFishIndividualityMarkup(fish, now = Date.now(), options = {}) {
     : null;
   if (serviceTarget) {
     rows.push(["Currently", `Visiting ${runtime.decorMap.get(serviceTarget.decorKey)?.name || getBoroughServiceLabel(fish.boroughServiceType)}`]);
-  } else if (fish.behaviorIntent?.action) {
-    const target = fish.behaviorIntent.target ? ` · ${fish.behaviorIntent.target}` : "";
-    rows.push(["Currently", `${titleFromFile(fish.behaviorIntent.action)}${target}`]);
+  } else if (getFishBehaviorIntent(fish, now)?.type) {
+    const intent = getFishBehaviorIntent(fish, now);
+    const detail = intent.targetName || intent.cause;
+    rows.push(["Currently", `${titleFromFile(intent.type)}${detail ? ` · ${detail}` : ""}`]);
   } else if (fish.activity && !options.dead) {
     rows.push(["Currently", titleFromFile(fish.activity)]);
   }
@@ -8325,10 +8328,14 @@ function closeStoreOverlay(options = {}) {
 
 function openUtilityOverlay(mode, options = {}) {
   const nextMode = String(mode || "");
+  if (nextMode === "invite-friend" && !INVITE_FRIEND_ENABLED) {
+    return false;
+  }
   openExclusiveOverlay("utility", {
     ...options,
     mode: nextMode
   });
+  return true;
 }
 
 function openAutoDispenserResetConfirmation() {
@@ -14486,6 +14493,11 @@ function bindEvents() {
     if (!dom.loadingOverlay?.classList.contains("is-ready")) return;
   });
   if (typeof document !== "undefined") {
+    if (!INVITE_FRIEND_ENABLED) {
+      document.querySelectorAll("[data-open-invite-friend]").forEach((button) => {
+        button.hidden = true;
+      });
+    }
     document.addEventListener("visibilitychange", () => {
       syncAmbienceAudio();
     });
@@ -14493,7 +14505,9 @@ function bindEvents() {
       const inviteButton = event.target instanceof Element ? event.target.closest("[data-open-invite-friend]") : null;
       if (inviteButton) {
         event.preventDefault();
-        openUtilityOverlay("invite-friend");
+        if (INVITE_FRIEND_ENABLED) {
+          openUtilityOverlay("invite-friend");
+        }
         return;
       }
 
@@ -22305,6 +22319,21 @@ function handleFishRefuseFoodPellet(fish, pellet, now = Date.now()) {
   const refusalReason = diseaseState !== DISEASE_STATE_NONE
     ? `${diseaseState} symptoms + comfort ${comfortPercent}%`
     : `comfort ${comfortPercent}%`;
+  const playerReason = diseaseState !== DISEASE_STATE_NONE
+    ? "it feels unwell"
+    : comfortPercent <= 40
+      ? "it is too stressed"
+      : "it is not ready to eat yet";
+  fish.lastNeedEventAtByType = sanitizeFishNeedEventMap(fish.lastNeedEventAtByType);
+  if (now - (Number(fish.lastNeedEventAtByType["food-refused-player"]) || 0) >= 5 * MINUTE_MS) {
+    fish.lastNeedEventAtByType["food-refused-player"] = now;
+    pushEvent(`${fish.name} refused food because ${playerReason}.`, now, getCurrentTank(), {
+      type: "food",
+      fishId: fish.id,
+      score: 0,
+      recapEligible: false
+    });
+  }
   recordFishFeedingMemory(fish, pellet, now);
   recordFishBehaviorSignal(fish, "food_refused", now, {
     debugText: `refuse food | ${refusalReason}`
@@ -36032,6 +36061,24 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
     label: mealCoins > 0 ? `Fed ${fishLabel}` : `Fed ${fishLabel} (no coin reward)`
   });
   return mealCoins;
+}
+
+function getDailyFeedingCareStatus(tank = getCurrentTank(), now = Date.now()) {
+  const livingFish = (tank?.fish || [])
+    .filter((fish) => fish && !isFishDead(fish) && !isMealFreeFish(fish));
+  const entry = getMealHistoryEntry(`feeding-care-${getLocalDayKey(now)}`, tank);
+  const rewardedFishIds = new Set(Array.isArray(entry?.fishIds) ? entry.fishIds : []);
+  const earned = clamp(Math.max(0, Number(entry?.coinsEarned) || 0), 0, FISH_DAILY_FEEDING_CARE_COIN_CAP);
+  const remainingCap = Math.max(0, FISH_DAILY_FEEDING_CARE_COIN_CAP - earned);
+  const available = livingFish
+    .filter((fish) => !rewardedFishIds.has(fish.id))
+    .reduce((total, fish) => total + Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0), 0);
+  return {
+    earned,
+    remainingCap,
+    eligibleCoins: Math.min(remainingCap, available),
+    eligibleFish: livingFish.filter((fish) => !rewardedFishIds.has(fish.id)).length
+  };
 }
 
 function hasFishEatenInSlot(fish, slotOrKey, tank = getCurrentTank()) {
@@ -51216,16 +51263,14 @@ function renderSummary(now) {
 
 function buildSummaryMarkup(now) {
   const dirtiness = getTankDirtiness(now);
-  const coinsPerMeal = getLivingTankFish().reduce((total, fish) => (
-    total + (isMealFreeFish(fish) ? 0 : (getSpeciesForFish(fish)?.mealCoins || 0))
-  ), 0);
+  const feedingCare = getDailyFeedingCareStatus(getCurrentTank(), now);
   const lowHealthCount = state.fish.filter((fish) => !isFishDead(fish) && fish.healthUnits < getFishMaxHealthUnits(fish)).length;
   const grimeLoad = Math.round((getTankFishDirtinessMultiplier() - 1) * 100);
   const maxDirtyIn = formatDuration(getTankMaxDirtyDurationMs());
 
   const rows = [
     { label: "Fish in Tank", value: state.fish.filter((fish) => !isFishDead(fish)).length },
-    { label: "Feeding Care Coins", value: coinsPerMeal },
+    { label: "Feeding Care Eligible Today", value: `${feedingCare.eligibleCoins} / ${FISH_DAILY_FEEDING_CARE_COIN_CAP}` },
     { label: "Current Grime", value: `${Math.round(dirtiness * 100)}%` },
     { label: "Waste on floor", value: state.poops.length },
     { label: "Tank Grime Load", value: `+${grimeLoad}%` },
@@ -51272,7 +51317,7 @@ function formatFishShopMetric(kind, count, options = {}) {
   }
 
   if (kind === "coin") {
-    return `+${safeCount} feeding care`;
+    return `+${safeCount} first feed/day (shared ${FISH_DAILY_FEEDING_CARE_COIN_CAP} cap)`;
   }
 
   return `${safeCount} ${pluralize("heart", safeCount)}`;
@@ -51399,6 +51444,9 @@ function renderFishShop() {
         : debugUnlocked
           ? `Debug unlocked (${lockedRequirementLabel})`
           : "Unlocked";
+      const behaviorWarning = isPiranhaSpecies(fish)
+        ? "Warning: attacks and can kill non-undead tankmates when aggressive behavior is enabled."
+        : "";
       return `
         <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
           <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
@@ -51406,6 +51454,8 @@ function renderFishShop() {
             <div>
               <strong>${fish.name}</strong>
               ${renderFishShopThemePill(fish.theme)}
+              ${fish.description ? `<div class="fish-meta">${escapeHtml(fish.description)}</div>` : ""}
+              ${behaviorWarning ? `<div class="shop-behavior-warning">${escapeHtml(behaviorWarning)}</div>` : ""}
             </div>
             <div class="shop-stat-list">
               <div class="shop-stat-row"><span class="shop-stat-label">Unlock:</span><span class="shop-stat-value">${escapeHtml(unlockLabel)}</span></div>
@@ -53200,9 +53250,7 @@ function getManagementHubStats(now = Date.now()) {
   const cleanPercent = Math.round((1 - dirtiness) * 100);
   const maxDirtyInMs = Math.max(0, (1 - dirtiness) * getTankMaxDirtyDurationMs());
   const grimeLoad = Math.round((getTankFishDirtinessMultiplier() - 1) * 100);
-  const feedingCareCoins = getLivingTankFish().reduce((total, fish) => (
-    total + (isMealFreeFish(fish) ? 0 : (getSpeciesForFish(fish)?.mealCoins || 0))
-  ), 0);
+  const feedingCare = getDailyFeedingCareStatus(tank, now);
   const hungryFish = getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD).length;
   const starvingFish = getHungryFishByNeeds(tank, now, FISH_HUNGER_CRITICAL_THRESHOLD).length;
   const hungerStable = hungryFish <= 0;
@@ -53219,7 +53267,9 @@ function getManagementHubStats(now = Date.now()) {
 
   return {
     cleanPercent,
-    coinsPerMeal: feedingCareCoins,
+    feedingCareEligible: feedingCare.eligibleCoins,
+    feedingCareEarned: feedingCare.earned,
+    feedingCareCap: FISH_DAILY_FEEDING_CARE_COIN_CAP,
     currentMealServed: hungerStable,
     deadFish,
     grimeLoad,
@@ -57786,7 +57836,7 @@ function renderManagedFishCard(fish, now, options = {}) {
                 : detritusFish
                   ? "Feeds on grime and poop instead of pellets."
                   : fish.healthUnits < maxHealthUnits
-                    ? `Recovery streak: ${Math.min(fish.fedStreak, RECOVERY_FEED_STREAK)}/${RECOVERY_FEED_STREAK}`
+                    ? "Health does not recover from ordinary food. Use First Aid or a Clinic service."
                     : "Full hearts and thriving.";
   const rewardLabel = dead
     ? "No feeding care coins"
@@ -57794,7 +57844,7 @@ function renderManagedFishCard(fish, now, options = {}) {
       ? "Cleans tank"
       : mealFreeFish
         ? "No feeding care coins"
-        : `+${species.mealCoins} feeding care`;
+        : `+${species.mealCoins} first feed/day · shared ${FISH_DAILY_FEEDING_CARE_COIN_CAP} cap`;
   const dirtinessLoadPercent = Math.round(getFishDirtinessBonus(fish, species) * 100);
 
   return `
@@ -58513,12 +58563,20 @@ function renderFishInspector(now) {
     dom.inspectorHealth.innerHTML = inspectorHeartsMarkup;
   }
   setTextIfChanged(
-    dom.inspectorComfort,
+    dom.inspectorActivity,
     inStorage
       ? (dead ? `${corpseLabel} in storage` : "Stored safely")
       : dead
         ? corpseLabel
-        : needsSnapshot.mood.label
+        : needsSnapshot.activity
+  );
+  setTextIfChanged(
+    dom.inspectorComfort,
+    inStorage
+      ? "N/A"
+      : dead
+        ? "0% (Deceased)"
+        : `${Math.round(comfort.value * 100)}% (${comfort.label})`
   );
   if (dom.inspectorNeedsBars) {
     dom.inspectorNeedsBars.hidden = true;
@@ -69928,8 +69986,17 @@ function drawFish(now, layer = null, options = {}) {
     if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
       tankContext.save();
       const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
-      const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Okay");
-      const moodTone = pose.isDead ? "danger" : (snapshot?.mood?.tone || "good");
+      const comfort = pose.isDead ? null : getFishComfort(fish, now);
+      const comfortLabel = pose.isDead
+        ? "Dead"
+        : `${Math.round((comfort?.value || 0) * 100)}% ${comfort?.label || "Comfort"}`;
+      const comfortTone = pose.isDead
+        ? "danger"
+        : (comfort?.value || 0) <= 0.4
+          ? "danger"
+          : (comfort?.value || 0) <= 0.64
+            ? "warn"
+            : "good";
       const heartCount = Math.max(0, (Number(fish.healthUnits) || 0) / 2);
       const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
       const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
@@ -69943,15 +70010,15 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
       const nameWidth = tankContext.measureText(fish.name || "Fish").width;
-      const moodWidth = tankContext.measureText(moodLabel).width;
+      const comfortWidth = tankContext.measureText(comfortLabel).width;
       const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
-      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, moodWidth, heartWidth) + 18 * stableScale));
+      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, comfortWidth, heartWidth) + 18 * stableScale));
       const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
       const desiredBottomY = pose.y - height * 0.58;
       const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
-      const moodStroke = moodTone === "danger"
+      const moodStroke = comfortTone === "danger"
         ? "rgba(255, 116, 137, 0.82)"
-        : moodTone === "warn"
+        : comfortTone === "warn"
           ? "rgba(255, 202, 102, 0.82)"
           : "rgba(89, 229, 203, 0.82)";
 
@@ -69980,7 +70047,7 @@ function drawFish(now, layer = null, options = {}) {
 
       tankContext.textAlign = "center";
       tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(moodLabel, labelX, topY + (rowHeight + rowGap) * 2 + rowHeight / 2 + 0.5);
+      tankContext.fillText(comfortLabel, labelX, topY + (rowHeight + rowGap) * 2 + rowHeight / 2 + 0.5);
       tankContext.restore();
     }
   }

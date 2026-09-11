@@ -1,6 +1,7 @@
 const STORAGE_KEY = "bubble-borough-save-v1";
 const SUPABASE_URL = "https://idljwswasrxtifbkioyg.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qxhGQH_faz0TDw4_AbYsGw_iYljA_9s";
+const INVITE_FRIEND_ENABLED = false;
 const CLOUD_AUTH_SESSION_KEY = "bubble-borough-cloud-auth-v1";
 const CLOUD_SAVE_META_KEY = "bubble-borough-cloud-meta-v1";
 const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1";
@@ -3082,6 +3083,7 @@ const dom = {
   fishNameKeyboard: document.querySelector("#fishNameKeyboard"),
   inspectorSpecies: document.querySelector("#inspectorSpecies"),
   inspectorHealth: document.querySelector("#inspectorHealth"),
+  inspectorActivity: document.querySelector("#inspectorActivity"),
   inspectorComfort: document.querySelector("#inspectorComfort"),
   inspectorNeeds: document.querySelector("#inspectorNeeds"),
   inspectorNeedsBars: document.querySelector("#inspectorNeedsBars"),

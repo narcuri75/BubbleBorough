@@ -1683,26 +1683,25 @@ test("overview and store keep the toolbar visible while compact dialogs cover it
   assert.match(rendering, /runtime\.utilityOverlayOpen[\s\S]*runtime\.settingsOverlayOpen[\s\S]*runtime\.equipmentOverlayOpen/);
   assert.match(rendering, /classList\.toggle\("is-behind-overlay", dialogCoversToolbar\)/);
   assert.match(css, /\.tank-bottom-dock\.is-behind-overlay\s*\{[\s\S]*z-index:\s*3/);
-  assert.match(css, /data-utility-mode="invite-friend"[\s\S]*width:\s*min\(640px/);
   assert.match(css, /data-utility-mode="fish-sell-confirm"[\s\S]*width:\s*min\(520px/);
   assert.doesNotMatch(tank, /traceDecorEditRoundedTankPath\(glassContext\);/);
 });
 
-test("startup requires account auth before a new aquarium and invite-a-friend is available beside credits", () => {
+test("startup requires account auth before a new aquarium and invite-a-friend stays disabled", () => {
   const cloud = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
-  const management = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
+  const customContent = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
   const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
   assert.match(cloud, /Sign in or create an account to continue\./);
   assert.doesNotMatch(cloud, />Start New Aquarium<\/button>/);
   assert.match(cloud, /data-startup-new>Start<\/button>/);
   assert.match(cloud, /runtime\.cloudAuthCallbackType === "signup"/);
-  assert.match(bootstrap, /"invite-friend"/);
-  assert.match(management, /data-invite-friend-emails/);
-  assert.match(management, /\/functions\/v1\/send-friend-invite/);
-  assert.match(management, /Authorization: `Bearer \$\{session\.access_token\}`/);
-  assert.doesNotMatch(management, /mailto:/);
-  assert.match(html, /data-open-invite-friend>[\s\S]*Invite A Friend/);
+  assert.match(bootstrap, /const INVITE_FRIEND_ENABLED = false/);
+  assert.match(customContent, /if \(!INVITE_FRIEND_ENABLED\)[\s\S]*button\.hidden = true/);
+  assert.match(customContent, /if \(INVITE_FRIEND_ENABLED\) \{[\s\S]*openUtilityOverlay\("invite-friend"\)/);
+  assert.match(customization, /nextMode === "invite-friend" && !INVITE_FRIEND_ENABLED/);
+  assert.equal((html.match(/data-open-invite-friend hidden/g) || []).length, 2);
 });
 
 test("borough overview fish are hard-capped at 12 FPS", () => {
@@ -1723,8 +1722,63 @@ test("selected fish status uses compact in-tank badge without a Fish Care intera
   assert.doesNotMatch(uiSource, />Offer treat</);
   assert.match(renderingSource, /runtime\.selectedFishStatusFishId === fish\.id/);
   assert.match(renderingSource, /heartLabel/);
-  assert.match(renderingSource, /moodLabel/);
+  assert.match(renderingSource, /comfortLabel/);
   assert.doesNotMatch(inputSource, /careTool === "interact"/);
+});
+
+test("care UI explains health, feeding rewards, comfort, refusals, and predator risk accurately", () => {
+  const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
+  const feeding = fs.readFileSync(path.join(root, "fish/feeding-and-medicine.js"), "utf8");
+  const behavior = fs.readFileSync(path.join(root, "fish/needs-disease-and-behavior.js"), "utf8");
+  const individuality = fs.readFileSync(path.join(root, "borough/living-borough.js"), "utf8");
+  const ui = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const store = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  assert.doesNotMatch(html, /Fed fish recover/);
+  assert.match(html, /first rewarded feeding of the day/);
+  assert.match(html, /id="inspectorActivity"/);
+  assert.match(html, />Comfort:</);
+  assert.match(feeding, /function getDailyFeedingCareStatus/);
+  assert.match(ui, /Health does not recover from ordinary food/);
+  assert.doesNotMatch(ui, /Recovery streak:/);
+  assert.match(behavior, /refused food because/);
+  assert.match(individuality, /getFishBehaviorIntent\(fish, now\)\?\.type/);
+  assert.match(store, /attacks and can kill non-undead tankmates/);
+  assert.match(store, /Feeding Care Eligible Today/);
+});
+
+test("feeding care eligibility counts only unfed fish within the shared daily cap", () => {
+  const dayKey = "2026-09-11";
+  const mealHistory = {
+    [`feeding-care-${dayKey}`]: { fishIds: ["already-fed"], coinsEarned: 2 }
+  };
+  const tank = {
+    fish: [
+      { id: "already-fed", healthUnits: 20, mealCoins: 2 },
+      { id: "eligible-a", healthUnits: 20, mealCoins: 4 },
+      { id: "eligible-b", healthUnits: 20, mealCoins: 3 },
+      { id: "meal-free", healthUnits: 20, mealCoins: 4, mealFree: true },
+      { id: "dead", healthUnits: 0, mealCoins: 4 }
+    ]
+  };
+  const c = load("fish/feeding-and-medicine.js", ["getDailyFeedingCareStatus"], {
+    state: { mealHistory },
+    FISH_DAILY_FEEDING_CARE_COIN_CAP: 8,
+    getCurrentTank: () => tank,
+    getLocalDayKey: () => dayKey,
+    getMealHistoryEntry: key => mealHistory[key] || null,
+    getSpeciesForFish: fish => ({ mealCoins: fish.mealCoins }),
+    isFishDead: fish => fish.healthUnits <= 0,
+    isMealFreeFish: fish => Boolean(fish.mealFree)
+  });
+
+  const status = c.getDailyFeedingCareStatus(tank, Date.now());
+  assert.equal(status.earned, 2);
+  assert.equal(status.remainingCap, 6);
+  assert.equal(status.eligibleCoins, 6);
+  assert.equal(status.eligibleFish, 2);
+
+  mealHistory[`feeding-care-${dayKey}`].coinsEarned = 8;
+  assert.equal(c.getDailyFeedingCareStatus(tank, Date.now()).eligibleCoins, 0);
 });
 
 test("Chum Skiff resource icon uses the existing chum food art", () => {

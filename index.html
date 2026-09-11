@@ -197,10 +197,17 @@
                     <h3>Tips:</h3>
                     <ul class="rule-list">
                       <li>💔 Starving fish can lose health.</li>
-                      <li>💖 Fed fish recover and stay in better moods.</li>
+                      <li>💖 Food restores hunger and comfort. Use medicine to restore lost health.</li>
                       <li>💩 Fish poop 1 to 3 hours after eating and it settles on the gravel.</li>
                       <li>🏚️ Bigger fish and more fish make grime build up faster.</li>
                       <li>🐠 Sucker fish help slow grime build-up.</li>
+                    </ul>
+                    <h3>Coins:</h3>
+                    <ul>
+                      <li>🪙 Each fish's first rewarded feeding of the day earns its listed Feeding Care value, up to 8 coins total per day.</li>
+                      <li>🧽 Cleaning at 25% grime or higher earns coins. Dirtier tanks pay more.</li>
+                      <li>☀️ Daily recaps and milestones award coins automatically.</li>
+                      <li>🪨 Fish may find coins in the gravel, and eligible fish or tanks can be sold.</li>
                     </ul>
                   </section>
 
@@ -223,7 +230,7 @@
 
                   <section class="info-card info-card-credits">
                     <div class="overview-actions">
-                      <button class="small-button alt" type="button" data-open-invite-friend>
+                      <button class="small-button alt" type="button" data-open-invite-friend hidden>
                         Invite A Friend
                       </button>
                       <button class="small-button alt credits-button" type="button" data-open-credits>
@@ -726,7 +733,7 @@
                         </div>
                       </div>
                       <div class="overview-actions settings-other-actions">
-                        <button class="small-button alt" type="button" data-open-invite-friend>
+                        <button class="small-button alt" type="button" data-open-invite-friend hidden>
                           <img class="settings-button-icon" data-sprite-src="assets/icons/invite-friend.png" alt="" aria-hidden="true" />
                           Invite A Friend
                         </button>
@@ -1268,8 +1275,12 @@
                     <div id="inspectorHealth" class="hearts"></div>
                   </div>
                   <div class="inspector-line">
-                    <span>Mood:</span>
-                    <strong id="inspectorComfort">100% (Calm)</strong>
+                    <span>Activity:</span>
+                    <strong id="inspectorActivity">Watching the world drift by</strong>
+                  </div>
+                  <div class="inspector-line">
+                    <span>Comfort:</span>
+                    <strong id="inspectorComfort">100% (Sparkling)</strong>
                   </div>
                   <div id="inspectorNeedsBars" class="fish-needs-bars" aria-label="Fish needs"></div>
                   <div class="inspector-line inspector-line-chips">

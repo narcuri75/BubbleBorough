@@ -758,10 +758,14 @@ function closeStoreOverlay(options = {}) {
 
 function openUtilityOverlay(mode, options = {}) {
   const nextMode = String(mode || "");
+  if (nextMode === "invite-friend" && !INVITE_FRIEND_ENABLED) {
+    return false;
+  }
   openExclusiveOverlay("utility", {
     ...options,
     mode: nextMode
   });
+  return true;
 }
 
 function openAutoDispenserResetConfirmation() {

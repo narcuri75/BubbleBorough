@@ -119,6 +119,24 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   return mealCoins;
 }
 
+function getDailyFeedingCareStatus(tank = getCurrentTank(), now = Date.now()) {
+  const livingFish = (tank?.fish || [])
+    .filter((fish) => fish && !isFishDead(fish) && !isMealFreeFish(fish));
+  const entry = getMealHistoryEntry(`feeding-care-${getLocalDayKey(now)}`, tank);
+  const rewardedFishIds = new Set(Array.isArray(entry?.fishIds) ? entry.fishIds : []);
+  const earned = clamp(Math.max(0, Number(entry?.coinsEarned) || 0), 0, FISH_DAILY_FEEDING_CARE_COIN_CAP);
+  const remainingCap = Math.max(0, FISH_DAILY_FEEDING_CARE_COIN_CAP - earned);
+  const available = livingFish
+    .filter((fish) => !rewardedFishIds.has(fish.id))
+    .reduce((total, fish) => total + Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0), 0);
+  return {
+    earned,
+    remainingCap,
+    eligibleCoins: Math.min(remainingCap, available),
+    eligibleFish: livingFish.filter((fish) => !rewardedFishIds.has(fish.id)).length
+  };
+}
+
 function hasFishEatenInSlot(fish, slotOrKey, tank = getCurrentTank()) {
   if (!fish || isMealFreeFish(fish)) {
     return true;

@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2913,
+  "functionCount": 2914,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -466,7 +466,7 @@
     },
     {
       "path": "fish/feeding-and-medicine.js",
-      "functionCount": 30,
+      "functionCount": 31,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -826,6 +826,7 @@
         "decor/customization.js",
         "decor/placement-and-dragging.js",
         "fish/decor-behavior.js",
+        "fish/feeding-and-medicine.js",
         "fish/health.js",
         "fish/meals-and-needs.js",
         "fish/needs-disease-and-behavior.js",
@@ -860,6 +861,7 @@
         "decor/layout-and-layers.js",
         "decor/placement-and-dragging.js",
         "fish/decor-behavior.js",
+        "fish/feeding-and-medicine.js",
         "fish/health.js",
         "fish/lifecycle-and-breeding.js",
         "fish/meals-and-needs.js",

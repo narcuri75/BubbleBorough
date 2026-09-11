@@ -2491,7 +2491,7 @@ function renderManagedFishCard(fish, now, options = {}) {
                 : detritusFish
                   ? "Feeds on grime and poop instead of pellets."
                   : fish.healthUnits < maxHealthUnits
-                    ? `Recovery streak: ${Math.min(fish.fedStreak, RECOVERY_FEED_STREAK)}/${RECOVERY_FEED_STREAK}`
+                    ? "Health does not recover from ordinary food. Use First Aid or a Clinic service."
                     : "Full hearts and thriving.";
   const rewardLabel = dead
     ? "No feeding care coins"
@@ -2499,7 +2499,7 @@ function renderManagedFishCard(fish, now, options = {}) {
       ? "Cleans tank"
       : mealFreeFish
         ? "No feeding care coins"
-        : `+${species.mealCoins} feeding care`;
+        : `+${species.mealCoins} first feed/day · shared ${FISH_DAILY_FEEDING_CARE_COIN_CAP} cap`;
   const dirtinessLoadPercent = Math.round(getFishDirtinessBonus(fish, species) * 100);
 
   return `
@@ -3218,12 +3218,20 @@ function renderFishInspector(now) {
     dom.inspectorHealth.innerHTML = inspectorHeartsMarkup;
   }
   setTextIfChanged(
-    dom.inspectorComfort,
+    dom.inspectorActivity,
     inStorage
       ? (dead ? `${corpseLabel} in storage` : "Stored safely")
       : dead
         ? corpseLabel
-        : needsSnapshot.mood.label
+        : needsSnapshot.activity
+  );
+  setTextIfChanged(
+    dom.inspectorComfort,
+    inStorage
+      ? "N/A"
+      : dead
+        ? "0% (Deceased)"
+        : `${Math.round(comfort.value * 100)}% (${comfort.label})`
   );
   if (dom.inspectorNeedsBars) {
     dom.inspectorNeedsBars.hidden = true;

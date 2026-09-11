@@ -592,6 +592,11 @@ function bindEvents() {
     if (!dom.loadingOverlay?.classList.contains("is-ready")) return;
   });
   if (typeof document !== "undefined") {
+    if (!INVITE_FRIEND_ENABLED) {
+      document.querySelectorAll("[data-open-invite-friend]").forEach((button) => {
+        button.hidden = true;
+      });
+    }
     document.addEventListener("visibilitychange", () => {
       syncAmbienceAudio();
     });
@@ -599,7 +604,9 @@ function bindEvents() {
       const inviteButton = event.target instanceof Element ? event.target.closest("[data-open-invite-friend]") : null;
       if (inviteButton) {
         event.preventDefault();
-        openUtilityOverlay("invite-friend");
+        if (INVITE_FRIEND_ENABLED) {
+          openUtilityOverlay("invite-friend");
+        }
         return;
       }
 

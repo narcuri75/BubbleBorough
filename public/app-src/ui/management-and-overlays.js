@@ -1014,9 +1014,7 @@ function getManagementHubStats(now = Date.now()) {
   const cleanPercent = Math.round((1 - dirtiness) * 100);
   const maxDirtyInMs = Math.max(0, (1 - dirtiness) * getTankMaxDirtyDurationMs());
   const grimeLoad = Math.round((getTankFishDirtinessMultiplier() - 1) * 100);
-  const feedingCareCoins = getLivingTankFish().reduce((total, fish) => (
-    total + (isMealFreeFish(fish) ? 0 : (getSpeciesForFish(fish)?.mealCoins || 0))
-  ), 0);
+  const feedingCare = getDailyFeedingCareStatus(tank, now);
   const hungryFish = getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD).length;
   const starvingFish = getHungryFishByNeeds(tank, now, FISH_HUNGER_CRITICAL_THRESHOLD).length;
   const hungerStable = hungryFish <= 0;
@@ -1033,7 +1031,9 @@ function getManagementHubStats(now = Date.now()) {
 
   return {
     cleanPercent,
-    coinsPerMeal: feedingCareCoins,
+    feedingCareEligible: feedingCare.eligibleCoins,
+    feedingCareEarned: feedingCare.earned,
+    feedingCareCap: FISH_DAILY_FEEDING_CARE_COIN_CAP,
     currentMealServed: hungerStable,
     deadFish,
     grimeLoad,

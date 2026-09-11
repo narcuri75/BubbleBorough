@@ -2562,6 +2562,21 @@ function handleFishRefuseFoodPellet(fish, pellet, now = Date.now()) {
   const refusalReason = diseaseState !== DISEASE_STATE_NONE
     ? `${diseaseState} symptoms + comfort ${comfortPercent}%`
     : `comfort ${comfortPercent}%`;
+  const playerReason = diseaseState !== DISEASE_STATE_NONE
+    ? "it feels unwell"
+    : comfortPercent <= 40
+      ? "it is too stressed"
+      : "it is not ready to eat yet";
+  fish.lastNeedEventAtByType = sanitizeFishNeedEventMap(fish.lastNeedEventAtByType);
+  if (now - (Number(fish.lastNeedEventAtByType["food-refused-player"]) || 0) >= 5 * MINUTE_MS) {
+    fish.lastNeedEventAtByType["food-refused-player"] = now;
+    pushEvent(`${fish.name} refused food because ${playerReason}.`, now, getCurrentTank(), {
+      type: "food",
+      fishId: fish.id,
+      score: 0,
+      recapEligible: false
+    });
+  }
   recordFishFeedingMemory(fish, pellet, now);
   recordFishBehaviorSignal(fish, "food_refused", now, {
     debugText: `refuse food | ${refusalReason}`

@@ -823,9 +823,10 @@ function buildFishIndividualityMarkup(fish, now = Date.now(), options = {}) {
     : null;
   if (serviceTarget) {
     rows.push(["Currently", `Visiting ${runtime.decorMap.get(serviceTarget.decorKey)?.name || getBoroughServiceLabel(fish.boroughServiceType)}`]);
-  } else if (fish.behaviorIntent?.action) {
-    const target = fish.behaviorIntent.target ? ` · ${fish.behaviorIntent.target}` : "";
-    rows.push(["Currently", `${titleFromFile(fish.behaviorIntent.action)}${target}`]);
+  } else if (getFishBehaviorIntent(fish, now)?.type) {
+    const intent = getFishBehaviorIntent(fish, now);
+    const detail = intent.targetName || intent.cause;
+    rows.push(["Currently", `${titleFromFile(intent.type)}${detail ? ` · ${detail}` : ""}`]);
   } else if (fish.activity && !options.dead) {
     rows.push(["Currently", titleFromFile(fish.activity)]);
   }

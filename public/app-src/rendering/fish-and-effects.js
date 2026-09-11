@@ -755,8 +755,17 @@ function drawFish(now, layer = null, options = {}) {
     if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
       tankContext.save();
       const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
-      const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Okay");
-      const moodTone = pose.isDead ? "danger" : (snapshot?.mood?.tone || "good");
+      const comfort = pose.isDead ? null : getFishComfort(fish, now);
+      const comfortLabel = pose.isDead
+        ? "Dead"
+        : `${Math.round((comfort?.value || 0) * 100)}% ${comfort?.label || "Comfort"}`;
+      const comfortTone = pose.isDead
+        ? "danger"
+        : (comfort?.value || 0) <= 0.4
+          ? "danger"
+          : (comfort?.value || 0) <= 0.64
+            ? "warn"
+            : "good";
       const heartCount = Math.max(0, (Number(fish.healthUnits) || 0) / 2);
       const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
       const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
@@ -770,15 +779,15 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
       const nameWidth = tankContext.measureText(fish.name || "Fish").width;
-      const moodWidth = tankContext.measureText(moodLabel).width;
+      const comfortWidth = tankContext.measureText(comfortLabel).width;
       const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
-      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, moodWidth, heartWidth) + 18 * stableScale));
+      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, comfortWidth, heartWidth) + 18 * stableScale));
       const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
       const desiredBottomY = pose.y - height * 0.58;
       const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
-      const moodStroke = moodTone === "danger"
+      const moodStroke = comfortTone === "danger"
         ? "rgba(255, 116, 137, 0.82)"
-        : moodTone === "warn"
+        : comfortTone === "warn"
           ? "rgba(255, 202, 102, 0.82)"
           : "rgba(89, 229, 203, 0.82)";
 
@@ -807,7 +816,7 @@ function drawFish(now, layer = null, options = {}) {
 
       tankContext.textAlign = "center";
       tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(moodLabel, labelX, topY + (rowHeight + rowGap) * 2 + rowHeight / 2 + 0.5);
+      tankContext.fillText(comfortLabel, labelX, topY + (rowHeight + rowGap) * 2 + rowHeight / 2 + 0.5);
       tankContext.restore();
     }
   }

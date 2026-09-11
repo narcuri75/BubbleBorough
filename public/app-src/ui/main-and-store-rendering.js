@@ -291,16 +291,14 @@ function renderSummary(now) {
 
 function buildSummaryMarkup(now) {
   const dirtiness = getTankDirtiness(now);
-  const coinsPerMeal = getLivingTankFish().reduce((total, fish) => (
-    total + (isMealFreeFish(fish) ? 0 : (getSpeciesForFish(fish)?.mealCoins || 0))
-  ), 0);
+  const feedingCare = getDailyFeedingCareStatus(getCurrentTank(), now);
   const lowHealthCount = state.fish.filter((fish) => !isFishDead(fish) && fish.healthUnits < getFishMaxHealthUnits(fish)).length;
   const grimeLoad = Math.round((getTankFishDirtinessMultiplier() - 1) * 100);
   const maxDirtyIn = formatDuration(getTankMaxDirtyDurationMs());
 
   const rows = [
     { label: "Fish in Tank", value: state.fish.filter((fish) => !isFishDead(fish)).length },
-    { label: "Feeding Care Coins", value: coinsPerMeal },
+    { label: "Feeding Care Eligible Today", value: `${feedingCare.eligibleCoins} / ${FISH_DAILY_FEEDING_CARE_COIN_CAP}` },
     { label: "Current Grime", value: `${Math.round(dirtiness * 100)}%` },
     { label: "Waste on floor", value: state.poops.length },
     { label: "Tank Grime Load", value: `+${grimeLoad}%` },
@@ -347,7 +345,7 @@ function formatFishShopMetric(kind, count, options = {}) {
   }
 
   if (kind === "coin") {
-    return `+${safeCount} feeding care`;
+    return `+${safeCount} first feed/day (shared ${FISH_DAILY_FEEDING_CARE_COIN_CAP} cap)`;
   }
 
   return `${safeCount} ${pluralize("heart", safeCount)}`;
@@ -474,6 +472,9 @@ function renderFishShop() {
         : debugUnlocked
           ? `Debug unlocked (${lockedRequirementLabel})`
           : "Unlocked";
+      const behaviorWarning = isPiranhaSpecies(fish)
+        ? "Warning: attacks and can kill non-undead tankmates when aggressive behavior is enabled."
+        : "";
       return `
         <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
           <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
@@ -481,6 +482,8 @@ function renderFishShop() {
             <div>
               <strong>${fish.name}</strong>
               ${renderFishShopThemePill(fish.theme)}
+              ${fish.description ? `<div class="fish-meta">${escapeHtml(fish.description)}</div>` : ""}
+              ${behaviorWarning ? `<div class="shop-behavior-warning">${escapeHtml(behaviorWarning)}</div>` : ""}
             </div>
             <div class="shop-stat-list">
               <div class="shop-stat-row"><span class="shop-stat-label">Unlock:</span><span class="shop-stat-value">${escapeHtml(unlockLabel)}</span></div>

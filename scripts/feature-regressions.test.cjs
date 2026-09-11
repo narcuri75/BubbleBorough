@@ -1853,7 +1853,7 @@ test("horizontal care and edit menus render in front of the entire toolbar", () 
   assert.match(rendering, /horizontalMenuCoversToolbar = runtime\.editTankMode[\s\S]*runtime\.fishEditMode[\s\S]*runtime\.equipmentEditMode[\s\S]*runtime\.tankEditMode[\s\S]*runtime\.foodTrayOpen[\s\S]*runtime\.medicineTrayOpen/);
   assert.match(rendering, /classList\.toggle\("is-behind-horizontal-menu", horizontalMenuCoversToolbar\)/);
   assert.match(css, /\.tank-bottom-dock\.is-behind-horizontal-menu:not\(\.is-behind-overlay\)\s*\{\s*z-index:\s*6/);
-  assert.match(css, /\.edit-decor-tray\s*\{[\s\S]*?z-index:\s*9/);
+  assert.match(css, /\.tank-stage > \.edit-decor-tray:not\(\[hidden\]\)\s*\{[\s\S]*?z-index:\s*20/);
 });
 
 test("borough edit overview never renders beyond the real 5 by 3 limit", () => {

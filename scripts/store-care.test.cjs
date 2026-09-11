@@ -103,6 +103,25 @@ test("a Halloween pile buys 10 pieces only in season, and zero stock cannot be d
   assert.equal(c.state.foodInventory.halloweenCandy, 9);
   assert.equal(c.state.floatingPellets.length, 1);
 });
+test("owned Halloween candy can still be selected after the seasonal shop closes", () => {
+  const candy = JSON.parse(fs.readFileSync(path.join(root, "../../assets/foodandmeds/food-and-meds.json"))).food.halloweenCandy;
+  const toasts = [];
+  const c = harness({
+    getFoodMeta: () => candy,
+    shouldShowFoodInStore: () => false,
+    state: { foodInventory: { halloweenCandy: 6 } },
+    runtime: { foodTrayOpen: false, medicineTrayOpen: true, cleaningMode: false, scoopMode: false, medicineModeKey: "", feedingModeFoodKey: "" },
+    renderUi() {},
+    showToast: message => toasts.push(message)
+  });
+  addFunctions(c, "store/purchases.js", ["selectFoodMode"]);
+  const result = c.selectFoodMode("halloweenCandy");
+  assert.equal(result.ok, true);
+  assert.equal(result.selected, true);
+  assert.equal(c.runtime.feedingModeFoodKey, "halloweenCandy");
+  assert.match(toasts.at(-1), /selected/i);
+});
+
 test("each candy drop chooses an individual image and preserves that choice", () => {
   let random = 0;
   const candy = { id: "halloweenCandy", dropImages: ["Halloween_candy_1.png", "Halloween_candy_2.png"] };

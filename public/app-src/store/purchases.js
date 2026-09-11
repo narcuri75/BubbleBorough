@@ -140,12 +140,15 @@ function selectFoodMode(foodKey, options = {}) {
   if (!food) {
     return { ok: false, reason: "missing-food" };
   }
-  if (!shouldShowFoodInStore(food) || food.id === "upgraded") {
+
+  // Seasonal food can disappear from the shop after its sale window ends, but
+  // anything the player already owns must remain usable from Fish Care.
+  const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
+  if ((quantity <= 0 && !shouldShowFoodInStore(food)) || food.id === "upgraded") {
     showToast("That food is no longer available.");
     return { ok: false, reason: "food-locked", foodId: food.id };
   }
 
-  const quantity = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
   if (quantity <= 0) {
     showToast("Buy that food first.");
     return { ok: false, reason: "out-of-stock", foodId: food.id };

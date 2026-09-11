@@ -246,6 +246,7 @@ function toggleScoopMode(options = {}) {
 
 function applyDebugTankDirtiness(targetBaseDirtiness, now, eventMessage, toastMessage) {
   rebaseTankDirtiness(now, targetBaseDirtiness);
+  invalidateBoroughOverviewSnapshot(getCurrentTank());
   const livingFish = getLivingTankFish();
   const desiredPoopCount = livingFish.length
     ? Math.max(state.poops.length, Math.min(28, Math.ceil(livingFish.length * (1.2 + targetBaseDirtiness * 1.6))))
@@ -315,6 +316,32 @@ function maxTankDirtinessDebug() {
   );
 }
 
+function maxTankCleanlinessDebug() {
+  const now = Date.now();
+  syncState(now);
+
+  const currentBaseDirtiness = getBaseTankDirtiness(now);
+  const hasVisibleWaste = Array.isArray(state.poops) && state.poops.length > 0;
+  if (currentBaseDirtiness <= 0.005 && !hasVisibleWaste) {
+    showToast("The tank is already at maximum cleanliness.");
+    return;
+  }
+
+  rebaseTankDirtiness(now, 0);
+  state.poops = [];
+  invalidateBoroughOverviewSnapshot(getCurrentTank());
+  runtime.cleaningTransition = null;
+  runtime.cleaningMode = false;
+  runtime.toolModeSource = null;
+  runtime.pointerDown = false;
+  clearScrubProgress();
+  renderToolCursor();
+  pushEvent("Debug tank cleanliness maxed. Tank grime reset to 0%.", now);
+  saveState();
+  renderUi(now);
+  showToast("Tank cleanliness maxed.");
+}
+
 function forceAllWhalesToBreatheDebug(now = Date.now()) {
   const tank = getCurrentTank();
   const whales = Array.isArray(tank?.fish)
@@ -360,44 +387,124 @@ function addDebugCoins(amount = 10) {
   showToast(`+${coinAmount} ${pluralize("coin", coinAmount)}.`);
 }
 
+function reviveFishForDebug(fish, now = Date.now()) {
+  if (!fish || !isFishDead(fish)) {
+    return false;
+  }
+
+  const species = getSpeciesForFish(fish);
+  fish.deadAt = null;
+  fish.healthUnits = getFishMaxHealthUnits(fish, species);
+  fish.activity = "roam";
+  fish.decayStage = null;
+  fish.fedStreak = 0;
+  fish.missedMealsInRow = 0;
+  fish.comfortDamageProgressMs = 0;
+  fish.feedingPelletId = null;
+  fish.behaviorIntent = null;
+  fish.foodRefusalUntil = 0;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.blockedDecorId = null;
+  fish.blockedDecorUntil = null;
+  fish.coarseActivity = null;
+  fish.entryStartedAt = null;
+  fish.entryDurationMs = 0;
+  fish.entryFromYNorm = null;
+  fish.entrySplashTriggered = false;
+  fish.turnStartedAt = null;
+  fish.turnDurationMs = 0;
+  fish.sharkLastAttackAt = 0;
+
+  clearZombieAttackState(fish);
+  clearPiranhaAttackState(fish);
+  fish.zombieReviveAt = null;
+  fish.zombieReviveSourceId = null;
+  fish.piranhaConsumptionStartedAt = null;
+  fish.piranhaConsumptionEndsAt = null;
+  fish.piranhaLastBloodAt = null;
+  clearFishPanicState(fish);
+  clearFishSchoolFollowState(fish);
+  clearFishCaveBehavior(fish);
+  resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now);
+  clearDiseaseGreenBubbleStream(fish);
+
+  runtime.pendingNeighborhoodTravel?.delete?.(fish.id);
+  runtime.fishActionQueuesByFishId?.delete?.(fish.id);
+  runtime.fishActionSteeringByFishId?.delete?.(fish.id);
+  runtime.debugBehaviorSteeringByFishId?.delete?.(fish.id);
+  runtime.debugAutonomyPausedFishIds?.delete?.(fish.id);
+  runtime.activeFishCavePlans?.delete?.(fish.id);
+  runtime.fishGravelPebbleActions?.delete?.(fish.id);
+  runtime.forcedGravelDigUntilByFishId?.delete?.(fish.id);
+
+  const xNorm = clamp(Number(fish.xNorm) || 0.5, 0.08, 0.92);
+  const yNorm = clamp(Number(fish.yNorm) || 0.5, 0.14, 0.8);
+  fish.xNorm = xNorm;
+  fish.yNorm = yNorm;
+  fish.targetXNorm = xNorm;
+  fish.targetYNorm = yNorm;
+  if (species) {
+    const layer = getEffectiveFishBehavior(fish, species) === "sucker"
+      ? getSuckerFishGlassLayer(fish)
+      : clampTankLayer(Number(fish.tankLayer) || DEFAULT_TANK_LAYER);
+    setFishTankLayers(fish, layer, layer);
+    fish.swimSpeed = normalizeFishSpeed(species, Number(fish.swimSpeed));
+  }
+  fish.targetAt = now;
+  return true;
+}
+
 function restoreAllFishHealthDebug() {
   const now = Date.now();
+  const allFish = [...getAllTankFish(state), ...(Array.isArray(state.storedFish) ? state.storedFish : [])];
+  let revivedCount = 0;
   let healedCount = 0;
 
-  for (const fish of [...state.fish, ...state.storedFish]) {
-    if (!fish || isFishDead(fish)) {
+  for (const fish of allFish) {
+    if (!fish) {
+      continue;
+    }
+
+    if (isFishDead(fish)) {
+      if (reviveFishForDebug(fish, now)) {
+        revivedCount += 1;
+      }
       continue;
     }
 
     const maxHealthUnits = getFishMaxHealthUnits(fish);
-    const nextHealthUnits = clamp(maxHealthUnits, 0, maxHealthUnits);
-    const nextComfortDamageProgressMs = 0;
-    const nextMissedMealsInRow = 0;
-    const nextFedStreak = 0;
-    const changed = fish.healthUnits !== nextHealthUnits
-      || (Number(fish.comfortDamageProgressMs) || 0) !== nextComfortDamageProgressMs
-      || (Number(fish.missedMealsInRow) || 0) !== nextMissedMealsInRow
-      || (Number(fish.fedStreak) || 0) !== nextFedStreak;
-
-    fish.healthUnits = nextHealthUnits;
-    fish.comfortDamageProgressMs = nextComfortDamageProgressMs;
-    fish.missedMealsInRow = nextMissedMealsInRow;
-    fish.fedStreak = nextFedStreak;
-
+    const changed = fish.healthUnits !== maxHealthUnits
+      || (Number(fish.comfortDamageProgressMs) || 0) !== 0
+      || (Number(fish.missedMealsInRow) || 0) !== 0
+      || (Number(fish.fedStreak) || 0) !== 0;
+    fish.healthUnits = maxHealthUnits;
+    fish.comfortDamageProgressMs = 0;
+    fish.missedMealsInRow = 0;
+    fish.fedStreak = 0;
     if (changed) {
       healedCount += 1;
     }
   }
 
-  if (!healedCount) {
-    showToast("All living fish are already at full health.");
+  for (const tank of getAllTanks(state)) {
+    if (!(tank.fish || []).some((fish) => isFishDead(fish))) {
+      tank.lastCorpseSicknessAt = null;
+    }
+  }
+
+  if (!revivedCount && !healedCount) {
+    showToast("All fish are already alive and at full health.");
     return;
   }
 
-  pushEvent(`Debug health reset restored ${healedCount} ${pluralize("fish", healedCount)} to full hearts.`, now);
+  const parts = [];
+  if (revivedCount) parts.push(`${revivedCount} ${pluralize("fish", revivedCount)} revived`);
+  if (healedCount) parts.push(`${healedCount} ${pluralize("fish", healedCount)} fully healed`);
+  pushEvent(`Debug fish reset: ${parts.join(", ")}.`, now);
   saveState();
   renderUi(now);
-  showToast(`Full hearts restored for ${healedCount} ${pluralize("fish", healedCount)}.`);
+  showToast(parts.join(" · "));
 }
 
 function resetMealsDebug() {
@@ -843,8 +950,6 @@ function getDebugBehaviorScenarioOptions(action) {
       return { allowPredatorSpecial: true };
     case "disease":
       return { allowSuckerSpecial: true, allowPredatorSpecial: true };
-    case "night-forage":
-      return { allowSuckerSpecial: true };
     case "clear":
       return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowUndead: true, allowSuckerSpecial: true, allowPredatorSpecial: true, allowDead: true };
     default:
@@ -1002,15 +1107,6 @@ function finishDebugBehaviorScenario(fish, eventText, toastText, now = Date.now(
   if (toastText) {
     showToast(toastText);
   }
-}
-
-function forceLightsOutForDebug(now = Date.now()) {
-  const tank = getCurrentTank();
-  if (!tank) {
-    return false;
-  }
-  tank.lightsOutOverride = LIGHTS_OUT_OVERRIDE_ON;
-  return isTankLightsOut(now, tank);
 }
 
 function getActiveDebugBehaviorSteering(fish, now = Date.now()) {
@@ -1673,84 +1769,6 @@ function triggerDebugBehaviorDisease(now = Date.now()) {
   finishDebugBehaviorScenario(fish, `Debug advanced ${fish.name} illness to ${nextState}.`, `${fish.name} disease behavior: ${nextState}.`, now);
 }
 
-function triggerDebugBehaviorNightSleep(now = Date.now()) {
-  const selection = getDebugBehaviorSelectedFishOrToast("night-sleep");
-  if (!selection) {
-    return;
-  }
-  const { fish, species } = selection;
-  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("night-sleep"))) {
-    return;
-  }
-  forceLightsOutForDebug(now);
-
-  const cover = pickDecorHangoutTarget(species, fish, now, {
-    allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
-    force: true,
-    ignoreOccupancy: true,
-    lingerMultiplier: 2.4,
-    preferBackLayer: true
-  }) || {
-    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.04, 0.04), 0.08, 0.92),
-    yNorm: clamp((fish.yNorm || 0.5) + randomBetween(-0.03, 0.03), 0.18, 0.78),
-    targetLayer: getFishTankLayer(fish),
-    targetAt: now + randomBetween(9000, 16000),
-    signalType: "odd_sleep_spot",
-    debugText: "night sleep | exposed"
-  };
-  applyBehaviorTarget(fish, species, {
-    ...cover,
-    targetAt: cover.targetAt || now + randomBetween(9000, 18000),
-    intentType: "night sleep",
-    intentCause: cover.signalType === "odd_sleep_spot" ? "exposed" : "lights out",
-    signalType: cover.signalType || "night_sleep",
-    debugText: cover.debugText || "night sleep | lights out",
-    slow: true
-  }, now);
-  finishDebugBehaviorScenario(fish, `Debug put ${fish.name} into Lights Out sleep.`, `${fish.name} is settling for Lights Out.`, now);
-}
-
-function triggerDebugBehaviorNightForage(now = Date.now()) {
-  const selection = getDebugBehaviorSelectedFishOrToast("night-forage");
-  if (!selection) {
-    return;
-  }
-  const { fish, species } = selection;
-  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("night-forage"))) {
-    return;
-  }
-  forceLightsOutForDebug(now);
-
-  const effectiveBehavior = getEffectiveFishBehavior(fish, species);
-  if (effectiveBehavior === "sucker") {
-    setFishBehaviorIntent(fish, "night forage", "night-active", now);
-    recordFishBehaviorSignal(fish, "night_forage", now, { debugText: "night forage | night-active" });
-    finishDebugBehaviorScenario(fish, `Debug marked ${fish.name} for night foraging.`, `${fish.name} keeps special movement while night-forage is logged.`, now);
-    return;
-  }
-
-  const forage = pickDecorHangoutTarget(species, fish, now, {
-    allowedZoneTypes: ["hardscape", "plant", "hide"],
-    force: true,
-    ignoreOccupancy: true,
-    lingerMultiplier: 0.9,
-    preferBackLayer: false
-  }) || {
-    xNorm: randomSwimX(),
-    yNorm: randomBetween(0.56, 0.82),
-    targetLayer: clampTankLayer(Math.max(1, getFishTankLayer(fish))),
-    targetAt: now + randomBetween(3600, 7600)
-  };
-  applyBehaviorTarget(fish, species, {
-    ...forage,
-    intentType: "night forage",
-    intentCause: "night-active",
-    signalType: "night_forage",
-    debugText: "night forage | night-active"
-  }, now);
-  finishDebugBehaviorScenario(fish, `Debug sent ${fish.name} night foraging.`, `${fish.name} is foraging after Lights Out.`, now);
-}
-
 function triggerDebugBehaviorClear(now = Date.now()) {
   const selection = getDebugBehaviorSelectedFishOrToast("clear");
   if (!selection) {
@@ -1798,12 +1816,6 @@ function triggerDebugBehaviorScenario(action) {
       break;
     case "disease":
       triggerDebugBehaviorDisease();
-      break;
-    case "night-sleep":
-      triggerDebugBehaviorNightSleep();
-      break;
-    case "night-forage":
-      triggerDebugBehaviorNightForage();
       break;
     case "clear":
       triggerDebugBehaviorClear();

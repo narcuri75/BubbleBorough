@@ -916,6 +916,9 @@ function renderControls(now) {
   if (dom.debugCureFishButton) {
     dom.debugCureFishButton.hidden = !debugMode;
   }
+  if (dom.debugReviveAllFishButton) {
+    dom.debugReviveAllFishButton.hidden = !debugMode;
+  }
   dom.addCoinsButton.hidden = !debugMode;
   if (dom.addHundredCoinsButton) {
     dom.addHundredCoinsButton.hidden = !debugMode;
@@ -923,6 +926,9 @@ function renderControls(now) {
   dom.maxDirtButton.hidden = !debugMode;
   if (dom.debugMaxDirtinessButton) {
     dom.debugMaxDirtinessButton.hidden = !debugMode;
+  }
+  if (dom.debugMaxCleanlinessButton) {
+    dom.debugMaxCleanlinessButton.hidden = !debugMode;
   }
   dom.debugGravelDigButton.hidden = !debugMode;
   dom.debugGravelPebbleButton.hidden = !debugMode;
@@ -948,6 +954,9 @@ function renderControls(now) {
   if (dom.debugMaxDirtinessButton) {
     dom.debugMaxDirtinessButton.disabled = !debugMode;
   }
+  if (dom.debugMaxCleanlinessButton) {
+    dom.debugMaxCleanlinessButton.disabled = !debugMode;
+  }
   dom.debugGravelDigButton.disabled = !debugMode || !hasGravelDigCandidate;
   dom.debugGravelPebbleButton.disabled = !debugMode || !hasGravelPebbleCandidate;
   dom.debugDamageFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
@@ -956,6 +965,9 @@ function renderControls(now) {
   }
   if (dom.debugCureFishButton) {
     dom.debugCureFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
+  }
+  if (dom.debugReviveAllFishButton) {
+    dom.debugReviveAllFishButton.disabled = !debugMode;
   }
   dom.debugBreedButton.disabled = !debugMode || (!hasDebugBreedingPairCandidate(now) && !runtime.debugBreedingSequence);
   if (dom.debugDailyRecapButton) {

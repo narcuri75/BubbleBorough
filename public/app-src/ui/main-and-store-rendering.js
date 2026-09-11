@@ -605,6 +605,10 @@ function toggleAquariumOverview() {
 }
 
 function getBoroughSnapshotSignature(tank) {
+  const tankId = String(tank?.id || "");
+  const machinery = tankId && typeof getMachineryForTank === "function"
+    ? getMachineryForTank(tankId)
+    : [];
   return JSON.stringify({
     tankTypeId: tank?.tankTypeId,
     selectedBackground: tank?.selectedBackground,
@@ -625,11 +629,49 @@ function getBoroughSnapshotSignature(tank) {
     poops: tank?.poops,
     lastCleanedAt: tank?.lastCleanedAt,
     selectedTankAsset: tank?.selectedTankAsset,
+    fish: (tank?.fish || []).map((fish) => [
+      fish.id, fish.speciesId, fish.scale, fish.tankLayer, fish.appearanceVariantKey, fish.deadAt, fish.isDead
+    ]),
+    machinery: machinery.map((item) => [
+      item.id, item.type, item.scale, item.tankLayer,
+      item.appearanceVariantKey, item.machineryColor, item.machineryColorize
+    ]),
     placedDecor: (tank?.placedDecor || []).map((item) => [
       item.id, item.decorKey, item.xNorm, item.yNorm, item.scale, item.tankLayer, item.flipped, item.flippedY,
       item.decorSettings, item.caveColorSettings
     ])
   });
+}
+
+function invalidateBoroughOverviewSnapshot(tankOrId = getCurrentTank()) {
+  const tankId = typeof tankOrId === "string" ? tankOrId : String(tankOrId?.id || "");
+  if (!tankId || !runtime?.boroughOverviewSnapshotCache) return false;
+  runtime.boroughOverviewSnapshotCache.delete(tankId);
+  const queue = Array.isArray(runtime.boroughOverviewSnapshotQueue) ? runtime.boroughOverviewSnapshotQueue : [];
+  runtime.boroughOverviewSnapshotQueue = [tankId, ...queue.filter((queuedId) => queuedId !== tankId)];
+  runtime.boroughOverviewSnapshotRenderedAt = 0;
+  runtime.boroughOverviewFishRenderedAt = 0;
+  return true;
+}
+
+function pruneStaleBoroughOverviewSnapshots(tanks = getAllTanks()) {
+  if (runtime.debugSnapshotCacheFrozen || !runtime?.boroughOverviewSnapshotCache) return 0;
+  const staleIds = [];
+  for (const tank of tanks) {
+    const cached = runtime.boroughOverviewSnapshotCache.get(tank.id);
+    if (cached?.canvas && cached.signature !== getBoroughSnapshotSignature(tank)) {
+      runtime.boroughOverviewSnapshotCache.delete(tank.id);
+      staleIds.push(tank.id);
+    }
+  }
+  if (staleIds.length) {
+    const staleSet = new Set(staleIds);
+    const queue = Array.isArray(runtime.boroughOverviewSnapshotQueue) ? runtime.boroughOverviewSnapshotQueue : [];
+    runtime.boroughOverviewSnapshotQueue = [...staleIds, ...queue.filter((tankId) => !staleSet.has(tankId))];
+    runtime.boroughOverviewSnapshotRenderedAt = 0;
+    runtime.boroughOverviewFishRenderedAt = 0;
+  }
+  return staleIds.length;
 }
 
 function paintBoroughSnapshotBackground(context, tank, width, height) {
@@ -677,8 +719,10 @@ function getBoroughSnapshot(tank, now = Date.now()) {
   canvas.width = 384;
   canvas.height = 216;
   const previousFish = tank.fish;
+  const previousCleaningTransition = runtime.cleaningTransition;
   withActiveTank(tank.id, () => {
     tank.fish = [];
+    runtime.cleaningTransition = null;
     try {
       renderTank(now);
       const context = canvas.getContext("2d", { alpha: false });
@@ -690,6 +734,7 @@ function getBoroughSnapshot(tank, now = Date.now()) {
       context.drawImage(dom.glassCanvas, 0, 0, canvas.width, canvas.height);
     } finally {
       tank.fish = previousFish;
+      runtime.cleaningTransition = previousCleaningTransition;
     }
   });
   const entry = { signature, canvas, capturedAt: now, changed: true };
@@ -848,6 +893,7 @@ function renderAquariumOverview() {
     return;
   }
   const tanks = getAllTanks();
+  pruneStaleBoroughOverviewSnapshots(tanks);
   const expansionSpaces = getValidAquariumExpansionSpaces();
   const editMode = runtime.boroughOverviewEditMode === true;
   const syntheticCount = isDebugModeEnabled() ? Math.max(0, Number(runtime.debugOverviewSyntheticCount) || 0) : 0;

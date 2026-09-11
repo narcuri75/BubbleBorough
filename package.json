@@ -11,7 +11,7 @@
     "check:mobile": "node scripts/check-mobile-patch.cjs",
     "check:notifications": "node scripts/check-notification-consolidation.cjs",
     "check:architecture": "node scripts/check-action-architecture.cjs",
-    "test": "npm run check:app && npm run check:mobile && npm run check:notifications && npm run check:architecture && node --check public/app.js && node --check public/store-facets.js && node --check public/store-variants.js && node --test scripts/feature-regressions.test.cjs scripts/store-care.test.cjs scripts/sprite-sheets.test.cjs",
+    "test": "npm run check:app && npm run check:mobile && npm run check:notifications && npm run check:architecture && node --check public/app.js && node --check public/store-facets.js && node --check public/store-variants.js && node --test scripts/auth-flows.test.cjs scripts/feature-regressions.test.cjs scripts/store-care.test.cjs scripts/sprite-sheets.test.cjs",
     "generate:assets": "npm run generate:manifest && npm run build:app",
     "generate:manifest": "powershell -ExecutionPolicy Bypass -File scripts/generate-asset-manifest.ps1 && node scripts/write-stable-json.cjs assets/asset-manifest.json",
     "strip:sprite-json": "node scripts/strip-sprite-json-images.cjs"

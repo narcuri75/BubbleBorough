@@ -115,6 +115,29 @@ function loadState() {
   }
 }
 
+function sanitizeAccountProfile(rawProfile) {
+  const source = rawProfile && typeof rawProfile === "object" ? rawProfile : {};
+  const username = typeof source.username === "string"
+    ? source.username.trim().replace(/\s+/g, " ").slice(0, 32)
+    : "";
+  const userId = typeof source.userId === "string" ? source.userId.trim().slice(0, 80) : "";
+  return { username, userId };
+}
+
+function getAccountUsernameForUser(userId = "") {
+  const profile = sanitizeAccountProfile(state?.accountProfile);
+  const expectedUserId = String(userId || "").trim();
+  if (profile.username && (!expectedUserId || profile.userId === expectedUserId)) return profile.username;
+  const options = ["Buddy", "Guy", "Feller", "Friend", "Pal", "Dude"];
+  const source = expectedUserId || "Bubble Borough";
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return options[(hash >>> 0) % options.length];
+}
+
 function sanitizeContentSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   const hasCombinedSetting = Object.prototype.hasOwnProperty.call(source, "violenceAndGoreEnabled");
@@ -938,6 +961,7 @@ function reconcileState(rawState) {
     coins: STARTING_COINS,
     walletTransactions: [],
     lifetimeDeaths: 0,
+    accountProfile: sanitizeAccountProfile(null),
     mealHistory: {},
     lastGravelCoinFoundAt: 0,
     unlockedFishSpecies: [],
@@ -1014,6 +1038,7 @@ function reconcileState(rawState) {
       })).filter((entry) => entry.amount > 0 || entry.direction === "neutral").sort((left, right) => right.time - left.time).slice(0, 60)
       : base.walletTransactions,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
+    accountProfile: sanitizeAccountProfile(incoming.accountProfile),
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     lastGravelCoinFoundAt: Math.max(
       Number(incoming.lastGravelCoinFoundAt) || 0,

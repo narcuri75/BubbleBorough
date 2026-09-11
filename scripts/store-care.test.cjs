@@ -49,6 +49,25 @@ test("one candy fills every stat and health, remains active after reload, and ex
   assert.equal(c.hasActiveCandyBoost({ ...restored, activity: "dead" }, now), false);
   assert.equal(c.hasActiveCandyBoost({ candyBoostUntil: Infinity }, now), false);
 });
+test("Halloween candy targets every living creature and uses pellet-sized sprite geometry", () => {
+  const c = harness({
+    getFoodMeta: value => typeof value === "string" ? { id: value } : value,
+    getViewportStableAssetScale: () => 1,
+    getFishNeedValue: () => { throw new Error("Candy should not check hunger."); },
+    canFoodSatisfyFishMeal: () => { throw new Error("Candy should not check diet."); }
+  });
+  addFunctions(c, "fish/feeding-and-medicine.js", ["canFishEatFoodPellet"]);
+  addFunctions(c, "tank/catalog-and-equipment.js", ["isPelletSizedFoodSprite", "getFoodSpriteVisualSize"]);
+  for (const creature of [
+    { name: "ordinary", activity: "roam", healthUnits: 12 },
+    { name: "shark", activity: "roam", healthUnits: 12, speciesId: "great-white" },
+    { name: "skeleton", activity: "roam", healthUnits: 12, speciesId: "skeleton-fish" },
+    { name: "grazer", activity: "roam", healthUnits: 12, speciesId: "otocinclus" }
+  ]) assert.equal(c.canFishEatFoodPellet(creature, "halloweenCandy", Date.now()), true);
+  assert.deepEqual({ ...c.getFoodSpriteVisualSize("halloweenCandy", 1, 1) }, { maxSize: 11.6, minSize: 6.6 });
+  assert.deepEqual({ ...c.getFoodSpriteVisualSize("chum", 1, 1) }, { maxSize: 24, minSize: 10 });
+});
+
 test("offline hunger decay only counts time after the candy expires", () => {
   const c = harness({ isUndeadFish: () => false, isMealFreeFish: () => false, getPersonalityNeedModifier: () => 1 });
   addFunctions(c, "fish/meals-and-needs.js", ["calculateFishNeedDeltas"]);

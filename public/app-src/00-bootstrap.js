@@ -171,8 +171,6 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugBehaviorFollowButton", domKey: "debugBehaviorFollowButton", action: "follow", icon: "&#128101;", label: "Follow", title: "Debug: Follow A Friend" },
   { id: "debugBehaviorAvoidButton", domKey: "debugBehaviorAvoidButton", action: "avoid", icon: "&#8618;&#65039;", label: "Avoid", title: "Debug: Avoid A Feared Fish" },
   { id: "debugBehaviorDiseaseButton", domKey: "debugBehaviorDiseaseButton", action: "disease", icon: "&#129658;", label: "Symptom Test", title: "Debug: Disease Symptom Test" },
-  { id: "debugBehaviorNightSleepButton", domKey: "debugBehaviorNightSleepButton", action: "night-sleep", icon: "&#127769;", label: "Night Sleep", title: "Debug: Night Sleep" },
-  { id: "debugBehaviorNightForageButton", domKey: "debugBehaviorNightForageButton", action: "night-forage", icon: "&#128269;", label: "Night Forage", title: "Debug: Night Forage" },
   { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
 ]);
 const DEBUG_BEHAVIOR_STEER_REFRESH_MS = 260;
@@ -2865,9 +2863,11 @@ const dom = {
   resetFishHealthButton: document.querySelector("#resetFishHealthButton"),
   debugInfectFishButton: document.querySelector("#debugInfectFishButton"),
   debugCureFishButton: document.querySelector("#debugCureFishButton"),
+  debugReviveAllFishButton: document.querySelector("#debugReviveAllFishButton"),
   addCoinsButton: document.querySelector("#addCoinsButton"),
   maxDirtButton: document.querySelector("#maxDirtButton"),
   debugMaxDirtinessButton: document.querySelector("#debugMaxDirtinessButton"),
+  debugMaxCleanlinessButton: document.querySelector("#debugMaxCleanlinessButton"),
   debugGravelDigButton: document.querySelector("#debugGravelDigButton"),
   debugGravelPebbleButton: document.querySelector("#debugGravelPebbleButton"),
   debugCaveButton: document.querySelector("#debugCaveButton"),
@@ -4282,6 +4282,15 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     id: "credits",
     exclusive: true,
     render: renderCreditsUtilityOverlay
+  },
+  "invite-friend": {
+    id: "invite-friend",
+    exclusive: true,
+    render: renderInviteFriendUtilityOverlay,
+    onBodyInput: handleInviteFriendUtilityOverlayInput,
+    onFooterClick: createUtilityOverlayActionHandler([
+      { selector: "[data-send-friend-invite]", run: () => openInviteFriendEmailComposer() }
+    ])
   },
   "bubbler-settings": createPlacedDecorUtilityMode({
     id: "bubbler-settings",

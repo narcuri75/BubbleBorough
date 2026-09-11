@@ -388,24 +388,17 @@ function bindEvents() {
         }
       }
     }
-    if (
-      (keyRaw === "ArrowLeft" || keyRaw === "ArrowRight")
-      && !runtime.storeOverlayOpen
-      && !runtime.settingsOverlayOpen
-      && !runtime.utilityOverlayOpen
-      && !runtime.equipmentOverlayOpen
-    ) {
-      event.preventDefault();
-      moveCameraToAdjacentSection(keyRaw === "ArrowLeft" ? -1 : 1, 0, { preserveHorizontalOverlays: true });
-      return;
-    }
-
     if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.equipmentEditMode && !runtime.tankEditMode && !runtime.boroughOverviewOpen
       && !runtime.storeOverlayOpen && !runtime.settingsOverlayOpen && !runtime.utilityOverlayOpen && !runtime.equipmentOverlayOpen) {
-      const cameraMoves = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
-      if (cameraMoves[key]) {
+      const cameraMoves = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1]
+      };
+      if (cameraMoves[keyRaw]) {
         event.preventDefault();
-        moveCameraToAdjacentSection(...cameraMoves[key]);
+        moveCameraToAdjacentSection(...cameraMoves[keyRaw], { preserveHorizontalOverlays: true });
         return;
       }
     }
@@ -603,6 +596,13 @@ function bindEvents() {
       syncAmbienceAudio();
     });
     document.addEventListener("click", (event) => {
+      const inviteButton = event.target instanceof Element ? event.target.closest("[data-open-invite-friend]") : null;
+      if (inviteButton) {
+        event.preventDefault();
+        openUtilityOverlay("invite-friend");
+        return;
+      }
+
       const creditsButton = event.target instanceof Element ? event.target.closest("[data-open-credits]") : null;
       if (creditsButton) {
         event.preventDefault();
@@ -934,10 +934,12 @@ function bindEvents() {
   dom.resetFishHealthButton?.addEventListener("click", () => restoreAllFishHealthDebug());
   dom.debugInfectFishButton?.addEventListener("click", () => infectSelectedFishDebug());
   dom.debugCureFishButton?.addEventListener("click", () => cureSelectedFishDebug());
+  dom.debugReviveAllFishButton?.addEventListener("click", () => restoreAllFishHealthDebug());
   dom.addCoinsButton.addEventListener("click", () => addDebugCoins(10));
   dom.addHundredCoinsButton?.addEventListener("click", () => addDebugCoins(100));
   dom.maxDirtButton.addEventListener("click", () => increaseTankDirtinessDebug());
   dom.debugMaxDirtinessButton?.addEventListener("click", () => maxTankDirtinessDebug());
+  dom.debugMaxCleanlinessButton?.addEventListener("click", () => maxTankCleanlinessDebug());
   dom.debugGravelDigButton?.addEventListener("click", () => triggerDebugGravelDigTest());
   dom.debugGravelPebbleButton?.addEventListener("click", () => triggerDebugGravelPebbleTest());
   dom.debugCaveButton.addEventListener("click", () => toggleDebugNightCaveMode());

@@ -1006,6 +1006,24 @@ function getFoodDropStyle(foodOrKey) {
   return food?.dropStyle === "sprite" ? "sprite" : "pellet";
 }
 
+function isPelletSizedFoodSprite(foodOrKey) {
+  const food = typeof foodOrKey === "string" ? getFoodMeta(foodOrKey) : foodOrKey;
+  return food?.id === "halloweenCandy";
+}
+
+function getFoodSpriteVisualSize(foodOrKey, scale, stableScale = getViewportStableAssetScale()) {
+  if (isPelletSizedFoodSprite(foodOrKey)) {
+    return {
+      maxSize: 11.6 * scale,
+      minSize: 6.6 * stableScale
+    };
+  }
+  return {
+    maxSize: 24 * scale,
+    minSize: 10 * stableScale
+  };
+}
+
 function getChumSpriteVisualScale(spritePath = "") {
   const fileName = String(spritePath || "")
     .split(/[\\/]/)

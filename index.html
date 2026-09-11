@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260909-store-care" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260910-shared-auth" />
   <style>
     #lightsOutToggleButton:disabled {
       opacity: 0.38;
@@ -223,6 +223,9 @@
 
                   <section class="info-card info-card-credits">
                     <div class="overview-actions">
+                      <button class="small-button alt" type="button" data-open-invite-friend>
+                        Invite A Friend
+                      </button>
                       <button class="small-button alt credits-button" type="button" data-open-credits>
                         Credits
                       </button>
@@ -709,6 +712,9 @@
                   <section class="settings-section settings-credits-section" aria-label="Other settings">
                     <h3>Other</h3>
                     <div class="overview-actions">
+                      <button class="small-button alt" type="button" data-open-invite-friend>
+                        Invite A Friend
+                      </button>
                       <button class="small-button alt credits-button" type="button" data-open-credits>
                         Credits
                       </button>
@@ -1091,8 +1097,8 @@
                 aria-label="Debug: Selected Fish loses half a heart">💔</button>
 
               <button id="resetFishHealthButton" class="dock-button debug" type="button" hidden
-                title="Debug: Restore all fish to full health"
-                aria-label="Debug: Restore all fish to full health">💖</button>
+                title="Debug: Revive and fully heal all fish"
+                aria-label="Debug: Revive and fully heal all fish">💖</button>
 
               <button id="maxDirtButton" class="dock-button debug" type="button"
                 title="Debug: Increase Dirtiness by 10%" aria-label="Debug: Increase Dirtiness by 10%">💩</button>
@@ -1151,6 +1157,11 @@
                       <span class="debug-menu-icon">&#9762;&#65039;</span>
                       <span>Maximum Dirtiness</span>
                     </button>
+                    <button id="debugMaxCleanlinessButton" class="debug-menu-button" type="button"
+                      title="Debug: Maximum Cleanliness" aria-label="Debug: Maximum Cleanliness">
+                      <span class="debug-menu-icon">&#10024;</span>
+                      <span>Maximum Cleanliness</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1168,6 +1179,12 @@
                       aria-label="Debug: Cure Selected Fish">
                       <span class="debug-menu-icon">&#128137;</span>
                       <span>Cure Selected Fish</span>
+                    </button>
+                    <button id="debugReviveAllFishButton" class="debug-menu-button" type="button"
+                      title="Debug: Revive and fully heal all fish"
+                      aria-label="Debug: Revive and fully heal all fish">
+                      <span class="debug-menu-icon">&#128150;</span>
+                      <span>Revive All Fish</span>
                     </button>
                   </div>
                 </div>
@@ -2372,14 +2389,14 @@
       const mobileAgentPattern = /Android.*Mobile|iPhone|iPod|IEMobile|Windows Phone|webOS|BlackBerry|Opera Mini/i;
       if (window.matchMedia?.(mobileDeviceQuery)?.matches || mobileAgentPattern.test(navigator.userAgent || "")) {
         document.documentElement.dataset.unsupportedMobileDevice = "true";
-        return;
+        // Load authentication on phones too; the existing game-device blocker remains.
       }
 
       const script = document.createElement("script");
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost
         ? `live-${Date.now()}`
-        : "20260909-store-care";
+        : "20260910-shared-auth";
       script.type = "module";
       script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);

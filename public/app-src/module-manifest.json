@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2877,
+  "functionCount": 2908,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -61,7 +61,7 @@
     },
     {
       "path": "tank/catalog-and-equipment.js",
-      "functionCount": 94,
+      "functionCount": 96,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -282,7 +282,7 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 101,
+      "functionCount": 103,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -715,7 +715,7 @@
     },
     {
       "path": "debug/tools.js",
-      "functionCount": 82,
+      "functionCount": 81,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -731,6 +731,7 @@
         "fish/health.js",
         "fish/meals-and-needs.js",
         "fish/needs-disease-and-behavior.js",
+        "fish/predators-and-motion.js",
         "fish/undead-and-appearance.js",
         "rendering/collision-and-masks.js",
         "rendering/fish-motion-and-floor.js",
@@ -813,7 +814,7 @@
     },
     {
       "path": "ui/main-and-store-rendering.js",
-      "functionCount": 50,
+      "functionCount": 52,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -846,7 +847,7 @@
     },
     {
       "path": "ui/management-and-overlays.js",
-      "functionCount": 111,
+      "functionCount": 115,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -1221,12 +1222,13 @@
     },
     {
       "path": "core/cloud-save.js",
-      "functionCount": 39,
+      "functionCount": 61,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
         "core/settings-and-persistence.js",
         "tank/catalog-and-equipment.js",
+        "tank/events-recaps-and-save.js",
         "ui/notifications.js",
         "ui/tool-modes-and-debug-panels.js"
       ]

@@ -2093,6 +2093,17 @@ function renderMedicineTray() {
     && Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) > 0
   ));
 
+  const careCardWidth = 78;
+  const careCardGap = 7;
+  const sectionWidthForCount = (count, emptyWidth) => count > 0
+    ? count * careCardWidth + Math.max(0, count - 1) * careCardGap
+    : emptyWidth;
+  const foodSectionWidth = sectionWidthForCount(foodItems.length, 248);
+  const medicineSectionWidth = sectionWidthForCount(medicineItems.length, 163);
+  const toolsSectionWidth = 163;
+  const trayContentWidth = foodSectionWidth + medicineSectionWidth + toolsSectionWidth + 50;
+  dom.medicineTray?.style.setProperty("--care-tray-content-width", `${trayContentWidth}px`);
+
   const dataKey = [
     runtime.medicineTrayOpen ? "1" : "0",
     runtime.feedingModeFoodKey || "",
@@ -2177,7 +2188,7 @@ function renderMedicineTray() {
       `;
 
     const markup = `
-      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tools-min-width: 163px; --care-tray-min-width: 624px;">
+      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: ${foodSectionWidth}px; --care-medicine-min-width: ${medicineSectionWidth}px; --care-tools-min-width: ${toolsSectionWidth}px; --care-tray-min-width: ${trayContentWidth}px;">
         <section class="care-tray-food" aria-label="Food">
           <div class="care-tray-heading-row">
             <img class="care-tray-inline-icon" ${assetImageAttributes("assets/icons/feed_fish.png")} alt="" aria-hidden="true" draggable="false" />

@@ -174,8 +174,6 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugBehaviorFollowButton", domKey: "debugBehaviorFollowButton", action: "follow", icon: "&#128101;", label: "Follow", title: "Debug: Follow A Friend" },
   { id: "debugBehaviorAvoidButton", domKey: "debugBehaviorAvoidButton", action: "avoid", icon: "&#8618;&#65039;", label: "Avoid", title: "Debug: Avoid A Feared Fish" },
   { id: "debugBehaviorDiseaseButton", domKey: "debugBehaviorDiseaseButton", action: "disease", icon: "&#129658;", label: "Symptom Test", title: "Debug: Disease Symptom Test" },
-  { id: "debugBehaviorNightSleepButton", domKey: "debugBehaviorNightSleepButton", action: "night-sleep", icon: "&#127769;", label: "Night Sleep", title: "Debug: Night Sleep" },
-  { id: "debugBehaviorNightForageButton", domKey: "debugBehaviorNightForageButton", action: "night-forage", icon: "&#128269;", label: "Night Forage", title: "Debug: Night Forage" },
   { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
 ]);
 const DEBUG_BEHAVIOR_STEER_REFRESH_MS = 260;
@@ -2868,9 +2866,11 @@ const dom = {
   resetFishHealthButton: document.querySelector("#resetFishHealthButton"),
   debugInfectFishButton: document.querySelector("#debugInfectFishButton"),
   debugCureFishButton: document.querySelector("#debugCureFishButton"),
+  debugReviveAllFishButton: document.querySelector("#debugReviveAllFishButton"),
   addCoinsButton: document.querySelector("#addCoinsButton"),
   maxDirtButton: document.querySelector("#maxDirtButton"),
   debugMaxDirtinessButton: document.querySelector("#debugMaxDirtinessButton"),
+  debugMaxCleanlinessButton: document.querySelector("#debugMaxCleanlinessButton"),
   debugGravelDigButton: document.querySelector("#debugGravelDigButton"),
   debugGravelPebbleButton: document.querySelector("#debugGravelPebbleButton"),
   debugCaveButton: document.querySelector("#debugCaveButton"),
@@ -4285,6 +4285,15 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     id: "credits",
     exclusive: true,
     render: renderCreditsUtilityOverlay
+  },
+  "invite-friend": {
+    id: "invite-friend",
+    exclusive: true,
+    render: renderInviteFriendUtilityOverlay,
+    onBodyInput: handleInviteFriendUtilityOverlayInput,
+    onFooterClick: createUtilityOverlayActionHandler([
+      { selector: "[data-send-friend-invite]", run: () => openInviteFriendEmailComposer() }
+    ])
   },
   "bubbler-settings": createPlacedDecorUtilityMode({
     id: "bubbler-settings",
@@ -6089,11 +6098,11 @@ function handleLivingBoroughDebugAction(event) {
       queue.active = null;
     }
     fish.behaviorIntent = null;
-    fish.activity = "swim";
+    fish.activity = "roam";
   } else if (action === "action-cancel" && fish) {
     const queue = getFishActionQueueState(fish.id);
     if (queue?.active) cancelFishQueuedAction(fish.id, queue.active.id, now);
-    else { fish.behaviorIntent = null; fish.activity = "swim"; }
+    else { fish.behaviorIntent = null; fish.activity = "roam"; }
   } else if (action === "queue-clear" && fish) {
     const queue = getFishActionQueueState(fish.id, { create: true });
     if (queue.active) finishFishActionQueueItem(fish, queue.active, now, { cancelled: true });
@@ -6124,7 +6133,7 @@ function handleLivingBoroughDebugAction(event) {
   else if (action === "age-set" && fish) fish.acquiredAt = now - Number(value) * DAY_MS;
   else if (action === "birthday" && fish && !isFishDead(fish)) { runtime.debugBirthdayHatFishIds.add(fish.id); pushEvent(`${fish.name} is celebrating a borough birthday!`, now, tank, { type: "birthday", fishId: fish.id }); }
   else if (action === "kill" && fish) markFishAsDead(fish, now, `${fish.name} died during a debug test.`);
-  else if (action === "revive" && fish && isFishDead(fish)) { fish.deadAt = null; fish.activity = "swim"; fish.healthUnits = getFishMaxHealthUnits(fish); fish.decayStage = null; }
+  else if (action === "revive" && fish && isFishDead(fish)) reviveFishForDebug(fish, now);
   else if (action === "memorial" && fish) recordFishMemorial(fish, tank, "Debug memorial record", now);
   else if (action === "relationship" && fish) {
     const other = getAllTankFish(state).find((entry) => entry.id !== fish.id && !isFishDead(entry));
@@ -7437,6 +7446,24 @@ function getFoodDropStyle(foodOrKey) {
     return "pellet";
   }
   return food?.dropStyle === "sprite" ? "sprite" : "pellet";
+}
+
+function isPelletSizedFoodSprite(foodOrKey) {
+  const food = typeof foodOrKey === "string" ? getFoodMeta(foodOrKey) : foodOrKey;
+  return food?.id === "halloweenCandy";
+}
+
+function getFoodSpriteVisualSize(foodOrKey, scale, stableScale = getViewportStableAssetScale()) {
+  if (isPelletSizedFoodSprite(foodOrKey)) {
+    return {
+      maxSize: 11.6 * scale,
+      minSize: 6.6 * stableScale
+    };
+  }
+  return {
+    maxSize: 24 * scale,
+    minSize: 10 * stableScale
+  };
 }
 
 function getChumSpriteVisualScale(spritePath = "") {
@@ -12877,7 +12904,7 @@ async function init() {
   const earlyRawState = loadState();
   runtime.hadLocalSaveAtStartup = Boolean(earlyRawState);
   runtime.freshGameSaveLocked = !earlyRawState;
-  initializeCloudSaveRuntime();
+  await initializeCloudSaveRuntime();
   applyLoadingOverlayBackground(getSavedActiveTankCandidate(earlyRawState));
 
   const [backgroundResponse, tankResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
@@ -14255,24 +14282,17 @@ function bindEvents() {
         }
       }
     }
-    if (
-      (keyRaw === "ArrowLeft" || keyRaw === "ArrowRight")
-      && !runtime.storeOverlayOpen
-      && !runtime.settingsOverlayOpen
-      && !runtime.utilityOverlayOpen
-      && !runtime.equipmentOverlayOpen
-    ) {
-      event.preventDefault();
-      moveCameraToAdjacentSection(keyRaw === "ArrowLeft" ? -1 : 1, 0, { preserveHorizontalOverlays: true });
-      return;
-    }
-
     if (!runtime.editTankMode && !runtime.fishEditMode && !runtime.equipmentEditMode && !runtime.tankEditMode && !runtime.boroughOverviewOpen
       && !runtime.storeOverlayOpen && !runtime.settingsOverlayOpen && !runtime.utilityOverlayOpen && !runtime.equipmentOverlayOpen) {
-      const cameraMoves = { w: [0, -1], a: [-1, 0], s: [0, 1], d: [1, 0] };
-      if (cameraMoves[key]) {
+      const cameraMoves = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1]
+      };
+      if (cameraMoves[keyRaw]) {
         event.preventDefault();
-        moveCameraToAdjacentSection(...cameraMoves[key]);
+        moveCameraToAdjacentSection(...cameraMoves[keyRaw], { preserveHorizontalOverlays: true });
         return;
       }
     }
@@ -14470,6 +14490,13 @@ function bindEvents() {
       syncAmbienceAudio();
     });
     document.addEventListener("click", (event) => {
+      const inviteButton = event.target instanceof Element ? event.target.closest("[data-open-invite-friend]") : null;
+      if (inviteButton) {
+        event.preventDefault();
+        openUtilityOverlay("invite-friend");
+        return;
+      }
+
       const creditsButton = event.target instanceof Element ? event.target.closest("[data-open-credits]") : null;
       if (creditsButton) {
         event.preventDefault();
@@ -14801,10 +14828,12 @@ function bindEvents() {
   dom.resetFishHealthButton?.addEventListener("click", () => restoreAllFishHealthDebug());
   dom.debugInfectFishButton?.addEventListener("click", () => infectSelectedFishDebug());
   dom.debugCureFishButton?.addEventListener("click", () => cureSelectedFishDebug());
+  dom.debugReviveAllFishButton?.addEventListener("click", () => restoreAllFishHealthDebug());
   dom.addCoinsButton.addEventListener("click", () => addDebugCoins(10));
   dom.addHundredCoinsButton?.addEventListener("click", () => addDebugCoins(100));
   dom.maxDirtButton.addEventListener("click", () => increaseTankDirtinessDebug());
   dom.debugMaxDirtinessButton?.addEventListener("click", () => maxTankDirtinessDebug());
+  dom.debugMaxCleanlinessButton?.addEventListener("click", () => maxTankCleanlinessDebug());
   dom.debugGravelDigButton?.addEventListener("click", () => triggerDebugGravelDigTest());
   dom.debugGravelPebbleButton?.addEventListener("click", () => triggerDebugGravelPebbleTest());
   dom.debugCaveButton.addEventListener("click", () => toggleDebugNightCaveMode());
@@ -24077,6 +24106,29 @@ function loadState() {
   }
 }
 
+function sanitizeAccountProfile(rawProfile) {
+  const source = rawProfile && typeof rawProfile === "object" ? rawProfile : {};
+  const username = typeof source.username === "string"
+    ? source.username.trim().replace(/\s+/g, " ").slice(0, 32)
+    : "";
+  const userId = typeof source.userId === "string" ? source.userId.trim().slice(0, 80) : "";
+  return { username, userId };
+}
+
+function getAccountUsernameForUser(userId = "") {
+  const profile = sanitizeAccountProfile(state?.accountProfile);
+  const expectedUserId = String(userId || "").trim();
+  if (profile.username && (!expectedUserId || profile.userId === expectedUserId)) return profile.username;
+  const options = ["Buddy", "Guy", "Feller", "Friend", "Pal", "Dude"];
+  const source = expectedUserId || "Bubble Borough";
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return options[(hash >>> 0) % options.length];
+}
+
 function sanitizeContentSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   const hasCombinedSetting = Object.prototype.hasOwnProperty.call(source, "violenceAndGoreEnabled");
@@ -24900,6 +24952,7 @@ function reconcileState(rawState) {
     coins: STARTING_COINS,
     walletTransactions: [],
     lifetimeDeaths: 0,
+    accountProfile: sanitizeAccountProfile(null),
     mealHistory: {},
     lastGravelCoinFoundAt: 0,
     unlockedFishSpecies: [],
@@ -24976,6 +25029,7 @@ function reconcileState(rawState) {
       })).filter((entry) => entry.amount > 0 || entry.direction === "neutral").sort((left, right) => right.time - left.time).slice(0, 60)
       : base.walletTransactions,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
+    accountProfile: sanitizeAccountProfile(incoming.accountProfile),
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     lastGravelCoinFoundAt: Math.max(
       Number(incoming.lastGravelCoinFoundAt) || 0,
@@ -36161,6 +36215,7 @@ function releasePelletsTargetingFishIds(fishIds) {
 function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), options = {}) {
   const food = getFoodMeta(foodKey);
   const dropStyle = getFoodDropStyle(food);
+  const pelletLikeDrop = dropStyle !== "sprite" || isPelletSizedFoodSprite(food);
   const spread = Number.isFinite(Number(options.spreadNorm))
     ? Math.max(0, Number(options.spreadNorm))
     : FOOD_DROP_SPREAD_NORM;
@@ -36183,8 +36238,8 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     yNorm: dropYNorm,
     startYNorm: dropYNorm,
     sway: Math.random(),
-    rotation: dropStyle === "sprite" ? randomBetween(-0.95, 0.95) : randomBetween(-0.22, 0.22),
-    scale: dropStyle === "sprite" ? randomBetween(0.92, 1.18) : randomBetween(0.94, 1.08),
+    rotation: pelletLikeDrop ? randomBetween(-0.22, 0.22) : randomBetween(-0.95, 0.95),
+    scale: pelletLikeDrop ? randomBetween(0.94, 1.08) : randomBetween(0.92, 1.18),
     sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
     dropStartXNorm: hasCustomDropStart ? Number(options.dropStartXNorm) : null,
     dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
@@ -36215,6 +36270,7 @@ function createAutoDispenserDroppedPellet(storedPellet, now = Date.now()) {
   const layout = getAutoDispenserLayout();
   const food = getFoodMeta(storedPellet.foodKey);
   const dropStyle = getFoodDropStyle(food);
+  const pelletLikeDrop = dropStyle !== "sprite" || isPelletSizedFoodSprite(food);
   const dispenserScale = layout.scale || getViewportStableAssetScale();
   const nozzleXNorm = clamp((layout.nozzle.x + AUTO_DISPENSER_DROP_X_OFFSET_PX * dispenserScale) / TANK_WIDTH, 0.08, 0.92);
   const nozzleYNorm = clamp(layout.nozzle.y / TANK_HEIGHT, 0.02, AUTO_DISPENSER_PELLET_MAX_Y_NORM);
@@ -36237,8 +36293,8 @@ function createAutoDispenserDroppedPellet(storedPellet, now = Date.now()) {
     yNorm: targetYNorm,
     startYNorm: targetYNorm,
     sway: Math.random(),
-    rotation: dropStyle === "sprite" ? randomBetween(-0.95, 0.95) : randomBetween(-0.22, 0.22),
-    scale: dropStyle === "sprite" ? randomBetween(0.92, 1.18) : randomBetween(0.94, 1.08),
+    rotation: pelletLikeDrop ? randomBetween(-0.22, 0.22) : randomBetween(-0.95, 0.95),
+    scale: pelletLikeDrop ? randomBetween(0.94, 1.08) : randomBetween(0.92, 1.18),
     sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
     dropStartXNorm: nozzleXNorm,
     dropStartYNorm: nozzleYNorm,
@@ -45876,6 +45932,7 @@ function toggleScoopMode(options = {}) {
 
 function applyDebugTankDirtiness(targetBaseDirtiness, now, eventMessage, toastMessage) {
   rebaseTankDirtiness(now, targetBaseDirtiness);
+  invalidateBoroughOverviewSnapshot(getCurrentTank());
   const livingFish = getLivingTankFish();
   const desiredPoopCount = livingFish.length
     ? Math.max(state.poops.length, Math.min(28, Math.ceil(livingFish.length * (1.2 + targetBaseDirtiness * 1.6))))
@@ -45945,6 +46002,32 @@ function maxTankDirtinessDebug() {
   );
 }
 
+function maxTankCleanlinessDebug() {
+  const now = Date.now();
+  syncState(now);
+
+  const currentBaseDirtiness = getBaseTankDirtiness(now);
+  const hasVisibleWaste = Array.isArray(state.poops) && state.poops.length > 0;
+  if (currentBaseDirtiness <= 0.005 && !hasVisibleWaste) {
+    showToast("The tank is already at maximum cleanliness.");
+    return;
+  }
+
+  rebaseTankDirtiness(now, 0);
+  state.poops = [];
+  invalidateBoroughOverviewSnapshot(getCurrentTank());
+  runtime.cleaningTransition = null;
+  runtime.cleaningMode = false;
+  runtime.toolModeSource = null;
+  runtime.pointerDown = false;
+  clearScrubProgress();
+  renderToolCursor();
+  pushEvent("Debug tank cleanliness maxed. Tank grime reset to 0%.", now);
+  saveState();
+  renderUi(now);
+  showToast("Tank cleanliness maxed.");
+}
+
 function forceAllWhalesToBreatheDebug(now = Date.now()) {
   const tank = getCurrentTank();
   const whales = Array.isArray(tank?.fish)
@@ -45990,44 +46073,124 @@ function addDebugCoins(amount = 10) {
   showToast(`+${coinAmount} ${pluralize("coin", coinAmount)}.`);
 }
 
+function reviveFishForDebug(fish, now = Date.now()) {
+  if (!fish || !isFishDead(fish)) {
+    return false;
+  }
+
+  const species = getSpeciesForFish(fish);
+  fish.deadAt = null;
+  fish.healthUnits = getFishMaxHealthUnits(fish, species);
+  fish.activity = "roam";
+  fish.decayStage = null;
+  fish.fedStreak = 0;
+  fish.missedMealsInRow = 0;
+  fish.comfortDamageProgressMs = 0;
+  fish.feedingPelletId = null;
+  fish.behaviorIntent = null;
+  fish.foodRefusalUntil = 0;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.blockedDecorId = null;
+  fish.blockedDecorUntil = null;
+  fish.coarseActivity = null;
+  fish.entryStartedAt = null;
+  fish.entryDurationMs = 0;
+  fish.entryFromYNorm = null;
+  fish.entrySplashTriggered = false;
+  fish.turnStartedAt = null;
+  fish.turnDurationMs = 0;
+  fish.sharkLastAttackAt = 0;
+
+  clearZombieAttackState(fish);
+  clearPiranhaAttackState(fish);
+  fish.zombieReviveAt = null;
+  fish.zombieReviveSourceId = null;
+  fish.piranhaConsumptionStartedAt = null;
+  fish.piranhaConsumptionEndsAt = null;
+  fish.piranhaLastBloodAt = null;
+  clearFishPanicState(fish);
+  clearFishSchoolFollowState(fish);
+  clearFishCaveBehavior(fish);
+  resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now);
+  clearDiseaseGreenBubbleStream(fish);
+
+  runtime.pendingNeighborhoodTravel?.delete?.(fish.id);
+  runtime.fishActionQueuesByFishId?.delete?.(fish.id);
+  runtime.fishActionSteeringByFishId?.delete?.(fish.id);
+  runtime.debugBehaviorSteeringByFishId?.delete?.(fish.id);
+  runtime.debugAutonomyPausedFishIds?.delete?.(fish.id);
+  runtime.activeFishCavePlans?.delete?.(fish.id);
+  runtime.fishGravelPebbleActions?.delete?.(fish.id);
+  runtime.forcedGravelDigUntilByFishId?.delete?.(fish.id);
+
+  const xNorm = clamp(Number(fish.xNorm) || 0.5, 0.08, 0.92);
+  const yNorm = clamp(Number(fish.yNorm) || 0.5, 0.14, 0.8);
+  fish.xNorm = xNorm;
+  fish.yNorm = yNorm;
+  fish.targetXNorm = xNorm;
+  fish.targetYNorm = yNorm;
+  if (species) {
+    const layer = getEffectiveFishBehavior(fish, species) === "sucker"
+      ? getSuckerFishGlassLayer(fish)
+      : clampTankLayer(Number(fish.tankLayer) || DEFAULT_TANK_LAYER);
+    setFishTankLayers(fish, layer, layer);
+    fish.swimSpeed = normalizeFishSpeed(species, Number(fish.swimSpeed));
+  }
+  fish.targetAt = now;
+  return true;
+}
+
 function restoreAllFishHealthDebug() {
   const now = Date.now();
+  const allFish = [...getAllTankFish(state), ...(Array.isArray(state.storedFish) ? state.storedFish : [])];
+  let revivedCount = 0;
   let healedCount = 0;
 
-  for (const fish of [...state.fish, ...state.storedFish]) {
-    if (!fish || isFishDead(fish)) {
+  for (const fish of allFish) {
+    if (!fish) {
+      continue;
+    }
+
+    if (isFishDead(fish)) {
+      if (reviveFishForDebug(fish, now)) {
+        revivedCount += 1;
+      }
       continue;
     }
 
     const maxHealthUnits = getFishMaxHealthUnits(fish);
-    const nextHealthUnits = clamp(maxHealthUnits, 0, maxHealthUnits);
-    const nextComfortDamageProgressMs = 0;
-    const nextMissedMealsInRow = 0;
-    const nextFedStreak = 0;
-    const changed = fish.healthUnits !== nextHealthUnits
-      || (Number(fish.comfortDamageProgressMs) || 0) !== nextComfortDamageProgressMs
-      || (Number(fish.missedMealsInRow) || 0) !== nextMissedMealsInRow
-      || (Number(fish.fedStreak) || 0) !== nextFedStreak;
-
-    fish.healthUnits = nextHealthUnits;
-    fish.comfortDamageProgressMs = nextComfortDamageProgressMs;
-    fish.missedMealsInRow = nextMissedMealsInRow;
-    fish.fedStreak = nextFedStreak;
-
+    const changed = fish.healthUnits !== maxHealthUnits
+      || (Number(fish.comfortDamageProgressMs) || 0) !== 0
+      || (Number(fish.missedMealsInRow) || 0) !== 0
+      || (Number(fish.fedStreak) || 0) !== 0;
+    fish.healthUnits = maxHealthUnits;
+    fish.comfortDamageProgressMs = 0;
+    fish.missedMealsInRow = 0;
+    fish.fedStreak = 0;
     if (changed) {
       healedCount += 1;
     }
   }
 
-  if (!healedCount) {
-    showToast("All living fish are already at full health.");
+  for (const tank of getAllTanks(state)) {
+    if (!(tank.fish || []).some((fish) => isFishDead(fish))) {
+      tank.lastCorpseSicknessAt = null;
+    }
+  }
+
+  if (!revivedCount && !healedCount) {
+    showToast("All fish are already alive and at full health.");
     return;
   }
 
-  pushEvent(`Debug health reset restored ${healedCount} ${pluralize("fish", healedCount)} to full hearts.`, now);
+  const parts = [];
+  if (revivedCount) parts.push(`${revivedCount} ${pluralize("fish", revivedCount)} revived`);
+  if (healedCount) parts.push(`${healedCount} ${pluralize("fish", healedCount)} fully healed`);
+  pushEvent(`Debug fish reset: ${parts.join(", ")}.`, now);
   saveState();
   renderUi(now);
-  showToast(`Full hearts restored for ${healedCount} ${pluralize("fish", healedCount)}.`);
+  showToast(parts.join(" · "));
 }
 
 function resetMealsDebug() {
@@ -46473,8 +46636,6 @@ function getDebugBehaviorScenarioOptions(action) {
       return { allowPredatorSpecial: true };
     case "disease":
       return { allowSuckerSpecial: true, allowPredatorSpecial: true };
-    case "night-forage":
-      return { allowSuckerSpecial: true };
     case "clear":
       return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowUndead: true, allowSuckerSpecial: true, allowPredatorSpecial: true, allowDead: true };
     default:
@@ -46632,15 +46793,6 @@ function finishDebugBehaviorScenario(fish, eventText, toastText, now = Date.now(
   if (toastText) {
     showToast(toastText);
   }
-}
-
-function forceLightsOutForDebug(now = Date.now()) {
-  const tank = getCurrentTank();
-  if (!tank) {
-    return false;
-  }
-  tank.lightsOutOverride = LIGHTS_OUT_OVERRIDE_ON;
-  return isTankLightsOut(now, tank);
 }
 
 function getActiveDebugBehaviorSteering(fish, now = Date.now()) {
@@ -47303,84 +47455,6 @@ function triggerDebugBehaviorDisease(now = Date.now()) {
   finishDebugBehaviorScenario(fish, `Debug advanced ${fish.name} illness to ${nextState}.`, `${fish.name} disease behavior: ${nextState}.`, now);
 }
 
-function triggerDebugBehaviorNightSleep(now = Date.now()) {
-  const selection = getDebugBehaviorSelectedFishOrToast("night-sleep");
-  if (!selection) {
-    return;
-  }
-  const { fish, species } = selection;
-  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("night-sleep"))) {
-    return;
-  }
-  forceLightsOutForDebug(now);
-
-  const cover = pickDecorHangoutTarget(species, fish, now, {
-    allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
-    force: true,
-    ignoreOccupancy: true,
-    lingerMultiplier: 2.4,
-    preferBackLayer: true
-  }) || {
-    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.04, 0.04), 0.08, 0.92),
-    yNorm: clamp((fish.yNorm || 0.5) + randomBetween(-0.03, 0.03), 0.18, 0.78),
-    targetLayer: getFishTankLayer(fish),
-    targetAt: now + randomBetween(9000, 16000),
-    signalType: "odd_sleep_spot",
-    debugText: "night sleep | exposed"
-  };
-  applyBehaviorTarget(fish, species, {
-    ...cover,
-    targetAt: cover.targetAt || now + randomBetween(9000, 18000),
-    intentType: "night sleep",
-    intentCause: cover.signalType === "odd_sleep_spot" ? "exposed" : "lights out",
-    signalType: cover.signalType || "night_sleep",
-    debugText: cover.debugText || "night sleep | lights out",
-    slow: true
-  }, now);
-  finishDebugBehaviorScenario(fish, `Debug put ${fish.name} into Lights Out sleep.`, `${fish.name} is settling for Lights Out.`, now);
-}
-
-function triggerDebugBehaviorNightForage(now = Date.now()) {
-  const selection = getDebugBehaviorSelectedFishOrToast("night-forage");
-  if (!selection) {
-    return;
-  }
-  const { fish, species } = selection;
-  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("night-forage"))) {
-    return;
-  }
-  forceLightsOutForDebug(now);
-
-  const effectiveBehavior = getEffectiveFishBehavior(fish, species);
-  if (effectiveBehavior === "sucker") {
-    setFishBehaviorIntent(fish, "night forage", "night-active", now);
-    recordFishBehaviorSignal(fish, "night_forage", now, { debugText: "night forage | night-active" });
-    finishDebugBehaviorScenario(fish, `Debug marked ${fish.name} for night foraging.`, `${fish.name} keeps special movement while night-forage is logged.`, now);
-    return;
-  }
-
-  const forage = pickDecorHangoutTarget(species, fish, now, {
-    allowedZoneTypes: ["hardscape", "plant", "hide"],
-    force: true,
-    ignoreOccupancy: true,
-    lingerMultiplier: 0.9,
-    preferBackLayer: false
-  }) || {
-    xNorm: randomSwimX(),
-    yNorm: randomBetween(0.56, 0.82),
-    targetLayer: clampTankLayer(Math.max(1, getFishTankLayer(fish))),
-    targetAt: now + randomBetween(3600, 7600)
-  };
-  applyBehaviorTarget(fish, species, {
-    ...forage,
-    intentType: "night forage",
-    intentCause: "night-active",
-    signalType: "night_forage",
-    debugText: "night forage | night-active"
-  }, now);
-  finishDebugBehaviorScenario(fish, `Debug sent ${fish.name} night foraging.`, `${fish.name} is foraging after Lights Out.`, now);
-}
-
 function triggerDebugBehaviorClear(now = Date.now()) {
   const selection = getDebugBehaviorSelectedFishOrToast("clear");
   if (!selection) {
@@ -47428,12 +47502,6 @@ function triggerDebugBehaviorScenario(action) {
       break;
     case "disease":
       triggerDebugBehaviorDisease();
-      break;
-    case "night-sleep":
-      triggerDebugBehaviorNightSleep();
-      break;
-    case "night-forage":
-      triggerDebugBehaviorNightForage();
       break;
     case "clear":
       triggerDebugBehaviorClear();
@@ -48062,6 +48130,7 @@ function completeCleaning(options = {}) {
 
   state.lastCleanedAt = now;
   state.poops = [];
+  invalidateBoroughOverviewSnapshot(getCurrentTank());
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
   if (cleanReward > 0) {
     recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Deep tank cleaning", place: getTankLabel() });
@@ -51463,6 +51532,10 @@ function toggleAquariumOverview() {
 }
 
 function getBoroughSnapshotSignature(tank) {
+  const tankId = String(tank?.id || "");
+  const machinery = tankId && typeof getMachineryForTank === "function"
+    ? getMachineryForTank(tankId)
+    : [];
   return JSON.stringify({
     tankTypeId: tank?.tankTypeId,
     selectedBackground: tank?.selectedBackground,
@@ -51483,11 +51556,49 @@ function getBoroughSnapshotSignature(tank) {
     poops: tank?.poops,
     lastCleanedAt: tank?.lastCleanedAt,
     selectedTankAsset: tank?.selectedTankAsset,
+    fish: (tank?.fish || []).map((fish) => [
+      fish.id, fish.speciesId, fish.scale, fish.tankLayer, fish.appearanceVariantKey, fish.deadAt, fish.isDead
+    ]),
+    machinery: machinery.map((item) => [
+      item.id, item.type, item.scale, item.tankLayer,
+      item.appearanceVariantKey, item.machineryColor, item.machineryColorize
+    ]),
     placedDecor: (tank?.placedDecor || []).map((item) => [
       item.id, item.decorKey, item.xNorm, item.yNorm, item.scale, item.tankLayer, item.flipped, item.flippedY,
       item.decorSettings, item.caveColorSettings
     ])
   });
+}
+
+function invalidateBoroughOverviewSnapshot(tankOrId = getCurrentTank()) {
+  const tankId = typeof tankOrId === "string" ? tankOrId : String(tankOrId?.id || "");
+  if (!tankId || !runtime?.boroughOverviewSnapshotCache) return false;
+  runtime.boroughOverviewSnapshotCache.delete(tankId);
+  const queue = Array.isArray(runtime.boroughOverviewSnapshotQueue) ? runtime.boroughOverviewSnapshotQueue : [];
+  runtime.boroughOverviewSnapshotQueue = [tankId, ...queue.filter((queuedId) => queuedId !== tankId)];
+  runtime.boroughOverviewSnapshotRenderedAt = 0;
+  runtime.boroughOverviewFishRenderedAt = 0;
+  return true;
+}
+
+function pruneStaleBoroughOverviewSnapshots(tanks = getAllTanks()) {
+  if (runtime.debugSnapshotCacheFrozen || !runtime?.boroughOverviewSnapshotCache) return 0;
+  const staleIds = [];
+  for (const tank of tanks) {
+    const cached = runtime.boroughOverviewSnapshotCache.get(tank.id);
+    if (cached?.canvas && cached.signature !== getBoroughSnapshotSignature(tank)) {
+      runtime.boroughOverviewSnapshotCache.delete(tank.id);
+      staleIds.push(tank.id);
+    }
+  }
+  if (staleIds.length) {
+    const staleSet = new Set(staleIds);
+    const queue = Array.isArray(runtime.boroughOverviewSnapshotQueue) ? runtime.boroughOverviewSnapshotQueue : [];
+    runtime.boroughOverviewSnapshotQueue = [...staleIds, ...queue.filter((tankId) => !staleSet.has(tankId))];
+    runtime.boroughOverviewSnapshotRenderedAt = 0;
+    runtime.boroughOverviewFishRenderedAt = 0;
+  }
+  return staleIds.length;
 }
 
 function paintBoroughSnapshotBackground(context, tank, width, height) {
@@ -51535,8 +51646,10 @@ function getBoroughSnapshot(tank, now = Date.now()) {
   canvas.width = 384;
   canvas.height = 216;
   const previousFish = tank.fish;
+  const previousCleaningTransition = runtime.cleaningTransition;
   withActiveTank(tank.id, () => {
     tank.fish = [];
+    runtime.cleaningTransition = null;
     try {
       renderTank(now);
       const context = canvas.getContext("2d", { alpha: false });
@@ -51548,6 +51661,7 @@ function getBoroughSnapshot(tank, now = Date.now()) {
       context.drawImage(dom.glassCanvas, 0, 0, canvas.width, canvas.height);
     } finally {
       tank.fish = previousFish;
+      runtime.cleaningTransition = previousCleaningTransition;
     }
   });
   const entry = { signature, canvas, capturedAt: now, changed: true };
@@ -51706,6 +51820,7 @@ function renderAquariumOverview() {
     return;
   }
   const tanks = getAllTanks();
+  pruneStaleBoroughOverviewSnapshots(tanks);
   const expansionSpaces = getValidAquariumExpansionSpaces();
   const editMode = runtime.boroughOverviewEditMode === true;
   const syntheticCount = isDebugModeEnabled() ? Math.max(0, Number(runtime.debugOverviewSyntheticCount) || 0) : 0;
@@ -52119,7 +52234,7 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
   if (variant === "overlay") {
     const managementStats = stats || getManagementHubStats(Date.now());
     const status = getManagementTankStatus(managementStats);
-    const switchTankDisclaimer = "Use Overview to navigate the borough, or WASD to move through adjacent neighborhoods.";
+    const switchTankDisclaimer = "Use Overview to navigate the borough, or the arrow keys to move through adjacent neighborhoods.";
 
     return `
       <div class="management-summary-strip management-tone-${status.tone}">
@@ -53471,6 +53586,105 @@ function renderCreditsUtilityOverlay() {
     `,
     footer: buildUtilityCloseFooter("Close")
   };
+}
+
+function parseInviteFriendEmails(rawValue) {
+  const entries = String(rawValue || "")
+    .split(/[,;\n]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const unique = [];
+  const seen = new Set();
+  const invalid = [];
+  for (const entry of entries) {
+    const normalized = entry.toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) {
+      invalid.push(entry);
+      continue;
+    }
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      unique.push(entry);
+    }
+  }
+  return { emails: unique, invalid, total: entries.length };
+}
+
+function renderInviteFriendUtilityOverlay() {
+  return {
+    kicker: "Share",
+    title: "Invite A Friend",
+    body: `
+      <div class="utility-confirm-card invite-friend-card">
+        <div class="utility-confirm-copy">
+          <strong>Think someone would like Bubble Borough?</strong>
+          <div class="fish-meta">Enter up to 20 email addresses separated by commas. Recipients are added as BCC so their addresses stay private from each other.</div>
+        </div>
+        <label class="invite-friend-field">
+          <span>Email addresses</span>
+          <textarea rows="5" placeholder="friend@example.com, another@example.com" data-invite-friend-emails></textarea>
+        </label>
+        <div class="invite-friend-meta">
+          <span data-invite-friend-count>0 / 20</span>
+          <span data-invite-friend-status role="status"></span>
+        </div>
+      </div>
+    `,
+    footer: buildUtilityActionsFooter([
+      { label: "Open Email Invite", attribute: "data-send-friend-invite" },
+      { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
+    ]),
+    closable: true
+  };
+}
+
+function handleInviteFriendUtilityOverlayInput(ctx, target) {
+  const input = target?.closest?.("[data-invite-friend-emails]");
+  if (!(input instanceof HTMLTextAreaElement)) return false;
+  const result = parseInviteFriendEmails(input.value);
+  const count = dom.utilityOverlayBody?.querySelector("[data-invite-friend-count]");
+  const status = dom.utilityOverlayBody?.querySelector("[data-invite-friend-status]");
+  if (count) count.textContent = `${result.emails.length} / 20`;
+  if (status) {
+    if (result.invalid.length) status.textContent = `${result.invalid.length} invalid ${result.invalid.length === 1 ? "address" : "addresses"}`;
+    else if (result.emails.length > 20) status.textContent = "Use 20 or fewer addresses at a time.";
+    else status.textContent = "";
+  }
+  return true;
+}
+
+function openInviteFriendEmailComposer() {
+  const input = dom.utilityOverlayBody?.querySelector("[data-invite-friend-emails]");
+  const status = dom.utilityOverlayBody?.querySelector("[data-invite-friend-status]");
+  const result = parseInviteFriendEmails(input instanceof HTMLTextAreaElement ? input.value : "");
+  if (!result.emails.length) {
+    if (status) status.textContent = "Enter at least one valid email address.";
+    input?.focus?.();
+    return false;
+  }
+  if (result.invalid.length) {
+    if (status) status.textContent = `Fix ${result.invalid.length} invalid ${result.invalid.length === 1 ? "address" : "addresses"} first.`;
+    input?.focus?.();
+    return false;
+  }
+  if (result.emails.length > 20) {
+    if (status) status.textContent = "Use 20 or fewer addresses at a time.";
+    input?.focus?.();
+    return false;
+  }
+
+  const subject = "I think you'd like Bubble Borough";
+  const body = [
+    "Hey! I think you'd like Bubble Borough.",
+    "",
+    "It's a browser aquarium game where you build and care for your own little underwater world.",
+    "",
+    "Play here: https://bubbleborough.com/"
+  ].join("\n");
+  const mailto = `mailto:?bcc=${encodeURIComponent(result.emails.join(","))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  if (status) status.textContent = "Opening your email app...";
+  window.location.href = mailto;
+  return true;
 }
 
 function renderDecorBuyConfirmUtilityOverlay() {
@@ -57140,6 +57354,17 @@ function renderMedicineTray() {
     && Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) > 0
   ));
 
+  const careCardWidth = 78;
+  const careCardGap = 7;
+  const sectionWidthForCount = (count, emptyWidth) => count > 0
+    ? count * careCardWidth + Math.max(0, count - 1) * careCardGap
+    : emptyWidth;
+  const foodSectionWidth = sectionWidthForCount(foodItems.length, 248);
+  const medicineSectionWidth = sectionWidthForCount(medicineItems.length, 163);
+  const toolsSectionWidth = 163;
+  const trayContentWidth = foodSectionWidth + medicineSectionWidth + toolsSectionWidth + 50;
+  dom.medicineTray?.style.setProperty("--care-tray-content-width", `${trayContentWidth}px`);
+
   const dataKey = [
     runtime.medicineTrayOpen ? "1" : "0",
     runtime.feedingModeFoodKey || "",
@@ -57224,7 +57449,7 @@ function renderMedicineTray() {
       `;
 
     const markup = `
-      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: 248px; --care-medicine-min-width: 163px; --care-tools-min-width: 163px; --care-tray-min-width: 624px;">
+      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: ${foodSectionWidth}px; --care-medicine-min-width: ${medicineSectionWidth}px; --care-tools-min-width: ${toolsSectionWidth}px; --care-tray-min-width: ${trayContentWidth}px;">
         <section class="care-tray-food" aria-label="Food">
           <div class="care-tray-heading-row">
             <img class="care-tray-inline-icon" ${assetImageAttributes("assets/icons/feed_fish.png")} alt="" aria-hidden="true" draggable="false" />
@@ -59604,6 +59829,9 @@ function renderControls(now) {
   if (dom.debugCureFishButton) {
     dom.debugCureFishButton.hidden = !debugMode;
   }
+  if (dom.debugReviveAllFishButton) {
+    dom.debugReviveAllFishButton.hidden = !debugMode;
+  }
   dom.addCoinsButton.hidden = !debugMode;
   if (dom.addHundredCoinsButton) {
     dom.addHundredCoinsButton.hidden = !debugMode;
@@ -59611,6 +59839,9 @@ function renderControls(now) {
   dom.maxDirtButton.hidden = !debugMode;
   if (dom.debugMaxDirtinessButton) {
     dom.debugMaxDirtinessButton.hidden = !debugMode;
+  }
+  if (dom.debugMaxCleanlinessButton) {
+    dom.debugMaxCleanlinessButton.hidden = !debugMode;
   }
   dom.debugGravelDigButton.hidden = !debugMode;
   dom.debugGravelPebbleButton.hidden = !debugMode;
@@ -59636,6 +59867,9 @@ function renderControls(now) {
   if (dom.debugMaxDirtinessButton) {
     dom.debugMaxDirtinessButton.disabled = !debugMode;
   }
+  if (dom.debugMaxCleanlinessButton) {
+    dom.debugMaxCleanlinessButton.disabled = !debugMode;
+  }
   dom.debugGravelDigButton.disabled = !debugMode || !hasGravelDigCandidate;
   dom.debugGravelPebbleButton.disabled = !debugMode || !hasGravelPebbleCandidate;
   dom.debugDamageFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
@@ -59644,6 +59878,9 @@ function renderControls(now) {
   }
   if (dom.debugCureFishButton) {
     dom.debugCureFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
+  }
+  if (dom.debugReviveAllFishButton) {
+    dom.debugReviveAllFishButton.disabled = !debugMode;
   }
   dom.debugBreedButton.disabled = !debugMode || (!hasDebugBreedingPairCandidate(now) && !runtime.debugBreedingSequence);
   if (dom.debugDailyRecapButton) {
@@ -65884,9 +66121,10 @@ function drawFoodSpritePieceToContext(context, x, y, pellet, spritePath) {
   const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
   const variantScale = pellet?.foodKey === "chum" ? getChumSpriteVisualScale(spritePath) : 1;
   const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale * chumScale * variantScale;
-  const fitScale = Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height));
-  const drawWidth = Math.max(10 * stableScale, image.width * fitScale);
-  const drawHeight = Math.max(10 * stableScale, image.height * fitScale);
+  const visualSize = getFoodSpriteVisualSize(pellet?.foodKey, scale, stableScale);
+  const fitScale = Math.min(visualSize.maxSize / Math.max(1, image.width), visualSize.maxSize / Math.max(1, image.height));
+  const drawWidth = Math.max(visualSize.minSize, image.width * fitScale);
+  const drawHeight = Math.max(visualSize.minSize, image.height * fitScale);
 
   context.save();
   context.translate(x, y);
@@ -66208,9 +66446,10 @@ function drawFoodSpritePiece(x, y, pellet, spritePath) {
   const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
   const variantScale = pellet?.foodKey === "chum" ? getChumSpriteVisualScale(spritePath) : 1;
   const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale * chumScale * variantScale;
-  const fitScale = Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height));
-  const drawWidth = Math.max(10 * stableScale, image.width * fitScale);
-  const drawHeight = Math.max(10 * stableScale, image.height * fitScale);
+  const visualSize = getFoodSpriteVisualSize(pellet?.foodKey, scale, stableScale);
+  const fitScale = Math.min(visualSize.maxSize / Math.max(1, image.width), visualSize.maxSize / Math.max(1, image.height));
+  const drawWidth = Math.max(visualSize.minSize, image.width * fitScale);
+  const drawHeight = Math.max(visualSize.minSize, image.height * fitScale);
 
   tankContext.save();
   tankContext.translate(x, y);
@@ -70527,11 +70766,14 @@ function getPelletHitBounds(pellet, now = Date.now()) {
   const scale = clamp(Number(pellet.scale) || 1, 0.75, 1.4) * stableScale * chumScale * variantScale;
   if (appearance.dropStyle === "sprite") {
     const image = appearance.spritePath ? runtime.images.get(appearance.spritePath) : null;
+    const visualSize = getFoodSpriteVisualSize(pellet.foodKey, scale, stableScale);
     const fitScale = image
-      ? Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height))
+      ? Math.min(visualSize.maxSize / Math.max(1, image.width), visualSize.maxSize / Math.max(1, image.height))
       : 1;
-    const width = image ? Math.max(10 * stableScale, image.width * fitScale) : 18 * scale;
-    const height = image ? Math.max(10 * stableScale, image.height * fitScale) : 14 * scale;
+    const fallbackWidth = isPelletSizedFoodSprite(pellet.foodKey) ? 11.6 * scale : 18 * scale;
+    const fallbackHeight = isPelletSizedFoodSprite(pellet.foodKey) ? 6.6 * scale : 14 * scale;
+    const width = image ? Math.max(visualSize.minSize, image.width * fitScale) : fallbackWidth;
+    const height = image ? Math.max(visualSize.minSize, image.height * fitScale) : fallbackHeight;
     return {
       pellet,
       x,
@@ -76384,6 +76626,7 @@ function persistCloudSession(session) {
 }
 
 function clearCloudSession() {
+  runtime.cloudEmailChangeNotice = "";
   localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
   runtime.cloudSession = null;
   syncDebugToolsAuthorization();
@@ -76414,22 +76657,40 @@ function recordLocalSaveForCloud(savedAt = Date.now()) {
   setCloudMeta({ localSavedAt: savedAt });
 }
 
+function getCloudSyncStatusPresentation(status, label = "") {
+  const normalizedStatus = String(status || "");
+  const normalizedLabel = String(label || "").trim();
+  const presentations = {
+    syncing: {
+      title: "Syncing...",
+      detail: normalizedLabel === "Pending sync..." ? "Changes are waiting to upload..." : "Uploading save data..."
+    },
+    checking: { title: "Checking...", detail: "Looking for your latest cloud save..." },
+    synced: {
+      title: "Synced",
+      detail: normalizedLabel === "Cloud ready" ? "Cloud save is ready." : "All save data is up to date."
+    },
+    offline: { title: "Offline", detail: "Saved locally. Cloud sync will resume when you're online." },
+    error: {
+      title: "Sync Failed",
+      detail: normalizedLabel.toLowerCase().includes("check") ? "Could not verify your cloud save." : "Could not upload save data."
+    },
+    "signed-out": { title: "Not Signed In", detail: "Sign in to keep your aquarium backed up." }
+  };
+  return presentations[normalizedStatus] || { title: normalizedLabel || "Cloud Save", detail: "" };
+}
+
 function setCloudSyncStatus(status, label = "") {
   runtime.cloudSyncStatus = status;
   runtime.cloudSyncLabel = label;
+  const presentation = getCloudSyncStatusPresentation(status, label);
+  runtime.cloudSyncDetail = presentation.detail;
   document.querySelectorAll("[data-cloud-sync-status]").forEach((element) => {
     element.dataset.status = status;
     const text = element.querySelector("[data-cloud-sync-text]");
-    if (text) {
-      text.textContent = label || ({
-        syncing: "Syncing...",
-        synced: "Synced",
-        offline: "Offline",
-        error: "Sync failed",
-        checking: "Checking cloud save...",
-        "signed-out": "Not signed in"
-      }[status] || "Cloud save");
-    }
+    const detail = element.querySelector("[data-cloud-sync-detail]");
+    if (text) text.textContent = presentation.title;
+    if (detail) detail.textContent = presentation.detail;
   });
 }
 
@@ -76451,7 +76712,10 @@ async function supabaseAuthFetch(path, options = {}) {
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!response.ok) {
-    throw new Error(data?.msg || data?.message || data?.error_description || data?.error || `Cloud request failed (${response.status}).`);
+    const error = new Error(data?.msg || data?.message || data?.error_description || data?.error || `Cloud request failed (${response.status}).`);
+    error.code = data?.error_code || data?.code || "";
+    error.status = response.status;
+    throw error;
   }
   return data;
 }
@@ -76481,7 +76745,8 @@ async function refreshCloudSessionIfNeeded() {
 }
 
 async function createCloudAccount(email, password) {
-  const result = await supabaseAuthFetch("/auth/v1/signup", { body: { email, password } });
+  const redirectTo = getCloudAuthRedirectUrl("signup-confirmed");
+  const result = await supabaseAuthFetch(`/auth/v1/signup?redirect_to=${encodeURIComponent(redirectTo)}`, { body: { email, password } });
   if (result?.access_token) {
     persistCloudSession(result);
     await resolveCloudAfterLogin({ source: "signup" });
@@ -76493,8 +76758,223 @@ async function createCloudAccount(email, password) {
 async function signInCloudAccount(email, password) {
   const result = await supabaseAuthFetch("/auth/v1/token?grant_type=password", { body: { email, password } });
   persistCloudSession(result);
+  runtime.cloudForceLogin = false;
   await resolveCloudAfterLogin({ source: "signin" });
   return true;
+}
+
+function getCloudAuthRedirectUrl(auth = "") {
+  try {
+    const url = new URL(window.location.href);
+    url.hash = "";
+    url.search = "";
+    if (auth) url.searchParams.set("auth", auth);
+    return url.toString();
+  } catch {
+    return window.location.href.split("#")[0].split("?")[0];
+  }
+}
+
+async function requestCloudPasswordReset(email) {
+  const normalizedEmail = String(email || "").trim();
+  if (!normalizedEmail) throw new Error("Enter your email address first.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
+  const redirectTo = getCloudAuthRedirectUrl("recovery");
+  await supabaseAuthFetch(`/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
+    body: { email: normalizedEmail }
+  });
+  return true;
+}
+
+async function requestCloudEmailChange(email) {
+  const normalizedEmail = String(email || "").trim();
+  if (!normalizedEmail) throw new Error("Enter a new email address first.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
+  const session = await refreshCloudSessionIfNeeded();
+  if (!session?.access_token) throw new Error("You are not signed in.");
+  const currentEmail = String(session.user?.email || "").trim().toLowerCase();
+  if (currentEmail && currentEmail === normalizedEmail.toLowerCase()) throw new Error("That is already your account email.");
+  const redirectTo = getCloudAuthRedirectUrl("email-changed");
+  const user = await supabaseAuthFetch(`/auth/v1/user?redirect_to=${encodeURIComponent(redirectTo)}`, {
+    method: "PUT",
+    accessToken: session.access_token,
+    body: { email: normalizedEmail }
+  });
+  if (user && typeof user === "object") persistCloudSession({ ...session, user });
+  return user;
+}
+
+function clearCloudAuthCallbackUrl() {
+  try {
+    const url = new URL(window.location.href);
+    const keys = ["auth", "access_token", "refresh_token", "token_type", "expires_in", "expires_at", "type", "error", "error_code", "error_description", "code", "token_hash"];
+    keys.forEach(key => url.searchParams.delete(key));
+    const hash = new URLSearchParams(url.hash.slice(1));
+    if (keys.some(key => hash.has(key))) url.hash = "";
+    window.history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+  } catch {
+    // Some embedded browsers do not permit history cleanup.
+  }
+}
+
+function getCloudAuthErrorMessage(error) {
+  const code = String(error?.code || "");
+  if (error?.status === 429 || /rate|too many|over_.*limit/.test(code)) return "Too many requests. Please wait a few minutes and try again.";
+  if (error instanceof TypeError || /network|fetch/i.test(error?.message || "")) return "We couldn't connect. Check your internet connection and try again.";
+  if (/reauthentication_not_valid/.test(code)) return "The verification code is incorrect or expired. Check the code and try again, or request a new code.";
+  return error?.message || "We couldn't verify this request. Please try again.";
+}
+
+function showAuthSuccess({ title, message, buttonText = "Return to Login", error = false }) {
+  runtime.cloudAuthScreen = { title, message, buttonText, error };
+  runtime.cloudWritesAllowed = false;
+  renderStartupActions();
+}
+
+function showCloudAuthLinkError(error, recovery = false) {
+  const expired = /expired|otp_expired/i.test(`${error?.code} ${error?.message}`);
+  const verified = /already.*(verified|confirmed)/i.test(error?.message || "");
+  showAuthSuccess({
+    title: verified ? "Email Already Verified" : expired ? "Verification Link Expired" : recovery ? "Invalid Password Recovery Link" : "Something Went Wrong",
+    message: verified ? "This email has already been verified. Return to Login to sign in." : expired ? "This verification link is no longer valid. Please request a new link." : getCloudAuthErrorMessage(error),
+    error: !verified
+  });
+}
+
+// The sole URL router. Callback credentials are validated before any success UI
+// or game session is created. Query routes alone are never proof of verification.
+async function handleAuthRoute() {
+  const url = new URL(window.location.href);
+  const hash = new URLSearchParams(url.hash.slice(1));
+  const value = key => hash.get(key) || url.searchParams.get(key) || "";
+  const route = value("auth");
+  const type = value("type");
+  const recovery = type === "recovery" || route === "recovery";
+  const handled = Boolean(route || value("access_token") || value("error") || value("error_description") || value("code") || value("token_hash"));
+  if (!handled) return { handled: false, recovery: false, type };
+  runtime.cloudWritesAllowed = false;
+  try {
+    if (value("error") || value("error_description")) {
+      throw Object.assign(new Error(value("error_description") || value("error")), { code: value("error_code") });
+    }
+    if (route === "reauth") {
+      if (!runtime.cloudReauth) throw new Error("There is no pending verification request. Sign in and try your account action again.");
+      renderStartupActions();
+      return { handled: true, recovery: false, type };
+    }
+    const accessToken = value("access_token");
+    if (!accessToken) throw new Error(recovery ? "Open the password reset link from your email, or request a new one using Forgot Password." : "This verification link is invalid or its session is missing. Please sign in or request a new link.");
+    const user = await supabaseAuthFetch("/auth/v1/user", { method: "GET", accessToken });
+    if (!user?.id) throw new Error("The verification session is missing. Please request a new link.");
+    const session = { access_token: accessToken, refresh_token: value("refresh_token"), token_type: value("token_type") || "bearer", expires_in: Number(value("expires_in")) || 3600, user };
+    runtime.cloudAuthTemporarySession = session;
+    if (recovery) {
+      runtime.cloudPasswordRecovery = session;
+      runtime.cloudAuthScreen = null;
+    } else if (type === "invite") {
+      // Administrative invitations deliberately land on the ordinary sign-in card.
+      runtime.cloudForceLogin = true;
+    } else if (type === "signup" || route === "signup-confirmed") {
+      showAuthSuccess({ title: "Email Confirmed", message: "Your Bubble Borough account has been verified." });
+    } else if (type === "email_change" || route === "email-changed") {
+      if (user.new_email) {
+        showAuthSuccess({ title: "Verification Still Needed", message: "Please follow the verification instructions sent to both your current and new email addresses to finish changing your email." });
+      } else showAuthSuccess({ title: "Email Address Changed", message: "Your new email address has been verified." });
+    } else if (route) {
+      throw new Error("This authentication request is no longer available. Please sign in again.");
+    } else {
+      // Preserve existing magic-link callbacks without exposing new login options.
+      persistCloudSession(session);
+      runtime.cloudAuthTemporarySession = null;
+    }
+  } catch (error) {
+    showCloudAuthLinkError(error, recovery);
+  } finally {
+    clearCloudAuthCallbackUrl();
+  }
+  return { handled: true, recovery: hasCloudPasswordRecoverySession(), type };
+}
+
+async function consumeCloudAuthCallbackFromUrl() {
+  return handleAuthRoute();
+}
+
+function returnToCloudLogin() {
+  runtime.cloudAuthScreen = null;
+  runtime.cloudPasswordRecovery = null;
+  runtime.cloudAuthTemporarySession = null;
+  runtime.cloudReauth = null;
+  runtime.cloudAuthNotice = "";
+  runtime.cloudAuthCallbackType = "";
+  runtime.cloudForceLogin = false;
+  clearCloudAuthCallbackUrl();
+  clearCloudSession();
+  const actions = ensureStartupActions();
+  actions?.querySelectorAll("input").forEach(input => { input.value = ""; });
+  actions?.querySelectorAll("small").forEach(status => { status.textContent = ""; });
+  renderStartupActions();
+  actions?.querySelector("[data-startup-email]")?.focus();
+}
+
+function hasCloudPasswordRecoverySession() {
+  return Boolean(runtime.cloudPasswordRecovery?.access_token);
+}
+
+async function completeCloudPasswordReset(password, confirmation) {
+  const nextPassword = String(password || "");
+  const confirmedPassword = String(confirmation || "");
+  if (nextPassword.length < 6) throw new Error("Use a password with at least 6 characters.");
+  if (nextPassword !== confirmedPassword) throw new Error("The passwords do not match.");
+  const recovery = runtime.cloudPasswordRecovery;
+  if (!recovery?.access_token) throw new Error("This password reset link has expired or is no longer available.");
+
+  return submitCloudPasswordUpdate(recovery, nextPassword);
+}
+
+async function submitCloudPasswordUpdate(session, password, nonce = "") {
+  try {
+    const user = await supabaseAuthFetch("/auth/v1/user", {
+      method: "PUT", accessToken: session.access_token,
+      body: { password, ...(nonce ? { nonce } : {}) }
+    });
+    runtime.cloudPasswordRecovery = null;
+    runtime.cloudReauth = null;
+    runtime.cloudAuthTemporarySession = { ...session, user };
+    showAuthSuccess({ title: "Password Changed", message: "Your password has been updated successfully." });
+    ensureStartupActions()?.querySelectorAll('input[type="password"]').forEach(input => { input.value = ""; });
+    return user;
+  } catch (error) {
+    if (error.code !== "reauthentication_needed" || nonce) throw error;
+    await supabaseAuthFetch("/auth/v1/reauthenticate", { method: "GET", accessToken: session.access_token });
+    runtime.cloudReauth = { session, password };
+    renderStartupActions();
+    return null;
+  }
+}
+
+async function handleCloudReauth(resend = false) {
+  const pending = runtime.cloudReauth;
+  const card = ensureStartupActions()?.querySelector("[data-startup-reauth]");
+  const status = card?.querySelector("small");
+  if (!pending || runtime.cloudReauthBusy) return;
+  runtime.cloudReauthBusy = true;
+  card?.querySelectorAll("button").forEach(button => { button.disabled = true; });
+  try {
+    if (resend) {
+      await supabaseAuthFetch("/auth/v1/reauthenticate", { method: "GET", accessToken: pending.session.access_token });
+      if (status) status.textContent = "A new verification code has been sent. Check your email.";
+    } else {
+      const nonce = String(card?.querySelector("input")?.value || "").trim();
+      if (!nonce) throw new Error("Enter the verification code from your email.");
+      if (status) status.textContent = "Verifying...";
+      await submitCloudPasswordUpdate(pending.session, pending.password, nonce);
+    }
+  } catch (error) {
+    if (status) status.textContent = getCloudAuthErrorMessage(error);
+  } finally {
+    runtime.cloudReauthBusy = false;
+    card?.querySelectorAll("button").forEach(button => { button.disabled = false; });
+  }
 }
 
 async function signOutCloudAccount() {
@@ -76754,6 +77234,7 @@ function finishCloudConflictSelection() {
   primeSoundEffects();
   playRegularButtonSoundEffect();
   hideLoadingOverlay();
+  showStartupAccountWelcome();
 }
 
 function closeCloudDialog() {
@@ -76808,6 +77289,37 @@ async function showCloudConflictDialog(cloud) {
   wrapper.querySelector("[data-cloud-conflict-later]")?.addEventListener("click", closeCloudDialog);
 }
 
+// All full-screen auth states use the original Password Reset card primitives.
+function renderAuthCard({ attribute, title, message, fields = [], buttons = [], footer = "", status = "" }) {
+  return `<form class="startup-auth" ${attribute} hidden>
+    <div class="startup-auth-heading"><strong class="startup-auth-title" tabindex="-1">${escapeHtml(title)}</strong><span class="startup-auth-copy">${escapeHtml(message)}</span></div>
+    ${fields.map(field => `<label class="startup-auth-field"><span class="startup-auth-label">${escapeHtml(field.label)}</span><span class="startup-auth-input-wrap"><span class="startup-auth-input-icon" aria-hidden="true">${field.type === "email" ? "✉" : "▣"}</span><input type="${field.type}" autocomplete="${field.autocomplete}" placeholder="${escapeHtml(field.placeholder || field.label)}" ${field.attribute}></span></label>`).join("")}
+    <div class="startup-auth-actions ${buttons.length === 1 ? "startup-auth-actions-single" : ""}">${buttons.map((button, index) => `<button class="small-button ${index ? "alt startup-create-button" : "startup-signin-button"}" type="${index ? "button" : "submit"}" ${button.attribute}>${escapeHtml(button.text)}</button>`).join("")}</div>
+    ${footer}<small role="status" aria-live="polite" ${status}></small>
+  </form>`;
+}
+
+function getCloudAuthFormMarkup(recovery = false, settings = false) {
+  const prefix = settings ? "data-cloud-settings" : "data-startup";
+  return renderAuthCard(recovery ? {
+    attribute: "data-startup-password-recovery", title: "Choose a new password", message: "Create a new password for your Bubble Borough account.",
+    fields: [
+      { label: "New Password", type: "password", autocomplete: "new-password", placeholder: "Enter a new password", attribute: `${prefix}-new-password` },
+      { label: "Confirm Password", type: "password", autocomplete: "new-password", placeholder: "Confirm your new password", attribute: `${prefix}-confirm-password` }
+    ],
+    buttons: [{ text: "Save New Password", attribute: `${prefix}-complete-password-reset` }], status: settings ? `${prefix}-message` : "data-startup-password-recovery-status"
+  } : {
+    attribute: "data-startup-auth", title: "Sign in to Bubble Borough", message: "Sign in or create an account to continue.",
+    fields: [
+      { label: "Email", type: "email", autocomplete: "email", placeholder: "Enter your email", attribute: `${prefix}-email` },
+      { label: "Password", type: "password", autocomplete: "current-password", placeholder: "Enter your password", attribute: `${prefix}-password` }
+    ],
+    buttons: [{ text: "Sign In", attribute: settings ? `${prefix}-signin` : `${prefix}-signin-submit` }, { text: "Create Account", attribute: settings ? `${prefix}-create` : `${prefix}-create-submit` }],
+    footer: `<div class="startup-forgot-row"><span aria-hidden="true"></span><button class="startup-forgot-button" type="button" ${prefix}-forgot-password><b aria-hidden="true">?</b> Forgot Password</button><span aria-hidden="true"></span></div>`,
+    status: settings ? `${prefix}-message` : "data-startup-auth-status"
+  });
+}
+
 function ensureStartupActions() {
   const content = dom.loadingOverlay?.querySelector(".loading-overlay-content");
   if (!content) return null;
@@ -76816,16 +77328,16 @@ function ensureStartupActions() {
   actions = document.createElement("div");
   actions.className = "startup-actions";
   actions.dataset.startupActions = "true";
-  actions.innerHTML = `
-    <div data-startup-buttons></div>
-    <div class="startup-auth" data-startup-auth hidden>
-      <label>Email<input type="email" autocomplete="email" data-startup-email></label>
-      <label>Password<input type="password" autocomplete="current-password" data-startup-password></label>
-      <div class="startup-auth-actions"><button class="small-button" type="button" data-startup-signin-submit>Sign In</button><button class="small-button alt" type="button" data-startup-create-submit>Create Account</button><button class="small-button alt" type="button" data-startup-auth-cancel>Back</button></div>
-      <small data-startup-auth-status></small>
-    </div>`;
+  actions.innerHTML = `<div data-startup-buttons></div>${getCloudAuthFormMarkup()}${getCloudAuthFormMarkup(true)}
+    ${renderAuthCard({ attribute: "data-startup-result", title: "", message: "", buttons: [{ text: "Return to Login", attribute: "data-auth-return-login" }] })}
+    ${renderAuthCard({ attribute: "data-startup-reauth", title: "Verify It's You", message: "For your security, please verify your identity before continuing.", fields: [{ label: "Verification Code", type: "text", autocomplete: "one-time-code", attribute: "data-auth-nonce" }], buttons: [{ text: "Verify", attribute: "data-auth-verify" }], footer: '<button class="startup-forgot-button" type="button" data-auth-resend-code>Send New Code</button><button class="startup-forgot-button" type="button" data-auth-return-login>Return to Login</button>' })}`;
   content.appendChild(actions);
   actions.addEventListener("click", handleStartupActionClick);
+  actions.addEventListener("submit", event => {
+    event.preventDefault();
+    const button = event.target.querySelector('button[type="submit"]');
+    if (button && !button.disabled) button.click();
+  });
   return actions;
 }
 
@@ -76834,25 +77346,100 @@ function renderStartupActions() {
   if (!actions || !dom.loadingOverlay?.classList.contains("is-ready")) return;
   const buttons = actions.querySelector("[data-startup-buttons]");
   const auth = actions.querySelector("[data-startup-auth]");
-  if (!buttons || !auth) return;
-  if (!auth.hidden) return;
+  const recovery = actions.querySelector("[data-startup-password-recovery]");
+  if (!buttons || !auth || !recovery) return;
+  const overlay = dom.loadingOverlay;
+  const result = actions.querySelector("[data-startup-result]");
+  const reauth = actions.querySelector("[data-startup-reauth]");
+  result.hidden = true;
+  reauth.hidden = true;
+  if (runtime.cloudAuthScreen || runtime.cloudReauth) {
+    overlay.classList.add("is-auth-mode");
+    overlay.classList.remove("is-welcome-mode");
+    buttons.innerHTML = "";
+    auth.hidden = true;
+    recovery.hidden = true;
+    const card = runtime.cloudAuthScreen ? result : reauth;
+    card.hidden = false;
+    if (runtime.cloudAuthScreen) {
+      const screen = runtime.cloudAuthScreen;
+      card.querySelector(".startup-auth-title").textContent = screen.title;
+      card.querySelector(".startup-auth-copy").textContent = screen.message;
+      card.querySelector("button").textContent = screen.buttonText;
+      card.dataset.authError = String(screen.error);
+    }
+    if (!card.contains(document.activeElement)) card.querySelector("input, .startup-auth-title")?.focus();
+    return;
+  }
+  if (hasCloudPasswordRecoverySession()) {
+    overlay?.classList.add("is-auth-mode");
+    overlay?.classList.remove("is-welcome-mode");
+    buttons.innerHTML = "";
+    auth.hidden = true;
+    recovery.hidden = false;
+    if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
+    recovery.querySelector("[data-startup-new-password]")?.focus();
+    return;
+  }
+  recovery.hidden = true;
   const hasLocal = Boolean(runtime.hadLocalSaveAtStartup);
-  const signedIn = Boolean(getCloudSession());
-  buttons.innerHTML = (hasLocal || signedIn)
-    ? `<button class="startup-primary-button" type="button" data-startup-continue>Continue</button>`
-    : `<button class="startup-primary-button" type="button" data-startup-new>Start New Aquarium</button><button class="startup-secondary-button" type="button" data-startup-signin>Sign In</button>`;
-  // The logo establishes the start screen. Keep the live-status node empty so
-  // it does not render as a misleading, non-actionable welcome button.
+  const session = getCloudSession();
+  const signedIn = Boolean(session) && !runtime.cloudForceLogin;
+  const authStatus = auth.querySelector("[data-startup-auth-status]");
+  if (!signedIn) {
+    overlay?.classList.add("is-auth-mode");
+    overlay?.classList.remove("is-welcome-mode");
+    buttons.innerHTML = "";
+    auth.hidden = false;
+    if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
+    if (authStatus && runtime.cloudAuthNotice) authStatus.textContent = runtime.cloudAuthNotice;
+    return;
+  }
+  overlay?.classList.remove("is-auth-mode");
+  overlay?.classList.add("is-welcome-mode");
+  auth.hidden = true;
+  const username = getAccountUsernameForUser(session?.user?.id || "");
+  const shouldStartFresh = !hasLocal && (
+    runtime.cloudAuthCallbackType === "signup"
+    || (runtime.cloudChecked === true && runtime.freshGameSaveLocked === true)
+  );
+  const notice = runtime.cloudAuthNotice
+    ? `<div class="startup-auth-confirmed" role="status">${escapeHtml(runtime.cloudAuthNotice)}</div>`
+    : "";
   if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
+  buttons.innerHTML = `${notice}<div class="startup-welcome-title">Welcome, ${escapeHtml(username)}!</div>${shouldStartFresh
+    ? `<button class="startup-primary-button" type="button" data-startup-new>Start</button>`
+    : `<button class="startup-primary-button" type="button" data-startup-continue>Continue</button>`}`;
 }
 
 function showStartupAuth() {
   const actions = ensureStartupActions();
   const buttons = actions?.querySelector("[data-startup-buttons]");
   const auth = actions?.querySelector("[data-startup-auth]");
+  dom.loadingOverlay?.classList.add("is-auth-mode");
+  dom.loadingOverlay?.classList.remove("is-welcome-mode");
   if (buttons) buttons.innerHTML = "";
   if (auth) auth.hidden = false;
   actions?.querySelector("[data-startup-email]")?.focus();
+}
+
+async function startFromStartup() {
+  const button = ensureStartupActions()?.querySelector("[data-startup-new]");
+  showStartupLoadingState(button, "Starting aquarium...");
+  runtime.freshGameSaveLocked = true;
+  if (getCloudSession()) await resolveCloudAfterLogin({ source: "startup" });
+  if (document.querySelector("[data-cloud-dialog]")) {
+    const actions = ensureStartupActions();
+    if (actions) delete actions.dataset.startupPending;
+    renderStartupActions();
+    return;
+  }
+  runtime.cloudAuthCallbackType = "";
+  runtime.cloudAuthNotice = "";
+  primeSoundEffects();
+  playRegularButtonSoundEffect();
+  hideLoadingOverlay();
+  showStartupAccountWelcome();
 }
 
 async function handleStartupAuthSubmit(createAccount = false) {
@@ -76869,7 +77456,7 @@ async function handleStartupAuthSubmit(createAccount = false) {
     if (createAccount) {
       const result = await createCloudAccount(email, password);
       if (result.needsConfirmation) {
-        if (status) status.textContent = "Account created. Check your email to confirm it, then sign in.";
+        if (status) status.textContent = "Account created. Check your email to confirm it, then return here to start.";
         return;
       }
     } else {
@@ -76880,29 +77467,58 @@ async function handleStartupAuthSubmit(createAccount = false) {
     if (auth) auth.hidden = true;
     renderStartupActions();
   } catch (error) {
-    if (status) status.textContent = error?.message || "Could not sign in.";
+    if (status) status.textContent = getCloudAuthErrorMessage(error);
+  }
+}
+
+async function handleStartupForgotPassword() {
+  const actions = ensureStartupActions();
+  const email = String(actions?.querySelector("[data-startup-email]")?.value || "").trim();
+  const status = actions?.querySelector("[data-startup-auth-status]");
+  if (!email) {
+    if (status) status.textContent = "Enter your email address first.";
+    return;
+  }
+  if (status) status.textContent = "Sending reset email...";
+  try {
+    await requestCloudPasswordReset(email);
+    if (status) status.textContent = "If that email has a Bubble Borough account, a password reset link is on the way.";
+  } catch (error) {
+    if (status) status.textContent = getCloudAuthErrorMessage(error);
+  }
+}
+
+async function handleStartupCompletePasswordReset() {
+  const actions = ensureStartupActions();
+  const recovery = actions?.querySelector("[data-startup-password-recovery]");
+  const password = String(recovery?.querySelector("[data-startup-new-password]")?.value || "");
+  const confirmation = String(recovery?.querySelector("[data-startup-confirm-password]")?.value || "");
+  const status = recovery?.querySelector("[data-startup-password-recovery-status]");
+  if (status) status.textContent = "Updating password...";
+  try {
+    await completeCloudPasswordReset(password, confirmation);
+    if (status) status.textContent = "";
+    renderStartupActions();
+  } catch (error) {
+    if (status) status.textContent = getCloudAuthErrorMessage(error);
   }
 }
 
 function handleStartupActionClick(event) {
   const target = event.target instanceof Element ? event.target : null;
   if (!target) return;
+  // Button clicks are handled here; Enter is forwarded by the form listener.
+  if (target.closest('button[type="submit"]')) event.preventDefault();
+  if (target.closest("[data-auth-return-login]")) { returnToCloudLogin(); return; }
+  if (target.closest("[data-auth-verify]")) { void handleCloudReauth(); return; }
+  if (target.closest("[data-auth-resend-code]")) { void handleCloudReauth(true); return; }
   if (target.closest("[data-startup-signin]")) { showStartupAuth(); return; }
-  if (target.closest("[data-startup-auth-cancel]")) {
-    const auth = ensureStartupActions()?.querySelector("[data-startup-auth]");
-    if (auth) auth.hidden = true;
-    renderStartupActions();
-    return;
-  }
-  if (target.closest("[data-startup-signin-submit]")) { void handleStartupAuthSubmit(false); return; }
-  if (target.closest("[data-startup-create-submit]")) { void handleStartupAuthSubmit(true); return; }
+  if (target.closest("[data-startup-signin-submit]")) { void runStartupAuthAction(() => handleStartupAuthSubmit(false)); return; }
+  if (target.closest("[data-startup-create-submit]")) { void runStartupAuthAction(() => handleStartupAuthSubmit(true)); return; }
+  if (target.closest("[data-startup-forgot-password]")) { void runStartupAuthAction(handleStartupForgotPassword); return; }
+  if (target.closest("[data-startup-complete-password-reset]")) { void runStartupAuthAction(handleStartupCompletePasswordReset); return; }
   if (target.closest("[data-startup-new]")) {
-    const button = target.closest("[data-startup-new]");
-    showStartupLoadingState(button, "Starting aquarium...");
-    runtime.freshGameSaveLocked = true;
-    primeSoundEffects();
-    playRegularButtonSoundEffect();
-    window.setTimeout(hideLoadingOverlay, 130);
+    void startFromStartup();
     return;
   }
   if (target.closest("[data-startup-continue]")) {
@@ -76935,6 +77551,15 @@ function showStartupLoadingState(button, label) {
   }, 90);
 }
 
+function showStartupAccountWelcome() {
+  const session = getCloudSession();
+  const userId = session?.user?.id || "";
+  const username = getAccountUsernameForUser(userId);
+  if (!userId || !username) return false;
+  window.setTimeout(() => showToast(`Welcome, ${username}!`), 250);
+  return true;
+}
+
 async function continueFromStartup() {
   const button = ensureStartupActions()?.querySelector("[data-startup-continue]");
   showStartupLoadingState(button, "Loading aquarium...");
@@ -76948,17 +77573,85 @@ async function continueFromStartup() {
   primeSoundEffects();
   playRegularButtonSoundEffect();
   hideLoadingOverlay();
+  runtime.cloudAuthNotice = "";
+  runtime.cloudAuthCallbackType = "";
+  showStartupAccountWelcome();
 }
 
 function renderCloudAccountPanel() {
   const container = document.querySelector("[data-cloud-account-panel]");
   if (!container) return;
+  container.closest(".settings-section")?.classList.add("cloud-account-settings-section");
+  container.closest(".settings-panel")?.classList.add("has-cloud-account-ui");
   const session = runtime.cloudSession || getCloudSession();
   const email = session?.user?.email || "";
-  if (!session) {
-    container.innerHTML = `<p class="settings-section-note">Sign in to automatically back up this aquarium and load it on another device.</p><div class="cloud-settings-auth"><input type="email" placeholder="Email" autocomplete="email" data-cloud-settings-email><input type="password" placeholder="Password" autocomplete="current-password" data-cloud-settings-password><div class="overview-actions"><button class="small-button" type="button" data-cloud-settings-signin>Sign In</button><button class="small-button alt" type="button" data-cloud-settings-create>Create Account</button></div><small data-cloud-settings-message></small></div>`;
+  const pendingEmail = session?.user?.new_email || "";
+  const userId = session?.user?.id || "";
+  if (hasCloudPasswordRecoverySession() || !session) {
+    container.innerHTML = getCloudAuthFormMarkup(hasCloudPasswordRecoverySession(), true).replace(" hidden>", ">");
+    container.querySelector("form")?.addEventListener("submit", event => {
+      event.preventDefault();
+      const button = event.target.querySelector('button[type="submit"]');
+      if (button && !button.disabled) button.click();
+    });
   } else {
-    container.innerHTML = `<p><strong>${escapeHtml(email || "Signed in")}</strong></p><div class="cloud-sync-row" data-cloud-sync-status data-status="${escapeHtml(runtime.cloudSyncStatus || "checking")}"><span class="cloud-bubble-spinner" aria-hidden="true"><i></i><i></i><i></i></span><span data-cloud-sync-text>${escapeHtml(runtime.cloudSyncLabel || "Checking cloud save...")}</span></div><div class="overview-actions"><button class="small-button" type="button" data-cloud-sync-now>Sync Now</button><button class="small-button alt" type="button" data-cloud-download-save>Download Save</button><button class="small-button alt" type="button" data-cloud-signout>Sign Out</button></div><small data-cloud-settings-message></small>`;
+    const username = getAccountUsernameForUser(userId);
+    const presentation = getCloudSyncStatusPresentation(runtime.cloudSyncStatus || "checking", runtime.cloudSyncLabel || "");
+    container.innerHTML = `
+      <div class="cloud-account-shell">
+        <header class="cloud-account-hero">
+          <div class="cloud-account-title-group">
+            <span class="cloud-account-title-icon" aria-hidden="true"><span>↑</span><span>↓</span></span>
+            <div><strong>Cloud Save Sync</strong><span>Keep your progress safe across devices.</span></div>
+          </div>
+          <div class="cloud-sync-state-card" data-cloud-sync-status data-status="${escapeHtml(runtime.cloudSyncStatus || "checking")}" role="status" aria-live="polite">
+            <span class="cloud-sync-light" aria-hidden="true"></span>
+            <span class="cloud-sync-state-copy"><strong data-cloud-sync-text>${escapeHtml(presentation.title)}</strong><span data-cloud-sync-detail>${escapeHtml(presentation.detail)}</span></span>
+          </div>
+        </header>
+
+        <section class="cloud-account-details-panel">
+          <div class="cloud-account-section-heading"><strong>Account Details</strong><span>Your account keeps your progress, settings, and unlocks safe.</span></div>
+          <div class="cloud-account-identity-grid">
+            <div class="cloud-account-identity-card">
+              <span class="cloud-account-avatar" aria-hidden="true">●</span>
+              <div class="cloud-account-identity-copy"><span>Username</span><strong>${escapeHtml(username)}</strong></div>
+              <button class="cloud-account-edit-button" type="button" data-cloud-edit-username aria-label="Edit username" title="Edit username">✎</button>
+              <div class="cloud-account-username-editor" data-cloud-username-editor hidden>
+                <input type="text" maxlength="32" autocomplete="nickname" placeholder="Choose a name" value="${escapeHtml(username)}" data-cloud-settings-username>
+                <button class="small-button" type="button" data-cloud-save-username>Save</button>
+                <button class="small-button alt" type="button" data-cloud-cancel-username>Cancel</button>
+              </div>
+            </div>
+            <div class="cloud-account-identity-card">
+              <span class="cloud-account-mail-icon" aria-hidden="true">✉</span>
+              <div class="cloud-account-identity-copy"><span>Email</span><strong>${escapeHtml(email || "Signed in")}</strong>${pendingEmail ? `<small>Pending: ${escapeHtml(pendingEmail)}</small>` : ""}</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="cloud-account-primary-actions">
+          <button class="cloud-account-action cloud-account-action-primary" type="button" data-cloud-sync-now><span class="cloud-account-action-icon" aria-hidden="true">↻</span><span><strong>Sync Now</strong><small>Upload latest save</small></span></button>
+          <button class="cloud-account-action" type="button" data-cloud-download-save><span class="cloud-account-action-icon" aria-hidden="true">⇩</span><span><strong>Download Save</strong><small>Create a backup copy</small></span></button>
+          <button class="cloud-account-action" type="button" data-cloud-signout><span class="cloud-account-action-icon" aria-hidden="true">⇥</span><span><strong>Sign Out</strong><small>Disconnect this account</small></span></button>
+        </div>
+
+        <section class="cloud-account-security" aria-label="Account security">
+          <div class="cloud-account-section-heading"><strong>Account Security</strong><span>Manage recovery and your sign-in email.</span></div>
+          <div class="cloud-account-security-grid">
+            <section class="cloud-account-security-card">
+              <div><strong>Forgot Password</strong><span>Send a password reset link to ${escapeHtml(email || "your account email")}.</span></div>
+              <button class="small-button alt" type="button" data-cloud-settings-signedin-forgot-password>Send Reset Email</button>
+            </section>
+            <section class="cloud-account-security-card cloud-account-security-card-email">
+              <div><strong>Change Email Address</strong><span>We'll verify the new address before changing your sign-in email.</span></div>
+              <div class="cloud-account-email-change-controls"><input type="email" placeholder="New email address" autocomplete="email" data-cloud-settings-new-email><button class="small-button alt" type="button" data-cloud-settings-change-email ${runtime.cloudEmailChangeBusy ? "disabled" : ""}>Change Email</button></div>
+              <small class="cloud-account-email-status" data-cloud-email-status role="status" aria-live="polite">${escapeHtml(runtime.cloudEmailChangeNotice || "")}</small>
+            </section>
+          </div>
+        </section>
+        <small class="cloud-account-message" data-cloud-settings-message>${escapeHtml(runtime.cloudAuthNotice || "")}</small>
+      </div>`;
   }
 }
 
@@ -76966,6 +77659,7 @@ async function handleCloudSettingsClick(event) {
   const target = event.target instanceof Element ? event.target : null;
   const panel = target?.closest("[data-cloud-account-panel]");
   if (!panel) return false;
+  if (target.closest('button[type="submit"]')) event.preventDefault();
   const message = panel.querySelector("[data-cloud-settings-message]");
   const email = String(panel.querySelector("[data-cloud-settings-email]")?.value || "").trim();
   const password = String(panel.querySelector("[data-cloud-settings-password]")?.value || "");
@@ -76980,8 +77674,88 @@ async function handleCloudSettingsClick(event) {
       if (message) message.textContent = "Creating account...";
       const result = await createCloudAccount(email, password);
       if (result.needsConfirmation) {
-        if (message) message.textContent = "Account created. Check your email to confirm it, then sign in.";
+        if (message) message.textContent = "Account created. Check your email to confirm it, then return here.";
       } else renderCloudAccountPanel();
+      return true;
+    }
+    if (target.closest("[data-cloud-settings-forgot-password]")) {
+      if (!email) {
+        if (message) message.textContent = "Enter your email address first.";
+        return true;
+      }
+      if (message) message.textContent = "Sending reset email...";
+      await requestCloudPasswordReset(email);
+      if (message) message.textContent = "If that email has a Bubble Borough account, a password reset link is on the way.";
+      return true;
+    }
+    if (target.closest("[data-cloud-settings-signedin-forgot-password]")) {
+      const session = runtime.cloudSession || getCloudSession();
+      const signedInEmail = String(session?.user?.email || "").trim();
+      if (!signedInEmail) {
+        if (message) message.textContent = "Your account email could not be found. Sign out and sign in again.";
+        return true;
+      }
+      if (message) message.textContent = "Sending reset email...";
+      await requestCloudPasswordReset(signedInEmail);
+      if (message) message.textContent = "Password reset email sent. Check your inbox.";
+      return true;
+    }
+    if (target.closest("[data-cloud-settings-change-email]")) {
+      if (runtime.cloudEmailChangeBusy) return true;
+      const button = panel.querySelector("[data-cloud-settings-change-email]");
+      const nextEmail = String(panel.querySelector("[data-cloud-settings-new-email]")?.value || "").trim();
+      runtime.cloudEmailChangeBusy = true;
+      button.disabled = true;
+      const setNotice = text => {
+        runtime.cloudEmailChangeNotice = text;
+        const status = panel.querySelector("[data-cloud-email-status]");
+        if (status) status.textContent = text;
+      };
+      setNotice("Sending verification instructions...");
+      try {
+        await requestCloudEmailChange(nextEmail);
+        setNotice(`Verification instructions sent for: ${nextEmail}. Follow the instructions sent to your new and, if required, current email address. Your email address will change after all required verifications are complete.`);
+      } catch (error) {
+        setNotice(getCloudAuthErrorMessage(error));
+      } finally {
+        runtime.cloudEmailChangeBusy = false;
+        button.disabled = false;
+      }
+      return true;
+    }
+    if (target.closest("[data-cloud-settings-complete-password-reset]")) {
+      const password = String(panel.querySelector("[data-cloud-settings-new-password]")?.value || "");
+      const confirmation = String(panel.querySelector("[data-cloud-settings-confirm-password]")?.value || "");
+      if (message) message.textContent = "Updating password...";
+      await completeCloudPasswordReset(password, confirmation);
+      dom.loadingOverlay.hidden = false;
+      dom.loadingOverlay.classList.remove("is-hiding");
+      dom.loadingOverlay.classList.add("is-ready");
+      renderStartupActions();
+      renderCloudAccountPanel();
+      return true;
+    }
+    if (target.closest("[data-cloud-edit-username]")) {
+      const editor = panel.querySelector("[data-cloud-username-editor]");
+      if (editor) editor.hidden = false;
+      panel.querySelector("[data-cloud-settings-username]")?.focus();
+      return true;
+    }
+    if (target.closest("[data-cloud-cancel-username]")) {
+      const editor = panel.querySelector("[data-cloud-username-editor]");
+      if (editor) editor.hidden = true;
+      return true;
+    }
+    if (target.closest("[data-cloud-save-username]")) {
+      const session = runtime.cloudSession || getCloudSession();
+      const userId = session?.user?.id || "";
+      const usernameInput = panel.querySelector("[data-cloud-settings-username]");
+      if (!userId || !usernameInput) return true;
+      const profile = sanitizeAccountProfile({ username: usernameInput.value, userId });
+      state.accountProfile = profile;
+      saveState();
+      renderCloudAccountPanel();
+      showToast(profile.username ? `Username saved as ${profile.username}.` : "Username cleared.");
       return true;
     }
     if (target.closest("[data-cloud-sync-now]")) { await uploadCurrentSaveToCloud({ force: true }); return true; }
@@ -76989,20 +77763,33 @@ async function handleCloudSettingsClick(event) {
     if (target.closest("[data-cloud-signout]")) { await signOutCloudAccount(); return true; }
   } catch (error) {
     console.error(error);
-    if (message) message.textContent = error?.message || "Cloud account action failed.";
+    if (message) message.textContent = getCloudAuthErrorMessage(error);
     return true;
   }
   return false;
 }
 
-function initializeCloudSaveRuntime() {
-  runtime.cloudSession = getCloudSession();
+async function initializeCloudSaveRuntime() {
+  const callback = await consumeCloudAuthCallbackFromUrl();
+  runtime.cloudSession = callback.recovery ? null : getCloudSession();
   syncDebugToolsAuthorization();
   runtime.cloudWritesAllowed = false;
   runtime.cloudChecked = false;
   runtime.cloudRevision = Number(getCloudMeta().cloudRevision) || 0;
   setCloudSyncStatus(runtime.cloudSession ? "checking" : "signed-out", runtime.cloudSession ? "Cloud check pending" : "Not signed in");
   renderCloudAccountPanel();
+}
+
+async function runStartupAuthAction(action) {
+  if (runtime.cloudStartupAuthBusy) return;
+  runtime.cloudStartupAuthBusy = true;
+  const actions = ensureStartupActions();
+  actions?.querySelectorAll("button").forEach(button => { button.disabled = true; });
+  try { await action(); }
+  finally {
+    runtime.cloudStartupAuthBusy = false;
+    actions?.querySelectorAll("button").forEach(button => { button.disabled = false; });
+  }
 }
 // </bundle-source>
 

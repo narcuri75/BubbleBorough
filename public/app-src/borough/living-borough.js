@@ -1175,11 +1175,11 @@ function handleLivingBoroughDebugAction(event) {
       queue.active = null;
     }
     fish.behaviorIntent = null;
-    fish.activity = "swim";
+    fish.activity = "roam";
   } else if (action === "action-cancel" && fish) {
     const queue = getFishActionQueueState(fish.id);
     if (queue?.active) cancelFishQueuedAction(fish.id, queue.active.id, now);
-    else { fish.behaviorIntent = null; fish.activity = "swim"; }
+    else { fish.behaviorIntent = null; fish.activity = "roam"; }
   } else if (action === "queue-clear" && fish) {
     const queue = getFishActionQueueState(fish.id, { create: true });
     if (queue.active) finishFishActionQueueItem(fish, queue.active, now, { cancelled: true });
@@ -1210,7 +1210,7 @@ function handleLivingBoroughDebugAction(event) {
   else if (action === "age-set" && fish) fish.acquiredAt = now - Number(value) * DAY_MS;
   else if (action === "birthday" && fish && !isFishDead(fish)) { runtime.debugBirthdayHatFishIds.add(fish.id); pushEvent(`${fish.name} is celebrating a borough birthday!`, now, tank, { type: "birthday", fishId: fish.id }); }
   else if (action === "kill" && fish) markFishAsDead(fish, now, `${fish.name} died during a debug test.`);
-  else if (action === "revive" && fish && isFishDead(fish)) { fish.deadAt = null; fish.activity = "swim"; fish.healthUnits = getFishMaxHealthUnits(fish); fish.decayStage = null; }
+  else if (action === "revive" && fish && isFishDead(fish)) reviveFishForDebug(fish, now);
   else if (action === "memorial" && fish) recordFishMemorial(fish, tank, "Debug memorial record", now);
   else if (action === "relationship" && fish) {
     const other = getAllTankFish(state).find((entry) => entry.id !== fish.id && !isFishDead(entry));

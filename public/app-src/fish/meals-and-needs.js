@@ -234,11 +234,14 @@ function getPelletHitBounds(pellet, now = Date.now()) {
   const scale = clamp(Number(pellet.scale) || 1, 0.75, 1.4) * stableScale * chumScale * variantScale;
   if (appearance.dropStyle === "sprite") {
     const image = appearance.spritePath ? runtime.images.get(appearance.spritePath) : null;
+    const visualSize = getFoodSpriteVisualSize(pellet.foodKey, scale, stableScale);
     const fitScale = image
-      ? Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height))
+      ? Math.min(visualSize.maxSize / Math.max(1, image.width), visualSize.maxSize / Math.max(1, image.height))
       : 1;
-    const width = image ? Math.max(10 * stableScale, image.width * fitScale) : 18 * scale;
-    const height = image ? Math.max(10 * stableScale, image.height * fitScale) : 14 * scale;
+    const fallbackWidth = isPelletSizedFoodSprite(pellet.foodKey) ? 11.6 * scale : 18 * scale;
+    const fallbackHeight = isPelletSizedFoodSprite(pellet.foodKey) ? 6.6 * scale : 14 * scale;
+    const width = image ? Math.max(visualSize.minSize, image.width * fitScale) : fallbackWidth;
+    const height = image ? Math.max(visualSize.minSize, image.height * fitScale) : fallbackHeight;
     return {
       pellet,
       x,

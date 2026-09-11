@@ -1638,9 +1638,10 @@ function drawFoodSpritePieceToContext(context, x, y, pellet, spritePath) {
   const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
   const variantScale = pellet?.foodKey === "chum" ? getChumSpriteVisualScale(spritePath) : 1;
   const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale * chumScale * variantScale;
-  const fitScale = Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height));
-  const drawWidth = Math.max(10 * stableScale, image.width * fitScale);
-  const drawHeight = Math.max(10 * stableScale, image.height * fitScale);
+  const visualSize = getFoodSpriteVisualSize(pellet?.foodKey, scale, stableScale);
+  const fitScale = Math.min(visualSize.maxSize / Math.max(1, image.width), visualSize.maxSize / Math.max(1, image.height));
+  const drawWidth = Math.max(visualSize.minSize, image.width * fitScale);
+  const drawHeight = Math.max(visualSize.minSize, image.height * fitScale);
 
   context.save();
   context.translate(x, y);
@@ -1962,9 +1963,10 @@ function drawFoodSpritePiece(x, y, pellet, spritePath) {
   const chumScale = pellet?.foodKey === "chum" ? 2 : 1;
   const variantScale = pellet?.foodKey === "chum" ? getChumSpriteVisualScale(spritePath) : 1;
   const scale = clamp(Number(pellet?.scale) || 1, 0.8, 1.4) * stableScale * chumScale * variantScale;
-  const fitScale = Math.min((24 * scale) / Math.max(1, image.width), (24 * scale) / Math.max(1, image.height));
-  const drawWidth = Math.max(10 * stableScale, image.width * fitScale);
-  const drawHeight = Math.max(10 * stableScale, image.height * fitScale);
+  const visualSize = getFoodSpriteVisualSize(pellet?.foodKey, scale, stableScale);
+  const fitScale = Math.min(visualSize.maxSize / Math.max(1, image.width), visualSize.maxSize / Math.max(1, image.height));
+  const drawWidth = Math.max(visualSize.minSize, image.width * fitScale);
+  const drawHeight = Math.max(visualSize.minSize, image.height * fitScale);
 
   tankContext.save();
   tankContext.translate(x, y);

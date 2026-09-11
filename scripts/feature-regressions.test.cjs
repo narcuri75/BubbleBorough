@@ -1545,6 +1545,103 @@ test("overview opens from cached previews and refreshes at most one tank per fra
   assert.equal(draws, settledDraws, "settled previews do no extra painting between refreshes");
 });
 
+test("borough snapshots reject stale tank state and cleaning never captures the grime fade", () => {
+  const overview = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const cleaning = fs.readFileSync(path.join(root, "tank/cleaning-and-glass.js"), "utf8");
+  assert.match(overview, /function pruneStaleBoroughOverviewSnapshots/);
+  assert.match(overview, /cached\.signature !== getBoroughSnapshotSignature\(tank\)/);
+  assert.match(overview, /fish: \(tank\?\.fish \|\| \[\]\)\.map/);
+  assert.match(overview, /machinery: machinery\.map/);
+  assert.match(overview, /const previousCleaningTransition = runtime\.cleaningTransition/);
+  assert.match(overview, /runtime\.cleaningTransition = null/);
+  assert.match(cleaning, /state\.poops = \[\];\s+invalidateBoroughOverviewSnapshot\(getCurrentTank\(\)\)/);
+});
+
+test("tank navigation is arrow-only while WASD stays reserved for manual machinery", () => {
+  const source = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  assert.match(source, /ArrowLeft: \[-1, 0\]/);
+  assert.match(source, /ArrowRight: \[1, 0\]/);
+  assert.match(source, /ArrowUp: \[0, -1\]/);
+  assert.match(source, /ArrowDown: \[0, 1\]/);
+  assert.doesNotMatch(source, /const cameraMoves = \{ w:/);
+  assert.match(source, /setBoatManualDriveKey\(key, true\)/);
+  assert.match(source, /setSubmarineManualDriveKey\(key, true\)/);
+});
+
+test("Fish Care sizes its food column from stocked tiles instead of reserving three slots", () => {
+  const source = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const css = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
+  assert.match(source, /const foodSectionWidth = sectionWidthForCount\(foodItems\.length, 248\)/);
+  assert.match(source, /--care-food-min-width: \$\{foodSectionWidth\}px/);
+  assert.match(source, /--care-tray-content-width/);
+  assert.match(css, /#medicineTray[\s\S]*var\(--care-tray-content-width, 624px\)/);
+  assert.match(css, /#medicineTray \.edit-decor-tray-scroller[\s\S]*overflow-x: auto/);
+});
+
+test("signed-in account settings persist a UID-bound username, provide a stable default, and greet that user after startup", () => {
+  const cloud = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
+  const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  assert.match(settings, /accountProfile: sanitizeAccountProfile\(incoming\.accountProfile\)/);
+  assert.match(settings, /\["Buddy", "Guy", "Feller", "Friend", "Pal", "Dude"\]/);
+  assert.match(cloud, /data-cloud-settings-username/);
+  assert.match(cloud, /data-cloud-save-username/);
+  assert.match(cloud, /Welcome, \$\{escapeHtml\(username\)\}!/);
+  const c = load("core/settings-and-persistence.js", ["sanitizeAccountProfile", "getAccountUsernameForUser"], {
+    state: { accountProfile: { username: "  Bubble   Boss  ", userId: "uid-a" } }
+  });
+  assert.deepEqual({ ...c.sanitizeAccountProfile(c.state.accountProfile) }, { username: "Bubble Boss", userId: "uid-a" });
+  assert.equal(c.getAccountUsernameForUser("uid-a"), "Bubble Boss");
+  const fallback = c.getAccountUsernameForUser("uid-b");
+  assert.ok(["Buddy", "Guy", "Feller", "Friend", "Pal", "Dude"].includes(fallback));
+  assert.equal(c.getAccountUsernameForUser("uid-b"), fallback);
+});
+
+test("account UI hides Supabase UID and exposes complete password recovery and email change paths", () => {
+  const cloud = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
+  assert.match(cloud, /<span>Username<\/span>/);
+  assert.match(cloud, /<span>Email<\/span>/);
+  assert.doesNotMatch(cloud, /<span>User ID<\/span>/);
+  const context = vm.createContext({ escapeHtml: String });
+  vm.runInContext(cloud, context);
+  assert.match(context.getCloudAuthFormMarkup(false, true), /data-cloud-settings-forgot-password>[\s\S]*Forgot Password<\/button>/);
+  assert.match(context.getCloudAuthFormMarkup(), /data-startup-forgot-password>[\s\S]*Forgot Password<\/button>/);
+  assert.match(cloud, /\/auth\/v1\/recover\?redirect_to=/);
+  assert.match(cloud, /data-cloud-settings-change-email/);
+  assert.match(cloud, /body: \{ email: normalizedEmail \}/);
+  // Callback verification, password updates, and session isolation are exercised
+  // behaviorally in auth-flows.test.cjs rather than tied to source spelling.
+});
+
+test("cloud account UI uses yellow syncing, green success, red failure, and the startup auth card layout", () => {
+  const cloud = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
+  const css = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
+  assert.match(cloud, /cloud-sync-state-card/);
+  assert.match(cloud, /title: "Syncing\.\.\."/);
+  assert.match(cloud, /title: "Synced"/);
+  assert.match(cloud, /title: "Sync Failed"/);
+  assert.match(css, /cloud-sync-state-card\[data-status="syncing"\][\s\S]*#ffc643/);
+  assert.match(css, /cloud-sync-state-card\[data-status="synced"\][\s\S]*#55ef8a/);
+  assert.match(css, /cloud-sync-state-card\[data-status="error"\][\s\S]*#ff536a/);
+  assert.match(css, /@keyframes cloudSyncPulse/);
+  assert.match(css, /loading-overlay\.is-ready\.is-auth-mode/);
+  assert.match(cloud, /startup-auth-input-wrap/);
+});
+
+test("startup requires account auth before a new aquarium and invite-a-friend is available beside credits", () => {
+  const cloud = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const management = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
+  const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
+  assert.match(cloud, /Sign in or create an account to continue\./);
+  assert.doesNotMatch(cloud, />Start New Aquarium<\/button>/);
+  assert.match(cloud, /data-startup-new>Start<\/button>/);
+  assert.match(cloud, /runtime\.cloudAuthCallbackType === "signup"/);
+  assert.match(bootstrap, /"invite-friend"/);
+  assert.match(management, /data-invite-friend-emails/);
+  assert.match(management, /bcc=\$\{encodeURIComponent\(result\.emails\.join\(","\)\)\}/);
+  assert.match(html, /data-open-invite-friend>[\s\S]*Invite A Friend/);
+});
+
 test("borough overview fish are hard-capped at 12 FPS", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");

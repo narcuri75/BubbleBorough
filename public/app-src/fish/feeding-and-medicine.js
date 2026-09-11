@@ -298,6 +298,7 @@ function releasePelletsTargetingFishIds(fishIds) {
 function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), options = {}) {
   const food = getFoodMeta(foodKey);
   const dropStyle = getFoodDropStyle(food);
+  const pelletLikeDrop = dropStyle !== "sprite" || isPelletSizedFoodSprite(food);
   const spread = Number.isFinite(Number(options.spreadNorm))
     ? Math.max(0, Number(options.spreadNorm))
     : FOOD_DROP_SPREAD_NORM;
@@ -320,8 +321,8 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     yNorm: dropYNorm,
     startYNorm: dropYNorm,
     sway: Math.random(),
-    rotation: dropStyle === "sprite" ? randomBetween(-0.95, 0.95) : randomBetween(-0.22, 0.22),
-    scale: dropStyle === "sprite" ? randomBetween(0.92, 1.18) : randomBetween(0.94, 1.08),
+    rotation: pelletLikeDrop ? randomBetween(-0.22, 0.22) : randomBetween(-0.95, 0.95),
+    scale: pelletLikeDrop ? randomBetween(0.94, 1.08) : randomBetween(0.92, 1.18),
     sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
     dropStartXNorm: hasCustomDropStart ? Number(options.dropStartXNorm) : null,
     dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
@@ -352,6 +353,7 @@ function createAutoDispenserDroppedPellet(storedPellet, now = Date.now()) {
   const layout = getAutoDispenserLayout();
   const food = getFoodMeta(storedPellet.foodKey);
   const dropStyle = getFoodDropStyle(food);
+  const pelletLikeDrop = dropStyle !== "sprite" || isPelletSizedFoodSprite(food);
   const dispenserScale = layout.scale || getViewportStableAssetScale();
   const nozzleXNorm = clamp((layout.nozzle.x + AUTO_DISPENSER_DROP_X_OFFSET_PX * dispenserScale) / TANK_WIDTH, 0.08, 0.92);
   const nozzleYNorm = clamp(layout.nozzle.y / TANK_HEIGHT, 0.02, AUTO_DISPENSER_PELLET_MAX_Y_NORM);
@@ -374,8 +376,8 @@ function createAutoDispenserDroppedPellet(storedPellet, now = Date.now()) {
     yNorm: targetYNorm,
     startYNorm: targetYNorm,
     sway: Math.random(),
-    rotation: dropStyle === "sprite" ? randomBetween(-0.95, 0.95) : randomBetween(-0.22, 0.22),
-    scale: dropStyle === "sprite" ? randomBetween(0.92, 1.18) : randomBetween(0.94, 1.08),
+    rotation: pelletLikeDrop ? randomBetween(-0.22, 0.22) : randomBetween(-0.95, 0.95),
+    scale: pelletLikeDrop ? randomBetween(0.94, 1.08) : randomBetween(0.92, 1.18),
     sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
     dropStartXNorm: nozzleXNorm,
     dropStartYNorm: nozzleYNorm,

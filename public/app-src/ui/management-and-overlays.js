@@ -55,7 +55,7 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
   if (variant === "overlay") {
     const managementStats = stats || getManagementHubStats(Date.now());
     const status = getManagementTankStatus(managementStats);
-    const switchTankDisclaimer = "Use Overview to navigate the borough, or WASD to move through adjacent neighborhoods.";
+    const switchTankDisclaimer = "Use Overview to navigate the borough, or the arrow keys to move through adjacent neighborhoods.";
 
     return `
       <div class="management-summary-strip management-tone-${status.tone}">
@@ -1407,6 +1407,105 @@ function renderCreditsUtilityOverlay() {
     `,
     footer: buildUtilityCloseFooter("Close")
   };
+}
+
+function parseInviteFriendEmails(rawValue) {
+  const entries = String(rawValue || "")
+    .split(/[,;\n]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const unique = [];
+  const seen = new Set();
+  const invalid = [];
+  for (const entry of entries) {
+    const normalized = entry.toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) {
+      invalid.push(entry);
+      continue;
+    }
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      unique.push(entry);
+    }
+  }
+  return { emails: unique, invalid, total: entries.length };
+}
+
+function renderInviteFriendUtilityOverlay() {
+  return {
+    kicker: "Share",
+    title: "Invite A Friend",
+    body: `
+      <div class="utility-confirm-card invite-friend-card">
+        <div class="utility-confirm-copy">
+          <strong>Think someone would like Bubble Borough?</strong>
+          <div class="fish-meta">Enter up to 20 email addresses separated by commas. Recipients are added as BCC so their addresses stay private from each other.</div>
+        </div>
+        <label class="invite-friend-field">
+          <span>Email addresses</span>
+          <textarea rows="5" placeholder="friend@example.com, another@example.com" data-invite-friend-emails></textarea>
+        </label>
+        <div class="invite-friend-meta">
+          <span data-invite-friend-count>0 / 20</span>
+          <span data-invite-friend-status role="status"></span>
+        </div>
+      </div>
+    `,
+    footer: buildUtilityActionsFooter([
+      { label: "Open Email Invite", attribute: "data-send-friend-invite" },
+      { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
+    ]),
+    closable: true
+  };
+}
+
+function handleInviteFriendUtilityOverlayInput(ctx, target) {
+  const input = target?.closest?.("[data-invite-friend-emails]");
+  if (!(input instanceof HTMLTextAreaElement)) return false;
+  const result = parseInviteFriendEmails(input.value);
+  const count = dom.utilityOverlayBody?.querySelector("[data-invite-friend-count]");
+  const status = dom.utilityOverlayBody?.querySelector("[data-invite-friend-status]");
+  if (count) count.textContent = `${result.emails.length} / 20`;
+  if (status) {
+    if (result.invalid.length) status.textContent = `${result.invalid.length} invalid ${result.invalid.length === 1 ? "address" : "addresses"}`;
+    else if (result.emails.length > 20) status.textContent = "Use 20 or fewer addresses at a time.";
+    else status.textContent = "";
+  }
+  return true;
+}
+
+function openInviteFriendEmailComposer() {
+  const input = dom.utilityOverlayBody?.querySelector("[data-invite-friend-emails]");
+  const status = dom.utilityOverlayBody?.querySelector("[data-invite-friend-status]");
+  const result = parseInviteFriendEmails(input instanceof HTMLTextAreaElement ? input.value : "");
+  if (!result.emails.length) {
+    if (status) status.textContent = "Enter at least one valid email address.";
+    input?.focus?.();
+    return false;
+  }
+  if (result.invalid.length) {
+    if (status) status.textContent = `Fix ${result.invalid.length} invalid ${result.invalid.length === 1 ? "address" : "addresses"} first.`;
+    input?.focus?.();
+    return false;
+  }
+  if (result.emails.length > 20) {
+    if (status) status.textContent = "Use 20 or fewer addresses at a time.";
+    input?.focus?.();
+    return false;
+  }
+
+  const subject = "I think you'd like Bubble Borough";
+  const body = [
+    "Hey! I think you'd like Bubble Borough.",
+    "",
+    "It's a browser aquarium game where you build and care for your own little underwater world.",
+    "",
+    "Play here: https://bubbleborough.com/"
+  ].join("\n");
+  const mailto = `mailto:?bcc=${encodeURIComponent(result.emails.join(","))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  if (status) status.textContent = "Opening your email app...";
+  window.location.href = mailto;
+  return true;
 }
 
 function renderDecorBuyConfirmUtilityOverlay() {

@@ -1852,8 +1852,17 @@ test("horizontal care and edit menus render in front of the entire toolbar", () 
   const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
   assert.match(rendering, /horizontalMenuCoversToolbar = runtime\.editTankMode[\s\S]*runtime\.fishEditMode[\s\S]*runtime\.equipmentEditMode[\s\S]*runtime\.tankEditMode[\s\S]*runtime\.foodTrayOpen[\s\S]*runtime\.medicineTrayOpen/);
   assert.match(rendering, /classList\.toggle\("is-behind-horizontal-menu", horizontalMenuCoversToolbar\)/);
-  assert.match(css, /\.tank-bottom-dock\.is-behind-horizontal-menu:not\(\.is-behind-overlay\)\s*\{\s*z-index:\s*6/);
-  assert.match(css, /\.tank-stage > \.edit-decor-tray:not\(\[hidden\]\)\s*\{[\s\S]*?z-index:\s*20/);
+  assert.match(css, /\.tank-bottom-dock\.is-behind-horizontal-menu:not\(\.is-behind-overlay\)\s*\{\s*z-index:\s*3/);
+  assert.match(css, /\.tank-stage\.has-edit-decor-tray > \.tank-overlay\s*\{\s*z-index:\s*20/);
+  assert.match(css, /\.tank-overlay > \.edit-decor-tray:not\(\[hidden\]\)\s*\{\s*z-index:\s*21/);
+  assert.match(css, /\.tank-stage\.has-edit-decor-tray > \.tank-bottom-dock\s*\{\s*z-index:\s*3 !important/);
+});
+
+test("startup Continue is replaced by loading and cannot reappear while the aquarium resolves", () => {
+  const cloud = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
+  assert.match(cloud, /actions\.dataset\.startupPending === "true"[\s\S]*startup-loading-indicator[\s\S]*return;/);
+  assert.match(cloud, /actions\.dataset\.startupLoadingLabel = label;[\s\S]*buttons\.innerHTML = `<div class="startup-loading-indicator"/);
+  assert.doesNotMatch(cloud, /function showStartupLoadingState[\s\S]*?window\.setTimeout\(\(\) => \{[\s\S]*?startup-loading-indicator/);
 });
 
 test("borough edit overview never renders beyond the real 5 by 3 limit", () => {

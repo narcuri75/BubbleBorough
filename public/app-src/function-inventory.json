@@ -5140,8 +5140,8 @@
       "module": "core/cloud-save.js",
       "sourceLine": 787,
       "originalLine": null,
-      "characters": 3309,
-      "sourceHash": "f4fec4e91623bd8f90365ad86a6a5397bd0f8d4671a585408124d1fc3f4e36c6",
+      "characters": 4140,
+      "sourceHash": "99bf74e0d496403c9c43f3c4891ea3d911983f70527bf217dcf12b452506948d",
       "calls": [
         "ensureStartupActions",
         "escapeHtml",
@@ -5153,7 +5153,7 @@
     {
       "name": "showStartupAuth",
       "module": "core/cloud-save.js",
-      "sourceLine": 858,
+      "sourceLine": 875,
       "originalLine": null,
       "characters": 445,
       "sourceHash": "80efda26da3c6a3d38061c1fead2f3edf14f226a4b6f4951d204770907ea3bb7",
@@ -5164,10 +5164,10 @@
     {
       "name": "startFromStartup",
       "module": "core/cloud-save.js",
-      "sourceLine": 869,
+      "sourceLine": 886,
       "originalLine": null,
-      "characters": 671,
-      "sourceHash": "3fde596dd0c7c6ff9e5ab2555d686fb505aab317187baa4134ff063bf42b5ef0",
+      "characters": 735,
+      "sourceHash": "72edd0555a77230a4abbdffe3864330176e04ae0ae1f1631642834b10357079b",
       "calls": [
         "ensureStartupActions",
         "getCloudSession",
@@ -5183,7 +5183,7 @@
     {
       "name": "handleStartupAuthSubmit",
       "module": "core/cloud-save.js",
-      "sourceLine": 888,
+      "sourceLine": 908,
       "originalLine": null,
       "characters": 1226,
       "sourceHash": "0c69233488956f49f074c11b40926e3a4f294398d40e38bc8dc187a2b3a6a911",
@@ -5198,7 +5198,7 @@
     {
       "name": "handleStartupForgotPassword",
       "module": "core/cloud-save.js",
-      "sourceLine": 917,
+      "sourceLine": 937,
       "originalLine": null,
       "characters": 685,
       "sourceHash": "56fc34fadddbc4923490e6a50ec5c1ee1ac66c00a57da6bdb085d7a09a728582",
@@ -5211,7 +5211,7 @@
     {
       "name": "handleStartupCompletePasswordReset",
       "module": "core/cloud-save.js",
-      "sourceLine": 934,
+      "sourceLine": 954,
       "originalLine": null,
       "characters": 753,
       "sourceHash": "dff1d379c2fb4b3868f559b7795fac92262ec89eeabff24d167247158735a58b",
@@ -5225,7 +5225,7 @@
     {
       "name": "handleStartupActionClick",
       "module": "core/cloud-save.js",
-      "sourceLine": 950,
+      "sourceLine": 970,
       "originalLine": null,
       "characters": 1325,
       "sourceHash": "fae1a2f2d02cc6315cec681e4cb84cb4f5846ffb20bc7a19f8d0aa78d89a49b3",
@@ -5242,10 +5242,10 @@
     {
       "name": "showStartupLoadingState",
       "module": "core/cloud-save.js",
-      "sourceLine": 972,
+      "sourceLine": 992,
       "originalLine": null,
-      "characters": 1038,
-      "sourceHash": "1c4130dec47fe0d01d3332cf420743a6a06e71816d268b18c510553cfdeec48b",
+      "characters": 1343,
+      "sourceHash": "287e65e9b53ac8728e9f1a28f1ad5dbe11dfe23120d0e2fcc0ed165bb5bbbad1",
       "calls": [
         "ensureStartupActions",
         "escapeHtml"
@@ -5254,7 +5254,7 @@
     {
       "name": "showStartupAccountWelcome",
       "module": "core/cloud-save.js",
-      "sourceLine": 997,
+      "sourceLine": 1021,
       "originalLine": null,
       "characters": 298,
       "sourceHash": "79a5c46174d6369f0e0d6d2a8989194655e6f3ab05b9a0aaac6fd5631422da75",
@@ -5267,10 +5267,10 @@
     {
       "name": "continueFromStartup",
       "module": "core/cloud-save.js",
-      "sourceLine": 1006,
+      "sourceLine": 1030,
       "originalLine": null,
-      "characters": 640,
-      "sourceHash": "05c3a20bda9fd092e1b88f52978dbe34ac993ae5ea1555862910c1a96d6cfcc7",
+      "characters": 704,
+      "sourceHash": "03a94d3c8b0b0b9a019ded47245803984d74abc1e2ba977c84d062b832fc9935",
       "calls": [
         "ensureStartupActions",
         "getCloudSession",
@@ -5286,7 +5286,7 @@
     {
       "name": "ensureCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 1024,
+      "sourceLine": 1051,
       "originalLine": null,
       "characters": 1176,
       "sourceHash": "fee8b3354b2b17709126d8122f74cd3880c23d50e54839268956c0e4a7a6f997",
@@ -5295,7 +5295,7 @@
     {
       "name": "bindCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 1055,
+      "sourceLine": 1082,
       "originalLine": null,
       "characters": 637,
       "sourceHash": "640263ccfd87fdcb97460544aa97c0543a883e1e74d26190450a6e8bb4b80dda",
@@ -5307,7 +5307,7 @@
     {
       "name": "renderCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 1071,
+      "sourceLine": 1098,
       "originalLine": null,
       "characters": 6925,
       "sourceHash": "7675f1fe560830510afc1956402f4e5d8e9c9c13916036d52a3e0667e5177484",
@@ -5326,7 +5326,7 @@
     {
       "name": "handleCloudSettingsClick",
       "module": "core/cloud-save.js",
-      "sourceLine": 1160,
+      "sourceLine": 1187,
       "originalLine": null,
       "characters": 6368,
       "sourceHash": "45a0f5f6e5cbff31019f2b0c4713fe71a135e2a9f602aeed6f14278889ff5b14",
@@ -5350,7 +5350,7 @@
     {
       "name": "initializeCloudSaveRuntime",
       "module": "core/cloud-save.js",
-      "sourceLine": 1294,
+      "sourceLine": 1321,
       "originalLine": null,
       "characters": 515,
       "sourceHash": "afa76ab1a55bb76df5ccd9da1d2a42e13d560d5e9b432dc730cc9773451a2f39",
@@ -5366,7 +5366,7 @@
     {
       "name": "runStartupAuthAction",
       "module": "core/cloud-save.js",
-      "sourceLine": 1305,
+      "sourceLine": 1332,
       "originalLine": null,
       "characters": 431,
       "sourceHash": "e8bae99fea096856e81f93205bad62498cf85d76fc0faa9e619b979fef1a4d56",
@@ -18250,8 +18250,8 @@
       "module": "fish/meals-and-needs.js",
       "sourceLine": 222,
       "originalLine": 57718,
-      "characters": 1723,
-      "sourceHash": "5f1521955e1b8c66aa7a543acc87b3bdbc26aaddb86088a3d0a04c51213c396c",
+      "characters": 1720,
+      "sourceHash": "82dd1ffbec4427fed45365dad3883ae7d0cd5a3f4e3219e17097254ac2884832",
       "calls": [
         "clamp",
         "getChumSpriteVisualScale",
@@ -28244,8 +28244,8 @@
       "module": "store/catalog.js",
       "sourceLine": 312,
       "originalLine": 34927,
-      "characters": 2180,
-      "sourceHash": "1239e3095087bea191dd233891861c668b426df5361beae014cff0b1151106ef",
+      "characters": 2374,
+      "sourceHash": "ff7a2c9f6a10e2f6908c948c08dd7a610cb6317637a33b684bac8042721e82f8",
       "calls": [
         "escapeHtml",
         "getStoreSearchQuery",
@@ -28258,7 +28258,7 @@
     {
       "name": "setStoreSort",
       "module": "store/catalog.js",
-      "sourceLine": 364,
+      "sourceLine": 368,
       "originalLine": 34988,
       "characters": 346,
       "sourceHash": "42b952ffccfcc9a0f05e94dd8102c68ecb51b4edb5ea33eb89f4daa9164a3df5",
@@ -28271,7 +28271,7 @@
     {
       "name": "setStoreFilter",
       "module": "store/catalog.js",
-      "sourceLine": 380,
+      "sourceLine": 384,
       "originalLine": 35004,
       "characters": 326,
       "sourceHash": "e6faf012906afb6d42d1a0a05b085737eb709c1e272312598bbf0997bdbcfd26",
@@ -28283,7 +28283,7 @@
     {
       "name": "setStoreSearchQuery",
       "module": "store/catalog.js",
-      "sourceLine": 395,
+      "sourceLine": 399,
       "originalLine": 35019,
       "characters": 1046,
       "sourceHash": "53dc092ddd262af6bcb1096069e686c74ff2615f7f1772986ee9d4e2fa601eb5",
@@ -28295,7 +28295,7 @@
     {
       "name": "isFishSpeciesUnlocked",
       "module": "store/catalog.js",
-      "sourceLine": 429,
+      "sourceLine": 433,
       "originalLine": 35053,
       "characters": 100,
       "sourceHash": "579726bf818ef389041aade18924dc9053d59cf3f5ee87ef513adcca08fee29e",
@@ -28306,7 +28306,7 @@
     {
       "name": "getFishShopCatalog",
       "module": "store/catalog.js",
-      "sourceLine": 433,
+      "sourceLine": 437,
       "originalLine": 35057,
       "characters": 240,
       "sourceHash": "0f1f05f8bf9097e2157ce6d450b99a9126508702f08983d8f2185526c25ef26f",
@@ -28319,7 +28319,7 @@
     {
       "name": "getStarterFishSpecies",
       "module": "store/catalog.js",
-      "sourceLine": 441,
+      "sourceLine": 445,
       "originalLine": 35063,
       "characters": 290,
       "sourceHash": "a688dfcd8245a5a408871c6c45ef8cd56fb81d93d0d29132fbf06f2af297b49f",
@@ -28331,7 +28331,7 @@
     {
       "name": "getFishPurchaseCost",
       "module": "store/catalog.js",
-      "sourceLine": 448,
+      "sourceLine": 452,
       "originalLine": 35069,
       "characters": 333,
       "sourceHash": "0a217da3d12dbd5b6eba80a47afcd459d6374cdcc0e1d50407e4c5c53e7473a9",
@@ -28344,7 +28344,7 @@
     {
       "name": "unlockFishSpecies",
       "module": "store/catalog.js",
-      "sourceLine": 461,
+      "sourceLine": 465,
       "originalLine": 35082,
       "characters": 420,
       "sourceHash": "b6d4e2eccd5ee456fed22f25f0eea6e5fe21257442bd52e61f296b04d8fc812e",
@@ -28443,8 +28443,8 @@
       "module": "store/purchases.js",
       "sourceLine": 138,
       "originalLine": 30301,
-      "characters": 1136,
-      "sourceHash": "0a16a24f423d222921609f42ba5b9c39531ff86ecb540fcf0b941e30b029d988",
+      "characters": 1308,
+      "sourceHash": "32810195dc45e19292345e6807bcf54b8d561b24afcb3bb198faef0a0658c07e",
       "calls": [
         "getFoodMeta",
         "renderUi",
@@ -28455,7 +28455,7 @@
     {
       "name": "selectMedicineMode",
       "module": "store/purchases.js",
-      "sourceLine": 174,
+      "sourceLine": 177,
       "originalLine": 30335,
       "characters": 915,
       "sourceHash": "47999a1ab08f30b3848926cb78a6dcecfb1586185a120746fbda332dc3effd3f",
@@ -28469,7 +28469,7 @@
     {
       "name": "ensureFishPurchaseImageReady",
       "module": "store/purchases.js",
-      "sourceLine": 207,
+      "sourceLine": 210,
       "originalLine": null,
       "characters": 939,
       "sourceHash": "d331e109e53895afb73c6fe61f3ab4bd68a32ec1499c1ec1cc5267fe509eccb7",
@@ -28484,7 +28484,7 @@
     {
       "name": "buyFish",
       "module": "store/purchases.js",
-      "sourceLine": 234,
+      "sourceLine": 237,
       "originalLine": 30366,
       "characters": 4910,
       "sourceHash": "f52193e70442ecb7c318b13f80c6acf4fcf5c917a90e8537afd727e10a7e7bf6",
@@ -28523,7 +28523,7 @@
     {
       "name": "buyAnotherCustomFish",
       "module": "store/purchases.js",
-      "sourceLine": 365,
+      "sourceLine": 368,
       "originalLine": 30442,
       "characters": 3317,
       "sourceHash": "fbbe7a80dbee5e66baf010d46cef4cc63303c72b35e2ca7d04755d612c97cb57",
@@ -28555,7 +28555,7 @@
     {
       "name": "buyAnotherFishFromSource",
       "module": "store/purchases.js",
-      "sourceLine": 456,
+      "sourceLine": 459,
       "originalLine": 30507,
       "characters": 391,
       "sourceHash": "9f429b929a1832bb9973bbacc102e6d5ce333c62821f554f9d73aaf9c17ef7cf",
@@ -28571,7 +28571,7 @@
     {
       "name": "requestCommerceConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 472,
+      "sourceLine": 475,
       "originalLine": null,
       "characters": 510,
       "sourceHash": "b0c2b8b534a6f8fc20b35f7a8d587978ce3995e3d2a159bf6a87ee15fae8a3a5",
@@ -28583,7 +28583,7 @@
     {
       "name": "confirmCommerceAction",
       "module": "store/purchases.js",
-      "sourceLine": 486,
+      "sourceLine": 489,
       "originalLine": null,
       "characters": 513,
       "sourceHash": "da358d8d23e39e6a7fc99baccf3cd9c1a2923ca70f866e6e72300baf31b8bf3b",
@@ -28596,7 +28596,7 @@
     {
       "name": "getPendingFishActionDetails",
       "module": "store/purchases.js",
-      "sourceLine": 500,
+      "sourceLine": 503,
       "originalLine": 30523,
       "characters": 607,
       "sourceHash": "8fe1b2e2d59f6896f3f0718f06f9e605669409542007018a04b46c454e54a587",
@@ -28609,7 +28609,7 @@
     {
       "name": "getPendingFishBuyAnotherDetails",
       "module": "store/purchases.js",
-      "sourceLine": 528,
+      "sourceLine": 531,
       "originalLine": 30551,
       "characters": 602,
       "sourceHash": "8b07483991c205246b5b86293666696c4e07b2c7b1a58e3faeaf0830e41c76f2",
@@ -28625,7 +28625,7 @@
     {
       "name": "getPendingFishSellDetails",
       "module": "store/purchases.js",
-      "sourceLine": 549,
+      "sourceLine": 552,
       "originalLine": 30572,
       "characters": 412,
       "sourceHash": "bcdb3e571ea248f03de53b539e5287e3f219d01882f06df3e8cce646d9020bcd",
@@ -28639,7 +28639,7 @@
     {
       "name": "openFishBuyAnotherConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 566,
+      "sourceLine": 569,
       "originalLine": 30589,
       "characters": 770,
       "sourceHash": "f77d93b910c969d34e77f93e9c71ffa8d315e4b54cc3a50fa9f25da7e1d2cb20",
@@ -28652,7 +28652,7 @@
     {
       "name": "openFishSellConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 587,
+      "sourceLine": 590,
       "originalLine": 30625,
       "characters": 627,
       "sourceHash": "14f0887845eacead06daeadab07e84ce98d3ec79b4194965bf988aaa2ddbe2c2",
@@ -28664,7 +28664,7 @@
     {
       "name": "confirmFishBuyAnother",
       "module": "store/purchases.js",
-      "sourceLine": 606,
+      "sourceLine": 609,
       "originalLine": 30655,
       "characters": 539,
       "sourceHash": "2c29d6a5e1590a90f363ebd8f6c5d7582f80d525acb09ddb55fded0d9f115ae2",
@@ -28677,7 +28677,7 @@
     {
       "name": "confirmFishSell",
       "module": "store/purchases.js",
-      "sourceLine": 621,
+      "sourceLine": 624,
       "originalLine": 30681,
       "characters": 400,
       "sourceHash": "aef754f1ddcdaee7a169366a5b59f9a0869fc27ab60dccf63e4d2712fb4469c7",
@@ -28689,7 +28689,7 @@
     {
       "name": "getDecorPurchaseCost",
       "module": "store/purchases.js",
-      "sourceLine": 634,
+      "sourceLine": 637,
       "originalLine": 30701,
       "characters": 258,
       "sourceHash": "99c7565f935f600129d80b812abb40e726bcb2577dc1083247aea9e4c1119d4a",
@@ -28700,7 +28700,7 @@
     {
       "name": "buyDecor",
       "module": "store/purchases.js",
-      "sourceLine": 640,
+      "sourceLine": 643,
       "originalLine": 30706,
       "characters": 2504,
       "sourceHash": "3c32efb08cb725283671b76b39cbb358326107482d1839347af6f5e3b8154e4b",
@@ -28729,7 +28729,7 @@
     {
       "name": "buyAnotherDecor",
       "module": "store/purchases.js",
-      "sourceLine": 710,
+      "sourceLine": 713,
       "originalLine": 30773,
       "characters": 1122,
       "sourceHash": "3204e0ff88f6f6f3fa1e095583d837b89432d0d7176fc0be1819b3da056d4d24",
@@ -28747,7 +28747,7 @@
     {
       "name": "getPendingDecorBuyAnotherDetails",
       "module": "store/purchases.js",
-      "sourceLine": 750,
+      "sourceLine": 753,
       "originalLine": 30811,
       "characters": 433,
       "sourceHash": "1db8d1dfd745f3d10d1ef0241d3d64c5705bb1afcffb5be82cd3a37837bb283b",
@@ -28758,7 +28758,7 @@
     {
       "name": "getPendingDecorSellDetails",
       "module": "store/purchases.js",
-      "sourceLine": 771,
+      "sourceLine": 774,
       "originalLine": 30832,
       "characters": 538,
       "sourceHash": "e63fc50276c4312a3ae677b745bbc32b7872be3df7376a1993cbc3708a719ac6",
@@ -28772,7 +28772,7 @@
     {
       "name": "openDecorBuyAnotherConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 796,
+      "sourceLine": 799,
       "originalLine": 30857,
       "characters": 806,
       "sourceHash": "958f80d006fef37c6c6fee06c4d2aa8e027524d383fe146879a576f84888cb78",
@@ -28786,7 +28786,7 @@
     {
       "name": "openDecorSellConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 818,
+      "sourceLine": 821,
       "originalLine": 30882,
       "characters": 551,
       "sourceHash": "abc1f70c9538bd4cdf9418c8128dcc7a29d9113fb9f67aaa3f4495e04d5ff22d",
@@ -28798,7 +28798,7 @@
     {
       "name": "confirmDecorBuyAnother",
       "module": "store/purchases.js",
-      "sourceLine": 833,
+      "sourceLine": 836,
       "originalLine": 30900,
       "characters": 341,
       "sourceHash": "da680bfd5e5d4adf0189e1943c032ece644f28ec4ab4da661cd2189d9828d974",
@@ -28811,7 +28811,7 @@
     {
       "name": "confirmDecorSell",
       "module": "store/purchases.js",
-      "sourceLine": 844,
+      "sourceLine": 847,
       "originalLine": 30918,
       "characters": 326,
       "sourceHash": "1da048bd738383628b884f2612ca2842f866c51f53a2c787066c2d3e6f95d1fe",
@@ -28823,7 +28823,7 @@
     {
       "name": "buyBackground",
       "module": "store/purchases.js",
-      "sourceLine": 853,
+      "sourceLine": 856,
       "originalLine": 30936,
       "characters": 714,
       "sourceHash": "de56e143318b630cbf367064d5478a4ca04d5567ac636ef4e565a1a6ecf633de",
@@ -28837,7 +28837,7 @@
     {
       "name": "buyAutoDispenser",
       "module": "store/purchases.js",
-      "sourceLine": 877,
+      "sourceLine": 880,
       "originalLine": 30992,
       "characters": 673,
       "sourceHash": "f1c5278c2a42b4eca32ce3139f2ab54691159e218227cc5ca2aec191c4ae1d23",
@@ -28852,7 +28852,7 @@
     {
       "name": "buyUvLight",
       "module": "store/purchases.js",
-      "sourceLine": 897,
+      "sourceLine": 900,
       "originalLine": 31016,
       "characters": 665,
       "sourceHash": "ffa5a71be710292d107a7457b95489506b0f8deb41f1004137353b5dfb3b03e4",
@@ -30548,8 +30548,8 @@
       "module": "tank/catalog-and-equipment.js",
       "sourceLine": 1014,
       "originalLine": null,
-      "characters": 300,
-      "sourceHash": "429fe2bb73dbff34c56e276943f41b422b5cfb83b46679d8f947fe6d0b1aa64c",
+      "characters": 451,
+      "sourceHash": "dde01fe4842a2f8c430a068a858e45fb499c5598818a89185a285d4e366c459b",
       "calls": [
         "getViewportStableAssetScale",
         "isPelletSizedFoodSprite"
@@ -30558,7 +30558,7 @@
     {
       "name": "getChumSpriteVisualScale",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1027,
+      "sourceLine": 1029,
       "originalLine": null,
       "characters": 443,
       "sourceHash": "0907a1175543317e61a55b7579110f7d23ae9a089b32ebd4e067f0edc3496ff6",
@@ -30567,7 +30567,7 @@
     {
       "name": "getFoodDropAppearance",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1040,
+      "sourceLine": 1042,
       "originalLine": 3804,
       "characters": 1092,
       "sourceHash": "9bf9a9ba175f37a27e6a94fc77e3f37b010c90a3fb313e4b4d61fd8b8ff1a501",
@@ -30582,7 +30582,7 @@
     {
       "name": "getDefaultMedicineInventory",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1059,
+      "sourceLine": 1061,
       "originalLine": 3823,
       "characters": 129,
       "sourceHash": "07621c0aee4d2ee82ce10d487e37ffbb1b97faed877d71a00f04bd32f1a38171",
@@ -30593,7 +30593,7 @@
     {
       "name": "sanitizeDispenserStoredPellet",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1063,
+      "sourceLine": 1065,
       "originalLine": 3827,
       "characters": 388,
       "sourceHash": "5889a9bed5703583bd4d27781d4c1d2422727f3bb06a5e3da185f1bf9f62e50d",
@@ -30606,7 +30606,7 @@
     {
       "name": "createDefaultAutoDispenserState",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1080,
+      "sourceLine": 1082,
       "originalLine": 3844,
       "characters": 1062,
       "sourceHash": "b1a6760a72f4016176203b526de8aac5ae027e7ed5231a1991ed82c4e7c46615",
@@ -30619,7 +30619,7 @@
     {
       "name": "getAutoDispenserLoadedCount",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1102,
+      "sourceLine": 1104,
       "originalLine": 3866,
       "characters": 161,
       "sourceHash": "5b6bbba76cba57a511bc0e621c7f02851b7b053a1f89bd5b90fc86692ba96a7e",
@@ -30628,7 +30628,7 @@
     {
       "name": "isAutoDispenserFoodLow",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1106,
+      "sourceLine": 1108,
       "originalLine": 3870,
       "characters": 403,
       "sourceHash": "bbcc6d9bdb3479749522a58f4128c53b9555a47e0b24b29a07feac187cc657a5",
@@ -30640,7 +30640,7 @@
     {
       "name": "hasAutoDispenserInstalled",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1120,
+      "sourceLine": 1122,
       "originalLine": 3884,
       "characters": 85,
       "sourceHash": "b7c2f8e3db659e9c5d4355521654198aec6d31998939ec0f3199efd3bd0a8363",
@@ -34335,8 +34335,8 @@
       "module": "ui/customization-actions-and-inventory.js",
       "sourceLine": 3474,
       "originalLine": 48072,
-      "characters": 5379,
-      "sourceHash": "c1ea1d7b922c8115b3486e28d6dce9131fb9c6676a13e6588b043b791f1da70c",
+      "characters": 5365,
+      "sourceHash": "258ff6715d1f37a363c210a223792fe423ec990324f169aa6c7f5f7a5e0bcaab",
       "calls": [
         "assetImageAttributes",
         "clamp",

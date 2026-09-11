@@ -17735,10 +17735,19 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
 
 /* BubbleBodega + horizontal tray polish ---------------------------------- */
 /* Horizontal trays must always paint above the toolbar when their bounds
-   overlap. This also covers compact landscape layouts where both controls
-   are promoted to high stacking layers. */
-.tank-stage > .edit-decor-tray:not([hidden]) {
+   overlap. The trays live inside .tank-overlay, while the toolbar is promoted
+   to a direct child of .tank-stage, so the parent stacking context must move
+   above the toolbar rather than only increasing the tray child z-index. */
+.tank-stage.has-edit-decor-tray > .tank-overlay {
   z-index: 20;
+}
+
+.tank-overlay > .edit-decor-tray:not([hidden]) {
+  z-index: 21;
+}
+
+.tank-stage.has-edit-decor-tray > .tank-bottom-dock {
+  z-index: 3 !important;
 }
 
 /* In All Items, every top-level category gets the same white section bar.

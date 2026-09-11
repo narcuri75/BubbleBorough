@@ -77563,6 +77563,23 @@ function renderStartupActions() {
   const overlay = dom.loadingOverlay;
   const result = actions.querySelector("[data-startup-result]");
   const reauth = actions.querySelector("[data-startup-reauth]");
+
+  // Once Continue/Start has been pressed, startup owns this area until loading
+  // finishes. Cloud/session refreshes can call renderStartupActions while the
+  // aquarium is still resolving, so never rebuild the welcome button during
+  // that pending window.
+  if (actions.dataset.startupPending === "true") {
+    const loadingLabel = actions.dataset.startupLoadingLabel || "Loading aquarium...";
+    buttons.innerHTML = `<div class="startup-loading-indicator" role="status"><span aria-hidden="true"></span>${escapeHtml(loadingLabel)}</div>`;
+    auth.hidden = true;
+    recovery.hidden = true;
+    if (result) result.hidden = true;
+    if (reauth) reauth.hidden = true;
+    overlay?.classList.remove("is-auth-mode", "is-welcome-mode");
+    if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
+    return;
+  }
+
   result.hidden = true;
   reauth.hidden = true;
   if (runtime.cloudAuthScreen || runtime.cloudReauth) {
@@ -77642,7 +77659,10 @@ async function startFromStartup() {
   if (getCloudSession()) await resolveCloudAfterLogin({ source: "startup" });
   if (document.querySelector("[data-cloud-dialog]")) {
     const actions = ensureStartupActions();
-    if (actions) delete actions.dataset.startupPending;
+    if (actions) {
+      delete actions.dataset.startupPending;
+      delete actions.dataset.startupLoadingLabel;
+    }
     renderStartupActions();
     return;
   }
@@ -77743,6 +77763,7 @@ function showStartupLoadingState(button, label) {
   const buttons = actions?.querySelector("[data-startup-buttons]");
   if (!actions || !buttons || actions.dataset.startupPending === "true") return;
   actions.dataset.startupPending = "true";
+  actions.dataset.startupLoadingLabel = label;
   const trivia = document.querySelector("[data-loading-trivia]");
   if (trivia) {
     const messages = [
@@ -77758,9 +77779,12 @@ function showStartupLoadingState(button, label) {
     button.disabled = true;
     button.classList.add("is-pressed");
   }
-  window.setTimeout(() => {
-    buttons.innerHTML = `<div class="startup-loading-indicator" role="status"><span aria-hidden="true"></span>${escapeHtml(label)}</div>`;
-  }, 90);
+
+  // Replace the welcome action immediately. Waiting even a single frame gives
+  // async cloud-state renders a chance to put Continue back on screen.
+  buttons.innerHTML = `<div class="startup-loading-indicator" role="status"><span aria-hidden="true"></span>${escapeHtml(label)}</div>`;
+  dom.loadingOverlay?.classList.remove("is-auth-mode", "is-welcome-mode");
+  if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
 }
 
 function showStartupAccountWelcome() {
@@ -77778,7 +77802,10 @@ async function continueFromStartup() {
   if (getCloudSession()) await resolveCloudAfterLogin({ source: "startup" });
   if (document.querySelector("[data-cloud-dialog]")) {
     const actions = ensureStartupActions();
-    if (actions) delete actions.dataset.startupPending;
+    if (actions) {
+      delete actions.dataset.startupPending;
+      delete actions.dataset.startupLoadingLabel;
+    }
     renderStartupActions();
     return;
   }

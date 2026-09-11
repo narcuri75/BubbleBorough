@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260910-balance-cloud-r4" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260911-loading-experiences-r1" />
   <style>
     #lightsOutToggleButton:disabled {
       opacity: 0.38;
@@ -73,6 +73,16 @@
           <canvas id="glassCanvas" width="1280" height="720"></canvas>
 
           <section id="boroughOverview" class="borough-overview" hidden aria-label="Bubble Borough overview">
+            <div id="boroughOverviewLoading" class="borough-overview-loading" hidden role="status" aria-live="polite">
+              <div class="borough-overview-loading-scene" aria-hidden="true">
+                <span class="borough-overview-loading-fish"></span>
+                <span class="borough-overview-loading-bubble bubble-one"></span>
+                <span class="borough-overview-loading-bubble bubble-two"></span>
+                <span class="borough-overview-loading-bubble bubble-three"></span>
+              </div>
+              <strong>Loading...</strong>
+              <span data-borough-overview-loading-copy>Surveying the borough</span>
+            </div>
             <div class="borough-overview-header">
               <div>
                 <span class="borough-overview-kicker">Bubble Borough</span>
@@ -483,6 +493,11 @@
 
                 <div class="store-panel-body tankazon-body">
                   <main id="tankazonCatalogArea" class="tankazon-catalog-area">
+                    <div id="tankazonCatalogLoading" class="tankazon-catalog-loading" hidden role="status" aria-live="polite">
+                      <div class="tankazon-catalog-loading-box" aria-hidden="true"></div>
+                      <strong>Loading...</strong>
+                      <span data-tankazon-loading-copy>Stocking the shelves</span>
+                    </div>
                     <section id="tankazonItemPage" class="tankazon-item-page" aria-labelledby="tankazonItemTitle" hidden>
                       <button id="tankazonItemBack" class="tankazon-item-back" type="button">← Back to results</button>
                       <div id="tankazonItemCategory" class="tankazon-item-category"></div>
@@ -1373,12 +1388,96 @@
       let allCategoriesScrollTop = 0;
       let selectedItem = null;
       let itemReturnScrollTop = 0;
+      let tankazonLoadingToken = 0;
+      let tankazonLoadingStartedAt = 0;
 
       const overlay = () => document.getElementById("storeOverlay");
       const drawers = () => CATEGORY_IDS.map((id) => document.querySelector(`[data-tankazon-category="${id}"]`)).filter(Boolean);
       const scope = () => document.getElementById("tankazonSearchScope")?.value || "all";
       const typedQuery = () => (document.getElementById("tankazonSearchInput")?.value || "").trim().toLowerCase();
       const query = () => committedSearchQuery;
+
+      function getTankazonLoadingCopy(category) {
+        return ({
+          food: "Restocking the food aisle",
+          pharmacy: "Checking the medicine cabinet",
+          fish: "Acclimating new arrivals",
+          decor: "Unpacking tank decor",
+          equipment: "Testing the equipment",
+          all: "Opening every aisle"
+        })[category] || "Stocking the shelves";
+      }
+
+      function getTankazonVisibleProductImages(category) {
+        const catalog = document.getElementById("tankazonCatalogArea");
+        if (!catalog) return [];
+        const selector = category === "all"
+          ? ".store-drawer:not([hidden]) .shop-card img"
+          : `[data-tankazon-category="${category}"]:not([hidden]) .shop-card img`;
+        const images = [...catalog.querySelectorAll(selector)].filter((image) => image.getAttribute("src") || image.getAttribute("data-sprite-src"));
+        const bounds = catalog.getBoundingClientRect();
+        const onScreen = images.filter((image) => {
+          const rect = image.getBoundingClientRect();
+          return rect.bottom >= bounds.top - 80 && rect.top <= bounds.bottom + 180;
+        });
+        return (onScreen.length ? onScreen : images).slice(0, 18);
+      }
+
+      function waitForTankazonImage(image) {
+        if (!(image instanceof HTMLImageElement)) return Promise.resolve();
+        if (image.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          const done = () => {
+            image.removeEventListener("load", done);
+            image.removeEventListener("error", done);
+            resolve();
+          };
+          image.addEventListener("load", done, { once: true });
+          image.addEventListener("error", done, { once: true });
+        });
+      }
+
+      async function settleTankazonCatalogLoading(category, token) {
+        await waitForTankazonRender();
+        if (token !== tankazonLoadingToken) return;
+
+        const images = getTankazonVisibleProductImages(category);
+        if (images.length) {
+          await Promise.race([
+            Promise.all(images.map(waitForTankazonImage)),
+            new Promise((resolve) => setTimeout(resolve, 1800))
+          ]);
+        }
+
+        const elapsed = performance.now() - tankazonLoadingStartedAt;
+        if (elapsed < 220) {
+          await new Promise((resolve) => setTimeout(resolve, 220 - elapsed));
+        }
+        if (token !== tankazonLoadingToken) return;
+
+        const loader = document.getElementById("tankazonCatalogLoading");
+        const catalog = document.getElementById("tankazonCatalogArea");
+        if (loader) loader.hidden = true;
+        if (catalog) {
+          catalog.classList.remove("is-loading");
+          catalog.removeAttribute("aria-busy");
+        }
+      }
+
+      function beginTankazonCatalogLoading(category = "all") {
+        const loader = document.getElementById("tankazonCatalogLoading");
+        const catalog = document.getElementById("tankazonCatalogArea");
+        if (!loader || !catalog) return;
+        const token = ++tankazonLoadingToken;
+        tankazonLoadingStartedAt = performance.now();
+        const copy = loader.querySelector("[data-tankazon-loading-copy]");
+        if (copy) copy.textContent = getTankazonLoadingCopy(category);
+        loader.hidden = false;
+        catalog.classList.add("is-loading");
+        catalog.setAttribute("aria-busy", "true");
+        catalog.scrollTop = 0;
+        void settleTankazonCatalogLoading(category, token);
+      }
 
       function saveTankazonCart() {
         try {
@@ -1928,6 +2027,7 @@
       }
 
       function showAllCategories() {
+        beginTankazonCatalogLoading("all");
         closeTankazonItem(false);
         allCategoriesMode = true;
         allCategoriesScrollTop = 0;
@@ -2204,6 +2304,7 @@
       window.addEventListener("bubbleborough:store-tab", (event) => {
         const category = event.detail?.category;
         if (!category || !getTankazonCategoryTab(category)) return;
+        beginTankazonCatalogLoading(category);
         if (selectedItem) closeTankazonItem(false);
         allCategoriesMode = false;
         document.getElementById("tankazonAllCategories")?.classList.remove("is-active");
@@ -2284,11 +2385,12 @@
         }
         const tab = event.target.closest?.(".store-tab-button");
         if (tab) {
+          const category = tab.id === "storeFoodTab" ? "food" : tab.id === "storePharmacyTab" ? "pharmacy" : tab.id === "storeFishTab" ? "fish" : tab.id === "storeDecorTab" ? "decor" : "equipment";
+          beginTankazonCatalogLoading(category);
           closeTankazonItem(false);
           allCategoriesMode = false;
           document.getElementById("tankazonAllCategories")?.classList.remove("is-active");
           document.getElementById("tankazonAllCategories")?.setAttribute("aria-pressed", "false");
-          const category = tab.id === "storeFoodTab" ? "food" : tab.id === "storePharmacyTab" ? "pharmacy" : tab.id === "storeFishTab" ? "fish" : tab.id === "storeDecorTab" ? "decor" : "equipment";
           saveTankazonView(category);
           const select = document.getElementById("tankazonSearchScope");
           if (select) select.value = category;
@@ -2350,6 +2452,7 @@
           if (justOpened) {
             const savedView = storeOverlay.dataset.requestedCategory || restoreTankazonView();
             delete storeOverlay.dataset.requestedCategory;
+            beginTankazonCatalogLoading(savedView);
 
             // Let Bubble Borough finish its normal Food-store opening first.
             // Then use the real category tab so the native store renderer
@@ -2410,6 +2513,102 @@
       normalizeTankazonPurchaseButtons();
       renderCart();
       syncTankazonNavState();
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const overview = document.getElementById("boroughOverview");
+      const grid = document.getElementById("boroughGrid");
+      const loader = document.getElementById("boroughOverviewLoading");
+      if (!overview || !grid || !loader) return;
+
+      const loadingMessages = [
+        "Surveying the borough",
+        "Checking every tank",
+        "Waking up the neighborhood"
+      ];
+      let loadingToken = 0;
+      let loadingStartedAt = 0;
+      let messageTimer = 0;
+
+      function stopLoadingMessages() {
+        if (messageTimer) window.clearInterval(messageTimer);
+        messageTimer = 0;
+      }
+
+      function finishOverviewLoading(token) {
+        if (token !== loadingToken) return;
+        stopLoadingMessages();
+        loader.hidden = true;
+        overview.classList.remove("is-loading-overview");
+        grid.removeAttribute("aria-busy");
+      }
+
+      function areOverviewPreviewsReady() {
+        const canvases = [...grid.querySelectorAll("canvas[data-borough-snapshot-tank-id]")];
+        if (!canvases.length) return grid.children.length > 0;
+        return canvases.every((canvas) => canvas.classList.contains("is-ready"));
+      }
+
+      function waitForOverviewPreviews(token) {
+        const maxWaitMs = 4500;
+        const minimumMs = 260;
+        const check = () => {
+          if (token !== loadingToken || overview.hidden) {
+            finishOverviewLoading(token);
+            return;
+          }
+          const elapsed = performance.now() - loadingStartedAt;
+          if ((areOverviewPreviewsReady() && elapsed >= minimumMs) || elapsed >= maxWaitMs) {
+            finishOverviewLoading(token);
+            return;
+          }
+          window.setTimeout(check, 45);
+        };
+        requestAnimationFrame(() => requestAnimationFrame(check));
+      }
+
+      function beginOverviewLoading() {
+        const token = ++loadingToken;
+        loadingStartedAt = performance.now();
+        loader.hidden = false;
+        overview.classList.add("is-loading-overview");
+        grid.setAttribute("aria-busy", "true");
+
+        stopLoadingMessages();
+        let messageIndex = 0;
+        const copy = loader.querySelector("[data-borough-overview-loading-copy]");
+        if (copy) copy.textContent = loadingMessages[messageIndex];
+        messageTimer = window.setInterval(() => {
+          if (token !== loadingToken || loader.hidden) {
+            stopLoadingMessages();
+            return;
+          }
+          messageIndex = (messageIndex + 1) % loadingMessages.length;
+          if (copy) copy.textContent = loadingMessages[messageIndex];
+        }, 700);
+
+        waitForOverviewPreviews(token);
+      }
+
+      document.addEventListener("click", (event) => {
+        const trigger = event.target.closest?.("#overviewButton, [data-open-aquarium-overview]");
+        if (trigger && overview.hidden) beginOverviewLoading();
+      }, true);
+
+      const observer = new MutationObserver(() => {
+        if (overview.hidden) {
+          ++loadingToken;
+          stopLoadingMessages();
+          loader.hidden = true;
+          overview.classList.remove("is-loading-overview");
+          grid.removeAttribute("aria-busy");
+          return;
+        }
+        if (loader.hidden && !areOverviewPreviewsReady()) beginOverviewLoading();
+      });
+      observer.observe(overview, { attributes: true, attributeFilter: ["hidden"] });
     })();
   </script>
 

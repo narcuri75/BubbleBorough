@@ -303,7 +303,7 @@ const PERSONALITY_RARITY_VARIATION = "variation";
 const PERSONALITY_RARITY_ODDBALL = "oddball";
 const BEHAVIOR_SIGNAL_EXPIRY_MS = 12 * MINUTE_MS;
 const BEHAVIOR_SIGNAL_COOLDOWN_MS = 4 * MINUTE_MS;
-const BEHAVIOR_INTENT_LINGER_MS = 90 * 1000;
+const BEHAVIOR_INTENT_LINGER_MS = 12 * 1000;
 const FOOD_REFUSAL_RETARGET_MS = 80 * 1000;
 const BEHAVIOR_RELATIONSHIP_CHECK_MS = 2 * MINUTE_MS;
 const DISEASE_AVOIDANCE_CHECK_MIN_MS = 900;
@@ -7057,6 +7057,9 @@ function getTankComfortFacts(tank = getCurrentTank(), now = Date.now()) {
 }
 
 function isFishNeedMet(fish, needTag, tank = getCurrentTank(), facts = getTankComfortFacts(tank)) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return true;
+  }
   const tag = String(needTag || "").toLowerCase();
   const species = getSpeciesForFish(fish);
   switch (tag) {
@@ -7091,6 +7094,9 @@ function getFishNeedsStatus(fish, tank = getCurrentTank(), now = Date.now()) {
 
 function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts = getTankComfortFacts(tank)) {
   if (!fish || isFishDead(fish)) {
+    return false;
+  }
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     return false;
   }
   const tag = String(conflictTag || "").toLowerCase();
@@ -20625,10 +20631,16 @@ function isActiveDiseaseState(stateId) {
 }
 
 function hasActiveFishDisease(fish) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
   return Boolean(fish && isActiveDiseaseState(fish.diseaseState));
 }
 
 function isFishDiseaseVisible(fish) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
   return [
     DISEASE_STATE_EARLY,
     DISEASE_STATE_VISIBLE,
@@ -22066,9 +22078,11 @@ function applyBehaviorTarget(fish, species, target, now = Date.now()) {
     fish.swimSpeed = normalizeFishSpeed(species, target.slow ? randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.72)) : undefined);
   }
   if (target.intentType) {
+    const intentDurationMs = Math.max(1200, Math.min(18000, (Number(fish.targetAt) || now + 4000) - now + 900));
     setFishBehaviorIntent(fish, target.intentType, target.intentCause || "", now, {
       targetId: target.intentTargetId || target.hangoutDecorId || target.decorId || "",
-      targetName: target.intentTargetName || ""
+      targetName: target.intentTargetName || "",
+      durationMs: intentDurationMs
     });
   }
   if (target.signalType) {
@@ -22469,6 +22483,10 @@ function pickPersonalityDecorBehaviorTarget(fish, species, now = Date.now()) {
 
 function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish) || isUndeadFish(fish)) {
+    return false;
+  }
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    fish.behaviorIntent = null;
     return false;
   }
   if (applyDiseaseAvoidanceTarget(fish, species, now)) {
@@ -43268,10 +43286,16 @@ function hasPiranhaContext() {
 }
 
 function isFishSickOrDying(fish) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
   return Boolean(fish && !isFishDead(fish) && fish.healthUnits <= getFishSickHealthUnitsThreshold(fish));
 }
 
 function isFishCriticallyLowHealth(fish) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
   return Boolean(
     fish
     && !isFishDead(fish)
@@ -43342,6 +43366,7 @@ function getFishMaxHealthUnits(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishHealthRatio(fish, species = getSpeciesForFish(fish)) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return 1;
   if (hasActiveCandyBoost(fish)) return 1;
   return clamp((Number(fish?.healthUnits) || 0) / Math.max(1, getFishMaxHealthUnits(fish, species)), 0, 1);
 }
@@ -44833,6 +44858,9 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   ) {
     return null;
   }
+  if (Number.isFinite(Number(fish.followCooldownUntil)) && now < Number(fish.followCooldownUntil)) {
+    return null;
+  }
 
   const schoolingStrength = getFishSchoolingStrength(fish, species);
   if (schoolingStrength <= 0.025) {
@@ -44882,6 +44910,7 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   );
   fish.followFishId = leader.id;
   fish.followUntil = followUntil;
+  fish.followCooldownUntil = followUntil + randomBetween(2200, 5200);
   fish.followOffsetXNorm = null;
   fish.followOffsetYNorm = null;
   const anchor = getFishSchoolFollowAnchor(fish, leader);
@@ -45437,9 +45466,7 @@ function openFishInspector(fishId, options = {}) {
   closeFishActionMenu();
   runtime.selectedFishId = fishId;
   runtime.selectedFishStatusFishId = fishId;
-  if (options.settingsOpen === true) {
-    runtime.fishInspectorSettingsOpen = true;
-  }
+  runtime.fishInspectorSettingsOpen = options.settingsOpen !== false;
   renderUi(Date.now());
 }
 
@@ -59430,7 +59457,9 @@ function renderSelectedFishNeedsPanel(now = Date.now()) {
   }
 
 function renderFishInspector(now) {
-  const managed = getManagedFishById(runtime.selectedFishId);
+  const managed = runtime.fishInspectorSettingsOpen
+    ? getManagedFishById(runtime.selectedFishId)
+    : null;
   if (!managed) {
     runtime.selectedFishId = null;
     runtime.fishInspectorSettingsOpen = false;
@@ -59478,7 +59507,11 @@ function renderFishInspector(now) {
   const needsSnapshot = inStorage || dead ? null : getFishNeedsSnapshot(fish, now);
   dom.fishInspector.hidden = false;
   setTextIfChanged(dom.inspectorSpecies, getFishInspectorSpeciesLabel(fish, species));
-  const inspectorHeartsMarkup = renderHearts(fish.healthUnits, getFishMaxHealthUnits(fish, baseSpecies));
+  const inspectorMaxHealthUnits = getFishMaxHealthUnits(fish, baseSpecies);
+  const inspectorHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !dead
+    ? inspectorMaxHealthUnits
+    : fish.healthUnits;
+  const inspectorHeartsMarkup = renderHearts(inspectorHealthUnits, inspectorMaxHealthUnits);
   if (dom.inspectorHealth.innerHTML !== inspectorHeartsMarkup) {
     dom.inspectorHealth.innerHTML = inspectorHeartsMarkup;
   }
@@ -64376,6 +64409,7 @@ function getFishProfileHoverTarget(fish, species, layer, profile) {
 }
 
 function assignSpeciesRoamTarget(fish, species, now) {
+  fish.behaviorIntent = null;
   const profile = getFishLocomotionProfile(fish || species);
   const nextRoamLayer = clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
   const hoverTarget = getFishProfileHoverTarget(fish, species, getFishTankLayer(fish), profile);
@@ -64817,6 +64851,13 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
 
     if (!fish) {
       return true;
+    }
+
+    // Force at least one non-hangout target between visits to the same piece
+    // of decor. Without this, high-affinity/homebody fish can select one
+    // favorite zone every time their target expires and appear stuck in a loop.
+    if (options.allowSameDecor !== true && fish.hangoutDecorId && zone.decorId === fish.hangoutDecorId) {
+      return false;
     }
 
     const residenceItem = state.placedDecor.find((item) => item.id === zone.decorId);
@@ -70926,7 +70967,10 @@ function drawFish(now, layer = null, options = {}) {
           : (comfort?.value || 0) <= 0.64
             ? "warn"
             : "good";
-      const heartCount = Math.max(0, (Number(fish.healthUnits) || 0) / 2);
+      const displayHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !pose.isDead
+        ? getFishMaxHealthUnits(fish, species)
+        : (Number(fish.healthUnits) || 0);
+      const heartCount = Math.max(0, displayHealthUnits / 2);
       const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
       const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
       const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;
@@ -76378,28 +76422,17 @@ function setFishDirection(fish, desiredDirection, species, now) {
   if (getEffectiveFishBehavior(fish, species) !== "sucker") {
     const currentDisplayDirection = getFishFacingDirection(fish);
     const currentDisplayAngle = currentDisplayDirection < 0 ? Math.PI : 0;
-    fish.direction = nextDirection;
 
     if (fish.turnStartedAt && fish.turnDurationMs > 0) {
-      const pendingDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
-      if (nextDirection === pendingDirection) {
-        return;
-      }
-
-      if (nextDirection === currentDisplayDirection) {
-        fish.displayDirection = nextDirection;
-        fish.displayAngle = currentDisplayAngle;
-        fish.turnStartedAt = null;
-        fish.turnDurationMs = 0;
-        fish.turnFromDirection = nextDirection;
-        fish.turnToDirection = nextDirection;
-        fish.turnFromAngle = currentDisplayAngle;
-        fish.turnToAngle = currentDisplayAngle;
-        fish.turnSpinDirection = nextDirection < 0 ? 1 : -1;
-      }
+      // Finish the current turn before accepting another reversal. Moving
+      // targets and collision corrections can cross the fish several times
+      // per second; cancelling and restarting here created rapid left/right
+      // flip loops even though the fish had barely moved.
+      fish.direction = Number(fish.turnToDirection) < 0 ? -1 : 1;
       return;
     }
 
+    fish.direction = nextDirection;
     if (nextDirection === currentDisplayDirection) {
       fish.displayDirection = nextDirection;
       fish.displayAngle = currentDisplayAngle;

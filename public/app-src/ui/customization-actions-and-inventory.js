@@ -3212,7 +3212,9 @@ function renderSelectedFishNeedsPanel(now = Date.now()) {
   }
 
 function renderFishInspector(now) {
-  const managed = getManagedFishById(runtime.selectedFishId);
+  const managed = runtime.fishInspectorSettingsOpen
+    ? getManagedFishById(runtime.selectedFishId)
+    : null;
   if (!managed) {
     runtime.selectedFishId = null;
     runtime.fishInspectorSettingsOpen = false;
@@ -3260,7 +3262,11 @@ function renderFishInspector(now) {
   const needsSnapshot = inStorage || dead ? null : getFishNeedsSnapshot(fish, now);
   dom.fishInspector.hidden = false;
   setTextIfChanged(dom.inspectorSpecies, getFishInspectorSpeciesLabel(fish, species));
-  const inspectorHeartsMarkup = renderHearts(fish.healthUnits, getFishMaxHealthUnits(fish, baseSpecies));
+  const inspectorMaxHealthUnits = getFishMaxHealthUnits(fish, baseSpecies);
+  const inspectorHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !dead
+    ? inspectorMaxHealthUnits
+    : fish.healthUnits;
+  const inspectorHeartsMarkup = renderHearts(inspectorHealthUnits, inspectorMaxHealthUnits);
   if (dom.inspectorHealth.innerHTML !== inspectorHeartsMarkup) {
     dom.inspectorHealth.innerHTML = inspectorHeartsMarkup;
   }

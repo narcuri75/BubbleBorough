@@ -592,6 +592,9 @@ function getTankComfortFacts(tank = getCurrentTank(), now = Date.now()) {
 }
 
 function isFishNeedMet(fish, needTag, tank = getCurrentTank(), facts = getTankComfortFacts(tank)) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return true;
+  }
   const tag = String(needTag || "").toLowerCase();
   const species = getSpeciesForFish(fish);
   switch (tag) {
@@ -626,6 +629,9 @@ function getFishNeedsStatus(fish, tank = getCurrentTank(), now = Date.now()) {
 
 function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts = getTankComfortFacts(tank)) {
   if (!fish || isFishDead(fish)) {
+    return false;
+  }
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     return false;
   }
   const tag = String(conflictTag || "").toLowerCase();

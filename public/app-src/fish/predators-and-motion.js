@@ -3059,6 +3059,7 @@ function getFishProfileHoverTarget(fish, species, layer, profile) {
 }
 
 function assignSpeciesRoamTarget(fish, species, now) {
+  fish.behaviorIntent = null;
   const profile = getFishLocomotionProfile(fish || species);
   const nextRoamLayer = clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
   const hoverTarget = getFishProfileHoverTarget(fish, species, getFishTankLayer(fish), profile);

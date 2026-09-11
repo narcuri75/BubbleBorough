@@ -215,6 +215,13 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
       return true;
     }
 
+    // Force at least one non-hangout target between visits to the same piece
+    // of decor. Without this, high-affinity/homebody fish can select one
+    // favorite zone every time their target expires and appear stuck in a loop.
+    if (options.allowSameDecor !== true && fish.hangoutDecorId && zone.decorId === fish.hangoutDecorId) {
+      return false;
+    }
+
     const residenceItem = state.placedDecor.find((item) => item.id === zone.decorId);
     if (
       residenceItem

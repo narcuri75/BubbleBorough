@@ -16029,8 +16029,8 @@
       "module": "fish/decor-behavior.js",
       "sourceLine": 184,
       "originalLine": 52216,
-      "characters": 3212,
-      "sourceHash": "0338f2ae4ca7650f4b71f541a44a57223b68cdca11cdf06fea4fef4ab6b48531",
+      "characters": 3578,
+      "sourceHash": "f8e498b7877a28e2811847afe7c40e7b2fabd55b090fb9909bd18b9b9bf848dc",
       "calls": [
         "clamp",
         "clampFishYNormToLayer",
@@ -16051,7 +16051,7 @@
     {
       "name": "getDecorHangoutZonesCacheKey",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 275,
+      "sourceLine": 282,
       "originalLine": 52287,
       "characters": 363,
       "sourceHash": "08b489b10803a2be69545189fca73abc2a2ca3e54a063ee92757307138b7065a",
@@ -16062,7 +16062,7 @@
     {
       "name": "getCachedDecorHangoutZones",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 292,
+      "sourceLine": 299,
       "originalLine": 52304,
       "characters": 368,
       "sourceHash": "fed4c973ea94a9fe6a620a7d4e278bd53789e754287df70b3bc5ebed100ef885",
@@ -16074,7 +16074,7 @@
     {
       "name": "buildDecorHangoutZones",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 304,
+      "sourceLine": 311,
       "originalLine": 52316,
       "characters": 4197,
       "sourceHash": "d384485dd473ed1d82ce070d4ad4fa255dad093426e2383fa1525b82e8dd41ee",
@@ -16090,7 +16090,7 @@
     {
       "name": "getDecorBoroughServiceTypes",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 447,
+      "sourceLine": 454,
       "originalLine": null,
       "characters": 172,
       "sourceHash": "97e7a8b01d1431aab0c388076c1d7868df151151fa48d6649e9c7cc621ee7cd7",
@@ -16101,7 +16101,7 @@
     {
       "name": "getBoroughSectionServiceTypes",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 452,
+      "sourceLine": 459,
       "originalLine": null,
       "characters": 289,
       "sourceHash": "1018fe00196b9afdb667d7b5f2ad67abe6a550aab6d15f19270584f95638a268",
@@ -16113,7 +16113,7 @@
     {
       "name": "getBoroughServiceLabel",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 462,
+      "sourceLine": 469,
       "originalLine": null,
       "characters": 231,
       "sourceHash": "d31245f9342d4bd0c451d29a827442d4850c32fdae4881bf42fccc827fe85743",
@@ -16124,7 +16124,7 @@
     {
       "name": "getBoroughSectionServiceCandidates",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 473,
+      "sourceLine": 480,
       "originalLine": null,
       "characters": 214,
       "sourceHash": "179264c85b7b99bd37de7fc667f195608bf9e21d52b15e76246bd123ed011ef7",
@@ -16135,7 +16135,7 @@
     {
       "name": "getDecorBoroughServiceSeats",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 478,
+      "sourceLine": 485,
       "originalLine": null,
       "characters": 761,
       "sourceHash": "7e7e9b0b47dbe5b1a23138fe8811f19e173df1459ab0200290054d930f39ce98",
@@ -16147,7 +16147,7 @@
     {
       "name": "getFishReservedBoroughServiceSeatId",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 496,
+      "sourceLine": 503,
       "originalLine": null,
       "characters": 242,
       "sourceHash": "1a2f5576522490b1510ab2dbd7c5983f6490f1020c91469d8a81f5385abd78f6",
@@ -16156,7 +16156,7 @@
     {
       "name": "getDecorBoroughServiceSeatReservations",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 501,
+      "sourceLine": 508,
       "originalLine": null,
       "characters": 654,
       "sourceHash": "59e1091ee7735dd389caf7cb6c92408ba1445dc0300372aa68b07da6a6811303",
@@ -16169,7 +16169,7 @@
     {
       "name": "getAvailableDecorBoroughServiceSeat",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 515,
+      "sourceLine": 522,
       "originalLine": null,
       "characters": 491,
       "sourceHash": "3daacbfb1a006f3eb2fda83f84f71434415fa17105144cd953b863e2af86f66c",
@@ -16183,7 +16183,7 @@
     {
       "name": "getDecorBoroughServiceSeatUsage",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 526,
+      "sourceLine": 533,
       "originalLine": null,
       "characters": 177,
       "sourceHash": "c5c188f64e6e405adac1bb48533fe00a560950b8693bbd8d23354cad10d21b80",
@@ -16196,7 +16196,7 @@
     {
       "name": "getDecorBoroughServiceSeatPoint",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 530,
+      "sourceLine": 537,
       "originalLine": null,
       "characters": 152,
       "sourceHash": "c436ac3524f1a971f40c5306252dfb1bb43d092870e3a47c115aa4a6b116aa77",
@@ -16207,7 +16207,7 @@
     {
       "name": "clearFishBoroughServiceReservation",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 535,
+      "sourceLine": 542,
       "originalLine": null,
       "characters": 462,
       "sourceHash": "6a321feb95d296528bdd14331b58b9d2b2956799c4d1a83eb31439fc04e07e18",
@@ -16216,7 +16216,7 @@
     {
       "name": "clearDecorBoroughServiceReservations",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 551,
+      "sourceLine": 558,
       "originalLine": null,
       "characters": 490,
       "sourceHash": "946e1a920fd50995dfce6df8e632ed31ccf7773e585a479448d83c9ad8e53c27",
@@ -16228,7 +16228,7 @@
     {
       "name": "getDecorServiceSummary",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 566,
+      "sourceLine": 573,
       "originalLine": null,
       "characters": 443,
       "sourceHash": "9f5134355645d4c2b566cc6abcecde585f406742e4e0b73c0c63710fda805ac0",
@@ -16241,7 +16241,7 @@
     {
       "name": "getFishNeededBoroughServiceType",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 578,
+      "sourceLine": 585,
       "originalLine": null,
       "characters": 649,
       "sourceHash": "21b55760658ff077e11b283c13b45357960a26e86d9a7debe83dda390634d7f3",
@@ -16257,7 +16257,7 @@
     {
       "name": "applyBoroughStructureService",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 600,
+      "sourceLine": 607,
       "originalLine": null,
       "characters": 2519,
       "sourceHash": "081c1b974ad150b86db19eda4229a466f7226c8ed1f0fa5d825a3ea2100755be",
@@ -16277,7 +16277,7 @@
     {
       "name": "processBoroughStructureServices",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 659,
+      "sourceLine": 666,
       "originalLine": null,
       "characters": 3232,
       "sourceHash": "5f40d4f8fac742e792f948a9308b5727a9ef1ec2ac38558a466da708750e88b6",
@@ -16303,7 +16303,7 @@
     {
       "name": "getCoarseFishActivityPosition",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 731,
+      "sourceLine": 738,
       "originalLine": null,
       "characters": 754,
       "sourceHash": "7867e0dd864815b5e4de92d6c9ea5432ee6c5f46d38fd6f1263ef03d7977667d",
@@ -16314,7 +16314,7 @@
     {
       "name": "createCoarseFishActivity",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 750,
+      "sourceLine": 757,
       "originalLine": null,
       "characters": 3668,
       "sourceHash": "b2da3f1c033c383065d12918321bb1472461a1d22ebe477ee26518c018880ffd",
@@ -16336,7 +16336,7 @@
     {
       "name": "advanceCoarseFishActivities",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 831,
+      "sourceLine": 838,
       "originalLine": null,
       "characters": 2136,
       "sourceHash": "b2dd55ea92986b45e94ab8ec9296906b296544ba85095cb6a8e037b6f2efee2e",
@@ -16355,7 +16355,7 @@
     {
       "name": "materializeCoarseFishActivities",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 885,
+      "sourceLine": 892,
       "originalLine": null,
       "characters": 670,
       "sourceHash": "65390ad9029a55ed9785d65a7f81a8d42732d1f6b71ba9509f778bbeb9a4c7f3",
@@ -17430,8 +17430,8 @@
       "module": "fish/gravel-and-schooling.js",
       "sourceLine": 1165,
       "originalLine": 34644,
-      "characters": 2430,
-      "sourceHash": "09b145e52ff97bc39d265bb7d83e33b663b08861b5dccba17390b763ae92b9b9",
+      "characters": 2622,
+      "sourceHash": "370f1e894d704155d1b95ea9f5c36670d9f615e6e37a4bc3d455a002c37d6d31",
       "calls": [
         "clamp",
         "clearFishSchoolFollowState",
@@ -17607,29 +17607,31 @@
       "module": "fish/health.js",
       "sourceLine": 144,
       "originalLine": 33217,
-      "characters": 142,
-      "sourceHash": "714ae594cb67fcb4ae18d0e4ed5e3c24679a4fe23509dc289573932e4abaa098",
+      "characters": 273,
+      "sourceHash": "0d1ee483b1a6946e27baeefc2675c451e107ec8be7ea1439ad41c11545536b49",
       "calls": [
         "getFishSickHealthUnitsThreshold",
-        "isFishDead"
+        "isFishDead",
+        "isPeacefulModeEnabled"
       ]
     },
     {
       "name": "isFishCriticallyLowHealth",
       "module": "fish/health.js",
-      "sourceLine": 148,
+      "sourceLine": 151,
       "originalLine": 33221,
-      "characters": 214,
-      "sourceHash": "faf24dd82126de257a8879a8fe1a2c92b69b47b1d532311b984ccfdc1b1c92f1",
+      "characters": 345,
+      "sourceHash": "b6da7b18f5deaa3c679dae0a73e1f5c1edffa0684ed03c388ad4229f36980406",
       "calls": [
         "hasDefinedFiniteNumber",
-        "isFishDead"
+        "isFishDead",
+        "isPeacefulModeEnabled"
       ]
     },
     {
       "name": "getFishVisualSize",
       "module": "fish/health.js",
-      "sourceLine": 157,
+      "sourceLine": 163,
       "originalLine": 33230,
       "characters": 263,
       "sourceHash": "6a80e58d7cc0201a9dcee0a5c351d1ef147f2df42ddb8f9884b02dd757b624eb",
@@ -17642,7 +17644,7 @@
     {
       "name": "getFishSizeRatio",
       "module": "fish/health.js",
-      "sourceLine": 165,
+      "sourceLine": 171,
       "originalLine": 33238,
       "characters": 603,
       "sourceHash": "dd56be78a474676d2b272ead87508703b584346f67e220bb402c6abceb8b7a83",
@@ -17658,7 +17660,7 @@
     {
       "name": "getFishHealthSizeRatio",
       "module": "fish/health.js",
-      "sourceLine": 178,
+      "sourceLine": 184,
       "originalLine": 33251,
       "characters": 481,
       "sourceHash": "8677ad154e60c93ccb69e8a426afea072a32b2f037ce8aa06220327f036fe515",
@@ -17670,7 +17672,7 @@
     {
       "name": "getSpeciesMaxHealthUnits",
       "module": "fish/health.js",
-      "sourceLine": 194,
+      "sourceLine": 200,
       "originalLine": 33268,
       "characters": 820,
       "sourceHash": "2d511374dcf5e26140cffbfa59137584ce18612279211a2ea5f3822823b4157c",
@@ -17682,7 +17684,7 @@
     {
       "name": "getFishMaxHealthUnits",
       "module": "fish/health.js",
-      "sourceLine": 214,
+      "sourceLine": 220,
       "originalLine": 33288,
       "characters": 119,
       "sourceHash": "de104056a1fe00b6411d8fe0a7244f73acf440357c16f4cb1c6d8a846105b365",
@@ -17694,21 +17696,23 @@
     {
       "name": "getFishHealthRatio",
       "module": "fish/health.js",
-      "sourceLine": 218,
+      "sourceLine": 224,
       "originalLine": 33292,
-      "characters": 223,
-      "sourceHash": "c788d9f54ad3bdf09da8464d58fcc53b8af097dffa6ab2f10809bf9c09041ea1",
+      "characters": 340,
+      "sourceHash": "5db82d9e9c836fafa56e524359398c635f25625e99d4d40c5214d08e7e317895",
       "calls": [
         "clamp",
         "getFishMaxHealthUnits",
         "getSpeciesForFish",
-        "hasActiveCandyBoost"
+        "hasActiveCandyBoost",
+        "isFishDead",
+        "isPeacefulModeEnabled"
       ]
     },
     {
       "name": "getFishSickHealthUnitsThreshold",
       "module": "fish/health.js",
-      "sourceLine": 223,
+      "sourceLine": 230,
       "originalLine": 33296,
       "characters": 191,
       "sourceHash": "688b1f3823a4f82f5c18b04753f9b4f598a443d0eb040aae210ebabf834e6e71",
@@ -17720,7 +17724,7 @@
     {
       "name": "scaleLegacyFishHealthUnits",
       "module": "fish/health.js",
-      "sourceLine": 227,
+      "sourceLine": 234,
       "originalLine": 33300,
       "characters": 387,
       "sourceHash": "eb11b92d890358183eb16c6ea9b1bcd9777cf64c31edd89f369694b8dafd1c1f",
@@ -17731,7 +17735,7 @@
     {
       "name": "rebalanceFishHealthForCurrentModel",
       "module": "fish/health.js",
-      "sourceLine": 240,
+      "sourceLine": 247,
       "originalLine": 33313,
       "characters": 353,
       "sourceHash": "3298a4179cf28c83d4ab615e3316baf278a32840564cbca8cf60ea355833909f",
@@ -17745,7 +17749,7 @@
     {
       "name": "getFishDirtinessBonus",
       "module": "fish/health.js",
-      "sourceLine": 253,
+      "sourceLine": 260,
       "originalLine": 33326,
       "characters": 231,
       "sourceHash": "b8bf50fae0875311ce4b3534762441af2e9038ce122047e9c35740fef2f696c2",
@@ -17757,7 +17761,7 @@
     {
       "name": "getDeadFishDirtinessBonus",
       "module": "fish/health.js",
-      "sourceLine": 258,
+      "sourceLine": 265,
       "originalLine": 33331,
       "characters": 244,
       "sourceHash": "ea217e92afe2eb3a96b61ca906b8c15d1633f23b0541a8de07b7aef67d058004",
@@ -17769,7 +17773,7 @@
     {
       "name": "getTankFishDirtinessMultiplier",
       "module": "fish/health.js",
-      "sourceLine": 263,
+      "sourceLine": 270,
       "originalLine": 33336,
       "characters": 377,
       "sourceHash": "b06381b83cd2e9e8565fa1929f03b01483fdd9a7151547b2005d037b0a23933f",
@@ -17784,7 +17788,7 @@
     {
       "name": "getTankMaxDirtyDurationMs",
       "module": "fish/health.js",
-      "sourceLine": 270,
+      "sourceLine": 277,
       "originalLine": null,
       "characters": 764,
       "sourceHash": "175e3cccddfe3d848f968209941cb1a0ea40ec8c5afc518a87100fb11263f351",
@@ -17801,7 +17805,7 @@
     {
       "name": "getFishCriticalHealthTickMs",
       "module": "fish/health.js",
-      "sourceLine": 281,
+      "sourceLine": 288,
       "originalLine": 33354,
       "characters": 123,
       "sourceHash": "a48f39a2d7abe6c2d189f00c691875edf7898ec65f8e1bd5b0dd68463747bbbe",
@@ -17812,7 +17816,7 @@
     {
       "name": "resetLivingFishComfortDamageProgress",
       "module": "fish/health.js",
-      "sourceLine": 285,
+      "sourceLine": 292,
       "originalLine": 33358,
       "characters": 267,
       "sourceHash": "686fa16ce6c30431d6cee3c4134565a37174bcfe77e3b7759124d3f2b396cb51",
@@ -17823,7 +17827,7 @@
     {
       "name": "rebaseTankDirtiness",
       "module": "fish/health.js",
-      "sourceLine": 296,
+      "sourceLine": 303,
       "originalLine": 33369,
       "characters": 179,
       "sourceHash": "93aa93fb0ec3e0aa66a129c19918cbf90b7efc9a01a54823d5dab967869b39c6",
@@ -17837,7 +17841,7 @@
     {
       "name": "preserveTankDirtinessThroughChange",
       "module": "fish/health.js",
-      "sourceLine": 300,
+      "sourceLine": 307,
       "originalLine": 33373,
       "characters": 182,
       "sourceHash": "e54a0a8f14bd46454da1eb575807d7289dc26747699d22394e33fb4ab74a4c3f",
@@ -17849,7 +17853,7 @@
     {
       "name": "getPoopFloorYNormAtXNorm",
       "module": "fish/health.js",
-      "sourceLine": 306,
+      "sourceLine": 313,
       "originalLine": 33379,
       "characters": 155,
       "sourceHash": "76c8b4b0d94c6a9215cab4288e89da7876d2cb3a329fa98186c63babb201926b",
@@ -17861,7 +17865,7 @@
     {
       "name": "getPoopTankLayer",
       "module": "fish/health.js",
-      "sourceLine": 310,
+      "sourceLine": 317,
       "originalLine": 33383,
       "characters": 131,
       "sourceHash": "9551cac06e0b9b89589392f76fa310ea33158dc7b1a5a4a4701798bded2c5977",
@@ -17872,7 +17876,7 @@
     {
       "name": "getPoopLayerTargetAnchorY",
       "module": "fish/health.js",
-      "sourceLine": 316,
+      "sourceLine": 323,
       "originalLine": 33389,
       "characters": 384,
       "sourceHash": "f034dd384c6de754d3bdf3d0a7814816f7705a82198a107083bb8788dd9f7530",
@@ -17885,7 +17889,7 @@
     {
       "name": "getPoopLayerTargetYNorm",
       "module": "fish/health.js",
-      "sourceLine": 328,
+      "sourceLine": 335,
       "originalLine": 33401,
       "characters": 156,
       "sourceHash": "52afcee64ea8a03757414fd006732fe0cf426c673469033f8d1ec265c3579a5f",
@@ -17896,7 +17900,7 @@
     {
       "name": "createPoopRecord",
       "module": "fish/health.js",
-      "sourceLine": 332,
+      "sourceLine": 339,
       "originalLine": 33405,
       "characters": 601,
       "sourceHash": "081dd4ce5006776dd57afc26d3bb038270187bbeb31f533345e8fd16192d4683",
@@ -17911,7 +17915,7 @@
     {
       "name": "getNearestDeadFish",
       "module": "fish/health.js",
-      "sourceLine": 348,
+      "sourceLine": 355,
       "originalLine": 33421,
       "characters": 495,
       "sourceHash": "f1d54986c635efb1a963ff9ebb1b325b9112c3c22ce23cf341c3c4ae39c14322",
@@ -17922,7 +17926,7 @@
     {
       "name": "pickDeadFishVigilTarget",
       "module": "fish/health.js",
-      "sourceLine": 369,
+      "sourceLine": 376,
       "originalLine": 33442,
       "characters": 829,
       "sourceHash": "01ae39eb4a3afcf4e55c0903b00a95fa1dae54f8c9c89c6cdb0b5053d869c28e",
@@ -17939,7 +17943,7 @@
     {
       "name": "clearFishSchoolFollowState",
       "module": "fish/health.js",
-      "sourceLine": 396,
+      "sourceLine": 403,
       "originalLine": 33469,
       "characters": 198,
       "sourceHash": "b9f3a0a7c6bfc22d516691122b7a44f6aab61333d069e01564103a4360d8bde3",
@@ -17948,7 +17952,7 @@
     {
       "name": "pruneFishGravelPebbleRuntimeState",
       "module": "fish/health.js",
-      "sourceLine": 407,
+      "sourceLine": 414,
       "originalLine": 33480,
       "characters": 633,
       "sourceHash": "2840aaa8b8cbb18c5438facf5bec1d50c10270c585d8ce93c3a62a24195b2009",
@@ -17957,7 +17961,7 @@
     {
       "name": "markFishAsDead",
       "module": "fish/health.js",
-      "sourceLine": 424,
+      "sourceLine": 431,
       "originalLine": 35097,
       "characters": 3196,
       "sourceHash": "5e6621179bda9dcf4d0c9c269608ff90e7e9f00c2c2c9d52f3dd9f8a84eaa56b",
@@ -17986,7 +17990,7 @@
     {
       "name": "applyFishDamage",
       "module": "fish/health.js",
-      "sourceLine": 513,
+      "sourceLine": 520,
       "originalLine": 35176,
       "characters": 582,
       "sourceHash": "1f81fbe926158d70c56232a4b792229613ea57c9e24418f0a4f6157f0df6622f",
@@ -19752,27 +19756,31 @@
       "module": "fish/needs-disease-and-behavior.js",
       "sourceLine": 610,
       "originalLine": 15388,
-      "characters": 106,
-      "sourceHash": "8d368a2a64aa8d90ccd4d69c66705ab19de71cee63a5191dea56db7653eb2829",
+      "characters": 237,
+      "sourceHash": "63fe7d65f603406662473a84ef5d7e991cf467d02febac4b7818912ffae1ca57",
       "calls": [
-        "isActiveDiseaseState"
+        "isActiveDiseaseState",
+        "isFishDead",
+        "isPeacefulModeEnabled"
       ]
     },
     {
       "name": "isFishDiseaseVisible",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 614,
+      "sourceLine": 617,
       "originalLine": 15392,
-      "characters": 213,
-      "sourceHash": "e88941b5250073df56d0382832c9fa2d3a5c04c4f735493e217fd9bdc72ee5c0",
+      "characters": 344,
+      "sourceHash": "4f6288a969d6b0600ad3017d431ebc32f5e9716a2a609cdc41ca401b6e0f15b8",
       "calls": [
+        "isFishDead",
+        "isPeacefulModeEnabled",
         "sanitizeDiseaseState"
       ]
     },
     {
       "name": "isFishDiseaseContagious",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 623,
+      "sourceLine": 629,
       "originalLine": 15401,
       "characters": 273,
       "sourceHash": "5587e011e7c2382c2c02f0a64913b7bec7bb38d6a0c756d262221e8a8727203f",
@@ -19783,7 +19791,7 @@
     {
       "name": "isFishDiseaseAvoidanceSource",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 634,
+      "sourceLine": 640,
       "originalLine": 15412,
       "characters": 166,
       "sourceHash": "368ef2203496cf33bebf60bc7053dec910f016f67025d9cadf8793f80cbea70f",
@@ -19794,7 +19802,7 @@
     {
       "name": "getDiseaseStateFromProgress",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 641,
+      "sourceLine": 647,
       "originalLine": 15419,
       "characters": 450,
       "sourceHash": "559b9a2e91b966d5b9f5d6b5e8c1aea96d531c61b998c3358bf9445208bb7732",
@@ -19803,7 +19811,7 @@
     {
       "name": "getDebugDiseaseProgressForStage",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 658,
+      "sourceLine": 664,
       "originalLine": 15436,
       "characters": 473,
       "sourceHash": "78537d19132a0a73f5cb7c980f8d429e42dbcf5ac5ece3fc910cef7bbd1e71a1",
@@ -19814,7 +19822,7 @@
     {
       "name": "resetFishDiseaseFields",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 676,
+      "sourceLine": 682,
       "originalLine": 15454,
       "characters": 2100,
       "sourceHash": "3de11d567feca3358901d6465c783abf1efaa96faa42e4f8622ac5d0d5cf13ce",
@@ -19828,7 +19836,7 @@
     {
       "name": "infectFishWithDisease",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 740,
+      "sourceLine": 746,
       "originalLine": 15518,
       "characters": 1645,
       "sourceHash": "282475ae581a4b354170e6bb072fd0e0195a6db0efe5b4d891a90cf5a70179ed",
@@ -19846,7 +19854,7 @@
     {
       "name": "getDiseaseTankCleanliness",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 776,
+      "sourceLine": 782,
       "originalLine": 15554,
       "characters": 109,
       "sourceHash": "4389c87c7b99ccf6c674565312f9ec97c825ee070e80557137bbc3371293aa40",
@@ -19858,7 +19866,7 @@
     {
       "name": "getTankLivingFishLoad",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 780,
+      "sourceLine": 786,
       "originalLine": 15558,
       "characters": 183,
       "sourceHash": "62fed69355020160136533a8c7761df6572734d18931ea06218b0554a154ad6f",
@@ -19870,7 +19878,7 @@
     {
       "name": "isTankCrowdedForDisease",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 784,
+      "sourceLine": 790,
       "originalLine": 15562,
       "characters": 144,
       "sourceHash": "700f9f40fd2af3bbe5ee89f773abe87d13fe8a0cf0e4da11ab8bfa000852a979",
@@ -19882,7 +19890,7 @@
     {
       "name": "getAverageLivingTankComfort",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 788,
+      "sourceLine": 794,
       "originalLine": 15566,
       "characters": 368,
       "sourceHash": "09e9adeec44e579fc8fcc5286b87da05e948ff93c3758c78c7bc0678f40d2912",
@@ -19895,7 +19903,7 @@
     {
       "name": "getNewFishDiseaseCarrierChance",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 797,
+      "sourceLine": 803,
       "originalLine": 15575,
       "characters": 715,
       "sourceHash": "6af2b11d440c7cd2a33d14b674d409fd725763fe154a3fa05de08a462b718b99",
@@ -19911,7 +19919,7 @@
     {
       "name": "maybeSeedNewFishDiseaseCarrier",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 815,
+      "sourceLine": 821,
       "originalLine": 15593,
       "characters": 299,
       "sourceHash": "917d985a3b333adcdc6a1adb5f1526920d659b3cadd3e10056b8f19e5c093d2b",
@@ -19925,7 +19933,7 @@
     {
       "name": "getDailyFishDiseaseChance",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 824,
+      "sourceLine": 830,
       "originalLine": 15602,
       "characters": 877,
       "sourceHash": "bcd8ad8d3b0d6594288a63e42f36b73704fc230d21a98a714cd1b533ccd79e3c",
@@ -19943,7 +19951,7 @@
     {
       "name": "getDiseaseStageSpreadMultiplier",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 851,
+      "sourceLine": 857,
       "originalLine": 15629,
       "characters": 432,
       "sourceHash": "2c55b9914121d4f5f9f8d73f0dd0779a294289e9609c5fdc1227e81b64685f4b",
@@ -19954,7 +19962,7 @@
     {
       "name": "getDiseaseSpreadCheckExposureCap",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 870,
+      "sourceLine": 876,
       "originalLine": 15648,
       "characters": 238,
       "sourceHash": "8cfcda93aeada203811f01bcebbe67eba66ff569b98009399b64547856289432",
@@ -19965,7 +19973,7 @@
     {
       "name": "getDiseaseCleanlinessMultiplier",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 877,
+      "sourceLine": 883,
       "originalLine": 15655,
       "characters": 296,
       "sourceHash": "29344b7426f2293b9ffbe16158b0d4e01297d731f827165a1970bbb98a2c2640",
@@ -19976,7 +19984,7 @@
     {
       "name": "getDiseaseComfortMultiplier",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 894,
+      "sourceLine": 900,
       "originalLine": 15672,
       "characters": 239,
       "sourceHash": "0671a4e10c31f26396625f94dbc2ebd0e209cf3e75b9182fb489923235759cb2",
@@ -19987,7 +19995,7 @@
     {
       "name": "getDiseaseExposureRadiusNorm",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 908,
+      "sourceLine": 914,
       "originalLine": 15686,
       "characters": 303,
       "sourceHash": "965eaecea4255e792424489877b1e2b3ffdad1d253ac6f4f6bd71184b7c904a7",
@@ -19999,7 +20007,7 @@
     {
       "name": "getDiseaseVisibleAvoidanceRadiusNorm",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 917,
+      "sourceLine": 923,
       "originalLine": 15695,
       "characters": 498,
       "sourceHash": "522d55ec27fc5f0c802658245bdd3de460bd0817c696e56401b7d9d6492e3ec4",
@@ -20012,7 +20020,7 @@
     {
       "name": "getFishDiseaseComfortPenalty",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 930,
+      "sourceLine": 936,
       "originalLine": 15708,
       "characters": 396,
       "sourceHash": "31e0e76c57fd552866b639edfe2ab3c5089c6c5e87666fa09884c2c81c87654f",
@@ -20024,7 +20032,7 @@
     {
       "name": "getFishDiseaseRecoveryRatio",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 945,
+      "sourceLine": 951,
       "originalLine": 15723,
       "characters": 147,
       "sourceHash": "399f60eda09c07d2379fdcfa655ef5ec3710b7ed784c10df5121b5995e930eaf",
@@ -20035,7 +20043,7 @@
     {
       "name": "getFishDiseaseSpeedMultiplier",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 949,
+      "sourceLine": 955,
       "originalLine": 15727,
       "characters": 453,
       "sourceHash": "12245d826eb22b1e0478afc70ded79108cbffcce21a6549948eda69efe32d75f",
@@ -20047,7 +20055,7 @@
     {
       "name": "getFishDiseaseSaturationPercent",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 966,
+      "sourceLine": 972,
       "originalLine": 15744,
       "characters": 406,
       "sourceHash": "f0b1044a46620c66265c07d32b1b274bebdcbc7d4126cbc9324d523e5be7c498",
@@ -20059,7 +20067,7 @@
     {
       "name": "getFishDiseaseBrightnessPercent",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 981,
+      "sourceLine": 987,
       "originalLine": 15759,
       "characters": 359,
       "sourceHash": "8ce26405a42b22a37e2867ce5af971b0ddd635cfcb00b4ae27529b049589af22",
@@ -20071,7 +20079,7 @@
     {
       "name": "getFishDiseaseFoodRefusalChance",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 994,
+      "sourceLine": 1000,
       "originalLine": 15772,
       "characters": 681,
       "sourceHash": "1110d59939cdb9d3f05338bf4f15a434076370616391d5d7ab4e0faa0b8af06b",
@@ -20085,7 +20093,7 @@
     {
       "name": "recordDiseaseSignal",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1022,
+      "sourceLine": 1028,
       "originalLine": 15800,
       "characters": 543,
       "sourceHash": "b91af41c055c016f7eec8b2d1287b50d8e394e0c5453f56c3760daa61a5cd9a7",
@@ -20097,7 +20105,7 @@
     {
       "name": "forceDiseaseSignalForDebug",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1039,
+      "sourceLine": 1045,
       "originalLine": 15817,
       "characters": 349,
       "sourceHash": "30e21032f11e1c3cc373e685bc2cef497a2fa9e8c5569840c6faf8f89254f19f",
@@ -20108,7 +20116,7 @@
     {
       "name": "getRecentDiseaseSignals",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1050,
+      "sourceLine": 1056,
       "originalLine": 15828,
       "characters": 360,
       "sourceHash": "68659128fae35f61e7851b2085c754a5b995099f6812e5f32415519f2ccbaace",
@@ -20119,7 +20127,7 @@
     {
       "name": "getDiseaseSignalHistoryEventText",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1059,
+      "sourceLine": 1065,
       "originalLine": 15837,
       "characters": 1659,
       "sourceHash": "6ed2af2fc4dbbe1c6a12e304ed8a70e254511d5f3fd1ab19d39214acaf2fc94f",
@@ -20130,7 +20138,7 @@
     {
       "name": "pushDiseaseSignalHistoryEvent",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1099,
+      "sourceLine": 1105,
       "originalLine": 15879,
       "characters": 480,
       "sourceHash": "28900a45c8127fd4c32f66489c3132c98194e4ec76f1c82a1d0ed3c0c7468405",
@@ -20145,7 +20153,7 @@
     {
       "name": "shouldFishRefuseFoodForDisease",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1117,
+      "sourceLine": 1123,
       "originalLine": 15898,
       "characters": 412,
       "sourceHash": "f9fb8458fe1db3d7203a512c2e70d4518e0b2f0d0fe8930cb26d5e0d14369cc8",
@@ -20161,7 +20169,7 @@
     {
       "name": "getNextGreenBubbleAtForDisease",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1128,
+      "sourceLine": 1134,
       "originalLine": 15909,
       "characters": 553,
       "sourceHash": "ce90da808ca3515892b1322a4cd4844a4aead58438c5ce35b1128327c5583e92",
@@ -20174,7 +20182,7 @@
     {
       "name": "shouldDrawDiseaseGreenBubble",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1143,
+      "sourceLine": 1149,
       "originalLine": 15924,
       "characters": 464,
       "sourceHash": "e24a4a3def188394e438fdae508fffd51c6132104e7338c400d5c9142d8936c3",
@@ -20186,7 +20194,7 @@
     {
       "name": "getFishDiseaseBubbleMouthPoint",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1156,
+      "sourceLine": 1162,
       "originalLine": 15937,
       "characters": 476,
       "sourceHash": "188633bbb6d041c177d70998941286f329e627508c1892b45b477111f995ade2",
@@ -20198,7 +20206,7 @@
     {
       "name": "clearDiseaseGreenBubbleStream",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1176,
+      "sourceLine": 1182,
       "originalLine": 15957,
       "characters": 127,
       "sourceHash": "a1f36471652a756e230c75f018df2cec2c7fe105b99af16c973716c311eea1b5",
@@ -20207,7 +20215,7 @@
     {
       "name": "getDiseaseGreenBubbleStream",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1182,
+      "sourceLine": 1188,
       "originalLine": 15963,
       "characters": 371,
       "sourceHash": "950a66102e8c38461eb647470bd2ef28a11e78095222321aa622d6d486486685",
@@ -20216,7 +20224,7 @@
     {
       "name": "emitDiseaseGreenBubble",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1198,
+      "sourceLine": 1204,
       "originalLine": 15979,
       "characters": 1009,
       "sourceHash": "d10ba59bcb777d5f83ca0385a19787af1f3f41e1bc6738952c64224b6931d806",
@@ -20230,7 +20238,7 @@
     {
       "name": "syncDiseaseGreenBubbleStream",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1217,
+      "sourceLine": 1223,
       "originalLine": 15998,
       "characters": 991,
       "sourceHash": "32fd63fcfd528fa86981413f3f0bbd0ca6dfcfc69f18aff85524d3a5c8f89da6",
@@ -20245,7 +20253,7 @@
     {
       "name": "drawFishDiseaseBubbles",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1247,
+      "sourceLine": 1253,
       "originalLine": 16028,
       "characters": 3248,
       "sourceHash": "43d3365a25b58deda64ab30dce2a759c289b20f23dc53849beaa6d519a74926b",
@@ -20261,7 +20269,7 @@
     {
       "name": "processDiseaseDailyRisk",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1347,
+      "sourceLine": 1353,
       "originalLine": 16128,
       "characters": 457,
       "sourceHash": "4801d4ba7746791028215d2a5291fddf1847050f85d59ca3e36394336513bd04",
@@ -20275,7 +20283,7 @@
     {
       "name": "applyFirstAidDiseaseSlowdown",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1362,
+      "sourceLine": 1368,
       "originalLine": 16143,
       "characters": 456,
       "sourceHash": "4e7e3d1210caa553fe472b268d3a09ebb953a5075617434d191f36d4f9b619d3",
@@ -20287,7 +20295,7 @@
     {
       "name": "processFishDisease",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1377,
+      "sourceLine": 1383,
       "originalLine": 16158,
       "characters": 4306,
       "sourceHash": "13a8085ca135f37ba23d910f82757a6e8114fc80a363bced4476b39426532e08",
@@ -20315,7 +20323,7 @@
     {
       "name": "updateFishDiseaseSignals",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1477,
+      "sourceLine": 1483,
       "originalLine": 16257,
       "characters": 1471,
       "sourceHash": "2b0392de5ca4b969b5e45ed7e0e0f255048707a5716b30481de4baae04a81209",
@@ -20332,7 +20340,7 @@
     {
       "name": "isSocialDiseaseFish",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1517,
+      "sourceLine": 1523,
       "originalLine": 16299,
       "characters": 264,
       "sourceHash": "2e5a980024b04912b4b32a1d4e82fd9d3c6e285008c502eb24b4ba3c5a75722e",
@@ -20343,7 +20351,7 @@
     {
       "name": "processFishDiseaseExposure",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1522,
+      "sourceLine": 1528,
       "originalLine": 16304,
       "characters": 2929,
       "sourceHash": "adea12a61bd5b36a96aaa323ddb1df742480497683cd9316b2d9cd5b5b77725d",
@@ -20369,7 +20377,7 @@
     {
       "name": "pickDiseaseBehaviorTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1597,
+      "sourceLine": 1603,
       "originalLine": 16379,
       "characters": 2793,
       "sourceHash": "5ecb3c5bdb55bca977f96425d28d5a0dec391b58edffac310a35dc6f28d4cb4a",
@@ -20388,7 +20396,7 @@
     {
       "name": "applyDiseaseBehaviorTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1679,
+      "sourceLine": 1685,
       "originalLine": 16471,
       "characters": 905,
       "sourceHash": "023c1cc7e6c3f7ed5352f330b986f0ea6762e1cdf98f8bc134ea05b63e89821d",
@@ -20407,7 +20415,7 @@
     {
       "name": "getNearestContagiousDiseaseFish",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1702,
+      "sourceLine": 1708,
       "originalLine": 16494,
       "characters": 620,
       "sourceHash": "8454280341939a5b94b4d319afc07ccdee6b6e3c22d84a28319e19a76432726b",
@@ -20420,7 +20428,7 @@
     {
       "name": "hasVisibleDiseaseAvoidanceSource",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1722,
+      "sourceLine": 1728,
       "originalLine": 16514,
       "characters": 249,
       "sourceHash": "fb9c2c85603e49c08e04edb3adb1155343a98355a408d7286d5e63b18247a428",
@@ -20433,7 +20441,7 @@
     {
       "name": "applyDiseaseAvoidanceTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1731,
+      "sourceLine": 1737,
       "originalLine": 16523,
       "characters": 1603,
       "sourceHash": "80a3a76f2a7b9857a40e09e1200806dca51da9569a99b6d2af069cb2dd278980",
@@ -20454,7 +20462,7 @@
     {
       "name": "maybeApplyDiseaseAvoidanceReaction",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1770,
+      "sourceLine": 1776,
       "originalLine": 16562,
       "characters": 681,
       "sourceHash": "d9c0c05875d0367491367c0efd6acc4f67fe984a7f9361ac51ff1826a2b71b5e",
@@ -20470,7 +20478,7 @@
     {
       "name": "getLightsOutOverride",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1790,
+      "sourceLine": 1796,
       "originalLine": 16582,
       "characters": 132,
       "sourceHash": "95458804d3117387ff34c5cbb4f4bf23c86aa539d41f1a8c39eb1f0cf2ae1b13",
@@ -20482,7 +20490,7 @@
     {
       "name": "isTankLightsOut",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1794,
+      "sourceLine": 1800,
       "originalLine": 16586,
       "characters": 356,
       "sourceHash": "2dfeed55ffd858118a1de303bc43f2e8a0b591e01c849f5051ab12edab5a51b5",
@@ -20495,7 +20503,7 @@
     {
       "name": "isNightActiveFish",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1808,
+      "sourceLine": 1814,
       "originalLine": 16597,
       "characters": 246,
       "sourceHash": "698e26de57899bac763a72184245d63d55409af72b4aa927e24e389e62065199",
@@ -20507,7 +20515,7 @@
     {
       "name": "isSlowGracefulFish",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1814,
+      "sourceLine": 1820,
       "originalLine": 16603,
       "characters": 107,
       "sourceHash": "e6be409c7066c003639d9af0e668b7aae17c7cf6efb9bc893a94c5b84bc25068",
@@ -20518,7 +20526,7 @@
     {
       "name": "getFishPersonality",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1818,
+      "sourceLine": 1824,
       "originalLine": 16607,
       "characters": 108,
       "sourceHash": "e9f43325442301c488e70188e1f0dce6f3d881979657d9536c84854dbdf41ee9",
@@ -20529,7 +20537,7 @@
     {
       "name": "setFishBehaviorIntent",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1822,
+      "sourceLine": 1828,
       "originalLine": 16611,
       "characters": 509,
       "sourceHash": "9598b1f903aa9b3dad3a26839c2632676f02111e7de8576da6482cdbdaae6d39",
@@ -20538,7 +20546,7 @@
     {
       "name": "clearExpiredFishBehaviorIntent",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1837,
+      "sourceLine": 1843,
       "originalLine": 16626,
       "characters": 217,
       "sourceHash": "c9f7e86aa062ae29e89e3e744a022f090aa9cd590bc4c997a240a304a7323fea",
@@ -20547,7 +20555,7 @@
     {
       "name": "getFishBehaviorIntent",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1845,
+      "sourceLine": 1851,
       "originalLine": 16634,
       "characters": 142,
       "sourceHash": "ce98456a92cc05327408565a880bce15763fc20212383eaf9095bf32c7fc4715",
@@ -20558,7 +20566,7 @@
     {
       "name": "getBehaviorHistoryEventText",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1850,
+      "sourceLine": 1856,
       "originalLine": 16639,
       "characters": 1593,
       "sourceHash": "ac8e5f894604567917aa9a1048d211973a6fede7b08387650029f3205559aa62",
@@ -20567,7 +20575,7 @@
     {
       "name": "pushFishBehaviorSignalHistoryEvent",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1889,
+      "sourceLine": 1895,
       "originalLine": 16678,
       "characters": 645,
       "sourceHash": "313c1bdc6101b19275c0c0da4c362ab30fa548e487690170874d9fd7ba9c4c9b",
@@ -20580,7 +20588,7 @@
     {
       "name": "recordFishBehaviorSignal",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1910,
+      "sourceLine": 1916,
       "originalLine": 16699,
       "characters": 1158,
       "sourceHash": "bc331041d34e287c04cb21f6d75f464e0733d89e2c23ae0715f34034617c259c",
@@ -20594,7 +20602,7 @@
     {
       "name": "pruneFishBehaviorState",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1940,
+      "sourceLine": 1946,
       "originalLine": 16729,
       "characters": 400,
       "sourceHash": "0ed0b4ee82a9e48e65dd3b36778de5ab98b15e83ec6aead4365ff66f48830d6b",
@@ -20606,7 +20614,7 @@
     {
       "name": "getRelationshipKindForFish",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1950,
+      "sourceLine": 1956,
       "originalLine": 16739,
       "characters": 1163,
       "sourceHash": "382054e98d0bc4a12cd083c967c8317f58f293d2c1dd8a51272041e6a9b167c5",
@@ -20622,7 +20630,7 @@
     {
       "name": "ensureFishRelationships",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 1981,
+      "sourceLine": 1987,
       "originalLine": 16764,
       "characters": 1486,
       "sourceHash": "ff3321adb5db1d5750b95d21e6ef9b339c923f0731082fbf880ecf624cdd4d5e",
@@ -20636,7 +20644,7 @@
     {
       "name": "processFishBehaviorState",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2022,
+      "sourceLine": 2028,
       "originalLine": 16805,
       "characters": 270,
       "sourceHash": "11d305585a2bb41ce34536939c12cfaff7d0835fe0a0568243491ff373c9ba04",
@@ -20648,10 +20656,10 @@
     {
       "name": "applyBehaviorTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2033,
+      "sourceLine": 2039,
       "originalLine": 16816,
-      "characters": 1972,
-      "sourceHash": "fb311881bdc458537297221cdd9af1ab41715f1c06d281e70d2ddac265adef28",
+      "characters": 2121,
+      "sourceHash": "0ae9d4e0b8a513f45f7b3abbc3a94d9f13d4d42613e410e7702ac5c7433c42de",
       "calls": [
         "clamp",
         "clampTankLayer",
@@ -20666,7 +20674,7 @@
     {
       "name": "getAvoidanceEscapeTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2078,
+      "sourceLine": 2086,
       "originalLine": 16861,
       "characters": 2692,
       "sourceHash": "8bfc5d0ad552ff6ea824926e33bdad7d60c5e11c69ff47c0b982b108879d296a",
@@ -20681,7 +20689,7 @@
     {
       "name": "pickRelationshipBehaviorTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2143,
+      "sourceLine": 2151,
       "originalLine": 16926,
       "characters": 4761,
       "sourceHash": "a302099689d5834cf0f2d806ba9dfd5bd76656dd6d46022e7084970cde126d67",
@@ -20703,7 +20711,7 @@
     {
       "name": "pickNightBehaviorTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2248,
+      "sourceLine": 2256,
       "originalLine": 16984,
       "characters": 2608,
       "sourceHash": "58a44811174c1a6604c323925f37333dd8e3d8cbebf18444b3dfa2f6e5a1f4ac",
@@ -20723,7 +20731,7 @@
     {
       "name": "pickFeedingMemoryBehaviorTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2333,
+      "sourceLine": 2341,
       "originalLine": 17064,
       "characters": 1824,
       "sourceHash": "8f2490ef63165e1095c963df73b4332a9a67575a0d2fb5e7ffbf580bc876bcda",
@@ -20745,7 +20753,7 @@
     {
       "name": "pickPersonalityDecorBehaviorTarget",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2376,
+      "sourceLine": 2384,
       "originalLine": 17107,
       "characters": 3227,
       "sourceHash": "a70a189900c50f07b84ca938074232bef462e3adb12ae1920f9c20d79271ade9",
@@ -20761,10 +20769,10 @@
     {
       "name": "applyFishBehaviorIntentLayer",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2453,
+      "sourceLine": 2461,
       "originalLine": 17184,
-      "characters": 1977,
-      "sourceHash": "112caea23963060befd434de04e9a6747c5d8fc8ab812f3ac3f9d4b782272552",
+      "characters": 2111,
+      "sourceHash": "b97190ec849485381443651234659e88079428e333401c7235595b4a78f5c2a0",
       "calls": [
         "applyBehaviorTarget",
         "applyDiseaseAvoidanceTarget",
@@ -20772,6 +20780,7 @@
         "getEffectiveFishBehavior",
         "isFishDead",
         "isNightActiveFish",
+        "isPeacefulModeEnabled",
         "isTankLightsOut",
         "isUndeadFish",
         "pickDiseaseBehaviorTarget",
@@ -20787,7 +20796,7 @@
     {
       "name": "recordFishFeedingMemory",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2497,
+      "sourceLine": 2509,
       "originalLine": 17228,
       "characters": 1156,
       "sourceHash": "8fbc161cb86a36967fefa3121b829498ae11c4a9ca19feed50924960b2e0c908",
@@ -20801,7 +20810,7 @@
     {
       "name": "shouldFishRefuseFoodForComfort",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2523,
+      "sourceLine": 2535,
       "originalLine": 17254,
       "characters": 1306,
       "sourceHash": "4c90a5d9831e83849a6f6931e5e8de5e690af1b23b3a72ffffc45576f7bc2ee3",
@@ -20819,7 +20828,7 @@
     {
       "name": "handleFishRefuseFoodPellet",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2558,
+      "sourceLine": 2570,
       "originalLine": 17280,
       "characters": 1980,
       "sourceHash": "f4e222b105504a0c7460410b4d3287c96620b1772da9ab959b25391235152726",
@@ -20842,7 +20851,7 @@
     {
       "name": "getUvGlowSourceKey",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2604,
+      "sourceLine": 2616,
       "originalLine": 17311,
       "characters": 575,
       "sourceHash": "e1f3bcb9bb744d9d6b36b5344e6326afa8d2773212508f7a62f417dff3348828",
@@ -20851,7 +20860,7 @@
     {
       "name": "isUvLightLowCostMode",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2628,
+      "sourceLine": 2640,
       "originalLine": 17335,
       "characters": 103,
       "sourceHash": "c1eda62391248c21a8e9ad96a5d396cbb8457a13c565c8e08ceab926cd2f5e0d",
@@ -20862,7 +20871,7 @@
     {
       "name": "isUvLightGravelGlowEnabled",
       "module": "fish/needs-disease-and-behavior.js",
-      "sourceLine": 2632,
+      "sourceLine": 2644,
       "originalLine": 17339,
       "characters": 147,
       "sourceHash": "e2b22729e64fd0ee2460f2e57be207fa2179eaefe1bb466e13b0dddeb0a006b0",
@@ -22059,8 +22068,8 @@
       "module": "fish/predators-and-motion.js",
       "sourceLine": 3061,
       "originalLine": null,
-      "characters": 1797,
-      "sourceHash": "125b5f12dfc4e8b58ae7bcb4446994897a2b697e885faf320470eef04dd6b248",
+      "characters": 1827,
+      "sourceHash": "5562ef75cdb72a415b83e5072cf17670a2c3347d5ff1d13b451495b92626027c",
       "calls": [
         "clamp",
         "clampFishPlacement",
@@ -22081,7 +22090,7 @@
     {
       "name": "assignSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3100,
+      "sourceLine": 3101,
       "originalLine": 51906,
       "characters": 7273,
       "sourceHash": "e1345ceb73b71c99b6e16ae5b71731fe27ab4f0d0199a78a841bb8a52c890c43",
@@ -26189,8 +26198,8 @@
       "module": "rendering/fish-and-effects.js",
       "sourceLine": 617,
       "originalLine": 56843,
-      "characters": 9290,
-      "sourceHash": "a7876952685d6f3db592ba3947eb958cf5392f81c40a0f56ebbde58cd4ff2691",
+      "characters": 9487,
+      "sourceHash": "7b4a03ce3abcf7463984d4e0d6cccedda82d8cf1e23700a3072eea550901f248",
       "calls": [
         "clamp",
         "clampTankLayer",
@@ -26208,12 +26217,14 @@
         "getFishDisplayAssetPath",
         "getFishDisplayWidth",
         "getFishHealthRatio",
+        "getFishMaxHealthUnits",
         "getFishNeedsSnapshot",
         "getFishPose",
         "getFishTintedImage",
         "getFishUvGlowIntensity",
         "getPlacedDecorBounds",
         "getTankContainingFish",
+        "isPeacefulModeEnabled",
         "isSuckerFishFreeSwimming",
         "isUsableRuntimeImage",
         "markLightweightCausticImage",
@@ -26224,7 +26235,7 @@
     {
       "name": "drawWaterSurface",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 829,
+      "sourceLine": 832,
       "originalLine": 56995,
       "characters": 1232,
       "sourceHash": "4ee646237f1974b72bdb4c1142530e5ed6201e0a2ec42f61eb1acbc86d4c3a48",
@@ -26233,7 +26244,7 @@
     {
       "name": "drawSplashBursts",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 870,
+      "sourceLine": 873,
       "originalLine": 57036,
       "characters": 2170,
       "sourceHash": "6ebd7fd4177aae783d3e6af05e42eadc2628af977385ada5a1a909191ec254b4",
@@ -26245,7 +26256,7 @@
     {
       "name": "drawGlassTapEffects",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 937,
+      "sourceLine": 940,
       "originalLine": 57103,
       "characters": 3142,
       "sourceHash": "5bb6235ad81e7f5e038de679f0cc7ae1a595d11d232791d83a4628d7332added",
@@ -26257,7 +26268,7 @@
     {
       "name": "drawRearGrime",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1027,
+      "sourceLine": 1030,
       "originalLine": null,
       "characters": 2343,
       "sourceHash": "53abb52d78dfe8037eea446f8766a26d0d51fd9f1c95c05c3b2ce980f03dbb6d",
@@ -26273,7 +26284,7 @@
     {
       "name": "drawGrime",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1082,
+      "sourceLine": 1085,
       "originalLine": 57194,
       "characters": 2228,
       "sourceHash": "2b50b41fc4edfbfbb976f040d6cc8940a036b628d3d7d160f02ab5fdb71e74d1",
@@ -26289,7 +26300,7 @@
     {
       "name": "drawCleaningSparkles",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1142,
+      "sourceLine": 1145,
       "originalLine": 57217,
       "characters": 2419,
       "sourceHash": "54ab38ef5b67f07b37a530c954732173d03f361e689c92d885fbd33bdeea7057",
@@ -26302,7 +26313,7 @@
     {
       "name": "getFishPose",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1212,
+      "sourceLine": 1215,
       "originalLine": 57313,
       "characters": 10666,
       "sourceHash": "45f959dad619257295d92fbf76a1f08e0ff33ae4bd9963d78053f8eb9b0c92c1",
@@ -26444,8 +26455,8 @@
       "module": "rendering/fish-motion-and-floor.js",
       "sourceLine": 175,
       "originalLine": 62029,
-      "characters": 2114,
-      "sourceHash": "a0583b8e6d7b91f2404e3e5ec11ee0923663809f4b0315505cd3cfe8d36a55a0",
+      "characters": 1840,
+      "sourceHash": "ce35eaba4a71c9357180e79b1d599f8d47c935fbf504b04a7f6bef7ec6448fa6",
       "calls": [
         "getEffectiveFishBehavior",
         "getFishFacingDirection",
@@ -26456,7 +26467,7 @@
     {
       "name": "getActiveGravelContour",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 231,
+      "sourceLine": 220,
       "originalLine": 62085,
       "characters": 193,
       "sourceHash": "62fc1ee30199ef2c322353a1159d518e478c3a92952f5c2a4812e1a301f93f7e",
@@ -26465,7 +26476,7 @@
     {
       "name": "getVisibleTankVirtualBounds",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 238,
+      "sourceLine": 227,
       "originalLine": 62092,
       "characters": 896,
       "sourceHash": "782d9922b52eb40cc4423418fd83256402fa9113dbf15814ef9256292d9cec89",
@@ -26477,7 +26488,7 @@
     {
       "name": "getSceneLayoutVisibleTankVirtualBounds",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 257,
+      "sourceLine": 246,
       "originalLine": null,
       "characters": 298,
       "sourceHash": "cd6bf9bad79514e5d9c4ed1bba24ea559cb585d893c195eb36a14d1590fc8f37",
@@ -26489,7 +26500,7 @@
     {
       "name": "normalizeViewportNormRange",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 267,
+      "sourceLine": 256,
       "originalLine": 62111,
       "characters": 226,
       "sourceHash": "a16329d25544f66799d7dd577f08bc63d15a41e7c37896633bfc2917081165f6",
@@ -26500,7 +26511,7 @@
     {
       "name": "getMobileViewportSwimBoundsNorm",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 282,
+      "sourceLine": 271,
       "originalLine": 62126,
       "characters": 1666,
       "sourceHash": "05895483f2b7d2030ae35cd419e8173bce371bbf08c403c80ce6cf4f38cf40c3",
@@ -26517,7 +26528,7 @@
     {
       "name": "clampFishXNormToMobileViewport",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 332,
+      "sourceLine": 321,
       "originalLine": 62176,
       "characters": 379,
       "sourceHash": "16a99856e6c5d71e6c5b93ed4189807d7d8fb51547deec6caf3d5701cb3cee1b",
@@ -26531,7 +26542,7 @@
     {
       "name": "clampFishToMobileViewport",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 342,
+      "sourceLine": 331,
       "originalLine": 62186,
       "characters": 2027,
       "sourceHash": "f72403d33c6c285a99c5f5a70f6c74f1abafa996a99c4d4c57e006c7111b2bd6",
@@ -26554,7 +26565,7 @@
     {
       "name": "getTargetVisibleGravelHeightPx",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 395,
+      "sourceLine": 384,
       "originalLine": 62234,
       "characters": 366,
       "sourceHash": "6d5c93cf4273061bc39c7ccdd7eb48b75e6f266e8614ed97e0f83b7a4477ff50",
@@ -26566,7 +26577,7 @@
     {
       "name": "getTargetVisibleGravelHeightVirtual",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 401,
+      "sourceLine": 390,
       "originalLine": 62240,
       "characters": 714,
       "sourceHash": "8c6dae974cff98f766955a22b26a9801d749383f02d5b00e64d77c79c1e04fbd",
@@ -26581,7 +26592,7 @@
     {
       "name": "getVisibleTankFloorBottomY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 419,
+      "sourceLine": 408,
       "originalLine": 62244,
       "characters": 99,
       "sourceHash": "196b4de17b76beae11b822407e61b661802888c329ea0b92bdd8b1b343e9ca2a",
@@ -26592,7 +26603,7 @@
     {
       "name": "getDynamicGravelSurfaceBaseY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 423,
+      "sourceLine": 412,
       "originalLine": 62248,
       "characters": 166,
       "sourceHash": "0741ea4087c298c4ff637bd41e5cb67b714cdae51e5eafe36a0ae3c21254c1e3",
@@ -26604,7 +26615,7 @@
     {
       "name": "getGravelFloorLayoutKey",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 430,
+      "sourceLine": 419,
       "originalLine": 62255,
       "characters": 194,
       "sourceHash": "a830f2450a7a4e034b26034c255df95ef38e1d9a66b5a5986ed2b14f6f2cdc98",
@@ -26616,7 +26627,7 @@
     {
       "name": "getGravelSurfacePointY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 438,
+      "sourceLine": 427,
       "originalLine": 62263,
       "characters": 96,
       "sourceHash": "d3a3f4b128c7baf64839509ffe787feedfad832530c9a2e3c45447d340d92fa7",
@@ -26627,7 +26638,7 @@
     {
       "name": "traceTankFloorPath",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 442,
+      "sourceLine": 431,
       "originalLine": 62267,
       "characters": 563,
       "sourceHash": "e6f04f8bf97227a7869440515feb2601c475e4d3ff10d63892a1f8924dd8fd3b",
@@ -26639,7 +26650,7 @@
     {
       "name": "traceTankFloorSurfaceBandPath",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 455,
+      "sourceLine": 444,
       "originalLine": 62280,
       "characters": 654,
       "sourceHash": "c0728c82c5b8e14e13d3bc530fe87ea9aa8d8bebf67ca512880f9187a8d98c5d",
@@ -26651,7 +26662,7 @@
     {
       "name": "getTankFloorSurfaceYAtX",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 473,
+      "sourceLine": 462,
       "originalLine": 62298,
       "characters": 491,
       "sourceHash": "69eda8f7839c03b7196828dc8e3e7655a94df78177b7d0d71a18cf838039adc0",
@@ -26664,7 +26675,7 @@
     {
       "name": "buildGravelSurfaceContour",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 484,
+      "sourceLine": 473,
       "originalLine": 62309,
       "characters": 980,
       "sourceHash": "2abbbcd28c0921d929361e7df9fb3bd184c262d5468da4e5f1f1697ba6d4cecf",
@@ -30290,18 +30301,20 @@
       "module": "tank/catalog-and-equipment.js",
       "sourceLine": 594,
       "originalLine": 2399,
-      "characters": 695,
-      "sourceHash": "7154ab88422aaf8176a92d962071f53b04472768802e279ca01286bf84cec51d",
+      "characters": 825,
+      "sourceHash": "f432995ff328ccc87d1f5e9f2d99f72a9da6b2664bfc2be012c20ce24a5f2043",
       "calls": [
         "getCurrentTank",
         "getSpeciesForFish",
-        "getTankComfortFacts"
+        "getTankComfortFacts",
+        "isFishDead",
+        "isPeacefulModeEnabled"
       ]
     },
     {
       "name": "getFishNeedsStatus",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 617,
+      "sourceLine": 620,
       "originalLine": 2427,
       "characters": 323,
       "sourceHash": "0011a53a7da5f2740956b89f9ed603e472e929d6bc8b91563e32c0fc9fe281db",
@@ -30317,15 +30330,16 @@
     {
       "name": "isFishConflictActive",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 627,
+      "sourceLine": 630,
       "originalLine": 2437,
-      "characters": 2127,
-      "sourceHash": "b28b627a342d4a754b90ba9ecc5d3f7e1e87831ea3ece51e195bd499eed1e3da",
+      "characters": 2229,
+      "sourceHash": "e20c7cf14fd97c844e2c9317a1a164a94a723e5eb067bf4bf843e58b55222a0e",
       "calls": [
         "getCurrentTank",
         "getSpeciesForFish",
         "getTankComfortFacts",
         "isFishDead",
+        "isPeacefulModeEnabled",
         "isPiranhaSpecies",
         "isUndeadFish",
         "isZombieFish"
@@ -30334,7 +30348,7 @@
     {
       "name": "getFishConflictStatus",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 674,
+      "sourceLine": 680,
       "originalLine": 2484,
       "characters": 340,
       "sourceHash": "9677c9a45226441f9d3e9c162d1457caed9f8108bbcce85d61676f6cce4b8106",
@@ -30350,7 +30364,7 @@
     {
       "name": "renderComfortTagChips",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 684,
+      "sourceLine": 690,
       "originalLine": 2494,
       "characters": 642,
       "sourceHash": "797517ba763a988834a9f320548a059ecbb949cdd1241502d4980b7dcde6379f",
@@ -30361,7 +30375,7 @@
     {
       "name": "renderNeutralComfortTagChips",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 699,
+      "sourceLine": 705,
       "originalLine": 2509,
       "characters": 328,
       "sourceHash": "89382415e196c479a18c0691fb8ab75f598abe7a75b9bbe1f7614ea8ed2cee0c",
@@ -30374,7 +30388,7 @@
     {
       "name": "normalizeDecorKey",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 707,
+      "sourceLine": 713,
       "originalLine": 2917,
       "characters": 204,
       "sourceHash": "9b9c23a5108bcb3a8b7d7799fe996a836d28a910069738f0df2f9e48c7392419",
@@ -30383,7 +30397,7 @@
     {
       "name": "escapeHtml",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 716,
+      "sourceLine": 722,
       "originalLine": 3507,
       "characters": 209,
       "sourceHash": "183e1e899f507805b0368560b52548869fff05177861b75023777dee4b150dc3",
@@ -30392,7 +30406,7 @@
     {
       "name": "buildCoinIconMarkup",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 725,
+      "sourceLine": 731,
       "originalLine": 3516,
       "characters": 429,
       "sourceHash": "854dba7d9b1e653af3a30fc9a41b1f1de4832054c4b02ea1cd8393a60eebc1e8",
@@ -30404,7 +30418,7 @@
     {
       "name": "buildCoinAmountMarkup",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 733,
+      "sourceLine": 739,
       "originalLine": 3524,
       "characters": 333,
       "sourceHash": "1d4b4e7c26e729ee0bab0cb79c986d6d2ca468734286bc7fa53116630c94bef0",
@@ -30417,7 +30431,7 @@
     {
       "name": "formatStoreCoinCounterValue",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 740,
+      "sourceLine": 746,
       "originalLine": 3531,
       "characters": 109,
       "sourceHash": "1b8c01ff4c0cf91ee16a3c0edbcd8c9e68c5d7606d31dde61996e2b05873302b",
@@ -30426,7 +30440,7 @@
     {
       "name": "sanitizeTankName",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 744,
+      "sourceLine": 750,
       "originalLine": 3536,
       "characters": 188,
       "sourceHash": "6b1df7ded4705cbdf617adc97ac5ef26dec76b844faf9a9e5359842e918280bc",
@@ -30435,7 +30449,7 @@
     {
       "name": "buildDefaultTankName",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 751,
+      "sourceLine": 757,
       "originalLine": 3543,
       "characters": 95,
       "sourceHash": "5e72bd0fae07affde52e96436e402ed869f86a94e397afc6216b9e56ad66cfb5",
@@ -30444,7 +30458,7 @@
     {
       "name": "assignFallbackTankNames",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 755,
+      "sourceLine": 761,
       "originalLine": 3547,
       "characters": 261,
       "sourceHash": "ff15fd6b1b349ed36ee67b1cd18524ea3d06a3dda065205a6c4ac9810ac94837",
@@ -30456,7 +30470,7 @@
     {
       "name": "getNextAvailableTankName",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 765,
+      "sourceLine": 771,
       "originalLine": 3557,
       "characters": 364,
       "sourceHash": "9fa4364196805f151413b01dccffdb0096e964e936163a5c650f99ff3317071d",
@@ -30469,7 +30483,7 @@
     {
       "name": "getTankTypeMeta",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 777,
+      "sourceLine": 783,
       "originalLine": 3569,
       "characters": 73,
       "sourceHash": "d7d34d9bc75014c6264eb3b15a63827f7c410a81bec6656c8efa8750358568c8",
@@ -30478,7 +30492,7 @@
     {
       "name": "isBowlTank",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 781,
+      "sourceLine": 787,
       "originalLine": 3574,
       "characters": 66,
       "sourceHash": "cb597cf20b08cf691cada5f159a962b295475423b68ddfd53f779e05f75b42fd",
@@ -30489,7 +30503,7 @@
     {
       "name": "getTankProductImagePath",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 785,
+      "sourceLine": 791,
       "originalLine": 3578,
       "characters": 110,
       "sourceHash": "9445ce89c880b50b8eae386cfbb02b7d0097fe397436e7757a90ed69aa9993d7",
@@ -30500,7 +30514,7 @@
     {
       "name": "getTankProductImageFallback",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 789,
+      "sourceLine": 795,
       "originalLine": 3582,
       "characters": 815,
       "sourceHash": "7594fb365552bd2ce9e7eaf2c29104666f39bef1e8805236355e589154694858",
@@ -30509,7 +30523,7 @@
     {
       "name": "normalizeWaterType",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 804,
+      "sourceLine": 810,
       "originalLine": 3597,
       "characters": 382,
       "sourceHash": "012584dcc9879978702f646c72df422b35176e6d55d90d7a671dc25d915650c1",
@@ -30518,7 +30532,7 @@
     {
       "name": "inferWaterTypeFromTheme",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 815,
+      "sourceLine": 821,
       "originalLine": 3608,
       "characters": 316,
       "sourceHash": "bcad5d3bcc8ca8fb8ff3fb1e45f3230f1ebd5ab5aec122ceaddf51199ab16a53",
@@ -30527,7 +30541,7 @@
     {
       "name": "getTankById",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 826,
+      "sourceLine": 832,
       "originalLine": 3619,
       "characters": 229,
       "sourceHash": "308fb1cd4342b83a105cee412709df894cdabfb561a097e643e59864f6101710",
@@ -30536,7 +30550,7 @@
     {
       "name": "getCurrentTank",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 834,
+      "sourceLine": 840,
       "originalLine": 3627,
       "characters": 190,
       "sourceHash": "e9645aa29c1d235c9f08e665ad72063a77c98f1919ace888df84409ede3efb86",
@@ -30547,7 +30561,7 @@
     {
       "name": "getCurrentTankIndex",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 842,
+      "sourceLine": 848,
       "originalLine": 3635,
       "characters": 278,
       "sourceHash": "3c82b2047ba86deb12283080357dee4022c56ec9e0069e8c0c18c76e31212dc6",
@@ -30558,7 +30572,7 @@
     {
       "name": "getAllTanks",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 851,
+      "sourceLine": 857,
       "originalLine": 3644,
       "characters": 114,
       "sourceHash": "b458f9f37bc187b0a5ec7548d396b9192f5cd70b27bdbc87f73fe548dc3dfd2c",
@@ -30567,7 +30581,7 @@
     {
       "name": "getAllTankFish",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 855,
+      "sourceLine": 861,
       "originalLine": 3648,
       "characters": 145,
       "sourceHash": "fafa796e674428f7d7f454a9e14d22e7ff04f04764042f01f5b22d99910bedad",
@@ -30578,7 +30592,7 @@
     {
       "name": "getAllPlacedDecor",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 859,
+      "sourceLine": 865,
       "originalLine": 3652,
       "characters": 162,
       "sourceHash": "c34eec791f79141cbdac242255282cab18d204d7662d81e757d31ba25ac8f709",
@@ -30589,7 +30603,7 @@
     {
       "name": "getTankLabel",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 863,
+      "sourceLine": 869,
       "originalLine": 3656,
       "characters": 283,
       "sourceHash": "eb2eb4dc19a3f801096d8802fba1f10048c30df19c8746ea7cef8114e12d251d",
@@ -30602,7 +30616,7 @@
     {
       "name": "isTankEmpty",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 872,
+      "sourceLine": 878,
       "originalLine": 3665,
       "characters": 419,
       "sourceHash": "eb8e73d24a059fd3d75777bd876275fa02016fd0fe64da1edd9a5181fa0b33b3",
@@ -30614,7 +30628,7 @@
     {
       "name": "getFoodCatalogEntries",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 883,
+      "sourceLine": 889,
       "originalLine": 3675,
       "characters": 91,
       "sourceHash": "da54e3ee31be66dc1d4f1bc7ed973fc1d5480d3c71a3b410b8c480d4e7295340",
@@ -30623,7 +30637,7 @@
     {
       "name": "getMedicineCatalogEntries",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 887,
+      "sourceLine": 893,
       "originalLine": 3679,
       "characters": 99,
       "sourceHash": "ffe45860ed44f1889af50097d5dfdb8703810a1b138ad060ea593650e12c059b",
@@ -30632,7 +30646,7 @@
     {
       "name": "getFoodCatalog",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 891,
+      "sourceLine": 897,
       "originalLine": 3683,
       "characters": 78,
       "sourceHash": "6e489eb577e3d1db4b83fcc5e52802a27fdea22c6e7c40d5d1dbe94108a8ad3b",
@@ -30643,7 +30657,7 @@
     {
       "name": "getMedicineCatalog",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 895,
+      "sourceLine": 901,
       "originalLine": 3687,
       "characters": 86,
       "sourceHash": "db965ac1f6ee470d1ef8f22443b227b6d4ad2788139909e671cbf9859035d34e",
@@ -30654,7 +30668,7 @@
     {
       "name": "shouldShowFoodInStore",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 899,
+      "sourceLine": 905,
       "originalLine": 3691,
       "characters": 183,
       "sourceHash": "715d39c8fec117310a0ecb2a045f803a171086573dfb5193d028a7af4409576c",
@@ -30665,7 +30679,7 @@
     {
       "name": "shouldShowMedicineInStore",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 906,
+      "sourceLine": 912,
       "originalLine": 3701,
       "characters": 193,
       "sourceHash": "64292f796bff69647d27514c22219a0d178062f6a7556c561166073d61e12bac",
@@ -30677,7 +30691,7 @@
     {
       "name": "isFilteredGoreDecor",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 913,
+      "sourceLine": 919,
       "originalLine": 3708,
       "characters": 238,
       "sourceHash": "f10776faf469a3481732c7825d5cd30df03d3076d289ffa5e57adf8cae030bc4",
@@ -30686,7 +30700,7 @@
     {
       "name": "canUseDecorWithCurrentContentSettings",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 920,
+      "sourceLine": 926,
       "originalLine": 3715,
       "characters": 135,
       "sourceHash": "8c43ee7da4f8e28e93a4f12e69957cbc506c702f82fe72b1874347fcd89d1edc",
@@ -30698,7 +30712,7 @@
     {
       "name": "getDecorUnlockRequirement",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 924,
+      "sourceLine": 930,
       "originalLine": 3719,
       "characters": 225,
       "sourceHash": "09ca4d721bbc1d50cca82343ad5067d9a792b25174f3a02e326dc0a28e9b1a05",
@@ -30709,7 +30723,7 @@
     {
       "name": "isDecorUnlocked",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 929,
+      "sourceLine": 935,
       "originalLine": 3724,
       "characters": 86,
       "sourceHash": "2890252d4c94221f7a2c3024c84af9b61d88fd74af388df39ab5782d0d61d24a",
@@ -30720,7 +30734,7 @@
     {
       "name": "getDecorUnlockRequirementLabel",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 933,
+      "sourceLine": 939,
       "originalLine": 3728,
       "characters": 130,
       "sourceHash": "6e895db732948929d640b00bc0961a86352dd957602f433cd70c00112dccc8e3",
@@ -30732,7 +30746,7 @@
     {
       "name": "unlockDecorKey",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 937,
+      "sourceLine": 943,
       "originalLine": 3732,
       "characters": 487,
       "sourceHash": "00603feb070319a6214d06c8158ccba853162042c619330b980a7fc6ef8d3b41",
@@ -30747,7 +30761,7 @@
     {
       "name": "getFoodMeta",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 954,
+      "sourceLine": 960,
       "originalLine": 3749,
       "characters": 154,
       "sourceHash": "2de39cdb11fb08b35b97918972d0235cbbf49237b29fc7e1f577353bf4671545",
@@ -30758,7 +30772,7 @@
     {
       "name": "getMedicineMeta",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 961,
+      "sourceLine": 967,
       "originalLine": 3756,
       "characters": 178,
       "sourceHash": "0e703353d05b6abc2065e274dc13d14e332bbfa6277462dd95685cfa1acea6a1",
@@ -30769,7 +30783,7 @@
     {
       "name": "getDefaultFoodKey",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 968,
+      "sourceLine": 974,
       "originalLine": 3763,
       "characters": 105,
       "sourceHash": "b265a189329a2cbcf962971546140acde9dee0e34105e50dc61a97a5ee863228",
@@ -30781,7 +30795,7 @@
     {
       "name": "getDefaultFoodInventory",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 972,
+      "sourceLine": 978,
       "originalLine": 3767,
       "characters": 113,
       "sourceHash": "f3c4265d986c4d2515e25682b3e32388e005d9b3c846679ca15ef308812f558a",
@@ -30792,7 +30806,7 @@
     {
       "name": "getFoodDropSpritePaths",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 976,
+      "sourceLine": 982,
       "originalLine": 3771,
       "characters": 260,
       "sourceHash": "67396b67e64effb9c44a1e117aba7e60e51e97781a12c639bc7d6061dd0b6fec",
@@ -30803,7 +30817,7 @@
     {
       "name": "pickFoodDropSpritePath",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 983,
+      "sourceLine": 989,
       "originalLine": 3778,
       "characters": 341,
       "sourceHash": "b1572f95216a4297b06e49cc7bfde8eff494ab8f688e32a89f497f34e61dd51e",
@@ -30814,7 +30828,7 @@
     {
       "name": "resolveStoredFoodDropSpritePath",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 993,
+      "sourceLine": 999,
       "originalLine": 3788,
       "characters": 265,
       "sourceHash": "163c529ecd4a5ca23933b942b78813fbc35bca591e5a512af4dd23768d6c007c",
@@ -30825,7 +30839,7 @@
     {
       "name": "getFoodDropStyle",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1001,
+      "sourceLine": 1007,
       "originalLine": 3796,
       "characters": 269,
       "sourceHash": "fa6c5354b8fe635dbc499d27d336494663a7b5f2626abadb666d5e2967f0b4be",
@@ -30837,7 +30851,7 @@
     {
       "name": "isPelletSizedFoodSprite",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1009,
+      "sourceLine": 1015,
       "originalLine": null,
       "characters": 170,
       "sourceHash": "566462c76534336051e155022e92e32e3f54f38a13dfde07929b8b9234bab95c",
@@ -30848,7 +30862,7 @@
     {
       "name": "getFoodSpriteVisualSize",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1014,
+      "sourceLine": 1020,
       "originalLine": null,
       "characters": 451,
       "sourceHash": "dde01fe4842a2f8c430a068a858e45fb499c5598818a89185a285d4e366c459b",
@@ -30860,7 +30874,7 @@
     {
       "name": "getChumSpriteVisualScale",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1029,
+      "sourceLine": 1035,
       "originalLine": null,
       "characters": 443,
       "sourceHash": "0907a1175543317e61a55b7579110f7d23ae9a089b32ebd4e067f0edc3496ff6",
@@ -30869,7 +30883,7 @@
     {
       "name": "getFoodDropAppearance",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1042,
+      "sourceLine": 1048,
       "originalLine": 3804,
       "characters": 1092,
       "sourceHash": "9bf9a9ba175f37a27e6a94fc77e3f37b010c90a3fb313e4b4d61fd8b8ff1a501",
@@ -30884,7 +30898,7 @@
     {
       "name": "getDefaultMedicineInventory",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1061,
+      "sourceLine": 1067,
       "originalLine": 3823,
       "characters": 129,
       "sourceHash": "07621c0aee4d2ee82ce10d487e37ffbb1b97faed877d71a00f04bd32f1a38171",
@@ -30895,7 +30909,7 @@
     {
       "name": "sanitizeDispenserStoredPellet",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1065,
+      "sourceLine": 1071,
       "originalLine": 3827,
       "characters": 388,
       "sourceHash": "5889a9bed5703583bd4d27781d4c1d2422727f3bb06a5e3da185f1bf9f62e50d",
@@ -30908,7 +30922,7 @@
     {
       "name": "createDefaultAutoDispenserState",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1082,
+      "sourceLine": 1088,
       "originalLine": 3844,
       "characters": 1062,
       "sourceHash": "b1a6760a72f4016176203b526de8aac5ae027e7ed5231a1991ed82c4e7c46615",
@@ -30921,7 +30935,7 @@
     {
       "name": "getAutoDispenserLoadedCount",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1104,
+      "sourceLine": 1110,
       "originalLine": 3866,
       "characters": 161,
       "sourceHash": "5b6bbba76cba57a511bc0e621c7f02851b7b053a1f89bd5b90fc86692ba96a7e",
@@ -30930,7 +30944,7 @@
     {
       "name": "isAutoDispenserFoodLow",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1108,
+      "sourceLine": 1114,
       "originalLine": 3870,
       "characters": 403,
       "sourceHash": "bbcc6d9bdb3479749522a58f4128c53b9555a47e0b24b29a07feac187cc657a5",
@@ -30942,7 +30956,7 @@
     {
       "name": "hasAutoDispenserInstalled",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1122,
+      "sourceLine": 1128,
       "originalLine": 3884,
       "characters": 85,
       "sourceHash": "b7c2f8e3db659e9c5d4355521654198aec6d31998939ec0f3199efd3bd0a8363",
@@ -34589,8 +34603,8 @@
       "module": "ui/customization-actions-and-inventory.js",
       "sourceLine": 3214,
       "originalLine": 47801,
-      "characters": 8784,
-      "sourceHash": "93661ca5320933e8541ced6c8e7a578cc65e69081c869976dbc03775c8f987c2",
+      "characters": 9063,
+      "sourceHash": "d81c66d8e84bbacff8ab245c8c6c21daa914faddb3a01cb3f1f62936a8cbdec1",
       "calls": [
         "buildFishIndividualityMarkup",
         "clearFishInspectorDisplayDocking",
@@ -34616,6 +34630,7 @@
         "isFishJuvenile",
         "isFishSpeciesShopUnlocked",
         "isMealFreeFish",
+        "isPeacefulModeEnabled",
         "pluralize",
         "renderComfortTagChips",
         "renderFishInspectorBehaviorOptions",
@@ -34630,7 +34645,7 @@
     {
       "name": "renderDecorShop",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3419,
+      "sourceLine": 3425,
       "originalLine": 47981,
       "characters": 5121,
       "sourceHash": "2e7a177c8db36abf07cdbc612defceb4d56e9cffd075c6d0c094626def0cb805",
@@ -34667,7 +34682,7 @@
     {
       "name": "renderEquipmentShop",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3529,
+      "sourceLine": 3535,
       "originalLine": 48072,
       "characters": 5365,
       "sourceHash": "258ff6715d1f37a363c210a223792fe423ec990324f169aa6c7f5f7a5e0bcaab",
@@ -34691,7 +34706,7 @@
     {
       "name": "renderDecorInventory",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3656,
+      "sourceLine": 3662,
       "originalLine": 48283,
       "characters": 2964,
       "sourceHash": "9f8479aa207362adfd944905a572303e36feafbcfbfa486114152da3510dc666",
@@ -34743,8 +34758,8 @@
       "module": "ui/fish-inspector.js",
       "sourceLine": 40,
       "originalLine": 35232,
-      "characters": 489,
-      "sourceHash": "7937a13a9ef5897b44bfd7df2e310d4a5e0ca6ff87f360fc7521f63690ea6eb7",
+      "characters": 470,
+      "sourceHash": "2f5567386291854ed8263d9878c5ec7673c76ee8f9c8e554bd3bba8d560cdeeb",
       "calls": [
         "closeFishActionMenu",
         "getManagedFishById",
@@ -34754,7 +34769,7 @@
     {
       "name": "closeFishInspector",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 59,
+      "sourceLine": 57,
       "originalLine": 35251,
       "characters": 285,
       "sourceHash": "414b35d3f2311738e92d640ad0c9beb0374bcfece77a44bb5b3e30318a04bf5f",
@@ -34765,7 +34780,7 @@
     {
       "name": "setFishNameDraftFromInput",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 69,
+      "sourceLine": 67,
       "originalLine": 35261,
       "characters": 249,
       "sourceHash": "3b320d7ba8ccec6378ca48c0a3cb798bbbed692380011fedf8d898b7831423ce",
@@ -34774,7 +34789,7 @@
     {
       "name": "clearFishNameDraft",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 77,
+      "sourceLine": 75,
       "originalLine": 35269,
       "characters": 100,
       "sourceHash": "869216a115252179a4d623a97c607f77839ae0b5aee0909924be4aa5611ff701",
@@ -34783,7 +34798,7 @@
     {
       "name": "saveInspectorName",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 82,
+      "sourceLine": 80,
       "originalLine": 35274,
       "characters": 575,
       "sourceHash": "08e1388ab1292c2b7967a10ede0fbd40ee19dc4fdad559c3fd989d7df8474f52",
@@ -34800,7 +34815,7 @@
     {
       "name": "randomizeInspectorName",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 105,
+      "sourceLine": 103,
       "originalLine": 35297,
       "characters": 1115,
       "sourceHash": "42fcdbc14f2c4059b8eafe4174608cb126f0b3c6f46d1509dcd420790ed22e7d",
@@ -34817,7 +34832,7 @@
     {
       "name": "getWallpaperFishNameKeyboardRows",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 140,
+      "sourceLine": 138,
       "originalLine": 35332,
       "characters": 1608,
       "sourceHash": "5db01fbea0b1bc9142e03e99b9a851d4fbcd0eaae5966d7994fe501ad27a3e28",
@@ -34826,7 +34841,7 @@
     {
       "name": "renderWallpaperNameKeyboardInto",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 168,
+      "sourceLine": 166,
       "originalLine": 35360,
       "characters": 1170,
       "sourceHash": "b84215d188a7703bb7c85d039480665c99f29d9aa854e96f37d62b81fb91cbe9",
@@ -34838,7 +34853,7 @@
     {
       "name": "renderWallpaperFishNameKeyboard",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 193,
+      "sourceLine": 191,
       "originalLine": 35385,
       "characters": 103,
       "sourceHash": "f1b39014ff307e1b6aed60e6146737562f1f6e617b5f63851b855e0128b89458",
@@ -34849,7 +34864,7 @@
     {
       "name": "updateWallpaperFishNameKeyboard",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 197,
+      "sourceLine": 195,
       "originalLine": 35389,
       "characters": 544,
       "sourceHash": "11c881f4eda188ab0d5b710d2a1cdc72da0cd501d4e67b84ce55e16a122b297a",
@@ -34861,7 +34876,7 @@
     {
       "name": "setNameInputValue",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 214,
+      "sourceLine": 212,
       "originalLine": 35407,
       "characters": 336,
       "sourceHash": "d76760014d03172b2aee5712afe60fe449f36287eda2d7eb78f8e6a29c3f3160",
@@ -34870,7 +34885,7 @@
     {
       "name": "applyWallpaperNameKeyboardActionToInput",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 224,
+      "sourceLine": 222,
       "originalLine": 35417,
       "characters": 1007,
       "sourceHash": "9874be2733c57975b9864a9983c1178407a6db63d352265fc3834568942f7295",
@@ -34883,7 +34898,7 @@
     {
       "name": "applyWallpaperFishNameKeyboardAction",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 258,
+      "sourceLine": 256,
       "originalLine": 35451,
       "characters": 137,
       "sourceHash": "dc336461d55a3c05947ee1dd4c90cec9f11b4bd87900bcd407d36ef64aa9bfc6",
@@ -34894,7 +34909,7 @@
     {
       "name": "syncWallpaperUtilityNameKeyboards",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 262,
+      "sourceLine": 260,
       "originalLine": 35455,
       "characters": 846,
       "sourceHash": "bd3176a968826dd7183aad514273946db14ae27be42c45c4c2c098e20ae9ca73",
@@ -34906,7 +34921,7 @@
     {
       "name": "toggleFishInspectorSettings",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 283,
+      "sourceLine": 281,
       "originalLine": 35476,
       "characters": 209,
       "sourceHash": "3d24087796225d5d97a4043a46bf0245e5dbbd36ee50a503bd252f7eb88120e2",
@@ -34918,7 +34933,7 @@
     {
       "name": "buyInspectorFish",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 291,
+      "sourceLine": 289,
       "originalLine": 35484,
       "characters": 206,
       "sourceHash": "dcb7b213861affa53a28202a2494e9357de1701057b14e5f18c3cfc035e84d51",
@@ -34930,7 +34945,7 @@
     {
       "name": "getFishInspectorBehaviorProfiles",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 301,
+      "sourceLine": 299,
       "originalLine": 35494,
       "characters": 345,
       "sourceHash": "a2cc713cf12f9372f6695410152680a38dd9151716f42f88d24e1dd3aa301ebc",
@@ -34944,7 +34959,7 @@
     {
       "name": "renderFishInspectorBehaviorOptions",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 312,
+      "sourceLine": 310,
       "originalLine": 35504,
       "characters": 630,
       "sourceHash": "ef22df2c88bd37a07d3c9dbb840b5052466486c3df27ebadcf05e57c871f93ba",
@@ -34958,7 +34973,7 @@
     {
       "name": "setInspectorInputValue",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 326,
+      "sourceLine": 324,
       "originalLine": 35518,
       "characters": 165,
       "sourceHash": "8224ad5db54752f19aafcab1e0343e5bbb62fc613eeb54446c7840a60d572416",
@@ -34967,7 +34982,7 @@
     {
       "name": "renderFishInspectorColorControls",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 332,
+      "sourceLine": 330,
       "originalLine": 35524,
       "characters": 1892,
       "sourceHash": "acdcb937c3181795803ff52812c5a70cc4f5ecd33312b7240a7830a6af4c1f7c",
@@ -34982,7 +34997,7 @@
     {
       "name": "updateInspectorFishReadouts",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 391,
+      "sourceLine": 389,
       "originalLine": 35583,
       "characters": 630,
       "sourceHash": "12f47eee4a32219a6a4011b9fe618fedc474c1b85bf8f8abad733a3a3ead24ca",
@@ -34999,7 +35014,7 @@
     {
       "name": "updateInspectorFishSetting",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 403,
+      "sourceLine": 401,
       "originalLine": 35595,
       "characters": 2667,
       "sourceHash": "62c56f048e499a7125f8843e7201358bf347c6a8be4ed329bba7517b318a999b",
@@ -35025,7 +35040,7 @@
     {
       "name": "queueInspectorFishColorPreview",
       "module": "ui/fish-inspector.js",
-      "sourceLine": 497,
+      "sourceLine": 495,
       "originalLine": null,
       "characters": 878,
       "sourceHash": "cae40cfa6e392f7954063bd7756ffa103065f4da84d87659be7a4cbd6aac73e6",

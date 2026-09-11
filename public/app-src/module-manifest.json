@@ -617,6 +617,7 @@
         "assets/custom-content.js",
         "borough/living-borough.js",
         "core/platform.js",
+        "core/settings-and-persistence.js",
         "core/utilities.js",
         "debug/tools.js",
         "decor/layout-and-layers.js",
@@ -1089,6 +1090,7 @@
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
+        "core/settings-and-persistence.js",
         "core/utilities.js",
         "debug/tools.js",
         "decor/customization.js",

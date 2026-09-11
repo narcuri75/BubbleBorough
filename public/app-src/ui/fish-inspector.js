@@ -50,9 +50,7 @@ function openFishInspector(fishId, options = {}) {
   closeFishActionMenu();
   runtime.selectedFishId = fishId;
   runtime.selectedFishStatusFishId = fishId;
-  if (options.settingsOpen === true) {
-    runtime.fishInspectorSettingsOpen = true;
-  }
+  runtime.fishInspectorSettingsOpen = options.settingsOpen !== false;
   renderUi(Date.now());
 }
 

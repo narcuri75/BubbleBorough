@@ -608,10 +608,16 @@ function isActiveDiseaseState(stateId) {
 }
 
 function hasActiveFishDisease(fish) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
   return Boolean(fish && isActiveDiseaseState(fish.diseaseState));
 }
 
 function isFishDiseaseVisible(fish) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
   return [
     DISEASE_STATE_EARLY,
     DISEASE_STATE_VISIBLE,
@@ -2049,9 +2055,11 @@ function applyBehaviorTarget(fish, species, target, now = Date.now()) {
     fish.swimSpeed = normalizeFishSpeed(species, target.slow ? randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.72)) : undefined);
   }
   if (target.intentType) {
+    const intentDurationMs = Math.max(1200, Math.min(18000, (Number(fish.targetAt) || now + 4000) - now + 900));
     setFishBehaviorIntent(fish, target.intentType, target.intentCause || "", now, {
       targetId: target.intentTargetId || target.hangoutDecorId || target.decorId || "",
-      targetName: target.intentTargetName || ""
+      targetName: target.intentTargetName || "",
+      durationMs: intentDurationMs
     });
   }
   if (target.signalType) {
@@ -2452,6 +2460,10 @@ function pickPersonalityDecorBehaviorTarget(fish, species, now = Date.now()) {
 
 function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish) || isUndeadFish(fish)) {
+    return false;
+  }
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    fish.behaviorIntent = null;
     return false;
   }
   if (applyDiseaseAvoidanceTarget(fish, species, now)) {

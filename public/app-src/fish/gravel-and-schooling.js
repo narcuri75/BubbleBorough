@@ -1173,6 +1173,9 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   ) {
     return null;
   }
+  if (Number.isFinite(Number(fish.followCooldownUntil)) && now < Number(fish.followCooldownUntil)) {
+    return null;
+  }
 
   const schoolingStrength = getFishSchoolingStrength(fish, species);
   if (schoolingStrength <= 0.025) {
@@ -1222,6 +1225,7 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   );
   fish.followFishId = leader.id;
   fish.followUntil = followUntil;
+  fish.followCooldownUntil = followUntil + randomBetween(2200, 5200);
   fish.followOffsetXNorm = null;
   fish.followOffsetYNorm = null;
   const anchor = getFishSchoolFollowAnchor(fish, leader);

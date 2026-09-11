@@ -177,28 +177,17 @@ function setFishDirection(fish, desiredDirection, species, now) {
   if (getEffectiveFishBehavior(fish, species) !== "sucker") {
     const currentDisplayDirection = getFishFacingDirection(fish);
     const currentDisplayAngle = currentDisplayDirection < 0 ? Math.PI : 0;
-    fish.direction = nextDirection;
 
     if (fish.turnStartedAt && fish.turnDurationMs > 0) {
-      const pendingDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
-      if (nextDirection === pendingDirection) {
-        return;
-      }
-
-      if (nextDirection === currentDisplayDirection) {
-        fish.displayDirection = nextDirection;
-        fish.displayAngle = currentDisplayAngle;
-        fish.turnStartedAt = null;
-        fish.turnDurationMs = 0;
-        fish.turnFromDirection = nextDirection;
-        fish.turnToDirection = nextDirection;
-        fish.turnFromAngle = currentDisplayAngle;
-        fish.turnToAngle = currentDisplayAngle;
-        fish.turnSpinDirection = nextDirection < 0 ? 1 : -1;
-      }
+      // Finish the current turn before accepting another reversal. Moving
+      // targets and collision corrections can cross the fish several times
+      // per second; cancelling and restarting here created rapid left/right
+      // flip loops even though the fish had barely moved.
+      fish.direction = Number(fish.turnToDirection) < 0 ? -1 : 1;
       return;
     }
 
+    fish.direction = nextDirection;
     if (nextDirection === currentDisplayDirection) {
       fish.displayDirection = nextDirection;
       fish.displayAngle = currentDisplayAngle;

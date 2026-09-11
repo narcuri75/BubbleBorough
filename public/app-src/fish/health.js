@@ -142,10 +142,16 @@ function hasPiranhaContext() {
 }
 
 function isFishSickOrDying(fish) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
   return Boolean(fish && !isFishDead(fish) && fish.healthUnits <= getFishSickHealthUnitsThreshold(fish));
 }
 
 function isFishCriticallyLowHealth(fish) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
   return Boolean(
     fish
     && !isFishDead(fish)
@@ -216,6 +222,7 @@ function getFishMaxHealthUnits(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishHealthRatio(fish, species = getSpeciesForFish(fish)) {
+  if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return 1;
   if (hasActiveCandyBoost(fish)) return 1;
   return clamp((Number(fish?.healthUnits) || 0) / Math.max(1, getFishMaxHealthUnits(fish, species)), 0, 1);
 }

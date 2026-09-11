@@ -766,7 +766,10 @@ function drawFish(now, layer = null, options = {}) {
           : (comfort?.value || 0) <= 0.64
             ? "warn"
             : "good";
-      const heartCount = Math.max(0, (Number(fish.healthUnits) || 0) / 2);
+      const displayHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !pose.isDead
+        ? getFishMaxHealthUnits(fish, species)
+        : (Number(fish.healthUnits) || 0);
+      const heartCount = Math.max(0, displayHealthUnits / 2);
       const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
       const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
       const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;

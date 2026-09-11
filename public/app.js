@@ -4292,7 +4292,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     render: renderInviteFriendUtilityOverlay,
     onBodyInput: handleInviteFriendUtilityOverlayInput,
     onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-send-friend-invite]", run: () => openInviteFriendEmailComposer() }
+      { selector: "[data-send-friend-invite]", run: (ctx, button) => sendInviteFriendEmails(button) }
     ])
   },
   "bubbler-settings": createPlacedDecorUtilityMode({
@@ -14791,9 +14791,7 @@ function bindEvents() {
   dom.importDataInput?.addEventListener("change", (event) => {
     void importSaveDataFromPicker(event);
   });
-  document.querySelector("[data-cloud-account-panel]")?.addEventListener("click", (event) => {
-    void handleCloudSettingsClick(event);
-  });
+  bindCloudAccountPanel();
   dom.localBackgroundInput?.addEventListener("change", (event) => {
     void importLocalBackgroundFromPicker(event);
   });
@@ -24205,7 +24203,7 @@ function sanitizeUiSettings(rawSettings) {
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
-    halloweenMode: normalizeHalloweenMode(source.halloweenMode),
+    halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
       ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
       : DEFAULT_UI_SETTINGS.editOverlayMode
@@ -53618,7 +53616,7 @@ function renderInviteFriendUtilityOverlay() {
       <div class="utility-confirm-card invite-friend-card">
         <div class="utility-confirm-copy">
           <strong>Think someone would like Bubble Borough?</strong>
-          <div class="fish-meta">Enter up to 20 email addresses separated by commas. Recipients are added as BCC so their addresses stay private from each other.</div>
+          <div class="fish-meta">Enter up to 20 email addresses separated by commas. Each friend receives a private invite directly from Bubble Borough.</div>
         </div>
         <label class="invite-friend-field">
           <span>Email addresses</span>
@@ -53631,7 +53629,7 @@ function renderInviteFriendUtilityOverlay() {
       </div>
     `,
     footer: buildUtilityActionsFooter([
-      { label: "Open Email Invite", attribute: "data-send-friend-invite" },
+      { label: "Send Invites", attribute: "data-send-friend-invite" },
       { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
     ]),
     closable: true
@@ -53653,7 +53651,7 @@ function handleInviteFriendUtilityOverlayInput(ctx, target) {
   return true;
 }
 
-function openInviteFriendEmailComposer() {
+async function sendInviteFriendEmails(button) {
   const input = dom.utilityOverlayBody?.querySelector("[data-invite-friend-emails]");
   const status = dom.utilityOverlayBody?.querySelector("[data-invite-friend-status]");
   const result = parseInviteFriendEmails(input instanceof HTMLTextAreaElement ? input.value : "");
@@ -53673,18 +53671,45 @@ function openInviteFriendEmailComposer() {
     return false;
   }
 
-  const subject = "I think you'd like Bubble Borough";
-  const body = [
-    "Hey! I think you'd like Bubble Borough.",
-    "",
-    "It's a browser aquarium game where you build and care for your own little underwater world.",
-    "",
-    "Play here: https://bubbleborough.com/"
-  ].join("\n");
-  const mailto = `mailto:?bcc=${encodeURIComponent(result.emails.join(","))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  if (status) status.textContent = "Opening your email app...";
-  window.location.href = mailto;
-  return true;
+  const session = await refreshCloudSessionIfNeeded();
+  if (!session?.access_token) {
+    if (status) status.textContent = "Sign in again before sending invites.";
+    return false;
+  }
+
+  if (button instanceof HTMLButtonElement) button.disabled = true;
+  if (input instanceof HTMLTextAreaElement) input.disabled = true;
+  if (status) status.textContent = result.emails.length === 1 ? "Sending invite..." : `Sending ${result.emails.length} invites...`;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-friend-invite`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ emails: result.emails })
+    });
+    const responseText = await response.text();
+    let data = null;
+    try { data = responseText ? JSON.parse(responseText) : null; } catch { data = null; }
+    if (!response.ok) throw new Error(data?.error || `Invite delivery failed (${response.status}).`);
+    if (status) status.textContent = result.emails.length === 1 ? "Invite sent." : `${result.emails.length} invites sent.`;
+    if (input instanceof HTMLTextAreaElement) input.value = "";
+    const count = dom.utilityOverlayBody?.querySelector("[data-invite-friend-count]");
+    if (count) count.textContent = "0 / 20";
+    showToast(result.emails.length === 1 ? "Friend invite sent." : `${result.emails.length} friend invites sent.`);
+    return true;
+  } catch (error) {
+    const message = error instanceof TypeError
+      ? "Invite delivery service is unavailable."
+      : (error?.message || "Could not send invites. Try again.");
+    if (status) status.textContent = message;
+    return false;
+  } finally {
+    if (button instanceof HTMLButtonElement) button.disabled = false;
+    if (input instanceof HTMLTextAreaElement) input.disabled = false;
+  }
 }
 
 function renderDecorBuyConfirmUtilityOverlay() {
@@ -55660,6 +55685,7 @@ function renderSettingsOverlay() {
     return;
   }
 
+  const isOpening = runtime.settingsOverlayOpen && dom.settingsOverlay.hidden;
   const settings = getContentSettings();
   const uiSettings = getUiSettings();
   const tutorialAvailable = isIntroTutorialEnabled();
@@ -55667,6 +55693,13 @@ function renderSettingsOverlay() {
   const mouseLockRow = dom.tankMouseLockToggleInput?.closest(".settings-toggle-row");
   dom.settingsOverlay.hidden = !runtime.settingsOverlayOpen;
   dom.settingsOverlay.classList.toggle("is-open", runtime.settingsOverlayOpen);
+  if (runtime.settingsOverlayOpen) {
+    renderCloudAccountPanel();
+  }
+  if (isOpening) {
+    const settingsScroller = dom.settingsOverlay.querySelector(".settings-panel-body");
+    if (settingsScroller instanceof HTMLElement) settingsScroller.scrollTop = 0;
+  }
   syncDebugToolsAuthorization();
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
@@ -76657,23 +76690,42 @@ function recordLocalSaveForCloud(savedAt = Date.now()) {
   setCloudMeta({ localSavedAt: savedAt });
 }
 
+function formatCloudSyncTimestamp(value) {
+  const date = value ? new Date(value) : null;
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).padStart(4, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
+function getLatestCloudSyncTimestamp() {
+  const meta = getCloudMeta();
+  return Number(meta.lastCloudSyncedAt) || meta.cloudUpdatedAt || "";
+}
+
 function getCloudSyncStatusPresentation(status, label = "") {
   const normalizedStatus = String(status || "");
   const normalizedLabel = String(label || "").trim();
+  const syncedAt = formatCloudSyncTimestamp(getLatestCloudSyncTimestamp());
   const presentations = {
     syncing: {
-      title: "Syncing...",
+      title: normalizedLabel === "Pending sync..." ? "Syncing Soon" : "Syncing Now",
       detail: normalizedLabel === "Pending sync..." ? "Changes are waiting to upload..." : "Uploading save data..."
     },
-    checking: { title: "Checking...", detail: "Looking for your latest cloud save..." },
+    checking: { title: "Syncing Now", detail: "Looking for your latest cloud save..." },
     synced: {
-      title: "Synced",
-      detail: normalizedLabel === "Cloud ready" ? "Cloud save is ready." : "All save data is up to date."
+      title: normalizedLabel === "Cloud ready" ? "Cloud Ready" : "Synced",
+      timestamp: syncedAt ? `at ${syncedAt}` : "",
+      detail: normalizedLabel === "Cloud ready" ? "Cloud save is ready." : "Your aquarium is safely backed up."
     },
     offline: { title: "Offline", detail: "Saved locally. Cloud sync will resume when you're online." },
     error: {
       title: "Sync Failed",
-      detail: normalizedLabel.toLowerCase().includes("check") ? "Could not verify your cloud save." : "Could not upload save data."
+      detail: normalizedLabel.toLowerCase().includes("check") ? "Could not verify your cloud save. Click to try again." : "Could not upload save data. Click to try again."
     },
     "signed-out": { title: "Not Signed In", detail: "Sign in to keep your aquarium backed up." }
   };
@@ -76688,9 +76740,16 @@ function setCloudSyncStatus(status, label = "") {
   document.querySelectorAll("[data-cloud-sync-status]").forEach((element) => {
     element.dataset.status = status;
     const text = element.querySelector("[data-cloud-sync-text]");
+    const time = element.querySelector("[data-cloud-sync-time]");
     const detail = element.querySelector("[data-cloud-sync-detail]");
     if (text) text.textContent = presentation.title;
+    if (time) time.textContent = presentation.timestamp || "";
     if (detail) detail.textContent = presentation.detail;
+    if (element instanceof HTMLButtonElement) {
+      const busy = status === "syncing" || status === "checking";
+      element.disabled = busy;
+      element.setAttribute("aria-busy", busy ? "true" : "false");
+    }
   });
 }
 
@@ -77578,9 +77637,50 @@ async function continueFromStartup() {
   showStartupAccountWelcome();
 }
 
+function ensureCloudAccountPanel() {
+  const settingsBody = document.querySelector("#settingsOverlay .settings-panel-body");
+  if (!settingsBody) return null;
+
+  let section = document.querySelector("#accountCloudSaveSettingsSection");
+  let container = section?.querySelector("[data-cloud-account-panel]") || document.querySelector("[data-cloud-account-panel]");
+  if (!section && container) section = container.closest(".settings-section");
+
+  if (!section) {
+    section = document.createElement("section");
+    section.id = "accountCloudSaveSettingsSection";
+    section.className = "settings-section";
+    settingsBody.prepend(section);
+  }
+
+  if (!container || !section.contains(container)) {
+    section.replaceChildren();
+    const heading = document.createElement("h3");
+    heading.textContent = "Account / Cloud Save";
+    container = document.createElement("div");
+    container.dataset.cloudAccountPanel = "";
+    section.append(heading, container);
+  }
+
+  section.hidden = false;
+  section.removeAttribute("hidden");
+  section.style.removeProperty("display");
+  if (settingsBody.firstElementChild !== section) settingsBody.prepend(section);
+  return container;
+}
+
+function bindCloudAccountPanel() {
+  const container = ensureCloudAccountPanel();
+  if (!container || container.dataset.cloudAccountClickBound === "true") return;
+  container.dataset.cloudAccountClickBound = "true";
+  container.addEventListener("click", (event) => {
+    void handleCloudSettingsClick(event);
+  });
+}
+
 function renderCloudAccountPanel() {
-  const container = document.querySelector("[data-cloud-account-panel]");
+  const container = ensureCloudAccountPanel();
   if (!container) return;
+  bindCloudAccountPanel();
   container.closest(".settings-section")?.classList.add("cloud-account-settings-section");
   container.closest(".settings-panel")?.classList.add("has-cloud-account-ui");
   const session = runtime.cloudSession || getCloudSession();
@@ -77596,60 +77696,57 @@ function renderCloudAccountPanel() {
     });
   } else {
     const username = getAccountUsernameForUser(userId);
-    const presentation = getCloudSyncStatusPresentation(runtime.cloudSyncStatus || "checking", runtime.cloudSyncLabel || "");
+    const syncStatus = runtime.cloudSyncStatus || "checking";
+    const presentation = getCloudSyncStatusPresentation(syncStatus, runtime.cloudSyncLabel || "");
+    const syncBusy = syncStatus === "syncing" || syncStatus === "checking";
     container.innerHTML = `
       <div class="cloud-account-shell">
-        <header class="cloud-account-hero">
-          <div class="cloud-account-title-group">
-            <span class="cloud-account-title-icon" aria-hidden="true"><span>↑</span><span>↓</span></span>
-            <div><strong>Cloud Save Sync</strong><span>Keep your progress safe across devices.</span></div>
-          </div>
-          <div class="cloud-sync-state-card" data-cloud-sync-status data-status="${escapeHtml(runtime.cloudSyncStatus || "checking")}" role="status" aria-live="polite">
-            <span class="cloud-sync-light" aria-hidden="true"></span>
-            <span class="cloud-sync-state-copy"><strong data-cloud-sync-text>${escapeHtml(presentation.title)}</strong><span data-cloud-sync-detail>${escapeHtml(presentation.detail)}</span></span>
-          </div>
-        </header>
+        <div class="cloud-account-section-heading cloud-account-main-heading">
+          <span class="cloud-account-title-icon" aria-hidden="true"><img src="assets/icons/settings/account-cloud.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+          <div><strong>Account &amp; Cloud Save</strong><span>Manage your account and keep your aquarium safe in the cloud.</span></div>
+        </div>
 
-        <section class="cloud-account-details-panel">
-          <div class="cloud-account-section-heading"><strong>Account Details</strong><span>Your account keeps your progress, settings, and unlocks safe.</span></div>
-          <div class="cloud-account-identity-grid">
-            <div class="cloud-account-identity-card">
-              <span class="cloud-account-avatar" aria-hidden="true">●</span>
+        <div class="cloud-account-dashboard">
+          <div class="cloud-account-core-panel">
+            <div class="cloud-account-identity-card cloud-account-username-card">
+              <span class="cloud-account-avatar" aria-hidden="true"><img src="assets/icons/settings/user.png" alt="" onerror="this.classList.add('is-missing')" /></span>
               <div class="cloud-account-identity-copy"><span>Username</span><strong>${escapeHtml(username)}</strong></div>
-              <button class="cloud-account-edit-button" type="button" data-cloud-edit-username aria-label="Edit username" title="Edit username">✎</button>
+              <button class="cloud-account-edit-button" type="button" data-cloud-edit-username aria-label="Edit username" title="Edit username"><img src="assets/icons/settings/edit.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /></button>
               <div class="cloud-account-username-editor" data-cloud-username-editor hidden>
                 <input type="text" maxlength="32" autocomplete="nickname" placeholder="Choose a name" value="${escapeHtml(username)}" data-cloud-settings-username>
                 <button class="small-button" type="button" data-cloud-save-username>Save</button>
                 <button class="small-button alt" type="button" data-cloud-cancel-username>Cancel</button>
               </div>
             </div>
-            <div class="cloud-account-identity-card">
-              <span class="cloud-account-mail-icon" aria-hidden="true">✉</span>
+
+            <div class="cloud-account-identity-card cloud-account-email-card">
+              <span class="cloud-account-mail-icon" aria-hidden="true"><img src="assets/icons/settings/email.png" alt="" onerror="this.classList.add('is-missing')" /></span>
               <div class="cloud-account-identity-copy"><span>Email</span><strong>${escapeHtml(email || "Signed in")}</strong>${pendingEmail ? `<small>Pending: ${escapeHtml(pendingEmail)}</small>` : ""}</div>
             </div>
-          </div>
-        </section>
 
-        <div class="cloud-account-primary-actions">
-          <button class="cloud-account-action cloud-account-action-primary" type="button" data-cloud-sync-now><span class="cloud-account-action-icon" aria-hidden="true">↻</span><span><strong>Sync Now</strong><small>Upload latest save</small></span></button>
-          <button class="cloud-account-action" type="button" data-cloud-download-save><span class="cloud-account-action-icon" aria-hidden="true">⇩</span><span><strong>Download Save</strong><small>Create a backup copy</small></span></button>
-          <button class="cloud-account-action" type="button" data-cloud-signout><span class="cloud-account-action-icon" aria-hidden="true">⇥</span><span><strong>Sign Out</strong><small>Disconnect this account</small></span></button>
+            <button class="cloud-sync-state-card" type="button" data-cloud-sync-now data-cloud-sync-status data-status="${escapeHtml(syncStatus)}" aria-label="Sync cloud save now" aria-live="polite" ${syncBusy ? "disabled" : ""}>
+              <span class="cloud-sync-light" aria-hidden="true"></span>
+              <span class="cloud-sync-state-copy"><span class="cloud-sync-label">Cloud Save Status</span><span class="cloud-sync-title-line"><strong data-cloud-sync-text>${escapeHtml(presentation.title)}</strong><span data-cloud-sync-time>${escapeHtml(presentation.timestamp || "")}</span></span><span data-cloud-sync-detail>${escapeHtml(presentation.detail)}</span></span>
+            </button>
+          </div>
+
+          <div class="cloud-account-side-actions">
+            <button class="cloud-account-compact-action" type="button" data-cloud-settings-signedin-forgot-password><img src="assets/icons/settings/reset-password.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /><strong>Reset Password</strong></button>
+            <button class="cloud-account-compact-action" type="button" data-cloud-toggle-email-editor><img src="assets/icons/settings/change-email.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /><strong>Change Email</strong></button>
+            <button class="cloud-account-compact-action cloud-account-logout-action" type="button" data-cloud-signout><img src="assets/icons/settings/logout.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /><strong>Log Out</strong></button>
+          </div>
         </div>
 
-        <section class="cloud-account-security" aria-label="Account security">
-          <div class="cloud-account-section-heading"><strong>Account Security</strong><span>Manage recovery and your sign-in email.</span></div>
-          <div class="cloud-account-security-grid">
-            <section class="cloud-account-security-card">
-              <div><strong>Forgot Password</strong><span>Send a password reset link to ${escapeHtml(email || "your account email")}.</span></div>
-              <button class="small-button alt" type="button" data-cloud-settings-signedin-forgot-password>Send Reset Email</button>
-            </section>
-            <section class="cloud-account-security-card cloud-account-security-card-email">
-              <div><strong>Change Email Address</strong><span>We'll verify the new address before changing your sign-in email.</span></div>
-              <div class="cloud-account-email-change-controls"><input type="email" placeholder="New email address" autocomplete="email" data-cloud-settings-new-email><button class="small-button alt" type="button" data-cloud-settings-change-email ${runtime.cloudEmailChangeBusy ? "disabled" : ""}>Change Email</button></div>
-              <small class="cloud-account-email-status" data-cloud-email-status role="status" aria-live="polite">${escapeHtml(runtime.cloudEmailChangeNotice || "")}</small>
-            </section>
+        <div class="cloud-account-email-editor" data-cloud-email-editor hidden>
+          <div><strong>Change Email Address</strong><span>We'll verify the new address before changing your sign-in email.</span></div>
+          <div class="cloud-account-email-change-controls">
+            <input type="email" placeholder="New email address" autocomplete="email" data-cloud-settings-new-email>
+            <button class="small-button" type="button" data-cloud-settings-change-email ${runtime.cloudEmailChangeBusy ? "disabled" : ""}>Send Verification</button>
+            <button class="small-button alt" type="button" data-cloud-cancel-email-editor>Cancel</button>
           </div>
-        </section>
+          <small class="cloud-account-email-status" data-cloud-email-status role="status" aria-live="polite">${escapeHtml(runtime.cloudEmailChangeNotice || "")}</small>
+        </div>
+
         <small class="cloud-account-message" data-cloud-settings-message>${escapeHtml(runtime.cloudAuthNotice || "")}</small>
       </div>`;
   }
@@ -77698,6 +77795,19 @@ async function handleCloudSettingsClick(event) {
       if (message) message.textContent = "Sending reset email...";
       await requestCloudPasswordReset(signedInEmail);
       if (message) message.textContent = "Password reset email sent. Check your inbox.";
+      return true;
+    }
+    if (target.closest("[data-cloud-toggle-email-editor]")) {
+      const editor = panel.querySelector("[data-cloud-email-editor]");
+      if (editor) {
+        editor.hidden = !editor.hidden;
+        if (!editor.hidden) panel.querySelector("[data-cloud-settings-new-email]")?.focus();
+      }
+      return true;
+    }
+    if (target.closest("[data-cloud-cancel-email-editor]")) {
+      const editor = panel.querySelector("[data-cloud-email-editor]");
+      if (editor) editor.hidden = true;
       return true;
     }
     if (target.closest("[data-cloud-settings-change-email]")) {
@@ -77759,7 +77869,6 @@ async function handleCloudSettingsClick(event) {
       return true;
     }
     if (target.closest("[data-cloud-sync-now]")) { await uploadCurrentSaveToCloud({ force: true }); return true; }
-    if (target.closest("[data-cloud-download-save]")) { await exportSaveData({ openOverlay: false }); return true; }
     if (target.closest("[data-cloud-signout]")) { await signOutCloudAccount(); return true; }
   } catch (error) {
     console.error(error);

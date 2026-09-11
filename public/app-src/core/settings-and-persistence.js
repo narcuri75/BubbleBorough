@@ -214,7 +214,7 @@ function sanitizeUiSettings(rawSettings) {
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
     uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
-    halloweenMode: normalizeHalloweenMode(source.halloweenMode),
+    halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
       ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
       : DEFAULT_UI_SETTINGS.editOverlayMode

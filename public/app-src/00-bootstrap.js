@@ -4289,7 +4289,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     render: renderInviteFriendUtilityOverlay,
     onBodyInput: handleInviteFriendUtilityOverlayInput,
     onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-send-friend-invite]", run: () => openInviteFriendEmailComposer() }
+      { selector: "[data-send-friend-invite]", run: (ctx, button) => sendInviteFriendEmails(button) }
     ])
   },
   "bubbler-settings": createPlacedDecorUtilityMode({

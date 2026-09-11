@@ -15699,6 +15699,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   position: relative;
   display: flex;
   align-items: center;
+  overflow: hidden;
   min-height: 70px;
   border: 1px solid rgba(139, 222, 255, .68);
   border-radius: 18px;
@@ -15731,6 +15732,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   box-sizing: border-box;
   padding: 0 22px 0 72px;
   border: 0;
+  border-radius: inherit;
   outline: 0;
   color: #f4fcff;
   background: transparent;
@@ -15837,6 +15839,13 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* Account / cloud save redesign */
+#accountCloudSaveSettingsSection {
+  display: block !important;
+  height: max-content !important;
+  min-height: max-content !important;
+  max-height: none !important;
+  align-self: start;
+}
 .settings-panel.has-cloud-account-ui { width: min(1080px, calc(100vw - 100px)); }
 .cloud-account-settings-section {
   padding: 0;
@@ -15848,7 +15857,10 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 }
 .cloud-account-settings-section > h3 { display: none; }
-.cloud-account-settings-section > [data-cloud-account-panel] { min-width: 0; }
+.cloud-account-settings-section > [data-cloud-account-panel] {
+  min-width: 0;
+  min-height: max-content;
+}
 .cloud-account-shell { display: grid; gap: 18px; padding: 22px; }
 .cloud-account-hero {
   display: grid;
@@ -16478,3 +16490,790 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 /* Email callbacks remain usable on phones; gameplay retains its device guard. */
 body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupported-blocker { display: none !important; }
 .loading-overlay.is-ready.is-auth-mode:not([hidden]) { display: grid !important; }
+
+/* Settings dashboard redesign 2026-09-10 */
+#settingsOverlay .settings-dashboard-panel {
+  width: min(1320px, calc(100vw - 72px));
+  max-width: 1320px;
+  max-height: min(92dvh, 980px);
+  gap: 16px;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(43, 206, 241, 0.42);
+  background:
+    radial-gradient(circle at 45% -18%, rgba(39, 191, 226, 0.17), transparent 38%),
+    linear-gradient(180deg, rgba(3, 40, 62, 0.97), rgba(2, 29, 48, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 30px 90px rgba(0, 0, 0, .5),
+    0 0 30px rgba(14, 150, 201, .08);
+}
+
+#settingsOverlay .settings-panel-header {
+  align-items: center;
+  padding: 2px 4px 14px;
+  border-bottom: 1px solid rgba(68, 197, 229, .22);
+}
+
+#settingsOverlay .settings-panel-copy {
+  gap: 3px;
+}
+
+#settingsOverlay .settings-panel-copy h2 {
+  margin: 0;
+  color: #f3fbff;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  line-height: 1.05;
+  letter-spacing: -.02em;
+}
+
+#settingsOverlay .settings-panel-copy > p:last-child {
+  margin: 0;
+  color: rgba(211, 236, 247, .82);
+  font-size: .95rem;
+}
+
+#settingsOverlay .settings-kicker {
+  color: rgba(209, 235, 247, .78);
+  font-size: .68rem;
+  letter-spacing: .2em;
+}
+
+#settingsOverlay .settings-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+#settingsOverlay .settings-debug-control {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+#settingsOverlay .settings-debug-control[hidden] {
+  display: none !important;
+}
+
+#settingsOverlay .settings-debug-toggle {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 43px;
+  box-sizing: border-box;
+  padding: 7px 10px 7px 15px;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 207, 241, .42);
+  background: linear-gradient(180deg, rgba(4, 61, 88, .78), rgba(3, 42, 66, .86));
+  color: #eefaff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+  font-size: .9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#settingsOverlay .settings-debug-toggle .settings-checkbox {
+  margin: 0;
+}
+
+#settingsOverlay .settings-header-actions .store-close-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border-color: rgba(255, 92, 85, .55);
+  background: linear-gradient(180deg, #9e241f, #741713);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.13), 0 8px 20px rgba(53, 5, 6, .24);
+}
+
+#settingsOverlay .settings-scroll-shell {
+  display: block;
+  min-height: 0;
+}
+
+#settingsOverlay .settings-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "account account"
+    "data general"
+    "graphics audio"
+    "graphics other";
+  align-items: start;
+  column-gap: 14px;
+  row-gap: 10px;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 4px 2px 0;
+}
+
+#settingsOverlay .settings-account-card { grid-area: account; }
+#settingsOverlay .settings-data-card { grid-area: data; }
+#settingsOverlay .settings-general-card { grid-area: general; }
+#settingsOverlay .settings-graphics-card { grid-area: graphics; }
+#settingsOverlay .settings-audio-card { grid-area: audio; }
+#settingsOverlay .settings-other-card { grid-area: other; }
+
+#settingsOverlay .settings-section {
+  gap: 11px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(47, 186, 222, .34);
+  background:
+    linear-gradient(180deg, rgba(7, 55, 79, .76), rgba(3, 39, 60, .84));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 8px 18px rgba(0, 12, 27, .08);
+}
+
+#settingsOverlay .settings-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+#settingsOverlay .settings-section-heading > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+#settingsOverlay .settings-section-heading-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  color: #6de8fb;
+  line-height: 1;
+}
+
+#settingsOverlay .settings-section-heading-icon img,
+#settingsOverlay .settings-button-icon,
+#settingsOverlay .cloud-account-title-icon img,
+#settingsOverlay .cloud-account-avatar img,
+#settingsOverlay .cloud-account-mail-icon img,
+#settingsOverlay .cloud-account-edit-button img,
+#settingsOverlay .cloud-account-compact-action > img {
+  display: block;
+  object-fit: contain;
+}
+
+#settingsOverlay .settings-section-heading-icon img {
+  width: 34px;
+  height: 34px;
+}
+
+#settingsOverlay .settings-button-icon {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+}
+
+#settingsOverlay img.is-missing {
+  visibility: hidden;
+}
+
+#settingsOverlay .settings-section h3 {
+  margin: 0;
+  color: #f1fbff;
+  font-size: 1.15rem;
+  line-height: 1.15;
+}
+
+#settingsOverlay .settings-section-note {
+  margin: 0;
+  color: rgba(194, 226, 238, .75);
+  font-size: .78rem;
+  line-height: 1.35;
+}
+
+#settingsOverlay .settings-section-heading-icon {
+  font-weight: 700;
+  opacity: .98;
+}
+
+#settingsOverlay .settings-toggle-row,
+#settingsOverlay .settings-toolbar-color-row,
+#settingsOverlay .settings-inline-action {
+  min-height: 54px;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  gap: 12px;
+  border-radius: 13px;
+  border: 1px solid rgba(66, 164, 197, .22);
+  background: rgba(1, 25, 42, .52);
+}
+
+#settingsOverlay .settings-toggle-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+#settingsOverlay .settings-toolbar-color-row,
+#settingsOverlay .settings-inline-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+#settingsOverlay .settings-toggle-copy {
+  gap: 2px;
+}
+
+#settingsOverlay .settings-toggle-label {
+  color: #f0faff;
+  font-size: .84rem;
+  line-height: 1.2;
+}
+
+#settingsOverlay .settings-toggle-note {
+  color: rgba(190, 220, 232, .72);
+  font-size: .71rem;
+  line-height: 1.35;
+}
+
+#settingsOverlay .settings-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #36d7f3;
+}
+
+#settingsOverlay .settings-color-input {
+  width: 58px;
+  height: 34px;
+  min-width: 58px;
+  border-radius: 7px;
+  border: 5px solid rgba(255,255,255,.28);
+  background: transparent;
+  cursor: pointer;
+}
+
+#settingsOverlay .settings-select {
+  min-width: 118px;
+  border: 1px solid rgba(83, 190, 222, .32);
+  border-radius: 9px;
+  padding: 8px 28px 8px 10px;
+  color: #effbff;
+  background: rgba(5, 46, 68, .92);
+}
+
+#settingsOverlay .settings-data-actions,
+#settingsOverlay .settings-other-actions {
+  display: grid;
+  align-items: stretch;
+  gap: 10px;
+}
+
+#settingsOverlay .settings-data-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#settingsOverlay .settings-other-actions {
+  grid-template-columns: repeat(5, minmax(108px, 1fr));
+  margin-top: 4px;
+}
+
+#settingsOverlay .settings-data-actions .small-button,
+#settingsOverlay .settings-other-actions .small-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 16px;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 15px;
+  white-space: nowrap;
+}
+
+#settingsOverlay .settings-data-actions #exportDataButton {
+  color: #062f48;
+  border-color: rgba(142, 239, 255, .72);
+  background: linear-gradient(180deg, #79efff, #31ccec);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 20px rgba(42, 211, 239, .1);
+}
+
+#settingsOverlay .settings-data-actions #importDataButton {
+  color: #eefaff;
+  border-color: rgba(91, 145, 181, .32);
+  background: linear-gradient(180deg, rgba(51, 82, 111, .92), rgba(31, 57, 82, .96));
+}
+
+#settingsOverlay .settings-data-actions #resetProgressButton {
+  color: #fff2f4;
+  border-color: rgba(225, 91, 116, .38);
+  background: linear-gradient(180deg, rgba(121, 53, 71, .9), rgba(84, 40, 55, .94));
+}
+
+#settingsOverlay .settings-other-actions .donation-button {
+  color: #072f46;
+  background: linear-gradient(180deg, #78ebfb, #35cce8);
+  border-color: rgba(132, 238, 255, .7);
+}
+
+#settingsOverlay .settings-data-card,
+#settingsOverlay .settings-general-card {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  gap: 9px;
+}
+
+#settingsOverlay .settings-general-card .settings-toolbar-color-row {
+  min-height: 50px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+#settingsOverlay .settings-other-card {
+  padding-bottom: 16px;
+}
+
+#settingsOverlay .settings-other-actions .small-button {
+  font-size: .82rem;
+}
+
+#settingsOverlay .settings-other-actions .small-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 62px;
+  padding: 8px 10px;
+  line-height: 1.1;
+}
+
+#settingsOverlay .settings-other-actions .settings-button-icon {
+  width: 20px;
+  height: 20px;
+}
+
+#settingsOverlay .settings-graphics-card .settings-toggle-row,
+#settingsOverlay .settings-audio-card .settings-toggle-row {
+  min-height: 52px;
+}
+
+/* Compact account card, matching the dashboard layout. */
+#settingsOverlay #accountCloudSaveSettingsSection {
+  display: block !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0;
+  overflow: visible;
+  border-color: rgba(52, 207, 237, .42);
+  background:
+    radial-gradient(circle at 44% -40%, rgba(53, 211, 240, .13), transparent 42%),
+    linear-gradient(180deg, rgba(5, 51, 75, .86), rgba(2, 34, 55, .92));
+}
+
+#settingsOverlay #accountCloudSaveSettingsSection > h3 {
+  display: none;
+}
+
+#settingsOverlay #accountCloudSaveSettingsSection > [data-cloud-account-panel] {
+  min-height: 0;
+}
+
+#settingsOverlay .cloud-account-shell {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+#settingsOverlay .cloud-account-main-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+#settingsOverlay .cloud-account-main-heading > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+#settingsOverlay .cloud-account-main-heading > div > strong {
+  color: #f2fbff;
+  font-size: 1.18rem;
+  line-height: 1.1;
+}
+
+#settingsOverlay .cloud-account-main-heading > div > span {
+  color: #72d9ee;
+  font-size: .78rem;
+}
+
+#settingsOverlay .cloud-account-title-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  box-shadow: none;
+  background: rgba(34, 134, 169, .22);
+}
+
+#settingsOverlay .cloud-account-title-icon::before,
+#settingsOverlay .cloud-account-title-icon::after {
+  display: none;
+}
+
+#settingsOverlay .cloud-account-title-icon img {
+  width: 34px;
+  height: 34px;
+}
+
+#settingsOverlay .cloud-account-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 322px;
+  gap: 10px;
+  align-items: stretch;
+}
+
+#settingsOverlay .cloud-account-core-panel {
+  display: grid;
+  grid-template-columns: minmax(190px, .78fr) minmax(235px, .95fr) minmax(330px, 1.27fr);
+  gap: 0;
+  min-width: 0;
+  border: 1px solid rgba(66, 178, 213, .28);
+  border-radius: 15px;
+  background: rgba(1, 28, 46, .48);
+  overflow: hidden;
+}
+
+#settingsOverlay .cloud-account-identity-card,
+#settingsOverlay .cloud-sync-state-card {
+  min-height: 100px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#settingsOverlay .cloud-account-identity-card {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 11px;
+  padding: 15px 16px;
+}
+
+#settingsOverlay .cloud-account-username-card {
+  grid-template-columns: auto max-content auto minmax(0, 1fr);
+}
+
+#settingsOverlay .cloud-account-email-card {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+#settingsOverlay .cloud-account-core-panel > * + * {
+  border-left: 1px solid rgba(72, 185, 218, .24);
+}
+
+#settingsOverlay .cloud-account-avatar,
+#settingsOverlay .cloud-account-mail-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#settingsOverlay .cloud-account-avatar::before,
+#settingsOverlay .cloud-account-avatar::after {
+  display: none;
+}
+
+#settingsOverlay .cloud-account-avatar img,
+#settingsOverlay .cloud-account-mail-icon img {
+  width: 30px;
+  height: 30px;
+}
+
+#settingsOverlay .cloud-account-identity-copy > span {
+  color: rgba(224, 242, 250, .82);
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+#settingsOverlay .cloud-account-identity-copy > strong {
+  color: #f4fcff;
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
+
+#settingsOverlay .cloud-account-edit-button {
+  width: 28px;
+  height: 28px;
+  margin-left: -3px;
+  border-radius: 8px;
+  color: #9aedff;
+  background: linear-gradient(180deg, rgba(34, 109, 147, .82), rgba(21, 78, 110, .88));
+}
+
+#settingsOverlay .cloud-account-edit-button img {
+  width: 16px;
+  height: 16px;
+}
+
+#settingsOverlay .cloud-sync-state-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 16px;
+  color: #eefaff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+
+#settingsOverlay .cloud-sync-state-card:not(:disabled):hover,
+#settingsOverlay .cloud-sync-state-card:not(:disabled):focus-visible {
+  filter: brightness(1.1);
+  box-shadow: inset 0 0 0 1px rgba(122, 226, 245, .28);
+}
+
+#settingsOverlay .cloud-sync-state-card:disabled {
+  opacity: 1;
+  cursor: wait;
+}
+
+#settingsOverlay .cloud-sync-light {
+  width: 22px;
+  height: 22px;
+}
+
+#settingsOverlay .cloud-sync-state-copy {
+  gap: 3px;
+}
+
+#settingsOverlay .cloud-sync-title-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+#settingsOverlay .cloud-sync-title-line [data-cloud-sync-time] {
+  color: rgba(181, 226, 199, .72);
+  font-size: .78rem;
+  font-weight: 650;
+}
+
+#settingsOverlay .cloud-sync-label {
+  color: rgba(225, 241, 248, .8) !important;
+  font-size: .74rem !important;
+  font-weight: 800;
+}
+
+#settingsOverlay .cloud-sync-state-copy strong {
+  font-size: .92rem;
+  line-height: 1.25;
+}
+
+#settingsOverlay .cloud-sync-state-copy span[data-cloud-sync-detail] {
+  font-size: .72rem;
+}
+
+#settingsOverlay .cloud-sync-state-card[data-status="synced"] .cloud-sync-light {
+  box-shadow: 0 0 0 4px rgba(85,239,138,.07), 0 0 12px rgba(65,242,133,.3);
+}
+
+#settingsOverlay .cloud-sync-state-card[data-status="syncing"] .cloud-sync-title-line [data-cloud-sync-time],
+#settingsOverlay .cloud-sync-state-card[data-status="checking"] .cloud-sync-title-line [data-cloud-sync-time],
+#settingsOverlay .cloud-sync-state-card[data-status="error"] .cloud-sync-title-line [data-cloud-sync-time],
+#settingsOverlay .cloud-sync-state-card[data-status="offline"] .cloud-sync-title-line [data-cloud-sync-time] {
+  display: none;
+}
+
+#settingsOverlay .cloud-account-side-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .82fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+#settingsOverlay .cloud-account-compact-action {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 100px;
+  padding: 12px 6px;
+  border: 1px solid rgba(88, 190, 224, .35);
+  border-radius: 13px;
+  color: #effaff;
+  background: linear-gradient(180deg, rgba(25, 91, 128, .88), rgba(15, 66, 100, .92));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+#settingsOverlay .cloud-account-compact-action:hover,
+#settingsOverlay .cloud-account-compact-action:focus-visible {
+  filter: brightness(1.1);
+  border-color: rgba(105, 222, 247, .55);
+}
+
+#settingsOverlay .cloud-account-compact-action > img {
+  width: 21px;
+  height: 21px;
+}
+
+#settingsOverlay .cloud-account-compact-action strong {
+  width: 100%;
+  min-width: 0;
+  font-size: .82rem;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#settingsOverlay .cloud-account-logout-action {
+  border-color: rgba(220, 78, 95, .44);
+  background: linear-gradient(180deg, rgba(111, 47, 63, .94), rgba(78, 32, 49, .96));
+}
+
+#settingsOverlay .cloud-account-logout-action > span {
+  color: #ffd4d9;
+}
+
+#settingsOverlay .cloud-account-email-editor {
+  display: grid;
+  grid-template-columns: minmax(190px, .7fr) minmax(0, 1.3fr);
+  gap: 10px 14px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(71, 181, 216, .26);
+  border-radius: 13px;
+  background: rgba(1, 27, 45, .6);
+}
+
+#settingsOverlay .cloud-account-email-editor[hidden] {
+  display: none !important;
+}
+
+#settingsOverlay .cloud-account-email-editor > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+#settingsOverlay .cloud-account-email-editor strong {
+  color: #f2fbff;
+  font-size: .8rem;
+}
+
+#settingsOverlay .cloud-account-email-editor span {
+  color: rgba(191, 221, 233, .7);
+  font-size: .68rem;
+  line-height: 1.35;
+}
+
+#settingsOverlay .cloud-account-email-change-controls {
+  grid-template-columns: minmax(160px, 1fr) auto auto;
+}
+
+#settingsOverlay .cloud-account-email-status,
+#settingsOverlay .cloud-account-message {
+  min-height: 0;
+  color: #bfefff;
+  font-size: .68rem;
+  line-height: 1.35;
+}
+
+#settingsOverlay .cloud-account-email-status {
+  grid-column: 1 / -1;
+}
+
+#settingsOverlay .cloud-account-message:empty,
+#settingsOverlay .cloud-account-email-status:empty {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  #settingsOverlay .settings-dashboard-panel {
+    width: min(1020px, calc(100vw - 44px));
+  }
+  #settingsOverlay .cloud-account-dashboard {
+    grid-template-columns: 1fr;
+  }
+  #settingsOverlay .cloud-account-side-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  #settingsOverlay .cloud-account-compact-action {
+    min-height: 58px;
+    grid-template-columns: auto auto;
+    place-items: center;
+  }
+  #settingsOverlay .settings-other-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  #settingsOverlay .settings-dashboard-panel {
+    width: min(100%, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    padding: 14px;
+  }
+  #settingsOverlay .settings-panel-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+  #settingsOverlay .settings-header-actions {
+    align-items: flex-start;
+  }
+  #settingsOverlay .settings-debug-toggle {
+    min-height: 44px;
+    padding-left: 12px;
+  }
+  #settingsOverlay .settings-debug-toggle > span {
+    display: none;
+  }
+  #settingsOverlay .settings-dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "account"
+      "data"
+      "general"
+      "graphics"
+      "audio"
+      "other";
+  }
+  #settingsOverlay .cloud-account-core-panel {
+    grid-template-columns: 1fr;
+  }
+  #settingsOverlay .cloud-account-core-panel > * + * {
+    border-left: 0;
+    border-top: 1px solid rgba(72, 185, 218, .24);
+  }
+  #settingsOverlay .cloud-account-side-actions {
+    grid-template-columns: 1fr;
+  }
+  #settingsOverlay .cloud-account-compact-action {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    min-height: 52px;
+    text-align: left;
+  }
+  #settingsOverlay .cloud-account-email-editor {
+    grid-template-columns: 1fr;
+  }
+  #settingsOverlay .cloud-account-email-change-controls {
+    grid-template-columns: 1fr;
+  }
+  #settingsOverlay .settings-data-actions,
+  #settingsOverlay .settings-other-actions {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1439,7 +1439,7 @@ function renderInviteFriendUtilityOverlay() {
       <div class="utility-confirm-card invite-friend-card">
         <div class="utility-confirm-copy">
           <strong>Think someone would like Bubble Borough?</strong>
-          <div class="fish-meta">Enter up to 20 email addresses separated by commas. Recipients are added as BCC so their addresses stay private from each other.</div>
+          <div class="fish-meta">Enter up to 20 email addresses separated by commas. Each friend receives a private invite directly from Bubble Borough.</div>
         </div>
         <label class="invite-friend-field">
           <span>Email addresses</span>
@@ -1452,7 +1452,7 @@ function renderInviteFriendUtilityOverlay() {
       </div>
     `,
     footer: buildUtilityActionsFooter([
-      { label: "Open Email Invite", attribute: "data-send-friend-invite" },
+      { label: "Send Invites", attribute: "data-send-friend-invite" },
       { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
     ]),
     closable: true
@@ -1474,7 +1474,7 @@ function handleInviteFriendUtilityOverlayInput(ctx, target) {
   return true;
 }
 
-function openInviteFriendEmailComposer() {
+async function sendInviteFriendEmails(button) {
   const input = dom.utilityOverlayBody?.querySelector("[data-invite-friend-emails]");
   const status = dom.utilityOverlayBody?.querySelector("[data-invite-friend-status]");
   const result = parseInviteFriendEmails(input instanceof HTMLTextAreaElement ? input.value : "");
@@ -1494,18 +1494,45 @@ function openInviteFriendEmailComposer() {
     return false;
   }
 
-  const subject = "I think you'd like Bubble Borough";
-  const body = [
-    "Hey! I think you'd like Bubble Borough.",
-    "",
-    "It's a browser aquarium game where you build and care for your own little underwater world.",
-    "",
-    "Play here: https://bubbleborough.com/"
-  ].join("\n");
-  const mailto = `mailto:?bcc=${encodeURIComponent(result.emails.join(","))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  if (status) status.textContent = "Opening your email app...";
-  window.location.href = mailto;
-  return true;
+  const session = await refreshCloudSessionIfNeeded();
+  if (!session?.access_token) {
+    if (status) status.textContent = "Sign in again before sending invites.";
+    return false;
+  }
+
+  if (button instanceof HTMLButtonElement) button.disabled = true;
+  if (input instanceof HTMLTextAreaElement) input.disabled = true;
+  if (status) status.textContent = result.emails.length === 1 ? "Sending invite..." : `Sending ${result.emails.length} invites...`;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-friend-invite`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ emails: result.emails })
+    });
+    const responseText = await response.text();
+    let data = null;
+    try { data = responseText ? JSON.parse(responseText) : null; } catch { data = null; }
+    if (!response.ok) throw new Error(data?.error || `Invite delivery failed (${response.status}).`);
+    if (status) status.textContent = result.emails.length === 1 ? "Invite sent." : `${result.emails.length} invites sent.`;
+    if (input instanceof HTMLTextAreaElement) input.value = "";
+    const count = dom.utilityOverlayBody?.querySelector("[data-invite-friend-count]");
+    if (count) count.textContent = "0 / 20";
+    showToast(result.emails.length === 1 ? "Friend invite sent." : `${result.emails.length} friend invites sent.`);
+    return true;
+  } catch (error) {
+    const message = error instanceof TypeError
+      ? "Invite delivery service is unavailable."
+      : (error?.message || "Could not send invites. Try again.");
+    if (status) status.textContent = message;
+    return false;
+  } finally {
+    if (button instanceof HTMLButtonElement) button.disabled = false;
+    if (input instanceof HTMLTextAreaElement) input.disabled = false;
+  }
 }
 
 function renderDecorBuyConfirmUtilityOverlay() {

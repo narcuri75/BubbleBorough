@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260910-shared-auth" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260910-settings-dashboard-r3" />
   <style>
     #lightsOutToggleButton:disabled {
       opacity: 0.38;
@@ -556,182 +556,198 @@
 
             <section id="settingsOverlay" class="store-overlay settings-overlay" hidden aria-labelledby="settingsTitle"
               aria-modal="true" role="dialog">
-              <div class="settings-panel">
+              <div class="settings-panel settings-dashboard-panel">
                 <div class="settings-panel-header">
                   <div class="settings-panel-copy">
                     <p class="settings-kicker">Aquarium Tools</p>
                     <h2 id="settingsTitle">Settings</h2>
-                    <p>Manage save files, content filters, and reset tools for this aquarium.</p>
+                    <p>Manage your account, save data, graphics, and game preferences.</p>
                   </div>
 
-                  <button id="closeSettingsOverlay" class="store-close-button" type="button" title="Close settings"
-                    aria-label="Close settings">
-                    &times;
-                  </button>
+                  <div class="settings-header-actions">
+                    <section id="debugModeSettingsSection" class="settings-debug-control" hidden aria-label="Developer settings">
+                      <label class="settings-debug-toggle" for="debugModeToggleInput">
+                        <span>Debug Mode</span>
+                        <input id="debugModeToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+                    </section>
+                    <button id="closeSettingsOverlay" class="store-close-button" type="button" title="Close settings"
+                      aria-label="Close settings">
+                      &times;
+                    </button>
+                  </div>
                 </div>
 
                 <div class="wallpaper-scroll-shell settings-scroll-shell">
-                  <div class="settings-panel-body" data-wallpaper-scroll-target="settings">
-                  <section class="settings-section">
-                    <h3>Account / Cloud Save</h3>
-                    <div data-cloud-account-panel>
-                      <p class="settings-section-note">Cloud account controls are loading.</p>
-                    </div>
-                  </section>
-
-                  <section id="debugModeSettingsSection" class="settings-section" hidden>
-                    <h3>Developer</h3>
-                    <label class="settings-toggle-row" for="debugModeToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Debug Mode</span>
-                        <span class="settings-toggle-note">Enables developer testing tools for this account.</span>
+                  <div class="settings-panel-body settings-dashboard-grid" data-wallpaper-scroll-target="settings">
+                    <section id="accountCloudSaveSettingsSection" class="settings-section settings-account-card">
+                      <h3>Account / Cloud Save</h3>
+                      <div data-cloud-account-panel>
+                        <p class="settings-section-note">Cloud account controls are loading.</p>
                       </div>
-                      <input id="debugModeToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
-                  </section>
+                    </section>
 
-                  <section class="settings-section">
-                    <h3>Data</h3>
-                    <p class="settings-section-note">Export, import, or reset your aquarium save.</p>
-                    <div class="overview-actions">
-                      <button id="exportDataButton" class="small-button" type="button">
-                        Export
-                      </button>
-                      <button id="importDataButton" class="small-button alt" type="button">
-                        Import
-                      </button>
-                      <button id="resetProgressButton" class="small-button warn" type="button">
-                        Reset Progress
-                      </button>
-                    </div>
-                    <input id="importDataInput" type="file" accept=".json,application/json" hidden />
-                  </section>
-
-                  <section class="settings-section">
-                    <h3>General</h3>
-
-                    <!-- Toolbar and Digital Display location controls are intentionally disabled. -->
-
-                    <label class="settings-toolbar-color-row" for="toolbarTileColorInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Toolbar Tile Color</span>
-                        <span class="settings-toggle-note">Changes the color of the tile behind each toolbar icon.</span>
+                    <section class="settings-section settings-data-card">
+                      <div class="settings-section-heading">
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/data.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <div>
+                          <h3>Data</h3>
+                          <p class="settings-section-note">Export, import, or reset your aquarium save.</p>
+                        </div>
                       </div>
-                      <input id="toolbarTileColorInput" class="settings-color-input" type="color" value="#00438a" />
-                    </label>
-
-                    <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Tank Mouse Input</span>
-                        <span class="settings-toggle-note">Lock aquarium interactions while leaving the display and menus available.</span>
+                      <div class="overview-actions settings-data-actions">
+                        <button id="exportDataButton" class="small-button" type="button">
+                          <img class="settings-button-icon" src="assets/icons/settings/export.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /> Export
+                        </button>
+                        <button id="importDataButton" class="small-button alt" type="button">
+                          <img class="settings-button-icon" src="assets/icons/settings/import.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /> Import
+                        </button>
+                        <button id="resetProgressButton" class="small-button warn" type="button">
+                          <img class="settings-button-icon" src="assets/icons/settings/reset-progress.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /> Reset Progress
+                        </button>
                       </div>
-                      <button id="toggleMouseLockButton" class="small-button alt settings-action-button" type="button"
-                        aria-pressed="false">Lock Input</button>
-                    </div>
-                  </section>
+                      <input id="importDataInput" type="file" accept=".json,application/json" hidden />
+                    </section>
 
-                  <section class="settings-section">
-                    <h3>Graphics</h3>
-
-                    <label class="settings-toggle-row" for="violenceGoreToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Gore and Violence</span>
-                        <span class="settings-toggle-note">Toggles graphic effects and aggressive fish behavior.</span>
+                    <section class="settings-section settings-general-card">
+                      <div class="settings-section-heading">
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/general.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <div>
+                          <h3>General</h3>
+                          <p class="settings-section-note">Customize the look and feel.</p>
+                        </div>
                       </div>
-                      <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
 
-                    <label class="settings-toggle-row" for="ambientBubblesToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Ambient Bubbles</span>
-                        <span class="settings-toggle-note">Shows drifting aquarium bubbles.</span>
+                      <label class="settings-toolbar-color-row" for="toolbarTileColorInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Toolbar Tile Color</span>
+                          <span class="settings-toggle-note">Changes the color of the tile behind each toolbar icon.</span>
+                        </div>
+                        <input id="toolbarTileColorInput" class="settings-color-input" type="color" value="#00438a" />
+                      </label>
+
+                      
+
+                      <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Tank Mouse Input</span>
+                          <span class="settings-toggle-note">Lock aquarium interactions while leaving the display and menus available.</span>
+                        </div>
+                        <button id="toggleMouseLockButton" class="small-button alt settings-action-button" type="button"
+                          aria-pressed="false">Lock Input</button>
                       </div>
-                      <input id="ambientBubblesToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
+                    </section>
 
-                    <label class="settings-toggle-row" for="waterParticlesToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Particle System</span>
-                        <span class="settings-toggle-note">Shows suspended particles and subtle atmospheric particulate streaks.</span>
+                    <section class="settings-section settings-graphics-card">
+                      <div class="settings-section-heading">
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/graphics.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <div>
+                          <h3>Graphics</h3>
+                          <p class="settings-section-note">Visual effects and aquarium atmosphere.</p>
+                        </div>
                       </div>
-                      <input id="waterParticlesToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
 
-                    <label class="settings-toggle-row" for="causticLightingToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Caustic Lighting</span>
-                        <span class="settings-toggle-note">Shows animated refracted light patterns on the gravel.</span>
+                      <label class="settings-toggle-row" for="violenceGoreToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Gore and Violence</span>
+                          <span class="settings-toggle-note">Toggles graphic effects and aggressive fish behavior.</span>
+                        </div>
+                        <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+
+                      <label class="settings-toggle-row" for="ambientBubblesToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Ambient Bubbles</span>
+                          <span class="settings-toggle-note">Shows drifting aquarium bubbles.</span>
+                        </div>
+                        <input id="ambientBubblesToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+
+                      <label class="settings-toggle-row" for="waterParticlesToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Particle System</span>
+                          <span class="settings-toggle-note">Shows suspended particles and subtle atmospheric particulate streaks.</span>
+                        </div>
+                        <input id="waterParticlesToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+
+                      <label class="settings-toggle-row" for="causticLightingToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Caustic Lighting</span>
+                          <span class="settings-toggle-note">Shows animated refracted light patterns on the gravel.</span>
+                        </div>
+                        <input id="causticLightingToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+
+                      <label class="settings-toggle-row" for="decorShadowsToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Decor Shadows</span>
+                          <span class="settings-toggle-note">Shows soft contact shadows where decor meets the substrate.</span>
+                        </div>
+                        <input id="decorShadowsToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+                    </section>
+
+                    <section class="settings-section settings-audio-card">
+                      <div class="settings-section-heading">
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/audio.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <div>
+                          <h3>Audio</h3>
+                          <p class="settings-section-note">Control sound settings.</p>
+                        </div>
                       </div>
-                      <input id="causticLightingToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
 
-                    <label class="settings-toggle-row" for="decorShadowsToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Decor Shadows</span>
-                        <span class="settings-toggle-note">Shows soft contact shadows where decor meets the substrate.</span>
+                      <label class="settings-toggle-row" for="uiMuteToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Mute UI</span>
+                          <span class="settings-toggle-note">Turns off button press and menu feedback sounds only.</span>
+                        </div>
+                        <input id="uiMuteToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+
+                      <label class="settings-toggle-row" for="soundMuteToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Mute All Audio</span>
+                          <span class="settings-toggle-note">Turns off ambience and sound effects.</span>
+                        </div>
+                        <input id="soundMuteToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+                    </section>
+
+                    <section class="settings-section settings-credits-section settings-other-card" aria-label="Other settings">
+                      <div class="settings-section-heading">
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/other.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <div>
+                          <h3>Other</h3>
+                          <p class="settings-section-note">Additional resources and community.</p>
+                        </div>
                       </div>
-                      <input id="decorShadowsToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
-                  </section>
-
-                  <section class="settings-section">
-                    <h3>Seasonal</h3>
-                    <label class="settings-toggle-row" for="halloweenModeSelect">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Seasonal Mode</span>
-                        <span class="settings-toggle-note">Changes seasonal artwork. Automatic runs Halloween content October 1–31 in local time.</span>
+                      <div class="overview-actions settings-other-actions">
+                        <button class="small-button alt" type="button" data-open-invite-friend>
+                          <img class="settings-button-icon" src="assets/icons/settings/invite-friend.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          Invite A Friend
+                        </button>
+                        <button class="small-button alt credits-button" type="button" data-open-credits>
+                          <img class="settings-button-icon" src="assets/icons/settings/credits.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          Credits
+                        </button>
+                        <a class="small-button alt" href="https://forms.gle/p6Qnwo3SoHQJc8VY6" target="_blank"
+                          rel="noopener noreferrer">
+                          <img class="settings-button-icon" src="assets/icons/settings/feedback.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          Feedback
+                        </a>
+                        <a class="small-button alt" href="https://nathanarcuri.com/" target="_blank"
+                          rel="noopener noreferrer">
+                          <img class="settings-button-icon" src="assets/icons/settings/visit-site.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          Visit My Site
+                        </a>
+                        <a class="small-button donation-button" href="https://buymeacoffee.com/nathanarcuri" target="_blank"
+                          rel="noopener noreferrer" aria-label="Donate with Buy Me a Coffee">
+                          <img class="settings-button-icon" src="assets/icons/settings/pizza.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          Pizza Me!
+                        </a>
                       </div>
-                      <select id="halloweenModeSelect" class="settings-select" aria-label="Seasonal Mode">
-                        <option value="automatic">Automatic</option>
-                        <option value="on">On</option>
-                        <option value="off">Off</option>
-                      </select>
-                    </label>
-                  </section>
-
-                  <section class="settings-section">
-                    <h3>Audio</h3>
-
-                    <label class="settings-toggle-row" for="uiMuteToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Mute UI</span>
-                        <span class="settings-toggle-note">Turns off button press and menu feedback sounds only.</span>
-                      </div>
-                      <input id="uiMuteToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
-
-                    <label class="settings-toggle-row" for="soundMuteToggleInput">
-                      <div class="settings-toggle-copy">
-                        <span class="settings-toggle-label">Mute All Audio</span>
-                        <span class="settings-toggle-note">Turns off ambience and sound effects.</span>
-                      </div>
-                      <input id="soundMuteToggleInput" class="settings-checkbox" type="checkbox" />
-                    </label>
-                  </section>
-
-                  <section class="settings-section settings-credits-section" aria-label="Other settings">
-                    <h3>Other</h3>
-                    <div class="overview-actions">
-                      <button class="small-button alt" type="button" data-open-invite-friend>
-                        Invite A Friend
-                      </button>
-                      <button class="small-button alt credits-button" type="button" data-open-credits>
-                        Credits
-                      </button>
-                      <a class="small-button alt" href="https://forms.gle/p6Qnwo3SoHQJc8VY6" target="_blank"
-                        rel="noopener noreferrer">
-                        Feedback
-                      </a>
-                      <a class="small-button alt" href="https://nathanarcuri.com/" target="_blank"
-                        rel="noopener noreferrer">
-                        Visit My Site
-                      </a>
-                      <a class="small-button donation-button" href="https://buymeacoffee.com/nathanarcuri" target="_blank"
-                        rel="noopener noreferrer" aria-label="Donate with Buy Me a Coffee">
-                        Pizza Me!
-                      </a>
-                    </div>
-                  </section>
+                    </section>
                   </div>
                   <div class="wallpaper-scroll-controls" data-wallpaper-scroll-controls="settings" hidden
                     aria-label="Settings scroll controls">
@@ -2396,7 +2412,7 @@
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost
         ? `live-${Date.now()}`
-        : "20260910-shared-auth";
+        : "20260910-settings-dashboard-r3";
       script.type = "module";
       script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);

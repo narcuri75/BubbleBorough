@@ -1615,9 +1615,15 @@ test("account UI hides Supabase UID and exposes complete password recovery and e
 test("cloud account UI uses yellow syncing, green success, red failure, and the startup auth card layout", () => {
   const cloud = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
   const css = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
+  const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
   assert.match(cloud, /cloud-sync-state-card/);
-  assert.match(cloud, /title: "Syncing\.\.\."/);
-  assert.match(cloud, /title: "Synced"/);
+  assert.match(cloud, /function ensureCloudAccountPanel\(\)/);
+  assert.match(cloud, /settingsBody\.prepend\(section\)/);
+  assert.match(cloud, /function bindCloudAccountPanel\(\)/);
+  assert.match(cloud, /section\.hidden = false/);
+  assert.match(html, /id="accountCloudSaveSettingsSection"/);
+  assert.match(cloud, /title: normalizedLabel === "Pending sync\.\.\." \? "Syncing Soon" : "Syncing Now"/);
+  assert.match(cloud, /timestamp: syncedAt \? `at \$\{syncedAt\}`/);
   assert.match(cloud, /title: "Sync Failed"/);
   assert.match(css, /cloud-sync-state-card\[data-status="syncing"\][\s\S]*#ffc643/);
   assert.match(css, /cloud-sync-state-card\[data-status="synced"\][\s\S]*#55ef8a/);
@@ -1638,7 +1644,9 @@ test("startup requires account auth before a new aquarium and invite-a-friend is
   assert.match(cloud, /runtime\.cloudAuthCallbackType === "signup"/);
   assert.match(bootstrap, /"invite-friend"/);
   assert.match(management, /data-invite-friend-emails/);
-  assert.match(management, /bcc=\$\{encodeURIComponent\(result\.emails\.join\(","\)\)\}/);
+  assert.match(management, /\/functions\/v1\/send-friend-invite/);
+  assert.match(management, /Authorization: `Bearer \$\{session\.access_token\}`/);
+  assert.doesNotMatch(management, /mailto:/);
   assert.match(html, /data-open-invite-friend>[\s\S]*Invite A Friend/);
 });
 

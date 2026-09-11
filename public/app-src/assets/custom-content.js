@@ -897,9 +897,7 @@ function bindEvents() {
   dom.importDataInput?.addEventListener("change", (event) => {
     void importSaveDataFromPicker(event);
   });
-  document.querySelector("[data-cloud-account-panel]")?.addEventListener("click", (event) => {
-    void handleCloudSettingsClick(event);
-  });
+  bindCloudAccountPanel();
   dom.localBackgroundInput?.addEventListener("change", (event) => {
     void importLocalBackgroundFromPicker(event);
   });

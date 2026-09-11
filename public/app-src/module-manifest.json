@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2908,
+  "functionCount": 2910,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -852,6 +852,7 @@
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
         "borough/living-borough.js",
+        "core/cloud-save.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -872,6 +873,7 @@
         "ui/customization-actions-and-inventory.js",
         "ui/fish-inspector.js",
         "ui/main-and-store-rendering.js",
+        "ui/notifications.js",
         "ui/tool-modes-and-debug-panels.js"
       ]
     },
@@ -884,6 +886,7 @@
         "assets/sprite-sheets.js",
         "audio/system.js",
         "borough/living-borough.js",
+        "core/cloud-save.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -1222,7 +1225,7 @@
     },
     {
       "path": "core/cloud-save.js",
-      "functionCount": 61,
+      "functionCount": 63,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",

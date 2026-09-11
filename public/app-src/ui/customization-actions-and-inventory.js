@@ -399,6 +399,7 @@ function renderSettingsOverlay() {
     return;
   }
 
+  const isOpening = runtime.settingsOverlayOpen && dom.settingsOverlay.hidden;
   const settings = getContentSettings();
   const uiSettings = getUiSettings();
   const tutorialAvailable = isIntroTutorialEnabled();
@@ -406,6 +407,13 @@ function renderSettingsOverlay() {
   const mouseLockRow = dom.tankMouseLockToggleInput?.closest(".settings-toggle-row");
   dom.settingsOverlay.hidden = !runtime.settingsOverlayOpen;
   dom.settingsOverlay.classList.toggle("is-open", runtime.settingsOverlayOpen);
+  if (runtime.settingsOverlayOpen) {
+    renderCloudAccountPanel();
+  }
+  if (isOpening) {
+    const settingsScroller = dom.settingsOverlay.querySelector(".settings-panel-body");
+    if (settingsScroller instanceof HTMLElement) settingsScroller.scrollTop = 0;
+  }
   syncDebugToolsAuthorization();
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;

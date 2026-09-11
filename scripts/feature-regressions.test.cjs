@@ -1582,14 +1582,18 @@ test("tank navigation is arrow-only while WASD stays reserved for manual machine
   assert.match(source, /setSubmarineManualDriveKey\(key, true\)/);
 });
 
-test("Fish Care sizes its food column from stocked tiles instead of reserving three slots", () => {
+test("Fish Care sizes to stocked content and shrinks at viewport edges without horizontal scrolling", () => {
   const source = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const input = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const css = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
   assert.match(source, /const foodSectionWidth = sectionWidthForCount\(foodItems\.length, 248\)/);
   assert.match(source, /--care-food-min-width: \$\{foodSectionWidth\}px/);
   assert.match(source, /--care-tray-content-width/);
-  assert.match(css, /#medicineTray[\s\S]*var\(--care-tray-content-width, 624px\)/);
-  assert.match(css, /#medicineTray \.edit-decor-tray-scroller[\s\S]*overflow-x: auto/);
+  assert.match(source, /medicineTrayScroller\.scrollLeft = 0/);
+  assert.match(css, /#medicineTray[\s\S]*width:\s*min\(calc\(100vw - 30px\), calc\(var\(--care-tray-content-width, 624px\) \+ 24px\)\)/);
+  assert.match(css, /#medicineTray \.edit-decor-tray-scroller[\s\S]*overflow-x: hidden/);
+  assert.match(css, /\.care-tray-content\s*\{[\s\S]*min-width:\s*0[\s\S]*max-width:\s*100%/);
+  assert.doesNotMatch(input, /medicineTray\?\.addEventListener\("wheel", handleMedicineTrayWheel/);
 });
 
 test("signed-in account settings persist a UID-bound username, provide a stable default, and greet that user after startup", () => {
@@ -1713,6 +1717,45 @@ test("borough overview fish are hard-capped at 12 FPS", () => {
   assert.doesNotMatch(rendering, /debugOverviewFishFps/);
 });
 
+test("closing the borough overview finishes editing and other toolbar actions close it first", () => {
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const input = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  assert.match(rendering, /function finishBoroughOverviewEditing\(\)[\s\S]*boroughOverviewEditMode = false[\s\S]*boroughOverviewDraggedTankId = null[\s\S]*boroughOverviewDragPointerId = null/);
+  assert.match(rendering, /function closeAquariumOverview\(\)\s*\{\s*finishBoroughOverviewEditing\(\)/);
+  assert.match(input, /function closeBoroughOverviewBeforeToolbarAction/);
+  assert.match(input, /button === dom\.overviewButton \|\| button === dom\.toolbarTab/);
+  assert.match(input, /tankBottomDock\?\.addEventListener\("click", closeBoroughOverviewBeforeToolbarAction, true\)/);
+
+  const runtime = {
+    boroughOverviewOpen: true,
+    aquariumExpansionMode: true,
+    boroughOverviewEditMode: true,
+    boroughOverviewDraggedTankId: "tank-a",
+    boroughOverviewDragPointerId: 7,
+    editingTankNameId: "tank-a",
+    editingTankNameValue: "Draft name"
+  };
+  const draggedElement = {
+    classList: { remove() {} },
+    setAttribute(name, value) { this[name] = value; }
+  };
+  const c = load("ui/main-and-store-rendering.js", ["finishBoroughOverviewEditing", "closeAquariumOverview"], {
+    runtime,
+    dom: { boroughGrid: { querySelectorAll: () => [draggedElement] } },
+    materializeCoarseFishActivities() {},
+    getCurrentTank: () => ({}),
+    renderAquariumOverview() {}
+  });
+  c.closeAquariumOverview();
+  assert.equal(runtime.boroughOverviewOpen, false);
+  assert.equal(runtime.aquariumExpansionMode, false);
+  assert.equal(runtime.boroughOverviewEditMode, false);
+  assert.equal(runtime.boroughOverviewDraggedTankId, null);
+  assert.equal(runtime.boroughOverviewDragPointerId, null);
+  assert.equal(runtime.editingTankNameId, null);
+  assert.equal(draggedElement["aria-grabbed"], "false");
+});
+
 test("selected fish status uses compact in-tank badge without a Fish Care interact button", () => {
   const uiSource = fs.readFileSync(path.join(root, "../../public/app-src/ui/customization-actions-and-inventory.js"), "utf8");
   const renderingSource = fs.readFileSync(path.join(root, "../../public/app-src/rendering/fish-and-effects.js"), "utf8");
@@ -1802,6 +1845,15 @@ test("toolbar icons render in front of the collapse tab", () => {
   assert.ok(Number.isFinite(tabLayer));
   assert.ok(Number.isFinite(buttonLayer));
   assert.ok(buttonLayer > tabLayer, `toolbar button layer ${buttonLayer} must exceed tab layer ${tabLayer}`);
+});
+
+test("horizontal care and edit menus render in front of the entire toolbar", () => {
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(rendering, /horizontalMenuCoversToolbar = runtime\.editTankMode[\s\S]*runtime\.fishEditMode[\s\S]*runtime\.equipmentEditMode[\s\S]*runtime\.tankEditMode[\s\S]*runtime\.foodTrayOpen[\s\S]*runtime\.medicineTrayOpen/);
+  assert.match(rendering, /classList\.toggle\("is-behind-horizontal-menu", horizontalMenuCoversToolbar\)/);
+  assert.match(css, /\.tank-bottom-dock\.is-behind-horizontal-menu:not\(\.is-behind-overlay\)\s*\{\s*z-index:\s*6/);
+  assert.match(css, /\.edit-decor-tray\s*\{[\s\S]*?z-index:\s*9/);
 });
 
 test("borough edit overview never renders beyond the real 5 by 3 limit", () => {

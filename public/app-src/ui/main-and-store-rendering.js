@@ -165,9 +165,16 @@ function renderToolbarPosition() {
     const dialogCoversToolbar = runtime.utilityOverlayOpen
       || runtime.settingsOverlayOpen
       || runtime.equipmentOverlayOpen;
+    const horizontalMenuCoversToolbar = runtime.editTankMode
+      || runtime.fishEditMode
+      || runtime.equipmentEditMode
+      || runtime.tankEditMode
+      || runtime.foodTrayOpen
+      || runtime.medicineTrayOpen;
     dom.tankBottomDock.dataset.toolbarPosition = toolbarPosition;
     dom.tankBottomDock.classList.toggle("is-toolbar-collapsed", toolbarCollapsed);
     dom.tankBottomDock.classList.toggle("is-behind-overlay", dialogCoversToolbar);
+    dom.tankBottomDock.classList.toggle("is-behind-horizontal-menu", horizontalMenuCoversToolbar);
     dom.tankBottomDock.setAttribute("aria-expanded", String(!toolbarCollapsed));
   }
   if (dom.tankDisplay) {
@@ -601,7 +608,22 @@ function openAquariumOverview() {
   renderAquariumOverview();
 }
 
+function finishBoroughOverviewEditing() {
+  const wasEditing = runtime.boroughOverviewEditMode === true;
+  runtime.boroughOverviewEditMode = false;
+  runtime.boroughOverviewDraggedTankId = null;
+  runtime.boroughOverviewDragPointerId = null;
+  runtime.editingTankNameId = null;
+  runtime.editingTankNameValue = "";
+  dom.boroughGrid?.querySelectorAll(".is-dragging, .is-drop-target").forEach((element) => {
+    element.classList.remove("is-dragging", "is-drop-target");
+    element.setAttribute("aria-grabbed", "false");
+  });
+  return wasEditing;
+}
+
 function closeAquariumOverview() {
+  finishBoroughOverviewEditing();
   materializeCoarseFishActivities(getCurrentTank(), Date.now());
   runtime.boroughOverviewOpen = false;
   runtime.aquariumExpansionMode = false;

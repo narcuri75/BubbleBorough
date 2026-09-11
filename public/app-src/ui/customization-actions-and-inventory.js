@@ -2090,6 +2090,7 @@ function renderMedicineTray() {
     syncMedicineTrayScrollControls();
     return;
   }
+  dom.medicineTrayScroller.scrollLeft = 0;
 
   const foodItems = getFoodCatalog().filter((food) => (
     (food.id === "halloweenCandy" || shouldShowFoodInStore(food))

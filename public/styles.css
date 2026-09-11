@@ -3828,6 +3828,16 @@ h2 {
 .tank-bottom-dock.is-behind-overlay {
   z-index: 3;
 }
+
+/* Responsive layouts can raise both the dock and horizontal trays to layer 12.
+   Keep an open tray above the whole dock while preserving icon-over-tab order. */
+:root[data-toolbar-position] .tank-bottom-dock.is-behind-overlay {
+  z-index: 3;
+}
+
+:root[data-toolbar-position] .tank-bottom-dock.is-behind-horizontal-menu:not(.is-behind-overlay) {
+  z-index: 6;
+}
 .toolbar-wallet { height: 46px; min-width: 118px; box-sizing: border-box; display: grid; grid-template-columns: 38px 1fr; align-items: center; padding: 4px 12px 4px 5px; border: 1px solid color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, rgba(232, 251, 255, .34)); border-radius: 10px; color: #eefbff; background: linear-gradient(color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, #102a3a), color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 35%, #07141f)), var(--sprite-icon-tile, none) center / 46px 46px repeat; background-blend-mode: color, normal; box-shadow: inset 0 0 14px rgba(37,125,161,.12); }
 .toolbar-wallet.is-gaining-coins { animation: toolbar-wallet-coin-gain 1s ease-out; }
 @keyframes toolbar-wallet-coin-gain {
@@ -13431,11 +13441,13 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 /* Keep the merged care tray at the same height as the current horizontal tray. */
 #medicineTray .edit-decor-tray-scroller {
+  width: 100%;
+  min-width: 0;
   min-height: 98px;
   align-items: stretch;
   padding-top: 0;
   padding-bottom: 0;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
 }
 
@@ -13446,18 +13458,19 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 #medicineTray {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
-  width: min(92vw, calc(var(--care-tray-content-width, 624px) + 24px));
+  width: min(calc(100vw - 30px), calc(var(--care-tray-content-width, 624px) + 24px));
   max-width: calc(100vw - 30px);
 }
 
 .care-tray-content {
-  flex: 0 0 var(--care-tray-min-width, 624px);
-  width: var(--care-tray-min-width, 624px);
-  min-width: var(--care-tray-min-width, 624px);
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   height: 98px;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(248px, var(--care-food-min-width, 248px)) 1px minmax(163px, var(--care-medicine-min-width, 163px)) 1px minmax(163px, var(--care-tools-min-width, 163px));
+  grid-template-columns: minmax(0, var(--care-food-min-width, 248px)) 1px minmax(0, var(--care-medicine-min-width, 163px)) 1px minmax(0, var(--care-tools-min-width, 163px));
   gap: 10px;
   align-items: stretch;
   padding: 0 4px;
@@ -13467,6 +13480,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .care-tray-medical,
 .care-tray-tools {
   min-width: 0;
+  overflow: hidden;
   box-sizing: border-box;
   display: grid;
   grid-template-rows: 17px minmax(0, 1fr);
@@ -13515,9 +13529,10 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .care-medicine-card {
   position: relative;
   width: 78px;
-  min-width: 78px;
+  min-width: 0;
+  max-width: 78px;
   height: 72px;
-  flex: 0 0 78px;
+  flex: 1 1 78px;
   display: grid;
   grid-template-rows: 1fr auto;
   place-items: center;
@@ -13537,6 +13552,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .care-medicine-card-image {
   width: 37px;
   height: 37px;
+  max-width: 90%;
   object-fit: contain;
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.28));
 }
@@ -13669,7 +13685,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .care-tray-tools {
-  min-width: var(--care-tools-min-width, 163px);
+  min-width: 0;
 }
 
 .care-tray-tool-row {
@@ -13705,6 +13721,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .care-tool-emoji {
   width: 43px;
   height: 43px;
+  max-width: 90%;
   display: grid;
   place-items: center;
   object-fit: contain;

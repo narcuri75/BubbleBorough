@@ -124,6 +124,18 @@ function handleToolbarActionMenuKeyDown(event) {
   }
 }
 
+function closeBoroughOverviewBeforeToolbarAction(event) {
+  if (!runtime.boroughOverviewOpen || !(event.target instanceof Element)) {
+    return false;
+  }
+  const button = event.target.closest("button");
+  if (!(button instanceof HTMLButtonElement) || button === dom.overviewButton || button === dom.toolbarTab) {
+    return false;
+  }
+  closeAquariumOverview();
+  return true;
+}
+
 function getTankColorPickerContextColor(context) {
   const key = String(context || "");
   if (key === "solid-background") {
@@ -795,8 +807,12 @@ function bindEvents() {
     runtime.boroughOverviewDraggedTankId = null;
   });
   dom.toggleBoroughEditMode?.addEventListener("click", () => {
-    runtime.boroughOverviewEditMode = !runtime.boroughOverviewEditMode;
-    runtime.boroughOverviewDraggedTankId = null;
+    if (runtime.boroughOverviewEditMode) {
+      finishBoroughOverviewEditing();
+    } else {
+      runtime.boroughOverviewEditMode = true;
+      runtime.boroughOverviewDraggedTankId = null;
+    }
     renderAquariumOverview();
   });
   dom.addBoroughTankButton?.addEventListener("click", () => {
@@ -983,6 +999,7 @@ function bindEvents() {
   dom.replayTutorialButton?.addEventListener("click", () => rerunIntroTutorial());
   dom.toggleFishShop.addEventListener("click", () => openStoreOverlay("fish"));
   dom.toggleDecorShop.addEventListener("click", () => openStoreOverlay("decor"));
+  dom.tankBottomDock?.addEventListener("click", closeBoroughOverviewBeforeToolbarAction, true);
   dom.tankBottomDock?.addEventListener("click", captureToolbarButtonSoundState, true);
   dom.tankBottomDock?.addEventListener("click", playToolbarButtonSoundForClick);
   dom.tankBottomDock?.addEventListener("pointerover", handleToolbarFastTooltipPointerOver);
@@ -2216,7 +2233,6 @@ function bindEvents() {
     event.preventDefault();
     event.stopPropagation();
   });
-  dom.medicineTray?.addEventListener("wheel", handleMedicineTrayWheel, { passive: false });
   dom.medicineTrayScroller?.addEventListener("click", (event) => {
     if (handleCareTrayAction(event)) return;
 
@@ -2243,9 +2259,6 @@ function bindEvents() {
       selectMedicineMode(button.dataset.selectMedicine);
     }
   });
-  dom.medicineTrayScroller?.addEventListener("scroll", () => syncMedicineTrayScrollControls());
-  dom.medicineTrayPrev?.addEventListener("click", () => scrollMedicineTray(-1));
-  dom.medicineTrayNext?.addEventListener("click", () => scrollMedicineTray(1));
   dom.toggleSidebar.addEventListener("click", () => {
     runtime.sidebarCollapsed = !runtime.sidebarCollapsed;
     renderUi(Date.now());

@@ -322,6 +322,8 @@ function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
   const itemLabel = shopKind === "decor"
     ? pluralize("decor piece", visibleCount)
     : (selectedFilter === "cave" ? "cave fish" : "fish");
+  const toolbarTitle = shopKind === "decor" ? "Decor" : "Aquarium Fish";
+  const titleMarkup = `<h3 class="shop-toolbar-title">${toolbarTitle}</h3>`;
   const summaryMarkup = totalCount !== visibleCount
     ? `<div class="fish-meta shop-toolbar-summary"><span class="shop-toolbar-count"><strong>${visibleCount}</strong> of <strong>${totalCount}</strong></span> ${itemLabel} available</div>`
     : `<div class="fish-meta shop-toolbar-summary"><span class="shop-toolbar-count"><strong>${visibleCount}</strong></span> ${itemLabel} available</div>`;
@@ -329,6 +331,7 @@ function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
   if (tutorialRestriction?.hideControls) {
     return `
       <div class="shop-toolbar">
+        ${titleMarkup}
         ${summaryMarkup}
       </div>
     `;
@@ -336,6 +339,7 @@ function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
 
   return `
     <div class="shop-toolbar">
+      ${titleMarkup}
       ${summaryMarkup}
       <div class="shop-toolbar-controls">
         <label class="shop-search-control">

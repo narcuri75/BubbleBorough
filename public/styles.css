@@ -17740,8 +17740,7 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
 }
 
 /* In All Items, every top-level category gets the same white section bar.
-   Fish/Decor keep their sort controls directly beneath the title so the two
-   rows read as one continuous header instead of a title floating on gray. */
+   Fish and Decor put their section title in the exact same bar as Sort by. */
 .tankazon-store .store-drawer.tankazon-all-section::before {
   grid-column: 1 / -1;
   display: flex;
@@ -17760,18 +17759,37 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
   text-transform: capitalize;
 }
 
+.tankazon-store .shop-toolbar-title {
+  display: none;
+}
+
 .tankazon-store .store-drawer.tankazon-all-section > .shop-toolbar {
   position: static;
   z-index: auto;
-  margin: -12px -20px 12px;
-  padding: 0 20px 10px;
+  min-height: 44px;
+  margin: -18px -20px 12px;
+  padding: 10px 20px;
+  box-sizing: border-box;
   background: #fff;
   border-bottom: 1px solid #d5d9d9;
   box-shadow: 0 2px 8px rgba(15, 17, 17, .08);
 }
 
-.tankazon-store .store-drawer.tankazon-all-section[data-tankazon-category="fish"]::before {
-  content: "Aquarium Fish";
+.tankazon-store .store-drawer.tankazon-all-section > .shop-toolbar .shop-toolbar-title {
+  display: block;
+  margin: 0;
+  color: #0f1111;
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+/* Fish and Decor already have a toolbar. Their title belongs inside it, not in
+   a second stacked white strip. */
+.tankazon-store .store-drawer.tankazon-all-section[data-tankazon-category="fish"]::before,
+.tankazon-store .store-drawer.tankazon-all-section[data-tankazon-category="decor"]::before {
+  content: none;
+  display: none;
 }
 
 .tankazon-store .store-drawer.tankazon-all-section[data-tankazon-category="pharmacy"]::before {

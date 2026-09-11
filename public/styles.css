@@ -3829,14 +3829,16 @@ h2 {
   z-index: 3;
 }
 
-/* Responsive layouts can raise both the dock and horizontal trays to layer 12.
-   Keep an open tray above the whole dock while preserving icon-over-tab order. */
+/* The horizontal trays live inside .tank-overlay (z-index: 4), while the toolbar
+   is promoted to a direct child of .tank-stage. When a horizontal tray is open,
+   the toolbar must drop below the entire overlay stacking context, not merely
+   below the tray's child z-index. */
 :root[data-toolbar-position] .tank-bottom-dock.is-behind-overlay {
   z-index: 3;
 }
 
 :root[data-toolbar-position] .tank-bottom-dock.is-behind-horizontal-menu:not(.is-behind-overlay) {
-  z-index: 6;
+  z-index: 3;
 }
 .toolbar-wallet { height: 46px; min-width: 118px; box-sizing: border-box; display: grid; grid-template-columns: 38px 1fr; align-items: center; padding: 4px 12px 4px 5px; border: 1px solid color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, rgba(232, 251, 255, .34)); border-radius: 10px; color: #eefbff; background: linear-gradient(color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, #102a3a), color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 35%, #07141f)), var(--sprite-icon-tile, none) center / 46px 46px repeat; background-blend-mode: color, normal; box-shadow: inset 0 0 14px rgba(37,125,161,.12); }
 .toolbar-wallet.is-gaining-coins { animation: toolbar-wallet-coin-gain 1s ease-out; }

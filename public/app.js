@@ -58974,8 +58974,8 @@ function renderEquipmentShop() {
     </section>
     <section class="shop-section">
       <div class="shop-section-heading">
-        <h3>Equipment</h3>
-        <p>Purchase equipment for your borough, then deploy owned equipment from the Edit overlay.</p>
+        <h3>Machinery</h3>
+        <p>Remote-controlled machinery with built-in feeding controls and autopilot.</p>
       </div>
       <div class="shop-section-cards">
         ${renderSubmarineShopCard()}

@@ -255,12 +255,23 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
     return null;
   }
 
+  let zonePool = zones;
+  if (fish?.speciesId === "clownfish") {
+    const anemoneZones = zones.filter((candidate) => {
+      const item = state.placedDecor.find((entry) => entry.id === candidate.decorId);
+      return /anemone/i.test(String(item?.decorKey || ""));
+    });
+    if (anemoneZones.length && Math.random() < 0.9) {
+      zonePool = anemoneZones;
+    }
+  }
+
   const favoriteZone = fish?.favoriteSpot?.decorId && locomotionProfile.homeRangeStrength > 0
-    ? zones.find((candidate) => candidate.decorId === fish.favoriteSpot.decorId)
+    ? zonePool.find((candidate) => candidate.decorId === fish.favoriteSpot.decorId)
     : null;
   const zone = favoriteZone && Math.random() < clamp(locomotionProfile.homeRangeStrength, 0, 1)
     ? favoriteZone
-    : zones[Math.floor(Math.random() * zones.length)];
+    : zonePool[Math.floor(Math.random() * zonePool.length)];
   const targetLayer = options.preferBackLayer
     ? clampTankLayer(zone.targetLayerMax)
     : clampTankLayer(zone.targetLayerMin + Math.floor(Math.random() * (zone.targetLayerMax - zone.targetLayerMin + 1)));
@@ -435,7 +446,7 @@ function buildDecorHangoutZones() {
       addTypedZone("hide");
     }
 
-    if (/(coral|seaweed|grass|anubias|moss|bloom|bunch)/.test(key)) {
+    if (/(coral|seaweed|anemone|grass|anubias|moss|bloom|bunch)/.test(key)) {
       addTypedZone("plant");
     }
 

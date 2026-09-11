@@ -149,7 +149,12 @@
             "cost": 10,
             "mealCoins": 1,
             "asset": "betta.png",
-            "assetVariants": ["betta_1.png", "betta_2.png", "betta_3.png", "betta_4.png"],
+            "assetVariants": [
+                "betta_1.png",
+                "betta_2.png",
+                "betta_3.png",
+                "betta_4.png"
+            ],
             "description": "A dramatic long-fin swimmer that glides slowly and deliberately.",
             "width": 219,
             "bobSpeed": 1.15,
@@ -198,7 +203,7 @@
             "mealCoins": 2,
             "asset": "clownfish.png",
             "description": "A playful striped swimmer with a steady medium pace.",
-            "width": 270,
+            "width": 162,
             "bobSpeed": 1.35,
             "swimStyle": "steady",
             "speedMin": 0.032,
@@ -227,7 +232,7 @@
                 "Pogo",
                 "Beans"
             ],
-            "caveEnabled": false,
+            "caveEnabled": true,
             "theme": "Salt Water",
             "needs": {
                 "decor": [],
@@ -244,7 +249,12 @@
             "cost": 36,
             "mealCoins": 2,
             "asset": "angelfish.png",
-            "assetVariants": ["angelfish_1.png", "angelfish_2.png", "angelfish_3.png", "angelfish_4.png"],
+            "assetVariants": [
+                "angelfish_1.png",
+                "angelfish_2.png",
+                "angelfish_3.png",
+                "angelfish_4.png"
+            ],
             "description": "A graceful tall-fin fish that prefers calm slow arcs through the whole tank.",
             "width": 456,
             "displayWidth": 235,
@@ -528,7 +538,9 @@
             "cost": 24,
             "mealCoins": 2,
             "asset": "yellowtang.png",
-            "assetVariants": ["yellowtang_1.png"],
+            "assetVariants": [
+                "yellowtang_1.png"
+            ],
             "description": "A bright reef grazer that cruises smoothly across open water.",
             "width": 360,
             "displayWidth": 245,
@@ -673,7 +685,12 @@
             "cost": 3,
             "mealCoins": 1,
             "asset": "ChiliRasbora.png",
-            "assetVariants": ["ChiliRasbora_1.png", "ChiliRasbora_2.png", "ChiliRasbora_3.png", "ChiliRasbora_4.png"],
+            "assetVariants": [
+                "ChiliRasbora_1.png",
+                "ChiliRasbora_2.png",
+                "ChiliRasbora_3.png",
+                "ChiliRasbora_4.png"
+            ],
             "description": "A tiny, peaceful shoaling rasbora that darts gently through planted areas and open water.",
             "width": 105,
             "bobSpeed": 1.48,
@@ -721,7 +738,12 @@
             "cost": 4,
             "mealCoins": 1,
             "asset": "embertetra.png",
-            "assetVariants": ["embertetra_1.png", "embertetra_2.png", "embertetra_3.png", "embertetra_4.png"],
+            "assetVariants": [
+                "embertetra_1.png",
+                "embertetra_2.png",
+                "embertetra_3.png",
+                "embertetra_4.png"
+            ],
             "description": "A tiny, peaceful orange tetra that prefers calm company and spends most of its time schooling mid-water.",
             "width": 110,
             "bobSpeed": 1.42,
@@ -769,7 +791,12 @@
             "cost": 6,
             "mealCoins": 1,
             "asset": "HarlequinRasbora.png",
-            "assetVariants": ["HarlequinRasbora_1.png", "HarlequinRasbora_2.png", "HarlequinRasbora_3.png", "HarlequinRasbora_4.png"],
+            "assetVariants": [
+                "HarlequinRasbora_1.png",
+                "HarlequinRasbora_2.png",
+                "HarlequinRasbora_3.png",
+                "HarlequinRasbora_4.png"
+            ],
             "description": "A peaceful, active rasbora that cruises in loose schools and settles in readily with calm community fish.",
             "width": 155,
             "bobSpeed": 1.32,
@@ -817,7 +844,12 @@
             "cost": 7,
             "mealCoins": 1,
             "asset": "Pencilfish.png",
-            "assetVariants": ["Pencilfish_1.png", "Pencilfish_2.png", "Pencilfish_3.png", "Pencilfish_4.png"],
+            "assetVariants": [
+                "Pencilfish_1.png",
+                "Pencilfish_2.png",
+                "Pencilfish_3.png",
+                "Pencilfish_4.png"
+            ],
             "description": "A slender, peaceful shoaling fish that glides near cover with occasional quick bursts and gentle sparring displays.",
             "width": 185,
             "bobSpeed": 1.24,
@@ -865,7 +897,12 @@
             "cost": 7,
             "mealCoins": 1,
             "asset": "RummyNoseTetra.png",
-            "assetVariants": ["RummyNoseTetra_1.png", "RummyNoseTetra_2.png", "RummyNoseTetra_3.png", "RummyNoseTetra_4.png"],
+            "assetVariants": [
+                "RummyNoseTetra_1.png",
+                "RummyNoseTetra_2.png",
+                "RummyNoseTetra_3.png",
+                "RummyNoseTetra_4.png"
+            ],
             "description": "A peaceful, tightly schooling tetra known for coordinated cruising and a bright red nose when comfortable.",
             "width": 158,
             "bobSpeed": 1.36,
@@ -1154,7 +1191,12 @@
             "cost": 3,
             "mealCoins": 1,
             "asset": "CelestialPearlDanio.png",
-            "assetVariants": ["CelestialPearlDanio_1.png", "CelestialPearlDanio_2.png", "CelestialPearlDanio_3.png", "CelestialPearlDanio_4.png"],
+            "assetVariants": [
+                "CelestialPearlDanio_1.png",
+                "CelestialPearlDanio_2.png",
+                "CelestialPearlDanio_3.png",
+                "CelestialPearlDanio_4.png"
+            ],
             "description": "A tiny speckled danio that darts, pauses, and darts again.",
             "width": 105,
             "bobSpeed": 1.38,
@@ -1384,7 +1426,12 @@
             "cost": 42,
             "mealCoins": 3,
             "asset": "Bull_Shark.png",
-            "assetVariants": ["Bull_Shark_1.png", "Bull_Shark_2.png", "Bull_Shark_3.png", "Bull_Shark_4.png"],
+            "assetVariants": [
+                "Bull_Shark_1.png",
+                "Bull_Shark_2.png",
+                "Bull_Shark_3.png",
+                "Bull_Shark_4.png"
+            ],
             "description": "A powerful, adaptable cruiser that follows chum and keeps its distance from tankmates until desperation takes over.",
             "width": 405,
             "displayWidth": 310,
@@ -1473,7 +1520,12 @@
             "cost": 48,
             "mealCoins": 3,
             "asset": "Hammerhead_Shark.png",
-            "assetVariants": ["Hammerhead_Shark_1.png", "Hammerhead_Shark_2.png", "Hammerhead_Shark_3.png", "Hammerhead_Shark_4.png"],
+            "assetVariants": [
+                "Hammerhead_Shark_1.png",
+                "Hammerhead_Shark_2.png",
+                "Hammerhead_Shark_3.png",
+                "Hammerhead_Shark_4.png"
+            ],
             "description": "A curious, wide-ranging shark that searches the water with patient sweeps and follows chum when it appears.",
             "width": 405,
             "displayWidth": 310,
@@ -1643,7 +1695,12 @@
             "cost": 24,
             "mealCoins": 2,
             "asset": "Pilot_Fish.png",
-            "assetVariants": ["Pilot_Fish_1.png", "Pilot_Fish_2.png", "Pilot_Fish_3.png", "Pilot_Fish_4.png"],
+            "assetVariants": [
+                "Pilot_Fish_1.png",
+                "Pilot_Fish_2.png",
+                "Pilot_Fish_3.png",
+                "Pilot_Fish_4.png"
+            ],
             "description": "An active, harmless ocean cruiser that naturally shadows larger animals and investigates whatever they leave behind.",
             "width": 320,
             "displayWidth": 245,

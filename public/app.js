@@ -426,7 +426,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "home-hover", preferredY: 0.5, verticalSpread: 0.52,
     targetDistanceMin: 0.07, targetDistanceMax: 0.26, headingPersistence: 0.26,
     hoverChance: 0.28, hoverMinMs: 900, hoverMaxMs: 2600, schoolStrength: 0.2,
-    schoolSpacingScale: 1.15, structureAffinity: 2, caveAffinity: 0.3,
+    schoolSpacingScale: 1.15, structureAffinity: 2, caveAffinity: 2.2,
     homeRangeStrength: 0.92, homeRangeRadius: 0.16, startleStrength: 1.05,
     turnDurationScale: 1.08, speedMinBlend: 0.1, speedMaxBlend: 0.52,
     targetDurationScale: 1.2
@@ -2520,10 +2520,11 @@ const FISH_TYPES = [
     mealCoins: 2,
     asset: "/assets/fish/clownfish.png",
     description: "Bright stripes, playful swimming, and a solid meal bonus.",
-    width: 270,
+    width: 162,
     cycleSeconds: 24,
     bobSpeed: 1.35,
     swimStyle: "steady",
+    caveEnabled: true,
     speedMin: 0.032,
     speedMax: 0.042,
     targetMinMs: 2400,
@@ -29243,9 +29244,22 @@ function collectCaveBehaviorPlansForFish(fish, now = Date.now(), options = {}) {
       Number.isFinite(fish.blockedDecorUntil) &&
       now < fish.blockedDecorUntil
     ))
-    .map((item) => buildSimpleCaveDockingPlan(item, fish, now))
-    .filter(Boolean)
-    .sort((left, right) => left.score - right.score);
+    .map((item) => ({
+      item,
+      plan: buildSimpleCaveDockingPlan(item, fish, now)
+    }))
+    .filter((entry) => Boolean(entry.plan))
+    .sort((left, right) => {
+      if (fish.speciesId === "clownfish") {
+        const leftAnemone = /anemone/i.test(String(left.item?.decorKey || ""));
+        const rightAnemone = /anemone/i.test(String(right.item?.decorKey || ""));
+        if (leftAnemone !== rightAnemone) {
+          return leftAnemone ? -1 : 1;
+        }
+      }
+      return left.plan.score - right.plan.score;
+    })
+    .map((entry) => entry.plan);
 
   return plans.slice(0, MAX_VALID_CAVE_PLANS_PER_EVAL);
 }
@@ -64584,6 +64598,22 @@ function assignSwimTarget(fish, species, now) {
     return;
   }
 
+  if (fish.speciesId === "clownfish") {
+    const preferredCavePlan = pickCaveEntryBehavior(species, fish, now);
+    if (preferredCavePlan) {
+      const personality = getFishPersonality(fish);
+      setFishBehaviorIntent(
+        fish,
+        isTankLightsOut(now) ? "night sleep" : (personality === "territorial" ? "guard cave" : "cave visit"),
+        isTankLightsOut(now) ? "lights out" : personality,
+        now
+      );
+      beginFishCaveBehavior(fish, preferredCavePlan, now);
+      fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
+      return;
+    }
+  }
+
   const hangout = pickDecorHangoutTarget(species, fish, now);
   if (hangout) {
     fish.targetXNorm = hangout.xNorm;
@@ -64617,7 +64647,7 @@ function assignSwimTarget(fish, species, now) {
     return;
   }
 
-  const cavePlan = pickCaveEntryBehavior(species, fish, now);
+  const cavePlan = fish.speciesId === "clownfish" ? null : pickCaveEntryBehavior(species, fish, now);
   if (cavePlan) {
     const personality = getFishPersonality(fish);
     setFishBehaviorIntent(
@@ -64893,12 +64923,23 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
     return null;
   }
 
+  let zonePool = zones;
+  if (fish?.speciesId === "clownfish") {
+    const anemoneZones = zones.filter((candidate) => {
+      const item = state.placedDecor.find((entry) => entry.id === candidate.decorId);
+      return /anemone/i.test(String(item?.decorKey || ""));
+    });
+    if (anemoneZones.length && Math.random() < 0.9) {
+      zonePool = anemoneZones;
+    }
+  }
+
   const favoriteZone = fish?.favoriteSpot?.decorId && locomotionProfile.homeRangeStrength > 0
-    ? zones.find((candidate) => candidate.decorId === fish.favoriteSpot.decorId)
+    ? zonePool.find((candidate) => candidate.decorId === fish.favoriteSpot.decorId)
     : null;
   const zone = favoriteZone && Math.random() < clamp(locomotionProfile.homeRangeStrength, 0, 1)
     ? favoriteZone
-    : zones[Math.floor(Math.random() * zones.length)];
+    : zonePool[Math.floor(Math.random() * zonePool.length)];
   const targetLayer = options.preferBackLayer
     ? clampTankLayer(zone.targetLayerMax)
     : clampTankLayer(zone.targetLayerMin + Math.floor(Math.random() * (zone.targetLayerMax - zone.targetLayerMin + 1)));
@@ -65073,7 +65114,7 @@ function buildDecorHangoutZones() {
       addTypedZone("hide");
     }
 
-    if (/(coral|seaweed|grass|anubias|moss|bloom|bunch)/.test(key)) {
+    if (/(coral|seaweed|anemone|grass|anubias|moss|bloom|bunch)/.test(key)) {
       addTypedZone("plant");
     }
 

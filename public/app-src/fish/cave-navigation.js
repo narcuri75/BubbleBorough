@@ -591,9 +591,22 @@ function collectCaveBehaviorPlansForFish(fish, now = Date.now(), options = {}) {
       Number.isFinite(fish.blockedDecorUntil) &&
       now < fish.blockedDecorUntil
     ))
-    .map((item) => buildSimpleCaveDockingPlan(item, fish, now))
-    .filter(Boolean)
-    .sort((left, right) => left.score - right.score);
+    .map((item) => ({
+      item,
+      plan: buildSimpleCaveDockingPlan(item, fish, now)
+    }))
+    .filter((entry) => Boolean(entry.plan))
+    .sort((left, right) => {
+      if (fish.speciesId === "clownfish") {
+        const leftAnemone = /anemone/i.test(String(left.item?.decorKey || ""));
+        const rightAnemone = /anemone/i.test(String(right.item?.decorKey || ""));
+        if (leftAnemone !== rightAnemone) {
+          return leftAnemone ? -1 : 1;
+        }
+      }
+      return left.plan.score - right.plan.score;
+    })
+    .map((entry) => entry.plan);
 
   return plans.slice(0, MAX_VALID_CAVE_PLANS_PER_EVAL);
 }

@@ -3234,6 +3234,22 @@ function assignSwimTarget(fish, species, now) {
     return;
   }
 
+  if (fish.speciesId === "clownfish") {
+    const preferredCavePlan = pickCaveEntryBehavior(species, fish, now);
+    if (preferredCavePlan) {
+      const personality = getFishPersonality(fish);
+      setFishBehaviorIntent(
+        fish,
+        isTankLightsOut(now) ? "night sleep" : (personality === "territorial" ? "guard cave" : "cave visit"),
+        isTankLightsOut(now) ? "lights out" : personality,
+        now
+      );
+      beginFishCaveBehavior(fish, preferredCavePlan, now);
+      fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
+      return;
+    }
+  }
+
   const hangout = pickDecorHangoutTarget(species, fish, now);
   if (hangout) {
     fish.targetXNorm = hangout.xNorm;
@@ -3267,7 +3283,7 @@ function assignSwimTarget(fish, species, now) {
     return;
   }
 
-  const cavePlan = pickCaveEntryBehavior(species, fish, now);
+  const cavePlan = fish.speciesId === "clownfish" ? null : pickCaveEntryBehavior(species, fish, now);
   if (cavePlan) {
     const personality = getFishPersonality(fish);
     setFishBehaviorIntent(

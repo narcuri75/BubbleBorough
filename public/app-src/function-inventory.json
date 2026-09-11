@@ -14679,8 +14679,8 @@
       "module": "fish/cave-navigation.js",
       "sourceLine": 579,
       "originalLine": 23245,
-      "characters": 681,
-      "sourceHash": "5dc274eea9b03a4f101f2ec5d0c58d80dbe916c512034c7c3eb98e2b6ae6fb27",
+      "characters": 1109,
+      "sourceHash": "790201fefe6a9937daa19dcc243c147ce3443311f18ed6012abfc410281181aa",
       "calls": [
         "buildSimpleCaveDockingPlan",
         "isCaveDecorKey"
@@ -14689,7 +14689,7 @@
     {
       "name": "clearFishCaveBehavior",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 601,
+      "sourceLine": 614,
       "originalLine": 23267,
       "characters": 663,
       "sourceHash": "dc2d3276a41c0943bd48e378448b27ac07bab06be0e3ae1d909930bac01d5a41",
@@ -14698,7 +14698,7 @@
     {
       "name": "getCaveBehaviorDecorById",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 627,
+      "sourceLine": 640,
       "originalLine": 23293,
       "characters": 158,
       "sourceHash": "f6b7d226807ab00b20c2f05d0c6f0f9d5aae26b42df5b2bc6bf58accb4cb9f86",
@@ -14707,7 +14707,7 @@
     {
       "name": "getActiveFishCavePlan",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 635,
+      "sourceLine": 648,
       "originalLine": 23301,
       "characters": 136,
       "sourceHash": "1731968b590dad36404a72b8653aa91a404561a62c5889391e99a6ef23b33999",
@@ -14716,7 +14716,7 @@
     {
       "name": "getActiveFishCaveTriggerRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 643,
+      "sourceLine": 656,
       "originalLine": 23309,
       "characters": 293,
       "sourceHash": "c918decbecd4e010eb52c22bbdd7209529a0dcc17869b1fe6fe45181cede0933",
@@ -14729,7 +14729,7 @@
     {
       "name": "getActiveFishCaveSeatRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 656,
+      "sourceLine": 669,
       "originalLine": 23322,
       "characters": 315,
       "sourceHash": "c86356f4db9fd6b944e11392c324e87f616c5ecbe5e3ad56aa84374d81064815",
@@ -14742,7 +14742,7 @@
     {
       "name": "applyFishCaveSeatFacing",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 669,
+      "sourceLine": 682,
       "originalLine": 23335,
       "characters": 298,
       "sourceHash": "9d8a3aaa4989936e6f9a646040d1933e4dba55baca8ba53c3ad96b0c2e7ac71b",
@@ -14754,7 +14754,7 @@
     {
       "name": "applyFishCaveSeatFacingById",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 678,
+      "sourceLine": 691,
       "originalLine": 23344,
       "characters": 312,
       "sourceHash": "b374753e7d930a31f0a196c4de547e5b766d6f1028a92eaddb7e98097017725c",
@@ -14767,7 +14767,7 @@
     {
       "name": "getReservedFishCaveSeatId",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 687,
+      "sourceLine": 700,
       "originalLine": 23353,
       "characters": 359,
       "sourceHash": "61f5d0c3d5b3872c75aba9caed45d29040199c5e06c5ccbdf760f8f4d7f5e6b9",
@@ -14776,7 +14776,7 @@
     {
       "name": "getFishActiveCaveInsideLayer",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 700,
+      "sourceLine": 713,
       "originalLine": 23366,
       "characters": 442,
       "sourceHash": "a8ee1659c04efc2a543643138d79be733de3ae28a56a74328c4f51f37d96b6e8",
@@ -14787,7 +14787,7 @@
     {
       "name": "getPortalMatchForTriggerRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 717,
+      "sourceLine": 730,
       "originalLine": 23383,
       "characters": 1281,
       "sourceHash": "caa7e917c3ea6081fa25618092b0e2ca4580b22403700b5fc688a3ad15605c7c",
@@ -14798,7 +14798,7 @@
     {
       "name": "getExplicitCaveBehaviorPortals",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 758,
+      "sourceLine": 771,
       "originalLine": 23424,
       "characters": 625,
       "sourceHash": "f5ba39a3281e839d8a8d4602d50ab5844e086b106e49925b0ed2be57a8237b20",
@@ -14807,7 +14807,7 @@
     {
       "name": "buildCaveNavigationCacheKey",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 773,
+      "sourceLine": 786,
       "originalLine": 23439,
       "characters": 828,
       "sourceHash": "984bb4ed2e81655deed6b6ebb87ac93ab36059f2458f7ff0b848cc32d8b0401e",
@@ -14820,7 +14820,7 @@
     {
       "name": "getCaveNavigationData",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 790,
+      "sourceLine": 803,
       "originalLine": 23454,
       "characters": 2224,
       "sourceHash": "3ada600b2f262e47c1a1bb83098e7cff02563c602c98370217746f26fb59e8c5",
@@ -14835,7 +14835,7 @@
     {
       "name": "getCaveNavIndex",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 854,
+      "sourceLine": 867,
       "originalLine": 23518,
       "characters": 74,
       "sourceHash": "3477f304194e5c3429a4715284368e2df501d70c650ead054b5a8aa517ed009e",
@@ -14844,7 +14844,7 @@
     {
       "name": "isCaveNavCellInBounds",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 858,
+      "sourceLine": 871,
       "originalLine": 23522,
       "characters": 132,
       "sourceHash": "91f6556f54c187817fb579dbbf946d5be6536d0d3e71b202bc19a234d1085b5a",
@@ -14853,7 +14853,7 @@
     {
       "name": "getCaveNavCellCenter",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 862,
+      "sourceLine": 875,
       "originalLine": 23526,
       "characters": 280,
       "sourceHash": "d0306a85f691589956fce5e2c22c973c05eed802dd3105f4732fb8f75c5467fe",
@@ -14864,7 +14864,7 @@
     {
       "name": "getCaveNavCellFromWorldPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 873,
+      "sourceLine": 886,
       "originalLine": 23537,
       "characters": 402,
       "sourceHash": "707e6d82bac0838a3808c7c7db09dca6e9114bbd7be79771187a7bcd9ffd4b8e",
@@ -14876,7 +14876,7 @@
     {
       "name": "collectCaveNavCandidatesNearWorldPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 891,
+      "sourceLine": 904,
       "originalLine": 23555,
       "characters": 1130,
       "sourceHash": "f236caed8e953bc643f5442752e473cc1f92ba7bd84cbb32b2106ef13c262b41",
@@ -14890,7 +14890,7 @@
     {
       "name": "getFishDescriptorAtPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 930,
+      "sourceLine": 943,
       "originalLine": 23594,
       "characters": 246,
       "sourceHash": "966cddbac2b174ddf3e10117f88ac96c592a9ebb6bb299c30ed10c2410d7eab3",
@@ -14902,7 +14902,7 @@
     {
       "name": "canFishOccupyCavePoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 935,
+      "sourceLine": 948,
       "originalLine": 23599,
       "characters": 503,
       "sourceHash": "b01f2c84a982ddda6b24b5ebb29ff1cf6cec503d61c2703ee404e5bfb2e3d8e4",
@@ -14914,7 +14914,7 @@
     {
       "name": "canFishOccupyCaveNavIndex",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 951,
+      "sourceLine": 964,
       "originalLine": 23615,
       "characters": 513,
       "sourceHash": "a2f23352c5e7493519b3fd3ea8c194e0cdce0b3b61728895c6b41d926be1f811",
@@ -14926,7 +14926,7 @@
     {
       "name": "buildReachableCaveRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 972,
+      "sourceLine": 985,
       "originalLine": 23636,
       "characters": 1775,
       "sourceHash": "1ae488175ea69c600a57904d3deb0042fab29fbc2e6167fa64b976b6d22c2db4",
@@ -14939,7 +14939,7 @@
     {
       "name": "buildCavePathIndices",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1035,
+      "sourceLine": 1048,
       "originalLine": 23701,
       "characters": 346,
       "sourceHash": "6d154b58ba89458ef4e52b6132db430dceaeb64021ec37ebe2fd8bfeca3529c6",
@@ -14948,7 +14948,7 @@
     {
       "name": "compressCavePathNodes",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1054,
+      "sourceLine": 1067,
       "originalLine": 23720,
       "characters": 637,
       "sourceHash": "d0c7c982ac7347212863ba58880522d69b3cb5cc5e97f45dbf06005b4d0946a6",
@@ -14959,7 +14959,7 @@
     {
       "name": "sanitizeGravelPebble",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1077,
+      "sourceLine": 1090,
       "originalLine": 23743,
       "characters": 1382,
       "sourceHash": "679f31954c190e52e867850032f8c3aec7b7fdaac43c72f2a93d753780d53610",
@@ -14972,7 +14972,7 @@
     {
       "name": "reconcileLooseGravelPebbles",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1102,
+      "sourceLine": 1115,
       "originalLine": 23769,
       "characters": 1757,
       "sourceHash": "762d9b8eeb12f4c9d0be8402a9ff7d1eef7e720b5b1e54587c0f8a0f1bc9fdfc",
@@ -14986,7 +14986,7 @@
     {
       "name": "getDecorPebbleProfile",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1151,
+      "sourceLine": 1164,
       "originalLine": 23819,
       "characters": 574,
       "sourceHash": "af5d96770d5ccb137e426140fe1c29550aa720dfeb899cd529e30e8e1f42a684",
@@ -14995,7 +14995,7 @@
     {
       "name": "getDecorPebbleSurfacePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1165,
+      "sourceLine": 1178,
       "originalLine": 23833,
       "characters": 729,
       "sourceHash": "130c9a7a8d255e8f1b14cdd3259b39680cfbd85853fed9312a0378a7a65a6539",
@@ -15008,7 +15008,7 @@
     {
       "name": "getLooseGravelFloorPose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1187,
+      "sourceLine": 1200,
       "originalLine": 23855,
       "characters": 509,
       "sourceHash": "1a5e5b679fd4cdd96b47e5b042c3ca1b87f6c409f83b231d41ec7324363a1577",
@@ -15020,7 +15020,7 @@
     {
       "name": "resolveLiveGravelPebblePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1203,
+      "sourceLine": 1216,
       "originalLine": 23871,
       "characters": 543,
       "sourceHash": "352b1eef543e69af9ff94db2b7b5aa8cb9ace285f78262ac20da590cddcc6295",
@@ -15032,7 +15032,7 @@
     {
       "name": "getPebbleDropTarget",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1220,
+      "sourceLine": 1233,
       "originalLine": 23888,
       "characters": 1476,
       "sourceHash": "d04f631f9f2dee3942b7bad3a8e587e7fc0fa54e5fb1f83834166da751d1eb16",
@@ -15048,7 +15048,7 @@
     {
       "name": "findLiveGravelPebbleAtPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1273,
+      "sourceLine": 1286,
       "originalLine": 23941,
       "characters": 574,
       "sourceHash": "5334cd8e4703ddf83db5e3ca348924f975042cbf55f2df02c8b022037cc12d3e",
@@ -15060,7 +15060,7 @@
     {
       "name": "isPointNearGravelBed",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1290,
+      "sourceLine": 1303,
       "originalLine": 23958,
       "characters": 188,
       "sourceHash": "1054cab4ccf3759338c2c2193774e623195ed118e62974f79439b6d1008e0c87",
@@ -15071,7 +15071,7 @@
     {
       "name": "createLoosePebbleFromBed",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1295,
+      "sourceLine": 1308,
       "originalLine": 23963,
       "characters": 744,
       "sourceHash": "45159d3f9a59be0679fbef5ed127ccd53a37ede9b4542c6d96904a56edc6f78e",
@@ -15085,7 +15085,7 @@
     {
       "name": "beginGravelPebbleDrag",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1314,
+      "sourceLine": 1327,
       "originalLine": 23982,
       "characters": 1514,
       "sourceHash": "1428f2dd48a509a529c07c46598e0412d9b4dabc5ea0c3a181e1ddb63e1a59e1",
@@ -15105,7 +15105,7 @@
     {
       "name": "updateDraggedGravelPebble",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1365,
+      "sourceLine": 1378,
       "originalLine": 24033,
       "characters": 647,
       "sourceHash": "859545cf34c7220fe6c296edefe9113c10bfd7690951c648633d0518a8d950c5",
@@ -15116,7 +15116,7 @@
     {
       "name": "finalizeGravelPebbleDrag",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1385,
+      "sourceLine": 1398,
       "originalLine": 24053,
       "characters": 1301,
       "sourceHash": "e44aee179a290471037531fb39e5d374049a305d749976504181129b0761870c",
@@ -15133,7 +15133,7 @@
     {
       "name": "getFallingGravelPebblePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1437,
+      "sourceLine": 1450,
       "originalLine": 24106,
       "characters": 487,
       "sourceHash": "57130a88c706d73d75f40a839f273b200f6e29b319caa355db67c747c56f7fa1",
@@ -16029,8 +16029,8 @@
       "module": "fish/decor-behavior.js",
       "sourceLine": 184,
       "originalLine": 52216,
-      "characters": 3578,
-      "sourceHash": "f8e498b7877a28e2811847afe7c40e7b2fabd55b090fb9909bd18b9b9bf848dc",
+      "characters": 3957,
+      "sourceHash": "02aab19d751c69c057ce2cc9927bb3e433ba319272970be4c8f85d408a6eb827",
       "calls": [
         "clamp",
         "clampFishYNormToLayer",
@@ -16051,7 +16051,7 @@
     {
       "name": "getDecorHangoutZonesCacheKey",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 282,
+      "sourceLine": 293,
       "originalLine": 52287,
       "characters": 363,
       "sourceHash": "08b489b10803a2be69545189fca73abc2a2ca3e54a063ee92757307138b7065a",
@@ -16062,7 +16062,7 @@
     {
       "name": "getCachedDecorHangoutZones",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 299,
+      "sourceLine": 310,
       "originalLine": 52304,
       "characters": 368,
       "sourceHash": "fed4c973ea94a9fe6a620a7d4e278bd53789e754287df70b3bc5ebed100ef885",
@@ -16074,10 +16074,10 @@
     {
       "name": "buildDecorHangoutZones",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 311,
+      "sourceLine": 322,
       "originalLine": 52316,
-      "characters": 4197,
-      "sourceHash": "d384485dd473ed1d82ce070d4ad4fa255dad093426e2383fa1525b82e8dd41ee",
+      "characters": 4205,
+      "sourceHash": "ebfe98fb534cd8edd96029beaab1c5296e3f7cd71588e8419f96f1af4c8702dc",
       "calls": [
         "clampTankLayer",
         "getDecorFishBehaviorMeta",
@@ -16090,7 +16090,7 @@
     {
       "name": "getDecorBoroughServiceTypes",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 454,
+      "sourceLine": 465,
       "originalLine": null,
       "characters": 172,
       "sourceHash": "97e7a8b01d1431aab0c388076c1d7868df151151fa48d6649e9c7cc621ee7cd7",
@@ -16101,7 +16101,7 @@
     {
       "name": "getBoroughSectionServiceTypes",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 459,
+      "sourceLine": 470,
       "originalLine": null,
       "characters": 289,
       "sourceHash": "1018fe00196b9afdb667d7b5f2ad67abe6a550aab6d15f19270584f95638a268",
@@ -16113,7 +16113,7 @@
     {
       "name": "getBoroughServiceLabel",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 469,
+      "sourceLine": 480,
       "originalLine": null,
       "characters": 231,
       "sourceHash": "d31245f9342d4bd0c451d29a827442d4850c32fdae4881bf42fccc827fe85743",
@@ -16124,7 +16124,7 @@
     {
       "name": "getBoroughSectionServiceCandidates",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 480,
+      "sourceLine": 491,
       "originalLine": null,
       "characters": 214,
       "sourceHash": "179264c85b7b99bd37de7fc667f195608bf9e21d52b15e76246bd123ed011ef7",
@@ -16135,7 +16135,7 @@
     {
       "name": "getDecorBoroughServiceSeats",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 485,
+      "sourceLine": 496,
       "originalLine": null,
       "characters": 761,
       "sourceHash": "7e7e9b0b47dbe5b1a23138fe8811f19e173df1459ab0200290054d930f39ce98",
@@ -16147,7 +16147,7 @@
     {
       "name": "getFishReservedBoroughServiceSeatId",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 503,
+      "sourceLine": 514,
       "originalLine": null,
       "characters": 242,
       "sourceHash": "1a2f5576522490b1510ab2dbd7c5983f6490f1020c91469d8a81f5385abd78f6",
@@ -16156,7 +16156,7 @@
     {
       "name": "getDecorBoroughServiceSeatReservations",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 508,
+      "sourceLine": 519,
       "originalLine": null,
       "characters": 654,
       "sourceHash": "59e1091ee7735dd389caf7cb6c92408ba1445dc0300372aa68b07da6a6811303",
@@ -16169,7 +16169,7 @@
     {
       "name": "getAvailableDecorBoroughServiceSeat",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 522,
+      "sourceLine": 533,
       "originalLine": null,
       "characters": 491,
       "sourceHash": "3daacbfb1a006f3eb2fda83f84f71434415fa17105144cd953b863e2af86f66c",
@@ -16183,7 +16183,7 @@
     {
       "name": "getDecorBoroughServiceSeatUsage",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 533,
+      "sourceLine": 544,
       "originalLine": null,
       "characters": 177,
       "sourceHash": "c5c188f64e6e405adac1bb48533fe00a560950b8693bbd8d23354cad10d21b80",
@@ -16196,7 +16196,7 @@
     {
       "name": "getDecorBoroughServiceSeatPoint",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 537,
+      "sourceLine": 548,
       "originalLine": null,
       "characters": 152,
       "sourceHash": "c436ac3524f1a971f40c5306252dfb1bb43d092870e3a47c115aa4a6b116aa77",
@@ -16207,7 +16207,7 @@
     {
       "name": "clearFishBoroughServiceReservation",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 542,
+      "sourceLine": 553,
       "originalLine": null,
       "characters": 462,
       "sourceHash": "6a321feb95d296528bdd14331b58b9d2b2956799c4d1a83eb31439fc04e07e18",
@@ -16216,7 +16216,7 @@
     {
       "name": "clearDecorBoroughServiceReservations",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 558,
+      "sourceLine": 569,
       "originalLine": null,
       "characters": 490,
       "sourceHash": "946e1a920fd50995dfce6df8e632ed31ccf7773e585a479448d83c9ad8e53c27",
@@ -16228,7 +16228,7 @@
     {
       "name": "getDecorServiceSummary",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 573,
+      "sourceLine": 584,
       "originalLine": null,
       "characters": 443,
       "sourceHash": "9f5134355645d4c2b566cc6abcecde585f406742e4e0b73c0c63710fda805ac0",
@@ -16241,7 +16241,7 @@
     {
       "name": "getFishNeededBoroughServiceType",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 585,
+      "sourceLine": 596,
       "originalLine": null,
       "characters": 649,
       "sourceHash": "21b55760658ff077e11b283c13b45357960a26e86d9a7debe83dda390634d7f3",
@@ -16257,7 +16257,7 @@
     {
       "name": "applyBoroughStructureService",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 607,
+      "sourceLine": 618,
       "originalLine": null,
       "characters": 2519,
       "sourceHash": "081c1b974ad150b86db19eda4229a466f7226c8ed1f0fa5d825a3ea2100755be",
@@ -16277,7 +16277,7 @@
     {
       "name": "processBoroughStructureServices",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 666,
+      "sourceLine": 677,
       "originalLine": null,
       "characters": 3232,
       "sourceHash": "5f40d4f8fac742e792f948a9308b5727a9ef1ec2ac38558a466da708750e88b6",
@@ -16303,7 +16303,7 @@
     {
       "name": "getCoarseFishActivityPosition",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 738,
+      "sourceLine": 749,
       "originalLine": null,
       "characters": 754,
       "sourceHash": "7867e0dd864815b5e4de92d6c9ea5432ee6c5f46d38fd6f1263ef03d7977667d",
@@ -16314,7 +16314,7 @@
     {
       "name": "createCoarseFishActivity",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 757,
+      "sourceLine": 768,
       "originalLine": null,
       "characters": 3668,
       "sourceHash": "b2da3f1c033c383065d12918321bb1472461a1d22ebe477ee26518c018880ffd",
@@ -16336,7 +16336,7 @@
     {
       "name": "advanceCoarseFishActivities",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 838,
+      "sourceLine": 849,
       "originalLine": null,
       "characters": 2136,
       "sourceHash": "b2dd55ea92986b45e94ab8ec9296906b296544ba85095cb6a8e037b6f2efee2e",
@@ -16355,7 +16355,7 @@
     {
       "name": "materializeCoarseFishActivities",
       "module": "fish/decor-behavior.js",
-      "sourceLine": 892,
+      "sourceLine": 903,
       "originalLine": null,
       "characters": 670,
       "sourceHash": "65390ad9029a55ed9785d65a7f81a8d42732d1f6b71ba9509f778bbeb9a4c7f3",
@@ -22092,8 +22092,8 @@
       "module": "fish/predators-and-motion.js",
       "sourceLine": 3101,
       "originalLine": 51906,
-      "characters": 7273,
-      "sourceHash": "e1345ceb73b71c99b6e16ae5b71731fe27ab4f0d0199a78a841bb8a52c890c43",
+      "characters": 7924,
+      "sourceHash": "af326a0a46107b0865b81fbddb1f11678df3cb6ca63261fd6a60f843454603f0",
       "calls": [
         "applyFishBehaviorIntentLayer",
         "assignSpeciesRoamTarget",

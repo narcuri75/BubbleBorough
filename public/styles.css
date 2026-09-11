@@ -15779,6 +15779,26 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 @keyframes startupSpinner { to { transform: rotate(1turn); } }
 
+.loading-overlay-version {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 3;
+  display: none;
+  color: rgba(218, 237, 247, .48);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .045em;
+  text-align: right;
+  text-shadow: 0 1px 4px rgba(0, 12, 28, .72);
+  pointer-events: none;
+}
+.loading-overlay.is-ready.is-auth-mode .loading-overlay-version,
+.loading-overlay.is-ready.is-welcome-mode .loading-overlay-version {
+  display: block;
+}
+
 /* Signed-out startup is a focused auth card instead of the large logo screen. */
 .loading-overlay.is-ready.is-auth-mode .loading-overlay-content {
   width: min(100%, 900px);

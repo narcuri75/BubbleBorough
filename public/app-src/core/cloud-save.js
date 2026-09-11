@@ -106,6 +106,14 @@ function getCloudSyncStatusPresentation(status, label = "") {
   return presentations[normalizedStatus] || { title: normalizedLabel || "Cloud Save", detail: "" };
 }
 
+function getCloudSyncIconPath(status) {
+  const normalizedStatus = String(status || "");
+  if (normalizedStatus === "synced") return "assets/icons/sync-success.png";
+  if (normalizedStatus === "syncing" || normalizedStatus === "checking") return "assets/icons/sync-syncing.png";
+  if (normalizedStatus === "error" || normalizedStatus === "offline") return "assets/icons/sync-failed.png";
+  return "assets/icons/sync-syncing.png";
+}
+
 function setCloudSyncStatus(status, label = "") {
   runtime.cloudSyncStatus = status;
   runtime.cloudSyncLabel = label;
@@ -116,6 +124,8 @@ function setCloudSyncStatus(status, label = "") {
     const text = element.querySelector("[data-cloud-sync-text]");
     const time = element.querySelector("[data-cloud-sync-time]");
     const detail = element.querySelector("[data-cloud-sync-detail]");
+    const light = element.querySelector("[data-cloud-sync-light]");
+    if (light) light.setAttribute("data-sprite-src", getCloudSyncIconPath(status));
     if (text) text.textContent = presentation.title;
     if (time) time.textContent = presentation.timestamp || "";
     if (detail) detail.textContent = presentation.detail;
@@ -1049,6 +1059,13 @@ function bindCloudAccountPanel() {
   container.addEventListener("click", (event) => {
     void handleCloudSettingsClick(event);
   });
+  container.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const openEditor = container.querySelector("[data-cloud-username-editor]:not([hidden]), [data-cloud-email-editor]:not([hidden])");
+    if (!openEditor) return;
+    event.preventDefault();
+    openEditor.hidden = true;
+  });
 }
 
 function renderCloudAccountPanel() {
@@ -1076,49 +1093,63 @@ function renderCloudAccountPanel() {
     container.innerHTML = `
       <div class="cloud-account-shell">
         <div class="cloud-account-section-heading cloud-account-main-heading">
-          <span class="cloud-account-title-icon" aria-hidden="true"><img src="assets/icons/settings/account-cloud.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+          <span class="cloud-account-title-icon" aria-hidden="true"><img data-sprite-src="assets/icons/account-cloud.png" alt="" /></span>
           <div><strong>Account &amp; Cloud Save</strong><span>Manage your account and keep your aquarium safe in the cloud.</span></div>
         </div>
 
         <div class="cloud-account-dashboard">
           <div class="cloud-account-core-panel">
             <div class="cloud-account-identity-card cloud-account-username-card">
-              <span class="cloud-account-avatar" aria-hidden="true"><img src="assets/icons/settings/user.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+              <span class="cloud-account-avatar" aria-hidden="true"><img data-sprite-src="assets/icons/user.png" alt="" /></span>
               <div class="cloud-account-identity-copy"><span>Username</span><strong>${escapeHtml(username)}</strong></div>
-              <button class="cloud-account-edit-button" type="button" data-cloud-edit-username aria-label="Edit username" title="Edit username"><img src="assets/icons/settings/edit.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /></button>
-              <div class="cloud-account-username-editor" data-cloud-username-editor hidden>
-                <input type="text" maxlength="32" autocomplete="nickname" placeholder="Choose a name" value="${escapeHtml(username)}" data-cloud-settings-username>
-                <button class="small-button" type="button" data-cloud-save-username>Save</button>
-                <button class="small-button alt" type="button" data-cloud-cancel-username>Cancel</button>
-              </div>
+              <button class="cloud-account-edit-button" type="button" data-cloud-edit-username aria-label="Edit username" title="Edit username"><img data-sprite-src="assets/icons/edit.png" alt="" aria-hidden="true" /></button>
             </div>
 
             <div class="cloud-account-identity-card cloud-account-email-card">
-              <span class="cloud-account-mail-icon" aria-hidden="true"><img src="assets/icons/settings/email.png" alt="" onerror="this.classList.add('is-missing')" /></span>
-              <div class="cloud-account-identity-copy"><span>Email</span><strong>${escapeHtml(email || "Signed in")}</strong>${pendingEmail ? `<small>Pending: ${escapeHtml(pendingEmail)}</small>` : ""}</div>
+              <span class="cloud-account-mail-icon" aria-hidden="true"><img data-sprite-src="assets/icons/email.png" alt="" /></span>
+              <div class="cloud-account-identity-copy"><span>Email</span><strong title="${escapeHtml(email || "Signed in")}">${escapeHtml(email || "Signed in")}</strong>${pendingEmail ? `<small>Pending: ${escapeHtml(pendingEmail)}</small>` : ""}</div>
+              <button class="cloud-account-edit-button" type="button" data-cloud-edit-email aria-label="Edit email address" title="Edit email address"><img data-sprite-src="assets/icons/edit.png" alt="" aria-hidden="true" /></button>
             </div>
 
             <button class="cloud-sync-state-card" type="button" data-cloud-sync-now data-cloud-sync-status data-status="${escapeHtml(syncStatus)}" aria-label="Sync cloud save now" aria-live="polite" ${syncBusy ? "disabled" : ""}>
-              <span class="cloud-sync-light" aria-hidden="true"></span>
+              <img class="cloud-sync-light" data-cloud-sync-light data-sprite-src="${escapeHtml(getCloudSyncIconPath(syncStatus))}" alt="" aria-hidden="true" />
               <span class="cloud-sync-state-copy"><span class="cloud-sync-label">Cloud Save Status</span><span class="cloud-sync-title-line"><strong data-cloud-sync-text>${escapeHtml(presentation.title)}</strong><span data-cloud-sync-time>${escapeHtml(presentation.timestamp || "")}</span></span><span data-cloud-sync-detail>${escapeHtml(presentation.detail)}</span></span>
             </button>
           </div>
 
           <div class="cloud-account-side-actions">
-            <button class="cloud-account-compact-action" type="button" data-cloud-settings-signedin-forgot-password><img src="assets/icons/settings/reset-password.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /><strong>Reset Password</strong></button>
-            <button class="cloud-account-compact-action" type="button" data-cloud-toggle-email-editor><img src="assets/icons/settings/change-email.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /><strong>Change Email</strong></button>
-            <button class="cloud-account-compact-action cloud-account-logout-action" type="button" data-cloud-signout><img src="assets/icons/settings/logout.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /><strong>Log Out</strong></button>
+            <button class="cloud-account-compact-action" type="button" data-cloud-settings-signedin-forgot-password><img data-sprite-src="assets/icons/reset-password.png" alt="" aria-hidden="true" /><strong>Reset Password</strong></button>
+            <button class="cloud-account-compact-action cloud-account-logout-action" type="button" data-cloud-signout><img data-sprite-src="assets/icons/logout.png" alt="" aria-hidden="true" /><strong>Log Out</strong></button>
           </div>
         </div>
 
-        <div class="cloud-account-email-editor" data-cloud-email-editor hidden>
-          <div><strong>Change Email Address</strong><span>We'll verify the new address before changing your sign-in email.</span></div>
-          <div class="cloud-account-email-change-controls">
-            <input type="email" placeholder="New email address" autocomplete="email" data-cloud-settings-new-email>
-            <button class="small-button" type="button" data-cloud-settings-change-email ${runtime.cloudEmailChangeBusy ? "disabled" : ""}>Send Verification</button>
-            <button class="small-button alt" type="button" data-cloud-cancel-email-editor>Cancel</button>
+        <div class="cloud-account-editor-overlay" data-cloud-username-editor hidden>
+          <div class="cloud-account-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudUsernameEditorTitle">
+            <div class="cloud-account-editor-heading">
+              <span class="cloud-account-editor-icon" aria-hidden="true"><img data-sprite-src="assets/icons/edit.png" alt="" /></span>
+              <div><strong id="cloudUsernameEditorTitle">Edit Username</strong><span>Choose the name shown for this Bubble Borough account.</span></div>
+            </div>
+            <input class="cloud-account-editor-input" type="text" maxlength="32" autocomplete="nickname" placeholder="Choose a name" value="${escapeHtml(username)}" data-cloud-settings-username>
+            <div class="cloud-account-editor-actions">
+              <button class="small-button" type="button" data-cloud-save-username>Save</button>
+              <button class="small-button alt" type="button" data-cloud-cancel-username>Cancel</button>
+            </div>
           </div>
-          <small class="cloud-account-email-status" data-cloud-email-status role="status" aria-live="polite">${escapeHtml(runtime.cloudEmailChangeNotice || "")}</small>
+        </div>
+
+        <div class="cloud-account-editor-overlay" data-cloud-email-editor hidden>
+          <div class="cloud-account-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudEmailEditorTitle">
+            <div class="cloud-account-editor-heading">
+              <span class="cloud-account-editor-icon" aria-hidden="true"><img data-sprite-src="assets/icons/email.png" alt="" /></span>
+              <div><strong id="cloudEmailEditorTitle">Change Email Address</strong><span>We'll verify the new address before changing your sign-in email.</span></div>
+            </div>
+            <input class="cloud-account-editor-input" type="email" placeholder="New email address" autocomplete="email" data-cloud-settings-new-email>
+            <div class="cloud-account-editor-actions">
+              <button class="small-button" type="button" data-cloud-settings-change-email ${runtime.cloudEmailChangeBusy ? "disabled" : ""}>Send Verification</button>
+              <button class="small-button alt" type="button" data-cloud-cancel-email-editor>Cancel</button>
+            </div>
+            <small class="cloud-account-email-status" data-cloud-email-status role="status" aria-live="polite">${escapeHtml(runtime.cloudEmailChangeNotice || "")}</small>
+          </div>
         </div>
 
         <small class="cloud-account-message" data-cloud-settings-message>${escapeHtml(runtime.cloudAuthNotice || "")}</small>
@@ -1171,11 +1202,17 @@ async function handleCloudSettingsClick(event) {
       if (message) message.textContent = "Password reset email sent. Check your inbox.";
       return true;
     }
-    if (target.closest("[data-cloud-toggle-email-editor]")) {
+    if (target.matches?.("[data-cloud-username-editor], [data-cloud-email-editor]")) {
+      target.hidden = true;
+      return true;
+    }
+    if (target.closest("[data-cloud-edit-email]")) {
       const editor = panel.querySelector("[data-cloud-email-editor]");
+      const usernameEditor = panel.querySelector("[data-cloud-username-editor]");
+      if (usernameEditor) usernameEditor.hidden = true;
       if (editor) {
-        editor.hidden = !editor.hidden;
-        if (!editor.hidden) panel.querySelector("[data-cloud-settings-new-email]")?.focus();
+        editor.hidden = false;
+        panel.querySelector("[data-cloud-settings-new-email]")?.focus();
       }
       return true;
     }
@@ -1221,6 +1258,8 @@ async function handleCloudSettingsClick(event) {
     }
     if (target.closest("[data-cloud-edit-username]")) {
       const editor = panel.querySelector("[data-cloud-username-editor]");
+      const emailEditor = panel.querySelector("[data-cloud-email-editor]");
+      if (emailEditor) emailEditor.hidden = true;
       if (editor) editor.hidden = false;
       panel.querySelector("[data-cloud-settings-username]")?.focus();
       return true;

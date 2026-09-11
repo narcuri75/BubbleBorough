@@ -456,6 +456,35 @@
         "assets/generated/sprites/icons/Icons/bell.png.thumb.webp": "8c584069612cc0e6c26486a37775013c87ec45ba75bb91b8a7c3e6338160fd8b"
       }
     },
+    "assets/icons/settings.webp": {
+      "version": "6c0bacde4d6f-v1",
+      "files": {
+        "assets/generated/sprites/icons/settings/account-cloud.png.thumb.webp": "87fcf119acb33f8dad7bd4a060135188de1dcab5151287d4defea13695df63ec",
+        "assets/generated/sprites/icons/settings/audio.png.thumb.webp": "9ae94e53266fb7aff682714485e49a87d252247739b3b6bd4c4bcff5f6e01ed8",
+        "assets/generated/sprites/icons/settings/change-email.png.thumb.webp": "e18ca8ab80d2f2bf6e45f5f24136e3b1bf567c2b9f7ae13761142783437b5231",
+        "assets/generated/sprites/icons/settings/close.png.thumb.webp": "c059fa00ae65937b387857bb45f06c4b237725471a4afb0525b60874fea49c29",
+        "assets/generated/sprites/icons/settings/credits.png.thumb.webp": "02034de3b566cf5d6837c6eedccfc06c5b965b79c6f9e03abc626fdfea3cd4fe",
+        "assets/generated/sprites/icons/settings/data.png.thumb.webp": "3c9a7c2074204a9836f231a890ba39d7c8a6ee6ef80721a0f7fc9dc3f8ec0a64",
+        "assets/generated/sprites/icons/settings/edit.png.thumb.webp": "ef11f0f5fd6b9d782ce4a60a561627f1dbbafe8c66ec15a205fd8e9d57320208",
+        "assets/generated/sprites/icons/settings/email.png.thumb.webp": "0dd1a2f146e5c5fd0d08ac4f2077ee1d631fe98994c10a8654db4ca329d9f953",
+        "assets/generated/sprites/icons/settings/export.png.thumb.webp": "44b115236e5f1a75b3ac889bb1faf1795a3d20a66ed252b66e43d65f51702d97",
+        "assets/generated/sprites/icons/settings/feedback.png.thumb.webp": "a0ca1c3e7d3bdf87b596665e34ecd957766d6915671e912b0c2095224e86ac0f",
+        "assets/generated/sprites/icons/settings/general.png.thumb.webp": "192ca0f469ebd4813790154adc98ae31156acc10ed6a7c1b5e5f5729a9f0b040",
+        "assets/generated/sprites/icons/settings/graphics.png.thumb.webp": "4c189cc52fc35e61bf2a671692d07f669c36111b7ec6e261fb9c64f7ea139106",
+        "assets/generated/sprites/icons/settings/import.png.thumb.webp": "59e4d4824fb1732c660029b00315ee9429f8e36418e3578cdbb9c6d3b2e986b9",
+        "assets/generated/sprites/icons/settings/invite-friend.png.thumb.webp": "c8ed2145579a09f961be6cc2d1c425037190c39e626ac14d65fb8a4c987dc1d2",
+        "assets/generated/sprites/icons/settings/logout.png.thumb.webp": "6afabc29b65a4073ae2a8779b26d3112393deb036e11e4d9a74cf509be7605d4",
+        "assets/generated/sprites/icons/settings/other.png.thumb.webp": "41e2e90544e76332efc3c2444ffed5ce4f844b3911bb8bf8d08ac5a16cf21bd0",
+        "assets/generated/sprites/icons/settings/pizza.png.thumb.webp": "edaa24c2db0557e6b059c7ebccb2fac375ae08f2bca4b2a439bee465db736c4a",
+        "assets/generated/sprites/icons/settings/reset-password.png.thumb.webp": "255447a978a92c3f1af754259b3faddfed471032aee3730761e1f9101be24f1c",
+        "assets/generated/sprites/icons/settings/reset-progress.png.thumb.webp": "2b8c5cafd93e67024dc0e9ef0350b0397a04cebdc968e1e03e957aa080d6011c",
+        "assets/generated/sprites/icons/settings/sync-failed.png.thumb.webp": "677b4a38508717023fa06e111a5a889f168740e6010b81fcc4a3effea0713a97",
+        "assets/generated/sprites/icons/settings/sync-success.png.thumb.webp": "7973aee534926e593be00ae46793f9b30fc47a6885d8acf7f78d024dfbfb0285",
+        "assets/generated/sprites/icons/settings/sync-syncing.png.thumb.webp": "1b3888276f3e1dd2bfb6234c77b9d10fcd454883f080017ac919202ca41c4d35",
+        "assets/generated/sprites/icons/settings/user.png.thumb.webp": "26799f5cd316f0b1e3e3f3357b49b3e0d30f336948574eec9811d98f44cb3e4c",
+        "assets/generated/sprites/icons/settings/visit-site.png.thumb.webp": "6670f3f1975c95808e93586e9b97f3bccf60481ce0a7bba425f9b41b1581b392"
+      }
+    },
     "assets/misc/Egg.webp": {
       "version": "39b4216c4d39-v1",
       "files": {

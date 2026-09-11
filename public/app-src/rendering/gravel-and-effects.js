@@ -319,6 +319,7 @@ function drawCustomGravelLoosePebbles(bounds, now = Date.now()) {
   }
 
   tankContext.drawImage(canvas, 0, 0);
+  markLightweightCausticImage(tankContext, canvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
   return true;
 }
 

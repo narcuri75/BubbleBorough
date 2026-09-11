@@ -1994,6 +1994,163 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/icons/settings.webp",
+      "version": "f1e1e97ef204",
+      "width": 400,
+      "height": 600,
+      "frames": {
+        "account-cloud.png": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "audio.png": [
+          100,
+          0,
+          100,
+          100
+        ],
+        "change-email.png": [
+          200,
+          0,
+          100,
+          100
+        ],
+        "close.png": [
+          300,
+          0,
+          100,
+          100
+        ],
+        "credits.png": [
+          0,
+          100,
+          100,
+          100
+        ],
+        "data.png": [
+          100,
+          100,
+          100,
+          100
+        ],
+        "edit.png": [
+          200,
+          100,
+          100,
+          100
+        ],
+        "email.png": [
+          300,
+          100,
+          100,
+          100
+        ],
+        "export.png": [
+          0,
+          200,
+          100,
+          100
+        ],
+        "feedback.png": [
+          100,
+          200,
+          100,
+          100
+        ],
+        "general.png": [
+          200,
+          200,
+          100,
+          100
+        ],
+        "graphics.png": [
+          300,
+          200,
+          100,
+          100
+        ],
+        "import.png": [
+          0,
+          300,
+          100,
+          100
+        ],
+        "invite-friend.png": [
+          100,
+          300,
+          100,
+          100
+        ],
+        "logout.png": [
+          200,
+          300,
+          100,
+          100
+        ],
+        "other.png": [
+          300,
+          300,
+          100,
+          100
+        ],
+        "pizza.png": [
+          0,
+          400,
+          100,
+          100
+        ],
+        "reset-password.png": [
+          100,
+          400,
+          100,
+          100
+        ],
+        "reset-progress.png": [
+          200,
+          400,
+          100,
+          100
+        ],
+        "sync-failed.png": [
+          300,
+          400,
+          100,
+          100
+        ],
+        "sync-success.png": [
+          0,
+          500,
+          100,
+          100
+        ],
+        "sync-syncing.png": [
+          100,
+          500,
+          100,
+          100
+        ],
+        "user.png": [
+          200,
+          500,
+          100,
+          100
+        ],
+        "visit-site.png": [
+          300,
+          500,
+          100,
+          100
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/icons/settings",
+        "version": "6c0bacde4d6f-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/misc/Egg.webp",
       "version": "750c69769f07",
       "width": 400,

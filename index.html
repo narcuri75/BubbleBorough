@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260910-settings-dashboard-r3" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260910-balance-cloud-r4" />
   <style>
     #lightsOutToggleButton:disabled {
       opacity: 0.38;
@@ -573,7 +573,7 @@
                     </section>
                     <button id="closeSettingsOverlay" class="store-close-button" type="button" title="Close settings"
                       aria-label="Close settings">
-                      &times;
+                      <img class="settings-close-icon" data-sprite-src="assets/icons/close.png" alt="" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -589,7 +589,7 @@
 
                     <section class="settings-section settings-data-card">
                       <div class="settings-section-heading">
-                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/data.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/data.png" alt="" /></span>
                         <div>
                           <h3>Data</h3>
                           <p class="settings-section-note">Export, import, or reset your aquarium save.</p>
@@ -597,13 +597,16 @@
                       </div>
                       <div class="overview-actions settings-data-actions">
                         <button id="exportDataButton" class="small-button" type="button">
-                          <img class="settings-button-icon" src="assets/icons/settings/export.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /> Export
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/export.png" alt="" aria-hidden="true" />
+                          <span class="settings-button-label">Export</span>
                         </button>
                         <button id="importDataButton" class="small-button alt" type="button">
-                          <img class="settings-button-icon" src="assets/icons/settings/import.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /> Import
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/import.png" alt="" aria-hidden="true" />
+                          <span class="settings-button-label">Import</span>
                         </button>
                         <button id="resetProgressButton" class="small-button warn" type="button">
-                          <img class="settings-button-icon" src="assets/icons/settings/reset-progress.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" /> Reset Progress
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/reset-progress.png" alt="" aria-hidden="true" />
+                          <span class="settings-button-label">Reset Progress</span>
                         </button>
                       </div>
                       <input id="importDataInput" type="file" accept=".json,application/json" hidden />
@@ -611,7 +614,7 @@
 
                     <section class="settings-section settings-general-card">
                       <div class="settings-section-heading">
-                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/general.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/general.png" alt="" /></span>
                         <div>
                           <h3>General</h3>
                           <p class="settings-section-note">Customize the look and feel.</p>
@@ -640,7 +643,7 @@
 
                     <section class="settings-section settings-graphics-card">
                       <div class="settings-section-heading">
-                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/graphics.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/graphics.png" alt="" /></span>
                         <div>
                           <h3>Graphics</h3>
                           <p class="settings-section-note">Visual effects and aquarium atmosphere.</p>
@@ -690,7 +693,7 @@
 
                     <section class="settings-section settings-audio-card">
                       <div class="settings-section-heading">
-                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/audio.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/audio.png" alt="" /></span>
                         <div>
                           <h3>Audio</h3>
                           <p class="settings-section-note">Control sound settings.</p>
@@ -716,7 +719,7 @@
 
                     <section class="settings-section settings-credits-section settings-other-card" aria-label="Other settings">
                       <div class="settings-section-heading">
-                        <span class="settings-section-heading-icon" aria-hidden="true"><img src="assets/icons/settings/other.png" alt="" onerror="this.classList.add('is-missing')" /></span>
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/other.png" alt="" /></span>
                         <div>
                           <h3>Other</h3>
                           <p class="settings-section-note">Additional resources and community.</p>
@@ -724,26 +727,26 @@
                       </div>
                       <div class="overview-actions settings-other-actions">
                         <button class="small-button alt" type="button" data-open-invite-friend>
-                          <img class="settings-button-icon" src="assets/icons/settings/invite-friend.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/invite-friend.png" alt="" aria-hidden="true" />
                           Invite A Friend
                         </button>
                         <button class="small-button alt credits-button" type="button" data-open-credits>
-                          <img class="settings-button-icon" src="assets/icons/settings/credits.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/credits.png" alt="" aria-hidden="true" />
                           Credits
                         </button>
                         <a class="small-button alt" href="https://forms.gle/p6Qnwo3SoHQJc8VY6" target="_blank"
                           rel="noopener noreferrer">
-                          <img class="settings-button-icon" src="assets/icons/settings/feedback.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/feedback.png" alt="" aria-hidden="true" />
                           Feedback
                         </a>
                         <a class="small-button alt" href="https://nathanarcuri.com/" target="_blank"
                           rel="noopener noreferrer">
-                          <img class="settings-button-icon" src="assets/icons/settings/visit-site.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/visit-site.png" alt="" aria-hidden="true" />
                           Visit My Site
                         </a>
                         <a class="small-button donation-button" href="https://buymeacoffee.com/nathanarcuri" target="_blank"
                           rel="noopener noreferrer" aria-label="Donate with Buy Me a Coffee">
-                          <img class="settings-button-icon" src="assets/icons/settings/pizza.png" alt="" aria-hidden="true" onerror="this.classList.add('is-missing')" />
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/pizza.png" alt="" aria-hidden="true" />
                           Pizza Me!
                         </a>
                       </div>
@@ -2412,7 +2415,7 @@
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost
         ? `live-${Date.now()}`
-        : "20260910-settings-dashboard-r3";
+        : "20260910-account-popover-r3";
       script.type = "module";
       script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);

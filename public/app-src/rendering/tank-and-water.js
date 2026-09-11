@@ -200,10 +200,18 @@ function markLightweightCausticImage(sourceContext, image, x, y, width, height) 
   context.drawImage(image, x, y, width, height);
 }
 
-function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, width, height, item, now, motion) {
+function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, width, height, item, now, motion, receivesCaustics = true) {
   if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
   const context = setLightweightCausticMaskTransform(sourceContext);
+  context.save();
+  if (!receivesCaustics) {
+    // Background art occludes caustics from the floor and objects behind it.
+    // Later foreground layers can still add their own silhouettes to the mask.
+    context.globalCompositeOperation = "destination-out";
+    context.globalAlpha = sourceContext.globalAlpha;
+  }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, motion);
+  context.restore();
 }
 
 function markLightweightCausticFloor() {
@@ -212,8 +220,11 @@ function markLightweightCausticFloor() {
   const bounds = getTankFloorDrawBounds();
   mask.context.setTransform(mask.scale, 0, 0, mask.scale, 0, 0);
   mask.context.globalCompositeOperation = "source-over";
+  mask.context.globalAlpha = 1;
   mask.context.fillStyle = "#fff";
-  mask.context.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, Math.max(1, bounds.bottom - bounds.drawTop));
+  // Use the same current hill profile as the gravel renderer, including randomization.
+  traceTankFloorMaskPath(mask.context, bounds);
+  mask.context.fill();
 }
 
 function drawLightweightCausticOverlay(now) {

@@ -8,11 +8,13 @@ function drawDecorColorLayerImageToContext(context, sourceImage, imagePath, colo
 
   const normalizedSetting = normalizeDecorColorSetting(colorSetting);
   const colorize = normalizeDecorColorizeSetting(colorizeSetting);
+  // Keep the source layer's role even when tinting replaces it with a canvas.
+  const receivesCaustics = imagePath !== runtime.decorMap.get(item?.decorKey)?.bgPath;
   if (isDecorRgbColorSetting(normalizedSetting)) {
     if ("filter" in context) {
       context.save();
       context.filter = colorize ? getDecorRgbColorizeFilter(now) : getDecorRgbCycleFilter(now);
-      drawDecorImageLayerToContext(context, sourceImage, drawX, drawY, width, height, item, now, motion, alpha);
+      drawDecorImageLayerToContext(context, sourceImage, drawX, drawY, width, height, item, now, motion, alpha, receivesCaustics);
       context.restore();
       return true;
     }
@@ -21,7 +23,7 @@ function drawDecorColorLayerImageToContext(context, sourceImage, imagePath, colo
       colorize,
       sourceImage
     }) || sourceImage;
-    drawDecorImageLayerToContext(context, fallbackImage, drawX, drawY, width, height, item, now, motion, alpha);
+    drawDecorImageLayerToContext(context, fallbackImage, drawX, drawY, width, height, item, now, motion, alpha, receivesCaustics);
     return true;
   }
 
@@ -29,7 +31,7 @@ function drawDecorColorLayerImageToContext(context, sourceImage, imagePath, colo
     colorize,
     sourceImage
   }) || sourceImage;
-  drawDecorImageLayerToContext(context, image, drawX, drawY, width, height, item, now, motion, alpha);
+  drawDecorImageLayerToContext(context, image, drawX, drawY, width, height, item, now, motion, alpha, receivesCaustics);
   return true;
 }
 
@@ -212,7 +214,7 @@ function drawDecorMotionImageToContext(context, image, drawX, drawY, width, heig
   }
 }
 
-function drawDecorImageLayerToContext(context, image, drawX, drawY, width, height, item, now, motion = null, alpha = 1) {
+function drawDecorImageLayerToContext(context, image, drawX, drawY, width, height, item, now, motion = null, alpha = 1, receivesCaustics = image !== runtime.images.get(runtime.decorMap.get(item?.decorKey)?.bgPath)) {
   if (!image) {
     return;
   }
@@ -229,7 +231,7 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
     drawY = flipY ? 0 : drawY;
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
-  markLightweightCausticDecorImage(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
+  markLightweightCausticDecorImage(context, image, drawX, drawY, width, height, item, now, resolvedMotion, receivesCaustics);
   drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
   context.restore();
 }

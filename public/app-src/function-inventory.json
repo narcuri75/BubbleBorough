@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 2910,
+  "functionCount": 2913,
   "functions": [
     {
       "name": "syncViewportCssVariables",
@@ -2484,8 +2484,8 @@
       "module": "assets/sprite-sheet-definitions.js",
       "sourceLine": 2,
       "originalLine": null,
-      "characters": 39594,
-      "sourceHash": "9dde51c4bcdffe2e9c0528db82066b04c9f479746bc2533cffafd9ba4a26bf6d",
+      "characters": 42192,
+      "sourceHash": "5e3d290866b54b64de8905540f3a561934720cbbb2c6f79b6099de467c7065c2",
       "calls": []
     },
     {
@@ -4583,29 +4583,62 @@
       ]
     },
     {
-      "name": "getCloudSyncStatusPresentation",
+      "name": "formatCloudSyncTimestamp",
       "module": "core/cloud-save.js",
       "sourceLine": 67,
       "originalLine": null,
-      "characters": 1128,
-      "sourceHash": "24fbcfa5094513dbcd439585025eeacae510bf9f1baf083e6bc3745b5ee7a605",
+      "characters": 591,
+      "sourceHash": "5bf082cdd2f208f4dddd1d83dd3262216d3fea2a31cb25e187c50da9346bb7bb",
+      "calls": []
+    },
+    {
+      "name": "getLatestCloudSyncTimestamp",
+      "module": "core/cloud-save.js",
+      "sourceLine": 79,
+      "originalLine": null,
+      "characters": 143,
+      "sourceHash": "f8cec338e5eb01738310ff5d37dd428620d6f0dbebe0fce9a169c5010cd9151e",
+      "calls": [
+        "getCloudMeta"
+      ]
+    },
+    {
+      "name": "getCloudSyncStatusPresentation",
+      "module": "core/cloud-save.js",
+      "sourceLine": 84,
+      "originalLine": null,
+      "characters": 1365,
+      "sourceHash": "1d057afdbf00937dc87333004c4f571fea9a80a28923b8c752178d3150579f91",
+      "calls": [
+        "formatCloudSyncTimestamp",
+        "getLatestCloudSyncTimestamp"
+      ]
+    },
+    {
+      "name": "getCloudSyncIconPath",
+      "module": "core/cloud-save.js",
+      "sourceLine": 109,
+      "originalLine": null,
+      "characters": 431,
+      "sourceHash": "87ad989882d3613dbad24dc1b4e7b3ce6d7a13aa902ae2c9dc4250221c71deed",
       "calls": []
     },
     {
       "name": "setCloudSyncStatus",
       "module": "core/cloud-save.js",
-      "sourceLine": 90,
+      "sourceLine": 117,
       "originalLine": null,
-      "characters": 826,
-      "sourceHash": "0ddecdc3b94d960d704dce5f1e27bb824919e672c61e247ce639a61a3f1fef88",
+      "characters": 1107,
+      "sourceHash": "78712ae4b4180d3b824c2c0f41027ea8ca03602b422bfa06504b737f0e29531a",
       "calls": [
+        "getCloudSyncIconPath",
         "getCloudSyncStatusPresentation"
       ]
     },
     {
       "name": "isCloudSessionCached",
       "module": "core/cloud-save.js",
-      "sourceLine": 109,
+      "sourceLine": 140,
       "originalLine": null,
       "characters": 72,
       "sourceHash": "c7abdf04293527b9cd54dce096adbee4c729512d780b14ab16a7401730b41e33",
@@ -4616,7 +4649,7 @@
     {
       "name": "supabaseAuthFetch",
       "module": "core/cloud-save.js",
-      "sourceLine": 113,
+      "sourceLine": 144,
       "originalLine": null,
       "characters": 857,
       "sourceHash": "12b0e54693b1f643c51fdc3e9930aa0156751a9350d7c46ac1986a2c9520eacd",
@@ -4625,7 +4658,7 @@
     {
       "name": "refreshCloudSessionIfNeeded",
       "module": "core/cloud-save.js",
-      "sourceLine": 135,
+      "sourceLine": 166,
       "originalLine": null,
       "characters": 697,
       "sourceHash": "8c12428709fdb07ff0a927cadabf2a718882fbf9b2e9c90583e4eab5bcb7c62c",
@@ -4640,7 +4673,7 @@
     {
       "name": "createCloudAccount",
       "module": "core/cloud-save.js",
-      "sourceLine": 159,
+      "sourceLine": 190,
       "originalLine": null,
       "characters": 467,
       "sourceHash": "9439d05c6c60d6d8b5815c4f6c69613956efc9bd0f77b1223fcf93cbfbb1918f",
@@ -4654,7 +4687,7 @@
     {
       "name": "signInCloudAccount",
       "module": "core/cloud-save.js",
-      "sourceLine": 170,
+      "sourceLine": 201,
       "originalLine": null,
       "characters": 300,
       "sourceHash": "7fef6e2e576e3af3509f8d044fa38a661181d79b0f0deb3b62f324908a8b5cfe",
@@ -4667,7 +4700,7 @@
     {
       "name": "getCloudAuthRedirectUrl",
       "module": "core/cloud-save.js",
-      "sourceLine": 178,
+      "sourceLine": 209,
       "originalLine": null,
       "characters": 296,
       "sourceHash": "0fdcb30e603e5fe59017bdf1dc919bb549ad0dc2a23e5b329ae596a11da54538",
@@ -4676,7 +4709,7 @@
     {
       "name": "requestCloudPasswordReset",
       "module": "core/cloud-save.js",
-      "sourceLine": 190,
+      "sourceLine": 221,
       "originalLine": null,
       "characters": 499,
       "sourceHash": "fe26218ac338907f3d7034632ee345c9dae0322f36393503f39843b37aacd747",
@@ -4688,7 +4721,7 @@
     {
       "name": "requestCloudEmailChange",
       "module": "core/cloud-save.js",
-      "sourceLine": 201,
+      "sourceLine": 232,
       "originalLine": null,
       "characters": 987,
       "sourceHash": "7b3d737d10d99005358f04261e778823b528b7a4b08f06589410ec994832290f",
@@ -4702,7 +4735,7 @@
     {
       "name": "clearCloudAuthCallbackUrl",
       "module": "core/cloud-save.js",
-      "sourceLine": 219,
+      "sourceLine": 250,
       "originalLine": null,
       "characters": 614,
       "sourceHash": "7502119ada46c6d802a4f2e898673922730a52b60b4ce3b9e061461baffa3d26",
@@ -4711,7 +4744,7 @@
     {
       "name": "getCloudAuthErrorMessage",
       "module": "core/cloud-save.js",
-      "sourceLine": 232,
+      "sourceLine": 263,
       "originalLine": null,
       "characters": 624,
       "sourceHash": "f2123dfe7424fb52dc8083038d3160c0dbaa2202d2f65e5b270c449915b2f7fe",
@@ -4720,7 +4753,7 @@
     {
       "name": "showAuthSuccess",
       "module": "core/cloud-save.js",
-      "sourceLine": 240,
+      "sourceLine": 271,
       "originalLine": null,
       "characters": 226,
       "sourceHash": "d79bec2274d230729507319dbde493b1f1a77ec42a994bd1e95ec07cfc72c2db",
@@ -4731,7 +4764,7 @@
     {
       "name": "showCloudAuthLinkError",
       "module": "core/cloud-save.js",
-      "sourceLine": 246,
+      "sourceLine": 277,
       "originalLine": null,
       "characters": 640,
       "sourceHash": "1c183274b9459f7373f40e769abdcb044c3bb52b0ad6fc351f39ff9d831b2e2a",
@@ -4743,7 +4776,7 @@
     {
       "name": "handleAuthRoute",
       "module": "core/cloud-save.js",
-      "sourceLine": 258,
+      "sourceLine": 289,
       "originalLine": null,
       "characters": 3124,
       "sourceHash": "da1f20e52349bd90cd7df9c2b055307f31f9dcd778d30982661ac4086675ba24",
@@ -4760,7 +4793,7 @@
     {
       "name": "consumeCloudAuthCallbackFromUrl",
       "module": "core/cloud-save.js",
-      "sourceLine": 310,
+      "sourceLine": 341,
       "originalLine": null,
       "characters": 80,
       "sourceHash": "fb13c432ec63e7f038c225385595d03bbbae56204fdc957521d6d6a224d53f56",
@@ -4771,7 +4804,7 @@
     {
       "name": "returnToCloudLogin",
       "module": "core/cloud-save.js",
-      "sourceLine": 314,
+      "sourceLine": 345,
       "originalLine": null,
       "characters": 631,
       "sourceHash": "63e1e74b51881d5172fa3f4db8cd3051f3ce464a2a562b446071095a281d0f60",
@@ -4785,7 +4818,7 @@
     {
       "name": "hasCloudPasswordRecoverySession",
       "module": "core/cloud-save.js",
-      "sourceLine": 331,
+      "sourceLine": 362,
       "originalLine": null,
       "characters": 109,
       "sourceHash": "dbdb1cef916288c7168b24a4ef3b91f335642608f32e1163f8977e84e28bebc5",
@@ -4794,7 +4827,7 @@
     {
       "name": "completeCloudPasswordReset",
       "module": "core/cloud-save.js",
-      "sourceLine": 335,
+      "sourceLine": 366,
       "originalLine": null,
       "characters": 582,
       "sourceHash": "0099af997eee205a0738bf3edd5df5f8dc199d2635e5095ab1962e666153f870",
@@ -4805,7 +4838,7 @@
     {
       "name": "submitCloudPasswordUpdate",
       "module": "core/cloud-save.js",
-      "sourceLine": 346,
+      "sourceLine": 377,
       "originalLine": null,
       "characters": 935,
       "sourceHash": "a896273d12d4eb199cd2e15a74db80c38d11ed093fbc349780ebf158f4f5021b",
@@ -4819,7 +4852,7 @@
     {
       "name": "handleCloudReauth",
       "module": "core/cloud-save.js",
-      "sourceLine": 367,
+      "sourceLine": 398,
       "originalLine": null,
       "characters": 1177,
       "sourceHash": "aaf977cd6317e342c5913012547d440ce36cc2302fcd3f7ab198fc5dee07c5a5",
@@ -4833,7 +4866,7 @@
     {
       "name": "signOutCloudAccount",
       "module": "core/cloud-save.js",
-      "sourceLine": 392,
+      "sourceLine": 423,
       "originalLine": null,
       "characters": 403,
       "sourceHash": "ae4d822a304890a08359e5345cc134669af515b99893a1f962dd29f70ef1c24d",
@@ -4846,7 +4879,7 @@
     {
       "name": "supabaseSaveFetch",
       "module": "core/cloud-save.js",
-      "sourceLine": 405,
+      "sourceLine": 436,
       "originalLine": null,
       "characters": 901,
       "sourceHash": "8b3b3af4be8e259c376e61581c4625e44de59cd3213d99bdd93793f452118b29",
@@ -4857,7 +4890,7 @@
     {
       "name": "getCloudSaveRecord",
       "module": "core/cloud-save.js",
-      "sourceLine": 427,
+      "sourceLine": 458,
       "originalLine": null,
       "characters": 435,
       "sourceHash": "6288f114f321648543a254d230c8bbbc32def75958d9cb4f5fee6ce97b90a26e",
@@ -4869,7 +4902,7 @@
     {
       "name": "createCloudSavePayload",
       "module": "core/cloud-save.js",
-      "sourceLine": 435,
+      "sourceLine": 466,
       "originalLine": null,
       "characters": 268,
       "sourceHash": "073825e42c03d992b7454a9abd7e1256cb20a569bbb741cfd7baee3eb0d7336c",
@@ -4880,7 +4913,7 @@
     {
       "name": "validateCloudSavePayload",
       "module": "core/cloud-save.js",
-      "sourceLine": 445,
+      "sourceLine": 476,
       "originalLine": null,
       "characters": 234,
       "sourceHash": "b2ce7a101e3d7914f3e1a9f290696e4ee428356b7abdc33a2f1cb0a958e4b3ab",
@@ -4892,7 +4925,7 @@
     {
       "name": "backupCurrentLocalBeforeReplacement",
       "module": "core/cloud-save.js",
-      "sourceLine": 451,
+      "sourceLine": 482,
       "originalLine": null,
       "characters": 438,
       "sourceHash": "ce7530edd922fe3d43a032b7405ad97b3bc4a4b3ee8f987313e8bdd68d90b459",
@@ -4903,7 +4936,7 @@
     {
       "name": "downloadCloudPayload",
       "module": "core/cloud-save.js",
-      "sourceLine": 463,
+      "sourceLine": 494,
       "originalLine": null,
       "characters": 304,
       "sourceHash": "37f2d09ac648c606ce754ce84debdc5c9859515b08cd5388c134c830c062070b",
@@ -4914,7 +4947,7 @@
     {
       "name": "applyCloudSaveRecord",
       "module": "core/cloud-save.js",
-      "sourceLine": 470,
+      "sourceLine": 501,
       "originalLine": null,
       "characters": 1202,
       "sourceHash": "178cafad7c74445db3e8da20f5687936f3f9353fa7355acb17557d984c5131ba",
@@ -4930,7 +4963,7 @@
     {
       "name": "performCloudSaveUpload",
       "module": "core/cloud-save.js",
-      "sourceLine": 502,
+      "sourceLine": 533,
       "originalLine": null,
       "characters": 1721,
       "sourceHash": "3a0a613c6020899a4a2c5d287248fc39d23ce2ed48e7aa5166a3a01b09d68004",
@@ -4948,7 +4981,7 @@
     {
       "name": "uploadCurrentSaveToCloud",
       "module": "core/cloud-save.js",
-      "sourceLine": 544,
+      "sourceLine": 575,
       "originalLine": null,
       "characters": 440,
       "sourceHash": "15e2197c8a75668fc7dc5a7ce4562716532cc54a9f5ed0f13557ee30e4d54955",
@@ -4960,7 +4993,7 @@
     {
       "name": "scheduleCloudSave",
       "module": "core/cloud-save.js",
-      "sourceLine": 559,
+      "sourceLine": 590,
       "originalLine": null,
       "characters": 644,
       "sourceHash": "11c4c565f02055bdece1d3e9aca8a9723285e52bb739ce81dc56fabcafab9c4e",
@@ -4974,7 +5007,7 @@
     {
       "name": "resolveCloudAfterLogin",
       "module": "core/cloud-save.js",
-      "sourceLine": 572,
+      "sourceLine": 603,
       "originalLine": null,
       "characters": 2277,
       "sourceHash": "4229cba4dc8caf73b4faac8ff38328335d76b5c093db521462e339118d1d64f0",
@@ -4993,7 +5026,7 @@
     {
       "name": "chooseLocalForCloudConflict",
       "module": "core/cloud-save.js",
-      "sourceLine": 628,
+      "sourceLine": 659,
       "originalLine": null,
       "characters": 366,
       "sourceHash": "e032e5bc19252b14907cc96a8e3c6f90dea2056edf4843b3c8df10ab3f59fb64",
@@ -5006,7 +5039,7 @@
     {
       "name": "chooseCloudForCloudConflict",
       "module": "core/cloud-save.js",
-      "sourceLine": 636,
+      "sourceLine": 667,
       "originalLine": null,
       "characters": 124,
       "sourceHash": "da6d2aacd6e058eb97c5f7e23e4e37485972d454c88d3e9b04d90a42cc23a0f0",
@@ -5018,7 +5051,7 @@
     {
       "name": "finishCloudConflictSelection",
       "module": "core/cloud-save.js",
-      "sourceLine": 641,
+      "sourceLine": 672,
       "originalLine": null,
       "characters": 354,
       "sourceHash": "4b6373e9f0f2642d07acdb1aa4b3c74beb66e78c830fd46b19c05df7ce9b89cb",
@@ -5034,7 +5067,7 @@
     {
       "name": "closeCloudDialog",
       "module": "core/cloud-save.js",
-      "sourceLine": 652,
+      "sourceLine": 683,
       "originalLine": null,
       "characters": 126,
       "sourceHash": "0419626ba832ec95bad981cbaf056318704c9b9aff9d00a9b0998d1d6865f0bf",
@@ -5043,7 +5076,7 @@
     {
       "name": "showCloudConflictDialog",
       "module": "core/cloud-save.js",
-      "sourceLine": 657,
+      "sourceLine": 688,
       "originalLine": null,
       "characters": 3008,
       "sourceHash": "5eab71a19354f740c33f96afdecd50034c27aa8d454cafd9728a1460e5a86b88",
@@ -5060,7 +5093,7 @@
     {
       "name": "renderAuthCard",
       "module": "core/cloud-save.js",
-      "sourceLine": 705,
+      "sourceLine": 736,
       "originalLine": null,
       "characters": 1216,
       "sourceHash": "0a9e64c570f5bc71e85212a1022876fcc542b3e602330ccd7a7816b9dc40ab2d",
@@ -5071,7 +5104,7 @@
     {
       "name": "getCloudAuthFormMarkup",
       "module": "core/cloud-save.js",
-      "sourceLine": 714,
+      "sourceLine": 745,
       "originalLine": null,
       "characters": 1803,
       "sourceHash": "4c10561905ef932f6ec1c2ec5da3bf3452439505b09ed3154866d5fedaa7a427",
@@ -5082,7 +5115,7 @@
     {
       "name": "ensureStartupActions",
       "module": "core/cloud-save.js",
-      "sourceLine": 735,
+      "sourceLine": 766,
       "originalLine": null,
       "characters": 1514,
       "sourceHash": "d2973925a7c95bf421aa5cc27a1d2b676f36442d914d471394661f8e34cee871",
@@ -5094,7 +5127,7 @@
     {
       "name": "renderStartupActions",
       "module": "core/cloud-save.js",
-      "sourceLine": 756,
+      "sourceLine": 787,
       "originalLine": null,
       "characters": 3309,
       "sourceHash": "f4fec4e91623bd8f90365ad86a6a5397bd0f8d4671a585408124d1fc3f4e36c6",
@@ -5109,7 +5142,7 @@
     {
       "name": "showStartupAuth",
       "module": "core/cloud-save.js",
-      "sourceLine": 827,
+      "sourceLine": 858,
       "originalLine": null,
       "characters": 445,
       "sourceHash": "80efda26da3c6a3d38061c1fead2f3edf14f226a4b6f4951d204770907ea3bb7",
@@ -5120,7 +5153,7 @@
     {
       "name": "startFromStartup",
       "module": "core/cloud-save.js",
-      "sourceLine": 838,
+      "sourceLine": 869,
       "originalLine": null,
       "characters": 671,
       "sourceHash": "3fde596dd0c7c6ff9e5ab2555d686fb505aab317187baa4134ff063bf42b5ef0",
@@ -5139,7 +5172,7 @@
     {
       "name": "handleStartupAuthSubmit",
       "module": "core/cloud-save.js",
-      "sourceLine": 857,
+      "sourceLine": 888,
       "originalLine": null,
       "characters": 1226,
       "sourceHash": "0c69233488956f49f074c11b40926e3a4f294398d40e38bc8dc187a2b3a6a911",
@@ -5154,7 +5187,7 @@
     {
       "name": "handleStartupForgotPassword",
       "module": "core/cloud-save.js",
-      "sourceLine": 886,
+      "sourceLine": 917,
       "originalLine": null,
       "characters": 685,
       "sourceHash": "56fc34fadddbc4923490e6a50ec5c1ee1ac66c00a57da6bdb085d7a09a728582",
@@ -5167,7 +5200,7 @@
     {
       "name": "handleStartupCompletePasswordReset",
       "module": "core/cloud-save.js",
-      "sourceLine": 903,
+      "sourceLine": 934,
       "originalLine": null,
       "characters": 753,
       "sourceHash": "dff1d379c2fb4b3868f559b7795fac92262ec89eeabff24d167247158735a58b",
@@ -5181,7 +5214,7 @@
     {
       "name": "handleStartupActionClick",
       "module": "core/cloud-save.js",
-      "sourceLine": 919,
+      "sourceLine": 950,
       "originalLine": null,
       "characters": 1325,
       "sourceHash": "fae1a2f2d02cc6315cec681e4cb84cb4f5846ffb20bc7a19f8d0aa78d89a49b3",
@@ -5198,7 +5231,7 @@
     {
       "name": "showStartupLoadingState",
       "module": "core/cloud-save.js",
-      "sourceLine": 941,
+      "sourceLine": 972,
       "originalLine": null,
       "characters": 1038,
       "sourceHash": "1c4130dec47fe0d01d3332cf420743a6a06e71816d268b18c510553cfdeec48b",
@@ -5210,7 +5243,7 @@
     {
       "name": "showStartupAccountWelcome",
       "module": "core/cloud-save.js",
-      "sourceLine": 966,
+      "sourceLine": 997,
       "originalLine": null,
       "characters": 298,
       "sourceHash": "79a5c46174d6369f0e0d6d2a8989194655e6f3ab05b9a0aaac6fd5631422da75",
@@ -5223,7 +5256,7 @@
     {
       "name": "continueFromStartup",
       "module": "core/cloud-save.js",
-      "sourceLine": 975,
+      "sourceLine": 1006,
       "originalLine": null,
       "characters": 640,
       "sourceHash": "05c3a20bda9fd092e1b88f52978dbe34ac993ae5ea1555862910c1a96d6cfcc7",
@@ -5242,7 +5275,7 @@
     {
       "name": "ensureCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 993,
+      "sourceLine": 1024,
       "originalLine": null,
       "characters": 1176,
       "sourceHash": "fee8b3354b2b17709126d8122f74cd3880c23d50e54839268956c0e4a7a6f997",
@@ -5251,10 +5284,10 @@
     {
       "name": "bindCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 1024,
+      "sourceLine": 1055,
       "originalLine": null,
-      "characters": 316,
-      "sourceHash": "4cda3c61ffe2767c03bde8883d2ccaf2be5bfe124f194fe478ab03f5fa1333f0",
+      "characters": 637,
+      "sourceHash": "640263ccfd87fdcb97460544aa97c0543a883e1e74d26190450a6e8bb4b80dda",
       "calls": [
         "ensureCloudAccountPanel",
         "handleCloudSettingsClick"
@@ -5263,10 +5296,10 @@
     {
       "name": "renderCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 1033,
+      "sourceLine": 1071,
       "originalLine": null,
-      "characters": 5289,
-      "sourceHash": "ea39e71f7de1c2856ead98ffc1479b6215c3de14e6eeb1413f43b7d20fd2d02a",
+      "characters": 6925,
+      "sourceHash": "7675f1fe560830510afc1956402f4e5d8e9c9c13916036d52a3e0667e5177484",
       "calls": [
         "bindCloudAccountPanel",
         "ensureCloudAccountPanel",
@@ -5274,6 +5307,7 @@
         "getAccountUsernameForUser",
         "getCloudAuthFormMarkup",
         "getCloudSession",
+        "getCloudSyncIconPath",
         "getCloudSyncStatusPresentation",
         "hasCloudPasswordRecoverySession"
       ]
@@ -5281,10 +5315,10 @@
     {
       "name": "handleCloudSettingsClick",
       "module": "core/cloud-save.js",
-      "sourceLine": 1108,
+      "sourceLine": 1160,
       "originalLine": null,
-      "characters": 6002,
-      "sourceHash": "1cf1395ba671a77ed7e1c8244b6ba0aeff877309c18102cc294bd240593323b3",
+      "characters": 6368,
+      "sourceHash": "45a0f5f6e5cbff31019f2b0c4713fe71a135e2a9f602aeed6f14278889ff5b14",
       "calls": [
         "completeCloudPasswordReset",
         "createCloudAccount",
@@ -5305,7 +5339,7 @@
     {
       "name": "initializeCloudSaveRuntime",
       "module": "core/cloud-save.js",
-      "sourceLine": 1234,
+      "sourceLine": 1294,
       "originalLine": null,
       "characters": 515,
       "sourceHash": "afa76ab1a55bb76df5ccd9da1d2a42e13d560d5e9b432dc730cc9773451a2f39",
@@ -5321,7 +5355,7 @@
     {
       "name": "runStartupAuthAction",
       "module": "core/cloud-save.js",
-      "sourceLine": 1245,
+      "sourceLine": 1305,
       "originalLine": null,
       "characters": 431,
       "sourceHash": "e8bae99fea096856e81f93205bad62498cf85d76fc0faa9e619b979fef1a4d56",
@@ -5780,12 +5814,11 @@
       "module": "core/settings-and-persistence.js",
       "sourceLine": 196,
       "originalLine": 19121,
-      "characters": 1633,
-      "sourceHash": "1b028064970382c751c87fa00dbce36a65eee0859c093dbeb8dff06c1f243a07",
+      "characters": 1600,
+      "sourceHash": "c9c1ea375b9c38cfe62756369f8ec0f25cccda14ba6525bec9548d0d1f634a35",
       "calls": [
         "isTankMouseLockFeatureEnabled",
         "normalizeDisplayPosition",
-        "normalizeHalloweenMode",
         "normalizeToolbarPosition",
         "normalizeToolbarTileColor",
         "normalizeUvLightRenderQuality"
@@ -25041,8 +25074,8 @@
       "module": "rendering/decor.js",
       "sourceLine": 4,
       "originalLine": 55538,
-      "characters": 1239,
-      "sourceHash": "2ff57c4c0d338cb992f678f45f6be0bf41eaae1ca622fbcf0fb524c5fe4c4566",
+      "characters": 1459,
+      "sourceHash": "aaedd5a1a45f10da8db7eaf700f92c92c07ec9a6efe9175c4e39e56119a5cb56",
       "calls": [
         "drawDecorImageLayerToContext",
         "getDecorRgbColorizeFilter",
@@ -25057,7 +25090,7 @@
     {
       "name": "getTintedBubblerLightImage",
       "module": "rendering/decor.js",
-      "sourceLine": 36,
+      "sourceLine": 38,
       "originalLine": null,
       "characters": 1627,
       "sourceHash": "c50f5401eab4a0f089bc7da7e7b28b7bffc36c971d0b5b5b9609e62af8d6527e",
@@ -25069,7 +25102,7 @@
     {
       "name": "getBubblerLightFlickerAlpha",
       "module": "rendering/decor.js",
-      "sourceLine": 79,
+      "sourceLine": 81,
       "originalLine": null,
       "characters": 508,
       "sourceHash": "a495749bc3e7f0eadde9cb0fd2445d9b14fc76b2df1afde4c334e2fafeaf26d8",
@@ -25080,7 +25113,7 @@
     {
       "name": "drawBubblerLightLayerToContext",
       "module": "rendering/decor.js",
-      "sourceLine": 88,
+      "sourceLine": 90,
       "originalLine": null,
       "characters": 1819,
       "sourceHash": "636dff0727677c439488921645313d6dbb4467c379085027898a24c010c918e0",
@@ -25100,7 +25133,7 @@
     {
       "name": "getDecorWarpSliceCount",
       "module": "rendering/decor.js",
-      "sourceLine": 140,
+      "sourceLine": 142,
       "originalLine": 55571,
       "characters": 196,
       "sourceHash": "1827314e2784ca891cefb6a3b9ffb73fbebe6d7e3435814981bc1ca606ce3e03",
@@ -25111,7 +25144,7 @@
     {
       "name": "normalizeDecorWarpOffset",
       "module": "rendering/decor.js",
-      "sourceLine": 148,
+      "sourceLine": 150,
       "originalLine": 55579,
       "characters": 192,
       "sourceHash": "4b1ebdcd87ea0bafe4d7ae58473788e0a542eb264ee2d3c25c74d39f7b14aafa",
@@ -25120,7 +25153,7 @@
     {
       "name": "drawWarpedImageBandsToContext",
       "module": "rendering/decor.js",
-      "sourceLine": 155,
+      "sourceLine": 157,
       "originalLine": 55586,
       "characters": 1329,
       "sourceHash": "b2fd95e70c3ff3e95553bd134c59f23d5855042a2dbf167bad3eb4b57ffce16b",
@@ -25131,7 +25164,7 @@
     {
       "name": "drawDecorWarpedToContext",
       "module": "rendering/decor.js",
-      "sourceLine": 190,
+      "sourceLine": 192,
       "originalLine": 55621,
       "characters": 407,
       "sourceHash": "873eb5967d9fab42f5e86c8056a7139e12f5f2068e9f0d0d8f287cd77a702ce9",
@@ -25145,7 +25178,7 @@
     {
       "name": "drawDecorMotionImageToContext",
       "module": "rendering/decor.js",
-      "sourceLine": 205,
+      "sourceLine": 207,
       "originalLine": 55637,
       "characters": 538,
       "sourceHash": "3c3c1e585758fa3e5fbd816417908dbc5232c5989605540e9a632b1cf4582362",
@@ -25157,10 +25190,10 @@
     {
       "name": "drawDecorImageLayerToContext",
       "module": "rendering/decor.js",
-      "sourceLine": 215,
+      "sourceLine": 217,
       "originalLine": 55647,
-      "characters": 974,
-      "sourceHash": "f0689b38886d2950cb71a70ad8a0b95a4a82d7327c33d96b0d46c6925c4a8b15",
+      "characters": 1087,
+      "sourceHash": "5465c1e60abc3e1a501c03b82ef3b2499b31b948798f6c33272a68b4fbd486b5",
       "calls": [
         "clamp",
         "drawDecorMotionImageToContext",
@@ -25175,7 +25208,7 @@
     {
       "name": "getCustomDecorMotionOffsetAt",
       "module": "rendering/decor.js",
-      "sourceLine": 237,
+      "sourceLine": 239,
       "originalLine": 55665,
       "characters": 1544,
       "sourceHash": "04b60684ae553ab9326a8228db9529e428974f1c1174eb0f417405c3cb8bdeb7",
@@ -25191,7 +25224,7 @@
     {
       "name": "drawCustomDecorMotionImageLayerToContext",
       "module": "rendering/decor.js",
-      "sourceLine": 269,
+      "sourceLine": 271,
       "originalLine": 55697,
       "characters": 738,
       "sourceHash": "2f60afc5c39192f79e7c341e0d1d4ac0b157e5d128e10a29ef6095d73f5b8302",
@@ -25205,7 +25238,7 @@
     {
       "name": "getDecorSliceOffset",
       "module": "rendering/decor.js",
-      "sourceLine": 293,
+      "sourceLine": 295,
       "originalLine": 55722,
       "characters": 1170,
       "sourceHash": "c4fd08b59f4aba6a08548835bc8b0a5e3505536a62bd4fcf6e4a0c8014cf80e4",
@@ -25217,7 +25250,7 @@
     {
       "name": "getDecorMotion",
       "module": "rendering/decor.js",
-      "sourceLine": 318,
+      "sourceLine": 320,
       "originalLine": 55747,
       "characters": 2031,
       "sourceHash": "2523a8bb33ead6cbbd039df60681318b7bc4660a0048f56c8f44c34d8ae69ef9",
@@ -25232,7 +25265,7 @@
     {
       "name": "getFishShadowLayerPlaneY",
       "module": "rendering/decor.js",
-      "sourceLine": 359,
+      "sourceLine": 361,
       "originalLine": 55788,
       "characters": 262,
       "sourceHash": "0eae88d781b6e98d4b41578672b96dbcca388ed41eafd08650ea03c59a5e4e1f",
@@ -25246,7 +25279,7 @@
     {
       "name": "getSmoothedFishShadowPlaneY",
       "module": "rendering/decor.js",
-      "sourceLine": 369,
+      "sourceLine": 371,
       "originalLine": 55798,
       "characters": 700,
       "sourceHash": "e2ea09559927730f1af4e276737b82f5f51c880bc1bea4e799f12e9c6d51fa0b",
@@ -25257,7 +25290,7 @@
     {
       "name": "pruneFishShadowPlaneCache",
       "module": "rendering/decor.js",
-      "sourceLine": 387,
+      "sourceLine": 389,
       "originalLine": 55816,
       "characters": 356,
       "sourceHash": "9c6a9bd2fd61ee72f38a87c8543383f2f1322ed3ab485841d936612ff3f89364",
@@ -25266,7 +25299,7 @@
     {
       "name": "getDecorContactSpans",
       "module": "rendering/decor.js",
-      "sourceLine": 400,
+      "sourceLine": 402,
       "originalLine": null,
       "characters": 1177,
       "sourceHash": "a4c278e1c8f630410565bb32225b7b8c518bfd0f857038d8fc2340734e0a42a7",
@@ -25278,7 +25311,7 @@
     {
       "name": "getDecorContactShadowMetrics",
       "module": "rendering/decor.js",
-      "sourceLine": 428,
+      "sourceLine": 430,
       "originalLine": null,
       "characters": 1446,
       "sourceHash": "827b1fe2302d44767d4f337d3ac40469ef939f38a3d3d5a1c9bfebd451e241d3",
@@ -25296,7 +25329,7 @@
     {
       "name": "drawDecorContactShadow",
       "module": "rendering/decor.js",
-      "sourceLine": 476,
+      "sourceLine": 478,
       "originalLine": null,
       "characters": 1291,
       "sourceHash": "b66ab307c9214c66f62c2f57a1f63356091ed7c746b78ccee057b50e1ff83d15",
@@ -25311,7 +25344,7 @@
     {
       "name": "drawGroundShadows",
       "module": "rendering/decor.js",
-      "sourceLine": 509,
+      "sourceLine": 511,
       "originalLine": 55829,
       "characters": 1276,
       "sourceHash": "a612c4587d234d2bf458bc122edbbfebb4b6b6f4b7c4d5cf990eed4564d9cfcb",
@@ -25333,7 +25366,7 @@
     {
       "name": "drawFishProjectedShadow",
       "module": "rendering/decor.js",
-      "sourceLine": 551,
+      "sourceLine": 553,
       "originalLine": 55867,
       "characters": 1075,
       "sourceHash": "0b9fcc4caa53b9e8982ed7294326bf9e207260611e9f95a8d45a75d8770ffe8f",
@@ -25345,7 +25378,7 @@
     {
       "name": "drawDecorImageLayer",
       "module": "rendering/decor.js",
-      "sourceLine": 571,
+      "sourceLine": 573,
       "originalLine": 55882,
       "characters": 987,
       "sourceHash": "473236d353a521d79a7295ca06a0a0320cc945d5b89d317898cdf08349432470",
@@ -25361,7 +25394,7 @@
     {
       "name": "drawCaveBackgroundLayerToContext",
       "module": "rendering/decor.js",
-      "sourceLine": 588,
+      "sourceLine": 590,
       "originalLine": 55893,
       "characters": 1504,
       "sourceHash": "83da2c5ce59a731d7c4078489635536a0190add16847539abab2b3adc0b9a6a7",
@@ -25377,7 +25410,7 @@
     {
       "name": "drawCaveColorLayersToContext",
       "module": "rendering/decor.js",
-      "sourceLine": 614,
+      "sourceLine": 616,
       "originalLine": 55919,
       "characters": 1457,
       "sourceHash": "bca67d80738b687b5330154b770c3f30d96ada22775dd9a3199401e895d766e1",
@@ -25394,7 +25427,7 @@
     {
       "name": "getDecorSameLayerRenderPriority",
       "module": "rendering/decor.js",
-      "sourceLine": 647,
+      "sourceLine": 649,
       "originalLine": 55952,
       "characters": 99,
       "sourceHash": "8b17cb946bdcc07b9d3c7856ddb1d36ba35df42795884fae5949cf9dd23d9c94",
@@ -25405,7 +25438,7 @@
     {
       "name": "comparePlacedDecorDrawOrder",
       "module": "rendering/decor.js",
-      "sourceLine": 651,
+      "sourceLine": 653,
       "originalLine": 55956,
       "characters": 246,
       "sourceHash": "0308d267139bcb0abef40ace28801e0f72f69ef45c115a0a1160f016d0e376ae",
@@ -25416,7 +25449,7 @@
     {
       "name": "comparePlacedDecorHitOrder",
       "module": "rendering/decor.js",
-      "sourceLine": 660,
+      "sourceLine": 662,
       "originalLine": 55965,
       "characters": 366,
       "sourceHash": "fd488ae9d20dd60a87e7cf9c7fbe96c1697a2b38a601469334c89dcd9cc86007",
@@ -25428,7 +25461,7 @@
     {
       "name": "drawDecor",
       "module": "rendering/decor.js",
-      "sourceLine": 674,
+      "sourceLine": 676,
       "originalLine": 55979,
       "characters": 3521,
       "sourceHash": "e3650b884aa5f704ef8ea7e29a557cd980ec91b650813fbc5727dd4472660de1",
@@ -25454,7 +25487,7 @@
     {
       "name": "drawDecorPreview",
       "module": "rendering/decor.js",
-      "sourceLine": 793,
+      "sourceLine": 795,
       "originalLine": 56083,
       "characters": 3174,
       "sourceHash": "102288db8e12ae77d75b8520396e3afe3cc7510ff2d0c5a2ab166dee6c1de8cb",
@@ -25475,7 +25508,7 @@
     {
       "name": "shouldShowDecorSwimGuide",
       "module": "rendering/decor.js",
-      "sourceLine": 888,
+      "sourceLine": 890,
       "originalLine": 56163,
       "characters": 127,
       "sourceHash": "c28b88208ecc4c2567b079fe0d6d04e9f9323fb782176671a50a9e42fd773794",
@@ -25484,7 +25517,7 @@
     {
       "name": "getFishMaxSwimGuideY",
       "module": "rendering/decor.js",
-      "sourceLine": 892,
+      "sourceLine": 894,
       "originalLine": 56167,
       "characters": 1088,
       "sourceHash": "50170d4131faa42cd455192fd5d313d9b00212cc3968658a32f42b651bfd2759",
@@ -25500,7 +25533,7 @@
     {
       "name": "drawDecorSwimGuide",
       "module": "rendering/decor.js",
-      "sourceLine": 937,
+      "sourceLine": 939,
       "originalLine": 56212,
       "characters": 1009,
       "sourceHash": "f75c4435a2197667d025b4a7bb2c8240164d109e68998258efd7ab62380e9a3e",
@@ -25515,7 +25548,7 @@
     {
       "name": "drawActiveDecorLayerCue",
       "module": "rendering/decor.js",
-      "sourceLine": 966,
+      "sourceLine": 968,
       "originalLine": 56241,
       "characters": 1801,
       "sourceHash": "0499112ed01beb3a4719131ac4b80b4547fb62dec3b9565975b0da82ba80082f",
@@ -25533,7 +25566,7 @@
     {
       "name": "drawDecorSettingsBadge",
       "module": "rendering/decor.js",
-      "sourceLine": 1014,
+      "sourceLine": 1016,
       "originalLine": 56289,
       "characters": 1055,
       "sourceHash": "b35d68b202469d8dd17851e7fdfc7b2a0e19ae03a561c4aa4be0078c1d13ba73",
@@ -25544,7 +25577,7 @@
     {
       "name": "drawSelectedDecorHighlight",
       "module": "rendering/decor.js",
-      "sourceLine": 1045,
+      "sourceLine": 1047,
       "originalLine": 56320,
       "characters": 1263,
       "sourceHash": "edc58caa61aa0e770ba2c3903a90ba157674e3078195a9d87cec8dc8a4eb1a49",
@@ -25555,7 +25588,7 @@
     {
       "name": "drawDecorLayerBadge",
       "module": "rendering/decor.js",
-      "sourceLine": 1081,
+      "sourceLine": 1083,
       "originalLine": 56356,
       "characters": 1520,
       "sourceHash": "6793e9cff5eacbe12d1270b734a3959c19233f3f57e757e38706e052b2b3e9fc",
@@ -26984,8 +27017,8 @@
       "module": "rendering/tank-and-water.js",
       "sourceLine": 203,
       "originalLine": null,
-      "characters": 379,
-      "sourceHash": "d5d53a817ef0d93f099fe0cf35507b9b1fdf1d4562da16b4de827337612fbc44",
+      "characters": 743,
+      "sourceHash": "9851d169949c2f7ec5af22fd75ad2231aa8def82535b9dfb119c32018336e7ad",
       "calls": [
         "drawDecorMotionImageToContext",
         "setLightweightCausticMaskTransform"
@@ -26994,7 +27027,7 @@
     {
       "name": "markLightweightCausticFloor",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 209,
+      "sourceLine": 217,
       "originalLine": null,
       "characters": 458,
       "sourceHash": "9b8465e9cec57d59a0ef84193c9cd2fc2f880fb0b454605df41019f4aa1ee590",
@@ -27006,7 +27039,7 @@
     {
       "name": "drawLightweightCausticOverlay",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 219,
+      "sourceLine": 227,
       "originalLine": null,
       "characters": 2452,
       "sourceHash": "f59c8172827cd62941d6ee97f1b7639c7543714893d5a93b17f8879004d88637",
@@ -27023,7 +27056,7 @@
     {
       "name": "drawUnderwaterLightingPass",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 276,
+      "sourceLine": 284,
       "originalLine": null,
       "characters": 2028,
       "sourceHash": "23744ef7dc56d3b159efff52d35899e3874fefb868214b60e9174bff5c915a17",
@@ -27032,7 +27065,7 @@
     {
       "name": "clearStageDisplaySurfaces",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 316,
+      "sourceLine": 324,
       "originalLine": null,
       "characters": 1314,
       "sourceHash": "01a60ca1e2cea96b7c6aeaec4f397d876df9a33c7e978953b0baf090e8b1ecf8",
@@ -27043,7 +27076,7 @@
     {
       "name": "getDecorEditTankFrameGeometry",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 350,
+      "sourceLine": 358,
       "originalLine": null,
       "characters": 602,
       "sourceHash": "d48b1a1c85285193de9ce78caab243ee35d0c788ef8793483ab87aa7b9ee121e",
@@ -27056,7 +27089,7 @@
     {
       "name": "traceDecorEditRoundedTankPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 369,
+      "sourceLine": 377,
       "originalLine": null,
       "characters": 1021,
       "sourceHash": "a2fe9effaacd8b27dfc381cf2bb6d9704fb42d352a0d5c77d2a2a652b058fe23",
@@ -27067,7 +27100,7 @@
     {
       "name": "drawDecorEditTankBoundary",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 391,
+      "sourceLine": 399,
       "originalLine": null,
       "characters": 2187,
       "sourceHash": "0fca04ee8d09e9676429d8705b8a2deb31bf9b2019e04576840fd62a4501a074",
@@ -27084,7 +27117,7 @@
     {
       "name": "drawDirtyWaterTintToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 438,
+      "sourceLine": 446,
       "originalLine": null,
       "characters": 1002,
       "sourceHash": "05667ad204f4737755e4b154acf295b2528a647d43b43e06516a73cbccc53ce9",
@@ -27096,7 +27129,7 @@
     {
       "name": "drawDirtyWaterTint",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 468,
+      "sourceLine": 476,
       "originalLine": null,
       "characters": 154,
       "sourceHash": "2e298951883ace39cec3edbb71f6eb1d8b3a2e5dc080ab1baf82a0d42a00f430",
@@ -27109,7 +27142,7 @@
     {
       "name": "drawLightsOutOverlay",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 472,
+      "sourceLine": 480,
       "originalLine": 52537,
       "characters": 812,
       "sourceHash": "783c1d54a5da72e3164ed40d8974e64d3dc79489861270a330feb2f079cc1750",
@@ -27121,7 +27154,7 @@
     {
       "name": "getScaledTankShellPoints",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 493,
+      "sourceLine": 501,
       "originalLine": 52558,
       "characters": 153,
       "sourceHash": "1ee3b948d3b3657ce18a5d08af4f9b4e0b8ca129b694b12418cf9cd29ea3d565",
@@ -27130,7 +27163,7 @@
     {
       "name": "getTankShellPointSet",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 500,
+      "sourceLine": 508,
       "originalLine": 52565,
       "characters": 235,
       "sourceHash": "1fff058c599e5a2f4686416f8bb3514f33e822dca26c63d06b83692fd7950b42",
@@ -27143,7 +27176,7 @@
     {
       "name": "getPolygonBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 507,
+      "sourceLine": 515,
       "originalLine": 52572,
       "characters": 551,
       "sourceHash": "dbde7714b10d31ad9afe160cc3e2f23dfb639c7bfecf3a93b07374cd5d23530c",
@@ -27152,7 +27185,7 @@
     {
       "name": "tracePolygonPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 535,
+      "sourceLine": 543,
       "originalLine": 52600,
       "characters": 299,
       "sourceHash": "80d2a55a0f71696f039c875311a2d812f957636a4cc59eda6b936005ba4f8398",
@@ -27161,7 +27194,7 @@
     {
       "name": "traceTankShellPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 548,
+      "sourceLine": 556,
       "originalLine": 52613,
       "characters": 706,
       "sourceHash": "26b73fb97ec2aa32494a82edda49fd4f30529d5d9a1ca35a4b1d915aeac6c695",
@@ -27175,7 +27208,7 @@
     {
       "name": "pointInPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 567,
+      "sourceLine": 575,
       "originalLine": 52632,
       "characters": 620,
       "sourceHash": "167fc23c0ef90b05c64b202fe35bc5907d245ed4061b2c41de0ad2af2ca24d24",
@@ -27184,7 +27217,7 @@
     {
       "name": "projectPointIntoPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 585,
+      "sourceLine": 593,
       "originalLine": 52650,
       "characters": 791,
       "sourceHash": "2b2abe9d9bbd54414f6adf01056dd7dbc07efba086ab0b14c348f899b4540320",
@@ -27196,7 +27229,7 @@
     {
       "name": "constrainPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 623,
+      "sourceLine": 631,
       "originalLine": 52688,
       "characters": 506,
       "sourceHash": "6ab69c3390974258b0d4d46ed2a7fcc11d34ab46eab991205f144aeee7ddf230",
@@ -27210,7 +27243,7 @@
     {
       "name": "constrainNormalizedPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 640,
+      "sourceLine": 648,
       "originalLine": 52705,
       "characters": 333,
       "sourceHash": "b4875454c7060544fa29cb4bebdce2c38bee742b5ecec71c36b0014fb31fb4ec",
@@ -27221,7 +27254,7 @@
     {
       "name": "getTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 653,
+      "sourceLine": 661,
       "originalLine": 52718,
       "characters": 918,
       "sourceHash": "2760c8d79eb3ef8fb60c45988b023626666163d678953abd0f4b15b5242a18e5",
@@ -27234,7 +27267,7 @@
     {
       "name": "clipToTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 687,
+      "sourceLine": 695,
       "originalLine": 52752,
       "characters": 386,
       "sourceHash": "37b620c2a788f969e10220906f3df1aa3783db00f16e7dc65cfca772484c19db",
@@ -27249,7 +27282,7 @@
     {
       "name": "drawTankBackdrop",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 698,
+      "sourceLine": 706,
       "originalLine": 52757,
       "characters": 753,
       "sourceHash": "508f1944cc8f7026f577952713ab93e0afab4c02d0d3eff121afccc9b2135882",
@@ -27263,7 +27296,7 @@
     {
       "name": "drawBackground",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 723,
+      "sourceLine": 731,
       "originalLine": 52774,
       "characters": 3140,
       "sourceHash": "aeb55a43ce81445122f47ec9fa6a2e994346e1045f2ef41bdd8ebe094906335f",
@@ -27280,7 +27313,7 @@
     {
       "name": "drawAmbientBubbles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 795,
+      "sourceLine": 803,
       "originalLine": 52846,
       "characters": 4120,
       "sourceHash": "542edc48b79c0381a0e8e345f0669216e0782de78ca42907ba6ffb0751a0878d",
@@ -27300,7 +27333,7 @@
     {
       "name": "getAmbientBubbleRenderPass",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 903,
+      "sourceLine": 911,
       "originalLine": 52954,
       "characters": 193,
       "sourceHash": "a2fb8353dfd7ecb1a092eb5125c6cc3a35e26c87fff2dfa09ac4457c5ea017a3",
@@ -27311,7 +27344,7 @@
     {
       "name": "getAmbientBubbleLayerProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 911,
+      "sourceLine": 919,
       "originalLine": 52962,
       "characters": 415,
       "sourceHash": "e6f4b68e80421fc47d438551702a8bb782acdd68b12946d75f2c6f9fde55316e",
@@ -27320,7 +27353,7 @@
     {
       "name": "getWaterParticleVisibleCount",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 921,
+      "sourceLine": 929,
       "originalLine": 53101,
       "characters": 154,
       "sourceHash": "60e89ed6c0a6f6d04ce47727463025a92fb738f8ec76c81cd62b7f6831558e5e",
@@ -27331,7 +27364,7 @@
     {
       "name": "ensureWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 926,
+      "sourceLine": 934,
       "originalLine": 53111,
       "characters": 2172,
       "sourceHash": "0ee37fdf9de1d7a957947e32c45fb233516629ae0a0cad49190358da18dfb5cb",
@@ -27351,7 +27384,7 @@
     {
       "name": "getWaterParticleDrawColor",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 970,
+      "sourceLine": 978,
       "originalLine": 53151,
       "characters": 501,
       "sourceHash": "f2a56fcf25457ef5848a9a64f5870051ea42c52692a9f79b06053c1e9a18cc2b",
@@ -27360,7 +27393,7 @@
     {
       "name": "formatRgb",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 986,
+      "sourceLine": 994,
       "originalLine": 53171,
       "characters": 117,
       "sourceHash": "02811baecb616084daf778efe9f4830df8448f6cfc2e9a9a312f24f5b258ae2e",
@@ -27369,7 +27402,7 @@
     {
       "name": "formatRgba",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 990,
+      "sourceLine": 998,
       "originalLine": 53175,
       "characters": 160,
       "sourceHash": "011537d4df3dc1513654f81959b9f447371285f675f53d34a58b274f1f4163f6",
@@ -27380,7 +27413,7 @@
     {
       "name": "getWaterParticleSpriteBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 994,
+      "sourceLine": 1002,
       "originalLine": 53179,
       "characters": 762,
       "sourceHash": "e6efd0be55fc716e777e28df1846bf92fd866c684c9cba5f176e35eefdcbe543",
@@ -27392,7 +27425,7 @@
     {
       "name": "getTintedWaterParticleSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1015,
+      "sourceLine": 1023,
       "originalLine": 53200,
       "characters": 1810,
       "sourceHash": "7b777740d57097e1000e560d241c9663cd417875b3881149684410d38acc85e2",
@@ -27406,7 +27439,7 @@
     {
       "name": "collectBubblerParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1074,
+      "sourceLine": 1082,
       "originalLine": 53259,
       "characters": 2303,
       "sourceHash": "226f46a1c72a7032fbb5300ea339340607d1e16047e164d09b5bb7f9c7c12bd9",
@@ -27426,7 +27459,7 @@
     {
       "name": "applyBubblerForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1121,
+      "sourceLine": 1129,
       "originalLine": 53306,
       "characters": 920,
       "sourceHash": "f7707f33609141e9b87fb582fc606e1af9047251fe03d2186ecb4a9ec07c8ea2",
@@ -27437,7 +27470,7 @@
     {
       "name": "getAmbientBubbleParticleLayers",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1140,
+      "sourceLine": 1148,
       "originalLine": 53325,
       "characters": 166,
       "sourceHash": "6b0de811cc87c926469888fd134092b088aa47051e56e531dbd767471a6b72e3",
@@ -27446,7 +27479,7 @@
     {
       "name": "collectAmbientBubbleParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1150,
+      "sourceLine": 1158,
       "originalLine": 53335,
       "characters": 1431,
       "sourceHash": "2388c00a21b07016f96655135ae8c4ddce90e3397d16d530811c54283027d8f6",
@@ -27463,7 +27496,7 @@
     {
       "name": "applyAmbientBubbleForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1190,
+      "sourceLine": 1198,
       "originalLine": 53375,
       "characters": 775,
       "sourceHash": "de023cc1e0644fd07fc473adabe924f6b0cdbfba8a9bf11053cc12fb51b9aef6",
@@ -27474,7 +27507,7 @@
     {
       "name": "getWaterParticleTankLayer",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1211,
+      "sourceLine": 1219,
       "originalLine": 53396,
       "characters": 277,
       "sourceHash": "f0108e9d9871ebf60b20414034aaddc125604460a4a0ee466e9babc170227d94",
@@ -27486,7 +27519,7 @@
     {
       "name": "getParticleFishFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1221,
+      "sourceLine": 1229,
       "originalLine": 53438,
       "characters": 751,
       "sourceHash": "1693df92c68fe81f833ac80880e92f36de07d093656b4dd4b854adf39af60340",
@@ -27501,7 +27534,7 @@
     {
       "name": "applyFishForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1246,
+      "sourceLine": 1254,
       "originalLine": 53463,
       "characters": 933,
       "sourceHash": "a1d17a3a4fa522df5320a4a8a8de1eb1f337c762f6773e50940aa8de7ae5a878",
@@ -27513,7 +27546,7 @@
     {
       "name": "updateWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1272,
+      "sourceLine": 1280,
       "originalLine": 53489,
       "characters": 3277,
       "sourceHash": "c7d4e0bda20e984d9320866b6f03306c08dccf3ec4c918faccf1e14363b671f1",
@@ -27537,7 +27570,7 @@
     {
       "name": "getWaterAtmosphereStreakSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1345,
+      "sourceLine": 1353,
       "originalLine": null,
       "characters": 789,
       "sourceHash": "d96a56cd535b0115930539d8472968c7b107836df0873a1125eb10dbbbd41fcd",
@@ -27546,7 +27579,7 @@
     {
       "name": "drawWaterAtmosphereStreak",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1370,
+      "sourceLine": 1378,
       "originalLine": null,
       "characters": 1246,
       "sourceHash": "10e52a97060fcb37b8b9036904a16353a54157c3532b9521b122ec2bc3e01223",
@@ -27558,7 +27591,7 @@
     {
       "name": "drawWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1411,
+      "sourceLine": 1419,
       "originalLine": 53564,
       "characters": 3955,
       "sourceHash": "d225e785110d9af0c8aeec1688f961ee78248a5054a5ff75d21576034d586155",
@@ -27581,7 +27614,7 @@
     {
       "name": "drawAutoDispenserButton",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1510,
+      "sourceLine": 1518,
       "originalLine": 53665,
       "characters": 2696,
       "sourceHash": "a89dc4f2a9a7e34def46ddf8a973cd5a62d1496f4201494ce409e368a1d1792c",
@@ -27592,7 +27625,7 @@
     {
       "name": "getAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1573,
+      "sourceLine": 1581,
       "originalLine": 53728,
       "characters": 242,
       "sourceHash": "47d63588814b89a503e7e217884f7d77424685052a411bdc5f03ad7a4946ae41",
@@ -27601,7 +27634,7 @@
     {
       "name": "getAutoDispenserHopperCacheKey",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1583,
+      "sourceLine": 1591,
       "originalLine": 53738,
       "characters": 409,
       "sourceHash": "2d3b52c239f11ce09564058775dfa18c02de7b18f6821ed20420aa15f4250e7f",
@@ -27612,7 +27645,7 @@
     {
       "name": "drawFoodPelletPieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1596,
+      "sourceLine": 1604,
       "originalLine": 53751,
       "characters": 1284,
       "sourceHash": "596531a028ac14859caeaf1ab4c141df13cedfe24ba8d460644bdf41a125e71a",
@@ -27625,7 +27658,7 @@
     {
       "name": "drawFoodSpritePieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1631,
+      "sourceLine": 1639,
       "originalLine": 53786,
       "characters": 1090,
       "sourceHash": "0acf314808acb722015b0be1a9449310f5ec58ec24467bdbe76e61ffb66f2a4c",
@@ -27639,7 +27672,7 @@
     {
       "name": "buildAutoDispenserHopperPile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1655,
+      "sourceLine": 1663,
       "originalLine": 53807,
       "characters": 1800,
       "sourceHash": "a43ce334c4102195a505999974a667a42c52d53624df781145952c13ce123001",
@@ -27656,7 +27689,7 @@
     {
       "name": "renderAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1704,
+      "sourceLine": 1712,
       "originalLine": 53856,
       "characters": 1593,
       "sourceHash": "377abbcb73cb6cd3c523352fc7dc8d69f678ba0b2f624b742ff786153438beee",
@@ -27672,7 +27705,7 @@
     {
       "name": "drawAutoDispenser",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1740,
+      "sourceLine": 1748,
       "originalLine": 53892,
       "characters": 3306,
       "sourceHash": "6abbbf039fa76385948aea4aba7dd4a83e8c1f726d8115cb4cf630f33587905c",
@@ -27689,7 +27722,7 @@
     {
       "name": "getTintedFoodPelletSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1821,
+      "sourceLine": 1829,
       "originalLine": 53973,
       "characters": 2084,
       "sourceHash": "e798a796eabeb409cbd42e3012c1007c02c9dfcbffd4a24ed3a53fe2950e4280",
@@ -27702,7 +27735,7 @@
     {
       "name": "drawProceduralFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1879,
+      "sourceLine": 1887,
       "originalLine": 54031,
       "characters": 1077,
       "sourceHash": "01e5495f0d5cc73a1d8c7498180cc03c688ffc35e325c464854c94fa9241ac42",
@@ -27714,7 +27747,7 @@
     {
       "name": "drawFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1909,
+      "sourceLine": 1917,
       "originalLine": 54062,
       "characters": 763,
       "sourceHash": "2551c2cd00bf5ca942facdd4e625fc2553828d66bdbb828858ff0457e47d3959",
@@ -27728,7 +27761,7 @@
     {
       "name": "drawFallbackChumPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1930,
+      "sourceLine": 1938,
       "originalLine": 54083,
       "characters": 868,
       "sourceHash": "bcdbe6b9f780481629d90c9d01c522b850065e7612a8adbf8fcfdc1e942de4f5",
@@ -27740,7 +27773,7 @@
     {
       "name": "drawFoodSpritePiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1956,
+      "sourceLine": 1964,
       "originalLine": 54109,
       "characters": 1096,
       "sourceHash": "846a33bf219f2c6fb45bd3eebbb401765cdb4d9ae3f08c00da104332d6ed023e",
@@ -27754,7 +27787,7 @@
     {
       "name": "drawPellets",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1980,
+      "sourceLine": 1988,
       "originalLine": 54130,
       "characters": 748,
       "sourceHash": "546e479c3c41d7d3e628f9b9c307be1e9698824aef21f729f570b5aa538edb81",
@@ -27770,7 +27803,7 @@
     {
       "name": "getTankFloorDrawBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2004,
+      "sourceLine": 2012,
       "originalLine": 54154,
       "characters": 449,
       "sourceHash": "f24215c9f218214d6960c75c6ebdccb67344f878272d876e808cea26ea18772a",
@@ -27782,7 +27815,7 @@
     {
       "name": "getTankFloorMaskSurfaceYAtX",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2023,
+      "sourceLine": 2031,
       "originalLine": 54173,
       "characters": 569,
       "sourceHash": "c7c7fcaa954c09970a22bce5eb71c1c6c1f587ce137cb3409ebd8b332bb356e1",
@@ -27795,7 +27828,7 @@
     {
       "name": "getTankFloorMaskHillProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2033,
+      "sourceLine": 2041,
       "originalLine": null,
       "characters": 900,
       "sourceHash": "667e5a171665fb75306e9ee5ac18851afcd0911f7fcc4fe60852cbe44f358228",
@@ -27806,7 +27839,7 @@
     {
       "name": "traceTankFloorMaskPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2056,
+      "sourceLine": 2064,
       "originalLine": 54182,
       "characters": 345,
       "sourceHash": "e6b792d3de236bece492cd2acb2e116de380b9b1dcb673c8a1d0e226c3a6115d",

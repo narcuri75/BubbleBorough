@@ -1,0 +1,289 @@
+{
+  "version": 2,
+  "columns": 4,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "81ac1efc-369b-49eb-a8e3-b8fac0c1875d",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "48ae3e6b-b9dc-481b-9573-74d02aefbbc7",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "account-cloud.png"
+        },
+        {
+          "id": "324ddd38-1226-4a2b-994e-3ae9cba1c3d7",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "audio.png"
+        },
+        {
+          "id": "f31196ad-ec15-4b49-86cf-0f2d53963bc1",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "change-email.png"
+        },
+        {
+          "id": "82d82ad6-34ee-47c5-a463-b01591a60c43",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "close.png"
+        },
+        {
+          "id": "d3f8c0b7-9714-4f9c-af5e-57c6be7971d1",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "credits.png"
+        },
+        {
+          "id": "2ddd2019-b6ea-4030-acb3-ad2322f51cf6",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "data.png"
+        },
+        {
+          "id": "4c86646f-a862-4ee4-a70b-0ed9bead2031",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "edit.png"
+        },
+        {
+          "id": "dc3d24b9-3562-4ec8-8bb5-835893ff6791",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "email.png"
+        },
+        {
+          "id": "ed75649e-4c4d-4d49-8c49-28eedc23f295",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "export.png"
+        },
+        {
+          "id": "0d4132a1-0deb-4d2f-bf1b-4b8f57c90f3e",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "feedback.png"
+        },
+        {
+          "id": "0c88efe4-4a7b-409e-95b9-86136d909c1f",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "general.png"
+        },
+        {
+          "id": "2697e2d2-d0b4-405f-9f97-135a5a25a1d9",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "graphics.png"
+        },
+        {
+          "id": "498ae03b-2708-4931-81bb-110cbd601346",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "import.png"
+        },
+        {
+          "id": "3be074bc-fdfa-4e86-ad2f-dae4b1a5ec08",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "invite-friend.png"
+        },
+        {
+          "id": "4a03912a-7083-4f2e-a7a0-5e98bae2a4f2",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "logout.png"
+        },
+        {
+          "id": "ce8547d1-6f1a-40c9-a385-327039b7e7f5",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "other.png"
+        },
+        {
+          "id": "2bcdd7c3-7428-4a47-8f98-838a6596b78a",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "pizza.png"
+        },
+        {
+          "id": "33192545-c071-462c-a1fb-5ca8f338daf2",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "reset-password.png"
+        },
+        {
+          "id": "45645e10-6e44-4ea3-bddd-089a8483fe6a",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "reset-progress.png"
+        },
+        {
+          "id": "ccf2c250-5251-405e-b49e-d547aaa21364",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sync-failed.png"
+        },
+        {
+          "id": "46220ab5-e046-4052-95e5-dc5d25cf280d",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sync-success.png"
+        },
+        {
+          "id": "e61047fd-f65b-4f91-9f82-457d734e3245",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sync-syncing.png"
+        },
+        {
+          "id": "69bf01ea-51ee-4bbb-89ad-9ca60cf4cf8f",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "user.png"
+        },
+        {
+          "id": "7bcfabff-608f-4c0f-b6a0-27ca57d0417e",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "visit-site.png"
+        }
+      ]
+    }
+  ]
+}

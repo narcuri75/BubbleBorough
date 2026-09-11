@@ -1795,6 +1795,15 @@ test("toolbar shell follows the selected tile color with a clearly darker muted 
   assert.match(css, /background:\s*var\(--toolbar-shell-color\)/);
 });
 
+test("toolbar icons render in front of the collapse tab", () => {
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const tabLayer = Number(css.match(/\.toolbar-tab\s*\{[^}]*z-index:\s*(\d+)/s)?.[1]);
+  const buttonLayer = Number(css.match(/\.dock-button\s*\{[^}]*z-index:\s*(\d+)/s)?.[1]);
+  assert.ok(Number.isFinite(tabLayer));
+  assert.ok(Number.isFinite(buttonLayer));
+  assert.ok(buttonLayer > tabLayer, `toolbar button layer ${buttonLayer} must exceed tab layer ${tabLayer}`);
+});
+
 test("borough edit overview never renders beyond the real 5 by 3 limit", () => {
   const source = fs.readFileSync(path.join(root, "../../public/app-src/ui/main-and-store-rendering.js"), "utf8");
   assert.match(source, /editFrame = \{ minX: frameMinX, maxX: frameMinX \+ 4, minY: frameMinY, maxY: frameMinY \+ 2 \}/);

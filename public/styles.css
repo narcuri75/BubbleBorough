@@ -4221,6 +4221,7 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
 
 .dock-button {
   position: relative;
+  z-index: 3;
   width: 45px;
   height: 45px;
   padding: 0;

@@ -157,8 +157,17 @@ function renderToolbarPosition() {
   document.documentElement.dataset.toolbarCollapsed = toolbarCollapsed ? "true" : "false";
   document.documentElement.dataset.displayCollapsed = displayCollapsed ? "true" : "false";
   if (dom.tankBottomDock) {
+    // Keep the toolbar in the tank's top-level stacking context so it can remain
+    // usable over the borough overview and BubbleBodega. Dialogs still cover it.
+    if (dom.tankStage && dom.tankBottomDock.parentElement !== dom.tankStage) {
+      dom.tankStage.append(dom.tankBottomDock);
+    }
+    const dialogCoversToolbar = runtime.utilityOverlayOpen
+      || runtime.settingsOverlayOpen
+      || runtime.equipmentOverlayOpen;
     dom.tankBottomDock.dataset.toolbarPosition = toolbarPosition;
     dom.tankBottomDock.classList.toggle("is-toolbar-collapsed", toolbarCollapsed);
+    dom.tankBottomDock.classList.toggle("is-behind-overlay", dialogCoversToolbar);
     dom.tankBottomDock.setAttribute("aria-expanded", String(!toolbarCollapsed));
   }
   if (dom.tankDisplay) {

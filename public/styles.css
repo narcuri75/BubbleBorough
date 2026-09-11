@@ -3824,6 +3824,10 @@ h2 {
     padding 160ms ease;
   will-change: transform;
 }
+
+.tank-bottom-dock.is-behind-overlay {
+  z-index: 3;
+}
 .toolbar-wallet { height: 46px; min-width: 118px; box-sizing: border-box; display: grid; grid-template-columns: 38px 1fr; align-items: center; padding: 4px 12px 4px 5px; border: 1px solid color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, rgba(232, 251, 255, .34)); border-radius: 10px; color: #eefbff; background: linear-gradient(color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 52%, #102a3a), color-mix(in srgb, var(--toolbar-tile-color, #4c92aa) 35%, #07141f)), var(--sprite-icon-tile, none) center / 46px 46px repeat; background-blend-mode: color, normal; box-shadow: inset 0 0 14px rgba(37,125,161,.12); }
 .toolbar-wallet.is-gaining-coins { animation: toolbar-wallet-coin-gain 1s ease-out; }
 @keyframes toolbar-wallet-coin-gain {
@@ -5868,6 +5872,22 @@ html[data-hardware-acceleration-notice-open="true"] .utility-overlay[data-utilit
 .utility-overlay[data-utility-mode="hardware-acceleration"] .utility-panel {
   width: min(1040px, calc(100vw - 40px));
   max-height: calc(100dvh - 40px);
+}
+
+@media (min-width: 768px) and (min-height: 560px) {
+  .utility-overlay[data-utility-mode="invite-friend"] .utility-panel {
+    width: min(640px, calc(100vw - 40px));
+    height: auto;
+    max-height: min(76dvh, 540px);
+    grid-template-rows: auto minmax(0, auto) auto;
+  }
+
+  .utility-overlay[data-utility-mode="fish-sell-confirm"] .utility-panel {
+    width: min(520px, calc(100vw - 40px));
+    height: auto;
+    max-height: min(68dvh, 390px);
+    grid-template-rows: auto minmax(0, auto) auto;
+  }
 }
 
 .utility-overlay-body {
@@ -16157,7 +16177,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .cloud-dialog { width: min(680px, 94vw); max-height: 90vh; overflow: auto; border-radius: 20px; padding: 22px; background: #f5fbff; color: #12384d; box-shadow: 0 24px 70px rgba(0,0,0,.45); }
 .cloud-dialog h2 { margin-top: 0; }
 .invite-friend-card { display: grid; gap: 16px; }
-.invite-friend-field { display: grid; gap: 7px; color: #12384d; font-size: 12px; font-weight: 800; }
+.invite-friend-field { display: grid; gap: 7px; color: var(--muted); font-size: 12px; font-weight: 800; }
 .invite-friend-field textarea { width: 100%; min-height: 116px; box-sizing: border-box; resize: vertical; border: 1px solid rgba(5,59,99,.2); border-radius: 12px; padding: 12px; background: #fff; color: #12384d; font: inherit; line-height: 1.45; }
 .invite-friend-field textarea:focus { outline: 2px solid rgba(20,130,180,.25); border-color: #3d91b6; }
 .invite-friend-meta { display: flex; justify-content: space-between; gap: 12px; min-height: 18px; color: #557486; font-size: 11px; }

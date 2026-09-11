@@ -1,6 +1,6 @@
 # Friend invite delivery
 
-This Edge Function sends the in-game friend invitation through Resend. It validates the caller's Supabase access token itself and sends one private message per recipient.
+This Edge Function sends the in-game friend invitation through Supabase Auth. It validates the caller's Supabase access token itself, then calls `auth.admin.inviteUserByEmail()` once per recipient. Supabase sends the project's configured **Invite user** template through the same Auth email provider used for password resets.
 
 ## Why JWT verification is disabled for this function
 
@@ -15,15 +15,9 @@ verify_jwt = false
 
 The function is still protected. The actual `POST` must include a bearer token, and the function validates that token against Supabase Auth before sending any email.
 
-## Configure Resend
+## Configure email delivery
 
-Supabase Auth using Resend SMTP does not automatically expose that Resend API key to Edge Functions. Add the same Resend API key separately as an Edge Function secret:
-
-```sh
-supabase secrets set RESEND_API_KEY=re_... INVITE_FROM_EMAIL="Bubble Borough <noreply@bubbleborough.com>"
-```
-
-`INVITE_FROM_EMAIL` is optional because the function already defaults to `Bubble Borough <noreply@bubbleborough.com>`. The sender domain must be verified in Resend.
+Configure Supabase Auth SMTP and the **Invite user** email template in the Supabase dashboard. No separate `RESEND_API_KEY` Edge Function secret is required. Supabase automatically supplies the hosted function with its server-side project credentials; those credentials must never be exposed to the browser.
 
 ## Deploy
 

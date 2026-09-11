@@ -427,7 +427,15 @@ function drawDecorEditTankBoundary() {
     frameGradient.addColorStop(1, `rgba(238, 250, 255, ${(0.86 + amount * 0.05).toFixed(3)})`);
     glassContext.strokeStyle = frameGradient;
     glassContext.lineWidth = frameWidthPx;
-    traceDecorEditRoundedTankPath(glassContext);
+    // The top edge reads as an unrelated blue bar against full-screen UI.
+    // Retain the useful side and floor boundaries without drawing that edge.
+    glassContext.beginPath();
+    glassContext.moveTo(frame.left, frame.top + frame.radius);
+    glassContext.lineTo(frame.left, frame.bottom - frame.radius);
+    glassContext.quadraticCurveTo(frame.left, frame.bottom, frame.left + frame.radius, frame.bottom);
+    glassContext.lineTo(frame.right - frame.radius, frame.bottom);
+    glassContext.quadraticCurveTo(frame.right, frame.bottom, frame.right, frame.bottom - frame.radius);
+    glassContext.lineTo(frame.right, frame.top + frame.radius);
     glassContext.stroke();
   } else {
     glassContext.strokeStyle = `rgba(214, 246, 255, ${(0.8 + amount * 0.08).toFixed(3)})`;

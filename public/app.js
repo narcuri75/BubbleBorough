@@ -2164,7 +2164,7 @@ const DIGITAL_DISPLAY_ENABLED = false;
 const DISPENSER_SOUND_PATH = "assets/sounds/dispenser.mp3";
 const SUBMARINE_SONAR_SOUND_PATH = "assets/sounds/sonar_sound.mp3";
 const BOAT_HORN_SOUND_PATH = "assets/sounds/boat_horn.mp3";
-const WHALE_BREATH_SOUND_PATH = "assets/sounds/whale_breath.mp3";
+const WHALE_BREATH_SOUND_PATH = "assets/sounds/whalebreath.mp3";
 const SUBMARINE_SONAR_SOUND_VOLUME = 0.5;
 const TOOLBAR_FAST_TOOLTIP_DELAY_MS = 100;
 const TOOLBAR_FAST_TOOLTIP_OFFSET_PX = 14;
@@ -51082,8 +51082,17 @@ function renderToolbarPosition() {
   document.documentElement.dataset.toolbarCollapsed = toolbarCollapsed ? "true" : "false";
   document.documentElement.dataset.displayCollapsed = displayCollapsed ? "true" : "false";
   if (dom.tankBottomDock) {
+    // Keep the toolbar in the tank's top-level stacking context so it can remain
+    // usable over the borough overview and BubbleBodega. Dialogs still cover it.
+    if (dom.tankStage && dom.tankBottomDock.parentElement !== dom.tankStage) {
+      dom.tankStage.append(dom.tankBottomDock);
+    }
+    const dialogCoversToolbar = runtime.utilityOverlayOpen
+      || runtime.settingsOverlayOpen
+      || runtime.equipmentOverlayOpen;
     dom.tankBottomDock.dataset.toolbarPosition = toolbarPosition;
     dom.tankBottomDock.classList.toggle("is-toolbar-collapsed", toolbarCollapsed);
+    dom.tankBottomDock.classList.toggle("is-behind-overlay", dialogCoversToolbar);
     dom.tankBottomDock.setAttribute("aria-expanded", String(!toolbarCollapsed));
   }
   if (dom.tankDisplay) {
@@ -64943,7 +64952,15 @@ function drawDecorEditTankBoundary() {
     frameGradient.addColorStop(1, `rgba(238, 250, 255, ${(0.86 + amount * 0.05).toFixed(3)})`);
     glassContext.strokeStyle = frameGradient;
     glassContext.lineWidth = frameWidthPx;
-    traceDecorEditRoundedTankPath(glassContext);
+    // The top edge reads as an unrelated blue bar against full-screen UI.
+    // Retain the useful side and floor boundaries without drawing that edge.
+    glassContext.beginPath();
+    glassContext.moveTo(frame.left, frame.top + frame.radius);
+    glassContext.lineTo(frame.left, frame.bottom - frame.radius);
+    glassContext.quadraticCurveTo(frame.left, frame.bottom, frame.left + frame.radius, frame.bottom);
+    glassContext.lineTo(frame.right - frame.radius, frame.bottom);
+    glassContext.quadraticCurveTo(frame.right, frame.bottom, frame.right, frame.bottom - frame.radius);
+    glassContext.lineTo(frame.right, frame.top + frame.radius);
     glassContext.stroke();
   } else {
     glassContext.strokeStyle = `rgba(214, 246, 255, ${(0.8 + amount * 0.08).toFixed(3)})`;

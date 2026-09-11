@@ -27104,22 +27104,21 @@
       "module": "rendering/tank-and-water.js",
       "sourceLine": 402,
       "originalLine": null,
-      "characters": 2187,
-      "sourceHash": "0fca04ee8d09e9676429d8705b8a2deb31bf9b2019e04576840fd62a4501a074",
+      "characters": 2787,
+      "sourceHash": "1a8c5d4bf80929903dfc68e063d404cd3c65f15be21622a7f96f6a026ecb2229",
       "calls": [
         "clamp",
         "getCurrentTank",
         "getDecorEditTankFrameGeometry",
         "getTankShellBounds",
         "getViewportPxAsTankVirtual",
-        "traceDecorEditRoundedTankPath",
         "traceTankShellPath"
       ]
     },
     {
       "name": "drawDirtyWaterTintToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 449,
+      "sourceLine": 457,
       "originalLine": null,
       "characters": 1002,
       "sourceHash": "05667ad204f4737755e4b154acf295b2528a647d43b43e06516a73cbccc53ce9",
@@ -27131,7 +27130,7 @@
     {
       "name": "drawDirtyWaterTint",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 479,
+      "sourceLine": 487,
       "originalLine": null,
       "characters": 154,
       "sourceHash": "2e298951883ace39cec3edbb71f6eb1d8b3a2e5dc080ab1baf82a0d42a00f430",
@@ -27144,7 +27143,7 @@
     {
       "name": "drawLightsOutOverlay",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 483,
+      "sourceLine": 491,
       "originalLine": 52537,
       "characters": 812,
       "sourceHash": "783c1d54a5da72e3164ed40d8974e64d3dc79489861270a330feb2f079cc1750",
@@ -27156,7 +27155,7 @@
     {
       "name": "getScaledTankShellPoints",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 504,
+      "sourceLine": 512,
       "originalLine": 52558,
       "characters": 153,
       "sourceHash": "1ee3b948d3b3657ce18a5d08af4f9b4e0b8ca129b694b12418cf9cd29ea3d565",
@@ -27165,7 +27164,7 @@
     {
       "name": "getTankShellPointSet",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 511,
+      "sourceLine": 519,
       "originalLine": 52565,
       "characters": 235,
       "sourceHash": "1fff058c599e5a2f4686416f8bb3514f33e822dca26c63d06b83692fd7950b42",
@@ -27178,7 +27177,7 @@
     {
       "name": "getPolygonBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 518,
+      "sourceLine": 526,
       "originalLine": 52572,
       "characters": 551,
       "sourceHash": "dbde7714b10d31ad9afe160cc3e2f23dfb639c7bfecf3a93b07374cd5d23530c",
@@ -27187,7 +27186,7 @@
     {
       "name": "tracePolygonPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 546,
+      "sourceLine": 554,
       "originalLine": 52600,
       "characters": 299,
       "sourceHash": "80d2a55a0f71696f039c875311a2d812f957636a4cc59eda6b936005ba4f8398",
@@ -27196,7 +27195,7 @@
     {
       "name": "traceTankShellPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 559,
+      "sourceLine": 567,
       "originalLine": 52613,
       "characters": 706,
       "sourceHash": "26b73fb97ec2aa32494a82edda49fd4f30529d5d9a1ca35a4b1d915aeac6c695",
@@ -27210,7 +27209,7 @@
     {
       "name": "pointInPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 578,
+      "sourceLine": 586,
       "originalLine": 52632,
       "characters": 620,
       "sourceHash": "167fc23c0ef90b05c64b202fe35bc5907d245ed4061b2c41de0ad2af2ca24d24",
@@ -27219,7 +27218,7 @@
     {
       "name": "projectPointIntoPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 596,
+      "sourceLine": 604,
       "originalLine": 52650,
       "characters": 791,
       "sourceHash": "2b2abe9d9bbd54414f6adf01056dd7dbc07efba086ab0b14c348f899b4540320",
@@ -27231,7 +27230,7 @@
     {
       "name": "constrainPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 634,
+      "sourceLine": 642,
       "originalLine": 52688,
       "characters": 506,
       "sourceHash": "6ab69c3390974258b0d4d46ed2a7fcc11d34ab46eab991205f144aeee7ddf230",
@@ -27245,7 +27244,7 @@
     {
       "name": "constrainNormalizedPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 651,
+      "sourceLine": 659,
       "originalLine": 52705,
       "characters": 333,
       "sourceHash": "b4875454c7060544fa29cb4bebdce2c38bee742b5ecec71c36b0014fb31fb4ec",
@@ -27256,7 +27255,7 @@
     {
       "name": "getTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 664,
+      "sourceLine": 672,
       "originalLine": 52718,
       "characters": 918,
       "sourceHash": "2760c8d79eb3ef8fb60c45988b023626666163d678953abd0f4b15b5242a18e5",
@@ -27269,7 +27268,7 @@
     {
       "name": "clipToTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 698,
+      "sourceLine": 706,
       "originalLine": 52752,
       "characters": 386,
       "sourceHash": "37b620c2a788f969e10220906f3df1aa3783db00f16e7dc65cfca772484c19db",
@@ -27284,7 +27283,7 @@
     {
       "name": "drawTankBackdrop",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 709,
+      "sourceLine": 717,
       "originalLine": 52757,
       "characters": 753,
       "sourceHash": "508f1944cc8f7026f577952713ab93e0afab4c02d0d3eff121afccc9b2135882",
@@ -27298,7 +27297,7 @@
     {
       "name": "drawBackground",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 734,
+      "sourceLine": 742,
       "originalLine": 52774,
       "characters": 3140,
       "sourceHash": "aeb55a43ce81445122f47ec9fa6a2e994346e1045f2ef41bdd8ebe094906335f",
@@ -27315,7 +27314,7 @@
     {
       "name": "drawAmbientBubbles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 806,
+      "sourceLine": 814,
       "originalLine": 52846,
       "characters": 4120,
       "sourceHash": "542edc48b79c0381a0e8e345f0669216e0782de78ca42907ba6ffb0751a0878d",
@@ -27335,7 +27334,7 @@
     {
       "name": "getAmbientBubbleRenderPass",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 914,
+      "sourceLine": 922,
       "originalLine": 52954,
       "characters": 193,
       "sourceHash": "a2fb8353dfd7ecb1a092eb5125c6cc3a35e26c87fff2dfa09ac4457c5ea017a3",
@@ -27346,7 +27345,7 @@
     {
       "name": "getAmbientBubbleLayerProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 922,
+      "sourceLine": 930,
       "originalLine": 52962,
       "characters": 415,
       "sourceHash": "e6f4b68e80421fc47d438551702a8bb782acdd68b12946d75f2c6f9fde55316e",
@@ -27355,7 +27354,7 @@
     {
       "name": "getWaterParticleVisibleCount",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 932,
+      "sourceLine": 940,
       "originalLine": 53101,
       "characters": 154,
       "sourceHash": "60e89ed6c0a6f6d04ce47727463025a92fb738f8ec76c81cd62b7f6831558e5e",
@@ -27366,7 +27365,7 @@
     {
       "name": "ensureWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 937,
+      "sourceLine": 945,
       "originalLine": 53111,
       "characters": 2172,
       "sourceHash": "0ee37fdf9de1d7a957947e32c45fb233516629ae0a0cad49190358da18dfb5cb",
@@ -27386,7 +27385,7 @@
     {
       "name": "getWaterParticleDrawColor",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 981,
+      "sourceLine": 989,
       "originalLine": 53151,
       "characters": 501,
       "sourceHash": "f2a56fcf25457ef5848a9a64f5870051ea42c52692a9f79b06053c1e9a18cc2b",
@@ -27395,7 +27394,7 @@
     {
       "name": "formatRgb",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 997,
+      "sourceLine": 1005,
       "originalLine": 53171,
       "characters": 117,
       "sourceHash": "02811baecb616084daf778efe9f4830df8448f6cfc2e9a9a312f24f5b258ae2e",
@@ -27404,7 +27403,7 @@
     {
       "name": "formatRgba",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1001,
+      "sourceLine": 1009,
       "originalLine": 53175,
       "characters": 160,
       "sourceHash": "011537d4df3dc1513654f81959b9f447371285f675f53d34a58b274f1f4163f6",
@@ -27415,7 +27414,7 @@
     {
       "name": "getWaterParticleSpriteBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1005,
+      "sourceLine": 1013,
       "originalLine": 53179,
       "characters": 762,
       "sourceHash": "e6efd0be55fc716e777e28df1846bf92fd866c684c9cba5f176e35eefdcbe543",
@@ -27427,7 +27426,7 @@
     {
       "name": "getTintedWaterParticleSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1026,
+      "sourceLine": 1034,
       "originalLine": 53200,
       "characters": 1810,
       "sourceHash": "7b777740d57097e1000e560d241c9663cd417875b3881149684410d38acc85e2",
@@ -27441,7 +27440,7 @@
     {
       "name": "collectBubblerParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1085,
+      "sourceLine": 1093,
       "originalLine": 53259,
       "characters": 2303,
       "sourceHash": "226f46a1c72a7032fbb5300ea339340607d1e16047e164d09b5bb7f9c7c12bd9",
@@ -27461,7 +27460,7 @@
     {
       "name": "applyBubblerForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1132,
+      "sourceLine": 1140,
       "originalLine": 53306,
       "characters": 920,
       "sourceHash": "f7707f33609141e9b87fb582fc606e1af9047251fe03d2186ecb4a9ec07c8ea2",
@@ -27472,7 +27471,7 @@
     {
       "name": "getAmbientBubbleParticleLayers",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1151,
+      "sourceLine": 1159,
       "originalLine": 53325,
       "characters": 166,
       "sourceHash": "6b0de811cc87c926469888fd134092b088aa47051e56e531dbd767471a6b72e3",
@@ -27481,7 +27480,7 @@
     {
       "name": "collectAmbientBubbleParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1161,
+      "sourceLine": 1169,
       "originalLine": 53335,
       "characters": 1431,
       "sourceHash": "2388c00a21b07016f96655135ae8c4ddce90e3397d16d530811c54283027d8f6",
@@ -27498,7 +27497,7 @@
     {
       "name": "applyAmbientBubbleForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1201,
+      "sourceLine": 1209,
       "originalLine": 53375,
       "characters": 775,
       "sourceHash": "de023cc1e0644fd07fc473adabe924f6b0cdbfba8a9bf11053cc12fb51b9aef6",
@@ -27509,7 +27508,7 @@
     {
       "name": "getWaterParticleTankLayer",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1222,
+      "sourceLine": 1230,
       "originalLine": 53396,
       "characters": 277,
       "sourceHash": "f0108e9d9871ebf60b20414034aaddc125604460a4a0ee466e9babc170227d94",
@@ -27521,7 +27520,7 @@
     {
       "name": "getParticleFishFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1232,
+      "sourceLine": 1240,
       "originalLine": 53438,
       "characters": 751,
       "sourceHash": "1693df92c68fe81f833ac80880e92f36de07d093656b4dd4b854adf39af60340",
@@ -27536,7 +27535,7 @@
     {
       "name": "applyFishForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1257,
+      "sourceLine": 1265,
       "originalLine": 53463,
       "characters": 933,
       "sourceHash": "a1d17a3a4fa522df5320a4a8a8de1eb1f337c762f6773e50940aa8de7ae5a878",
@@ -27548,7 +27547,7 @@
     {
       "name": "updateWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1283,
+      "sourceLine": 1291,
       "originalLine": 53489,
       "characters": 3277,
       "sourceHash": "c7d4e0bda20e984d9320866b6f03306c08dccf3ec4c918faccf1e14363b671f1",
@@ -27572,7 +27571,7 @@
     {
       "name": "getWaterAtmosphereStreakSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1356,
+      "sourceLine": 1364,
       "originalLine": null,
       "characters": 789,
       "sourceHash": "d96a56cd535b0115930539d8472968c7b107836df0873a1125eb10dbbbd41fcd",
@@ -27581,7 +27580,7 @@
     {
       "name": "drawWaterAtmosphereStreak",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1381,
+      "sourceLine": 1389,
       "originalLine": null,
       "characters": 1246,
       "sourceHash": "10e52a97060fcb37b8b9036904a16353a54157c3532b9521b122ec2bc3e01223",
@@ -27593,7 +27592,7 @@
     {
       "name": "drawWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1422,
+      "sourceLine": 1430,
       "originalLine": 53564,
       "characters": 3955,
       "sourceHash": "d225e785110d9af0c8aeec1688f961ee78248a5054a5ff75d21576034d586155",
@@ -27616,7 +27615,7 @@
     {
       "name": "drawAutoDispenserButton",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1521,
+      "sourceLine": 1529,
       "originalLine": 53665,
       "characters": 2696,
       "sourceHash": "a89dc4f2a9a7e34def46ddf8a973cd5a62d1496f4201494ce409e368a1d1792c",
@@ -27627,7 +27626,7 @@
     {
       "name": "getAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1584,
+      "sourceLine": 1592,
       "originalLine": 53728,
       "characters": 242,
       "sourceHash": "47d63588814b89a503e7e217884f7d77424685052a411bdc5f03ad7a4946ae41",
@@ -27636,7 +27635,7 @@
     {
       "name": "getAutoDispenserHopperCacheKey",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1594,
+      "sourceLine": 1602,
       "originalLine": 53738,
       "characters": 409,
       "sourceHash": "2d3b52c239f11ce09564058775dfa18c02de7b18f6821ed20420aa15f4250e7f",
@@ -27647,7 +27646,7 @@
     {
       "name": "drawFoodPelletPieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1607,
+      "sourceLine": 1615,
       "originalLine": 53751,
       "characters": 1284,
       "sourceHash": "596531a028ac14859caeaf1ab4c141df13cedfe24ba8d460644bdf41a125e71a",
@@ -27660,7 +27659,7 @@
     {
       "name": "drawFoodSpritePieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1642,
+      "sourceLine": 1650,
       "originalLine": 53786,
       "characters": 1090,
       "sourceHash": "0acf314808acb722015b0be1a9449310f5ec58ec24467bdbe76e61ffb66f2a4c",
@@ -27674,7 +27673,7 @@
     {
       "name": "buildAutoDispenserHopperPile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1666,
+      "sourceLine": 1674,
       "originalLine": 53807,
       "characters": 1800,
       "sourceHash": "a43ce334c4102195a505999974a667a42c52d53624df781145952c13ce123001",
@@ -27691,7 +27690,7 @@
     {
       "name": "renderAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1715,
+      "sourceLine": 1723,
       "originalLine": 53856,
       "characters": 1593,
       "sourceHash": "377abbcb73cb6cd3c523352fc7dc8d69f678ba0b2f624b742ff786153438beee",
@@ -27707,7 +27706,7 @@
     {
       "name": "drawAutoDispenser",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1751,
+      "sourceLine": 1759,
       "originalLine": 53892,
       "characters": 3306,
       "sourceHash": "6abbbf039fa76385948aea4aba7dd4a83e8c1f726d8115cb4cf630f33587905c",
@@ -27724,7 +27723,7 @@
     {
       "name": "getTintedFoodPelletSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1832,
+      "sourceLine": 1840,
       "originalLine": 53973,
       "characters": 2084,
       "sourceHash": "e798a796eabeb409cbd42e3012c1007c02c9dfcbffd4a24ed3a53fe2950e4280",
@@ -27737,7 +27736,7 @@
     {
       "name": "drawProceduralFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1890,
+      "sourceLine": 1898,
       "originalLine": 54031,
       "characters": 1077,
       "sourceHash": "01e5495f0d5cc73a1d8c7498180cc03c688ffc35e325c464854c94fa9241ac42",
@@ -27749,7 +27748,7 @@
     {
       "name": "drawFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1920,
+      "sourceLine": 1928,
       "originalLine": 54062,
       "characters": 763,
       "sourceHash": "2551c2cd00bf5ca942facdd4e625fc2553828d66bdbb828858ff0457e47d3959",
@@ -27763,7 +27762,7 @@
     {
       "name": "drawFallbackChumPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1941,
+      "sourceLine": 1949,
       "originalLine": 54083,
       "characters": 868,
       "sourceHash": "bcdbe6b9f780481629d90c9d01c522b850065e7612a8adbf8fcfdc1e942de4f5",
@@ -27775,7 +27774,7 @@
     {
       "name": "drawFoodSpritePiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1967,
+      "sourceLine": 1975,
       "originalLine": 54109,
       "characters": 1096,
       "sourceHash": "846a33bf219f2c6fb45bd3eebbb401765cdb4d9ae3f08c00da104332d6ed023e",
@@ -27789,7 +27788,7 @@
     {
       "name": "drawPellets",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1991,
+      "sourceLine": 1999,
       "originalLine": 54130,
       "characters": 748,
       "sourceHash": "546e479c3c41d7d3e628f9b9c307be1e9698824aef21f729f570b5aa538edb81",
@@ -27805,7 +27804,7 @@
     {
       "name": "getTankFloorDrawBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2015,
+      "sourceLine": 2023,
       "originalLine": 54154,
       "characters": 449,
       "sourceHash": "f24215c9f218214d6960c75c6ebdccb67344f878272d876e808cea26ea18772a",
@@ -27817,7 +27816,7 @@
     {
       "name": "getTankFloorMaskSurfaceYAtX",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2034,
+      "sourceLine": 2042,
       "originalLine": 54173,
       "characters": 569,
       "sourceHash": "c7c7fcaa954c09970a22bce5eb71c1c6c1f587ce137cb3409ebd8b332bb356e1",
@@ -27830,7 +27829,7 @@
     {
       "name": "getTankFloorMaskHillProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2044,
+      "sourceLine": 2052,
       "originalLine": null,
       "characters": 900,
       "sourceHash": "667e5a171665fb75306e9ee5ac18851afcd0911f7fcc4fe60852cbe44f358228",
@@ -27841,7 +27840,7 @@
     {
       "name": "traceTankFloorMaskPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2067,
+      "sourceLine": 2075,
       "originalLine": 54182,
       "characters": 345,
       "sourceHash": "e6b792d3de236bece492cd2acb2e116de380b9b1dcb673c8a1d0e226c3a6115d",
@@ -34782,8 +34781,8 @@
       "module": "ui/main-and-store-rendering.js",
       "sourceLine": 147,
       "originalLine": 40703,
-      "characters": 1650,
-      "sourceHash": "449382f5bdf64766af22303d1dfc3e07338595d70143d88309fb72b4aa289d0e",
+      "characters": 2165,
+      "sourceHash": "9cdc72124ffc508bd65145e1ef808db332e16b958b3ee0742dbb7bd5b4ae1e9b",
       "calls": [
         "getEffectiveDisplayCollapsed",
         "getTutorialUiState",
@@ -34794,7 +34793,7 @@
     {
       "name": "renderSidebar",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 176,
+      "sourceLine": 185,
       "originalLine": 40730,
       "characters": 380,
       "sourceHash": "cd55e2185419c17998021dfef7daace82b38587440ad7aae7c423066947ce30d",
@@ -34803,7 +34802,7 @@
     {
       "name": "renderTabs",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 189,
+      "sourceLine": 198,
       "originalLine": 40743,
       "characters": 276,
       "sourceHash": "9d6862649da7dd9e515e3c009cf930ae26043434c62007d2e13f9b2594a22260",
@@ -34812,7 +34811,7 @@
     {
       "name": "triggerCoinGainGlow",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 199,
+      "sourceLine": 208,
       "originalLine": null,
       "characters": 480,
       "sourceHash": "617eb08a52829343c9a74522a06a004d5915ef6f855e0ad4d08a64c97c91708b",
@@ -34821,7 +34820,7 @@
     {
       "name": "renderHeader",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 216,
+      "sourceLine": 225,
       "originalLine": 40753,
       "characters": 1148,
       "sourceHash": "42b1ffaea15deafeb3a6730bc07a231f601d0727b6b1a01b68183b5fe23c902a",
@@ -34838,7 +34837,7 @@
     {
       "name": "renderWalletTransactionMenu",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 239,
+      "sourceLine": 248,
       "originalLine": null,
       "characters": 1486,
       "sourceHash": "a9affd0307ebacb376275ec2830b24c828b0e971d6382498665c44701ed57490",
@@ -34851,7 +34850,7 @@
     {
       "name": "renderMealTrack",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 260,
+      "sourceLine": 269,
       "originalLine": 40768,
       "characters": 111,
       "sourceHash": "0b47626d6b459bc5e5dca5668b40e3071081f64c1ab00a35f97f721a848672d5",
@@ -34863,7 +34862,7 @@
     {
       "name": "buildMealTrackMarkup",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 264,
+      "sourceLine": 273,
       "originalLine": 40772,
       "characters": 645,
       "sourceHash": "ffd3b71871db9e8f4664aab501890b3923db7a2af54e4c15c865b32e9ed45f60",
@@ -34875,7 +34874,7 @@
     {
       "name": "renderSummary",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 279,
+      "sourceLine": 288,
       "originalLine": 40795,
       "characters": 111,
       "sourceHash": "38355bcafa1c48dd9ca80468e2452b71f11138a7746d8483cd031b19c4937d09",
@@ -34887,7 +34886,7 @@
     {
       "name": "buildSummaryMarkup",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 283,
+      "sourceLine": 292,
       "originalLine": 40799,
       "characters": 1250,
       "sourceHash": "92921331ab15d29bc208adb9fad822b543cc8a006f63e0d393424521bcbb56f2",
@@ -34906,7 +34905,7 @@
     {
       "name": "renderEvents",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 315,
+      "sourceLine": 324,
       "originalLine": 40831,
       "characters": 99,
       "sourceHash": "8787bfc4833a3116910a6b7e3a69a1b0bf0a9c30357e0a2b1129d3dc8c71356d",
@@ -34918,7 +34917,7 @@
     {
       "name": "buildEventsMarkup",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 319,
+      "sourceLine": 328,
       "originalLine": 40835,
       "characters": 364,
       "sourceHash": "146cbd41cf542e62a2c29c3ccb7d00ee0a37711a6d3481146980639d3f572e70",
@@ -34929,7 +34928,7 @@
     {
       "name": "formatFishShopMetric",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 334,
+      "sourceLine": 343,
       "originalLine": 40850,
       "characters": 324,
       "sourceHash": "b7415e3fe6e2ca16f2aaa2413ef6d27a8bcdcff9c92ba2c3afd46edd41f3d59c",
@@ -34940,7 +34939,7 @@
     {
       "name": "formatFishShopBehavior",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 347,
+      "sourceLine": 356,
       "originalLine": 40863,
       "characters": 1021,
       "sourceHash": "c277c0e348f057c53d5573bcc9fba2c12f4709b6faa950c9b4e442ba5378b061",
@@ -34955,7 +34954,7 @@
     {
       "name": "renderFishShop",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 397,
+      "sourceLine": 406,
       "originalLine": 40900,
       "characters": 5451,
       "sourceHash": "176395c5fc0828312c76b880413fcc7f418a28becdb6e5d377b649a5301ddebe",
@@ -34997,7 +34996,7 @@
     {
       "name": "renderStoreOverlay",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 506,
+      "sourceLine": 515,
       "originalLine": 41010,
       "characters": 3401,
       "sourceHash": "a63d4a3418c493cd7de02ddb034d0f174c7f20acd1345391d8a3a08ea9ef9bbf",
@@ -35013,7 +35012,7 @@
     {
       "name": "renderTankNavigation",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 570,
+      "sourceLine": 579,
       "originalLine": 41064,
       "characters": 311,
       "sourceHash": "9e6663a432fb0627f04f7a46b18a0adcddbdfbcd7fbc8c5c0bcfd6f1d41a8f6f",
@@ -35025,7 +35024,7 @@
     {
       "name": "openAquariumOverview",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 584,
+      "sourceLine": 593,
       "originalLine": null,
       "characters": 213,
       "sourceHash": "cf2d5105078d96f326f037e7580579f64be854f50a1a2784a891809d146ab312",
@@ -35037,7 +35036,7 @@
     {
       "name": "closeAquariumOverview",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 592,
+      "sourceLine": 601,
       "originalLine": null,
       "characters": 209,
       "sourceHash": "35aa2287c547ae697870ed461f3e1f9df2a51fc00251d2afad4048a015ccf0a0",
@@ -35050,7 +35049,7 @@
     {
       "name": "toggleAquariumOverview",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 599,
+      "sourceLine": 608,
       "originalLine": null,
       "characters": 146,
       "sourceHash": "d43c3519f7de045be955a1a8f90d4e90af95e2b915115aa18af07bb6b3916741",
@@ -35062,7 +35061,7 @@
     {
       "name": "getBoroughSnapshotSignature",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 607,
+      "sourceLine": 616,
       "originalLine": null,
       "characters": 1788,
       "sourceHash": "ab17ca5abac0c4903845d721d92a13e7652e423d516423c67652b38731f9dd56",
@@ -35074,7 +35073,7 @@
     {
       "name": "invalidateBoroughOverviewSnapshot",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 646,
+      "sourceLine": 655,
       "originalLine": null,
       "characters": 613,
       "sourceHash": "9685b0d5f3c3032e711bb63531e5351045f209391af2f4fa07c927b842b445e9",
@@ -35085,7 +35084,7 @@
     {
       "name": "pruneStaleBoroughOverviewSnapshots",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 657,
+      "sourceLine": 666,
       "originalLine": null,
       "characters": 887,
       "sourceHash": "8b7a0bcc6860d15a6bc27b43ab25ac992354385dce28da92efc6c958d7d616b3",
@@ -35097,7 +35096,7 @@
     {
       "name": "paintBoroughSnapshotBackground",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 677,
+      "sourceLine": 686,
       "originalLine": null,
       "characters": 1426,
       "sourceHash": "1b10f14ecfed8f7b1fce35db4d95cec44723c479fab73452dc8dcd31daf68bbd",
@@ -35110,7 +35109,7 @@
     {
       "name": "getBoroughSnapshot",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 710,
+      "sourceLine": 719,
       "originalLine": null,
       "characters": 1560,
       "sourceHash": "d4deca95aa70ba87070ad2a4425d726143f718b6eccdbedf6111650c70720585",
@@ -35124,7 +35123,7 @@
     {
       "name": "paintBoroughSnapshots",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 745,
+      "sourceLine": 754,
       "originalLine": null,
       "characters": 1949,
       "sourceHash": "2c0872df4d7a3be17ebfd7f70b69bed40ac00536bab5bdf1a4064818e2f6c27d",
@@ -35136,7 +35135,7 @@
     {
       "name": "getBoroughOverviewSummary",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 785,
+      "sourceLine": 794,
       "originalLine": null,
       "characters": 670,
       "sourceHash": "2d8680f58cd0b8763ac93ec9b6f2190ad92a7bcdcb7c9086ec3183c57d2a41b8",
@@ -35153,7 +35152,7 @@
     {
       "name": "buildBoroughOverviewCareTaskRow",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 796,
+      "sourceLine": 805,
       "originalLine": null,
       "characters": 665,
       "sourceHash": "4b6f3ef8963dccd5f97d687e33304c5eed93a9ef7711d6054af87f993e373422",
@@ -35165,7 +35164,7 @@
     {
       "name": "buildBoroughOverviewBoroughPanel",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 805,
+      "sourceLine": 814,
       "originalLine": null,
       "characters": 751,
       "sourceHash": "a5573f0640e69c09e3b4f2b8018ff81e50206d9cddacfa29f149d5067aba71b6",
@@ -35176,7 +35175,7 @@
     {
       "name": "buildBoroughOverviewNeighborhoodPanel",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 820,
+      "sourceLine": 829,
       "originalLine": null,
       "characters": 2550,
       "sourceHash": "77f33143cd69ec71503e43f6d50802a6062f207ca71240e0c4a65e7e789416f5",
@@ -35193,7 +35192,7 @@
     {
       "name": "renderBoroughOverviewInfoPanel",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 857,
+      "sourceLine": 866,
       "originalLine": null,
       "characters": 1394,
       "sourceHash": "399937da4d7ef14ca0dac96206e2e47fe13355eb9e2d94723082c9368f8b40ad",
@@ -35214,7 +35213,7 @@
     {
       "name": "renderAquariumOverview",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 885,
+      "sourceLine": 894,
       "originalLine": null,
       "characters": 10312,
       "sourceHash": "3a77709ef52682dd45a58a93e5954267190f4cfb7c19841def92e805a53cd3c4",
@@ -35243,7 +35242,7 @@
     {
       "name": "getBoroughOverviewFishColor",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1018,
+      "sourceLine": 1027,
       "originalLine": null,
       "characters": 461,
       "sourceHash": "8e2097718e33adeb0855a47b9030986c017c5b701069c346fe4a7daf7926f4f6",
@@ -35254,7 +35253,7 @@
     {
       "name": "getBoroughOverviewFishPosition",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1032,
+      "sourceLine": 1041,
       "originalLine": null,
       "characters": 1209,
       "sourceHash": "bc2ea11a7cfd5e9e8bba797bebaf9aca9e4bc8b71ecd8e2f254da1f1feed4453",
@@ -35266,7 +35265,7 @@
     {
       "name": "renderBoroughOverviewFish",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1050,
+      "sourceLine": 1059,
       "originalLine": null,
       "characters": 2717,
       "sourceHash": "295186fcbe2afdc87c93dbe0a12224e6ad0e3182b0d833cce46a4872cc665ec5",
@@ -35284,7 +35283,7 @@
     {
       "name": "visitAquariumSection",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1109,
+      "sourceLine": 1118,
       "originalLine": null,
       "characters": 147,
       "sourceHash": "0f3cf6c3e2e58b50da0591cad54288071ca640d4da44c2615d2b9274e210ec11",
@@ -35296,7 +35295,7 @@
     {
       "name": "moveCameraToAdjacentSection",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1115,
+      "sourceLine": 1124,
       "originalLine": null,
       "characters": 278,
       "sourceHash": "3572c93ea3b1bab5fe6f45b5a85c9a5ce8a440a991e2c33598b51da2c3a16792",
@@ -35309,7 +35308,7 @@
     {
       "name": "getFoodAndMedArt",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1124,
+      "sourceLine": 1133,
       "originalLine": 41083,
       "characters": 480,
       "sourceHash": "c85d34ec3d6e8100a78f4d9f76c955f7b4d0542b5bb21c555a15b9e4613b8da2",
@@ -35320,7 +35319,7 @@
     {
       "name": "renderFoodAndMedImage",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1138,
+      "sourceLine": 1147,
       "originalLine": 41097,
       "characters": 341,
       "sourceHash": "77af860454230caff87b324b4fa50bf44126694803cfb4509692222ce7f577c7",
@@ -35332,7 +35331,7 @@
     {
       "name": "renderTankProductImage",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1143,
+      "sourceLine": 1152,
       "originalLine": 41102,
       "characters": 399,
       "sourceHash": "da65476e87a0a2c48308a8d07485222dc25a4643b2e60cc6297395c152b44c2e",
@@ -35345,7 +35344,7 @@
     {
       "name": "getCustomBackgroundPreviewClasses",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1149,
+      "sourceLine": 1158,
       "originalLine": 41108,
       "characters": 301,
       "sourceHash": "1ae504c7d9a78185b6d085ceb7c546fc5e8aa5dda9e59e8e2eaef23995df7a27",
@@ -35357,7 +35356,7 @@
     {
       "name": "renderCustomBackgroundPreview",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1157,
+      "sourceLine": 1166,
       "originalLine": 41116,
       "characters": 303,
       "sourceHash": "23e0260eea61730fba917e7a2e70186bf46cfc226f2a4b74ffb4665a71564e43",
@@ -35371,7 +35370,7 @@
     {
       "name": "renderCustomBackgroundPreviewSwatch",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1161,
+      "sourceLine": 1170,
       "originalLine": 41120,
       "characters": 467,
       "sourceHash": "69eed97c61a27bd35cee83dac7a24b39947315118ac4641b031fb15f5deb53e0",
@@ -35384,7 +35383,7 @@
     {
       "name": "renderBackgroundPreview",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1170,
+      "sourceLine": 1179,
       "originalLine": 41129,
       "characters": 630,
       "sourceHash": "aaa74fdaad9f5f662ea64ad47d0ccdf14991802d0ff1039fa4ce9ea684938819",
@@ -35401,7 +35400,7 @@
     {
       "name": "renderFoodShop",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1189,
+      "sourceLine": 1198,
       "originalLine": 41148,
       "characters": 1218,
       "sourceHash": "fb16aa043d17659b94e39d79b4df425ba2c94910d4d364fd89e7f35c8ba6f5ae",
@@ -35417,7 +35416,7 @@
     {
       "name": "renderPharmacyShop",
       "module": "ui/main-and-store-rendering.js",
-      "sourceLine": 1220,
+      "sourceLine": 1229,
       "originalLine": 41180,
       "characters": 1237,
       "sourceHash": "ae3db7962a25d9c8e19b42447f8f37fe4c2d64c4092d3f60669afacb54f18a0d",

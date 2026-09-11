@@ -1654,8 +1654,38 @@ test("friend invite Edge Function allows CORS preflight through the gateway and 
   assert.match(fn, /request\.method === "OPTIONS"[\s\S]*status: 204/);
   assert.match(fn, /request\.headers\.get\("Authorization"\)/);
   assert.match(fn, /\/auth\/v1\/user/);
-  assert.match(fn, /RESEND_API_KEY/);
+  assert.match(fn, /auth\.admin\.inviteUserByEmail/);
+  assert.match(fn, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.doesNotMatch(fn, /RESEND_API_KEY|api\.resend\.com/);
   assert.doesNotMatch(fn, /!supabaseUrl \|\| !supabaseAnonKey \|\| !resendApiKey/);
+});
+
+test("sound effect paths match deployed asset filename casing", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const soundDir = path.join(root, "../../assets/sounds");
+  const deployedNames = new Set(fs.readdirSync(soundDir));
+  const referencedNames = [...bootstrap.matchAll(/const\s+[A-Z0-9_]+_SOUND_PATH\s*=\s*"assets\/sounds\/([^"/]+)"/g)]
+    .map((match) => match[1]);
+
+  assert.ok(referencedNames.length > 0, "expected sound effect path constants");
+  for (const filename of referencedNames) {
+    assert.ok(deployedNames.has(filename), `sound effect filename casing mismatch: ${filename}`);
+  }
+  assert.match(bootstrap, /WHALE_BREATH_SOUND_PATH = "assets\/sounds\/whalebreath\.mp3"/);
+});
+
+test("overview and store keep the toolbar visible while compact dialogs cover it", () => {
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const tank = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+  const css = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
+
+  assert.match(rendering, /dom\.tankStage\.append\(dom\.tankBottomDock\)/);
+  assert.match(rendering, /runtime\.utilityOverlayOpen[\s\S]*runtime\.settingsOverlayOpen[\s\S]*runtime\.equipmentOverlayOpen/);
+  assert.match(rendering, /classList\.toggle\("is-behind-overlay", dialogCoversToolbar\)/);
+  assert.match(css, /\.tank-bottom-dock\.is-behind-overlay\s*\{[\s\S]*z-index:\s*3/);
+  assert.match(css, /data-utility-mode="invite-friend"[\s\S]*width:\s*min\(640px/);
+  assert.match(css, /data-utility-mode="fish-sell-confirm"[\s\S]*width:\s*min\(520px/);
+  assert.doesNotMatch(tank, /traceDecorEditRoundedTankPath\(glassContext\);/);
 });
 
 test("startup requires account auth before a new aquarium and invite-a-friend is available beside credits", () => {

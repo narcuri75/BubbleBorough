@@ -117,22 +117,23 @@ function getNextMealBoundary(timestamp) {
 }
 
 function getTankPoint(event, options = {}) {
-  const rect = dom.tankStage.getBoundingClientRect();
-  if (!rect.width || !rect.height) {
+  const metrics = getTankStageVisualMetrics();
+  const stagePoint = getTankStageClientPointInLayoutSpace(event);
+  if (!metrics.rect || !stagePoint) {
     return null;
   }
 
   runtime.pointerStagePx = {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top
+    x: stagePoint.x,
+    y: stagePoint.y
   };
 
   const dpr = getStageRenderDevicePixelRatio();
   const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
   const offsetX = Number(runtime.stageRenderOffsetX) || 0;
   const offsetY = Number(runtime.stageRenderOffsetY) || 0;
-  const canvasX = (event.clientX - rect.left) * dpr;
-  const canvasY = (event.clientY - rect.top) * dpr;
+  const canvasX = stagePoint.x * dpr;
+  const canvasY = stagePoint.y * dpr;
   const rawPoint = {
     x: (canvasX - offsetX) / scale,
     y: (canvasY - offsetY) / scale

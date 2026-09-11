@@ -19,6 +19,63 @@ function isLayoutRatioLockActive() {
     && Number(runtime.layoutRatioLockHeight) > 0;
 }
 
+function getTankStageLayoutSize() {
+  const stage = dom?.tankStage;
+  if (!(stage instanceof HTMLElement)) {
+    return { width: TANK_WIDTH, height: TANK_HEIGHT };
+  }
+
+  // clientWidth/clientHeight are layout-space measurements and intentionally do
+  // not include the Ratio Lock transform applied to the outer app shell. The
+  // renderer must keep using these frozen logical dimensions while the browser
+  // window only changes the final presentation scale.
+  const fallback = stage.getBoundingClientRect?.();
+  return {
+    width: Math.max(1, Number(stage.clientWidth) || Number(fallback?.width) || TANK_WIDTH),
+    height: Math.max(1, Number(stage.clientHeight) || Number(fallback?.height) || TANK_HEIGHT)
+  };
+}
+
+function getTankStageVisualMetrics() {
+  const stage = dom?.tankStage;
+  const layout = getTankStageLayoutSize();
+  const rect = stage?.getBoundingClientRect?.() || null;
+  const visualWidth = Math.max(0.0001, Number(rect?.width) || layout.width);
+  const visualHeight = Math.max(0.0001, Number(rect?.height) || layout.height);
+  return {
+    rect,
+    layoutWidth: layout.width,
+    layoutHeight: layout.height,
+    visualWidth,
+    visualHeight,
+    visualToLayoutX: layout.width / visualWidth,
+    visualToLayoutY: layout.height / visualHeight
+  };
+}
+
+function getTankStageClientPointInLayoutSpace(event) {
+  const metrics = getTankStageVisualMetrics();
+  if (!metrics.rect) return null;
+  return {
+    x: (Number(event?.clientX) - metrics.rect.left) * metrics.visualToLayoutX,
+    y: (Number(event?.clientY) - metrics.rect.top) * metrics.visualToLayoutY
+  };
+}
+
+function getElementRectInTankStageLayout(element) {
+  const metrics = getTankStageVisualMetrics();
+  const rect = element?.getBoundingClientRect?.();
+  if (!metrics.rect || !rect) return null;
+  return {
+    left: (rect.left - metrics.rect.left) * metrics.visualToLayoutX,
+    top: (rect.top - metrics.rect.top) * metrics.visualToLayoutY,
+    width: rect.width * metrics.visualToLayoutX,
+    height: rect.height * metrics.visualToLayoutY,
+    right: (rect.right - metrics.rect.left) * metrics.visualToLayoutX,
+    bottom: (rect.bottom - metrics.rect.top) * metrics.visualToLayoutY
+  };
+}
+
 function updateLayoutRatioLockPresentation() {
   if (typeof document === "undefined") {
     return 1;
@@ -3633,14 +3690,14 @@ function updatePlayfieldCssVariables() {
 }
 
 function getStageRenderViewTarget() {
-  const rect = dom.tankStage?.getBoundingClientRect?.();
-  if (!rect?.width || !rect?.height) {
+  const layout = getTankStageLayoutSize();
+  if (!layout.width || !layout.height) {
     return null;
   }
 
   const dpr = getStageRenderDevicePixelRatio();
-  const displayWidth = Math.max(1, Math.round(rect.width * dpr));
-  const displayHeight = Math.max(1, Math.round(rect.height * dpr));
+  const displayWidth = Math.max(1, Math.round(layout.width * dpr));
+  const displayHeight = Math.max(1, Math.round(layout.height * dpr));
   const coverScale = Math.max(displayWidth / TANK_WIDTH, displayHeight / TANK_HEIGHT);
   const coverOffsetX = (displayWidth - TANK_WIDTH * coverScale) * 0.5;
   const coverOffsetY = (displayHeight - TANK_HEIGHT * coverScale) * 0.5;
@@ -3663,13 +3720,13 @@ function getStageRenderViewTarget() {
     };
   }
 
-  const trayRect = activeEditTray.getBoundingClientRect();
-  const topPaddingCss = Math.max(18, Math.min(34, rect.height * 0.035));
-  const sidePaddingCss = Math.max(28, Math.min(64, rect.width * 0.035));
+  const trayRect = getElementRectInTankStageLayout(activeEditTray);
+  const topPaddingCss = Math.max(18, Math.min(34, layout.height * 0.035));
+  const sidePaddingCss = Math.max(28, Math.min(64, layout.width * 0.035));
   const trayGapCss = 14;
-  const trayTopCss = clamp(trayRect.top - rect.top - trayGapCss, rect.height * 0.42, rect.height - 120);
+  const trayTopCss = clamp((trayRect?.top ?? layout.height) - trayGapCss, layout.height * 0.42, layout.height - 120);
   const availableHeightCss = Math.max(220, trayTopCss - topPaddingCss);
-  const availableWidthCss = Math.max(320, rect.width - sidePaddingCss * 2);
+  const availableWidthCss = Math.max(320, layout.width - sidePaddingCss * 2);
   const editScale = Math.min(
     coverScale,
     (availableWidthCss * dpr) / TANK_WIDTH,
@@ -3781,14 +3838,14 @@ function updateStageRenderView(frameTime = performance.now(), options = {}) {
 }
 
 function resizeDisplayCanvases() {
-  const rect = dom.tankStage.getBoundingClientRect();
-  if (!rect.width || !rect.height) {
+  const layout = getTankStageLayoutSize();
+  if (!layout.width || !layout.height) {
     return;
   }
 
   const dpr = getStageRenderDevicePixelRatio();
-  const displayWidth = Math.max(1, Math.round(rect.width * dpr));
-  const displayHeight = Math.max(1, Math.round(rect.height * dpr));
+  const displayWidth = Math.max(1, Math.round(layout.width * dpr));
+  const displayHeight = Math.max(1, Math.round(layout.height * dpr));
   runtime.stageRenderViewTarget = null;
 
   const tankSizeChanged = dom.tankCanvas.width !== displayWidth || dom.tankCanvas.height !== displayHeight;
@@ -3829,8 +3886,8 @@ function resizeDisplayCanvases() {
     scale: 1,
     left: 0,
     top: 0,
-    width: rect.width,
-    height: rect.height,
+    width: layout.width,
+    height: layout.height,
     contentWidth: TANK_WIDTH,
     contentHeight: TANK_HEIGHT
   };

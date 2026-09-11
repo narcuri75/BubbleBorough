@@ -953,14 +953,14 @@ function updateEditQuickRefLayout() {
   dom.editQuickRef.style.removeProperty("--edit-quick-ref-right");
   dom.editQuickRef.style.removeProperty("--edit-quick-ref-max-width");
 
-  const stageRect = dom.tankStage?.getBoundingClientRect?.();
-  if (!stageRect?.width || !stageRect?.height) {
+  const stageSize = getTankStageLayoutSize();
+  if (!stageSize.width || !stageSize.height) {
     return;
   }
 
   const computedStyle = window.getComputedStyle(dom.editQuickRef);
   const baseRight = Number.parseFloat(computedStyle.right) || 24;
-  const stageWidth = Math.max(0, stageRect.width);
+  const stageWidth = Math.max(0, stageSize.width);
   let rightOffset = baseRight;
   let maxWidth = Math.max(200, Math.floor(stageWidth - baseRight - 20));
 
@@ -976,21 +976,21 @@ function updateEditQuickRefLayout() {
     && !toolbar.classList.contains("is-tutorial-hidden")
     && toolbar.getAttribute("aria-expanded") !== "false"
   ) {
-    const toolbarRect = toolbar.getBoundingClientRect?.();
+    const toolbarRect = getElementRectInTankStageLayout(toolbar);
     if (
       toolbarRect?.width
       && toolbarRect?.height
-      && toolbarRect.right > stageRect.left
-      && toolbarRect.left < stageRect.right
+      && toolbarRect.right > 0
+      && toolbarRect.left < stageWidth
     ) {
       const toolbarGap = 14;
       rightOffset = Math.max(
         baseRight,
-        Math.round(stageRect.right - toolbarRect.left + toolbarGap)
+        Math.round(stageWidth - toolbarRect.left + toolbarGap)
       );
       maxWidth = Math.max(
         176,
-        Math.floor(toolbarRect.left - stageRect.left - 20)
+        Math.floor(toolbarRect.left - 20)
       );
     }
   }

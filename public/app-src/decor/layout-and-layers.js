@@ -1107,8 +1107,9 @@ function updateSelectedDecorActionButtons() {
   }
 
   const bounds = getPlacedDecorOpaqueBounds(item);
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  if (!bounds || !stageRect?.width || !stageRect?.height) {
+  const stageSize = getTankStageLayoutSize();
+  const stageRect = { width: stageSize.width, height: stageSize.height };
+  if (!bounds || !stageRect.width || !stageRect.height) {
     hideSelectedDecorActionButtons();
     return;
   }
@@ -1261,7 +1262,7 @@ function updateSelectedDecorActionButtons() {
   if (actionBar) {
     actionBar.hidden = false;
     const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - 24);
-    const actionRect = actionBar.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const actionRect = getElementRectInTankStageLayout(actionBar) || { width: 0, height: 0 };
     const actionHalfWidth = Math.ceil((Number(actionRect.width) || 320) / 2);
     const actionHalfHeight = Math.ceil((Number(actionRect.height) || 44) / 2);
     actionBar.style.left = `${clamp(
@@ -1279,7 +1280,7 @@ function updateSelectedDecorActionButtons() {
   if (layerControls) {
     layerControls.hidden = false;
     const layerPoint = tankVirtualPointToStagePx(bounds.right + 34, (bounds.top + bounds.bottom) / 2);
-    const layerRect = layerControls.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const layerRect = getElementRectInTankStageLayout(layerControls) || { width: 0, height: 0 };
     const layerHalfWidth = Math.ceil((Number(layerRect.width) || 58) / 2);
     const layerHalfHeight = Math.ceil((Number(layerRect.height) || 124) / 2);
     layerControls.style.left = `${clamp(
@@ -1297,7 +1298,7 @@ function updateSelectedDecorActionButtons() {
   if (transformControls) {
     transformControls.hidden = false;
     const transformPoint = tankVirtualPointToStagePx(bounds.left - 34, (bounds.top + bounds.bottom) / 2);
-    const transformRect = transformControls.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const transformRect = getElementRectInTankStageLayout(transformControls) || { width: 0, height: 0 };
     const transformHalfWidth = Math.ceil((Number(transformRect.width) || 58) / 2);
     const transformHalfHeight = Math.ceil((Number(transformRect.height) || 96) / 2);
     transformControls.style.left = `${clamp(
@@ -1320,9 +1321,9 @@ function updateSelectedDecorActionButtons() {
 }
 
 function getNormalCoverStageRenderMetrics() {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const width = Number(stageRect?.width) || 0;
-  const height = Number(stageRect?.height) || 0;
+  const stageSize = getTankStageLayoutSize();
+  const width = Number(stageSize.width) || 0;
+  const height = Number(stageSize.height) || 0;
   if (width <= 0 || height <= 0) {
     return null;
   }
@@ -1372,9 +1373,9 @@ function getViewportStableObjectScale(type = "fish") {
 }
 
 function getResponsiveViewportScale(minScale = 1) {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const width = Number(stageRect?.width) || 0;
-  const height = Number(stageRect?.height) || 0;
+  const stageSize = getTankStageLayoutSize();
+  const width = Number(stageSize.width) || 0;
+  const height = Number(stageSize.height) || 0;
   if (!width || !height) {
     return 1;
   }
@@ -1410,9 +1411,9 @@ function getMobileViewportObjectScaleMultiplier(type = "fish") {
 }
 
 function getResponsiveViewportObjectScale(type = "fish") {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const width = Number(stageRect?.width) || 0;
-  const height = Number(stageRect?.height) || 0;
+  const stageSize = getTankStageLayoutSize();
+  const width = Number(stageSize.width) || 0;
+  const height = Number(stageSize.height) || 0;
   if (!width || !height) {
     return 1;
   }

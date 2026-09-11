@@ -14125,6 +14125,63 @@ function isLayoutRatioLockActive() {
     && Number(runtime.layoutRatioLockHeight) > 0;
 }
 
+function getTankStageLayoutSize() {
+  const stage = dom?.tankStage;
+  if (!(stage instanceof HTMLElement)) {
+    return { width: TANK_WIDTH, height: TANK_HEIGHT };
+  }
+
+  // clientWidth/clientHeight are layout-space measurements and intentionally do
+  // not include the Ratio Lock transform applied to the outer app shell. The
+  // renderer must keep using these frozen logical dimensions while the browser
+  // window only changes the final presentation scale.
+  const fallback = stage.getBoundingClientRect?.();
+  return {
+    width: Math.max(1, Number(stage.clientWidth) || Number(fallback?.width) || TANK_WIDTH),
+    height: Math.max(1, Number(stage.clientHeight) || Number(fallback?.height) || TANK_HEIGHT)
+  };
+}
+
+function getTankStageVisualMetrics() {
+  const stage = dom?.tankStage;
+  const layout = getTankStageLayoutSize();
+  const rect = stage?.getBoundingClientRect?.() || null;
+  const visualWidth = Math.max(0.0001, Number(rect?.width) || layout.width);
+  const visualHeight = Math.max(0.0001, Number(rect?.height) || layout.height);
+  return {
+    rect,
+    layoutWidth: layout.width,
+    layoutHeight: layout.height,
+    visualWidth,
+    visualHeight,
+    visualToLayoutX: layout.width / visualWidth,
+    visualToLayoutY: layout.height / visualHeight
+  };
+}
+
+function getTankStageClientPointInLayoutSpace(event) {
+  const metrics = getTankStageVisualMetrics();
+  if (!metrics.rect) return null;
+  return {
+    x: (Number(event?.clientX) - metrics.rect.left) * metrics.visualToLayoutX,
+    y: (Number(event?.clientY) - metrics.rect.top) * metrics.visualToLayoutY
+  };
+}
+
+function getElementRectInTankStageLayout(element) {
+  const metrics = getTankStageVisualMetrics();
+  const rect = element?.getBoundingClientRect?.();
+  if (!metrics.rect || !rect) return null;
+  return {
+    left: (rect.left - metrics.rect.left) * metrics.visualToLayoutX,
+    top: (rect.top - metrics.rect.top) * metrics.visualToLayoutY,
+    width: rect.width * metrics.visualToLayoutX,
+    height: rect.height * metrics.visualToLayoutY,
+    right: (rect.right - metrics.rect.left) * metrics.visualToLayoutX,
+    bottom: (rect.bottom - metrics.rect.top) * metrics.visualToLayoutY
+  };
+}
+
 function updateLayoutRatioLockPresentation() {
   if (typeof document === "undefined") {
     return 1;
@@ -17739,14 +17796,14 @@ function updatePlayfieldCssVariables() {
 }
 
 function getStageRenderViewTarget() {
-  const rect = dom.tankStage?.getBoundingClientRect?.();
-  if (!rect?.width || !rect?.height) {
+  const layout = getTankStageLayoutSize();
+  if (!layout.width || !layout.height) {
     return null;
   }
 
   const dpr = getStageRenderDevicePixelRatio();
-  const displayWidth = Math.max(1, Math.round(rect.width * dpr));
-  const displayHeight = Math.max(1, Math.round(rect.height * dpr));
+  const displayWidth = Math.max(1, Math.round(layout.width * dpr));
+  const displayHeight = Math.max(1, Math.round(layout.height * dpr));
   const coverScale = Math.max(displayWidth / TANK_WIDTH, displayHeight / TANK_HEIGHT);
   const coverOffsetX = (displayWidth - TANK_WIDTH * coverScale) * 0.5;
   const coverOffsetY = (displayHeight - TANK_HEIGHT * coverScale) * 0.5;
@@ -17769,13 +17826,13 @@ function getStageRenderViewTarget() {
     };
   }
 
-  const trayRect = activeEditTray.getBoundingClientRect();
-  const topPaddingCss = Math.max(18, Math.min(34, rect.height * 0.035));
-  const sidePaddingCss = Math.max(28, Math.min(64, rect.width * 0.035));
+  const trayRect = getElementRectInTankStageLayout(activeEditTray);
+  const topPaddingCss = Math.max(18, Math.min(34, layout.height * 0.035));
+  const sidePaddingCss = Math.max(28, Math.min(64, layout.width * 0.035));
   const trayGapCss = 14;
-  const trayTopCss = clamp(trayRect.top - rect.top - trayGapCss, rect.height * 0.42, rect.height - 120);
+  const trayTopCss = clamp((trayRect?.top ?? layout.height) - trayGapCss, layout.height * 0.42, layout.height - 120);
   const availableHeightCss = Math.max(220, trayTopCss - topPaddingCss);
-  const availableWidthCss = Math.max(320, rect.width - sidePaddingCss * 2);
+  const availableWidthCss = Math.max(320, layout.width - sidePaddingCss * 2);
   const editScale = Math.min(
     coverScale,
     (availableWidthCss * dpr) / TANK_WIDTH,
@@ -17887,14 +17944,14 @@ function updateStageRenderView(frameTime = performance.now(), options = {}) {
 }
 
 function resizeDisplayCanvases() {
-  const rect = dom.tankStage.getBoundingClientRect();
-  if (!rect.width || !rect.height) {
+  const layout = getTankStageLayoutSize();
+  if (!layout.width || !layout.height) {
     return;
   }
 
   const dpr = getStageRenderDevicePixelRatio();
-  const displayWidth = Math.max(1, Math.round(rect.width * dpr));
-  const displayHeight = Math.max(1, Math.round(rect.height * dpr));
+  const displayWidth = Math.max(1, Math.round(layout.width * dpr));
+  const displayHeight = Math.max(1, Math.round(layout.height * dpr));
   runtime.stageRenderViewTarget = null;
 
   const tankSizeChanged = dom.tankCanvas.width !== displayWidth || dom.tankCanvas.height !== displayHeight;
@@ -17935,8 +17992,8 @@ function resizeDisplayCanvases() {
     scale: 1,
     left: 0,
     top: 0,
-    width: rect.width,
-    height: rect.height,
+    width: layout.width,
+    height: layout.height,
     contentWidth: TANK_WIDTH,
     contentHeight: TANK_HEIGHT
   };
@@ -27583,8 +27640,9 @@ function updateSelectedDecorActionButtons() {
   }
 
   const bounds = getPlacedDecorOpaqueBounds(item);
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  if (!bounds || !stageRect?.width || !stageRect?.height) {
+  const stageSize = getTankStageLayoutSize();
+  const stageRect = { width: stageSize.width, height: stageSize.height };
+  if (!bounds || !stageRect.width || !stageRect.height) {
     hideSelectedDecorActionButtons();
     return;
   }
@@ -27737,7 +27795,7 @@ function updateSelectedDecorActionButtons() {
   if (actionBar) {
     actionBar.hidden = false;
     const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - 24);
-    const actionRect = actionBar.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const actionRect = getElementRectInTankStageLayout(actionBar) || { width: 0, height: 0 };
     const actionHalfWidth = Math.ceil((Number(actionRect.width) || 320) / 2);
     const actionHalfHeight = Math.ceil((Number(actionRect.height) || 44) / 2);
     actionBar.style.left = `${clamp(
@@ -27755,7 +27813,7 @@ function updateSelectedDecorActionButtons() {
   if (layerControls) {
     layerControls.hidden = false;
     const layerPoint = tankVirtualPointToStagePx(bounds.right + 34, (bounds.top + bounds.bottom) / 2);
-    const layerRect = layerControls.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const layerRect = getElementRectInTankStageLayout(layerControls) || { width: 0, height: 0 };
     const layerHalfWidth = Math.ceil((Number(layerRect.width) || 58) / 2);
     const layerHalfHeight = Math.ceil((Number(layerRect.height) || 124) / 2);
     layerControls.style.left = `${clamp(
@@ -27773,7 +27831,7 @@ function updateSelectedDecorActionButtons() {
   if (transformControls) {
     transformControls.hidden = false;
     const transformPoint = tankVirtualPointToStagePx(bounds.left - 34, (bounds.top + bounds.bottom) / 2);
-    const transformRect = transformControls.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const transformRect = getElementRectInTankStageLayout(transformControls) || { width: 0, height: 0 };
     const transformHalfWidth = Math.ceil((Number(transformRect.width) || 58) / 2);
     const transformHalfHeight = Math.ceil((Number(transformRect.height) || 96) / 2);
     transformControls.style.left = `${clamp(
@@ -27796,9 +27854,9 @@ function updateSelectedDecorActionButtons() {
 }
 
 function getNormalCoverStageRenderMetrics() {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const width = Number(stageRect?.width) || 0;
-  const height = Number(stageRect?.height) || 0;
+  const stageSize = getTankStageLayoutSize();
+  const width = Number(stageSize.width) || 0;
+  const height = Number(stageSize.height) || 0;
   if (width <= 0 || height <= 0) {
     return null;
   }
@@ -27848,9 +27906,9 @@ function getViewportStableObjectScale(type = "fish") {
 }
 
 function getResponsiveViewportScale(minScale = 1) {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const width = Number(stageRect?.width) || 0;
-  const height = Number(stageRect?.height) || 0;
+  const stageSize = getTankStageLayoutSize();
+  const width = Number(stageSize.width) || 0;
+  const height = Number(stageSize.height) || 0;
   if (!width || !height) {
     return 1;
   }
@@ -27886,9 +27944,9 @@ function getMobileViewportObjectScaleMultiplier(type = "fish") {
 }
 
 function getResponsiveViewportObjectScale(type = "fish") {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const width = Number(stageRect?.width) || 0;
-  const height = Number(stageRect?.height) || 0;
+  const stageSize = getTankStageLayoutSize();
+  const width = Number(stageSize.width) || 0;
+  const height = Number(stageSize.height) || 0;
   if (!width || !height) {
     return 1;
   }
@@ -42129,14 +42187,14 @@ function updateEditQuickRefLayout() {
   dom.editQuickRef.style.removeProperty("--edit-quick-ref-right");
   dom.editQuickRef.style.removeProperty("--edit-quick-ref-max-width");
 
-  const stageRect = dom.tankStage?.getBoundingClientRect?.();
-  if (!stageRect?.width || !stageRect?.height) {
+  const stageSize = getTankStageLayoutSize();
+  if (!stageSize.width || !stageSize.height) {
     return;
   }
 
   const computedStyle = window.getComputedStyle(dom.editQuickRef);
   const baseRight = Number.parseFloat(computedStyle.right) || 24;
-  const stageWidth = Math.max(0, stageRect.width);
+  const stageWidth = Math.max(0, stageSize.width);
   let rightOffset = baseRight;
   let maxWidth = Math.max(200, Math.floor(stageWidth - baseRight - 20));
 
@@ -42152,21 +42210,21 @@ function updateEditQuickRefLayout() {
     && !toolbar.classList.contains("is-tutorial-hidden")
     && toolbar.getAttribute("aria-expanded") !== "false"
   ) {
-    const toolbarRect = toolbar.getBoundingClientRect?.();
+    const toolbarRect = getElementRectInTankStageLayout(toolbar);
     if (
       toolbarRect?.width
       && toolbarRect?.height
-      && toolbarRect.right > stageRect.left
-      && toolbarRect.left < stageRect.right
+      && toolbarRect.right > 0
+      && toolbarRect.left < stageWidth
     ) {
       const toolbarGap = 14;
       rightOffset = Math.max(
         baseRight,
-        Math.round(stageRect.right - toolbarRect.left + toolbarGap)
+        Math.round(stageWidth - toolbarRect.left + toolbarGap)
       );
       maxWidth = Math.max(
         176,
-        Math.floor(toolbarRect.left - stageRect.left - 20)
+        Math.floor(toolbarRect.left - 20)
       );
     }
   }
@@ -59149,14 +59207,13 @@ function closeFishActionTargetMenu() {
 }
 
 function getFishActionCategoryAnchorFromElement(element) {
-  const buttonRect = element?.getBoundingClientRect?.() || null;
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  if (!buttonRect?.width || !buttonRect?.height || !stageRect?.width || !stageRect?.height) {
+  const buttonRect = getElementRectInTankStageLayout(element);
+  if (!buttonRect?.width || !buttonRect?.height) {
     return null;
   }
   return {
-    x: buttonRect.left - stageRect.left + buttonRect.width / 2,
-    y: buttonRect.top - stageRect.top + buttonRect.height / 2,
+    x: buttonRect.left + buttonRect.width / 2,
+    y: buttonRect.top + buttonRect.height / 2,
     width: buttonRect.width,
     height: buttonRect.height,
     side: element.closest?.(".fish-action-flyout-right") ? "right" : "left"
@@ -59370,9 +59427,9 @@ function renderFishActionSubmenu(now = Date.now()) {
     return;
   }
 
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const maxWidth = stageRect?.width || TANK_WIDTH;
-  const maxHeight = stageRect?.height || TANK_HEIGHT;
+  const stageSize = getTankStageLayoutSize();
+  const maxWidth = stageSize.width || TANK_WIDTH;
+  const maxHeight = stageSize.height || TANK_HEIGHT;
   const anchor = runtime.fishActionCategoryAnchor || getTankNormStagePoint(fish.xNorm || 0.5, fish.yNorm || 0.5);
   const submenuWidth = 206;
   const submenuHeight = 18 + actions.length * 40;
@@ -59436,9 +59493,9 @@ function renderFishActionTargetMenu(now = Date.now()) {
   }
 
   const stagePoint = getTankNormStagePoint(fish.xNorm || 0.5, fish.yNorm || 0.5);
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const maxWidth = stageRect?.width || TANK_WIDTH;
-  const maxHeight = stageRect?.height || TANK_HEIGHT;
+  const stageSize = getTankStageLayoutSize();
+  const maxWidth = stageSize.width || TANK_WIDTH;
+  const maxHeight = stageSize.height || TANK_HEIGHT;
   const direction = stagePoint.x < maxWidth * 0.58 ? 1 : -1;
   const x = clamp(stagePoint.x + direction * 210, 132, Math.max(132, maxWidth - 132));
   const y = clamp(stagePoint.y, 104, Math.max(104, maxHeight - 104));
@@ -71934,22 +71991,23 @@ function getNextMealBoundary(timestamp) {
 }
 
 function getTankPoint(event, options = {}) {
-  const rect = dom.tankStage.getBoundingClientRect();
-  if (!rect.width || !rect.height) {
+  const metrics = getTankStageVisualMetrics();
+  const stagePoint = getTankStageClientPointInLayoutSpace(event);
+  if (!metrics.rect || !stagePoint) {
     return null;
   }
 
   runtime.pointerStagePx = {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top
+    x: stagePoint.x,
+    y: stagePoint.y
   };
 
   const dpr = getStageRenderDevicePixelRatio();
   const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
   const offsetX = Number(runtime.stageRenderOffsetX) || 0;
   const offsetY = Number(runtime.stageRenderOffsetY) || 0;
-  const canvasX = (event.clientX - rect.left) * dpr;
-  const canvasY = (event.clientY - rect.top) * dpr;
+  const canvasX = stagePoint.x * dpr;
+  const canvasY = stagePoint.y * dpr;
   const rawPoint = {
     x: (canvasX - offsetX) / scale,
     y: (canvasY - offsetY) / scale
@@ -76655,8 +76713,9 @@ function getVisibleTankVirtualBounds() {
   const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
   const offsetX = Number(runtime.stageRenderOffsetX) || 0;
   const offsetY = Number(runtime.stageRenderOffsetY) || 0;
-  const displayWidth = Math.max(1, dom.tankCanvas?.width || Math.round((dom.tankStage?.getBoundingClientRect?.().width || TANK_WIDTH) * dpr));
-  const displayHeight = Math.max(1, dom.tankCanvas?.height || Math.round((dom.tankStage?.getBoundingClientRect?.().height || TANK_HEIGHT) * dpr));
+  const stageSize = getTankStageLayoutSize();
+  const displayWidth = Math.max(1, dom.tankCanvas?.width || Math.round((stageSize.width || TANK_WIDTH) * dpr));
+  const displayHeight = Math.max(1, dom.tankCanvas?.height || Math.round((stageSize.height || TANK_HEIGHT) * dpr));
   const left = clamp((-offsetX) / scale, 0, TANK_WIDTH);
   const top = clamp((-offsetY) / scale, 0, TANK_HEIGHT);
   const right = clamp((displayWidth - offsetX) / scale, left, TANK_WIDTH);
@@ -76808,8 +76867,8 @@ function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now 
 }
 
 function getTargetVisibleGravelHeightPx() {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.();
-  const stageHeight = stageRect?.height || (dom.tankCanvas?.height ? dom.tankCanvas.height / getStageRenderDevicePixelRatio() : TANK_HEIGHT);
+  const stageSize = getTankStageLayoutSize();
+  const stageHeight = stageSize.height || (dom.tankCanvas?.height ? dom.tankCanvas.height / getStageRenderDevicePixelRatio() : TANK_HEIGHT);
   return stageHeight * (isMobilePageRuntime() ? MOBILE_GRAVEL_VIEWPORT_HEIGHT_RATIO : GRAVEL_VIEWPORT_HEIGHT_RATIO);
 }
 

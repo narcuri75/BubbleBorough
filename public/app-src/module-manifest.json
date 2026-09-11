@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2951,
+  "functionCount": 2955,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -185,7 +185,7 @@
     },
     {
       "path": "assets/custom-content.js",
-      "functionCount": 124,
+      "functionCount": 128,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -1196,6 +1196,7 @@
       "path": "rendering/fish-motion-and-floor.js",
       "functionCount": 28,
       "dependencies": [
+        "assets/custom-content.js",
         "core/utilities.js",
         "decor/layout-and-layers.js",
         "fish/meals-and-needs.js",

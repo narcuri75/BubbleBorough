@@ -2753,14 +2753,13 @@ function closeFishActionTargetMenu() {
 }
 
 function getFishActionCategoryAnchorFromElement(element) {
-  const buttonRect = element?.getBoundingClientRect?.() || null;
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  if (!buttonRect?.width || !buttonRect?.height || !stageRect?.width || !stageRect?.height) {
+  const buttonRect = getElementRectInTankStageLayout(element);
+  if (!buttonRect?.width || !buttonRect?.height) {
     return null;
   }
   return {
-    x: buttonRect.left - stageRect.left + buttonRect.width / 2,
-    y: buttonRect.top - stageRect.top + buttonRect.height / 2,
+    x: buttonRect.left + buttonRect.width / 2,
+    y: buttonRect.top + buttonRect.height / 2,
     width: buttonRect.width,
     height: buttonRect.height,
     side: element.closest?.(".fish-action-flyout-right") ? "right" : "left"
@@ -2974,9 +2973,9 @@ function renderFishActionSubmenu(now = Date.now()) {
     return;
   }
 
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const maxWidth = stageRect?.width || TANK_WIDTH;
-  const maxHeight = stageRect?.height || TANK_HEIGHT;
+  const stageSize = getTankStageLayoutSize();
+  const maxWidth = stageSize.width || TANK_WIDTH;
+  const maxHeight = stageSize.height || TANK_HEIGHT;
   const anchor = runtime.fishActionCategoryAnchor || getTankNormStagePoint(fish.xNorm || 0.5, fish.yNorm || 0.5);
   const submenuWidth = 206;
   const submenuHeight = 18 + actions.length * 40;
@@ -3040,9 +3039,9 @@ function renderFishActionTargetMenu(now = Date.now()) {
   }
 
   const stagePoint = getTankNormStagePoint(fish.xNorm || 0.5, fish.yNorm || 0.5);
-  const stageRect = dom.tankStage?.getBoundingClientRect?.() || null;
-  const maxWidth = stageRect?.width || TANK_WIDTH;
-  const maxHeight = stageRect?.height || TANK_HEIGHT;
+  const stageSize = getTankStageLayoutSize();
+  const maxWidth = stageSize.width || TANK_WIDTH;
+  const maxHeight = stageSize.height || TANK_HEIGHT;
   const direction = stagePoint.x < maxWidth * 0.58 ? 1 : -1;
   const x = clamp(stagePoint.x + direction * 210, 132, Math.max(132, maxWidth - 132));
   const y = clamp(stagePoint.y, 104, Math.max(104, maxHeight - 104));

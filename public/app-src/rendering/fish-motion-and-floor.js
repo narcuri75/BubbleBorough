@@ -229,8 +229,9 @@ function getVisibleTankVirtualBounds() {
   const scale = Math.max(0.0001, Number(runtime.stageRenderScale) || dpr);
   const offsetX = Number(runtime.stageRenderOffsetX) || 0;
   const offsetY = Number(runtime.stageRenderOffsetY) || 0;
-  const displayWidth = Math.max(1, dom.tankCanvas?.width || Math.round((dom.tankStage?.getBoundingClientRect?.().width || TANK_WIDTH) * dpr));
-  const displayHeight = Math.max(1, dom.tankCanvas?.height || Math.round((dom.tankStage?.getBoundingClientRect?.().height || TANK_HEIGHT) * dpr));
+  const stageSize = getTankStageLayoutSize();
+  const displayWidth = Math.max(1, dom.tankCanvas?.width || Math.round((stageSize.width || TANK_WIDTH) * dpr));
+  const displayHeight = Math.max(1, dom.tankCanvas?.height || Math.round((stageSize.height || TANK_HEIGHT) * dpr));
   const left = clamp((-offsetX) / scale, 0, TANK_WIDTH);
   const top = clamp((-offsetY) / scale, 0, TANK_HEIGHT);
   const right = clamp((displayWidth - offsetX) / scale, left, TANK_WIDTH);
@@ -382,8 +383,8 @@ function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now 
 }
 
 function getTargetVisibleGravelHeightPx() {
-  const stageRect = dom.tankStage?.getBoundingClientRect?.();
-  const stageHeight = stageRect?.height || (dom.tankCanvas?.height ? dom.tankCanvas.height / getStageRenderDevicePixelRatio() : TANK_HEIGHT);
+  const stageSize = getTankStageLayoutSize();
+  const stageHeight = stageSize.height || (dom.tankCanvas?.height ? dom.tankCanvas.height / getStageRenderDevicePixelRatio() : TANK_HEIGHT);
   return stageHeight * (isMobilePageRuntime() ? MOBILE_GRAVEL_VIEWPORT_HEIGHT_RATIO : GRAVEL_VIEWPORT_HEIGHT_RATIO);
 }
 

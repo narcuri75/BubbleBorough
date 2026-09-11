@@ -648,6 +648,8 @@ function getDecorCategoryLabel(category) {
       return "Caves";
     case "plants":
       return "Plants";
+    case "coral":
+      return "Coral";
     case "ornaments":
       return "Ornaments";
     case "bubbler":
@@ -2742,7 +2744,7 @@ function renderCustomHideCreationOverlay() {
           <select class="shop-sort-select" data-custom-hide-setting="tankLayer" aria-label="Custom hide layer">
             ${layerOptions}
           </select>
-          <em>Caves span layers 3-4 for fish entrances and interiors, so their front layer is locked.</em>
+          <em>Choose the front layer. The cave interior and background remain on their required layers behind it.</em>
         </label>
         ${previewItem && previewDecor ? renderCaveColorSettingsControls(previewItem, previewDecor) : ""}
         ${previewItem ? renderCaveSettingsControls(previewItem) : ""}
@@ -2970,8 +2972,10 @@ function renderDecorSettingsOverlay(item) {
   const sizeValue = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const layerReadout = formatDecorSettingReadout("tankLayer", item);
   const layerOptions = renderDecorLayerOptions(item);
-  const layerHelpText = isCaveDecorKey(item.decorKey)
-    ? "Caves span layers 3-4 for fish entrances and interiors, so their front layer is locked."
+  const layerHelpText = isThreeLayerCaveDecorKey(item.decorKey)
+    ? "Choose the cave's front layer. Its interior stays one layer behind and its background stays two layers behind."
+    : isCaveDecorKey(item.decorKey)
+    ? "Choose the cave's front layer. Its interior stays one layer behind."
     : "Layer 1 draws closest to the glass. Layer 5 draws deepest in the tank.";
   const swaySideOptions = DECOR_SWAY_SIDE_OPTIONS.map((option) => `
     <option value="${escapeHtml(option.id)}" ${motionSettings.swaySide === option.id ? "selected" : ""}>

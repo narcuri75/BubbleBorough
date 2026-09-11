@@ -14,6 +14,245 @@
       "cost": 15,
       "width": 510,
       "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular"
+    },
+    {
+      "file": "Brain_Coral.png",
+      "name": "Brain Coral",
+      "cost": 12,
+      "width": 300,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_1.png",
+      "name": "Branch Coral 1",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_2.png",
+      "name": "Branch Coral 2",
+      "cost": 10,
+      "width": 240,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_3.png",
+      "name": "Branch Coral 3",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_4.png",
+      "name": "Branch Coral 4",
+      "cost": 10,
+      "width": 260,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_5.png",
+      "name": "Branch Coral 5",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_6.png",
+      "name": "Branch Coral 6",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_7.png",
+      "name": "Branch Coral 7",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_8.png",
+      "name": "Branch Coral 8",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_9.png",
+      "name": "Branch Coral 9",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Coral_10.png",
+      "name": "Branch Coral 10",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": ["coral"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_1.png",
+      "name": "Coral Shelf Cave 1",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_2.png",
+      "name": "Coral Shelf Cave 2",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_3.png",
+      "name": "Coral Shelf Cave 3",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_4.png",
+      "name": "Coral Shelf Cave 4",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_5.png",
+      "name": "Coral Shelf Cave 5",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_6.png",
+      "name": "Coral Shelf Cave 6",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_7.png",
+      "name": "Coral Shelf Cave 7",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_9.png",
+      "name": "Coral Shelf Cave 9",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Coral_Shelf_10.png",
+      "name": "Coral Shelf Cave 10",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": ["coral", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Sea_Anemone_2.png",
+      "name": "Sea Anemone 2",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "categories": ["plants"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Sea_Anemone_5.png",
+      "name": "Sea Anemone 5",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "categories": ["plants"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Sea_Anemone_1.png",
+      "name": "Sea Anemone Cave 1",
+      "cost": 14,
+      "width": 420,
+      "defaultScale": 1,
+      "categories": ["plants", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Sea_Anemone_3.png",
+      "name": "Sea Anemone Cave 3",
+      "cost": 14,
+      "width": 420,
+      "defaultScale": 1,
+      "categories": ["plants", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "Cave_Sea_Anemone_4.png",
+      "name": "Sea Anemone Cave 4",
+      "cost": 14,
+      "width": 420,
+      "defaultScale": 1,
+      "categories": ["plants", "caves"],
+      "theme": "Regular"
+    },
+    {
+      "file": "dirt.png",
+      "name": "Dirt Mound",
+      "cost": 3,
+      "width": 480,
+      "defaultScale": 1,
+      "categories": ["ornaments"],
       "theme": "Regular"
     },
     {

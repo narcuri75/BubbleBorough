@@ -12,7 +12,7 @@ function getCaveInsideLayerForItem(item) {
   }
 
   const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
-  return clampTankLayer(span.back || CAVE_SEAT_LOCKED_LAYER);
+  return clampTankLayer(span.mid || span.back || CAVE_SEAT_LOCKED_LAYER);
 }
 
 function isCaveNightWindow(timestamp = Date.now()) {
@@ -507,7 +507,9 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
 
     for (const slot of slotPool) {
       const inside = mapDecorLocalPointToTankNorm(item, slot.x, slot.y);
-      const slotLayer = clampTankLayer(slot.layer || portalInsideLayer);
+      const slotLayer = isThreeLayerCaveDecorKey(item.decorKey)
+        ? portalInsideLayer
+        : clampTankLayer(slot.layer || portalInsideLayer);
       const seatDirection = getCaveSeatFacingDirection(slot, entryDirection);
       if (!inside) {
         continue;
@@ -706,7 +708,7 @@ function getFishActiveCaveInsideLayer(fish, fallbackLayer = DEFAULT_TANK_LAYER) 
   }
 
   if (fish.caveState === "inside" && fish.caveSeatId) {
-    return clampTankLayer(CAVE_SEAT_LOCKED_LAYER);
+    return baseLayer;
   }
 
   return baseLayer;

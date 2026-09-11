@@ -473,6 +473,166 @@
     {
       "key": "volcano-2_bubbler_bg.png",
       "path": "assets/decor/volcano-2_bubbler_bg.png?v=639104396789381039"
+    },
+    {
+      "key": "Brain_Coral.png",
+      "path": "assets/decor/Brain_Coral.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_1.png",
+      "path": "assets/decor/Cave_Coral_Shelf_1.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_1_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_1_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_10.png",
+      "path": "assets/decor/Cave_Coral_Shelf_10.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_10_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_10_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_2.png",
+      "path": "assets/decor/Cave_Coral_Shelf_2.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_2_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_2_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_3.png",
+      "path": "assets/decor/Cave_Coral_Shelf_3.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_3_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_3_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_4.png",
+      "path": "assets/decor/Cave_Coral_Shelf_4.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_4_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_4_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_5.png",
+      "path": "assets/decor/Cave_Coral_Shelf_5.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_5_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_5_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_6.png",
+      "path": "assets/decor/Cave_Coral_Shelf_6.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_6_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_6_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_7.png",
+      "path": "assets/decor/Cave_Coral_Shelf_7.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_7_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_7_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_9.png",
+      "path": "assets/decor/Cave_Coral_Shelf_9.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_9_bg.png",
+      "path": "assets/decor/Cave_Coral_Shelf_9_bg.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_9_color2.png",
+      "path": "assets/decor/Cave_Coral_Shelf_9_color2.png"
+    },
+    {
+      "key": "Cave_Sea_Anemone_1.png",
+      "path": "assets/decor/Cave_Sea_Anemone_1.png"
+    },
+    {
+      "key": "Cave_Sea_Anemone_1_bg.png",
+      "path": "assets/decor/Cave_Sea_Anemone_1_bg.png"
+    },
+    {
+      "key": "Cave_Sea_Anemone_3.png",
+      "path": "assets/decor/Cave_Sea_Anemone_3.png"
+    },
+    {
+      "key": "Cave_Sea_Anemone_3_bg.png",
+      "path": "assets/decor/Cave_Sea_Anemone_3_bg.png"
+    },
+    {
+      "key": "Cave_Sea_Anemone_4.png",
+      "path": "assets/decor/Cave_Sea_Anemone_4.png"
+    },
+    {
+      "key": "Cave_Sea_Anemone_4_bg.png",
+      "path": "assets/decor/Cave_Sea_Anemone_4_bg.png"
+    },
+    {
+      "key": "Coral_1.png",
+      "path": "assets/decor/Coral_1.png"
+    },
+    {
+      "key": "Coral_10.png",
+      "path": "assets/decor/Coral_10.png"
+    },
+    {
+      "key": "Coral_2.png",
+      "path": "assets/decor/Coral_2.png"
+    },
+    {
+      "key": "Coral_3.png",
+      "path": "assets/decor/Coral_3.png"
+    },
+    {
+      "key": "Coral_4.png",
+      "path": "assets/decor/Coral_4.png"
+    },
+    {
+      "key": "Coral_5.png",
+      "path": "assets/decor/Coral_5.png"
+    },
+    {
+      "key": "Coral_6.png",
+      "path": "assets/decor/Coral_6.png"
+    },
+    {
+      "key": "Coral_7.png",
+      "path": "assets/decor/Coral_7.png"
+    },
+    {
+      "key": "Coral_8.png",
+      "path": "assets/decor/Coral_8.png"
+    },
+    {
+      "key": "Coral_9.png",
+      "path": "assets/decor/Coral_9.png"
+    },
+    {
+      "key": "dirt.png",
+      "path": "assets/decor/dirt.png"
+    },
+    {
+      "key": "Frozen_Penguin.png",
+      "path": "assets/decor/Frozen_Penguin.png"
+    },
+    {
+      "key": "Sea_Anemone_2.png",
+      "path": "assets/decor/Sea_Anemone_2.png"
+    },
+    {
+      "key": "Sea_Anemone_5.png",
+      "path": "assets/decor/Sea_Anemone_5.png"
     }
   ],
   "fish": [

@@ -836,7 +836,7 @@ function drawDecorPreview() {
   tankContext.ellipse(previewFootX, previewFootY + 3, width * 0.34, Math.max(10, width * 0.08), 0, 0, Math.PI * 2);
   tankContext.fill();
   const previewMotion = getDecorMotion(previewItem, Date.now());
-  if ((decor.bubbler || isCaveDecorKey(decor.key) || hasDecorCaveColorLayers(decor)) && decor.bgPath) {
+  if (decor.bgPath) {
     if (hasDecorCaveColorLayers(decor)) {
       drawCaveBackgroundLayerToContext(tankContext, previewItem, decor, Date.now(), {
         drawX: x - width / 2,

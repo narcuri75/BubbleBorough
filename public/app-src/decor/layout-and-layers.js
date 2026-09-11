@@ -2249,7 +2249,15 @@ function getDecorFrontLayer(decorKey, layer) {
     return clamped;
   }
 
-  return 3;
+  return clamp(clamped, 1, TANK_DEPTH_LAYERS - (isThreeLayerCaveDecorKey(decorKey) ? 2 : 1));
+}
+
+function isThreeLayerCaveDecorKey(decorKey = "") {
+  if (!isCaveDecorKey(decorKey)) {
+    return false;
+  }
+  const decor = runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[decorKey] || null;
+  return Boolean(decor?.bgPath || decor?.hasBg || decor?.customType === "hide");
 }
 
 function getDecorLayerSpan(decorKey, layer) {
@@ -2270,11 +2278,13 @@ function getDecorLayerSpan(decorKey, layer) {
     };
   }
 
-  const back = frontLayer + 1;
+  const threeLayerCave = isThreeLayerCaveDecorKey(decorKey);
+  const mid = threeLayerCave ? frontLayer + 1 : null;
+  const back = frontLayer + (threeLayerCave ? 2 : 1);
 
   return {
     front: frontLayer,
-    mid: null,
+    mid,
     back,
     min: frontLayer,
     max: back,

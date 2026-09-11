@@ -1805,9 +1805,6 @@ function getCaveCollisionFrameCandidates(testLayer, now = Date.now()) {
       const layers = span.front === span.back ? [span.front] : [span.front, span.back];
       for (const candidateLayer of layers) {
         const normalizedLayer = clampTankLayer(candidateLayer);
-        if (normalizedLayer < 3 && !isTransitTubeDecorKey(item.decorKey)) {
-          continue;
-        }
         const descriptor = getCaveBlockingDescriptorForLayer(item, normalizedLayer);
         if (!descriptor) {
           continue;

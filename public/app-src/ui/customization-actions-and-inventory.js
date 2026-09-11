@@ -1248,6 +1248,9 @@ function hasInlineToolTrayOpen() {
 
 function getDecorTrayTypeTone(decor, decorKey) {
   const categories = deriveDecorCategories(decor, decorKey).map((category) => String(category || "").toLowerCase());
+  if (categories.some((category) => category === "coral" || category === "corals" || category === "reef")) {
+    return "coral";
+  }
   if (categories.some((category) => category === "plants" || category === "plant")) {
     return "plants";
   }
@@ -1267,10 +1270,28 @@ function getDecorTrayTypeLabel(tone) {
   return ({
     caves: "Cave",
     plants: "Plant",
+    coral: "Coral",
     ornaments: "Ornament",
     bubbler: "Bubbler",
     custom: "Custom"
   })[tone] || "Ornament";
+}
+
+function decorMatchesTrayTab(decor, decorKey, tab) {
+  const normalizedTab = String(tab || "").toLowerCase();
+  if (!normalizedTab || normalizedTab === "all") {
+    return true;
+  }
+  const categories = deriveDecorCategories(decor, decorKey).map((category) => String(category || "").toLowerCase());
+  const aliases = {
+    caves: ["caves", "cave", "hide"],
+    plants: ["plants", "plant"],
+    coral: ["coral", "corals", "reef"],
+    ornaments: ["ornaments", "ornament", "hardscape"],
+    bubbler: ["bubbler", "bubblers", "bubble"],
+    custom: ["custom"]
+  };
+  return (aliases[normalizedTab] || [normalizedTab]).some((category) => categories.includes(category));
 }
 
 function syncTankTrayStageClass() {
@@ -1553,7 +1574,7 @@ function renderEditDecorTray() {
     return;
   }
 
-  const validTabs = new Set(["all", "caves", "plants", "ornaments", "bubbler", "custom"]);
+  const validTabs = new Set(["all", "caves", "plants", "coral", "ornaments", "bubbler", "custom"]);
   if (!validTabs.has(runtime.editDecorTrayTab)) {
     runtime.editDecorTrayTab = "all";
   }
@@ -1584,7 +1605,7 @@ function renderEditDecorTray() {
   const allTrayEntries = runtime.editDecorTrayInTank ? getInTankDecorTrayEntries() : getDecorTrayEntries();
   const trayEntries = runtime.editDecorTrayTab === "all"
     ? allTrayEntries
-    : allTrayEntries.filter((entry) => getDecorTrayTypeTone(entry.decor, entry.decorKey) === runtime.editDecorTrayTab);
+    : allTrayEntries.filter((entry) => decorMatchesTrayTab(entry.decor, entry.decorKey, runtime.editDecorTrayTab));
   const dataKey = [
     runtime.editTankMode ? "1" : "0",
     runtime.editDecorTrayTab,

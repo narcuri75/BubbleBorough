@@ -8431,7 +8431,8 @@ function isDecorFloatingKey(decorKey = "") {
 }
 
 function isDecorSeaweedKey(decorKey = "") {
-  return String(decorKey || "").toLowerCase().includes("seaweed");
+  const normalizedKey = String(decorKey || "").toLowerCase();
+  return normalizedKey.includes("seaweed") || /sea[_\s-]?anemone/.test(normalizedKey);
 }
 
 function isDecorLureKey(decorKey = "") {
@@ -8801,41 +8802,12 @@ function resolveDecorColorLayerPath(layer) {
 
 function getVisibleDecorColorLayers(decorOrKey) {
   const layers = getDecorCaveColorLayers(decorOrKey);
-  const getLayer = (id) => layers.find((layer) => layer.id === id) || null;
   const resolveFirstPath = (paths = []) => paths.find((path) => path && runtime.images.has(path)) || "";
-  const baseLayer = getLayer("color1");
-  if (!baseLayer) {
-    return [];
-  }
-
-  const visible = [{ ...baseLayer, resolvedPath: resolveFirstPath(baseLayer.paths) || baseLayer.path }];
-  const color2Layer = getLayer("color2");
-  const color3Layer = getLayer("color3");
-  const newColor2Path = resolveFirstPath(color2Layer?.paths);
-  const newColor3Path = resolveFirstPath(color3Layer?.paths);
-  const legacyColor2Path = resolveFirstPath(color2Layer?.legacyPaths);
-  const legacyColor3Path = resolveFirstPath(color3Layer?.legacyPaths);
-
-  if (newColor3Path) {
-    if (newColor2Path) {
-      visible.push({ ...color2Layer, resolvedPath: newColor2Path });
-    }
-    visible.push({ ...color3Layer, resolvedPath: newColor3Path });
-    return visible;
-  }
-
-  if (legacyColor2Path) {
-    visible.push({ ...color2Layer, resolvedPath: legacyColor2Path });
-    if (legacyColor3Path) {
-      visible.push({ ...color3Layer, resolvedPath: legacyColor3Path });
-    }
-    return visible;
-  }
-
-  if (newColor2Path) {
-    visible.push({ ...color2Layer, resolvedPath: newColor2Path });
-  }
-  return visible;
+  return ["color1", "color2", "color3"].flatMap((id) => {
+    const layer = layers.find((entry) => entry.id === id) || null;
+    const resolvedPath = resolveFirstPath(layer?.paths) || layer?.path || "";
+    return layer && resolvedPath ? [{ ...layer, resolvedPath }] : [];
+  });
 }
 
 function hasDecorCaveColorLayers(decorOrKey) {
@@ -9331,12 +9303,11 @@ function getDecorLayerSelectValue(item) {
 
 function renderDecorLayerOptions(item) {
   const selectedLayer = getDecorLayerSelectValue(item);
-  const caveLocked = isCaveDecorKey(item?.decorKey);
 
   return Array.from({ length: TANK_DEPTH_LAYERS }, (_, index) => {
     const layer = index + 1;
     const selected = selectedLayer === layer;
-    const disabled = caveLocked && !selected;
+    const disabled = getDecorFrontLayer(item?.decorKey, layer) !== layer;
     return `
       <option value="${layer}" ${selected ? "selected" : ""} ${disabled ? "disabled" : ""}>
         Layer ${layer}${layer === 1 ? " (front)" : layer === TANK_DEPTH_LAYERS ? " (back)" : ""}
@@ -15437,7 +15408,7 @@ function bindEvents() {
     }
     const tab = event.target.closest("[data-decor-tray-tab]");
     if (tab) {
-      const nextTab = ["caves", "plants", "ornaments", "bubbler", "custom"].includes(tab.dataset.decorTrayTab)
+      const nextTab = ["caves", "plants", "coral", "ornaments", "bubbler", "custom"].includes(tab.dataset.decorTrayTab)
         ? tab.dataset.decorTrayTab
         : "all";
       if (runtime.editDecorTrayTab !== nextTab) {
@@ -18557,14 +18528,14 @@ function buildDecorCaveColorLayers(group) {
     return uniqueCandidates;
   };
 
-  const buildOverlayLayer = (id, label, candidates = [], legacyCandidates = []) => {
-    const primary = candidates[0] || legacyCandidates[0] || null;
+  const buildOverlayLayer = (id, label, candidates = []) => {
+    const primary = candidates[0] || null;
     return {
       id,
       label,
       path: primary?.path || "",
       paths: candidates.map((candidate) => candidate.path),
-      legacyPaths: legacyCandidates.map((candidate) => candidate.path),
+      legacyPaths: [],
       sourceKey: primary?.sourceKey || ""
     };
   };
@@ -18582,8 +18553,8 @@ function buildDecorCaveColorLayers(group) {
       sourceKey: group.base.key,
       isBaseLayer: true
     },
-    buildOverlayLayer("color2", "Color 2", color2Candidates, color1Candidates),
-    buildOverlayLayer("color3", "Color 3", color3Candidates, color2Candidates)
+    buildOverlayLayer("color2", "Color 2", color2Candidates),
+    buildOverlayLayer("color3", "Color 3", color3Candidates)
   ];
 }
 
@@ -28098,7 +28069,15 @@ function getDecorFrontLayer(decorKey, layer) {
     return clamped;
   }
 
-  return 3;
+  return clamp(clamped, 1, TANK_DEPTH_LAYERS - (isThreeLayerCaveDecorKey(decorKey) ? 2 : 1));
+}
+
+function isThreeLayerCaveDecorKey(decorKey = "") {
+  if (!isCaveDecorKey(decorKey)) {
+    return false;
+  }
+  const decor = runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[decorKey] || null;
+  return Boolean(decor?.bgPath || decor?.hasBg || decor?.customType === "hide");
 }
 
 function getDecorLayerSpan(decorKey, layer) {
@@ -28119,11 +28098,13 @@ function getDecorLayerSpan(decorKey, layer) {
     };
   }
 
-  const back = frontLayer + 1;
+  const threeLayerCave = isThreeLayerCaveDecorKey(decorKey);
+  const mid = threeLayerCave ? frontLayer + 1 : null;
+  const back = frontLayer + (threeLayerCave ? 2 : 1);
 
   return {
     front: frontLayer,
-    mid: null,
+    mid,
     back,
     min: frontLayer,
     max: back,
@@ -28147,7 +28128,7 @@ function getCaveInsideLayerForItem(item) {
   }
 
   const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
-  return clampTankLayer(span.back || CAVE_SEAT_LOCKED_LAYER);
+  return clampTankLayer(span.mid || span.back || CAVE_SEAT_LOCKED_LAYER);
 }
 
 function isCaveNightWindow(timestamp = Date.now()) {
@@ -28642,7 +28623,9 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
 
     for (const slot of slotPool) {
       const inside = mapDecorLocalPointToTankNorm(item, slot.x, slot.y);
-      const slotLayer = clampTankLayer(slot.layer || portalInsideLayer);
+      const slotLayer = isThreeLayerCaveDecorKey(item.decorKey)
+        ? portalInsideLayer
+        : clampTankLayer(slot.layer || portalInsideLayer);
       const seatDirection = getCaveSeatFacingDirection(slot, entryDirection);
       if (!inside) {
         continue;
@@ -28841,7 +28824,7 @@ function getFishActiveCaveInsideLayer(fish, fallbackLayer = DEFAULT_TANK_LAYER) 
   }
 
   if (fish.caveState === "inside" && fish.caveSeatId) {
-    return clampTankLayer(CAVE_SEAT_LOCKED_LAYER);
+    return baseLayer;
   }
 
   return baseLayer;
@@ -40532,7 +40515,10 @@ function startPlacingDecor(decorKey) {
     return;
   }
   runtime.pendingDecorPlacementKey = null;
-  const initialLayer = getDecorFrontLayer(decorKey, runtime.decorPlacementLayer);
+  const initialLayer = getDecorFrontLayer(
+    decorKey,
+    isCaveDecorKey(decorKey) ? DEFAULT_TANK_LAYER : runtime.decorPlacementLayer
+  );
   const span = getDecorLayerSpan(decorKey, initialLayer);
   const isTransitTube = isTransitTubeDecorKey(decorKey);
   const motionCapabilities = getDecorMotionCapabilities(decorKey);
@@ -40715,14 +40701,8 @@ function placeDecorAtPoint(xNorm, yNorm) {
 }
 
 function isDecorLayerShortcutEndpoint(decorKey, layer, step) {
-  if (isCaveDecorKey(decorKey)) {
-    return false;
-  }
-
-  const currentLayer = clampTankLayer(layer);
-  return step > 0
-    ? currentLayer >= TANK_DEPTH_LAYERS
-    : currentLayer <= 1;
+  const currentLayer = getDecorFrontLayer(decorKey, layer);
+  return getDecorFrontLayer(decorKey, currentLayer + Math.sign(Number(step) || 0)) === currentLayer;
 }
 
 function canStepPlacedDecorLayer(item, direction) {
@@ -52951,6 +52931,8 @@ function getDecorCategoryLabel(category) {
       return "Caves";
     case "plants":
       return "Plants";
+    case "coral":
+      return "Coral";
     case "ornaments":
       return "Ornaments";
     case "bubbler":
@@ -55045,7 +55027,7 @@ function renderCustomHideCreationOverlay() {
           <select class="shop-sort-select" data-custom-hide-setting="tankLayer" aria-label="Custom hide layer">
             ${layerOptions}
           </select>
-          <em>Caves span layers 3-4 for fish entrances and interiors, so their front layer is locked.</em>
+          <em>Choose the front layer. The cave interior and background remain on their required layers behind it.</em>
         </label>
         ${previewItem && previewDecor ? renderCaveColorSettingsControls(previewItem, previewDecor) : ""}
         ${previewItem ? renderCaveSettingsControls(previewItem) : ""}
@@ -55273,8 +55255,10 @@ function renderDecorSettingsOverlay(item) {
   const sizeValue = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const layerReadout = formatDecorSettingReadout("tankLayer", item);
   const layerOptions = renderDecorLayerOptions(item);
-  const layerHelpText = isCaveDecorKey(item.decorKey)
-    ? "Caves span layers 3-4 for fish entrances and interiors, so their front layer is locked."
+  const layerHelpText = isThreeLayerCaveDecorKey(item.decorKey)
+    ? "Choose the cave's front layer. Its interior stays one layer behind and its background stays two layers behind."
+    : isCaveDecorKey(item.decorKey)
+    ? "Choose the cave's front layer. Its interior stays one layer behind."
     : "Layer 1 draws closest to the glass. Layer 5 draws deepest in the tank.";
   const swaySideOptions = DECOR_SWAY_SIDE_OPTIONS.map((option) => `
     <option value="${escapeHtml(option.id)}" ${motionSettings.swaySide === option.id ? "selected" : ""}>
@@ -56660,6 +56644,9 @@ function hasInlineToolTrayOpen() {
 
 function getDecorTrayTypeTone(decor, decorKey) {
   const categories = deriveDecorCategories(decor, decorKey).map((category) => String(category || "").toLowerCase());
+  if (categories.some((category) => category === "coral" || category === "corals" || category === "reef")) {
+    return "coral";
+  }
   if (categories.some((category) => category === "plants" || category === "plant")) {
     return "plants";
   }
@@ -56679,10 +56666,28 @@ function getDecorTrayTypeLabel(tone) {
   return ({
     caves: "Cave",
     plants: "Plant",
+    coral: "Coral",
     ornaments: "Ornament",
     bubbler: "Bubbler",
     custom: "Custom"
   })[tone] || "Ornament";
+}
+
+function decorMatchesTrayTab(decor, decorKey, tab) {
+  const normalizedTab = String(tab || "").toLowerCase();
+  if (!normalizedTab || normalizedTab === "all") {
+    return true;
+  }
+  const categories = deriveDecorCategories(decor, decorKey).map((category) => String(category || "").toLowerCase());
+  const aliases = {
+    caves: ["caves", "cave", "hide"],
+    plants: ["plants", "plant"],
+    coral: ["coral", "corals", "reef"],
+    ornaments: ["ornaments", "ornament", "hardscape"],
+    bubbler: ["bubbler", "bubblers", "bubble"],
+    custom: ["custom"]
+  };
+  return (aliases[normalizedTab] || [normalizedTab]).some((category) => categories.includes(category));
 }
 
 function syncTankTrayStageClass() {
@@ -56965,7 +56970,7 @@ function renderEditDecorTray() {
     return;
   }
 
-  const validTabs = new Set(["all", "caves", "plants", "ornaments", "bubbler", "custom"]);
+  const validTabs = new Set(["all", "caves", "plants", "coral", "ornaments", "bubbler", "custom"]);
   if (!validTabs.has(runtime.editDecorTrayTab)) {
     runtime.editDecorTrayTab = "all";
   }
@@ -56996,7 +57001,7 @@ function renderEditDecorTray() {
   const allTrayEntries = runtime.editDecorTrayInTank ? getInTankDecorTrayEntries() : getDecorTrayEntries();
   const trayEntries = runtime.editDecorTrayTab === "all"
     ? allTrayEntries
-    : allTrayEntries.filter((entry) => getDecorTrayTypeTone(entry.decor, entry.decorKey) === runtime.editDecorTrayTab);
+    : allTrayEntries.filter((entry) => decorMatchesTrayTab(entry.decor, entry.decorKey, runtime.editDecorTrayTab));
   const dataKey = [
     runtime.editTankMode ? "1" : "0",
     runtime.editDecorTrayTab,
@@ -69023,7 +69028,7 @@ function drawDecorPreview() {
   tankContext.ellipse(previewFootX, previewFootY + 3, width * 0.34, Math.max(10, width * 0.08), 0, 0, Math.PI * 2);
   tankContext.fill();
   const previewMotion = getDecorMotion(previewItem, Date.now());
-  if ((decor.bubbler || isCaveDecorKey(decor.key) || hasDecorCaveColorLayers(decor)) && decor.bgPath) {
+  if (decor.bgPath) {
     if (hasDecorCaveColorLayers(decor)) {
       drawCaveBackgroundLayerToContext(tankContext, previewItem, decor, Date.now(), {
         drawX: x - width / 2,
@@ -74639,9 +74644,6 @@ function getCaveCollisionFrameCandidates(testLayer, now = Date.now()) {
       const layers = span.front === span.back ? [span.front] : [span.front, span.back];
       for (const candidateLayer of layers) {
         const normalizedLayer = clampTankLayer(candidateLayer);
-        if (normalizedLayer < 3 && !isTransitTubeDecorKey(item.decorKey)) {
-          continue;
-        }
         const descriptor = getCaveBlockingDescriptorForLayer(item, normalizedLayer);
         if (!descriptor) {
           continue;

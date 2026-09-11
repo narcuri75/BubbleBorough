@@ -1308,7 +1308,6 @@ test("transit tubes participate in both layers of cave-style collision", () => {
   const collision = fs.readFileSync(path.join(root, "fish/caves-and-collision.js"), "utf8");
   assert.match(navigation, /!isCaveDecorKey\(item\.decorKey\) && !isTransitTubeDecorKey\(item\.decorKey\)/);
   assert.match(collision, /!isCaveDecorKey\(item\.decorKey\) && !isTransitTubeDecorKey\(item\.decorKey\)/);
-  assert.match(collision, /normalizedLayer < 3 && !isTransitTubeDecorKey\(item\.decorKey\)/);
   assert.match(navigation, /testLayer !== span\.front && testLayer !== span\.back/);
   assert.match(collision, /movingThroughTubeExterior[\s\S]*clamp\(nextYNorm, -0\.35, 1\.35\)/);
   assert.match(collision, /Only the committed traveler gets[\s\S]*tube remains solid for every other fish/);
@@ -1395,7 +1394,7 @@ test("Halloween placement uses corrected sizes with catalog loading and offline 
     const modules = {
       "assets/custom-content.js": ["fetchDecorCatalog", "normalizeDecorMeta", "getDecorCompanionType", "getDecorBaseKey", "buildDecorCaveColorLayers", "getExpectedCaveCompanionPaths", "buildDecorCatalog"],
       "fish/needs-disease-and-behavior.js": ["resolveDecorBaseScale", "getDecorScaleDefault"],
-      "decor/layout-and-layers.js": ["migrateLegacyHalloweenDecorScaleDefaults", "getDecorDisplayWidth", "isCaveDecorKey"],
+      "decor/layout-and-layers.js": ["migrateLegacyHalloweenDecorScaleDefaults", "getDecorDisplayWidth", "isCaveDecorKey", "isThreeLayerCaveDecorKey"],
       "tank/catalog-and-equipment.js": ["normalizeStringList", "normalizeDecorHangoutTypes", "normalizeDecorFishBehaviorMeta", "getTankComfortDecorTags"],
       "decor/placement-and-dragging.js": ["startPlacingDecor", "createPlacedDecor"]
     };
@@ -1927,6 +1926,64 @@ test("Frozen decor never uses plant sway", () => {
   assert.match(source, /const frozenDecor =/);
   assert.match(source, /hasSway:\s*!frozenDecor/);
   assert.match(source, /const isSeaweed = !frozenDecor/);
+});
+
+test("sea anemones share seaweed sway across foreground and cave background layers", () => {
+  const customizationSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/customization.js"), "utf8");
+  const renderingSource = fs.readFileSync(path.join(root, "../../public/app-src/rendering/decor.js"), "utf8");
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, "../../assets/decor/decor_types.json"), "utf8"));
+  const byFile = new Map(catalog.decor.map(entry => [entry.file, entry]));
+
+  assert.match(customizationSource, /sea\[_\\s-\]\?anemone/);
+  assert.match(renderingSource, /drawCaveBackgroundLayerToContext[\s\S]*?const motion = options\.motion \|\| getDecorMotion\(item, now\)/);
+  assert.match(renderingSource, /drawCaveColorLayersToContext[\s\S]*?const motion = options\.motion \|\| getDecorMotion\(item, now\)/);
+  assert.deepEqual(byFile.get("Cave_Sea_Anemone_3.png").categories, ["plants", "caves"]);
+  assert.deepEqual(byFile.get("Cave_Coral_Shelf_9.png").categories, ["coral", "caves"]);
+  assert.deepEqual(byFile.get("mushroomcoral_seaweed.png").categories, ["coral"]);
+});
+
+test("decor artwork and thumbnails use the literal bg, regular, color2, color3 stack", () => {
+  const customizationSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/customization.js"), "utf8");
+  const previewSource = fs.readFileSync(path.join(root, "../../scripts/generate-loose-decor-previews.cjs"), "utf8");
+
+  assert.match(customizationSource, /\["color1", "color2", "color3"\]\.flatMap/);
+  assert.match(previewSource, /\[group\.bg, group\.base, group\.color2, group\.color3\]\.filter\(Boolean\)/);
+  assert.match(previewSource, /composite\(layers\.map\(input => \(\{ input, blend: "over" \}\)\)\)/);
+});
+
+test("caves can shift their fixed layer stack, including Sea Anemone backgrounds", () => {
+  const runtime = {
+    decorMap: new Map([
+      ["Cave_Coral_Shelf_1.png", { name: "Coral Shelf Cave 1", categories: ["coral", "caves"], bgPath: "shelf-bg.png" }],
+      ["Cave_Sea_Anemone_4.png", { name: "Sea Anemone Cave 4", categories: ["plants", "caves"], bgPath: "anemone-bg.png" }],
+      ["rock-hide.png", { name: "Rock Hide", categories: ["caves"] }]
+    ]),
+    decorMeta: {}
+  };
+  const c = load("decor/layout-and-layers.js", ["isCaveDecorKey", "isThreeLayerCaveDecorKey", "getDecorFrontLayer", "getDecorLayerSpan"], {
+    runtime,
+    TANK_DEPTH_LAYERS: 5,
+    clampTankLayer: value => clamp(Math.round(Number(value) || 1), 1, 5),
+    isCustomHideAssetKey: () => false,
+    isTransitTubeDecorKey: () => false
+  });
+
+  assert.deepEqual({ ...c.getDecorLayerSpan("Cave_Coral_Shelf_1.png", 3) }, {
+    front: 3, mid: 4, back: 5, min: 3, max: 5, label: "Layers 3-5"
+  });
+  assert.deepEqual({ ...c.getDecorLayerSpan("Cave_Coral_Shelf_1.png", 1) }, {
+    front: 1, mid: 2, back: 3, min: 1, max: 3, label: "Layers 1-3"
+  });
+  assert.equal(c.getDecorFrontLayer("Cave_Coral_Shelf_1.png", 5), 3);
+  assert.deepEqual({ ...c.getDecorLayerSpan("Cave_Sea_Anemone_4.png", 3) }, {
+    front: 3, mid: 4, back: 5, min: 3, max: 5, label: "Layers 3-5"
+  });
+  assert.deepEqual({ ...c.getDecorLayerSpan("rock-hide.png", 4) }, {
+    front: 4, mid: null, back: 5, min: 4, max: 5, label: "Layers 4-5"
+  });
+
+  const caveNavigation = fs.readFileSync(path.join(root, "../../public/app-src/fish/cave-navigation.js"), "utf8");
+  assert.match(caveNavigation, /span\.mid \|\| span\.back/);
 });
 
 test("Lure decor is tank-top locked until Free Placement is explicitly enabled", () => {

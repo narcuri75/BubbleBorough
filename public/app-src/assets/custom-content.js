@@ -1534,7 +1534,7 @@ function bindEvents() {
     }
     const tab = event.target.closest("[data-decor-tray-tab]");
     if (tab) {
-      const nextTab = ["caves", "plants", "ornaments", "bubbler", "custom"].includes(tab.dataset.decorTrayTab)
+      const nextTab = ["caves", "plants", "coral", "ornaments", "bubbler", "custom"].includes(tab.dataset.decorTrayTab)
         ? tab.dataset.decorTrayTab
         : "all";
       if (runtime.editDecorTrayTab !== nextTab) {
@@ -4654,14 +4654,14 @@ function buildDecorCaveColorLayers(group) {
     return uniqueCandidates;
   };
 
-  const buildOverlayLayer = (id, label, candidates = [], legacyCandidates = []) => {
-    const primary = candidates[0] || legacyCandidates[0] || null;
+  const buildOverlayLayer = (id, label, candidates = []) => {
+    const primary = candidates[0] || null;
     return {
       id,
       label,
       path: primary?.path || "",
       paths: candidates.map((candidate) => candidate.path),
-      legacyPaths: legacyCandidates.map((candidate) => candidate.path),
+      legacyPaths: [],
       sourceKey: primary?.sourceKey || ""
     };
   };
@@ -4679,8 +4679,8 @@ function buildDecorCaveColorLayers(group) {
       sourceKey: group.base.key,
       isBaseLayer: true
     },
-    buildOverlayLayer("color2", "Color 2", color2Candidates, color1Candidates),
-    buildOverlayLayer("color3", "Color 3", color3Candidates, color2Candidates)
+    buildOverlayLayer("color2", "Color 2", color2Candidates),
+    buildOverlayLayer("color3", "Color 3", color3Candidates)
   ];
 }
 

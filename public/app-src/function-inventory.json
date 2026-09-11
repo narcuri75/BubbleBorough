@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 2917,
+  "functionCount": 2919,
   "functions": [
     {
       "name": "syncViewportCssVariables",
@@ -203,8 +203,8 @@
       "module": "assets/custom-content.js",
       "sourceLine": 288,
       "originalLine": 10034,
-      "characters": 121159,
-      "sourceHash": "080f485441ea5f08eea3df4c98b0c35581dfd29d58b4a04213fd6e9857e14a6b",
+      "characters": 121168,
+      "sourceHash": "5a7f13f16c568f22cd2151bb9fb8202ec0e98f3673b36a454a237afdef20103a",
       "calls": [
         "addDebugCoins",
         "adjustDecorDefaultSize",
@@ -985,8 +985,8 @@
       "module": "assets/custom-content.js",
       "sourceLine": 4630,
       "originalLine": 13399,
-      "characters": 1578,
-      "sourceHash": "51936442ce9d745f64f6b2ec7ab4e792b061c0babd34f0f221a9731022c43093",
+      "characters": 1447,
+      "sourceHash": "2d42dca5d24aeef32123d6384cd830d9df357aedcf4126f493f1963bd9582aee",
       "calls": []
     },
     {
@@ -8939,14 +8939,14 @@
       "module": "decor/customization.js",
       "sourceLine": 861,
       "originalLine": 4467,
-      "characters": 112,
-      "sourceHash": "2fb95082c9777df5f98f89ec02b4d07d7ed63d1470c63ed872361c7dafb86550",
+      "characters": 194,
+      "sourceHash": "b67917a062388ca1d5b2a2c88ee90c1101e6738dd7aaffb23c8455f1b9a632fe",
       "calls": []
     },
     {
       "name": "isDecorLureKey",
       "module": "decor/customization.js",
-      "sourceLine": 865,
+      "sourceLine": 866,
       "originalLine": 4471,
       "characters": 311,
       "sourceHash": "1d83f39f7552dd620dcb4fca123002a3424969bfed76b310696a01d872e8ae27",
@@ -8955,7 +8955,7 @@
     {
       "name": "getDecorMotionCapabilities",
       "module": "decor/customization.js",
-      "sourceLine": 875,
+      "sourceLine": 876,
       "originalLine": 4475,
       "characters": 2288,
       "sourceHash": "85b198793fcc14b6e03868199548d3010bc9c14182a4675505708c17bb9f01ca",
@@ -8974,7 +8974,7 @@
     {
       "name": "getPlacedDecorMotionSettings",
       "module": "decor/customization.js",
-      "sourceLine": 935,
+      "sourceLine": 936,
       "originalLine": 4532,
       "characters": 781,
       "sourceHash": "fd98416c1c6a3bb498ba1562cf63d6e04f44c7b5c89cebe08a5fedf708a13cfc",
@@ -8989,7 +8989,7 @@
     {
       "name": "ensurePlacedDecorSettings",
       "module": "decor/customization.js",
-      "sourceLine": 950,
+      "sourceLine": 951,
       "originalLine": 4547,
       "characters": 213,
       "sourceHash": "229db4e9378a0bd112194bed4ec7fedce1ccb6bf8e0e801566d8415a81add20c",
@@ -8998,7 +8998,7 @@
     {
       "name": "normalizeCaveEntrySide",
       "module": "decor/customization.js",
-      "sourceLine": 960,
+      "sourceLine": 961,
       "originalLine": 4557,
       "characters": 205,
       "sourceHash": "26e8ad9e6b9d639b1c3ed998a1286b7fafd4f588583928aec8d8fe26f8fc821a",
@@ -9007,7 +9007,7 @@
     {
       "name": "normalizeCaveSeatFacing",
       "module": "decor/customization.js",
-      "sourceLine": 965,
+      "sourceLine": 966,
       "originalLine": 4562,
       "characters": 532,
       "sourceHash": "ea5464d070883289b09e3487ceacecb8f3b310d27272b23db4da4b1e57c4dff2",
@@ -9016,7 +9016,7 @@
     {
       "name": "getDefaultCaveSeatFacing",
       "module": "decor/customization.js",
-      "sourceLine": 983,
+      "sourceLine": 984,
       "originalLine": 4580,
       "characters": 233,
       "sourceHash": "22e656a5ed54e382ce45d65d6149382b2f8685f962ce8ce7cd2e10b88f15abb6",
@@ -9025,7 +9025,7 @@
     {
       "name": "getCaveEntryOutsideLayers",
       "module": "decor/customization.js",
-      "sourceLine": 992,
+      "sourceLine": 993,
       "originalLine": 4589,
       "characters": 212,
       "sourceHash": "ee22a946816d95f59549c5dae04044ea59f4c5c4348d8140151dabefa1d259ed",
@@ -9036,7 +9036,7 @@
     {
       "name": "buildDefaultCaveEntryPoint",
       "module": "decor/customization.js",
-      "sourceLine": 1004,
+      "sourceLine": 1005,
       "originalLine": 4601,
       "characters": 573,
       "sourceHash": "de9698f2b9bd3360421521f5133c825414a31abad0c2a795b354dc036673a9ed",
@@ -9047,7 +9047,7 @@
     {
       "name": "buildDefaultCaveSeatPoint",
       "module": "decor/customization.js",
-      "sourceLine": 1018,
+      "sourceLine": 1019,
       "originalLine": 4615,
       "characters": 770,
       "sourceHash": "072edfb8547570e25d7c689709b125225511971a105344eeeb93334c750c7f2a",
@@ -9059,7 +9059,7 @@
     {
       "name": "sanitizeCaveLocalCoordinate",
       "module": "decor/customization.js",
-      "sourceLine": 1040,
+      "sourceLine": 1041,
       "originalLine": 4637,
       "characters": 171,
       "sourceHash": "56d0a6b76610849af44a5099b2512b82709c806cde4223992ccd15f05606129e",
@@ -9070,7 +9070,7 @@
     {
       "name": "sanitizeCaveLocalPoint",
       "module": "decor/customization.js",
-      "sourceLine": 1045,
+      "sourceLine": 1046,
       "originalLine": 4642,
       "characters": 245,
       "sourceHash": "c01052b4858f85ea05d4c79ed8c3d597e24e073dcd3713e88a42b369947de8e6",
@@ -9081,7 +9081,7 @@
     {
       "name": "normalizeCaveSettingsIdList",
       "module": "decor/customization.js",
-      "sourceLine": 1052,
+      "sourceLine": 1053,
       "originalLine": 4649,
       "characters": 271,
       "sourceHash": "44bcdca9c5f1e6a9ad7b2c098a25e848b3af3dd64d403994f31e57fb112fe272",
@@ -9090,7 +9090,7 @@
     {
       "name": "sanitizePlacedCaveSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1059,
+      "sourceLine": 1060,
       "originalLine": 4656,
       "characters": 2788,
       "sourceHash": "0f6f57cd4d11081f10023867cbddb37fab44f260cf469d2297349ed778d939e1",
@@ -9108,7 +9108,7 @@
     {
       "name": "getAuthoredDecorCaveSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1133,
+      "sourceLine": 1134,
       "originalLine": 4730,
       "characters": 621,
       "sourceHash": "ce61f1a7688b3d52bd80d8a861c33485293d28e713e937ec208d4d47fa7b439b",
@@ -9119,7 +9119,7 @@
     {
       "name": "hasPlacedCaveSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1152,
+      "sourceLine": 1153,
       "originalLine": 4749,
       "characters": 251,
       "sourceHash": "d4bd0d3548c80e69975506bf8b45a6ae4ed67352a3abddb6b2d26809a685a814",
@@ -9131,7 +9131,7 @@
     {
       "name": "getPlacedCaveSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1163,
+      "sourceLine": 1164,
       "originalLine": 4760,
       "characters": 323,
       "sourceHash": "d82137c9f42c6635f1de41f0e94f04798c7741022a398d8295bf04ebb01ceb61",
@@ -9144,7 +9144,7 @@
     {
       "name": "ensurePlacedCaveSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1174,
+      "sourceLine": 1175,
       "originalLine": 4771,
       "characters": 257,
       "sourceHash": "9d3d057ce6d514bd4f133272196477a271e621d6bd6e515eee9c34bee25dca1d",
@@ -9157,7 +9157,7 @@
     {
       "name": "getDecorDefaultCaveSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1183,
+      "sourceLine": 1184,
       "originalLine": 4780,
       "characters": 221,
       "sourceHash": "f798bc963a23819fdaa6909ca198f4aaa85794d4afe0965f834c9d81b171404d",
@@ -9169,7 +9169,7 @@
     {
       "name": "getDecorDefaultCaveColorSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1192,
+      "sourceLine": 1193,
       "originalLine": 4789,
       "characters": 747,
       "sourceHash": "fa4a6c70d569d61e885d8f949c1af488b779dd140f114d83649ab88d5624317e",
@@ -9181,7 +9181,7 @@
     {
       "name": "getDecorCaveColorLayers",
       "module": "decor/customization.js",
-      "sourceLine": 1211,
+      "sourceLine": 1212,
       "originalLine": 4808,
       "characters": 446,
       "sourceHash": "24202acd7fe5016fecdd2ce3b554c0caef725399037d180744db02364b19dc38",
@@ -9190,7 +9190,7 @@
     {
       "name": "resolveDecorColorLayerPath",
       "module": "decor/customization.js",
-      "sourceLine": 1225,
+      "sourceLine": 1226,
       "originalLine": 4822,
       "characters": 262,
       "sourceHash": "4673238bdac221ec35f35141276f417889cccb321395d9209f862fd88d6dba21",
@@ -9199,10 +9199,10 @@
     {
       "name": "getVisibleDecorColorLayers",
       "module": "decor/customization.js",
-      "sourceLine": 1230,
+      "sourceLine": 1231,
       "originalLine": 4827,
-      "characters": 1376,
-      "sourceHash": "1d74337828109af141917908a6266e14a0d3bb19dc7ba51bbae48569328b21cf",
+      "characters": 489,
+      "sourceHash": "fbd4086351439643e195c724833ffb52dc0a30c2baed745f67641bc48dabe98a",
       "calls": [
         "getDecorCaveColorLayers"
       ]
@@ -9210,7 +9210,7 @@
     {
       "name": "hasDecorCaveColorLayers",
       "module": "decor/customization.js",
-      "sourceLine": 1269,
+      "sourceLine": 1241,
       "originalLine": 4866,
       "characters": 108,
       "sourceHash": "91c0def142f6f1f176c639a55e425059d15ae06f15d610550e956f76872c5675",
@@ -9221,7 +9221,7 @@
     {
       "name": "isDecorRgbColorSetting",
       "module": "decor/customization.js",
-      "sourceLine": 1273,
+      "sourceLine": 1245,
       "originalLine": 4870,
       "characters": 126,
       "sourceHash": "ae057613cdd8c06a72acd8f5b88646c8d02f15aec3c69651cd0eec4b4d11b312",
@@ -9230,7 +9230,7 @@
     {
       "name": "normalizeDecorColorSetting",
       "module": "decor/customization.js",
-      "sourceLine": 1277,
+      "sourceLine": 1249,
       "originalLine": 4874,
       "characters": 158,
       "sourceHash": "5206d22b6c4c3c2519a923d0308bd8d8142ea93c9eca30717d03e4eb4a47dddd",
@@ -9242,7 +9242,7 @@
     {
       "name": "normalizeDecorColorSettingList",
       "module": "decor/customization.js",
-      "sourceLine": 1283,
+      "sourceLine": 1255,
       "originalLine": 4880,
       "characters": 315,
       "sourceHash": "3902bb50ab11116e931f392cf1a872f5169b2542e5de0eb331aaceb926382145",
@@ -9253,7 +9253,7 @@
     {
       "name": "resolveDecorColorSettingForRender",
       "module": "decor/customization.js",
-      "sourceLine": 1295,
+      "sourceLine": 1267,
       "originalLine": 4892,
       "characters": 294,
       "sourceHash": "9706e627f9ae18d7d21e09c6edd006c7a683b2fc871ec383b9676e6bdbe62b96",
@@ -9266,7 +9266,7 @@
     {
       "name": "getDecorRgbCycleHue",
       "module": "decor/customization.js",
-      "sourceLine": 1301,
+      "sourceLine": 1273,
       "originalLine": 4898,
       "characters": 124,
       "sourceHash": "29b1fc514ea2dac71df1eda94830bb888e7f82668daec862fd2f347603d43b82",
@@ -9277,7 +9277,7 @@
     {
       "name": "getDecorRgbCycleColor",
       "module": "decor/customization.js",
-      "sourceLine": 1305,
+      "sourceLine": 1277,
       "originalLine": 4902,
       "characters": 300,
       "sourceHash": "eac1e10419db35c099bb2d73919e65034cc50fc47e0ce26e820911e055ae3e73",
@@ -9290,7 +9290,7 @@
     {
       "name": "getDecorRgbCycleFilter",
       "module": "decor/customization.js",
-      "sourceLine": 1317,
+      "sourceLine": 1289,
       "originalLine": 4914,
       "characters": 134,
       "sourceHash": "1cf51a5122863a64f1700494c12dca64a9e28d270d35f984cda238fc3ee05fd6",
@@ -9301,7 +9301,7 @@
     {
       "name": "getDecorRgbColorizeFilter",
       "module": "decor/customization.js",
-      "sourceLine": 1321,
+      "sourceLine": 1293,
       "originalLine": 4918,
       "characters": 167,
       "sourceHash": "e690aebb51c87eae07be674857a8510924b65301a6aff5bf43b03a71c2163f70",
@@ -9312,7 +9312,7 @@
     {
       "name": "getDecorColorizeSettingKey",
       "module": "decor/customization.js",
-      "sourceLine": 1325,
+      "sourceLine": 1297,
       "originalLine": 4922,
       "characters": 122,
       "sourceHash": "db5bda054eb48307efdc5a33e7cf94d1c0d64d1b2d7179b0c8326540e845a020",
@@ -9321,7 +9321,7 @@
     {
       "name": "normalizeDecorColorizeSetting",
       "module": "decor/customization.js",
-      "sourceLine": 1329,
+      "sourceLine": 1301,
       "originalLine": 4926,
       "characters": 340,
       "sourceHash": "3d11f36c1f43c721ab5c6c0f583208693be494a3b9f46100121bdef66e91b856",
@@ -9330,7 +9330,7 @@
     {
       "name": "sanitizePlacedCaveColorSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1341,
+      "sourceLine": 1313,
       "originalLine": 4938,
       "characters": 1122,
       "sourceHash": "133ed156b32289bf58f7c1c44a9c369f9c8d1068448b2df240a231662cafc9f9",
@@ -9344,7 +9344,7 @@
     {
       "name": "getPlacedCaveColorSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1377,
+      "sourceLine": 1349,
       "originalLine": 4974,
       "characters": 377,
       "sourceHash": "67db6d0981a8ab550ceac4053bc200809370fac421235f1c1de23a55a1ec63e8",
@@ -9356,7 +9356,7 @@
     {
       "name": "getPlacedCaveColorizeSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1384,
+      "sourceLine": 1356,
       "originalLine": 4981,
       "characters": 423,
       "sourceHash": "a851daaeeec0ab1c40416c48834bfe53d56f49c1f722eb1debbc3dbf261c06de",
@@ -9369,7 +9369,7 @@
     {
       "name": "buildPlacedCaveColorSettingsPayload",
       "module": "decor/customization.js",
-      "sourceLine": 1394,
+      "sourceLine": 1366,
       "originalLine": 4991,
       "characters": 585,
       "sourceHash": "e7ac98dcd942471e6d8ed6bc42ffe95eba9ed01f5117a531e85a872db3f3dd89",
@@ -9383,7 +9383,7 @@
     {
       "name": "getCaveColorLayerLabel",
       "module": "decor/customization.js",
-      "sourceLine": 1413,
+      "sourceLine": 1385,
       "originalLine": 5010,
       "characters": 462,
       "sourceHash": "f98affa29212c9695e374fe0815d7e3f0d03ecd510867cfbcb92bb4342ce35de",
@@ -9394,7 +9394,7 @@
     {
       "name": "formatCaveColorChoiceLabel",
       "module": "decor/customization.js",
-      "sourceLine": 1429,
+      "sourceLine": 1401,
       "originalLine": 5026,
       "characters": 311,
       "sourceHash": "12f96bac17d0f66b74aefbdabbac54dd419d032bcd19de4daf4f07dec7736dd4",
@@ -9407,7 +9407,7 @@
     {
       "name": "updateCaveColorSettingsControls",
       "module": "decor/customization.js",
-      "sourceLine": 1442,
+      "sourceLine": 1414,
       "originalLine": 5039,
       "characters": 1890,
       "sourceHash": "fe49f87998fdfed4a0418d9d31fd43d715ec613da97c57f756e1ac8d3df99f0f",
@@ -9423,7 +9423,7 @@
     {
       "name": "updateSelectedCaveColorSetting",
       "module": "decor/customization.js",
-      "sourceLine": 1486,
+      "sourceLine": 1458,
       "originalLine": 5083,
       "characters": 1426,
       "sourceHash": "09155570e62c516ae240f7a6446528915fa81367f81e37cb3b7846112417e5c3",
@@ -9444,7 +9444,7 @@
     {
       "name": "updateSelectedCaveColorizeSetting",
       "module": "decor/customization.js",
-      "sourceLine": 1525,
+      "sourceLine": 1497,
       "originalLine": 5122,
       "characters": 1448,
       "sourceHash": "f1856581a706ba0e1b87e28665caf8da65a238ba7f295600383329330609d4ad",
@@ -9466,7 +9466,7 @@
     {
       "name": "buildCaveBehaviorProfileFromPlacedSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1564,
+      "sourceLine": 1536,
       "originalLine": 5161,
       "characters": 197,
       "sourceHash": "8c7138eaff77f385cca609eb78d77e827066389be8ca58c935cb1b59e7747ffd",
@@ -9479,7 +9479,7 @@
     {
       "name": "buildCaveBehaviorProfileFromSettings",
       "module": "decor/customization.js",
-      "sourceLine": 1572,
+      "sourceLine": 1544,
       "originalLine": 5169,
       "characters": 2833,
       "sourceHash": "3c4e8f2e1bf77035c950f0ddd25090ba85b2db42d641c1f6ae617b027a0c6b88",
@@ -9494,7 +9494,7 @@
     {
       "name": "getCustomDecorMotionIntensityLabel",
       "module": "decor/customization.js",
-      "sourceLine": 1654,
+      "sourceLine": 1626,
       "originalLine": 5251,
       "characters": 249,
       "sourceHash": "60907070a40ec7feac0d2cc3b7a9fd616587664e3f19df01f4fd5641df04fccf",
@@ -9503,7 +9503,7 @@
     {
       "name": "formatCustomDecorSettingReadout",
       "module": "decor/customization.js",
-      "sourceLine": 1664,
+      "sourceLine": 1636,
       "originalLine": 5261,
       "characters": 391,
       "sourceHash": "d4ec24e0ee2c2b29788a6f1cf504d18b6acdc679db0db9dab3937470725d92b2",
@@ -9515,7 +9515,7 @@
     {
       "name": "getCustomDecorSettingControlValue",
       "module": "decor/customization.js",
-      "sourceLine": 1675,
+      "sourceLine": 1647,
       "originalLine": 5272,
       "characters": 368,
       "sourceHash": "47415bd72e1babed913bf858154a199f8f8db67594a5e7f40761d954314bc48b",
@@ -9527,7 +9527,7 @@
     {
       "name": "updateCustomDecorSettingsControls",
       "module": "decor/customization.js",
-      "sourceLine": 1686,
+      "sourceLine": 1658,
       "originalLine": 5283,
       "characters": 938,
       "sourceHash": "f25c7e632583daec2415e69f668cdb7630cdac9aa859aee179eab98e8703c79c",
@@ -9539,7 +9539,7 @@
     {
       "name": "updateSelectedCustomDecorSetting",
       "module": "decor/customization.js",
-      "sourceLine": 1710,
+      "sourceLine": 1682,
       "originalLine": 5307,
       "characters": 1349,
       "sourceHash": "e778cfbac431d2758a6fa3852a391a2abc7fb7e001adf5154e7e8ecd69549791",
@@ -9560,7 +9560,7 @@
     {
       "name": "getDecorLayerSelectValue",
       "module": "decor/customization.js",
-      "sourceLine": 1756,
+      "sourceLine": 1728,
       "originalLine": 5353,
       "characters": 127,
       "sourceHash": "dbe2741864e136a6d4345b242a541546e548f39e08a9bdd4e571654342248d78",
@@ -9571,19 +9571,19 @@
     {
       "name": "renderDecorLayerOptions",
       "module": "decor/customization.js",
-      "sourceLine": 1760,
+      "sourceLine": 1732,
       "originalLine": 5357,
-      "characters": 580,
-      "sourceHash": "3c7bb376817c00693ef1dccebfdaa7654695e959269e6aad944015e8c92a9ed5",
+      "characters": 555,
+      "sourceHash": "f199e69298199b2af4c25129e570a8815e1bfd8312bdd65cff2abad4ed0afea6",
       "calls": [
-        "getDecorLayerSelectValue",
-        "isCaveDecorKey"
+        "getDecorFrontLayer",
+        "getDecorLayerSelectValue"
       ]
     },
     {
       "name": "formatDecorSettingReadout",
       "module": "decor/customization.js",
-      "sourceLine": 1776,
+      "sourceLine": 1747,
       "originalLine": 5373,
       "characters": 804,
       "sourceHash": "867cce0ffb49f83b8c819a874f0308fbe66f4de2c733d9178676b8752bca7e1f",
@@ -9597,7 +9597,7 @@
     {
       "name": "getDecorSettingControlValue",
       "module": "decor/customization.js",
-      "sourceLine": 1798,
+      "sourceLine": 1769,
       "originalLine": 5395,
       "characters": 766,
       "sourceHash": "1dc13f79488e5d33976177825031ec0f0962a83b75bf0bc2092836c4e83ba541",
@@ -9611,7 +9611,7 @@
     {
       "name": "updateDecorSettingsControls",
       "module": "decor/customization.js",
-      "sourceLine": 1822,
+      "sourceLine": 1793,
       "originalLine": 5419,
       "characters": 1280,
       "sourceHash": "fda5edc479c366ea4d1a10eb84b20fbf552eff7de1b798643d247068084a3f6a",
@@ -9627,7 +9627,7 @@
     {
       "name": "setDecorGroupScale",
       "module": "decor/customization.js",
-      "sourceLine": 1856,
+      "sourceLine": 1827,
       "originalLine": 5453,
       "characters": 1201,
       "sourceHash": "28ccc49895a6e49a492ecef6f939afee8740bcdc92001ae5f57ad9539c0891c6",
@@ -9644,7 +9644,7 @@
     {
       "name": "setDecorGroupLayer",
       "module": "decor/customization.js",
-      "sourceLine": 1886,
+      "sourceLine": 1857,
       "originalLine": 5483,
       "characters": 1375,
       "sourceHash": "cd0f0c9620a6e04101adda4643c6c2dd701d000c63c22b75a3bd3d5f4f19d0af",
@@ -9660,7 +9660,7 @@
     {
       "name": "updateSelectedDecorSetting",
       "module": "decor/customization.js",
-      "sourceLine": 1931,
+      "sourceLine": 1902,
       "originalLine": 5528,
       "characters": 1443,
       "sourceHash": "3937e52891ad7bac85d5568ea937ab820216b82e937ee92a201f10f1ec0167f2",
@@ -9682,7 +9682,7 @@
     {
       "name": "updateSelectedDecorMotionSetting",
       "module": "decor/customization.js",
-      "sourceLine": 1973,
+      "sourceLine": 1944,
       "originalLine": 5570,
       "characters": 1356,
       "sourceHash": "efab44436afb673bf3889d74c241ed6f3076803573708ab907a87da82a94ef81",
@@ -9701,7 +9701,7 @@
     {
       "name": "formatCaveSettingPercent",
       "module": "decor/customization.js",
-      "sourceLine": 2030,
+      "sourceLine": 2001,
       "originalLine": 5627,
       "characters": 113,
       "sourceHash": "d2ffb3ad626b3db25ce1592c9816211074d468e62d7b2fde23480f62a10b3e9c",
@@ -9712,7 +9712,7 @@
     {
       "name": "getCaveSettingControlValue",
       "module": "decor/customization.js",
-      "sourceLine": 2034,
+      "sourceLine": 2005,
       "originalLine": 5631,
       "characters": 1516,
       "sourceHash": "fe8104be001fb91adddd0f96583ef35c440d322b7ddb0627efebfaac85101b05",
@@ -9728,7 +9728,7 @@
     {
       "name": "updateCaveSettingsPreviewMarkers",
       "module": "decor/customization.js",
-      "sourceLine": 2081,
+      "sourceLine": 2052,
       "originalLine": 5678,
       "characters": 1580,
       "sourceHash": "6bbd6740685832298d8a1f9a7a216ba43fd59db3c8a2832ae608b9c4af616c8d",
@@ -9740,7 +9740,7 @@
     {
       "name": "updateCaveSettingsControls",
       "module": "decor/customization.js",
-      "sourceLine": 2134,
+      "sourceLine": 2105,
       "originalLine": 5731,
       "characters": 3294,
       "sourceHash": "66967bb603a561786b81c36a06205f9965b3bc588eb749ee224f0202f1b586c0",
@@ -9758,7 +9758,7 @@
     {
       "name": "clearCaveBehaviorForDecor",
       "module": "decor/customization.js",
-      "sourceLine": 2221,
+      "sourceLine": 2192,
       "originalLine": 5818,
       "characters": 423,
       "sourceHash": "7cd0104e938e2cdf35a24354e3674f0110e671505be45f23fd882eb2a763b9ac",
@@ -9769,7 +9769,7 @@
     {
       "name": "getEditableCaveSettingsTarget",
       "module": "decor/customization.js",
-      "sourceLine": 2240,
+      "sourceLine": 2211,
       "originalLine": 5837,
       "characters": 430,
       "sourceHash": "3758d55e57b2e24084a243846543c509ffc847f97dd70f73ce45100a9dcf8bd8",
@@ -9782,7 +9782,7 @@
     {
       "name": "updateSelectedCaveSetting",
       "module": "decor/customization.js",
-      "sourceLine": 2251,
+      "sourceLine": 2222,
       "originalLine": 5848,
       "characters": 4197,
       "sourceHash": "14d2db9dd6193b70fbe0e92a6f501b318efa4ad9ccc587fc42f67af557c82b4c",
@@ -9802,7 +9802,7 @@
     {
       "name": "getCaveSettingsPreviewLocalPoint",
       "module": "decor/customization.js",
-      "sourceLine": 2382,
+      "sourceLine": 2353,
       "originalLine": 5979,
       "characters": 495,
       "sourceHash": "9269365d408504d52880de12caea469d36ebd221cebed7915e378ec82ae24559",
@@ -9813,7 +9813,7 @@
     {
       "name": "applyCaveSettingsPreviewPoint",
       "module": "decor/customization.js",
-      "sourceLine": 2399,
+      "sourceLine": 2370,
       "originalLine": 5996,
       "characters": 1224,
       "sourceHash": "b5640a2b8fba9ee7069f1b86e763c9877d831349b5fc3df96e56f02c8143b493",
@@ -9830,7 +9830,7 @@
     {
       "name": "getCaveSettingsPreviewPointerTarget",
       "module": "decor/customization.js",
-      "sourceLine": 2437,
+      "sourceLine": 2408,
       "originalLine": 6034,
       "characters": 919,
       "sourceHash": "d8fd02acb9d98069d5fad4341bd7429d37f19b91177a477bc1a7edb7ee655343",
@@ -9842,7 +9842,7 @@
     {
       "name": "finishCaveSettingsPreviewDrag",
       "module": "decor/customization.js",
-      "sourceLine": 2469,
+      "sourceLine": 2440,
       "originalLine": 6066,
       "characters": 642,
       "sourceHash": "9d61a1ea768f6dd8563c0480efeeba9186d884ec1503362e550bcc5ead5c18af",
@@ -9857,7 +9857,7 @@
     {
       "name": "formatBubblerSpeedReadout",
       "module": "decor/customization.js",
-      "sourceLine": 2489,
+      "sourceLine": 2460,
       "originalLine": 6086,
       "characters": 244,
       "sourceHash": "6bb7a11336d6f36ee1e3770b31d987b0140178e7fb2b3df5e50b20403099d8c4",
@@ -9868,7 +9868,7 @@
     {
       "name": "formatBubblerSettingReadout",
       "module": "decor/customization.js",
-      "sourceLine": 2496,
+      "sourceLine": 2467,
       "originalLine": 6093,
       "characters": 1720,
       "sourceHash": "2c6d3526d865db54bd2f8eefd6632a5fc27cc4a64a598e95fd238f060f11b423",
@@ -9883,7 +9883,7 @@
     {
       "name": "getBubblerSettingControlValue",
       "module": "decor/customization.js",
-      "sourceLine": 2542,
+      "sourceLine": 2513,
       "originalLine": 6137,
       "characters": 1059,
       "sourceHash": "f16106f5689e70397bfd56b375f50840c21c499cfcefa2f4eb88495a4e498fe6",
@@ -9892,7 +9892,7 @@
     {
       "name": "updateBubblerSettingsControls",
       "module": "decor/customization.js",
-      "sourceLine": 2580,
+      "sourceLine": 2551,
       "originalLine": 6173,
       "characters": 1611,
       "sourceHash": "bd756288a9d2df49eac53dd2298233b1aad6a24bd324b51b1c7e071228fe4b25",
@@ -9906,7 +9906,7 @@
     {
       "name": "updateSelectedBubblerSetting",
       "module": "decor/customization.js",
-      "sourceLine": 2618,
+      "sourceLine": 2589,
       "originalLine": 6211,
       "characters": 2893,
       "sourceHash": "c23ccb6dc59db55c52cc27989a2021e9f0fc3a0fbfcaaf8859d0fcdb76244196",
@@ -9926,7 +9926,7 @@
     {
       "name": "resetSelectedBubblerSettings",
       "module": "decor/customization.js",
-      "sourceLine": 2687,
+      "sourceLine": 2658,
       "originalLine": 6277,
       "characters": 219,
       "sourceHash": "762d6c0d8ffbf4d48e7c466cb0585e6cc8465ebf8f58a16b72e49b3f9be8bb3f",
@@ -9940,7 +9940,7 @@
     {
       "name": "sanitizeCustomDecorName",
       "module": "decor/customization.js",
-      "sourceLine": 2699,
+      "sourceLine": 2670,
       "originalLine": 6289,
       "characters": 295,
       "sourceHash": "671d0589709c15a35a7373ccba3f408f411b3fe4ad14d9496435f4b1bed3daae",
@@ -9949,7 +9949,7 @@
     {
       "name": "getCustomDecorMotionTypeConfig",
       "module": "decor/customization.js",
-      "sourceLine": 2707,
+      "sourceLine": 2678,
       "originalLine": 6297,
       "characters": 320,
       "sourceHash": "e52ff3da06fb595d75c585bb36697519ee7ca358af7072118de361934743d9c3",
@@ -9958,7 +9958,7 @@
     {
       "name": "normalizeCustomDecorMotionType",
       "module": "decor/customization.js",
-      "sourceLine": 2715,
+      "sourceLine": 2686,
       "originalLine": 6305,
       "characters": 101,
       "sourceHash": "0ee466f712206a825478b3f4040306554be43479a1ba9d385170fb1c3544943c",
@@ -9969,7 +9969,7 @@
     {
       "name": "customDecorMotionTypeUsesSplit",
       "module": "decor/customization.js",
-      "sourceLine": 2719,
+      "sourceLine": 2690,
       "originalLine": 6309,
       "characters": 117,
       "sourceHash": "311fa5fb5031bcefcf9ee28cd0fd56cb472be42a403c89d321ed36799c976adf",
@@ -9980,7 +9980,7 @@
     {
       "name": "sanitizeCustomDecorMotionSplit",
       "module": "decor/customization.js",
-      "sourceLine": 2723,
+      "sourceLine": 2694,
       "originalLine": 6313,
       "characters": 132,
       "sourceHash": "03edc8d6c87fde7097e651594fc93929ec31c994d2110a1345b9f8ef9be7ea1b",
@@ -9991,7 +9991,7 @@
     {
       "name": "sanitizeCustomDecorMotionIntensity",
       "module": "decor/customization.js",
-      "sourceLine": 2727,
+      "sourceLine": 2698,
       "originalLine": 6317,
       "characters": 265,
       "sourceHash": "771b64349d1713b4fab7672f2ce93334829cd7e27ee2cd79f71e5f256e0b7dbd",
@@ -10002,7 +10002,7 @@
     {
       "name": "sanitizeDecorMotionSpeed",
       "module": "decor/customization.js",
-      "sourceLine": 2736,
+      "sourceLine": 2707,
       "originalLine": 6326,
       "characters": 222,
       "sourceHash": "4f5b36f249a71c6df2e9bc0ea837d1e88408ad59e323b56e15fbb4abe1a41122",
@@ -10013,7 +10013,7 @@
     {
       "name": "normalizeDecorSwaySide",
       "module": "decor/customization.js",
-      "sourceLine": 2745,
+      "sourceLine": 2716,
       "originalLine": 6335,
       "characters": 229,
       "sourceHash": "b81193d57709d280ead6e77a4d5e6f83647e301bae8bd9bd2b832ba79db6a546",
@@ -10022,7 +10022,7 @@
     {
       "name": "getDecorSwaySliceProgress",
       "module": "decor/customization.js",
-      "sourceLine": 2752,
+      "sourceLine": 2723,
       "originalLine": 6342,
       "characters": 524,
       "sourceHash": "2b3373a65ec1ae35d4847681854a11481d3da53b4aa3828e6c348513b3352756",
@@ -10035,7 +10035,7 @@
     {
       "name": "focusUtilityOverlayInputAfterRender",
       "module": "decor/customization.js",
-      "sourceLine": 2769,
+      "sourceLine": 2740,
       "originalLine": 6380,
       "characters": 270,
       "sourceHash": "e6fcc110040da3296db4b1156f0f069cd73906d72fcc1d436abb3650b7d6c3ef",
@@ -10044,7 +10044,7 @@
     {
       "name": "openCustomAssetEditorOverlay",
       "module": "decor/customization.js",
-      "sourceLine": 2778,
+      "sourceLine": 2749,
       "originalLine": 6389,
       "characters": 1084,
       "sourceHash": "72e6835ced1be34999f2fb1c6d77d3ac31e792a71df0b93dc94c00f0723fce29",
@@ -10058,7 +10058,7 @@
     {
       "name": "openCustomDecorNameOverlay",
       "module": "decor/customization.js",
-      "sourceLine": 2804,
+      "sourceLine": 2775,
       "originalLine": 6415,
       "characters": 849,
       "sourceHash": "34bdd7cd310569ae3de38178b888edfdbd98bce778a58f040e64ed8aa96ae0f7",
@@ -10071,7 +10071,7 @@
     {
       "name": "updatePendingCustomDecorPreview",
       "module": "decor/customization.js",
-      "sourceLine": 2821,
+      "sourceLine": 2792,
       "originalLine": 6432,
       "characters": 3209,
       "sourceHash": "16b9cf4f8628b28b8889a852b91ea889abeb4b1afd1672c246fca7808e990df0",
@@ -10088,7 +10088,7 @@
     {
       "name": "renderCustomDecorMotionPreview",
       "module": "decor/customization.js",
-      "sourceLine": 2881,
+      "sourceLine": 2852,
       "originalLine": 6492,
       "characters": 3149,
       "sourceHash": "cf3e329e0b49bcf0539348d80359fe77e7a494aaa205ff29782c08c6c80eeb22",
@@ -10105,7 +10105,7 @@
     {
       "name": "renderDecorSettingsMotionPreview",
       "module": "decor/customization.js",
-      "sourceLine": 2960,
+      "sourceLine": 2931,
       "originalLine": 6571,
       "characters": 4777,
       "sourceHash": "0af37a61be306e7de7d5c8d9463488edb4a99c45ee424e6e3c43d76aca7d9d01",
@@ -10128,7 +10128,7 @@
     {
       "name": "updatePendingCustomDecorSize",
       "module": "decor/customization.js",
-      "sourceLine": 3081,
+      "sourceLine": 3052,
       "originalLine": 6692,
       "characters": 316,
       "sourceHash": "e05ef5b5b089e8e55ab46082955c2905a7ec77cd282293075ea76df0083633a7",
@@ -10140,7 +10140,7 @@
     {
       "name": "updatePendingCustomDecorMotionSplit",
       "module": "decor/customization.js",
-      "sourceLine": 3094,
+      "sourceLine": 3065,
       "originalLine": 6705,
       "characters": 255,
       "sourceHash": "52c272af255f63566041d4ca5d7bd378adf82820a50939053faa054a4c7c5516",
@@ -10152,7 +10152,7 @@
     {
       "name": "updatePendingCustomDecorMotionIntensity",
       "module": "decor/customization.js",
-      "sourceLine": 3103,
+      "sourceLine": 3074,
       "originalLine": 6714,
       "characters": 252,
       "sourceHash": "ccf55d9e5c7b3081b98f0d46d2adb53614929c5ff21c4680fae15ba624f4a314",
@@ -10164,7 +10164,7 @@
     {
       "name": "setPendingCustomDecorSwaySide",
       "module": "decor/customization.js",
-      "sourceLine": 3112,
+      "sourceLine": 3083,
       "originalLine": 6723,
       "characters": 281,
       "sourceHash": "fdc8118649b68bddb407e183602d4ecbaabdcf08affafd74647625f1391438f1",
@@ -10176,7 +10176,7 @@
     {
       "name": "setPendingCustomDecorMotionType",
       "module": "decor/customization.js",
-      "sourceLine": 3122,
+      "sourceLine": 3093,
       "originalLine": 6733,
       "characters": 287,
       "sourceHash": "ea3fe615ac23c8fc322633059904686911defb715a5279985237c77b984d4405",
@@ -10188,7 +10188,7 @@
     {
       "name": "savePendingCustomDecorUpload",
       "module": "decor/customization.js",
-      "sourceLine": 3132,
+      "sourceLine": 3103,
       "originalLine": 6743,
       "characters": 177,
       "sourceHash": "d9da7f5ca713a0da2d47e5eb6b1862f7320ade2595e8a457a5cf41aa519c4633",
@@ -10200,7 +10200,7 @@
     {
       "name": "buildPendingCustomHideUpload",
       "module": "decor/customization.js",
-      "sourceLine": 3138,
+      "sourceLine": 3109,
       "originalLine": 6749,
       "characters": 1934,
       "sourceHash": "8abcf549448721c44da578942bba9450a0d497ab516e714d24031e27339a193c",
@@ -10216,7 +10216,7 @@
     {
       "name": "openCustomHideCreationOverlay",
       "module": "decor/customization.js",
-      "sourceLine": 3182,
+      "sourceLine": 3153,
       "originalLine": 6793,
       "characters": 176,
       "sourceHash": "7ee8b3878437593ac78a493780f127ccf79c6e827d60b32ba7df236f0e0af6c0",
@@ -10228,7 +10228,7 @@
     {
       "name": "getPendingCustomHidePreviewDecor",
       "module": "decor/customization.js",
-      "sourceLine": 3188,
+      "sourceLine": 3159,
       "originalLine": 6799,
       "characters": 1602,
       "sourceHash": "d7ff56fb68ad1d361fa376e8b6986ae156629b2da92f3e402ce63b98a21dba06",
@@ -10242,7 +10242,7 @@
     {
       "name": "getPendingCustomHidePreviewItem",
       "module": "decor/customization.js",
-      "sourceLine": 3238,
+      "sourceLine": 3209,
       "originalLine": 6849,
       "characters": 722,
       "sourceHash": "7410089057e0c98e50b7a804bf34c1ca2d1e1dce940d8deb73521bd421d93ae4",
@@ -10255,7 +10255,7 @@
     {
       "name": "updatePendingCustomHidePreview",
       "module": "decor/customization.js",
-      "sourceLine": 3258,
+      "sourceLine": 3229,
       "originalLine": 6869,
       "characters": 936,
       "sourceHash": "1b707f013ac6110540fec3a8f47e7f8615bc484d0effc8724fd959552336f2b0",
@@ -12013,24 +12013,38 @@
       "module": "decor/layout-and-layers.js",
       "sourceLine": 2246,
       "originalLine": 22639,
-      "characters": 161,
-      "sourceHash": "636a69245e571d07880b6bf28881c3fe05c25d09778dbdf65aa4d629b2c46a29",
+      "characters": 243,
+      "sourceHash": "4519b8aaa95e029ae9af1b2a2c481de97a0724dacfbc39d32ded6527e77395b1",
       "calls": [
+        "clamp",
         "clampTankLayer",
+        "isCaveDecorKey",
+        "isThreeLayerCaveDecorKey"
+      ]
+    },
+    {
+      "name": "isThreeLayerCaveDecorKey",
+      "module": "decor/layout-and-layers.js",
+      "sourceLine": 2255,
+      "originalLine": null,
+      "characters": 282,
+      "sourceHash": "3a8ffc3b52206c5bf7a959b55141677fc1eb26c892890b6c2b1b9f583a1412bd",
+      "calls": [
         "isCaveDecorKey"
       ]
     },
     {
       "name": "getDecorLayerSpan",
       "module": "decor/layout-and-layers.js",
-      "sourceLine": 2255,
+      "sourceLine": 2263,
       "originalLine": 22648,
-      "characters": 693,
-      "sourceHash": "5177b35b9c838cca90d0e53225625060e73af605589d5c8260401928990ce223",
+      "characters": 825,
+      "sourceHash": "b76cb6ccc72dd71e51768b423f34249986b81eca0841f2a1f7efabd3ea859bd1",
       "calls": [
         "clampTankLayer",
         "getDecorFrontLayer",
         "isCaveDecorKey",
+        "isThreeLayerCaveDecorKey",
         "isTransitTubeDecorKey"
       ]
     },
@@ -12039,8 +12053,8 @@
       "module": "decor/placement-and-dragging.js",
       "sourceLine": 4,
       "originalLine": 31073,
-      "characters": 4260,
-      "sourceHash": "ad5a821a29783e2c0a79a959e7dae5d7effcb9396aa8049d662f351d60226d41",
+      "characters": 4320,
+      "sourceHash": "937eb7f6aef46e89710a8e3de9dda048aedd0006c40c66fca7703f55b67e0289",
       "calls": [
         "canUseDecorWithCurrentContentSettings",
         "clampDecorPlacement",
@@ -12066,7 +12080,7 @@
     {
       "name": "createPlacedDecor",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 120,
+      "sourceLine": 123,
       "originalLine": 31160,
       "characters": 2007,
       "sourceHash": "94d0044630016e81582d4fb56470b7ab5887e1c782ddb89aa6793d822dd5117d",
@@ -12091,7 +12105,7 @@
     {
       "name": "placeDecorAtPoint",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 183,
+      "sourceLine": 186,
       "originalLine": 31215,
       "characters": 1463,
       "sourceHash": "343000ceeabaf50566e64808c5b032595fda6d41f3d953b76b78f138db2c194e",
@@ -12113,19 +12127,18 @@
     {
       "name": "isDecorLayerShortcutEndpoint",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 232,
+      "sourceLine": 235,
       "originalLine": 31264,
-      "characters": 250,
-      "sourceHash": "e4b86c9dd4c4c604ba720fbfa5986da31b8e4deb9143c9a06918911627423ddb",
+      "characters": 225,
+      "sourceHash": "6e09b2be377a907517d5b5e7d775beca24014e2d383cba429cbe601c05b21843",
       "calls": [
-        "clampTankLayer",
-        "isCaveDecorKey"
+        "getDecorFrontLayer"
       ]
     },
     {
       "name": "canStepPlacedDecorLayer",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 243,
+      "sourceLine": 240,
       "originalLine": 31275,
       "characters": 328,
       "sourceHash": "d00b198b40881d801870f2f4a6959c268faafed54a40e97cd6d6336db392b36c",
@@ -12136,7 +12149,7 @@
     {
       "name": "triggerLayerLimitPulse",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 253,
+      "sourceLine": 250,
       "originalLine": 31285,
       "characters": 261,
       "sourceHash": "d818d0618216b1a7a7d05c5d8efb8a34510e380365abf3090e0e2072125917b0",
@@ -12148,7 +12161,7 @@
     {
       "name": "syncDecorDragLayerState",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 261,
+      "sourceLine": 258,
       "originalLine": 31293,
       "characters": 796,
       "sourceHash": "98d7961fdd94f0271691d11375aa1d3528d347e4243fcd5582ca1988e9bf1b41",
@@ -12160,7 +12173,7 @@
     {
       "name": "getDecorGroupTransformItems",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 290,
+      "sourceLine": 287,
       "originalLine": 31322,
       "characters": 157,
       "sourceHash": "bfb53bd423b09a250b789605e11e6cd02f05328a6879de0fa49093f51c05c045",
@@ -12172,7 +12185,7 @@
     {
       "name": "getDecorItemsCenter",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 295,
+      "sourceLine": 292,
       "originalLine": 31327,
       "characters": 358,
       "sourceHash": "0be49bccbbd356b16f4d3c573ceac5ee58738cb8f10d59a8e99bc8298182caf1",
@@ -12181,7 +12194,7 @@
     {
       "name": "stepDecorGroupLayer",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 307,
+      "sourceLine": 304,
       "originalLine": 31339,
       "characters": 1282,
       "sourceHash": "89a556ce8f6aa729589eaf7ff0701ba9bd3d99392ca5231d4251c4edc0193a65",
@@ -12200,7 +12213,7 @@
     {
       "name": "stepDecorGroupScale",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 347,
+      "sourceLine": 344,
       "originalLine": 31378,
       "characters": 1295,
       "sourceHash": "daa20284d6a83a374fca7312703ba4ba0c58a1815b16da4d2818ce9b1275fb48",
@@ -12219,7 +12232,7 @@
     {
       "name": "toggleDecorGroupFlip",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 379,
+      "sourceLine": 376,
       "originalLine": 31409,
       "characters": 1026,
       "sourceHash": "539d473a7dd87ab9a8d5a4d870c56e812c70c9fb7e1598be30c86e8da70f3f0a",
@@ -12236,7 +12249,7 @@
     {
       "name": "stepActiveDecorLayer",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 409,
+      "sourceLine": 406,
       "originalLine": 31432,
       "characters": 4003,
       "sourceHash": "fada4fad05731bec47cc3955f5fe2547c2467d3a093bf6564f8b8ab81007c71b",
@@ -12257,7 +12270,7 @@
     {
       "name": "stepActiveDecorScale",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 517,
+      "sourceLine": 514,
       "originalLine": 31537,
       "characters": 2257,
       "sourceHash": "7a1b12435486e879c869545c39dcf271ac23dc57ef9451c93905b51f62f85c9d",
@@ -12276,7 +12289,7 @@
     {
       "name": "toggleActiveDecorFlip",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 588,
+      "sourceLine": 585,
       "originalLine": 31604,
       "characters": 1660,
       "sourceHash": "dba7376bef3b27149d4479c412d26ae8d41296aee64867fafb66e3336390a9ac",
@@ -12293,7 +12306,7 @@
     {
       "name": "performDecorEditShortcutAction",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 640,
+      "sourceLine": 637,
       "originalLine": 31650,
       "characters": 1397,
       "sourceHash": "efe362cb5a7507f034f6a3132898584808f1af0f01d3d0ac765080218f08aed0",
@@ -12311,7 +12324,7 @@
     {
       "name": "stepDraggedSuckerFishLayer",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 685,
+      "sourceLine": 682,
       "originalLine": 31695,
       "characters": 847,
       "sourceHash": "d6c52ca5dde6d27a7a0433dd2b67aa1af72fa88d129b8398106764f00bc33c32",
@@ -12329,7 +12342,7 @@
     {
       "name": "getPlacementHintState",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 715,
+      "sourceLine": 712,
       "originalLine": 31725,
       "characters": 1131,
       "sourceHash": "1ef3bcdad28ae8943d3718fa81b86017ea1d28ede1f001bf7c1ff514123f7dc2",
@@ -12342,7 +12355,7 @@
     {
       "name": "clearGuidance",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 766,
+      "sourceLine": 763,
       "originalLine": 31777,
       "characters": 794,
       "sourceHash": "143d91d9d3999c74e4fcc5a0b03c9584b9d387ecf05a844d6493097129dd6712",
@@ -12353,7 +12366,7 @@
     {
       "name": "clearGuidanceForModeChange",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 790,
+      "sourceLine": 787,
       "originalLine": 31801,
       "characters": 472,
       "sourceHash": "1e39e0fd2a3515167a564af7b42f6971639b3b7a89ae02fa8e8fd77fba1c5020",
@@ -12365,7 +12378,7 @@
     {
       "name": "reconcileGuidanceState",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 807,
+      "sourceLine": 804,
       "originalLine": 31818,
       "characters": 620,
       "sourceHash": "3b89092ea320b2e4d6ccf1168477ce78e6aa121aad81cc9ccac20dd4e32f37ff",
@@ -12378,7 +12391,7 @@
     {
       "name": "renderPlacementHint",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 829,
+      "sourceLine": 826,
       "originalLine": 31840,
       "characters": 1023,
       "sourceHash": "e5c0fe46cc53d43b5ebe86044b165ee1453f56e394559ae283816745de322672",
@@ -12393,7 +12406,7 @@
     {
       "name": "buildEditQuickRefRowMarkup",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 867,
+      "sourceLine": 864,
       "originalLine": 31878,
       "characters": 236,
       "sourceHash": "6d3c84aa265fa26309d71625763ed34d322e4f5b198a0d7d75f64ce69e6dab07",
@@ -12402,7 +12415,7 @@
     {
       "name": "getEditQuickRefItems",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 876,
+      "sourceLine": 873,
       "originalLine": 31887,
       "characters": 2419,
       "sourceHash": "4176cdb900810c35755c6c4a149904c432be25656498450dd578b6c5e1cda33f",
@@ -12416,7 +12429,7 @@
     {
       "name": "updateEditQuickRefLayout",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 950,
+      "sourceLine": 947,
       "originalLine": 31961,
       "characters": 1883,
       "sourceHash": "95dbbae31784929515d4efbb70b78b9a5ac519aff37c90b2020550a8626d64eb",
@@ -12427,7 +12440,7 @@
     {
       "name": "renderEditQuickRef",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1006,
+      "sourceLine": 1003,
       "originalLine": 32017,
       "characters": 664,
       "sourceHash": "58e40e3eb2ea899da39428b6dd69e62df4acf8c54ac67b0d38db13f54ce28b67",
@@ -12441,7 +12454,7 @@
     {
       "name": "normalizeDecorResizeCorner",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1027,
+      "sourceLine": 1024,
       "originalLine": 32038,
       "characters": 164,
       "sourceHash": "c297af068c6141fd2615bbd1e4af0d6be531f6c9632e5bc766e61cf5f4baf04c",
@@ -12450,7 +12463,7 @@
     {
       "name": "snapDecorScaleToStep",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1032,
+      "sourceLine": 1029,
       "originalLine": 32043,
       "characters": 212,
       "sourceHash": "eb7e2c720c7a7ba77caa09aa581349b382516c79ac119562024e92c121c5c561",
@@ -12461,7 +12474,7 @@
     {
       "name": "beginDecorCornerResize",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1037,
+      "sourceLine": 1034,
       "originalLine": 32048,
       "characters": 1794,
       "sourceHash": "b85900283722034acccd28f51a86cf7de01f92758b8ce5f807797c6b60815751",
@@ -12482,7 +12495,7 @@
     {
       "name": "updateDecorCornerResize",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1081,
+      "sourceLine": 1078,
       "originalLine": 32091,
       "characters": 1681,
       "sourceHash": "ff6492dd42beb171efa3bbbdc6ea1e826a6ea1e94d159c749bd55a30450065b8",
@@ -12498,7 +12511,7 @@
     {
       "name": "finalizeDecorCornerResize",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1120,
+      "sourceLine": 1117,
       "originalLine": 32130,
       "characters": 445,
       "sourceHash": "be46695dff4ff8c977586a6b0cdd9c8734f09b719e02e2d3118bd535057e4175",
@@ -12515,7 +12528,7 @@
     {
       "name": "beginDecorDrag",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1138,
+      "sourceLine": 1135,
       "originalLine": 32148,
       "characters": 1416,
       "sourceHash": "332f861ad4185e68403b9c1aec7820d41ca3a8e224fa2fa1832a8bb5acf81c2d",
@@ -12535,7 +12548,7 @@
     {
       "name": "clampSharedDecorDragDelta",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1178,
+      "sourceLine": 1175,
       "originalLine": 32187,
       "characters": 300,
       "sourceHash": "bc8e3c1781e184a1154b9924070a97337584f5383afefb68f82493c0659a8cc7",
@@ -12546,7 +12559,7 @@
     {
       "name": "getDraggedDecorStartNorm",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1188,
+      "sourceLine": 1185,
       "originalLine": 32197,
       "characters": 710,
       "sourceHash": "7c9526e4a092171c8b5877920ae64d1db66b17fccf44a0e908f75769bc2c3e10",
@@ -12555,7 +12568,7 @@
     {
       "name": "updateDraggedDecorGroup",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1206,
+      "sourceLine": 1203,
       "originalLine": 32215,
       "characters": 1614,
       "sourceHash": "7736db721522cde9719a3c32cc2fa323466daa8a86f998da85702a26bfec5bb0",
@@ -12571,7 +12584,7 @@
     {
       "name": "updateDraggedDecor",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1246,
+      "sourceLine": 1243,
       "originalLine": 32249,
       "characters": 1256,
       "sourceHash": "5cd22815a354cb0e34ca3ce4b22de23b04a9b55aa6e023d54520df0188a4b725",
@@ -12586,7 +12599,7 @@
     {
       "name": "finalizeDecorDrag",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1290,
+      "sourceLine": 1287,
       "originalLine": 32292,
       "characters": 910,
       "sourceHash": "4328dda9118dfbd0a394e559040602d0ee14774cf74bbfe84ae5a08bad47df0e",
@@ -12603,7 +12616,7 @@
     {
       "name": "clampFishPlacement",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1324,
+      "sourceLine": 1321,
       "originalLine": 32326,
       "characters": 1517,
       "sourceHash": "3b7d07dec1cfc13f19089c15c214c6acd155fdc4e9ab5e47a9803224244c1ad2",
@@ -12623,7 +12636,7 @@
     {
       "name": "enforceFishLayerBoundary",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1362,
+      "sourceLine": 1359,
       "originalLine": 32363,
       "characters": 3232,
       "sourceHash": "d6c91633459a41948f9c400ce91bf5b062b100e056d58f4a4e2fdc38308aef62",
@@ -12647,7 +12660,7 @@
     {
       "name": "beginFishDrag",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1430,
+      "sourceLine": 1427,
       "originalLine": 32413,
       "characters": 1054,
       "sourceHash": "d43828b24df6c0141feebb6bc1c69f487152d2c4da30ba85b8974b7460ffcd0b",
@@ -12666,7 +12679,7 @@
     {
       "name": "updateDraggedFish",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1469,
+      "sourceLine": 1466,
       "originalLine": 32452,
       "characters": 1585,
       "sourceHash": "5e8a217fdbe44cf0ab95ca86b7c824c618383d51b481815d29d402abfa9cbadf",
@@ -12686,7 +12699,7 @@
     {
       "name": "finalizeFishDrag",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1521,
+      "sourceLine": 1518,
       "originalLine": 32504,
       "characters": 722,
       "sourceHash": "2f1a9bf52a36efc9afffb71afa08d1528c21b8e0ffa1f5551d16dc9e82ee4638",
@@ -12703,7 +12716,7 @@
     {
       "name": "beginFishEggDrag",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1551,
+      "sourceLine": 1548,
       "originalLine": 32534,
       "characters": 1438,
       "sourceHash": "335403f40700f01edae96933b5036be6ae3133d5ade1b4a4c9a062e689276aec",
@@ -12720,7 +12733,7 @@
     {
       "name": "updateDraggedFishEgg",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1593,
+      "sourceLine": 1590,
       "originalLine": 32576,
       "characters": 965,
       "sourceHash": "96d53c8006edae605b0a2373a441d69b4fd128b12fe17b521ec2157ccec165e6",
@@ -12734,7 +12747,7 @@
     {
       "name": "finalizeFishEggDrag",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1628,
+      "sourceLine": 1625,
       "originalLine": 32611,
       "characters": 1088,
       "sourceHash": "d9f788e22615fcb3785b6582684d2e149237b71e5f4487255533119270ef9781",
@@ -12749,7 +12762,7 @@
     {
       "name": "storeDecor",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1673,
+      "sourceLine": 1670,
       "originalLine": 32656,
       "characters": 1168,
       "sourceHash": "74a9d3302a54a9cea8ce3a2b344ee768b91736c751a01f4d578271355ac06855",
@@ -12770,7 +12783,7 @@
     {
       "name": "storeFish",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1706,
+      "sourceLine": 1703,
       "originalLine": 32686,
       "characters": 3214,
       "sourceHash": "2e4f53c9e0d857d37153b1ffc0796c40748321b26c83ea34fa60ead23bbbdc38",
@@ -12801,7 +12814,7 @@
     {
       "name": "sellFish",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1795,
+      "sourceLine": 1792,
       "originalLine": 32771,
       "characters": 1571,
       "sourceHash": "f894ffa67ee5b1db7edb1ab45e5ea3420699b8b577c54a7a8d4e6d9fb7f4bd88",
@@ -12820,7 +12833,7 @@
     {
       "name": "sellStoredDecor",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1852,
+      "sourceLine": 1849,
       "originalLine": 32824,
       "characters": 832,
       "sourceHash": "6db383b80c2e67b742997b24c95b474d384d6612a27437f3894fe156d6eb67ac",
@@ -12834,7 +12847,7 @@
     {
       "name": "sellPlacedDecor",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1882,
+      "sourceLine": 1879,
       "originalLine": 32852,
       "characters": 1382,
       "sourceHash": "34263d1d720a564e86d885f1845ac77e0630bdc23eeaca471b7317a6b19feaee",
@@ -12853,7 +12866,7 @@
     {
       "name": "disposeFish",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1924,
+      "sourceLine": 1921,
       "originalLine": 32889,
       "characters": 1314,
       "sourceHash": "3ff7d35b1569a648a1263ed1bcabd65455bfa09590f0e56444aa8869c9f04ebb",
@@ -12874,7 +12887,7 @@
     {
       "name": "disposeAllDeadFish",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 1969,
+      "sourceLine": 1966,
       "originalLine": 32934,
       "characters": 1297,
       "sourceHash": "3e614cad0eb4f595b6b1df99544262c168e92b6d3b69297673508729ef2304f2",
@@ -12895,7 +12908,7 @@
     {
       "name": "restoreFishToTank",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 2003,
+      "sourceLine": 2000,
       "originalLine": 32968,
       "characters": 2182,
       "sourceHash": "0d6e2fe70e11af30b67bc6db71fc012a0b9fc34e3fc36a89878c4a734ca4ec9d",
@@ -12921,7 +12934,7 @@
     {
       "name": "adjustDecorDefaultSize",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 2064,
+      "sourceLine": 2061,
       "originalLine": 33029,
       "characters": 320,
       "sourceHash": "9e8544c7de6d6eba311f2667c8f1207b61ebd7abb048a9b6080d7dcd0754255d",
@@ -12935,7 +12948,7 @@
     {
       "name": "adjustPlacedDecorSize",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 2075,
+      "sourceLine": 2072,
       "originalLine": 33040,
       "characters": 709,
       "sourceHash": "3c5ebcf2a6e54317e6c1f634181fac38512a8d933a090905fec55b363c7beb92",
@@ -12953,7 +12966,7 @@
     {
       "name": "savePlacedDecorSizeAsDefault",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 2096,
+      "sourceLine": 2093,
       "originalLine": 33060,
       "characters": 292,
       "sourceHash": "736af4270504606ac3258a0043babf2ad344fe17135465b573f6c52f2549534c",
@@ -12966,7 +12979,7 @@
     {
       "name": "getManagedFishById",
       "module": "decor/placement-and-dragging.js",
-      "sourceLine": 2107,
+      "sourceLine": 2104,
       "originalLine": 33071,
       "characters": 351,
       "sourceHash": "74d583d96410a2e50d77e6716427d40579c78839fc7bf4ce9011abd76002ddb2",
@@ -14119,8 +14132,8 @@
       "module": "fish/cave-navigation.js",
       "sourceLine": 9,
       "originalLine": 22679,
-      "characters": 285,
-      "sourceHash": "328374bede06d43d84dca944c4380aa5b817fc2aea879531bfb330072785d2ad",
+      "characters": 297,
+      "sourceHash": "a0cb3b3fe37eb97cc5ca67020ad0e82657268d6454922f66503afd478a3dba39",
       "calls": [
         "clampTankLayer",
         "getDecorLayerSpan",
@@ -14366,8 +14379,8 @@
       "module": "fish/cave-navigation.js",
       "sourceLine": 455,
       "originalLine": 23123,
-      "characters": 4228,
-      "sourceHash": "e50451e27ad8f745a14201312065ea6e718a4f8cc87005ad1e9e21f39cdbe06e",
+      "characters": 4306,
+      "sourceHash": "86708359e0c6f1eb8a87339516048c60a0e2ba4a697a0cf8e0ba5a0f18e45e9e",
       "calls": [
         "buildConfiguredCaveDockingPlan",
         "buildTriggerSeatCavePlan",
@@ -14380,6 +14393,7 @@
         "getFishTankLayer",
         "getSpeciesForFish",
         "isPointInsideCaveInteriorDescriptor",
+        "isThreeLayerCaveDecorKey",
         "mapDecorLocalPointToTankNorm",
         "pathStaysInsideCave",
         "portalOpeningFitsFish"
@@ -14388,7 +14402,7 @@
     {
       "name": "collectCaveBehaviorPlansForFish",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 577,
+      "sourceLine": 579,
       "originalLine": 23245,
       "characters": 681,
       "sourceHash": "5dc274eea9b03a4f101f2ec5d0c58d80dbe916c512034c7c3eb98e2b6ae6fb27",
@@ -14400,7 +14414,7 @@
     {
       "name": "clearFishCaveBehavior",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 599,
+      "sourceLine": 601,
       "originalLine": 23267,
       "characters": 663,
       "sourceHash": "dc2d3276a41c0943bd48e378448b27ac07bab06be0e3ae1d909930bac01d5a41",
@@ -14409,7 +14423,7 @@
     {
       "name": "getCaveBehaviorDecorById",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 625,
+      "sourceLine": 627,
       "originalLine": 23293,
       "characters": 158,
       "sourceHash": "f6b7d226807ab00b20c2f05d0c6f0f9d5aae26b42df5b2bc6bf58accb4cb9f86",
@@ -14418,7 +14432,7 @@
     {
       "name": "getActiveFishCavePlan",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 633,
+      "sourceLine": 635,
       "originalLine": 23301,
       "characters": 136,
       "sourceHash": "1731968b590dad36404a72b8653aa91a404561a62c5889391e99a6ef23b33999",
@@ -14427,7 +14441,7 @@
     {
       "name": "getActiveFishCaveTriggerRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 641,
+      "sourceLine": 643,
       "originalLine": 23309,
       "characters": 293,
       "sourceHash": "c918decbecd4e010eb52c22bbdd7209529a0dcc17869b1fe6fe45181cede0933",
@@ -14440,7 +14454,7 @@
     {
       "name": "getActiveFishCaveSeatRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 654,
+      "sourceLine": 656,
       "originalLine": 23322,
       "characters": 315,
       "sourceHash": "c86356f4db9fd6b944e11392c324e87f616c5ecbe5e3ad56aa84374d81064815",
@@ -14453,7 +14467,7 @@
     {
       "name": "applyFishCaveSeatFacing",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 667,
+      "sourceLine": 669,
       "originalLine": 23335,
       "characters": 298,
       "sourceHash": "9d8a3aaa4989936e6f9a646040d1933e4dba55baca8ba53c3ad96b0c2e7ac71b",
@@ -14465,7 +14479,7 @@
     {
       "name": "applyFishCaveSeatFacingById",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 676,
+      "sourceLine": 678,
       "originalLine": 23344,
       "characters": 312,
       "sourceHash": "b374753e7d930a31f0a196c4de547e5b766d6f1028a92eaddb7e98097017725c",
@@ -14478,7 +14492,7 @@
     {
       "name": "getReservedFishCaveSeatId",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 685,
+      "sourceLine": 687,
       "originalLine": 23353,
       "characters": 359,
       "sourceHash": "61f5d0c3d5b3872c75aba9caed45d29040199c5e06c5ccbdf760f8f4d7f5e6b9",
@@ -14487,10 +14501,10 @@
     {
       "name": "getFishActiveCaveInsideLayer",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 698,
+      "sourceLine": 700,
       "originalLine": 23366,
-      "characters": 471,
-      "sourceHash": "a8cf8c7621c6b8249dc4beeb57de9434ee3bed29a78156587d787ea7c1290f3b",
+      "characters": 442,
+      "sourceHash": "a8ee1659c04efc2a543643138d79be733de3ae28a56a74328c4f51f37d96b6e8",
       "calls": [
         "clampTankLayer"
       ]
@@ -14498,7 +14512,7 @@
     {
       "name": "getPortalMatchForTriggerRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 715,
+      "sourceLine": 717,
       "originalLine": 23383,
       "characters": 1281,
       "sourceHash": "caa7e917c3ea6081fa25618092b0e2ca4580b22403700b5fc688a3ad15605c7c",
@@ -14509,7 +14523,7 @@
     {
       "name": "getExplicitCaveBehaviorPortals",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 756,
+      "sourceLine": 758,
       "originalLine": 23424,
       "characters": 625,
       "sourceHash": "f5ba39a3281e839d8a8d4602d50ab5844e086b106e49925b0ed2be57a8237b20",
@@ -14518,7 +14532,7 @@
     {
       "name": "buildCaveNavigationCacheKey",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 771,
+      "sourceLine": 773,
       "originalLine": 23439,
       "characters": 828,
       "sourceHash": "984bb4ed2e81655deed6b6ebb87ac93ab36059f2458f7ff0b848cc32d8b0401e",
@@ -14531,7 +14545,7 @@
     {
       "name": "getCaveNavigationData",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 788,
+      "sourceLine": 790,
       "originalLine": 23454,
       "characters": 2224,
       "sourceHash": "3ada600b2f262e47c1a1bb83098e7cff02563c602c98370217746f26fb59e8c5",
@@ -14546,7 +14560,7 @@
     {
       "name": "getCaveNavIndex",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 852,
+      "sourceLine": 854,
       "originalLine": 23518,
       "characters": 74,
       "sourceHash": "3477f304194e5c3429a4715284368e2df501d70c650ead054b5a8aa517ed009e",
@@ -14555,7 +14569,7 @@
     {
       "name": "isCaveNavCellInBounds",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 856,
+      "sourceLine": 858,
       "originalLine": 23522,
       "characters": 132,
       "sourceHash": "91f6556f54c187817fb579dbbf946d5be6536d0d3e71b202bc19a234d1085b5a",
@@ -14564,7 +14578,7 @@
     {
       "name": "getCaveNavCellCenter",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 860,
+      "sourceLine": 862,
       "originalLine": 23526,
       "characters": 280,
       "sourceHash": "d0306a85f691589956fce5e2c22c973c05eed802dd3105f4732fb8f75c5467fe",
@@ -14575,7 +14589,7 @@
     {
       "name": "getCaveNavCellFromWorldPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 871,
+      "sourceLine": 873,
       "originalLine": 23537,
       "characters": 402,
       "sourceHash": "707e6d82bac0838a3808c7c7db09dca6e9114bbd7be79771187a7bcd9ffd4b8e",
@@ -14587,7 +14601,7 @@
     {
       "name": "collectCaveNavCandidatesNearWorldPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 889,
+      "sourceLine": 891,
       "originalLine": 23555,
       "characters": 1130,
       "sourceHash": "f236caed8e953bc643f5442752e473cc1f92ba7bd84cbb32b2106ef13c262b41",
@@ -14601,7 +14615,7 @@
     {
       "name": "getFishDescriptorAtPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 928,
+      "sourceLine": 930,
       "originalLine": 23594,
       "characters": 246,
       "sourceHash": "966cddbac2b174ddf3e10117f88ac96c592a9ebb6bb299c30ed10c2410d7eab3",
@@ -14613,7 +14627,7 @@
     {
       "name": "canFishOccupyCavePoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 933,
+      "sourceLine": 935,
       "originalLine": 23599,
       "characters": 503,
       "sourceHash": "b01f2c84a982ddda6b24b5ebb29ff1cf6cec503d61c2703ee404e5bfb2e3d8e4",
@@ -14625,7 +14639,7 @@
     {
       "name": "canFishOccupyCaveNavIndex",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 949,
+      "sourceLine": 951,
       "originalLine": 23615,
       "characters": 513,
       "sourceHash": "a2f23352c5e7493519b3fd3ea8c194e0cdce0b3b61728895c6b41d926be1f811",
@@ -14637,7 +14651,7 @@
     {
       "name": "buildReachableCaveRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 970,
+      "sourceLine": 972,
       "originalLine": 23636,
       "characters": 1775,
       "sourceHash": "1ae488175ea69c600a57904d3deb0042fab29fbc2e6167fa64b976b6d22c2db4",
@@ -14650,7 +14664,7 @@
     {
       "name": "buildCavePathIndices",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1033,
+      "sourceLine": 1035,
       "originalLine": 23701,
       "characters": 346,
       "sourceHash": "6d154b58ba89458ef4e52b6132db430dceaeb64021ec37ebe2fd8bfeca3529c6",
@@ -14659,7 +14673,7 @@
     {
       "name": "compressCavePathNodes",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1052,
+      "sourceLine": 1054,
       "originalLine": 23720,
       "characters": 637,
       "sourceHash": "d0c7c982ac7347212863ba58880522d69b3cb5cc5e97f45dbf06005b4d0946a6",
@@ -14670,7 +14684,7 @@
     {
       "name": "sanitizeGravelPebble",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1075,
+      "sourceLine": 1077,
       "originalLine": 23743,
       "characters": 1382,
       "sourceHash": "679f31954c190e52e867850032f8c3aec7b7fdaac43c72f2a93d753780d53610",
@@ -14683,7 +14697,7 @@
     {
       "name": "reconcileLooseGravelPebbles",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1100,
+      "sourceLine": 1102,
       "originalLine": 23769,
       "characters": 1757,
       "sourceHash": "762d9b8eeb12f4c9d0be8402a9ff7d1eef7e720b5b1e54587c0f8a0f1bc9fdfc",
@@ -14697,7 +14711,7 @@
     {
       "name": "getDecorPebbleProfile",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1149,
+      "sourceLine": 1151,
       "originalLine": 23819,
       "characters": 574,
       "sourceHash": "af5d96770d5ccb137e426140fe1c29550aa720dfeb899cd529e30e8e1f42a684",
@@ -14706,7 +14720,7 @@
     {
       "name": "getDecorPebbleSurfacePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1163,
+      "sourceLine": 1165,
       "originalLine": 23833,
       "characters": 729,
       "sourceHash": "130c9a7a8d255e8f1b14cdd3259b39680cfbd85853fed9312a0378a7a65a6539",
@@ -14719,7 +14733,7 @@
     {
       "name": "getLooseGravelFloorPose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1185,
+      "sourceLine": 1187,
       "originalLine": 23855,
       "characters": 509,
       "sourceHash": "1a5e5b679fd4cdd96b47e5b042c3ca1b87f6c409f83b231d41ec7324363a1577",
@@ -14731,7 +14745,7 @@
     {
       "name": "resolveLiveGravelPebblePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1201,
+      "sourceLine": 1203,
       "originalLine": 23871,
       "characters": 543,
       "sourceHash": "352b1eef543e69af9ff94db2b7b5aa8cb9ace285f78262ac20da590cddcc6295",
@@ -14743,7 +14757,7 @@
     {
       "name": "getPebbleDropTarget",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1218,
+      "sourceLine": 1220,
       "originalLine": 23888,
       "characters": 1476,
       "sourceHash": "d04f631f9f2dee3942b7bad3a8e587e7fc0fa54e5fb1f83834166da751d1eb16",
@@ -14759,7 +14773,7 @@
     {
       "name": "findLiveGravelPebbleAtPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1271,
+      "sourceLine": 1273,
       "originalLine": 23941,
       "characters": 574,
       "sourceHash": "5334cd8e4703ddf83db5e3ca348924f975042cbf55f2df02c8b022037cc12d3e",
@@ -14771,7 +14785,7 @@
     {
       "name": "isPointNearGravelBed",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1288,
+      "sourceLine": 1290,
       "originalLine": 23958,
       "characters": 188,
       "sourceHash": "1054cab4ccf3759338c2c2193774e623195ed118e62974f79439b6d1008e0c87",
@@ -14782,7 +14796,7 @@
     {
       "name": "createLoosePebbleFromBed",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1293,
+      "sourceLine": 1295,
       "originalLine": 23963,
       "characters": 744,
       "sourceHash": "45159d3f9a59be0679fbef5ed127ccd53a37ede9b4542c6d96904a56edc6f78e",
@@ -14796,7 +14810,7 @@
     {
       "name": "beginGravelPebbleDrag",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1312,
+      "sourceLine": 1314,
       "originalLine": 23982,
       "characters": 1514,
       "sourceHash": "1428f2dd48a509a529c07c46598e0412d9b4dabc5ea0c3a181e1ddb63e1a59e1",
@@ -14816,7 +14830,7 @@
     {
       "name": "updateDraggedGravelPebble",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1363,
+      "sourceLine": 1365,
       "originalLine": 24033,
       "characters": 647,
       "sourceHash": "859545cf34c7220fe6c296edefe9113c10bfd7690951c648633d0518a8d950c5",
@@ -14827,7 +14841,7 @@
     {
       "name": "finalizeGravelPebbleDrag",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1383,
+      "sourceLine": 1385,
       "originalLine": 24053,
       "characters": 1301,
       "sourceHash": "e44aee179a290471037531fb39e5d374049a305d749976504181129b0761870c",
@@ -14844,7 +14858,7 @@
     {
       "name": "getFallingGravelPebblePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1435,
+      "sourceLine": 1437,
       "originalLine": 24106,
       "characters": 487,
       "sourceHash": "57130a88c706d73d75f40a839f273b200f6e29b319caa355db67c747c56f7fa1",
@@ -15367,8 +15381,8 @@
       "module": "fish/caves-and-collision.js",
       "sourceLine": 1785,
       "originalLine": null,
-      "characters": 1683,
-      "sourceHash": "cb448af906c08270ce2f4c056394565f66e09c972128b86803fadf8eabc48c4c",
+      "characters": 1577,
+      "sourceHash": "24984c129712fd927bd3534aa707b2b63090590095841ef7992ca38005863eba",
       "calls": [
         "clampTankLayer",
         "getCaveBlockingDescriptorForLayer",
@@ -15381,7 +15395,7 @@
     {
       "name": "findBlockingCaveForFishPose",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1831,
+      "sourceLine": 1828,
       "originalLine": 61206,
       "characters": 1543,
       "sourceHash": "cbd00d45d387301a4ff4870a168f5c71388e478e3943dfe88e38ef995fa9ecfc",
@@ -15400,7 +15414,7 @@
     {
       "name": "pushFishOutOfBlockingCave",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1877,
+      "sourceLine": 1874,
       "originalLine": 61247,
       "characters": 1432,
       "sourceHash": "ac10639a7b429149b711c4306d1a93757bae1adf607232c67afc6f0050c1fd04",
@@ -15416,7 +15430,7 @@
     {
       "name": "isDraggedFishBlockedByCaveAtLayer",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1914,
+      "sourceLine": 1911,
       "originalLine": 61287,
       "characters": 260,
       "sourceHash": "7747c8531b9ac12439df6a795e9d2462d630f7f2d6aae7aac1277080eeea5037",
@@ -15428,7 +15442,7 @@
     {
       "name": "resolveDraggedFishCaveSegment",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1919,
+      "sourceLine": 1916,
       "originalLine": 61292,
       "characters": 2150,
       "sourceHash": "3d8b465d1d1d9584fdd4e41f373c36b69e32ac76f0d3c4422b255676ff310611",
@@ -15441,7 +15455,7 @@
     {
       "name": "resolveDraggedFishCaveCollision",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2002,
+      "sourceLine": 1999,
       "originalLine": 61375,
       "characters": 1153,
       "sourceHash": "bfcd6f0a6f20864f22d37e279c5197cb1fa18ffcecd8b877a2bb567e5b371781",
@@ -15453,7 +15467,7 @@
     {
       "name": "resolveFishCaveCollision",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2038,
+      "sourceLine": 2035,
       "originalLine": 61411,
       "characters": 2489,
       "sourceHash": "6f0a438021abe7ec654255740fc7c9831fb3d3f58e1e6d1b33c078bd6edc50da",
@@ -15471,7 +15485,7 @@
     {
       "name": "getFishShapeDescriptor",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2131,
+      "sourceLine": 2128,
       "originalLine": 61487,
       "characters": 3316,
       "sourceHash": "8846a23030a7909e87a46b40a2dd2de646a1a288f63a200b2b9f8d4e92169614",
@@ -15486,7 +15500,7 @@
     {
       "name": "getOverlappingDecorForFish",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2214,
+      "sourceLine": 2211,
       "originalLine": 61570,
       "characters": 1075,
       "sourceHash": "8e286263784aa1a29448c99375119c773b003c688a5be937f0cddbc03cbfbc6d",
@@ -15503,7 +15517,7 @@
     {
       "name": "getOverlappingFishForLayerChange",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2249,
+      "sourceLine": 2246,
       "originalLine": 61605,
       "characters": 1434,
       "sourceHash": "80533353a8beb2cb7013dc2716052621c1acc11f3f208de6991853f302b308e8",
@@ -15521,7 +15535,7 @@
     {
       "name": "canFishChangeToLayer",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2295,
+      "sourceLine": 2292,
       "originalLine": 61651,
       "characters": 1157,
       "sourceHash": "c0b6320af5774071913abc8d17fc917ccc555e0f49cb7844ad9cc9133d195eba",
@@ -15537,7 +15551,7 @@
     {
       "name": "syncFishDrawLayer",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2327,
+      "sourceLine": 2324,
       "originalLine": 61683,
       "characters": 933,
       "sourceHash": "d5a1b50ccb91cd74bdaa9adaec8c7c4e3be7b112af9ab5e11637c61ea48b9e12",
@@ -15556,7 +15570,7 @@
     {
       "name": "getFishOcclusionBounds",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2355,
+      "sourceLine": 2352,
       "originalLine": 61713,
       "characters": 497,
       "sourceHash": "65c782c48464521ba318d7221c434f4bced2fc62b0422afd69a69aa84e6da875",
@@ -15568,7 +15582,7 @@
     {
       "name": "boundsIntersect",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2370,
+      "sourceLine": 2367,
       "originalLine": 61728,
       "characters": 243,
       "sourceHash": "3ec157577c52a9d857abcd3df39ea81b93c9c1fc9aa4b51d68c0e91a114f8802",
@@ -25521,8 +25535,8 @@
       "module": "rendering/decor.js",
       "sourceLine": 795,
       "originalLine": 56083,
-      "characters": 3174,
-      "sourceHash": "102288db8e12ae77d75b8520396e3afe3cc7510ff2d0c5a2ab166dee6c1de8cb",
+      "characters": 3092,
+      "sourceHash": "688c18926fdbaac36e23fc649eaa1995efba7049d82241662784001926475b6a",
       "calls": [
         "drawBubblerLightLayerToContext",
         "drawCaveBackgroundLayerToContext",
@@ -25533,8 +25547,7 @@
         "getDecorMotion",
         "getDecorScaleDefault",
         "getPlacedDecorGroundBounds",
-        "hasDecorCaveColorLayers",
-        "isCaveDecorKey"
+        "hasDecorCaveColorLayers"
       ]
     },
     {
@@ -33422,8 +33435,8 @@
       "module": "ui/customization-actions-and-inventory.js",
       "sourceLine": 1249,
       "originalLine": null,
-      "characters": 659,
-      "sourceHash": "371eb92739bc44ee4221005308b6e6c46c5f2b0fba55a428a0e26d90383463b1",
+      "characters": 792,
+      "sourceHash": "b226397ebe7fd3b3e85678469aafc6078f792c0bf03d603cda9c6dca5f5bbd98",
       "calls": [
         "deriveDecorCategories"
       ]
@@ -33431,16 +33444,27 @@
     {
       "name": "getDecorTrayTypeLabel",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1266,
+      "sourceLine": 1269,
       "originalLine": null,
-      "characters": 190,
-      "sourceHash": "43a033fa79d6a32035143f1bea7ab1eaed6e2d34386058390665daf0ba2f644a",
+      "characters": 210,
+      "sourceHash": "dde7974cb5f9e53aca6ce1db8a486ed34175649c7d1938efcb7ca88ae71af310",
       "calls": []
+    },
+    {
+      "name": "decorMatchesTrayTab",
+      "module": "ui/customization-actions-and-inventory.js",
+      "sourceLine": 1280,
+      "originalLine": null,
+      "characters": 666,
+      "sourceHash": "996c5e6e99c9dc64ac27a1525e4e6759a8a18836b4f0e6a89c2fb9c62ed5b93c",
+      "calls": [
+        "deriveDecorCategories"
+      ]
     },
     {
       "name": "syncTankTrayStageClass",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1276,
+      "sourceLine": 1297,
       "originalLine": 46172,
       "characters": 308,
       "sourceHash": "ebde393ed6ad0f9bc774c682913c80c60b72ae49b562fe97cb4f8629d922599a",
@@ -33451,7 +33475,7 @@
     {
       "name": "getResidenceAssignmentTarget",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1285,
+      "sourceLine": 1306,
       "originalLine": null,
       "characters": 134,
       "sourceHash": "014e7dad031e01e338838ab963c3773b4e4d5b82f360e8ed7013e7ae12e084f9",
@@ -33463,7 +33487,7 @@
     {
       "name": "openDecorResidenceAssignment",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1289,
+      "sourceLine": 1310,
       "originalLine": null,
       "characters": 366,
       "sourceHash": "1e4f4b5e500ef131edf3027fe93b6732e66a2ad2a395f7af4188b6d88f523b60",
@@ -33477,7 +33501,7 @@
     {
       "name": "renderResidenceFishCard",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1300,
+      "sourceLine": 1321,
       "originalLine": null,
       "characters": 1162,
       "sourceHash": "5c54d3bed50cd20d2cb674d69b3eaf5bd946071ea2ccebddeee2aa5384013c83",
@@ -33494,7 +33518,7 @@
     {
       "name": "renderDecorResidenceAssignmentOverlay",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1326,
+      "sourceLine": 1347,
       "originalLine": null,
       "characters": 2020,
       "sourceHash": "c51df1098ef3b848a550a2dc29df6e86d97542a30ea6f0bc9a5828dbaf783b6f",
@@ -33513,7 +33537,7 @@
     {
       "name": "assignFishResidence",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1363,
+      "sourceLine": 1384,
       "originalLine": null,
       "characters": 1444,
       "sourceHash": "739dfe6fcc05bdde9c6c98b40fdd3c7ae1e35cea0edc5b156cb8825243e14d51",
@@ -33537,7 +33561,7 @@
     {
       "name": "unassignFishResidence",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1403,
+      "sourceLine": 1424,
       "originalLine": null,
       "characters": 544,
       "sourceHash": "96c358b2e94b0d2b16302dcdbcde71580aa22b051b97a4a89ab18991a9e0a275",
@@ -33552,7 +33576,7 @@
     {
       "name": "handleDecorResidenceUtilityOverlayBodyClick",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1420,
+      "sourceLine": 1441,
       "originalLine": null,
       "characters": 535,
       "sourceHash": "e8fb20bb51e3919c6e90a33c483332eba5e2d13580c26a49899bd3a6e192ad8e",
@@ -33564,7 +33588,7 @@
     {
       "name": "getDecorFreePlacementSelectionState",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1434,
+      "sourceLine": 1455,
       "originalLine": null,
       "characters": 881,
       "sourceHash": "fa1f68b35c7cc54a4a9a697b5f95e216b49770658325af7a066b00ded167dbe0",
@@ -33577,7 +33601,7 @@
     {
       "name": "setFreeDecorPlacementEnabled",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1464,
+      "sourceLine": 1485,
       "originalLine": null,
       "characters": 2770,
       "sourceHash": "feddb42eb6e8d544c66a4e99e03932e6c47e07d1b596fdd442a48018c6e3d3c7",
@@ -33598,14 +33622,15 @@
     {
       "name": "renderEditDecorTray",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1541,
+      "sourceLine": 1562,
       "originalLine": 46176,
-      "characters": 6992,
-      "sourceHash": "d52b317a7da36f27cc189febb03e2392cc9d99f49dc045eca40fbca1fd15f6e8",
+      "characters": 6997,
+      "sourceHash": "d6613c68cdf0b3bf87ec46528d29eaa16ae4d2bac6242adfb63f5bfe5c7b8bbd",
       "calls": [
         "assetImageAttributes",
         "canUseDecorWithCurrentContentSettings",
         "closeEditDecorTrayContextMenu",
+        "decorMatchesTrayTab",
         "escapeHtml",
         "formatDecorScale",
         "getDecorFreePlacementSelectionState",
@@ -33631,7 +33656,7 @@
     {
       "name": "getStoredFishEntries",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1679,
+      "sourceLine": 1700,
       "originalLine": 46271,
       "characters": 338,
       "sourceHash": "67796b45392fea9c026ad133fb1accb87ac2650c2b834e13407fc04e1babc295",
@@ -33642,7 +33667,7 @@
     {
       "name": "getFishTrayEntries",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1687,
+      "sourceLine": 1708,
       "originalLine": 46279,
       "characters": 838,
       "sourceHash": "ed34537fd079b2bfce87fad00a89ce510f9a99f1e9275e8ee59cf1c3933e0d3f",
@@ -33654,7 +33679,7 @@
     {
       "name": "getFishTrayMoodTone",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1706,
+      "sourceLine": 1727,
       "originalLine": null,
       "characters": 115,
       "sourceHash": "ca2fcda07b598c141a1e1230e83275a366494077c53e5a0a6df07295747b86a2",
@@ -33665,7 +33690,7 @@
     {
       "name": "getStoredFishTrayMoodTone",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1710,
+      "sourceLine": 1731,
       "originalLine": null,
       "characters": 186,
       "sourceHash": "e16a5da758b4a5a21c1e398e3ae17403c2f08201d3f1475f89e90c460f08e226",
@@ -33674,7 +33699,7 @@
     {
       "name": "syncEditFishTrayScrollControls",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1715,
+      "sourceLine": 1736,
       "originalLine": 46292,
       "characters": 508,
       "sourceHash": "0adb7398b5d060e67cad332a24bc237beb7530db4ec43239c9e84dcb64cf1274",
@@ -33683,7 +33708,7 @@
     {
       "name": "scrollEditFishTray",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1728,
+      "sourceLine": 1749,
       "originalLine": 46305,
       "characters": 351,
       "sourceHash": "188a7c24ff784cb4d67766d905964f93a4242a53fe4c21c87677d0048f86456e",
@@ -33694,7 +33719,7 @@
     {
       "name": "clearEditFishTrayLongPress",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1742,
+      "sourceLine": 1763,
       "originalLine": 46319,
       "characters": 475,
       "sourceHash": "db5a538f1cf2b9decac73c0144cdd7e93fd9c24f37bcf7101659ca01a8b18bcc",
@@ -33703,7 +33728,7 @@
     {
       "name": "shouldSuppressEditFishTrayRestoreClick",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1763,
+      "sourceLine": 1784,
       "originalLine": 46340,
       "characters": 218,
       "sourceHash": "cff50be8c4eafcac1b9f7aa714581944b25da11de305e90b9f0d25f369682bd7",
@@ -33712,7 +33737,7 @@
     {
       "name": "closeEditFishTrayContextMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1772,
+      "sourceLine": 1793,
       "originalLine": 46349,
       "characters": 289,
       "sourceHash": "f22fea8ca20262b39b0c3aa43fdfc6fb88bf253bbc837a6a95197611b72123f4",
@@ -33723,7 +33748,7 @@
     {
       "name": "openEditFishTrayContextMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1782,
+      "sourceLine": 1803,
       "originalLine": 46359,
       "characters": 531,
       "sourceHash": "59946edd70fa1d1919f4e5e7fe90c5275053c7aefe8092ddc5f44a79e421a2c7",
@@ -33738,7 +33763,7 @@
     {
       "name": "renderEditFishTrayContextMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1796,
+      "sourceLine": 1817,
       "originalLine": 46373,
       "characters": 2391,
       "sourceHash": "3240a4c666c5eb44120f79467b13bdae6e4bb3bd7d34e89dd4a70551bde6658b",
@@ -33758,7 +33783,7 @@
     {
       "name": "syncFoodTrayScrollControls",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1871,
+      "sourceLine": 1892,
       "originalLine": 46448,
       "characters": 476,
       "sourceHash": "6d20a6f89e786626441533ce011b50de647d15df3b2d7ac273ab628b4096d4df",
@@ -33767,7 +33792,7 @@
     {
       "name": "scrollFoodTray",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1884,
+      "sourceLine": 1905,
       "originalLine": 46461,
       "characters": 331,
       "sourceHash": "e53c7ff9d561eb6d6e347ae8e9b7f837d047ebb74c1a4a83dfdbc0e54f1baccc",
@@ -33778,7 +33803,7 @@
     {
       "name": "syncMedicineTrayScrollControls",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1898,
+      "sourceLine": 1919,
       "originalLine": 46475,
       "characters": 508,
       "sourceHash": "b3c1595a1e4395f27bf514229f444410fbf093e2852d9df8dd5ecd697a7b1a5f",
@@ -33787,7 +33812,7 @@
     {
       "name": "scrollMedicineTray",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1911,
+      "sourceLine": 1932,
       "originalLine": 46488,
       "characters": 351,
       "sourceHash": "4660513741c4b91b7c3cc3ef506784885e87e6c875789f6658dc9d72e3ce14b4",
@@ -33798,7 +33823,7 @@
     {
       "name": "renderEditFishTray",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 1925,
+      "sourceLine": 1946,
       "originalLine": 46502,
       "characters": 4011,
       "sourceHash": "36e646eb9935f9745cf92118530357c7be7be45b18499bd3be94323b30e694d2",
@@ -33821,7 +33846,7 @@
     {
       "name": "renderEditTankTray",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2015,
+      "sourceLine": 2036,
       "originalLine": null,
       "characters": 1718,
       "sourceHash": "52e23acc90dcecfb64dac57431fdb5628089295f793b4554bef4eb4357977b98",
@@ -33832,7 +33857,7 @@
     {
       "name": "randomizeCurrentTankGravelHill",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2058,
+      "sourceLine": 2079,
       "originalLine": null,
       "characters": 652,
       "sourceHash": "2601cc3712c821d8987232913338ee54349888bbec09bf4e53eb7350895af83d",
@@ -33847,7 +33872,7 @@
     {
       "name": "renderFoodTray",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2073,
+      "sourceLine": 2094,
       "originalLine": 46566,
       "characters": 247,
       "sourceHash": "8ba7eb5149feabbb6a39a636dd0f9f77f74f6418705419791d50791344b918b4",
@@ -33856,7 +33881,7 @@
     {
       "name": "handleCareTrayAction",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2079,
+      "sourceLine": 2100,
       "originalLine": null,
       "characters": 501,
       "sourceHash": "eeb5b29e1223d2a939309b12236f4d65b279de4ac82ead209e887ab782959ef4",
@@ -33869,7 +33894,7 @@
     {
       "name": "renderMedicineTray",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2091,
+      "sourceLine": 2112,
       "originalLine": 46622,
       "characters": 7961,
       "sourceHash": "0b99df29490b0501e7318ddee00221c1e89a1abcde70c2d6649c26c089d37c8e",
@@ -33889,7 +33914,7 @@
     {
       "name": "renderFishList",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2252,
+      "sourceLine": 2273,
       "originalLine": 46677,
       "characters": 6146,
       "sourceHash": "c40f933949ea52c7a4f7eb5ad049c02c1a8c69ba81c9c1fd5db8a294bf161640",
@@ -33910,7 +33935,7 @@
     {
       "name": "renderManagedFishCard",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2396,
+      "sourceLine": 2417,
       "originalLine": 46822,
       "characters": 9981,
       "sourceHash": "a08eefe7b27dd4602c439a59c8f8e95375999e75a5ddb61de3917e7aa9806e03",
@@ -33947,7 +33972,7 @@
     {
       "name": "clearFishInspectorDisplayDocking",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2571,
+      "sourceLine": 2592,
       "originalLine": 46999,
       "characters": 362,
       "sourceHash": "ba1fbe45940e5a6e4fd447165f1d2f22ae2229c7066f1255b671c40432df2008",
@@ -33956,7 +33981,7 @@
     {
       "name": "getTankNormStagePoint",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2586,
+      "sourceLine": 2607,
       "originalLine": 47014,
       "characters": 471,
       "sourceHash": "19a0177456d41079b166e0b0b5bd5a8bb10ef2f9b9faeb2f13067f7882ed52e1",
@@ -33968,7 +33993,7 @@
     {
       "name": "holdFishForActionMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2597,
+      "sourceLine": 2618,
       "originalLine": 47025,
       "characters": 1483,
       "sourceHash": "84a371f9dc2ecdb84a68a2c55118c3cfa0b5d98d455132b8068b048b96e028c5",
@@ -33991,7 +34016,7 @@
     {
       "name": "releaseFishActionMenuHold",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2644,
+      "sourceLine": 2665,
       "originalLine": 47071,
       "characters": 938,
       "sourceHash": "5f50d0f2980b5dbf5b6593cd79432084e9d66854a683b1ce107f7c2f57a07ff5",
@@ -34003,7 +34028,7 @@
     {
       "name": "updateFishActionMenuHold",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2670,
+      "sourceLine": 2691,
       "originalLine": 47097,
       "characters": 968,
       "sourceHash": "1cc5e2b123427d0c99526226cabe30e809c4adb5cd0dbf9cdf95adf4bf25ae5b",
@@ -34017,7 +34042,7 @@
     {
       "name": "closeFishActionMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2695,
+      "sourceLine": 2716,
       "originalLine": 47122,
       "characters": 294,
       "sourceHash": "28463f94aa974694a757d441760de303ec6cb2e04214dd698404b0adfdda90b5",
@@ -34030,7 +34055,7 @@
     {
       "name": "closeFishActionSubmenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2706,
+      "sourceLine": 2727,
       "originalLine": 47133,
       "characters": 236,
       "sourceHash": "41650267ee93c59600b1c235c6bb8fd4414d55ace090c1f556111f06a6070d48",
@@ -34039,7 +34064,7 @@
     {
       "name": "closeFishActionTargetMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2715,
+      "sourceLine": 2736,
       "originalLine": 47142,
       "characters": 248,
       "sourceHash": "8d6013d3f55db61e29e90b2f52597a6b3832c3548a151b7fde4548d72fe66deb",
@@ -34048,7 +34073,7 @@
     {
       "name": "getFishActionCategoryAnchorFromElement",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2724,
+      "sourceLine": 2745,
       "originalLine": 47151,
       "characters": 589,
       "sourceHash": "05afa8821553aa1ec11ff134368445c9e7e3af796784d6813ff9b032c102fe5f",
@@ -34057,7 +34082,7 @@
     {
       "name": "openFishActionSubmenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2739,
+      "sourceLine": 2760,
       "originalLine": 47166,
       "characters": 858,
       "sourceHash": "c88d47f1e42ed6c557907a2163abde0ee4351faef1d7391b06707d7e34141639",
@@ -34076,7 +34101,7 @@
     {
       "name": "openFishActionTargetMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2760,
+      "sourceLine": 2781,
       "originalLine": 47187,
       "characters": 890,
       "sourceHash": "cac95400d203cbe672b8bc0be8f9285bb5c0d06c2b730b4d744a147c1fe865ad",
@@ -34097,7 +34122,7 @@
     {
       "name": "openFishActionMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2783,
+      "sourceLine": 2804,
       "originalLine": 47210,
       "characters": 890,
       "sourceHash": "7970e21e271e51d2741c476a9440d091cd7754dc8893243196ddd6b9b15c50b4",
@@ -34116,7 +34141,7 @@
     {
       "name": "getFishInspectorDockingBounds",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2805,
+      "sourceLine": 2826,
       "originalLine": 47230,
       "characters": 1343,
       "sourceHash": "00d49bfb99f20801fdb67fec32b88829eb688e8681df1d621145f20e491a1e6a",
@@ -34125,7 +34150,7 @@
     {
       "name": "updateFishInspectorDisplayDocking",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2850,
+      "sourceLine": 2871,
       "originalLine": 47275,
       "characters": 2592,
       "sourceHash": "efb41bc89c994ff2566d720e021afe636c2e43d1b48bf86700cfc3d5af03ba27",
@@ -34141,7 +34166,7 @@
     {
       "name": "renderFishActionFlyout",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2916,
+      "sourceLine": 2937,
       "originalLine": 47341,
       "characters": 327,
       "sourceHash": "41571689b24d4086a6e043db21a577fa7bc808a6e0da6c75c8f951d9e3944621",
@@ -34153,7 +34178,7 @@
     {
       "name": "renderFishActionSubmenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2924,
+      "sourceLine": 2945,
       "originalLine": 47437,
       "characters": 2839,
       "sourceHash": "45aaef8ac5768f4ca35b941b1c159109e786355f834a6f8b8c86241675b2ba3a",
@@ -34173,7 +34198,7 @@
     {
       "name": "renderFishActionTargetMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2988,
+      "sourceLine": 3009,
       "originalLine": 47501,
       "characters": 3179,
       "sourceHash": "5c2885910a67a1ed50f96d647f6b56d86bbe5e8c6aa4807491d44625619dfcbe",
@@ -34195,7 +34220,7 @@
     {
       "name": "updateFishActionFlyoutBranchLayout",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3061,
+      "sourceLine": 3082,
       "originalLine": 47574,
       "characters": 1554,
       "sourceHash": "8167de90cedd9d62eff9b7db024f7056276d3a8994e51fdba8a82d770671ee29",
@@ -34204,7 +34229,7 @@
     {
       "name": "renderFishActionQueueDock",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3105,
+      "sourceLine": 3126,
       "originalLine": 47618,
       "characters": 190,
       "sourceHash": "b461cf6952b60778e237aa546ef84dd86ba7d34044be3b4f2fef9759a4ef18b7",
@@ -34213,7 +34238,7 @@
     {
       "name": "renderFishNeedsBars",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3111,
+      "sourceLine": 3132,
       "originalLine": 47692,
       "characters": 1937,
       "sourceHash": "7e8a5566a6aae2db6361eb465af25ed52ab3426b9e6e560e8c621210530bfb5c",
@@ -34229,7 +34254,7 @@
     {
       "name": "getSelectedFishNeedsMoodLabel",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3155,
+      "sourceLine": 3176,
       "originalLine": 47736,
       "characters": 148,
       "sourceHash": "a06a4e1bdddbadaed03fe8534ed7e7db2f451b473c8eeb7edd8b22d06763e74e",
@@ -34241,7 +34266,7 @@
     {
       "name": "shouldShowSelectedFishNeedsPanel",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3159,
+      "sourceLine": 3180,
       "originalLine": 47760,
       "characters": 403,
       "sourceHash": "39e8b7770984dcec1c05ede2bb0707462c8aaff464b011592e6b29d45307024d",
@@ -34253,7 +34278,7 @@
     {
       "name": "renderSelectedFishNeedsPanel",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3173,
+      "sourceLine": 3194,
       "originalLine": 47773,
       "characters": 365,
       "sourceHash": "93cc582f4c8b189f94c8e7eba6de80a20f1f0a32f445e93692f18828fb5f15ad",
@@ -34264,7 +34289,7 @@
     {
       "name": "renderFishInspector",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3182,
+      "sourceLine": 3203,
       "originalLine": 47801,
       "characters": 8110,
       "sourceHash": "1909225ea789d28809adf12069ad03d1404626ccb3b7069830867e88d4d91a26",
@@ -34307,7 +34332,7 @@
     {
       "name": "renderDecorShop",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3373,
+      "sourceLine": 3394,
       "originalLine": 47981,
       "characters": 5121,
       "sourceHash": "2e7a177c8db36abf07cdbc612defceb4d56e9cffd075c6d0c094626def0cb805",
@@ -34344,7 +34369,7 @@
     {
       "name": "renderEquipmentShop",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3483,
+      "sourceLine": 3504,
       "originalLine": 48072,
       "characters": 5365,
       "sourceHash": "258ff6715d1f37a363c210a223792fe423ec990324f169aa6c7f5f7a5e0bcaab",
@@ -34368,7 +34393,7 @@
     {
       "name": "renderDecorInventory",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3610,
+      "sourceLine": 3631,
       "originalLine": 48283,
       "characters": 2964,
       "sourceHash": "9f8479aa207362adfd944905a572303e36feafbcfbfa486114152da3510dc666",
@@ -35892,8 +35917,8 @@
       "module": "ui/management-and-overlays.js",
       "sourceLine": 645,
       "originalLine": 42263,
-      "characters": 366,
-      "sourceHash": "1d76997cd577d12a3aee1b940392f722c89ffc49a4376fcda7167e9e0405552a",
+      "characters": 406,
+      "sourceHash": "265f107a33adfeded220241607c7dfec6f8675a33e50225c23719dcfd1ca4c08",
       "calls": [
         "titleFromFile"
       ]
@@ -35901,7 +35926,7 @@
     {
       "name": "getAllManagementHistoryRecords",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 662,
+      "sourceLine": 664,
       "originalLine": 42280,
       "characters": 1054,
       "sourceHash": "a09cfcda4b31d80600cebd1415fbf6c12a3c67da15e7e8100ab4d26ae1811e27",
@@ -35918,7 +35943,7 @@
     {
       "name": "recordMatchesManagementHistoryFilters",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 691,
+      "sourceLine": 693,
       "originalLine": 42309,
       "characters": 1428,
       "sourceHash": "1d9d78ccaae07bb300715491375fe4fde763f19784ea40a94ff8c2c9d71264c1",
@@ -35932,7 +35957,7 @@
     {
       "name": "buildManagementHistoryFilterOptions",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 727,
+      "sourceLine": 729,
       "originalLine": 42345,
       "characters": 1555,
       "sourceHash": "dece35fb598d122c6b152b8e821717830f62a51d95ec1f0f56f97e853e46a729",
@@ -35947,7 +35972,7 @@
     {
       "name": "buildManagementHistorySelect",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 769,
+      "sourceLine": 771,
       "originalLine": 42387,
       "characters": 737,
       "sourceHash": "28b71327bb431290107b604eae15a4d73fcc3c50525b69c955ef2bb5659f95cd",
@@ -35958,7 +35983,7 @@
     {
       "name": "buildManagementHistoryRecordRow",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 786,
+      "sourceLine": 788,
       "originalLine": 42404,
       "characters": 483,
       "sourceHash": "4d481713971c409d328ea6a5bb17f181fdc013ad0ceb65debaff6fbf71844752",
@@ -35971,7 +35996,7 @@
     {
       "name": "buildTankManagementHistoryBrowser",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 799,
+      "sourceLine": 801,
       "originalLine": 42417,
       "characters": 1928,
       "sourceHash": "939fc08bd2ed8bed9eb7751c6a6ae5aabd2c85bdf4cb2183f61f1f6c45e64cb7",
@@ -35990,7 +36015,7 @@
     {
       "name": "buyAnotherFishFromManagement",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 833,
+      "sourceLine": 835,
       "originalLine": 42451,
       "characters": 91,
       "sourceHash": "cbbcea6b12abee294abd601f51e6bf39c90aafc6f1eb8a16f5d2398c8312affa",
@@ -36001,7 +36026,7 @@
     {
       "name": "selectFishInTankFromManagement",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 837,
+      "sourceLine": 839,
       "originalLine": 42455,
       "characters": 236,
       "sourceHash": "8f602a354786feddaf8d168d164e14b3a13f8536b83ba5ac9a94ccae213ba9b6",
@@ -36015,7 +36040,7 @@
     {
       "name": "selectDecorInTankFromManagement",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 847,
+      "sourceLine": 849,
       "originalLine": 42464,
       "characters": 286,
       "sourceHash": "50641dd148e80d89efac31a7b9fe4285a35973c763fd1a6abe5fe9332bb8fbe8",
@@ -36030,7 +36055,7 @@
     {
       "name": "buildManagementBrowserShell",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 859,
+      "sourceLine": 861,
       "originalLine": 42476,
       "characters": 1451,
       "sourceHash": "879718306a2bbc4e1073c34b0d0d7496d7b170e50981faa0831a9e637f754dd6",
@@ -36042,7 +36067,7 @@
     {
       "name": "buildManagementFishRow",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 888,
+      "sourceLine": 890,
       "originalLine": 42505,
       "characters": 2198,
       "sourceHash": "a1655f1eea297286f52abfafbfaa6ace71b9bd5f00d3baec7c2914881dbfd544",
@@ -36067,7 +36092,7 @@
     {
       "name": "buildTankManagementFishBrowser",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 932,
+      "sourceLine": 934,
       "originalLine": 42550,
       "characters": 590,
       "sourceHash": "c9682bdfee56d39e35e40f53e560066a5b0b9f221dd847e4666820e40651c61c",
@@ -36080,7 +36105,7 @@
     {
       "name": "buildManagementDecorRow",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 952,
+      "sourceLine": 954,
       "originalLine": 42570,
       "characters": 2110,
       "sourceHash": "4e4262ccf718b30f18f283344adeaa4a3dccaac4c276964789482d81eeb3c0fb",
@@ -36107,7 +36132,7 @@
     {
       "name": "buildTankManagementDecorBrowser",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 984,
+      "sourceLine": 986,
       "originalLine": 42598,
       "characters": 648,
       "sourceHash": "15c7c1310d829f6b20480e4b14a7fd2ac8a9d2961449b73ba4b32d12e9b29579",
@@ -36120,7 +36145,7 @@
     {
       "name": "getManagementHubStats",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1002,
+      "sourceLine": 1004,
       "originalLine": 42616,
       "characters": 2341,
       "sourceHash": "a7ea96cc02902bd978299039c5c13b6206e8e543dc8a8d6fe0cfb5da8efc1679",
@@ -36139,7 +36164,7 @@
     {
       "name": "buildTankManagementOverlayBody",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1057,
+      "sourceLine": 1059,
       "originalLine": 42673,
       "characters": 3302,
       "sourceHash": "57d421665ceac3d31fe5c5463b3dcb0711233b2705e48c51a676c6d92267a251",
@@ -36159,7 +36184,7 @@
     {
       "name": "buildDefaultUtilityOverlayConfig",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1141,
+      "sourceLine": 1143,
       "originalLine": 42756,
       "characters": 160,
       "sourceHash": "e2331b34665adb80101a59c95de9ff8091e934c3aea26f953ebc3429134e1ae3",
@@ -36168,7 +36193,7 @@
     {
       "name": "buildUtilityActionButtonMarkup",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1151,
+      "sourceLine": 1153,
       "originalLine": 42766,
       "characters": 629,
       "sourceHash": "2eeef4952f9bdb4fbd9fcec2d16fb404db9847bd2082550af277f51ea9787dc4",
@@ -36179,7 +36204,7 @@
     {
       "name": "buildUtilityActionsFooter",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1168,
+      "sourceLine": 1170,
       "originalLine": 42783,
       "characters": 267,
       "sourceHash": "e7824c6ce0d4da9fe4fa6d35a29dca26024e2e42e39a3c118685a2a5fb43e856",
@@ -36190,7 +36215,7 @@
     {
       "name": "buildUtilityCloseFooter",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1175,
+      "sourceLine": 1177,
       "originalLine": 42790,
       "characters": 169,
       "sourceHash": "9ef2456b4d6ff0aa6d25de044a243790c9ab2ec1393ba0da4c93143b04f31b86",
@@ -36201,7 +36226,7 @@
     {
       "name": "buildUtilityConfirmCardMarkup",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1181,
+      "sourceLine": 1183,
       "originalLine": 42796,
       "characters": 590,
       "sourceHash": "1ffc266e113bd60ba65acd2e22fe94d6fb96623605c38e704c5d9a4bb91c2976",
@@ -36210,7 +36235,7 @@
     {
       "name": "createPendingStateUtilityMode",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1197,
+      "sourceLine": 1199,
       "originalLine": 42823,
       "characters": 611,
       "sourceHash": "604147dd2b63854360ecb4d1a94b18809427acc2b0153ec1f734979dd4f1dfb5",
@@ -36219,7 +36244,7 @@
     {
       "name": "createPlacedDecorUtilityMode",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1219,
+      "sourceLine": 1221,
       "originalLine": 42845,
       "characters": 810,
       "sourceHash": "ef9cd1f7e2c32be2c503ecb7c3c42d4e9fe2463478f75cde71c1efe6d08d90dd",
@@ -36230,7 +36255,7 @@
     {
       "name": "renderTutorialSkipConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1246,
+      "sourceLine": 1248,
       "originalLine": 42872,
       "characters": 661,
       "sourceHash": "b8c49683a2db1e15e02b56d50f77257cf40c6f9e8737bca5aad2affa297eddcb",
@@ -36243,7 +36268,7 @@
     {
       "name": "renderHardwareAccelerationUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1264,
+      "sourceLine": 1266,
       "originalLine": 42890,
       "characters": 3119,
       "sourceHash": "08d4b1c640ae2263d99dfab5131fe08f87c893783d6b8aabfa2f10b087252bfa",
@@ -36254,7 +36279,7 @@
     {
       "name": "handleHardwareAccelerationUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1329,
+      "sourceLine": 1331,
       "originalLine": 42955,
       "characters": 705,
       "sourceHash": "62efe5c76fb7d297ffc2f17887f135b0775c24915a218d8c95dfb8998b53bc7a",
@@ -36263,7 +36288,7 @@
     {
       "name": "renderDispenserResetUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1354,
+      "sourceLine": 1356,
       "originalLine": 42980,
       "characters": 802,
       "sourceHash": "1c5e47518c0b34d5a0f0a2903a3afb8b3367c8fc3391f317beb49b9238b25c93",
@@ -36277,7 +36302,7 @@
     {
       "name": "renderCreditsUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1374,
+      "sourceLine": 1376,
       "originalLine": 43000,
       "characters": 1272,
       "sourceHash": "b3f2393dc4cd251cb4bdc52dd337b4673319d7fdc2418ccebc6b4784256d8e2d",
@@ -36288,7 +36313,7 @@
     {
       "name": "parseInviteFriendEmails",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1412,
+      "sourceLine": 1414,
       "originalLine": null,
       "characters": 571,
       "sourceHash": "505335fde1bde366442ae6744b6f95f681c107a08a0aa48bf4a7d5383563dc8e",
@@ -36297,7 +36322,7 @@
     {
       "name": "renderInviteFriendUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1434,
+      "sourceLine": 1436,
       "originalLine": null,
       "characters": 1100,
       "sourceHash": "78cbf5e003068c533d778dc2c972a2e74be921fd423fedd44398ec515fbdd24e",
@@ -36308,7 +36333,7 @@
     {
       "name": "handleInviteFriendUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1462,
+      "sourceLine": 1464,
       "originalLine": null,
       "characters": 797,
       "sourceHash": "6cccc3ddab2f622a841a9f9583ec22cffb51ede7a7bf053b1e22568790a2e5f5",
@@ -36319,7 +36344,7 @@
     {
       "name": "sendInviteFriendEmails",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1477,
+      "sourceLine": 1479,
       "originalLine": null,
       "characters": 2768,
       "sourceHash": "d54ff069f5f7e09066e77d23bd26ec5f2a612a9fe4bbba8771bdcb0baa479fbe",
@@ -36332,7 +36357,7 @@
     {
       "name": "renderDecorBuyConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1538,
+      "sourceLine": 1540,
       "originalLine": 43038,
       "characters": 1004,
       "sourceHash": "5fc1d8b140ea91d56b94de4d59dc6d29e3fc91781db64ca5c2e6217900177a9f",
@@ -36345,7 +36370,7 @@
     {
       "name": "renderDecorSellConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1559,
+      "sourceLine": 1561,
       "originalLine": 43059,
       "characters": 992,
       "sourceHash": "2f005b75268c7343f6141ffa4e4d75536598a9980d8021b7107af80477fb7f77",
@@ -36358,7 +36383,7 @@
     {
       "name": "renderFishBuyConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1580,
+      "sourceLine": 1582,
       "originalLine": 43080,
       "characters": 908,
       "sourceHash": "5d97a34fad833132c8f6f7e4e027d79f191284321c029986f054137e584aa228",
@@ -36373,7 +36398,7 @@
     {
       "name": "renderFishSellConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1602,
+      "sourceLine": 1604,
       "originalLine": 43102,
       "characters": 1068,
       "sourceHash": "7756bf1e362b475c539080b3c0773cf9217627aedcbfb1bbdb533ccef1248754",
@@ -36388,7 +36413,7 @@
     {
       "name": "renderImportConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1631,
+      "sourceLine": 1633,
       "originalLine": 43131,
       "characters": 456,
       "sourceHash": "147b2fa6202694ae0bcf8c43cbecc548c473f550d43ce45cb1311a16719e90df",
@@ -36400,7 +36425,7 @@
     {
       "name": "renderResetProgressUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1646,
+      "sourceLine": 1648,
       "originalLine": 43146,
       "characters": 531,
       "sourceHash": "bf13d0277769747b0582a4371b09d781866b79008d707aae2dc68a734013c1c2",
@@ -36412,7 +36437,7 @@
     {
       "name": "renderResetProgressSaveChoiceUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1661,
+      "sourceLine": 1663,
       "originalLine": 43161,
       "characters": 612,
       "sourceHash": "828e75c29a283defe57815827db1feeeca60dc3d1de9f71e533c25fca7d2c62a",
@@ -36424,7 +36449,7 @@
     {
       "name": "renderResetProgressSaveExportUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1677,
+      "sourceLine": 1679,
       "originalLine": 43177,
       "characters": 425,
       "sourceHash": "5b4ebb05d5e88880ff7b730a1d93d0774899599b59d44326c4725039629f2891",
@@ -36436,7 +36461,7 @@
     {
       "name": "createUtilityOverlayActionHandler",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1690,
+      "sourceLine": 1692,
       "originalLine": 43190,
       "characters": 319,
       "sourceHash": "731423c67967d16867143ce9b063dace66ab71078435dce8f965bf273ba15b71",
@@ -36445,7 +36470,7 @@
     {
       "name": "handleFoodUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1704,
+      "sourceLine": 1706,
       "originalLine": 43204,
       "characters": 228,
       "sourceHash": "30a03c5f7af5f3b68b8c705ba4c3db56658fea1fb2ed4e4ccc79d3c334408fa0",
@@ -36456,7 +36481,7 @@
     {
       "name": "handleMedicineUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1713,
+      "sourceLine": 1715,
       "originalLine": 43213,
       "characters": 256,
       "sourceHash": "aa3466f20760b6ce1311c9a1dbf415eb6fcc6b090246519d1b10279ac13186f3",
@@ -36467,7 +36492,7 @@
     {
       "name": "handleTankManagementUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1722,
+      "sourceLine": 1724,
       "originalLine": 43222,
       "characters": 4063,
       "sourceHash": "915f5efb9576e404dc8b413155897a8ca2048827813543e7d2bfe7f384a429e2",
@@ -36500,7 +36525,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1835,
+      "sourceLine": 1837,
       "originalLine": 43317,
       "characters": 1767,
       "sourceHash": "636429862f7360bf1d88eadac9583bc5aa172d447e80fc3068d8ace8c9a67f34",
@@ -36519,7 +36544,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayPointerDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1885,
+      "sourceLine": 1887,
       "originalLine": 43357,
       "characters": 1572,
       "sourceHash": "b3fe14e3fd63c4ad0c1d311c3792be500b48c8c1efee68609123c63df1d7efd4",
@@ -36535,7 +36560,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayPointerMove",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1920,
+      "sourceLine": 1922,
       "originalLine": 43392,
       "characters": 405,
       "sourceHash": "f9915d23a10b7c2085b894029f8fe5189d3de3e40101440ba7d8cba6f5bdc155",
@@ -36547,7 +36572,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayPointerEnd",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1934,
+      "sourceLine": 1936,
       "originalLine": 43406,
       "characters": 122,
       "sourceHash": "af4c53abfd34b1d2ec07d31b71886f5c7cc2f8318f13741452c2a9ee3d1c8b6b",
@@ -36558,7 +36583,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayFocusIn",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1939,
+      "sourceLine": 1941,
       "originalLine": 43411,
       "characters": 690,
       "sourceHash": "41403d5a4d1cd01d835654f2bb6c2bcab6e5dae5c81ab9c97c1320bc5469c0bf",
@@ -36569,7 +36594,7 @@
     {
       "name": "handleCommonUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1953,
+      "sourceLine": 1955,
       "originalLine": 43425,
       "characters": 1529,
       "sourceHash": "de4b7fb881fc45c7454ea13bdccf468424fff4315135574cf21b56725ccaeac1",
@@ -36584,7 +36609,7 @@
     {
       "name": "handleCustomDecorUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1992,
+      "sourceLine": 1994,
       "originalLine": 43464,
       "characters": 1162,
       "sourceHash": "d77ecdb0d2b53705d468e5ca31a673784ae5637660390e8df9b975d0b54860a8",
@@ -36597,7 +36622,7 @@
     {
       "name": "handleCustomHideUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2016,
+      "sourceLine": 2018,
       "originalLine": 43488,
       "characters": 598,
       "sourceHash": "42a6072d6af26fa15ff95f8aa562f879f2877d6342a643a71d2496313c9e73c2",
@@ -36608,7 +36633,7 @@
     {
       "name": "handleTankManagementUtilityOverlayChange",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2030,
+      "sourceLine": 2032,
       "originalLine": 43502,
       "characters": 560,
       "sourceHash": "e766b1e6a1d04b40c9e1f269b7bf773da07c545b0f969fdd5e282d12c2827769",
@@ -36620,7 +36645,7 @@
     {
       "name": "handleCustomHideUtilityOverlayChange",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2046,
+      "sourceLine": 2048,
       "originalLine": 43518,
       "characters": 350,
       "sourceHash": "98c8894b94656d666ff9936dd6914cff673e28287f7c0eb2f6c07c2a8d62c6d2",
@@ -36631,7 +36656,7 @@
     {
       "name": "handleCustomHideUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2055,
+      "sourceLine": 2057,
       "originalLine": 43527,
       "characters": 425,
       "sourceHash": "79580d0667526b03f3c9d333a6173b945c0daa2051ee5818ce1c0ae73b201018",
@@ -36643,7 +36668,7 @@
     {
       "name": "handleCustomFishUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2069,
+      "sourceLine": 2071,
       "originalLine": 43541,
       "characters": 872,
       "sourceHash": "e7db5d28a696d043b3196202186c90307a0c76c6ab1298c6644006129cd98dc9",
@@ -36655,7 +36680,7 @@
     {
       "name": "handleCustomFishUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2088,
+      "sourceLine": 2090,
       "originalLine": 43560,
       "characters": 81,
       "sourceHash": "03f59105ea0856ea536de470ac2820baac17353d6f843786e7080a4d89ce1d37",
@@ -36664,7 +36689,7 @@
     {
       "name": "handleCustomFishUtilityOverlayChange",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2092,
+      "sourceLine": 2094,
       "originalLine": 43564,
       "characters": 349,
       "sourceHash": "49ee8ec3bf45fc8ac2e6dd09405be9eb4ce53e9f471d97991336ea7af0a4585d",
@@ -36676,7 +36701,7 @@
     {
       "name": "handleTankManagementUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2101,
+      "sourceLine": 2103,
       "originalLine": 43573,
       "characters": 254,
       "sourceHash": "6024c600137bc722b663a8199c8ce144bf52bbbea723bdf412bbf331b20fad8f",
@@ -36685,7 +36710,7 @@
     {
       "name": "handleCommonUtilityOverlayChange",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2110,
+      "sourceLine": 2112,
       "originalLine": 43582,
       "characters": 2975,
       "sourceHash": "0271af311d2b3f00fddff0ed2e3473e61926ff9b83fa1efc1336364ef06d5d7e",
@@ -36704,7 +36729,7 @@
     {
       "name": "handleTankManagementUtilityOverlayKeyDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2175,
+      "sourceLine": 2177,
       "originalLine": 43647,
       "characters": 440,
       "sourceHash": "cd37e3814b94353968bc486ed3b3f4df27e5e2a5616b2af6bc6eab251e731710",
@@ -36716,7 +36741,7 @@
     {
       "name": "handleCustomDecorUtilityOverlayKeyDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2193,
+      "sourceLine": 2195,
       "originalLine": 43665,
       "characters": 482,
       "sourceHash": "ff9724dedfc5840fbc72f06fb151cff839c9221c7954916fd55a1a8a699c6128",
@@ -36728,7 +36753,7 @@
     {
       "name": "handleCustomHideUtilityOverlayKeyDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2211,
+      "sourceLine": 2213,
       "originalLine": 43683,
       "characters": 477,
       "sourceHash": "ffa3f0f2c751ed9f0f47dde213e77a59421faa336f1dddec363f068d8dc06bcb",
@@ -36740,7 +36765,7 @@
     {
       "name": "handleCustomFishUtilityOverlayKeyDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2229,
+      "sourceLine": 2231,
       "originalLine": 43701,
       "characters": 477,
       "sourceHash": "d0c6283f1aacaf91b13fe8a9f7e12b9ea94ab30033272f1075f2f44747548729",
@@ -36752,7 +36777,7 @@
     {
       "name": "requestCloseUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2247,
+      "sourceLine": 2249,
       "originalLine": 44087,
       "characters": 256,
       "sourceHash": "d5ccdff9d225668fd8a36dd2ac1df5e40da959eb6032e383cf9af198ab7bcfe9",
@@ -36765,7 +36790,7 @@
     {
       "name": "dispatchUtilityOverlayTargetEvent",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2256,
+      "sourceLine": 2258,
       "originalLine": 44096,
       "characters": 387,
       "sourceHash": "09328eb8fae4ef3730430f1788d93ccbc228435b0fa085cf6fe3ad531ed487c9",
@@ -36777,7 +36802,7 @@
     {
       "name": "dispatchUtilityOverlayPointerEvent",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2266,
+      "sourceLine": 2268,
       "originalLine": 44106,
       "characters": 269,
       "sourceHash": "213f7fc66ae810ebacc3dc1fff6f72932623d0120f0f33d6d5f4f727c24b9418",
@@ -36789,7 +36814,7 @@
     {
       "name": "renderUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2272,
+      "sourceLine": 2274,
       "originalLine": 44112,
       "characters": 1401,
       "sourceHash": "9a2d050f6434d32e9431223623bd5070005340cf77c08262594e59334139b1ae",
@@ -36806,7 +36831,7 @@
     {
       "name": "renderExternalLinkOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2310,
+      "sourceLine": 2312,
       "originalLine": 44150,
       "characters": 546,
       "sourceHash": "44e5ef04d70a0446665c1a304d9bf54c84f0eab273d31c531ff36a8b62d4e004",
@@ -36817,7 +36842,7 @@
     {
       "name": "renderSaveExportOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2326,
+      "sourceLine": 2328,
       "originalLine": 44166,
       "characters": 1047,
       "sourceHash": "0dc09e291701d11f7fea9aeb5a5aeb9ea0324cde9af52705c8d34ce9963e2d04",
@@ -36829,7 +36854,7 @@
     {
       "name": "renderSaveExportActionsFooter",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2349,
+      "sourceLine": 2351,
       "originalLine": 44189,
       "characters": 711,
       "sourceHash": "8f8cce4fd42b6dc902e07d7051e9be610f612710876b355f965c5f1af9887319",
@@ -36841,7 +36866,7 @@
     {
       "name": "renderCustomDecorNameOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2362,
+      "sourceLine": 2364,
       "originalLine": 44202,
       "characters": 6870,
       "sourceHash": "1ffcc94621d3910c4ce403fd2b481f557a4bce17bc21a02f67e8fe568bc257aa",
@@ -36862,7 +36887,7 @@
     {
       "name": "renderCaveColorSettingsControls",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2509,
+      "sourceLine": 2511,
       "originalLine": 44349,
       "characters": 3463,
       "sourceHash": "15c426e89a981b130797b3cce012e97bdadd89be9cca1bfa996cfc85f86e90ca",
@@ -36881,7 +36906,7 @@
     {
       "name": "renderCustomHideBackgroundPrompt",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2596,
+      "sourceLine": 2598,
       "originalLine": 44436,
       "characters": 1011,
       "sourceHash": "dd1f8437c175065105de2d41c6658bdac85c715762751d534136361885b92cba",
@@ -36893,10 +36918,10 @@
     {
       "name": "renderCustomHideCreationOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2624,
+      "sourceLine": 2626,
       "originalLine": 44464,
-      "characters": 7371,
-      "sourceHash": "64c2cc4085ecc72d1e0bf4155e61945d8df7a087f5c437b6f6e64bad0d2cd7d4",
+      "characters": 7383,
+      "sourceHash": "320ca15bf87b027457ddd2581bbb27b13e743f5b9f73bae3bda25b68128f4905",
       "calls": [
         "assetImageAttributes",
         "buildPendingCustomHideUpload",
@@ -36917,7 +36942,7 @@
     {
       "name": "renderCaveSettingsMarkers",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2771,
+      "sourceLine": 2773,
       "originalLine": 44611,
       "characters": 1201,
       "sourceHash": "a109c01e052a5f82fdbfeac1096dd41d7eb113270c13c574c3abe90af7396c2b",
@@ -36928,7 +36953,7 @@
     {
       "name": "renderCaveSettingsControls",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2804,
+      "sourceLine": 2806,
       "originalLine": 44644,
       "characters": 5969,
       "sourceHash": "afda07af28d55f908baa32b2941153b92699363eb63ede2f2e67be9121b7b8cc",
@@ -36944,10 +36969,10 @@
     {
       "name": "renderDecorSettingsOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2940,
+      "sourceLine": 2942,
       "originalLine": 44780,
-      "characters": 9677,
-      "sourceHash": "e1a6852419c72b33766fc68780bbad8ae64a66bcb400a059859a9e5cbc5837e2",
+      "characters": 9822,
+      "sourceHash": "bc1c435c5683c92922af78a7f0b2c92076bc8fed7b158052dfe5a2284c3bd01b",
       "calls": [
         "assetImageAttributes",
         "canConfigureDecorBubbler",
@@ -36968,6 +36993,7 @@
         "getTransitTubeDisplayName",
         "hasDecorCaveColorLayers",
         "isCaveDecorKey",
+        "isThreeLayerCaveDecorKey",
         "isTransitTubeDecorKey",
         "normalizeDecorColorSetting",
         "renderBubblerSettingsOverlay",

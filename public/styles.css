@@ -2968,6 +2968,13 @@ h2 {
   --decor-tab-text: #e1ffe9;
 }
 
+.edit-decor-tray-tab[data-decor-tone="coral"] {
+  --decor-tab-border: rgba(255, 132, 174, 0.42);
+  --decor-tab-bg-top: rgba(151, 54, 91, 0.74);
+  --decor-tab-bg-bottom: rgba(91, 30, 61, 0.7);
+  --decor-tab-text: #ffe4ee;
+}
+
 .edit-decor-tray-tab[data-decor-tone="ornaments"] {
   --decor-tab-border: rgba(255, 196, 83, 0.42);
   --decor-tab-bg-top: rgba(151, 101, 25, 0.74);
@@ -3135,6 +3142,13 @@ h2 {
   --decor-menu-glow: rgba(160, 255, 188, 0.22);
   --decor-menu-top: rgba(29, 108, 58, 0.97);
   --decor-menu-bottom: rgba(14, 62, 37, 0.96);
+}
+
+#editDecorTrayContextMenu .is-decor-context-card[data-decor-tone="coral"] {
+  --decor-menu-border: rgba(255, 132, 174, 0.6);
+  --decor-menu-glow: rgba(255, 179, 205, 0.24);
+  --decor-menu-top: rgba(130, 42, 78, 0.97);
+  --decor-menu-bottom: rgba(76, 21, 50, 0.96);
 }
 
 #editDecorTrayContextMenu .is-decor-context-card[data-decor-tone="ornaments"] {
@@ -3403,6 +3417,11 @@ h2 {
 #editDecorTray .edit-decor-tile.is-decor-type-tile[data-decor-tone="plants"] .edit-decor-tile-surface {
   border-color: rgba(100, 242, 143, 0.42);
   background: radial-gradient(circle at 50% 14%, rgba(160, 255, 188, 0.26), transparent 38%), linear-gradient(180deg, rgba(35, 125, 67, 0.8), rgba(19, 78, 46, 0.7));
+}
+
+#editDecorTray .edit-decor-tile.is-decor-type-tile[data-decor-tone="coral"] .edit-decor-tile-surface {
+  border-color: rgba(255, 132, 174, 0.46);
+  background: radial-gradient(circle at 50% 14%, rgba(255, 179, 205, 0.28), transparent 38%), linear-gradient(180deg, rgba(151, 54, 91, 0.82), rgba(91, 30, 61, 0.72));
 }
 
 #editDecorTray .edit-decor-tile.is-decor-type-tile[data-decor-tone="ornaments"] .edit-decor-tile-surface {

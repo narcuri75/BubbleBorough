@@ -47,7 +47,10 @@ function startPlacingDecor(decorKey) {
     return;
   }
   runtime.pendingDecorPlacementKey = null;
-  const initialLayer = getDecorFrontLayer(decorKey, runtime.decorPlacementLayer);
+  const initialLayer = getDecorFrontLayer(
+    decorKey,
+    isCaveDecorKey(decorKey) ? DEFAULT_TANK_LAYER : runtime.decorPlacementLayer
+  );
   const span = getDecorLayerSpan(decorKey, initialLayer);
   const isTransitTube = isTransitTubeDecorKey(decorKey);
   const motionCapabilities = getDecorMotionCapabilities(decorKey);
@@ -230,14 +233,8 @@ function placeDecorAtPoint(xNorm, yNorm) {
 }
 
 function isDecorLayerShortcutEndpoint(decorKey, layer, step) {
-  if (isCaveDecorKey(decorKey)) {
-    return false;
-  }
-
-  const currentLayer = clampTankLayer(layer);
-  return step > 0
-    ? currentLayer >= TANK_DEPTH_LAYERS
-    : currentLayer <= 1;
+  const currentLayer = getDecorFrontLayer(decorKey, layer);
+  return getDecorFrontLayer(decorKey, currentLayer + Math.sign(Number(step) || 0)) === currentLayer;
 }
 
 function canStepPlacedDecorLayer(item, direction) {

@@ -859,7 +859,8 @@ function isDecorFloatingKey(decorKey = "") {
 }
 
 function isDecorSeaweedKey(decorKey = "") {
-  return String(decorKey || "").toLowerCase().includes("seaweed");
+  const normalizedKey = String(decorKey || "").toLowerCase();
+  return normalizedKey.includes("seaweed") || /sea[_\s-]?anemone/.test(normalizedKey);
 }
 
 function isDecorLureKey(decorKey = "") {
@@ -1229,41 +1230,12 @@ function resolveDecorColorLayerPath(layer) {
 
 function getVisibleDecorColorLayers(decorOrKey) {
   const layers = getDecorCaveColorLayers(decorOrKey);
-  const getLayer = (id) => layers.find((layer) => layer.id === id) || null;
   const resolveFirstPath = (paths = []) => paths.find((path) => path && runtime.images.has(path)) || "";
-  const baseLayer = getLayer("color1");
-  if (!baseLayer) {
-    return [];
-  }
-
-  const visible = [{ ...baseLayer, resolvedPath: resolveFirstPath(baseLayer.paths) || baseLayer.path }];
-  const color2Layer = getLayer("color2");
-  const color3Layer = getLayer("color3");
-  const newColor2Path = resolveFirstPath(color2Layer?.paths);
-  const newColor3Path = resolveFirstPath(color3Layer?.paths);
-  const legacyColor2Path = resolveFirstPath(color2Layer?.legacyPaths);
-  const legacyColor3Path = resolveFirstPath(color3Layer?.legacyPaths);
-
-  if (newColor3Path) {
-    if (newColor2Path) {
-      visible.push({ ...color2Layer, resolvedPath: newColor2Path });
-    }
-    visible.push({ ...color3Layer, resolvedPath: newColor3Path });
-    return visible;
-  }
-
-  if (legacyColor2Path) {
-    visible.push({ ...color2Layer, resolvedPath: legacyColor2Path });
-    if (legacyColor3Path) {
-      visible.push({ ...color3Layer, resolvedPath: legacyColor3Path });
-    }
-    return visible;
-  }
-
-  if (newColor2Path) {
-    visible.push({ ...color2Layer, resolvedPath: newColor2Path });
-  }
-  return visible;
+  return ["color1", "color2", "color3"].flatMap((id) => {
+    const layer = layers.find((entry) => entry.id === id) || null;
+    const resolvedPath = resolveFirstPath(layer?.paths) || layer?.path || "";
+    return layer && resolvedPath ? [{ ...layer, resolvedPath }] : [];
+  });
 }
 
 function hasDecorCaveColorLayers(decorOrKey) {
@@ -1759,12 +1731,11 @@ function getDecorLayerSelectValue(item) {
 
 function renderDecorLayerOptions(item) {
   const selectedLayer = getDecorLayerSelectValue(item);
-  const caveLocked = isCaveDecorKey(item?.decorKey);
 
   return Array.from({ length: TANK_DEPTH_LAYERS }, (_, index) => {
     const layer = index + 1;
     const selected = selectedLayer === layer;
-    const disabled = caveLocked && !selected;
+    const disabled = getDecorFrontLayer(item?.decorKey, layer) !== layer;
     return `
       <option value="${layer}" ${selected ? "selected" : ""} ${disabled ? "disabled" : ""}>
         Layer ${layer}${layer === 1 ? " (front)" : layer === TANK_DEPTH_LAYERS ? " (back)" : ""}

@@ -1829,7 +1829,7 @@ function renderEditEquipmentTray() {
       ? `Chum ${inventory.chum}/${BOAT_RESOURCE_CAPACITY}`
       : `Food ${inventory.food}/${SUBMARINE_RESOURCE_CAPACITY} | Health ${inventory.health}/${SUBMARINE_RESOURCE_CAPACITY} | Calm ${inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}`;
     return `
-      <article class="edit-decor-tile" data-decor-name="${label}">
+      <article class="edit-decor-tile is-fish-mood-tile" data-mood-tone="good" data-decor-name="${label}">
         ${!stored ? `<button class="edit-decor-tile-menu-button" type="button" data-open-equipment-menu="${escapeHtml(item.id)}" aria-label="${label} options">…</button>` : ""}
         <button
           class="edit-decor-tile-primary"

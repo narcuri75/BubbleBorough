@@ -1730,6 +1730,7 @@ function storeFish(fishId, options = {}) {
   }
 
   const now = Date.now();
+  const storageMoodTone = !dead ? (getFishCareStatus(fish, now)?.tone || "good") : "";
   preserveTankDirtinessThroughChange(now, () => {
     state.fish.splice(index, 1);
     clearPiranhaAttackState(fish);
@@ -1771,6 +1772,7 @@ function storeFish(fishId, options = {}) {
     fish.piranhaConsumptionEndsAt = null;
     fish.piranhaLastBloodAt = null;
     fish.storageFrozen = true;
+    fish.storageMoodTone = storageMoodTone;
     fish.storedAt = now;
     fish.frozenMealSlotKey = getCurrentMealSlot(now)?.key || "";
     fish.frozenLastSimulatedAt = now;

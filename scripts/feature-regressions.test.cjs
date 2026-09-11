@@ -1865,6 +1865,13 @@ test("startup Continue is replaced by loading and cannot reappear while the aqua
   assert.doesNotMatch(cloud, /function showStartupLoadingState[\s\S]*?window\.setTimeout\(\(\) => \{[\s\S]*?startup-loading-indicator/);
 });
 
+test("startup keeps the intended loading spinner but suppresses the stray fade-out spinner", () => {
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(css, /\.startup-loading-indicator span\s*\{[\s\S]*width:\s*17px[\s\S]*animation:\s*startupSpinner/);
+  assert.match(css, /\.loading-overlay\.is-hiding \.loading-overlay-text\s*\{\s*display:\s*none !important/);
+  assert.match(css, /\.loading-overlay\.is-hiding \.loading-overlay-text::before\s*\{[\s\S]*content:\s*none !important[\s\S]*animation:\s*none !important/);
+});
+
 test("borough edit overview never renders beyond the real 5 by 3 limit", () => {
   const source = fs.readFileSync(path.join(root, "../../public/app-src/ui/main-and-store-rendering.js"), "utf8");
   assert.match(source, /editFrame = \{ minX: frameMinX, maxX: frameMinX \+ 4, minY: frameMinY, maxY: frameMinY \+ 2 \}/);

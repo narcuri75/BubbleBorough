@@ -995,17 +995,6 @@ function showStartupLoadingState(button, label) {
   if (!actions || !buttons || actions.dataset.startupPending === "true") return;
   actions.dataset.startupPending = "true";
   actions.dataset.startupLoadingLabel = label;
-  const trivia = document.querySelector("[data-loading-trivia]");
-  if (trivia) {
-    const messages = [
-      "The whole world decays\nI retreat beneath the glass\nDigital fish swim",
-      "Goldfish can recognize familiar people.",
-      "Angelfish communicate with posture and color.",
-      "A school of fish can move as one without a leader.",
-      "A clean tank is a happier neighborhood."
-    ];
-    trivia.textContent = messages[Math.floor(Math.random() * messages.length)];
-  }
   if (button) {
     button.disabled = true;
     button.classList.add("is-pressed");

@@ -1757,6 +1757,27 @@ function bindEvents() {
   dom.editEquipmentTray?.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
   });
+  dom.editEquipmentTray?.addEventListener("pointermove", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const tile = target?.closest(".edit-decor-tile.is-fish-mood-tile");
+    if (!(tile instanceof HTMLElement)) {
+      return;
+    }
+    const rect = tile.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+    const xPercent = clamp(((event.clientX - rect.left) / rect.width) * 100, 0, 100);
+    const yPercent = clamp(((event.clientY - rect.top) / rect.height) * 100, 0, 100);
+    tile.style.setProperty("--fish-reflection-x", `${xPercent.toFixed(1)}%`);
+    tile.style.setProperty("--fish-reflection-y", `${yPercent.toFixed(1)}%`);
+  });
+  dom.editEquipmentTray?.addEventListener("pointerleave", () => {
+    for (const tile of dom.editEquipmentTray?.querySelectorAll?.(".edit-decor-tile.is-fish-mood-tile") || []) {
+      tile.style.removeProperty("--fish-reflection-x");
+      tile.style.removeProperty("--fish-reflection-y");
+    }
+  });
   dom.editEquipmentTray?.addEventListener("click", (event) => {
     event.stopPropagation();
     const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");

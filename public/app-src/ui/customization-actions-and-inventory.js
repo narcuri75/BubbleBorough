@@ -1707,6 +1707,11 @@ function getFishTrayMoodTone(fish, now = Date.now()) {
     return getFishCareStatus(fish, now)?.tone || "good";
   }
 
+function getStoredFishTrayMoodTone(fish) {
+  const tone = String(fish?.storageMoodTone || "").toLowerCase();
+  return ["good", "okay", "warn", "danger"].includes(tone) ? tone : "good";
+}
+
 function syncEditFishTrayScrollControls() {
   if (!dom.editFishTrayScroller || !dom.editFishTrayPrev || !dom.editFishTrayNext) {
     return;
@@ -1958,7 +1963,11 @@ function renderEditFishTray() {
         const species = runtime.fishMap.get(fish.speciesId);
         const displaySpeciesName = getFishDisplaySpeciesName(fish, species);
         const label = `${fish.name}${displaySpeciesName ? ` - ${displaySpeciesName}` : ""}`;
-        const moodTone = !inStorage && !dead ? getFishTrayMoodTone(fish, trayRenderNow) : "";
+        const moodTone = dead
+          ? ""
+          : inStorage
+            ? getStoredFishTrayMoodTone(fish)
+            : getFishTrayMoodTone(fish, trayRenderNow);
         const actionLabel = !inStorage && !dead
           ? `Meet ${fish.name}`
           : dead

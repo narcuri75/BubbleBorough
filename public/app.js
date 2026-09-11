@@ -15660,6 +15660,27 @@ function bindEvents() {
   dom.editEquipmentTray?.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
   });
+  dom.editEquipmentTray?.addEventListener("pointermove", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const tile = target?.closest(".edit-decor-tile.is-fish-mood-tile");
+    if (!(tile instanceof HTMLElement)) {
+      return;
+    }
+    const rect = tile.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+    const xPercent = clamp(((event.clientX - rect.left) / rect.width) * 100, 0, 100);
+    const yPercent = clamp(((event.clientY - rect.top) / rect.height) * 100, 0, 100);
+    tile.style.setProperty("--fish-reflection-x", `${xPercent.toFixed(1)}%`);
+    tile.style.setProperty("--fish-reflection-y", `${yPercent.toFixed(1)}%`);
+  });
+  dom.editEquipmentTray?.addEventListener("pointerleave", () => {
+    for (const tile of dom.editEquipmentTray?.querySelectorAll?.(".edit-decor-tile.is-fish-mood-tile") || []) {
+      tile.style.removeProperty("--fish-reflection-x");
+      tile.style.removeProperty("--fish-reflection-y");
+    }
+  });
   dom.editEquipmentTray?.addEventListener("click", (event) => {
     event.stopPropagation();
     const overlayModeTab = event.target.closest("[data-edit-overlay-mode]");
@@ -34732,7 +34753,7 @@ function renderEditEquipmentTray() {
       ? `Chum ${inventory.chum}/${BOAT_RESOURCE_CAPACITY}`
       : `Food ${inventory.food}/${SUBMARINE_RESOURCE_CAPACITY} | Health ${inventory.health}/${SUBMARINE_RESOURCE_CAPACITY} | Calm ${inventory.calming}/${SUBMARINE_RESOURCE_CAPACITY}`;
     return `
-      <article class="edit-decor-tile" data-decor-name="${label}">
+      <article class="edit-decor-tile is-fish-mood-tile" data-mood-tone="good" data-decor-name="${label}">
         ${!stored ? `<button class="edit-decor-tile-menu-button" type="button" data-open-equipment-menu="${escapeHtml(item.id)}" aria-label="${label} options">…</button>` : ""}
         <button
           class="edit-decor-tile-primary"
@@ -42194,6 +42215,7 @@ function storeFish(fishId, options = {}) {
   }
 
   const now = Date.now();
+  const storageMoodTone = !dead ? (getFishCareStatus(fish, now)?.tone || "good") : "";
   preserveTankDirtinessThroughChange(now, () => {
     state.fish.splice(index, 1);
     clearPiranhaAttackState(fish);
@@ -42235,6 +42257,7 @@ function storeFish(fishId, options = {}) {
     fish.piranhaConsumptionEndsAt = null;
     fish.piranhaLastBloodAt = null;
     fish.storageFrozen = true;
+    fish.storageMoodTone = storageMoodTone;
     fish.storedAt = now;
     fish.frozenMealSlotKey = getCurrentMealSlot(now)?.key || "";
     fish.frozenLastSimulatedAt = now;
@@ -57096,6 +57119,11 @@ function getFishTrayMoodTone(fish, now = Date.now()) {
     return getFishCareStatus(fish, now)?.tone || "good";
   }
 
+function getStoredFishTrayMoodTone(fish) {
+  const tone = String(fish?.storageMoodTone || "").toLowerCase();
+  return ["good", "okay", "warn", "danger"].includes(tone) ? tone : "good";
+}
+
 function syncEditFishTrayScrollControls() {
   if (!dom.editFishTrayScroller || !dom.editFishTrayPrev || !dom.editFishTrayNext) {
     return;
@@ -57347,7 +57375,11 @@ function renderEditFishTray() {
         const species = runtime.fishMap.get(fish.speciesId);
         const displaySpeciesName = getFishDisplaySpeciesName(fish, species);
         const label = `${fish.name}${displaySpeciesName ? ` - ${displaySpeciesName}` : ""}`;
-        const moodTone = !inStorage && !dead ? getFishTrayMoodTone(fish, trayRenderNow) : "";
+        const moodTone = dead
+          ? ""
+          : inStorage
+            ? getStoredFishTrayMoodTone(fish)
+            : getFishTrayMoodTone(fish, trayRenderNow);
         const actionLabel = !inStorage && !dead
           ? `Meet ${fish.name}`
           : dead
@@ -77764,17 +77796,6 @@ function showStartupLoadingState(button, label) {
   if (!actions || !buttons || actions.dataset.startupPending === "true") return;
   actions.dataset.startupPending = "true";
   actions.dataset.startupLoadingLabel = label;
-  const trivia = document.querySelector("[data-loading-trivia]");
-  if (trivia) {
-    const messages = [
-      "The whole world decays\nI retreat beneath the glass\nDigital fish swim",
-      "Goldfish can recognize familiar people.",
-      "Angelfish communicate with posture and color.",
-      "A school of fish can move as one without a leader.",
-      "A clean tank is a happier neighborhood."
-    ];
-    trivia.textContent = messages[Math.floor(Math.random() * messages.length)];
-  }
   if (button) {
     button.disabled = true;
     button.classList.add("is-pressed");

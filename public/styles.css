@@ -170,21 +170,6 @@ html.halloween-mode .loading-overlay-logo { filter: drop-shadow(0 0 10px rgba(12
   width: min(100%, 520px);
 }
 
-.loading-overlay-trivia {
-  position: absolute;
-  left: 50%;
-  bottom: clamp(18px, 5vh, 76px);
-  width: min(88vw, 620px);
-  margin: 0;
-  color: rgba(238, 249, 255, 0.9);
-  font-size: clamp(.78rem, 1.15vw, 1rem);
-  font-style: italic;
-  line-height: 1.45;
-  text-align: center;
-  text-shadow: 0 2px 12px rgba(0, 20, 60, .9);
-  transform: translateX(-50%);
-  white-space: pre-line;
-}
 
 .loading-overlay.is-ready .loading-overlay-text,
 .loading-overlay.is-error .loading-overlay-text {
@@ -202,8 +187,6 @@ html.halloween-mode .loading-overlay-logo { filter: drop-shadow(0 0 10px rgba(12
 .loading-overlay.is-ready .loading-overlay-text {
   display: none;
 }
-.loading-overlay.is-ready .loading-overlay-trivia,
-.loading-overlay.is-error .loading-overlay-trivia { display: none; }
 
 .loading-overlay.is-error .loading-overlay-text {
   background: linear-gradient(180deg, rgba(116, 30, 55, 0.9), rgba(62, 15, 38, 0.94));
@@ -237,6 +220,17 @@ html.halloween-mode .loading-overlay-logo { filter: drop-shadow(0 0 10px rgba(12
 }
 
 @keyframes loadingOverlaySpinner { to { transform: rotate(1turn); } }
+
+/* During the final fade-out, keep the base loading label hidden. Without this,
+   removing .is-ready briefly reactivates its centered spinner by itself. */
+.loading-overlay.is-hiding .loading-overlay-text {
+  display: none !important;
+}
+.loading-overlay.is-hiding .loading-overlay-text::before {
+  content: none !important;
+  display: none !important;
+  animation: none !important;
+}
 
 .loading-overlay-error-details,
 .loading-overlay-error-actions,
@@ -3483,40 +3477,40 @@ h2 {
   white-space: nowrap;
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile[data-mood-tone="good"] .edit-decor-tile-surface {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile[data-mood-tone="good"] .edit-decor-tile-surface {
   border-color: rgba(99, 255, 146, 0.42);
   background:
     radial-gradient(circle at 50% 14%, rgba(153, 255, 183, 0.28), transparent 38%),
     linear-gradient(180deg, rgba(32, 126, 67, 0.78), rgba(18, 82, 48, 0.68));
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile[data-mood-tone="okay"] .edit-decor-tile-surface {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile[data-mood-tone="okay"] .edit-decor-tile-surface {
   border-color: rgba(90, 238, 222, 0.44);
   background:
     radial-gradient(circle at 50% 14%, rgba(142, 255, 244, 0.25), transparent 38%),
     linear-gradient(180deg, rgba(20, 119, 128, 0.78), rgba(11, 75, 91, 0.68));
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile[data-mood-tone="warn"] .edit-decor-tile-surface {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile[data-mood-tone="warn"] .edit-decor-tile-surface {
   border-color: rgba(255, 184, 52, 0.5);
   background:
     radial-gradient(circle at 50% 14%, rgba(255, 224, 137, 0.28), transparent 38%),
     linear-gradient(180deg, rgba(145, 96, 18, 0.82), rgba(100, 62, 10, 0.72));
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile[data-mood-tone="danger"] .edit-decor-tile-surface {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile[data-mood-tone="danger"] .edit-decor-tile-surface {
   border-color: rgba(255, 85, 112, 0.52);
   background:
     radial-gradient(circle at 50% 14%, rgba(255, 160, 175, 0.26), transparent 38%),
     linear-gradient(180deg, rgba(133, 32, 54, 0.84), rgba(84, 18, 39, 0.74));
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile .edit-decor-tile-surface {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile .edit-decor-tile-surface {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   transition: border-color 160ms ease, filter 160ms ease;
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile .edit-decor-tile-surface::after {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile .edit-decor-tile-surface::after {
   content: "";
   position: absolute;
   z-index: 2;
@@ -3534,36 +3528,36 @@ h2 {
   transition: opacity 90ms ease;
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile:hover .edit-decor-tile-surface,
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile:focus-within .edit-decor-tile-surface {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile:hover .edit-decor-tile-surface,
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile:focus-within .edit-decor-tile-surface {
   border-color: rgba(235, 255, 255, 0.7);
   filter: brightness(1.08) saturate(1.04);
   transform: none;
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile:hover .edit-decor-tile-surface::after,
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile:focus-within .edit-decor-tile-surface::after {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile:hover .edit-decor-tile-surface::after,
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile:focus-within .edit-decor-tile-surface::after {
   opacity: 0.82;
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile::before {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile::before {
   content: none;
   display: none;
   box-shadow: none;
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile .edit-decor-tile-thumb {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile .edit-decor-tile-thumb {
   z-index: 1;
   filter: none;
 }
 
-.edit-fish-tray .edit-decor-tile.is-fish-mood-tile .inventory-tray-label {
+:is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile .inventory-tray-label {
   z-index: 3;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .edit-fish-tray .edit-decor-tile.is-fish-mood-tile:hover .edit-decor-tile-surface::after,
-  .edit-fish-tray .edit-decor-tile.is-fish-mood-tile:focus-within .edit-decor-tile-surface::after {
+  :is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile:hover .edit-decor-tile-surface::after,
+  :is(.edit-fish-tray, .edit-equipment-tray) .edit-decor-tile.is-fish-mood-tile:focus-within .edit-decor-tile-surface::after {
     opacity: 0.28;
   }
 }
@@ -3893,74 +3887,27 @@ h2 {
   font-weight: 800;
   letter-spacing: .04em;
 }
-.borough-overview-loading-scene {
-  position: relative;
-  width: min(320px, 56vw);
-  height: 82px;
-  overflow: hidden;
+.borough-overview-loading-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: min(180px, 34vw);
+  height: 104px;
 }
-.borough-overview-loading-scene::after {
-  content: "";
-  position: absolute;
-  left: 7%;
-  right: 7%;
-  bottom: 8px;
-  height: 1px;
-  background: #2d7891;
+.borough-overview-loading-icon {
+  display: block;
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .28));
+  transform-origin: 50% 68%;
+  animation: borough-overview-icon-wiggle .78s ease-in-out infinite alternate;
 }
-.borough-overview-loading-fish {
-  position: absolute;
-  top: 27px;
-  left: 18%;
-  width: 54px;
-  height: 26px;
-  border-radius: 55% 48% 48% 55%;
-  background: #65d6ef;
-  box-shadow: 0 0 22px #1d7e9b;
-  animation: borough-loading-swim 1.75s ease-in-out infinite alternate;
+@keyframes borough-overview-icon-wiggle {
+  from { transform: rotate(-6deg) translateX(-3px) translateY(1px); }
+  to { transform: rotate(6deg) translateX(3px) translateY(-1px); }
 }
-.borough-overview-loading-fish::before {
-  content: "";
-  position: absolute;
-  left: -17px;
-  top: 5px;
-  width: 0;
-  height: 0;
-  border-top: 9px solid transparent;
-  border-bottom: 9px solid transparent;
-  border-right: 20px solid #65d6ef;
-}
-.borough-overview-loading-fish::after {
-  content: "";
-  position: absolute;
-  right: 10px;
-  top: 8px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #031521;
-}
-.borough-overview-loading-bubble {
-  position: absolute;
-  bottom: 9px;
-  width: 8px;
-  height: 8px;
-  border: 1px solid #8beaff;
-  border-radius: 50%;
-  opacity: .8;
-  animation: borough-loading-bubble 1.6s linear infinite;
-}
-.borough-overview-loading-bubble.bubble-one { left: 63%; animation-delay: 0s; }
-.borough-overview-loading-bubble.bubble-two { left: 70%; width: 5px; height: 5px; animation-delay: .48s; }
-.borough-overview-loading-bubble.bubble-three { left: 76%; width: 11px; height: 11px; animation-delay: .9s; }
-@keyframes borough-loading-swim {
-  from { transform: translateX(-46px) translateY(3px); }
-  to { transform: translateX(112px) translateY(-4px); }
-}
-@keyframes borough-loading-bubble {
-  0% { transform: translateY(0) scale(.75); opacity: 0; }
-  18% { opacity: .85; }
-  100% { transform: translateY(-64px) scale(1.15); opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .borough-overview-loading-icon { animation: none; }
 }
 
 .borough-overview {
@@ -15818,8 +15765,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   width: min(100%, 900px);
 }
 .loading-overlay.is-ready.is-auth-mode .loading-overlay-logo,
-.loading-overlay.is-ready.is-auth-mode .loading-overlay-text,
-.loading-overlay.is-ready.is-auth-mode .loading-overlay-trivia {
+.loading-overlay.is-ready.is-auth-mode .loading-overlay-text {
   display: none !important;
 }
 .loading-overlay.is-ready.is-auth-mode::after {

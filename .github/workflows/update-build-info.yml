@@ -1,0 +1,47 @@
+name: Update Bubble Borough build info
+
+on:
+  push:
+
+permissions:
+  contents: write
+
+jobs:
+  update-build-info:
+    if: github.actor != 'github-actions[bot]' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Write build info
+        shell: bash
+        run: |
+          BUILD_VERSION="$(node -e "const fs=require('fs'); try { const j=JSON.parse(fs.readFileSync('public/build-info.json','utf8')); process.stdout.write(j.version || 'Beta Version 0.2.1'); } catch { process.stdout.write('Beta Version 0.2.1'); }")"
+          PUSH_TIME="$(TZ=America/Los_Angeles date '+%m/%d/%Y %-I:%M %p %Z')"
+          SHORT_SHA="${GITHUB_SHA::7}"
+
+          cat > public/build-info.json <<EOF_JSON
+          {
+            "version": "${BUILD_VERSION}",
+            "lastPushed": "${PUSH_TIME}",
+            "commit": "${SHORT_SHA}"
+          }
+          EOF_JSON
+
+      - name: Commit updated build info
+        shell: bash
+        run: |
+          if git diff --quiet -- public/build-info.json; then
+            echo "Build info is already current."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/build-info.json
+          git commit -m "chore: update build info"
+          git push

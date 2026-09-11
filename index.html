@@ -58,7 +58,10 @@
         <small data-loading-recovery-status></small>
       </div>
     </div>
-    <div class="loading-overlay-version" aria-label="Bubble Borough Beta Version 0.2.1">Beta Version 0.2.1</div>
+    <div id="buildVersionLabel" class="loading-overlay-version" aria-label="Bubble Borough Beta Version 0.2.1">
+      <span data-build-version>Beta Version 0.2.1</span>
+      <small data-build-pushed hidden></small>
+    </div>
   </div>
 
   <div class="app-shell">
@@ -2627,6 +2630,35 @@
         if (loader.hidden && !areOverviewPreviewsReady()) beginOverviewLoading();
       });
       observer.observe(overview, { attributes: true, attributeFilter: ["hidden"] });
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const label = document.getElementById("buildVersionLabel");
+      if (!label) return;
+
+      const versionNode = label.querySelector("[data-build-version]");
+      const pushedNode = label.querySelector("[data-build-pushed]");
+      const fallbackVersion = "Beta Version 0.2.1";
+
+      fetch(`./public/build-info.json?ts=${Date.now()}`, { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
+        .then((info) => {
+          const version = String(info?.version || fallbackVersion).trim();
+          const pushedAt = String(info?.lastPushed || "").trim();
+          const commit = String(info?.commit || "").trim();
+
+          if (versionNode) versionNode.textContent = version;
+          if (pushedNode && pushedAt) {
+            pushedNode.textContent = `Last pushed: ${pushedAt}${commit ? ` · ${commit}` : ""}`;
+            pushedNode.hidden = false;
+          }
+          label.setAttribute("aria-label", `${version}${pushedAt ? `. Last pushed ${pushedAt}` : ""}`);
+        })
+        .catch(() => {
+          if (versionNode) versionNode.textContent = fallbackVersion;
+        });
     })();
   </script>
 

@@ -15816,6 +15816,18 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   text-shadow: 0 1px 4px rgba(0, 12, 28, .72);
   pointer-events: none;
 }
+.loading-overlay-version > span,
+.loading-overlay-version > small {
+  display: block;
+}
+.loading-overlay-version > small {
+  margin-top: 4px;
+  color: rgba(218, 237, 247, .34);
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: .025em;
+}
 .loading-overlay.is-ready.is-auth-mode .loading-overlay-version,
 .loading-overlay.is-ready.is-welcome-mode .loading-overlay-version {
   display: block;

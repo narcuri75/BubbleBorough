@@ -941,6 +941,7 @@ function getFishAdultScale(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishGrowthProgress(fish, now = Date.now()) {
+  if (typeof getPeacefulModeSimulationNow === "function") now = getPeacefulModeSimulationNow(now);
   if (
     !fish
     || !Number.isFinite(Number(fish.growthStartedAt))

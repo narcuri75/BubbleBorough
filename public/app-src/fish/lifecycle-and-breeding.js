@@ -539,6 +539,7 @@ function hatchFishEgg(egg, now = Date.now()) {
 }
 
 function processFishEggs(now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!Array.isArray(state.fishEggs) || !state.fishEggs.length) {
     return false;
   }

@@ -2987,12 +2987,15 @@ const dom = {
   utilityOverlay: document.querySelector("#utilityOverlay"),
   utilityOverlayTitle: document.querySelector("#utilityOverlayTitle"),
   utilityOverlayKicker: document.querySelector("#utilityOverlayKicker"),
+  utilityOverlayTitleActions: document.querySelector("#utilityOverlayTitleActions"),
+  utilityOverlayHeaderActions: document.querySelector("#utilityOverlayHeaderActions"),
   utilityOverlayBody: document.querySelector("#utilityOverlayBody"),
   utilityOverlayFooter: document.querySelector("#utilityOverlayFooter"),
   closeUtilityOverlay: document.querySelector("#closeUtilityOverlay"),
   settingsOverlay: document.querySelector("#settingsOverlay"),
   debugModeSettingsSection: document.querySelector("#debugModeSettingsSection"),
   debugModeToggleInput: document.querySelector("#debugModeToggleInput"),
+  peacefulModeToggleInput: document.querySelector("#peacefulModeToggleInput"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -3213,6 +3216,7 @@ const runtime = {
   residenceSettingsDecorId: null,
   caveSettingsActivePointType: "seat",
   caveSettingsDrag: null,
+  decorSettingsCaveTab: "entries",
   pendingDecorAction: null,
   pendingFishAction: null,
   pendingCustomDecorUpload: null,
@@ -4309,14 +4313,26 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     runtimeKey: "customDecorSettingsDecorId",
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderDecorSettingsOverlay(item)
+    renderBody: (item) => renderDecorSettingsOverlay(item),
+    renderTitleActions: (item, decor) => renderDecorSettingsTitleActions(item, decor),
+    renderHeaderActions: (item, decor) => renderDecorSettingsHeaderActions(item, decor),
+    hideFooter: true,
+    handlers: {
+      onHeaderClick: handleDecorSettingsUtilityOverlayHeaderClick
+    }
   }),
   "custom-decor-settings": createPlacedDecorUtilityMode({
     id: "custom-decor-settings",
     runtimeKey: "customDecorSettingsDecorId",
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderDecorSettingsOverlay(item)
+    renderBody: (item) => renderDecorSettingsOverlay(item),
+    renderTitleActions: (item, decor) => renderDecorSettingsTitleActions(item, decor),
+    renderHeaderActions: (item, decor) => renderDecorSettingsHeaderActions(item, decor),
+    hideFooter: true,
+    handlers: {
+      onHeaderClick: handleDecorSettingsUtilityOverlayHeaderClick
+    }
   }),
   "decor-residence": createPlacedDecorUtilityMode({
     id: "decor-residence",
@@ -4593,7 +4609,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
 // Decoration history and reusable layouts. History is session-only; layouts travel with saves.
 
 function copyDecorEditItem(item) {
-  const keys = ["id", "decorKey", "xNorm", "yNorm", "scale", "tankLayer", "flipped", "flippedY",
+  const keys = ["id", "decorKey", "customName", "xNorm", "yNorm", "scale", "tankLayer", "flipped", "flippedY",
     "freePlacementEnabled", "groupId", "xAnchorMode", "xCenterOffsetWorld", "yAnchorMode", "yAnchorValue",
     "bubblerSettings", "decorSettings", "caveSettings", "caveColorSettings", "transitTubeName", "transitTubeColor", "transitTubeLinkedId"];
   return JSON.parse(JSON.stringify(Object.fromEntries(keys.filter((key) => item[key] !== undefined).map((key) => [key, item[key]]))));
@@ -5133,10 +5149,14 @@ function maybeRecordBoroughHappeningFromEvent(event, tank = getCurrentTank()) {
 }
 
 function getFishAgeDays(fish, now = Date.now()) {
-  return Math.max(0, Math.floor((getBoroughReferenceNow(now) - (Number(fish?.acquiredAt) || getBoroughReferenceNow(now))) / DAY_MS));
+  const referenceNow = typeof getPeacefulModeSimulationNow === "function"
+    ? getPeacefulModeSimulationNow(getBoroughReferenceNow(now))
+    : getBoroughReferenceNow(now);
+  return Math.max(0, Math.floor((referenceNow - (Number(fish?.acquiredAt) || referenceNow)) / DAY_MS));
 }
 
 function processFishAgeMilestones(now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   let changed = false;
   for (const tank of getAllTanks(state)) {
     for (const fish of tank.fish || []) {
@@ -8053,6 +8073,10 @@ function sellCurrentTank() {
 }
 
 function sellAquariumTank(tankId) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    showToast("Selling is disabled while Peaceful Mode is enabled.");
+    return false;
+  }
   const tank = getTankById(tankId);
   if (!tank) {
     return false;
@@ -8358,6 +8382,81 @@ function getBubblerSettingsTarget() {
   return item && canConfigureDecorBubbler(item) ? item : null;
 }
 
+function setSelectedDecorCustomName(value) {
+  const item = getDecorSettingsTarget();
+  if (!item) {
+    return false;
+  }
+
+  const nextName = sanitizePlacedDecorDisplayName(value);
+  if (nextName) {
+    item.customName = nextName;
+  } else {
+    delete item.customName;
+  }
+  saveState();
+  renderUi(Date.now());
+  return true;
+}
+
+function stepSelectedDecorLayer(direction) {
+  const item = getDecorSettingsTarget();
+  if (!item) {
+    return false;
+  }
+
+  const step = Number(direction) < 0 ? -1 : 1;
+  const currentLayer = getDecorLayerSelectValue(item);
+  const nextLayer = getDecorFrontLayer(item.decorKey, currentLayer + step);
+  if (nextLayer === currentLayer) {
+    return false;
+  }
+
+  updateSelectedDecorSetting("tankLayer", nextLayer);
+  return true;
+}
+
+function resetSelectedDecorSettings() {
+  const item = getDecorSettingsTarget();
+  if (!item) {
+    return false;
+  }
+
+  const defaultScale = getDecorScaleDefault(item.decorKey);
+  const defaultLayer = getDecorFrontLayer(item.decorKey, DEFAULT_TANK_LAYER);
+  if (isPlacedDecorGrouped(item)) {
+    setDecorGroupScale(item, defaultScale, false);
+    setDecorGroupLayer(item, defaultLayer, false);
+  } else {
+    item.scale = defaultScale;
+    item.tankLayer = defaultLayer;
+    const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
+    item.xNorm = placement.xNorm;
+    item.yNorm = placement.yNorm;
+    updatePlacedDecorResizeAnchor(item);
+  }
+
+  delete item.decorSettings;
+  delete item.caveColorSettings;
+  if (isCaveDecorKey(item.decorKey)) {
+    item.caveSettings = getDecorDefaultCaveSettings(item.decorKey);
+    clearCaveBehaviorForDecor(item.id);
+    runtime.decorSettingsCaveTab = "entries";
+  }
+  if (canConfigureDecorBubbler(item)) {
+    delete item.bubblerSettings;
+  }
+  if (isTransitTubeDecorKey(item.decorKey)) {
+    delete item.transitTubeColor;
+  }
+
+  runtime.decorPlacementLayer = getDecorLayerSelectValue(item);
+  saveState();
+  renderUi(Date.now());
+  showToast("Decor settings reset.");
+  return true;
+}
+
 function openDecorSettings(placedId) {
   const item = setSelectedDecor(placedId);
   if (!item) {
@@ -8372,6 +8471,7 @@ function openDecorSettings(placedId) {
 
   runtime.customDecorSettingsDecorId = item.id;
   runtime.bubblerSettingsDecorId = null;
+  runtime.decorSettingsCaveTab = "entries";
   openUtilityOverlay("decor-settings", { clearPrimaryToolModes: false });
 }
 
@@ -9017,6 +9117,19 @@ function updateCaveColorSettingsControls(item = getDecorSettingsTarget(), decorO
     swatch.setAttribute("aria-pressed", String(selected));
   });
 
+  const colorPickers = dom.utilityOverlayBody.querySelectorAll("[data-cave-color-picker]");
+  colorPickers.forEach((picker) => {
+    if (!(picker instanceof HTMLInputElement)) {
+      return;
+    }
+    const layerId = picker.getAttribute("data-cave-color-picker") || "";
+    const activeColor = normalizeHexColor(settings[layerId] || "");
+    if (activeColor && document.activeElement !== picker) {
+      picker.value = activeColor;
+    }
+    picker.closest("[data-cave-color-picker-shell]")?.classList.toggle("is-selected", Boolean(activeColor));
+  });
+
   const colorizeControls = dom.utilityOverlayBody.querySelectorAll("[data-cave-colorize-layer]");
   colorizeControls.forEach((control) => {
     if (!(control instanceof HTMLInputElement)) {
@@ -9027,7 +9140,38 @@ function updateCaveColorSettingsControls(item = getDecorSettingsTarget(), decorO
   });
 }
 
-function updateSelectedCaveColorSetting(layerId, color) {
+function queueCaveColorLivePreview(item, decor, pendingCustomHide = null) {
+  runtime.pendingCaveColorPreviewItem = item || null;
+  runtime.pendingCaveColorPreviewDecor = decor || null;
+  runtime.pendingCaveColorPreviewIsCustomHide = Boolean(pendingCustomHide);
+  if (runtime.caveColorPreviewFrame) {
+    return;
+  }
+
+  const scheduleFrame = typeof window !== "undefined" && typeof window.requestAnimationFrame === "function"
+    ? window.requestAnimationFrame.bind(window)
+    : (callback) => setTimeout(callback, 0);
+  runtime.caveColorPreviewFrame = scheduleFrame(() => {
+    runtime.caveColorPreviewFrame = 0;
+    const previewItem = runtime.pendingCaveColorPreviewItem;
+    const previewDecor = runtime.pendingCaveColorPreviewDecor;
+    const customHidePreview = runtime.pendingCaveColorPreviewIsCustomHide;
+    runtime.pendingCaveColorPreviewItem = null;
+    runtime.pendingCaveColorPreviewDecor = null;
+    runtime.pendingCaveColorPreviewIsCustomHide = false;
+
+    if (previewItem && previewDecor) {
+      updateCaveColorSettingsControls(previewItem, previewDecor);
+    }
+    if (customHidePreview) {
+      renderCustomHidePreview(Date.now());
+    } else {
+      renderDecorSettingsMotionPreview(Date.now());
+    }
+  });
+}
+
+function updateSelectedCaveColorSetting(layerId, color, options = {}) {
   const pendingCustomHide = runtime.utilityOverlayMode === "custom-hide-create" ? runtime.pendingCustomHideUpload : null;
   const item = pendingCustomHide ? getPendingCustomHidePreviewItem() : getDecorSettingsTarget();
   const decor = pendingCustomHide ? getPendingCustomHidePreviewDecor() : (item ? runtime.decorMap.get(item.decorKey) : null);
@@ -9036,34 +9180,49 @@ function updateSelectedCaveColorSetting(layerId, color) {
     return;
   }
 
+  const live = options.live === true;
+  const persist = options.persist !== false;
   const nextSettings = buildPlacedCaveColorSettingsPayload(item, decor);
   const normalizedColor = normalizeDecorColorSetting(color);
-  if (normalizedColor) {
-    nextSettings[layerId] = normalizedColor;
-  } else {
-    delete nextSettings[layerId];
+  const currentColor = normalizeDecorColorSetting(getPlacedCaveColorSettings(item, decor)[layerId] || "");
+  const changed = currentColor !== normalizedColor;
+
+  if (changed) {
+    if (normalizedColor) {
+      nextSettings[layerId] = normalizedColor;
+    } else {
+      delete nextSettings[layerId];
+    }
+
+    const sanitized = sanitizePlacedCaveColorSettings(nextSettings, decor);
+    if (pendingCustomHide) {
+      if (sanitized) {
+        pendingCustomHide.caveColorSettings = sanitized;
+      } else {
+        delete pendingCustomHide.caveColorSettings;
+      }
+    } else if (sanitized) {
+      item.caveColorSettings = sanitized;
+    } else {
+      delete item.caveColorSettings;
+    }
   }
 
-  const sanitized = sanitizePlacedCaveColorSettings(nextSettings, decor);
-  if (pendingCustomHide) {
-    if (sanitized) {
-      pendingCustomHide.caveColorSettings = sanitized;
-    } else {
-      delete pendingCustomHide.caveColorSettings;
-    }
-    updateCaveColorSettingsControls(getPendingCustomHidePreviewItem(), getPendingCustomHidePreviewDecor());
-    renderCustomHidePreview(Date.now());
+  if (!pendingCustomHide && persist && (changed || options.forcePersist === true)) {
+    saveState();
+  }
+
+  if (live) {
+    queueCaveColorLivePreview(item, decor, pendingCustomHide);
     return;
   }
-  if (sanitized) {
-    item.caveColorSettings = sanitized;
-  } else {
-    delete item.caveColorSettings;
-  }
 
-  saveState();
-  updateCaveColorSettingsControls(item);
-  renderDecorSettingsMotionPreview(Date.now());
+  updateCaveColorSettingsControls(item, decor);
+  if (pendingCustomHide) {
+    renderCustomHidePreview(Date.now());
+  } else {
+    renderDecorSettingsMotionPreview(Date.now());
+  }
 }
 
 function updateSelectedCaveColorizeSetting(layerId, colorize) {
@@ -9920,6 +10079,61 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
   }
 
   updateCaveSettingsControls(item);
+}
+
+function addSelectedCavePoint(kind = "entry") {
+  const target = getEditableCaveSettingsTarget();
+  if (!target?.settings) {
+    return false;
+  }
+
+  const isSeat = String(kind) === "seat";
+  const countKey = isSeat ? "seatCount" : "entryCount";
+  const maxCount = isSeat ? CAVE_SETTINGS_MAX_SEATS : CAVE_SETTINGS_MAX_ENTRIES;
+  const currentCount = Number(target.settings[countKey]) || (isSeat ? target.settings.seats.length : target.settings.entries.length);
+  if (currentCount >= maxCount) {
+    return false;
+  }
+
+  updateSelectedCaveSetting(countKey, currentCount + 1);
+  return true;
+}
+
+function removeSelectedCavePoint(kind = "entry", indexValue = 0) {
+  const target = getEditableCaveSettingsTarget();
+  if (!target?.item || !target.settings) {
+    return false;
+  }
+
+  const isSeat = String(kind) === "seat";
+  const listKey = isSeat ? "seats" : "entries";
+  const countKey = isSeat ? "seatCount" : "entryCount";
+  const activeKey = isSeat ? "activeSeatIndex" : "activeEntryIndex";
+  const minCount = isSeat ? CAVE_SETTINGS_MIN_SEATS : CAVE_SETTINGS_MIN_ENTRIES;
+  const list = Array.isArray(target.settings[listKey]) ? target.settings[listKey] : [];
+  if (list.length <= minCount) {
+    return false;
+  }
+
+  const index = clamp(Math.floor(Number(indexValue) || 0), 0, list.length - 1);
+  list.splice(index, 1);
+  target.settings[countKey] = list.length;
+  target.settings[activeKey] = clamp(
+    Math.floor(Number(target.settings[activeKey]) || 0) - (index < Number(target.settings[activeKey]) ? 1 : 0),
+    0,
+    Math.max(0, list.length - 1)
+  );
+  runtime.caveSettingsActivePointType = isSeat ? "seat" : "entry";
+
+  target.item.caveSettings = sanitizePlacedCaveSettings(target.settings);
+  if (target.pending) {
+    target.pending.caveSettings = target.item.caveSettings;
+  } else {
+    clearCaveBehaviorForDecor(target.item.id);
+    saveState();
+  }
+  renderUi(Date.now());
+  return true;
 }
 
 function getCaveSettingsPreviewLocalPoint(event) {
@@ -15269,6 +15483,9 @@ function bindEvents() {
   dom.debugModeToggleInput?.addEventListener("change", (event) => {
     setDebugToolsEnabled(event.currentTarget?.checked);
   });
+  dom.peacefulModeToggleInput?.addEventListener("change", (event) => {
+    setPeacefulModeEnabled(event.currentTarget?.checked);
+  });
   dom.settingsOverlay?.addEventListener("change", (event) => {
     const toolbarInput = event.target.closest("[data-toolbar-position-choice]");
     if (TOOLBAR_POSITION_SETTING_ENABLED && toolbarInput instanceof HTMLInputElement) {
@@ -16054,8 +16271,8 @@ function bindEvents() {
     if (selectButton) {
       event.stopPropagation();
       const fishId = selectButton.dataset.traySelectFish;
-      clearPrimaryToolModes();
-      openFishActionMenu(fishId);
+      closeEditFishTrayContextMenu({ render: false });
+      openFishInspector(fishId, { settingsOpen: true });
       return;
     }
     const menuButton = event.target.closest("[data-open-fish-tray-menu]");
@@ -16267,6 +16484,12 @@ function bindEvents() {
     applyWallpaperNameKeyboardActionToInput(input, button.dataset.fishNameAction || button.dataset.fishNameKey || "");
     runtime.wallpaperUtilityKeyboardOpenId = input.dataset.wallpaperKeyboardInput || "";
     syncWallpaperUtilityNameKeyboards();
+  });
+  dom.utilityOverlayTitleActions?.addEventListener("click", (event) => {
+    dispatchUtilityOverlayTargetEvent("onHeaderClick", event);
+  });
+  dom.utilityOverlayHeaderActions?.addEventListener("click", (event) => {
+    dispatchUtilityOverlayTargetEvent("onHeaderClick", event);
   });
   dom.utilityOverlayFooter?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -16818,7 +17041,11 @@ function bindEvents() {
 
     const hitFish = findFishAtPoint(point.x, point.y, Date.now());
     if (hitFish) {
-      openFishActionMenu(hitFish.id, point);
+      if (runtime.fishEditMode) {
+        openFishInspector(hitFish.id, { settingsOpen: true });
+      } else {
+        openFishActionMenu(hitFish.id, point);
+      }
       return;
     }
 
@@ -17143,7 +17370,13 @@ function bindEvents() {
   });
   dom.inspectorStoreFish?.addEventListener("click", () => {
     const fishId = dom.inspectorStoreFish?.dataset.storeFish;
-    if (fishId) {
+    if (!fishId) {
+      return;
+    }
+    const managed = getManagedFishById(fishId);
+    if (managed?.inStorage) {
+      restoreFishToTank(fishId);
+    } else {
       storeFish(fishId);
     }
   });
@@ -17176,6 +17409,11 @@ function bindEvents() {
   dom.fishInspector?.addEventListener("input", playFishInspectorSliderInputSound, true);
   dom.fishInspector?.addEventListener("input", (event) => {
     const target = event.target instanceof Element ? event.target : null;
+    const colorPicker = target?.closest("[data-inspector-fish-color-picker]");
+    if (colorPicker instanceof HTMLInputElement && colorPicker.type === "color") {
+      queueInspectorFishColorPreview(colorPicker.value);
+      return;
+    }
     const control = target?.closest("[data-inspector-fish-setting]");
     if (control instanceof HTMLInputElement) {
       updateInspectorFishSetting(
@@ -17186,6 +17424,11 @@ function bindEvents() {
   });
   dom.fishInspector?.addEventListener("change", (event) => {
     const target = event.target instanceof Element ? event.target : null;
+    const colorPicker = target?.closest("[data-inspector-fish-color-picker]");
+    if (colorPicker instanceof HTMLInputElement && colorPicker.type === "color") {
+      updateInspectorFishSetting("color", colorPicker.value, { forcePersist: true });
+      return;
+    }
     const control = target?.closest("[data-inspector-fish-setting]");
     if (control instanceof HTMLInputElement || control instanceof HTMLSelectElement) {
       updateInspectorFishSetting(
@@ -17194,6 +17437,16 @@ function bindEvents() {
       );
     }
   });
+  window.addEventListener("pointerdown", (event) => {
+    if (!runtime.fishInspectorSettingsOpen || !runtime.selectedFishId || !dom.fishInspector || dom.fishInspector.hidden) {
+      return;
+    }
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest(".fish-inspector")) {
+      return;
+    }
+    closeFishInspector();
+  }, true);
   dom.fishNameInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -20209,6 +20462,7 @@ function getDerivedFishNeedDefaults(fish, now = Date.now()) {
 }
 
 function sanitizeFishNeeds(value, fish = null, now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) && fish && !isFishDead(fish)) return Object.fromEntries(FISH_NEED_KEYS.map(key => [key, 100]));
   if (hasActiveCandyBoost(fish, now)) return Object.fromEntries(FISH_NEED_KEYS.map(key => [key, 100]));
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const defaults = fish ? getDerivedFishNeedDefaults(fish, now) : FISH_NEED_DEFAULTS;
@@ -21138,6 +21392,7 @@ function applyFirstAidDiseaseSlowdown(now = Date.now()) {
 }
 
 function processFishDisease(now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!state?.fish?.length) {
     return false;
   }
@@ -23340,6 +23595,7 @@ function getFishAdultScale(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishGrowthProgress(fish, now = Date.now()) {
+  if (typeof getPeacefulModeSimulationNow === "function") now = getPeacefulModeSimulationNow(now);
   if (
     !fish
     || !Number.isFinite(Number(fish.growthStartedAt))
@@ -24450,6 +24706,248 @@ function getWallpaperKeyboardNameInput(target) {
   return input instanceof HTMLInputElement ? input : null;
 }
 
+function sanitizePeacefulModeState(rawState) {
+  const source = rawState && typeof rawState === "object" ? rawState : {};
+  const tankSnapshots = source.tankSnapshots && typeof source.tankSnapshots === "object" && !Array.isArray(source.tankSnapshots)
+    ? source.tankSnapshots
+    : {};
+  const fishSnapshots = source.fishSnapshots && typeof source.fishSnapshots === "object" && !Array.isArray(source.fishSnapshots)
+    ? source.fishSnapshots
+    : {};
+  return {
+    enabled: source.enabled === true,
+    startedAt: Number.isFinite(Number(source.startedAt)) ? Math.max(0, Number(source.startedAt)) : 0,
+    tankSnapshots,
+    fishSnapshots
+  };
+}
+
+function getPeacefulModeState(targetState = state) {
+  return sanitizePeacefulModeState(targetState?.peacefulMode);
+}
+
+function isPeacefulModeEnabled(targetState = state) {
+  return getPeacefulModeState(targetState).enabled;
+}
+
+function getPeacefulModeSimulationNow(now = Date.now()) {
+  const mode = getPeacefulModeState();
+  return mode.enabled && mode.startedAt > 0 ? Math.min(now, mode.startedAt) : now;
+}
+
+function getPeacefulModeTankSnapshot(tank, now = Date.now()) {
+  if (!tank) return null;
+  const fishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+  const deadFishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && isFishDead(fish));
+  const duration = getTankMaxDirtyDurationMs(fishList, tank, deadFishList);
+  const lastCleanedAt = Number(tank.lastCleanedAt) || now;
+  return {
+    dirtiness: clamp((now - lastCleanedAt) / Math.max(1, duration), 0, 1),
+    poops: Array.isArray(tank.poops) ? tank.poops.map((poop) => ({ ...poop })) : [],
+    pendingPoops: Array.isArray(tank.pendingPoops) ? tank.pendingPoops.map((poop) => ({ ...poop })) : [],
+    lastSimulatedAt: Number.isFinite(Number(tank.lastSimulatedAt)) ? Number(tank.lastSimulatedAt) : now,
+    createdAt: Number.isFinite(Number(tank.createdAt)) ? Number(tank.createdAt) : null
+  };
+}
+
+function getPeacefulModeFishSnapshot(fish) {
+  if (!fish) return null;
+  const timerKeys = [
+    "acquiredAt", "tankAddedAt", "growthStartedAt", "growthEndsAt",
+    "diseaseLastProgressAt", "nextDiseaseCheckAt", "nextSymptomCheckAt", "nextDiseaseSpreadCheckAt",
+    "diseaseTreatedUntil", "temporaryImmunityUntil", "nextGreenBubbleAt",
+    "zombieBiteStartedAt", "zombieBiteLastBloodAt", "zombieReviveAt",
+    "nextWasteAt", "lastNeighborhoodMoveAt", "lastAteAt", "breedCooldownUntil"
+  ];
+  const timers = {};
+  for (const key of timerKeys) {
+    if (Number.isFinite(Number(fish[key]))) timers[key] = Number(fish[key]);
+  }
+  return {
+    needs: fish.needs && typeof fish.needs === "object" ? { ...fish.needs } : null,
+    healthUnits: Number.isFinite(Number(fish.healthUnits)) ? Number(fish.healthUnits) : null,
+    needsUpdatedAt: Number.isFinite(Number(fish.needsUpdatedAt)) ? Number(fish.needsUpdatedAt) : null,
+    comfortDamageProgressMs: Math.max(0, Number(fish.comfortDamageProgressMs) || 0),
+    timers
+  };
+}
+
+function capturePeacefulModeSnapshots(now = Date.now()) {
+  const tankSnapshots = {};
+  const fishSnapshots = {};
+  for (const tank of getAllTanks(state)) {
+    if (!tank?.id) continue;
+    tankSnapshots[tank.id] = getPeacefulModeTankSnapshot(tank, now);
+    for (const fish of Array.isArray(tank.fish) ? tank.fish : []) {
+      if (fish?.id) fishSnapshots[fish.id] = getPeacefulModeFishSnapshot(fish);
+    }
+  }
+  for (const fish of Array.isArray(state?.storedFish) ? state.storedFish : []) {
+    if (fish?.id && !fishSnapshots[fish.id]) fishSnapshots[fish.id] = getPeacefulModeFishSnapshot(fish);
+  }
+  return { tankSnapshots, fishSnapshots };
+}
+
+function ensurePeacefulModeSnapshots(now = Date.now()) {
+  if (!state || !isPeacefulModeEnabled()) return false;
+  const mode = getPeacefulModeState();
+  if (mode.startedAt > 0 && Object.keys(mode.tankSnapshots).length) return false;
+  const snapshots = capturePeacefulModeSnapshots(now);
+  state.peacefulMode = {
+    enabled: true,
+    startedAt: mode.startedAt > 0 ? mode.startedAt : now,
+    ...snapshots
+  };
+  return true;
+}
+
+function enforcePeacefulModeState(now = Date.now()) {
+  if (!state || !isPeacefulModeEnabled()) return false;
+  ensurePeacefulModeSnapshots(now);
+  let changed = false;
+  const fullNeeds = Object.fromEntries(FISH_NEED_KEYS.map((key) => [key, 100]));
+  for (const tank of getAllTanks(state)) {
+    if (Array.isArray(tank.poops) && tank.poops.length) {
+      tank.poops = [];
+      changed = true;
+    }
+    if (Array.isArray(tank.pendingPoops) && tank.pendingPoops.length) {
+      tank.pendingPoops = [];
+      changed = true;
+    }
+    tank.lastSimulatedAt = now;
+    for (const fish of Array.isArray(tank.fish) ? tank.fish : []) {
+      if (!fish || isFishDead(fish)) continue;
+      const maxHealth = getFishMaxHealthUnits(fish);
+      if (Number(fish.healthUnits) !== maxHealth) {
+        fish.healthUnits = maxHealth;
+        changed = true;
+      }
+      const currentNeeds = sanitizeFishNeeds(fish.needs, fish, now);
+      if (FISH_NEED_KEYS.some((key) => currentNeeds[key] !== 100)) changed = true;
+      fish.needs = { ...fullNeeds };
+      fish.needsUpdatedAt = now;
+      fish.comfortDamageProgressMs = 0;
+      clearPiranhaAttackState(fish);
+      clearZombieAttackState(fish);
+    }
+  }
+  for (const fish of Array.isArray(state.storedFish) ? state.storedFish : []) {
+    if (!fish || isFishDead(fish)) continue;
+    const maxHealth = getFishMaxHealthUnits(fish);
+    if (Number(fish.healthUnits) !== maxHealth) {
+      fish.healthUnits = maxHealth;
+      changed = true;
+    }
+    fish.needs = { ...fullNeeds };
+    fish.needsUpdatedAt = now;
+    fish.comfortDamageProgressMs = 0;
+    clearPiranhaAttackState(fish);
+    clearZombieAttackState(fish);
+  }
+  clearBloodEffectClouds();
+  runtime.bloodWaterTint = 0;
+  runtime.bettaPassLocks.clear();
+  return changed;
+}
+
+function restorePeacefulModeState(now = Date.now()) {
+  if (!state) return false;
+  const mode = getPeacefulModeState();
+  const pauseDuration = mode.startedAt > 0 ? Math.max(0, now - mode.startedAt) : 0;
+  state.peacefulMode = { enabled: false, startedAt: 0, tankSnapshots: {}, fishSnapshots: {} };
+  let changed = false;
+  for (const tank of getAllTanks(state)) {
+    const snapshot = tank?.id ? mode.tankSnapshots[tank.id] : null;
+    const fishList = (Array.isArray(tank?.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+    const deadFishList = (Array.isArray(tank?.fish) ? tank.fish : []).filter((fish) => fish && isFishDead(fish));
+    const duration = getTankMaxDirtyDurationMs(fishList, tank, deadFishList);
+    if (snapshot) {
+      tank.lastCleanedAt = now - clamp(Number(snapshot.dirtiness) || 0, 0, 1) * Math.max(1, duration);
+      if (Number.isFinite(Number(snapshot.createdAt))) tank.createdAt = Number(snapshot.createdAt) + pauseDuration;
+      tank.poops = Array.isArray(snapshot.poops) ? snapshot.poops.map((poop) => ({ ...poop })) : [];
+      const livingIds = new Set((tank.fish || []).filter((fish) => fish && !isFishDead(fish)).map((fish) => fish.id));
+      tank.pendingPoops = Array.isArray(snapshot.pendingPoops)
+        ? snapshot.pendingPoops.filter((poop) => !poop?.fishId || livingIds.has(poop.fishId)).map((poop) => ({ ...poop }))
+        : [];
+    } else {
+      tank.lastCleanedAt = now;
+      tank.poops = [];
+      tank.pendingPoops = [];
+      if (Number.isFinite(Number(tank.createdAt)) && Number(tank.createdAt) >= mode.startedAt) tank.createdAt = now;
+    }
+    tank.lastSimulatedAt = now;
+    for (const event of Array.isArray(tank.events) ? tank.events : []) {
+      if (!event || event.progressionEligible === false) continue;
+      const progressionTime = Number.isFinite(Number(event.progressionTime)) ? Number(event.progressionTime) : Number(event.time);
+      if (Number.isFinite(progressionTime)) event.progressionTime = progressionTime + pauseDuration;
+    }
+  }
+  for (const event of Array.isArray(state.boroughEvents) ? state.boroughEvents : []) {
+    if (!event || event.progressionEligible === false) continue;
+    const progressionTime = Number.isFinite(Number(event.progressionTime)) ? Number(event.progressionTime) : Number(event.time);
+    if (Number.isFinite(progressionTime)) event.progressionTime = progressionTime + pauseDuration;
+  }
+  for (const egg of Array.isArray(state.fishEggs) ? state.fishEggs : []) {
+    if (!egg) continue;
+    for (const key of ["createdAt", "hatchAt", "hatchedAt", "shellExpiresAt", "releasedAt"]) {
+      if (Number.isFinite(Number(egg[key])) && Number(egg[key]) > 0) egg[key] = Number(egg[key]) + pauseDuration;
+    }
+  }
+
+  const allFish = [...getAllTankFish(state), ...(Array.isArray(state.storedFish) ? state.storedFish : [])];
+  for (const fish of allFish) {
+    if (!fish?.id || isFishDead(fish)) continue;
+    const snapshot = mode.fishSnapshots[fish.id];
+    if (snapshot) {
+      fish.needs = snapshot.needs ? sanitizeFishNeeds(snapshot.needs, fish, now) : sanitizeFishNeeds(null, fish, now);
+      if (Number.isFinite(Number(snapshot.healthUnits))) fish.healthUnits = clamp(Number(snapshot.healthUnits), 0, getFishMaxHealthUnits(fish));
+      fish.needsUpdatedAt = now;
+      fish.comfortDamageProgressMs = Math.max(0, Number(snapshot.comfortDamageProgressMs) || 0);
+      for (const [key, value] of Object.entries(snapshot.timers || {})) {
+        if (Number.isFinite(Number(value))) fish[key] = Number(value) + pauseDuration;
+      }
+    } else {
+      fish.needs = sanitizeFishNeeds(null, fish, now);
+      fish.needsUpdatedAt = now;
+      fish.healthUnits = getFishMaxHealthUnits(fish);
+      fish.comfortDamageProgressMs = 0;
+      fish.acquiredAt = now;
+      if (Number.isFinite(Number(fish.tankAddedAt))) fish.tankAddedAt = now;
+      if (Number.isFinite(Number(fish.growthStartedAt)) && Number.isFinite(Number(fish.growthEndsAt))) {
+        const growthDuration = Math.max(1, Number(fish.growthEndsAt) - Number(fish.growthStartedAt));
+        fish.growthStartedAt = now;
+        fish.growthEndsAt = now + growthDuration;
+      }
+    }
+  }
+
+  if (state.dailyBonus) {
+    state.dailyBonus.lastEvaluatedDayKey = getPreviousLocalDayKey(now);
+  }
+  changed = true;
+  return changed;
+}
+
+function setPeacefulModeEnabled(enabled = true) {
+  if (!state) return false;
+  const nextEnabled = enabled === true;
+  if (isPeacefulModeEnabled() === nextEnabled) return false;
+  const now = Date.now();
+  if (nextEnabled) {
+    const snapshots = capturePeacefulModeSnapshots(now);
+    state.peacefulMode = { enabled: true, startedAt: now, ...snapshots };
+    enforcePeacefulModeState(now);
+    showToast("Peaceful Mode enabled. Income and progression are paused.");
+  } else {
+    restorePeacefulModeState(now);
+    showToast("Peaceful Mode disabled. Normal simulation and progression resumed.");
+  }
+  saveState();
+  renderUi(now);
+  return true;
+}
+
 function getContentSettings() {
   return sanitizeContentSettings(state?.contentSettings);
 }
@@ -24459,11 +24957,11 @@ function isViolenceAndGoreEnabled() {
 }
 
 function isViolenceEnabled() {
-  return isViolenceAndGoreEnabled();
+  return !isPeacefulModeEnabled() && isViolenceAndGoreEnabled();
 }
 
 function isGoreEnabled() {
-  return isViolenceAndGoreEnabled();
+  return !isPeacefulModeEnabled() && isViolenceAndGoreEnabled();
 }
 
 function isZombieSkeletonModeAvailable() {
@@ -25014,6 +25512,7 @@ function reconcileState(rawState) {
     dailyBonus: buildDefaultDailyBonusState(),
     notificationCenter: buildDefaultNotificationCenterState(),
     tutorial: buildDefaultTutorialState(),
+    peacefulMode: sanitizePeacefulModeState(null),
     uiSettings: sanitizeUiSettings(null),
     contentSettings: sanitizeContentSettings(null),
     boroughTravelWalls: {},
@@ -25111,6 +25610,7 @@ function reconcileState(rawState) {
     notificationCenter: sanitizeNotificationCenterState(incoming.notificationCenter),
     tutorial: buildDefaultTutorialState(),
     healthModelVersion: HEALTH_MODEL_VERSION,
+    peacefulMode: sanitizePeacefulModeState(incoming.peacefulMode),
     uiSettings: sanitizeUiSettings(incoming.uiSettings),
     contentSettings: sanitizeContentSettings(incoming.contentSettings),
     boroughTravelWalls: incoming.boroughTravelWalls && typeof incoming.boroughTravelWalls === "object"
@@ -26601,6 +27101,20 @@ function getSanitizedPlacedDecorWorldAnchors(item) {
   };
 }
 
+function sanitizePlacedDecorDisplayName(value = "") {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 48);
+}
+
+function getPlacedDecorDisplayName(item, decorOverride = null) {
+  const customName = sanitizePlacedDecorDisplayName(item?.customName);
+  if (customName) {
+    return customName;
+  }
+
+  const decor = decorOverride || runtime.decorMap.get(item?.decorKey);
+  return decor?.name || titleFromFile(item?.decorKey || "Decor") || "Decor";
+}
+
 function sanitizePlacedDecor(item) {
   if (!item || typeof item.decorKey !== "string") {
     return null;
@@ -26623,6 +27137,10 @@ function sanitizePlacedDecor(item) {
   };
   if (Object.prototype.hasOwnProperty.call(item, "freePlacementEnabled")) {
     sanitized.freePlacementEnabled = item.freePlacementEnabled === true;
+  }
+  const customName = sanitizePlacedDecorDisplayName(item.customName);
+  if (customName) {
+    sanitized.customName = customName;
   }
   const groupId = normalizeDecorGroupId(item.groupId);
   if (groupId) {
@@ -29948,6 +30466,9 @@ function sanitizeEvent(entry) {
     time: Number.isFinite(entry.time) ? entry.time : Date.now(),
     text: entry.text
   };
+  if (Number.isFinite(Number(entry.progressionTime))) {
+    sanitized.progressionTime = Number(entry.progressionTime);
+  }
   if (Number.isFinite(score)) {
     sanitized.score = clamp(Math.round(score), -1, 1);
   }
@@ -29973,6 +30494,9 @@ function sanitizeEvent(entry) {
   }
   if (entry.recapEligible === false) {
     sanitized.recapEligible = false;
+  }
+  if (entry.progressionEligible === false) {
+    sanitized.progressionEligible = false;
   }
   return sanitized;
 }
@@ -32260,6 +32784,8 @@ function syncCurrentTankState(now, options = {}) {
   if (!state) {
     return false;
   }
+  if (typeof ensurePeacefulModeSnapshots === "function") ensurePeacefulModeSnapshots(now);
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) && typeof enforcePeacefulModeState === "function") enforcePeacefulModeState(now);
   if (!PIRANHA_BEHAVIOR_ENABLED) {
     for (const fish of state.fish) {
       fish.piranhaConsumptionStartedAt = null;
@@ -32350,15 +32876,19 @@ function syncCurrentTankState(now, options = {}) {
   }
   changed = changed || pelletMotionChanged || pelletsBefore !== state.floatingPellets.length;
 
-  changed = processTankMedicineEffects(now) || changed;
-  changed = processFishDisease(now) || changed;
+  if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    changed = processTankMedicineEffects(now) || changed;
+    changed = processFishDisease(now) || changed;
+  }
   changed = processFishBehaviorState(now) || changed;
-  changed = processZombieInfections(now) || changed;
-  changed = processFishDecayStates(now) || changed;
-  changed = processDetritusFish(now) || changed;
-  changed = applyCriticalComfortHealthEffects(now) || changed;
-  changed = updateComfortHistoryEvents(now) || changed;
-  changed = maybeGenerateDailyRecapForTank(targetTank, now) || changed;
+  if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    changed = processZombieInfections(now) || changed;
+    changed = processFishDecayStates(now) || changed;
+    changed = processDetritusFish(now) || changed;
+    changed = applyCriticalComfortHealthEffects(now) || changed;
+    changed = updateComfortHistoryEvents(now) || changed;
+    changed = maybeGenerateDailyRecapForTank(targetTank, now) || changed;
+  }
   changed = normalizeCurrentTankShellState() || changed;
 
   pruneTankState(now, getCurrentTank());
@@ -32436,7 +32966,7 @@ function syncState(now) {
     changed = withActiveTank(tank.id, () => syncCurrentTankState(now, { visibleTankId }), state) || changed;
   }
   changed = processBoroughFishTravel(now) || changed;
-  changed = processFishAgeMilestones(now) || changed;
+  if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) changed = processFishAgeMilestones(now) || changed;
   state.activeTankId = activeTankId && tanks.some((tank) => tank.id === activeTankId)
     ? activeTankId
     : tanks[0].id;
@@ -36049,6 +36579,9 @@ function ensureMealHistoryEntry(slotKey, now = Date.now(), tank = getCurrentTank
 }
 
 function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    return 0;
+  }
   if (!fish || isMealFreeFish(fish)) {
     return 0;
   }
@@ -37483,6 +38016,7 @@ function hatchFishEgg(egg, now = Date.now()) {
 }
 
 function processFishEggs(now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!Array.isArray(state.fishEggs) || !state.fishEggs.length) {
     return false;
   }
@@ -39590,6 +40124,11 @@ function resolvePurchasedDecorKey(decorKey, appearanceVariantKey = "") {
 function performCoinTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
   const direction = options.direction === "credit" ? "credit" : "debit";
+  if (direction === "credit" && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    const errorMessage = "Income is disabled while Peaceful Mode is enabled.";
+    showToast(errorMessage, { force: true, tone: "neutral" });
+    return { ok: false, reason: "peaceful-mode-income-disabled", amount, errorMessage };
+  }
   if (direction === "debit" && state.coins < amount) {
     const errorMessage = getInsufficientFundsMessage();
     showToast(errorMessage, { force: true, tone: "error" });
@@ -43902,6 +44441,9 @@ function spawnCoinGlint(x, y, now = Date.now()) {
 }
 
 function attemptGravelCoinFind(fish, action, now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    return false;
+  }
   if (!fish || !action || action.coinFindRolled) {
     return false;
   }
@@ -45180,8 +45722,11 @@ function renderFishInspectorColorControls(fish) {
   }
 
   const activeColor = getFishColorSetting(fish);
+  const activeCustomColor = normalizeHexColor(activeColor);
   const originalSelected = !activeColor;
   const rgbSelected = isDecorRgbColorSetting(activeColor);
+  const customSelected = Boolean(activeCustomColor);
+  const pickerColor = activeCustomColor || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
   const originalTile = `
     <button
       class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${originalSelected ? "is-selected" : ""}"
@@ -45204,19 +45749,18 @@ function renderFishInspectorColorControls(fish) {
       RGB
     </button>
   `;
-  const swatches = getCustomGravelColorChoices().map((choice) => {
-    const selected = activeColor === choice.color;
-    return `
-      <button
-        class="custom-gravel-color-swatch bubbler-color-swatch ${selected ? "is-selected" : ""}"
-        type="button"
-        style="--swatch:${choice.color};"
-        data-inspector-fish-color="${choice.color}"
-        aria-pressed="${selected}"
-        aria-label="Set fish to ${escapeHtml(choice.label)}"
-        title="${escapeHtml(choice.label)}"></button>
-    `;
-  }).join("");
+  const customColorPicker = `
+    <label
+      class="cave-color-picker-shell fish-color-picker-shell ${customSelected ? "is-selected" : ""}"
+      title="Choose custom fish color">
+      <input
+        class="cave-color-picker-input fish-color-picker-input"
+        type="color"
+        value="${escapeHtml(pickerColor)}"
+        data-inspector-fish-color-picker
+        aria-label="Choose custom fish color" />
+    </label>
+  `;
 
   setMarkupIfChanged(
     "fish-inspector-color-swatches",
@@ -45225,9 +45769,7 @@ function renderFishInspectorColorControls(fish) {
       <div class="color-choice-mode-row">
         ${originalTile}
         ${rgbTile}
-      </div>
-      <div class="color-choice-swatch-row">
-        ${swatches}
+        ${customColorPicker}
       </div>
     `
   );
@@ -45245,7 +45787,7 @@ function updateInspectorFishReadouts(fish) {
   renderFishInspectorColorControls(fish);
 }
 
-function updateInspectorFishSetting(setting, rawValue) {
+function updateInspectorFishSetting(setting, rawValue, options = {}) {
   const managed = getManagedFishById(runtime.selectedFishId);
   if (!managed) {
     return;
@@ -45315,20 +45857,50 @@ function updateInspectorFishSetting(setting, rawValue) {
     applyChange();
   }
 
+  const persist = options.persist !== false;
+  const refreshControls = options.refreshControls !== false;
   if (!changed) {
-    updateInspectorFishReadouts(fish);
+    if (persist && options.forcePersist === true) {
+      saveState();
+    }
+    if (refreshControls) {
+      updateInspectorFishReadouts(fish);
+    }
     return;
   }
-  saveState();
+  if (persist) {
+    saveState();
+  }
   if (setting === "color" || setting === "colorize") {
-    // Color changes are live previews. Keep the settings panel mounted so
-    // users can compare several colors without the inspector being rebuilt
-    // or dismissed between picks. The tank renderer reads the fish state on
-    // the next frame, so a full UI render is unnecessary here.
+    if (!refreshControls) {
+      return;
+    }
     updateInspectorFishReadouts(fish);
     return;
   }
   renderUi(now);
+}
+
+function queueInspectorFishColorPreview(rawValue) {
+  runtime.pendingInspectorFishColorValue = normalizeDecorColorSetting(rawValue);
+  if (runtime.inspectorFishColorPreviewFrame) {
+    return;
+  }
+
+  runtime.inspectorFishColorPreviewFrame = window.requestAnimationFrame(() => {
+    runtime.inspectorFishColorPreviewFrame = 0;
+    const nextColor = runtime.pendingInspectorFishColorValue;
+    runtime.pendingInspectorFishColorValue = "";
+    updateInspectorFishSetting("color", nextColor, {
+      persist: false,
+      refreshControls: false
+    });
+    const managed = getManagedFishById(runtime.selectedFishId);
+    if (managed?.fish) {
+      setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(getFishColorSetting(managed.fish)));
+      dom.inspectorFishColorSwatches?.querySelector(".fish-color-picker-shell")?.classList.add("is-selected");
+    }
+  });
 }
 // </bundle-source>
 
@@ -46130,6 +46702,10 @@ function exposeDebugConsoleCommands() {
 }
 
 function addDebugCoins(amount = 10) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    showToast("Income is disabled while Peaceful Mode is enabled.");
+    return;
+  }
   const now = Date.now();
   const coinAmount = Math.max(0, Math.floor(Number(amount) || 0));
   if (!coinAmount) {
@@ -48772,6 +49348,7 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
   const eventEntry = {
     id: createId("event"),
     time,
+    progressionTime: time,
     text
   };
   if (Number.isFinite(score)) {
@@ -48797,8 +49374,11 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
       eventEntry[key] = meta[key].trim().slice(0, 160);
     }
   }
-  if (meta?.recapEligible === false) {
+  if (meta?.recapEligible === false || (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     eventEntry.recapEligible = false;
+  }
+  if (meta?.progressionEligible === false || (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    eventEntry.progressionEligible = false;
   }
 
   const events = Array.isArray(targetTank.events) ? targetTank.events : [];
@@ -48920,6 +49500,7 @@ function getActiveDailyBonusSummary(tank = getCurrentTank()) {
 }
 
 function grantDailyRecapRewardAutomatically(summary, now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!state?.dailyBonus || !summary?.dayKey) {
     return false;
   }
@@ -49181,6 +49762,7 @@ function storeDailyRecapSummary(summary) {
 }
 
 function maybeGenerateDailyRecapForTank(tank, now = Date.now(), options = {}) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!tank || !state?.dailyBonus) {
     return false;
   }
@@ -49305,7 +49887,7 @@ function countEventOccurrences(events, pattern) {
 function getLatestEventTime(events, pattern) {
   return (Array.isArray(events) ? events : [])
     .filter((event) => pattern.test(String(event?.text || "")))
-    .reduce((latest, event) => Math.max(latest, Number(event?.time) || 0), 0);
+    .reduce((latest, event) => Math.max(latest, Number(event?.progressionTime ?? event?.time) || 0), 0);
 }
 
 function getMilestoneTankFishEntries() {
@@ -49363,10 +49945,12 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     : (Number(referenceSummary?.averageComfort) || 0);
   const livingFish = getAllTankFish(state).filter((fish) => fish && !isFishDead(fish));
   const oldestLivingFishAgeMs = livingFish.reduce((oldest, fish) => Math.max(oldest, now - (Number(fish.acquiredAt) || now)), 0);
-  const allEvents = getAllTanks(state).flatMap((tank) => Array.isArray(tank.events) ? tank.events : []);
+  const allEvents = getAllTanks(state)
+    .flatMap((tank) => Array.isArray(tank.events) ? tank.events : [])
+    .filter((event) => event?.progressionEligible !== false);
   const latestDeath = allEvents
     .filter((event) => / died|dead fish|could not survive/i.test(event?.text || ""))
-    .reduce((latest, event) => Math.max(latest, Number(event.time) || 0), 0);
+    .reduce((latest, event) => Math.max(latest, Number(event.progressionTime ?? event.time) || 0), 0);
   const stewardshipStartCandidates = [
     ...getAllTanks(state).map((tank) => Number(tank?.createdAt) || Number(tank?.lastSimulatedAt) || now),
     ...livingFish.map((fish) => Number(fish.acquiredAt) || now)
@@ -49392,7 +49976,7 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
   const lastHealingAt = getLatestEventTime(allEvents, /recovered half a heart|medicine .* used|was used in|health reset restored/i);
   const deathAfterLastHealing = lastHealingAt > 0 && allEvents.some((event) => (
     / died|dead fish|could not survive/i.test(event?.text || "")
-    && (Number(event?.time) || 0) > lastHealingAt
+    && (Number(event?.progressionTime ?? event?.time) || 0) > lastHealingAt
   ));
   const grownBabyFishCount = [
     ...getAllTankFish(state),
@@ -49441,6 +50025,7 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
 }
 
 function applyProgressMilestones(latestSummary = null, now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return [];
   if (!state?.dailyBonus || runtime.achievementEvaluationActive) {
     return [];
   }
@@ -51761,7 +52346,16 @@ function getBoroughSnapshot(tank, now = Date.now()) {
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "low";
       context.drawImage(dom.tankCanvas, 0, 0, canvas.width, canvas.height);
-      context.drawImage(dom.grimeCanvas, 0, 0, canvas.width, canvas.height);
+      // The live grime canvas is kept at full-strength pixels and faded with CSS opacity.
+      // Canvas-to-canvas snapshots do not inherit that CSS opacity, so apply the same
+      // visible dirtiness here or clean tanks appear permanently filthy in Overview.
+      const snapshotGrimeOpacity = getVisibleGrimeDirtiness(getTankDirtiness(now));
+      if (snapshotGrimeOpacity > 0.002) {
+        context.save();
+        context.globalAlpha = snapshotGrimeOpacity;
+        context.drawImage(dom.grimeCanvas, 0, 0, canvas.width, canvas.height);
+        context.restore();
+      }
       context.drawImage(dom.glassCanvas, 0, 0, canvas.width, canvas.height);
     } finally {
       tank.fish = previousFish;
@@ -53515,11 +54109,19 @@ function createPlacedDecorUtilityMode(options = {}) {
     render: () => {
       const item = options.getItem?.() || null;
       const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+      const titleActions = typeof options.renderTitleActions === "function"
+        ? options.renderTitleActions(item, decor)
+        : String(options.titleActions || "");
+      const headerActions = typeof options.renderHeaderActions === "function"
+        ? options.renderHeaderActions(item, decor)
+        : String(options.headerActions || "");
       return {
         kicker: String(options.kicker || "Decor"),
-        title: decor?.name || options.fallbackTitle || "Decor Settings",
+        title: item ? getPlacedDecorDisplayName(item, decor) : (decor?.name || options.fallbackTitle || "Decor Settings"),
+        titleActions,
+        headerActions,
         body: options.renderBody(item),
-        footer: buildUtilityCloseFooter(options.footerLabel || "Done", "alt"),
+        footer: options.hideFooter ? "" : buildUtilityCloseFooter(options.footerLabel || "Done", "alt"),
         closable: true
       };
     },
@@ -54117,7 +54719,82 @@ function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
   return false;
 }
 
+function renderDecorSettingsTitleActions(item, decor) {
+  if (!item || !decor || isTransitTubeDecorKey(item.decorKey)) {
+    return "";
+  }
+
+  return `<button class="utility-header-icon-button" type="button" data-decor-settings-rename title="Rename this placed decor" aria-label="Rename this placed decor">✎</button>`;
+}
+
+function renderDecorSettingsHeaderActions(item, decor) {
+  if (!item || !decor || isTransitTubeDecorKey(item.decorKey)) {
+    return "";
+  }
+
+  return `
+    <button class="utility-header-reset-button" type="button" data-decor-settings-reset title="Reset decor settings">
+      <span aria-hidden="true">↻</span>
+      <span>Reset</span>
+    </button>
+  `;
+}
+
+function handleDecorSettingsUtilityOverlayHeaderClick(ctx, target) {
+  const item = getDecorSettingsTarget();
+  if (!item) {
+    return false;
+  }
+
+  if (target?.closest?.("[data-decor-settings-reset]")) {
+    resetSelectedDecorSettings();
+    return true;
+  }
+
+  if (target?.closest?.("[data-decor-settings-rename]")) {
+    const decor = runtime.decorMap.get(item.decorKey);
+    const currentName = getPlacedDecorDisplayName(item, decor);
+    const nextName = window.prompt("Name this placed decor:", currentName);
+    if (nextName !== null) {
+      setSelectedDecorCustomName(nextName);
+    }
+    return true;
+  }
+
+  return false;
+}
+
 function handleCaveSettingsUtilityOverlayBodyClick(ctx, target) {
+  const caveTabButton = target?.closest?.("[data-decor-cave-tab]");
+  if (caveTabButton) {
+    const nextTab = String(caveTabButton.dataset.decorCaveTab || "entries");
+    runtime.decorSettingsCaveTab = ["entries", "seats", "preview"].includes(nextTab) ? nextTab : "entries";
+    renderUtilityOverlay();
+    return true;
+  }
+  if (target?.closest?.("[data-cave-add-entry]")) {
+    addSelectedCavePoint("entry");
+    return true;
+  }
+  const removeEntryButton = target?.closest?.("[data-cave-remove-entry]");
+  if (removeEntryButton) {
+    removeSelectedCavePoint("entry", removeEntryButton.dataset.caveRemoveEntry);
+    return true;
+  }
+  if (target?.closest?.("[data-cave-add-seat]")) {
+    addSelectedCavePoint("seat");
+    return true;
+  }
+  const removeSeatButton = target?.closest?.("[data-cave-remove-seat]");
+  if (removeSeatButton) {
+    removeSelectedCavePoint("seat", removeSeatButton.dataset.caveRemoveSeat);
+    return true;
+  }
+  const layerStepButton = target?.closest?.("[data-decor-layer-step]");
+  if (layerStepButton) {
+    stepSelectedDecorLayer(layerStepButton.dataset.decorLayerStep);
+    return true;
+  }
   const transitTubeColorButton = target?.closest?.("[data-transit-tube-color]");
   if (transitTubeColorButton) {
     const item = getDecorSettingsTarget();
@@ -54236,6 +54913,15 @@ function handleCaveSettingsUtilityOverlayFocusIn(ctx, target) {
 }
 
 function handleCommonUtilityOverlayInput(ctx, target) {
+  const caveColorPicker = target?.closest?.("[data-cave-color-picker]");
+  if (caveColorPicker instanceof HTMLInputElement && caveColorPicker.type === "color") {
+    updateSelectedCaveColorSetting(
+      caveColorPicker.dataset.caveColorPicker,
+      caveColorPicker.value,
+      { live: true, persist: false }
+    );
+    return true;
+  }
   const caveSettingInput = target?.closest?.("[data-cave-setting]");
   if (caveSettingInput instanceof HTMLInputElement) {
     updateSelectedCaveSetting(
@@ -54393,6 +55079,15 @@ function handleTankManagementUtilityOverlayInput(ctx, target) {
 }
 
 function handleCommonUtilityOverlayChange(ctx, target) {
+  const caveColorPicker = target?.closest?.("[data-cave-color-picker]");
+  if (caveColorPicker instanceof HTMLInputElement && caveColorPicker.type === "color") {
+    updateSelectedCaveColorSetting(
+      caveColorPicker.dataset.caveColorPicker,
+      caveColorPicker.value,
+      { forcePersist: true }
+    );
+    return true;
+  }
   const caveColorizeControl = target?.closest?.("[data-cave-colorize-layer]");
   if (caveColorizeControl instanceof HTMLInputElement) {
     updateSelectedCaveColorizeSetting(
@@ -54554,6 +55249,31 @@ function dispatchUtilityOverlayPointerEvent(handlerKey, event) {
   return handler ? handler(getUtilityOverlayContext(Date.now()), event) === true : false;
 }
 
+function syncUtilityOverlayEditTraySafeArea() {
+  if (!dom.utilityOverlay) {
+    return;
+  }
+
+  const isDecorSettings = runtime.utilityOverlayOpen
+    && (runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-decor-settings");
+  if (!isDecorSettings) {
+    dom.utilityOverlay.style.removeProperty("--utility-edit-tray-reserve");
+    return;
+  }
+
+  const visibleTray = [dom.editDecorTray, dom.editFishTray, dom.editEquipmentTray, dom.editTankTray]
+    .find((tray) => tray instanceof HTMLElement && !tray.hidden && tray.getClientRects().length);
+  if (!visibleTray) {
+    dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", "0px");
+    return;
+  }
+
+  const overlayRect = dom.utilityOverlay.getBoundingClientRect();
+  const trayRect = visibleTray.getBoundingClientRect();
+  const reserve = Math.max(0, Math.ceil(overlayRect.bottom - trayRect.top + 12));
+  dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", `${reserve}px`);
+}
+
 function renderUtilityOverlay() {
   if (!dom.utilityOverlay) {
     return;
@@ -54570,6 +55290,8 @@ function renderUtilityOverlay() {
   const hideKicker = config.kicker === false;
   const kicker = hideKicker ? "" : String(config.kicker || "Tank Tools");
   const title = String(config.title || "Details");
+  const titleActions = String(config.titleActions || "");
+  const headerActions = String(config.headerActions || "");
   const body = String(config.body || "");
   const footer = String(config.footer || "");
 
@@ -54577,6 +55299,14 @@ function renderUtilityOverlay() {
   if (dom.utilityOverlayKicker) {
     setTextIfChanged(dom.utilityOverlayKicker, kicker);
     dom.utilityOverlayKicker.hidden = hideKicker;
+  }
+  if (dom.utilityOverlayTitleActions) {
+    setMarkupIfChanged("utility-overlay-title-actions", dom.utilityOverlayTitleActions, titleActions);
+    dom.utilityOverlayTitleActions.hidden = !titleActions.trim();
+  }
+  if (dom.utilityOverlayHeaderActions) {
+    setMarkupIfChanged("utility-overlay-header-actions", dom.utilityOverlayHeaderActions, headerActions);
+    dom.utilityOverlayHeaderActions.hidden = !headerActions.trim();
   }
   if (dom.utilityOverlayBody) {
     setMarkupIfChanged("utility-overlay-body", dom.utilityOverlayBody, body);
@@ -54590,6 +55320,7 @@ function renderUtilityOverlay() {
   if (dom.closeUtilityOverlay) {
     dom.closeUtilityOverlay.hidden = config.closable === false;
   }
+  syncUtilityOverlayEditTraySafeArea();
 }
 
 function renderExternalLinkOverlay(link) {
@@ -54799,12 +55530,15 @@ function renderCaveColorSettingsControls(item, decor) {
 
   const settings = getPlacedCaveColorSettings(item, decor);
   const colorizeSettings = getPlacedCaveColorizeSettings(item, decor);
-  const colorChoices = getCustomGravelColorChoices();
   const layerControls = layers.map((layer) => {
     const activeColor = normalizeDecorColorSetting(settings[layer.id] || "");
+    const activeCustomColor = normalizeHexColor(activeColor);
     const originalSelected = !activeColor;
     const rgbSelected = isDecorRgbColorSetting(activeColor);
+    const customSelected = Boolean(activeCustomColor);
     const colorizeChecked = colorizeSettings[layer.id] === true;
+    const layerLabel = getCaveColorLayerLabel(layer, layers, decor);
+    const pickerColor = activeCustomColor || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
     const originalTile = `
       <button
         class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${originalSelected ? "is-selected" : ""}"
@@ -54812,7 +55546,7 @@ function renderCaveColorSettingsControls(item, decor) {
         data-cave-color-layer="${escapeHtml(layer.id)}"
         data-cave-color=""
         aria-pressed="${originalSelected}"
-        aria-label="Use original ${escapeHtml(getCaveColorLayerLabel(layer, layers, decor))} color"
+        aria-label="Use original ${escapeHtml(layerLabel)} color"
         title="Original color">
         Original
       </button>
@@ -54824,39 +55558,36 @@ function renderCaveColorSettingsControls(item, decor) {
         data-cave-color-layer="${escapeHtml(layer.id)}"
         data-cave-color="${DECOR_RGB_COLOR_SETTING}"
         aria-pressed="${rgbSelected}"
-        aria-label="Fade ${escapeHtml(getCaveColorLayerLabel(layer, layers, decor))} through RGB colors"
+        aria-label="Fade ${escapeHtml(layerLabel)} through RGB colors"
         title="RGB color cycle">
         RGB
       </button>
     `;
-    const swatches = colorChoices.map((choice) => {
-      const selected = activeColor === choice.color;
-      return `
-        <button
-          class="custom-gravel-color-swatch bubbler-color-swatch ${selected ? "is-selected" : ""}"
-          type="button"
-          style="--swatch:${choice.color};"
-          data-cave-color-layer="${escapeHtml(layer.id)}"
-          data-cave-color="${choice.color}"
-          aria-pressed="${selected}"
-          aria-label="Set ${escapeHtml(getCaveColorLayerLabel(layer, layers, decor))} to ${escapeHtml(choice.label)}"
-          title="${escapeHtml(choice.label)}"></button>
-      `;
-    }).join("");
+    const customColorPicker = `
+      <label
+        class="cave-color-picker-shell ${customSelected ? "is-selected" : ""}"
+        data-cave-color-picker-shell="${escapeHtml(layer.id)}"
+        title="Choose custom ${escapeHtml(layerLabel)} color">
+        <input
+          class="cave-color-picker-input"
+          type="color"
+          value="${escapeHtml(pickerColor)}"
+          data-cave-color-picker="${escapeHtml(layer.id)}"
+          aria-label="Choose custom ${escapeHtml(layerLabel)} color" />
+      </label>
+    `;
 
     return `
       <div class="cave-color-layer-card" data-cave-color-card="${escapeHtml(layer.id)}">
         <div class="bubbler-color-row cave-color-layer-header">
-          <span>${escapeHtml(getCaveColorLayerLabel(layer, layers, decor))}</span>
+          <span>${escapeHtml(layerLabel)}</span>
           <strong data-cave-color-layer-value="${escapeHtml(layer.id)}">${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong>
         </div>
         <div class="bubbler-color-swatches cave-color-swatches">
           <div class="color-choice-mode-row">
             ${originalTile}
             ${rgbTile}
-          </div>
-          <div class="color-choice-swatch-row">
-            ${swatches}
+            ${customColorPicker}
           </div>
         </div>
         <label class="cave-colorize-toggle">
@@ -54872,7 +55603,7 @@ function renderCaveColorSettingsControls(item, decor) {
 
   return `
     <div class="cave-color-controls">
-      <div class="custom-decor-type-summary">Decor color layers use the shared color palette.</div>
+      <div class="custom-decor-type-summary">Choose Original, RGB cycle, or any custom color.</div>
       ${layerControls}
     </div>
   `;
@@ -55041,8 +55772,8 @@ function renderCustomHideCreationOverlay() {
     `;
 
   return `
-    <div class="custom-decor-name-panel decor-settings-panel">
-      <div class="custom-decor-create-layout decor-settings-layout">
+    <div class="custom-decor-name-panel decor-settings-panel decor-settings-compact-panel">
+      <div class="custom-decor-create-layout decor-settings-layout decor-settings-compact-layout">
         <div class="custom-decor-preview-column">
           ${uploadChooserMarkup}
           ${combinedPreviewMarkup}
@@ -55086,7 +55817,7 @@ function renderCaveSettingsMarkers(settings) {
   `;
 }
 
-function renderCaveSettingsControls(item) {
+function renderLegacyCaveSettingsControls(item) {
   const settings = getPlacedCaveSettings(item) || sanitizePlacedCaveSettings();
   const entryCountOptions = Array.from({ length: CAVE_SETTINGS_MAX_ENTRIES - CAVE_SETTINGS_MIN_ENTRIES + 1 }, (_, index) => {
     const count = CAVE_SETTINGS_MIN_ENTRIES + index;
@@ -55222,6 +55953,122 @@ function renderCaveSettingsControls(item) {
   `;
 }
 
+
+function renderCaveSettingsControls(item) {
+  const compactMode = runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-decor-settings";
+  if (!compactMode) {
+    return renderLegacyCaveSettingsControls(item);
+  }
+
+  const settings = getPlacedCaveSettings(item) || sanitizePlacedCaveSettings();
+  const currentTab = ["entries", "seats", "preview"].includes(runtime.decorSettingsCaveTab)
+    ? runtime.decorSettingsCaveTab
+    : "entries";
+  const tabButton = (id, label, icon) => `
+    <button
+      class="decor-cave-tab ${currentTab === id ? "is-active" : ""}"
+      type="button"
+      role="tab"
+      data-decor-cave-tab="${id}"
+      aria-selected="${currentTab === id ? "true" : "false"}">
+      <span class="decor-cave-tab-icon" aria-hidden="true">${icon}</span>
+      <span>${label}</span>
+    </button>
+  `;
+
+  const entryRows = settings.entries.map((entry, index) => {
+    const active = index === settings.activeEntryIndex;
+    const side = normalizeCaveEntrySide(entry.side);
+    const sideOptions = CAVE_ENTRY_SIDE_OPTIONS.map((option) => `
+      <option value="${escapeHtml(option.id)}" ${side === option.id ? "selected" : ""}>${escapeHtml(option.label)}</option>
+    `).join("");
+    return `
+      <div class="decor-cave-point-row ${active ? "is-active" : ""}" data-cave-entry-card="${index}">
+        <button class="decor-cave-point-badge is-entry" type="button" data-cave-entry-select="${index}" aria-label="Select entry ${index + 1}">${index + 1}</button>
+        <label class="decor-cave-side-control">
+          <span class="sr-only">Entry ${index + 1} side</span>
+          <select class="shop-sort-select" data-cave-setting="entrySide" data-cave-entry-index="${index}" aria-label="Cave entry ${index + 1} side">
+            ${sideOptions}
+          </select>
+        </label>
+        <label class="decor-cave-coordinate-control">
+          <span>X <strong data-cave-setting-value="entryX" data-cave-entry-index="${index}">${formatCaveSettingPercent(entry.x)}</strong></span>
+          <input type="range" min="0.02" max="0.98" step="0.01" value="${entry.x}" data-cave-setting="entryX" data-cave-entry-index="${index}" />
+        </label>
+        <label class="decor-cave-coordinate-control">
+          <span>Y <strong data-cave-setting-value="entryY" data-cave-entry-index="${index}">${formatCaveSettingPercent(entry.y)}</strong></span>
+          <input type="range" min="0.02" max="0.98" step="0.01" value="${entry.y}" data-cave-setting="entryY" data-cave-entry-index="${index}" />
+        </label>
+        <button class="decor-cave-delete-button" type="button" data-cave-remove-entry="${index}" aria-label="Delete entry ${index + 1}" title="Delete entry" ${settings.entryCount <= CAVE_SETTINGS_MIN_ENTRIES ? "disabled" : ""}>×</button>
+      </div>
+    `;
+  }).join("");
+
+  const seatRows = settings.seats.map((seat, index) => {
+    const active = index === settings.activeSeatIndex;
+    const facing = normalizeCaveSeatFacing(seat.facing);
+    return `
+      <div class="decor-cave-point-row ${active ? "is-active" : ""}" data-cave-seat-card="${index}">
+        <button class="decor-cave-point-badge is-seat" type="button" data-cave-seat-select="${index}" aria-label="Select seat ${index + 1}">${index + 1}</button>
+        <div class="decor-cave-facing-control" role="group" aria-label="Seat ${index + 1} facing">
+          <button class="cave-seat-facing-button ${facing < 0 ? "is-selected" : ""}" type="button" data-cave-seat-facing="-1" data-cave-seat-index="${index}" aria-pressed="${facing < 0 ? "true" : "false"}" title="Face left">‹</button>
+          <button class="cave-seat-facing-button ${facing > 0 ? "is-selected" : ""}" type="button" data-cave-seat-facing="1" data-cave-seat-index="${index}" aria-pressed="${facing > 0 ? "true" : "false"}" title="Face right">›</button>
+        </div>
+        <label class="decor-cave-coordinate-control">
+          <span>X <strong data-cave-setting-value="seatX" data-cave-seat-index="${index}">${formatCaveSettingPercent(seat.x)}</strong></span>
+          <input type="range" min="0.02" max="0.98" step="0.01" value="${seat.x}" data-cave-setting="seatX" data-cave-seat-index="${index}" />
+        </label>
+        <label class="decor-cave-coordinate-control">
+          <span>Y <strong data-cave-setting-value="seatY" data-cave-seat-index="${index}">${formatCaveSettingPercent(seat.y)}</strong></span>
+          <input type="range" min="0.02" max="0.98" step="0.01" value="${seat.y}" data-cave-setting="seatY" data-cave-seat-index="${index}" />
+        </label>
+        <button class="decor-cave-delete-button" type="button" data-cave-remove-seat="${index}" aria-label="Delete seat ${index + 1}" title="Delete seat" ${settings.seatCount <= CAVE_SETTINGS_MIN_SEATS ? "disabled" : ""}>×</button>
+      </div>
+    `;
+  }).join("");
+
+  let panelMarkup = "";
+  if (currentTab === "entries") {
+    panelMarkup = `
+      <div class="decor-cave-list-header">
+        <strong>${settings.entryCount} ${settings.entryCount === 1 ? "Entry" : "Entries"}</strong>
+        <button class="decor-cave-add-button" type="button" data-cave-add-entry ${settings.entryCount >= CAVE_SETTINGS_MAX_ENTRIES ? "disabled" : ""}>+ Add Entry</button>
+      </div>
+      <div class="decor-cave-compact-list">${entryRows}</div>
+    `;
+  } else if (currentTab === "seats") {
+    panelMarkup = `
+      <div class="decor-cave-list-header">
+        <strong>${settings.seatCount} ${pluralize("Seat", settings.seatCount)}</strong>
+        <button class="decor-cave-add-button" type="button" data-cave-add-seat ${settings.seatCount >= CAVE_SETTINGS_MAX_SEATS ? "disabled" : ""}>+ Add Seat</button>
+      </div>
+      <div class="decor-cave-compact-list">${seatRows}</div>
+    `;
+  } else {
+    panelMarkup = `
+      <div class="decor-cave-preview-summary">
+        <strong>Position cave points directly on the preview.</strong>
+        <span>Drag the numbered entry and seat markers on the decor image. The X and Y values update live.</span>
+        <div class="decor-cave-preview-stats">
+          <span><b>${settings.entryCount}</b> ${settings.entryCount === 1 ? "entry" : "entries"}</span>
+          <span><b>${settings.seatCount}</b> ${pluralize("seat", settings.seatCount)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <section class="decor-settings-cave-panel">
+      <div class="decor-cave-tabs" role="tablist" aria-label="Cave settings">
+        ${tabButton("entries", "Entries", "↪")}
+        ${tabButton("seats", "Seats", "●")}
+        ${tabButton("preview", "Preview", "◉")}
+      </div>
+      <div class="decor-cave-tab-panel" role="tabpanel">${panelMarkup}</div>
+    </section>
+  `;
+}
+
 function renderDecorSettingsOverlay(item) {
   if (!item) {
     return `<div class="empty-state">Select a placed decor item first.</div>`;
@@ -55266,101 +56113,79 @@ function renderDecorSettingsOverlay(item) {
     </option>
   `).join("");
   const motionControls = hasMotionControls ? `
-    <div class="custom-decor-type-summary">${escapeHtml(capabilities.summary)}</div>
-    ${capabilities.hasSway ? `
-      <label class="custom-decor-name-row">
-        <span>Sway Area</span>
-        <select class="shop-sort-select" data-decor-setting="swaySide" aria-label="Decor sway area">
-          ${swaySideOptions}
-        </select>
-      </label>
-      <label class="bubbler-control-row">
-        <span>Sway Starts <strong data-decor-setting-value="swaySplitY">${Math.round(motionSettings.swaySplitY * 100)}%</strong></span>
-        <input
-          type="range"
-          min="8"
-          max="92"
-          step="1"
-          value="${Math.round(motionSettings.swaySplitY * 100)}"
-          data-decor-setting="swaySplitY" />
-      </label>
-      <label class="bubbler-control-row">
-        <span>Sway Intensity <strong data-decor-setting-value="swayIntensity">${motionSettings.swayIntensity.toFixed(2)}x</strong></span>
-        <input
-          type="range"
-          min="${MIN_CUSTOM_DECOR_MOTION_INTENSITY}"
-          max="${MAX_CUSTOM_DECOR_MOTION_INTENSITY}"
-          step="0.05"
-          value="${motionSettings.swayIntensity}"
-          data-decor-setting="swayIntensity" />
-      </label>
-      <label class="bubbler-control-row">
-        <span>Sway Speed <strong data-decor-setting-value="swaySpeed">${motionSettings.swaySpeed.toFixed(2)}x</strong></span>
-        <input
-          type="range"
-          min="${MIN_DECOR_MOTION_SPEED}"
-          max="${MAX_DECOR_MOTION_SPEED}"
-          step="0.05"
-          value="${motionSettings.swaySpeed}"
-          data-decor-setting="swaySpeed" />
-      </label>
-    ` : ""}
-    ${capabilities.hasBob ? `
-      <label class="bubbler-control-row">
-        <span>Bob Intensity <strong data-decor-setting-value="bobIntensity">${motionSettings.bobIntensity.toFixed(2)}x</strong></span>
-        <input
-          type="range"
-          min="${MIN_CUSTOM_DECOR_MOTION_INTENSITY}"
-          max="${MAX_CUSTOM_DECOR_MOTION_INTENSITY}"
-          step="0.05"
-          value="${motionSettings.bobIntensity}"
-          data-decor-setting="bobIntensity" />
-      </label>
-      <label class="bubbler-control-row">
-        <span>Bob Speed <strong data-decor-setting-value="bobSpeed">${motionSettings.bobSpeed.toFixed(2)}x</strong></span>
-        <input
-          type="range"
-          min="${MIN_DECOR_MOTION_SPEED}"
-          max="${MAX_DECOR_MOTION_SPEED}"
-          step="0.05"
-          value="${motionSettings.bobSpeed}"
-          data-decor-setting="bobSpeed" />
-      </label>
-    ` : ""}
+    <section class="decor-settings-control-section decor-settings-motion-section">
+      <div class="decor-settings-section-title">
+        <span>${capabilities.hasSway ? "Sway" : "Motion"}</span>
+        <small>${escapeHtml(capabilities.summary)}</small>
+      </div>
+      <div class="decor-settings-motion-grid">
+        ${capabilities.hasSway ? `
+          <label class="decor-settings-compact-control decor-settings-select-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">≈</b>Area</span>
+            <select class="shop-sort-select" data-decor-setting="swaySide" aria-label="Decor sway area">
+              ${swaySideOptions}
+            </select>
+          </label>
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">≋</b>Starts <strong data-decor-setting-value="swaySplitY">${Math.round(motionSettings.swaySplitY * 100)}%</strong></span>
+            <input type="range" min="8" max="92" step="1" value="${Math.round(motionSettings.swaySplitY * 100)}" data-decor-setting="swaySplitY" />
+          </label>
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">≋</b>Intensity <strong data-decor-setting-value="swayIntensity">${motionSettings.swayIntensity.toFixed(2)}x</strong></span>
+            <input type="range" min="${MIN_CUSTOM_DECOR_MOTION_INTENSITY}" max="${MAX_CUSTOM_DECOR_MOTION_INTENSITY}" step="0.05" value="${motionSettings.swayIntensity}" data-decor-setting="swayIntensity" />
+          </label>
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">∿</b>Speed <strong data-decor-setting-value="swaySpeed">${motionSettings.swaySpeed.toFixed(2)}x</strong></span>
+            <input type="range" min="${MIN_DECOR_MOTION_SPEED}" max="${MAX_DECOR_MOTION_SPEED}" step="0.05" value="${motionSettings.swaySpeed}" data-decor-setting="swaySpeed" />
+          </label>
+        ` : ""}
+        ${capabilities.hasBob ? `
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">↕</b>Bob <strong data-decor-setting-value="bobIntensity">${motionSettings.bobIntensity.toFixed(2)}x</strong></span>
+            <input type="range" min="${MIN_CUSTOM_DECOR_MOTION_INTENSITY}" max="${MAX_CUSTOM_DECOR_MOTION_INTENSITY}" step="0.05" value="${motionSettings.bobIntensity}" data-decor-setting="bobIntensity" />
+          </label>
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">⌁</b>Bob Speed <strong data-decor-setting-value="bobSpeed">${motionSettings.bobSpeed.toFixed(2)}x</strong></span>
+            <input type="range" min="${MIN_DECOR_MOTION_SPEED}" max="${MAX_DECOR_MOTION_SPEED}" step="0.05" value="${motionSettings.bobSpeed}" data-decor-setting="bobSpeed" />
+          </label>
+        ` : ""}
+      </div>
+    </section>
   ` : hasBubblerControls
-    ? `<div class="mini-note">The object stays still while the bubble stream preview updates live.</div>`
+    ? `<div class="mini-note decor-settings-inline-note">The object stays still while the bubble stream preview updates live.</div>`
     : hasCaveControls
       ? ""
-      : `<div class="mini-note">This decor is still, so only size is available.</div>`;
+      : `<div class="mini-note decor-settings-inline-note">This decor is still, so only size and layer are available.</div>`;
   const controlsMarkup = `
-    <div class="custom-decor-controls-column">
-      <label class="bubbler-control-row">
-        <span>Size <strong data-decor-setting-value="size">${formatDecorScale(sizeValue)}</strong></span>
-        <input
-          type="range"
-          min="${DECOR_SCALE_MIN}"
-          max="${DECOR_SCALE_MAX}"
-          step="0.01"
-          value="${sizeValue}"
-          data-decor-setting="size" />
-      </label>
-      <label class="bubbler-control-row">
-        <span>Layer <strong data-decor-setting-value="tankLayer">${escapeHtml(layerReadout)}</strong></span>
-        <select class="shop-sort-select" data-decor-setting="tankLayer" aria-label="Decor layer">
-          ${layerOptions}
-        </select>
-        <em>${escapeHtml(layerHelpText)}</em>
-      </label>
+    <div class="custom-decor-controls-column decor-settings-controls-column">
+      <div class="decor-settings-top-grid">
+        <label class="decor-settings-control-card">
+          <span class="decor-settings-card-heading">Size <strong data-decor-setting-value="size">${formatDecorScale(sizeValue)}</strong></span>
+          <input type="range" min="${DECOR_SCALE_MIN}" max="${DECOR_SCALE_MAX}" step="0.01" value="${sizeValue}" data-decor-setting="size" />
+        </label>
+        <div class="decor-settings-control-card decor-settings-layer-card">
+          <span class="decor-settings-card-heading">Layer <strong data-decor-setting-value="tankLayer">${escapeHtml(layerReadout)}</strong></span>
+          <div class="decor-settings-layer-row">
+            <select class="shop-sort-select" data-decor-setting="tankLayer" aria-label="Decor layer" title="${escapeHtml(layerHelpText)}">
+              ${layerOptions}
+            </select>
+            <div class="decor-settings-layer-stepper" role="group" aria-label="Move decor layer">
+              <button type="button" data-decor-layer-step="-1" aria-label="Move one layer closer" title="Move one layer closer">▲</button>
+              <button type="button" data-decor-layer-step="1" aria-label="Move one layer deeper" title="Move one layer deeper">▼</button>
+            </div>
+          </div>
+        </div>
+      </div>
       ${motionControls}
-      ${hasCaveColorControls ? renderCaveColorSettingsControls(item, decor) : ""}
+      ${hasCaveColorControls ? `<section class="decor-settings-control-section decor-settings-color-section"><div class="decor-settings-section-title"><span>Color</span></div>${renderCaveColorSettingsControls(item, decor)}</section>` : ""}
       ${hasCaveControls ? renderCaveSettingsControls(item) : ""}
-      ${hasBubblerControls ? renderBubblerSettingsOverlay(item) : ""}
+      ${hasBubblerControls ? `<section class="decor-settings-control-section decor-settings-bubbler-section">${renderBubblerSettingsOverlay(item)}</section>` : ""}
     </div>
   `;
 
   return `
-    <div class="custom-decor-name-panel decor-settings-panel">
-      <div class="custom-decor-create-layout decor-settings-layout">
+    <div class="custom-decor-name-panel decor-settings-panel decor-settings-compact-panel">
+      <div class="custom-decor-create-layout decor-settings-layout decor-settings-compact-layout">
         <div class="custom-decor-preview-column">
           <div class="custom-decor-size-window">
             <div class="custom-decor-size-stage">
@@ -55380,10 +56205,7 @@ function renderDecorSettingsOverlay(item) {
                 ${hasCaveControls ? renderCaveSettingsMarkers(caveSettings) : ""}
               </div>
             </div>
-            <div class="custom-fish-size-readout">
-              <span>${escapeHtml(hasCaveControls ? "Cave Points" : hasBubblerControls ? "Live Preview" : capabilities.label || "Preview")}</span>
-              <strong>${escapeHtml(formatDecorScale(sizeValue))}</strong>
-            </div>
+            ${hasCaveControls ? `<div class="decor-settings-preview-hint">Drag the numbered markers to position entries and seats.</div>` : ""}
           </div>
         </div>
         ${controlsMarkup}
@@ -55745,6 +56567,10 @@ function buildCurrentTankCareSuggestions(now = Date.now()) {
 
 function claimDailyBonus() {
   const now = Date.now();
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    showToast("Daily awards are paused while Peaceful Mode is enabled.");
+    return;
+  }
   syncActiveDailyBonusState();
   const tank = getCurrentTank();
   const summary = getActiveDailyBonusSummary();
@@ -55811,6 +56637,9 @@ function renderSettingsOverlay() {
     if (settingsScroller instanceof HTMLElement) settingsScroller.scrollTop = 0;
   }
   syncDebugToolsAuthorization();
+  if (dom.peacefulModeToggleInput) {
+    dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
+  }
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
   }
@@ -57404,9 +58233,9 @@ function renderEditFishTray() {
             <button
               class="edit-decor-tile-primary"
               type="button"
-              ${!inStorage && !dead ? `data-tray-select-fish="${fish.id}"` : `data-tray-restore-fish="${fish.id}"`}
-              title="${actionLabel}"
-              aria-label="${actionLabel}"
+              ${dead ? `data-tray-restore-fish="${fish.id}"` : `data-tray-select-fish="${fish.id}"`}
+              title="${dead ? actionLabel : `Edit ${escapeHtml(fish.name)}`}"
+              aria-label="${dead ? actionLabel : `Edit ${escapeHtml(fish.name)}`}"
             >
               <span class="edit-decor-tile-surface">
                 <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${label}" />
@@ -58272,6 +59101,10 @@ function updateFishInspectorDisplayDocking() {
     clearFishInspectorDisplayDocking();
     return;
   }
+  if (runtime.fishInspectorSettingsOpen) {
+    clearFishInspectorDisplayDocking();
+    return;
+  }
 
   const uiSettings = getUiSettings();
   const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, getTutorialUiState());
@@ -58602,6 +59435,10 @@ function renderFishInspector(now) {
     runtime.selectedFishId = null;
     runtime.fishInspectorSettingsOpen = false;
     clearFishInspectorDisplayDocking();
+    dom.fishInspector?.classList.remove("is-settings-window");
+    if (dom.closeInspector) {
+      dom.closeInspector.hidden = true;
+    }
     dom.fishInspector.hidden = true;
     if (dom.inspectorSellFish) {
       dom.inspectorSellFish.hidden = true;
@@ -58609,12 +59446,13 @@ function renderFishInspector(now) {
     }
     if (dom.inspectorStoreFish) {
       dom.inspectorStoreFish.hidden = true;
+      dom.inspectorStoreFish.disabled = false;
       delete dom.inspectorStoreFish.dataset.storeFish;
+      dom.inspectorStoreFish.textContent = "PUT AWAY";
+      dom.inspectorStoreFish.title = "Move to Storage";
+      dom.inspectorStoreFish.setAttribute("aria-label", "Move to Storage");
     }
-    if (dom.inspectorDisposeFish) {
-      dom.inspectorDisposeFish.hidden = true;
-      delete dom.inspectorDisposeFish.dataset.disposeFish;
-    }
+
     if (dom.inspectorBuyAnotherFish) {
       dom.inspectorBuyAnotherFish.hidden = true;
       delete dom.inspectorBuyAnotherFish.dataset.buyAnotherFish;
@@ -58631,7 +59469,7 @@ function renderFishInspector(now) {
   const dead = isFishDead(fish);
   const beingConsumed = dead && isFishBeingConsumedByPiranhas(fish, now);
   const corpseLabel = dead ? getFishCorpseStateLabel(fish, now) : null;
-  const canBuyAnother = Boolean(baseSpecies && !dead && !inStorage && isFishSpeciesShopUnlocked(baseSpecies));
+  const canBuyAnother = Boolean(baseSpecies && !dead && isFishSpeciesShopUnlocked(baseSpecies));
   const purchaseCost = canBuyAnother ? getFishPurchaseCost(fish.speciesId) : 0;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
   const canSell = Boolean(baseSpecies) && !dead && !beingConsumed && !isFishJuvenile(fish);
@@ -58728,20 +59566,25 @@ function renderFishInspector(now) {
   }
 
   if (dom.inspectorStoreFish) {
-    const showStore = !inStorage && !dead;
+    const showStore = !dead;
+    const canMoveFish = inStorage ? true : canStore;
     dom.inspectorStoreFish.hidden = !showStore;
-    dom.inspectorStoreFish.disabled = !canStore;
+    dom.inspectorStoreFish.disabled = !canMoveFish;
     if (showStore) {
       dom.inspectorStoreFish.dataset.storeFish = fish.id;
-      dom.inspectorStoreFish.textContent = "PUT AWAY";
-      dom.inspectorStoreFish.title = canStore
-        ? `Move ${fish.name} to storage`
-        : `${fish.name} can't be moved to storage right now`;
+      dom.inspectorStoreFish.textContent = inStorage ? "PLACE" : "PUT AWAY";
+      dom.inspectorStoreFish.title = inStorage
+        ? `Place ${fish.name} in the tank`
+        : canStore
+          ? `Move ${fish.name} to storage`
+          : `${fish.name} can't be moved to storage right now`;
       dom.inspectorStoreFish.setAttribute(
         "aria-label",
-        canStore
-          ? `Move ${fish.name} to storage`
-          : `${fish.name} can't be moved to storage right now`
+        inStorage
+          ? `Place ${fish.name} in the tank`
+          : canStore
+            ? `Move ${fish.name} to storage`
+            : `${fish.name} can't be moved to storage right now`
       );
     } else {
       delete dom.inspectorStoreFish.dataset.storeFish;
@@ -58776,8 +59619,12 @@ function renderFishInspector(now) {
   if (dom.fishInspectorSettings) {
     dom.fishInspectorSettings.hidden = !runtime.fishInspectorSettingsOpen || dead;
   }
+  dom.fishInspector?.classList.toggle("is-settings-window", Boolean(runtime.fishInspectorSettingsOpen && !dead));
+  if (dom.closeInspector) {
+    dom.closeInspector.hidden = !runtime.fishInspectorSettingsOpen || dead;
+  }
   if (dom.inspectorFishSettingsButton) {
-    dom.inspectorFishSettingsButton.hidden = dead;
+    dom.inspectorFishSettingsButton.hidden = dead || runtime.fishInspectorSettingsOpen;
     dom.inspectorFishSettingsButton.textContent = "SETTINGS";
     dom.inspectorFishSettingsButton.classList.toggle("is-active", Boolean(runtime.fishInspectorSettingsOpen && !dead));
   }
@@ -70747,6 +71594,7 @@ function getFishPose(fish, species, now) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function getTankDirtiness(now) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return 0;
   const cleanDirtiness = getBaseTankDirtiness(now);
   if (!runtime.cleaningTransition) {
     return cleanDirtiness;
@@ -70762,6 +71610,7 @@ function getTankDirtiness(now) {
 }
 
 function getBaseTankDirtiness(now) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return 0;
   if (isTutorialTankDirtinessLocked()) {
     return 0;
   }
@@ -72226,6 +73075,7 @@ function updateComfortHistoryEvents(now = Date.now()) {
 }
 
 function getFishComfort(fish, now) {
+  if (!isFishDead(fish) && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return { value: 1, label: "Peaceful" };
   if (hasActiveCandyBoost(fish, now)) return { value: 1, label: "Candy boost" };
   if (isFishDead(fish)) {
     return { value: 0, label: "Deceased" };
@@ -72445,6 +73295,9 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
 }
 
 function updateFishNeeds(now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    return typeof enforcePeacefulModeState === "function" ? enforcePeacefulModeState(now) : false;
+  }
   let changed = false;
   for (const fish of getLivingTankFish()) {
     if (isUndeadFish(fish)) {

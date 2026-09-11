@@ -384,6 +384,9 @@ function sanitizeEvent(entry) {
     time: Number.isFinite(entry.time) ? entry.time : Date.now(),
     text: entry.text
   };
+  if (Number.isFinite(Number(entry.progressionTime))) {
+    sanitized.progressionTime = Number(entry.progressionTime);
+  }
   if (Number.isFinite(score)) {
     sanitized.score = clamp(Math.round(score), -1, 1);
   }
@@ -409,6 +412,9 @@ function sanitizeEvent(entry) {
   }
   if (entry.recapEligible === false) {
     sanitized.recapEligible = false;
+  }
+  if (entry.progressionEligible === false) {
+    sanitized.progressionEligible = false;
   }
   return sanitized;
 }

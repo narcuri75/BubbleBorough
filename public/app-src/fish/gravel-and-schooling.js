@@ -781,6 +781,9 @@ function spawnCoinGlint(x, y, now = Date.now()) {
 }
 
 function attemptGravelCoinFind(fish, action, now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    return false;
+  }
   if (!fish || !action || action.coinFindRolled) {
     return false;
   }

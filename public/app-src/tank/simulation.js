@@ -141,6 +141,8 @@ function syncCurrentTankState(now, options = {}) {
   if (!state) {
     return false;
   }
+  if (typeof ensurePeacefulModeSnapshots === "function") ensurePeacefulModeSnapshots(now);
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) && typeof enforcePeacefulModeState === "function") enforcePeacefulModeState(now);
   if (!PIRANHA_BEHAVIOR_ENABLED) {
     for (const fish of state.fish) {
       fish.piranhaConsumptionStartedAt = null;
@@ -231,15 +233,19 @@ function syncCurrentTankState(now, options = {}) {
   }
   changed = changed || pelletMotionChanged || pelletsBefore !== state.floatingPellets.length;
 
-  changed = processTankMedicineEffects(now) || changed;
-  changed = processFishDisease(now) || changed;
+  if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    changed = processTankMedicineEffects(now) || changed;
+    changed = processFishDisease(now) || changed;
+  }
   changed = processFishBehaviorState(now) || changed;
-  changed = processZombieInfections(now) || changed;
-  changed = processFishDecayStates(now) || changed;
-  changed = processDetritusFish(now) || changed;
-  changed = applyCriticalComfortHealthEffects(now) || changed;
-  changed = updateComfortHistoryEvents(now) || changed;
-  changed = maybeGenerateDailyRecapForTank(targetTank, now) || changed;
+  if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    changed = processZombieInfections(now) || changed;
+    changed = processFishDecayStates(now) || changed;
+    changed = processDetritusFish(now) || changed;
+    changed = applyCriticalComfortHealthEffects(now) || changed;
+    changed = updateComfortHistoryEvents(now) || changed;
+    changed = maybeGenerateDailyRecapForTank(targetTank, now) || changed;
+  }
   changed = normalizeCurrentTankShellState() || changed;
 
   pruneTankState(now, getCurrentTank());
@@ -317,7 +323,7 @@ function syncState(now) {
     changed = withActiveTank(tank.id, () => syncCurrentTankState(now, { visibleTankId }), state) || changed;
   }
   changed = processBoroughFishTravel(now) || changed;
-  changed = processFishAgeMilestones(now) || changed;
+  if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) changed = processFishAgeMilestones(now) || changed;
   state.activeTankId = activeTankId && tanks.some((tank) => tank.id === activeTankId)
     ? activeTankId
     : tanks[0].id;

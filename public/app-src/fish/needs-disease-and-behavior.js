@@ -445,6 +445,7 @@ function getDerivedFishNeedDefaults(fish, now = Date.now()) {
 }
 
 function sanitizeFishNeeds(value, fish = null, now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) && fish && !isFishDead(fish)) return Object.fromEntries(FISH_NEED_KEYS.map(key => [key, 100]));
   if (hasActiveCandyBoost(fish, now)) return Object.fromEntries(FISH_NEED_KEYS.map(key => [key, 100]));
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const defaults = fish ? getDerivedFishNeedDefaults(fish, now) : FISH_NEED_DEFAULTS;
@@ -1374,6 +1375,7 @@ function applyFirstAidDiseaseSlowdown(now = Date.now()) {
 }
 
 function processFishDisease(now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!state?.fish?.length) {
     return false;
   }

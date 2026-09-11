@@ -1,7 +1,7 @@
 // Decoration history and reusable layouts. History is session-only; layouts travel with saves.
 
 function copyDecorEditItem(item) {
-  const keys = ["id", "decorKey", "xNorm", "yNorm", "scale", "tankLayer", "flipped", "flippedY",
+  const keys = ["id", "decorKey", "customName", "xNorm", "yNorm", "scale", "tankLayer", "flipped", "flippedY",
     "freePlacementEnabled", "groupId", "xAnchorMode", "xCenterOffsetWorld", "yAnchorMode", "yAnchorValue",
     "bubblerSettings", "decorSettings", "caveSettings", "caveColorSettings", "transitTubeName", "transitTubeColor", "transitTubeLinkedId"];
   return JSON.parse(JSON.stringify(Object.fromEntries(keys.filter((key) => item[key] !== undefined).map((key) => [key, item[key]]))));

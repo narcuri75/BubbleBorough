@@ -374,6 +374,10 @@ function exposeDebugConsoleCommands() {
 }
 
 function addDebugCoins(amount = 10) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    showToast("Income is disabled while Peaceful Mode is enabled.");
+    return;
+  }
   const now = Date.now();
   const coinAmount = Math.max(0, Math.floor(Number(amount) || 0));
   if (!coinAmount) {

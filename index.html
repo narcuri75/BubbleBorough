@@ -558,13 +558,19 @@
                 <div class="store-panel-header">
                   <div class="settings-panel-copy">
                     <p id="utilityOverlayKicker" class="settings-kicker">Tank Tools</p>
-                    <h2 id="utilityOverlayTitle">Details</h2>
+                    <div class="utility-overlay-title-row">
+                      <h2 id="utilityOverlayTitle">Details</h2>
+                      <div id="utilityOverlayTitleActions" class="utility-overlay-title-actions" hidden></div>
+                    </div>
                   </div>
 
-                  <button id="closeUtilityOverlay" class="store-close-button" type="button" title="Close panel"
-                    aria-label="Close panel">
-                    &times;
-                  </button>
+                  <div class="utility-overlay-header-controls">
+                    <div id="utilityOverlayHeaderActions" class="utility-overlay-header-actions" hidden></div>
+                    <button id="closeUtilityOverlay" class="store-close-button" type="button" title="Close panel"
+                      aria-label="Close panel">
+                      &times;
+                    </button>
+                  </div>
                 </div>
 
                 <div id="utilityOverlayBody" class="store-panel-body utility-overlay-body"></div>
@@ -639,6 +645,14 @@
                         </div>
                       </div>
 
+                      <label class="settings-toggle-row settings-peaceful-mode-row" for="peacefulModeToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Peaceful Mode</span>
+                          <span class="settings-toggle-note">Max fish stats, no hunger or fighting, and a permanently clean tank. All income, daily awards, and achievement progress pause until disabled.</span>
+                        </div>
+                        <input id="peacefulModeToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+
                       <label class="settings-toolbar-color-row" for="toolbarTileColorInput">
                         <div class="settings-toggle-copy">
                           <span class="settings-toggle-label">Toolbar Tile Color</span>
@@ -646,8 +660,6 @@
                         </div>
                         <input id="toolbarTileColorInput" class="settings-color-input" type="color" value="#00438a" />
                       </label>
-
-                      
 
                       <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
                         <div class="settings-toggle-copy">

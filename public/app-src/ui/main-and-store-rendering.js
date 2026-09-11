@@ -764,7 +764,16 @@ function getBoroughSnapshot(tank, now = Date.now()) {
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "low";
       context.drawImage(dom.tankCanvas, 0, 0, canvas.width, canvas.height);
-      context.drawImage(dom.grimeCanvas, 0, 0, canvas.width, canvas.height);
+      // The live grime canvas is kept at full-strength pixels and faded with CSS opacity.
+      // Canvas-to-canvas snapshots do not inherit that CSS opacity, so apply the same
+      // visible dirtiness here or clean tanks appear permanently filthy in Overview.
+      const snapshotGrimeOpacity = getVisibleGrimeDirtiness(getTankDirtiness(now));
+      if (snapshotGrimeOpacity > 0.002) {
+        context.save();
+        context.globalAlpha = snapshotGrimeOpacity;
+        context.drawImage(dom.grimeCanvas, 0, 0, canvas.width, canvas.height);
+        context.restore();
+      }
       context.drawImage(dom.glassCanvas, 0, 0, canvas.width, canvas.height);
     } finally {
       tank.fish = previousFish;

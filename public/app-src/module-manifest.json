@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2919,
+  "functionCount": 2944,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -88,7 +88,7 @@
     },
     {
       "path": "decor/customization.js",
-      "functionCount": 160,
+      "functionCount": 166,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -282,7 +282,7 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 103,
+      "functionCount": 114,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -315,7 +315,7 @@
     },
     {
       "path": "decor/layout-and-layers.js",
-      "functionCount": 109,
+      "functionCount": 111,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -470,6 +470,7 @@
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
+        "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
         "decor/layout-and-layers.js",
@@ -676,7 +677,7 @@
     },
     {
       "path": "ui/fish-inspector.js",
-      "functionCount": 24,
+      "functionCount": 25,
       "dependencies": [
         "assets/custom-content.js",
         "core/settings-and-persistence.js",
@@ -836,6 +837,7 @@
         "store/catalog.js",
         "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js",
+        "tank/cleaning-and-glass.js",
         "tank/events-recaps-and-save.js",
         "tank/simulation.js",
         "tutorial/flow.js",
@@ -848,7 +850,7 @@
     },
     {
       "path": "ui/management-and-overlays.js",
-      "functionCount": 115,
+      "functionCount": 120,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",

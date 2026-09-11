@@ -1395,6 +1395,9 @@ function bindEvents() {
   dom.debugModeToggleInput?.addEventListener("change", (event) => {
     setDebugToolsEnabled(event.currentTarget?.checked);
   });
+  dom.peacefulModeToggleInput?.addEventListener("change", (event) => {
+    setPeacefulModeEnabled(event.currentTarget?.checked);
+  });
   dom.settingsOverlay?.addEventListener("change", (event) => {
     const toolbarInput = event.target.closest("[data-toolbar-position-choice]");
     if (TOOLBAR_POSITION_SETTING_ENABLED && toolbarInput instanceof HTMLInputElement) {
@@ -2180,8 +2183,8 @@ function bindEvents() {
     if (selectButton) {
       event.stopPropagation();
       const fishId = selectButton.dataset.traySelectFish;
-      clearPrimaryToolModes();
-      openFishActionMenu(fishId);
+      closeEditFishTrayContextMenu({ render: false });
+      openFishInspector(fishId, { settingsOpen: true });
       return;
     }
     const menuButton = event.target.closest("[data-open-fish-tray-menu]");
@@ -2393,6 +2396,12 @@ function bindEvents() {
     applyWallpaperNameKeyboardActionToInput(input, button.dataset.fishNameAction || button.dataset.fishNameKey || "");
     runtime.wallpaperUtilityKeyboardOpenId = input.dataset.wallpaperKeyboardInput || "";
     syncWallpaperUtilityNameKeyboards();
+  });
+  dom.utilityOverlayTitleActions?.addEventListener("click", (event) => {
+    dispatchUtilityOverlayTargetEvent("onHeaderClick", event);
+  });
+  dom.utilityOverlayHeaderActions?.addEventListener("click", (event) => {
+    dispatchUtilityOverlayTargetEvent("onHeaderClick", event);
   });
   dom.utilityOverlayFooter?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -2944,7 +2953,11 @@ function bindEvents() {
 
     const hitFish = findFishAtPoint(point.x, point.y, Date.now());
     if (hitFish) {
-      openFishActionMenu(hitFish.id, point);
+      if (runtime.fishEditMode) {
+        openFishInspector(hitFish.id, { settingsOpen: true });
+      } else {
+        openFishActionMenu(hitFish.id, point);
+      }
       return;
     }
 
@@ -3269,7 +3282,13 @@ function bindEvents() {
   });
   dom.inspectorStoreFish?.addEventListener("click", () => {
     const fishId = dom.inspectorStoreFish?.dataset.storeFish;
-    if (fishId) {
+    if (!fishId) {
+      return;
+    }
+    const managed = getManagedFishById(fishId);
+    if (managed?.inStorage) {
+      restoreFishToTank(fishId);
+    } else {
       storeFish(fishId);
     }
   });
@@ -3302,6 +3321,11 @@ function bindEvents() {
   dom.fishInspector?.addEventListener("input", playFishInspectorSliderInputSound, true);
   dom.fishInspector?.addEventListener("input", (event) => {
     const target = event.target instanceof Element ? event.target : null;
+    const colorPicker = target?.closest("[data-inspector-fish-color-picker]");
+    if (colorPicker instanceof HTMLInputElement && colorPicker.type === "color") {
+      queueInspectorFishColorPreview(colorPicker.value);
+      return;
+    }
     const control = target?.closest("[data-inspector-fish-setting]");
     if (control instanceof HTMLInputElement) {
       updateInspectorFishSetting(
@@ -3312,6 +3336,11 @@ function bindEvents() {
   });
   dom.fishInspector?.addEventListener("change", (event) => {
     const target = event.target instanceof Element ? event.target : null;
+    const colorPicker = target?.closest("[data-inspector-fish-color-picker]");
+    if (colorPicker instanceof HTMLInputElement && colorPicker.type === "color") {
+      updateInspectorFishSetting("color", colorPicker.value, { forcePersist: true });
+      return;
+    }
     const control = target?.closest("[data-inspector-fish-setting]");
     if (control instanceof HTMLInputElement || control instanceof HTMLSelectElement) {
       updateInspectorFishSetting(
@@ -3320,6 +3349,16 @@ function bindEvents() {
       );
     }
   });
+  window.addEventListener("pointerdown", (event) => {
+    if (!runtime.fishInspectorSettingsOpen || !runtime.selectedFishId || !dom.fishInspector || dom.fishInspector.hidden) {
+      return;
+    }
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest(".fish-inspector")) {
+      return;
+    }
+    closeFishInspector();
+  }, true);
   dom.fishNameInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();

@@ -208,10 +208,14 @@ function maybeRecordBoroughHappeningFromEvent(event, tank = getCurrentTank()) {
 }
 
 function getFishAgeDays(fish, now = Date.now()) {
-  return Math.max(0, Math.floor((getBoroughReferenceNow(now) - (Number(fish?.acquiredAt) || getBoroughReferenceNow(now))) / DAY_MS));
+  const referenceNow = typeof getPeacefulModeSimulationNow === "function"
+    ? getPeacefulModeSimulationNow(getBoroughReferenceNow(now))
+    : getBoroughReferenceNow(now);
+  return Math.max(0, Math.floor((referenceNow - (Number(fish?.acquiredAt) || referenceNow)) / DAY_MS));
 }
 
 function processFishAgeMilestones(now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   let changed = false;
   for (const tank of getAllTanks(state)) {
     for (const fish of tank.fish || []) {

@@ -349,6 +349,10 @@ function buildCurrentTankCareSuggestions(now = Date.now()) {
 
 function claimDailyBonus() {
   const now = Date.now();
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    showToast("Daily awards are paused while Peaceful Mode is enabled.");
+    return;
+  }
   syncActiveDailyBonusState();
   const tank = getCurrentTank();
   const summary = getActiveDailyBonusSummary();
@@ -415,6 +419,9 @@ function renderSettingsOverlay() {
     if (settingsScroller instanceof HTMLElement) settingsScroller.scrollTop = 0;
   }
   syncDebugToolsAuthorization();
+  if (dom.peacefulModeToggleInput) {
+    dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
+  }
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
   }
@@ -2008,9 +2015,9 @@ function renderEditFishTray() {
             <button
               class="edit-decor-tile-primary"
               type="button"
-              ${!inStorage && !dead ? `data-tray-select-fish="${fish.id}"` : `data-tray-restore-fish="${fish.id}"`}
-              title="${actionLabel}"
-              aria-label="${actionLabel}"
+              ${dead ? `data-tray-restore-fish="${fish.id}"` : `data-tray-select-fish="${fish.id}"`}
+              title="${dead ? actionLabel : `Edit ${escapeHtml(fish.name)}`}"
+              aria-label="${dead ? actionLabel : `Edit ${escapeHtml(fish.name)}`}"
             >
               <span class="edit-decor-tile-surface">
                 <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${label}" />
@@ -2876,6 +2883,10 @@ function updateFishInspectorDisplayDocking() {
     clearFishInspectorDisplayDocking();
     return;
   }
+  if (runtime.fishInspectorSettingsOpen) {
+    clearFishInspectorDisplayDocking();
+    return;
+  }
 
   const uiSettings = getUiSettings();
   const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, getTutorialUiState());
@@ -3206,6 +3217,10 @@ function renderFishInspector(now) {
     runtime.selectedFishId = null;
     runtime.fishInspectorSettingsOpen = false;
     clearFishInspectorDisplayDocking();
+    dom.fishInspector?.classList.remove("is-settings-window");
+    if (dom.closeInspector) {
+      dom.closeInspector.hidden = true;
+    }
     dom.fishInspector.hidden = true;
     if (dom.inspectorSellFish) {
       dom.inspectorSellFish.hidden = true;
@@ -3213,12 +3228,13 @@ function renderFishInspector(now) {
     }
     if (dom.inspectorStoreFish) {
       dom.inspectorStoreFish.hidden = true;
+      dom.inspectorStoreFish.disabled = false;
       delete dom.inspectorStoreFish.dataset.storeFish;
+      dom.inspectorStoreFish.textContent = "PUT AWAY";
+      dom.inspectorStoreFish.title = "Move to Storage";
+      dom.inspectorStoreFish.setAttribute("aria-label", "Move to Storage");
     }
-    if (dom.inspectorDisposeFish) {
-      dom.inspectorDisposeFish.hidden = true;
-      delete dom.inspectorDisposeFish.dataset.disposeFish;
-    }
+
     if (dom.inspectorBuyAnotherFish) {
       dom.inspectorBuyAnotherFish.hidden = true;
       delete dom.inspectorBuyAnotherFish.dataset.buyAnotherFish;
@@ -3235,7 +3251,7 @@ function renderFishInspector(now) {
   const dead = isFishDead(fish);
   const beingConsumed = dead && isFishBeingConsumedByPiranhas(fish, now);
   const corpseLabel = dead ? getFishCorpseStateLabel(fish, now) : null;
-  const canBuyAnother = Boolean(baseSpecies && !dead && !inStorage && isFishSpeciesShopUnlocked(baseSpecies));
+  const canBuyAnother = Boolean(baseSpecies && !dead && isFishSpeciesShopUnlocked(baseSpecies));
   const purchaseCost = canBuyAnother ? getFishPurchaseCost(fish.speciesId) : 0;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
   const canSell = Boolean(baseSpecies) && !dead && !beingConsumed && !isFishJuvenile(fish);
@@ -3332,20 +3348,25 @@ function renderFishInspector(now) {
   }
 
   if (dom.inspectorStoreFish) {
-    const showStore = !inStorage && !dead;
+    const showStore = !dead;
+    const canMoveFish = inStorage ? true : canStore;
     dom.inspectorStoreFish.hidden = !showStore;
-    dom.inspectorStoreFish.disabled = !canStore;
+    dom.inspectorStoreFish.disabled = !canMoveFish;
     if (showStore) {
       dom.inspectorStoreFish.dataset.storeFish = fish.id;
-      dom.inspectorStoreFish.textContent = "PUT AWAY";
-      dom.inspectorStoreFish.title = canStore
-        ? `Move ${fish.name} to storage`
-        : `${fish.name} can't be moved to storage right now`;
+      dom.inspectorStoreFish.textContent = inStorage ? "PLACE" : "PUT AWAY";
+      dom.inspectorStoreFish.title = inStorage
+        ? `Place ${fish.name} in the tank`
+        : canStore
+          ? `Move ${fish.name} to storage`
+          : `${fish.name} can't be moved to storage right now`;
       dom.inspectorStoreFish.setAttribute(
         "aria-label",
-        canStore
-          ? `Move ${fish.name} to storage`
-          : `${fish.name} can't be moved to storage right now`
+        inStorage
+          ? `Place ${fish.name} in the tank`
+          : canStore
+            ? `Move ${fish.name} to storage`
+            : `${fish.name} can't be moved to storage right now`
       );
     } else {
       delete dom.inspectorStoreFish.dataset.storeFish;
@@ -3380,8 +3401,12 @@ function renderFishInspector(now) {
   if (dom.fishInspectorSettings) {
     dom.fishInspectorSettings.hidden = !runtime.fishInspectorSettingsOpen || dead;
   }
+  dom.fishInspector?.classList.toggle("is-settings-window", Boolean(runtime.fishInspectorSettingsOpen && !dead));
+  if (dom.closeInspector) {
+    dom.closeInspector.hidden = !runtime.fishInspectorSettingsOpen || dead;
+  }
   if (dom.inspectorFishSettingsButton) {
-    dom.inspectorFishSettingsButton.hidden = dead;
+    dom.inspectorFishSettingsButton.hidden = dead || runtime.fishInspectorSettingsOpen;
     dom.inspectorFishSettingsButton.textContent = "SETTINGS";
     dom.inspectorFishSettingsButton.classList.toggle("is-active", Boolean(runtime.fishInspectorSettingsOpen && !dead));
   }

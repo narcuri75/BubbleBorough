@@ -12,6 +12,7 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
   const eventEntry = {
     id: createId("event"),
     time,
+    progressionTime: time,
     text
   };
   if (Number.isFinite(score)) {
@@ -37,8 +38,11 @@ function pushEvent(text, time = Date.now(), tank = getCurrentTank(), meta = {}) 
       eventEntry[key] = meta[key].trim().slice(0, 160);
     }
   }
-  if (meta?.recapEligible === false) {
+  if (meta?.recapEligible === false || (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     eventEntry.recapEligible = false;
+  }
+  if (meta?.progressionEligible === false || (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    eventEntry.progressionEligible = false;
   }
 
   const events = Array.isArray(targetTank.events) ? targetTank.events : [];
@@ -160,6 +164,7 @@ function getActiveDailyBonusSummary(tank = getCurrentTank()) {
 }
 
 function grantDailyRecapRewardAutomatically(summary, now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!state?.dailyBonus || !summary?.dayKey) {
     return false;
   }
@@ -421,6 +426,7 @@ function storeDailyRecapSummary(summary) {
 }
 
 function maybeGenerateDailyRecapForTank(tank, now = Date.now(), options = {}) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!tank || !state?.dailyBonus) {
     return false;
   }
@@ -545,7 +551,7 @@ function countEventOccurrences(events, pattern) {
 function getLatestEventTime(events, pattern) {
   return (Array.isArray(events) ? events : [])
     .filter((event) => pattern.test(String(event?.text || "")))
-    .reduce((latest, event) => Math.max(latest, Number(event?.time) || 0), 0);
+    .reduce((latest, event) => Math.max(latest, Number(event?.progressionTime ?? event?.time) || 0), 0);
 }
 
 function getMilestoneTankFishEntries() {
@@ -603,10 +609,12 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     : (Number(referenceSummary?.averageComfort) || 0);
   const livingFish = getAllTankFish(state).filter((fish) => fish && !isFishDead(fish));
   const oldestLivingFishAgeMs = livingFish.reduce((oldest, fish) => Math.max(oldest, now - (Number(fish.acquiredAt) || now)), 0);
-  const allEvents = getAllTanks(state).flatMap((tank) => Array.isArray(tank.events) ? tank.events : []);
+  const allEvents = getAllTanks(state)
+    .flatMap((tank) => Array.isArray(tank.events) ? tank.events : [])
+    .filter((event) => event?.progressionEligible !== false);
   const latestDeath = allEvents
     .filter((event) => / died|dead fish|could not survive/i.test(event?.text || ""))
-    .reduce((latest, event) => Math.max(latest, Number(event.time) || 0), 0);
+    .reduce((latest, event) => Math.max(latest, Number(event.progressionTime ?? event.time) || 0), 0);
   const stewardshipStartCandidates = [
     ...getAllTanks(state).map((tank) => Number(tank?.createdAt) || Number(tank?.lastSimulatedAt) || now),
     ...livingFish.map((fish) => Number(fish.acquiredAt) || now)
@@ -632,7 +640,7 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
   const lastHealingAt = getLatestEventTime(allEvents, /recovered half a heart|medicine .* used|was used in|health reset restored/i);
   const deathAfterLastHealing = lastHealingAt > 0 && allEvents.some((event) => (
     / died|dead fish|could not survive/i.test(event?.text || "")
-    && (Number(event?.time) || 0) > lastHealingAt
+    && (Number(event?.progressionTime ?? event?.time) || 0) > lastHealingAt
   ));
   const grownBabyFishCount = [
     ...getAllTankFish(state),
@@ -681,6 +689,7 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
 }
 
 function applyProgressMilestones(latestSummary = null, now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return [];
   if (!state?.dailyBonus || runtime.achievementEvaluationActive) {
     return [];
   }

@@ -1232,11 +1232,19 @@ function createPlacedDecorUtilityMode(options = {}) {
     render: () => {
       const item = options.getItem?.() || null;
       const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+      const titleActions = typeof options.renderTitleActions === "function"
+        ? options.renderTitleActions(item, decor)
+        : String(options.titleActions || "");
+      const headerActions = typeof options.renderHeaderActions === "function"
+        ? options.renderHeaderActions(item, decor)
+        : String(options.headerActions || "");
       return {
         kicker: String(options.kicker || "Decor"),
-        title: decor?.name || options.fallbackTitle || "Decor Settings",
+        title: item ? getPlacedDecorDisplayName(item, decor) : (decor?.name || options.fallbackTitle || "Decor Settings"),
+        titleActions,
+        headerActions,
         body: options.renderBody(item),
-        footer: buildUtilityCloseFooter(options.footerLabel || "Done", "alt"),
+        footer: options.hideFooter ? "" : buildUtilityCloseFooter(options.footerLabel || "Done", "alt"),
         closable: true
       };
     },
@@ -1834,7 +1842,82 @@ function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
   return false;
 }
 
+function renderDecorSettingsTitleActions(item, decor) {
+  if (!item || !decor || isTransitTubeDecorKey(item.decorKey)) {
+    return "";
+  }
+
+  return `<button class="utility-header-icon-button" type="button" data-decor-settings-rename title="Rename this placed decor" aria-label="Rename this placed decor">✎</button>`;
+}
+
+function renderDecorSettingsHeaderActions(item, decor) {
+  if (!item || !decor || isTransitTubeDecorKey(item.decorKey)) {
+    return "";
+  }
+
+  return `
+    <button class="utility-header-reset-button" type="button" data-decor-settings-reset title="Reset decor settings">
+      <span aria-hidden="true">↻</span>
+      <span>Reset</span>
+    </button>
+  `;
+}
+
+function handleDecorSettingsUtilityOverlayHeaderClick(ctx, target) {
+  const item = getDecorSettingsTarget();
+  if (!item) {
+    return false;
+  }
+
+  if (target?.closest?.("[data-decor-settings-reset]")) {
+    resetSelectedDecorSettings();
+    return true;
+  }
+
+  if (target?.closest?.("[data-decor-settings-rename]")) {
+    const decor = runtime.decorMap.get(item.decorKey);
+    const currentName = getPlacedDecorDisplayName(item, decor);
+    const nextName = window.prompt("Name this placed decor:", currentName);
+    if (nextName !== null) {
+      setSelectedDecorCustomName(nextName);
+    }
+    return true;
+  }
+
+  return false;
+}
+
 function handleCaveSettingsUtilityOverlayBodyClick(ctx, target) {
+  const caveTabButton = target?.closest?.("[data-decor-cave-tab]");
+  if (caveTabButton) {
+    const nextTab = String(caveTabButton.dataset.decorCaveTab || "entries");
+    runtime.decorSettingsCaveTab = ["entries", "seats", "preview"].includes(nextTab) ? nextTab : "entries";
+    renderUtilityOverlay();
+    return true;
+  }
+  if (target?.closest?.("[data-cave-add-entry]")) {
+    addSelectedCavePoint("entry");
+    return true;
+  }
+  const removeEntryButton = target?.closest?.("[data-cave-remove-entry]");
+  if (removeEntryButton) {
+    removeSelectedCavePoint("entry", removeEntryButton.dataset.caveRemoveEntry);
+    return true;
+  }
+  if (target?.closest?.("[data-cave-add-seat]")) {
+    addSelectedCavePoint("seat");
+    return true;
+  }
+  const removeSeatButton = target?.closest?.("[data-cave-remove-seat]");
+  if (removeSeatButton) {
+    removeSelectedCavePoint("seat", removeSeatButton.dataset.caveRemoveSeat);
+    return true;
+  }
+  const layerStepButton = target?.closest?.("[data-decor-layer-step]");
+  if (layerStepButton) {
+    stepSelectedDecorLayer(layerStepButton.dataset.decorLayerStep);
+    return true;
+  }
   const transitTubeColorButton = target?.closest?.("[data-transit-tube-color]");
   if (transitTubeColorButton) {
     const item = getDecorSettingsTarget();
@@ -1953,6 +2036,15 @@ function handleCaveSettingsUtilityOverlayFocusIn(ctx, target) {
 }
 
 function handleCommonUtilityOverlayInput(ctx, target) {
+  const caveColorPicker = target?.closest?.("[data-cave-color-picker]");
+  if (caveColorPicker instanceof HTMLInputElement && caveColorPicker.type === "color") {
+    updateSelectedCaveColorSetting(
+      caveColorPicker.dataset.caveColorPicker,
+      caveColorPicker.value,
+      { live: true, persist: false }
+    );
+    return true;
+  }
   const caveSettingInput = target?.closest?.("[data-cave-setting]");
   if (caveSettingInput instanceof HTMLInputElement) {
     updateSelectedCaveSetting(
@@ -2110,6 +2202,15 @@ function handleTankManagementUtilityOverlayInput(ctx, target) {
 }
 
 function handleCommonUtilityOverlayChange(ctx, target) {
+  const caveColorPicker = target?.closest?.("[data-cave-color-picker]");
+  if (caveColorPicker instanceof HTMLInputElement && caveColorPicker.type === "color") {
+    updateSelectedCaveColorSetting(
+      caveColorPicker.dataset.caveColorPicker,
+      caveColorPicker.value,
+      { forcePersist: true }
+    );
+    return true;
+  }
   const caveColorizeControl = target?.closest?.("[data-cave-colorize-layer]");
   if (caveColorizeControl instanceof HTMLInputElement) {
     updateSelectedCaveColorizeSetting(
@@ -2271,6 +2372,31 @@ function dispatchUtilityOverlayPointerEvent(handlerKey, event) {
   return handler ? handler(getUtilityOverlayContext(Date.now()), event) === true : false;
 }
 
+function syncUtilityOverlayEditTraySafeArea() {
+  if (!dom.utilityOverlay) {
+    return;
+  }
+
+  const isDecorSettings = runtime.utilityOverlayOpen
+    && (runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-decor-settings");
+  if (!isDecorSettings) {
+    dom.utilityOverlay.style.removeProperty("--utility-edit-tray-reserve");
+    return;
+  }
+
+  const visibleTray = [dom.editDecorTray, dom.editFishTray, dom.editEquipmentTray, dom.editTankTray]
+    .find((tray) => tray instanceof HTMLElement && !tray.hidden && tray.getClientRects().length);
+  if (!visibleTray) {
+    dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", "0px");
+    return;
+  }
+
+  const overlayRect = dom.utilityOverlay.getBoundingClientRect();
+  const trayRect = visibleTray.getBoundingClientRect();
+  const reserve = Math.max(0, Math.ceil(overlayRect.bottom - trayRect.top + 12));
+  dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", `${reserve}px`);
+}
+
 function renderUtilityOverlay() {
   if (!dom.utilityOverlay) {
     return;
@@ -2287,6 +2413,8 @@ function renderUtilityOverlay() {
   const hideKicker = config.kicker === false;
   const kicker = hideKicker ? "" : String(config.kicker || "Tank Tools");
   const title = String(config.title || "Details");
+  const titleActions = String(config.titleActions || "");
+  const headerActions = String(config.headerActions || "");
   const body = String(config.body || "");
   const footer = String(config.footer || "");
 
@@ -2294,6 +2422,14 @@ function renderUtilityOverlay() {
   if (dom.utilityOverlayKicker) {
     setTextIfChanged(dom.utilityOverlayKicker, kicker);
     dom.utilityOverlayKicker.hidden = hideKicker;
+  }
+  if (dom.utilityOverlayTitleActions) {
+    setMarkupIfChanged("utility-overlay-title-actions", dom.utilityOverlayTitleActions, titleActions);
+    dom.utilityOverlayTitleActions.hidden = !titleActions.trim();
+  }
+  if (dom.utilityOverlayHeaderActions) {
+    setMarkupIfChanged("utility-overlay-header-actions", dom.utilityOverlayHeaderActions, headerActions);
+    dom.utilityOverlayHeaderActions.hidden = !headerActions.trim();
   }
   if (dom.utilityOverlayBody) {
     setMarkupIfChanged("utility-overlay-body", dom.utilityOverlayBody, body);
@@ -2307,6 +2443,7 @@ function renderUtilityOverlay() {
   if (dom.closeUtilityOverlay) {
     dom.closeUtilityOverlay.hidden = config.closable === false;
   }
+  syncUtilityOverlayEditTraySafeArea();
 }
 
 function renderExternalLinkOverlay(link) {
@@ -2516,12 +2653,15 @@ function renderCaveColorSettingsControls(item, decor) {
 
   const settings = getPlacedCaveColorSettings(item, decor);
   const colorizeSettings = getPlacedCaveColorizeSettings(item, decor);
-  const colorChoices = getCustomGravelColorChoices();
   const layerControls = layers.map((layer) => {
     const activeColor = normalizeDecorColorSetting(settings[layer.id] || "");
+    const activeCustomColor = normalizeHexColor(activeColor);
     const originalSelected = !activeColor;
     const rgbSelected = isDecorRgbColorSetting(activeColor);
+    const customSelected = Boolean(activeCustomColor);
     const colorizeChecked = colorizeSettings[layer.id] === true;
+    const layerLabel = getCaveColorLayerLabel(layer, layers, decor);
+    const pickerColor = activeCustomColor || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
     const originalTile = `
       <button
         class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${originalSelected ? "is-selected" : ""}"
@@ -2529,7 +2669,7 @@ function renderCaveColorSettingsControls(item, decor) {
         data-cave-color-layer="${escapeHtml(layer.id)}"
         data-cave-color=""
         aria-pressed="${originalSelected}"
-        aria-label="Use original ${escapeHtml(getCaveColorLayerLabel(layer, layers, decor))} color"
+        aria-label="Use original ${escapeHtml(layerLabel)} color"
         title="Original color">
         Original
       </button>
@@ -2541,39 +2681,36 @@ function renderCaveColorSettingsControls(item, decor) {
         data-cave-color-layer="${escapeHtml(layer.id)}"
         data-cave-color="${DECOR_RGB_COLOR_SETTING}"
         aria-pressed="${rgbSelected}"
-        aria-label="Fade ${escapeHtml(getCaveColorLayerLabel(layer, layers, decor))} through RGB colors"
+        aria-label="Fade ${escapeHtml(layerLabel)} through RGB colors"
         title="RGB color cycle">
         RGB
       </button>
     `;
-    const swatches = colorChoices.map((choice) => {
-      const selected = activeColor === choice.color;
-      return `
-        <button
-          class="custom-gravel-color-swatch bubbler-color-swatch ${selected ? "is-selected" : ""}"
-          type="button"
-          style="--swatch:${choice.color};"
-          data-cave-color-layer="${escapeHtml(layer.id)}"
-          data-cave-color="${choice.color}"
-          aria-pressed="${selected}"
-          aria-label="Set ${escapeHtml(getCaveColorLayerLabel(layer, layers, decor))} to ${escapeHtml(choice.label)}"
-          title="${escapeHtml(choice.label)}"></button>
-      `;
-    }).join("");
+    const customColorPicker = `
+      <label
+        class="cave-color-picker-shell ${customSelected ? "is-selected" : ""}"
+        data-cave-color-picker-shell="${escapeHtml(layer.id)}"
+        title="Choose custom ${escapeHtml(layerLabel)} color">
+        <input
+          class="cave-color-picker-input"
+          type="color"
+          value="${escapeHtml(pickerColor)}"
+          data-cave-color-picker="${escapeHtml(layer.id)}"
+          aria-label="Choose custom ${escapeHtml(layerLabel)} color" />
+      </label>
+    `;
 
     return `
       <div class="cave-color-layer-card" data-cave-color-card="${escapeHtml(layer.id)}">
         <div class="bubbler-color-row cave-color-layer-header">
-          <span>${escapeHtml(getCaveColorLayerLabel(layer, layers, decor))}</span>
+          <span>${escapeHtml(layerLabel)}</span>
           <strong data-cave-color-layer-value="${escapeHtml(layer.id)}">${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong>
         </div>
         <div class="bubbler-color-swatches cave-color-swatches">
           <div class="color-choice-mode-row">
             ${originalTile}
             ${rgbTile}
-          </div>
-          <div class="color-choice-swatch-row">
-            ${swatches}
+            ${customColorPicker}
           </div>
         </div>
         <label class="cave-colorize-toggle">
@@ -2589,7 +2726,7 @@ function renderCaveColorSettingsControls(item, decor) {
 
   return `
     <div class="cave-color-controls">
-      <div class="custom-decor-type-summary">Decor color layers use the shared color palette.</div>
+      <div class="custom-decor-type-summary">Choose Original, RGB cycle, or any custom color.</div>
       ${layerControls}
     </div>
   `;
@@ -2758,8 +2895,8 @@ function renderCustomHideCreationOverlay() {
     `;
 
   return `
-    <div class="custom-decor-name-panel decor-settings-panel">
-      <div class="custom-decor-create-layout decor-settings-layout">
+    <div class="custom-decor-name-panel decor-settings-panel decor-settings-compact-panel">
+      <div class="custom-decor-create-layout decor-settings-layout decor-settings-compact-layout">
         <div class="custom-decor-preview-column">
           ${uploadChooserMarkup}
           ${combinedPreviewMarkup}
@@ -2803,7 +2940,7 @@ function renderCaveSettingsMarkers(settings) {
   `;
 }
 
-function renderCaveSettingsControls(item) {
+function renderLegacyCaveSettingsControls(item) {
   const settings = getPlacedCaveSettings(item) || sanitizePlacedCaveSettings();
   const entryCountOptions = Array.from({ length: CAVE_SETTINGS_MAX_ENTRIES - CAVE_SETTINGS_MIN_ENTRIES + 1 }, (_, index) => {
     const count = CAVE_SETTINGS_MIN_ENTRIES + index;
@@ -2939,6 +3076,122 @@ function renderCaveSettingsControls(item) {
   `;
 }
 
+
+function renderCaveSettingsControls(item) {
+  const compactMode = runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-decor-settings";
+  if (!compactMode) {
+    return renderLegacyCaveSettingsControls(item);
+  }
+
+  const settings = getPlacedCaveSettings(item) || sanitizePlacedCaveSettings();
+  const currentTab = ["entries", "seats", "preview"].includes(runtime.decorSettingsCaveTab)
+    ? runtime.decorSettingsCaveTab
+    : "entries";
+  const tabButton = (id, label, icon) => `
+    <button
+      class="decor-cave-tab ${currentTab === id ? "is-active" : ""}"
+      type="button"
+      role="tab"
+      data-decor-cave-tab="${id}"
+      aria-selected="${currentTab === id ? "true" : "false"}">
+      <span class="decor-cave-tab-icon" aria-hidden="true">${icon}</span>
+      <span>${label}</span>
+    </button>
+  `;
+
+  const entryRows = settings.entries.map((entry, index) => {
+    const active = index === settings.activeEntryIndex;
+    const side = normalizeCaveEntrySide(entry.side);
+    const sideOptions = CAVE_ENTRY_SIDE_OPTIONS.map((option) => `
+      <option value="${escapeHtml(option.id)}" ${side === option.id ? "selected" : ""}>${escapeHtml(option.label)}</option>
+    `).join("");
+    return `
+      <div class="decor-cave-point-row ${active ? "is-active" : ""}" data-cave-entry-card="${index}">
+        <button class="decor-cave-point-badge is-entry" type="button" data-cave-entry-select="${index}" aria-label="Select entry ${index + 1}">${index + 1}</button>
+        <label class="decor-cave-side-control">
+          <span class="sr-only">Entry ${index + 1} side</span>
+          <select class="shop-sort-select" data-cave-setting="entrySide" data-cave-entry-index="${index}" aria-label="Cave entry ${index + 1} side">
+            ${sideOptions}
+          </select>
+        </label>
+        <label class="decor-cave-coordinate-control">
+          <span>X <strong data-cave-setting-value="entryX" data-cave-entry-index="${index}">${formatCaveSettingPercent(entry.x)}</strong></span>
+          <input type="range" min="0.02" max="0.98" step="0.01" value="${entry.x}" data-cave-setting="entryX" data-cave-entry-index="${index}" />
+        </label>
+        <label class="decor-cave-coordinate-control">
+          <span>Y <strong data-cave-setting-value="entryY" data-cave-entry-index="${index}">${formatCaveSettingPercent(entry.y)}</strong></span>
+          <input type="range" min="0.02" max="0.98" step="0.01" value="${entry.y}" data-cave-setting="entryY" data-cave-entry-index="${index}" />
+        </label>
+        <button class="decor-cave-delete-button" type="button" data-cave-remove-entry="${index}" aria-label="Delete entry ${index + 1}" title="Delete entry" ${settings.entryCount <= CAVE_SETTINGS_MIN_ENTRIES ? "disabled" : ""}>×</button>
+      </div>
+    `;
+  }).join("");
+
+  const seatRows = settings.seats.map((seat, index) => {
+    const active = index === settings.activeSeatIndex;
+    const facing = normalizeCaveSeatFacing(seat.facing);
+    return `
+      <div class="decor-cave-point-row ${active ? "is-active" : ""}" data-cave-seat-card="${index}">
+        <button class="decor-cave-point-badge is-seat" type="button" data-cave-seat-select="${index}" aria-label="Select seat ${index + 1}">${index + 1}</button>
+        <div class="decor-cave-facing-control" role="group" aria-label="Seat ${index + 1} facing">
+          <button class="cave-seat-facing-button ${facing < 0 ? "is-selected" : ""}" type="button" data-cave-seat-facing="-1" data-cave-seat-index="${index}" aria-pressed="${facing < 0 ? "true" : "false"}" title="Face left">‹</button>
+          <button class="cave-seat-facing-button ${facing > 0 ? "is-selected" : ""}" type="button" data-cave-seat-facing="1" data-cave-seat-index="${index}" aria-pressed="${facing > 0 ? "true" : "false"}" title="Face right">›</button>
+        </div>
+        <label class="decor-cave-coordinate-control">
+          <span>X <strong data-cave-setting-value="seatX" data-cave-seat-index="${index}">${formatCaveSettingPercent(seat.x)}</strong></span>
+          <input type="range" min="0.02" max="0.98" step="0.01" value="${seat.x}" data-cave-setting="seatX" data-cave-seat-index="${index}" />
+        </label>
+        <label class="decor-cave-coordinate-control">
+          <span>Y <strong data-cave-setting-value="seatY" data-cave-seat-index="${index}">${formatCaveSettingPercent(seat.y)}</strong></span>
+          <input type="range" min="0.02" max="0.98" step="0.01" value="${seat.y}" data-cave-setting="seatY" data-cave-seat-index="${index}" />
+        </label>
+        <button class="decor-cave-delete-button" type="button" data-cave-remove-seat="${index}" aria-label="Delete seat ${index + 1}" title="Delete seat" ${settings.seatCount <= CAVE_SETTINGS_MIN_SEATS ? "disabled" : ""}>×</button>
+      </div>
+    `;
+  }).join("");
+
+  let panelMarkup = "";
+  if (currentTab === "entries") {
+    panelMarkup = `
+      <div class="decor-cave-list-header">
+        <strong>${settings.entryCount} ${settings.entryCount === 1 ? "Entry" : "Entries"}</strong>
+        <button class="decor-cave-add-button" type="button" data-cave-add-entry ${settings.entryCount >= CAVE_SETTINGS_MAX_ENTRIES ? "disabled" : ""}>+ Add Entry</button>
+      </div>
+      <div class="decor-cave-compact-list">${entryRows}</div>
+    `;
+  } else if (currentTab === "seats") {
+    panelMarkup = `
+      <div class="decor-cave-list-header">
+        <strong>${settings.seatCount} ${pluralize("Seat", settings.seatCount)}</strong>
+        <button class="decor-cave-add-button" type="button" data-cave-add-seat ${settings.seatCount >= CAVE_SETTINGS_MAX_SEATS ? "disabled" : ""}>+ Add Seat</button>
+      </div>
+      <div class="decor-cave-compact-list">${seatRows}</div>
+    `;
+  } else {
+    panelMarkup = `
+      <div class="decor-cave-preview-summary">
+        <strong>Position cave points directly on the preview.</strong>
+        <span>Drag the numbered entry and seat markers on the decor image. The X and Y values update live.</span>
+        <div class="decor-cave-preview-stats">
+          <span><b>${settings.entryCount}</b> ${settings.entryCount === 1 ? "entry" : "entries"}</span>
+          <span><b>${settings.seatCount}</b> ${pluralize("seat", settings.seatCount)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <section class="decor-settings-cave-panel">
+      <div class="decor-cave-tabs" role="tablist" aria-label="Cave settings">
+        ${tabButton("entries", "Entries", "↪")}
+        ${tabButton("seats", "Seats", "●")}
+        ${tabButton("preview", "Preview", "◉")}
+      </div>
+      <div class="decor-cave-tab-panel" role="tabpanel">${panelMarkup}</div>
+    </section>
+  `;
+}
+
 function renderDecorSettingsOverlay(item) {
   if (!item) {
     return `<div class="empty-state">Select a placed decor item first.</div>`;
@@ -2983,101 +3236,79 @@ function renderDecorSettingsOverlay(item) {
     </option>
   `).join("");
   const motionControls = hasMotionControls ? `
-    <div class="custom-decor-type-summary">${escapeHtml(capabilities.summary)}</div>
-    ${capabilities.hasSway ? `
-      <label class="custom-decor-name-row">
-        <span>Sway Area</span>
-        <select class="shop-sort-select" data-decor-setting="swaySide" aria-label="Decor sway area">
-          ${swaySideOptions}
-        </select>
-      </label>
-      <label class="bubbler-control-row">
-        <span>Sway Starts <strong data-decor-setting-value="swaySplitY">${Math.round(motionSettings.swaySplitY * 100)}%</strong></span>
-        <input
-          type="range"
-          min="8"
-          max="92"
-          step="1"
-          value="${Math.round(motionSettings.swaySplitY * 100)}"
-          data-decor-setting="swaySplitY" />
-      </label>
-      <label class="bubbler-control-row">
-        <span>Sway Intensity <strong data-decor-setting-value="swayIntensity">${motionSettings.swayIntensity.toFixed(2)}x</strong></span>
-        <input
-          type="range"
-          min="${MIN_CUSTOM_DECOR_MOTION_INTENSITY}"
-          max="${MAX_CUSTOM_DECOR_MOTION_INTENSITY}"
-          step="0.05"
-          value="${motionSettings.swayIntensity}"
-          data-decor-setting="swayIntensity" />
-      </label>
-      <label class="bubbler-control-row">
-        <span>Sway Speed <strong data-decor-setting-value="swaySpeed">${motionSettings.swaySpeed.toFixed(2)}x</strong></span>
-        <input
-          type="range"
-          min="${MIN_DECOR_MOTION_SPEED}"
-          max="${MAX_DECOR_MOTION_SPEED}"
-          step="0.05"
-          value="${motionSettings.swaySpeed}"
-          data-decor-setting="swaySpeed" />
-      </label>
-    ` : ""}
-    ${capabilities.hasBob ? `
-      <label class="bubbler-control-row">
-        <span>Bob Intensity <strong data-decor-setting-value="bobIntensity">${motionSettings.bobIntensity.toFixed(2)}x</strong></span>
-        <input
-          type="range"
-          min="${MIN_CUSTOM_DECOR_MOTION_INTENSITY}"
-          max="${MAX_CUSTOM_DECOR_MOTION_INTENSITY}"
-          step="0.05"
-          value="${motionSettings.bobIntensity}"
-          data-decor-setting="bobIntensity" />
-      </label>
-      <label class="bubbler-control-row">
-        <span>Bob Speed <strong data-decor-setting-value="bobSpeed">${motionSettings.bobSpeed.toFixed(2)}x</strong></span>
-        <input
-          type="range"
-          min="${MIN_DECOR_MOTION_SPEED}"
-          max="${MAX_DECOR_MOTION_SPEED}"
-          step="0.05"
-          value="${motionSettings.bobSpeed}"
-          data-decor-setting="bobSpeed" />
-      </label>
-    ` : ""}
+    <section class="decor-settings-control-section decor-settings-motion-section">
+      <div class="decor-settings-section-title">
+        <span>${capabilities.hasSway ? "Sway" : "Motion"}</span>
+        <small>${escapeHtml(capabilities.summary)}</small>
+      </div>
+      <div class="decor-settings-motion-grid">
+        ${capabilities.hasSway ? `
+          <label class="decor-settings-compact-control decor-settings-select-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">≈</b>Area</span>
+            <select class="shop-sort-select" data-decor-setting="swaySide" aria-label="Decor sway area">
+              ${swaySideOptions}
+            </select>
+          </label>
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">≋</b>Starts <strong data-decor-setting-value="swaySplitY">${Math.round(motionSettings.swaySplitY * 100)}%</strong></span>
+            <input type="range" min="8" max="92" step="1" value="${Math.round(motionSettings.swaySplitY * 100)}" data-decor-setting="swaySplitY" />
+          </label>
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">≋</b>Intensity <strong data-decor-setting-value="swayIntensity">${motionSettings.swayIntensity.toFixed(2)}x</strong></span>
+            <input type="range" min="${MIN_CUSTOM_DECOR_MOTION_INTENSITY}" max="${MAX_CUSTOM_DECOR_MOTION_INTENSITY}" step="0.05" value="${motionSettings.swayIntensity}" data-decor-setting="swayIntensity" />
+          </label>
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">∿</b>Speed <strong data-decor-setting-value="swaySpeed">${motionSettings.swaySpeed.toFixed(2)}x</strong></span>
+            <input type="range" min="${MIN_DECOR_MOTION_SPEED}" max="${MAX_DECOR_MOTION_SPEED}" step="0.05" value="${motionSettings.swaySpeed}" data-decor-setting="swaySpeed" />
+          </label>
+        ` : ""}
+        ${capabilities.hasBob ? `
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">↕</b>Bob <strong data-decor-setting-value="bobIntensity">${motionSettings.bobIntensity.toFixed(2)}x</strong></span>
+            <input type="range" min="${MIN_CUSTOM_DECOR_MOTION_INTENSITY}" max="${MAX_CUSTOM_DECOR_MOTION_INTENSITY}" step="0.05" value="${motionSettings.bobIntensity}" data-decor-setting="bobIntensity" />
+          </label>
+          <label class="decor-settings-compact-control">
+            <span><b class="decor-settings-control-glyph" aria-hidden="true">⌁</b>Bob Speed <strong data-decor-setting-value="bobSpeed">${motionSettings.bobSpeed.toFixed(2)}x</strong></span>
+            <input type="range" min="${MIN_DECOR_MOTION_SPEED}" max="${MAX_DECOR_MOTION_SPEED}" step="0.05" value="${motionSettings.bobSpeed}" data-decor-setting="bobSpeed" />
+          </label>
+        ` : ""}
+      </div>
+    </section>
   ` : hasBubblerControls
-    ? `<div class="mini-note">The object stays still while the bubble stream preview updates live.</div>`
+    ? `<div class="mini-note decor-settings-inline-note">The object stays still while the bubble stream preview updates live.</div>`
     : hasCaveControls
       ? ""
-      : `<div class="mini-note">This decor is still, so only size is available.</div>`;
+      : `<div class="mini-note decor-settings-inline-note">This decor is still, so only size and layer are available.</div>`;
   const controlsMarkup = `
-    <div class="custom-decor-controls-column">
-      <label class="bubbler-control-row">
-        <span>Size <strong data-decor-setting-value="size">${formatDecorScale(sizeValue)}</strong></span>
-        <input
-          type="range"
-          min="${DECOR_SCALE_MIN}"
-          max="${DECOR_SCALE_MAX}"
-          step="0.01"
-          value="${sizeValue}"
-          data-decor-setting="size" />
-      </label>
-      <label class="bubbler-control-row">
-        <span>Layer <strong data-decor-setting-value="tankLayer">${escapeHtml(layerReadout)}</strong></span>
-        <select class="shop-sort-select" data-decor-setting="tankLayer" aria-label="Decor layer">
-          ${layerOptions}
-        </select>
-        <em>${escapeHtml(layerHelpText)}</em>
-      </label>
+    <div class="custom-decor-controls-column decor-settings-controls-column">
+      <div class="decor-settings-top-grid">
+        <label class="decor-settings-control-card">
+          <span class="decor-settings-card-heading">Size <strong data-decor-setting-value="size">${formatDecorScale(sizeValue)}</strong></span>
+          <input type="range" min="${DECOR_SCALE_MIN}" max="${DECOR_SCALE_MAX}" step="0.01" value="${sizeValue}" data-decor-setting="size" />
+        </label>
+        <div class="decor-settings-control-card decor-settings-layer-card">
+          <span class="decor-settings-card-heading">Layer <strong data-decor-setting-value="tankLayer">${escapeHtml(layerReadout)}</strong></span>
+          <div class="decor-settings-layer-row">
+            <select class="shop-sort-select" data-decor-setting="tankLayer" aria-label="Decor layer" title="${escapeHtml(layerHelpText)}">
+              ${layerOptions}
+            </select>
+            <div class="decor-settings-layer-stepper" role="group" aria-label="Move decor layer">
+              <button type="button" data-decor-layer-step="-1" aria-label="Move one layer closer" title="Move one layer closer">▲</button>
+              <button type="button" data-decor-layer-step="1" aria-label="Move one layer deeper" title="Move one layer deeper">▼</button>
+            </div>
+          </div>
+        </div>
+      </div>
       ${motionControls}
-      ${hasCaveColorControls ? renderCaveColorSettingsControls(item, decor) : ""}
+      ${hasCaveColorControls ? `<section class="decor-settings-control-section decor-settings-color-section"><div class="decor-settings-section-title"><span>Color</span></div>${renderCaveColorSettingsControls(item, decor)}</section>` : ""}
       ${hasCaveControls ? renderCaveSettingsControls(item) : ""}
-      ${hasBubblerControls ? renderBubblerSettingsOverlay(item) : ""}
+      ${hasBubblerControls ? `<section class="decor-settings-control-section decor-settings-bubbler-section">${renderBubblerSettingsOverlay(item)}</section>` : ""}
     </div>
   `;
 
   return `
-    <div class="custom-decor-name-panel decor-settings-panel">
-      <div class="custom-decor-create-layout decor-settings-layout">
+    <div class="custom-decor-name-panel decor-settings-panel decor-settings-compact-panel">
+      <div class="custom-decor-create-layout decor-settings-layout decor-settings-compact-layout">
         <div class="custom-decor-preview-column">
           <div class="custom-decor-size-window">
             <div class="custom-decor-size-stage">
@@ -3097,10 +3328,7 @@ function renderDecorSettingsOverlay(item) {
                 ${hasCaveControls ? renderCaveSettingsMarkers(caveSettings) : ""}
               </div>
             </div>
-            <div class="custom-fish-size-readout">
-              <span>${escapeHtml(hasCaveControls ? "Cave Points" : hasBubblerControls ? "Live Preview" : capabilities.label || "Preview")}</span>
-              <strong>${escapeHtml(formatDecorScale(sizeValue))}</strong>
-            </div>
+            ${hasCaveControls ? `<div class="decor-settings-preview-hint">Drag the numbered markers to position entries and seats.</div>` : ""}
           </div>
         </div>
         ${controlsMarkup}

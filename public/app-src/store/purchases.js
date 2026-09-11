@@ -47,6 +47,11 @@ function resolvePurchasedDecorKey(decorKey, appearanceVariantKey = "") {
 function performCoinTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
   const direction = options.direction === "credit" ? "credit" : "debit";
+  if (direction === "credit" && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    const errorMessage = "Income is disabled while Peaceful Mode is enabled.";
+    showToast(errorMessage, { force: true, tone: "neutral" });
+    return { ok: false, reason: "peaceful-mode-income-disabled", amount, errorMessage };
+  }
   if (direction === "debit" && state.coins < amount) {
     const errorMessage = getInsufficientFundsMessage();
     showToast(errorMessage, { force: true, tone: "error" });

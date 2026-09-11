@@ -481,6 +481,10 @@ function sellCurrentTank() {
 }
 
 function sellAquariumTank(tankId) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    showToast("Selling is disabled while Peaceful Mode is enabled.");
+    return false;
+  }
   const tank = getTankById(tankId);
   if (!tank) {
     return false;
@@ -786,6 +790,81 @@ function getBubblerSettingsTarget() {
   return item && canConfigureDecorBubbler(item) ? item : null;
 }
 
+function setSelectedDecorCustomName(value) {
+  const item = getDecorSettingsTarget();
+  if (!item) {
+    return false;
+  }
+
+  const nextName = sanitizePlacedDecorDisplayName(value);
+  if (nextName) {
+    item.customName = nextName;
+  } else {
+    delete item.customName;
+  }
+  saveState();
+  renderUi(Date.now());
+  return true;
+}
+
+function stepSelectedDecorLayer(direction) {
+  const item = getDecorSettingsTarget();
+  if (!item) {
+    return false;
+  }
+
+  const step = Number(direction) < 0 ? -1 : 1;
+  const currentLayer = getDecorLayerSelectValue(item);
+  const nextLayer = getDecorFrontLayer(item.decorKey, currentLayer + step);
+  if (nextLayer === currentLayer) {
+    return false;
+  }
+
+  updateSelectedDecorSetting("tankLayer", nextLayer);
+  return true;
+}
+
+function resetSelectedDecorSettings() {
+  const item = getDecorSettingsTarget();
+  if (!item) {
+    return false;
+  }
+
+  const defaultScale = getDecorScaleDefault(item.decorKey);
+  const defaultLayer = getDecorFrontLayer(item.decorKey, DEFAULT_TANK_LAYER);
+  if (isPlacedDecorGrouped(item)) {
+    setDecorGroupScale(item, defaultScale, false);
+    setDecorGroupLayer(item, defaultLayer, false);
+  } else {
+    item.scale = defaultScale;
+    item.tankLayer = defaultLayer;
+    const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
+    item.xNorm = placement.xNorm;
+    item.yNorm = placement.yNorm;
+    updatePlacedDecorResizeAnchor(item);
+  }
+
+  delete item.decorSettings;
+  delete item.caveColorSettings;
+  if (isCaveDecorKey(item.decorKey)) {
+    item.caveSettings = getDecorDefaultCaveSettings(item.decorKey);
+    clearCaveBehaviorForDecor(item.id);
+    runtime.decorSettingsCaveTab = "entries";
+  }
+  if (canConfigureDecorBubbler(item)) {
+    delete item.bubblerSettings;
+  }
+  if (isTransitTubeDecorKey(item.decorKey)) {
+    delete item.transitTubeColor;
+  }
+
+  runtime.decorPlacementLayer = getDecorLayerSelectValue(item);
+  saveState();
+  renderUi(Date.now());
+  showToast("Decor settings reset.");
+  return true;
+}
+
 function openDecorSettings(placedId) {
   const item = setSelectedDecor(placedId);
   if (!item) {
@@ -800,6 +879,7 @@ function openDecorSettings(placedId) {
 
   runtime.customDecorSettingsDecorId = item.id;
   runtime.bubblerSettingsDecorId = null;
+  runtime.decorSettingsCaveTab = "entries";
   openUtilityOverlay("decor-settings", { clearPrimaryToolModes: false });
 }
 
@@ -1445,6 +1525,19 @@ function updateCaveColorSettingsControls(item = getDecorSettingsTarget(), decorO
     swatch.setAttribute("aria-pressed", String(selected));
   });
 
+  const colorPickers = dom.utilityOverlayBody.querySelectorAll("[data-cave-color-picker]");
+  colorPickers.forEach((picker) => {
+    if (!(picker instanceof HTMLInputElement)) {
+      return;
+    }
+    const layerId = picker.getAttribute("data-cave-color-picker") || "";
+    const activeColor = normalizeHexColor(settings[layerId] || "");
+    if (activeColor && document.activeElement !== picker) {
+      picker.value = activeColor;
+    }
+    picker.closest("[data-cave-color-picker-shell]")?.classList.toggle("is-selected", Boolean(activeColor));
+  });
+
   const colorizeControls = dom.utilityOverlayBody.querySelectorAll("[data-cave-colorize-layer]");
   colorizeControls.forEach((control) => {
     if (!(control instanceof HTMLInputElement)) {
@@ -1455,7 +1548,38 @@ function updateCaveColorSettingsControls(item = getDecorSettingsTarget(), decorO
   });
 }
 
-function updateSelectedCaveColorSetting(layerId, color) {
+function queueCaveColorLivePreview(item, decor, pendingCustomHide = null) {
+  runtime.pendingCaveColorPreviewItem = item || null;
+  runtime.pendingCaveColorPreviewDecor = decor || null;
+  runtime.pendingCaveColorPreviewIsCustomHide = Boolean(pendingCustomHide);
+  if (runtime.caveColorPreviewFrame) {
+    return;
+  }
+
+  const scheduleFrame = typeof window !== "undefined" && typeof window.requestAnimationFrame === "function"
+    ? window.requestAnimationFrame.bind(window)
+    : (callback) => setTimeout(callback, 0);
+  runtime.caveColorPreviewFrame = scheduleFrame(() => {
+    runtime.caveColorPreviewFrame = 0;
+    const previewItem = runtime.pendingCaveColorPreviewItem;
+    const previewDecor = runtime.pendingCaveColorPreviewDecor;
+    const customHidePreview = runtime.pendingCaveColorPreviewIsCustomHide;
+    runtime.pendingCaveColorPreviewItem = null;
+    runtime.pendingCaveColorPreviewDecor = null;
+    runtime.pendingCaveColorPreviewIsCustomHide = false;
+
+    if (previewItem && previewDecor) {
+      updateCaveColorSettingsControls(previewItem, previewDecor);
+    }
+    if (customHidePreview) {
+      renderCustomHidePreview(Date.now());
+    } else {
+      renderDecorSettingsMotionPreview(Date.now());
+    }
+  });
+}
+
+function updateSelectedCaveColorSetting(layerId, color, options = {}) {
   const pendingCustomHide = runtime.utilityOverlayMode === "custom-hide-create" ? runtime.pendingCustomHideUpload : null;
   const item = pendingCustomHide ? getPendingCustomHidePreviewItem() : getDecorSettingsTarget();
   const decor = pendingCustomHide ? getPendingCustomHidePreviewDecor() : (item ? runtime.decorMap.get(item.decorKey) : null);
@@ -1464,34 +1588,49 @@ function updateSelectedCaveColorSetting(layerId, color) {
     return;
   }
 
+  const live = options.live === true;
+  const persist = options.persist !== false;
   const nextSettings = buildPlacedCaveColorSettingsPayload(item, decor);
   const normalizedColor = normalizeDecorColorSetting(color);
-  if (normalizedColor) {
-    nextSettings[layerId] = normalizedColor;
-  } else {
-    delete nextSettings[layerId];
+  const currentColor = normalizeDecorColorSetting(getPlacedCaveColorSettings(item, decor)[layerId] || "");
+  const changed = currentColor !== normalizedColor;
+
+  if (changed) {
+    if (normalizedColor) {
+      nextSettings[layerId] = normalizedColor;
+    } else {
+      delete nextSettings[layerId];
+    }
+
+    const sanitized = sanitizePlacedCaveColorSettings(nextSettings, decor);
+    if (pendingCustomHide) {
+      if (sanitized) {
+        pendingCustomHide.caveColorSettings = sanitized;
+      } else {
+        delete pendingCustomHide.caveColorSettings;
+      }
+    } else if (sanitized) {
+      item.caveColorSettings = sanitized;
+    } else {
+      delete item.caveColorSettings;
+    }
   }
 
-  const sanitized = sanitizePlacedCaveColorSettings(nextSettings, decor);
-  if (pendingCustomHide) {
-    if (sanitized) {
-      pendingCustomHide.caveColorSettings = sanitized;
-    } else {
-      delete pendingCustomHide.caveColorSettings;
-    }
-    updateCaveColorSettingsControls(getPendingCustomHidePreviewItem(), getPendingCustomHidePreviewDecor());
-    renderCustomHidePreview(Date.now());
+  if (!pendingCustomHide && persist && (changed || options.forcePersist === true)) {
+    saveState();
+  }
+
+  if (live) {
+    queueCaveColorLivePreview(item, decor, pendingCustomHide);
     return;
   }
-  if (sanitized) {
-    item.caveColorSettings = sanitized;
-  } else {
-    delete item.caveColorSettings;
-  }
 
-  saveState();
-  updateCaveColorSettingsControls(item);
-  renderDecorSettingsMotionPreview(Date.now());
+  updateCaveColorSettingsControls(item, decor);
+  if (pendingCustomHide) {
+    renderCustomHidePreview(Date.now());
+  } else {
+    renderDecorSettingsMotionPreview(Date.now());
+  }
 }
 
 function updateSelectedCaveColorizeSetting(layerId, colorize) {
@@ -2348,6 +2487,61 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
   }
 
   updateCaveSettingsControls(item);
+}
+
+function addSelectedCavePoint(kind = "entry") {
+  const target = getEditableCaveSettingsTarget();
+  if (!target?.settings) {
+    return false;
+  }
+
+  const isSeat = String(kind) === "seat";
+  const countKey = isSeat ? "seatCount" : "entryCount";
+  const maxCount = isSeat ? CAVE_SETTINGS_MAX_SEATS : CAVE_SETTINGS_MAX_ENTRIES;
+  const currentCount = Number(target.settings[countKey]) || (isSeat ? target.settings.seats.length : target.settings.entries.length);
+  if (currentCount >= maxCount) {
+    return false;
+  }
+
+  updateSelectedCaveSetting(countKey, currentCount + 1);
+  return true;
+}
+
+function removeSelectedCavePoint(kind = "entry", indexValue = 0) {
+  const target = getEditableCaveSettingsTarget();
+  if (!target?.item || !target.settings) {
+    return false;
+  }
+
+  const isSeat = String(kind) === "seat";
+  const listKey = isSeat ? "seats" : "entries";
+  const countKey = isSeat ? "seatCount" : "entryCount";
+  const activeKey = isSeat ? "activeSeatIndex" : "activeEntryIndex";
+  const minCount = isSeat ? CAVE_SETTINGS_MIN_SEATS : CAVE_SETTINGS_MIN_ENTRIES;
+  const list = Array.isArray(target.settings[listKey]) ? target.settings[listKey] : [];
+  if (list.length <= minCount) {
+    return false;
+  }
+
+  const index = clamp(Math.floor(Number(indexValue) || 0), 0, list.length - 1);
+  list.splice(index, 1);
+  target.settings[countKey] = list.length;
+  target.settings[activeKey] = clamp(
+    Math.floor(Number(target.settings[activeKey]) || 0) - (index < Number(target.settings[activeKey]) ? 1 : 0),
+    0,
+    Math.max(0, list.length - 1)
+  );
+  runtime.caveSettingsActivePointType = isSeat ? "seat" : "entry";
+
+  target.item.caveSettings = sanitizePlacedCaveSettings(target.settings);
+  if (target.pending) {
+    target.pending.caveSettings = target.item.caveSettings;
+  } else {
+    clearCaveBehaviorForDecor(target.item.id);
+    saveState();
+  }
+  renderUi(Date.now());
+  return true;
 }
 
 function getCaveSettingsPreviewLocalPoint(event) {

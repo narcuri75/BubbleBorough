@@ -781,6 +781,20 @@ function getSanitizedPlacedDecorWorldAnchors(item) {
   };
 }
 
+function sanitizePlacedDecorDisplayName(value = "") {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, 48);
+}
+
+function getPlacedDecorDisplayName(item, decorOverride = null) {
+  const customName = sanitizePlacedDecorDisplayName(item?.customName);
+  if (customName) {
+    return customName;
+  }
+
+  const decor = decorOverride || runtime.decorMap.get(item?.decorKey);
+  return decor?.name || titleFromFile(item?.decorKey || "Decor") || "Decor";
+}
+
 function sanitizePlacedDecor(item) {
   if (!item || typeof item.decorKey !== "string") {
     return null;
@@ -803,6 +817,10 @@ function sanitizePlacedDecor(item) {
   };
   if (Object.prototype.hasOwnProperty.call(item, "freePlacementEnabled")) {
     sanitized.freePlacementEnabled = item.freePlacementEnabled === true;
+  }
+  const customName = sanitizePlacedDecorDisplayName(item.customName);
+  if (customName) {
+    sanitized.customName = customName;
   }
   const groupId = normalizeDecorGroupId(item.groupId);
   if (groupId) {

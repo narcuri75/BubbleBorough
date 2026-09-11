@@ -335,8 +335,11 @@ function renderFishInspectorColorControls(fish) {
   }
 
   const activeColor = getFishColorSetting(fish);
+  const activeCustomColor = normalizeHexColor(activeColor);
   const originalSelected = !activeColor;
   const rgbSelected = isDecorRgbColorSetting(activeColor);
+  const customSelected = Boolean(activeCustomColor);
+  const pickerColor = activeCustomColor || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
   const originalTile = `
     <button
       class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${originalSelected ? "is-selected" : ""}"
@@ -359,19 +362,18 @@ function renderFishInspectorColorControls(fish) {
       RGB
     </button>
   `;
-  const swatches = getCustomGravelColorChoices().map((choice) => {
-    const selected = activeColor === choice.color;
-    return `
-      <button
-        class="custom-gravel-color-swatch bubbler-color-swatch ${selected ? "is-selected" : ""}"
-        type="button"
-        style="--swatch:${choice.color};"
-        data-inspector-fish-color="${choice.color}"
-        aria-pressed="${selected}"
-        aria-label="Set fish to ${escapeHtml(choice.label)}"
-        title="${escapeHtml(choice.label)}"></button>
-    `;
-  }).join("");
+  const customColorPicker = `
+    <label
+      class="cave-color-picker-shell fish-color-picker-shell ${customSelected ? "is-selected" : ""}"
+      title="Choose custom fish color">
+      <input
+        class="cave-color-picker-input fish-color-picker-input"
+        type="color"
+        value="${escapeHtml(pickerColor)}"
+        data-inspector-fish-color-picker
+        aria-label="Choose custom fish color" />
+    </label>
+  `;
 
   setMarkupIfChanged(
     "fish-inspector-color-swatches",
@@ -380,9 +382,7 @@ function renderFishInspectorColorControls(fish) {
       <div class="color-choice-mode-row">
         ${originalTile}
         ${rgbTile}
-      </div>
-      <div class="color-choice-swatch-row">
-        ${swatches}
+        ${customColorPicker}
       </div>
     `
   );
@@ -400,7 +400,7 @@ function updateInspectorFishReadouts(fish) {
   renderFishInspectorColorControls(fish);
 }
 
-function updateInspectorFishSetting(setting, rawValue) {
+function updateInspectorFishSetting(setting, rawValue, options = {}) {
   const managed = getManagedFishById(runtime.selectedFishId);
   if (!managed) {
     return;
@@ -470,18 +470,48 @@ function updateInspectorFishSetting(setting, rawValue) {
     applyChange();
   }
 
+  const persist = options.persist !== false;
+  const refreshControls = options.refreshControls !== false;
   if (!changed) {
-    updateInspectorFishReadouts(fish);
+    if (persist && options.forcePersist === true) {
+      saveState();
+    }
+    if (refreshControls) {
+      updateInspectorFishReadouts(fish);
+    }
     return;
   }
-  saveState();
+  if (persist) {
+    saveState();
+  }
   if (setting === "color" || setting === "colorize") {
-    // Color changes are live previews. Keep the settings panel mounted so
-    // users can compare several colors without the inspector being rebuilt
-    // or dismissed between picks. The tank renderer reads the fish state on
-    // the next frame, so a full UI render is unnecessary here.
+    if (!refreshControls) {
+      return;
+    }
     updateInspectorFishReadouts(fish);
     return;
   }
   renderUi(now);
+}
+
+function queueInspectorFishColorPreview(rawValue) {
+  runtime.pendingInspectorFishColorValue = normalizeDecorColorSetting(rawValue);
+  if (runtime.inspectorFishColorPreviewFrame) {
+    return;
+  }
+
+  runtime.inspectorFishColorPreviewFrame = window.requestAnimationFrame(() => {
+    runtime.inspectorFishColorPreviewFrame = 0;
+    const nextColor = runtime.pendingInspectorFishColorValue;
+    runtime.pendingInspectorFishColorValue = "";
+    updateInspectorFishSetting("color", nextColor, {
+      persist: false,
+      refreshControls: false
+    });
+    const managed = getManagedFishById(runtime.selectedFishId);
+    if (managed?.fish) {
+      setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(getFishColorSetting(managed.fish)));
+      dom.inspectorFishColorSwatches?.querySelector(".fish-color-picker-shell")?.classList.add("is-selected");
+    }
+  });
 }

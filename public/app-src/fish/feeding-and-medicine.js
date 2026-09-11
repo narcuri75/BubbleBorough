@@ -86,6 +86,9 @@ function ensureMealHistoryEntry(slotKey, now = Date.now(), tank = getCurrentTank
 }
 
 function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    return 0;
+  }
   if (!fish || isMealFreeFish(fish)) {
     return 0;
   }

@@ -2984,12 +2984,15 @@ const dom = {
   utilityOverlay: document.querySelector("#utilityOverlay"),
   utilityOverlayTitle: document.querySelector("#utilityOverlayTitle"),
   utilityOverlayKicker: document.querySelector("#utilityOverlayKicker"),
+  utilityOverlayTitleActions: document.querySelector("#utilityOverlayTitleActions"),
+  utilityOverlayHeaderActions: document.querySelector("#utilityOverlayHeaderActions"),
   utilityOverlayBody: document.querySelector("#utilityOverlayBody"),
   utilityOverlayFooter: document.querySelector("#utilityOverlayFooter"),
   closeUtilityOverlay: document.querySelector("#closeUtilityOverlay"),
   settingsOverlay: document.querySelector("#settingsOverlay"),
   debugModeSettingsSection: document.querySelector("#debugModeSettingsSection"),
   debugModeToggleInput: document.querySelector("#debugModeToggleInput"),
+  peacefulModeToggleInput: document.querySelector("#peacefulModeToggleInput"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -3210,6 +3213,7 @@ const runtime = {
   residenceSettingsDecorId: null,
   caveSettingsActivePointType: "seat",
   caveSettingsDrag: null,
+  decorSettingsCaveTab: "entries",
   pendingDecorAction: null,
   pendingFishAction: null,
   pendingCustomDecorUpload: null,
@@ -4306,14 +4310,26 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     runtimeKey: "customDecorSettingsDecorId",
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderDecorSettingsOverlay(item)
+    renderBody: (item) => renderDecorSettingsOverlay(item),
+    renderTitleActions: (item, decor) => renderDecorSettingsTitleActions(item, decor),
+    renderHeaderActions: (item, decor) => renderDecorSettingsHeaderActions(item, decor),
+    hideFooter: true,
+    handlers: {
+      onHeaderClick: handleDecorSettingsUtilityOverlayHeaderClick
+    }
   }),
   "custom-decor-settings": createPlacedDecorUtilityMode({
     id: "custom-decor-settings",
     runtimeKey: "customDecorSettingsDecorId",
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderDecorSettingsOverlay(item)
+    renderBody: (item) => renderDecorSettingsOverlay(item),
+    renderTitleActions: (item, decor) => renderDecorSettingsTitleActions(item, decor),
+    renderHeaderActions: (item, decor) => renderDecorSettingsHeaderActions(item, decor),
+    hideFooter: true,
+    handlers: {
+      onHeaderClick: handleDecorSettingsUtilityOverlayHeaderClick
+    }
   }),
   "decor-residence": createPlacedDecorUtilityMode({
     id: "decor-residence",

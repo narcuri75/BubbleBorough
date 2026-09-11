@@ -2,6 +2,7 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function getTankDirtiness(now) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return 0;
   const cleanDirtiness = getBaseTankDirtiness(now);
   if (!runtime.cleaningTransition) {
     return cleanDirtiness;
@@ -17,6 +18,7 @@ function getTankDirtiness(now) {
 }
 
 function getBaseTankDirtiness(now) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return 0;
   if (isTutorialTankDirtinessLocked()) {
     return 0;
   }
@@ -1481,6 +1483,7 @@ function updateComfortHistoryEvents(now = Date.now()) {
 }
 
 function getFishComfort(fish, now) {
+  if (!isFishDead(fish) && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return { value: 1, label: "Peaceful" };
   if (hasActiveCandyBoost(fish, now)) return { value: 1, label: "Candy boost" };
   if (isFishDead(fish)) {
     return { value: 0, label: "Deceased" };
@@ -1700,6 +1703,9 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
 }
 
 function updateFishNeeds(now = Date.now()) {
+  if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+    return typeof enforcePeacefulModeState === "function" ? enforcePeacefulModeState(now) : false;
+  }
   let changed = false;
   for (const fish of getLivingTankFish()) {
     if (isUndeadFish(fish)) {

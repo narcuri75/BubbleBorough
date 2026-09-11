@@ -425,6 +425,248 @@ function getWallpaperKeyboardNameInput(target) {
   return input instanceof HTMLInputElement ? input : null;
 }
 
+function sanitizePeacefulModeState(rawState) {
+  const source = rawState && typeof rawState === "object" ? rawState : {};
+  const tankSnapshots = source.tankSnapshots && typeof source.tankSnapshots === "object" && !Array.isArray(source.tankSnapshots)
+    ? source.tankSnapshots
+    : {};
+  const fishSnapshots = source.fishSnapshots && typeof source.fishSnapshots === "object" && !Array.isArray(source.fishSnapshots)
+    ? source.fishSnapshots
+    : {};
+  return {
+    enabled: source.enabled === true,
+    startedAt: Number.isFinite(Number(source.startedAt)) ? Math.max(0, Number(source.startedAt)) : 0,
+    tankSnapshots,
+    fishSnapshots
+  };
+}
+
+function getPeacefulModeState(targetState = state) {
+  return sanitizePeacefulModeState(targetState?.peacefulMode);
+}
+
+function isPeacefulModeEnabled(targetState = state) {
+  return getPeacefulModeState(targetState).enabled;
+}
+
+function getPeacefulModeSimulationNow(now = Date.now()) {
+  const mode = getPeacefulModeState();
+  return mode.enabled && mode.startedAt > 0 ? Math.min(now, mode.startedAt) : now;
+}
+
+function getPeacefulModeTankSnapshot(tank, now = Date.now()) {
+  if (!tank) return null;
+  const fishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+  const deadFishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && isFishDead(fish));
+  const duration = getTankMaxDirtyDurationMs(fishList, tank, deadFishList);
+  const lastCleanedAt = Number(tank.lastCleanedAt) || now;
+  return {
+    dirtiness: clamp((now - lastCleanedAt) / Math.max(1, duration), 0, 1),
+    poops: Array.isArray(tank.poops) ? tank.poops.map((poop) => ({ ...poop })) : [],
+    pendingPoops: Array.isArray(tank.pendingPoops) ? tank.pendingPoops.map((poop) => ({ ...poop })) : [],
+    lastSimulatedAt: Number.isFinite(Number(tank.lastSimulatedAt)) ? Number(tank.lastSimulatedAt) : now,
+    createdAt: Number.isFinite(Number(tank.createdAt)) ? Number(tank.createdAt) : null
+  };
+}
+
+function getPeacefulModeFishSnapshot(fish) {
+  if (!fish) return null;
+  const timerKeys = [
+    "acquiredAt", "tankAddedAt", "growthStartedAt", "growthEndsAt",
+    "diseaseLastProgressAt", "nextDiseaseCheckAt", "nextSymptomCheckAt", "nextDiseaseSpreadCheckAt",
+    "diseaseTreatedUntil", "temporaryImmunityUntil", "nextGreenBubbleAt",
+    "zombieBiteStartedAt", "zombieBiteLastBloodAt", "zombieReviveAt",
+    "nextWasteAt", "lastNeighborhoodMoveAt", "lastAteAt", "breedCooldownUntil"
+  ];
+  const timers = {};
+  for (const key of timerKeys) {
+    if (Number.isFinite(Number(fish[key]))) timers[key] = Number(fish[key]);
+  }
+  return {
+    needs: fish.needs && typeof fish.needs === "object" ? { ...fish.needs } : null,
+    healthUnits: Number.isFinite(Number(fish.healthUnits)) ? Number(fish.healthUnits) : null,
+    needsUpdatedAt: Number.isFinite(Number(fish.needsUpdatedAt)) ? Number(fish.needsUpdatedAt) : null,
+    comfortDamageProgressMs: Math.max(0, Number(fish.comfortDamageProgressMs) || 0),
+    timers
+  };
+}
+
+function capturePeacefulModeSnapshots(now = Date.now()) {
+  const tankSnapshots = {};
+  const fishSnapshots = {};
+  for (const tank of getAllTanks(state)) {
+    if (!tank?.id) continue;
+    tankSnapshots[tank.id] = getPeacefulModeTankSnapshot(tank, now);
+    for (const fish of Array.isArray(tank.fish) ? tank.fish : []) {
+      if (fish?.id) fishSnapshots[fish.id] = getPeacefulModeFishSnapshot(fish);
+    }
+  }
+  for (const fish of Array.isArray(state?.storedFish) ? state.storedFish : []) {
+    if (fish?.id && !fishSnapshots[fish.id]) fishSnapshots[fish.id] = getPeacefulModeFishSnapshot(fish);
+  }
+  return { tankSnapshots, fishSnapshots };
+}
+
+function ensurePeacefulModeSnapshots(now = Date.now()) {
+  if (!state || !isPeacefulModeEnabled()) return false;
+  const mode = getPeacefulModeState();
+  if (mode.startedAt > 0 && Object.keys(mode.tankSnapshots).length) return false;
+  const snapshots = capturePeacefulModeSnapshots(now);
+  state.peacefulMode = {
+    enabled: true,
+    startedAt: mode.startedAt > 0 ? mode.startedAt : now,
+    ...snapshots
+  };
+  return true;
+}
+
+function enforcePeacefulModeState(now = Date.now()) {
+  if (!state || !isPeacefulModeEnabled()) return false;
+  ensurePeacefulModeSnapshots(now);
+  let changed = false;
+  const fullNeeds = Object.fromEntries(FISH_NEED_KEYS.map((key) => [key, 100]));
+  for (const tank of getAllTanks(state)) {
+    if (Array.isArray(tank.poops) && tank.poops.length) {
+      tank.poops = [];
+      changed = true;
+    }
+    if (Array.isArray(tank.pendingPoops) && tank.pendingPoops.length) {
+      tank.pendingPoops = [];
+      changed = true;
+    }
+    tank.lastSimulatedAt = now;
+    for (const fish of Array.isArray(tank.fish) ? tank.fish : []) {
+      if (!fish || isFishDead(fish)) continue;
+      const maxHealth = getFishMaxHealthUnits(fish);
+      if (Number(fish.healthUnits) !== maxHealth) {
+        fish.healthUnits = maxHealth;
+        changed = true;
+      }
+      const currentNeeds = sanitizeFishNeeds(fish.needs, fish, now);
+      if (FISH_NEED_KEYS.some((key) => currentNeeds[key] !== 100)) changed = true;
+      fish.needs = { ...fullNeeds };
+      fish.needsUpdatedAt = now;
+      fish.comfortDamageProgressMs = 0;
+      clearPiranhaAttackState(fish);
+      clearZombieAttackState(fish);
+    }
+  }
+  for (const fish of Array.isArray(state.storedFish) ? state.storedFish : []) {
+    if (!fish || isFishDead(fish)) continue;
+    const maxHealth = getFishMaxHealthUnits(fish);
+    if (Number(fish.healthUnits) !== maxHealth) {
+      fish.healthUnits = maxHealth;
+      changed = true;
+    }
+    fish.needs = { ...fullNeeds };
+    fish.needsUpdatedAt = now;
+    fish.comfortDamageProgressMs = 0;
+    clearPiranhaAttackState(fish);
+    clearZombieAttackState(fish);
+  }
+  clearBloodEffectClouds();
+  runtime.bloodWaterTint = 0;
+  runtime.bettaPassLocks.clear();
+  return changed;
+}
+
+function restorePeacefulModeState(now = Date.now()) {
+  if (!state) return false;
+  const mode = getPeacefulModeState();
+  const pauseDuration = mode.startedAt > 0 ? Math.max(0, now - mode.startedAt) : 0;
+  state.peacefulMode = { enabled: false, startedAt: 0, tankSnapshots: {}, fishSnapshots: {} };
+  let changed = false;
+  for (const tank of getAllTanks(state)) {
+    const snapshot = tank?.id ? mode.tankSnapshots[tank.id] : null;
+    const fishList = (Array.isArray(tank?.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+    const deadFishList = (Array.isArray(tank?.fish) ? tank.fish : []).filter((fish) => fish && isFishDead(fish));
+    const duration = getTankMaxDirtyDurationMs(fishList, tank, deadFishList);
+    if (snapshot) {
+      tank.lastCleanedAt = now - clamp(Number(snapshot.dirtiness) || 0, 0, 1) * Math.max(1, duration);
+      if (Number.isFinite(Number(snapshot.createdAt))) tank.createdAt = Number(snapshot.createdAt) + pauseDuration;
+      tank.poops = Array.isArray(snapshot.poops) ? snapshot.poops.map((poop) => ({ ...poop })) : [];
+      const livingIds = new Set((tank.fish || []).filter((fish) => fish && !isFishDead(fish)).map((fish) => fish.id));
+      tank.pendingPoops = Array.isArray(snapshot.pendingPoops)
+        ? snapshot.pendingPoops.filter((poop) => !poop?.fishId || livingIds.has(poop.fishId)).map((poop) => ({ ...poop }))
+        : [];
+    } else {
+      tank.lastCleanedAt = now;
+      tank.poops = [];
+      tank.pendingPoops = [];
+      if (Number.isFinite(Number(tank.createdAt)) && Number(tank.createdAt) >= mode.startedAt) tank.createdAt = now;
+    }
+    tank.lastSimulatedAt = now;
+    for (const event of Array.isArray(tank.events) ? tank.events : []) {
+      if (!event || event.progressionEligible === false) continue;
+      const progressionTime = Number.isFinite(Number(event.progressionTime)) ? Number(event.progressionTime) : Number(event.time);
+      if (Number.isFinite(progressionTime)) event.progressionTime = progressionTime + pauseDuration;
+    }
+  }
+  for (const event of Array.isArray(state.boroughEvents) ? state.boroughEvents : []) {
+    if (!event || event.progressionEligible === false) continue;
+    const progressionTime = Number.isFinite(Number(event.progressionTime)) ? Number(event.progressionTime) : Number(event.time);
+    if (Number.isFinite(progressionTime)) event.progressionTime = progressionTime + pauseDuration;
+  }
+  for (const egg of Array.isArray(state.fishEggs) ? state.fishEggs : []) {
+    if (!egg) continue;
+    for (const key of ["createdAt", "hatchAt", "hatchedAt", "shellExpiresAt", "releasedAt"]) {
+      if (Number.isFinite(Number(egg[key])) && Number(egg[key]) > 0) egg[key] = Number(egg[key]) + pauseDuration;
+    }
+  }
+
+  const allFish = [...getAllTankFish(state), ...(Array.isArray(state.storedFish) ? state.storedFish : [])];
+  for (const fish of allFish) {
+    if (!fish?.id || isFishDead(fish)) continue;
+    const snapshot = mode.fishSnapshots[fish.id];
+    if (snapshot) {
+      fish.needs = snapshot.needs ? sanitizeFishNeeds(snapshot.needs, fish, now) : sanitizeFishNeeds(null, fish, now);
+      if (Number.isFinite(Number(snapshot.healthUnits))) fish.healthUnits = clamp(Number(snapshot.healthUnits), 0, getFishMaxHealthUnits(fish));
+      fish.needsUpdatedAt = now;
+      fish.comfortDamageProgressMs = Math.max(0, Number(snapshot.comfortDamageProgressMs) || 0);
+      for (const [key, value] of Object.entries(snapshot.timers || {})) {
+        if (Number.isFinite(Number(value))) fish[key] = Number(value) + pauseDuration;
+      }
+    } else {
+      fish.needs = sanitizeFishNeeds(null, fish, now);
+      fish.needsUpdatedAt = now;
+      fish.healthUnits = getFishMaxHealthUnits(fish);
+      fish.comfortDamageProgressMs = 0;
+      fish.acquiredAt = now;
+      if (Number.isFinite(Number(fish.tankAddedAt))) fish.tankAddedAt = now;
+      if (Number.isFinite(Number(fish.growthStartedAt)) && Number.isFinite(Number(fish.growthEndsAt))) {
+        const growthDuration = Math.max(1, Number(fish.growthEndsAt) - Number(fish.growthStartedAt));
+        fish.growthStartedAt = now;
+        fish.growthEndsAt = now + growthDuration;
+      }
+    }
+  }
+
+  if (state.dailyBonus) {
+    state.dailyBonus.lastEvaluatedDayKey = getPreviousLocalDayKey(now);
+  }
+  changed = true;
+  return changed;
+}
+
+function setPeacefulModeEnabled(enabled = true) {
+  if (!state) return false;
+  const nextEnabled = enabled === true;
+  if (isPeacefulModeEnabled() === nextEnabled) return false;
+  const now = Date.now();
+  if (nextEnabled) {
+    const snapshots = capturePeacefulModeSnapshots(now);
+    state.peacefulMode = { enabled: true, startedAt: now, ...snapshots };
+    enforcePeacefulModeState(now);
+    showToast("Peaceful Mode enabled. Income and progression are paused.");
+  } else {
+    restorePeacefulModeState(now);
+    showToast("Peaceful Mode disabled. Normal simulation and progression resumed.");
+  }
+  saveState();
+  renderUi(now);
+  return true;
+}
+
 function getContentSettings() {
   return sanitizeContentSettings(state?.contentSettings);
 }
@@ -434,11 +676,11 @@ function isViolenceAndGoreEnabled() {
 }
 
 function isViolenceEnabled() {
-  return isViolenceAndGoreEnabled();
+  return !isPeacefulModeEnabled() && isViolenceAndGoreEnabled();
 }
 
 function isGoreEnabled() {
-  return isViolenceAndGoreEnabled();
+  return !isPeacefulModeEnabled() && isViolenceAndGoreEnabled();
 }
 
 function isZombieSkeletonModeAvailable() {
@@ -989,6 +1231,7 @@ function reconcileState(rawState) {
     dailyBonus: buildDefaultDailyBonusState(),
     notificationCenter: buildDefaultNotificationCenterState(),
     tutorial: buildDefaultTutorialState(),
+    peacefulMode: sanitizePeacefulModeState(null),
     uiSettings: sanitizeUiSettings(null),
     contentSettings: sanitizeContentSettings(null),
     boroughTravelWalls: {},
@@ -1086,6 +1329,7 @@ function reconcileState(rawState) {
     notificationCenter: sanitizeNotificationCenterState(incoming.notificationCenter),
     tutorial: buildDefaultTutorialState(),
     healthModelVersion: HEALTH_MODEL_VERSION,
+    peacefulMode: sanitizePeacefulModeState(incoming.peacefulMode),
     uiSettings: sanitizeUiSettings(incoming.uiSettings),
     contentSettings: sanitizeContentSettings(incoming.contentSettings),
     boroughTravelWalls: incoming.boroughTravelWalls && typeof incoming.boroughTravelWalls === "object"

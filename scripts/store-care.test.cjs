@@ -49,7 +49,7 @@ test("one candy fills every stat and health, remains active after reload, and ex
   assert.equal(c.hasActiveCandyBoost({ ...restored, activity: "dead" }, now), false);
   assert.equal(c.hasActiveCandyBoost({ candyBoostUntil: Infinity }, now), false);
 });
-test("Halloween candy targets every living creature and uses pellet-sized sprite geometry", () => {
+test("Halloween candy targets every living creature and uses a large readable sprite", () => {
   const c = harness({
     getFoodMeta: value => typeof value === "string" ? { id: value } : value,
     getViewportStableAssetScale: () => 1,
@@ -64,7 +64,7 @@ test("Halloween candy targets every living creature and uses pellet-sized sprite
     { name: "skeleton", activity: "roam", healthUnits: 12, speciesId: "skeleton-fish" },
     { name: "grazer", activity: "roam", healthUnits: 12, speciesId: "otocinclus" }
   ]) assert.equal(c.canFishEatFoodPellet(creature, "halloweenCandy", Date.now()), true);
-  assert.deepEqual({ ...c.getFoodSpriteVisualSize("halloweenCandy", 1, 1) }, { maxSize: 11.6, minSize: 6.6 });
+  assert.deepEqual({ ...c.getFoodSpriteVisualSize("halloweenCandy", 1, 1) }, { maxSize: 48, minSize: 22 });
   assert.deepEqual({ ...c.getFoodSpriteVisualSize("chum", 1, 1) }, { maxSize: 24, minSize: 10 });
 });
 

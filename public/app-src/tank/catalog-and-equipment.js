@@ -1013,9 +1013,11 @@ function isPelletSizedFoodSprite(foodOrKey) {
 
 function getFoodSpriteVisualSize(foodOrKey, scale, stableScale = getViewportStableAssetScale()) {
   if (isPelletSizedFoodSprite(foodOrKey)) {
+    // Candy uses detailed sprite art rather than a tiny pellet. Keep it large
+    // enough to read clearly in the tank, especially on desktop displays.
     return {
-      maxSize: 11.6 * scale,
-      minSize: 6.6 * stableScale
+      maxSize: 48 * scale,
+      minSize: 22 * stableScale
     };
   }
   return {

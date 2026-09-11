@@ -238,8 +238,8 @@ function getPelletHitBounds(pellet, now = Date.now()) {
     const fitScale = image
       ? Math.min(visualSize.maxSize / Math.max(1, image.width), visualSize.maxSize / Math.max(1, image.height))
       : 1;
-    const fallbackWidth = isPelletSizedFoodSprite(pellet.foodKey) ? 11.6 * scale : 18 * scale;
-    const fallbackHeight = isPelletSizedFoodSprite(pellet.foodKey) ? 6.6 * scale : 14 * scale;
+    const fallbackWidth = isPelletSizedFoodSprite(pellet.foodKey) ? 48 * scale : 18 * scale;
+    const fallbackHeight = isPelletSizedFoodSprite(pellet.foodKey) ? 23 * scale : 14 * scale;
     const width = image ? Math.max(visualSize.minSize, image.width * fitScale) : fallbackWidth;
     const height = image ? Math.max(visualSize.minSize, image.height * fitScale) : fallbackHeight;
     return {

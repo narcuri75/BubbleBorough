@@ -1258,7 +1258,21 @@ test("settings control only the procedural foreground caustics", () => {
   assert.match(waterRendering, /const drift = .*Math\.sin/);
   assert.doesNotMatch(waterRendering, /wrapped\(seconds \* 8\.5/);
   assert.match(decorRendering, /markLightweightCausticDecorImage/);
+  assert.match(decorRendering, /receivesCaustics = imagePath !== runtime\.decorMap\.get\(item\?\.decorKey\)\?\.bgPath/);
+  assert.match(waterRendering, /if \(!receivesCaustics\) \{[\s\S]*globalCompositeOperation = "destination-out"/);
   assert.match(fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8"), /markLightweightCausticImage/);
+});
+
+test("caustics follow the randomized gravel hill and loose crest pebbles", () => {
+  const waterRendering = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+  const gravelRendering = fs.readFileSync(path.join(root, "rendering/gravel-and-effects.js"), "utf8");
+  const markFloor = waterRendering.slice(
+    waterRendering.indexOf("function markLightweightCausticFloor"),
+    waterRendering.indexOf("function drawLightweightCausticOverlay")
+  );
+  assert.match(markFloor, /traceTankFloorMaskPath\(mask\.context, bounds\);\s*mask\.context\.fill\(\);/);
+  assert.doesNotMatch(markFloor, /fillRect\(/);
+  assert.match(gravelRendering, /tankContext\.drawImage\(canvas, 0, 0\);\s*markLightweightCausticImage\(tankContext, canvas, 0, 0, TANK_WIDTH, TANK_HEIGHT\);/);
 });
 
 test("each tank seed gets a stable, subtly different gravel hill mask", () => {
@@ -1631,6 +1645,17 @@ test("cloud account UI uses yellow syncing, green success, red failure, and the 
   assert.match(css, /@keyframes cloudSyncPulse/);
   assert.match(css, /loading-overlay\.is-ready\.is-auth-mode/);
   assert.match(cloud, /startup-auth-input-wrap/);
+});
+
+test("friend invite Edge Function allows CORS preflight through the gateway and authenticates POST itself", () => {
+  const config = fs.readFileSync(path.join(__dirname, "../supabase/config.toml"), "utf8");
+  const fn = fs.readFileSync(path.join(__dirname, "../supabase/functions/send-friend-invite/index.ts"), "utf8");
+  assert.match(config, /\[functions\.send-friend-invite\][\s\S]*verify_jwt\s*=\s*false/);
+  assert.match(fn, /request\.method === "OPTIONS"[\s\S]*status: 204/);
+  assert.match(fn, /request\.headers\.get\("Authorization"\)/);
+  assert.match(fn, /\/auth\/v1\/user/);
+  assert.match(fn, /RESEND_API_KEY/);
+  assert.doesNotMatch(fn, /!supabaseUrl \|\| !supabaseAnonKey \|\| !resendApiKey/);
 });
 
 test("startup requires account auth before a new aquarium and invite-a-friend is available beside credits", () => {

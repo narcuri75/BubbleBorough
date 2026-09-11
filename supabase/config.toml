@@ -1,0 +1,5 @@
+[functions.send-friend-invite]
+# Browser CORS preflight requests do not carry the user's Authorization header.
+# Disable the platform-level JWT gate so OPTIONS can reach the function, then
+# authenticate the actual POST inside the function itself.
+verify_jwt = false

@@ -64736,8 +64736,11 @@ function markLightweightCausticFloor() {
   const bounds = getTankFloorDrawBounds();
   mask.context.setTransform(mask.scale, 0, 0, mask.scale, 0, 0);
   mask.context.globalCompositeOperation = "source-over";
+  mask.context.globalAlpha = 1;
   mask.context.fillStyle = "#fff";
-  mask.context.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, Math.max(1, bounds.bottom - bounds.drawTop));
+  // Use the same current hill profile as the gravel renderer, including randomization.
+  traceTankFloorMaskPath(mask.context, bounds);
+  mask.context.fill();
 }
 
 function drawLightweightCausticOverlay(now) {
@@ -66914,6 +66917,7 @@ function drawCustomGravelLoosePebbles(bounds, now = Date.now()) {
   }
 
   tankContext.drawImage(canvas, 0, 0);
+  markLightweightCausticImage(tankContext, canvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
   return true;
 }
 

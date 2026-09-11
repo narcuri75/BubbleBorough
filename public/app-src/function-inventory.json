@@ -26511,16 +26511,17 @@
       "module": "rendering/gravel-and-effects.js",
       "sourceLine": 315,
       "originalLine": 54507,
-      "characters": 222,
-      "sourceHash": "2638b9c2f94306dded621d66d82becf6063e7c573cde3aaa123b025943573450",
+      "characters": 305,
+      "sourceHash": "a91ac5371f82b9b44e8fc6925fbdd06a5e20bbd3d4ee669cdcf0e6f047bf70a0",
       "calls": [
-        "getCustomGravelTopLayerCanvas"
+        "getCustomGravelTopLayerCanvas",
+        "markLightweightCausticImage"
       ]
     },
     {
       "name": "isCustomGravelUvReactiveColor",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 325,
+      "sourceLine": 326,
       "originalLine": 54517,
       "characters": 800,
       "sourceHash": "97edacf88747ced46e9c0af2159f829ec2dfa66712e70e8744fff8081978fe41",
@@ -26534,7 +26535,7 @@
     {
       "name": "drawCustomGravelFloor",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 359,
+      "sourceLine": 360,
       "originalLine": 54551,
       "characters": 2372,
       "sourceHash": "22563c98bd57027e314314437966c6eca0652d649ed96247c6fb0b2f4bf253ac",
@@ -26555,7 +26556,7 @@
     {
       "name": "drawGravelDepthTreatment",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 414,
+      "sourceLine": 415,
       "originalLine": null,
       "characters": 2254,
       "sourceHash": "6834c0b96423d85f4f04c917d6ab163280a3bf3fcdcc017c9124e3b3571dd04e",
@@ -26566,7 +26567,7 @@
     {
       "name": "drawTankFloor",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 461,
+      "sourceLine": 462,
       "originalLine": 54589,
       "characters": 326,
       "sourceHash": "508f8642e4e2cb6664392094c7d17c1c2144ee30e34a1dbf130de8b56d4fda31",
@@ -26581,7 +26582,7 @@
     {
       "name": "getGravelGrimeIntensity",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 476,
+      "sourceLine": 477,
       "originalLine": 54603,
       "characters": 152,
       "sourceHash": "f5149531479469be8ec66c917c4a7447fa10151dbc0b8c7107c0d2f067e3fe57",
@@ -26593,7 +26594,7 @@
     {
       "name": "drawGravelGrime",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 480,
+      "sourceLine": 481,
       "originalLine": 54607,
       "characters": 1362,
       "sourceHash": "af55d8c1f6cfc39ddc88a0cf74690843e18538ed38fadb44b78c386da1871048",
@@ -26609,7 +26610,7 @@
     {
       "name": "renderGravelGrimeTexture",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 510,
+      "sourceLine": 511,
       "originalLine": null,
       "characters": 1424,
       "sourceHash": "c8a5aab85ba0bc831e84fae3791cb6562e3d16169f7d6536106d29e666dda65d",
@@ -26623,7 +26624,7 @@
     {
       "name": "drawSedimentClouds",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 549,
+      "sourceLine": 550,
       "originalLine": 54652,
       "characters": 1901,
       "sourceHash": "0a13ea7598cff122b1efd252c9f6c01bf58a2770aff5ccf283c141b0d5a9df65",
@@ -26637,7 +26638,7 @@
     {
       "name": "drawGravelDigBursts",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 594,
+      "sourceLine": 595,
       "originalLine": 54697,
       "characters": 2695,
       "sourceHash": "f551e0b271dd1b355e011a5af61c982f0fd09aaf8c1a4d271d85b632376419c5",
@@ -26651,7 +26652,7 @@
     {
       "name": "drawCoinGlints",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 655,
+      "sourceLine": 656,
       "originalLine": 54758,
       "characters": 1254,
       "sourceHash": "34667f832adc57ed2802016d4bda9296a5084342380b8777474f9366be40b6ec",
@@ -26662,7 +26663,7 @@
     {
       "name": "invalidateGravelBedCache",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 689,
+      "sourceLine": 690,
       "originalLine": 54792,
       "characters": 227,
       "sourceHash": "1db61660f60b4b391dee81a4dc8d40e2a256e9232ac44d6206887627c701df13",
@@ -26671,7 +26672,7 @@
     {
       "name": "ensureGravelLayouts",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 698,
+      "sourceLine": 699,
       "originalLine": 54801,
       "characters": 5451,
       "sourceHash": "aa372dd5d10ff1f1986a1efa712be72aeda451300b115288af143aa509b53c2e",
@@ -26687,7 +26688,7 @@
     {
       "name": "getGravelBedCacheKey",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 859,
+      "sourceLine": 860,
       "originalLine": 54962,
       "characters": 335,
       "sourceHash": "9328e1393a932710b0ef4e210f26665d09a74865331a3836b983b41319dac935",
@@ -26700,7 +26701,7 @@
     {
       "name": "getGravelBedCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 866,
+      "sourceLine": 867,
       "originalLine": 54969,
       "characters": 1209,
       "sourceHash": "dd6eff3e8fd5a2c08e037e592f6034a9ce54c20237b85fbcfd9bb970de9f0c96",
@@ -26716,7 +26717,7 @@
     {
       "name": "getGravelCapCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 905,
+      "sourceLine": 906,
       "originalLine": 55008,
       "characters": 119,
       "sourceHash": "180bcd200e6562fb2af90d49b460fc2e9875c5496404475f4d20d21d7745fd16",
@@ -26727,7 +26728,7 @@
     {
       "name": "getGravelCacheDimensions",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 912,
+      "sourceLine": 913,
       "originalLine": 55015,
       "characters": 364,
       "sourceHash": "c8abe8b832681cfff16e066929ad3c224f71bdaa06c89a5f49caef45433319e7",
@@ -26736,7 +26737,7 @@
     {
       "name": "renderGravelBedToCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 921,
+      "sourceLine": 922,
       "originalLine": 55024,
       "characters": 639,
       "sourceHash": "25568a13e92160f9ffd29733487bca83a005c9e57a0bd37c0586f8e55d1bef09",
@@ -26749,7 +26750,7 @@
     {
       "name": "renderGravelCapToCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 951,
+      "sourceLine": 952,
       "originalLine": 55054,
       "characters": 650,
       "sourceHash": "386c1db4c1249aaaddcaae17c6afc755abbb214829917e2a906077a7086cae56",
@@ -26762,7 +26763,7 @@
     {
       "name": "drawLooseGravel",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 981,
+      "sourceLine": 982,
       "originalLine": 55084,
       "characters": 2014,
       "sourceHash": "3a72eb0b4af29755dc8cdcd088ef078fbaa1bb463d0a2e4fc36554dd4ed4cb53",
@@ -26778,7 +26779,7 @@
     {
       "name": "drawLoosePebbleGrounding",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1047,
+      "sourceLine": 1048,
       "originalLine": 55150,
       "characters": 713,
       "sourceHash": "f01c8cff2323caea3d39791be3ab320e6021bda2101f192c818f767f825d4f0d",
@@ -26789,7 +26790,7 @@
     {
       "name": "drawLooseGravelCap",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1068,
+      "sourceLine": 1069,
       "originalLine": 55171,
       "characters": 294,
       "sourceHash": "51f5e735288bdf7aa94489ac02bb99d4c1e2f59ad4f0b31d425fefa326e31d1e",
@@ -26801,7 +26802,7 @@
     {
       "name": "drawGravelPebbleSprite",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1081,
+      "sourceLine": 1082,
       "originalLine": 55184,
       "characters": 654,
       "sourceHash": "de54e0f2d652cbcbc1c2f636d8386ffc3f44fced5405e0ccbacaaa88d1a95a78",
@@ -26814,7 +26815,7 @@
     {
       "name": "getGravelPebbleAsset",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1098,
+      "sourceLine": 1099,
       "originalLine": 55201,
       "characters": 356,
       "sourceHash": "942d1d8c1a7f5d29ed59a156911726c343a4758d1e7a538d4310bb5a839dcfc5",
@@ -26823,7 +26824,7 @@
     {
       "name": "getPebbleShapeDescriptor",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1109,
+      "sourceLine": 1110,
       "originalLine": 55212,
       "characters": 1695,
       "sourceHash": "9a62ee8c729413ea3166fc07edff0393fefe99c81fce66427f34b28163a5e5b8",
@@ -26837,7 +26838,7 @@
     {
       "name": "getTintedGravelPebbleSprite",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1167,
+      "sourceLine": 1168,
       "originalLine": 55270,
       "characters": 2787,
       "sourceHash": "5b2f4a36e9794275d0762e8a9440271a0728e42f88b6139bf173b2a29bc7194a",
@@ -26856,7 +26857,7 @@
     {
       "name": "getPebbleSourceStats",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1245,
+      "sourceLine": 1246,
       "originalLine": 55348,
       "characters": 1495,
       "sourceHash": "1bcbd57cc21bfcd698dc52c28c027f052b9be28ea477ad92bd7e284ed7e18da1",
@@ -26868,7 +26869,7 @@
     {
       "name": "getCaveLayerSourceStats",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1300,
+      "sourceLine": 1301,
       "originalLine": 55403,
       "characters": 1492,
       "sourceHash": "55eff79f648cb24788849d7524509aed71d9130eb1881260c9287edfae0c2023",
@@ -26880,7 +26881,7 @@
     {
       "name": "getTintedCaveLayerImage",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1355,
+      "sourceLine": 1356,
       "originalLine": 55458,
       "characters": 2856,
       "sourceHash": "0a7a4ffecc4a4b5e14dbeff6f72eaa24192dbe7c035a45280ce6544c7f88a3f9",
@@ -27029,17 +27030,18 @@
       "module": "rendering/tank-and-water.js",
       "sourceLine": 217,
       "originalLine": null,
-      "characters": 458,
-      "sourceHash": "9b8465e9cec57d59a0ef84193c9cd2fc2f880fb0b454605df41019f4aa1ee590",
+      "characters": 532,
+      "sourceHash": "58e32ff252cf6f94a907f3d864fc00a721f5aae44a320098fcc3d4648740f2ce",
       "calls": [
         "getLightweightCausticMask",
-        "getTankFloorDrawBounds"
+        "getTankFloorDrawBounds",
+        "traceTankFloorMaskPath"
       ]
     },
     {
       "name": "drawLightweightCausticOverlay",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 227,
+      "sourceLine": 230,
       "originalLine": null,
       "characters": 2452,
       "sourceHash": "f59c8172827cd62941d6ee97f1b7639c7543714893d5a93b17f8879004d88637",
@@ -27056,7 +27058,7 @@
     {
       "name": "drawUnderwaterLightingPass",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 284,
+      "sourceLine": 287,
       "originalLine": null,
       "characters": 2028,
       "sourceHash": "23744ef7dc56d3b159efff52d35899e3874fefb868214b60e9174bff5c915a17",
@@ -27065,7 +27067,7 @@
     {
       "name": "clearStageDisplaySurfaces",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 324,
+      "sourceLine": 327,
       "originalLine": null,
       "characters": 1314,
       "sourceHash": "01a60ca1e2cea96b7c6aeaec4f397d876df9a33c7e978953b0baf090e8b1ecf8",
@@ -27076,7 +27078,7 @@
     {
       "name": "getDecorEditTankFrameGeometry",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 358,
+      "sourceLine": 361,
       "originalLine": null,
       "characters": 602,
       "sourceHash": "d48b1a1c85285193de9ce78caab243ee35d0c788ef8793483ab87aa7b9ee121e",
@@ -27089,7 +27091,7 @@
     {
       "name": "traceDecorEditRoundedTankPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 377,
+      "sourceLine": 380,
       "originalLine": null,
       "characters": 1021,
       "sourceHash": "a2fe9effaacd8b27dfc381cf2bb6d9704fb42d352a0d5c77d2a2a652b058fe23",
@@ -27100,7 +27102,7 @@
     {
       "name": "drawDecorEditTankBoundary",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 399,
+      "sourceLine": 402,
       "originalLine": null,
       "characters": 2187,
       "sourceHash": "0fca04ee8d09e9676429d8705b8a2deb31bf9b2019e04576840fd62a4501a074",
@@ -27117,7 +27119,7 @@
     {
       "name": "drawDirtyWaterTintToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 446,
+      "sourceLine": 449,
       "originalLine": null,
       "characters": 1002,
       "sourceHash": "05667ad204f4737755e4b154acf295b2528a647d43b43e06516a73cbccc53ce9",
@@ -27129,7 +27131,7 @@
     {
       "name": "drawDirtyWaterTint",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 476,
+      "sourceLine": 479,
       "originalLine": null,
       "characters": 154,
       "sourceHash": "2e298951883ace39cec3edbb71f6eb1d8b3a2e5dc080ab1baf82a0d42a00f430",
@@ -27142,7 +27144,7 @@
     {
       "name": "drawLightsOutOverlay",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 480,
+      "sourceLine": 483,
       "originalLine": 52537,
       "characters": 812,
       "sourceHash": "783c1d54a5da72e3164ed40d8974e64d3dc79489861270a330feb2f079cc1750",
@@ -27154,7 +27156,7 @@
     {
       "name": "getScaledTankShellPoints",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 501,
+      "sourceLine": 504,
       "originalLine": 52558,
       "characters": 153,
       "sourceHash": "1ee3b948d3b3657ce18a5d08af4f9b4e0b8ca129b694b12418cf9cd29ea3d565",
@@ -27163,7 +27165,7 @@
     {
       "name": "getTankShellPointSet",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 508,
+      "sourceLine": 511,
       "originalLine": 52565,
       "characters": 235,
       "sourceHash": "1fff058c599e5a2f4686416f8bb3514f33e822dca26c63d06b83692fd7950b42",
@@ -27176,7 +27178,7 @@
     {
       "name": "getPolygonBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 515,
+      "sourceLine": 518,
       "originalLine": 52572,
       "characters": 551,
       "sourceHash": "dbde7714b10d31ad9afe160cc3e2f23dfb639c7bfecf3a93b07374cd5d23530c",
@@ -27185,7 +27187,7 @@
     {
       "name": "tracePolygonPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 543,
+      "sourceLine": 546,
       "originalLine": 52600,
       "characters": 299,
       "sourceHash": "80d2a55a0f71696f039c875311a2d812f957636a4cc59eda6b936005ba4f8398",
@@ -27194,7 +27196,7 @@
     {
       "name": "traceTankShellPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 556,
+      "sourceLine": 559,
       "originalLine": 52613,
       "characters": 706,
       "sourceHash": "26b73fb97ec2aa32494a82edda49fd4f30529d5d9a1ca35a4b1d915aeac6c695",
@@ -27208,7 +27210,7 @@
     {
       "name": "pointInPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 575,
+      "sourceLine": 578,
       "originalLine": 52632,
       "characters": 620,
       "sourceHash": "167fc23c0ef90b05c64b202fe35bc5907d245ed4061b2c41de0ad2af2ca24d24",
@@ -27217,7 +27219,7 @@
     {
       "name": "projectPointIntoPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 593,
+      "sourceLine": 596,
       "originalLine": 52650,
       "characters": 791,
       "sourceHash": "2b2abe9d9bbd54414f6adf01056dd7dbc07efba086ab0b14c348f899b4540320",
@@ -27229,7 +27231,7 @@
     {
       "name": "constrainPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 631,
+      "sourceLine": 634,
       "originalLine": 52688,
       "characters": 506,
       "sourceHash": "6ab69c3390974258b0d4d46ed2a7fcc11d34ab46eab991205f144aeee7ddf230",
@@ -27243,7 +27245,7 @@
     {
       "name": "constrainNormalizedPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 648,
+      "sourceLine": 651,
       "originalLine": 52705,
       "characters": 333,
       "sourceHash": "b4875454c7060544fa29cb4bebdce2c38bee742b5ecec71c36b0014fb31fb4ec",
@@ -27254,7 +27256,7 @@
     {
       "name": "getTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 661,
+      "sourceLine": 664,
       "originalLine": 52718,
       "characters": 918,
       "sourceHash": "2760c8d79eb3ef8fb60c45988b023626666163d678953abd0f4b15b5242a18e5",
@@ -27267,7 +27269,7 @@
     {
       "name": "clipToTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 695,
+      "sourceLine": 698,
       "originalLine": 52752,
       "characters": 386,
       "sourceHash": "37b620c2a788f969e10220906f3df1aa3783db00f16e7dc65cfca772484c19db",
@@ -27282,7 +27284,7 @@
     {
       "name": "drawTankBackdrop",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 706,
+      "sourceLine": 709,
       "originalLine": 52757,
       "characters": 753,
       "sourceHash": "508f1944cc8f7026f577952713ab93e0afab4c02d0d3eff121afccc9b2135882",
@@ -27296,7 +27298,7 @@
     {
       "name": "drawBackground",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 731,
+      "sourceLine": 734,
       "originalLine": 52774,
       "characters": 3140,
       "sourceHash": "aeb55a43ce81445122f47ec9fa6a2e994346e1045f2ef41bdd8ebe094906335f",
@@ -27313,7 +27315,7 @@
     {
       "name": "drawAmbientBubbles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 803,
+      "sourceLine": 806,
       "originalLine": 52846,
       "characters": 4120,
       "sourceHash": "542edc48b79c0381a0e8e345f0669216e0782de78ca42907ba6ffb0751a0878d",
@@ -27333,7 +27335,7 @@
     {
       "name": "getAmbientBubbleRenderPass",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 911,
+      "sourceLine": 914,
       "originalLine": 52954,
       "characters": 193,
       "sourceHash": "a2fb8353dfd7ecb1a092eb5125c6cc3a35e26c87fff2dfa09ac4457c5ea017a3",
@@ -27344,7 +27346,7 @@
     {
       "name": "getAmbientBubbleLayerProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 919,
+      "sourceLine": 922,
       "originalLine": 52962,
       "characters": 415,
       "sourceHash": "e6f4b68e80421fc47d438551702a8bb782acdd68b12946d75f2c6f9fde55316e",
@@ -27353,7 +27355,7 @@
     {
       "name": "getWaterParticleVisibleCount",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 929,
+      "sourceLine": 932,
       "originalLine": 53101,
       "characters": 154,
       "sourceHash": "60e89ed6c0a6f6d04ce47727463025a92fb738f8ec76c81cd62b7f6831558e5e",
@@ -27364,7 +27366,7 @@
     {
       "name": "ensureWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 934,
+      "sourceLine": 937,
       "originalLine": 53111,
       "characters": 2172,
       "sourceHash": "0ee37fdf9de1d7a957947e32c45fb233516629ae0a0cad49190358da18dfb5cb",
@@ -27384,7 +27386,7 @@
     {
       "name": "getWaterParticleDrawColor",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 978,
+      "sourceLine": 981,
       "originalLine": 53151,
       "characters": 501,
       "sourceHash": "f2a56fcf25457ef5848a9a64f5870051ea42c52692a9f79b06053c1e9a18cc2b",
@@ -27393,7 +27395,7 @@
     {
       "name": "formatRgb",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 994,
+      "sourceLine": 997,
       "originalLine": 53171,
       "characters": 117,
       "sourceHash": "02811baecb616084daf778efe9f4830df8448f6cfc2e9a9a312f24f5b258ae2e",
@@ -27402,7 +27404,7 @@
     {
       "name": "formatRgba",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 998,
+      "sourceLine": 1001,
       "originalLine": 53175,
       "characters": 160,
       "sourceHash": "011537d4df3dc1513654f81959b9f447371285f675f53d34a58b274f1f4163f6",
@@ -27413,7 +27415,7 @@
     {
       "name": "getWaterParticleSpriteBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1002,
+      "sourceLine": 1005,
       "originalLine": 53179,
       "characters": 762,
       "sourceHash": "e6efd0be55fc716e777e28df1846bf92fd866c684c9cba5f176e35eefdcbe543",
@@ -27425,7 +27427,7 @@
     {
       "name": "getTintedWaterParticleSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1023,
+      "sourceLine": 1026,
       "originalLine": 53200,
       "characters": 1810,
       "sourceHash": "7b777740d57097e1000e560d241c9663cd417875b3881149684410d38acc85e2",
@@ -27439,7 +27441,7 @@
     {
       "name": "collectBubblerParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1082,
+      "sourceLine": 1085,
       "originalLine": 53259,
       "characters": 2303,
       "sourceHash": "226f46a1c72a7032fbb5300ea339340607d1e16047e164d09b5bb7f9c7c12bd9",
@@ -27459,7 +27461,7 @@
     {
       "name": "applyBubblerForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1129,
+      "sourceLine": 1132,
       "originalLine": 53306,
       "characters": 920,
       "sourceHash": "f7707f33609141e9b87fb582fc606e1af9047251fe03d2186ecb4a9ec07c8ea2",
@@ -27470,7 +27472,7 @@
     {
       "name": "getAmbientBubbleParticleLayers",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1148,
+      "sourceLine": 1151,
       "originalLine": 53325,
       "characters": 166,
       "sourceHash": "6b0de811cc87c926469888fd134092b088aa47051e56e531dbd767471a6b72e3",
@@ -27479,7 +27481,7 @@
     {
       "name": "collectAmbientBubbleParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1158,
+      "sourceLine": 1161,
       "originalLine": 53335,
       "characters": 1431,
       "sourceHash": "2388c00a21b07016f96655135ae8c4ddce90e3397d16d530811c54283027d8f6",
@@ -27496,7 +27498,7 @@
     {
       "name": "applyAmbientBubbleForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1198,
+      "sourceLine": 1201,
       "originalLine": 53375,
       "characters": 775,
       "sourceHash": "de023cc1e0644fd07fc473adabe924f6b0cdbfba8a9bf11053cc12fb51b9aef6",
@@ -27507,7 +27509,7 @@
     {
       "name": "getWaterParticleTankLayer",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1219,
+      "sourceLine": 1222,
       "originalLine": 53396,
       "characters": 277,
       "sourceHash": "f0108e9d9871ebf60b20414034aaddc125604460a4a0ee466e9babc170227d94",
@@ -27519,7 +27521,7 @@
     {
       "name": "getParticleFishFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1229,
+      "sourceLine": 1232,
       "originalLine": 53438,
       "characters": 751,
       "sourceHash": "1693df92c68fe81f833ac80880e92f36de07d093656b4dd4b854adf39af60340",
@@ -27534,7 +27536,7 @@
     {
       "name": "applyFishForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1254,
+      "sourceLine": 1257,
       "originalLine": 53463,
       "characters": 933,
       "sourceHash": "a1d17a3a4fa522df5320a4a8a8de1eb1f337c762f6773e50940aa8de7ae5a878",
@@ -27546,7 +27548,7 @@
     {
       "name": "updateWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1280,
+      "sourceLine": 1283,
       "originalLine": 53489,
       "characters": 3277,
       "sourceHash": "c7d4e0bda20e984d9320866b6f03306c08dccf3ec4c918faccf1e14363b671f1",
@@ -27570,7 +27572,7 @@
     {
       "name": "getWaterAtmosphereStreakSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1353,
+      "sourceLine": 1356,
       "originalLine": null,
       "characters": 789,
       "sourceHash": "d96a56cd535b0115930539d8472968c7b107836df0873a1125eb10dbbbd41fcd",
@@ -27579,7 +27581,7 @@
     {
       "name": "drawWaterAtmosphereStreak",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1378,
+      "sourceLine": 1381,
       "originalLine": null,
       "characters": 1246,
       "sourceHash": "10e52a97060fcb37b8b9036904a16353a54157c3532b9521b122ec2bc3e01223",
@@ -27591,7 +27593,7 @@
     {
       "name": "drawWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1419,
+      "sourceLine": 1422,
       "originalLine": 53564,
       "characters": 3955,
       "sourceHash": "d225e785110d9af0c8aeec1688f961ee78248a5054a5ff75d21576034d586155",
@@ -27614,7 +27616,7 @@
     {
       "name": "drawAutoDispenserButton",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1518,
+      "sourceLine": 1521,
       "originalLine": 53665,
       "characters": 2696,
       "sourceHash": "a89dc4f2a9a7e34def46ddf8a973cd5a62d1496f4201494ce409e368a1d1792c",
@@ -27625,7 +27627,7 @@
     {
       "name": "getAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1581,
+      "sourceLine": 1584,
       "originalLine": 53728,
       "characters": 242,
       "sourceHash": "47d63588814b89a503e7e217884f7d77424685052a411bdc5f03ad7a4946ae41",
@@ -27634,7 +27636,7 @@
     {
       "name": "getAutoDispenserHopperCacheKey",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1591,
+      "sourceLine": 1594,
       "originalLine": 53738,
       "characters": 409,
       "sourceHash": "2d3b52c239f11ce09564058775dfa18c02de7b18f6821ed20420aa15f4250e7f",
@@ -27645,7 +27647,7 @@
     {
       "name": "drawFoodPelletPieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1604,
+      "sourceLine": 1607,
       "originalLine": 53751,
       "characters": 1284,
       "sourceHash": "596531a028ac14859caeaf1ab4c141df13cedfe24ba8d460644bdf41a125e71a",
@@ -27658,7 +27660,7 @@
     {
       "name": "drawFoodSpritePieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1639,
+      "sourceLine": 1642,
       "originalLine": 53786,
       "characters": 1090,
       "sourceHash": "0acf314808acb722015b0be1a9449310f5ec58ec24467bdbe76e61ffb66f2a4c",
@@ -27672,7 +27674,7 @@
     {
       "name": "buildAutoDispenserHopperPile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1663,
+      "sourceLine": 1666,
       "originalLine": 53807,
       "characters": 1800,
       "sourceHash": "a43ce334c4102195a505999974a667a42c52d53624df781145952c13ce123001",
@@ -27689,7 +27691,7 @@
     {
       "name": "renderAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1712,
+      "sourceLine": 1715,
       "originalLine": 53856,
       "characters": 1593,
       "sourceHash": "377abbcb73cb6cd3c523352fc7dc8d69f678ba0b2f624b742ff786153438beee",
@@ -27705,7 +27707,7 @@
     {
       "name": "drawAutoDispenser",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1748,
+      "sourceLine": 1751,
       "originalLine": 53892,
       "characters": 3306,
       "sourceHash": "6abbbf039fa76385948aea4aba7dd4a83e8c1f726d8115cb4cf630f33587905c",
@@ -27722,7 +27724,7 @@
     {
       "name": "getTintedFoodPelletSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1829,
+      "sourceLine": 1832,
       "originalLine": 53973,
       "characters": 2084,
       "sourceHash": "e798a796eabeb409cbd42e3012c1007c02c9dfcbffd4a24ed3a53fe2950e4280",
@@ -27735,7 +27737,7 @@
     {
       "name": "drawProceduralFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1887,
+      "sourceLine": 1890,
       "originalLine": 54031,
       "characters": 1077,
       "sourceHash": "01e5495f0d5cc73a1d8c7498180cc03c688ffc35e325c464854c94fa9241ac42",
@@ -27747,7 +27749,7 @@
     {
       "name": "drawFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1917,
+      "sourceLine": 1920,
       "originalLine": 54062,
       "characters": 763,
       "sourceHash": "2551c2cd00bf5ca942facdd4e625fc2553828d66bdbb828858ff0457e47d3959",
@@ -27761,7 +27763,7 @@
     {
       "name": "drawFallbackChumPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1938,
+      "sourceLine": 1941,
       "originalLine": 54083,
       "characters": 868,
       "sourceHash": "bcdbe6b9f780481629d90c9d01c522b850065e7612a8adbf8fcfdc1e942de4f5",
@@ -27773,7 +27775,7 @@
     {
       "name": "drawFoodSpritePiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1964,
+      "sourceLine": 1967,
       "originalLine": 54109,
       "characters": 1096,
       "sourceHash": "846a33bf219f2c6fb45bd3eebbb401765cdb4d9ae3f08c00da104332d6ed023e",
@@ -27787,7 +27789,7 @@
     {
       "name": "drawPellets",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1988,
+      "sourceLine": 1991,
       "originalLine": 54130,
       "characters": 748,
       "sourceHash": "546e479c3c41d7d3e628f9b9c307be1e9698824aef21f729f570b5aa538edb81",
@@ -27803,7 +27805,7 @@
     {
       "name": "getTankFloorDrawBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2012,
+      "sourceLine": 2015,
       "originalLine": 54154,
       "characters": 449,
       "sourceHash": "f24215c9f218214d6960c75c6ebdccb67344f878272d876e808cea26ea18772a",
@@ -27815,7 +27817,7 @@
     {
       "name": "getTankFloorMaskSurfaceYAtX",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2031,
+      "sourceLine": 2034,
       "originalLine": 54173,
       "characters": 569,
       "sourceHash": "c7c7fcaa954c09970a22bce5eb71c1c6c1f587ce137cb3409ebd8b332bb356e1",
@@ -27828,7 +27830,7 @@
     {
       "name": "getTankFloorMaskHillProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2041,
+      "sourceLine": 2044,
       "originalLine": null,
       "characters": 900,
       "sourceHash": "667e5a171665fb75306e9ee5ac18851afcd0911f7fcc4fe60852cbe44f358228",
@@ -27839,7 +27841,7 @@
     {
       "name": "traceTankFloorMaskPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2064,
+      "sourceLine": 2067,
       "originalLine": 54182,
       "characters": 345,
       "sourceHash": "e6b792d3de236bece492cd2acb2e116de380b9b1dcb673c8a1d0e226c3a6115d",

@@ -1272,6 +1272,11 @@ function hideLoadingOverlay() {
     return;
   }
 
+  if (state && getUiSettings().layoutRatioLockEnabled !== false && !isLayoutRatioLockActive()) {
+    initializeLayoutRatioLockFromSettings({ recapture: true });
+    resizeDisplayCanvases();
+  }
+
   let completed = false;
   const complete = () => {
     if (completed) {

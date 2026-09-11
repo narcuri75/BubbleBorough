@@ -422,6 +422,9 @@ function renderSettingsOverlay() {
   if (dom.peacefulModeToggleInput) {
     dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
   }
+  if (dom.layoutRatioLockToggleInput) {
+    dom.layoutRatioLockToggleInput.checked = uiSettings.layoutRatioLockEnabled !== false;
+  }
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
   }

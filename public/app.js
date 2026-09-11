@@ -1205,6 +1205,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   soundMuted: false,
   uiSoundsMuted: false,
   tankMouseInputLocked: false,
+  layoutRatioLockEnabled: true,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
@@ -2997,6 +2998,7 @@ const dom = {
   debugModeSettingsSection: document.querySelector("#debugModeSettingsSection"),
   debugModeToggleInput: document.querySelector("#debugModeToggleInput"),
   peacefulModeToggleInput: document.querySelector("#peacefulModeToggleInput"),
+  layoutRatioLockToggleInput: document.querySelector("#layoutRatioLockToggleInput"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -3519,6 +3521,10 @@ const runtime = {
     height: 0,
     stableHeight: 0
   },
+  layoutRatioLockActive: false,
+  layoutRatioLockWidth: 0,
+  layoutRatioLockHeight: 0,
+  layoutRatioLockScale: 1,
   portablePerformanceActive: null,
   resizeObserver: null,
   wallpaperEngineFpsLimit: wallpaperEngineGeneralPropertyState.fps,
@@ -13432,6 +13438,11 @@ function hideLoadingOverlay() {
     return;
   }
 
+  if (state && getUiSettings().layoutRatioLockEnabled !== false && !isLayoutRatioLockActive()) {
+    initializeLayoutRatioLockFromSettings({ recapture: true });
+    resizeDisplayCanvases();
+  }
+
   let completed = false;
   const complete = () => {
     if (completed) {
@@ -14096,6 +14107,128 @@ function getPortableGrimeBlurScale() {
 // Source fragment: assets/custom-content.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function getBrowserViewportSize() {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return { width: TANK_WIDTH, height: TANK_HEIGHT };
+  }
+  const root = document.documentElement;
+  const visualViewport = window.visualViewport;
+  return {
+    width: Math.max(1, Math.round(visualViewport?.width || window.innerWidth || root?.clientWidth || TANK_WIDTH)),
+    height: Math.max(1, Math.round(visualViewport?.height || window.innerHeight || root?.clientHeight || TANK_HEIGHT))
+  };
+}
+
+function isLayoutRatioLockActive() {
+  return runtime.layoutRatioLockActive === true
+    && Number(runtime.layoutRatioLockWidth) > 0
+    && Number(runtime.layoutRatioLockHeight) > 0;
+}
+
+function updateLayoutRatioLockPresentation() {
+  if (typeof document === "undefined") {
+    return 1;
+  }
+  const root = document.documentElement;
+  if (!root) {
+    return 1;
+  }
+
+  if (!isLayoutRatioLockActive()) {
+    runtime.layoutRatioLockScale = 1;
+    delete root.dataset.layoutRatioLock;
+    root.style.removeProperty("--layout-ratio-lock-scale");
+    root.style.removeProperty("--layout-ratio-lock-width");
+    root.style.removeProperty("--layout-ratio-lock-height");
+    return 1;
+  }
+
+  const browserViewport = getBrowserViewportSize();
+  const lockedWidth = Math.max(1, Number(runtime.layoutRatioLockWidth) || browserViewport.width);
+  const lockedHeight = Math.max(1, Number(runtime.layoutRatioLockHeight) || browserViewport.height);
+  const scale = Math.max(0.05, Math.min(browserViewport.width / lockedWidth, browserViewport.height / lockedHeight));
+  runtime.layoutRatioLockScale = scale;
+  root.dataset.layoutRatioLock = "true";
+  root.style.setProperty("--layout-ratio-lock-scale", String(scale));
+  root.style.setProperty("--layout-ratio-lock-width", `${lockedWidth}px`);
+  root.style.setProperty("--layout-ratio-lock-height", `${lockedHeight}px`);
+  return scale;
+}
+
+function captureLayoutRatioLockReference() {
+  const viewport = getBrowserViewportSize();
+  runtime.layoutRatioLockWidth = viewport.width;
+  runtime.layoutRatioLockHeight = viewport.height;
+  runtime.layoutRatioLockActive = true;
+  runtime.viewportMetrics.orientation = "";
+  runtime.viewportMetrics.width = 0;
+  runtime.viewportMetrics.height = 0;
+  runtime.viewportMetrics.stableHeight = 0;
+  updateLayoutRatioLockPresentation();
+  syncViewportCssVariables({ resetStable: true });
+  return viewport;
+}
+
+function releaseLayoutRatioLockReference() {
+  runtime.layoutRatioLockActive = false;
+  runtime.layoutRatioLockWidth = 0;
+  runtime.layoutRatioLockHeight = 0;
+  runtime.layoutRatioLockScale = 1;
+  runtime.viewportMetrics.orientation = "";
+  runtime.viewportMetrics.width = 0;
+  runtime.viewportMetrics.height = 0;
+  runtime.viewportMetrics.stableHeight = 0;
+  updateLayoutRatioLockPresentation();
+  syncViewportCssVariables({ resetStable: true });
+}
+
+function initializeLayoutRatioLockFromSettings(options = {}) {
+  const enabled = Boolean(state && getUiSettings().layoutRatioLockEnabled);
+  if (!enabled) {
+    if (isLayoutRatioLockActive()) releaseLayoutRatioLockReference();
+    return false;
+  }
+  if (isLayoutRatioLockActive() && options.recapture !== true) {
+    updateLayoutRatioLockPresentation();
+    return true;
+  }
+  captureLayoutRatioLockReference();
+  return true;
+}
+
+function setLayoutRatioLockEnabled(value, options = {}) {
+  if (!state) {
+    return false;
+  }
+
+  const enabled = Boolean(value);
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    layoutRatioLockEnabled: enabled
+  });
+  const preferenceChanged = currentSettings.layoutRatioLockEnabled !== nextSettings.layoutRatioLockEnabled;
+  state.uiSettings = nextSettings;
+
+  if (enabled) {
+    // Every OFF -> ON transition intentionally captures the browser's current
+    // gameplay dimensions. This is the user's way to choose a new locked ratio.
+    captureLayoutRatioLockReference();
+  } else {
+    releaseLayoutRatioLockReference();
+  }
+
+  resizeDisplayCanvases();
+  if (preferenceChanged && options.save !== false) saveState();
+  if (options.render !== false) renderUi(Date.now(), { full: false });
+  if (options.showToast !== false) {
+    showToast(enabled
+      ? "Ratio Lock on. Current window size is now the layout reference."
+      : "Ratio Lock off. The game will resize with the window.");
+  }
+  return true;
+}
+
 function syncViewportCssVariables(options = {}) {
   if (typeof document === "undefined") {
     return;
@@ -14107,15 +14240,14 @@ function syncViewportCssVariables(options = {}) {
   }
 
   syncPortablePerformanceMode();
-  const visualViewport = window.visualViewport;
-  const viewportWidth = Math.max(
-    1,
-    Math.round(visualViewport?.width || window.innerWidth || root.clientWidth || TANK_WIDTH)
-  );
-  const viewportHeight = Math.max(
-    1,
-    Math.round(visualViewport?.height || window.innerHeight || root.clientHeight || TANK_HEIGHT)
-  );
+  const browserViewport = getBrowserViewportSize();
+  const locked = isLayoutRatioLockActive();
+  const viewportWidth = locked
+    ? Math.max(1, Math.round(Number(runtime.layoutRatioLockWidth) || browserViewport.width))
+    : browserViewport.width;
+  const viewportHeight = locked
+    ? Math.max(1, Math.round(Number(runtime.layoutRatioLockHeight) || browserViewport.height))
+    : browserViewport.height;
   const orientation = viewportWidth >= viewportHeight ? "landscape" : "portrait";
   const metrics = runtime.viewportMetrics;
   const widthJumped = Math.abs(viewportWidth - (metrics.width || viewportWidth)) > 120;
@@ -14137,6 +14269,7 @@ function syncViewportCssVariables(options = {}) {
   root.style.setProperty("--app-viewport-width", `${viewportWidth}px`);
   root.style.setProperty("--app-viewport-height", `${viewportHeight}px`);
   root.style.setProperty("--app-stable-viewport-height", `${Math.max(1, metrics.stableHeight || viewportHeight)}px`);
+  updateLayoutRatioLockPresentation();
 }
 
 function hasStockedMedicine() {
@@ -15492,6 +15625,9 @@ function bindEvents() {
   });
   dom.peacefulModeToggleInput?.addEventListener("change", (event) => {
     setPeacefulModeEnabled(event.currentTarget?.checked);
+  });
+  dom.layoutRatioLockToggleInput?.addEventListener("change", (event) => {
+    setLayoutRatioLockEnabled(event.currentTarget?.checked);
   });
   dom.settingsOverlay?.addEventListener("change", (event) => {
     const toolbarInput = event.target.closest("[data-toolbar-position-choice]");
@@ -24509,6 +24645,7 @@ function sanitizeUiSettings(rawSettings) {
     soundMuted: source.soundMuted === true,
     uiSoundsMuted: source.uiSoundsMuted === true,
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
+    layoutRatioLockEnabled: source.layoutRatioLockEnabled !== false,
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
@@ -56680,6 +56817,9 @@ function renderSettingsOverlay() {
   syncDebugToolsAuthorization();
   if (dom.peacefulModeToggleInput) {
     dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
+  }
+  if (dom.layoutRatioLockToggleInput) {
+    dom.layoutRatioLockToggleInput.checked = uiSettings.layoutRatioLockEnabled !== false;
   }
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;

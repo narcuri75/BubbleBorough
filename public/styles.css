@@ -463,6 +463,24 @@ h2 {
   min-height: var(--app-viewport-height);
 }
 
+html[data-layout-ratio-lock="true"] .app-shell {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: var(--layout-ratio-lock-width, var(--app-viewport-width));
+  height: var(--layout-ratio-lock-height, var(--app-viewport-height));
+  min-height: 0;
+  transform: translate(-50%, -50%) scale(var(--layout-ratio-lock-scale, 1));
+  transform-origin: center center;
+  overflow: hidden;
+  contain: layout paint;
+}
+
+html[data-layout-ratio-lock="true"] body {
+  width: 100vw;
+  height: 100vh;
+}
+
 .tank-page {
   display: block;
 }
@@ -10488,8 +10506,12 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 @media (max-width: 767px), (max-width: 1180px) and (max-height: 620px) {
   .loading-overlay,
-  .app-shell,
+  html:not([data-layout-ratio-lock="true"]) .app-shell,
   .toast {
+    display: none !important;
+  }
+
+  html[data-layout-ratio-lock="true"] .mobile-unsupported-blocker {
     display: none !important;
   }
 

@@ -209,6 +209,7 @@ function sanitizeUiSettings(rawSettings) {
     soundMuted: source.soundMuted === true,
     uiSoundsMuted: source.uiSoundsMuted === true,
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
+    layoutRatioLockEnabled: source.layoutRatioLockEnabled !== false,
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,

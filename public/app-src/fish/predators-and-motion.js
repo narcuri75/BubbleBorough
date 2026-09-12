@@ -2021,37 +2021,63 @@ function startSuckerFishFreeSwim(fish, species, targetXNorm, targetYNorm, now = 
     return false;
   }
 
+  const gravelScanMode = species.id === "otocinclus" && options.mode === "gravel-scan";
   const targetX = clamp(Number(targetXNorm), 0.08, 0.92);
-  const targetY = clamp(Number(targetYNorm), 0.14, 0.8);
+  const targetY = clamp(Number(targetYNorm), gravelScanMode ? 0.58 : 0.14, gravelScanMode ? 0.94 : 0.8);
   const distanceNorm = Math.hypot(targetX - fish.xNorm, targetY - fish.yNorm);
   const threshold = Number.isFinite(Number(options.distanceThreshold))
-    ? Math.max(0.05, Number(options.distanceThreshold))
+    ? Math.max(0.01, Number(options.distanceThreshold))
     : SUCKER_FISH_FREE_SWIM_DISTANCE_NORM;
-  if (distanceNorm < threshold) {
+  if (!options.force && distanceNorm < threshold) {
     return false;
   }
 
-  const returnLayer = getSuckerFishGlassLayer(fish);
-  const swimSpeed = randomBetween(SUCKER_FISH_FREE_SWIM_SPEED_MIN, SUCKER_FISH_FREE_SWIM_SPEED_MAX);
-  const travelMs = (distanceNorm / Math.max(0.00001, swimSpeed * FISH_MOTION_SCALE)) * 1000;
-  const durationMs = clamp(
-    travelMs * 1.32,
-    SUCKER_FISH_FREE_SWIM_MIN_DURATION_MS,
-    SUCKER_FISH_FREE_SWIM_MAX_DURATION_MS
+  const sourceLayer = getSuckerFishGlassLayer(fish);
+  const returnLayer = normalizeSuckerFishGlassLayer(
+    Number.isFinite(Number(options.returnLayer)) ? Number(options.returnLayer) : sourceLayer
   );
+  const swimSpeed = randomBetween(SUCKER_FISH_FREE_SWIM_SPEED_MIN, SUCKER_FISH_FREE_SWIM_SPEED_MAX);
+  const travelMs = (Math.max(distanceNorm, 0.06) / Math.max(0.00001, swimSpeed * FISH_MOTION_SCALE)) * 1000;
+  const durationMs = gravelScanMode
+    ? randomBetween(OTOCINCLUS_GRAVEL_SCAN_MIN_DURATION_MS, OTOCINCLUS_GRAVEL_SCAN_MAX_DURATION_MS)
+    : clamp(
+      travelMs * 1.32,
+      SUCKER_FISH_FREE_SWIM_MIN_DURATION_MS,
+      SUCKER_FISH_FREE_SWIM_MAX_DURATION_MS
+    );
 
   fish.suckerFreeSwimStartedAt = now;
   fish.suckerFreeSwimUntil = now + durationMs;
   fish.suckerFreeSwimTargetXNorm = targetX;
   fish.suckerFreeSwimTargetYNorm = targetY;
   fish.suckerFreeSwimReturnLayer = returnLayer;
+  fish.suckerFreeSwimMode = gravelScanMode ? "gravel-scan" : "transit";
+  fish.suckerGravelScanRemaining = gravelScanMode
+    ? Math.max(
+      OTOCINCLUS_GRAVEL_SCAN_MIN_PICKS,
+      Math.min(
+        OTOCINCLUS_GRAVEL_SCAN_MAX_PICKS,
+        Math.round(Number(options.scanCount) || randomBetween(OTOCINCLUS_GRAVEL_SCAN_MIN_PICKS, OTOCINCLUS_GRAVEL_SCAN_MAX_PICKS))
+      )
+    )
+    : 0;
   fish.swimSpeed = swimSpeed;
   fish.targetXNorm = targetX;
   fish.targetYNorm = targetY;
   fish.targetAt = fish.suckerFreeSwimUntil;
   fish.hangoutDecorId = null;
   fish.hangoutZoneType = null;
-  setFishTankLayers(fish, SUCKER_FISH_FREE_SWIM_LAYER, SUCKER_FISH_FREE_SWIM_LAYER);
+  fish.frontGlassScrubAt = null;
+  fish.frontGlassScrubX = null;
+  fish.frontGlassScrubY = null;
+  startSuckerFishViewTransition(
+    fish,
+    getSuckerFishGlassViewForLayer(sourceLayer),
+    "swim",
+    "down",
+    now
+  );
+  setFishTankLayers(fish, SUCKER_FISH_FREE_SWIM_LAYER, returnLayer);
   setFishDirection(fish, targetX >= fish.xNorm ? 1 : -1, species, now);
   return true;
 }
@@ -2066,12 +2092,22 @@ function finishSuckerFishFreeSwim(fish, species, now = Date.now()) {
       ? Number(fish.suckerFreeSwimReturnLayer)
       : SUCKER_FISH_BACK_GLASS_LAYER
   );
+  const returnView = getSuckerFishGlassViewForLayer(returnLayer);
+  startSuckerFishViewTransition(
+    fish,
+    "swim",
+    returnView,
+    returnView === "front" ? "up" : "down",
+    now
+  );
+  setFishTankLayers(fish, returnLayer, returnLayer);
   delete fish.suckerFreeSwimStartedAt;
   delete fish.suckerFreeSwimUntil;
   delete fish.suckerFreeSwimTargetXNorm;
   delete fish.suckerFreeSwimTargetYNorm;
   delete fish.suckerFreeSwimReturnLayer;
-  setFishTankLayers(fish, returnLayer, returnLayer);
+  delete fish.suckerFreeSwimMode;
+  delete fish.suckerGravelScanRemaining;
   fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, species.speedMax));
   fish.targetAt = Math.min(Number(fish.targetAt) || now, now + 450);
   setSuckerFishAngle(fish, Number(fish.direction) < 0 ? Math.PI : 0, now);
@@ -2088,6 +2124,36 @@ function updateSuckerFishFreeSwimState(fish, species, now = Date.now()) {
   const reachedTarget = Number.isFinite(targetX) && Number.isFinite(targetY)
     ? Math.hypot(targetX - fish.xNorm, targetY - fish.yNorm) <= SUCKER_FISH_FREE_SWIM_ARRIVAL_DISTANCE_NORM
     : false;
+
+  if (species.id === "otocinclus" && fish.suckerFreeSwimMode === "gravel-scan") {
+    if (now >= Number(fish.suckerFreeSwimUntil)) {
+      return finishSuckerFishFreeSwim(fish, species, now);
+    }
+
+    if (reachedTarget) {
+      performOtocinclusGravelScan(fish, species, now);
+      fish.suckerGravelScanRemaining = Math.max(0, Math.round(Number(fish.suckerGravelScanRemaining) || 0) - 1);
+      if (fish.suckerGravelScanRemaining <= 0) {
+        return finishSuckerFishFreeSwim(fish, species, now);
+      }
+
+      const nextTarget = pickOtocinclusGravelScanTarget(fish, species, now);
+      if (!nextTarget) {
+        return finishSuckerFishFreeSwim(fish, species, now);
+      }
+      fish.suckerFreeSwimTargetXNorm = nextTarget.xNorm;
+      fish.suckerFreeSwimTargetYNorm = nextTarget.yNorm;
+      fish.targetXNorm = nextTarget.xNorm;
+      fish.targetYNorm = nextTarget.yNorm;
+      fish.targetAt = fish.suckerFreeSwimUntil;
+      fish.swimSpeed = randomBetween(SUCKER_FISH_FREE_SWIM_SPEED_MIN, SUCKER_FISH_FREE_SWIM_SPEED_MAX);
+      if (Math.abs(nextTarget.xNorm - fish.xNorm) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
+        setFishDirection(fish, nextTarget.xNorm >= fish.xNorm ? 1 : -1, species, now);
+      }
+    }
+    return false;
+  }
+
   if (now >= Number(fish.suckerFreeSwimUntil) || reachedTarget) {
     return finishSuckerFishFreeSwim(fish, species, now);
   }
@@ -2253,8 +2319,13 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     if (effectiveBehavior === "sucker") {
+      const freeSwimmingSucker = isSuckerFishFreeSwimming(fish, species, now);
       const glassLayer = getSuckerFishGlassLayer(fish);
-      setFishTankLayers(fish, glassLayer, glassLayer);
+      setFishTankLayers(
+        fish,
+        freeSwimmingSucker ? SUCKER_FISH_FREE_SWIM_LAYER : glassLayer,
+        glassLayer
+      );
       fish.hangoutDecorId = null;
       if (fish.activity === "feeding") {
         fish.activity = "roam";
@@ -2861,7 +2932,13 @@ function updateFishMotion(now, deltaSeconds) {
             : clamp(0.44 + travelRatio * 0.5 + Math.min(0.16, moveDistance * 4.5), 0.16, 0.92);
 
       if (effectiveBehavior === "sucker") {
-        setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
+        if (species.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now)) {
+          if (Math.abs(moveDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
+            setFishDirection(fish, moveDx >= 0 ? 1 : -1, species, now);
+          }
+        } else {
+          setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
+        }
       } else if (!handledDirectionThisFrame) {
         const debugFaceDirection = panicOwnsMovement ? null : getDebugBehaviorFacingDirection(fish, now);
         const facingDx = fish.activity === "feeding" && pelletPose
@@ -2906,11 +2983,15 @@ function updateFishMotion(now, deltaSeconds) {
       const nearbyCorpse = getNearestDeadFish(fish);
       if (nearbyCorpse && nearbyCorpse.distanceNorm <= 0.16) {
         if (effectiveBehavior === "sucker") {
-          setSuckerFishAngle(
-            fish,
-            Math.atan2(nearbyCorpse.fish.yNorm - fish.yNorm, nearbyCorpse.fish.xNorm - fish.xNorm),
-            now
-          );
+          if (species.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now)) {
+            setFishDirection(fish, nearbyCorpse.fish.xNorm >= fish.xNorm ? 1 : -1, species, now);
+          } else {
+            setSuckerFishAngle(
+              fish,
+              Math.atan2(nearbyCorpse.fish.yNorm - fish.yNorm, nearbyCorpse.fish.xNorm - fish.xNorm),
+              now
+            );
+          }
         } else {
           setFishDirection(fish, nearbyCorpse.fish.xNorm >= fish.xNorm ? 1 : -1, species, now);
         }
@@ -3177,6 +3258,28 @@ function assignSwimTarget(fish, species, now) {
   if (effectiveBehavior === "sucker") {
     const glassLayer = getSuckerFishGlassLayer(fish);
     const yRange = getSuckerFishYRange(fish, species, glassLayer);
+
+    if (species.id === "otocinclus" && Math.random() < OTOCINCLUS_GRAVEL_SCAN_CHANCE) {
+      const scanTarget = pickOtocinclusGravelScanTarget(fish, species, now);
+      if (scanTarget) {
+        const oppositeLayer = glassLayer === SUCKER_FISH_FRONT_GLASS_LAYER
+          ? SUCKER_FISH_BACK_GLASS_LAYER
+          : SUCKER_FISH_FRONT_GLASS_LAYER;
+        const returnLayer = Math.random() < OTOCINCLUS_GLASS_SWITCH_CHANCE_AFTER_SCAN
+          ? oppositeLayer
+          : glassLayer;
+        if (startSuckerFishFreeSwim(fish, species, scanTarget.xNorm, scanTarget.yNorm, now, {
+          force: true,
+          mode: "gravel-scan",
+          returnLayer,
+          scanCount: Math.round(randomBetween(OTOCINCLUS_GRAVEL_SCAN_MIN_PICKS, OTOCINCLUS_GRAVEL_SCAN_MAX_PICKS))
+        })) {
+          setFishBehaviorIntent(fish, "gravel scanning", "otocinclus", now);
+          return;
+        }
+      }
+    }
+
     const grimeTarget = pickFrontGlassSuckerGrimeTarget(fish, now);
     if (grimeTarget) {
       const travelDistance = Math.hypot(grimeTarget.xNorm - fish.xNorm, grimeTarget.yNorm - fish.yNorm);

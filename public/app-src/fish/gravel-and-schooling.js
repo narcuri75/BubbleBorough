@@ -234,6 +234,8 @@ function getFishFrontMouthOffsetAtPose(fish, species, width, height, pose, now =
     SUCKER_FISH_FACE_PIVOT_ENABLED
     && !pose.isDead
     && getEffectiveFishBehavior(fish, species) === "sucker"
+    && !isSuckerFishFreeSwimming(fish, species, now)
+    && !getSuckerFishViewTransitionState(fish, now)
   );
   const drawX = -width / 2 + (pose.wiggle || 0) * width * 0.018;
   const drawY = -height / 2;
@@ -780,7 +782,7 @@ function spawnCoinGlint(x, y, now = Date.now()) {
   }
 }
 
-function attemptGravelCoinFind(fish, action, now = Date.now()) {
+function attemptGravelCoinFind(fish, action, now = Date.now(), options = {}) {
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     return false;
   }
@@ -790,7 +792,9 @@ function attemptGravelCoinFind(fish, action, now = Date.now()) {
 
   action.coinFindRolled = true;
   const lastFoundAt = Number(state.lastGravelCoinFoundAt) || 0;
-  if (now - lastFoundAt < GRAVEL_COIN_FIND_COOLDOWN_MS || Math.random() >= GRAVEL_COIN_FIND_CHANCE) {
+  const chanceMultiplier = Math.max(0, Number(options.chanceMultiplier) || 1);
+  const coinChance = clamp(GRAVEL_COIN_FIND_CHANCE * chanceMultiplier, 0, 1);
+  if (now - lastFoundAt < GRAVEL_COIN_FIND_COOLDOWN_MS || Math.random() >= coinChance) {
     return false;
   }
 
@@ -801,6 +805,110 @@ function attemptGravelCoinFind(fish, action, now = Date.now()) {
   spawnCoinGlint(action.pickupXNorm * TANK_WIDTH, action.pickupYNorm * TANK_HEIGHT - 8, now);
   saveState();
   renderUi(now, { full: false });
+  return true;
+}
+
+function isOtocinclusGravelScanner(fish, species = getSpeciesForFish(fish)) {
+  return Boolean(fish && species?.id === "otocinclus" && getEffectiveFishBehavior(fish, species) === "sucker");
+}
+
+function pickOtocinclusGravelScanTarget(fish, species, now = Date.now()) {
+  if (!isOtocinclusGravelScanner(fish, species)) {
+    return null;
+  }
+
+  const xNorm = clamp(fish.xNorm + randomBetween(-0.2, 0.2), 0.1, 0.9);
+  const targetX = xNorm * TANK_WIDTH;
+  const floorY = getTankFloorMaskSurfaceYAtX(targetX);
+  const sideAssetPath = getSuckerFishFreeSwimAssetPath(species, fish);
+  const sideImage = sideAssetPath ? runtime.images.get(sideAssetPath) : null;
+  const width = getFishDisplayWidth(fish, species, now);
+  const height = width * (sideImage?.width ? sideImage.height / sideImage.width : 0.36);
+  const targetYNorm = clamp((floorY - Math.max(6, height * 0.22)) / TANK_HEIGHT, 0.64, 0.94);
+
+  return {
+    xNorm,
+    yNorm: targetYNorm,
+    direction: xNorm >= fish.xNorm ? 1 : -1,
+    floorY
+  };
+}
+
+function spawnOtocinclusImmediatePebbleSpit(fish, species, now = Date.now()) {
+  const pebbleAssets = getCustomGravelLoosePebbleAssets();
+  if (!pebbleAssets.length || !fish || !species) {
+    return false;
+  }
+
+  const colors = getResolvedCustomGravelLayerColors(now);
+  const colorizeSettings = getActiveCustomGravelLayerColorizeSettings();
+  const asset = pebbleAssets[Math.floor(Math.random() * pebbleAssets.length)] || pebbleAssets[0];
+  const colorIndex = Math.floor(Math.random() * Math.max(1, colors.length));
+  const color = colors[colorIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+  const colorize = Boolean(colorizeSettings?.[colorIndex]);
+  const sizePx = randomBetween(FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX * 0.72, FISH_GRAVEL_PEBBLE_HOLD_SIZE_MAX_PX * 0.86);
+  const mouthPoint = getFishGravelPebbleMouthPoint(fish, species, now, sizePx * 0.18);
+  if (!mouthPoint) {
+    return false;
+  }
+
+  if (runtime.fishPebbleTosses.length >= MAX_ACTIVE_FISH_GRAVEL_PEBBLE_TOSSES) {
+    runtime.fishPebbleTosses.shift();
+  }
+
+  const landingX = clamp(mouthPoint.x + randomBetween(-24, 24), GLASS_MARGIN_X + 10, TANK_WIDTH - GLASS_MARGIN_X - 10);
+  const landingY = getTankFloorMaskSurfaceYAtX(landingX) - randomBetween(1, 4);
+  runtime.fishPebbleTosses.push({
+    id: createId("otocinclus-gravel-pebble"),
+    fishId: fish.id,
+    assetPath: asset.path,
+    color,
+    colorize,
+    sizePx,
+    startX: mouthPoint.x,
+    startY: mouthPoint.y,
+    endX: landingX,
+    endY: landingY,
+    endLayer: SUCKER_FISH_FREE_SWIM_LAYER,
+    endYOffsetPx: 0,
+    sway: Math.random(),
+    driftAmplitudePx: randomBetween(2, 7),
+    arcLiftPx: randomBetween(4, 10),
+    rotation: randomBetween(-Math.PI, Math.PI),
+    spin: randomBetween(-0.4, 0.4),
+    startedAt: now,
+    durationMs: randomBetween(OTOCINCLUS_GRAVEL_SPIT_MIN_MS, OTOCINCLUS_GRAVEL_SPIT_MAX_MS)
+  });
+  return true;
+}
+
+function performOtocinclusGravelScan(fish, species, now = Date.now()) {
+  if (!isOtocinclusGravelScanner(fish, species)) {
+    return false;
+  }
+
+  const mouthPoint = getFishGravelPebbleMouthPoint(fish, species, now);
+  const scanX = mouthPoint?.x ?? fish.xNorm * TANK_WIDTH;
+  const scanY = getTankFloorMaskSurfaceYAtX(scanX) - 2;
+  spawnGravelCloudEffectAtPoint(scanX, scanY + 5, {
+    now,
+    intensity: 0.42,
+    sedimentStrength: getSedimentStrength(now, 0.66),
+    baseRadius: 13,
+    driftX: randomBetween(-2, 2),
+    driftY: randomBetween(-4, -1)
+  });
+  spawnGravelDigBurst(scanX, scanY + 4, {
+    now,
+    intensity: 0.24,
+    direction: getFishFacingDirection(fish)
+  });
+  spawnOtocinclusImmediatePebbleSpit(fish, species, now);
+  attemptGravelCoinFind(fish, {
+    coinFindRolled: false,
+    pickupXNorm: clamp(scanX / TANK_WIDTH, 0, 1),
+    pickupYNorm: clamp(scanY / TANK_HEIGHT, 0, 1)
+  }, now, { chanceMultiplier: OTOCINCLUS_GRAVEL_SCAN_COIN_CHANCE_MULTIPLIER });
   return true;
 }
 

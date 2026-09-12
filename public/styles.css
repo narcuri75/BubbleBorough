@@ -18876,3 +18876,64 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
   0% { box-shadow: 0 0 0 0 rgba(85, 217, 255, 0.46); }
   75%, 100% { box-shadow: 0 0 0 8px rgba(85, 217, 255, 0); }
 }
+
+/* Settings column-stack correction 2026-09-11
+   Keep the tall Graphics card from stretching the Audio row and pushing Other
+   toward the bottom edge. Each side of the dashboard now flows independently. */
+#settingsOverlay .settings-dashboard-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "account account"
+    "left right";
+  align-items: start;
+  align-content: start;
+  column-gap: 14px;
+  row-gap: 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#settingsOverlay .settings-account-card {
+  grid-area: account;
+}
+
+#settingsOverlay .settings-dashboard-column {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+#settingsOverlay .settings-dashboard-column-left {
+  grid-area: left;
+}
+
+#settingsOverlay .settings-dashboard-column-right {
+  grid-area: right;
+}
+
+#settingsOverlay .settings-dashboard-column > .settings-section {
+  width: 100%;
+  min-width: 0;
+  grid-area: auto;
+}
+
+#settingsOverlay .settings-graphics-card {
+  align-self: start;
+  height: auto;
+}
+
+#settingsOverlay .settings-other-card {
+  margin-top: 0;
+}
+
+@media (max-width: 860px) {
+  #settingsOverlay .settings-dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "account"
+      "left"
+      "right";
+  }
+}
+

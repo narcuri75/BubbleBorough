@@ -2066,12 +2066,53 @@ test("Trypophobia graphics mode overlays base cave art and replaces color compan
   assert.match(rendering, /const activeLayerImage = trypophobiaImage \|\| layerImage/);
 });
 
-test("tank switching hides incremental asset loading behind a blue transition veil", () => {
+test("tank switching fully covers the old tank before committing the destination", () => {
   const source = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
-  assert.match(source, /beginTankSwitchLoadingTransition\(\)/);
-  assert.match(source, /getTankSwitchPreloadPaths\(nextTank\)/);
-  assert.match(source, /preloadImages\(preloadPaths,[\s\S]*\.finally\(\(\) => \{[\s\S]*renderTank\(Date\.now\(\)\)[\s\S]*finishTankSwitchLoadingTransition/);
+  const setActiveTankSource = source.slice(source.indexOf("function setActiveTank"), source.indexOf("function switchTankByOffset"));
+  assert.match(source, /function waitForTankSwitchLoadingCover\(token\)/);
+  assert.match(source, /transitionend[\s\S]*propertyName !== "opacity"/);
+  assert.match(setActiveTankSource, /Promise\.all\(\[[\s\S]*waitForTankSwitchLoadingCover\(transitionToken\)[\s\S]*preloadPromise/);
+  assert.ok(
+    setActiveTankSource.indexOf("waitForTankSwitchLoadingCover(transitionToken)") < setActiveTankSource.indexOf("state.activeTankId = nextTank.id"),
+    "destination tank should not become active until the loading veil is fully covering the current tank"
+  );
+  assert.match(setActiveTankSource, /state\.activeTankId = nextTank\.id;[\s\S]*renderUi\(Date\.now\(\)\);[\s\S]*requestAnimationFrame[\s\S]*finishTankSwitchLoadingTransition/);
   assert.match(css, /\.tank-switch-loading-overlay\s*\{[\s\S]*linear-gradient\(180deg, #0a4166/);
   assert.match(css, /\.tank-switch-loading-overlay\.is-visible\s*\{\s*opacity:\s*1/);
+});
+
+test("settings dashboard uses independent compact columns so Graphics cannot push Other downward", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(html, /settings-dashboard-column-left[\s\S]*settings-data-card[\s\S]*settings-graphics-card[\s\S]*settings-dashboard-column-right[\s\S]*settings-general-card[\s\S]*settings-audio-card[\s\S]*settings-other-card/);
+  assert.match(css, /grid-template-areas:\s*\n\s*"account account"\s*\n\s*"left right"/);
+  assert.match(css, /\.settings-dashboard-column\s*\{[\s\S]*align-content:\s*start[\s\S]*gap:\s*10px/);
+  assert.match(css, /\.settings-graphics-card\s*\{[\s\S]*height:\s*auto/);
+});
+
+test("Otocinclus uses top, side and bottom views with dedicated gravel scanning", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const appearance = fs.readFileSync(path.join(root, "fish/undead-and-appearance.js"), "utf8");
+  const motion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
+  const gravel = fs.readFileSync(path.join(root, "fish/gravel-and-schooling.js"), "utf8");
+  const collision = fs.readFileSync(path.join(root, "fish/caves-and-collision.js"), "utf8");
+  const renderFish = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
+  const renderTank = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+
+  assert.match(bootstrap, /otocinclus:\s*"assets\/fish\/otocinclus_bottom\.png"/);
+  assert.match(bootstrap, /otocinclus:\s*"assets\/fish\/otocinclus_side\.png"/);
+  assert.match(bootstrap, /OTOCINCLUS_GRAVEL_SCAN_COIN_CHANCE_MULTIPLIER\s*=\s*2/);
+  assert.match(appearance, /view === "swim"[\s\S]*getSuckerFishFreeSwimAssetPath/);
+  assert.match(appearance, /view === "front"[\s\S]*getSuckerFishFrontGlassAssetPath/);
+  assert.match(motion, /getSuckerFishGlassViewForLayer\(sourceLayer\),\s*"swim",\s*"down"/);
+  assert.match(motion, /"swim",\s*returnView,\s*returnView === "front" \? "up" : "down"/);
+  assert.match(motion, /Math\.random\(\) < OTOCINCLUS_GRAVEL_SCAN_CHANCE/);
+  assert.match(gravel, /function performOtocinclusGravelScan/);
+  assert.match(gravel, /chanceMultiplier:\s*OTOCINCLUS_GRAVEL_SCAN_COIN_CHANCE_MULTIPLIER/);
+  assert.match(gravel, /species\.behavior !== "sucker"/);
+  assert.match(renderFish, /renderOtocinclusAsFreeSwimmer/);
+  assert.match(renderFish, /noseDownTilt/);
+  assert.match(collision, /isSuckerFishFreeSwimming\(fish, species, now\)[\s\S]*SUCKER_FISH_FREE_SWIM_LAYER/);
+  assert.match(renderTank, /drawFish\(now, layer, \{ onlyBehavior: "sucker" \}\)/);
 });

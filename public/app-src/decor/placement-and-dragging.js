@@ -1321,21 +1321,25 @@ function finalizeDecorDrag() {
 function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
   const fish = options.fish || null;
   const suckerBehaviorActive = getEffectiveFishBehavior(fish, species) === "sucker";
-  const layer = suckerBehaviorActive
+  const suckerFreeSwimming = suckerBehaviorActive && isSuckerFishFreeSwimming(fish, species);
+  const layer = suckerBehaviorActive && !suckerFreeSwimming
     ? normalizeSuckerFishGlassLayer(options.layer ?? getSuckerFishGlassLayer(fish))
     : clampTankLayer(options.layer ?? getFishTankLayer(fish) ?? DEFAULT_TANK_LAYER);
-  const suckerPlacementOptions = suckerBehaviorActive
+  const suckerPlacementOptions = suckerBehaviorActive && !suckerFreeSwimming
     ? getSuckerFishPlacementOptionsForLayer(layer)
     : null;
+  const freeSwimPlacementOptions = suckerFreeSwimming && fish?.suckerFreeSwimMode === "gravel-scan"
+    ? { minYNorm: 0.14, maxYNorm: 0.94 }
+    : { minYNorm: 0.14, maxYNorm: 0.8 };
   const baseXNorm = clampFishXNormToMobileViewport(xNorm, fish, species);
-  const basePlacement = suckerBehaviorActive
+  const basePlacement = suckerBehaviorActive && !suckerFreeSwimming
     ? {
       xNorm: baseXNorm,
       yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, suckerPlacementOptions)
     }
     : {
       xNorm: baseXNorm,
-      yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, { minYNorm: 0.14, maxYNorm: 0.8 })
+      yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, freeSwimPlacementOptions)
     };
 
   if (!isBowlTank()) {
@@ -1343,7 +1347,7 @@ function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
   }
 
   const constrained = constrainNormalizedPointToTankShell(basePlacement.xNorm, basePlacement.yNorm, { variant: "inner" });
-  if (suckerBehaviorActive) {
+  if (suckerBehaviorActive && !suckerFreeSwimming) {
     return {
       xNorm: clampFishXNormToMobileViewport(constrained.xNorm, fish, species),
       yNorm: clampFishYNormToLayer(constrained.yNorm, fish, species, layer, suckerPlacementOptions)
@@ -1352,7 +1356,7 @@ function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
 
   return {
     xNorm: clampFishXNormToMobileViewport(constrained.xNorm, fish, species),
-    yNorm: clampFishYNormToLayer(constrained.yNorm, fish, species, layer, { minYNorm: 0.14, maxYNorm: 0.8 })
+    yNorm: clampFishYNormToLayer(constrained.yNorm, fish, species, layer, freeSwimPlacementOptions)
   };
 }
 

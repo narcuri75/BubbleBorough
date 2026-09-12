@@ -658,11 +658,15 @@ function drawFish(now, layer = null, options = {}) {
     const suckerFreeSwimming = effectiveBehavior === "sucker"
       ? isSuckerFishFreeSwimming(fish, species, now)
       : false;
+    const suckerViewTransition = effectiveBehavior === "sucker"
+      ? getSuckerFishViewTransitionState(fish, now)
+      : null;
     const useSuckerFacePivot = (
       SUCKER_FISH_FACE_PIVOT_ENABLED
       && !pose.isDead
       && effectiveBehavior === "sucker"
       && !suckerFreeSwimming
+      && !suckerViewTransition
     );
     const suckerFacePivotX = useSuckerFacePivot
       ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X
@@ -694,13 +698,24 @@ function drawFish(now, layer = null, options = {}) {
       const innerWidth = tubeBounds ? Math.max(12, (tubeBounds.right - tubeBounds.left) * .5) : 34;
       tubeCompression = Math.min(1, innerWidth / Math.max(1, height));
     }
-    tankContext.scale(pose.bodyScaleX, pose.bodyScaleY * tubeCompression);
+    if (suckerViewTransition) {
+      const surfaceFlipPivotY = suckerViewTransition.flipDirection === "up" ? -height / 2 : height / 2;
+      tankContext.translate(0, surfaceFlipPivotY);
+      tankContext.scale(
+        pose.bodyScaleX,
+        pose.bodyScaleY * tubeCompression * suckerViewTransition.scaleY
+      );
+      tankContext.translate(0, -surfaceFlipPivotY);
+    } else {
+      tankContext.scale(pose.bodyScaleX, pose.bodyScaleY * tubeCompression);
+    }
 
     if (
       SUCKER_FISH_GLASS_SHADOW_ENABLED
       && !pose.isDead
       && effectiveBehavior === "sucker"
       && !suckerFreeSwimming
+      && !suckerViewTransition
     ) {
       const shadowWidth = width * SUCKER_FISH_GLASS_SHADOW_SCALE;
       const shadowHeight = height * SUCKER_FISH_GLASS_SHADOW_SCALE;
@@ -1283,6 +1298,50 @@ function getFishPose(fish, species, now) {
   const motionLevel = clamp(Number(fish.motionLevel) || 0.12, 0.04, 1);
   const sickMotionBoost = isFishCriticallyLowHealth(fish) ? 1.22 : 1;
   const wiggleClock = Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : (now / 1000) * (0.45 + fish.swimSpeed * 14);
+  const suckerViewTransition = getEffectiveFishBehavior(fish, species) === "sucker"
+    ? getSuckerFishViewTransitionState(fish, now)
+    : null;
+  const renderOtocinclusAsFreeSwimmer = species?.id === "otocinclus"
+    && getEffectiveFishBehavior(fish, species) === "sucker"
+    && (suckerViewTransition
+      ? suckerViewTransition.currentView === "swim"
+      : isSuckerFishFreeSwimming(fish, species, now));
+
+  if (renderOtocinclusAsFreeSwimmer) {
+    const baseWiggle = Math.sin(wiggleClock + fish.phase * Math.PI * 2) * sickMotionBoost;
+    const targetDy = (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm;
+    const turnProgress = fish.turnStartedAt && fish.turnDurationMs > 0
+      ? clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1)
+      : null;
+    const turnAmount = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI);
+    const turnFromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
+    const turnToDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
+    const renderDirection = turnProgress === null
+      ? getFishFacingDirection(fish)
+      : (turnProgress < 0.5 ? turnFromDirection : turnToDirection);
+    const scanningGravel = fish.suckerFreeSwimMode === "gravel-scan";
+    const noseDownTilt = scanningGravel
+      ? clamp(0.18 + Math.abs(targetDy) * 0.28 + Math.sin(wiggleClock * 0.6 + fish.phase * Math.PI) * 0.025, 0.14, 0.28)
+      : clamp(targetDy * 0.72 + baseWiggle * 0.018, -0.14, 0.14);
+    const x = fish.xNorm * TANK_WIDTH;
+    const subtleBob = scanningGravel
+      ? Math.sin(now / 780 + fish.phase * Math.PI * 2) * 0.65
+      : Math.sin(now / 920 + fish.phase * Math.PI * 2) * 1.2;
+    const y = fish.yNorm * TANK_HEIGHT + subtleBob;
+    return {
+      x,
+      y,
+      direction: fish.direction || 1,
+      facingScaleX: renderDirection,
+      tilt: noseDownTilt,
+      wiggle: baseWiggle * (scanningGravel ? 0.32 : 0.58),
+      bodyScaleX: (1 - Math.abs(baseWiggle) * 0.012) * (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)),
+      bodyScaleY: (1 + Math.abs(baseWiggle) * 0.008) * (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)),
+      swayX: baseWiggle * (scanningGravel ? 0.42 : 0.78),
+      isDead: false
+    };
+  }
+
   if (getEffectiveFishBehavior(fish, species) === "sucker") {
     const facing = getFishFacingDirection(fish);
     const turnProgress = fish.turnStartedAt && fish.turnDurationMs > 0

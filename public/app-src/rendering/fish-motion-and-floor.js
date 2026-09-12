@@ -174,7 +174,8 @@ function setSuckerFishAngle(fish, desiredAngle, now) {
 
 function setFishDirection(fish, desiredDirection, species, now) {
   const nextDirection = Number(desiredDirection) < 0 ? -1 : 1;
-  if (getEffectiveFishBehavior(fish, species) !== "sucker") {
+  const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
+  if (getEffectiveFishBehavior(fish, species) !== "sucker" || freeSwimmingOtocinclus) {
     const currentDisplayDirection = getFishFacingDirection(fish);
     const currentDisplayAngle = currentDisplayDirection < 0 ? Math.PI : 0;
 
@@ -335,10 +336,11 @@ function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now 
   }
 
   const suckerBehaviorActive = getEffectiveFishBehavior(fish, species) === "sucker";
-  const currentLayer = suckerBehaviorActive
+  const suckerFreeSwimming = suckerBehaviorActive && isSuckerFishFreeSwimming(fish, species, now);
+  const currentLayer = suckerBehaviorActive && !suckerFreeSwimming
     ? getSuckerFishGlassLayer(fish)
     : getFishTankLayer(fish);
-  const targetLayer = suckerBehaviorActive
+  const targetLayer = suckerBehaviorActive && !suckerFreeSwimming
     ? getDesiredSuckerFishGlassLayer(fish)
     : getDesiredFishTankLayer(fish);
   const clampYNorm = (value, layer) => {
@@ -355,7 +357,7 @@ function clampFishToMobileViewport(fish, species = getSpeciesForFish(fish), now 
 
     return clampFishYNormToLayer(value, fish, species, layer, {
       minYNorm: 0.14,
-      maxYNorm: 0.8
+      maxYNorm: suckerFreeSwimming && fish?.suckerFreeSwimMode === "gravel-scan" ? 0.94 : 0.8
     });
   };
   const xNorm = clampFishXNormToMobileViewport(fish.xNorm, fish, species, now);

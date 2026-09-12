@@ -2026,6 +2026,7 @@ function getDesiredSuckerFishGlassLayer(fish) {
 
 function isFrontGlassSuckerFish(fish, species = getSpeciesForFish(fish)) {
   return getEffectiveFishBehavior(fish, species) === "sucker"
+    && !isSuckerFishFreeSwimming(fish, species)
     && getSuckerFishGlassLayer(fish) === SUCKER_FISH_FRONT_GLASS_LAYER;
 }
 
@@ -2078,8 +2079,14 @@ function setFishTankLayers(fish, tankLayer, desiredTankLayer = tankLayer) {
   let nextDesiredTankLayer;
 
   if (getEffectiveFishBehavior(fish, species) === "sucker") {
-    nextTankLayer = normalizeSuckerFishGlassLayer(tankLayer);
-    nextDesiredTankLayer = normalizeSuckerFishGlassLayer(desiredTankLayer);
+    if (isSuckerFishFreeSwimming(fish, species, now)) {
+      nextTankLayer = clampRegularFishLayer(tankLayer);
+      nextDesiredTankLayer = normalizeSuckerFishGlassLayer(desiredTankLayer);
+      fish.suckerFreeSwimReturnLayer = nextDesiredTankLayer;
+    } else {
+      nextTankLayer = normalizeSuckerFishGlassLayer(tankLayer);
+      nextDesiredTankLayer = normalizeSuckerFishGlassLayer(desiredTankLayer);
+    }
   } else {
     nextTankLayer = clampRegularFishLayer(tankLayer);
     nextDesiredTankLayer = clampRegularFishLayer(desiredTankLayer);

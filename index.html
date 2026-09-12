@@ -615,6 +615,7 @@
                       </div>
                     </section>
 
+                    <div class="settings-dashboard-column settings-dashboard-column-left">
                     <section class="settings-section settings-data-card">
                       <div class="settings-section-heading">
                         <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/data.png" alt="" /></span>
@@ -638,49 +639,6 @@
                         </button>
                       </div>
                       <input id="importDataInput" type="file" accept=".json,application/json" hidden />
-                    </section>
-
-                    <section class="settings-section settings-general-card">
-                      <div class="settings-section-heading">
-                        <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/general.png" alt="" /></span>
-                        <div>
-                          <h3>General</h3>
-                          <p class="settings-section-note">Customize the look and feel.</p>
-                        </div>
-                      </div>
-
-                      <label class="settings-toggle-row settings-peaceful-mode-row" for="peacefulModeToggleInput">
-                        <div class="settings-toggle-copy">
-                          <span class="settings-toggle-label">Peaceful Mode</span>
-                          <span class="settings-toggle-note">Max fish stats, no hunger or fighting, and a permanently clean tank. All income, daily awards, and achievement progress pause until disabled.</span>
-                        </div>
-                        <input id="peacefulModeToggleInput" class="settings-checkbox" type="checkbox" />
-                      </label>
-
-                      <label class="settings-toggle-row" for="layoutRatioLockToggleInput">
-                        <div class="settings-toggle-copy">
-                          <span class="settings-toggle-label">Ratio Lock</span>
-                          <span class="settings-toggle-note">Keeps the current game layout and proportions when the window is resized. Turn it off and back on to use the current window size as the new ratio.</span>
-                        </div>
-                        <input id="layoutRatioLockToggleInput" class="settings-checkbox" type="checkbox" checked />
-                      </label>
-
-                      <label class="settings-toolbar-color-row" for="toolbarTileColorInput">
-                        <div class="settings-toggle-copy">
-                          <span class="settings-toggle-label">Toolbar Tile Color</span>
-                          <span class="settings-toggle-note">Changes the color of the tile behind each toolbar icon.</span>
-                        </div>
-                        <input id="toolbarTileColorInput" class="settings-color-input" type="color" value="#00438a" />
-                      </label>
-
-                      <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
-                        <div class="settings-toggle-copy">
-                          <span class="settings-toggle-label">Tank Mouse Input</span>
-                          <span class="settings-toggle-note">Lock aquarium interactions while leaving the display and menus available.</span>
-                        </div>
-                        <button id="toggleMouseLockButton" class="small-button alt settings-action-button" type="button"
-                          aria-pressed="false">Lock Input</button>
-                      </div>
                     </section>
 
                     <section class="settings-section settings-graphics-card">
@@ -739,6 +697,52 @@
                         </div>
                         <input id="decorShadowsToggleInput" class="settings-checkbox" type="checkbox" />
                       </label>
+                    </section>
+
+                    </div>
+
+                    <div class="settings-dashboard-column settings-dashboard-column-right">
+                    <section class="settings-section settings-general-card">
+                      <div class="settings-section-heading">
+                        <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/general.png" alt="" /></span>
+                        <div>
+                          <h3>General</h3>
+                          <p class="settings-section-note">Customize the look and feel.</p>
+                        </div>
+                      </div>
+
+                      <label class="settings-toggle-row settings-peaceful-mode-row" for="peacefulModeToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Peaceful Mode</span>
+                          <span class="settings-toggle-note">Max fish stats, no hunger or fighting, and a permanently clean tank. All income, daily awards, and achievement progress pause until disabled.</span>
+                        </div>
+                        <input id="peacefulModeToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+
+                      <label class="settings-toggle-row" for="layoutRatioLockToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Ratio Lock</span>
+                          <span class="settings-toggle-note">Keeps the current game layout and proportions when the window is resized. Turn it off and back on to use the current window size as the new ratio.</span>
+                        </div>
+                        <input id="layoutRatioLockToggleInput" class="settings-checkbox" type="checkbox" checked />
+                      </label>
+
+                      <label class="settings-toolbar-color-row" for="toolbarTileColorInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Toolbar Tile Color</span>
+                          <span class="settings-toggle-note">Changes the color of the tile behind each toolbar icon.</span>
+                        </div>
+                        <input id="toolbarTileColorInput" class="settings-color-input" type="color" value="#00438a" />
+                      </label>
+
+                      <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Tank Mouse Input</span>
+                          <span class="settings-toggle-note">Lock aquarium interactions while leaving the display and menus available.</span>
+                        </div>
+                        <button id="toggleMouseLockButton" class="small-button alt settings-action-button" type="button"
+                          aria-pressed="false">Lock Input</button>
+                      </div>
                     </section>
 
                     <section class="settings-section settings-audio-card">
@@ -801,6 +805,7 @@
                         </a>
                       </div>
                     </section>
+                    </div>
                   </div>
                   <div class="wallpaper-scroll-controls" data-wallpaper-scroll-controls="settings" hidden
                     aria-label="Settings scroll controls">

@@ -2324,7 +2324,11 @@ function canFishChangeToLayer(fish, species, now, desiredLayer, poseOverride = n
 function syncFishDrawLayer(fish, species, now) {
   if (getEffectiveFishBehavior(fish, species) === "sucker") {
     const glassLayer = getSuckerFishGlassLayer(fish);
-    setFishTankLayers(fish, glassLayer, glassLayer);
+    if (isSuckerFishFreeSwimming(fish, species, now)) {
+      setFishTankLayers(fish, SUCKER_FISH_FREE_SWIM_LAYER, glassLayer);
+    } else {
+      setFishTankLayers(fish, glassLayer, glassLayer);
+    }
     return;
   }
 

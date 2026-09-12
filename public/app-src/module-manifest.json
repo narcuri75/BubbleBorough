@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2966,
+  "functionCount": 2976,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -88,7 +88,7 @@
     },
     {
       "path": "decor/customization.js",
-      "functionCount": 175,
+      "functionCount": 176,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -253,7 +253,7 @@
     },
     {
       "path": "fish/undead-and-appearance.js",
-      "functionCount": 85,
+      "functionCount": 90,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "assets/sprite-sheets.js",
@@ -634,7 +634,7 @@
     },
     {
       "path": "fish/gravel-and-schooling.js",
-      "functionCount": 45,
+      "functionCount": 49,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/settings-and-persistence.js",

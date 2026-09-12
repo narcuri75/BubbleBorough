@@ -36,6 +36,9 @@ function renderTank(now) {
     }
     drawFishEggs(now, layer);
     //drawLooseGravel(now, { surfaceKind: "decor", decorLayer: layer });
+    if (layer !== TANK_DEPTH_LAYERS && layer !== SUCKER_FISH_FRONT_GLASS_LAYER) {
+      drawFish(now, layer, { onlyBehavior: "sucker" });
+    }
     drawFish(now, layer, { excludeBehavior: "sucker" });
     // A tossed pebble belongs with the layer where it will land and disturb
     // gravel, rather than being painted behind every fish and ornament.

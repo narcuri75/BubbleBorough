@@ -637,6 +637,72 @@ function isSuckerFishFreeSwimming(fish, species = getSpeciesForFish(fish), now =
   );
 }
 
+function getSuckerFishGlassViewForLayer(layer) {
+  return normalizeSuckerFishGlassLayer(layer) === SUCKER_FISH_FRONT_GLASS_LAYER ? "front" : "back";
+}
+
+function clearSuckerFishViewTransition(fish) {
+  if (!fish) return;
+  delete fish.suckerViewTransitionStartedAt;
+  delete fish.suckerViewTransitionDurationMs;
+  delete fish.suckerViewTransitionFrom;
+  delete fish.suckerViewTransitionTo;
+  delete fish.suckerViewTransitionFlip;
+}
+
+function startSuckerFishViewTransition(fish, fromView, toView, flipDirection = "down", now = Date.now()) {
+  if (!fish) return false;
+  const normalizedFrom = ["back", "front", "swim"].includes(fromView) ? fromView : "back";
+  const normalizedTo = ["back", "front", "swim"].includes(toView) ? toView : normalizedFrom;
+  if (normalizedFrom === normalizedTo) {
+    clearSuckerFishViewTransition(fish);
+    return false;
+  }
+  fish.suckerViewTransitionStartedAt = now;
+  fish.suckerViewTransitionDurationMs = SUCKER_FISH_VIEW_TRANSITION_DURATION_MS;
+  fish.suckerViewTransitionFrom = normalizedFrom;
+  fish.suckerViewTransitionTo = normalizedTo;
+  fish.suckerViewTransitionFlip = flipDirection === "up" ? "up" : "down";
+  return true;
+}
+
+function getSuckerFishViewTransitionState(fish, now = Date.now()) {
+  if (!fish || !Number.isFinite(Number(fish.suckerViewTransitionStartedAt))) {
+    return null;
+  }
+  const durationMs = Math.max(1, Number(fish.suckerViewTransitionDurationMs) || SUCKER_FISH_VIEW_TRANSITION_DURATION_MS);
+  const progress = clamp((now - Number(fish.suckerViewTransitionStartedAt)) / durationMs, 0, 1);
+  if (progress >= 1) {
+    clearSuckerFishViewTransition(fish);
+    return null;
+  }
+  const fromView = ["back", "front", "swim"].includes(fish.suckerViewTransitionFrom)
+    ? fish.suckerViewTransitionFrom
+    : "back";
+  const toView = ["back", "front", "swim"].includes(fish.suckerViewTransitionTo)
+    ? fish.suckerViewTransitionTo
+    : fromView;
+  return {
+    progress,
+    fromView,
+    toView,
+    currentView: progress < 0.5 ? fromView : toView,
+    flipDirection: fish.suckerViewTransitionFlip === "up" ? "up" : "down",
+    scaleY: Math.max(SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y, Math.abs(Math.cos(progress * Math.PI)))
+  };
+}
+
+function getSuckerFishViewAssetPath(species, fish, view) {
+  if (!species) return null;
+  if (view === "swim") {
+    return getSuckerFishFreeSwimAssetPath(species, fish);
+  }
+  if (view === "front") {
+    return getSuckerFishFrontGlassAssetPath(species, fish);
+  }
+  return getFishAssetPath(fish, species) || species.asset || species.fallbackAsset || null;
+}
+
 function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date.now()) {
   const widthSpecies = getFishDisplaySourceSpecies(fish, species) || species;
   if (!widthSpecies) {
@@ -835,14 +901,19 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
   const selectedAlternate = Boolean(fish?.appearanceVariantKey && fish.appearanceVariantKey !== getFishAppearanceVariantKey(displaySpecies.asset));
   const selectedFishAsset = getFishAssetPath(fish, displaySpecies);
-  const freeSwimAsset = !isFishDead(fish) && isSuckerFishFreeSwimming(fish, species, now)
-    ? (getSuckerFishFreeSwimAssetPath(displaySpecies, fish) || getSuckerFishFreeSwimAssetPath(species, fish))
+  const livingSucker = !isFishDead(fish) && species?.behavior === "sucker";
+  const suckerTransition = livingSucker ? getSuckerFishViewTransitionState(fish, now) : null;
+  const stableSuckerView = livingSucker
+    ? (isSuckerFishFreeSwimming(fish, species, now)
+      ? "swim"
+      : (typeof isFrontGlassSuckerFish === "function" && isFrontGlassSuckerFish(fish, species, now) ? "front" : "back"))
     : null;
-  const frontGlassAsset = !freeSwimAsset && !isFishDead(fish) && isFrontGlassSuckerFish(fish, species)
-    ? (getSuckerFishFrontGlassAssetPath(displaySpecies, fish) || getSuckerFishFrontGlassAssetPath(species, fish))
+  const suckerView = suckerTransition?.currentView || stableSuckerView;
+  const suckerViewAsset = suckerView
+    ? (getSuckerFishViewAssetPath(displaySpecies, fish, suckerView) || getSuckerFishViewAssetPath(species, fish, suckerView))
     : null;
   const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
-  const preferredBaseAsset = freeSwimAsset || (isZombieVariantFish(fish)
+  const preferredBaseAsset = suckerViewAsset || (isZombieVariantFish(fish)
     ? getFishZombieVariantAssetPath(fish, displaySpecies)
     : undeadBaseStage
       ? (
@@ -854,9 +925,9 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
         || species.fallbackAsset
         || null
       )
-      : (freeSwimAsset || frontGlassAsset || getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
+      : (getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
   const baseAsset = selectedAlternate && selectedFishAsset
-    ? (freeSwimAsset || frontGlassAsset || selectedFishAsset)
+    ? (suckerViewAsset || selectedFishAsset)
     : [
       preferredBaseAsset,
       displaySpecies.fallbackAsset,

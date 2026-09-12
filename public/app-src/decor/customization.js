@@ -433,9 +433,52 @@ function beginTankSwitchLoadingTransition() {
     return token;
   }
   overlay.hidden = false;
-  overlay.classList.remove("is-leaving");
-  requestAnimationFrame(() => overlay.classList.add("is-visible"));
+  overlay.classList.remove("is-leaving", "is-visible");
+  // Establish a real opacity:0 frame before starting the fade. Without this,
+  // a fast tank switch can render the destination before the veil ever paints.
+  void overlay.offsetWidth;
+  requestAnimationFrame(() => {
+    if (token === runtime.tankSwitchTransitionToken) {
+      overlay.classList.add("is-visible");
+    }
+  });
   return token;
+}
+
+function waitForTankSwitchLoadingCover(token) {
+  const overlay = runtime.tankSwitchTransitionElement;
+  if (!overlay || token !== runtime.tankSwitchTransitionToken) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let fallbackTimer = 0;
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      overlay.removeEventListener("transitionend", onTransitionEnd);
+      if (fallbackTimer) {
+        window.clearTimeout(fallbackTimer);
+      }
+      resolve();
+    };
+    const onTransitionEnd = (event) => {
+      if (event.target !== overlay || event.propertyName !== "opacity") {
+        return;
+      }
+      if (token !== runtime.tankSwitchTransitionToken || overlay.classList.contains("is-visible")) {
+        finish();
+      }
+    };
+
+    overlay.addEventListener("transitionend", onTransitionEnd);
+    // The CSS fade is 180ms. This fallback also covers reduced-motion or a
+    // browser that does not dispatch transitionend for this frame.
+    fallbackTimer = window.setTimeout(finish, 240);
+  });
 }
 
 function finishTankSwitchLoadingTransition(token) {
@@ -494,52 +537,63 @@ function setActiveTank(tankId, options = {}) {
     return false;
   }
 
-  const preserveHorizontalOverlays = options.preserveHorizontalOverlays === true;
-  if (!preserveHorizontalOverlays) {
-    clearPrimaryToolModes();
-    resetCompetingOverlayState({ reason: "tank-switch" });
-  } else {
-    runtime.selectedDecorIds = [];
-    runtime.selectedPlacedDecorId = null;
-  }
-  closeSubmarineManager();
-  closeEditEquipmentTrayContextMenu();
-  suspendSubmarineManualDrive();
-  runtime.selectedFishId = null;
-  runtime.fishInspectorSettingsOpen = false;
-  runtime.editingTankNameId = null;
-  runtime.editingTankNameValue = "";
-  runtime.effectClouds = [];
-  runtime.bloodWaterTint = 0;
-  runtime.fishShadowPlaneCache.clear();
-  runtime.fishGravelPebbleActions.clear();
-  runtime.fishPebbleTosses = [];
-  runtime.forcedGravelDigUntilByFishId.clear();
-  runtime.gravelDigBursts = [];
-  materializeCoarseFishActivities(nextTank, Date.now());
-
   const transitionToken = beginTankSwitchLoadingTransition();
-  state.activeTankId = nextTank.id;
   const assetLoadGeneration = ++runtime.activeTankAssetLoadGeneration;
-  runtime.gravelStateDirty = true;
-  renderUi(Date.now());
-  saveState();
-  if (options.announce !== false) {
-    showToast(getTankLabel(nextTank));
-  }
+  const preloadPaths = getTankSwitchPreloadPaths(nextTank);
+  const preloadPromise = preloadImages(preloadPaths, {
+    maxAttempts: 2,
+    timeoutMs: 8000,
+    retryDelayMs: 180
+  }).catch((error) => {
+    console.debug("Tank switch preload completed with unavailable artwork.", error);
+  });
 
-  // Give the blue veil a chance to paint before decoding the next tank's loose
-  // decor artwork. The active tank changes immediately for state consistency,
-  // but the player never sees partially loaded layers underneath the veil.
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const preloadPaths = getTankSwitchPreloadPaths(nextTank);
-    void preloadImages(preloadPaths, {
-      maxAttempts: 2,
-      timeoutMs: 8000,
-      retryDelayMs: 180
-    }).catch((error) => {
-      console.debug("Tank switch preload completed with unavailable artwork.", error);
-    }).finally(() => {
+  // Keep the current aquarium completely intact until the loading veil has
+  // finished fading in AND the destination artwork has decoded. This avoids
+  // the one-frame flash of the next tank that used to happen before the veil.
+  void Promise.all([
+    waitForTankSwitchLoadingCover(transitionToken),
+    preloadPromise
+  ]).then(() => {
+    if (assetLoadGeneration !== runtime.activeTankAssetLoadGeneration || transitionToken !== runtime.tankSwitchTransitionToken) {
+      return;
+    }
+
+    const preserveHorizontalOverlays = options.preserveHorizontalOverlays === true;
+    if (!preserveHorizontalOverlays) {
+      clearPrimaryToolModes();
+      resetCompetingOverlayState({ reason: "tank-switch" });
+    } else {
+      runtime.selectedDecorIds = [];
+      runtime.selectedPlacedDecorId = null;
+    }
+    closeSubmarineManager();
+    closeEditEquipmentTrayContextMenu();
+    suspendSubmarineManualDrive();
+    runtime.selectedFishId = null;
+    runtime.fishInspectorSettingsOpen = false;
+    runtime.editingTankNameId = null;
+    runtime.editingTankNameValue = "";
+    runtime.effectClouds = [];
+    runtime.bloodWaterTint = 0;
+    runtime.fishShadowPlaneCache.clear();
+    runtime.fishGravelPebbleActions.clear();
+    runtime.fishPebbleTosses = [];
+    runtime.forcedGravelDigUntilByFishId.clear();
+    runtime.gravelDigBursts = [];
+    materializeCoarseFishActivities(nextTank, Date.now());
+
+    state.activeTankId = nextTank.id;
+    runtime.gravelStateDirty = true;
+    renderUi(Date.now());
+    saveState();
+    if (options.announce !== false) {
+      showToast(getTankLabel(nextTank));
+    }
+
+    // Keep the veil opaque through the first fully rendered destination frame,
+    // then fade it away to reveal the completed aquarium all at once.
+    requestAnimationFrame(() => {
       if (assetLoadGeneration !== runtime.activeTankAssetLoadGeneration || transitionToken !== runtime.tankSwitchTransitionToken) {
         return;
       }
@@ -547,7 +601,7 @@ function setActiveTank(tankId, options = {}) {
       releaseInactiveDecorImages(state);
       requestAnimationFrame(() => finishTankSwitchLoadingTransition(transitionToken));
     });
-  }));
+  });
 
   return true;
 }

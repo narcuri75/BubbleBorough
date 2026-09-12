@@ -3,33 +3,33 @@
   "previewSize": 384,
   "sheets": {
     "assets/fish/Angelfish.webp": {
-      "version": "de415196f10e-v1",
+      "version": "0342a21d176d-v1",
       "files": {
-        "assets/generated/sprites/fish/Angelfish/angelfish_3.png.thumb.webp": "46ea21a8ec1ae103bb87235a8d225f205ea8eb25aa28f3d744bdd94441538600",
-        "assets/generated/sprites/fish/Angelfish/angelfish_2.png.thumb.webp": "68c037c96adb7e83f93db165be855c683466b18e67966201ef38f5b698591bdf",
-        "assets/generated/sprites/fish/Angelfish/angelfish_1.png.thumb.webp": "50bf015e3a96260ff182fcd2fcf8fd50d3d83b716cac0f2001b082165a342327",
-        "assets/generated/sprites/fish/Angelfish/angelfish.png.thumb.webp": "f24120b09100b0f29f0c2444c39e2c02d78b909228c696b8c1c74333cae9d7e7",
-        "assets/generated/sprites/fish/Angelfish/angelfish_4.png.thumb.webp": "aed2c3c53a69eefbd6f4e2b0f288d7f9f4a7b70aebe3f4980bdeda1804c285c6"
+        "assets/generated/sprites/fish/Angelfish/angelfish_3.png.thumb.webp": "9984c0eecdd95e3937e5ee4ee56f56892672903cd3171a8fe8672bbfb57793ab",
+        "assets/generated/sprites/fish/Angelfish/angelfish_2.png.thumb.webp": "3e92227f63c2a6fe86a4f1840e7e1b5545aa6a75bad6aa071abe3b0cafef80d5",
+        "assets/generated/sprites/fish/Angelfish/angelfish_1.png.thumb.webp": "e2cae04790dc766ab242f1ee193096aa1c06633c32682a84e20b18b2fa942df3",
+        "assets/generated/sprites/fish/Angelfish/angelfish.png.thumb.webp": "bb8446b9e4fa10a6f0a6914bc404b6aa1d8544b98f184d0479b6c00e0cb1ad0e",
+        "assets/generated/sprites/fish/Angelfish/angelfish_4.png.thumb.webp": "79cf203ff8850efcf61ad9da2ed0cd2efc7d2c5ce278a1c295d4f4efa042ed18"
       }
     },
     "assets/fish/Betta.webp": {
-      "version": "e36c49fed52c-v1",
+      "version": "dfdb209f7607-v1",
       "files": {
-        "assets/generated/sprites/fish/Betta/betta_4.png.thumb.webp": "9759dc865b7ec4a41dba30dddcc5f55a71a077f67f1da7c8f8595a2d4f44ab13",
-        "assets/generated/sprites/fish/Betta/betta_1.png.thumb.webp": "f8f0979e9a4c3e14d17edb094e2ca6d3123e58d5f36019fceb57293b8569ad4e",
-        "assets/generated/sprites/fish/Betta/betta.png.thumb.webp": "604f31218983f2ae3437f51519e0de533a3a969984df3f2a7781f2e6135cfe68",
-        "assets/generated/sprites/fish/Betta/betta_3.png.thumb.webp": "b99b06811e40244e07c5f882b484d396750029fe4663e1934db1fbfb3e87eec9",
-        "assets/generated/sprites/fish/Betta/betta_2.png.thumb.webp": "da717cf8153a2a67318d215763f46eda0f33a287d193bc04fa5a1dd529618193"
+        "assets/generated/sprites/fish/Betta/betta_4.png.thumb.webp": "a8ad4acffd000efb0f73c222ad0768342febf926b272c9af37ca7675fb551acf",
+        "assets/generated/sprites/fish/Betta/betta_1.png.thumb.webp": "efe15d339ce7692ab91227039f29097a8423daf2403d9dee4604ab01f4a5dedb",
+        "assets/generated/sprites/fish/Betta/betta.png.thumb.webp": "57a75535efb7fc95e83641b58d395487729bbbf9e743c04dcbac5f34ffbaaa15",
+        "assets/generated/sprites/fish/Betta/betta_3.png.thumb.webp": "e62503525bf377248936ef179602c294fbdea5cc6db44b9ebaea82fa7c6e7f16",
+        "assets/generated/sprites/fish/Betta/betta_2.png.thumb.webp": "1ff0c7f151b367e8597e5b3918ee2b7067ad111e74471da906ac3b4892c4729a"
       }
     },
     "assets/fish/BlueRam.webp": {
-      "version": "5e741b695c9f-v1",
+      "version": "a0051938a50e-v1",
       "files": {
-        "assets/generated/sprites/fish/BlueRam/BlueRam.png.thumb.webp": "a49bb897e256783e2c555e59530c99506424b1d83302226bd30e13d606e920ab",
-        "assets/generated/sprites/fish/BlueRam/BlueRam_1.png.thumb.webp": "d28a2edc688d728713dbb23f9ec74ce5a884632a31d5ce38e981ed8e1d1d7496",
-        "assets/generated/sprites/fish/BlueRam/BlueRam_2.png.thumb.webp": "2499e6fbe97089e9d55f83f38ac802d8b7a0bc068052971dfc3a07e7ece3f317",
-        "assets/generated/sprites/fish/BlueRam/BlueRam_3.png.thumb.webp": "ff0608fffb0a8e453194c92d6a5c82fa0c388d75c6e93d41a6d2fe1bf016817a",
-        "assets/generated/sprites/fish/BlueRam/BlueRam_4.png.thumb.webp": "a4efc0546df0d5f2ef1b4ec2ecfe7d752e74066c9640b4ca6066f65689eae397"
+        "assets/generated/sprites/fish/BlueRam/BlueRam.png.thumb.webp": "f4dd7655afff7802edff741325486b8b121f8a87068268ef54dc5071703286c1",
+        "assets/generated/sprites/fish/BlueRam/BlueRam_1.png.thumb.webp": "2f1dd1dcc370e90c8e0479b126857a06758bdc56f15c8e3453e1c91e0ac92036",
+        "assets/generated/sprites/fish/BlueRam/BlueRam_2.png.thumb.webp": "d37ef629bb86bdcd71d504f838355c1abc4ea58b849a57601ff9506d38b94e6c",
+        "assets/generated/sprites/fish/BlueRam/BlueRam_3.png.thumb.webp": "fa304e4f77d4b55446391bd727530a6ad376a93471b99e6fe5b169dacfc489f5",
+        "assets/generated/sprites/fish/BlueRam/BlueRam_4.png.thumb.webp": "7d8ccb348ca0cdfad1b869f2f779da1176158fbd7ff21de34dd50170c63d9840"
       }
     },
     "assets/fish/Boat.webp": {
@@ -135,23 +135,23 @@
       }
     },
     "assets/fish/Moorgoldfish.webp": {
-      "version": "6e1bde44da1f-v1",
+      "version": "0e44bbdffd2d-v1",
       "files": {
-        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish.png.thumb.webp": "10f10cdc7b0faa4c5b257f6377db752cab397bf3cba8a063c910acd55926b23e",
-        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_1.png.thumb.webp": "6aa4e3a74d496f8dba882723c29b143345a3228944923362f0998ab729dc434c",
-        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_2.png.thumb.webp": "8fc6213f5190ae227422435d40667c9f1705445266d35774b5215890994bcf1a",
-        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_3.png.thumb.webp": "7a0f4caa412c4d3480a4658e25833f0786d0e1ba41c4f79667c82e8f6c69b09b",
-        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_4.png.thumb.webp": "b15f8c82f5b0c68bcf53f9c0bd591086c30db6afc87309b112c97d97d8d1c973"
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish.png.thumb.webp": "adfed934e8c5ae17f73ad0759b9e7f07925e2db997307908f7626ee42a71a3fe",
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_1.png.thumb.webp": "6cd45260d292ebdeda392bbb6e23c974df8d032cbb40c5b95bed50727e00fc98",
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_2.png.thumb.webp": "61a1dca0026a2983f8da8741fb5565621476c256042bea6568fe9c0dc0685ef2",
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_3.png.thumb.webp": "b9ea45c0ca3e55353c5252b5e7424a3368532f91069eb0158c241c9e3efc2830",
+        "assets/generated/sprites/fish/Moorgoldfish/moorgoldfish_4.png.thumb.webp": "485c49b69f9822870491218ec9ee894cad9ad2afa0137fb0cc8de0f2fc8db5b9"
       }
     },
     "assets/fish/NeonTetra.webp": {
-      "version": "efdb53fde50c-v1",
+      "version": "005467200adf-v1",
       "files": {
-        "assets/generated/sprites/fish/NeonTetra/NeonTetra.png.thumb.webp": "bf950c929669e469de2bc048b41e8d46f12f78e989b3b73695a0f7481642ead9",
-        "assets/generated/sprites/fish/NeonTetra/NeonTetra_1.png.thumb.webp": "64f8444e8a4430e6394af7207a9cb6cdefd04b56132bcf5f9deb0c30f1cf2ad9",
-        "assets/generated/sprites/fish/NeonTetra/NeonTetra_2.png.thumb.webp": "36a24f5ac1308e08d56e8ca83f002d689e0ccad703b65667ce54207b7676010d",
-        "assets/generated/sprites/fish/NeonTetra/NeonTetra_3.png.thumb.webp": "63adb7abfe13cb68f64ec05d8d620efd37c606dd2840e43e6923c2b6b6049079",
-        "assets/generated/sprites/fish/NeonTetra/NeonTetra_4.png.thumb.webp": "e562a337cf3d9eebe279da1e54d9ace80669f356590c4c8185d7c15ebc01cac8"
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra.png.thumb.webp": "004813edcf6292de313079c85e4fcf3fb35cb8f67f86d72d28025de8c1c40868",
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra_1.png.thumb.webp": "06f791b8da28e682edc391c6d46b3f94cbe671661cd3d7c9cb72fa3731dfcb53",
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra_2.png.thumb.webp": "5c89270301a8017c9d9471968df60598180a081050bb0419ec400c96c6386e10",
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra_3.png.thumb.webp": "c269de72f495b8f7f66042e600acc87134cc362ec9722f1dc14e0cdf22f9446f",
+        "assets/generated/sprites/fish/NeonTetra/NeonTetra_4.png.thumb.webp": "0f1bdb221131fa2b580fbb79155c8bf92a141c37b83c185cd6db64b4156e88eb"
       }
     },
     "assets/fish/Orca.webp": {
@@ -202,13 +202,13 @@
       }
     },
     "assets/fish/RummyNoseTetra.webp": {
-      "version": "13e8532f7e67-v1",
+      "version": "249087f88be9-v1",
       "files": {
-        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra.png.thumb.webp": "60eb891c95964a419e93086be2ecf9edda2a59272dc625726fdf544ae380b809",
-        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_4.png.thumb.webp": "a27f99eb61e176b9fb0ca63b856a4168fb54d82fec57fb4cd3ebc3236ab61e25",
-        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_3.png.thumb.webp": "7e88fd9a8ef6530021b72117110a0ed7738b2a9ffc03d3c3a9ba361c51495b5c",
-        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_2.png.thumb.webp": "46887feadbb9b6ba66a712d3aeec26adff45ee2fa8f4b361b164c88c48c272ca",
-        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_1.png.thumb.webp": "351e163e892d789f70c9648cc9bf42c32a8db57a0ad678953517492b7e70d125"
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra.png.thumb.webp": "8eaf17166443641bedea0ccb746bbaa8f47dd7be3c6c8d266ce2df418d5613f0",
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_4.png.thumb.webp": "1c8e1353d791e719a4480f95bfefc36e6876b6968d1e4a88e708b2f5ccc1bb13",
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_3.png.thumb.webp": "98c225937e8098dd22aa6bfc462a03b06e9a91715184b05e9d6a13539af0dd19",
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_2.png.thumb.webp": "36ece2bf7b923f2e33eb3738f8f9aa407db35418bef329cf708d38a34bea8240",
+        "assets/generated/sprites/fish/RummyNoseTetra/RummyNoseTetra_1.png.thumb.webp": "630c411c14c0f3c74bf48951505558af727ff3548caac2e97434c989c64082b3"
       }
     },
     "assets/fish/Seahorse.webp": {
@@ -273,33 +273,33 @@
       }
     },
     "assets/fish/clownfish.webp": {
-      "version": "88dbfbf320de-v1",
+      "version": "b6d734010ef4-v1",
       "files": {
-        "assets/generated/sprites/fish/clownfish/clownfish.png.thumb.webp": "3bc1772322876b0776daaf53479308abb76dcf0e4782c94e0d681eefc1ee9eab",
-        "assets/generated/sprites/fish/clownfish/clownfish_1.png.thumb.webp": "0ca019e805e25df7c174b6659e9cbe6ee727b312291656e730cfc650f9114d7c",
-        "assets/generated/sprites/fish/clownfish/clownfish_2.png.thumb.webp": "e1a047d797129620ff4a92c775b1c33a7d12da79f0bf0a2a760fc18504a01fa7",
-        "assets/generated/sprites/fish/clownfish/clownfish_3.png.thumb.webp": "1393cf5936d70cbaa6b91991486968730d51cabe5ff70a1c01cafaac41a52470",
-        "assets/generated/sprites/fish/clownfish/clownfish_4.png.thumb.webp": "bb6d68a1bb43c7e7699efe1ed5eeb095cc8477ab298f5d03aeabd4d6000c8b77"
+        "assets/generated/sprites/fish/clownfish/clownfish.png.thumb.webp": "a3f57b0bd8b8b3d519e12f82353ef47f5df8c60f3b18d7a64aa2b60191490e05",
+        "assets/generated/sprites/fish/clownfish/clownfish_1.png.thumb.webp": "5a5c17d771e3b0757fbed9f6fccfb44028442b792e7e0ee42c0fe368039d7ab1",
+        "assets/generated/sprites/fish/clownfish/clownfish_2.png.thumb.webp": "751dcd16164a8aa7287d52bf30623abcb4e2c02b82ca4a1795b43b8416fda625",
+        "assets/generated/sprites/fish/clownfish/clownfish_3.png.thumb.webp": "d89daebacbd1f8dca666c27a2d8327f5d1a23c872ac71939705040fe18a01223",
+        "assets/generated/sprites/fish/clownfish/clownfish_4.png.thumb.webp": "24baa53821ac3b2c38c2741fb9763b5eb1ac3da1765b634fd6a5464590851cd5"
       }
     },
     "assets/fish/discus.webp": {
-      "version": "f0d406c37c3f-v1",
+      "version": "2208359cffea-v1",
       "files": {
-        "assets/generated/sprites/fish/discus/discus.png.thumb.webp": "6c4c6afc3fb372a9a3c8b81a17eac9c717dc894e6edb40e8d147e24b37bd0636",
-        "assets/generated/sprites/fish/discus/discus_1.png.thumb.webp": "a8a1fac28843906d9d1b34b6acf9e70f9bb56c7d1f1f5d6f8f4c33691fd685ea",
-        "assets/generated/sprites/fish/discus/discus_2.png.thumb.webp": "313a5b7f5e1b23d9c9c968f60ecbdbc30b1b888f6affe3a31e03387af44f047b",
-        "assets/generated/sprites/fish/discus/discus_3.png.thumb.webp": "7ee16e4e3947f5c94101a937a21fb6bb85f624dc05884573f593272dd7051588",
-        "assets/generated/sprites/fish/discus/discus_4.png.thumb.webp": "352155637e1ebf4df83e76b0ae7ceaa9296db491b701b6fa22e4e679aea253ea"
+        "assets/generated/sprites/fish/discus/discus.png.thumb.webp": "2c6313553c689eec1cdd5d313f9d0577faabf39228933c33559d9c9ff745e530",
+        "assets/generated/sprites/fish/discus/discus_1.png.thumb.webp": "8261a848b048c51af0a0b52fb0c9394aa0a104d6102fbd2d5fa6621612034b18",
+        "assets/generated/sprites/fish/discus/discus_2.png.thumb.webp": "af77e8a8dce0bda04631156acb7320cb82ee71f48a44ec6dd866c93531433507",
+        "assets/generated/sprites/fish/discus/discus_3.png.thumb.webp": "9105998e6b884aaa6e62428bc40e9f4362d5399a8bb462eace4794653ffe39a7",
+        "assets/generated/sprites/fish/discus/discus_4.png.thumb.webp": "7becb35a2786721839ede315ba41481a0464ee3cc2a1bbdcfb8f4553c9e1e991"
       }
     },
     "assets/fish/goldfish.webp": {
-      "version": "b7ad3517f347-v1",
+      "version": "b5504eb8af66-v1",
       "files": {
-        "assets/generated/sprites/fish/goldfish/goldfish.png.thumb.webp": "6ba368d38c91ba4413c2fe13a69c12dc1add33beee6dcea903dd93e22d4f7fda",
-        "assets/generated/sprites/fish/goldfish/goldfish_1.png.thumb.webp": "d0652668254a1e2d7733764ac4720fc8592fb91b3c782fd03d3dccf2a6f57c1c",
-        "assets/generated/sprites/fish/goldfish/goldfish_2.png.thumb.webp": "bb61cfeecfd788c135428d903436e283f4e7079ef73ad204ab6c207fc419e289",
-        "assets/generated/sprites/fish/goldfish/goldfish_3.png.thumb.webp": "3dbc016c57b484845098856a728aca27fa2c9ccdd00919d95c35cc62d870a603",
-        "assets/generated/sprites/fish/goldfish/goldfish_4.png.thumb.webp": "cbb39a038663b34e6d6c002173db9990fd1d567f6343294dacfd789968a8a8b2"
+        "assets/generated/sprites/fish/goldfish/goldfish.png.thumb.webp": "1c27ba5f0ae2dc414296be60ed4fe474d375d83fe7ec89a58537e3d87b3186e5",
+        "assets/generated/sprites/fish/goldfish/goldfish_1.png.thumb.webp": "cd96ce9888fc1f1ce1652ea61eaad62940736b082c84081365f20b6fc23a11e8",
+        "assets/generated/sprites/fish/goldfish/goldfish_2.png.thumb.webp": "32628722b698939b96626323229b09150828507804817882fec02aa8cfb6d4ae",
+        "assets/generated/sprites/fish/goldfish/goldfish_3.png.thumb.webp": "ac7c382621a35a3ec3ab463ddacf04cb47322c396863880efd1d6de69ee337d1",
+        "assets/generated/sprites/fish/goldfish/goldfish_4.png.thumb.webp": "4c8f67c1855842024637d4e5e7c4e114d692a6184af3ef4928b4a3532aaae83d"
       }
     },
     "assets/fish/guppy.webp": {

@@ -176,13 +176,6 @@ function normalizeDisplayPosition(value) {
   }
 }
 
-function normalizeUvLightRenderQuality(value) {
-  const normalized = String(value || "").trim().toLowerCase();
-  return UV_LIGHT_RENDER_QUALITY_OPTIONS.includes(normalized)
-    ? normalized
-    : DEFAULT_UV_LIGHT_RENDER_QUALITY;
-}
-
 function normalizeToolbarTileColor(value) {
   const normalized = String(value || "").trim().toLowerCase();
   if (/^#[0-9a-f]{6}$/.test(normalized)) {
@@ -217,7 +210,7 @@ function sanitizeUiSettings(rawSettings) {
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
-    uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
+    simpleTurnAnimationsOnly: source.simpleTurnAnimationsOnly === true,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
       ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
@@ -245,8 +238,8 @@ function areDecorShadowsEnabled() {
   return DECOR_SHADOWS_SETTING_ENABLED && getUiSettings().decorShadowsEnabled;
 }
 
-function getUvLightRenderQuality() {
-  return getUiSettings().uvLightQuality;
+function areSimpleTurnAnimationsForced() {
+  return getUiSettings().simpleTurnAnimationsOnly === true;
 }
 
 function normalizeWallpaperEngineBooleanPropertyValue(propertyValue) {
@@ -1046,9 +1039,6 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     localBackgroundImageRefId,
     selectedTankAsset: runtime.tankMap.has(incomingTank.selectedTankAsset) ? incomingTank.selectedTankAsset : null,
     autoDispenser: createDefaultAutoDispenserState(incomingTank.autoDispenser),
-    uvLightInstalled: false,
-    uvLightEnabled: false,
-    lightsOutOverride: normalizeLightsOutOverride(incomingTank.lightsOutOverride),
     selectedBubbleAsset: runtime.bubbleMap.has(incomingTank.selectedBubbleAsset)
       ? incomingTank.selectedBubbleAsset
       : (runtime.bubbleCatalog[0]?.key || null),
@@ -1107,8 +1097,6 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     localBackgroundImageRefId: incoming?.localBackgroundImageRefId,
     selectedTankAsset: incoming?.selectedTankAsset,
     autoDispenser: incoming?.autoDispenser,
-    uvLightInstalled: incoming?.uvLightInstalled,
-    uvLightEnabled: incoming?.uvLightEnabled,
     selectedBubbleAsset: incoming?.selectedBubbleAsset,
     lastCleanedAt: incoming?.lastCleanedAt,
     lastSimulatedAt: incoming?.lastSimulatedAt,
@@ -1139,7 +1127,6 @@ function matchesLegacyDefaultStarterTankAppearance(tank, index) {
     && Array.isArray(tank.floatingPellets) && tank.floatingPellets.length === 0
     && Object.keys(tank.feedHistory || {}).length === 0
     && !tank.selectedTankAsset
-    && !tank.uvLightInstalled
     && tank.selectedBackground === defaultBackgroundKey
     && normalizeCustomBackgroundMode(tank.customBackgroundMode) === CUSTOM_BACKGROUND_MODE_SOLID
     && (matchesLegacyColors || matchesCurrentDefaultColors);
@@ -1233,7 +1220,6 @@ function reconcileState(rawState) {
     boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
-    uvLightOwned: false,
     foodInventory: getDefaultFoodInventory(),
     medicineInventory: getDefaultMedicineInventory(),
     dailyBonus: buildDefaultDailyBonusState(),
@@ -1319,12 +1305,6 @@ function reconcileState(rawState) {
       incoming.ownedBackgroundInventory ?? incoming.ownedBackgrounds,
       tanks.map((tank) => tank.selectedBackground)
     ),
-    uvLightOwned: ENABLE_UV_LIGHT && Boolean(
-      incoming.uvLightOwned
-      || incoming.ownedUvLight
-      || incoming.uvLightInstalled
-      || tanks.some((tank) => tank.uvLightInstalled)
-    ),
     foodInventory: Object.fromEntries(getFoodCatalog().map((food) => [
       food.id,
       Math.max(0, Number(sanitizeInventory(incoming.foodInventory)[food.id]) || 0)
@@ -1360,15 +1340,6 @@ function reconcileState(rawState) {
   installTankStateAccessors(nextState);
 
   for (const tank of nextState.tanks) {
-    if (!nextState.uvLightOwned || !tank.uvLightInstalled) {
-      tank.uvLightInstalled = false;
-      tank.uvLightEnabled = false;
-    } else {
-      tank.uvLightEnabled = tank.uvLightEnabled !== false;
-    }
-  }
-
-  for (const tank of nextState.tanks) {
     tank.customGravelEnabled = true;
   }
 
@@ -1383,10 +1354,8 @@ function reconcileState(rawState) {
       Object.keys(tank.feedHistory || {}).length
       || tank.pendingPoops.length
       || tank.poops.length
-      || tank.uvLightInstalled
     ))
     || Object.keys(nextState.ownedBackgroundInventory).some((key) => !DEFAULT_OWNED_BACKGROUND_KEYS.includes(key))
-    || nextState.uvLightOwned
     || Object.values(nextState.foodInventory).some((count) => count > 0)
     || Object.values(nextState.medicineInventory).some((count) => count > 0);
   if (!hasStartedPlaying && nextState.coins < STARTING_COINS) {

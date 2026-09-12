@@ -3,7 +3,7 @@ function getSpriteSheetDefinitions() {
   return [
     {
       "path": "assets/fish/Angelfish.webp",
-      "version": "cf44c0c61579",
+      "version": "944a8d5043d2",
       "width": 1024,
       "height": 1536,
       "frames": {
@@ -40,13 +40,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/Angelfish",
-        "version": "de415196f10e-v1",
+        "version": "0342a21d176d-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/Betta.webp",
-      "version": "3428f556fac7",
+      "version": "92c3c5e2562d",
       "width": 1024,
       "height": 1338,
       "frames": {
@@ -83,13 +83,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/Betta",
-        "version": "e36c49fed52c-v1",
+        "version": "dfdb209f7607-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/BlueRam.webp",
-      "version": "e1d026822e8f",
+      "version": "18fc10022329",
       "width": 1024,
       "height": 1023,
       "frames": {
@@ -126,7 +126,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/BlueRam",
-        "version": "5e741b695c9f-v1",
+        "version": "a0051938a50e-v1",
         "standalone": false
       }
     },
@@ -577,7 +577,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/Moorgoldfish.webp",
-      "version": "714515184fe2",
+      "version": "255c798a50ba",
       "width": 1024,
       "height": 1152,
       "frames": {
@@ -614,13 +614,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/Moorgoldfish",
-        "version": "6e1bde44da1f-v1",
+        "version": "0e44bbdffd2d-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/NeonTetra.webp",
-      "version": "b1d13f054d7b",
+      "version": "5ec5bb9cffc8",
       "width": 1002,
       "height": 627,
       "frames": {
@@ -657,7 +657,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/NeonTetra",
-        "version": "efdb53fde50c-v1",
+        "version": "005467200adf-v1",
         "standalone": false
       }
     },
@@ -883,7 +883,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/RummyNoseTetra.webp",
-      "version": "00a0901d0225",
+      "version": "6cb3520effc7",
       "width": 992,
       "height": 699,
       "frames": {
@@ -920,7 +920,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/RummyNoseTetra",
-        "version": "13e8532f7e67-v1",
+        "version": "249087f88be9-v1",
         "standalone": false
       }
     },
@@ -1193,7 +1193,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/clownfish.webp",
-      "version": "38f9bf3113fb",
+      "version": "5d784984e259",
       "width": 1024,
       "height": 948,
       "frames": {
@@ -1230,13 +1230,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/clownfish",
-        "version": "88dbfbf320de-v1",
+        "version": "b6d734010ef4-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/discus.webp",
-      "version": "0cc979dea35b",
+      "version": "5d8360881740",
       "width": 1024,
       "height": 1281,
       "frames": {
@@ -1273,13 +1273,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/discus",
-        "version": "f0d406c37c3f-v1",
+        "version": "2208359cffea-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/goldfish.webp",
-      "version": "872e4ab1a4e3",
+      "version": "1a51b44ae397",
       "width": 1024,
       "height": 921,
       "frames": {
@@ -1316,7 +1316,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/goldfish",
-        "version": "b7ad3517f347-v1",
+        "version": "b5504eb8af66-v1",
         "standalone": false
       }
     },

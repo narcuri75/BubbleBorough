@@ -11,7 +11,6 @@ function renderTank(now) {
   // Rear-pane grime belongs above the background and below every moving object.
   drawRearGrime(dirtiness);
   beginLightweightCausticMask();
-  drawUvLightAtmosphere(now, "back");
   drawWaterParticles(now, TANK_DEPTH_LAYERS);
   drawAmbientBubbles(now, 1);
   drawTankFloor(now);
@@ -63,9 +62,7 @@ function renderTank(now) {
   drawDecorPreview();
   drawDecorSwimGuide(now);
   drawActiveDecorLayerCue();
-  drawLightsOutOverlay(now);
   drawWaterSurface(now);
-  drawUvLightAtmosphere(now, "front");
   drawSplashBursts(now);
   // Front glass glare is disabled for this display-focused view.
   tankContext.restore();
@@ -203,6 +200,16 @@ function markLightweightCausticImage(sourceContext, image, x, y, width, height) 
   context.drawImage(image, x, y, width, height);
 }
 
+function markLightweightCausticTurnaroundRig(sourceContext, image, x, width, height, fish, now) {
+  if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
+  const context = setLightweightCausticMaskTransform(sourceContext);
+  drawFishTurnaroundRig(context, image, x, width, height, fish, now, {
+    columnDensity: FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY,
+    minimumColumns: 1,
+    maximumColumns: FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS
+  });
+}
+
 function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, width, height, item, now, motion, receivesCaustics = true) {
   if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
   const context = setLightweightCausticMaskTransform(sourceContext);
@@ -231,7 +238,7 @@ function markLightweightCausticFloor() {
 }
 
 function drawLightweightCausticOverlay(now) {
-  if (!isCausticLightingEnabled() || isTankLightsOut(now)) return;
+  if (!isCausticLightingEnabled()) return;
   const seconds = (Number(now) || 0) / 1000;
   const dirtFade = 1 - clamp(getTankDirtiness(now), 0, 1) * 0.58;
   const width = TANK_WIDTH;
@@ -481,27 +488,6 @@ function drawDirtyWaterTintToContext(context, strength = 1) {
 
 function drawDirtyWaterTint(dirtiness = getTankDirtiness(Date.now())) {
   drawDirtyWaterTintToContext(tankContext, getVisibleGrimeDirtiness(dirtiness));
-}
-
-function drawLightsOutOverlay(now = Date.now()) {
-  if (!isTankLightsOut(now)) {
-    return;
-  }
-  const forced = getLightsOutOverride() === LIGHTS_OUT_OVERRIDE_ON;
-  const alpha = forced ? 0.36 : 0.3;
-  tankContext.save();
-  const gradient = tankContext.createLinearGradient(0, 0, 0, TANK_HEIGHT);
-  gradient.addColorStop(0, `rgba(3, 12, 26, ${alpha + 0.08})`);
-  gradient.addColorStop(0.52, `rgba(2, 16, 30, ${alpha})`);
-  gradient.addColorStop(1, `rgba(0, 6, 16, ${alpha + 0.04})`);
-  tankContext.fillStyle = gradient;
-  tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  tankContext.globalCompositeOperation = "screen";
-  tankContext.fillStyle = forced
-    ? "rgba(112, 178, 255, 0.045)"
-    : "rgba(98, 155, 220, 0.035)";
-  tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  tankContext.restore();
 }
 
 function getScaledTankShellPoints(pointSet) {
@@ -965,7 +951,6 @@ function ensureWaterParticles(now = Date.now()) {
       phase: randomBetweenWith(rand, 0, Math.PI * 2),
       size: randomBetweenWith(rand, 0.65, 1.45),
       tone: randomBetweenWith(rand, 0, 1),
-      uvReactive: randomBetweenWith(rand, 0, 1) > 0.62,
       spriteIndex: Math.floor(randomBetweenWith(rand, 0, WATER_PARTICLE_ASSET_PATHS.length)),
       rotation: randomBetweenWith(rand, -Math.PI, Math.PI),
       spin: randomBetweenWith(rand, -0.34, 0.34),
@@ -981,17 +966,7 @@ function ensureWaterParticles(now = Date.now()) {
   });
 }
 
-function getWaterParticleDrawColor(particle, dirtiness, uvActive) {
-  if (uvActive && particle?.uvReactive) {
-    if (particle.tone < 0.34) {
-      return { r: 102, g: 236, b: 255 };
-    }
-    if (particle.tone < 0.68) {
-      return { r: 92, g: 255, b: 171 };
-    }
-    return { r: 255, g: 116, b: 229 };
-  }
-
+function getWaterParticleDrawColor() {
   // Dirty-water color comes from the static grime overlay, not new particle
   // tint variants that have to be generated and cached at high dirtiness.
   return { r: 218, g: 248, b: 255 };
@@ -1032,7 +1007,7 @@ function getTintedWaterParticleSprite(spritePath, sprite, tintRgb) {
   }
 
   const bounds = getWaterParticleSpriteBounds(spritePath, sprite);
-  const cacheKey = `${getUvGlowSourceKey(sprite)}|${tintRgb}|${bounds.sx},${bounds.sy},${bounds.sw},${bounds.sh}`;
+  const cacheKey = `${getRuntimeImageSourceKey(sprite)}|${tintRgb}|${bounds.sx},${bounds.sy},${bounds.sw},${bounds.sh}`;
   if (runtime.waterParticleTintCache.has(cacheKey)) {
     return runtime.waterParticleTintCache.get(cacheKey);
   }
@@ -1430,7 +1405,6 @@ function drawWaterParticles(now = Date.now(), layer = null) {
   ensureWaterParticles(now);
   const targetLayer = Number.isFinite(Number(layer)) ? clampTankLayer(layer) : null;
   const dirtiness = getTankDirtiness(now);
-  const uvActive = isUvLightActive() && UV_LIGHT_WATER_PARTICLE_GLOW_ENABLED;
 
   tankContext.save();
   tankContext.globalCompositeOperation = "source-over";
@@ -1461,7 +1435,7 @@ function drawWaterParticles(now = Date.now(), layer = null) {
       : index;
     const spritePath = WATER_PARTICLE_ASSET_PATHS[spriteIndex % WATER_PARTICLE_ASSET_PATHS.length];
     const sprite = runtime.images.get(spritePath);
-    const color = getWaterParticleDrawColor(particle, dirtiness, uvActive);
+    const color = getWaterParticleDrawColor();
     const tintRgb = formatRgb(color);
     const renderSprite = sprite?.width && sprite?.height
       ? getTintedWaterParticleSprite(spritePath, sprite, tintRgb)
@@ -1471,17 +1445,10 @@ function drawWaterParticles(now = Date.now(), layer = null) {
 
     drawWaterAtmosphereStreak(tankContext, particle, now, visibility, dirtiness);
 
-    if (uvActive && particle.uvReactive) {
-      tankContext.shadowColor = formatRgba(color, alpha * 2.2);
-      tankContext.shadowBlur = 5 + particle.depth * 9;
-      tankContext.fillStyle = formatRgba(color, alpha * 1.65);
-      tankContext.strokeStyle = tankContext.fillStyle;
-    } else {
-      tankContext.shadowBlur = 0;
-      const cleanAlphaBoost = color.r === 218 && color.g === 248 ? 1.45 : 0.9;
-      tankContext.fillStyle = formatRgba(color, alpha * cleanAlphaBoost);
-      tankContext.strokeStyle = tankContext.fillStyle;
-    }
+    tankContext.shadowBlur = 0;
+    const cleanAlphaBoost = color.r === 218 && color.g === 248 ? 1.45 : 0.9;
+    tankContext.fillStyle = formatRgba(color, alpha * cleanAlphaBoost);
+    tankContext.strokeStyle = tankContext.fillStyle;
 
     tankContext.save();
     tankContext.translate(particle.x, particle.y);
@@ -1489,31 +1456,10 @@ function drawWaterParticles(now = Date.now(), layer = null) {
     tankContext.globalAlpha = renderSprite?.width && renderSprite?.height ? alpha : alpha * 0.82;
     if (renderSprite?.width && renderSprite?.height) {
       tankContext.drawImage(renderSprite, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-      if (uvActive && particle.uvReactive) {
-        drawUvGlowImageToContext(
-          tankContext,
-          renderSprite,
-          -drawWidth / 2,
-          -drawHeight / 2,
-          drawWidth,
-          drawHeight,
-          0.92 + particle.depth * 0.55,
-          alpha * 1.18,
-          "water-particle"
-        );
-      }
     } else {
       tankContext.beginPath();
       tankContext.ellipse(0, 0, drawWidth * 0.5, drawHeight * 0.5, 0, 0, Math.PI * 2);
       tankContext.fill();
-      if (uvActive && particle.uvReactive) {
-        tankContext.globalCompositeOperation = "screen";
-        tankContext.globalAlpha = alpha * 0.72;
-        tankContext.beginPath();
-        tankContext.ellipse(0, 0, drawWidth * 0.82, drawHeight * 0.82, 0, 0, Math.PI * 2);
-        tankContext.fill();
-        tankContext.globalCompositeOperation = "source-over";
-      }
     }
     tankContext.restore();
   }

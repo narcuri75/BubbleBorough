@@ -24,7 +24,6 @@
       } catch { return {}; }
     }
     const type = card.querySelector("[data-buy-background], [data-use-background-shop]") ? "Backgrounds"
-      : card.querySelector("[data-buy-uv-light]") ? "Lighting"
       : card.querySelector("[data-buy-auto-dispenser]") ? "Feeding equipment"
       : card.querySelector("[data-buy-boat], [data-buy-submarine]") ? "Vehicles" : "Aquarium upgrades";
     const facets = { Type: [type] };

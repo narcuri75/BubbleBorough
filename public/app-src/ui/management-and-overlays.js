@@ -2184,6 +2184,11 @@ function handleCustomFishUtilityOverlayBodyClick(ctx, target) {
 }
 
 function handleCustomFishUtilityOverlayChange(ctx, target) {
+  const turnToggle = target?.closest?.("[data-custom-fish-turn-toggle]");
+  if (turnToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.turnAnimation = turnToggle.checked ? "complex" : "simple";
+    return true;
+  }
   const flipToggle = target?.closest?.("[data-custom-fish-flip-toggle]");
   if (flipToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
     updatePendingCustomFishFlip(flipToggle.checked);

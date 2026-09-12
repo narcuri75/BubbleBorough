@@ -27,9 +27,17 @@
     "sourceHash": "c2de88755196682a8431414e37577ce8d815ac5df2c43edcbdc1dafb222906e0",
     "outputHash": "aa0c96f17b1eda61eb54e91d58b2c02d87a251ea7ce959e6789f448647d8030c"
   },
+  "Cave_Coral_Shelf_10_Trypophobia.png": {
+    "sourceHash": "8fe75e150f23dfa299585fa2e7d32cdd42435f84dd3cafe6e9578c0a12ec0b8e",
+    "outputHash": "7c52f7e37d5ab158f71b426d686942af9a14fd7adc225b62a26f871a602ec3c0"
+  },
   "Cave_Coral_Shelf_10_bg.png": {
     "sourceHash": "5fb2d34b3a62bed49e9365e8bf4a25bf468e773fd49688bdf89dbcb87510a1ad",
     "outputHash": "5b3c8b083f8d445c0a8cc72071c7d5578b2fcfb0431448feaa6dadc2710b0165"
+  },
+  "Cave_Coral_Shelf_1_Trypophobia.png": {
+    "sourceHash": "5247b549ae7440b125e5c74a0a565eb2158319452294764dce213e4d25acd82c",
+    "outputHash": "1526399f09612ad56c8db4d0342147a7a34e3ae663db61d835c39d9d694d7d67"
   },
   "Cave_Coral_Shelf_1_bg.png": {
     "sourceHash": "af6a65ca34df219ddbfd23072a388073c24a82bbc51fbd6895e66719e13c2eba",
@@ -71,6 +79,10 @@
     "sourceHash": "8946a0fa0b816e7ddcaa288ef513db848f644b629df661711e7eb7a7025cdd98",
     "outputHash": "3b7bb3b9af59b0067b008a9dd774301f33558d7c6265c3cbbb453439dc06bbdf"
   },
+  "Cave_Coral_Shelf_6_Trypophobia.png": {
+    "sourceHash": "ae3ccb1de42047370720cf02a34e94fbf349fd643bac885b4f458e868127fa42",
+    "outputHash": "20fd13bccff56bfdc916698b7acff00a0339c85029e5348974e38d234f77192e"
+  },
   "Cave_Coral_Shelf_6_bg.png": {
     "sourceHash": "d8546d18830a3c14fe2ef2e44c442cf8a1494ca96b1257000c4ddf353bf9da84",
     "outputHash": "e2274e889c37f16373414817bc4ac6d4596a5ec8709b8d14ec1a9fb245f581af"
@@ -84,8 +96,8 @@
     "outputHash": "5dcc62e171aa6e104ba9824d86268ea30cf344fb0d0d15331401d8050f674cc0"
   },
   "Cave_Coral_Shelf_9.png": {
-    "sourceHash": "73604af885c6f46904e80225c6f80888eddafd66585037d75aafe63aaecedd85",
-    "outputHash": "51f9202af7bac2de252a436fce751d6d3b1865540a23e2c8fc401c9b40bd5524"
+    "sourceHash": "72167ae246bc87fc3871e0fda72e77ba00b7e1c774c9b46f45012409383978fd",
+    "outputHash": "c7acc1368c1ae5012c5ad715b9d923ab4248467da0db7546138a45eb9d47c601"
   },
   "Cave_Coral_Shelf_9_bg.png": {
     "sourceHash": "23e757cc9f63353134a584c8f2ec87a4d2ad69d73eb4643932f980ae1e82f534",
@@ -94,6 +106,10 @@
   "Cave_Coral_Shelf_9_color2.png": {
     "sourceHash": "4b174da33c0ef8860fb5a0b2ad0c4e465b8b245c3ce400782d1ef8e8dcc6857d",
     "outputHash": "924d37eda7c5c4edbcec4091acbcb60742faf883cdcda5fc92f479a1d115aa5f"
+  },
+  "Cave_Coral_Shelf_9_color2_Trypophobia.png": {
+    "sourceHash": "d02b1be31cdb1546fb80ae432dd04830dff20641ec3a8fe22e95bee8b5ca9dd5",
+    "outputHash": "669646ef1850fa24ba6e61297d7ff5ced2f6b39fa62dbb02bf7d0bd5d4bf684c"
   },
   "Cave_Sea_Anemone_1.png": {
     "sourceHash": "c38e6f919b07e2b69e67f321f32b22997406e3b642827ba16842face1fc99b8f",

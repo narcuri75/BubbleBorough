@@ -11,7 +11,7 @@ function pickCaveEntryBehavior(species, fish, now = Date.now()) {
     return null;
   }
 
-  const assignedCaveId = isTankLightsOut(now) ? getFishResidenceDecorId(fish) : null;
+  const assignedCaveId = null;
   const assignedCave = assignedCaveId
     ? state.placedDecor.find((item) => item.id === assignedCaveId && isCaveDecorKey(item.decorKey))
     : null;

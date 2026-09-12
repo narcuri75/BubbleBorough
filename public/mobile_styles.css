@@ -2102,14 +2102,6 @@ body.mobile-page #equipmentOverlay .background-card button {
   line-height: 1;
 }
 
-body.mobile-page #equipmentOverlay .uv-light-equipment {
-  margin-top: 5px;
-}
-
-body.mobile-page #equipmentOverlay .uv-light-card {
-  grid-template-columns: 48px minmax(0, 1fr);
-}
-
 /* ==========================================================================
    9. Utility overlays
    ========================================================================== */
@@ -3538,8 +3530,7 @@ body.mobile-page #equipmentOverlay :is(
   .settings-toggle-row,
   .background-card,
   .custom-gravel-layer-card,
-  .background-solid-color-card,
-  .uv-light-card
+  .background-solid-color-card
 ),
 body.mobile-page #utilityOverlay :is(
   .utility-confirm-card,

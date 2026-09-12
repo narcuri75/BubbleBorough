@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2986,
+  "functionCount": 2987,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -88,7 +88,7 @@
     },
     {
       "path": "decor/customization.js",
-      "functionCount": 176,
+      "functionCount": 174,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -230,7 +230,7 @@
     },
     {
       "path": "fish/needs-disease-and-behavior.js",
-      "functionCount": 127,
+      "functionCount": 121,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -238,14 +238,12 @@
         "core/utilities.js",
         "decor/customization.js",
         "decor/layout-and-layers.js",
-        "fish/cave-navigation.js",
         "fish/decor-behavior.js",
         "fish/feeding-and-medicine.js",
         "fish/gravel-and-schooling.js",
         "fish/health.js",
         "fish/meals-and-needs.js",
         "fish/undead-and-appearance.js",
-        "rendering/fish-motion-and-floor.js",
         "rendering/gravel-and-effects.js",
         "tank/catalog-and-equipment.js",
         "tank/events-recaps-and-save.js"
@@ -253,20 +251,16 @@
     },
     {
       "path": "fish/undead-and-appearance.js",
-      "functionCount": 90,
+      "functionCount": 73,
       "dependencies": [
-        "assets/image-storage-and-import.js",
         "assets/sprite-sheets.js",
         "core/platform.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
-        "decor/customization.js",
         "decor/layout-and-layers.js",
         "fish/health.js",
         "fish/meals-and-needs.js",
         "fish/needs-disease-and-behavior.js",
-        "rendering/decor.js",
-        "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js"
       ]
     },
@@ -282,7 +276,7 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 115,
+      "functionCount": 114,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -544,7 +538,7 @@
     },
     {
       "path": "store/purchases.js",
-      "functionCount": 34,
+      "functionCount": 33,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -700,13 +694,12 @@
     },
     {
       "path": "tank/appearance-controls.js",
-      "functionCount": 20,
+      "functionCount": 17,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
-        "fish/needs-disease-and-behavior.js",
         "fish/undead-and-appearance.js",
         "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js",
@@ -717,7 +710,7 @@
     },
     {
       "path": "debug/tools.js",
-      "functionCount": 82,
+      "functionCount": 95,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -731,11 +724,13 @@
         "fish/feeding-and-medicine.js",
         "fish/gravel-and-schooling.js",
         "fish/health.js",
+        "fish/lifecycle-and-breeding.js",
         "fish/meals-and-needs.js",
         "fish/needs-disease-and-behavior.js",
         "fish/predators-and-motion.js",
         "fish/undead-and-appearance.js",
         "rendering/collision-and-masks.js",
+        "rendering/fish-and-effects.js",
         "rendering/fish-motion-and-floor.js",
         "rendering/gravel-and-effects.js",
         "tank/catalog-and-equipment.js",
@@ -927,7 +922,7 @@
     },
     {
       "path": "ui/scene-controls-and-animation.js",
-      "functionCount": 20,
+      "functionCount": 18,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -943,7 +938,6 @@
         "fish/gravel-and-schooling.js",
         "fish/health.js",
         "fish/lifecycle-and-breeding.js",
-        "fish/needs-disease-and-behavior.js",
         "fish/predators-and-motion.js",
         "fish/undead-and-appearance.js",
         "machinery/submarine.js",
@@ -960,7 +954,7 @@
     },
     {
       "path": "fish/predators-and-motion.js",
-      "functionCount": 83,
+      "functionCount": 82,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "assets/sprite-sheets.js",
@@ -1022,7 +1016,6 @@
         "borough/living-borough.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
-        "decor/customization.js",
         "decor/layout-and-layers.js",
         "fish/health.js",
         "fish/meals-and-needs.js",
@@ -1052,7 +1045,6 @@
         "decor/layout-and-layers.js",
         "fish/cave-navigation.js",
         "fish/meals-and-needs.js",
-        "fish/needs-disease-and-behavior.js",
         "fish/undead-and-appearance.js",
         "rendering/fish-motion-and-floor.js",
         "rendering/tank-and-water.js",
@@ -1073,7 +1065,6 @@
         "decor/hit-testing.js",
         "decor/layout-and-layers.js",
         "fish/caves-and-collision.js",
-        "fish/decor-behavior.js",
         "fish/health.js",
         "fish/meals-and-needs.js",
         "fish/needs-disease-and-behavior.js",
@@ -1087,14 +1078,13 @@
     },
     {
       "path": "rendering/fish-and-effects.js",
-      "functionCount": 28,
+      "functionCount": 45,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "debug/tools.js",
-        "decor/customization.js",
         "decor/hit-testing.js",
         "decor/layout-and-layers.js",
         "fish/decor-behavior.js",
@@ -1115,7 +1105,7 @@
     },
     {
       "path": "fish/meals-and-needs.js",
-      "functionCount": 61,
+      "functionCount": 65,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1179,7 +1169,6 @@
         "fish/decor-behavior.js",
         "fish/gravel-and-schooling.js",
         "fish/health.js",
-        "fish/needs-disease-and-behavior.js",
         "fish/undead-and-appearance.js",
         "rendering/collision-and-masks.js",
         "rendering/fish-and-effects.js",

@@ -1887,6 +1887,461 @@ function triggerDebugBehaviorScenario(action) {
   }
 }
 
+function getDebugFishBehaviorPreviewOption(behaviorId = runtime.debugFishBehaviorPreviewBehaviorId) {
+  return DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS.find((entry) => entry.id === behaviorId)
+    || DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS[0];
+}
+
+function getDebugFishBehaviorPreviewCycleMs(behaviorId, fish, species) {
+  if (behaviorId === "turn-around") {
+    return Math.max(900, Number(fish?.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species)) + 720;
+  }
+  if (["rest", "sleep", "hangout", "sick", "dead"].includes(behaviorId)) {
+    return 4200;
+  }
+  if (["zoomies", "avoid"].includes(behaviorId)) {
+    return 1550;
+  }
+  return 2800;
+}
+
+function populateDebugFishBehaviorPreviewControls() {
+  const fishSelect = dom.debugFishBehaviorPreviewSpecies;
+  const behaviorSelect = dom.debugFishBehaviorPreviewBehavior;
+  if (!fishSelect || !behaviorSelect) {
+    return;
+  }
+
+  const catalog = runtime.fishCatalog
+    .filter((species) => species?.id && species?.name)
+    .sort((left, right) => String(left.name).localeCompare(String(right.name)));
+  fishSelect.innerHTML = catalog
+    .map((species) => `<option value="${escapeHtml(species.id)}">${escapeHtml(species.name)}</option>`)
+    .join("");
+  behaviorSelect.innerHTML = DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS
+    .map((entry) => `<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.label)}</option>`)
+    .join("");
+
+  const selectedFish = getManagedFishById(runtime.selectedFishId)?.fish || null;
+  const preferredSpeciesId = runtime.debugFishBehaviorPreviewSpeciesId
+    || selectedFish?.speciesId
+    || catalog[0]?.id
+    || "";
+  runtime.debugFishBehaviorPreviewSpeciesId = runtime.fishMap.has(preferredSpeciesId)
+    ? preferredSpeciesId
+    : (catalog[0]?.id || "");
+  fishSelect.value = runtime.debugFishBehaviorPreviewSpeciesId;
+  behaviorSelect.value = getDebugFishBehaviorPreviewOption()?.id || "swim";
+}
+
+function createDebugFishBehaviorPreviewFish(speciesId) {
+  const species = runtime.fishMap.get(speciesId);
+  if (!species) {
+    return null;
+  }
+  const fish = createFishRecord(speciesId, {
+    id: `debug-preview-${speciesId}`,
+    name: species.name,
+    xNorm: 0.5,
+    yNorm: 0.5,
+    targetXNorm: 0.72,
+    targetYNorm: 0.5,
+    direction: 1,
+    tankLayer: DEFAULT_TANK_LAYER,
+    desiredTankLayer: DEFAULT_TANK_LAYER,
+    now: Date.now()
+  });
+  if (!fish) {
+    return null;
+  }
+  fish.phase = 0.17;
+  fish.activity = "roam";
+  fish.motionLevel = 0.55;
+  fish.swimSpeed = Math.max(0.02, Number(species.speedMin) || 0.025);
+  fish.entryStartedAt = 0;
+  fish.entryDurationMs = 0;
+  fish.entryFromYNorm = null;
+  fish.turnStartedAt = 0;
+  fish.turnDurationMs = 0;
+  fish.turnFromDirection = 1;
+  fish.turnToDirection = -1;
+  fish.debugPreviewTurnDurationMs = getFishTurnDurationMs(fish, species);
+  fish.direction = 1;
+  fish.deadAt = null;
+  fish.healthUnits = getSpeciesMaxHealthUnits(species);
+  return fish;
+}
+
+function getDebugFishBehaviorPreviewAssetPaths(fish, species, now = Date.now()) {
+  const paths = [
+    getFishDisplayAssetPath(fish, species, now),
+    species?.asset,
+    species?.fallbackAsset
+  ];
+  if (species?.behavior === "sucker") {
+    paths.push(
+      getSuckerFishViewAssetPath(species, fish, "back"),
+      getSuckerFishViewAssetPath(species, fish, "front"),
+      getSuckerFishViewAssetPath(species, fish, "swim")
+    );
+  }
+  return [...new Set(paths.filter(Boolean))];
+}
+
+function resetDebugFishBehaviorPreview() {
+  const speciesId = runtime.debugFishBehaviorPreviewSpeciesId;
+  const species = runtime.fishMap.get(speciesId);
+  runtime.debugFishBehaviorPreviewStartedAt = performance.now();
+  runtime.debugFishBehaviorPreviewFish = createDebugFishBehaviorPreviewFish(speciesId);
+  if (!species || !runtime.debugFishBehaviorPreviewFish) {
+    if (dom.debugFishBehaviorPreviewStatus) {
+      dom.debugFishBehaviorPreviewStatus.textContent = "Fish unavailable";
+    }
+    return;
+  }
+
+  const option = getDebugFishBehaviorPreviewOption();
+  if (dom.debugFishBehaviorPreviewDescription) {
+    dom.debugFishBehaviorPreviewDescription.textContent = option?.description || "";
+  }
+  if (dom.debugFishBehaviorPreviewStatus) {
+    dom.debugFishBehaviorPreviewStatus.textContent = `Loading ${species.name}…`;
+  }
+  const token = ++runtime.debugFishBehaviorPreviewLoadToken;
+  void preloadImages(getDebugFishBehaviorPreviewAssetPaths(runtime.debugFishBehaviorPreviewFish, species), {
+    maxAttempts: 2,
+    timeoutMs: 8000,
+    retryDelayMs: 300
+  }).then(() => {
+    if (token !== runtime.debugFishBehaviorPreviewLoadToken || !runtime.debugFishBehaviorPreviewOpen) {
+      return;
+    }
+    if (dom.debugFishBehaviorPreviewStatus) {
+      dom.debugFishBehaviorPreviewStatus.textContent = `${species.name} · ${option?.label || "Preview"}`;
+    }
+  });
+}
+
+function openDebugFishBehaviorPreview() {
+  if (!isDebugModeEnabled() || !dom.debugFishBehaviorPreview) {
+    return;
+  }
+  populateDebugFishBehaviorPreviewControls();
+  runtime.debugFishBehaviorPreviewOpen = true;
+  runtime.debugSidebarOpen = false;
+  dom.debugFishBehaviorPreview.hidden = false;
+  document.body.classList.add("debug-fish-behavior-preview-open");
+  resetDebugFishBehaviorPreview();
+  if (!runtime.debugFishBehaviorPreviewFrame) {
+    runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
+  }
+  dom.debugFishBehaviorPreviewSpecies?.focus();
+  renderUi(Date.now(), { full: false });
+}
+
+function closeDebugFishBehaviorPreview() {
+  runtime.debugFishBehaviorPreviewOpen = false;
+  runtime.debugFishBehaviorPreviewLoadToken += 1;
+  runtime.debugFishBehaviorPreviewFish = null;
+  if (runtime.debugFishBehaviorPreviewFrame) {
+    cancelAnimationFrame(runtime.debugFishBehaviorPreviewFrame);
+    runtime.debugFishBehaviorPreviewFrame = 0;
+  }
+  if (dom.debugFishBehaviorPreview) {
+    dom.debugFishBehaviorPreview.hidden = true;
+  }
+  document.body.classList.remove("debug-fish-behavior-preview-open");
+  dom.debugFishBehaviorPreviewButton?.focus();
+}
+
+function setDebugFishBehaviorPreviewSpecies(speciesId) {
+  if (!runtime.fishMap.has(speciesId)) {
+    return;
+  }
+  runtime.debugFishBehaviorPreviewSpeciesId = speciesId;
+  resetDebugFishBehaviorPreview();
+}
+
+function setDebugFishBehaviorPreviewBehavior(behaviorId) {
+  const option = getDebugFishBehaviorPreviewOption(behaviorId);
+  runtime.debugFishBehaviorPreviewBehaviorId = option.id;
+  if (dom.debugFishBehaviorPreviewBehavior) {
+    dom.debugFishBehaviorPreviewBehavior.value = option.id;
+  }
+  resetDebugFishBehaviorPreview();
+}
+
+function getDebugFishBehaviorPreviewPose(behaviorId, phase) {
+  const angle = phase * Math.PI * 2;
+  let tilt = Math.sin(angle) * 0.035;
+  let wiggle = Math.sin(angle * 2) * 0.55;
+  let bodyScaleX = 1 - Math.abs(wiggle) * 0.018;
+  let bodyScaleY = 1 + Math.abs(wiggle) * 0.014;
+  let swayX = 0;
+  let alpha = 1;
+  let filterMode = "normal";
+
+  switch (behaviorId) {
+    case "eat": {
+      const bite = Math.pow(Math.max(0, Math.sin(angle * 2)), 5);
+      tilt = -0.12 + Math.sin(angle) * 0.08;
+      wiggle = Math.sin(angle * 2) * 0.38;
+      bodyScaleX = 1 - bite * 0.08;
+      bodyScaleY = 1 + bite * 0.11;
+      swayX = Math.sin(angle) * 8;
+      break;
+    }
+    case "waitfood":
+      tilt = -0.18 + Math.sin(angle) * 0.025;
+      wiggle *= 0.28;
+      bodyScaleX = 0.99;
+      bodyScaleY = 1.015;
+      break;
+    case "rest":
+      tilt = Math.sin(angle) * 0.012;
+      wiggle *= 0.12;
+      bodyScaleX = 1 + Math.sin(angle) * 0.006;
+      bodyScaleY = 1 - Math.sin(angle) * 0.006;
+      break;
+    case "sleep":
+      tilt = 0.11 + Math.sin(angle) * 0.009;
+      wiggle *= 0.055;
+      bodyScaleX = 1 + Math.sin(angle) * 0.004;
+      bodyScaleY = 0.985 - Math.sin(angle) * 0.004;
+      alpha = 0.86;
+      break;
+    case "zoomies":
+      tilt = Math.sin(angle) * 0.17;
+      wiggle = Math.sin(angle * 3) * 1.15;
+      bodyScaleX = 1.08 - Math.abs(wiggle) * 0.035;
+      bodyScaleY = 0.94 + Math.abs(wiggle) * 0.028;
+      swayX = Math.sin(angle * 2) * 18;
+      break;
+    case "greet":
+      tilt = -Math.pow(Math.max(0, Math.sin(angle * 2)), 3) * 0.22;
+      wiggle *= 0.34;
+      swayX = Math.sin(angle) * 5;
+      break;
+    case "hangout":
+      tilt = Math.sin(angle) * 0.045;
+      wiggle *= 0.36;
+      swayX = Math.sin(angle) * 10;
+      break;
+    case "play":
+      tilt = Math.sin(angle) * 0.25;
+      wiggle = Math.sin(angle * 2) * 0.9;
+      bodyScaleX = 1 - Math.max(0, Math.sin(angle)) * 0.08;
+      bodyScaleY = 1 + Math.max(0, Math.sin(angle)) * 0.1;
+      swayX = Math.sin(angle * 2) * 9;
+      break;
+    case "pebble": {
+      const search = phase < 0.55 ? Math.sin((phase / 0.55) * Math.PI) : 0;
+      tilt = search * 0.62 - Math.max(0, (phase - 0.55) / 0.45) * 0.18;
+      wiggle *= 0.24;
+      bodyScaleX = 0.98;
+      bodyScaleY = 1.04;
+      break;
+    }
+    case "dig":
+      tilt = 0.76 + Math.sin(angle * 3) * 0.055;
+      wiggle = Math.sin(angle * 4) * 0.32;
+      bodyScaleX = 0.96 + Math.sin(angle * 3) * 0.02;
+      bodyScaleY = 1.06 - Math.sin(angle * 3) * 0.02;
+      break;
+    case "avoid": {
+      const recoil = Math.pow(Math.max(0, Math.sin(phase * Math.PI)), 0.7);
+      tilt = -0.2 * recoil;
+      wiggle = Math.sin(angle * 3) * recoil;
+      bodyScaleX = 1 - recoil * 0.12;
+      bodyScaleY = 1 + recoil * 0.09;
+      swayX = -recoil * 24;
+      break;
+    }
+    case "breed":
+      tilt = Math.sin(angle * 2) * 0.12;
+      wiggle = Math.sin(angle * 3) * 0.72;
+      bodyScaleX = 0.99;
+      bodyScaleY = 1.02;
+      swayX = Math.sin(angle) * 12;
+      break;
+    case "hide":
+      tilt = 0.08 + Math.sin(angle) * 0.025;
+      wiggle *= 0.16;
+      bodyScaleX = 0.88 + Math.sin(angle) * 0.015;
+      bodyScaleY = 0.94;
+      alpha = 0.76;
+      break;
+    case "inspect":
+      tilt = Math.sin(angle * 2) * 0.09;
+      wiggle *= 0.18;
+      bodyScaleX = 0.98 + Math.sin(angle) * 0.018;
+      bodyScaleY = 1.02 - Math.sin(angle) * 0.018;
+      swayX = Math.sin(angle) * 4;
+      break;
+    case "sick":
+      tilt = 0.13 + Math.sin(angle) * 0.045;
+      wiggle = Math.sin(angle * 0.7) * 0.16;
+      bodyScaleX = 0.97 + Math.sin(angle) * 0.008;
+      bodyScaleY = 1.02;
+      swayX = Math.sin(angle * 0.5) * 3;
+      filterMode = "sick";
+      break;
+    case "dead":
+      tilt = Math.PI + Math.sin(angle) * 0.025;
+      wiggle = Math.sin(angle * 0.4) * 0.04;
+      bodyScaleX = 1;
+      bodyScaleY = 1;
+      swayX = Math.sin(angle) * 3;
+      filterMode = "dead";
+      break;
+    default:
+      break;
+  }
+
+  return { tilt, wiggle, bodyScaleX, bodyScaleY, swayX, alpha, filterMode };
+}
+
+function resizeDebugFishBehaviorPreviewCanvas(canvas, context) {
+  const rect = canvas.getBoundingClientRect();
+  const cssWidth = Math.max(1, rect.width);
+  const cssHeight = Math.max(1, rect.height);
+  const pixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+  const width = Math.round(cssWidth * pixelRatio);
+  const height = Math.round(cssHeight * pixelRatio);
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  return { width: cssWidth, height: cssHeight };
+}
+
+function renderDebugFishBehaviorPreviewFrame(frameNow) {
+  runtime.debugFishBehaviorPreviewFrame = 0;
+  if (!runtime.debugFishBehaviorPreviewOpen || !dom.debugFishBehaviorPreviewCanvas) {
+    return;
+  }
+
+  const canvas = dom.debugFishBehaviorPreviewCanvas;
+  const context = canvas.getContext("2d");
+  const fish = runtime.debugFishBehaviorPreviewFish;
+  const species = runtime.fishMap.get(runtime.debugFishBehaviorPreviewSpeciesId);
+  if (!context || !fish || !species) {
+    runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
+    return;
+  }
+
+  const viewport = resizeDebugFishBehaviorPreviewCanvas(canvas, context);
+  context.clearRect(0, 0, viewport.width, viewport.height);
+  const behaviorId = getDebugFishBehaviorPreviewOption()?.id || "swim";
+  const cycleMs = getDebugFishBehaviorPreviewCycleMs(behaviorId, fish, species);
+  const elapsed = Math.max(0, frameNow - runtime.debugFishBehaviorPreviewStartedAt);
+  const cycleElapsed = elapsed % cycleMs;
+  let phase = clamp(cycleElapsed / cycleMs, 0, 1);
+  const renderNow = Date.now();
+  const pose = getDebugFishBehaviorPreviewPose(behaviorId, phase);
+
+  fish.deadAt = null;
+  fish.healthUnits = getSpeciesMaxHealthUnits(species);
+  fish.turnStartedAt = 0;
+  fish.turnDurationMs = 0;
+  fish.direction = 1;
+  if (behaviorId === "sick") {
+    fish.healthUnits = 1;
+  } else if (behaviorId === "dead") {
+    fish.healthUnits = 0;
+    fish.deadAt = renderNow - 1000;
+  }
+
+  let turnActive = false;
+  if (behaviorId === "turn-around") {
+    fish.turnAnimationMode = (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced())
+      ? "simple"
+      : getConfiguredFishTurnAnimationMode(species);
+    const durationMs = Math.max(120, Number(fish.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species, fish.turnAnimationMode));
+    phase = clamp(cycleElapsed / durationMs, 0, 1);
+    turnActive = cycleElapsed <= durationMs;
+    fish.turnDurationMs = durationMs;
+    fish.turnStartedAt = renderNow - phase * durationMs;
+    fish.turnFromDirection = 1;
+    fish.turnToDirection = -1;
+    fish.turnSpinDirection = -1;
+    fish.direction = -1;
+  }
+
+  const imagePath = getFishDisplayAssetPath(fish, species, renderNow) || species.asset;
+  const sourceImage = runtime.images.get(imagePath);
+  if (!isUsableRuntimeImage(sourceImage)) {
+    requestRuntimeImageRecovery(imagePath, { kind: "fish-preview", id: fish.id, speciesId: species.id });
+    if (dom.debugFishBehaviorPreviewStatus) {
+      dom.debugFishBehaviorPreviewStatus.textContent = `Loading ${species.name}…`;
+    }
+    runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
+    return;
+  }
+
+  const renderImage = getFishTintedImage(imagePath, sourceImage, fish);
+  const aspect = sourceImage.height / Math.max(1, sourceImage.width);
+  const maxWidth = viewport.width * 0.7;
+  const maxHeight = viewport.height * 0.62;
+  const drawWidth = Math.max(70, Math.min(maxWidth, maxHeight / Math.max(0.08, aspect)));
+  const drawHeight = drawWidth * aspect;
+  const drawX = -drawWidth / 2 + pose.wiggle * drawWidth * 0.018;
+  const healthRatio = getFishHealthRatio(fish, species);
+  const fishFilter = getFishCanvasFilter(fish, healthRatio, renderNow, behaviorId === "sick" ? 0.25 : 1);
+
+  const previewTurnMode = behaviorId === "turn-around"
+    ? getFishTurnAnimationMode(fish, species)
+    : "simple";
+  const simpleTurnAmount = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+    ? Math.sin(phase * Math.PI)
+    : 0;
+  const simpleTurnDirection = phase < 0.5 ? 1 : -1;
+  const simpleTurnScaleX = 1 - simpleTurnAmount * (1 - FISH_TURN_MIN_SCALE_X);
+  const simpleTurnScaleY = 1 + simpleTurnAmount * (FISH_TURN_MAX_SCALE_Y - 1);
+  const simpleTurnLean = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+    ? -simpleTurnAmount * 0.14
+    : 0;
+  const simpleTurnSway = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+    ? -simpleTurnAmount * 0.8
+    : 0;
+
+  context.save();
+  context.translate(viewport.width / 2 + pose.swayX + simpleTurnSway, viewport.height / 2);
+  context.rotate(pose.tilt + simpleTurnLean);
+  context.scale(behaviorId === "turn-around"
+    ? (previewTurnMode === "simple" ? simpleTurnDirection : 1)
+    : fish.direction, 1);
+  context.scale(pose.bodyScaleX * simpleTurnScaleX, pose.bodyScaleY * simpleTurnScaleY);
+  context.globalAlpha = pose.alpha;
+  context.filter = fishFilter;
+  if (behaviorId === "turn-around" && turnActive && previewTurnMode === "complex") {
+    drawFishTurnaroundRig(context, renderImage, drawX, drawWidth, drawHeight, fish, renderNow);
+  } else {
+    context.drawImage(renderImage, drawX, -drawHeight / 2, drawWidth, drawHeight);
+  }
+  context.restore();
+
+  if (dom.debugFishBehaviorPreviewPhase) {
+    dom.debugFishBehaviorPreviewPhase.textContent = `${Math.round(phase * 100)}%`;
+  }
+  if (dom.debugFishBehaviorPreviewScaleX) {
+    dom.debugFishBehaviorPreviewScaleX.textContent = `${Math.round(pose.bodyScaleX * simpleTurnScaleX * 100)}%`;
+  }
+  if (dom.debugFishBehaviorPreviewScaleY) {
+    dom.debugFishBehaviorPreviewScaleY.textContent = `${Math.round(pose.bodyScaleY * simpleTurnScaleY * 100)}%`;
+  }
+  if (dom.debugFishBehaviorPreviewTilt) {
+    const displayTilt = behaviorId === "dead" ? 180 : Math.round(pose.tilt * 180 / Math.PI);
+    dom.debugFishBehaviorPreviewTilt.textContent = `${displayTilt}°`;
+  }
+  if (dom.debugFishBehaviorPreviewStatus) {
+    dom.debugFishBehaviorPreviewStatus.textContent = `${species.name} · ${getDebugFishBehaviorPreviewOption()?.label || "Preview"}`;
+  }
+
+  runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
+}
+
 function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now()) {
   const species = getSpeciesForFish(selectedFish);
   const config = DEBUG_BEHAVIOR_BUTTON_CONFIGS.find((entry) => entry.action === action);
@@ -2158,4 +2613,3 @@ function resetAllProgress() {
   syncAmbienceAudio();
   showToast("All progress reset.");
 }
-

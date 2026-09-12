@@ -1630,7 +1630,6 @@ function pickAutonomousFishAction(fish, now = Date.now(), options = {}) {
     if (getFishActionAvailability("waitfood", fish, now).enabled) return "waitfood";
   }
   if (options.emergency) return "";
-  if (isTankLightsOut(now) && !isNightActiveFish(fish)) return "sleep";
   const personality = getFishPersonality(fish);
   const choices = ["", "", "inspect", "rest"];
   if (["curious", "explorer", "hunter"].includes(personality)) choices.push("inspect", "inspect", "play");

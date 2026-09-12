@@ -232,7 +232,6 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
   markLightweightCausticDecorImage(context, image, drawX, drawY, width, height, item, now, resolvedMotion, receivesCaustics);
-  drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
   context.restore();
 }
 
@@ -575,13 +574,6 @@ function drawDecorImageLayer(image, drawX, drawY, width, height, item, now, moti
     const decor = runtime.decorMap.get(item.decorKey);
     const imagePath = image === runtime.images.get(decor?.bgPath) ? decor.bgPath : decor?.path;
     drawDecorColorLayerImageToContext(tankContext, image, imagePath || "", item.transitTubeColor, true, drawX, drawY, width, height, item, now, motion, alpha);
-    return;
-  }
-  if (isTankLightsOut(now) && isSpookyDecorItem(item)) {
-    tankContext.save();
-    tankContext.filter = "brightness(118%) saturate(112%) drop-shadow(0 0 12px rgba(118, 210, 180, 0.28))";
-    drawDecorImageLayerToContext(tankContext, image, drawX, drawY, width, height, item, now, motion, alpha);
-    tankContext.restore();
     return;
   }
   drawDecorImageLayerToContext(tankContext, image, drawX, drawY, width, height, item, now, motion, alpha);

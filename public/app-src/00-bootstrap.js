@@ -178,6 +178,26 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugOtocinclusNormalButton", domKey: "debugOtocinclusNormalButton", action: "oto-normal", icon: "&#8634;", label: "Oto Normal", title: "Debug: Return Otocinclus / Dwarf Sucker Catfish to normal behavior", extraClass: "wide" },
   { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
 ]);
+const DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS = Object.freeze([
+  { id: "swim", label: "Normal Swim", description: "The standard cruising pose, body flex, and tail rhythm." },
+  { id: "turn-around", label: "Turn Around", description: "The fish's configured turnaround animation, played at its real duration." },
+  { id: "eat", label: "Eat", description: "A repeated feeding approach and bite motion." },
+  { id: "waitfood", label: "Wait for Food", description: "An alert hover while anticipating the next meal." },
+  { id: "rest", label: "Rest", description: "A quiet hover with reduced motion and slow breathing." },
+  { id: "sleep", label: "Sleep", description: "The settled sleeping posture and minimal body movement." },
+  { id: "zoomies", label: "Zoomies", description: "Fast, energetic flexing used during a burst around the tank." },
+  { id: "greet", label: "Greet", description: "A friendly approach with a short double nod." },
+  { id: "hangout", label: "Hang Out", description: "Relaxed social swimming with an easy synchronized sway." },
+  { id: "play", label: "Play", description: "A lively roll, bounce, and body squash cycle." },
+  { id: "pebble", label: "Find Pebble", description: "The nose-down search, pickup, and raised carry pose." },
+  { id: "dig", label: "Dig", description: "The steep gravel-facing digging pose and repeated push." },
+  { id: "avoid", label: "Avoid", description: "A startled recoil and fast retreat posture." },
+  { id: "breed", label: "Mate", description: "The courtship sway used during a breeding approach." },
+  { id: "hide", label: "Hide", description: "A compressed, cautious posture used while moving into cover." },
+  { id: "inspect", label: "Inspect", description: "A curious close-look pose with small deliberate nods." },
+  { id: "sick", label: "Sick / Critical", description: "Low-health coloring with sluggish, uneven movement." },
+  { id: "dead", label: "Dead Float", description: "The inverted floating pose used after death." }
+]);
 const DEBUG_BEHAVIOR_STEER_REFRESH_MS = 260;
 const DEBUG_BEHAVIOR_FOLLOW_DURATION_MS = 45 * 1000;
 const DEBUG_BEHAVIOR_FOLLOW_DISTANCE_NORM = 0.045;
@@ -268,15 +288,6 @@ const DISEASE_SIGNAL_TYPES = Object.freeze([
   "night_active_still",
   "odd_sleep_spot",
   "lingering_near_bubbler"
-]);
-const LIGHTS_OUT_FEATURE_ENABLED = false;
-const LIGHTS_OUT_OVERRIDE_AUTO = "auto";
-const LIGHTS_OUT_OVERRIDE_ON = "on";
-const LIGHTS_OUT_OVERRIDE_OFF = "off";
-const LIGHTS_OUT_OVERRIDES = Object.freeze([
-  LIGHTS_OUT_OVERRIDE_AUTO,
-  LIGHTS_OUT_OVERRIDE_ON,
-  LIGHTS_OUT_OVERRIDE_OFF
 ]);
 const BEHAVIOR_PERSONALITIES = Object.freeze([
   "bold",
@@ -632,25 +643,25 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
   }),
   "bull-shark": createFishLocomotionProfile({
     movementPattern: "wide-cruise", preferredY: 0.46, verticalSpread: 0.56,
-    targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.86,
+    targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.97,
     hoverChance: 0.015, schoolStrength: 0.08, structureAffinity: 0.64,
     caveAffinity: 0.1, startleStrength: 0.72, turnDurationScale: 0.72,
-    speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 0.82
+    speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 1.2
   }),
   "great-white-shark": createFishLocomotionProfile({
     movementPattern: "wide-cruise", preferredY: 0.42, verticalSpread: 0.46,
-    targetDistanceMin: 0.38, targetDistanceMax: 0.76, headingPersistence: 0.94,
+    targetDistanceMin: 0.38, targetDistanceMax: 0.76, headingPersistence: 0.985,
     hoverChance: 0.006, schoolStrength: 0, structureAffinity: 0.48,
     caveAffinity: 0.04, startleStrength: 0.58, turnDurationScale: 0.62,
-    speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 0.78
+    speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 1.28
   }),
   "hammerhead-shark": createFishLocomotionProfile({
     movementPattern: "search-cruise", preferredY: 0.5, verticalSpread: 0.62,
-    targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.72,
+    targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.95,
     hoverChance: 0.035, schoolStrength: 0.16, schoolSpacingScale: 1.08,
     structureAffinity: 0.72, caveAffinity: 0.16, startleStrength: 0.86,
     turnDurationScale: 0.76, speedMinBlend: 0.5, speedMaxBlend: 0.92,
-    targetDurationScale: 0.9
+    targetDurationScale: 1.15
   }),
   "orca": createFishLocomotionProfile({
     movementPattern: "pod-cruise", preferredY: 0.44, verticalSpread: 0.54,
@@ -1190,13 +1201,6 @@ const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false,
   trypophobiaEnabled: false
 });
-const UV_LIGHT_RENDER_QUALITY_LOW = "low";
-const UV_LIGHT_RENDER_QUALITY_HIGH = "high";
-const DEFAULT_UV_LIGHT_RENDER_QUALITY = UV_LIGHT_RENDER_QUALITY_LOW;
-const UV_LIGHT_RENDER_QUALITY_OPTIONS = Object.freeze([
-  UV_LIGHT_RENDER_QUALITY_LOW,
-  UV_LIGHT_RENDER_QUALITY_HIGH
-]);
 const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
   toolbarTileColor: "#00438a",
@@ -1214,7 +1218,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
   decorShadowsEnabled: false,
-  uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY,
+  simpleTurnAnimationsOnly: false,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
@@ -1701,6 +1705,55 @@ const FISH_TURN_MIN_SCALE_X = 0.42;
 const FISH_TURN_MAX_SCALE_Y = 1.12;
 const FISH_TURN_MIN_MS = 130;
 const FISH_TURN_MAX_MS = 210;
+// The segmented turnaround rig is authored on a 0..1.08 second timeline.
+// Keep the gameplay turn alive for that entire sequence instead of squeezing
+// it into the legacy 130-210ms sprite-flip window.
+const FISH_TURN_RIG_SEGMENTS = 12;
+const FISH_TURN_RIG_COLLAPSE_DURATION = 0.12;
+const FISH_TURN_RIG_COLLAPSE_STEP = 0.055;
+const FISH_TURN_RIG_REBUILD_DURATION = 0.15;
+const FISH_TURN_RIG_REBUILD_STEP = 0.05;
+const FISH_TURN_RIG_FRONT_SHRINK = 0.18;
+const FISH_TURN_RIG_TAIL_SWELL = 0.12;
+const FISH_TURN_RIG_FOLLOWER_LAG = 0.9;
+const FISH_TURN_RIG_TAIL_START_DELAY = 0;
+const FISH_TURN_RIG_REBUILD_OVERLAP = 0.35;
+const FISH_TURN_RIG_EXIT_PULL = 0.58;
+const FISH_TURN_RIG_RELEASE_CURVE = 0.5;
+const FISH_TURN_RIG_HEAD_STAGGER = 1;
+const FISH_TURN_RIG_REVERSE_EMERGENCE_PULL = false;
+const FISH_TURN_RIG_CENTER_SEAM_SCALE = 1;
+const FISH_TURN_RIG_SEAM_BRIDGE = 0;
+const FISH_TURN_RIG_CONTINUOUS_OVERLAP = 0.85;
+const FISH_TURN_RIG_EDGE_SOFTEN_SRC = 1.25;
+const FISH_TURN_RIG_EDGE_SOFTEN_DEST = 1.15;
+const FISH_TURN_RIG_INTERNAL_TIMELINE_MAX = 1.08;
+const FISH_TURN_RIG_TIMELINE_RATE = 0.24;
+const FISH_TURN_RIG_PLAYBACK_SPEED = 2.5;
+const FISH_TURN_RIG_DURATION_MS = (
+  FISH_TURN_RIG_INTERNAL_TIMELINE_MAX
+  / (FISH_TURN_RIG_TIMELINE_RATE * FISH_TURN_RIG_PLAYBACK_SPEED)
+) * 1000;
+const FISH_TURN_RIG_MIN_DURATION_MS = 1000;
+const FISH_TURN_RIG_MAX_DURATION_MS = 3200;
+const FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE = Object.freeze({
+  piranha: 0.86,
+  sucker: 1.08,
+  zombie: 1.15,
+  skeleton: 0.92
+});
+const FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY = 0.55;
+const FISH_TURN_RIG_VISIBLE_MAX_COLUMNS = 48;
+const FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY = 0.08;
+const FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS = 4;
+const FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS = 0.62;
+const fishTurnRigCanvasCache = new WeakMap();
+const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
+  "assets/decor/Cave_Coral_Shelf_1_Trypophobia.png",
+  "assets/decor/Cave_Coral_Shelf_6_Trypophobia.png",
+  "assets/decor/Cave_Coral_Shelf_10_Trypophobia.png",
+  "assets/decor/Cave_Coral_Shelf_9_color2_Trypophobia.png"
+].map((path) => path.toLowerCase()));
 const NAUTILUS_STATE_HOVER = "hover";
 const NAUTILUS_STATE_JET = "jet";
 const NAUTILUS_STATE_GLIDE = "glide";
@@ -2043,17 +2096,6 @@ const SUBMARINE_SPOTLIGHT_LAMP_X_NORM = 0.744;
 const SUBMARINE_SPOTLIGHT_LAMP_Y_NORM = 0.2;
 const SHARK_DESPERATION_ATTACK_COOLDOWN_MS = 9000;
 const SHARK_DESPERATION_ATTACK_RANGE_NORM = 0.075;
-const ENABLE_UV_LIGHT = false;
-const UV_LIGHT_COST = 25;
-const UV_LIGHT_IMAGE_PATH = resolveAppUrl("assets/misc/uvlight.png");
-const UV_LIGHT_ATMOSPHERE_ENABLED = false;
-const UV_LIGHT_GRAVEL_GLOW_HIGH_ENABLED = true;
-const UV_LIGHT_BUBBLE_GLOW_ENABLED = false;
-const UV_LIGHT_WATER_PARTICLE_GLOW_ENABLED = false;
-const UV_LIGHT_CACHE_LOW_MIN_WIDTH = 24;
-const UV_LIGHT_CACHE_LOW_MAX_WIDTH = 176;
-const UV_LIGHT_CACHE_HIGH_MIN_WIDTH = 72;
-const UV_LIGHT_CACHE_HIGH_MAX_WIDTH = 256;
 const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "fish",
   "feedHistory",
@@ -2088,8 +2130,6 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "localBackgroundImageRefId",
   "selectedTankAsset",
   "autoDispenser",
-  "uvLightInstalled",
-  "uvLightEnabled",
   "selectedBubbleAsset",
   "theme",
   "lastCleanedAt",
@@ -2871,6 +2911,19 @@ const dom = {
   debugMenuFish: document.querySelector("#debugMenuFish"),
   debugMenuDirtiness: document.querySelector("#debugMenuDirtiness"),
   debugMenuBehaviors: document.querySelector("#debugMenuBehaviors"),
+  debugFishBehaviorPreviewButton: document.querySelector("#debugFishBehaviorPreviewButton"),
+  debugFishBehaviorPreview: document.querySelector("#debugFishBehaviorPreview"),
+  closeDebugFishBehaviorPreview: document.querySelector("#closeDebugFishBehaviorPreview"),
+  restartDebugFishBehaviorPreview: document.querySelector("#restartDebugFishBehaviorPreview"),
+  debugFishBehaviorPreviewSpecies: document.querySelector("#debugFishBehaviorPreviewSpecies"),
+  debugFishBehaviorPreviewBehavior: document.querySelector("#debugFishBehaviorPreviewBehavior"),
+  debugFishBehaviorPreviewCanvas: document.querySelector("#debugFishBehaviorPreviewCanvas"),
+  debugFishBehaviorPreviewStatus: document.querySelector("#debugFishBehaviorPreviewStatus"),
+  debugFishBehaviorPreviewPhase: document.querySelector("#debugFishBehaviorPreviewPhase"),
+  debugFishBehaviorPreviewScaleX: document.querySelector("#debugFishBehaviorPreviewScaleX"),
+  debugFishBehaviorPreviewScaleY: document.querySelector("#debugFishBehaviorPreviewScaleY"),
+  debugFishBehaviorPreviewTilt: document.querySelector("#debugFishBehaviorPreviewTilt"),
+  debugFishBehaviorPreviewDescription: document.querySelector("#debugFishBehaviorPreviewDescription"),
   debugNotificationUiButton: document.querySelector("#debugNotificationUiButton"),
   debugFishActionIndicatorsButton: document.querySelector("#debugFishActionIndicatorsButton"),
   debugFrameProfilerButton: document.querySelector("#debugFrameProfilerButton"),
@@ -2895,8 +2948,6 @@ const dom = {
   debugCaveButton: document.querySelector("#debugCaveButton"),
   debugDailyRecapButton: document.querySelector("#debugDailyRecapButton"),
   debugFishBehaviorLogButton: document.querySelector("#debugFishBehaviorLogButton"),
-  lightsOutToggleButton: document.querySelector("#lightsOutToggleButton"),
-  lightsOutModeBadge: document.querySelector("#lightsOutModeBadge"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
   loadingOverlayBackground: document.querySelector("#loadingOverlayBackground"),
   loadingOverlayUnderwater: document.querySelector("#loadingOverlayUnderwater"),
@@ -2960,8 +3011,6 @@ const dom = {
   editTankBackgroundColorPanel: document.querySelector("#editTankBackgroundColorPanel"),
   editTankBackgroundList: document.querySelector("#editTankBackgroundList"),
   editTankCustomGravelPanel: document.querySelector("#editTankCustomGravelPanel"),
-  editTankLightingSection: document.querySelector("#editTankLightingSection"),
-  editTankUvLightList: document.querySelector("#editTankUvLightList"),
   foodTray: document.querySelector("#foodTray"),
   foodTrayScroller: document.querySelector("#foodTrayScroller"),
   foodTrayPrev: document.querySelector("#foodTrayPrev"),
@@ -2987,11 +3036,6 @@ const dom = {
   localFishInput: document.querySelector("#localFishInput"),
   tankManagementCard: document.querySelector("#tankManagementCard"),
   tankWaterActionList: document.querySelector("#tankWaterActionList"),
-  tankLightingActionList: document.querySelector("#tankLightingActionList"),
-  tankLightingSection: document.querySelector("#tankLightingSection"),
-  tankLightingSectionTitle: document.querySelector("#tankLightingSectionTitle"),
-  tankLightingSectionNote: document.querySelector("#tankLightingSectionNote"),
-  uvLightList: document.querySelector("#uvLightList"),
   foodShop: document.querySelector("#foodShop"),
   pharmacyShop: document.querySelector("#pharmacyShop"),
   fishList: document.querySelector("#fishList"),
@@ -3052,8 +3096,8 @@ const dom = {
   waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
   causticLightingToggleInput: document.querySelector("#causticLightingToggleInput"),
   decorShadowsToggleInput: document.querySelector("#decorShadowsToggleInput"),
+  simpleTurnAnimationsToggleInput: document.querySelector("#simpleTurnAnimationsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
-  uvLightQualitySelect: document.querySelector("#uvLightQualitySelect"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
   tankMouseLockToggleInput: document.querySelector("#tankMouseLockToggleInput"),
   openEquipmentShopButton: document.querySelector("#openEquipmentShopButton"),
@@ -3063,7 +3107,6 @@ const dom = {
   equipmentBackgroundList: document.querySelector("#equipmentBackgroundList"),
   equipmentBackgroundColorPanel: document.querySelector("#equipmentBackgroundColorPanel"),
   tankAssetList: document.querySelector("#tankAssetList"),
-  equipmentUvLightList: document.querySelector("#equipmentUvLightList"),
   //gravelPaletteSlots: document.querySelector("#gravelPaletteSlots"),
   //gravelPaletteChoices: document.querySelector("#gravelPaletteChoices"),
   customGravelPanel: document.querySelector("#customGravelPanel"),
@@ -3121,6 +3164,8 @@ const dom = {
   inspectorFishSizeInput: document.querySelector("#inspectorFishSizeInput"),
   inspectorFishSizeValue: document.querySelector("#inspectorFishSizeValue"),
   inspectorFishBehaviorSelect: document.querySelector("#inspectorFishBehaviorSelect"),
+  inspectorFishTurnAnimationInput: document.querySelector("#inspectorFishTurnAnimationInput"),
+  inspectorFishTurnAnimationValue: document.querySelector("#inspectorFishTurnAnimationValue"),
   inspectorFishColorSwatches: document.querySelector("#inspectorFishColorSwatches"),
   inspectorFishColorValue: document.querySelector("#inspectorFishColorValue"),
   inspectorFishColorizeInput: document.querySelector("#inspectorFishColorizeInput"),
@@ -3134,7 +3179,6 @@ const dom = {
   editModeDockButton: document.querySelector("#editModeDockButton"),
   equipmentEditModeDockButton: document.querySelector("#equipmentEditModeDockButton"),
   toggleMouseLockButton: document.querySelector("#toggleMouseLockButton"),
-  uvLightToggleButton: document.querySelector("#uvLightToggleButton"),
   editLayerUpButton: document.querySelector("#editLayerUpButton"),
   editLayerDownButton: document.querySelector("#editLayerDownButton"),
   editScaleUpButton: document.querySelector("#editScaleUpButton"),
@@ -3490,8 +3534,7 @@ const runtime = {
   customGravelTintCache: new Map(),
   foodPelletTintCache: new Map(),
   waterParticleTintCache: new Map(),
-  uvGlowMaskCache: new Map(),
-  uvGlowSourceId: 0,
+  imageSourceId: 0,
   gravelSourceStats: new Map(),
   customGravelTopLayerCacheKey: "",
   customGravelTopLayerCanvas: null,
@@ -3530,6 +3573,13 @@ const runtime = {
   lastAnimationUpdateAt: 0,
   debugToolsEnabled: false,
   debugSidebarOpen: false,
+  debugFishBehaviorPreviewOpen: false,
+  debugFishBehaviorPreviewSpeciesId: "",
+  debugFishBehaviorPreviewBehaviorId: "turn-around",
+  debugFishBehaviorPreviewStartedAt: 0,
+  debugFishBehaviorPreviewFrame: 0,
+  debugFishBehaviorPreviewFish: null,
+  debugFishBehaviorPreviewLoadToken: 0,
   aspectRatioLocked: FIXED_16_9_ASPECT_RATIO,
   hiddenKeySequenceBuffer: "",
   debugBreedingSequence: null,
@@ -3710,9 +3760,7 @@ const TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS = Object.freeze([
   "careTaskPaneButton",
   "medicineButton",
   "tipsButton",
-  "toggleMouseLockButton",
-  "lightsOutToggleButton",
-  "uvLightToggleButton"
+  "toggleMouseLockButton"
 ]);
 const TUTORIAL_ALL_TOOLBAR_BUTTON_IDS = Object.freeze([
   ...TUTORIAL_CORE_TOOLBAR_BUTTON_IDS,
@@ -4163,6 +4211,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         imageRefId: storedImage.imageRefId,
         width: pending.width,
         behaviorProfileId: pending.behaviorProfileId,
+        turnAnimation: String(pending.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
         createdAt: now
       }, speciesKey);
       if (!asset) {

@@ -953,7 +953,6 @@ async function init() {
   setupDebugMenuButtons();
   exposeDebugConsoleCommands();
   bindEvents();
-  syncLightingFeatureVisibility();
   const earlyRawState = loadState();
   runtime.hadLocalSaveAtStartup = Boolean(earlyRawState);
   runtime.freshGameSaveLocked = !earlyRawState;
@@ -1052,7 +1051,6 @@ async function init() {
     ...runtime.bubbleCatalog.map((item) => item.path),
     AUTO_DISPENSER_IMAGE_PATH,
     AUTO_DISPENSER_BG_PATH,
-    ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
@@ -1404,12 +1402,11 @@ function syncDebugToolsAuthorization() {
 
   if (!enabled) {
     runtime.debugSidebarOpen = false;
+    if (runtime.debugFishBehaviorPreviewOpen) {
+      closeDebugFishBehaviorPreview();
+    }
     resetDebugFishBehaviorBroadcastState();
     clearAllDebugOtocinclusForcedStates(Date.now());
-  }
-
-  if (changed) {
-    runtime.uvGlowMaskCache.clear();
   }
 
   syncDebugSettingsControls();
@@ -1434,10 +1431,12 @@ function setDebugToolsEnabled(enabled) {
   runtime.debugToolsEnabled = nextEnabled;
   if (!nextEnabled) {
     runtime.debugSidebarOpen = false;
+    if (runtime.debugFishBehaviorPreviewOpen) {
+      closeDebugFishBehaviorPreview();
+    }
     resetDebugFishBehaviorBroadcastState();
     clearAllDebugOtocinclusForcedStates(Date.now());
   }
-  runtime.uvGlowMaskCache.clear();
   syncDebugSettingsControls();
   renderUi(Date.now());
   showToast(nextEnabled ? "Debug tools enabled." : "Debug tools hidden.");
@@ -1666,10 +1665,6 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   if (behaviorSignals[0]?.debugText) {
     detailParts.unshift(behaviorSignals[0].debugText);
     signatureParts.push(`behavior-signal:${behaviorSignals[0].type}`);
-  }
-  if (isTankLightsOut(now)) {
-    detailParts.push(isNightActiveFish(fish) ? "lights out active" : "lights out dim");
-    signatureParts.push("lights-out");
   }
   if (fish.personality) {
     detailParts.push(`trait ${fish.personality}`);

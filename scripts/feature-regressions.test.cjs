@@ -463,7 +463,7 @@ test("fed fish choose personality routines without waiting for depleted meters",
   random.random = () => 0.999;
   const c = load("fish/actions.js", ["pickAutonomousFishAction"], {
     Math: random, sanitizeFishNeeds: () => ({ hunger: 90 }), isMealFreeFish: () => false,
-    FISH_HUNGER_LOW_THRESHOLD: 55, isTankLightsOut: () => false,
+    FISH_HUNGER_LOW_THRESHOLD: 55,
     getFishPersonality: fish => fish.personality, getFishActionAvailability: () => ({ enabled: true }),
     getFishActionPartner: () => ({ id: "pip" }), getRelationshipKindForFish: () => "neutral"
   });
@@ -471,9 +471,6 @@ test("fed fish choose personality routines without waiting for depleted meters",
   assert.equal(c.pickAutonomousFishAction({ personality: "curious" }), "play");
   assert.equal(c.pickAutonomousFishAction({ personality: "social" }), "greet");
   assert.equal(c.pickAutonomousFishAction({ personality: "social", relationships: { pip: { kind: "fear" } } }), "rest");
-  c.isTankLightsOut = () => true;
-  c.isNightActiveFish = () => false;
-  assert.equal(c.pickAutonomousFishAction({}), "sleep");
 });
 
 test("autonomy spaces decisions and leaves active routines and feeding alone", () => {
@@ -1109,6 +1106,57 @@ test("chum sprite variants are normalized to the same apparent size", () => {
   assert.match(meals, /getChumSpriteVisualScale\(appearance\.spritePath\)/);
 });
 
+test("fish turnaround uses the authored segmented rig timeline", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const meals = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
+  const motion = fs.readFileSync(path.join(root, "rendering/fish-motion-and-floor.js"), "utf8");
+  assert.match(bootstrap, /FISH_TURN_RIG_INTERNAL_TIMELINE_MAX = 1\.08/);
+  assert.match(bootstrap, /FISH_TURN_RIG_TIMELINE_RATE = 0\.24/);
+  assert.match(bootstrap, /FISH_TURN_RIG_PLAYBACK_SPEED = 2\.5/);
+  assert.match(meals, /getFishLocomotionProfile\(species \|\| fish\)/);
+  assert.match(meals, /FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE\[effectiveBehavior\]/);
+  assert.match(meals, /FISH_TURN_RIG_DURATION_MS \* speciesScale \* behaviorScale \* typeScale/);
+  assert.match(
+    rendering,
+    /return\s*\(\s*normalized\s*\*\s*FISH_TURN_RIG_INTERNAL_TIMELINE_MAX\s*\)/,
+  );
+  assert.match(rendering, /const advanceWidth\s*=\s*drawWidth\s*\* packedFactor;[\s\S]*const outerX\s*=\s*innerX\s*\+ drawWidth;/);
+  assert.match(rendering, /innerX \+=\s*advanceWidth/);
+  assert.equal(
+    [...rendering.matchAll(/clamp\(\s*segment\.progress,\s*0,\s*1\s*\)/g)].length,
+    2,
+    "both rebuilt chains must clamp progress with explicit numeric bounds"
+  );
+  assert.doesNotMatch(rendering, /clamp\(\s*segment\.progress\s*\)/);
+  assert.doesNotMatch(rendering, /genericTurnRigScaleCompensation/);
+  assert.doesNotMatch(rendering, /FISH_TURN_(?:MIN_SCALE_X|MAX_SCALE_Y)/);
+  assert.match(rendering, /fish\.turnFinalFrameRenderedAt = now/);
+  assert.match(motion, /progress >= 1 && Number\(fish\.turnFinalFrameRenderedAt\) > 0/);
+  assert.match(motion, /fish\.turnDurationMs = getFishTurnDurationMs\(fish, species\);\s*fish\.turnFinalFrameRenderedAt = 0/);
+  const predatorsAndMotion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
+  assert.match(predatorsAndMotion, /const segmentedTurnaroundActive = effectiveBehavior !== "sucker"/);
+  assert.match(predatorsAndMotion, /segmentedTurnaroundProgress < FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS/);
+  assert.match(predatorsAndMotion, /const turnaroundMovementBlend = turnaroundMovementRaw/);
+  assert.match(predatorsAndMotion, /speedMultiplier \*= 0\.12 \+ turnaroundMovementBlend \* 0\.88/);
+  assert.match(predatorsAndMotion, /fish\.motionVelocityXNorm = 0;\s*fish\.motionVelocityYNorm = 0/);
+  assert.match(predatorsAndMotion, /if \(moveDistance > 0\.0001 && !turnaroundHoldsPosition\)/);
+});
+
+test("retired light controls and UV glow passes stay removed while turnaround receives caustics", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
+  const tankRendering = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+  const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
+  assert.doesNotMatch(`${bootstrap}\n${rendering}\n${html}`, /uvLight|UvLight|UV_LIGHT|lightsOut|LightsOut|LIGHTS_OUT/);
+  assert.match(rendering, /drawFishTurnaroundRig[\s\S]*markLightweightCausticTurnaroundRig/);
+  assert.match(tankRendering, /function markLightweightCausticTurnaroundRig[\s\S]*drawFishTurnaroundRig/);
+  assert.match(tankRendering, /columnDensity: FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY/);
+  assert.match(tankRendering, /maximumColumns: FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS/);
+  assert.match(rendering, /FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY/);
+  assert.match(rendering, /FISH_TURN_RIG_VISIBLE_MAX_COLUMNS/);
+});
+
 
 test("vehicle bubble streams use popping and maximum malformed settings", () => {
   const machinery = fs.readFileSync(path.join(root, "machinery/submarine.js"), "utf8");
@@ -1468,6 +1516,7 @@ test("decor assets keep explicit sizing and bubbler light textures remain option
     if (/^Frozen_/i.test(file)) return false;
     if (retiredLooseDecor.has(file)) return false;
     if (/_color[123]\.png$/i.test(file)) return false;
+    if (/_Trypophobia\.png$/i.test(file)) return false;
     return !/_(?:bg|mid|fg|light|mask|trigger|triggers|seat|seats)\.png$/i.test(file);
   });
 
@@ -2110,6 +2159,30 @@ test("Otocinclus debug controls force back glass, swimming, front glass, and nor
   assert.match(motion, /forcedOtocinclusState === "swim"/);
   assert.match(motion, /forcedOtocinclusState === "back" \|\| forcedOtocinclusState === "front"/);
   assert.match(tools, /clearAllDebugOtocinclusForcedStates\(Date\.now\(\)\)/);
+});
+
+test("debug fish behavior viewer previews every action on a stationary specimen", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const debug = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");
+  const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const actionIds = ["eat", "waitfood", "rest", "sleep", "zoomies", "greet", "hangout", "play", "pebble", "dig", "avoid", "breed", "hide", "inspect"];
+
+  assert.match(html, /id="debugFishBehaviorPreviewButton"/);
+  assert.match(html, /id="debugFishBehaviorPreview"[\s\S]*id="debugFishBehaviorPreviewCanvas"/);
+  assert.match(html, /debugFishBehaviorPreviewSpecies[\s\S]*debugFishBehaviorPreviewBehavior[\s\S]*restartDebugFishBehaviorPreview/);
+  for (const actionId of actionIds) {
+    assert.match(bootstrap, new RegExp(`id: "${actionId}"`));
+  }
+  assert.match(bootstrap, /id: "swim"[\s\S]*id: "turn-around"[\s\S]*id: "sick"[\s\S]*id: "dead"/);
+  assert.match(debug, /function openDebugFishBehaviorPreview/);
+  assert.match(debug, /function renderDebugFishBehaviorPreviewFrame/);
+  assert.match(debug, /drawFishTurnaroundRig\(context, renderImage/);
+  assert.match(debug, /context\.translate\(viewport\.width \/ 2 \+ pose\.swayX, viewport\.height \/ 2\)/);
+  assert.match(events, /debugFishBehaviorPreviewButton[\s\S]*openDebugFishBehaviorPreview/);
+  assert.match(css, /\.debug-fish-behavior-preview\s*\{[\s\S]*?pointer-events:\s*auto/);
+  assert.match(css, /\.debug-fish-behavior-preview-stage[\s\S]*\.debug-fish-behavior-preview-readouts/);
 });
 
 test("Otocinclus uses top, side and bottom views with dedicated gravel scanning", () => {

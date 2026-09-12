@@ -275,6 +275,9 @@ function sanitizeFish(fish, options = {}) {
     appearanceAssetPath: typeof fish.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null,
     scale: clamp(Number(fish.scale) || resolveFishBaseScale(fish.speciesId), FISH_SCALE_MIN, FISH_SCALE_MAX),
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(fish.behaviorSpeciesId, fish.speciesId),
+    turnAnimationPreference: ["simple", "complex"].includes(String(fish.turnAnimationPreference || "").trim().toLowerCase())
+      ? String(fish.turnAnimationPreference).trim().toLowerCase()
+      : "",
     fishColor: normalizeDecorColorSetting(fish.fishColor ?? fish.colorSetting ?? ""),
     fishColorize: normalizeDecorColorizeSetting(fish.fishColorize ?? false),
     hueShift: sanitizeFishHueShift(fish.hueShift),

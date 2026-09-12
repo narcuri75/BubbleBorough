@@ -1,22 +1,6 @@
 // Source fragment: decor/customization.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
-function isUvLightOwned(targetState = state) {
-  return Boolean(ENABLE_UV_LIGHT && targetState?.uvLightOwned);
-}
-
-function isUvLightFeatureEnabled() {
-  return ENABLE_UV_LIGHT;
-}
-
-function isUvLightInstalled(targetTank = getCurrentTank()) {
-  return Boolean(isUvLightFeatureEnabled() && isUvLightOwned() && targetTank?.uvLightInstalled);
-}
-
-function isUvLightActive(targetTank = getCurrentTank()) {
-  return Boolean(isUvLightInstalled(targetTank) && targetTank?.uvLightEnabled !== false);
-}
-
 function createTankState(options = {}) {
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const typeMeta = getTankTypeMeta("rectangular");
@@ -86,9 +70,6 @@ function createTankState(options = {}) {
     localBackgroundImageRefId: sanitizeCustomImageRefId(options.localBackgroundImageRefId),
     selectedTankAsset: options.selectedTankAsset ?? null,
     autoDispenser: createDefaultAutoDispenserState(options.autoDispenser),
-    uvLightInstalled: false,
-    uvLightEnabled: false,
-    lightsOutOverride: normalizeLightsOutOverride(options.lightsOutOverride),
     selectedBubbleAsset: options.selectedBubbleAsset ?? (runtime.bubbleCatalog[0]?.key || null),
     theme: DEFAULT_THEME,
     lastCleanedAt: Number.isFinite(options.lastCleanedAt) ? options.lastCleanedAt : now,
@@ -1457,6 +1438,17 @@ function getDecorDefaultCaveColorSettings(decorKey = "") {
   return null;
 }
 
+function normalizeDecorTrypophobiaLookupPath(path = "") {
+  return String(path || "")
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .toLowerCase();
+}
+
+function isKnownDecorTrypophobiaVariantPath(path = "") {
+  return KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS.has(normalizeDecorTrypophobiaLookupPath(path));
+}
+
 function buildTrypophobiaVariantPath(imagePath = "") {
   const path = String(imagePath || "");
   if (!path || /^(?:data:|blob:)/i.test(path) || /_trypophobia(?=\.[^./?#]+(?:[?#].*)?$)/i.test(path)) {
@@ -1471,7 +1463,8 @@ function getDecorLayerTrypophobiaPath(decor, layer) {
     return explicitPath;
   }
   const sourcePath = layer?.isBaseLayer ? decor?.path : resolveDecorColorLayerPath(layer);
-  return buildTrypophobiaVariantPath(sourcePath);
+  const candidatePath = buildTrypophobiaVariantPath(sourcePath);
+  return isKnownDecorTrypophobiaVariantPath(candidatePath) ? candidatePath : "";
 }
 
 function getDecorTrypophobiaCandidatePaths(decor) {

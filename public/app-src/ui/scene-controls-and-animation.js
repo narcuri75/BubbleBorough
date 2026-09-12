@@ -659,63 +659,6 @@ function renderSolidBackgroundControls() {
 }
 
 
-function syncLightingFeatureVisibility() {
-  const enabled = isUvLightFeatureEnabled();
-  for (const section of [dom.tankLightingSection, dom.equipmentLightingSection]) {
-    if (section) section.hidden = !enabled;
-  }
-  if (dom.editTankLightingSection) dom.editTankLightingSection.hidden = !enabled || runtime.editTankTrayTab !== "equipment";
-  if (dom.equipmentPanelDescription) dom.equipmentPanelDescription.textContent = enabled
-    ? "Adjust the current aquarium's background, gravel, and UV light."
-    : "Adjust the current aquarium's background and gravel.";
-}
-
-function renderUvLightControls() {
-  const containers = [
-    ["uv-light-controls", dom.uvLightList],
-    ["equipment-uv-light-controls", dom.equipmentUvLightList],
-    ["edit-tank-uv-light-controls", dom.editTankUvLightList]
-  ].filter(([, container]) => container);
-  if (!containers.length) {
-    return;
-  }
-
-  const uvLightVisible = isUvLightFeatureEnabled();
-  for (const [, container] of containers) {
-    if (container instanceof HTMLElement) {
-      container.hidden = !uvLightVisible;
-    }
-  }
-  if (!uvLightVisible) {
-    for (const [cacheKey, container] of containers) {
-      setMarkupIfChanged(cacheKey, container, "");
-    }
-    return;
-  }
-
-  const owned = isUvLightOwned();
-  const installed = isUvLightInstalled();
-  const active = isUvLightActive();
-  const markup = owned
-    ? `
-      <article class="background-card uv-light-card ${installed ? "is-selected" : ""}">
-        <img class="scene-thumb" ${assetImageAttributes(UV_LIGHT_IMAGE_PATH)} alt="UV light" />
-        <div>
-          <strong>UV Light</strong>
-          <div class="fish-meta">${installed ? `Added to this tank. Toolbar switch is ${active ? "on" : "off"}.` : "Owned and ready to add."}</div>
-        </div>
-        <div class="shop-button-row">
-          <button type="button" data-toggle-uv-light-install>${installed ? "Remove from Tank" : "Add to Tank"}</button>
-        </div>
-      </article>
-    `
-    : `<div class="empty-state">Buy a UV light from the Tank Shop to add blacklight glow to this aquarium.</div>`;
-
-  for (const [cacheKey, container] of containers) {
-    setMarkupIfChanged(cacheKey, container, markup);
-  }
-}
-
 function renderCustomGravelControls() {
   const standardContainers = [
     ["custom-gravel-panel", dom.customGravelPanel],
@@ -1053,48 +996,6 @@ function renderControls(now) {
   dom.careMenuButton?.setAttribute("aria-expanded", String(runtime.medicineTrayOpen));
   dom.editMenuButton?.setAttribute("aria-expanded", "false");
   dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu) && toolbarCareMenuOpen);
-  if (dom.lightsOutToggleButton) {
-    if (!LIGHTS_OUT_FEATURE_ENABLED) {
-      dom.lightsOutToggleButton.hidden = true;
-      dom.lightsOutToggleButton.disabled = true;
-      dom.lightsOutToggleButton.classList.remove("is-active");
-      dom.lightsOutToggleButton.dataset.mode = "disabled";
-      dom.lightsOutToggleButton.title = "Lights Out: Disabled";
-      dom.lightsOutToggleButton.setAttribute("aria-label", "Lights Out disabled");
-      dom.lightsOutToggleButton.setAttribute("aria-pressed", "false");
-      if (dom.lightsOutModeBadge) {
-        dom.lightsOutModeBadge.textContent = "OFF";
-      }
-    } else {
-      const override = getLightsOutOverride();
-      const active = isTankLightsOut(now);
-      const modeText = override === LIGHTS_OUT_OVERRIDE_AUTO
-        ? "Auto"
-        : override === LIGHTS_OUT_OVERRIDE_ON
-          ? "On"
-          : "Off";
-      dom.lightsOutToggleButton.hidden = false;
-      dom.lightsOutToggleButton.disabled = false;
-      dom.lightsOutToggleButton.classList.toggle("is-active", active);
-      dom.lightsOutToggleButton.dataset.mode = override;
-      dom.lightsOutToggleButton.title = `Lights Out: ${modeText}`;
-      dom.lightsOutToggleButton.setAttribute("aria-label", `Lights Out ${modeText}`);
-      dom.lightsOutToggleButton.setAttribute("aria-pressed", String(active));
-      if (dom.lightsOutModeBadge) {
-        dom.lightsOutModeBadge.textContent = override === LIGHTS_OUT_OVERRIDE_AUTO ? "A" : override === LIGHTS_OUT_OVERRIDE_ON ? "ON" : "OFF";
-      }
-    }
-  }
-  if (dom.uvLightToggleButton) {
-    const uvLightVisible = isUvLightFeatureEnabled();
-    const uvInstalled = isUvLightInstalled();
-    const uvActive = isUvLightActive();
-    dom.uvLightToggleButton.hidden = !uvLightVisible || !uvInstalled;
-    dom.uvLightToggleButton.classList.toggle("is-active", uvActive);
-    dom.uvLightToggleButton.title = uvActive ? "Turn UV Light Off" : "Turn UV Light On";
-    dom.uvLightToggleButton.setAttribute("aria-label", uvActive ? "Turn UV Light Off" : "Turn UV Light On");
-    dom.uvLightToggleButton.setAttribute("aria-pressed", String(uvActive));
-  }
   if (dom.toolbarTab) {
     const uiSettings = getUiSettings();
     const toolbarCollapsed = uiSettings.toolbarCollapsed;

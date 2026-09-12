@@ -901,27 +901,3 @@ function buyAutoDispenser() {
     toast: "Pellet dispenser installed."
   });
 }
-
-function buyUvLight() {
-  if (!isUvLightFeatureEnabled()) {
-    showToast("UV light is disabled.");
-    return;
-  }
-
-  if (isUvLightOwned()) {
-    showToast("You already own a UV light.");
-    return;
-  }
-
-  return performCoinTransaction({
-    amount: UV_LIGHT_COST,
-    insufficientMessage: `You need ${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)} for the UV light.`,
-    apply: () => {
-      state.uvLightOwned = true;
-      state.uvLightInstalled = true;
-      state.uvLightEnabled = true;
-    },
-    event: { type: "equipment", tone: "positive", text: "Installed a UV light for blacklight glow." },
-    toast: "UV light installed and switched on."
-  });
-}

@@ -18,13 +18,6 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="stylesheet" href="./public/styles.css?v=20260911-ratio-lock-r1" />
-  <style>
-    #lightsOutToggleButton:disabled {
-      opacity: 0.38;
-      filter: grayscale(0.75) saturate(0.35);
-      cursor: not-allowed;
-    }
-  </style>
 </head>
 
 <body>
@@ -358,24 +351,6 @@
                       </div>
                     </section>
 
-                    <section id="tankLightingSection" class="info-card full-span collapsible-section" data-collapsible-section="decorLighting">
-                      <div class="collapsible-header">
-                        <button class="collapsible-toggle" type="button" data-collapsible-toggle="decorLighting"
-                          aria-expanded="true">
-                          <span id="tankLightingSectionTitle" class="collapsible-title">Lighting</span>
-                          <span class="collapsible-icon" data-collapsible-icon>â¬†ï¸</span>
-                        </button>
-                      </div>
-                      <div data-collapsible-body>
-                        <div class="compact-heading equipment-heading">
-                          <p id="tankLightingSectionNote">Add or remove a UV light here.</p>
-                          <button id="openEquipmentShopButton" class="small-button alt" type="button">
-                            Tank Shop
-                          </button>
-                        </div>
-                      </div>
-                    </section>
-
                     <section class="info-card full-span collapsible-section"
                       data-collapsible-section="decorCustomGravel">
                       <div class="collapsible-header">
@@ -697,6 +672,14 @@
                         </div>
                         <input id="decorShadowsToggleInput" class="settings-checkbox" type="checkbox" />
                       </label>
+
+                      <label class="settings-toggle-row" for="simpleTurnAnimationsToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Simple Turn Animations</span>
+                          <span class="settings-toggle-note">Forces the lightweight turnaround animation for every fish.</span>
+                        </div>
+                        <input id="simpleTurnAnimationsToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
                     </section>
 
                     </div>
@@ -863,17 +846,6 @@
                     <div id="equipmentCustomGravelPanel"></div>
                   </section>
 
-                  <section id="equipmentLightingSection" class="settings-section">
-                    <div class="equipment-heading">
-                      <div>
-                        <h3 id="equipmentLightingSectionTitle">Lighting</h3>
-                        <p id="equipmentLightingSectionNote" class="settings-section-note">Add or remove a UV light here.</p>
-                      </div>
-                      <button id="openEquipmentStoreButton" class="small-button alt" type="button">
-                        Tank Shop
-                      </button>
-                    </div>
-                  </section>
                 </div>
               </div>
             </section>
@@ -1141,12 +1113,6 @@
 
 
 
-              <button id="lightsOutToggleButton" class="dock-button lights-out" type="button" title="Lights Out: Disabled"
-                aria-label="Lights Out disabled" aria-pressed="false" disabled hidden>
-                <span class="dock-button-night-icon" aria-hidden="true"></span>
-                <span id="lightsOutModeBadge" class="dock-button-mode-badge" aria-hidden="true">OFF</span>
-              </button>
-
               <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
                 aria-label="Settings">
                 <img class="dock-button-icon" data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true"
@@ -1266,7 +1232,14 @@
 
                 <div class="debug-menu-section">
                   <h3>Behavior:</h3>
-                  <div id="debugMenuBehaviors" class="debug-menu-grid"></div>
+                  <div id="debugMenuBehaviors" class="debug-menu-grid">
+                    <button id="debugFishBehaviorPreviewButton" class="debug-menu-button wide" type="button"
+                      data-preserve-fish-selection title="Debug: Open stationary fish behavior viewer"
+                      aria-label="Debug: Open stationary fish behavior viewer">
+                      <span class="debug-menu-icon">&#127916;</span>
+                      <span>Behavior Viewer</span>
+                    </button>
+                  </div>
                 </div>
                 <div class="debug-menu-section">
                   <h3>UI Experiments</h3>
@@ -1294,6 +1267,50 @@
                 <div id="debugLivingBoroughPanel"></div>
               </div>
             </aside>
+
+            <section id="debugFishBehaviorPreview" class="debug-fish-behavior-preview" hidden
+              aria-labelledby="debugFishBehaviorPreviewTitle" data-preserve-fish-selection>
+              <div class="debug-fish-behavior-preview-backdrop" data-debug-fish-preview-close></div>
+              <div class="debug-fish-behavior-preview-panel" role="dialog" aria-modal="true">
+                <header class="debug-fish-behavior-preview-header">
+                  <div>
+                    <span class="debug-fish-behavior-preview-kicker">Developer tool</span>
+                    <h2 id="debugFishBehaviorPreviewTitle">Fish behavior viewer</h2>
+                    <p>Inspect every animation without the fish moving across the tank.</p>
+                  </div>
+                  <button id="closeDebugFishBehaviorPreview" class="icon-button" type="button"
+                    aria-label="Close fish behavior viewer">&times;</button>
+                </header>
+
+                <div class="debug-fish-behavior-preview-controls">
+                  <label>
+                    <span>Fish</span>
+                    <select id="debugFishBehaviorPreviewSpecies"></select>
+                  </label>
+                  <label>
+                    <span>Behavior</span>
+                    <select id="debugFishBehaviorPreviewBehavior"></select>
+                  </label>
+                  <button id="restartDebugFishBehaviorPreview" class="small-button alt" type="button">Replay</button>
+                </div>
+
+                <div class="debug-fish-behavior-preview-stage">
+                  <canvas id="debugFishBehaviorPreviewCanvas" width="960" height="480"
+                    aria-label="Stationary animated fish behavior preview"></canvas>
+                  <div class="debug-fish-behavior-preview-crosshair" aria-hidden="true"></div>
+                  <div id="debugFishBehaviorPreviewStatus" class="debug-fish-behavior-preview-status">Loading fish…</div>
+                </div>
+
+                <div class="debug-fish-behavior-preview-readouts" aria-live="polite">
+                  <div><span>Phase</span><strong id="debugFishBehaviorPreviewPhase">0%</strong></div>
+                  <div><span>Body width</span><strong id="debugFishBehaviorPreviewScaleX">100%</strong></div>
+                  <div><span>Body height</span><strong id="debugFishBehaviorPreviewScaleY">100%</strong></div>
+                  <div><span>Tilt</span><strong id="debugFishBehaviorPreviewTilt">0°</strong></div>
+                </div>
+
+                <p id="debugFishBehaviorPreviewDescription" class="debug-fish-behavior-preview-description"></p>
+              </div>
+            </section>
 
             <section id="fishInspector" class="fish-inspector" hidden>
               <div class="fish-inspector-card">
@@ -1358,6 +1375,12 @@
                   <label class="inspector-setting-row inspector-setting-row-select">
                     <span>Behavior</span>
                     <select id="inspectorFishBehaviorSelect" data-inspector-fish-setting="behavior"></select>
+                  </label>
+                  <label class="inspector-setting-row">
+                    <span>Turn Style</span>
+                    <input id="inspectorFishTurnAnimationInput" class="settings-checkbox" type="checkbox"
+                      data-inspector-fish-setting="turnAnimation" aria-label="Use complex turnaround animation for this fish" />
+                    <strong id="inspectorFishTurnAnimationValue">Simple</strong>
                   </label>
                   <div class="fish-inspector-color-card">
                     <div class="bubbler-color-row cave-color-layer-header">

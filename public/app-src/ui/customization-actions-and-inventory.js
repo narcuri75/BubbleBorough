@@ -19,6 +19,7 @@ function renderCustomFishCreationOverlay() {
     : "1 / 1";
   const rotation = sanitizeCustomFishRotation(pending.rotation);
   const flipped = Boolean(pending.flipX);
+  const complexTurnaround = String(pending.turnAnimation || "simple").trim().toLowerCase() === "complex";
   const transform = getPendingCustomFishTransform(pending);
 
   return `
@@ -73,6 +74,13 @@ function renderCustomFishCreationOverlay() {
             step="1"
             value="${width}"
             data-custom-fish-size-input />
+        </label>
+        <label class="cave-colorize-toggle custom-fish-turn-toggle">
+          <input
+            type="checkbox"
+            data-custom-fish-turn-toggle
+            ${complexTurnaround ? "checked" : ""} />
+          <span>Complex turn around animation</span>
         </label>
         <label class="cave-colorize-toggle custom-fish-flip-toggle">
           <input
@@ -454,17 +462,11 @@ function renderSettingsOverlay() {
     dom.decorShadowsToggleInput.checked = uiSettings.decorShadowsEnabled;
     dom.decorShadowsToggleInput.closest(".settings-toggle-row")?.toggleAttribute("hidden", !DECOR_SHADOWS_SETTING_ENABLED);
   }
+  if (dom.simpleTurnAnimationsToggleInput) {
+    dom.simpleTurnAnimationsToggleInput.checked = uiSettings.simpleTurnAnimationsOnly === true;
+  }
   if (dom.halloweenModeSelect instanceof HTMLSelectElement) {
     dom.halloweenModeSelect.value = uiSettings.halloweenMode;
-  }
-  const uvLightQualitySection = dom.uvLightQualitySelect?.closest(".settings-section");
-  if (dom.uvLightQualitySelect instanceof HTMLSelectElement) {
-    const uvLightSettingsVisible = isUvLightFeatureEnabled();
-    dom.uvLightQualitySelect.value = uiSettings.uvLightQuality;
-    dom.uvLightQualitySelect.disabled = !uvLightSettingsVisible;
-    if (uvLightQualitySection instanceof HTMLElement) {
-      uvLightQualitySection.hidden = !uvLightSettingsVisible;
-    }
   }
   if (dom.tutorialSettingsSection) {
     dom.tutorialSettingsSection.hidden = !tutorialAvailable;
@@ -771,8 +773,6 @@ function renderTutorialGuidance() {
     "openEquipmentButton",
     "openSettingsButton",
     "toggleMouseLockButton",
-    "lightsOutToggleButton",
-    "uvLightToggleButton"
   ];
   const clearSpotlights = () => {
     dom.tankDisplay?.classList.remove("is-tutorial-pulse");
@@ -3565,33 +3565,6 @@ function renderEquipmentShop() {
       </article>
   `;
 
-  const uvLightMarkup = isUvLightFeatureEnabled()
-    ? (() => {
-      const uvLightOwned = isUvLightOwned();
-      const uvLightInstalled = isUvLightInstalled();
-      const uvLightActive = isUvLightActive();
-      return `
-      <article class="shop-card">
-        <img class="shop-thumb uv-light-shop-thumb" ${assetImageAttributes(UV_LIGHT_IMAGE_PATH)} alt="UV light" />
-        <div class="shop-meta shop-card-main">
-          <div>
-            <strong>UV Light</strong>
-            <div class="fish-meta">${uvLightOwned ? (uvLightInstalled ? `Added to this tank | ${uvLightActive ? "On" : "Off"}` : "Owned | Not added to this tank") : "Not owned"}</div>
-          </div>
-          <div class="fish-meta">Adds a blacklight glow pass for fish and decor colors that naturally react under UV.</div>
-          <div class="mini-note">Once owned, add or remove it from the Edit Tank panel.</div>
-        </div>
-        <div class="shop-meta shop-card-actions">
-          <span class="price-tag">${uvLightOwned ? "Unlocked" : `${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)}`}</span>
-          <div class="shop-button-row">
-            <button class="buy-button" data-buy-uv-light="true" ${uvLightOwned ? "disabled" : ""}>${uvLightOwned ? "Owned" : "Buy & Add"}</button>
-          </div>
-        </div>
-      </article>
-  `;
-    })()
-    : "";
-
   const backgroundMarkup = runtime.backgroundCatalog
     .filter((background) => !background.defaultUnlocked)
     .map((background) => {
@@ -3630,16 +3603,6 @@ function renderEquipmentShop() {
 
 
   const markup = `
-    ${uvLightMarkup ? `
-    <section class="shop-section">
-      <div class="shop-section-heading">
-        <h3>Lighting</h3>
-        <p>Unlock a blacklight effect and switch it per tank from the toolbar.</p>
-      </div>
-      <div class="shop-section-cards">
-        ${uvLightMarkup}
-      </div>
-    </section>` : ""}
     <section class="shop-section">
       <div class="shop-section-heading">
         <h3>Backgrounds</h3>

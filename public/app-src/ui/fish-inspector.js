@@ -389,9 +389,21 @@ function renderFishInspectorColorControls(fish) {
 function updateInspectorFishReadouts(fish) {
   const sizePercent = Math.round(clamp(Number(fish?.scale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX) * 100);
   const activeColor = getFishColorSetting(fish);
+  const species = getSpeciesForFish(fish);
+  const storedTurnPreference = String(fish?.turnAnimationPreference || "").trim().toLowerCase();
+  const preferredTurnMode = ["simple", "complex"].includes(storedTurnPreference)
+    ? storedTurnPreference
+    : getConfiguredFishTurnAnimationMode(species);
   setInspectorInputValue(dom.inspectorFishSizeInput, sizePercent);
   setTextIfChanged(dom.inspectorFishSizeValue, `${sizePercent}%`);
   setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(activeColor));
+  if (dom.inspectorFishTurnAnimationInput instanceof HTMLInputElement) {
+    dom.inspectorFishTurnAnimationInput.checked = preferredTurnMode === "complex";
+    dom.inspectorFishTurnAnimationInput.title = areSimpleTurnAnimationsForced()
+      ? "Graphics settings currently force Simple turns for all fish. This preference will apply when that override is disabled."
+      : "Use the complex segmented turnaround for this fish.";
+  }
+  setTextIfChanged(dom.inspectorFishTurnAnimationValue, preferredTurnMode === "complex" ? "Complex" : "Simple");
   if (dom.inspectorFishColorizeInput instanceof HTMLInputElement) {
     dom.inspectorFishColorizeInput.checked = getFishColorizeSetting(fish);
   }
@@ -434,6 +446,16 @@ function updateInspectorFishSetting(setting, rawValue, options = {}) {
           if (effectiveSpecies) {
             enforceFishLayerBoundary(fish, effectiveSpecies);
           }
+          changed = true;
+        }
+        break;
+      }
+      case "turnAnimation": {
+        const nextTurnAnimation = rawValue === true || String(rawValue).trim().toLowerCase() === "complex"
+          ? "complex"
+          : "simple";
+        if (fish.turnAnimationPreference !== nextTurnAnimation) {
+          fish.turnAnimationPreference = nextTurnAnimation;
           changed = true;
         }
         break;

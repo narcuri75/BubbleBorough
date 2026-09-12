@@ -146,11 +146,6 @@ function sanitizeFishBehaviorSpeciesId(value, baseSpeciesId = "") {
     : "";
 }
 
-function normalizeLightsOutOverride(value) {
-  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
-  return LIGHTS_OUT_OVERRIDES.includes(normalized) ? normalized : LIGHTS_OUT_OVERRIDE_AUTO;
-}
-
 function normalizeBehaviorPersonality(value) {
   const normalized = typeof value === "string"
     ? value.trim().toLowerCase().replace(/[_\s]+/g, "-")
@@ -547,9 +542,6 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now(), comfortVal
   }
   if (diseaseSaturationPercent < 100 || diseaseBrightnessPercent < 100) {
     filters.push(`saturate(${diseaseSaturationPercent}%) brightness(${diseaseBrightnessPercent}%)`);
-  }
-  if (!isFishDead(fish) && isTankLightsOut(now)) {
-    filters.push(isNightActiveFish(fish) ? "brightness(108%) saturate(96%)" : "brightness(84%) saturate(82%)");
   }
   if (grayscalePercent > 0) {
     filters.push(`grayscale(${grayscalePercent}%)`);
@@ -1793,24 +1785,6 @@ function maybeApplyDiseaseAvoidanceReaction(fish, species, now = Date.now()) {
   return true;
 }
 
-function getLightsOutOverride(targetTank = getCurrentTank()) {
-  return normalizeLightsOutOverride(targetTank?.lightsOutOverride);
-}
-
-function isTankLightsOut(now = Date.now(), targetTank = getCurrentTank()) {
-  if (!LIGHTS_OUT_FEATURE_ENABLED) {
-    return false;
-  }
-  const override = getLightsOutOverride(targetTank);
-  if (override === LIGHTS_OUT_OVERRIDE_ON) {
-    return true;
-  }
-  if (override === LIGHTS_OUT_OVERRIDE_OFF) {
-    return false;
-  }
-  return isCaveNightWindow(now);
-}
-
 function isNightActiveFish(fishOrSpecies) {
   const profile = getFishBehaviorProfile(fishOrSpecies);
   const personality = normalizeBehaviorPersonality(fishOrSpecies?.personality);
@@ -1874,9 +1848,9 @@ function getBehaviorHistoryEventText(signalType, fish, options = {}) {
     case "inspect_lure":
       return `${name} keeps inspecting a lure.`;
     case "night_sleep":
-      return `${name} settled into a sleep spot after lights out.`;
+      return `${name} settled into a sleep spot for the night.`;
     case "night_forage":
-      return `${name} is moving after lights out.`;
+      return `${name} is moving around at night.`;
     case "night_active_still":
       return `${name} has been unusually still at night.`;
     case "odd_sleep_spot":
@@ -2253,91 +2227,6 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
   return null;
 }
 
-function pickNightBehaviorTarget(fish, species, now = Date.now()) {
-  if (!isTankLightsOut(now)) {
-    return null;
-  }
-  const personality = getFishPersonality(fish);
-  const nightActive = isNightActiveFish(fish);
-  if (nightActive) {
-    const forage = pickDecorHangoutTarget(species, fish, now, {
-      allowedZoneTypes: ["hardscape", "plant", "hide"],
-      chanceMultiplier: 1.9,
-      lingerMultiplier: 0.9,
-      preferBackLayer: false
-    });
-    if (forage) {
-      return {
-        ...forage,
-        intentType: "night forage",
-        intentCause: "night-active",
-        signalType: "night_forage",
-        debugText: "night forage | night-active"
-      };
-    }
-    return {
-      xNorm: randomSwimX(),
-      yNorm: randomBetween(0.56, 0.82),
-      targetLayer: clampTankLayer(Math.max(1, getFishTankLayer(fish))),
-      targetAt: now + randomBetween(3600, 7600),
-      intentType: "night forage",
-      intentCause: "night-active",
-      signalType: "night_forage",
-      debugText: "night forage | night-active"
-    };
-  }
-
-  const assignedResidence = getAssignedResidenceTarget(fish, species, now);
-  if (assignedResidence) {
-    return assignedResidence;
-  }
-
-  const homeSpot = fish.favoriteSpot && ["homebody", "routine-loving"].includes(personality)
-    ? fish.favoriteSpot
-    : null;
-  if (homeSpot && Math.random() < 0.65) {
-    return {
-      xNorm: homeSpot.xNorm,
-      yNorm: homeSpot.yNorm,
-      targetLayer: getFishTankLayer(fish),
-      targetAt: now + randomBetween(8000, 18000),
-      intentType: "night sleep",
-      intentCause: "favorite spot",
-      signalType: "night_sleep",
-      debugText: "night sleep | lights out"
-    };
-  }
-  const cover = pickDecorHangoutTarget(species, fish, now, {
-    allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
-    chanceMultiplier: ["shy", "sensitive", "homebody"].includes(personality) ? 2.2 : 1.2,
-    lingerMultiplier: 2.3,
-    preferBackLayer: true
-  });
-  if (cover) {
-    return {
-      ...cover,
-      intentType: "night sleep",
-      intentCause: "lights out",
-      signalType: "night_sleep",
-      debugText: "night sleep | lights out",
-      slow: true
-    };
-  }
-  if (Math.random() < 0.2) {
-    return {
-      xNorm: clamp(fish.xNorm + randomBetween(-0.05, 0.05), 0.08, 0.92),
-      yNorm: clamp(fish.yNorm + randomBetween(-0.03, 0.03), 0.18, 0.78),
-      targetLayer: getFishTankLayer(fish),
-      targetAt: now + randomBetween(8000, 16000),
-      intentType: "night sleep",
-      intentCause: "exposed",
-      signalType: "odd_sleep_spot",
-      debugText: "night sleep | exposed"
-    };
-  }
-  return null;
-}
-
 function pickFeedingMemoryBehaviorTarget(fish, species, now = Date.now()) {
   if (!fish || !species || isMealFreeFish(fish) || !canFoodSatisfyFishMeal(fish, "basic")) {
     return null;
@@ -2477,18 +2366,10 @@ function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   }
   const effectiveBehavior = getEffectiveFishBehavior(fish, species);
   if (["sucker", "piranha"].includes(effectiveBehavior)) {
-    if (isTankLightsOut(now) && isNightActiveFish(fish)) {
-      setFishBehaviorIntent(fish, "night forage", "night-active", now);
-      recordFishBehaviorSignal(fish, "night_forage", now, { debugText: "night forage | night-active" });
-    }
     return false;
   }
   const threatTarget = pickRelationshipBehaviorTarget(fish, species, now, { onlyThreat: true });
   if (threatTarget && applyBehaviorTarget(fish, species, threatTarget, now)) {
-    return true;
-  }
-  const nightTarget = pickNightBehaviorTarget(fish, species, now);
-  if (nightTarget && applyBehaviorTarget(fish, species, nightTarget, now)) {
     return true;
   }
   const feedingMemoryTarget = pickFeedingMemoryBehaviorTarget(fish, species, now);
@@ -2613,7 +2494,7 @@ function handleFishRefuseFoodPellet(fish, pellet, now = Date.now()) {
   return true;
 }
 
-function getUvGlowSourceKey(sourceImage) {
+function getRuntimeImageSourceKey(sourceImage) {
   const directSource = sourceImage?.currentSrc || sourceImage?.src || "";
   if (directSource) {
     return directSource;
@@ -2623,24 +2504,16 @@ function getUvGlowSourceKey(sourceImage) {
     return "";
   }
 
-  if (!sourceImage.__bbUvGlowSourceKey) {
-    const key = `generated-uv-source-${runtime.uvGlowSourceId += 1}`;
+  if (!sourceImage.__bbRuntimeImageSourceKey) {
+    const key = `generated-image-source-${runtime.imageSourceId += 1}`;
     try {
-      Object.defineProperty(sourceImage, "__bbUvGlowSourceKey", {
+      Object.defineProperty(sourceImage, "__bbRuntimeImageSourceKey", {
         value: key,
         enumerable: false
       });
     } catch (error) {
-      sourceImage.__bbUvGlowSourceKey = key;
+      sourceImage.__bbRuntimeImageSourceKey = key;
     }
   }
-  return sourceImage.__bbUvGlowSourceKey;
-}
-
-function isUvLightLowCostMode() {
-  return getUvLightRenderQuality() === UV_LIGHT_RENDER_QUALITY_LOW;
-}
-
-function isUvLightGravelGlowEnabled() {
-  return getUvLightRenderQuality() === UV_LIGHT_RENDER_QUALITY_HIGH && UV_LIGHT_GRAVEL_GLOW_HIGH_ENABLED;
+  return sourceImage.__bbRuntimeImageSourceKey;
 }

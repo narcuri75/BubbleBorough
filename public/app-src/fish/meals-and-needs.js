@@ -38,7 +38,35 @@ function normalizeFishSpeed(species, explicitValue) {
   return species.speedMin;
 }
 
-function getFishTurnDurationMs(fish, species) {
+function getConfiguredFishTurnAnimationMode(species) {
+  const explicitMode = String(species?.turnAnimation || "").trim().toLowerCase();
+  if (["simple", "complex"].includes(explicitMode)) {
+    return explicitMode;
+  }
+  const speciesType = typeof getFishSpeciesType === "function"
+    ? getFishSpeciesType(species)
+    : String(species?.type || "").trim().toLowerCase();
+  return ["shark", "whale"].includes(speciesType) ? "complex" : "simple";
+}
+
+function getFishTurnAnimationMode(fish, species = getSpeciesForFish(fish)) {
+  const activeMode = fish?.turnStartedAt && Number(fish.turnDurationMs) > 0
+    ? String(fish.turnAnimationMode || "").trim().toLowerCase()
+    : "";
+  if (["simple", "complex"].includes(activeMode)) {
+    return activeMode;
+  }
+  if (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced()) {
+    return "simple";
+  }
+  const fishPreference = String(fish?.turnAnimationPreference || "").trim().toLowerCase();
+  if (["simple", "complex"].includes(fishPreference)) {
+    return fishPreference;
+  }
+  return getConfiguredFishTurnAnimationMode(species);
+}
+
+function getSimpleFishTurnDurationMs(fish, species) {
   if (!fish || !species) {
     return FISH_TURN_MIN_MS + Math.random() * (FISH_TURN_MAX_MS - FISH_TURN_MIN_MS);
   }
@@ -55,6 +83,32 @@ function getFishTurnDurationMs(fish, species) {
   const minMs = (FISH_TURN_MIN_MS + slowBias * 55) * turnDurationScale;
   const maxMs = (FISH_TURN_MAX_MS + slowBias * 130) * turnDurationScale;
   return minMs + Math.random() * Math.max(1, maxMs - minMs);
+}
+
+function getComplexFishTurnDurationMs(fish, species) {
+  const locomotionProfile = getFishLocomotionProfile(species || fish);
+  const speciesScale = clamp(Number(locomotionProfile?.turnDurationScale) || 1, 0.6, 1.65);
+  const effectiveBehavior = getEffectiveFishBehavior(fish || species) || "steady";
+  const behaviorScale = FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE[effectiveBehavior] || 1;
+  const typeScale = species?.type === "shark" || String(species?.type || "").toLowerCase() === "shark"
+    ? 0.86
+    : String(species?.type || "").toLowerCase() === "whale"
+      ? 1.16
+      : 1;
+  return clamp(
+    FISH_TURN_RIG_DURATION_MS * speciesScale * behaviorScale * typeScale,
+    FISH_TURN_RIG_MIN_DURATION_MS,
+    FISH_TURN_RIG_MAX_DURATION_MS
+  );
+}
+
+function getFishTurnDurationMs(fish, species, animationMode = null) {
+  const mode = ["simple", "complex"].includes(String(animationMode || "").trim().toLowerCase())
+    ? String(animationMode).trim().toLowerCase()
+    : getFishTurnAnimationMode(fish, species);
+  return mode === "complex"
+    ? getComplexFishTurnDurationMs(fish, species)
+    : getSimpleFishTurnDurationMs(fish, species);
 }
 
 function formatSwimStyle(swimStyle) {
@@ -501,11 +555,10 @@ function drawBubbleOrbToContext(context, x, y, radius, alpha, stretch = 1, palet
     stroke: "rgba(240, 250, 255, 0.700)",
     highlight: "rgba(250, 253, 255, 0.400)"
   };
-  const bubbleGlowEnabled = !isUvLightActive() || UV_LIGHT_BUBBLE_GLOW_ENABLED;
   const bubbleSprite = getTintedBubbleOrbSprite(resolvedPalette);
   context.save();
   context.globalAlpha = alpha;
-  if (!bubbleSprite && bubbleGlowEnabled && resolvedPalette.glow) {
+  if (!bubbleSprite && resolvedPalette.glow) {
     context.beginPath();
     context.ellipse(x, y, drawRadius * stretch * 1.45, drawRadius * 1.45, 0, 0, Math.PI * 2);
     context.fillStyle = resolvedPalette.glow;

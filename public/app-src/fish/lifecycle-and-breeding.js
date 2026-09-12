@@ -194,6 +194,9 @@ function createFishRecord(speciesId, options = {}) {
     appearanceAssetPath: typeof options.appearanceAssetPath === "string" ? options.appearanceAssetPath : null,
     scale,
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(options.behaviorSpeciesId, speciesId),
+    turnAnimationPreference: ["simple", "complex"].includes(String(options.turnAnimationPreference || "").trim().toLowerCase())
+      ? String(options.turnAnimationPreference).trim().toLowerCase()
+      : "",
     fishColor: normalizeDecorColorSetting(options.fishColor ?? options.colorSetting ?? ""),
     fishColorize: normalizeDecorColorizeSetting(options.fishColorize ?? false),
     hueShift: sanitizeFishHueShift(options.hueShift),
@@ -217,6 +220,7 @@ function createFishRecord(speciesId, options = {}) {
     displayAngle: direction < 0 ? Math.PI : 0,
     turnStartedAt: null,
     turnDurationMs: 0,
+    turnFinalFrameRenderedAt: 0,
     turnFromDirection: direction,
     turnToDirection: direction,
     turnFromAngle: direction < 0 ? Math.PI : 0,

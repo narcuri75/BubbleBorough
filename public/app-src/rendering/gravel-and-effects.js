@@ -394,18 +394,6 @@ function drawCustomGravelFloor(bounds, now = Date.now()) {
     }
 
     drawImageCover(tankContext, tintedLayer, bounds.left, bounds.drawTop, bounds.drawWidth, bounds.drawHeight);
-    if (isUvLightGravelGlowEnabled() && isCustomGravelUvReactiveColor(layerColors[index])) {
-      drawUvGlowImageCoverToContext(
-        tankContext,
-        tintedLayer,
-        bounds.left,
-        bounds.drawTop,
-        bounds.drawWidth,
-        bounds.drawHeight,
-        0.52,
-        0.32 + index * 0.05
-      );
-    }
     drewLayer = true;
   }
 

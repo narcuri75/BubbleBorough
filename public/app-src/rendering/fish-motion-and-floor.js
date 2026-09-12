@@ -82,13 +82,16 @@ function getDirectedAngleDelta(fromAngle, toAngle, spinDirection = 1) {
 }
 
 function updateFishTurnState(fish, species, now) {
-  if (species.behavior !== "sucker") {
+  const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
+  if (species.behavior !== "sucker" || freeSwimmingOtocinclus) {
     const liveDirection = Number(fish.direction) < 0 ? -1 : 1;
     if (!fish.turnStartedAt || fish.turnDurationMs <= 0) {
       fish.displayDirection = liveDirection;
       fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
+      fish.turnFinalFrameRenderedAt = 0;
+      fish.turnAnimationMode = null;
       fish.turnFromDirection = fish.displayDirection;
       fish.turnToDirection = fish.displayDirection;
       fish.turnFromAngle = fish.displayAngle;
@@ -100,6 +103,33 @@ function updateFishTurnState(fish, species, now) {
     const progress = clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1);
     const fromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
     const toDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
+    const useComplexTurn = getFishTurnAnimationMode(fish, species) === "complex";
+
+    if (useComplexTurn) {
+      // The segmented rig performs the visible reversal itself, so keep the
+      // normal sprite locked to the source side until its terminal frame has
+      // actually rendered.
+      fish.displayDirection = fromDirection;
+      fish.displayAngle = fromDirection < 0 ? Math.PI : 0;
+
+      if (progress >= 1 && Number(fish.turnFinalFrameRenderedAt) > 0) {
+        fish.displayDirection = liveDirection;
+        fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
+        fish.turnStartedAt = null;
+        fish.turnDurationMs = 0;
+        fish.turnFinalFrameRenderedAt = 0;
+        fish.turnAnimationMode = null;
+        fish.turnFromDirection = fish.displayDirection;
+        fish.turnToDirection = fish.displayDirection;
+        fish.turnFromAngle = fish.displayAngle;
+        fish.turnToAngle = fish.displayAngle;
+        fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
+      }
+      return;
+    }
+
+    // Lightweight legacy turnaround: squash toward the midpoint, flip while
+    // narrow, then expand on the destination side.
     const visibleDirection = progress < 0.5 ? fromDirection : toDirection;
     fish.displayDirection = visibleDirection;
     fish.displayAngle = visibleDirection < 0 ? Math.PI : 0;
@@ -109,6 +139,8 @@ function updateFishTurnState(fish, species, now) {
       fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
+      fish.turnFinalFrameRenderedAt = 0;
+      fish.turnAnimationMode = null;
       fish.turnFromDirection = fish.displayDirection;
       fish.turnToDirection = fish.displayDirection;
       fish.turnFromAngle = fish.displayAngle;
@@ -131,6 +163,7 @@ function updateFishTurnState(fish, species, now) {
     fish.displayDirection = Math.cos(fish.displayAngle) < 0 ? -1 : 1;
     fish.turnStartedAt = null;
     fish.turnDurationMs = 0;
+    fish.turnAnimationMode = null;
     fish.turnFromDirection = fish.displayDirection;
     fish.turnToDirection = fish.displayDirection;
     fish.turnFromAngle = fish.displayAngle;
@@ -194,6 +227,8 @@ function setFishDirection(fish, desiredDirection, species, now) {
       fish.displayAngle = currentDisplayAngle;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
+      fish.turnFinalFrameRenderedAt = 0;
+      fish.turnAnimationMode = null;
       fish.turnFromDirection = nextDirection;
       fish.turnToDirection = nextDirection;
       fish.turnFromAngle = currentDisplayAngle;
@@ -204,8 +239,10 @@ function setFishDirection(fish, desiredDirection, species, now) {
 
     fish.displayDirection = currentDisplayDirection;
     fish.displayAngle = currentDisplayAngle;
+    fish.turnAnimationMode = getFishTurnAnimationMode(fish, species);
     fish.turnStartedAt = now;
-    fish.turnDurationMs = getFishTurnDurationMs(fish, species);
+    fish.turnDurationMs = getFishTurnDurationMs(fish, species, fish.turnAnimationMode);
+    fish.turnFinalFrameRenderedAt = 0;
     fish.turnFromDirection = currentDisplayDirection;
     fish.turnToDirection = nextDirection;
     fish.turnFromAngle = currentDisplayAngle;

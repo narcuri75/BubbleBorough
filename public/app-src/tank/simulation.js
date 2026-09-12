@@ -68,11 +68,9 @@ function renderVisiblePanels(now) {
   if (runtime.equipmentOverlayOpen) {
     renderBackgrounds();
     renderSolidBackgroundControls();
-    renderUvLightControls();
     renderCustomGravelControls();
   }
 
-  syncLightingFeatureVisibility();
 
   if (showingOverviewTab || showingFishTab || showingDecorTab) {
     renderCollapsibleSections();
@@ -356,7 +354,7 @@ function processBoroughFishTravel(now = Date.now()) {
       const residenceTank = getTankContainingDecor(getFishResidenceDecorId(fish));
       const shouldReturnHome = residenceTank
         && residenceTank.id !== source.id
-        && (isTankLightsOut(now) || getFishNeedValue(fish, "energy", now) <= 52);
+        && getFishNeedValue(fish, "energy", now) <= 52;
       const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
       const residenceTubeJourney = shouldReturnHome ? getTransitTubeJourney(source, residenceTank) : null;
       const directedRoute = foodRoute || serviceRoute || residenceRoute;
@@ -373,9 +371,6 @@ function processBoroughFishTravel(now = Date.now()) {
       const destinationsWithFood = neededService === "food"
         ? neighbors.filter((tank) => (tank.floatingPellets || []).length > 0)
         : [];
-      if (!serviceRoute && residenceTank?.id === source.id && isTankLightsOut(now)) {
-        continue;
-      }
       const ambientTubeJourneys = !directedRoute && !tubeJourney
         ? getAllTanks().flatMap((target) => {
           const journey = getTransitTubeJourney(source, target);

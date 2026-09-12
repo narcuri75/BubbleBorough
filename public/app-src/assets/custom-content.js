@@ -1096,6 +1096,24 @@ function bindEvents() {
   });
   dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("notifications"));
   dom.toggleDebugMenuButton?.addEventListener("click", () => toggleDebugSidebar());
+  dom.debugFishBehaviorPreviewButton?.addEventListener("click", () => openDebugFishBehaviorPreview());
+  dom.closeDebugFishBehaviorPreview?.addEventListener("click", () => closeDebugFishBehaviorPreview());
+  dom.debugFishBehaviorPreview?.querySelector("[data-debug-fish-preview-close]")?.addEventListener("click", () => {
+    closeDebugFishBehaviorPreview();
+  });
+  dom.restartDebugFishBehaviorPreview?.addEventListener("click", () => resetDebugFishBehaviorPreview());
+  dom.debugFishBehaviorPreviewSpecies?.addEventListener("change", (event) => {
+    setDebugFishBehaviorPreviewSpecies(event.currentTarget.value);
+  });
+  dom.debugFishBehaviorPreviewBehavior?.addEventListener("change", (event) => {
+    setDebugFishBehaviorPreviewBehavior(event.currentTarget.value);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && runtime.debugFishBehaviorPreviewOpen) {
+      event.preventDefault();
+      closeDebugFishBehaviorPreview();
+    }
+  });
   dom.debugDailyRecapButton?.addEventListener("click", () => triggerDebugDailyRecap());
   dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
   dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
@@ -1385,8 +1403,6 @@ function bindEvents() {
   dom.openEquipmentShopButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.openEquipmentStoreButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.toggleMouseLockButton?.addEventListener("click", () => toggleTankMouseInputLocked());
-  dom.lightsOutToggleButton?.addEventListener("click", () => toggleLightsOutOverride());
-  dom.uvLightToggleButton?.addEventListener("click", () => toggleUvLightPower());
   dom.editModeDockButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("editModeDockButton")) {
       return;
@@ -1602,8 +1618,8 @@ function bindEvents() {
   dom.decorShadowsToggleInput?.addEventListener("change", (event) => {
     setDecorShadowsEnabled(event.currentTarget?.checked);
   });
-  dom.uvLightQualitySelect?.addEventListener("change", (event) => {
-    setUvLightRenderQuality(event.currentTarget?.value);
+  dom.simpleTurnAnimationsToggleInput?.addEventListener("change", (event) => {
+    setSimpleTurnAnimationsOnly(event.currentTarget?.checked);
   });
   dom.halloweenModeSelect?.addEventListener("change", (event) => {
     setHalloweenMode(event.currentTarget?.value);
@@ -2729,11 +2745,6 @@ function bindEvents() {
       return;
     }
 
-    const buyUvLightButton = event.target.closest("[data-buy-uv-light]");
-    if (buyUvLightButton) {
-      buyUvLight();
-      return;
-    }
 
 
     const tankButton = event.target.closest("[data-extend-aquarium-store]");
@@ -2942,11 +2953,6 @@ function bindEvents() {
       }
 
 
-      const uvLightButton = event.target.closest("[data-toggle-uv-light-install]");
-      if (uvLightButton) {
-        setUvLightInstalled(!isUvLightInstalled());
-        return;
-      }
 
       const swatchButton = event.target.closest("[data-custom-gravel-color]");
       if (swatchButton) {
@@ -2994,9 +3000,6 @@ function bindEvents() {
   bindEquipmentSurface(dom.editTankBackgroundList);
   bindEquipmentSurface(dom.editTankBackgroundColorPanel);
   bindEquipmentSurface(dom.tankAssetList);
-  bindEquipmentSurface(dom.uvLightList);
-  bindEquipmentSurface(dom.equipmentUvLightList);
-  bindEquipmentSurface(dom.editTankUvLightList);
   bindEquipmentSurface(dom.customGravelPanel);
   bindEquipmentSurface(dom.equipmentCustomGravelPanel);
   bindEquipmentSurface(dom.editTankCustomGravelPanel);
@@ -5536,7 +5539,8 @@ function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", d
     width: clamp(CUSTOM_FISH_DEFAULT_WIDTH, CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
     naturalWidth,
     naturalHeight,
-    behaviorProfileId: normalizeCustomFishBehaviorProfileId("")
+    behaviorProfileId: normalizeCustomFishBehaviorProfileId(""),
+    turnAnimation: "simple"
   });
 }
 
@@ -5833,6 +5837,7 @@ function sanitizeCustomFishAssetEntry(entry, key) {
     imageRefId,
     width: clamp(Math.round(Number(entry.width) || CUSTOM_FISH_DEFAULT_WIDTH), CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
     behaviorProfileId,
+    turnAnimation: String(entry.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
 }
@@ -5916,7 +5921,8 @@ function buildCustomFishCatalogEntry(asset) {
     caveEnabled: profile?.caveEnabled !== false,
     defaultNames: [asset.name || "Custom Fish"],
     customAsset: true,
-    behaviorProfileId: profile?.id || ""
+    behaviorProfileId: profile?.id || "",
+    turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
   species.mealCoins = resolveSpeciesMealCoins(species);
   return species;
@@ -6057,6 +6063,13 @@ function normalizeFishDefinition(entry, index, options = {}) {
   const behavior = typeof entry.behavior === "string" && entry.behavior.trim() ? entry.behavior.trim().toLowerCase() : "free";
   const diet = typeof entry.diet === "string" && entry.diet.trim() ? entry.diet.trim().toLowerCase() : "pellet";
   const speciesType = typeof entry.type === "string" && entry.type.trim() ? entry.type.trim() : "Fish";
+  const explicitTurnAnimation = typeof entry.turnAnimation === "string"
+    ? entry.turnAnimation.trim().toLowerCase()
+    : "";
+  const normalizedSpeciesType = speciesType.trim().toLowerCase();
+  const turnAnimation = ["simple", "complex"].includes(explicitTurnAnimation)
+    ? explicitTurnAnimation
+    : (["shark", "whale"].includes(normalizedSpeciesType) ? "complex" : "simple");
   const renderMotionProfile = typeof entry.renderMotionProfile === "string" && entry.renderMotionProfile.trim()
     ? entry.renderMotionProfile.trim().toLowerCase()
     : "";
@@ -6144,6 +6157,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     behavior,
     diet,
     type: speciesType,
+    turnAnimation,
     chumOnly: entry.chumOnly === true,
     desperationPredator: entry.desperationPredator === true,
     renderMotionProfile,

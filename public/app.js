@@ -181,6 +181,26 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugOtocinclusNormalButton", domKey: "debugOtocinclusNormalButton", action: "oto-normal", icon: "&#8634;", label: "Oto Normal", title: "Debug: Return Otocinclus / Dwarf Sucker Catfish to normal behavior", extraClass: "wide" },
   { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
 ]);
+const DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS = Object.freeze([
+  { id: "swim", label: "Normal Swim", description: "The standard cruising pose, body flex, and tail rhythm." },
+  { id: "turn-around", label: "Turn Around", description: "The fish's configured turnaround animation, played at its real duration." },
+  { id: "eat", label: "Eat", description: "A repeated feeding approach and bite motion." },
+  { id: "waitfood", label: "Wait for Food", description: "An alert hover while anticipating the next meal." },
+  { id: "rest", label: "Rest", description: "A quiet hover with reduced motion and slow breathing." },
+  { id: "sleep", label: "Sleep", description: "The settled sleeping posture and minimal body movement." },
+  { id: "zoomies", label: "Zoomies", description: "Fast, energetic flexing used during a burst around the tank." },
+  { id: "greet", label: "Greet", description: "A friendly approach with a short double nod." },
+  { id: "hangout", label: "Hang Out", description: "Relaxed social swimming with an easy synchronized sway." },
+  { id: "play", label: "Play", description: "A lively roll, bounce, and body squash cycle." },
+  { id: "pebble", label: "Find Pebble", description: "The nose-down search, pickup, and raised carry pose." },
+  { id: "dig", label: "Dig", description: "The steep gravel-facing digging pose and repeated push." },
+  { id: "avoid", label: "Avoid", description: "A startled recoil and fast retreat posture." },
+  { id: "breed", label: "Mate", description: "The courtship sway used during a breeding approach." },
+  { id: "hide", label: "Hide", description: "A compressed, cautious posture used while moving into cover." },
+  { id: "inspect", label: "Inspect", description: "A curious close-look pose with small deliberate nods." },
+  { id: "sick", label: "Sick / Critical", description: "Low-health coloring with sluggish, uneven movement." },
+  { id: "dead", label: "Dead Float", description: "The inverted floating pose used after death." }
+]);
 const DEBUG_BEHAVIOR_STEER_REFRESH_MS = 260;
 const DEBUG_BEHAVIOR_FOLLOW_DURATION_MS = 45 * 1000;
 const DEBUG_BEHAVIOR_FOLLOW_DISTANCE_NORM = 0.045;
@@ -271,15 +291,6 @@ const DISEASE_SIGNAL_TYPES = Object.freeze([
   "night_active_still",
   "odd_sleep_spot",
   "lingering_near_bubbler"
-]);
-const LIGHTS_OUT_FEATURE_ENABLED = false;
-const LIGHTS_OUT_OVERRIDE_AUTO = "auto";
-const LIGHTS_OUT_OVERRIDE_ON = "on";
-const LIGHTS_OUT_OVERRIDE_OFF = "off";
-const LIGHTS_OUT_OVERRIDES = Object.freeze([
-  LIGHTS_OUT_OVERRIDE_AUTO,
-  LIGHTS_OUT_OVERRIDE_ON,
-  LIGHTS_OUT_OVERRIDE_OFF
 ]);
 const BEHAVIOR_PERSONALITIES = Object.freeze([
   "bold",
@@ -635,25 +646,25 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
   }),
   "bull-shark": createFishLocomotionProfile({
     movementPattern: "wide-cruise", preferredY: 0.46, verticalSpread: 0.56,
-    targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.86,
+    targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.97,
     hoverChance: 0.015, schoolStrength: 0.08, structureAffinity: 0.64,
     caveAffinity: 0.1, startleStrength: 0.72, turnDurationScale: 0.72,
-    speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 0.82
+    speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 1.2
   }),
   "great-white-shark": createFishLocomotionProfile({
     movementPattern: "wide-cruise", preferredY: 0.42, verticalSpread: 0.46,
-    targetDistanceMin: 0.38, targetDistanceMax: 0.76, headingPersistence: 0.94,
+    targetDistanceMin: 0.38, targetDistanceMax: 0.76, headingPersistence: 0.985,
     hoverChance: 0.006, schoolStrength: 0, structureAffinity: 0.48,
     caveAffinity: 0.04, startleStrength: 0.58, turnDurationScale: 0.62,
-    speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 0.78
+    speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 1.28
   }),
   "hammerhead-shark": createFishLocomotionProfile({
     movementPattern: "search-cruise", preferredY: 0.5, verticalSpread: 0.62,
-    targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.72,
+    targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.95,
     hoverChance: 0.035, schoolStrength: 0.16, schoolSpacingScale: 1.08,
     structureAffinity: 0.72, caveAffinity: 0.16, startleStrength: 0.86,
     turnDurationScale: 0.76, speedMinBlend: 0.5, speedMaxBlend: 0.92,
-    targetDurationScale: 0.9
+    targetDurationScale: 1.15
   }),
   "orca": createFishLocomotionProfile({
     movementPattern: "pod-cruise", preferredY: 0.44, verticalSpread: 0.54,
@@ -1193,13 +1204,6 @@ const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false,
   trypophobiaEnabled: false
 });
-const UV_LIGHT_RENDER_QUALITY_LOW = "low";
-const UV_LIGHT_RENDER_QUALITY_HIGH = "high";
-const DEFAULT_UV_LIGHT_RENDER_QUALITY = UV_LIGHT_RENDER_QUALITY_LOW;
-const UV_LIGHT_RENDER_QUALITY_OPTIONS = Object.freeze([
-  UV_LIGHT_RENDER_QUALITY_LOW,
-  UV_LIGHT_RENDER_QUALITY_HIGH
-]);
 const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
   toolbarTileColor: "#00438a",
@@ -1217,7 +1221,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
   decorShadowsEnabled: false,
-  uvLightQuality: DEFAULT_UV_LIGHT_RENDER_QUALITY,
+  simpleTurnAnimationsOnly: false,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
@@ -1704,6 +1708,55 @@ const FISH_TURN_MIN_SCALE_X = 0.42;
 const FISH_TURN_MAX_SCALE_Y = 1.12;
 const FISH_TURN_MIN_MS = 130;
 const FISH_TURN_MAX_MS = 210;
+// The segmented turnaround rig is authored on a 0..1.08 second timeline.
+// Keep the gameplay turn alive for that entire sequence instead of squeezing
+// it into the legacy 130-210ms sprite-flip window.
+const FISH_TURN_RIG_SEGMENTS = 12;
+const FISH_TURN_RIG_COLLAPSE_DURATION = 0.12;
+const FISH_TURN_RIG_COLLAPSE_STEP = 0.055;
+const FISH_TURN_RIG_REBUILD_DURATION = 0.15;
+const FISH_TURN_RIG_REBUILD_STEP = 0.05;
+const FISH_TURN_RIG_FRONT_SHRINK = 0.18;
+const FISH_TURN_RIG_TAIL_SWELL = 0.12;
+const FISH_TURN_RIG_FOLLOWER_LAG = 0.9;
+const FISH_TURN_RIG_TAIL_START_DELAY = 0;
+const FISH_TURN_RIG_REBUILD_OVERLAP = 0.35;
+const FISH_TURN_RIG_EXIT_PULL = 0.58;
+const FISH_TURN_RIG_RELEASE_CURVE = 0.5;
+const FISH_TURN_RIG_HEAD_STAGGER = 1;
+const FISH_TURN_RIG_REVERSE_EMERGENCE_PULL = false;
+const FISH_TURN_RIG_CENTER_SEAM_SCALE = 1;
+const FISH_TURN_RIG_SEAM_BRIDGE = 0;
+const FISH_TURN_RIG_CONTINUOUS_OVERLAP = 0.85;
+const FISH_TURN_RIG_EDGE_SOFTEN_SRC = 1.25;
+const FISH_TURN_RIG_EDGE_SOFTEN_DEST = 1.15;
+const FISH_TURN_RIG_INTERNAL_TIMELINE_MAX = 1.08;
+const FISH_TURN_RIG_TIMELINE_RATE = 0.24;
+const FISH_TURN_RIG_PLAYBACK_SPEED = 2.5;
+const FISH_TURN_RIG_DURATION_MS = (
+  FISH_TURN_RIG_INTERNAL_TIMELINE_MAX
+  / (FISH_TURN_RIG_TIMELINE_RATE * FISH_TURN_RIG_PLAYBACK_SPEED)
+) * 1000;
+const FISH_TURN_RIG_MIN_DURATION_MS = 1000;
+const FISH_TURN_RIG_MAX_DURATION_MS = 3200;
+const FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE = Object.freeze({
+  piranha: 0.86,
+  sucker: 1.08,
+  zombie: 1.15,
+  skeleton: 0.92
+});
+const FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY = 0.55;
+const FISH_TURN_RIG_VISIBLE_MAX_COLUMNS = 48;
+const FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY = 0.08;
+const FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS = 4;
+const FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS = 0.62;
+const fishTurnRigCanvasCache = new WeakMap();
+const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
+  "assets/decor/Cave_Coral_Shelf_1_Trypophobia.png",
+  "assets/decor/Cave_Coral_Shelf_6_Trypophobia.png",
+  "assets/decor/Cave_Coral_Shelf_10_Trypophobia.png",
+  "assets/decor/Cave_Coral_Shelf_9_color2_Trypophobia.png"
+].map((path) => path.toLowerCase()));
 const NAUTILUS_STATE_HOVER = "hover";
 const NAUTILUS_STATE_JET = "jet";
 const NAUTILUS_STATE_GLIDE = "glide";
@@ -2046,17 +2099,6 @@ const SUBMARINE_SPOTLIGHT_LAMP_X_NORM = 0.744;
 const SUBMARINE_SPOTLIGHT_LAMP_Y_NORM = 0.2;
 const SHARK_DESPERATION_ATTACK_COOLDOWN_MS = 9000;
 const SHARK_DESPERATION_ATTACK_RANGE_NORM = 0.075;
-const ENABLE_UV_LIGHT = false;
-const UV_LIGHT_COST = 25;
-const UV_LIGHT_IMAGE_PATH = resolveAppUrl("assets/misc/uvlight.png");
-const UV_LIGHT_ATMOSPHERE_ENABLED = false;
-const UV_LIGHT_GRAVEL_GLOW_HIGH_ENABLED = true;
-const UV_LIGHT_BUBBLE_GLOW_ENABLED = false;
-const UV_LIGHT_WATER_PARTICLE_GLOW_ENABLED = false;
-const UV_LIGHT_CACHE_LOW_MIN_WIDTH = 24;
-const UV_LIGHT_CACHE_LOW_MAX_WIDTH = 176;
-const UV_LIGHT_CACHE_HIGH_MIN_WIDTH = 72;
-const UV_LIGHT_CACHE_HIGH_MAX_WIDTH = 256;
 const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "fish",
   "feedHistory",
@@ -2091,8 +2133,6 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "localBackgroundImageRefId",
   "selectedTankAsset",
   "autoDispenser",
-  "uvLightInstalled",
-  "uvLightEnabled",
   "selectedBubbleAsset",
   "theme",
   "lastCleanedAt",
@@ -2874,6 +2914,19 @@ const dom = {
   debugMenuFish: document.querySelector("#debugMenuFish"),
   debugMenuDirtiness: document.querySelector("#debugMenuDirtiness"),
   debugMenuBehaviors: document.querySelector("#debugMenuBehaviors"),
+  debugFishBehaviorPreviewButton: document.querySelector("#debugFishBehaviorPreviewButton"),
+  debugFishBehaviorPreview: document.querySelector("#debugFishBehaviorPreview"),
+  closeDebugFishBehaviorPreview: document.querySelector("#closeDebugFishBehaviorPreview"),
+  restartDebugFishBehaviorPreview: document.querySelector("#restartDebugFishBehaviorPreview"),
+  debugFishBehaviorPreviewSpecies: document.querySelector("#debugFishBehaviorPreviewSpecies"),
+  debugFishBehaviorPreviewBehavior: document.querySelector("#debugFishBehaviorPreviewBehavior"),
+  debugFishBehaviorPreviewCanvas: document.querySelector("#debugFishBehaviorPreviewCanvas"),
+  debugFishBehaviorPreviewStatus: document.querySelector("#debugFishBehaviorPreviewStatus"),
+  debugFishBehaviorPreviewPhase: document.querySelector("#debugFishBehaviorPreviewPhase"),
+  debugFishBehaviorPreviewScaleX: document.querySelector("#debugFishBehaviorPreviewScaleX"),
+  debugFishBehaviorPreviewScaleY: document.querySelector("#debugFishBehaviorPreviewScaleY"),
+  debugFishBehaviorPreviewTilt: document.querySelector("#debugFishBehaviorPreviewTilt"),
+  debugFishBehaviorPreviewDescription: document.querySelector("#debugFishBehaviorPreviewDescription"),
   debugNotificationUiButton: document.querySelector("#debugNotificationUiButton"),
   debugFishActionIndicatorsButton: document.querySelector("#debugFishActionIndicatorsButton"),
   debugFrameProfilerButton: document.querySelector("#debugFrameProfilerButton"),
@@ -2898,8 +2951,6 @@ const dom = {
   debugCaveButton: document.querySelector("#debugCaveButton"),
   debugDailyRecapButton: document.querySelector("#debugDailyRecapButton"),
   debugFishBehaviorLogButton: document.querySelector("#debugFishBehaviorLogButton"),
-  lightsOutToggleButton: document.querySelector("#lightsOutToggleButton"),
-  lightsOutModeBadge: document.querySelector("#lightsOutModeBadge"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
   loadingOverlayBackground: document.querySelector("#loadingOverlayBackground"),
   loadingOverlayUnderwater: document.querySelector("#loadingOverlayUnderwater"),
@@ -2963,8 +3014,6 @@ const dom = {
   editTankBackgroundColorPanel: document.querySelector("#editTankBackgroundColorPanel"),
   editTankBackgroundList: document.querySelector("#editTankBackgroundList"),
   editTankCustomGravelPanel: document.querySelector("#editTankCustomGravelPanel"),
-  editTankLightingSection: document.querySelector("#editTankLightingSection"),
-  editTankUvLightList: document.querySelector("#editTankUvLightList"),
   foodTray: document.querySelector("#foodTray"),
   foodTrayScroller: document.querySelector("#foodTrayScroller"),
   foodTrayPrev: document.querySelector("#foodTrayPrev"),
@@ -2990,11 +3039,6 @@ const dom = {
   localFishInput: document.querySelector("#localFishInput"),
   tankManagementCard: document.querySelector("#tankManagementCard"),
   tankWaterActionList: document.querySelector("#tankWaterActionList"),
-  tankLightingActionList: document.querySelector("#tankLightingActionList"),
-  tankLightingSection: document.querySelector("#tankLightingSection"),
-  tankLightingSectionTitle: document.querySelector("#tankLightingSectionTitle"),
-  tankLightingSectionNote: document.querySelector("#tankLightingSectionNote"),
-  uvLightList: document.querySelector("#uvLightList"),
   foodShop: document.querySelector("#foodShop"),
   pharmacyShop: document.querySelector("#pharmacyShop"),
   fishList: document.querySelector("#fishList"),
@@ -3055,8 +3099,8 @@ const dom = {
   waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
   causticLightingToggleInput: document.querySelector("#causticLightingToggleInput"),
   decorShadowsToggleInput: document.querySelector("#decorShadowsToggleInput"),
+  simpleTurnAnimationsToggleInput: document.querySelector("#simpleTurnAnimationsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
-  uvLightQualitySelect: document.querySelector("#uvLightQualitySelect"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
   tankMouseLockToggleInput: document.querySelector("#tankMouseLockToggleInput"),
   openEquipmentShopButton: document.querySelector("#openEquipmentShopButton"),
@@ -3066,7 +3110,6 @@ const dom = {
   equipmentBackgroundList: document.querySelector("#equipmentBackgroundList"),
   equipmentBackgroundColorPanel: document.querySelector("#equipmentBackgroundColorPanel"),
   tankAssetList: document.querySelector("#tankAssetList"),
-  equipmentUvLightList: document.querySelector("#equipmentUvLightList"),
   //gravelPaletteSlots: document.querySelector("#gravelPaletteSlots"),
   //gravelPaletteChoices: document.querySelector("#gravelPaletteChoices"),
   customGravelPanel: document.querySelector("#customGravelPanel"),
@@ -3124,6 +3167,8 @@ const dom = {
   inspectorFishSizeInput: document.querySelector("#inspectorFishSizeInput"),
   inspectorFishSizeValue: document.querySelector("#inspectorFishSizeValue"),
   inspectorFishBehaviorSelect: document.querySelector("#inspectorFishBehaviorSelect"),
+  inspectorFishTurnAnimationInput: document.querySelector("#inspectorFishTurnAnimationInput"),
+  inspectorFishTurnAnimationValue: document.querySelector("#inspectorFishTurnAnimationValue"),
   inspectorFishColorSwatches: document.querySelector("#inspectorFishColorSwatches"),
   inspectorFishColorValue: document.querySelector("#inspectorFishColorValue"),
   inspectorFishColorizeInput: document.querySelector("#inspectorFishColorizeInput"),
@@ -3137,7 +3182,6 @@ const dom = {
   editModeDockButton: document.querySelector("#editModeDockButton"),
   equipmentEditModeDockButton: document.querySelector("#equipmentEditModeDockButton"),
   toggleMouseLockButton: document.querySelector("#toggleMouseLockButton"),
-  uvLightToggleButton: document.querySelector("#uvLightToggleButton"),
   editLayerUpButton: document.querySelector("#editLayerUpButton"),
   editLayerDownButton: document.querySelector("#editLayerDownButton"),
   editScaleUpButton: document.querySelector("#editScaleUpButton"),
@@ -3493,8 +3537,7 @@ const runtime = {
   customGravelTintCache: new Map(),
   foodPelletTintCache: new Map(),
   waterParticleTintCache: new Map(),
-  uvGlowMaskCache: new Map(),
-  uvGlowSourceId: 0,
+  imageSourceId: 0,
   gravelSourceStats: new Map(),
   customGravelTopLayerCacheKey: "",
   customGravelTopLayerCanvas: null,
@@ -3533,6 +3576,13 @@ const runtime = {
   lastAnimationUpdateAt: 0,
   debugToolsEnabled: false,
   debugSidebarOpen: false,
+  debugFishBehaviorPreviewOpen: false,
+  debugFishBehaviorPreviewSpeciesId: "",
+  debugFishBehaviorPreviewBehaviorId: "turn-around",
+  debugFishBehaviorPreviewStartedAt: 0,
+  debugFishBehaviorPreviewFrame: 0,
+  debugFishBehaviorPreviewFish: null,
+  debugFishBehaviorPreviewLoadToken: 0,
   aspectRatioLocked: FIXED_16_9_ASPECT_RATIO,
   hiddenKeySequenceBuffer: "",
   debugBreedingSequence: null,
@@ -3713,9 +3763,7 @@ const TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS = Object.freeze([
   "careTaskPaneButton",
   "medicineButton",
   "tipsButton",
-  "toggleMouseLockButton",
-  "lightsOutToggleButton",
-  "uvLightToggleButton"
+  "toggleMouseLockButton"
 ]);
 const TUTORIAL_ALL_TOOLBAR_BUTTON_IDS = Object.freeze([
   ...TUTORIAL_CORE_TOOLBAR_BUTTON_IDS,
@@ -4166,6 +4214,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         imageRefId: storedImage.imageRefId,
         width: pending.width,
         behaviorProfileId: pending.behaviorProfileId,
+        turnAnimation: String(pending.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
         createdAt: now
       }, speciesKey);
       if (!asset) {
@@ -7630,22 +7679,6 @@ function hasAutoDispenserInstalled(targetTank = getCurrentTank()) {
 // Source fragment: decor/customization.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
-function isUvLightOwned(targetState = state) {
-  return Boolean(ENABLE_UV_LIGHT && targetState?.uvLightOwned);
-}
-
-function isUvLightFeatureEnabled() {
-  return ENABLE_UV_LIGHT;
-}
-
-function isUvLightInstalled(targetTank = getCurrentTank()) {
-  return Boolean(isUvLightFeatureEnabled() && isUvLightOwned() && targetTank?.uvLightInstalled);
-}
-
-function isUvLightActive(targetTank = getCurrentTank()) {
-  return Boolean(isUvLightInstalled(targetTank) && targetTank?.uvLightEnabled !== false);
-}
-
 function createTankState(options = {}) {
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const typeMeta = getTankTypeMeta("rectangular");
@@ -7715,9 +7748,6 @@ function createTankState(options = {}) {
     localBackgroundImageRefId: sanitizeCustomImageRefId(options.localBackgroundImageRefId),
     selectedTankAsset: options.selectedTankAsset ?? null,
     autoDispenser: createDefaultAutoDispenserState(options.autoDispenser),
-    uvLightInstalled: false,
-    uvLightEnabled: false,
-    lightsOutOverride: normalizeLightsOutOverride(options.lightsOutOverride),
     selectedBubbleAsset: options.selectedBubbleAsset ?? (runtime.bubbleCatalog[0]?.key || null),
     theme: DEFAULT_THEME,
     lastCleanedAt: Number.isFinite(options.lastCleanedAt) ? options.lastCleanedAt : now,
@@ -9086,6 +9116,17 @@ function getDecorDefaultCaveColorSettings(decorKey = "") {
   return null;
 }
 
+function normalizeDecorTrypophobiaLookupPath(path = "") {
+  return String(path || "")
+    .replace(/\\/g, "/")
+    .replace(/[?#].*$/, "")
+    .toLowerCase();
+}
+
+function isKnownDecorTrypophobiaVariantPath(path = "") {
+  return KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS.has(normalizeDecorTrypophobiaLookupPath(path));
+}
+
 function buildTrypophobiaVariantPath(imagePath = "") {
   const path = String(imagePath || "");
   if (!path || /^(?:data:|blob:)/i.test(path) || /_trypophobia(?=\.[^./?#]+(?:[?#].*)?$)/i.test(path)) {
@@ -9100,7 +9141,8 @@ function getDecorLayerTrypophobiaPath(decor, layer) {
     return explicitPath;
   }
   const sourcePath = layer?.isBaseLayer ? decor?.path : resolveDecorColorLayerPath(layer);
-  return buildTrypophobiaVariantPath(sourcePath);
+  const candidatePath = buildTrypophobiaVariantPath(sourcePath);
+  return isKnownDecorTrypophobiaVariantPath(candidatePath) ? candidatePath : "";
 }
 
 function getDecorTrypophobiaCandidatePaths(decor) {
@@ -13350,7 +13392,6 @@ async function init() {
   setupDebugMenuButtons();
   exposeDebugConsoleCommands();
   bindEvents();
-  syncLightingFeatureVisibility();
   const earlyRawState = loadState();
   runtime.hadLocalSaveAtStartup = Boolean(earlyRawState);
   runtime.freshGameSaveLocked = !earlyRawState;
@@ -13449,7 +13490,6 @@ async function init() {
     ...runtime.bubbleCatalog.map((item) => item.path),
     AUTO_DISPENSER_IMAGE_PATH,
     AUTO_DISPENSER_BG_PATH,
-    ...(ENABLE_UV_LIGHT ? [UV_LIGHT_IMAGE_PATH] : []),
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
@@ -13801,12 +13841,11 @@ function syncDebugToolsAuthorization() {
 
   if (!enabled) {
     runtime.debugSidebarOpen = false;
+    if (runtime.debugFishBehaviorPreviewOpen) {
+      closeDebugFishBehaviorPreview();
+    }
     resetDebugFishBehaviorBroadcastState();
     clearAllDebugOtocinclusForcedStates(Date.now());
-  }
-
-  if (changed) {
-    runtime.uvGlowMaskCache.clear();
   }
 
   syncDebugSettingsControls();
@@ -13831,10 +13870,12 @@ function setDebugToolsEnabled(enabled) {
   runtime.debugToolsEnabled = nextEnabled;
   if (!nextEnabled) {
     runtime.debugSidebarOpen = false;
+    if (runtime.debugFishBehaviorPreviewOpen) {
+      closeDebugFishBehaviorPreview();
+    }
     resetDebugFishBehaviorBroadcastState();
     clearAllDebugOtocinclusForcedStates(Date.now());
   }
-  runtime.uvGlowMaskCache.clear();
   syncDebugSettingsControls();
   renderUi(Date.now());
   showToast(nextEnabled ? "Debug tools enabled." : "Debug tools hidden.");
@@ -14063,10 +14104,6 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   if (behaviorSignals[0]?.debugText) {
     detailParts.unshift(behaviorSignals[0].debugText);
     signatureParts.push(`behavior-signal:${behaviorSignals[0].type}`);
-  }
-  if (isTankLightsOut(now)) {
-    detailParts.push(isNightActiveFish(fish) ? "lights out active" : "lights out dim");
-    signatureParts.push("lights-out");
   }
   if (fish.personality) {
     detailParts.push(`trait ${fish.personality}`);
@@ -15452,6 +15489,24 @@ function bindEvents() {
   });
   dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("notifications"));
   dom.toggleDebugMenuButton?.addEventListener("click", () => toggleDebugSidebar());
+  dom.debugFishBehaviorPreviewButton?.addEventListener("click", () => openDebugFishBehaviorPreview());
+  dom.closeDebugFishBehaviorPreview?.addEventListener("click", () => closeDebugFishBehaviorPreview());
+  dom.debugFishBehaviorPreview?.querySelector("[data-debug-fish-preview-close]")?.addEventListener("click", () => {
+    closeDebugFishBehaviorPreview();
+  });
+  dom.restartDebugFishBehaviorPreview?.addEventListener("click", () => resetDebugFishBehaviorPreview());
+  dom.debugFishBehaviorPreviewSpecies?.addEventListener("change", (event) => {
+    setDebugFishBehaviorPreviewSpecies(event.currentTarget.value);
+  });
+  dom.debugFishBehaviorPreviewBehavior?.addEventListener("change", (event) => {
+    setDebugFishBehaviorPreviewBehavior(event.currentTarget.value);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && runtime.debugFishBehaviorPreviewOpen) {
+      event.preventDefault();
+      closeDebugFishBehaviorPreview();
+    }
+  });
   dom.debugDailyRecapButton?.addEventListener("click", () => triggerDebugDailyRecap());
   dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
   dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
@@ -15741,8 +15796,6 @@ function bindEvents() {
   dom.openEquipmentShopButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.openEquipmentStoreButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.toggleMouseLockButton?.addEventListener("click", () => toggleTankMouseInputLocked());
-  dom.lightsOutToggleButton?.addEventListener("click", () => toggleLightsOutOverride());
-  dom.uvLightToggleButton?.addEventListener("click", () => toggleUvLightPower());
   dom.editModeDockButton?.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("editModeDockButton")) {
       return;
@@ -15958,8 +16011,8 @@ function bindEvents() {
   dom.decorShadowsToggleInput?.addEventListener("change", (event) => {
     setDecorShadowsEnabled(event.currentTarget?.checked);
   });
-  dom.uvLightQualitySelect?.addEventListener("change", (event) => {
-    setUvLightRenderQuality(event.currentTarget?.value);
+  dom.simpleTurnAnimationsToggleInput?.addEventListener("change", (event) => {
+    setSimpleTurnAnimationsOnly(event.currentTarget?.checked);
   });
   dom.halloweenModeSelect?.addEventListener("change", (event) => {
     setHalloweenMode(event.currentTarget?.value);
@@ -17085,11 +17138,6 @@ function bindEvents() {
       return;
     }
 
-    const buyUvLightButton = event.target.closest("[data-buy-uv-light]");
-    if (buyUvLightButton) {
-      buyUvLight();
-      return;
-    }
 
 
     const tankButton = event.target.closest("[data-extend-aquarium-store]");
@@ -17298,11 +17346,6 @@ function bindEvents() {
       }
 
 
-      const uvLightButton = event.target.closest("[data-toggle-uv-light-install]");
-      if (uvLightButton) {
-        setUvLightInstalled(!isUvLightInstalled());
-        return;
-      }
 
       const swatchButton = event.target.closest("[data-custom-gravel-color]");
       if (swatchButton) {
@@ -17350,9 +17393,6 @@ function bindEvents() {
   bindEquipmentSurface(dom.editTankBackgroundList);
   bindEquipmentSurface(dom.editTankBackgroundColorPanel);
   bindEquipmentSurface(dom.tankAssetList);
-  bindEquipmentSurface(dom.uvLightList);
-  bindEquipmentSurface(dom.equipmentUvLightList);
-  bindEquipmentSurface(dom.editTankUvLightList);
   bindEquipmentSurface(dom.customGravelPanel);
   bindEquipmentSurface(dom.equipmentCustomGravelPanel);
   bindEquipmentSurface(dom.editTankCustomGravelPanel);
@@ -19892,7 +19932,8 @@ function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", d
     width: clamp(CUSTOM_FISH_DEFAULT_WIDTH, CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
     naturalWidth,
     naturalHeight,
-    behaviorProfileId: normalizeCustomFishBehaviorProfileId("")
+    behaviorProfileId: normalizeCustomFishBehaviorProfileId(""),
+    turnAnimation: "simple"
   });
 }
 
@@ -20189,6 +20230,7 @@ function sanitizeCustomFishAssetEntry(entry, key) {
     imageRefId,
     width: clamp(Math.round(Number(entry.width) || CUSTOM_FISH_DEFAULT_WIDTH), CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
     behaviorProfileId,
+    turnAnimation: String(entry.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
 }
@@ -20272,7 +20314,8 @@ function buildCustomFishCatalogEntry(asset) {
     caveEnabled: profile?.caveEnabled !== false,
     defaultNames: [asset.name || "Custom Fish"],
     customAsset: true,
-    behaviorProfileId: profile?.id || ""
+    behaviorProfileId: profile?.id || "",
+    turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
   species.mealCoins = resolveSpeciesMealCoins(species);
   return species;
@@ -20413,6 +20456,13 @@ function normalizeFishDefinition(entry, index, options = {}) {
   const behavior = typeof entry.behavior === "string" && entry.behavior.trim() ? entry.behavior.trim().toLowerCase() : "free";
   const diet = typeof entry.diet === "string" && entry.diet.trim() ? entry.diet.trim().toLowerCase() : "pellet";
   const speciesType = typeof entry.type === "string" && entry.type.trim() ? entry.type.trim() : "Fish";
+  const explicitTurnAnimation = typeof entry.turnAnimation === "string"
+    ? entry.turnAnimation.trim().toLowerCase()
+    : "";
+  const normalizedSpeciesType = speciesType.trim().toLowerCase();
+  const turnAnimation = ["simple", "complex"].includes(explicitTurnAnimation)
+    ? explicitTurnAnimation
+    : (["shark", "whale"].includes(normalizedSpeciesType) ? "complex" : "simple");
   const renderMotionProfile = typeof entry.renderMotionProfile === "string" && entry.renderMotionProfile.trim()
     ? entry.renderMotionProfile.trim().toLowerCase()
     : "";
@@ -20500,6 +20550,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     behavior,
     diet,
     type: speciesType,
+    turnAnimation,
     chumOnly: entry.chumOnly === true,
     desperationPredator: entry.desperationPredator === true,
     renderMotionProfile,
@@ -20683,11 +20734,6 @@ function sanitizeFishBehaviorSpeciesId(value, baseSpeciesId = "") {
   return profile && !profile.customUploadProduct && !isCustomFishShopKey(profile.id)
     ? profile.id
     : "";
-}
-
-function normalizeLightsOutOverride(value) {
-  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
-  return LIGHTS_OUT_OVERRIDES.includes(normalized) ? normalized : LIGHTS_OUT_OVERRIDE_AUTO;
 }
 
 function normalizeBehaviorPersonality(value) {
@@ -21086,9 +21132,6 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now(), comfortVal
   }
   if (diseaseSaturationPercent < 100 || diseaseBrightnessPercent < 100) {
     filters.push(`saturate(${diseaseSaturationPercent}%) brightness(${diseaseBrightnessPercent}%)`);
-  }
-  if (!isFishDead(fish) && isTankLightsOut(now)) {
-    filters.push(isNightActiveFish(fish) ? "brightness(108%) saturate(96%)" : "brightness(84%) saturate(82%)");
   }
   if (grayscalePercent > 0) {
     filters.push(`grayscale(${grayscalePercent}%)`);
@@ -22332,24 +22375,6 @@ function maybeApplyDiseaseAvoidanceReaction(fish, species, now = Date.now()) {
   return true;
 }
 
-function getLightsOutOverride(targetTank = getCurrentTank()) {
-  return normalizeLightsOutOverride(targetTank?.lightsOutOverride);
-}
-
-function isTankLightsOut(now = Date.now(), targetTank = getCurrentTank()) {
-  if (!LIGHTS_OUT_FEATURE_ENABLED) {
-    return false;
-  }
-  const override = getLightsOutOverride(targetTank);
-  if (override === LIGHTS_OUT_OVERRIDE_ON) {
-    return true;
-  }
-  if (override === LIGHTS_OUT_OVERRIDE_OFF) {
-    return false;
-  }
-  return isCaveNightWindow(now);
-}
-
 function isNightActiveFish(fishOrSpecies) {
   const profile = getFishBehaviorProfile(fishOrSpecies);
   const personality = normalizeBehaviorPersonality(fishOrSpecies?.personality);
@@ -22413,9 +22438,9 @@ function getBehaviorHistoryEventText(signalType, fish, options = {}) {
     case "inspect_lure":
       return `${name} keeps inspecting a lure.`;
     case "night_sleep":
-      return `${name} settled into a sleep spot after lights out.`;
+      return `${name} settled into a sleep spot for the night.`;
     case "night_forage":
-      return `${name} is moving after lights out.`;
+      return `${name} is moving around at night.`;
     case "night_active_still":
       return `${name} has been unusually still at night.`;
     case "odd_sleep_spot":
@@ -22792,91 +22817,6 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
   return null;
 }
 
-function pickNightBehaviorTarget(fish, species, now = Date.now()) {
-  if (!isTankLightsOut(now)) {
-    return null;
-  }
-  const personality = getFishPersonality(fish);
-  const nightActive = isNightActiveFish(fish);
-  if (nightActive) {
-    const forage = pickDecorHangoutTarget(species, fish, now, {
-      allowedZoneTypes: ["hardscape", "plant", "hide"],
-      chanceMultiplier: 1.9,
-      lingerMultiplier: 0.9,
-      preferBackLayer: false
-    });
-    if (forage) {
-      return {
-        ...forage,
-        intentType: "night forage",
-        intentCause: "night-active",
-        signalType: "night_forage",
-        debugText: "night forage | night-active"
-      };
-    }
-    return {
-      xNorm: randomSwimX(),
-      yNorm: randomBetween(0.56, 0.82),
-      targetLayer: clampTankLayer(Math.max(1, getFishTankLayer(fish))),
-      targetAt: now + randomBetween(3600, 7600),
-      intentType: "night forage",
-      intentCause: "night-active",
-      signalType: "night_forage",
-      debugText: "night forage | night-active"
-    };
-  }
-
-  const assignedResidence = getAssignedResidenceTarget(fish, species, now);
-  if (assignedResidence) {
-    return assignedResidence;
-  }
-
-  const homeSpot = fish.favoriteSpot && ["homebody", "routine-loving"].includes(personality)
-    ? fish.favoriteSpot
-    : null;
-  if (homeSpot && Math.random() < 0.65) {
-    return {
-      xNorm: homeSpot.xNorm,
-      yNorm: homeSpot.yNorm,
-      targetLayer: getFishTankLayer(fish),
-      targetAt: now + randomBetween(8000, 18000),
-      intentType: "night sleep",
-      intentCause: "favorite spot",
-      signalType: "night_sleep",
-      debugText: "night sleep | lights out"
-    };
-  }
-  const cover = pickDecorHangoutTarget(species, fish, now, {
-    allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
-    chanceMultiplier: ["shy", "sensitive", "homebody"].includes(personality) ? 2.2 : 1.2,
-    lingerMultiplier: 2.3,
-    preferBackLayer: true
-  });
-  if (cover) {
-    return {
-      ...cover,
-      intentType: "night sleep",
-      intentCause: "lights out",
-      signalType: "night_sleep",
-      debugText: "night sleep | lights out",
-      slow: true
-    };
-  }
-  if (Math.random() < 0.2) {
-    return {
-      xNorm: clamp(fish.xNorm + randomBetween(-0.05, 0.05), 0.08, 0.92),
-      yNorm: clamp(fish.yNorm + randomBetween(-0.03, 0.03), 0.18, 0.78),
-      targetLayer: getFishTankLayer(fish),
-      targetAt: now + randomBetween(8000, 16000),
-      intentType: "night sleep",
-      intentCause: "exposed",
-      signalType: "odd_sleep_spot",
-      debugText: "night sleep | exposed"
-    };
-  }
-  return null;
-}
-
 function pickFeedingMemoryBehaviorTarget(fish, species, now = Date.now()) {
   if (!fish || !species || isMealFreeFish(fish) || !canFoodSatisfyFishMeal(fish, "basic")) {
     return null;
@@ -23016,18 +22956,10 @@ function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   }
   const effectiveBehavior = getEffectiveFishBehavior(fish, species);
   if (["sucker", "piranha"].includes(effectiveBehavior)) {
-    if (isTankLightsOut(now) && isNightActiveFish(fish)) {
-      setFishBehaviorIntent(fish, "night forage", "night-active", now);
-      recordFishBehaviorSignal(fish, "night_forage", now, { debugText: "night forage | night-active" });
-    }
     return false;
   }
   const threatTarget = pickRelationshipBehaviorTarget(fish, species, now, { onlyThreat: true });
   if (threatTarget && applyBehaviorTarget(fish, species, threatTarget, now)) {
-    return true;
-  }
-  const nightTarget = pickNightBehaviorTarget(fish, species, now);
-  if (nightTarget && applyBehaviorTarget(fish, species, nightTarget, now)) {
     return true;
   }
   const feedingMemoryTarget = pickFeedingMemoryBehaviorTarget(fish, species, now);
@@ -23152,7 +23084,7 @@ function handleFishRefuseFoodPellet(fish, pellet, now = Date.now()) {
   return true;
 }
 
-function getUvGlowSourceKey(sourceImage) {
+function getRuntimeImageSourceKey(sourceImage) {
   const directSource = sourceImage?.currentSrc || sourceImage?.src || "";
   if (directSource) {
     return directSource;
@@ -23162,469 +23094,24 @@ function getUvGlowSourceKey(sourceImage) {
     return "";
   }
 
-  if (!sourceImage.__bbUvGlowSourceKey) {
-    const key = `generated-uv-source-${runtime.uvGlowSourceId += 1}`;
+  if (!sourceImage.__bbRuntimeImageSourceKey) {
+    const key = `generated-image-source-${runtime.imageSourceId += 1}`;
     try {
-      Object.defineProperty(sourceImage, "__bbUvGlowSourceKey", {
+      Object.defineProperty(sourceImage, "__bbRuntimeImageSourceKey", {
         value: key,
         enumerable: false
       });
     } catch (error) {
-      sourceImage.__bbUvGlowSourceKey = key;
+      sourceImage.__bbRuntimeImageSourceKey = key;
     }
   }
-  return sourceImage.__bbUvGlowSourceKey;
-}
-
-function isUvLightLowCostMode() {
-  return getUvLightRenderQuality() === UV_LIGHT_RENDER_QUALITY_LOW;
-}
-
-function isUvLightGravelGlowEnabled() {
-  return getUvLightRenderQuality() === UV_LIGHT_RENDER_QUALITY_HIGH && UV_LIGHT_GRAVEL_GLOW_HIGH_ENABLED;
+  return sourceImage.__bbRuntimeImageSourceKey;
 }
 // </bundle-source>
 
 // <bundle-source path="fish/undead-and-appearance.js">
 // Source fragment: fish/undead-and-appearance.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
-
-function getUvGlowCachedWidth(width) {
-  const sourceWidth = Math.max(1, Math.round(Number(width) || 1));
-  return isUvLightLowCostMode()
-    ? clamp(sourceWidth, UV_LIGHT_CACHE_LOW_MIN_WIDTH, UV_LIGHT_CACHE_LOW_MAX_WIDTH)
-    : clamp(sourceWidth, UV_LIGHT_CACHE_HIGH_MIN_WIDTH, UV_LIGHT_CACHE_HIGH_MAX_WIDTH);
-}
-
-function getUvGlowPixel(r, g, b, alpha) {
-  if (alpha <= 10) {
-    return null;
-  }
-
-  const hsl = rgbToHsl({ r, g, b });
-  const value = Math.max(r, g, b) / 255;
-  if (value <= 0.18) {
-    return null;
-  }
-
-  const hue = normalizeHueUnit(hsl.h);
-  const saturation = clamp(hsl.s, 0, 1);
-  const vividness = Math.pow(saturation, 0.82) * Math.pow(value, 0.72);
-  const brightNeutral = value > 0.86 && saturation < 0.16
-    ? (value - 0.86) * 2.4
-    : 0;
-  let hueBoost = 0.72;
-  let glowHue = hue;
-  let glowSaturation = 1;
-  let glowLightness = 0.62;
-
-  // Map source pigment families toward the emitted colors they usually suggest under blacklight.
-  if (saturation < 0.16) {
-    hueBoost = 0.5;
-    glowHue = 0.58;
-    glowSaturation = 0.72;
-    glowLightness = 0.8;
-  } else if (hue >= 0.1 && hue < 0.22) {
-    hueBoost = 1.42;
-    glowHue = 0.29;
-    glowLightness = 0.66;
-  } else if (hue >= 0.22 && hue < 0.42) {
-    hueBoost = 1.34;
-    glowHue = clamp(hue, 0.28, 0.38);
-    glowLightness = 0.64;
-  } else if (hue >= 0.42 && hue < 0.56) {
-    hueBoost = 1.22;
-    glowHue = 0.5;
-    glowLightness = 0.64;
-  } else if (hue >= 0.56 && hue < 0.72) {
-    hueBoost = 1.02;
-    glowHue = 0.58;
-    glowLightness = 0.66;
-  } else if (hue >= 0.72 && hue < 0.84) {
-    hueBoost = 0.98;
-    glowHue = 0.76;
-    glowLightness = 0.64;
-  } else if (hue >= 0.84 && hue < 0.96) {
-    hueBoost = 1.28;
-    glowHue = 0.88;
-    glowLightness = 0.63;
-  } else if (hue < 0.06 || hue >= 0.96) {
-    hueBoost = 1.04;
-    glowHue = 0.94;
-    glowLightness = 0.62;
-  } else {
-    hueBoost = 0.92;
-    glowHue = 0.08;
-    glowLightness = 0.62;
-  }
-
-  const pastelPenalty = saturation < 0.32 ? clamp((saturation - 0.12) / 0.2, 0, 1) : 1;
-  const fluorescentScore = saturation < 0.16
-    ? brightNeutral
-    : Math.max(0, (vividness - 0.14) * 1.52) * pastelPenalty;
-  const lowLightPenalty = hsl.l < 0.24 ? 0.45 + hsl.l * 2.3 : 1;
-  const intensity = clamp((fluorescentScore + brightNeutral * 0.18) * hueBoost * lowLightPenalty, 0, 1);
-  if (intensity <= 0.05) {
-    return null;
-  }
-
-  const glowRgb = hslToRgb({
-    h: glowHue,
-    s: glowSaturation,
-    l: glowLightness
-  });
-
-  return {
-    r: glowRgb.r,
-    g: glowRgb.g,
-    b: glowRgb.b,
-    a: clamp(Math.round(alpha * intensity * 1.12), 0, 255),
-    intensity
-  };
-}
-
-function getBiologicalWasteUvGlowPixel(r, g, b, alpha) {
-  if (alpha <= 10) {
-    return null;
-  }
-
-  const luminance = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
-  const hsl = rgbToHsl({ r, g, b });
-  const hue = normalizeHueUnit(hsl.h);
-  const isWarmWasteTone = hsl.s >= 0.12 && hue >= 0.04 && hue <= 0.18;
-  const intensity = clamp(0.42 + Math.pow(luminance, 0.58) * 0.62 + (isWarmWasteTone ? 0.12 : 0), 0.35, 1);
-  const glowRgb = hslToRgb({
-    h: isWarmWasteTone ? 0.15 : 0.58,
-    s: isWarmWasteTone ? 0.12 : 0.1,
-    l: 0.94
-  });
-
-  return {
-    r: glowRgb.r,
-    g: glowRgb.g,
-    b: glowRgb.b,
-    a: clamp(Math.round(alpha * intensity * 0.98), 0, 255),
-    intensity
-  };
-}
-
-function getUvGlowPixelForProfile(r, g, b, alpha, profile = "default") {
-  return profile === "biological-waste"
-    ? getBiologicalWasteUvGlowPixel(r, g, b, alpha)
-    : getUvGlowPixel(r, g, b, alpha);
-}
-
-function getUvGlowMaskImage(sourceImage, profile = "default") {
-  if (!sourceImage?.width || !sourceImage?.height) {
-    return null;
-  }
-
-  const width = Math.max(1, Math.round(Number(sourceImage.naturalWidth || sourceImage.width) || 1));
-  const height = Math.max(1, Math.round(Number(sourceImage.naturalHeight || sourceImage.height) || 1));
-  const cacheKey = `${getUvGlowSourceKey(sourceImage)}|${profile}|${getUvLightRenderQuality()}|${width}x${height}`;
-  if (runtime.uvGlowMaskCache.has(cacheKey)) {
-    return runtime.uvGlowMaskCache.get(cacheKey);
-  }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) {
-    return null;
-  }
-
-  context.clearRect(0, 0, width, height);
-  context.drawImage(sourceImage, 0, 0, width, height);
-
-  let imageData;
-  try {
-    imageData = context.getImageData(0, 0, width, height);
-  } catch (error) {
-    runtime.uvGlowMaskCache.set(cacheKey, null);
-    return null;
-  }
-
-  const pixels = imageData.data;
-  let reactiveWeight = 0;
-  let sourceWeight = 0;
-  for (let index = 0; index < pixels.length; index += 4) {
-    const alpha = pixels[index + 3];
-    if (alpha <= 10) {
-      pixels[index + 3] = 0;
-      continue;
-    }
-
-    sourceWeight += alpha / 255;
-    const glow = getUvGlowPixelForProfile(pixels[index], pixels[index + 1], pixels[index + 2], alpha, profile);
-    if (!glow) {
-      pixels[index + 3] = 0;
-      continue;
-    }
-
-    pixels[index] = glow.r;
-    pixels[index + 1] = glow.g;
-    pixels[index + 2] = glow.b;
-    pixels[index + 3] = glow.a;
-    reactiveWeight += glow.intensity * (alpha / 255);
-  }
-
-  const coverage = sourceWeight > 0 ? reactiveWeight / sourceWeight : 0;
-  if (coverage <= 0.006) {
-    runtime.uvGlowMaskCache.set(cacheKey, null);
-    return null;
-  }
-
-  context.putImageData(imageData, 0, 0);
-
-  const cachedWidth = getUvGlowCachedWidth(width);
-  const cachedHeight = Math.max(1, Math.round(cachedWidth * (height / width)));
-  const coreCanvas = document.createElement("canvas");
-  coreCanvas.width = cachedWidth;
-  coreCanvas.height = cachedHeight;
-  const coreContext = coreCanvas.getContext("2d");
-  if (!coreContext) {
-    return null;
-  }
-  coreContext.drawImage(canvas, 0, 0, cachedWidth, cachedHeight);
-
-  const lowCostMode = isUvLightLowCostMode();
-  const result = {
-    canvas: coreCanvas,
-    coverage,
-    tight: lowCostMode ? null : createUvGlowBlurCanvas(coreCanvas, 3, 8),
-    soft: createUvGlowBlurCanvas(coreCanvas, lowCostMode ? 8 : 10, lowCostMode ? 18 : 22)
-  };
-  setBoundedCanvasCache(runtime.uvGlowMaskCache, cacheKey, result, { maxEntries: 16, maxBytes: 48 * 1024 * 1024 });
-  return result;
-}
-
-function createUvGlowBlurCanvas(sourceCanvas, blurPx, paddingPx) {
-  if (!sourceCanvas?.width || !sourceCanvas?.height) {
-    return null;
-  }
-
-  const padding = Math.max(1, Math.round(Number(paddingPx) || 1));
-  const canvas = document.createElement("canvas");
-  canvas.width = sourceCanvas.width + padding * 2;
-  canvas.height = sourceCanvas.height + padding * 2;
-  const context = canvas.getContext("2d");
-  if (!context) {
-    return null;
-  }
-
-  context.filter = `blur(${Math.max(0, Number(blurPx) || 0)}px) saturate(190%)`;
-  context.drawImage(sourceCanvas, padding, padding);
-  context.filter = "none";
-  return {
-    canvas,
-    padding
-  };
-}
-
-function drawUvGlowBitmap(context, glowBitmap, drawX, drawY, width, height, alpha) {
-  if (!glowBitmap?.canvas || alpha <= 0.01) {
-    return;
-  }
-
-  const rect = getUvGlowBitmapDrawRect(glowBitmap, drawX, drawY, width, height);
-  context.globalAlpha = alpha;
-  context.drawImage(glowBitmap.canvas, rect.x, rect.y, rect.width, rect.height);
-}
-
-function getUvGlowBitmapDrawRect(glowBitmap, drawX, drawY, width, height) {
-  const baseWidth = Math.max(1, glowBitmap.canvas.width - glowBitmap.padding * 2);
-  const baseHeight = Math.max(1, glowBitmap.canvas.height - glowBitmap.padding * 2);
-  const padX = width * (glowBitmap.padding / baseWidth);
-  const padY = height * (glowBitmap.padding / baseHeight);
-  return {
-    x: drawX - padX,
-    y: drawY - padY,
-    width: width + padX * 2,
-    height: height + padY * 2
-  };
-}
-
-function drawUvGlowBitmapWithDecorMotion(context, glowBitmap, drawX, drawY, width, height, item, now, motion, alpha) {
-  if (!glowBitmap?.canvas || alpha <= 0.01) {
-    return;
-  }
-
-  const rect = getUvGlowBitmapDrawRect(glowBitmap, drawX, drawY, width, height);
-  const offset = getDecorUvGlowWholeOffset(item, now, motion, width);
-  context.globalAlpha = alpha;
-  context.drawImage(glowBitmap.canvas, rect.x + offset.x, rect.y + offset.y, rect.width, rect.height);
-}
-
-function drawUvGlowImageToContext(context, sourceImage, drawX, drawY, width, height, intensity = 1, alpha = 1, profile = "default") {
-  if (!isUvLightActive() || !sourceImage || width <= 0 || height <= 0 || alpha <= 0.02) {
-    return;
-  }
-
-  const glow = getUvGlowMaskImage(sourceImage, profile);
-  if (!glow?.canvas) {
-    return;
-  }
-
-  const strength = clamp((Number(intensity) || 1) * (0.68 + glow.coverage * 2.2), 0.16, 1.35);
-  const lowCostMode = isUvLightLowCostMode();
-
-  context.save();
-  context.globalCompositeOperation = "screen";
-  drawUvGlowBitmap(context, glow.soft, drawX, drawY, width, height, clamp(alpha * strength * (lowCostMode ? 0.5 : 0.46), 0, 0.74));
-  if (!lowCostMode) {
-    drawUvGlowBitmap(context, glow.tight, drawX, drawY, width, height, clamp(alpha * strength * 0.36, 0, 0.62));
-  }
-  context.globalAlpha = clamp(alpha * strength * (lowCostMode ? 0.24 : 0.28), 0, lowCostMode ? 0.48 : 0.55);
-  context.drawImage(glow.canvas, drawX, drawY, width, height);
-  context.restore();
-}
-
-function drawUvGlowImageCoverToContext(context, sourceImage, left, top, width, height, intensity = 1, alpha = 1, profile = "default") {
-  const rect = getImageCoverDrawRect(sourceImage, left, top, width, height);
-  if (!rect) {
-    return;
-  }
-
-  drawUvGlowImageToContext(context, sourceImage, rect.x, rect.y, rect.width, rect.height, intensity, alpha, profile);
-}
-
-function drawUvGlowDecorImageToContext(context, sourceImage, drawX, drawY, width, height, item, now, motion, intensity = 1, alpha = 1) {
-  if (!isUvLightActive() || !sourceImage || width <= 0 || height <= 0 || alpha <= 0.02) {
-    return;
-  }
-
-  const glow = getUvGlowMaskImage(sourceImage);
-  if (!glow?.canvas) {
-    return;
-  }
-
-  const strength = clamp((Number(intensity) || 1) * (0.68 + glow.coverage * 2.2), 0.16, 1.35);
-  const hasSway = hasDecorUvSwayMotion(motion);
-  const lowCostMode = isUvLightLowCostMode();
-  const coreStrength = hasSway ? (lowCostMode ? 0.08 : 0.1) : (lowCostMode ? 0.22 : 0.28);
-  const coreMax = hasSway ? (lowCostMode ? 0.16 : 0.2) : (lowCostMode ? 0.44 : 0.55);
-
-  context.save();
-  context.globalCompositeOperation = "screen";
-  drawUvGlowBitmapWithDecorMotion(context, glow.soft, drawX, drawY, width, height, item, now, motion, clamp(alpha * strength * (lowCostMode ? 0.5 : 0.46), 0, 0.74));
-  if (!lowCostMode) {
-    drawUvGlowBitmapWithDecorMotion(context, glow.tight, drawX, drawY, width, height, item, now, motion, clamp(alpha * strength * 0.36, 0, 0.62));
-  }
-  const offset = getDecorUvGlowWholeOffset(item, now, motion, width);
-  context.globalAlpha = clamp(alpha * strength * coreStrength, 0, coreMax);
-  context.drawImage(glow.canvas, drawX + offset.x, drawY + offset.y, width, height);
-  context.restore();
-}
-
-function hasDecorUvSwayMotion(motion) {
-  if (!motion) {
-    return false;
-  }
-
-  if (motion.customMotionType) {
-    return Boolean(getCustomDecorMotionTypeConfig(motion.customMotionType).hasSway);
-  }
-
-  return Boolean(motion.isSeaweed || motion.isLure);
-}
-
-function getDecorUvGlowWholeOffset(item, now, motion, width) {
-  const resolvedMotion = motion || getDecorMotion(item, now);
-  if (!resolvedMotion) {
-    return { x: 0, y: 0 };
-  }
-
-  if (resolvedMotion.customMotionType) {
-    const motionConfig = getCustomDecorMotionTypeConfig(resolvedMotion.customMotionType);
-    if (!motionConfig.hasSway) {
-      return {
-        x: motionConfig.hasBob ? resolvedMotion.bobX : 0,
-        y: motionConfig.hasBob ? resolvedMotion.bobY : 0
-      };
-    }
-    const sampleT = normalizeDecorSwaySide(resolvedMotion.customMotionSwaySide) === "below" ? 0.88 : 0.12;
-    return normalizeDecorWarpOffset(getCustomDecorMotionOffsetAt(sampleT, now, resolvedMotion, motionConfig, width));
-  }
-
-  if (resolvedMotion.isFloating || resolvedMotion.isSeaweed || resolvedMotion.isLure) {
-    const sampleT = normalizeDecorSwaySide(resolvedMotion.swaySide) === "below" ? 0.88 : 0.12;
-    return normalizeDecorWarpOffset(getDecorSliceOffset(item, now, sampleT, resolvedMotion));
-  }
-
-  return { x: 0, y: 0 };
-}
-
-function getFishUvGlowIntensity(fish, species) {
-  const label = `${species?.id || ""} ${species?.name || ""}`.toLowerCase();
-  let intensity = 0.62;
-  if (/(neon|rainbow|celestial|blue|ram|killifish|discus|gramma|tang)/.test(label)) {
-    intensity = 1;
-  } else if (/(guppy|betta|gourami|clown|yellow|cherry|swordtail)/.test(label)) {
-    intensity = 0.82;
-  } else if (/(sucker|loach|puffer|goldfish)/.test(label)) {
-    intensity = 0.52;
-  }
-
-  return isFishDead(fish) ? intensity * 0.62 : intensity;
-}
-
-function getDecorUvGlowIntensity(item) {
-  const key = String(item?.decorKey || "").toLowerCase();
-  if (/(ufo|meteor|volcano|treasure|coral|mushroom|seaweed|anubia|lure|castle)/.test(key)) {
-    return 1;
-  }
-  if (/(ship|plane|filter|bubbler)/.test(key)) {
-    return 0.68;
-  }
-  if (/(rock|slate|driftwood|bricks)/.test(key)) {
-    return 0.42;
-  }
-  return 0.58;
-}
-
-function drawUvLightAtmosphere(now = Date.now(), layer = "back") {
-  if (!UV_LIGHT_ATMOSPHERE_ENABLED || !isUvLightActive()) {
-    return;
-  }
-
-  const pulse = 0.5 + Math.sin(now / 3400) * 0.5;
-  tankContext.save();
-  if (layer === "back") {
-    tankContext.globalCompositeOperation = "multiply";
-    const shade = tankContext.createLinearGradient(0, 0, TANK_WIDTH, TANK_HEIGHT);
-    shade.addColorStop(0, "rgba(30, 18, 78, 0.5)");
-    shade.addColorStop(0.48, "rgba(8, 10, 42, 0.42)");
-    shade.addColorStop(1, "rgba(4, 8, 28, 0.5)");
-    tankContext.fillStyle = shade;
-    tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-
-    tankContext.globalCompositeOperation = "screen";
-    const beam = tankContext.createLinearGradient(TANK_WIDTH * 0.1, 0, TANK_WIDTH * 0.9, TANK_HEIGHT);
-    beam.addColorStop(0, `rgba(136, 83, 255, ${0.1 + pulse * 0.025})`);
-    beam.addColorStop(0.34, "rgba(83, 232, 255, 0.04)");
-    beam.addColorStop(0.72, "rgba(153, 80, 255, 0.035)");
-    beam.addColorStop(1, "rgba(0, 0, 0, 0)");
-    tankContext.fillStyle = beam;
-    tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  } else {
-    tankContext.globalCompositeOperation = "screen";
-    const haze = tankContext.createRadialGradient(
-      TANK_WIDTH * 0.5,
-      WATER_SURFACE_Y - 20,
-      20,
-      TANK_WIDTH * 0.5,
-      WATER_SURFACE_Y + 90,
-      TANK_WIDTH * 0.72
-    );
-    haze.addColorStop(0, `rgba(177, 106, 255, ${0.08 + pulse * 0.025})`);
-    haze.addColorStop(0.46, "rgba(83, 232, 255, 0.035)");
-    haze.addColorStop(1, "rgba(0, 0, 0, 0)");
-    tankContext.fillStyle = haze;
-    tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  }
-  tankContext.restore();
-}
 
 function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
   if (!baseSpecies || !profileSpecies) {
@@ -25073,13 +24560,6 @@ function normalizeDisplayPosition(value) {
   }
 }
 
-function normalizeUvLightRenderQuality(value) {
-  const normalized = String(value || "").trim().toLowerCase();
-  return UV_LIGHT_RENDER_QUALITY_OPTIONS.includes(normalized)
-    ? normalized
-    : DEFAULT_UV_LIGHT_RENDER_QUALITY;
-}
-
 function normalizeToolbarTileColor(value) {
   const normalized = String(value || "").trim().toLowerCase();
   if (/^#[0-9a-f]{6}$/.test(normalized)) {
@@ -25114,7 +24594,7 @@ function sanitizeUiSettings(rawSettings) {
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
-    uvLightQuality: normalizeUvLightRenderQuality(source.uvLightQuality),
+    simpleTurnAnimationsOnly: source.simpleTurnAnimationsOnly === true,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
       ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
@@ -25142,8 +24622,8 @@ function areDecorShadowsEnabled() {
   return DECOR_SHADOWS_SETTING_ENABLED && getUiSettings().decorShadowsEnabled;
 }
 
-function getUvLightRenderQuality() {
-  return getUiSettings().uvLightQuality;
+function areSimpleTurnAnimationsForced() {
+  return getUiSettings().simpleTurnAnimationsOnly === true;
 }
 
 function normalizeWallpaperEngineBooleanPropertyValue(propertyValue) {
@@ -25943,9 +25423,6 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     localBackgroundImageRefId,
     selectedTankAsset: runtime.tankMap.has(incomingTank.selectedTankAsset) ? incomingTank.selectedTankAsset : null,
     autoDispenser: createDefaultAutoDispenserState(incomingTank.autoDispenser),
-    uvLightInstalled: false,
-    uvLightEnabled: false,
-    lightsOutOverride: normalizeLightsOutOverride(incomingTank.lightsOutOverride),
     selectedBubbleAsset: runtime.bubbleMap.has(incomingTank.selectedBubbleAsset)
       ? incomingTank.selectedBubbleAsset
       : (runtime.bubbleCatalog[0]?.key || null),
@@ -26004,8 +25481,6 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     localBackgroundImageRefId: incoming?.localBackgroundImageRefId,
     selectedTankAsset: incoming?.selectedTankAsset,
     autoDispenser: incoming?.autoDispenser,
-    uvLightInstalled: incoming?.uvLightInstalled,
-    uvLightEnabled: incoming?.uvLightEnabled,
     selectedBubbleAsset: incoming?.selectedBubbleAsset,
     lastCleanedAt: incoming?.lastCleanedAt,
     lastSimulatedAt: incoming?.lastSimulatedAt,
@@ -26036,7 +25511,6 @@ function matchesLegacyDefaultStarterTankAppearance(tank, index) {
     && Array.isArray(tank.floatingPellets) && tank.floatingPellets.length === 0
     && Object.keys(tank.feedHistory || {}).length === 0
     && !tank.selectedTankAsset
-    && !tank.uvLightInstalled
     && tank.selectedBackground === defaultBackgroundKey
     && normalizeCustomBackgroundMode(tank.customBackgroundMode) === CUSTOM_BACKGROUND_MODE_SOLID
     && (matchesLegacyColors || matchesCurrentDefaultColors);
@@ -26130,7 +25604,6 @@ function reconcileState(rawState) {
     boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
-    uvLightOwned: false,
     foodInventory: getDefaultFoodInventory(),
     medicineInventory: getDefaultMedicineInventory(),
     dailyBonus: buildDefaultDailyBonusState(),
@@ -26216,12 +25689,6 @@ function reconcileState(rawState) {
       incoming.ownedBackgroundInventory ?? incoming.ownedBackgrounds,
       tanks.map((tank) => tank.selectedBackground)
     ),
-    uvLightOwned: ENABLE_UV_LIGHT && Boolean(
-      incoming.uvLightOwned
-      || incoming.ownedUvLight
-      || incoming.uvLightInstalled
-      || tanks.some((tank) => tank.uvLightInstalled)
-    ),
     foodInventory: Object.fromEntries(getFoodCatalog().map((food) => [
       food.id,
       Math.max(0, Number(sanitizeInventory(incoming.foodInventory)[food.id]) || 0)
@@ -26257,15 +25724,6 @@ function reconcileState(rawState) {
   installTankStateAccessors(nextState);
 
   for (const tank of nextState.tanks) {
-    if (!nextState.uvLightOwned || !tank.uvLightInstalled) {
-      tank.uvLightInstalled = false;
-      tank.uvLightEnabled = false;
-    } else {
-      tank.uvLightEnabled = tank.uvLightEnabled !== false;
-    }
-  }
-
-  for (const tank of nextState.tanks) {
     tank.customGravelEnabled = true;
   }
 
@@ -26280,10 +25738,8 @@ function reconcileState(rawState) {
       Object.keys(tank.feedHistory || {}).length
       || tank.pendingPoops.length
       || tank.poops.length
-      || tank.uvLightInstalled
     ))
     || Object.keys(nextState.ownedBackgroundInventory).some((key) => !DEFAULT_OWNED_BACKGROUND_KEYS.includes(key))
-    || nextState.uvLightOwned
     || Object.values(nextState.foodInventory).some((count) => count > 0)
     || Object.values(nextState.medicineInventory).some((count) => count > 0);
   if (!hasStartedPlaying && nextState.coins < STARTING_COINS) {
@@ -27219,6 +26675,9 @@ function sanitizeFish(fish, options = {}) {
     appearanceAssetPath: typeof fish.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null,
     scale: clamp(Number(fish.scale) || resolveFishBaseScale(fish.speciesId), FISH_SCALE_MIN, FISH_SCALE_MAX),
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(fish.behaviorSpeciesId, fish.speciesId),
+    turnAnimationPreference: ["simple", "complex"].includes(String(fish.turnAnimationPreference || "").trim().toLowerCase())
+      ? String(fish.turnAnimationPreference).trim().toLowerCase()
+      : "",
     fishColor: normalizeDecorColorSetting(fish.fishColor ?? fish.colorSetting ?? ""),
     fishColorize: normalizeDecorColorizeSetting(fish.fishColorize ?? false),
     hueShift: sanitizeFishHueShift(fish.hueShift),
@@ -33356,11 +32815,9 @@ function renderVisiblePanels(now) {
   if (runtime.equipmentOverlayOpen) {
     renderBackgrounds();
     renderSolidBackgroundControls();
-    renderUvLightControls();
     renderCustomGravelControls();
   }
 
-  syncLightingFeatureVisibility();
 
   if (showingOverviewTab || showingFishTab || showingDecorTab) {
     renderCollapsibleSections();
@@ -33644,7 +33101,7 @@ function processBoroughFishTravel(now = Date.now()) {
       const residenceTank = getTankContainingDecor(getFishResidenceDecorId(fish));
       const shouldReturnHome = residenceTank
         && residenceTank.id !== source.id
-        && (isTankLightsOut(now) || getFishNeedValue(fish, "energy", now) <= 52);
+        && getFishNeedValue(fish, "energy", now) <= 52;
       const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
       const residenceTubeJourney = shouldReturnHome ? getTransitTubeJourney(source, residenceTank) : null;
       const directedRoute = foodRoute || serviceRoute || residenceRoute;
@@ -33661,9 +33118,6 @@ function processBoroughFishTravel(now = Date.now()) {
       const destinationsWithFood = neededService === "food"
         ? neighbors.filter((tank) => (tank.floatingPellets || []).length > 0)
         : [];
-      if (!serviceRoute && residenceTank?.id === source.id && isTankLightsOut(now)) {
-        continue;
-      }
       const ambientTubeJourneys = !directedRoute && !tubeJourney
         ? getAllTanks().flatMap((target) => {
           const journey = getTransitTubeJourney(source, target);
@@ -38316,6 +37770,9 @@ function createFishRecord(speciesId, options = {}) {
     appearanceAssetPath: typeof options.appearanceAssetPath === "string" ? options.appearanceAssetPath : null,
     scale,
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(options.behaviorSpeciesId, speciesId),
+    turnAnimationPreference: ["simple", "complex"].includes(String(options.turnAnimationPreference || "").trim().toLowerCase())
+      ? String(options.turnAnimationPreference).trim().toLowerCase()
+      : "",
     fishColor: normalizeDecorColorSetting(options.fishColor ?? options.colorSetting ?? ""),
     fishColorize: normalizeDecorColorizeSetting(options.fishColorize ?? false),
     hueShift: sanitizeFishHueShift(options.hueShift),
@@ -38339,6 +37796,7 @@ function createFishRecord(speciesId, options = {}) {
     displayAngle: direction < 0 ? Math.PI : 0,
     turnStartedAt: null,
     turnDurationMs: 0,
+    turnFinalFrameRenderedAt: 0,
     turnFromDirection: direction,
     turnToDirection: direction,
     turnFromAngle: direction < 0 ? Math.PI : 0,
@@ -40611,7 +40069,6 @@ function pickAutonomousFishAction(fish, now = Date.now(), options = {}) {
     if (getFishActionAvailability("waitfood", fish, now).enabled) return "waitfood";
   }
   if (options.emergency) return "";
-  if (isTankLightsOut(now) && !isNightActiveFish(fish)) return "sleep";
   const personality = getFishPersonality(fish);
   const choices = ["", "", "inspect", "rest"];
   if (["curious", "explorer", "hunter"].includes(personality)) choices.push("inspect", "inspect", "play");
@@ -41621,30 +41078,6 @@ function buyAutoDispenser() {
     },
     event: { type: "equipment", tone: "positive", text: "Installed an automatic pellet dispenser above the waterline." },
     toast: "Pellet dispenser installed."
-  });
-}
-
-function buyUvLight() {
-  if (!isUvLightFeatureEnabled()) {
-    showToast("UV light is disabled.");
-    return;
-  }
-
-  if (isUvLightOwned()) {
-    showToast("You already own a UV light.");
-    return;
-  }
-
-  return performCoinTransaction({
-    amount: UV_LIGHT_COST,
-    insufficientMessage: `You need ${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)} for the UV light.`,
-    apply: () => {
-      state.uvLightOwned = true;
-      state.uvLightInstalled = true;
-      state.uvLightEnabled = true;
-    },
-    event: { type: "equipment", tone: "positive", text: "Installed a UV light for blacklight glow." },
-    toast: "UV light installed and switched on."
   });
 }
 // </bundle-source>
@@ -46544,9 +45977,21 @@ function renderFishInspectorColorControls(fish) {
 function updateInspectorFishReadouts(fish) {
   const sizePercent = Math.round(clamp(Number(fish?.scale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX) * 100);
   const activeColor = getFishColorSetting(fish);
+  const species = getSpeciesForFish(fish);
+  const storedTurnPreference = String(fish?.turnAnimationPreference || "").trim().toLowerCase();
+  const preferredTurnMode = ["simple", "complex"].includes(storedTurnPreference)
+    ? storedTurnPreference
+    : getConfiguredFishTurnAnimationMode(species);
   setInspectorInputValue(dom.inspectorFishSizeInput, sizePercent);
   setTextIfChanged(dom.inspectorFishSizeValue, `${sizePercent}%`);
   setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(activeColor));
+  if (dom.inspectorFishTurnAnimationInput instanceof HTMLInputElement) {
+    dom.inspectorFishTurnAnimationInput.checked = preferredTurnMode === "complex";
+    dom.inspectorFishTurnAnimationInput.title = areSimpleTurnAnimationsForced()
+      ? "Graphics settings currently force Simple turns for all fish. This preference will apply when that override is disabled."
+      : "Use the complex segmented turnaround for this fish.";
+  }
+  setTextIfChanged(dom.inspectorFishTurnAnimationValue, preferredTurnMode === "complex" ? "Complex" : "Simple");
   if (dom.inspectorFishColorizeInput instanceof HTMLInputElement) {
     dom.inspectorFishColorizeInput.checked = getFishColorizeSetting(fish);
   }
@@ -46589,6 +46034,16 @@ function updateInspectorFishSetting(setting, rawValue, options = {}) {
           if (effectiveSpecies) {
             enforceFishLayerBoundary(fish, effectiveSpecies);
           }
+          changed = true;
+        }
+        break;
+      }
+      case "turnAnimation": {
+        const nextTurnAnimation = rawValue === true || String(rawValue).trim().toLowerCase() === "complex"
+          ? "complex"
+          : "simple";
+        if (fish.turnAnimationPreference !== nextTurnAnimation) {
+          fish.turnAnimationPreference = nextTurnAnimation;
           changed = true;
         }
         break;
@@ -47010,83 +46465,6 @@ function selectTankAsset(tankKey) {
       tone: "neutral",
       text: `Swapped the tank shell to ${runtime.tankMap.get(tankKey).name}.`
     }
-  });
-}
-
-
-function setUvLightInstalled(installed) {
-  if (!isUvLightFeatureEnabled()) {
-    showToast("UV light is disabled.");
-    return;
-  }
-
-  if (!isUvLightOwned()) {
-    showToast("Buy the UV light in the Tank shop first.");
-    return;
-  }
-
-  const nextInstalled = Boolean(installed);
-  if (state.uvLightInstalled === nextInstalled) {
-    return;
-  }
-
-  return updateTankAppearance({
-    changes: {
-      uvLightInstalled: nextInstalled,
-      uvLightEnabled: nextInstalled
-    },
-    event: {
-      type: "equipment",
-      tone: "neutral",
-      text: nextInstalled ? "Added the UV light to this tank." : "Removed the UV light from this tank."
-    },
-    toast: nextInstalled ? "UV light added and switched on." : "UV light removed from this tank."
-  });
-}
-
-function toggleUvLightPower(force = null) {
-  if (!isUvLightFeatureEnabled()) {
-    showToast("UV light is disabled.");
-    return;
-  }
-
-  if (!isUvLightInstalled()) {
-    showToast("Add the UV light to this tank from Edit Tank first.");
-    return;
-  }
-
-  const nextEnabled = typeof force === "boolean" ? force : !isUvLightActive();
-  if (state.uvLightEnabled === nextEnabled) {
-    return;
-  }
-
-  return updateTankAppearance({
-    changes: { uvLightEnabled: nextEnabled },
-    toast: nextEnabled ? "UV light on." : "UV light off."
-  });
-}
-
-function toggleLightsOutOverride() {
-  if (!LIGHTS_OUT_FEATURE_ENABLED) {
-    return;
-  }
-  const targetTank = getCurrentTank();
-  if (!targetTank) {
-    return;
-  }
-  const current = getLightsOutOverride(targetTank);
-  const next = current === LIGHTS_OUT_OVERRIDE_AUTO
-    ? LIGHTS_OUT_OVERRIDE_ON
-    : current === LIGHTS_OUT_OVERRIDE_ON
-      ? LIGHTS_OUT_OVERRIDE_OFF
-      : LIGHTS_OUT_OVERRIDE_AUTO;
-  return updateTankAppearance({
-    changes: { lightsOutOverride: next },
-    toast: next === LIGHTS_OUT_OVERRIDE_AUTO
-      ? "Lights Out follows the tank clock."
-      : next === LIGHTS_OUT_OVERRIDE_ON
-        ? "Lights Out on."
-        : "Lights Out off until you switch it back."
   });
 }
 // </bundle-source>
@@ -48979,6 +48357,461 @@ function triggerDebugBehaviorScenario(action) {
     default:
       showToast("Unknown behavior debug scenario.");
   }
+}
+
+function getDebugFishBehaviorPreviewOption(behaviorId = runtime.debugFishBehaviorPreviewBehaviorId) {
+  return DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS.find((entry) => entry.id === behaviorId)
+    || DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS[0];
+}
+
+function getDebugFishBehaviorPreviewCycleMs(behaviorId, fish, species) {
+  if (behaviorId === "turn-around") {
+    return Math.max(900, Number(fish?.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species)) + 720;
+  }
+  if (["rest", "sleep", "hangout", "sick", "dead"].includes(behaviorId)) {
+    return 4200;
+  }
+  if (["zoomies", "avoid"].includes(behaviorId)) {
+    return 1550;
+  }
+  return 2800;
+}
+
+function populateDebugFishBehaviorPreviewControls() {
+  const fishSelect = dom.debugFishBehaviorPreviewSpecies;
+  const behaviorSelect = dom.debugFishBehaviorPreviewBehavior;
+  if (!fishSelect || !behaviorSelect) {
+    return;
+  }
+
+  const catalog = runtime.fishCatalog
+    .filter((species) => species?.id && species?.name)
+    .sort((left, right) => String(left.name).localeCompare(String(right.name)));
+  fishSelect.innerHTML = catalog
+    .map((species) => `<option value="${escapeHtml(species.id)}">${escapeHtml(species.name)}</option>`)
+    .join("");
+  behaviorSelect.innerHTML = DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS
+    .map((entry) => `<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.label)}</option>`)
+    .join("");
+
+  const selectedFish = getManagedFishById(runtime.selectedFishId)?.fish || null;
+  const preferredSpeciesId = runtime.debugFishBehaviorPreviewSpeciesId
+    || selectedFish?.speciesId
+    || catalog[0]?.id
+    || "";
+  runtime.debugFishBehaviorPreviewSpeciesId = runtime.fishMap.has(preferredSpeciesId)
+    ? preferredSpeciesId
+    : (catalog[0]?.id || "");
+  fishSelect.value = runtime.debugFishBehaviorPreviewSpeciesId;
+  behaviorSelect.value = getDebugFishBehaviorPreviewOption()?.id || "swim";
+}
+
+function createDebugFishBehaviorPreviewFish(speciesId) {
+  const species = runtime.fishMap.get(speciesId);
+  if (!species) {
+    return null;
+  }
+  const fish = createFishRecord(speciesId, {
+    id: `debug-preview-${speciesId}`,
+    name: species.name,
+    xNorm: 0.5,
+    yNorm: 0.5,
+    targetXNorm: 0.72,
+    targetYNorm: 0.5,
+    direction: 1,
+    tankLayer: DEFAULT_TANK_LAYER,
+    desiredTankLayer: DEFAULT_TANK_LAYER,
+    now: Date.now()
+  });
+  if (!fish) {
+    return null;
+  }
+  fish.phase = 0.17;
+  fish.activity = "roam";
+  fish.motionLevel = 0.55;
+  fish.swimSpeed = Math.max(0.02, Number(species.speedMin) || 0.025);
+  fish.entryStartedAt = 0;
+  fish.entryDurationMs = 0;
+  fish.entryFromYNorm = null;
+  fish.turnStartedAt = 0;
+  fish.turnDurationMs = 0;
+  fish.turnFromDirection = 1;
+  fish.turnToDirection = -1;
+  fish.debugPreviewTurnDurationMs = getFishTurnDurationMs(fish, species);
+  fish.direction = 1;
+  fish.deadAt = null;
+  fish.healthUnits = getSpeciesMaxHealthUnits(species);
+  return fish;
+}
+
+function getDebugFishBehaviorPreviewAssetPaths(fish, species, now = Date.now()) {
+  const paths = [
+    getFishDisplayAssetPath(fish, species, now),
+    species?.asset,
+    species?.fallbackAsset
+  ];
+  if (species?.behavior === "sucker") {
+    paths.push(
+      getSuckerFishViewAssetPath(species, fish, "back"),
+      getSuckerFishViewAssetPath(species, fish, "front"),
+      getSuckerFishViewAssetPath(species, fish, "swim")
+    );
+  }
+  return [...new Set(paths.filter(Boolean))];
+}
+
+function resetDebugFishBehaviorPreview() {
+  const speciesId = runtime.debugFishBehaviorPreviewSpeciesId;
+  const species = runtime.fishMap.get(speciesId);
+  runtime.debugFishBehaviorPreviewStartedAt = performance.now();
+  runtime.debugFishBehaviorPreviewFish = createDebugFishBehaviorPreviewFish(speciesId);
+  if (!species || !runtime.debugFishBehaviorPreviewFish) {
+    if (dom.debugFishBehaviorPreviewStatus) {
+      dom.debugFishBehaviorPreviewStatus.textContent = "Fish unavailable";
+    }
+    return;
+  }
+
+  const option = getDebugFishBehaviorPreviewOption();
+  if (dom.debugFishBehaviorPreviewDescription) {
+    dom.debugFishBehaviorPreviewDescription.textContent = option?.description || "";
+  }
+  if (dom.debugFishBehaviorPreviewStatus) {
+    dom.debugFishBehaviorPreviewStatus.textContent = `Loading ${species.name}…`;
+  }
+  const token = ++runtime.debugFishBehaviorPreviewLoadToken;
+  void preloadImages(getDebugFishBehaviorPreviewAssetPaths(runtime.debugFishBehaviorPreviewFish, species), {
+    maxAttempts: 2,
+    timeoutMs: 8000,
+    retryDelayMs: 300
+  }).then(() => {
+    if (token !== runtime.debugFishBehaviorPreviewLoadToken || !runtime.debugFishBehaviorPreviewOpen) {
+      return;
+    }
+    if (dom.debugFishBehaviorPreviewStatus) {
+      dom.debugFishBehaviorPreviewStatus.textContent = `${species.name} · ${option?.label || "Preview"}`;
+    }
+  });
+}
+
+function openDebugFishBehaviorPreview() {
+  if (!isDebugModeEnabled() || !dom.debugFishBehaviorPreview) {
+    return;
+  }
+  populateDebugFishBehaviorPreviewControls();
+  runtime.debugFishBehaviorPreviewOpen = true;
+  runtime.debugSidebarOpen = false;
+  dom.debugFishBehaviorPreview.hidden = false;
+  document.body.classList.add("debug-fish-behavior-preview-open");
+  resetDebugFishBehaviorPreview();
+  if (!runtime.debugFishBehaviorPreviewFrame) {
+    runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
+  }
+  dom.debugFishBehaviorPreviewSpecies?.focus();
+  renderUi(Date.now(), { full: false });
+}
+
+function closeDebugFishBehaviorPreview() {
+  runtime.debugFishBehaviorPreviewOpen = false;
+  runtime.debugFishBehaviorPreviewLoadToken += 1;
+  runtime.debugFishBehaviorPreviewFish = null;
+  if (runtime.debugFishBehaviorPreviewFrame) {
+    cancelAnimationFrame(runtime.debugFishBehaviorPreviewFrame);
+    runtime.debugFishBehaviorPreviewFrame = 0;
+  }
+  if (dom.debugFishBehaviorPreview) {
+    dom.debugFishBehaviorPreview.hidden = true;
+  }
+  document.body.classList.remove("debug-fish-behavior-preview-open");
+  dom.debugFishBehaviorPreviewButton?.focus();
+}
+
+function setDebugFishBehaviorPreviewSpecies(speciesId) {
+  if (!runtime.fishMap.has(speciesId)) {
+    return;
+  }
+  runtime.debugFishBehaviorPreviewSpeciesId = speciesId;
+  resetDebugFishBehaviorPreview();
+}
+
+function setDebugFishBehaviorPreviewBehavior(behaviorId) {
+  const option = getDebugFishBehaviorPreviewOption(behaviorId);
+  runtime.debugFishBehaviorPreviewBehaviorId = option.id;
+  if (dom.debugFishBehaviorPreviewBehavior) {
+    dom.debugFishBehaviorPreviewBehavior.value = option.id;
+  }
+  resetDebugFishBehaviorPreview();
+}
+
+function getDebugFishBehaviorPreviewPose(behaviorId, phase) {
+  const angle = phase * Math.PI * 2;
+  let tilt = Math.sin(angle) * 0.035;
+  let wiggle = Math.sin(angle * 2) * 0.55;
+  let bodyScaleX = 1 - Math.abs(wiggle) * 0.018;
+  let bodyScaleY = 1 + Math.abs(wiggle) * 0.014;
+  let swayX = 0;
+  let alpha = 1;
+  let filterMode = "normal";
+
+  switch (behaviorId) {
+    case "eat": {
+      const bite = Math.pow(Math.max(0, Math.sin(angle * 2)), 5);
+      tilt = -0.12 + Math.sin(angle) * 0.08;
+      wiggle = Math.sin(angle * 2) * 0.38;
+      bodyScaleX = 1 - bite * 0.08;
+      bodyScaleY = 1 + bite * 0.11;
+      swayX = Math.sin(angle) * 8;
+      break;
+    }
+    case "waitfood":
+      tilt = -0.18 + Math.sin(angle) * 0.025;
+      wiggle *= 0.28;
+      bodyScaleX = 0.99;
+      bodyScaleY = 1.015;
+      break;
+    case "rest":
+      tilt = Math.sin(angle) * 0.012;
+      wiggle *= 0.12;
+      bodyScaleX = 1 + Math.sin(angle) * 0.006;
+      bodyScaleY = 1 - Math.sin(angle) * 0.006;
+      break;
+    case "sleep":
+      tilt = 0.11 + Math.sin(angle) * 0.009;
+      wiggle *= 0.055;
+      bodyScaleX = 1 + Math.sin(angle) * 0.004;
+      bodyScaleY = 0.985 - Math.sin(angle) * 0.004;
+      alpha = 0.86;
+      break;
+    case "zoomies":
+      tilt = Math.sin(angle) * 0.17;
+      wiggle = Math.sin(angle * 3) * 1.15;
+      bodyScaleX = 1.08 - Math.abs(wiggle) * 0.035;
+      bodyScaleY = 0.94 + Math.abs(wiggle) * 0.028;
+      swayX = Math.sin(angle * 2) * 18;
+      break;
+    case "greet":
+      tilt = -Math.pow(Math.max(0, Math.sin(angle * 2)), 3) * 0.22;
+      wiggle *= 0.34;
+      swayX = Math.sin(angle) * 5;
+      break;
+    case "hangout":
+      tilt = Math.sin(angle) * 0.045;
+      wiggle *= 0.36;
+      swayX = Math.sin(angle) * 10;
+      break;
+    case "play":
+      tilt = Math.sin(angle) * 0.25;
+      wiggle = Math.sin(angle * 2) * 0.9;
+      bodyScaleX = 1 - Math.max(0, Math.sin(angle)) * 0.08;
+      bodyScaleY = 1 + Math.max(0, Math.sin(angle)) * 0.1;
+      swayX = Math.sin(angle * 2) * 9;
+      break;
+    case "pebble": {
+      const search = phase < 0.55 ? Math.sin((phase / 0.55) * Math.PI) : 0;
+      tilt = search * 0.62 - Math.max(0, (phase - 0.55) / 0.45) * 0.18;
+      wiggle *= 0.24;
+      bodyScaleX = 0.98;
+      bodyScaleY = 1.04;
+      break;
+    }
+    case "dig":
+      tilt = 0.76 + Math.sin(angle * 3) * 0.055;
+      wiggle = Math.sin(angle * 4) * 0.32;
+      bodyScaleX = 0.96 + Math.sin(angle * 3) * 0.02;
+      bodyScaleY = 1.06 - Math.sin(angle * 3) * 0.02;
+      break;
+    case "avoid": {
+      const recoil = Math.pow(Math.max(0, Math.sin(phase * Math.PI)), 0.7);
+      tilt = -0.2 * recoil;
+      wiggle = Math.sin(angle * 3) * recoil;
+      bodyScaleX = 1 - recoil * 0.12;
+      bodyScaleY = 1 + recoil * 0.09;
+      swayX = -recoil * 24;
+      break;
+    }
+    case "breed":
+      tilt = Math.sin(angle * 2) * 0.12;
+      wiggle = Math.sin(angle * 3) * 0.72;
+      bodyScaleX = 0.99;
+      bodyScaleY = 1.02;
+      swayX = Math.sin(angle) * 12;
+      break;
+    case "hide":
+      tilt = 0.08 + Math.sin(angle) * 0.025;
+      wiggle *= 0.16;
+      bodyScaleX = 0.88 + Math.sin(angle) * 0.015;
+      bodyScaleY = 0.94;
+      alpha = 0.76;
+      break;
+    case "inspect":
+      tilt = Math.sin(angle * 2) * 0.09;
+      wiggle *= 0.18;
+      bodyScaleX = 0.98 + Math.sin(angle) * 0.018;
+      bodyScaleY = 1.02 - Math.sin(angle) * 0.018;
+      swayX = Math.sin(angle) * 4;
+      break;
+    case "sick":
+      tilt = 0.13 + Math.sin(angle) * 0.045;
+      wiggle = Math.sin(angle * 0.7) * 0.16;
+      bodyScaleX = 0.97 + Math.sin(angle) * 0.008;
+      bodyScaleY = 1.02;
+      swayX = Math.sin(angle * 0.5) * 3;
+      filterMode = "sick";
+      break;
+    case "dead":
+      tilt = Math.PI + Math.sin(angle) * 0.025;
+      wiggle = Math.sin(angle * 0.4) * 0.04;
+      bodyScaleX = 1;
+      bodyScaleY = 1;
+      swayX = Math.sin(angle) * 3;
+      filterMode = "dead";
+      break;
+    default:
+      break;
+  }
+
+  return { tilt, wiggle, bodyScaleX, bodyScaleY, swayX, alpha, filterMode };
+}
+
+function resizeDebugFishBehaviorPreviewCanvas(canvas, context) {
+  const rect = canvas.getBoundingClientRect();
+  const cssWidth = Math.max(1, rect.width);
+  const cssHeight = Math.max(1, rect.height);
+  const pixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+  const width = Math.round(cssWidth * pixelRatio);
+  const height = Math.round(cssHeight * pixelRatio);
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  return { width: cssWidth, height: cssHeight };
+}
+
+function renderDebugFishBehaviorPreviewFrame(frameNow) {
+  runtime.debugFishBehaviorPreviewFrame = 0;
+  if (!runtime.debugFishBehaviorPreviewOpen || !dom.debugFishBehaviorPreviewCanvas) {
+    return;
+  }
+
+  const canvas = dom.debugFishBehaviorPreviewCanvas;
+  const context = canvas.getContext("2d");
+  const fish = runtime.debugFishBehaviorPreviewFish;
+  const species = runtime.fishMap.get(runtime.debugFishBehaviorPreviewSpeciesId);
+  if (!context || !fish || !species) {
+    runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
+    return;
+  }
+
+  const viewport = resizeDebugFishBehaviorPreviewCanvas(canvas, context);
+  context.clearRect(0, 0, viewport.width, viewport.height);
+  const behaviorId = getDebugFishBehaviorPreviewOption()?.id || "swim";
+  const cycleMs = getDebugFishBehaviorPreviewCycleMs(behaviorId, fish, species);
+  const elapsed = Math.max(0, frameNow - runtime.debugFishBehaviorPreviewStartedAt);
+  const cycleElapsed = elapsed % cycleMs;
+  let phase = clamp(cycleElapsed / cycleMs, 0, 1);
+  const renderNow = Date.now();
+  const pose = getDebugFishBehaviorPreviewPose(behaviorId, phase);
+
+  fish.deadAt = null;
+  fish.healthUnits = getSpeciesMaxHealthUnits(species);
+  fish.turnStartedAt = 0;
+  fish.turnDurationMs = 0;
+  fish.direction = 1;
+  if (behaviorId === "sick") {
+    fish.healthUnits = 1;
+  } else if (behaviorId === "dead") {
+    fish.healthUnits = 0;
+    fish.deadAt = renderNow - 1000;
+  }
+
+  let turnActive = false;
+  if (behaviorId === "turn-around") {
+    fish.turnAnimationMode = (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced())
+      ? "simple"
+      : getConfiguredFishTurnAnimationMode(species);
+    const durationMs = Math.max(120, Number(fish.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species, fish.turnAnimationMode));
+    phase = clamp(cycleElapsed / durationMs, 0, 1);
+    turnActive = cycleElapsed <= durationMs;
+    fish.turnDurationMs = durationMs;
+    fish.turnStartedAt = renderNow - phase * durationMs;
+    fish.turnFromDirection = 1;
+    fish.turnToDirection = -1;
+    fish.turnSpinDirection = -1;
+    fish.direction = -1;
+  }
+
+  const imagePath = getFishDisplayAssetPath(fish, species, renderNow) || species.asset;
+  const sourceImage = runtime.images.get(imagePath);
+  if (!isUsableRuntimeImage(sourceImage)) {
+    requestRuntimeImageRecovery(imagePath, { kind: "fish-preview", id: fish.id, speciesId: species.id });
+    if (dom.debugFishBehaviorPreviewStatus) {
+      dom.debugFishBehaviorPreviewStatus.textContent = `Loading ${species.name}…`;
+    }
+    runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
+    return;
+  }
+
+  const renderImage = getFishTintedImage(imagePath, sourceImage, fish);
+  const aspect = sourceImage.height / Math.max(1, sourceImage.width);
+  const maxWidth = viewport.width * 0.7;
+  const maxHeight = viewport.height * 0.62;
+  const drawWidth = Math.max(70, Math.min(maxWidth, maxHeight / Math.max(0.08, aspect)));
+  const drawHeight = drawWidth * aspect;
+  const drawX = -drawWidth / 2 + pose.wiggle * drawWidth * 0.018;
+  const healthRatio = getFishHealthRatio(fish, species);
+  const fishFilter = getFishCanvasFilter(fish, healthRatio, renderNow, behaviorId === "sick" ? 0.25 : 1);
+
+  const previewTurnMode = behaviorId === "turn-around"
+    ? getFishTurnAnimationMode(fish, species)
+    : "simple";
+  const simpleTurnAmount = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+    ? Math.sin(phase * Math.PI)
+    : 0;
+  const simpleTurnDirection = phase < 0.5 ? 1 : -1;
+  const simpleTurnScaleX = 1 - simpleTurnAmount * (1 - FISH_TURN_MIN_SCALE_X);
+  const simpleTurnScaleY = 1 + simpleTurnAmount * (FISH_TURN_MAX_SCALE_Y - 1);
+  const simpleTurnLean = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+    ? -simpleTurnAmount * 0.14
+    : 0;
+  const simpleTurnSway = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+    ? -simpleTurnAmount * 0.8
+    : 0;
+
+  context.save();
+  context.translate(viewport.width / 2 + pose.swayX + simpleTurnSway, viewport.height / 2);
+  context.rotate(pose.tilt + simpleTurnLean);
+  context.scale(behaviorId === "turn-around"
+    ? (previewTurnMode === "simple" ? simpleTurnDirection : 1)
+    : fish.direction, 1);
+  context.scale(pose.bodyScaleX * simpleTurnScaleX, pose.bodyScaleY * simpleTurnScaleY);
+  context.globalAlpha = pose.alpha;
+  context.filter = fishFilter;
+  if (behaviorId === "turn-around" && turnActive && previewTurnMode === "complex") {
+    drawFishTurnaroundRig(context, renderImage, drawX, drawWidth, drawHeight, fish, renderNow);
+  } else {
+    context.drawImage(renderImage, drawX, -drawHeight / 2, drawWidth, drawHeight);
+  }
+  context.restore();
+
+  if (dom.debugFishBehaviorPreviewPhase) {
+    dom.debugFishBehaviorPreviewPhase.textContent = `${Math.round(phase * 100)}%`;
+  }
+  if (dom.debugFishBehaviorPreviewScaleX) {
+    dom.debugFishBehaviorPreviewScaleX.textContent = `${Math.round(pose.bodyScaleX * simpleTurnScaleX * 100)}%`;
+  }
+  if (dom.debugFishBehaviorPreviewScaleY) {
+    dom.debugFishBehaviorPreviewScaleY.textContent = `${Math.round(pose.bodyScaleY * simpleTurnScaleY * 100)}%`;
+  }
+  if (dom.debugFishBehaviorPreviewTilt) {
+    const displayTilt = behaviorId === "dead" ? 180 : Math.round(pose.tilt * 180 / Math.PI);
+    dom.debugFishBehaviorPreviewTilt.textContent = `${displayTilt}°`;
+  }
+  if (dom.debugFishBehaviorPreviewStatus) {
+    dom.debugFishBehaviorPreviewStatus.textContent = `${species.name} · ${getDebugFishBehaviorPreviewOption()?.label || "Preview"}`;
+  }
+
+  runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
 }
 
 function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now()) {
@@ -55908,6 +55741,11 @@ function handleCustomFishUtilityOverlayBodyClick(ctx, target) {
 }
 
 function handleCustomFishUtilityOverlayChange(ctx, target) {
+  const turnToggle = target?.closest?.("[data-custom-fish-turn-toggle]");
+  if (turnToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.turnAnimation = turnToggle.checked ? "complex" : "simple";
+    return true;
+  }
   const flipToggle = target?.closest?.("[data-custom-fish-flip-toggle]");
   if (flipToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
     updatePendingCustomFishFlip(flipToggle.checked);
@@ -57084,6 +56922,7 @@ function renderCustomFishCreationOverlay() {
     : "1 / 1";
   const rotation = sanitizeCustomFishRotation(pending.rotation);
   const flipped = Boolean(pending.flipX);
+  const complexTurnaround = String(pending.turnAnimation || "simple").trim().toLowerCase() === "complex";
   const transform = getPendingCustomFishTransform(pending);
 
   return `
@@ -57138,6 +56977,13 @@ function renderCustomFishCreationOverlay() {
             step="1"
             value="${width}"
             data-custom-fish-size-input />
+        </label>
+        <label class="cave-colorize-toggle custom-fish-turn-toggle">
+          <input
+            type="checkbox"
+            data-custom-fish-turn-toggle
+            ${complexTurnaround ? "checked" : ""} />
+          <span>Complex turn around animation</span>
         </label>
         <label class="cave-colorize-toggle custom-fish-flip-toggle">
           <input
@@ -57519,17 +57365,11 @@ function renderSettingsOverlay() {
     dom.decorShadowsToggleInput.checked = uiSettings.decorShadowsEnabled;
     dom.decorShadowsToggleInput.closest(".settings-toggle-row")?.toggleAttribute("hidden", !DECOR_SHADOWS_SETTING_ENABLED);
   }
+  if (dom.simpleTurnAnimationsToggleInput) {
+    dom.simpleTurnAnimationsToggleInput.checked = uiSettings.simpleTurnAnimationsOnly === true;
+  }
   if (dom.halloweenModeSelect instanceof HTMLSelectElement) {
     dom.halloweenModeSelect.value = uiSettings.halloweenMode;
-  }
-  const uvLightQualitySection = dom.uvLightQualitySelect?.closest(".settings-section");
-  if (dom.uvLightQualitySelect instanceof HTMLSelectElement) {
-    const uvLightSettingsVisible = isUvLightFeatureEnabled();
-    dom.uvLightQualitySelect.value = uiSettings.uvLightQuality;
-    dom.uvLightQualitySelect.disabled = !uvLightSettingsVisible;
-    if (uvLightQualitySection instanceof HTMLElement) {
-      uvLightQualitySection.hidden = !uvLightSettingsVisible;
-    }
   }
   if (dom.tutorialSettingsSection) {
     dom.tutorialSettingsSection.hidden = !tutorialAvailable;
@@ -57836,8 +57676,6 @@ function renderTutorialGuidance() {
     "openEquipmentButton",
     "openSettingsButton",
     "toggleMouseLockButton",
-    "lightsOutToggleButton",
-    "uvLightToggleButton"
   ];
   const clearSpotlights = () => {
     dom.tankDisplay?.classList.remove("is-tutorial-pulse");
@@ -60630,33 +60468,6 @@ function renderEquipmentShop() {
       </article>
   `;
 
-  const uvLightMarkup = isUvLightFeatureEnabled()
-    ? (() => {
-      const uvLightOwned = isUvLightOwned();
-      const uvLightInstalled = isUvLightInstalled();
-      const uvLightActive = isUvLightActive();
-      return `
-      <article class="shop-card">
-        <img class="shop-thumb uv-light-shop-thumb" ${assetImageAttributes(UV_LIGHT_IMAGE_PATH)} alt="UV light" />
-        <div class="shop-meta shop-card-main">
-          <div>
-            <strong>UV Light</strong>
-            <div class="fish-meta">${uvLightOwned ? (uvLightInstalled ? `Added to this tank | ${uvLightActive ? "On" : "Off"}` : "Owned | Not added to this tank") : "Not owned"}</div>
-          </div>
-          <div class="fish-meta">Adds a blacklight glow pass for fish and decor colors that naturally react under UV.</div>
-          <div class="mini-note">Once owned, add or remove it from the Edit Tank panel.</div>
-        </div>
-        <div class="shop-meta shop-card-actions">
-          <span class="price-tag">${uvLightOwned ? "Unlocked" : `${UV_LIGHT_COST} ${pluralize("coin", UV_LIGHT_COST)}`}</span>
-          <div class="shop-button-row">
-            <button class="buy-button" data-buy-uv-light="true" ${uvLightOwned ? "disabled" : ""}>${uvLightOwned ? "Owned" : "Buy & Add"}</button>
-          </div>
-        </div>
-      </article>
-  `;
-    })()
-    : "";
-
   const backgroundMarkup = runtime.backgroundCatalog
     .filter((background) => !background.defaultUnlocked)
     .map((background) => {
@@ -60695,16 +60506,6 @@ function renderEquipmentShop() {
 
 
   const markup = `
-    ${uvLightMarkup ? `
-    <section class="shop-section">
-      <div class="shop-section-heading">
-        <h3>Lighting</h3>
-        <p>Unlock a blacklight effect and switch it per tank from the toolbar.</p>
-      </div>
-      <div class="shop-section-cards">
-        ${uvLightMarkup}
-      </div>
-    </section>` : ""}
     <section class="shop-section">
       <div class="shop-section-heading">
         <h3>Backgrounds</h3>
@@ -61459,63 +61260,6 @@ function renderSolidBackgroundControls() {
 }
 
 
-function syncLightingFeatureVisibility() {
-  const enabled = isUvLightFeatureEnabled();
-  for (const section of [dom.tankLightingSection, dom.equipmentLightingSection]) {
-    if (section) section.hidden = !enabled;
-  }
-  if (dom.editTankLightingSection) dom.editTankLightingSection.hidden = !enabled || runtime.editTankTrayTab !== "equipment";
-  if (dom.equipmentPanelDescription) dom.equipmentPanelDescription.textContent = enabled
-    ? "Adjust the current aquarium's background, gravel, and UV light."
-    : "Adjust the current aquarium's background and gravel.";
-}
-
-function renderUvLightControls() {
-  const containers = [
-    ["uv-light-controls", dom.uvLightList],
-    ["equipment-uv-light-controls", dom.equipmentUvLightList],
-    ["edit-tank-uv-light-controls", dom.editTankUvLightList]
-  ].filter(([, container]) => container);
-  if (!containers.length) {
-    return;
-  }
-
-  const uvLightVisible = isUvLightFeatureEnabled();
-  for (const [, container] of containers) {
-    if (container instanceof HTMLElement) {
-      container.hidden = !uvLightVisible;
-    }
-  }
-  if (!uvLightVisible) {
-    for (const [cacheKey, container] of containers) {
-      setMarkupIfChanged(cacheKey, container, "");
-    }
-    return;
-  }
-
-  const owned = isUvLightOwned();
-  const installed = isUvLightInstalled();
-  const active = isUvLightActive();
-  const markup = owned
-    ? `
-      <article class="background-card uv-light-card ${installed ? "is-selected" : ""}">
-        <img class="scene-thumb" ${assetImageAttributes(UV_LIGHT_IMAGE_PATH)} alt="UV light" />
-        <div>
-          <strong>UV Light</strong>
-          <div class="fish-meta">${installed ? `Added to this tank. Toolbar switch is ${active ? "on" : "off"}.` : "Owned and ready to add."}</div>
-        </div>
-        <div class="shop-button-row">
-          <button type="button" data-toggle-uv-light-install>${installed ? "Remove from Tank" : "Add to Tank"}</button>
-        </div>
-      </article>
-    `
-    : `<div class="empty-state">Buy a UV light from the Tank Shop to add blacklight glow to this aquarium.</div>`;
-
-  for (const [cacheKey, container] of containers) {
-    setMarkupIfChanged(cacheKey, container, markup);
-  }
-}
-
 function renderCustomGravelControls() {
   const standardContainers = [
     ["custom-gravel-panel", dom.customGravelPanel],
@@ -61853,48 +61597,6 @@ function renderControls(now) {
   dom.careMenuButton?.setAttribute("aria-expanded", String(runtime.medicineTrayOpen));
   dom.editMenuButton?.setAttribute("aria-expanded", "false");
   dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu) && toolbarCareMenuOpen);
-  if (dom.lightsOutToggleButton) {
-    if (!LIGHTS_OUT_FEATURE_ENABLED) {
-      dom.lightsOutToggleButton.hidden = true;
-      dom.lightsOutToggleButton.disabled = true;
-      dom.lightsOutToggleButton.classList.remove("is-active");
-      dom.lightsOutToggleButton.dataset.mode = "disabled";
-      dom.lightsOutToggleButton.title = "Lights Out: Disabled";
-      dom.lightsOutToggleButton.setAttribute("aria-label", "Lights Out disabled");
-      dom.lightsOutToggleButton.setAttribute("aria-pressed", "false");
-      if (dom.lightsOutModeBadge) {
-        dom.lightsOutModeBadge.textContent = "OFF";
-      }
-    } else {
-      const override = getLightsOutOverride();
-      const active = isTankLightsOut(now);
-      const modeText = override === LIGHTS_OUT_OVERRIDE_AUTO
-        ? "Auto"
-        : override === LIGHTS_OUT_OVERRIDE_ON
-          ? "On"
-          : "Off";
-      dom.lightsOutToggleButton.hidden = false;
-      dom.lightsOutToggleButton.disabled = false;
-      dom.lightsOutToggleButton.classList.toggle("is-active", active);
-      dom.lightsOutToggleButton.dataset.mode = override;
-      dom.lightsOutToggleButton.title = `Lights Out: ${modeText}`;
-      dom.lightsOutToggleButton.setAttribute("aria-label", `Lights Out ${modeText}`);
-      dom.lightsOutToggleButton.setAttribute("aria-pressed", String(active));
-      if (dom.lightsOutModeBadge) {
-        dom.lightsOutModeBadge.textContent = override === LIGHTS_OUT_OVERRIDE_AUTO ? "A" : override === LIGHTS_OUT_OVERRIDE_ON ? "ON" : "OFF";
-      }
-    }
-  }
-  if (dom.uvLightToggleButton) {
-    const uvLightVisible = isUvLightFeatureEnabled();
-    const uvInstalled = isUvLightInstalled();
-    const uvActive = isUvLightActive();
-    dom.uvLightToggleButton.hidden = !uvLightVisible || !uvInstalled;
-    dom.uvLightToggleButton.classList.toggle("is-active", uvActive);
-    dom.uvLightToggleButton.title = uvActive ? "Turn UV Light Off" : "Turn UV Light On";
-    dom.uvLightToggleButton.setAttribute("aria-label", uvActive ? "Turn UV Light Off" : "Turn UV Light On");
-    dom.uvLightToggleButton.setAttribute("aria-pressed", String(uvActive));
-  }
   if (dom.toolbarTab) {
     const uiSettings = getUiSettings();
     const toolbarCollapsed = uiSettings.toolbarCollapsed;
@@ -62477,31 +62179,6 @@ function setDisplayPosition(displayPosition) {
   renderUi(Date.now(), { full: false });
 }
 
-function formatUvLightQualityLabel(value) {
-  return normalizeUvLightRenderQuality(value) === UV_LIGHT_RENDER_QUALITY_HIGH ? "High" : "Low";
-}
-
-function setUvLightRenderQuality(quality) {
-  if (!state) {
-    return;
-  }
-
-  const currentSettings = getUiSettings();
-  const nextSettings = sanitizeUiSettings({
-    ...currentSettings,
-    uvLightQuality: quality
-  });
-  if (currentSettings.uvLightQuality === nextSettings.uvLightQuality) {
-    return;
-  }
-
-  state.uiSettings = nextSettings;
-  runtime.uvGlowMaskCache.clear();
-  saveState();
-  renderUi(Date.now(), { full: false });
-  showToast(`UV quality set to ${formatUvLightQualityLabel(nextSettings.uvLightQuality)}.`);
-}
-
 function setSoundMuted(value, options = {}) {
   if (!state) {
     return false;
@@ -62648,6 +62325,30 @@ function setDecorShadowsEnabled(value) {
   saveState();
   renderUi(Date.now(), { full: false });
   showToast(nextSettings.decorShadowsEnabled ? "Decor shadows on." : "Decor shadows off.");
+}
+
+function setSimpleTurnAnimationsOnly(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    simpleTurnAnimationsOnly: Boolean(value)
+  });
+  if (currentSettings.simpleTurnAnimationsOnly === nextSettings.simpleTurnAnimationsOnly) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+  showToast(
+    nextSettings.simpleTurnAnimationsOnly
+      ? "Simple turn animations enabled for all fish."
+      : "Species turn animations restored."
+  );
 }
 
 function clearTankMouseInteractionState() {
@@ -64775,6 +64476,32 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     updateFishTurnState(fish, species, now);
+    const segmentedTurnaroundActive = effectiveBehavior !== "sucker"
+      && Boolean(fish.turnStartedAt && fish.turnDurationMs > 0);
+    const segmentedTurnaroundProgress = segmentedTurnaroundActive
+      ? clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1)
+      : 1;
+    const turnaroundHoldsPosition = segmentedTurnaroundActive
+      && segmentedTurnaroundProgress < FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS;
+    const turnaroundMovementRaw = segmentedTurnaroundActive
+      ? clamp(
+        (segmentedTurnaroundProgress - FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS)
+        / Math.max(0.001, 1 - FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS),
+        0,
+        1
+      )
+      : 1;
+    const turnaroundMovementBlend = turnaroundMovementRaw
+      * turnaroundMovementRaw
+      * (3 - 2 * turnaroundMovementRaw);
+    if (turnaroundHoldsPosition) {
+      // The authored turnaround is an in-place action. Clear passive momentum
+      // so the fish cannot travel toward its new target while still visibly
+      // facing its old direction. Once the rebuilt head reads clearly, release
+      // the hold and blend into travel while the remaining sections finish.
+      fish.motionVelocityXNorm = 0;
+      fish.motionVelocityYNorm = 0;
+    }
 
     if (!piranhaLockedOnPrey && !breedingRole && isFishCriticallyLowHealth(fish) && fish.activity === "roam" && Math.random() < deltaSeconds * 0.35) {
       fish.panicUntil = now + randomBetween(1600, 3200);
@@ -65141,9 +64868,12 @@ function updateFishMotion(now, deltaSeconds) {
     } else if (activeDebugSteering?.type === "anticipate-food") {
       motionTarget = Math.max(motionTarget, 0.16);
     }
+    if (turnaroundHoldsPosition) {
+      motionTarget = Math.min(motionTarget, 0.08);
+    }
     let handledDirectionThisFrame = false;
 
-    if (moveDistance > 0.0001) {
+    if (moveDistance > 0.0001 && !turnaroundHoldsPosition) {
       const manuallyChasingFood = fish.activity === "feeding" && pellet && pellet.dropStartXNorm == null;
       let speedMultiplier = fish.activity === "feeding"
         ? (manuallyChasingFood ? 1 : FEED_CHASE_MULTIPLIER)
@@ -65249,6 +64979,9 @@ function updateFishMotion(now, deltaSeconds) {
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.18, 1.4);
       }
       speedMultiplier *= getFishDiseaseSpeedMultiplier(fish, now);
+      if (segmentedTurnaroundActive) {
+        speedMultiplier *= 0.12 + turnaroundMovementBlend * 0.88;
+      }
       if (manuallyChasingFood) {
         // Manual feeding should redirect normal swimming, not turn it into a
         // dash. This final cap also prevents another transient behavior from
@@ -65566,6 +65299,9 @@ function getFishProfileRoamX(fish, species, profile) {
   const minDistance = clamp(profile.targetDistanceMin, 0.02, 0.7);
   const maxDistance = clamp(Math.max(minDistance, profile.targetDistanceMax), minDistance, 0.84);
   const distance = randomBetween(minDistance, maxDistance);
+  const sharkCruiser = species?.id === "bull-shark"
+    || species?.id === "great-white-shark"
+    || species?.id === "hammerhead-shark";
   let direction = Math.random() < clamp(profile.headingPersistence, 0, 1)
     ? facingDirection
     : (Math.random() < 0.5 ? -1 : 1);
@@ -65576,7 +65312,16 @@ function getFishProfileRoamX(fish, species, profile) {
   }
   let targetX = currentX + direction * distance;
   if (targetX < 0.08 || targetX > 0.92) {
-    targetX = currentX - direction * distance * randomBetween(0.78, 1);
+    if (sharkCruiser) {
+      // Large sharks should cruise through the tank instead of reflecting an
+      // oversized forward target behind themselves. Reflection made them pick
+      // an opposite-side target while still mid-tank, causing repeated
+      // turnaround loops. Keep the target ahead and let the edge trigger the
+      // eventual reversal naturally.
+      targetX = direction > 0 ? 0.92 : 0.08;
+    } else {
+      targetX = currentX - direction * distance * randomBetween(0.78, 1);
+    }
   }
   return clampFishXNormToMobileViewport(clamp(targetX, 0.08, 0.92), fish, species);
 }
@@ -65830,8 +65575,8 @@ function assignSwimTarget(fish, species, now) {
       const personality = getFishPersonality(fish);
       setFishBehaviorIntent(
         fish,
-        isTankLightsOut(now) ? "night sleep" : (personality === "territorial" ? "guard cave" : "cave visit"),
-        isTankLightsOut(now) ? "lights out" : personality,
+        personality === "territorial" ? "guard cave" : "cave visit",
+        personality,
         now
       );
       beginFishCaveBehavior(fish, preferredCavePlan, now);
@@ -65878,8 +65623,8 @@ function assignSwimTarget(fish, species, now) {
     const personality = getFishPersonality(fish);
     setFishBehaviorIntent(
       fish,
-      isTankLightsOut(now) ? "night sleep" : (personality === "territorial" ? "guard cave" : "cave visit"),
-      isTankLightsOut(now) ? "lights out" : personality,
+      personality === "territorial" ? "guard cave" : "cave visit",
+      personality,
       now
     );
     beginFishCaveBehavior(fish, cavePlan, now);
@@ -66831,7 +66576,6 @@ function renderTank(now) {
   // Rear-pane grime belongs above the background and below every moving object.
   drawRearGrime(dirtiness);
   beginLightweightCausticMask();
-  drawUvLightAtmosphere(now, "back");
   drawWaterParticles(now, TANK_DEPTH_LAYERS);
   drawAmbientBubbles(now, 1);
   drawTankFloor(now);
@@ -66883,9 +66627,7 @@ function renderTank(now) {
   drawDecorPreview();
   drawDecorSwimGuide(now);
   drawActiveDecorLayerCue();
-  drawLightsOutOverlay(now);
   drawWaterSurface(now);
-  drawUvLightAtmosphere(now, "front");
   drawSplashBursts(now);
   // Front glass glare is disabled for this display-focused view.
   tankContext.restore();
@@ -67023,6 +66765,16 @@ function markLightweightCausticImage(sourceContext, image, x, y, width, height) 
   context.drawImage(image, x, y, width, height);
 }
 
+function markLightweightCausticTurnaroundRig(sourceContext, image, x, width, height, fish, now) {
+  if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
+  const context = setLightweightCausticMaskTransform(sourceContext);
+  drawFishTurnaroundRig(context, image, x, width, height, fish, now, {
+    columnDensity: FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY,
+    minimumColumns: 1,
+    maximumColumns: FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS
+  });
+}
+
 function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, width, height, item, now, motion, receivesCaustics = true) {
   if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
   const context = setLightweightCausticMaskTransform(sourceContext);
@@ -67051,7 +66803,7 @@ function markLightweightCausticFloor() {
 }
 
 function drawLightweightCausticOverlay(now) {
-  if (!isCausticLightingEnabled() || isTankLightsOut(now)) return;
+  if (!isCausticLightingEnabled()) return;
   const seconds = (Number(now) || 0) / 1000;
   const dirtFade = 1 - clamp(getTankDirtiness(now), 0, 1) * 0.58;
   const width = TANK_WIDTH;
@@ -67301,27 +67053,6 @@ function drawDirtyWaterTintToContext(context, strength = 1) {
 
 function drawDirtyWaterTint(dirtiness = getTankDirtiness(Date.now())) {
   drawDirtyWaterTintToContext(tankContext, getVisibleGrimeDirtiness(dirtiness));
-}
-
-function drawLightsOutOverlay(now = Date.now()) {
-  if (!isTankLightsOut(now)) {
-    return;
-  }
-  const forced = getLightsOutOverride() === LIGHTS_OUT_OVERRIDE_ON;
-  const alpha = forced ? 0.36 : 0.3;
-  tankContext.save();
-  const gradient = tankContext.createLinearGradient(0, 0, 0, TANK_HEIGHT);
-  gradient.addColorStop(0, `rgba(3, 12, 26, ${alpha + 0.08})`);
-  gradient.addColorStop(0.52, `rgba(2, 16, 30, ${alpha})`);
-  gradient.addColorStop(1, `rgba(0, 6, 16, ${alpha + 0.04})`);
-  tankContext.fillStyle = gradient;
-  tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  tankContext.globalCompositeOperation = "screen";
-  tankContext.fillStyle = forced
-    ? "rgba(112, 178, 255, 0.045)"
-    : "rgba(98, 155, 220, 0.035)";
-  tankContext.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
-  tankContext.restore();
 }
 
 function getScaledTankShellPoints(pointSet) {
@@ -67785,7 +67516,6 @@ function ensureWaterParticles(now = Date.now()) {
       phase: randomBetweenWith(rand, 0, Math.PI * 2),
       size: randomBetweenWith(rand, 0.65, 1.45),
       tone: randomBetweenWith(rand, 0, 1),
-      uvReactive: randomBetweenWith(rand, 0, 1) > 0.62,
       spriteIndex: Math.floor(randomBetweenWith(rand, 0, WATER_PARTICLE_ASSET_PATHS.length)),
       rotation: randomBetweenWith(rand, -Math.PI, Math.PI),
       spin: randomBetweenWith(rand, -0.34, 0.34),
@@ -67801,17 +67531,7 @@ function ensureWaterParticles(now = Date.now()) {
   });
 }
 
-function getWaterParticleDrawColor(particle, dirtiness, uvActive) {
-  if (uvActive && particle?.uvReactive) {
-    if (particle.tone < 0.34) {
-      return { r: 102, g: 236, b: 255 };
-    }
-    if (particle.tone < 0.68) {
-      return { r: 92, g: 255, b: 171 };
-    }
-    return { r: 255, g: 116, b: 229 };
-  }
-
+function getWaterParticleDrawColor() {
   // Dirty-water color comes from the static grime overlay, not new particle
   // tint variants that have to be generated and cached at high dirtiness.
   return { r: 218, g: 248, b: 255 };
@@ -67852,7 +67572,7 @@ function getTintedWaterParticleSprite(spritePath, sprite, tintRgb) {
   }
 
   const bounds = getWaterParticleSpriteBounds(spritePath, sprite);
-  const cacheKey = `${getUvGlowSourceKey(sprite)}|${tintRgb}|${bounds.sx},${bounds.sy},${bounds.sw},${bounds.sh}`;
+  const cacheKey = `${getRuntimeImageSourceKey(sprite)}|${tintRgb}|${bounds.sx},${bounds.sy},${bounds.sw},${bounds.sh}`;
   if (runtime.waterParticleTintCache.has(cacheKey)) {
     return runtime.waterParticleTintCache.get(cacheKey);
   }
@@ -68250,7 +67970,6 @@ function drawWaterParticles(now = Date.now(), layer = null) {
   ensureWaterParticles(now);
   const targetLayer = Number.isFinite(Number(layer)) ? clampTankLayer(layer) : null;
   const dirtiness = getTankDirtiness(now);
-  const uvActive = isUvLightActive() && UV_LIGHT_WATER_PARTICLE_GLOW_ENABLED;
 
   tankContext.save();
   tankContext.globalCompositeOperation = "source-over";
@@ -68281,7 +68000,7 @@ function drawWaterParticles(now = Date.now(), layer = null) {
       : index;
     const spritePath = WATER_PARTICLE_ASSET_PATHS[spriteIndex % WATER_PARTICLE_ASSET_PATHS.length];
     const sprite = runtime.images.get(spritePath);
-    const color = getWaterParticleDrawColor(particle, dirtiness, uvActive);
+    const color = getWaterParticleDrawColor();
     const tintRgb = formatRgb(color);
     const renderSprite = sprite?.width && sprite?.height
       ? getTintedWaterParticleSprite(spritePath, sprite, tintRgb)
@@ -68291,17 +68010,10 @@ function drawWaterParticles(now = Date.now(), layer = null) {
 
     drawWaterAtmosphereStreak(tankContext, particle, now, visibility, dirtiness);
 
-    if (uvActive && particle.uvReactive) {
-      tankContext.shadowColor = formatRgba(color, alpha * 2.2);
-      tankContext.shadowBlur = 5 + particle.depth * 9;
-      tankContext.fillStyle = formatRgba(color, alpha * 1.65);
-      tankContext.strokeStyle = tankContext.fillStyle;
-    } else {
-      tankContext.shadowBlur = 0;
-      const cleanAlphaBoost = color.r === 218 && color.g === 248 ? 1.45 : 0.9;
-      tankContext.fillStyle = formatRgba(color, alpha * cleanAlphaBoost);
-      tankContext.strokeStyle = tankContext.fillStyle;
-    }
+    tankContext.shadowBlur = 0;
+    const cleanAlphaBoost = color.r === 218 && color.g === 248 ? 1.45 : 0.9;
+    tankContext.fillStyle = formatRgba(color, alpha * cleanAlphaBoost);
+    tankContext.strokeStyle = tankContext.fillStyle;
 
     tankContext.save();
     tankContext.translate(particle.x, particle.y);
@@ -68309,31 +68021,10 @@ function drawWaterParticles(now = Date.now(), layer = null) {
     tankContext.globalAlpha = renderSprite?.width && renderSprite?.height ? alpha : alpha * 0.82;
     if (renderSprite?.width && renderSprite?.height) {
       tankContext.drawImage(renderSprite, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-      if (uvActive && particle.uvReactive) {
-        drawUvGlowImageToContext(
-          tankContext,
-          renderSprite,
-          -drawWidth / 2,
-          -drawHeight / 2,
-          drawWidth,
-          drawHeight,
-          0.92 + particle.depth * 0.55,
-          alpha * 1.18,
-          "water-particle"
-        );
-      }
     } else {
       tankContext.beginPath();
       tankContext.ellipse(0, 0, drawWidth * 0.5, drawHeight * 0.5, 0, 0, Math.PI * 2);
       tankContext.fill();
-      if (uvActive && particle.uvReactive) {
-        tankContext.globalCompositeOperation = "screen";
-        tankContext.globalAlpha = alpha * 0.72;
-        tankContext.beginPath();
-        tankContext.ellipse(0, 0, drawWidth * 0.82, drawHeight * 0.82, 0, 0, Math.PI * 2);
-        tankContext.fill();
-        tankContext.globalCompositeOperation = "source-over";
-      }
     }
     tankContext.restore();
   }
@@ -69299,18 +68990,6 @@ function drawCustomGravelFloor(bounds, now = Date.now()) {
     }
 
     drawImageCover(tankContext, tintedLayer, bounds.left, bounds.drawTop, bounds.drawWidth, bounds.drawHeight);
-    if (isUvLightGravelGlowEnabled() && isCustomGravelUvReactiveColor(layerColors[index])) {
-      drawUvGlowImageCoverToContext(
-        tankContext,
-        tintedLayer,
-        bounds.left,
-        bounds.drawTop,
-        bounds.drawWidth,
-        bounds.drawHeight,
-        0.52,
-        0.32 + index * 0.05
-      );
-    }
     drewLayer = true;
   }
 
@@ -70574,7 +70253,6 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
   }
   drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
   markLightweightCausticDecorImage(context, image, drawX, drawY, width, height, item, now, resolvedMotion, receivesCaustics);
-  drawUvGlowDecorImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion, getDecorUvGlowIntensity(item), alpha);
   context.restore();
 }
 
@@ -70917,13 +70595,6 @@ function drawDecorImageLayer(image, drawX, drawY, width, height, item, now, moti
     const decor = runtime.decorMap.get(item.decorKey);
     const imagePath = image === runtime.images.get(decor?.bgPath) ? decor.bgPath : decor?.path;
     drawDecorColorLayerImageToContext(tankContext, image, imagePath || "", item.transitTubeColor, true, drawX, drawY, width, height, item, now, motion, alpha);
-    return;
-  }
-  if (isTankLightsOut(now) && isSpookyDecorItem(item)) {
-    tankContext.save();
-    tankContext.filter = "brightness(118%) saturate(112%) drop-shadow(0 0 12px rgba(118, 210, 180, 0.28))";
-    drawDecorImageLayerToContext(tankContext, image, drawX, drawY, width, height, item, now, motion, alpha);
-    tankContext.restore();
     return;
   }
   drawDecorImageLayerToContext(tankContext, image, drawX, drawY, width, height, item, now, motion, alpha);
@@ -71496,7 +71167,6 @@ function drawPoops(now, layer = null) {
     tankContext.save();
     tankContext.translate(pose.x, pose.y + 4);
     tankContext.rotate(pose.wobble);
-    drawPoopUvGlowToContext(tankContext, pose, now);
     tankContext.globalAlpha = 0.9;
     tankContext.drawImage(pose.sprite, -pose.width / 2, -pose.height * 0.88, pose.width, pose.height);
     tankContext.restore();
@@ -71624,19 +71294,6 @@ function drawFishEggFallback(context, pose, egg, now = Date.now()) {
     : "#9A7E55";
   context.save();
   context.translate(-width / 2, -height * 0.9);
-  if (isUvLightActive()) {
-    context.save();
-    context.globalCompositeOperation = "screen";
-    context.shadowColor = "rgba(118, 236, 255, 0.62)";
-    context.shadowBlur = Math.max(7, width * 0.22);
-    context.fillStyle = kind === "shell"
-      ? "rgba(201, 255, 244, 0.22)"
-      : "rgba(146, 242, 255, 0.28)";
-    context.beginPath();
-    context.ellipse(width * 0.5, height * 0.52, width * 0.42, height * 0.48, -0.12, 0, Math.PI * 2);
-    context.fill();
-    context.restore();
-  }
   if (kind === "shell") {
     context.fillStyle = shellFill;
     context.strokeStyle = "rgba(97, 75, 48, 0.36)";
@@ -71721,17 +71378,6 @@ function drawFishEggs(now, layer = null) {
       const eggSprite = egg.fishColor
         ? (getTintedCaveLayerImage(pose.spritePath, egg.fishColor, { colorize: egg.fishColorize }) || pose.sprite)
         : pose.sprite;
-      drawUvGlowImageToContext(
-        tankContext,
-        eggSprite,
-        -pose.width / 2,
-        -pose.height * 0.9,
-        pose.width,
-        pose.height,
-        pose.spritePath === FISH_EGG_SHELL_ASSET_PATH ? 0.96 : 1.16,
-        pose.spritePath === FISH_EGG_SHELL_ASSET_PATH ? 0.66 : 0.78,
-        "biological-waste"
-      );
       tankContext.drawImage(
         eggSprite,
         -pose.width / 2,
@@ -71744,25 +71390,6 @@ function drawFishEggs(now, layer = null) {
     }
     tankContext.restore();
   }
-}
-
-function drawPoopUvGlowToContext(context, pose, now = Date.now()) {
-  if (!isUvLightActive() || !pose?.sprite) {
-    return;
-  }
-
-  const pulse = 0.5 + Math.sin(now / 1700 + pose.x * 0.018) * 0.5;
-  drawUvGlowImageToContext(
-    context,
-    pose.sprite,
-    -pose.width / 2,
-    -pose.height * 0.88,
-    pose.width,
-    pose.height,
-    1.35,
-    0.82 + pulse * 0.12,
-    "biological-waste"
-  );
 }
 
 function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
@@ -71995,10 +71622,6 @@ function getFishTopLightOverlay(image) {
 }
 
 function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now(), lightingOverride = null) {
-  if (isTankLightsOut(now)) {
-    return;
-  }
-
   const overlay = getFishTopLightOverlay(image);
   if (!overlay) {
     return;
@@ -72094,6 +71717,1213 @@ function prepareFishRenderFrameCache(now = Date.now()) {
   return cache;
 }
 
+
+function getFishTurnRigCanvas(image, mirrored = false) {
+  if (!isUsableRuntimeImage(image)) {
+    return null;
+  }
+
+  let entry = fishTurnRigCanvasCache.get(image);
+
+  if (
+    !entry
+    || entry.width !== image.width
+    || entry.height !== image.height
+  ) {
+    const original = document.createElement("canvas");
+    original.width = image.width;
+    original.height = image.height;
+
+    const originalContext = original.getContext("2d");
+    originalContext.clearRect(
+      0,
+      0,
+      original.width,
+      original.height
+    );
+    originalContext.drawImage(image, 0, 0);
+
+    const flipped = document.createElement("canvas");
+    flipped.width = image.width;
+    flipped.height = image.height;
+
+    const flippedContext = flipped.getContext("2d");
+    flippedContext.clearRect(
+      0,
+      0,
+      flipped.width,
+      flipped.height
+    );
+
+    flippedContext.translate(
+      flipped.width,
+      0
+    );
+
+    flippedContext.scale(
+      -1,
+      1
+    );
+
+    flippedContext.drawImage(
+      image,
+      0,
+      0
+    );
+
+    entry = {
+      width: image.width,
+      height: image.height,
+      original,
+      mirrored: flipped,
+      sliceWidth:
+        image.width
+        / FISH_TURN_RIG_SEGMENTS
+    };
+
+    fishTurnRigCanvasCache.set(
+      image,
+      entry
+    );
+  }
+
+  return mirrored
+    ? entry.mirrored
+    : entry.original;
+}
+
+function shouldUseFishTurnRigForSprite(
+  fish,
+  species,
+  effectiveBehavior,
+  pose,
+  suckerFreeSwimming,
+  suckerViewTransition
+) {
+  if (
+    !fish
+    || !species
+    || !pose
+    || pose.isDead
+  ) {
+    return false;
+  }
+
+  if (suckerViewTransition) {
+    return false;
+  }
+
+  if (
+    effectiveBehavior === "sucker"
+    && !suckerFreeSwimming
+  ) {
+    return false;
+  }
+
+  if (
+    !fish.turnStartedAt
+    || Number(fish.turnDurationMs) <= 0
+    || getFishTurnAnimationMode(fish, species) !== "complex"
+  ) {
+    return false;
+  }
+
+  const fromDirection =
+    Number(fish.turnFromDirection) < 0
+      ? -1
+      : 1;
+
+  const toDirection =
+    Number(fish.turnToDirection) < 0
+      ? -1
+      : 1;
+
+  return fromDirection !== toDirection;
+}
+
+function getFishTurnRigProgress(
+  fish,
+  now
+) {
+  if (
+    !fish?.turnStartedAt
+    || Number(fish.turnDurationMs) <= 0
+  ) {
+    return null;
+  }
+
+  const normalized =
+    clamp(
+      (
+        now
+        - Number(fish.turnStartedAt)
+      )
+      / Math.max(
+        1,
+        Number(fish.turnDurationMs)
+      ),
+      0,
+      1
+    );
+
+  return (
+    normalized
+    * FISH_TURN_RIG_INTERNAL_TIMELINE_MAX
+  );
+}
+
+function getFishTurnRigState(
+  fish,
+  now
+) {
+  const progress =
+    getFishTurnRigProgress(
+      fish,
+      now
+    );
+
+  if (progress === null) {
+    return null;
+  }
+
+  return {
+    progress,
+
+    fromDirection:
+      Number(fish.turnFromDirection) < 0
+        ? -1
+        : 1,
+
+    toDirection:
+      Number(fish.turnToDirection) < 0
+        ? -1
+        : 1
+  };
+}
+
+function getFishTurnRigPhaseProgress(
+  timelineProgress,
+  start,
+  duration
+) {
+  const raw =
+    clamp(
+      (
+        timelineProgress
+        - start
+      )
+      / Math.max(
+        0.0001,
+        duration
+      ),
+      0,
+      1
+    );
+
+  return (
+    raw
+    * raw
+    * (
+      3
+      - 2 * raw
+    )
+  );
+}
+function getFishTurnRigCollapseProgress(
+  turnProgress,
+  originalIndex
+) {
+  let start =
+    (
+      11
+      - originalIndex
+    )
+    * FISH_TURN_RIG_COLLAPSE_STEP
+    * FISH_TURN_RIG_FOLLOWER_LAG;
+
+  if (originalIndex <= 5) {
+    start +=
+      FISH_TURN_RIG_TAIL_START_DELAY;
+  }
+
+  return getFishTurnRigPhaseProgress(
+    turnProgress,
+    start,
+    FISH_TURN_RIG_COLLAPSE_DURATION
+  );
+}
+
+function getFishTurnRigRebuildProgress(
+  turnProgress,
+  originalIndex
+) {
+  const start =
+    FISH_TURN_RIG_REBUILD_OVERLAP
+    + (
+      11
+      - originalIndex
+    )
+    * FISH_TURN_RIG_REBUILD_STEP;
+
+  return getFishTurnRigPhaseProgress(
+    turnProgress,
+    start,
+    FISH_TURN_RIG_REBUILD_DURATION
+  );
+}
+
+function buildFishTurnRigOriginalBody(
+  turnProgress
+) {
+  const segments = [];
+
+  for (
+    let index = 0;
+    index < FISH_TURN_RIG_SEGMENTS;
+    index += 1
+  ) {
+    const progress =
+      getFishTurnRigCollapseProgress(
+        turnProgress,
+        index
+      );
+
+    segments.push({
+      widthScale:
+        1
+        - progress,
+
+      sizeScale:
+        index >= 6
+          ? (
+            1
+            - FISH_TURN_RIG_FRONT_SHRINK
+            * progress
+          )
+          : (
+            1
+            + FISH_TURN_RIG_TAIL_SWELL
+            * progress
+          )
+    });
+  }
+
+  return segments;
+}
+
+function buildFishTurnRigEmergingHead(
+  turnProgress
+) {
+  const segments = [];
+
+  const order = [
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ];
+
+  for (
+    const originalIndex
+    of order
+  ) {
+    const start =
+      FISH_TURN_RIG_REBUILD_OVERLAP
+      + (
+        11
+        - originalIndex
+      )
+      * FISH_TURN_RIG_REBUILD_STEP
+      * FISH_TURN_RIG_HEAD_STAGGER;
+
+    const progress =
+      getFishTurnRigPhaseProgress(
+        turnProgress,
+        start,
+        FISH_TURN_RIG_REBUILD_DURATION
+      );
+
+    segments.push({
+      widthScale:
+        progress,
+
+      sizeScale:
+        1
+        + FISH_TURN_RIG_FRONT_SHRINK
+        * (
+          1
+          - progress
+        )
+        * 0.9,
+
+      progress
+    });
+  }
+
+  return segments;
+}
+
+function buildFishTurnRigEmergingTail(
+  turnProgress
+) {
+  const segments = [];
+
+  const order = [
+    5,
+    4,
+    3,
+    2,
+    1,
+    0
+  ];
+
+  for (
+    const originalIndex
+    of order
+  ) {
+    const progress =
+      getFishTurnRigRebuildProgress(
+        turnProgress,
+        originalIndex
+      );
+
+    segments.push({
+      widthScale:
+        progress,
+
+      sizeScale:
+        (
+          1
+          + FISH_TURN_RIG_TAIL_SWELL
+        )
+        - FISH_TURN_RIG_TAIL_SWELL
+        * progress,
+
+      progress
+    });
+  }
+
+  return segments;
+}
+
+function withFishTurnRigBodyScales(
+  segments
+) {
+  const boundaries = [
+    segments[0]?.sizeScale
+    || 1
+  ];
+
+  for (
+    let index = 1;
+    index < segments.length;
+    index += 1
+  ) {
+    boundaries[index] =
+      (
+        segments[
+          index - 1
+        ].sizeScale
+        + segments[
+          index
+        ].sizeScale
+      )
+      * 0.5;
+  }
+
+  boundaries[
+    segments.length
+  ] =
+    segments[
+      segments.length - 1
+    ]?.sizeScale
+    || 1;
+
+  return segments.map(
+    (
+      segment,
+      index
+    ) => ({
+      ...segment,
+
+      leftScale:
+        boundaries[index],
+
+      rightScale:
+        boundaries[
+          index + 1
+        ]
+    })
+  );
+}
+
+function withFishTurnRigChainScales(
+  segments,
+  centerScale = 1
+) {
+  const boundaries =
+    new Array(
+      segments.length + 1
+    );
+
+  boundaries[0] =
+    centerScale;
+
+  for (
+    let index = 1;
+    index < segments.length;
+    index += 1
+  ) {
+    boundaries[index] =
+      (
+        segments[
+          index - 1
+        ].sizeScale
+        + segments[
+          index
+        ].sizeScale
+      )
+      * 0.5;
+  }
+
+  boundaries[
+    segments.length
+  ] =
+    segments[
+      segments.length - 1
+    ]?.sizeScale
+    || centerScale;
+
+  return segments.map(
+    (
+      segment,
+      index
+    ) => ({
+      ...segment,
+
+      innerScale:
+        boundaries[index],
+
+      outerScale:
+        boundaries[
+          index + 1
+        ]
+    })
+  );
+}
+
+function measureFishTurnRigOriginalLayout(
+  segments,
+  centerX,
+  targetWidth
+) {
+  const welded =
+    withFishTurnRigBodyScales(
+      segments
+    );
+
+  const widths =
+    welded.map(
+      (segment) =>
+        (
+          targetWidth
+          / FISH_TURN_RIG_SEGMENTS
+        )
+        * segment.widthScale
+    );
+
+  const totalWidth =
+    widths.reduce(
+      (
+        sum,
+        width
+      ) =>
+        sum
+        + width,
+      0
+    );
+
+  const x0 =
+    centerX
+    - totalWidth / 2;
+
+  let seamX =
+    x0;
+
+  for (
+    let index = 0;
+    index < 6;
+    index += 1
+  ) {
+    seamX +=
+      widths[index];
+  }
+
+  return {
+    welded,
+    widths,
+    totalWidth,
+    x0,
+    seamX
+  };
+}
+
+function drawFishTurnRigTextureSegment(
+  context,
+  fullSource,
+  srcX0,
+  srcX1,
+  x0,
+  x1,
+  centerY,
+  targetHeight,
+  leftScale,
+  rightScale,
+  renderOptions = {}
+) {
+  if (!fullSource) {
+    return;
+  }
+
+  const paddedSrcX0 =
+    Math.max(
+      0,
+      srcX0
+      - FISH_TURN_RIG_EDGE_SOFTEN_SRC
+    );
+
+  const paddedSrcX1 =
+    Math.min(
+      fullSource.width,
+      srcX1
+      + FISH_TURN_RIG_EDGE_SOFTEN_SRC
+    );
+
+  const paddedDestX0 =
+    x0
+    - FISH_TURN_RIG_EDGE_SOFTEN_DEST;
+
+  const paddedDestX1 =
+    x1
+    + FISH_TURN_RIG_EDGE_SOFTEN_DEST;
+
+  const destWidth =
+    paddedDestX1
+    - paddedDestX0;
+
+  const srcWidth =
+    paddedSrcX1
+    - paddedSrcX0;
+
+  if (
+    Math.abs(destWidth) <= 0.001
+    || Math.abs(srcWidth) <= 0.001
+  ) {
+    return;
+  }
+
+  const minimumColumns = Math.max(1, Math.floor(Number(renderOptions.minimumColumns) || 4));
+  const maximumColumns = Math.max(
+    minimumColumns,
+    Math.floor(Number(renderOptions.maximumColumns) || FISH_TURN_RIG_VISIBLE_MAX_COLUMNS)
+  );
+  const columnDensity = Math.max(
+    0.01,
+    Number(renderOptions.columnDensity) || FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY
+  );
+  const steps = clamp(
+    Math.ceil(Math.abs(destWidth) * columnDensity),
+    minimumColumns,
+    maximumColumns
+  );
+
+  for (
+    let column = 0;
+    column < steps;
+    column += 1
+  ) {
+    const u0 =
+      column
+      / steps;
+
+    const u1 =
+      (
+        column + 1
+      )
+      / steps;
+
+    const umRaw =
+      (
+        u0
+        + u1
+      )
+      * 0.5;
+
+    const um =
+      umRaw
+      * umRaw
+      * (
+        3
+        - 2 * umRaw
+      );
+
+    const sx0 =
+      paddedSrcX0
+      + srcWidth
+      * u0;
+
+    const sx1 =
+      paddedSrcX0
+      + srcWidth
+      * u1;
+
+    const dx0 =
+      paddedDestX0
+      + destWidth
+      * u0;
+
+    const dx1 =
+      paddedDestX0
+      + destWidth
+      * u1;
+
+    const scale =
+      leftScale
+      + (
+        rightScale
+        - leftScale
+      )
+      * um;
+
+    const drawHeight =
+      targetHeight
+      * scale;
+
+    const drawY =
+      centerY
+      - drawHeight / 2;
+
+    const sx =
+      Math.min(
+        sx0,
+        sx1
+      );
+
+    const sw =
+      Math.max(
+        0.85,
+        Math.abs(
+          sx1
+          - sx0
+        )
+        + 0.9
+      );
+
+    const dx =
+      Math.min(
+        dx0,
+        dx1
+      )
+      - FISH_TURN_RIG_CONTINUOUS_OVERLAP
+      * 0.5;
+
+    const dw =
+      Math.abs(
+        dx1
+        - dx0
+      )
+      + FISH_TURN_RIG_CONTINUOUS_OVERLAP;
+
+    context.drawImage(
+      fullSource,
+      sx,
+      0,
+      sw,
+      fullSource.height,
+      dx,
+      drawY,
+      dw,
+      drawHeight
+    );
+  }
+}
+
+function drawFishTurnRigOriginal(
+  context,
+  fullSource,
+  layout,
+  centerY,
+  targetHeight,
+  sliceWidth,
+  renderOptions = {}
+) {
+  let x =
+    layout.x0;
+
+  for (
+    let index = 0;
+    index < FISH_TURN_RIG_SEGMENTS;
+    index += 1
+  ) {
+    const segment =
+      layout.welded[index];
+
+    const drawWidth =
+      layout.widths[index];
+
+    if (
+      drawWidth <= 0.001
+    ) {
+      continue;
+    }
+
+    const srcX0 =
+      index
+      * sliceWidth;
+
+    const srcX1 =
+      (
+        index + 1
+      )
+      * sliceWidth;
+
+    drawFishTurnRigTextureSegment(
+      context,
+      fullSource,
+      srcX0,
+      srcX1,
+      x,
+      x + drawWidth,
+      centerY,
+      targetHeight,
+      segment.leftScale,
+      segment.rightScale,
+      renderOptions
+    );
+
+    x +=
+      drawWidth;
+  }
+}
+
+function drawFishTurnRigLeftChain(
+  context,
+  mirroredSource,
+  chain,
+  seamX,
+  centerY,
+  slotWidth,
+  targetHeight,
+  sliceWidth,
+  renderOptions = {}
+) {
+  const welded =
+    withFishTurnRigChainScales(
+      chain,
+      FISH_TURN_RIG_CENTER_SEAM_SCALE
+    );
+
+  let innerX =
+    seamX;
+
+  const handoff =
+    0.46;
+
+  for (
+    let chainIndex = 0;
+    chainIndex < welded.length;
+    chainIndex += 1
+  ) {
+    const segment =
+      welded[
+        chainIndex
+      ];
+
+    const drawWidth =
+      slotWidth
+      * segment.widthScale;
+
+    if (
+      drawWidth <= 0.001
+    ) {
+      continue;
+    }
+
+    const pullEase =
+      1
+      - Math.pow(
+        clamp(
+          segment.progress,
+          0,
+          1
+        ),
+        FISH_TURN_RIG_RELEASE_CURVE
+      );
+
+    const packedFactor =
+      FISH_TURN_RIG_REVERSE_EMERGENCE_PULL
+        ? (
+          1
+          + FISH_TURN_RIG_EXIT_PULL
+          * pullEase
+        )
+        : (
+          1
+          - FISH_TURN_RIG_EXIT_PULL
+          * pullEase
+        );
+
+    const pulledWidth =
+      drawWidth
+      * packedFactor;
+
+    const outerX =
+      innerX
+      - pulledWidth;
+
+    const sourceSlot =
+      5
+      - chainIndex;
+
+    const slotLeft =
+      sourceSlot
+      * sliceWidth;
+
+    const slotRight =
+      (
+        sourceSlot + 1
+      )
+      * sliceWidth;
+
+    let srcX0 =
+      slotLeft;
+
+    let srcX1 =
+      slotRight;
+
+    if (
+      segment.progress
+      < handoff
+    ) {
+      const reveal =
+        clamp(
+          segment.progress
+          / handoff
+        );
+
+      srcX0 =
+        slotRight
+        - sliceWidth
+        * reveal;
+    }
+
+    drawFishTurnRigTextureSegment(
+      context,
+      mirroredSource,
+      srcX0,
+      srcX1,
+      outerX,
+      innerX,
+      centerY,
+      targetHeight,
+      segment.outerScale,
+      segment.innerScale,
+      renderOptions
+    );
+
+    innerX =
+      outerX;
+  }
+}
+
+function drawFishTurnRigRightChain(
+  context,
+  mirroredSource,
+  chain,
+  seamX,
+  centerY,
+  slotWidth,
+  targetHeight,
+  sliceWidth,
+  renderOptions = {}
+) {
+  const welded =
+    withFishTurnRigChainScales(
+      chain,
+      FISH_TURN_RIG_CENTER_SEAM_SCALE
+    );
+
+  let innerX =
+    seamX;
+
+  const handoff =
+    0.48;
+
+  for (
+    let chainIndex = 0;
+    chainIndex < welded.length;
+    chainIndex += 1
+  ) {
+    const segment =
+      welded[
+        chainIndex
+      ];
+
+    const drawWidth =
+      slotWidth
+      * segment.widthScale;
+
+    if (
+      drawWidth <= 0.001
+    ) {
+      continue;
+    }
+
+    const pullEase =
+      1
+      - Math.pow(
+        clamp(
+          segment.progress,
+          0,
+          1
+        ),
+        FISH_TURN_RIG_RELEASE_CURVE
+      );
+
+    const packedFactor =
+      FISH_TURN_RIG_REVERSE_EMERGENCE_PULL
+        ? (
+          1
+          + FISH_TURN_RIG_EXIT_PULL
+          * pullEase
+        )
+        : (
+          1
+          - FISH_TURN_RIG_EXIT_PULL
+          * pullEase
+        );
+
+    const advanceWidth =
+      drawWidth
+      * packedFactor;
+
+    const outerX =
+      innerX
+      + drawWidth;
+
+    const sourceSlot =
+      6
+      + chainIndex;
+
+    const slotLeft =
+      sourceSlot
+      * sliceWidth;
+
+    const slotRight =
+      (
+        sourceSlot + 1
+      )
+      * sliceWidth;
+
+    let srcX0 =
+      slotLeft;
+
+    let srcX1 =
+      slotRight;
+
+    if (
+      segment.progress
+      < handoff
+    ) {
+      const reveal =
+        clamp(
+          segment.progress
+          / handoff
+        );
+
+      srcX1 =
+        slotLeft
+        + sliceWidth
+        * reveal;
+    }
+
+    drawFishTurnRigTextureSegment(
+      context,
+      mirroredSource,
+      srcX0,
+      srcX1,
+      innerX,
+      outerX,
+      centerY,
+      targetHeight,
+      segment.innerScale,
+      segment.outerScale,
+      renderOptions
+    );
+
+    innerX +=
+      advanceWidth;
+  }
+}
+
+function drawFishTurnaroundRig(
+  context,
+  image,
+  drawX,
+  drawWidth,
+  drawHeight,
+  fish,
+  now,
+  renderOptions = {}
+) {
+  const turnState =
+    getFishTurnRigState(
+      fish,
+      now
+    );
+
+  if (!turnState) {
+    context.drawImage(
+      image,
+      drawX,
+      -drawHeight / 2,
+      drawWidth,
+      drawHeight
+    );
+
+    return false;
+  }
+
+  const originalSource =
+    getFishTurnRigCanvas(
+      image,
+      false
+    );
+
+  const mirroredSource =
+    getFishTurnRigCanvas(
+      image,
+      true
+    );
+
+  if (
+    !originalSource
+    || !mirroredSource
+  ) {
+    context.drawImage(
+      image,
+      drawX,
+      -drawHeight / 2,
+      drawWidth,
+      drawHeight
+    );
+
+    return false;
+  }
+
+  const centerX =
+    drawX
+    + drawWidth / 2;
+
+  const centerY =
+    0;
+
+  const slotWidth =
+    drawWidth
+    / FISH_TURN_RIG_SEGMENTS;
+
+  const sourceSliceWidth =
+    originalSource.width
+    / FISH_TURN_RIG_SEGMENTS;
+
+  const originalBody =
+    buildFishTurnRigOriginalBody(
+      turnState.progress
+    );
+
+  const emergingHead =
+    buildFishTurnRigEmergingHead(
+      turnState.progress
+    );
+
+  const emergingTail =
+    buildFishTurnRigEmergingTail(
+      turnState.progress
+    );
+
+  const originalLayout =
+    measureFishTurnRigOriginalLayout(
+      originalBody,
+      centerX,
+      drawWidth
+    );
+
+  const seamX =
+    originalLayout.seamX;
+
+  context.save();
+
+  if (
+    turnState.fromDirection < 0
+  ) {
+    context.translate(
+      centerX,
+      0
+    );
+
+    context.scale(
+      -1,
+      1
+    );
+
+    context.translate(
+      -centerX,
+      0
+    );
+  }
+
+  drawFishTurnRigLeftChain(
+    context,
+    mirroredSource,
+    emergingHead,
+    seamX,
+    centerY,
+    slotWidth,
+    drawHeight,
+    sourceSliceWidth,
+    renderOptions
+  );
+
+  drawFishTurnRigOriginal(
+    context,
+    originalSource,
+    originalLayout,
+    centerY,
+    drawHeight,
+    sourceSliceWidth,
+    renderOptions
+  );
+
+  drawFishTurnRigRightChain(
+    context,
+    mirroredSource,
+    emergingTail,
+    seamX,
+    centerY,
+    slotWidth,
+    drawHeight,
+    sourceSliceWidth,
+    renderOptions
+  );
+
+  context.restore();
+
+  return true;
+}
+
+
 function drawFish(now, layer = null, options = {}) {
   if (!state.fish.length) {
     return;
@@ -72188,10 +73018,19 @@ function drawFish(now, layer = null, options = {}) {
       ? -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y
       : 0;
 
+    const genericTurnRigActive = shouldUseFishTurnRigForSprite(
+      fish,
+      species,
+      effectiveBehavior,
+      pose,
+      suckerFreeSwimming,
+      suckerViewTransition
+    );
+
     const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
     tankContext.translate(pose.x + pose.swayX, pose.y);
-    tankContext.scale(pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1), 1);
+    tankContext.scale(genericTurnRigActive ? 1 : (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)), 1);
     if (useSuckerFacePivot) {
       tankContext.translate(suckerFacePivotX, suckerFacePivotY);
       tankContext.rotate(pose.tilt);
@@ -72256,21 +73095,20 @@ function drawFish(now, layer = null, options = {}) {
         tankContext.translate(0, -surfaceFlipPivotY);
       }
       tankContext.filter = fishRenderFilter;
-      tankContext.drawImage(sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
-      markLightweightCausticImage(tankContext, sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+      if (genericTurnRigActive) {
+        drawFishTurnaroundRig(tankContext, sprite.renderImage, fishDrawX, width, spriteHeight, fish, now);
+        if (getFishTurnRigProgress(fish, now) >= FISH_TURN_RIG_INTERNAL_TIMELINE_MAX) {
+          fish.turnFinalFrameRenderedAt = now;
+        }
+        markLightweightCausticTurnaroundRig(tankContext, sprite.renderImage, fishDrawX, width, spriteHeight, fish, now);
+      } else {
+        tankContext.drawImage(sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        markLightweightCausticImage(tankContext, sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+      }
       tankContext.filter = "none";
-      if (!pose.isDead) {
+      if (!pose.isDead && !genericTurnRigActive) {
         drawFishTopLightOverlay(tankContext, sprite.sourceImage, fishDrawX, spriteHeight, width, pose.y, now, fishLighting);
       }
-      drawUvGlowImageToContext(
-        tankContext,
-        sprite.renderImage,
-        fishDrawX,
-        -spriteHeight / 2,
-        width,
-        spriteHeight,
-        getFishUvGlowIntensity(fish, species)
-      );
       tankContext.restore();
     };
 
@@ -72858,9 +73696,10 @@ function getFishPose(fish, species, now) {
     const turnAmount = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI);
     const turnFromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
     const turnToDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
+    const useComplexTurn = turnProgress !== null && getFishTurnAnimationMode(fish, species) === "complex";
     const renderDirection = turnProgress === null
       ? getFishFacingDirection(fish)
-      : (turnProgress < 0.5 ? turnFromDirection : turnToDirection);
+      : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
     const scanningGravel = fish.suckerFreeSwimMode === "gravel-scan";
     const noseDownTilt = scanningGravel
       ? clamp(0.18 + Math.abs(targetDy) * 0.28 + Math.sin(wiggleClock * 0.6 + fish.phase * Math.PI) * 0.025, 0.14, 0.28)
@@ -72877,8 +73716,8 @@ function getFishPose(fish, species, now) {
       facingScaleX: renderDirection,
       tilt: noseDownTilt,
       wiggle: baseWiggle * (scanningGravel ? 0.32 : 0.58),
-      bodyScaleX: (1 - Math.abs(baseWiggle) * 0.012) * (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)),
-      bodyScaleY: (1 + Math.abs(baseWiggle) * 0.008) * (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)),
+      bodyScaleX: (1 - Math.abs(baseWiggle) * 0.012) * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X))),
+      bodyScaleY: (1 + Math.abs(baseWiggle) * 0.008) * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1))),
       swayX: baseWiggle * (scanningGravel ? 0.42 : 0.78),
       isDead: false
     };
@@ -72978,10 +73817,11 @@ function getFishPose(fish, species, now) {
   const turnAmount = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI);
   const turnFromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
   const turnToDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
+  const useComplexTurn = turnProgress !== null && getFishTurnAnimationMode(fish, species) === "complex";
   const renderDirection = turnProgress === null
     ? getFishFacingDirection(fish)
-    : (turnProgress < 0.5 ? turnFromDirection : turnToDirection);
-  const turnLean = turnProgress === null
+    : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
+  const turnLean = turnProgress === null || useComplexTurn
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * 0.14;
   const baseTilt = clamp(
@@ -73012,9 +73852,13 @@ function getFishPose(fish, species, now) {
       : renderDirection;
     tilt = clamp(tilt * 0.35 - faceDirection * 0.2, -0.34, 0.34);
   }
-  const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch) * (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)) * (forcedDigPrompt ? 0.97 : 1);
-  const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78)) * (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)) * (forcedDigPrompt ? 1.04 : 1);
-  const turnSway = turnProgress === null
+  const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch)
+    * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)))
+    * (forcedDigPrompt ? 0.97 : 1);
+  const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78))
+    * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)))
+    * (forcedDigPrompt ? 1.04 : 1);
+  const turnSway = turnProgress === null || useComplexTurn
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * (0.35 + motionLevel * 0.95);
   return {
@@ -73074,7 +73918,35 @@ function normalizeFishSpeed(species, explicitValue) {
   return species.speedMin;
 }
 
-function getFishTurnDurationMs(fish, species) {
+function getConfiguredFishTurnAnimationMode(species) {
+  const explicitMode = String(species?.turnAnimation || "").trim().toLowerCase();
+  if (["simple", "complex"].includes(explicitMode)) {
+    return explicitMode;
+  }
+  const speciesType = typeof getFishSpeciesType === "function"
+    ? getFishSpeciesType(species)
+    : String(species?.type || "").trim().toLowerCase();
+  return ["shark", "whale"].includes(speciesType) ? "complex" : "simple";
+}
+
+function getFishTurnAnimationMode(fish, species = getSpeciesForFish(fish)) {
+  const activeMode = fish?.turnStartedAt && Number(fish.turnDurationMs) > 0
+    ? String(fish.turnAnimationMode || "").trim().toLowerCase()
+    : "";
+  if (["simple", "complex"].includes(activeMode)) {
+    return activeMode;
+  }
+  if (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced()) {
+    return "simple";
+  }
+  const fishPreference = String(fish?.turnAnimationPreference || "").trim().toLowerCase();
+  if (["simple", "complex"].includes(fishPreference)) {
+    return fishPreference;
+  }
+  return getConfiguredFishTurnAnimationMode(species);
+}
+
+function getSimpleFishTurnDurationMs(fish, species) {
   if (!fish || !species) {
     return FISH_TURN_MIN_MS + Math.random() * (FISH_TURN_MAX_MS - FISH_TURN_MIN_MS);
   }
@@ -73091,6 +73963,32 @@ function getFishTurnDurationMs(fish, species) {
   const minMs = (FISH_TURN_MIN_MS + slowBias * 55) * turnDurationScale;
   const maxMs = (FISH_TURN_MAX_MS + slowBias * 130) * turnDurationScale;
   return minMs + Math.random() * Math.max(1, maxMs - minMs);
+}
+
+function getComplexFishTurnDurationMs(fish, species) {
+  const locomotionProfile = getFishLocomotionProfile(species || fish);
+  const speciesScale = clamp(Number(locomotionProfile?.turnDurationScale) || 1, 0.6, 1.65);
+  const effectiveBehavior = getEffectiveFishBehavior(fish || species) || "steady";
+  const behaviorScale = FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE[effectiveBehavior] || 1;
+  const typeScale = species?.type === "shark" || String(species?.type || "").toLowerCase() === "shark"
+    ? 0.86
+    : String(species?.type || "").toLowerCase() === "whale"
+      ? 1.16
+      : 1;
+  return clamp(
+    FISH_TURN_RIG_DURATION_MS * speciesScale * behaviorScale * typeScale,
+    FISH_TURN_RIG_MIN_DURATION_MS,
+    FISH_TURN_RIG_MAX_DURATION_MS
+  );
+}
+
+function getFishTurnDurationMs(fish, species, animationMode = null) {
+  const mode = ["simple", "complex"].includes(String(animationMode || "").trim().toLowerCase())
+    ? String(animationMode).trim().toLowerCase()
+    : getFishTurnAnimationMode(fish, species);
+  return mode === "complex"
+    ? getComplexFishTurnDurationMs(fish, species)
+    : getSimpleFishTurnDurationMs(fish, species);
 }
 
 function formatSwimStyle(swimStyle) {
@@ -73537,11 +74435,10 @@ function drawBubbleOrbToContext(context, x, y, radius, alpha, stretch = 1, palet
     stroke: "rgba(240, 250, 255, 0.700)",
     highlight: "rgba(250, 253, 255, 0.400)"
   };
-  const bubbleGlowEnabled = !isUvLightActive() || UV_LIGHT_BUBBLE_GLOW_ENABLED;
   const bubbleSprite = getTintedBubbleOrbSprite(resolvedPalette);
   context.save();
   context.globalAlpha = alpha;
-  if (!bubbleSprite && bubbleGlowEnabled && resolvedPalette.glow) {
+  if (!bubbleSprite && resolvedPalette.glow) {
     context.beginPath();
     context.ellipse(x, y, drawRadius * stretch * 1.45, drawRadius * 1.45, 0, 0, Math.PI * 2);
     context.fillStyle = resolvedPalette.glow;
@@ -75193,7 +76090,7 @@ function pickCaveEntryBehavior(species, fish, now = Date.now()) {
     return null;
   }
 
-  const assignedCaveId = isTankLightsOut(now) ? getFishResidenceDecorId(fish) : null;
+  const assignedCaveId = null;
   const assignedCave = assignedCaveId
     ? state.placedDecor.find((item) => item.id === assignedCaveId && isCaveDecorKey(item.decorKey))
     : null;
@@ -77777,13 +78674,16 @@ function getDirectedAngleDelta(fromAngle, toAngle, spinDirection = 1) {
 }
 
 function updateFishTurnState(fish, species, now) {
-  if (species.behavior !== "sucker") {
+  const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
+  if (species.behavior !== "sucker" || freeSwimmingOtocinclus) {
     const liveDirection = Number(fish.direction) < 0 ? -1 : 1;
     if (!fish.turnStartedAt || fish.turnDurationMs <= 0) {
       fish.displayDirection = liveDirection;
       fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
+      fish.turnFinalFrameRenderedAt = 0;
+      fish.turnAnimationMode = null;
       fish.turnFromDirection = fish.displayDirection;
       fish.turnToDirection = fish.displayDirection;
       fish.turnFromAngle = fish.displayAngle;
@@ -77795,6 +78695,33 @@ function updateFishTurnState(fish, species, now) {
     const progress = clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1);
     const fromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
     const toDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
+    const useComplexTurn = getFishTurnAnimationMode(fish, species) === "complex";
+
+    if (useComplexTurn) {
+      // The segmented rig performs the visible reversal itself, so keep the
+      // normal sprite locked to the source side until its terminal frame has
+      // actually rendered.
+      fish.displayDirection = fromDirection;
+      fish.displayAngle = fromDirection < 0 ? Math.PI : 0;
+
+      if (progress >= 1 && Number(fish.turnFinalFrameRenderedAt) > 0) {
+        fish.displayDirection = liveDirection;
+        fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
+        fish.turnStartedAt = null;
+        fish.turnDurationMs = 0;
+        fish.turnFinalFrameRenderedAt = 0;
+        fish.turnAnimationMode = null;
+        fish.turnFromDirection = fish.displayDirection;
+        fish.turnToDirection = fish.displayDirection;
+        fish.turnFromAngle = fish.displayAngle;
+        fish.turnToAngle = fish.displayAngle;
+        fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
+      }
+      return;
+    }
+
+    // Lightweight legacy turnaround: squash toward the midpoint, flip while
+    // narrow, then expand on the destination side.
     const visibleDirection = progress < 0.5 ? fromDirection : toDirection;
     fish.displayDirection = visibleDirection;
     fish.displayAngle = visibleDirection < 0 ? Math.PI : 0;
@@ -77804,6 +78731,8 @@ function updateFishTurnState(fish, species, now) {
       fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
+      fish.turnFinalFrameRenderedAt = 0;
+      fish.turnAnimationMode = null;
       fish.turnFromDirection = fish.displayDirection;
       fish.turnToDirection = fish.displayDirection;
       fish.turnFromAngle = fish.displayAngle;
@@ -77826,6 +78755,7 @@ function updateFishTurnState(fish, species, now) {
     fish.displayDirection = Math.cos(fish.displayAngle) < 0 ? -1 : 1;
     fish.turnStartedAt = null;
     fish.turnDurationMs = 0;
+    fish.turnAnimationMode = null;
     fish.turnFromDirection = fish.displayDirection;
     fish.turnToDirection = fish.displayDirection;
     fish.turnFromAngle = fish.displayAngle;
@@ -77889,6 +78819,8 @@ function setFishDirection(fish, desiredDirection, species, now) {
       fish.displayAngle = currentDisplayAngle;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
+      fish.turnFinalFrameRenderedAt = 0;
+      fish.turnAnimationMode = null;
       fish.turnFromDirection = nextDirection;
       fish.turnToDirection = nextDirection;
       fish.turnFromAngle = currentDisplayAngle;
@@ -77899,8 +78831,10 @@ function setFishDirection(fish, desiredDirection, species, now) {
 
     fish.displayDirection = currentDisplayDirection;
     fish.displayAngle = currentDisplayAngle;
+    fish.turnAnimationMode = getFishTurnAnimationMode(fish, species);
     fish.turnStartedAt = now;
-    fish.turnDurationMs = getFishTurnDurationMs(fish, species);
+    fish.turnDurationMs = getFishTurnDurationMs(fish, species, fish.turnAnimationMode);
+    fish.turnFinalFrameRenderedAt = 0;
     fish.turnFromDirection = currentDisplayDirection;
     fish.turnToDirection = nextDirection;
     fish.turnFromAngle = currentDisplayAngle;
@@ -80479,7 +81413,7 @@ function getSpriteSheetDefinitions() {
   return [
     {
       "path": "assets/fish/Angelfish.webp",
-      "version": "cf44c0c61579",
+      "version": "944a8d5043d2",
       "width": 1024,
       "height": 1536,
       "frames": {
@@ -80516,13 +81450,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/Angelfish",
-        "version": "de415196f10e-v1",
+        "version": "0342a21d176d-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/Betta.webp",
-      "version": "3428f556fac7",
+      "version": "92c3c5e2562d",
       "width": 1024,
       "height": 1338,
       "frames": {
@@ -80559,13 +81493,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/Betta",
-        "version": "e36c49fed52c-v1",
+        "version": "dfdb209f7607-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/BlueRam.webp",
-      "version": "e1d026822e8f",
+      "version": "18fc10022329",
       "width": 1024,
       "height": 1023,
       "frames": {
@@ -80602,7 +81536,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/BlueRam",
-        "version": "5e741b695c9f-v1",
+        "version": "a0051938a50e-v1",
         "standalone": false
       }
     },
@@ -81053,7 +81987,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/Moorgoldfish.webp",
-      "version": "714515184fe2",
+      "version": "255c798a50ba",
       "width": 1024,
       "height": 1152,
       "frames": {
@@ -81090,13 +82024,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/Moorgoldfish",
-        "version": "6e1bde44da1f-v1",
+        "version": "0e44bbdffd2d-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/NeonTetra.webp",
-      "version": "b1d13f054d7b",
+      "version": "5ec5bb9cffc8",
       "width": 1002,
       "height": 627,
       "frames": {
@@ -81133,7 +82067,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/NeonTetra",
-        "version": "efdb53fde50c-v1",
+        "version": "005467200adf-v1",
         "standalone": false
       }
     },
@@ -81359,7 +82293,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/RummyNoseTetra.webp",
-      "version": "00a0901d0225",
+      "version": "6cb3520effc7",
       "width": 992,
       "height": 699,
       "frames": {
@@ -81396,7 +82330,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/RummyNoseTetra",
-        "version": "13e8532f7e67-v1",
+        "version": "249087f88be9-v1",
         "standalone": false
       }
     },
@@ -81669,7 +82603,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/clownfish.webp",
-      "version": "38f9bf3113fb",
+      "version": "5d784984e259",
       "width": 1024,
       "height": 948,
       "frames": {
@@ -81706,13 +82640,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/clownfish",
-        "version": "88dbfbf320de-v1",
+        "version": "b6d734010ef4-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/discus.webp",
-      "version": "0cc979dea35b",
+      "version": "5d8360881740",
       "width": 1024,
       "height": 1281,
       "frames": {
@@ -81749,13 +82683,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/discus",
-        "version": "f0d406c37c3f-v1",
+        "version": "2208359cffea-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/goldfish.webp",
-      "version": "872e4ab1a4e3",
+      "version": "1a51b44ae397",
       "width": 1024,
       "height": 921,
       "frames": {
@@ -81792,7 +82726,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/goldfish",
-        "version": "b7ad3517f347-v1",
+        "version": "b5504eb8af66-v1",
         "standalone": false
       }
     },

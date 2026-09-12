@@ -302,31 +302,6 @@ function setDisplayPosition(displayPosition) {
   renderUi(Date.now(), { full: false });
 }
 
-function formatUvLightQualityLabel(value) {
-  return normalizeUvLightRenderQuality(value) === UV_LIGHT_RENDER_QUALITY_HIGH ? "High" : "Low";
-}
-
-function setUvLightRenderQuality(quality) {
-  if (!state) {
-    return;
-  }
-
-  const currentSettings = getUiSettings();
-  const nextSettings = sanitizeUiSettings({
-    ...currentSettings,
-    uvLightQuality: quality
-  });
-  if (currentSettings.uvLightQuality === nextSettings.uvLightQuality) {
-    return;
-  }
-
-  state.uiSettings = nextSettings;
-  runtime.uvGlowMaskCache.clear();
-  saveState();
-  renderUi(Date.now(), { full: false });
-  showToast(`UV quality set to ${formatUvLightQualityLabel(nextSettings.uvLightQuality)}.`);
-}
-
 function setSoundMuted(value, options = {}) {
   if (!state) {
     return false;
@@ -473,6 +448,30 @@ function setDecorShadowsEnabled(value) {
   saveState();
   renderUi(Date.now(), { full: false });
   showToast(nextSettings.decorShadowsEnabled ? "Decor shadows on." : "Decor shadows off.");
+}
+
+function setSimpleTurnAnimationsOnly(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    simpleTurnAnimationsOnly: Boolean(value)
+  });
+  if (currentSettings.simpleTurnAnimationsOnly === nextSettings.simpleTurnAnimationsOnly) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+  showToast(
+    nextSettings.simpleTurnAnimationsOnly
+      ? "Simple turn animations enabled for all fish."
+      : "Species turn animations restored."
+  );
 }
 
 function clearTankMouseInteractionState() {
@@ -2600,6 +2599,32 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     updateFishTurnState(fish, species, now);
+    const segmentedTurnaroundActive = effectiveBehavior !== "sucker"
+      && Boolean(fish.turnStartedAt && fish.turnDurationMs > 0);
+    const segmentedTurnaroundProgress = segmentedTurnaroundActive
+      ? clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1)
+      : 1;
+    const turnaroundHoldsPosition = segmentedTurnaroundActive
+      && segmentedTurnaroundProgress < FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS;
+    const turnaroundMovementRaw = segmentedTurnaroundActive
+      ? clamp(
+        (segmentedTurnaroundProgress - FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS)
+        / Math.max(0.001, 1 - FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS),
+        0,
+        1
+      )
+      : 1;
+    const turnaroundMovementBlend = turnaroundMovementRaw
+      * turnaroundMovementRaw
+      * (3 - 2 * turnaroundMovementRaw);
+    if (turnaroundHoldsPosition) {
+      // The authored turnaround is an in-place action. Clear passive momentum
+      // so the fish cannot travel toward its new target while still visibly
+      // facing its old direction. Once the rebuilt head reads clearly, release
+      // the hold and blend into travel while the remaining sections finish.
+      fish.motionVelocityXNorm = 0;
+      fish.motionVelocityYNorm = 0;
+    }
 
     if (!piranhaLockedOnPrey && !breedingRole && isFishCriticallyLowHealth(fish) && fish.activity === "roam" && Math.random() < deltaSeconds * 0.35) {
       fish.panicUntil = now + randomBetween(1600, 3200);
@@ -2966,9 +2991,12 @@ function updateFishMotion(now, deltaSeconds) {
     } else if (activeDebugSteering?.type === "anticipate-food") {
       motionTarget = Math.max(motionTarget, 0.16);
     }
+    if (turnaroundHoldsPosition) {
+      motionTarget = Math.min(motionTarget, 0.08);
+    }
     let handledDirectionThisFrame = false;
 
-    if (moveDistance > 0.0001) {
+    if (moveDistance > 0.0001 && !turnaroundHoldsPosition) {
       const manuallyChasingFood = fish.activity === "feeding" && pellet && pellet.dropStartXNorm == null;
       let speedMultiplier = fish.activity === "feeding"
         ? (manuallyChasingFood ? 1 : FEED_CHASE_MULTIPLIER)
@@ -3074,6 +3102,9 @@ function updateFishMotion(now, deltaSeconds) {
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.18, 1.4);
       }
       speedMultiplier *= getFishDiseaseSpeedMultiplier(fish, now);
+      if (segmentedTurnaroundActive) {
+        speedMultiplier *= 0.12 + turnaroundMovementBlend * 0.88;
+      }
       if (manuallyChasingFood) {
         // Manual feeding should redirect normal swimming, not turn it into a
         // dash. This final cap also prevents another transient behavior from
@@ -3391,6 +3422,9 @@ function getFishProfileRoamX(fish, species, profile) {
   const minDistance = clamp(profile.targetDistanceMin, 0.02, 0.7);
   const maxDistance = clamp(Math.max(minDistance, profile.targetDistanceMax), minDistance, 0.84);
   const distance = randomBetween(minDistance, maxDistance);
+  const sharkCruiser = species?.id === "bull-shark"
+    || species?.id === "great-white-shark"
+    || species?.id === "hammerhead-shark";
   let direction = Math.random() < clamp(profile.headingPersistence, 0, 1)
     ? facingDirection
     : (Math.random() < 0.5 ? -1 : 1);
@@ -3401,7 +3435,16 @@ function getFishProfileRoamX(fish, species, profile) {
   }
   let targetX = currentX + direction * distance;
   if (targetX < 0.08 || targetX > 0.92) {
-    targetX = currentX - direction * distance * randomBetween(0.78, 1);
+    if (sharkCruiser) {
+      // Large sharks should cruise through the tank instead of reflecting an
+      // oversized forward target behind themselves. Reflection made them pick
+      // an opposite-side target while still mid-tank, causing repeated
+      // turnaround loops. Keep the target ahead and let the edge trigger the
+      // eventual reversal naturally.
+      targetX = direction > 0 ? 0.92 : 0.08;
+    } else {
+      targetX = currentX - direction * distance * randomBetween(0.78, 1);
+    }
   }
   return clampFishXNormToMobileViewport(clamp(targetX, 0.08, 0.92), fish, species);
 }
@@ -3655,8 +3698,8 @@ function assignSwimTarget(fish, species, now) {
       const personality = getFishPersonality(fish);
       setFishBehaviorIntent(
         fish,
-        isTankLightsOut(now) ? "night sleep" : (personality === "territorial" ? "guard cave" : "cave visit"),
-        isTankLightsOut(now) ? "lights out" : personality,
+        personality === "territorial" ? "guard cave" : "cave visit",
+        personality,
         now
       );
       beginFishCaveBehavior(fish, preferredCavePlan, now);
@@ -3703,8 +3746,8 @@ function assignSwimTarget(fish, species, now) {
     const personality = getFishPersonality(fish);
     setFishBehaviorIntent(
       fish,
-      isTankLightsOut(now) ? "night sleep" : (personality === "territorial" ? "guard cave" : "cave visit"),
-      isTankLightsOut(now) ? "lights out" : personality,
+      personality === "territorial" ? "guard cave" : "cave visit",
+      personality,
       now
     );
     beginFishCaveBehavior(fish, cavePlan, now);

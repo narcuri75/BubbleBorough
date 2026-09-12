@@ -682,13 +682,24 @@ function getSuckerFishViewTransitionState(fish, now = Date.now()) {
   const toView = ["back", "front", "swim"].includes(fish.suckerViewTransitionTo)
     ? fish.suckerViewTransitionTo
     : fromView;
+  const easedProgress = progress * progress * (3 - 2 * progress);
   return {
     progress,
+    easedProgress,
     fromView,
     toView,
     currentView: progress < 0.5 ? fromView : toView,
     flipDirection: fish.suckerViewTransitionFlip === "up" ? "up" : "down",
-    scaleY: Math.max(SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y, Math.abs(Math.cos(progress * Math.PI)))
+    fromScaleY: Math.max(
+      SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y,
+      Math.cos(easedProgress * Math.PI * 0.5)
+    ),
+    toScaleY: Math.max(
+      SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y,
+      Math.sin(easedProgress * Math.PI * 0.5)
+    ),
+    fromAlpha: clamp(1 - easedProgress, 0, 1),
+    toAlpha: clamp(easedProgress, 0, 1)
   };
 }
 

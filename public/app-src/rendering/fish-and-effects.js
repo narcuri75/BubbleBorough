@@ -638,8 +638,45 @@ function drawFish(now, layer = null, options = {}) {
       continue;
     }
 
-    const imagePath = getFishDisplayAssetPath(fish, species, now) || species.asset;
-    const image = runtime.images.get(imagePath);
+    const suckerFreeSwimming = effectiveBehavior === "sucker"
+      ? isSuckerFishFreeSwimming(fish, species, now)
+      : false;
+    const suckerViewTransition = effectiveBehavior === "sucker"
+      ? getSuckerFishViewTransitionState(fish, now)
+      : null;
+    const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
+    const getSuckerTransitionSprite = (view) => {
+      const path = getSuckerFishViewAssetPath(displaySpecies, fish, view)
+        || getSuckerFishViewAssetPath(species, fish, view);
+      if (!path) return null;
+      const sourceImage = runtime.images.get(path);
+      if (!isUsableRuntimeImage(sourceImage)) {
+        requestRuntimeImageRecovery(path, {
+          kind: "fish",
+          id: fish.id,
+          speciesId: fish.speciesId
+        });
+        return null;
+      }
+      return {
+        path,
+        sourceImage,
+        renderImage: getFishTintedImage(path, sourceImage, fish)
+      };
+    };
+    const transitionFromSprite = suckerViewTransition
+      ? getSuckerTransitionSprite(suckerViewTransition.fromView)
+      : null;
+    const transitionToSprite = suckerViewTransition
+      ? getSuckerTransitionSprite(suckerViewTransition.toView)
+      : null;
+    const hasSuckerCrossFlip = Boolean(suckerViewTransition && transitionFromSprite && transitionToSprite);
+    const imagePath = hasSuckerCrossFlip
+      ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.path : transitionToSprite.path)
+      : (getFishDisplayAssetPath(fish, species, now) || species.asset);
+    const image = hasSuckerCrossFlip
+      ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.sourceImage : transitionToSprite.sourceImage)
+      : runtime.images.get(imagePath);
     if (!isUsableRuntimeImage(image)) {
       requestRuntimeImageRecovery(imagePath, {
         kind: "fish",
@@ -649,18 +686,14 @@ function drawFish(now, layer = null, options = {}) {
       drawMissingFishArtworkFallback(fish, species, now);
       continue;
     }
-    const renderImage = getFishTintedImage(imagePath, image, fish);
+    const renderImage = hasSuckerCrossFlip
+      ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.renderImage : transitionToSprite.renderImage)
+      : getFishTintedImage(imagePath, image, fish);
     const pose = getFishPose(fish, species, now);
     const width = getFishDisplayWidth(fish, species, now);
     const height = width * (image.height / image.width);
     const healthRatio = getFishHealthRatio(fish, species);
     const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
-    const suckerFreeSwimming = effectiveBehavior === "sucker"
-      ? isSuckerFishFreeSwimming(fish, species, now)
-      : false;
-    const suckerViewTransition = effectiveBehavior === "sucker"
-      ? getSuckerFishViewTransitionState(fish, now)
-      : null;
     const useSuckerFacePivot = (
       SUCKER_FISH_FACE_PIVOT_ENABLED
       && !pose.isDead
@@ -698,17 +731,7 @@ function drawFish(now, layer = null, options = {}) {
       const innerWidth = tubeBounds ? Math.max(12, (tubeBounds.right - tubeBounds.left) * .5) : 34;
       tubeCompression = Math.min(1, innerWidth / Math.max(1, height));
     }
-    if (suckerViewTransition) {
-      const surfaceFlipPivotY = suckerViewTransition.flipDirection === "up" ? -height / 2 : height / 2;
-      tankContext.translate(0, surfaceFlipPivotY);
-      tankContext.scale(
-        pose.bodyScaleX,
-        pose.bodyScaleY * tubeCompression * suckerViewTransition.scaleY
-      );
-      tankContext.translate(0, -surfaceFlipPivotY);
-    } else {
-      tankContext.scale(pose.bodyScaleX, pose.bodyScaleY * tubeCompression);
-    }
+    tankContext.scale(pose.bodyScaleX, pose.bodyScaleY * tubeCompression);
 
     if (
       SUCKER_FISH_GLASS_SHADOW_ENABLED
@@ -736,16 +759,55 @@ function drawFish(now, layer = null, options = {}) {
     const comfort = !pose.isDead ? getFishComfort(fish, now) : null;
     const fishLighting = getFishDepthLightingStyle(pose.y);
     const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now, comfort?.value);
-    tankContext.filter = fishBaseFilter === "none"
+    const fishRenderFilter = fishBaseFilter === "none"
       ? fishLighting.filter
       : `${fishBaseFilter} ${fishLighting.filter}`;
-    tankContext.drawImage(renderImage, fishDrawX, -height / 2, width, height);
-    markLightweightCausticImage(tankContext, renderImage, fishDrawX, -height / 2, width, height);
-    tankContext.filter = "none";
-    if (!pose.isDead) {
-      drawFishTopLightOverlay(tankContext, image, fishDrawX, height, width, pose.y, now, fishLighting);
+    const drawFishSpriteLayer = (sprite, scaleY = 1, alpha = 1) => {
+      if (!sprite?.sourceImage || !sprite?.renderImage || alpha <= 0) return;
+      const spriteHeight = width * (sprite.sourceImage.height / sprite.sourceImage.width);
+      const surfaceFlipPivotY = suckerViewTransition?.flipDirection === "up"
+        ? -spriteHeight / 2
+        : spriteHeight / 2;
+      tankContext.save();
+      tankContext.globalAlpha *= clamp(alpha, 0, 1);
+      if (suckerViewTransition) {
+        tankContext.translate(0, surfaceFlipPivotY);
+        tankContext.scale(1, Math.max(SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y, scaleY));
+        tankContext.translate(0, -surfaceFlipPivotY);
+      }
+      tankContext.filter = fishRenderFilter;
+      tankContext.drawImage(sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+      markLightweightCausticImage(tankContext, sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+      tankContext.filter = "none";
+      if (!pose.isDead) {
+        drawFishTopLightOverlay(tankContext, sprite.sourceImage, fishDrawX, spriteHeight, width, pose.y, now, fishLighting);
+      }
+      drawUvGlowImageToContext(
+        tankContext,
+        sprite.renderImage,
+        fishDrawX,
+        -spriteHeight / 2,
+        width,
+        spriteHeight,
+        getFishUvGlowIntensity(fish, species)
+      );
+      tankContext.restore();
+    };
+
+    if (hasSuckerCrossFlip) {
+      drawFishSpriteLayer(
+        transitionFromSprite,
+        suckerViewTransition.fromScaleY,
+        suckerViewTransition.fromAlpha
+      );
+      drawFishSpriteLayer(
+        transitionToSprite,
+        suckerViewTransition.toScaleY,
+        suckerViewTransition.toAlpha
+      );
+    } else {
+      drawFishSpriteLayer({ sourceImage: image, renderImage }, 1, 1);
     }
-    drawUvGlowImageToContext(tankContext, renderImage, fishDrawX, -height / 2, width, height, getFishUvGlowIntensity(fish, species));
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
     tankContext.restore();
     drawFishDiseaseBubbles(fish, species, pose, width, height, now);

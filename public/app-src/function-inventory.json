@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 2984,
+  "functionCount": 2986,
   "functions": [
     {
       "name": "getBrowserViewportSize",
@@ -7896,8 +7896,8 @@
       "module": "debug/tools.js",
       "sourceLine": 1032,
       "originalLine": 36720,
-      "characters": 292,
-      "sourceHash": "88c7597eb2de4b4b09c5b0260363c5eec9c62412d9d1b55570376f1139013afe",
+      "characters": 369,
+      "sourceHash": "056512cd2a52f95f98d326d08f3a65f53ba25bb608214f838a0d4d2b364d0708",
       "calls": [
         "getDebugBehaviorBlockReason",
         "getSpeciesForFish"
@@ -7906,7 +7906,7 @@
     {
       "name": "getDebugBehaviorSelectedFishOrToast",
       "module": "debug/tools.js",
-      "sourceLine": 1042,
+      "sourceLine": 1043,
       "originalLine": 36730,
       "characters": 247,
       "sourceHash": "8480cdb385f7419fb021320fae61447bbdbe1e238b9a3cafd515c5bac9237e66",
@@ -7919,7 +7919,7 @@
     {
       "name": "hasDebugDecorHangoutZone",
       "module": "debug/tools.js",
-      "sourceLine": 1051,
+      "sourceLine": 1052,
       "originalLine": 36739,
       "characters": 289,
       "sourceHash": "a68807a6d0f83ae6442cc52ebd05d1ff8a6e7c1357e372385d68e6914d094c1f",
@@ -7931,7 +7931,7 @@
     {
       "name": "getDebugRelationshipPartner",
       "module": "debug/tools.js",
-      "sourceLine": 1059,
+      "sourceLine": 1060,
       "originalLine": 36747,
       "characters": 527,
       "sourceHash": "6a7c9619e993077aa2d5a5fe29263bd7302f9d7f5d4ba3d59fffdd6e174e8caf",
@@ -7942,7 +7942,7 @@
     {
       "name": "setDebugFishRelationship",
       "module": "debug/tools.js",
-      "sourceLine": 1073,
+      "sourceLine": 1074,
       "originalLine": 36761,
       "characters": 537,
       "sourceHash": "ada50273726f62b957ce7b3f8d78ac56732082286e51b89289e0520618a7555d",
@@ -7953,7 +7953,7 @@
     {
       "name": "prepareFishForDebugBehavior",
       "module": "debug/tools.js",
-      "sourceLine": 1085,
+      "sourceLine": 1086,
       "originalLine": 36773,
       "characters": 713,
       "sourceHash": "1b143cb1a1885984952e5c7f25ef9514b6b58aa333481d9d172cb78c7bd08bb4",
@@ -7969,7 +7969,7 @@
     {
       "name": "finishDebugBehaviorScenario",
       "module": "debug/tools.js",
-      "sourceLine": 1109,
+      "sourceLine": 1110,
       "originalLine": 36797,
       "characters": 284,
       "sourceHash": "59c63c58fed1274f1921e277579ca819c76c3219b81e7a4792f48faf48b6f39b",
@@ -7983,7 +7983,7 @@
     {
       "name": "getActiveDebugBehaviorSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1121,
+      "sourceLine": 1122,
       "originalLine": 36818,
       "characters": 434,
       "sourceHash": "8b6bd3e101d38377f2ce2584cf12bcb6c1fc9a6a15058d9ec9a4d9a959d8ea4d",
@@ -7994,7 +7994,7 @@
     {
       "name": "setDebugBehaviorSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1136,
+      "sourceLine": 1137,
       "originalLine": 36833,
       "characters": 674,
       "sourceHash": "4753d87393fa653b42b0cb4fb0aaffa4246f6fd2cfb6817131042cf6e91b1bb0",
@@ -8003,7 +8003,7 @@
     {
       "name": "clearDebugBehaviorSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1157,
+      "sourceLine": 1158,
       "originalLine": 36854,
       "characters": 167,
       "sourceHash": "04bf570d9bf5f8ee18c801854b184c61b1073225b7d43c9c1689debd4664202a",
@@ -8012,7 +8012,7 @@
     {
       "name": "getDebugBehaviorFacingDirection",
       "module": "debug/tools.js",
-      "sourceLine": 1163,
+      "sourceLine": 1164,
       "originalLine": 36860,
       "characters": 437,
       "sourceHash": "9ecdb24e102daffd26e4085bd969ee655fab66d2c240c4710b9431e4e187dc31",
@@ -8023,7 +8023,7 @@
     {
       "name": "isDebugBehaviorSteeringBlocked",
       "module": "debug/tools.js",
-      "sourceLine": 1176,
+      "sourceLine": 1177,
       "originalLine": 36873,
       "characters": 677,
       "sourceHash": "00322b7e53168f41cf9b84b0c5103eed3527beaa71c9b26799ad7da574841570",
@@ -8037,7 +8037,7 @@
     {
       "name": "setDebugBehaviorSteeringIntent",
       "module": "debug/tools.js",
-      "sourceLine": 1196,
+      "sourceLine": 1197,
       "originalLine": 36893,
       "characters": 749,
       "sourceHash": "11b49ed094ee7845e749e6d93ed9588c14c64a5e8123147b6ca08833169ee9b0",
@@ -8049,7 +8049,7 @@
     {
       "name": "updateDebugFollowSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1212,
+      "sourceLine": 1213,
       "originalLine": 36909,
       "characters": 3044,
       "sourceHash": "fc9220b182c3e92301f845cd8b14b95c0e2620ca0c9b3c8a35ba7a92ceaebe4d",
@@ -8070,7 +8070,7 @@
     {
       "name": "updateDebugAvoidSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1271,
+      "sourceLine": 1272,
       "originalLine": 36968,
       "characters": 1760,
       "sourceHash": "340426b450465a32d00cd10b7d5799ac1760335b87feddf10fc3f67560757b21",
@@ -8087,7 +8087,7 @@
     {
       "name": "updateDebugLureInspectSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1311,
+      "sourceLine": 1312,
       "originalLine": 37008,
       "characters": 2346,
       "sourceHash": "feb9bcdb00de6a9eda807cb75eb03bf681bde83ad001a15552a4c5d626d1be81",
@@ -8105,7 +8105,7 @@
     {
       "name": "updateDebugAnticipateFoodSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1349,
+      "sourceLine": 1350,
       "originalLine": 37046,
       "characters": 1471,
       "sourceHash": "c38efc3ade830c804260ce946c172d886d77e15fa1cdef51e89caa0b22b0ca38",
@@ -8122,7 +8122,7 @@
     {
       "name": "updateDebugBehaviorSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1383,
+      "sourceLine": 1384,
       "originalLine": 37080,
       "characters": 686,
       "sourceHash": "930757fa6c715dec4cf225dc9f8347f3aae7f0c662f40d31d608e9b36d68e4ef",
@@ -8138,7 +8138,7 @@
     {
       "name": "getDebugAnticipateFoodTarget",
       "module": "debug/tools.js",
-      "sourceLine": 1402,
+      "sourceLine": 1403,
       "originalLine": 37099,
       "characters": 1683,
       "sourceHash": "7a649e86bf0a70d2f23c1417fd9ebd4a8cb6ff39db47fa186f4a14f72430bd09",
@@ -8153,7 +8153,7 @@
     {
       "name": "triggerDebugBehaviorRefuseFood",
       "module": "debug/tools.js",
-      "sourceLine": 1444,
+      "sourceLine": 1445,
       "originalLine": 37141,
       "characters": 1961,
       "sourceHash": "6c7ba534dfd107e61eb78295e23005fec024ce7502d6fe3e775815eb97b7a446",
@@ -8177,7 +8177,7 @@
     {
       "name": "triggerDebugBehaviorAnticipateFood",
       "module": "debug/tools.js",
-      "sourceLine": 1490,
+      "sourceLine": 1491,
       "originalLine": 37187,
       "characters": 852,
       "sourceHash": "4b635c207861f8afb6afc63651d8420eea225260ea4c2335ebdf080d6fc55318",
@@ -8194,7 +8194,7 @@
     {
       "name": "triggerDebugBehaviorHide",
       "module": "debug/tools.js",
-      "sourceLine": 1512,
+      "sourceLine": 1513,
       "originalLine": 37209,
       "characters": 1019,
       "sourceHash": "8e644cb217e1efe6794f03cc6335ff9bc7585c7b06da842be4c4a08176ee8cec",
@@ -8211,7 +8211,7 @@
     {
       "name": "triggerDebugBehaviorInspectLure",
       "module": "debug/tools.js",
-      "sourceLine": 1545,
+      "sourceLine": 1546,
       "originalLine": 37242,
       "characters": 1590,
       "sourceHash": "7f99f8e5d653fbc081a874be42816c265985e025dabad749e8ce2e333b251083",
@@ -8231,7 +8231,7 @@
     {
       "name": "triggerDebugBehaviorGuardCave",
       "module": "debug/tools.js",
-      "sourceLine": 1591,
+      "sourceLine": 1592,
       "originalLine": 37288,
       "characters": 1114,
       "sourceHash": "87ed54ff8293d99209ad5258d1dc2acc01d7d49be38a3842adc46b2f32fe18a5",
@@ -8248,7 +8248,7 @@
     {
       "name": "triggerDebugBehaviorFollow",
       "module": "debug/tools.js",
-      "sourceLine": 1625,
+      "sourceLine": 1626,
       "originalLine": 37322,
       "characters": 1456,
       "sourceHash": "553cba817e3a9d77d194ae160283620945b58b834b4322bd49c9a3509291b286",
@@ -8272,7 +8272,7 @@
     {
       "name": "triggerDebugBehaviorAvoid",
       "module": "debug/tools.js",
-      "sourceLine": 1665,
+      "sourceLine": 1666,
       "originalLine": 37362,
       "characters": 1621,
       "sourceHash": "dd312d48e11028e6b8d80a25d034d211a1f7921e806b262619a3ed09df530c5f",
@@ -8296,7 +8296,7 @@
     {
       "name": "getDebugDiseaseBehaviorCause",
       "module": "debug/tools.js",
-      "sourceLine": 1708,
+      "sourceLine": 1709,
       "originalLine": 37405,
       "characters": 454,
       "sourceHash": "28a20665ad265544f07b2ae7de9baae17c0008919db0584065e81f0d6926703b",
@@ -8307,7 +8307,7 @@
     {
       "name": "getNextDebugDiseaseBehaviorStage",
       "module": "debug/tools.js",
-      "sourceLine": 1725,
+      "sourceLine": 1726,
       "originalLine": 37422,
       "characters": 358,
       "sourceHash": "7753316d41a510d8fc0ccb3aa8779151474dd8f3109adad428c8d0a84513373a",
@@ -8318,7 +8318,7 @@
     {
       "name": "triggerDebugBehaviorDisease",
       "module": "debug/tools.js",
-      "sourceLine": 1738,
+      "sourceLine": 1739,
       "originalLine": 37435,
       "characters": 1973,
       "sourceHash": "78fc2949cdbbc88818d9c7462226af7eb8f489a714d603d58a46a04011d398ee",
@@ -8344,7 +8344,7 @@
     {
       "name": "triggerDebugBehaviorClear",
       "module": "debug/tools.js",
-      "sourceLine": 1781,
+      "sourceLine": 1782,
       "originalLine": 37556,
       "characters": 777,
       "sourceHash": "2b1f57b22c997fdd788c4e8147749b1ddb8c16c313b818e995911d352bccf856",
@@ -8360,7 +8360,7 @@
     {
       "name": "triggerDebugOtocinclusState",
       "module": "debug/tools.js",
-      "sourceLine": 1803,
+      "sourceLine": 1804,
       "originalLine": null,
       "characters": 1087,
       "sourceHash": "9028877e3f8cf56cbf7e7004c85eb9893b731ab7d64c0a8c6dbbb34abe1df997",
@@ -8377,7 +8377,7 @@
     {
       "name": "triggerDebugBehaviorScenario",
       "module": "debug/tools.js",
-      "sourceLine": 1840,
+      "sourceLine": 1841,
       "originalLine": 37575,
       "characters": 1150,
       "sourceHash": "ab7ced20cf38581825b67f444ee990dacd9d77acea7b54cf4057b627bd84545e",
@@ -8399,7 +8399,7 @@
     {
       "name": "getDebugBehaviorButtonAvailability",
       "module": "debug/tools.js",
-      "sourceLine": 1889,
+      "sourceLine": 1890,
       "originalLine": 37618,
       "characters": 1635,
       "sourceHash": "d319090696fa0e203ed4bdb7748af3e38d475c3ab4777c456a078fb1f8993d31",
@@ -8415,7 +8415,7 @@
     {
       "name": "syncDebugBehaviorLabButtons",
       "module": "debug/tools.js",
-      "sourceLine": 1927,
+      "sourceLine": 1928,
       "originalLine": 37650,
       "characters": 1479,
       "sourceHash": "eb08e51604738351c10c2f630a7195f4155109c01f1df481782113a331e0c8de",
@@ -8429,7 +8429,7 @@
     {
       "name": "damageSelectedFish",
       "module": "debug/tools.js",
-      "sourceLine": 1965,
+      "sourceLine": 1966,
       "originalLine": 37673,
       "characters": 744,
       "sourceHash": "1816477a5253402bc1210413b5b4f34b016599d488c8ccba17512c847a80fb61",
@@ -8445,7 +8445,7 @@
     {
       "name": "getNextDebugDiseaseStage",
       "module": "debug/tools.js",
-      "sourceLine": 1998,
+      "sourceLine": 1999,
       "originalLine": 37706,
       "characters": 341,
       "sourceHash": "c9e58c786e0ec741c1c0b073f6790bcd9a37b2035a5fe6fa41e56697d7e54975",
@@ -8456,7 +8456,7 @@
     {
       "name": "forceDebugDiseaseSignals",
       "module": "debug/tools.js",
-      "sourceLine": 2007,
+      "sourceLine": 2008,
       "originalLine": 37715,
       "characters": 1078,
       "sourceHash": "2e9ae9b6dc2266ad4d6bb33b1bfd8dbf8b3a7b904923aeed5e572c07e4a4511c",
@@ -8470,7 +8470,7 @@
     {
       "name": "setSelectedFishDiseaseStageForDebug",
       "module": "debug/tools.js",
-      "sourceLine": 2034,
+      "sourceLine": 2035,
       "originalLine": 37742,
       "characters": 1531,
       "sourceHash": "a68a88462072b2f45384375535753202c27362d828cfcc0d3418c732c0e2cccb",
@@ -8486,7 +8486,7 @@
     {
       "name": "infectSelectedFishDebug",
       "module": "debug/tools.js",
-      "sourceLine": 2070,
+      "sourceLine": 2071,
       "originalLine": 37778,
       "characters": 934,
       "sourceHash": "0f3b3464660aa1e791b3a269e708864accf769d9a400b032d9fcb6b581a6e592",
@@ -8505,7 +8505,7 @@
     {
       "name": "cureSelectedFishDebug",
       "module": "debug/tools.js",
-      "sourceLine": 2103,
+      "sourceLine": 2104,
       "originalLine": 37811,
       "characters": 1133,
       "sourceHash": "55c5016e9d4e2e238fa6fa19609e3cd5ecba1048da1e3c4e01b570fdea0502be",
@@ -8522,7 +8522,7 @@
     {
       "name": "resetAllProgress",
       "module": "debug/tools.js",
-      "sourceLine": 2142,
+      "sourceLine": 2143,
       "originalLine": 37850,
       "characters": 453,
       "sourceHash": "be813e871ec7db0b3ce27cac2ce69c645786259f8ae58f6c72640e6b28998bd2",
@@ -22280,8 +22280,8 @@
       "module": "fish/predators-and-motion.js",
       "sourceLine": 2048,
       "originalLine": null,
-      "characters": 1275,
-      "sourceHash": "140857a3919a5a2c502c2e43d034c6df12f2a2800f17c96b664db19cdcfd6be2",
+      "characters": 1372,
+      "sourceHash": "f70edc821d64e6be2bd579d513a026ad90cebd71490a913eefad42fe05c51919",
       "calls": [
         "getSuckerFishGlassLayer",
         "isFishDead",
@@ -22294,51 +22294,83 @@
       ]
     },
     {
-      "name": "applyDebugOtocinclusForcedTarget",
+      "name": "clearOtocinclusFreeSwimState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2080,
+      "sourceLine": 2082,
       "originalLine": null,
-      "characters": 2082,
-      "sourceHash": "aa54f3671992a5fb71d19324c4b10c014bd964c9f520739e5aa9a513af3cc00e",
+      "characters": 340,
+      "sourceHash": "374b1c76a7e954bdb3143876bd46680623fb03ed8b1454f15b1230fc206ca66b",
+      "calls": []
+    },
+    {
+      "name": "forceDebugOtocinclusGlassState",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 2093,
+      "originalLine": null,
+      "characters": 1766,
+      "sourceHash": "ee042eeb35e3e648f4965218998bc7c1cb72afeffc916f0e3841b7e1a211ad29",
       "calls": [
         "clamp",
+        "clearOtocinclusFreeSwimState",
+        "clearSuckerFishViewTransition",
+        "getSuckerFishGlassLayer",
+        "getSuckerFishGlassViewForLayer",
+        "getSuckerFishViewTransitionState",
+        "getSuckerFishYRange",
+        "isSuckerFishFreeSwimming",
+        "normalizeFishSpeed",
+        "normalizeSuckerFishGlassLayer",
+        "randomBetween",
+        "setFishTankLayers",
+        "startSuckerFishViewTransition"
+      ]
+    },
+    {
+      "name": "applyDebugOtocinclusForcedTarget",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 2138,
+      "originalLine": null,
+      "characters": 1501,
+      "sourceHash": "40fe36c4cf175c6c25b7515cf6061a34899c0035dfb4a96419452c6284df9c63",
+      "calls": [
+        "clamp",
+        "forceDebugOtocinclusGlassState",
         "getDebugForcedOtocinclusState",
         "getSuckerFishGlassLayer",
         "getSuckerFishYRange",
         "isSuckerFishFreeSwimming",
         "normalizeFishSpeed",
-        "pickDebugOtocinclusSwimTarget",
         "randomBetween",
         "setDebugOtocinclusFreeSwimTarget",
-        "setFishTankLayers",
-        "startSuckerFishFreeSwim"
+        "setFishTankLayers"
       ]
     },
     {
       "name": "setDebugOtocinclusForcedState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2136,
+      "sourceLine": 2180,
       "originalLine": null,
-      "characters": 1255,
-      "sourceHash": "dfcecf7f73531de64b031064a7cf53b353d0e1749c40d8d69fe375664ddc0678",
+      "characters": 1620,
+      "sourceHash": "ba29715e5faf266739e3fe8a79deccbba3f1f1cfa559ac61ff30ffa021441ccb",
       "calls": [
-        "applyDebugOtocinclusForcedTarget",
         "clearDebugBehaviorSteering",
         "clearFishGravelPebbleAction",
         "clearFishSchoolFollowState",
         "clearForcedGravelDigPrompt",
+        "forceDebugOtocinclusGlassState",
         "getEffectiveFishBehavior",
         "getSpeciesForFish",
-        "isSuckerFishFreeSwimming"
+        "isSuckerFishFreeSwimming",
+        "setDebugOtocinclusFreeSwimTarget"
       ]
     },
     {
       "name": "clearAllDebugOtocinclusForcedStates",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2168,
+      "sourceLine": 2225,
       "originalLine": null,
-      "characters": 791,
-      "sourceHash": "e0c2262fd6ad73912898f78b21876aa50d80d3c0155b24dcd8d5d8e66e0f8f7c",
+      "characters": 924,
+      "sourceHash": "38071217c74f45d20cb56880cab3c4ccbaa19165f77fe1d0eb7948acd62c473b",
       "calls": [
         "getSpeciesForFish",
         "isSuckerFishFreeSwimming"
@@ -22347,10 +22379,10 @@
     {
       "name": "startSuckerFishFreeSwim",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2190,
+      "sourceLine": 2250,
       "originalLine": null,
-      "characters": 2648,
-      "sourceHash": "71b49fb9fbfe900eb483e94df540235eb06eb2b55ade6e3a7351ee7c8b624764",
+      "characters": 3168,
+      "sourceHash": "e52d737c02fbe7fa24cf49ff609b2841736e6d5d6f544ae521ac08beb49a72ec",
       "calls": [
         "canSuckerFishFreeSwim",
         "clamp",
@@ -22367,10 +22399,10 @@
     {
       "name": "finishSuckerFishFreeSwim",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2256,
+      "sourceLine": 2333,
       "originalLine": null,
-      "characters": 1153,
-      "sourceHash": "e063365a887d40ff41e1d81093c03d58549a8b800eb79b3467c320cef6d5c2fa",
+      "characters": 1262,
+      "sourceHash": "f603904fca868c24232bffcc4358348589a5cf66bdc6fafefc437e36f6743c32",
       "calls": [
         "getSuckerFishGlassViewForLayer",
         "normalizeFishSpeed",
@@ -22384,14 +22416,15 @@
     {
       "name": "updateSuckerFishFreeSwimState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2288,
+      "sourceLine": 2368,
       "originalLine": null,
-      "characters": 2682,
-      "sourceHash": "2b934fa2a1e5b4fa71258add0958edabd180c4f35cb6a1e6c590872bae3cfc98",
+      "characters": 3774,
+      "sourceHash": "72836f72aa80658ac99cf8e3e877fafde39dbe4c5c0db1f49839cab500e53954",
       "calls": [
         "finishSuckerFishFreeSwim",
         "getDebugForcedOtocinclusState",
         "performOtocinclusGravelScan",
+        "pickDebugOtocinclusSwimTarget",
         "pickOtocinclusGravelScanTarget",
         "randomBetween",
         "setDebugOtocinclusFreeSwimTarget",
@@ -22401,7 +22434,7 @@
     {
       "name": "updateFishMotion",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2352,
+      "sourceLine": 2455,
       "originalLine": 51176,
       "characters": 39869,
       "sourceHash": "3d529e47ee681bacf658bd72ffd75f95cc8d069f92f88fb3ea5ca3b27a64539b",
@@ -22518,7 +22551,7 @@
     {
       "name": "getFishProfileRoamSpeed",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3255,
+      "sourceLine": 3358,
       "originalLine": null,
       "characters": 707,
       "sourceHash": "51cc43e6d0c5c080695f65c1240656d0dbcdbb0010925fedb357136eff39de1c",
@@ -22531,7 +22564,7 @@
     {
       "name": "getFishProfileRoamY",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3275,
+      "sourceLine": 3378,
       "originalLine": null,
       "characters": 468,
       "sourceHash": "04978c318da4d0739f738cd7ff94a540d01493713f3541c852561d72cda0416d",
@@ -22544,7 +22577,7 @@
     {
       "name": "getFishProfileRoamX",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3285,
+      "sourceLine": 3388,
       "originalLine": null,
       "characters": 890,
       "sourceHash": "a1b7cf390db3a66c8792a679c54cdd735038a69e1d718d45cc383ad72efea74a",
@@ -22558,7 +22591,7 @@
     {
       "name": "getFishProfileHomeRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3306,
+      "sourceLine": 3409,
       "originalLine": null,
       "characters": 675,
       "sourceHash": "e0b3ee3da671ecc36eb20de677e0e9593d6f0df4a7a32739bfb97c1e148eec98",
@@ -22571,7 +22604,7 @@
     {
       "name": "getFishProfileHoverTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3326,
+      "sourceLine": 3429,
       "originalLine": null,
       "characters": 659,
       "sourceHash": "4a1c639b1f32fcc3d8dfee62d1fdf743b5e23b384e4d34cedf0a2e52fa140ce2",
@@ -22585,7 +22618,7 @@
     {
       "name": "assignSpeciesRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3347,
+      "sourceLine": 3450,
       "originalLine": null,
       "characters": 1827,
       "sourceHash": "5562ef75cdb72a415b83e5072cf17670a2c3347d5ff1d13b451495b92626027c",
@@ -22609,7 +22642,7 @@
     {
       "name": "assignSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3387,
+      "sourceLine": 3490,
       "originalLine": 51906,
       "characters": 8974,
       "sourceHash": "ab697833ed367646403591e3c5892c1753d2b3d301ddc991f1e7fdb57486dbbd",
@@ -23111,8 +23144,8 @@
       "module": "fish/undead-and-appearance.js",
       "sourceLine": 669,
       "originalLine": null,
-      "characters": 1025,
-      "sourceHash": "5312e9f037c500ca8eb42d195bccd94e3fe882f228d89b5390eb913c22d7ae16",
+      "characters": 1345,
+      "sourceHash": "3c379ae261c2f9aa254d18f9ad66cb6afb26790e965b9f3d814b2668b2cb193c",
       "calls": [
         "clamp",
         "clearSuckerFishViewTransition"
@@ -23121,7 +23154,7 @@
     {
       "name": "getSuckerFishViewAssetPath",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 695,
+      "sourceLine": 706,
       "originalLine": null,
       "characters": 358,
       "sourceHash": "6f782ac38e5be2b5b2f8b2d2c7b5d82f5620cf4888799ab2d909a0e2704526ee",
@@ -23134,7 +23167,7 @@
     {
       "name": "getFishDisplayWidth",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 706,
+      "sourceLine": 717,
       "originalLine": 17927,
       "characters": 662,
       "sourceHash": "d92e41a301ab916f38068701e29f04a6aec37bcba628893eb4cbac3883fa163f",
@@ -23151,7 +23184,7 @@
     {
       "name": "getFishAppearanceVariantSeed",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 722,
+      "sourceLine": 733,
       "originalLine": 17943,
       "characters": 192,
       "sourceHash": "926b60dcfdb78276bd47fcb27c84023ff674a6067599ac77260364c009499694",
@@ -23163,7 +23196,7 @@
     {
       "name": "hashStringToUint32",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 727,
+      "sourceLine": 738,
       "originalLine": 17948,
       "characters": 187,
       "sourceHash": "74f75818c82ea986fabd65a47abce67108ac5a5bbd90a68a9600f9adc96ff234",
@@ -23172,7 +23205,7 @@
     {
       "name": "normalizeFishAppearanceVariantIndex",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 735,
+      "sourceLine": 746,
       "originalLine": 17956,
       "characters": 486,
       "sourceHash": "e3732344cef524224b31d53daecdeccf3e5604bbaf21320e2f5fe8d82220cb9e",
@@ -23184,7 +23217,7 @@
     {
       "name": "getFishAssetPath",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 750,
+      "sourceLine": 761,
       "originalLine": 17971,
       "characters": 750,
       "sourceHash": "c6d464124942be5a75debcebdf201f57fdccee345451283870b6c5ce292e7799",
@@ -23198,7 +23231,7 @@
     {
       "name": "appendAssetSuffix",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 766,
+      "sourceLine": 777,
       "originalLine": 17980,
       "characters": 530,
       "sourceHash": "5d03b3154f66d561e38b61504a70b33d7073c2cf0d69cc9fc4cdec5b660ba588",
@@ -23207,7 +23240,7 @@
     {
       "name": "deriveFishStageAssetFile",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 782,
+      "sourceLine": 793,
       "originalLine": 17996,
       "characters": 756,
       "sourceHash": "1c8f53dd65ee9232a6d44985722b981ce3be9947ac350ac766d322d7191133a4",
@@ -23218,7 +23251,7 @@
     {
       "name": "getFishDeathAssetCandidates",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 801,
+      "sourceLine": 812,
       "originalLine": 18015,
       "characters": 445,
       "sourceHash": "7c7c56076063fb8a259f7516890e37b0cfde051fed053f256457c133b5562330",
@@ -23227,7 +23260,7 @@
     {
       "name": "getBorrowedFishDeathAssetPool",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 815,
+      "sourceLine": 826,
       "originalLine": 18029,
       "characters": 356,
       "sourceHash": "ac22162c48db93001270f0eefa60e1a8172f4c3bdcc78be2b306a3abf01d0b3c",
@@ -23238,7 +23271,7 @@
     {
       "name": "getStableBorrowedFishDeathAssetPath",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 822,
+      "sourceLine": 833,
       "originalLine": 18036,
       "characters": 354,
       "sourceHash": "cf36e636fd891624e5fcb83cd93460e6808bbf988ec7158f6010d3e500b8c1e8",
@@ -23249,7 +23282,7 @@
     {
       "name": "getFishDeathAssetPath",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 832,
+      "sourceLine": 843,
       "originalLine": 18046,
       "characters": 793,
       "sourceHash": "ac3f91d206aacfadee0a84bbab81c7600164cb97d1256cd9890242b353097dc7",
@@ -23263,7 +23296,7 @@
     {
       "name": "getFishZombieVariantAssetPath",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 857,
+      "sourceLine": 868,
       "originalLine": 18071,
       "characters": 243,
       "sourceHash": "a8ba94711c4a48ef91c74a37efa67ef1e149940296b27d4386127103f424abaa",
@@ -23276,7 +23309,7 @@
     {
       "name": "getFishDecayStage",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 865,
+      "sourceLine": 876,
       "originalLine": 18079,
       "characters": 799,
       "sourceHash": "4cba4cd91dfa6b99adbe1aabf97f53b27a0d72f9d6921107785cc5c82a1b4e88",
@@ -23290,7 +23323,7 @@
     {
       "name": "getFishDisplayAssetPath",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 896,
+      "sourceLine": 907,
       "originalLine": 18110,
       "characters": 2484,
       "sourceHash": "3447c7f9ec0107fb579f575f4edbaa55811debfe0c38dc3d8aed58b5ef100913",
@@ -23317,7 +23350,7 @@
     {
       "name": "getFishCatalogAssetPath",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 951,
+      "sourceLine": 962,
       "originalLine": 18153,
       "characters": 283,
       "sourceHash": "b935661227fd0697ee071bd9879b9dc2f8278c0c28bc8ffb4bf56f90b4f07b57",
@@ -23328,7 +23361,7 @@
     {
       "name": "getFishCorpseDisplayState",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 963,
+      "sourceLine": 974,
       "originalLine": 18165,
       "characters": 293,
       "sourceHash": "af6ec57686583e0b33a2ce041c30072d02041a044bf6dc12affa8b33928e1150",
@@ -23342,7 +23375,7 @@
     {
       "name": "getFishCorpseStateLabel",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 979,
+      "sourceLine": 990,
       "originalLine": 18181,
       "characters": 549,
       "sourceHash": "78868fdff3010e39e7bff4d118e72c3726cbd5decb62f7ae290f511bd491b93c",
@@ -23354,7 +23387,7 @@
     {
       "name": "getFishAdultScale",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1002,
+      "sourceLine": 1013,
       "originalLine": 18204,
       "characters": 351,
       "sourceHash": "9fc3776f988a682aad61cc2bd8e725be0bc3bfc772cf1227814fa493c32a847c",
@@ -23367,7 +23400,7 @@
     {
       "name": "getFishGrowthProgress",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1014,
+      "sourceLine": 1025,
       "originalLine": 18216,
       "characters": 517,
       "sourceHash": "e1cfcaca9c6c5bb02263d3076d30bbb2e3859a90637f3c72e06be2be2a83f87b",
@@ -23379,7 +23412,7 @@
     {
       "name": "getFishGrowthScaleMultiplier",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1032,
+      "sourceLine": 1043,
       "originalLine": 18233,
       "characters": 201,
       "sourceHash": "5e702f212652736e9388c78724fec42252e7d909f085ff21ec96f073935584b7",
@@ -23390,7 +23423,7 @@
     {
       "name": "getFishEffectiveScale",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1037,
+      "sourceLine": 1048,
       "originalLine": 18238,
       "characters": 178,
       "sourceHash": "1dd6692b2f13246de865bd22b490009bfc51e8b1a5a53d5221fdf2e7373007f8",
@@ -23403,7 +23436,7 @@
     {
       "name": "isFishJuvenile",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1041,
+      "sourceLine": 1052,
       "originalLine": 18242,
       "characters": 98,
       "sourceHash": "03b768a52d9d0dcac8b6ddea77b64827c35509c47e8be7833ff6a5cba8e0c835",
@@ -23414,7 +23447,7 @@
     {
       "name": "isFishAdult",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1045,
+      "sourceLine": 1056,
       "originalLine": 18246,
       "characters": 85,
       "sourceHash": "babb758d30f90829ee39d8fa14376b1536d7d4b986f133f9c46bbeea7b40f1fa",
@@ -23425,7 +23458,7 @@
     {
       "name": "hasFishBeenInTankLongEnoughToBreed",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1049,
+      "sourceLine": 1060,
       "originalLine": 18250,
       "characters": 191,
       "sourceHash": "b7bd7732ee8129dfc57404ff1e63e8d302a5f41032f995a72e441a9b5467a814",
@@ -23434,7 +23467,7 @@
     {
       "name": "isDetritusFish",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1054,
+      "sourceLine": 1065,
       "originalLine": 18255,
       "characters": 221,
       "sourceHash": "6e9b8c75547de49f264d660253d2b77a7036f4af8d9851abada9fecae510c299",
@@ -23446,7 +23479,7 @@
     {
       "name": "isBrineShrimpSpecies",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1062,
+      "sourceLine": 1073,
       "originalLine": null,
       "characters": 190,
       "sourceHash": "fc0c926816c632344d3e93eb8430dc1e12f0defd0f428bc2b34d91e1e7f5ec56",
@@ -23457,7 +23490,7 @@
     {
       "name": "isMealFreeFish",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1067,
+      "sourceLine": 1078,
       "originalLine": 18263,
       "characters": 442,
       "sourceHash": "2d81c0aa7e9a3c5599330530a3be41a76be40167ca08fa2fcfbf61a90d6a8f8d",
@@ -23472,7 +23505,7 @@
     {
       "name": "isZombieVariantFish",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1082,
+      "sourceLine": 1093,
       "originalLine": 18279,
       "characters": 155,
       "sourceHash": "7d93c8852e8a14867ac47e897927443e0d459ea8d6c5d0e7e0f9754c20486dc4",
@@ -23484,7 +23517,7 @@
     {
       "name": "isZombieFish",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1086,
+      "sourceLine": 1097,
       "originalLine": 18283,
       "characters": 217,
       "sourceHash": "d984333a827fc3494f763c6f0835d70c25662593b9727a9eb9ef9f5978291d97",
@@ -23497,7 +23530,7 @@
     {
       "name": "isSkeletonFish",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1091,
+      "sourceLine": 1102,
       "originalLine": 18288,
       "characters": 188,
       "sourceHash": "a333161bee3afe228b4526e67e279c6d7b34d0b4fff182c5e0307006ece53825",
@@ -23509,7 +23542,7 @@
     {
       "name": "isUndeadSpecies",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1096,
+      "sourceLine": 1107,
       "originalLine": 18293,
       "characters": 177,
       "sourceHash": "ac000efc557274221f39c83f49ba0511b84a3c09a7797ffc7ed312cac53651f7",
@@ -23520,7 +23553,7 @@
     {
       "name": "isUndeadFish",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1101,
+      "sourceLine": 1112,
       "originalLine": 18298,
       "characters": 90,
       "sourceHash": "ca338c01314fcb40b665ce2aab1a2025e3ab6839c0bcf61608d75e2e978c1360",
@@ -23532,7 +23565,7 @@
     {
       "name": "hasDefinedFiniteNumber",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1105,
+      "sourceLine": 1116,
       "originalLine": 18302,
       "characters": 140,
       "sourceHash": "cba80b10c7a9f8de53ca8f342b574db7e4dc028f89e3d401cf9c0852d5572d4b",
@@ -23541,7 +23574,7 @@
     {
       "name": "hasZombieBiteInfection",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1109,
+      "sourceLine": 1120,
       "originalLine": 18306,
       "characters": 154,
       "sourceHash": "41aacca095d613f11d0b1dbbe9575453652dfed64798ae174215f645566d4e6e",
@@ -23553,7 +23586,7 @@
     {
       "name": "hasPendingZombieRevival",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1117,
+      "sourceLine": 1128,
       "originalLine": 18314,
       "characters": 149,
       "sourceHash": "bd79e7d924f4c48bb54e8ac5f0848accdcb2833919f5403d3dec22daee08bd19",
@@ -23565,7 +23598,7 @@
     {
       "name": "usesZombieHunterBehavior",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1125,
+      "sourceLine": 1136,
       "originalLine": 18322,
       "characters": 160,
       "sourceHash": "7d74b638a691bd0fd58ae8b03682a56fe3e0684b8a1cc16362c5e674d3f7946d",
@@ -23576,7 +23609,7 @@
     {
       "name": "getEffectiveFishBehavior",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1133,
+      "sourceLine": 1144,
       "originalLine": 18330,
       "characters": 545,
       "sourceHash": "ee86f46b093e981d2c6403b67e2f238c577f2cc793834dc04ff220f48871e3a4",
@@ -23589,7 +23622,7 @@
     {
       "name": "getFishDisplaySpeciesName",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1155,
+      "sourceLine": 1166,
       "originalLine": 18349,
       "characters": 593,
       "sourceHash": "4f0ef0d45b4b5090b279dd902c166271af291b15588b35158ac6c9bce59f3cf0",
@@ -23604,7 +23637,7 @@
     {
       "name": "getFishInspectorSpeciesLabel",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1173,
+      "sourceLine": 1184,
       "originalLine": 18367,
       "characters": 208,
       "sourceHash": "be250e268543d8b906b2d424d568ad61fdd6481fdcedf0b1ce5ce194708c471a",
@@ -23616,7 +23649,7 @@
     {
       "name": "isPiranhaSpecies",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1178,
+      "sourceLine": 1189,
       "originalLine": 18372,
       "characters": 226,
       "sourceHash": "f7f2e854423e04b2a7b53e68969e1a3a7031254a66a6c1cf1f1c203360f632b9",
@@ -23628,7 +23661,7 @@
     {
       "name": "fishNeedsMealWindow",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1186,
+      "sourceLine": 1197,
       "originalLine": 18381,
       "characters": 74,
       "sourceHash": "8abf5b5eaa6458ef47f97416792451146d32ac06775511a5aab918662a037c4f",
@@ -23639,7 +23672,7 @@
     {
       "name": "getMealHistoryEntry",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1190,
+      "sourceLine": 1201,
       "originalLine": 18385,
       "characters": 235,
       "sourceHash": "eeb00dc6504732d2a2fdd0a0c344432ba915953ae3e13c47c4fa07bb68908526",
@@ -23650,7 +23683,7 @@
     {
       "name": "getMealFedFishIds",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1203,
+      "sourceLine": 1214,
       "originalLine": 18398,
       "characters": 186,
       "sourceHash": "543634b43e453de008b45aeb64b6a2aba0c758bba3adbdcb2f0682495704d779",
@@ -23662,7 +23695,7 @@
     {
       "name": "getMealEligibleFishForSlot",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1208,
+      "sourceLine": 1219,
       "originalLine": 18403,
       "characters": 356,
       "sourceHash": "36d9d45f50d91db01cab5b0a14980649d01860d6c721cdafaef3916a861b9c2b",
@@ -23676,7 +23709,7 @@
     {
       "name": "isMealSlotServed",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1222,
+      "sourceLine": 1233,
       "originalLine": 18417,
       "characters": 288,
       "sourceHash": "2144f832fba0efeec6cf415c6119f8d749bd93c7dc2c5228d9d9184d10bf3642",
@@ -23689,7 +23722,7 @@
     {
       "name": "normalizeHexColor",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1232,
+      "sourceLine": 1243,
       "originalLine": 18432,
       "characters": 373,
       "sourceHash": "1d6569a74095cbda66b8b2572c61b32ea582a393d77742b8f9d1f8acba9387e9",
@@ -23698,7 +23731,7 @@
     {
       "name": "hexToRgb",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1247,
+      "sourceLine": 1258,
       "originalLine": 18448,
       "characters": 289,
       "sourceHash": "39e58ab4a8709a11807dae61adae3af395724fc825f46e19621bc8babd2200f8",
@@ -23709,7 +23742,7 @@
     {
       "name": "rgbToHex",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1260,
+      "sourceLine": 1271,
       "originalLine": 18461,
       "characters": 166,
       "sourceHash": "e92cd7c471447f48e038a8475f950406b333aa6407149942eb7f515b3ad93ab2",
@@ -23720,7 +23753,7 @@
     {
       "name": "rgbToHsl",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1264,
+      "sourceLine": 1275,
       "originalLine": 18465,
       "characters": 782,
       "sourceHash": "9314a293cad56e17fc51d9b6a68205af280946b7289b817c0a7c8930e773326d",
@@ -23731,7 +23764,7 @@
     {
       "name": "hslToRgb",
       "module": "fish/undead-and-appearance.js",
-      "sourceLine": 1296,
+      "sourceLine": 1307,
       "originalLine": 18497,
       "characters": 832,
       "sourceHash": "c1c53265c6d4b67cbd05bad7d5f3a95ed692d588f8db2e5cea630096d5c44c89",
@@ -26778,8 +26811,8 @@
       "module": "rendering/fish-and-effects.js",
       "sourceLine": 617,
       "originalLine": 56843,
-      "characters": 10070,
-      "sourceHash": "ca1784d0dc670bef9c15b3909488e93dc8689f1279153ab54e07a07d2fb73539",
+      "characters": 12488,
+      "sourceHash": "26644f8064a5fc8a3257a6b6588a2765f20922f8658147361f8f53eca303515d",
       "calls": [
         "clamp",
         "clampTankLayer",
@@ -26795,6 +26828,7 @@
         "getFishComfort",
         "getFishDepthLightingStyle",
         "getFishDisplayAssetPath",
+        "getFishDisplaySourceSpecies",
         "getFishDisplayWidth",
         "getFishHealthRatio",
         "getFishMaxHealthUnits",
@@ -26803,6 +26837,7 @@
         "getFishTintedImage",
         "getFishUvGlowIntensity",
         "getPlacedDecorBounds",
+        "getSuckerFishViewAssetPath",
         "getSuckerFishViewTransitionState",
         "getTankContainingFish",
         "isPeacefulModeEnabled",
@@ -26816,7 +26851,7 @@
     {
       "name": "drawWaterSurface",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 847,
+      "sourceLine": 909,
       "originalLine": 56995,
       "characters": 1232,
       "sourceHash": "4ee646237f1974b72bdb4c1142530e5ed6201e0a2ec42f61eb1acbc86d4c3a48",
@@ -26825,7 +26860,7 @@
     {
       "name": "drawSplashBursts",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 888,
+      "sourceLine": 950,
       "originalLine": 57036,
       "characters": 2170,
       "sourceHash": "6ebd7fd4177aae783d3e6af05e42eadc2628af977385ada5a1a909191ec254b4",
@@ -26837,7 +26872,7 @@
     {
       "name": "drawGlassTapEffects",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 955,
+      "sourceLine": 1017,
       "originalLine": 57103,
       "characters": 3142,
       "sourceHash": "5bb6235ad81e7f5e038de679f0cc7ae1a595d11d232791d83a4628d7332added",
@@ -26849,7 +26884,7 @@
     {
       "name": "drawRearGrime",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1045,
+      "sourceLine": 1107,
       "originalLine": null,
       "characters": 2343,
       "sourceHash": "53abb52d78dfe8037eea446f8766a26d0d51fd9f1c95c05c3b2ce980f03dbb6d",
@@ -26865,7 +26900,7 @@
     {
       "name": "drawGrime",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1100,
+      "sourceLine": 1162,
       "originalLine": 57194,
       "characters": 2228,
       "sourceHash": "2b50b41fc4edfbfbb976f040d6cc8940a036b628d3d7d160f02ab5fdb71e74d1",
@@ -26881,7 +26916,7 @@
     {
       "name": "drawCleaningSparkles",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1160,
+      "sourceLine": 1222,
       "originalLine": 57217,
       "characters": 2419,
       "sourceHash": "54ab38ef5b67f07b37a530c954732173d03f361e689c92d885fbd33bdeea7057",
@@ -26894,7 +26929,7 @@
     {
       "name": "getFishPose",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1230,
+      "sourceLine": 1292,
       "originalLine": 57313,
       "characters": 12861,
       "sourceHash": "568fedeefc4c5c86633d282bb6e872e24bafcfeb88c5673f9a0afb694fe68a11",

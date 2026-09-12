@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2984,
+  "functionCount": 2986,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -960,7 +960,7 @@
     },
     {
       "path": "fish/predators-and-motion.js",
-      "functionCount": 81,
+      "functionCount": 83,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "assets/sprite-sheets.js",

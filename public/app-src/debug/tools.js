@@ -1030,7 +1030,8 @@ function getDebugBehaviorBlockReason(fish, species = getSpeciesForFish(fish), op
 }
 
 function getSelectedDebugBehaviorFish(options = {}) {
-  const fish = state?.fish?.find((entry) => entry?.id === runtime.selectedFishId) || null;
+  const selectedFishId = runtime.selectedFishId || runtime.selectedFishStatusFishId;
+  const fish = state?.fish?.find((entry) => entry?.id === selectedFishId) || null;
   const species = getSpeciesForFish(fish);
   return {
     fish,

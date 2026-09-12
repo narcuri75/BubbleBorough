@@ -172,6 +172,10 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugBehaviorFollowButton", domKey: "debugBehaviorFollowButton", action: "follow", icon: "&#128101;", label: "Follow", title: "Debug: Follow A Friend" },
   { id: "debugBehaviorAvoidButton", domKey: "debugBehaviorAvoidButton", action: "avoid", icon: "&#8618;&#65039;", label: "Avoid", title: "Debug: Avoid A Feared Fish" },
   { id: "debugBehaviorDiseaseButton", domKey: "debugBehaviorDiseaseButton", action: "disease", icon: "&#129658;", label: "Symptom Test", title: "Debug: Disease Symptom Test" },
+  { id: "debugOtocinclusBackButton", domKey: "debugOtocinclusBackButton", action: "oto-back", icon: "&#8595;&#65039;", label: "Oto Back Glass", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to the back glass" },
+  { id: "debugOtocinclusSwimButton", domKey: "debugOtocinclusSwimButton", action: "oto-swim", icon: "&#128031;", label: "Oto Swim", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to free swim" },
+  { id: "debugOtocinclusFrontButton", domKey: "debugOtocinclusFrontButton", action: "oto-front", icon: "&#8593;&#65039;", label: "Oto Front Glass", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to the front glass" },
+  { id: "debugOtocinclusNormalButton", domKey: "debugOtocinclusNormalButton", action: "oto-normal", icon: "&#8634;", label: "Oto Normal", title: "Debug: Return Otocinclus / Dwarf Sucker Catfish to normal behavior", extraClass: "wide" },
   { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
 ]);
 const DEBUG_BEHAVIOR_STEER_REFRESH_MS = 260;
@@ -3498,6 +3502,7 @@ const runtime = {
   fishLayerDepthScaleTransitions: new Map(),
   diseaseGreenBubblesByFishId: new Map(),
   debugBehaviorSteeringByFishId: new Map(),
+  debugForcedOtocinclusStateByFishId: new Map(),
   fishGravelPebbleActions: new Map(),
   fishPebbleTosses: [],
   forcedGravelDigUntilByFishId: new Map(),

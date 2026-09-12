@@ -18888,7 +18888,7 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
   align-items: start;
   align-content: start;
   column-gap: 14px;
-  row-gap: 10px;
+  row-gap: 14px;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -18900,7 +18900,7 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
 #settingsOverlay .settings-dashboard-column {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
 }
 

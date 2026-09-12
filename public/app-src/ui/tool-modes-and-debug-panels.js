@@ -1405,6 +1405,7 @@ function syncDebugToolsAuthorization() {
   if (!enabled) {
     runtime.debugSidebarOpen = false;
     resetDebugFishBehaviorBroadcastState();
+    clearAllDebugOtocinclusForcedStates(Date.now());
   }
 
   if (changed) {
@@ -1434,6 +1435,7 @@ function setDebugToolsEnabled(enabled) {
   if (!nextEnabled) {
     runtime.debugSidebarOpen = false;
     resetDebugFishBehaviorBroadcastState();
+    clearAllDebugOtocinclusForcedStates(Date.now());
   }
   runtime.uvGlowMaskCache.clear();
   syncDebugSettingsControls();

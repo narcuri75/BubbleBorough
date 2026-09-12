@@ -2087,8 +2087,28 @@ test("settings dashboard uses independent compact columns so Graphics cannot pus
   const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
   assert.match(html, /settings-dashboard-column-left[\s\S]*settings-data-card[\s\S]*settings-graphics-card[\s\S]*settings-dashboard-column-right[\s\S]*settings-general-card[\s\S]*settings-audio-card[\s\S]*settings-other-card/);
   assert.match(css, /grid-template-areas:\s*\n\s*"account account"\s*\n\s*"left right"/);
-  assert.match(css, /\.settings-dashboard-column\s*\{[\s\S]*align-content:\s*start[\s\S]*gap:\s*10px/);
+  assert.match(css, /\.settings-dashboard-column\s*\{[\s\S]*align-content:\s*start[\s\S]*gap:\s*14px/);
   assert.match(css, /\.settings-graphics-card\s*\{[\s\S]*height:\s*auto/);
+});
+
+test("Otocinclus debug controls force back glass, swimming, front glass, and normal behavior", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const debug = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");
+  const motion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
+  const tools = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+
+  assert.match(bootstrap, /action:\s*"oto-back"[\s\S]*action:\s*"oto-swim"[\s\S]*action:\s*"oto-front"[\s\S]*action:\s*"oto-normal"/);
+  assert.match(bootstrap, /debugForcedOtocinclusStateByFishId:\s*new Map\(\)/);
+  assert.match(debug, /function triggerDebugOtocinclusState/);
+  assert.match(debug, /case "oto-back":[\s\S]*triggerDebugOtocinclusState\("back"\)/);
+  assert.match(debug, /case "oto-swim":[\s\S]*triggerDebugOtocinclusState\("swim"\)/);
+  assert.match(debug, /case "oto-front":[\s\S]*triggerDebugOtocinclusState\("front"\)/);
+  assert.match(debug, /case "oto-normal":[\s\S]*triggerDebugOtocinclusState\("normal"\)/);
+  assert.match(motion, /function setDebugOtocinclusForcedState/);
+  assert.match(motion, /function applyDebugOtocinclusForcedTarget/);
+  assert.match(motion, /forcedOtocinclusState === "swim"/);
+  assert.match(motion, /forcedOtocinclusState === "back" \|\| forcedOtocinclusState === "front"/);
+  assert.match(tools, /clearAllDebugOtocinclusForcedStates\(Date\.now\(\)\)/);
 });
 
 test("Otocinclus uses top, side and bottom views with dedicated gravel scanning", () => {

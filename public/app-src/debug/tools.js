@@ -954,6 +954,11 @@ function getDebugBehaviorScenarioOptions(action) {
       return { allowPredatorSpecial: true };
     case "disease":
       return { allowSuckerSpecial: true, allowPredatorSpecial: true };
+    case "oto-back":
+    case "oto-swim":
+    case "oto-front":
+    case "oto-normal":
+      return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowSuckerSpecial: true };
     case "clear":
       return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowUndead: true, allowSuckerSpecial: true, allowPredatorSpecial: true, allowDead: true };
     default:
@@ -1783,6 +1788,9 @@ function triggerDebugBehaviorClear(now = Date.now()) {
   fish.behaviorSignals = {};
   fish.foodRefusalUntil = 0;
   clearDebugBehaviorSteering(fish);
+  if (getDebugForcedOtocinclusState(fish, getSpeciesForFish(fish))) {
+    setDebugOtocinclusForcedState(fish, "normal", now);
+  }
   if (!fish.caveState && fish.activity === "roam") {
     fish.hangoutDecorId = null;
     fish.hangoutZoneType = null;
@@ -1790,6 +1798,43 @@ function triggerDebugBehaviorClear(now = Date.now()) {
   }
   runtime.debugFishBehaviorSignatures.delete(fish.id);
   finishDebugBehaviorScenario(fish, `Debug cleared forced behavior for ${fish.name}.`, `${fish.name} behavior debug cleared.`, now);
+}
+
+function triggerDebugOtocinclusState(forcedState, now = Date.now()) {
+  const action = forcedState === "back"
+    ? "oto-back"
+    : forcedState === "swim"
+      ? "oto-swim"
+      : forcedState === "front"
+        ? "oto-front"
+        : "oto-normal";
+  const selection = getDebugBehaviorSelectedFishOrToast(action);
+  if (!selection) {
+    return;
+  }
+  const { fish, species } = selection;
+  if (species?.id !== "otocinclus" || getEffectiveFishBehavior(fish, species) !== "sucker") {
+    showToast("Select an Otocinclus / Dwarf Sucker Catfish first.");
+    return;
+  }
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions(action))) {
+    return;
+  }
+
+  setDebugOtocinclusForcedState(fish, forcedState, now);
+  const label = forcedState === "back"
+    ? "back glass"
+    : forcedState === "front"
+      ? "front glass"
+      : forcedState === "swim"
+        ? "free swimming"
+        : "normal behavior";
+  finishDebugBehaviorScenario(
+    fish,
+    `Debug set ${fish.name} Otocinclus state to ${label}.`,
+    `${fish.name}: ${label}.`,
+    now
+  );
 }
 
 function triggerDebugBehaviorScenario(action) {
@@ -1821,6 +1866,18 @@ function triggerDebugBehaviorScenario(action) {
     case "disease":
       triggerDebugBehaviorDisease();
       break;
+    case "oto-back":
+      triggerDebugOtocinclusState("back");
+      break;
+    case "oto-swim":
+      triggerDebugOtocinclusState("swim");
+      break;
+    case "oto-front":
+      triggerDebugOtocinclusState("front");
+      break;
+    case "oto-normal":
+      triggerDebugOtocinclusState("normal");
+      break;
     case "clear":
       triggerDebugBehaviorClear();
       break;
@@ -1836,6 +1893,12 @@ function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now
   const reason = getDebugBehaviorBlockReason(selectedFish, species, getDebugBehaviorScenarioOptions(action));
   if (reason) {
     return { enabled: false, title: `${title}: ${reason}` };
+  }
+  if (action.startsWith("oto-")) {
+    if (species?.id !== "otocinclus" || getEffectiveFishBehavior(selectedFish, species) !== "sucker") {
+      return { enabled: false, title: `${title}: select an Otocinclus / Dwarf Sucker Catfish` };
+    }
+    return { enabled: true, title };
   }
 
   switch (action) {
@@ -1874,11 +1937,27 @@ function syncDebugBehaviorLabButtons(debugMode, selectedFish, now = Date.now()) 
     button.disabled = !debugMode || !availability.enabled;
     button.title = availability.title || config.title;
     button.setAttribute("aria-label", availability.title || config.title);
+    const forcedOtocinclusState = selectedFish
+      ? getDebugForcedOtocinclusState(selectedFish, getSpeciesForFish(selectedFish))
+      : null;
+    const otocinclusActionState = config.action === "oto-back"
+      ? "back"
+      : config.action === "oto-swim"
+        ? "swim"
+        : config.action === "oto-front"
+          ? "front"
+          : config.action === "oto-normal"
+            ? "normal"
+            : null;
     button.classList.toggle(
       "is-active",
-      config.action === "disease"
+      (config.action === "disease"
         && selectedFish
-        && sanitizeDiseaseState(selectedFish.diseaseState) !== DISEASE_STATE_NONE
+        && sanitizeDiseaseState(selectedFish.diseaseState) !== DISEASE_STATE_NONE)
+      || (otocinclusActionState !== null
+        && selectedFish
+        && getSpeciesForFish(selectedFish)?.id === "otocinclus"
+        && (otocinclusActionState === "normal" ? !forcedOtocinclusState : forcedOtocinclusState === otocinclusActionState))
     );
   }
 }

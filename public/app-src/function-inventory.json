@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 2976,
+  "functionCount": 2983,
   "functions": [
     {
       "name": "getBrowserViewportSize",
@@ -7853,14 +7853,14 @@
       "module": "debug/tools.js",
       "sourceLine": 947,
       "originalLine": 36638,
-      "characters": 685,
-      "sourceHash": "0e59b541ea9d100561db80237f243963c0522f29d4065b29444dd7bc9fcace8a",
+      "characters": 883,
+      "sourceHash": "55e70718a9018bb57c81a28ceacf865506b8ae00896c3e5b3c93f008248d2fbf",
       "calls": []
     },
     {
       "name": "getDebugBehaviorBlockReason",
       "module": "debug/tools.js",
-      "sourceLine": 964,
+      "sourceLine": 969,
       "originalLine": 36657,
       "characters": 2037,
       "sourceHash": "a7c4a4762f93ffd0ee1e990affd8f0ff6f5384fe114b8d8a232915cac156fe60",
@@ -7879,7 +7879,7 @@
     {
       "name": "getSelectedDebugBehaviorFish",
       "module": "debug/tools.js",
-      "sourceLine": 1027,
+      "sourceLine": 1032,
       "originalLine": 36720,
       "characters": 292,
       "sourceHash": "88c7597eb2de4b4b09c5b0260363c5eec9c62412d9d1b55570376f1139013afe",
@@ -7891,7 +7891,7 @@
     {
       "name": "getDebugBehaviorSelectedFishOrToast",
       "module": "debug/tools.js",
-      "sourceLine": 1037,
+      "sourceLine": 1042,
       "originalLine": 36730,
       "characters": 247,
       "sourceHash": "8480cdb385f7419fb021320fae61447bbdbe1e238b9a3cafd515c5bac9237e66",
@@ -7904,7 +7904,7 @@
     {
       "name": "hasDebugDecorHangoutZone",
       "module": "debug/tools.js",
-      "sourceLine": 1046,
+      "sourceLine": 1051,
       "originalLine": 36739,
       "characters": 289,
       "sourceHash": "a68807a6d0f83ae6442cc52ebd05d1ff8a6e7c1357e372385d68e6914d094c1f",
@@ -7916,7 +7916,7 @@
     {
       "name": "getDebugRelationshipPartner",
       "module": "debug/tools.js",
-      "sourceLine": 1054,
+      "sourceLine": 1059,
       "originalLine": 36747,
       "characters": 527,
       "sourceHash": "6a7c9619e993077aa2d5a5fe29263bd7302f9d7f5d4ba3d59fffdd6e174e8caf",
@@ -7927,7 +7927,7 @@
     {
       "name": "setDebugFishRelationship",
       "module": "debug/tools.js",
-      "sourceLine": 1068,
+      "sourceLine": 1073,
       "originalLine": 36761,
       "characters": 537,
       "sourceHash": "ada50273726f62b957ce7b3f8d78ac56732082286e51b89289e0520618a7555d",
@@ -7938,7 +7938,7 @@
     {
       "name": "prepareFishForDebugBehavior",
       "module": "debug/tools.js",
-      "sourceLine": 1080,
+      "sourceLine": 1085,
       "originalLine": 36773,
       "characters": 713,
       "sourceHash": "1b143cb1a1885984952e5c7f25ef9514b6b58aa333481d9d172cb78c7bd08bb4",
@@ -7954,7 +7954,7 @@
     {
       "name": "finishDebugBehaviorScenario",
       "module": "debug/tools.js",
-      "sourceLine": 1104,
+      "sourceLine": 1109,
       "originalLine": 36797,
       "characters": 284,
       "sourceHash": "59c63c58fed1274f1921e277579ca819c76c3219b81e7a4792f48faf48b6f39b",
@@ -7968,7 +7968,7 @@
     {
       "name": "getActiveDebugBehaviorSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1116,
+      "sourceLine": 1121,
       "originalLine": 36818,
       "characters": 434,
       "sourceHash": "8b6bd3e101d38377f2ce2584cf12bcb6c1fc9a6a15058d9ec9a4d9a959d8ea4d",
@@ -7979,7 +7979,7 @@
     {
       "name": "setDebugBehaviorSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1131,
+      "sourceLine": 1136,
       "originalLine": 36833,
       "characters": 674,
       "sourceHash": "4753d87393fa653b42b0cb4fb0aaffa4246f6fd2cfb6817131042cf6e91b1bb0",
@@ -7988,7 +7988,7 @@
     {
       "name": "clearDebugBehaviorSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1152,
+      "sourceLine": 1157,
       "originalLine": 36854,
       "characters": 167,
       "sourceHash": "04bf570d9bf5f8ee18c801854b184c61b1073225b7d43c9c1689debd4664202a",
@@ -7997,7 +7997,7 @@
     {
       "name": "getDebugBehaviorFacingDirection",
       "module": "debug/tools.js",
-      "sourceLine": 1158,
+      "sourceLine": 1163,
       "originalLine": 36860,
       "characters": 437,
       "sourceHash": "9ecdb24e102daffd26e4085bd969ee655fab66d2c240c4710b9431e4e187dc31",
@@ -8008,7 +8008,7 @@
     {
       "name": "isDebugBehaviorSteeringBlocked",
       "module": "debug/tools.js",
-      "sourceLine": 1171,
+      "sourceLine": 1176,
       "originalLine": 36873,
       "characters": 677,
       "sourceHash": "00322b7e53168f41cf9b84b0c5103eed3527beaa71c9b26799ad7da574841570",
@@ -8022,7 +8022,7 @@
     {
       "name": "setDebugBehaviorSteeringIntent",
       "module": "debug/tools.js",
-      "sourceLine": 1191,
+      "sourceLine": 1196,
       "originalLine": 36893,
       "characters": 749,
       "sourceHash": "11b49ed094ee7845e749e6d93ed9588c14c64a5e8123147b6ca08833169ee9b0",
@@ -8034,7 +8034,7 @@
     {
       "name": "updateDebugFollowSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1207,
+      "sourceLine": 1212,
       "originalLine": 36909,
       "characters": 3044,
       "sourceHash": "fc9220b182c3e92301f845cd8b14b95c0e2620ca0c9b3c8a35ba7a92ceaebe4d",
@@ -8055,7 +8055,7 @@
     {
       "name": "updateDebugAvoidSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1266,
+      "sourceLine": 1271,
       "originalLine": 36968,
       "characters": 1760,
       "sourceHash": "340426b450465a32d00cd10b7d5799ac1760335b87feddf10fc3f67560757b21",
@@ -8072,7 +8072,7 @@
     {
       "name": "updateDebugLureInspectSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1306,
+      "sourceLine": 1311,
       "originalLine": 37008,
       "characters": 2346,
       "sourceHash": "feb9bcdb00de6a9eda807cb75eb03bf681bde83ad001a15552a4c5d626d1be81",
@@ -8090,7 +8090,7 @@
     {
       "name": "updateDebugAnticipateFoodSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1344,
+      "sourceLine": 1349,
       "originalLine": 37046,
       "characters": 1471,
       "sourceHash": "c38efc3ade830c804260ce946c172d886d77e15fa1cdef51e89caa0b22b0ca38",
@@ -8107,7 +8107,7 @@
     {
       "name": "updateDebugBehaviorSteering",
       "module": "debug/tools.js",
-      "sourceLine": 1378,
+      "sourceLine": 1383,
       "originalLine": 37080,
       "characters": 686,
       "sourceHash": "930757fa6c715dec4cf225dc9f8347f3aae7f0c662f40d31d608e9b36d68e4ef",
@@ -8123,7 +8123,7 @@
     {
       "name": "getDebugAnticipateFoodTarget",
       "module": "debug/tools.js",
-      "sourceLine": 1397,
+      "sourceLine": 1402,
       "originalLine": 37099,
       "characters": 1683,
       "sourceHash": "7a649e86bf0a70d2f23c1417fd9ebd4a8cb6ff39db47fa186f4a14f72430bd09",
@@ -8138,7 +8138,7 @@
     {
       "name": "triggerDebugBehaviorRefuseFood",
       "module": "debug/tools.js",
-      "sourceLine": 1439,
+      "sourceLine": 1444,
       "originalLine": 37141,
       "characters": 1961,
       "sourceHash": "6c7ba534dfd107e61eb78295e23005fec024ce7502d6fe3e775815eb97b7a446",
@@ -8162,7 +8162,7 @@
     {
       "name": "triggerDebugBehaviorAnticipateFood",
       "module": "debug/tools.js",
-      "sourceLine": 1485,
+      "sourceLine": 1490,
       "originalLine": 37187,
       "characters": 852,
       "sourceHash": "4b635c207861f8afb6afc63651d8420eea225260ea4c2335ebdf080d6fc55318",
@@ -8179,7 +8179,7 @@
     {
       "name": "triggerDebugBehaviorHide",
       "module": "debug/tools.js",
-      "sourceLine": 1507,
+      "sourceLine": 1512,
       "originalLine": 37209,
       "characters": 1019,
       "sourceHash": "8e644cb217e1efe6794f03cc6335ff9bc7585c7b06da842be4c4a08176ee8cec",
@@ -8196,7 +8196,7 @@
     {
       "name": "triggerDebugBehaviorInspectLure",
       "module": "debug/tools.js",
-      "sourceLine": 1540,
+      "sourceLine": 1545,
       "originalLine": 37242,
       "characters": 1590,
       "sourceHash": "7f99f8e5d653fbc081a874be42816c265985e025dabad749e8ce2e333b251083",
@@ -8216,7 +8216,7 @@
     {
       "name": "triggerDebugBehaviorGuardCave",
       "module": "debug/tools.js",
-      "sourceLine": 1586,
+      "sourceLine": 1591,
       "originalLine": 37288,
       "characters": 1114,
       "sourceHash": "87ed54ff8293d99209ad5258d1dc2acc01d7d49be38a3842adc46b2f32fe18a5",
@@ -8233,7 +8233,7 @@
     {
       "name": "triggerDebugBehaviorFollow",
       "module": "debug/tools.js",
-      "sourceLine": 1620,
+      "sourceLine": 1625,
       "originalLine": 37322,
       "characters": 1456,
       "sourceHash": "553cba817e3a9d77d194ae160283620945b58b834b4322bd49c9a3509291b286",
@@ -8257,7 +8257,7 @@
     {
       "name": "triggerDebugBehaviorAvoid",
       "module": "debug/tools.js",
-      "sourceLine": 1660,
+      "sourceLine": 1665,
       "originalLine": 37362,
       "characters": 1621,
       "sourceHash": "dd312d48e11028e6b8d80a25d034d211a1f7921e806b262619a3ed09df530c5f",
@@ -8281,7 +8281,7 @@
     {
       "name": "getDebugDiseaseBehaviorCause",
       "module": "debug/tools.js",
-      "sourceLine": 1703,
+      "sourceLine": 1708,
       "originalLine": 37405,
       "characters": 454,
       "sourceHash": "28a20665ad265544f07b2ae7de9baae17c0008919db0584065e81f0d6926703b",
@@ -8292,7 +8292,7 @@
     {
       "name": "getNextDebugDiseaseBehaviorStage",
       "module": "debug/tools.js",
-      "sourceLine": 1720,
+      "sourceLine": 1725,
       "originalLine": 37422,
       "characters": 358,
       "sourceHash": "7753316d41a510d8fc0ccb3aa8779151474dd8f3109adad428c8d0a84513373a",
@@ -8303,7 +8303,7 @@
     {
       "name": "triggerDebugBehaviorDisease",
       "module": "debug/tools.js",
-      "sourceLine": 1733,
+      "sourceLine": 1738,
       "originalLine": 37435,
       "characters": 1973,
       "sourceHash": "78fc2949cdbbc88818d9c7462226af7eb8f489a714d603d58a46a04011d398ee",
@@ -8329,23 +8329,43 @@
     {
       "name": "triggerDebugBehaviorClear",
       "module": "debug/tools.js",
-      "sourceLine": 1776,
+      "sourceLine": 1781,
       "originalLine": 37556,
-      "characters": 647,
-      "sourceHash": "e650a98f6d5d19f143b531875a8c61f5de4db7a9ca3d64054967a48c03c94db7",
+      "characters": 777,
+      "sourceHash": "2b1f57b22c997fdd788c4e8147749b1ddb8c16c313b818e995911d352bccf856",
       "calls": [
         "clearDebugBehaviorSteering",
         "finishDebugBehaviorScenario",
-        "getDebugBehaviorSelectedFishOrToast"
+        "getDebugBehaviorSelectedFishOrToast",
+        "getDebugForcedOtocinclusState",
+        "getSpeciesForFish",
+        "setDebugOtocinclusForcedState"
+      ]
+    },
+    {
+      "name": "triggerDebugOtocinclusState",
+      "module": "debug/tools.js",
+      "sourceLine": 1803,
+      "originalLine": null,
+      "characters": 1087,
+      "sourceHash": "9028877e3f8cf56cbf7e7004c85eb9893b731ab7d64c0a8c6dbbb34abe1df997",
+      "calls": [
+        "finishDebugBehaviorScenario",
+        "getDebugBehaviorScenarioOptions",
+        "getDebugBehaviorSelectedFishOrToast",
+        "getEffectiveFishBehavior",
+        "prepareFishForDebugBehavior",
+        "setDebugOtocinclusForcedState",
+        "showToast"
       ]
     },
     {
       "name": "triggerDebugBehaviorScenario",
       "module": "debug/tools.js",
-      "sourceLine": 1795,
+      "sourceLine": 1840,
       "originalLine": 37575,
-      "characters": 836,
-      "sourceHash": "f23f1d9130aaa77fc4f0d59929799ad4904e6b8dbd4f4759e47540084b520531",
+      "characters": 1150,
+      "sourceHash": "ab7ced20cf38581825b67f444ee990dacd9d77acea7b54cf4057b627bd84545e",
       "calls": [
         "isDebugModeEnabled",
         "showToast",
@@ -8357,20 +8377,22 @@
         "triggerDebugBehaviorGuardCave",
         "triggerDebugBehaviorHide",
         "triggerDebugBehaviorInspectLure",
-        "triggerDebugBehaviorRefuseFood"
+        "triggerDebugBehaviorRefuseFood",
+        "triggerDebugOtocinclusState"
       ]
     },
     {
       "name": "getDebugBehaviorButtonAvailability",
       "module": "debug/tools.js",
-      "sourceLine": 1832,
+      "sourceLine": 1889,
       "originalLine": 37618,
-      "characters": 1352,
-      "sourceHash": "b342d4a012bacd15bcd39be31d2988b4728fa05ff0c4853d1b9ce1575d643d7c",
+      "characters": 1635,
+      "sourceHash": "d319090696fa0e203ed4bdb7748af3e38d475c3ab4777c456a078fb1f8993d31",
       "calls": [
         "getDebugBehaviorBlockReason",
         "getDebugBehaviorScenarioOptions",
         "getDebugRelationshipPartner",
+        "getEffectiveFishBehavior",
         "getSpeciesForFish",
         "hasDebugDecorHangoutZone"
       ]
@@ -8378,19 +8400,21 @@
     {
       "name": "syncDebugBehaviorLabButtons",
       "module": "debug/tools.js",
-      "sourceLine": 1864,
+      "sourceLine": 1927,
       "originalLine": 37650,
-      "characters": 800,
-      "sourceHash": "1fcfd049c0a26b29499f3b6ae7090bccc24bdb9f23257d45b41891f2b14d37c8",
+      "characters": 1479,
+      "sourceHash": "eb08e51604738351c10c2f630a7195f4155109c01f1df481782113a331e0c8de",
       "calls": [
         "getDebugBehaviorButtonAvailability",
+        "getDebugForcedOtocinclusState",
+        "getSpeciesForFish",
         "sanitizeDiseaseState"
       ]
     },
     {
       "name": "damageSelectedFish",
       "module": "debug/tools.js",
-      "sourceLine": 1886,
+      "sourceLine": 1965,
       "originalLine": 37673,
       "characters": 744,
       "sourceHash": "1816477a5253402bc1210413b5b4f34b016599d488c8ccba17512c847a80fb61",
@@ -8406,7 +8430,7 @@
     {
       "name": "getNextDebugDiseaseStage",
       "module": "debug/tools.js",
-      "sourceLine": 1919,
+      "sourceLine": 1998,
       "originalLine": 37706,
       "characters": 341,
       "sourceHash": "c9e58c786e0ec741c1c0b073f6790bcd9a37b2035a5fe6fa41e56697d7e54975",
@@ -8417,7 +8441,7 @@
     {
       "name": "forceDebugDiseaseSignals",
       "module": "debug/tools.js",
-      "sourceLine": 1928,
+      "sourceLine": 2007,
       "originalLine": 37715,
       "characters": 1078,
       "sourceHash": "2e9ae9b6dc2266ad4d6bb33b1bfd8dbf8b3a7b904923aeed5e572c07e4a4511c",
@@ -8431,7 +8455,7 @@
     {
       "name": "setSelectedFishDiseaseStageForDebug",
       "module": "debug/tools.js",
-      "sourceLine": 1955,
+      "sourceLine": 2034,
       "originalLine": 37742,
       "characters": 1531,
       "sourceHash": "a68a88462072b2f45384375535753202c27362d828cfcc0d3418c732c0e2cccb",
@@ -8447,7 +8471,7 @@
     {
       "name": "infectSelectedFishDebug",
       "module": "debug/tools.js",
-      "sourceLine": 1991,
+      "sourceLine": 2070,
       "originalLine": 37778,
       "characters": 934,
       "sourceHash": "0f3b3464660aa1e791b3a269e708864accf769d9a400b032d9fcb6b581a6e592",
@@ -8466,7 +8490,7 @@
     {
       "name": "cureSelectedFishDebug",
       "module": "debug/tools.js",
-      "sourceLine": 2024,
+      "sourceLine": 2103,
       "originalLine": 37811,
       "characters": 1133,
       "sourceHash": "55c5016e9d4e2e238fa6fa19609e3cd5ecba1048da1e3c4e01b570fdea0502be",
@@ -8483,7 +8507,7 @@
     {
       "name": "resetAllProgress",
       "module": "debug/tools.js",
-      "sourceLine": 2063,
+      "sourceLine": 2142,
       "originalLine": 37850,
       "characters": 453,
       "sourceHash": "be813e871ec7db0b3ce27cac2ce69c645786259f8ae58f6c72640e6b28998bd2",
@@ -22212,9 +22236,103 @@
       ]
     },
     {
-      "name": "startSuckerFishFreeSwim",
+      "name": "getDebugForcedOtocinclusState",
       "module": "fish/predators-and-motion.js",
       "sourceLine": 2019,
+      "originalLine": null,
+      "characters": 468,
+      "sourceHash": "2d5bc984a70a75233236f370858f1cd2a9575a6f6add5e1879617c7be0b07e59",
+      "calls": [
+        "getEffectiveFishBehavior",
+        "getSpeciesForFish",
+        "isDebugModeEnabled"
+      ]
+    },
+    {
+      "name": "pickDebugOtocinclusSwimTarget",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 2030,
+      "originalLine": null,
+      "characters": 645,
+      "sourceHash": "93cf5bd885284f1bd684b3c154319970be364318036f40dac90c4f297aeddc93",
+      "calls": [
+        "clamp",
+        "randomBetween"
+      ]
+    },
+    {
+      "name": "setDebugOtocinclusFreeSwimTarget",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 2048,
+      "originalLine": null,
+      "characters": 1275,
+      "sourceHash": "140857a3919a5a2c502c2e43d034c6df12f2a2800f17c96b664db19cdcfd6be2",
+      "calls": [
+        "getSuckerFishGlassLayer",
+        "isFishDead",
+        "isSuckerFishFreeSwimming",
+        "pickDebugOtocinclusSwimTarget",
+        "randomBetween",
+        "setFishDirection",
+        "setFishTankLayers",
+        "startSuckerFishFreeSwim"
+      ]
+    },
+    {
+      "name": "applyDebugOtocinclusForcedTarget",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 2080,
+      "originalLine": null,
+      "characters": 2082,
+      "sourceHash": "aa54f3671992a5fb71d19324c4b10c014bd964c9f520739e5aa9a513af3cc00e",
+      "calls": [
+        "clamp",
+        "getDebugForcedOtocinclusState",
+        "getSuckerFishGlassLayer",
+        "getSuckerFishYRange",
+        "isSuckerFishFreeSwimming",
+        "normalizeFishSpeed",
+        "pickDebugOtocinclusSwimTarget",
+        "randomBetween",
+        "setDebugOtocinclusFreeSwimTarget",
+        "setFishTankLayers",
+        "startSuckerFishFreeSwim"
+      ]
+    },
+    {
+      "name": "setDebugOtocinclusForcedState",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 2136,
+      "originalLine": null,
+      "characters": 1255,
+      "sourceHash": "dfcecf7f73531de64b031064a7cf53b353d0e1749c40d8d69fe375664ddc0678",
+      "calls": [
+        "applyDebugOtocinclusForcedTarget",
+        "clearDebugBehaviorSteering",
+        "clearFishGravelPebbleAction",
+        "clearFishSchoolFollowState",
+        "clearForcedGravelDigPrompt",
+        "getEffectiveFishBehavior",
+        "getSpeciesForFish",
+        "isSuckerFishFreeSwimming"
+      ]
+    },
+    {
+      "name": "clearAllDebugOtocinclusForcedStates",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 2168,
+      "originalLine": null,
+      "characters": 791,
+      "sourceHash": "e0c2262fd6ad73912898f78b21876aa50d80d3c0155b24dcd8d5d8e66e0f8f7c",
+      "calls": [
+        "getSpeciesForFish",
+        "isSuckerFishFreeSwimming"
+      ]
+    },
+    {
+      "name": "startSuckerFishFreeSwim",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 2190,
       "originalLine": null,
       "characters": 2648,
       "sourceHash": "71b49fb9fbfe900eb483e94df540235eb06eb2b55ade6e3a7351ee7c8b624764",
@@ -22234,7 +22352,7 @@
     {
       "name": "finishSuckerFishFreeSwim",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2085,
+      "sourceLine": 2256,
       "originalLine": null,
       "characters": 1153,
       "sourceHash": "e063365a887d40ff41e1d81093c03d58549a8b800eb79b3467c320cef6d5c2fa",
@@ -22251,22 +22369,24 @@
     {
       "name": "updateSuckerFishFreeSwimState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2117,
+      "sourceLine": 2288,
       "originalLine": null,
-      "characters": 1886,
-      "sourceHash": "2e0e933ab8886db6930d1f3258ddfd8063056338c73a268de4fd78a77abf980a",
+      "characters": 2682,
+      "sourceHash": "2b934fa2a1e5b4fa71258add0958edabd180c4f35cb6a1e6c590872bae3cfc98",
       "calls": [
         "finishSuckerFishFreeSwim",
+        "getDebugForcedOtocinclusState",
         "performOtocinclusGravelScan",
         "pickOtocinclusGravelScanTarget",
         "randomBetween",
+        "setDebugOtocinclusFreeSwimTarget",
         "setFishDirection"
       ]
     },
     {
       "name": "updateFishMotion",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2163,
+      "sourceLine": 2352,
       "originalLine": 51176,
       "characters": 39869,
       "sourceHash": "3d529e47ee681bacf658bd72ffd75f95cc8d069f92f88fb3ea5ca3b27a64539b",
@@ -22383,7 +22503,7 @@
     {
       "name": "getFishProfileRoamSpeed",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3066,
+      "sourceLine": 3255,
       "originalLine": null,
       "characters": 707,
       "sourceHash": "51cc43e6d0c5c080695f65c1240656d0dbcdbb0010925fedb357136eff39de1c",
@@ -22396,7 +22516,7 @@
     {
       "name": "getFishProfileRoamY",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3086,
+      "sourceLine": 3275,
       "originalLine": null,
       "characters": 468,
       "sourceHash": "04978c318da4d0739f738cd7ff94a540d01493713f3541c852561d72cda0416d",
@@ -22409,7 +22529,7 @@
     {
       "name": "getFishProfileRoamX",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3096,
+      "sourceLine": 3285,
       "originalLine": null,
       "characters": 890,
       "sourceHash": "a1b7cf390db3a66c8792a679c54cdd735038a69e1d718d45cc383ad72efea74a",
@@ -22423,7 +22543,7 @@
     {
       "name": "getFishProfileHomeRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3117,
+      "sourceLine": 3306,
       "originalLine": null,
       "characters": 675,
       "sourceHash": "e0b3ee3da671ecc36eb20de677e0e9593d6f0df4a7a32739bfb97c1e148eec98",
@@ -22436,7 +22556,7 @@
     {
       "name": "getFishProfileHoverTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3137,
+      "sourceLine": 3326,
       "originalLine": null,
       "characters": 659,
       "sourceHash": "4a1c639b1f32fcc3d8dfee62d1fdf743b5e23b384e4d34cedf0a2e52fa140ce2",
@@ -22450,7 +22570,7 @@
     {
       "name": "assignSpeciesRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3158,
+      "sourceLine": 3347,
       "originalLine": null,
       "characters": 1827,
       "sourceHash": "5562ef75cdb72a415b83e5072cf17670a2c3347d5ff1d13b451495b92626027c",
@@ -22474,11 +22594,12 @@
     {
       "name": "assignSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3198,
+      "sourceLine": 3387,
       "originalLine": 51906,
-      "characters": 8829,
-      "sourceHash": "d5ecc73270d570d33c2220e5f6f67c39fa17f677608b7c4e25bc2d74fa1084c3",
+      "characters": 8974,
+      "sourceHash": "ab697833ed367646403591e3c5892c1753d2b3d301ddc991f1e7fdb57486dbbd",
       "calls": [
+        "applyDebugOtocinclusForcedTarget",
         "applyFishBehaviorIntentLayer",
         "assignSpeciesRoamTarget",
         "beginFishCaveBehavior",
@@ -39469,9 +39590,10 @@
       "module": "ui/tool-modes-and-debug-panels.js",
       "sourceLine": 1400,
       "originalLine": null,
-      "characters": 427,
-      "sourceHash": "e87a41951f1d103b89395d1016282c11f15e3e12b74f1a143654e5eec590dcad",
+      "characters": 480,
+      "sourceHash": "8cb2baf8124f4fdf5c15407e136b08e66010489d53e708e527b49570b9277ef8",
       "calls": [
+        "clearAllDebugOtocinclusForcedStates",
         "getDebugToolsPreference",
         "isDebugAccountAuthorized",
         "resetDebugFishBehaviorBroadcastState",
@@ -39481,11 +39603,12 @@
     {
       "name": "setDebugToolsEnabled",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1418,
+      "sourceLine": 1419,
       "originalLine": null,
-      "characters": 809,
-      "sourceHash": "eeb88225375057cde5c99c1129cd3f66954f2ac5c7ccd2ba4e71d77fbbb0b0d1",
+      "characters": 862,
+      "sourceHash": "ff2cbf2e3b9b77408b6653975d253fee90a29f872a16059e6676764443857b5f",
       "calls": [
+        "clearAllDebugOtocinclusForcedStates",
         "isDebugAccountAuthorized",
         "renderUi",
         "resetDebugFishBehaviorBroadcastState",
@@ -39496,7 +39619,7 @@
     {
       "name": "isDebugModeEnabled",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1445,
+      "sourceLine": 1447,
       "originalLine": 9475,
       "characters": 108,
       "sourceHash": "2d48528567ccf8889377c32ba5e56dac0442b3ecb0db08033adefa098887f291",
@@ -39507,7 +39630,7 @@
     {
       "name": "setupDebugMenuButtons",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1449,
+      "sourceLine": 1451,
       "originalLine": 9479,
       "characters": 2917,
       "sourceHash": "26150cd8865b9f04e1098eee42d3150f59434b28c17254bc2dc8ba5d8f91b0e8",
@@ -39518,7 +39641,7 @@
     {
       "name": "toggleDebugSidebar",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1521,
+      "sourceLine": 1523,
       "originalLine": 9551,
       "characters": 216,
       "sourceHash": "4e15e0c348b64e08d7e82d6be88ee9fd9a9980c9dccb64163ce6338477771044",
@@ -39530,7 +39653,7 @@
     {
       "name": "isAspectRatioLocked",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1531,
+      "sourceLine": 1533,
       "originalLine": 9561,
       "characters": 79,
       "sourceHash": "972e01b1c29ecd817d751d1526cd9ea35a25572d09ae7fd17139e3cf1fe54156",
@@ -39539,7 +39662,7 @@
     {
       "name": "getDebugFishDisplayName",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1535,
+      "sourceLine": 1537,
       "originalLine": 9565,
       "characters": 218,
       "sourceHash": "41350bb3f003488d59036637b273671e9336745664e49e1acbeecc266dd0d482",
@@ -39550,7 +39673,7 @@
     {
       "name": "getDebugFishBehaviorSnapshot",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1542,
+      "sourceLine": 1544,
       "originalLine": 9572,
       "characters": 7470,
       "sourceHash": "a98ff1193626dc72f47e62c8849e99319c2d59da469e7de0943d60a4495070bf",
@@ -39582,7 +39705,7 @@
     {
       "name": "resetDebugFishBehaviorBroadcastState",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1719,
+      "sourceLine": 1721,
       "originalLine": 9751,
       "characters": 98,
       "sourceHash": "6123c19f9e7c606e47490f68ed9fe4a9dcb2d339bd5f4d3bccd9fa4f65e06423",
@@ -39591,7 +39714,7 @@
     {
       "name": "pushDebugFishBehaviorLog",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1723,
+      "sourceLine": 1725,
       "originalLine": 9755,
       "characters": 652,
       "sourceHash": "0e03c02a5e8ed7e48c96944481ecdb2c41a17d13219106db27c6a7fa743d1463",
@@ -39604,7 +39727,7 @@
     {
       "name": "syncDebugFishBehaviorBroadcast",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1746,
+      "sourceLine": 1748,
       "originalLine": 9778,
       "characters": 936,
       "sourceHash": "5b94de56a551e2202803c7bba54d64897e22840561793bf9fcf3f0e114456c5b",
@@ -39619,7 +39742,7 @@
     {
       "name": "formatDebugFishBehaviorLogEntry",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1779,
+      "sourceLine": 1781,
       "originalLine": 9811,
       "characters": 330,
       "sourceHash": "4817cbb671eef182f9cc8ebfee7a3fe15aceac2c8c0c52ddf1d63b3aa4c0d920",
@@ -39628,7 +39751,7 @@
     {
       "name": "buildDebugFishBehaviorLogText",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1786,
+      "sourceLine": 1788,
       "originalLine": 9818,
       "characters": 320,
       "sourceHash": "2790637e3327811b1c38fb26a47055de19d968195e60298e776f7e48090194aa",
@@ -39639,7 +39762,7 @@
     {
       "name": "createDebugFishBehaviorLogFilename",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1797,
+      "sourceLine": 1799,
       "originalLine": 9829,
       "characters": 398,
       "sourceHash": "9a9e0d0a47db2c744900af021decfbfb0db9036c850fd8431c5b7b0f0b534192",
@@ -39648,7 +39771,7 @@
     {
       "name": "downloadDebugFishBehaviorLog",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1803,
+      "sourceLine": 1805,
       "originalLine": 9835,
       "characters": 371,
       "sourceHash": "358208997da0d9723fde0122c3a44625fd1fc89529113deeb1403e258ed3084c",
@@ -39663,7 +39786,7 @@
     {
       "name": "toggleAspectRatioLock",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1821,
+      "sourceLine": 1823,
       "originalLine": 9864,
       "characters": 276,
       "sourceHash": "6cfa136557f4767097e7192439471ad5cf0fc33030ee29515e2166e1009c9077",
@@ -39677,7 +39800,7 @@
     {
       "name": "handleHiddenKeySequence",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1829,
+      "sourceLine": 1831,
       "originalLine": 9872,
       "characters": 616,
       "sourceHash": "9e25aebe4770cf511553b1762fe7b0ddfca2fc1aa23b11ff5fe7fc9da5f6ea69",
@@ -39688,7 +39811,7 @@
     {
       "name": "isFocusedTextEntry",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1851,
+      "sourceLine": 1853,
       "originalLine": 9901,
       "characters": 305,
       "sourceHash": "60b82e735b83ed114894a805528c842fedee7f4f9cb879bf3f8f06cf8718d482",
@@ -39697,7 +39820,7 @@
     {
       "name": "syncPortablePerformanceMode",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1863,
+      "sourceLine": 1865,
       "originalLine": 9913,
       "characters": 235,
       "sourceHash": "02b69b36fc8be4a1a76535c3b70c166560174e6e10f23fb50562fa748c9d00cc",
@@ -39706,7 +39829,7 @@
     {
       "name": "isPortablePerformanceModeActive",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1870,
+      "sourceLine": 1872,
       "originalLine": 9920,
       "characters": 187,
       "sourceHash": "88ec860e5a08a6310024dfab9120a6589d2c912ae3e96255244ca1d5c94f08d7",
@@ -39717,7 +39840,7 @@
     {
       "name": "getStageRenderDevicePixelRatio",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1876,
+      "sourceLine": 1878,
       "originalLine": 9926,
       "characters": 163,
       "sourceHash": "0ee9c1e2cdfdf4e03d5595516ca7bf98d615ffa4eb7dc6c1844ff68d01ecc730",
@@ -39726,7 +39849,7 @@
     {
       "name": "getEffectiveAnimationFpsLimit",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1881,
+      "sourceLine": 1883,
       "originalLine": 9933,
       "characters": 1110,
       "sourceHash": "da7483b6c8504919e2fdaa706db7c7b8923255155c962ff0141f6f8ee7ea1e7b",
@@ -39737,7 +39860,7 @@
     {
       "name": "getWaterParticleTargetCount",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1907,
+      "sourceLine": 1909,
       "originalLine": 9942,
       "characters": 193,
       "sourceHash": "063e02cf9557c6bb09ffe7152258b576f4e8040860f09f2b508dc24048efc7e4",
@@ -39748,7 +39871,7 @@
     {
       "name": "getWaterParticleCleanVisibleCount",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1913,
+      "sourceLine": 1915,
       "originalLine": 9948,
       "characters": 241,
       "sourceHash": "e67f6328009118718b0c46dba24eb95e6c8eedfecd48589446611d1fa535e3d5",
@@ -39759,7 +39882,7 @@
     {
       "name": "getWaterParticleDirtyVisibleCount",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1919,
+      "sourceLine": 1921,
       "originalLine": 9954,
       "characters": 241,
       "sourceHash": "e7d530869da4c14ede7f431445b95722e9d7c920a0c564298df36d948119c11a",
@@ -39770,7 +39893,7 @@
     {
       "name": "getAmbientBubbleSeedCount",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1925,
+      "sourceLine": 1927,
       "originalLine": 9960,
       "characters": 191,
       "sourceHash": "151afbd53162988a7ff6a4ab9d7904a5df49c64f26bd64163a5bdf8538577e0f",
@@ -39781,7 +39904,7 @@
     {
       "name": "getVisibleAmbientSceneBubbles",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1931,
+      "sourceLine": 1933,
       "originalLine": 9966,
       "characters": 394,
       "sourceHash": "fee553def2055e39c78b3b6f5da386336bdd05269a68313c78340b49217a57a0",
@@ -39793,7 +39916,7 @@
     {
       "name": "getMaxVisibleBubblerBubblesPerSpout",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1942,
+      "sourceLine": 1944,
       "originalLine": 9977,
       "characters": 252,
       "sourceHash": "2a36832ac59825cba7b0cc936a7bf8e5e64dcc00cb63968212a97f92f080285a",
@@ -39804,7 +39927,7 @@
     {
       "name": "getPortableTankBlurScale",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1948,
+      "sourceLine": 1950,
       "originalLine": 9983,
       "characters": 126,
       "sourceHash": "9d33a2dd714b4e47519c05d2c79c18c3466101460ef7960a0e35dd3578230a0d",
@@ -39815,7 +39938,7 @@
     {
       "name": "getPortableGrimeBlurScale",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1952,
+      "sourceLine": 1954,
       "originalLine": 9987,
       "characters": 128,
       "sourceHash": "853006b0d918c7b1604981bfef077806df8cc94d54a501ce85c90f83897cfa68",

@@ -1211,6 +1211,8 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   uiSoundsMuted: false,
   tankMouseInputLocked: false,
   layoutRatioLockEnabled: true,
+  layoutRatioLockWidth: 0,
+  layoutRatioLockHeight: 0,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
@@ -13679,7 +13681,7 @@ function hideLoadingOverlay() {
   }
 
   if (state && getUiSettings().layoutRatioLockEnabled !== false && !isLayoutRatioLockActive()) {
-    initializeLayoutRatioLockFromSettings({ recapture: true });
+    initializeLayoutRatioLockFromSettings({ save: true });
     resizeDisplayCanvases();
   }
 
@@ -14459,10 +14461,11 @@ function updateLayoutRatioLockPresentation() {
   return scale;
 }
 
-function captureLayoutRatioLockReference() {
-  const viewport = getBrowserViewportSize();
-  runtime.layoutRatioLockWidth = viewport.width;
-  runtime.layoutRatioLockHeight = viewport.height;
+function applyLayoutRatioLockReference(width, height) {
+  const normalizedWidth = Math.max(1, Math.round(Number(width) || 0));
+  const normalizedHeight = Math.max(1, Math.round(Number(height) || 0));
+  runtime.layoutRatioLockWidth = normalizedWidth;
+  runtime.layoutRatioLockHeight = normalizedHeight;
   runtime.layoutRatioLockActive = true;
   runtime.viewportMetrics.orientation = "";
   runtime.viewportMetrics.width = 0;
@@ -14470,7 +14473,21 @@ function captureLayoutRatioLockReference() {
   runtime.viewportMetrics.stableHeight = 0;
   updateLayoutRatioLockPresentation();
   syncViewportCssVariables({ resetStable: true });
-  return viewport;
+  return { width: normalizedWidth, height: normalizedHeight };
+}
+
+function captureLayoutRatioLockReference(options = {}) {
+  const viewport = getBrowserViewportSize();
+  const reference = applyLayoutRatioLockReference(viewport.width, viewport.height);
+  if (state && options.persist !== false) {
+    state.uiSettings = sanitizeUiSettings({
+      ...getUiSettings(),
+      layoutRatioLockEnabled: true,
+      layoutRatioLockWidth: reference.width,
+      layoutRatioLockHeight: reference.height
+    });
+  }
+  return reference;
 }
 
 function releaseLayoutRatioLockReference() {
@@ -14487,16 +14504,32 @@ function releaseLayoutRatioLockReference() {
 }
 
 function initializeLayoutRatioLockFromSettings(options = {}) {
-  const enabled = Boolean(state && getUiSettings().layoutRatioLockEnabled);
+  const settings = getUiSettings();
+  const enabled = Boolean(state && settings.layoutRatioLockEnabled);
   if (!enabled) {
     if (isLayoutRatioLockActive()) releaseLayoutRatioLockReference();
     return false;
   }
-  if (isLayoutRatioLockActive() && options.recapture !== true) {
-    updateLayoutRatioLockPresentation();
+
+  const savedWidth = Math.max(0, Math.round(Number(settings.layoutRatioLockWidth) || 0));
+  const savedHeight = Math.max(0, Math.round(Number(settings.layoutRatioLockHeight) || 0));
+  if (savedWidth > 0 && savedHeight > 0) {
+    const alreadyUsingSavedReference = isLayoutRatioLockActive()
+      && Number(runtime.layoutRatioLockWidth) === savedWidth
+      && Number(runtime.layoutRatioLockHeight) === savedHeight;
+    if (!alreadyUsingSavedReference) {
+      applyLayoutRatioLockReference(savedWidth, savedHeight);
+    } else {
+      updateLayoutRatioLockPresentation();
+    }
     return true;
   }
-  captureLayoutRatioLockReference();
+
+  // A save without stored dimensions has never established its Ratio Lock
+  // reference. Capture exactly once, persist it, and use that saved reference
+  // on every later launch until the player manually toggles Ratio Lock.
+  captureLayoutRatioLockReference({ persist: true });
+  if (options.save !== false) saveState();
   return true;
 }
 
@@ -14506,29 +14539,29 @@ function setLayoutRatioLockEnabled(value, options = {}) {
   }
 
   const enabled = Boolean(value);
-  const currentSettings = getUiSettings();
-  const nextSettings = sanitizeUiSettings({
-    ...currentSettings,
+  state.uiSettings = sanitizeUiSettings({
+    ...getUiSettings(),
     layoutRatioLockEnabled: enabled
   });
-  const preferenceChanged = currentSettings.layoutRatioLockEnabled !== nextSettings.layoutRatioLockEnabled;
-  state.uiSettings = nextSettings;
 
   if (enabled) {
-    // Every OFF -> ON transition intentionally captures the browser's current
-    // gameplay dimensions. This is the user's way to choose a new locked ratio.
-    captureLayoutRatioLockReference();
+    // Manual OFF -> ON is the only way, after the initial automatic capture,
+    // to establish a new Ratio Lock reference. The captured dimensions are
+    // saved with the aquarium and restored unchanged on future launches.
+    captureLayoutRatioLockReference({ persist: true });
   } else {
+    // Unlock the current session without deleting the last saved reference.
+    // If the player enables Ratio Lock again, the current window size replaces it.
     releaseLayoutRatioLockReference();
   }
 
   resizeDisplayCanvases();
-  if (preferenceChanged && options.save !== false) saveState();
+  if (options.save !== false) saveState();
   if (options.render !== false) renderUi(Date.now(), { full: false });
   if (options.showToast !== false) {
     showToast(enabled
-      ? "Ratio Lock on. Current window size is now the layout reference."
-      : "Ratio Lock off. The game will resize with the window.");
+      ? "Ratio Lock on. Current window size is saved as the layout reference."
+      : "Ratio Lock off. Turn it back on when you want to save a new layout reference.");
   }
   return true;
 }
@@ -25063,6 +25096,8 @@ function sanitizeUiSettings(rawSettings) {
     uiSoundsMuted: source.uiSoundsMuted === true,
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     layoutRatioLockEnabled: source.layoutRatioLockEnabled !== false,
+    layoutRatioLockWidth: Math.max(0, Math.round(Number(source.layoutRatioLockWidth) || 0)),
+    layoutRatioLockHeight: Math.max(0, Math.round(Number(source.layoutRatioLockHeight) || 0)),
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,

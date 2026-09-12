@@ -1208,6 +1208,8 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   uiSoundsMuted: false,
   tankMouseInputLocked: false,
   layoutRatioLockEnabled: true,
+  layoutRatioLockWidth: 0,
+  layoutRatioLockHeight: 0,
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
   causticLightingEnabled: true,

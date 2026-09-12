@@ -1285,7 +1285,7 @@ function hideLoadingOverlay() {
   }
 
   if (state && getUiSettings().layoutRatioLockEnabled !== false && !isLayoutRatioLockActive()) {
-    initializeLayoutRatioLockFromSettings({ recapture: true });
+    initializeLayoutRatioLockFromSettings({ save: true });
     resizeDisplayCanvases();
   }
 

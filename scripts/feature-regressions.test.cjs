@@ -2136,3 +2136,22 @@ test("Otocinclus uses top, side and bottom views with dedicated gravel scanning"
   assert.match(collision, /isSuckerFishFreeSwimming\(fish, species, now\)[\s\S]*SUCKER_FISH_FREE_SWIM_LAYER/);
   assert.match(renderTank, /drawFish\(now, layer, \{ onlyBehavior: "sucker" \}\)/);
 });
+
+
+test("Ratio Lock auto-captures only once and persists its saved reference", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  const ratio = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const tools = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+
+  assert.match(bootstrap, /layoutRatioLockEnabled:\s*true,[\s\S]*layoutRatioLockWidth:\s*0,[\s\S]*layoutRatioLockHeight:\s*0/);
+  assert.match(settings, /layoutRatioLockWidth:\s*Math\.max\(0,[\s\S]*layoutRatioLockHeight:\s*Math\.max\(0/);
+  assert.match(ratio, /savedWidth > 0 && savedHeight > 0[\s\S]*applyLayoutRatioLockReference\(savedWidth, savedHeight\)/);
+  assert.match(ratio, /Capture exactly once[\s\S]*captureLayoutRatioLockReference\(\{ persist: true \}\);[\s\S]*saveState\(\)/);
+  assert.match(ratio, /Manual OFF -> ON is the only way[\s\S]*captureLayoutRatioLockReference\(\{ persist: true \}\)/);
+  assert.match(ratio, /layoutRatioLockWidth:\s*reference\.width,[\s\S]*layoutRatioLockHeight:\s*reference\.height/);
+  assert.doesNotMatch(tools, /initializeLayoutRatioLockFromSettings\(\{ recapture: true \}\)/);
+  assert.match(tools, /initializeLayoutRatioLockFromSettings\(\{ save: true \}\)/);
+  assert.match(html, /Keeps your saved game layout and proportions/);
+});

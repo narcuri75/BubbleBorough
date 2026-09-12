@@ -373,6 +373,9 @@ function openEditOverlayMode(mode = null, options = {}) {
 
 function toggleEditTankMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.editTankMode;
+  if (nextMode) {
+    closeStoreBeforePrimaryViewChange();
+  }
   clearPrimaryToolModes();
   if (!nextMode) {
     hideToast({ key: TUTORIAL_TOAST_DECOR_DONE });
@@ -766,6 +769,9 @@ function hasToolbarTriggeredToolMode() {
 
 function toggleFishEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.fishEditMode;
+  if (nextMode) {
+    closeStoreBeforePrimaryViewChange();
+  }
   clearPrimaryToolModes();
   const now = Date.now();
   let tutorialChanged = false;
@@ -790,6 +796,9 @@ function toggleFishEditMode(force = null, options = {}) {
 
 function toggleEquipmentEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.equipmentEditMode;
+  if (nextMode) {
+    closeStoreBeforePrimaryViewChange();
+  }
   clearPrimaryToolModes();
   const now = Date.now();
 
@@ -806,6 +815,9 @@ function toggleEquipmentEditMode(force = null, options = {}) {
 
 function toggleTankEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.tankEditMode;
+  if (nextMode) {
+    closeStoreBeforePrimaryViewChange();
+  }
   clearPrimaryToolModes();
   const now = Date.now();
 
@@ -1868,7 +1880,12 @@ function getStageRenderDevicePixelRatio() {
 
 function getEffectiveAnimationFpsLimit() {
   const portableLimit = isPortablePerformanceModeActive() ? PORTABLE_PERFORMANCE_MAX_FPS : 0;
-  const overlayLimit = runtime.storeOverlayOpen || runtime.utilityOverlayOpen || runtime.settingsOverlayOpen ? 30 : 0;
+  // BubbleBodega now uses a transparent, heavily blurred backdrop. Keeping the
+  // live aquarium at 24 FPS under that blur gives it motion without asking the
+  // browser to recomposite the expensive blur at full gameplay frame rate.
+  const overlayLimit = runtime.storeOverlayOpen
+    ? 24
+    : (runtime.utilityOverlayOpen || runtime.settingsOverlayOpen ? 30 : 0);
   const interacting = Boolean(
     runtime.dragState
     || runtime.decorResizeState

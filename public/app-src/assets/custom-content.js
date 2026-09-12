@@ -1198,7 +1198,13 @@ function bindEvents() {
     if (!guardTutorialToolbarControl("openStoreButton")) {
       return;
     }
-    if (runtime.storeOverlayOpen) {
+    const storeActuallyVisible = Boolean(
+      runtime.storeOverlayOpen
+      && dom.storeOverlay
+      && !dom.storeOverlay.hidden
+      && dom.storeOverlay.classList.contains("is-open")
+    );
+    if (storeActuallyVisible) {
       closeStoreOverlay();
       return;
     }
@@ -1532,6 +1538,9 @@ function bindEvents() {
   });
   dom.violenceGoreToggleInput?.addEventListener("change", (event) => {
     setContentSetting("violenceAndGoreEnabled", event.currentTarget?.checked);
+  });
+  dom.trypophobiaToggleInput?.addEventListener("change", (event) => {
+    setContentSetting("trypophobiaEnabled", event.currentTarget?.checked);
   });
   const handleSoundMuteToggleInput = (event) => {
     setSoundMuted(event.currentTarget?.checked);
@@ -4796,6 +4805,22 @@ function resolveSpeciesMealCoins(species) {
 function getDecorCompanionType(decorKey = "") {
   const key = String(decorKey || "").toLowerCase();
 
+  if (/_color1_trypophobia\.[^.]+$/.test(key)) {
+    return "color1Trypophobia";
+  }
+
+  if (/_color2_trypophobia\.[^.]+$/.test(key)) {
+    return "color2Trypophobia";
+  }
+
+  if (/_color3_trypophobia\.[^.]+$/.test(key)) {
+    return "color3Trypophobia";
+  }
+
+  if (/_trypophobia\.[^.]+$/.test(key)) {
+    return "trypophobia";
+  }
+
   if (/_color1\.[^.]+$/.test(key)) {
     return "color1";
   }
@@ -4838,6 +4863,8 @@ function getDecorCompanionType(decorKey = "") {
 function getDecorBaseKey(decorKey = "") {
   const key = String(decorKey || "").toLowerCase();
   return key
+    .replace(/_color[123]_trypophobia(?=\.[^.]+$)/, "")
+    .replace(/_trypophobia(?=\.[^.]+$)/, "")
     .replace(/_color[123](?=\.[^.]+$)/, "")
     .replace(/_(?:triggers|trigger)(?=\.[^.]+$)/, "")
     .replace(/_(?:seats|seat)(?=\.[^.]+$)/, "")
@@ -4875,7 +4902,7 @@ function buildDecorCaveColorLayers(group) {
     return uniqueCandidates;
   };
 
-  const buildOverlayLayer = (id, label, candidates = []) => {
+  const buildOverlayLayer = (id, label, candidates = [], trypophobiaCompanion = null) => {
     const primary = candidates[0] || null;
     return {
       id,
@@ -4883,7 +4910,10 @@ function buildDecorCaveColorLayers(group) {
       path: primary?.path || "",
       paths: candidates.map((candidate) => candidate.path),
       legacyPaths: [],
-      sourceKey: primary?.sourceKey || ""
+      sourceKey: primary?.sourceKey || "",
+      trypophobiaPath: trypophobiaCompanion?.path || "",
+      trypophobiaSourceKey: trypophobiaCompanion?.key || "",
+      trypophobiaMode: "replace"
     };
   };
 
@@ -4898,10 +4928,13 @@ function buildDecorCaveColorLayers(group) {
       path: group.base.path,
       paths: [group.base.path],
       sourceKey: group.base.key,
-      isBaseLayer: true
+      isBaseLayer: true,
+      trypophobiaPath: group.trypophobia?.path || group.color1Trypophobia?.path || "",
+      trypophobiaSourceKey: group.trypophobia?.key || group.color1Trypophobia?.key || "",
+      trypophobiaMode: "overlay"
     },
-    buildOverlayLayer("color2", "Color 2", color2Candidates),
-    buildOverlayLayer("color3", "Color 3", color3Candidates)
+    buildOverlayLayer("color2", "Color 2", color2Candidates, group.color2Trypophobia),
+    buildOverlayLayer("color3", "Color 3", color3Candidates, group.color3Trypophobia)
   ];
 }
 
@@ -4932,6 +4965,10 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         color1: null,
         color2: null,
         color3: null,
+        trypophobia: null,
+        color1Trypophobia: null,
+        color2Trypophobia: null,
+        color3Trypophobia: null,
         trigger: null,
         seats: null
       });
@@ -4960,6 +4997,10 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         color1: null,
         color2: null,
         color3: null,
+        trypophobia: null,
+        color1Trypophobia: null,
+        color2Trypophobia: null,
+        color3Trypophobia: null,
         trigger: null,
         seats: null
       });

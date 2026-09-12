@@ -406,6 +406,76 @@ function withActiveTank(tankId, callback, targetState = state) {
   }
 }
 
+function getTankSwitchLoadingOverlay() {
+  if (runtime.tankSwitchTransitionElement?.isConnected) {
+    return runtime.tankSwitchTransitionElement;
+  }
+  const stage = dom.tankStage;
+  if (!stage) {
+    return null;
+  }
+  const overlay = document.createElement("div");
+  overlay.className = "tank-switch-loading-overlay";
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.setAttribute("aria-label", "Loading tank");
+  overlay.innerHTML = '<div class="tank-switch-loading-inner"><span class="tank-switch-loading-pulse" aria-hidden="true"></span><strong>Loading tank...</strong></div>';
+  stage.appendChild(overlay);
+  runtime.tankSwitchTransitionElement = overlay;
+  return overlay;
+}
+
+function beginTankSwitchLoadingTransition() {
+  const overlay = getTankSwitchLoadingOverlay();
+  runtime.tankSwitchTransitionActive = true;
+  const token = ++runtime.tankSwitchTransitionToken;
+  if (!overlay) {
+    return token;
+  }
+  overlay.hidden = false;
+  overlay.classList.remove("is-leaving");
+  requestAnimationFrame(() => overlay.classList.add("is-visible"));
+  return token;
+}
+
+function finishTankSwitchLoadingTransition(token) {
+  if (token !== runtime.tankSwitchTransitionToken) {
+    return;
+  }
+  runtime.tankSwitchTransitionActive = false;
+  const overlay = runtime.tankSwitchTransitionElement;
+  if (!overlay) {
+    return;
+  }
+  overlay.classList.add("is-leaving");
+  overlay.classList.remove("is-visible");
+  window.setTimeout(() => {
+    if (token !== runtime.tankSwitchTransitionToken || overlay.classList.contains("is-visible")) {
+      return;
+    }
+    overlay.hidden = true;
+    overlay.classList.remove("is-leaving");
+  }, 240);
+}
+
+function getTankSwitchPreloadPaths(tank) {
+  if (!tank) {
+    return [];
+  }
+  const targetState = {
+    ...state,
+    tanks: [tank],
+    activeTankId: tank.id
+  };
+  const background = runtime.backgroundMap.get(tank.selectedBackground);
+  return filterPreloadPathsForCurrentContentSettings([...new Set([
+    ...getPlacedDecorPreloadPaths(targetState),
+    ...getOwnedFishPreloadPaths(targetState),
+    background?.path,
+    getLocalBackgroundImageDataUrl(tank)
+  ].filter(Boolean))]);
+}
+
 function getTankResaleValue(tank) {
   return getResaleValue(getTankTypeMeta(tank?.tankTypeId).cost || 0);
 }
@@ -417,6 +487,10 @@ function setActiveTank(tankId, options = {}) {
   }
 
   if (state.activeTankId === nextTank.id) {
+    return false;
+  }
+
+  if (runtime.tankSwitchTransitionActive && options.allowDuringTransition !== true) {
     return false;
   }
 
@@ -443,21 +517,38 @@ function setActiveTank(tankId, options = {}) {
   runtime.forcedGravelDigUntilByFishId.clear();
   runtime.gravelDigBursts = [];
   materializeCoarseFishActivities(nextTank, Date.now());
+
+  const transitionToken = beginTankSwitchLoadingTransition();
   state.activeTankId = nextTank.id;
   const assetLoadGeneration = ++runtime.activeTankAssetLoadGeneration;
-  releaseInactiveDecorImages(state);
-  void preloadImages(getPlacedDecorPreloadPaths(state)).then(() => {
-    if (assetLoadGeneration !== runtime.activeTankAssetLoadGeneration) {
-      releaseInactiveDecorImages(state);
-      return;
-    }
-    renderTank(Date.now());
-  });
+  runtime.gravelStateDirty = true;
   renderUi(Date.now());
   saveState();
   if (options.announce !== false) {
     showToast(getTankLabel(nextTank));
   }
+
+  // Give the blue veil a chance to paint before decoding the next tank's loose
+  // decor artwork. The active tank changes immediately for state consistency,
+  // but the player never sees partially loaded layers underneath the veil.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const preloadPaths = getTankSwitchPreloadPaths(nextTank);
+    void preloadImages(preloadPaths, {
+      maxAttempts: 2,
+      timeoutMs: 8000,
+      retryDelayMs: 180
+    }).catch((error) => {
+      console.debug("Tank switch preload completed with unavailable artwork.", error);
+    }).finally(() => {
+      if (assetLoadGeneration !== runtime.activeTankAssetLoadGeneration || transitionToken !== runtime.tankSwitchTransitionToken) {
+        return;
+      }
+      renderTank(Date.now());
+      releaseInactiveDecorImages(state);
+      requestAnimationFrame(() => finishTankSwitchLoadingTransition(transitionToken));
+    });
+  }));
+
   return true;
 }
 
@@ -731,6 +822,13 @@ function openStoreOverlay(tab = "food", options = {}) {
     return;
   }
 
+  // The store has both runtime state and a rendered DOM shell. If something
+  // external ever leaves those out of sync, opening the store must heal the
+  // state instead of treating an invisible store as already open.
+  if (runtime.storeOverlayOpen && dom.storeOverlay?.hidden) {
+    runtime.storeOverlayOpen = false;
+  }
+
   // BubbleBodega normally restores the shopper's last category. A tutorial task
   // must always open the category it teaches, including when its toolbar
   // button calls this function without an explicit option.
@@ -756,7 +854,23 @@ function closeStoreOverlay(options = {}) {
   }
 
   runtime.storeOverlayOpen = false;
-  renderUi(Date.now());
+  if (options.render === false) {
+    if (dom.storeOverlay) {
+      dom.storeOverlay.hidden = true;
+      dom.storeOverlay.classList.remove("is-open");
+    }
+  } else {
+    renderUi(Date.now());
+  }
+  return true;
+}
+
+function closeStoreBeforePrimaryViewChange() {
+  const renderedOpen = Boolean(dom.storeOverlay && !dom.storeOverlay.hidden);
+  if (!runtime.storeOverlayOpen && !renderedOpen) {
+    return false;
+  }
+  closeStoreOverlay({ force: true, render: false });
   return true;
 }
 
@@ -1287,6 +1401,45 @@ function getDecorDefaultCaveColorSettings(decorKey = "") {
   }
 
   return null;
+}
+
+function buildTrypophobiaVariantPath(imagePath = "") {
+  const path = String(imagePath || "");
+  if (!path || /^(?:data:|blob:)/i.test(path) || /_trypophobia(?=\.[^./?#]+(?:[?#].*)?$)/i.test(path)) {
+    return "";
+  }
+  return path.replace(/(\.[^./?#]+)([?#].*)?$/, "_Trypophobia$1$2");
+}
+
+function getDecorLayerTrypophobiaPath(decor, layer) {
+  const explicitPath = String(layer?.trypophobiaPath || "").trim();
+  if (explicitPath) {
+    return explicitPath;
+  }
+  const sourcePath = layer?.isBaseLayer ? decor?.path : resolveDecorColorLayerPath(layer);
+  return buildTrypophobiaVariantPath(sourcePath);
+}
+
+function getDecorTrypophobiaCandidatePaths(decor) {
+  if (!decor || !hasDecorCaveColorLayers(decor)) {
+    return [];
+  }
+  return [...new Set(getVisibleDecorColorLayers(decor)
+    .map((layer) => getDecorLayerTrypophobiaPath(decor, layer))
+    .filter(Boolean))];
+}
+
+function getDecorTrypophobiaArtworkPaths(decor) {
+  if (!decor || !hasDecorCaveColorLayers(decor)) {
+    return [];
+  }
+  return [...new Set(getVisibleDecorColorLayers(decor).flatMap((layer) => {
+    const path = getDecorLayerTrypophobiaPath(decor, layer);
+    if (!path) {
+      return [];
+    }
+    return layer.trypophobiaPath || runtime.images.has(path) ? [path] : [];
+  }))];
 }
 
 function getDecorCaveColorLayers(decorOrKey) {

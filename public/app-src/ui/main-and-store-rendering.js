@@ -601,6 +601,7 @@ function renderTankNavigation() {
 }
 
 function openAquariumOverview() {
+  closeStoreBeforePrimaryViewChange();
   clearPrimaryToolModes();
   runtime.boroughOverviewOpen = true;
   runtime.aquariumExpansionMode = true;

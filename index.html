@@ -700,6 +700,14 @@
                         <input id="violenceGoreToggleInput" class="settings-checkbox" type="checkbox" />
                       </label>
 
+                      <label class="settings-toggle-row" for="trypophobiaToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Trypophobia</span>
+                          <span class="settings-toggle-note">Uses alternate pore and hole detail artwork when available.</span>
+                        </div>
+                        <input id="trypophobiaToggleInput" class="settings-checkbox" type="checkbox" />
+                      </label>
+
                       <label class="settings-toggle-row" for="ambientBubblesToggleInput">
                         <div class="settings-toggle-copy">
                           <span class="settings-toggle-label">Ambient Bubbles</span>
@@ -2419,6 +2427,23 @@
         }
       }, true);
 
+      const tankazonSearchInput = document.getElementById("tankazonSearchInput");
+      tankazonSearchInput?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        // Treat Enter as a store-search action only. Stop it at the input so it
+        // can never bubble into gameplay/toolbar keyboard handling or leave the
+        // store runtime state out of sync with the visible overlay.
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        commitTankazonSearch();
+      }, true);
+      tankazonSearchInput?.addEventListener("keyup", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        event.stopPropagation();
+      }, true);
+
       document.addEventListener("keydown", (event) => {
         const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb");
         if (preview && ["Enter", " "].includes(event.key)) {
@@ -2426,9 +2451,6 @@
           openTankazonItem(preview);
           return;
         }
-        if (event.target?.id !== "tankazonSearchInput" || event.key !== "Enter") return;
-        event.preventDefault();
-        commitTankazonSearch();
       });
       document.addEventListener("change", (event) => {
         if (event.target?.id !== "tankazonSearchScope") return;

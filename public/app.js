@@ -1186,7 +1186,8 @@ const DISPLAY_POSITION_SETTING_ENABLED = false;
 const CAUSTIC_LIGHTING_SETTING_ENABLED = true;
 const DECOR_SHADOWS_SETTING_ENABLED = false;
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
-  violenceAndGoreEnabled: false
+  violenceAndGoreEnabled: false,
+  trypophobiaEnabled: false
 });
 const UV_LIGHT_RENDER_QUALITY_LOW = "low";
 const UV_LIGHT_RENDER_QUALITY_HIGH = "high";
@@ -1214,7 +1215,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
-const BOROUGH_OVERVIEW_FISH_FPS = 12;
+const BOROUGH_OVERVIEW_FISH_FPS = 24;
 const BOROUGH_OVERVIEW_FISH_FRAME_MS = 1000 / BOROUGH_OVERVIEW_FISH_FPS;
 const CUSTOM_IMAGE_BACKGROUND_ASSET_KEY = "__custom-image-background__";
 const CUSTOM_DECOR_SHOP_KEY = "__custom-decor-shop__";
@@ -3029,6 +3030,7 @@ const dom = {
   closeSettingsOverlay: document.querySelector("#closeSettingsOverlay"),
   closeEquipmentOverlay: document.querySelector("#closeEquipmentOverlay"),
   violenceGoreToggleInput: document.querySelector("#violenceGoreToggleInput"),
+  trypophobiaToggleInput: document.querySelector("#trypophobiaToggleInput"),
   soundMuteToggleInput: document.querySelector("#soundMuteToggleInput"),
   uiMuteToggleInput: document.querySelector("#uiMuteToggleInput"),
   ambientBubblesToggleInput: document.querySelector("#ambientBubblesToggleInput"),
@@ -3446,6 +3448,9 @@ const runtime = {
   imageLoadFailures: new Map(),
   imageRecoveryNextAt: new Map(),
   activeTankAssetLoadGeneration: 0,
+  tankSwitchTransitionActive: false,
+  tankSwitchTransitionElement: null,
+  tankSwitchTransitionToken: 0,
   cloudUploadPromise: null,
   cloudUploadQueued: false,
   missingFishImageWarnings: new Set(),
@@ -8011,6 +8016,76 @@ function withActiveTank(tankId, callback, targetState = state) {
   }
 }
 
+function getTankSwitchLoadingOverlay() {
+  if (runtime.tankSwitchTransitionElement?.isConnected) {
+    return runtime.tankSwitchTransitionElement;
+  }
+  const stage = dom.tankStage;
+  if (!stage) {
+    return null;
+  }
+  const overlay = document.createElement("div");
+  overlay.className = "tank-switch-loading-overlay";
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.setAttribute("aria-label", "Loading tank");
+  overlay.innerHTML = '<div class="tank-switch-loading-inner"><span class="tank-switch-loading-pulse" aria-hidden="true"></span><strong>Loading tank...</strong></div>';
+  stage.appendChild(overlay);
+  runtime.tankSwitchTransitionElement = overlay;
+  return overlay;
+}
+
+function beginTankSwitchLoadingTransition() {
+  const overlay = getTankSwitchLoadingOverlay();
+  runtime.tankSwitchTransitionActive = true;
+  const token = ++runtime.tankSwitchTransitionToken;
+  if (!overlay) {
+    return token;
+  }
+  overlay.hidden = false;
+  overlay.classList.remove("is-leaving");
+  requestAnimationFrame(() => overlay.classList.add("is-visible"));
+  return token;
+}
+
+function finishTankSwitchLoadingTransition(token) {
+  if (token !== runtime.tankSwitchTransitionToken) {
+    return;
+  }
+  runtime.tankSwitchTransitionActive = false;
+  const overlay = runtime.tankSwitchTransitionElement;
+  if (!overlay) {
+    return;
+  }
+  overlay.classList.add("is-leaving");
+  overlay.classList.remove("is-visible");
+  window.setTimeout(() => {
+    if (token !== runtime.tankSwitchTransitionToken || overlay.classList.contains("is-visible")) {
+      return;
+    }
+    overlay.hidden = true;
+    overlay.classList.remove("is-leaving");
+  }, 240);
+}
+
+function getTankSwitchPreloadPaths(tank) {
+  if (!tank) {
+    return [];
+  }
+  const targetState = {
+    ...state,
+    tanks: [tank],
+    activeTankId: tank.id
+  };
+  const background = runtime.backgroundMap.get(tank.selectedBackground);
+  return filterPreloadPathsForCurrentContentSettings([...new Set([
+    ...getPlacedDecorPreloadPaths(targetState),
+    ...getOwnedFishPreloadPaths(targetState),
+    background?.path,
+    getLocalBackgroundImageDataUrl(tank)
+  ].filter(Boolean))]);
+}
+
 function getTankResaleValue(tank) {
   return getResaleValue(getTankTypeMeta(tank?.tankTypeId).cost || 0);
 }
@@ -8022,6 +8097,10 @@ function setActiveTank(tankId, options = {}) {
   }
 
   if (state.activeTankId === nextTank.id) {
+    return false;
+  }
+
+  if (runtime.tankSwitchTransitionActive && options.allowDuringTransition !== true) {
     return false;
   }
 
@@ -8048,21 +8127,38 @@ function setActiveTank(tankId, options = {}) {
   runtime.forcedGravelDigUntilByFishId.clear();
   runtime.gravelDigBursts = [];
   materializeCoarseFishActivities(nextTank, Date.now());
+
+  const transitionToken = beginTankSwitchLoadingTransition();
   state.activeTankId = nextTank.id;
   const assetLoadGeneration = ++runtime.activeTankAssetLoadGeneration;
-  releaseInactiveDecorImages(state);
-  void preloadImages(getPlacedDecorPreloadPaths(state)).then(() => {
-    if (assetLoadGeneration !== runtime.activeTankAssetLoadGeneration) {
-      releaseInactiveDecorImages(state);
-      return;
-    }
-    renderTank(Date.now());
-  });
+  runtime.gravelStateDirty = true;
   renderUi(Date.now());
   saveState();
   if (options.announce !== false) {
     showToast(getTankLabel(nextTank));
   }
+
+  // Give the blue veil a chance to paint before decoding the next tank's loose
+  // decor artwork. The active tank changes immediately for state consistency,
+  // but the player never sees partially loaded layers underneath the veil.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const preloadPaths = getTankSwitchPreloadPaths(nextTank);
+    void preloadImages(preloadPaths, {
+      maxAttempts: 2,
+      timeoutMs: 8000,
+      retryDelayMs: 180
+    }).catch((error) => {
+      console.debug("Tank switch preload completed with unavailable artwork.", error);
+    }).finally(() => {
+      if (assetLoadGeneration !== runtime.activeTankAssetLoadGeneration || transitionToken !== runtime.tankSwitchTransitionToken) {
+        return;
+      }
+      renderTank(Date.now());
+      releaseInactiveDecorImages(state);
+      requestAnimationFrame(() => finishTankSwitchLoadingTransition(transitionToken));
+    });
+  }));
+
   return true;
 }
 
@@ -8336,6 +8432,13 @@ function openStoreOverlay(tab = "food", options = {}) {
     return;
   }
 
+  // The store has both runtime state and a rendered DOM shell. If something
+  // external ever leaves those out of sync, opening the store must heal the
+  // state instead of treating an invisible store as already open.
+  if (runtime.storeOverlayOpen && dom.storeOverlay?.hidden) {
+    runtime.storeOverlayOpen = false;
+  }
+
   // BubbleBodega normally restores the shopper's last category. A tutorial task
   // must always open the category it teaches, including when its toolbar
   // button calls this function without an explicit option.
@@ -8361,7 +8464,23 @@ function closeStoreOverlay(options = {}) {
   }
 
   runtime.storeOverlayOpen = false;
-  renderUi(Date.now());
+  if (options.render === false) {
+    if (dom.storeOverlay) {
+      dom.storeOverlay.hidden = true;
+      dom.storeOverlay.classList.remove("is-open");
+    }
+  } else {
+    renderUi(Date.now());
+  }
+  return true;
+}
+
+function closeStoreBeforePrimaryViewChange() {
+  const renderedOpen = Boolean(dom.storeOverlay && !dom.storeOverlay.hidden);
+  if (!runtime.storeOverlayOpen && !renderedOpen) {
+    return false;
+  }
+  closeStoreOverlay({ force: true, render: false });
   return true;
 }
 
@@ -8892,6 +9011,45 @@ function getDecorDefaultCaveColorSettings(decorKey = "") {
   }
 
   return null;
+}
+
+function buildTrypophobiaVariantPath(imagePath = "") {
+  const path = String(imagePath || "");
+  if (!path || /^(?:data:|blob:)/i.test(path) || /_trypophobia(?=\.[^./?#]+(?:[?#].*)?$)/i.test(path)) {
+    return "";
+  }
+  return path.replace(/(\.[^./?#]+)([?#].*)?$/, "_Trypophobia$1$2");
+}
+
+function getDecorLayerTrypophobiaPath(decor, layer) {
+  const explicitPath = String(layer?.trypophobiaPath || "").trim();
+  if (explicitPath) {
+    return explicitPath;
+  }
+  const sourcePath = layer?.isBaseLayer ? decor?.path : resolveDecorColorLayerPath(layer);
+  return buildTrypophobiaVariantPath(sourcePath);
+}
+
+function getDecorTrypophobiaCandidatePaths(decor) {
+  if (!decor || !hasDecorCaveColorLayers(decor)) {
+    return [];
+  }
+  return [...new Set(getVisibleDecorColorLayers(decor)
+    .map((layer) => getDecorLayerTrypophobiaPath(decor, layer))
+    .filter(Boolean))];
+}
+
+function getDecorTrypophobiaArtworkPaths(decor) {
+  if (!decor || !hasDecorCaveColorLayers(decor)) {
+    return [];
+  }
+  return [...new Set(getVisibleDecorColorLayers(decor).flatMap((layer) => {
+    const path = getDecorLayerTrypophobiaPath(decor, layer);
+    if (!path) {
+      return [];
+    }
+    return layer.trypophobiaPath || runtime.images.has(path) ? [path] : [];
+  }))];
 }
 
 function getDecorCaveColorLayers(decorOrKey) {
@@ -12539,6 +12697,9 @@ function openEditOverlayMode(mode = null, options = {}) {
 
 function toggleEditTankMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.editTankMode;
+  if (nextMode) {
+    closeStoreBeforePrimaryViewChange();
+  }
   clearPrimaryToolModes();
   if (!nextMode) {
     hideToast({ key: TUTORIAL_TOAST_DECOR_DONE });
@@ -12932,6 +13093,9 @@ function hasToolbarTriggeredToolMode() {
 
 function toggleFishEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.fishEditMode;
+  if (nextMode) {
+    closeStoreBeforePrimaryViewChange();
+  }
   clearPrimaryToolModes();
   const now = Date.now();
   let tutorialChanged = false;
@@ -12956,6 +13120,9 @@ function toggleFishEditMode(force = null, options = {}) {
 
 function toggleEquipmentEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.equipmentEditMode;
+  if (nextMode) {
+    closeStoreBeforePrimaryViewChange();
+  }
   clearPrimaryToolModes();
   const now = Date.now();
 
@@ -12972,6 +13139,9 @@ function toggleEquipmentEditMode(force = null, options = {}) {
 
 function toggleTankEditMode(force = null, options = {}) {
   const nextMode = typeof force === "boolean" ? force : !runtime.tankEditMode;
+  if (nextMode) {
+    closeStoreBeforePrimaryViewChange();
+  }
   clearPrimaryToolModes();
   const now = Date.now();
 
@@ -14034,7 +14204,12 @@ function getStageRenderDevicePixelRatio() {
 
 function getEffectiveAnimationFpsLimit() {
   const portableLimit = isPortablePerformanceModeActive() ? PORTABLE_PERFORMANCE_MAX_FPS : 0;
-  const overlayLimit = runtime.storeOverlayOpen || runtime.utilityOverlayOpen || runtime.settingsOverlayOpen ? 30 : 0;
+  // BubbleBodega now uses a transparent, heavily blurred backdrop. Keeping the
+  // live aquarium at 24 FPS under that blur gives it motion without asking the
+  // browser to recomposite the expensive blur at full gameplay frame rate.
+  const overlayLimit = runtime.storeOverlayOpen
+    ? 24
+    : (runtime.utilityOverlayOpen || runtime.settingsOverlayOpen ? 30 : 0);
   const interacting = Boolean(
     runtime.dragState
     || runtime.decorResizeState
@@ -15304,7 +15479,13 @@ function bindEvents() {
     if (!guardTutorialToolbarControl("openStoreButton")) {
       return;
     }
-    if (runtime.storeOverlayOpen) {
+    const storeActuallyVisible = Boolean(
+      runtime.storeOverlayOpen
+      && dom.storeOverlay
+      && !dom.storeOverlay.hidden
+      && dom.storeOverlay.classList.contains("is-open")
+    );
+    if (storeActuallyVisible) {
       closeStoreOverlay();
       return;
     }
@@ -15638,6 +15819,9 @@ function bindEvents() {
   });
   dom.violenceGoreToggleInput?.addEventListener("change", (event) => {
     setContentSetting("violenceAndGoreEnabled", event.currentTarget?.checked);
+  });
+  dom.trypophobiaToggleInput?.addEventListener("change", (event) => {
+    setContentSetting("trypophobiaEnabled", event.currentTarget?.checked);
   });
   const handleSoundMuteToggleInput = (event) => {
     setSoundMuted(event.currentTarget?.checked);
@@ -18902,6 +19086,22 @@ function resolveSpeciesMealCoins(species) {
 function getDecorCompanionType(decorKey = "") {
   const key = String(decorKey || "").toLowerCase();
 
+  if (/_color1_trypophobia\.[^.]+$/.test(key)) {
+    return "color1Trypophobia";
+  }
+
+  if (/_color2_trypophobia\.[^.]+$/.test(key)) {
+    return "color2Trypophobia";
+  }
+
+  if (/_color3_trypophobia\.[^.]+$/.test(key)) {
+    return "color3Trypophobia";
+  }
+
+  if (/_trypophobia\.[^.]+$/.test(key)) {
+    return "trypophobia";
+  }
+
   if (/_color1\.[^.]+$/.test(key)) {
     return "color1";
   }
@@ -18944,6 +19144,8 @@ function getDecorCompanionType(decorKey = "") {
 function getDecorBaseKey(decorKey = "") {
   const key = String(decorKey || "").toLowerCase();
   return key
+    .replace(/_color[123]_trypophobia(?=\.[^.]+$)/, "")
+    .replace(/_trypophobia(?=\.[^.]+$)/, "")
     .replace(/_color[123](?=\.[^.]+$)/, "")
     .replace(/_(?:triggers|trigger)(?=\.[^.]+$)/, "")
     .replace(/_(?:seats|seat)(?=\.[^.]+$)/, "")
@@ -18981,7 +19183,7 @@ function buildDecorCaveColorLayers(group) {
     return uniqueCandidates;
   };
 
-  const buildOverlayLayer = (id, label, candidates = []) => {
+  const buildOverlayLayer = (id, label, candidates = [], trypophobiaCompanion = null) => {
     const primary = candidates[0] || null;
     return {
       id,
@@ -18989,7 +19191,10 @@ function buildDecorCaveColorLayers(group) {
       path: primary?.path || "",
       paths: candidates.map((candidate) => candidate.path),
       legacyPaths: [],
-      sourceKey: primary?.sourceKey || ""
+      sourceKey: primary?.sourceKey || "",
+      trypophobiaPath: trypophobiaCompanion?.path || "",
+      trypophobiaSourceKey: trypophobiaCompanion?.key || "",
+      trypophobiaMode: "replace"
     };
   };
 
@@ -19004,10 +19209,13 @@ function buildDecorCaveColorLayers(group) {
       path: group.base.path,
       paths: [group.base.path],
       sourceKey: group.base.key,
-      isBaseLayer: true
+      isBaseLayer: true,
+      trypophobiaPath: group.trypophobia?.path || group.color1Trypophobia?.path || "",
+      trypophobiaSourceKey: group.trypophobia?.key || group.color1Trypophobia?.key || "",
+      trypophobiaMode: "overlay"
     },
-    buildOverlayLayer("color2", "Color 2", color2Candidates),
-    buildOverlayLayer("color3", "Color 3", color3Candidates)
+    buildOverlayLayer("color2", "Color 2", color2Candidates, group.color2Trypophobia),
+    buildOverlayLayer("color3", "Color 3", color3Candidates, group.color3Trypophobia)
   ];
 }
 
@@ -19038,6 +19246,10 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         color1: null,
         color2: null,
         color3: null,
+        trypophobia: null,
+        color1Trypophobia: null,
+        color2Trypophobia: null,
+        color3Trypophobia: null,
         trigger: null,
         seats: null
       });
@@ -19066,6 +19278,10 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         color1: null,
         color2: null,
         color3: null,
+        trypophobia: null,
+        color1Trypophobia: null,
+        color2Trypophobia: null,
+        color3Trypophobia: null,
         trigger: null,
         seats: null
       });
@@ -24641,7 +24857,8 @@ function sanitizeContentSettings(rawSettings) {
       ? source.violenceAndGoreEnabled !== false
       : (hasLegacyViolenceSetting || hasLegacyGoreSetting)
         ? (source.violenceEnabled !== false && source.goreEnabled !== false)
-        : DEFAULT_CONTENT_SETTINGS.violenceAndGoreEnabled !== false
+        : DEFAULT_CONTENT_SETTINGS.violenceAndGoreEnabled !== false,
+    trypophobiaEnabled: source.trypophobiaEnabled === true
   };
 }
 
@@ -25167,6 +25384,10 @@ function getContentSettings() {
 
 function isViolenceAndGoreEnabled() {
   return getContentSettings().violenceAndGoreEnabled;
+}
+
+function isTrypophobiaEnabled() {
+  return getContentSettings().trypophobiaEnabled === true;
 }
 
 function isViolenceEnabled() {
@@ -52419,6 +52640,7 @@ function renderTankNavigation() {
 }
 
 function openAquariumOverview() {
+  closeStoreBeforePrimaryViewChange();
   clearPrimaryToolModes();
   runtime.boroughOverviewOpen = true;
   runtime.aquariumExpansionMode = true;
@@ -56881,6 +57103,9 @@ function renderSettingsOverlay() {
   }
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
+  }
+  if (dom.trypophobiaToggleInput) {
+    dom.trypophobiaToggleInput.checked = settings.trypophobiaEnabled === true;
   }
   if (dom.soundMuteToggleInput) {
     dom.soundMuteToggleInput.checked = uiSettings.soundMuted;
@@ -61752,7 +61977,7 @@ function applyContentSettingsEffects(now = Date.now()) {
 }
 
 function setContentSetting(settingKey, value) {
-  if (!state || settingKey !== "violenceAndGoreEnabled") {
+  if (!state || !["violenceAndGoreEnabled", "trypophobiaEnabled"].includes(settingKey)) {
     return;
   }
 
@@ -61762,15 +61987,31 @@ function setContentSetting(settingKey, value) {
     [settingKey]: Boolean(value)
   });
 
-  if (currentSettings.violenceAndGoreEnabled === nextSettings.violenceAndGoreEnabled) {
+  if (currentSettings[settingKey] === nextSettings[settingKey]) {
     return;
   }
 
   state.contentSettings = nextSettings;
   const now = Date.now();
-  applyContentSettingsEffects(now);
+  if (settingKey === "violenceAndGoreEnabled") {
+    applyContentSettingsEffects(now);
+  }
   saveState();
   renderUi(now);
+
+  if (settingKey === "trypophobiaEnabled") {
+    if (nextSettings.trypophobiaEnabled) {
+      const activeDecorPaths = getPlacedDecorPreloadPaths(state)
+        .filter((path) => /_trypophobia(?=\.[^./?#]+(?:[?#].*)?$)/i.test(String(path || "")));
+      void preloadImages(activeDecorPaths, { maxAttempts: 1 })
+        .finally(() => renderTank(Date.now()));
+    } else {
+      renderTank(now);
+    }
+    showToast(nextSettings.trypophobiaEnabled ? "Trypophobia artwork enabled." : "Trypophobia artwork disabled.");
+    return;
+  }
+
   if (nextSettings.violenceAndGoreEnabled) {
     void preloadContentGatedAssetsForCurrentSettings()
       .then(() => {
@@ -66218,15 +66459,7 @@ function drawDecorEditTankBoundary() {
     frameGradient.addColorStop(1, `rgba(238, 250, 255, ${(0.86 + amount * 0.05).toFixed(3)})`);
     glassContext.strokeStyle = frameGradient;
     glassContext.lineWidth = frameWidthPx;
-    // The top edge reads as an unrelated blue bar against full-screen UI.
-    // Retain the useful side and floor boundaries without drawing that edge.
-    glassContext.beginPath();
-    glassContext.moveTo(frame.left, frame.top + frame.radius);
-    glassContext.lineTo(frame.left, frame.bottom - frame.radius);
-    glassContext.quadraticCurveTo(frame.left, frame.bottom, frame.left + frame.radius, frame.bottom);
-    glassContext.lineTo(frame.right - frame.radius, frame.bottom);
-    glassContext.quadraticCurveTo(frame.right, frame.bottom, frame.right, frame.bottom - frame.radius);
-    glassContext.lineTo(frame.right, frame.top + frame.radius);
+    traceDecorEditRoundedTankPath(glassContext);
     glassContext.stroke();
   } else {
     glassContext.strokeStyle = `rgba(214, 246, 255, ${(0.8 + amount * 0.08).toFixed(3)})`;
@@ -69953,11 +70186,28 @@ function drawCaveColorLayersToContext(context, item, decor, now, options = {}) {
   for (const layer of layers) {
     const layerPath = resolveDecorColorLayerPath(layer);
     const layerImage = runtime.images.get(layerPath);
-    if (!layerImage) {
+    const trypophobiaPath = isTrypophobiaEnabled() ? getDecorLayerTrypophobiaPath(decor, layer) : "";
+    const trypophobiaImage = trypophobiaPath ? runtime.images.get(trypophobiaPath) : null;
+
+    if (layer.isBaseLayer) {
+      if (!layerImage) {
+        continue;
+      }
+      drawDecorColorLayerImageToContext(context, layerImage, layerPath, settings[layer.id], colorizeSettings[layer.id], drawX, drawY, width, height, item, now, motion, alpha);
+      if (trypophobiaImage) {
+        drawDecorImageLayerToContext(context, trypophobiaImage, drawX, drawY, width, height, item, now, motion, alpha, true);
+      }
+      drewLayer = true;
       continue;
     }
 
-    drawDecorColorLayerImageToContext(context, layerImage, layerPath, settings[layer.id], colorizeSettings[layer.id], drawX, drawY, width, height, item, now, motion, alpha);
+    const activeLayerPath = trypophobiaImage ? trypophobiaPath : layerPath;
+    const activeLayerImage = trypophobiaImage || layerImage;
+    if (!activeLayerImage) {
+      continue;
+    }
+
+    drawDecorColorLayerImageToContext(context, activeLayerImage, activeLayerPath, settings[layer.id], colorizeSettings[layer.id], drawX, drawY, width, height, item, now, motion, alpha);
     drewLayer = true;
   }
 
@@ -73828,6 +74078,15 @@ function findPlacedDecorAtPoint(x, y) {
       }
     }
 
+    const decor = runtime.decorMap.get(item.decorKey);
+    const caveDescriptors = getCaveDecorHitShapeDescriptors(item, decor);
+    if (caveDescriptors.length) {
+      if (caveDescriptors.some((descriptor) => pointHitsShapeDescriptor(descriptor, x, y))) {
+        return item;
+      }
+      continue;
+    }
+
     const descriptor = getDecorShapeDescriptor(item);
     if (descriptor && pointHitsShapeDescriptor(descriptor, x, y)) {
       return item;
@@ -73843,6 +74102,34 @@ function getCustomBubblerHitBounds(item) {
   }
 
   return expandBoundsAroundCenter(getPlacedDecorGroundBounds(item), CUSTOM_BUBBLER_HIT_SCALE);
+}
+
+function getCaveDecorHitShapeDescriptors(item, decor = runtime.decorMap.get(item?.decorKey)) {
+  if (!item || !decor || !hasDecorCaveColorLayers(decor)) {
+    return [];
+  }
+
+  const descriptors = [];
+  const seen = new Set();
+  const addDescriptor = (imagePath) => {
+    if (!imagePath || seen.has(imagePath)) {
+      return;
+    }
+    seen.add(imagePath);
+    const descriptor = getDecorShapeDescriptor(item, imagePath);
+    if (descriptor) {
+      descriptors.push(descriptor);
+    }
+  };
+
+  addDescriptor(decor.bgPath);
+  for (const layer of getVisibleDecorColorLayers(decor)) {
+    addDescriptor(resolveDecorColorLayerPath(layer));
+    if (typeof isTrypophobiaEnabled === "function" && isTrypophobiaEnabled()) {
+      addDescriptor(getDecorLayerTrypophobiaPath(decor, layer));
+    }
+  }
+  return descriptors;
 }
 
 function getPlacedDecorBounds(item) {
@@ -73870,9 +74157,17 @@ function getDecorVisibleImagePaths(decor) {
     return [];
   }
 
+  const colorLayers = hasDecorCaveColorLayers(decor) ? getVisibleDecorColorLayers(decor) : [];
+  const normalColorPaths = colorLayers.map((layer) => resolveDecorColorLayerPath(layer)).filter(Boolean);
+  const trypophobiaPaths = isTrypophobiaEnabled()
+    ? colorLayers.map((layer) => getDecorLayerTrypophobiaPath(decor, layer)).filter((path) => path && runtime.images.get(path))
+    : [];
+
   return [...new Set([
     decor.bgPath,
     decor.path,
+    ...normalColorPaths,
+    ...trypophobiaPaths,
     decor.midPath,
     decor.lightPath
   ].filter(Boolean))];
@@ -81753,7 +82048,10 @@ function getDecorArtworkPaths(decor) {
     ...(Array.isArray(decor.caveColorLayers) ? decor.caveColorLayers.flatMap(layer => [
       ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
       ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])
-    ]) : [])
+    ]) : []),
+    ...((typeof isTrypophobiaEnabled === "function" && isTrypophobiaEnabled() && typeof getDecorTrypophobiaArtworkPaths === "function")
+      ? getDecorTrypophobiaArtworkPaths(decor)
+      : [])
   ].filter(Boolean))];
 }
 
@@ -81762,7 +82060,14 @@ function getPlacedDecorPreloadPaths(targetState = state) {
   const tanks = Array.isArray(targetState?.tanks) ? targetState.tanks : [];
   const tank = tanks.find(candidate => candidate.id === targetState?.activeTankId) || tanks[0];
   for (const item of tank?.placedDecor || []) keys.add(item.decorKey);
-  return [...keys].flatMap(key => getDecorArtworkPaths(runtime.decorMap.get(key)));
+  return [...keys].flatMap((key) => {
+    const decor = runtime.decorMap.get(key);
+    const paths = getDecorArtworkPaths(decor);
+    if (typeof isTrypophobiaEnabled === "function" && isTrypophobiaEnabled() && typeof getDecorTrypophobiaCandidatePaths === "function") {
+      paths.push(...getDecorTrypophobiaCandidatePaths(decor));
+    }
+    return [...new Set(paths.filter(Boolean))];
+  });
 }
 
 function releaseInactiveDecorImages(targetState = state) {

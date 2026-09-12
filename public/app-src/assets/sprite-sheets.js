@@ -198,7 +198,10 @@ function getDecorArtworkPaths(decor) {
     ...(Array.isArray(decor.caveColorLayers) ? decor.caveColorLayers.flatMap(layer => [
       ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
       ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])
-    ]) : [])
+    ]) : []),
+    ...((typeof isTrypophobiaEnabled === "function" && isTrypophobiaEnabled() && typeof getDecorTrypophobiaArtworkPaths === "function")
+      ? getDecorTrypophobiaArtworkPaths(decor)
+      : [])
   ].filter(Boolean))];
 }
 
@@ -207,7 +210,14 @@ function getPlacedDecorPreloadPaths(targetState = state) {
   const tanks = Array.isArray(targetState?.tanks) ? targetState.tanks : [];
   const tank = tanks.find(candidate => candidate.id === targetState?.activeTankId) || tanks[0];
   for (const item of tank?.placedDecor || []) keys.add(item.decorKey);
-  return [...keys].flatMap(key => getDecorArtworkPaths(runtime.decorMap.get(key)));
+  return [...keys].flatMap((key) => {
+    const decor = runtime.decorMap.get(key);
+    const paths = getDecorArtworkPaths(decor);
+    if (typeof isTrypophobiaEnabled === "function" && isTrypophobiaEnabled() && typeof getDecorTrypophobiaCandidatePaths === "function") {
+      paths.push(...getDecorTrypophobiaCandidatePaths(decor));
+    }
+    return [...new Set(paths.filter(Boolean))];
+  });
 }
 
 function releaseInactiveDecorImages(targetState = state) {

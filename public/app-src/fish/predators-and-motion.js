@@ -191,7 +191,7 @@ function applyContentSettingsEffects(now = Date.now()) {
 }
 
 function setContentSetting(settingKey, value) {
-  if (!state || settingKey !== "violenceAndGoreEnabled") {
+  if (!state || !["violenceAndGoreEnabled", "trypophobiaEnabled"].includes(settingKey)) {
     return;
   }
 
@@ -201,15 +201,31 @@ function setContentSetting(settingKey, value) {
     [settingKey]: Boolean(value)
   });
 
-  if (currentSettings.violenceAndGoreEnabled === nextSettings.violenceAndGoreEnabled) {
+  if (currentSettings[settingKey] === nextSettings[settingKey]) {
     return;
   }
 
   state.contentSettings = nextSettings;
   const now = Date.now();
-  applyContentSettingsEffects(now);
+  if (settingKey === "violenceAndGoreEnabled") {
+    applyContentSettingsEffects(now);
+  }
   saveState();
   renderUi(now);
+
+  if (settingKey === "trypophobiaEnabled") {
+    if (nextSettings.trypophobiaEnabled) {
+      const activeDecorPaths = getPlacedDecorPreloadPaths(state)
+        .filter((path) => /_trypophobia(?=\.[^./?#]+(?:[?#].*)?$)/i.test(String(path || "")));
+      void preloadImages(activeDecorPaths, { maxAttempts: 1 })
+        .finally(() => renderTank(Date.now()));
+    } else {
+      renderTank(now);
+    }
+    showToast(nextSettings.trypophobiaEnabled ? "Trypophobia artwork enabled." : "Trypophobia artwork disabled.");
+    return;
+  }
+
   if (nextSettings.violenceAndGoreEnabled) {
     void preloadContentGatedAssetsForCurrentSettings()
       .then(() => {

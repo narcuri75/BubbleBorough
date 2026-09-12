@@ -635,11 +635,28 @@ function drawCaveColorLayersToContext(context, item, decor, now, options = {}) {
   for (const layer of layers) {
     const layerPath = resolveDecorColorLayerPath(layer);
     const layerImage = runtime.images.get(layerPath);
-    if (!layerImage) {
+    const trypophobiaPath = isTrypophobiaEnabled() ? getDecorLayerTrypophobiaPath(decor, layer) : "";
+    const trypophobiaImage = trypophobiaPath ? runtime.images.get(trypophobiaPath) : null;
+
+    if (layer.isBaseLayer) {
+      if (!layerImage) {
+        continue;
+      }
+      drawDecorColorLayerImageToContext(context, layerImage, layerPath, settings[layer.id], colorizeSettings[layer.id], drawX, drawY, width, height, item, now, motion, alpha);
+      if (trypophobiaImage) {
+        drawDecorImageLayerToContext(context, trypophobiaImage, drawX, drawY, width, height, item, now, motion, alpha, true);
+      }
+      drewLayer = true;
       continue;
     }
 
-    drawDecorColorLayerImageToContext(context, layerImage, layerPath, settings[layer.id], colorizeSettings[layer.id], drawX, drawY, width, height, item, now, motion, alpha);
+    const activeLayerPath = trypophobiaImage ? trypophobiaPath : layerPath;
+    const activeLayerImage = trypophobiaImage || layerImage;
+    if (!activeLayerImage) {
+      continue;
+    }
+
+    drawDecorColorLayerImageToContext(context, activeLayerImage, activeLayerPath, settings[layer.id], colorizeSettings[layer.id], drawX, drawY, width, height, item, now, motion, alpha);
     drewLayer = true;
   }
 

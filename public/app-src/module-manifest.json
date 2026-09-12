@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 2955,
+  "functionCount": 2966,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -88,7 +88,7 @@
     },
     {
       "path": "decor/customization.js",
-      "functionCount": 166,
+      "functionCount": 175,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -282,7 +282,7 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 114,
+      "functionCount": 115,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -963,6 +963,7 @@
       "functionCount": 75,
       "dependencies": [
         "assets/image-storage-and-import.js",
+        "assets/sprite-sheets.js",
         "audio/system.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
@@ -1149,10 +1150,11 @@
     },
     {
       "path": "decor/hit-testing.js",
-      "functionCount": 13,
+      "functionCount": 14,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
+        "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
         "decor/layout-and-layers.js",
@@ -1255,7 +1257,9 @@
         "assets/image-storage-and-import.js",
         "assets/sprite-sheet-definitions.js",
         "core/platform.js",
+        "core/settings-and-persistence.js",
         "core/utilities.js",
+        "decor/customization.js",
         "fish/undead-and-appearance.js",
         "tank/catalog-and-equipment.js"
       ]

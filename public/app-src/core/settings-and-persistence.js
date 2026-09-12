@@ -148,7 +148,8 @@ function sanitizeContentSettings(rawSettings) {
       ? source.violenceAndGoreEnabled !== false
       : (hasLegacyViolenceSetting || hasLegacyGoreSetting)
         ? (source.violenceEnabled !== false && source.goreEnabled !== false)
-        : DEFAULT_CONTENT_SETTINGS.violenceAndGoreEnabled !== false
+        : DEFAULT_CONTENT_SETTINGS.violenceAndGoreEnabled !== false,
+    trypophobiaEnabled: source.trypophobiaEnabled === true
   };
 }
 
@@ -674,6 +675,10 @@ function getContentSettings() {
 
 function isViolenceAndGoreEnabled() {
   return getContentSettings().violenceAndGoreEnabled;
+}
+
+function isTrypophobiaEnabled() {
+  return getContentSettings().trypophobiaEnabled === true;
 }
 
 function isViolenceEnabled() {

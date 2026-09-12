@@ -171,6 +171,15 @@ function findPlacedDecorAtPoint(x, y) {
       }
     }
 
+    const decor = runtime.decorMap.get(item.decorKey);
+    const caveDescriptors = getCaveDecorHitShapeDescriptors(item, decor);
+    if (caveDescriptors.length) {
+      if (caveDescriptors.some((descriptor) => pointHitsShapeDescriptor(descriptor, x, y))) {
+        return item;
+      }
+      continue;
+    }
+
     const descriptor = getDecorShapeDescriptor(item);
     if (descriptor && pointHitsShapeDescriptor(descriptor, x, y)) {
       return item;
@@ -186,6 +195,34 @@ function getCustomBubblerHitBounds(item) {
   }
 
   return expandBoundsAroundCenter(getPlacedDecorGroundBounds(item), CUSTOM_BUBBLER_HIT_SCALE);
+}
+
+function getCaveDecorHitShapeDescriptors(item, decor = runtime.decorMap.get(item?.decorKey)) {
+  if (!item || !decor || !hasDecorCaveColorLayers(decor)) {
+    return [];
+  }
+
+  const descriptors = [];
+  const seen = new Set();
+  const addDescriptor = (imagePath) => {
+    if (!imagePath || seen.has(imagePath)) {
+      return;
+    }
+    seen.add(imagePath);
+    const descriptor = getDecorShapeDescriptor(item, imagePath);
+    if (descriptor) {
+      descriptors.push(descriptor);
+    }
+  };
+
+  addDescriptor(decor.bgPath);
+  for (const layer of getVisibleDecorColorLayers(decor)) {
+    addDescriptor(resolveDecorColorLayerPath(layer));
+    if (typeof isTrypophobiaEnabled === "function" && isTrypophobiaEnabled()) {
+      addDescriptor(getDecorLayerTrypophobiaPath(decor, layer));
+    }
+  }
+  return descriptors;
 }
 
 function getPlacedDecorBounds(item) {
@@ -213,9 +250,17 @@ function getDecorVisibleImagePaths(decor) {
     return [];
   }
 
+  const colorLayers = hasDecorCaveColorLayers(decor) ? getVisibleDecorColorLayers(decor) : [];
+  const normalColorPaths = colorLayers.map((layer) => resolveDecorColorLayerPath(layer)).filter(Boolean);
+  const trypophobiaPaths = isTrypophobiaEnabled()
+    ? colorLayers.map((layer) => getDecorLayerTrypophobiaPath(decor, layer)).filter((path) => path && runtime.images.get(path))
+    : [];
+
   return [...new Set([
     decor.bgPath,
     decor.path,
+    ...normalColorPaths,
+    ...trypophobiaPaths,
     decor.midPath,
     decor.lightPath
   ].filter(Boolean))];

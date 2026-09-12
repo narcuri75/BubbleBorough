@@ -1687,7 +1687,7 @@ test("overview and store keep the toolbar visible while compact dialogs cover it
   assert.match(rendering, /classList\.toggle\("is-behind-overlay", dialogCoversToolbar\)/);
   assert.match(css, /\.tank-bottom-dock\.is-behind-overlay\s*\{[\s\S]*z-index:\s*3/);
   assert.match(css, /data-utility-mode="fish-sell-confirm"[\s\S]*width:\s*min\(520px/);
-  assert.doesNotMatch(tank, /traceDecorEditRoundedTankPath\(glassContext\);/);
+  assert.match(tank, /traceDecorEditRoundedTankPath\(glassContext\);/);
 });
 
 test("startup requires account auth before a new aquarium and invite-a-friend stays disabled", () => {
@@ -1707,13 +1707,29 @@ test("startup requires account auth before a new aquarium and invite-a-friend st
   assert.equal((html.match(/data-open-invite-friend hidden/g) || []).length, 2);
 });
 
-test("borough overview fish are hard-capped at 12 FPS", () => {
+test("borough overview fish are hard-capped at 24 FPS", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
-  assert.match(bootstrap, /BOROUGH_OVERVIEW_FISH_FPS = 12/);
+  assert.match(bootstrap, /BOROUGH_OVERVIEW_FISH_FPS = 24/);
   assert.match(bootstrap, /BOROUGH_OVERVIEW_FISH_FRAME_MS = 1000 \/ BOROUGH_OVERVIEW_FISH_FPS/);
   assert.match(rendering, /< BOROUGH_OVERVIEW_FISH_FRAME_MS/);
   assert.doesNotMatch(rendering, /debugOverviewFishFps/);
+});
+
+test("BubbleBodega search Enter stays inside the store and primary views close the store", () => {
+  const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
+  const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
+  const toolModes = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  const overview = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const css = fs.readFileSync(path.join(root, "../../public/styles.css"), "utf8");
+
+  assert.match(html, /tankazonSearchInput\?\.addEventListener\("keydown"[\s\S]*event\.stopPropagation\(\)[\s\S]*commitTankazonSearch\(\)/);
+  assert.match(customization, /function closeStoreBeforePrimaryViewChange\(\)/);
+  assert.match(toolModes, /function toggleTankEditMode[\s\S]*closeStoreBeforePrimaryViewChange\(\)/);
+  assert.match(toolModes, /function toggleEditTankMode[\s\S]*closeStoreBeforePrimaryViewChange\(\)/);
+  assert.match(overview, /function openAquariumOverview\(\)\s*\{\s*closeStoreBeforePrimaryViewChange\(\)/);
+  assert.match(toolModes, /runtime\.storeOverlayOpen\s*\? 24/);
+  assert.match(css, /\.tankazon-store\s*\{[\s\S]*background:\s*transparent;[\s\S]*backdrop-filter:\s*blur\(22px\)/);
 });
 
 test("closing the borough overview finishes editing and other toolbar actions close it first", () => {
@@ -1944,9 +1960,14 @@ test("sea anemones share seaweed sway across foreground and cave background laye
 
 test("decor artwork and thumbnails use the literal bg, regular, color2, color3 stack", () => {
   const customizationSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/customization.js"), "utf8");
+  const hitTestingSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/hit-testing.js"), "utf8");
   const previewSource = fs.readFileSync(path.join(root, "../../scripts/generate-loose-decor-previews.cjs"), "utf8");
 
   assert.match(customizationSource, /\["color1", "color2", "color3"\]\.flatMap/);
+  assert.match(hitTestingSource, /getCaveDecorHitShapeDescriptors/);
+  assert.match(hitTestingSource, /addDescriptor\(decor\.bgPath\)/);
+  assert.match(hitTestingSource, /getVisibleDecorColorLayers\(decor\)/);
+  assert.match(hitTestingSource, /resolveDecorColorLayerPath\(layer\)/);
   assert.match(previewSource, /\[group\.bg, group\.base, group\.color2, group\.color3\]\.filter\(Boolean\)/);
   assert.match(previewSource, /composite\(layers\.map\(input => \(\{ input, blend: "over" \}\)\)\)/);
 });
@@ -2029,4 +2050,28 @@ test("retired loose Borough decor no longer appears in catalogs or unlock metada
     assert.equal(manifestFiles.has(file), false, `${file} removed from asset manifest`);
     assert.equal(bootstrap.includes(`"${file}"`), false, `${file} removed from bootstrap metadata`);
   }
+});
+
+test("Trypophobia graphics mode overlays base cave art and replaces color companion layers", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  const catalog = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "rendering/decor.js"), "utf8");
+  assert.match(html, /violenceGoreToggleInput[\s\S]*trypophobiaToggleInput[\s\S]*ambientBubblesToggleInput/);
+  assert.match(settings, /trypophobiaEnabled:\s*source\.trypophobiaEnabled === true/);
+  assert.match(catalog, /_color2_trypophobia\\\.[\s\S]*?return "color2Trypophobia"/i);
+  assert.match(catalog, /trypophobiaMode:\s*"overlay"/);
+  assert.match(catalog, /trypophobiaMode:\s*"replace"/);
+  assert.match(rendering, /if \(layer\.isBaseLayer\)[\s\S]*trypophobiaImage[\s\S]*drawDecorImageLayerToContext/);
+  assert.match(rendering, /const activeLayerImage = trypophobiaImage \|\| layerImage/);
+});
+
+test("tank switching hides incremental asset loading behind a blue transition veil", () => {
+  const source = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(source, /beginTankSwitchLoadingTransition\(\)/);
+  assert.match(source, /getTankSwitchPreloadPaths\(nextTank\)/);
+  assert.match(source, /preloadImages\(preloadPaths,[\s\S]*\.finally\(\(\) => \{[\s\S]*renderTank\(Date\.now\(\)\)[\s\S]*finishTankSwitchLoadingTransition/);
+  assert.match(css, /\.tank-switch-loading-overlay\s*\{[\s\S]*linear-gradient\(180deg, #0a4166/);
+  assert.match(css, /\.tank-switch-loading-overlay\.is-visible\s*\{\s*opacity:\s*1/);
 });

@@ -428,6 +428,9 @@ function renderSettingsOverlay() {
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
   }
+  if (dom.trypophobiaToggleInput) {
+    dom.trypophobiaToggleInput.checked = settings.trypophobiaEnabled === true;
+  }
   if (dom.soundMuteToggleInput) {
     dom.soundMuteToggleInput.checked = uiSettings.soundMuted;
   }

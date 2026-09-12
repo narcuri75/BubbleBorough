@@ -11132,8 +11132,9 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 /* ========================================================================== */
 .tankazon-store {
   padding: clamp(14px, 2vw, 28px);
-  background: rgba(0, 8, 16, 0.62);
-  backdrop-filter: blur(5px);
+  background: transparent;
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  backdrop-filter: blur(22px) saturate(1.08);
 }
 
 .tankazon-store .tankazon-panel {
@@ -18815,4 +18816,63 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
     grid-column: 1;
     grid-template-columns: 72px minmax(0, 1fr) auto;
   }
+}
+
+/* Tank-to-tank asset transition. Keep the current layout stable while the next
+   aquarium's loose artwork decodes behind an opaque blue veil. */
+.tank-switch-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: auto;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(48, 196, 236, 0.20), transparent 34%),
+    linear-gradient(180deg, #0a4166 0%, #062c49 48%, #031d33 100%);
+  transition: opacity 180ms ease;
+}
+
+.tank-switch-loading-overlay[hidden] {
+  display: none;
+}
+
+.tank-switch-loading-overlay.is-visible {
+  opacity: 1;
+}
+
+.tank-switch-loading-overlay.is-leaving {
+  pointer-events: none;
+}
+
+.tank-switch-loading-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border: 1px solid rgba(151, 230, 255, 0.28);
+  border-radius: 999px;
+  color: rgba(235, 250, 255, 0.92);
+  background: rgba(2, 24, 42, 0.34);
+  box-shadow: 0 8px 28px rgba(0, 10, 24, 0.2);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.tank-switch-loading-pulse {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #55d9ff;
+  box-shadow: 0 0 0 0 rgba(85, 217, 255, 0.44);
+  animation: tank-switch-loading-pulse 1.05s ease-out infinite;
+}
+
+@keyframes tank-switch-loading-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(85, 217, 255, 0.46); }
+  75%, 100% { box-shadow: 0 0 0 8px rgba(85, 217, 255, 0); }
 }

@@ -1183,7 +1183,8 @@ const DISPLAY_POSITION_SETTING_ENABLED = false;
 const CAUSTIC_LIGHTING_SETTING_ENABLED = true;
 const DECOR_SHADOWS_SETTING_ENABLED = false;
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
-  violenceAndGoreEnabled: false
+  violenceAndGoreEnabled: false,
+  trypophobiaEnabled: false
 });
 const UV_LIGHT_RENDER_QUALITY_LOW = "low";
 const UV_LIGHT_RENDER_QUALITY_HIGH = "high";
@@ -1211,7 +1212,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
-const BOROUGH_OVERVIEW_FISH_FPS = 12;
+const BOROUGH_OVERVIEW_FISH_FPS = 24;
 const BOROUGH_OVERVIEW_FISH_FRAME_MS = 1000 / BOROUGH_OVERVIEW_FISH_FPS;
 const CUSTOM_IMAGE_BACKGROUND_ASSET_KEY = "__custom-image-background__";
 const CUSTOM_DECOR_SHOP_KEY = "__custom-decor-shop__";
@@ -3026,6 +3027,7 @@ const dom = {
   closeSettingsOverlay: document.querySelector("#closeSettingsOverlay"),
   closeEquipmentOverlay: document.querySelector("#closeEquipmentOverlay"),
   violenceGoreToggleInput: document.querySelector("#violenceGoreToggleInput"),
+  trypophobiaToggleInput: document.querySelector("#trypophobiaToggleInput"),
   soundMuteToggleInput: document.querySelector("#soundMuteToggleInput"),
   uiMuteToggleInput: document.querySelector("#uiMuteToggleInput"),
   ambientBubblesToggleInput: document.querySelector("#ambientBubblesToggleInput"),
@@ -3443,6 +3445,9 @@ const runtime = {
   imageLoadFailures: new Map(),
   imageRecoveryNextAt: new Map(),
   activeTankAssetLoadGeneration: 0,
+  tankSwitchTransitionActive: false,
+  tankSwitchTransitionElement: null,
+  tankSwitchTransitionToken: 0,
   cloudUploadPromise: null,
   cloudUploadQueued: false,
   missingFishImageWarnings: new Set(),

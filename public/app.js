@@ -3200,6 +3200,9 @@ const runtime = {
   storeOverlayOpen: false,
   utilityOverlayOpen: false,
   utilityOverlayMode: "",
+  legalOverlayTab: "privacy",
+  startupLegalOpen: false,
+  startupLegalTab: "privacy",
   settingsOverlayOpen: false,
   equipmentOverlayOpen: false,
   storeTab: "food",
@@ -4371,6 +4374,16 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     id: "credits",
     exclusive: true,
     render: renderCreditsUtilityOverlay
+  },
+  legal: {
+    id: "legal",
+    exclusive: true,
+    onOpen: (ctx, options = {}) => {
+      runtime.legalOverlayTab = normalizeLegalOverlayTab(options.tab || "privacy");
+    },
+    render: renderLegalUtilityOverlay,
+    onHeaderClick: handleLegalUtilityOverlayBodyClick,
+    onBodyClick: handleLegalUtilityOverlayBodyClick
   },
   "invite-friend": {
     id: "invite-friend",
@@ -15229,6 +15242,13 @@ function bindEvents() {
       if (creditsButton) {
         event.preventDefault();
         openUtilityOverlay("credits");
+        return;
+      }
+
+      const legalButton = event.target instanceof Element ? event.target.closest("[data-open-legal]") : null;
+      if (legalButton) {
+        event.preventDefault();
+        openUtilityOverlay("legal", { tab: legalButton.dataset.legalTab || "privacy" });
         return;
       }
 
@@ -54951,7 +54971,11 @@ function renderCreditsUtilityOverlay() {
           </div>
           <div class="credits-row">
             <strong>Game design and code</strong>
-            <span>Nathan Arcuri, made with OpenAI Codex assistance.</span>
+            <span>Nathan Arcuri.</span>
+          </div>
+          <div class="credits-row">
+            <strong>LLM assistance</strong>
+            <span>ChatGPT.</span>
           </div>
           <div class="credits-row">
             <strong>Artwork</strong>
@@ -54963,7 +54987,7 @@ function renderCreditsUtilityOverlay() {
           </div>
           <div class="credits-row">
             <strong>Availability</strong>
-            <span>Bubble Borough is free-to-play while it is available on the internet.</span>
+            <span>Bubble Borough is free-to-play. Optional donations are appreciated and handled through Buy Me a Coffee.</span>
           </div>
           <div class="credits-row">
             <strong>Copyright</strong>
@@ -54974,6 +54998,339 @@ function renderCreditsUtilityOverlay() {
     `,
     footer: buildUtilityCloseFooter("Close")
   };
+}
+
+function normalizeLegalOverlayTab(value) {
+  const tab = String(value || "").trim().toLowerCase();
+  return ["privacy", "terms", "services", "licenses"].includes(tab) ? tab : "privacy";
+}
+
+function renderLegalOverlayTabs(activeTab) {
+  const selected = normalizeLegalOverlayTab(activeTab);
+  const tabs = [
+    ["privacy", "Privacy Policy"],
+    ["terms", "Terms of Service"],
+    ["services", "Data & Services"],
+    ["licenses", "Licenses"]
+  ];
+  return `
+    <div class="legal-tabs" role="tablist" aria-label="Legal information">
+      ${tabs.map(([id, label]) => `<button class="legal-tab-button ${selected === id ? "is-active" : ""}" type="button" role="tab" aria-selected="${selected === id ? "true" : "false"}" data-legal-tab="${id}">${escapeHtml(label)}</button>`).join("")}
+    </div>
+  `;
+}
+
+function renderLegalPrivacyPolicy() {
+  return `
+    <article class="legal-document" aria-labelledby="legalPrivacyTitle">
+      <header class="legal-document-heading">
+        <div>
+          <p class="legal-document-eyebrow">Last updated 09/13/2026</p>
+          <h3 id="legalPrivacyTitle">Privacy Policy</h3>
+        </div>
+        <span class="legal-document-badge">Bubble Borough</span>
+      </header>
+
+      <section>
+        <h4>Who operates Bubble Borough</h4>
+        <p>Bubble Borough is operated by <strong>Nathan Arcuri</strong>. Questions about privacy, account data, or deletion requests can be sent to <strong>Dev@BubbleBorough.com</strong>.</p>
+      </section>
+
+      <section>
+        <h4>Information used by Bubble Borough</h4>
+        <ul>
+          <li><strong>Account information:</strong> your email address, Supabase account identifier, and the username you enter.</li>
+          <li><strong>Authentication information:</strong> passwords and authentication credentials are handled through Supabase Auth. Authentication credentials are not stored inside your Bubble Borough game save.</li>
+          <li><strong>Cloud save information:</strong> your game progress, aquarium state, settings, inventory, timestamps, profile information stored in the save, and other gameplay data needed to synchronize or restore your aquarium.</li>
+          <li><strong>Custom content:</strong> images you import for custom fish, decor, hides, or backgrounds, along with names and related settings. Custom images can be embedded in your cloud save as image data.</li>
+          <li><strong>Local game information:</strong> Bubble Borough also uses browser storage, including local storage and IndexedDB, for local game data, session-related information, backups, and custom image storage.</li>
+          <li><strong>Information you choose to submit:</strong> information you send through Feedback, email, or other contact methods.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h4>How information is used</h4>
+        <p>Information is used to create and authenticate accounts, synchronize and restore cloud saves, deliver account emails, provide custom-content features, protect account access, troubleshoot problems, respond to support or deletion requests, and operate Bubble Borough.</p>
+      </section>
+
+      <section>
+        <h4>Custom images and private content</h4>
+        <p>Bubble Borough allows you to import your own images for custom game content. The game does not provide a public gallery or moderation feed for those images, and imported images are not intentionally published to other players. When included in cloud saving, image files are stored as encoded image data inside the save associated with your account. <strong>Base64 encoding is not encryption.</strong></p>
+        <p>Bubble Borough sends cloud-save requests using your authenticated Supabase session and requests the save associated with the signed-in account. Service administration may still provide access to stored data when reasonably necessary to maintain, secure, troubleshoot, or comply with legal obligations.</p>
+      </section>
+
+      <section>
+        <h4>Service providers</h4>
+        <p><strong>Supabase</strong> provides authentication, account management, and cloud save storage. <strong>Resend</strong> is currently used for transactional account email delivery through the Supabase email configuration. Feedback may open <strong>Google Forms</strong>. Optional donations are handled by <strong>Buy Me a Coffee</strong>. External links may also open <strong>nathanarcuri.com</strong>. Each external service has its own privacy practices.</p>
+        <p>Supabase, Resend, and other infrastructure providers may process technical information such as IP addresses, browser or device information, timestamps, authentication events, request logs, and email-delivery logs as part of operating and securing their services.</p>
+      </section>
+
+      <section>
+        <h4>Analytics, advertising, and sale of information</h4>
+        <p>Bubble Borough does not currently include third-party analytics or behavioral tracking code in the game client, does not contain third-party advertising, and does not sell your personal information.</p>
+      </section>
+
+      <section>
+        <h4>Account requirement and cloud saving</h4>
+        <p>A Bubble Borough account is currently required to access the game, and cloud saving is part of the signed-in experience. Local browser data may also be used for performance, recovery, and backup purposes.</p>
+      </section>
+
+      <section>
+        <h4>Children and families</h4>
+        <p>Bubble Borough's game content is intended for a general audience and may be enjoyed by users of all ages. Because the online service requires an account and email address, children should use Bubble Borough with the involvement of a parent or guardian where required by applicable law. Bubble Borough does not use account or gameplay information for targeted advertising or behavioral profiling.</p>
+      </section>
+
+      <section>
+        <h4>Retention and deletion</h4>
+        <p>Account and cloud save information is generally retained while the account and service remain available, subject to Supabase storage, retention, and service limits. To request deletion of your Bubble Borough account and associated cloud save data, email <strong>Dev@BubbleBorough.com</strong> from, or identify, the account email address. Additional verification may be required before deletion is completed.</p>
+        <p>Deleting cloud data does not necessarily erase local browser data already stored on a device. Local copies can be removed by clearing Bubble Borough site data in that browser.</p>
+      </section>
+
+      <section>
+        <h4>Security</h4>
+        <p>Reasonable technical measures are used to protect account and cloud save information, including authenticated access to cloud services. No online system can guarantee absolute security.</p>
+      </section>
+
+      <section>
+        <h4>Changes to this policy</h4>
+        <p>This policy may be updated as Bubble Borough changes. The date at the top of this page will be updated when material changes are made.</p>
+      </section>
+    </article>
+  `;
+}
+
+function renderLegalTermsOfService() {
+  return `
+    <article class="legal-document" aria-labelledby="legalTermsTitle">
+      <header class="legal-document-heading">
+        <div>
+          <p class="legal-document-eyebrow">Last updated 09/13/2026</p>
+          <h3 id="legalTermsTitle">Terms of Service</h3>
+        </div>
+        <span class="legal-document-badge">Bubble Borough</span>
+      </header>
+
+      <section>
+        <h4>Using Bubble Borough</h4>
+        <p>These Terms of Service apply when you access or use Bubble Borough. Bubble Borough is operated by Nathan Arcuri. By creating an account or using the service, you agree to follow these terms.</p>
+      </section>
+
+      <section>
+        <h4>Your account</h4>
+        <p>A signed-in account is currently required to access Bubble Borough. You are responsible for the accuracy of information you provide, keeping your sign-in credentials secure, and activity performed through your account. Do not attempt to access another person's account or bypass account security.</p>
+      </section>
+
+      <section>
+        <h4>Game license and ownership</h4>
+        <p>Bubble Borough and its original code, artwork, interface, writing, game systems, names, and other original content are owned by Nathan Arcuri unless otherwise noted. You receive a personal, limited, revocable, non-transferable license to use Bubble Borough for its intended purpose. You may not sell, redistribute, impersonate, or commercially exploit Bubble Borough or its original assets without permission.</p>
+      </section>
+
+      <section>
+        <h4>Your custom content</h4>
+        <p>Bubble Borough lets you import images and other custom content for private use in your aquarium. You are responsible for the content you import and for having any rights or permissions needed to use it. Do not use the service to store content that is unlawful, malicious, or infringes another person's rights.</p>
+        <p>Custom content is not proactively reviewed or moderated through an in-game moderation system. You grant Bubble Borough only the permission reasonably necessary to process, display, store, synchronize, back up, and restore the custom content needed to provide the feature you chose to use. If unlawful content or abuse is brought to the operator's attention, access or content may be restricted when reasonably necessary.</p>
+      </section>
+
+      <section>
+        <h4>Acceptable use</h4>
+        <p>Do not use Bubble Borough to break the law, interfere with the service, probe or bypass security, distribute malicious software, abuse account systems, send unwanted invitations, or deliberately disrupt other users or infrastructure.</p>
+      </section>
+
+      <section>
+        <h4>Cloud saves and availability</h4>
+        <p>Cloud saving is currently part of the required signed-in experience. Synchronization may occasionally be unavailable, delayed, interrupted, or limited by third-party services. Keep exported backups of save data that is important to you. Bubble Borough may be changed, suspended, or discontinued, and specific features may be added, removed, or modified over time.</p>
+      </section>
+
+      <section>
+        <h4>Free-to-play and donations</h4>
+        <p>Bubble Borough is currently free-to-play. Optional donations through Buy Me a Coffee are voluntary and do not purchase in-game goods, ownership rights, guaranteed service, or special account privileges unless a specific offer clearly states otherwise.</p>
+      </section>
+
+      <section>
+        <h4>Third-party services and links</h4>
+        <p>Bubble Borough relies on third-party services for authentication, cloud storage, email delivery, feedback, and optional external links. These include Supabase, Resend, Google Forms, Buy Me a Coffee, and links to nathanarcuri.com. Those services operate under their own terms and privacy policies. Bubble Borough is not responsible for third-party websites or services you choose to visit.</p>
+      </section>
+
+      <section>
+        <h4>No warranty</h4>
+        <p>Bubble Borough is provided on an "as available" basis. To the fullest extent permitted by law, no guarantee is made that the game will always be available, error-free, secure, or compatible with every device or browser.</p>
+      </section>
+
+      <section>
+        <h4>Limitation of liability</h4>
+        <p>To the fullest extent permitted by law, Bubble Borough and its creator will not be liable for indirect, incidental, special, consequential, or punitive damages, or for lost data, lost progress, lost profits, or service interruption arising from use of the game.</p>
+      </section>
+
+      <section>
+        <h4>Account deletion</h4>
+        <p>You may request deletion of your Bubble Borough account and associated cloud save data by emailing <strong>Dev@BubbleBorough.com</strong>. Verification of account ownership may be required before a deletion request is completed.</p>
+      </section>
+
+      <section>
+        <h4>Enforcement and changes</h4>
+        <p>Access may be limited or terminated when reasonably necessary to protect the service, enforce these terms, or comply with law. These terms may be updated as Bubble Borough changes. Continued use after updated terms take effect means you accept the revised terms.</p>
+      </section>
+    </article>
+  `;
+}
+
+function renderLegalDataServices() {
+  return `
+    <article class="legal-document legal-services-document" aria-labelledby="legalServicesTitle">
+      <header class="legal-document-heading">
+        <div>
+          <p class="legal-document-eyebrow">Plain-language transparency</p>
+          <h3 id="legalServicesTitle">Data & Services</h3>
+        </div>
+        <span class="legal-document-badge">Quick view</span>
+      </header>
+
+      <p class="legal-lead">This page is the short version of what happens when Bubble Borough connects to online services.</p>
+
+      <div class="legal-service-grid">
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Operator</strong><span class="legal-status-pill is-local">Nathan Arcuri</span></div>
+          <p>Bubble Borough is independently operated by Nathan Arcuri. Privacy and account deletion requests can be sent to Dev@BubbleBorough.com.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Authentication</strong><span class="legal-status-pill">Supabase</span></div>
+          <p>Your email address and authentication credentials are handled through Supabase Auth for sign-in, verification, password reset, email changes, and account security.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Cloud saves</strong><span class="legal-status-pill">Supabase</span></div>
+          <p>Signing in is required to play, and your Bubble Borough save is synchronized to Supabase as part of the account experience.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Custom images</strong><span class="legal-status-pill">Account save</span></div>
+          <p>Custom fish, decor, hides, and background images can be stored as encoded image data inside your cloud save. They are not intentionally published to other players. Base64 encoding is not encryption.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Account email</strong><span class="legal-status-pill">Resend</span></div>
+          <p>Verification, password reset, email change, and similar transactional messages are delivered through the email provider configured for Supabase, currently Resend.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Local storage</strong><span class="legal-status-pill is-local">Your device</span></div>
+          <p>Bubble Borough uses browser storage for local game data, backups, session-related information, and custom image storage.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Analytics</strong><span class="legal-status-pill is-none">None</span></div>
+          <p>The current game client does not include third-party analytics or behavioral tracking code.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Advertising</strong><span class="legal-status-pill is-none">None</span></div>
+          <p>Bubble Borough does not currently contain third-party advertising.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Data sales</strong><span class="legal-status-pill is-none">No</span></div>
+          <p>Bubble Borough does not sell your personal information.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Donations</strong><span class="legal-status-pill is-external">Buy Me a Coffee</span></div>
+          <p>Bubble Borough is free-to-play. The Pizza Me link opens Buy Me a Coffee for optional donations.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>External links</strong><span class="legal-status-pill is-external">When opened</span></div>
+          <p>Feedback can open Google Forms, Visit My Site opens nathanarcuri.com, and Pizza Me opens Buy Me a Coffee. Their own privacy practices apply after you leave Bubble Borough.</p>
+        </div>
+        <div class="legal-service-card">
+          <div class="legal-service-card-heading"><strong>Account deletion</strong><span class="legal-status-pill is-local">By request</span></div>
+          <p>Email Dev@BubbleBorough.com to request deletion of your account and associated cloud save data. Verification may be required.</p>
+        </div>
+      </div>
+
+      <div class="legal-callout">
+        <strong>What is tied to your account?</strong>
+        <p>Your authenticated account is connected to its cloud save. That save can include your username, aquarium progress, settings, inventory, custom fish and decor data, imported images, and other gameplay state.</p>
+      </div>
+    </article>
+  `;
+}
+
+function renderLegalLicenses() {
+  return `
+    <article class="legal-document" aria-labelledby="legalLicensesTitle">
+      <header class="legal-document-heading">
+        <div>
+          <p class="legal-document-eyebrow">Attribution and third-party material</p>
+          <h3 id="legalLicensesTitle">Licenses</h3>
+        </div>
+        <span class="legal-document-badge">Bubble Borough</span>
+      </header>
+
+      <section>
+        <h4>Bubble Borough original content</h4>
+        <p>Unless otherwise identified, original Bubble Borough code, game design, interface design, writing, and game assets are &copy; 2026 Nathan Arcuri. All rights reserved.</p>
+      </section>
+
+      <section>
+        <h4>Sound effects</h4>
+        <p>Some sound effects used by Bubble Borough were obtained from Pixabay and remain subject to the license terms that applied to those assets when obtained.</p>
+      </section>
+
+      <section>
+        <h4>LLM assistance</h4>
+        <p>Bubble Borough was developed with ChatGPT assistance. Artwork generated with ChatGPT was selected, edited, and integrated into the game by Nathan Arcuri.</p>
+      </section>
+
+      <section>
+        <h4>Supabase</h4>
+        <p>Bubble Borough uses Supabase for authentication and cloud save services. Supabase names, trademarks, services, and software remain subject to their respective owners and applicable terms or licenses.</p>
+      </section>
+
+      <section>
+        <h4>Resend</h4>
+        <p>Resend is used as the configured transactional email delivery provider for account-related messages. Resend's service, name, and trademarks remain the property of their respective owners.</p>
+      </section>
+
+      <section>
+        <h4>Third-party websites and tools</h4>
+        <p>Photopea is used as an editing tool during development. Feedback may open Google Forms, optional donations open Buy Me a Coffee, and the Visit My Site button opens nathanarcuri.com. These services and websites are governed by their own terms where applicable.</p>
+      </section>
+
+      <div class="legal-callout">
+        <strong>Need a specific attribution?</strong>
+        <p>Email Dev@BubbleBorough.com if you believe a required credit or license notice is missing.</p>
+      </div>
+    </article>
+  `;
+}
+
+function renderLegalUtilityOverlay() {
+  const activeTab = normalizeLegalOverlayTab(runtime.legalOverlayTab);
+  const content = activeTab === "terms"
+    ? renderLegalTermsOfService()
+    : activeTab === "services"
+      ? renderLegalDataServices()
+      : activeTab === "licenses"
+        ? renderLegalLicenses()
+        : renderLegalPrivacyPolicy();
+  return {
+    kicker: "Legal",
+    title: "Bubble Borough",
+    headerActions: renderLegalOverlayTabs(activeTab),
+    body: `
+      <div class="legal-overlay-shell">
+        <div class="legal-tab-panel" role="tabpanel">${content}</div>
+      </div>
+    `,
+    footer: "",
+    closable: true
+  };
+}
+
+function handleLegalUtilityOverlayBodyClick(ctx, target, event) {
+  const button = target.closest("[data-legal-tab]");
+  if (!(button instanceof HTMLButtonElement)) {
+    return false;
+  }
+  event?.preventDefault?.();
+  runtime.legalOverlayTab = normalizeLegalOverlayTab(button.dataset.legalTab);
+  renderUtilityOverlay();
+  if (dom.utilityOverlayBody) {
+    dom.utilityOverlayBody.scrollTop = 0;
+    dom.utilityOverlayBody.querySelector(`[data-legal-tab="${runtime.legalOverlayTab}"]`)?.focus();
+  }
+  return true;
 }
 
 function parseInviteFriendEmails(rawValue) {
@@ -80809,6 +81166,42 @@ async function showCloudConflictDialog(cloud) {
 }
 
 // All full-screen auth states use the original Password Reset card primitives.
+function renderCloudAuthLegalNotice(settings = false) {
+  const legalLink = (tab, label) => settings
+    ? `<button class="startup-auth-legal-link" type="button" data-open-legal data-legal-tab="${tab}">${label}</button>`
+    : `<button class="startup-auth-legal-link" type="button" data-startup-legal-tab="${tab}">${label}</button>`;
+  return `
+    <div class="startup-auth-trust">
+      <strong>Authentication and cloud saves are powered by Supabase.</strong>
+      <span>By creating an account, you agree to the ${legalLink("terms", "Terms of Service")} and acknowledge the ${legalLink("privacy", "Privacy Policy")}.</span>
+    </div>
+  `;
+}
+
+function renderStartupLegalPanelContents() {
+  const activeTab = normalizeLegalOverlayTab(runtime.startupLegalTab);
+  const content = activeTab === "terms"
+    ? renderLegalTermsOfService()
+    : activeTab === "services"
+      ? renderLegalDataServices()
+      : activeTab === "licenses"
+        ? renderLegalLicenses()
+        : renderLegalPrivacyPolicy();
+  return `
+    <div class="startup-legal-card" role="dialog" aria-modal="true" aria-labelledby="startupLegalTitle">
+      <div class="startup-legal-header">
+        <div>
+          <span>Legal</span>
+          <h2 id="startupLegalTitle">Bubble Borough</h2>
+        </div>
+        <button class="startup-legal-close" type="button" data-startup-legal-close aria-label="Close legal information" title="Close legal information">&times;</button>
+      </div>
+      ${renderLegalOverlayTabs(activeTab)}
+      <div class="startup-legal-scroll" role="tabpanel">${content}</div>
+    </div>
+  `;
+}
+
 function renderAuthCard({ attribute, title, message, fields = [], buttons = [], footer = "", status = "" }) {
   return `<form class="startup-auth" ${attribute} hidden>
     <div class="startup-auth-heading"><strong class="startup-auth-title" tabindex="-1">${escapeHtml(title)}</strong><span class="startup-auth-copy">${escapeHtml(message)}</span></div>
@@ -80834,7 +81227,7 @@ function getCloudAuthFormMarkup(recovery = false, settings = false) {
       { label: "Password", type: "password", autocomplete: "current-password", placeholder: "Enter your password", attribute: `${prefix}-password` }
     ],
     buttons: [{ text: "Sign In", attribute: settings ? `${prefix}-signin` : `${prefix}-signin-submit` }, { text: "Create Account", attribute: settings ? `${prefix}-create` : `${prefix}-create-submit` }],
-    footer: `<div class="startup-forgot-row"><span aria-hidden="true"></span><button class="startup-forgot-button" type="button" ${prefix}-forgot-password><b aria-hidden="true">?</b> Forgot Password</button><span aria-hidden="true"></span></div>`,
+    footer: `<div class="startup-forgot-row"><span aria-hidden="true"></span><button class="startup-forgot-button" type="button" ${prefix}-forgot-password><b aria-hidden="true">?</b> Forgot Password</button><span aria-hidden="true"></span></div>${renderCloudAuthLegalNotice(settings)}`,
     status: settings ? `${prefix}-message` : "data-startup-auth-status"
   });
 }
@@ -80849,7 +81242,8 @@ function ensureStartupActions() {
   actions.dataset.startupActions = "true";
   actions.innerHTML = `<div data-startup-buttons></div>${getCloudAuthFormMarkup()}${getCloudAuthFormMarkup(true)}
     ${renderAuthCard({ attribute: "data-startup-result", title: "", message: "", buttons: [{ text: "Return to Login", attribute: "data-auth-return-login" }] })}
-    ${renderAuthCard({ attribute: "data-startup-reauth", title: "Verify It's You", message: "For your security, please verify your identity before continuing.", fields: [{ label: "Verification Code", type: "text", autocomplete: "one-time-code", attribute: "data-auth-nonce" }], buttons: [{ text: "Verify", attribute: "data-auth-verify" }], footer: '<button class="startup-forgot-button" type="button" data-auth-resend-code>Send New Code</button><button class="startup-forgot-button" type="button" data-auth-return-login>Return to Login</button>' })}`;
+    ${renderAuthCard({ attribute: "data-startup-reauth", title: "Verify It's You", message: "For your security, please verify your identity before continuing.", fields: [{ label: "Verification Code", type: "text", autocomplete: "one-time-code", attribute: "data-auth-nonce" }], buttons: [{ text: "Verify", attribute: "data-auth-verify" }], footer: '<button class="startup-forgot-button" type="button" data-auth-resend-code>Send New Code</button><button class="startup-forgot-button" type="button" data-auth-return-login>Return to Login</button>' })}
+    <section class="startup-legal-panel" data-startup-legal-panel hidden></section>`;
   content.appendChild(actions);
   actions.addEventListener("click", handleStartupActionClick);
   actions.addEventListener("submit", event => {
@@ -80870,6 +81264,9 @@ function renderStartupActions() {
   const overlay = dom.loadingOverlay;
   const result = actions.querySelector("[data-startup-result]");
   const reauth = actions.querySelector("[data-startup-reauth]");
+  const legalPanel = actions.querySelector("[data-startup-legal-panel]");
+  actions.classList.toggle("is-legal-mode", runtime.startupLegalOpen === true);
+  if (legalPanel) legalPanel.hidden = true;
 
   // Once Continue/Start has been pressed, startup owns this area until loading
   // finishes. Cloud/session refreshes can call renderStartupActions while the
@@ -80882,6 +81279,7 @@ function renderStartupActions() {
     recovery.hidden = true;
     if (result) result.hidden = true;
     if (reauth) reauth.hidden = true;
+    if (legalPanel) legalPanel.hidden = true;
     overlay?.classList.remove("is-auth-mode", "is-welcome-mode");
     if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
     return;
@@ -80889,6 +81287,17 @@ function renderStartupActions() {
 
   result.hidden = true;
   reauth.hidden = true;
+  if (runtime.startupLegalOpen && legalPanel) {
+    overlay.classList.add("is-auth-mode");
+    overlay.classList.remove("is-welcome-mode");
+    buttons.innerHTML = "";
+    auth.hidden = true;
+    recovery.hidden = true;
+    legalPanel.innerHTML = renderStartupLegalPanelContents();
+    legalPanel.hidden = false;
+    if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
+    return;
+  }
   if (runtime.cloudAuthScreen || runtime.cloudReauth) {
     overlay.classList.add("is-auth-mode");
     overlay.classList.remove("is-welcome-mode");
@@ -80949,6 +81358,7 @@ function renderStartupActions() {
 }
 
 function showStartupAuth() {
+  runtime.startupLegalOpen = false;
   const actions = ensureStartupActions();
   const buttons = actions?.querySelector("[data-startup-buttons]");
   const auth = actions?.querySelector("[data-startup-auth]");
@@ -81048,6 +81458,30 @@ function handleStartupActionClick(event) {
   if (!target) return;
   // Button clicks are handled here; Enter is forwarded by the form listener.
   if (target.closest('button[type="submit"]')) event.preventDefault();
+  const startupLegalLink = target.closest("[data-startup-legal-tab]");
+  if (startupLegalLink) {
+    event.preventDefault();
+    runtime.startupLegalTab = normalizeLegalOverlayTab(startupLegalLink.dataset.startupLegalTab);
+    runtime.startupLegalOpen = true;
+    renderStartupActions();
+    return;
+  }
+  const startupLegalTab = target.closest("[data-startup-legal-panel] [data-legal-tab]");
+  if (startupLegalTab) {
+    event.preventDefault();
+    runtime.startupLegalTab = normalizeLegalOverlayTab(startupLegalTab.dataset.legalTab);
+    runtime.startupLegalOpen = true;
+    renderStartupActions();
+    ensureStartupActions()?.querySelector(`[data-startup-legal-panel] [data-legal-tab="${runtime.startupLegalTab}"]`)?.focus();
+    return;
+  }
+  if (target.closest("[data-startup-legal-close]")) {
+    event.preventDefault();
+    runtime.startupLegalOpen = false;
+    renderStartupActions();
+    ensureStartupActions()?.querySelector(`[data-startup-legal-tab="${runtime.startupLegalTab}"]`)?.focus();
+    return;
+  }
   if (target.closest("[data-auth-return-login]")) { returnToCloudLogin(); return; }
   if (target.closest("[data-auth-verify]")) { void handleCloudReauth(); return; }
   if (target.closest("[data-auth-resend-code]")) { void handleCloudReauth(true); return; }

@@ -9001,6 +9001,260 @@ button.management-task-row {
   line-height: 1.45;
 }
 
+.legal-button {
+  min-width: 118px;
+}
+
+#settingsOverlay .settings-other-actions .settings-button-glyph {
+  display: grid;
+  place-items: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.28rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #72ebff;
+  text-shadow: 0 0 8px rgba(72, 218, 255, 0.42);
+}
+
+.utility-overlay[data-utility-mode="legal"] .utility-panel {
+  width: min(980px, calc(100vw - 80px));
+  height: min(86dvh, 790px);
+  max-height: min(86dvh, 790px);
+}
+
+.utility-overlay[data-utility-mode="legal"] .utility-overlay-body {
+  padding-right: 4px;
+  padding-bottom: 4px;
+}
+
+.legal-overlay-shell {
+  display: grid;
+  gap: 14px;
+  min-height: 100%;
+}
+
+.legal-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  width: min(520px, 52vw);
+  padding: 5px;
+  border: 1px solid rgba(112, 218, 248, 0.16);
+  border-radius: 14px;
+  background: rgba(5, 29, 44, 0.94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.legal-tab-button {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(226, 246, 255, 0.72);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.legal-tab-button:hover,
+.legal-tab-button:focus-visible {
+  color: #f1fcff;
+  border-color: rgba(100, 220, 247, 0.28);
+  background: rgba(48, 159, 197, 0.12);
+}
+
+.legal-tab-button.is-active {
+  color: #062f48;
+  border-color: rgba(143, 239, 255, 0.72);
+  background: linear-gradient(180deg, #7beeff, #37cee9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46), 0 6px 18px rgba(37, 190, 220, 0.18);
+}
+
+.legal-tab-panel {
+  min-height: 0;
+}
+
+.legal-document {
+  display: grid;
+  gap: 12px;
+  color: rgba(232, 247, 255, 0.82);
+}
+
+.legal-document-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 2px 2px;
+}
+
+.legal-document-heading > div {
+  min-width: 0;
+}
+
+.legal-document-eyebrow {
+  margin: 0 0 3px;
+  color: rgba(151, 222, 247, 0.68);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.legal-document h3 {
+  margin: 0;
+  color: #f5fcff;
+  font-size: 1.34rem;
+}
+
+.legal-document-badge {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid rgba(104, 213, 246, 0.22);
+  border-radius: 999px;
+  background: rgba(63, 174, 211, 0.1);
+  color: rgba(194, 239, 255, 0.8);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.legal-document section,
+.legal-callout,
+.legal-service-card {
+  border: 1px solid rgba(115, 208, 238, 0.12);
+  border-radius: 13px;
+  background: linear-gradient(180deg, rgba(12, 50, 70, 0.62), rgba(7, 35, 51, 0.68));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.legal-document section {
+  display: grid;
+  gap: 7px;
+  padding: 12px 14px;
+}
+
+.legal-document h4 {
+  margin: 0;
+  color: #f3fbff;
+  font-size: 0.88rem;
+}
+
+.legal-document p {
+  margin: 0;
+  color: rgba(226, 244, 252, 0.76);
+  font-size: 0.82rem;
+  line-height: 1.56;
+}
+
+.legal-document ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 20px;
+  color: rgba(226, 244, 252, 0.76);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.legal-document strong {
+  color: rgba(245, 252, 255, 0.94);
+}
+
+.legal-lead {
+  padding: 0 2px;
+  color: rgba(217, 242, 251, 0.72) !important;
+}
+
+.legal-service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.legal-service-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 112px;
+  padding: 12px 13px;
+}
+
+.legal-service-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.legal-service-card-heading strong {
+  font-size: 0.86rem;
+}
+
+.legal-status-pill {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid rgba(99, 224, 247, 0.25);
+  border-radius: 999px;
+  background: rgba(55, 199, 228, 0.12);
+  color: #88edff;
+  font-size: 0.65rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.legal-status-pill.is-local {
+  border-color: rgba(143, 209, 255, 0.22);
+  background: rgba(77, 143, 205, 0.12);
+  color: #b7dcff;
+}
+
+.legal-status-pill.is-none {
+  border-color: rgba(112, 229, 172, 0.22);
+  background: rgba(58, 173, 115, 0.12);
+  color: #a7f3ce;
+}
+
+.legal-status-pill.is-external {
+  border-color: rgba(255, 207, 112, 0.22);
+  background: rgba(188, 133, 49, 0.12);
+  color: #f8d79c;
+}
+
+.legal-callout {
+  display: grid;
+  gap: 5px;
+  padding: 13px 14px;
+  border-color: rgba(75, 219, 246, 0.22);
+  background: linear-gradient(180deg, rgba(15, 72, 92, 0.6), rgba(8, 45, 61, 0.72));
+}
+
+.legal-callout > strong {
+  font-size: 0.88rem;
+}
+
+@media (max-width: 760px) {
+  .legal-tabs {
+    width: min(430px, 62vw);
+  }
+
+  .legal-tab-button {
+    padding-inline: 6px;
+    font-size: 0.72rem;
+  }
+
+  .legal-service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .legal-document-heading {
+    align-items: flex-start;
+  }
+}
+
 .donation-button {
   border-color: rgba(255, 199, 92, 0.82);
   background:
@@ -16160,6 +16414,114 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 .startup-forgot-button:hover,
 .startup-forgot-button:focus-visible { color: #ecfdff; border-color: rgba(91, 235, 246, .8); background: rgba(7, 76, 99, .78); }
+.startup-auth-trust {
+  display: grid;
+  gap: 5px;
+  padding: 11px 14px;
+  border: 1px solid rgba(81, 210, 231, .18);
+  border-radius: 14px;
+  background: rgba(1, 34, 52, .36);
+  color: rgba(186, 225, 238, .76);
+  font-size: .76rem;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+}
+.startup-auth-trust strong {
+  color: rgba(222, 248, 255, .9);
+  font-size: .78rem;
+}
+.startup-auth-legal-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  color: #7fefff;
+  background: transparent;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.startup-auth-legal-link:hover,
+.startup-auth-legal-link:focus-visible {
+  color: #d8fbff;
+}
+.loading-overlay.is-ready.is-auth-mode .startup-actions.is-legal-mode {
+  width: min(980px, calc(100vw - 54px));
+}
+.startup-legal-panel {
+  width: 100%;
+  min-height: 0;
+}
+.startup-legal-panel[hidden] {
+  display: none !important;
+}
+.startup-legal-card {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  height: min(82vh, 790px);
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid rgba(77, 232, 240, .54);
+  border-radius: 28px;
+  color: #f5fcff;
+  background: linear-gradient(160deg, rgba(4, 51, 73, .97), rgba(2, 29, 53, .97));
+  box-shadow: 0 32px 80px rgba(0, 12, 29, .48), inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(18px) saturate(1.15);
+  text-align: left;
+}
+.startup-legal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.startup-legal-header > div {
+  display: grid;
+  gap: 1px;
+}
+.startup-legal-header span {
+  color: rgba(128, 230, 248, .7);
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.startup-legal-header h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.42rem;
+}
+.startup-legal-close {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 160, 160, .2);
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(122, 22, 22, .96), rgba(88, 15, 15, .96));
+  font: inherit;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.startup-legal-panel .legal-tabs {
+  width: 100%;
+}
+.startup-legal-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 5px;
+  overscroll-behavior: contain;
+}
+
 .startup-auth small {
   min-height: 1.25em;
   color: #e8f6ff;

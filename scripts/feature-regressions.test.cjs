@@ -2140,6 +2140,30 @@ test("settings dashboard uses independent compact columns so Graphics cannot pus
   assert.match(css, /\.settings-graphics-card\s*\{[\s\S]*height:\s*auto/);
 });
 
+test("settings exposes a single Legal entry with tabbed privacy, terms, services, and licenses", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const overlays = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
+  const listeners = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const cloudSave = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+
+  assert.match(html, /settings-other-actions[\s\S]*data-open-legal[\s\S]*Legal/);
+  assert.match(bootstrap, /legalOverlayTab:\s*"privacy"/);
+  assert.match(bootstrap, /legal:\s*\{[\s\S]*render:\s*renderLegalUtilityOverlay[\s\S]*onHeaderClick:\s*handleLegalUtilityOverlayBodyClick[\s\S]*onBodyClick:\s*handleLegalUtilityOverlayBodyClick/);
+  assert.match(overlays, /Privacy Policy[\s\S]*Terms of Service[\s\S]*Data & Services[\s\S]*Licenses/);
+  assert.match(overlays, /Supabase[\s\S]*Resend/);
+  assert.match(overlays, /Dev@BubbleBorough\.com/);
+  assert.match(overlays, /Base64 encoding is not encryption/);
+  assert.match(overlays, /LLM assistance[\s\S]*ChatGPT/i);
+  assert.doesNotMatch(overlays, /Codex/i);
+  assert.match(listeners, /closest\("\[data-open-legal\]"\)[\s\S]*openUtilityOverlay\("legal"/);
+  assert.match(cloudSave, /Authentication and cloud saves are powered by Supabase/);
+  assert.match(cloudSave, /By creating an account, you agree to the[\s\S]*Terms of Service[\s\S]*Privacy Policy/);
+  assert.match(cloudSave, /data-startup-legal-panel[\s\S]*renderStartupLegalPanelContents/);
+  assert.match(css, /\.legal-tabs\s*\{[\s\S]*grid-template-columns:\s*repeat\(4/);
+});
+
 test("Otocinclus debug controls force back glass, swimming, front glass, and normal behavior", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const debug = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");

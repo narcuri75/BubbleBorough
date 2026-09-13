@@ -839,6 +839,13 @@ function bindEvents() {
         return;
       }
 
+      const legalButton = event.target instanceof Element ? event.target.closest("[data-open-legal]") : null;
+      if (legalButton) {
+        event.preventDefault();
+        openUtilityOverlay("legal", { tab: legalButton.dataset.legalTab || "privacy" });
+        return;
+      }
+
       const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
       if (!(link instanceof HTMLAnchorElement)) {
         return;

@@ -733,6 +733,42 @@ async function showCloudConflictDialog(cloud) {
 }
 
 // All full-screen auth states use the original Password Reset card primitives.
+function renderCloudAuthLegalNotice(settings = false) {
+  const legalLink = (tab, label) => settings
+    ? `<button class="startup-auth-legal-link" type="button" data-open-legal data-legal-tab="${tab}">${label}</button>`
+    : `<button class="startup-auth-legal-link" type="button" data-startup-legal-tab="${tab}">${label}</button>`;
+  return `
+    <div class="startup-auth-trust">
+      <strong>Authentication and cloud saves are powered by Supabase.</strong>
+      <span>By creating an account, you agree to the ${legalLink("terms", "Terms of Service")} and acknowledge the ${legalLink("privacy", "Privacy Policy")}.</span>
+    </div>
+  `;
+}
+
+function renderStartupLegalPanelContents() {
+  const activeTab = normalizeLegalOverlayTab(runtime.startupLegalTab);
+  const content = activeTab === "terms"
+    ? renderLegalTermsOfService()
+    : activeTab === "services"
+      ? renderLegalDataServices()
+      : activeTab === "licenses"
+        ? renderLegalLicenses()
+        : renderLegalPrivacyPolicy();
+  return `
+    <div class="startup-legal-card" role="dialog" aria-modal="true" aria-labelledby="startupLegalTitle">
+      <div class="startup-legal-header">
+        <div>
+          <span>Legal</span>
+          <h2 id="startupLegalTitle">Bubble Borough</h2>
+        </div>
+        <button class="startup-legal-close" type="button" data-startup-legal-close aria-label="Close legal information" title="Close legal information">&times;</button>
+      </div>
+      ${renderLegalOverlayTabs(activeTab)}
+      <div class="startup-legal-scroll" role="tabpanel">${content}</div>
+    </div>
+  `;
+}
+
 function renderAuthCard({ attribute, title, message, fields = [], buttons = [], footer = "", status = "" }) {
   return `<form class="startup-auth" ${attribute} hidden>
     <div class="startup-auth-heading"><strong class="startup-auth-title" tabindex="-1">${escapeHtml(title)}</strong><span class="startup-auth-copy">${escapeHtml(message)}</span></div>
@@ -758,7 +794,7 @@ function getCloudAuthFormMarkup(recovery = false, settings = false) {
       { label: "Password", type: "password", autocomplete: "current-password", placeholder: "Enter your password", attribute: `${prefix}-password` }
     ],
     buttons: [{ text: "Sign In", attribute: settings ? `${prefix}-signin` : `${prefix}-signin-submit` }, { text: "Create Account", attribute: settings ? `${prefix}-create` : `${prefix}-create-submit` }],
-    footer: `<div class="startup-forgot-row"><span aria-hidden="true"></span><button class="startup-forgot-button" type="button" ${prefix}-forgot-password><b aria-hidden="true">?</b> Forgot Password</button><span aria-hidden="true"></span></div>`,
+    footer: `<div class="startup-forgot-row"><span aria-hidden="true"></span><button class="startup-forgot-button" type="button" ${prefix}-forgot-password><b aria-hidden="true">?</b> Forgot Password</button><span aria-hidden="true"></span></div>${renderCloudAuthLegalNotice(settings)}`,
     status: settings ? `${prefix}-message` : "data-startup-auth-status"
   });
 }
@@ -773,7 +809,8 @@ function ensureStartupActions() {
   actions.dataset.startupActions = "true";
   actions.innerHTML = `<div data-startup-buttons></div>${getCloudAuthFormMarkup()}${getCloudAuthFormMarkup(true)}
     ${renderAuthCard({ attribute: "data-startup-result", title: "", message: "", buttons: [{ text: "Return to Login", attribute: "data-auth-return-login" }] })}
-    ${renderAuthCard({ attribute: "data-startup-reauth", title: "Verify It's You", message: "For your security, please verify your identity before continuing.", fields: [{ label: "Verification Code", type: "text", autocomplete: "one-time-code", attribute: "data-auth-nonce" }], buttons: [{ text: "Verify", attribute: "data-auth-verify" }], footer: '<button class="startup-forgot-button" type="button" data-auth-resend-code>Send New Code</button><button class="startup-forgot-button" type="button" data-auth-return-login>Return to Login</button>' })}`;
+    ${renderAuthCard({ attribute: "data-startup-reauth", title: "Verify It's You", message: "For your security, please verify your identity before continuing.", fields: [{ label: "Verification Code", type: "text", autocomplete: "one-time-code", attribute: "data-auth-nonce" }], buttons: [{ text: "Verify", attribute: "data-auth-verify" }], footer: '<button class="startup-forgot-button" type="button" data-auth-resend-code>Send New Code</button><button class="startup-forgot-button" type="button" data-auth-return-login>Return to Login</button>' })}
+    <section class="startup-legal-panel" data-startup-legal-panel hidden></section>`;
   content.appendChild(actions);
   actions.addEventListener("click", handleStartupActionClick);
   actions.addEventListener("submit", event => {
@@ -794,6 +831,9 @@ function renderStartupActions() {
   const overlay = dom.loadingOverlay;
   const result = actions.querySelector("[data-startup-result]");
   const reauth = actions.querySelector("[data-startup-reauth]");
+  const legalPanel = actions.querySelector("[data-startup-legal-panel]");
+  actions.classList.toggle("is-legal-mode", runtime.startupLegalOpen === true);
+  if (legalPanel) legalPanel.hidden = true;
 
   // Once Continue/Start has been pressed, startup owns this area until loading
   // finishes. Cloud/session refreshes can call renderStartupActions while the
@@ -806,6 +846,7 @@ function renderStartupActions() {
     recovery.hidden = true;
     if (result) result.hidden = true;
     if (reauth) reauth.hidden = true;
+    if (legalPanel) legalPanel.hidden = true;
     overlay?.classList.remove("is-auth-mode", "is-welcome-mode");
     if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
     return;
@@ -813,6 +854,17 @@ function renderStartupActions() {
 
   result.hidden = true;
   reauth.hidden = true;
+  if (runtime.startupLegalOpen && legalPanel) {
+    overlay.classList.add("is-auth-mode");
+    overlay.classList.remove("is-welcome-mode");
+    buttons.innerHTML = "";
+    auth.hidden = true;
+    recovery.hidden = true;
+    legalPanel.innerHTML = renderStartupLegalPanelContents();
+    legalPanel.hidden = false;
+    if (dom.loadingOverlayText) dom.loadingOverlayText.textContent = "";
+    return;
+  }
   if (runtime.cloudAuthScreen || runtime.cloudReauth) {
     overlay.classList.add("is-auth-mode");
     overlay.classList.remove("is-welcome-mode");
@@ -873,6 +925,7 @@ function renderStartupActions() {
 }
 
 function showStartupAuth() {
+  runtime.startupLegalOpen = false;
   const actions = ensureStartupActions();
   const buttons = actions?.querySelector("[data-startup-buttons]");
   const auth = actions?.querySelector("[data-startup-auth]");
@@ -972,6 +1025,30 @@ function handleStartupActionClick(event) {
   if (!target) return;
   // Button clicks are handled here; Enter is forwarded by the form listener.
   if (target.closest('button[type="submit"]')) event.preventDefault();
+  const startupLegalLink = target.closest("[data-startup-legal-tab]");
+  if (startupLegalLink) {
+    event.preventDefault();
+    runtime.startupLegalTab = normalizeLegalOverlayTab(startupLegalLink.dataset.startupLegalTab);
+    runtime.startupLegalOpen = true;
+    renderStartupActions();
+    return;
+  }
+  const startupLegalTab = target.closest("[data-startup-legal-panel] [data-legal-tab]");
+  if (startupLegalTab) {
+    event.preventDefault();
+    runtime.startupLegalTab = normalizeLegalOverlayTab(startupLegalTab.dataset.legalTab);
+    runtime.startupLegalOpen = true;
+    renderStartupActions();
+    ensureStartupActions()?.querySelector(`[data-startup-legal-panel] [data-legal-tab="${runtime.startupLegalTab}"]`)?.focus();
+    return;
+  }
+  if (target.closest("[data-startup-legal-close]")) {
+    event.preventDefault();
+    runtime.startupLegalOpen = false;
+    renderStartupActions();
+    ensureStartupActions()?.querySelector(`[data-startup-legal-tab="${runtime.startupLegalTab}"]`)?.focus();
+    return;
+  }
   if (target.closest("[data-auth-return-login]")) { returnToCloudLogin(); return; }
   if (target.closest("[data-auth-verify]")) { void handleCloudReauth(); return; }
   if (target.closest("[data-auth-resend-code]")) { void handleCloudReauth(true); return; }

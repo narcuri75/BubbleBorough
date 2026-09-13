@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 2987,
+  "functionCount": 2997,
   "functions": [
     {
       "name": "getBrowserViewportSize",
@@ -351,8 +351,8 @@
       "module": "assets/custom-content.js",
       "sourceLine": 498,
       "originalLine": 10034,
-      "characters": 123628,
-      "sourceHash": "d95f3d8e95fcbf5ebe324037f731ff767eb5dc57fa1e314a533a695f127ee4f1",
+      "characters": 123909,
+      "sourceHash": "675712bfd6cb66d79f7ea3d2a66db9ab356346ed3da233e3e58f19390f7fd0f5",
       "calls": [
         "addDebugCoins",
         "adjustDecorDefaultSize",
@@ -674,7 +674,7 @@
     {
       "name": "configureCanvasContext",
       "module": "assets/custom-content.js",
-      "sourceLine": 3706,
+      "sourceLine": 3713,
       "originalLine": 12281,
       "characters": 211,
       "sourceHash": "71dcf201d1e75c2f1b7ce26d0baa4643e4b1fb8978d83e197954e2e39d71b140",
@@ -683,7 +683,7 @@
     {
       "name": "updatePlayfieldCssVariables",
       "module": "assets/custom-content.js",
-      "sourceLine": 3717,
+      "sourceLine": 3724,
       "originalLine": 12292,
       "characters": 758,
       "sourceHash": "9d0907a1dfee08a4db179b7b0f54c0c980ceffbff783e64dfae8440dd385b2b0",
@@ -692,7 +692,7 @@
     {
       "name": "getStageRenderViewTarget",
       "module": "assets/custom-content.js",
-      "sourceLine": 3735,
+      "sourceLine": 3742,
       "originalLine": null,
       "characters": 2051,
       "sourceHash": "55a27f45d39b7a1ab9130432cf0cdb66bf9f7fc28a934dfb326387ff76ddcccc",
@@ -706,7 +706,7 @@
     {
       "name": "syncTankStageRenderCssGeometry",
       "module": "assets/custom-content.js",
-      "sourceLine": 3791,
+      "sourceLine": 3798,
       "originalLine": null,
       "characters": 1193,
       "sourceHash": "dbdbc4633965714184bde33eb8deec40c61518b84772ce555364661b91f03294",
@@ -718,7 +718,7 @@
     {
       "name": "applyStageRenderViewTransform",
       "module": "assets/custom-content.js",
-      "sourceLine": 3812,
+      "sourceLine": 3819,
       "originalLine": null,
       "characters": 853,
       "sourceHash": "f7043bf8ff53de48261dd80de0e59625cee956316730fb29e90a31023ab23cb3",
@@ -730,7 +730,7 @@
     {
       "name": "updateStageRenderView",
       "module": "assets/custom-content.js",
-      "sourceLine": 3837,
+      "sourceLine": 3844,
       "originalLine": null,
       "characters": 2354,
       "sourceHash": "94566c85938ab0a917b35e1735b739b43773994c2f6bbcaf629c05976fd88fe3",
@@ -743,7 +743,7 @@
     {
       "name": "resizeDisplayCanvases",
       "module": "assets/custom-content.js",
-      "sourceLine": 3883,
+      "sourceLine": 3890,
       "originalLine": 12310,
       "characters": 3446,
       "sourceHash": "6371abf5ff2bd53a820784f2aff0bdcb77d2bee77c52da72c48a1b92ec0c312a",
@@ -763,7 +763,7 @@
     {
       "name": "fetchAssetList",
       "module": "assets/custom-content.js",
-      "sourceLine": 3972,
+      "sourceLine": 3979,
       "originalLine": 12386,
       "characters": 225,
       "sourceHash": "59e5b178cd07e703c64285936581c7b373ccc60baac2f5d27322e5a4b8ffd9c3",
@@ -774,7 +774,7 @@
     {
       "name": "fetchAssetManifest",
       "module": "assets/custom-content.js",
-      "sourceLine": 3982,
+      "sourceLine": 3989,
       "originalLine": 12396,
       "characters": 536,
       "sourceHash": "d52a5940966523097a3804951a8b44d9be2ca1b1699e805fc0c9402f124a6740",
@@ -785,7 +785,7 @@
     {
       "name": "fetchFishCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4001,
+      "sourceLine": 4008,
       "originalLine": 12415,
       "characters": 338,
       "sourceHash": "9831d6e79eb2e440ca52557caf2727cd18f8d4e94ae11713ed4052adae1ad360",
@@ -796,7 +796,7 @@
     {
       "name": "fetchZombieSkeletonFishCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4015,
+      "sourceLine": 4022,
       "originalLine": 12429,
       "characters": 155,
       "sourceHash": "f07348764fcc9158d323e560ba0df71a3c6cf8e6c2abc33378356cfa0d8bd0fe",
@@ -805,7 +805,7 @@
     {
       "name": "fetchDecorCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4020,
+      "sourceLine": 4027,
       "originalLine": 12447,
       "characters": 433,
       "sourceHash": "e07abf2244149eb0aa07d81f0c26887a5696faec8105ab2bd9d5e8b29eeab3bf",
@@ -816,7 +816,7 @@
     {
       "name": "fetchBackgroundCatalogMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4040,
+      "sourceLine": 4047,
       "originalLine": 12485,
       "characters": 359,
       "sourceHash": "3b37a60b69aff644611e7620ef2fe119cff0c9dd209b90d81c698e52858899f3",
@@ -827,7 +827,7 @@
     {
       "name": "fetchFoodAndMedCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4054,
+      "sourceLine": 4061,
       "originalLine": 12499,
       "characters": 444,
       "sourceHash": "d33b34d64d780bf56f4042816aaa627bc307df45f65566ecc82cd76fb1435d15",
@@ -838,7 +838,7 @@
     {
       "name": "normalizeFoodAndMedCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4072,
+      "sourceLine": 4079,
       "originalLine": 12517,
       "characters": 3879,
       "sourceHash": "0c6e9ef7cbf699f475828dbec1cf1b9b98464539d17d586922a03037005a5fce",
@@ -852,7 +852,7 @@
     {
       "name": "normalizeBackgroundMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4160,
+      "sourceLine": 4167,
       "originalLine": 12606,
       "characters": 770,
       "sourceHash": "3dd5fabb262a28c16987c810515eabd6c2142be7566cf7ef045f7f59ee84b8c5",
@@ -863,7 +863,7 @@
     {
       "name": "normalizeDecorMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4192,
+      "sourceLine": 4199,
       "originalLine": 12638,
       "characters": 1619,
       "sourceHash": "63aa36e9279021c417615fd8dbda81991cbc8c063469b852c8055605353d727f",
@@ -886,7 +886,7 @@
     {
       "name": "hasBubblerMetaFields",
       "module": "assets/custom-content.js",
-      "sourceLine": 4240,
+      "sourceLine": 4247,
       "originalLine": 12723,
       "characters": 282,
       "sourceHash": "74116a3a5b4bbbb24278527e0b28e10473dcd5897c31187409fae838f9f5ba58",
@@ -897,7 +897,7 @@
     {
       "name": "hasBubblerSpoutMetaFields",
       "module": "assets/custom-content.js",
-      "sourceLine": 4251,
+      "sourceLine": 4258,
       "originalLine": 12734,
       "characters": 958,
       "sourceHash": "bcd11b853c04f5f0f1fb4b98b32442690c26901f0acfcdba9392cb2d123880a6",
@@ -906,7 +906,7 @@
     {
       "name": "isBubblerDecorFileKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4293,
+      "sourceLine": 4300,
       "originalLine": 12773,
       "characters": 115,
       "sourceHash": "9a479531512024c7531be00c88cd8e735dae2e6cdd7768d0b8198b768af88ce5",
@@ -915,7 +915,7 @@
     {
       "name": "normalizeBubblerHorizontalPosition",
       "module": "assets/custom-content.js",
-      "sourceLine": 4297,
+      "sourceLine": 4304,
       "originalLine": 12777,
       "characters": 866,
       "sourceHash": "b578cc71edeb806bb0010e554538a77ce2a0f9d705781e3be48b7f874406222b",
@@ -926,7 +926,7 @@
     {
       "name": "getBubblerCadenceFromIntensity",
       "module": "assets/custom-content.js",
-      "sourceLine": 4333,
+      "sourceLine": 4340,
       "originalLine": 12813,
       "characters": 649,
       "sourceHash": "a9c65e18fb56d34ff8b26628719620d06cf52426d84a8cf4db4c5167b5a26a86",
@@ -937,7 +937,7 @@
     {
       "name": "getBubblerTravelDurationFromSpeed",
       "module": "assets/custom-content.js",
-      "sourceLine": 4349,
+      "sourceLine": 4356,
       "originalLine": 12829,
       "characters": 334,
       "sourceHash": "506911fddf466e02195bf0147481e545512d60f9d960eb4f5c82c4fb69236dd4",
@@ -948,7 +948,7 @@
     {
       "name": "buildDefaultBubblerSpoutMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4358,
+      "sourceLine": 4365,
       "originalLine": 12838,
       "characters": 1177,
       "sourceHash": "7bb38e7e6d096adca15bb9554ecf39e4dc497a44ff61f626778709a62d03991c",
@@ -959,7 +959,7 @@
     {
       "name": "normalizeBubblerSpoutMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4385,
+      "sourceLine": 4392,
       "originalLine": 12864,
       "characters": 6076,
       "sourceHash": "2280e2e9bcde63f189da9e331276a3dc1dc1da70a5a29e3d4c2b0f01d293fae3",
@@ -976,7 +976,7 @@
     {
       "name": "normalizeBubblerMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4544,
+      "sourceLine": 4551,
       "originalLine": 13020,
       "characters": 1010,
       "sourceHash": "7fb0f7b9d45cd54859630941b7b037834458168030367803eab8085b8d98fae6",
@@ -989,7 +989,7 @@
     {
       "name": "normalizeCavePortalMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4580,
+      "sourceLine": 4587,
       "originalLine": 13056,
       "characters": 1525,
       "sourceHash": "2d59a9729085681a9c5d68104c66e9642a8152dbc7a99c3bece8aad0b98f2457",
@@ -1002,7 +1002,7 @@
     {
       "name": "normalizeCaveInsideSlotMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4627,
+      "sourceLine": 4634,
       "originalLine": 13103,
       "characters": 974,
       "sourceHash": "4b7fff8ee984788cda055dc3fe9684741db1859a0d83539ddc94f2c7950ea136",
@@ -1016,7 +1016,7 @@
     {
       "name": "normalizeCaveBehaviorMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4657,
+      "sourceLine": 4664,
       "originalLine": 13133,
       "characters": 1464,
       "sourceHash": "b7dd49e5905ca5285a9280a83262b948d2baf1bb274a3858dd19d893d2cd7b1b",
@@ -1030,7 +1030,7 @@
     {
       "name": "buildBackgroundCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4705,
+      "sourceLine": 4712,
       "originalLine": 13181,
       "characters": 1336,
       "sourceHash": "1fcf076d8dc9c50d1a01ef80ea03f13815dd944ac9ee4dfa78b18c1ff53f85f2",
@@ -1042,7 +1042,7 @@
     {
       "name": "buildSimpleAssetCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4738,
+      "sourceLine": 4745,
       "originalLine": 13214,
       "characters": 322,
       "sourceHash": "28785b6d251a925986b1603c362764493d833e7ae2c79ffde3f15c60165c747e",
@@ -1053,7 +1053,7 @@
     {
       "name": "buildCustomGravelAssetCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4751,
+      "sourceLine": 4758,
       "originalLine": 13231,
       "characters": 660,
       "sourceHash": "6f9d83a24f4aef9036cdf5c7a5058013c905f542308e1d101790d70fa7f374bb",
@@ -1064,7 +1064,7 @@
     {
       "name": "buildCustomGravelLayerCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4773,
+      "sourceLine": 4780,
       "originalLine": 13253,
       "characters": 195,
       "sourceHash": "45a89f9622517b62d9b2fab945acf94db384cfae5f8c2709bcc00ed1aa328be6",
@@ -1075,7 +1075,7 @@
     {
       "name": "buildCustomGravelPebbleCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4780,
+      "sourceLine": 4787,
       "originalLine": 13260,
       "characters": 204,
       "sourceHash": "6aa5a212a9b18f9ab35b31ce8377be5b9bf1d5d60c86914de57d4b124fefe893",
@@ -1086,7 +1086,7 @@
     {
       "name": "buildFishSizeRange",
       "module": "assets/custom-content.js",
-      "sourceLine": 4788,
+      "sourceLine": 4795,
       "originalLine": 13298,
       "characters": 426,
       "sourceHash": "30e921dc5fd627bc402f3f9955753eec473b76daacc87cb3183c1052a25abc82",
@@ -1097,7 +1097,7 @@
     {
       "name": "buildFishCostRange",
       "module": "assets/custom-content.js",
-      "sourceLine": 4802,
+      "sourceLine": 4809,
       "originalLine": 13312,
       "characters": 351,
       "sourceHash": "cf28d8cffbf14e9de4032e0da4bd0404020fc0ca6cbafaa083fc3e905cd930c2",
@@ -1106,7 +1106,7 @@
     {
       "name": "resolveSpeciesMealCoins",
       "module": "assets/custom-content.js",
-      "sourceLine": 4816,
+      "sourceLine": 4823,
       "originalLine": 13326,
       "characters": 681,
       "sourceHash": "844a7f533f1fc8f02e799a353fb328e7c7a9c794d5039570181c360c24d15f87",
@@ -1119,7 +1119,7 @@
     {
       "name": "getDecorCompanionType",
       "module": "assets/custom-content.js",
-      "sourceLine": 4839,
+      "sourceLine": 4846,
       "originalLine": 13349,
       "characters": 1019,
       "sourceHash": "40674acea4f3d8bd5b9f34aa4a750e6bfa3e84aba0d366134a4811be04022e78",
@@ -1128,7 +1128,7 @@
     {
       "name": "getDecorBaseKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4897,
+      "sourceLine": 4904,
       "originalLine": 13387,
       "characters": 544,
       "sourceHash": "784631fe7dd3524d296e4681f8f9bbb5cc6ab252928b2472e1ab6f8a7cb8772c",
@@ -1137,7 +1137,7 @@
     {
       "name": "buildDecorCaveColorLayers",
       "module": "assets/custom-content.js",
-      "sourceLine": 4912,
+      "sourceLine": 4919,
       "originalLine": 13399,
       "characters": 1889,
       "sourceHash": "3cb1c4d55c5504a57a92ea2ee09228b8ce7650b59b1ed82ae1e64483e09c739c",
@@ -1146,7 +1146,7 @@
     {
       "name": "getExpectedCaveCompanionPaths",
       "module": "assets/custom-content.js",
-      "sourceLine": 4975,
+      "sourceLine": 4982,
       "originalLine": null,
       "characters": 434,
       "sourceHash": "2e4c07970bdd5a8a5441d51d12e2dc1887da2e3231cb030746cadb71dd89a141",
@@ -1157,7 +1157,7 @@
     {
       "name": "buildDecorCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4985,
+      "sourceLine": 4992,
       "originalLine": 13456,
       "characters": 3328,
       "sourceHash": "47d47726f8ac941b265a74b7b065ca133494b54ac531a07e74400ff101e760fb",
@@ -1177,7 +1177,7 @@
     {
       "name": "isCustomDecorShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5089,
+      "sourceLine": 5096,
       "originalLine": 13542,
       "characters": 107,
       "sourceHash": "59212ced33995b5fb2de11bc39c053bf6de13de5133d6941431ff9b3b9015118",
@@ -1186,7 +1186,7 @@
     {
       "name": "isCustomHideShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5093,
+      "sourceLine": 5100,
       "originalLine": 13546,
       "characters": 105,
       "sourceHash": "781c9e3cdf569c437a1127f7c599be6d51df3236dc801f303d0e3f421e42f4dd",
@@ -1195,7 +1195,7 @@
     {
       "name": "isCustomDecorUploadShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5097,
+      "sourceLine": 5104,
       "originalLine": 13550,
       "characters": 128,
       "sourceHash": "f536a73d9e8778a61763ce069c66e0f1711e434e58d4b9063daaf715da9b83c5",
@@ -1207,7 +1207,7 @@
     {
       "name": "isCustomHideAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5101,
+      "sourceLine": 5108,
       "originalLine": 13554,
       "characters": 167,
       "sourceHash": "edaae036a959a58d6b0a9869957b414fcb6b2c0254ba80fdee6e0d01433ae499",
@@ -1216,7 +1216,7 @@
     {
       "name": "isCustomDecorAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5106,
+      "sourceLine": 5113,
       "originalLine": 13559,
       "characters": 201,
       "sourceHash": "e745d9a72c8b6e67fb0a0c4169b1a8a1db47875e04e0f06546aa2411f7de92a6",
@@ -1227,7 +1227,7 @@
     {
       "name": "isCustomBubblerDecorKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5111,
+      "sourceLine": 5118,
       "originalLine": 13564,
       "characters": 113,
       "sourceHash": "7fbb5e6610e286ff3624c12d70f2d48781f84fb8512a64ab7b6e324277c6854e",
@@ -1236,7 +1236,7 @@
     {
       "name": "getDecorThumbnailPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 5115,
+      "sourceLine": 5122,
       "originalLine": 13568,
       "characters": 305,
       "sourceHash": "96b8f79418bdcdec9867c9e6375f95ad62f87fe9c5f27442d52008e491fc4d4f",
@@ -1245,7 +1245,7 @@
     {
       "name": "buildVirtualDecorCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 5124,
+      "sourceLine": 5131,
       "originalLine": 13572,
       "characters": 2410,
       "sourceHash": "b81f98b4bb550c3c3df5be16acbc2213aee8ceeb5fe1de65db1b56971caeaf48",
@@ -1257,7 +1257,7 @@
     {
       "name": "sanitizeCustomDecorAssetEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 5223,
+      "sourceLine": 5230,
       "originalLine": 13665,
       "characters": 2681,
       "sourceHash": "7f1cea7b5b498ec5121f6ccdec812c3285f1ceefd438396f66c330bb6a998e6c",
@@ -1278,7 +1278,7 @@
     {
       "name": "sanitizeCustomDecorAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 5287,
+      "sourceLine": 5294,
       "originalLine": 13729,
       "characters": 336,
       "sourceHash": "2c805a853a9ea657e55c9cd6f7f7fe3014a6008d4a58a93b8e59d2ec6bfdbb2e",
@@ -1289,7 +1289,7 @@
     {
       "name": "buildCustomDecorColorLayers",
       "module": "assets/custom-content.js",
-      "sourceLine": 5302,
+      "sourceLine": 5309,
       "originalLine": 13744,
       "characters": 464,
       "sourceHash": "9ce3d52287e2f68d9dbb4ca1aa605bd2e61c6acf6520e7534d4d7f93ac79b137",
@@ -1301,7 +1301,7 @@
     {
       "name": "buildCustomDecorCatalogEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 5326,
+      "sourceLine": 5333,
       "originalLine": 13768,
       "characters": 2123,
       "sourceHash": "5e4b82d696b10f60713da7ee15cbe3dd8133f22d9905ac59d81a3d21a7039ce0",
@@ -1322,7 +1322,7 @@
     {
       "name": "getCustomDecorCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 5375,
+      "sourceLine": 5382,
       "originalLine": 13815,
       "characters": 202,
       "sourceHash": "73a208bb0f6c4f0f458710e60ec1c48879dfa739f1532477f88fa4c0026e706f",
@@ -1333,7 +1333,7 @@
     {
       "name": "syncRuntimeCustomDecorAssetsFromState",
       "module": "assets/custom-content.js",
-      "sourceLine": 5381,
+      "sourceLine": 5388,
       "originalLine": 13821,
       "characters": 323,
       "sourceHash": "24134b3f519b812fdc66b420c60daf5d4885f7114313580e37c765ecdba6608f",
@@ -1345,7 +1345,7 @@
     {
       "name": "isCustomFishShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5393,
+      "sourceLine": 5400,
       "originalLine": 13833,
       "characters": 107,
       "sourceHash": "0a9e41ab8a35a1bbea1847c927a00113c03d92c9ae185a2899b7e67c9a735453",
@@ -1354,7 +1354,7 @@
     {
       "name": "isCustomFishAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5397,
+      "sourceLine": 5404,
       "originalLine": 13837,
       "characters": 169,
       "sourceHash": "54aef44fb55bdf6992f5ef98b22bee2e7b9a9213ebcb3984d9ece8d09efcd3a8",
@@ -1363,7 +1363,7 @@
     {
       "name": "buildVirtualFishCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 5402,
+      "sourceLine": 5409,
       "originalLine": 13842,
       "characters": 1525,
       "sourceHash": "6cc4bd00c3db48fa8eafeec8bc1ffea607956e61d00a3ac937bc31bd4e3ed50c",
@@ -1372,7 +1372,7 @@
     {
       "name": "getCustomFishBehaviorProfiles",
       "module": "assets/custom-content.js",
-      "sourceLine": 5454,
+      "sourceLine": 5461,
       "originalLine": 13894,
       "characters": 497,
       "sourceHash": "cbb1d080986c7e956088ffc69d238bbf8714523fe0c9d1264cde53ed16969c92",
@@ -1385,7 +1385,7 @@
     {
       "name": "getCustomFishBehaviorKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5473,
+      "sourceLine": 5480,
       "originalLine": 13912,
       "characters": 510,
       "sourceHash": "fa19c315ff0769e383ec32d4e65d5548cb558300414b12faf9f8539b55fca2a4",
@@ -1394,7 +1394,7 @@
     {
       "name": "formatCustomFishBehaviorLabel",
       "module": "assets/custom-content.js",
-      "sourceLine": 5486,
+      "sourceLine": 5493,
       "originalLine": 13925,
       "characters": 198,
       "sourceHash": "5c9e9411dd03b42e3f5b4fe48f75517c4d16601adef8dc69009e6afba0869811",
@@ -1405,7 +1405,7 @@
     {
       "name": "getDefaultCustomFishBehaviorProfile",
       "module": "assets/custom-content.js",
-      "sourceLine": 5493,
+      "sourceLine": 5500,
       "originalLine": 13932,
       "characters": 191,
       "sourceHash": "591e403c3a26d728a368525a6c164a9ff3f13ad42e4d122e27fff00ad3fd5161",
@@ -1416,7 +1416,7 @@
     {
       "name": "getCustomFishBehaviorProfile",
       "module": "assets/custom-content.js",
-      "sourceLine": 5499,
+      "sourceLine": 5506,
       "originalLine": 13938,
       "characters": 249,
       "sourceHash": "4285ad35d4481475ae9563562640857226629c7d601a8b856d915544d9bf3b95",
@@ -1427,7 +1427,7 @@
     {
       "name": "normalizeCustomFishBehaviorProfileId",
       "module": "assets/custom-content.js",
-      "sourceLine": 5508,
+      "sourceLine": 5515,
       "originalLine": 13947,
       "characters": 165,
       "sourceHash": "a5e0e9d223dae258c1734b157aa4bc45df7e8e7ddeefe98b1afd757b1a1da7da",
@@ -1439,7 +1439,7 @@
     {
       "name": "sanitizeCustomFishName",
       "module": "assets/custom-content.js",
-      "sourceLine": 5514,
+      "sourceLine": 5521,
       "originalLine": 13953,
       "characters": 291,
       "sourceHash": "f348044eca25392e6ee35a499753256b5fd83fe89e523cfe70f8d518b531d046",
@@ -1448,7 +1448,7 @@
     {
       "name": "formatCustomFishBehaviorOption",
       "module": "assets/custom-content.js",
-      "sourceLine": 5522,
+      "sourceLine": 5529,
       "originalLine": 13961,
       "characters": 168,
       "sourceHash": "b694d2b1790c5b12c76a77ab87b1394c70e88c53509d51f61b00e68786d04fc8",
@@ -1459,7 +1459,7 @@
     {
       "name": "openCustomFishCreationOverlay",
       "module": "assets/custom-content.js",
-      "sourceLine": 5530,
+      "sourceLine": 5537,
       "originalLine": 13969,
       "characters": 760,
       "sourceHash": "0d27515e465c4f8397bfbe1b2a6c6b8750a3d477b857b8b888880d074089b6e8",
@@ -1473,7 +1473,7 @@
     {
       "name": "getCustomAssetTypeDef",
       "module": "assets/custom-content.js",
-      "sourceLine": 5547,
+      "sourceLine": 5554,
       "originalLine": 13985,
       "characters": 225,
       "sourceHash": "df12239a39e6603a678a65e50be13e2532d4791ba62d44526d75eeb053465e0d",
@@ -1482,7 +1482,7 @@
     {
       "name": "getCustomAssetInput",
       "module": "assets/custom-content.js",
-      "sourceLine": 5554,
+      "sourceLine": 5561,
       "originalLine": 13992,
       "characters": 231,
       "sourceHash": "d40dbd168e3d6fe56a6c8582afb2c852150b75cf47e0a1bab5d8e0ee4a78f9fb",
@@ -1493,7 +1493,7 @@
     {
       "name": "resetCustomAssetInput",
       "module": "assets/custom-content.js",
-      "sourceLine": 5561,
+      "sourceLine": 5568,
       "originalLine": 13999,
       "characters": 110,
       "sourceHash": "0add18bd74677ec4fe3dbf2898f0705da8be502704ae9fa27c470724451e58b3",
@@ -1502,7 +1502,7 @@
     {
       "name": "ensureCustomAssetCost",
       "module": "assets/custom-content.js",
-      "sourceLine": 5567,
+      "sourceLine": 5574,
       "originalLine": 14005,
       "characters": 340,
       "sourceHash": "2096774417aceaf612b86e9105c8cf85c7147c1ab0caad7a58ee072bb4b7748d",
@@ -1514,7 +1514,7 @@
     {
       "name": "getPendingCustomAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 5579,
+      "sourceLine": 5586,
       "originalLine": 14017,
       "characters": 147,
       "sourceHash": "0cee3b04624db290bdb1fc3424ba16e9b94e1e14fc56d86fde6aeedfc232e2a0",
@@ -1525,7 +1525,7 @@
     {
       "name": "finalizeCustomAssetCreation",
       "module": "assets/custom-content.js",
-      "sourceLine": 5584,
+      "sourceLine": 5591,
       "originalLine": 14022,
       "characters": 627,
       "sourceHash": "47314aaf3761a0079552c25631b2c5152441cbb9deb56f3cdc655ead0e2f4f57",
@@ -1542,7 +1542,7 @@
     {
       "name": "openCustomAssetPicker",
       "module": "assets/custom-content.js",
-      "sourceLine": 5604,
+      "sourceLine": 5611,
       "originalLine": 14042,
       "characters": 642,
       "sourceHash": "2170aca8c5cf8b07b7382958709e801beac30312d53cedc3e28e1e9141957404",
@@ -1557,7 +1557,7 @@
     {
       "name": "importCustomAssetFromPicker",
       "module": "assets/custom-content.js",
-      "sourceLine": 5626,
+      "sourceLine": 5633,
       "originalLine": 14064,
       "characters": 860,
       "sourceHash": "2eaa28b50d6fdec5c72792c0524103e07827604ebc4f850719fcb82c5a5680e5",
@@ -1572,7 +1572,7 @@
     {
       "name": "savePendingCustomAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 5660,
+      "sourceLine": 5667,
       "originalLine": 14098,
       "characters": 676,
       "sourceHash": "ce4f0fd77b18aab9b2e18632a67ae08a26f5eb5780833387409b44275afaa0de",
@@ -1586,7 +1586,7 @@
     {
       "name": "sanitizeCustomFishRotation",
       "module": "assets/custom-content.js",
-      "sourceLine": 5687,
+      "sourceLine": 5694,
       "originalLine": 14411,
       "characters": 178,
       "sourceHash": "9a471d43b4adb464c2936381d39be7f3f84947daa5463855683e501c6d57757e",
@@ -1597,7 +1597,7 @@
     {
       "name": "getPendingCustomFishTransform",
       "module": "assets/custom-content.js",
-      "sourceLine": 5695,
+      "sourceLine": 5702,
       "originalLine": 14419,
       "characters": 210,
       "sourceHash": "cb449045b2e4eac26d8733ae2283600facb9e0c1e9f7e7d0950e05687a6a0cda",
@@ -1608,7 +1608,7 @@
     {
       "name": "updatePendingCustomFishTransformControls",
       "module": "assets/custom-content.js",
-      "sourceLine": 5701,
+      "sourceLine": 5708,
       "originalLine": 14425,
       "characters": 798,
       "sourceHash": "4985914bd851b6a16f836fe3fefdda3c748ad07e93f83ebc0ae5f6026cf57e03",
@@ -1619,7 +1619,7 @@
     {
       "name": "getPendingCustomFishOutputDataUrl",
       "module": "assets/custom-content.js",
-      "sourceLine": 5719,
+      "sourceLine": 5726,
       "originalLine": 14443,
       "characters": 1373,
       "sourceHash": "d6c2310e3100bf75a396d145ed4681d64736538508a3385c2750d4311611ac8f",
@@ -1632,7 +1632,7 @@
     {
       "name": "updatePendingCustomFishPreview",
       "module": "assets/custom-content.js",
-      "sourceLine": 5755,
+      "sourceLine": 5762,
       "originalLine": 14479,
       "characters": 972,
       "sourceHash": "217189daedbd0f93a8739f1eb8c67142168a66fbff4285e0ec578869f2608ea6",
@@ -1645,7 +1645,7 @@
     {
       "name": "updatePendingCustomFishSize",
       "module": "assets/custom-content.js",
-      "sourceLine": 5778,
+      "sourceLine": 5785,
       "originalLine": 14502,
       "characters": 309,
       "sourceHash": "a34d93b02f1c66aa235d707a043bcdc3072bb2a0a93a4bd51b69830b0f55f2fd",
@@ -1657,7 +1657,7 @@
     {
       "name": "updatePendingCustomFishFlip",
       "module": "assets/custom-content.js",
-      "sourceLine": 5791,
+      "sourceLine": 5798,
       "originalLine": 14515,
       "characters": 200,
       "sourceHash": "aa9414eadf0889978929ce66d86d9ee77ac5957a34711861a5958d27d6b4fb08",
@@ -1668,7 +1668,7 @@
     {
       "name": "updatePendingCustomFishRotation",
       "module": "assets/custom-content.js",
-      "sourceLine": 5800,
+      "sourceLine": 5807,
       "originalLine": 14524,
       "characters": 226,
       "sourceHash": "a8c26ea4af3d63ed85913922a8da30475726f846215361e57a628981485fc9f7",
@@ -1680,7 +1680,7 @@
     {
       "name": "sanitizeCustomFishAssetEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 5809,
+      "sourceLine": 5816,
       "originalLine": 14533,
       "characters": 1217,
       "sourceHash": "3179672900cdc9cb0ae91f2fe44825f40a40585c012246ba05ed3e5d10456c10",
@@ -1695,7 +1695,7 @@
     {
       "name": "sanitizeCustomFishAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 5845,
+      "sourceLine": 5852,
       "originalLine": 14568,
       "characters": 334,
       "sourceHash": "d54ba0e596670ee64468a950d40ffaebcbad1ab1ed24136dfbd4ee0242222b33",
@@ -1706,7 +1706,7 @@
     {
       "name": "buildCustomFishCatalogEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 5860,
+      "sourceLine": 5867,
       "originalLine": 14583,
       "characters": 3458,
       "sourceHash": "9b7373c21a8eaf1f4df5f64efbc23535a3ccbd005115ee99c93a7ace9c9fff17",
@@ -1721,7 +1721,7 @@
     {
       "name": "getCustomFishCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 5931,
+      "sourceLine": 5938,
       "originalLine": 14650,
       "characters": 199,
       "sourceHash": "0dbda8e3f45a6af1d400e48c16ad293844c532e96ca2e285d1aadf787b994f3f",
@@ -1732,7 +1732,7 @@
     {
       "name": "syncRuntimeCustomFishAssetsFromState",
       "module": "assets/custom-content.js",
-      "sourceLine": 5937,
+      "sourceLine": 5944,
       "originalLine": 14656,
       "characters": 316,
       "sourceHash": "1eb6a3caa937747f5e3e17f1617b54ada23ef67363f2222464359f14803120c9",
@@ -1744,7 +1744,7 @@
     {
       "name": "savePendingCustomFishUpload",
       "module": "assets/custom-content.js",
-      "sourceLine": 5949,
+      "sourceLine": 5956,
       "originalLine": 14668,
       "characters": 175,
       "sourceHash": "6a59fb6bc9b774c9e9da0b7bba63a218fc319cb3f4fd5e0f9ed45fc899c12faf",
@@ -1756,7 +1756,7 @@
     {
       "name": "normalizeFishCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 5955,
+      "sourceLine": 5962,
       "originalLine": 14674,
       "characters": 460,
       "sourceHash": "77b71eac4c513f710c4f4e5d8f234d05af41a4c4575664537577fe1f82d36bed",
@@ -1767,7 +1767,7 @@
     {
       "name": "collectFishCatalogAssetFiles",
       "module": "assets/custom-content.js",
-      "sourceLine": 5969,
+      "sourceLine": 5976,
       "originalLine": 14688,
       "characters": 254,
       "sourceHash": "eb15555367a9f8260a8c4aa729dc40a67df11d3d87887e78a666a94b97e2cd6d",
@@ -1778,7 +1778,7 @@
     {
       "name": "normalizeCatalogAssetLookupKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5976,
+      "sourceLine": 5983,
       "originalLine": 14695,
       "characters": 174,
       "sourceHash": "8c7c8c31ceb9694de7847a0a04e2154df3e2598d1a9511f7e6ddb03a57c15703",
@@ -1787,7 +1787,7 @@
     {
       "name": "findCatalogAssetManifestItem",
       "module": "assets/custom-content.js",
-      "sourceLine": 5984,
+      "sourceLine": 5991,
       "originalLine": 14703,
       "characters": 602,
       "sourceHash": "1d0b81f783d03158097f0e2e2de6c50a82e4476576438690514059a207c0b0d8",
@@ -1798,7 +1798,7 @@
     {
       "name": "resolveFishCatalogAssetFolderPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 6001,
+      "sourceLine": 6008,
       "originalLine": 14720,
       "characters": 363,
       "sourceHash": "72a99e7e1dd7c7a99624fe53cbf98584886b45d5eb313be796274b246dd0e7e8",
@@ -1807,7 +1807,7 @@
     {
       "name": "encodeCatalogAssetPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 6010,
+      "sourceLine": 6017,
       "originalLine": 14729,
       "characters": 161,
       "sourceHash": "52f99bc09661cec2d9b8f173ba1bc9e0261b2cceb8755dbce26107a49c9b05f6",
@@ -1816,7 +1816,7 @@
     {
       "name": "resolveFishCatalogAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 6017,
+      "sourceLine": 6024,
       "originalLine": 14736,
       "characters": 826,
       "sourceHash": "d0eebd4c3f83245efcc23361f983d012bef670f65957fa69cfa521408cb0a6cc",
@@ -1830,7 +1830,7 @@
     {
       "name": "resolveFishCatalogStageAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 6033,
+      "sourceLine": 6040,
       "originalLine": 14752,
       "characters": 604,
       "sourceHash": "4be6ec40922bbd88c36abcd5733356da345faf18bd3c1d3a632784a8b7c80c5c",
@@ -1843,7 +1843,7 @@
     {
       "name": "normalizeFishDefinition",
       "module": "assets/custom-content.js",
-      "sourceLine": 6048,
+      "sourceLine": 6055,
       "originalLine": 14767,
       "characters": 8768,
       "sourceHash": "fb35aebb34422323db8c64a38094f2617f575baeb8803be734cae9bbe395b9a6",
@@ -5263,9 +5263,34 @@
       ]
     },
     {
-      "name": "renderAuthCard",
+      "name": "renderCloudAuthLegalNotice",
       "module": "core/cloud-save.js",
       "sourceLine": 736,
+      "originalLine": null,
+      "characters": 643,
+      "sourceHash": "75e04050e092b070abab9602fce6aefa7db209c7a735a2230d37c6a411d3b557",
+      "calls": []
+    },
+    {
+      "name": "renderStartupLegalPanelContents",
+      "module": "core/cloud-save.js",
+      "sourceLine": 748,
+      "originalLine": null,
+      "characters": 945,
+      "sourceHash": "4d82d25992025d06e76621be3151f07d7c9d1b6f675de1cecdf0b065f8d10c13",
+      "calls": [
+        "normalizeLegalOverlayTab",
+        "renderLegalDataServices",
+        "renderLegalLicenses",
+        "renderLegalOverlayTabs",
+        "renderLegalPrivacyPolicy",
+        "renderLegalTermsOfService"
+      ]
+    },
+    {
+      "name": "renderAuthCard",
+      "module": "core/cloud-save.js",
+      "sourceLine": 772,
       "originalLine": null,
       "characters": 1216,
       "sourceHash": "0a9e64c570f5bc71e85212a1022876fcc542b3e602330ccd7a7816b9dc40ab2d",
@@ -5276,21 +5301,22 @@
     {
       "name": "getCloudAuthFormMarkup",
       "module": "core/cloud-save.js",
-      "sourceLine": 745,
+      "sourceLine": 781,
       "originalLine": null,
-      "characters": 1803,
-      "sourceHash": "4c10561905ef932f6ec1c2ec5da3bf3452439505b09ed3154866d5fedaa7a427",
+      "characters": 1842,
+      "sourceHash": "b40a52938526916d214b6d818317443d177e1b61b51676344b8f3ed0ca5a3f31",
       "calls": [
-        "renderAuthCard"
+        "renderAuthCard",
+        "renderCloudAuthLegalNotice"
       ]
     },
     {
       "name": "ensureStartupActions",
       "module": "core/cloud-save.js",
-      "sourceLine": 766,
+      "sourceLine": 802,
       "originalLine": null,
-      "characters": 1514,
-      "sourceHash": "d2973925a7c95bf421aa5cc27a1d2b676f36442d914d471394661f8e34cee871",
+      "characters": 1598,
+      "sourceHash": "12a511923c5c851eab1d9b062c451b166b87d11ce502ce208700c6824d4b135c",
       "calls": [
         "getCloudAuthFormMarkup",
         "renderAuthCard"
@@ -5299,25 +5325,26 @@
     {
       "name": "renderStartupActions",
       "module": "core/cloud-save.js",
-      "sourceLine": 787,
+      "sourceLine": 824,
       "originalLine": null,
-      "characters": 4140,
-      "sourceHash": "99bf74e0d496403c9c43f3c4891ea3d911983f70527bf217dcf12b452506948d",
+      "characters": 4786,
+      "sourceHash": "93fe3a9c67af8f77fb0db14b0ae2f40c918aa2009be517da492e61ded3e7fefe",
       "calls": [
         "ensureStartupActions",
         "escapeHtml",
         "getAccountUsernameForUser",
         "getCloudSession",
-        "hasCloudPasswordRecoverySession"
+        "hasCloudPasswordRecoverySession",
+        "renderStartupLegalPanelContents"
       ]
     },
     {
       "name": "showStartupAuth",
       "module": "core/cloud-save.js",
-      "sourceLine": 875,
+      "sourceLine": 927,
       "originalLine": null,
-      "characters": 445,
-      "sourceHash": "80efda26da3c6a3d38061c1fead2f3edf14f226a4b6f4951d204770907ea3bb7",
+      "characters": 481,
+      "sourceHash": "22a633670ed6d27902399e1ed9974cf490a5e6bd386595047753be2e6ce765c1",
       "calls": [
         "ensureStartupActions"
       ]
@@ -5325,7 +5352,7 @@
     {
       "name": "startFromStartup",
       "module": "core/cloud-save.js",
-      "sourceLine": 886,
+      "sourceLine": 939,
       "originalLine": null,
       "characters": 735,
       "sourceHash": "72edd0555a77230a4abbdffe3864330176e04ae0ae1f1631642834b10357079b",
@@ -5344,7 +5371,7 @@
     {
       "name": "handleStartupAuthSubmit",
       "module": "core/cloud-save.js",
-      "sourceLine": 908,
+      "sourceLine": 961,
       "originalLine": null,
       "characters": 1226,
       "sourceHash": "0c69233488956f49f074c11b40926e3a4f294398d40e38bc8dc187a2b3a6a911",
@@ -5359,7 +5386,7 @@
     {
       "name": "handleStartupForgotPassword",
       "module": "core/cloud-save.js",
-      "sourceLine": 937,
+      "sourceLine": 990,
       "originalLine": null,
       "characters": 685,
       "sourceHash": "56fc34fadddbc4923490e6a50ec5c1ee1ac66c00a57da6bdb085d7a09a728582",
@@ -5372,7 +5399,7 @@
     {
       "name": "handleStartupCompletePasswordReset",
       "module": "core/cloud-save.js",
-      "sourceLine": 954,
+      "sourceLine": 1007,
       "originalLine": null,
       "characters": 753,
       "sourceHash": "dff1d379c2fb4b3868f559b7795fac92262ec89eeabff24d167247158735a58b",
@@ -5386,14 +5413,17 @@
     {
       "name": "handleStartupActionClick",
       "module": "core/cloud-save.js",
-      "sourceLine": 970,
+      "sourceLine": 1023,
       "originalLine": null,
-      "characters": 1325,
-      "sourceHash": "fae1a2f2d02cc6315cec681e4cb84cb4f5846ffb20bc7a19f8d0aa78d89a49b3",
+      "characters": 2343,
+      "sourceHash": "7fd550fa23efb5031b8c4556d86cf1635b3c3f085726e1f14e849c2041685b1b",
       "calls": [
         "continueFromStartup",
+        "ensureStartupActions",
         "handleCloudReauth",
         "handleStartupAuthSubmit",
+        "normalizeLegalOverlayTab",
+        "renderStartupActions",
         "returnToCloudLogin",
         "runStartupAuthAction",
         "showStartupAuth",
@@ -5403,7 +5433,7 @@
     {
       "name": "showStartupLoadingState",
       "module": "core/cloud-save.js",
-      "sourceLine": 992,
+      "sourceLine": 1069,
       "originalLine": null,
       "characters": 855,
       "sourceHash": "170b690424313c3c1792a7049526ee98ea91a2c602f00808ac358ebfacd903f8",
@@ -5415,7 +5445,7 @@
     {
       "name": "showStartupAccountWelcome",
       "module": "core/cloud-save.js",
-      "sourceLine": 1010,
+      "sourceLine": 1087,
       "originalLine": null,
       "characters": 298,
       "sourceHash": "79a5c46174d6369f0e0d6d2a8989194655e6f3ab05b9a0aaac6fd5631422da75",
@@ -5428,7 +5458,7 @@
     {
       "name": "continueFromStartup",
       "module": "core/cloud-save.js",
-      "sourceLine": 1019,
+      "sourceLine": 1096,
       "originalLine": null,
       "characters": 704,
       "sourceHash": "03a94d3c8b0b0b9a019ded47245803984d74abc1e2ba977c84d062b832fc9935",
@@ -5447,7 +5477,7 @@
     {
       "name": "ensureCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 1040,
+      "sourceLine": 1117,
       "originalLine": null,
       "characters": 1176,
       "sourceHash": "fee8b3354b2b17709126d8122f74cd3880c23d50e54839268956c0e4a7a6f997",
@@ -5456,7 +5486,7 @@
     {
       "name": "bindCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 1071,
+      "sourceLine": 1148,
       "originalLine": null,
       "characters": 637,
       "sourceHash": "640263ccfd87fdcb97460544aa97c0543a883e1e74d26190450a6e8bb4b80dda",
@@ -5468,7 +5498,7 @@
     {
       "name": "renderCloudAccountPanel",
       "module": "core/cloud-save.js",
-      "sourceLine": 1087,
+      "sourceLine": 1164,
       "originalLine": null,
       "characters": 6925,
       "sourceHash": "7675f1fe560830510afc1956402f4e5d8e9c9c13916036d52a3e0667e5177484",
@@ -5487,7 +5517,7 @@
     {
       "name": "handleCloudSettingsClick",
       "module": "core/cloud-save.js",
-      "sourceLine": 1176,
+      "sourceLine": 1253,
       "originalLine": null,
       "characters": 6368,
       "sourceHash": "45a0f5f6e5cbff31019f2b0c4713fe71a135e2a9f602aeed6f14278889ff5b14",
@@ -5511,7 +5541,7 @@
     {
       "name": "initializeCloudSaveRuntime",
       "module": "core/cloud-save.js",
-      "sourceLine": 1310,
+      "sourceLine": 1387,
       "originalLine": null,
       "characters": 515,
       "sourceHash": "afa76ab1a55bb76df5ccd9da1d2a42e13d560d5e9b432dc730cc9773451a2f39",
@@ -5527,7 +5557,7 @@
     {
       "name": "runStartupAuthAction",
       "module": "core/cloud-save.js",
-      "sourceLine": 1321,
+      "sourceLine": 1398,
       "originalLine": null,
       "characters": 431,
       "sourceHash": "e8bae99fea096856e81f93205bad62498cf85d76fc0faa9e619b979fef1a4d56",
@@ -22660,8 +22690,8 @@
       "module": "fish/predators-and-motion.js",
       "sourceLine": 3419,
       "originalLine": null,
-      "characters": 890,
-      "sourceHash": "a1b7cf390db3a66c8792a679c54cdd735038a69e1d718d45cc383ad72efea74a",
+      "characters": 1463,
+      "sourceHash": "0771e0e97d6b84eaa4fe6f015d567f0076b02e251b50ef52365ac3e239603361",
       "calls": [
         "clamp",
         "clampFishXNormToMobileViewport",
@@ -22672,7 +22702,7 @@
     {
       "name": "getFishProfileHomeRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3440,
+      "sourceLine": 3452,
       "originalLine": null,
       "characters": 675,
       "sourceHash": "e0b3ee3da671ecc36eb20de677e0e9593d6f0df4a7a32739bfb97c1e148eec98",
@@ -22685,7 +22715,7 @@
     {
       "name": "getFishProfileHoverTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3460,
+      "sourceLine": 3472,
       "originalLine": null,
       "characters": 659,
       "sourceHash": "4a1c639b1f32fcc3d8dfee62d1fdf743b5e23b384e4d34cedf0a2e52fa140ce2",
@@ -22699,7 +22729,7 @@
     {
       "name": "assignSpeciesRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3481,
+      "sourceLine": 3493,
       "originalLine": null,
       "characters": 1827,
       "sourceHash": "5562ef75cdb72a415b83e5072cf17670a2c3347d5ff1d13b451495b92626027c",
@@ -22723,7 +22753,7 @@
     {
       "name": "assignSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3521,
+      "sourceLine": 3533,
       "originalLine": 51906,
       "characters": 8816,
       "sourceHash": "1d16f8170278bd74757d45a95838a0677933d3cd0864dcf0384bb57c3782fd9b",
@@ -37254,16 +37284,101 @@
       "module": "ui/management-and-overlays.js",
       "sourceLine": 1384,
       "originalLine": 43000,
-      "characters": 1272,
-      "sourceHash": "b3f2393dc4cd251cb4bdc52dd337b4673319d7fdc2418ccebc6b4784256d8e2d",
+      "characters": 1402,
+      "sourceHash": "a08ca8084174e8f908bd5b6fbd09f8f24f647dec48ccc50e473c4cec3c269846",
       "calls": [
         "buildUtilityCloseFooter"
       ]
     },
     {
+      "name": "normalizeLegalOverlayTab",
+      "module": "ui/management-and-overlays.js",
+      "sourceLine": 1426,
+      "originalLine": null,
+      "characters": 187,
+      "sourceHash": "0762f1216d86da5b97a6018b834065083d0f97d6428b107ff94629d2727ce30d",
+      "calls": []
+    },
+    {
+      "name": "renderLegalOverlayTabs",
+      "module": "ui/management-and-overlays.js",
+      "sourceLine": 1431,
+      "originalLine": null,
+      "characters": 612,
+      "sourceHash": "f53763999563e8e0566904b9fa40efaa70cd5932da58fc7707c66bf2b08a0204",
+      "calls": [
+        "escapeHtml",
+        "normalizeLegalOverlayTab"
+      ]
+    },
+    {
+      "name": "renderLegalPrivacyPolicy",
+      "module": "ui/management-and-overlays.js",
+      "sourceLine": 1446,
+      "originalLine": null,
+      "characters": 6265,
+      "sourceHash": "ea42bc8c3601066c6778653b1fa35f5c775bdbec8788d0a75a4a1624f897b091",
+      "calls": []
+    },
+    {
+      "name": "renderLegalTermsOfService",
+      "module": "ui/management-and-overlays.js",
+      "sourceLine": 1525,
+      "originalLine": null,
+      "characters": 5336,
+      "sourceHash": "aa6f4f517daf2dfbc7a3f1cadd6c10ea76b93a8123a7d91cf0012ff6d807ff55",
+      "calls": []
+    },
+    {
+      "name": "renderLegalDataServices",
+      "module": "ui/management-and-overlays.js",
+      "sourceLine": 1600,
+      "originalLine": null,
+      "characters": 5028,
+      "sourceHash": "10f4346f57968d822b9383da6aaaebc23624ca8eec393ff517f78ffce7a97b79",
+      "calls": []
+    },
+    {
+      "name": "renderLegalLicenses",
+      "module": "ui/management-and-overlays.js",
+      "sourceLine": 1672,
+      "originalLine": null,
+      "characters": 2266,
+      "sourceHash": "c01726b053407239a50756d2204fff4e36cab541837c18f4f438b391c44a9c24",
+      "calls": []
+    },
+    {
+      "name": "renderLegalUtilityOverlay",
+      "module": "ui/management-and-overlays.js",
+      "sourceLine": 1721,
+      "originalLine": null,
+      "characters": 650,
+      "sourceHash": "f5a100be4fa6035f28f117381fd4b3db8d552dcc97be43ae16e2984c7d813bcb",
+      "calls": [
+        "normalizeLegalOverlayTab",
+        "renderLegalDataServices",
+        "renderLegalLicenses",
+        "renderLegalOverlayTabs",
+        "renderLegalPrivacyPolicy",
+        "renderLegalTermsOfService"
+      ]
+    },
+    {
+      "name": "handleLegalUtilityOverlayBodyClick",
+      "module": "ui/management-and-overlays.js",
+      "sourceLine": 1744,
+      "originalLine": null,
+      "characters": 517,
+      "sourceHash": "fb8381ad4df756c95f2bc9722137f734f80629261121ffd627881c9abf86eace",
+      "calls": [
+        "normalizeLegalOverlayTab",
+        "renderUtilityOverlay"
+      ]
+    },
+    {
       "name": "parseInviteFriendEmails",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1422,
+      "sourceLine": 1759,
       "originalLine": null,
       "characters": 571,
       "sourceHash": "505335fde1bde366442ae6744b6f95f681c107a08a0aa48bf4a7d5383563dc8e",
@@ -37272,7 +37387,7 @@
     {
       "name": "renderInviteFriendUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1444,
+      "sourceLine": 1781,
       "originalLine": null,
       "characters": 1100,
       "sourceHash": "78cbf5e003068c533d778dc2c972a2e74be921fd423fedd44398ec515fbdd24e",
@@ -37283,7 +37398,7 @@
     {
       "name": "handleInviteFriendUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1472,
+      "sourceLine": 1809,
       "originalLine": null,
       "characters": 797,
       "sourceHash": "6cccc3ddab2f622a841a9f9583ec22cffb51ede7a7bf053b1e22568790a2e5f5",
@@ -37294,7 +37409,7 @@
     {
       "name": "sendInviteFriendEmails",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1487,
+      "sourceLine": 1824,
       "originalLine": null,
       "characters": 2768,
       "sourceHash": "d54ff069f5f7e09066e77d23bd26ec5f2a612a9fe4bbba8771bdcb0baa479fbe",
@@ -37307,7 +37422,7 @@
     {
       "name": "renderDecorBuyConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1548,
+      "sourceLine": 1885,
       "originalLine": 43038,
       "characters": 1004,
       "sourceHash": "5fc1d8b140ea91d56b94de4d59dc6d29e3fc91781db64ca5c2e6217900177a9f",
@@ -37320,7 +37435,7 @@
     {
       "name": "renderDecorSellConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1569,
+      "sourceLine": 1906,
       "originalLine": 43059,
       "characters": 992,
       "sourceHash": "2f005b75268c7343f6141ffa4e4d75536598a9980d8021b7107af80477fb7f77",
@@ -37333,7 +37448,7 @@
     {
       "name": "renderFishBuyConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1590,
+      "sourceLine": 1927,
       "originalLine": 43080,
       "characters": 908,
       "sourceHash": "5d97a34fad833132c8f6f7e4e027d79f191284321c029986f054137e584aa228",
@@ -37348,7 +37463,7 @@
     {
       "name": "renderFishSellConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1612,
+      "sourceLine": 1949,
       "originalLine": 43102,
       "characters": 1068,
       "sourceHash": "7756bf1e362b475c539080b3c0773cf9217627aedcbfb1bbdb533ccef1248754",
@@ -37363,7 +37478,7 @@
     {
       "name": "renderImportConfirmUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1641,
+      "sourceLine": 1978,
       "originalLine": 43131,
       "characters": 456,
       "sourceHash": "147b2fa6202694ae0bcf8c43cbecc548c473f550d43ce45cb1311a16719e90df",
@@ -37375,7 +37490,7 @@
     {
       "name": "renderResetProgressUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1656,
+      "sourceLine": 1993,
       "originalLine": 43146,
       "characters": 531,
       "sourceHash": "bf13d0277769747b0582a4371b09d781866b79008d707aae2dc68a734013c1c2",
@@ -37387,7 +37502,7 @@
     {
       "name": "renderResetProgressSaveChoiceUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1671,
+      "sourceLine": 2008,
       "originalLine": 43161,
       "characters": 612,
       "sourceHash": "828e75c29a283defe57815827db1feeeca60dc3d1de9f71e533c25fca7d2c62a",
@@ -37399,7 +37514,7 @@
     {
       "name": "renderResetProgressSaveExportUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1687,
+      "sourceLine": 2024,
       "originalLine": 43177,
       "characters": 425,
       "sourceHash": "5b4ebb05d5e88880ff7b730a1d93d0774899599b59d44326c4725039629f2891",
@@ -37411,7 +37526,7 @@
     {
       "name": "createUtilityOverlayActionHandler",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1700,
+      "sourceLine": 2037,
       "originalLine": 43190,
       "characters": 319,
       "sourceHash": "731423c67967d16867143ce9b063dace66ab71078435dce8f965bf273ba15b71",
@@ -37420,7 +37535,7 @@
     {
       "name": "handleFoodUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1714,
+      "sourceLine": 2051,
       "originalLine": 43204,
       "characters": 228,
       "sourceHash": "30a03c5f7af5f3b68b8c705ba4c3db56658fea1fb2ed4e4ccc79d3c334408fa0",
@@ -37431,7 +37546,7 @@
     {
       "name": "handleMedicineUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1723,
+      "sourceLine": 2060,
       "originalLine": 43213,
       "characters": 256,
       "sourceHash": "aa3466f20760b6ce1311c9a1dbf415eb6fcc6b090246519d1b10279ac13186f3",
@@ -37442,7 +37557,7 @@
     {
       "name": "handleTankManagementUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1732,
+      "sourceLine": 2069,
       "originalLine": 43222,
       "characters": 4063,
       "sourceHash": "915f5efb9576e404dc8b413155897a8ca2048827813543e7d2bfe7f384a429e2",
@@ -37475,7 +37590,7 @@
     {
       "name": "renderDecorSettingsTitleActions",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1845,
+      "sourceLine": 2182,
       "originalLine": null,
       "characters": 320,
       "sourceHash": "bb8082276171d1633718c47a95612ec60c9fbe5705f00740e257ecb34ae6426f",
@@ -37486,7 +37601,7 @@
     {
       "name": "renderDecorSettingsHeaderActions",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1853,
+      "sourceLine": 2190,
       "originalLine": null,
       "characters": 356,
       "sourceHash": "6fa01f546f67a6d4177dc2a204b4decb04497df48c9589e5d57d1648da16c6b3",
@@ -37497,7 +37612,7 @@
     {
       "name": "handleDecorSettingsUtilityOverlayHeaderClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1866,
+      "sourceLine": 2203,
       "originalLine": null,
       "characters": 634,
       "sourceHash": "59b29e31ddf0180505c1e067ad9580087ac0cdae35c6922f78c2a9fcf6f9828c",
@@ -37511,7 +37626,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1890,
+      "sourceLine": 2227,
       "originalLine": 43317,
       "characters": 2894,
       "sourceHash": "e5f7f8dbbe9123e18495f7d3d612bfaf967ecbf4f682af5d19436560b7845377",
@@ -37533,7 +37648,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayPointerDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 1970,
+      "sourceLine": 2307,
       "originalLine": 43357,
       "characters": 1572,
       "sourceHash": "b3fe14e3fd63c4ad0c1d311c3792be500b48c8c1efee68609123c63df1d7efd4",
@@ -37549,7 +37664,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayPointerMove",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2005,
+      "sourceLine": 2342,
       "originalLine": 43392,
       "characters": 405,
       "sourceHash": "f9915d23a10b7c2085b894029f8fe5189d3de3e40101440ba7d8cba6f5bdc155",
@@ -37561,7 +37676,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayPointerEnd",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2019,
+      "sourceLine": 2356,
       "originalLine": 43406,
       "characters": 122,
       "sourceHash": "af4c53abfd34b1d2ec07d31b71886f5c7cc2f8318f13741452c2a9ee3d1c8b6b",
@@ -37572,7 +37687,7 @@
     {
       "name": "handleCaveSettingsUtilityOverlayFocusIn",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2024,
+      "sourceLine": 2361,
       "originalLine": 43411,
       "characters": 690,
       "sourceHash": "41403d5a4d1cd01d835654f2bb6c2bcab6e5dae5c81ab9c97c1320bc5469c0bf",
@@ -37583,7 +37698,7 @@
     {
       "name": "handleCommonUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2038,
+      "sourceLine": 2375,
       "originalLine": 43425,
       "characters": 1868,
       "sourceHash": "f62a69669a2d8614b38ebc3cd6bd9ecdf407d5151b449f8d13ee20c38e77d612",
@@ -37599,7 +37714,7 @@
     {
       "name": "handleCustomDecorUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2086,
+      "sourceLine": 2423,
       "originalLine": 43464,
       "characters": 1162,
       "sourceHash": "d77ecdb0d2b53705d468e5ca31a673784ae5637660390e8df9b975d0b54860a8",
@@ -37612,7 +37727,7 @@
     {
       "name": "handleCustomHideUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2110,
+      "sourceLine": 2447,
       "originalLine": 43488,
       "characters": 598,
       "sourceHash": "42a6072d6af26fa15ff95f8aa562f879f2877d6342a643a71d2496313c9e73c2",
@@ -37623,7 +37738,7 @@
     {
       "name": "handleTankManagementUtilityOverlayChange",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2124,
+      "sourceLine": 2461,
       "originalLine": 43502,
       "characters": 560,
       "sourceHash": "e766b1e6a1d04b40c9e1f269b7bf773da07c545b0f969fdd5e282d12c2827769",
@@ -37635,7 +37750,7 @@
     {
       "name": "handleCustomHideUtilityOverlayChange",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2140,
+      "sourceLine": 2477,
       "originalLine": 43518,
       "characters": 350,
       "sourceHash": "98c8894b94656d666ff9936dd6914cff673e28287f7c0eb2f6c07c2a8d62c6d2",
@@ -37646,7 +37761,7 @@
     {
       "name": "handleCustomHideUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2149,
+      "sourceLine": 2486,
       "originalLine": 43527,
       "characters": 425,
       "sourceHash": "79580d0667526b03f3c9d333a6173b945c0daa2051ee5818ce1c0ae73b201018",
@@ -37658,7 +37773,7 @@
     {
       "name": "handleCustomFishUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2163,
+      "sourceLine": 2500,
       "originalLine": 43541,
       "characters": 872,
       "sourceHash": "e7db5d28a696d043b3196202186c90307a0c76c6ab1298c6644006129cd98dc9",
@@ -37670,7 +37785,7 @@
     {
       "name": "handleCustomFishUtilityOverlayBodyClick",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2182,
+      "sourceLine": 2519,
       "originalLine": 43560,
       "characters": 81,
       "sourceHash": "03f59105ea0856ea536de470ac2820baac17353d6f843786e7080a4d89ce1d37",
@@ -37679,7 +37794,7 @@
     {
       "name": "handleCustomFishUtilityOverlayChange",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2186,
+      "sourceLine": 2523,
       "originalLine": 43564,
       "characters": 622,
       "sourceHash": "3d9027648690b8e08b4f20ce8bef7e714d9c4464c9c3153f9404b88320f4f8c2",
@@ -37691,7 +37806,7 @@
     {
       "name": "handleTankManagementUtilityOverlayInput",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2200,
+      "sourceLine": 2537,
       "originalLine": 43573,
       "characters": 254,
       "sourceHash": "6024c600137bc722b663a8199c8ce144bf52bbbea723bdf412bbf331b20fad8f",
@@ -37700,7 +37815,7 @@
     {
       "name": "handleCommonUtilityOverlayChange",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2209,
+      "sourceLine": 2546,
       "originalLine": 43582,
       "characters": 3306,
       "sourceHash": "d5fa907982629f5cd8e63e77dff3226a262511faa4dbbee4947fdf2eb3d27c1b",
@@ -37720,7 +37835,7 @@
     {
       "name": "handleTankManagementUtilityOverlayKeyDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2283,
+      "sourceLine": 2620,
       "originalLine": 43647,
       "characters": 440,
       "sourceHash": "cd37e3814b94353968bc486ed3b3f4df27e5e2a5616b2af6bc6eab251e731710",
@@ -37732,7 +37847,7 @@
     {
       "name": "handleCustomDecorUtilityOverlayKeyDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2301,
+      "sourceLine": 2638,
       "originalLine": 43665,
       "characters": 482,
       "sourceHash": "ff9724dedfc5840fbc72f06fb151cff839c9221c7954916fd55a1a8a699c6128",
@@ -37744,7 +37859,7 @@
     {
       "name": "handleCustomHideUtilityOverlayKeyDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2319,
+      "sourceLine": 2656,
       "originalLine": 43683,
       "characters": 477,
       "sourceHash": "ffa3f0f2c751ed9f0f47dde213e77a59421faa336f1dddec363f068d8dc06bcb",
@@ -37756,7 +37871,7 @@
     {
       "name": "handleCustomFishUtilityOverlayKeyDown",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2337,
+      "sourceLine": 2674,
       "originalLine": 43701,
       "characters": 477,
       "sourceHash": "d0c6283f1aacaf91b13fe8a9f7e12b9ea94ab30033272f1075f2f44747548729",
@@ -37768,7 +37883,7 @@
     {
       "name": "requestCloseUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2355,
+      "sourceLine": 2692,
       "originalLine": 44087,
       "characters": 256,
       "sourceHash": "d5ccdff9d225668fd8a36dd2ac1df5e40da959eb6032e383cf9af198ab7bcfe9",
@@ -37781,7 +37896,7 @@
     {
       "name": "dispatchUtilityOverlayTargetEvent",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2364,
+      "sourceLine": 2701,
       "originalLine": 44096,
       "characters": 387,
       "sourceHash": "09328eb8fae4ef3730430f1788d93ccbc228435b0fa085cf6fe3ad531ed487c9",
@@ -37793,7 +37908,7 @@
     {
       "name": "dispatchUtilityOverlayPointerEvent",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2374,
+      "sourceLine": 2711,
       "originalLine": 44106,
       "characters": 269,
       "sourceHash": "213f7fc66ae810ebacc3dc1fff6f72932623d0120f0f33d6d5f4f727c24b9418",
@@ -37805,7 +37920,7 @@
     {
       "name": "syncUtilityOverlayEditTraySafeArea",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2380,
+      "sourceLine": 2717,
       "originalLine": null,
       "characters": 992,
       "sourceHash": "58ac37093f23219fee0a25625a64dcfd826f13a286d1ee431d7dd06ed3c0183e",
@@ -37814,7 +37929,7 @@
     {
       "name": "renderUtilityOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2405,
+      "sourceLine": 2742,
       "originalLine": 44112,
       "characters": 1991,
       "sourceHash": "870cf78e42b6ba368e188f4460f864b2431c28becd10c79fbcf73fba62996632",
@@ -37832,7 +37947,7 @@
     {
       "name": "renderExternalLinkOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2454,
+      "sourceLine": 2791,
       "originalLine": 44150,
       "characters": 546,
       "sourceHash": "44e5ef04d70a0446665c1a304d9bf54c84f0eab273d31c531ff36a8b62d4e004",
@@ -37843,7 +37958,7 @@
     {
       "name": "renderSaveExportOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2470,
+      "sourceLine": 2807,
       "originalLine": 44166,
       "characters": 1047,
       "sourceHash": "0dc09e291701d11f7fea9aeb5a5aeb9ea0324cde9af52705c8d34ce9963e2d04",
@@ -37855,7 +37970,7 @@
     {
       "name": "renderSaveExportActionsFooter",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2493,
+      "sourceLine": 2830,
       "originalLine": 44189,
       "characters": 711,
       "sourceHash": "8f8cce4fd42b6dc902e07d7051e9be610f612710876b355f965c5f1af9887319",
@@ -37867,7 +37982,7 @@
     {
       "name": "renderCustomDecorNameOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2506,
+      "sourceLine": 2843,
       "originalLine": 44202,
       "characters": 6870,
       "sourceHash": "1ffcc94621d3910c4ce403fd2b481f557a4bce17bc21a02f67e8fe568bc257aa",
@@ -37888,7 +38003,7 @@
     {
       "name": "renderCaveColorSettingsControls",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2653,
+      "sourceLine": 2990,
       "originalLine": 44349,
       "characters": 3403,
       "sourceHash": "09919463816be857ec864d59becc952456b96c09f83bdf4facd6f73ffbbd106d",
@@ -37907,7 +38022,7 @@
     {
       "name": "renderCustomHideBackgroundPrompt",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2740,
+      "sourceLine": 3077,
       "originalLine": 44436,
       "characters": 1011,
       "sourceHash": "dd1f8437c175065105de2d41c6658bdac85c715762751d534136361885b92cba",
@@ -37919,7 +38034,7 @@
     {
       "name": "renderCustomHideCreationOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2768,
+      "sourceLine": 3105,
       "originalLine": 44464,
       "characters": 7442,
       "sourceHash": "0ab7176c50f40430a0d5bd58601281d36a3d7ce2deef62dfb9be4fcb3a2bc42c",
@@ -37943,7 +38058,7 @@
     {
       "name": "renderCaveSettingsMarkers",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2915,
+      "sourceLine": 3252,
       "originalLine": 44611,
       "characters": 1201,
       "sourceHash": "a109c01e052a5f82fdbfeac1096dd41d7eb113270c13c574c3abe90af7396c2b",
@@ -37954,7 +38069,7 @@
     {
       "name": "renderLegacyCaveSettingsControls",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 2948,
+      "sourceLine": 3285,
       "originalLine": null,
       "characters": 5975,
       "sourceHash": "f50e1d9b85c7fa441dbc59e09a5012cceb50c571377cb3db715e54cc48c07bac",
@@ -37970,7 +38085,7 @@
     {
       "name": "renderCaveSettingsControls",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 3085,
+      "sourceLine": 3422,
       "originalLine": 44644,
       "characters": 6688,
       "sourceHash": "4b7d27c6e052317e4105b3b54d08580d7a10be8b01e354577ec0f83fa504e0b2",
@@ -37988,7 +38103,7 @@
     {
       "name": "renderDecorSettingsOverlay",
       "module": "ui/management-and-overlays.js",
-      "sourceLine": 3200,
+      "sourceLine": 3537,
       "originalLine": 44780,
       "characters": 11194,
       "sourceHash": "4b039670f3950b02f8e41ab6e81faf31220d23583854cd35326d370c8fb06aa0",

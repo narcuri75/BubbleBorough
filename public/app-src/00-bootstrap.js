@@ -3197,6 +3197,9 @@ const runtime = {
   storeOverlayOpen: false,
   utilityOverlayOpen: false,
   utilityOverlayMode: "",
+  legalOverlayTab: "privacy",
+  startupLegalOpen: false,
+  startupLegalTab: "privacy",
   settingsOverlayOpen: false,
   equipmentOverlayOpen: false,
   storeTab: "food",
@@ -4368,6 +4371,16 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     id: "credits",
     exclusive: true,
     render: renderCreditsUtilityOverlay
+  },
+  legal: {
+    id: "legal",
+    exclusive: true,
+    onOpen: (ctx, options = {}) => {
+      runtime.legalOverlayTab = normalizeLegalOverlayTab(options.tab || "privacy");
+    },
+    render: renderLegalUtilityOverlay,
+    onHeaderClick: handleLegalUtilityOverlayBodyClick,
+    onBodyClick: handleLegalUtilityOverlayBodyClick
   },
   "invite-friend": {
     id: "invite-friend",

@@ -3673,6 +3673,19 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
+      const freeSwimmingOtocinclus = species.id === "otocinclus"
+        && isSuckerFishFreeSwimming(fish, species, now);
+      if (effectiveBehavior !== "sucker" || freeSwimmingOtocinclus) {
+        updateFishSwimTilt(
+          fish,
+          getFishSwimTiltForVector(
+            fish.xNorm - previousXNorm,
+            fish.yNorm - previousYNorm
+          ),
+          deltaSeconds
+        );
+      }
+
       const forcedDigPromptAfterMove = getForcedGravelDigPrompt(fish, now);
       if (forcedDigPromptAfterMove) {
         completeForcedFishGravelDig(fish, species, forcedDigPromptAfterMove, now);
@@ -3722,6 +3735,11 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
     } else {
+      const freeSwimmingOtocinclus = species.id === "otocinclus"
+        && isSuckerFishFreeSwimming(fish, species, now);
+      if (effectiveBehavior !== "sucker" || freeSwimmingOtocinclus) {
+        updateFishSwimTilt(fish, 0, deltaSeconds);
+      }
       const forcedDigPromptAtRest = getForcedGravelDigPrompt(fish, now);
       if (forcedDigPromptAtRest) {
         completeForcedFishGravelDig(fish, species, forcedDigPromptAtRest, now);

@@ -81,6 +81,45 @@ function getDirectedAngleDelta(fromAngle, toAngle, spinDirection = 1) {
   return spinDirection < 0 ? counterClockwiseDelta : clockwiseDelta;
 }
 
+function getFishSwimTiltForVector(deltaXNorm, deltaYNorm) {
+  const deltaXPx = Math.abs(Number(deltaXNorm) || 0) * TANK_WIDTH;
+  const deltaYPx = (Number(deltaYNorm) || 0) * TANK_HEIGHT;
+  if (Math.hypot(deltaXPx, deltaYPx) < 0.001) {
+    return 0;
+  }
+
+  return clamp(
+    Math.atan2(deltaYPx, Math.max(0.001, deltaXPx)),
+    -FISH_SWIM_TILT_MAX,
+    FISH_SWIM_TILT_MAX
+  );
+}
+
+function updateFishSwimTilt(fish, desiredTilt, deltaSeconds) {
+  if (!fish) {
+    return 0;
+  }
+
+  const currentTilt = Number.isFinite(Number(fish.swimTilt))
+    ? clamp(Number(fish.swimTilt), -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX)
+    : 0;
+  const targetTilt = clamp(
+    Number.isFinite(Number(desiredTilt)) ? Number(desiredTilt) : 0,
+    -FISH_SWIM_TILT_MAX,
+    FISH_SWIM_TILT_MAX
+  );
+  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
+  const response = 1 - Math.exp(-FISH_SWIM_TILT_RESPONSE_PER_SECOND * elapsedSeconds);
+  const responsiveStep = (targetTilt - currentTilt) * response;
+  const maximumStep = FISH_SWIM_TILT_MAX_RADIANS_PER_SECOND * elapsedSeconds;
+  const nextTilt = currentTilt + clamp(responsiveStep, -maximumStep, maximumStep);
+
+  fish.swimTilt = Math.abs(targetTilt - nextTilt) <= FISH_SWIM_TILT_SETTLE_EPSILON
+    ? targetTilt
+    : nextTilt;
+  return fish.swimTilt;
+}
+
 function updateFishTurnState(fish, species, now) {
   const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
   if (species.behavior !== "sucker" || freeSwimmingOtocinclus) {

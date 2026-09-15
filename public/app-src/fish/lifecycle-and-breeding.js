@@ -223,6 +223,7 @@ function createFishRecord(speciesId, options = {}) {
     nextDetritusSnackAt: now + species.cleanupMinMs,
     displayDirection: direction,
     displayAngle: direction < 0 ? Math.PI : 0,
+    swimTilt: 0,
     turnStartedAt: null,
     turnDurationMs: 0,
     turnFinalFrameRenderedAt: 0,

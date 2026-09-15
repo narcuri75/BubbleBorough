@@ -1531,6 +1531,35 @@ test("retired light controls and UV glow passes stay removed while turnaround re
   assert.match(rendering, /FISH_TURN_RIG_VISIBLE_MAX_COLUMNS/);
 });
 
+test("free-swimming fish ease toward a new vertical heading instead of snapping", () => {
+  const c = load(
+    "rendering/fish-motion-and-floor.js",
+    ["getFishSwimTiltForVector", "updateFishSwimTilt"],
+    {
+      TANK_WIDTH: 1000,
+      TANK_HEIGHT: 500,
+      FISH_SWIM_TILT_MAX: Math.PI / 4,
+      FISH_SWIM_TILT_RESPONSE_PER_SECOND: 5.2,
+      FISH_SWIM_TILT_MAX_RADIANS_PER_SECOND: 2.35,
+      FISH_SWIM_TILT_SETTLE_EPSILON: 0.001
+    }
+  );
+  const upward45Degrees = c.getFishSwimTiltForVector(1 / 1000, -1 / 500);
+  const downward35Degrees = 35 * Math.PI / 180;
+  const fish = { swimTilt: upward45Degrees };
+
+  assert.ok(Math.abs(upward45Degrees + Math.PI / 4) < 0.000001);
+  const firstFrame = c.updateFishSwimTilt(fish, downward35Degrees, 1 / 60);
+  assert.ok(firstFrame > upward45Degrees, "the heading should begin rotating toward the new course");
+  assert.ok(firstFrame < downward35Degrees, "the heading must not snap to the new course in one frame");
+  assert.ok(firstFrame - upward45Degrees <= 2.35 / 60 + 0.000001, "turn rate must remain capped");
+
+  for (let frame = 0; frame < 180; frame += 1) {
+    c.updateFishSwimTilt(fish, downward35Degrees, 1 / 60);
+  }
+  assert.ok(Math.abs(fish.swimTilt - downward35Degrees) < 0.002);
+});
+
 
 test("vehicle bubble streams use popping and maximum malformed settings", () => {
   const machinery = fs.readFileSync(path.join(root, "machinery/submarine.js"), "utf8");

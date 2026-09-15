@@ -1744,6 +1744,10 @@ const WATER_PARTICLE_ASSET_PATHS = Object.freeze(
   Array.from({ length: 10 }, (_, index) => resolveAppUrl(`assets/misc/particle${index + 1}.png`))
 );
 const FISH_DIRECTION_TARGET_DEADZONE_NORM = 0.006;
+const FISH_SWIM_TILT_MAX = Math.PI / 4;
+const FISH_SWIM_TILT_RESPONSE_PER_SECOND = 5.2;
+const FISH_SWIM_TILT_MAX_RADIANS_PER_SECOND = 2.35;
+const FISH_SWIM_TILT_SETTLE_EPSILON = 0.001;
 const FISH_TURN_MIN_SCALE_X = 0.42;
 const FISH_TURN_MAX_SCALE_Y = 1.12;
 const FISH_TURN_MIN_MS = 130;

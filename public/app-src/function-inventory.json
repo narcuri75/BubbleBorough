@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 3123,
+  "functionCount": 3125,
   "functions": [
     {
       "name": "getBrowserViewportSize",
@@ -19048,8 +19048,8 @@
       "module": "fish/lifecycle-and-breeding.js",
       "sourceLine": 18,
       "originalLine": 27980,
-      "characters": 10947,
-      "sourceHash": "44fd48aa20445b991e6b2efa27f07b0963bd6d12cfc13d9f1ff5dbcb88c30979",
+      "characters": 10964,
+      "sourceHash": "78c3a4eb500b50dd3c86010507fe63a83ee0613f2c3932a1ddafd111a7e166bd",
       "calls": [
         "buildFishName",
         "clamp",
@@ -19095,7 +19095,7 @@
     {
       "name": "addFishToTank",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 274,
+      "sourceLine": 275,
       "originalLine": 28232,
       "characters": 229,
       "sourceHash": "d997543b62142aca491fd2dbeb1e4e37e19239fe6cebc47a8f7d16037a458cdc",
@@ -19107,7 +19107,7 @@
     {
       "name": "getBreedableFishGroups",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 287,
+      "sourceLine": 288,
       "originalLine": 28245,
       "characters": 1029,
       "sourceHash": "2b9209fed2fafaa96a3bec73a0b502686b81c1bc6f82615e8a518fe77017990f",
@@ -19121,7 +19121,7 @@
     {
       "name": "pickRandomItems",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 322,
+      "sourceLine": 323,
       "originalLine": 28280,
       "characters": 377,
       "sourceHash": "783d0b0308f328ae85e7baeb09b325e02257b7b109330473553d31f9a8165609",
@@ -19130,7 +19130,7 @@
     {
       "name": "createBabyFishFromSpecies",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 331,
+      "sourceLine": 332,
       "originalLine": 28289,
       "characters": 1208,
       "sourceHash": "c64c9168906e856e978a004bd63949ad308c41af2069b552775444054383ed2f",
@@ -19148,7 +19148,7 @@
     {
       "name": "getAvailableFishInheritanceColors",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 356,
+      "sourceLine": 357,
       "originalLine": 28314,
       "characters": 222,
       "sourceHash": "b07f7b3dc12d7a05e5a0b3df8006c59f9c2f25c1cfa7d4d086a2c0e8bed95606",
@@ -19160,7 +19160,7 @@
     {
       "name": "getColorDistanceSquared",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 362,
+      "sourceLine": 363,
       "originalLine": 28320,
       "characters": 480,
       "sourceHash": "f4e13658422e1bf7cf8e8d1cd72865ae38e3fceb771d59d803ffd79cf4bf45e2",
@@ -19171,7 +19171,7 @@
     {
       "name": "snapFishInheritanceColorToAvailable",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 378,
+      "sourceLine": 379,
       "originalLine": 28336,
       "characters": 636,
       "sourceHash": "6945ae54371b9c3a0e2060f5fc18681d05ed3f4bdc3e6016f9ef4703a6068f2a",
@@ -19184,7 +19184,7 @@
     {
       "name": "getFishBreedingColor",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 400,
+      "sourceLine": 401,
       "originalLine": 28358,
       "characters": 272,
       "sourceHash": "b194036cdcb68e10eb8f7ff9105d4340ff40ca2e47dfc6526572fd91fdb2f671",
@@ -19198,7 +19198,7 @@
     {
       "name": "getBreedingEggColorInheritance",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 413,
+      "sourceLine": 414,
       "originalLine": 28371,
       "characters": 783,
       "sourceHash": "7c43629ec4747cbf75834cd5e0b019ef58c43142b69fb1f55de548649992cf2d",
@@ -19212,7 +19212,7 @@
     {
       "name": "getFishEggTargetYNorm",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 442,
+      "sourceLine": 443,
       "originalLine": 28400,
       "characters": 297,
       "sourceHash": "1e44dab1a717e442656af2dd6158635201d99584807832e952d46e3e7beb04c9",
@@ -19225,7 +19225,7 @@
     {
       "name": "createFishEggRecord",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 457,
+      "sourceLine": 458,
       "originalLine": 28415,
       "characters": 1382,
       "sourceHash": "240bcd2f4dda84f767ff22adc4b57af03201f124ae05eb0ebfb0b3504502c8f0",
@@ -19243,7 +19243,7 @@
     {
       "name": "addFishEggToTank",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 496,
+      "sourceLine": 497,
       "originalLine": 28454,
       "characters": 181,
       "sourceHash": "6da91cdc5c2a253bbf0c5860e698124b05228c9b829c187957c1142d95c8a836",
@@ -19252,7 +19252,7 @@
     {
       "name": "hatchFishEgg",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 508,
+      "sourceLine": 509,
       "originalLine": 28466,
       "characters": 1378,
       "sourceHash": "771dc24835fbf09e3556f4d4fe6ab43a116141f218d00ef6adf95b8f6d9e3ffc",
@@ -19271,7 +19271,7 @@
     {
       "name": "processFishEggs",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 550,
+      "sourceLine": 551,
       "originalLine": 28507,
       "characters": 631,
       "sourceHash": "7b85c43566254ac895cb4f0536c707a416a59d7069af82f87c1589da0189179e",
@@ -19283,7 +19283,7 @@
     {
       "name": "getBreedingEventTankLayer",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 568,
+      "sourceLine": 569,
       "originalLine": 28524,
       "characters": 147,
       "sourceHash": "9e514b0aad5eac5a169bb825bcf39350df645f2e15d556fada827db0f7632a69",
@@ -19292,7 +19292,7 @@
     {
       "name": "getBreedingEggTankLayer",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 572,
+      "sourceLine": 573,
       "originalLine": 28528,
       "characters": 254,
       "sourceHash": "2ca32b87bce14ae5ba8ae230daf6cf9b1d09489da8b370938077e44a9b072578",
@@ -19304,7 +19304,7 @@
     {
       "name": "clampBreedingAnchorYNorm",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 578,
+      "sourceLine": 579,
       "originalLine": 28534,
       "characters": 892,
       "sourceHash": "e9f22b6a7b34fdf606f30f94d8755be012d08d11d19b519c61caf1c133430f61",
@@ -19317,7 +19317,7 @@
     {
       "name": "processFishBreedingForSlot",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 604,
+      "sourceLine": 605,
       "originalLine": 28560,
       "characters": 2124,
       "sourceHash": "03c43e33f6d53cf724ece8ea6667c696d6c43f7d191e36a35585830166cf55a1",
@@ -19338,7 +19338,7 @@
     {
       "name": "hasDebugBreedingPairCandidate",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 671,
+      "sourceLine": 672,
       "originalLine": 28627,
       "characters": 134,
       "sourceHash": "43c3464ac53d27b2a013d359d3f51282ccdf7fac8ae21af939a14fde66bee268",
@@ -19349,7 +19349,7 @@
     {
       "name": "clearDebugBreedingSequence",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 675,
+      "sourceLine": 676,
       "originalLine": 28631,
       "characters": 81,
       "sourceHash": "074b2d036f4160f86868166025b148ca34f6b8999fc0bbbd7ea80073c1cd187d",
@@ -19358,7 +19358,7 @@
     {
       "name": "getActiveDebugBreedingSequenceFish",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 679,
+      "sourceLine": 680,
       "originalLine": 28635,
       "characters": 568,
       "sourceHash": "99bfb7580c4a96f388b49be2bc718c0135aa0ba260878274dc62f2be94a0105b",
@@ -19370,7 +19370,7 @@
     {
       "name": "getDebugBreedingTarget",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 701,
+      "sourceLine": 702,
       "originalLine": 28657,
       "characters": 250,
       "sourceHash": "bd25aa798a1810942e93b5b22e7fde9f412aef8135bb0937ee0f50b74132c07c",
@@ -19381,7 +19381,7 @@
     {
       "name": "hasFishReachedNormTarget",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 709,
+      "sourceLine": 710,
       "originalLine": 28665,
       "characters": 229,
       "sourceHash": "c2073ca322cc95abe3df05543a86f9e718b1800cfd5b3f8665cbb64259a0a721",
@@ -19390,7 +19390,7 @@
     {
       "name": "updateDebugBreedingSequence",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 717,
+      "sourceLine": 718,
       "originalLine": 28673,
       "characters": 1883,
       "sourceHash": "62cdf414d227b1948b30be5efee9f751e95cd888a570fec6e515872c5a10dc4b",
@@ -19413,7 +19413,7 @@
     {
       "name": "setFishBreedingTarget",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 770,
+      "sourceLine": 771,
       "originalLine": 28726,
       "characters": 883,
       "sourceHash": "d4e9a98dbe929893186da4988e7bb3d2f606e91ebeaa55d371bf9fb3110645c1",
@@ -19429,7 +19429,7 @@
     {
       "name": "triggerDebugBabySequence",
       "module": "fish/lifecycle-and-breeding.js",
-      "sourceLine": 795,
+      "sourceLine": 796,
       "originalLine": 28751,
       "characters": 2064,
       "sourceHash": "ece913946bea06de282f7e782c7a4ce9d138a5f95b177eb4074a262cc386d57d",
@@ -23197,8 +23197,8 @@
       "module": "fish/predators-and-motion.js",
       "sourceLine": 2886,
       "originalLine": 51176,
-      "characters": 41891,
-      "sourceHash": "10b827b06de5c8d9113b970294520bf26812bab9ec9c5134df70341e94daf573",
+      "characters": 42549,
+      "sourceHash": "b3e0a6312e66230ca51c5a997a72f2f55347f210d93ce0d65b29db1ba270796b",
       "calls": [
         "abortFishCaveBehavior",
         "assignFloatingPelletsToHungryFish",
@@ -23238,6 +23238,7 @@
         "getFishSchoolFollowFacingDirection",
         "getFishSchoolFollowLeader",
         "getFishShapeDescriptor",
+        "getFishSwimTiltForVector",
         "getFishTankLayer",
         "getFishTargetNormForMouthPoint",
         "getForcedGravelDigPrompt",
@@ -23302,6 +23303,7 @@
         "updateFishGravelPebbleAction",
         "updateFishPebbleTosses",
         "updateFishSchoolFollowTarget",
+        "updateFishSwimTilt",
         "updateFishTurnState",
         "updateForcedFishGravelDigTarget",
         "updatePiranhaSwarmTargets",
@@ -23314,7 +23316,7 @@
     {
       "name": "getFishProfileRoamSpeed",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3829,
+      "sourceLine": 3847,
       "originalLine": null,
       "characters": 707,
       "sourceHash": "51cc43e6d0c5c080695f65c1240656d0dbcdbb0010925fedb357136eff39de1c",
@@ -23327,7 +23329,7 @@
     {
       "name": "getFishProfileRoamY",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3849,
+      "sourceLine": 3867,
       "originalLine": null,
       "characters": 468,
       "sourceHash": "04978c318da4d0739f738cd7ff94a540d01493713f3541c852561d72cda0416d",
@@ -23340,7 +23342,7 @@
     {
       "name": "getFishProfileRoamX",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3859,
+      "sourceLine": 3877,
       "originalLine": null,
       "characters": 1463,
       "sourceHash": "0771e0e97d6b84eaa4fe6f015d567f0076b02e251b50ef52365ac3e239603361",
@@ -23354,7 +23356,7 @@
     {
       "name": "getFishProfileHomeRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3892,
+      "sourceLine": 3910,
       "originalLine": null,
       "characters": 675,
       "sourceHash": "e0b3ee3da671ecc36eb20de677e0e9593d6f0df4a7a32739bfb97c1e148eec98",
@@ -23367,7 +23369,7 @@
     {
       "name": "getFishProfileHoverTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3912,
+      "sourceLine": 3930,
       "originalLine": null,
       "characters": 659,
       "sourceHash": "4a1c639b1f32fcc3d8dfee62d1fdf743b5e23b384e4d34cedf0a2e52fa140ce2",
@@ -23381,7 +23383,7 @@
     {
       "name": "assignSpeciesRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3933,
+      "sourceLine": 3951,
       "originalLine": null,
       "characters": 1827,
       "sourceHash": "5562ef75cdb72a415b83e5072cf17670a2c3347d5ff1d13b451495b92626027c",
@@ -23405,7 +23407,7 @@
     {
       "name": "assignSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3973,
+      "sourceLine": 3991,
       "originalLine": 51906,
       "characters": 8975,
       "sourceHash": "0958da3c4f3287a1336675e2df83c6ca944a3b689f4d92ebdf311596c05c74b2",
@@ -27665,8 +27667,8 @@
       "module": "rendering/fish-and-effects.js",
       "sourceLine": 2462,
       "originalLine": 57313,
-      "characters": 13295,
-      "sourceHash": "1fbac9f75605183ac8cfcd1db45e3e89e58dedc1780ff2a0a91ecea785c83bde",
+      "characters": 13581,
+      "sourceHash": "0119931cd6424ed15f5b35a171818472e458e8a128c63e5b72107b6746fcf7f5",
       "calls": [
         "clamp",
         "getActiveDebugBehaviorSteering",
@@ -27778,9 +27780,31 @@
       ]
     },
     {
-      "name": "updateFishTurnState",
+      "name": "getFishSwimTiltForVector",
       "module": "rendering/fish-motion-and-floor.js",
       "sourceLine": 84,
+      "originalLine": null,
+      "characters": 377,
+      "sourceHash": "7d9ac8a730c312f31886ac5ffc002f944eb629e514d45eba9749621e22a2be34",
+      "calls": [
+        "clamp"
+      ]
+    },
+    {
+      "name": "updateFishSwimTilt",
+      "module": "rendering/fish-motion-and-floor.js",
+      "sourceLine": 98,
+      "originalLine": null,
+      "characters": 913,
+      "sourceHash": "3ff07fa3cd62f0eeae2b2d88cb02735342d01dc872c7a37e3d072f28d431bd00",
+      "calls": [
+        "clamp"
+      ]
+    },
+    {
+      "name": "updateFishTurnState",
+      "module": "rendering/fish-motion-and-floor.js",
+      "sourceLine": 123,
       "originalLine": 61938,
       "characters": 3821,
       "sourceHash": "8f3d894c4699f03733dc5c42c60580ddde21fb969def877b5ecf3b3fc730c412",
@@ -27795,7 +27819,7 @@
     {
       "name": "setSuckerFishAngle",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 175,
+      "sourceLine": 214,
       "originalLine": 61996,
       "characters": 1320,
       "sourceHash": "c58e4d0bd1175866f8663dc79711ba2b990e5ae9639844d3cb20c34b410ab5a6",
@@ -27808,7 +27832,7 @@
     {
       "name": "setFishDirection",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 208,
+      "sourceLine": 247,
       "originalLine": 62029,
       "characters": 2188,
       "sourceHash": "651c58d19cc0469a708b36288eff8ff7e190c26a84765c4262fb69d569a4484c",
@@ -27824,7 +27848,7 @@
     {
       "name": "getActiveGravelContour",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 258,
+      "sourceLine": 297,
       "originalLine": 62085,
       "characters": 193,
       "sourceHash": "62fc1ee30199ef2c322353a1159d518e478c3a92952f5c2a4812e1a301f93f7e",
@@ -27833,7 +27857,7 @@
     {
       "name": "getVisibleTankVirtualBounds",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 265,
+      "sourceLine": 304,
       "originalLine": 62092,
       "characters": 880,
       "sourceHash": "28658f8a7197a4eb5a84c5b75682490b107c433bbcc297be0bbd978648a14db3",
@@ -27846,7 +27870,7 @@
     {
       "name": "getSceneLayoutVisibleTankVirtualBounds",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 285,
+      "sourceLine": 324,
       "originalLine": null,
       "characters": 298,
       "sourceHash": "cd6bf9bad79514e5d9c4ed1bba24ea559cb585d893c195eb36a14d1590fc8f37",
@@ -27858,7 +27882,7 @@
     {
       "name": "normalizeViewportNormRange",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 295,
+      "sourceLine": 334,
       "originalLine": 62111,
       "characters": 226,
       "sourceHash": "a16329d25544f66799d7dd577f08bc63d15a41e7c37896633bfc2917081165f6",
@@ -27869,7 +27893,7 @@
     {
       "name": "getMobileViewportSwimBoundsNorm",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 310,
+      "sourceLine": 349,
       "originalLine": 62126,
       "characters": 1666,
       "sourceHash": "05895483f2b7d2030ae35cd419e8173bce371bbf08c403c80ce6cf4f38cf40c3",
@@ -27886,7 +27910,7 @@
     {
       "name": "clampFishXNormToMobileViewport",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 360,
+      "sourceLine": 399,
       "originalLine": 62176,
       "characters": 379,
       "sourceHash": "16a99856e6c5d71e6c5b93ed4189807d7d8fb51547deec6caf3d5701cb3cee1b",
@@ -27900,7 +27924,7 @@
     {
       "name": "clampFishToMobileViewport",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 370,
+      "sourceLine": 409,
       "originalLine": 62186,
       "characters": 2246,
       "sourceHash": "016e68d4c7bfb7a799d4b0849b6d7b801ec595919d8aeede5a3e2ac628cd0d50",
@@ -27924,7 +27948,7 @@
     {
       "name": "getTargetVisibleGravelHeightPx",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 424,
+      "sourceLine": 463,
       "originalLine": 62234,
       "characters": 349,
       "sourceHash": "64827d5716f6d6fd867f674f22aaf476ab2a3312494333af30396c38b977e8d9",
@@ -27937,7 +27961,7 @@
     {
       "name": "getTargetVisibleGravelHeightVirtual",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 430,
+      "sourceLine": 469,
       "originalLine": 62240,
       "characters": 714,
       "sourceHash": "8c6dae974cff98f766955a22b26a9801d749383f02d5b00e64d77c79c1e04fbd",
@@ -27952,7 +27976,7 @@
     {
       "name": "getVisibleTankFloorBottomY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 448,
+      "sourceLine": 487,
       "originalLine": 62244,
       "characters": 99,
       "sourceHash": "196b4de17b76beae11b822407e61b661802888c329ea0b92bdd8b1b343e9ca2a",
@@ -27963,7 +27987,7 @@
     {
       "name": "getDynamicGravelSurfaceBaseY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 452,
+      "sourceLine": 491,
       "originalLine": 62248,
       "characters": 166,
       "sourceHash": "0741ea4087c298c4ff637bd41e5cb67b714cdae51e5eafe36a0ae3c21254c1e3",
@@ -27975,7 +27999,7 @@
     {
       "name": "getGravelFloorLayoutKey",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 459,
+      "sourceLine": 498,
       "originalLine": 62255,
       "characters": 194,
       "sourceHash": "a830f2450a7a4e034b26034c255df95ef38e1d9a66b5a5986ed2b14f6f2cdc98",
@@ -27987,7 +28011,7 @@
     {
       "name": "getGravelSurfacePointY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 467,
+      "sourceLine": 506,
       "originalLine": 62263,
       "characters": 96,
       "sourceHash": "d3a3f4b128c7baf64839509ffe787feedfad832530c9a2e3c45447d340d92fa7",
@@ -27998,7 +28022,7 @@
     {
       "name": "traceTankFloorPath",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 471,
+      "sourceLine": 510,
       "originalLine": 62267,
       "characters": 563,
       "sourceHash": "e6f04f8bf97227a7869440515feb2601c475e4d3ff10d63892a1f8924dd8fd3b",
@@ -28010,7 +28034,7 @@
     {
       "name": "traceTankFloorSurfaceBandPath",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 484,
+      "sourceLine": 523,
       "originalLine": 62280,
       "characters": 654,
       "sourceHash": "c0728c82c5b8e14e13d3bc530fe87ea9aa8d8bebf67ca512880f9187a8d98c5d",
@@ -28022,7 +28046,7 @@
     {
       "name": "getTankFloorSurfaceYAtX",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 502,
+      "sourceLine": 541,
       "originalLine": 62298,
       "characters": 491,
       "sourceHash": "69eda8f7839c03b7196828dc8e3e7655a94df78177b7d0d71a18cf838039adc0",
@@ -28035,7 +28059,7 @@
     {
       "name": "buildGravelSurfaceContour",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 513,
+      "sourceLine": 552,
       "originalLine": 62309,
       "characters": 980,
       "sourceHash": "2abbbcd28c0921d929361e7df9fb3bd184c262d5468da4e5f1f1697ba6d4cecf",

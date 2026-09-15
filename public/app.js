@@ -1747,6 +1747,10 @@ const WATER_PARTICLE_ASSET_PATHS = Object.freeze(
   Array.from({ length: 10 }, (_, index) => resolveAppUrl(`assets/misc/particle${index + 1}.png`))
 );
 const FISH_DIRECTION_TARGET_DEADZONE_NORM = 0.006;
+const FISH_SWIM_TILT_MAX = Math.PI / 4;
+const FISH_SWIM_TILT_RESPONSE_PER_SECOND = 5.2;
+const FISH_SWIM_TILT_MAX_RADIANS_PER_SECOND = 2.35;
+const FISH_SWIM_TILT_SETTLE_EPSILON = 0.001;
 const FISH_TURN_MIN_SCALE_X = 0.42;
 const FISH_TURN_MAX_SCALE_Y = 1.12;
 const FISH_TURN_MIN_MS = 130;
@@ -38872,6 +38876,7 @@ function createFishRecord(speciesId, options = {}) {
     nextDetritusSnackAt: now + species.cleanupMinMs,
     displayDirection: direction,
     displayAngle: direction < 0 ? Math.PI : 0,
+    swimTilt: 0,
     turnStartedAt: null,
     turnDurationMs: 0,
     turnFinalFrameRenderedAt: 0,
@@ -68708,6 +68713,19 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
+      const freeSwimmingOtocinclus = species.id === "otocinclus"
+        && isSuckerFishFreeSwimming(fish, species, now);
+      if (effectiveBehavior !== "sucker" || freeSwimmingOtocinclus) {
+        updateFishSwimTilt(
+          fish,
+          getFishSwimTiltForVector(
+            fish.xNorm - previousXNorm,
+            fish.yNorm - previousYNorm
+          ),
+          deltaSeconds
+        );
+      }
+
       const forcedDigPromptAfterMove = getForcedGravelDigPrompt(fish, now);
       if (forcedDigPromptAfterMove) {
         completeForcedFishGravelDig(fish, species, forcedDigPromptAfterMove, now);
@@ -68757,6 +68775,11 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
     } else {
+      const freeSwimmingOtocinclus = species.id === "otocinclus"
+        && isSuckerFishFreeSwimming(fish, species, now);
+      if (effectiveBehavior !== "sucker" || freeSwimmingOtocinclus) {
+        updateFishSwimTilt(fish, 0, deltaSeconds);
+      }
       const forcedDigPromptAtRest = getForcedGravelDigPrompt(fish, now);
       if (forcedDigPromptAtRest) {
         completeForcedFishGravelDig(fish, species, forcedDigPromptAtRest, now);
@@ -77310,6 +77333,9 @@ function getFishPose(fish, species, now) {
   if (renderOtocinclusAsFreeSwimmer) {
     const baseWiggle = Math.sin(wiggleClock + fish.phase * Math.PI * 2) * sickMotionBoost;
     const targetDy = (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm;
+    const steeringTilt = Number.isFinite(Number(fish.swimTilt))
+      ? clamp(Number(fish.swimTilt), -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX)
+      : 0;
     const turnProgress = fish.turnStartedAt && fish.turnDurationMs > 0
       ? clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1)
       : null;
@@ -77323,7 +77349,7 @@ function getFishPose(fish, species, now) {
     const scanningGravel = fish.suckerFreeSwimMode === "gravel-scan";
     const noseDownTilt = scanningGravel
       ? clamp(0.18 + Math.abs(targetDy) * 0.28 + Math.sin(wiggleClock * 0.6 + fish.phase * Math.PI) * 0.025, 0.14, 0.28)
-      : clamp(targetDy * 0.72 + baseWiggle * 0.018, -0.14, 0.14);
+      : clamp(steeringTilt + baseWiggle * 0.018, -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX);
     const x = fish.xNorm * TANK_WIDTH;
     const subtleBob = scanningGravel
       ? Math.sin(now / 780 + fish.phase * Math.PI * 2) * 0.65
@@ -77444,12 +77470,15 @@ function getFishPose(fish, species, now) {
   const turnLean = turnProgress === null || useComplexTurn
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * 0.14;
+  const steeringTilt = Number.isFinite(Number(fish.swimTilt))
+    ? clamp(Number(fish.swimTilt), -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX)
+    : 0;
   const baseTilt = clamp(
-    (fish.targetYNorm - fish.yNorm) * (0.9 + motionLevel * 0.35)
+    steeringTilt
     + wiggle * (0.008 + motionLevel * 0.04)
     + turnLean,
-    -0.26,
-    0.26
+    -FISH_SWIM_TILT_MAX,
+    FISH_SWIM_TILT_MAX
   );
   const forcedDigPrompt = getForcedGravelDigPrompt(fish, now);
   const forcedDigTilt = forcedDigPrompt
@@ -77459,7 +77488,7 @@ function getFishPose(fish, species, now) {
     ? (forcedDigTilt ?? baseTilt)
     : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
   if (species.renderMotionProfile === "seahorse") {
-    const verticalDrift = clamp((fish.targetYNorm - fish.yNorm) * 1.35, -0.28, 0.28);
+    const verticalDrift = clamp(steeringTilt * 0.48, -0.28, 0.28);
     const tailSway = Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
     tilt = clamp(tilt * 0.28 + verticalDrift + tailSway, -0.38, 0.38);
   }
@@ -82302,6 +82331,45 @@ function getDirectedAngleDelta(fromAngle, toAngle, spinDirection = 1) {
     return shortestDelta;
   }
   return spinDirection < 0 ? counterClockwiseDelta : clockwiseDelta;
+}
+
+function getFishSwimTiltForVector(deltaXNorm, deltaYNorm) {
+  const deltaXPx = Math.abs(Number(deltaXNorm) || 0) * TANK_WIDTH;
+  const deltaYPx = (Number(deltaYNorm) || 0) * TANK_HEIGHT;
+  if (Math.hypot(deltaXPx, deltaYPx) < 0.001) {
+    return 0;
+  }
+
+  return clamp(
+    Math.atan2(deltaYPx, Math.max(0.001, deltaXPx)),
+    -FISH_SWIM_TILT_MAX,
+    FISH_SWIM_TILT_MAX
+  );
+}
+
+function updateFishSwimTilt(fish, desiredTilt, deltaSeconds) {
+  if (!fish) {
+    return 0;
+  }
+
+  const currentTilt = Number.isFinite(Number(fish.swimTilt))
+    ? clamp(Number(fish.swimTilt), -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX)
+    : 0;
+  const targetTilt = clamp(
+    Number.isFinite(Number(desiredTilt)) ? Number(desiredTilt) : 0,
+    -FISH_SWIM_TILT_MAX,
+    FISH_SWIM_TILT_MAX
+  );
+  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
+  const response = 1 - Math.exp(-FISH_SWIM_TILT_RESPONSE_PER_SECOND * elapsedSeconds);
+  const responsiveStep = (targetTilt - currentTilt) * response;
+  const maximumStep = FISH_SWIM_TILT_MAX_RADIANS_PER_SECOND * elapsedSeconds;
+  const nextTilt = currentTilt + clamp(responsiveStep, -maximumStep, maximumStep);
+
+  fish.swimTilt = Math.abs(targetTilt - nextTilt) <= FISH_SWIM_TILT_SETTLE_EPSILON
+    ? targetTilt
+    : nextTilt;
+  return fish.swimTilt;
 }
 
 function updateFishTurnState(fish, species, now) {

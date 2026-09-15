@@ -2542,6 +2542,9 @@ function getFishPose(fish, species, now) {
   if (renderOtocinclusAsFreeSwimmer) {
     const baseWiggle = Math.sin(wiggleClock + fish.phase * Math.PI * 2) * sickMotionBoost;
     const targetDy = (Number(fish.targetYNorm) || fish.yNorm) - fish.yNorm;
+    const steeringTilt = Number.isFinite(Number(fish.swimTilt))
+      ? clamp(Number(fish.swimTilt), -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX)
+      : 0;
     const turnProgress = fish.turnStartedAt && fish.turnDurationMs > 0
       ? clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1)
       : null;
@@ -2555,7 +2558,7 @@ function getFishPose(fish, species, now) {
     const scanningGravel = fish.suckerFreeSwimMode === "gravel-scan";
     const noseDownTilt = scanningGravel
       ? clamp(0.18 + Math.abs(targetDy) * 0.28 + Math.sin(wiggleClock * 0.6 + fish.phase * Math.PI) * 0.025, 0.14, 0.28)
-      : clamp(targetDy * 0.72 + baseWiggle * 0.018, -0.14, 0.14);
+      : clamp(steeringTilt + baseWiggle * 0.018, -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX);
     const x = fish.xNorm * TANK_WIDTH;
     const subtleBob = scanningGravel
       ? Math.sin(now / 780 + fish.phase * Math.PI * 2) * 0.65
@@ -2676,12 +2679,15 @@ function getFishPose(fish, species, now) {
   const turnLean = turnProgress === null || useComplexTurn
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * 0.14;
+  const steeringTilt = Number.isFinite(Number(fish.swimTilt))
+    ? clamp(Number(fish.swimTilt), -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX)
+    : 0;
   const baseTilt = clamp(
-    (fish.targetYNorm - fish.yNorm) * (0.9 + motionLevel * 0.35)
+    steeringTilt
     + wiggle * (0.008 + motionLevel * 0.04)
     + turnLean,
-    -0.26,
-    0.26
+    -FISH_SWIM_TILT_MAX,
+    FISH_SWIM_TILT_MAX
   );
   const forcedDigPrompt = getForcedGravelDigPrompt(fish, now);
   const forcedDigTilt = forcedDigPrompt
@@ -2691,7 +2697,7 @@ function getFishPose(fish, species, now) {
     ? (forcedDigTilt ?? baseTilt)
     : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
   if (species.renderMotionProfile === "seahorse") {
-    const verticalDrift = clamp((fish.targetYNorm - fish.yNorm) * 1.35, -0.28, 0.28);
+    const verticalDrift = clamp(steeringTilt * 0.48, -0.28, 0.28);
     const tailSway = Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
     tilt = clamp(tilt * 0.28 + verticalDrift + tailSway, -0.38, 0.38);
   }

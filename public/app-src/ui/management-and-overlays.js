@@ -900,7 +900,9 @@ function buildManagementFishRow(fish, now = Date.now()) {
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
-  const canBuyAnother = isCustomFishAssetKey(fish.speciesId) || isFishSpeciesShopUnlocked(baseSpecies);
+  const canBuyAnother = isCustomFishAssetKey(fish.speciesId)
+    ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
+    : isFishSpeciesShopUnlocked(baseSpecies);
   const canSell = Boolean(baseSpecies) && !dead && !isFishBeingConsumedByPiranhas(fish, now) && !juvenile;
   const canStore = !dead && !infected;
   const status = dead
@@ -3018,6 +3020,14 @@ function isProteusOrder(order) {
   return (order?.items || []).some((item) => /proteus biodyne/i.test(String(item.seller || item.vendor || item.category || "")));
 }
 
+function isDavyMutationOrder(order) {
+  return (order?.items || []).some((item) => {
+    const key = String(item?.key || "");
+    const image = String(item?.image || "");
+    return /(?:^|:)davy-/.test(key) || /web\/davy\/mutations/i.test(image);
+  });
+}
+
 function isEngineeredAquaticSpecimenOrder(order) {
   return (order?.items || []).some((item) => {
     const key = String(item.key || "");
@@ -3203,6 +3213,25 @@ function getWebSurfInboxMessages() {
     messages.push({ id: `auto-${templateId}-${order.id}`, templateId, data, sender: template?.sender || (isProteusOrder(order) ? "designer@proteusbiodyne.swim" : "orders@bubblebodega.swim"), subject: template ? interpolateWebSurfEmailValue(data.itemQuantity === 1 && template.subjectSingular ? template.subjectSingular : template.subject, data) : "Order Confirmed", preview: template ? interpolateWebSurfEmailValue(template.preview, data) : "Your order has been completed and delivered.", destination: template?.action?.destination || "store", icon: isProteusOrder(order) ? "assets/web/proteus/Proteus_Logo_Icon.png" : "assets/misc/Box.png", time: Number(order.placedAt) || 0 });
   });
 
+  const firstDavyPurchase = orders
+    .filter((order) => (Number(order.placedAt) || 0) <= now && isDavyMutationOrder(order))
+    .sort((left, right) => (Number(left.placedAt) || 0) - (Number(right.placedAt) || 0))[0] || null;
+  if (firstDavyPurchase) {
+    const template = getWebSurfAutoEmailTemplate("davy_jones_invitation");
+    const data = { orderId: firstDavyPurchase.id, siteAddress: "davyjoneslocker.hadal" };
+    messages.push({
+      id: `auto-davy_jones_invitation-${firstDavyPurchase.id}`,
+      templateId: "davy_jones_invitation",
+      data,
+      sender: template?.sender || "FIN",
+      subject: template?.subject || "Regarding Your Purchase",
+      preview: template?.preview || "A private seller left you a message.",
+      destination: "davy-locker-unlock",
+      icon: "assets/web/davy/icons/davy_icon.png",
+      time: (Number(firstDavyPurchase.placedAt) || 0) + 1
+    });
+  }
+
   const transactions = Array.isArray(state?.walletTransactions) ? state.walletTransactions : [];
   const seenMilestones = new Set();
   transactions.filter((entry) => (Number(entry.time) || 0) <= now).forEach((entry) => {
@@ -3230,6 +3259,7 @@ function getWebSurfInboxMessages() {
   });
 
   if (window.hasDiscoveredProteus?.()) {
+    const proteusDiscoveredAt = Math.min(now, Math.max(1, Number(window.getProteusDiscoveredAt?.()) || now));
     messages.push({
       id: "proteus-research-bulletin-1",
       sender: "research@proteusbiodyne.swim",
@@ -3237,12 +3267,12 @@ function getWebSurfInboxMessages() {
       preview: "New specimen and directed-adaptation records are available.",
       destination: "proteus",
       icon: "assets/web/proteus/Proteus_Logo_Icon.png",
-      time: 1
+      time: proteusDiscoveredAt
     });
   }
 
   return messages
-    .sort((left, right) => Number(right.favorite === true) - Number(left.favorite === true) || right.time - left.time)
+    .sort((left, right) => (Number(right.time) || 0) - (Number(left.time) || 0))
     .slice(0, 40);
 }
 
@@ -3257,9 +3287,10 @@ function syncWebSurfUnreadBadge() {
 }
 
 function formatWebSurfMailTime(timestamp) {
-  if (!timestamp) return "Saved";
-  const date = new Date(timestamp);
+  const rawTimestamp = Number(timestamp);
+  if (!Number.isFinite(rawTimestamp) || rawTimestamp <= 0) return "Saved";
   const now = new Date();
+  const date = new Date(Math.min(rawTimestamp, now.getTime()));
   if (date.toDateString() === now.toDateString()) {
     return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   }
@@ -3338,6 +3369,9 @@ function renderWebSurfAutoEmailBody(message) {
     }
     if (block.type === "action") {
       const action = template.action || {};
+      if (action.destination === "davy-locker-unlock") {
+        return `<div class="websurf-email-inline-action"><a class="websurf-email-hyperlink" href="#davyjoneslocker.hadal" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(action.label || "davyjoneslocker.hadal")}</a></div>`;
+      }
       return `<div class="websurf-email-inline-action"><button type="button" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(action.label || "Open")}</button></div>`;
     }
     return `<p>${renderWebSurfEmailInlineText(block.text, data)}</p>`;
@@ -3367,6 +3401,18 @@ function handleWebSurfEmailAction(message) {
     }
     return;
   }
+  if (action.destination === "davy-locker-unlock") {
+    const now = Date.now();
+    const firstUnlock = state.davyJonesLockerUnlocked !== true;
+    state.davyJonesLockerUnlocked = true;
+    if (firstUnlock || !(Number(state.davyJonesLockerUnlockedAt) > 0)) {
+      state.davyJonesLockerUnlockedAt = now;
+      pushEvent("Davy Jones' Locker was added to WebSurf bookmarks.", now);
+      saveState();
+    }
+    openDavyJonesLockerPage();
+    return;
+  }
   if (action.destination === "proteus-designer") {
     const orderId = String(message.data?.orderId || "");
     if (getEngineeredAquaticSpecimenOrderStatus(orderId) !== "design-required") {
@@ -3391,6 +3437,7 @@ function renderWebSurfHomePage() {
   const silencedSenders = getWebSurfSilencedSenders();
   const unreadCount = messages.filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
   const proteusDiscovered = Boolean(window.hasDiscoveredProteus?.());
+  const davyLockerUnlocked = state?.davyJonesLockerUnlocked === true;
   const mailMarkup = messages.map((message) => {
     const senderKey = String(message.sender || "").toLowerCase();
     const silenced = silencedSenders.has(senderKey);
@@ -3420,6 +3467,7 @@ function renderWebSurfHomePage() {
           <button type="button" class="websurf-bookmark" data-webpage-destination="bank"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" /><span><strong>Bubble Borough Bank</strong><small>Balance, rewards, and statements</small></span></button>
           <button type="button" class="websurf-bookmark" data-webpage-destination="store"><img ${assetImageAttributes("assets/misc/Box.png")} alt="" /><span><strong>BubbleBodega</strong><small>Food, fish, and aquarium supplies</small></span></button>
           <button type="button" class="websurf-bookmark" data-webpage-destination="proteus" data-proteus-home-link ${proteusDiscovered ? "" : "hidden"}><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" /><span><strong>Proteus Biodyne</strong><small>Adaptive biology and marine research</small></span></button>
+          ${davyLockerUnlocked ? `<button type="button" class="websurf-bookmark" data-webpage-destination="locker"><img ${assetImageAttributes("assets/web/davy/icons/davy_icon.png")} alt="" /><span><strong>Davy Jones' Locker</strong><small>Private catalogue · davyjoneslocker.hadal</small></span></button>` : ""}
           <span class="websurf-bookmark is-coming-soon"><span aria-hidden="true">◈</span><span><strong>More coming soon</strong><small>New destinations on the horizon</small></span></span>
         </div>
       </section>

@@ -174,6 +174,7 @@ function createFishRecord(speciesId, options = {}) {
     diseaseTreatedUntil: 0,
     diseaseLastDamageAt: 0,
     diseaseSource: "",
+    diseaseRequiresTreatment: false,
     temporaryImmunityUntil: 0,
     nextDiseaseCheckAt: now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS),
     nextDiseaseSpreadCheckAt: now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS),

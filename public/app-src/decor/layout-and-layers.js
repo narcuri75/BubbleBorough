@@ -244,6 +244,7 @@ function sanitizeFish(fish, options = {}) {
     diseaseTreatedUntil: Number.isFinite(Number(fish.diseaseTreatedUntil)) ? Math.max(0, Number(fish.diseaseTreatedUntil)) : 0,
     diseaseLastDamageAt: Number.isFinite(Number(fish.diseaseLastDamageAt)) ? Math.max(0, Number(fish.diseaseLastDamageAt)) : 0,
     diseaseSource: typeof fish.diseaseSource === "string" ? fish.diseaseSource.trim() : "",
+    diseaseRequiresTreatment: fish.diseaseRequiresTreatment === true,
     temporaryImmunityUntil: Number.isFinite(Number(fish.temporaryImmunityUntil)) ? Math.max(0, Number(fish.temporaryImmunityUntil)) : 0,
     nextDiseaseCheckAt: Number.isFinite(Number(fish.nextDiseaseCheckAt)) ? Math.max(0, Number(fish.nextDiseaseCheckAt)) : 0,
     nextDiseaseSpreadCheckAt: Number.isFinite(Number(fish.nextDiseaseSpreadCheckAt)) ? Math.max(0, Number(fish.nextDiseaseSpreadCheckAt)) : 0,

@@ -82,6 +82,18 @@
         "highlight": true
       }
     },
+    "davy_jones_invitation": {
+      "sender": "FIN",
+      "subject": "Regarding Your Purchase",
+      "preview": "A private seller left you a message.",
+      "body": [
+        { "type": "heading", "text": "Thank you for your purchase." },
+        { "type": "text", "text": "Your discretion is appreciated." },
+        { "type": "text", "text": "Additional inventory is available through the address below." },
+        { "type": "action" }
+      ],
+      "action": { "label": "davyjoneslocker.hadal", "destination": "davy-locker-unlock" }
+    },
     "bubblebodega_rescue_offer": {
       "sender": "offers@bubblebodega.swim",
       "subject": "A Fresh Start, On Us",

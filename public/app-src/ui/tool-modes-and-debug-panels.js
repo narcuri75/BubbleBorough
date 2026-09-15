@@ -1047,7 +1047,7 @@ async function init() {
   const selectedBackgroundKeys = new Set(getAllTanks().map((tank) => tank.selectedBackground).filter(Boolean));
   await preloadImages(filterPreloadPathsForCurrentContentSettings([
     ...runtime.backgroundCatalog
-      .filter((item) => selectedBackgroundKeys.has(item.key) && !isLocalImageBackgroundKey(item.key))
+      .filter((item) => selectedBackgroundKeys.has(item.key) && !isCustomBackgroundKey(item.key) && !isLocalImageBackgroundKey(item.key))
       .map((item) => item.path),
     ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
     ...runtime.tankCatalog.map((item) => item.path),

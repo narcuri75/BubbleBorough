@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 52,
-  "functionCount": 3121,
+  "functionCount": 3123,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -236,7 +236,7 @@
     },
     {
       "path": "fish/needs-disease-and-behavior.js",
-      "functionCount": 122,
+      "functionCount": 123,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -859,7 +859,7 @@
     },
     {
       "path": "ui/management-and-overlays.js",
-      "functionCount": 173,
+      "functionCount": 174,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",

@@ -472,8 +472,8 @@ async function buyFish(speciesId, options = {}) {
     const transaction = performCoinTransaction({
       amount: purchaseCost,
       now: purchaseCompletedAt,
-      place: davyMutationPurchase ? "UNKNOWN_VENDOR" : undefined,
-      receiptLabel: davyMutationPurchase ? "UNKNOWN_VENDOR" : undefined,
+      place: davyMutationPurchase ? "Private Seller" : undefined,
+      receiptLabel: davyMutationPurchase ? "Private Seller" : undefined,
       insufficientMessage: `You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`,
       apply: () => {
         fish.acquiredAt = purchaseCompletedAt;
@@ -486,7 +486,11 @@ async function buyFish(speciesId, options = {}) {
         if (speciesId === "goldfish" && purchaseCost === 0 && getBubbleBodegaRescueOfferStatus().goldfishAvailable) {
           markBubbleBodegaRescueItemClaimed("goldfish", purchaseCompletedAt);
         }
-        maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
+        if (options.purchaseSource === "davyjoneslocker") {
+          maybeSeedDavyJonesViralIllness(fish, purchaseCompletedAt);
+        } else {
+          maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
+        }
         if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
           setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
           fish.lastAteAt = purchaseCompletedAt;
@@ -522,6 +526,10 @@ async function buyFish(speciesId, options = {}) {
 }
 
 async function buyAnotherCustomFish(fishId) {
+  if (!isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)) {
+    showToast(`${getUnlockRequirementLabel(runtime.fishMap.get(CUSTOM_FISH_SHOP_KEY)?.unlockRequirement)} milestone required.`);
+    return { ok: false, reason: "species-locked" };
+  }
   const managed = getManagedFishById(fishId);
   const sourceFish = managed?.fish || null;
   if (!sourceFish || !isCustomFishAssetKey(sourceFish.speciesId)) {
@@ -693,7 +701,9 @@ function getPendingFishBuyAnotherDetails() {
   const cost = getFishPurchaseCost(details.fish.speciesId);
   const customFish = isCustomFishAssetKey(details.fish.speciesId);
   const goreLocked = isUndeadSpecies(details.species) && !isViolenceAndGoreEnabled();
-  const unlocked = customFish || isFishSpeciesShopUnlocked(details.baseSpecies);
+  const unlocked = customFish
+    ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
+    : isFishSpeciesShopUnlocked(details.baseSpecies);
   return {
     ...details,
     cost,

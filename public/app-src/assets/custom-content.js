@@ -4791,7 +4791,9 @@ function buildBackgroundCatalog(items, metaMap = {}) {
       const meta = { ...fallbackMeta, ...(metaMap[key] || {}) };
       return {
         key,
-        path: item?.path || resolveAppUrl(`assets/backgrounds/${encodeURIComponent(key)}`),
+        path: key === NONE_BACKGROUND_ASSET_KEY || key === CUSTOM_IMAGE_BACKGROUND_ASSET_KEY
+          ? ""
+          : item?.path || resolveAppUrl(`assets/backgrounds/${encodeURIComponent(key)}`),
         name: meta.name || titleFromFile(key),
         description: meta.description || "",
         cost: Math.max(0, Math.floor(Number(meta.cost) || 0)),

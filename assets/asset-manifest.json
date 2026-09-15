@@ -2,59 +2,59 @@
   "backgrounds": [
     {
       "key": "Abyssal_Pillars.png",
-      "path": "assets/backgrounds/Abyssal_Pillars.png"
+      "path": "assets/generated/backgrounds/Abyssal_Pillars.png.webp"
     },
     {
       "key": "Blue_Rock_Canyon.png",
-      "path": "assets/backgrounds/Blue_Rock_Canyon.png"
+      "path": "assets/generated/backgrounds/Blue_Rock_Canyon.png.webp"
     },
     {
       "key": "Coral_Shelf_Reef.png",
-      "path": "assets/backgrounds/Coral_Shelf_Reef.png"
+      "path": "assets/generated/backgrounds/Coral_Shelf_Reef.png.webp"
     },
     {
       "key": "Emerald_Aquascape.png",
-      "path": "assets/backgrounds/Emerald_Aquascape.png"
+      "path": "assets/generated/backgrounds/Emerald_Aquascape.png.webp"
     },
     {
       "key": "Forest_Stream.png",
-      "path": "assets/backgrounds/Forest_Stream.png"
+      "path": "assets/generated/backgrounds/Forest_Stream.png.webp"
     },
     {
       "key": "Halloween_Haunted_Kelp_Forest.png",
-      "path": "assets/backgrounds/Halloween_Haunted_Kelp_Forest.png"
+      "path": "assets/generated/backgrounds/Halloween_Haunted_Kelp_Forest.png.webp"
     },
     {
       "key": "Mangrove_Passage.png",
-      "path": "assets/backgrounds/Mangrove_Passage.png"
+      "path": "assets/generated/backgrounds/Mangrove_Passage.png.webp"
     },
     {
       "key": "Riverbed_Driftwood.png",
-      "path": "assets/backgrounds/Riverbed_Driftwood.png"
+      "path": "assets/generated/backgrounds/Riverbed_Driftwood.png.webp"
     },
     {
       "key": "Shadow_Slate.png",
-      "path": "assets/backgrounds/Shadow_Slate.png"
+      "path": "assets/generated/backgrounds/Shadow_Slate.png.webp"
     },
     {
       "key": "Sunken_Ruins.png",
-      "path": "assets/backgrounds/Sunken_Ruins.png"
+      "path": "assets/generated/backgrounds/Sunken_Ruins.png.webp"
     },
     {
       "key": "Sunken_Saucer.png",
-      "path": "assets/backgrounds/Sunken_Saucer.png"
+      "path": "assets/generated/backgrounds/Sunken_Saucer.png.webp"
     },
     {
       "key": "Volcanic_Caverns.png",
-      "path": "assets/backgrounds/Volcanic_Caverns.png"
+      "path": "assets/generated/backgrounds/Volcanic_Caverns.png.webp"
     },
     {
       "key": "Volcanic_Passage.png",
-      "path": "assets/backgrounds/Volcanic_Passage.png"
+      "path": "assets/generated/backgrounds/Volcanic_Passage.png.webp"
     },
     {
       "key": "Volcanic_Rock_Reef.png",
-      "path": "assets/backgrounds/Volcanic_Rock_Reef.png"
+      "path": "assets/generated/backgrounds/Volcanic_Rock_Reef.png.webp"
     }
   ],
   "decor": [
@@ -777,14 +777,6 @@
       "path": "assets/fish/zebradanio.png?v=639107558255083922"
     },
     {
-      "key": "Halloween_Boat.png",
-      "path": "assets/fish/Halloween_Boat.png"
-    },
-    {
-      "key": "Halloween_Submarine.png",
-      "path": "assets/fish/Halloween_Submarine.png"
-    },
-    {
       "key": "angelfish_1.png",
       "path": "assets/fish/angelfish_1.png"
     },
@@ -895,14 +887,6 @@
     {
       "key": "Great_White_Shark.png",
       "path": "assets/fish/Great_White_Shark.png"
-    },
-    {
-      "key": "Halloween_Boat_5.png",
-      "path": "assets/fish/Halloween_Boat_5.png"
-    },
-    {
-      "key": "Halloween_Submarine_5.png",
-      "path": "assets/fish/Halloween_Submarine_5.png"
     },
     {
       "key": "Hammerhead_Shark.png",
@@ -1547,6 +1531,62 @@
     {
       "key": "Submarine_Light_Red.webp",
       "path": "assets/equipment/machinery/Submarine_Light_Red.webp"
+    },
+    {
+      "key": "Food_Dispenser.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser.png"
+    },
+    {
+      "key": "Food_Dispenser_1.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_1.png"
+    },
+    {
+      "key": "Food_Dispenser_1_bg.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_1_bg.png"
+    },
+    {
+      "key": "Food_Dispenser_2.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_2.png"
+    },
+    {
+      "key": "Food_Dispenser_2_bg.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_2_bg.png"
+    },
+    {
+      "key": "Food_Dispenser_3.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_3.png"
+    },
+    {
+      "key": "Food_Dispenser_3_bg.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_3_bg.png"
+    },
+    {
+      "key": "Food_Dispenser_4.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_4.png"
+    },
+    {
+      "key": "Food_Dispenser_4_bg.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_4_bg.png"
+    },
+    {
+      "key": "Food_Dispenser_bg.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_bg.png"
+    },
+    {
+      "key": "Food_Dispenser_Light_Green.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_Light_Green.png"
+    },
+    {
+      "key": "Food_Dispenser_Light_Off.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_Light_Off.png"
+    },
+    {
+      "key": "Food_Dispenser_Light_Red.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_Light_Red.png"
+    },
+    {
+      "key": "Food_Dispenser_Light_Yellow.png",
+      "path": "assets/equipment/dispenser/Food_Dispenser_Light_Yellow.png"
     }
   ]
 }

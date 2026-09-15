@@ -27,7 +27,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 48;
+const STATE_VERSION = 49;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -213,6 +213,8 @@ const DEBUG_BEHAVIOR_LURE_INSPECT_DURATION_MS = 45 * 1000;
 const DEBUG_BEHAVIOR_LURE_SIDE_MS = 4200;
 const DEBUG_BEHAVIOR_ANTICIPATE_FOOD_DURATION_MS = 14 * 1000;
 const DISEASE_TYPE_GENERIC = "generic";
+const DISEASE_TYPE_VIRAL = "viral";
+const DAVY_JONES_VIRAL_PURCHASE_CHANCE = 0.05;
 const DISEASE_CARRIER_MS = 12 * HOUR_MS;
 const DISEASE_INCUBATING_MS = 24 * HOUR_MS;
 const DISEASE_EARLY_MS = 48 * HOUR_MS;
@@ -2699,7 +2701,7 @@ const TANK_TYPE_META = Object.freeze({
 });
 
 const TANK_PRODUCT_IMAGE_PATHS = Object.freeze({
-  rectangular: "assets/misc/tank.png"
+  rectangular: "assets/icons/edit_tank.png"
 });
 
 const BOWL_TANK_OUTER_POINTS = Object.freeze([
@@ -3256,6 +3258,7 @@ const runtime = {
   webSurfSelectedMailId: "",
   bubbleBankOpen: false,
   davyJonesLockerOpen: false,
+  davyJonesLockerTabOpen: false,
   davyLockerItemSpeciesId: "",
   davyLockerVariantSelections: {},
   proteusDesignerOpen: false,

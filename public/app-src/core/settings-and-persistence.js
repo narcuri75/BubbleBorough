@@ -1264,6 +1264,8 @@ function reconcileState(rawState) {
     engineeredSpecimenCompletedOrderIds: [],
     engineeredSpecimenDesignStartedOrderIds: [],
     bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer(null),
+    davyJonesLockerUnlocked: false,
+    davyJonesLockerUnlockedAt: 0,
     mealHistory: {},
     lastGravelCoinFoundAt: 0,
     unlockedFishSpecies: [],
@@ -1363,6 +1365,8 @@ function reconcileState(rawState) {
       ? incoming.engineeredSpecimenDesignStartedOrderIds.filter((id) => typeof id === "string").slice(0, 20)
       : [],
     bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer(incoming.bubbleBodegaRescueOffer),
+    davyJonesLockerUnlocked: incoming.davyJonesLockerUnlocked === true,
+    davyJonesLockerUnlockedAt: Number.isFinite(Number(incoming.davyJonesLockerUnlockedAt)) ? Math.max(0, Number(incoming.davyJonesLockerUnlockedAt)) : 0,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     lastGravelCoinFoundAt: Math.max(
       Number(incoming.lastGravelCoinFoundAt) || 0,
@@ -1506,15 +1510,20 @@ function reconcileState(rawState) {
     nextState.lifetimeDeaths = corpseCount;
   }
 
+  // Progression locks are purchase permissions, not ownership permissions.
+  // Legacy saves used to permanently unlock a species merely because the player
+  // already owned one. Strip those stale milestone unlocks and rebuild them only
+  // from milestones the save has actually earned. Existing fish remain untouched.
+  const milestoneFishUnlockIds = new Set(
+    PROGRESSION_MILESTONES.flatMap((milestone) => milestone.unlocks || [])
+  );
+  const nonMilestoneFishUnlocks = nextState.unlockedFishSpecies
+    .filter((speciesId) => !milestoneFishUnlockIds.has(speciesId));
   nextState.unlockedFishSpecies = sanitizeUnlockedFishSpecies([
-    ...nextState.unlockedFishSpecies,
+    ...nonMilestoneFishUnlocks,
     ...PROGRESSION_MILESTONES
       .filter((milestone) => nextState.dailyBonus?.milestones?.[milestone.id])
-      .flatMap((milestone) => milestone.unlocks || []),
-    ...(Object.keys(nextState.customFishAssets || {}).length ? [CUSTOM_FISH_SHOP_KEY] : []),
-    ...[...getAllTankFish(nextState), ...nextState.storedFish]
-      .map((fish) => fish?.speciesId)
-      .filter((speciesId) => runtime.fishMap.get(speciesId)?.unlockRequirement)
+      .flatMap((milestone) => milestone.unlocks || [])
   ]);
   nextState.unlockedDecorKeys = sanitizeUnlockedDecorKeys([
     ...nextState.unlockedDecorKeys,

@@ -21,6 +21,17 @@ foreach ($sheet in $spriteCatalog) {
   $manifest.$category = @($manifest.$category) + @($sheet.assets | Where-Object { $_.key -notin $known })
 }
 
+# Background PNGs remain editable source assets, while the runtime manifest
+# points at their substantially smaller generated WebP delivery files.
+if ($manifest.PSObject.Properties["backgrounds"]) {
+  foreach ($entry in $manifest.backgrounds) {
+    $deliveryPath = Join-Path $root ("assets/generated/backgrounds/{0}.webp" -f $entry.key)
+    if (Test-Path -LiteralPath $deliveryPath -PathType Leaf) {
+      $entry.path = "assets/generated/backgrounds/$($entry.key).webp"
+    }
+  }
+}
+
 # Retire catalog sections whose asset directories were removed.
 foreach ($property in @($manifest.PSObject.Properties)) {
   $categoryPath = Join-Path $root (Join-Path "assets" $property.Name)
@@ -43,9 +54,10 @@ function Add-MissingImageAssets([string]$category, [string]$directory, [scriptbl
     Where-Object { $_.Name -notin $known } |
     Sort-Object Name |
     ForEach-Object {
+      $relativePath = $_.FullName.Substring($assetDirectory.Length).TrimStart([char[]]"\/").Replace('\', '/')
       [pscustomobject]@{
         key = $_.Name
-        path = "assets/$directory/$([IO.Path]::GetRelativePath($assetDirectory, $_.FullName).Replace('\\', '/'))"
+        path = "assets/$directory/$relativePath"
       }
     }
   if ($additions.Count) {
@@ -57,6 +69,15 @@ Add-MissingImageAssets "decor" "decor"
 Add-MissingImageAssets "fish" "fish" { param($name) $name -notmatch '_(zombie|skeleton)\.[^.]+$' }
 Add-MissingImageAssets "equipment" "equipment"
 
+# Nested discovery above can see the physical sheet files. Keep only their
+# logical frame entries in purchasable catalog sections.
+foreach ($sheet in $spriteCatalog) {
+  $category = $sheet.category
+  if ($manifest.PSObject.Properties[$category]) {
+    $manifest.$category = @($manifest.$category | Where-Object { ($_.path -split '[?#]')[0] -ne $sheet.path })
+  }
+}
+
 # Remove stale entries written before nested equipment folders were supported.
 if ($manifest.PSObject.Properties["equipment"]) {
   $manifest.equipment = @($manifest.equipment | Where-Object { $_.path -notmatch '^assets/equipment/(?:Boat|Submarine|Food_Dispenser)' })
@@ -65,7 +86,7 @@ if ($manifest.PSObject.Properties["equipment"]) {
 # Boat and submarine frames now live under equipment/machinery rather than the
 # historical fish catalog directory.
 if ($manifest.PSObject.Properties["fish"]) {
-  $manifest.fish = @($manifest.fish | Where-Object { $_.path -notmatch '^assets/fish/(boat|submarine)(?:_[0-9]+)?\.png$' })
+  $manifest.fish = @($manifest.fish | Where-Object { $_.path -notmatch '^assets/fish/(?:Halloween_)?(?:boat|submarine)(?:_[0-9]+)?\.png$' })
 }
 
 $manifestJson = $manifest | ConvertTo-Json -Depth 8

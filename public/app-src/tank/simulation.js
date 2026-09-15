@@ -494,12 +494,15 @@ function findNearestBoroughServiceRoute(sourceTank, serviceType) {
   return null;
 }
 
-function pruneTankState(now, targetTank = getCurrentTank()) {
+function pruneTankState(now, targetTank = getCurrentTank(), targetState = state) {
   if (!targetTank) {
     return;
   }
 
-  const validResidenceIds = new Set(getAllPlacedDecor().map((item) => item.id));
+  // Save reconciliation can run against a freshly-sanitized state before it has
+  // become the global state. Validate residences against that state so a browser
+  // refresh never mistakes a perfectly valid home for an orphan.
+  const validResidenceIds = new Set(getAllPlacedDecor(targetState).map((item) => item.id));
   for (const fish of targetTank.fish || []) {
     if (getFishResidenceDecorId(fish) && !validResidenceIds.has(fish.residenceDecorId)) {
       fish.residenceDecorId = null;
@@ -593,14 +596,14 @@ function pruneState(now, target = state) {
       }
     }
     for (const tank of target.tanks) {
-      pruneTankState(now, tank);
+      pruneTankState(now, tank, target);
     }
     pruneCustomDecorAssets(target);
     pruneCustomFishAssets(target);
     return;
   }
 
-  pruneTankState(now, target);
+  pruneTankState(now, target, target);
 }
 
 function getCriticalTankConditionStartAt(now) {

@@ -12,7 +12,7 @@ function getBoroughReferenceNow(now = Date.now()) {
 
 function isHalloweenCalendarDate(now = Date.now()) {
   const date = new Date(getBoroughReferenceNow(now));
-  return date.getMonth() === 9 && date.getDate() >= 24;
+  return date.getMonth() === 9;
 }
 
 function syncSeasonalBubbleBoroughLogos(now = Date.now()) {

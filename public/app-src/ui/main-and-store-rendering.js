@@ -505,10 +505,10 @@ function renderFishShop() {
         : "";
       return `
         <article class="shop-card ${locked ? "is-locked" : ""} ${isDavyMutation ? "is-davy-mutation" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
-          <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
+          <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
           <div class="shop-meta shop-card-main">
             <div>
-              <strong>${fish.name}</strong>
+              <strong>${escapeHtml(fish.name)}</strong>
               ${renderFishShopThemePill(fish.theme)}
               ${[fish.description, ...(Array.isArray(fish.aboutParagraphs) ? fish.aboutParagraphs : [])]
                 .filter((paragraph) => typeof paragraph === "string" && paragraph.trim())
@@ -667,7 +667,8 @@ async function handleDavyJonesLockerPageClick(event) {
   if (!buyButton || buyButton.disabled) return;
   buyButton.disabled = true;
   const result = await buyFish(buyButton.dataset.davyBuyFish || "", {
-    appearanceVariantKey: buyButton.dataset.davyVariantKey || ""
+    appearanceVariantKey: buyButton.dataset.davyVariantKey || "",
+    purchaseSource: "davyjoneslocker"
   });
   if (!result?.ok) buyButton.disabled = false;
   renderDavyJonesLockerInventory();
@@ -678,6 +679,8 @@ function renderStoreOverlay() {
   const showingBank = runtime.bubbleBankOpen === true;
   const showingLocker = runtime.davyJonesLockerOpen === true;
   const showingDesigner = runtime.proteusDesignerOpen === true;
+  const davyLockerTab = dom.storeOverlay?.querySelector('.webpage-tab[data-webpage-destination="locker"]');
+  if (davyLockerTab) davyLockerTab.hidden = runtime.davyJonesLockerTabOpen !== true;
   const allowedTabs = getTutorialAllowedStoreTabs();
   if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
     runtime.storeTab = getTutorialPreferredStoreTab() || [...allowedTabs][0] || runtime.storeTab;

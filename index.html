@@ -441,13 +441,13 @@
                       <img data-sprite-src="assets/icons/coin.png" alt="" aria-hidden="true" />
                       <span>BB Bank</span>
                     </button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="locker" hidden>
+                      <img src="assets/web/davy/icons/davy_icon.png" alt="" aria-hidden="true" />
+                      <span>Davy Jones' Locker</span>
+                    </button>
                     <button type="button" class="webpage-tab" data-webpage-destination="proteus" hidden>
                       <img src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
                       <span>Proteus Biodyne</span>
-                    </button>
-                    <button type="button" class="webpage-tab" data-webpage-destination="locker">
-                      <img src="assets/web/davy/icons/davy_icon.png" alt="" aria-hidden="true" />
-                      <span>Davy Jones' Locker</span>
                     </button>
                     <button type="button" class="webpage-tab" data-webpage-destination="designer" hidden>
                       <img src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
@@ -1729,6 +1729,7 @@
       const TANKAZON_CART_STORAGE_KEY = "bubble-borough-tankazon-cart-v1";
       const TANKAZON_VIEW_STORAGE_KEY = "bubble-borough-tankazon-view-v1";
       const PROTEUS_DISCOVERY_STORAGE_KEY = "bubble-borough-proteus-discovered-v1";
+      const PROTEUS_DISCOVERY_TIME_STORAGE_KEY = "bubble-borough-proteus-discovered-at-v1";
       const TANKAZON_ORDERS_PER_PAGE = 10;
       const cart = new Map();
       let allCategoriesMode = true;
@@ -1921,6 +1922,21 @@
         catch { return false; }
       }
 
+      function getProteusDiscoveredAt() {
+        if (!hasDiscoveredProteus()) return 0;
+        const now = Date.now();
+        try {
+          let discoveredAt = Number(localStorage.getItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY));
+          if (!Number.isFinite(discoveredAt) || discoveredAt <= 0 || discoveredAt > now + 60000) {
+            discoveredAt = now;
+            localStorage.setItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY, String(discoveredAt));
+          }
+          return Math.min(discoveredAt, now);
+        } catch {
+          return now;
+        }
+      }
+
       function syncProteusDiscovery() {
         const discovered = hasDiscoveredProteus();
         document.querySelectorAll("#storeOverlay [data-proteus-home-link]").forEach((link) => { link.hidden = !discovered; });
@@ -1928,7 +1944,13 @@
       }
 
       function discoverProteus() {
-        try { localStorage.setItem(PROTEUS_DISCOVERY_STORAGE_KEY, "true"); } catch {}
+        try {
+          const alreadyDiscovered = localStorage.getItem(PROTEUS_DISCOVERY_STORAGE_KEY) === "true";
+          localStorage.setItem(PROTEUS_DISCOVERY_STORAGE_KEY, "true");
+          if (!alreadyDiscovered || !Number(localStorage.getItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY))) {
+            localStorage.setItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY, String(Date.now()));
+          }
+        } catch {}
         syncProteusDiscovery();
       }
 
@@ -1968,6 +1990,7 @@
       window.closeProteusBiodynePage = (restoreFocus = false) => closeProteusBiodyne(restoreFocus);
       window.syncWebPageTabs = syncWebPageTabs;
       window.hasDiscoveredProteus = hasDiscoveredProteus;
+      window.getProteusDiscoveredAt = getProteusDiscoveredAt;
       window.syncProteusDiscovery = syncProteusDiscovery;
       window.captureProteusSessionState = () => {
         proteusSessionScrollTop = Math.max(0, Number(document.querySelector("#proteusBiodynePage .proteus-biodyne-scroll")?.scrollTop) || 0);
@@ -2133,23 +2156,6 @@
         if (catalog) catalog.scrollTop = 0;
       }
 
-      function useBackgroundCatalogImages() {
-        document.querySelectorAll("#storeOverlay .shop-card img.shop-thumb, #storeOverlay .shop-card img.decor-thumb").forEach((img) => {
-          if (img.hasAttribute("data-sprite-src")) return;
-          const src = img.getAttribute("src") || "";
-          if (!src || /_bg(?:\.[a-z0-9]+)(?:[?#].*)?$/i.test(src) || img.dataset.tankazonBgChecked === src) return;
-          img.dataset.tankazonBgChecked = src;
-          const match = src.match(/^(.*?)(\.[a-z0-9]+)([?#].*)?$/i);
-          if (!match) return;
-          const candidate = `${match[1]}_bg${match[2]}${match[3] || ""}`;
-          const probe = new Image();
-          probe.onload = () => {
-            if (img.isConnected && img.getAttribute("src") === src) img.setAttribute("src", candidate);
-          };
-          probe.src = candidate;
-        });
-      }
-
       function normalizeTankazonTiles() {
         document.querySelectorAll("#storeOverlay .shop-card").forEach((card) => {
           const nameNode = card.querySelector(
@@ -2247,7 +2253,6 @@
             button.classList.add("tankazon-out-of-stock");
           }
         });
-        useBackgroundCatalogImages();
         normalizeTankazonTiles();
         syncTankazonItem();
       }
@@ -2588,11 +2593,11 @@
           return;
         }
         itemsEl.innerHTML = items.map((item) => `
-          <article class="tankazon-cart-item" data-cart-key="${item.key}">
-            <img data-sprite-src="${item.image}" alt="" />
+          <article class="tankazon-cart-item" data-cart-key="${escapeTankazonOrderText(item.key)}">
+            <img data-sprite-src="${escapeTankazonOrderText(item.image)}" alt="" />
             <div>
-              <strong>${item.name}</strong>
-              <small>${categoryLabels[item.category]}</small>
+              <strong>${escapeTankazonOrderText(item.name)}</strong>
+              <small>${escapeTankazonOrderText(categoryLabels[item.category] || item.category || "Store item")}</small>
               <b class="tankazon-cart-item-price">
                 <img src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" />
                 <span>${item.cost}</span>
@@ -2600,10 +2605,10 @@
               </b>
             </div>
             <div class="tankazon-cart-item-actions">
-              <button type="button" data-cart-dec="${item.key}" aria-label="Decrease quantity">−</button>
+              <button type="button" data-cart-dec="${escapeTankazonOrderText(item.key)}" aria-label="Decrease quantity">−</button>
               <span>${item.quantity}</span>
-              <button type="button" data-cart-inc="${item.key}" aria-label="Increase quantity" ${item.maxQuantity != null && Number.isFinite(Number(item.maxQuantity)) && item.quantity >= Number(item.maxQuantity) ? "disabled" : ""}>+</button>
-              <button class="tankazon-cart-remove" type="button" data-cart-remove="${item.key}">Remove</button>
+              <button type="button" data-cart-inc="${escapeTankazonOrderText(item.key)}" aria-label="Increase quantity" ${item.maxQuantity != null && Number.isFinite(Number(item.maxQuantity)) && item.quantity >= Number(item.maxQuantity) ? "disabled" : ""}>+</button>
+              <button class="tankazon-cart-remove" type="button" data-cart-remove="${escapeTankazonOrderText(item.key)}">Remove</button>
             </div>
           </article>`).join("");
       }

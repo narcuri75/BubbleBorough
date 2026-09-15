@@ -30,7 +30,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 48;
+const STATE_VERSION = 49;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -216,6 +216,8 @@ const DEBUG_BEHAVIOR_LURE_INSPECT_DURATION_MS = 45 * 1000;
 const DEBUG_BEHAVIOR_LURE_SIDE_MS = 4200;
 const DEBUG_BEHAVIOR_ANTICIPATE_FOOD_DURATION_MS = 14 * 1000;
 const DISEASE_TYPE_GENERIC = "generic";
+const DISEASE_TYPE_VIRAL = "viral";
+const DAVY_JONES_VIRAL_PURCHASE_CHANCE = 0.05;
 const DISEASE_CARRIER_MS = 12 * HOUR_MS;
 const DISEASE_INCUBATING_MS = 24 * HOUR_MS;
 const DISEASE_EARLY_MS = 48 * HOUR_MS;
@@ -2702,7 +2704,7 @@ const TANK_TYPE_META = Object.freeze({
 });
 
 const TANK_PRODUCT_IMAGE_PATHS = Object.freeze({
-  rectangular: "assets/misc/tank.png"
+  rectangular: "assets/icons/edit_tank.png"
 });
 
 const BOWL_TANK_OUTER_POINTS = Object.freeze([
@@ -3259,6 +3261,7 @@ const runtime = {
   webSurfSelectedMailId: "",
   bubbleBankOpen: false,
   davyJonesLockerOpen: false,
+  davyJonesLockerTabOpen: false,
   davyLockerItemSpeciesId: "",
   davyLockerVariantSelections: {},
   proteusDesignerOpen: false,
@@ -5154,7 +5157,7 @@ function getBoroughReferenceNow(now = Date.now()) {
 
 function isHalloweenCalendarDate(now = Date.now()) {
   const date = new Date(getBoroughReferenceNow(now));
-  return date.getMonth() === 9 && date.getDate() >= 24;
+  return date.getMonth() === 9;
 }
 
 function syncSeasonalBubbleBoroughLogos(now = Date.now()) {
@@ -8938,6 +8941,7 @@ function resetWebSurfSessionState() {
     runtime.webHomeOpen = true;
     runtime.bubbleBankOpen = false;
     runtime.davyJonesLockerOpen = false;
+    runtime.davyJonesLockerTabOpen = false;
     if (typeof renderStoreOverlay === "function") renderStoreOverlay();
   }
 }
@@ -8953,7 +8957,7 @@ function openWebSurfSessionPage() {
     window.showProteusBiodynePage?.(dom.openStoreButton);
     return;
   }
-  if (page === "locker") {
+  if (page === "locker" && state?.davyJonesLockerUnlocked === true) {
     openDavyJonesLockerPage();
     return;
   }
@@ -9007,6 +9011,10 @@ function openStoreOverlay(tab = "food", options = {}) {
 }
 
 function openDavyJonesLockerPage() {
+  if (state?.davyJonesLockerUnlocked !== true) {
+    showToast("That WebSurf destination has not been discovered yet.");
+    return false;
+  }
   const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
     ? runtime.storeTab
     : "food";
@@ -9016,6 +9024,7 @@ function openDavyJonesLockerPage() {
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = true;
+  runtime.davyJonesLockerTabOpen = true;
   runtime.webSurfLastPage = "locker";
   renderUi(Date.now());
   restoreWebSurfSessionScroll("locker");
@@ -9091,6 +9100,7 @@ function handleWebPageNavigation(event) {
   }
   const emailAction = target?.closest("[data-websurf-email-action]");
   if (emailAction) {
+    event?.preventDefault?.();
     const message = getWebSurfInboxMessages().find((entry) => entry.id === String(emailAction.dataset.websurfEmailAction || ""));
     if (message) handleWebSurfEmailAction(message);
     return;
@@ -9179,6 +9189,8 @@ function closeStoreOverlay(options = {}) {
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = false;
+  runtime.davyJonesLockerTabOpen = false;
+  if (runtime.webSurfLastPage === "locker") runtime.webSurfLastPage = "home";
   if (options.render === false) {
     if (dom.storeOverlay) {
       dom.storeOverlay.hidden = true;
@@ -14098,7 +14110,7 @@ async function init() {
   const selectedBackgroundKeys = new Set(getAllTanks().map((tank) => tank.selectedBackground).filter(Boolean));
   await preloadImages(filterPreloadPathsForCurrentContentSettings([
     ...runtime.backgroundCatalog
-      .filter((item) => selectedBackgroundKeys.has(item.key) && !isLocalImageBackgroundKey(item.key))
+      .filter((item) => selectedBackgroundKeys.has(item.key) && !isCustomBackgroundKey(item.key) && !isLocalImageBackgroundKey(item.key))
       .map((item) => item.path),
     ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
     ...runtime.tankCatalog.map((item) => item.path),
@@ -19812,7 +19824,9 @@ function buildBackgroundCatalog(items, metaMap = {}) {
       const meta = { ...fallbackMeta, ...(metaMap[key] || {}) };
       return {
         key,
-        path: item?.path || resolveAppUrl(`assets/backgrounds/${encodeURIComponent(key)}`),
+        path: key === NONE_BACKGROUND_ASSET_KEY || key === CUSTOM_IMAGE_BACKGROUND_ASSET_KEY
+          ? ""
+          : item?.path || resolveAppUrl(`assets/backgrounds/${encodeURIComponent(key)}`),
         name: meta.name || titleFromFile(key),
         description: meta.description || "",
         cost: Math.max(0, Math.floor(Number(meta.cost) || 0)),
@@ -22187,6 +22201,7 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
     fish.diseaseTreatedUntil,
     fish.diseaseLastDamageAt,
     fish.diseaseSource,
+    fish.diseaseRequiresTreatment,
     fish.temporaryImmunityUntil,
     fish.nextDiseaseCheckAt,
     fish.nextDiseaseSpreadCheckAt,
@@ -22204,6 +22219,7 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
   fish.diseaseTreatedUntil = 0;
   fish.diseaseLastDamageAt = 0;
   fish.diseaseSource = "";
+  fish.diseaseRequiresTreatment = false;
   fish.temporaryImmunityUntil = 0;
   fish.nextDiseaseCheckAt = now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS);
   fish.nextDiseaseSpreadCheckAt = now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS);
@@ -22226,6 +22242,7 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
     fish.diseaseTreatedUntil,
     fish.diseaseLastDamageAt,
     fish.diseaseSource,
+    fish.diseaseRequiresTreatment,
     fish.temporaryImmunityUntil,
     fish.nextDiseaseCheckAt,
     fish.nextDiseaseSpreadCheckAt,
@@ -22235,10 +22252,10 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
   return previous !== current;
 }
 
-function infectFishWithDisease(fish, source = "conditions", now = Date.now(), initialState = DISEASE_STATE_INCUBATING) {
+function infectFishWithDisease(fish, source = "conditions", now = Date.now(), initialState = DISEASE_STATE_INCUBATING, options = {}) {
   if (
     !fish
-    || !hasIllnessUnlocked()
+    || (!hasIllnessUnlocked() && options.bypassUnlock !== true)
     || isFishDead(fish)
     || isUndeadFish(fish)
     || hasActiveFishDisease(fish)
@@ -22252,9 +22269,9 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
   fish.diseaseState = stateId === DISEASE_STATE_NONE || stateId === DISEASE_STATE_IMMUNE
     ? DISEASE_STATE_INCUBATING
     : stateId;
-  fish.diseaseType = DISEASE_TYPE_GENERIC;
+  fish.diseaseType = options.type === DISEASE_TYPE_VIRAL ? DISEASE_TYPE_VIRAL : DISEASE_TYPE_GENERIC;
   fish.diseaseInfectedAt = now;
-  fish.diseaseProgressMs = fish.diseaseState === DISEASE_STATE_CARRIER ? 0 : DISEASE_CARRIER_MS;
+  fish.diseaseProgressMs = getDebugDiseaseProgressForStage(fish.diseaseState);
   fish.diseaseLastProgressAt = now;
   fish.diseaseExposureLevel = 0;
   fish.diseaseRecoveryProgressMs = 0;
@@ -22268,7 +22285,29 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
   fish.lastIllnessSignalAtByType = sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType);
   fish.diseaseLastDamageAt = now;
   fish.diseaseSource = String(source || "conditions");
+  fish.diseaseRequiresTreatment = options.requiresTreatment === true;
   return true;
+}
+
+function maybeSeedDavyJonesViralIllness(fish, now = Date.now()) {
+  if (!fish || isFishDead(fish) || isUndeadFish(fish) || Math.random() >= DAVY_JONES_VIRAL_PURCHASE_CHANCE) {
+    return false;
+  }
+  const infected = infectFishWithDisease(
+    fish,
+    "davy-jones-locker",
+    now,
+    DISEASE_STATE_VISIBLE,
+    { type: DISEASE_TYPE_VIRAL, requiresTreatment: true, bypassUnlock: true }
+  );
+  if (infected) {
+    pushEvent(`${fish.name} arrived showing signs of a viral illness. Treatment is required for recovery.`, now, getCurrentTank(), {
+      type: "illness",
+      fishId: fish.id,
+      recapEligible: false
+    });
+  }
+  return infected;
 }
 
 function getDiseaseTankCleanliness(now = Date.now()) {
@@ -22920,12 +22959,14 @@ function processFishDisease(now = Date.now()) {
         fish.diseaseProgressMs = Math.max(0, Number(fish.diseaseProgressMs) || 0) + diseaseElapsedMs * progressRate;
       }
 
-      if (goodConditions) {
+      const treatmentRequired = fish.diseaseRequiresTreatment === true;
+      const treatmentReceived = (Number(fish.diseaseTreatedUntil) || 0) > 0;
+      if (goodConditions && (!treatmentRequired || treatmentReceived)) {
         fish.diseaseRecoveryProgressMs = Math.min(
           DISEASE_RECOVERY_REQUIRED_MS,
           (Number(fish.diseaseRecoveryProgressMs) || 0) + diseaseElapsedMs * (treated ? DISEASE_RECOVERY_TREATED_MULTIPLIER : 1)
         );
-      } else {
+      } else if (!goodConditions) {
         fish.diseaseRecoveryProgressMs = Math.max(0, (Number(fish.diseaseRecoveryProgressMs) || 0) - diseaseElapsedMs * 0.45);
       }
 
@@ -26573,6 +26614,8 @@ function reconcileState(rawState) {
     engineeredSpecimenCompletedOrderIds: [],
     engineeredSpecimenDesignStartedOrderIds: [],
     bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer(null),
+    davyJonesLockerUnlocked: false,
+    davyJonesLockerUnlockedAt: 0,
     mealHistory: {},
     lastGravelCoinFoundAt: 0,
     unlockedFishSpecies: [],
@@ -26672,6 +26715,8 @@ function reconcileState(rawState) {
       ? incoming.engineeredSpecimenDesignStartedOrderIds.filter((id) => typeof id === "string").slice(0, 20)
       : [],
     bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer(incoming.bubbleBodegaRescueOffer),
+    davyJonesLockerUnlocked: incoming.davyJonesLockerUnlocked === true,
+    davyJonesLockerUnlockedAt: Number.isFinite(Number(incoming.davyJonesLockerUnlockedAt)) ? Math.max(0, Number(incoming.davyJonesLockerUnlockedAt)) : 0,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     lastGravelCoinFoundAt: Math.max(
       Number(incoming.lastGravelCoinFoundAt) || 0,
@@ -26815,15 +26860,20 @@ function reconcileState(rawState) {
     nextState.lifetimeDeaths = corpseCount;
   }
 
+  // Progression locks are purchase permissions, not ownership permissions.
+  // Legacy saves used to permanently unlock a species merely because the player
+  // already owned one. Strip those stale milestone unlocks and rebuild them only
+  // from milestones the save has actually earned. Existing fish remain untouched.
+  const milestoneFishUnlockIds = new Set(
+    PROGRESSION_MILESTONES.flatMap((milestone) => milestone.unlocks || [])
+  );
+  const nonMilestoneFishUnlocks = nextState.unlockedFishSpecies
+    .filter((speciesId) => !milestoneFishUnlockIds.has(speciesId));
   nextState.unlockedFishSpecies = sanitizeUnlockedFishSpecies([
-    ...nextState.unlockedFishSpecies,
+    ...nonMilestoneFishUnlocks,
     ...PROGRESSION_MILESTONES
       .filter((milestone) => nextState.dailyBonus?.milestones?.[milestone.id])
-      .flatMap((milestone) => milestone.unlocks || []),
-    ...(Object.keys(nextState.customFishAssets || {}).length ? [CUSTOM_FISH_SHOP_KEY] : []),
-    ...[...getAllTankFish(nextState), ...nextState.storedFish]
-      .map((fish) => fish?.speciesId)
-      .filter((speciesId) => runtime.fishMap.get(speciesId)?.unlockRequirement)
+      .flatMap((milestone) => milestone.unlocks || [])
   ]);
   nextState.unlockedDecorKeys = sanitizeUnlockedDecorKeys([
     ...nextState.unlockedDecorKeys,
@@ -27660,6 +27710,7 @@ function sanitizeFish(fish, options = {}) {
     diseaseTreatedUntil: Number.isFinite(Number(fish.diseaseTreatedUntil)) ? Math.max(0, Number(fish.diseaseTreatedUntil)) : 0,
     diseaseLastDamageAt: Number.isFinite(Number(fish.diseaseLastDamageAt)) ? Math.max(0, Number(fish.diseaseLastDamageAt)) : 0,
     diseaseSource: typeof fish.diseaseSource === "string" ? fish.diseaseSource.trim() : "",
+    diseaseRequiresTreatment: fish.diseaseRequiresTreatment === true,
     temporaryImmunityUntil: Number.isFinite(Number(fish.temporaryImmunityUntil)) ? Math.max(0, Number(fish.temporaryImmunityUntil)) : 0,
     nextDiseaseCheckAt: Number.isFinite(Number(fish.nextDiseaseCheckAt)) ? Math.max(0, Number(fish.nextDiseaseCheckAt)) : 0,
     nextDiseaseSpreadCheckAt: Number.isFinite(Number(fish.nextDiseaseSpreadCheckAt)) ? Math.max(0, Number(fish.nextDiseaseSpreadCheckAt)) : 0,
@@ -34260,12 +34311,15 @@ function findNearestBoroughServiceRoute(sourceTank, serviceType) {
   return null;
 }
 
-function pruneTankState(now, targetTank = getCurrentTank()) {
+function pruneTankState(now, targetTank = getCurrentTank(), targetState = state) {
   if (!targetTank) {
     return;
   }
 
-  const validResidenceIds = new Set(getAllPlacedDecor().map((item) => item.id));
+  // Save reconciliation can run against a freshly-sanitized state before it has
+  // become the global state. Validate residences against that state so a browser
+  // refresh never mistakes a perfectly valid home for an orphan.
+  const validResidenceIds = new Set(getAllPlacedDecor(targetState).map((item) => item.id));
   for (const fish of targetTank.fish || []) {
     if (getFishResidenceDecorId(fish) && !validResidenceIds.has(fish.residenceDecorId)) {
       fish.residenceDecorId = null;
@@ -34359,14 +34413,14 @@ function pruneState(now, target = state) {
       }
     }
     for (const tank of target.tanks) {
-      pruneTankState(now, tank);
+      pruneTankState(now, tank, target);
     }
     pruneCustomDecorAssets(target);
     pruneCustomFishAssets(target);
     return;
   }
 
-  pruneTankState(now, target);
+  pruneTankState(now, target, target);
 }
 
 function getCriticalTankConditionStartAt(now) {
@@ -38769,6 +38823,7 @@ function createFishRecord(speciesId, options = {}) {
     diseaseTreatedUntil: 0,
     diseaseLastDamageAt: 0,
     diseaseSource: "",
+    diseaseRequiresTreatment: false,
     temporaryImmunityUntil: 0,
     nextDiseaseCheckAt: now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS),
     nextDiseaseSpreadCheckAt: now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS),
@@ -41674,8 +41729,8 @@ async function buyFish(speciesId, options = {}) {
     const transaction = performCoinTransaction({
       amount: purchaseCost,
       now: purchaseCompletedAt,
-      place: davyMutationPurchase ? "UNKNOWN_VENDOR" : undefined,
-      receiptLabel: davyMutationPurchase ? "UNKNOWN_VENDOR" : undefined,
+      place: davyMutationPurchase ? "Private Seller" : undefined,
+      receiptLabel: davyMutationPurchase ? "Private Seller" : undefined,
       insufficientMessage: `You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`,
       apply: () => {
         fish.acquiredAt = purchaseCompletedAt;
@@ -41688,7 +41743,11 @@ async function buyFish(speciesId, options = {}) {
         if (speciesId === "goldfish" && purchaseCost === 0 && getBubbleBodegaRescueOfferStatus().goldfishAvailable) {
           markBubbleBodegaRescueItemClaimed("goldfish", purchaseCompletedAt);
         }
-        maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
+        if (options.purchaseSource === "davyjoneslocker") {
+          maybeSeedDavyJonesViralIllness(fish, purchaseCompletedAt);
+        } else {
+          maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
+        }
         if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
           setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
           fish.lastAteAt = purchaseCompletedAt;
@@ -41724,6 +41783,10 @@ async function buyFish(speciesId, options = {}) {
 }
 
 async function buyAnotherCustomFish(fishId) {
+  if (!isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)) {
+    showToast(`${getUnlockRequirementLabel(runtime.fishMap.get(CUSTOM_FISH_SHOP_KEY)?.unlockRequirement)} milestone required.`);
+    return { ok: false, reason: "species-locked" };
+  }
   const managed = getManagedFishById(fishId);
   const sourceFish = managed?.fish || null;
   if (!sourceFish || !isCustomFishAssetKey(sourceFish.speciesId)) {
@@ -41895,7 +41958,9 @@ function getPendingFishBuyAnotherDetails() {
   const cost = getFishPurchaseCost(details.fish.speciesId);
   const customFish = isCustomFishAssetKey(details.fish.speciesId);
   const goreLocked = isUndeadSpecies(details.species) && !isViolenceAndGoreEnabled();
-  const unlocked = customFish || isFishSpeciesShopUnlocked(details.baseSpecies);
+  const unlocked = customFish
+    ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
+    : isFishSpeciesShopUnlocked(details.baseSpecies);
   return {
     ...details,
     cost,
@@ -46297,7 +46362,7 @@ function getDavyMutationCatalogDefinitions() {
   return [
     {
       id: "davy-bioluminescent-cherub-goldfish",
-      seller: "UNKNOWN_VENDOR",
+      seller: "Private Seller",
       name: "Cherub Puff Goldfish",
       description: "A consumer-focused companion specimen engineered around fancy goldfish, pufferfish, and permanently juvenile developmental traits. Oversized eyes, rounded proportions, a translucent glowing belly, and a tiny bioluminescent forehead organ were intentionally selected to maximize perceived cuteness. The result is undeniably adorable. Thinking too hard about why it looks that way is not recommended.",
       davyBehaviorLabel: "Affectionate companion",
@@ -46327,7 +46392,7 @@ function getDavyMutationCatalogDefinitions() {
     },
     {
       id: "davy-bioluminescent-angler-pike",
-      seller: "UNKNOWN_VENDOR",
+      seller: "Private Seller",
       name: "Dwarf Siren Pike",
       description: "An experimental ambush predator built around a dwarf pike genome and reinforced with deep-sea, electric, regenerative, and camouflage adaptations. Its luminous lure, expandable throat structure, exposed bioelectric organs, and highly modified fins make the specimen difficult to mistake for anything naturally occurring. It is remarkably patient. Until it isn’t.",
       davyBehaviorLabel: "Patient ambush predator",
@@ -46357,7 +46422,7 @@ function getDavyMutationCatalogDefinitions() {
     },
     {
       id: "davy-bioluminescent-glass-fangfish",
-      seller: "UNKNOWN_VENDOR",
+      seller: "Private Seller",
       name: "Glass Needle Spitter",
       description: "A two-inch laboratory curiosity combining pygmy fish genetics with transparent tissue, bioluminescent organs, precision water projection, defensive inflation, and disproportionately large predatory teeth. Most of its internal anatomy remains visible through the body wall. Small enough to disappear behind a filter tube. Strange enough that you will immediately notice when it does.",
       davyBehaviorLabel: "Nervous cover dart",
@@ -46387,7 +46452,7 @@ function getDavyMutationCatalogDefinitions() {
     },
     {
       id: "davy-dwarf-chimera-barracuda",
-      seller: "UNKNOWN_VENDOR",
+      seller: "Private Seller",
       name: "Dwarf Chimera Barracuda",
       description: "A compact apex predator assembled from barracuda, cuttlefish, electric eel, lionfish, and mantis shrimp genetics. Adaptive camouflage, electrostunning organs, venomous dorsal defenses, and enhanced motion tracking were compressed into a specimen small enough for domestic aquariums. Extremely fast. Extremely observant. Technically ornamental.",
       davyBehaviorLabel: "Active patrol predator",
@@ -46417,7 +46482,7 @@ function getDavyMutationCatalogDefinitions() {
     },
     {
       id: "davy-dwarf-hyperfin",
-      seller: "UNKNOWN_VENDOR",
+      seller: "Private Seller",
       name: "Dwarf Hyperfin",
       description: "A compact high-performance fish engineered from some of the fastest and most efficient swimmers in the animal kingdom. Streamlined musculature, drag-reducing skin, stabilizing finlets, and an oversized cardiovascular system allow the Dwarf Hyperfin to accelerate with startling force while remaining small enough for a home aquarium. At rest, it is elegant. At speed, it becomes difficult to follow with your eyes.",
       davyBehaviorLabel: "High-speed open-water runner",
@@ -54277,10 +54342,10 @@ function renderFishShop() {
         : "";
       return `
         <article class="shop-card ${locked ? "is-locked" : ""} ${isDavyMutation ? "is-davy-mutation" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
-          <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
+          <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
           <div class="shop-meta shop-card-main">
             <div>
-              <strong>${fish.name}</strong>
+              <strong>${escapeHtml(fish.name)}</strong>
               ${renderFishShopThemePill(fish.theme)}
               ${[fish.description, ...(Array.isArray(fish.aboutParagraphs) ? fish.aboutParagraphs : [])]
                 .filter((paragraph) => typeof paragraph === "string" && paragraph.trim())
@@ -54439,7 +54504,8 @@ async function handleDavyJonesLockerPageClick(event) {
   if (!buyButton || buyButton.disabled) return;
   buyButton.disabled = true;
   const result = await buyFish(buyButton.dataset.davyBuyFish || "", {
-    appearanceVariantKey: buyButton.dataset.davyVariantKey || ""
+    appearanceVariantKey: buyButton.dataset.davyVariantKey || "",
+    purchaseSource: "davyjoneslocker"
   });
   if (!result?.ok) buyButton.disabled = false;
   renderDavyJonesLockerInventory();
@@ -54450,6 +54516,8 @@ function renderStoreOverlay() {
   const showingBank = runtime.bubbleBankOpen === true;
   const showingLocker = runtime.davyJonesLockerOpen === true;
   const showingDesigner = runtime.proteusDesignerOpen === true;
+  const davyLockerTab = dom.storeOverlay?.querySelector('.webpage-tab[data-webpage-destination="locker"]');
+  if (davyLockerTab) davyLockerTab.hidden = runtime.davyJonesLockerTabOpen !== true;
   const allowedTabs = getTutorialAllowedStoreTabs();
   if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
     runtime.storeTab = getTutorialPreferredStoreTab() || [...allowedTabs][0] || runtime.storeTab;
@@ -56163,7 +56231,9 @@ function buildManagementFishRow(fish, now = Date.now()) {
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
-  const canBuyAnother = isCustomFishAssetKey(fish.speciesId) || isFishSpeciesShopUnlocked(baseSpecies);
+  const canBuyAnother = isCustomFishAssetKey(fish.speciesId)
+    ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
+    : isFishSpeciesShopUnlocked(baseSpecies);
   const canSell = Boolean(baseSpecies) && !dead && !isFishBeingConsumedByPiranhas(fish, now) && !juvenile;
   const canStore = !dead && !infected;
   const status = dead
@@ -58281,6 +58351,14 @@ function isProteusOrder(order) {
   return (order?.items || []).some((item) => /proteus biodyne/i.test(String(item.seller || item.vendor || item.category || "")));
 }
 
+function isDavyMutationOrder(order) {
+  return (order?.items || []).some((item) => {
+    const key = String(item?.key || "");
+    const image = String(item?.image || "");
+    return /(?:^|:)davy-/.test(key) || /web\/davy\/mutations/i.test(image);
+  });
+}
+
 function isEngineeredAquaticSpecimenOrder(order) {
   return (order?.items || []).some((item) => {
     const key = String(item.key || "");
@@ -58466,6 +58544,25 @@ function getWebSurfInboxMessages() {
     messages.push({ id: `auto-${templateId}-${order.id}`, templateId, data, sender: template?.sender || (isProteusOrder(order) ? "designer@proteusbiodyne.swim" : "orders@bubblebodega.swim"), subject: template ? interpolateWebSurfEmailValue(data.itemQuantity === 1 && template.subjectSingular ? template.subjectSingular : template.subject, data) : "Order Confirmed", preview: template ? interpolateWebSurfEmailValue(template.preview, data) : "Your order has been completed and delivered.", destination: template?.action?.destination || "store", icon: isProteusOrder(order) ? "assets/web/proteus/Proteus_Logo_Icon.png" : "assets/misc/Box.png", time: Number(order.placedAt) || 0 });
   });
 
+  const firstDavyPurchase = orders
+    .filter((order) => (Number(order.placedAt) || 0) <= now && isDavyMutationOrder(order))
+    .sort((left, right) => (Number(left.placedAt) || 0) - (Number(right.placedAt) || 0))[0] || null;
+  if (firstDavyPurchase) {
+    const template = getWebSurfAutoEmailTemplate("davy_jones_invitation");
+    const data = { orderId: firstDavyPurchase.id, siteAddress: "davyjoneslocker.hadal" };
+    messages.push({
+      id: `auto-davy_jones_invitation-${firstDavyPurchase.id}`,
+      templateId: "davy_jones_invitation",
+      data,
+      sender: template?.sender || "FIN",
+      subject: template?.subject || "Regarding Your Purchase",
+      preview: template?.preview || "A private seller left you a message.",
+      destination: "davy-locker-unlock",
+      icon: "assets/web/davy/icons/davy_icon.png",
+      time: (Number(firstDavyPurchase.placedAt) || 0) + 1
+    });
+  }
+
   const transactions = Array.isArray(state?.walletTransactions) ? state.walletTransactions : [];
   const seenMilestones = new Set();
   transactions.filter((entry) => (Number(entry.time) || 0) <= now).forEach((entry) => {
@@ -58493,6 +58590,7 @@ function getWebSurfInboxMessages() {
   });
 
   if (window.hasDiscoveredProteus?.()) {
+    const proteusDiscoveredAt = Math.min(now, Math.max(1, Number(window.getProteusDiscoveredAt?.()) || now));
     messages.push({
       id: "proteus-research-bulletin-1",
       sender: "research@proteusbiodyne.swim",
@@ -58500,12 +58598,12 @@ function getWebSurfInboxMessages() {
       preview: "New specimen and directed-adaptation records are available.",
       destination: "proteus",
       icon: "assets/web/proteus/Proteus_Logo_Icon.png",
-      time: 1
+      time: proteusDiscoveredAt
     });
   }
 
   return messages
-    .sort((left, right) => Number(right.favorite === true) - Number(left.favorite === true) || right.time - left.time)
+    .sort((left, right) => (Number(right.time) || 0) - (Number(left.time) || 0))
     .slice(0, 40);
 }
 
@@ -58520,9 +58618,10 @@ function syncWebSurfUnreadBadge() {
 }
 
 function formatWebSurfMailTime(timestamp) {
-  if (!timestamp) return "Saved";
-  const date = new Date(timestamp);
+  const rawTimestamp = Number(timestamp);
+  if (!Number.isFinite(rawTimestamp) || rawTimestamp <= 0) return "Saved";
   const now = new Date();
+  const date = new Date(Math.min(rawTimestamp, now.getTime()));
   if (date.toDateString() === now.toDateString()) {
     return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   }
@@ -58601,6 +58700,9 @@ function renderWebSurfAutoEmailBody(message) {
     }
     if (block.type === "action") {
       const action = template.action || {};
+      if (action.destination === "davy-locker-unlock") {
+        return `<div class="websurf-email-inline-action"><a class="websurf-email-hyperlink" href="#davyjoneslocker.hadal" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(action.label || "davyjoneslocker.hadal")}</a></div>`;
+      }
       return `<div class="websurf-email-inline-action"><button type="button" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(action.label || "Open")}</button></div>`;
     }
     return `<p>${renderWebSurfEmailInlineText(block.text, data)}</p>`;
@@ -58630,6 +58732,18 @@ function handleWebSurfEmailAction(message) {
     }
     return;
   }
+  if (action.destination === "davy-locker-unlock") {
+    const now = Date.now();
+    const firstUnlock = state.davyJonesLockerUnlocked !== true;
+    state.davyJonesLockerUnlocked = true;
+    if (firstUnlock || !(Number(state.davyJonesLockerUnlockedAt) > 0)) {
+      state.davyJonesLockerUnlockedAt = now;
+      pushEvent("Davy Jones' Locker was added to WebSurf bookmarks.", now);
+      saveState();
+    }
+    openDavyJonesLockerPage();
+    return;
+  }
   if (action.destination === "proteus-designer") {
     const orderId = String(message.data?.orderId || "");
     if (getEngineeredAquaticSpecimenOrderStatus(orderId) !== "design-required") {
@@ -58654,6 +58768,7 @@ function renderWebSurfHomePage() {
   const silencedSenders = getWebSurfSilencedSenders();
   const unreadCount = messages.filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
   const proteusDiscovered = Boolean(window.hasDiscoveredProteus?.());
+  const davyLockerUnlocked = state?.davyJonesLockerUnlocked === true;
   const mailMarkup = messages.map((message) => {
     const senderKey = String(message.sender || "").toLowerCase();
     const silenced = silencedSenders.has(senderKey);
@@ -58683,6 +58798,7 @@ function renderWebSurfHomePage() {
           <button type="button" class="websurf-bookmark" data-webpage-destination="bank"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" /><span><strong>Bubble Borough Bank</strong><small>Balance, rewards, and statements</small></span></button>
           <button type="button" class="websurf-bookmark" data-webpage-destination="store"><img ${assetImageAttributes("assets/misc/Box.png")} alt="" /><span><strong>BubbleBodega</strong><small>Food, fish, and aquarium supplies</small></span></button>
           <button type="button" class="websurf-bookmark" data-webpage-destination="proteus" data-proteus-home-link ${proteusDiscovered ? "" : "hidden"}><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" /><span><strong>Proteus Biodyne</strong><small>Adaptive biology and marine research</small></span></button>
+          ${davyLockerUnlocked ? `<button type="button" class="websurf-bookmark" data-webpage-destination="locker"><img ${assetImageAttributes("assets/web/davy/icons/davy_icon.png")} alt="" /><span><strong>Davy Jones' Locker</strong><small>Private catalogue · davyjoneslocker.hadal</small></span></button>` : ""}
           <span class="websurf-bookmark is-coming-soon"><span aria-hidden="true">◈</span><span><strong>More coming soon</strong><small>New destinations on the horizon</small></span></span>
         </div>
       </section>
@@ -61936,12 +62052,12 @@ function renderEditFishTray() {
           ? `Dispose of ${fish.name}`
           : `Place ${fish.name} in the tank`;
         return `
-          <article class="edit-decor-tile ${dead ? "is-dead" : ""}${moodTone ? " is-fish-mood-tile" : ""}" ${moodTone ? `data-mood-tone="${moodTone}"` : ""} data-decor-name="${label}">
+          <article class="edit-decor-tile ${dead ? "is-dead" : ""}${moodTone ? " is-fish-mood-tile" : ""}" ${moodTone ? `data-mood-tone="${escapeHtml(moodTone)}"` : ""} data-decor-name="${escapeHtml(label)}">
             ${inStorage || dead ? `<button
               class="edit-decor-tile-menu-button"
               type="button"
-              data-open-fish-tray-menu="${fish.id}"
-              aria-label="More options for ${fish.name}"
+              data-open-fish-tray-menu="${escapeHtml(fish.id)}"
+              aria-label="More options for ${escapeHtml(fish.name)}"
               title="More options"
             >
               ...
@@ -61949,12 +62065,12 @@ function renderEditFishTray() {
             <button
               class="edit-decor-tile-primary"
               type="button"
-              ${dead ? `data-tray-restore-fish="${fish.id}"` : `data-tray-select-fish="${fish.id}"`}
-              title="${dead ? actionLabel : `Edit ${escapeHtml(fish.name)}`}"
-              aria-label="${dead ? actionLabel : `Edit ${escapeHtml(fish.name)}`}"
+              ${dead ? `data-tray-restore-fish="${escapeHtml(fish.id)}"` : `data-tray-select-fish="${escapeHtml(fish.id)}"`}
+              title="${escapeHtml(dead ? actionLabel : `Edit ${fish.name}`)}"
+              aria-label="${escapeHtml(dead ? actionLabel : `Edit ${fish.name}`)}"
             >
               <span class="edit-decor-tile-surface">
-                <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${label}" />
+                <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${escapeHtml(label)}" />
                 <span class="inventory-tray-label">${!inStorage && !dead ? escapeHtml(fish.name || "Fish") : dead ? (inStorage ? "Dead In Storage" : "Dead In Tank") : "Storage"}</span>
               </span>
             </button>
@@ -62481,14 +62597,14 @@ function renderManagedFishCard(fish, now, options = {}) {
 
   return `
     <article class="fish-card">
-      <img class="fish-thumb" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
+      <img class="fish-thumb" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
       <div class="fish-card-main">
         <div class="fish-card-heading">
           <div class="fish-card-title">
-            <strong>${fish.name}</strong>
-            <div class="fish-species">${displaySpeciesName}</div>
+            <strong>${escapeHtml(fish.name)}</strong>
+            <div class="fish-species">${escapeHtml(displaySpeciesName)}</div>
           </div>
-          ${showDisposeButton ? `<button class="small-button warn" data-dispose-fish="${fish.id}" title="Dispose of ${fish.name}" aria-label="Dispose of ${fish.name}">&#128701;</button>` : ""}
+          ${showDisposeButton ? `<button class="small-button warn" data-dispose-fish="${escapeHtml(fish.id)}" title="Dispose of ${escapeHtml(fish.name)}" aria-label="Dispose of ${escapeHtml(fish.name)}">&#128701;</button>` : ""}
         </div>
         <div class="hearts">${renderHearts(fish.healthUnits, maxHealthUnits)}</div>
         <div class="fish-status-line">${status}</div>
@@ -62511,16 +62627,16 @@ function renderManagedFishCard(fish, now, options = {}) {
       </div>
       <div class="fish-actions fish-card-actions">
         <div class="size-controls">
-          <button class="small-button icon alt" data-size-fish="${fish.id}" data-size-direction="-1" aria-label="Make ${fish.name} smaller">-</button>
+          <button class="small-button icon alt" data-size-fish="${escapeHtml(fish.id)}" data-size-direction="-1" aria-label="Make ${escapeHtml(fish.name)} smaller">-</button>
           <span class="size-badge">${formatFishScale(fish.scale)}</span>
-          <button class="small-button icon alt" data-size-fish="${fish.id}" data-size-direction="1" aria-label="Make ${fish.name} larger">+</button>
+          <button class="small-button icon alt" data-size-fish="${escapeHtml(fish.id)}" data-size-direction="1" aria-label="Make ${escapeHtml(fish.name)} larger">+</button>
         </div>
         <div class="fish-card-button-row">
           <span class="price-tag">${rewardLabel}</span>
-          <button class="small-button" data-copy-fish-size="${fish.id}" title="Use ${formatFishScale(fish.scale)} as the default size for future ${displaySpeciesName.toLowerCase()}s">
+          <button class="small-button" data-copy-fish-size="${escapeHtml(fish.id)}" title="Use ${formatFishScale(fish.scale)} as the default size for future ${escapeHtml(displaySpeciesName.toLowerCase())}s">
             ${usesDefaultScale ? "Default Set" : "Set Default"}
           </button>
-          <button class="small-button alt" data-open-fish="${fish.id}">Details</button>
+          <button class="small-button alt" data-open-fish="${escapeHtml(fish.id)}">Details</button>
           ${dead ? "" : `
             <button class="small-button alt" data-sell-fish="${fish.id}">
               Sell

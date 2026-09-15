@@ -1043,6 +1043,7 @@ function resetWebSurfSessionState() {
     runtime.webHomeOpen = true;
     runtime.bubbleBankOpen = false;
     runtime.davyJonesLockerOpen = false;
+    runtime.davyJonesLockerTabOpen = false;
     if (typeof renderStoreOverlay === "function") renderStoreOverlay();
   }
 }
@@ -1058,7 +1059,7 @@ function openWebSurfSessionPage() {
     window.showProteusBiodynePage?.(dom.openStoreButton);
     return;
   }
-  if (page === "locker") {
+  if (page === "locker" && state?.davyJonesLockerUnlocked === true) {
     openDavyJonesLockerPage();
     return;
   }
@@ -1112,6 +1113,10 @@ function openStoreOverlay(tab = "food", options = {}) {
 }
 
 function openDavyJonesLockerPage() {
+  if (state?.davyJonesLockerUnlocked !== true) {
+    showToast("That WebSurf destination has not been discovered yet.");
+    return false;
+  }
   const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
     ? runtime.storeTab
     : "food";
@@ -1121,6 +1126,7 @@ function openDavyJonesLockerPage() {
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = true;
+  runtime.davyJonesLockerTabOpen = true;
   runtime.webSurfLastPage = "locker";
   renderUi(Date.now());
   restoreWebSurfSessionScroll("locker");
@@ -1196,6 +1202,7 @@ function handleWebPageNavigation(event) {
   }
   const emailAction = target?.closest("[data-websurf-email-action]");
   if (emailAction) {
+    event?.preventDefault?.();
     const message = getWebSurfInboxMessages().find((entry) => entry.id === String(emailAction.dataset.websurfEmailAction || ""));
     if (message) handleWebSurfEmailAction(message);
     return;
@@ -1284,6 +1291,8 @@ function closeStoreOverlay(options = {}) {
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = false;
+  runtime.davyJonesLockerTabOpen = false;
+  if (runtime.webSurfLastPage === "locker") runtime.webSurfLastPage = "home";
   if (options.render === false) {
     if (dom.storeOverlay) {
       dom.storeOverlay.hidden = true;

@@ -21427,6 +21427,16 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
   text-transform: uppercase;
 }
 .websurf-email-inline-action { margin: 11px 0 13px; }
+.websurf-email-inline-action .websurf-email-hyperlink {
+  color: #245b83;
+  font-size: .76rem;
+  font-weight: 760;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.websurf-email-inline-action .websurf-email-hyperlink:hover,
+.websurf-email-inline-action .websurf-email-hyperlink:focus-visible { color: #173f5b; }
 .websurf-email-inline-action button {
   min-height: 32px;
   padding: 6px 12px;

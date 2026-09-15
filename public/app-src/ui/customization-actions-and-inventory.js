@@ -2185,12 +2185,12 @@ function renderEditFishTray() {
           ? `Dispose of ${fish.name}`
           : `Place ${fish.name} in the tank`;
         return `
-          <article class="edit-decor-tile ${dead ? "is-dead" : ""}${moodTone ? " is-fish-mood-tile" : ""}" ${moodTone ? `data-mood-tone="${moodTone}"` : ""} data-decor-name="${label}">
+          <article class="edit-decor-tile ${dead ? "is-dead" : ""}${moodTone ? " is-fish-mood-tile" : ""}" ${moodTone ? `data-mood-tone="${escapeHtml(moodTone)}"` : ""} data-decor-name="${escapeHtml(label)}">
             ${inStorage || dead ? `<button
               class="edit-decor-tile-menu-button"
               type="button"
-              data-open-fish-tray-menu="${fish.id}"
-              aria-label="More options for ${fish.name}"
+              data-open-fish-tray-menu="${escapeHtml(fish.id)}"
+              aria-label="More options for ${escapeHtml(fish.name)}"
               title="More options"
             >
               ...
@@ -2198,12 +2198,12 @@ function renderEditFishTray() {
             <button
               class="edit-decor-tile-primary"
               type="button"
-              ${dead ? `data-tray-restore-fish="${fish.id}"` : `data-tray-select-fish="${fish.id}"`}
-              title="${dead ? actionLabel : `Edit ${escapeHtml(fish.name)}`}"
-              aria-label="${dead ? actionLabel : `Edit ${escapeHtml(fish.name)}`}"
+              ${dead ? `data-tray-restore-fish="${escapeHtml(fish.id)}"` : `data-tray-select-fish="${escapeHtml(fish.id)}"`}
+              title="${escapeHtml(dead ? actionLabel : `Edit ${fish.name}`)}"
+              aria-label="${escapeHtml(dead ? actionLabel : `Edit ${fish.name}`)}"
             >
               <span class="edit-decor-tile-surface">
-                <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${label}" />
+                <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${escapeHtml(label)}" />
                 <span class="inventory-tray-label">${!inStorage && !dead ? escapeHtml(fish.name || "Fish") : dead ? (inStorage ? "Dead In Storage" : "Dead In Tank") : "Storage"}</span>
               </span>
             </button>
@@ -2730,14 +2730,14 @@ function renderManagedFishCard(fish, now, options = {}) {
 
   return `
     <article class="fish-card">
-      <img class="fish-thumb" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
+      <img class="fish-thumb" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
       <div class="fish-card-main">
         <div class="fish-card-heading">
           <div class="fish-card-title">
-            <strong>${fish.name}</strong>
-            <div class="fish-species">${displaySpeciesName}</div>
+            <strong>${escapeHtml(fish.name)}</strong>
+            <div class="fish-species">${escapeHtml(displaySpeciesName)}</div>
           </div>
-          ${showDisposeButton ? `<button class="small-button warn" data-dispose-fish="${fish.id}" title="Dispose of ${fish.name}" aria-label="Dispose of ${fish.name}">&#128701;</button>` : ""}
+          ${showDisposeButton ? `<button class="small-button warn" data-dispose-fish="${escapeHtml(fish.id)}" title="Dispose of ${escapeHtml(fish.name)}" aria-label="Dispose of ${escapeHtml(fish.name)}">&#128701;</button>` : ""}
         </div>
         <div class="hearts">${renderHearts(fish.healthUnits, maxHealthUnits)}</div>
         <div class="fish-status-line">${status}</div>
@@ -2760,16 +2760,16 @@ function renderManagedFishCard(fish, now, options = {}) {
       </div>
       <div class="fish-actions fish-card-actions">
         <div class="size-controls">
-          <button class="small-button icon alt" data-size-fish="${fish.id}" data-size-direction="-1" aria-label="Make ${fish.name} smaller">-</button>
+          <button class="small-button icon alt" data-size-fish="${escapeHtml(fish.id)}" data-size-direction="-1" aria-label="Make ${escapeHtml(fish.name)} smaller">-</button>
           <span class="size-badge">${formatFishScale(fish.scale)}</span>
-          <button class="small-button icon alt" data-size-fish="${fish.id}" data-size-direction="1" aria-label="Make ${fish.name} larger">+</button>
+          <button class="small-button icon alt" data-size-fish="${escapeHtml(fish.id)}" data-size-direction="1" aria-label="Make ${escapeHtml(fish.name)} larger">+</button>
         </div>
         <div class="fish-card-button-row">
           <span class="price-tag">${rewardLabel}</span>
-          <button class="small-button" data-copy-fish-size="${fish.id}" title="Use ${formatFishScale(fish.scale)} as the default size for future ${displaySpeciesName.toLowerCase()}s">
+          <button class="small-button" data-copy-fish-size="${escapeHtml(fish.id)}" title="Use ${formatFishScale(fish.scale)} as the default size for future ${escapeHtml(displaySpeciesName.toLowerCase())}s">
             ${usesDefaultScale ? "Default Set" : "Set Default"}
           </button>
-          <button class="small-button alt" data-open-fish="${fish.id}">Details</button>
+          <button class="small-button alt" data-open-fish="${escapeHtml(fish.id)}">Details</button>
           ${dead ? "" : `
             <button class="small-button alt" data-sell-fish="${fish.id}">
               Sell

@@ -877,7 +877,7 @@ test("every Halloween decor file is registered and gets a Halloween tag without 
   assert.equal(c.isHalloweenDecor({ name: "Floating HALLOWEEN Ghost", key: "ghost.png" }), true);
   assert.equal(c.isHalloweenDecor({ name: "Rock", key: "rock.png" }), false);
   assert.equal(manifest.fish.some(item => /_(zombie|skeleton)\./i.test(item.key)), false);
-  for (const key of ["Halloween_Boat.png", "Halloween_Submarine.png"]) assert.ok(manifest.fish.some(item => item.key === key));
+  for (const key of ["Halloween_Boat_5.png", "Halloween_Submarine_5.png"]) assert.ok(manifest.equipment.some(item => item.key === key));
 });
 
 test("Seasonal decor is only listed while its season is active", () => {
@@ -1504,10 +1504,10 @@ test("fish turnaround uses the authored segmented rig timeline", () => {
   );
   assert.doesNotMatch(rendering, /clamp\(\s*segment\.progress\s*\)/);
   assert.doesNotMatch(rendering, /genericTurnRigScaleCompensation/);
-  assert.doesNotMatch(rendering, /FISH_TURN_(?:MIN_SCALE_X|MAX_SCALE_Y)/);
+  assert.match(rendering, /useComplexTurn \? 1 : \(1 - turnAmount \* \(1 - FISH_TURN_MIN_SCALE_X\)\)/);
   assert.match(rendering, /fish\.turnFinalFrameRenderedAt = now/);
   assert.match(motion, /progress >= 1 && Number\(fish\.turnFinalFrameRenderedAt\) > 0/);
-  assert.match(motion, /fish\.turnDurationMs = getFishTurnDurationMs\(fish, species\);\s*fish\.turnFinalFrameRenderedAt = 0/);
+  assert.match(motion, /fish\.turnDurationMs = getFishTurnDurationMs\(fish, species, fish\.turnAnimationMode\);\s*fish\.turnFinalFrameRenderedAt = 0/);
   const predatorsAndMotion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
   assert.match(predatorsAndMotion, /const segmentedTurnaroundActive = effectiveBehavior !== "sucker"/);
   assert.match(predatorsAndMotion, /segmentedTurnaroundProgress < FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS/);
@@ -1798,7 +1798,7 @@ test("Bubble Borough Bank exposes account, reward math, and unlocked milestone v
   assert.match(rendering, /data-open-bubble-bank/);
   assert.match(rendering, /renderBubbleBankPage\(\)/);
   assert.match(customization, /function openBubbleBank\(/);
-  assert.match(customization, /openStoreOverlay\(previousStoreTab, \{ render: false \}\)/);
+  assert.match(customization, /openStoreOverlay\(previousStoreTab, \{ render: false, rememberWebSurfPage: false \}\)/);
   assert.match(html, /id="bubbleBankPage"/);
   assert.match(overlays, /assets\/misc\/bank_logo\.png/);
   assert.match(overlays, /data-bank-order-id/);
@@ -1806,7 +1806,7 @@ test("Bubble Borough Bank exposes account, reward math, and unlocked milestone v
   assert.match(purchases, /entry\.orderId = order\.id/);
   assert.match(html, /function showBubbleBodegaOrder\(/);
   assert.match(html, /is-highlighted/);
-  assert.match(rendering, /showingBank \? "Bubble Borough Bank" : "BubbleBodega Store"/);
+  assert.match(rendering, /showingBank \? "Bubble Borough Bank" : showingLocker \? "Davy Jones' Locker" : "BubbleBodega Store"/);
   assert.match(overlays, /function renderBubbleBankAccount\(/);
   assert.match(overlays, /function renderBubbleBankRewards\(/);
   assert.match(overlays, /function renderBubbleBankMilestones\(/);
@@ -2655,7 +2655,7 @@ test("debug fish behavior viewer previews every action on a stationary specimen"
   assert.match(debug, /function openDebugFishBehaviorPreview/);
   assert.match(debug, /function renderDebugFishBehaviorPreviewFrame/);
   assert.match(debug, /drawFishTurnaroundRig\(context, renderImage/);
-  assert.match(debug, /context\.translate\(viewport\.width \/ 2 \+ pose\.swayX, viewport\.height \/ 2\)/);
+  assert.match(debug, /context\.translate\(viewport\.width \/ 2 \+ pose\.swayX \+ simpleTurnSway, viewport\.height \/ 2\)/);
   assert.match(events, /debugFishBehaviorPreviewButton[\s\S]*openDebugFishBehaviorPreview/);
   assert.match(css, /\.debug-fish-behavior-preview\s*\{[\s\S]*?pointer-events:\s*auto/);
   assert.match(css, /\.debug-fish-behavior-preview-stage[\s\S]*\.debug-fish-behavior-preview-readouts/);
@@ -2709,4 +2709,25 @@ test("Ratio Lock auto-captures only once and persists its saved reference", () =
   assert.doesNotMatch(tools, /initializeLayoutRatioLockFromSettings\(\{ recapture: true \}\)/);
   assert.match(tools, /initializeLayoutRatioLockFromSettings\(\{ save: true \}\)/);
   assert.match(html, /Keeps your saved game layout and proportions/);
+});
+
+test("procedural backgrounds and store thumbnails do not request invented image files", () => {
+  const assets = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const startup = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  assert.match(assets, /key === NONE_BACKGROUND_ASSET_KEY \|\| key === CUSTOM_IMAGE_BACKGROUND_ASSET_KEY[\s\S]*\? ""/);
+  assert.match(startup, /!isCustomBackgroundKey\(item\.key\) && !isLocalImageBackgroundKey\(item\.key\)/);
+  assert.doesNotMatch(html, /function useBackgroundCatalogImages/);
+  assert.doesNotMatch(html, /const candidate = `\$\{match\[1\]\}_bg/);
+});
+
+test("user-authored fish and cart labels are escaped before HTML insertion", () => {
+  const inventory = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const store = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  assert.match(inventory, /<strong>\$\{escapeHtml\(fish\.name\)\}<\/strong>/);
+  assert.match(inventory, /data-decor-name="\$\{escapeHtml\(label\)\}"/);
+  assert.match(store, /alt="\$\{escapeHtml\(fish\.name\)\}"/);
+  assert.match(html, /<strong>\$\{escapeTankazonOrderText\(item\.name\)\}<\/strong>/);
+  assert.match(html, /data-cart-key="\$\{escapeTankazonOrderText\(item\.key\)\}"/);
 });

@@ -791,6 +791,7 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
     fish.diseaseTreatedUntil,
     fish.diseaseLastDamageAt,
     fish.diseaseSource,
+    fish.diseaseRequiresTreatment,
     fish.temporaryImmunityUntil,
     fish.nextDiseaseCheckAt,
     fish.nextDiseaseSpreadCheckAt,
@@ -808,6 +809,7 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
   fish.diseaseTreatedUntil = 0;
   fish.diseaseLastDamageAt = 0;
   fish.diseaseSource = "";
+  fish.diseaseRequiresTreatment = false;
   fish.temporaryImmunityUntil = 0;
   fish.nextDiseaseCheckAt = now + randomDelay(DISEASE_STAGE_CHECK_MIN_MS, DISEASE_STAGE_CHECK_MAX_MS);
   fish.nextDiseaseSpreadCheckAt = now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS);
@@ -830,6 +832,7 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
     fish.diseaseTreatedUntil,
     fish.diseaseLastDamageAt,
     fish.diseaseSource,
+    fish.diseaseRequiresTreatment,
     fish.temporaryImmunityUntil,
     fish.nextDiseaseCheckAt,
     fish.nextDiseaseSpreadCheckAt,
@@ -839,10 +842,10 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
   return previous !== current;
 }
 
-function infectFishWithDisease(fish, source = "conditions", now = Date.now(), initialState = DISEASE_STATE_INCUBATING) {
+function infectFishWithDisease(fish, source = "conditions", now = Date.now(), initialState = DISEASE_STATE_INCUBATING, options = {}) {
   if (
     !fish
-    || !hasIllnessUnlocked()
+    || (!hasIllnessUnlocked() && options.bypassUnlock !== true)
     || isFishDead(fish)
     || isUndeadFish(fish)
     || hasActiveFishDisease(fish)
@@ -856,9 +859,9 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
   fish.diseaseState = stateId === DISEASE_STATE_NONE || stateId === DISEASE_STATE_IMMUNE
     ? DISEASE_STATE_INCUBATING
     : stateId;
-  fish.diseaseType = DISEASE_TYPE_GENERIC;
+  fish.diseaseType = options.type === DISEASE_TYPE_VIRAL ? DISEASE_TYPE_VIRAL : DISEASE_TYPE_GENERIC;
   fish.diseaseInfectedAt = now;
-  fish.diseaseProgressMs = fish.diseaseState === DISEASE_STATE_CARRIER ? 0 : DISEASE_CARRIER_MS;
+  fish.diseaseProgressMs = getDebugDiseaseProgressForStage(fish.diseaseState);
   fish.diseaseLastProgressAt = now;
   fish.diseaseExposureLevel = 0;
   fish.diseaseRecoveryProgressMs = 0;
@@ -872,7 +875,29 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
   fish.lastIllnessSignalAtByType = sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType);
   fish.diseaseLastDamageAt = now;
   fish.diseaseSource = String(source || "conditions");
+  fish.diseaseRequiresTreatment = options.requiresTreatment === true;
   return true;
+}
+
+function maybeSeedDavyJonesViralIllness(fish, now = Date.now()) {
+  if (!fish || isFishDead(fish) || isUndeadFish(fish) || Math.random() >= DAVY_JONES_VIRAL_PURCHASE_CHANCE) {
+    return false;
+  }
+  const infected = infectFishWithDisease(
+    fish,
+    "davy-jones-locker",
+    now,
+    DISEASE_STATE_VISIBLE,
+    { type: DISEASE_TYPE_VIRAL, requiresTreatment: true, bypassUnlock: true }
+  );
+  if (infected) {
+    pushEvent(`${fish.name} arrived showing signs of a viral illness. Treatment is required for recovery.`, now, getCurrentTank(), {
+      type: "illness",
+      fishId: fish.id,
+      recapEligible: false
+    });
+  }
+  return infected;
 }
 
 function getDiseaseTankCleanliness(now = Date.now()) {
@@ -1524,12 +1549,14 @@ function processFishDisease(now = Date.now()) {
         fish.diseaseProgressMs = Math.max(0, Number(fish.diseaseProgressMs) || 0) + diseaseElapsedMs * progressRate;
       }
 
-      if (goodConditions) {
+      const treatmentRequired = fish.diseaseRequiresTreatment === true;
+      const treatmentReceived = (Number(fish.diseaseTreatedUntil) || 0) > 0;
+      if (goodConditions && (!treatmentRequired || treatmentReceived)) {
         fish.diseaseRecoveryProgressMs = Math.min(
           DISEASE_RECOVERY_REQUIRED_MS,
           (Number(fish.diseaseRecoveryProgressMs) || 0) + diseaseElapsedMs * (treated ? DISEASE_RECOVERY_TREATED_MULTIPLIER : 1)
         );
-      } else {
+      } else if (!goodConditions) {
         fish.diseaseRecoveryProgressMs = Math.max(0, (Number(fish.diseaseRecoveryProgressMs) || 0) - diseaseElapsedMs * 0.45);
       }
 

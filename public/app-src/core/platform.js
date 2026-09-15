@@ -227,8 +227,8 @@ function resolveFoodAndMedAssetPath(fileName) {
 function resolveDispenserAssetPath(fileName) {
   const normalizedFileName = typeof fileName === "string" && fileName.trim()
     ? fileName.trim().replace(/^\/+/, "")
-    : "pelletdispenser.png";
-  return resolveAppUrl(`assets/dispenser/${normalizedFileName}?v=${AUTO_DISPENSER_ASSET_VERSION}`);
+    : "Food_Dispenser.png";
+  return resolveAppUrl(`assets/equipment/dispenser/${normalizedFileName}?v=${AUTO_DISPENSER_ASSET_VERSION}`);
 }
 
 function normalizeCatalogTheme(value) {

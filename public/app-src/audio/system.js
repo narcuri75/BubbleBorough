@@ -1109,6 +1109,14 @@ function syncToolbarFastTooltipExperiment() {
     return;
   }
 
+  // The tank stage is transformed to fit the viewport. A fixed-position
+  // tooltip inside that transformed subtree uses the stage's coordinate space,
+  // which offsets labels away from the toolbar button they describe. Keep the
+  // shared tooltip at document level so viewport coordinates line up.
+  if (dom.toolbarFastTooltip && dom.toolbarFastTooltip.parentElement !== document.body) {
+    document.body.append(dom.toolbarFastTooltip);
+  }
+
   const enabled = isToolbarFastTooltipExperimentEnabled();
   const buttons = dock.querySelectorAll(".dock-button, .toolbar-action-menu-button");
   for (const button of buttons) {

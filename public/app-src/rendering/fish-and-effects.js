@@ -1938,6 +1938,9 @@ function drawFish(now, layer = null, options = {}) {
         : spriteHeight / 2;
       tankContext.save();
       tankContext.globalAlpha *= clamp(alpha, 0, 1);
+      if (isHalloweenModeActive(now)) {
+        tankContext.globalAlpha *= 0.55;
+      }
       if (suckerViewTransition) {
         tankContext.translate(0, surfaceFlipPivotY);
         tankContext.scale(1, Math.max(SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y, scaleY));

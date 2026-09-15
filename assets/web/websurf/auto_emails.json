@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "interpolation": "{{variableName}}",
+  "templates": {
+    "welcome_to_websurf": {
+      "sender": "welcome@websurf.swim",
+      "subject": "Welcome to WebSurf!",
+      "preview": "Your new WebSurf email address is ready.",
+      "body": [
+        { "type": "heading", "text": "Welcome to WebSurf!" },
+        { "type": "text", "text": "Your email address {{emailAddress}} has been created." },
+        { "type": "text", "text": "This inbox receives BubbleBodega order confirmations, Bubble Borough Bank statements and rewards, and messages from sites you discover while browsing WebSurf." },
+        { "type": "guide_section", "icon": "assets/icons/email.png", "title": "Your Inbox", "text": "New messages arrive here automatically as a result of activity in Bubble Borough." },
+        { "type": "guide_section", "icon": "assets/icons/bell.png", "title": "Unread Mail", "text": "The notification badge on the WebSurf toolbar icon shows when unread mail is waiting for you." }
+      ]
+    },
+    "welcome_to_bubble_borough": {
+      "sender": "welcome@websurf.swim",
+      "subject": "Welcome to Bubble Borough",
+      "preview": "Your aquarium is ready. Let's get you started.",
+      "body": [
+        { "type": "heading", "text": "Welcome to Bubble Borough!" },
+        { "type": "text", "text": "You have an empty tank and {{coin:startingCoins}}. Time to bring it to life." },
+        { "type": "guide_section", "icon": "assets/icons/fish_care.png", "title": "Get Started", "text": "Purchased fish are automatically added to your active tank." },
+        {
+          "type": "link_row",
+          "links": [
+            { "label": "Buy a Fish", "icon": "assets/icons/fish_box.png", "destination": "store", "section": "fish" },
+            { "label": "Buy Food", "icon": "assets/icons/feed_fish.png", "destination": "store", "section": "food" },
+            { "label": "Buy Decor", "icon": "assets/icons/decor_box.png", "destination": "store", "section": "decor" }
+          ]
+        },
+        { "type": "guide_section", "icon": "assets/icons/pizza.png", "title": "Care for Your Fish", "text": "Feed your fish twice a day and keep their needs met. Neglected fish can become unhealthy and eventually die." },
+        { "type": "guide_section", "icon": "assets/icons/coin.png", "title": "Earn Fish Coins", "text": "Care for your fish, keep tanks clean, complete milestones, and check your daily recap to earn more coins." },
+        {
+          "type": "feature_list",
+          "icon": "assets/icons/edit_tank.png",
+          "title": "Edit Tank",
+          "items": [
+            { "icon": "assets/icons/fish_box.png", "label": "Fish", "text": "View fish in your tank or storage." },
+            { "icon": "assets/icons/decor_box.png", "label": "Decor", "text": "Add, move, recolor, configure, and store decor. Save or load layouts." },
+            { "icon": "assets/icons/tools.png", "label": "Equipment", "text": "Manage automatic feeders, remote-control vehicles, and other equipment." },
+            { "icon": "assets/icons/aquarium_overview.png", "label": "Background", "text": "Choose an image, solid color, gradient, or animated background. Use purchased images or upload your own. Animated backgrounds offer several colors to choose from." },
+            { "icon": "assets/gravel/pebble_1.png", "label": "Gravel", "text": "Customize the back, middle, and front gravel colors. The front layer is the most visible." }
+          ]
+        },
+        { "type": "guide_section", "icon": "assets/icons/WebSurf_icon.png", "title": "WebSurf", "text": "Browse WebSurf to shop at BubbleBodega, manage your Bubble Borough Bank account, and discover new sites." }
+      ]
+    },
+    "milestone_reward": {
+      "sender": "rewards@bubbleboroughbank.swim",
+      "subject": "Milestone Unlocked: {{milestoneName}}",
+      "preview": "You earned {{coin:reward}}.",
+      "body": [
+        { "type": "text", "text": "For \"{{milestoneRequirement}}\", you have unlocked the {{milestoneName}} milestone." },
+        { "type": "text", "text": "{{coin:reward}} have been deposited into your account." },
+        { "type": "summary", "label": "New balance", "value": "{{coin:balance}}" }
+      ],
+      "action": {
+        "label": "View Milestone",
+        "destination": "bank",
+        "section": "milestones",
+        "targetField": "milestoneId",
+        "highlight": true
+      }
+    },
+    "bubblebodega_order_confirmation": {
+      "sender": "orders@bubblebodega.swim",
+      "subject": "Order Confirmed: {{itemQuantity}} Items",
+      "subjectSingular": "Order Confirmed: 1 Item",
+      "preview": "Your order has been completed and delivered.",
+      "body": [
+        { "type": "text", "text": "Your order has been completed and delivered to your inventory." },
+        { "type": "item_list", "source": "items", "thumbnailField": "thumbnail", "nameField": "itemName", "quantityField": "quantity", "itemIdField": "itemId" },
+        { "type": "summary", "label": "Total", "value": "{{coin:total}}" }
+      ],
+      "action": {
+        "label": "View Order",
+        "destination": "store",
+        "section": "purchase-history",
+        "targetField": "orderId",
+        "highlight": true
+      }
+    },
+    "bubblebodega_rescue_offer": {
+      "sender": "offers@bubblebodega.swim",
+      "subject": "A Fresh Start, On Us",
+      "preview": "A Goldfish and one bottle of Basic Fish Food are waiting for you—free.",
+      "body": [
+        { "type": "heading", "text": "Let’s get your aquarium swimming again" },
+        { "type": "text", "text": "BubbleBodega has reserved a complimentary Goldfish and one bottle of Basic Fish Food for your aquarium." },
+        { "type": "text", "text": "Use the offer below to add the food to your cart and view your free Goldfish. This email link can be used once; BubbleBodega will send a new offer if your aquarium needs another fresh start later." },
+        { "type": "status", "label": "Promotional price", "value": "Free" }
+      ],
+      "action": {
+        "label": "Claim Free Goldfish + Food",
+        "destination": "rescue-offer"
+      }
+    },
+    "weekly_bank_statement": {
+      "sender": "statements@bubbleboroughbank.swim",
+      "subject": "Weekly Statement: {{dateRange}}",
+      "preview": "{{transactionCount}} transactions • Balance: {{coin:balance}}",
+      "body": [
+        { "type": "transaction_list", "source": "transactions", "dateField": "date", "amountField": "signedAmount", "descriptionField": "description" },
+        { "type": "summary", "label": "Money in", "value": "+{{coin:income}}" },
+        { "type": "summary", "label": "Money out", "value": "-{{coin:spending}}" },
+        { "type": "summary", "label": "Ending balance", "value": "{{coin:balance}}" }
+      ],
+      "action": { "label": "View Account", "destination": "bank", "section": "account" }
+    },
+    "proteus_asset_fulfillment": {
+      "sender": "Fulfillment@ProteusBiodyne.swim",
+      "subject": "Asset Fulfillment Complete",
+      "preview": "Your BubbleBodega order has been completed to specification.",
+      "body": [
+        { "type": "text", "text": "Proteus Biodyne has completed fulfillment of the asset requested through the BubbleBodega vendor platform." },
+        { "type": "text", "text": "The asset has been created to the submitted specifications and released for customer use." },
+        { "type": "text", "text": "All sales are final. No refunds or exchanges will be issued. The customer assumes all responsibility and liability associated with possession, handling, use, or disposition of the fulfilled asset." },
+        { "type": "text", "text": "No further action is required." },
+        { "type": "status", "label": "Order status", "value": "Complete" }
+      ],
+      "action": { "label": "View Purchase", "destination": "store", "section": "purchase-history", "targetField": "orderId", "highlight": true }
+    },
+    "proteus_engineered_specimen_design": {
+      "sender": "designer@proteusbiodyne.swim",
+      "subject": "Engineered Specimen Authorization",
+      "preview": "{{designPreview}}",
+      "body": [
+        { "type": "proteus_authorization" }
+      ],
+      "action": { "label": "Configure Specimen", "destination": "proteus-designer" }
+    },
+    "proteus_engineered_specimen_fulfillment": {
+      "sender": "Fulfillment@ProteusBiodyne.swim",
+      "subject": "Engineered Aquatic Specimen Fulfillment Complete",
+      "preview": "Your Engineered Aquatic Specimen has been completed to specification.",
+      "body": [
+        { "type": "heading", "text": "Engineered Aquatic Specimen Fulfillment Complete" },
+        { "type": "text", "text": "Proteus Biodyne has completed fulfillment of your Engineered Aquatic Specimen through the BubbleBodega vendor platform." },
+        { "type": "text", "text": "Your Engineered Aquatic Specimen has been created to the submitted specifications and delivered directly into your aquarium." },
+        { "type": "status", "label": "Order status", "value": "Complete" }
+      ],
+      "action": { "label": "View Purchase", "destination": "store", "section": "purchase-history", "targetField": "orderId", "highlight": true }
+    }
+  }
+}

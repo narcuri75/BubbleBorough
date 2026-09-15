@@ -316,6 +316,12 @@ function handleWalletTransactionMenuDocumentClick(event) {
   renderWalletTransactionMenu();
 }
 
+function handleWalletTransactionMenuClick(event) {
+  if (!(event.target instanceof Element) || !event.target.closest("[data-open-bubble-bank]")) return;
+  runtime.walletTransactionMenuOpen = false;
+  openBubbleBank("account");
+}
+
 function handleToolbarActionMenuKeyDown(event) {
   if (event.key !== "Escape") {
     return;
@@ -583,6 +589,14 @@ function bindEvents() {
     }
 
     const key = keyRaw.toLowerCase();
+    if (runtime.equipmentEditMode && hasAutoDispenserInstalled() && !event.target?.closest?.("button, a, [role=button], [role=tab]")) {
+      if (["ArrowUp", "ArrowDown", "z", "x"].includes(keyRaw) || ["z", "x"].includes(key)) {
+        event.preventDefault();
+        const delta = keyRaw === "ArrowUp" || key === "z" ? 1 : -1;
+        setAutoDispenserTankLayer((state.autoDispenser?.tankLayer || AUTO_DISPENSER_DEFAULT_TANK_LAYER) + delta);
+        return;
+      }
+    }
     const activeManualMachinery = getActiveManualMachinery();
     if (activeManualMachinery && !event.target?.closest?.("button, a, [role=button], [role=tab]")) {
       if (handleManualMachineryActionKey(activeManualMachinery, event)) return;
@@ -738,7 +752,11 @@ function bindEvents() {
   document.addEventListener("pointercancel", finishSoundRangeDrag, true);
   document.addEventListener("click", handleToolbarActionMenuDocumentClick);
   document.addEventListener("click", handleWalletTransactionMenuDocumentClick);
+  document.addEventListener("click", handleWebPageNavigation);
+  document.addEventListener("input", handleProteusDesignerInputEvent);
+  document.addEventListener("change", handleProteusDesignerChangeEvent);
   dom.toolbarWallet?.addEventListener("click", toggleWalletTransactionMenu);
+  dom.walletTransactionMenu?.addEventListener("click", handleWalletTransactionMenuClick);
   document.addEventListener("keydown", handleToolbarActionMenuKeyDown);
   dom.loadingOverlay?.addEventListener("click", (event) => {
     if (dom.loadingOverlay?.classList.contains("is-error")) {
@@ -1261,13 +1279,17 @@ function bindEvents() {
       && dom.storeOverlay.classList.contains("is-open")
     );
     if (storeActuallyVisible) {
+      if (runtime.bubbleBankOpen === true) {
+        openStoreOverlay(runtime.storeTab || "food");
+        return;
+      }
       closeStoreOverlay();
       return;
     }
     if (openTutorialStoreForCurrentStage()) {
       return;
     }
-    openStoreOverlay("food");
+    openWebSurfSessionPage();
   });
   dom.toolbarTab?.addEventListener("click", () => toggleToolbarCollapsed());
   dom.displayTab?.addEventListener("click", () => toggleDisplayCollapsed());
@@ -1497,6 +1519,9 @@ function bindEvents() {
       closeStoreOverlay();
     }
   });
+  dom.bubbleBankPage?.addEventListener("click", handleBubbleBankPageClick);
+  dom.bubbleBankPage?.addEventListener("change", handleBubbleBankPageChange);
+  dom.davyJonesLockerPage?.addEventListener("click", handleDavyJonesLockerPageClick);
   dom.closeUtilityOverlay?.addEventListener("click", () => {
     const wasOpen = runtime.utilityOverlayOpen;
     requestCloseUtilityOverlay();
@@ -2042,6 +2067,21 @@ function bindEvents() {
         if (dom.editEquipmentTrayScroller) dom.editEquipmentTrayScroller.scrollLeft = 0;
         renderEditEquipmentTray();
       }
+      return;
+    }
+    if (event.target.closest("[data-tray-select-dispenser]")) {
+      if (state.autoDispenser?.stored && !state.autoDispenser?.installed) {
+        deployAutoDispenser(getCurrentTank(), Date.now());
+        return;
+      }
+      runtime.editTankMode = false;
+      runtime.equipmentEditMode = true;
+      showToast("Drag the pellet dispenser horizontally along the tank top. Layer can be adjusted with Up/Down.");
+      renderUi(Date.now(), { full: false });
+      return;
+    }
+    if (event.target.closest("[data-tray-store-dispenser]")) {
+      recallAutoDispenser(Date.now());
       return;
     }
     const menuButton = event.target.closest("[data-open-equipment-menu]");
@@ -3104,6 +3144,15 @@ function bindEvents() {
       return;
     }
 
+    if (runtime.equipmentEditMode && hasAutoDispenserInstalled() && pointInSimpleBounds(point.x, point.y, getAutoDispenserHitBounds())) {
+      runtime.autoDispenserDragState = { pointerId: event.pointerId };
+      runtime.pointerDown = true;
+      dom.tankStage.setPointerCapture(event.pointerId);
+      rememberTankPointerCapture(event.pointerId);
+      runtime.suppressNextTankClick = true;
+      return;
+    }
+
     const now = Date.now();
     const hitMachinery = findMachineryAtPoint(point.x, point.y, now);
     if (hitMachinery) {
@@ -3280,6 +3329,11 @@ function bindEvents() {
       if (point) {
         updateDraggedDecor(point);
       }
+      return;
+    }
+
+    if (runtime.autoDispenserDragState && point) {
+      setAutoDispenserPositionFromPoint(point, Date.now());
       return;
     }
 
@@ -3637,6 +3691,10 @@ function bindEvents() {
     }
     if (runtime.dragState) {
       finalizeDecorDrag();
+    }
+    if (runtime.autoDispenserDragState) {
+      runtime.autoDispenserDragState = null;
+      saveState();
     }
     if (runtime.fishDragState) {
       finalizeFishDrag();
@@ -4095,6 +4153,7 @@ function normalizeFoodAndMedCatalog(payload) {
       }
       entries[id] = {
         id,
+        seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
         name: typeof entry.name === "string" && entry.name.trim()
           ? entry.name.trim()
           : titleFromFile(id),
@@ -4136,6 +4195,7 @@ function normalizeFoodAndMedCatalog(payload) {
       }
       entries[id] = {
         id,
+        seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
         name: typeof entry.name === "string" && entry.name.trim()
           ? entry.name.trim()
           : titleFromFile(id),
@@ -4184,9 +4244,11 @@ function normalizeBackgroundMeta(payload) {
     }
 
     map[key] = {
+      seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
       name: typeof entry.name === "string" && entry.name.trim()
         ? entry.name.trim()
         : titleFromFile(key),
+      description: typeof entry.description === "string" ? entry.description.trim() : "",
       cost: Math.max(0, Math.floor(Number(entry.cost) || 0)),
       defaultUnlocked: entry.defaultUnlocked === true,
       sortOrder: Number.isFinite(entry.sortOrder) ? Number(entry.sortOrder) : 999
@@ -4216,9 +4278,11 @@ function normalizeDecorMeta(payload) {
     }
 
     map[key] = {
+      seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
       name: typeof entry.name === "string" && entry.name.trim()
         ? entry.name.trim()
         : titleFromFile(key),
+      description: typeof entry.description === "string" ? entry.description.trim() : "",
       theme: isHalloweenDecor({ ...entry, key }) ? "Halloween" : normalizeCatalogTheme(entry.theme),
       cost: Number.isFinite(entry.cost) ? entry.cost : 8,
       width: Number.isFinite(entry.width) ? entry.width : 140,
@@ -4729,6 +4793,7 @@ function buildBackgroundCatalog(items, metaMap = {}) {
         key,
         path: item?.path || resolveAppUrl(`assets/backgrounds/${encodeURIComponent(key)}`),
         name: meta.name || titleFromFile(key),
+        description: meta.description || "",
         cost: Math.max(0, Math.floor(Number(meta.cost) || 0)),
         defaultUnlocked: meta.defaultUnlocked === true,
         sortOrder: Number.isFinite(meta.sortOrder) ? Number(meta.sortOrder) : 999
@@ -5080,6 +5145,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         // added to the manifest they join the existing layer resolver.
         expectedCaveCompanionPaths,
         name: meta.name || titleFromFile(group.base.key),
+        description: meta.description || "",
         theme: isHalloweenDecor({ ...meta, key: group.base.key }) ? "Halloween" : normalizeCatalogTheme(meta.theme),
         categories: deriveDecorCategories(meta, group.base.key),
         cost: Number.isFinite(meta.cost) ? meta.cost : 8,
@@ -5410,10 +5476,12 @@ function buildVirtualFishCatalogEntries() {
   return [
     {
       id: CUSTOM_FISH_SHOP_KEY,
-      name: "Custom Fish",
+      name: "Engineered Aquatic Specimen",
+      seller: "Proteus Biodyne",
       theme: "Custom",
       waterType: "freshwater",
       cost: CUSTOM_FISH_COST,
+      unlockRequirement: "borough-legends",
       mealCoins: 0,
       mealCoinOverride: null,
       asset: CUSTOM_FISH_SHOP_IMAGE,
@@ -5421,8 +5489,15 @@ function buildVirtualFishCatalogEntries() {
       zombieAssetVariants: [],
       skeletonAssetVariants: [],
       fallbackAsset: CUSTOM_FISH_SHOP_IMAGE,
-      assetFolder: "misc",
-      description: "Upload an image, name a fish type, choose its size, and pick a behavior profile.",
+      assetFolder: "web/proteus",
+      description: "A bespoke biological design service from PROTEUS BIODYNE, developed for clients seeking an organism tailored to precise visual, behavioral, and environmental requirements.",
+      aboutParagraphs: [
+        "Purchase the commission first. Proteus will email you a secure design link, you will finalize the specimen through the Proteus designer portal, and the finished fish will be delivered directly into your tank.",
+        "Submit your preferred appearance, define the intended scale, and select a behavioral profile. Our adaptive biology platform will produce a unique aquatic specimen engineered to your specifications while maintaining the stability, viability, and behavioral integrity expected of every PROTEUS BIODYNE organism.",
+        "No two commissions are required to be alike. Each specimen is treated as an individual biological program, developed, stabilized, and cleared for delivery to your aquarium."
+      ],
+      aboutAttribution: "PROTEUS BIODYNE",
+      aboutTagline: "Adaptive Biology. Engineered.",
       width: CUSTOM_FISH_DEFAULT_WIDTH,
       cycleSeconds: 26,
       bobSpeed: 1.2,
@@ -5518,6 +5593,54 @@ function normalizeCustomFishBehaviorProfileId(value) {
     || "";
 }
 
+function normalizeCustomFishDiet(value) {
+  return String(value || "").trim().toLowerCase() === "chum" ? "chum" : "pellet";
+}
+
+function getDefaultCustomFishDiet(profile) {
+  return isChumOnlyFish(profile) ? "chum" : "pellet";
+}
+
+function normalizeCustomFishActivityRegulation(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["calm", "standard", "reactive"].includes(normalized) ? normalized : "";
+}
+
+function getCustomFishActivitySwimStyle(value, fallback = "steady") {
+  const regulation = normalizeCustomFishActivityRegulation(value);
+  if (regulation === "calm") return "peaceful";
+  if (regulation === "reactive") return "sporadic";
+  if (regulation === "standard") return "steady";
+  return ["peaceful", "steady", "sporadic"].includes(fallback) ? fallback : "steady";
+}
+
+function getCustomFishActivityRegulationDisplay(value, profile) {
+  const override = normalizeCustomFishActivityRegulation(value);
+  if (override) return override;
+  if (profile?.swimStyle === "peaceful") return "calm";
+  if (profile?.swimStyle === "sporadic") return "reactive";
+  return "standard";
+}
+
+function normalizeCustomFishSwimZone(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["full", "upper", "midwater", "lower"].includes(normalized) ? normalized : "";
+}
+
+function getCustomFishSwimZoneDisplay(value, profile) {
+  const override = normalizeCustomFishSwimZone(value);
+  if (override) return override;
+  const locomotion = FISH_LOCOMOTION_PROFILES[profile?.id] || FISH_LOCOMOTION_PROFILE_DEFAULT;
+  if (locomotion.preferredY <= 0.35) return "upper";
+  if (locomotion.preferredY >= 0.7) return "lower";
+  return locomotion.verticalSpread >= 0.68 ? "full" : "midwater";
+}
+
+function normalizeCustomFishSocialAffinity(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["independent", "schooling"].includes(normalized) ? normalized : "adaptive";
+}
+
 function sanitizeCustomFishName(value, fallback = "Custom Fish") {
   const trimmed = String(value || "").replace(/\s+/g, " ").trim();
   if (trimmed) {
@@ -5537,7 +5660,7 @@ function formatCustomFishBehaviorOption(profile) {
 function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", dimensions = {}) {
   const naturalWidth = Math.max(1, Math.round(Number(dimensions.width) || CUSTOM_FISH_DEFAULT_WIDTH));
   const naturalHeight = Math.max(1, Math.round(Number(dimensions.height) || CUSTOM_FISH_DEFAULT_WIDTH));
-  openCustomAssetEditorOverlay("fish", {
+  const pending = {
     dataUrl,
     flipX: false,
     rotation: 0,
@@ -5547,8 +5670,20 @@ function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", d
     naturalWidth,
     naturalHeight,
     behaviorProfileId: normalizeCustomFishBehaviorProfileId(""),
+    diet: getDefaultCustomFishDiet(getDefaultCustomFishBehaviorProfile()),
+    activityRegulation: "",
+    swimZone: "",
+    socialAffinity: "adaptive",
     turnAnimation: "simple"
-  });
+  };
+  const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
+  if (runtime.proteusDesignerOpen === true && beginEngineeredAquaticSpecimenDesign(activeOrderId)) {
+    runtime.pendingCustomFishUpload = pending;
+    runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
+    renderStoreOverlay();
+    return;
+  }
+  openCustomAssetEditorOverlay("fish", pending);
 }
 
 function getCustomAssetTypeDef(type) {
@@ -5575,6 +5710,13 @@ function ensureCustomAssetCost(type) {
   const typeDef = getCustomAssetTypeDef(type);
   if (!typeDef || Math.max(0, Number(typeDef.cost) || 0) <= 0) {
     return true;
+  }
+  if (type === "fish") {
+    const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
+    if (runtime.proteusDesignerOpen === true
+      && ["design-required", "specimen-configured"].includes(getEngineeredAquaticSpecimenOrderStatus(activeOrderId))) {
+      return true;
+    }
   }
   if (state.coins >= typeDef.cost) {
     return true;
@@ -5635,7 +5777,9 @@ async function importCustomAssetFromPicker(type, step = "primary", event) {
   const stepDef = typeDef?.pickerSteps?.[step];
   const input = event?.currentTarget instanceof HTMLInputElement
     ? event.currentTarget
-    : getCustomAssetInput(type, step);
+    : event?.target instanceof HTMLInputElement
+      ? event.target
+      : getCustomAssetInput(type, step);
   const file = input?.files?.[0];
   if (!typeDef || !stepDef || !file) {
     return;
@@ -5678,7 +5822,10 @@ async function savePendingCustomAsset(type) {
       showToast(validation.message);
     }
     if (validation?.focusSelector) {
-      dom.utilityOverlayBody?.querySelector(validation.focusSelector)?.focus?.();
+      const focusRoot = runtime.proteusDesignerOpen === true
+        ? document.getElementById("proteusDesignerRoute")
+        : dom.utilityOverlayBody;
+      focusRoot?.querySelector(validation.focusSelector)?.focus?.();
     }
     return false;
   }
@@ -5707,9 +5854,9 @@ function getPendingCustomFishTransform(pending) {
 
 function updatePendingCustomFishTransformControls(pending) {
   const rotation = sanitizeCustomFishRotation(pending?.rotation);
-  const rotationLabels = dom.utilityOverlayBody?.querySelectorAll("[data-custom-fish-rotation-label]") || [];
-  const rotationSlider = dom.utilityOverlayBody?.querySelector("[data-custom-fish-rotation-input]");
-  const flipToggle = dom.utilityOverlayBody?.querySelector("[data-custom-fish-flip-toggle]");
+  const rotationLabels = document.querySelectorAll("[data-custom-fish-rotation-label]");
+  const rotationSlider = document.querySelector("#proteusDesignerRoute [data-custom-fish-rotation-input], #utilityOverlay [data-custom-fish-rotation-input]");
+  const flipToggle = document.querySelector("#proteusDesignerRoute [data-custom-fish-flip-toggle], #utilityOverlay [data-custom-fish-flip-toggle]");
 
   for (const label of rotationLabels) {
     label.textContent = `${rotation} deg`;
@@ -5766,9 +5913,9 @@ function updatePendingCustomFishPreview() {
   }
 
   const width = clamp(Number(pending.width) || CUSTOM_FISH_DEFAULT_WIDTH, CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH);
-  const labels = dom.utilityOverlayBody?.querySelectorAll("[data-custom-fish-size-label]") || [];
-  const preview = dom.utilityOverlayBody?.querySelector("[data-custom-fish-preview]");
-  const slider = dom.utilityOverlayBody?.querySelector("[data-custom-fish-size-input]");
+  const labels = document.querySelectorAll("[data-custom-fish-size-label]");
+  const preview = document.querySelector("#proteusDesignerRoute [data-custom-fish-preview], #utilityOverlay [data-custom-fish-preview]");
+  const slider = document.querySelector("#proteusDesignerRoute [data-custom-fish-size-input], #utilityOverlay [data-custom-fish-size-input]");
   for (const label of labels) {
     label.textContent = `${Math.round(width)} px`;
   }
@@ -5844,6 +5991,10 @@ function sanitizeCustomFishAssetEntry(entry, key) {
     imageRefId,
     width: clamp(Math.round(Number(entry.width) || CUSTOM_FISH_DEFAULT_WIDTH), CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
     behaviorProfileId,
+    diet: normalizeCustomFishDiet(entry.diet),
+    activityRegulation: normalizeCustomFishActivityRegulation(entry.activityRegulation),
+    swimZone: normalizeCustomFishSwimZone(entry.swimZone),
+    socialAffinity: normalizeCustomFishSocialAffinity(entry.socialAffinity),
     turnAnimation: String(entry.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
@@ -5867,17 +6018,24 @@ function sanitizeCustomFishAssets(assets) {
 function buildCustomFishCatalogEntry(asset) {
   const profile = getCustomFishBehaviorProfile(asset.behaviorProfileId) || getDefaultCustomFishBehaviorProfile();
   const imagePath = getStoredImageSource(asset, "runtimePath", "path", CUSTOM_FISH_SHOP_IMAGE);
-  const swimStyle = typeof profile?.swimStyle === "string" && profile.swimStyle.trim()
+  const inheritedSwimStyle = typeof profile?.swimStyle === "string" && profile.swimStyle.trim()
     ? profile.swimStyle
     : "steady";
+  const activityRegulation = normalizeCustomFishActivityRegulation(asset.activityRegulation);
+  const swimStyle = getCustomFishActivitySwimStyle(activityRegulation, inheritedSwimStyle);
   const defaults = SWIM_STYLE_DEFAULTS[swimStyle] || SWIM_STYLE_DEFAULTS.steady;
-  const speedMin = Number.isFinite(Number(profile?.speedMin)) ? Number(profile.speedMin) : defaults.speedMin;
-  const speedMax = Number.isFinite(Number(profile?.speedMax)) ? Number(profile.speedMax) : defaults.speedMax;
+  const speedMin = activityRegulation
+    ? defaults.speedMin
+    : (Number.isFinite(Number(profile?.speedMin)) ? Number(profile.speedMin) : defaults.speedMin);
+  const speedMax = activityRegulation
+    ? defaults.speedMax
+    : (Number.isFinite(Number(profile?.speedMax)) ? Number(profile.speedMax) : defaults.speedMax);
   const cleanupMinMs = Math.max(60 * 1000, Math.floor(Number(profile?.cleanupMinMs) || 12 * 60 * 1000));
   const cleanupMaxMs = Math.max(cleanupMinMs + 60 * 1000, Math.floor(Number(profile?.cleanupMaxMs) || 24 * 60 * 1000));
   const species = {
     id: asset.key,
     name: asset.name || "Custom Fish",
+    seller: "Proteus Biodyne",
     theme: "Custom",
     waterType: profile?.waterType || "freshwater",
     cost: CUSTOM_FISH_COST,
@@ -5896,13 +6054,14 @@ function buildCustomFishCatalogEntry(asset) {
     cycleSeconds: clamp(Number(profile?.cycleSeconds) || 26, 12, 60),
     bobSpeed: clamp(Number(profile?.bobSpeed) || 1.2, 0.6, 2.2),
     swimStyle,
-    speedMode: profile?.speedMode === "dynamic" ? "dynamic" : defaults.speedMode,
+    speedMode: activityRegulation ? defaults.speedMode : (profile?.speedMode === "dynamic" ? "dynamic" : defaults.speedMode),
     speedMin: clamp(speedMin, 0.00005, 0.095),
     speedMax: clamp(speedMax, Math.max(0.00005, speedMin), 0.095),
-    targetMinMs: Math.max(800, Math.floor(Number(profile?.targetMinMs) || defaults.targetMinMs)),
-    targetMaxMs: Math.max(1400, Math.floor(Number(profile?.targetMaxMs) || defaults.targetMaxMs)),
+    targetMinMs: Math.max(800, Math.floor(activityRegulation ? defaults.targetMinMs : (Number(profile?.targetMinMs) || defaults.targetMinMs))),
+    targetMaxMs: Math.max(1400, Math.floor(activityRegulation ? defaults.targetMaxMs : (Number(profile?.targetMaxMs) || defaults.targetMaxMs))),
     behavior: typeof profile?.behavior === "string" && profile.behavior.trim() ? profile.behavior : "free",
-    diet: typeof profile?.diet === "string" && profile.diet.trim() ? profile.diet : "pellet",
+    diet: normalizeCustomFishDiet(asset.diet),
+    chumOnly: normalizeCustomFishDiet(asset.diet) === "chum",
     type: "Fish",
     desperationPredator: false,
     renderMotionProfile: "",
@@ -5929,6 +6088,10 @@ function buildCustomFishCatalogEntry(asset) {
     defaultNames: [asset.name || "Custom Fish"],
     customAsset: true,
     behaviorProfileId: profile?.id || "",
+    behaviorSpeciesId: profile?.id || "",
+    activityRegulation,
+    swimZone: normalizeCustomFishSwimZone(asset.swimZone),
+    socialAffinity: normalizeCustomFishSocialAffinity(asset.socialAffinity),
     turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
   species.mealCoins = resolveSpeciesMealCoins(species);
@@ -6135,6 +6298,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
 
   const normalized = {
     id,
+    seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
     name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : titleFromFile(id),
     theme: normalizeCatalogTheme(entry.theme),
     waterType: normalizeWaterType(entry.waterType, inferWaterTypeFromTheme(entry.theme, "freshwater")),
@@ -6151,6 +6315,8 @@ function normalizeFishDefinition(entry, index, options = {}) {
     description: typeof entry.description === "string" && entry.description.trim()
       ? entry.description.trim()
       : "A custom fish from your fish catalog.",
+    aboutAttribution: typeof entry.aboutAttribution === "string" ? entry.aboutAttribution.trim() : "",
+    aboutTagline: typeof entry.aboutTagline === "string" ? entry.aboutTagline.trim() : "",
     width: clamp(Number(entry.width) || 128, FISH_CATALOG_WIDTH_MIN, FISH_CATALOG_WIDTH_MAX),
     displayWidth: clamp(Number(entry.displayWidth) || Number(entry.width) || 128, FISH_CATALOG_WIDTH_MIN, FISH_CATALOG_WIDTH_MAX),
     cycleSeconds: clamp(Number(entry.cycleSeconds) || 26, 12, 60),
@@ -6191,6 +6357,11 @@ function normalizeFishDefinition(entry, index, options = {}) {
     dislikedTypes: normalizeStringList(entry.dislikedTypes || entry.dislikes || entry.dislikedFishTypes)
       .map((value) => value.toLowerCase()),
     caveEnabled: entry.caveEnabled !== false,
+    davyMutation: entry.davyMutation === true,
+    davyBehaviorLabel: typeof entry.davyBehaviorLabel === "string" ? entry.davyBehaviorLabel.trim() : "",
+    davyBehaviorSummary: typeof entry.davyBehaviorSummary === "string" ? entry.davyBehaviorSummary.trim() : "",
+    davyTraits: normalizeStringList(entry.davyTraits),
+    storeBackgroundImage: typeof entry.storeBackgroundImage === "string" ? entry.storeBackgroundImage.trim() : "",
     defaultNames: Array.isArray(entry.defaultNames) && entry.defaultNames.length
       ? entry.defaultNames.map((name) => String(name).trim()).filter(Boolean)
       : []

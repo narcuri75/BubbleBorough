@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260911-ratio-lock-r1" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260914-websurf-r1" />
 </head>
 
 <body>
@@ -427,6 +427,52 @@
 
             <section id="storeOverlay" class="store-overlay tankazon-store" hidden aria-label="BubbleBodega Store">
               <div class="store-panel tankazon-panel">
+                <nav class="webpage-tab-strip" aria-label="Web pages">
+                  <div class="webpage-tab-list">
+                    <button type="button" class="webpage-tab" data-webpage-destination="home" aria-label="Open the browser home page">
+                      <img src="assets/icons/browser_home.png" alt="" aria-hidden="true" />
+                      <span>Home</span>
+                    </button>
+                    <button type="button" class="webpage-tab is-active" data-webpage-destination="store" aria-current="page">
+                      <img src="assets/misc/Box.png" alt="" aria-hidden="true" />
+                      <span>BubbleBodega</span>
+                    </button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="bank">
+                      <img data-sprite-src="assets/icons/coin.png" alt="" aria-hidden="true" />
+                      <span>BB Bank</span>
+                    </button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="proteus" hidden>
+                      <img src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
+                      <span>Proteus Biodyne</span>
+                    </button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="locker">
+                      <img src="assets/web/davy/icons/davy_icon.png" alt="" aria-hidden="true" />
+                      <span>Davy Jones' Locker</span>
+                    </button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="designer" hidden>
+                      <img src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
+                      <span>EAS Designer</span>
+                    </button>
+                  </div>
+                  <button id="closeStoreOverlay" class="webpage-browser-close" type="button" title="Close browser" aria-label="Close browser">&times;</button>
+                </nav>
+                <section id="webHomePage" class="web-home-page" aria-label="WebSurf home" hidden></section>
+                <section id="bubbleBankPage" class="bubble-bank-page" aria-label="Bubble Borough Bank" hidden></section>
+                <section id="davyJonesLockerPage" class="davy-jones-locker-page" aria-label="Davy Jones' Locker" hidden>
+                  <div class="davy-jones-locker-shell">
+                    <header class="davy-jones-locker-header">
+                      <div class="davy-jones-locker-brand">
+                        <img src="assets/web/davy/icons/davy_icon.png" alt="" aria-hidden="true" />
+                        <div>
+                          <span class="davy-jones-locker-kicker">PRIVATE CATALOGUE</span>
+                          <h1>Davy Jones' Locker</h1>
+                        </div>
+                      </div>
+                      <code>davyjoneslocker.hadal</code>
+                    </header>
+                    <main class="davy-jones-locker-inventory" data-davy-inventory aria-label="Private mutation inventory"></main>
+                  </div>
+                </section>
                 <header class="store-panel-header tankazon-header">
                   <div class="tankazon-mainbar">
                     <img class="tankazon-logo" src="assets/misc/Store_Logo.png" alt="BubbleBodega" draggable="false" />
@@ -442,14 +488,16 @@
                       <input id="tankazonSearchInput" type="search" placeholder="Search for anything for your tank..." autocomplete="off" />
                       <button id="tankazonSearchButton" class="tankazon-search-button" type="button" aria-label="Search">⌕</button>
                     </label>
+                    <button id="tankazonAccountButton" class="tankazon-account-button" type="button" aria-label="Open store account">
+                      <img data-sprite-src="assets/icons/user.png" alt="" aria-hidden="true" draggable="false" />
+                      <span><small>Account</small><strong data-tankazon-account-name>Your Account</strong></span>
+                    </button>
                     <div class="store-panel-actions">
                       <div id="storeCoinCounter" class="store-coin-counter" aria-label="Current coins: 0">
                         <img class="coin-symbol store-coin-icon store-coin-counter-icon" data-sprite-src="assets/icons/coin.png"
                           alt="" aria-hidden="true" draggable="false" />
                         <span class="store-coin-counter-value">0</span>
                       </div>
-                      <button id="closeStoreOverlay" class="store-close-button" type="button" title="Close BubbleBodega"
-                        aria-label="Close BubbleBodega">&times;</button>
                     </div>
                   </div>
 
@@ -465,9 +513,246 @@
                   </div>
                 </header>
 
+                <section id="proteusBiodynePage" class="proteus-biodyne-page" aria-labelledby="proteusBiodyneTitle" hidden>
+                  <header class="proteus-biodyne-header">
+                    <button class="proteus-biodyne-brand" type="button" data-proteus-back aria-label="Return to the product">
+                      <img class="proteus-biodyne-brand-icon" src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
+                      <img class="proteus-biodyne-brand-title" src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" />
+                    </button>
+                    <nav class="proteus-biodyne-nav" role="tablist" aria-label="Proteus Biodyne sections">
+                      <button type="button" role="tab" aria-selected="true" aria-controls="proteusHomePanel" data-proteus-tab="home" class="is-active">Home</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusMissionPanel" data-proteus-tab="mission">Our Mission</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusResearchPanel" data-proteus-tab="research">Research</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusProgramsPanel" data-proteus-tab="programs">Programs</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusSpecimensPanel" data-proteus-tab="specimens">Specimens</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusSustainabilityPanel" data-proteus-tab="sustainability">Sustainability</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusCareersPanel" data-proteus-tab="careers">Careers</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusInvestorsPanel" data-proteus-tab="investors">Investors</button>
+                    </nav>
+                  </header>
+
+                  <div class="proteus-biodyne-scroll">
+                    <section id="proteusHomePanel" class="proteus-tab-panel" role="tabpanel" data-proteus-panel="home">
+                    <section class="proteus-biodyne-hero" aria-labelledby="proteusBiodyneTitle">
+                      <div class="proteus-biodyne-hero-copy">
+                        <p>Oceans adapt.<br />So do we.</p>
+                        <h1 id="proteusBiodyneTitle" tabindex="-1"><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne — Adaptive Biology. Engineered." /></h1>
+                        <p class="proteus-biodyne-intro">Harnessing the ocean’s potential through responsible genetic innovation. A more resilient tomorrow lives below the surface.</p>
+                        <button class="proteus-biodyne-cta" type="button" data-proteus-tab-link="mission">Our mission <span aria-hidden="true">&#8594;</span></button>
+                      </div>
+                      <div class="proteus-biodyne-hero-side" aria-hidden="true">
+                        <span>Stability<br />through<br />adaptation</span>
+                        <i></i>
+                        <span>Marine life.<br />Greater potential.</span>
+                      </div>
+                    </section>
+
+                    <div class="proteus-biodyne-grid">
+                      <main id="proteusPrograms" class="proteus-biodyne-programs">
+                        <article id="proteusResearch" class="proteus-program-card">
+                          <div class="proteus-program-image proteus-program-dna" aria-hidden="true">
+                            <img src="assets/web/proteus/PB_DNA.png" alt="" />
+                          </div>
+                          <span>01</span>
+                          <h2>Marine scaling program</h2>
+                          <p>Selective genomic pathways support resilience, growth, and environmental adaptability.</p>
+                          <button type="button" data-proteus-tab-link="programs">Explore program <span aria-hidden="true">&#8594;</span></button>
+                        </article>
+                        <article class="proteus-program-card">
+                          <div class="proteus-program-image" aria-hidden="true">
+                            <img src="assets/web/proteus/PB_JellyFish.png" alt="" />
+                          </div>
+                          <span>02</span>
+                          <h2>Specimen stability</h2>
+                          <p>Long-term viability through proprietary genomic balancing and cellular reinforcement.</p>
+                          <button type="button" data-proteus-tab-link="programs">Explore program <span aria-hidden="true">&#8594;</span></button>
+                        </article>
+                        <article class="proteus-program-card">
+                          <div class="proteus-program-image" aria-hidden="true">
+                            <img src="assets/web/proteus/PB_FishHead.png" alt="" />
+                          </div>
+                          <span>03</span>
+                          <h2>Behavioral integrity</h2>
+                          <p>Preserving natural behaviors while enabling predictable responses in managed environments.</p>
+                          <button type="button" data-proteus-tab-link="programs">Explore program <span aria-hidden="true">&#8594;</span></button>
+                        </article>
+                      </main>
+
+                      <aside id="proteusSpecimen" class="proteus-specimen-card">
+                        <header><strong>Specimen database</strong><span>Secure access &#8594;</span></header>
+                        <div class="proteus-specimen-record">
+                          <div class="proteus-specimen-image"><img src="assets/web/proteus/PB_Species_1.png" alt="Pufferfish specimen PB-4473" /></div>
+                          <div>
+                            <h2>PB-4473</h2>
+                            <em>Tetraodontidae-P</em>
+                            <dl><dt>Status</dt><dd>Stable</dd><dt>Origin</dt><dd>Open Ocean</dd><dt>Adaptations</dt><dd>Defensive inflation</dd><dt>Containment</dt><dd>Tier 2</dd></dl>
+                            <span class="proteus-dossier-link">View dossier &#8594;</span>
+                          </div>
+                        </div>
+                        <div class="proteus-specimen-index" aria-label="Specimen database samples">
+                          <figure><img src="assets/web/proteus/PB_Species_1.png" alt="Specimen PB-4473" /><figcaption>PB-4473</figcaption></figure>
+                          <figure><img src="assets/web/proteus/PB_Species_2.png" alt="Specimen PB-4474" /><figcaption>PB-4474</figcaption></figure>
+                          <figure><img src="assets/web/proteus/PB_Species_3.png" alt="Specimen PB-4475" /><figcaption>PB-4475</figcaption></figure>
+                          <figure><img src="assets/web/proteus/PB_Species_4.png" alt="Specimen PB-4476" /><figcaption>PB-4476</figcaption></figure>
+                          <figure><img src="assets/web/proteus/PB_Species_5.png" alt="Specimen PB-4477" /><figcaption>PB-4477</figcaption></figure>
+                        </div>
+                        <blockquote>“A more adaptable world is a more survivable one.”</blockquote>
+                        <p>— Proteus Biodyne</p>
+                      </aside>
+                    </div>
+                    </section>
+
+                    <section id="proteusMissionPanel" class="proteus-tab-panel proteus-subpage proteus-mission-page" role="tabpanel" data-proteus-panel="mission" hidden>
+                      <header class="proteus-page-lead">
+                        <p>Our Mission</p>
+                        <h2 tabindex="-1">To reshape biological life for a world that can no longer wait for nature to adapt on its own.</h2>
+                        <p>PROTEUS BIODYNE exists to expand the limits of biological adaptation.</p>
+                        <blockquote>We believe biology can do more.</blockquote>
+                      </header>
+                      <div class="proteus-manifesto">
+                        <article>
+                          <p>The natural world is changing faster than many species can survive. Habitats are shrinking. Ecosystems are destabilizing. Human needs continue to grow. Evolution, once measured across thousands of generations, no longer operates on a timeline compatible with the challenges ahead.</p>
+                          <p>Through advanced genetic engineering, directed adaptation, behavioral preservation, and controlled biological scaling, PROTEUS BIODYNE develops organisms capable of thriving under conditions nature never prepared them for.</p>
+                          <p>Our work is designed to preserve biological potential, improve compatibility between species and human environments, and ensure that valuable life does not disappear simply because the world changed first.</p>
+                        </article>
+                        <aside class="proteus-continuity-card">
+                          <span>Continuity Principle / PB-01</span>
+                          <strong>We do not replace nature.</strong>
+                          <p>We give it the tools to continue.</p>
+                        </aside>
+                      </div>
+                      <div class="proteus-principle-grid proteus-mission-pillars">
+                        <article><span>01</span><h3>Preserve</h3><p>Preserve desirable biological traits, learned behavior, and viable lineages across generations.</p></article>
+                        <article><span>02</span><h3>Adapt</h3><p>Adapt organisms to environments they could never naturally inhabit.</p></article>
+                        <article><span>03</span><h3>Integrate</h3><p>Integrate stable organisms into human-controlled ecosystems where they can be observed and sustained.</p></article>
+                      </div>
+                      <section class="proteus-mission-detail" aria-labelledby="proteusNameHeading">
+                        <div class="proteus-mission-detail-heading">
+                          <p>Identity / PB-02</p>
+                          <h3 id="proteusNameHeading">Why PROTEUS BIODYNE</h3>
+                        </div>
+                        <div class="proteus-mission-detail-copy">
+                          <p>Proteus, the ancient sea god of transformation, represents life’s ability to change form in response to its environment.</p>
+                          <p>Biodyne combines biology with the concept of applied force, reflecting our belief that adaptation does not need to remain passive.</p>
+                          <p>Together, the name represents our founding principle: biological change can be understood, directed, and engineered with purpose.</p>
+                          <strong>Adaptive Biology. Engineered.</strong>
+                        </div>
+                      </section>
+                      <section class="proteus-mission-detail proteus-scaling-doctrine" aria-labelledby="proteusScalingHeading">
+                        <div class="proteus-mission-detail-heading">
+                          <p>Applied Research / PB-03</p>
+                          <h3 id="proteusScalingHeading">Controlled Biological Scaling</h3>
+                        </div>
+                        <div class="proteus-mission-detail-copy">
+                          <p>Miniaturized marine organisms are not novelties. They demonstrate that body scale can be radically altered without sacrificing cognitive, behavioral, or predatory phenotype integrity.</p>
+                          <p>By preserving the defining capabilities of an organism while reducing the resources and habitat it requires, biological scaling creates new pathways for species survival, research, and integration.</p>
+                        </div>
+                      </section>
+                      <blockquote class="proteus-mission-coda">
+                        <span>Founding Principle / Internal Doctrine</span>
+                        If an organism cannot survive the world we are creating, change the organism.
+                      </blockquote>
+                    </section>
+
+                    <section id="proteusResearchPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="research" hidden>
+                      <header class="proteus-page-lead">
+                        <p>Research Division / Public Briefing 06</p>
+                        <h2 tabindex="-1">Radical adaptation.<br />Recognizable life.</h2>
+                        <p>Our platforms accelerate biological change while retaining the learned behaviors, survival responses, and defining characteristics that make each organism itself.</p>
+                        <div><strong>92.4%</strong><span>mean behavioral retention across stable marine cohorts</span></div>
+                      </header>
+                      <section class="proteus-research-feature" aria-labelledby="proteusSuspensionHeading">
+                        <div class="proteus-research-feature-index"><strong>PUBLICLY AVAILABLE</strong></div>
+                        <div>
+                          <p>Preservation Platform / PB-SAS</p>
+                          <h3 id="proteusSuspensionHeading">Long-Term Aquatic Suspension</h3>
+                          <p>Proteus Biodyne pioneered suspended-animation storage for aquatic life. Qualified specimens can be placed into a stable, non-aging suspended state and recovered when needed—potentially forever.</p>
+                          <small>Available to public aquariums, conservation programs, research institutions, and private collectors.</small>
+                        </div>
+                      </section>
+                      <div class="proteus-research-grid">
+                        <article><h3>Biological Scaling</h3><p>Coordinated reduction of mass, organ systems, and metabolic demand.</p></article>
+                        <article><h3>Adaptive Genomics</h3><p>Directed genomic responses designed for conditions evolution has not reached.</p></article>
+                        <article><h3>Behavioral Retention</h3><p>Instinct continuity measured before, during, and after phenotype transition.</p></article>
+                        <article><h3>Cognitive Preservation</h3><p>Memory and recognition safeguards for qualifying higher-order specimens.</p></article>
+                        <article><h3>Environmental Resilience</h3><p>Expanded tolerance to temperature, chemistry, pressure, and habitat loss.</p></article>
+                        <article><h3>Accelerated Phenotypes</h3><p>Viable biological outcomes delivered within operational timelines.</p></article>
+                      </div>
+                    </section>
+
+                    <section id="proteusProgramsPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="programs" hidden>
+                      <header class="proteus-page-lead proteus-page-lead-compact"><p>Active Initiatives</p><h2 tabindex="-1">Programs built for what comes next.</h2><p>Five coordinated initiatives translate Proteus research into durable biological systems.</p></header>
+                      <div class="proteus-program-list">
+                        <article><span>PB/CMI</span><div><h3>Compact Marine Initiative</h3><p>Lower habitat and resource requirements through proportional marine scaling.</p></div><strong>Public</strong></article>
+                        <article><span>PB/PEL</span><div><h3>Project Pelagos</h3><p>Ocean adaptation for rapidly changing temperature and chemistry profiles.</p></div><strong>Limited access</strong></article>
+                        <article><span>PB/CON</span><div><h3>Continuity Program</h3><p>Preservation pathways for species approaching nonrecoverable population loss.</p></div><strong>Public</strong></article>
+                        <article><span>PB/AEG</span><div><h3>Aegis Initiative</h3><p>Disease resistance and environmental tolerance across managed populations.</p></div><strong>Partner access</strong></article>
+                        <article><span>PB/HNX</span><div><h3>HABITAT//NEXT</h3><p>Organisms designed to remain viable in environments that do not yet exist.</p></div><strong>Restricted</strong></article>
+                      </div>
+                    </section>
+
+                    <section id="proteusSpecimensPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="specimens" hidden>
+                      <header class="proteus-page-lead proteus-page-lead-compact"><p>Public Specimen Registry</p><h2 tabindex="-1">Verified adaptive outcomes.</h2><p>Selected records released under Proteus transparency protocol PB-GOV-14.</p></header>
+                      <div class="proteus-specimen-grid">
+                        <article><img src="assets/web/proteus/PB_Species_1.png" alt="Pufferfish specimen PB-4473" /><div><span>PB-4473 · Generation IV</span><h3>Pelagic Puffer</h3><dl><dt>Stability</dt><dd>96.2%</dd><dt>Behavior</dt><dd>91.8%</dd><dt>Disposition</dt><dd>Commercial release approved</dd></dl></div></article>
+                        <article><img src="assets/web/proteus/PB_Species_2.png" alt="Ray specimen PB-4474" /><div><span>PB-4474 · Generation III</span><h3>Abyssal Ray</h3><dl><dt>Stability</dt><dd>94.7%</dd><dt>Behavior</dt><dd>88.6%</dd><dt>Disposition</dt><dd>Observation only</dd></dl></div></article>
+                        <article><img src="assets/web/proteus/PB_Species_3.png" alt="Anglerfish specimen PB-4475" /><div><span>PB-4475 · Generation V</span><h3>Abyssal Anglerfish</h3><dl><dt>Stability</dt><dd>98.1%</dd><dt>Predatory response</dt><dd>98.7%</dd><dt>Disposition</dt><dd>Restricted</dd></dl></div></article>
+                        <article><img src="assets/web/proteus/PB_Species_4.png" alt="Shark specimen PB-4476" /><div><span>PB-4476 · Generation II</span><h3>Scaled Selachimorph</h3><dl><dt>Stability</dt><dd>89.3%</dd><dt>Behavior</dt><dd>93.0%</dd><dt>Disposition</dt><dd>Program discontinued</dd></dl></div></article>
+                        <article><img src="assets/web/proteus/PB_Species_5.png" alt="Seahorse specimen PB-4477" /><div><span>PB-4477 · Generation IV</span><h3>Compact Seahorse</h3><dl><dt>Stability</dt><dd>97.0%</dd><dt>Behavior</dt><dd>95.2%</dd><dt>Disposition</dt><dd>Commercial review</dd></dl></div></article>
+                      </div>
+                    </section>
+
+                    <section id="proteusSustainabilityPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="sustainability" hidden>
+                      <header class="proteus-page-lead"><p>Ecological Stewardship</p><h2 tabindex="-1">Conservation cannot always preserve the past.</h2><p>Sometimes it must redesign what comes next. Proteus reduces biological loss by creating organisms able to thrive within the habitats the future can sustain.</p><blockquote>Smaller organisms consume fewer resources, require less habitat, and make continuity achievable at ecosystem scale.</blockquote></header>
+                      <section class="proteus-recovery-program" aria-labelledby="proteusRecoveryHeading">
+                        <div class="proteus-recovery-program-label"><span>Lifecycle Recovery / PB-LR1</span><strong>Free for customers</strong></div>
+                        <div>
+                          <p>Customer Stewardship Program</p>
+                          <h3 id="proteusRecoveryHeading">Return life to the cycle.</h3>
+                          <p>Proteus accepts deceased aquatic specimens at no cost to the owner. Every recovery is handled through our secure biological materials program, where viable tissue and biological records may support future conservation, research, and adaptation work.</p>
+                          <small>By enrolling, owners authorize Proteus Biodyne to retain, process, study, or repurpose recovered specimens at its discretion. Specific downstream uses are confidential and are not individually disclosed.</small>
+                        </div>
+                      </section>
+                      <div class="proteus-principle-grid"><article><span>01</span><h3>Preserve</h3><p>Retain viable lineages before environmental change makes recovery impossible.</p></article><article><span>02</span><h3>Adapt</h3><p>Reduce habitat demands and reinforce biological systems against instability.</p></article><article><span>03</span><h3>Integrate</h3><p>Return approved organisms to managed environments under measured oversight.</p></article></div>
+                    </section>
+
+                    <section id="proteusCareersPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="careers" hidden>
+                      <header class="proteus-page-lead proteus-page-lead-compact"><p>Careers at Proteus</p><h2 tabindex="-1">Change life. Literally.</h2><p>Work with interdisciplinary teams solving extinction, adaptation, and continuity at biological scale.</p></header>
+                      <div class="proteus-career-layout"><div><h3>Open disciplines</h3><p>Genetics · Marine Biology · Behavioral Science · Bioinformatics · Veterinary Research · Containment Operations · Corporate</p><h3>Proteus benefits</h3><p>On-campus housing, private healthcare, research sabbaticals, relocation support, and protected family continuity services.</p></div><div class="proteus-job-list"><article><span>Research</span><strong>Behavioral Integrity Technician</strong><small>Pacific Campus · On site</small></article><article><span>Operations</span><strong>Specimen Recovery Specialist</strong><small>Pelagos Annex · Rotating</small></article><article><span>Engineering</span><strong>Containment Systems Engineer</strong><small>North Atlantic Facility · Hybrid</small></article><article><span>Welfare</span><strong>Post-Adaptation Welfare Analyst</strong><small>Pacific Campus · On site</small></article></div></div>
+                    </section>
+
+                    <section id="proteusInvestorsPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="investors" hidden>
+                      <header class="proteus-page-lead"><p>Investor Relations / FY 2026</p><h2 tabindex="-1">Biological limitations are addressable markets.</h2><p>Proteus converts proprietary adaptive systems into scalable platforms for conservation, aquaculture, medicine, licensing, and sovereign resilience programs.</p><div><strong>42</strong><span>active patent families across adaptive biology</span></div></header>
+                      <div class="proteus-investor-grid"><article><span>31%</span><h3>Platform growth</h3><p>Year-over-year expansion across licensed marine applications.</p></article><article><span>18</span><h3>Strategic partners</h3><p>Government, conservation, and commercial deployment agreements.</p></article><article><span>7.4×</span><h3>Habitat efficiency</h3><p>Average modeled capacity gain for compact marine populations.</p></article></div>
+                    </section>
+                  </div>
+                </section>
+
+                <section id="proteusDesignerRoute" class="proteus-designer-route" aria-label="Proteus Biodyne specimen designer" hidden>
+                  <div id="proteusDesignerWorkspace" class="proteus-designer-workspace"></div>
+                </section>
+
                 <div class="tankazon-promo-strip">
                   <div><strong>Everything for a <span>thriving tank.</span></strong><small>Happy fish. Better tanks. Questionable delivery methods.</small></div>
                 </div>
+
+                <section id="tankazonAccountPage" class="tankazon-account-page" aria-labelledby="tankazonAccountTitle" hidden>
+                  <div class="tankazon-account-heading">
+                    <div>
+                      <button id="tankazonAccountBack" class="tankazon-account-back" type="button">← Back to shopping</button>
+                      <p class="tankazon-account-eyebrow" data-tankazon-account-owner>Your Account</p>
+                      <h1 id="tankazonAccountTitle" tabindex="-1">Purchase History:</h1>
+                      <p>Review your BubbleBodega orders, newest first.</p>
+                    </div>
+                    <label class="tankazon-order-search">
+                      <input id="tankazonOrderSearchInput" type="search" placeholder="Search purchase history" aria-label="Search purchase history" autocomplete="off" />
+                      <button id="tankazonOrderSearchButton" type="button" aria-label="Search purchase history">⌕</button>
+                    </label>
+                  </div>
+                  <div id="tankazonOrderSummary" class="tankazon-order-summary" aria-live="polite"></div>
+                  <div id="tankazonOrderList" class="tankazon-order-list"></div>
+                  <nav id="tankazonOrderPagination" class="tankazon-order-pagination" aria-label="Purchase history pages"></nav>
+                </section>
 
                 <div class="store-panel-body tankazon-body">
                   <main id="tankazonCatalogArea" class="tankazon-catalog-area">
@@ -487,7 +772,7 @@
                         </div>
                         <div class="tankazon-item-description">
                           <h1 id="tankazonItemTitle" tabindex="-1"></h1>
-                          <p class="tankazon-item-brand">Visit the BubbleBodega Store</p>
+                          <p id="tankazonItemBrand" class="tankazon-item-brand">Visit the BubbleBodega Store</p>
                           <div id="tankazonItemPrice" class="tankazon-item-price"></div>
                           <h2>About this item</h2>
                           <div id="tankazonItemDetails" class="tankazon-item-details"></div>
@@ -499,7 +784,7 @@
                           <button id="tankazonItemAdd" class="tankazon-item-add" type="button">Add to Cart</button>
                           <button id="tankazonItemBuy" class="tankazon-item-buy" type="button">Buy Now</button>
                           <p id="tankazonItemStatus" class="tankazon-item-status" role="status" aria-live="polite"></p>
-                          <div class="tankazon-item-seller"><span>Sold by</span><strong>BubbleBodega</strong><span>Payment</span><strong>Aquarium coins</strong></div>
+                          <div class="tankazon-item-seller"><span>Sold by</span><button id="tankazonItemSeller" type="button" data-tankazon-seller-link>BubbleBodega</button><span>Payment</span><strong>Aquarium coins</strong></div>
                         </aside>
                       </div>
                     </section>
@@ -1112,10 +1397,11 @@
               <button id="editScaleDownButton" class="dock-button edit-shortcut-control" type="button" hidden
                 title="Decrease decor size (-)" aria-label="Decrease decor size (-)">-</button>
 
-              <button id="openStoreButton" class="dock-button shop" type="button" title="Store"
-                aria-label="Store">
-                <img class="dock-button-icon" data-sprite-src="assets/icons/Store_Icon.png" alt="" aria-hidden="true"
+              <button id="openStoreButton" class="dock-button shop" type="button" title="WebSurf"
+                aria-label="WebSurf">
+                <img class="dock-button-icon websurf-toolbar-icon" src="assets/icons/WebSurf_icon.png" alt="" aria-hidden="true"
                   draggable="false" />
+                <span id="webSurfUnreadBadge" class="dock-button-badge" aria-label="Unread WebSurf mail" hidden></span>
               </button>
 
 
@@ -1442,6 +1728,8 @@
       const categoryLabels = { food: "Food", pharmacy: "Pharmacy", fish: "Fish", decor: "Decor", equipment: "Equipment" };
       const TANKAZON_CART_STORAGE_KEY = "bubble-borough-tankazon-cart-v1";
       const TANKAZON_VIEW_STORAGE_KEY = "bubble-borough-tankazon-view-v1";
+      const PROTEUS_DISCOVERY_STORAGE_KEY = "bubble-borough-proteus-discovered-v1";
+      const TANKAZON_ORDERS_PER_PAGE = 10;
       const cart = new Map();
       let allCategoriesMode = true;
       let lastTankazonCategory = "all";
@@ -1454,12 +1742,251 @@
       let itemReturnScrollTop = 0;
       let tankazonLoadingToken = 0;
       let tankazonLoadingStartedAt = 0;
+      let accountPageOpen = false;
+      let accountNavSnapshot = [];
+      let orderSearchQuery = "";
+      let orderPage = 1;
+      let highlightedOrderId = "";
+      let proteusPageOpen = false;
+      let proteusTabOpen = false;
+      let proteusReturnFocus = null;
+      let proteusSessionTab = "home";
+      let proteusSessionScrollTop = 0;
 
       const overlay = () => document.getElementById("storeOverlay");
       const drawers = () => CATEGORY_IDS.map((id) => document.querySelector(`[data-tankazon-category="${id}"]`)).filter(Boolean);
       const scope = () => document.getElementById("tankazonSearchScope")?.value || "all";
       const typedQuery = () => (document.getElementById("tankazonSearchInput")?.value || "").trim().toLowerCase();
       const query = () => committedSearchQuery;
+
+      function getTankazonAccountData() {
+        const data = window.getBubbleBodegaAccountData?.();
+        return {
+          username: String(data?.username || "Player").trim() || "Player",
+          orders: Array.isArray(data?.orders) ? data.orders : []
+        };
+      }
+
+      function syncTankazonAccountLabel() {
+        const { username } = getTankazonAccountData();
+        const accountName = `${username}'s Account`;
+        document.querySelectorAll("[data-tankazon-account-name], [data-tankazon-account-owner]").forEach((node) => {
+          node.textContent = accountName;
+        });
+        document.getElementById("tankazonAccountButton")?.setAttribute("aria-label", `Open ${accountName}`);
+      }
+
+      function formatTankazonOrderDate(value) {
+        const date = new Date(Number(value) || value);
+        return Number.isNaN(date.getTime())
+          ? "Unknown date"
+          : new Intl.DateTimeFormat(undefined, { year: "numeric", month: "long", day: "numeric" }).format(date);
+      }
+
+      function escapeTankazonOrderText(value) {
+        const node = document.createElement("span");
+        node.textContent = String(value ?? "");
+        return node.innerHTML;
+      }
+
+      function renderTankazonOrders() {
+        const { orders } = getTankazonAccountData();
+        const normalizedQuery = orderSearchQuery.trim().toLowerCase();
+        const matches = normalizedQuery
+          ? orders.filter((order) => {
+            const itemText = (order.items || []).map((item) => `${item.name} ${categoryLabels[item.category] || item.category || ""}`).join(" ");
+            return `${order.id || ""} ${itemText} ${formatTankazonOrderDate(order.placedAt)}`.toLowerCase().includes(normalizedQuery);
+          })
+          : orders;
+        const pageCount = Math.max(1, Math.ceil(matches.length / TANKAZON_ORDERS_PER_PAGE));
+        orderPage = Math.min(Math.max(1, orderPage), pageCount);
+        const visibleOrders = matches.slice((orderPage - 1) * TANKAZON_ORDERS_PER_PAGE, orderPage * TANKAZON_ORDERS_PER_PAGE);
+        const summary = document.getElementById("tankazonOrderSummary");
+        const list = document.getElementById("tankazonOrderList");
+        const pagination = document.getElementById("tankazonOrderPagination");
+        if (summary) summary.textContent = `${matches.length} ${matches.length === 1 ? "order" : "orders"}${normalizedQuery ? " found" : ""}`;
+        if (list) {
+          list.innerHTML = visibleOrders.length ? visibleOrders.map((order) => `
+            <article class="tankazon-order-card ${order.id === highlightedOrderId ? "is-highlighted" : ""}" data-tankazon-order-id="${escapeTankazonOrderText(order.id)}" tabindex="-1">
+              <header>
+                <div><small>ORDER PLACED</small><strong>${escapeTankazonOrderText(formatTankazonOrderDate(order.placedAt))}</strong></div>
+                <div><small>TOTAL</small><strong><img src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" /> ${Number(order.total || 0).toLocaleString()} coins</strong></div>
+                <div class="tankazon-order-number"><small>ORDER</small><strong>#${escapeTankazonOrderText(String(order.id || "").slice(-10).toUpperCase())}</strong></div>
+              </header>
+              <div class="tankazon-order-products">${(order.items || []).map((item) => `
+                <div class="tankazon-order-product">
+                  <img data-sprite-src="${escapeTankazonOrderText(item.image || "assets/icons/Store_Icon.png")}" alt="" />
+                  <div><strong>${escapeTankazonOrderText(item.name || "Store item")}</strong><small>${escapeTankazonOrderText(categoryLabels[item.category] || item.category || "BubbleBodega")}${Number(item.quantity) > 1 ? ` · Quantity: ${Number(item.quantity)}` : ""}</small></div>
+                  <span><img src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" /> ${Number(item.cost || 0).toLocaleString()}</span>
+                </div>`).join("")}</div>
+            </article>`).join("") : `<div class="tankazon-orders-empty"><strong>${normalizedQuery ? "No matching purchases" : "No purchases yet"}</strong><span>${normalizedQuery ? "Try a product name, category, date, or order number." : "Your completed BubbleBodega orders will appear here."}</span><button type="button" data-account-shop-now>Continue shopping</button></div>`;
+        }
+        if (pagination) {
+          pagination.innerHTML = pageCount > 1 ? `<button type="button" data-order-page="${orderPage - 1}" ${orderPage === 1 ? "disabled" : ""}>← Previous</button><span>Page ${orderPage} of ${pageCount}</span><button type="button" data-order-page="${orderPage + 1}" ${orderPage === pageCount ? "disabled" : ""}>Next →</button>` : "";
+        }
+      }
+
+      function showTankazonAccount() {
+        if (accountPageOpen) return;
+        closeTankazonItem(false);
+        accountNavSnapshot = [...document.querySelectorAll("#tankazonAllCategories, .store-tab-button")].map((element) => ({
+          element,
+          active: element.classList.contains("is-active"),
+          ariaSelected: element.getAttribute("aria-selected"),
+          ariaPressed: element.getAttribute("aria-pressed")
+        }));
+        accountNavSnapshot.forEach(({ element }) => {
+          element.classList.remove("is-active");
+          if (element.matches(".store-tab-button")) element.setAttribute("aria-selected", "false");
+          if (element.id === "tankazonAllCategories") element.setAttribute("aria-pressed", "false");
+        });
+        accountPageOpen = true;
+        overlay()?.classList.add("tankazon-account-open");
+        document.getElementById("tankazonAccountPage").hidden = false;
+        syncTankazonAccountLabel();
+        renderTankazonOrders();
+        document.getElementById("tankazonAccountTitle")?.focus?.({ preventScroll: true });
+      }
+
+      function showBubbleBodegaOrder(orderId) {
+        const normalizedOrderId = String(orderId || "");
+        const { orders } = getTankazonAccountData();
+        const orderIndex = orders.findIndex((order) => order.id === normalizedOrderId);
+        highlightedOrderId = normalizedOrderId;
+        orderSearchQuery = "";
+        orderPage = orderIndex >= 0 ? Math.floor(orderIndex / TANKAZON_ORDERS_PER_PAGE) + 1 : 1;
+        const searchInput = document.getElementById("tankazonOrderSearchInput");
+        if (searchInput) searchInput.value = "";
+        if (!accountPageOpen) showTankazonAccount();
+        else renderTankazonOrders();
+        window.requestAnimationFrame(() => {
+          const card = [...document.querySelectorAll("[data-tankazon-order-id]")]
+            .find((element) => element.dataset.tankazonOrderId === normalizedOrderId);
+          card?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+          card?.focus?.({ preventScroll: true });
+        });
+      }
+
+      window.showBubbleBodegaOrder = showBubbleBodegaOrder;
+
+      function closeTankazonAccount() {
+        if (!accountPageOpen) return;
+        accountPageOpen = false;
+        overlay()?.classList.remove("tankazon-account-open");
+        document.getElementById("tankazonAccountPage").hidden = true;
+        accountNavSnapshot.forEach(({ element, active, ariaSelected, ariaPressed }) => {
+          if (!element.isConnected) return;
+          element.classList.toggle("is-active", active);
+          if (ariaSelected === null) element.removeAttribute("aria-selected");
+          else element.setAttribute("aria-selected", ariaSelected);
+          if (ariaPressed === null) element.removeAttribute("aria-pressed");
+          else element.setAttribute("aria-pressed", ariaPressed);
+        });
+        accountNavSnapshot = [];
+      }
+
+      function isProteusBiodyneSeller(value) {
+        return getTankazonSellerName(value).toLowerCase() === "proteus biodyne";
+      }
+
+      function showProteusTab(tabId, { focus = false, restoreScroll = false } = {}) {
+        const page = document.getElementById("proteusBiodynePage");
+        if (!page) return;
+        const panels = [...page.querySelectorAll("[data-proteus-panel]")];
+        const tabs = [...page.querySelectorAll("[data-proteus-tab]")];
+        if (!panels.some((panel) => panel.dataset.proteusPanel === tabId)) return;
+        panels.forEach((panel) => { panel.hidden = panel.dataset.proteusPanel !== tabId; });
+        tabs.forEach((tab) => {
+          const active = tab.dataset.proteusTab === tabId;
+          tab.classList.toggle("is-active", active);
+          tab.setAttribute("aria-selected", String(active));
+          tab.tabIndex = active ? 0 : -1;
+        });
+        proteusSessionTab = tabId;
+        page.querySelector(".proteus-biodyne-scroll")?.scrollTo({ top: restoreScroll ? proteusSessionScrollTop : 0 });
+        if (focus) page.querySelector(`[data-proteus-panel="${tabId}"] h1, [data-proteus-panel="${tabId}"] h2`)?.focus?.({ preventScroll: true });
+      }
+
+      function syncWebPageTabs(activePage) {
+        document.querySelectorAll("#storeOverlay .webpage-tab-strip [data-webpage-destination]").forEach((tab) => {
+          const active = tab.dataset.webpageDestination === activePage;
+          tab.classList.toggle("is-active", active);
+          if (active) tab.setAttribute("aria-current", "page");
+          else tab.removeAttribute("aria-current");
+        });
+      }
+
+      function hasDiscoveredProteus() {
+        try { return localStorage.getItem(PROTEUS_DISCOVERY_STORAGE_KEY) === "true"; }
+        catch { return false; }
+      }
+
+      function syncProteusDiscovery() {
+        const discovered = hasDiscoveredProteus();
+        document.querySelectorAll("#storeOverlay [data-proteus-home-link]").forEach((link) => { link.hidden = !discovered; });
+        document.querySelectorAll("#storeOverlay .webpage-tab[data-webpage-destination=\"proteus\"]").forEach((tab) => { tab.hidden = !proteusTabOpen; });
+      }
+
+      function discoverProteus() {
+        try { localStorage.setItem(PROTEUS_DISCOVERY_STORAGE_KEY, "true"); } catch {}
+        syncProteusDiscovery();
+      }
+
+      function showProteusBiodyne(trigger, { allowDirect = false } = {}) {
+        if (proteusPageOpen) return;
+        if (!allowDirect && (!selectedItem || !isProteusBiodyneSeller(selectedItem.seller))) return;
+        if (!allowDirect) discoverProteus();
+        closeTankazonAccount();
+        proteusPageOpen = true;
+        proteusTabOpen = true;
+        syncProteusDiscovery();
+        proteusReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
+        const page = document.getElementById("proteusBiodynePage");
+        page.hidden = false;
+        document.getElementById("proteusDesignerRoute")?.setAttribute("hidden", "");
+        overlay()?.classList.add("proteus-biodyne-open");
+        showProteusTab(proteusSessionTab, { restoreScroll: true });
+        window.rememberWebSurfPage?.("proteus");
+        syncWebPageTabs("proteus");
+        document.getElementById("proteusBiodyneTitle")?.focus?.({ preventScroll: true });
+      }
+
+      function closeProteusBiodyne(restoreFocus = true) {
+        const designerRoute = document.getElementById("proteusDesignerRoute");
+        if (!proteusPageOpen && designerRoute?.hidden !== false) return;
+        proteusSessionScrollTop = Math.max(0, Number(document.querySelector("#proteusBiodynePage .proteus-biodyne-scroll")?.scrollTop) || 0);
+        proteusPageOpen = false;
+        overlay()?.classList.remove("proteus-biodyne-open");
+        document.getElementById("proteusBiodynePage").hidden = true;
+        if (designerRoute) designerRoute.hidden = true;
+        syncWebPageTabs("store");
+        if (restoreFocus && proteusReturnFocus?.isConnected) proteusReturnFocus.focus({ preventScroll: true });
+        proteusReturnFocus = null;
+      }
+
+      window.showProteusBiodynePage = (trigger) => showProteusBiodyne(trigger, { allowDirect: true });
+      window.closeProteusBiodynePage = (restoreFocus = false) => closeProteusBiodyne(restoreFocus);
+      window.syncWebPageTabs = syncWebPageTabs;
+      window.hasDiscoveredProteus = hasDiscoveredProteus;
+      window.syncProteusDiscovery = syncProteusDiscovery;
+      window.captureProteusSessionState = () => {
+        proteusSessionScrollTop = Math.max(0, Number(document.querySelector("#proteusBiodynePage .proteus-biodyne-scroll")?.scrollTop) || 0);
+      };
+      window.resetProteusSessionState = () => {
+        proteusSessionTab = "home";
+        proteusSessionScrollTop = 0;
+      };
+      window.resetOptionalWebPageTabs = () => {
+        proteusTabOpen = false;
+        syncProteusDiscovery();
+      };
+      syncProteusDiscovery();
+
+      function commitTankazonOrderSearch() {
+        orderSearchQuery = (document.getElementById("tankazonOrderSearchInput")?.value || "").trim();
+        orderPage = 1;
+        renderTankazonOrders();
+      }
 
       function getTankazonLoadingCopy(category) {
         return ({
@@ -1729,6 +2256,11 @@
         return [...card.querySelectorAll("button")].find((button) => getButtonDescriptor(button));
       }
 
+      function getTankazonSellerName(value) {
+        const seller = typeof value === "string" ? value.trim() : "";
+        return seller || "BubbleBodega";
+      }
+
       function openTankazonItem(preview) {
         if (completingPurchase) return;
         const card = preview.closest(".shop-card");
@@ -1738,7 +2270,8 @@
           name: card.dataset.tankazonTitle || preview.getAttribute("alt") || "Aquarium item",
           category: card.closest("[data-tankazon-category]")?.dataset.tankazonCategory || "equipment",
           cost: Number((card.dataset.tankazonCost || "").match(/\d+/)?.[0] || 0),
-          previewOnly: true
+          previewOnly: true,
+          seller: getTankazonSellerName(card.dataset.storeSeller)
         };
         const catalog = document.getElementById("tankazonCatalogArea");
         itemReturnScrollTop = catalog.scrollTop;
@@ -1747,24 +2280,21 @@
         image.removeAttribute("tabindex");
         image.removeAttribute("role");
         image.removeAttribute("aria-label");
-        image.className = "tankazon-item-art";
-        document.getElementById("tankazonItemImage").replaceChildren(image);
-        document.getElementById("tankazonItemImage").classList.toggle("is-fish-preview", descriptor.category === "fish");
+        const isLayeredDispenser = image.classList.contains("layered-dispenser-thumb")
+          || image.dataset.dispenserLayeredArt === "true";
+        image.className = isLayeredDispenser
+          ? "tankazon-item-art layered-dispenser-thumb"
+          : "tankazon-item-art";
+        const itemImageStage = document.getElementById("tankazonItemImage");
+        itemImageStage.replaceChildren(image);
+        itemImageStage.classList.toggle("is-fish-preview", descriptor.category === "fish");
+        itemImageStage.classList.toggle("is-proteus-preview", isProteusBiodyneSeller(descriptor.seller));
+        itemImageStage.classList.toggle("is-davy-mutation-preview", Boolean(descriptor.backgroundImage));
         renderTankazonVariants(descriptor);
         document.getElementById("tankazonItemTitle").textContent = descriptor.baseName || descriptor.name;
         document.getElementById("tankazonItemCategory").textContent = `BubbleBodega › ${categoryLabels[descriptor.category]}`;
         const details = document.getElementById("tankazonItemDetails");
         details.replaceChildren();
-        const summary = document.createElement("p");
-        summary.className = "tankazon-item-summary";
-        summary.textContent = {
-          fish: "A living aquarium companion with its own needs, behavior, and appearance.",
-          food: "A pantry item that helps keep your aquarium residents fed.",
-          pharmacy: "A care item for treating and supporting your aquarium residents.",
-          decor: "A display piece that adds character and useful places for fish to explore.",
-          equipment: "An aquarium upgrade built to support life in the tank."
-        }[descriptor.category] || "A useful addition for your aquarium.";
-        details.append(summary);
         // Reuse the real catalog's descriptions, care stats and unlock requirements.
         card.querySelectorAll(":scope > .shop-card-main, :scope > .shop-meta:not(:last-child):not(.shop-card-main)").forEach((source) => {
           const copy = source.cloneNode(true);
@@ -1810,9 +2340,32 @@
         if (current && variantExists) selectedItem = selectTankazonFishVariant(current, selectedItem.variantKey);
         const available = Boolean(button && !button.disabled && variantExists);
         const price = selectedItem.previewOnly ? "Not for purchase" : selectedItem.cost === 0 ? "Free" : `${selectedItem.cost.toLocaleString()} coins`;
+        const discounted = !selectedItem.previewOnly
+          && Number.isFinite(Number(selectedItem.originalCost))
+          && Number(selectedItem.originalCost) > Number(selectedItem.cost);
+        const priceMarkup = discounted
+          ? `<span class="tankazon-item-price-original">${Number(selectedItem.originalCost).toLocaleString()} coins</span><span class="tankazon-item-price-sale">${price}</span>`
+          : price;
+        const seller = getTankazonSellerName(selectedItem.seller);
+        const brand = document.getElementById("tankazonItemBrand");
+        const sellerLabel = document.getElementById("tankazonItemSeller");
+        if (brand && brand.textContent !== `Visit the ${seller} Store`) brand.textContent = `Visit the ${seller} Store`;
+        if (sellerLabel && sellerLabel.textContent !== seller) sellerLabel.textContent = seller;
+        document.querySelectorAll("[data-tankazon-seller-link]").forEach((sellerLink) => {
+          const available = isProteusBiodyneSeller(seller);
+          sellerLink.disabled = !available;
+          sellerLink.classList.toggle("is-linked", available);
+          if (available) {
+            sellerLink.setAttribute("aria-label", "Visit the Proteus Biodyne webpage");
+            sellerLink.title = "Visit Proteus Biodyne";
+          } else {
+            sellerLink.removeAttribute("aria-label");
+            sellerLink.removeAttribute("title");
+          }
+        });
         for (const id of ["tankazonItemPrice", "tankazonItemBuyPrice"]) {
           const node = document.getElementById(id);
-          if (node.textContent !== price) node.textContent = price;
+          if (node.innerHTML !== priceMarkup) node.innerHTML = priceMarkup;
         }
         const availability = document.getElementById("tankazonItemAvailability");
         const label = available ? "Available" : "Currently unavailable";
@@ -1841,6 +2394,7 @@
         status.textContent = "Buying…";
         try {
           await executeTankazonNativePurchase(item);
+          globalThis.recordBubbleBodegaOrder?.([{ ...item, quantity: 1 }]);
           status.textContent = `${item.name} purchased!`;
         } catch (error) {
           status.textContent = error?.code === "insufficient-funds"
@@ -1863,17 +2417,24 @@
         if (completingPurchase || !isTankazonCustomProduct(item)) return;
         const button = findTankazonNativePurchaseButton(item);
         if (!button || button.disabled) return;
-        // Keep the file picker on the original user gesture. The native flow
-        // charges only after the player has finished choosing their content.
-        completingPurchase = true;
-        try {
-          closeTankazonItem();
-          if (item.fnName === "buyFish") window.buyFish(item.id);
-          else button.click();
-        } finally {
-          completingPurchase = false;
-          normalizeTankazonPurchaseButtons();
+        if (!(item.fnName === "buyFish" && item.id === "__custom-fish-shop__")) {
+          completingPurchase = true;
+          try {
+            closeTankazonItem();
+            button.click();
+          } finally {
+            completingPurchase = false;
+            normalizeTankazonPurchaseButtons();
+          }
+          return;
         }
+        purchaseErrorMessage = "";
+        const current = cart.get(item.key);
+        cart.set(item.key, { ...item, quantity: Math.min(1, (current?.quantity || 0) + 1), maxQuantity: 1 });
+        saveTankazonCart();
+        renderCart();
+        closeTankazonItem();
+        showToast("Engineered Aquatic Specimen added to your cart.");
       }
 
       function getButtonDescriptor(button) {
@@ -1893,6 +2454,8 @@
             const name = card?.querySelector(".shop-card-main strong, strong")?.textContent?.trim() || button.textContent.trim();
             const thumbnail = card?.querySelector("img");
             const image = thumbnail?.getAttribute("data-sprite-src") || thumbnail?.getAttribute("src") || "assets/icons/Store_Icon.png";
+            const sellerSource = card?.dataset?.storeSeller || button.dataset.storeSeller;
+            const seller = typeof sellerSource === "string" && sellerSource.trim() ? sellerSource.trim() : "BubbleBodega";
             let variants = [];
             try { variants = JSON.parse(button.dataset.fishVariants || button.dataset.decorVariants || button.dataset.machineryVariants || "[]"); } catch { /* Older catalog markup has no variants. */ }
             const descriptor = {
@@ -1902,10 +2465,14 @@
               category,
               name,
               image,
+              seller,
+              backgroundImage: button.dataset.shopBgImage || "",
+              lightImage: button.dataset.shopLightImage || "",
               cost,
+              originalCost: Number.isFinite(Number(button.dataset.listPrice)) ? Number(button.dataset.listPrice) : cost,
               maxQuantity: undefined
             };
-            if (["buyFish", "buyDecor", "buySubmarine", "buyBoat"].includes(fnName) && variants.length) {
+            if (["buyFish", "buyDecor", "buyAutoDispenser", "buySubmarine", "buyBoat"].includes(fnName) && variants.length) {
               descriptor.variants = variants;
               descriptor.baseName = name;
               const selectedKey = variants.some(variant => variant.key === button.dataset.shopVariantKey)
@@ -1927,6 +2494,8 @@
           variantKey: variant.key,
           variantLabel: variant.label,
           image: variant.image,
+          backgroundImage: variant.backgroundImage || item.backgroundImage || "",
+          lightImage: variant.lightImage || item.lightImage || "",
           name: item.variants.length > 1 ? `${item.baseName} (${variant.label})` : item.baseName
         };
       }
@@ -1945,13 +2514,55 @@
           button.dataset.tankazonVariant = variant.key;
           button.setAttribute("aria-label", `Select ${variant.label}`);
           button.setAttribute("aria-pressed", String(variant.key === item.variantKey));
-          const image = document.createElement("img");
-          image.setAttribute("data-sprite-src", variant.image);
-          image.alt = variant.label;
-          button.append(image);
+          if (variant.backgroundImage) {
+            button.append(createTankazonLayeredArt(variant.image, variant.backgroundImage, variant.label));
+          } else {
+            const image = document.createElement("img");
+            image.setAttribute("data-sprite-src", variant.image);
+            image.alt = variant.label;
+            button.append(image);
+          }
           gallery.append(button);
         });
+        syncTankazonItemArt(item);
+      }
+
+      function syncTankazonItemArt(item) {
+        const foreground = document.querySelector("#tankazonItemImage [data-dispenser-layer=foreground]");
+        const background = document.querySelector("#tankazonItemImage [data-dispenser-layer=background]");
+        if (foreground && background) {
+          foreground.setAttribute("data-sprite-src", item.image);
+          background.setAttribute("data-sprite-src", item.backgroundImage || "");
+          const light = document.querySelector("#tankazonItemImage [data-dispenser-layer=light]");
+          if (light) light.setAttribute("data-sprite-src", item.lightImage || "");
+          return;
+        }
         document.querySelector("#tankazonItemImage img")?.setAttribute("data-sprite-src", item.image);
+      }
+
+      function createTankazonLayeredArt(foregroundPath, backgroundPath, alt = "") {
+        const wrapper = document.createElement("span");
+        wrapper.className = "layered-dispenser-thumb layered-dispenser-variant-art";
+        wrapper.setAttribute("data-dispenser-layered-art", "true");
+        const background = document.createElement("img");
+        background.className = "layered-dispenser-thumb-bg";
+        background.setAttribute("data-dispenser-layer", "background");
+        background.setAttribute("data-sprite-src", backgroundPath);
+        background.alt = "";
+        background.setAttribute("aria-hidden", "true");
+        const light = document.createElement("img");
+        light.className = "layered-dispenser-thumb-light";
+        light.setAttribute("data-dispenser-layer", "light");
+        light.setAttribute("data-sprite-src", "assets/equipment/dispenser/Food_Dispenser_Light_Off.png");
+        light.alt = "";
+        light.setAttribute("aria-hidden", "true");
+        const foreground = document.createElement("img");
+        foreground.className = "layered-dispenser-thumb-fg";
+        foreground.setAttribute("data-dispenser-layer", "foreground");
+        foreground.setAttribute("data-sprite-src", foregroundPath);
+        foreground.alt = alt;
+        wrapper.append(background, foreground, light);
+        return wrapper;
       }
 
       function renderCart() {
@@ -2177,6 +2788,20 @@
         return button;
       }
 
+      async function openBubbleBodegaRescueOffer(offer = {}) {
+        if (offer.foodAvailable) {
+          const foodButton = await ensureTankazonNativePurchaseButton({ fnName: "buyFood", id: "basic", category: "food" });
+          const food = foodButton ? getButtonDescriptor(foodButton) : null;
+          if (food) addToCart({ ...food, key: "rescue-offer:buyFood:basic", cost: 0, originalCost: food.originalCost || 5, maxQuantity: 1 });
+        }
+
+        const goldfishButton = await ensureTankazonNativePurchaseButton({ fnName: "buyFish", id: "goldfish", category: "fish" });
+        const preview = goldfishButton?.closest(".shop-card")?.querySelector(".shop-thumb, .decor-thumb");
+        if (preview) openTankazonItem(preview);
+      }
+
+      window.openBubbleBodegaRescueOffer = openBubbleBodegaRescueOffer;
+
       async function waitForTankazonCoinChange(previousBalance, expectedCost, timeoutMs = 2500) {
         if (!Number.isFinite(previousBalance) || expectedCost <= 0) {
           await new Promise((resolve) => setTimeout(resolve, 80));
@@ -2195,9 +2820,17 @@
       }
 
       async function executeTankazonNativePurchase(item) {
-        if (isTankazonCustomProduct(item)) {
-          throw new Error("Open this item's Customize button to choose its images first.");
+        if (item.fnName === "buyFish" && item.id === "__custom-fish-shop__") {
+          const result = await window.buyEngineeredAquaticSpecimen?.();
+          if (!result?.ok) {
+            const error = new Error(result?.errorMessage || `${item.name} could not be purchased.`);
+            if (result?.reason === "insufficient-coins") error.code = "insufficient-funds";
+            throw error;
+          }
+          await waitForTankazonRender();
+          return;
         }
+        if (isTankazonCustomProduct(item)) throw new Error("Open this item's Customize button to choose its content first.");
         // Fish have a complete variant-aware purchase API. Call it before
         // looking up the catalog card: item pages can keep that card hidden or
         // tutorial-disabled even though the selected product is purchasable.
@@ -2263,6 +2896,12 @@
           return;
         }
 
+        if (item.fnName === "buyAutoDispenser" && typeof window.buyAutoDispenser === "function") {
+          if (!window.buyAutoDispenser({ appearanceVariantKey: item.variantKey })) throw new Error(`${item.name} could not be purchased.`);
+          await waitForTankazonRender();
+          return;
+        }
+
         // completingPurchase=true makes BubbleBodega's capture listener stand aside,
         // so this click reaches Bubble Borough's real purchase handler.
         button.click();
@@ -2301,6 +2940,8 @@
           button.textContent = "Buying...";
         }
 
+        let completedOrderItems = [];
+        let completedOrderRecorded = false;
         try {
           const items = [...cart.values()].map((item) => ({ ...item }));
 
@@ -2309,6 +2950,9 @@
             for (const item of items) {
               for (let i = 0; i < item.quantity; i += 1) {
                 await executeTankazonNativePurchase(item);
+                const completedItem = completedOrderItems.find((entry) => entry.key === item.key);
+                if (completedItem) completedItem.quantity += 1;
+                else completedOrderItems.push({ ...item, quantity: 1 });
                 const remaining = cart.get(item.key);
                 if (remaining) {
                   remaining.quantity -= 1;
@@ -2323,6 +2967,9 @@
           }
 
           window.playPurchaseSoundEffect?.();
+
+          globalThis.recordBubbleBodegaOrder?.(completedOrderItems);
+          completedOrderRecorded = true;
 
           cart.clear();
           saveTankazonCart();
@@ -2344,6 +2991,11 @@
           }, 1250);
         } catch (error) {
           console.error("BubbleBodega checkout failed", error);
+
+          if (completedOrderItems.length && !completedOrderRecorded) {
+            globalThis.recordBubbleBodegaOrder?.(completedOrderItems);
+            completedOrderRecorded = true;
+          }
 
           if (error?.code === "insufficient-funds") {
             showTankazonPurchaseError();
@@ -2380,16 +3032,51 @@
       });
 
       document.addEventListener("click", (event) => {
+        const proteusTab = event.target.closest?.("[data-proteus-tab]");
+        if (proteusTab) { showProteusTab(proteusTab.dataset.proteusTab, { focus: true }); return; }
+        const proteusTabLink = event.target.closest?.("[data-proteus-tab-link]");
+        if (proteusTabLink) { showProteusTab(proteusTabLink.dataset.proteusTabLink, { focus: true }); return; }
+        const sellerLink = event.target.closest?.("[data-tankazon-seller-link]");
+        if (sellerLink && !sellerLink.disabled) { event.preventDefault(); showProteusBiodyne(sellerLink); return; }
+        if (event.target.closest?.("[data-proteus-back]")) { closeProteusBiodyne(); return; }
+        if (event.target.closest?.("#tankazonAccountButton")) { highlightedOrderId = ""; showTankazonAccount(); return; }
+        if (event.target.closest?.("#tankazonAccountBack, [data-account-shop-now]")) { closeTankazonAccount(); return; }
+        if (event.target.closest?.("#tankazonOrderSearchButton")) { commitTankazonOrderSearch(); return; }
+        const orderPageButton = event.target.closest?.("[data-order-page]");
+        if (orderPageButton && !orderPageButton.disabled) {
+          orderPage = Number(orderPageButton.dataset.orderPage) || 1;
+          renderTankazonOrders();
+          document.getElementById("tankazonAccountPage")?.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
         const variantButton = event.target.closest?.("[data-tankazon-variant]");
         if (variantButton && selectedItem && !completingPurchase) {
           selectedItem = selectTankazonFishVariant(selectedItem, variantButton.dataset.tankazonVariant);
-          document.querySelector("#tankazonItemImage img")?.setAttribute("data-sprite-src", selectedItem.image);
+          syncTankazonItemArt(selectedItem);
           document.getElementById("tankazonItemVariantLabel").textContent = `Appearance: ${selectedItem.variantLabel}`;
           document.getElementById("tankazonItemStatus").textContent = "";
           document.querySelectorAll("[data-tankazon-variant]").forEach((button) => {
             button.setAttribute("aria-pressed", String(button.dataset.tankazonVariant === selectedItem.variantKey));
           });
           syncTankazonItem();
+          return;
+        }
+        const shopVariantButton = event.target.closest?.(".shop-variant-dots [data-shop-variant-key]");
+        if (shopVariantButton && !completingPurchase) {
+          const card = shopVariantButton.closest(".shop-card");
+          const foreground = card?.querySelector("[data-dispenser-layer=foreground]");
+          const background = card?.querySelector("[data-dispenser-layer=background]");
+          if (foreground && background) {
+            foreground.setAttribute("data-sprite-src", shopVariantButton.dataset.shopVariantImage || "");
+            background.setAttribute("data-sprite-src", shopVariantButton.dataset.shopVariantBackground || "");
+            const light = card?.querySelector("[data-dispenser-layer=light]");
+            if (light) light.setAttribute("data-sprite-src", shopVariantButton.dataset.shopVariantLight || "");
+            const purchaseButton = card.querySelector("[data-buy-auto-dispenser]");
+            if (purchaseButton) purchaseButton.dataset.shopVariantKey = shopVariantButton.dataset.shopVariantKey || "";
+            card.querySelectorAll(".shop-variant-dots [data-shop-variant-key]").forEach((button) => {
+              button.setAttribute("aria-pressed", String(button === shopVariantButton));
+            });
+          }
           return;
         }
         const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb");
@@ -2413,8 +3100,8 @@
           if (descriptor) addToCart(descriptor);
           return;
         }
-        if (event.target.closest?.("#tankazonAllCategories")) { event.preventDefault(); showAllCategories(); return; }
-        if (event.target.closest?.("#tankazonSearchButton")) { commitTankazonSearch(); return; }
+        if (event.target.closest?.("#tankazonAllCategories")) { event.preventDefault(); closeTankazonAccount(); showAllCategories(); return; }
+        if (event.target.closest?.("#tankazonSearchButton")) { closeTankazonAccount(); commitTankazonSearch(); return; }
         if (event.target.closest?.("#tankazonCompletePurchase")) { completePurchase(); return; }
         const inc = event.target.closest?.("[data-cart-inc]");
         if (inc) {
@@ -2449,6 +3136,7 @@
         }
         const tab = event.target.closest?.(".store-tab-button");
         if (tab) {
+          closeTankazonAccount();
           const category = tab.id === "storeFoodTab" ? "food" : tab.id === "storePharmacyTab" ? "pharmacy" : tab.id === "storeFishTab" ? "fish" : tab.id === "storeDecorTab" ? "decor" : "equipment";
           beginTankazonCatalogLoading(category);
           closeTankazonItem(false);
@@ -2471,6 +3159,7 @@
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
+        closeTankazonAccount();
         commitTankazonSearch();
       }, true);
       tankazonSearchInput?.addEventListener("keyup", (event) => {
@@ -2478,8 +3167,26 @@
         event.preventDefault();
         event.stopPropagation();
       }, true);
+      document.getElementById("tankazonOrderSearchInput")?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        event.stopPropagation();
+        commitTankazonOrderSearch();
+      }, true);
 
       document.addEventListener("keydown", (event) => {
+        const proteusTab = event.target.closest?.("[data-proteus-tab]");
+        if (proteusTab && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+          const tabs = [...document.querySelectorAll("#proteusBiodynePage [data-proteus-tab]")];
+          const currentIndex = tabs.indexOf(proteusTab);
+          const nextIndex = event.key === "Home" ? 0
+            : event.key === "End" ? tabs.length - 1
+              : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+          event.preventDefault();
+          tabs[nextIndex]?.focus();
+          showProteusTab(tabs[nextIndex]?.dataset.proteusTab);
+          return;
+        }
         const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb");
         if (preview && ["Enter", " "].includes(event.key)) {
           event.preventDefault();
@@ -2489,6 +3196,7 @@
       });
       document.addEventListener("change", (event) => {
         if (event.target?.id !== "tankazonSearchScope") return;
+        closeTankazonAccount();
         closeTankazonItem(false);
         allCategoriesMode = event.target.value === "all";
         saveTankazonView(event.target.value);
@@ -2525,9 +3233,10 @@
           const justOpened = isStoreOpen && !wasStoreOpen;
           wasStoreOpen = isStoreOpen;
 
-          if (!isStoreOpen) { closeTankazonItem(false); return; }
+          if (!isStoreOpen) { closeProteusBiodyne(false); closeTankazonItem(false); closeTankazonAccount(); return; }
 
           if (justOpened) {
+            syncTankazonAccountLabel();
             const savedView = storeOverlay.dataset.requestedCategory || restoreTankazonView();
             delete storeOverlay.dataset.requestedCategory;
             beginTankazonCatalogLoading(savedView);
@@ -2732,7 +3441,7 @@
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost
         ? `live-${Date.now()}`
-        : "20260910-account-popover-r3";
+        : "20260913-store-account-r1";
       script.type = "module";
       script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);

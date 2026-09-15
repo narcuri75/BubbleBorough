@@ -103,7 +103,11 @@ function createFishRecord(speciesId, options = {}) {
     name: options.name,
     speciesId
   });
-  const personalityPick = pickFishPersonality(species);
+  const behaviorSpeciesId = sanitizeFishBehaviorSpeciesId(
+    options.behaviorSpeciesId || (species.customAsset ? (species.behaviorSpeciesId || species.behaviorProfileId) : ""),
+    speciesId
+  );
+  const personalityPick = pickFishPersonality(runtime.fishMap.get(behaviorSpeciesId) || species);
   const fish = {
     id: fishId,
     speciesId,
@@ -193,7 +197,7 @@ function createFishRecord(speciesId, options = {}) {
     appearanceVariantKey: typeof options.appearanceVariantKey === "string" ? options.appearanceVariantKey : null,
     appearanceAssetPath: typeof options.appearanceAssetPath === "string" ? options.appearanceAssetPath : null,
     scale,
-    behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(options.behaviorSpeciesId, speciesId),
+    behaviorSpeciesId,
     turnAnimationPreference: ["simple", "complex"].includes(String(options.turnAnimationPreference || "").trim().toLowerCase())
       ? String(options.turnAnimationPreference).trim().toLowerCase()
       : "",

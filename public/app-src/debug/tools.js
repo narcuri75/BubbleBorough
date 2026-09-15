@@ -579,14 +579,10 @@ function dispenseAutoDispenserNow(now = Date.now()) {
   }
 
   const dispenser = state.autoDispenser;
-  const requested = clamp(
-    Math.round(Number(dispenser?.mealPortion) || 0),
-    AUTO_DISPENSER_PORTION_MIN,
-    AUTO_DISPENSER_PORTION_MAX
-  );
+  const requested = Math.min(AUTO_DISPENSER_MAX_PELLETS, getAutoDispenserDemandCount(getCurrentTank(), now));
 
   if (requested <= 0) {
-    showToast("Set the pellet dispenser amount above 00 first.");
+    showToast("There are no hungry connected fish to feed right now.");
     return false;
   }
 
@@ -1561,7 +1557,7 @@ function triggerDebugBehaviorInspectLure(now = Date.now()) {
     lingerMultiplier: 1
   });
   if (!lure) {
-    showToast("Add a Fishing Lure or Gorbag to test lure inspection.");
+    showToast("Add a Fishing Lure or Gorebag to test lure inspection.");
     return;
   }
 
@@ -2365,7 +2361,7 @@ function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now
     case "inspect-lure":
       return hasDebugDecorHangoutZone(["lure"])
         ? { enabled: true, title }
-        : { enabled: false, title: `${title}: add a Fishing Lure or Gorbag` };
+        : { enabled: false, title: `${title}: add a Fishing Lure or Gorebag` };
     case "guard-cave":
       return hasDebugDecorHangoutZone(["hide", "hardscape"])
         ? { enabled: true, title }

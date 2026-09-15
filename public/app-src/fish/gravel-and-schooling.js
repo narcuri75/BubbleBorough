@@ -1122,12 +1122,23 @@ function getFishSchoolFollowLeader(fish) {
   return state.fish.find((entry) => entry.id === fish.followFishId) || null;
 }
 
+function getFishSchoolingCompatibilityId(fish) {
+  const species = getBaseSpeciesForFish(fish);
+  if (species?.customAsset) {
+    return sanitizeFishBehaviorSpeciesId(
+      fish?.behaviorSpeciesId || species.behaviorSpeciesId || species.behaviorProfileId,
+      fish?.speciesId
+    ) || fish?.speciesId || "";
+  }
+  return fish?.speciesId || "";
+}
+
 function isFishEligibleSchoolLeader(leader, follower, species, now = Date.now()) {
   if (
     !leader ||
     !follower ||
     leader.id === follower.id ||
-    leader.speciesId !== follower.speciesId ||
+    getFishSchoolingCompatibilityId(leader) !== getFishSchoolingCompatibilityId(follower) ||
     isFishDead(leader) ||
     leader.activity !== "roam" ||
     leader.caveState ||

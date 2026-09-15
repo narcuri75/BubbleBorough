@@ -352,9 +352,12 @@ function processBoroughFishTravel(now = Date.now()) {
         ? findNearestBoroughServiceRoute(source, neededService)
         : null;
       const residenceTank = getTankContainingDecor(getFishResidenceDecorId(fish));
+      const timeSinceLastMove = now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0);
+      const needsUrgentHomecoming = getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_CRITICAL_THRESHOLD;
       const shouldReturnHome = residenceTank
         && residenceTank.id !== source.id
-        && getFishNeedValue(fish, "energy", now) <= 52;
+        && getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_LOW_THRESHOLD
+        && (needsUrgentHomecoming || timeSinceLastMove >= 5 * MINUTE_MS);
       const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
       const residenceTubeJourney = shouldReturnHome ? getTransitTubeJourney(source, residenceTank) : null;
       const directedRoute = foodRoute || serviceRoute || residenceRoute;
@@ -365,7 +368,7 @@ function processBoroughFishTravel(now = Date.now()) {
           ? getTransitTubeJourney(source, foodDestination)
           : residenceTubeJourney;
       const minimumMoveDelay = directedRoute ? 25 * 1000 : 2 * MINUTE_MS;
-      if (now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0) < minimumMoveDelay) {
+      if (timeSinceLastMove < minimumMoveDelay) {
         continue;
       }
       const destinationsWithFood = neededService === "food"
@@ -377,8 +380,14 @@ function processBoroughFishTravel(now = Date.now()) {
           return journey ? [journey] : [];
         })
         : [];
-      const ambientTravelRequested = (neighbors.length > 0 || ambientTubeJourneys.length > 0) && Math.random() < 0.02;
-      const ambientTubeJourney = ambientTravelRequested && ambientTubeJourneys.length
+      // A linked tube is an intentional piece of infrastructure, so give it a
+      // distinct exploration roll instead of making it compete with the much
+      // more common open-edge route. This also makes tube use visible without
+      // turning neighborhood hopping into constant churn.
+      const ambientTubeTravelRequested = ambientTubeJourneys.length > 0 && Math.random() < 0.08;
+      const ambientEdgeTravelRequested = !ambientTubeTravelRequested && neighbors.length > 0 && Math.random() < 0.02;
+      const ambientTravelRequested = ambientTubeTravelRequested || ambientEdgeTravelRequested;
+      const ambientTubeJourney = ambientTubeTravelRequested
         ? ambientTubeJourneys[Math.floor(Math.random() * ambientTubeJourneys.length)]
         : null;
       const selectedTubeJourney = tubeJourney || ambientTubeJourney;

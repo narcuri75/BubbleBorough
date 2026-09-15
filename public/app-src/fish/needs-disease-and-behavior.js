@@ -122,9 +122,18 @@ function getFishByIdFast(fishId) {
   return runtime.fishFrameLookupById.get(fishId) || null;
 }
 
-function getFishBehaviorProfileSpecies(fish) {
-  const profileId = typeof fish?.behaviorSpeciesId === "string" ? fish.behaviorSpeciesId.trim() : "";
-  if (!profileId || profileId === fish?.speciesId) {
+function getFishBehaviorProfileSpecies(fishOrSpecies) {
+  const baseSpecies = fishOrSpecies?.speciesId
+    ? getBaseSpeciesForFish(fishOrSpecies)
+    : fishOrSpecies;
+  const profileId = [
+    fishOrSpecies?.behaviorSpeciesId,
+    baseSpecies?.behaviorSpeciesId,
+    baseSpecies?.behaviorProfileSpeciesId,
+    baseSpecies?.behaviorProfileId
+  ].find((value) => typeof value === "string" && value.trim())?.trim() || "";
+  const baseSpeciesId = fishOrSpecies?.speciesId || baseSpecies?.id || "";
+  if (!profileId || profileId === baseSpeciesId) {
     return null;
   }
 
@@ -154,9 +163,10 @@ function normalizeBehaviorPersonality(value) {
 }
 
 function getFishBehaviorProfile(speciesOrFish) {
-  const species = speciesOrFish?.speciesId
-    ? (getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
-    : speciesOrFish;
+  const species = getFishBehaviorProfileSpecies(speciesOrFish)
+    || (speciesOrFish?.speciesId
+      ? (getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
+      : speciesOrFish);
   const speciesId = typeof species?.id === "string" ? species.id : (typeof speciesOrFish?.speciesId === "string" ? speciesOrFish.speciesId : "");
   const profile = FISH_BEHAVIOR_PROFILES[speciesId] || null;
   const behavior = species?.behavior || "";
@@ -183,17 +193,55 @@ function getFishBehaviorProfile(speciesOrFish) {
 }
 
 function getFishLocomotionProfile(speciesOrFish) {
-  const species = speciesOrFish?.speciesId
-    ? (getFishBehaviorProfileSpecies(speciesOrFish) || getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
+  const baseSpecies = speciesOrFish?.speciesId
+    ? (getBaseSpeciesForFish(speciesOrFish) || getSpeciesForFish(speciesOrFish))
     : speciesOrFish;
-  const speciesId = typeof species?.id === "string"
-    ? species.id
-    : (typeof speciesOrFish?.speciesId === "string" ? speciesOrFish.speciesId : "");
-  return FISH_LOCOMOTION_PROFILES[speciesId] || FISH_LOCOMOTION_PROFILE_DEFAULT;
+  const profileSpecies = getFishBehaviorProfileSpecies(speciesOrFish);
+  const speciesId = profileSpecies?.id || baseSpecies?.id || speciesOrFish?.speciesId || "";
+  const inherited = FISH_LOCOMOTION_PROFILES[speciesId] || FISH_LOCOMOTION_PROFILE_DEFAULT;
+  if (!baseSpecies?.customAsset) return inherited;
+
+  const swimZone = normalizeCustomFishSwimZone(baseSpecies.swimZone);
+  const socialAffinity = normalizeCustomFishSocialAffinity(baseSpecies.socialAffinity);
+  if (!swimZone && socialAffinity === "adaptive") return inherited;
+
+  const cache = runtime.customFishLocomotionProfileCache || (runtime.customFishLocomotionProfileCache = new WeakMap());
+  const cached = cache.get(baseSpecies);
+  if (
+    cached?.inherited === inherited
+    && cached.swimZone === swimZone
+    && cached.socialAffinity === socialAffinity
+  ) {
+    return cached.profile;
+  }
+
+  const overrides = {};
+  if (swimZone === "full") {
+    overrides.preferredY = 0.5;
+    overrides.verticalSpread = 0.86;
+  } else if (swimZone === "upper") {
+    overrides.preferredY = 0.25;
+    overrides.verticalSpread = 0.48;
+  } else if (swimZone === "midwater") {
+    overrides.preferredY = 0.5;
+    overrides.verticalSpread = 0.56;
+  } else if (swimZone === "lower") {
+    overrides.preferredY = 0.72;
+    overrides.verticalSpread = 0.46;
+  }
+  if (socialAffinity === "independent") {
+    overrides.schoolStrength = 0;
+  } else if (socialAffinity === "schooling") {
+    overrides.schoolStrength = Math.max(Number(inherited.schoolStrength) || 0, 0.74);
+  }
+
+  const profile = Object.freeze({ ...inherited, ...overrides });
+  cache.set(baseSpecies, { inherited, swimZone, socialAffinity, profile });
+  return profile;
 }
 
 function getFishSchoolingStrength(fish, species = getSpeciesForFish(fish)) {
-  const profile = getFishLocomotionProfile(species || fish);
+  const profile = getFishLocomotionProfile(fish || species);
   const personality = getFishPersonality(fish);
   let personalityScale = 1;
   if (personality === "social" || personality === "follower") {
@@ -520,14 +568,66 @@ function getFishColorCycleFilter(fish, now = Date.now()) {
 }
 
 function getFishTintedImage(imagePath, sourceImage, fish) {
-  const color = getFishColorSetting(fish);
+  const color = isHalloweenModeActive()
+    ? "#37ae9e"
+    : getFishColorSetting(fish);
   if (!color || isDecorRgbColorSetting(color)) {
     return sourceImage;
   }
 
   return getTintedCaveLayerImage(imagePath, color, {
-    colorize: getFishColorizeSetting(fish)
+    colorize: isHalloweenModeActive() || getFishColorizeSetting(fish)
   }) || sourceImage;
+}
+
+function getDavyMutationCanvasFilter(fish, now = Date.now(), comfortValueOverride = null) {
+  if (!fish || isFishDead(fish)) return "none";
+  const species = getSpeciesForFish(fish);
+  const behaviorKey = getDavyMutationBehaviorKey(species);
+  if (!behaviorKey) return "none";
+  const comfortValue = Number.isFinite(Number(comfortValueOverride))
+    ? Number(comfortValueOverride)
+    : getFishComfort(fish, now).value;
+  const stressed = comfortValue <= 0.45 || (Number(fish.panicUntil) || 0) > now;
+  const feeding = fish.activity === "feeding";
+
+  if (behaviorKey === "barracuda") {
+    const amplitude = feeding || stressed ? 18 : 8;
+    const hue = Math.round(Math.sin(now / 1700 + (Number(fish.phase) || 0) * 5) * amplitude);
+    const saturation = feeding || stressed ? 132 : 112;
+    const brightness = feeding || stressed ? 108 : 101;
+    return `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${brightness}%)`;
+  }
+
+  if (behaviorKey === "siren-pike") {
+    const pulse = (Math.sin(now / 620 + (Number(fish.phase) || 0) * 4) + 1) * 0.5;
+    const brightness = Math.round(101 + pulse * (feeding || stressed ? 11 : 5));
+    const saturation = Math.round(106 + pulse * 12);
+    return `brightness(${brightness}%) saturate(${saturation}%)`;
+  }
+
+  if (behaviorKey === "glass-spitter") {
+    const pulse = (Math.sin(now / 430 + (Number(fish.phase) || 0) * 6) + 1) * 0.5;
+    const brightness = Math.round(101 + pulse * (feeding || stressed ? 10 : 5));
+    const saturation = Math.round(104 + pulse * (feeding || stressed ? 20 : 10));
+    return `brightness(${brightness}%) saturate(${saturation}%)`;
+  }
+
+  if (behaviorKey === "cherub") {
+    const pulse = (Math.sin(now / 700 + (Number(fish.phase) || 0) * 3) + 1) * 0.5;
+    const brightness = Math.round(100 + pulse * (feeding || stressed ? 9 : 3));
+    return `brightness(${brightness}%) saturate(${feeding || stressed ? 116 : 105}%)`;
+  }
+
+  if (behaviorKey === "hyperfin") {
+    const pulse = (Math.sin(now / 480 + (Number(fish.phase) || 0) * 7) + 1) * 0.5;
+    const accelerated = (Number(fish.davyFoodBurstUntil) || 0) > now || (Number(fish.davyCircuitUntil) || 0) > now || (Number(fish.davyPatrolBurstUntil) || 0) > now;
+    const brightness = Math.round(101 + pulse * (accelerated || feeding || stressed ? 10 : 4));
+    const saturation = Math.round((accelerated || feeding || stressed ? 114 : 104) + pulse * (accelerated ? 8 : 4));
+    return `brightness(${brightness}%) saturate(${saturation}%)`;
+  }
+
+  return "none";
 }
 
 function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now(), comfortValueOverride = null) {
@@ -536,9 +636,13 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now(), comfortVal
   const colorCycleFilter = getFishColorCycleFilter(fish, now);
   const diseaseSaturationPercent = getFishDiseaseSaturationPercent(fish, now);
   const diseaseBrightnessPercent = getFishDiseaseBrightnessPercent(fish, now);
+  const davyMutationFilter = getDavyMutationCanvasFilter(fish, now, comfortValueOverride);
 
   if (colorCycleFilter !== "none") {
     filters.push(colorCycleFilter);
+  }
+  if (davyMutationFilter !== "none") {
+    filters.push(davyMutationFilter);
   }
   if (diseaseSaturationPercent < 100 || diseaseBrightnessPercent < 100) {
     filters.push(`saturate(${diseaseSaturationPercent}%) brightness(${diseaseBrightnessPercent}%)`);

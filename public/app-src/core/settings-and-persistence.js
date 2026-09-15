@@ -124,6 +124,58 @@ function sanitizeAccountProfile(rawProfile) {
   return { username, userId };
 }
 
+function sanitizeBubbleBodegaRescueOffer(rawOffer) {
+  const source = rawOffer && typeof rawOffer === "object" ? rawOffer : {};
+  const timestamp = (value) => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+  return {
+    cycle: Number.isFinite(Number(source.cycle)) ? Math.max(0, Math.floor(Number(source.cycle))) : 0,
+    eligibilityActive: source.eligibilityActive === true,
+    issuedAt: timestamp(source.issuedAt),
+    activatedAt: timestamp(source.activatedAt),
+    foodClaimedAt: timestamp(source.foodClaimedAt),
+    goldfishClaimedAt: timestamp(source.goldfishClaimedAt)
+  };
+}
+
+function sanitizePurchaseHistory(rawHistory) {
+  if (!Array.isArray(rawHistory)) return [];
+  return rawHistory.map((rawOrder) => {
+    if (!rawOrder || typeof rawOrder !== "object") return null;
+    const placedAt = Number.isFinite(Number(rawOrder.placedAt)) ? Number(rawOrder.placedAt) : Date.now();
+    const items = Array.isArray(rawOrder.items) ? rawOrder.items.map((rawItem) => {
+      if (!rawItem || typeof rawItem !== "object") return null;
+      const name = typeof rawItem.name === "string" ? rawItem.name.trim().slice(0, 120) : "Store item";
+      const category = typeof rawItem.category === "string" ? rawItem.category.trim().slice(0, 32) : "";
+      const image = typeof rawItem.image === "string" && rawItem.image.trim() ? rawItem.image.trim().slice(0, 600) : "assets/misc/Store_Logo.png";
+      const seller = typeof rawItem.seller === "string" ? rawItem.seller.trim().slice(0, 120) : "";
+      return {
+        key: typeof rawItem.key === "string" ? rawItem.key.slice(0, 180) : "",
+        name: name || "Store item",
+        category,
+        image,
+        seller,
+        cost: clamp(Math.floor(Math.max(0, Number(rawItem.cost) || 0)), 0, MAX_WALLET_COINS),
+        quantity: clamp(Math.floor(Math.max(1, Number(rawItem.quantity) || 1)), 1, 999)
+      };
+    }).filter(Boolean).slice(0, 100) : [];
+    if (!items.length) return null;
+    const proteusStatus = ["design-required", "specimen-configured", "fulfillment-complete"].includes(rawOrder.proteusStatus)
+      ? rawOrder.proteusStatus
+      : "";
+    return {
+      id: typeof rawOrder.id === "string" ? rawOrder.id.slice(0, 80) : createId("order"),
+      placedAt,
+      total: items.reduce((sum, item) => sum + item.cost * item.quantity, 0),
+      items,
+      ...(proteusStatus ? {
+        proteusStatus,
+        proteusConfiguredAt: Number.isFinite(Number(rawOrder.proteusConfiguredAt)) ? Math.max(0, Number(rawOrder.proteusConfiguredAt)) : 0,
+        proteusFulfilledAt: Number.isFinite(Number(rawOrder.proteusFulfilledAt)) ? Math.max(0, Number(rawOrder.proteusFulfilledAt)) : 0
+      } : {})
+    };
+  }).filter(Boolean).sort((left, right) => right.placedAt - left.placedAt).slice(0, 250);
+}
+
 function getAccountUsernameForUser(userId = "") {
   const profile = sanitizeAccountProfile(state?.accountProfile);
   const expectedUserId = String(userId || "").trim();
@@ -766,7 +818,10 @@ function shouldPersistReconciledState(rawState) {
   const incoming = rawState && typeof rawState === "object" ? rawState : {};
   const incomingVersion = Number.isFinite(incoming.version) ? incoming.version : 0;
   const incomingHealthModelVersion = Number.isFinite(incoming.healthModelVersion) ? incoming.healthModelVersion : 1;
-  return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION;
+  const welcomeMailCurrent = Number(incoming.webSurfWelcomeVersion) >= 1
+    && Number.isFinite(Number(incoming.webSurfWelcomeSentAt))
+    && Number(incoming.webSurfWelcomeSentAt) > 0;
+  return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION || !welcomeMailCurrent;
 }
 
 
@@ -1192,13 +1247,23 @@ function sanitizeBoroughEventHistory(rawEvents, fallbackTanks = []) {
 
 function reconcileState(rawState) {
   const now = Date.now();
+  const isBrandNewGame = !rawState || typeof rawState !== "object";
   const base = {
     version: STATE_VERSION,
     healthModelVersion: HEALTH_MODEL_VERSION,
+    gameCreatedAt: now,
+    webSurfWelcomeVersion: 1,
+    webSurfWelcomeSentAt: now,
     coins: STARTING_COINS,
     walletTransactions: [],
     lifetimeDeaths: 0,
     accountProfile: sanitizeAccountProfile(null),
+    purchaseHistory: [],
+    engineeredSpecimenDesignCredits: 0,
+    engineeredSpecimenDesignOrderIds: [],
+    engineeredSpecimenCompletedOrderIds: [],
+    engineeredSpecimenDesignStartedOrderIds: [],
+    bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer(null),
     mealHistory: {},
     lastGravelCoinFoundAt: 0,
     unlockedFishSpecies: [],
@@ -1263,6 +1328,15 @@ function reconcileState(rawState) {
 
   const nextState = {
     ...base,
+    gameCreatedAt: Number.isFinite(Number(incoming.gameCreatedAt))
+      ? Math.max(0, Number(incoming.gameCreatedAt))
+      : (isBrandNewGame ? base.gameCreatedAt : 0),
+    webSurfWelcomeVersion: 1,
+    webSurfWelcomeSentAt: Number(incoming.webSurfWelcomeVersion) >= 1
+      && Number.isFinite(Number(incoming.webSurfWelcomeSentAt))
+      && Number(incoming.webSurfWelcomeSentAt) > 0
+      ? Number(incoming.webSurfWelcomeSentAt)
+      : now,
     coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
     walletTransactions: Array.isArray(incoming.walletTransactions)
       ? incoming.walletTransactions.map((entry) => ({
@@ -1271,11 +1345,24 @@ function reconcileState(rawState) {
         direction: entry?.direction === "debit" ? "debit" : entry?.direction === "neutral" ? "neutral" : "credit",
         label: typeof entry?.label === "string" ? entry.label.slice(0, 180) : "Aquarium activity",
         place: typeof entry?.place === "string" ? entry.place.replace(/tankazon/ig, "BubbleBodega").slice(0, 80) : "Aquarium",
-        time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now
+        time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now,
+        orderId: typeof entry?.orderId === "string" ? entry.orderId.slice(0, 80) : ""
       })).filter((entry) => entry.amount > 0 || entry.direction === "neutral").sort((left, right) => right.time - left.time).slice(0, 60)
       : base.walletTransactions,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     accountProfile: sanitizeAccountProfile(incoming.accountProfile),
+    purchaseHistory: sanitizePurchaseHistory(incoming.purchaseHistory),
+    engineeredSpecimenDesignCredits: Math.max(0, Math.floor(Number(incoming.engineeredSpecimenDesignCredits) || 0)),
+    engineeredSpecimenDesignOrderIds: Array.isArray(incoming.engineeredSpecimenDesignOrderIds)
+      ? incoming.engineeredSpecimenDesignOrderIds.filter((id) => typeof id === "string").slice(0, 20)
+      : [],
+    engineeredSpecimenCompletedOrderIds: Array.isArray(incoming.engineeredSpecimenCompletedOrderIds)
+      ? incoming.engineeredSpecimenCompletedOrderIds.filter((id) => typeof id === "string").slice(0, 20)
+      : [],
+    engineeredSpecimenDesignStartedOrderIds: Array.isArray(incoming.engineeredSpecimenDesignStartedOrderIds)
+      ? incoming.engineeredSpecimenDesignStartedOrderIds.filter((id) => typeof id === "string").slice(0, 20)
+      : [],
+    bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer(incoming.bubbleBodegaRescueOffer),
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     lastGravelCoinFoundAt: Math.max(
       Number(incoming.lastGravelCoinFoundAt) || 0,
@@ -1421,6 +1508,10 @@ function reconcileState(rawState) {
 
   nextState.unlockedFishSpecies = sanitizeUnlockedFishSpecies([
     ...nextState.unlockedFishSpecies,
+    ...PROGRESSION_MILESTONES
+      .filter((milestone) => nextState.dailyBonus?.milestones?.[milestone.id])
+      .flatMap((milestone) => milestone.unlocks || []),
+    ...(Object.keys(nextState.customFishAssets || {}).length ? [CUSTOM_FISH_SHOP_KEY] : []),
     ...[...getAllTankFish(nextState), ...nextState.storedFish]
       .map((fish) => fish?.speciesId)
       .filter((speciesId) => runtime.fishMap.get(speciesId)?.unlockRequirement)

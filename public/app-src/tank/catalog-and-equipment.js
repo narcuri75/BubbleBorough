@@ -236,6 +236,8 @@ function getUnlockRequirementLabel(requirement) {
       return "Master Keeper";
     case "marine-curator":
       return "Marine Curator";
+    case "borough-legends":
+      return "Borough Legends";
     case "spooky-keeper":
     case "corpse-zombie":
       return "Spooky Keeper";
@@ -1098,6 +1100,11 @@ function createDefaultAutoDispenserState(options = {}) {
 
   return {
     installed: Boolean(source.installed),
+    stored: source.stored === true,
+    storedCount: Math.max(0, Math.floor(Number(source.storedCount) || (source.stored === true ? 1 : 0))),
+    appearanceVariantKey: typeof source.appearanceVariantKey === "string" ? source.appearanceVariantKey : "",
+    xNorm: clamp(Number.isFinite(Number(source.xNorm)) ? Number(source.xNorm) : AUTO_DISPENSER_DEFAULT_X_NORM, 0.12, 0.88),
+    tankLayer: clampTankLayer(source.tankLayer ?? AUTO_DISPENSER_DEFAULT_TANK_LAYER),
     mealPortion,
     storedPellets,
     lastDispensedSlotKey: typeof source.lastDispensedSlotKey === "string" ? source.lastDispensedSlotKey : "",
@@ -1125,6 +1132,42 @@ function isAutoDispenserFoodLow(dispenser = state?.autoDispenser) {
   return mealPortion > 0 && loadedCount <= Math.max(1, mealPortion);
 }
 
+function getAutoDispenserDemandCount(targetTank = getCurrentTank(), now = Date.now()) {
+  if (!targetTank) return 0;
+  return getAllTanks().reduce((total, tank) => total + getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD)
+    .filter((fish) => tank.id === targetTank.id || findAquariumSectionRoute(tank, targetTank) || getTransitTubeJourney(tank, targetTank)).length, 0);
+}
+
 function hasAutoDispenserInstalled(targetTank = getCurrentTank()) {
-  return false;
+  return Boolean(targetTank?.autoDispenser?.installed);
+}
+
+function deployAutoDispenser(targetTank = getCurrentTank(), now = Date.now()) {
+  if (!targetTank?.autoDispenser?.stored || targetTank.autoDispenser.installed || (Number(targetTank.autoDispenser.storedCount) || 0) <= 0) return false;
+  targetTank.autoDispenser = createDefaultAutoDispenserState({
+    ...targetTank.autoDispenser,
+    stored: false,
+    installed: true,
+    storedCount: Math.max(0, Math.floor(Number(targetTank.autoDispenser.storedCount) || 1) - 1),
+    xNorm: AUTO_DISPENSER_DEFAULT_X_NORM,
+    tankLayer: AUTO_DISPENSER_DEFAULT_TANK_LAYER
+  });
+  runtime.equipmentEditTrayTab = "tank";
+  pushEvent(`Pellet dispenser deployed in ${getTankLabel(targetTank)}.`, now, targetTank, { type: "equipment" });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function recallAutoDispenser(now = Date.now()) {
+  const dispenser = state?.autoDispenser;
+  if (!dispenser?.installed) return false;
+  dispenser.installed = false;
+  dispenser.stored = true;
+  dispenser.storedCount = Math.max(1, Math.floor(Number(dispenser.storedCount) || 0) + 1);
+  pushEvent("Pellet dispenser returned to equipment storage with its food inventory intact.", now, getCurrentTank(), { type: "equipment" });
+  runtime.equipmentEditTrayTab = "storage";
+  saveState();
+  renderUi(now);
+  return true;
 }

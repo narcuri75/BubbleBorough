@@ -1634,15 +1634,15 @@ function renderSubmarineShopCard() {
   const variants = getMachineryAppearanceVariants(MACHINERY_TYPE_SUBMARINE);
   const mainImage = variants[0]?.image || SUBMARINE_IMAGE_PATH;
   return `
-    <article class="shop-card submarine-shop-card">
+    <article class="shop-card submarine-shop-card" data-store-seller="BubbleBodega">
       <img class="shop-thumb submarine-shop-thumb" ${assetImageAttributes(mainImage)} alt="Automated Care Submarine" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
       <div class="shop-meta shop-card-main">
         <div>
           <strong>Automated Care Submarine</strong>
           <div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div>
         </div>
-        <div class="fish-meta">Automatic care machinery that travels between connected tanks to feed hungry fish and deploy health or calming medicine when needed.</div>
-        <div class="mini-note">Carries 99 food, 99 health drops, and 99 calming drops. Choose an appearance and buy as many as you need.</div>
+        <div class="fish-meta">A tiny autonomous submarine built to handle the parts of fishkeeping you might forget. It travels between connected tanks, feeds hungry residents, administers medicine when needed, and carries up to 99 portions of each supply.</div>
+        <div class="mini-note">Not compatible with chum. Choose an appearance and buy as many as you need.</div>
       </div>
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)}</span>
@@ -1659,12 +1659,12 @@ function renderBoatShopCard() {
   const variants = getMachineryAppearanceVariants(MACHINERY_TYPE_BOAT);
   const mainImage = variants[0]?.image || BOAT_IMAGE_PATH;
   return `
-    <article class="shop-card boat-shop-card">
+    <article class="shop-card boat-shop-card" data-store-seller="BubbleBodega">
       <img class="shop-thumb submarine-shop-thumb" ${assetImageAttributes(mainImage)} alt="Chum Skiff" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
       <div class="shop-meta shop-card-main">
         <div><strong>Chum Skiff</strong><div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div></div>
-        <div class="fish-meta">A surface skiff that skips back and forth across the water and drops chum on command.</div>
-        <div class="mini-note">Carries ${BOAT_RESOURCE_CAPACITY} chum. Choose an appearance and buy as many as you need.</div>
+        <div class="fish-meta">A small surface skiff dedicated to one extremely specific job that even submariners won't do: delivering chum. It patrols the water above the tank and drops a portion on command from its supply of up to ${BOAT_RESOURCE_CAPACITY} servings.</div>
+        <div class="mini-note">Choose an appearance and buy as many as you need.</div>
       </div>
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${BOAT_COST} ${pluralize("coin", BOAT_COST)}</span>
@@ -1787,6 +1787,8 @@ function renderEditEquipmentTray() {
   const currentTank = getCurrentTank();
   const submarineTank = getSubmarineTank(submarine);
   const boatTank = getBoatTank(boat);
+  const dispenserInstalled = hasAutoDispenserInstalled(currentTank);
+  const dispenserOwned = dispenserInstalled || state.autoDispenser?.stored === true || (Number(state.autoDispenser?.storedCount) || 0) > 0;
   const machineryEntries = activeLocationTab === "storage"
     ? [
       ...storedSubmarines.map((item) => ({ item, type: MACHINERY_TYPE_SUBMARINE, stored: true })),
@@ -1848,7 +1850,18 @@ function renderEditEquipmentTray() {
     `;
   };
 
-  let markup = machineryEntries.map(renderMachineryTile).join("");
+  const dispenserTile = dispenserOwned
+    && ((activeLocationTab === "storage" && !dispenserInstalled) || (activeLocationTab === "tank" && dispenserInstalled))
+    ? `<article class="edit-decor-tile" data-mood-tone="good" data-decor-name="Food Dispenser 9000">
+        <button class="edit-decor-tile-primary" type="button" title="${dispenserInstalled ? "Select and drag the Food Dispenser 9000" : "Deploy the Food Dispenser 9000 in this tank"}" aria-label="${dispenserInstalled ? "Select and drag the Food Dispenser 9000" : "Deploy the Food Dispenser 9000 in this tank"}" data-tray-select-dispenser="true">
+          <span class="edit-decor-tile-surface"><img class="edit-decor-tile-thumb" ${assetImageAttributes(getAutoDispenserImagePath(state.autoDispenser))} alt="Food Dispenser 9000" /><span class="inventory-tray-label">${dispenserInstalled ? "In Tank" : "Storage"}</span></span>
+        </button>
+        <div class="mini-note edit-equipment-resource-note">${dispenserInstalled ? `${getAutoDispenserLoadedCount(state.autoDispenser)}/${AUTO_DISPENSER_MAX_PELLETS} pellets · top mount · layer ${state.autoDispenser.tankLayer}` : `Ready to deploy${Number(state.autoDispenser.storedCount) > 1 ? ` · ${state.autoDispenser.storedCount} stored` : ""}`}</div>
+        ${dispenserInstalled ? `<button class="small-button alt" type="button" data-tray-store-dispenser="true">Put Away</button>` : ""}
+      </article>`
+    : "";
+
+  let markup = `${dispenserTile}${machineryEntries.map(renderMachineryTile).join("")}`;
   if (!markup && activeLocationTab === "storage" && (submarineOwned || boatOwned)) {
     const foreignMachine = submarine && !machineryEntries.some((entry) => entry.item.id === submarine.id)
       ? { label: "submarine", tank: submarineTank, visitAttribute: "data-visit-submarine-tank" }
@@ -1886,6 +1899,10 @@ function renderEditEquipmentTray() {
     boat ? normalizeBoatResourceCount(boat.inventory?.chum) : 0,
     storedBoat ? normalizeBoatResourceCount(storedBoat.inventory?.chum) : 0,
     boatTank?.name || ""
+    , dispenserInstalled ? "dispenser" : "no-dispenser"
+    , state.autoDispenser?.xNorm || ""
+    , state.autoDispenser?.tankLayer || ""
+    , getAutoDispenserLoadedCount(state.autoDispenser)
   ].join("|");
   if (shouldRebuildRenderSection("edit-equipment-tray-data", dataKey)) {
     setMarkupIfChanged("edit-equipment-tray", dom.editEquipmentTrayScroller, markup);
@@ -1924,6 +1941,7 @@ function getSubmarineDrawMetrics(submarine, now = Date.now()) {
   const turn = getMachineryTurnRenderState(submarine, now, SUBMARINE_TURN_LEAN_RADIANS);
   return {
     image,
+    imagePath,
     x: Number(submarine.xNorm) * TANK_WIDTH + turn.swayX,
     y: renderYNorm * TANK_HEIGHT + bob,
     width,
@@ -1983,81 +2001,23 @@ function getBoatDrawMetrics(boat, now = Date.now()) {
   };
 }
 
-function drawSubmarineSpotlight(submarine, metrics) {
-  if (!submarine?.mission || !metrics || !isSubmarineAutopilotEnabled(submarine)) return;
-  const direction = metrics.direction;
-  const turnScaleX = Number(metrics.turnScaleX) || 1;
-  const turnScaleY = Number(metrics.turnScaleY) || 1;
-  const localX = (SUBMARINE_SPOTLIGHT_LAMP_X_NORM - 0.5) * metrics.width * direction * turnScaleX;
-  const localY = (SUBMARINE_SPOTLIGHT_LAMP_Y_NORM - 0.5) * metrics.height * turnScaleY;
-  const rotation = (Number(metrics.rotation) || 0) + (direction < 0 ? Math.PI : 0);
-  const cosRotation = Math.cos(Number(metrics.rotation) || 0);
-  const sinRotation = Math.sin(Number(metrics.rotation) || 0);
-  const lampX = metrics.x + localX * cosRotation - localY * sinRotation;
-  const lampY = metrics.y + localX * sinRotation + localY * cosRotation;
-  const length = SUBMARINE_SPOTLIGHT_LENGTH_PX;
-  const outerSpread = 84;
-  const innerSpread = 42;
-  tankContext.save();
-  tankContext.globalCompositeOperation = "screen";
-  tankContext.translate(lampX, lampY);
-  tankContext.rotate(rotation);
-
-  const outerGlow = tankContext.createRadialGradient(0, 0, 1, length * 0.24, 0, length);
-  outerGlow.addColorStop(0, "rgba(205,241,255,0.2)");
-  outerGlow.addColorStop(0.22, "rgba(176,224,255,0.1)");
-  outerGlow.addColorStop(0.68, "rgba(149,211,255,0.028)");
-  outerGlow.addColorStop(1, "rgba(149,211,255,0)");
-  tankContext.fillStyle = outerGlow;
-  tankContext.beginPath();
-  tankContext.moveTo(0, -7);
-  tankContext.quadraticCurveTo(length * 0.5, -outerSpread * 0.72, length, -outerSpread);
-  tankContext.lineTo(length, outerSpread);
-  tankContext.quadraticCurveTo(length * 0.5, outerSpread * 0.72, 0, 7);
-  tankContext.closePath();
-  tankContext.fill();
-
-  const coreGlow = tankContext.createLinearGradient(0, 0, length, 0);
-  coreGlow.addColorStop(0, "rgba(234,251,255,0.24)");
-  coreGlow.addColorStop(0.34, "rgba(203,239,255,0.1)");
-  coreGlow.addColorStop(1, "rgba(181,229,255,0)");
-  tankContext.fillStyle = coreGlow;
-  tankContext.beginPath();
-  tankContext.moveTo(0, -4);
-  tankContext.quadraticCurveTo(length * 0.52, -innerSpread * 0.7, length, -innerSpread);
-  tankContext.lineTo(length, innerSpread);
-  tankContext.quadraticCurveTo(length * 0.52, innerSpread * 0.7, 0, 4);
-  tankContext.closePath();
-  tankContext.fill();
-  tankContext.restore();
-}
-
-function drawSubmarineWarningLight(submarine, metrics, now = Date.now()) {
+function drawSubmarineRedLightOverlay(submarine, metrics, now = Date.now()) {
   if (!isSubmarineOutOfResources(submarine) || !metrics) return;
   const blinkOn = Math.floor(now / SUBMARINE_RED_LIGHT_BLINK_MS) % 2 === 0;
   if (!blinkOn) return;
-  const localX = (SUBMARINE_WARNING_LIGHT_X_NORM - 0.5) * metrics.width * metrics.direction * (Number(metrics.turnScaleX) || 1);
-  const localY = (SUBMARINE_WARNING_LIGHT_Y_NORM - 0.5) * metrics.height * (Number(metrics.turnScaleY) || 1);
-  const rotation = Number(metrics.rotation) || 0;
-  const cosRotation = Math.cos(rotation);
-  const sinRotation = Math.sin(rotation);
-  const lightX = metrics.x + localX * cosRotation - localY * sinRotation;
-  const lightY = metrics.y + localX * sinRotation + localY * cosRotation;
+  const overlay = runtime.images.get(SUBMARINE_RED_LIGHT_OVERLAY_PATH);
+  if (!isUsableRuntimeImage(overlay)) {
+    requestRuntimeImageRecovery(SUBMARINE_RED_LIGHT_OVERLAY_PATH, { kind: "machinery", id: submarine.id });
+    return;
+  }
+  const frame = getSpriteAssetFrame(metrics.imagePath);
+  if (!frame) return;
+  const [sourceX, sourceY, sourceWidth, sourceHeight] = frame.rect;
   tankContext.save();
-  tankContext.globalCompositeOperation = "screen";
-  const glowRadius = clamp(metrics.width * 0.095, 13, 22);
-  const glow = tankContext.createRadialGradient(lightX, lightY, 1, lightX, lightY, glowRadius);
-  glow.addColorStop(0, "rgba(255,245,245,1)");
-  glow.addColorStop(0.2, "rgba(255,70,70,0.95)");
-  glow.addColorStop(1, "rgba(255,0,0,0)");
-  tankContext.fillStyle = glow;
-  tankContext.beginPath();
-  tankContext.arc(lightX, lightY, glowRadius, 0, Math.PI * 2);
-  tankContext.fill();
-  tankContext.fillStyle = "rgba(255,45,45,0.98)";
-  tankContext.beginPath();
-  tankContext.arc(lightX, lightY, clamp(metrics.width * 0.018, 3.1, 5.2), 0, Math.PI * 2);
-  tankContext.fill();
+  tankContext.translate(metrics.x, metrics.y);
+  tankContext.rotate(metrics.rotation || 0);
+  tankContext.scale(metrics.direction * (Number(metrics.turnScaleX) || 1), Number(metrics.turnScaleY) || 1);
+  tankContext.drawImage(overlay, sourceX, sourceY, sourceWidth, sourceHeight, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
   tankContext.restore();
 }
 
@@ -2381,7 +2341,7 @@ function drawMachinery(now, layer = 2) {
       : machinery.type === MACHINERY_TYPE_SUBMARINE
         ? getSubmarineDrawMetrics(machinery, now)
         : null;
-    if (!metrics || metrics.tankLayer !== layer) continue;
+    if (!metrics || (layer !== 0 && metrics.tankLayer !== layer) || (layer !== 0 && machinery.type === MACHINERY_TYPE_BOAT) || (layer === 0 && machinery.type !== MACHINERY_TYPE_BOAT)) continue;
     if (machinery.type === MACHINERY_TYPE_SUBMARINE) queueSubmarineBubbleBurst(machinery, metrics, now);
     if (machinery.type === MACHINERY_TYPE_BOAT) queueBoatBubbleBurst(machinery, metrics, now);
     machineryForLayer.push({ machinery, metrics });
@@ -2390,7 +2350,6 @@ function drawMachinery(now, layer = 2) {
   drawBoatBubbleBursts(now, layer);
   for (const { machinery, metrics } of machineryForLayer) {
     const isBoat = machinery.type === MACHINERY_TYPE_BOAT;
-    if (!isBoat) drawSubmarineSpotlight(machinery, metrics);
     tankContext.save();
     tankContext.translate(metrics.x, metrics.y);
     tankContext.rotate(metrics.rotation || 0);
@@ -2411,7 +2370,7 @@ function drawMachinery(now, layer = 2) {
       tankContext.stroke();
     }
     tankContext.restore();
-    if (!isBoat) drawSubmarineWarningLight(machinery, metrics, now);
+    if (!isBoat) drawSubmarineRedLightOverlay(machinery, metrics, now);
     if (runtime.selectedMachineryId === machinery.id) {
       tankContext.save();
       tankContext.strokeStyle = "rgba(108,236,255,0.9)";

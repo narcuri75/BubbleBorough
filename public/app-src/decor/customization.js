@@ -781,6 +781,8 @@ function resetCompetingOverlayState(options = {}) {
   }
 
   runtime.storeOverlayOpen = false;
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
   runtime.settingsOverlayOpen = false;
   runtime.equipmentOverlayOpen = false;
 
@@ -851,10 +853,238 @@ function openExclusiveOverlay(kind, options = {}) {
   }
 }
 
+function setProteusDesignerTabVisible(visible) {
+  const tab = document.querySelector('#storeOverlay .webpage-tab[data-webpage-destination="designer"]');
+  if (tab) tab.hidden = visible !== true;
+}
+
+function closeProteusDesignerSession(options = {}) {
+  if (runtime.proteusDesignerCloseTimer) {
+    window.clearTimeout(runtime.proteusDesignerCloseTimer);
+    runtime.proteusDesignerCloseTimer = 0;
+  }
+  runtime.proteusDesignerOpen = false;
+  runtime.proteusDesignerCompleting = false;
+  runtime.activeEngineeredSpecimenOrderId = "";
+  runtime.pendingCustomFishUpload = null;
+  setProteusDesignerTabVisible(false);
+  const route = document.getElementById("proteusDesignerRoute");
+  if (route) route.hidden = true;
+  if (options.render === true && runtime.storeOverlayOpen) renderStoreOverlay();
+}
+
+function openProteusDesignerPage(orderId = "") {
+  const id = String(orderId || runtime.activeEngineeredSpecimenOrderId || "").trim();
+  if (!beginEngineeredAquaticSpecimenDesign(id)) {
+    showToast("This specimen design link has already been completed or is no longer valid.");
+    return false;
+  }
+  if (!runtime.storeOverlayOpen) {
+    const storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "fish";
+    if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false })) return false;
+  }
+  window.closeProteusBiodynePage?.(false);
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.proteusDesignerOpen = true;
+  runtime.proteusDesignerCompleting = false;
+  runtime.activeEngineeredSpecimenOrderId = id;
+  runtime.webSurfLastPage = "designer";
+  setProteusDesignerTabVisible(true);
+  renderStoreOverlay();
+  window.requestAnimationFrame(() => document.getElementById("proteusDesignerTitle")?.focus?.({ preventScroll: true }));
+  return true;
+}
+
+function cancelProteusDesignerPage() {
+  closeProteusDesignerSession();
+  if (!runtime.storeOverlayOpen) return;
+  runtime.webHomeOpen = true;
+  runtime.bubbleBankOpen = false;
+  runtime.webSurfLastPage = "home";
+  renderStoreOverlay();
+  restoreWebSurfSessionScroll("home");
+}
+
+function completeProteusDesignerFlow(orderId = "") {
+  const id = String(orderId || runtime.activeEngineeredSpecimenOrderId || "").trim();
+  if (!id || !(state?.engineeredSpecimenCompletedOrderIds || []).includes(id)) return false;
+  if (runtime.proteusDesignerCloseTimer) window.clearTimeout(runtime.proteusDesignerCloseTimer);
+  runtime.proteusDesignerOpen = true;
+  runtime.proteusDesignerCompleting = true;
+  runtime.activeEngineeredSpecimenOrderId = id;
+  setProteusDesignerTabVisible(true);
+  renderStoreOverlay();
+  runtime.proteusDesignerCloseTimer = window.setTimeout(() => {
+    runtime.proteusDesignerCloseTimer = 0;
+    if (!(state?.engineeredSpecimenCompletedOrderIds || []).includes(id)) return;
+    runtime.proteusDesignerOpen = false;
+    runtime.proteusDesignerCompleting = false;
+    runtime.activeEngineeredSpecimenOrderId = "";
+    runtime.pendingCustomFishUpload = null;
+    runtime.webSurfLastPage = "home";
+    setProteusDesignerTabVisible(false);
+    const route = document.getElementById("proteusDesignerRoute");
+    if (route) route.hidden = true;
+    closeStoreOverlay({ preserveWebSurfSession: true, force: true });
+    runtime.webSurfLastPage = "home";
+  }, 1100);
+  return true;
+}
+
+function handleProteusDesignerInputEvent(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  if (!target?.closest("#proteusDesignerRoute") || runtime.proteusDesignerOpen !== true) return;
+  handleCustomFishUtilityOverlayInput(null, target);
+}
+
+async function handleProteusDesignerChangeEvent(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  if (!target?.closest("#proteusDesignerRoute") || runtime.proteusDesignerOpen !== true) return;
+  if (target.matches("#proteusDesignerImageInput")) {
+    const file = target instanceof HTMLInputElement ? target.files?.[0] : null;
+    if (!file) return;
+    try {
+      const dataUrl = await prepareLocalFishImageDataUrl(file);
+      const image = await loadImageElement(dataUrl);
+      await preloadImages([dataUrl]);
+      openCustomFishCreationOverlay(dataUrl, titleFromFile(file.name || "Custom Fish"), {
+        width: image.naturalWidth || image.width || CUSTOM_FISH_DEFAULT_WIDTH,
+        height: image.naturalHeight || image.height || CUSTOM_FISH_DEFAULT_WIDTH
+      });
+      if (runtime.proteusDesignerOpen === true) renderStoreOverlay();
+    } catch (error) {
+      console.error(error);
+      showToast(error?.message || "Could not use that specimen image.");
+    } finally {
+      target.value = "";
+    }
+    return;
+  }
+  handleCustomFishUtilityOverlayChange(null, target);
+}
+
+function submitProteusDesignerSpecimen(button = null) {
+  if (runtime.proteusDesignerOpen !== true || runtime.proteusDesignerCompleting === true) return false;
+  const orderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
+  if (!markEngineeredAquaticSpecimenConfigured(orderId)) {
+    showToast("This specimen design link is no longer valid.");
+    cancelProteusDesignerPage();
+    return false;
+  }
+  if (button instanceof HTMLButtonElement) button.disabled = true;
+  void savePendingCustomFishUpload()
+    .then((saved) => {
+      if (saved) return;
+      resetEngineeredAquaticSpecimenConfiguration(orderId);
+      if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
+    })
+    .catch((error) => {
+      console.error(error);
+      resetEngineeredAquaticSpecimenConfiguration(orderId);
+      if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
+      showToast(error?.message || "Proteus could not fulfill that specimen. Please try again.");
+    });
+  return true;
+}
+
+function normalizeWebSurfSessionPage(value) {
+  return ["home", "store", "bank", "proteus", "locker", "designer"].includes(value) ? value : "home";
+}
+
+function getActiveWebSurfSessionPage() {
+  if (!runtime.storeOverlayOpen) return "";
+  if (runtime.proteusDesignerOpen === true) return "designer";
+  if (dom.storeOverlay?.classList.contains("proteus-biodyne-open")) return "proteus";
+  if (runtime.davyJonesLockerOpen === true) return "locker";
+  if (runtime.webHomeOpen === true) return "home";
+  if (runtime.bubbleBankOpen === true) return "bank";
+  return "store";
+}
+
+function getWebSurfSessionScrollElement(page) {
+  if (page === "home") return dom.webHomePage;
+  if (page === "bank") return dom.bubbleBankPage?.querySelector(".bubble-bank-scroll");
+  if (page === "locker") return dom.davyJonesLockerPage;
+  if (page === "store") return document.getElementById("tankazonCatalogArea");
+  if (page === "designer") return document.getElementById("proteusDesignerRoute");
+  return null;
+}
+
+function captureWebSurfSessionState() {
+  const page = getActiveWebSurfSessionPage();
+  if (!page) return;
+  runtime.webSurfLastPage = page;
+  if (page === "proteus") {
+    window.captureProteusSessionState?.();
+    return;
+  }
+  const scrollElement = getWebSurfSessionScrollElement(page);
+  if (scrollElement) runtime.webSurfPageScroll[page] = Math.max(0, Number(scrollElement.scrollTop) || 0);
+}
+
+function restoreWebSurfSessionScroll(page) {
+  if (page === "proteus") return;
+  const scrollTop = Math.max(0, Number(runtime.webSurfPageScroll?.[page]) || 0);
+  window.requestAnimationFrame(() => {
+    const scrollElement = getWebSurfSessionScrollElement(page);
+    if (scrollElement) scrollElement.scrollTop = scrollTop;
+  });
+}
+
+function resetWebSurfSessionState() {
+  runtime.webSurfLastPage = "home";
+  runtime.webSurfPageScroll = { home: 0, store: 0, bank: 0, locker: 0, designer: 0 };
+  runtime.webSurfSelectedMailId = "";
+  window.resetProteusSessionState?.();
+  closeProteusDesignerSession();
+  if (runtime.storeOverlayOpen) {
+    window.closeProteusBiodynePage?.(false);
+    runtime.webHomeOpen = true;
+    runtime.bubbleBankOpen = false;
+    runtime.davyJonesLockerOpen = false;
+    if (typeof renderStoreOverlay === "function") renderStoreOverlay();
+  }
+}
+
+function openWebSurfSessionPage() {
+  const page = normalizeWebSurfSessionPage(runtime.webSurfLastPage);
+  if (page === "bank") {
+    if (openBubbleBank(runtime.bubbleBankTab || "account")) restoreWebSurfSessionScroll("bank");
+    return;
+  }
+  if (page === "proteus" && window.hasDiscoveredProteus?.()) {
+    if (!openStoreOverlay(runtime.storeTab || "food", { rememberWebSurfPage: false })) return;
+    window.showProteusBiodynePage?.(dom.openStoreButton);
+    return;
+  }
+  if (page === "locker") {
+    openDavyJonesLockerPage();
+    return;
+  }
+  if (page === "designer" && beginEngineeredAquaticSpecimenDesign(runtime.activeEngineeredSpecimenOrderId)) {
+    openProteusDesignerPage(runtime.activeEngineeredSpecimenOrderId);
+    return;
+  }
+  if (page === "store") {
+    if (openStoreOverlay(runtime.storeTab || "food")) restoreWebSurfSessionScroll("store");
+    return;
+  }
+  if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false })) return;
+  runtime.webHomeOpen = true;
+  runtime.bubbleBankOpen = false;
+  runtime.webSurfLastPage = "home";
+  renderUi(Date.now());
+  restoreWebSurfSessionScroll("home");
+}
+
 function openStoreOverlay(tab = "food", options = {}) {
+  window.rememberWebSurfPage = (page) => {
+    runtime.webSurfLastPage = normalizeWebSurfSessionPage(page);
+  };
   if (getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
     showToast("Finish this task first.");
-    return;
+    return false;
   }
 
   // The store has both runtime state and a rendered DOM shell. If something
@@ -864,13 +1094,172 @@ function openStoreOverlay(tab = "food", options = {}) {
     runtime.storeOverlayOpen = false;
   }
 
+  if (runtime.storeOverlayOpen) captureWebSurfSessionState();
+  if (runtime.proteusDesignerOpen === true) closeProteusDesignerSession();
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = false;
+  if (options.rememberWebSurfPage !== false) runtime.webSurfLastPage = "store";
+
   // BubbleBodega normally restores the shopper's last category. A tutorial task
   // must always open the category it teaches, including when its toolbar
   // button calls this function without an explicit option.
   if (dom.storeOverlay && (options.forceCategory === true || getActiveTutorial())) {
     dom.storeOverlay.dataset.requestedCategory = tab;
   }
-  openExclusiveOverlay("store", { tab });
+  openExclusiveOverlay("store", { tab, render: options.render });
+  return true;
+}
+
+function openDavyJonesLockerPage() {
+  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+    ? runtime.storeTab
+    : "food";
+  if (!openStoreOverlay(previousStoreTab, { render: false, rememberWebSurfPage: false })) return false;
+  window.closeProteusBiodynePage?.(false);
+  closeProteusDesignerSession();
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = true;
+  runtime.webSurfLastPage = "locker";
+  renderUi(Date.now());
+  restoreWebSurfSessionScroll("locker");
+  return true;
+}
+
+function openBubbleBank(tab = "account", options = {}) {
+  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+    ? runtime.storeTab
+    : "food";
+  if (!openStoreOverlay(previousStoreTab, { render: false, rememberWebSurfPage: false })) return false;
+  runtime.bubbleBankOpen = true;
+  runtime.webSurfLastPage = "bank";
+  runtime.bubbleBankTab = normalizeBubbleBankTab(tab);
+  runtime.bubbleBankTargetId = String(options.targetId || "");
+  renderUi(Date.now());
+  return true;
+}
+
+function handleWebPageNavigation(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  if (target?.closest("[data-proteus-designer-clear]")) {
+    runtime.pendingCustomFishUpload = null;
+    runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
+    renderStoreOverlay();
+    return;
+  }
+  if (target?.closest("[data-proteus-designer-reset]")) {
+    if (runtime.pendingCustomFishUpload) {
+      runtime.pendingCustomFishUpload.width = CUSTOM_FISH_DEFAULT_WIDTH;
+      runtime.pendingCustomFishUpload.flipX = false;
+      runtime.pendingCustomFishUpload.rotation = 0;
+      runtime.pendingCustomFishUpload.turnAnimation = "simple";
+      runtime.pendingCustomFishUpload.behaviorProfileId = normalizeCustomFishBehaviorProfileId("");
+      const defaultProfile = getCustomFishBehaviorProfile(runtime.pendingCustomFishUpload.behaviorProfileId)
+        || getDefaultCustomFishBehaviorProfile();
+      runtime.pendingCustomFishUpload.diet = getDefaultCustomFishDiet(defaultProfile);
+      runtime.pendingCustomFishUpload.activityRegulation = "";
+      runtime.pendingCustomFishUpload.swimZone = "";
+      runtime.pendingCustomFishUpload.socialAffinity = "adaptive";
+      runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
+      renderStoreOverlay();
+    }
+    return;
+  }
+  const designerCancel = target?.closest("[data-proteus-designer-cancel]");
+  if (designerCancel) {
+    cancelProteusDesignerPage();
+    return;
+  }
+  const designerSubmit = target?.closest("[data-proteus-designer-submit]");
+  if (designerSubmit && !designerSubmit.disabled) {
+    submitProteusDesignerSpecimen(designerSubmit);
+    return;
+  }
+  if (target?.closest("[data-websurf-mark-all-read]")) {
+    markAllWebSurfMailRead();
+    renderStoreOverlay();
+    return;
+  }
+  const silenceSenderButton = target?.closest("[data-websurf-silence-sender]");
+  if (silenceSenderButton) {
+    toggleWebSurfSenderSilenced(silenceSenderButton.dataset.websurfSilenceSender);
+    renderStoreOverlay();
+    return;
+  }
+  const guideLink = target?.closest("[data-websurf-guide-destination]");
+  if (guideLink) {
+    const destination = String(guideLink.dataset.websurfGuideDestination || "store");
+    const section = String(guideLink.dataset.websurfGuideSection || "food");
+    if (destination === "store") openStoreOverlay(section);
+    return;
+  }
+  const emailAction = target?.closest("[data-websurf-email-action]");
+  if (emailAction) {
+    const message = getWebSurfInboxMessages().find((entry) => entry.id === String(emailAction.dataset.websurfEmailAction || ""));
+    if (message) handleWebSurfEmailAction(message);
+    return;
+  }
+  const mailItem = target?.closest("[data-websurf-mail-id]");
+  if (mailItem) {
+    const mailId = String(mailItem.dataset.websurfMailId || "");
+    markWebSurfMailRead(mailId);
+    runtime.webSurfSelectedMailId = runtime.webSurfSelectedMailId === mailId ? "" : mailId;
+    renderStoreOverlay();
+    return;
+  }
+  if (target?.closest("[data-close-web-browser]")) {
+    captureWebSurfSessionState();
+    window.closeProteusBiodynePage?.(false);
+    closeStoreOverlay({ preserveWebSurfSession: true });
+    return;
+  }
+  const tab = target?.closest("[data-webpage-destination]");
+  if (!tab) return;
+  const destination = String(tab.dataset.webpageDestination || "");
+  captureWebSurfSessionState();
+  if (destination === "home") {
+    closeProteusDesignerSession();
+    window.closeProteusBiodynePage?.(false);
+    runtime.webHomeOpen = true;
+    runtime.bubbleBankOpen = false;
+    runtime.davyJonesLockerOpen = false;
+    runtime.webSurfLastPage = "home";
+    renderStoreOverlay();
+    restoreWebSurfSessionScroll("home");
+    return;
+  }
+  if (destination === "store") {
+    closeProteusDesignerSession();
+    window.closeProteusBiodynePage?.(false);
+    runtime.davyJonesLockerOpen = false;
+    openStoreOverlay(runtime.storeTab || "food");
+    return;
+  }
+  if (destination === "bank") {
+    closeProteusDesignerSession();
+    window.closeProteusBiodynePage?.(false);
+    runtime.davyJonesLockerOpen = false;
+    openBubbleBank("account");
+    return;
+  }
+  if (destination === "proteus") {
+    closeProteusDesignerSession();
+    runtime.webHomeOpen = false;
+    runtime.bubbleBankOpen = false;
+    runtime.davyJonesLockerOpen = false;
+    runtime.webSurfLastPage = "proteus";
+    renderStoreOverlay();
+    window.showProteusBiodynePage?.(tab);
+    return;
+  }
+  if (destination === "locker") {
+    openDavyJonesLockerPage();
+    return;
+  }
+  if (destination === "designer") {
+    openProteusDesignerPage(runtime.activeEngineeredSpecimenOrderId);
+  }
 }
 
 function closeStoreOverlay(options = {}) {
@@ -888,7 +1277,13 @@ function closeStoreOverlay(options = {}) {
     return false;
   }
 
+  if (options.preserveWebSurfSession !== true) captureWebSurfSessionState();
+  window.closeProteusBiodynePage?.(false);
+  if (runtime.proteusDesignerOpen === true || runtime.proteusDesignerCompleting === true) closeProteusDesignerSession();
   runtime.storeOverlayOpen = false;
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = false;
   if (options.render === false) {
     if (dom.storeOverlay) {
       dom.storeOverlay.hidden = true;

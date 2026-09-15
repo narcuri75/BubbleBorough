@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "d7b219b4-a45c-4a51-bb4b-7c9bec22700b",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "ab453e53-264d-4fa3-a17b-51f2e73759c6",
+          "width": 512,
+          "height": 363,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent _Cherub_Goldfish_1.png"
+        },
+        {
+          "id": "9437327d-b150-46e1-aa14-9a490316dfc9",
+          "width": 512,
+          "height": 363,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent _Cherub_Goldfish_5.png"
+        },
+        {
+          "id": "f48494a9-94a6-4356-8826-913ca831e1ee",
+          "width": 512,
+          "height": 363,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent _Cherub_Goldfish_4.png"
+        },
+        {
+          "id": "78114920-2421-4aa3-81fa-008ca89d82db",
+          "width": 512,
+          "height": 363,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent _Cherub_Goldfish_3.png"
+        },
+        {
+          "id": "1afbe65f-03fd-43dd-95db-1497a2c71ab3",
+          "width": 512,
+          "height": 363,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent _Cherub_Goldfish_2.png"
+        }
+      ]
+    }
+  ]
+}

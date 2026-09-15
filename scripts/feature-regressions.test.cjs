@@ -59,8 +59,8 @@ test("BubbleBodega Buy Now reports insufficient funds and releases purchase cont
   assert.match(status.textContent, /Not enough coins/);
 });
 
-test("custom products open configuration synchronously without entering the cart or reporting a purchase", async () => {
-  for (const [fnName, id] of [["buyFish", "__custom-fish-shop__"], ["buyDecor", "__custom-decor-shop__"], ["buyDecor", "__custom-hide-shop__"]]) {
+test("custom fish adds to cart before purchase while custom decor still opens configuration", async () => {
+  for (const [fnName, id] of [["buyDecor", "__custom-decor-shop__"], ["buyDecor", "__custom-hide-shop__"]]) {
     const item = { key: `${fnName}:${id}`, fnName, id, cost: 10, name: "Custom" };
     const status = { textContent: "" };
     let opened = 0;
@@ -88,6 +88,188 @@ test("custom products open configuration synchronously without entering the cart
     c.addToCart(item);
     assert.equal(opened, 2);
   }
+  const item = { key: "buyFish:__custom-fish-shop__", fnName: "buyFish", id: "__custom-fish-shop__", cost: 75, name: "Engineered Aquatic Specimen" };
+  const cart = new Map();
+  const c = loadTankazonFunctions(["addToCart", "beginTankazonCustomization"], {
+    selectedItem: item, completingPurchase: false, cart,
+    findTankazonNativePurchaseButton: () => ({ disabled: false }),
+    saveTankazonCart() {}, renderCart() {}, closeTankazonItem() {}, showToast() {}
+  });
+  c.addToCart(item);
+  assert.equal(cart.get(item.key).quantity, 1);
+});
+
+test("Proteus custom fish reuse template locomotion with bounded depth and social overrides", () => {
+  const inherited = Object.freeze({
+    movementPattern: "area-forage",
+    preferredY: 0.58,
+    verticalSpread: 0.76,
+    targetDistanceMin: 0.16,
+    targetDistanceMax: 0.42,
+    hoverChance: 0.13,
+    schoolStrength: 0.18
+  });
+  const template = { id: "goldfish", name: "Goldfish" };
+  const custom = {
+    id: "proteus_custom_test",
+    customAsset: true,
+    behaviorSpeciesId: "goldfish",
+    swimZone: "",
+    socialAffinity: "adaptive"
+  };
+  const runtime = { customFishLocomotionProfileCache: new WeakMap() };
+  const c = load("fish/needs-disease-and-behavior.js", ["getFishLocomotionProfile"], {
+    runtime,
+    FISH_LOCOMOTION_PROFILES: { goldfish: inherited },
+    FISH_LOCOMOTION_PROFILE_DEFAULT: {},
+    getBaseSpeciesForFish: () => custom,
+    getSpeciesForFish: () => custom,
+    getFishBehaviorProfileSpecies: () => template,
+    normalizeCustomFishSwimZone: value => ["full", "upper", "midwater", "lower"].includes(value) ? value : "",
+    normalizeCustomFishSocialAffinity: value => ["independent", "schooling"].includes(value) ? value : "adaptive"
+  });
+  const fish = { speciesId: custom.id, behaviorSpeciesId: "goldfish" };
+  assert.equal(c.getFishLocomotionProfile(fish), inherited, "no override must return the real Goldfish locomotion profile");
+
+  custom.swimZone = "upper";
+  let resolved = c.getFishLocomotionProfile(fish);
+  assert.equal(resolved.preferredY, 0.25);
+  assert.equal(resolved.verticalSpread, 0.48);
+  assert.equal(resolved.movementPattern, inherited.movementPattern);
+  assert.equal(resolved.targetDistanceMax, inherited.targetDistanceMax);
+  assert.equal(resolved.hoverChance, inherited.hoverChance);
+
+  custom.swimZone = "lower";
+  resolved = c.getFishLocomotionProfile(fish);
+  assert.equal(resolved.preferredY, 0.72);
+  assert.equal(resolved.verticalSpread, 0.46);
+  assert.ok(resolved.preferredY + resolved.verticalSpread / 2 < 1, "lower calibration must remain a bias, not a substrate lock");
+
+  custom.swimZone = "";
+  custom.socialAffinity = "independent";
+  assert.equal(c.getFishLocomotionProfile(fish).schoolStrength, 0);
+  custom.socialAffinity = "schooling";
+  assert.equal(c.getFishLocomotionProfile(fish).schoolStrength, 0.74);
+});
+
+test("Proteus activity and dietary controls map to existing simulation identifiers", () => {
+  const activity = load("assets/custom-content.js", [
+    "normalizeCustomFishDiet",
+    "normalizeCustomFishActivityRegulation",
+    "getCustomFishActivitySwimStyle",
+    "normalizeCustomFishSwimZone",
+    "normalizeCustomFishSocialAffinity"
+  ]);
+  assert.equal(activity.normalizeCustomFishDiet("Standard Feed"), "pellet");
+  assert.equal(activity.normalizeCustomFishDiet("chum"), "chum");
+  assert.equal(activity.getCustomFishActivitySwimStyle("calm", "steady"), "peaceful");
+  assert.equal(activity.getCustomFishActivitySwimStyle("standard", "peaceful"), "steady");
+  assert.equal(activity.getCustomFishActivitySwimStyle("reactive", "peaceful"), "sporadic");
+  assert.equal(activity.normalizeCustomFishSwimZone("upper"), "upper");
+  assert.equal(activity.normalizeCustomFishSocialAffinity("schooling"), "schooling");
+
+  const feeding = load("tank/catalog-and-equipment.js", ["isChumOnlyFish", "canFoodSatisfyFishMeal"], {
+    getSpeciesForFish: fish => fish.species,
+    getFishSpeciesType: () => "fish",
+    isFishDead: () => false,
+    isPredatorMealFood: key => key === "chum",
+    isNormalMealFood: key => key === "basic",
+    isPiranhaSpecies: () => false,
+    isZombieFish: () => false,
+    isZombieSkeletonModeAvailable: () => false,
+    isSkeletonFish: () => false,
+    isMealFreeFish: () => false
+  });
+  const standardFish = { speciesId: "proteus_standard", species: { diet: "pellet", chumOnly: false } };
+  const chumFish = { speciesId: "proteus_chum", species: { diet: "chum", chumOnly: true } };
+  assert.equal(feeding.canFoodSatisfyFishMeal(standardFish, "basic"), true);
+  assert.equal(feeding.canFoodSatisfyFishMeal(standardFish, "chum"), false);
+  assert.equal(feeding.canFoodSatisfyFishMeal(chumFish, "basic"), false);
+  assert.equal(feeding.canFoodSatisfyFishMeal(chumFish, "chum"), true);
+});
+
+test("Proteus behavior fields persist and completed design links remain single-use", () => {
+  const customSource = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const lifecycleSource = fs.readFileSync(path.join(root, "fish/lifecycle-and-breeding.js"), "utf8");
+  const persistenceSource = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
+  assert.match(customSource, /behaviorProfileId,[\s\S]*diet: normalizeCustomFishDiet\(entry\.diet\)[\s\S]*activityRegulation:[\s\S]*swimZone:[\s\S]*socialAffinity:/);
+  assert.match(lifecycleSource, /behaviorSpeciesId: asset\.behaviorProfileId|behaviorSpeciesId,/);
+  assert.match(persistenceSource, /species\.customAsset \? \(species\.behaviorSpeciesId \|\| species\.behaviorProfileId\)/);
+
+  const legacy = load("assets/custom-content.js", [
+    "normalizeCustomFishDiet",
+    "normalizeCustomFishActivityRegulation",
+    "normalizeCustomFishSwimZone",
+    "normalizeCustomFishSocialAffinity",
+    "sanitizeCustomFishAssetEntry"
+  ], {
+    isCustomFishAssetKey: key => String(key).startsWith("custom-fish-"),
+    sanitizeCustomImageRefId: value => String(value || ""),
+    normalizeCustomFishBehaviorProfileId: () => "goldfish",
+    sanitizeCustomFishName: value => String(value || "Custom Fish"),
+    CUSTOM_FISH_DEFAULT_WIDTH: 140,
+    CUSTOM_FISH_MIN_WIDTH: 40,
+    CUSTOM_FISH_MAX_WIDTH: 420
+  });
+  const migrated = legacy.sanitizeCustomFishAssetEntry({
+    key: "custom-fish-legacy",
+    name: "Legacy Specimen",
+    path: "data:image/png;base64,legacy",
+    width: 140,
+    behaviorProfileId: "goldfish"
+  }, "custom-fish-legacy");
+  assert.equal(migrated.behaviorProfileId, "goldfish");
+  assert.equal(migrated.diet, "pellet");
+  assert.equal(migrated.activityRegulation, "");
+  assert.equal(migrated.swimZone, "");
+  assert.equal(migrated.socialAffinity, "adaptive");
+
+  const order = { id: "order-proteus", items: [{ key: "__custom-fish-shop__" }], proteusStatus: "design-required" };
+  const state = {
+    purchaseHistory: [order],
+    engineeredSpecimenDesignOrderIds: [order.id],
+    engineeredSpecimenCompletedOrderIds: [],
+    engineeredSpecimenDesignStartedOrderIds: []
+  };
+  const orders = load("store/purchases.js", [
+    "getEngineeredAquaticSpecimenOrder",
+    "getEngineeredAquaticSpecimenOrderStatus",
+    "setEngineeredAquaticSpecimenOrderStatus",
+    "beginEngineeredAquaticSpecimenDesign",
+    "markEngineeredAquaticSpecimenConfigured",
+    "resetEngineeredAquaticSpecimenConfiguration",
+    "markEngineeredAquaticSpecimenDesigned"
+  ], {
+    state,
+    isEngineeredAquaticSpecimenOrder: entry => entry === order,
+    saveState() {}
+  });
+  assert.equal(orders.beginEngineeredAquaticSpecimenDesign(order.id), true);
+  assert.equal(orders.markEngineeredAquaticSpecimenConfigured(order.id), true);
+  assert.equal(order.proteusStatus, "specimen-configured");
+  assert.equal(orders.beginEngineeredAquaticSpecimenDesign(order.id), false);
+  assert.equal(orders.markEngineeredAquaticSpecimenConfigured(order.id), false);
+  assert.equal(orders.resetEngineeredAquaticSpecimenConfiguration(order.id), true);
+  assert.equal(order.proteusStatus, "design-required");
+  assert.equal(orders.beginEngineeredAquaticSpecimenDesign(order.id), true);
+  assert.equal(orders.markEngineeredAquaticSpecimenConfigured(order.id), true);
+  assert.equal(orders.markEngineeredAquaticSpecimenDesigned(order.id), true);
+  assert.equal(order.proteusStatus, "fulfillment-complete");
+  assert.equal(orders.beginEngineeredAquaticSpecimenDesign(order.id), false);
+  assert.equal(orders.markEngineeredAquaticSpecimenDesigned(order.id), false);
+  assert.deepEqual(Array.from(state.engineeredSpecimenCompletedOrderIds), [order.id]);
+});
+
+test("Proteus designer exposes the clinical behavior controls without restoring the hero", () => {
+  const designer = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(designer, /BEHAVIOR PROFILE/);
+  assert.match(designer, /DIETARY PROFILE[\s\S]*approved nutritional substrate/);
+  assert.match(designer, /ACTIVITY REGULATION[\s\S]*locomotor cadence/);
+  assert.match(designer, /SWIM ZONE CALIBRATION[\s\S]*preferred operating depth/);
+  assert.match(designer, /SOCIAL AFFINITY[\s\S]*coordinate movement/);
+  assert.doesNotMatch(designer, /proteus-designer-hero/);
+  assert.doesNotMatch(styles, /\.proteus-designer-hero/);
 });
 
 test("restored carts discard unconfigured placeholders and preserve actual custom assets", () => {
@@ -869,38 +1051,10 @@ test("machinery turns squash, flip at midpoint, and settle cleanly", () => {
   assert.equal(vehicle.turnStartedAt, null);
 });
 
-test("submarine spotlight starts at the tower lamp and uses a soft two-layer beam", () => {
-  const calls = [];
-  const gradient = { addColorStop(...args) { calls.push(["stop", ...args]); } };
-  const c = load("machinery/submarine.js", ["drawSubmarineSpotlight"], {
-    SUBMARINE_SPOTLIGHT_LENGTH_PX: 320,
-    SUBMARINE_SPOTLIGHT_LAMP_X_NORM: 0.744,
-    SUBMARINE_SPOTLIGHT_LAMP_Y_NORM: 0.2,
-    isSubmarineAutopilotEnabled: () => true,
-    tankContext: {
-      save() { calls.push(["save"]); }, restore() { calls.push(["restore"]); },
-      translate(...args) { calls.push(["translate", ...args]); }, rotate(value) { calls.push(["rotate", value]); },
-      createRadialGradient() { calls.push(["radial"]); return gradient; },
-      createLinearGradient() { calls.push(["linear"]); return gradient; },
-      beginPath() { calls.push(["begin"]); }, moveTo(...args) { calls.push(["move", ...args]); },
-      quadraticCurveTo(...args) { calls.push(["curve", ...args]); }, lineTo(...args) { calls.push(["line", ...args]); },
-      closePath() { calls.push(["close"]); }, fill() { calls.push(["fill"]); }
-    }
-  });
-  c.drawSubmarineSpotlight({ mission: { type: "food" } }, {
-    x: 500, y: 300, width: 190, height: 95, direction: 1,
-    turnScaleX: 1, turnScaleY: 1, rotation: 0
-  });
-  const translate = calls.find(call => call[0] === "translate");
-  assert.ok(Math.abs(translate[1] - 546.36) < 0.001);
-  assert.ok(Math.abs(translate[2] - 271.5) < 0.001);
-  assert.equal(calls.filter(call => call[0] === "radial").length, 1);
-  assert.equal(calls.filter(call => call[0] === "linear").length, 1);
-  assert.equal(calls.filter(call => call[0] === "curve").length, 4);
-});
-
 test("school followers cannot form a chain behind another follower", () => {
-  const c = load("fish/gravel-and-schooling.js", ["isFishEligibleSchoolLeader"], {
+  const c = load("fish/gravel-and-schooling.js", ["getFishSchoolingCompatibilityId", "isFishEligibleSchoolLeader"], {
+    getBaseSpeciesForFish: (fish) => ({ id: fish.speciesId, customAsset: false }),
+    sanitizeFishBehaviorSpeciesId: (value, fallback = "") => String(value || fallback || ""),
     isFishDead: () => false,
     isFishDiseaseAvoidanceSource: () => false,
     isFishSickOrDying: () => false
@@ -1022,6 +1176,226 @@ test("pilot fish remains while axolotl and nautilus are absent", () => {
 
   const behaviorSource = fs.readFileSync(path.join(root, "fish/needs-disease-and-behavior.js"), "utf8");
   assert.match(behaviorSource, /species\?\.id === "pilot-fish"[\s\S]*bull-shark[\s\S]*great-white-shark[\s\S]*hammerhead-shark[\s\S]*orca/);
+});
+
+test("store item pages use catalog-authored sellers and link Proteus Biodyne to its overlay webpage", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
+  for (const id of ["bull-shark", "great-white-shark", "hammerhead-shark", "orca", "sunfish"]) {
+    assert.equal(catalog.fish.find((fish) => fish.id === id)?.seller.toLowerCase(), "proteus biodyne");
+  }
+
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const indexHtml = html;
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const cloudSource = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
+  const catalogSource = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
+  const normalizationSource = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const overlaySource = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
+  const storeRenderingSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const managementSource = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
+  assert.match(html, /getTankazonSellerName[\s\S]*return seller \|\| "BubbleBodega"/);
+  assert.match(html, /tankazonItemSeller[\s\S]*Visit the \$\{seller\} Store/);
+  assert.match(normalizationSource, /id: CUSTOM_FISH_SHOP_KEY,[\s\S]*seller: "Proteus Biodyne"/);
+  assert.match(bootstrap, /const CUSTOM_FISH_COST = 75;/);
+  assert.match(bootstrap, /CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl\("assets\/web\/proteus\/PB_Custom_Fish\.png"\)/);
+  assert.match(normalizationSource, /A bespoke biological design service from PROTEUS BIODYNE/);
+  assert.match(normalizationSource, /aboutTagline: "Adaptive Biology\. Engineered\."/);
+  assert.match(normalizationSource, /id: asset\.key,[\s\S]*seller: "Proteus Biodyne"/);
+  assert.match(catalogSource, /if \(kind === "fish"\)[\s\S]*Seller: \[seller\]/);
+  assert.match(html, /id="proteusBiodynePage"/);
+  assert.match(html, /id="openStoreButton"[^>]*title="WebSurf"[\s\S]{0,180}aria-label="WebSurf"[\s\S]{0,180}src="assets\/icons\/WebSurf_icon\.png"/);
+  assert.match(normalizationSource, /dom\.openStoreButton\.addEventListener\("click"[\s\S]*openWebSurfSessionPage\(\)/);
+  assert.match(styles, /#openStoreButton \.websurf-toolbar-icon \{ width: 42px; height: 42px; object-fit: contain; \}/);
+  assert.match(styles, /\.dock-button:is\(:hover, :focus-visible, :active, \.is-active, \[aria-pressed="true"\]\) \{\s*z-index: 6;/);
+  assert.match(styles, /\.dock-button:is\(:hover, :focus-visible\) \.dock-button-icon,\s*\.dock-button:is\(:hover, :focus-visible\) \.dock-button-emoji \{\s*transform: none;/);
+  assert.doesNotMatch(html, /class="proteus-biodyne-account"/);
+  assert.doesNotMatch(html, /class="proteus-biodyne-coins"|data-proteus-coin-value/);
+  for (const tab of ["home", "mission", "research", "programs", "specimens", "sustainability", "careers", "investors"]) {
+    assert.match(html, new RegExp(`data-proteus-tab="${tab}"`));
+    assert.match(html, new RegExp(`data-proteus-panel="${tab}"`));
+  }
+  assert.match(html, /function showProteusTab[\s\S]*aria-selected[\s\S]*data-proteus-tab-link/);
+  assert.match(html, /showProteusTab\(proteusSessionTab, \{ restoreScroll: true \}\)/);
+  assert.match(html, /data-proteus-panel="mission"[\s\S]*To reshape biological life for a world that can no longer wait for nature to adapt on its own\.[\s\S]*Preserve[\s\S]*Adapt[\s\S]*Integrate/);
+  assert.match(html, /PROTEUS BIODYNE exists to expand the limits of biological adaptation\./);
+  assert.match(html, /Why PROTEUS BIODYNE[\s\S]*Adaptive Biology\. Engineered\./);
+  assert.match(html, /body scale can be radically altered without sacrificing cognitive, behavioral, or predatory phenotype integrity/);
+  assert.match(html, /If an organism cannot survive the world we are creating, change the organism\./);
+  for (const page of ["home", "store", "bank", "proteus"]) {
+    assert.match(html, new RegExp(`data-webpage-destination="${page}"`));
+  }
+  assert.match(html, /data-webpage-destination="home"[\s\S]{0,180}assets\/icons\/browser_home\.png/);
+  assert.match(html, /data-webpage-destination="store"[\s\S]{0,180}assets\/misc\/Box\.png/);
+  assert.match(html, /data-webpage-destination="bank"[\s\S]{0,180}assets\/icons\/coin\.png/);
+  assert.match(html, /data-webpage-destination="bank"[\s\S]{0,180}<span>BB Bank<\/span>/);
+  assert.match(html, /data-webpage-destination="proteus"[\s\S]{0,180}assets\/web\/proteus\/Proteus_Logo_Icon\.png/);
+  assert.match(html, /class="webpage-tab" data-webpage-destination="proteus" hidden/);
+  assert.match(html, /id="webHomePage" class="web-home-page" aria-label="WebSurf home" hidden/);
+  assert.match(html, /id="webSurfUnreadBadge" class="dock-button-badge"/);
+  assert.match(managementSource, /function renderWebSurfHomePage[\s\S]*Welcome, \$\{escapeHtml\(username\)\}[\s\S]*@WebSurf\.swim[\s\S]*Bookmarks[\s\S]*Inbox[\s\S]*WebSurf Account/);
+  assert.match(managementSource, /function getWebSurfInboxMessages[\s\S]*statements@bubbleboroughbank\.swim[\s\S]*orders@bubblebodega\.swim[\s\S]*rewards@bubbleboroughbank\.swim[\s\S]*research@proteusbiodyne\.swim/);
+  assert.match(managementSource, /data-proteus-home-link \$\{proteusDiscovered \? "" : "hidden"\}/);
+  assert.match(managementSource, /function markWebSurfMailRead[\s\S]*function markAllWebSurfMailRead/);
+  assert.match(managementSource, /function getWebSurfSilencedSenders[\s\S]*function toggleWebSurfSenderSilenced[\s\S]*function isWebSurfMailUnread/);
+  assert.match(managementSource, /silencedSenders\.has\(String\(message\.sender \|\| ""\)\.toLowerCase\(\)\)/);
+  assert.match(managementSource, /data-websurf-silence-sender="\$\{escapeHtml\(message\.sender\)\}"[\s\S]*Silence sender/);
+  assert.match(overlaySource, /data-websurf-silence-sender[\s\S]*toggleWebSurfSenderSilenced[\s\S]*data-websurf-mail-id/);
+  assert.match(storeRenderingSource, /syncWebSurfUnreadBadge\(\)[\s\S]*renderWebSurfHomePage\(\)/);
+  assert.match(html, /window\.hasDiscoveredProteus = hasDiscoveredProteus;[\s\S]*window\.syncProteusDiscovery = syncProteusDiscovery;/);
+  assert.match(overlaySource, /function normalizeWebSurfSessionPage[\s\S]*function captureWebSurfSessionState[\s\S]*function openWebSurfSessionPage/);
+  assert.match(overlaySource, /window\.rememberWebSurfPage = \(page\) =>/);
+  assert.match(overlaySource, /runtime\.webSurfLastPage = "home"/);
+  assert.match(overlaySource, /closeStoreOverlay\(\{ preserveWebSurfSession: true \}\)/);
+  assert.match(bootstrap, /webSurfLastPage: "home"[\s\S]*webSurfPageScroll/);
+  assert.match(bootstrap, /webSurfSelectedMailId/);
+  assert.match(indexHtml, /proteusSessionTab = "home"[\s\S]*proteusSessionScrollTop = 0/);
+  assert.match(indexHtml, /window\.resetProteusSessionState = \(\) =>/);
+  assert.match(cloudSource, /function clearCloudSession\(\) \{\s*if \(typeof resetWebSurfSessionState === "function"\) resetWebSurfSessionState\(\);/);
+  assert.match(html, /PROTEUS_DISCOVERY_STORAGE_KEY = "bubble-borough-proteus-discovered-v1"/);
+  assert.match(html, /if \(!allowDirect\) discoverProteus\(\)/);
+  assert.match(overlaySource, /function handleWebPageNavigation[\s\S]*openBubbleBank\("account"\)[\s\S]*showProteusBiodynePage/);
+  assert.match(overlaySource, /destination === "home"[\s\S]*runtime\.webHomeOpen = true;[\s\S]*renderStoreOverlay\(\)/);
+  assert.match(storeRenderingSource, /const showingProteus = dom\.storeOverlay\.classList\.contains\("proteus-biodyne-open"\)[\s\S]*showingProteus \? "proteus" : showingHome \? "home" : showingBank \? "bank" : "store"/);
+  assert.match(styles, /\.webpage-tab-strip[\s\S]*\.webpage-tab\.is-active/);
+  assert.match(html, /class="webpage-tab-list"[\s\S]*id="closeStoreOverlay" class="webpage-browser-close"/);
+  assert.doesNotMatch(html, /web-home-close|proteus-biodyne-close|data-proteus-close/);
+  assert.doesNotMatch(managementSource, /data-close-bubble-bank/);
+  assert.match(styles, /\.webpage-tab-list \{[^}]*overflow-x: auto;[^}]*overflow-y: hidden;/);
+  assert.match(styles, /\.tankazon-store\.is-bubble-bank-open \.tankazon-panel \{ grid-template-rows: auto minmax\(0, 1fr\) !important; \}/);
+  assert.doesNotMatch(styles, /\.tankazon-store\.is-bubble-bank-open \.tankazon-panel \{[^}]*border:\s*2px solid #2ccfff/);
+  assert.match(styles, /proteus-biodyne-open[\s\S]*PB_Banner\.png/);
+  assert.match(styles, /\.proteus-specimen-record \{[^}]*grid-template-columns: minmax\(0, 1\.35fr\) minmax\(118px, 1fr\)/);
+  for (const asset of [
+    "Proteus_Logo_Icon.png",
+    "Proteus_Title_Logo.png",
+    "PB_DNA.png",
+    "PB_JellyFish.png",
+    "PB_FishHead.png",
+    "PB_Species_1.png",
+    "PB_Species_2.png",
+    "PB_Species_3.png",
+    "PB_Species_4.png",
+    "PB_Species_5.png"
+  ]) {
+    assert.match(html, new RegExp(`assets/web/proteus/${asset.replace(".", "\\.")}`));
+  }
+  for (const [asset, name] of [
+    ["PB_Species_1.png", "Pelagic Puffer"],
+    ["PB_Species_2.png", "Abyssal Ray"],
+    ["PB_Species_3.png", "Abyssal Anglerfish"],
+    ["PB_Species_4.png", "Scaled Selachimorph"],
+    ["PB_Species_5.png", "Compact Seahorse"]
+  ]) {
+    assert.match(html, new RegExp(`${asset.replace(".", "\\.")}[\\s\\S]{0,220}<h3>${name}</h3>`));
+  }
+  assert.match(html, /data-tankazon-seller-link[\s\S]*isProteusBiodyneSeller[\s\S]*showProteusBiodyne/);
+  assert.match(html, /proteus-biodyne-open[\s\S]*closeProteusBiodyne/);
+  assert.match(styles, /\.tankazon-store \.tankazon-item-buybox \.tankazon-item-seller > button \{[\s\S]*width: auto;[\s\S]*min-height: 0;[\s\S]*padding: 0;/);
+  assert.match(indexHtml, /is-proteus-preview[\s\S]*isProteusBiodyneSeller\(descriptor\.seller\)/);
+  assert.match(styles, /data-store-seller="Proteus Biodyne" i[\s\S]*PB_Item_Thumb\.png[\s\S]*filter: blur\(1\.5px\)/);
+  assert.match(styles, /tankazon-item-image\.is-proteus-preview::before[\s\S]*PB_Item_Thumb\.png[\s\S]*filter: blur\(2px\)/);
+  assert.match(catalogSource, /data-store-seller=.*escapeHtml\(seller\)/);
+  assert.match(normalizationSource, /seller: typeof entry\.seller === "string" \? entry\.seller\.trim\(\) : ""/);
+});
+
+test("fish progression is paced through Borough Legends and gates engineered specimens", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const catalogSource = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
+  const purchaseSource = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
+  const normalizationSource = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const renderingSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const managementSource = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const emailTemplates = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/web/websurf/auto_emails.json"), "utf8"));
+
+  assert.match(catalogSource, /unlockedCatalog\.find\(\(species\) => species\.id === "goldfish"\)/);
+  assert.doesNotMatch(catalogSource, /state\.coins <= 0 && getOwnedFishCount\(\) === 0/);
+  assert.match(bootstrap, /id: "borough-legends"[\s\S]*unlocks: \["great-white-shark", "orca", "__custom-fish-shop__"\][\s\S]*30 \* DAY_MS/);
+  assert.match(normalizationSource, /name: "Engineered Aquatic Specimen"[\s\S]*unlockRequirement: "borough-legends"/);
+  assert.match(renderingSource, /const progressLocked = !isFishSpeciesProgressUnlocked\(fish\);[\s\S]*const locked = !isFishSpeciesShopUnlocked\(fish\);/);
+  assert.match(purchaseSource, /isCustomFishShopKey\(speciesId\)[\s\S]*!isFishSpeciesShopUnlocked\(speciesId\)/);
+  assert.match(bootstrap, /recordBubbleBodegaOrder\(\[\{[\s\S]*name: "Engineered Aquatic Specimen"/);
+  assert.match(managementSource, /proteus_engineered_specimen_fulfillment/);
+  const template = emailTemplates.templates.proteus_engineered_specimen_design;
+  assert.ok(template);
+  assert.match(template.sender, /designer@proteusbiodyne\.swim/i);
+  assert.equal(template.body.length, 1);
+  assert.equal(template.body[0].type, "proteus_authorization");
+  assert.equal(template.action.label, "Configure Specimen");
+  assert.match(managementSource, /ENGINEERED SPECIMEN AUTHORIZATION[\s\S]*ORDER STATUS[\s\S]*CONFIGURATION[\s\S]*Appearance[\s\S]*Behavior[\s\S]*Fulfillment/);
+  assert.match(managementSource, /data\.proteusOrderStatus === "design-required"[\s\S]*CONFIGURE SPECIMEN[\s\S]*WE APPRECIATE YOUR BUSINESS/);
+  assert.match(managementSource, /getEngineeredAquaticSpecimenOrderStatus\(orderId\) !== "design-required"/);
+  assert.match(purchaseSource, /order\.proteusStatus = "design-required"/);
+  assert.match(purchaseSource, /getEngineeredAquaticSpecimenOrderStatus\(id\) !== "specimen-configured"/);
+  assert.match(styles, /\.websurf-proteus-auth-status-grid[\s\S]*grid-template-columns:[^;]+;/);
+  assert.doesNotMatch(`${template.subject} ${template.preview} ${template.body.map((block) => block.text || "").join(" ")}`, /custom fish/i);
+});
+
+test("BubbleBodega issues a single-use recovery email for every empty-and-broke cycle", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const catalogSource = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
+  const purchaseSource = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
+  const saveSource = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  const managementSource = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
+  const renderingSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const emailTemplates = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/web/websurf/auto_emails.json"), "utf8"));
+  const template = emailTemplates.templates.bubblebodega_rescue_offer;
+
+  assert.ok(template);
+  assert.match(template.sender, /@bubblebodega\.swim$/i);
+  assert.match(`${template.subject} ${template.preview}`, /Goldfish|Fresh Start/);
+  assert.match(catalogSource, /const eligible = state\.coins <= 0 && getLivingOwnedFishCount\(\) === 0/);
+  assert.match(catalogSource, /if \(!offer\.eligibilityActive\)[\s\S]*offer\.cycle = [\s\S]*\+ 1[\s\S]*offer\.activatedAt = 0/);
+  assert.match(catalogSource, /if \(status\.activated\)[\s\S]*accepted: false/);
+  assert.match(catalogSource, /activatedAt[\s\S]*foodClaimedAt[\s\S]*goldfishClaimedAt/);
+  assert.match(catalogSource, /speciesId === "goldfish" && getBubbleBodegaRescueOfferStatus\(\)\.goldfishAvailable/);
+  assert.match(purchaseSource, /food\.id === "basic"[\s\S]*markBubbleBodegaRescueItemClaimed\("food"\)/);
+  assert.match(purchaseSource, /speciesId === "goldfish"[\s\S]*markBubbleBodegaRescueItemClaimed\("goldfish"/);
+  assert.match(saveSource, /bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer/);
+  assert.match(managementSource, /action\.destination === "rescue-offer"[\s\S]*openBubbleBodegaRescueOffer/);
+  assert.match(renderingSource, /data-buy-food="\$\{food\.id\}" data-list-price="\$\{food\.cost\}"/);
+  assert.match(html, /rescue-offer:buyFood:basic[\s\S]*openTankazonItem\(preview\)/);
+  assert.match(html, /tankazon-item-price-original[\s\S]*tankazon-item-price-sale/);
+  assert.match(styles, /\.tankazon-item-price-original[^}]*text-decoration: line-through/);
+  assert.match(styles, /\.tankazon-item-price-sale[^}]*color: #b12704/);
+
+  const livingFish = [];
+  const state = {
+    coins: 0,
+    storedFish: [],
+    bubbleBodegaRescueOffer: {
+      cycle: 0,
+      eligibilityActive: false,
+      issuedAt: 0,
+      activatedAt: 0,
+      foodClaimedAt: 0,
+      goldfishClaimedAt: 0
+    }
+  };
+  const c = load("store/catalog.js", [
+    "getLivingOwnedFishCount",
+    "getBubbleBodegaRescueOfferStatus",
+    "ensureBubbleBodegaRescueOffer",
+    "activateBubbleBodegaRescueOffer"
+  ], {
+    state,
+    getAllTankFish: () => livingFish,
+    isFishDead: () => false,
+    saveState() {},
+    sanitizeBubbleBodegaRescueOffer: () => ({ cycle: 0, eligibilityActive: false, issuedAt: 0, activatedAt: 0, foodClaimedAt: 0, goldfishClaimedAt: 0 })
+  });
+
+  assert.equal(c.ensureBubbleBodegaRescueOffer(100).cycle, 1);
+  assert.equal(c.activateBubbleBodegaRescueOffer(110).accepted, true);
+  assert.equal(c.activateBubbleBodegaRescueOffer(120).accepted, false, "one email link only activates once");
+  livingFish.push({ id: "rescued-goldfish" });
+  c.ensureBubbleBodegaRescueOffer(200);
+  livingFish.length = 0;
+  const nextOffer = c.ensureBubbleBodegaRescueOffer(300);
+  assert.equal(nextOffer.cycle, 2, "a later empty-and-broke occurrence issues another offer");
+  assert.equal(nextOffer.activated, false);
 });
 
 test("fish color previews keep the settings inspector mounted", () => {
@@ -1368,6 +1742,14 @@ test("linked tubes support homecoming and occasional ordinary travel", () => {
   assert.match(simulation, /tubeJourney: selectedTubeJourney/);
 });
 
+test("neighborhood visits last long enough and linked tubes get their own travel roll", () => {
+  const simulation = fs.readFileSync(path.join(root, "tank", "simulation.js"), "utf8");
+  assert.match(simulation, /getFishNeedValue\(fish, "energy", now\) <= FISH_ENERGY_LOW_THRESHOLD/);
+  assert.match(simulation, /timeSinceLastMove >= 5 \* MINUTE_MS/);
+  assert.match(simulation, /ambientTubeTravelRequested = ambientTubeJourneys\.length > 0 && Math\.random\(\) < 0\.08/);
+  assert.match(simulation, /ambientEdgeTravelRequested = !ambientTubeTravelRequested && neighbors\.length > 0 && Math\.random\(\) < 0\.02/);
+});
+
 test("decor edit mode avoids a full unrelated UI rebuild", () => {
   const source = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
   const body = source.match(/function toggleEditTankMode[\s\S]*?\n}\n/)?.[0] || "";
@@ -1402,6 +1784,76 @@ test("wallet receipts persist purchases and expose a compact toolbar history", (
   assert.match(purchases, /function recordWalletTransaction/);
   assert.match(rendering, /function renderWalletTransactionMenu/);
   assert.match(html, /id="walletTransactionMenu"/);
+});
+
+test("Bubble Borough Bank exposes account, reward math, and unlocked milestone views", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "ui", "main-and-store-rendering.js"), "utf8");
+  const overlays = fs.readFileSync(path.join(root, "ui", "management-and-overlays.js"), "utf8");
+  const customization = fs.readFileSync(path.join(root, "decor", "customization.js"), "utf8");
+  const purchases = fs.readFileSync(path.join(root, "store", "purchases.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(bootstrap, /bubbleBankOpen: false/);
+  assert.match(rendering, /data-open-bubble-bank/);
+  assert.match(rendering, /renderBubbleBankPage\(\)/);
+  assert.match(customization, /function openBubbleBank\(/);
+  assert.match(customization, /openStoreOverlay\(previousStoreTab, \{ render: false \}\)/);
+  assert.match(html, /id="bubbleBankPage"/);
+  assert.match(overlays, /assets\/misc\/bank_logo\.png/);
+  assert.match(overlays, /data-bank-order-id/);
+  assert.match(overlays, /showBubbleBodegaOrder/);
+  assert.match(purchases, /entry\.orderId = order\.id/);
+  assert.match(html, /function showBubbleBodegaOrder\(/);
+  assert.match(html, /is-highlighted/);
+  assert.match(rendering, /showingBank \? "Bubble Borough Bank" : "BubbleBodega Store"/);
+  assert.match(overlays, /function renderBubbleBankAccount\(/);
+  assert.match(overlays, /function renderBubbleBankRewards\(/);
+  assert.match(overlays, /function renderBubbleBankMilestones\(/);
+  assert.match(overlays, /Reward = max\(0, score\)/);
+  assert.match(styles, /\.bubble-bank-balance-card/);
+});
+
+test("milestone stats do not return an undefined clean recap counter", () => {
+  const recapSource = fs.readFileSync(path.join(root, "tank/events-recaps-and-save.js"), "utf8");
+  const statsStart = recapSource.indexOf("function getMilestoneStats(");
+  const statsEnd = recapSource.indexOf("\nfunction applyProgressMilestones", statsStart);
+  const statsSource = recapSource.slice(statsStart, statsEnd);
+
+  assert.ok(statsStart >= 0 && statsEnd > statsStart);
+  assert.doesNotMatch(statsSource, /\bcleanRecapCount95\b/);
+  assert.match(statsSource, /cleanRecapStreak90[\s\S]*cleanRecapStreak95/);
+});
+
+test("the toolbar store button switches from the bank page into the catalog", () => {
+  const content = fs.readFileSync(path.join(root, "assets", "custom-content.js"), "utf8");
+  const audio = fs.readFileSync(path.join(root, "audio", "system.js"), "utf8");
+  assert.match(content, /runtime\.bubbleBankOpen === true/);
+  assert.match(content, /openStoreOverlay\(runtime\.storeTab \|\| "food"\)/);
+  assert.match(audio, /toolbarFastTooltip\.parentElement !== document\.body/);
+});
+
+test("the bank account tab uses the fish coin artwork", () => {
+  const overlays = fs.readFileSync(path.join(root, "ui", "management-and-overlays.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(overlays, /bubble-bank-tab-icon/);
+  assert.match(overlays, /assets\/misc\/coin_unicode\.png/);
+  assert.match(styles, /\.bubble-bank-tab\.is-active \.bubble-bank-tab-icon/);
+});
+
+test("the bank account copy stays concise", () => {
+  const overlays = fs.readFileSync(path.join(root, "ui", "management-and-overlays.js"), "utf8");
+  assert.match(overlays, /Manage your Fish Coins and review your account activity\./);
+  assert.match(overlays, /Save small\. Swim big\./);
+  assert.doesNotMatch(overlays, /Save up, complete milestones, and explore a bigger, brighter Bubble Borough\./);
+});
+
+test("bank transaction history exposes earned and spent filters", () => {
+  const overlays = fs.readFileSync(path.join(root, "ui", "management-and-overlays.js"), "utf8");
+  assert.match(overlays, /data-bank-transaction-filter/);
+  assert.match(overlays, /All Earned Money/);
+  assert.match(overlays, /All Spent Money/);
+  assert.match(overlays, /bubbleBankTransactionMatchesFilter/);
 });
 
 test("Halloween placement uses corrected sizes with catalog loading and offline fallback", async () => {

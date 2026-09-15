@@ -124,18 +124,25 @@ function formatSwimStyle(swimStyle) {
 
 function getCurrentMealSlot(timestamp) {
   const date = new Date(timestamp);
-  const morning = date.getHours() < 12;
   const start = new Date(date);
-  start.setHours(morning ? 0 : 12, 0, 0, 0);
+  const hour = date.getHours();
+  // Automatic feeders serve at 08:00 and 20:00 local aquarium time. Before
+  // the morning service, the active slot is still the previous evening slot.
+  if (hour < 8) {
+    start.setDate(start.getDate() - 1);
+    start.setHours(20, 0, 0, 0);
+  } else {
+    start.setHours(hour < 20 ? 8 : 20, 0, 0, 0);
+  }
   return buildMealSlot(start);
 }
 
 function getTodaysMealSlots(timestamp) {
   const date = new Date(timestamp);
   const morning = new Date(date);
-  morning.setHours(0, 0, 0, 0);
+  morning.setHours(8, 0, 0, 0);
   const evening = new Date(date);
-  evening.setHours(12, 0, 0, 0);
+  evening.setHours(20, 0, 0, 0);
   return [buildMealSlot(morning), buildMealSlot(evening)];
 }
 
@@ -143,7 +150,7 @@ function buildMealSlot(startDate) {
   const start = new Date(startDate);
   const end = new Date(start);
   end.setHours(end.getHours() + 12, 0, 0, 0);
-  const part = start.getHours() < 12 ? "Morning" : "Evening";
+  const part = start.getHours() < 20 ? "Morning" : "Evening";
   return {
     key: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}-${part.toLowerCase()}`,
     label: part,
@@ -1206,7 +1213,9 @@ function getAutoDispenserLayout() {
   const width = AUTO_DISPENSER_DRAW_WIDTH * dispenserScale;
   const height = AUTO_DISPENSER_DRAW_HEIGHT * dispenserScale;
   const visibleBounds = getVisibleTankVirtualBounds();
-  const x = TANK_WIDTH * 0.5 - width / 2;
+  const dispenser = state?.autoDispenser;
+  const centerX = TANK_WIDTH * clamp(Number(dispenser?.xNorm) || AUTO_DISPENSER_DEFAULT_X_NORM, 0.12, 0.88);
+  const x = centerX - width / 2;
   const y = visibleBounds.top - getViewportPxAsTankVirtual(AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX);
   const screenWidth = width * 0.12;
   const screenHeight = height * 0.2;
@@ -1274,6 +1283,11 @@ function getAutoDispenserLayout() {
     nozzle: {
       x: x + width * 0.5,
       y: y + height * 0.77
+    },
+    statusLight: {
+      x: x + width * 0.91,
+      y: y + height * 0.37 - Math.max(3, width * 0.02) * 1.5,
+      radius: Math.max(3, width * 0.02)
     }
   };
 }
@@ -1314,18 +1328,6 @@ function getAutoDispenserHitTarget(x, y) {
   if (!pointInSimpleBounds(x, y, layout.bodyBounds)) {
     return "";
   }
-  if (pointInSimpleBounds(x, y, layout.minusBounds)) {
-    return "minus";
-  }
-  if (pointInSimpleBounds(x, y, layout.plusBounds)) {
-    return "plus";
-  }
-  if (pointInSimpleBounds(x, y, layout.resetBounds)) {
-    return "reset";
-  }
-  if (pointInSimpleBounds(x, y, layout.playBounds)) {
-    return "play";
-  }
   return "body";
 }
 
@@ -1339,32 +1341,41 @@ function handleAutoDispenserInteractionAtPoint(point, now = Date.now()) {
     return false;
   }
 
-  if (hitTarget === "minus") {
-    adjustAutoDispenserMealPortion(-1, now);
-    return true;
-  }
-
-  if (hitTarget === "plus") {
-    adjustAutoDispenserMealPortion(1, now);
-    return true;
-  }
-
-  if (hitTarget === "reset") {
-    openAutoDispenserResetConfirmation();
-    return true;
-  }
-
-  if (hitTarget === "play") {
-    dispenseAutoDispenserNow(now);
-    return true;
-  }
-
   if (runtime.medicineModeKey) {
     showToast("Only food can be loaded into the pellet dispenser.");
     return true;
   }
 
   return loadSelectedFoodIntoAutoDispenser(now);
+}
+
+function getAutoDispenserHitBounds(now = Date.now()) {
+  if (!hasAutoDispenserInstalled()) return null;
+  return getAutoDispenserLayout().bodyBounds;
+}
+
+function setAutoDispenserPositionFromPoint(point, now = Date.now()) {
+  if (!hasAutoDispenserInstalled() || !point) return false;
+  const dispenser = state.autoDispenser;
+  const layout = getAutoDispenserLayout();
+  const halfWidthNorm = layout.width / (2 * TANK_WIDTH);
+  const nextX = clamp(point.x / TANK_WIDTH, 0.12 + halfWidthNorm, 0.88 - halfWidthNorm);
+  if (Math.abs(nextX - Number(dispenser.xNorm || AUTO_DISPENSER_DEFAULT_X_NORM)) < 0.0005) return false;
+  dispenser.xNorm = nextX;
+  saveState();
+  renderUi(now, { full: false });
+  return true;
+}
+
+function setAutoDispenserTankLayer(nextLayer, now = Date.now()) {
+  if (!hasAutoDispenserInstalled()) return false;
+  const dispenser = state.autoDispenser;
+  const resolved = clampTankLayer(nextLayer);
+  if (resolved === dispenser.tankLayer) return false;
+  dispenser.tankLayer = resolved;
+  saveState();
+  renderUi(now, { full: false });
+  return true;
 }
 
 function scoopTankItemAtPoint(x, y, now = Date.now()) {

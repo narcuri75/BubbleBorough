@@ -6,7 +6,7 @@ function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
     return baseSpecies || null;
   }
 
-  return {
+  const merged = {
     ...baseSpecies,
     cycleSeconds: profileSpecies.cycleSeconds,
     bobSpeed: profileSpecies.bobSpeed,
@@ -27,6 +27,21 @@ function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
     behaviorProfileSpeciesId: profileSpecies.id,
     behaviorProfileName: profileSpecies.name
   };
+  if (baseSpecies.customAsset) {
+    merged.swimStyle = baseSpecies.swimStyle;
+    merged.speedMode = baseSpecies.speedMode;
+    merged.speedMin = baseSpecies.speedMin;
+    merged.speedMax = baseSpecies.speedMax;
+    merged.targetMinMs = baseSpecies.targetMinMs;
+    merged.targetMaxMs = baseSpecies.targetMaxMs;
+    merged.diet = baseSpecies.diet;
+    merged.chumOnly = baseSpecies.chumOnly;
+    merged.activityRegulation = baseSpecies.activityRegulation;
+    merged.swimZone = baseSpecies.swimZone;
+    merged.socialAffinity = baseSpecies.socialAffinity;
+    merged.behaviorSpeciesId = profileSpecies.id;
+  }
+  return merged;
 }
 
 function getSpeciesForFish(fish) {

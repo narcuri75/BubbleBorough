@@ -43,7 +43,13 @@ function renderTank(now) {
     // gravel, rather than being painted behind every fish and ornament.
     drawFishPebbleTosses(now, layer);
     drawMachinery(now, layer);
+    if (layer === clampTankLayer(state?.autoDispenser?.tankLayer ?? AUTO_DISPENSER_DEFAULT_TANK_LAYER)) {
+      drawAutoDispenser(now);
+    }
   }
+  // Surface boats are always above decor, while the glass/grime canvases are
+  // composited after this scene and therefore remain in front of them.
+  drawMachinery(now, 0);
   drawCoinGlints(now);
   drawDecorBubbleStreams(now);
   drawTransitTubeBursts(now);
@@ -1704,8 +1710,9 @@ function drawAutoDispenser(now = Date.now()) {
 
   const dispenser = state.autoDispenser;
   const layout = getAutoDispenserLayout();
-  const backgroundImage = runtime.images.get(AUTO_DISPENSER_BG_PATH);
-  const foregroundImage = runtime.images.get(AUTO_DISPENSER_IMAGE_PATH);
+  const backgroundImage = runtime.images.get(getAutoDispenserBackgroundPath(dispenser));
+  const foregroundImage = runtime.images.get(getAutoDispenserImagePath(dispenser));
+  const loadedCount = getAutoDispenserLoadedCount(dispenser);
 
   tankContext.save();
   if (backgroundImage) {
@@ -1737,44 +1744,48 @@ function drawAutoDispenser(now = Date.now()) {
     tankContext.drawImage(foregroundImage, layout.x, layout.y, layout.width, layout.height);
   }
 
-  const lowFood = isAutoDispenserFoodLow(dispenser) || dispenser.refillAlert;
-  const blinking = lowFood && Math.floor(now / AUTO_DISPENSER_LOW_FOOD_BLINK_MS) % 2 === 0;
-  const screenBounds = layout.screenBounds;
-  const screenGradient = tankContext.createLinearGradient(screenBounds.left, screenBounds.top, screenBounds.left, screenBounds.bottom);
-  screenGradient.addColorStop(0, "rgba(82, 86, 86, 0.98)");
-  screenGradient.addColorStop(0.48, "rgba(55, 58, 58, 0.98)");
-  screenGradient.addColorStop(1, "rgba(31, 33, 34, 0.98)");
-  tankContext.fillStyle = screenGradient;
-  tankContext.beginPath();
-  tankContext.roundRect(
-    screenBounds.left,
-    screenBounds.top,
-    screenBounds.right - screenBounds.left,
-    screenBounds.bottom - screenBounds.top,
-    6
-  );
-  tankContext.fill();
-  tankContext.strokeStyle = "rgba(12, 13, 13, 0.72)";
-  tankContext.lineWidth = getViewportStableAssetScale();
-  tankContext.stroke();
+  drawAutoDispenserStatusLight(layout, loadedCount, now);
 
-  const displayValue = String(clamp(dispenser.mealPortion || 0, AUTO_DISPENSER_PORTION_MIN, AUTO_DISPENSER_PORTION_MAX)).padStart(2, "0");
-  const screenWidth = screenBounds.right - screenBounds.left;
-  const screenHeight = screenBounds.bottom - screenBounds.top;
-  tankContext.save();
-  tankContext.textAlign = "center";
-  tankContext.textBaseline = "middle";
-  tankContext.font = `700 ${Math.max(9, Math.round(screenHeight * 0.82))}px "E1234Display", "Consolas", "Courier New", monospace`;
-  tankContext.fillStyle = blinking ? "#E92525" : "#050505";
-  tankContext.shadowColor = blinking ? "rgba(255, 28, 28, 0.55)" : "transparent";
-  tankContext.shadowBlur = blinking ? Math.max(2, screenHeight * 0.18) : 0;
-  tankContext.fillText(displayValue, screenBounds.left + screenWidth / 2, screenBounds.top + screenHeight * 0.57, screenWidth * 0.82);
+  // The dispenser is intentionally display-less: feeding quantity is decided
+  // by the simulation, not by controls attached to the artwork.
   tankContext.restore();
+}
 
-  drawAutoDispenserButton(layout.minusBounds, "-");
-  drawAutoDispenserButton(layout.plusBounds, "+");
-  drawAutoDispenserButton(layout.resetBounds, "", { icon: "reset", variant: "reset" });
-  drawAutoDispenserButton(layout.playBounds, "", { icon: "play", variant: "play" });
+function drawAutoDispenserStatusLight(layout, loadedCount, now) {
+  const light = layout?.statusLight;
+  if (!light) return;
+  const fillRatio = clamp(loadedCount / Math.max(1, AUTO_DISPENSER_MAX_PELLETS), 0, 1);
+  const isEmpty = loadedCount <= 0;
+  const isCritical = !isEmpty && fillRatio < 0.1;
+  const isWarning = !isEmpty && fillRatio < 0.5;
+  const blinkOn = Math.floor(now / 360) % 2 === 0;
+  const pulse = 0.68 + 0.32 * (0.5 + 0.5 * Math.sin(now / 260));
+  const alpha = isEmpty || isCritical ? (isEmpty ? 1 : pulse) : 1;
+  const lightPath = isEmpty
+    ? (blinkOn ? AUTO_DISPENSER_LIGHT_RED_PATH : AUTO_DISPENSER_LIGHT_OFF_PATH)
+    : isWarning
+      ? AUTO_DISPENSER_LIGHT_YELLOW_PATH
+      : AUTO_DISPENSER_LIGHT_GREEN_PATH;
+  const lightImage = runtime.images.get(lightPath);
+
+  tankContext.save();
+  tankContext.globalAlpha = alpha;
+  if (lightImage) {
+    tankContext.drawImage(lightImage, layout.x, layout.y, layout.width, layout.height);
+    tankContext.restore();
+    return;
+  }
+  const color = isEmpty ? "#f33b42" : isWarning ? "#ffd52f" : "#4dff64";
+  tankContext.shadowColor = color;
+  tankContext.shadowBlur = light.radius * (isEmpty || isCritical ? 2.8 : 2.2);
+  tankContext.fillStyle = color;
+  tankContext.beginPath();
+  tankContext.arc(light.x, light.y, light.radius, 0, Math.PI * 2);
+  tankContext.fill();
+  tankContext.shadowBlur = 0;
+  tankContext.strokeStyle = "rgba(255,255,255,0.65)";
+  tankContext.lineWidth = Math.max(1, light.radius * 0.18);
+  tankContext.stroke();
   tankContext.restore();
 }
 

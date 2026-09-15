@@ -994,9 +994,15 @@ async function init() {
       allowZombieSkeletonFish: true
     })
     : [];
+  const normalizedDavyMutationCatalog = normalizeFishCatalog({ fish: getDavyMutationCatalogDefinitions() }, {
+    assetFolders: {},
+    includeZombieSkeletonStageAssets: false,
+    allowZombieSkeletonFish: false
+  });
   const normalizedFishCatalog = [
     ...normalizedBaseFishCatalog,
-    ...normalizedZombieSkeletonFishCatalog
+    ...normalizedZombieSkeletonFishCatalog,
+    ...normalizedDavyMutationCatalog
   ];
   await discoverFishAppearanceVariants(normalizedFishCatalog, [...baseFishResponse, ...suckerFishResponse]);
   runtime.fishCatalog = [
@@ -1050,13 +1056,23 @@ async function init() {
     ...runtime.customGravelPebbleCatalog.map((item) => item.path),
     ...runtime.bubbleCatalog.map((item) => item.path),
     AUTO_DISPENSER_IMAGE_PATH,
+    ...AUTO_DISPENSER_VARIANT_IMAGE_PATHS,
+    ...AUTO_DISPENSER_VARIANT_BG_PATHS,
     AUTO_DISPENSER_BG_PATH,
+    AUTO_DISPENSER_LIGHT_OFF_PATH,
+    AUTO_DISPENSER_LIGHT_GREEN_PATH,
+    AUTO_DISPENSER_LIGHT_RED_PATH,
+    AUTO_DISPENSER_LIGHT_YELLOW_PATH,
+    "assets/icons/sync-success.png",
+    "assets/icons/sync-syncing.png",
+    "assets/icons/sync-failed.png",
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
     FISH_EGG_SHELL_ASSET_PATH,
     ...SUBMARINE_VARIANT_IMAGE_PATHS,
+    SUBMARINE_RED_LIGHT_OVERLAY_PATH,
     ...BOAT_VARIANT_IMAGE_PATHS,
     HALLOWEEN_BOAT_IMAGE_PATH,
     HALLOWEEN_SUBMARINE_IMAGE_PATH,

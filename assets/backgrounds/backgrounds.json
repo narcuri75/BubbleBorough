@@ -8,34 +8,102 @@
       "sortOrder": 0
     },
     {
-      "key": "Volcanic_Reef.png",
-      "name": "Volcanic Reef",
+      "key": "Abyssal_Pillars.png",
+      "name": "Abyssal Pillars",
       "cost": 10,
-      "sortOrder": 1
+      "sortOrder": 1,
+      "description": "Towering stone formations fading into deep blue water, creating the feeling that your aquarium sits at the edge of something much larger."
     },
     {
-      "key": "Sunken_Ship.png",
-      "name": "Sunken Ship",
+      "key": "Blue_Rock_Canyon.png",
+      "name": "Blue Rock Canyon",
       "cost": 10,
-      "sortOrder": 2
+      "sortOrder": 2,
+      "description": "A cool blue canyon of weathered stone that adds depth and the illusion of a vast underwater passage beyond the glass."
     },
     {
-      "key": "Underwater_City.png",
-      "name": "Underwater City",
+      "key": "Coral_Shelf_Reef.png",
+      "name": "Coral Shelf Reef",
       "cost": 10,
-      "sortOrder": 3
+      "sortOrder": 3,
+      "description": "Layered coral shelves stretch into the distance, turning the back of the aquarium into a colorful reef landscape."
     },
     {
-      "key": "Sunken_UFO.png",
-      "name": "Sunken UFO",
+      "key": "Emerald_Aquascape.png",
+      "name": "Emerald Aquascape",
       "cost": 10,
-      "sortOrder": 4
+      "sortOrder": 4,
+      "description": "A lush green underwater landscape filled with dense plant life, rocky contours, and the calm atmosphere of a carefully grown aquascape."
     },
     {
-      "key": "Aquatic_Ambience.png",
-      "name": "Aquatic Ambience",
+      "key": "Forest_Stream.png",
+      "name": "Forest Stream",
       "cost": 10,
-      "sortOrder": 5
+      "sortOrder": 5,
+      "description": "A quiet submerged stream surrounded by roots, stones, and greenery, making the aquarium feel like a hidden pocket of forest water."
+    },
+    {
+      "key": "Halloween_Haunted_Kelp_Forest.png",
+      "name": "Haunted Kelp Forest",
+      "cost": 10,
+      "sortOrder": 6,
+      "description": "Dark kelp disappears into murky water while crooked silhouettes loom in the distance. Something is probably moving back there."
+    },
+    {
+      "key": "Mangrove_Passage.png",
+      "name": "Mangrove Passage",
+      "cost": 10,
+      "sortOrder": 7,
+      "description": "Twisting mangrove roots form a sheltered underwater passage, adding natural depth and a dense, tangled shoreline atmosphere."
+    },
+    {
+      "key": "Riverbed_Driftwood.png",
+      "name": "Riverbed Driftwood",
+      "cost": 10,
+      "sortOrder": 8,
+      "description": "Weathered driftwood, stones, and soft sediment create the look of a calm riverbed stretching far beyond the aquarium."
+    },
+    {
+      "key": "Shadow_Slate.png",
+      "name": "Shadow Slate",
+      "cost": 10,
+      "sortOrder": 9,
+      "description": "Dark layers of slate disappear into shadow, creating a simple, moody backdrop that keeps attention on the fish."
+    },
+    {
+      "key": "Sunken_Ruins.png",
+      "name": "Sunken Ruins",
+      "cost": 10,
+      "sortOrder": 10,
+      "description": "Ancient structures rest quietly beneath the water, worn down by time and slowly being reclaimed by the surrounding environment."
+    },
+    {
+      "key": "Sunken_Saucer.png",
+      "name": "Sunken Saucer",
+      "cost": 10,
+      "sortOrder": 11,
+      "description": "A mysterious flying saucer rests half-buried on the bottom, apparently completing an interstellar journey in the least dignified way possible."
+    },
+    {
+      "key": "Volcanic_Caverns.png",
+      "name": "Volcanic Caverns",
+      "cost": 10,
+      "sortOrder": 12,
+      "description": "Dark volcanic caves and glowing stone formations create the impression of an aquarium tucked deep inside an ancient lava field."
+    },
+    {
+      "key": "Volcanic_Passage.png",
+      "name": "Volcanic Passage",
+      "cost": 10,
+      "sortOrder": 13,
+      "description": "A narrow route through towering volcanic rock, giving the tank the look of a hidden passage carved through cooled lava."
+    },
+    {
+      "key": "Volcanic_Rock_Reef.png",
+      "name": "Volcanic Rock Reef",
+      "cost": 10,
+      "sortOrder": 14,
+      "description": "Jagged volcanic stone rises behind the aquarium like a dark natural reef, adding rugged texture and dramatic depth."
     }
   ]
 }

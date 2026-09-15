@@ -20,6 +20,7 @@ function renderCustomFishCreationOverlay() {
   const rotation = sanitizeCustomFishRotation(pending.rotation);
   const flipped = Boolean(pending.flipX);
   const complexTurnaround = String(pending.turnAnimation || "simple").trim().toLowerCase() === "complex";
+  const diet = normalizeCustomFishDiet(pending.diet);
   const transform = getPendingCustomFishTransform(pending);
 
   return `
@@ -41,7 +42,7 @@ function renderCustomFishCreationOverlay() {
               data-custom-fish-preview />
           </div>
           <div class="custom-fish-size-readout">
-            <span>Actual fish width</span>
+            <span>CURRENT WIDTH:</span>
             <strong data-custom-fish-size-label>${width} px</strong>
           </div>
         </div>
@@ -65,8 +66,15 @@ function renderCustomFishCreationOverlay() {
             ${behaviorOptions}
           </select>
         </label>
+        <label class="custom-decor-name-row">
+          <span>Diet</span>
+          <select class="shop-sort-select" data-custom-fish-diet-select aria-label="Custom fish diet">
+            <option value="pellet" ${diet === "pellet" ? "selected" : ""}>Basic Food</option>
+            <option value="chum" ${diet === "chum" ? "selected" : ""}>Chum</option>
+          </select>
+        </label>
         <label class="bubbler-control-row custom-fish-size-control">
-          <span>Fish Size <strong data-custom-fish-size-label>${width} px</strong></span>
+          <span>SPECIMEN SCALE <strong data-custom-fish-size-label>${width} px</strong></span>
           <input
             type="range"
             min="${CUSTOM_FISH_MIN_WIDTH}"
@@ -80,7 +88,7 @@ function renderCustomFishCreationOverlay() {
             type="checkbox"
             data-custom-fish-turn-toggle
             ${complexTurnaround ? "checked" : ""} />
-          <span>Complex turn around animation</span>
+          <span>Advanced Turn Animation</span>
         </label>
         <label class="cave-colorize-toggle custom-fish-flip-toggle">
           <input
@@ -103,6 +111,175 @@ function renderCustomFishCreationOverlay() {
       </div>
     </div>
   `;
+}
+
+function renderProteusDesignerWorkspace() {
+  const pending = runtime.pendingCustomFishUpload;
+  const hasImage = Boolean(pending?.dataUrl);
+  const width = clamp(
+    Math.round(Number(pending?.width) || CUSTOM_FISH_DEFAULT_WIDTH),
+    CUSTOM_FISH_MIN_WIDTH,
+    CUSTOM_FISH_MAX_WIDTH
+  );
+  const behaviorProfileId = normalizeCustomFishBehaviorProfileId(pending?.behaviorProfileId);
+  const behaviorProfile = getCustomFishBehaviorProfile(behaviorProfileId) || getDefaultCustomFishBehaviorProfile();
+  const behaviorOptions = getCustomFishBehaviorProfiles().map((profile) => `
+    <option value="${escapeHtml(profile.id)}" ${behaviorProfileId === profile.id ? "selected" : ""}>
+      ${escapeHtml(formatCustomFishBehaviorOption(profile))}
+    </option>
+  `).join("");
+  const aspectRatio = pending?.naturalHeight && pending?.naturalWidth
+    ? `${Math.max(1, Number(pending.naturalWidth))} / ${Math.max(1, Number(pending.naturalHeight))}`
+    : "1 / 1";
+  const rotation = sanitizeCustomFishRotation(pending?.rotation);
+  const flipped = Boolean(pending?.flipX);
+  const complexTurnaround = String(pending?.turnAnimation || "simple").trim().toLowerCase() === "complex";
+  const diet = normalizeCustomFishDiet(pending?.diet);
+  const activityRegulation = getCustomFishActivityRegulationDisplay(pending?.activityRegulation, behaviorProfile);
+  const swimZone = getCustomFishSwimZoneDisplay(pending?.swimZone, behaviorProfile);
+  const socialAffinity = normalizeCustomFishSocialAffinity(pending?.socialAffinity);
+  const transform = getPendingCustomFishTransform(pending);
+  const disabled = hasImage ? "" : "disabled";
+
+  return `
+    <div class="proteus-designer-shell">
+      <header class="proteus-designer-app-header">
+        <img ${assetImageAttributes("assets/web/proteus/Proteus_Title_Logo.png")} alt="Proteus Biodyne" draggable="false" />
+        <div class="proteus-designer-brand-divider" aria-hidden="true"></div>
+        <div class="proteus-designer-app-title"><h1 id="proteusDesignerTitle" tabindex="-1">Engineered Aquatic Specimen Designer</h1><span>DESIGN. ADAPT. POPULATE A MORE RESILIENT TOMORROW.</span></div>
+        <div class="proteus-designer-session"><strong>▣ &nbsp; SECURE DESIGNER SESSION</strong><span>PROTEUS BIODYNE // RESTRICTED</span></div>
+      </header>
+      <div class="proteus-designer-editor">
+        <section class="proteus-designer-preview-column" aria-label="Specimen image">
+          <header class="proteus-designer-panel-heading"><div><strong>SPECIMEN DESIGN INTERFACE</strong><span>Create and refine your aquatic specimen using the tools at right.</span></div><div class="proteus-designer-tools"><label><span>⇧ &nbsp; Upload Reference</span><input id="proteusDesignerImageInput" type="file" accept="image/*" /></label><button type="button" data-proteus-designer-clear>▱ &nbsp; Clear Specimen</button><button type="button" data-proteus-designer-reset>↻ &nbsp; Reset Parameters</button></div></header>
+          <div class="proteus-designer-preview-window">
+            ${hasImage ? `
+              <img
+                class="proteus-designer-preview-image"
+                ${assetImageAttributes(pending.dataUrl)}
+                alt="Uploaded specimen preview"
+                style="width: ${width}px; aspect-ratio: ${escapeHtml(aspectRatio)}; transform: ${escapeHtml(transform)};"
+                data-custom-fish-preview />
+            ` : `
+              <div class="proteus-designer-empty-preview">
+                <img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" />
+                <strong>Specimen image required</strong>
+                <span>Upload the side-profile asset Proteus will use for fulfillment.</span>
+              </div>
+            `}
+            <div class="proteus-designer-front-marker" aria-label="Specimen front points right"><span>FRONT</span><i aria-hidden="true"></i></div>
+          </div>
+          <div class="proteus-designer-preview-meta"><div class="proteus-designer-size-readout"><span>CURRENT WIDTH:</span><strong data-custom-fish-size-label>${width} px</strong></div><span>GRID: 50 px &nbsp; | &nbsp; VIEW: STANDARD &nbsp; | &nbsp; UNITS: PIXELS</span></div>
+        </section>
+
+        <section class="proteus-designer-settings" aria-label="Specimen configuration">
+          <header class="proteus-designer-panel-heading"><div><strong>SPECIMEN PARAMETERS</strong><span>Define the characteristics of your engineered specimen.</span></div></header>
+          <label class="proteus-designer-field">
+            <span>SPECIMEN NAME</span>
+            <input type="text" maxlength="48" value="${escapeHtml(pending?.name || pending?.suggestedName || "")}" data-custom-fish-name-input ${disabled} />
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>BEHAVIOR PROFILE</span>
+            <select data-custom-fish-behavior-select ${disabled}>${behaviorOptions}</select>
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>DIETARY PROFILE</span>
+            <select data-custom-fish-diet-select ${disabled}>
+              <option value="pellet" ${diet === "pellet" ? "selected" : ""}>Standard Feed</option>
+              <option value="chum" ${diet === "chum" ? "selected" : ""}>Chum</option>
+            </select>
+            <small>Defines the specimen's approved nutritional substrate.</small>
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>ACTIVITY REGULATION</span>
+            <select data-custom-fish-activity-select ${disabled}>
+              <option value="calm" ${activityRegulation === "calm" ? "selected" : ""}>Calm</option>
+              <option value="standard" ${activityRegulation === "standard" ? "selected" : ""}>Standard</option>
+              <option value="reactive" ${activityRegulation === "reactive" ? "selected" : ""}>Reactive</option>
+            </select>
+            <small>Regulates locomotor cadence, cruising behavior, and response frequency.</small>
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>SWIM ZONE CALIBRATION</span>
+            <select data-custom-fish-swim-zone-select ${disabled}>
+              <option value="full" ${swimZone === "full" ? "selected" : ""}>Full Water Column</option>
+              <option value="upper" ${swimZone === "upper" ? "selected" : ""}>Upper Column</option>
+              <option value="midwater" ${swimZone === "midwater" ? "selected" : ""}>Midwater</option>
+              <option value="lower" ${swimZone === "lower" ? "selected" : ""}>Lower Column</option>
+            </select>
+            <small>Biases the specimen's preferred operating depth without restricting free movement.</small>
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>SOCIAL AFFINITY</span>
+            <select data-custom-fish-social-select ${disabled}>
+              <option value="independent" ${socialAffinity === "independent" ? "selected" : ""}>Independent</option>
+              <option value="adaptive" ${socialAffinity === "adaptive" ? "selected" : ""}>Adaptive</option>
+              <option value="schooling" ${socialAffinity === "schooling" ? "selected" : ""}>Schooling</option>
+            </select>
+            <small>Controls the specimen's tendency to coordinate movement with nearby aquatic life.</small>
+          </label>
+
+          <label class="proteus-designer-range">
+            <span>SPECIMEN SCALE <strong data-custom-fish-size-label>${width} px</strong></span>
+            <input type="range" min="${CUSTOM_FISH_MIN_WIDTH}" max="${CUSTOM_FISH_MAX_WIDTH}" step="1" value="${width}" data-custom-fish-size-input ${disabled} />
+          </label>
+
+          <div class="proteus-designer-toggle-row">
+            <label class="proteus-designer-toggle">
+              <input type="checkbox" data-custom-fish-turn-toggle ${complexTurnaround ? "checked" : ""} ${disabled} />
+              <span>Advanced Turn Animation</span>
+            </label>
+
+            <label class="proteus-designer-toggle">
+              <input type="checkbox" data-custom-fish-flip-toggle ${flipped ? "checked" : ""} ${disabled} />
+              <span>Flip Horizontally</span>
+            </label>
+          </div>
+
+          <label class="proteus-designer-range">
+            <span>Rotation <strong data-custom-fish-rotation-label>${rotation} deg</strong></span>
+            <input type="range" min="${CUSTOM_FISH_ROTATION_MIN_DEGREES}" max="${CUSTOM_FISH_ROTATION_MAX_DEGREES}" step="1" value="${rotation}" data-custom-fish-rotation-input ${disabled} />
+          </label>
+
+          <div class="proteus-designer-note"><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" /><div><strong>SPECIMEN FULFILLMENT <b>75 COINS</b></strong><span>Your custom aquatic specimen will be synthesized and delivered to your tank upon confirmation.</span></div></div>
+          <div class="proteus-designer-actions"><button type="button" class="proteus-designer-submit" data-proteus-designer-submit ${hasImage ? "" : "disabled"}>COMMISSION SPECIMEN &nbsp; →</button><button type="button" class="proteus-designer-cancel" data-proteus-designer-cancel>CANCEL</button></div>
+          <small class="proteus-designer-legal">All specimens are subject to review in accordance with Proteus Biodyne biosecurity and ecological compliance standards.</small>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function renderProteusDesignerCompletion() {
+  return `
+    <div class="proteus-designer-completion" role="status" aria-live="polite">
+      <img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="Proteus Biodyne" />
+      <p>ASSET DESIGN AND FULFILLMENT COMPLETE.</p>
+    </div>
+  `;
+}
+
+function renderProteusDesignerPage() {
+  const route = document.getElementById("proteusDesignerRoute");
+  const workspace = document.getElementById("proteusDesignerWorkspace");
+  if (!route || !workspace) return;
+  route.hidden = runtime.proteusDesignerOpen !== true;
+  route.classList.toggle("is-complete", runtime.proteusDesignerCompleting === true);
+  if (route.hidden) return;
+  workspace.classList.toggle("is-complete", runtime.proteusDesignerCompleting === true);
+  const renderKey = runtime.proteusDesignerCompleting === true
+    ? `complete:${String(runtime.activeEngineeredSpecimenOrderId || "")}`
+    : `workspace:${String(runtime.activeEngineeredSpecimenOrderId || "")}:${Number(runtime.proteusDesignerRenderRevision) || 0}:${runtime.pendingCustomFishUpload?.dataUrl ? "image" : "empty"}`;
+  if (workspace.dataset.proteusDesignerRenderKey === renderKey && workspace.firstElementChild) return;
+  workspace.dataset.proteusDesignerRenderKey = renderKey;
+  workspace.innerHTML = runtime.proteusDesignerCompleting === true
+    ? renderProteusDesignerCompletion()
+    : renderProteusDesignerWorkspace();
 }
 
 function renderBubblerSettingsOverlay(item) {
@@ -2288,11 +2465,16 @@ function renderFishList(now) {
   const starterName = starterSpecies?.name || "starter fish";
   const emergencyStarter = starterSpecies ? getFishPurchaseCost(starterSpecies.id) === 0 : false;
   const starterCost = starterSpecies ? starterSpecies.cost : 1;
+  const rescueOfferWaiting = state.coins <= 0
+    && getLivingOwnedFishCount() === 0
+    && getBubbleBodegaRescueOfferStatus().issued
+    && !getBubbleBodegaRescueOfferStatus().redeemed;
   const fishListDataKey = [
     getLocalDayKey(now),
     starterSpecies?.id || "",
     starterCost,
     emergencyStarter ? 1 : 0,
+    rescueOfferWaiting ? 1 : 0,
     runtime.collapsedSections.fishTank ? 1 : 0,
     runtime.collapsedSections.fishDead ? 1 : 0,
     runtime.collapsedSections.fishStorage ? 1 : 0,
@@ -2347,7 +2529,7 @@ function renderFishList(now) {
         inStorage: false
       }))
       .join("")
-    : `<div class="empty-state">The tank is empty. Open the cart and ${emergencyStarter ? `grab a free ${starterName} to get back on your feet.` : `grab a ${starterName} for ${starterCost} ${pluralize("coin", starterCost)} to get started.`}</div>`;
+    : `<div class="empty-state">The tank is empty. ${rescueOfferWaiting ? "Check your WebSurf inbox for a BubbleBodega recovery offer." : `Open the cart and ${emergencyStarter ? `grab a free ${starterName} to get back on your feet.` : `grab a ${starterName} for ${starterCost} ${pluralize("coin", starterCost)} to get started.`}`}</div>`;
 
   const deadMarkup = deadFishEntries.length
     ? [...deadFishEntries]
@@ -2571,7 +2753,7 @@ function renderManagedFishCard(fish, now, options = {}) {
           ${goreEnabled && dead && corpseState === "skeleton" ? `<span class="fish-trait">Decay: Skeleton</span>` : ""}
           ${dead && corpseState === "devoured" ? `<span class="fish-trait">Decay: Piranha feeding</span>` : ""}
           ${!dead ? `<span class="fish-trait">Grime load: +${dirtinessLoadPercent}%</span>` : ""}
-          <span class="fish-trait">Swim: ${zombieHunterFish ? "Undead hunter" : formatSwimStyle(species.swimStyle)}</span>
+          <span class="fish-trait">Swim: ${zombieHunterFish ? "Undead hunter" : isDavyMutationSpecies(species) ? formatFishShopBehavior(species) : formatSwimStyle(species.swimStyle)}</span>
           <span class="fish-trait">Age: ${age}</span>
         </div>
         <div class="mini-note fish-health-note">${healthNote}</div>
@@ -3504,6 +3686,7 @@ function renderDecorShop() {
           <div>
             <strong>${decor.name}</strong>
             ${renderShopThemePill(decor.theme)}
+            ${decor.description ? `<div class="fish-meta">${escapeHtml(decor.description)}</div>` : ""}
             <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
             ${serviceSummary ? `<div class="mini-note borough-service-note">${escapeHtml(serviceSummary)}</div>` : ""}
           </div>
@@ -3543,23 +3726,32 @@ function renderEquipmentShop() {
   }
 
   const dispenserInstalled = hasAutoDispenserInstalled();
+  const dispenserOwned = dispenserInstalled || state.autoDispenser?.stored === true || (Number(state.autoDispenser?.storedCount) || 0) > 0;
   const dispenserLoadedCount = getAutoDispenserLoadedCount(state.autoDispenser);
-  const dispenserPortion = clamp(Number(state.autoDispenser?.mealPortion) || 0, 0, AUTO_DISPENSER_PORTION_MAX);
+  const dispenserVariants = getAutoDispenserAppearanceVariants();
+  const dispenserMainVariant = dispenserVariants[0];
+  const dispenserVariantDots = dispenserVariants.length > 1
+    ? `<div class="shop-variant-dots" aria-label="Choose dispenser appearance">${dispenserVariants.map((variant, index) => `<button type="button" data-shop-variant-key="${escapeHtml(variant.key)}" data-shop-variant-image="${escapeHtml(variant.image)}" data-shop-variant-background="${escapeHtml(variant.backgroundImage || "")}" data-shop-variant-light="${escapeHtml(variant.lightImage || AUTO_DISPENSER_LIGHT_OFF_PATH)}" aria-label="${escapeHtml(variant.label)}" aria-pressed="${index === 0 ? "true" : "false"}"></button>`).join("")}</div>`
+    : "";
   const dispenserMarkup = `
-      <article class="shop-card">
-        <img class="shop-thumb" ${assetImageAttributes(AUTO_DISPENSER_IMAGE_PATH)} alt="Automatic pellet dispenser" />
+      <article class="shop-card" data-store-seller="BubbleBodega">
+        <div class="shop-thumb layered-dispenser-thumb" role="img" aria-label="Automatic pellet dispenser">
+          <img class="layered-dispenser-thumb-bg" ${assetImageAttributes(dispenserMainVariant.backgroundImage)} data-dispenser-layer="background" alt="" aria-hidden="true" />
+          <img class="layered-dispenser-thumb-fg" ${assetImageAttributes(dispenserMainVariant.image)} data-dispenser-layer="foreground" alt="Food Dispenser 9000" />
+          <img class="layered-dispenser-thumb-light" ${assetImageAttributes(dispenserMainVariant.lightImage || AUTO_DISPENSER_LIGHT_OFF_PATH)} data-dispenser-layer="light" alt="" aria-hidden="true" />
+        </div>
+        ${dispenserVariantDots}
         <div class="shop-meta shop-card-main">
           <div>
-            <strong>Pellet Dispenser</strong>
-            <div class="fish-meta">${dispenserInstalled ? "Installed in this tank" : "Not installed in this tank"}</div>
+            <strong>Food Dispenser 9000</strong>
+            <div class="fish-meta">${dispenserInstalled ? "Installed in this tank" : dispenserOwned ? "In equipment storage" : "Available"}</div>
           </div>
-          <div class="fish-meta">Mounts at the center waterline, stores up to ${AUTO_DISPENSER_MAX_PELLETS} pellets, and feeds hungry fish on demand.</div>
-          <div class="mini-note">${dispenserLoadedCount}/${AUTO_DISPENSER_MAX_PELLETS} loaded | Manual release ${String(dispenserPortion).padStart(2, "0")}</div>
+          <div class="fish-meta">A top-mounted automatic feeder with an unnecessarily impressive name. Position it where you want it and it will dispense exactly what hungry fish need when they need it. Just don't forget to add food to it.</div>
         </div>
         <div class="shop-meta shop-card-actions">
           <span class="price-tag">${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)}</span>
           <div class="shop-button-row">
-            <button class="buy-button" data-buy-auto-dispenser="true" ${dispenserInstalled ? "disabled" : ""}>${dispenserInstalled ? "Installed" : "Buy & Install"}</button>
+            <button class="buy-button" data-buy-auto-dispenser="true" data-shop-bg-image="${escapeHtml(dispenserMainVariant.backgroundImage)}" data-shop-light-image="${escapeHtml(dispenserMainVariant.lightImage || AUTO_DISPENSER_LIGHT_OFF_PATH)}" data-machinery-variants="${escapeHtml(JSON.stringify(dispenserVariants))}">Buy for Equipment</button>
           </div>
         </div>
       </article>
@@ -3580,11 +3772,12 @@ function renderEquipmentShop() {
         : `${background.cost} ${pluralize("coin", background.cost)}`;
 
       return `
-      <article class="shop-card">
+      <article class="shop-card" data-store-seller="${escapeHtml(background.seller || "BubbleBodega")}">
         ${renderBackgroundPreview(background, "shop-thumb background-shop-thumb")}
         <div class="shop-meta shop-card-main">
           <div>
             <strong>${background.name}</strong>
+            ${background.description ? `<div class="fish-meta">${escapeHtml(background.description)}</div>` : ""}
             <div class="fish-meta">${statusLabel}</div>
           </div>
         </div>
@@ -3618,6 +3811,7 @@ function renderEquipmentShop() {
         <p>Remote-controlled machinery with built-in feeding controls and autopilot.</p>
       </div>
       <div class="shop-section-cards">
+        ${dispenserMarkup}
         ${renderSubmarineShopCard()}
         ${renderBoatShopCard()}
       </div>

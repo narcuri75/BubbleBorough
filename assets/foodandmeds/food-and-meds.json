@@ -3,8 +3,8 @@
   "food": {
     "basic": {
       "id": "basic",
-      "name": "Food",
-      "description": "Simple pellets that satisfy hunger.",
+      "name": "Basic Fish Food",
+      "description": "Classic fish pellets that satisfy hunger. No one knows exactly what they’re made of, but the fish don’t seem concerned.",
       "bottlePellets": 99,
       "cost": 5,
       "image": "basic-food.png",
@@ -15,8 +15,8 @@
     },
     "frisky": {
       "id": "frisky",
-      "name": "Frisky",
-      "description": "Pellets that raise the chance of fish pairing up.",
+      "name": "Frisky Fish Food",
+      "description": "Special pellets that put fish in the mood for love. Formulated with ingredients intended to increase fish libido and improve the chance of mating.",
       "bottlePellets": 99,
       "cost": 5,
       "image": "frisky-food.png",
@@ -28,7 +28,7 @@
     "chum": {
       "id": "chum",
       "name": "Chum",
-      "description": "A messy bait food that attracts piranha-like feeders.",
+      "description": "A messy blend of bait food made for aggressive feeders. Its strong scent is especially effective at attracting piranha, sharks, and other meat-loving fish.",
       "bottlePellets": 99,
       "cost": 10,
       "image": "chum-food.png",
@@ -41,8 +41,8 @@
     },
     "halloweenCandy": {
       "id": "halloweenCandy",
-      "name": "Halloween Candy Pile",
-      "description": "10 candies. Each candy keeps one fish’s health and all care stats full for 24 hours. Sold during Halloween season.",
+      "name": "Halloween Candy",
+      "description": "Candy made for fish. We’re not entirely sure why they can eat it, but they love it. Just one piece keeps a fish feeling happy, healthy, and unusually energetic for a full 24 hours. No refunds.",
       "bottlePellets": 10,
       "cost": 10,
       "image": "Halloween_Candy_Pile.png",
@@ -58,7 +58,7 @@
     "firstAid": {
       "id": "firstAid",
       "name": "First Aid",
-      "description": "Blue drops that heal half a heart every 10 seconds for 1 minute and help sick fish slow down their decline.",
+      "description": "Fast-acting blue drops for fish that have seen better days. Helps injured fish recover and gives sick fish a little extra strength while they fight off whatever’s bothering them.",
       "color": "#56B8FF",
       "bottleDrops": 3,
       "cost": 8,
@@ -67,20 +67,11 @@
     "betaBlocker": {
       "id": "betaBlocker",
       "name": "Calming Serum",
-      "description": "Yellow drops that calm the tank and set comfort to 100% for the rest of the day.",
+      "description": "Gentle yellow drops for fish that could use a little peace and quiet. Helps calm the entire tank and keeps its residents feeling comfortable and content for the rest of the day.",
       "color": "#F3D348",
       "bottleDrops": 3,
       "cost": 10,
       "image": "calming-serum.png"
-    },
-    "antidote": {
-      "id": "antidote",
-      "name": "The Cure",
-      "description": "Green drops that cure zombie virus, restore zombie variants, and kill skeletons.",
-      "color": "#49D17A",
-      "bottleDrops": 3,
-      "cost": 50,
-      "image": "zombie-virus-antidote-drops.png"
     }
   }
 }

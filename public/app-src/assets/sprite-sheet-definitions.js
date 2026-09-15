@@ -2,6 +2,104 @@
 function getSpriteSheetDefinitions() {
   return [
     {
+      "path": "assets/equipment/machinery/Boat.webp",
+      "version": "bb54f0722cc2",
+      "width": 990,
+      "height": 975,
+      "frames": {
+        "boat.png": [
+          0,
+          0,
+          495,
+          325
+        ],
+        "Halloween_Boat_5.png": [
+          495,
+          0,
+          495,
+          325
+        ],
+        "boat_3.png": [
+          0,
+          325,
+          495,
+          325
+        ],
+        "boat_1.png": [
+          495,
+          325,
+          495,
+          325
+        ],
+        "boat_4.png": [
+          0,
+          650,
+          495,
+          325
+        ],
+        "boat_2.png": [
+          495,
+          650,
+          495,
+          325
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/equipment/machinery/Boat",
+        "version": "4e2808e4140c-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/equipment/machinery/Submarine.webp",
+      "version": "ed5e6fc5525e",
+      "width": 1024,
+      "height": 741,
+      "frames": {
+        "submarine_1.png": [
+          0,
+          0,
+          512,
+          247
+        ],
+        "submarine.png": [
+          512,
+          0,
+          512,
+          247
+        ],
+        "submarine_2.png": [
+          0,
+          247,
+          512,
+          247
+        ],
+        "submarine_3.png": [
+          512,
+          247,
+          512,
+          247
+        ],
+        "Halloween_Submarine_5.png": [
+          0,
+          494,
+          512,
+          247
+        ],
+        "submarine_4.png": [
+          512,
+          494,
+          512,
+          247
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/equipment/machinery/Submarine",
+        "version": "3d069deab6f9-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/Angelfish.webp",
       "version": "944a8d5043d2",
       "width": 1024,
@@ -128,58 +226,6 @@ function getSpriteSheetDefinitions() {
         "root": "assets/generated/sprites/fish/BlueRam",
         "version": "a0051938a50e-v1",
         "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Boat.webp",
-      "version": "bb54f0722cc2",
-      "width": 990,
-      "height": 975,
-      "frames": {
-        "boat.png": [
-          0,
-          0,
-          495,
-          325
-        ],
-        "Halloween_Boat_5.png": [
-          495,
-          0,
-          495,
-          325
-        ],
-        "boat_3.png": [
-          0,
-          325,
-          495,
-          325
-        ],
-        "boat_1.png": [
-          495,
-          325,
-          495,
-          325
-        ],
-        "boat_4.png": [
-          0,
-          650,
-          495,
-          325
-        ],
-        "boat_2.png": [
-          495,
-          650,
-          495,
-          325
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Boat",
-        "version": "4e2808e4140c-v1",
-        "standalone": false
-      },
-      "aliases": {
-        "Halloween_Boat.png": "Halloween_Boat_5.png"
       }
     },
     {
@@ -965,58 +1011,6 @@ function getSpriteSheetDefinitions() {
         "root": "assets/generated/sprites/fish/Seahorse",
         "version": "0e3bcc85d985-v1",
         "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Submarine.webp",
-      "version": "f252e74db63d",
-      "width": 1024,
-      "height": 741,
-      "frames": {
-        "submarine_1.png": [
-          0,
-          0,
-          512,
-          247
-        ],
-        "submarine.png": [
-          512,
-          0,
-          512,
-          247
-        ],
-        "submarine_2.png": [
-          0,
-          247,
-          512,
-          247
-        ],
-        "submarine_3.png": [
-          512,
-          247,
-          512,
-          247
-        ],
-        "Halloween_Submarine_5.png": [
-          0,
-          494,
-          512,
-          247
-        ],
-        "submarine_4.png": [
-          512,
-          494,
-          512,
-          247
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Submarine",
-        "version": "615de5f4a424-v1",
-        "standalone": false
-      },
-      "aliases": {
-        "Halloween_Submarine.png": "Halloween_Submarine_5.png"
       }
     },
     {
@@ -2282,6 +2276,221 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/misc/Particles",
         "version": "3df6080e5987-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish.webp",
+      "version": "9b229893ce22",
+      "width": 1024,
+      "height": 1089,
+      "frames": {
+        "DNA_Bioluminescent _Cherub_Goldfish_1.png": [
+          0,
+          0,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_5.png": [
+          512,
+          0,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_4.png": [
+          0,
+          363,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_3.png": [
+          512,
+          363,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_2.png": [
+          0,
+          726,
+          512,
+          363
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish",
+        "version": "96c706e9cddb-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Bioluminescent_Angler_Pike.webp",
+      "version": "1a7788398270",
+      "width": 1024,
+      "height": 1029,
+      "frames": {
+        "DNA_Bioluminescent_Angler_Pike_1.png": [
+          0,
+          0,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_5.png": [
+          512,
+          0,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_4.png": [
+          0,
+          343,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_3.png": [
+          512,
+          343,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_2.png": [
+          0,
+          686,
+          512,
+          343
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike",
+        "version": "65f89046db81-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish.webp",
+      "version": "fbb5049ca221",
+      "width": 1024,
+      "height": 618,
+      "frames": {
+        "DNA_Bioluminescent_Glass_Fangfish_1.png": [
+          0,
+          0,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_5.png": [
+          512,
+          0,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_4.png": [
+          0,
+          206,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_3.png": [
+          512,
+          206,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_2.png": [
+          0,
+          412,
+          512,
+          206
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish",
+        "version": "9f36e613a2c5-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda.webp",
+      "version": "b457cbd38e2e",
+      "width": 1024,
+      "height": 828,
+      "frames": {
+        "DNA_Dwarf_Chimera_Barracuda_1.png": [
+          0,
+          0,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_5.png": [
+          512,
+          0,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_4.png": [
+          0,
+          276,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_3.png": [
+          512,
+          276,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_2.png": [
+          0,
+          552,
+          512,
+          276
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda",
+        "version": "6c466272f623-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Dwarf_Hyperfin.webp",
+      "version": "f8b51e7b9063",
+      "width": 1024,
+      "height": 573,
+      "frames": {
+        "DNA_Dwarf_Hyperfin_5.png": [
+          0,
+          0,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_4.png": [
+          512,
+          0,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_3.png": [
+          0,
+          191,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_2.png": [
+          512,
+          191,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_1.png": [
+          0,
+          382,
+          512,
+          191
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin",
+        "version": "7aa8c114c794-v1",
         "standalone": false
       }
     }

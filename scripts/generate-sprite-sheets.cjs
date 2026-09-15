@@ -27,9 +27,17 @@ function webpSize(buffer) {
 function buildDefinitions(assetRoot = path.join(root, "assets")) {
   const definitions = [];
   const names = new Set();
-  for (const directory of fs.readdirSync(assetRoot, { withFileTypes: true }).filter((item) => item.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
-    for (const file of fs.readdirSync(path.join(assetRoot, directory.name)).filter((name) => name.endsWith(".webp")).sort()) {
-      const sheetPath = path.join(assetRoot, directory.name, file);
+  const directories = [];
+  const visit = (directoryPath, relativeDirectory) => {
+    directories.push({ directoryPath, relativeDirectory });
+    for (const entry of fs.readdirSync(directoryPath, { withFileTypes: true }).filter((item) => item.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
+      visit(path.join(directoryPath, entry.name), `${relativeDirectory}/${entry.name}`);
+    }
+  };
+  visit(assetRoot, "");
+  for (const directory of directories.sort((a, b) => a.relativeDirectory.localeCompare(b.relativeDirectory))) {
+    for (const file of fs.readdirSync(directory.directoryPath).filter((name) => name.endsWith(".webp")).sort()) {
+      const sheetPath = path.join(directory.directoryPath, file);
       const jsonPath = sheetPath.replace(/\.webp$/, ".json");
       if (!fs.existsSync(jsonPath)) continue;
       const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
@@ -48,17 +56,17 @@ function buildDefinitions(assetRoot = path.join(root, "assets")) {
         if (!sprite.name || /[/\\]/.test(sprite.name) || sprite.rotation || sprite.flipX || sprite.flipY) fail(`Unsupported sprite name/transform: ${sprite.name}`);
         const { x = 0, y = 0, width: w, height: h } = sprite;
         if (![x, y, w, h].every(Number.isInteger) || x < 0 || y < 0 || w < 1 || h < 1 || x + w > cellWidth || y + h > cellHeight) fail(`Frame exceeds its cell: ${sprite.name}`);
-        const key = `${directory.name}/${sprite.name}`.toLowerCase();
+        const key = `${directory.relativeDirectory}/${sprite.name}`.replace(/^\//, "").toLowerCase();
         if (names.has(key)) fail(`Duplicate sprite: ${sprite.name}`);
         names.add(key);
         frames[sprite.name] = [(index % data.columns) * cellWidth + x, Math.floor(index / data.columns) * cellHeight + y, w, h];
       });
       const version = crypto.createHash("sha256").update(sheetBytes).digest("hex").slice(0, 12);
-      definitions.push({ path: `assets/${directory.name}/${file}`, version, width, height, frames,
+      definitions.push({ path: `assets/${directory.relativeDirectory}/${file}`.replace("assets//", "assets/"), version, width, height, frames,
         delivery: {
-          root: `assets/generated/sprites/${directory.name}/${file.replace(/\.webp$/, "")}`,
+          root: `assets/generated/sprites/${directory.relativeDirectory}/${file.replace(/\.webp$/, "")}`.replace("sprites//", "sprites/"),
           version: `${crypto.createHash("sha256").update(sheetBytes).update(JSON.stringify(frames)).digest("hex").slice(0, 12)}-v1`,
-          standalone: directory.name === "decor"
+          standalone: directory.relativeDirectory === "decor"
         }
       });
     }

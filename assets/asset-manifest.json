@@ -1,36 +1,60 @@
 {
   "backgrounds": [
     {
-      "key": "Aquatic_Ambience.png",
-      "path": "assets/backgrounds/Aquatic_Ambience.png?v=639111940678243852"
+      "key": "Abyssal_Pillars.png",
+      "path": "assets/backgrounds/Abyssal_Pillars.png"
     },
     {
-      "key": "none.png",
-      "path": "assets/backgrounds/none.png?v=639104303250848710"
+      "key": "Blue_Rock_Canyon.png",
+      "path": "assets/backgrounds/Blue_Rock_Canyon.png"
     },
     {
-      "key": "Sunken_Ship.png",
-      "path": "assets/backgrounds/Sunken_Ship.png?v=639098493604046566"
+      "key": "Coral_Shelf_Reef.png",
+      "path": "assets/backgrounds/Coral_Shelf_Reef.png"
     },
     {
-      "key": "Sunken_UFO.png",
-      "path": "assets/backgrounds/Sunken_UFO.png?v=639111936913795111"
+      "key": "Emerald_Aquascape.png",
+      "path": "assets/backgrounds/Emerald_Aquascape.png"
     },
     {
-      "key": "Underwater_City.png",
-      "path": "assets/backgrounds/Underwater_City.png?v=639111940415407807"
+      "key": "Forest_Stream.png",
+      "path": "assets/backgrounds/Forest_Stream.png"
     },
     {
-      "key": "Volcanic_Reef.png",
-      "path": "assets/backgrounds/Volcanic_Reef.png?v=639096815809906949"
+      "key": "Halloween_Haunted_Kelp_Forest.png",
+      "path": "assets/backgrounds/Halloween_Haunted_Kelp_Forest.png"
     },
     {
-      "key": "Halloween_Graveyard.png",
-      "path": "assets/backgrounds/Halloween_Graveyard.png"
+      "key": "Mangrove_Passage.png",
+      "path": "assets/backgrounds/Mangrove_Passage.png"
     },
     {
-      "key": "Halloween_Kelp_Forest.png",
-      "path": "assets/backgrounds/Halloween_Kelp_Forest.png"
+      "key": "Riverbed_Driftwood.png",
+      "path": "assets/backgrounds/Riverbed_Driftwood.png"
+    },
+    {
+      "key": "Shadow_Slate.png",
+      "path": "assets/backgrounds/Shadow_Slate.png"
+    },
+    {
+      "key": "Sunken_Ruins.png",
+      "path": "assets/backgrounds/Sunken_Ruins.png"
+    },
+    {
+      "key": "Sunken_Saucer.png",
+      "path": "assets/backgrounds/Sunken_Saucer.png"
+    },
+    {
+      "key": "Volcanic_Caverns.png",
+      "path": "assets/backgrounds/Volcanic_Caverns.png"
+    },
+    {
+      "key": "Volcanic_Passage.png",
+      "path": "assets/backgrounds/Volcanic_Passage.png"
+    },
+    {
+      "key": "Volcanic_Rock_Reef.png",
+      "path": "assets/backgrounds/Volcanic_Rock_Reef.png"
     }
   ],
   "decor": [
@@ -633,6 +657,22 @@
     {
       "key": "Sea_Anemone_5.png",
       "path": "assets/decor/Sea_Anemone_5.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_1_Trypophobia.png",
+      "path": "assets/decor/Cave_Coral_Shelf_1_Trypophobia.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_10_Trypophobia.png",
+      "path": "assets/decor/Cave_Coral_Shelf_10_Trypophobia.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_6_Trypophobia.png",
+      "path": "assets/decor/Cave_Coral_Shelf_6_Trypophobia.png"
+    },
+    {
+      "key": "Cave_Coral_Shelf_9_color2_Trypophobia.png",
+      "path": "assets/decor/Cave_Coral_Shelf_9_color2_Trypophobia.png"
     }
   ],
   "fish": [
@@ -775,26 +815,6 @@
     {
       "key": "betta_4.png",
       "path": "assets/fish/betta_4.png"
-    },
-    {
-      "key": "boat.png",
-      "path": "assets/fish/boat.png"
-    },
-    {
-      "key": "boat_1.png",
-      "path": "assets/fish/boat_1.png"
-    },
-    {
-      "key": "boat_2.png",
-      "path": "assets/fish/boat_2.png"
-    },
-    {
-      "key": "boat_3.png",
-      "path": "assets/fish/boat_3.png"
-    },
-    {
-      "key": "boat_4.png",
-      "path": "assets/fish/boat_4.png"
     },
     {
       "key": "Bull_Shark.png",
@@ -1007,26 +1027,6 @@
     {
       "key": "Seahorse.png",
       "path": "assets/fish/Seahorse.png"
-    },
-    {
-      "key": "submarine.png",
-      "path": "assets/fish/submarine.png"
-    },
-    {
-      "key": "submarine_1.png",
-      "path": "assets/fish/submarine_1.png"
-    },
-    {
-      "key": "submarine_2.png",
-      "path": "assets/fish/submarine_2.png"
-    },
-    {
-      "key": "submarine_3.png",
-      "path": "assets/fish/submarine_3.png"
-    },
-    {
-      "key": "submarine_4.png",
-      "path": "assets/fish/submarine_4.png"
     },
     {
       "key": "Sunfish.png",
@@ -1493,6 +1493,60 @@
     {
       "key": "pebble_3.png",
       "path": "assets/gravel/pebble_3.png?v=639107173002946915"
+    }
+  ],
+  "equipment": [
+    {
+      "key": "boat.png",
+      "path": "assets/equipment/machinery/boat.png"
+    },
+    {
+      "key": "Halloween_Boat_5.png",
+      "path": "assets/equipment/machinery/Halloween_Boat_5.png"
+    },
+    {
+      "key": "boat_3.png",
+      "path": "assets/equipment/machinery/boat_3.png"
+    },
+    {
+      "key": "boat_1.png",
+      "path": "assets/equipment/machinery/boat_1.png"
+    },
+    {
+      "key": "boat_4.png",
+      "path": "assets/equipment/machinery/boat_4.png"
+    },
+    {
+      "key": "boat_2.png",
+      "path": "assets/equipment/machinery/boat_2.png"
+    },
+    {
+      "key": "submarine_1.png",
+      "path": "assets/equipment/machinery/submarine_1.png"
+    },
+    {
+      "key": "submarine.png",
+      "path": "assets/equipment/machinery/submarine.png"
+    },
+    {
+      "key": "submarine_2.png",
+      "path": "assets/equipment/machinery/submarine_2.png"
+    },
+    {
+      "key": "submarine_3.png",
+      "path": "assets/equipment/machinery/submarine_3.png"
+    },
+    {
+      "key": "Halloween_Submarine_5.png",
+      "path": "assets/equipment/machinery/Halloween_Submarine_5.png"
+    },
+    {
+      "key": "submarine_4.png",
+      "path": "assets/equipment/machinery/submarine_4.png"
+    },
+    {
+      "key": "Submarine_Light_Red.webp",
+      "path": "assets/equipment/machinery/Submarine_Light_Red.webp"
     }
   ]
 }

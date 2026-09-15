@@ -2451,6 +2451,438 @@ function updateSuckerFishFreeSwimState(fish, species, now = Date.now()) {
   return false;
 }
 
+function getDavyMutationBehaviorKey(speciesOrFish) {
+  const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
+  switch (species?.id) {
+    case "davy-dwarf-chimera-barracuda":
+      return "barracuda";
+    case "davy-bioluminescent-angler-pike":
+      return "siren-pike";
+    case "davy-bioluminescent-glass-fangfish":
+      return "glass-spitter";
+    case "davy-bioluminescent-cherub-goldfish":
+      return "cherub";
+    case "davy-dwarf-hyperfin":
+      return "hyperfin";
+    default:
+      return "";
+  }
+}
+
+function getNearestDavyMutationTankmate(fish, predicate = null) {
+  if (!fish) return null;
+  let nearest = null;
+  for (const otherFish of state.fish || []) {
+    if (!otherFish || otherFish.id === fish.id || isFishDead(otherFish)) continue;
+    const otherSpecies = getSpeciesForFish(otherFish);
+    if (!otherSpecies || (predicate && !predicate(otherFish, otherSpecies))) continue;
+    const distanceNorm = Math.hypot((otherFish.xNorm || 0.5) - (fish.xNorm || 0.5), (otherFish.yNorm || 0.5) - (fish.yNorm || 0.5));
+    if (!nearest || distanceNorm < nearest.distanceNorm) {
+      nearest = { fish: otherFish, species: otherSpecies, distanceNorm };
+    }
+  }
+  return nearest;
+}
+
+function isPeacefulDavyCompanionTarget(otherFish, otherSpecies) {
+  if (!otherFish || !otherSpecies || isFishDead(otherFish) || isDavyMutationSpecies(otherSpecies)) return false;
+  if (isPiranhaSpecies(otherFish) || usesZombieHunterBehavior(otherFish)) return false;
+  const speciesType = getFishSpeciesType(otherSpecies);
+  return speciesType !== "shark" && speciesType !== "whale";
+}
+
+function maybeAssignDavyMutationReactionTarget(fish, species, now = Date.now()) {
+  if (!fish || !species || isDavyMutationSpecies(species) || isFishDead(fish)) return false;
+
+  const barracuda = getNearestDavyMutationTankmate(fish, (otherFish, otherSpecies) => otherSpecies.id === "davy-dwarf-chimera-barracuda");
+  if (barracuda && barracuda.distanceNorm <= 0.19 && Math.random() < 0.38) {
+    const dx = (fish.xNorm || 0.5) - (barracuda.fish.xNorm || 0.5);
+    const dy = (fish.yNorm || 0.5) - (barracuda.fish.yNorm || 0.5);
+    const magnitude = Math.max(0.001, Math.hypot(dx, dy));
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + (dx / magnitude) * randomBetween(0.14, 0.24),
+      (fish.yNorm || 0.5) + (dy / magnitude) * randomBetween(0.08, 0.17),
+      species,
+      { fish, layer: getFishTankLayer(fish) }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(1000, 2200);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax));
+    fish.hangoutDecorId = null;
+    fish.hangoutZoneType = null;
+    setFishBehaviorIntent(fish, "keeping distance", "intimidated", now, { durationMs: 5000, targetName: barracuda.fish.name });
+    return true;
+  }
+
+  const siren = getNearestDavyMutationTankmate(fish, (otherFish, otherSpecies) => otherSpecies.id === "davy-bioluminescent-angler-pike");
+  const personality = getFishPersonality(fish);
+  if (
+    siren
+    && siren.distanceNorm <= 0.3
+    && ["curious", "social", "greedy", "explorer"].includes(personality)
+    && Math.random() < 0.16
+  ) {
+    const side = (fish.xNorm || 0.5) <= (siren.fish.xNorm || 0.5) ? -1 : 1;
+    const placement = clampFishPlacement(
+      (siren.fish.xNorm || 0.5) + side * randomBetween(0.07, 0.11),
+      (siren.fish.yNorm || 0.5) + randomBetween(-0.045, 0.045),
+      species,
+      { fish, layer: getFishTankLayer(siren.fish) }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(1800, 3600);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.58)));
+    fish.hangoutDecorId = null;
+    fish.hangoutZoneType = null;
+    setFishDesiredTankLayer(fish, getFishTankLayer(siren.fish));
+    setFishBehaviorIntent(fish, "investigating lure", personality, now, { durationMs: 6500, targetName: siren.fish.name });
+    return true;
+  }
+
+  const hyperfin = getNearestDavyMutationTankmate(fish, (otherFish, otherSpecies) => otherSpecies.id === "davy-dwarf-hyperfin");
+  if (
+    hyperfin
+    && hyperfin.distanceNorm <= 0.22
+    && ((Number(hyperfin.fish.davyCircuitUntil) || 0) > now || (Number(hyperfin.fish.davyFoodBurstUntil) || 0) > now || (Number(hyperfin.fish.davyPatrolBurstUntil) || 0) > now)
+    && Math.random() < 0.24
+  ) {
+    const dx = (fish.xNorm || 0.5) - (hyperfin.fish.xNorm || 0.5);
+    const dy = (fish.yNorm || 0.5) - (hyperfin.fish.yNorm || 0.5);
+    const magnitude = Math.max(0.001, Math.hypot(dx, dy));
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + (dx / magnitude) * randomBetween(0.1, 0.18),
+      (fish.yNorm || 0.5) + (dy / magnitude) * randomBetween(0.05, 0.12),
+      species,
+      { fish, layer: getFishTankLayer(fish) }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(850, 1800);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.66), species.speedMax));
+    fish.hangoutDecorId = null;
+    fish.hangoutZoneType = null;
+    setFishBehaviorIntent(fish, "startled by speed", "reactive", now, { durationMs: 4200, targetName: hyperfin.fish.name });
+    return true;
+  }
+
+  return false;
+}
+
+function assignDavyMutationSwimTarget(fish, species, now = Date.now()) {
+  const behaviorKey = getDavyMutationBehaviorKey(species);
+  if (!behaviorKey || !fish || isFishDead(fish)) return false;
+
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  clearFishSchoolFollowState(fish);
+  const currentLayer = getFishTankLayer(fish);
+
+  if (behaviorKey === "barracuda") {
+    if (Math.random() < 0.28) {
+      fish.targetXNorm = fish.xNorm;
+      fish.targetYNorm = fish.yNorm;
+      fish.targetAt = now + randomBetween(2600, 5200);
+      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
+      setFishDesiredTankLayer(fish, currentLayer);
+      setFishBehaviorIntent(fish, "holding position", "patrol", now, { durationMs: fish.targetAt - now });
+      return true;
+    }
+
+    const direction = getFishFacingDirection(fish);
+    const targetLayer = clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS, currentLayer + (Math.random() < 0.35 ? (Math.random() < 0.5 ? -1 : 1) : 0))));
+    const burst = Math.random() < 0.24;
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + direction * randomBetween(burst ? 0.34 : 0.26, burst ? 0.64 : 0.52),
+      clamp((fish.yNorm || 0.5) + randomBetween(-0.09, 0.09), 0.28, 0.68),
+      species,
+      { fish, layer: targetLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(burst ? 700 : 1800, burst ? 1350 : 3600);
+    fish.swimSpeed = normalizeFishSpeed(species, burst
+      ? randomBetween(Math.max(species.speedMin, species.speedMax * 0.9), species.speedMax)
+      : randomBetween(Math.max(species.speedMin, species.speedMax * 0.5), species.speedMax * 0.76));
+    if (burst) fish.davyPatrolBurstUntil = now + 1100;
+    setFishDesiredTankLayer(fish, targetLayer);
+    setFishBehaviorIntent(fish, burst ? "burst patrol" : "open-water patrol", "patrol", now, { durationMs: fish.targetAt - now });
+    return true;
+  }
+
+  if (behaviorKey === "siren-pike") {
+    const roll = Math.random();
+    if (roll < 0.58) {
+      fish.targetXNorm = fish.xNorm;
+      fish.targetYNorm = fish.yNorm;
+      fish.targetAt = now + randomBetween(4400, 9200);
+      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
+      setFishDesiredTankLayer(fish, currentLayer);
+      setFishBehaviorIntent(fish, "ambush hover", "waiting", now, { durationMs: fish.targetAt - now });
+      return true;
+    }
+    const facing = getFishFacingDirection(fish);
+    const lunge = roll > 0.9;
+    const targetLayer = clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS, currentLayer + (Math.random() < 0.22 ? (Math.random() < 0.5 ? -1 : 1) : 0))));
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + facing * randomBetween(lunge ? 0.24 : 0.055, lunge ? 0.46 : 0.15),
+      clamp((fish.yNorm || 0.5) + randomBetween(lunge ? -0.1 : -0.04, lunge ? 0.1 : 0.04), 0.28, 0.72),
+      species,
+      { fish, layer: targetLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(lunge ? 750 : 2600, lunge ? 1350 : 5200);
+    fish.swimSpeed = normalizeFishSpeed(species, lunge
+      ? randomBetween(Math.max(species.speedMin, species.speedMax * 0.92), species.speedMax)
+      : randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.46)));
+    if (lunge) fish.davyPatrolBurstUntil = now + 1200;
+    setFishDesiredTankLayer(fish, targetLayer);
+    setFishBehaviorIntent(fish, lunge ? "lunge" : "creeping", "ambush", now, { durationMs: fish.targetAt - now });
+    return true;
+  }
+
+  if (behaviorKey === "glass-spitter") {
+    const largerFish = getNearestDavyMutationTankmate(fish, (otherFish, otherSpecies) => (Number(otherSpecies.displayWidth) || 0) > (Number(species.displayWidth) || 0) * 1.08);
+    if (largerFish && largerFish.distanceNorm <= 0.24 && Math.random() < 0.46) {
+      const dx = (fish.xNorm || 0.5) - (largerFish.fish.xNorm || 0.5);
+      const dy = (fish.yNorm || 0.5) - (largerFish.fish.yNorm || 0.5);
+      const magnitude = Math.max(0.001, Math.hypot(dx, dy));
+      const placement = clampFishPlacement(
+        (fish.xNorm || 0.5) + (dx / magnitude) * randomBetween(0.15, 0.26),
+        (fish.yNorm || 0.5) + (dy / magnitude) * randomBetween(0.08, 0.16),
+        species,
+        { fish, layer: getFishTankLayer(fish) }
+      );
+      fish.targetXNorm = placement.xNorm;
+      fish.targetYNorm = placement.yNorm;
+      fish.targetAt = now + randomBetween(520, 1050);
+      fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.9), species.speedMax));
+      fish.davyPatrolBurstUntil = now + 900;
+      setFishBehaviorIntent(fish, "retreating", "nervous", now, { durationMs: 3200, targetName: largerFish.fish.name });
+      return true;
+    }
+
+    if (Math.random() < 0.52) {
+      const cover = pickDecorHangoutTarget(species, fish, now, {
+        allowedZoneTypes: ["hide", "plant", "hardscape", "spooky"],
+        chanceMultiplier: 2.6,
+        lingerMultiplier: 0.7,
+        occupancyLimit: 1,
+        preferBackLayer: true
+      });
+      if (cover) {
+        fish.targetXNorm = cover.xNorm;
+        fish.targetYNorm = cover.yNorm;
+        fish.targetAt = now + Math.min(3200, cover.lingerMs);
+        setFishDesiredTankLayer(fish, cover.targetLayer);
+        fish.hangoutDecorId = cover.decorId;
+        fish.hangoutZoneType = cover.zoneType;
+        fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.7), species.speedMax));
+        setFishBehaviorIntent(fish, "seeking cover", "nervous", now, { durationMs: fish.targetAt - now });
+        return true;
+      }
+    }
+
+    const direction = Math.random() < 0.5 ? -1 : 1;
+    const targetLayer = clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + direction * randomBetween(0.1, 0.3),
+      (fish.yNorm || 0.5) + randomBetween(-0.16, 0.16),
+      species,
+      { fish, layer: targetLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(520, 1350);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.76), species.speedMax));
+    fish.davyPatrolBurstUntil = now + 850;
+    setFishDesiredTankLayer(fish, targetLayer);
+    setFishBehaviorIntent(fish, "abrupt dart", "nervous", now, { durationMs: fish.targetAt - now });
+    return true;
+  }
+
+  if (behaviorKey === "cherub") {
+    const companion = getNearestDavyMutationTankmate(fish, isPeacefulDavyCompanionTarget);
+    if (companion && companion.distanceNorm <= 0.42 && Math.random() < 0.5) {
+      const side = (fish.xNorm || 0.5) <= (companion.fish.xNorm || 0.5) ? -1 : 1;
+      const placement = clampFishPlacement(
+        (companion.fish.xNorm || 0.5) + side * randomBetween(0.045, 0.09),
+        (companion.fish.yNorm || 0.5) + randomBetween(-0.055, 0.055),
+        species,
+        { fish, layer: getFishTankLayer(companion.fish) }
+      );
+      fish.targetXNorm = placement.xNorm;
+      fish.targetYNorm = placement.yNorm;
+      fish.targetAt = now + randomBetween(2200, 4400);
+      fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.58)));
+      setFishDesiredTankLayer(fish, getFishTankLayer(companion.fish));
+      setFishBehaviorIntent(fish, "following", "companion", now, { durationMs: fish.targetAt - now, targetName: companion.fish.name });
+      return true;
+    }
+
+    if (Math.random() < 0.42) {
+      fish.targetXNorm = clamp((fish.xNorm || 0.5) + randomBetween(-0.035, 0.035), 0.1, 0.9);
+      fish.targetYNorm = clamp((fish.yNorm || 0.5) + randomBetween(-0.025, 0.025), 0.22, 0.76);
+      fish.targetAt = now + randomBetween(2600, 5600);
+      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
+      setFishDesiredTankLayer(fish, 1);
+      setFishBehaviorIntent(fish, "watching glass", "companion", now, { durationMs: fish.targetAt - now });
+      return true;
+    }
+
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + randomBetween(-0.16, 0.16),
+      (fish.yNorm || 0.5) + randomBetween(-0.1, 0.1),
+      species,
+      { fish, layer: Math.random() < 0.55 ? 1 : currentLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(2800, 6200);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.52)));
+    setFishDesiredTankLayer(fish, Math.random() < 0.55 ? 1 : currentLayer);
+    setFishBehaviorIntent(fish, "companion wander", "companion", now, { durationMs: fish.targetAt - now });
+    return true;
+  }
+
+  if (behaviorKey === "hyperfin") {
+    const inCircuit = (Number(fish.davyCircuitUntil) || 0) > now;
+    const excited = inCircuit || fish.activity === "feeding" || Math.random() < 0.34;
+    const direction = getFishFacingDirection(fish) || ((fish.xNorm || 0.5) < 0.5 ? 1 : -1);
+    const targetLayer = clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS, currentLayer + (Math.random() < 0.18 ? (Math.random() < 0.5 ? -1 : 1) : 0))));
+    const farEdge = direction >= 0 ? 0.92 : 0.08;
+    const cruiseY = clamp((fish.yNorm || 0.5) + randomBetween(-0.08, 0.08), 0.24, 0.68);
+    const placement = clampFishPlacement(
+      excited ? farEdge : (fish.xNorm || 0.5) + direction * randomBetween(0.28, 0.52),
+      cruiseY,
+      species,
+      { fish, layer: targetLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(excited ? 650 : 1600, excited ? 1350 : 3000);
+    fish.swimSpeed = normalizeFishSpeed(species, excited
+      ? randomBetween(Math.max(species.speedMin, species.speedMax * 0.9), species.speedMax)
+      : randomBetween(Math.max(species.speedMin, species.speedMax * 0.48), species.speedMax * 0.72));
+    setFishDesiredTankLayer(fish, targetLayer);
+    if (excited) {
+      fish.davyCircuitUntil = now + randomBetween(3200, 5200);
+      fish.davyPatrolBurstUntil = now + 1250;
+      setFishBehaviorIntent(fish, "high-speed circuit", "performance", now, { durationMs: fish.targetAt - now });
+    } else {
+      setFishBehaviorIntent(fish, "open-water cruise", "performance", now, { durationMs: fish.targetAt - now });
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now = Date.now()) {
+  const behaviorKey = getDavyMutationBehaviorKey(species);
+  if (!behaviorKey || !fish || !pellet || !pelletPose) return null;
+
+  if (fish.davyFoodReactionPelletId !== pellet.id) {
+    fish.davyFoodReactionPelletId = pellet.id;
+    fish.davyFoodReactionStartedAt = now;
+    fish.davyFoodBurstUntil = 0;
+    fish.davyFoodCreepUntil = 0;
+  }
+  const elapsed = Math.max(0, now - (Number(fish.davyFoodReactionStartedAt) || now));
+
+  if (behaviorKey === "barracuda") {
+    if (elapsed < 1100) {
+      setFishBehaviorIntent(fish, "tracking food", "motion tracking", now, { durationMs: 1400 });
+      return { handled: true, xNorm: fish.xNorm, yNorm: fish.yNorm, targetAt: now + 180 };
+    }
+    if (!(Number(fish.davyFoodBurstUntil) > now)) fish.davyFoodBurstUntil = now + 1050;
+    setFishBehaviorIntent(fish, "striking", "feeding", now, { durationMs: 1400 });
+    return null;
+  }
+
+  if (behaviorKey === "siren-pike") {
+    if (elapsed < 2100) {
+      setFishBehaviorIntent(fish, "waiting on food", "ambush", now, { durationMs: 2300 });
+      return { handled: true, xNorm: fish.xNorm, yNorm: fish.yNorm, targetAt: now + 180 };
+    }
+    if (elapsed < 3400) {
+      fish.davyFoodCreepUntil = now + 220;
+      setFishBehaviorIntent(fish, "creeping toward food", "ambush", now, { durationMs: 1500 });
+      return {
+        handled: true,
+        xNorm: fish.xNorm + (pelletPose.xNorm - fish.xNorm) * 0.32,
+        yNorm: fish.yNorm + (pelletPose.yNorm - fish.yNorm) * 0.32,
+        targetAt: now + 300
+      };
+    }
+    if (!(Number(fish.davyFoodBurstUntil) > now)) fish.davyFoodBurstUntil = now + 1150;
+    setFishBehaviorIntent(fish, "ambush strike", "feeding", now, { durationMs: 1500 });
+    return null;
+  }
+
+  if (behaviorKey === "glass-spitter" && pelletPose.yNorm <= 0.34 && elapsed < 950) {
+    const targetY = clamp(pelletPose.yNorm + 0.1, 0.2, 0.42);
+    setFishBehaviorIntent(fish, "lining up surface jet", "surface tracking", now, { durationMs: 1200 });
+    return {
+      handled: true,
+      xNorm: pelletPose.xNorm,
+      yNorm: targetY,
+      targetAt: now + 260
+    };
+  }
+
+  if (behaviorKey === "cherub") {
+    setFishBehaviorIntent(fish, "excited for food", "companion", now, { durationMs: 2200 });
+  }
+
+  if (behaviorKey === "hyperfin") {
+    if (elapsed < 260) {
+      fish.davyCircuitUntil = now + 2600;
+      setFishBehaviorIntent(fish, "locking onto food", "visual tracking", now, { durationMs: 1200 });
+      return {
+        handled: true,
+        xNorm: fish.xNorm + (pelletPose.xNorm - fish.xNorm) * 0.55,
+        yNorm: fish.yNorm + (pelletPose.yNorm - fish.yNorm) * 0.55,
+        targetAt: now + 180
+      };
+    }
+    if (!(Number(fish.davyFoodBurstUntil) > now)) fish.davyFoodBurstUntil = now + 1350;
+    fish.davyCircuitUntil = now + 3200;
+    setFishBehaviorIntent(fish, "accelerating toward food", "feeding", now, { durationMs: 1600 });
+    return null;
+  }
+
+  return null;
+}
+
+function getDavyMutationMotionSpeedMultiplier(fish, species, now = Date.now()) {
+  const behaviorKey = getDavyMutationBehaviorKey(species);
+  if (!behaviorKey) return 1;
+  if (Number(fish.davyFoodBurstUntil) > now) {
+    return behaviorKey === "hyperfin"
+      ? 2.15
+      : behaviorKey === "siren-pike"
+        ? 2.05
+        : behaviorKey === "barracuda"
+          ? 1.82
+          : 1.3;
+  }
+  if (Number(fish.davyFoodCreepUntil) > now) return 0.28;
+  if (Number(fish.davyPatrolBurstUntil) > now) {
+    return behaviorKey === "hyperfin"
+      ? 1.66
+      : behaviorKey === "glass-spitter"
+        ? 1.34
+        : 1.48;
+  }
+  if (behaviorKey === "hyperfin" && Number(fish.davyCircuitUntil) > now) return 1.58;
+  if (behaviorKey === "cherub") return fish.activity === "feeding" ? 0.82 : 0.76;
+  if (behaviorKey === "hyperfin") return fish.activity === "feeding" ? 1.2 : 1.08;
+  return 1;
+}
+
 function updateFishMotion(now, deltaSeconds) {
   if (!state?.fish.length) {
     runtime.fishGravelPebbleActions.clear();
@@ -2813,25 +3245,32 @@ function updateFishMotion(now, deltaSeconds) {
         }
         pelletPose = getPelletPose(pellet, now);
         pelletBounds = getPelletHitBounds(pellet, now);
-        const mouthChaseTarget = getFishTargetNormForMouthPoint(
-          fish,
-          species,
-          pelletPose.xNorm * TANK_WIDTH,
-          pelletPose.yNorm * TANK_HEIGHT,
-          now,
-          {
-            minYNorm: 0.14,
-            maxYNorm: pellet.settled ? 0.9 : 0.82
-          }
-        );
-        if (mouthChaseTarget) {
-          fish.targetXNorm = mouthChaseTarget.xNorm;
-          fish.targetYNorm = mouthChaseTarget.yNorm;
+        const davyFeedingControl = getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now);
+        if (davyFeedingControl?.handled) {
+          fish.targetXNorm = clamp(davyFeedingControl.xNorm, 0.08, 0.92);
+          fish.targetYNorm = clamp(davyFeedingControl.yNorm, 0.14, pellet.settled ? 0.9 : 0.82);
+          fish.targetAt = Number(davyFeedingControl.targetAt) || now + 300;
         } else {
-          fish.targetXNorm = pelletPose.xNorm;
-          fish.targetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+          const mouthChaseTarget = getFishTargetNormForMouthPoint(
+            fish,
+            species,
+            pelletPose.xNorm * TANK_WIDTH,
+            pelletPose.yNorm * TANK_HEIGHT,
+            now,
+            {
+              minYNorm: 0.14,
+              maxYNorm: pellet.settled ? 0.9 : 0.82
+            }
+          );
+          if (mouthChaseTarget) {
+            fish.targetXNorm = mouthChaseTarget.xNorm;
+            fish.targetYNorm = mouthChaseTarget.yNorm;
+          } else {
+            fish.targetXNorm = pelletPose.xNorm;
+            fish.targetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+          }
+          fish.targetAt = now + 1000;
         }
-        fish.targetAt = now + 1000;
         setFishDesiredTankLayer(
           fish,
           effectiveBehavior === "sucker"
@@ -3102,6 +3541,7 @@ function updateFishMotion(now, deltaSeconds) {
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.18, 1.4);
       }
       speedMultiplier *= getFishDiseaseSpeedMultiplier(fish, now);
+      speedMultiplier *= getDavyMutationMotionSpeedMultiplier(fish, species, now);
       if (segmentedTurnaroundActive) {
         speedMultiplier *= 0.12 + turnaroundMovementBlend * 0.88;
       }
@@ -3689,6 +4129,14 @@ function assignSwimTarget(fish, species, now) {
     setFishTankLayers(fish, glassLayer, glassLayer);
     fish.hangoutDecorId = null;
     fish.swimSpeed = crawlSpeed;
+    return;
+  }
+
+  if (maybeAssignDavyMutationReactionTarget(fish, species, now)) {
+    return;
+  }
+
+  if (assignDavyMutationSwimTarget(fish, species, now)) {
     return;
   }
 

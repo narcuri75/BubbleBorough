@@ -274,7 +274,10 @@ function sanitizeFish(fish, options = {}) {
     appearanceVariantKey: typeof fish.appearanceVariantKey === "string" ? fish.appearanceVariantKey : null,
     appearanceAssetPath: typeof fish.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null,
     scale: clamp(Number(fish.scale) || resolveFishBaseScale(fish.speciesId), FISH_SCALE_MIN, FISH_SCALE_MAX),
-    behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(fish.behaviorSpeciesId, fish.speciesId),
+    behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(
+      fish.behaviorSpeciesId || (species.customAsset ? (species.behaviorSpeciesId || species.behaviorProfileId) : ""),
+      fish.speciesId
+    ),
     turnAnimationPreference: ["simple", "complex"].includes(String(fish.turnAnimationPreference || "").trim().toLowerCase())
       ? String(fish.turnAnimationPreference).trim().toLowerCase()
       : "",

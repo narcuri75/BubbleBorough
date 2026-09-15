@@ -9,6 +9,143 @@ function setStorePurchaseSoundBatch(active = false) {
   runtime.storePurchaseSoundBatch = active === true;
 }
 
+function recordBubbleBodegaOrder(rawItems) {
+  if (!state) return null;
+  const items = sanitizePurchaseHistory([{ id: createId("order"), placedAt: Date.now(), items: rawItems }])[0]?.items || [];
+  if (!items.length) return null;
+  const order = {
+    id: createId("order"),
+    placedAt: Date.now(),
+    total: items.reduce((sum, item) => sum + item.cost * item.quantity, 0),
+    items
+  };
+  const engineeredSpecimen = typeof isEngineeredAquaticSpecimenOrder === "function"
+    && isEngineeredAquaticSpecimenOrder(order);
+  if (engineeredSpecimen) {
+    order.proteusStatus = "design-required";
+    order.proteusConfiguredAt = 0;
+    order.proteusFulfilledAt = 0;
+  }
+  if (!Array.isArray(state.purchaseHistory)) state.purchaseHistory = [];
+  state.purchaseHistory.unshift(order);
+  state.purchaseHistory = sanitizePurchaseHistory(state.purchaseHistory);
+  if (engineeredSpecimen) {
+    if (!Array.isArray(state.engineeredSpecimenDesignOrderIds)) state.engineeredSpecimenDesignOrderIds = [];
+    state.engineeredSpecimenDesignOrderIds = [...new Set([order.id, ...state.engineeredSpecimenDesignOrderIds])].slice(0, 20);
+  }
+  const remainingCosts = new Map();
+  for (const item of items) {
+    const cost = Math.max(0, Math.floor(Number(item.cost) || 0));
+    remainingCosts.set(cost, (remainingCosts.get(cost) || 0) + Math.max(1, Math.floor(Number(item.quantity) || 1)));
+  }
+  for (const entry of state.walletTransactions || []) {
+    const cost = Math.max(0, Math.floor(Number(entry.amount) || 0));
+    if (
+      entry.direction !== "debit"
+      || entry.orderId
+      || !/bubblebodega/i.test(String(entry.place || ""))
+      || Math.abs(order.placedAt - (Number(entry.time) || 0)) > 15000
+      || !(remainingCosts.get(cost) > 0)
+    ) continue;
+    entry.orderId = order.id;
+    remainingCosts.set(cost, remainingCosts.get(cost) - 1);
+  }
+  saveState();
+  return order;
+}
+
+function buyEngineeredAquaticSpecimen() {
+  const purchaseCost = CUSTOM_FISH_COST;
+  return performCoinTransaction({
+    amount: purchaseCost,
+    insufficientMessage: getInsufficientFundsMessage(),
+    event: { type: "purchase", tone: "positive", text: "Engineered Aquatic Specimen order placed." },
+    toast: "Engineered Aquatic Specimen order placed. Check WebSurf for your Proteus design link."
+  });
+}
+
+function getEngineeredAquaticSpecimenOrder(orderId = "") {
+  const id = String(orderId || "").trim();
+  if (!id) return null;
+  const order = (state?.purchaseHistory || []).find((entry) => String(entry?.id || "") === id) || null;
+  return order && (typeof isEngineeredAquaticSpecimenOrder !== "function" || isEngineeredAquaticSpecimenOrder(order))
+    ? order
+    : null;
+}
+
+function getEngineeredAquaticSpecimenOrderStatus(orderId = "") {
+  const id = String(orderId || "").trim();
+  const order = getEngineeredAquaticSpecimenOrder(id);
+  if (!order) return "";
+  if ((state?.engineeredSpecimenCompletedOrderIds || []).includes(id)) return "fulfillment-complete";
+  if (["design-required", "specimen-configured", "fulfillment-complete"].includes(order.proteusStatus)) {
+    return order.proteusStatus;
+  }
+  if ((state?.engineeredSpecimenDesignStartedOrderIds || []).includes(id)) return "specimen-configured";
+  return "design-required";
+}
+
+function setEngineeredAquaticSpecimenOrderStatus(orderId, status, now = Date.now()) {
+  const id = String(orderId || "").trim();
+  const order = getEngineeredAquaticSpecimenOrder(id);
+  if (!order || !["design-required", "specimen-configured", "fulfillment-complete"].includes(status)) return false;
+  order.proteusStatus = status;
+  order.proteusConfiguredAt = status === "specimen-configured"
+    ? Math.max(0, Number(now) || Date.now())
+    : status === "design-required" ? 0 : Math.max(0, Number(order.proteusConfiguredAt) || Number(now) || Date.now());
+  order.proteusFulfilledAt = status === "fulfillment-complete" ? Math.max(0, Number(now) || Date.now()) : 0;
+  if (!Array.isArray(state.engineeredSpecimenDesignOrderIds)) state.engineeredSpecimenDesignOrderIds = [];
+  if (!Array.isArray(state.engineeredSpecimenDesignStartedOrderIds)) state.engineeredSpecimenDesignStartedOrderIds = [];
+  if (!Array.isArray(state.engineeredSpecimenCompletedOrderIds)) state.engineeredSpecimenCompletedOrderIds = [];
+  state.engineeredSpecimenDesignOrderIds = status === "fulfillment-complete"
+    ? state.engineeredSpecimenDesignOrderIds.filter((entry) => entry !== id)
+    : [...new Set([id, ...state.engineeredSpecimenDesignOrderIds])].slice(0, 20);
+  state.engineeredSpecimenDesignStartedOrderIds = status === "specimen-configured"
+    ? [...new Set([id, ...state.engineeredSpecimenDesignStartedOrderIds])].slice(0, 20)
+    : state.engineeredSpecimenDesignStartedOrderIds.filter((entry) => entry !== id);
+  state.engineeredSpecimenCompletedOrderIds = status === "fulfillment-complete"
+    ? [...new Set([id, ...state.engineeredSpecimenCompletedOrderIds])].slice(0, 20)
+    : state.engineeredSpecimenCompletedOrderIds.filter((entry) => entry !== id);
+  return true;
+}
+
+function markEngineeredAquaticSpecimenConfigured(orderId = "") {
+  const id = String(orderId || "").trim();
+  if (getEngineeredAquaticSpecimenOrderStatus(id) !== "design-required") return false;
+  return setEngineeredAquaticSpecimenOrderStatus(id, "specimen-configured");
+}
+
+function resetEngineeredAquaticSpecimenConfiguration(orderId = "") {
+  const id = String(orderId || "").trim();
+  if (getEngineeredAquaticSpecimenOrderStatus(id) !== "specimen-configured") return false;
+  return setEngineeredAquaticSpecimenOrderStatus(id, "design-required");
+}
+
+function markEngineeredAquaticSpecimenDesigned(orderId = "") {
+  const id = String(orderId || "").trim();
+  if (getEngineeredAquaticSpecimenOrderStatus(id) !== "specimen-configured") return false;
+  return setEngineeredAquaticSpecimenOrderStatus(id, "fulfillment-complete");
+}
+
+function beginEngineeredAquaticSpecimenDesign(orderId = "") {
+  const id = String(orderId || "").trim();
+  const order = getEngineeredAquaticSpecimenOrder(id);
+  if (!order || getEngineeredAquaticSpecimenOrderStatus(id) !== "design-required") return false;
+  if (order.proteusStatus !== "design-required") {
+    setEngineeredAquaticSpecimenOrderStatus(id, "design-required");
+    saveState();
+  }
+  return true;
+}
+
+function getBubbleBodegaAccountData() {
+  const session = runtime.cloudSession || getCloudSession();
+  return {
+    username: getAccountUsernameForUser(session?.user?.id || ""),
+    orders: sanitizePurchaseHistory(state?.purchaseHistory)
+  };
+}
+
 function recordWalletTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Math.abs(Number(options.amount) || 0)));
   const allowZero = options.allowZero === true || options.direction === "neutral";
@@ -24,7 +161,8 @@ function recordWalletTransaction(options = {}) {
     direction,
     label: String(options.label || "Aquarium activity").slice(0, 180),
     place: String(options.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega").slice(0, 80),
-    time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now()
+    time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now(),
+    orderId: typeof options.orderId === "string" ? options.orderId.slice(0, 80) : ""
   });
   state.walletTransactions = state.walletTransactions.slice(0, 60);
   return true;
@@ -107,11 +245,14 @@ function buyFood(foodKey) {
     return;
   }
 
+  const purchaseCost = getFoodPurchaseCost(food.id);
+  const rescueOffer = food.id === "basic" && purchaseCost === 0 && getBubbleBodegaRescueOfferStatus().foodAvailable;
   return performCoinTransaction({
-    amount: food.cost,
+    amount: purchaseCost,
     insufficientMessage: "Not enough coins for that food bottle.",
     apply: () => {
       state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
+      if (rescueOffer) markBubbleBodegaRescueItemClaimed("food");
     },
     event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}).` },
     toast: `${food.name} stocked. +${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}.`
@@ -249,6 +390,10 @@ async function buyFish(speciesId, options = {}) {
   }
 
   if (isCustomFishShopKey(speciesId)) {
+    if (!isFishSpeciesShopUnlocked(speciesId)) {
+      showToast(`${getUnlockRequirementLabel(runtime.fishMap.get(speciesId)?.unlockRequirement)} milestone required.`);
+      return { ok: false, reason: "locked" };
+    }
     openLocalFishPicker();
     return { ok: false, reason: "custom-upload" };
   }
@@ -269,6 +414,7 @@ async function buyFish(speciesId, options = {}) {
   }
 
   const purchaseCost = getFishPurchaseCost(speciesId);
+  const davyMutationPurchase = species?.davyMutation === true || String(species?.id || "").startsWith("davy-");
   if (state.coins < purchaseCost) {
     const errorMessage = getInsufficientFundsMessage();
     showToast(errorMessage, { force: true, tone: "error" });
@@ -326,6 +472,8 @@ async function buyFish(speciesId, options = {}) {
     const transaction = performCoinTransaction({
       amount: purchaseCost,
       now: purchaseCompletedAt,
+      place: davyMutationPurchase ? "UNKNOWN_VENDOR" : undefined,
+      receiptLabel: davyMutationPurchase ? "UNKNOWN_VENDOR" : undefined,
       insufficientMessage: `You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`,
       apply: () => {
         fish.acquiredAt = purchaseCompletedAt;
@@ -335,6 +483,9 @@ async function buyFish(speciesId, options = {}) {
           : purchaseCompletedAt;
         fish.entrySplashTriggered = false;
         addFishToTank(fish, purchaseCompletedAt);
+        if (speciesId === "goldfish" && purchaseCost === 0 && getBubbleBodegaRescueOfferStatus().goldfishAvailable) {
+          markBubbleBodegaRescueItemClaimed("goldfish", purchaseCompletedAt);
+        }
         maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
         if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
           setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
@@ -882,22 +1033,21 @@ function buyBackground(backgroundKey) {
 }
 
 
-function buyAutoDispenser() {
-  if (hasAutoDispenserInstalled()) {
-    showToast("This tank already has a pellet dispenser installed.");
-    return;
-  }
-
+function buyAutoDispenser(options = {}) {
   return performCoinTransaction({
     amount: AUTO_DISPENSER_COST,
     insufficientMessage: `You need ${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)} for the pellet dispenser.`,
     apply: () => {
+      const existing = state.autoDispenser;
       state.autoDispenser = createDefaultAutoDispenserState({
-        ...state.autoDispenser,
-        installed: true
+        ...existing,
+        installed: existing?.installed === true,
+        stored: true,
+        storedCount: Math.max(0, Math.floor(Number(existing?.storedCount) || 0)) + 1,
+        appearanceVariantKey: options.appearanceVariantKey || existing?.appearanceVariantKey || ""
       });
     },
-    event: { type: "equipment", tone: "positive", text: "Installed an automatic pellet dispenser above the waterline." },
-    toast: "Pellet dispenser installed."
+    event: { type: "equipment", tone: "positive", text: "Purchased a pellet dispenser. Deploy it from Edit > Equipment." },
+    toast: "Pellet dispenser purchased. Deploy it from Edit > Equipment."
   });
 }

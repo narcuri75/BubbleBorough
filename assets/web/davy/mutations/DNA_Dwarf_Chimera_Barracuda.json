@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "3cdfa684-3794-41c8-8cda-22753b449951",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "c36de601-04de-4f5d-9ebf-1e8d975cfa9b",
+          "width": 512,
+          "height": 276,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Dwarf_Chimera_Barracuda_1.png"
+        },
+        {
+          "id": "0cec64ad-b02c-4067-9785-1ae64bb435bb",
+          "width": 512,
+          "height": 276,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Dwarf_Chimera_Barracuda_5.png"
+        },
+        {
+          "id": "3514e59e-17e6-4d86-bb95-8b5403e40144",
+          "width": 512,
+          "height": 276,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Dwarf_Chimera_Barracuda_4.png"
+        },
+        {
+          "id": "7f4f90f2-f2a4-436c-9fa6-888db2d41bf1",
+          "width": 512,
+          "height": 276,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Dwarf_Chimera_Barracuda_3.png"
+        },
+        {
+          "id": "a4a9b97a-159e-416d-ba8f-8654a545a180",
+          "width": 512,
+          "height": 276,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Dwarf_Chimera_Barracuda_2.png"
+        }
+      ]
+    }
+  ]
+}

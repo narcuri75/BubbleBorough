@@ -33,6 +33,7 @@ function persistCloudSession(session) {
 }
 
 function clearCloudSession() {
+  if (typeof resetWebSurfSessionState === "function") resetWebSurfSessionState();
   runtime.cloudEmailChangeNotice = "";
   localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
   runtime.cloudSession = null;

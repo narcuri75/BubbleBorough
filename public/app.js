@@ -2,6 +2,8 @@
 
 // <bundle-source path="00-bootstrap.js">
 const STORAGE_KEY = "bubble-borough-save-v1";
+const WEBSURF_MAIL_READ_STORAGE_KEY = "bubble-borough-websurf-read-mail-v1";
+const WEBSURF_SILENCED_SENDERS_STORAGE_KEY = "bubble-borough-websurf-silenced-senders-v1";
 const SUPABASE_URL = "https://idljwswasrxtifbkioyg.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qxhGQH_faz0TDw4_AbYsGw_iYljA_9s";
 const INVITE_FRIEND_ENABLED = false;
@@ -28,7 +30,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 46;
+const STATE_VERSION = 48;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -360,7 +362,11 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "orca": { group: "orca-pod", personalities: ["social", "hunter", "explorer", "bold"], rare: ["curious", "routine-loving", "territorial"], predatorDiet: true, desperationPredator: true },
   "sunfish": { group: "sunfish-gentle", personalities: ["gentle", "homebody", "routine-loving", "sensitive"], rare: ["shy", "curious", "social"], slowGraceful: true },
   "seahorse": { group: "seahorse-drifter", personalities: ["gentle", "homebody", "shy", "curious"], rare: ["social", "routine-loving", "sensitive"], slowGraceful: true },
-  "pilot-fish": { group: "pilot-follower", personalities: ["follower", "social", "explorer", "curious"], rare: ["bold", "routine-loving", "shy"] }
+  "pilot-fish": { group: "pilot-follower", personalities: ["follower", "social", "explorer", "curious"], rare: ["bold", "routine-loving", "shy"] },
+  "davy-dwarf-chimera-barracuda": { group: "special-predator", personalities: ["hunter", "bold", "standoffish", "territorial"], rare: ["curious", "explorer", "sensitive"], predatorDiet: true },
+  "davy-bioluminescent-angler-pike": { group: "special-predator", personalities: ["hunter", "homebody", "sensitive", "standoffish"], rare: ["curious", "bold", "territorial"], predatorDiet: true },
+  "davy-bioluminescent-glass-fangfish": { group: "small-social", personalities: ["nervous", "shy", "curious", "explorer"], rare: ["hunter", "sensitive", "homebody"] },
+  "davy-bioluminescent-cherub-goldfish": { group: "slow-graceful", personalities: ["gentle", "social", "follower", "curious"], rare: ["sensitive", "homebody", "greedy"], slowGraceful: true }
 });
 const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   movementPattern: "cruise",
@@ -697,6 +703,37 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     schoolDurationScale: 1.22, schoolVerticalJitterScale: 0.72, structureAffinity: 0.62,
     caveAffinity: 0.08, startleStrength: 0.92, turnDurationScale: 0.82,
     speedMinBlend: 0.56, speedMaxBlend: 0.96, targetDurationScale: 0.88
+  }),
+  "davy-dwarf-chimera-barracuda": createFishLocomotionProfile({
+    movementPattern: "patrol-burst", preferredY: 0.46, verticalSpread: 0.58,
+    targetDistanceMin: 0.34, targetDistanceMax: 0.76, headingPersistence: 0.9,
+    hoverChance: 0.24, hoverMinMs: 2400, hoverMaxMs: 5200, schoolStrength: 0,
+    structureAffinity: 0.3, caveAffinity: 0.05, startleStrength: 1.3,
+    startleRecoveryScale: 0.82, turnDurationScale: 0.72, speedMinBlend: 0.55,
+    speedMaxBlend: 0.92, dartChance: 0.22, dartSpeedMinBlend: 0.92, targetDurationScale: 0.9
+  }),
+  "davy-bioluminescent-angler-pike": createFishLocomotionProfile({
+    movementPattern: "ambush-hover", preferredY: 0.5, verticalSpread: 0.48,
+    targetDistanceMin: 0.05, targetDistanceMax: 0.28, headingPersistence: 0.82,
+    hoverChance: 0.62, hoverMinMs: 4200, hoverMaxMs: 9200, schoolStrength: 0,
+    structureAffinity: 1.35, caveAffinity: 0.7, homeRangeStrength: 0.45, homeRangeRadius: 0.18,
+    startleStrength: 1.5, startleRecoveryScale: 1.3, turnDurationScale: 1.2,
+    speedMinBlend: 0.05, speedMaxBlend: 0.36, dartChance: 0.09, dartSpeedMinBlend: 0.95, targetDurationScale: 1.35
+  }),
+  "davy-bioluminescent-glass-fangfish": createFishLocomotionProfile({
+    movementPattern: "cover-dart", preferredY: 0.42, verticalSpread: 0.72,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.3, headingPersistence: 0.22,
+    hoverChance: 0.04, schoolStrength: 0.04, structureAffinity: 2.1, caveAffinity: 1.4,
+    startleStrength: 1.65, startleRecoveryScale: 0.7, turnDurationScale: 0.55,
+    speedMinBlend: 0.42, speedMaxBlend: 0.94, dartChance: 0.62, dartSpeedMinBlend: 0.9, targetDurationScale: 0.66
+  }),
+  "davy-bioluminescent-cherub-goldfish": createFishLocomotionProfile({
+    movementPattern: "companion-hover", preferredY: 0.5, verticalSpread: 0.64,
+    targetDistanceMin: 0.07, targetDistanceMax: 0.28, headingPersistence: 0.36,
+    hoverChance: 0.32, hoverMinMs: 1800, hoverMaxMs: 4800, schoolStrength: 0.48,
+    schoolSpacingScale: 1.15, schoolDurationScale: 1.4, structureAffinity: 0.9, caveAffinity: 0.55,
+    startleStrength: 0.9, startleRecoveryScale: 1.4, turnDurationScale: 1.35,
+    speedMinBlend: 0.08, speedMaxBlend: 0.42, targetDurationScale: 1.25
   })
 });
 const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
@@ -745,41 +782,41 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "guppy": { mealCoins: 1, unlock: null, needs: ["plants", "open_water"], conflicts: ["betta_present", "aggressive_predator", "fin_nipper"] },
   "zebra-danio": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
   "goldfish": { mealCoins: 1, unlock: null, needs: ["open_water", "hardscape"], conflicts: ["overcrowded", "fin_nipper"] },
-  "neon-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator", "large_fish"] },
+  "neon-tetra": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator", "large_fish"] },
   "cherry-barb": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator"] },
   "celestial-pearl-danio": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "large_fish", "aggressive_predator"] },
-  "chili-rasbora": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
-  "ember-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
-  "harlequin-rasbora": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
-  "pencilfish": { mealCoins: 1, unlock: null, needs: ["surface_cover", "school_2_plus"], conflicts: ["aggressive_predator", "fast_eater"] },
-  "rummy-nose-tetra": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "chili-rasbora": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
+  "ember-tetra": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
+  "harlequin-rasbora": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "pencilfish": { mealCoins: 1, unlock: "stable-tank", needs: ["surface_cover", "school_2_plus"], conflicts: ["aggressive_predator", "fast_eater"] },
+  "rummy-nose-tetra": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
   "moor-goldfish": { mealCoins: 1, unlock: "first-care", needs: ["open_water", "hardscape"], conflicts: ["sharp_decor", "fin_nipper", "overcrowded"] },
-  "otocinclus": { mealCoins: 0, unlock: "first-care", needs: ["seaweed_algae", "plants"], conflicts: ["aggressive_predator", "large_fish"] },
-  "molly": { mealCoins: 1, unlock: "first-care", needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
-  "livebearer": { mealCoins: 1, unlock: "first-care", needs: ["plants", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "otocinclus": { mealCoins: 0, unlock: "stable-tank", needs: ["seaweed_algae", "plants"], conflicts: ["aggressive_predator", "large_fish"] },
+  "molly": { mealCoins: 1, unlock: "stable-tank", needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "livebearer": { mealCoins: 1, unlock: "stable-tank", needs: ["plants", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
   "loach": { mealCoins: 1, unlock: "stable-tank", needs: ["cave", "plants"], conflicts: ["sharp_decor", "aggressive_predator"] },
   "swordtail": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "plants"], conflicts: ["same_species", "overcrowded"] },
-  "betta": { mealCoins: 1, unlock: "stable-tank", needs: ["plants", "cave"], conflicts: ["betta_present", "community_fish", "fin_nipper"] },
-  "blue-ram": { mealCoins: 1, unlock: "stable-tank", needs: ["cave", "plants"], conflicts: ["fast_eater", "aggressive_predator"] },
-  "piranha": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "cave"], conflicts: ["community_fish", "overcrowded"] },
+  "betta": { mealCoins: 1, unlock: "happy-habitat", needs: ["plants", "cave"], conflicts: ["betta_present", "community_fish", "fin_nipper"] },
+  "blue-ram": { mealCoins: 1, unlock: "happy-habitat", needs: ["cave", "plants"], conflicts: ["fast_eater", "aggressive_predator"] },
+  "piranha": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "cave"], conflicts: ["community_fish", "overcrowded"] },
   ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? ZOMBIE_SKELETON_COMFORT_PROFILES : {}),
   "wonder-killifish": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "open_water"], conflicts: ["tiny_fish", "surface_crowding"] },
   "rainbowfish": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded", "aggressive_predator"] },
   "gourami": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "plants"], conflicts: ["betta_present", "fin_nipper"] },
   "discus": { mealCoins: 2, unlock: "master-keeper", needs: ["plants", "driftwood"], conflicts: ["fast_eater", "aggressive_predator"] },
   "angelfish": { mealCoins: 2, unlock: "master-keeper", needs: ["plants", "open_water"], conflicts: ["fin_nipper", "tiny_fish"] },
-  "clownfish": { mealCoins: 2, unlock: "marine-curator", needs: ["coral", "cave"], conflicts: ["same_species", "aggressive_predator"] },
-  "royal-gramma": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
-  "yellow-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
-  "blue-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
+  "clownfish": { mealCoins: 2, unlock: "happy-habitat", needs: ["coral", "cave"], conflicts: ["same_species", "aggressive_predator"] },
+  "royal-gramma": { mealCoins: 2, unlock: "happy-habitat", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
+  "yellow-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
+  "blue-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
   "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] },
   "bull-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
-  "great-white-shark": { mealCoins: 4, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
+  "great-white-shark": { mealCoins: 4, unlock: "borough-legends", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
   "hammerhead-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
-  "orca": { mealCoins: 4, unlock: "marine-curator", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
-  "sunfish": { mealCoins: 2, unlock: "marine-curator", needs: ["open_water", "surface_cover"], conflicts: ["overcrowded"] },
-  "seahorse": { mealCoins: 2, unlock: "marine-curator", needs: ["plants", "surface_cover"], conflicts: ["fast_eater", "aggressive_predator"] },
-  "pilot-fish": { mealCoins: 2, unlock: "marine-curator", needs: ["open_water"], conflicts: ["overcrowded"] }
+  "orca": { mealCoins: 4, unlock: "borough-legends", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
+  "sunfish": { mealCoins: 2, unlock: "master-keeper", needs: ["open_water", "surface_cover"], conflicts: ["overcrowded"] },
+  "seahorse": { mealCoins: 2, unlock: "happy-habitat", needs: ["plants", "surface_cover"], conflicts: ["fast_eater", "aggressive_predator"] },
+  "pilot-fish": { mealCoins: 2, unlock: "master-keeper", needs: ["open_water"], conflicts: ["overcrowded"] }
 });
 const PROGRESSION_MILESTONES = Object.freeze([
   {
@@ -787,7 +824,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "First Care",
     requirement: "Finish a Daily Recap with score 3+.",
     reward: 3,
-    unlocks: ["celestial-pearl-danio", "moor-goldfish", "otocinclus", "molly", "livebearer"],
+    unlocks: ["chili-rasbora", "ember-tetra", "neon-tetra", "celestial-pearl-danio", "moor-goldfish"],
     decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "treasure-chest_bubbler.png"],
     isMet: (stats) => stats.latestScore >= 3,
     progress: (stats) => [{ value: (Number(stats.latestScore) || 0) / 3, label: `Latest recap score ${Math.max(0, Number(stats.latestScore) || 0)}/3` }]
@@ -797,7 +834,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Stable Tank",
     requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
     reward: 8,
-    unlocks: ["swordtail", "betta", "blue-ram", "piranha"],
+    unlocks: ["harlequin-rasbora", "pencilfish", "rummy-nose-tetra", "otocinclus", "molly", "livebearer", "swordtail"],
     decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
     progress: (stats) => [
@@ -810,7 +847,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Happy Habitat",
     requirement: "Keep any fish alive for 7 days and recent average comfort at 80%+.",
     reward: 12,
-    unlocks: ["wonder-killifish", "rainbowfish", "gourami"],
+    unlocks: ["betta", "blue-ram", "piranha", "wonder-killifish", "rainbowfish", "gourami", "clownfish", "royal-gramma", "seahorse"],
     decorUnlocks: ["Shipwreck.png", "mushroomcoral_seaweed.png", "Castle-Cave.png", "blue_castle_cave.png", "meteor_cave.png", "volcano-1_bubbler.png", "volcano-2_bubbler.png", "__custom-decor-shop__", "__custom-hide-shop__"],
     isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80,
     progress: (stats) => [
@@ -823,7 +860,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Master Keeper",
     requirement: "Go 14 days without a death and have one fish at Sparkling comfort.",
     reward: 18,
-    unlocks: ["discus", "angelfish"],
+    unlocks: ["discus", "angelfish", "yellow-tang", "blue-tang", "sunfish", "pilot-fish"],
     decorUnlocks: [],
     isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish,
     progress: (stats) => [
@@ -834,15 +871,29 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "marine-curator",
     label: "Marine Curator",
-    requirement: "Own a saltwater fish, finish 5 good recaps, and go 3 days without a death.",
+    requirement: "Keep any fish alive for 21 days, own a saltwater fish, and finish 10 good recaps.",
     reward: 20,
-    unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish", "bull-shark", "great-white-shark", "hammerhead-shark", "orca", "sunfish", "seahorse", "pilot-fish"],
+    unlocks: ["pufferfish", "bull-shark", "hammerhead-shark"],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3,
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= 21 * DAY_MS && stats.hasSaltwaterFish && stats.goodRecaps >= 10,
     progress: (stats) => [
       { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
-      { value: (Number(stats.goodRecaps) || 0) / 5, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 5)}/5` },
-      { value: (Number(stats.daysSinceLastDeath) || 0) / 3, label: `No-death streak ${Math.min(Number(stats.daysSinceLastDeath) || 0, 3)}/3d` }
+      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (21 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 21 * DAY_MS))}/21d` },
+      { value: (Number(stats.goodRecaps) || 0) / 10, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 10)}/10` }
+    ]
+  },
+  {
+    id: "borough-legends",
+    label: "Borough Legends",
+    requirement: "Keep any fish alive for 30 days, finish 15 good recaps, and have one fish at Sparkling comfort.",
+    reward: 30,
+    unlocks: ["great-white-shark", "orca", "__custom-fish-shop__"],
+    decorUnlocks: [],
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= 30 * DAY_MS && stats.goodRecaps >= 15 && stats.hasSparklingFish,
+    progress: (stats) => [
+      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (30 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 30 * DAY_MS))}/30d` },
+      { value: (Number(stats.goodRecaps) || 0) / 15, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 15)}/15` },
+      { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
     ]
   },
   {
@@ -858,12 +909,12 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "crystal-keeper",
     label: "Crystal Keeper",
-    requirement: "Keep cleanliness at 95%+ for 7 daily recaps.",
+    requirement: "Keep cleanliness at 95%+ for 7 daily recaps in a row.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.cleanRecapCount95 >= 7,
-    progress: (stats) => [{ value: (Number(stats.cleanRecapCount95) || 0) / 7, label: `95%+ clean recaps ${Math.min(Number(stats.cleanRecapCount95) || 0, 7)}/7` }]
+    isMet: (stats) => stats.cleanRecapStreak95 >= 7,
+    progress: (stats) => [{ value: (Number(stats.cleanRecapStreak95) || 0) / 7, label: `95%+ clean recap streak ${Math.min(Number(stats.cleanRecapStreak95) || 0, 7)}/7` }]
   },
   {
     id: "full-bellies",
@@ -1001,7 +1052,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "community-tank",
     label: "Community Tank",
-    requirement: "Keep 5 community-safe fish with 70%+ recent comfort and 3 good recaps.",
+    requirement: "Keep 5 community-safe fish in one aquarium, without overcrowding, with 70%+ recent comfort and 3 good recaps.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
@@ -1097,23 +1148,13 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "tank-network",
     label: "Tank Network",
-    requirement: "Own 3 aquariums with at least one healthy fish in each.",
+    requirement: "Own 3 aquariums and connect them with Bubble Borough tubes.",
     reward: 20,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.healthyTankCount >= 3,
-    progress: (stats) => [{ value: (Number(stats.healthyTankCount) || 0) / 3, label: `Healthy tanks ${Math.min(Number(stats.healthyTankCount) || 0, 3)}/3` }]
-  },
-  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? [{
-    id: "spooky-keeper",
-    label: "Spooky Keeper",
-    requirement: "Discover the corpse, zombie, or skeleton care path.",
-    reward: 5,
-    unlocks: [...ZOMBIE_SKELETON_PROGRESSION_UNLOCKS],
-    decorUnlocks: ["gorebag_lure.png", "fishheadeffigy_1.png", "fishheadeffigy_2.png", "fishheadeffigy_3.png"],
-    isMet: (stats) => stats.hasSpookyKeeperPath,
-    progress: (stats) => [{ value: stats.hasSpookyKeeperPath ? 1 : 0, label: stats.hasSpookyKeeperPath ? "Spooky path found" : "No spooky path discovered yet" }]
-  }] : [])
+    isMet: (stats) => stats.connectedTubeTankCount >= 3,
+    progress: (stats) => [{ value: (Number(stats.connectedTubeTankCount) || 0) / 3, label: `Tube-connected tanks ${Math.min(Number(stats.connectedTubeTankCount) || 0, 3)}/3` }]
+  }
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
   "fishing_lure.png": "first-care",
@@ -1238,7 +1279,7 @@ const CUSTOM_FISH_KEY_PREFIX = "__custom-fish-";
 const CUSTOM_DECOR_COST = 10;
 const CUSTOM_HIDE_COST = 10;
 const CUSTOM_BUBBLER_COST = 8;
-const CUSTOM_FISH_COST = 10;
+const CUSTOM_FISH_COST = 75;
 const CUSTOM_DECOR_DEFAULT_WIDTH = 200;
 const CUSTOM_DECOR_MIN_WIDTH = 40;
 const CUSTOM_DECOR_MAX_WIDTH = 1440;
@@ -2010,7 +2051,7 @@ const FOOD_PELLET_SETTLED_NEARBY_TARGET_RADIUS_NORM = 0.5;
 const AUTO_DISPENSER_MAX_PELLETS = 99;
 const AUTO_DISPENSER_PORTION_MIN = 0;
 const AUTO_DISPENSER_PORTION_MAX = AUTO_DISPENSER_MAX_PELLETS;
-const AUTO_DISPENSER_COST = 30;
+const AUTO_DISPENSER_COST = 150;
 const AUTO_DISPENSER_ASSET_VERSION = "2026-04-01";
 const AUTO_DISPENSER_RELEASE_SPACING_MS = 80;
 const AUTO_DISPENSER_DROP_DISTANCE_PX = 150;
@@ -2018,27 +2059,42 @@ const AUTO_DISPENSER_DROP_X_OFFSET_PX = -30;
 const AUTO_DISPENSER_DROP_DRIFT_PX = 10;
 const AUTO_DISPENSER_DROP_DURATION_MS = 850;
 const AUTO_DISPENSER_PELLET_MAX_Y_NORM = 0.28;
+const AUTO_DISPENSER_DEFAULT_TANK_LAYER = 5;
+const AUTO_DISPENSER_DEFAULT_X_NORM = 0.5;
+const AUTO_DISPENSER_VARIANT_IMAGE_PATHS = [
+  resolveDispenserAssetPath("Food_Dispenser.png"),
+  ...[1, 2, 3, 4].map((number) => resolveDispenserAssetPath(`Food_Dispenser_${number}.png`))
+];
+const AUTO_DISPENSER_VARIANT_BG_PATHS = [
+  resolveDispenserAssetPath("Food_Dispenser_bg.png"),
+  ...[1, 2, 3, 4].map((number) => resolveDispenserAssetPath(`Food_Dispenser_${number}_bg.png`))
+];
+const AUTO_DISPENSER_LIGHT_OFF_PATH = resolveDispenserAssetPath("Food_Dispenser_Light_Off.png");
+const AUTO_DISPENSER_LIGHT_GREEN_PATH = resolveDispenserAssetPath("Food_Dispenser_Light_Green.png");
+const AUTO_DISPENSER_LIGHT_RED_PATH = resolveDispenserAssetPath("Food_Dispenser_Light_Red.png");
+const AUTO_DISPENSER_LIGHT_YELLOW_PATH = resolveDispenserAssetPath("Food_Dispenser_Light_Yellow.png");
 const AUTO_DISPENSER_HOPPER_MAX_DRAWN_PELLETS = AUTO_DISPENSER_MAX_PELLETS;
 const AUTO_DISPENSER_LOW_FOOD_BLINK_MS = 360;
 const MACHINERY_TYPE_SUBMARINE = "submarine";
 const MACHINERY_TYPE_BOAT = "boat";
-const SUBMARINE_COST = 100;
-const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/submarine.png");
-const BOAT_COST = 50;
-const BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/boat.png");
+const SUBMARINE_COST = 300;
+const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/equipment/machinery/submarine.png");
+const SUBMARINE_RED_LIGHT_OVERLAY_PATH = resolveAppUrl("assets/equipment/machinery/Submarine_Light_Red.webp");
+const BOAT_COST = 125;
+const BOAT_IMAGE_PATH = resolveAppUrl("assets/equipment/machinery/boat.png");
 // The original Halloween vehicle files were renamed to their shared fifth
 // appearance slot, so seasonal presentation and the purchasable choice use
 // the same real asset.
-const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Boat_5.png");
-const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Submarine_5.png");
+const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/equipment/machinery/Halloween_Boat_5.png");
+const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/equipment/machinery/Halloween_Submarine_5.png");
 const BOAT_VARIANT_IMAGE_PATHS = [
   BOAT_IMAGE_PATH,
-  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/fish/boat_${number}.png`)),
+  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/equipment/machinery/boat_${number}.png`)),
   HALLOWEEN_BOAT_IMAGE_PATH
 ];
 const SUBMARINE_VARIANT_IMAGE_PATHS = [
   SUBMARINE_IMAGE_PATH,
-  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/fish/submarine_${number}.png`)),
+  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/equipment/machinery/submarine_${number}.png`)),
   HALLOWEEN_SUBMARINE_IMAGE_PATH
 ];
 const BOAT_RESOURCE_CAPACITY = 99;
@@ -2076,8 +2132,6 @@ const SUBMARINE_IDLE_BOB_PERIOD_MS = 2100;
 const SUBMARINE_MANUAL_FOOD_COOLDOWN_MS = 140;
 const SUBMARINE_ENTRY_DURATION_MS = FISH_ENTRY_DURATION_MS;
 const SUBMARINE_ENTRY_FROM_Y_NORM = FISH_ENTRY_FROM_Y_NORM;
-const SUBMARINE_WARNING_LIGHT_X_NORM = 0.6164;
-const SUBMARINE_WARNING_LIGHT_Y_NORM = 0.1745;
 const SUBMARINE_REAR_BUBBLE_X_NORM = 0.048;
 const SUBMARINE_REAR_BUBBLE_Y_NORM = 0.565;
 const SUBMARINE_PRESSURE_BUBBLE_LEFT_X_NORM = 0.46;
@@ -2094,9 +2148,6 @@ const SUBMARINE_COMFORT_THRESHOLD = 0.35;
 const SUBMARINE_RED_LIGHT_BLINK_MS = 500;
 const SUBMARINE_FOOD_RETRY_MS = 9000;
 const SUBMARINE_MEDICINE_RETRY_MS = 12000;
-const SUBMARINE_SPOTLIGHT_LENGTH_PX = 320;
-const SUBMARINE_SPOTLIGHT_LAMP_X_NORM = 0.744;
-const SUBMARINE_SPOTLIGHT_LAMP_Y_NORM = 0.2;
 const SHARK_DESPERATION_ATTACK_COOLDOWN_MS = 9000;
 const SHARK_DESPERATION_ATTACK_RANGE_NORM = 0.075;
 const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
@@ -2471,8 +2522,8 @@ const TOOL_CURSOR_ICON_PATHS = Object.freeze({
 });
 
 
-const AUTO_DISPENSER_IMAGE_PATH = resolveDispenserAssetPath("pelletdispenser.png");
-const AUTO_DISPENSER_BG_PATH = resolveDispenserAssetPath("pelletdispenser_bg.png");
+const AUTO_DISPENSER_IMAGE_PATH = resolveDispenserAssetPath("Food_Dispenser.png");
+const AUTO_DISPENSER_BG_PATH = resolveDispenserAssetPath("Food_Dispenser_bg.png");
 
 
 const DEFAULT_CAVE_BEHAVIOR_PROFILE = {
@@ -2891,7 +2942,7 @@ const CUSTOM_BUBBLER_DECOR_IMAGE = resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH)
 const CUSTOM_BUBBLER_THUMBNAIL_IMAGE = resolveAppUrl("assets/misc/custom_bubbler.png");
 const CUSTOM_DECOR_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_decor.png");
 const CUSTOM_HIDE_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_hide.png");
-const CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_fish.png");
+const CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl("assets/web/proteus/PB_Custom_Fish.png");
 const CUSTOM_FISH_TEMPLATE_IMAGE = resolveAppUrl("assets/misc/fish_template.png");
 
 const dom = {
@@ -3049,6 +3100,10 @@ const dom = {
   equipmentShop: document.querySelector("#equipmentShop"),
   storeScrollControls: document.querySelector("#storeScrollControls"),
   storeOverlay: document.querySelector("#storeOverlay"),
+  webHomePage: document.querySelector("#webHomePage"),
+  webSurfUnreadBadge: document.querySelector("#webSurfUnreadBadge"),
+  bubbleBankPage: document.querySelector("#bubbleBankPage"),
+  davyJonesLockerPage: document.querySelector("#davyJonesLockerPage"),
   utilityOverlay: document.querySelector("#utilityOverlay"),
   utilityOverlayTitle: document.querySelector("#utilityOverlayTitle"),
   utilityOverlayKicker: document.querySelector("#utilityOverlayKicker"),
@@ -3198,8 +3253,23 @@ const glassContext = dom.glassCanvas.getContext("2d");
 const runtime = {
   activeTab: "overview",
   storeOverlayOpen: false,
+  webHomeOpen: false,
+  webSurfLastPage: "home",
+  webSurfPageScroll: { home: 0, store: 0, bank: 0, locker: 0, designer: 0 },
+  webSurfSelectedMailId: "",
+  bubbleBankOpen: false,
+  davyJonesLockerOpen: false,
+  davyLockerItemSpeciesId: "",
+  davyLockerVariantSelections: {},
+  proteusDesignerOpen: false,
+  proteusDesignerCompleting: false,
+  activeEngineeredSpecimenOrderId: "",
+  proteusDesignerCloseTimer: 0,
   utilityOverlayOpen: false,
   utilityOverlayMode: "",
+  bubbleBankTab: "account",
+  bubbleBankTargetId: "",
+  bubbleBankTransactionFilter: "all",
   legalOverlayTab: "privacy",
   startupLegalOpen: false,
   startupLegalTab: "privacy",
@@ -3377,6 +3447,7 @@ const runtime = {
   debugTimeScale: 1,
   debugSimulationPaused: false,
   debugHalloweenModeOverride: null,
+  debugBirthdayMode: false,
   debugBirthdayHatFishIds: new Set(),
   debugAutonomyPausedFishIds: new Set(),
   debugOverviewFishFps: null,
@@ -4165,7 +4236,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
   },
   fish: {
     type: "fish",
-    label: "Custom Fish",
+    label: "Engineered Aquatic Specimen",
     cost: CUSTOM_FISH_COST,
     pendingStateKey: "pendingCustomFishUpload",
     failureToast: "Could not use that image.",
@@ -4217,6 +4288,10 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         imageRefId: storedImage.imageRefId,
         width: pending.width,
         behaviorProfileId: pending.behaviorProfileId,
+        diet: normalizeCustomFishDiet(pending.diet),
+        activityRegulation: normalizeCustomFishActivityRegulation(pending.activityRegulation),
+        swimZone: normalizeCustomFishSwimZone(pending.swimZone),
+        socialAffinity: normalizeCustomFishSocialAffinity(pending.socialAffinity),
         turnAnimation: String(pending.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
         createdAt: now
       }, speciesKey);
@@ -4225,8 +4300,15 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         return false;
       }
       setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
-      state.coins -= CUSTOM_FISH_COST;
-      recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
+      const activeDesignOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
+      const designCredit = Boolean(
+        activeDesignOrderId
+        && getEngineeredAquaticSpecimenOrderStatus(activeDesignOrderId) === "specimen-configured"
+      );
+      if (!designCredit) {
+        state.coins -= CUSTOM_FISH_COST;
+        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
+      }
       if (!state.customFishAssets || typeof state.customFishAssets !== "object") {
         state.customFishAssets = {};
       }
@@ -4235,6 +4317,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       const fish = createFishRecord(asset.key, {
         now,
         name: asset.name,
+        behaviorSpeciesId: asset.behaviorProfileId,
         scale: DEFAULT_FISH_SCALE,
         entryStartedAt: now,
         entryDurationMs: FISH_ENTRY_DURATION_MS,
@@ -4243,22 +4326,47 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       if (!fish) {
         delete state.customFishAssets[asset.key];
         syncRuntimeCustomFishAssetsFromState(state);
-        state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
-        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "credit", now, place: "Bubble Borough", label: `Refunded custom fish ${asset.name}.` });
+        if (!designCredit) {
+          state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
+          recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "credit", now, place: "Bubble Borough", label: `Refunded custom fish ${asset.name}.` });
+        }
         showToast("Could not add that custom fish to the tank.");
         return false;
       }
       addFishToTank(fish, now);
+      if (designCredit) {
+        if (!markEngineeredAquaticSpecimenDesigned(activeDesignOrderId)) {
+          delete state.customFishAssets[asset.key];
+          syncRuntimeCustomFishAssetsFromState(state);
+          state.fish = state.fish.filter((entry) => entry.id !== fish.id);
+          showToast("This Proteus commission could not be fulfilled because its order state changed.");
+          return false;
+        }
+        runtime.proteusDesignerCompleting = true;
+      }
       maybeSeedNewFishDiseaseCarrier(fish, now);
       if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
         setFishNeedValue(fish, "hunger", 82, now);
         fish.lastAteAt = now;
       }
-      return finalizeCustomAssetCreation("fish", {
+      if (!designCredit) recordBubbleBodegaOrder([{
+          key: CUSTOM_FISH_SHOP_KEY,
+          name: "Engineered Aquatic Specimen",
+          category: "fish",
+          image: CUSTOM_FISH_SHOP_IMAGE,
+          seller: "Proteus Biodyne",
+          cost: CUSTOM_FISH_COST,
+          quantity: 1
+        }]);
+      const finalized = finalizeCustomAssetCreation("fish", {
         now,
         eventText: `Created custom fish ${asset.name}.`,
-        toastText: `${asset.name} created and added to the tank.`
+        toastText: designCredit ? "" : `${asset.name} created and added to the tank.`
       });
+      if (finalized && designCredit) {
+        completeProteusDesignerFlow(activeDesignOrderId);
+      }
+      return finalized;
     }
   }
 });
@@ -5046,7 +5154,7 @@ function getBoroughReferenceNow(now = Date.now()) {
 
 function isHalloweenCalendarDate(now = Date.now()) {
   const date = new Date(getBoroughReferenceNow(now));
-  return date.getMonth() === 9;
+  return date.getMonth() === 9 && date.getDate() >= 24;
 }
 
 function syncSeasonalBubbleBoroughLogos(now = Date.now()) {
@@ -5072,11 +5180,35 @@ function getMachineryAppearanceVariants(type) {
   const variants = type === MACHINERY_TYPE_BOAT
     ? (typeof BOAT_VARIANT_IMAGE_PATHS === "undefined" ? [BOAT_IMAGE_PATH] : BOAT_VARIANT_IMAGE_PATHS)
     : (typeof SUBMARINE_VARIANT_IMAGE_PATHS === "undefined" ? [SUBMARINE_IMAGE_PATH] : SUBMARINE_VARIANT_IMAGE_PATHS);
-  return variants.map((path, index) => ({
+  const purchasableVariants = variants.filter((path) => path !== (
+    type === MACHINERY_TYPE_BOAT ? HALLOWEEN_BOAT_IMAGE_PATH : HALLOWEEN_SUBMARINE_IMAGE_PATH
+  ));
+  return purchasableVariants.map((path, index) => ({
     key: path.split("/").pop(),
-    label: index === 0 ? "Main" : index === variants.length - 1 ? "Halloween" : `Variant ${index}`,
+    label: index === 0 ? "Main" : `Variant ${index}`,
     image: path
   }));
+}
+
+function getAutoDispenserAppearanceVariants() {
+  return AUTO_DISPENSER_VARIANT_IMAGE_PATHS.map((image, index) => ({
+    key: image.split("/").pop().split("?")[0],
+    label: index === 0 ? "Main" : `Variant ${index}`,
+    image,
+    backgroundImage: AUTO_DISPENSER_VARIANT_BG_PATHS[index] || AUTO_DISPENSER_VARIANT_BG_PATHS[0],
+    lightImage: AUTO_DISPENSER_LIGHT_OFF_PATH
+  }));
+}
+
+function getAutoDispenserImagePath(dispenser = state?.autoDispenser) {
+  const variants = getAutoDispenserAppearanceVariants();
+  return variants.find((entry) => entry.key === dispenser?.appearanceVariantKey)?.image || variants[0].image;
+}
+
+function getAutoDispenserBackgroundPath(dispenser = state?.autoDispenser) {
+  const variants = getAutoDispenserAppearanceVariants();
+  const selectedIndex = Math.max(0, variants.findIndex((entry) => entry.key === dispenser?.appearanceVariantKey));
+  return AUTO_DISPENSER_VARIANT_BG_PATHS[selectedIndex] || AUTO_DISPENSER_VARIANT_BG_PATHS[0];
 }
 
 function getMachineryImagePath(type, now = Date.now(), machinery = null) {
@@ -5088,12 +5220,12 @@ function getMachineryImagePath(type, now = Date.now(), machinery = null) {
   const normalizedVariants = (Array.isArray(variants) && variants.length ? variants : [
     type === MACHINERY_TYPE_BOAT ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH
   ]).map((image) => ({ key: String(image).split("/").pop(), image }));
-  const selected = normalizedVariants.find((variant) => variant.key === machinery?.appearanceVariantKey);
-  if (selected) return selected.image;
   const isBoat = type === MACHINERY_TYPE_BOAT;
   if (isHalloweenModeActive(now)) {
     return isBoat ? HALLOWEEN_BOAT_IMAGE_PATH : HALLOWEEN_SUBMARINE_IMAGE_PATH;
   }
+  const selected = normalizedVariants.find((variant) => variant.key === machinery?.appearanceVariantKey);
+  if (selected) return selected.image;
   return normalizedVariants[0]?.image || (isBoat ? BOAT_IMAGE_PATH : SUBMARINE_IMAGE_PATH);
 }
 
@@ -5849,6 +5981,15 @@ function buildFishIndividualityMarkup(fish, now = Date.now(), options = {}) {
   if (tank) {
     rows.push(["Neighborhood", getTankLabel(tank)]);
   }
+  const species = getSpeciesForFish(fish);
+  if (isDavyMutationSpecies(species)) {
+    if (species.davyBehaviorLabel) {
+      rows.push(["Behavior Profile", species.davyBehaviorLabel]);
+    }
+    if (Array.isArray(species.davyTraits) && species.davyTraits.length) {
+      rows.push(["Observed Traits", species.davyTraits.slice(0, 3).join(", ")]);
+    }
+  }
   const residenceId = getFishResidenceDecorId(fish);
   const residence = residenceId ? getAllPlacedDecor(state).find((item) => item.id === residenceId) : null;
   if (residence) {
@@ -6143,12 +6284,12 @@ function renderLivingBoroughDebugPanel(now = Date.now()) {
   const pending = fish ? runtime.pendingNeighborhoodTravel.get(fish.id) : null;
   const identity = calculateNeighborhoodIdentity(tank);
   const simulated = new Date(getBoroughReferenceNow(now)).toLocaleString();
-  const status = `<div class="debug-living-status"><strong>${fish ? `Selected: ${escapeHtml(fish.name)} (${escapeHtml(fish.id)})` : "Select a fish for fish-specific controls"}</strong><span>Clock: ${escapeHtml(simulated)} · ${runtime.debugSimulationPaused ? "Paused" : `${runtime.debugTimeScale || 1}x`}</span><span>Halloween: ${isHalloweenModeActive(now) ? "Active" : "Inactive"} (${escapeHtml(getHalloweenModeSetting())})</span><span>Neighborhood: ${escapeHtml(tank ? getTankLabel(tank) : "None")} · ${escapeHtml(identity.label)}</span>${pending ? `<span>Travel: ${escapeHtml(pending.direction)} → ${escapeHtml(getTankLabel(getTankById(pending.destinationTankId)))}</span>` : ""}${runtime.debugLivingBoroughOutput ? `<span>${escapeHtml(runtime.debugLivingBoroughOutput)}</span>` : ""}</div>`;
+  const status = `<div class="debug-living-status"><strong>${fish ? `Selected: ${escapeHtml(fish.name)} (${escapeHtml(fish.id)})` : "Select a fish for fish-specific controls"}</strong><span>Clock: ${escapeHtml(simulated)} · ${runtime.debugSimulationPaused ? "Paused" : `${runtime.debugTimeScale || 1}x`}</span><span>Halloween: ${isHalloweenModeActive(now) ? "Active" : "Inactive"} (${escapeHtml(getHalloweenModeSetting())})</span><span>Bday: ${runtime.debugBirthdayMode === true ? "Yes" : "No"}</span><span>Neighborhood: ${escapeHtml(tank ? getTankLabel(tank) : "None")} · ${escapeHtml(identity.label)}</span>${pending ? `<span>Travel: ${escapeHtml(pending.direction)} → ${escapeHtml(getTankLabel(getTankById(pending.destinationTankId)))}</span>` : ""}${runtime.debugLivingBoroughOutput ? `<span>${escapeHtml(runtime.debugLivingBoroughOutput)}</span>` : ""}</div>`;
   const needsEditor = fish ? `<div class="debug-living-needs-editor">${["hunger", "energy", "social", "comfort", "hygiene", "environment", "stimulation"].map((key) => `<label>${escapeHtml(titleFromFile(key))}<input type="number" min="0" max="100" step="1" value="${Math.round(sanitizeFishNeeds(fish.needs, fish, now)[key])}" data-debug-fish-need="${escapeHtml(key)}"></label>`).join("")}</div>` : "";
   const markup = status
     + buildLivingBoroughDebugFishStateMarkup(fish, now)
     + buildLivingBoroughDebugSection("Global Time", [["time-pause", runtime.debugSimulationPaused ? "Resume" : "Pause"], ["time-scale", "1x", "1"], ["time-scale", "5x", "5"], ["time-scale", "20x", "20"], ["time-scale", "100x", "100"], ["time-add", "+1 hour", String(HOUR_MS)], ["time-add", "+1 day", String(DAY_MS)], ["time-add", "+7 days", String(7 * DAY_MS)]])
-    + buildLivingBoroughDebugSection("Seasonal", [["halloween", "Automatic", "automatic"], ["halloween", "Force On", "on"], ["halloween", "Force Off", "off"], ["simulate-date", "October 1", "oct-1"], ["simulate-date", "October 31", "oct-31"], ["simulate-date", "November 1", "nov-1"]])
+    + buildLivingBoroughDebugSection("Seasonal", [["seasonal", "Set to Halloween", "halloween"], ["seasonal", "Set to Xmas", "xmas"], ["seasonal", "Set to Bday", "bday"], ["seasonal", "Clear Seasonal Simulation", "clear"], ["halloween", "Automatic", "automatic"], ["halloween", "Force On", "on"], ["halloween", "Force Off", "off"], ["simulate-date", "October 1", "oct-1"], ["simulate-date", "October 31", "oct-31"], ["simulate-date", "November 1", "nov-1"]])
     + buildLivingBoroughDebugSection("Fish Travel", [["travel", "Force Left", "left"], ["travel", "Force Right", "right"], ["travel", "Force Up", "up"], ["travel", "Force Down", "down"], ["travel-service", "To Food", "food"], ["travel-service", "To Clinic", "clinic"], ["travel-service", "To Social", "social"], ["travel-service", "To Nursery", "nursery"], ["travel-home", "Return Home"], ["travel-random", "Random Explore"], ["travel-complete", "Complete Instantly"], ["travel-cancel", "Cancel Travel"]])
     + buildLivingBoroughDebugSection("Off-screen", [["coarse", "Wandering", "wander"], ["coarse", "Service Visit", "service"], ["coarse", "Resting", "rest"], ["coarse", "Socializing", "social"], ["coarse-materialize", "Materialize"], ["coarse-complete", "Complete Activity"], ["coarse-cancel", "Cancel Activity"]])
     + buildLivingBoroughDebugSection("Fish Inspector", [["action-complete", "Complete Action"], ["action-cancel", "Cancel Action"], ["queue-clear", "Clear Queue"], ["autonomy-force", "Force Decision"], ["autonomy-toggle", runtime.debugAutonomyPausedFishIds.has(fish?.id) ? "Resume Autonomy" : "Pause Autonomy"], ["teleport-center", "Teleport Center"], ["needs", "Needs 0", "0"], ["needs", "Needs 50", "50"], ["needs", "Needs 100", "100"], ["heal", "Heal Fully"], ["damage", "Damage Health"], ["disease", "Apply / Advance Disease"], ["cure", "Cure Disease"], ["age-add", "+1 Day Age", "1"], ["age-add", "+7 Days Age", "7"], ["age-set", "Jump 30 Days", "30"], ["age-set", "Jump 100 Days", "100"], ["age-set", "Jump 365 Days", "365"], ["birthday", "Trigger Birthday"], ["kill", "Kill Fish"], ["revive", "Revive Fish"], ["memorial", "Generate Memorial"]], needsEditor)
@@ -6179,7 +6320,27 @@ function handleLivingBoroughDebugAction(event) {
   if (action === "time-pause") runtime.debugSimulationPaused = !runtime.debugSimulationPaused;
   else if (action === "time-scale") { runtime.debugTimeScale = Math.max(1, Number(value) || 1); runtime.debugSimulationPaused = false; }
   else if (action === "time-add") { runtime.debugSimulatedNow = now + Number(value); syncState(runtime.debugSimulatedNow); }
-  else if (action === "halloween") { runtime.debugHalloweenModeOverride = value; syncHalloweenPresentation(now); }
+  else if (action === "seasonal") {
+    const year = new Date().getFullYear();
+    runtime.debugBirthdayMode = value === "bday";
+    runtime.debugSimulationPaused = true;
+    if (value === "halloween") {
+      runtime.debugHalloweenModeOverride = HALLOWEEN_MODE_AUTOMATIC;
+      runtime.debugSimulatedNow = new Date(year, 9, 31, 12).getTime();
+    } else if (value === "xmas") {
+      runtime.debugHalloweenModeOverride = HALLOWEEN_MODE_OFF;
+      runtime.debugSimulatedNow = new Date(year, 11, 25, 12).getTime();
+    } else if (value === "bday") {
+      runtime.debugHalloweenModeOverride = HALLOWEEN_MODE_OFF;
+      runtime.debugSimulatedNow = Date.now();
+    } else {
+      runtime.debugBirthdayMode = false;
+      runtime.debugHalloweenModeOverride = null;
+      runtime.debugSimulatedNow = null;
+      runtime.debugSimulationPaused = false;
+    }
+    syncHalloweenPresentation(runtime.debugSimulatedNow || now);
+  }
   else if (action === "simulate-date") {
     const year = new Date().getFullYear();
     const parts = value === "oct-31" ? [9, 31] : value === "nov-1" ? [10, 1] : [9, 1];
@@ -6541,8 +6702,8 @@ function resolveFoodAndMedAssetPath(fileName) {
 function resolveDispenserAssetPath(fileName) {
   const normalizedFileName = typeof fileName === "string" && fileName.trim()
     ? fileName.trim().replace(/^\/+/, "")
-    : "pelletdispenser.png";
-  return resolveAppUrl(`assets/dispenser/${normalizedFileName}?v=${AUTO_DISPENSER_ASSET_VERSION}`);
+    : "Food_Dispenser.png";
+  return resolveAppUrl(`assets/equipment/dispenser/${normalizedFileName}?v=${AUTO_DISPENSER_ASSET_VERSION}`);
 }
 
 function normalizeCatalogTheme(value) {
@@ -6794,6 +6955,8 @@ function getUnlockRequirementLabel(requirement) {
       return "Master Keeper";
     case "marine-curator":
       return "Marine Curator";
+    case "borough-legends":
+      return "Borough Legends";
     case "spooky-keeper":
     case "corpse-zombie":
       return "Spooky Keeper";
@@ -7656,6 +7819,11 @@ function createDefaultAutoDispenserState(options = {}) {
 
   return {
     installed: Boolean(source.installed),
+    stored: source.stored === true,
+    storedCount: Math.max(0, Math.floor(Number(source.storedCount) || (source.stored === true ? 1 : 0))),
+    appearanceVariantKey: typeof source.appearanceVariantKey === "string" ? source.appearanceVariantKey : "",
+    xNorm: clamp(Number.isFinite(Number(source.xNorm)) ? Number(source.xNorm) : AUTO_DISPENSER_DEFAULT_X_NORM, 0.12, 0.88),
+    tankLayer: clampTankLayer(source.tankLayer ?? AUTO_DISPENSER_DEFAULT_TANK_LAYER),
     mealPortion,
     storedPellets,
     lastDispensedSlotKey: typeof source.lastDispensedSlotKey === "string" ? source.lastDispensedSlotKey : "",
@@ -7683,8 +7851,44 @@ function isAutoDispenserFoodLow(dispenser = state?.autoDispenser) {
   return mealPortion > 0 && loadedCount <= Math.max(1, mealPortion);
 }
 
+function getAutoDispenserDemandCount(targetTank = getCurrentTank(), now = Date.now()) {
+  if (!targetTank) return 0;
+  return getAllTanks().reduce((total, tank) => total + getHungryFishByNeeds(tank, now, FISH_HUNGER_LOW_THRESHOLD)
+    .filter((fish) => tank.id === targetTank.id || findAquariumSectionRoute(tank, targetTank) || getTransitTubeJourney(tank, targetTank)).length, 0);
+}
+
 function hasAutoDispenserInstalled(targetTank = getCurrentTank()) {
-  return false;
+  return Boolean(targetTank?.autoDispenser?.installed);
+}
+
+function deployAutoDispenser(targetTank = getCurrentTank(), now = Date.now()) {
+  if (!targetTank?.autoDispenser?.stored || targetTank.autoDispenser.installed || (Number(targetTank.autoDispenser.storedCount) || 0) <= 0) return false;
+  targetTank.autoDispenser = createDefaultAutoDispenserState({
+    ...targetTank.autoDispenser,
+    stored: false,
+    installed: true,
+    storedCount: Math.max(0, Math.floor(Number(targetTank.autoDispenser.storedCount) || 1) - 1),
+    xNorm: AUTO_DISPENSER_DEFAULT_X_NORM,
+    tankLayer: AUTO_DISPENSER_DEFAULT_TANK_LAYER
+  });
+  runtime.equipmentEditTrayTab = "tank";
+  pushEvent(`Pellet dispenser deployed in ${getTankLabel(targetTank)}.`, now, targetTank, { type: "equipment" });
+  saveState();
+  renderUi(now);
+  return true;
+}
+
+function recallAutoDispenser(now = Date.now()) {
+  const dispenser = state?.autoDispenser;
+  if (!dispenser?.installed) return false;
+  dispenser.installed = false;
+  dispenser.stored = true;
+  dispenser.storedCount = Math.max(1, Math.floor(Number(dispenser.storedCount) || 0) + 1);
+  pushEvent("Pellet dispenser returned to equipment storage with its food inventory intact.", now, getCurrentTank(), { type: "equipment" });
+  runtime.equipmentEditTrayTab = "storage";
+  saveState();
+  renderUi(now);
+  return true;
 }
 // </bundle-source>
 
@@ -8472,6 +8676,8 @@ function resetCompetingOverlayState(options = {}) {
   }
 
   runtime.storeOverlayOpen = false;
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
   runtime.settingsOverlayOpen = false;
   runtime.equipmentOverlayOpen = false;
 
@@ -8542,10 +8748,238 @@ function openExclusiveOverlay(kind, options = {}) {
   }
 }
 
+function setProteusDesignerTabVisible(visible) {
+  const tab = document.querySelector('#storeOverlay .webpage-tab[data-webpage-destination="designer"]');
+  if (tab) tab.hidden = visible !== true;
+}
+
+function closeProteusDesignerSession(options = {}) {
+  if (runtime.proteusDesignerCloseTimer) {
+    window.clearTimeout(runtime.proteusDesignerCloseTimer);
+    runtime.proteusDesignerCloseTimer = 0;
+  }
+  runtime.proteusDesignerOpen = false;
+  runtime.proteusDesignerCompleting = false;
+  runtime.activeEngineeredSpecimenOrderId = "";
+  runtime.pendingCustomFishUpload = null;
+  setProteusDesignerTabVisible(false);
+  const route = document.getElementById("proteusDesignerRoute");
+  if (route) route.hidden = true;
+  if (options.render === true && runtime.storeOverlayOpen) renderStoreOverlay();
+}
+
+function openProteusDesignerPage(orderId = "") {
+  const id = String(orderId || runtime.activeEngineeredSpecimenOrderId || "").trim();
+  if (!beginEngineeredAquaticSpecimenDesign(id)) {
+    showToast("This specimen design link has already been completed or is no longer valid.");
+    return false;
+  }
+  if (!runtime.storeOverlayOpen) {
+    const storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "fish";
+    if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false })) return false;
+  }
+  window.closeProteusBiodynePage?.(false);
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.proteusDesignerOpen = true;
+  runtime.proteusDesignerCompleting = false;
+  runtime.activeEngineeredSpecimenOrderId = id;
+  runtime.webSurfLastPage = "designer";
+  setProteusDesignerTabVisible(true);
+  renderStoreOverlay();
+  window.requestAnimationFrame(() => document.getElementById("proteusDesignerTitle")?.focus?.({ preventScroll: true }));
+  return true;
+}
+
+function cancelProteusDesignerPage() {
+  closeProteusDesignerSession();
+  if (!runtime.storeOverlayOpen) return;
+  runtime.webHomeOpen = true;
+  runtime.bubbleBankOpen = false;
+  runtime.webSurfLastPage = "home";
+  renderStoreOverlay();
+  restoreWebSurfSessionScroll("home");
+}
+
+function completeProteusDesignerFlow(orderId = "") {
+  const id = String(orderId || runtime.activeEngineeredSpecimenOrderId || "").trim();
+  if (!id || !(state?.engineeredSpecimenCompletedOrderIds || []).includes(id)) return false;
+  if (runtime.proteusDesignerCloseTimer) window.clearTimeout(runtime.proteusDesignerCloseTimer);
+  runtime.proteusDesignerOpen = true;
+  runtime.proteusDesignerCompleting = true;
+  runtime.activeEngineeredSpecimenOrderId = id;
+  setProteusDesignerTabVisible(true);
+  renderStoreOverlay();
+  runtime.proteusDesignerCloseTimer = window.setTimeout(() => {
+    runtime.proteusDesignerCloseTimer = 0;
+    if (!(state?.engineeredSpecimenCompletedOrderIds || []).includes(id)) return;
+    runtime.proteusDesignerOpen = false;
+    runtime.proteusDesignerCompleting = false;
+    runtime.activeEngineeredSpecimenOrderId = "";
+    runtime.pendingCustomFishUpload = null;
+    runtime.webSurfLastPage = "home";
+    setProteusDesignerTabVisible(false);
+    const route = document.getElementById("proteusDesignerRoute");
+    if (route) route.hidden = true;
+    closeStoreOverlay({ preserveWebSurfSession: true, force: true });
+    runtime.webSurfLastPage = "home";
+  }, 1100);
+  return true;
+}
+
+function handleProteusDesignerInputEvent(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  if (!target?.closest("#proteusDesignerRoute") || runtime.proteusDesignerOpen !== true) return;
+  handleCustomFishUtilityOverlayInput(null, target);
+}
+
+async function handleProteusDesignerChangeEvent(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  if (!target?.closest("#proteusDesignerRoute") || runtime.proteusDesignerOpen !== true) return;
+  if (target.matches("#proteusDesignerImageInput")) {
+    const file = target instanceof HTMLInputElement ? target.files?.[0] : null;
+    if (!file) return;
+    try {
+      const dataUrl = await prepareLocalFishImageDataUrl(file);
+      const image = await loadImageElement(dataUrl);
+      await preloadImages([dataUrl]);
+      openCustomFishCreationOverlay(dataUrl, titleFromFile(file.name || "Custom Fish"), {
+        width: image.naturalWidth || image.width || CUSTOM_FISH_DEFAULT_WIDTH,
+        height: image.naturalHeight || image.height || CUSTOM_FISH_DEFAULT_WIDTH
+      });
+      if (runtime.proteusDesignerOpen === true) renderStoreOverlay();
+    } catch (error) {
+      console.error(error);
+      showToast(error?.message || "Could not use that specimen image.");
+    } finally {
+      target.value = "";
+    }
+    return;
+  }
+  handleCustomFishUtilityOverlayChange(null, target);
+}
+
+function submitProteusDesignerSpecimen(button = null) {
+  if (runtime.proteusDesignerOpen !== true || runtime.proteusDesignerCompleting === true) return false;
+  const orderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
+  if (!markEngineeredAquaticSpecimenConfigured(orderId)) {
+    showToast("This specimen design link is no longer valid.");
+    cancelProteusDesignerPage();
+    return false;
+  }
+  if (button instanceof HTMLButtonElement) button.disabled = true;
+  void savePendingCustomFishUpload()
+    .then((saved) => {
+      if (saved) return;
+      resetEngineeredAquaticSpecimenConfiguration(orderId);
+      if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
+    })
+    .catch((error) => {
+      console.error(error);
+      resetEngineeredAquaticSpecimenConfiguration(orderId);
+      if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
+      showToast(error?.message || "Proteus could not fulfill that specimen. Please try again.");
+    });
+  return true;
+}
+
+function normalizeWebSurfSessionPage(value) {
+  return ["home", "store", "bank", "proteus", "locker", "designer"].includes(value) ? value : "home";
+}
+
+function getActiveWebSurfSessionPage() {
+  if (!runtime.storeOverlayOpen) return "";
+  if (runtime.proteusDesignerOpen === true) return "designer";
+  if (dom.storeOverlay?.classList.contains("proteus-biodyne-open")) return "proteus";
+  if (runtime.davyJonesLockerOpen === true) return "locker";
+  if (runtime.webHomeOpen === true) return "home";
+  if (runtime.bubbleBankOpen === true) return "bank";
+  return "store";
+}
+
+function getWebSurfSessionScrollElement(page) {
+  if (page === "home") return dom.webHomePage;
+  if (page === "bank") return dom.bubbleBankPage?.querySelector(".bubble-bank-scroll");
+  if (page === "locker") return dom.davyJonesLockerPage;
+  if (page === "store") return document.getElementById("tankazonCatalogArea");
+  if (page === "designer") return document.getElementById("proteusDesignerRoute");
+  return null;
+}
+
+function captureWebSurfSessionState() {
+  const page = getActiveWebSurfSessionPage();
+  if (!page) return;
+  runtime.webSurfLastPage = page;
+  if (page === "proteus") {
+    window.captureProteusSessionState?.();
+    return;
+  }
+  const scrollElement = getWebSurfSessionScrollElement(page);
+  if (scrollElement) runtime.webSurfPageScroll[page] = Math.max(0, Number(scrollElement.scrollTop) || 0);
+}
+
+function restoreWebSurfSessionScroll(page) {
+  if (page === "proteus") return;
+  const scrollTop = Math.max(0, Number(runtime.webSurfPageScroll?.[page]) || 0);
+  window.requestAnimationFrame(() => {
+    const scrollElement = getWebSurfSessionScrollElement(page);
+    if (scrollElement) scrollElement.scrollTop = scrollTop;
+  });
+}
+
+function resetWebSurfSessionState() {
+  runtime.webSurfLastPage = "home";
+  runtime.webSurfPageScroll = { home: 0, store: 0, bank: 0, locker: 0, designer: 0 };
+  runtime.webSurfSelectedMailId = "";
+  window.resetProteusSessionState?.();
+  closeProteusDesignerSession();
+  if (runtime.storeOverlayOpen) {
+    window.closeProteusBiodynePage?.(false);
+    runtime.webHomeOpen = true;
+    runtime.bubbleBankOpen = false;
+    runtime.davyJonesLockerOpen = false;
+    if (typeof renderStoreOverlay === "function") renderStoreOverlay();
+  }
+}
+
+function openWebSurfSessionPage() {
+  const page = normalizeWebSurfSessionPage(runtime.webSurfLastPage);
+  if (page === "bank") {
+    if (openBubbleBank(runtime.bubbleBankTab || "account")) restoreWebSurfSessionScroll("bank");
+    return;
+  }
+  if (page === "proteus" && window.hasDiscoveredProteus?.()) {
+    if (!openStoreOverlay(runtime.storeTab || "food", { rememberWebSurfPage: false })) return;
+    window.showProteusBiodynePage?.(dom.openStoreButton);
+    return;
+  }
+  if (page === "locker") {
+    openDavyJonesLockerPage();
+    return;
+  }
+  if (page === "designer" && beginEngineeredAquaticSpecimenDesign(runtime.activeEngineeredSpecimenOrderId)) {
+    openProteusDesignerPage(runtime.activeEngineeredSpecimenOrderId);
+    return;
+  }
+  if (page === "store") {
+    if (openStoreOverlay(runtime.storeTab || "food")) restoreWebSurfSessionScroll("store");
+    return;
+  }
+  if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false })) return;
+  runtime.webHomeOpen = true;
+  runtime.bubbleBankOpen = false;
+  runtime.webSurfLastPage = "home";
+  renderUi(Date.now());
+  restoreWebSurfSessionScroll("home");
+}
+
 function openStoreOverlay(tab = "food", options = {}) {
+  window.rememberWebSurfPage = (page) => {
+    runtime.webSurfLastPage = normalizeWebSurfSessionPage(page);
+  };
   if (getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
     showToast("Finish this task first.");
-    return;
+    return false;
   }
 
   // The store has both runtime state and a rendered DOM shell. If something
@@ -8555,13 +8989,172 @@ function openStoreOverlay(tab = "food", options = {}) {
     runtime.storeOverlayOpen = false;
   }
 
+  if (runtime.storeOverlayOpen) captureWebSurfSessionState();
+  if (runtime.proteusDesignerOpen === true) closeProteusDesignerSession();
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = false;
+  if (options.rememberWebSurfPage !== false) runtime.webSurfLastPage = "store";
+
   // BubbleBodega normally restores the shopper's last category. A tutorial task
   // must always open the category it teaches, including when its toolbar
   // button calls this function without an explicit option.
   if (dom.storeOverlay && (options.forceCategory === true || getActiveTutorial())) {
     dom.storeOverlay.dataset.requestedCategory = tab;
   }
-  openExclusiveOverlay("store", { tab });
+  openExclusiveOverlay("store", { tab, render: options.render });
+  return true;
+}
+
+function openDavyJonesLockerPage() {
+  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+    ? runtime.storeTab
+    : "food";
+  if (!openStoreOverlay(previousStoreTab, { render: false, rememberWebSurfPage: false })) return false;
+  window.closeProteusBiodynePage?.(false);
+  closeProteusDesignerSession();
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = true;
+  runtime.webSurfLastPage = "locker";
+  renderUi(Date.now());
+  restoreWebSurfSessionScroll("locker");
+  return true;
+}
+
+function openBubbleBank(tab = "account", options = {}) {
+  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+    ? runtime.storeTab
+    : "food";
+  if (!openStoreOverlay(previousStoreTab, { render: false, rememberWebSurfPage: false })) return false;
+  runtime.bubbleBankOpen = true;
+  runtime.webSurfLastPage = "bank";
+  runtime.bubbleBankTab = normalizeBubbleBankTab(tab);
+  runtime.bubbleBankTargetId = String(options.targetId || "");
+  renderUi(Date.now());
+  return true;
+}
+
+function handleWebPageNavigation(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  if (target?.closest("[data-proteus-designer-clear]")) {
+    runtime.pendingCustomFishUpload = null;
+    runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
+    renderStoreOverlay();
+    return;
+  }
+  if (target?.closest("[data-proteus-designer-reset]")) {
+    if (runtime.pendingCustomFishUpload) {
+      runtime.pendingCustomFishUpload.width = CUSTOM_FISH_DEFAULT_WIDTH;
+      runtime.pendingCustomFishUpload.flipX = false;
+      runtime.pendingCustomFishUpload.rotation = 0;
+      runtime.pendingCustomFishUpload.turnAnimation = "simple";
+      runtime.pendingCustomFishUpload.behaviorProfileId = normalizeCustomFishBehaviorProfileId("");
+      const defaultProfile = getCustomFishBehaviorProfile(runtime.pendingCustomFishUpload.behaviorProfileId)
+        || getDefaultCustomFishBehaviorProfile();
+      runtime.pendingCustomFishUpload.diet = getDefaultCustomFishDiet(defaultProfile);
+      runtime.pendingCustomFishUpload.activityRegulation = "";
+      runtime.pendingCustomFishUpload.swimZone = "";
+      runtime.pendingCustomFishUpload.socialAffinity = "adaptive";
+      runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
+      renderStoreOverlay();
+    }
+    return;
+  }
+  const designerCancel = target?.closest("[data-proteus-designer-cancel]");
+  if (designerCancel) {
+    cancelProteusDesignerPage();
+    return;
+  }
+  const designerSubmit = target?.closest("[data-proteus-designer-submit]");
+  if (designerSubmit && !designerSubmit.disabled) {
+    submitProteusDesignerSpecimen(designerSubmit);
+    return;
+  }
+  if (target?.closest("[data-websurf-mark-all-read]")) {
+    markAllWebSurfMailRead();
+    renderStoreOverlay();
+    return;
+  }
+  const silenceSenderButton = target?.closest("[data-websurf-silence-sender]");
+  if (silenceSenderButton) {
+    toggleWebSurfSenderSilenced(silenceSenderButton.dataset.websurfSilenceSender);
+    renderStoreOverlay();
+    return;
+  }
+  const guideLink = target?.closest("[data-websurf-guide-destination]");
+  if (guideLink) {
+    const destination = String(guideLink.dataset.websurfGuideDestination || "store");
+    const section = String(guideLink.dataset.websurfGuideSection || "food");
+    if (destination === "store") openStoreOverlay(section);
+    return;
+  }
+  const emailAction = target?.closest("[data-websurf-email-action]");
+  if (emailAction) {
+    const message = getWebSurfInboxMessages().find((entry) => entry.id === String(emailAction.dataset.websurfEmailAction || ""));
+    if (message) handleWebSurfEmailAction(message);
+    return;
+  }
+  const mailItem = target?.closest("[data-websurf-mail-id]");
+  if (mailItem) {
+    const mailId = String(mailItem.dataset.websurfMailId || "");
+    markWebSurfMailRead(mailId);
+    runtime.webSurfSelectedMailId = runtime.webSurfSelectedMailId === mailId ? "" : mailId;
+    renderStoreOverlay();
+    return;
+  }
+  if (target?.closest("[data-close-web-browser]")) {
+    captureWebSurfSessionState();
+    window.closeProteusBiodynePage?.(false);
+    closeStoreOverlay({ preserveWebSurfSession: true });
+    return;
+  }
+  const tab = target?.closest("[data-webpage-destination]");
+  if (!tab) return;
+  const destination = String(tab.dataset.webpageDestination || "");
+  captureWebSurfSessionState();
+  if (destination === "home") {
+    closeProteusDesignerSession();
+    window.closeProteusBiodynePage?.(false);
+    runtime.webHomeOpen = true;
+    runtime.bubbleBankOpen = false;
+    runtime.davyJonesLockerOpen = false;
+    runtime.webSurfLastPage = "home";
+    renderStoreOverlay();
+    restoreWebSurfSessionScroll("home");
+    return;
+  }
+  if (destination === "store") {
+    closeProteusDesignerSession();
+    window.closeProteusBiodynePage?.(false);
+    runtime.davyJonesLockerOpen = false;
+    openStoreOverlay(runtime.storeTab || "food");
+    return;
+  }
+  if (destination === "bank") {
+    closeProteusDesignerSession();
+    window.closeProteusBiodynePage?.(false);
+    runtime.davyJonesLockerOpen = false;
+    openBubbleBank("account");
+    return;
+  }
+  if (destination === "proteus") {
+    closeProteusDesignerSession();
+    runtime.webHomeOpen = false;
+    runtime.bubbleBankOpen = false;
+    runtime.davyJonesLockerOpen = false;
+    runtime.webSurfLastPage = "proteus";
+    renderStoreOverlay();
+    window.showProteusBiodynePage?.(tab);
+    return;
+  }
+  if (destination === "locker") {
+    openDavyJonesLockerPage();
+    return;
+  }
+  if (destination === "designer") {
+    openProteusDesignerPage(runtime.activeEngineeredSpecimenOrderId);
+  }
 }
 
 function closeStoreOverlay(options = {}) {
@@ -8579,7 +9172,13 @@ function closeStoreOverlay(options = {}) {
     return false;
   }
 
+  if (options.preserveWebSurfSession !== true) captureWebSurfSessionState();
+  window.closeProteusBiodynePage?.(false);
+  if (runtime.proteusDesignerOpen === true || runtime.proteusDesignerCompleting === true) closeProteusDesignerSession();
   runtime.storeOverlayOpen = false;
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = false;
   if (options.render === false) {
     if (dom.storeOverlay) {
       dom.storeOverlay.hidden = true;
@@ -13446,9 +14045,15 @@ async function init() {
       allowZombieSkeletonFish: true
     })
     : [];
+  const normalizedDavyMutationCatalog = normalizeFishCatalog({ fish: getDavyMutationCatalogDefinitions() }, {
+    assetFolders: {},
+    includeZombieSkeletonStageAssets: false,
+    allowZombieSkeletonFish: false
+  });
   const normalizedFishCatalog = [
     ...normalizedBaseFishCatalog,
-    ...normalizedZombieSkeletonFishCatalog
+    ...normalizedZombieSkeletonFishCatalog,
+    ...normalizedDavyMutationCatalog
   ];
   await discoverFishAppearanceVariants(normalizedFishCatalog, [...baseFishResponse, ...suckerFishResponse]);
   runtime.fishCatalog = [
@@ -13502,13 +14107,23 @@ async function init() {
     ...runtime.customGravelPebbleCatalog.map((item) => item.path),
     ...runtime.bubbleCatalog.map((item) => item.path),
     AUTO_DISPENSER_IMAGE_PATH,
+    ...AUTO_DISPENSER_VARIANT_IMAGE_PATHS,
+    ...AUTO_DISPENSER_VARIANT_BG_PATHS,
     AUTO_DISPENSER_BG_PATH,
+    AUTO_DISPENSER_LIGHT_OFF_PATH,
+    AUTO_DISPENSER_LIGHT_GREEN_PATH,
+    AUTO_DISPENSER_LIGHT_RED_PATH,
+    AUTO_DISPENSER_LIGHT_YELLOW_PATH,
+    "assets/icons/sync-success.png",
+    "assets/icons/sync-syncing.png",
+    "assets/icons/sync-failed.png",
     resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH),
     resolveAppUrl(POOP_ASSET_PATH),
     FISH_EGG_ASSET_PATH,
     FISH_EGG_CRACKED_ASSET_PATH,
     FISH_EGG_SHELL_ASSET_PATH,
     ...SUBMARINE_VARIANT_IMAGE_PATHS,
+    SUBMARINE_RED_LIGHT_OVERLAY_PATH,
     ...BOAT_VARIANT_IMAGE_PATHS,
     HALLOWEEN_BOAT_IMAGE_PATH,
     HALLOWEEN_SUBMARINE_IMAGE_PATH,
@@ -14722,6 +15337,12 @@ function handleWalletTransactionMenuDocumentClick(event) {
   renderWalletTransactionMenu();
 }
 
+function handleWalletTransactionMenuClick(event) {
+  if (!(event.target instanceof Element) || !event.target.closest("[data-open-bubble-bank]")) return;
+  runtime.walletTransactionMenuOpen = false;
+  openBubbleBank("account");
+}
+
 function handleToolbarActionMenuKeyDown(event) {
   if (event.key !== "Escape") {
     return;
@@ -14989,6 +15610,14 @@ function bindEvents() {
     }
 
     const key = keyRaw.toLowerCase();
+    if (runtime.equipmentEditMode && hasAutoDispenserInstalled() && !event.target?.closest?.("button, a, [role=button], [role=tab]")) {
+      if (["ArrowUp", "ArrowDown", "z", "x"].includes(keyRaw) || ["z", "x"].includes(key)) {
+        event.preventDefault();
+        const delta = keyRaw === "ArrowUp" || key === "z" ? 1 : -1;
+        setAutoDispenserTankLayer((state.autoDispenser?.tankLayer || AUTO_DISPENSER_DEFAULT_TANK_LAYER) + delta);
+        return;
+      }
+    }
     const activeManualMachinery = getActiveManualMachinery();
     if (activeManualMachinery && !event.target?.closest?.("button, a, [role=button], [role=tab]")) {
       if (handleManualMachineryActionKey(activeManualMachinery, event)) return;
@@ -15144,7 +15773,11 @@ function bindEvents() {
   document.addEventListener("pointercancel", finishSoundRangeDrag, true);
   document.addEventListener("click", handleToolbarActionMenuDocumentClick);
   document.addEventListener("click", handleWalletTransactionMenuDocumentClick);
+  document.addEventListener("click", handleWebPageNavigation);
+  document.addEventListener("input", handleProteusDesignerInputEvent);
+  document.addEventListener("change", handleProteusDesignerChangeEvent);
   dom.toolbarWallet?.addEventListener("click", toggleWalletTransactionMenu);
+  dom.walletTransactionMenu?.addEventListener("click", handleWalletTransactionMenuClick);
   document.addEventListener("keydown", handleToolbarActionMenuKeyDown);
   dom.loadingOverlay?.addEventListener("click", (event) => {
     if (dom.loadingOverlay?.classList.contains("is-error")) {
@@ -15667,13 +16300,17 @@ function bindEvents() {
       && dom.storeOverlay.classList.contains("is-open")
     );
     if (storeActuallyVisible) {
+      if (runtime.bubbleBankOpen === true) {
+        openStoreOverlay(runtime.storeTab || "food");
+        return;
+      }
       closeStoreOverlay();
       return;
     }
     if (openTutorialStoreForCurrentStage()) {
       return;
     }
-    openStoreOverlay("food");
+    openWebSurfSessionPage();
   });
   dom.toolbarTab?.addEventListener("click", () => toggleToolbarCollapsed());
   dom.displayTab?.addEventListener("click", () => toggleDisplayCollapsed());
@@ -15903,6 +16540,9 @@ function bindEvents() {
       closeStoreOverlay();
     }
   });
+  dom.bubbleBankPage?.addEventListener("click", handleBubbleBankPageClick);
+  dom.bubbleBankPage?.addEventListener("change", handleBubbleBankPageChange);
+  dom.davyJonesLockerPage?.addEventListener("click", handleDavyJonesLockerPageClick);
   dom.closeUtilityOverlay?.addEventListener("click", () => {
     const wasOpen = runtime.utilityOverlayOpen;
     requestCloseUtilityOverlay();
@@ -16448,6 +17088,21 @@ function bindEvents() {
         if (dom.editEquipmentTrayScroller) dom.editEquipmentTrayScroller.scrollLeft = 0;
         renderEditEquipmentTray();
       }
+      return;
+    }
+    if (event.target.closest("[data-tray-select-dispenser]")) {
+      if (state.autoDispenser?.stored && !state.autoDispenser?.installed) {
+        deployAutoDispenser(getCurrentTank(), Date.now());
+        return;
+      }
+      runtime.editTankMode = false;
+      runtime.equipmentEditMode = true;
+      showToast("Drag the pellet dispenser horizontally along the tank top. Layer can be adjusted with Up/Down.");
+      renderUi(Date.now(), { full: false });
+      return;
+    }
+    if (event.target.closest("[data-tray-store-dispenser]")) {
+      recallAutoDispenser(Date.now());
       return;
     }
     const menuButton = event.target.closest("[data-open-equipment-menu]");
@@ -17510,6 +18165,15 @@ function bindEvents() {
       return;
     }
 
+    if (runtime.equipmentEditMode && hasAutoDispenserInstalled() && pointInSimpleBounds(point.x, point.y, getAutoDispenserHitBounds())) {
+      runtime.autoDispenserDragState = { pointerId: event.pointerId };
+      runtime.pointerDown = true;
+      dom.tankStage.setPointerCapture(event.pointerId);
+      rememberTankPointerCapture(event.pointerId);
+      runtime.suppressNextTankClick = true;
+      return;
+    }
+
     const now = Date.now();
     const hitMachinery = findMachineryAtPoint(point.x, point.y, now);
     if (hitMachinery) {
@@ -17686,6 +18350,11 @@ function bindEvents() {
       if (point) {
         updateDraggedDecor(point);
       }
+      return;
+    }
+
+    if (runtime.autoDispenserDragState && point) {
+      setAutoDispenserPositionFromPoint(point, Date.now());
       return;
     }
 
@@ -18043,6 +18712,10 @@ function bindEvents() {
     }
     if (runtime.dragState) {
       finalizeDecorDrag();
+    }
+    if (runtime.autoDispenserDragState) {
+      runtime.autoDispenserDragState = null;
+      saveState();
     }
     if (runtime.fishDragState) {
       finalizeFishDrag();
@@ -18501,6 +19174,7 @@ function normalizeFoodAndMedCatalog(payload) {
       }
       entries[id] = {
         id,
+        seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
         name: typeof entry.name === "string" && entry.name.trim()
           ? entry.name.trim()
           : titleFromFile(id),
@@ -18542,6 +19216,7 @@ function normalizeFoodAndMedCatalog(payload) {
       }
       entries[id] = {
         id,
+        seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
         name: typeof entry.name === "string" && entry.name.trim()
           ? entry.name.trim()
           : titleFromFile(id),
@@ -18590,9 +19265,11 @@ function normalizeBackgroundMeta(payload) {
     }
 
     map[key] = {
+      seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
       name: typeof entry.name === "string" && entry.name.trim()
         ? entry.name.trim()
         : titleFromFile(key),
+      description: typeof entry.description === "string" ? entry.description.trim() : "",
       cost: Math.max(0, Math.floor(Number(entry.cost) || 0)),
       defaultUnlocked: entry.defaultUnlocked === true,
       sortOrder: Number.isFinite(entry.sortOrder) ? Number(entry.sortOrder) : 999
@@ -18622,9 +19299,11 @@ function normalizeDecorMeta(payload) {
     }
 
     map[key] = {
+      seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
       name: typeof entry.name === "string" && entry.name.trim()
         ? entry.name.trim()
         : titleFromFile(key),
+      description: typeof entry.description === "string" ? entry.description.trim() : "",
       theme: isHalloweenDecor({ ...entry, key }) ? "Halloween" : normalizeCatalogTheme(entry.theme),
       cost: Number.isFinite(entry.cost) ? entry.cost : 8,
       width: Number.isFinite(entry.width) ? entry.width : 140,
@@ -19135,6 +19814,7 @@ function buildBackgroundCatalog(items, metaMap = {}) {
         key,
         path: item?.path || resolveAppUrl(`assets/backgrounds/${encodeURIComponent(key)}`),
         name: meta.name || titleFromFile(key),
+        description: meta.description || "",
         cost: Math.max(0, Math.floor(Number(meta.cost) || 0)),
         defaultUnlocked: meta.defaultUnlocked === true,
         sortOrder: Number.isFinite(meta.sortOrder) ? Number(meta.sortOrder) : 999
@@ -19486,6 +20166,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         // added to the manifest they join the existing layer resolver.
         expectedCaveCompanionPaths,
         name: meta.name || titleFromFile(group.base.key),
+        description: meta.description || "",
         theme: isHalloweenDecor({ ...meta, key: group.base.key }) ? "Halloween" : normalizeCatalogTheme(meta.theme),
         categories: deriveDecorCategories(meta, group.base.key),
         cost: Number.isFinite(meta.cost) ? meta.cost : 8,
@@ -19816,10 +20497,12 @@ function buildVirtualFishCatalogEntries() {
   return [
     {
       id: CUSTOM_FISH_SHOP_KEY,
-      name: "Custom Fish",
+      name: "Engineered Aquatic Specimen",
+      seller: "Proteus Biodyne",
       theme: "Custom",
       waterType: "freshwater",
       cost: CUSTOM_FISH_COST,
+      unlockRequirement: "borough-legends",
       mealCoins: 0,
       mealCoinOverride: null,
       asset: CUSTOM_FISH_SHOP_IMAGE,
@@ -19827,8 +20510,15 @@ function buildVirtualFishCatalogEntries() {
       zombieAssetVariants: [],
       skeletonAssetVariants: [],
       fallbackAsset: CUSTOM_FISH_SHOP_IMAGE,
-      assetFolder: "misc",
-      description: "Upload an image, name a fish type, choose its size, and pick a behavior profile.",
+      assetFolder: "web/proteus",
+      description: "A bespoke biological design service from PROTEUS BIODYNE, developed for clients seeking an organism tailored to precise visual, behavioral, and environmental requirements.",
+      aboutParagraphs: [
+        "Purchase the commission first. Proteus will email you a secure design link, you will finalize the specimen through the Proteus designer portal, and the finished fish will be delivered directly into your tank.",
+        "Submit your preferred appearance, define the intended scale, and select a behavioral profile. Our adaptive biology platform will produce a unique aquatic specimen engineered to your specifications while maintaining the stability, viability, and behavioral integrity expected of every PROTEUS BIODYNE organism.",
+        "No two commissions are required to be alike. Each specimen is treated as an individual biological program, developed, stabilized, and cleared for delivery to your aquarium."
+      ],
+      aboutAttribution: "PROTEUS BIODYNE",
+      aboutTagline: "Adaptive Biology. Engineered.",
       width: CUSTOM_FISH_DEFAULT_WIDTH,
       cycleSeconds: 26,
       bobSpeed: 1.2,
@@ -19924,6 +20614,54 @@ function normalizeCustomFishBehaviorProfileId(value) {
     || "";
 }
 
+function normalizeCustomFishDiet(value) {
+  return String(value || "").trim().toLowerCase() === "chum" ? "chum" : "pellet";
+}
+
+function getDefaultCustomFishDiet(profile) {
+  return isChumOnlyFish(profile) ? "chum" : "pellet";
+}
+
+function normalizeCustomFishActivityRegulation(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["calm", "standard", "reactive"].includes(normalized) ? normalized : "";
+}
+
+function getCustomFishActivitySwimStyle(value, fallback = "steady") {
+  const regulation = normalizeCustomFishActivityRegulation(value);
+  if (regulation === "calm") return "peaceful";
+  if (regulation === "reactive") return "sporadic";
+  if (regulation === "standard") return "steady";
+  return ["peaceful", "steady", "sporadic"].includes(fallback) ? fallback : "steady";
+}
+
+function getCustomFishActivityRegulationDisplay(value, profile) {
+  const override = normalizeCustomFishActivityRegulation(value);
+  if (override) return override;
+  if (profile?.swimStyle === "peaceful") return "calm";
+  if (profile?.swimStyle === "sporadic") return "reactive";
+  return "standard";
+}
+
+function normalizeCustomFishSwimZone(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["full", "upper", "midwater", "lower"].includes(normalized) ? normalized : "";
+}
+
+function getCustomFishSwimZoneDisplay(value, profile) {
+  const override = normalizeCustomFishSwimZone(value);
+  if (override) return override;
+  const locomotion = FISH_LOCOMOTION_PROFILES[profile?.id] || FISH_LOCOMOTION_PROFILE_DEFAULT;
+  if (locomotion.preferredY <= 0.35) return "upper";
+  if (locomotion.preferredY >= 0.7) return "lower";
+  return locomotion.verticalSpread >= 0.68 ? "full" : "midwater";
+}
+
+function normalizeCustomFishSocialAffinity(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["independent", "schooling"].includes(normalized) ? normalized : "adaptive";
+}
+
 function sanitizeCustomFishName(value, fallback = "Custom Fish") {
   const trimmed = String(value || "").replace(/\s+/g, " ").trim();
   if (trimmed) {
@@ -19943,7 +20681,7 @@ function formatCustomFishBehaviorOption(profile) {
 function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", dimensions = {}) {
   const naturalWidth = Math.max(1, Math.round(Number(dimensions.width) || CUSTOM_FISH_DEFAULT_WIDTH));
   const naturalHeight = Math.max(1, Math.round(Number(dimensions.height) || CUSTOM_FISH_DEFAULT_WIDTH));
-  openCustomAssetEditorOverlay("fish", {
+  const pending = {
     dataUrl,
     flipX: false,
     rotation: 0,
@@ -19953,8 +20691,20 @@ function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", d
     naturalWidth,
     naturalHeight,
     behaviorProfileId: normalizeCustomFishBehaviorProfileId(""),
+    diet: getDefaultCustomFishDiet(getDefaultCustomFishBehaviorProfile()),
+    activityRegulation: "",
+    swimZone: "",
+    socialAffinity: "adaptive",
     turnAnimation: "simple"
-  });
+  };
+  const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
+  if (runtime.proteusDesignerOpen === true && beginEngineeredAquaticSpecimenDesign(activeOrderId)) {
+    runtime.pendingCustomFishUpload = pending;
+    runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
+    renderStoreOverlay();
+    return;
+  }
+  openCustomAssetEditorOverlay("fish", pending);
 }
 
 function getCustomAssetTypeDef(type) {
@@ -19981,6 +20731,13 @@ function ensureCustomAssetCost(type) {
   const typeDef = getCustomAssetTypeDef(type);
   if (!typeDef || Math.max(0, Number(typeDef.cost) || 0) <= 0) {
     return true;
+  }
+  if (type === "fish") {
+    const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
+    if (runtime.proteusDesignerOpen === true
+      && ["design-required", "specimen-configured"].includes(getEngineeredAquaticSpecimenOrderStatus(activeOrderId))) {
+      return true;
+    }
   }
   if (state.coins >= typeDef.cost) {
     return true;
@@ -20041,7 +20798,9 @@ async function importCustomAssetFromPicker(type, step = "primary", event) {
   const stepDef = typeDef?.pickerSteps?.[step];
   const input = event?.currentTarget instanceof HTMLInputElement
     ? event.currentTarget
-    : getCustomAssetInput(type, step);
+    : event?.target instanceof HTMLInputElement
+      ? event.target
+      : getCustomAssetInput(type, step);
   const file = input?.files?.[0];
   if (!typeDef || !stepDef || !file) {
     return;
@@ -20084,7 +20843,10 @@ async function savePendingCustomAsset(type) {
       showToast(validation.message);
     }
     if (validation?.focusSelector) {
-      dom.utilityOverlayBody?.querySelector(validation.focusSelector)?.focus?.();
+      const focusRoot = runtime.proteusDesignerOpen === true
+        ? document.getElementById("proteusDesignerRoute")
+        : dom.utilityOverlayBody;
+      focusRoot?.querySelector(validation.focusSelector)?.focus?.();
     }
     return false;
   }
@@ -20113,9 +20875,9 @@ function getPendingCustomFishTransform(pending) {
 
 function updatePendingCustomFishTransformControls(pending) {
   const rotation = sanitizeCustomFishRotation(pending?.rotation);
-  const rotationLabels = dom.utilityOverlayBody?.querySelectorAll("[data-custom-fish-rotation-label]") || [];
-  const rotationSlider = dom.utilityOverlayBody?.querySelector("[data-custom-fish-rotation-input]");
-  const flipToggle = dom.utilityOverlayBody?.querySelector("[data-custom-fish-flip-toggle]");
+  const rotationLabels = document.querySelectorAll("[data-custom-fish-rotation-label]");
+  const rotationSlider = document.querySelector("#proteusDesignerRoute [data-custom-fish-rotation-input], #utilityOverlay [data-custom-fish-rotation-input]");
+  const flipToggle = document.querySelector("#proteusDesignerRoute [data-custom-fish-flip-toggle], #utilityOverlay [data-custom-fish-flip-toggle]");
 
   for (const label of rotationLabels) {
     label.textContent = `${rotation} deg`;
@@ -20172,9 +20934,9 @@ function updatePendingCustomFishPreview() {
   }
 
   const width = clamp(Number(pending.width) || CUSTOM_FISH_DEFAULT_WIDTH, CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH);
-  const labels = dom.utilityOverlayBody?.querySelectorAll("[data-custom-fish-size-label]") || [];
-  const preview = dom.utilityOverlayBody?.querySelector("[data-custom-fish-preview]");
-  const slider = dom.utilityOverlayBody?.querySelector("[data-custom-fish-size-input]");
+  const labels = document.querySelectorAll("[data-custom-fish-size-label]");
+  const preview = document.querySelector("#proteusDesignerRoute [data-custom-fish-preview], #utilityOverlay [data-custom-fish-preview]");
+  const slider = document.querySelector("#proteusDesignerRoute [data-custom-fish-size-input], #utilityOverlay [data-custom-fish-size-input]");
   for (const label of labels) {
     label.textContent = `${Math.round(width)} px`;
   }
@@ -20250,6 +21012,10 @@ function sanitizeCustomFishAssetEntry(entry, key) {
     imageRefId,
     width: clamp(Math.round(Number(entry.width) || CUSTOM_FISH_DEFAULT_WIDTH), CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
     behaviorProfileId,
+    diet: normalizeCustomFishDiet(entry.diet),
+    activityRegulation: normalizeCustomFishActivityRegulation(entry.activityRegulation),
+    swimZone: normalizeCustomFishSwimZone(entry.swimZone),
+    socialAffinity: normalizeCustomFishSocialAffinity(entry.socialAffinity),
     turnAnimation: String(entry.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
@@ -20273,17 +21039,24 @@ function sanitizeCustomFishAssets(assets) {
 function buildCustomFishCatalogEntry(asset) {
   const profile = getCustomFishBehaviorProfile(asset.behaviorProfileId) || getDefaultCustomFishBehaviorProfile();
   const imagePath = getStoredImageSource(asset, "runtimePath", "path", CUSTOM_FISH_SHOP_IMAGE);
-  const swimStyle = typeof profile?.swimStyle === "string" && profile.swimStyle.trim()
+  const inheritedSwimStyle = typeof profile?.swimStyle === "string" && profile.swimStyle.trim()
     ? profile.swimStyle
     : "steady";
+  const activityRegulation = normalizeCustomFishActivityRegulation(asset.activityRegulation);
+  const swimStyle = getCustomFishActivitySwimStyle(activityRegulation, inheritedSwimStyle);
   const defaults = SWIM_STYLE_DEFAULTS[swimStyle] || SWIM_STYLE_DEFAULTS.steady;
-  const speedMin = Number.isFinite(Number(profile?.speedMin)) ? Number(profile.speedMin) : defaults.speedMin;
-  const speedMax = Number.isFinite(Number(profile?.speedMax)) ? Number(profile.speedMax) : defaults.speedMax;
+  const speedMin = activityRegulation
+    ? defaults.speedMin
+    : (Number.isFinite(Number(profile?.speedMin)) ? Number(profile.speedMin) : defaults.speedMin);
+  const speedMax = activityRegulation
+    ? defaults.speedMax
+    : (Number.isFinite(Number(profile?.speedMax)) ? Number(profile.speedMax) : defaults.speedMax);
   const cleanupMinMs = Math.max(60 * 1000, Math.floor(Number(profile?.cleanupMinMs) || 12 * 60 * 1000));
   const cleanupMaxMs = Math.max(cleanupMinMs + 60 * 1000, Math.floor(Number(profile?.cleanupMaxMs) || 24 * 60 * 1000));
   const species = {
     id: asset.key,
     name: asset.name || "Custom Fish",
+    seller: "Proteus Biodyne",
     theme: "Custom",
     waterType: profile?.waterType || "freshwater",
     cost: CUSTOM_FISH_COST,
@@ -20302,13 +21075,14 @@ function buildCustomFishCatalogEntry(asset) {
     cycleSeconds: clamp(Number(profile?.cycleSeconds) || 26, 12, 60),
     bobSpeed: clamp(Number(profile?.bobSpeed) || 1.2, 0.6, 2.2),
     swimStyle,
-    speedMode: profile?.speedMode === "dynamic" ? "dynamic" : defaults.speedMode,
+    speedMode: activityRegulation ? defaults.speedMode : (profile?.speedMode === "dynamic" ? "dynamic" : defaults.speedMode),
     speedMin: clamp(speedMin, 0.00005, 0.095),
     speedMax: clamp(speedMax, Math.max(0.00005, speedMin), 0.095),
-    targetMinMs: Math.max(800, Math.floor(Number(profile?.targetMinMs) || defaults.targetMinMs)),
-    targetMaxMs: Math.max(1400, Math.floor(Number(profile?.targetMaxMs) || defaults.targetMaxMs)),
+    targetMinMs: Math.max(800, Math.floor(activityRegulation ? defaults.targetMinMs : (Number(profile?.targetMinMs) || defaults.targetMinMs))),
+    targetMaxMs: Math.max(1400, Math.floor(activityRegulation ? defaults.targetMaxMs : (Number(profile?.targetMaxMs) || defaults.targetMaxMs))),
     behavior: typeof profile?.behavior === "string" && profile.behavior.trim() ? profile.behavior : "free",
-    diet: typeof profile?.diet === "string" && profile.diet.trim() ? profile.diet : "pellet",
+    diet: normalizeCustomFishDiet(asset.diet),
+    chumOnly: normalizeCustomFishDiet(asset.diet) === "chum",
     type: "Fish",
     desperationPredator: false,
     renderMotionProfile: "",
@@ -20335,6 +21109,10 @@ function buildCustomFishCatalogEntry(asset) {
     defaultNames: [asset.name || "Custom Fish"],
     customAsset: true,
     behaviorProfileId: profile?.id || "",
+    behaviorSpeciesId: profile?.id || "",
+    activityRegulation,
+    swimZone: normalizeCustomFishSwimZone(asset.swimZone),
+    socialAffinity: normalizeCustomFishSocialAffinity(asset.socialAffinity),
     turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
   species.mealCoins = resolveSpeciesMealCoins(species);
@@ -20541,6 +21319,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
 
   const normalized = {
     id,
+    seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
     name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : titleFromFile(id),
     theme: normalizeCatalogTheme(entry.theme),
     waterType: normalizeWaterType(entry.waterType, inferWaterTypeFromTheme(entry.theme, "freshwater")),
@@ -20557,6 +21336,8 @@ function normalizeFishDefinition(entry, index, options = {}) {
     description: typeof entry.description === "string" && entry.description.trim()
       ? entry.description.trim()
       : "A custom fish from your fish catalog.",
+    aboutAttribution: typeof entry.aboutAttribution === "string" ? entry.aboutAttribution.trim() : "",
+    aboutTagline: typeof entry.aboutTagline === "string" ? entry.aboutTagline.trim() : "",
     width: clamp(Number(entry.width) || 128, FISH_CATALOG_WIDTH_MIN, FISH_CATALOG_WIDTH_MAX),
     displayWidth: clamp(Number(entry.displayWidth) || Number(entry.width) || 128, FISH_CATALOG_WIDTH_MIN, FISH_CATALOG_WIDTH_MAX),
     cycleSeconds: clamp(Number(entry.cycleSeconds) || 26, 12, 60),
@@ -20597,6 +21378,11 @@ function normalizeFishDefinition(entry, index, options = {}) {
     dislikedTypes: normalizeStringList(entry.dislikedTypes || entry.dislikes || entry.dislikedFishTypes)
       .map((value) => value.toLowerCase()),
     caveEnabled: entry.caveEnabled !== false,
+    davyMutation: entry.davyMutation === true,
+    davyBehaviorLabel: typeof entry.davyBehaviorLabel === "string" ? entry.davyBehaviorLabel.trim() : "",
+    davyBehaviorSummary: typeof entry.davyBehaviorSummary === "string" ? entry.davyBehaviorSummary.trim() : "",
+    davyTraits: normalizeStringList(entry.davyTraits),
+    storeBackgroundImage: typeof entry.storeBackgroundImage === "string" ? entry.storeBackgroundImage.trim() : "",
     defaultNames: Array.isArray(entry.defaultNames) && entry.defaultNames.length
       ? entry.defaultNames.map((name) => String(name).trim()).filter(Boolean)
       : []
@@ -20732,9 +21518,18 @@ function getFishByIdFast(fishId) {
   return runtime.fishFrameLookupById.get(fishId) || null;
 }
 
-function getFishBehaviorProfileSpecies(fish) {
-  const profileId = typeof fish?.behaviorSpeciesId === "string" ? fish.behaviorSpeciesId.trim() : "";
-  if (!profileId || profileId === fish?.speciesId) {
+function getFishBehaviorProfileSpecies(fishOrSpecies) {
+  const baseSpecies = fishOrSpecies?.speciesId
+    ? getBaseSpeciesForFish(fishOrSpecies)
+    : fishOrSpecies;
+  const profileId = [
+    fishOrSpecies?.behaviorSpeciesId,
+    baseSpecies?.behaviorSpeciesId,
+    baseSpecies?.behaviorProfileSpeciesId,
+    baseSpecies?.behaviorProfileId
+  ].find((value) => typeof value === "string" && value.trim())?.trim() || "";
+  const baseSpeciesId = fishOrSpecies?.speciesId || baseSpecies?.id || "";
+  if (!profileId || profileId === baseSpeciesId) {
     return null;
   }
 
@@ -20764,9 +21559,10 @@ function normalizeBehaviorPersonality(value) {
 }
 
 function getFishBehaviorProfile(speciesOrFish) {
-  const species = speciesOrFish?.speciesId
-    ? (getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
-    : speciesOrFish;
+  const species = getFishBehaviorProfileSpecies(speciesOrFish)
+    || (speciesOrFish?.speciesId
+      ? (getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
+      : speciesOrFish);
   const speciesId = typeof species?.id === "string" ? species.id : (typeof speciesOrFish?.speciesId === "string" ? speciesOrFish.speciesId : "");
   const profile = FISH_BEHAVIOR_PROFILES[speciesId] || null;
   const behavior = species?.behavior || "";
@@ -20793,17 +21589,55 @@ function getFishBehaviorProfile(speciesOrFish) {
 }
 
 function getFishLocomotionProfile(speciesOrFish) {
-  const species = speciesOrFish?.speciesId
-    ? (getFishBehaviorProfileSpecies(speciesOrFish) || getSpeciesForFish(speciesOrFish) || getBaseSpeciesForFish(speciesOrFish))
+  const baseSpecies = speciesOrFish?.speciesId
+    ? (getBaseSpeciesForFish(speciesOrFish) || getSpeciesForFish(speciesOrFish))
     : speciesOrFish;
-  const speciesId = typeof species?.id === "string"
-    ? species.id
-    : (typeof speciesOrFish?.speciesId === "string" ? speciesOrFish.speciesId : "");
-  return FISH_LOCOMOTION_PROFILES[speciesId] || FISH_LOCOMOTION_PROFILE_DEFAULT;
+  const profileSpecies = getFishBehaviorProfileSpecies(speciesOrFish);
+  const speciesId = profileSpecies?.id || baseSpecies?.id || speciesOrFish?.speciesId || "";
+  const inherited = FISH_LOCOMOTION_PROFILES[speciesId] || FISH_LOCOMOTION_PROFILE_DEFAULT;
+  if (!baseSpecies?.customAsset) return inherited;
+
+  const swimZone = normalizeCustomFishSwimZone(baseSpecies.swimZone);
+  const socialAffinity = normalizeCustomFishSocialAffinity(baseSpecies.socialAffinity);
+  if (!swimZone && socialAffinity === "adaptive") return inherited;
+
+  const cache = runtime.customFishLocomotionProfileCache || (runtime.customFishLocomotionProfileCache = new WeakMap());
+  const cached = cache.get(baseSpecies);
+  if (
+    cached?.inherited === inherited
+    && cached.swimZone === swimZone
+    && cached.socialAffinity === socialAffinity
+  ) {
+    return cached.profile;
+  }
+
+  const overrides = {};
+  if (swimZone === "full") {
+    overrides.preferredY = 0.5;
+    overrides.verticalSpread = 0.86;
+  } else if (swimZone === "upper") {
+    overrides.preferredY = 0.25;
+    overrides.verticalSpread = 0.48;
+  } else if (swimZone === "midwater") {
+    overrides.preferredY = 0.5;
+    overrides.verticalSpread = 0.56;
+  } else if (swimZone === "lower") {
+    overrides.preferredY = 0.72;
+    overrides.verticalSpread = 0.46;
+  }
+  if (socialAffinity === "independent") {
+    overrides.schoolStrength = 0;
+  } else if (socialAffinity === "schooling") {
+    overrides.schoolStrength = Math.max(Number(inherited.schoolStrength) || 0, 0.74);
+  }
+
+  const profile = Object.freeze({ ...inherited, ...overrides });
+  cache.set(baseSpecies, { inherited, swimZone, socialAffinity, profile });
+  return profile;
 }
 
 function getFishSchoolingStrength(fish, species = getSpeciesForFish(fish)) {
-  const profile = getFishLocomotionProfile(species || fish);
+  const profile = getFishLocomotionProfile(fish || species);
   const personality = getFishPersonality(fish);
   let personalityScale = 1;
   if (personality === "social" || personality === "follower") {
@@ -21130,14 +21964,66 @@ function getFishColorCycleFilter(fish, now = Date.now()) {
 }
 
 function getFishTintedImage(imagePath, sourceImage, fish) {
-  const color = getFishColorSetting(fish);
+  const color = isHalloweenModeActive()
+    ? "#37ae9e"
+    : getFishColorSetting(fish);
   if (!color || isDecorRgbColorSetting(color)) {
     return sourceImage;
   }
 
   return getTintedCaveLayerImage(imagePath, color, {
-    colorize: getFishColorizeSetting(fish)
+    colorize: isHalloweenModeActive() || getFishColorizeSetting(fish)
   }) || sourceImage;
+}
+
+function getDavyMutationCanvasFilter(fish, now = Date.now(), comfortValueOverride = null) {
+  if (!fish || isFishDead(fish)) return "none";
+  const species = getSpeciesForFish(fish);
+  const behaviorKey = getDavyMutationBehaviorKey(species);
+  if (!behaviorKey) return "none";
+  const comfortValue = Number.isFinite(Number(comfortValueOverride))
+    ? Number(comfortValueOverride)
+    : getFishComfort(fish, now).value;
+  const stressed = comfortValue <= 0.45 || (Number(fish.panicUntil) || 0) > now;
+  const feeding = fish.activity === "feeding";
+
+  if (behaviorKey === "barracuda") {
+    const amplitude = feeding || stressed ? 18 : 8;
+    const hue = Math.round(Math.sin(now / 1700 + (Number(fish.phase) || 0) * 5) * amplitude);
+    const saturation = feeding || stressed ? 132 : 112;
+    const brightness = feeding || stressed ? 108 : 101;
+    return `hue-rotate(${hue}deg) saturate(${saturation}%) brightness(${brightness}%)`;
+  }
+
+  if (behaviorKey === "siren-pike") {
+    const pulse = (Math.sin(now / 620 + (Number(fish.phase) || 0) * 4) + 1) * 0.5;
+    const brightness = Math.round(101 + pulse * (feeding || stressed ? 11 : 5));
+    const saturation = Math.round(106 + pulse * 12);
+    return `brightness(${brightness}%) saturate(${saturation}%)`;
+  }
+
+  if (behaviorKey === "glass-spitter") {
+    const pulse = (Math.sin(now / 430 + (Number(fish.phase) || 0) * 6) + 1) * 0.5;
+    const brightness = Math.round(101 + pulse * (feeding || stressed ? 10 : 5));
+    const saturation = Math.round(104 + pulse * (feeding || stressed ? 20 : 10));
+    return `brightness(${brightness}%) saturate(${saturation}%)`;
+  }
+
+  if (behaviorKey === "cherub") {
+    const pulse = (Math.sin(now / 700 + (Number(fish.phase) || 0) * 3) + 1) * 0.5;
+    const brightness = Math.round(100 + pulse * (feeding || stressed ? 9 : 3));
+    return `brightness(${brightness}%) saturate(${feeding || stressed ? 116 : 105}%)`;
+  }
+
+  if (behaviorKey === "hyperfin") {
+    const pulse = (Math.sin(now / 480 + (Number(fish.phase) || 0) * 7) + 1) * 0.5;
+    const accelerated = (Number(fish.davyFoodBurstUntil) || 0) > now || (Number(fish.davyCircuitUntil) || 0) > now || (Number(fish.davyPatrolBurstUntil) || 0) > now;
+    const brightness = Math.round(101 + pulse * (accelerated || feeding || stressed ? 10 : 4));
+    const saturation = Math.round((accelerated || feeding || stressed ? 114 : 104) + pulse * (accelerated ? 8 : 4));
+    return `brightness(${brightness}%) saturate(${saturation}%)`;
+  }
+
+  return "none";
 }
 
 function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now(), comfortValueOverride = null) {
@@ -21146,9 +22032,13 @@ function getFishCanvasFilter(fish, healthRatio = 1, now = Date.now(), comfortVal
   const colorCycleFilter = getFishColorCycleFilter(fish, now);
   const diseaseSaturationPercent = getFishDiseaseSaturationPercent(fish, now);
   const diseaseBrightnessPercent = getFishDiseaseBrightnessPercent(fish, now);
+  const davyMutationFilter = getDavyMutationCanvasFilter(fish, now, comfortValueOverride);
 
   if (colorCycleFilter !== "none") {
     filters.push(colorCycleFilter);
+  }
+  if (davyMutationFilter !== "none") {
+    filters.push(davyMutationFilter);
   }
   if (diseaseSaturationPercent < 100 || diseaseBrightnessPercent < 100) {
     filters.push(`saturate(${diseaseSaturationPercent}%) brightness(${diseaseBrightnessPercent}%)`);
@@ -23138,7 +24028,7 @@ function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
     return baseSpecies || null;
   }
 
-  return {
+  const merged = {
     ...baseSpecies,
     cycleSeconds: profileSpecies.cycleSeconds,
     bobSpeed: profileSpecies.bobSpeed,
@@ -23159,6 +24049,21 @@ function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
     behaviorProfileSpeciesId: profileSpecies.id,
     behaviorProfileName: profileSpecies.name
   };
+  if (baseSpecies.customAsset) {
+    merged.swimStyle = baseSpecies.swimStyle;
+    merged.speedMode = baseSpecies.speedMode;
+    merged.speedMin = baseSpecies.speedMin;
+    merged.speedMax = baseSpecies.speedMax;
+    merged.targetMinMs = baseSpecies.targetMinMs;
+    merged.targetMaxMs = baseSpecies.targetMaxMs;
+    merged.diet = baseSpecies.diet;
+    merged.chumOnly = baseSpecies.chumOnly;
+    merged.activityRegulation = baseSpecies.activityRegulation;
+    merged.swimZone = baseSpecies.swimZone;
+    merged.socialAffinity = baseSpecies.socialAffinity;
+    merged.behaviorSpeciesId = profileSpecies.id;
+  }
+  return merged;
 }
 
 function getSpeciesForFish(fish) {
@@ -24528,6 +25433,58 @@ function sanitizeAccountProfile(rawProfile) {
   return { username, userId };
 }
 
+function sanitizeBubbleBodegaRescueOffer(rawOffer) {
+  const source = rawOffer && typeof rawOffer === "object" ? rawOffer : {};
+  const timestamp = (value) => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
+  return {
+    cycle: Number.isFinite(Number(source.cycle)) ? Math.max(0, Math.floor(Number(source.cycle))) : 0,
+    eligibilityActive: source.eligibilityActive === true,
+    issuedAt: timestamp(source.issuedAt),
+    activatedAt: timestamp(source.activatedAt),
+    foodClaimedAt: timestamp(source.foodClaimedAt),
+    goldfishClaimedAt: timestamp(source.goldfishClaimedAt)
+  };
+}
+
+function sanitizePurchaseHistory(rawHistory) {
+  if (!Array.isArray(rawHistory)) return [];
+  return rawHistory.map((rawOrder) => {
+    if (!rawOrder || typeof rawOrder !== "object") return null;
+    const placedAt = Number.isFinite(Number(rawOrder.placedAt)) ? Number(rawOrder.placedAt) : Date.now();
+    const items = Array.isArray(rawOrder.items) ? rawOrder.items.map((rawItem) => {
+      if (!rawItem || typeof rawItem !== "object") return null;
+      const name = typeof rawItem.name === "string" ? rawItem.name.trim().slice(0, 120) : "Store item";
+      const category = typeof rawItem.category === "string" ? rawItem.category.trim().slice(0, 32) : "";
+      const image = typeof rawItem.image === "string" && rawItem.image.trim() ? rawItem.image.trim().slice(0, 600) : "assets/misc/Store_Logo.png";
+      const seller = typeof rawItem.seller === "string" ? rawItem.seller.trim().slice(0, 120) : "";
+      return {
+        key: typeof rawItem.key === "string" ? rawItem.key.slice(0, 180) : "",
+        name: name || "Store item",
+        category,
+        image,
+        seller,
+        cost: clamp(Math.floor(Math.max(0, Number(rawItem.cost) || 0)), 0, MAX_WALLET_COINS),
+        quantity: clamp(Math.floor(Math.max(1, Number(rawItem.quantity) || 1)), 1, 999)
+      };
+    }).filter(Boolean).slice(0, 100) : [];
+    if (!items.length) return null;
+    const proteusStatus = ["design-required", "specimen-configured", "fulfillment-complete"].includes(rawOrder.proteusStatus)
+      ? rawOrder.proteusStatus
+      : "";
+    return {
+      id: typeof rawOrder.id === "string" ? rawOrder.id.slice(0, 80) : createId("order"),
+      placedAt,
+      total: items.reduce((sum, item) => sum + item.cost * item.quantity, 0),
+      items,
+      ...(proteusStatus ? {
+        proteusStatus,
+        proteusConfiguredAt: Number.isFinite(Number(rawOrder.proteusConfiguredAt)) ? Math.max(0, Number(rawOrder.proteusConfiguredAt)) : 0,
+        proteusFulfilledAt: Number.isFinite(Number(rawOrder.proteusFulfilledAt)) ? Math.max(0, Number(rawOrder.proteusFulfilledAt)) : 0
+      } : {})
+    };
+  }).filter(Boolean).sort((left, right) => right.placedAt - left.placedAt).slice(0, 250);
+}
+
 function getAccountUsernameForUser(userId = "") {
   const profile = sanitizeAccountProfile(state?.accountProfile);
   const expectedUserId = String(userId || "").trim();
@@ -25170,7 +26127,10 @@ function shouldPersistReconciledState(rawState) {
   const incoming = rawState && typeof rawState === "object" ? rawState : {};
   const incomingVersion = Number.isFinite(incoming.version) ? incoming.version : 0;
   const incomingHealthModelVersion = Number.isFinite(incoming.healthModelVersion) ? incoming.healthModelVersion : 1;
-  return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION;
+  const welcomeMailCurrent = Number(incoming.webSurfWelcomeVersion) >= 1
+    && Number.isFinite(Number(incoming.webSurfWelcomeSentAt))
+    && Number(incoming.webSurfWelcomeSentAt) > 0;
+  return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION || !welcomeMailCurrent;
 }
 
 
@@ -25596,13 +26556,23 @@ function sanitizeBoroughEventHistory(rawEvents, fallbackTanks = []) {
 
 function reconcileState(rawState) {
   const now = Date.now();
+  const isBrandNewGame = !rawState || typeof rawState !== "object";
   const base = {
     version: STATE_VERSION,
     healthModelVersion: HEALTH_MODEL_VERSION,
+    gameCreatedAt: now,
+    webSurfWelcomeVersion: 1,
+    webSurfWelcomeSentAt: now,
     coins: STARTING_COINS,
     walletTransactions: [],
     lifetimeDeaths: 0,
     accountProfile: sanitizeAccountProfile(null),
+    purchaseHistory: [],
+    engineeredSpecimenDesignCredits: 0,
+    engineeredSpecimenDesignOrderIds: [],
+    engineeredSpecimenCompletedOrderIds: [],
+    engineeredSpecimenDesignStartedOrderIds: [],
+    bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer(null),
     mealHistory: {},
     lastGravelCoinFoundAt: 0,
     unlockedFishSpecies: [],
@@ -25667,6 +26637,15 @@ function reconcileState(rawState) {
 
   const nextState = {
     ...base,
+    gameCreatedAt: Number.isFinite(Number(incoming.gameCreatedAt))
+      ? Math.max(0, Number(incoming.gameCreatedAt))
+      : (isBrandNewGame ? base.gameCreatedAt : 0),
+    webSurfWelcomeVersion: 1,
+    webSurfWelcomeSentAt: Number(incoming.webSurfWelcomeVersion) >= 1
+      && Number.isFinite(Number(incoming.webSurfWelcomeSentAt))
+      && Number(incoming.webSurfWelcomeSentAt) > 0
+      ? Number(incoming.webSurfWelcomeSentAt)
+      : now,
     coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
     walletTransactions: Array.isArray(incoming.walletTransactions)
       ? incoming.walletTransactions.map((entry) => ({
@@ -25675,11 +26654,24 @@ function reconcileState(rawState) {
         direction: entry?.direction === "debit" ? "debit" : entry?.direction === "neutral" ? "neutral" : "credit",
         label: typeof entry?.label === "string" ? entry.label.slice(0, 180) : "Aquarium activity",
         place: typeof entry?.place === "string" ? entry.place.replace(/tankazon/ig, "BubbleBodega").slice(0, 80) : "Aquarium",
-        time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now
+        time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now,
+        orderId: typeof entry?.orderId === "string" ? entry.orderId.slice(0, 80) : ""
       })).filter((entry) => entry.amount > 0 || entry.direction === "neutral").sort((left, right) => right.time - left.time).slice(0, 60)
       : base.walletTransactions,
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     accountProfile: sanitizeAccountProfile(incoming.accountProfile),
+    purchaseHistory: sanitizePurchaseHistory(incoming.purchaseHistory),
+    engineeredSpecimenDesignCredits: Math.max(0, Math.floor(Number(incoming.engineeredSpecimenDesignCredits) || 0)),
+    engineeredSpecimenDesignOrderIds: Array.isArray(incoming.engineeredSpecimenDesignOrderIds)
+      ? incoming.engineeredSpecimenDesignOrderIds.filter((id) => typeof id === "string").slice(0, 20)
+      : [],
+    engineeredSpecimenCompletedOrderIds: Array.isArray(incoming.engineeredSpecimenCompletedOrderIds)
+      ? incoming.engineeredSpecimenCompletedOrderIds.filter((id) => typeof id === "string").slice(0, 20)
+      : [],
+    engineeredSpecimenDesignStartedOrderIds: Array.isArray(incoming.engineeredSpecimenDesignStartedOrderIds)
+      ? incoming.engineeredSpecimenDesignStartedOrderIds.filter((id) => typeof id === "string").slice(0, 20)
+      : [],
+    bubbleBodegaRescueOffer: sanitizeBubbleBodegaRescueOffer(incoming.bubbleBodegaRescueOffer),
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     lastGravelCoinFoundAt: Math.max(
       Number(incoming.lastGravelCoinFoundAt) || 0,
@@ -25825,6 +26817,10 @@ function reconcileState(rawState) {
 
   nextState.unlockedFishSpecies = sanitizeUnlockedFishSpecies([
     ...nextState.unlockedFishSpecies,
+    ...PROGRESSION_MILESTONES
+      .filter((milestone) => nextState.dailyBonus?.milestones?.[milestone.id])
+      .flatMap((milestone) => milestone.unlocks || []),
+    ...(Object.keys(nextState.customFishAssets || {}).length ? [CUSTOM_FISH_SHOP_KEY] : []),
     ...[...getAllTankFish(nextState), ...nextState.storedFish]
       .map((fish) => fish?.speciesId)
       .filter((speciesId) => runtime.fishMap.get(speciesId)?.unlockRequirement)
@@ -26694,7 +27690,10 @@ function sanitizeFish(fish, options = {}) {
     appearanceVariantKey: typeof fish.appearanceVariantKey === "string" ? fish.appearanceVariantKey : null,
     appearanceAssetPath: typeof fish.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null,
     scale: clamp(Number(fish.scale) || resolveFishBaseScale(fish.speciesId), FISH_SCALE_MIN, FISH_SCALE_MAX),
-    behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(fish.behaviorSpeciesId, fish.speciesId),
+    behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(
+      fish.behaviorSpeciesId || (species.customAsset ? (species.behaviorSpeciesId || species.behaviorProfileId) : ""),
+      fish.speciesId
+    ),
     turnAnimationPreference: ["simple", "complex"].includes(String(fish.turnAnimationPreference || "").trim().toLowerCase())
       ? String(fish.turnAnimationPreference).trim().toLowerCase()
       : "",
@@ -33119,9 +34118,12 @@ function processBoroughFishTravel(now = Date.now()) {
         ? findNearestBoroughServiceRoute(source, neededService)
         : null;
       const residenceTank = getTankContainingDecor(getFishResidenceDecorId(fish));
+      const timeSinceLastMove = now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0);
+      const needsUrgentHomecoming = getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_CRITICAL_THRESHOLD;
       const shouldReturnHome = residenceTank
         && residenceTank.id !== source.id
-        && getFishNeedValue(fish, "energy", now) <= 52;
+        && getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_LOW_THRESHOLD
+        && (needsUrgentHomecoming || timeSinceLastMove >= 5 * MINUTE_MS);
       const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
       const residenceTubeJourney = shouldReturnHome ? getTransitTubeJourney(source, residenceTank) : null;
       const directedRoute = foodRoute || serviceRoute || residenceRoute;
@@ -33132,7 +34134,7 @@ function processBoroughFishTravel(now = Date.now()) {
           ? getTransitTubeJourney(source, foodDestination)
           : residenceTubeJourney;
       const minimumMoveDelay = directedRoute ? 25 * 1000 : 2 * MINUTE_MS;
-      if (now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0) < minimumMoveDelay) {
+      if (timeSinceLastMove < minimumMoveDelay) {
         continue;
       }
       const destinationsWithFood = neededService === "food"
@@ -33144,8 +34146,14 @@ function processBoroughFishTravel(now = Date.now()) {
           return journey ? [journey] : [];
         })
         : [];
-      const ambientTravelRequested = (neighbors.length > 0 || ambientTubeJourneys.length > 0) && Math.random() < 0.02;
-      const ambientTubeJourney = ambientTravelRequested && ambientTubeJourneys.length
+      // A linked tube is an intentional piece of infrastructure, so give it a
+      // distinct exploration roll instead of making it compete with the much
+      // more common open-edge route. This also makes tube use visible without
+      // turning neighborhood hopping into constant churn.
+      const ambientTubeTravelRequested = ambientTubeJourneys.length > 0 && Math.random() < 0.08;
+      const ambientEdgeTravelRequested = !ambientTubeTravelRequested && neighbors.length > 0 && Math.random() < 0.02;
+      const ambientTravelRequested = ambientTubeTravelRequested || ambientEdgeTravelRequested;
+      const ambientTubeJourney = ambientTubeTravelRequested
         ? ambientTubeJourneys[Math.floor(Math.random() * ambientTubeJourneys.length)]
         : null;
       const selectedTubeJourney = tubeJourney || ambientTubeJourney;
@@ -35190,15 +36198,15 @@ function renderSubmarineShopCard() {
   const variants = getMachineryAppearanceVariants(MACHINERY_TYPE_SUBMARINE);
   const mainImage = variants[0]?.image || SUBMARINE_IMAGE_PATH;
   return `
-    <article class="shop-card submarine-shop-card">
+    <article class="shop-card submarine-shop-card" data-store-seller="BubbleBodega">
       <img class="shop-thumb submarine-shop-thumb" ${assetImageAttributes(mainImage)} alt="Automated Care Submarine" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
       <div class="shop-meta shop-card-main">
         <div>
           <strong>Automated Care Submarine</strong>
           <div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div>
         </div>
-        <div class="fish-meta">Automatic care machinery that travels between connected tanks to feed hungry fish and deploy health or calming medicine when needed.</div>
-        <div class="mini-note">Carries 99 food, 99 health drops, and 99 calming drops. Choose an appearance and buy as many as you need.</div>
+        <div class="fish-meta">A tiny autonomous submarine built to handle the parts of fishkeeping you might forget. It travels between connected tanks, feeds hungry residents, administers medicine when needed, and carries up to 99 portions of each supply.</div>
+        <div class="mini-note">Not compatible with chum. Choose an appearance and buy as many as you need.</div>
       </div>
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${SUBMARINE_COST} ${pluralize("coin", SUBMARINE_COST)}</span>
@@ -35215,12 +36223,12 @@ function renderBoatShopCard() {
   const variants = getMachineryAppearanceVariants(MACHINERY_TYPE_BOAT);
   const mainImage = variants[0]?.image || BOAT_IMAGE_PATH;
   return `
-    <article class="shop-card boat-shop-card">
+    <article class="shop-card boat-shop-card" data-store-seller="BubbleBodega">
       <img class="shop-thumb submarine-shop-thumb" ${assetImageAttributes(mainImage)} alt="Chum Skiff" onerror="this.onerror=null;this.removeAttribute('src');this.setAttribute('data-sprite-src','assets/icons/tools.png')" />
       <div class="shop-meta shop-card-main">
         <div><strong>Chum Skiff</strong><div class="fish-meta">Available${count ? ` · You own ${count}` : ""}</div></div>
-        <div class="fish-meta">A surface skiff that skips back and forth across the water and drops chum on command.</div>
-        <div class="mini-note">Carries ${BOAT_RESOURCE_CAPACITY} chum. Choose an appearance and buy as many as you need.</div>
+        <div class="fish-meta">A small surface skiff dedicated to one extremely specific job that even submariners won't do: delivering chum. It patrols the water above the tank and drops a portion on command from its supply of up to ${BOAT_RESOURCE_CAPACITY} servings.</div>
+        <div class="mini-note">Choose an appearance and buy as many as you need.</div>
       </div>
       <div class="shop-meta shop-card-actions">
         <span class="price-tag">${BOAT_COST} ${pluralize("coin", BOAT_COST)}</span>
@@ -35343,6 +36351,8 @@ function renderEditEquipmentTray() {
   const currentTank = getCurrentTank();
   const submarineTank = getSubmarineTank(submarine);
   const boatTank = getBoatTank(boat);
+  const dispenserInstalled = hasAutoDispenserInstalled(currentTank);
+  const dispenserOwned = dispenserInstalled || state.autoDispenser?.stored === true || (Number(state.autoDispenser?.storedCount) || 0) > 0;
   const machineryEntries = activeLocationTab === "storage"
     ? [
       ...storedSubmarines.map((item) => ({ item, type: MACHINERY_TYPE_SUBMARINE, stored: true })),
@@ -35404,7 +36414,18 @@ function renderEditEquipmentTray() {
     `;
   };
 
-  let markup = machineryEntries.map(renderMachineryTile).join("");
+  const dispenserTile = dispenserOwned
+    && ((activeLocationTab === "storage" && !dispenserInstalled) || (activeLocationTab === "tank" && dispenserInstalled))
+    ? `<article class="edit-decor-tile" data-mood-tone="good" data-decor-name="Food Dispenser 9000">
+        <button class="edit-decor-tile-primary" type="button" title="${dispenserInstalled ? "Select and drag the Food Dispenser 9000" : "Deploy the Food Dispenser 9000 in this tank"}" aria-label="${dispenserInstalled ? "Select and drag the Food Dispenser 9000" : "Deploy the Food Dispenser 9000 in this tank"}" data-tray-select-dispenser="true">
+          <span class="edit-decor-tile-surface"><img class="edit-decor-tile-thumb" ${assetImageAttributes(getAutoDispenserImagePath(state.autoDispenser))} alt="Food Dispenser 9000" /><span class="inventory-tray-label">${dispenserInstalled ? "In Tank" : "Storage"}</span></span>
+        </button>
+        <div class="mini-note edit-equipment-resource-note">${dispenserInstalled ? `${getAutoDispenserLoadedCount(state.autoDispenser)}/${AUTO_DISPENSER_MAX_PELLETS} pellets · top mount · layer ${state.autoDispenser.tankLayer}` : `Ready to deploy${Number(state.autoDispenser.storedCount) > 1 ? ` · ${state.autoDispenser.storedCount} stored` : ""}`}</div>
+        ${dispenserInstalled ? `<button class="small-button alt" type="button" data-tray-store-dispenser="true">Put Away</button>` : ""}
+      </article>`
+    : "";
+
+  let markup = `${dispenserTile}${machineryEntries.map(renderMachineryTile).join("")}`;
   if (!markup && activeLocationTab === "storage" && (submarineOwned || boatOwned)) {
     const foreignMachine = submarine && !machineryEntries.some((entry) => entry.item.id === submarine.id)
       ? { label: "submarine", tank: submarineTank, visitAttribute: "data-visit-submarine-tank" }
@@ -35442,6 +36463,10 @@ function renderEditEquipmentTray() {
     boat ? normalizeBoatResourceCount(boat.inventory?.chum) : 0,
     storedBoat ? normalizeBoatResourceCount(storedBoat.inventory?.chum) : 0,
     boatTank?.name || ""
+    , dispenserInstalled ? "dispenser" : "no-dispenser"
+    , state.autoDispenser?.xNorm || ""
+    , state.autoDispenser?.tankLayer || ""
+    , getAutoDispenserLoadedCount(state.autoDispenser)
   ].join("|");
   if (shouldRebuildRenderSection("edit-equipment-tray-data", dataKey)) {
     setMarkupIfChanged("edit-equipment-tray", dom.editEquipmentTrayScroller, markup);
@@ -35480,6 +36505,7 @@ function getSubmarineDrawMetrics(submarine, now = Date.now()) {
   const turn = getMachineryTurnRenderState(submarine, now, SUBMARINE_TURN_LEAN_RADIANS);
   return {
     image,
+    imagePath,
     x: Number(submarine.xNorm) * TANK_WIDTH + turn.swayX,
     y: renderYNorm * TANK_HEIGHT + bob,
     width,
@@ -35539,81 +36565,23 @@ function getBoatDrawMetrics(boat, now = Date.now()) {
   };
 }
 
-function drawSubmarineSpotlight(submarine, metrics) {
-  if (!submarine?.mission || !metrics || !isSubmarineAutopilotEnabled(submarine)) return;
-  const direction = metrics.direction;
-  const turnScaleX = Number(metrics.turnScaleX) || 1;
-  const turnScaleY = Number(metrics.turnScaleY) || 1;
-  const localX = (SUBMARINE_SPOTLIGHT_LAMP_X_NORM - 0.5) * metrics.width * direction * turnScaleX;
-  const localY = (SUBMARINE_SPOTLIGHT_LAMP_Y_NORM - 0.5) * metrics.height * turnScaleY;
-  const rotation = (Number(metrics.rotation) || 0) + (direction < 0 ? Math.PI : 0);
-  const cosRotation = Math.cos(Number(metrics.rotation) || 0);
-  const sinRotation = Math.sin(Number(metrics.rotation) || 0);
-  const lampX = metrics.x + localX * cosRotation - localY * sinRotation;
-  const lampY = metrics.y + localX * sinRotation + localY * cosRotation;
-  const length = SUBMARINE_SPOTLIGHT_LENGTH_PX;
-  const outerSpread = 84;
-  const innerSpread = 42;
-  tankContext.save();
-  tankContext.globalCompositeOperation = "screen";
-  tankContext.translate(lampX, lampY);
-  tankContext.rotate(rotation);
-
-  const outerGlow = tankContext.createRadialGradient(0, 0, 1, length * 0.24, 0, length);
-  outerGlow.addColorStop(0, "rgba(205,241,255,0.2)");
-  outerGlow.addColorStop(0.22, "rgba(176,224,255,0.1)");
-  outerGlow.addColorStop(0.68, "rgba(149,211,255,0.028)");
-  outerGlow.addColorStop(1, "rgba(149,211,255,0)");
-  tankContext.fillStyle = outerGlow;
-  tankContext.beginPath();
-  tankContext.moveTo(0, -7);
-  tankContext.quadraticCurveTo(length * 0.5, -outerSpread * 0.72, length, -outerSpread);
-  tankContext.lineTo(length, outerSpread);
-  tankContext.quadraticCurveTo(length * 0.5, outerSpread * 0.72, 0, 7);
-  tankContext.closePath();
-  tankContext.fill();
-
-  const coreGlow = tankContext.createLinearGradient(0, 0, length, 0);
-  coreGlow.addColorStop(0, "rgba(234,251,255,0.24)");
-  coreGlow.addColorStop(0.34, "rgba(203,239,255,0.1)");
-  coreGlow.addColorStop(1, "rgba(181,229,255,0)");
-  tankContext.fillStyle = coreGlow;
-  tankContext.beginPath();
-  tankContext.moveTo(0, -4);
-  tankContext.quadraticCurveTo(length * 0.52, -innerSpread * 0.7, length, -innerSpread);
-  tankContext.lineTo(length, innerSpread);
-  tankContext.quadraticCurveTo(length * 0.52, innerSpread * 0.7, 0, 4);
-  tankContext.closePath();
-  tankContext.fill();
-  tankContext.restore();
-}
-
-function drawSubmarineWarningLight(submarine, metrics, now = Date.now()) {
+function drawSubmarineRedLightOverlay(submarine, metrics, now = Date.now()) {
   if (!isSubmarineOutOfResources(submarine) || !metrics) return;
   const blinkOn = Math.floor(now / SUBMARINE_RED_LIGHT_BLINK_MS) % 2 === 0;
   if (!blinkOn) return;
-  const localX = (SUBMARINE_WARNING_LIGHT_X_NORM - 0.5) * metrics.width * metrics.direction * (Number(metrics.turnScaleX) || 1);
-  const localY = (SUBMARINE_WARNING_LIGHT_Y_NORM - 0.5) * metrics.height * (Number(metrics.turnScaleY) || 1);
-  const rotation = Number(metrics.rotation) || 0;
-  const cosRotation = Math.cos(rotation);
-  const sinRotation = Math.sin(rotation);
-  const lightX = metrics.x + localX * cosRotation - localY * sinRotation;
-  const lightY = metrics.y + localX * sinRotation + localY * cosRotation;
+  const overlay = runtime.images.get(SUBMARINE_RED_LIGHT_OVERLAY_PATH);
+  if (!isUsableRuntimeImage(overlay)) {
+    requestRuntimeImageRecovery(SUBMARINE_RED_LIGHT_OVERLAY_PATH, { kind: "machinery", id: submarine.id });
+    return;
+  }
+  const frame = getSpriteAssetFrame(metrics.imagePath);
+  if (!frame) return;
+  const [sourceX, sourceY, sourceWidth, sourceHeight] = frame.rect;
   tankContext.save();
-  tankContext.globalCompositeOperation = "screen";
-  const glowRadius = clamp(metrics.width * 0.095, 13, 22);
-  const glow = tankContext.createRadialGradient(lightX, lightY, 1, lightX, lightY, glowRadius);
-  glow.addColorStop(0, "rgba(255,245,245,1)");
-  glow.addColorStop(0.2, "rgba(255,70,70,0.95)");
-  glow.addColorStop(1, "rgba(255,0,0,0)");
-  tankContext.fillStyle = glow;
-  tankContext.beginPath();
-  tankContext.arc(lightX, lightY, glowRadius, 0, Math.PI * 2);
-  tankContext.fill();
-  tankContext.fillStyle = "rgba(255,45,45,0.98)";
-  tankContext.beginPath();
-  tankContext.arc(lightX, lightY, clamp(metrics.width * 0.018, 3.1, 5.2), 0, Math.PI * 2);
-  tankContext.fill();
+  tankContext.translate(metrics.x, metrics.y);
+  tankContext.rotate(metrics.rotation || 0);
+  tankContext.scale(metrics.direction * (Number(metrics.turnScaleX) || 1), Number(metrics.turnScaleY) || 1);
+  tankContext.drawImage(overlay, sourceX, sourceY, sourceWidth, sourceHeight, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
   tankContext.restore();
 }
 
@@ -35937,7 +36905,7 @@ function drawMachinery(now, layer = 2) {
       : machinery.type === MACHINERY_TYPE_SUBMARINE
         ? getSubmarineDrawMetrics(machinery, now)
         : null;
-    if (!metrics || metrics.tankLayer !== layer) continue;
+    if (!metrics || (layer !== 0 && metrics.tankLayer !== layer) || (layer !== 0 && machinery.type === MACHINERY_TYPE_BOAT) || (layer === 0 && machinery.type !== MACHINERY_TYPE_BOAT)) continue;
     if (machinery.type === MACHINERY_TYPE_SUBMARINE) queueSubmarineBubbleBurst(machinery, metrics, now);
     if (machinery.type === MACHINERY_TYPE_BOAT) queueBoatBubbleBurst(machinery, metrics, now);
     machineryForLayer.push({ machinery, metrics });
@@ -35946,7 +36914,6 @@ function drawMachinery(now, layer = 2) {
   drawBoatBubbleBursts(now, layer);
   for (const { machinery, metrics } of machineryForLayer) {
     const isBoat = machinery.type === MACHINERY_TYPE_BOAT;
-    if (!isBoat) drawSubmarineSpotlight(machinery, metrics);
     tankContext.save();
     tankContext.translate(metrics.x, metrics.y);
     tankContext.rotate(metrics.rotation || 0);
@@ -35967,7 +36934,7 @@ function drawMachinery(now, layer = 2) {
       tankContext.stroke();
     }
     tankContext.restore();
-    if (!isBoat) drawSubmarineWarningLight(machinery, metrics, now);
+    if (!isBoat) drawSubmarineRedLightOverlay(machinery, metrics, now);
     if (runtime.selectedMachineryId === machinery.id) {
       tankContext.save();
       tankContext.strokeStyle = "rgba(108,236,255,0.9)";
@@ -37177,7 +38144,7 @@ function applyFoodBuff(foodKey, now = Date.now(), tank = getCurrentTank()) {
     };
   }
 
-  if (isNormalMealFood(foodKey)) {
+  if (foodKey === "frisky") {
     tank.foodBuffs.friskyUntil = Math.max(Number(tank.foodBuffs?.friskyUntil) || 0, now + BREEDING_FOOD_BOOST_MS);
   }
 }
@@ -37329,62 +38296,94 @@ function consumeOffscreenFishFoodPellet(fish, pelletId, targetTank, now = Date.n
   return true;
 }
 
+function getConnectedFoodTanks(startTank) {
+  if (!startTank) return [];
+  return getAllTanks().filter((tank) => (
+    tank.id === startTank.id
+    || findAquariumSectionRoute(tank, startTank)
+    || findAquariumSectionRoute(startTank, tank)
+    || getTransitTubeJourney(tank, startTank)
+    || getTransitTubeJourney(startTank, tank)
+  ));
+}
+
+function allocateAutoDispenserPellets(total, dispensers) {
+  const allocations = dispensers.map(() => 0);
+  let remaining = Math.max(0, Math.floor(total));
+  while (remaining > 0) {
+    const available = dispensers
+      .map((dispenser, index) => ({ dispenser, index, room: Math.max(0, getAutoDispenserLoadedCount(dispenser) - allocations[index]) }))
+      .filter((entry) => entry.room > 0);
+    if (!available.length) break;
+    const base = Math.floor(remaining / available.length);
+    const remainder = remaining % available.length;
+    let assigned = 0;
+    available.forEach((entry, order) => {
+      const amount = Math.min(entry.room, Math.max(1, base) + (order >= available.length - remainder ? 1 : 0));
+      allocations[entry.index] += amount;
+      assigned += amount;
+    });
+    if (!assigned) break;
+    remaining -= assigned;
+  }
+  return allocations;
+}
+
 function processSmartAutoFeeder(now = Date.now(), options = {}) {
-  return false;
-  /* Legacy dispenser behavior retained below only for save compatibility.
   const targetTank = options.tank || getCurrentTank();
-  const dispenser = targetTank?.autoDispenser;
-  if (!dispenser?.installed) {
+  const slot = getTodaysMealSlots(now).find((entry) => now >= entry.start) || null;
+  if (!targetTank || !slot) return false;
+  const connectedTanks = getConnectedFoodTanks(targetTank);
+  const feederEntries = connectedTanks
+    .filter((tank) => tank.autoDispenser?.installed)
+    .map((tank) => ({ tank, dispenser: tank.autoDispenser }));
+  if (!feederEntries.length) return false;
+
+  // syncCurrentTankState visits every tank. Only the first feeder in a
+  // connected component performs the network-wide meal, preventing duplicate
+  // dispensing when several tanks share the same water or tube route.
+  const owner = feederEntries.slice().sort((a, b) => String(a.tank.id).localeCompare(String(b.tank.id)))[0];
+  if (owner.tank.id !== targetTank.id || feederEntries.every(({ dispenser }) => dispenser.lastDispensedSlotKey === slot.key)) {
     return false;
-  }
-  dispenser.smartDispensedAtByFishId = sanitizeFishNeedEventMap(dispenser.smartDispensedAtByFishId);
-  if (now - (Number(dispenser.lastSmartDispensedAt) || 0) < FISH_AUTO_FEEDER_TANK_COOLDOWN_MS) {
-    return false;
-  }
-  const hungryFish = getHungryFishByNeeds(targetTank, now, FISH_HUNGER_LOW_THRESHOLD)
-    .filter((fish) => (
-      fish
-      && !fish.feedingPelletId
-      && now - (Number(dispenser.smartDispensedAtByFishId[fish.id]) || 0) >= FISH_AUTO_FEEDER_COOLDOWN_MS
-    ))
-    .sort((left, right) => getFishNeedValue(left, "hunger", now) - getFishNeedValue(right, "hunger", now));
-  if (!hungryFish.length) {
-    return false;
-  }
-  const storedPellets = Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : [];
-  if (!storedPellets.length) {
-    dispenser.refillAlert = true;
-    const fish = hungryFish[0];
-    setFishBehaviorIntent(fish, "wait for food", "auto feeder empty", now, { durationMs: 12 * 1000 });
-    maybeRecordFishNeedEvent(fish, "feeder-empty", "The auto feeder is empty.", now, 30 * MINUTE_MS);
-    return true;
   }
 
-  for (const fish of hungryFish) {
-    const pelletIndex = storedPellets.findIndex((storedPellet) => canFishEatFoodPellet(fish, storedPellet.foodKey, now));
-    if (pelletIndex < 0) {
-      setFishBehaviorIntent(fish, "wait for food", "wrong feeder food", now, { durationMs: 10 * 1000 });
-      maybeRecordFishNeedEvent(fish, "feeder-wrong-food", "Food in the auto feeder does not suit a hungry fish.", now, 30 * MINUTE_MS);
-      continue;
+  const fishEntries = connectedTanks.flatMap((tank) => getMealEligibleFishForSlot(slot, tank).map((fish) => ({ fish, tank })));
+  if (!fishEntries.length) return false;
+  const allocations = allocateAutoDispenserPellets(fishEntries.length, feederEntries.map(({ dispenser }) => dispenser));
+  let released = 0;
+  feederEntries.forEach(({ tank, dispenser }, feederIndex) => {
+    const count = allocations[feederIndex];
+    for (let index = 0; index < count; index += 1) {
+      const storedPellets = Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : [];
+      if (!storedPellets.length) break;
+      const [storedPellet] = storedPellets.splice(0, 1);
+      const floatingPellet = withActiveTank(tank.id, () => createAutoDispenserDroppedPellet(storedPellet, now));
+      if (floatingPellet) {
+        tank.floatingPellets.push(floatingPellet);
+        released += 1;
+      }
     }
-    const [storedPellet] = dispenser.storedPellets.splice(pelletIndex, 1);
-    const floatingPellet = createAutoDispenserDroppedPellet(storedPellet, now);
-    if (!floatingPellet) {
-      return false;
-    }
-    floatingPellet.targetFishId = fish.id;
-    state.floatingPellets.push(floatingPellet);
-    assignPelletToFish(fish, floatingPellet, now);
+    dispenser.lastDispensedSlotKey = slot.key;
     dispenser.lastSmartDispensedAt = now;
-    dispenser.smartDispensedAtByFishId[fish.id] = now;
     dispenser.refillAlert = getAutoDispenserLoadedCount(dispenser) <= 0;
-    setFishBehaviorIntent(fish, "wait for food", "auto feeder", now, { durationMs: 10 * 1000 });
-    pushEvent(`The auto feeder dropped food for ${fish.name}.`, now, targetTank, { type: "food", fishId: fish.id });
-    playDispenserSoundEffect();
-    return true;
-  }
+  });
 
-  return false; */
+  // Give every fish a concrete feeder destination. Fish in another tank will
+  // use the normal section route or tube journey to reach that destination.
+  const activeDestinations = feederEntries
+    .filter((_, index) => allocations[index] > 0)
+    .map(({ tank }) => tank);
+  fishEntries.forEach(({ fish, tank }, index) => {
+    const destination = activeDestinations[index % Math.max(1, activeDestinations.length)];
+    if (!destination || tank.id === destination.id) return;
+    runtime.foodTravelDestinations.set(fish.id, destination.id);
+    fish.lastNeighborhoodMoveAt = Math.min(Number(fish.lastNeighborhoodMoveAt) || 0, now - 25 * 1000);
+  });
+
+  connectedTanks.forEach((tank) => withActiveTank(tank.id, () => assignFloatingPelletsToHungryFish(now)));
+  playDispenserSoundEffect();
+  pushEvent(`The auto feeder dispensed ${released} pellet${released === 1 ? "" : "s"} for ${fishEntries.length} connected fish.`, now, targetTank, { type: "food" });
+  return true;
 }
 
 function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
@@ -37699,7 +38698,11 @@ function createFishRecord(speciesId, options = {}) {
     name: options.name,
     speciesId
   });
-  const personalityPick = pickFishPersonality(species);
+  const behaviorSpeciesId = sanitizeFishBehaviorSpeciesId(
+    options.behaviorSpeciesId || (species.customAsset ? (species.behaviorSpeciesId || species.behaviorProfileId) : ""),
+    speciesId
+  );
+  const personalityPick = pickFishPersonality(runtime.fishMap.get(behaviorSpeciesId) || species);
   const fish = {
     id: fishId,
     speciesId,
@@ -37789,7 +38792,7 @@ function createFishRecord(speciesId, options = {}) {
     appearanceVariantKey: typeof options.appearanceVariantKey === "string" ? options.appearanceVariantKey : null,
     appearanceAssetPath: typeof options.appearanceAssetPath === "string" ? options.appearanceAssetPath : null,
     scale,
-    behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(options.behaviorSpeciesId, speciesId),
+    behaviorSpeciesId,
     turnAnimationPreference: ["simple", "complex"].includes(String(options.turnAnimationPreference || "").trim().toLowerCase())
       ? String(options.turnAnimationPreference).trim().toLowerCase()
       : "",
@@ -40208,6 +41211,143 @@ function setStorePurchaseSoundBatch(active = false) {
   runtime.storePurchaseSoundBatch = active === true;
 }
 
+function recordBubbleBodegaOrder(rawItems) {
+  if (!state) return null;
+  const items = sanitizePurchaseHistory([{ id: createId("order"), placedAt: Date.now(), items: rawItems }])[0]?.items || [];
+  if (!items.length) return null;
+  const order = {
+    id: createId("order"),
+    placedAt: Date.now(),
+    total: items.reduce((sum, item) => sum + item.cost * item.quantity, 0),
+    items
+  };
+  const engineeredSpecimen = typeof isEngineeredAquaticSpecimenOrder === "function"
+    && isEngineeredAquaticSpecimenOrder(order);
+  if (engineeredSpecimen) {
+    order.proteusStatus = "design-required";
+    order.proteusConfiguredAt = 0;
+    order.proteusFulfilledAt = 0;
+  }
+  if (!Array.isArray(state.purchaseHistory)) state.purchaseHistory = [];
+  state.purchaseHistory.unshift(order);
+  state.purchaseHistory = sanitizePurchaseHistory(state.purchaseHistory);
+  if (engineeredSpecimen) {
+    if (!Array.isArray(state.engineeredSpecimenDesignOrderIds)) state.engineeredSpecimenDesignOrderIds = [];
+    state.engineeredSpecimenDesignOrderIds = [...new Set([order.id, ...state.engineeredSpecimenDesignOrderIds])].slice(0, 20);
+  }
+  const remainingCosts = new Map();
+  for (const item of items) {
+    const cost = Math.max(0, Math.floor(Number(item.cost) || 0));
+    remainingCosts.set(cost, (remainingCosts.get(cost) || 0) + Math.max(1, Math.floor(Number(item.quantity) || 1)));
+  }
+  for (const entry of state.walletTransactions || []) {
+    const cost = Math.max(0, Math.floor(Number(entry.amount) || 0));
+    if (
+      entry.direction !== "debit"
+      || entry.orderId
+      || !/bubblebodega/i.test(String(entry.place || ""))
+      || Math.abs(order.placedAt - (Number(entry.time) || 0)) > 15000
+      || !(remainingCosts.get(cost) > 0)
+    ) continue;
+    entry.orderId = order.id;
+    remainingCosts.set(cost, remainingCosts.get(cost) - 1);
+  }
+  saveState();
+  return order;
+}
+
+function buyEngineeredAquaticSpecimen() {
+  const purchaseCost = CUSTOM_FISH_COST;
+  return performCoinTransaction({
+    amount: purchaseCost,
+    insufficientMessage: getInsufficientFundsMessage(),
+    event: { type: "purchase", tone: "positive", text: "Engineered Aquatic Specimen order placed." },
+    toast: "Engineered Aquatic Specimen order placed. Check WebSurf for your Proteus design link."
+  });
+}
+
+function getEngineeredAquaticSpecimenOrder(orderId = "") {
+  const id = String(orderId || "").trim();
+  if (!id) return null;
+  const order = (state?.purchaseHistory || []).find((entry) => String(entry?.id || "") === id) || null;
+  return order && (typeof isEngineeredAquaticSpecimenOrder !== "function" || isEngineeredAquaticSpecimenOrder(order))
+    ? order
+    : null;
+}
+
+function getEngineeredAquaticSpecimenOrderStatus(orderId = "") {
+  const id = String(orderId || "").trim();
+  const order = getEngineeredAquaticSpecimenOrder(id);
+  if (!order) return "";
+  if ((state?.engineeredSpecimenCompletedOrderIds || []).includes(id)) return "fulfillment-complete";
+  if (["design-required", "specimen-configured", "fulfillment-complete"].includes(order.proteusStatus)) {
+    return order.proteusStatus;
+  }
+  if ((state?.engineeredSpecimenDesignStartedOrderIds || []).includes(id)) return "specimen-configured";
+  return "design-required";
+}
+
+function setEngineeredAquaticSpecimenOrderStatus(orderId, status, now = Date.now()) {
+  const id = String(orderId || "").trim();
+  const order = getEngineeredAquaticSpecimenOrder(id);
+  if (!order || !["design-required", "specimen-configured", "fulfillment-complete"].includes(status)) return false;
+  order.proteusStatus = status;
+  order.proteusConfiguredAt = status === "specimen-configured"
+    ? Math.max(0, Number(now) || Date.now())
+    : status === "design-required" ? 0 : Math.max(0, Number(order.proteusConfiguredAt) || Number(now) || Date.now());
+  order.proteusFulfilledAt = status === "fulfillment-complete" ? Math.max(0, Number(now) || Date.now()) : 0;
+  if (!Array.isArray(state.engineeredSpecimenDesignOrderIds)) state.engineeredSpecimenDesignOrderIds = [];
+  if (!Array.isArray(state.engineeredSpecimenDesignStartedOrderIds)) state.engineeredSpecimenDesignStartedOrderIds = [];
+  if (!Array.isArray(state.engineeredSpecimenCompletedOrderIds)) state.engineeredSpecimenCompletedOrderIds = [];
+  state.engineeredSpecimenDesignOrderIds = status === "fulfillment-complete"
+    ? state.engineeredSpecimenDesignOrderIds.filter((entry) => entry !== id)
+    : [...new Set([id, ...state.engineeredSpecimenDesignOrderIds])].slice(0, 20);
+  state.engineeredSpecimenDesignStartedOrderIds = status === "specimen-configured"
+    ? [...new Set([id, ...state.engineeredSpecimenDesignStartedOrderIds])].slice(0, 20)
+    : state.engineeredSpecimenDesignStartedOrderIds.filter((entry) => entry !== id);
+  state.engineeredSpecimenCompletedOrderIds = status === "fulfillment-complete"
+    ? [...new Set([id, ...state.engineeredSpecimenCompletedOrderIds])].slice(0, 20)
+    : state.engineeredSpecimenCompletedOrderIds.filter((entry) => entry !== id);
+  return true;
+}
+
+function markEngineeredAquaticSpecimenConfigured(orderId = "") {
+  const id = String(orderId || "").trim();
+  if (getEngineeredAquaticSpecimenOrderStatus(id) !== "design-required") return false;
+  return setEngineeredAquaticSpecimenOrderStatus(id, "specimen-configured");
+}
+
+function resetEngineeredAquaticSpecimenConfiguration(orderId = "") {
+  const id = String(orderId || "").trim();
+  if (getEngineeredAquaticSpecimenOrderStatus(id) !== "specimen-configured") return false;
+  return setEngineeredAquaticSpecimenOrderStatus(id, "design-required");
+}
+
+function markEngineeredAquaticSpecimenDesigned(orderId = "") {
+  const id = String(orderId || "").trim();
+  if (getEngineeredAquaticSpecimenOrderStatus(id) !== "specimen-configured") return false;
+  return setEngineeredAquaticSpecimenOrderStatus(id, "fulfillment-complete");
+}
+
+function beginEngineeredAquaticSpecimenDesign(orderId = "") {
+  const id = String(orderId || "").trim();
+  const order = getEngineeredAquaticSpecimenOrder(id);
+  if (!order || getEngineeredAquaticSpecimenOrderStatus(id) !== "design-required") return false;
+  if (order.proteusStatus !== "design-required") {
+    setEngineeredAquaticSpecimenOrderStatus(id, "design-required");
+    saveState();
+  }
+  return true;
+}
+
+function getBubbleBodegaAccountData() {
+  const session = runtime.cloudSession || getCloudSession();
+  return {
+    username: getAccountUsernameForUser(session?.user?.id || ""),
+    orders: sanitizePurchaseHistory(state?.purchaseHistory)
+  };
+}
+
 function recordWalletTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Math.abs(Number(options.amount) || 0)));
   const allowZero = options.allowZero === true || options.direction === "neutral";
@@ -40223,7 +41363,8 @@ function recordWalletTransaction(options = {}) {
     direction,
     label: String(options.label || "Aquarium activity").slice(0, 180),
     place: String(options.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega").slice(0, 80),
-    time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now()
+    time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now(),
+    orderId: typeof options.orderId === "string" ? options.orderId.slice(0, 80) : ""
   });
   state.walletTransactions = state.walletTransactions.slice(0, 60);
   return true;
@@ -40306,11 +41447,14 @@ function buyFood(foodKey) {
     return;
   }
 
+  const purchaseCost = getFoodPurchaseCost(food.id);
+  const rescueOffer = food.id === "basic" && purchaseCost === 0 && getBubbleBodegaRescueOfferStatus().foodAvailable;
   return performCoinTransaction({
-    amount: food.cost,
+    amount: purchaseCost,
     insufficientMessage: "Not enough coins for that food bottle.",
     apply: () => {
       state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
+      if (rescueOffer) markBubbleBodegaRescueItemClaimed("food");
     },
     event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}).` },
     toast: `${food.name} stocked. +${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}.`
@@ -40448,6 +41592,10 @@ async function buyFish(speciesId, options = {}) {
   }
 
   if (isCustomFishShopKey(speciesId)) {
+    if (!isFishSpeciesShopUnlocked(speciesId)) {
+      showToast(`${getUnlockRequirementLabel(runtime.fishMap.get(speciesId)?.unlockRequirement)} milestone required.`);
+      return { ok: false, reason: "locked" };
+    }
     openLocalFishPicker();
     return { ok: false, reason: "custom-upload" };
   }
@@ -40468,6 +41616,7 @@ async function buyFish(speciesId, options = {}) {
   }
 
   const purchaseCost = getFishPurchaseCost(speciesId);
+  const davyMutationPurchase = species?.davyMutation === true || String(species?.id || "").startsWith("davy-");
   if (state.coins < purchaseCost) {
     const errorMessage = getInsufficientFundsMessage();
     showToast(errorMessage, { force: true, tone: "error" });
@@ -40525,6 +41674,8 @@ async function buyFish(speciesId, options = {}) {
     const transaction = performCoinTransaction({
       amount: purchaseCost,
       now: purchaseCompletedAt,
+      place: davyMutationPurchase ? "UNKNOWN_VENDOR" : undefined,
+      receiptLabel: davyMutationPurchase ? "UNKNOWN_VENDOR" : undefined,
       insufficientMessage: `You need ${purchaseCost} ${pluralize("coin", purchaseCost)} for a ${species.name}.`,
       apply: () => {
         fish.acquiredAt = purchaseCompletedAt;
@@ -40534,6 +41685,9 @@ async function buyFish(speciesId, options = {}) {
           : purchaseCompletedAt;
         fish.entrySplashTriggered = false;
         addFishToTank(fish, purchaseCompletedAt);
+        if (speciesId === "goldfish" && purchaseCost === 0 && getBubbleBodegaRescueOfferStatus().goldfishAvailable) {
+          markBubbleBodegaRescueItemClaimed("goldfish", purchaseCompletedAt);
+        }
         maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
         if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
           setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
@@ -41081,23 +42235,22 @@ function buyBackground(backgroundKey) {
 }
 
 
-function buyAutoDispenser() {
-  if (hasAutoDispenserInstalled()) {
-    showToast("This tank already has a pellet dispenser installed.");
-    return;
-  }
-
+function buyAutoDispenser(options = {}) {
   return performCoinTransaction({
     amount: AUTO_DISPENSER_COST,
     insufficientMessage: `You need ${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)} for the pellet dispenser.`,
     apply: () => {
+      const existing = state.autoDispenser;
       state.autoDispenser = createDefaultAutoDispenserState({
-        ...state.autoDispenser,
-        installed: true
+        ...existing,
+        installed: existing?.installed === true,
+        stored: true,
+        storedCount: Math.max(0, Math.floor(Number(existing?.storedCount) || 0)) + 1,
+        appearanceVariantKey: options.appearanceVariantKey || existing?.appearanceVariantKey || ""
       });
     },
-    event: { type: "equipment", tone: "positive", text: "Installed an automatic pellet dispenser above the waterline." },
-    toast: "Pellet dispenser installed."
+    event: { type: "equipment", tone: "positive", text: "Purchased a pellet dispenser. Deploy it from Edit > Equipment." },
+    toast: "Pellet dispenser purchased. Deploy it from Edit > Equipment."
   });
 }
 // </bundle-source>
@@ -44891,12 +46044,23 @@ function getFishSchoolFollowLeader(fish) {
   return state.fish.find((entry) => entry.id === fish.followFishId) || null;
 }
 
+function getFishSchoolingCompatibilityId(fish) {
+  const species = getBaseSpeciesForFish(fish);
+  if (species?.customAsset) {
+    return sanitizeFishBehaviorSpeciesId(
+      fish?.behaviorSpeciesId || species.behaviorSpeciesId || species.behaviorProfileId,
+      fish?.speciesId
+    ) || fish?.speciesId || "";
+  }
+  return fish?.speciesId || "";
+}
+
 function isFishEligibleSchoolLeader(leader, follower, species, now = Date.now()) {
   if (
     !leader ||
     !follower ||
     leader.id === follower.id ||
-    leader.speciesId !== follower.speciesId ||
+    getFishSchoolingCompatibilityId(leader) !== getFishSchoolingCompatibilityId(follower) ||
     isFishDead(leader) ||
     leader.activity !== "roam" ||
     leader.caveState ||
@@ -45128,16 +46292,307 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
 // Source fragment: store/catalog.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function getDavyMutationCatalogDefinitions() {
+  const folder = "web/davy/mutations";
+  return [
+    {
+      id: "davy-bioluminescent-cherub-goldfish",
+      seller: "UNKNOWN_VENDOR",
+      name: "Cherub Puff Goldfish",
+      description: "A consumer-focused companion specimen engineered around fancy goldfish, pufferfish, and permanently juvenile developmental traits. Oversized eyes, rounded proportions, a translucent glowing belly, and a tiny bioluminescent forehead organ were intentionally selected to maximize perceived cuteness. The result is undeniably adorable. Thinking too hard about why it looks that way is not recommended.",
+      davyBehaviorLabel: "Affectionate companion",
+      davyBehaviorSummary: "Deliberately engineered to behave like an absurdly affectionate pet. It swims slowly, follows nearby movement, approaches the glass frequently, and tends to hover near other peaceful fish rather than keeping distance. Its tiny forehead light brightens during feeding, interaction, and excitement. When startled, it gives a brief miniature puff before slowly deflating. It frequently pauses to stare directly outward with its oversized eyes, which makes it either incredibly endearing or mildly disturbing. Its swimming is slightly clumsy because its proportions were designed for appearance rather than efficiency.",
+      davySwimStyleSummary: "Slow and slightly clumsy. It hovers often, drifts gently between short bursts of movement, and prefers close, social positioning over efficient cruising.",
+      davyDietSummary: "General prepared foods. Readily accepts standard aquarium feeding and responds quickly to visible food or interaction.",
+      davyTemperamentSummary: "Unusually social, attention-seeking, and gentle. It behaves more like a companion animal than a conventional ornamental fish.",
+      davyTraits: ["Companion following", "Front-glass visits", "Slow hover", "Startle puff"],
+      cost: 325,
+      assetFolder: folder,
+      asset: "DNA_Bioluminescent _Cherub_Goldfish_1.png",
+      assetVariants: [1, 2, 3, 4, 5].map((number) => `DNA_Bioluminescent _Cherub_Goldfish_${number}.png`),
+      width: 150,
+      displayWidth: 150,
+      swimStyle: "peaceful",
+      speedMode: "steady",
+      speedMin: 0.014,
+      speedMax: 0.034,
+      targetMinMs: 3200,
+      targetMaxMs: 7200,
+      behavior: "free",
+      diet: "pellet",
+      heartCount: 5,
+      caveEnabled: true,
+      davyMutation: true,
+      storeBackgroundImage: "assets/web/davy/icons/thumbnail_bg.png"
+    },
+    {
+      id: "davy-bioluminescent-angler-pike",
+      seller: "UNKNOWN_VENDOR",
+      name: "Dwarf Siren Pike",
+      description: "An experimental ambush predator built around a dwarf pike genome and reinforced with deep-sea, electric, regenerative, and camouflage adaptations. Its luminous lure, expandable throat structure, exposed bioelectric organs, and highly modified fins make the specimen difficult to mistake for anything naturally occurring. It is remarkably patient. Until it isn’t.",
+      davyBehaviorLabel: "Patient ambush predator",
+      davyBehaviorSummary: "A patient ambush hunter that spends unusually long periods hovering or resting nearly motionless. Its forehead lure glows and gently twitches while it waits, occasionally drawing curious fish closer. The ragged dorsal sail remains folded during normal swimming but expands dramatically when startled or displaying. Its translucent organ chambers pulse faintly at irregular intervals, and its throat pouch expands when feeding or agitated. Instead of chasing food across the tank, it prefers to wait, creep forward slowly, then suddenly lunge.",
+      davySwimStyleSummary: "Minimal routine movement punctuated by deliberate creeping and abrupt lunges. It conserves motion until there is a reason not to.",
+      davyDietSummary: "Predatory diet. Best suited to protein-rich foods and treated more like a waiting hunter than a casual community feeder.",
+      davyTemperamentSummary: "Patient, observant, and unnerving. It is less openly aggressive than its appearance suggests, but it is always assessing nearby movement.",
+      davyTraits: ["Ambush hover", "Lure display", "Slow creep", "Burst strike"],
+      cost: 500,
+      assetFolder: folder,
+      asset: "DNA_Bioluminescent_Angler_Pike_1.png",
+      assetVariants: [1, 2, 3, 4, 5].map((number) => `DNA_Bioluminescent_Angler_Pike_${number}.png`),
+      width: 180,
+      displayWidth: 180,
+      swimStyle: "sporadic",
+      speedMode: "dynamic",
+      speedMin: 0.014,
+      speedMax: 0.084,
+      targetMinMs: 3200,
+      targetMaxMs: 9000,
+      behavior: "free",
+      diet: "pellet",
+      heartCount: 7,
+      caveEnabled: true,
+      davyMutation: true,
+      storeBackgroundImage: "assets/web/davy/icons/thumbnail_bg.png"
+    },
+    {
+      id: "davy-bioluminescent-glass-fangfish",
+      seller: "UNKNOWN_VENDOR",
+      name: "Glass Needle Spitter",
+      description: "A two-inch laboratory curiosity combining pygmy fish genetics with transparent tissue, bioluminescent organs, precision water projection, defensive inflation, and disproportionately large predatory teeth. Most of its internal anatomy remains visible through the body wall. Small enough to disappear behind a filter tube. Strange enough that you will immediately notice when it does.",
+      davyBehaviorLabel: "Nervous cover dart",
+      davyBehaviorSummary: "Tiny, nervous, and extremely quick. It stays close to cover and changes direction in abrupt little darts rather than making long sweeping turns. Its enormous eyes constantly track activity both inside and above the tank. When food or movement appears near the surface, it may approach beneath it and fire a small jet of water upward. Its cheek photophores blink softly when exploring and brighten when excited. When frightened, its translucent belly inflates slightly and it may release a temporary mucus cloud before retreating. Despite its ridiculous teeth, it usually avoids larger fish.",
+      davySwimStyleSummary: "Abrupt, twitchy, and cover-oriented. It avoids long continuous routes and instead makes quick course changes around perceived shelter.",
+      davyDietSummary: "Micro-predatory diet. It responds strongly to small foods and surface activity and does best when it can feed in short, opportunistic bursts.",
+      davyTemperamentSummary: "Alert, skittish, and reactive. It prefers caution over confrontation and will usually choose retreat over open conflict.",
+      davyTraits: ["Cover-seeking", "Abrupt darts", "Surface tracking", "Defensive retreat"],
+      cost: 400,
+      assetFolder: folder,
+      asset: "DNA_Bioluminescent_Glass_Fangfish_1.png",
+      assetVariants: [1, 2, 3, 4, 5].map((number) => `DNA_Bioluminescent_Glass_Fangfish_${number}.png`),
+      width: 170,
+      displayWidth: 170,
+      swimStyle: "sporadic",
+      speedMode: "dynamic",
+      speedMin: 0.03,
+      speedMax: 0.094,
+      targetMinMs: 850,
+      targetMaxMs: 2600,
+      behavior: "free",
+      diet: "pellet",
+      heartCount: 6,
+      caveEnabled: true,
+      davyMutation: true,
+      storeBackgroundImage: "assets/web/davy/icons/thumbnail_bg.png"
+    },
+    {
+      id: "davy-dwarf-chimera-barracuda",
+      seller: "UNKNOWN_VENDOR",
+      name: "Dwarf Chimera Barracuda",
+      description: "A compact apex predator assembled from barracuda, cuttlefish, electric eel, lionfish, and mantis shrimp genetics. Adaptive camouflage, electrostunning organs, venomous dorsal defenses, and enhanced motion tracking were compressed into a specimen small enough for domestic aquariums. Extremely fast. Extremely observant. Technically ornamental.",
+      davyBehaviorLabel: "Active patrol predator",
+      davyBehaviorSummary: "An active patrol predator. It cruises steadily through open water, periodically stopping almost motionless before launching into very fast bursts. Its cuttlefish-derived chromatophores slowly shift pattern while idle, becoming more intense when hunting or stressed. When food appears, it tracks it visually before striking rather than immediately swimming toward it. Its electric organ briefly pulses along the flank during aggressive encounters, and the venomous dorsal spines rise when threatened. It prefers space and tends to intimidate nearby fish without constantly attacking them.",
+      davySwimStyleSummary: "Open-water patrol with periodic stillness followed by forceful acceleration. It prefers clear routes and visible space.",
+      davyDietSummary: "Predatory, protein-forward feeding. It responds to food as prey and tends to evaluate movement before committing to a strike.",
+      davyTemperamentSummary: "Confident and intimidating. It does not constantly attack, but its presence can alter the behavior of nearby fish.",
+      davyTraits: ["Open-water patrol", "Burst acceleration", "Adaptive camouflage", "Threat display"],
+      cost: 450,
+      assetFolder: folder,
+      asset: "DNA_Dwarf_Chimera_Barracuda_1.png",
+      assetVariants: [1, 2, 3, 4, 5].map((number) => `DNA_Dwarf_Chimera_Barracuda_${number}.png`),
+      width: 190,
+      displayWidth: 190,
+      swimStyle: "sporadic",
+      speedMode: "dynamic",
+      speedMin: 0.034,
+      speedMax: 0.095,
+      targetMinMs: 1800,
+      targetMaxMs: 5200,
+      behavior: "free",
+      diet: "pellet",
+      heartCount: 8,
+      caveEnabled: true,
+      davyMutation: true,
+      storeBackgroundImage: "assets/web/davy/icons/thumbnail_bg.png"
+    },
+    {
+      id: "davy-dwarf-hyperfin",
+      seller: "UNKNOWN_VENDOR",
+      name: "Dwarf Hyperfin",
+      description: "A compact high-performance fish engineered from some of the fastest and most efficient swimmers in the animal kingdom. Streamlined musculature, drag-reducing skin, stabilizing finlets, and an oversized cardiovascular system allow the Dwarf Hyperfin to accelerate with startling force while remaining small enough for a home aquarium. At rest, it is elegant. At speed, it becomes difficult to follow with your eyes.",
+      davyBehaviorLabel: "High-speed open-water runner",
+      davyBehaviorSummary: "Calm and deliberate when idle, but highly reactive to movement, food, and open swimming space. It prefers long unobstructed routes through the tank and may repeat high-speed circuits when excited. It is not especially aggressive, but its sudden acceleration can startle slower fish.",
+      davySwimStyleSummary: "Built for extreme burst speed. Most of the time it cruises with tiny, efficient tail movements and its fins held close to the body. During a sprint, the body stiffens, the pectoral fins tuck in, the rear finlets stabilize the flow, and the crescent tail beats in very fast, shallow strokes. It turns by banking sharply rather than slowing gradually.",
+      davyDietSummary: "High-protein carnivore. Prefers small fish, shrimp, insects, and protein-rich prepared foods. It burns energy quickly and benefits from frequent smaller feedings rather than one large meal.",
+      davyTemperamentSummary: "Alert, energetic, and highly visual. It watches movement outside the tank, investigates food immediately, and becomes restless in cramped or cluttered environments. It is more performance-driven than territorial.",
+      davyTraits: ["Long-route cruising", "Burst-speed circuits", "Sharp banked turns", "Immediate food response"],
+      cost: 475,
+      assetFolder: folder,
+      asset: "DNA_Dwarf_Hyperfin_1.png",
+      assetVariants: [1, 2, 3, 4, 5].map((number) => `DNA_Dwarf_Hyperfin_${number}.png`),
+      width: 188,
+      displayWidth: 188,
+      swimStyle: "steady",
+      speedMode: "dynamic",
+      speedMin: 0.026,
+      speedMax: 0.112,
+      targetMinMs: 1000,
+      targetMaxMs: 3200,
+      behavior: "free",
+      diet: "chum",
+      heartCount: 7,
+      caveEnabled: true,
+      davyMutation: true,
+      storeBackgroundImage: "assets/web/davy/icons/thumbnail_bg.png"
+    }
+  ];
+}
+
+function isDavyMutationSpecies(speciesOrId) {
+  const species = typeof speciesOrId === "string" ? runtime.fishMap.get(speciesOrId) : speciesOrId;
+  return species?.davyMutation === true || String(species?.id || speciesOrId || "").startsWith("davy-");
+}
+
+function getDavyMutationDayKey(now = Date.now()) {
+  const date = new Date(Number(now) || Date.now());
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function hashDavyMutationDailySeed(value = "") {
+  let hash = 2166136261;
+  for (const character of String(value)) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function getDavyMutationDailyOffer(now = Date.now()) {
+  const dayKey = getDavyMutationDayKey(now);
+  if (runtime.davyMutationDailyOffer?.dayKey === dayKey) {
+    return runtime.davyMutationDailyOffer.offer || null;
+  }
+  const mutations = (runtime.fishCatalog || []).filter((species) => isDavyMutationSpecies(species));
+  if (!mutations.length) {
+    runtime.davyMutationDailyOffer = { dayKey, offer: null };
+    return null;
+  }
+  let accountName = "local";
+  try {
+    if (typeof getAccountUsernameForUser === "function") accountName = getAccountUsernameForUser() || accountName;
+  } catch {}
+  const chanceHash = hashDavyMutationDailySeed(`${dayKey}|${accountName}|bubblebodega-mutation-roll`);
+  if ((chanceHash % 10000) >= 500) {
+    runtime.davyMutationDailyOffer = { dayKey, offer: null };
+    return null;
+  }
+  const speciesHash = hashDavyMutationDailySeed(`${dayKey}|${accountName}|species`);
+  const species = mutations[speciesHash % mutations.length];
+  const variants = getFishStoreVariants(species);
+  if (!variants.length) {
+    runtime.davyMutationDailyOffer = { dayKey, offer: null };
+    return null;
+  }
+  const variantHash = hashDavyMutationDailySeed(`${dayKey}|${accountName}|variant`);
+  const variant = variants[variantHash % variants.length];
+  const offer = { dayKey, species, variantKey: variant.key, variant };
+  runtime.davyMutationDailyOffer = { dayKey, offer };
+  return offer;
+}
+
+function getBubbleBodegaFishStoreVariants(species) {
+  if (!isDavyMutationSpecies(species)) {
+    return getFishStoreVariants(species);
+  }
+  const offer = getDavyMutationDailyOffer();
+  return offer?.species?.id === species?.id && offer.variant ? [offer.variant] : [];
+}
+
 function getOwnedFishCount() {
   return getAllTankFish().length + state.storedFish.length;
 }
 
+function getLivingOwnedFishCount() {
+  return getAllTankFish().filter((fish) => fish && !isFishDead(fish)).length
+    + state.storedFish.filter((fish) => fish && !isFishDead(fish)).length;
+}
+
+function getBubbleBodegaRescueOfferStatus() {
+  const offer = state?.bubbleBodegaRescueOffer || {};
+  const activated = Number(offer.activatedAt) > 0;
+  return {
+    cycle: Math.max(0, Math.floor(Number(offer.cycle) || 0)),
+    issued: Number(offer.issuedAt) > 0,
+    activated,
+    foodAvailable: activated && !(Number(offer.foodClaimedAt) > 0),
+    goldfishAvailable: activated && !(Number(offer.goldfishClaimedAt) > 0),
+    redeemed: Number(offer.foodClaimedAt) > 0 && Number(offer.goldfishClaimedAt) > 0
+  };
+}
+
+function ensureBubbleBodegaRescueOffer(now = Date.now()) {
+  if (!state) {
+    return getBubbleBodegaRescueOfferStatus();
+  }
+  if (!state.bubbleBodegaRescueOffer || typeof state.bubbleBodegaRescueOffer !== "object") {
+    state.bubbleBodegaRescueOffer = sanitizeBubbleBodegaRescueOffer(null);
+  }
+  const offer = state.bubbleBodegaRescueOffer;
+  const eligible = state.coins <= 0 && getLivingOwnedFishCount() === 0;
+  if (!eligible) {
+    offer.eligibilityActive = false;
+    return getBubbleBodegaRescueOfferStatus();
+  }
+  if (!offer.eligibilityActive) {
+    offer.cycle = Math.max(0, Math.floor(Number(offer.cycle) || 0)) + 1;
+    offer.eligibilityActive = true;
+    offer.issuedAt = now;
+    offer.activatedAt = 0;
+    offer.foodClaimedAt = 0;
+    offer.goldfishClaimedAt = 0;
+  }
+  return getBubbleBodegaRescueOfferStatus();
+}
+
+function activateBubbleBodegaRescueOffer(now = Date.now()) {
+  const status = ensureBubbleBodegaRescueOffer(now);
+  if (!status.issued || status.redeemed) {
+    return { ...status, accepted: false };
+  }
+  if (status.activated) {
+    return { ...status, accepted: false };
+  }
+  state.bubbleBodegaRescueOffer.activatedAt = now;
+  saveState();
+  return { ...getBubbleBodegaRescueOfferStatus(), accepted: true };
+}
+
+function markBubbleBodegaRescueItemClaimed(item, now = Date.now()) {
+  const field = item === "food" ? "foodClaimedAt" : item === "goldfish" ? "goldfishClaimedAt" : "";
+  if (!field || !state?.bubbleBodegaRescueOffer || Number(state.bubbleBodegaRescueOffer[field]) > 0) {
+    return false;
+  }
+  state.bubbleBodegaRescueOffer[field] = now;
+  return true;
+}
+
+function getFoodPurchaseCost(foodId) {
+  const food = getFoodMeta(foodId);
+  if (food?.id === "basic" && getBubbleBodegaRescueOfferStatus().foodAvailable) {
+    return 0;
+  }
+  return food?.cost ?? 0;
+}
+
 function getStoreProductFacets(kind, entry) {
   if (kind === "fish") {
+    const seller = typeof entry?.seller === "string" && entry.seller.trim()
+      ? entry.seller.trim()
+      : "BubbleBodega";
     return {
       Availability: [isFishSpeciesShopUnlocked(entry) ? "Available now" : "Locked"],
+      Seller: [seller],
       Type: [entry.behavior === "free" ? "Free swimming" : entry.behavior || "custom", ...(entry.caveEnabled ? ["Cave fish"] : [])],
-      "Water type": [entry.waterType || "freshwater"],
       Diet: [entry.diet || "omnivore"]
     };
   }
@@ -45158,7 +46613,10 @@ function getStoreProductFacets(kind, entry) {
 }
 
 function renderStoreFacetAttributes(kind, entry) {
-  return `data-store-facets="${escapeHtml(JSON.stringify(getStoreProductFacets(kind, entry)))}"`;
+  const seller = typeof entry?.seller === "string" && entry.seller.trim()
+    ? entry.seller.trim()
+    : "BubbleBodega";
+  return `data-store-facets="${escapeHtml(JSON.stringify(getStoreProductFacets(kind, entry)))}" data-store-seller="${escapeHtml(seller)}"`;
 }
 
 function compareFishCatalogBySize(left, right) {
@@ -45230,11 +46688,6 @@ function sortCatalogEntries(entries, sortKey) {
       return lockRank;
     }
 
-    const featuredRank = getFeaturedShopSortRank(left) - getFeaturedShopSortRank(right);
-    if (featuredRank !== 0) {
-      return featuredRank;
-    }
-
     if (normalizedSort === "name") {
       return String(left?.name || "").localeCompare(String(right?.name || ""))
         || (left?.cost ?? Number.MAX_SAFE_INTEGER) - (right?.cost ?? Number.MAX_SAFE_INTEGER);
@@ -45247,6 +46700,7 @@ function sortCatalogEntries(entries, sortKey) {
     }
 
     return (left?.cost ?? Number.MAX_SAFE_INTEGER) - (right?.cost ?? Number.MAX_SAFE_INTEGER)
+      || getFeaturedShopSortRank(left) - getFeaturedShopSortRank(right)
       || String(left?.name || "").localeCompare(String(right?.name || ""));
   });
 }
@@ -45351,10 +46805,8 @@ function getFishShopSearchHaystack(fish) {
   return [
     fish?.name,
     fish?.id,
-    fish?.theme,
     fish?.behavior,
     fish?.diet,
-    fish?.waterType,
     getUnlockRequirementLabel(fish?.unlockRequirement),
     ...getSpeciesNeedTags(fish).map((tag) => getComfortTagLabel(tag)),
     ...getSpeciesConflictTags(fish).map((tag) => getComfortTagLabel(tag)),
@@ -45484,7 +46936,7 @@ function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
           <select class="shop-sort-select" data-shop-sort="${shopKind}" aria-label="Sort ${shopKind} shop">
             <option value="cost" ${selectedSort === "cost" ? "selected" : ""}>Cost</option>
             <option value="name" ${selectedSort === "name" ? "selected" : ""}>Name</option>
-            <option value="theme" ${selectedSort === "theme" ? "selected" : ""}>Theme</option>
+            ${shopKind === "decor" ? `<option value="theme" ${selectedSort === "theme" ? "selected" : ""}>Theme</option>` : ""}
           </select>
         </label>
       </div>
@@ -45562,9 +47014,11 @@ function isFishSpeciesUnlocked(speciesOrId) {
 }
 
 function getFishShopCatalog() {
+  const davyOffer = getDavyMutationDailyOffer();
   return runtime.fishCatalog.filter((species) => (
     species
     && !HIDDEN_FISH_OPTION_IDS.has(species.id)
+    && (!isDavyMutationSpecies(species) || davyOffer?.species?.id === species.id)
     && ((isZombieSkeletonModeAvailable() && isGoreEnabled()) || !isUndeadSpecies(species))
   ));
 }
@@ -45572,6 +47026,10 @@ function getFishShopCatalog() {
 function getStarterFishSpecies() {
   const shopCatalog = getFishShopCatalog();
   const unlockedCatalog = shopCatalog.filter((species) => isFishSpeciesUnlocked(species));
+  const goldfish = unlockedCatalog.find((species) => species.id === "goldfish");
+  if (goldfish) {
+    return goldfish;
+  }
   return [...(unlockedCatalog.length ? unlockedCatalog : shopCatalog)]
     .sort(compareFishCatalogBySize)[0] || null;
 }
@@ -45581,8 +47039,7 @@ function getFishPurchaseCost(speciesId) {
     return CUSTOM_FISH_COST;
   }
 
-  const starterSpeciesId = getStarterFishSpecies()?.id;
-  if (speciesId === starterSpeciesId && state.coins <= 0 && getOwnedFishCount() === 0) {
+  if (speciesId === "goldfish" && getBubbleBodegaRescueOfferStatus().goldfishAvailable) {
     return 0;
   }
 
@@ -47071,14 +48528,10 @@ function dispenseAutoDispenserNow(now = Date.now()) {
   }
 
   const dispenser = state.autoDispenser;
-  const requested = clamp(
-    Math.round(Number(dispenser?.mealPortion) || 0),
-    AUTO_DISPENSER_PORTION_MIN,
-    AUTO_DISPENSER_PORTION_MAX
-  );
+  const requested = Math.min(AUTO_DISPENSER_MAX_PELLETS, getAutoDispenserDemandCount(getCurrentTank(), now));
 
   if (requested <= 0) {
-    showToast("Set the pellet dispenser amount above 00 first.");
+    showToast("There are no hungry connected fish to feed right now.");
     return false;
   }
 
@@ -48053,7 +49506,7 @@ function triggerDebugBehaviorInspectLure(now = Date.now()) {
     lingerMultiplier: 1
   });
   if (!lure) {
-    showToast("Add a Fishing Lure or Gorbag to test lure inspection.");
+    showToast("Add a Fishing Lure or Gorebag to test lure inspection.");
     return;
   }
 
@@ -48857,7 +50310,7 @@ function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now
     case "inspect-lure":
       return hasDebugDecorHangoutZone(["lure"])
         ? { enabled: true, title }
-        : { enabled: false, title: `${title}: add a Fishing Lure or Gorbag` };
+        : { enabled: false, title: `${title}: add a Fishing Lure or Gorebag` };
     case "guard-cave":
       return hasDebugDecorHangoutZone(["hide", "hardscape"])
         ? { enabled: true, title }
@@ -50627,11 +52080,43 @@ function hasCommunityMilestoneTank(recentAverageComfort = 0) {
   });
 }
 
-function getHealthyTankCount() {
-  return getAllTanks(state).filter((tank) => (
-    Array.isArray(tank?.fish)
-    && tank.fish.some((fish) => fish && !isFishDead(fish) && getFishHealthRatio(fish) >= 1)
-  )).length;
+function getConnectedTubeTankCount() {
+  const tanks = getAllTanks(state);
+  if (tanks.length < 3 || typeof getAllTransitTubes !== "function") {
+    return 0;
+  }
+  const tankIds = new Set(tanks.map((tank) => String(tank?.id || "")).filter(Boolean));
+  const adjacency = new Map([...tankIds].map((id) => [id, new Set()]));
+  for (const entry of getAllTransitTubes()) {
+    const sourceTankId = String(entry?.tank?.id || "");
+    const target = getAllTransitTubes().find((candidate) => candidate?.item?.id === entry?.item?.transitTubeLinkedId);
+    const targetTankId = String(target?.tank?.id || "");
+    if (!sourceTankId || !targetTankId || sourceTankId === targetTankId || target?.item?.transitTubeLinkedId !== entry?.item?.id) {
+      continue;
+    }
+    adjacency.get(sourceTankId)?.add(targetTankId);
+    adjacency.get(targetTankId)?.add(sourceTankId);
+  }
+  let largestComponent = 0;
+  const visited = new Set();
+  for (const startId of tankIds) {
+    if (visited.has(startId)) continue;
+    const queue = [startId];
+    visited.add(startId);
+    let size = 0;
+    while (queue.length) {
+      const currentId = queue.shift();
+      size += 1;
+      for (const neighborId of adjacency.get(currentId) || []) {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          queue.push(neighborId);
+        }
+      }
+    }
+    largestComponent = Math.max(largestComponent, size);
+  }
+  return largestComponent;
 }
 
 function getMilestoneStats(latestSummary = null, now = Date.now()) {
@@ -50659,7 +52144,7 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     ? Math.floor((now - latestDeath) / DAY_MS)
     : Math.floor((now - stewardshipStart) / DAY_MS);
   const cleanRecapStreak90 = countRecentRecapStreak(history, (summary) => getRecapCleanPercent(summary, now) >= 90);
-  const cleanRecapCount95 = history.filter((summary) => getRecapCleanPercent(summary, now) >= 95).length;
+  const cleanRecapStreak95 = countRecentRecapStreak(history, (summary) => getRecapCleanPercent(summary, now) >= 95);
   const allMealsSatisfiedStreak = countRecentRecapStreak(history, (summary) => summary?.allMealsSatisfied === true);
   const comfort80Streak = countRecentRecapStreak(history, (summary) => Number(summary?.averageComfort) >= 80);
   const comfort90Streak = countRecentRecapStreak(history, (summary) => Number(summary?.averageComfort) >= 90);
@@ -50695,11 +52180,8 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     daysSinceLastDeath,
     hasSparklingFish: livingFish.some((fish) => getFishComfort(fish, now).value >= 0.95),
     hasSaltwaterFish: livingFish.some((fish) => getSpeciesWaterType(fish) === "saltwater"),
-    hasSpookyKeeperPath: Number(state?.lifetimeDeaths) > 0
-      || allEvents.some((event) => /zombie|skeleton|corpse|dead fish/i.test(event?.text || ""))
-      || (state?.unlockedFishSpecies || []).some((speciesId) => speciesId === "zombie-fish" || speciesId === "skeleton-fish"),
     cleanRecapStreak90,
-    cleanRecapCount95,
+    cleanRecapStreak95,
     allMealsSatisfiedStreak,
     comfort80Streak,
     comfort90Streak,
@@ -50719,7 +52201,7 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     gravelCoinFinds,
     healingEvents,
     hasRescueKeeper: lastHealingAt > 0 && now - lastHealingAt >= 3 * DAY_MS && !deathAfterLastHealing,
-    healthyTankCount: getHealthyTankCount()
+    connectedTubeTankCount: getConnectedTubeTankCount()
   };
 }
 
@@ -50867,6 +52349,7 @@ function saveState() {
   }
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
 
+  ensureBubbleBodegaRescueOffer(Date.now());
   applyProgressMilestones(null, Date.now());
 
   const customDecorPruned = pruneCustomDecorAssets(state);
@@ -52025,6 +53508,14 @@ function syncToolbarFastTooltipExperiment() {
     return;
   }
 
+  // The tank stage is transformed to fit the viewport. A fixed-position
+  // tooltip inside that transformed subtree uses the stage's coordinate space,
+  // which offsets labels away from the toolbar button they describe. Keep the
+  // shared tooltip at document level so viewport coordinates line up.
+  if (dom.toolbarFastTooltip && dom.toolbarFastTooltip.parentElement !== document.body) {
+    document.body.append(dom.toolbarFastTooltip);
+  }
+
   const enabled = isToolbarFastTooltipExperimentEnabled();
   const buttons = dock.querySelectorAll(".dock-button, .toolbar-action-menu-button");
   for (const button of buttons) {
@@ -52291,9 +53782,18 @@ function renderUi(now, options = {}) {
     window.buyDecor = buyDecor;
     window.buySubmarine = buySubmarine;
     window.buyBoat = buyBoat;
+    window.buyAutoDispenser = buyAutoDispenser;
     window.showToast = showToast;
     window.setStorePurchaseSoundBatch = setStorePurchaseSoundBatch;
     window.playPurchaseSoundEffect = playPurchaseSoundEffect;
+    window.recordBubbleBodegaOrder = recordBubbleBodegaOrder;
+    window.buyEngineeredAquaticSpecimen = buyEngineeredAquaticSpecimen;
+    window.markEngineeredAquaticSpecimenDesigned = markEngineeredAquaticSpecimenDesigned;
+    window.markEngineeredAquaticSpecimenConfigured = markEngineeredAquaticSpecimenConfigured;
+    window.beginEngineeredAquaticSpecimenDesign = beginEngineeredAquaticSpecimenDesign;
+    window.showProteusDesignerPage = (orderId = "") => openProteusDesignerPage(orderId);
+    window.getBubbleBodegaAccountData = getBubbleBodegaAccountData;
+    window.activateBubbleBodegaRescueOffer = activateBubbleBodegaRescueOffer;
   }
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
@@ -52551,7 +54051,7 @@ function renderWalletTransactionMenu() {
       return `<article class="wallet-receipt ${neutral ? "is-neutral" : debit ? "is-debit" : "is-credit"}"><strong>${amountMarkup}</strong><span>${escapeHtml(place)} · ${escapeHtml(entry.label)}</span><time>${escapeHtml(time)}</time></article>`;
     }).join("")
     : `<p class="wallet-receipt-empty">No receipts yet.</p>`;
-  setMarkupIfChanged("wallet-transactions", menu, `<header><strong>Recent receipts</strong></header><div class="wallet-receipt-list">${receipts}</div>`);
+  setMarkupIfChanged("wallet-transactions", menu, `<header><strong>Recent receipts</strong><button type="button" data-open-bubble-bank>Open Bank</button></header><div class="wallet-receipt-list">${receipts}</div>`);
 }
 
 function renderMealTrack(now) {
@@ -52648,6 +54148,10 @@ function formatFishShopBehavior(species) {
     return "Choose behavior";
   }
 
+  if (isDavyMutationSpecies(species) && species.davyBehaviorLabel) {
+    return species.davyBehaviorLabel;
+  }
+
   if (isPiranhaSpecies(species)) {
     return "Swarm predator";
   }
@@ -52704,7 +54208,13 @@ function renderFishShop() {
       }
       return getFishPurchaseCost(fish.id) <= tutorialRestriction.maxCost;
     });
-  const allCatalog = sortCatalogEntries(filteredCatalog, runtime.storeSorts.fish);
+  const requestedSort = normalizeStoreSortKey(runtime.storeSorts.fish);
+  const sortedCatalog = sortCatalogEntries(filteredCatalog, requestedSort === "theme" ? "cost" : requestedSort);
+  const dailyMutationOffer = getDavyMutationDailyOffer();
+  const dailyMutationIndex = dailyMutationOffer ? sortedCatalog.findIndex((fish) => fish.id === dailyMutationOffer.species.id) : -1;
+  const allCatalog = dailyMutationIndex > 0
+    ? [sortedCatalog[dailyMutationIndex], ...sortedCatalog.filter((_, index) => index !== dailyMutationIndex)]
+    : sortedCatalog;
   const catalog = allCatalog.filter((fish) => matchesShopSearchQuery(getFishShopSearchHaystack(fish), searchQuery));
   const tutorialPreviewOnly = tutorialRestriction?.previewOnly === true;
   if (!allCatalog.length) {
@@ -52734,8 +54244,8 @@ function renderFishShop() {
   const cardsMarkup = catalog
     .map((fish) => {
       const isCustomUploadProduct = isCustomFishShopKey(fish.id);
-      const progressLocked = !isCustomUploadProduct && !isFishSpeciesProgressUnlocked(fish);
-      const locked = !isCustomUploadProduct && !isFishSpeciesShopUnlocked(fish);
+      const progressLocked = !isFishSpeciesProgressUnlocked(fish);
+      const locked = !isFishSpeciesShopUnlocked(fish);
       const debugUnlocked = progressLocked && !locked;
       const purchaseCost = getFishPurchaseCost(fish.id);
       const maxHealthUnits = getSpeciesMaxHealthUnits(fish);
@@ -52751,7 +54261,9 @@ function renderFishShop() {
       const dirtinessLoadPercent = isCustomUploadProduct
         ? null
         : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
-      const fishAsset = getFishStoreVariants(fish)[0]?.image || getFishCatalogAssetPath(fish) || fish.asset;
+      const bubbleBodegaVariants = getBubbleBodegaFishStoreVariants(fish);
+      const fishAsset = bubbleBodegaVariants[0]?.image || getFishCatalogAssetPath(fish) || fish.asset;
+      const isDavyMutation = isDavyMutationSpecies(fish);
       const needChips = renderNeutralComfortTagChips(getSpeciesNeedTags(fish));
       const conflictChips = renderNeutralComfortTagChips(getSpeciesConflictTags(fish));
       const lockedRequirementLabel = getUnlockRequirementLabel(fish.unlockRequirement);
@@ -52764,13 +54276,18 @@ function renderFishShop() {
         ? "Warning: attacks and can kill non-undead tankmates when aggressive behavior is enabled."
         : "";
       return `
-        <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
+        <article class="shop-card ${locked ? "is-locked" : ""} ${isDavyMutation ? "is-davy-mutation" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
           <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
           <div class="shop-meta shop-card-main">
             <div>
               <strong>${fish.name}</strong>
               ${renderFishShopThemePill(fish.theme)}
-              ${fish.description ? `<div class="fish-meta">${escapeHtml(fish.description)}</div>` : ""}
+              ${[fish.description, ...(Array.isArray(fish.aboutParagraphs) ? fish.aboutParagraphs : [])]
+                .filter((paragraph) => typeof paragraph === "string" && paragraph.trim())
+                .map((paragraph) => `<div class="fish-meta">${escapeHtml(paragraph)}</div>`)
+                .join("")}
+              ${fish.aboutAttribution ? `<div class="shop-about-attribution">${escapeHtml(fish.aboutAttribution)}</div>` : ""}
+              ${fish.aboutTagline ? `<div class="shop-about-tagline">${escapeHtml(fish.aboutTagline)}</div>` : ""}
               ${behaviorWarning ? `<div class="shop-behavior-warning">${escapeHtml(behaviorWarning)}</div>` : ""}
             </div>
             <div class="shop-stat-list">
@@ -52787,7 +54304,7 @@ function renderFishShop() {
           </div>
           <div class="shop-meta">
             <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
-              <button class="buy-button" data-buy-fish="${fish.id}" data-fish-variants="${escapeHtml(JSON.stringify(getFishStoreVariants(fish)))}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+              <button class="buy-button" data-buy-fish="${fish.id}" data-list-price="${fish.cost}" data-fish-variants="${escapeHtml(JSON.stringify(bubbleBodegaVariants))}" ${isDavyMutation && fish.storeBackgroundImage ? `data-shop-bg-image="${escapeHtml(fish.storeBackgroundImage)}"` : ""} ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
               ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
             </button>
           </div>
@@ -52803,9 +54320,138 @@ function renderFishShop() {
   );
 }
 
+function renderDavyJonesLockerSpecimenStage(species, variant, options = {}) {
+  const className = options.className ? ` ${options.className}` : "";
+  return `<div class="davy-locker-photo-stage${className}"><img ${assetImageAttributes(variant.image)} alt="${escapeHtml(species.name)}" /></div>`;
+}
+
+function renderDavyJonesLockerVariantButtons(species, variants, selected) {
+  return `<div class="davy-locker-variants" aria-label="Available variants">${variants.map((variant, index) => `<button type="button" data-davy-select-variant="${escapeHtml(variant.key)}" data-davy-species-id="${escapeHtml(species.id)}" aria-pressed="${variant.key === selected.key}"><img ${assetImageAttributes(variant.image)} alt="Variant ${index + 1}" /></button>`).join("")}</div>`;
+}
+
+function renderDavyJonesLockerItemPage(species) {
+  const variants = getFishStoreVariants(species);
+  if (!variants.length) return `<div class="davy-locker-empty">SPECIMEN DATA UNAVAILABLE</div>`;
+  runtime.davyLockerVariantSelections ||= {};
+  const selectedKey = variants.some((variant) => variant.key === runtime.davyLockerVariantSelections[species.id])
+    ? runtime.davyLockerVariantSelections[species.id]
+    : variants[0].key;
+  const selected = variants.find((variant) => variant.key === selectedKey) || variants[0];
+  runtime.davyLockerVariantSelections[species.id] = selected.key;
+  const traits = Array.isArray(species.davyTraits) ? species.davyTraits.filter(Boolean) : [];
+  return `<section class="davy-locker-item-page" data-davy-item-species="${escapeHtml(species.id)}">
+    <button type="button" class="davy-locker-back" data-davy-back-to-catalogue>&lt; CATALOGUE</button>
+    <div class="davy-locker-item-layout">
+      <div class="davy-locker-item-visual">
+        ${renderDavyJonesLockerSpecimenStage(species, selected, { className: "is-item-page" })}
+        ${renderDavyJonesLockerVariantButtons(species, variants, selected)}
+      </div>
+      <div class="davy-locker-item-copy">
+        <span class="davy-locker-record-label">SPECIMEN RECORD</span>
+        <h2>${escapeHtml(species.name)}</h2>
+        <dl class="davy-locker-record-grid">
+          <div><dt>Origin</dt><dd>REDACTED</dd></div>
+          <div><dt>Status</dt><dd>LIVE</dd></div>
+          <div><dt>Classification</dt><dd>EXPERIMENTAL HYBRID</dd></div>
+          <div><dt>Documentation</dt><dd>NONE</dd></div>
+        </dl>
+        <section class="davy-locker-record-section">
+          <h3>Description</h3>
+          <p>${escapeHtml(species.description || "No description available.")}</p>
+        </section>
+        <section class="davy-locker-record-section">
+          <h3>Behavior</h3>
+          <p>${escapeHtml(species.davyBehaviorSummary || species.davyBehaviorLabel || "Behavior data unavailable.")}</p>
+        </section>
+        ${species.davySwimStyleSummary ? `<section class="davy-locker-record-section"><h3>Swim Style</h3><p>${escapeHtml(species.davySwimStyleSummary)}</p></section>` : ""}
+        ${species.davyDietSummary ? `<section class="davy-locker-record-section"><h3>Diet</h3><p>${escapeHtml(species.davyDietSummary)}</p></section>` : ""}
+        ${species.davyTemperamentSummary ? `<section class="davy-locker-record-section"><h3>Temperament</h3><p>${escapeHtml(species.davyTemperamentSummary)}</p></section>` : ""}
+        ${traits.length ? `<section class="davy-locker-record-section"><h3>Observed Traits</h3><ul>${traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul></section>` : ""}
+        <footer class="davy-locker-item-purchase">
+          <span>${species.cost} coins</span>
+          <button type="button" data-davy-buy-fish="${escapeHtml(species.id)}" data-davy-variant-key="${escapeHtml(selected.key)}">ACQUIRE</button>
+        </footer>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderDavyJonesLockerInventory() {
+  const container = dom.davyJonesLockerPage?.querySelector?.("[data-davy-inventory]");
+  if (!container) return;
+  const mutations = (runtime.fishCatalog || [])
+    .filter((species) => isDavyMutationSpecies(species))
+    .sort((left, right) => (Number(left?.cost) || 0) - (Number(right?.cost) || 0));
+  runtime.davyLockerVariantSelections ||= {};
+
+  const openSpecies = runtime.davyLockerItemSpeciesId
+    ? mutations.find((species) => species.id === runtime.davyLockerItemSpeciesId)
+    : null;
+  if (openSpecies) {
+    setMarkupIfChanged("davy-locker-inventory", container, renderDavyJonesLockerItemPage(openSpecies));
+    return;
+  }
+
+  const markup = mutations.map((species) => {
+    const variants = getFishStoreVariants(species);
+    if (!variants.length) return "";
+    const selectedKey = variants.some((variant) => variant.key === runtime.davyLockerVariantSelections[species.id])
+      ? runtime.davyLockerVariantSelections[species.id]
+      : variants[0].key;
+    const selected = variants.find((variant) => variant.key === selectedKey) || variants[0];
+    runtime.davyLockerVariantSelections[species.id] = selected.key;
+    return `<article class="davy-locker-card" data-davy-species="${escapeHtml(species.id)}">
+      <button type="button" class="davy-locker-photo davy-locker-photo-button" data-davy-open-item="${escapeHtml(species.id)}" aria-label="Open ${escapeHtml(species.name)} specimen record">${renderDavyJonesLockerSpecimenStage(species, selected)}</button>
+      <div class="davy-locker-copy"><span>UNLISTED SPECIMEN</span><button type="button" class="davy-locker-name-button" data-davy-open-item="${escapeHtml(species.id)}">${escapeHtml(species.name)}</button><small>origin: REDACTED</small></div>
+      ${renderDavyJonesLockerVariantButtons(species, variants, selected)}
+      <footer><span>${species.cost} coins</span><button type="button" data-davy-buy-fish="${escapeHtml(species.id)}" data-davy-variant-key="${escapeHtml(selected.key)}">ACQUIRE</button></footer>
+    </article>`;
+  }).join("");
+  setMarkupIfChanged("davy-locker-inventory", container, markup || `<div class="davy-locker-empty">NO INVENTORY</div>`);
+}
+
+async function handleDavyJonesLockerPageClick(event) {
+  const backButton = event.target instanceof Element ? event.target.closest("[data-davy-back-to-catalogue]") : null;
+  if (backButton) {
+    runtime.davyLockerItemSpeciesId = "";
+    renderDavyJonesLockerInventory();
+    return;
+  }
+
+  const openItemButton = event.target instanceof Element ? event.target.closest("[data-davy-open-item]") : null;
+  if (openItemButton) {
+    runtime.davyLockerItemSpeciesId = openItemButton.dataset.davyOpenItem || "";
+    renderDavyJonesLockerInventory();
+    dom.davyJonesLockerPage?.scrollTo?.({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  const variantButton = event.target instanceof Element ? event.target.closest("[data-davy-select-variant]") : null;
+  if (variantButton) {
+    const speciesId = variantButton.dataset.davySpeciesId || "";
+    const variantKey = variantButton.dataset.davySelectVariant || "";
+    runtime.davyLockerVariantSelections ||= {};
+    runtime.davyLockerVariantSelections[speciesId] = variantKey;
+    renderDavyJonesLockerInventory();
+    return;
+  }
+  const buyButton = event.target instanceof Element ? event.target.closest("[data-davy-buy-fish]") : null;
+  if (!buyButton || buyButton.disabled) return;
+  buyButton.disabled = true;
+  const result = await buyFish(buyButton.dataset.davyBuyFish || "", {
+    appearanceVariantKey: buyButton.dataset.davyVariantKey || ""
+  });
+  if (!result?.ok) buyButton.disabled = false;
+  renderDavyJonesLockerInventory();
+}
+
 function renderStoreOverlay() {
+  const showingHome = runtime.webHomeOpen === true;
+  const showingBank = runtime.bubbleBankOpen === true;
+  const showingLocker = runtime.davyJonesLockerOpen === true;
+  const showingDesigner = runtime.proteusDesignerOpen === true;
   const allowedTabs = getTutorialAllowedStoreTabs();
-  if (runtime.storeOverlayOpen && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
+  if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
     runtime.storeTab = getTutorialPreferredStoreTab() || [...allowedTabs][0] || runtime.storeTab;
   }
   const showingFood = runtime.storeTab === "food";
@@ -52816,6 +54462,39 @@ function renderStoreOverlay() {
 
   dom.storeOverlay.hidden = !runtime.storeOverlayOpen;
   dom.storeOverlay.classList.toggle("is-open", runtime.storeOverlayOpen);
+  dom.storeOverlay.classList.toggle("is-web-home-open", runtime.storeOverlayOpen && showingHome);
+  dom.storeOverlay.classList.toggle("is-bubble-bank-open", runtime.storeOverlayOpen && showingBank);
+  dom.storeOverlay.classList.toggle("is-davy-jones-locker-open", runtime.storeOverlayOpen && showingLocker);
+  dom.storeOverlay.classList.toggle("is-proteus-designer-open", runtime.storeOverlayOpen && showingDesigner);
+  dom.storeOverlay.setAttribute("aria-label", showingDesigner ? "Proteus Biodyne Specimen Designer" : showingHome ? "Browser Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
+  if (dom.webHomePage) {
+    dom.webHomePage.hidden = !runtime.storeOverlayOpen || !showingHome;
+    syncWebSurfUnreadBadge();
+    if (runtime.storeOverlayOpen && showingHome) {
+      setMarkupIfChanged("websurf-home-page", dom.webHomePage, renderWebSurfHomePage());
+      window.syncProteusDiscovery?.();
+    }
+  }
+  if (dom.bubbleBankPage) {
+    dom.bubbleBankPage.hidden = !runtime.storeOverlayOpen || !showingBank;
+    if (runtime.storeOverlayOpen && showingBank) {
+      setMarkupIfChanged("bubble-bank-page", dom.bubbleBankPage, renderBubbleBankPage());
+    }
+  }
+  if (dom.davyJonesLockerPage) {
+    dom.davyJonesLockerPage.hidden = !runtime.storeOverlayOpen || !showingLocker;
+    if (runtime.storeOverlayOpen && showingLocker) renderDavyJonesLockerInventory();
+  }
+  const designerRoute = document.getElementById("proteusDesignerRoute");
+  if (designerRoute) {
+    designerRoute.hidden = !runtime.storeOverlayOpen || !showingDesigner;
+    if (runtime.storeOverlayOpen && showingDesigner) {
+      dom.storeOverlay.classList.remove("proteus-biodyne-open");
+      const proteusPage = document.getElementById("proteusBiodynePage");
+      if (proteusPage) proteusPage.hidden = true;
+      renderProteusDesignerPage();
+    }
+  }
 
   dom.storeFoodTab?.classList.toggle("is-active", showingFood);
   dom.storePharmacyTab?.classList.toggle("is-active", showingPharmacy);
@@ -52837,7 +54516,7 @@ function renderStoreOverlay() {
   // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
-  if (runtime.storeOverlayOpen && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+  if (runtime.storeOverlayOpen && !showingHome && !showingBank && !showingLocker && !showingDesigner && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
     dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
     window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
       detail: { category: runtime.storeTab }
@@ -52854,16 +54533,22 @@ function renderStoreOverlay() {
   }
 
   if (dom.foodShop) {
-    dom.foodShop.hidden = !runtime.storeOverlayOpen || !showingFood;
+    dom.foodShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingFood;
   }
   if (dom.pharmacyShop) {
-    dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || !showingPharmacy;
+    dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingPharmacy;
   }
-  dom.fishShop.hidden = !runtime.storeOverlayOpen || !showingFish;
-  dom.decorShop.hidden = !runtime.storeOverlayOpen || !showingDecor;
+  dom.fishShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingFish;
+  dom.decorShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingDecor;
   if (dom.equipmentShop) {
-    dom.equipmentShop.hidden = !runtime.storeOverlayOpen || !showingEquipment;
+    dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingEquipment;
   }
+  const showingProteus = dom.storeOverlay.classList.contains("proteus-biodyne-open");
+  const fallbackStandardWebPage = showingProteus ? "proteus" : showingHome ? "home" : showingBank ? "bank" : "store";
+  const activeStandardWebPage = showingLocker ? "locker" : fallbackStandardWebPage;
+  const activeWebPage = showingDesigner ? "designer" : activeStandardWebPage;
+  window.syncWebPageTabs?.(activeWebPage);
+  if (!runtime.storeOverlayOpen) window.resetOptionalWebPageTabs?.();
   syncWallpaperEngineStoreScrollControls();
 }
 
@@ -53519,6 +55204,7 @@ function renderFoodShop() {
   const catalog = getFoodCatalog().filter((food) => shouldShowFoodInStore(food));
   const cardsMarkup = catalog.map((food) => {
     const count = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
+    const purchaseCost = getFoodPurchaseCost(food.id);
     return `
       <article class="shop-card" ${renderStoreFacetAttributes("food", food)}>
         ${renderFoodAndMedImage("food", food.id, food.name)}
@@ -53530,8 +55216,8 @@ function renderFoodShop() {
           <div class="fish-meta">${count} ${food.id === "halloweenCandy" ? "candies" : "pellets"} owned</div>
         </div>
         <div class="shop-meta">
-          <span class="price-tag">${food.cost} ${pluralize("coin", food.cost)}</span>
-          <button class="buy-button" data-buy-food="${food.id}">
+          <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
+          <button class="buy-button" data-buy-food="${food.id}" data-list-price="${food.cost}">
             ${food.id === "halloweenCandy" ? "Buy Pile" : "Buy Bottle"} (+${food.bottlePellets})
           </button>
         </div>
@@ -56178,7 +57864,37 @@ function handleCommonUtilityOverlayChange(ctx, target) {
   }
   const customFishBehaviorSelect = target?.closest?.("[data-custom-fish-behavior-select]");
   if (customFishBehaviorSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
-    runtime.pendingCustomFishUpload.behaviorProfileId = normalizeCustomFishBehaviorProfileId(customFishBehaviorSelect.value);
+    const profileId = normalizeCustomFishBehaviorProfileId(customFishBehaviorSelect.value);
+    const profile = getCustomFishBehaviorProfile(profileId) || getDefaultCustomFishBehaviorProfile();
+    runtime.pendingCustomFishUpload.behaviorProfileId = profileId;
+    runtime.pendingCustomFishUpload.diet = getDefaultCustomFishDiet(profile);
+    runtime.pendingCustomFishUpload.activityRegulation = "";
+    runtime.pendingCustomFishUpload.swimZone = "";
+    runtime.pendingCustomFishUpload.socialAffinity = "adaptive";
+    if (runtime.proteusDesignerOpen === true) {
+      runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
+      renderStoreOverlay();
+    }
+    return true;
+  }
+  const customFishDietSelect = target?.closest?.("[data-custom-fish-diet-select]");
+  if (customFishDietSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.diet = normalizeCustomFishDiet(customFishDietSelect.value);
+    return true;
+  }
+  const customFishActivitySelect = target?.closest?.("[data-custom-fish-activity-select]");
+  if (customFishActivitySelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.activityRegulation = normalizeCustomFishActivityRegulation(customFishActivitySelect.value);
+    return true;
+  }
+  const customFishSwimZoneSelect = target?.closest?.("[data-custom-fish-swim-zone-select]");
+  if (customFishSwimZoneSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.swimZone = normalizeCustomFishSwimZone(customFishSwimZoneSelect.value);
+    return true;
+  }
+  const customFishSocialSelect = target?.closest?.("[data-custom-fish-social-select]");
+  if (customFishSocialSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.socialAffinity = normalizeCustomFishSocialAffinity(customFishSocialSelect.value);
     return true;
   }
   const customDecorTypeSelect = target?.closest?.("[data-custom-decor-type-select]");
@@ -56363,6 +58079,781 @@ function renderUtilityOverlay() {
     dom.closeUtilityOverlay.hidden = config.closable === false;
   }
   syncUtilityOverlayEditTraySafeArea();
+}
+
+function normalizeBubbleBankTab(value = "account") {
+  return ["account", "rewards", "milestones"].includes(value) ? value : "account";
+}
+
+function formatBubbleBankTime(timestamp, options = {}) {
+  const value = Number(timestamp) || Date.now();
+  return new Date(value).toLocaleString([], options.dateOnly
+    ? { month: "short", day: "numeric", year: "numeric" }
+    : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function getBubbleBankMilestoneForTransaction(entry) {
+  const label = String(entry?.label || "").toLowerCase();
+  return PROGRESSION_MILESTONES.find((milestone) => (
+    label.includes(`${String(milestone.label).toLowerCase()} milestone`)
+  )) || null;
+}
+
+function getBubbleBankRewardForTransaction(entry) {
+  if (!/daily (?:award|reward)/i.test(String(entry?.label || ""))) return null;
+  const time = Number(entry?.time) || 0;
+  const history = Array.isArray(state?.dailyBonus?.recapHistory) ? state.dailyBonus.recapHistory : [];
+  return history.find((summary) => Math.abs((Number(summary.generatedAt) || 0) - time) < 2000) || null;
+}
+
+function getBubbleBankTransactionCategory(entry) {
+  const text = `${String(entry?.label || "")} ${String(entry?.place || "")}`.toLowerCase();
+  if (/milestone/.test(text)) return "milestones";
+  if (/feed|fed|feeding/.test(text)) return "feeding";
+  if (/clean|cleaning|scrub/.test(text)) return "cleaning";
+  if (/sold|sale|sell/.test(text)) return "sales";
+  if (/daily|award|bonus|reward|coin/.test(text)) return "awards";
+  if (/fish|shark|catfish|custom fish|species/.test(text)) return "fish";
+  if (/decor|seaweed|cave|anemone|mound|plant|background/.test(text)) return "decor";
+  if (/equipment|expansion|dispenser|boat|submarine|skiff/.test(text)) return "equipment";
+  if (/food|medicine|medication|cure|pellet/.test(text)) return "food-medication";
+  return entry?.direction === "credit" ? "awards" : "decor";
+}
+
+function getBubbleBankTransactionFilterMarkup() {
+  const active = String(runtime.bubbleBankTransactionFilter || "all");
+  return `<select class="bubble-bank-filter" data-bank-transaction-filter aria-label="Filter transactions">
+    <option value="all" ${active === "all" ? "selected" : ""}>All transactions</option>
+    <optgroup label="All Earned Money">
+      <option value="earned" ${active === "earned" ? "selected" : ""}>All earned money</option>
+      <option value="feeding" ${active === "feeding" ? "selected" : ""}>Feeding</option>
+      <option value="cleaning" ${active === "cleaning" ? "selected" : ""}>Cleaning</option>
+      <option value="awards" ${active === "awards" ? "selected" : ""}>Awards</option>
+      <option value="milestones" ${active === "milestones" ? "selected" : ""}>Milestones</option>
+      <option value="sales" ${active === "sales" ? "selected" : ""}>Sales</option>
+    </optgroup>
+    <optgroup label="All Spent Money">
+      <option value="spent" ${active === "spent" ? "selected" : ""}>All spent money</option>
+      <option value="fish" ${active === "fish" ? "selected" : ""}>Fish</option>
+      <option value="decor" ${active === "decor" ? "selected" : ""}>Decor</option>
+      <option value="equipment" ${active === "equipment" ? "selected" : ""}>Equipment</option>
+      <option value="food-medication" ${active === "food-medication" ? "selected" : ""}>Food &amp; Medication</option>
+    </optgroup>
+  </select>`;
+}
+
+function bubbleBankTransactionMatchesFilter(entry, filter) {
+  if (!filter || filter === "all") return true;
+  const earned = entry.direction === "credit";
+  if (filter === "earned") return earned;
+  if (filter === "spent") return !earned && entry.direction === "debit";
+  if (["feeding", "cleaning", "awards", "milestones", "sales"].includes(filter)) return earned && getBubbleBankTransactionCategory(entry) === filter;
+  return !earned && entry.direction === "debit" && getBubbleBankTransactionCategory(entry) === filter;
+}
+
+function getWebSurfReadMailIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(WEBSURF_MAIL_READ_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed.map(String).slice(-120) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveWebSurfReadMailIds(readIds) {
+  try {
+    localStorage.setItem(WEBSURF_MAIL_READ_STORAGE_KEY, JSON.stringify([...readIds].slice(-120)));
+  } catch {}
+}
+
+function getWebSurfSilencedSenders() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(WEBSURF_SILENCED_SENDERS_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed.map((sender) => String(sender).toLowerCase()).slice(-80) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveWebSurfSilencedSenders(senders) {
+  try {
+    localStorage.setItem(WEBSURF_SILENCED_SENDERS_STORAGE_KEY, JSON.stringify([...senders].slice(-80)));
+  } catch {}
+}
+
+function toggleWebSurfSenderSilenced(sender) {
+  const normalized = String(sender || "").trim().toLowerCase();
+  if (!normalized) return;
+  const senders = getWebSurfSilencedSenders();
+  if (senders.has(normalized)) senders.delete(normalized);
+  else senders.add(normalized);
+  saveWebSurfSilencedSenders(senders);
+}
+
+function isWebSurfMailUnread(message, readIds = getWebSurfReadMailIds(), silencedSenders = getWebSurfSilencedSenders()) {
+  return !readIds.has(message.id) && !silencedSenders.has(String(message.sender || "").toLowerCase());
+}
+
+function markWebSurfMailRead(mailId) {
+  const id = String(mailId || "");
+  if (!id) return;
+  const readIds = getWebSurfReadMailIds();
+  readIds.add(id);
+  saveWebSurfReadMailIds(readIds);
+}
+
+function markAllWebSurfMailRead() {
+  const readIds = getWebSurfReadMailIds();
+  getWebSurfInboxMessages().forEach((message) => readIds.add(message.id));
+  saveWebSurfReadMailIds(readIds);
+}
+
+function loadWebSurfAutoEmailConfig() {
+  if (globalThis.webSurfAutoEmailConfigPromise) return globalThis.webSurfAutoEmailConfigPromise;
+  globalThis.webSurfAutoEmailConfigPromise = fetch("assets/web/websurf/auto_emails.json", { cache: "no-cache" })
+    .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Automatic email templates unavailable (${response.status})`)))
+    .then((config) => {
+      globalThis.webSurfAutoEmailConfig = config && typeof config === "object" ? config : null;
+      if (runtime?.storeOverlayOpen && runtime?.webHomeOpen) renderStoreOverlay();
+      return globalThis.webSurfAutoEmailConfig;
+    })
+    .catch((error) => {
+      console.warn("Bubble Borough automatic email templates could not be loaded.", error);
+      return null;
+    });
+  return globalThis.webSurfAutoEmailConfigPromise;
+}
+
+function getWebSurfAutoEmailTemplate(templateId) {
+  loadWebSurfAutoEmailConfig();
+  return globalThis.webSurfAutoEmailConfig?.templates?.[templateId] || null;
+}
+
+function interpolateWebSurfEmailValue(value, data = {}) {
+  return String(value ?? "").replace(/{{\s*([\w.:]+)\s*}}/g, (_match, key) => {
+    const coinField = key.match(/^coin:(.+)$/)?.[1];
+    if (coinField) return interpolateWebSurfEmailValue(`{{${coinField}}}`, data);
+    const result = key.split(".").reduce((current, part) => current?.[part], data);
+    return result == null ? "" : String(result);
+  });
+}
+
+function renderWebSurfEmailInlineText(value, data = {}) {
+  const parts = String(value ?? "").split(/({{\s*coin:[\w.]+\s*}})/g);
+  return parts.map((part) => {
+    const field = part.match(/^{{\s*coin:([\w.]+)\s*}}$/)?.[1];
+    if (!field) return escapeHtml(interpolateWebSurfEmailValue(part, data));
+    const amount = field.split(".").reduce((current, key) => current?.[key], data);
+    return `<span class="websurf-email-coin-amount"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="Fish Coin" /><strong>${escapeHtml(amount == null ? "" : String(amount))}</strong></span>`;
+  }).join("");
+}
+
+function normalizeWebSurfThumbnailPath(value) {
+  const fallback = "assets/misc/Store_Logo.png";
+  let raw = typeof value === "string" ? value.trim() : "";
+  if (!raw || raw.startsWith("data:")) return raw || fallback;
+  raw = raw.replace(/\\/g, "/");
+  try {
+    raw = new URL(raw, window.location.href).pathname;
+  } catch {}
+  const assetIndex = raw.toLowerCase().indexOf("assets/");
+  if (assetIndex >= 0) raw = raw.slice(assetIndex);
+  raw = raw.split(/[?#]/, 1)[0];
+  return raw.startsWith("assets/") ? raw : fallback;
+}
+
+function getWebSurfThumbnailAttributes(value) {
+  const path = normalizeWebSurfThumbnailPath(value);
+  const fallback = escapeHtml(resolveAppUrl("assets/misc/Store_Logo.png"));
+  return `${assetImageAttributes(path)} onerror="this.onerror=null;this.src='${fallback}'"`;
+}
+
+function getWebSurfOrderItems(order) {
+  return (order?.items || []).map((item) => ({
+    itemId: item.key || item.id || item.name,
+    itemName: item.name || "Store item",
+    thumbnail: normalizeWebSurfThumbnailPath(item.image),
+    quantity: Math.max(1, Number(item.quantity) || 1)
+  }));
+}
+
+function isProteusOrder(order) {
+  return (order?.items || []).some((item) => /proteus biodyne/i.test(String(item.seller || item.vendor || item.category || "")));
+}
+
+function isEngineeredAquaticSpecimenOrder(order) {
+  return (order?.items || []).some((item) => {
+    const key = String(item.key || "");
+    const name = String(item.name || item.itemName || "");
+    const seller = String(item.seller || item.vendor || "");
+    return key === `buyFish:${CUSTOM_FISH_SHOP_KEY}`
+      || key === CUSTOM_FISH_SHOP_KEY
+      || /engineered aquatic specimen/i.test(name)
+      || (/proteus biodyne/i.test(seller) && /custom fish|engineered specimen/i.test(`${key} ${name}`));
+  });
+}
+
+function isEngineeredAquaticSpecimenAwaitingDesign(order) {
+  if (!isEngineeredAquaticSpecimenOrder(order)) return false;
+  return getEngineeredAquaticSpecimenOrderStatus(String(order?.id || "")) === "design-required";
+}
+
+function getWebSurfStatementSnapshotStore() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("bubble-borough-websurf-statement-snapshots-v1") || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveWebSurfStatementSnapshotStore(store) {
+  try {
+    const entries = Object.entries(store || {}).sort((left, right) => left[0].localeCompare(right[0])).slice(-12);
+    localStorage.setItem("bubble-borough-websurf-statement-snapshots-v1", JSON.stringify(Object.fromEntries(entries)));
+  } catch {}
+}
+
+function getWebSurfStatementData() {
+  const transactions = Array.isArray(state?.walletTransactions) ? state.walletTransactions : [];
+  const currentSunday = new Date();
+  currentSunday.setHours(0, 0, 0, 0);
+  currentSunday.setDate(currentSunday.getDate() - currentSunday.getDay());
+  const periodStart = new Date(currentSunday);
+  periodStart.setDate(periodStart.getDate() - 7);
+  const periodEnd = currentSunday.getTime() - 1;
+  const statementKey = periodStart.toISOString().slice(0, 10);
+  const snapshots = getWebSurfStatementSnapshotStore();
+  if (snapshots[statementKey]?.snapshotVersion === 3) return snapshots[statementKey];
+  const rows = transactions.filter((entry) => {
+    const time = Number(entry.time) || 0;
+    return time >= periodStart.getTime() && time <= periodEnd;
+  }).map((entry) => {
+    const debit = entry.direction === "debit";
+    const amount = Math.max(0, Number(entry.amount) || 0);
+    return {
+      transactionId: entry.id || entry.time,
+      date: new Date(Number(entry.time) || Date.now()).toLocaleDateString([], { month: "2-digit", day: "2-digit" }),
+      signedAmount: entry.direction === "neutral" ? "•" : `${debit ? "−" : "+"}${amount}`,
+      description: String(entry.label || "Aquarium activity").replace(/tankazon/ig, "BubbleBodega"),
+      time: Number(entry.time) || 0,
+      type: entry.direction
+    };
+  });
+  const income = rows.reduce((sum, row) => sum + (row.signedAmount.startsWith("+") ? Number(row.signedAmount.slice(1)) : 0), 0);
+  const spending = rows.reduce((sum, row) => sum + (row.signedAmount.startsWith("−") ? Number(row.signedAmount.slice(1)) : 0), 0);
+  const snapshot = {
+    snapshotVersion: 3,
+    statementKey,
+    sentAt: currentSunday.getTime(),
+    periodStart: periodStart.getTime(),
+    periodEnd,
+    dateRange: `${periodStart.toLocaleDateString([], { month: "2-digit", day: "2-digit" })}–${new Date(periodEnd).toLocaleDateString([], { month: "2-digit", day: "2-digit" })}`,
+    transactionCount: rows.length,
+    transactions: rows,
+    income,
+    spending,
+    balance: Math.max(0, Number(state?.coins) || 0)
+  };
+  snapshots[statementKey] = snapshot;
+  saveWebSurfStatementSnapshotStore(snapshots);
+  return snapshot;
+}
+
+function getWebSurfMilestoneBalance(milestoneId, fallbackBalance) {
+  const storageKey = "bubble-borough-websurf-milestone-snapshots-v1";
+  try {
+    const snapshots = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    if (snapshots && Number.isFinite(Number(snapshots[milestoneId]))) return Number(snapshots[milestoneId]);
+    const balance = Math.max(0, Number(fallbackBalance) || 0);
+    localStorage.setItem(storageKey, JSON.stringify({ ...(snapshots || {}), [milestoneId]: balance }));
+    return balance;
+  } catch {
+    return Math.max(0, Number(fallbackBalance) || 0);
+  }
+}
+
+function getWebSurfInboxMessages() {
+  // Automatic sender registry: statements@bubbleboroughbank.swim, orders@bubblebodega.swim, rewards@bubbleboroughbank.swim, research@proteusbiodyne.swim.
+  const messages = [];
+  const rescueOffer = ensureBubbleBodegaRescueOffer(Date.now());
+  const welcomeSentAt = Math.max(0, Number(state?.webSurfWelcomeSentAt) || 0);
+  if (Number(state?.webSurfWelcomeVersion) >= 1 && welcomeSentAt) {
+    const profile = sanitizeAccountProfile(state?.accountProfile);
+    const username = profile.username || getAccountUsernameForUser(profile.userId);
+    const addressName = String(username || "user").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") || "user";
+    const webSurfTemplate = getWebSurfAutoEmailTemplate("welcome_to_websurf");
+    const webSurfData = { emailAddress: `${addressName}@websurf.swim` };
+    messages.push({
+      id: `auto-welcome_to_websurf-${welcomeSentAt}`,
+      templateId: "welcome_to_websurf",
+      data: webSurfData,
+      sender: webSurfTemplate?.sender || "welcome@websurf.swim",
+      subject: webSurfTemplate?.subject || "Welcome to WebSurf!",
+      preview: webSurfTemplate?.preview || "Your new WebSurf email address is ready.",
+      destination: "home",
+      icon: "assets/icons/WebSurf_icon.png",
+      time: welcomeSentAt
+    });
+    const template = getWebSurfAutoEmailTemplate("welcome_to_bubble_borough");
+    const data = { startingCoins: STARTING_COINS };
+    messages.push({
+      id: `auto-welcome_to_bubble_borough-${welcomeSentAt}`,
+      templateId: "welcome_to_bubble_borough",
+      favorite: true,
+      favoriteIcon: "assets/icons/other.png",
+      data,
+      sender: template?.sender || "welcome@websurf.swim",
+      subject: template?.subject || "Welcome to Bubble Borough",
+      preview: template?.preview || "Your aquarium is ready. Let's get you started.",
+      destination: "home",
+      icon: "assets/icons/WebSurf_icon.png",
+      time: welcomeSentAt + 1
+    });
+  }
+  if (rescueOffer.issued) {
+    const template = getWebSurfAutoEmailTemplate("bubblebodega_rescue_offer");
+    messages.push({
+      id: `auto-bubblebodega_rescue_offer-${rescueOffer.cycle}-${state.bubbleBodegaRescueOffer.issuedAt}`,
+      templateId: "bubblebodega_rescue_offer",
+      data: {},
+      sender: template?.sender || "offers@bubblebodega.swim",
+      subject: template?.subject || "A Fresh Start, On Us",
+      preview: template?.preview || "A free Goldfish and food are waiting for you.",
+      destination: "rescue-offer",
+      icon: "assets/misc/Store_Logo.png",
+      time: Number(state.bubbleBodegaRescueOffer.issuedAt) || Date.now()
+    });
+  }
+  const orders = sanitizePurchaseHistory(state?.purchaseHistory);
+  const now = Date.now();
+  orders.filter((order) => (Number(order.placedAt) || 0) <= now).forEach((order) => {
+    const engineeredSpecimen = isEngineeredAquaticSpecimenOrder(order);
+    const proteusOrderStatus = engineeredSpecimen
+      ? getEngineeredAquaticSpecimenOrderStatus(order.id)
+      : "";
+    const designPending = proteusOrderStatus === "design-required";
+    const designConfigured = proteusOrderStatus === "specimen-configured";
+    const designComplete = proteusOrderStatus === "fulfillment-complete";
+    // The legacy proteus_engineered_specimen_fulfillment template remains in the registry for old saves,
+    // but commissioned specimen mail now updates this original message in place when fulfillment completes.
+    const templateId = engineeredSpecimen
+      ? "proteus_engineered_specimen_design"
+      : isProteusOrder(order)
+        ? "proteus_asset_fulfillment"
+        : "bubblebodega_order_confirmation";
+    const template = getWebSurfAutoEmailTemplate(templateId);
+    const items = getWebSurfOrderItems(order);
+    const data = {
+      orderId: order.id,
+      itemQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
+      items,
+      total: order.total,
+      designPending,
+      designConfigured,
+      designComplete,
+      proteusOrderStatus,
+      designStatus: designPending ? "DESIGN REQUIRED" : designConfigured ? "SPECIMEN CONFIGURED" : "FULFILLMENT COMPLETE",
+      appearanceStatus: designPending ? "Pending" : "Approved",
+      behaviorStatus: designPending ? "Pending" : "Approved",
+      fulfillmentStatus: designPending ? "Awaiting design" : designConfigured ? "Processing" : "Complete",
+      designPreview: designPending
+        ? "Design required for your Engineered Aquatic Specimen commission."
+        : designConfigured
+          ? "Your Engineered Aquatic Specimen is being fulfilled."
+          : "Your Engineered Aquatic Specimen fulfillment is complete."
+    };
+    messages.push({ id: `auto-${templateId}-${order.id}`, templateId, data, sender: template?.sender || (isProteusOrder(order) ? "designer@proteusbiodyne.swim" : "orders@bubblebodega.swim"), subject: template ? interpolateWebSurfEmailValue(data.itemQuantity === 1 && template.subjectSingular ? template.subjectSingular : template.subject, data) : "Order Confirmed", preview: template ? interpolateWebSurfEmailValue(template.preview, data) : "Your order has been completed and delivered.", destination: template?.action?.destination || "store", icon: isProteusOrder(order) ? "assets/web/proteus/Proteus_Logo_Icon.png" : "assets/misc/Box.png", time: Number(order.placedAt) || 0 });
+  });
+
+  const transactions = Array.isArray(state?.walletTransactions) ? state.walletTransactions : [];
+  const seenMilestones = new Set();
+  transactions.filter((entry) => (Number(entry.time) || 0) <= now).forEach((entry) => {
+    const milestone = getBubbleBankMilestoneForTransaction(entry);
+    if (!milestone || seenMilestones.has(milestone.id)) return;
+    seenMilestones.add(milestone.id);
+    const milestoneId = `milestone-${milestone.id}`;
+    const data = { milestoneId, milestoneName: milestone.label, milestoneRequirement: milestone.requirement, reward: milestone.reward, balance: getWebSurfMilestoneBalance(milestoneId, state?.coins || 0) };
+    const template = getWebSurfAutoEmailTemplate("milestone_reward");
+    messages.push({ id: `auto-milestone_reward-${milestone.id}`, templateId: "milestone_reward", data, sender: template?.sender || "rewards@bubbleboroughbank.swim", subject: template ? interpolateWebSurfEmailValue(template.subject, data) : `Milestone Unlocked: ${milestone.label}`, preview: template ? interpolateWebSurfEmailValue(template.preview, data) : `${milestone.reward} Fish Coins earned.`, destination: "bank", icon: "assets/misc/coin_unicode.png", time: Number(entry.time) || 0 });
+  });
+
+  const statementData = getWebSurfStatementData();
+  const statementTemplate = getWebSurfAutoEmailTemplate("weekly_bank_statement");
+  messages.push({
+    id: `auto-weekly_bank_statement-${statementData.dateRange}`,
+    templateId: "weekly_bank_statement",
+    data: statementData,
+    sender: statementTemplate?.sender || "statements@bubbleboroughbank.swim",
+    subject: statementTemplate ? interpolateWebSurfEmailValue(statementTemplate.subject, statementData) : `Weekly Statement: ${statementData.dateRange}`,
+    preview: statementTemplate ? interpolateWebSurfEmailValue(statementTemplate.preview, statementData) : `${statementData.transactionCount} transactions • Balance: ${statementData.balance} Fish Coins`,
+    destination: "bank",
+    icon: "assets/misc/coin_unicode.png",
+    time: Number(statementData.sentAt) || 0
+  });
+
+  if (window.hasDiscoveredProteus?.()) {
+    messages.push({
+      id: "proteus-research-bulletin-1",
+      sender: "research@proteusbiodyne.swim",
+      subject: "Research Bulletin: Adaptive Marine Life",
+      preview: "New specimen and directed-adaptation records are available.",
+      destination: "proteus",
+      icon: "assets/web/proteus/Proteus_Logo_Icon.png",
+      time: 1
+    });
+  }
+
+  return messages
+    .sort((left, right) => Number(right.favorite === true) - Number(left.favorite === true) || right.time - left.time)
+    .slice(0, 40);
+}
+
+function syncWebSurfUnreadBadge() {
+  if (!dom.webSurfUnreadBadge) return;
+  const readIds = getWebSurfReadMailIds();
+  const silencedSenders = getWebSurfSilencedSenders();
+  const unreadCount = getWebSurfInboxMessages().filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
+  dom.webSurfUnreadBadge.hidden = unreadCount === 0;
+  dom.webSurfUnreadBadge.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
+  dom.webSurfUnreadBadge.setAttribute("aria-label", `${unreadCount} unread WebSurf ${unreadCount === 1 ? "message" : "messages"}`);
+}
+
+function formatWebSurfMailTime(timestamp) {
+  if (!timestamp) return "Saved";
+  const date = new Date(timestamp);
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function renderWebSurfProteusAuthorizationEmail(message) {
+  const data = message.data || {};
+  const designPending = data.proteusOrderStatus === "design-required" && data.designPending === true;
+  return `<section class="websurf-proteus-authorization" data-proteus-order-status="${escapeHtml(data.proteusOrderStatus || "")}">
+    <header class="websurf-proteus-auth-brand">
+      <img ${assetImageAttributes("assets/web/proteus/Proteus_Title_Logo.png")} alt="Proteus Biodyne" />
+      <span>BESPOKE AQUATIC SPECIMEN PROGRAM</span>
+    </header>
+    <div class="websurf-proteus-auth-intro">
+      <h3>ENGINEERED SPECIMEN AUTHORIZATION</h3>
+      <p>Your BubbleBodega commission has been received.</p>
+    </div>
+    <div class="websurf-proteus-auth-status-grid">
+      <section class="websurf-proteus-auth-order-status">
+        <h4>ORDER STATUS</h4>
+        <strong>${escapeHtml(data.designStatus || "DESIGN REQUIRED")}</strong>
+      </section>
+      <section class="websurf-proteus-auth-configuration">
+        <h4>CONFIGURATION</h4>
+        <div><span>Appearance</span><i aria-hidden="true"></i><strong>${escapeHtml(data.appearanceStatus || "Pending")}</strong></div>
+        <div><span>Behavior</span><i aria-hidden="true"></i><strong>${escapeHtml(data.behaviorStatus || "Pending")}</strong></div>
+        <div><span>Fulfillment</span><i aria-hidden="true"></i><strong>${escapeHtml(data.fulfillmentStatus || "Awaiting design")}</strong></div>
+      </section>
+    </div>
+    <div class="websurf-proteus-auth-response">
+      ${designPending
+        ? `<button type="button" data-websurf-email-action="${escapeHtml(message.id)}">CONFIGURE SPECIMEN</button><p>Fulfillment begins automatically after submission.</p>`
+        : `<strong class="websurf-proteus-auth-thanks">WE APPRECIATE YOUR BUSINESS.</strong>`}
+    </div>
+    <footer><span>All commissioned specimens are final.</span><strong>PROTEUS BIODYNE // RESTRICTED FULFILLMENT</strong></footer>
+  </section>`;
+}
+
+function renderWebSurfAutoEmailBody(message) {
+  const template = getWebSurfAutoEmailTemplate(message.templateId);
+  if (!template) return `<p>${escapeHtml(message.preview || "This automatic message is unavailable.")}</p>`;
+  const data = message.data || {};
+  return (template.body || []).map((block) => {
+    if (block.when && !data[block.when]) return "";
+    if (block.type === "proteus_authorization") return renderWebSurfProteusAuthorizationEmail(message);
+    if (block.type === "heading") return `<h3 class="websurf-email-heading">${renderWebSurfEmailInlineText(block.text, data)}</h3>`;
+    if (block.type === "section_label") return `<div class="websurf-email-section-label">${escapeHtml(block.text || "")}</div>`;
+    if (block.type === "guide_section") return `<section class="websurf-email-guide-section"><img ${assetImageAttributes(block.icon)} alt="" aria-hidden="true" /><div><h4>${escapeHtml(block.title || "")}</h4><p>${renderWebSurfEmailInlineText(block.text, data)}</p></div></section>`;
+    if (block.type === "link_row") return `<nav class="websurf-email-guide-links" aria-label="Getting started links">${(block.links || []).map((link) => `<button type="button" data-websurf-guide-destination="${escapeHtml(link.destination || "store")}" data-websurf-guide-section="${escapeHtml(link.section || "")}">${link.icon ? `<img ${assetImageAttributes(link.icon)} alt="" aria-hidden="true" />` : ""}<span>${escapeHtml(link.label || "Open")}</span></button>`).join("")}</nav>`;
+    if (block.type === "feature_list") return `<section class="websurf-email-feature-list"><header><img ${assetImageAttributes(block.icon)} alt="" aria-hidden="true" /><h4>${escapeHtml(block.title || "")}</h4></header>${(block.items || []).map((item) => `<div class="websurf-email-feature-row"><img ${assetImageAttributes(item.icon)} alt="" aria-hidden="true" /><p><strong>${escapeHtml(item.label || "")}:</strong> ${escapeHtml(item.text || "")}</p></div>`).join("")}</section>`;
+    if (block.type === "item_list") {
+      const items = Array.isArray(data[block.source]) ? data[block.source] : [];
+      return `<div class="websurf-email-item-list">${items.map((item) => `<div class="websurf-email-item-row" data-item-id="${escapeHtml(item.itemId)}"><img ${getWebSurfThumbnailAttributes(item[block.thumbnailField])} alt="" aria-hidden="true" /><strong>${escapeHtml(item[block.nameField] || "Store item")}</strong><span>×${escapeHtml(item[block.quantityField] || 1)}</span></div>`).join("")}</div>`;
+    }
+    if (block.type === "transaction_list") {
+      const rows = Array.isArray(data[block.source]) ? data[block.source] : [];
+      return `<div class="websurf-email-transaction-list">${rows.map((row) => {
+        const signedAmount = String(row[block.amountField] || "");
+        const numericAmount = Number.parseFloat(signedAmount.replace(/−/g, "-").replace(/,/g, ""));
+        const amountClass = numericAmount > 0 ? "is-money-in" : numericAmount < 0 ? "is-money-out" : "";
+        return `<div class="websurf-email-transaction-row"><time>${escapeHtml(row[block.dateField] || "")}</time><strong class="${amountClass}">${escapeHtml(signedAmount)}</strong><span>${escapeHtml(row[block.descriptionField] || "")}</span></div>`;
+      }).join("") || `<p class="websurf-email-empty">No transactions in this statement period.</p>`}</div>`;
+    }
+    if (block.type === "summary" || block.type === "status") {
+      const label = interpolateWebSurfEmailValue(block.label, data);
+      const normalizedLabel = String(label).trim().toLowerCase();
+      const summaryClass = normalizedLabel === "money in" ? "is-money-in" : normalizedLabel === "money out" ? "is-money-out" : "";
+      const typeClass = block.type === "status" ? "is-status" : "";
+      return `<p class="websurf-email-summary ${summaryClass} ${typeClass}"><strong>${escapeHtml(label)}</strong><span>${renderWebSurfEmailInlineText(block.value, data)}</span></p>`;
+    }
+    if (block.type === "completion_note") {
+      return `<div class="websurf-email-completion-note">${renderWebSurfEmailInlineText(block.text, data)}</div>`;
+    }
+    if (block.type === "action") {
+      const action = template.action || {};
+      return `<div class="websurf-email-inline-action"><button type="button" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(action.label || "Open")}</button></div>`;
+    }
+    return `<p>${renderWebSurfEmailInlineText(block.text, data)}</p>`;
+  }).join("");
+}
+
+function handleWebSurfEmailAction(message) {
+  const template = getWebSurfAutoEmailTemplate(message.templateId);
+  const action = template?.action || {};
+  captureWebSurfSessionState();
+  if (action.destination === "rescue-offer") {
+    const offer = activateBubbleBodegaRescueOffer(Date.now());
+    if (!offer.accepted) {
+      showToast("This recovery email has already been used.");
+      return;
+    }
+    openStoreOverlay("fish", { forceCategory: true });
+    window.requestAnimationFrame(() => void window.openBubbleBodegaRescueOffer?.(offer));
+    return;
+  }
+  if (action.destination === "bank") {
+    openBubbleBank(action.section || "account");
+    if (message.data?.milestoneId) {
+      runtime.bubbleBankTargetId = message.data.milestoneId;
+      renderStoreOverlay();
+      window.requestAnimationFrame(() => document.getElementById(message.data.milestoneId)?.scrollIntoView?.({ behavior: "smooth", block: "center" }));
+    }
+    return;
+  }
+  if (action.destination === "proteus-designer") {
+    const orderId = String(message.data?.orderId || "");
+    if (getEngineeredAquaticSpecimenOrderStatus(orderId) !== "design-required") {
+      showToast("This Proteus commission has already been configured or fulfilled.");
+      return;
+    }
+    openProteusDesignerPage(orderId);
+    return;
+  }
+  if (action.destination === "store") {
+    openStoreOverlay(runtime.storeTab || "food");
+    window.requestAnimationFrame(() => window.showBubbleBodegaOrder?.(message.data?.orderId));
+  }
+}
+
+function renderWebSurfHomePage() {
+  const profile = sanitizeAccountProfile(state?.accountProfile);
+  const username = profile.username || getAccountUsernameForUser(profile.userId);
+  const addressName = String(username || "user").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") || "user";
+  const messages = getWebSurfInboxMessages();
+  const readIds = getWebSurfReadMailIds();
+  const silencedSenders = getWebSurfSilencedSenders();
+  const unreadCount = messages.filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
+  const proteusDiscovered = Boolean(window.hasDiscoveredProteus?.());
+  const mailMarkup = messages.map((message) => {
+    const senderKey = String(message.sender || "").toLowerCase();
+    const silenced = silencedSenders.has(senderKey);
+    const unread = isWebSurfMailUnread(message, readIds, silencedSenders);
+    const selected = runtime.webSurfSelectedMailId === message.id;
+    return `<article class="websurf-mail-item ${selected ? "is-open" : ""}">
+      <button type="button" class="websurf-mail-row ${unread ? "is-unread" : ""} ${silenced ? "is-silenced" : ""}" data-websurf-mail-id="${escapeHtml(message.id)}" aria-expanded="${selected}">
+        ${message.favorite
+          ? `<span class="websurf-mail-favorite" title="Favorited" aria-label="Favorited"><img ${assetImageAttributes(message.favoriteIcon || "assets/icons/other.png")} alt="" aria-hidden="true" /></span>`
+          : `<span class="websurf-mail-status" aria-hidden="true"></span>`}
+        <img ${assetImageAttributes(message.icon)} alt="" aria-hidden="true" />
+        <span class="websurf-mail-sender">${escapeHtml(message.sender)}${silenced ? `<small>Silenced</small>` : ""}</span>
+        <span class="websurf-mail-copy"><strong>${escapeHtml(message.subject)}</strong><small>${message.templateId ? renderWebSurfEmailInlineText(getWebSurfAutoEmailTemplate(message.templateId)?.preview || message.preview, message.data) : escapeHtml(message.preview)}</small></span>
+        <time>${escapeHtml(formatWebSurfMailTime(message.time))}</time>
+      </button>
+      ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}">${silenced ? "Unsilence sender" : "Silence sender"}</button></div></div>` : ""}
+    </article>`;
+  }).join("");
+  return `<header class="websurf-home-header">
+      <img ${assetImageAttributes("assets/icons/WebSurf_icon.png")} alt="WebSurf" />
+      <div><span>WEBSURF.SWIM</span><h1 id="webHomeTitle">Welcome, ${escapeHtml(username)}</h1><p>${escapeHtml(addressName)}@WebSurf.swim</p></div>
+    </header>
+    <main class="websurf-home-main">
+      <section class="websurf-bookmarks" aria-labelledby="websurfBookmarksTitle">
+        <h2 id="websurfBookmarksTitle">Bookmarks</h2>
+        <div class="websurf-bookmark-row">
+          <button type="button" class="websurf-bookmark" data-webpage-destination="bank"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" /><span><strong>Bubble Borough Bank</strong><small>Balance, rewards, and statements</small></span></button>
+          <button type="button" class="websurf-bookmark" data-webpage-destination="store"><img ${assetImageAttributes("assets/misc/Box.png")} alt="" /><span><strong>BubbleBodega</strong><small>Food, fish, and aquarium supplies</small></span></button>
+          <button type="button" class="websurf-bookmark" data-webpage-destination="proteus" data-proteus-home-link ${proteusDiscovered ? "" : "hidden"}><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" /><span><strong>Proteus Biodyne</strong><small>Adaptive biology and marine research</small></span></button>
+          <span class="websurf-bookmark is-coming-soon"><span aria-hidden="true">◈</span><span><strong>More coming soon</strong><small>New destinations on the horizon</small></span></span>
+        </div>
+      </section>
+      <div class="websurf-dashboard-grid">
+        <section class="websurf-inbox" aria-labelledby="websurfInboxTitle">
+          <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></header>
+          <div class="websurf-mail-list">${mailMarkup}</div>
+        </section>
+        <aside class="websurf-account-card" aria-label="WebSurf account">
+          <header><img ${assetImageAttributes("assets/icons/WebSurf_icon.png")} alt="" /><span><strong>WebSurf Account</strong><small>Connected to Bubble Borough</small></span></header>
+          <div class="websurf-account-stats"><span><strong>${unreadCount}</strong><small>Unread</small></span><span><strong>${Math.min(99, messages.length * 2)} / 100 MB</strong><small>Mail storage</small></span></div>
+          <footer><span>${escapeHtml(addressName)}@WebSurf.swim</span><span>WebSurf 1.4 · Secure</span></footer>
+        </aside>
+      </div>
+    </main>`;
+}
+
+function getBubbleBankOrderForTransaction(entry) {
+  if (entry?.direction !== "debit" || !/bubblebodega/i.test(String(entry?.place || ""))) return null;
+  const orders = sanitizePurchaseHistory(state?.purchaseHistory);
+  const linkedOrder = orders.find((order) => order.id === entry.orderId);
+  if (linkedOrder) return linkedOrder;
+  const entryTime = Number(entry.time) || 0;
+  const entryAmount = Math.max(0, Math.floor(Number(entry.amount) || 0));
+  const entryLabel = String(entry.label || "").toLowerCase();
+  return orders
+    .filter((order) => Math.abs((Number(order.placedAt) || 0) - entryTime) <= 120000)
+    .map((order) => ({
+      order,
+      distance: Math.abs((Number(order.placedAt) || 0) - entryTime),
+      matchesItem: (order.items || []).some((item) => {
+        const name = String(item.name || "").toLowerCase();
+        return Math.max(0, Math.floor(Number(item.cost) || 0)) === entryAmount
+          && (!name || entryLabel.includes(name) || name.includes(entryLabel.replace(/^(?:bought|purchased|created)\s+/, "")));
+      })
+    }))
+    .filter((candidate) => candidate.matchesItem || Math.floor(Number(candidate.order.total) || 0) === entryAmount)
+    .sort((left, right) => left.distance - right.distance)[0]?.order || null;
+}
+
+function renderBubbleBankTabs(activeTab) {
+  const tabs = [
+    ["account", "Account", `<img class="bubble-bank-tab-icon" ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" />`],
+    ["rewards", "Rewards", "✚"],
+    ["milestones", "Milestones", "★"]
+  ];
+  return `<nav class="bubble-bank-tabs" aria-label="Bank sections">${tabs.map(([id, label, icon]) => `
+    <button type="button" class="bubble-bank-tab ${activeTab === id ? "is-active" : ""}" data-bank-tab="${id}" aria-current="${activeTab === id ? "page" : "false"}">
+      <span aria-hidden="true">${icon}</span>${label}
+    </button>`).join("")}</nav>`;
+}
+
+function renderBubbleBankCoinAmount(amount, options = {}) {
+  return `<span class="bubble-bank-coin-amount ${options.debit ? "is-debit" : options.credit ? "is-credit" : ""}"><img ${assetImageAttributes("assets/icons/coin.png")} alt="Fish Coin" /><strong>${escapeHtml(String(amount))}</strong></span>`;
+}
+
+function renderBubbleBankAccount() {
+  const filter = String(runtime.bubbleBankTransactionFilter || "all");
+  const entries = (Array.isArray(state.walletTransactions) ? state.walletTransactions.slice(0, 60) : [])
+    .filter((entry) => bubbleBankTransactionMatchesFilter(entry, filter));
+  const transactions = entries.length ? entries.map((entry) => {
+    const debit = entry.direction === "debit";
+    const neutral = entry.direction === "neutral" || Number(entry.amount) <= 0;
+    const milestone = getBubbleBankMilestoneForTransaction(entry);
+    const reward = getBubbleBankRewardForTransaction(entry);
+    const order = getBubbleBankOrderForTransaction(entry);
+    const target = milestone
+      ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="milestones" data-bank-target-id="milestone-${escapeHtml(milestone.id)}">View Milestone <span aria-hidden="true">→</span></button>`
+      : reward
+        ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="rewards" data-bank-target-id="reward-${escapeHtml(reward.dayKey || String(reward.generatedAt))}">View Reward <span aria-hidden="true">→</span></button>`
+        : order
+          ? `<button type="button" class="bubble-bank-row-link" data-bank-order-id="${escapeHtml(order.id)}">View Purchase <span aria-hidden="true">→</span></button>`
+          : "";
+    const signedAmount = neutral ? "•" : `${debit ? "−" : "+"}${Math.max(0, Number(entry.amount) || 0)}`;
+    return `<article class="bubble-bank-transaction ${neutral ? "is-neutral" : debit ? "is-debit" : "is-credit"}">
+      ${renderBubbleBankCoinAmount(signedAmount, { debit, credit: !debit && !neutral })}
+      <div class="bubble-bank-transaction-copy"><strong>${escapeHtml(entry.label || "Aquarium activity")}</strong><span>${escapeHtml(String(entry.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega"))}</span></div>
+      <time>${escapeHtml(formatBubbleBankTime(entry.time))}</time>${target}
+    </article>`;
+  }).join("") : `<div class="bubble-bank-empty"><strong>No transactions yet.</strong><span>Feed a fish or visit BubbleBodega to start your account history.</span></div>`;
+  return `<section class="bubble-bank-account">
+    <div class="bubble-bank-balance-card">
+      <div><span>Current Account Balance</span>${renderBubbleBankCoinAmount(state.coins)}<small>Fish Coins</small></div>
+    </div>
+    <div class="bubble-bank-ledger"><header><div><span aria-hidden="true">▤</span><h3>Transaction history</h3></div>${getBubbleBankTransactionFilterMarkup()}</header>${transactions}</div>
+  </section>`;
+}
+
+function renderBubbleBankRewards() {
+  const history = Array.isArray(state?.dailyBonus?.recapHistory) ? state.dailyBonus.recapHistory : [];
+  if (!history.length) {
+    return `<div class="bubble-bank-empty"><strong>No daily rewards yet.</strong><span>Your completed daily recaps and their exact score math will appear here.</span></div>`;
+  }
+  return `<section class="bubble-bank-card-list">${history.map((summary) => {
+    const rewardId = `reward-${summary.dayKey || String(summary.generatedAt)}`;
+    const positiveRows = (summary.rows || []).filter((row) => Number(row.score) > 0);
+    const negativeRows = (summary.rows || []).filter((row) => Number(row.score) < 0);
+    const scoreModelNote = summary.scoreModel
+      ? `${Number(summary.rawScore) || 0} raw points normalized across ${Math.max(1, Number(summary.fishCount) || Number(summary.tankCount) || 1)} fish/tanks.`
+      : "Each listed item contributes directly to the recap score.";
+    return `<details class="bubble-bank-reward-card" id="${escapeHtml(rewardId)}" ${runtime.bubbleBankTargetId === rewardId ? "open" : ""}>
+      <summary><div><strong>${escapeHtml(formatBubbleBankTime(summary.generatedAt, { dateOnly: true }))}</strong><span>${escapeHtml(formatBubbleBankTime(summary.generatedAt))} · ${escapeHtml(summary.overall || "Daily reward")}</span></div>${renderBubbleBankCoinAmount(`+${Math.max(0, Number(summary.reward) || 0)}`, { credit: true })}<span class="bubble-bank-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="bubble-bank-reward-math"><p>${escapeHtml(scoreModelNote)} Reward = max(0, score), capped at ${DAILY_RECAP_REWARD_CAP} coins.</p>
+        <div class="bubble-bank-math-columns"><div><h4>Added</h4>${positiveRows.length ? positiveRows.map((row) => `<span><b>+${Math.abs(Number(row.score) || 0)}</b>${escapeHtml(row.text)}</span>`).join("") : "<span>Nothing added that day.</span>"}</div>
+        <div><h4>Subtracted</h4>${negativeRows.length ? negativeRows.map((row) => `<span><b>−${Math.abs(Number(row.score) || 0)}</b>${escapeHtml(row.text)}</span>`).join("") : "<span>No negative events.</span>"}</div></div>
+      </div>
+    </details>`;
+  }).join("")}</section>`;
+}
+
+function renderBubbleBankMilestones() {
+  const unlocked = state?.dailyBonus?.milestones || {};
+  const milestones = PROGRESSION_MILESTONES.filter((milestone) => unlocked[milestone.id]);
+  if (!milestones.length) {
+    return `<div class="bubble-bank-empty"><strong>No milestones unlocked yet.</strong><span>Your completed achievements and Fish Coin payouts will appear here.</span></div>`;
+  }
+  return `<section class="bubble-bank-card-list">${milestones.map((milestone) => {
+    const milestoneId = `milestone-${milestone.id}`;
+    const receipt = (state.walletTransactions || []).find((entry) => getBubbleBankMilestoneForTransaction(entry)?.id === milestone.id);
+    const unlockedFish = (milestone.unlocks || []).map((id) => runtime.fishMap.get(id)?.name || titleFromFile(id));
+    return `<article class="bubble-bank-milestone-card ${runtime.bubbleBankTargetId === milestoneId ? "is-target" : ""}" id="${escapeHtml(milestoneId)}">
+      <span class="bubble-bank-milestone-star" aria-hidden="true">★</span><div><span>Milestone unlocked</span><h3>${escapeHtml(milestone.label)}</h3><p>${escapeHtml(milestone.requirement)}</p>${unlockedFish.length ? `<small>Unlocked fish: ${escapeHtml(unlockedFish.join(", "))}</small>` : ""}</div>
+      <div>${renderBubbleBankCoinAmount(`+${milestone.reward}`, { credit: true })}${receipt ? `<time>${escapeHtml(formatBubbleBankTime(receipt.time))}</time>` : ""}</div>
+    </article>`;
+  }).join("")}</section>`;
+}
+
+function renderBubbleBankPage() {
+  const activeTab = normalizeBubbleBankTab(runtime.bubbleBankTab);
+  const profile = sanitizeAccountProfile(state?.accountProfile);
+  const username = profile.username || getAccountUsernameForUser(profile.userId);
+  const content = activeTab === "rewards" ? renderBubbleBankRewards() : activeTab === "milestones" ? renderBubbleBankMilestones() : renderBubbleBankAccount();
+  return `<div class="bubble-bank-window-header">
+    <img class="bubble-bank-logo" ${assetImageAttributes("assets/misc/bank_logo.png")} alt="Bubble Borough Bank" />
+    ${renderBubbleBankTabs(activeTab)}
+    <div class="bubble-bank-window-actions">${renderBubbleBankCoinAmount(state.coins)}</div>
+  </div>
+  <div class="bubble-bank-scroll"><div class="bubble-bank-shell"><header class="bubble-bank-welcome"><div><span>Hello,</span><h2>${escapeHtml(username)}.</h2><p>Manage your Fish Coins and review your account activity.</p></div><strong>Save small. Swim big.</strong></header>${content}<footer>Fish Coins are earned through feeding, caring for your neighborhood, and completing milestones.</footer></div></div>`;
+}
+
+function handleBubbleBankPageClick(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  const purchaseButton = target?.closest?.("[data-bank-order-id]");
+  if (purchaseButton) {
+    const orderId = String(purchaseButton.dataset.bankOrderId || "");
+    runtime.bubbleBankOpen = false;
+    renderStoreOverlay();
+    window.showBubbleBodegaOrder?.(orderId);
+    return true;
+  }
+  const tabButton = target?.closest?.("[data-bank-tab]");
+  if (!tabButton) return false;
+  runtime.bubbleBankTab = normalizeBubbleBankTab(tabButton.dataset.bankTab);
+  runtime.bubbleBankTargetId = String(tabButton.dataset.bankTargetId || "");
+  renderStoreOverlay();
+  if (runtime.bubbleBankTargetId) {
+    window.requestAnimationFrame(() => {
+      document.getElementById(runtime.bubbleBankTargetId)?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    });
+  }
+  return true;
+}
+
+function handleBubbleBankPageChange(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  const filter = target?.closest?.("[data-bank-transaction-filter]");
+  if (!filter) return false;
+  runtime.bubbleBankTransactionFilter = String(filter.value || "all");
+  runtime.bubbleBankTargetId = "";
+  renderStoreOverlay();
+  return true;
 }
 
 function renderExternalLinkOverlay(link) {
@@ -57280,6 +59771,7 @@ function renderCustomFishCreationOverlay() {
   const rotation = sanitizeCustomFishRotation(pending.rotation);
   const flipped = Boolean(pending.flipX);
   const complexTurnaround = String(pending.turnAnimation || "simple").trim().toLowerCase() === "complex";
+  const diet = normalizeCustomFishDiet(pending.diet);
   const transform = getPendingCustomFishTransform(pending);
 
   return `
@@ -57301,7 +59793,7 @@ function renderCustomFishCreationOverlay() {
               data-custom-fish-preview />
           </div>
           <div class="custom-fish-size-readout">
-            <span>Actual fish width</span>
+            <span>CURRENT WIDTH:</span>
             <strong data-custom-fish-size-label>${width} px</strong>
           </div>
         </div>
@@ -57325,8 +59817,15 @@ function renderCustomFishCreationOverlay() {
             ${behaviorOptions}
           </select>
         </label>
+        <label class="custom-decor-name-row">
+          <span>Diet</span>
+          <select class="shop-sort-select" data-custom-fish-diet-select aria-label="Custom fish diet">
+            <option value="pellet" ${diet === "pellet" ? "selected" : ""}>Basic Food</option>
+            <option value="chum" ${diet === "chum" ? "selected" : ""}>Chum</option>
+          </select>
+        </label>
         <label class="bubbler-control-row custom-fish-size-control">
-          <span>Fish Size <strong data-custom-fish-size-label>${width} px</strong></span>
+          <span>SPECIMEN SCALE <strong data-custom-fish-size-label>${width} px</strong></span>
           <input
             type="range"
             min="${CUSTOM_FISH_MIN_WIDTH}"
@@ -57340,7 +59839,7 @@ function renderCustomFishCreationOverlay() {
             type="checkbox"
             data-custom-fish-turn-toggle
             ${complexTurnaround ? "checked" : ""} />
-          <span>Complex turn around animation</span>
+          <span>Advanced Turn Animation</span>
         </label>
         <label class="cave-colorize-toggle custom-fish-flip-toggle">
           <input
@@ -57363,6 +59862,175 @@ function renderCustomFishCreationOverlay() {
       </div>
     </div>
   `;
+}
+
+function renderProteusDesignerWorkspace() {
+  const pending = runtime.pendingCustomFishUpload;
+  const hasImage = Boolean(pending?.dataUrl);
+  const width = clamp(
+    Math.round(Number(pending?.width) || CUSTOM_FISH_DEFAULT_WIDTH),
+    CUSTOM_FISH_MIN_WIDTH,
+    CUSTOM_FISH_MAX_WIDTH
+  );
+  const behaviorProfileId = normalizeCustomFishBehaviorProfileId(pending?.behaviorProfileId);
+  const behaviorProfile = getCustomFishBehaviorProfile(behaviorProfileId) || getDefaultCustomFishBehaviorProfile();
+  const behaviorOptions = getCustomFishBehaviorProfiles().map((profile) => `
+    <option value="${escapeHtml(profile.id)}" ${behaviorProfileId === profile.id ? "selected" : ""}>
+      ${escapeHtml(formatCustomFishBehaviorOption(profile))}
+    </option>
+  `).join("");
+  const aspectRatio = pending?.naturalHeight && pending?.naturalWidth
+    ? `${Math.max(1, Number(pending.naturalWidth))} / ${Math.max(1, Number(pending.naturalHeight))}`
+    : "1 / 1";
+  const rotation = sanitizeCustomFishRotation(pending?.rotation);
+  const flipped = Boolean(pending?.flipX);
+  const complexTurnaround = String(pending?.turnAnimation || "simple").trim().toLowerCase() === "complex";
+  const diet = normalizeCustomFishDiet(pending?.diet);
+  const activityRegulation = getCustomFishActivityRegulationDisplay(pending?.activityRegulation, behaviorProfile);
+  const swimZone = getCustomFishSwimZoneDisplay(pending?.swimZone, behaviorProfile);
+  const socialAffinity = normalizeCustomFishSocialAffinity(pending?.socialAffinity);
+  const transform = getPendingCustomFishTransform(pending);
+  const disabled = hasImage ? "" : "disabled";
+
+  return `
+    <div class="proteus-designer-shell">
+      <header class="proteus-designer-app-header">
+        <img ${assetImageAttributes("assets/web/proteus/Proteus_Title_Logo.png")} alt="Proteus Biodyne" draggable="false" />
+        <div class="proteus-designer-brand-divider" aria-hidden="true"></div>
+        <div class="proteus-designer-app-title"><h1 id="proteusDesignerTitle" tabindex="-1">Engineered Aquatic Specimen Designer</h1><span>DESIGN. ADAPT. POPULATE A MORE RESILIENT TOMORROW.</span></div>
+        <div class="proteus-designer-session"><strong>▣ &nbsp; SECURE DESIGNER SESSION</strong><span>PROTEUS BIODYNE // RESTRICTED</span></div>
+      </header>
+      <div class="proteus-designer-editor">
+        <section class="proteus-designer-preview-column" aria-label="Specimen image">
+          <header class="proteus-designer-panel-heading"><div><strong>SPECIMEN DESIGN INTERFACE</strong><span>Create and refine your aquatic specimen using the tools at right.</span></div><div class="proteus-designer-tools"><label><span>⇧ &nbsp; Upload Reference</span><input id="proteusDesignerImageInput" type="file" accept="image/*" /></label><button type="button" data-proteus-designer-clear>▱ &nbsp; Clear Specimen</button><button type="button" data-proteus-designer-reset>↻ &nbsp; Reset Parameters</button></div></header>
+          <div class="proteus-designer-preview-window">
+            ${hasImage ? `
+              <img
+                class="proteus-designer-preview-image"
+                ${assetImageAttributes(pending.dataUrl)}
+                alt="Uploaded specimen preview"
+                style="width: ${width}px; aspect-ratio: ${escapeHtml(aspectRatio)}; transform: ${escapeHtml(transform)};"
+                data-custom-fish-preview />
+            ` : `
+              <div class="proteus-designer-empty-preview">
+                <img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" />
+                <strong>Specimen image required</strong>
+                <span>Upload the side-profile asset Proteus will use for fulfillment.</span>
+              </div>
+            `}
+            <div class="proteus-designer-front-marker" aria-label="Specimen front points right"><span>FRONT</span><i aria-hidden="true"></i></div>
+          </div>
+          <div class="proteus-designer-preview-meta"><div class="proteus-designer-size-readout"><span>CURRENT WIDTH:</span><strong data-custom-fish-size-label>${width} px</strong></div><span>GRID: 50 px &nbsp; | &nbsp; VIEW: STANDARD &nbsp; | &nbsp; UNITS: PIXELS</span></div>
+        </section>
+
+        <section class="proteus-designer-settings" aria-label="Specimen configuration">
+          <header class="proteus-designer-panel-heading"><div><strong>SPECIMEN PARAMETERS</strong><span>Define the characteristics of your engineered specimen.</span></div></header>
+          <label class="proteus-designer-field">
+            <span>SPECIMEN NAME</span>
+            <input type="text" maxlength="48" value="${escapeHtml(pending?.name || pending?.suggestedName || "")}" data-custom-fish-name-input ${disabled} />
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>BEHAVIOR PROFILE</span>
+            <select data-custom-fish-behavior-select ${disabled}>${behaviorOptions}</select>
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>DIETARY PROFILE</span>
+            <select data-custom-fish-diet-select ${disabled}>
+              <option value="pellet" ${diet === "pellet" ? "selected" : ""}>Standard Feed</option>
+              <option value="chum" ${diet === "chum" ? "selected" : ""}>Chum</option>
+            </select>
+            <small>Defines the specimen's approved nutritional substrate.</small>
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>ACTIVITY REGULATION</span>
+            <select data-custom-fish-activity-select ${disabled}>
+              <option value="calm" ${activityRegulation === "calm" ? "selected" : ""}>Calm</option>
+              <option value="standard" ${activityRegulation === "standard" ? "selected" : ""}>Standard</option>
+              <option value="reactive" ${activityRegulation === "reactive" ? "selected" : ""}>Reactive</option>
+            </select>
+            <small>Regulates locomotor cadence, cruising behavior, and response frequency.</small>
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>SWIM ZONE CALIBRATION</span>
+            <select data-custom-fish-swim-zone-select ${disabled}>
+              <option value="full" ${swimZone === "full" ? "selected" : ""}>Full Water Column</option>
+              <option value="upper" ${swimZone === "upper" ? "selected" : ""}>Upper Column</option>
+              <option value="midwater" ${swimZone === "midwater" ? "selected" : ""}>Midwater</option>
+              <option value="lower" ${swimZone === "lower" ? "selected" : ""}>Lower Column</option>
+            </select>
+            <small>Biases the specimen's preferred operating depth without restricting free movement.</small>
+          </label>
+
+          <label class="proteus-designer-field">
+            <span>SOCIAL AFFINITY</span>
+            <select data-custom-fish-social-select ${disabled}>
+              <option value="independent" ${socialAffinity === "independent" ? "selected" : ""}>Independent</option>
+              <option value="adaptive" ${socialAffinity === "adaptive" ? "selected" : ""}>Adaptive</option>
+              <option value="schooling" ${socialAffinity === "schooling" ? "selected" : ""}>Schooling</option>
+            </select>
+            <small>Controls the specimen's tendency to coordinate movement with nearby aquatic life.</small>
+          </label>
+
+          <label class="proteus-designer-range">
+            <span>SPECIMEN SCALE <strong data-custom-fish-size-label>${width} px</strong></span>
+            <input type="range" min="${CUSTOM_FISH_MIN_WIDTH}" max="${CUSTOM_FISH_MAX_WIDTH}" step="1" value="${width}" data-custom-fish-size-input ${disabled} />
+          </label>
+
+          <div class="proteus-designer-toggle-row">
+            <label class="proteus-designer-toggle">
+              <input type="checkbox" data-custom-fish-turn-toggle ${complexTurnaround ? "checked" : ""} ${disabled} />
+              <span>Advanced Turn Animation</span>
+            </label>
+
+            <label class="proteus-designer-toggle">
+              <input type="checkbox" data-custom-fish-flip-toggle ${flipped ? "checked" : ""} ${disabled} />
+              <span>Flip Horizontally</span>
+            </label>
+          </div>
+
+          <label class="proteus-designer-range">
+            <span>Rotation <strong data-custom-fish-rotation-label>${rotation} deg</strong></span>
+            <input type="range" min="${CUSTOM_FISH_ROTATION_MIN_DEGREES}" max="${CUSTOM_FISH_ROTATION_MAX_DEGREES}" step="1" value="${rotation}" data-custom-fish-rotation-input ${disabled} />
+          </label>
+
+          <div class="proteus-designer-note"><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" /><div><strong>SPECIMEN FULFILLMENT <b>75 COINS</b></strong><span>Your custom aquatic specimen will be synthesized and delivered to your tank upon confirmation.</span></div></div>
+          <div class="proteus-designer-actions"><button type="button" class="proteus-designer-submit" data-proteus-designer-submit ${hasImage ? "" : "disabled"}>COMMISSION SPECIMEN &nbsp; →</button><button type="button" class="proteus-designer-cancel" data-proteus-designer-cancel>CANCEL</button></div>
+          <small class="proteus-designer-legal">All specimens are subject to review in accordance with Proteus Biodyne biosecurity and ecological compliance standards.</small>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function renderProteusDesignerCompletion() {
+  return `
+    <div class="proteus-designer-completion" role="status" aria-live="polite">
+      <img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="Proteus Biodyne" />
+      <p>ASSET DESIGN AND FULFILLMENT COMPLETE.</p>
+    </div>
+  `;
+}
+
+function renderProteusDesignerPage() {
+  const route = document.getElementById("proteusDesignerRoute");
+  const workspace = document.getElementById("proteusDesignerWorkspace");
+  if (!route || !workspace) return;
+  route.hidden = runtime.proteusDesignerOpen !== true;
+  route.classList.toggle("is-complete", runtime.proteusDesignerCompleting === true);
+  if (route.hidden) return;
+  workspace.classList.toggle("is-complete", runtime.proteusDesignerCompleting === true);
+  const renderKey = runtime.proteusDesignerCompleting === true
+    ? `complete:${String(runtime.activeEngineeredSpecimenOrderId || "")}`
+    : `workspace:${String(runtime.activeEngineeredSpecimenOrderId || "")}:${Number(runtime.proteusDesignerRenderRevision) || 0}:${runtime.pendingCustomFishUpload?.dataUrl ? "image" : "empty"}`;
+  if (workspace.dataset.proteusDesignerRenderKey === renderKey && workspace.firstElementChild) return;
+  workspace.dataset.proteusDesignerRenderKey = renderKey;
+  workspace.innerHTML = runtime.proteusDesignerCompleting === true
+    ? renderProteusDesignerCompletion()
+    : renderProteusDesignerWorkspace();
 }
 
 function renderBubblerSettingsOverlay(item) {
@@ -59548,11 +62216,16 @@ function renderFishList(now) {
   const starterName = starterSpecies?.name || "starter fish";
   const emergencyStarter = starterSpecies ? getFishPurchaseCost(starterSpecies.id) === 0 : false;
   const starterCost = starterSpecies ? starterSpecies.cost : 1;
+  const rescueOfferWaiting = state.coins <= 0
+    && getLivingOwnedFishCount() === 0
+    && getBubbleBodegaRescueOfferStatus().issued
+    && !getBubbleBodegaRescueOfferStatus().redeemed;
   const fishListDataKey = [
     getLocalDayKey(now),
     starterSpecies?.id || "",
     starterCost,
     emergencyStarter ? 1 : 0,
+    rescueOfferWaiting ? 1 : 0,
     runtime.collapsedSections.fishTank ? 1 : 0,
     runtime.collapsedSections.fishDead ? 1 : 0,
     runtime.collapsedSections.fishStorage ? 1 : 0,
@@ -59607,7 +62280,7 @@ function renderFishList(now) {
         inStorage: false
       }))
       .join("")
-    : `<div class="empty-state">The tank is empty. Open the cart and ${emergencyStarter ? `grab a free ${starterName} to get back on your feet.` : `grab a ${starterName} for ${starterCost} ${pluralize("coin", starterCost)} to get started.`}</div>`;
+    : `<div class="empty-state">The tank is empty. ${rescueOfferWaiting ? "Check your WebSurf inbox for a BubbleBodega recovery offer." : `Open the cart and ${emergencyStarter ? `grab a free ${starterName} to get back on your feet.` : `grab a ${starterName} for ${starterCost} ${pluralize("coin", starterCost)} to get started.`}`}</div>`;
 
   const deadMarkup = deadFishEntries.length
     ? [...deadFishEntries]
@@ -59831,7 +62504,7 @@ function renderManagedFishCard(fish, now, options = {}) {
           ${goreEnabled && dead && corpseState === "skeleton" ? `<span class="fish-trait">Decay: Skeleton</span>` : ""}
           ${dead && corpseState === "devoured" ? `<span class="fish-trait">Decay: Piranha feeding</span>` : ""}
           ${!dead ? `<span class="fish-trait">Grime load: +${dirtinessLoadPercent}%</span>` : ""}
-          <span class="fish-trait">Swim: ${zombieHunterFish ? "Undead hunter" : formatSwimStyle(species.swimStyle)}</span>
+          <span class="fish-trait">Swim: ${zombieHunterFish ? "Undead hunter" : isDavyMutationSpecies(species) ? formatFishShopBehavior(species) : formatSwimStyle(species.swimStyle)}</span>
           <span class="fish-trait">Age: ${age}</span>
         </div>
         <div class="mini-note fish-health-note">${healthNote}</div>
@@ -60764,6 +63437,7 @@ function renderDecorShop() {
           <div>
             <strong>${decor.name}</strong>
             ${renderShopThemePill(decor.theme)}
+            ${decor.description ? `<div class="fish-meta">${escapeHtml(decor.description)}</div>` : ""}
             <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
             ${serviceSummary ? `<div class="mini-note borough-service-note">${escapeHtml(serviceSummary)}</div>` : ""}
           </div>
@@ -60803,23 +63477,32 @@ function renderEquipmentShop() {
   }
 
   const dispenserInstalled = hasAutoDispenserInstalled();
+  const dispenserOwned = dispenserInstalled || state.autoDispenser?.stored === true || (Number(state.autoDispenser?.storedCount) || 0) > 0;
   const dispenserLoadedCount = getAutoDispenserLoadedCount(state.autoDispenser);
-  const dispenserPortion = clamp(Number(state.autoDispenser?.mealPortion) || 0, 0, AUTO_DISPENSER_PORTION_MAX);
+  const dispenserVariants = getAutoDispenserAppearanceVariants();
+  const dispenserMainVariant = dispenserVariants[0];
+  const dispenserVariantDots = dispenserVariants.length > 1
+    ? `<div class="shop-variant-dots" aria-label="Choose dispenser appearance">${dispenserVariants.map((variant, index) => `<button type="button" data-shop-variant-key="${escapeHtml(variant.key)}" data-shop-variant-image="${escapeHtml(variant.image)}" data-shop-variant-background="${escapeHtml(variant.backgroundImage || "")}" data-shop-variant-light="${escapeHtml(variant.lightImage || AUTO_DISPENSER_LIGHT_OFF_PATH)}" aria-label="${escapeHtml(variant.label)}" aria-pressed="${index === 0 ? "true" : "false"}"></button>`).join("")}</div>`
+    : "";
   const dispenserMarkup = `
-      <article class="shop-card">
-        <img class="shop-thumb" ${assetImageAttributes(AUTO_DISPENSER_IMAGE_PATH)} alt="Automatic pellet dispenser" />
+      <article class="shop-card" data-store-seller="BubbleBodega">
+        <div class="shop-thumb layered-dispenser-thumb" role="img" aria-label="Automatic pellet dispenser">
+          <img class="layered-dispenser-thumb-bg" ${assetImageAttributes(dispenserMainVariant.backgroundImage)} data-dispenser-layer="background" alt="" aria-hidden="true" />
+          <img class="layered-dispenser-thumb-fg" ${assetImageAttributes(dispenserMainVariant.image)} data-dispenser-layer="foreground" alt="Food Dispenser 9000" />
+          <img class="layered-dispenser-thumb-light" ${assetImageAttributes(dispenserMainVariant.lightImage || AUTO_DISPENSER_LIGHT_OFF_PATH)} data-dispenser-layer="light" alt="" aria-hidden="true" />
+        </div>
+        ${dispenserVariantDots}
         <div class="shop-meta shop-card-main">
           <div>
-            <strong>Pellet Dispenser</strong>
-            <div class="fish-meta">${dispenserInstalled ? "Installed in this tank" : "Not installed in this tank"}</div>
+            <strong>Food Dispenser 9000</strong>
+            <div class="fish-meta">${dispenserInstalled ? "Installed in this tank" : dispenserOwned ? "In equipment storage" : "Available"}</div>
           </div>
-          <div class="fish-meta">Mounts at the center waterline, stores up to ${AUTO_DISPENSER_MAX_PELLETS} pellets, and feeds hungry fish on demand.</div>
-          <div class="mini-note">${dispenserLoadedCount}/${AUTO_DISPENSER_MAX_PELLETS} loaded | Manual release ${String(dispenserPortion).padStart(2, "0")}</div>
+          <div class="fish-meta">A top-mounted automatic feeder with an unnecessarily impressive name. Position it where you want it and it will dispense exactly what hungry fish need when they need it. Just don't forget to add food to it.</div>
         </div>
         <div class="shop-meta shop-card-actions">
           <span class="price-tag">${AUTO_DISPENSER_COST} ${pluralize("coin", AUTO_DISPENSER_COST)}</span>
           <div class="shop-button-row">
-            <button class="buy-button" data-buy-auto-dispenser="true" ${dispenserInstalled ? "disabled" : ""}>${dispenserInstalled ? "Installed" : "Buy & Install"}</button>
+            <button class="buy-button" data-buy-auto-dispenser="true" data-shop-bg-image="${escapeHtml(dispenserMainVariant.backgroundImage)}" data-shop-light-image="${escapeHtml(dispenserMainVariant.lightImage || AUTO_DISPENSER_LIGHT_OFF_PATH)}" data-machinery-variants="${escapeHtml(JSON.stringify(dispenserVariants))}">Buy for Equipment</button>
           </div>
         </div>
       </article>
@@ -60840,11 +63523,12 @@ function renderEquipmentShop() {
         : `${background.cost} ${pluralize("coin", background.cost)}`;
 
       return `
-      <article class="shop-card">
+      <article class="shop-card" data-store-seller="${escapeHtml(background.seller || "BubbleBodega")}">
         ${renderBackgroundPreview(background, "shop-thumb background-shop-thumb")}
         <div class="shop-meta shop-card-main">
           <div>
             <strong>${background.name}</strong>
+            ${background.description ? `<div class="fish-meta">${escapeHtml(background.description)}</div>` : ""}
             <div class="fish-meta">${statusLabel}</div>
           </div>
         </div>
@@ -60878,6 +63562,7 @@ function renderEquipmentShop() {
         <p>Remote-controlled machinery with built-in feeding controls and autopilot.</p>
       </div>
       <div class="shop-section-cards">
+        ${dispenserMarkup}
         ${renderSubmarineShopCard()}
         ${renderBoatShopCard()}
       </div>
@@ -64685,6 +67370,438 @@ function updateSuckerFishFreeSwimState(fish, species, now = Date.now()) {
   return false;
 }
 
+function getDavyMutationBehaviorKey(speciesOrFish) {
+  const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
+  switch (species?.id) {
+    case "davy-dwarf-chimera-barracuda":
+      return "barracuda";
+    case "davy-bioluminescent-angler-pike":
+      return "siren-pike";
+    case "davy-bioluminescent-glass-fangfish":
+      return "glass-spitter";
+    case "davy-bioluminescent-cherub-goldfish":
+      return "cherub";
+    case "davy-dwarf-hyperfin":
+      return "hyperfin";
+    default:
+      return "";
+  }
+}
+
+function getNearestDavyMutationTankmate(fish, predicate = null) {
+  if (!fish) return null;
+  let nearest = null;
+  for (const otherFish of state.fish || []) {
+    if (!otherFish || otherFish.id === fish.id || isFishDead(otherFish)) continue;
+    const otherSpecies = getSpeciesForFish(otherFish);
+    if (!otherSpecies || (predicate && !predicate(otherFish, otherSpecies))) continue;
+    const distanceNorm = Math.hypot((otherFish.xNorm || 0.5) - (fish.xNorm || 0.5), (otherFish.yNorm || 0.5) - (fish.yNorm || 0.5));
+    if (!nearest || distanceNorm < nearest.distanceNorm) {
+      nearest = { fish: otherFish, species: otherSpecies, distanceNorm };
+    }
+  }
+  return nearest;
+}
+
+function isPeacefulDavyCompanionTarget(otherFish, otherSpecies) {
+  if (!otherFish || !otherSpecies || isFishDead(otherFish) || isDavyMutationSpecies(otherSpecies)) return false;
+  if (isPiranhaSpecies(otherFish) || usesZombieHunterBehavior(otherFish)) return false;
+  const speciesType = getFishSpeciesType(otherSpecies);
+  return speciesType !== "shark" && speciesType !== "whale";
+}
+
+function maybeAssignDavyMutationReactionTarget(fish, species, now = Date.now()) {
+  if (!fish || !species || isDavyMutationSpecies(species) || isFishDead(fish)) return false;
+
+  const barracuda = getNearestDavyMutationTankmate(fish, (otherFish, otherSpecies) => otherSpecies.id === "davy-dwarf-chimera-barracuda");
+  if (barracuda && barracuda.distanceNorm <= 0.19 && Math.random() < 0.38) {
+    const dx = (fish.xNorm || 0.5) - (barracuda.fish.xNorm || 0.5);
+    const dy = (fish.yNorm || 0.5) - (barracuda.fish.yNorm || 0.5);
+    const magnitude = Math.max(0.001, Math.hypot(dx, dy));
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + (dx / magnitude) * randomBetween(0.14, 0.24),
+      (fish.yNorm || 0.5) + (dy / magnitude) * randomBetween(0.08, 0.17),
+      species,
+      { fish, layer: getFishTankLayer(fish) }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(1000, 2200);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax));
+    fish.hangoutDecorId = null;
+    fish.hangoutZoneType = null;
+    setFishBehaviorIntent(fish, "keeping distance", "intimidated", now, { durationMs: 5000, targetName: barracuda.fish.name });
+    return true;
+  }
+
+  const siren = getNearestDavyMutationTankmate(fish, (otherFish, otherSpecies) => otherSpecies.id === "davy-bioluminescent-angler-pike");
+  const personality = getFishPersonality(fish);
+  if (
+    siren
+    && siren.distanceNorm <= 0.3
+    && ["curious", "social", "greedy", "explorer"].includes(personality)
+    && Math.random() < 0.16
+  ) {
+    const side = (fish.xNorm || 0.5) <= (siren.fish.xNorm || 0.5) ? -1 : 1;
+    const placement = clampFishPlacement(
+      (siren.fish.xNorm || 0.5) + side * randomBetween(0.07, 0.11),
+      (siren.fish.yNorm || 0.5) + randomBetween(-0.045, 0.045),
+      species,
+      { fish, layer: getFishTankLayer(siren.fish) }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(1800, 3600);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.58)));
+    fish.hangoutDecorId = null;
+    fish.hangoutZoneType = null;
+    setFishDesiredTankLayer(fish, getFishTankLayer(siren.fish));
+    setFishBehaviorIntent(fish, "investigating lure", personality, now, { durationMs: 6500, targetName: siren.fish.name });
+    return true;
+  }
+
+  const hyperfin = getNearestDavyMutationTankmate(fish, (otherFish, otherSpecies) => otherSpecies.id === "davy-dwarf-hyperfin");
+  if (
+    hyperfin
+    && hyperfin.distanceNorm <= 0.22
+    && ((Number(hyperfin.fish.davyCircuitUntil) || 0) > now || (Number(hyperfin.fish.davyFoodBurstUntil) || 0) > now || (Number(hyperfin.fish.davyPatrolBurstUntil) || 0) > now)
+    && Math.random() < 0.24
+  ) {
+    const dx = (fish.xNorm || 0.5) - (hyperfin.fish.xNorm || 0.5);
+    const dy = (fish.yNorm || 0.5) - (hyperfin.fish.yNorm || 0.5);
+    const magnitude = Math.max(0.001, Math.hypot(dx, dy));
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + (dx / magnitude) * randomBetween(0.1, 0.18),
+      (fish.yNorm || 0.5) + (dy / magnitude) * randomBetween(0.05, 0.12),
+      species,
+      { fish, layer: getFishTankLayer(fish) }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(850, 1800);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.66), species.speedMax));
+    fish.hangoutDecorId = null;
+    fish.hangoutZoneType = null;
+    setFishBehaviorIntent(fish, "startled by speed", "reactive", now, { durationMs: 4200, targetName: hyperfin.fish.name });
+    return true;
+  }
+
+  return false;
+}
+
+function assignDavyMutationSwimTarget(fish, species, now = Date.now()) {
+  const behaviorKey = getDavyMutationBehaviorKey(species);
+  if (!behaviorKey || !fish || isFishDead(fish)) return false;
+
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  clearFishSchoolFollowState(fish);
+  const currentLayer = getFishTankLayer(fish);
+
+  if (behaviorKey === "barracuda") {
+    if (Math.random() < 0.28) {
+      fish.targetXNorm = fish.xNorm;
+      fish.targetYNorm = fish.yNorm;
+      fish.targetAt = now + randomBetween(2600, 5200);
+      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
+      setFishDesiredTankLayer(fish, currentLayer);
+      setFishBehaviorIntent(fish, "holding position", "patrol", now, { durationMs: fish.targetAt - now });
+      return true;
+    }
+
+    const direction = getFishFacingDirection(fish);
+    const targetLayer = clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS, currentLayer + (Math.random() < 0.35 ? (Math.random() < 0.5 ? -1 : 1) : 0))));
+    const burst = Math.random() < 0.24;
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + direction * randomBetween(burst ? 0.34 : 0.26, burst ? 0.64 : 0.52),
+      clamp((fish.yNorm || 0.5) + randomBetween(-0.09, 0.09), 0.28, 0.68),
+      species,
+      { fish, layer: targetLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(burst ? 700 : 1800, burst ? 1350 : 3600);
+    fish.swimSpeed = normalizeFishSpeed(species, burst
+      ? randomBetween(Math.max(species.speedMin, species.speedMax * 0.9), species.speedMax)
+      : randomBetween(Math.max(species.speedMin, species.speedMax * 0.5), species.speedMax * 0.76));
+    if (burst) fish.davyPatrolBurstUntil = now + 1100;
+    setFishDesiredTankLayer(fish, targetLayer);
+    setFishBehaviorIntent(fish, burst ? "burst patrol" : "open-water patrol", "patrol", now, { durationMs: fish.targetAt - now });
+    return true;
+  }
+
+  if (behaviorKey === "siren-pike") {
+    const roll = Math.random();
+    if (roll < 0.58) {
+      fish.targetXNorm = fish.xNorm;
+      fish.targetYNorm = fish.yNorm;
+      fish.targetAt = now + randomBetween(4400, 9200);
+      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
+      setFishDesiredTankLayer(fish, currentLayer);
+      setFishBehaviorIntent(fish, "ambush hover", "waiting", now, { durationMs: fish.targetAt - now });
+      return true;
+    }
+    const facing = getFishFacingDirection(fish);
+    const lunge = roll > 0.9;
+    const targetLayer = clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS, currentLayer + (Math.random() < 0.22 ? (Math.random() < 0.5 ? -1 : 1) : 0))));
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + facing * randomBetween(lunge ? 0.24 : 0.055, lunge ? 0.46 : 0.15),
+      clamp((fish.yNorm || 0.5) + randomBetween(lunge ? -0.1 : -0.04, lunge ? 0.1 : 0.04), 0.28, 0.72),
+      species,
+      { fish, layer: targetLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(lunge ? 750 : 2600, lunge ? 1350 : 5200);
+    fish.swimSpeed = normalizeFishSpeed(species, lunge
+      ? randomBetween(Math.max(species.speedMin, species.speedMax * 0.92), species.speedMax)
+      : randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.46)));
+    if (lunge) fish.davyPatrolBurstUntil = now + 1200;
+    setFishDesiredTankLayer(fish, targetLayer);
+    setFishBehaviorIntent(fish, lunge ? "lunge" : "creeping", "ambush", now, { durationMs: fish.targetAt - now });
+    return true;
+  }
+
+  if (behaviorKey === "glass-spitter") {
+    const largerFish = getNearestDavyMutationTankmate(fish, (otherFish, otherSpecies) => (Number(otherSpecies.displayWidth) || 0) > (Number(species.displayWidth) || 0) * 1.08);
+    if (largerFish && largerFish.distanceNorm <= 0.24 && Math.random() < 0.46) {
+      const dx = (fish.xNorm || 0.5) - (largerFish.fish.xNorm || 0.5);
+      const dy = (fish.yNorm || 0.5) - (largerFish.fish.yNorm || 0.5);
+      const magnitude = Math.max(0.001, Math.hypot(dx, dy));
+      const placement = clampFishPlacement(
+        (fish.xNorm || 0.5) + (dx / magnitude) * randomBetween(0.15, 0.26),
+        (fish.yNorm || 0.5) + (dy / magnitude) * randomBetween(0.08, 0.16),
+        species,
+        { fish, layer: getFishTankLayer(fish) }
+      );
+      fish.targetXNorm = placement.xNorm;
+      fish.targetYNorm = placement.yNorm;
+      fish.targetAt = now + randomBetween(520, 1050);
+      fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.9), species.speedMax));
+      fish.davyPatrolBurstUntil = now + 900;
+      setFishBehaviorIntent(fish, "retreating", "nervous", now, { durationMs: 3200, targetName: largerFish.fish.name });
+      return true;
+    }
+
+    if (Math.random() < 0.52) {
+      const cover = pickDecorHangoutTarget(species, fish, now, {
+        allowedZoneTypes: ["hide", "plant", "hardscape", "spooky"],
+        chanceMultiplier: 2.6,
+        lingerMultiplier: 0.7,
+        occupancyLimit: 1,
+        preferBackLayer: true
+      });
+      if (cover) {
+        fish.targetXNorm = cover.xNorm;
+        fish.targetYNorm = cover.yNorm;
+        fish.targetAt = now + Math.min(3200, cover.lingerMs);
+        setFishDesiredTankLayer(fish, cover.targetLayer);
+        fish.hangoutDecorId = cover.decorId;
+        fish.hangoutZoneType = cover.zoneType;
+        fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.7), species.speedMax));
+        setFishBehaviorIntent(fish, "seeking cover", "nervous", now, { durationMs: fish.targetAt - now });
+        return true;
+      }
+    }
+
+    const direction = Math.random() < 0.5 ? -1 : 1;
+    const targetLayer = clampTankLayer(1 + Math.floor(Math.random() * TANK_DEPTH_LAYERS));
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + direction * randomBetween(0.1, 0.3),
+      (fish.yNorm || 0.5) + randomBetween(-0.16, 0.16),
+      species,
+      { fish, layer: targetLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(520, 1350);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.76), species.speedMax));
+    fish.davyPatrolBurstUntil = now + 850;
+    setFishDesiredTankLayer(fish, targetLayer);
+    setFishBehaviorIntent(fish, "abrupt dart", "nervous", now, { durationMs: fish.targetAt - now });
+    return true;
+  }
+
+  if (behaviorKey === "cherub") {
+    const companion = getNearestDavyMutationTankmate(fish, isPeacefulDavyCompanionTarget);
+    if (companion && companion.distanceNorm <= 0.42 && Math.random() < 0.5) {
+      const side = (fish.xNorm || 0.5) <= (companion.fish.xNorm || 0.5) ? -1 : 1;
+      const placement = clampFishPlacement(
+        (companion.fish.xNorm || 0.5) + side * randomBetween(0.045, 0.09),
+        (companion.fish.yNorm || 0.5) + randomBetween(-0.055, 0.055),
+        species,
+        { fish, layer: getFishTankLayer(companion.fish) }
+      );
+      fish.targetXNorm = placement.xNorm;
+      fish.targetYNorm = placement.yNorm;
+      fish.targetAt = now + randomBetween(2200, 4400);
+      fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.58)));
+      setFishDesiredTankLayer(fish, getFishTankLayer(companion.fish));
+      setFishBehaviorIntent(fish, "following", "companion", now, { durationMs: fish.targetAt - now, targetName: companion.fish.name });
+      return true;
+    }
+
+    if (Math.random() < 0.42) {
+      fish.targetXNorm = clamp((fish.xNorm || 0.5) + randomBetween(-0.035, 0.035), 0.1, 0.9);
+      fish.targetYNorm = clamp((fish.yNorm || 0.5) + randomBetween(-0.025, 0.025), 0.22, 0.76);
+      fish.targetAt = now + randomBetween(2600, 5600);
+      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
+      setFishDesiredTankLayer(fish, 1);
+      setFishBehaviorIntent(fish, "watching glass", "companion", now, { durationMs: fish.targetAt - now });
+      return true;
+    }
+
+    const placement = clampFishPlacement(
+      (fish.xNorm || 0.5) + randomBetween(-0.16, 0.16),
+      (fish.yNorm || 0.5) + randomBetween(-0.1, 0.1),
+      species,
+      { fish, layer: Math.random() < 0.55 ? 1 : currentLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(2800, 6200);
+    fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.52)));
+    setFishDesiredTankLayer(fish, Math.random() < 0.55 ? 1 : currentLayer);
+    setFishBehaviorIntent(fish, "companion wander", "companion", now, { durationMs: fish.targetAt - now });
+    return true;
+  }
+
+  if (behaviorKey === "hyperfin") {
+    const inCircuit = (Number(fish.davyCircuitUntil) || 0) > now;
+    const excited = inCircuit || fish.activity === "feeding" || Math.random() < 0.34;
+    const direction = getFishFacingDirection(fish) || ((fish.xNorm || 0.5) < 0.5 ? 1 : -1);
+    const targetLayer = clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS, currentLayer + (Math.random() < 0.18 ? (Math.random() < 0.5 ? -1 : 1) : 0))));
+    const farEdge = direction >= 0 ? 0.92 : 0.08;
+    const cruiseY = clamp((fish.yNorm || 0.5) + randomBetween(-0.08, 0.08), 0.24, 0.68);
+    const placement = clampFishPlacement(
+      excited ? farEdge : (fish.xNorm || 0.5) + direction * randomBetween(0.28, 0.52),
+      cruiseY,
+      species,
+      { fish, layer: targetLayer }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(excited ? 650 : 1600, excited ? 1350 : 3000);
+    fish.swimSpeed = normalizeFishSpeed(species, excited
+      ? randomBetween(Math.max(species.speedMin, species.speedMax * 0.9), species.speedMax)
+      : randomBetween(Math.max(species.speedMin, species.speedMax * 0.48), species.speedMax * 0.72));
+    setFishDesiredTankLayer(fish, targetLayer);
+    if (excited) {
+      fish.davyCircuitUntil = now + randomBetween(3200, 5200);
+      fish.davyPatrolBurstUntil = now + 1250;
+      setFishBehaviorIntent(fish, "high-speed circuit", "performance", now, { durationMs: fish.targetAt - now });
+    } else {
+      setFishBehaviorIntent(fish, "open-water cruise", "performance", now, { durationMs: fish.targetAt - now });
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now = Date.now()) {
+  const behaviorKey = getDavyMutationBehaviorKey(species);
+  if (!behaviorKey || !fish || !pellet || !pelletPose) return null;
+
+  if (fish.davyFoodReactionPelletId !== pellet.id) {
+    fish.davyFoodReactionPelletId = pellet.id;
+    fish.davyFoodReactionStartedAt = now;
+    fish.davyFoodBurstUntil = 0;
+    fish.davyFoodCreepUntil = 0;
+  }
+  const elapsed = Math.max(0, now - (Number(fish.davyFoodReactionStartedAt) || now));
+
+  if (behaviorKey === "barracuda") {
+    if (elapsed < 1100) {
+      setFishBehaviorIntent(fish, "tracking food", "motion tracking", now, { durationMs: 1400 });
+      return { handled: true, xNorm: fish.xNorm, yNorm: fish.yNorm, targetAt: now + 180 };
+    }
+    if (!(Number(fish.davyFoodBurstUntil) > now)) fish.davyFoodBurstUntil = now + 1050;
+    setFishBehaviorIntent(fish, "striking", "feeding", now, { durationMs: 1400 });
+    return null;
+  }
+
+  if (behaviorKey === "siren-pike") {
+    if (elapsed < 2100) {
+      setFishBehaviorIntent(fish, "waiting on food", "ambush", now, { durationMs: 2300 });
+      return { handled: true, xNorm: fish.xNorm, yNorm: fish.yNorm, targetAt: now + 180 };
+    }
+    if (elapsed < 3400) {
+      fish.davyFoodCreepUntil = now + 220;
+      setFishBehaviorIntent(fish, "creeping toward food", "ambush", now, { durationMs: 1500 });
+      return {
+        handled: true,
+        xNorm: fish.xNorm + (pelletPose.xNorm - fish.xNorm) * 0.32,
+        yNorm: fish.yNorm + (pelletPose.yNorm - fish.yNorm) * 0.32,
+        targetAt: now + 300
+      };
+    }
+    if (!(Number(fish.davyFoodBurstUntil) > now)) fish.davyFoodBurstUntil = now + 1150;
+    setFishBehaviorIntent(fish, "ambush strike", "feeding", now, { durationMs: 1500 });
+    return null;
+  }
+
+  if (behaviorKey === "glass-spitter" && pelletPose.yNorm <= 0.34 && elapsed < 950) {
+    const targetY = clamp(pelletPose.yNorm + 0.1, 0.2, 0.42);
+    setFishBehaviorIntent(fish, "lining up surface jet", "surface tracking", now, { durationMs: 1200 });
+    return {
+      handled: true,
+      xNorm: pelletPose.xNorm,
+      yNorm: targetY,
+      targetAt: now + 260
+    };
+  }
+
+  if (behaviorKey === "cherub") {
+    setFishBehaviorIntent(fish, "excited for food", "companion", now, { durationMs: 2200 });
+  }
+
+  if (behaviorKey === "hyperfin") {
+    if (elapsed < 260) {
+      fish.davyCircuitUntil = now + 2600;
+      setFishBehaviorIntent(fish, "locking onto food", "visual tracking", now, { durationMs: 1200 });
+      return {
+        handled: true,
+        xNorm: fish.xNorm + (pelletPose.xNorm - fish.xNorm) * 0.55,
+        yNorm: fish.yNorm + (pelletPose.yNorm - fish.yNorm) * 0.55,
+        targetAt: now + 180
+      };
+    }
+    if (!(Number(fish.davyFoodBurstUntil) > now)) fish.davyFoodBurstUntil = now + 1350;
+    fish.davyCircuitUntil = now + 3200;
+    setFishBehaviorIntent(fish, "accelerating toward food", "feeding", now, { durationMs: 1600 });
+    return null;
+  }
+
+  return null;
+}
+
+function getDavyMutationMotionSpeedMultiplier(fish, species, now = Date.now()) {
+  const behaviorKey = getDavyMutationBehaviorKey(species);
+  if (!behaviorKey) return 1;
+  if (Number(fish.davyFoodBurstUntil) > now) {
+    return behaviorKey === "hyperfin"
+      ? 2.15
+      : behaviorKey === "siren-pike"
+        ? 2.05
+        : behaviorKey === "barracuda"
+          ? 1.82
+          : 1.3;
+  }
+  if (Number(fish.davyFoodCreepUntil) > now) return 0.28;
+  if (Number(fish.davyPatrolBurstUntil) > now) {
+    return behaviorKey === "hyperfin"
+      ? 1.66
+      : behaviorKey === "glass-spitter"
+        ? 1.34
+        : 1.48;
+  }
+  if (behaviorKey === "hyperfin" && Number(fish.davyCircuitUntil) > now) return 1.58;
+  if (behaviorKey === "cherub") return fish.activity === "feeding" ? 0.82 : 0.76;
+  if (behaviorKey === "hyperfin") return fish.activity === "feeding" ? 1.2 : 1.08;
+  return 1;
+}
+
 function updateFishMotion(now, deltaSeconds) {
   if (!state?.fish.length) {
     runtime.fishGravelPebbleActions.clear();
@@ -65047,25 +68164,32 @@ function updateFishMotion(now, deltaSeconds) {
         }
         pelletPose = getPelletPose(pellet, now);
         pelletBounds = getPelletHitBounds(pellet, now);
-        const mouthChaseTarget = getFishTargetNormForMouthPoint(
-          fish,
-          species,
-          pelletPose.xNorm * TANK_WIDTH,
-          pelletPose.yNorm * TANK_HEIGHT,
-          now,
-          {
-            minYNorm: 0.14,
-            maxYNorm: pellet.settled ? 0.9 : 0.82
-          }
-        );
-        if (mouthChaseTarget) {
-          fish.targetXNorm = mouthChaseTarget.xNorm;
-          fish.targetYNorm = mouthChaseTarget.yNorm;
+        const davyFeedingControl = getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now);
+        if (davyFeedingControl?.handled) {
+          fish.targetXNorm = clamp(davyFeedingControl.xNorm, 0.08, 0.92);
+          fish.targetYNorm = clamp(davyFeedingControl.yNorm, 0.14, pellet.settled ? 0.9 : 0.82);
+          fish.targetAt = Number(davyFeedingControl.targetAt) || now + 300;
         } else {
-          fish.targetXNorm = pelletPose.xNorm;
-          fish.targetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+          const mouthChaseTarget = getFishTargetNormForMouthPoint(
+            fish,
+            species,
+            pelletPose.xNorm * TANK_WIDTH,
+            pelletPose.yNorm * TANK_HEIGHT,
+            now,
+            {
+              minYNorm: 0.14,
+              maxYNorm: pellet.settled ? 0.9 : 0.82
+            }
+          );
+          if (mouthChaseTarget) {
+            fish.targetXNorm = mouthChaseTarget.xNorm;
+            fish.targetYNorm = mouthChaseTarget.yNorm;
+          } else {
+            fish.targetXNorm = pelletPose.xNorm;
+            fish.targetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+          }
+          fish.targetAt = now + 1000;
         }
-        fish.targetAt = now + 1000;
         setFishDesiredTankLayer(
           fish,
           effectiveBehavior === "sucker"
@@ -65336,6 +68460,7 @@ function updateFishMotion(now, deltaSeconds) {
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.18, 1.4);
       }
       speedMultiplier *= getFishDiseaseSpeedMultiplier(fish, now);
+      speedMultiplier *= getDavyMutationMotionSpeedMultiplier(fish, species, now);
       if (segmentedTurnaroundActive) {
         speedMultiplier *= 0.12 + turnaroundMovementBlend * 0.88;
       }
@@ -65923,6 +69048,14 @@ function assignSwimTarget(fish, species, now) {
     setFishTankLayers(fish, glassLayer, glassLayer);
     fish.hangoutDecorId = null;
     fish.swimSpeed = crawlSpeed;
+    return;
+  }
+
+  if (maybeAssignDavyMutationReactionTarget(fish, species, now)) {
+    return;
+  }
+
+  if (assignDavyMutationSwimTarget(fish, species, now)) {
     return;
   }
 
@@ -66965,7 +70098,13 @@ function renderTank(now) {
     // gravel, rather than being painted behind every fish and ornament.
     drawFishPebbleTosses(now, layer);
     drawMachinery(now, layer);
+    if (layer === clampTankLayer(state?.autoDispenser?.tankLayer ?? AUTO_DISPENSER_DEFAULT_TANK_LAYER)) {
+      drawAutoDispenser(now);
+    }
   }
+  // Surface boats are always above decor, while the glass/grime canvases are
+  // composited after this scene and therefore remain in front of them.
+  drawMachinery(now, 0);
   drawCoinGlints(now);
   drawDecorBubbleStreams(now);
   drawTransitTubeBursts(now);
@@ -68626,8 +71765,9 @@ function drawAutoDispenser(now = Date.now()) {
 
   const dispenser = state.autoDispenser;
   const layout = getAutoDispenserLayout();
-  const backgroundImage = runtime.images.get(AUTO_DISPENSER_BG_PATH);
-  const foregroundImage = runtime.images.get(AUTO_DISPENSER_IMAGE_PATH);
+  const backgroundImage = runtime.images.get(getAutoDispenserBackgroundPath(dispenser));
+  const foregroundImage = runtime.images.get(getAutoDispenserImagePath(dispenser));
+  const loadedCount = getAutoDispenserLoadedCount(dispenser);
 
   tankContext.save();
   if (backgroundImage) {
@@ -68659,44 +71799,48 @@ function drawAutoDispenser(now = Date.now()) {
     tankContext.drawImage(foregroundImage, layout.x, layout.y, layout.width, layout.height);
   }
 
-  const lowFood = isAutoDispenserFoodLow(dispenser) || dispenser.refillAlert;
-  const blinking = lowFood && Math.floor(now / AUTO_DISPENSER_LOW_FOOD_BLINK_MS) % 2 === 0;
-  const screenBounds = layout.screenBounds;
-  const screenGradient = tankContext.createLinearGradient(screenBounds.left, screenBounds.top, screenBounds.left, screenBounds.bottom);
-  screenGradient.addColorStop(0, "rgba(82, 86, 86, 0.98)");
-  screenGradient.addColorStop(0.48, "rgba(55, 58, 58, 0.98)");
-  screenGradient.addColorStop(1, "rgba(31, 33, 34, 0.98)");
-  tankContext.fillStyle = screenGradient;
-  tankContext.beginPath();
-  tankContext.roundRect(
-    screenBounds.left,
-    screenBounds.top,
-    screenBounds.right - screenBounds.left,
-    screenBounds.bottom - screenBounds.top,
-    6
-  );
-  tankContext.fill();
-  tankContext.strokeStyle = "rgba(12, 13, 13, 0.72)";
-  tankContext.lineWidth = getViewportStableAssetScale();
-  tankContext.stroke();
+  drawAutoDispenserStatusLight(layout, loadedCount, now);
 
-  const displayValue = String(clamp(dispenser.mealPortion || 0, AUTO_DISPENSER_PORTION_MIN, AUTO_DISPENSER_PORTION_MAX)).padStart(2, "0");
-  const screenWidth = screenBounds.right - screenBounds.left;
-  const screenHeight = screenBounds.bottom - screenBounds.top;
-  tankContext.save();
-  tankContext.textAlign = "center";
-  tankContext.textBaseline = "middle";
-  tankContext.font = `700 ${Math.max(9, Math.round(screenHeight * 0.82))}px "E1234Display", "Consolas", "Courier New", monospace`;
-  tankContext.fillStyle = blinking ? "#E92525" : "#050505";
-  tankContext.shadowColor = blinking ? "rgba(255, 28, 28, 0.55)" : "transparent";
-  tankContext.shadowBlur = blinking ? Math.max(2, screenHeight * 0.18) : 0;
-  tankContext.fillText(displayValue, screenBounds.left + screenWidth / 2, screenBounds.top + screenHeight * 0.57, screenWidth * 0.82);
+  // The dispenser is intentionally display-less: feeding quantity is decided
+  // by the simulation, not by controls attached to the artwork.
   tankContext.restore();
+}
 
-  drawAutoDispenserButton(layout.minusBounds, "-");
-  drawAutoDispenserButton(layout.plusBounds, "+");
-  drawAutoDispenserButton(layout.resetBounds, "", { icon: "reset", variant: "reset" });
-  drawAutoDispenserButton(layout.playBounds, "", { icon: "play", variant: "play" });
+function drawAutoDispenserStatusLight(layout, loadedCount, now) {
+  const light = layout?.statusLight;
+  if (!light) return;
+  const fillRatio = clamp(loadedCount / Math.max(1, AUTO_DISPENSER_MAX_PELLETS), 0, 1);
+  const isEmpty = loadedCount <= 0;
+  const isCritical = !isEmpty && fillRatio < 0.1;
+  const isWarning = !isEmpty && fillRatio < 0.5;
+  const blinkOn = Math.floor(now / 360) % 2 === 0;
+  const pulse = 0.68 + 0.32 * (0.5 + 0.5 * Math.sin(now / 260));
+  const alpha = isEmpty || isCritical ? (isEmpty ? 1 : pulse) : 1;
+  const lightPath = isEmpty
+    ? (blinkOn ? AUTO_DISPENSER_LIGHT_RED_PATH : AUTO_DISPENSER_LIGHT_OFF_PATH)
+    : isWarning
+      ? AUTO_DISPENSER_LIGHT_YELLOW_PATH
+      : AUTO_DISPENSER_LIGHT_GREEN_PATH;
+  const lightImage = runtime.images.get(lightPath);
+
+  tankContext.save();
+  tankContext.globalAlpha = alpha;
+  if (lightImage) {
+    tankContext.drawImage(lightImage, layout.x, layout.y, layout.width, layout.height);
+    tankContext.restore();
+    return;
+  }
+  const color = isEmpty ? "#f33b42" : isWarning ? "#ffd52f" : "#4dff64";
+  tankContext.shadowColor = color;
+  tankContext.shadowBlur = light.radius * (isEmpty || isCritical ? 2.8 : 2.2);
+  tankContext.fillStyle = color;
+  tankContext.beginPath();
+  tankContext.arc(light.x, light.y, light.radius, 0, Math.PI * 2);
+  tankContext.fill();
+  tankContext.shadowBlur = 0;
+  tankContext.strokeStyle = "rgba(255,255,255,0.65)";
+  tankContext.lineWidth = Math.max(1, light.radius * 0.18);
+  tankContext.stroke();
   tankContext.restore();
 }
 
@@ -73446,6 +76590,9 @@ function drawFish(now, layer = null, options = {}) {
         : spriteHeight / 2;
       tankContext.save();
       tankContext.globalAlpha *= clamp(alpha, 0, 1);
+      if (isHalloweenModeActive(now)) {
+        tankContext.globalAlpha *= 0.55;
+      }
       if (suckerViewTransition) {
         tankContext.translate(0, surfaceFlipPivotY);
         tankContext.scale(1, Math.max(SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y, scaleY));
@@ -74361,18 +77508,25 @@ function formatSwimStyle(swimStyle) {
 
 function getCurrentMealSlot(timestamp) {
   const date = new Date(timestamp);
-  const morning = date.getHours() < 12;
   const start = new Date(date);
-  start.setHours(morning ? 0 : 12, 0, 0, 0);
+  const hour = date.getHours();
+  // Automatic feeders serve at 08:00 and 20:00 local aquarium time. Before
+  // the morning service, the active slot is still the previous evening slot.
+  if (hour < 8) {
+    start.setDate(start.getDate() - 1);
+    start.setHours(20, 0, 0, 0);
+  } else {
+    start.setHours(hour < 20 ? 8 : 20, 0, 0, 0);
+  }
   return buildMealSlot(start);
 }
 
 function getTodaysMealSlots(timestamp) {
   const date = new Date(timestamp);
   const morning = new Date(date);
-  morning.setHours(0, 0, 0, 0);
+  morning.setHours(8, 0, 0, 0);
   const evening = new Date(date);
-  evening.setHours(12, 0, 0, 0);
+  evening.setHours(20, 0, 0, 0);
   return [buildMealSlot(morning), buildMealSlot(evening)];
 }
 
@@ -74380,7 +77534,7 @@ function buildMealSlot(startDate) {
   const start = new Date(startDate);
   const end = new Date(start);
   end.setHours(end.getHours() + 12, 0, 0, 0);
-  const part = start.getHours() < 12 ? "Morning" : "Evening";
+  const part = start.getHours() < 20 ? "Morning" : "Evening";
   return {
     key: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}-${part.toLowerCase()}`,
     label: part,
@@ -75443,7 +78597,9 @@ function getAutoDispenserLayout() {
   const width = AUTO_DISPENSER_DRAW_WIDTH * dispenserScale;
   const height = AUTO_DISPENSER_DRAW_HEIGHT * dispenserScale;
   const visibleBounds = getVisibleTankVirtualBounds();
-  const x = TANK_WIDTH * 0.5 - width / 2;
+  const dispenser = state?.autoDispenser;
+  const centerX = TANK_WIDTH * clamp(Number(dispenser?.xNorm) || AUTO_DISPENSER_DEFAULT_X_NORM, 0.12, 0.88);
+  const x = centerX - width / 2;
   const y = visibleBounds.top - getViewportPxAsTankVirtual(AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX);
   const screenWidth = width * 0.12;
   const screenHeight = height * 0.2;
@@ -75511,6 +78667,11 @@ function getAutoDispenserLayout() {
     nozzle: {
       x: x + width * 0.5,
       y: y + height * 0.77
+    },
+    statusLight: {
+      x: x + width * 0.91,
+      y: y + height * 0.37 - Math.max(3, width * 0.02) * 1.5,
+      radius: Math.max(3, width * 0.02)
     }
   };
 }
@@ -75551,18 +78712,6 @@ function getAutoDispenserHitTarget(x, y) {
   if (!pointInSimpleBounds(x, y, layout.bodyBounds)) {
     return "";
   }
-  if (pointInSimpleBounds(x, y, layout.minusBounds)) {
-    return "minus";
-  }
-  if (pointInSimpleBounds(x, y, layout.plusBounds)) {
-    return "plus";
-  }
-  if (pointInSimpleBounds(x, y, layout.resetBounds)) {
-    return "reset";
-  }
-  if (pointInSimpleBounds(x, y, layout.playBounds)) {
-    return "play";
-  }
   return "body";
 }
 
@@ -75576,32 +78725,41 @@ function handleAutoDispenserInteractionAtPoint(point, now = Date.now()) {
     return false;
   }
 
-  if (hitTarget === "minus") {
-    adjustAutoDispenserMealPortion(-1, now);
-    return true;
-  }
-
-  if (hitTarget === "plus") {
-    adjustAutoDispenserMealPortion(1, now);
-    return true;
-  }
-
-  if (hitTarget === "reset") {
-    openAutoDispenserResetConfirmation();
-    return true;
-  }
-
-  if (hitTarget === "play") {
-    dispenseAutoDispenserNow(now);
-    return true;
-  }
-
   if (runtime.medicineModeKey) {
     showToast("Only food can be loaded into the pellet dispenser.");
     return true;
   }
 
   return loadSelectedFoodIntoAutoDispenser(now);
+}
+
+function getAutoDispenserHitBounds(now = Date.now()) {
+  if (!hasAutoDispenserInstalled()) return null;
+  return getAutoDispenserLayout().bodyBounds;
+}
+
+function setAutoDispenserPositionFromPoint(point, now = Date.now()) {
+  if (!hasAutoDispenserInstalled() || !point) return false;
+  const dispenser = state.autoDispenser;
+  const layout = getAutoDispenserLayout();
+  const halfWidthNorm = layout.width / (2 * TANK_WIDTH);
+  const nextX = clamp(point.x / TANK_WIDTH, 0.12 + halfWidthNorm, 0.88 - halfWidthNorm);
+  if (Math.abs(nextX - Number(dispenser.xNorm || AUTO_DISPENSER_DEFAULT_X_NORM)) < 0.0005) return false;
+  dispenser.xNorm = nextX;
+  saveState();
+  renderUi(now, { full: false });
+  return true;
+}
+
+function setAutoDispenserTankLayer(nextLayer, now = Date.now()) {
+  if (!hasAutoDispenserInstalled()) return false;
+  const dispenser = state.autoDispenser;
+  const resolved = clampTankLayer(nextLayer);
+  if (resolved === dispenser.tankLayer) return false;
+  dispenser.tankLayer = resolved;
+  saveState();
+  renderUi(now, { full: false });
+  return true;
 }
 
 function scoopTankItemAtPoint(x, y, now = Date.now()) {
@@ -80466,6 +83624,7 @@ function persistCloudSession(session) {
 }
 
 function clearCloudSession() {
+  if (typeof resetWebSurfSessionState === "function") resetWebSurfSessionState();
   runtime.cloudEmailChangeNotice = "";
   localStorage.removeItem(CLOUD_AUTH_SESSION_KEY);
   runtime.cloudSession = null;
@@ -81846,6 +85005,104 @@ async function runStartupAuthAction(action) {
 function getSpriteSheetDefinitions() {
   return [
     {
+      "path": "assets/equipment/machinery/Boat.webp",
+      "version": "bb54f0722cc2",
+      "width": 990,
+      "height": 975,
+      "frames": {
+        "boat.png": [
+          0,
+          0,
+          495,
+          325
+        ],
+        "Halloween_Boat_5.png": [
+          495,
+          0,
+          495,
+          325
+        ],
+        "boat_3.png": [
+          0,
+          325,
+          495,
+          325
+        ],
+        "boat_1.png": [
+          495,
+          325,
+          495,
+          325
+        ],
+        "boat_4.png": [
+          0,
+          650,
+          495,
+          325
+        ],
+        "boat_2.png": [
+          495,
+          650,
+          495,
+          325
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/equipment/machinery/Boat",
+        "version": "4e2808e4140c-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/equipment/machinery/Submarine.webp",
+      "version": "ed5e6fc5525e",
+      "width": 1024,
+      "height": 741,
+      "frames": {
+        "submarine_1.png": [
+          0,
+          0,
+          512,
+          247
+        ],
+        "submarine.png": [
+          512,
+          0,
+          512,
+          247
+        ],
+        "submarine_2.png": [
+          0,
+          247,
+          512,
+          247
+        ],
+        "submarine_3.png": [
+          512,
+          247,
+          512,
+          247
+        ],
+        "Halloween_Submarine_5.png": [
+          0,
+          494,
+          512,
+          247
+        ],
+        "submarine_4.png": [
+          512,
+          494,
+          512,
+          247
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/equipment/machinery/Submarine",
+        "version": "3d069deab6f9-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/Angelfish.webp",
       "version": "944a8d5043d2",
       "width": 1024,
@@ -81972,58 +85229,6 @@ function getSpriteSheetDefinitions() {
         "root": "assets/generated/sprites/fish/BlueRam",
         "version": "a0051938a50e-v1",
         "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Boat.webp",
-      "version": "bb54f0722cc2",
-      "width": 990,
-      "height": 975,
-      "frames": {
-        "boat.png": [
-          0,
-          0,
-          495,
-          325
-        ],
-        "Halloween_Boat_5.png": [
-          495,
-          0,
-          495,
-          325
-        ],
-        "boat_3.png": [
-          0,
-          325,
-          495,
-          325
-        ],
-        "boat_1.png": [
-          495,
-          325,
-          495,
-          325
-        ],
-        "boat_4.png": [
-          0,
-          650,
-          495,
-          325
-        ],
-        "boat_2.png": [
-          495,
-          650,
-          495,
-          325
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Boat",
-        "version": "4e2808e4140c-v1",
-        "standalone": false
-      },
-      "aliases": {
-        "Halloween_Boat.png": "Halloween_Boat_5.png"
       }
     },
     {
@@ -82809,58 +86014,6 @@ function getSpriteSheetDefinitions() {
         "root": "assets/generated/sprites/fish/Seahorse",
         "version": "0e3bcc85d985-v1",
         "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Submarine.webp",
-      "version": "f252e74db63d",
-      "width": 1024,
-      "height": 741,
-      "frames": {
-        "submarine_1.png": [
-          0,
-          0,
-          512,
-          247
-        ],
-        "submarine.png": [
-          512,
-          0,
-          512,
-          247
-        ],
-        "submarine_2.png": [
-          0,
-          247,
-          512,
-          247
-        ],
-        "submarine_3.png": [
-          512,
-          247,
-          512,
-          247
-        ],
-        "Halloween_Submarine_5.png": [
-          0,
-          494,
-          512,
-          247
-        ],
-        "submarine_4.png": [
-          512,
-          494,
-          512,
-          247
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Submarine",
-        "version": "615de5f4a424-v1",
-        "standalone": false
-      },
-      "aliases": {
-        "Halloween_Submarine.png": "Halloween_Submarine_5.png"
       }
     },
     {
@@ -84126,6 +87279,221 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/misc/Particles",
         "version": "3df6080e5987-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish.webp",
+      "version": "9b229893ce22",
+      "width": 1024,
+      "height": 1089,
+      "frames": {
+        "DNA_Bioluminescent _Cherub_Goldfish_1.png": [
+          0,
+          0,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_5.png": [
+          512,
+          0,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_4.png": [
+          0,
+          363,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_3.png": [
+          512,
+          363,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_2.png": [
+          0,
+          726,
+          512,
+          363
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish",
+        "version": "96c706e9cddb-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Bioluminescent_Angler_Pike.webp",
+      "version": "1a7788398270",
+      "width": 1024,
+      "height": 1029,
+      "frames": {
+        "DNA_Bioluminescent_Angler_Pike_1.png": [
+          0,
+          0,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_5.png": [
+          512,
+          0,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_4.png": [
+          0,
+          343,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_3.png": [
+          512,
+          343,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_2.png": [
+          0,
+          686,
+          512,
+          343
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike",
+        "version": "65f89046db81-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish.webp",
+      "version": "fbb5049ca221",
+      "width": 1024,
+      "height": 618,
+      "frames": {
+        "DNA_Bioluminescent_Glass_Fangfish_1.png": [
+          0,
+          0,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_5.png": [
+          512,
+          0,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_4.png": [
+          0,
+          206,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_3.png": [
+          512,
+          206,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_2.png": [
+          0,
+          412,
+          512,
+          206
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish",
+        "version": "9f36e613a2c5-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda.webp",
+      "version": "b457cbd38e2e",
+      "width": 1024,
+      "height": 828,
+      "frames": {
+        "DNA_Dwarf_Chimera_Barracuda_1.png": [
+          0,
+          0,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_5.png": [
+          512,
+          0,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_4.png": [
+          0,
+          276,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_3.png": [
+          512,
+          276,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_2.png": [
+          0,
+          552,
+          512,
+          276
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda",
+        "version": "6c466272f623-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/davy/mutations/DNA_Dwarf_Hyperfin.webp",
+      "version": "f8b51e7b9063",
+      "width": 1024,
+      "height": 573,
+      "frames": {
+        "DNA_Dwarf_Hyperfin_5.png": [
+          0,
+          0,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_4.png": [
+          512,
+          0,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_3.png": [
+          0,
+          191,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_2.png": [
+          512,
+          191,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_1.png": [
+          0,
+          382,
+          512,
+          191
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin",
+        "version": "7aa8c114c794-v1",
         "standalone": false
       }
     }

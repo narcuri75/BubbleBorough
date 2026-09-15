@@ -1,4 +1,6 @@
 const STORAGE_KEY = "bubble-borough-save-v1";
+const WEBSURF_MAIL_READ_STORAGE_KEY = "bubble-borough-websurf-read-mail-v1";
+const WEBSURF_SILENCED_SENDERS_STORAGE_KEY = "bubble-borough-websurf-silenced-senders-v1";
 const SUPABASE_URL = "https://idljwswasrxtifbkioyg.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qxhGQH_faz0TDw4_AbYsGw_iYljA_9s";
 const INVITE_FRIEND_ENABLED = false;
@@ -25,7 +27,7 @@ import {
   usesZombieSkeletonHunterBehavior
 } from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 46;
+const STATE_VERSION = 48;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -357,7 +359,11 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "orca": { group: "orca-pod", personalities: ["social", "hunter", "explorer", "bold"], rare: ["curious", "routine-loving", "territorial"], predatorDiet: true, desperationPredator: true },
   "sunfish": { group: "sunfish-gentle", personalities: ["gentle", "homebody", "routine-loving", "sensitive"], rare: ["shy", "curious", "social"], slowGraceful: true },
   "seahorse": { group: "seahorse-drifter", personalities: ["gentle", "homebody", "shy", "curious"], rare: ["social", "routine-loving", "sensitive"], slowGraceful: true },
-  "pilot-fish": { group: "pilot-follower", personalities: ["follower", "social", "explorer", "curious"], rare: ["bold", "routine-loving", "shy"] }
+  "pilot-fish": { group: "pilot-follower", personalities: ["follower", "social", "explorer", "curious"], rare: ["bold", "routine-loving", "shy"] },
+  "davy-dwarf-chimera-barracuda": { group: "special-predator", personalities: ["hunter", "bold", "standoffish", "territorial"], rare: ["curious", "explorer", "sensitive"], predatorDiet: true },
+  "davy-bioluminescent-angler-pike": { group: "special-predator", personalities: ["hunter", "homebody", "sensitive", "standoffish"], rare: ["curious", "bold", "territorial"], predatorDiet: true },
+  "davy-bioluminescent-glass-fangfish": { group: "small-social", personalities: ["nervous", "shy", "curious", "explorer"], rare: ["hunter", "sensitive", "homebody"] },
+  "davy-bioluminescent-cherub-goldfish": { group: "slow-graceful", personalities: ["gentle", "social", "follower", "curious"], rare: ["sensitive", "homebody", "greedy"], slowGraceful: true }
 });
 const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   movementPattern: "cruise",
@@ -694,6 +700,37 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     schoolDurationScale: 1.22, schoolVerticalJitterScale: 0.72, structureAffinity: 0.62,
     caveAffinity: 0.08, startleStrength: 0.92, turnDurationScale: 0.82,
     speedMinBlend: 0.56, speedMaxBlend: 0.96, targetDurationScale: 0.88
+  }),
+  "davy-dwarf-chimera-barracuda": createFishLocomotionProfile({
+    movementPattern: "patrol-burst", preferredY: 0.46, verticalSpread: 0.58,
+    targetDistanceMin: 0.34, targetDistanceMax: 0.76, headingPersistence: 0.9,
+    hoverChance: 0.24, hoverMinMs: 2400, hoverMaxMs: 5200, schoolStrength: 0,
+    structureAffinity: 0.3, caveAffinity: 0.05, startleStrength: 1.3,
+    startleRecoveryScale: 0.82, turnDurationScale: 0.72, speedMinBlend: 0.55,
+    speedMaxBlend: 0.92, dartChance: 0.22, dartSpeedMinBlend: 0.92, targetDurationScale: 0.9
+  }),
+  "davy-bioluminescent-angler-pike": createFishLocomotionProfile({
+    movementPattern: "ambush-hover", preferredY: 0.5, verticalSpread: 0.48,
+    targetDistanceMin: 0.05, targetDistanceMax: 0.28, headingPersistence: 0.82,
+    hoverChance: 0.62, hoverMinMs: 4200, hoverMaxMs: 9200, schoolStrength: 0,
+    structureAffinity: 1.35, caveAffinity: 0.7, homeRangeStrength: 0.45, homeRangeRadius: 0.18,
+    startleStrength: 1.5, startleRecoveryScale: 1.3, turnDurationScale: 1.2,
+    speedMinBlend: 0.05, speedMaxBlend: 0.36, dartChance: 0.09, dartSpeedMinBlend: 0.95, targetDurationScale: 1.35
+  }),
+  "davy-bioluminescent-glass-fangfish": createFishLocomotionProfile({
+    movementPattern: "cover-dart", preferredY: 0.42, verticalSpread: 0.72,
+    targetDistanceMin: 0.08, targetDistanceMax: 0.3, headingPersistence: 0.22,
+    hoverChance: 0.04, schoolStrength: 0.04, structureAffinity: 2.1, caveAffinity: 1.4,
+    startleStrength: 1.65, startleRecoveryScale: 0.7, turnDurationScale: 0.55,
+    speedMinBlend: 0.42, speedMaxBlend: 0.94, dartChance: 0.62, dartSpeedMinBlend: 0.9, targetDurationScale: 0.66
+  }),
+  "davy-bioluminescent-cherub-goldfish": createFishLocomotionProfile({
+    movementPattern: "companion-hover", preferredY: 0.5, verticalSpread: 0.64,
+    targetDistanceMin: 0.07, targetDistanceMax: 0.28, headingPersistence: 0.36,
+    hoverChance: 0.32, hoverMinMs: 1800, hoverMaxMs: 4800, schoolStrength: 0.48,
+    schoolSpacingScale: 1.15, schoolDurationScale: 1.4, structureAffinity: 0.9, caveAffinity: 0.55,
+    startleStrength: 0.9, startleRecoveryScale: 1.4, turnDurationScale: 1.35,
+    speedMinBlend: 0.08, speedMaxBlend: 0.42, targetDurationScale: 1.25
   })
 });
 const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
@@ -742,41 +779,41 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "guppy": { mealCoins: 1, unlock: null, needs: ["plants", "open_water"], conflicts: ["betta_present", "aggressive_predator", "fin_nipper"] },
   "zebra-danio": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
   "goldfish": { mealCoins: 1, unlock: null, needs: ["open_water", "hardscape"], conflicts: ["overcrowded", "fin_nipper"] },
-  "neon-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator", "large_fish"] },
+  "neon-tetra": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator", "large_fish"] },
   "cherry-barb": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "aggressive_predator"] },
   "celestial-pearl-danio": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["betta_present", "large_fish", "aggressive_predator"] },
-  "chili-rasbora": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
-  "ember-tetra": { mealCoins: 1, unlock: null, needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
-  "harlequin-rasbora": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
-  "pencilfish": { mealCoins: 1, unlock: null, needs: ["surface_cover", "school_2_plus"], conflicts: ["aggressive_predator", "fast_eater"] },
-  "rummy-nose-tetra": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "chili-rasbora": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
+  "ember-tetra": { mealCoins: 1, unlock: "first-care", needs: ["plants", "school_2_plus"], conflicts: ["large_fish", "aggressive_predator", "fast_eater"] },
+  "harlequin-rasbora": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "pencilfish": { mealCoins: 1, unlock: "stable-tank", needs: ["surface_cover", "school_2_plus"], conflicts: ["aggressive_predator", "fast_eater"] },
+  "rummy-nose-tetra": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
   "moor-goldfish": { mealCoins: 1, unlock: "first-care", needs: ["open_water", "hardscape"], conflicts: ["sharp_decor", "fin_nipper", "overcrowded"] },
-  "otocinclus": { mealCoins: 0, unlock: "first-care", needs: ["seaweed_algae", "plants"], conflicts: ["aggressive_predator", "large_fish"] },
-  "molly": { mealCoins: 1, unlock: "first-care", needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
-  "livebearer": { mealCoins: 1, unlock: "first-care", needs: ["plants", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "otocinclus": { mealCoins: 0, unlock: "stable-tank", needs: ["seaweed_algae", "plants"], conflicts: ["aggressive_predator", "large_fish"] },
+  "molly": { mealCoins: 1, unlock: "stable-tank", needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "livebearer": { mealCoins: 1, unlock: "stable-tank", needs: ["plants", "open_water"], conflicts: ["aggressive_predator", "overcrowded"] },
   "loach": { mealCoins: 1, unlock: "stable-tank", needs: ["cave", "plants"], conflicts: ["sharp_decor", "aggressive_predator"] },
   "swordtail": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "plants"], conflicts: ["same_species", "overcrowded"] },
-  "betta": { mealCoins: 1, unlock: "stable-tank", needs: ["plants", "cave"], conflicts: ["betta_present", "community_fish", "fin_nipper"] },
-  "blue-ram": { mealCoins: 1, unlock: "stable-tank", needs: ["cave", "plants"], conflicts: ["fast_eater", "aggressive_predator"] },
-  "piranha": { mealCoins: 1, unlock: "stable-tank", needs: ["open_water", "cave"], conflicts: ["community_fish", "overcrowded"] },
+  "betta": { mealCoins: 1, unlock: "happy-habitat", needs: ["plants", "cave"], conflicts: ["betta_present", "community_fish", "fin_nipper"] },
+  "blue-ram": { mealCoins: 1, unlock: "happy-habitat", needs: ["cave", "plants"], conflicts: ["fast_eater", "aggressive_predator"] },
+  "piranha": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "cave"], conflicts: ["community_fish", "overcrowded"] },
   ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? ZOMBIE_SKELETON_COMFORT_PROFILES : {}),
   "wonder-killifish": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "open_water"], conflicts: ["tiny_fish", "surface_crowding"] },
   "rainbowfish": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded", "aggressive_predator"] },
   "gourami": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "plants"], conflicts: ["betta_present", "fin_nipper"] },
   "discus": { mealCoins: 2, unlock: "master-keeper", needs: ["plants", "driftwood"], conflicts: ["fast_eater", "aggressive_predator"] },
   "angelfish": { mealCoins: 2, unlock: "master-keeper", needs: ["plants", "open_water"], conflicts: ["fin_nipper", "tiny_fish"] },
-  "clownfish": { mealCoins: 2, unlock: "marine-curator", needs: ["coral", "cave"], conflicts: ["same_species", "aggressive_predator"] },
-  "royal-gramma": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
-  "yellow-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
-  "blue-tang": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
+  "clownfish": { mealCoins: 2, unlock: "happy-habitat", needs: ["coral", "cave"], conflicts: ["same_species", "aggressive_predator"] },
+  "royal-gramma": { mealCoins: 2, unlock: "happy-habitat", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
+  "yellow-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
+  "blue-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
   "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] },
   "bull-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
-  "great-white-shark": { mealCoins: 4, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
+  "great-white-shark": { mealCoins: 4, unlock: "borough-legends", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
   "hammerhead-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
-  "orca": { mealCoins: 4, unlock: "marine-curator", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
-  "sunfish": { mealCoins: 2, unlock: "marine-curator", needs: ["open_water", "surface_cover"], conflicts: ["overcrowded"] },
-  "seahorse": { mealCoins: 2, unlock: "marine-curator", needs: ["plants", "surface_cover"], conflicts: ["fast_eater", "aggressive_predator"] },
-  "pilot-fish": { mealCoins: 2, unlock: "marine-curator", needs: ["open_water"], conflicts: ["overcrowded"] }
+  "orca": { mealCoins: 4, unlock: "borough-legends", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
+  "sunfish": { mealCoins: 2, unlock: "master-keeper", needs: ["open_water", "surface_cover"], conflicts: ["overcrowded"] },
+  "seahorse": { mealCoins: 2, unlock: "happy-habitat", needs: ["plants", "surface_cover"], conflicts: ["fast_eater", "aggressive_predator"] },
+  "pilot-fish": { mealCoins: 2, unlock: "master-keeper", needs: ["open_water"], conflicts: ["overcrowded"] }
 });
 const PROGRESSION_MILESTONES = Object.freeze([
   {
@@ -784,7 +821,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "First Care",
     requirement: "Finish a Daily Recap with score 3+.",
     reward: 3,
-    unlocks: ["celestial-pearl-danio", "moor-goldfish", "otocinclus", "molly", "livebearer"],
+    unlocks: ["chili-rasbora", "ember-tetra", "neon-tetra", "celestial-pearl-danio", "moor-goldfish"],
     decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "treasure-chest_bubbler.png"],
     isMet: (stats) => stats.latestScore >= 3,
     progress: (stats) => [{ value: (Number(stats.latestScore) || 0) / 3, label: `Latest recap score ${Math.max(0, Number(stats.latestScore) || 0)}/3` }]
@@ -794,7 +831,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Stable Tank",
     requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
     reward: 8,
-    unlocks: ["swordtail", "betta", "blue-ram", "piranha"],
+    unlocks: ["harlequin-rasbora", "pencilfish", "rummy-nose-tetra", "otocinclus", "molly", "livebearer", "swordtail"],
     decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
     progress: (stats) => [
@@ -807,7 +844,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Happy Habitat",
     requirement: "Keep any fish alive for 7 days and recent average comfort at 80%+.",
     reward: 12,
-    unlocks: ["wonder-killifish", "rainbowfish", "gourami"],
+    unlocks: ["betta", "blue-ram", "piranha", "wonder-killifish", "rainbowfish", "gourami", "clownfish", "royal-gramma", "seahorse"],
     decorUnlocks: ["Shipwreck.png", "mushroomcoral_seaweed.png", "Castle-Cave.png", "blue_castle_cave.png", "meteor_cave.png", "volcano-1_bubbler.png", "volcano-2_bubbler.png", "__custom-decor-shop__", "__custom-hide-shop__"],
     isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80,
     progress: (stats) => [
@@ -820,7 +857,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     label: "Master Keeper",
     requirement: "Go 14 days without a death and have one fish at Sparkling comfort.",
     reward: 18,
-    unlocks: ["discus", "angelfish"],
+    unlocks: ["discus", "angelfish", "yellow-tang", "blue-tang", "sunfish", "pilot-fish"],
     decorUnlocks: [],
     isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish,
     progress: (stats) => [
@@ -831,15 +868,29 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "marine-curator",
     label: "Marine Curator",
-    requirement: "Own a saltwater fish, finish 5 good recaps, and go 3 days without a death.",
+    requirement: "Keep any fish alive for 21 days, own a saltwater fish, and finish 10 good recaps.",
     reward: 20,
-    unlocks: ["clownfish", "royal-gramma", "yellow-tang", "blue-tang", "pufferfish", "bull-shark", "great-white-shark", "hammerhead-shark", "orca", "sunfish", "seahorse", "pilot-fish"],
+    unlocks: ["pufferfish", "bull-shark", "hammerhead-shark"],
     decorUnlocks: [],
-    isMet: (stats) => stats.hasSaltwaterFish && stats.goodRecaps >= 5 && stats.daysSinceLastDeath >= 3,
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= 21 * DAY_MS && stats.hasSaltwaterFish && stats.goodRecaps >= 10,
     progress: (stats) => [
       { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
-      { value: (Number(stats.goodRecaps) || 0) / 5, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 5)}/5` },
-      { value: (Number(stats.daysSinceLastDeath) || 0) / 3, label: `No-death streak ${Math.min(Number(stats.daysSinceLastDeath) || 0, 3)}/3d` }
+      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (21 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 21 * DAY_MS))}/21d` },
+      { value: (Number(stats.goodRecaps) || 0) / 10, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 10)}/10` }
+    ]
+  },
+  {
+    id: "borough-legends",
+    label: "Borough Legends",
+    requirement: "Keep any fish alive for 30 days, finish 15 good recaps, and have one fish at Sparkling comfort.",
+    reward: 30,
+    unlocks: ["great-white-shark", "orca", "__custom-fish-shop__"],
+    decorUnlocks: [],
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= 30 * DAY_MS && stats.goodRecaps >= 15 && stats.hasSparklingFish,
+    progress: (stats) => [
+      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (30 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 30 * DAY_MS))}/30d` },
+      { value: (Number(stats.goodRecaps) || 0) / 15, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 15)}/15` },
+      { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
     ]
   },
   {
@@ -855,12 +906,12 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "crystal-keeper",
     label: "Crystal Keeper",
-    requirement: "Keep cleanliness at 95%+ for 7 daily recaps.",
+    requirement: "Keep cleanliness at 95%+ for 7 daily recaps in a row.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.cleanRecapCount95 >= 7,
-    progress: (stats) => [{ value: (Number(stats.cleanRecapCount95) || 0) / 7, label: `95%+ clean recaps ${Math.min(Number(stats.cleanRecapCount95) || 0, 7)}/7` }]
+    isMet: (stats) => stats.cleanRecapStreak95 >= 7,
+    progress: (stats) => [{ value: (Number(stats.cleanRecapStreak95) || 0) / 7, label: `95%+ clean recap streak ${Math.min(Number(stats.cleanRecapStreak95) || 0, 7)}/7` }]
   },
   {
     id: "full-bellies",
@@ -998,7 +1049,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "community-tank",
     label: "Community Tank",
-    requirement: "Keep 5 community-safe fish with 70%+ recent comfort and 3 good recaps.",
+    requirement: "Keep 5 community-safe fish in one aquarium, without overcrowding, with 70%+ recent comfort and 3 good recaps.",
     reward: 12,
     unlocks: [],
     decorUnlocks: [],
@@ -1094,23 +1145,13 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "tank-network",
     label: "Tank Network",
-    requirement: "Own 3 aquariums with at least one healthy fish in each.",
+    requirement: "Own 3 aquariums and connect them with Bubble Borough tubes.",
     reward: 20,
     unlocks: [],
     decorUnlocks: [],
-    isMet: (stats) => stats.healthyTankCount >= 3,
-    progress: (stats) => [{ value: (Number(stats.healthyTankCount) || 0) / 3, label: `Healthy tanks ${Math.min(Number(stats.healthyTankCount) || 0, 3)}/3` }]
-  },
-  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? [{
-    id: "spooky-keeper",
-    label: "Spooky Keeper",
-    requirement: "Discover the corpse, zombie, or skeleton care path.",
-    reward: 5,
-    unlocks: [...ZOMBIE_SKELETON_PROGRESSION_UNLOCKS],
-    decorUnlocks: ["gorebag_lure.png", "fishheadeffigy_1.png", "fishheadeffigy_2.png", "fishheadeffigy_3.png"],
-    isMet: (stats) => stats.hasSpookyKeeperPath,
-    progress: (stats) => [{ value: stats.hasSpookyKeeperPath ? 1 : 0, label: stats.hasSpookyKeeperPath ? "Spooky path found" : "No spooky path discovered yet" }]
-  }] : [])
+    isMet: (stats) => stats.connectedTubeTankCount >= 3,
+    progress: (stats) => [{ value: (Number(stats.connectedTubeTankCount) || 0) / 3, label: `Tube-connected tanks ${Math.min(Number(stats.connectedTubeTankCount) || 0, 3)}/3` }]
+  }
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
   "fishing_lure.png": "first-care",
@@ -1235,7 +1276,7 @@ const CUSTOM_FISH_KEY_PREFIX = "__custom-fish-";
 const CUSTOM_DECOR_COST = 10;
 const CUSTOM_HIDE_COST = 10;
 const CUSTOM_BUBBLER_COST = 8;
-const CUSTOM_FISH_COST = 10;
+const CUSTOM_FISH_COST = 75;
 const CUSTOM_DECOR_DEFAULT_WIDTH = 200;
 const CUSTOM_DECOR_MIN_WIDTH = 40;
 const CUSTOM_DECOR_MAX_WIDTH = 1440;
@@ -2007,7 +2048,7 @@ const FOOD_PELLET_SETTLED_NEARBY_TARGET_RADIUS_NORM = 0.5;
 const AUTO_DISPENSER_MAX_PELLETS = 99;
 const AUTO_DISPENSER_PORTION_MIN = 0;
 const AUTO_DISPENSER_PORTION_MAX = AUTO_DISPENSER_MAX_PELLETS;
-const AUTO_DISPENSER_COST = 30;
+const AUTO_DISPENSER_COST = 150;
 const AUTO_DISPENSER_ASSET_VERSION = "2026-04-01";
 const AUTO_DISPENSER_RELEASE_SPACING_MS = 80;
 const AUTO_DISPENSER_DROP_DISTANCE_PX = 150;
@@ -2015,27 +2056,42 @@ const AUTO_DISPENSER_DROP_X_OFFSET_PX = -30;
 const AUTO_DISPENSER_DROP_DRIFT_PX = 10;
 const AUTO_DISPENSER_DROP_DURATION_MS = 850;
 const AUTO_DISPENSER_PELLET_MAX_Y_NORM = 0.28;
+const AUTO_DISPENSER_DEFAULT_TANK_LAYER = 5;
+const AUTO_DISPENSER_DEFAULT_X_NORM = 0.5;
+const AUTO_DISPENSER_VARIANT_IMAGE_PATHS = [
+  resolveDispenserAssetPath("Food_Dispenser.png"),
+  ...[1, 2, 3, 4].map((number) => resolveDispenserAssetPath(`Food_Dispenser_${number}.png`))
+];
+const AUTO_DISPENSER_VARIANT_BG_PATHS = [
+  resolveDispenserAssetPath("Food_Dispenser_bg.png"),
+  ...[1, 2, 3, 4].map((number) => resolveDispenserAssetPath(`Food_Dispenser_${number}_bg.png`))
+];
+const AUTO_DISPENSER_LIGHT_OFF_PATH = resolveDispenserAssetPath("Food_Dispenser_Light_Off.png");
+const AUTO_DISPENSER_LIGHT_GREEN_PATH = resolveDispenserAssetPath("Food_Dispenser_Light_Green.png");
+const AUTO_DISPENSER_LIGHT_RED_PATH = resolveDispenserAssetPath("Food_Dispenser_Light_Red.png");
+const AUTO_DISPENSER_LIGHT_YELLOW_PATH = resolveDispenserAssetPath("Food_Dispenser_Light_Yellow.png");
 const AUTO_DISPENSER_HOPPER_MAX_DRAWN_PELLETS = AUTO_DISPENSER_MAX_PELLETS;
 const AUTO_DISPENSER_LOW_FOOD_BLINK_MS = 360;
 const MACHINERY_TYPE_SUBMARINE = "submarine";
 const MACHINERY_TYPE_BOAT = "boat";
-const SUBMARINE_COST = 100;
-const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/submarine.png");
-const BOAT_COST = 50;
-const BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/boat.png");
+const SUBMARINE_COST = 300;
+const SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/equipment/machinery/submarine.png");
+const SUBMARINE_RED_LIGHT_OVERLAY_PATH = resolveAppUrl("assets/equipment/machinery/Submarine_Light_Red.webp");
+const BOAT_COST = 125;
+const BOAT_IMAGE_PATH = resolveAppUrl("assets/equipment/machinery/boat.png");
 // The original Halloween vehicle files were renamed to their shared fifth
 // appearance slot, so seasonal presentation and the purchasable choice use
 // the same real asset.
-const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Boat_5.png");
-const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/fish/Halloween_Submarine_5.png");
+const HALLOWEEN_BOAT_IMAGE_PATH = resolveAppUrl("assets/equipment/machinery/Halloween_Boat_5.png");
+const HALLOWEEN_SUBMARINE_IMAGE_PATH = resolveAppUrl("assets/equipment/machinery/Halloween_Submarine_5.png");
 const BOAT_VARIANT_IMAGE_PATHS = [
   BOAT_IMAGE_PATH,
-  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/fish/boat_${number}.png`)),
+  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/equipment/machinery/boat_${number}.png`)),
   HALLOWEEN_BOAT_IMAGE_PATH
 ];
 const SUBMARINE_VARIANT_IMAGE_PATHS = [
   SUBMARINE_IMAGE_PATH,
-  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/fish/submarine_${number}.png`)),
+  ...[1, 2, 3, 4].map((number) => resolveAppUrl(`assets/equipment/machinery/submarine_${number}.png`)),
   HALLOWEEN_SUBMARINE_IMAGE_PATH
 ];
 const BOAT_RESOURCE_CAPACITY = 99;
@@ -2073,8 +2129,6 @@ const SUBMARINE_IDLE_BOB_PERIOD_MS = 2100;
 const SUBMARINE_MANUAL_FOOD_COOLDOWN_MS = 140;
 const SUBMARINE_ENTRY_DURATION_MS = FISH_ENTRY_DURATION_MS;
 const SUBMARINE_ENTRY_FROM_Y_NORM = FISH_ENTRY_FROM_Y_NORM;
-const SUBMARINE_WARNING_LIGHT_X_NORM = 0.6164;
-const SUBMARINE_WARNING_LIGHT_Y_NORM = 0.1745;
 const SUBMARINE_REAR_BUBBLE_X_NORM = 0.048;
 const SUBMARINE_REAR_BUBBLE_Y_NORM = 0.565;
 const SUBMARINE_PRESSURE_BUBBLE_LEFT_X_NORM = 0.46;
@@ -2091,9 +2145,6 @@ const SUBMARINE_COMFORT_THRESHOLD = 0.35;
 const SUBMARINE_RED_LIGHT_BLINK_MS = 500;
 const SUBMARINE_FOOD_RETRY_MS = 9000;
 const SUBMARINE_MEDICINE_RETRY_MS = 12000;
-const SUBMARINE_SPOTLIGHT_LENGTH_PX = 320;
-const SUBMARINE_SPOTLIGHT_LAMP_X_NORM = 0.744;
-const SUBMARINE_SPOTLIGHT_LAMP_Y_NORM = 0.2;
 const SHARK_DESPERATION_ATTACK_COOLDOWN_MS = 9000;
 const SHARK_DESPERATION_ATTACK_RANGE_NORM = 0.075;
 const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
@@ -2468,8 +2519,8 @@ const TOOL_CURSOR_ICON_PATHS = Object.freeze({
 });
 
 
-const AUTO_DISPENSER_IMAGE_PATH = resolveDispenserAssetPath("pelletdispenser.png");
-const AUTO_DISPENSER_BG_PATH = resolveDispenserAssetPath("pelletdispenser_bg.png");
+const AUTO_DISPENSER_IMAGE_PATH = resolveDispenserAssetPath("Food_Dispenser.png");
+const AUTO_DISPENSER_BG_PATH = resolveDispenserAssetPath("Food_Dispenser_bg.png");
 
 
 const DEFAULT_CAVE_BEHAVIOR_PROFILE = {
@@ -2888,7 +2939,7 @@ const CUSTOM_BUBBLER_DECOR_IMAGE = resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH)
 const CUSTOM_BUBBLER_THUMBNAIL_IMAGE = resolveAppUrl("assets/misc/custom_bubbler.png");
 const CUSTOM_DECOR_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_decor.png");
 const CUSTOM_HIDE_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_hide.png");
-const CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_fish.png");
+const CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl("assets/web/proteus/PB_Custom_Fish.png");
 const CUSTOM_FISH_TEMPLATE_IMAGE = resolveAppUrl("assets/misc/fish_template.png");
 
 const dom = {
@@ -3046,6 +3097,10 @@ const dom = {
   equipmentShop: document.querySelector("#equipmentShop"),
   storeScrollControls: document.querySelector("#storeScrollControls"),
   storeOverlay: document.querySelector("#storeOverlay"),
+  webHomePage: document.querySelector("#webHomePage"),
+  webSurfUnreadBadge: document.querySelector("#webSurfUnreadBadge"),
+  bubbleBankPage: document.querySelector("#bubbleBankPage"),
+  davyJonesLockerPage: document.querySelector("#davyJonesLockerPage"),
   utilityOverlay: document.querySelector("#utilityOverlay"),
   utilityOverlayTitle: document.querySelector("#utilityOverlayTitle"),
   utilityOverlayKicker: document.querySelector("#utilityOverlayKicker"),
@@ -3195,8 +3250,23 @@ const glassContext = dom.glassCanvas.getContext("2d");
 const runtime = {
   activeTab: "overview",
   storeOverlayOpen: false,
+  webHomeOpen: false,
+  webSurfLastPage: "home",
+  webSurfPageScroll: { home: 0, store: 0, bank: 0, locker: 0, designer: 0 },
+  webSurfSelectedMailId: "",
+  bubbleBankOpen: false,
+  davyJonesLockerOpen: false,
+  davyLockerItemSpeciesId: "",
+  davyLockerVariantSelections: {},
+  proteusDesignerOpen: false,
+  proteusDesignerCompleting: false,
+  activeEngineeredSpecimenOrderId: "",
+  proteusDesignerCloseTimer: 0,
   utilityOverlayOpen: false,
   utilityOverlayMode: "",
+  bubbleBankTab: "account",
+  bubbleBankTargetId: "",
+  bubbleBankTransactionFilter: "all",
   legalOverlayTab: "privacy",
   startupLegalOpen: false,
   startupLegalTab: "privacy",
@@ -3374,6 +3444,7 @@ const runtime = {
   debugTimeScale: 1,
   debugSimulationPaused: false,
   debugHalloweenModeOverride: null,
+  debugBirthdayMode: false,
   debugBirthdayHatFishIds: new Set(),
   debugAutonomyPausedFishIds: new Set(),
   debugOverviewFishFps: null,
@@ -4162,7 +4233,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
   },
   fish: {
     type: "fish",
-    label: "Custom Fish",
+    label: "Engineered Aquatic Specimen",
     cost: CUSTOM_FISH_COST,
     pendingStateKey: "pendingCustomFishUpload",
     failureToast: "Could not use that image.",
@@ -4214,6 +4285,10 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         imageRefId: storedImage.imageRefId,
         width: pending.width,
         behaviorProfileId: pending.behaviorProfileId,
+        diet: normalizeCustomFishDiet(pending.diet),
+        activityRegulation: normalizeCustomFishActivityRegulation(pending.activityRegulation),
+        swimZone: normalizeCustomFishSwimZone(pending.swimZone),
+        socialAffinity: normalizeCustomFishSocialAffinity(pending.socialAffinity),
         turnAnimation: String(pending.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
         createdAt: now
       }, speciesKey);
@@ -4222,8 +4297,15 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         return false;
       }
       setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
-      state.coins -= CUSTOM_FISH_COST;
-      recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
+      const activeDesignOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
+      const designCredit = Boolean(
+        activeDesignOrderId
+        && getEngineeredAquaticSpecimenOrderStatus(activeDesignOrderId) === "specimen-configured"
+      );
+      if (!designCredit) {
+        state.coins -= CUSTOM_FISH_COST;
+        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
+      }
       if (!state.customFishAssets || typeof state.customFishAssets !== "object") {
         state.customFishAssets = {};
       }
@@ -4232,6 +4314,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       const fish = createFishRecord(asset.key, {
         now,
         name: asset.name,
+        behaviorSpeciesId: asset.behaviorProfileId,
         scale: DEFAULT_FISH_SCALE,
         entryStartedAt: now,
         entryDurationMs: FISH_ENTRY_DURATION_MS,
@@ -4240,22 +4323,47 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       if (!fish) {
         delete state.customFishAssets[asset.key];
         syncRuntimeCustomFishAssetsFromState(state);
-        state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
-        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "credit", now, place: "Bubble Borough", label: `Refunded custom fish ${asset.name}.` });
+        if (!designCredit) {
+          state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
+          recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "credit", now, place: "Bubble Borough", label: `Refunded custom fish ${asset.name}.` });
+        }
         showToast("Could not add that custom fish to the tank.");
         return false;
       }
       addFishToTank(fish, now);
+      if (designCredit) {
+        if (!markEngineeredAquaticSpecimenDesigned(activeDesignOrderId)) {
+          delete state.customFishAssets[asset.key];
+          syncRuntimeCustomFishAssetsFromState(state);
+          state.fish = state.fish.filter((entry) => entry.id !== fish.id);
+          showToast("This Proteus commission could not be fulfilled because its order state changed.");
+          return false;
+        }
+        runtime.proteusDesignerCompleting = true;
+      }
       maybeSeedNewFishDiseaseCarrier(fish, now);
       if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
         setFishNeedValue(fish, "hunger", 82, now);
         fish.lastAteAt = now;
       }
-      return finalizeCustomAssetCreation("fish", {
+      if (!designCredit) recordBubbleBodegaOrder([{
+          key: CUSTOM_FISH_SHOP_KEY,
+          name: "Engineered Aquatic Specimen",
+          category: "fish",
+          image: CUSTOM_FISH_SHOP_IMAGE,
+          seller: "Proteus Biodyne",
+          cost: CUSTOM_FISH_COST,
+          quantity: 1
+        }]);
+      const finalized = finalizeCustomAssetCreation("fish", {
         now,
         eventText: `Created custom fish ${asset.name}.`,
-        toastText: `${asset.name} created and added to the tank.`
+        toastText: designCredit ? "" : `${asset.name} created and added to the tank.`
       });
+      if (finalized && designCredit) {
+        completeProteusDesignerFlow(activeDesignOrderId);
+      }
+      return finalized;
     }
   }
 });

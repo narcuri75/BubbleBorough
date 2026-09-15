@@ -2601,7 +2601,37 @@ function handleCommonUtilityOverlayChange(ctx, target) {
   }
   const customFishBehaviorSelect = target?.closest?.("[data-custom-fish-behavior-select]");
   if (customFishBehaviorSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
-    runtime.pendingCustomFishUpload.behaviorProfileId = normalizeCustomFishBehaviorProfileId(customFishBehaviorSelect.value);
+    const profileId = normalizeCustomFishBehaviorProfileId(customFishBehaviorSelect.value);
+    const profile = getCustomFishBehaviorProfile(profileId) || getDefaultCustomFishBehaviorProfile();
+    runtime.pendingCustomFishUpload.behaviorProfileId = profileId;
+    runtime.pendingCustomFishUpload.diet = getDefaultCustomFishDiet(profile);
+    runtime.pendingCustomFishUpload.activityRegulation = "";
+    runtime.pendingCustomFishUpload.swimZone = "";
+    runtime.pendingCustomFishUpload.socialAffinity = "adaptive";
+    if (runtime.proteusDesignerOpen === true) {
+      runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
+      renderStoreOverlay();
+    }
+    return true;
+  }
+  const customFishDietSelect = target?.closest?.("[data-custom-fish-diet-select]");
+  if (customFishDietSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.diet = normalizeCustomFishDiet(customFishDietSelect.value);
+    return true;
+  }
+  const customFishActivitySelect = target?.closest?.("[data-custom-fish-activity-select]");
+  if (customFishActivitySelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.activityRegulation = normalizeCustomFishActivityRegulation(customFishActivitySelect.value);
+    return true;
+  }
+  const customFishSwimZoneSelect = target?.closest?.("[data-custom-fish-swim-zone-select]");
+  if (customFishSwimZoneSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.swimZone = normalizeCustomFishSwimZone(customFishSwimZoneSelect.value);
+    return true;
+  }
+  const customFishSocialSelect = target?.closest?.("[data-custom-fish-social-select]");
+  if (customFishSocialSelect instanceof HTMLSelectElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.socialAffinity = normalizeCustomFishSocialAffinity(customFishSocialSelect.value);
     return true;
   }
   const customDecorTypeSelect = target?.closest?.("[data-custom-decor-type-select]");
@@ -2786,6 +2816,781 @@ function renderUtilityOverlay() {
     dom.closeUtilityOverlay.hidden = config.closable === false;
   }
   syncUtilityOverlayEditTraySafeArea();
+}
+
+function normalizeBubbleBankTab(value = "account") {
+  return ["account", "rewards", "milestones"].includes(value) ? value : "account";
+}
+
+function formatBubbleBankTime(timestamp, options = {}) {
+  const value = Number(timestamp) || Date.now();
+  return new Date(value).toLocaleString([], options.dateOnly
+    ? { month: "short", day: "numeric", year: "numeric" }
+    : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function getBubbleBankMilestoneForTransaction(entry) {
+  const label = String(entry?.label || "").toLowerCase();
+  return PROGRESSION_MILESTONES.find((milestone) => (
+    label.includes(`${String(milestone.label).toLowerCase()} milestone`)
+  )) || null;
+}
+
+function getBubbleBankRewardForTransaction(entry) {
+  if (!/daily (?:award|reward)/i.test(String(entry?.label || ""))) return null;
+  const time = Number(entry?.time) || 0;
+  const history = Array.isArray(state?.dailyBonus?.recapHistory) ? state.dailyBonus.recapHistory : [];
+  return history.find((summary) => Math.abs((Number(summary.generatedAt) || 0) - time) < 2000) || null;
+}
+
+function getBubbleBankTransactionCategory(entry) {
+  const text = `${String(entry?.label || "")} ${String(entry?.place || "")}`.toLowerCase();
+  if (/milestone/.test(text)) return "milestones";
+  if (/feed|fed|feeding/.test(text)) return "feeding";
+  if (/clean|cleaning|scrub/.test(text)) return "cleaning";
+  if (/sold|sale|sell/.test(text)) return "sales";
+  if (/daily|award|bonus|reward|coin/.test(text)) return "awards";
+  if (/fish|shark|catfish|custom fish|species/.test(text)) return "fish";
+  if (/decor|seaweed|cave|anemone|mound|plant|background/.test(text)) return "decor";
+  if (/equipment|expansion|dispenser|boat|submarine|skiff/.test(text)) return "equipment";
+  if (/food|medicine|medication|cure|pellet/.test(text)) return "food-medication";
+  return entry?.direction === "credit" ? "awards" : "decor";
+}
+
+function getBubbleBankTransactionFilterMarkup() {
+  const active = String(runtime.bubbleBankTransactionFilter || "all");
+  return `<select class="bubble-bank-filter" data-bank-transaction-filter aria-label="Filter transactions">
+    <option value="all" ${active === "all" ? "selected" : ""}>All transactions</option>
+    <optgroup label="All Earned Money">
+      <option value="earned" ${active === "earned" ? "selected" : ""}>All earned money</option>
+      <option value="feeding" ${active === "feeding" ? "selected" : ""}>Feeding</option>
+      <option value="cleaning" ${active === "cleaning" ? "selected" : ""}>Cleaning</option>
+      <option value="awards" ${active === "awards" ? "selected" : ""}>Awards</option>
+      <option value="milestones" ${active === "milestones" ? "selected" : ""}>Milestones</option>
+      <option value="sales" ${active === "sales" ? "selected" : ""}>Sales</option>
+    </optgroup>
+    <optgroup label="All Spent Money">
+      <option value="spent" ${active === "spent" ? "selected" : ""}>All spent money</option>
+      <option value="fish" ${active === "fish" ? "selected" : ""}>Fish</option>
+      <option value="decor" ${active === "decor" ? "selected" : ""}>Decor</option>
+      <option value="equipment" ${active === "equipment" ? "selected" : ""}>Equipment</option>
+      <option value="food-medication" ${active === "food-medication" ? "selected" : ""}>Food &amp; Medication</option>
+    </optgroup>
+  </select>`;
+}
+
+function bubbleBankTransactionMatchesFilter(entry, filter) {
+  if (!filter || filter === "all") return true;
+  const earned = entry.direction === "credit";
+  if (filter === "earned") return earned;
+  if (filter === "spent") return !earned && entry.direction === "debit";
+  if (["feeding", "cleaning", "awards", "milestones", "sales"].includes(filter)) return earned && getBubbleBankTransactionCategory(entry) === filter;
+  return !earned && entry.direction === "debit" && getBubbleBankTransactionCategory(entry) === filter;
+}
+
+function getWebSurfReadMailIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(WEBSURF_MAIL_READ_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed.map(String).slice(-120) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveWebSurfReadMailIds(readIds) {
+  try {
+    localStorage.setItem(WEBSURF_MAIL_READ_STORAGE_KEY, JSON.stringify([...readIds].slice(-120)));
+  } catch {}
+}
+
+function getWebSurfSilencedSenders() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(WEBSURF_SILENCED_SENDERS_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed.map((sender) => String(sender).toLowerCase()).slice(-80) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveWebSurfSilencedSenders(senders) {
+  try {
+    localStorage.setItem(WEBSURF_SILENCED_SENDERS_STORAGE_KEY, JSON.stringify([...senders].slice(-80)));
+  } catch {}
+}
+
+function toggleWebSurfSenderSilenced(sender) {
+  const normalized = String(sender || "").trim().toLowerCase();
+  if (!normalized) return;
+  const senders = getWebSurfSilencedSenders();
+  if (senders.has(normalized)) senders.delete(normalized);
+  else senders.add(normalized);
+  saveWebSurfSilencedSenders(senders);
+}
+
+function isWebSurfMailUnread(message, readIds = getWebSurfReadMailIds(), silencedSenders = getWebSurfSilencedSenders()) {
+  return !readIds.has(message.id) && !silencedSenders.has(String(message.sender || "").toLowerCase());
+}
+
+function markWebSurfMailRead(mailId) {
+  const id = String(mailId || "");
+  if (!id) return;
+  const readIds = getWebSurfReadMailIds();
+  readIds.add(id);
+  saveWebSurfReadMailIds(readIds);
+}
+
+function markAllWebSurfMailRead() {
+  const readIds = getWebSurfReadMailIds();
+  getWebSurfInboxMessages().forEach((message) => readIds.add(message.id));
+  saveWebSurfReadMailIds(readIds);
+}
+
+function loadWebSurfAutoEmailConfig() {
+  if (globalThis.webSurfAutoEmailConfigPromise) return globalThis.webSurfAutoEmailConfigPromise;
+  globalThis.webSurfAutoEmailConfigPromise = fetch("assets/web/websurf/auto_emails.json", { cache: "no-cache" })
+    .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Automatic email templates unavailable (${response.status})`)))
+    .then((config) => {
+      globalThis.webSurfAutoEmailConfig = config && typeof config === "object" ? config : null;
+      if (runtime?.storeOverlayOpen && runtime?.webHomeOpen) renderStoreOverlay();
+      return globalThis.webSurfAutoEmailConfig;
+    })
+    .catch((error) => {
+      console.warn("Bubble Borough automatic email templates could not be loaded.", error);
+      return null;
+    });
+  return globalThis.webSurfAutoEmailConfigPromise;
+}
+
+function getWebSurfAutoEmailTemplate(templateId) {
+  loadWebSurfAutoEmailConfig();
+  return globalThis.webSurfAutoEmailConfig?.templates?.[templateId] || null;
+}
+
+function interpolateWebSurfEmailValue(value, data = {}) {
+  return String(value ?? "").replace(/{{\s*([\w.:]+)\s*}}/g, (_match, key) => {
+    const coinField = key.match(/^coin:(.+)$/)?.[1];
+    if (coinField) return interpolateWebSurfEmailValue(`{{${coinField}}}`, data);
+    const result = key.split(".").reduce((current, part) => current?.[part], data);
+    return result == null ? "" : String(result);
+  });
+}
+
+function renderWebSurfEmailInlineText(value, data = {}) {
+  const parts = String(value ?? "").split(/({{\s*coin:[\w.]+\s*}})/g);
+  return parts.map((part) => {
+    const field = part.match(/^{{\s*coin:([\w.]+)\s*}}$/)?.[1];
+    if (!field) return escapeHtml(interpolateWebSurfEmailValue(part, data));
+    const amount = field.split(".").reduce((current, key) => current?.[key], data);
+    return `<span class="websurf-email-coin-amount"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="Fish Coin" /><strong>${escapeHtml(amount == null ? "" : String(amount))}</strong></span>`;
+  }).join("");
+}
+
+function normalizeWebSurfThumbnailPath(value) {
+  const fallback = "assets/misc/Store_Logo.png";
+  let raw = typeof value === "string" ? value.trim() : "";
+  if (!raw || raw.startsWith("data:")) return raw || fallback;
+  raw = raw.replace(/\\/g, "/");
+  try {
+    raw = new URL(raw, window.location.href).pathname;
+  } catch {}
+  const assetIndex = raw.toLowerCase().indexOf("assets/");
+  if (assetIndex >= 0) raw = raw.slice(assetIndex);
+  raw = raw.split(/[?#]/, 1)[0];
+  return raw.startsWith("assets/") ? raw : fallback;
+}
+
+function getWebSurfThumbnailAttributes(value) {
+  const path = normalizeWebSurfThumbnailPath(value);
+  const fallback = escapeHtml(resolveAppUrl("assets/misc/Store_Logo.png"));
+  return `${assetImageAttributes(path)} onerror="this.onerror=null;this.src='${fallback}'"`;
+}
+
+function getWebSurfOrderItems(order) {
+  return (order?.items || []).map((item) => ({
+    itemId: item.key || item.id || item.name,
+    itemName: item.name || "Store item",
+    thumbnail: normalizeWebSurfThumbnailPath(item.image),
+    quantity: Math.max(1, Number(item.quantity) || 1)
+  }));
+}
+
+function isProteusOrder(order) {
+  return (order?.items || []).some((item) => /proteus biodyne/i.test(String(item.seller || item.vendor || item.category || "")));
+}
+
+function isEngineeredAquaticSpecimenOrder(order) {
+  return (order?.items || []).some((item) => {
+    const key = String(item.key || "");
+    const name = String(item.name || item.itemName || "");
+    const seller = String(item.seller || item.vendor || "");
+    return key === `buyFish:${CUSTOM_FISH_SHOP_KEY}`
+      || key === CUSTOM_FISH_SHOP_KEY
+      || /engineered aquatic specimen/i.test(name)
+      || (/proteus biodyne/i.test(seller) && /custom fish|engineered specimen/i.test(`${key} ${name}`));
+  });
+}
+
+function isEngineeredAquaticSpecimenAwaitingDesign(order) {
+  if (!isEngineeredAquaticSpecimenOrder(order)) return false;
+  return getEngineeredAquaticSpecimenOrderStatus(String(order?.id || "")) === "design-required";
+}
+
+function getWebSurfStatementSnapshotStore() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("bubble-borough-websurf-statement-snapshots-v1") || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveWebSurfStatementSnapshotStore(store) {
+  try {
+    const entries = Object.entries(store || {}).sort((left, right) => left[0].localeCompare(right[0])).slice(-12);
+    localStorage.setItem("bubble-borough-websurf-statement-snapshots-v1", JSON.stringify(Object.fromEntries(entries)));
+  } catch {}
+}
+
+function getWebSurfStatementData() {
+  const transactions = Array.isArray(state?.walletTransactions) ? state.walletTransactions : [];
+  const currentSunday = new Date();
+  currentSunday.setHours(0, 0, 0, 0);
+  currentSunday.setDate(currentSunday.getDate() - currentSunday.getDay());
+  const periodStart = new Date(currentSunday);
+  periodStart.setDate(periodStart.getDate() - 7);
+  const periodEnd = currentSunday.getTime() - 1;
+  const statementKey = periodStart.toISOString().slice(0, 10);
+  const snapshots = getWebSurfStatementSnapshotStore();
+  if (snapshots[statementKey]?.snapshotVersion === 3) return snapshots[statementKey];
+  const rows = transactions.filter((entry) => {
+    const time = Number(entry.time) || 0;
+    return time >= periodStart.getTime() && time <= periodEnd;
+  }).map((entry) => {
+    const debit = entry.direction === "debit";
+    const amount = Math.max(0, Number(entry.amount) || 0);
+    return {
+      transactionId: entry.id || entry.time,
+      date: new Date(Number(entry.time) || Date.now()).toLocaleDateString([], { month: "2-digit", day: "2-digit" }),
+      signedAmount: entry.direction === "neutral" ? "•" : `${debit ? "−" : "+"}${amount}`,
+      description: String(entry.label || "Aquarium activity").replace(/tankazon/ig, "BubbleBodega"),
+      time: Number(entry.time) || 0,
+      type: entry.direction
+    };
+  });
+  const income = rows.reduce((sum, row) => sum + (row.signedAmount.startsWith("+") ? Number(row.signedAmount.slice(1)) : 0), 0);
+  const spending = rows.reduce((sum, row) => sum + (row.signedAmount.startsWith("−") ? Number(row.signedAmount.slice(1)) : 0), 0);
+  const snapshot = {
+    snapshotVersion: 3,
+    statementKey,
+    sentAt: currentSunday.getTime(),
+    periodStart: periodStart.getTime(),
+    periodEnd,
+    dateRange: `${periodStart.toLocaleDateString([], { month: "2-digit", day: "2-digit" })}–${new Date(periodEnd).toLocaleDateString([], { month: "2-digit", day: "2-digit" })}`,
+    transactionCount: rows.length,
+    transactions: rows,
+    income,
+    spending,
+    balance: Math.max(0, Number(state?.coins) || 0)
+  };
+  snapshots[statementKey] = snapshot;
+  saveWebSurfStatementSnapshotStore(snapshots);
+  return snapshot;
+}
+
+function getWebSurfMilestoneBalance(milestoneId, fallbackBalance) {
+  const storageKey = "bubble-borough-websurf-milestone-snapshots-v1";
+  try {
+    const snapshots = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    if (snapshots && Number.isFinite(Number(snapshots[milestoneId]))) return Number(snapshots[milestoneId]);
+    const balance = Math.max(0, Number(fallbackBalance) || 0);
+    localStorage.setItem(storageKey, JSON.stringify({ ...(snapshots || {}), [milestoneId]: balance }));
+    return balance;
+  } catch {
+    return Math.max(0, Number(fallbackBalance) || 0);
+  }
+}
+
+function getWebSurfInboxMessages() {
+  // Automatic sender registry: statements@bubbleboroughbank.swim, orders@bubblebodega.swim, rewards@bubbleboroughbank.swim, research@proteusbiodyne.swim.
+  const messages = [];
+  const rescueOffer = ensureBubbleBodegaRescueOffer(Date.now());
+  const welcomeSentAt = Math.max(0, Number(state?.webSurfWelcomeSentAt) || 0);
+  if (Number(state?.webSurfWelcomeVersion) >= 1 && welcomeSentAt) {
+    const profile = sanitizeAccountProfile(state?.accountProfile);
+    const username = profile.username || getAccountUsernameForUser(profile.userId);
+    const addressName = String(username || "user").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") || "user";
+    const webSurfTemplate = getWebSurfAutoEmailTemplate("welcome_to_websurf");
+    const webSurfData = { emailAddress: `${addressName}@websurf.swim` };
+    messages.push({
+      id: `auto-welcome_to_websurf-${welcomeSentAt}`,
+      templateId: "welcome_to_websurf",
+      data: webSurfData,
+      sender: webSurfTemplate?.sender || "welcome@websurf.swim",
+      subject: webSurfTemplate?.subject || "Welcome to WebSurf!",
+      preview: webSurfTemplate?.preview || "Your new WebSurf email address is ready.",
+      destination: "home",
+      icon: "assets/icons/WebSurf_icon.png",
+      time: welcomeSentAt
+    });
+    const template = getWebSurfAutoEmailTemplate("welcome_to_bubble_borough");
+    const data = { startingCoins: STARTING_COINS };
+    messages.push({
+      id: `auto-welcome_to_bubble_borough-${welcomeSentAt}`,
+      templateId: "welcome_to_bubble_borough",
+      favorite: true,
+      favoriteIcon: "assets/icons/other.png",
+      data,
+      sender: template?.sender || "welcome@websurf.swim",
+      subject: template?.subject || "Welcome to Bubble Borough",
+      preview: template?.preview || "Your aquarium is ready. Let's get you started.",
+      destination: "home",
+      icon: "assets/icons/WebSurf_icon.png",
+      time: welcomeSentAt + 1
+    });
+  }
+  if (rescueOffer.issued) {
+    const template = getWebSurfAutoEmailTemplate("bubblebodega_rescue_offer");
+    messages.push({
+      id: `auto-bubblebodega_rescue_offer-${rescueOffer.cycle}-${state.bubbleBodegaRescueOffer.issuedAt}`,
+      templateId: "bubblebodega_rescue_offer",
+      data: {},
+      sender: template?.sender || "offers@bubblebodega.swim",
+      subject: template?.subject || "A Fresh Start, On Us",
+      preview: template?.preview || "A free Goldfish and food are waiting for you.",
+      destination: "rescue-offer",
+      icon: "assets/misc/Store_Logo.png",
+      time: Number(state.bubbleBodegaRescueOffer.issuedAt) || Date.now()
+    });
+  }
+  const orders = sanitizePurchaseHistory(state?.purchaseHistory);
+  const now = Date.now();
+  orders.filter((order) => (Number(order.placedAt) || 0) <= now).forEach((order) => {
+    const engineeredSpecimen = isEngineeredAquaticSpecimenOrder(order);
+    const proteusOrderStatus = engineeredSpecimen
+      ? getEngineeredAquaticSpecimenOrderStatus(order.id)
+      : "";
+    const designPending = proteusOrderStatus === "design-required";
+    const designConfigured = proteusOrderStatus === "specimen-configured";
+    const designComplete = proteusOrderStatus === "fulfillment-complete";
+    // The legacy proteus_engineered_specimen_fulfillment template remains in the registry for old saves,
+    // but commissioned specimen mail now updates this original message in place when fulfillment completes.
+    const templateId = engineeredSpecimen
+      ? "proteus_engineered_specimen_design"
+      : isProteusOrder(order)
+        ? "proteus_asset_fulfillment"
+        : "bubblebodega_order_confirmation";
+    const template = getWebSurfAutoEmailTemplate(templateId);
+    const items = getWebSurfOrderItems(order);
+    const data = {
+      orderId: order.id,
+      itemQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
+      items,
+      total: order.total,
+      designPending,
+      designConfigured,
+      designComplete,
+      proteusOrderStatus,
+      designStatus: designPending ? "DESIGN REQUIRED" : designConfigured ? "SPECIMEN CONFIGURED" : "FULFILLMENT COMPLETE",
+      appearanceStatus: designPending ? "Pending" : "Approved",
+      behaviorStatus: designPending ? "Pending" : "Approved",
+      fulfillmentStatus: designPending ? "Awaiting design" : designConfigured ? "Processing" : "Complete",
+      designPreview: designPending
+        ? "Design required for your Engineered Aquatic Specimen commission."
+        : designConfigured
+          ? "Your Engineered Aquatic Specimen is being fulfilled."
+          : "Your Engineered Aquatic Specimen fulfillment is complete."
+    };
+    messages.push({ id: `auto-${templateId}-${order.id}`, templateId, data, sender: template?.sender || (isProteusOrder(order) ? "designer@proteusbiodyne.swim" : "orders@bubblebodega.swim"), subject: template ? interpolateWebSurfEmailValue(data.itemQuantity === 1 && template.subjectSingular ? template.subjectSingular : template.subject, data) : "Order Confirmed", preview: template ? interpolateWebSurfEmailValue(template.preview, data) : "Your order has been completed and delivered.", destination: template?.action?.destination || "store", icon: isProteusOrder(order) ? "assets/web/proteus/Proteus_Logo_Icon.png" : "assets/misc/Box.png", time: Number(order.placedAt) || 0 });
+  });
+
+  const transactions = Array.isArray(state?.walletTransactions) ? state.walletTransactions : [];
+  const seenMilestones = new Set();
+  transactions.filter((entry) => (Number(entry.time) || 0) <= now).forEach((entry) => {
+    const milestone = getBubbleBankMilestoneForTransaction(entry);
+    if (!milestone || seenMilestones.has(milestone.id)) return;
+    seenMilestones.add(milestone.id);
+    const milestoneId = `milestone-${milestone.id}`;
+    const data = { milestoneId, milestoneName: milestone.label, milestoneRequirement: milestone.requirement, reward: milestone.reward, balance: getWebSurfMilestoneBalance(milestoneId, state?.coins || 0) };
+    const template = getWebSurfAutoEmailTemplate("milestone_reward");
+    messages.push({ id: `auto-milestone_reward-${milestone.id}`, templateId: "milestone_reward", data, sender: template?.sender || "rewards@bubbleboroughbank.swim", subject: template ? interpolateWebSurfEmailValue(template.subject, data) : `Milestone Unlocked: ${milestone.label}`, preview: template ? interpolateWebSurfEmailValue(template.preview, data) : `${milestone.reward} Fish Coins earned.`, destination: "bank", icon: "assets/misc/coin_unicode.png", time: Number(entry.time) || 0 });
+  });
+
+  const statementData = getWebSurfStatementData();
+  const statementTemplate = getWebSurfAutoEmailTemplate("weekly_bank_statement");
+  messages.push({
+    id: `auto-weekly_bank_statement-${statementData.dateRange}`,
+    templateId: "weekly_bank_statement",
+    data: statementData,
+    sender: statementTemplate?.sender || "statements@bubbleboroughbank.swim",
+    subject: statementTemplate ? interpolateWebSurfEmailValue(statementTemplate.subject, statementData) : `Weekly Statement: ${statementData.dateRange}`,
+    preview: statementTemplate ? interpolateWebSurfEmailValue(statementTemplate.preview, statementData) : `${statementData.transactionCount} transactions • Balance: ${statementData.balance} Fish Coins`,
+    destination: "bank",
+    icon: "assets/misc/coin_unicode.png",
+    time: Number(statementData.sentAt) || 0
+  });
+
+  if (window.hasDiscoveredProteus?.()) {
+    messages.push({
+      id: "proteus-research-bulletin-1",
+      sender: "research@proteusbiodyne.swim",
+      subject: "Research Bulletin: Adaptive Marine Life",
+      preview: "New specimen and directed-adaptation records are available.",
+      destination: "proteus",
+      icon: "assets/web/proteus/Proteus_Logo_Icon.png",
+      time: 1
+    });
+  }
+
+  return messages
+    .sort((left, right) => Number(right.favorite === true) - Number(left.favorite === true) || right.time - left.time)
+    .slice(0, 40);
+}
+
+function syncWebSurfUnreadBadge() {
+  if (!dom.webSurfUnreadBadge) return;
+  const readIds = getWebSurfReadMailIds();
+  const silencedSenders = getWebSurfSilencedSenders();
+  const unreadCount = getWebSurfInboxMessages().filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
+  dom.webSurfUnreadBadge.hidden = unreadCount === 0;
+  dom.webSurfUnreadBadge.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
+  dom.webSurfUnreadBadge.setAttribute("aria-label", `${unreadCount} unread WebSurf ${unreadCount === 1 ? "message" : "messages"}`);
+}
+
+function formatWebSurfMailTime(timestamp) {
+  if (!timestamp) return "Saved";
+  const date = new Date(timestamp);
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function renderWebSurfProteusAuthorizationEmail(message) {
+  const data = message.data || {};
+  const designPending = data.proteusOrderStatus === "design-required" && data.designPending === true;
+  return `<section class="websurf-proteus-authorization" data-proteus-order-status="${escapeHtml(data.proteusOrderStatus || "")}">
+    <header class="websurf-proteus-auth-brand">
+      <img ${assetImageAttributes("assets/web/proteus/Proteus_Title_Logo.png")} alt="Proteus Biodyne" />
+      <span>BESPOKE AQUATIC SPECIMEN PROGRAM</span>
+    </header>
+    <div class="websurf-proteus-auth-intro">
+      <h3>ENGINEERED SPECIMEN AUTHORIZATION</h3>
+      <p>Your BubbleBodega commission has been received.</p>
+    </div>
+    <div class="websurf-proteus-auth-status-grid">
+      <section class="websurf-proteus-auth-order-status">
+        <h4>ORDER STATUS</h4>
+        <strong>${escapeHtml(data.designStatus || "DESIGN REQUIRED")}</strong>
+      </section>
+      <section class="websurf-proteus-auth-configuration">
+        <h4>CONFIGURATION</h4>
+        <div><span>Appearance</span><i aria-hidden="true"></i><strong>${escapeHtml(data.appearanceStatus || "Pending")}</strong></div>
+        <div><span>Behavior</span><i aria-hidden="true"></i><strong>${escapeHtml(data.behaviorStatus || "Pending")}</strong></div>
+        <div><span>Fulfillment</span><i aria-hidden="true"></i><strong>${escapeHtml(data.fulfillmentStatus || "Awaiting design")}</strong></div>
+      </section>
+    </div>
+    <div class="websurf-proteus-auth-response">
+      ${designPending
+        ? `<button type="button" data-websurf-email-action="${escapeHtml(message.id)}">CONFIGURE SPECIMEN</button><p>Fulfillment begins automatically after submission.</p>`
+        : `<strong class="websurf-proteus-auth-thanks">WE APPRECIATE YOUR BUSINESS.</strong>`}
+    </div>
+    <footer><span>All commissioned specimens are final.</span><strong>PROTEUS BIODYNE // RESTRICTED FULFILLMENT</strong></footer>
+  </section>`;
+}
+
+function renderWebSurfAutoEmailBody(message) {
+  const template = getWebSurfAutoEmailTemplate(message.templateId);
+  if (!template) return `<p>${escapeHtml(message.preview || "This automatic message is unavailable.")}</p>`;
+  const data = message.data || {};
+  return (template.body || []).map((block) => {
+    if (block.when && !data[block.when]) return "";
+    if (block.type === "proteus_authorization") return renderWebSurfProteusAuthorizationEmail(message);
+    if (block.type === "heading") return `<h3 class="websurf-email-heading">${renderWebSurfEmailInlineText(block.text, data)}</h3>`;
+    if (block.type === "section_label") return `<div class="websurf-email-section-label">${escapeHtml(block.text || "")}</div>`;
+    if (block.type === "guide_section") return `<section class="websurf-email-guide-section"><img ${assetImageAttributes(block.icon)} alt="" aria-hidden="true" /><div><h4>${escapeHtml(block.title || "")}</h4><p>${renderWebSurfEmailInlineText(block.text, data)}</p></div></section>`;
+    if (block.type === "link_row") return `<nav class="websurf-email-guide-links" aria-label="Getting started links">${(block.links || []).map((link) => `<button type="button" data-websurf-guide-destination="${escapeHtml(link.destination || "store")}" data-websurf-guide-section="${escapeHtml(link.section || "")}">${link.icon ? `<img ${assetImageAttributes(link.icon)} alt="" aria-hidden="true" />` : ""}<span>${escapeHtml(link.label || "Open")}</span></button>`).join("")}</nav>`;
+    if (block.type === "feature_list") return `<section class="websurf-email-feature-list"><header><img ${assetImageAttributes(block.icon)} alt="" aria-hidden="true" /><h4>${escapeHtml(block.title || "")}</h4></header>${(block.items || []).map((item) => `<div class="websurf-email-feature-row"><img ${assetImageAttributes(item.icon)} alt="" aria-hidden="true" /><p><strong>${escapeHtml(item.label || "")}:</strong> ${escapeHtml(item.text || "")}</p></div>`).join("")}</section>`;
+    if (block.type === "item_list") {
+      const items = Array.isArray(data[block.source]) ? data[block.source] : [];
+      return `<div class="websurf-email-item-list">${items.map((item) => `<div class="websurf-email-item-row" data-item-id="${escapeHtml(item.itemId)}"><img ${getWebSurfThumbnailAttributes(item[block.thumbnailField])} alt="" aria-hidden="true" /><strong>${escapeHtml(item[block.nameField] || "Store item")}</strong><span>×${escapeHtml(item[block.quantityField] || 1)}</span></div>`).join("")}</div>`;
+    }
+    if (block.type === "transaction_list") {
+      const rows = Array.isArray(data[block.source]) ? data[block.source] : [];
+      return `<div class="websurf-email-transaction-list">${rows.map((row) => {
+        const signedAmount = String(row[block.amountField] || "");
+        const numericAmount = Number.parseFloat(signedAmount.replace(/−/g, "-").replace(/,/g, ""));
+        const amountClass = numericAmount > 0 ? "is-money-in" : numericAmount < 0 ? "is-money-out" : "";
+        return `<div class="websurf-email-transaction-row"><time>${escapeHtml(row[block.dateField] || "")}</time><strong class="${amountClass}">${escapeHtml(signedAmount)}</strong><span>${escapeHtml(row[block.descriptionField] || "")}</span></div>`;
+      }).join("") || `<p class="websurf-email-empty">No transactions in this statement period.</p>`}</div>`;
+    }
+    if (block.type === "summary" || block.type === "status") {
+      const label = interpolateWebSurfEmailValue(block.label, data);
+      const normalizedLabel = String(label).trim().toLowerCase();
+      const summaryClass = normalizedLabel === "money in" ? "is-money-in" : normalizedLabel === "money out" ? "is-money-out" : "";
+      const typeClass = block.type === "status" ? "is-status" : "";
+      return `<p class="websurf-email-summary ${summaryClass} ${typeClass}"><strong>${escapeHtml(label)}</strong><span>${renderWebSurfEmailInlineText(block.value, data)}</span></p>`;
+    }
+    if (block.type === "completion_note") {
+      return `<div class="websurf-email-completion-note">${renderWebSurfEmailInlineText(block.text, data)}</div>`;
+    }
+    if (block.type === "action") {
+      const action = template.action || {};
+      return `<div class="websurf-email-inline-action"><button type="button" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(action.label || "Open")}</button></div>`;
+    }
+    return `<p>${renderWebSurfEmailInlineText(block.text, data)}</p>`;
+  }).join("");
+}
+
+function handleWebSurfEmailAction(message) {
+  const template = getWebSurfAutoEmailTemplate(message.templateId);
+  const action = template?.action || {};
+  captureWebSurfSessionState();
+  if (action.destination === "rescue-offer") {
+    const offer = activateBubbleBodegaRescueOffer(Date.now());
+    if (!offer.accepted) {
+      showToast("This recovery email has already been used.");
+      return;
+    }
+    openStoreOverlay("fish", { forceCategory: true });
+    window.requestAnimationFrame(() => void window.openBubbleBodegaRescueOffer?.(offer));
+    return;
+  }
+  if (action.destination === "bank") {
+    openBubbleBank(action.section || "account");
+    if (message.data?.milestoneId) {
+      runtime.bubbleBankTargetId = message.data.milestoneId;
+      renderStoreOverlay();
+      window.requestAnimationFrame(() => document.getElementById(message.data.milestoneId)?.scrollIntoView?.({ behavior: "smooth", block: "center" }));
+    }
+    return;
+  }
+  if (action.destination === "proteus-designer") {
+    const orderId = String(message.data?.orderId || "");
+    if (getEngineeredAquaticSpecimenOrderStatus(orderId) !== "design-required") {
+      showToast("This Proteus commission has already been configured or fulfilled.");
+      return;
+    }
+    openProteusDesignerPage(orderId);
+    return;
+  }
+  if (action.destination === "store") {
+    openStoreOverlay(runtime.storeTab || "food");
+    window.requestAnimationFrame(() => window.showBubbleBodegaOrder?.(message.data?.orderId));
+  }
+}
+
+function renderWebSurfHomePage() {
+  const profile = sanitizeAccountProfile(state?.accountProfile);
+  const username = profile.username || getAccountUsernameForUser(profile.userId);
+  const addressName = String(username || "user").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") || "user";
+  const messages = getWebSurfInboxMessages();
+  const readIds = getWebSurfReadMailIds();
+  const silencedSenders = getWebSurfSilencedSenders();
+  const unreadCount = messages.filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
+  const proteusDiscovered = Boolean(window.hasDiscoveredProteus?.());
+  const mailMarkup = messages.map((message) => {
+    const senderKey = String(message.sender || "").toLowerCase();
+    const silenced = silencedSenders.has(senderKey);
+    const unread = isWebSurfMailUnread(message, readIds, silencedSenders);
+    const selected = runtime.webSurfSelectedMailId === message.id;
+    return `<article class="websurf-mail-item ${selected ? "is-open" : ""}">
+      <button type="button" class="websurf-mail-row ${unread ? "is-unread" : ""} ${silenced ? "is-silenced" : ""}" data-websurf-mail-id="${escapeHtml(message.id)}" aria-expanded="${selected}">
+        ${message.favorite
+          ? `<span class="websurf-mail-favorite" title="Favorited" aria-label="Favorited"><img ${assetImageAttributes(message.favoriteIcon || "assets/icons/other.png")} alt="" aria-hidden="true" /></span>`
+          : `<span class="websurf-mail-status" aria-hidden="true"></span>`}
+        <img ${assetImageAttributes(message.icon)} alt="" aria-hidden="true" />
+        <span class="websurf-mail-sender">${escapeHtml(message.sender)}${silenced ? `<small>Silenced</small>` : ""}</span>
+        <span class="websurf-mail-copy"><strong>${escapeHtml(message.subject)}</strong><small>${message.templateId ? renderWebSurfEmailInlineText(getWebSurfAutoEmailTemplate(message.templateId)?.preview || message.preview, message.data) : escapeHtml(message.preview)}</small></span>
+        <time>${escapeHtml(formatWebSurfMailTime(message.time))}</time>
+      </button>
+      ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}">${silenced ? "Unsilence sender" : "Silence sender"}</button></div></div>` : ""}
+    </article>`;
+  }).join("");
+  return `<header class="websurf-home-header">
+      <img ${assetImageAttributes("assets/icons/WebSurf_icon.png")} alt="WebSurf" />
+      <div><span>WEBSURF.SWIM</span><h1 id="webHomeTitle">Welcome, ${escapeHtml(username)}</h1><p>${escapeHtml(addressName)}@WebSurf.swim</p></div>
+    </header>
+    <main class="websurf-home-main">
+      <section class="websurf-bookmarks" aria-labelledby="websurfBookmarksTitle">
+        <h2 id="websurfBookmarksTitle">Bookmarks</h2>
+        <div class="websurf-bookmark-row">
+          <button type="button" class="websurf-bookmark" data-webpage-destination="bank"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" /><span><strong>Bubble Borough Bank</strong><small>Balance, rewards, and statements</small></span></button>
+          <button type="button" class="websurf-bookmark" data-webpage-destination="store"><img ${assetImageAttributes("assets/misc/Box.png")} alt="" /><span><strong>BubbleBodega</strong><small>Food, fish, and aquarium supplies</small></span></button>
+          <button type="button" class="websurf-bookmark" data-webpage-destination="proteus" data-proteus-home-link ${proteusDiscovered ? "" : "hidden"}><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" /><span><strong>Proteus Biodyne</strong><small>Adaptive biology and marine research</small></span></button>
+          <span class="websurf-bookmark is-coming-soon"><span aria-hidden="true">◈</span><span><strong>More coming soon</strong><small>New destinations on the horizon</small></span></span>
+        </div>
+      </section>
+      <div class="websurf-dashboard-grid">
+        <section class="websurf-inbox" aria-labelledby="websurfInboxTitle">
+          <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></header>
+          <div class="websurf-mail-list">${mailMarkup}</div>
+        </section>
+        <aside class="websurf-account-card" aria-label="WebSurf account">
+          <header><img ${assetImageAttributes("assets/icons/WebSurf_icon.png")} alt="" /><span><strong>WebSurf Account</strong><small>Connected to Bubble Borough</small></span></header>
+          <div class="websurf-account-stats"><span><strong>${unreadCount}</strong><small>Unread</small></span><span><strong>${Math.min(99, messages.length * 2)} / 100 MB</strong><small>Mail storage</small></span></div>
+          <footer><span>${escapeHtml(addressName)}@WebSurf.swim</span><span>WebSurf 1.4 · Secure</span></footer>
+        </aside>
+      </div>
+    </main>`;
+}
+
+function getBubbleBankOrderForTransaction(entry) {
+  if (entry?.direction !== "debit" || !/bubblebodega/i.test(String(entry?.place || ""))) return null;
+  const orders = sanitizePurchaseHistory(state?.purchaseHistory);
+  const linkedOrder = orders.find((order) => order.id === entry.orderId);
+  if (linkedOrder) return linkedOrder;
+  const entryTime = Number(entry.time) || 0;
+  const entryAmount = Math.max(0, Math.floor(Number(entry.amount) || 0));
+  const entryLabel = String(entry.label || "").toLowerCase();
+  return orders
+    .filter((order) => Math.abs((Number(order.placedAt) || 0) - entryTime) <= 120000)
+    .map((order) => ({
+      order,
+      distance: Math.abs((Number(order.placedAt) || 0) - entryTime),
+      matchesItem: (order.items || []).some((item) => {
+        const name = String(item.name || "").toLowerCase();
+        return Math.max(0, Math.floor(Number(item.cost) || 0)) === entryAmount
+          && (!name || entryLabel.includes(name) || name.includes(entryLabel.replace(/^(?:bought|purchased|created)\s+/, "")));
+      })
+    }))
+    .filter((candidate) => candidate.matchesItem || Math.floor(Number(candidate.order.total) || 0) === entryAmount)
+    .sort((left, right) => left.distance - right.distance)[0]?.order || null;
+}
+
+function renderBubbleBankTabs(activeTab) {
+  const tabs = [
+    ["account", "Account", `<img class="bubble-bank-tab-icon" ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" />`],
+    ["rewards", "Rewards", "✚"],
+    ["milestones", "Milestones", "★"]
+  ];
+  return `<nav class="bubble-bank-tabs" aria-label="Bank sections">${tabs.map(([id, label, icon]) => `
+    <button type="button" class="bubble-bank-tab ${activeTab === id ? "is-active" : ""}" data-bank-tab="${id}" aria-current="${activeTab === id ? "page" : "false"}">
+      <span aria-hidden="true">${icon}</span>${label}
+    </button>`).join("")}</nav>`;
+}
+
+function renderBubbleBankCoinAmount(amount, options = {}) {
+  return `<span class="bubble-bank-coin-amount ${options.debit ? "is-debit" : options.credit ? "is-credit" : ""}"><img ${assetImageAttributes("assets/icons/coin.png")} alt="Fish Coin" /><strong>${escapeHtml(String(amount))}</strong></span>`;
+}
+
+function renderBubbleBankAccount() {
+  const filter = String(runtime.bubbleBankTransactionFilter || "all");
+  const entries = (Array.isArray(state.walletTransactions) ? state.walletTransactions.slice(0, 60) : [])
+    .filter((entry) => bubbleBankTransactionMatchesFilter(entry, filter));
+  const transactions = entries.length ? entries.map((entry) => {
+    const debit = entry.direction === "debit";
+    const neutral = entry.direction === "neutral" || Number(entry.amount) <= 0;
+    const milestone = getBubbleBankMilestoneForTransaction(entry);
+    const reward = getBubbleBankRewardForTransaction(entry);
+    const order = getBubbleBankOrderForTransaction(entry);
+    const target = milestone
+      ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="milestones" data-bank-target-id="milestone-${escapeHtml(milestone.id)}">View Milestone <span aria-hidden="true">→</span></button>`
+      : reward
+        ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="rewards" data-bank-target-id="reward-${escapeHtml(reward.dayKey || String(reward.generatedAt))}">View Reward <span aria-hidden="true">→</span></button>`
+        : order
+          ? `<button type="button" class="bubble-bank-row-link" data-bank-order-id="${escapeHtml(order.id)}">View Purchase <span aria-hidden="true">→</span></button>`
+          : "";
+    const signedAmount = neutral ? "•" : `${debit ? "−" : "+"}${Math.max(0, Number(entry.amount) || 0)}`;
+    return `<article class="bubble-bank-transaction ${neutral ? "is-neutral" : debit ? "is-debit" : "is-credit"}">
+      ${renderBubbleBankCoinAmount(signedAmount, { debit, credit: !debit && !neutral })}
+      <div class="bubble-bank-transaction-copy"><strong>${escapeHtml(entry.label || "Aquarium activity")}</strong><span>${escapeHtml(String(entry.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega"))}</span></div>
+      <time>${escapeHtml(formatBubbleBankTime(entry.time))}</time>${target}
+    </article>`;
+  }).join("") : `<div class="bubble-bank-empty"><strong>No transactions yet.</strong><span>Feed a fish or visit BubbleBodega to start your account history.</span></div>`;
+  return `<section class="bubble-bank-account">
+    <div class="bubble-bank-balance-card">
+      <div><span>Current Account Balance</span>${renderBubbleBankCoinAmount(state.coins)}<small>Fish Coins</small></div>
+    </div>
+    <div class="bubble-bank-ledger"><header><div><span aria-hidden="true">▤</span><h3>Transaction history</h3></div>${getBubbleBankTransactionFilterMarkup()}</header>${transactions}</div>
+  </section>`;
+}
+
+function renderBubbleBankRewards() {
+  const history = Array.isArray(state?.dailyBonus?.recapHistory) ? state.dailyBonus.recapHistory : [];
+  if (!history.length) {
+    return `<div class="bubble-bank-empty"><strong>No daily rewards yet.</strong><span>Your completed daily recaps and their exact score math will appear here.</span></div>`;
+  }
+  return `<section class="bubble-bank-card-list">${history.map((summary) => {
+    const rewardId = `reward-${summary.dayKey || String(summary.generatedAt)}`;
+    const positiveRows = (summary.rows || []).filter((row) => Number(row.score) > 0);
+    const negativeRows = (summary.rows || []).filter((row) => Number(row.score) < 0);
+    const scoreModelNote = summary.scoreModel
+      ? `${Number(summary.rawScore) || 0} raw points normalized across ${Math.max(1, Number(summary.fishCount) || Number(summary.tankCount) || 1)} fish/tanks.`
+      : "Each listed item contributes directly to the recap score.";
+    return `<details class="bubble-bank-reward-card" id="${escapeHtml(rewardId)}" ${runtime.bubbleBankTargetId === rewardId ? "open" : ""}>
+      <summary><div><strong>${escapeHtml(formatBubbleBankTime(summary.generatedAt, { dateOnly: true }))}</strong><span>${escapeHtml(formatBubbleBankTime(summary.generatedAt))} · ${escapeHtml(summary.overall || "Daily reward")}</span></div>${renderBubbleBankCoinAmount(`+${Math.max(0, Number(summary.reward) || 0)}`, { credit: true })}<span class="bubble-bank-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="bubble-bank-reward-math"><p>${escapeHtml(scoreModelNote)} Reward = max(0, score), capped at ${DAILY_RECAP_REWARD_CAP} coins.</p>
+        <div class="bubble-bank-math-columns"><div><h4>Added</h4>${positiveRows.length ? positiveRows.map((row) => `<span><b>+${Math.abs(Number(row.score) || 0)}</b>${escapeHtml(row.text)}</span>`).join("") : "<span>Nothing added that day.</span>"}</div>
+        <div><h4>Subtracted</h4>${negativeRows.length ? negativeRows.map((row) => `<span><b>−${Math.abs(Number(row.score) || 0)}</b>${escapeHtml(row.text)}</span>`).join("") : "<span>No negative events.</span>"}</div></div>
+      </div>
+    </details>`;
+  }).join("")}</section>`;
+}
+
+function renderBubbleBankMilestones() {
+  const unlocked = state?.dailyBonus?.milestones || {};
+  const milestones = PROGRESSION_MILESTONES.filter((milestone) => unlocked[milestone.id]);
+  if (!milestones.length) {
+    return `<div class="bubble-bank-empty"><strong>No milestones unlocked yet.</strong><span>Your completed achievements and Fish Coin payouts will appear here.</span></div>`;
+  }
+  return `<section class="bubble-bank-card-list">${milestones.map((milestone) => {
+    const milestoneId = `milestone-${milestone.id}`;
+    const receipt = (state.walletTransactions || []).find((entry) => getBubbleBankMilestoneForTransaction(entry)?.id === milestone.id);
+    const unlockedFish = (milestone.unlocks || []).map((id) => runtime.fishMap.get(id)?.name || titleFromFile(id));
+    return `<article class="bubble-bank-milestone-card ${runtime.bubbleBankTargetId === milestoneId ? "is-target" : ""}" id="${escapeHtml(milestoneId)}">
+      <span class="bubble-bank-milestone-star" aria-hidden="true">★</span><div><span>Milestone unlocked</span><h3>${escapeHtml(milestone.label)}</h3><p>${escapeHtml(milestone.requirement)}</p>${unlockedFish.length ? `<small>Unlocked fish: ${escapeHtml(unlockedFish.join(", "))}</small>` : ""}</div>
+      <div>${renderBubbleBankCoinAmount(`+${milestone.reward}`, { credit: true })}${receipt ? `<time>${escapeHtml(formatBubbleBankTime(receipt.time))}</time>` : ""}</div>
+    </article>`;
+  }).join("")}</section>`;
+}
+
+function renderBubbleBankPage() {
+  const activeTab = normalizeBubbleBankTab(runtime.bubbleBankTab);
+  const profile = sanitizeAccountProfile(state?.accountProfile);
+  const username = profile.username || getAccountUsernameForUser(profile.userId);
+  const content = activeTab === "rewards" ? renderBubbleBankRewards() : activeTab === "milestones" ? renderBubbleBankMilestones() : renderBubbleBankAccount();
+  return `<div class="bubble-bank-window-header">
+    <img class="bubble-bank-logo" ${assetImageAttributes("assets/misc/bank_logo.png")} alt="Bubble Borough Bank" />
+    ${renderBubbleBankTabs(activeTab)}
+    <div class="bubble-bank-window-actions">${renderBubbleBankCoinAmount(state.coins)}</div>
+  </div>
+  <div class="bubble-bank-scroll"><div class="bubble-bank-shell"><header class="bubble-bank-welcome"><div><span>Hello,</span><h2>${escapeHtml(username)}.</h2><p>Manage your Fish Coins and review your account activity.</p></div><strong>Save small. Swim big.</strong></header>${content}<footer>Fish Coins are earned through feeding, caring for your neighborhood, and completing milestones.</footer></div></div>`;
+}
+
+function handleBubbleBankPageClick(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  const purchaseButton = target?.closest?.("[data-bank-order-id]");
+  if (purchaseButton) {
+    const orderId = String(purchaseButton.dataset.bankOrderId || "");
+    runtime.bubbleBankOpen = false;
+    renderStoreOverlay();
+    window.showBubbleBodegaOrder?.(orderId);
+    return true;
+  }
+  const tabButton = target?.closest?.("[data-bank-tab]");
+  if (!tabButton) return false;
+  runtime.bubbleBankTab = normalizeBubbleBankTab(tabButton.dataset.bankTab);
+  runtime.bubbleBankTargetId = String(tabButton.dataset.bankTargetId || "");
+  renderStoreOverlay();
+  if (runtime.bubbleBankTargetId) {
+    window.requestAnimationFrame(() => {
+      document.getElementById(runtime.bubbleBankTargetId)?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    });
+  }
+  return true;
+}
+
+function handleBubbleBankPageChange(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  const filter = target?.closest?.("[data-bank-transaction-filter]");
+  if (!filter) return false;
+  runtime.bubbleBankTransactionFilter = String(filter.value || "all");
+  runtime.bubbleBankTargetId = "";
+  renderStoreOverlay();
+  return true;
 }
 
 function renderExternalLinkOverlay(link) {

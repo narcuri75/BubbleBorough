@@ -87,6 +87,7 @@ test("a Halloween pile buys 10 pieces only in season, and zero stock cannot be d
     assignFloatingPelletsToHungryFish() {}, stageHungryFishTravelToFoodTank() {}, playDropSoundEffect() {},
     isGuidedTutorialActive: () => false, saveState() {} });
   addFunctions(c, "tank/catalog-and-equipment.js", ["shouldShowFoodInStore"]);
+  addFunctions(c, "store/catalog.js", ["getBubbleBodegaRescueOfferStatus", "getFoodPurchaseCost", "markBubbleBodegaRescueItemClaimed"]);
   addFunctions(c, "store/purchases.js", ["buyFood"]);
   addFunctions(c, "fish/feeding-and-medicine.js", ["dropSelectedFoodAtPoint"]);
   c.buyFood("halloweenCandy");
@@ -143,6 +144,22 @@ test("facet choices OR within a group, AND across groups, and handle no matches"
   assert.equal(c.matches({ Type: ["plants"], Theme: ["Halloween"] }, "Theme"), true);
   selection.Theme.clear();
   assert.equal(c.matches({ Type: ["plants"], Theme: ["Halloween"] }), true);
+});
+test("cost sorting uses the actual price before featured product placement", () => {
+  const c = vm.createContext({
+    normalizeCatalogTheme: value => value || "",
+    getCatalogLockSortRank: () => 0,
+    isCustomFishShopKey: id => id === "custom",
+    isCustomDecorUploadShopKey: () => false,
+    isCustomBubblerDecorKey: () => false
+  });
+  addFunctions(c, "store/catalog.js", ["normalizeStoreSortKey", "compareCatalogThemes", "getFeaturedShopSortRank", "sortCatalogEntries"]);
+  const sorted = c.sortCatalogEntries([
+    { id: "custom", name: "Custom Fish", cost: 75 },
+    { id: "danio", name: "Celestial Pearl Danio", cost: 3 },
+    { id: "goldfish", name: "Goldfish", cost: 4 }
+  ], "cost");
+  assert.deepEqual(Array.from(sorted, item => item.cost), [3, 4, 75]);
 });
 test("store navigation is silent; a successful purchase emits exactly one sound", () => {
   const sounds = [];

@@ -2,6 +2,28 @@
   "version": 1,
   "previewSize": 384,
   "sheets": {
+    "assets/equipment/machinery/Boat.webp": {
+      "version": "4e2808e4140c-v1",
+      "files": {
+        "assets/generated/sprites/equipment/machinery/Boat/boat.png.thumb.webp": "998d487cf5950c59167e9c8fac630ceaaee50903537302b3a2fa0b0bc0814ded",
+        "assets/generated/sprites/equipment/machinery/Boat/Halloween_Boat_5.png.thumb.webp": "1bcb06b50b9d2f4a48b8ee7f0ee7408a7ca21ac47f50e0806ee476242b0df687",
+        "assets/generated/sprites/equipment/machinery/Boat/boat_3.png.thumb.webp": "af8f2c406eeed323b445eb3c25494072649c15d7415c61b6aea072894b1b9bba",
+        "assets/generated/sprites/equipment/machinery/Boat/boat_1.png.thumb.webp": "34f7f96cdba540281f7d278472852361b5e2d263252f1ad0e1249982743fa385",
+        "assets/generated/sprites/equipment/machinery/Boat/boat_4.png.thumb.webp": "579f419d819e73432421c270a151fd1bf4d93317d22198e5973e2790b33da247",
+        "assets/generated/sprites/equipment/machinery/Boat/boat_2.png.thumb.webp": "f5e0151ec18a714df59bdca9194f0ee6f76e1b51d42940211fa3b7e1a683239a"
+      }
+    },
+    "assets/equipment/machinery/Submarine.webp": {
+      "version": "3d069deab6f9-v1",
+      "files": {
+        "assets/generated/sprites/equipment/machinery/Submarine/submarine_1.png.thumb.webp": "9cd202da19415a494a1e8cb768c2bd73f128ab457a42d23b82165acd9dd247cc",
+        "assets/generated/sprites/equipment/machinery/Submarine/submarine.png.thumb.webp": "116a1379f9118e1bd74e5a7e4562ab7385a06e8357df86ab224205951b0eff48",
+        "assets/generated/sprites/equipment/machinery/Submarine/submarine_2.png.thumb.webp": "8baee2f2618c06faf907a960c696edb07b98497d169932d871b330b8d0991f50",
+        "assets/generated/sprites/equipment/machinery/Submarine/submarine_3.png.thumb.webp": "31b725dd45472d33c9d7a5f34d33e64a713195f427bddd506ccddfd3022a79b8",
+        "assets/generated/sprites/equipment/machinery/Submarine/Halloween_Submarine_5.png.thumb.webp": "52c04852d614ff2e093b929205641fe5110ab19c9451545e17fa132ef5eddb2b",
+        "assets/generated/sprites/equipment/machinery/Submarine/submarine_4.png.thumb.webp": "7e6d68e8f5d34d1515d0af21ccf59d76b30a6dfc807822e2ad7ec3e34f4f1408"
+      }
+    },
     "assets/fish/Angelfish.webp": {
       "version": "0342a21d176d-v1",
       "files": {
@@ -30,17 +52,6 @@
         "assets/generated/sprites/fish/BlueRam/BlueRam_2.png.thumb.webp": "d37ef629bb86bdcd71d504f838355c1abc4ea58b849a57601ff9506d38b94e6c",
         "assets/generated/sprites/fish/BlueRam/BlueRam_3.png.thumb.webp": "fa304e4f77d4b55446391bd727530a6ad376a93471b99e6fe5b169dacfc489f5",
         "assets/generated/sprites/fish/BlueRam/BlueRam_4.png.thumb.webp": "7d8ccb348ca0cdfad1b869f2f779da1176158fbd7ff21de34dd50170c63d9840"
-      }
-    },
-    "assets/fish/Boat.webp": {
-      "version": "4e2808e4140c-v1",
-      "files": {
-        "assets/generated/sprites/fish/Boat/boat.png.thumb.webp": "998d487cf5950c59167e9c8fac630ceaaee50903537302b3a2fa0b0bc0814ded",
-        "assets/generated/sprites/fish/Boat/Halloween_Boat_5.png.thumb.webp": "1bcb06b50b9d2f4a48b8ee7f0ee7408a7ca21ac47f50e0806ee476242b0df687",
-        "assets/generated/sprites/fish/Boat/boat_3.png.thumb.webp": "af8f2c406eeed323b445eb3c25494072649c15d7415c61b6aea072894b1b9bba",
-        "assets/generated/sprites/fish/Boat/boat_1.png.thumb.webp": "34f7f96cdba540281f7d278472852361b5e2d263252f1ad0e1249982743fa385",
-        "assets/generated/sprites/fish/Boat/boat_4.png.thumb.webp": "579f419d819e73432421c270a151fd1bf4d93317d22198e5973e2790b33da247",
-        "assets/generated/sprites/fish/Boat/boat_2.png.thumb.webp": "f5e0151ec18a714df59bdca9194f0ee6f76e1b51d42940211fa3b7e1a683239a"
       }
     },
     "assets/fish/Bull_Shark.webp": {
@@ -219,17 +230,6 @@
         "assets/generated/sprites/fish/Seahorse/Seahorse_2.png.thumb.webp": "5e8c283e535cfc2ead9d0be6e033142bcdf9756b361756c7ebf3f078ff94fe08",
         "assets/generated/sprites/fish/Seahorse/Seahorse_3.png.thumb.webp": "3a79d122e6f6dabc437e5cffafa6f76ba01e0847d6f3ef9f335c35897dceb3f4",
         "assets/generated/sprites/fish/Seahorse/Seahorse_4.png.thumb.webp": "dbd34a381c36a8082f2fc119fe9333844f72dad0d159880a2be8de1a7a85178e"
-      }
-    },
-    "assets/fish/Submarine.webp": {
-      "version": "615de5f4a424-v1",
-      "files": {
-        "assets/generated/sprites/fish/Submarine/submarine_1.png.thumb.webp": "5d35850225920498346ad616e7b2485522874327454111722d5bbe75784f8fee",
-        "assets/generated/sprites/fish/Submarine/submarine.png.thumb.webp": "f413281a5512a3c777481768b0d48f27d40cf136c09dd05c88c5d2e370b733a1",
-        "assets/generated/sprites/fish/Submarine/submarine_2.png.thumb.webp": "b06568a7bec5e2d7dc1a799e96194b2c89196ac7e3c90eb015766e93190aed3f",
-        "assets/generated/sprites/fish/Submarine/submarine_3.png.thumb.webp": "30108929c62fb1783cc3bd0c396681d713113214a3e749a72c6f3575e755f9ff",
-        "assets/generated/sprites/fish/Submarine/Halloween_Submarine_5.png.thumb.webp": "fd4cdddc2762d6f6725f0f648db66a2be1e99b6d8648ab7d4de1911a8ebcbe64",
-        "assets/generated/sprites/fish/Submarine/submarine_4.png.thumb.webp": "6a11c2f99a96c32c7304dc473717619547ab4d8fa47f1880216c1ae86a976eb1"
       }
     },
     "assets/fish/Sunfish.webp": {
@@ -514,6 +514,56 @@
         "assets/generated/sprites/misc/Particles/particle7.png.thumb.webp": "6b23aa6cf827f0422d93c4ab80557be3f932ebc9ed6cdeecfd1d8f2876ee3b80",
         "assets/generated/sprites/misc/Particles/particle8.png.thumb.webp": "24ff40b0abb5391241752d253ea21dd8e13a4d319aa93073ae328e5c9eaa6f57",
         "assets/generated/sprites/misc/Particles/particle9.png.thumb.webp": "89662524c90d19222beeb451720ac98a3d9df280ff4fa531489523799d5f460b"
+      }
+    },
+    "assets/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish.webp": {
+      "version": "96c706e9cddb-v1",
+      "files": {
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish/DNA_Bioluminescent _Cherub_Goldfish_1.png.thumb.webp": "bd9f1c4dd007bb3362142ca510700c617890a46e24180b89bc44438648cf3ac7",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish/DNA_Bioluminescent _Cherub_Goldfish_5.png.thumb.webp": "422007dcec005836bfe24405b9dc0cc80836ef3ea878a27f1852e741bea00909",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish/DNA_Bioluminescent _Cherub_Goldfish_4.png.thumb.webp": "7815fd996c846a8e65a0c092f75af1b8183674cdc65a61ef7002ad9417f2385f",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish/DNA_Bioluminescent _Cherub_Goldfish_3.png.thumb.webp": "a2de9bc8bf5002be10971f34ad8e4cf8ef5b5498b72bdc3343a189a77b9a86e6",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish/DNA_Bioluminescent _Cherub_Goldfish_2.png.thumb.webp": "b283eef363a03e8dab66533a5cfa6d842a4474c2c41d043aef3d155da1045503"
+      }
+    },
+    "assets/web/davy/mutations/DNA_Bioluminescent_Angler_Pike.webp": {
+      "version": "65f89046db81-v1",
+      "files": {
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike/DNA_Bioluminescent_Angler_Pike_1.png.thumb.webp": "86273814d130a01ebfd4801d470fa95eb17fd70bc6d80cb601bdd10cf7fb28d3",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike/DNA_Bioluminescent_Angler_Pike_5.png.thumb.webp": "7c6f898241b12983cca5cdff2ed97374e75049d59a837689e8a9dd953db2e3da",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike/DNA_Bioluminescent_Angler_Pike_4.png.thumb.webp": "8709e9860828c8c8fe16ab8f62851780009831738fbd43aebcc2e3d499d825b7",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike/DNA_Bioluminescent_Angler_Pike_3.png.thumb.webp": "5d16be42aa774f5bd4458792bb300c70e7148882bd4a2a0489e232299e9d2c83",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike/DNA_Bioluminescent_Angler_Pike_2.png.thumb.webp": "2c1c965c43cb9dc1bb5a0872504fa077d86af40aa34dba67fb70f475003e21ec"
+      }
+    },
+    "assets/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish.webp": {
+      "version": "9f36e613a2c5-v1",
+      "files": {
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish/DNA_Bioluminescent_Glass_Fangfish_1.png.thumb.webp": "639418abbe195a52b11f808ca12616b83fb184f6149245ccf1295e125992f477",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish/DNA_Bioluminescent_Glass_Fangfish_5.png.thumb.webp": "862ad2341e2fcdf4a19cdf59d60db1a9be12df59d4b0f249d12a920a07a8f7e4",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish/DNA_Bioluminescent_Glass_Fangfish_4.png.thumb.webp": "4aa309f5bbd3cccc1816caa6084439458b74186f557c5d074fb7fde8f6c07d27",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish/DNA_Bioluminescent_Glass_Fangfish_3.png.thumb.webp": "d0bc5e1bf06fb09913f6d3cfd227c5fba90d0f8b0e26387141e40e90e59276f4",
+        "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish/DNA_Bioluminescent_Glass_Fangfish_2.png.thumb.webp": "eab00dfe229f4a09118a830dfd5a51f72c9b108f4cac689a36cac0da6b0cca16"
+      }
+    },
+    "assets/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda.webp": {
+      "version": "6c466272f623-v1",
+      "files": {
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda/DNA_Dwarf_Chimera_Barracuda_1.png.thumb.webp": "f481b1057c1f849ff331f55c5e79fa9a00e15f7ab9f0039db32b2a60f54e58cc",
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda/DNA_Dwarf_Chimera_Barracuda_5.png.thumb.webp": "3dab7dc72c8a4c154c224fbafe4059298a504443b7500488165c2e1918da4024",
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda/DNA_Dwarf_Chimera_Barracuda_4.png.thumb.webp": "a9f669b157d3292b519e5808157621660c865912f6b9a0bf3c5b95a6b1802c1c",
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda/DNA_Dwarf_Chimera_Barracuda_3.png.thumb.webp": "c390554409bcde80b94954f67d0e69dd0f90d0086ae7067b65a7d349b35ed5b1",
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda/DNA_Dwarf_Chimera_Barracuda_2.png.thumb.webp": "b37fb94bb6cef4d46dfcf7631026f42a6db88556e9bde3f62317e818da697fad"
+      }
+    },
+    "assets/web/davy/mutations/DNA_Dwarf_Hyperfin.webp": {
+      "version": "7aa8c114c794-v1",
+      "files": {
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin/DNA_Dwarf_Hyperfin_5.png.thumb.webp": "7eb25ff0857e2e906994a32fb6725608cfe86edcc73d7708ecc8baaf28f9014b",
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin/DNA_Dwarf_Hyperfin_4.png.thumb.webp": "944515cb94346685362ed98569fa0f09cc72d1a6d90d4b7b4b509eb252bf9fb9",
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin/DNA_Dwarf_Hyperfin_3.png.thumb.webp": "e9d6b94a16e30f6ce08a456057f7bb6183c36488cc1b74ef83badf62db6cf229",
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin/DNA_Dwarf_Hyperfin_2.png.thumb.webp": "18033d633c288eb5a843c2117dd926a8790fbf33d58d7480baf8c2a0bf53220b",
+        "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin/DNA_Dwarf_Hyperfin_1.png.thumb.webp": "84e02f0f1d179b7f2e23106e1c0cc9d042575be83c34d314a31aed376a2e2fee"
       }
     }
   }

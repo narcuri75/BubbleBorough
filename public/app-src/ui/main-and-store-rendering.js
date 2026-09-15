@@ -10,9 +10,18 @@ function renderUi(now, options = {}) {
     window.buyDecor = buyDecor;
     window.buySubmarine = buySubmarine;
     window.buyBoat = buyBoat;
+    window.buyAutoDispenser = buyAutoDispenser;
     window.showToast = showToast;
     window.setStorePurchaseSoundBatch = setStorePurchaseSoundBatch;
     window.playPurchaseSoundEffect = playPurchaseSoundEffect;
+    window.recordBubbleBodegaOrder = recordBubbleBodegaOrder;
+    window.buyEngineeredAquaticSpecimen = buyEngineeredAquaticSpecimen;
+    window.markEngineeredAquaticSpecimenDesigned = markEngineeredAquaticSpecimenDesigned;
+    window.markEngineeredAquaticSpecimenConfigured = markEngineeredAquaticSpecimenConfigured;
+    window.beginEngineeredAquaticSpecimenDesign = beginEngineeredAquaticSpecimenDesign;
+    window.showProteusDesignerPage = (orderId = "") => openProteusDesignerPage(orderId);
+    window.getBubbleBodegaAccountData = getBubbleBodegaAccountData;
+    window.activateBubbleBodegaRescueOffer = activateBubbleBodegaRescueOffer;
   }
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
@@ -270,7 +279,7 @@ function renderWalletTransactionMenu() {
       return `<article class="wallet-receipt ${neutral ? "is-neutral" : debit ? "is-debit" : "is-credit"}"><strong>${amountMarkup}</strong><span>${escapeHtml(place)} · ${escapeHtml(entry.label)}</span><time>${escapeHtml(time)}</time></article>`;
     }).join("")
     : `<p class="wallet-receipt-empty">No receipts yet.</p>`;
-  setMarkupIfChanged("wallet-transactions", menu, `<header><strong>Recent receipts</strong></header><div class="wallet-receipt-list">${receipts}</div>`);
+  setMarkupIfChanged("wallet-transactions", menu, `<header><strong>Recent receipts</strong><button type="button" data-open-bubble-bank>Open Bank</button></header><div class="wallet-receipt-list">${receipts}</div>`);
 }
 
 function renderMealTrack(now) {
@@ -367,6 +376,10 @@ function formatFishShopBehavior(species) {
     return "Choose behavior";
   }
 
+  if (isDavyMutationSpecies(species) && species.davyBehaviorLabel) {
+    return species.davyBehaviorLabel;
+  }
+
   if (isPiranhaSpecies(species)) {
     return "Swarm predator";
   }
@@ -423,7 +436,13 @@ function renderFishShop() {
       }
       return getFishPurchaseCost(fish.id) <= tutorialRestriction.maxCost;
     });
-  const allCatalog = sortCatalogEntries(filteredCatalog, runtime.storeSorts.fish);
+  const requestedSort = normalizeStoreSortKey(runtime.storeSorts.fish);
+  const sortedCatalog = sortCatalogEntries(filteredCatalog, requestedSort === "theme" ? "cost" : requestedSort);
+  const dailyMutationOffer = getDavyMutationDailyOffer();
+  const dailyMutationIndex = dailyMutationOffer ? sortedCatalog.findIndex((fish) => fish.id === dailyMutationOffer.species.id) : -1;
+  const allCatalog = dailyMutationIndex > 0
+    ? [sortedCatalog[dailyMutationIndex], ...sortedCatalog.filter((_, index) => index !== dailyMutationIndex)]
+    : sortedCatalog;
   const catalog = allCatalog.filter((fish) => matchesShopSearchQuery(getFishShopSearchHaystack(fish), searchQuery));
   const tutorialPreviewOnly = tutorialRestriction?.previewOnly === true;
   if (!allCatalog.length) {
@@ -453,8 +472,8 @@ function renderFishShop() {
   const cardsMarkup = catalog
     .map((fish) => {
       const isCustomUploadProduct = isCustomFishShopKey(fish.id);
-      const progressLocked = !isCustomUploadProduct && !isFishSpeciesProgressUnlocked(fish);
-      const locked = !isCustomUploadProduct && !isFishSpeciesShopUnlocked(fish);
+      const progressLocked = !isFishSpeciesProgressUnlocked(fish);
+      const locked = !isFishSpeciesShopUnlocked(fish);
       const debugUnlocked = progressLocked && !locked;
       const purchaseCost = getFishPurchaseCost(fish.id);
       const maxHealthUnits = getSpeciesMaxHealthUnits(fish);
@@ -470,7 +489,9 @@ function renderFishShop() {
       const dirtinessLoadPercent = isCustomUploadProduct
         ? null
         : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
-      const fishAsset = getFishStoreVariants(fish)[0]?.image || getFishCatalogAssetPath(fish) || fish.asset;
+      const bubbleBodegaVariants = getBubbleBodegaFishStoreVariants(fish);
+      const fishAsset = bubbleBodegaVariants[0]?.image || getFishCatalogAssetPath(fish) || fish.asset;
+      const isDavyMutation = isDavyMutationSpecies(fish);
       const needChips = renderNeutralComfortTagChips(getSpeciesNeedTags(fish));
       const conflictChips = renderNeutralComfortTagChips(getSpeciesConflictTags(fish));
       const lockedRequirementLabel = getUnlockRequirementLabel(fish.unlockRequirement);
@@ -483,13 +504,18 @@ function renderFishShop() {
         ? "Warning: attacks and can kill non-undead tankmates when aggressive behavior is enabled."
         : "";
       return `
-        <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
+        <article class="shop-card ${locked ? "is-locked" : ""} ${isDavyMutation ? "is-davy-mutation" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
           <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(fishAsset)} alt="${fish.name}" />
           <div class="shop-meta shop-card-main">
             <div>
               <strong>${fish.name}</strong>
               ${renderFishShopThemePill(fish.theme)}
-              ${fish.description ? `<div class="fish-meta">${escapeHtml(fish.description)}</div>` : ""}
+              ${[fish.description, ...(Array.isArray(fish.aboutParagraphs) ? fish.aboutParagraphs : [])]
+                .filter((paragraph) => typeof paragraph === "string" && paragraph.trim())
+                .map((paragraph) => `<div class="fish-meta">${escapeHtml(paragraph)}</div>`)
+                .join("")}
+              ${fish.aboutAttribution ? `<div class="shop-about-attribution">${escapeHtml(fish.aboutAttribution)}</div>` : ""}
+              ${fish.aboutTagline ? `<div class="shop-about-tagline">${escapeHtml(fish.aboutTagline)}</div>` : ""}
               ${behaviorWarning ? `<div class="shop-behavior-warning">${escapeHtml(behaviorWarning)}</div>` : ""}
             </div>
             <div class="shop-stat-list">
@@ -506,7 +532,7 @@ function renderFishShop() {
           </div>
           <div class="shop-meta">
             <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
-              <button class="buy-button" data-buy-fish="${fish.id}" data-fish-variants="${escapeHtml(JSON.stringify(getFishStoreVariants(fish)))}" ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+              <button class="buy-button" data-buy-fish="${fish.id}" data-list-price="${fish.cost}" data-fish-variants="${escapeHtml(JSON.stringify(bubbleBodegaVariants))}" ${isDavyMutation && fish.storeBackgroundImage ? `data-shop-bg-image="${escapeHtml(fish.storeBackgroundImage)}"` : ""} ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
               ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomUploadProduct ? "Choose Image" : "Buy Fish"}
             </button>
           </div>
@@ -522,9 +548,138 @@ function renderFishShop() {
   );
 }
 
+function renderDavyJonesLockerSpecimenStage(species, variant, options = {}) {
+  const className = options.className ? ` ${options.className}` : "";
+  return `<div class="davy-locker-photo-stage${className}"><img ${assetImageAttributes(variant.image)} alt="${escapeHtml(species.name)}" /></div>`;
+}
+
+function renderDavyJonesLockerVariantButtons(species, variants, selected) {
+  return `<div class="davy-locker-variants" aria-label="Available variants">${variants.map((variant, index) => `<button type="button" data-davy-select-variant="${escapeHtml(variant.key)}" data-davy-species-id="${escapeHtml(species.id)}" aria-pressed="${variant.key === selected.key}"><img ${assetImageAttributes(variant.image)} alt="Variant ${index + 1}" /></button>`).join("")}</div>`;
+}
+
+function renderDavyJonesLockerItemPage(species) {
+  const variants = getFishStoreVariants(species);
+  if (!variants.length) return `<div class="davy-locker-empty">SPECIMEN DATA UNAVAILABLE</div>`;
+  runtime.davyLockerVariantSelections ||= {};
+  const selectedKey = variants.some((variant) => variant.key === runtime.davyLockerVariantSelections[species.id])
+    ? runtime.davyLockerVariantSelections[species.id]
+    : variants[0].key;
+  const selected = variants.find((variant) => variant.key === selectedKey) || variants[0];
+  runtime.davyLockerVariantSelections[species.id] = selected.key;
+  const traits = Array.isArray(species.davyTraits) ? species.davyTraits.filter(Boolean) : [];
+  return `<section class="davy-locker-item-page" data-davy-item-species="${escapeHtml(species.id)}">
+    <button type="button" class="davy-locker-back" data-davy-back-to-catalogue>&lt; CATALOGUE</button>
+    <div class="davy-locker-item-layout">
+      <div class="davy-locker-item-visual">
+        ${renderDavyJonesLockerSpecimenStage(species, selected, { className: "is-item-page" })}
+        ${renderDavyJonesLockerVariantButtons(species, variants, selected)}
+      </div>
+      <div class="davy-locker-item-copy">
+        <span class="davy-locker-record-label">SPECIMEN RECORD</span>
+        <h2>${escapeHtml(species.name)}</h2>
+        <dl class="davy-locker-record-grid">
+          <div><dt>Origin</dt><dd>REDACTED</dd></div>
+          <div><dt>Status</dt><dd>LIVE</dd></div>
+          <div><dt>Classification</dt><dd>EXPERIMENTAL HYBRID</dd></div>
+          <div><dt>Documentation</dt><dd>NONE</dd></div>
+        </dl>
+        <section class="davy-locker-record-section">
+          <h3>Description</h3>
+          <p>${escapeHtml(species.description || "No description available.")}</p>
+        </section>
+        <section class="davy-locker-record-section">
+          <h3>Behavior</h3>
+          <p>${escapeHtml(species.davyBehaviorSummary || species.davyBehaviorLabel || "Behavior data unavailable.")}</p>
+        </section>
+        ${species.davySwimStyleSummary ? `<section class="davy-locker-record-section"><h3>Swim Style</h3><p>${escapeHtml(species.davySwimStyleSummary)}</p></section>` : ""}
+        ${species.davyDietSummary ? `<section class="davy-locker-record-section"><h3>Diet</h3><p>${escapeHtml(species.davyDietSummary)}</p></section>` : ""}
+        ${species.davyTemperamentSummary ? `<section class="davy-locker-record-section"><h3>Temperament</h3><p>${escapeHtml(species.davyTemperamentSummary)}</p></section>` : ""}
+        ${traits.length ? `<section class="davy-locker-record-section"><h3>Observed Traits</h3><ul>${traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul></section>` : ""}
+        <footer class="davy-locker-item-purchase">
+          <span>${species.cost} coins</span>
+          <button type="button" data-davy-buy-fish="${escapeHtml(species.id)}" data-davy-variant-key="${escapeHtml(selected.key)}">ACQUIRE</button>
+        </footer>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderDavyJonesLockerInventory() {
+  const container = dom.davyJonesLockerPage?.querySelector?.("[data-davy-inventory]");
+  if (!container) return;
+  const mutations = (runtime.fishCatalog || [])
+    .filter((species) => isDavyMutationSpecies(species))
+    .sort((left, right) => (Number(left?.cost) || 0) - (Number(right?.cost) || 0));
+  runtime.davyLockerVariantSelections ||= {};
+
+  const openSpecies = runtime.davyLockerItemSpeciesId
+    ? mutations.find((species) => species.id === runtime.davyLockerItemSpeciesId)
+    : null;
+  if (openSpecies) {
+    setMarkupIfChanged("davy-locker-inventory", container, renderDavyJonesLockerItemPage(openSpecies));
+    return;
+  }
+
+  const markup = mutations.map((species) => {
+    const variants = getFishStoreVariants(species);
+    if (!variants.length) return "";
+    const selectedKey = variants.some((variant) => variant.key === runtime.davyLockerVariantSelections[species.id])
+      ? runtime.davyLockerVariantSelections[species.id]
+      : variants[0].key;
+    const selected = variants.find((variant) => variant.key === selectedKey) || variants[0];
+    runtime.davyLockerVariantSelections[species.id] = selected.key;
+    return `<article class="davy-locker-card" data-davy-species="${escapeHtml(species.id)}">
+      <button type="button" class="davy-locker-photo davy-locker-photo-button" data-davy-open-item="${escapeHtml(species.id)}" aria-label="Open ${escapeHtml(species.name)} specimen record">${renderDavyJonesLockerSpecimenStage(species, selected)}</button>
+      <div class="davy-locker-copy"><span>UNLISTED SPECIMEN</span><button type="button" class="davy-locker-name-button" data-davy-open-item="${escapeHtml(species.id)}">${escapeHtml(species.name)}</button><small>origin: REDACTED</small></div>
+      ${renderDavyJonesLockerVariantButtons(species, variants, selected)}
+      <footer><span>${species.cost} coins</span><button type="button" data-davy-buy-fish="${escapeHtml(species.id)}" data-davy-variant-key="${escapeHtml(selected.key)}">ACQUIRE</button></footer>
+    </article>`;
+  }).join("");
+  setMarkupIfChanged("davy-locker-inventory", container, markup || `<div class="davy-locker-empty">NO INVENTORY</div>`);
+}
+
+async function handleDavyJonesLockerPageClick(event) {
+  const backButton = event.target instanceof Element ? event.target.closest("[data-davy-back-to-catalogue]") : null;
+  if (backButton) {
+    runtime.davyLockerItemSpeciesId = "";
+    renderDavyJonesLockerInventory();
+    return;
+  }
+
+  const openItemButton = event.target instanceof Element ? event.target.closest("[data-davy-open-item]") : null;
+  if (openItemButton) {
+    runtime.davyLockerItemSpeciesId = openItemButton.dataset.davyOpenItem || "";
+    renderDavyJonesLockerInventory();
+    dom.davyJonesLockerPage?.scrollTo?.({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  const variantButton = event.target instanceof Element ? event.target.closest("[data-davy-select-variant]") : null;
+  if (variantButton) {
+    const speciesId = variantButton.dataset.davySpeciesId || "";
+    const variantKey = variantButton.dataset.davySelectVariant || "";
+    runtime.davyLockerVariantSelections ||= {};
+    runtime.davyLockerVariantSelections[speciesId] = variantKey;
+    renderDavyJonesLockerInventory();
+    return;
+  }
+  const buyButton = event.target instanceof Element ? event.target.closest("[data-davy-buy-fish]") : null;
+  if (!buyButton || buyButton.disabled) return;
+  buyButton.disabled = true;
+  const result = await buyFish(buyButton.dataset.davyBuyFish || "", {
+    appearanceVariantKey: buyButton.dataset.davyVariantKey || ""
+  });
+  if (!result?.ok) buyButton.disabled = false;
+  renderDavyJonesLockerInventory();
+}
+
 function renderStoreOverlay() {
+  const showingHome = runtime.webHomeOpen === true;
+  const showingBank = runtime.bubbleBankOpen === true;
+  const showingLocker = runtime.davyJonesLockerOpen === true;
+  const showingDesigner = runtime.proteusDesignerOpen === true;
   const allowedTabs = getTutorialAllowedStoreTabs();
-  if (runtime.storeOverlayOpen && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
+  if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
     runtime.storeTab = getTutorialPreferredStoreTab() || [...allowedTabs][0] || runtime.storeTab;
   }
   const showingFood = runtime.storeTab === "food";
@@ -535,6 +690,39 @@ function renderStoreOverlay() {
 
   dom.storeOverlay.hidden = !runtime.storeOverlayOpen;
   dom.storeOverlay.classList.toggle("is-open", runtime.storeOverlayOpen);
+  dom.storeOverlay.classList.toggle("is-web-home-open", runtime.storeOverlayOpen && showingHome);
+  dom.storeOverlay.classList.toggle("is-bubble-bank-open", runtime.storeOverlayOpen && showingBank);
+  dom.storeOverlay.classList.toggle("is-davy-jones-locker-open", runtime.storeOverlayOpen && showingLocker);
+  dom.storeOverlay.classList.toggle("is-proteus-designer-open", runtime.storeOverlayOpen && showingDesigner);
+  dom.storeOverlay.setAttribute("aria-label", showingDesigner ? "Proteus Biodyne Specimen Designer" : showingHome ? "Browser Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
+  if (dom.webHomePage) {
+    dom.webHomePage.hidden = !runtime.storeOverlayOpen || !showingHome;
+    syncWebSurfUnreadBadge();
+    if (runtime.storeOverlayOpen && showingHome) {
+      setMarkupIfChanged("websurf-home-page", dom.webHomePage, renderWebSurfHomePage());
+      window.syncProteusDiscovery?.();
+    }
+  }
+  if (dom.bubbleBankPage) {
+    dom.bubbleBankPage.hidden = !runtime.storeOverlayOpen || !showingBank;
+    if (runtime.storeOverlayOpen && showingBank) {
+      setMarkupIfChanged("bubble-bank-page", dom.bubbleBankPage, renderBubbleBankPage());
+    }
+  }
+  if (dom.davyJonesLockerPage) {
+    dom.davyJonesLockerPage.hidden = !runtime.storeOverlayOpen || !showingLocker;
+    if (runtime.storeOverlayOpen && showingLocker) renderDavyJonesLockerInventory();
+  }
+  const designerRoute = document.getElementById("proteusDesignerRoute");
+  if (designerRoute) {
+    designerRoute.hidden = !runtime.storeOverlayOpen || !showingDesigner;
+    if (runtime.storeOverlayOpen && showingDesigner) {
+      dom.storeOverlay.classList.remove("proteus-biodyne-open");
+      const proteusPage = document.getElementById("proteusBiodynePage");
+      if (proteusPage) proteusPage.hidden = true;
+      renderProteusDesignerPage();
+    }
+  }
 
   dom.storeFoodTab?.classList.toggle("is-active", showingFood);
   dom.storePharmacyTab?.classList.toggle("is-active", showingPharmacy);
@@ -556,7 +744,7 @@ function renderStoreOverlay() {
   // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
-  if (runtime.storeOverlayOpen && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+  if (runtime.storeOverlayOpen && !showingHome && !showingBank && !showingLocker && !showingDesigner && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
     dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
     window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
       detail: { category: runtime.storeTab }
@@ -573,16 +761,22 @@ function renderStoreOverlay() {
   }
 
   if (dom.foodShop) {
-    dom.foodShop.hidden = !runtime.storeOverlayOpen || !showingFood;
+    dom.foodShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingFood;
   }
   if (dom.pharmacyShop) {
-    dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || !showingPharmacy;
+    dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingPharmacy;
   }
-  dom.fishShop.hidden = !runtime.storeOverlayOpen || !showingFish;
-  dom.decorShop.hidden = !runtime.storeOverlayOpen || !showingDecor;
+  dom.fishShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingFish;
+  dom.decorShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingDecor;
   if (dom.equipmentShop) {
-    dom.equipmentShop.hidden = !runtime.storeOverlayOpen || !showingEquipment;
+    dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingEquipment;
   }
+  const showingProteus = dom.storeOverlay.classList.contains("proteus-biodyne-open");
+  const fallbackStandardWebPage = showingProteus ? "proteus" : showingHome ? "home" : showingBank ? "bank" : "store";
+  const activeStandardWebPage = showingLocker ? "locker" : fallbackStandardWebPage;
+  const activeWebPage = showingDesigner ? "designer" : activeStandardWebPage;
+  window.syncWebPageTabs?.(activeWebPage);
+  if (!runtime.storeOverlayOpen) window.resetOptionalWebPageTabs?.();
   syncWallpaperEngineStoreScrollControls();
 }
 
@@ -1238,6 +1432,7 @@ function renderFoodShop() {
   const catalog = getFoodCatalog().filter((food) => shouldShowFoodInStore(food));
   const cardsMarkup = catalog.map((food) => {
     const count = Math.max(0, Number(state.foodInventory?.[food.id]) || 0);
+    const purchaseCost = getFoodPurchaseCost(food.id);
     return `
       <article class="shop-card" ${renderStoreFacetAttributes("food", food)}>
         ${renderFoodAndMedImage("food", food.id, food.name)}
@@ -1249,8 +1444,8 @@ function renderFoodShop() {
           <div class="fish-meta">${count} ${food.id === "halloweenCandy" ? "candies" : "pellets"} owned</div>
         </div>
         <div class="shop-meta">
-          <span class="price-tag">${food.cost} ${pluralize("coin", food.cost)}</span>
-          <button class="buy-button" data-buy-food="${food.id}">
+          <span class="price-tag">${purchaseCost === 0 ? "Free" : `${purchaseCost} ${pluralize("coin", purchaseCost)}`}</span>
+          <button class="buy-button" data-buy-food="${food.id}" data-list-price="${food.cost}">
             ${food.id === "halloweenCandy" ? "Buy Pile" : "Buy Bottle"} (+${food.bottlePellets})
           </button>
         </div>

@@ -6,7 +6,8 @@
       "cost": 2,
       "width": 298,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A simple cluster of flowing seaweed that adds movement and a little extra life to the tank. Looks right at home tucked between rocks, caves, or other decorations."
     },
     {
       "file": "mushroomcoral_seaweed.png",
@@ -17,7 +18,8 @@
       "categories": [
         "coral"
       ],
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A low, rounded coral with soft curves and plenty of texture. An easy way to add a natural reef look without taking over the tank."
     },
     {
       "file": "Brain_Coral.png",
@@ -28,7 +30,8 @@
       "categories": [
         "coral"
       ],
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A dense coral covered in winding, maze-like ridges. Compact, colorful, and just strange enough to earn its name."
     },
     {
       "file": "Coral_1.png",
@@ -36,8 +39,11 @@
       "cost": 10,
       "width": 280,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A branching coral formation that adds height, color, and a little reef complexity to the tank."
     },
     {
       "file": "Coral_2.png",
@@ -45,8 +51,11 @@
       "cost": 10,
       "width": 240,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A lively cluster of branching coral that helps fill open spaces with natural reef texture."
     },
     {
       "file": "Coral_3.png",
@@ -54,8 +63,11 @@
       "cost": 10,
       "width": 280,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A decorative branching coral with plenty of little arms reaching into the water around it."
     },
     {
       "file": "Coral_4.png",
@@ -63,8 +75,11 @@
       "cost": 10,
       "width": 260,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A colorful coral formation that brings a bit of reef structure and vertical interest to the aquarium."
     },
     {
       "file": "Coral_5.png",
@@ -72,8 +87,11 @@
       "cost": 10,
       "width": 280,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A branching coral cluster made for building out colorful reef scenes without overwhelming the tank."
     },
     {
       "file": "Coral_6.png",
@@ -81,8 +99,11 @@
       "cost": 10,
       "width": 280,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A compact branching coral that adds texture and depth wherever the tank is looking a little too empty."
     },
     {
       "file": "Coral_7.png",
@@ -90,8 +111,11 @@
       "cost": 10,
       "width": 280,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A decorative coral with branching growth that gives the tank a busier, more established reef look."
     },
     {
       "file": "Coral_8.png",
@@ -99,8 +123,11 @@
       "cost": 10,
       "width": 280,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A branching coral formation that works nicely tucked between rocks, caves, and other reef decorations."
     },
     {
       "file": "Coral_9.png",
@@ -108,8 +135,11 @@
       "cost": 10,
       "width": 280,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A colorful piece of branching coral that adds a little height and life to the aquarium floor."
     },
     {
       "file": "Coral_10.png",
@@ -117,8 +147,11 @@
       "cost": 10,
       "width": 280,
       "defaultScale": 1,
-      "categories": ["coral"],
-      "theme": "Regular"
+      "categories": [
+        "coral"
+      ],
+      "theme": "Regular",
+      "description": "A natural-looking coral cluster with branching growth, perfect for rounding out a larger reef display."
     },
     {
       "file": "Cave_Coral_Shelf_1.png",
@@ -126,8 +159,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A rocky coral shelf with a sheltered space underneath. Part reef decoration, part cozy hiding place."
     },
     {
       "file": "Cave_Coral_Shelf_2.png",
@@ -135,8 +172,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A layered coral shelf that creates a shaded little retreat beneath the reef."
     },
     {
       "file": "Cave_Coral_Shelf_3.png",
@@ -144,8 +185,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A sturdy coral-covered shelf with enough room underneath for curious fish to disappear for a while."
     },
     {
       "file": "Cave_Coral_Shelf_4.png",
@@ -153,8 +198,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A reef shelf with a natural hollow beneath it, adding both height and a tucked-away hiding spot."
     },
     {
       "file": "Cave_Coral_Shelf_5.png",
@@ -162,8 +211,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A rugged coral shelf that gives the tank a bit of reef structure and a quiet space underneath."
     },
     {
       "file": "Cave_Coral_Shelf_6.png",
@@ -171,8 +224,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor."
     },
     {
       "file": "Cave_Coral_Shelf_7.png",
@@ -180,8 +237,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A broad reef shelf with a built-in hiding place beneath it. Basically beachfront property for fish."
     },
     {
       "file": "Cave_Coral_Shelf_9.png",
@@ -189,8 +250,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A rocky coral overhang that adds depth to the reef and a shady little spot underneath."
     },
     {
       "file": "Cave_Coral_Shelf_10.png",
@@ -198,8 +263,12 @@
       "cost": 16,
       "width": 520,
       "defaultScale": 1,
-      "categories": ["coral", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "coral",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A substantial coral shelf with a protected hollow below, giving the tank a more layered reef landscape."
     },
     {
       "file": "Sea_Anemone_2.png",
@@ -207,8 +276,11 @@
       "cost": 8,
       "width": 320,
       "defaultScale": 1,
-      "categories": ["plants"],
-      "theme": "Regular"
+      "categories": [
+        "plants"
+      ],
+      "theme": "Regular",
+      "description": "A soft mass of waving tentacles that brings constant gentle movement to the aquarium. Clownfish may approve."
     },
     {
       "file": "Sea_Anemone_5.png",
@@ -216,8 +288,11 @@
       "cost": 8,
       "width": 320,
       "defaultScale": 1,
-      "categories": ["plants"],
-      "theme": "Regular"
+      "categories": [
+        "plants"
+      ],
+      "theme": "Regular",
+      "description": "A colorful sea anemone with flowing tentacles that sway with the water and make the tank feel a little more alive."
     },
     {
       "file": "Cave_Sea_Anemone_1.png",
@@ -225,8 +300,12 @@
       "cost": 14,
       "width": 420,
       "defaultScale": 1,
-      "categories": ["plants", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "plants",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly."
     },
     {
       "file": "Cave_Sea_Anemone_3.png",
@@ -234,8 +313,12 @@
       "cost": 14,
       "width": 420,
       "defaultScale": 1,
-      "categories": ["plants", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "plants",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly."
     },
     {
       "file": "Cave_Sea_Anemone_4.png",
@@ -243,8 +326,12 @@
       "cost": 14,
       "width": 420,
       "defaultScale": 1,
-      "categories": ["plants", "caves"],
-      "theme": "Regular"
+      "categories": [
+        "plants",
+        "caves"
+      ],
+      "theme": "Regular",
+      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly."
     },
     {
       "file": "dirt.png",
@@ -252,8 +339,11 @@
       "cost": 3,
       "width": 480,
       "defaultScale": 1,
-      "categories": ["ornaments"],
-      "theme": "Regular"
+      "categories": [
+        "ornaments"
+      ],
+      "theme": "Regular",
+      "description": "A small mound of loose earth for giving the aquarium floor a more uneven, natural look. Sometimes dirt really is the decoration."
     },
     {
       "file": "floatingseaweed_1.png",
@@ -261,7 +351,8 @@
       "cost": 4,
       "width": 220,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "Loose seaweed that drifts above the aquarium floor instead of staying politely planted where it belongs."
     },
     {
       "file": "seaweed_1.png",
@@ -269,7 +360,8 @@
       "cost": 4,
       "width": 280,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A simple patch of flowing seaweed that adds height, movement, and a little extra greenery to the tank."
     },
     {
       "file": "anubia-rock_seaweed.png",
@@ -277,7 +369,8 @@
       "cost": 4,
       "width": 495,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A hardy Anubias growing directly from a rock. Conveniently combines plant and stone into one tidy little decoration."
     },
     {
       "file": "moss-bridge.png",
@@ -285,7 +378,8 @@
       "cost": 10,
       "width": 698,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A small bridge softened by a layer of moss. Equal parts peaceful garden feature and tiny fish infrastructure."
     },
     {
       "file": "driftwood-root.png",
@@ -293,7 +387,8 @@
       "cost": 10,
       "width": 660,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A gnarled mass of weathered roots that adds natural shape and texture to the aquarium floor."
     },
     {
       "file": "slate-cave.png",
@@ -361,7 +456,8 @@
           }
         ]
       },
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A sturdy little shelter built from stacked slate. Simple, rocky, and perfect for fish that appreciate some privacy."
     },
     {
       "file": "Shipwreck.png",
@@ -372,7 +468,8 @@
       "fishBehavior": {
         "hangout": "hide"
       },
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A sunken ship left to slowly become part of the aquarium. Dramatic enough to tell a story without taking the whole tank hostage."
     },
     {
       "file": "Castle-Cave.png",
@@ -478,7 +575,8 @@
           }
         ]
       },
-      "theme": "Fantasy"
+      "theme": "Fantasy",
+      "description": "A miniature castle with enough openings and shelter to double as a proper fish hideout. Royal residency not guaranteed."
     },
     {
       "file": "Plane-wreck.png",
@@ -489,7 +587,8 @@
       "fishBehavior": {
         "hangout": "hide"
       },
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A miniature aircraft wreck resting on the aquarium floor. The investigation remains ongoing."
     },
     {
       "file": "blue_castle_cave.png",
@@ -538,7 +637,8 @@
           }
         ]
       },
-      "theme": "Fantasy"
+      "theme": "Fantasy",
+      "description": "A tiny underwater castle that gives the tank a touch of fantasy and its residents somewhere suitably dramatic to hide."
     },
     {
       "file": "meteor_cave.png",
@@ -572,7 +672,8 @@
           }
         ]
       },
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A strange rocky formation that looks suspiciously like it fell from somewhere much farther away. Conveniently, it also has a cave."
     },
     {
       "file": "driftwood.png",
@@ -580,7 +681,8 @@
       "cost": 10,
       "width": 675,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A weathered piece of driftwood with plenty of natural bends and texture. Simple, classic, and nearly impossible to make look out of place."
     },
     {
       "file": "fishing_lure.png",
@@ -593,11 +695,12 @@
         "occupancyLimit": 1
       },
       "theme": "Regular",
-      "variantGroup": "fishing_lure"
+      "variantGroup": "fishing_lure",
+      "description": "A bright fishing lure placed inside an aquarium for reasons nobody has fully explained. Fortunately, the fish seem more curious than concerned."
     },
     {
       "file": "gorebag_lure.png",
-      "name": "Gorbag",
+      "name": "Gorebag",
       "cost": 10,
       "width": 200,
       "defaultScale": 1,
@@ -605,7 +708,8 @@
         "hangout": "lure",
         "occupancyLimit": 1
       },
-      "theme": "Spooky"
+      "theme": "Spooky",
+      "description": "A peculiar decoration known only as Gorebag. Nobody remembers where it came from, and asking questions has not helped."
     },
     {
       "file": "fishheadeffigy_1.png",
@@ -617,7 +721,8 @@
         "hangout": "spooky",
         "occupancyLimit": 1
       },
-      "theme": "Spooky"
+      "theme": "Spooky",
+      "description": "A bloody fish-head effigy. Tasteful is probably not the word, but memorable definitely is."
     },
     {
       "file": "fishheadeffigy_2.png",
@@ -629,7 +734,8 @@
         "hangout": "spooky",
         "occupancyLimit": 1
       },
-      "theme": "Spooky"
+      "theme": "Spooky",
+      "description": "A guppy head mounted on a stake."
     },
     {
       "file": "fishheadeffigy_3.png",
@@ -641,7 +747,8 @@
         "hangout": "spooky",
         "occupancyLimit": 1
       },
-      "theme": "Spooky"
+      "theme": "Spooky",
+      "description": "A Danio fish-head effigy. Pretty ominous and completely unnecessary."
     },
     {
       "file": "rock_1_bricks.png",
@@ -649,7 +756,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A rock. A perfectly respectable rock, in fact. Useful for filling gaps, building little landscapes, or simply adding more rock."
     },
     {
       "file": "rock_2_bricks.png",
@@ -657,7 +765,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A simple aquarium rock for adding natural texture wherever the tank needs a little more structure."
     },
     {
       "file": "rock_3_bricks.png",
@@ -665,7 +774,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A sturdy decorative rock that fits comfortably into just about any aquarium layout."
     },
     {
       "file": "rock_4_bricks.png",
@@ -673,7 +783,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A natural-looking stone for breaking up open spaces and giving the aquarium floor a little more shape."
     },
     {
       "file": "rock_5_bricks.png",
@@ -681,7 +792,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A straightforward piece of rock decor. No gimmicks, no bubbles, just dependable geology."
     },
     {
       "file": "volcanic_rock_1_bricks.png",
@@ -689,7 +801,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A dark, rugged piece of volcanic rock with plenty of rough texture and character."
     },
     {
       "file": "volcanic_rock_2_bricks.png",
@@ -697,7 +810,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A porous-looking volcanic stone that adds a harsher, more dramatic edge to the aquarium floor."
     },
     {
       "file": "volcanic_rock_3_bricks.png",
@@ -705,7 +819,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A chunk of dark volcanic rock for building rocky formations, caves, or anything that needs a little ancient lava energy."
     },
     {
       "file": "volcanic_rock_4_bricks.png",
@@ -713,7 +828,8 @@
       "cost": 1,
       "width": 100,
       "defaultScale": 1,
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A rough volcanic stone with a naturally dramatic look. Thankfully, the volcano part is no longer active."
     },
     {
       "file": "volcano-1_bubbler.png",
@@ -739,7 +855,8 @@
           }
         ]
       },
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A miniature volcano that continuously sends bubbles toward the surface. Considerably safer than the full-sized version. Also: Completely Adjustable and Customizable!"
     },
     {
       "file": "volcano-2_bubbler.png",
@@ -778,7 +895,8 @@
           }
         ]
       },
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A bubbling volcanic decoration that adds constant movement to the tank without requiring an evacuation plan. Also: Completely Adjustable and Customizable!"
     },
     {
       "file": "treasure-chest_bubbler.png",
@@ -809,7 +927,8 @@
           }
         ]
       },
-      "theme": "Regular"
+      "theme": "Regular",
+      "description": "A little sunken treasure chest that releases a steady stream of bubbles. The treasure itself appears to be mostly air. Also: Completely Adjustable and Customizable!"
     },
     {
       "file": "floating_swampmoss_1.png",
@@ -817,7 +936,8 @@
       "theme": "Spooky",
       "cost": 5,
       "width": 510,
-      "defaultScale": 1
+      "defaultScale": 1,
+      "description": "A loose patch of eerie swamp moss suspended in the water. Damp, gloomy, and somehow thriving."
     },
     {
       "file": "transit-tube.png",
@@ -836,7 +956,8 @@
         "occupancyLimit": 1,
         "note": "Name and link two tubes to give fish a fast route between neighborhoods. It only bubbles while in use."
       },
-      "theme": "Borough"
+      "theme": "Borough",
+      "description": "Link two named tubes to create a fast route between neighborhoods. The tube stays quiet until a fish enters, then bubbles to life as it carries the fish across the Borough like an italian plumber."
     },
     {
       "file": "Floating_Halloween_Ghost.png",
@@ -853,7 +974,8 @@
         ],
         "occupancyLimit": 1
       },
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A little ghost that quietly floats in the aquarium."
     },
     {
       "file": "Halloween_Cauldron_Bubbler.png",
@@ -890,7 +1012,8 @@
           }
         ]
       },
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A cauldron that churns away on the aquarium floor, releasing a steady stream of bubbles. Whatever is brewing inside probably should not be tasted. Also: Completely Adjustable and Customizable!"
     },
     {
       "file": "Halloween_Crypt_Cave.png",
@@ -901,7 +1024,8 @@
         "caves",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A miniature stone crypt with enough room inside for fish that prefer their hiding places a little more gothic."
     },
     {
       "file": "Halloween_Floatingseaweed.png",
@@ -912,7 +1036,8 @@
         "plants",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "Eerie floating seaweed. It looks like it is rotting."
     },
     {
       "file": "Halloween_Ghost_Ship.png",
@@ -929,7 +1054,8 @@
           "spooky"
         ]
       },
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A spectral shipwreck that appears to have sailed directly into the aquarium. Its crew has yet to make themselves available for questions."
     },
     {
       "file": "Halloween_Gravestone_1.png",
@@ -940,7 +1066,8 @@
         "ornaments",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A tiny weathered gravestone for giving the aquarium floor a proper little graveyard atmosphere."
     },
     {
       "file": "Halloween_Gravestone_2.png",
@@ -951,7 +1078,8 @@
         "ornaments",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A miniature gravestone that adds just the right amount of unnecessary morbidity to the tank."
     },
     {
       "file": "Halloween_Gravestone_3.png",
@@ -962,7 +1090,8 @@
         "ornaments",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A worn little grave marker that looks perfectly at home among caves, dead plants, and other questionable aquarium decisions."
     },
     {
       "file": "Halloween_Gravestone_4.png",
@@ -973,7 +1102,8 @@
         "ornaments",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A small gravestone for building an underwater cemetery. Nobody is quite sure who is buried there."
     },
     {
       "file": "Halloween_Gravestone_5.png",
@@ -984,7 +1114,8 @@
         "ornaments",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A lonely little grave marker with just enough weathering to suggest it has been underwater much longer than it should have been."
     },
     {
       "file": "Halloween_Haunted_House_Cave.png",
@@ -1048,7 +1179,8 @@
         "caves",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A miniature haunted house with enough room inside for brave fish, scared fish, or fish that simply want somewhere dark to sit."
     },
     {
       "file": "Halloween_Haunted_Tree.png",
@@ -1065,7 +1197,8 @@
           "hardscape"
         ]
       },
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A twisted old tree that looks thoroughly dead."
     },
     {
       "file": "Halloween_JackOLantern_bubbler.png",
@@ -1102,7 +1235,8 @@
           }
         ]
       },
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A grinning jack-o'-lantern that releases a steady stream of bubbles. The pumpkin remains suspiciously intact underwater. Also: Completely Adjustable and Customizable!"
     },
     {
       "file": "Halloween_Seaweed.png",
@@ -1113,7 +1247,8 @@
         "plants",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "Dark, eerie seaweed that sways in the tank with considerably more menace than ordinary seaweed should possess."
     },
     {
       "file": "Halloween_Spider.png",
@@ -1130,7 +1265,8 @@
         ],
         "occupancyLimit": 1
       },
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A spider. In the aquarium. We agree that this raises several questions, but none of them have improved the situation."
     },
     {
       "file": "Halloween_Floating_skeleton.png",
@@ -1142,7 +1278,8 @@
         "halloween",
         "floating"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A fish skeleton that quietly floats in the aquarium. It probably fake, though. Right?"
     },
     {
       "file": "Halloween_webs.png",
@@ -1153,7 +1290,8 @@
         "ornaments",
         "halloween"
       ],
-      "theme": "Halloween"
+      "theme": "Halloween",
+      "description": "A little spider web to put wherever. How the web remains perfectly intact underwater is a problem for someone else to solve."
     },
     {
       "name": "Fishing Lure",
@@ -1166,7 +1304,8 @@
       },
       "theme": "Regular",
       "variantGroup": "fishing_lure",
-      "file": "fishing_lure_1.png"
+      "file": "fishing_lure_1.png",
+      "description": "A colorful fishing lure dangling where no fishing should be happening. The fish seem fascinated by it, which is probably exactly what the lure wants."
     },
     {
       "name": "Fishing Lure",
@@ -1179,7 +1318,8 @@
       },
       "theme": "Regular",
       "variantGroup": "fishing_lure",
-      "file": "fishing_lure_2.png"
+      "file": "fishing_lure_2.png",
+      "description": "A shiny little lure suspended in the aquarium. Completely harmless here, although the fish may have some understandable trust issues."
     },
     {
       "name": "Fishing Lure",
@@ -1192,7 +1332,8 @@
       },
       "theme": "Regular",
       "variantGroup": "fishing_lure",
-      "file": "fishing_lure_3.png"
+      "file": "fishing_lure_3.png",
+      "description": "A fishing lure repurposed as aquarium decor. It catches attention instead of fish now."
     },
     {
       "name": "Fishing Lure",
@@ -1205,7 +1346,8 @@
       },
       "theme": "Regular",
       "variantGroup": "fishing_lure",
-      "file": "fishing_lure_4.png"
+      "file": "fishing_lure_4.png",
+      "description": "A suspiciously enticing lure left hanging in the tank. No hook-related incidents have been reported."
     },
     {
       "name": "Fishing Lure",
@@ -1218,7 +1360,8 @@
       },
       "theme": "Regular",
       "variantGroup": "fishing_lure",
-      "file": "fishing_lure_5.png"
+      "file": "fishing_lure_5.png",
+      "description": "A bright piece of fishing tackle that gives curious fish something unusual to investigate. Thankfully, nobody is actually fishing."
     },
     {
       "name": "Fishing Lure",
@@ -1231,7 +1374,8 @@
       },
       "theme": "Regular",
       "variantGroup": "fishing_lure",
-      "file": "fishing_lure_6.png"
+      "file": "fishing_lure_6.png",
+      "description": "A decorative lure that sparkles just enough to get every nearby fish interested in absolutely nothing."
     }
   ]
 }

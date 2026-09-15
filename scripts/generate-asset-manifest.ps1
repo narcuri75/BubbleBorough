@@ -32,6 +32,9 @@ foreach ($property in @($manifest.PSObject.Properties)) {
 function Add-MissingImageAssets([string]$category, [string]$directory, [scriptblock]$include = $null) {
   $assetDirectory = Join-Path $root (Join-Path "assets" $directory)
   if (-not (Test-Path -LiteralPath $assetDirectory)) { return }
+  if (-not $manifest.PSObject.Properties[$category]) {
+    $manifest | Add-Member -NotePropertyName $category -NotePropertyValue @()
+  }
   $known = @($manifest.$category | ForEach-Object { $_.key })
   $additions = Get-ChildItem -LiteralPath $assetDirectory -File -Recurse |
     Where-Object { $_.Extension -match '^\.(png|jpe?g|webp)$' } |
@@ -42,7 +45,7 @@ function Add-MissingImageAssets([string]$category, [string]$directory, [scriptbl
     ForEach-Object {
       [pscustomobject]@{
         key = $_.Name
-        path = "assets/$directory/$($_.Name)"
+        path = "assets/$directory/$([IO.Path]::GetRelativePath($assetDirectory, $_.FullName).Replace('\\', '/'))"
       }
     }
   if ($additions.Count) {
@@ -52,6 +55,18 @@ function Add-MissingImageAssets([string]$category, [string]$directory, [scriptbl
 
 Add-MissingImageAssets "decor" "decor"
 Add-MissingImageAssets "fish" "fish" { param($name) $name -notmatch '_(zombie|skeleton)\.[^.]+$' }
+Add-MissingImageAssets "equipment" "equipment"
+
+# Remove stale entries written before nested equipment folders were supported.
+if ($manifest.PSObject.Properties["equipment"]) {
+  $manifest.equipment = @($manifest.equipment | Where-Object { $_.path -notmatch '^assets/equipment/(?:Boat|Submarine|Food_Dispenser)' })
+}
+
+# Boat and submarine frames now live under equipment/machinery rather than the
+# historical fish catalog directory.
+if ($manifest.PSObject.Properties["fish"]) {
+  $manifest.fish = @($manifest.fish | Where-Object { $_.path -notmatch '^assets/fish/(boat|submarine)(?:_[0-9]+)?\.png$' })
+}
 
 $manifestJson = $manifest | ConvertTo-Json -Depth 8
 [System.IO.File]::WriteAllText($manifestPath, $manifestJson, [System.Text.UTF8Encoding]::new($false))

@@ -565,7 +565,7 @@ function applyFoodBuff(foodKey, now = Date.now(), tank = getCurrentTank()) {
     };
   }
 
-  if (isNormalMealFood(foodKey)) {
+  if (foodKey === "frisky") {
     tank.foodBuffs.friskyUntil = Math.max(Number(tank.foodBuffs?.friskyUntil) || 0, now + BREEDING_FOOD_BOOST_MS);
   }
 }
@@ -717,62 +717,94 @@ function consumeOffscreenFishFoodPellet(fish, pelletId, targetTank, now = Date.n
   return true;
 }
 
+function getConnectedFoodTanks(startTank) {
+  if (!startTank) return [];
+  return getAllTanks().filter((tank) => (
+    tank.id === startTank.id
+    || findAquariumSectionRoute(tank, startTank)
+    || findAquariumSectionRoute(startTank, tank)
+    || getTransitTubeJourney(tank, startTank)
+    || getTransitTubeJourney(startTank, tank)
+  ));
+}
+
+function allocateAutoDispenserPellets(total, dispensers) {
+  const allocations = dispensers.map(() => 0);
+  let remaining = Math.max(0, Math.floor(total));
+  while (remaining > 0) {
+    const available = dispensers
+      .map((dispenser, index) => ({ dispenser, index, room: Math.max(0, getAutoDispenserLoadedCount(dispenser) - allocations[index]) }))
+      .filter((entry) => entry.room > 0);
+    if (!available.length) break;
+    const base = Math.floor(remaining / available.length);
+    const remainder = remaining % available.length;
+    let assigned = 0;
+    available.forEach((entry, order) => {
+      const amount = Math.min(entry.room, Math.max(1, base) + (order >= available.length - remainder ? 1 : 0));
+      allocations[entry.index] += amount;
+      assigned += amount;
+    });
+    if (!assigned) break;
+    remaining -= assigned;
+  }
+  return allocations;
+}
+
 function processSmartAutoFeeder(now = Date.now(), options = {}) {
-  return false;
-  /* Legacy dispenser behavior retained below only for save compatibility.
   const targetTank = options.tank || getCurrentTank();
-  const dispenser = targetTank?.autoDispenser;
-  if (!dispenser?.installed) {
+  const slot = getTodaysMealSlots(now).find((entry) => now >= entry.start) || null;
+  if (!targetTank || !slot) return false;
+  const connectedTanks = getConnectedFoodTanks(targetTank);
+  const feederEntries = connectedTanks
+    .filter((tank) => tank.autoDispenser?.installed)
+    .map((tank) => ({ tank, dispenser: tank.autoDispenser }));
+  if (!feederEntries.length) return false;
+
+  // syncCurrentTankState visits every tank. Only the first feeder in a
+  // connected component performs the network-wide meal, preventing duplicate
+  // dispensing when several tanks share the same water or tube route.
+  const owner = feederEntries.slice().sort((a, b) => String(a.tank.id).localeCompare(String(b.tank.id)))[0];
+  if (owner.tank.id !== targetTank.id || feederEntries.every(({ dispenser }) => dispenser.lastDispensedSlotKey === slot.key)) {
     return false;
-  }
-  dispenser.smartDispensedAtByFishId = sanitizeFishNeedEventMap(dispenser.smartDispensedAtByFishId);
-  if (now - (Number(dispenser.lastSmartDispensedAt) || 0) < FISH_AUTO_FEEDER_TANK_COOLDOWN_MS) {
-    return false;
-  }
-  const hungryFish = getHungryFishByNeeds(targetTank, now, FISH_HUNGER_LOW_THRESHOLD)
-    .filter((fish) => (
-      fish
-      && !fish.feedingPelletId
-      && now - (Number(dispenser.smartDispensedAtByFishId[fish.id]) || 0) >= FISH_AUTO_FEEDER_COOLDOWN_MS
-    ))
-    .sort((left, right) => getFishNeedValue(left, "hunger", now) - getFishNeedValue(right, "hunger", now));
-  if (!hungryFish.length) {
-    return false;
-  }
-  const storedPellets = Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : [];
-  if (!storedPellets.length) {
-    dispenser.refillAlert = true;
-    const fish = hungryFish[0];
-    setFishBehaviorIntent(fish, "wait for food", "auto feeder empty", now, { durationMs: 12 * 1000 });
-    maybeRecordFishNeedEvent(fish, "feeder-empty", "The auto feeder is empty.", now, 30 * MINUTE_MS);
-    return true;
   }
 
-  for (const fish of hungryFish) {
-    const pelletIndex = storedPellets.findIndex((storedPellet) => canFishEatFoodPellet(fish, storedPellet.foodKey, now));
-    if (pelletIndex < 0) {
-      setFishBehaviorIntent(fish, "wait for food", "wrong feeder food", now, { durationMs: 10 * 1000 });
-      maybeRecordFishNeedEvent(fish, "feeder-wrong-food", "Food in the auto feeder does not suit a hungry fish.", now, 30 * MINUTE_MS);
-      continue;
+  const fishEntries = connectedTanks.flatMap((tank) => getMealEligibleFishForSlot(slot, tank).map((fish) => ({ fish, tank })));
+  if (!fishEntries.length) return false;
+  const allocations = allocateAutoDispenserPellets(fishEntries.length, feederEntries.map(({ dispenser }) => dispenser));
+  let released = 0;
+  feederEntries.forEach(({ tank, dispenser }, feederIndex) => {
+    const count = allocations[feederIndex];
+    for (let index = 0; index < count; index += 1) {
+      const storedPellets = Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : [];
+      if (!storedPellets.length) break;
+      const [storedPellet] = storedPellets.splice(0, 1);
+      const floatingPellet = withActiveTank(tank.id, () => createAutoDispenserDroppedPellet(storedPellet, now));
+      if (floatingPellet) {
+        tank.floatingPellets.push(floatingPellet);
+        released += 1;
+      }
     }
-    const [storedPellet] = dispenser.storedPellets.splice(pelletIndex, 1);
-    const floatingPellet = createAutoDispenserDroppedPellet(storedPellet, now);
-    if (!floatingPellet) {
-      return false;
-    }
-    floatingPellet.targetFishId = fish.id;
-    state.floatingPellets.push(floatingPellet);
-    assignPelletToFish(fish, floatingPellet, now);
+    dispenser.lastDispensedSlotKey = slot.key;
     dispenser.lastSmartDispensedAt = now;
-    dispenser.smartDispensedAtByFishId[fish.id] = now;
     dispenser.refillAlert = getAutoDispenserLoadedCount(dispenser) <= 0;
-    setFishBehaviorIntent(fish, "wait for food", "auto feeder", now, { durationMs: 10 * 1000 });
-    pushEvent(`The auto feeder dropped food for ${fish.name}.`, now, targetTank, { type: "food", fishId: fish.id });
-    playDispenserSoundEffect();
-    return true;
-  }
+  });
 
-  return false; */
+  // Give every fish a concrete feeder destination. Fish in another tank will
+  // use the normal section route or tube journey to reach that destination.
+  const activeDestinations = feederEntries
+    .filter((_, index) => allocations[index] > 0)
+    .map(({ tank }) => tank);
+  fishEntries.forEach(({ fish, tank }, index) => {
+    const destination = activeDestinations[index % Math.max(1, activeDestinations.length)];
+    if (!destination || tank.id === destination.id) return;
+    runtime.foodTravelDestinations.set(fish.id, destination.id);
+    fish.lastNeighborhoodMoveAt = Math.min(Number(fish.lastNeighborhoodMoveAt) || 0, now - 25 * 1000);
+  });
+
+  connectedTanks.forEach((tank) => withActiveTank(tank.id, () => assignFloatingPelletsToHungryFish(now)));
+  playDispenserSoundEffect();
+  pushEvent(`The auto feeder dispensed ${released} pellet${released === 1 ? "" : "s"} for ${fishEntries.length} connected fish.`, now, targetTank, { type: "food" });
+  return true;
 }
 
 function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {

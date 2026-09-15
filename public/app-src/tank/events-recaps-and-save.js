@@ -592,11 +592,43 @@ function hasCommunityMilestoneTank(recentAverageComfort = 0) {
   });
 }
 
-function getHealthyTankCount() {
-  return getAllTanks(state).filter((tank) => (
-    Array.isArray(tank?.fish)
-    && tank.fish.some((fish) => fish && !isFishDead(fish) && getFishHealthRatio(fish) >= 1)
-  )).length;
+function getConnectedTubeTankCount() {
+  const tanks = getAllTanks(state);
+  if (tanks.length < 3 || typeof getAllTransitTubes !== "function") {
+    return 0;
+  }
+  const tankIds = new Set(tanks.map((tank) => String(tank?.id || "")).filter(Boolean));
+  const adjacency = new Map([...tankIds].map((id) => [id, new Set()]));
+  for (const entry of getAllTransitTubes()) {
+    const sourceTankId = String(entry?.tank?.id || "");
+    const target = getAllTransitTubes().find((candidate) => candidate?.item?.id === entry?.item?.transitTubeLinkedId);
+    const targetTankId = String(target?.tank?.id || "");
+    if (!sourceTankId || !targetTankId || sourceTankId === targetTankId || target?.item?.transitTubeLinkedId !== entry?.item?.id) {
+      continue;
+    }
+    adjacency.get(sourceTankId)?.add(targetTankId);
+    adjacency.get(targetTankId)?.add(sourceTankId);
+  }
+  let largestComponent = 0;
+  const visited = new Set();
+  for (const startId of tankIds) {
+    if (visited.has(startId)) continue;
+    const queue = [startId];
+    visited.add(startId);
+    let size = 0;
+    while (queue.length) {
+      const currentId = queue.shift();
+      size += 1;
+      for (const neighborId of adjacency.get(currentId) || []) {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          queue.push(neighborId);
+        }
+      }
+    }
+    largestComponent = Math.max(largestComponent, size);
+  }
+  return largestComponent;
 }
 
 function getMilestoneStats(latestSummary = null, now = Date.now()) {
@@ -624,7 +656,7 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     ? Math.floor((now - latestDeath) / DAY_MS)
     : Math.floor((now - stewardshipStart) / DAY_MS);
   const cleanRecapStreak90 = countRecentRecapStreak(history, (summary) => getRecapCleanPercent(summary, now) >= 90);
-  const cleanRecapCount95 = history.filter((summary) => getRecapCleanPercent(summary, now) >= 95).length;
+  const cleanRecapStreak95 = countRecentRecapStreak(history, (summary) => getRecapCleanPercent(summary, now) >= 95);
   const allMealsSatisfiedStreak = countRecentRecapStreak(history, (summary) => summary?.allMealsSatisfied === true);
   const comfort80Streak = countRecentRecapStreak(history, (summary) => Number(summary?.averageComfort) >= 80);
   const comfort90Streak = countRecentRecapStreak(history, (summary) => Number(summary?.averageComfort) >= 90);
@@ -660,11 +692,8 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     daysSinceLastDeath,
     hasSparklingFish: livingFish.some((fish) => getFishComfort(fish, now).value >= 0.95),
     hasSaltwaterFish: livingFish.some((fish) => getSpeciesWaterType(fish) === "saltwater"),
-    hasSpookyKeeperPath: Number(state?.lifetimeDeaths) > 0
-      || allEvents.some((event) => /zombie|skeleton|corpse|dead fish/i.test(event?.text || ""))
-      || (state?.unlockedFishSpecies || []).some((speciesId) => speciesId === "zombie-fish" || speciesId === "skeleton-fish"),
     cleanRecapStreak90,
-    cleanRecapCount95,
+    cleanRecapStreak95,
     allMealsSatisfiedStreak,
     comfort80Streak,
     comfort90Streak,
@@ -684,7 +713,7 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     gravelCoinFinds,
     healingEvents,
     hasRescueKeeper: lastHealingAt > 0 && now - lastHealingAt >= 3 * DAY_MS && !deathAfterLastHealing,
-    healthyTankCount: getHealthyTankCount()
+    connectedTubeTankCount: getConnectedTubeTankCount()
   };
 }
 
@@ -832,6 +861,7 @@ function saveState() {
   }
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
 
+  ensureBubbleBodegaRescueOffer(Date.now());
   applyProgressMilestones(null, Date.now());
 
   const customDecorPruned = pruneCustomDecorAssets(state);

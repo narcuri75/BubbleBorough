@@ -163,6 +163,21 @@ function getCustomGravelPebbleSpriteByPath(path, color, options = {}) {
   );
 }
 
+function invalidateCustomGravelVisualCaches() {
+  runtime.customGravelTopLayerCanvas = null;
+  runtime.customGravelTopLayerCacheKey = "";
+  runtime.customGravelTopLayerDepthCanvas = null;
+  runtime.customGravelTopLayerDepthCacheKey = "";
+
+  // Borough/overview thumbnails can otherwise briefly retain the previous
+  // gravel treatment after a live color edit.
+  if (runtime.boroughOverviewSnapshotCache instanceof Map) {
+    runtime.boroughOverviewSnapshotCache.clear();
+  }
+  runtime.boroughOverviewSnapshotRenderedAt = 0;
+  runtime.boroughOverviewFishRenderedAt = 0;
+}
+
 function getCustomGravelTopLayerCacheKey(bounds, now = Date.now()) {
   const colors = getCustomGravelTopPebbleColors(now).join("|");
   const colorize = getCustomGravelTopPebbleColorizeSettings().map((enabled) => (enabled ? "1" : "0")).join("|");
@@ -312,8 +327,64 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
   return canvas;
 }
 
+function getDepthTreatedCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
+  const sourceCanvas = getCustomGravelTopLayerCanvas(bounds, now);
+  if (!sourceCanvas || !areTankDepthEffectsEnabled()) {
+    return sourceCanvas;
+  }
+
+  const tuning = getActiveTankDepthTuning();
+  const referenceKey = getTankDepthReferencePoints()
+    .map((point) => `${point.layer}:${Number(point.y).toFixed(2)}`)
+    .join(",");
+  const cacheKey = [
+    runtime.customGravelTopLayerCacheKey,
+    getTankDepthEffectLevel(),
+    Number(tuning.substrate).toFixed(3),
+    Number(tuning.haze).toFixed(3),
+    Number(tuning.saturation).toFixed(3),
+    Number(tuning.contrast).toFixed(3),
+    Number(tuning.coolTint).toFixed(3),
+    Number(getTankDepthWaterlineY()).toFixed(2),
+    referenceKey
+  ].join("|");
+
+  if (runtime.customGravelTopLayerDepthCanvas && runtime.customGravelTopLayerDepthCacheKey === cacheKey) {
+    return runtime.customGravelTopLayerDepthCanvas;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = sourceCanvas.width;
+  canvas.height = sourceCanvas.height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return sourceCanvas;
+  }
+
+  context.drawImage(sourceCanvas, 0, 0);
+  context.save();
+  context.globalCompositeOperation = "source-atop";
+  const effectBounds = {
+    ...bounds,
+    drawTop: Math.max(0, getTankDepthWaterlineY()),
+    bottom: bounds.bottom
+  };
+  context.fillStyle = createTankDepthSubstrateOverlayGradient(context, effectBounds);
+  context.fillRect(
+    bounds.left,
+    effectBounds.drawTop,
+    bounds.drawWidth,
+    Math.max(1, effectBounds.bottom - effectBounds.drawTop + 2)
+  );
+  context.restore();
+
+  runtime.customGravelTopLayerDepthCanvas = canvas;
+  runtime.customGravelTopLayerDepthCacheKey = cacheKey;
+  return canvas;
+}
+
 function drawCustomGravelLoosePebbles(bounds, now = Date.now()) {
-  const canvas = getCustomGravelTopLayerCanvas(bounds, now);
+  const canvas = getDepthTreatedCustomGravelTopLayerCanvas(bounds, now);
   if (!canvas) {
     return false;
   }
@@ -491,10 +562,12 @@ function drawTankFloor(now = Date.now()) {
 
   tankContext.restore();
 
-  // Loose pebbles are part of the continuous substrate surface, so draw them
-  // before the shared depth pass instead of leaving them visually detached.
-  drawCustomGravelLoosePebbles(bounds, now);
+  // Treat the continuous gravel bed first, then draw the separately cached loose
+  // pebble/contour layer with its own matching depth treatment. This prevents the
+  // protruding pebbles above the gravel contour from escaping the depth haze while
+  // also avoiding a double tint where they overlap the main bed.
   drawGravelDepthTreatment(bounds);
+  drawCustomGravelLoosePebbles(bounds, now);
   drawSubstrateGroundShadow(bounds);
 }
 

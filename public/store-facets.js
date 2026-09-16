@@ -12,6 +12,13 @@
   overlay.querySelector(".store-panel-body").prepend(sidebar);
   const drawers = () => [...overlay.querySelectorAll(".store-drawer")];
   const category = drawer => drawer.dataset.tankazonCategory || drawer.id.replace(/Shop$/, "");
+  const normalizeFacetValue = (group, value) => {
+    const raw = String(value || "").trim();
+    if (String(group || "").trim().toLowerCase() === "type" && /^caves?$/i.test(raw)) {
+      return "Cave";
+    }
+    return raw;
+  };
   const values = card => {
     const raw = card.dataset.storeFacets || "";
     const cached = facetCache.get(card);
@@ -21,7 +28,10 @@
         const facets = JSON.parse(raw);
         for (const [group, list] of Object.entries(facets)) {
           if (!Array.isArray(list)) continue;
-          facets[group] = list.filter(value => !/^(?:undead|non[- ]?undead)$/i.test(String(value || "").trim()));
+          facets[group] = [...new Set(list
+            .filter(value => !/^(?:undead|non[- ]?undead)$/i.test(String(value || "").trim()))
+            .map(value => normalizeFacetValue(group, value))
+            .filter(Boolean))];
         }
         facetCache.set(card, { raw, facets });
         return facets;

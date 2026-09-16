@@ -408,20 +408,22 @@ function getSmoothedFishShadowPlaneY(fish, targetPlaneY, now = Date.now()) {
 }
 
 function pruneFishShadowPlaneCache() {
-  if (!runtime.fishShadowPlaneCache.size) {
-    return;
-  }
-
   const activeFishIds = new Set((state?.fish || []).map((fish) => fish?.id).filter(Boolean));
   for (const fishId of runtime.fishShadowPlaneCache.keys()) {
     if (!activeFishIds.has(fishId)) {
       runtime.fishShadowPlaneCache.delete(fishId);
     }
   }
+  for (const fishId of runtime.fishLayerTravelStepTransitions.keys()) {
+    if (!activeFishIds.has(fishId)) {
+      runtime.fishLayerTravelStepTransitions.delete(fishId);
+    }
+  }
 }
 
 function getDecorContactSpans(item, decor) {
-  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(decor.path) : null;
+  const contactPath = decor?.shadowFootprintPath || decor?.path;
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(contactPath) : null;
   if (!mask?.bounds || !mask.alpha) return null;
   if (!runtime.decorContactSpanCache) runtime.decorContactSpanCache = new WeakMap();
   let variants = runtime.decorContactSpanCache.get(mask);
@@ -476,7 +478,8 @@ function getDecorContactShadowMetrics(item) {
   }
 
   const spans = getDecorContactSpans(item, decor);
-  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(decor.path) : null;
+  const contactPath = decor.shadowFootprintPath || decor.path;
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(contactPath) : null;
   const footprint = mask?.bounds
     ? {
       left: mask.bounds.minX / mask.width,

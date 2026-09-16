@@ -1892,6 +1892,18 @@ const AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX = 18;
 const FISH_MOTION_SCALE = 1.62;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
+const FISH_LAYER_TRAVEL_STEP_INTERVAL_MS = 460;
+// Fish use their actual alpha silhouettes as a final collision check so they
+// cannot visually phase through one another. Broad bounds reject almost every
+// pair before the mask test, keeping this inexpensive during normal swimming.
+const FISH_BODY_COLLISION_SAMPLE_STEP_PX = 10;
+const FISH_BODY_COLLISION_SEGMENT_STEP_PX = 10;
+const FISH_BODY_COLLISION_AVOID_MS = 760;
+const FISH_LAYER_COLLISION_AVOID_MS = 900;
+const FISH_COLLISION_DETOUR_MIN_X_NORM = 0.075;
+const FISH_COLLISION_DETOUR_MAX_X_NORM = 0.15;
+const FISH_COLLISION_DETOUR_MIN_Y_NORM = 0.035;
+const FISH_COLLISION_DETOUR_MAX_Y_NORM = 0.095;
 const SUCKER_FISH_FACE_PIVOT_ENABLED = true;
 const SUCKER_FISH_FACE_PIVOT_X = 0.88;
 const SUCKER_FISH_FACE_PIVOT_Y = 0.5;
@@ -9118,6 +9130,10 @@ const runtime = {
   grimeBaseCacheKey: "",
   fishShadowPlaneCache: new Map(),
   fishLayerDepthScaleTransitions: new Map(),
+  fishLayerTravelStepTransitions: new Map(),
+  fishCollisionAvoidanceById: new Map(),
+  customGravelTopLayerDepthCacheKey: "",
+  customGravelTopLayerDepthCanvas: null,
   diseaseGreenBubblesByFishId: new Map(),
   debugBehaviorSteeringByFishId: new Map(),
   debugForcedOtocinclusStateByFishId: new Map(),

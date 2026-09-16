@@ -334,13 +334,32 @@ function getPlacedDecorGroundBounds(item) {
     return null;
   }
 
-  // Grounding is based on the visible pixels of the primary decor artwork, not
-  // the transparent PNG rectangle or optional companion/effect layers.
-  // This makes the visible bottom of the object the physical foot everywhere.
+  // The optional shadow-footprint helper is the authored physical contact line.
+  // Keep the visible primary artwork bounds for top/left/right placement, but use
+  // the helper's bottom edge as the true foot. This lets roots, fronds, shards,
+  // and other art extend below the placement plane without changing the layer
+  // where the object is considered to touch the substrate.
   const primaryBounds = decor.path
     ? getPlacedDecorOpaqueBounds(item, decor.path)
     : null;
-  return primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
+  const visualBounds = primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
+  if (!visualBounds) {
+    return null;
+  }
+
+  const footprintBounds = decor.shadowFootprintPath
+    ? getPlacedDecorOpaqueBoundsForImagePath(item, decor, decor.shadowFootprintPath)
+    : null;
+  if (!footprintBounds) {
+    return visualBounds;
+  }
+
+  return {
+    left: visualBounds.left,
+    right: visualBounds.right,
+    top: visualBounds.top,
+    bottom: Math.max(visualBounds.top, footprintBounds.bottom)
+  };
 }
 
 function getDecorShapeDescriptor(item, imagePathOverride = null) {

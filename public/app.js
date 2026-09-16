@@ -1895,6 +1895,18 @@ const AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX = 18;
 const FISH_MOTION_SCALE = 1.62;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
+const FISH_LAYER_TRAVEL_STEP_INTERVAL_MS = 460;
+// Fish use their actual alpha silhouettes as a final collision check so they
+// cannot visually phase through one another. Broad bounds reject almost every
+// pair before the mask test, keeping this inexpensive during normal swimming.
+const FISH_BODY_COLLISION_SAMPLE_STEP_PX = 10;
+const FISH_BODY_COLLISION_SEGMENT_STEP_PX = 10;
+const FISH_BODY_COLLISION_AVOID_MS = 760;
+const FISH_LAYER_COLLISION_AVOID_MS = 900;
+const FISH_COLLISION_DETOUR_MIN_X_NORM = 0.075;
+const FISH_COLLISION_DETOUR_MAX_X_NORM = 0.15;
+const FISH_COLLISION_DETOUR_MIN_Y_NORM = 0.035;
+const FISH_COLLISION_DETOUR_MAX_Y_NORM = 0.095;
 const SUCKER_FISH_FACE_PIVOT_ENABLED = true;
 const SUCKER_FISH_FACE_PIVOT_X = 0.88;
 const SUCKER_FISH_FACE_PIVOT_Y = 0.5;
@@ -9121,6 +9133,10 @@ const runtime = {
   grimeBaseCacheKey: "",
   fishShadowPlaneCache: new Map(),
   fishLayerDepthScaleTransitions: new Map(),
+  fishLayerTravelStepTransitions: new Map(),
+  fishCollisionAvoidanceById: new Map(),
+  customGravelTopLayerDepthCacheKey: "",
+  customGravelTopLayerDepthCanvas: null,
   diseaseGreenBubblesByFishId: new Map(),
   debugBehaviorSteeringByFishId: new Map(),
   debugForcedOtocinclusStateByFishId: new Map(),
@@ -24664,6 +24680,40 @@ function resetStageRenderViewAfterToolClose() {
   dom.tankStage?.classList.remove("is-decor-edit-framed");
 }
 
+function isStageEditTrayActuallyVisible(tray) {
+  if (!(tray instanceof HTMLElement) || tray.hidden) {
+    return false;
+  }
+
+  const style = typeof window.getComputedStyle === "function" ? window.getComputedStyle(tray) : null;
+  if (style && (style.display === "none" || style.visibility === "hidden")) {
+    return false;
+  }
+
+  const rect = tray.getBoundingClientRect();
+  return rect.width > 1 && rect.height > 1;
+}
+
+function refreshStageRenderViewAfterInlineEditorMutation(options = {}) {
+  runtime.stageRenderViewTarget = null;
+  runtime.stageRenderViewLastFrameAt = 0;
+
+  const refresh = () => {
+    runtime.stageRenderViewTarget = null;
+    runtime.stageRenderViewLastFrameAt = 0;
+    updateStageRenderView(performance.now(), { immediate: options.immediate === true });
+  };
+
+  // Recalculate after the edited tray has completed its DOM/layout update.
+  // Gravel swatch changes used to rebuild enough UI that the camera could keep
+  // an obsolete edit-frame target after the tray was no longer actually visible.
+  if (typeof window.requestAnimationFrame === "function") {
+    window.requestAnimationFrame(refresh);
+  } else {
+    refresh();
+  }
+}
+
 function getStageRenderViewTarget() {
   const layout = getTankStageLayoutSize();
   if (!layout.width || !layout.height) {
@@ -24686,7 +24736,7 @@ function getStageRenderViewTarget() {
         : runtime.tankEditMode
           ? dom.editTankTray
           : null;
-  if (!activeEditTray || activeEditTray.hidden) {
+  if (!isStageEditTrayActuallyVisible(activeEditTray)) {
     return {
       scale: coverScale,
       offsetX: coverOffsetX,
@@ -24768,13 +24818,13 @@ function applyStageRenderViewTransform(scale, offsetX, offsetY) {
 
 function updateStageRenderView(frameTime = performance.now(), options = {}) {
   const viewKey = runtime.editTankMode
-    ? `decor:${dom.editDecorTray?.hidden !== true}`
+    ? `decor:${isStageEditTrayActuallyVisible(dom.editDecorTray)}`
     : runtime.fishEditMode
-      ? `fish:${dom.editFishTray?.hidden !== true}`
+      ? `fish:${isStageEditTrayActuallyVisible(dom.editFishTray)}`
       : runtime.equipmentEditMode
-        ? `equipment:${dom.editEquipmentTray?.hidden !== true}`
+        ? `equipment:${isStageEditTrayActuallyVisible(dom.editEquipmentTray)}`
         : runtime.tankEditMode
-          ? `tank:${dom.editTankTray?.hidden !== true}`
+          ? `tank:${isStageEditTrayActuallyVisible(dom.editTankTray)}`
           : "view";
   if (runtime.stageRenderViewTargetKey !== viewKey) {
     runtime.stageRenderViewTargetKey = viewKey;
@@ -54308,53 +54358,83 @@ function pasteTankAppearanceScheme(kind) {
         customGravelLayerColors: sanitizeCustomGravelLayerColors(clipboard.customGravelLayerColors)
       }
     : { ...clipboard };
-  return updateTankAppearance({
+  const changed = updateTankAppearance({
     changes,
     toast: kind === "gravel" ? "Gravel color scheme pasted." : "Wallpaper scheme pasted.",
-    full: true
+    render: kind === "gravel" ? false : undefined,
+    full: kind !== "gravel"
   });
+  if (changed && kind === "gravel") {
+    invalidateCustomGravelVisualCaches();
+    renderCustomGravelControls();
+    refreshStageRenderViewAfterInlineEditorMutation();
+  }
+  return changed;
 }
 
 function setCustomGravelLayerColor(layerIndex, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor || !Number.isFinite(layerIndex)) {
-    return;
+    return false;
   }
 
   const nextIndex = clamp(Math.floor(layerIndex), 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
   const nextColors = getActiveCustomGravelLayerColors();
   if (nextColors[nextIndex] === normalizedColor) {
-    return;
+    return false;
   }
 
   nextColors[nextIndex] = normalizedColor;
-  return updateTankAppearance({
+  const changed = updateTankAppearance({
     changes: { customGravelLayerColors: nextColors },
     save: options.save,
-    render: options.render,
-    full: options.full
+    // Gravel is rendered continuously. Rebuilding the entire UI for a swatch
+    // click is unnecessary and could leave the tank camera holding a stale
+    // edit-frame target, most noticeably when editing the third gravel layer.
+    render: false,
+    full: false
   });
+  if (!changed) {
+    return false;
+  }
+
+  invalidateCustomGravelVisualCaches();
+  if (options.render !== false) {
+    renderCustomGravelControls();
+  }
+  refreshStageRenderViewAfterInlineEditorMutation();
+  return true;
 }
 
 function setCustomGravelLayerColorize(layerIndex, colorize) {
   if (!Number.isFinite(layerIndex)) {
-    return;
+    return false;
   }
 
   const nextIndex = clamp(Math.floor(layerIndex), 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
   const nextSettings = getActiveCustomGravelLayerColorizeSettings();
   const nextColorize = normalizeDecorColorizeSetting(colorize);
   if (nextSettings[nextIndex] === nextColorize) {
-    return;
+    return false;
   }
 
   nextSettings[nextIndex] = nextColorize;
-  return updateTankAppearance({
+  const changed = updateTankAppearance({
     changes: {
       customGravelLayerColors: getActiveCustomGravelLayerColors(),
       customGravelLayerColorize: nextSettings
-    }
+    },
+    render: false,
+    full: false
   });
+  if (!changed) {
+    return false;
+  }
+
+  invalidateCustomGravelVisualCaches();
+  renderCustomGravelControls();
+  refreshStageRenderViewAfterInlineEditorMutation();
+  return true;
 }
 
 function setSolidBackgroundColor(color, options = {}) {
@@ -76075,6 +76155,10 @@ function updateFishMotion(now, deltaSeconds) {
       updatePufferInflationMotionTarget(fish, species, now);
     }
 
+    if (!pendingTravel) {
+      applyFishCollisionAvoidanceSteering(fish, species, now);
+    }
+
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
     const moveDistance = Math.hypot(moveDx, moveDy);
@@ -76385,6 +76469,42 @@ function updateFishMotion(now, deltaSeconds) {
 
         if (fish.caveState && !skipDebugCaveCollision) {
           enforceActiveCaveMaskRule(fish, species, now);
+        }
+      }
+
+      if (!pendingTravel) {
+        const attemptedFishXNorm = fish.xNorm;
+        const attemptedFishYNorm = fish.yNorm;
+        const attemptedFishDistancePx = Math.hypot(
+          (attemptedFishXNorm - previousXNorm) * TANK_WIDTH,
+          (attemptedFishYNorm - previousYNorm) * TANK_HEIGHT
+        );
+        if (attemptedFishDistancePx > 0.001) {
+          // Resolve fish-vs-fish contact after cave/world collision has picked
+          // the attempted endpoint. Reset to the frame start so the segment
+          // test can stop at the last safe point rather than letting sprites
+          // tunnel through one another during a large frame step.
+          fish.xNorm = previousXNorm;
+          fish.yNorm = previousYNorm;
+          const fishCollisionMove = resolveFishBodyCollision(
+            fish,
+            species,
+            attemptedFishXNorm,
+            attemptedFishYNorm,
+            now
+          );
+          fish.xNorm = fishCollisionMove.xNorm;
+          fish.yNorm = fishCollisionMove.yNorm;
+          if (fishCollisionMove.blocked && fishCollisionMove.blockingFish) {
+            queueFishCollisionAvoidance(
+              fish,
+              species,
+              fishCollisionMove.blockingFish,
+              now,
+              { reason: "body" }
+            );
+            handledDirectionThisFrame = true;
+          }
         }
       }
 
@@ -78706,6 +78826,14 @@ function markLightweightCausticFloor() {
   // Use the same current hill profile as the gravel renderer, including randomization.
   traceTankFloorMaskPath(mask.context, bounds);
   mask.context.fill();
+
+  // The loose/contour gravel is rendered on a separate transparent canvas and can
+  // protrude above the main floor mask. Add its actual alpha to the receiver mask
+  // explicitly so caustic lighting reaches those exposed pebbles too.
+  const looseGravelCanvas = getDepthTreatedCustomGravelTopLayerCanvas(bounds);
+  if (looseGravelCanvas) {
+    mask.context.drawImage(looseGravelCanvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
+  }
 }
 
 function drawLightweightCausticOverlay(now) {
@@ -79173,10 +79301,19 @@ function drawBackground(now = Date.now()) {
   tankContext.clip();
 
   if (image) {
-    const renderedBackground = areTankBackgroundDepthEffectsEnabled()
-      ? getTankBackgroundDepthTreatedImage(image)
-      : image;
-    drawImageCover(tankContext, renderedBackground, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    // Always draw the authored background normally first so anything above the
+    // aquarium waterline remains untouched. The depth-treated copy is then
+    // composited only into the submerged portion using the same cover geometry.
+    drawImageCover(tankContext, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    if (areTankBackgroundDepthEffectsEnabled() && waterHeight > 0) {
+      const renderedBackground = getTankBackgroundDepthTreatedImage(image) || image;
+      tankContext.save();
+      tankContext.beginPath();
+      tankContext.rect(backgroundLeft, waterTop, backgroundWidth, waterHeight);
+      tankContext.clip();
+      drawImageCover(tankContext, renderedBackground, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+      tankContext.restore();
+    }
   } else if (isCustomBackgroundKey(background?.key)) {
     if (!isAnimatedBackgroundEnabled()) {
       tankContext.fillStyle = createCustomBackgroundFill(tankContext, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
@@ -80656,6 +80793,21 @@ function getCustomGravelPebbleSpriteByPath(path, color, options = {}) {
   );
 }
 
+function invalidateCustomGravelVisualCaches() {
+  runtime.customGravelTopLayerCanvas = null;
+  runtime.customGravelTopLayerCacheKey = "";
+  runtime.customGravelTopLayerDepthCanvas = null;
+  runtime.customGravelTopLayerDepthCacheKey = "";
+
+  // Borough/overview thumbnails can otherwise briefly retain the previous
+  // gravel treatment after a live color edit.
+  if (runtime.boroughOverviewSnapshotCache instanceof Map) {
+    runtime.boroughOverviewSnapshotCache.clear();
+  }
+  runtime.boroughOverviewSnapshotRenderedAt = 0;
+  runtime.boroughOverviewFishRenderedAt = 0;
+}
+
 function getCustomGravelTopLayerCacheKey(bounds, now = Date.now()) {
   const colors = getCustomGravelTopPebbleColors(now).join("|");
   const colorize = getCustomGravelTopPebbleColorizeSettings().map((enabled) => (enabled ? "1" : "0")).join("|");
@@ -80805,8 +80957,64 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
   return canvas;
 }
 
+function getDepthTreatedCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
+  const sourceCanvas = getCustomGravelTopLayerCanvas(bounds, now);
+  if (!sourceCanvas || !areTankDepthEffectsEnabled()) {
+    return sourceCanvas;
+  }
+
+  const tuning = getActiveTankDepthTuning();
+  const referenceKey = getTankDepthReferencePoints()
+    .map((point) => `${point.layer}:${Number(point.y).toFixed(2)}`)
+    .join(",");
+  const cacheKey = [
+    runtime.customGravelTopLayerCacheKey,
+    getTankDepthEffectLevel(),
+    Number(tuning.substrate).toFixed(3),
+    Number(tuning.haze).toFixed(3),
+    Number(tuning.saturation).toFixed(3),
+    Number(tuning.contrast).toFixed(3),
+    Number(tuning.coolTint).toFixed(3),
+    Number(getTankDepthWaterlineY()).toFixed(2),
+    referenceKey
+  ].join("|");
+
+  if (runtime.customGravelTopLayerDepthCanvas && runtime.customGravelTopLayerDepthCacheKey === cacheKey) {
+    return runtime.customGravelTopLayerDepthCanvas;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = sourceCanvas.width;
+  canvas.height = sourceCanvas.height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return sourceCanvas;
+  }
+
+  context.drawImage(sourceCanvas, 0, 0);
+  context.save();
+  context.globalCompositeOperation = "source-atop";
+  const effectBounds = {
+    ...bounds,
+    drawTop: Math.max(0, getTankDepthWaterlineY()),
+    bottom: bounds.bottom
+  };
+  context.fillStyle = createTankDepthSubstrateOverlayGradient(context, effectBounds);
+  context.fillRect(
+    bounds.left,
+    effectBounds.drawTop,
+    bounds.drawWidth,
+    Math.max(1, effectBounds.bottom - effectBounds.drawTop + 2)
+  );
+  context.restore();
+
+  runtime.customGravelTopLayerDepthCanvas = canvas;
+  runtime.customGravelTopLayerDepthCacheKey = cacheKey;
+  return canvas;
+}
+
 function drawCustomGravelLoosePebbles(bounds, now = Date.now()) {
-  const canvas = getCustomGravelTopLayerCanvas(bounds, now);
+  const canvas = getDepthTreatedCustomGravelTopLayerCanvas(bounds, now);
   if (!canvas) {
     return false;
   }
@@ -80984,10 +81192,12 @@ function drawTankFloor(now = Date.now()) {
 
   tankContext.restore();
 
-  // Loose pebbles are part of the continuous substrate surface, so draw them
-  // before the shared depth pass instead of leaving them visually detached.
-  drawCustomGravelLoosePebbles(bounds, now);
+  // Treat the continuous gravel bed first, then draw the separately cached loose
+  // pebble/contour layer with its own matching depth treatment. This prevents the
+  // protruding pebbles above the gravel contour from escaping the depth haze while
+  // also avoiding a double tint where they overlap the main bed.
   drawGravelDepthTreatment(bounds);
+  drawCustomGravelLoosePebbles(bounds, now);
   drawSubstrateGroundShadow(bounds);
 }
 
@@ -82362,20 +82572,22 @@ function getSmoothedFishShadowPlaneY(fish, targetPlaneY, now = Date.now()) {
 }
 
 function pruneFishShadowPlaneCache() {
-  if (!runtime.fishShadowPlaneCache.size) {
-    return;
-  }
-
   const activeFishIds = new Set((state?.fish || []).map((fish) => fish?.id).filter(Boolean));
   for (const fishId of runtime.fishShadowPlaneCache.keys()) {
     if (!activeFishIds.has(fishId)) {
       runtime.fishShadowPlaneCache.delete(fishId);
     }
   }
+  for (const fishId of runtime.fishLayerTravelStepTransitions.keys()) {
+    if (!activeFishIds.has(fishId)) {
+      runtime.fishLayerTravelStepTransitions.delete(fishId);
+    }
+  }
 }
 
 function getDecorContactSpans(item, decor) {
-  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(decor.path) : null;
+  const contactPath = decor?.shadowFootprintPath || decor?.path;
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(contactPath) : null;
   if (!mask?.bounds || !mask.alpha) return null;
   if (!runtime.decorContactSpanCache) runtime.decorContactSpanCache = new WeakMap();
   let variants = runtime.decorContactSpanCache.get(mask);
@@ -82430,7 +82642,8 @@ function getDecorContactShadowMetrics(item) {
   }
 
   const spans = getDecorContactSpans(item, decor);
-  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(decor.path) : null;
+  const contactPath = decor.shadowFootprintPath || decor.path;
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(contactPath) : null;
   const footprint = mask?.bounds
     ? {
       left: mask.bounds.minX / mask.width,
@@ -83227,9 +83440,6 @@ function drawPoops(now, layer = null) {
     if (!pose?.sprite) {
       continue;
     }
-
-    const depthLayer = getPoopTankLayer(poop);
-    const depthAlpha = getTankDepthObjectAlpha(depthLayer);
 
     tankContext.save();
     tankContext.translate(pose.x, pose.y + 4);
@@ -88166,13 +88376,32 @@ function getPlacedDecorGroundBounds(item) {
     return null;
   }
 
-  // Grounding is based on the visible pixels of the primary decor artwork, not
-  // the transparent PNG rectangle or optional companion/effect layers.
-  // This makes the visible bottom of the object the physical foot everywhere.
+  // The optional shadow-footprint helper is the authored physical contact line.
+  // Keep the visible primary artwork bounds for top/left/right placement, but use
+  // the helper's bottom edge as the true foot. This lets roots, fronds, shards,
+  // and other art extend below the placement plane without changing the layer
+  // where the object is considered to touch the substrate.
   const primaryBounds = decor.path
     ? getPlacedDecorOpaqueBounds(item, decor.path)
     : null;
-  return primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
+  const visualBounds = primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
+  if (!visualBounds) {
+    return null;
+  }
+
+  const footprintBounds = decor.shadowFootprintPath
+    ? getPlacedDecorOpaqueBoundsForImagePath(item, decor, decor.shadowFootprintPath)
+    : null;
+  if (!footprintBounds) {
+    return visualBounds;
+  }
+
+  return {
+    left: visualBounds.left,
+    right: visualBounds.right,
+    top: visualBounds.top,
+    bottom: Math.max(visualBounds.top, footprintBounds.bottom)
+  };
 }
 
 function getDecorShapeDescriptor(item, imagePathOverride = null) {
@@ -90320,7 +90549,7 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
   };
 }
 
-function getFishShapeDescriptor(fish, species, now, poseOverride = null) {
+function getFishShapeDescriptor(fish, species, now, poseOverride = null, options = null) {
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species?.asset;
   const image = runtime.images.get(fishAsset);
   const mask = fishAsset ? getImageAlphaMask(fishAsset) : null;
@@ -90329,7 +90558,12 @@ function getFishShapeDescriptor(fish, species, now, poseOverride = null) {
   }
 
   const pose = poseOverride || getFishPose(fish, species, now);
-  const width = getFishDisplayWidth(fish, species, now);
+  let width = getFishDisplayWidth(fish, species, now);
+  if (Number.isFinite(Number(options?.depthLayer))) {
+    const currentDepthScale = Math.max(0.0001, getFishLayerDepthScaleMultiplier(fish, now));
+    const targetDepthScale = getFishLayerDepthScaleForLayer(options.depthLayer);
+    width *= targetDepthScale / currentDepthScale;
+  }
   const height = width * (image.height / image.width);
   const centerX = pose.x + pose.swayX;
   const centerY = pose.y;
@@ -90404,7 +90638,9 @@ function getFishShapeDescriptor(fish, species, now, poseOverride = null) {
 }
 
 function getOverlappingDecorForFish(fish, species, now, poseOverride = null, options = null) {
-  const fishDescriptor = getFishShapeDescriptor(fish, species, now, poseOverride);
+  const fishDescriptor = getFishShapeDescriptor(fish, species, now, poseOverride, {
+    depthLayer: options?.depthLayer
+  });
   if (!fishDescriptor) {
     return [];
   }
@@ -90439,7 +90675,9 @@ function getOverlappingDecorForFish(fish, species, now, poseOverride = null, opt
 }
 
 function getOverlappingFishForLayerChange(fish, species, now, poseOverride = null, options = null) {
-  const fishDescriptor = getFishShapeDescriptor(fish, species, now, poseOverride);
+  const fishDescriptor = getFishShapeDescriptor(fish, species, now, poseOverride, {
+    depthLayer: options?.depthLayer
+  });
   if (!fishDescriptor) {
     return [];
   }
@@ -90449,7 +90687,7 @@ function getOverlappingFishForLayerChange(fish, species, now, poseOverride = nul
   const overlaps = [];
 
   for (const otherFish of state.fish) {
-    if (!otherFish || otherFish.id === fish.id || isFishDead(otherFish)) {
+    if (!otherFish || otherFish.id === fish.id) {
       continue;
     }
 
@@ -90464,13 +90702,11 @@ function getOverlappingFishForLayerChange(fish, species, now, poseOverride = nul
     }
 
     const otherPose = getFishPose(otherFish, otherSpecies, now);
-    const otherBounds = getFishOcclusionBounds(otherFish, otherSpecies, otherPose);
-    if (otherBounds && !boundsIntersect(fishDescriptor.bounds, otherBounds)) {
+    const otherDescriptor = getFishShapeDescriptor(otherFish, otherSpecies, now, otherPose);
+    if (!otherDescriptor || !boundsIntersect(fishDescriptor.bounds, otherDescriptor.bounds)) {
       continue;
     }
-
-    const otherDescriptor = getFishShapeDescriptor(otherFish, otherSpecies, now, otherPose);
-    if (!otherDescriptor || !shapesOverlapByMask(fishDescriptor, otherDescriptor, 10)) {
+    if (!shapesOverlapByMask(fishDescriptor, otherDescriptor, FISH_BODY_COLLISION_SAMPLE_STEP_PX)) {
       continue;
     }
 
@@ -90482,6 +90718,316 @@ function getOverlappingFishForLayerChange(fish, species, now, poseOverride = nul
   }
 
   return overlaps;
+}
+
+function getActiveFishCollisionAvoidance(fish, now = Date.now()) {
+  if (!fish?.id || !(runtime.fishCollisionAvoidanceById instanceof Map)) {
+    return null;
+  }
+  const avoidance = runtime.fishCollisionAvoidanceById.get(fish.id) || null;
+  if (!avoidance) {
+    return null;
+  }
+  if (!Number.isFinite(Number(avoidance.until)) || now >= avoidance.until) {
+    runtime.fishCollisionAvoidanceById.delete(fish.id);
+    return null;
+  }
+  return avoidance;
+}
+
+function clearFishCollisionAvoidance(fish) {
+  if (fish?.id && runtime.fishCollisionAvoidanceById instanceof Map) {
+    runtime.fishCollisionAvoidanceById.delete(fish.id);
+  }
+}
+
+function findFishBodyCollisionAtPose(fish, species, now, xNorm, yNorm, options = {}) {
+  if (!fish || !species) {
+    return null;
+  }
+
+  const layer = clampTankLayer(
+    Number.isFinite(Number(options.layer)) ? Number(options.layer) : getFishTankLayer(fish)
+  );
+  const direction = Number.isFinite(Number(options.direction))
+    ? (Number(options.direction) < 0 ? -1 : 1)
+    : (Math.abs(xNorm - fish.xNorm) > 0.0001 ? (xNorm >= fish.xNorm ? 1 : -1) : (fish.direction || 1));
+  const pose = getFishCollisionPose(fish, species, now, xNorm, yNorm, direction);
+  const fishDescriptor = getFishShapeDescriptor(fish, species, now, pose, {
+    depthLayer: options.depthLayer
+  });
+  if (!fishDescriptor) {
+    return null;
+  }
+
+  for (const otherFish of state.fish) {
+    if (!otherFish || otherFish.id === fish.id) {
+      continue;
+    }
+    if (getFishTankLayer(otherFish) !== layer) {
+      continue;
+    }
+
+    const otherSpecies = runtime.fishMap.get(otherFish.speciesId);
+    if (!otherSpecies) {
+      continue;
+    }
+    const otherPose = getFishPose(otherFish, otherSpecies, now);
+    const otherDescriptor = getFishShapeDescriptor(otherFish, otherSpecies, now, otherPose);
+    if (!otherDescriptor || !boundsIntersect(fishDescriptor.bounds, otherDescriptor.bounds)) {
+      continue;
+    }
+    if (!shapesOverlapByMask(fishDescriptor, otherDescriptor, FISH_BODY_COLLISION_SAMPLE_STEP_PX)) {
+      continue;
+    }
+
+    return {
+      fish: otherFish,
+      species: otherSpecies,
+      layer,
+      descriptor: otherDescriptor
+    };
+  }
+
+  return null;
+}
+
+function resolveFishBodyCollision(fish, species, nextXNorm, nextYNorm, now = Date.now()) {
+  if (!fish || !species) {
+    return {
+      xNorm: nextXNorm,
+      yNorm: nextYNorm,
+      blocked: false,
+      blockingFish: null
+    };
+  }
+
+  const layer = getFishTankLayer(fish);
+  const startXNorm = fish.xNorm;
+  const startYNorm = fish.yNorm;
+  const dx = nextXNorm - startXNorm;
+  const dy = nextYNorm - startYNorm;
+  const distancePx = Math.hypot(dx * TANK_WIDTH, dy * TANK_HEIGHT);
+  if (distancePx <= 0.001) {
+    return {
+      xNorm: nextXNorm,
+      yNorm: nextYNorm,
+      blocked: false,
+      blockingFish: null
+    };
+  }
+
+  const startCollision = findFishBodyCollisionAtPose(
+    fish,
+    species,
+    now,
+    startXNorm,
+    startYNorm,
+    { layer }
+  );
+  const startBlockerDistancePx = startCollision
+    ? Math.hypot(
+      (startXNorm - startCollision.fish.xNorm) * TANK_WIDTH,
+      (startYNorm - startCollision.fish.yNorm) * TANK_HEIGHT
+    )
+    : 0;
+
+  const samples = Math.max(1, Math.ceil(distancePx / Math.max(2, FISH_BODY_COLLISION_SEGMENT_STEP_PX)));
+  let lastSafe = { xNorm: startXNorm, yNorm: startYNorm };
+
+  for (let index = 1; index <= samples; index += 1) {
+    const t = index / samples;
+    const sampleXNorm = startXNorm + dx * t;
+    const sampleYNorm = startYNorm + dy * t;
+    const collision = findFishBodyCollisionAtPose(
+      fish,
+      species,
+      now,
+      sampleXNorm,
+      sampleYNorm,
+      { layer }
+    );
+
+    if (!collision) {
+      lastSafe = { xNorm: sampleXNorm, yNorm: sampleYNorm };
+      continue;
+    }
+
+    // Old saves or simultaneous motion can occasionally begin a frame already
+    // overlapping. Let a fish escape an existing overlap, but never let it move
+    // deeper into that fish or enter a new fish silhouette.
+    if (startCollision?.fish?.id === collision.fish.id) {
+      const sampleDistancePx = Math.hypot(
+        (sampleXNorm - collision.fish.xNorm) * TANK_WIDTH,
+        (sampleYNorm - collision.fish.yNorm) * TANK_HEIGHT
+      );
+      if (sampleDistancePx > startBlockerDistancePx + 0.25) {
+        lastSafe = { xNorm: sampleXNorm, yNorm: sampleYNorm };
+        continue;
+      }
+    }
+
+    return {
+      ...lastSafe,
+      blocked: true,
+      blockingFish: collision.fish,
+      blockingSpecies: collision.species
+    };
+  }
+
+  return {
+    xNorm: nextXNorm,
+    yNorm: nextYNorm,
+    blocked: false,
+    blockingFish: null
+  };
+}
+
+function getFishCollisionDetourCandidates(fish, species, blocker, now = Date.now()) {
+  const layer = getFishTankLayer(fish);
+  const range = getLayerSwimYRange(layer, fish, species, { minYNorm: 0.14, maxYNorm: 0.8 });
+  const deltaX = fish.xNorm - (Number(blocker?.xNorm) || fish.xNorm);
+  const deltaY = fish.yNorm - (Number(blocker?.yNorm) || fish.yNorm);
+  const awayX = Math.abs(deltaX) > 0.008
+    ? (deltaX >= 0 ? 1 : -1)
+    : ((fish.direction || 1) > 0 ? -1 : 1);
+  let awayY;
+  if (Math.abs(deltaY) > 0.006) {
+    awayY = deltaY >= 0 ? 1 : -1;
+  } else {
+    awayY = (fish.yNorm - range.min) >= (range.max - fish.yNorm) ? -1 : 1;
+  }
+
+  const xFar = randomBetween(FISH_COLLISION_DETOUR_MIN_X_NORM, FISH_COLLISION_DETOUR_MAX_X_NORM);
+  const xNear = randomBetween(FISH_COLLISION_DETOUR_MIN_X_NORM * 0.55, FISH_COLLISION_DETOUR_MIN_X_NORM * 0.9);
+  const yFar = randomBetween(FISH_COLLISION_DETOUR_MIN_Y_NORM, FISH_COLLISION_DETOUR_MAX_Y_NORM);
+  const yNear = randomBetween(FISH_COLLISION_DETOUR_MIN_Y_NORM * 0.55, FISH_COLLISION_DETOUR_MIN_Y_NORM * 0.95);
+  const clampCandidate = (xNorm, yNorm) => ({
+    xNorm: clamp(xNorm, 0.08, 0.92),
+    yNorm: clampFishYNormToLayer(yNorm, fish, species, layer, { minYNorm: range.min, maxYNorm: range.max })
+  });
+
+  return [
+    clampCandidate(fish.xNorm + awayX * xFar, fish.yNorm + awayY * yNear),
+    clampCandidate(fish.xNorm + awayX * xNear, fish.yNorm + awayY * yFar),
+    clampCandidate(fish.xNorm + awayX * xFar, fish.yNorm),
+    clampCandidate(fish.xNorm, fish.yNorm + awayY * yFar),
+    clampCandidate(fish.xNorm - awayX * xNear, fish.yNorm - awayY * yNear)
+  ];
+}
+
+function queueFishCollisionAvoidance(fish, species, blocker, now = Date.now(), options = {}) {
+  if (!fish?.id || !species || !blocker || fish.caveState) {
+    return false;
+  }
+
+  const blocksLayerChange = options.reason === "layer";
+  const durationMs = blocksLayerChange ? FISH_LAYER_COLLISION_AVOID_MS : FISH_BODY_COLLISION_AVOID_MS;
+  const existing = getActiveFishCollisionAvoidance(fish, now);
+  if (existing?.blockedFishId === blocker.id) {
+    if (blocksLayerChange) {
+      existing.reason = "layer";
+      existing.targetLayer = Number.isFinite(Number(options.targetLayer))
+        ? clampTankLayer(options.targetLayer)
+        : existing.targetLayer;
+    }
+    existing.until = Math.max(Number(existing.until) || 0, now + durationMs);
+    return true;
+  }
+
+  const layer = getFishTankLayer(fish);
+  const candidates = getFishCollisionDetourCandidates(fish, species, blocker, now);
+  let target = null;
+  for (const candidate of candidates) {
+    if (Math.hypot(candidate.xNorm - fish.xNorm, candidate.yNorm - fish.yNorm) < 0.012) {
+      continue;
+    }
+    const collision = findFishBodyCollisionAtPose(
+      fish,
+      species,
+      now,
+      candidate.xNorm,
+      candidate.yNorm,
+      { layer }
+    );
+    if (!collision) {
+      target = candidate;
+      break;
+    }
+  }
+
+  target ||= candidates.find((candidate) => Math.hypot(candidate.xNorm - fish.xNorm, candidate.yNorm - fish.yNorm) >= 0.012) || {
+    xNorm: fish.xNorm,
+    yNorm: fish.yNorm
+  };
+
+  runtime.fishCollisionAvoidanceById.set(fish.id, {
+    blockedFishId: blocker.id,
+    reason: blocksLayerChange ? "layer" : "body",
+    targetLayer: Number.isFinite(Number(options.targetLayer)) ? clampTankLayer(options.targetLayer) : null,
+    xNorm: target.xNorm,
+    yNorm: target.yNorm,
+    until: now + durationMs
+  });
+
+  fish.motionVelocityXNorm = 0;
+  fish.motionVelocityYNorm = 0;
+  fish.targetXNorm = target.xNorm;
+  fish.targetYNorm = target.yNorm;
+  fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + durationMs);
+  fish.wallAvoidUntil = Math.max(Number(fish.wallAvoidUntil) || 0, now + Math.min(durationMs, 520));
+
+  if (Math.abs(target.xNorm - fish.xNorm) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
+    setFishDirection(fish, target.xNorm >= fish.xNorm ? 1 : -1, species, now);
+  }
+
+  return true;
+}
+
+function applyFishCollisionAvoidanceSteering(fish, species, now = Date.now()) {
+  const avoidance = getActiveFishCollisionAvoidance(fish, now);
+  if (!avoidance || !fish || !species || fish.caveState) {
+    return false;
+  }
+
+  if (Math.hypot(fish.xNorm - avoidance.xNorm, fish.yNorm - avoidance.yNorm) <= 0.012) {
+    clearFishCollisionAvoidance(fish);
+    fish.targetAt = Math.min(Number(fish.targetAt) || now, now);
+    return false;
+  }
+
+  fish.targetXNorm = avoidance.xNorm;
+  fish.targetYNorm = clampFishYNormToLayer(
+    avoidance.yNorm,
+    fish,
+    species,
+    getFishTankLayer(fish),
+    { minYNorm: 0.14, maxYNorm: 0.8 }
+  );
+  fish.targetAt = Math.max(Number(fish.targetAt) || 0, avoidance.until);
+  return true;
+}
+
+function getFishLayerChangeBlockingFish(fish, species, now, targetLayer, poseOverride = null) {
+  const currentLayer = getFishTankLayer(fish);
+  const resolvedTargetLayer = clampTankLayer(targetLayer);
+  const minLayer = Math.min(currentLayer, resolvedTargetLayer);
+  const maxLayer = Math.max(currentLayer, resolvedTargetLayer);
+  const pose = poseOverride || getFishPose(fish, species, now);
+  const overlaps = getOverlappingFishForLayerChange(fish, species, now, pose, {
+    minLayer,
+    maxLayer,
+    depthLayer: resolvedTargetLayer
+  });
+  if (!overlaps.length) {
+    return null;
+  }
+  overlaps.sort((left, right) => {
+    const leftDistance = Math.hypot(left.fish.xNorm - fish.xNorm, left.fish.yNorm - fish.yNorm);
+    const rightDistance = Math.hypot(right.fish.xNorm - fish.xNorm, right.fish.yNorm - fish.yNorm);
+    return leftDistance - rightDistance;
+  });
+  return overlaps[0].fish || null;
 }
 
 function canFishChangeToLayer(fish, species, now, desiredLayer, poseOverride = null) {
@@ -90500,11 +91046,13 @@ function canFishChangeToLayer(fish, species, now, desiredLayer, poseOverride = n
   const maxLayer = Math.max(currentLayer, targetLayer);
   const decorOverlaps = getOverlappingDecorForFish(fish, species, now, pose, {
     minLayer,
-    maxLayer
+    maxLayer,
+    depthLayer: targetLayer
   });
   const fishOverlaps = getOverlappingFishForLayerChange(fish, species, now, pose, {
     minLayer,
-    maxLayer
+    maxLayer,
+    depthLayer: targetLayer
   });
 
   if (targetLayer > currentLayer) {
@@ -90524,6 +91072,7 @@ function syncFishDrawLayer(fish, species, now) {
     } else {
       setFishTankLayers(fish, glassLayer, glassLayer);
     }
+    if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
     return;
   }
 
@@ -90532,6 +91081,7 @@ function syncFishDrawLayer(fish, species, now) {
       ? clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER)
       : getFishActiveCaveInsideLayer(fish, DEFAULT_TANK_LAYER);
     setFishTankLayers(fish, lockedLayer, lockedLayer);
+    if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
     return;
   }
 
@@ -90539,12 +91089,60 @@ function syncFishDrawLayer(fish, species, now) {
   const desiredLayer = getDesiredFishTankLayer(fish);
   setFishTankLayers(fish, currentLayer, desiredLayer);
   if (desiredLayer === currentLayer) {
+    if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
+    const activeAvoidance = getActiveFishCollisionAvoidance(fish, now);
+    if (activeAvoidance?.reason === "layer") {
+      clearFishCollisionAvoidance(fish);
+    }
     return;
   }
 
+  const activeCollisionAvoidance = getActiveFishCollisionAvoidance(fish, now);
+  if (activeCollisionAvoidance?.reason === "layer") {
+    // Stay on the current plane while swimming around the fish that blocked the
+    // requested depth change. The original desired layer remains intact and is
+    // retried after the detour instead of phasing through the blocker.
+    return;
+  }
+
+  // Normal travel moves through adjacent depth planes instead of teleporting
+  // directly from (for example) Layer 1 to Layer 5. The existing visual scale
+  // easing then has time to show each step rather than collapsing the whole
+  // depth change into one frame.
+  const direction = desiredLayer > currentLayer ? 1 : -1;
+  const nextLayer = clampTankLayer(currentLayer + direction);
+  const transitionState = fish?.id ? runtime.fishLayerTravelStepTransitions.get(fish.id) : null;
+  if (transitionState) {
+    transitionState.targetLayer = desiredLayer;
+    if (now < transitionState.nextStepAt) {
+      return;
+    }
+  }
+
   const pose = getFishPose(fish, species, now);
-  if (canFishChangeToLayer(fish, species, now, desiredLayer, pose)) {
-    setFishTankLayers(fish, desiredLayer, desiredLayer);
+  if (!canFishChangeToLayer(fish, species, now, nextLayer, pose)) {
+    const blockingFish = getFishLayerChangeBlockingFish(fish, species, now, nextLayer, pose);
+    if (blockingFish) {
+      queueFishCollisionAvoidance(fish, species, blockingFish, now, {
+        reason: "layer",
+        targetLayer: desiredLayer
+      });
+    }
+    if (fish?.id) {
+      runtime.fishLayerTravelStepTransitions.set(fish.id, {
+        targetLayer: desiredLayer,
+        nextStepAt: now + Math.min(140, FISH_LAYER_TRAVEL_STEP_INTERVAL_MS)
+      });
+    }
+    return;
+  }
+
+  setFishTankLayers(fish, nextLayer, desiredLayer);
+  if (fish?.id) {
+    runtime.fishLayerTravelStepTransitions.set(fish.id, {
+      targetLayer: desiredLayer,
+      nextStepAt: now + FISH_LAYER_TRAVEL_STEP_INTERVAL_MS
+    });
   }
 }
 

@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 53,
-  "functionCount": 3273,
+  "functionCount": 3285,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -196,7 +196,7 @@
     },
     {
       "path": "assets/custom-content.js",
-      "functionCount": 137,
+      "functionCount": 139,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -716,17 +716,20 @@
       "path": "tank/appearance-controls.js",
       "functionCount": 18,
       "dependencies": [
+        "assets/custom-content.js",
         "assets/image-storage-and-import.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
         "decor/customization.js",
         "fish/appearance.js",
+        "rendering/gravel-and-effects.js",
         "rendering/tank-and-water.js",
         "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js",
         "tank/events-recaps-and-save.js",
         "ui/main-and-store-rendering.js",
-        "ui/notifications.js"
+        "ui/notifications.js",
+        "ui/scene-controls-and-animation.js"
       ]
     },
     {
@@ -1080,7 +1083,7 @@
     },
     {
       "path": "rendering/gravel-and-effects.js",
-      "functionCount": 45,
+      "functionCount": 47,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1206,7 +1209,7 @@
     },
     {
       "path": "fish/caves-and-collision.js",
-      "functionCount": 47,
+      "functionCount": 55,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/utilities.js",
@@ -1218,7 +1221,6 @@
         "fish/cave-navigation.js",
         "fish/decor-behavior.js",
         "fish/gravel-and-schooling.js",
-        "fish/health.js",
         "rendering/collision-and-masks.js",
         "rendering/fish-and-effects.js",
         "rendering/fish-motion-and-floor.js"

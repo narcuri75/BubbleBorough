@@ -3424,6 +3424,10 @@ function updateFishMotion(now, deltaSeconds) {
       updatePufferInflationMotionTarget(fish, species, now);
     }
 
+    if (!pendingTravel) {
+      applyFishCollisionAvoidanceSteering(fish, species, now);
+    }
+
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
     const moveDistance = Math.hypot(moveDx, moveDy);
@@ -3734,6 +3738,42 @@ function updateFishMotion(now, deltaSeconds) {
 
         if (fish.caveState && !skipDebugCaveCollision) {
           enforceActiveCaveMaskRule(fish, species, now);
+        }
+      }
+
+      if (!pendingTravel) {
+        const attemptedFishXNorm = fish.xNorm;
+        const attemptedFishYNorm = fish.yNorm;
+        const attemptedFishDistancePx = Math.hypot(
+          (attemptedFishXNorm - previousXNorm) * TANK_WIDTH,
+          (attemptedFishYNorm - previousYNorm) * TANK_HEIGHT
+        );
+        if (attemptedFishDistancePx > 0.001) {
+          // Resolve fish-vs-fish contact after cave/world collision has picked
+          // the attempted endpoint. Reset to the frame start so the segment
+          // test can stop at the last safe point rather than letting sprites
+          // tunnel through one another during a large frame step.
+          fish.xNorm = previousXNorm;
+          fish.yNorm = previousYNorm;
+          const fishCollisionMove = resolveFishBodyCollision(
+            fish,
+            species,
+            attemptedFishXNorm,
+            attemptedFishYNorm,
+            now
+          );
+          fish.xNorm = fishCollisionMove.xNorm;
+          fish.yNorm = fishCollisionMove.yNorm;
+          if (fishCollisionMove.blocked && fishCollisionMove.blockingFish) {
+            queueFishCollisionAvoidance(
+              fish,
+              species,
+              fishCollisionMove.blockingFish,
+              now,
+              { reason: "body" }
+            );
+            handledDirectionThisFrame = true;
+          }
         }
       }
 

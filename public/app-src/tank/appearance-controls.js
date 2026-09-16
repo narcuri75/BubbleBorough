@@ -54,53 +54,83 @@ function pasteTankAppearanceScheme(kind) {
         customGravelLayerColors: sanitizeCustomGravelLayerColors(clipboard.customGravelLayerColors)
       }
     : { ...clipboard };
-  return updateTankAppearance({
+  const changed = updateTankAppearance({
     changes,
     toast: kind === "gravel" ? "Gravel color scheme pasted." : "Wallpaper scheme pasted.",
-    full: true
+    render: kind === "gravel" ? false : undefined,
+    full: kind !== "gravel"
   });
+  if (changed && kind === "gravel") {
+    invalidateCustomGravelVisualCaches();
+    renderCustomGravelControls();
+    refreshStageRenderViewAfterInlineEditorMutation();
+  }
+  return changed;
 }
 
 function setCustomGravelLayerColor(layerIndex, color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor || !Number.isFinite(layerIndex)) {
-    return;
+    return false;
   }
 
   const nextIndex = clamp(Math.floor(layerIndex), 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
   const nextColors = getActiveCustomGravelLayerColors();
   if (nextColors[nextIndex] === normalizedColor) {
-    return;
+    return false;
   }
 
   nextColors[nextIndex] = normalizedColor;
-  return updateTankAppearance({
+  const changed = updateTankAppearance({
     changes: { customGravelLayerColors: nextColors },
     save: options.save,
-    render: options.render,
-    full: options.full
+    // Gravel is rendered continuously. Rebuilding the entire UI for a swatch
+    // click is unnecessary and could leave the tank camera holding a stale
+    // edit-frame target, most noticeably when editing the third gravel layer.
+    render: false,
+    full: false
   });
+  if (!changed) {
+    return false;
+  }
+
+  invalidateCustomGravelVisualCaches();
+  if (options.render !== false) {
+    renderCustomGravelControls();
+  }
+  refreshStageRenderViewAfterInlineEditorMutation();
+  return true;
 }
 
 function setCustomGravelLayerColorize(layerIndex, colorize) {
   if (!Number.isFinite(layerIndex)) {
-    return;
+    return false;
   }
 
   const nextIndex = clamp(Math.floor(layerIndex), 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
   const nextSettings = getActiveCustomGravelLayerColorizeSettings();
   const nextColorize = normalizeDecorColorizeSetting(colorize);
   if (nextSettings[nextIndex] === nextColorize) {
-    return;
+    return false;
   }
 
   nextSettings[nextIndex] = nextColorize;
-  return updateTankAppearance({
+  const changed = updateTankAppearance({
     changes: {
       customGravelLayerColors: getActiveCustomGravelLayerColors(),
       customGravelLayerColorize: nextSettings
-    }
+    },
+    render: false,
+    full: false
   });
+  if (!changed) {
+    return false;
+  }
+
+  invalidateCustomGravelVisualCaches();
+  renderCustomGravelControls();
+  refreshStageRenderViewAfterInlineEditorMutation();
+  return true;
 }
 
 function setSolidBackgroundColor(color, options = {}) {

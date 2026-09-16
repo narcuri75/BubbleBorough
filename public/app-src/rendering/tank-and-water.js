@@ -245,6 +245,14 @@ function markLightweightCausticFloor() {
   // Use the same current hill profile as the gravel renderer, including randomization.
   traceTankFloorMaskPath(mask.context, bounds);
   mask.context.fill();
+
+  // The loose/contour gravel is rendered on a separate transparent canvas and can
+  // protrude above the main floor mask. Add its actual alpha to the receiver mask
+  // explicitly so caustic lighting reaches those exposed pebbles too.
+  const looseGravelCanvas = getDepthTreatedCustomGravelTopLayerCanvas(bounds);
+  if (looseGravelCanvas) {
+    mask.context.drawImage(looseGravelCanvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
+  }
 }
 
 function drawLightweightCausticOverlay(now) {
@@ -712,10 +720,19 @@ function drawBackground(now = Date.now()) {
   tankContext.clip();
 
   if (image) {
-    const renderedBackground = areTankBackgroundDepthEffectsEnabled()
-      ? getTankBackgroundDepthTreatedImage(image)
-      : image;
-    drawImageCover(tankContext, renderedBackground, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    // Always draw the authored background normally first so anything above the
+    // aquarium waterline remains untouched. The depth-treated copy is then
+    // composited only into the submerged portion using the same cover geometry.
+    drawImageCover(tankContext, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    if (areTankBackgroundDepthEffectsEnabled() && waterHeight > 0) {
+      const renderedBackground = getTankBackgroundDepthTreatedImage(image) || image;
+      tankContext.save();
+      tankContext.beginPath();
+      tankContext.rect(backgroundLeft, waterTop, backgroundWidth, waterHeight);
+      tankContext.clip();
+      drawImageCover(tankContext, renderedBackground, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+      tankContext.restore();
+    }
   } else if (isCustomBackgroundKey(background?.key)) {
     if (!isAnimatedBackgroundEnabled()) {
       tankContext.fillStyle = createCustomBackgroundFill(tankContext, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);

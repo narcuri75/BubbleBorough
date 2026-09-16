@@ -3849,6 +3849,40 @@ function resetStageRenderViewAfterToolClose() {
   dom.tankStage?.classList.remove("is-decor-edit-framed");
 }
 
+function isStageEditTrayActuallyVisible(tray) {
+  if (!(tray instanceof HTMLElement) || tray.hidden) {
+    return false;
+  }
+
+  const style = typeof window.getComputedStyle === "function" ? window.getComputedStyle(tray) : null;
+  if (style && (style.display === "none" || style.visibility === "hidden")) {
+    return false;
+  }
+
+  const rect = tray.getBoundingClientRect();
+  return rect.width > 1 && rect.height > 1;
+}
+
+function refreshStageRenderViewAfterInlineEditorMutation(options = {}) {
+  runtime.stageRenderViewTarget = null;
+  runtime.stageRenderViewLastFrameAt = 0;
+
+  const refresh = () => {
+    runtime.stageRenderViewTarget = null;
+    runtime.stageRenderViewLastFrameAt = 0;
+    updateStageRenderView(performance.now(), { immediate: options.immediate === true });
+  };
+
+  // Recalculate after the edited tray has completed its DOM/layout update.
+  // Gravel swatch changes used to rebuild enough UI that the camera could keep
+  // an obsolete edit-frame target after the tray was no longer actually visible.
+  if (typeof window.requestAnimationFrame === "function") {
+    window.requestAnimationFrame(refresh);
+  } else {
+    refresh();
+  }
+}
+
 function getStageRenderViewTarget() {
   const layout = getTankStageLayoutSize();
   if (!layout.width || !layout.height) {
@@ -3871,7 +3905,7 @@ function getStageRenderViewTarget() {
         : runtime.tankEditMode
           ? dom.editTankTray
           : null;
-  if (!activeEditTray || activeEditTray.hidden) {
+  if (!isStageEditTrayActuallyVisible(activeEditTray)) {
     return {
       scale: coverScale,
       offsetX: coverOffsetX,
@@ -3953,13 +3987,13 @@ function applyStageRenderViewTransform(scale, offsetX, offsetY) {
 
 function updateStageRenderView(frameTime = performance.now(), options = {}) {
   const viewKey = runtime.editTankMode
-    ? `decor:${dom.editDecorTray?.hidden !== true}`
+    ? `decor:${isStageEditTrayActuallyVisible(dom.editDecorTray)}`
     : runtime.fishEditMode
-      ? `fish:${dom.editFishTray?.hidden !== true}`
+      ? `fish:${isStageEditTrayActuallyVisible(dom.editFishTray)}`
       : runtime.equipmentEditMode
-        ? `equipment:${dom.editEquipmentTray?.hidden !== true}`
+        ? `equipment:${isStageEditTrayActuallyVisible(dom.editEquipmentTray)}`
         : runtime.tankEditMode
-          ? `tank:${dom.editTankTray?.hidden !== true}`
+          ? `tank:${isStageEditTrayActuallyVisible(dom.editTankTray)}`
           : "view";
   if (runtime.stageRenderViewTargetKey !== viewKey) {
     runtime.stageRenderViewTargetKey = viewKey;

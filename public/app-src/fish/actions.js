@@ -268,7 +268,7 @@ function updateFishBreedingSequence(now = Date.now()) {
   const eggLayer = Number.isFinite(Number(sequence.eggLayer))
     ? clampTankLayer(sequence.eggLayer)
     : getBreedingEggTankLayer(species, sequence.targetLayer);
-  const egg = createFishEggRecord(sequence.speciesId, now, {
+  const offspring = spawnBreedingOffspring(sequence.speciesId, now, {
     xNorm: sequence.anchorXNorm,
     yNorm: sequence.anchorYNorm,
     parentNames: [leftFish.name, rightFish.name],
@@ -276,17 +276,16 @@ function updateFishBreedingSequence(now = Date.now()) {
     fishColor: colorInheritance.fishColor,
     fishColorize: colorInheritance.fishColorize
   });
-  if (egg) {
-    addFishEggToTank(egg);
+  if (offspring) {
     const cooldownUntil = now + BREEDING_COOLDOWN_MS;
     leftFish.breedCooldownUntil = cooldownUntil;
     rightFish.breedCooldownUntil = cooldownUntil;
     leftFish.targetAt = now;
     rightFish.targetAt = now;
-    pushEvent(`An egg appeared after ${leftFish.name} and ${rightFish.name} paired up.`, now);
+    pushEvent(getBreedingOffspringMessage(offspring), now, getCurrentTank(), { type: "birth", fishId: offspring.baby?.id || "", score: 1 });
     clearFishBreedingSequence();
     markFishActionStateDirty(now);
-    showToast(`${species?.name || "Fish"} egg settled into the gravel.`);
+    showToast(offspring.kind === "live" ? `${offspring.baby?.name || "A baby fish"} was born.` : `${species?.name || "Fish"} egg settled into the gravel.`);
     return null;
   }
 
@@ -436,7 +435,6 @@ function getFishActionPartners(fish, options = {}) {
         isFishAdult(otherFish, now)
         && hasFishBeenInTankLongEnoughToBreed(otherFish, now)
         && (Number(otherFish.breedCooldownUntil) || 0) <= now
-        && !isUndeadFish(otherFish)
       ))
     ))
     .map((otherFish) => {
@@ -587,7 +585,7 @@ function getFishActionAvailability(action, fish, now = Date.now()) {
         ? { enabled: true, title: baseTitle }
         : { enabled: false, title: `${baseTitle}: add another living fish` };
     case "breed":
-      return getFishActionPartner(fish, { sameSpeciesOnly: true, requireBreedReady: true, now }) && isFishAdult(fish, now) && hasFishBeenInTankLongEnoughToBreed(fish, now) && (Number(fish.breedCooldownUntil) || 0) <= now && !isUndeadFish(fish)
+      return getFishActionPartner(fish, { sameSpeciesOnly: true, requireBreedReady: true, now }) && isFishAdult(fish, now) && hasFishBeenInTankLongEnoughToBreed(fish, now) && (Number(fish.breedCooldownUntil) || 0) <= now
         ? { enabled: true, title: baseTitle }
         : { enabled: false, title: `${baseTitle}: needs two ready adult fish of the same species` };
     case "inspect":
@@ -1167,7 +1165,7 @@ function triggerFishActionAvoid(fish, species, now = Date.now(), item = null) {
 }
 
 function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
-  if (!isFishAdult(fish, now) || !hasFishBeenInTankLongEnoughToBreed(fish, now) || (Number(fish.breedCooldownUntil) || 0) > now || isUndeadFish(fish)) {
+  if (!isFishAdult(fish, now) || !hasFishBeenInTankLongEnoughToBreed(fish, now) || (Number(fish.breedCooldownUntil) || 0) > now) {
     showFishRoutineToast(fish, `${fish.name} is not ready to mate.`);
     return false;
   }
@@ -1654,7 +1652,7 @@ function processFishNeedsAutonomy(now = Date.now()) {
   for (const id of nextDecisions.keys()) if (!livingIds.has(id)) nextDecisions.delete(id);
   for (const fish of living) {
     if (runtime.fishDragState?.fishId === fish.id || fish.caveState || fish.activity !== "roam"
-      || Number(fish.panicUntil) > now || isUndeadFish(fish) || runtime.debugAutonomyPausedFishIds?.has?.(fish.id)) continue;
+      || Number(fish.panicUntil) > now || runtime.debugAutonomyPausedFishIds?.has?.(fish.id)) continue;
     const queue = getFishActionQueueState(fish.id);
     // Feeding interrupts passive routines through the existing feeding system.
     // Never repeatedly cancel an active behavior while waiting for a meal.

@@ -296,6 +296,22 @@ function clearLocalBackgroundImage() {
   renderUi(Date.now());
 }
 
+function ensureBackgroundImageReady(backgroundKey, options = {}) {
+  const background = runtime.backgroundMap.get(backgroundKey);
+  if (!background || isCustomBackgroundKey(background.key) || isLocalImageBackgroundKey(background.key) || !background.path) {
+    return Promise.resolve(false);
+  }
+  if (isUsableRuntimeImage(runtime.images.get(background.path))) {
+    return Promise.resolve(true);
+  }
+  return preloadImagePath(background.path).then((result) => {
+    if (result.loaded && state?.selectedBackground === backgroundKey && options.render !== false) {
+      renderTank(Date.now());
+    }
+    return result.loaded === true;
+  });
+}
+
 function selectBackground(backgroundKey) {
   if (!runtime.backgroundMap.has(backgroundKey)) {
     return;
@@ -315,7 +331,7 @@ function selectBackground(backgroundKey) {
     return;
   }
 
-  return updateTankAppearance({
+  const changed = updateTankAppearance({
     changes: { selectedBackground: backgroundKey },
     event: {
       type: "appearance",
@@ -323,6 +339,10 @@ function selectBackground(backgroundKey) {
       text: `Switched the tank background to ${runtime.backgroundMap.get(backgroundKey).name}.`
     }
   });
+  if (changed) {
+    void ensureBackgroundImageReady(backgroundKey);
+  }
+  return changed;
 }
 
 function selectTankAsset(tankKey) {

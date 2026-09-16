@@ -1556,7 +1556,9 @@ function beginFishEggDrag(egg, point, pointerId) {
 
   const now = Date.now();
   const tankLayer = getFishEggTankLayer(egg);
-  const targetYNorm = getFishEggTargetYNorm(egg.xNorm, tankLayer);
+  const targetYNorm = egg.buoyancy === "floating"
+    ? clamp(Number(egg.yNorm) || 0.28, 0.16, 0.46)
+    : getFishEggTargetYNorm(egg.xNorm, tankLayer);
   const pose = getFishEggPose(egg, now);
   const currentXNorm = clamp(Number(egg.xNorm) || 0.5, 0.08, 0.92);
   const currentYNorm = clamp((pose?.y ?? targetYNorm * TANK_HEIGHT) / TANK_HEIGHT, 0.12, targetYNorm);
@@ -1608,8 +1610,11 @@ function updateDraggedFishEgg(point) {
 
   const xNorm = clamp(point.x / TANK_WIDTH + drag.offsetXNorm, 0.08, 0.92);
   const tankLayer = getFishEggTankLayer(egg);
-  const targetYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
-  const yNorm = clamp(point.y / TANK_HEIGHT + drag.offsetYNorm, 0.12, targetYNorm);
+  const floorYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
+  const yNorm = egg.buoyancy === "floating"
+    ? clamp(point.y / TANK_HEIGHT + drag.offsetYNorm, 0.16, 0.46)
+    : clamp(point.y / TANK_HEIGHT + drag.offsetYNorm, 0.12, floorYNorm);
+  const targetYNorm = egg.buoyancy === "floating" ? yNorm : floorYNorm;
   const movedDistance = Math.hypot(
     (xNorm - drag.startXNorm) * TANK_WIDTH,
     (yNorm - drag.startYNorm) * TANK_HEIGHT
@@ -1654,17 +1659,20 @@ function finalizeFishEggDrag() {
 
   const tankLayer = getFishEggTankLayer(egg);
   const xNorm = clamp(Number(egg.xNorm) || drag.startXNorm || 0.5, 0.08, 0.92);
-  const targetYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
-  const currentYNorm = clamp(
-    Number.isFinite(Number(egg.dragYNorm)) ? Number(egg.dragYNorm) : targetYNorm,
-    0.12,
-    targetYNorm
-  );
+  const floorYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
+  const currentYNorm = egg.buoyancy === "floating"
+    ? clamp(Number.isFinite(Number(egg.dragYNorm)) ? Number(egg.dragYNorm) : Number(egg.yNorm) || 0.28, 0.16, 0.46)
+    : clamp(
+      Number.isFinite(Number(egg.dragYNorm)) ? Number(egg.dragYNorm) : floorYNorm,
+      0.12,
+      floorYNorm
+    );
+  const targetYNorm = egg.buoyancy === "floating" ? currentYNorm : floorYNorm;
 
   egg.xNorm = xNorm;
   egg.startYNorm = currentYNorm;
   egg.yNorm = targetYNorm;
-  egg.releasedAt = now;
+  egg.releasedAt = egg.buoyancy === "floating" ? null : now;
   delete egg.dragYNorm;
 
   saveState();
@@ -1713,10 +1721,6 @@ function storeFish(fishId, options = {}) {
 
   const fish = state.fish[index];
   const dead = isFishDead(fish);
-  if (!dead && hasZombieBiteInfection(fish)) {
-    showToast(`${fish.name} is panicking from a zombie bite and can't be stored right now.`);
-    return false;
-  }
   if (dead && isFishBeingConsumedByPiranhas(fish)) {
     showToast(`${fish.name} is already being devoured by piranhas.`);
     return false;
@@ -1735,7 +1739,6 @@ function storeFish(fishId, options = {}) {
   preserveTankDirtinessThroughChange(now, () => {
     state.fish.splice(index, 1);
     clearPiranhaAttackState(fish);
-    clearZombieAttackState(fish);
     fish.feedingPelletId = null;
     fish.comfortDamageProgressMs = 0;
     clearFishCaveBehavior(fish);

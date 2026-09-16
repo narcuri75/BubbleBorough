@@ -66,21 +66,7 @@ function createFishRecord(speciesId, options = {}) {
           ? Number(options.desiredTankLayer)
           : DEFAULT_TANK_LAYER
       );
-  const undeadTemplateStage = getUndeadTemplateStageForSpecies(species);
-  const requestedUndeadTemplateSpeciesId = typeof options.undeadTemplateSpeciesId === "string"
-    ? options.undeadTemplateSpeciesId.trim()
-    : "";
-  const requestedUndeadTemplateSpecies = requestedUndeadTemplateSpeciesId
-    ? runtime.fishMap.get(requestedUndeadTemplateSpeciesId)
-    : null;
-  const undeadTemplateSpecies = requestedUndeadTemplateSpecies && !isUndeadSpecies(requestedUndeadTemplateSpecies)
-    ? requestedUndeadTemplateSpecies
-    : (
-      undeadTemplateStage
-        ? runtime.fishMap.get(pickRandomUndeadTemplateSpeciesId(undeadTemplateStage) || "")
-        : null
-    );
-  const scaleSpeciesId = undeadTemplateSpecies?.id || speciesId;
+  const scaleSpeciesId = speciesId;
   const scale = clamp(
     Number.isFinite(Number(options.scale)) ? Number(options.scale) : getFishScaleDefault(scaleSpeciesId),
     FISH_SCALE_MIN,
@@ -111,19 +97,12 @@ function createFishRecord(speciesId, options = {}) {
   const fish = {
     id: fishId,
     speciesId,
-    undeadTemplateSpeciesId: isCatalogUndeadShopSpecies(species) ? (undeadTemplateSpecies?.id || null) : null,
     name: typeof options.name === "string" && options.name.trim()
       ? options.name.trim()
       : buildFishName(speciesId, takenNames),
     acquiredAt: now,
     tankAddedAt: Number.isFinite(Number(options.tankAddedAt)) ? Number(options.tankAddedAt) : now,
     deadAt: null,
-    zombieVariant: Boolean(options.zombieVariant),
-    zombieBiteStartedAt: null,
-    zombieBiteLastBloodAt: null,
-    zombieBiteAttackerId: null,
-    zombieReviveAt: null,
-    zombieReviveSourceId: null,
     decayStage: null,
     piranhaConsumptionStartedAt: null,
     piranhaConsumptionEndsAt: null,
@@ -150,6 +129,7 @@ function createFishRecord(speciesId, options = {}) {
     favoriteSpot: sanitizeFavoriteSpot(options.favoriteSpot),
     residenceDecorId: typeof options.residenceDecorId === "string" && options.residenceDecorId ? options.residenceDecorId : null,
     parentNames: Array.isArray(options.parentNames) ? options.parentNames.map((name) => String(name).slice(0, 40)).slice(0, 2) : [],
+    parentIds: Array.isArray(options.parentIds) ? options.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2) : [],
     celebratedAgeMilestones: [],
     visitedNeighborhoodIds: getCurrentTank()?.id ? [getCurrentTank().id] : [],
     needs: sanitizeFishNeeds(options.needs, null, now),
@@ -180,6 +160,14 @@ function createFishRecord(speciesId, options = {}) {
     nextDiseaseSpreadCheckAt: now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS),
     nextSymptomCheckAt: now + randomDelay(DISEASE_SYMPTOM_CHECK_MIN_MS, DISEASE_SYMPTOM_CHECK_MAX_MS),
     nextGreenBubbleAt: 0,
+    pufferInflatedAt: 0,
+    pufferInflatedUntil: 0,
+    pufferWobbleUntil: 0,
+    pufferRiseUntil: 0,
+    pufferCooldownUntil: 0,
+    pufferGlassStressUntil: 0,
+    pufferInflatedSwimSpeed: 0,
+    pufferDriftPhase: Math.random() * Math.PI * 2,
     lastIllnessRiskDayKey: "",
     lastIllnessSignalAtByType: {},
     xNorm: initialPosition.xNorm,
@@ -295,7 +283,7 @@ function getBreedableFishGroups(now = Date.now(), options = {}) {
     : null;
 
   for (const fish of state.fish) {
-    if (!fish || isFishDead(fish) || isUndeadFish(fish) || !isFishAdult(fish, now)) {
+    if (!fish || isFishDead(fish) || !isFishAdult(fish, now)) {
       continue;
     }
 
@@ -349,9 +337,73 @@ function createBabyFishFromSpecies(speciesId, now = Date.now(), options = {}) {
     yNorm: clamp(anchorYNorm + randomBetween(-0.012, 0.012), 0.14, 0.8),
     targetXNorm: clamp(anchorXNorm + randomBetween(-0.05, 0.05), 0.08, 0.92),
     targetYNorm: clamp(anchorYNorm + randomBetween(-0.04, 0.04), 0.14, 0.8),
+    appearanceVariant: Number.isFinite(Number(options.appearanceVariant)) ? Number(options.appearanceVariant) : undefined,
+    parentNames: Array.isArray(options.parentNames) ? options.parentNames : [],
+    parentIds: Array.isArray(options.parentIds) ? options.parentIds : [],
     fishColor: normalizeDecorColorSetting(options.fishColor ?? ""),
     fishColorize: normalizeDecorColorizeSetting(options.fishColorize ?? false)
   });
+}
+
+function spawnBreedingOffspring(speciesId, now = Date.now(), options = {}) {
+  const species = runtime.fishMap.get(speciesId);
+  if (!species) return null;
+  const parentNames = Array.isArray(options.parentNames)
+    ? options.parentNames.map((name) => sanitizeTankName(name, "")).filter(Boolean).slice(0, 2)
+    : [];
+  const parentIds = Array.isArray(options.parentIds)
+    ? options.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
+    : [];
+  const tankLayer = species.behavior === "sucker"
+    ? SUCKER_FISH_BACK_GLASS_LAYER
+    : clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : DEFAULT_TANK_LAYER);
+
+  if (species.liveBirth === true) {
+    const variants = getFishAssetVariants(species);
+    const appearanceVariant = variants.length > 1 ? Math.floor(Math.random() * variants.length) : 0;
+    const baby = createBabyFishFromSpecies(speciesId, now, {
+      anchorXNorm: options.xNorm,
+      anchorYNorm: options.yNorm,
+      tankLayer,
+      appearanceVariant,
+      parentNames,
+      parentIds,
+      fishColor: options.fishColor,
+      fishColorize: options.fishColorize
+    });
+    if (!baby) return null;
+    addFishToTank(baby, now);
+    return { kind: "live", baby, species, parentNames, parentIds };
+  }
+
+  const eggSpawnOptions = {
+    xNorm: options.xNorm,
+    yNorm: options.yNorm,
+    parentNames,
+    parentIds,
+    tankLayer,
+    fishColor: options.fishColor,
+    fishColorize: options.fishColorize
+  };
+  if (species.breedingMethod === "egg-scatterer") {
+    eggSpawnOptions.yNorm = randomBetween(0.72, 0.84);
+  } else if (species.breedingMethod === "floating-egg-mass") {
+    eggSpawnOptions.yNorm = randomBetween(0.2, 0.36);
+    eggSpawnOptions.startYNorm = eggSpawnOptions.yNorm;
+  }
+  const egg = createFishEggRecord(speciesId, now, eggSpawnOptions);
+  if (!egg) return null;
+  addFishEggToTank(egg);
+  return { kind: "egg", egg, species, parentNames, parentIds };
+}
+
+function getBreedingOffspringMessage(result) {
+  if (!result) return "";
+  const parents = result.parentNames || [];
+  const parentLabel = parents.length >= 2 ? `${parents[0]} and ${parents[1]}` : "a breeding pair";
+  return result.kind === "live"
+    ? `${result.baby?.name || "A baby fish"} the ${result.species?.name || "fish"} was born after ${parentLabel} paired up.`
+    : `An egg appeared after ${parentLabel} paired up.`;
 }
 
 function getAvailableFishInheritanceColors() {
@@ -465,14 +517,22 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
   const tankLayer = species.behavior === "sucker"
     ? SUCKER_FISH_BACK_GLASS_LAYER
     : clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : DEFAULT_TANK_LAYER);
-  const targetYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
-  const startYNorm = clamp(
-    Number.isFinite(Number(options.startYNorm)) ? Number(options.startYNorm) : (Number(options.yNorm) || targetYNorm - 0.18),
-    0.14,
-    Math.max(0.16, targetYNorm - 0.01)
-  );
+  const floatingEggMass = species.breedingMethod === "floating-egg-mass";
+  const targetYNorm = floatingEggMass
+    ? clamp(Number(options.yNorm) || randomBetween(0.2, 0.36), 0.16, 0.46)
+    : getFishEggTargetYNorm(xNorm, tankLayer);
+  const startYNorm = floatingEggMass
+    ? targetYNorm
+    : clamp(
+      Number.isFinite(Number(options.startYNorm)) ? Number(options.startYNorm) : (Number(options.yNorm) || targetYNorm - 0.18),
+      0.14,
+      Math.max(0.16, targetYNorm - 0.01)
+    );
   const parentNames = Array.isArray(options.parentNames)
     ? options.parentNames.map((name) => sanitizeTankName(name, "")).filter(Boolean).slice(0, 2)
+    : [];
+  const parentIds = Array.isArray(options.parentIds)
+    ? options.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
     : [];
   const fishColor = snapFishInheritanceColorToAvailable(options.fishColor ?? "");
 
@@ -480,6 +540,7 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
     id: createId("egg"),
     speciesId,
     parentNames,
+    parentIds,
     createdAt: now,
     hatchAt: now + FISH_EGG_INCUBATION_MS,
     hatchedAt: null,
@@ -490,7 +551,8 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
     xNorm,
     startYNorm,
     yNorm: targetYNorm,
-    tankLayer
+    tankLayer,
+    buoyancy: floatingEggMass ? "floating" : "sinking"
   };
 }
 
@@ -523,7 +585,8 @@ function hatchFishEgg(egg, now = Date.now()) {
     tankLayer: egg.tankLayer,
     fishColor: snapFishInheritanceColorToAvailable(egg.fishColor),
     fishColorize: egg.fishColorize,
-    parentNames: egg.parentNames
+    parentNames: egg.parentNames,
+    parentIds: egg.parentIds
   });
   if (!baby) {
     return false;
@@ -644,25 +707,24 @@ function processFishBreedingForSlot(slot) {
       { minYNorm: 0.18, maxYNorm: 0.76 }
     );
     const colorInheritance = getBreedingEggColorInheritance(parents, slot.end);
-    const egg = createFishEggRecord(speciesId, slot.end, {
+    const offspring = spawnBreedingOffspring(speciesId, slot.end, {
       xNorm: anchorXNorm,
       yNorm: anchorYNorm,
       parentNames: [parents[0].name, parents[1].name],
+      parentIds: [parents[0].id, parents[1].id],
       tankLayer: eggLayer,
       fishColor: colorInheritance.fishColor,
       fishColorize: colorInheritance.fishColorize
     });
-    if (!egg) {
+    if (!offspring) {
       continue;
     }
-
-    addFishEggToTank(egg);
     const cooldownUntil = slot.end + BREEDING_COOLDOWN_MS;
     for (const parent of parents) {
       parent.breedCooldownUntil = cooldownUntil;
     }
 
-    pushEvent(`An egg appeared after ${parents[0].name} and ${parents[1].name} paired up.`, slot.end);
+    pushEvent(getBreedingOffspringMessage(offspring), slot.end, getCurrentTank(), { type: "birth", fishId: offspring.baby?.id || "", score: 1 });
     changed = true;
   }
 
@@ -741,26 +803,26 @@ function updateDebugBreedingSequence(now) {
   const eggLayer = Number.isFinite(Number(sequence.eggLayer))
     ? clampTankLayer(sequence.eggLayer)
     : getBreedingEggTankLayer(species, sequence.targetLayer);
-  const egg = createFishEggRecord(sequence.speciesId, now, {
+  const offspring = spawnBreedingOffspring(sequence.speciesId, now, {
     xNorm: sequence.anchorXNorm,
     yNorm: sequence.anchorYNorm,
     parentNames: [leftFish.name, rightFish.name],
+    parentIds: [leftFish.id, rightFish.id],
     tankLayer: eggLayer,
     fishColor: colorInheritance.fishColor,
     fishColorize: colorInheritance.fishColorize
   });
-  if (egg) {
-    addFishEggToTank(egg);
+  if (offspring) {
     const cooldownUntil = now + BREEDING_COOLDOWN_MS;
     leftFish.breedCooldownUntil = cooldownUntil;
     rightFish.breedCooldownUntil = cooldownUntil;
     leftFish.targetAt = now;
     rightFish.targetAt = now;
-    pushEvent(`An egg appeared after ${leftFish.name} and ${rightFish.name} paired up.`, now);
+    pushEvent(getBreedingOffspringMessage(offspring), now, getCurrentTank(), { type: "birth", fishId: offspring.baby?.id || "", score: 1 });
     clearDebugBreedingSequence();
     saveState();
     renderUi(now);
-    showToast(`${species?.name || "Fish"} egg settled into the gravel.`);
+    showToast(offspring.kind === "live" ? `${offspring.baby?.name || "A baby fish"} was born.` : `${species?.name || "Fish"} egg settled into the gravel.`);
     return null;
   }
 

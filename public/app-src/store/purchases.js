@@ -403,10 +403,6 @@ async function buyFish(speciesId, options = {}) {
     return { ok: false, reason: "missing-species" };
   }
 
-  if (isUndeadSpecies(species) && !isViolenceAndGoreEnabled()) {
-    showToast("Enable Violence & Gore to buy undead fish.");
-    return { ok: false, reason: "content-locked" };
-  }
 
   if (!isFishSpeciesShopUnlocked(species)) {
     showToast(`${species.name} has not been unlocked yet.`);
@@ -513,6 +509,9 @@ async function buyFish(speciesId, options = {}) {
     });
     if (!transaction.ok) {
       return transaction;
+    }
+    if (options.purchaseSource === "davyjoneslocker" && typeof queueDavyJonesFulfillmentEmail === "function") {
+      queueDavyJonesFulfillmentEmail(fish, species, purchaseCompletedAt + 1);
     }
     return {
       ok: true,
@@ -700,7 +699,6 @@ function getPendingFishBuyAnotherDetails() {
 
   const cost = getFishPurchaseCost(details.fish.speciesId);
   const customFish = isCustomFishAssetKey(details.fish.speciesId);
-  const goreLocked = isUndeadSpecies(details.species) && !isViolenceAndGoreEnabled();
   const unlocked = customFish
     ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
     : isFishSpeciesShopUnlocked(details.baseSpecies);
@@ -708,10 +706,9 @@ function getPendingFishBuyAnotherDetails() {
     ...details,
     cost,
     customFish,
-    goreLocked,
     unlocked,
     canAfford: state.coins >= cost,
-    canBuy: unlocked && !goreLocked
+    canBuy: unlocked
   };
 }
 
@@ -743,7 +740,7 @@ function openFishBuyAnotherConfirmation(fishId) {
     getDetails: getPendingFishBuyAnotherDetails,
     missingMessage: "Choose a fish first.",
     validate: (details) => details?.goreLocked
-      ? "Enable Violence & Gore to buy undead fish."
+      ? "Enable Violence & Gore to buy this fish."
       : !details?.unlocked
         ? `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`
         : !details?.canAfford
@@ -778,7 +775,7 @@ function confirmFishBuyAnother() {
     missingMessage: "That fish is no longer available.",
     validate: (details) => !details?.canBuy
       ? (details?.goreLocked
-      ? "Enable Violence & Gore to buy undead fish."
+      ? "Enable Violence & Gore to buy this fish."
       : `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`)
       : !details?.canAfford
         ? getInsufficientFundsMessage()
@@ -1030,7 +1027,7 @@ function buyBackground(backgroundKey) {
     return;
   }
 
-  return performCoinTransaction({
+  const result = performCoinTransaction({
     amount: background.cost,
     insufficientMessage: `You need ${background.cost} ${pluralize("coin", background.cost)} for ${background.name}.`,
     apply: () => {
@@ -1040,6 +1037,10 @@ function buyBackground(backgroundKey) {
     event: { type: "purchase", tone: "positive", text: `Unlocked the ${background.name} background.` },
     toast: `${background.name} unlocked and applied.`
   });
+  if (result?.ok) {
+    void ensureBackgroundImageReady(backgroundKey);
+  }
+  return result;
 }
 
 

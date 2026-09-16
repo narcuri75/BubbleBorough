@@ -1133,7 +1133,29 @@ function bindEvents() {
   dom.debugFishBehaviorPreviewBehavior?.addEventListener("change", (event) => {
     setDebugFishBehaviorPreviewBehavior(event.currentTarget.value);
   });
+  dom.debugDecorPreviewButton?.addEventListener("click", () => openDebugDecorPreview());
+  dom.closeDebugDecorPreview?.addEventListener("click", () => closeDebugDecorPreview());
+  dom.debugDecorPreview?.querySelector("[data-debug-decor-preview-close]")?.addEventListener("click", () => closeDebugDecorPreview());
+  dom.debugDecorPreviewSelect?.addEventListener("change", (event) => setDebugDecorPreviewDecor(event.currentTarget.value));
+  dom.debugDecorPreviewLayer?.addEventListener("change", (event) => setDebugDecorPreviewLayer(event.currentTarget.value));
+  dom.debugDecorPreviewSnapButton?.addEventListener("click", () => snapDebugDecorPreviewToLayer());
+  dom.debugDecorPreviewResetButton?.addEventListener("click", () => resetDebugDecorPreview());
+  dom.debugDecorPreviewSize?.addEventListener("input", (event) => setDebugDecorPreviewSize(event.currentTarget.value));
+  dom.debugDecorPreviewFlipX?.addEventListener("change", (event) => setDebugDecorPreviewFlip("x", event.currentTarget.checked));
+  dom.debugDecorPreviewFlipY?.addEventListener("change", (event) => setDebugDecorPreviewFlip("y", event.currentTarget.checked));
+  dom.debugDecorPreviewShowFootprint?.addEventListener("change", () => requestDebugDecorPreviewRender());
+  dom.debugDecorPreviewColors?.addEventListener("input", (event) => handleDebugDecorPreviewColorInput(event));
+  dom.debugDecorPreviewColors?.addEventListener("change", (event) => handleDebugDecorPreviewColorInput(event));
+  dom.debugDecorPreviewCanvas?.addEventListener("pointerdown", (event) => beginDebugDecorPreviewDrag(event));
+  dom.debugDecorPreviewCanvas?.addEventListener("pointermove", (event) => moveDebugDecorPreviewDrag(event));
+  dom.debugDecorPreviewCanvas?.addEventListener("pointerup", (event) => endDebugDecorPreviewDrag(event));
+  dom.debugDecorPreviewCanvas?.addEventListener("pointercancel", (event) => endDebugDecorPreviewDrag(event));
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && runtime.debugDecorPreviewOpen) {
+      event.preventDefault();
+      closeDebugDecorPreview();
+      return;
+    }
     if (event.key === "Escape" && runtime.debugFishBehaviorPreviewOpen) {
       event.preventDefault();
       closeDebugFishBehaviorPreview();
@@ -1143,6 +1165,14 @@ function bindEvents() {
   dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
   dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
   dom.debugFrameProfilerButton?.addEventListener("click", () => toggleDebugFrameProfiler());
+  dom.debugDepthTuner?.addEventListener("input", (event) => {
+    const input = event.target?.closest?.("[data-depth-tuning-key]");
+    if (input) {
+      handleDebugDepthTuningInput(input);
+    }
+  });
+  dom.debugDepthTunerResetButton?.addEventListener("click", () => resetDebugDepthTuner());
+  dom.debugDepthTunerCopyButton?.addEventListener("click", () => copyDebugDepthTunerValues());
   dom.feedButton.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("feedButton")) {
       return;
@@ -1649,6 +1679,19 @@ function bindEvents() {
   });
   dom.decorShadowsToggleInput?.addEventListener("change", (event) => {
     setDecorShadowsEnabled(event.currentTarget?.checked);
+  });
+  dom.depthEffectLevelInput?.addEventListener("input", (event) => {
+    const depthLevel = normalizeDepthEffectLevel(event.currentTarget?.value);
+    if (dom.depthEffectLevelOutput) {
+      dom.depthEffectLevelOutput.textContent = `${depthLevel} · ${DEPTH_EFFECT_LEVEL_LABELS[depthLevel] || "Custom"}`;
+    }
+    setDepthEffectLevel(depthLevel);
+  });
+  dom.depthEffectLevelInput?.addEventListener("change", (event) => {
+    setDepthEffectLevel(event.currentTarget?.value);
+  });
+  dom.backgroundDepthHazeToggleInput?.addEventListener("change", (event) => {
+    setBackgroundDepthHazeEnabled(event.currentTarget?.checked);
   });
   dom.simpleTurnAnimationsToggleInput?.addEventListener("change", (event) => {
     setSimpleTurnAnimationsOnly(event.currentTarget?.checked);
@@ -3797,6 +3840,15 @@ function updatePlayfieldCssVariables() {
   dom.tankStage.style.setProperty("--playfield-bottom", `${top + height}px`);
 }
 
+function resetStageRenderViewAfterToolClose() {
+  runtime.stageRenderViewTarget = null;
+  runtime.stageRenderViewTargetKey = null;
+  runtime.stageRenderViewLastFrameAt = 0;
+  runtime.stageEditViewAmount = 0;
+  updateStageRenderView(performance.now(), { immediate: true });
+  dom.tankStage?.classList.remove("is-decor-edit-framed");
+}
+
 function getStageRenderViewTarget() {
   const layout = getTankStageLayoutSize();
   if (!layout.width || !layout.height) {
@@ -4077,11 +4129,6 @@ async function fetchFishCatalog() {
   }
 }
 
-async function fetchZombieSkeletonFishCatalog() {
-  // The per-species zombie and skeleton assets have been retired.
-  return { fish: [], variants: [] };
-}
-
 async function fetchDecorCatalog() {
   try {
     const response = await fetch(resolveAppUrl(DECOR_CATALOG_PATH), { cache: "no-store" });
@@ -4283,12 +4330,22 @@ function normalizeDecorMeta(payload) {
         ? entry.name.trim()
         : titleFromFile(key),
       description: typeof entry.description === "string" ? entry.description.trim() : "",
-      theme: isHalloweenDecor({ ...entry, key }) ? "Halloween" : normalizeCatalogTheme(entry.theme),
+      theme: normalizeCatalogTheme(entry.theme) || (isHalloweenDecor({ ...entry, key }) ? "halloween" : null),
       cost: Number.isFinite(entry.cost) ? entry.cost : 8,
       width: Number.isFinite(entry.width) ? entry.width : 140,
       defaultScale: Number.isFinite(entry.defaultScale) ? entry.defaultScale : DEFAULT_DECOR_SCALE,
       waterTypes: normalizeStringList(entry.waterTypes || entry.waterType).map((value) => normalizeWaterType(value)).filter(Boolean),
       categories: deriveDecorCategories(entry, key),
+      tags: normalizeStringList(entry.tags).map((value) => value.toLowerCase()),
+      behavior: normalizeDecorBehaviorType(entry.behavior),
+      motionBehavior: normalizeDecorBehaviorType(entry.motionBehavior),
+      motionLayer: ["front", "bg", "all"].includes(String(entry.motionLayer || "").trim().toLowerCase())
+        ? String(entry.motionLayer).trim().toLowerCase()
+        : "all",
+      motionSplitY: Number.isFinite(Number(entry.motionSplitY)) ? clamp(Number(entry.motionSplitY), 0.05, 0.95) : null,
+      motionSwaySide: ["above", "below"].includes(String(entry.motionSwaySide || "").trim().toLowerCase())
+        ? String(entry.motionSwaySide).trim().toLowerCase()
+        : "",
       fishBehavior: normalizeDecorFishBehaviorMeta(entry, key),
       moodDelta: clamp(Number(entry.moodDelta) || 0, -0.2, 0.2),
       caveBehavior: normalizeCaveBehaviorMeta(entry.caveBehavior),
@@ -4362,7 +4419,7 @@ function hasBubblerSpoutMetaFields(entry) {
 }
 
 function isBubblerDecorFileKey(decorKey = "") {
-  return /_bubbler\.[^.]+$/i.test(String(decorKey || "").trim());
+  return /(?:^|__)bubbler(?:__|\.)/i.test(String(decorKey || "").trim());
 }
 
 function normalizeBubblerHorizontalPosition(value) {
@@ -4912,70 +4969,59 @@ function resolveSpeciesMealCoins(species) {
 
 function getDecorCompanionType(decorKey = "") {
   const key = String(decorKey || "").toLowerCase();
+  const stem = key.replace(/\.[^.]+$/, "");
+  const tokens = stem.split("__").slice(2);
+  const has = (token) => tokens.includes(token);
+  const hasTrypophobia = has("trypophobia");
 
-  if (/_color1_trypophobia\.[^.]+$/.test(key)) {
-    return "color1Trypophobia";
+  for (const color of ["color1", "color2", "color3"]) {
+    if (has(color)) return hasTrypophobia ? `${color}Trypophobia` : color;
   }
+  if (hasTrypophobia) return "trypophobia";
+  if (has("shadow-footprint") || has("shadowfootprint") || has("footprint")) return "shadowFootprint";
+  if (has("bg")) return "bg";
+  if (has("mask")) return "mask";
+  if (has("light")) return "light";
+  if (has("mid")) return "mid";
+  if (has("trigger") || has("triggers")) return "trigger";
+  if (has("seat") || has("seats")) return "seats";
+  if (has("front")) return "base";
 
-  if (/_color2_trypophobia\.[^.]+$/.test(key)) {
-    return "color2Trypophobia";
-  }
-
-  if (/_color3_trypophobia\.[^.]+$/.test(key)) {
-    return "color3Trypophobia";
-  }
-
-  if (/_trypophobia\.[^.]+$/.test(key)) {
-    return "trypophobia";
-  }
-
-  if (/_color1\.[^.]+$/.test(key)) {
-    return "color1";
-  }
-
-  if (/_color2\.[^.]+$/.test(key)) {
-    return "color2";
-  }
-
-  if (/_color3\.[^.]+$/.test(key)) {
-    return "color3";
-  }
-
-  if (/_(?:triggers|trigger)\.[^.]+$/.test(key)) {
-    return "trigger";
-  }
-
-  if (/_(?:seats|seat)\.[^.]+$/.test(key)) {
-    return "seats";
-  }
-
-  if (/_bg\.[^.]+$/.test(key)) {
-    return "bg";
-  }
-
-  if (/_mask\.[^.]+$/.test(key)) {
-    return "mask";
-  }
-
-  if (/_light\.[^.]+$/.test(key)) {
-    return "light";
-  }
-
-  if (/_mid\.[^.]+$/.test(key)) {
-    return "mid";
-  }
-
+  // Legacy support for existing saves and old custom content.
+  if (/_color1_trypophobia\.[^.]+$/.test(key)) return "color1Trypophobia";
+  if (/_color2_trypophobia\.[^.]+$/.test(key)) return "color2Trypophobia";
+  if (/_color3_trypophobia\.[^.]+$/.test(key)) return "color3Trypophobia";
+  if (/_trypophobia\.[^.]+$/.test(key)) return "trypophobia";
+  if (/_color1\.[^.]+$/.test(key)) return "color1";
+  if (/_color2\.[^.]+$/.test(key)) return "color2";
+  if (/_color3\.[^.]+$/.test(key)) return "color3";
+  if (/_(?:triggers|trigger)\.[^.]+$/.test(key)) return "trigger";
+  if (/_(?:seats|seat)\.[^.]+$/.test(key)) return "seats";
+  if (/(?:_shadow[-_]?footprint|_footprint)\.[^.]+$/.test(key)) return "shadowFootprint";
+  if (/_bg\.[^.]+$/.test(key)) return "bg";
+  if (/_mask\.[^.]+$/.test(key)) return "mask";
+  if (/_light\.[^.]+$/.test(key)) return "light";
+  if (/_mid\.[^.]+$/.test(key)) return "mid";
   return "base";
 }
 
 function getDecorBaseKey(decorKey = "") {
-  const key = String(decorKey || "").toLowerCase();
-  return key
+  const original = String(decorKey || "");
+  const extensionMatch = original.match(/(\.[^.]+)$/);
+  const extension = extensionMatch?.[1] || "";
+  const stem = extension ? original.slice(0, -extension.length) : original;
+  if (stem.includes("__")) {
+    const removable = new Set(["front", "bg", "mask", "shadow-footprint", "shadowfootprint", "footprint", "light", "mid", "trypophobia", "color1", "color2", "color3", "trigger", "triggers", "seat", "seats"]);
+    const parts = stem.split("__").filter((part, index) => index < 2 || !removable.has(part.toLowerCase()));
+    return `${parts.join("__")}${extension}`.toLowerCase();
+  }
+  return original.toLowerCase()
     .replace(/_color[123]_trypophobia(?=\.[^.]+$)/, "")
     .replace(/_trypophobia(?=\.[^.]+$)/, "")
     .replace(/_color[123](?=\.[^.]+$)/, "")
     .replace(/_(?:triggers|trigger)(?=\.[^.]+$)/, "")
     .replace(/_(?:seats|seat)(?=\.[^.]+$)/, "")
+    .replace(/_(?:shadow[-_]?footprint|footprint)(?=\.[^.]+$)/, "")
     .replace(/_bg(?=\.[^.]+$)/, "")
     .replace(/_mask(?=\.[^.]+$)/, "")
     .replace(/_light(?=\.[^.]+$)/, "")
@@ -5050,10 +5096,15 @@ function getExpectedCaveCompanionPaths(baseItem, meta = {}) {
   if (!baseItem?.key || !meta?.caveSettings) return [];
   const extensionMatch = baseItem.key.match(/(\.[^.]+)$/);
   if (!extensionMatch) return [];
-  const stem = baseItem.key.slice(0, -extensionMatch[1].length);
-  return ["_bg", "_color2", "_color3"].map((suffix) => resolveAppUrl(
-    `assets/decor/${encodeURIComponent(`${stem}${suffix}${extensionMatch[1]}`)}`
-  ));
+  const baseKey = getDecorBaseKey(baseItem.key);
+  const stem = baseKey.slice(0, -extensionMatch[1].length);
+  const rawPath = String(baseItem.path || "").replace(/[?#].*$/, "");
+  const directory = rawPath.includes("/") ? rawPath.slice(0, rawPath.lastIndexOf("/") + 1) : "assets/decor/";
+  return [
+    `${stem}__bg${extensionMatch[1]}`,
+    `${stem}__front__color2${extensionMatch[1]}`,
+    `${stem}__front__color3${extensionMatch[1]}`
+  ].map((file) => resolveAppUrl(`${directory}${encodeURIComponent(file)}`));
 }
 
 function buildDecorCatalog(items, catalogMeta = {}) {
@@ -5068,6 +5119,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         base: null,
         bg: null,
         mask: null,
+        shadowFootprint: null,
         mid: null,
         light: null,
         color1: null,
@@ -5096,10 +5148,11 @@ function buildDecorCatalog(items, catalogMeta = {}) {
       grouped.set(baseKey, {
         base: {
           key,
-          path: resolveAppUrl(`assets/decor/${encodeURIComponent(key)}`)
+          path: getDecorAssetPathForKey(key)
         },
         bg: null,
         mask: null,
+        shadowFootprint: null,
         mid: null,
         light: null,
         color1: null,
@@ -5130,12 +5183,14 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         path: group.base.path,
         bgPath: group.bg?.path || null,
         maskPath: group.mask?.path || null,
+        shadowFootprintPath: group.shadowFootprint?.path || null,
         midPath: group.mid?.path || null,
         lightPath: group.light?.path || null,
         triggerPath: group.trigger?.path || null,
         seatsPath: group.seats?.path || null,
         hasBg: Boolean(group.bg),
         hasMask: Boolean(group.mask),
+        hasShadowFootprint: Boolean(group.shadowFootprint),
         hasMid: Boolean(group.mid),
         hasLight: Boolean(group.light),
         hasTrigger: Boolean(group.trigger),
@@ -5148,8 +5203,14 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         expectedCaveCompanionPaths,
         name: meta.name || titleFromFile(group.base.key),
         description: meta.description || "",
-        theme: isHalloweenDecor({ ...meta, key: group.base.key }) ? "Halloween" : normalizeCatalogTheme(meta.theme),
+        theme: normalizeCatalogTheme(meta.theme) || (isHalloweenDecor({ ...meta, key: group.base.key }) ? "halloween" : null),
         categories: deriveDecorCategories(meta, group.base.key),
+        tags: normalizeStringList(meta.tags).map((value) => value.toLowerCase()),
+        behavior: normalizeDecorBehaviorType(meta.behavior),
+        motionBehavior: normalizeDecorBehaviorType(meta.motionBehavior),
+        motionLayer: meta.motionLayer || "all",
+        motionSplitY: Number.isFinite(Number(meta.motionSplitY)) ? Number(meta.motionSplitY) : null,
+        motionSwaySide: meta.motionSwaySide || "",
         cost: Number.isFinite(meta.cost) ? meta.cost : 8,
         width: Number.isFinite(meta.width) ? meta.width : 140,
         defaultScale: Number.isFinite(meta.defaultScale) ? meta.defaultScale : DEFAULT_DECOR_SCALE,
@@ -5190,7 +5251,7 @@ function isCustomBubblerDecorKey(decorKey = "") {
 function getDecorThumbnailPath(decor) {
   if (decor?.thumbnailPath) return decor.thumbnailPath;
   const path = String(decor?.path || "");
-  const match = path.match(/(?:^|\/)assets\/decor\/([^/?#]+\.png)(?:[?#].*)?$/i);
+  const match = path.match(/(?:^|\/)assets\/decor\/(.+?\.png)(?:[?#].*)?$/i);
   return match
     ? `assets/generated/previews/decor/${match[1]}.webp`
     : path;
@@ -5204,12 +5265,14 @@ function buildVirtualDecorCatalogEntries() {
       thumbnailPath: CUSTOM_BUBBLER_THUMBNAIL_IMAGE,
       bgPath: null,
       maskPath: null,
+      shadowFootprintPath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
+      hasShadowFootprint: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -5234,12 +5297,14 @@ function buildVirtualDecorCatalogEntries() {
       path: CUSTOM_DECOR_SHOP_IMAGE,
       bgPath: null,
       maskPath: null,
+      shadowFootprintPath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
+      hasShadowFootprint: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -5265,12 +5330,14 @@ function buildVirtualDecorCatalogEntries() {
       path: CUSTOM_HIDE_SHOP_IMAGE,
       bgPath: null,
       maskPath: null,
+      shadowFootprintPath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
+      hasShadowFootprint: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -5488,8 +5555,6 @@ function buildVirtualFishCatalogEntries() {
       mealCoinOverride: null,
       asset: CUSTOM_FISH_SHOP_IMAGE,
       assetVariants: [CUSTOM_FISH_SHOP_IMAGE],
-      zombieAssetVariants: [],
-      skeletonAssetVariants: [],
       fallbackAsset: CUSTOM_FISH_SHOP_IMAGE,
       assetFolder: "web/proteus",
       description: "A bespoke biological design service from PROTEUS BIODYNE, developed for clients seeking an organism tailored to precise visual, behavioral, and environmental requirements.",
@@ -5518,7 +5583,6 @@ function buildVirtualFishCatalogEntries() {
       shadowScale: 0.28,
       defaultScale: DEFAULT_FISH_SCALE,
       unlockRequirement: null,
-      undeadType: null,
       heartCount: null,
       needs: {
         decor: [],
@@ -5555,9 +5619,6 @@ function getCustomFishBehaviorProfiles() {
 }
 
 function getCustomFishBehaviorKey(profile) {
-  if (typeof profile?.undeadType === "string" && profile.undeadType.trim()) {
-    return profile.undeadType.trim().toLowerCase();
-  }
   if (typeof profile?.behavior === "string" && profile.behavior.trim() && profile.behavior.trim().toLowerCase() !== "free") {
     return profile.behavior.trim().toLowerCase();
   }
@@ -5659,24 +5720,35 @@ function formatCustomFishBehaviorOption(profile) {
   return `${formatCustomFishBehaviorLabel(profile)} (${profile.name})`;
 }
 
-function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", dimensions = {}) {
+function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", dimensions = {}, options = {}) {
   const naturalWidth = Math.max(1, Math.round(Number(dimensions.width) || CUSTOM_FISH_DEFAULT_WIDTH));
   const naturalHeight = Math.max(1, Math.round(Number(dimensions.height) || CUSTOM_FISH_DEFAULT_WIDTH));
+  const previous = options.preserveParameters === true && runtime.pendingCustomFishUpload
+    ? runtime.pendingCustomFishUpload
+    : null;
+  const defaultProfile = getDefaultCustomFishBehaviorProfile();
   const pending = {
     dataUrl,
-    flipX: false,
-    rotation: 0,
+    flipX: previous ? Boolean(previous.flipX) : false,
+    rotation: previous ? sanitizeCustomFishRotation(previous.rotation) : 0,
     suggestedName: sanitizeCustomFishName(suggestedName, "Custom Fish"),
-    name: sanitizeCustomFishName(suggestedName, "Custom Fish"),
-    width: clamp(CUSTOM_FISH_DEFAULT_WIDTH, CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
+    name: previous
+      ? sanitizeCustomFishName(previous.name || previous.suggestedName, suggestedName)
+      : sanitizeCustomFishName(suggestedName, "Custom Fish"),
+    width: clamp(
+      previous ? Number(previous.width) || CUSTOM_FISH_DEFAULT_WIDTH : CUSTOM_FISH_DEFAULT_WIDTH,
+      CUSTOM_FISH_MIN_WIDTH,
+      CUSTOM_FISH_MAX_WIDTH
+    ),
     naturalWidth,
     naturalHeight,
-    behaviorProfileId: normalizeCustomFishBehaviorProfileId(""),
-    diet: getDefaultCustomFishDiet(getDefaultCustomFishBehaviorProfile()),
-    activityRegulation: "",
-    swimZone: "",
-    socialAffinity: "adaptive",
-    turnAnimation: "simple"
+    behaviorProfileId: normalizeCustomFishBehaviorProfileId(previous?.behaviorProfileId || ""),
+    diet: previous ? normalizeCustomFishDiet(previous.diet) : getDefaultCustomFishDiet(defaultProfile),
+    activityRegulation: previous ? normalizeCustomFishActivityRegulation(previous.activityRegulation) : "",
+    swimZone: previous ? normalizeCustomFishSwimZone(previous.swimZone) : "",
+    socialAffinity: previous ? normalizeCustomFishSocialAffinity(previous.socialAffinity) : "adaptive",
+    liveBirth: previous?.liveBirth === true,
+    turnAnimation: String(previous?.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
   const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
   if (runtime.proteusDesignerOpen === true && beginEngineeredAquaticSpecimenDesign(activeOrderId)) {
@@ -5997,6 +6069,7 @@ function sanitizeCustomFishAssetEntry(entry, key) {
     activityRegulation: normalizeCustomFishActivityRegulation(entry.activityRegulation),
     swimZone: normalizeCustomFishSwimZone(entry.swimZone),
     socialAffinity: normalizeCustomFishSocialAffinity(entry.socialAffinity),
+    liveBirth: entry.liveBirth === true || entry.live_birth === true || entry.Live_birth === true,
     turnAnimation: String(entry.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
@@ -6045,8 +6118,6 @@ function buildCustomFishCatalogEntry(asset) {
     mealCoinOverride: null,
     asset: imagePath,
     assetVariants: [imagePath],
-    zombieAssetVariants: [],
-    skeletonAssetVariants: [],
     fallbackAsset: imagePath,
     assetFolder: "custom",
     description: profile
@@ -6076,7 +6147,6 @@ function buildCustomFishCatalogEntry(asset) {
     shadowScale: clamp(Number(profile?.shadowScale) || 0.28, 0.14, 0.5),
     defaultScale: DEFAULT_FISH_SCALE,
     unlockRequirement: null,
-    undeadType: typeof profile?.undeadType === "string" && profile.undeadType.trim() ? profile.undeadType : null,
     heartCount: null,
     needs: {
       decor: [],
@@ -6094,6 +6164,7 @@ function buildCustomFishCatalogEntry(asset) {
     activityRegulation,
     swimZone: normalizeCustomFishSwimZone(asset.swimZone),
     socialAffinity: normalizeCustomFishSocialAffinity(asset.socialAffinity),
+    liveBirth: asset.liveBirth === true,
     turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
   species.mealCoins = resolveSpeciesMealCoins(species);
@@ -6130,10 +6201,7 @@ function normalizeFishCatalog(payload, options = {}) {
     : Array.isArray(payload?.fish)
       ? payload.fish
       : [];
-  const allowZombieSkeletonFish = options.allowZombieSkeletonFish === true;
-
   return entries
-    .filter((entry) => allowZombieSkeletonFish || !isZombieSkeletonCatalogSpecies(entry))
     .map((entry, index) => normalizeFishDefinition(entry, index, options))
     .filter(Boolean);
 }
@@ -6202,21 +6270,6 @@ function resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, fallbackA
     || (allowDirect ? resolveAppUrl(`${resolveFishCatalogAssetFolderPath(assetFolder)}/${encodeCatalogAssetPath(normalizedAssetFile)}`) : null);
 }
 
-function resolveFishCatalogStageAssets(assetFiles, assetFolder, folderAssets, stage) {
-  const normalizedStage = String(stage || "").trim().toLowerCase();
-  if (!["zombie", "skeleton"].includes(normalizedStage)) {
-    return [];
-  }
-
-  return collectFishCatalogAssetFiles(assetFiles)
-    .map((assetFile) => deriveFishStageAssetFile(assetFile, normalizedStage))
-    .map((assetFile) => resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, null, {
-      allowFallback: false,
-      allowDirect: false
-    }))
-    .filter((value, index, list) => Boolean(value) && list.indexOf(value) === index);
-}
-
 function normalizeFishDefinition(entry, index, options = {}) {
   if (!entry || typeof entry !== "object") {
     return null;
@@ -6272,27 +6325,6 @@ function normalizeFishDefinition(entry, index, options = {}) {
     .map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, fallbackAsset))
     .filter(Boolean)]
     .filter((value, assetIndex, list) => list.indexOf(value) === assetIndex);
-  const includeZombieSkeletonStageAssets = options.includeZombieSkeletonStageAssets === true;
-  const explicitZombieAssetFiles = collectFishCatalogAssetFiles(entry.zombieAsset, entry.zombieImage, entry.zombieFile, entry.zombieAssetVariants, entry.zombieAssets);
-  const explicitSkeletonAssetFiles = collectFishCatalogAssetFiles(entry.skeletonAsset, entry.skeletonImage, entry.skeletonFile, entry.skeletonAssetVariants, entry.skeletonAssets);
-  const zombieAssetVariants = includeZombieSkeletonStageAssets
-    ? (explicitZombieAssetFiles.length
-      ? explicitZombieAssetFiles.map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, null, {
-        allowFallback: false,
-        allowDirect: false
-      }))
-      : resolveFishCatalogStageAssets(assetSourceFiles, assetFolder, folderAssets, "zombie"))
-      .filter((value, assetIndex, list) => Boolean(value) && list.indexOf(value) === assetIndex)
-    : [];
-  const skeletonAssetVariants = includeZombieSkeletonStageAssets
-    ? (explicitSkeletonAssetFiles.length
-      ? explicitSkeletonAssetFiles.map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, null, {
-        allowFallback: false,
-        allowDirect: false
-      }))
-      : resolveFishCatalogStageAssets(assetSourceFiles, assetFolder, folderAssets, "skeleton"))
-      .filter((value, assetIndex, list) => Boolean(value) && list.indexOf(value) === assetIndex)
-    : [];
 
   const speedMinFloor = behavior === "sucker" ? 0.00005 : 0.012;
   const speedMaxCeiling = behavior === "sucker" ? 0.006 : 0.095;
@@ -6302,16 +6334,13 @@ function normalizeFishDefinition(entry, index, options = {}) {
     id,
     seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
     name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : titleFromFile(id),
-    theme: normalizeCatalogTheme(entry.theme),
-    waterType: normalizeWaterType(entry.waterType, inferWaterTypeFromTheme(entry.theme, "freshwater")),
+    genetics: String(entry.genetics || "natural").trim().toLowerCase() === "enhanced" ? "enhanced" : "natural",
     cost: Math.max(1, Math.floor(Number(entry.cost ?? entry.price) || 1)),
     mealCoins: 0,
     mealCoinOverride: Number.isFinite(explicitMealCoinOverride) ? Math.max(0, Math.round(explicitMealCoinOverride)) : null,
     asset: resolvedAsset,
     overlayAsset,
     assetVariants: resolvedAssetVariants,
-    zombieAssetVariants,
-    skeletonAssetVariants,
     fallbackAsset,
     assetFolder,
     description: typeof entry.description === "string" && entry.description.trim()
@@ -6334,6 +6363,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     type: speciesType,
     turnAnimation,
     chumOnly: entry.chumOnly === true,
+    liveBirth: entry.liveBirth === true || entry.live_birth === true || entry.Live_birth === true,
     desperationPredator: entry.desperationPredator === true,
     renderMotionProfile,
     cleanupMinMs: Math.max(60 * 1000, Math.floor(Number(entry.cleanupMinMs) || Number(entry.cleanupMinutesMin) * 60 * 1000 || 12 * 60 * 1000)),
@@ -6349,9 +6379,6 @@ function normalizeFishDefinition(entry, index, options = {}) {
         ? entry.unlockRequirement.trim().toLowerCase()
         : null
     ),
-    undeadType: typeof entry.undeadType === "string" && entry.undeadType.trim()
-      ? entry.undeadType.trim().toLowerCase()
-      : null,
     heartCount: Number.isFinite(explicitHeartCount)
       ? clamp(Math.round(explicitHeartCount), MIN_FISH_HEARTS, MAX_FISH_HEARTS)
       : null,

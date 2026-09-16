@@ -125,7 +125,9 @@ function drawBubblerLightLayerToContext(context, item, decor, now = Date.now(), 
   const flickerAlpha = getBubblerLightFlickerAlpha(item, now);
 
   context.save();
-  context.globalAlpha = baseAlpha * flickerAlpha;
+  const depthLayer = getDecorTankLayer(item);
+  const depthLightImage = getTankDepthTreatedImage(lightImage, depthLayer) || lightImage;
+  context.globalAlpha = baseAlpha * flickerAlpha * getTankDepthObjectAlpha(depthLayer);
   const flipX = isDecorHorizontallyFlipped(item);
   const flipY = isDecorVerticallyFlipped(item);
   if (flipX || flipY) {
@@ -134,7 +136,7 @@ function drawBubblerLightLayerToContext(context, item, decor, now = Date.now(), 
     drawX = flipX ? 0 : drawX;
     drawY = flipY ? 0 : drawY;
   }
-  drawDecorMotionImageToContext(context, lightImage, drawX, drawY, width, height, item, now, motion);
+  drawDecorMotionImageToContext(context, depthLightImage, drawX, drawY, width, height, item, now, motion);
   context.restore();
   return true;
 }
@@ -219,19 +221,39 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
     return;
   }
 
-  const resolvedMotion = motion || getDecorMotion(item, now);
+  const baseMotion = motion || getDecorMotion(item, now);
+  const motionLayer = getDecorMotionLayer(item);
+  const renderedLayer = receivesCaustics ? "front" : "bg";
+  const resolvedMotion = motionLayer === "all" || motionLayer === renderedLayer
+    ? baseMotion
+    : { ...baseMotion, isFloating: false, isSeaweed: false, isLure: false, customMotionType: "", bobX: 0, bobY: 0 };
   context.save();
-  context.globalAlpha = clamp(alpha, 0, 1);
+  const depthLayer = getDecorTankLayer(item);
+  context.globalAlpha = clamp(alpha, 0, 1) * getTankDepthObjectAlpha(depthLayer);
   const flipX = isDecorHorizontallyFlipped(item);
   const flipY = isDecorVerticallyFlipped(item);
-  if (flipX || flipY) {
-    context.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
-    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-    drawX = flipX ? 0 : drawX;
-    drawY = flipY ? 0 : drawY;
-  }
-  drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
-  markLightweightCausticDecorImage(context, image, drawX, drawY, width, height, item, now, resolvedMotion, receivesCaustics);
+  drawTankDepthAwareImageToContext(
+    context,
+    image,
+    depthLayer,
+    { left: drawX, top: drawY, width, height },
+    (renderContext, renderImage, passType) => {
+      renderContext.save();
+      let renderX = drawX;
+      let renderY = drawY;
+      if (flipX || flipY) {
+        renderContext.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
+        renderContext.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+        renderX = flipX ? 0 : drawX;
+        renderY = flipY ? 0 : drawY;
+      }
+      drawDecorMotionImageToContext(renderContext, renderImage, renderX, renderY, width, height, item, now, resolvedMotion);
+      if (passType === "depth") {
+        markLightweightCausticDecorImage(renderContext, renderImage, renderX, renderY, width, height, item, now, resolvedMotion, receivesCaustics);
+      }
+      renderContext.restore();
+    }
+  );
   context.restore();
 }
 
@@ -317,7 +339,6 @@ function getDecorSliceOffset(item, now, t, motion = null) {
 }
 
 function getDecorMotion(item, now) {
-  const key = String(item?.decorKey || "").toLowerCase();
   const phase = item.xNorm * 11.73 + item.yNorm * 7.19;
   const decor = runtime.decorMap.get(item?.decorKey);
   const capabilities = getDecorMotionCapabilities(item);
@@ -328,12 +349,13 @@ function getDecorMotion(item, now) {
   const customMotionConfig = customMotionType ? getCustomDecorMotionTypeConfig(customMotionType) : null;
   const isFloating = Boolean(capabilities.hasBob);
   const isSeaweed = Boolean(capabilities.hasSway);
-  const customMotionIntensity = motionSettings.swayIntensity;
-  const isLure = capabilities.isLure || key.includes("lure");
-  const lureBobX = isLure
+  const depthMovementMultiplier = getTankDepthMovementMultiplier(getDecorTankLayer(item));
+  const customMotionIntensity = motionSettings.swayIntensity * depthMovementMultiplier;
+  const isLure = Boolean(capabilities.isLure);
+  const lureBobX = isLure && capabilities.hasBob
     ? (Math.sin(now / (980 / motionSettings.bobSpeed) + phase * 0.85) * 2.1 + Math.sin(now / (1630 / motionSettings.bobSpeed) + phase * 1.4) * 0.7) * motionSettings.bobIntensity
     : 0;
-  const lureBobY = isLure
+  const lureBobY = isLure && capabilities.hasBob
     ? (Math.sin(now / (790 / motionSettings.bobSpeed) + phase) * 2.2 + Math.cos(now / (1280 / motionSettings.bobSpeed) + phase * 0.7) * 0.85) * motionSettings.bobIntensity
     : 0;
 
@@ -347,13 +369,13 @@ function getDecorMotion(item, now) {
     customMotionIntensity,
     swaySplitY: motionSettings.swaySplitY,
     swaySide: motionSettings.swaySide,
-    swayIntensity: motionSettings.swayIntensity,
-    bobIntensity: motionSettings.bobIntensity,
+    swayIntensity: motionSettings.swayIntensity * depthMovementMultiplier,
+    bobIntensity: motionSettings.bobIntensity * depthMovementMultiplier,
     swaySpeed: motionSettings.swaySpeed,
     bobSpeed: motionSettings.bobSpeed,
     phase,
-    bobX: isLure ? lureBobX : isFloating ? Math.sin(now / (980 / motionSettings.bobSpeed) + phase * 0.85) * 0.8 * motionSettings.bobIntensity : 0,
-    bobY: isLure ? lureBobY : isFloating ? Math.sin(now / (760 / motionSettings.bobSpeed) + phase) * 1.4 * motionSettings.bobIntensity : 0
+    bobX: (isLure ? lureBobX : isFloating ? Math.sin(now / (980 / motionSettings.bobSpeed) + phase * 0.85) * 0.8 * motionSettings.bobIntensity : 0) * depthMovementMultiplier,
+    bobY: (isLure ? lureBobY : isFloating ? Math.sin(now / (760 / motionSettings.bobSpeed) + phase) * 1.4 * motionSettings.bobIntensity : 0) * depthMovementMultiplier
   };
 }
 
@@ -399,7 +421,7 @@ function pruneFishShadowPlaneCache() {
 }
 
 function getDecorContactSpans(item, decor) {
-  const mask = getImageAlphaMask(decor.path);
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(decor.path) : null;
   if (!mask?.bounds || !mask.alpha) return null;
   if (!runtime.decorContactSpanCache) runtime.decorContactSpanCache = new WeakMap();
   let variants = runtime.decorContactSpanCache.get(mask);
@@ -425,6 +447,7 @@ function getDecorContactSpans(item, decor) {
   variants.set(flippedY, spans);
   return spans;
 }
+
 
 function getDecorContactShadowMetrics(item) {
   const decor = runtime.decorMap.get(item?.decorKey);
@@ -452,25 +475,48 @@ function getDecorContactShadowMetrics(item) {
     return null;
   }
 
-  const aspectFootprint = clamp(width / Math.max(width, height), 0.32, 1);
-  const radiusX = clamp(width * (0.255 + aspectFootprint * 0.118), 16, 226);
-  const radiusY = clamp(radiusX * 0.16, 5, 30);
-  const centerX = (bounds.left + bounds.right) * 0.5;
-  const lightOffsetX = clamp(radiusX * 0.075, 2, 12);
+  const spans = getDecorContactSpans(item, decor);
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(decor.path) : null;
+  const footprint = mask?.bounds
+    ? {
+      left: mask.bounds.minX / mask.width,
+      right: (mask.bounds.maxX + 1) / mask.width
+    }
+    : (Array.isArray(spans) && spans.length
+      ? {
+        left: Math.min(...spans.map((span) => span.left)),
+        right: Math.max(...spans.map((span) => span.right))
+      }
+      : { left: 0.1, right: 0.9 });
+  const spriteWidth = getDecorDisplayWidth(decor, item);
+  const resolveHorizontalUnit = typeof resolveDecorHorizontalUnit === "function"
+    ? resolveDecorHorizontalUnit
+    : ((_item, unit) => unit);
+  const footprintLeft = resolveHorizontalUnit(item, footprint.left);
+  const footprintRight = resolveHorizontalUnit(item, footprint.right);
+  const footprintCenterX = Number.isFinite(Number(item?.xNorm)) && Number.isFinite(typeof TANK_WIDTH !== "undefined" ? TANK_WIDTH : NaN)
+    ? Number(item.xNorm) * TANK_WIDTH + ((footprintLeft + footprintRight) / 2 - 0.5) * spriteWidth
+    : (bounds.left + bounds.right) * 0.5;
+  const footprintWidthPx = Math.max(8, Math.abs(footprintRight - footprintLeft) * spriteWidth);
+  const radiusX = clamp(footprintWidthPx * 0.5, 8, 280);
+  const footprintHeightBoost = clamp((footprintWidthPx - 90) / 180, 0, 1);
+  const radiusY = clamp(radiusX * (0.16 + footprintHeightBoost * 0.08), 4, 24);
   const shadowY = clamp(
-    anchorY - 0.5,
+    anchorY - (3.9 + footprintHeightBoost * 1.2),
     WATER_SURFACE_Y + 20,
     getVisibleTankFloorBottomY() + 8
   );
 
   return {
-    x: centerX + lightOffsetX,
+    x: footprintCenterX,
     y: shadowY,
     radiusX,
     radiusY,
-    alpha: 0.30 * groundingStrength,
-    spans: getDecorContactSpans(item, decor),
-    spriteWidth: getDecorDisplayWidth(decor, item)
+    boundsWidth: width,
+    footprintHeightBoost,
+    alpha: 0.48 * groundingStrength * getTankDepthShadowStrength(getDecorTankLayer(item)) * (typeof getDebugGroundShadowDarknessMultiplier === "function" ? getDebugGroundShadowDarknessMultiplier() : 1),
+    spans,
+    spriteWidth
   };
 }
 
@@ -483,19 +529,43 @@ function drawDecorContactShadow(context, item) {
   context.save();
   traceTankFloorMaskPath(context, getTankFloorDrawBounds());
   context.clip();
-  const spans = shadow.spans || [{ left: 0.22, right: 0.78 }];
+  // Base grounding shadow follows the opaque sprite footprint instead of the transparent canvas,
+  // so it stays directly under the decor and fades out at the real sprite edges.
+  context.save();
+  context.translate(shadow.x, shadow.y + DECOR_GROUND_SHADOWS.baseOffsetY);
+  context.scale(
+    Math.max(8, shadow.radiusX * DECOR_GROUND_SHADOWS.baseRadiusXMultiplier),
+    clamp(shadow.radiusY * (DECOR_GROUND_SHADOWS.baseRadiusYMultiplier + shadow.footprintHeightBoost * 0.42), 5, 26)
+  );
+  let gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+  gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * DECOR_GROUND_SHADOWS.baseAlphaMultiplier})`);
+  gradient.addColorStop(0.74, `rgba(3, 9, 14, ${(shadow.alpha * DECOR_GROUND_SHADOWS.baseMidAlphaMultiplier).toFixed(4)})`);
+  gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, 1, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+
+  const spans = shadow.spans || [{ left: 0.16, right: 0.84 }];
   for (const span of spans) {
     const left = resolveDecorHorizontalUnit(item, span.left);
     const right = resolveDecorHorizontalUnit(item, span.right);
     const x = item.xNorm * TANK_WIDTH + ((left + right) / 2 - 0.5) * shadow.spriteWidth;
-    const radius = Math.max(2, Math.abs(right - left) * shadow.spriteWidth / 2);
-    // Local soft occlusion plus a tight core; gaps under arches stay open.
+    const radius = Math.max(3, Math.abs(right - left) * shadow.spriteWidth / 2);
+
+    // Local soft occlusion plus a tighter core; gaps under arches stay open.
     for (const core of [false, true]) {
       context.save();
-      context.translate(x, shadow.y);
-      context.scale(radius * (core ? 1.02 : 1.1), core ? 1.5 : clamp(radius * 0.065, 2, 6));
-      const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
-      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * (core ? 0.88 : 0.42)})`);
+      context.translate(x, shadow.y - (1.4 + shadow.footprintHeightBoost * 0.8));
+      context.scale(
+        radius * (core ? DECOR_GROUND_SHADOWS.contactRadiusXMultiplier * 0.96 : DECOR_GROUND_SHADOWS.contactRadiusXMultiplier),
+        core
+          ? clamp(shadow.radiusY * (0.82 + shadow.footprintHeightBoost * 0.22), 2, 10)
+          : clamp(shadow.radiusY * (DECOR_GROUND_SHADOWS.contactRadiusYMultiplier + shadow.footprintHeightBoost * 0.34), 4, 16)
+      );
+      gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * (core ? DECOR_GROUND_SHADOWS.contactCoreAlphaMultiplier : DECOR_GROUND_SHADOWS.contactSoftAlphaMultiplier)})`);
       gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
       context.fillStyle = gradient;
       context.beginPath();
@@ -508,6 +578,10 @@ function drawDecorContactShadow(context, item) {
 }
 
 function drawGroundShadows(now) {
+  if (!areDecorShadowsEnabled()) {
+    return;
+  }
+
   tankContext.save();
   tankContext.globalCompositeOperation = "multiply";
   tankContext.beginPath();
@@ -518,10 +592,8 @@ function drawGroundShadows(now) {
     getVisibleTankFloorBottomY() - WATER_SURFACE_Y + 12
   );
   tankContext.clip();
-  if (areDecorShadowsEnabled()) {
-    for (const item of state.placedDecor) {
-      drawDecorContactShadow(tankContext, item);
-    }
+  for (const item of state.placedDecor) {
+    drawDecorContactShadow(tankContext, item);
   }
   pruneFishShadowPlaneCache();
   for (const fish of state.fish) {
@@ -541,7 +613,7 @@ function drawGroundShadows(now) {
       pose.y + height * 0.14,
       width,
       height,
-      0.15,
+      0.15 * getTankDepthShadowStrength(getFishTankLayer(fish)) * getDebugGroundShadowDarknessMultiplier(),
       species.shadowScale || 0.28,
       shadowPlaneY
     );
@@ -682,7 +754,8 @@ function comparePlacedDecorHitOrder(left, right) {
   return right.yNorm - left.yNorm;
 }
 
-function drawDecor(layer = null, now = Date.now()) {
+function drawDecor(layer = null, now = Date.now(), options = {}) {
+  const pass = options.pass === "cave-front" ? "cave-front" : "base";
   const sorted = [...state.placedDecor]
     .filter((item) => {
       if (layer === null) {
@@ -705,10 +778,27 @@ function drawDecor(layer = null, now = Date.now()) {
     }
 
     const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
+    const cave = isCaveDecorKey(item.decorKey);
+    const transitTube = isTransitTubeDecorKey(item.decorKey);
+
+    if (pass === "cave-front" && !cave) {
+      continue;
+    }
+    if (pass === "base" && cave && layer !== null && layer !== span.front) {
+      continue;
+    }
 
     let imagePath = decor.path;
-
-    if (isCaveDecorKey(item.decorKey) || isTransitTubeDecorKey(item.decorKey)) {
+    if (cave) {
+      if (pass === "base") {
+        if (!decor.bgPath) {
+          continue;
+        }
+        imagePath = decor.bgPath;
+      } else {
+        imagePath = decor.path;
+      }
+    } else if (transitTube) {
       if (layer === span.back && decor.bgPath) {
         imagePath = decor.bgPath;
       } else if (layer === span.front) {
@@ -732,6 +822,47 @@ function drawDecor(layer = null, now = Date.now()) {
     const drawX = x - width / 2;
     const drawY = y - height;
     const motion = getDecorMotion(item, now);
+
+    if (cave && pass === "base") {
+      const bgHeight = width * (image.height / Math.max(1, image.width));
+      if (drawCaveBackgroundLayerToContext(tankContext, item, decor, now, {
+        drawX,
+        bgDrawY: y - bgHeight,
+        width,
+        baseHeight: height,
+        motion
+      })) {
+        continue;
+      }
+      drawDecorImageLayer(image, drawX, y - bgHeight, width, bgHeight, item, now, motion);
+      continue;
+    }
+
+    if (cave && pass === "cave-front") {
+      if (decor.bubbler) {
+        drawBubblerLightLayerToContext(tankContext, item, decor, now, {
+          drawX,
+          drawY,
+          width,
+          height,
+          motion
+        });
+        drawDecorBubblerEffect(item, decor, image, now);
+      }
+      if (!decor.bubbler || !isCustomBubblerDecorKey(item.decorKey) || runtime.editTankMode) {
+        if (!drawCaveColorLayersToContext(tankContext, item, decor, now, {
+          drawX,
+          drawY,
+          width,
+          height,
+          motion
+        })) {
+          drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion);
+        }
+      }
+      continue;
+    }
+
     if (layer === span.front && decor.bubbler) {
       const bgImage = decor.bgPath ? runtime.images.get(decor.bgPath) : null;
       if (bgImage) {
@@ -768,9 +899,9 @@ function drawDecor(layer = null, now = Date.now()) {
       continue;
     }
 
-    if (layer === span.back && (hasDecorCaveColorLayers(decor) || isTransitTubeDecorKey(item.decorKey))) {
+    if (layer === span.back && (hasDecorCaveColorLayers(decor) || transitTube)) {
       const bgHeight = width * (image.height / Math.max(1, image.width));
-      if (isTransitTubeDecorKey(item.decorKey)) {
+      if (transitTube) {
         drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion);
         continue;
       }

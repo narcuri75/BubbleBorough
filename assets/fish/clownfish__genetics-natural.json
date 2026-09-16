@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "3997d1fc-a4c3-42d7-a144-12913d10afcb",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "de92710d-93df-468c-add1-e73342e14159",
+          "width": 512,
+          "height": 316,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "clownfish.png"
+        },
+        {
+          "id": "10014d55-a941-46c7-b429-43a4bdce7302",
+          "width": 512,
+          "height": 316,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "clownfish_1.png"
+        },
+        {
+          "id": "f9bab1dc-db21-4af4-980e-2d2c9d20e545",
+          "width": 512,
+          "height": 316,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "clownfish_2.png"
+        },
+        {
+          "id": "a001a4f5-0e9f-4055-a2b1-064141797608",
+          "width": 512,
+          "height": 316,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "clownfish_3.png"
+        },
+        {
+          "id": "07254f2e-2526-4b02-b098-6563e2fdfc62",
+          "width": 512,
+          "height": 316,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "clownfish_4.png"
+        }
+      ]
+    }
+  ]
+}

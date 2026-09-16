@@ -229,7 +229,8 @@ function getAquariumExpansionCost(targetState = state) {
 }
 
 function isTransitTubeDecorKey(decorKey = "") {
-  return normalizeDecorKey(decorKey) === "transit-tube.png";
+  const key = normalizeDecorKey(decorKey);
+  return decorHasCategory(key, "transit") || getDecorBehaviorType(key) === "transit";
 }
 
 function getAllTransitTubes(targetState = state) {
@@ -606,6 +607,166 @@ function sellCurrentTank() {
   return sellAquariumTank(getCurrentTank()?.id);
 }
 
+function prepareFishForTankStorageTransfer(fish, now = Date.now()) {
+  if (!fish) return null;
+  const dead = isFishDead(fish);
+  const storageMoodTone = !dead ? (getFishCareStatus(fish, now)?.tone || "good") : "";
+  clearPiranhaAttackState(fish);
+  clearFishCaveBehavior(fish);
+  clearFishBoroughServiceReservation(fish);
+  fish.coarseActivity = null;
+  fish.feedingPelletId = null;
+  fish.comfortDamageProgressMs = 0;
+  fish.hangoutDecorId = null;
+  fish.residenceDecorId = null;
+  fish.favoriteSpot = null;
+  fish.entryStartedAt = null;
+  fish.entryDurationMs = 0;
+  fish.entryFromYNorm = null;
+  fish.entrySplashTriggered = false;
+  fish.turnStartedAt = null;
+  fish.turnDurationMs = 0;
+  fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
+  fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
+  fish.turnFromDirection = fish.displayDirection;
+  fish.turnToDirection = fish.displayDirection;
+  fish.turnFromAngle = fish.displayAngle;
+  fish.turnToAngle = fish.displayAngle;
+  fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
+  fish.piranhaConsumptionStartedAt = null;
+  fish.piranhaConsumptionEndsAt = null;
+  fish.piranhaLastBloodAt = null;
+  fish.activity = dead ? "dead" : "roam";
+  if (!dead) {
+    const effectiveBehavior = getEffectiveFishBehavior(fish);
+    const storageLayer = effectiveBehavior === "sucker"
+      ? getSuckerFishGlassLayer(fish)
+      : fish.tankLayer || DEFAULT_TANK_LAYER;
+    setFishTankLayers(fish, storageLayer, storageLayer);
+  }
+  fish.storageFrozen = true;
+  fish.storageMoodTone = storageMoodTone;
+  fish.storedAt = now;
+  fish.frozenMealSlotKey = getCurrentMealSlot(now)?.key || "";
+  fish.frozenLastSimulatedAt = now;
+  return fish;
+}
+
+function returnSoldTankFishToStorage(tank, now = Date.now()) {
+  const fishList = Array.isArray(tank?.fish) ? tank.fish : [];
+  if (!fishList.length) return 0;
+  const fishIds = new Set(fishList.map((fish) => String(fish?.id || "")).filter(Boolean));
+  withActiveTank(tank.id, () => {
+    for (const fish of fishList) {
+      prepareFishForTankStorageTransfer(fish, now);
+    }
+  });
+  state.storedFish ||= [];
+  state.storedFish.push(...fishList);
+  tank.fish = [];
+  tank.pendingPoops = Array.isArray(tank.pendingPoops)
+    ? tank.pendingPoops.filter((poop) => !fishIds.has(String(poop?.fishId || "")))
+    : [];
+  if (Array.isArray(tank.floatingPellets)) {
+    for (const pellet of tank.floatingPellets) {
+      if (fishIds.has(String(pellet?.targetFishId || ""))) pellet.targetFishId = "";
+    }
+  }
+  for (const fishId of fishIds) {
+    runtime.pendingNeighborhoodTravel.delete(fishId);
+    runtime.activeFishCavePlans.delete(fishId);
+    runtime.fishShadowPlaneCache.delete(fishId);
+    runtime.fishGravelPebbleActions.delete(fishId);
+  }
+  if (fishIds.has(String(runtime.selectedFishId || ""))) runtime.selectedFishId = null;
+  if (fishIds.has(String(runtime.debugForcedCaveFishId || ""))) clearDebugCaveTestSelection();
+  return fishList.length;
+}
+
+function returnSoldTankDecorToStorage(tank) {
+  const decorList = Array.isArray(tank?.placedDecor) ? tank.placedDecor : [];
+  if (!decorList.length) return 0;
+  state.decorInventory ||= {};
+  for (const item of decorList) {
+    const decorKey = String(item?.decorKey || "");
+    if (!decorKey) continue;
+    clearDecorResidenceAssignments(item.id, { save: false });
+    clearDecorBoroughServiceReservations(item.id);
+    state.decorInventory[decorKey] = Math.max(0, Math.floor(Number(state.decorInventory[decorKey]) || 0)) + 1;
+    if (runtime.dragState?.placedId === item.id) runtime.dragState = null;
+    if (runtime.decorResizeState?.placedId === item.id) runtime.decorResizeState = null;
+    runtime.selectedDecorIds = runtime.selectedDecorIds.filter((id) => id !== item.id);
+    if (runtime.selectedPlacedDecorId === item.id) runtime.selectedPlacedDecorId = null;
+    if (runtime.bubblerSettingsDecorId === item.id) runtime.bubblerSettingsDecorId = null;
+    if (runtime.customDecorSettingsDecorId === item.id) runtime.customDecorSettingsDecorId = null;
+  }
+  tank.placedDecor = [];
+  tank.gravelLivePebbles = [];
+  return decorList.length;
+}
+
+function returnSoldTankDispenserToStorage(tank, storageTank) {
+  const dispenser = tank?.autoDispenser;
+  if (!dispenser || !storageTank) return 0;
+  const storedCount = Math.max(0, Math.floor(Number(dispenser.storedCount) || 0));
+  const unitCount = storedCount + (dispenser.installed ? 1 : 0);
+  if (!unitCount) return 0;
+
+  // Loaded food belongs to the player, not to a tank that is being removed.
+  // Return it to the normal food inventory before collapsing the dispenser(s)
+  // into the receiving tank's equipment-storage count.
+  state.foodInventory ||= {};
+  for (const pellet of Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : []) {
+    const foodKey = String(pellet?.foodKey || "");
+    if (!foodKey) continue;
+    state.foodInventory[foodKey] = Math.max(0, Math.floor(Number(state.foodInventory[foodKey]) || 0)) + 1;
+  }
+
+  const receiving = createDefaultAutoDispenserState(storageTank.autoDispenser);
+  receiving.storedCount = Math.max(0, Math.floor(Number(receiving.storedCount) || 0)) + unitCount;
+  receiving.stored = receiving.storedCount > 0;
+  storageTank.autoDispenser = receiving;
+  tank.autoDispenser = createDefaultAutoDispenserState();
+  return unitCount;
+}
+
+function returnSoldTankMachineryToStorage(tankId, now = Date.now()) {
+  const tankMachinery = getMachineryList().filter((item) => item?.tankId === tankId);
+  if (!tankMachinery.length) return 0;
+  const returnedIds = new Set();
+  for (const item of tankMachinery) {
+    returnedIds.add(item.id);
+    runtime.pendingMachineryTravel.delete(item.id);
+    if (item.type === MACHINERY_TYPE_SUBMARINE) {
+      const stored = createStoredSubmarineState(item, now);
+      if (stored) state.storedSubmarines = [...getStoredSubmarineStates(), stored];
+      state.submarineOwned = true;
+    } else if (item.type === MACHINERY_TYPE_BOAT) {
+      const stored = createStoredBoatState(item, now);
+      if (stored) state.storedBoats = [...getStoredBoatStates(), stored];
+      state.boatOwned = true;
+    }
+  }
+  state.storedSubmarine = getStoredSubmarineStates()[0] || null;
+  state.storedBoat = getStoredBoatStates()[0] || null;
+  state.machinery = getMachineryList().filter((item) => !returnedIds.has(item?.id));
+  if (returnedIds.has(runtime.selectedMachineryId)) {
+    runtime.selectedMachineryId = null;
+    closeEditEquipmentTrayContextMenu({ render: false });
+  }
+  runtime.equipmentEditTrayTab = "storage";
+  return returnedIds.size;
+}
+
+function returnSoldTankContentsToStorage(tank, storageTank, now = Date.now()) {
+  if (!tank) return { fish: 0, decor: 0, equipment: 0 };
+  const fish = returnSoldTankFishToStorage(tank, now);
+  const decor = returnSoldTankDecorToStorage(tank);
+  const machinery = returnSoldTankMachineryToStorage(tank.id, now);
+  const dispenser = returnSoldTankDispenserToStorage(tank, storageTank);
+  return { fish, decor, equipment: machinery + dispenser };
+}
+
 function sellAquariumTank(tankId) {
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     showToast("Selling is disabled while Peaceful Mode is enabled.");
@@ -621,20 +782,21 @@ function sellAquariumTank(tankId) {
     return false;
   }
 
-  if (!isTankEmpty(tank)) {
-    showToast("Only empty tanks can be sold.");
-    return false;
-  }
-
+  const now = Date.now();
   const resaleValue = getTankResaleValue(tank);
   const currentIndex = state.tanks.findIndex((entry) => entry.id === tank.id);
   const soldActiveTank = state.activeTankId === tank.id;
-  state.tanks = state.tanks.filter((entry) => entry.id !== tank.id);
+  const remainingTanks = state.tanks.filter((entry) => entry.id !== tank.id);
+  const storageTank = remainingTanks.find((entry) => entry.id === state.activeTankId)
+    || remainingTanks[Math.max(0, currentIndex - 1)]
+    || remainingTanks[0]
+    || null;
+  const returned = returnSoldTankContentsToStorage(tank, storageTank, now);
+  state.tanks = remainingTanks;
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + resaleValue);
-  recordWalletTransaction({ amount: resaleValue, direction: "credit", now: Date.now(), place: getTankLabel(tank), label: `Sold ${getTankLabel(tank)}` });
+  recordWalletTransaction({ amount: resaleValue, direction: "credit", now, place: getTankLabel(tank), label: `Sold ${getTankLabel(tank)}` });
   if (soldActiveTank) {
-    const fallbackTank = state.tanks[Math.max(0, currentIndex - 1)] || state.tanks[0];
-    state.activeTankId = fallbackTank?.id || null;
+    state.activeTankId = storageTank?.id || state.tanks[0]?.id || null;
   }
   for (const [key] of Object.entries(state.boroughTravelWalls || {})) {
     if (key.split("|").includes(tank.id)) delete state.boroughTravelWalls[key];
@@ -646,7 +808,12 @@ function sellAquariumTank(tankId) {
   }
   runtime.editingTankNameId = null;
   runtime.editingTankNameValue = "";
-  pushEvent(`Sold ${getTankLabel(tank, currentIndex)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, Date.now());
+  const returnedSummary = [
+    returned.fish ? `${returned.fish} ${pluralize("fish", returned.fish)}` : "",
+    returned.decor ? `${returned.decor} decor` : "",
+    returned.equipment ? `${returned.equipment} equipment` : ""
+  ].filter(Boolean).join(", ");
+  pushEvent(`Sold ${getTankLabel(tank, currentIndex)} for ${resaleValue} ${pluralize("coin", resaleValue)}.${returnedSummary ? ` Returned to storage: ${returnedSummary}.` : ""}`, now);
   saveState();
   playCoinSoundEffect();
   renderUi(Date.now());
@@ -951,7 +1118,7 @@ async function handleProteusDesignerChangeEvent(event) {
       openCustomFishCreationOverlay(dataUrl, titleFromFile(file.name || "Custom Fish"), {
         width: image.naturalWidth || image.width || CUSTOM_FISH_DEFAULT_WIDTH,
         height: image.naturalHeight || image.height || CUSTOM_FISH_DEFAULT_WIDTH
-      });
+      }, { preserveParameters: true });
       if (runtime.proteusDesignerOpen === true) renderStoreOverlay();
     } catch (error) {
       console.error(error);
@@ -1167,6 +1334,7 @@ function handleWebPageNavigation(event) {
       runtime.pendingCustomFishUpload.activityRegulation = "";
       runtime.pendingCustomFishUpload.swimZone = "";
       runtime.pendingCustomFishUpload.socialAffinity = "adaptive";
+      runtime.pendingCustomFishUpload.liveBirth = false;
       runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
       renderStoreOverlay();
     }
@@ -1182,14 +1350,34 @@ function handleWebPageNavigation(event) {
     submitProteusDesignerSpecimen(designerSubmit);
     return;
   }
+  if (target?.closest("[data-websurf-delete-unstarred]")) {
+    deleteUnstarredWebSurfMail();
+    renderStoreOverlay();
+    return;
+  }
   if (target?.closest("[data-websurf-mark-all-read]")) {
     markAllWebSurfMailRead();
     renderStoreOverlay();
     return;
   }
+  const starMailButton = target?.closest("[data-websurf-star-mail]");
+  if (starMailButton) {
+    toggleWebSurfMailStarred(starMailButton.dataset.websurfStarMail);
+    renderStoreOverlay();
+    return;
+  }
+  const trashMailButton = target?.closest("[data-websurf-trash-mail]");
+  if (trashMailButton && !trashMailButton.disabled) {
+    trashWebSurfMail(trashMailButton.dataset.websurfTrashMail);
+    renderStoreOverlay();
+    return;
+  }
   const silenceSenderButton = target?.closest("[data-websurf-silence-sender]");
   if (silenceSenderButton) {
-    toggleWebSurfSenderSilenced(silenceSenderButton.dataset.websurfSilenceSender);
+    toggleWebSurfSenderSilenced(
+      silenceSenderButton.dataset.websurfSilenceSender,
+      silenceSenderButton.dataset.websurfSilenceSenderId
+    );
     renderStoreOverlay();
     return;
   }
@@ -1488,30 +1676,21 @@ function getCustomDecorAssetForItem(item) {
 }
 
 function isDecorFloatingKey(decorKey = "") {
-  return String(decorKey || "").toLowerCase().includes("floating");
+  return ["floating_bob", "floating_sway"].includes(getDecorMotionBehaviorType(decorKey));
 }
 
 function isDecorSeaweedKey(decorKey = "") {
-  const normalizedKey = String(decorKey || "").toLowerCase();
-  return normalizedKey.includes("seaweed") || /sea[_\s-]?anemone/.test(normalizedKey);
+  return ["anchored_sway", "floating_sway", "ceiling_sway"].includes(getDecorMotionBehaviorType(decorKey));
 }
 
 function isDecorLureKey(decorKey = "") {
-  const normalizedKey = String(decorKey || "").toLowerCase();
-  if (normalizedKey.includes("lure")) {
-    return true;
-  }
-
-  const decor = typeof runtime !== "undefined" ? runtime.decorMap?.get?.(decorKey) : null;
-  return /\blure\b/i.test(String(decor?.name || ""));
+  return decorHasCategory(decorKey, "lure") || getDecorBehaviorType(decorKey) === "ceiling_sway";
 }
 
 function getDecorMotionCapabilities(itemOrKey) {
   const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
-  const decor = runtime.decorMap.get(decorKey);
-  const frozenDecor = /(^|[_\s-])frozen([_\s.-]|$)/i.test(String(decorKey || ""))
-    || /^frozen\b/i.test(String(decor?.name || ""))
-    || String(decor?.theme || "").trim().toLowerCase() === "frozen";
+  const decor = getDecorCatalogRecord(decorKey) || {};
+  const frozenDecor = decorHasTheme(decorKey, "frozen");
   const customMotionType = isCustomDecorAssetKey(decorKey)
     ? normalizeCustomDecorMotionType(decor?.motionType)
     : "";
@@ -1532,36 +1711,49 @@ function getDecorMotionCapabilities(itemOrKey) {
     };
   }
 
-  const isLure = isDecorLureKey(decorKey);
-  const isFloating = isDecorFloatingKey(decorKey) || isLure;
-  const isSeaweed = !frozenDecor && (isDecorSeaweedKey(decorKey) || isLure);
+  const behavior = getDecorMotionBehaviorType(decorKey);
+  const isLure = decorHasCategory(decorKey, "lure") || behavior === "ceiling_sway";
+  const hasBob = ["floating_bob", "floating_sway"].includes(behavior);
+  const hasSway = !frozenDecor && ["anchored_sway", "floating_sway", "ceiling_sway"].includes(behavior);
+  const defaultSplit = Number.isFinite(Number(decor?.motionSplitY))
+    ? Number(decor.motionSplitY)
+    : behavior === "floating_sway"
+      ? 0.25
+      : behavior === "ceiling_sway"
+        ? 0.7
+        : 0.75;
+  const defaultSide = decor?.motionSwaySide || (["floating_sway", "ceiling_sway"].includes(behavior) ? "below" : "above");
+  const labelByBehavior = {
+    anchored_sway: "Anchored sway",
+    floating_bob: "Floating object",
+    floating_sway: "Floating sway",
+    ceiling_sway: "Suspended lure",
+    cave_layered: "Layered cave",
+    bubbler: "Bubbler",
+    transit: "Transit tube",
+    static: "Static object"
+  };
+  const summaryByBehavior = {
+    anchored_sway: "Anchored in place while the flexible portion sways.",
+    floating_bob: "Bobs gently as one rigid object.",
+    floating_sway: "Bobs as a whole while the hanging portion sways.",
+    ceiling_sway: "Anchored to the water surface while the hanging portion sways.",
+    cave_layered: "Layered hide with no whole-object motion.",
+    bubbler: "Solid bubbler decoration.",
+    transit: "Solid transit equipment.",
+    static: "Solid and still."
+  };
   return {
-    motionType: "",
-    hasBob: isFloating,
-    hasSway: isSeaweed,
+    motionType: behavior,
+    hasBob,
+    hasSway,
     isLure,
-    isFloating,
-    isSeaweed,
-    label: isLure
-      ? "Lure"
-      : isFloating && isSeaweed
-        ? "Floating/Suspended Object"
-        : isFloating
-          ? "Floating Object"
-          : isSeaweed
-            ? "Seaweed"
-            : "Static Object",
-    summary: isLure
-      ? "Bobs and sways like a suspended object."
-      : isFloating && isSeaweed
-        ? "Bobs gently while the selected portion sways."
-        : isFloating
-          ? "Bobs gently."
-          : isSeaweed
-            ? "Sways from the selected line."
-            : "Solid and still.",
-    defaultSwaySplitY: isLure ? 0.7 : isFloating && isSeaweed ? 0.25 : 0.75,
-    defaultSwaySide: isLure || (isFloating && isSeaweed) ? "below" : "above",
+    isFloating: hasBob,
+    isSeaweed: hasSway,
+    label: labelByBehavior[behavior] || "Static object",
+    summary: summaryByBehavior[behavior] || "Solid and still.",
+    defaultSwaySplitY: sanitizeCustomDecorMotionSplit(defaultSplit),
+    defaultSwaySide: normalizeDecorSwaySide(defaultSide),
     defaultMotionIntensity: DEFAULT_CUSTOM_DECOR_MOTION_INTENSITY
   };
 }

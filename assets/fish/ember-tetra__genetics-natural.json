@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "7f632698-ff52-45e5-9ef6-97530af53d27",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "a5404f47-2ac6-453f-9a74-efe8484280f9",
+          "width": 512,
+          "height": 250,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "embertetra.png"
+        },
+        {
+          "id": "7c44557d-bf58-424d-8145-5e20d02d14ac",
+          "width": 512,
+          "height": 250,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "embertetra_3.png"
+        },
+        {
+          "id": "bb8e66c5-c5cd-4ac8-b312-1889abdd8891",
+          "width": 512,
+          "height": 250,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "embertetra_2.png"
+        },
+        {
+          "id": "76cf7f33-59c1-4c32-b6a5-7f53315517de",
+          "width": 512,
+          "height": 250,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "embertetra_4.png"
+        },
+        {
+          "id": "f852e789-3b2e-4f48-ba14-c7da1c762abd",
+          "width": 512,
+          "height": 250,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "embertetra_1.png"
+        }
+      ]
+    }
+  ]
+}

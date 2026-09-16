@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "443ab068-8ba2-458c-84f8-f87d58a126a9",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "7ca34f80-dd0b-4d0f-8656-d81742d31f86",
+          "width": 578,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "pufferfish.png"
+        },
+        {
+          "id": "9f9e2fb9-1f09-40c1-b05e-b754b962053e",
+          "width": 578,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "pufferfish_1.png"
+        },
+        {
+          "id": "1049e4ce-d61b-48f7-9d82-ced24b2150c3",
+          "width": 578,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "pufferfish_2.png"
+        },
+        {
+          "id": "947ab224-5487-442e-8a16-6c8d4d6e7cf4",
+          "width": 578,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "pufferfish_3.png"
+        },
+        {
+          "id": "8a12c2b6-f745-433c-822a-25acfc51d05a",
+          "width": 578,
+          "height": 427,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "pufferfish_4.png"
+        }
+      ]
+    }
+  ]
+}

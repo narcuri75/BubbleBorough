@@ -580,7 +580,7 @@ function hasAllLivingFishNeedsMet(now = Date.now()) {
 }
 
 function isCommunityMilestoneFish(fish) {
-  return Boolean(fish && !isPiranhaSpecies(fish) && !isUndeadFish(fish) && fish.speciesId !== "pufferfish");
+  return Boolean(fish && !isPiranhaSpecies(fish) && fish.speciesId !== "pufferfish");
 }
 
 function hasCommunityMilestoneTank(recentAverageComfort = 0) {
@@ -691,7 +691,6 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     oldestLivingFishAgeMs,
     daysSinceLastDeath,
     hasSparklingFish: livingFish.some((fish) => getFishComfort(fish, now).value >= 0.95),
-    hasSaltwaterFish: livingFish.some((fish) => getSpeciesWaterType(fish) === "saltwater"),
     cleanRecapStreak90,
     cleanRecapStreak95,
     allMealsSatisfiedStreak,
@@ -863,6 +862,7 @@ function saveState() {
 
   ensureBubbleBodegaRescueOffer(Date.now());
   applyProgressMilestones(null, Date.now());
+  if (typeof syncWebSurfMailPersistence === "function") syncWebSurfMailPersistence();
 
   const customDecorPruned = pruneCustomDecorAssets(state);
   const customFishPruned = pruneCustomFishAssets(state);

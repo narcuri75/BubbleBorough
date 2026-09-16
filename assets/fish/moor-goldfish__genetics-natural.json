@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "50e1a4d3-29db-4f2f-96a0-05e68b44d49f",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "f245817f-f420-4a23-a86f-acd1d62996fd",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "moorgoldfish.png"
+        },
+        {
+          "id": "837ce141-05ae-4542-82df-71812f7b0a24",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "moorgoldfish_1.png"
+        },
+        {
+          "id": "d214f70c-3576-406a-b1aa-87a7ffcfc8ef",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "moorgoldfish_2.png"
+        },
+        {
+          "id": "dfd7d065-80cf-455c-a3e2-a71369a51cb8",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "moorgoldfish_3.png"
+        },
+        {
+          "id": "12ea6696-87ae-4c05-b00a-a02fb39af433",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "moorgoldfish_4.png"
+        }
+      ]
+    }
+  ]
+}

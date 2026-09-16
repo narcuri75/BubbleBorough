@@ -294,18 +294,25 @@ function getSuckerFishViewAssetPath(species, fish, view) {
 
 function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date.now()) {
   const widthSpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  if (!widthSpecies) {
-    return (runtime.fishSizeRange?.min || FISH_CATALOG_WIDTH_MIN)
+  const baseWidth = !widthSpecies
+    ? (runtime.fishSizeRange?.min || FISH_CATALOG_WIDTH_MIN)
       * getFishDisplayScaleForSpecies()
       * getFishLayerDepthScaleMultiplier(fish, now)
+      * getMobileViewportObjectScaleMultiplier("fish")
+    : getFishVisualCatalogWidth(widthSpecies)
+      * getFishEffectiveScale(fish, species, now)
+      * getFishDisplayScaleForSpecies(widthSpecies)
+      * getFishLayerDepthScaleMultiplier(fish, now)
       * getMobileViewportObjectScaleMultiplier("fish");
-  }
 
-  return getFishVisualCatalogWidth(widthSpecies)
-    * getFishEffectiveScale(fish, species, now)
-    * getFishDisplayScaleForSpecies(widthSpecies)
-    * getFishLayerDepthScaleMultiplier(fish, now)
-    * getMobileViewportObjectScaleMultiplier("fish");
+  if (species?.id === "pufferfish" && isPufferInflatedActive(fish, now)) {
+    return baseWidth * 2;
+  }
+  if (species?.id === "pufferfish" && isPufferDeflatingActive(fish, now)) {
+    const deflationProgress = getPufferDeflationProgress(fish, now);
+    return baseWidth * (2 - deflationProgress);
+  }
+  return baseWidth;
 }
 
 function getFishAppearanceVariantSeed(fish, species = getSpeciesForFish(fish)) {
@@ -350,6 +357,30 @@ function getFishAssetPath(fish, species = getSpeciesForFish(fish)) {
   if (chosen) return chosen;
 
   return variants[normalizeFishAppearanceVariantIndex(fish?.appearanceVariant, species, fish)] || variants[0] || species?.fallbackAsset || species?.asset || null;
+}
+
+function getPufferInflatedAssetPathForBaseAsset(baseAsset) {
+  if (typeof baseAsset !== "string" || !baseAsset.trim()) {
+    return null;
+  }
+
+  return baseAsset.replace(
+    /(pufferfish)(?:_(\d+))?(\.[^./\?]+)(\?.*)?$/i,
+    (_match, stem, variantIndex, extension, query = "") => (
+      variantIndex
+        ? `${stem}_inflated_${variantIndex}${extension}${query}`
+        : `${stem}_inflated${extension}${query}`
+    )
+  );
+}
+
+function getPufferInflatedDisplayAssetPath(fish, species = getSpeciesForFish(fish)) {
+  if (!fish || species?.id !== "pufferfish") {
+    return null;
+  }
+
+  const baseAsset = getFishAssetPath(fish, species) || species.asset || species.fallbackAsset || null;
+  return getPufferInflatedAssetPathForBaseAsset(baseAsset);
 }
 
 function appendAssetSuffix(path, suffix) {
@@ -524,6 +555,14 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
       species.fallbackAsset,
       species.asset
     ].find((path) => path && runtime.images.has(path)) || preferredBaseAsset;
+  const pufferPuffVisualActive = species?.id === "pufferfish" && isPufferPuffVisualActive(fish, now);
+  const liveDisplayAsset = pufferPuffVisualActive
+    ? (
+      getPufferInflatedDisplayAssetPath(fish, displaySpecies)
+      || getPufferInflatedDisplayAssetPath(fish, species)
+      || baseAsset
+    )
+    : baseAsset;
   const stage = isGoreEnabled() ? getFishDecayStage(fish, now) : null;
   if (
     !stage
@@ -531,10 +570,10 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
     || (stage === "zombie" && isZombieVariantFish(fish))
     || (undeadBaseStage && stage === undeadBaseStage)
   ) {
-    return baseAsset;
+    return liveDisplayAsset;
   }
 
-  return getFishDeathAssetPath(fish, displaySpecies, stage) || baseAsset;
+  return getFishDeathAssetPath(fish, displaySpecies, stage) || liveDisplayAsset;
 }
 
 function getFishCatalogAssetPath(species) {
@@ -571,13 +610,13 @@ function getFishCorpseStateLabel(fish, now = Date.now()) {
     return "Being devoured";
   }
   if (hasPendingZombieRevival(fish)) {
-    return "Turning into a zombie";
+    return "Deceased";
   }
   if (stateLabel === "deceased") {
     return "Deceased";
   }
   if (stateLabel === "skeleton") {
-    return "Skeleton remains";
+    return "Remains";
   }
   if (stateLabel === "zombie") {
     return "Decaying corpse";
@@ -748,13 +787,13 @@ function getFishDisplaySpeciesName(fish, species = getSpeciesForFish(fish)) {
 
   const displaySpecies = getFishDisplaySourceSpecies(fish, species);
   if (isZombieVariantFish(fish)) {
-    return `Zombie ${displaySpecies?.name || species.name}`;
+    return displaySpecies?.name || species.name;
   }
   if (isCatalogUndeadShopSpecies(species) && displaySpecies && displaySpecies.id !== species.id) {
     if (!isViolenceAndGoreEnabled()) {
       return displaySpecies.name;
     }
-    return `${species.undeadType === "skeleton" ? "Skeleton" : "Zombie"} ${displaySpecies.name}`;
+    return displaySpecies.name;
   }
   return species.name;
 }

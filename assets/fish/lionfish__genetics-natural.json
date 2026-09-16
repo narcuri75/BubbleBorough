@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "d12f2f4b-be40-42ad-9feb-79662a542d06",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "6b597858-4f54-439d-b865-d7a409416839",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Lionfish_3.png"
+        },
+        {
+          "id": "468513be-b9e3-4caa-956c-46dca8ff8081",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Lionfish_2.png"
+        },
+        {
+          "id": "fb4b6b8c-2f49-4129-9acb-3d22a6443cb1",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Lionfish_1.png"
+        },
+        {
+          "id": "865534de-aad6-4efb-ac0d-e1103a47004b",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Lionfish_4.png"
+        },
+        {
+          "id": "5b07d982-70f1-4e38-a193-9e93f0ac3524",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Lionfish_5.png"
+        }
+      ]
+    }
+  ]
+}

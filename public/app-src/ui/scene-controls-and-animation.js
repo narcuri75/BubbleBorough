@@ -58,7 +58,7 @@ function renderPlacedDecor() {
     .map((item) => {
       const decor = runtime.decorMap.get(item.decorKey) || {
         name: titleFromFile(item.decorKey),
-        path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`)
+        path: getDecorAssetPathForKey(item.decorKey)
       };
       const grouped = isPlacedDecorGrouped(item);
       const selected = getSelectedDecorIdSet().has(item.id);
@@ -817,6 +817,9 @@ function renderControls(now) {
   }
   if (dom.debugSidebar) {
     dom.debugSidebar.hidden = !debugMode || !runtime.debugSidebarOpen;
+  }
+  if (debugMode && runtime.debugSidebarOpen) {
+    syncDebugDepthTunerControls();
   }
   if (dom.debugNotificationUiButton) {
     dom.debugNotificationUiButton.disabled = !debugMode;

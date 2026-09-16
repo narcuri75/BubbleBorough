@@ -303,7 +303,6 @@ function getFishInspectorBehaviorProfiles() {
     && !species.customUploadProduct
     && !isCustomFishShopKey(species.id)
     && !isCustomFishAssetKey(species.id)
-    && (!isUndeadSpecies(species) || isViolenceAndGoreEnabled())
   ));
 }
 

@@ -16,7 +16,7 @@ function drawPoops(now, layer = null) {
     tankContext.save();
     tankContext.translate(pose.x, pose.y + 4);
     tankContext.rotate(pose.wobble);
-    tankContext.globalAlpha = 0.9;
+    tankContext.globalAlpha = 0.9 * depthAlpha;
     tankContext.drawImage(pose.sprite, -pose.width / 2, -pose.height * 0.88, pose.width, pose.height);
     tankContext.restore();
   }
@@ -270,12 +270,15 @@ function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
   tankContext.restore();
 }
 
-function getFishSameLayerRenderPriority(fish) {
-  if (!fish?.caveDecorId || !["enter", "inside", "exit", "depart"].includes(fish.caveState)) {
-    return 0;
-  }
+function isFishInCaveRenderSublayer(fish) {
+  return Boolean(
+    fish?.caveDecorId
+    && ["enter", "inside", "exit", "depart"].includes(fish.caveState)
+  );
+}
 
-  return 1;
+function getFishSameLayerRenderPriority(fish) {
+  return isFishInCaveRenderSublayer(fish) ? 1 : 0;
 }
 
 function drawFishPebbleTosses(now, layer = null) {
@@ -394,11 +397,13 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
   const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
 
   tankContext.save();
-  tankContext.translate(pose.x + pose.swayX, pose.y);
+  const depthLayer = getFishTankLayer(fish);
+  const depthAlpha = getTankDepthObjectAlpha(depthLayer);
+  tankContext.translate(pose.x + pose.swayX * getTankDepthMovementMultiplier(depthLayer), pose.y);
   tankContext.scale(pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1), 1);
   tankContext.rotate(pose.tilt);
   tankContext.scale(pose.bodyScaleX, pose.bodyScaleY);
-  tankContext.globalAlpha = 0.82;
+  tankContext.globalAlpha = 0.82 * depthAlpha;
   tankContext.fillStyle = bodyColor;
   tankContext.beginPath();
   tankContext.ellipse(fishDrawX + width * 0.55, 0, width * 0.34, height * 0.42, 0, 0, Math.PI * 2);
@@ -419,13 +424,13 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
 
 function getFishDepthLightingStyle(poseY) {
   const floorBottom = Math.max(WATER_SURFACE_Y + 1, getVisibleTankFloorBottomY());
-  const depth = clamp((Number(poseY) - WATER_SURFACE_Y) / Math.max(1, floorBottom - WATER_SURFACE_Y), 0, 1);
-  const brightnessPercent = Math.round(101 - depth * 5);
-  const saturationPercent = Math.round(101 - depth * 4);
-  const highlightAlpha = 0.085 - depth * 0.04;
+  const waterColumnProgress = clamp((Number(poseY) - WATER_SURFACE_Y) / Math.max(1, floorBottom - WATER_SURFACE_Y), 0, 1);
+  const highlightAlpha = 0.085 - waterColumnProgress * 0.04;
   return {
-    depth,
-    filter: `brightness(${brightnessPercent}%) saturate(${saturationPercent}%)`,
+    depth: waterColumnProgress,
+    // Layer-based color/softness now comes exclusively from DEPTH_VISUALS.
+    // This function only retains the independent top-light highlight.
+    filter: "none",
     highlightAlpha: clamp(highlightAlpha, 0.035, 0.085)
   };
 }
@@ -1796,6 +1801,13 @@ function drawFish(now, layer = null, options = {}) {
     if (options.excludeBehavior && effectiveBehavior === options.excludeBehavior) {
       continue;
     }
+    const caveInteriorFish = isFishInCaveRenderSublayer(fish);
+    if (options.caveInteriorOnly === true && !caveInteriorFish) {
+      continue;
+    }
+    if (options.excludeCaveInterior === true && caveInteriorFish) {
+      continue;
+    }
 
     const suckerFreeSwimming = effectiveBehavior === "sucker"
       ? isSuckerFishFreeSwimming(fish, species, now)
@@ -1849,10 +1861,14 @@ function drawFish(now, layer = null, options = {}) {
       ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.renderImage : transitionToSprite.renderImage)
       : getFishTintedImage(imagePath, image, fish);
     const pose = getFishPose(fish, species, now);
+    const depthLayer = getFishTankLayer(fish);
+    const depthMovementMultiplier = getTankDepthMovementMultiplier(depthLayer);
+    const visualSwayX = pose.swayX * depthMovementMultiplier;
+    const visualWiggle = pose.wiggle * depthMovementMultiplier;
     const width = getFishDisplayWidth(fish, species, now);
     const height = width * (image.height / image.width);
     const healthRatio = getFishHealthRatio(fish, species);
-    const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
+    const fishDrawX = -width / 2 + visualWiggle * width * 0.018;
     const useSuckerFacePivot = (
       SUCKER_FISH_FACE_PIVOT_ENABLED
       && !pose.isDead
@@ -1878,7 +1894,7 @@ function drawFish(now, layer = null, options = {}) {
 
     const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
-    tankContext.translate(pose.x + pose.swayX, pose.y);
+    tankContext.translate(pose.x + visualSwayX, pose.y);
     tankContext.scale(genericTurnRigActive ? 1 : (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)), 1);
     if (useSuckerFacePivot) {
       tankContext.translate(suckerFacePivotX, suckerFacePivotY);
@@ -1927,9 +1943,10 @@ function drawFish(now, layer = null, options = {}) {
     const comfort = !pose.isDead ? getFishComfort(fish, now) : null;
     const fishLighting = getFishDepthLightingStyle(pose.y);
     const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now, comfort?.value);
-    const fishRenderFilter = fishBaseFilter === "none"
-      ? fishLighting.filter
-      : `${fishBaseFilter} ${fishLighting.filter}`;
+    const fishRenderFilter = combineTankCanvasFilters(
+      fishBaseFilter,
+      fishLighting.filter
+    );
     const drawFishSpriteLayer = (sprite, scaleY = 1, alpha = 1) => {
       if (!sprite?.sourceImage || !sprite?.renderImage || alpha <= 0) return;
       const spriteHeight = width * (sprite.sourceImage.height / sprite.sourceImage.width);
@@ -1937,7 +1954,7 @@ function drawFish(now, layer = null, options = {}) {
         ? -spriteHeight / 2
         : spriteHeight / 2;
       tankContext.save();
-      tankContext.globalAlpha *= clamp(alpha, 0, 1);
+      tankContext.globalAlpha *= clamp(alpha, 0, 1) * getTankDepthObjectAlpha(depthLayer);
       if (isHalloweenModeActive(now)) {
         tankContext.globalAlpha *= 0.55;
       }
@@ -1946,16 +1963,17 @@ function drawFish(now, layer = null, options = {}) {
         tankContext.scale(1, Math.max(SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y, scaleY));
         tankContext.translate(0, -surfaceFlipPivotY);
       }
+      const depthRenderImage = getTankDepthTreatedImage(sprite.renderImage, depthLayer) || sprite.renderImage;
       tankContext.filter = fishRenderFilter;
       if (genericTurnRigActive) {
-        drawFishTurnaroundRig(tankContext, sprite.renderImage, fishDrawX, width, spriteHeight, fish, now);
+        drawFishTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
         if (getFishTurnRigProgress(fish, now) >= FISH_TURN_RIG_INTERNAL_TIMELINE_MAX) {
           fish.turnFinalFrameRenderedAt = now;
         }
-        markLightweightCausticTurnaroundRig(tankContext, sprite.renderImage, fishDrawX, width, spriteHeight, fish, now);
+        markLightweightCausticTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
       } else {
-        tankContext.drawImage(sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
-        markLightweightCausticImage(tankContext, sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
       }
       tankContext.filter = "none";
       if (!pose.isDead && !genericTurnRigActive) {
@@ -1981,6 +1999,7 @@ function drawFish(now, layer = null, options = {}) {
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
     tankContext.restore();
     drawFishDiseaseBubbles(fish, species, pose, width, height, now);
+    drawFishPufferBubbleBurst(fish, species, pose, width, height, now);
     drawFishBirthdayHat(fish, pose, width, height, now);
 
     if ((!pose.isBeingConsumed && pose.isDead) || fish.healthUnits === 1) {
@@ -1991,7 +2010,7 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.textBaseline = "middle";
       tankContext.fillText(
         pose.isDead ? "\u2620\uFE0F" : "\u{1F494}",
-        pose.x + pose.swayX,
+        pose.x + visualSwayX,
         statusY
       );
       tankContext.restore();
@@ -2701,6 +2720,25 @@ function getFishPose(fish, species, now) {
     const tailSway = Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
     tilt = clamp(tilt * 0.28 + verticalDrift + tailSway, -0.38, 0.38);
   }
+  const behaviorIntentType = String(fish.behaviorIntent?.type || "");
+  const yellowTangGrazing = species?.id === "yellow-tang" && (Number(fish.yellowTangGrazeUntil) || 0) > now;
+  const yellowTangPecking = yellowTangGrazing && /graze/i.test(behaviorIntentType);
+  const yellowTangGravelPecking = yellowTangPecking && /gravel/i.test(behaviorIntentType);
+  const seahorsePerched = species?.id === "seahorse" && (Number(fish.seahorsePerchUntil) || 0) > now && Boolean(fish.seahorsePerchDecorId);
+  const bettaDisplaying = species?.id === "betta" && /betta (?:display|confrontation)/i.test(behaviorIntentType);
+  const pencilSparring = species?.id === "pencilfish" && /harmless spar/i.test(behaviorIntentType);
+  const yellowTangPeckPulse = yellowTangPecking
+    ? Math.pow(Math.max(0, Math.sin(now / 118 + fish.phase * Math.PI * 2)), 4)
+    : 0;
+  if (yellowTangGrazing) {
+    const noseDip = yellowTangPecking
+      ? renderDirection * (0.035 + yellowTangPeckPulse * (yellowTangGravelPecking ? 0.24 : 0.16))
+      : 0;
+    tilt = clamp(tilt * 0.38 + noseDip + Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.025, -0.34, 0.34);
+  }
+  if (seahorsePerched) {
+    tilt = clamp(tilt * 0.3 + Math.sin(now / 1100 + fish.phase * Math.PI) * 0.018, -0.16, 0.16);
+  }
   const debugPoseSteering = fish.activity === "roam" && !fish.caveState
     ? getActiveDebugBehaviorSteering(fish, now)
     : null;
@@ -2710,12 +2748,28 @@ function getFishPose(fish, species, now) {
       : renderDirection;
     tilt = clamp(tilt * 0.35 - faceDirection * 0.2, -0.34, 0.34);
   }
+  const pufferInflated = isPufferInflatedActive(fish, now);
+  const pufferWobbleAmount = pufferInflated ? getPufferInflationWobbleAmount(fish, now) : 0;
+  if (pufferInflated) {
+    tilt = clamp(
+      tilt * 0.22 + Math.sin(now / 170 + fish.phase * Math.PI * 2.4) * (0.1 + pufferWobbleAmount * 0.22),
+      -0.42,
+      0.42
+    );
+  }
   const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch)
     * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)))
-    * (forcedDigPrompt ? 0.97 : 1);
+    * (forcedDigPrompt ? 0.97 : 1)
+    * (pufferInflated ? (0.98 - pufferWobbleAmount * 0.025 + Math.sin(now / 210 + fish.phase * Math.PI) * 0.012) : 1)
+    * (bettaDisplaying ? 0.97 : 1)
+    * (pencilSparring ? 0.985 : 1);
   const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78))
     * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)))
-    * (forcedDigPrompt ? 1.04 : 1);
+    * (forcedDigPrompt ? 1.04 : 1)
+    * (pufferInflated ? (1.03 + pufferWobbleAmount * 0.038 + Math.abs(Math.sin(now / 190 + fish.phase * Math.PI * 1.2)) * 0.012) : 1)
+    * (bettaDisplaying ? 1.06 : 1)
+    * (pencilSparring ? 1.018 : 1)
+    * (seahorsePerched ? 0.99 : 1);
   const turnSway = turnProgress === null || useComplexTurn
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * (0.35 + motionLevel * 0.95);
@@ -2725,11 +2779,15 @@ function getFishPose(fish, species, now) {
     direction: fish.direction || 1,
     facingScaleX: renderDirection,
     tilt,
-    wiggle,
+    wiggle: seahorsePerched ? wiggle * 0.24 : wiggle,
     bodyScaleX,
     bodyScaleY,
-    swayX: wiggle * (0.7 + motionLevel * 1.55)
-      + turnSway * (entryProgress === null ? 1 : entryRightingEase),
+    swayX: (seahorsePerched ? wiggle * 0.12 : wiggle * (0.7 + motionLevel * 1.55))
+      + turnSway * (entryProgress === null ? 1 : entryRightingEase)
+      + (yellowTangGrazing ? Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.45 + renderDirection * yellowTangPeckPulse * 1.15 : 0)
+      + (bettaDisplaying ? Math.sin(now / 180 + fish.phase * Math.PI * 2) * 0.8 : 0)
+      + (pencilSparring ? Math.sin(now / 155 + fish.phase * Math.PI * 2.2) * 0.95 : 0)
+      + (pufferInflated ? Math.sin(now / 145 + fish.phase * Math.PI * 2.3) * (1.2 + pufferWobbleAmount * 2.1) : 0),
     isDead: false
   };
 }

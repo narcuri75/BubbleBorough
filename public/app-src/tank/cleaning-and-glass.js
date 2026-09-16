@@ -685,8 +685,80 @@ function getActiveGlassTapStressEnds(fish, now = Date.now()) {
     : [];
 }
 
+function getPufferRapidTapWindowMs() { return 4200; }
+function getPufferRapidTapTriggerCount() { return 9; }
+function getPufferRapidTapGuaranteedCount() { return 12; }
+function getPufferHarassmentStressDurationMs() { return 20 * MINUTE_MS; }
+function getPufferHarassmentStressPenalty() { return 0.1; }
+
+function getPufferRapidTapTriggerChance(tapCount) {
+  if (tapCount >= getPufferRapidTapGuaranteedCount()) return 1;
+  if (tapCount >= 11) return 0.8;
+  if (tapCount >= 10) return 0.5;
+  if (tapCount >= getPufferRapidTapTriggerCount()) return 0.2;
+  return 0;
+}
+
+function getPufferHarassmentStressPenaltyForFish(fish, now = Date.now()) {
+  return isPufferfishSpecies(fish) && (Number(fish?.pufferGlassStressUntil) || 0) > now
+    ? getPufferHarassmentStressPenalty()
+    : 0;
+}
+
 function getFishGlassTapStressPenalty(fish, now = Date.now()) {
-  return getActiveGlassTapStressEnds(fish, now).length * GLASS_TAP_STRESS_PENALTY;
+  return getActiveGlassTapStressEnds(fish, now).length * GLASS_TAP_STRESS_PENALTY
+    + getPufferHarassmentStressPenaltyForFish(fish, now);
+}
+
+function recordPufferRapidGlassTap(fish, species, now = Date.now()) {
+  if (!fish || species?.id !== "pufferfish" || isFishDead(fish)) {
+    return false;
+  }
+
+  const tapStates = runtime.pufferRapidTapByFishId || (runtime.pufferRapidTapByFishId = new Map());
+  const previous = tapStates.get(fish.id);
+  const withinWindow = previous && now - Number(previous.startedAt) <= getPufferRapidTapWindowMs();
+  const stateForFish = withinWindow
+    ? previous
+    : { startedAt: now, count: 0 };
+  stateForFish.count = Math.max(0, Math.floor(Number(stateForFish.count) || 0)) + 1;
+  stateForFish.lastTapAt = now;
+  tapStates.set(fish.id, stateForFish);
+
+  if (stateForFish.count < getPufferRapidTapTriggerCount()) {
+    return false;
+  }
+
+  const chance = getPufferRapidTapTriggerChance(stateForFish.count);
+  if (chance <= 0 || Math.random() >= chance) {
+    return false;
+  }
+
+  fish.pufferGlassStressUntil = Math.max(
+    Number(fish.pufferGlassStressUntil) || 0,
+    now + getPufferHarassmentStressDurationMs()
+  );
+
+  // One rapid-tap burst should produce one defensive event. Continuing to tap
+  // starts a new harassment window instead of rerolling every frame.
+  tapStates.delete(fish.id);
+
+  if (isPufferInflatedActive(fish, now) || (Number(fish.pufferCooldownUntil) || 0) > now) {
+    return true;
+  }
+
+  const inflated = startPufferInflation(fish, species, now);
+  if (inflated) {
+    const tank = getCurrentTank();
+    if (tank) {
+      pushEvent(`${fish.name} puffed up after repeated glass tapping.`, now, tank, {
+        score: -1,
+        type: "glass_tap_stress",
+        fishId: fish.id
+      });
+    }
+  }
+  return inflated || true;
 }
 
 function hasTankGlassTapStressEventToday(tank, now = Date.now()) {
@@ -818,6 +890,7 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
 
     if (distance <= GLASS_TAP_STRESS_RADIUS_PX) {
       stressChanged = recordGlassTapStressForFish(fish, now) || stressChanged;
+      stressChanged = recordPufferRapidGlassTap(fish, species, now) || stressChanged;
     }
 
     const fallbackAngle = Math.random() * Math.PI * 2;

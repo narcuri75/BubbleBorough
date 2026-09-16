@@ -13,24 +13,8 @@ const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1
 const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
-import {
-  ZOMBIE_SKELETON_BEHAVIOR_CONFIG,
-  ZOMBIE_SKELETON_COMFORT_PROFILES,
-  ZOMBIE_SKELETON_FEATURE_DEFAULT_ENABLED,
-  ZOMBIE_SKELETON_FISH_CATALOG_PATH,
-  ZOMBIE_SKELETON_PROGRESSION_UNLOCKS,
-  canZombieSkeletonPassAttackTarget,
-  canZombieSkeletonUsePassAttack,
-  getZombieSkeletonEffectiveBehavior,
-  isZombieSkeletonAssetFile,
-  isZombieSkeletonCatalogSpecies,
-  isZombieSkeletonStage,
-  isZombieSkeletonUndeadType,
-  mergeZombieSkeletonStageAssets,
-  usesZombieSkeletonHunterBehavior
-} from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 49;
+const STATE_VERSION = 50;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -54,8 +38,6 @@ const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
 let appConfig = DEFAULT_APP_CONFIG;
 const DEBUG_AUTHORIZED_USER_ID = "37128461-efc9-4997-bdc9-b5e55d6c02df";
 const DEBUG_TOOLS_PREFERENCE_KEY = "bubble-borough-debug-tools-v1";
-// Toggle this to keep zombie/skeleton fish behavior and assets out of the main catalog.
-const ZOMBIE_SKELETON_BEHAVIOR_ENABLED = ZOMBIE_SKELETON_FEATURE_DEFAULT_ENABLED;
 const DEBUG_FISH_BEHAVIOR_LOG_LIMIT = 600;
 const TUTORIAL_MODE_DISABLED = "disabled";
 const TUTORIAL_MODE_GUIDED = "guided-live";
@@ -177,6 +159,10 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugBehaviorFollowButton", domKey: "debugBehaviorFollowButton", action: "follow", icon: "&#128101;", label: "Follow", title: "Debug: Follow A Friend" },
   { id: "debugBehaviorAvoidButton", domKey: "debugBehaviorAvoidButton", action: "avoid", icon: "&#8618;&#65039;", label: "Avoid", title: "Debug: Avoid A Feared Fish" },
   { id: "debugBehaviorDiseaseButton", domKey: "debugBehaviorDiseaseButton", action: "disease", icon: "&#129658;", label: "Symptom Test", title: "Debug: Disease Symptom Test" },
+  { id: "debugBehaviorSpeciesSignatureButton", domKey: "debugBehaviorSpeciesSignatureButton", action: "species-signature", icon: "&#129504;", label: "Test Species AI", title: "Debug: Force the selected species' signature behavior", extraClass: "wide" },
+  { id: "debugPufferInflateButton", domKey: "debugPufferInflateButton", action: "puffer-inflate", icon: "&#128167;", label: "Puffer Puff", title: "Debug: Force the selected Pufferfish to inflate" },
+  { id: "debugPufferDeflateButton", domKey: "debugPufferDeflateButton", action: "puffer-deflate", icon: "&#128168;", label: "Puffer Deflate", title: "Debug: Force the selected Pufferfish into deflation" },
+  { id: "debugPufferRapidTapsButton", domKey: "debugPufferRapidTapsButton", action: "puffer-taps", icon: "&#128070;", label: "Puffer 12 Taps", title: "Debug: Simulate twelve rapid nearby glass taps on the selected Pufferfish", extraClass: "wide" },
   { id: "debugOtocinclusBackButton", domKey: "debugOtocinclusBackButton", action: "oto-back", icon: "&#8595;&#65039;", label: "Oto Back Glass", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to the back glass" },
   { id: "debugOtocinclusSwimButton", domKey: "debugOtocinclusSwimButton", action: "oto-swim", icon: "&#128031;", label: "Oto Swim", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to free swim" },
   { id: "debugOtocinclusFrontButton", domKey: "debugOtocinclusFrontButton", action: "oto-front", icon: "&#8593;&#65039;", label: "Oto Front Glass", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to the front glass" },
@@ -336,6 +322,7 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "livebearer": { group: "small-social", personalities: ["social", "routine-loving", "curious", "follower"], rare: ["greedy", "shy", "bold"] },
   "clownfish": { group: "open-water-cruiser", personalities: ["social", "curious", "bold", "homebody"], rare: ["greedy", "routine-loving", "territorial"] },
   "goldfish": { group: "slow-graceful", personalities: ["greedy", "gentle", "routine-loving", "curious"], rare: ["bold", "homebody", "sensitive"], slowGraceful: true },
+  "koi": { group: "slow-graceful", personalities: ["social", "gentle", "routine-loving", "greedy"], rare: ["curious", "digger", "bold"], slowGraceful: true },
   "betta": { group: "slow-graceful", personalities: ["display", "standoffish", "territorial", "sensitive"], rare: ["curious", "homebody", "greedy"], slowGraceful: true },
   "angelfish": { group: "slow-graceful", personalities: ["display", "gentle", "sensitive", "social"], rare: ["territorial", "homebody", "curious"], slowGraceful: true },
   "discus": { group: "slow-graceful", personalities: ["display", "sensitive", "gentle", "routine-loving"], rare: ["shy", "social", "homebody"], slowGraceful: true },
@@ -358,6 +345,7 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
   "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true },
+  "lionfish": { group: "special-predator", personalities: ["hunter", "homebody", "standoffish", "routine-loving"], rare: ["curious", "territorial", "bold"], predatorDiet: true },
   "bull-shark": { group: "shark-cruiser", personalities: ["bold", "explorer", "territorial", "routine-loving"], rare: ["hunter", "curious", "standoffish"], predatorDiet: true, desperationPredator: true },
   "great-white-shark": { group: "shark-cruiser", personalities: ["hunter", "bold", "explorer", "territorial"], rare: ["curious", "standoffish", "routine-loving"], predatorDiet: true, desperationPredator: true },
   "hammerhead-shark": { group: "shark-cruiser", personalities: ["curious", "explorer", "bold", "social"], rare: ["hunter", "territorial", "gentle"], predatorDiet: true, desperationPredator: true },
@@ -652,6 +640,24 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     speedMaxBlend: 0.42, dartChance: 0.07, dartSpeedMinBlend: 0.86,
     targetDurationScale: 1.22
   }),
+  "koi": createFishLocomotionProfile({
+    movementPattern: "broad-bottom-cruise", preferredY: 0.6, verticalSpread: 0.52,
+    targetDistanceMin: 0.28, targetDistanceMax: 0.68, headingPersistence: 0.82,
+    hoverChance: 0.035, hoverMinMs: 900, hoverMaxMs: 2100, schoolStrength: 0.46,
+    schoolSpacingScale: 1.28, schoolDurationScale: 1.34, schoolVerticalJitterScale: 0.72,
+    structureAffinity: 0.82, caveAffinity: 0.05, startleStrength: 0.82,
+    startleRecoveryScale: 1.08, turnDurationScale: 1.32, speedMinBlend: 0.3,
+    speedMaxBlend: 0.68, targetDurationScale: 1.24
+  }),
+  "lionfish": createFishLocomotionProfile({
+    movementPattern: "shelter-hover-glide", preferredY: 0.56, verticalSpread: 0.48,
+    targetDistanceMin: 0.06, targetDistanceMax: 0.3, headingPersistence: 0.5,
+    hoverChance: 0.44, hoverMinMs: 1400, hoverMaxMs: 4300, schoolStrength: 0,
+    structureAffinity: 2.15, caveAffinity: 2.35, homeRangeStrength: 0.76,
+    homeRangeRadius: 0.18, startleStrength: 0.68, startleRecoveryScale: 1.18,
+    turnDurationScale: 1.52, speedMinBlend: 0.02, speedMaxBlend: 0.38,
+    dartChance: 0.035, dartSpeedMinBlend: 0.88, targetDurationScale: 1.38
+  }),
   "bull-shark": createFishLocomotionProfile({
     movementPattern: "wide-cruise", preferredY: 0.46, verticalSpread: 0.56,
     targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.97,
@@ -801,7 +807,6 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "betta": { mealCoins: 1, unlock: "happy-habitat", needs: ["plants", "cave"], conflicts: ["betta_present", "community_fish", "fin_nipper"] },
   "blue-ram": { mealCoins: 1, unlock: "happy-habitat", needs: ["cave", "plants"], conflicts: ["fast_eater", "aggressive_predator"] },
   "piranha": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "cave"], conflicts: ["community_fish", "overcrowded"] },
-  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? ZOMBIE_SKELETON_COMFORT_PROFILES : {}),
   "wonder-killifish": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "open_water"], conflicts: ["tiny_fish", "surface_crowding"] },
   "rainbowfish": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded", "aggressive_predator"] },
   "gourami": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "plants"], conflicts: ["betta_present", "fin_nipper"] },
@@ -810,8 +815,10 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "clownfish": { mealCoins: 2, unlock: "happy-habitat", needs: ["coral", "cave"], conflicts: ["same_species", "aggressive_predator"] },
   "royal-gramma": { mealCoins: 2, unlock: "happy-habitat", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
   "yellow-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
-  "blue-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
+  "blue-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["open_water", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
   "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] },
+  "koi": { mealCoins: 2, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
+  "lionfish": { mealCoins: 2, unlock: null, needs: ["cave", "coral"], conflicts: ["overcrowded"] },
   "bull-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
   "great-white-shark": { mealCoins: 4, unlock: "borough-legends", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
   "hammerhead-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
@@ -827,7 +834,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     requirement: "Finish a Daily Recap with score 3+.",
     reward: 3,
     unlocks: ["chili-rasbora", "ember-tetra", "neon-tetra", "celestial-pearl-danio", "moor-goldfish"],
-    decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "treasure-chest_bubbler.png"],
+    decorUnlocks: ["floating-swamp-moss__plant__theme-natural.png", "fishing-lure__lure__theme-artificial.png", "treasure-chest__bubbler__theme-treasure__front.png"],
     isMet: (stats) => stats.latestScore >= 3,
     progress: (stats) => [{ value: (Number(stats.latestScore) || 0) / 3, label: `Latest recap score ${Math.max(0, Number(stats.latestScore) || 0)}/3` }]
   },
@@ -837,7 +844,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
     reward: 8,
     unlocks: ["harlequin-rasbora", "pencilfish", "rummy-nose-tetra", "otocinclus", "molly", "livebearer", "swordtail"],
-    decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
+    decorUnlocks: ["driftwood-root__wood__theme-natural.png", "driftwood__wood__theme-natural.png", "moss-bridge__wood-plant__theme-natural.png", "slate__cave-rock__theme-natural__front.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
     progress: (stats) => [
       { value: (Number(stats.goodRecaps) || 0) / 3, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 3)}/3` },
@@ -850,7 +857,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     requirement: "Keep any fish alive for 7 days and recent average comfort at 80%+.",
     reward: 12,
     unlocks: ["betta", "blue-ram", "piranha", "wonder-killifish", "rainbowfish", "gourami", "clownfish", "royal-gramma", "seahorse"],
-    decorUnlocks: ["Shipwreck.png", "mushroomcoral_seaweed.png", "Castle-Cave.png", "blue_castle_cave.png", "meteor_cave.png", "volcano-1_bubbler.png", "volcano-2_bubbler.png", "__custom-decor-shop__", "__custom-hide-shop__"],
+    decorUnlocks: ["large-mushroom-coral__coral__theme-reef.png", "wizard-castle__cave__theme-fantasy__front.png", "blue-castle__cave__theme-fantasy__front.png", "meteor__cave-rock__theme-space__front.png", "volcano__bubbler__theme-natural__front.png", "volcano__bubbler__theme-natural__v2__front.png", "__custom-decor-shop__", "__custom-hide-shop__"],
     isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80,
     progress: (stats) => [
       { value: (Number(stats.oldestLivingFishAgeMs) || 0) / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, WEEK_MS))}/7d` },
@@ -873,13 +880,12 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "marine-curator",
     label: "Marine Curator",
-    requirement: "Keep any fish alive for 21 days, own a saltwater fish, and finish 10 good recaps.",
+    requirement: "Keep any fish alive for 21 days and finish 10 good recaps.",
     reward: 20,
     unlocks: ["pufferfish", "bull-shark", "hammerhead-shark"],
     decorUnlocks: [],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= 21 * DAY_MS && stats.hasSaltwaterFish && stats.goodRecaps >= 10,
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= 21 * DAY_MS && stats.goodRecaps >= 10,
     progress: (stats) => [
-      { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
       { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (21 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 21 * DAY_MS))}/21d` },
       { value: (Number(stats.goodRecaps) || 0) / 10, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 10)}/10` }
     ]
@@ -1159,29 +1165,21 @@ const PROGRESSION_MILESTONES = Object.freeze([
   }
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
-  "fishing_lure.png": "first-care",
-  "treasure-chest_bubbler.png": "first-care",
-  "floating_swampmoss_1.png": "first-care",
-  "driftwood-root.png": "stable-tank",
-  "driftwood.png": "stable-tank",
-  "moss-bridge.png": "stable-tank",
-  "slate-cave.png": "stable-tank",
-  "Plane-wreck.png": "stable-tank",
-  "Shipwreck.png": "happy-habitat",
-  "mushroomcoral_seaweed.png": "happy-habitat",
-  "Castle-Cave.png": "happy-habitat",
-  "blue_castle_cave.png": "happy-habitat",
-  "meteor_cave.png": "happy-habitat",
-  "volcano-1_bubbler.png": "happy-habitat",
-  "volcano-2_bubbler.png": "happy-habitat",
+  "fishing-lure__lure__theme-artificial.png": "first-care",
+  "treasure-chest__bubbler__theme-treasure__front.png": "first-care",
+  "floating-swamp-moss__plant__theme-natural.png": "first-care",
+  "driftwood-root__wood__theme-natural.png": "stable-tank",
+  "driftwood__wood__theme-natural.png": "stable-tank",
+  "moss-bridge__wood-plant__theme-natural.png": "stable-tank",
+  "slate__cave-rock__theme-natural__front.png": "stable-tank",
+  "large-mushroom-coral__coral__theme-reef.png": "happy-habitat",
+  "wizard-castle__cave__theme-fantasy__front.png": "happy-habitat",
+  "blue-castle__cave__theme-fantasy__front.png": "happy-habitat",
+  "meteor__cave-rock__theme-space__front.png": "happy-habitat",
+  "volcano__bubbler__theme-natural__front.png": "happy-habitat",
+  "volcano__bubbler__theme-natural__v2__front.png": "happy-habitat",
   "__custom-decor-shop__": "happy-habitat",
   "__custom-hide-shop__": "happy-habitat",
-  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? {
-    "gorebag_lure.png": "spooky-keeper",
-    "fishheadeffigy_1.png": "spooky-keeper",
-    "fishheadeffigy_2.png": "spooky-keeper",
-    "fishheadeffigy_3.png": "spooky-keeper"
-  } : {})
 });
 const MANAGEMENT_HISTORY_PAGE_SIZE = 12;
 const MAX_TANK_EVENT_HISTORY = 2000;
@@ -1200,8 +1198,6 @@ const BOROUGH_NOTIFICATION_COOLDOWN_MS = 22 * 1000;
 const BOROUGH_NOTIFICATION_DUPLICATE_MS = 3 * MINUTE_MS;
 const NOTIFICATION_CENTER_HISTORY_LIMIT = 60;
 const CRITICAL_COMFORT_HEALTH_TICK_MS = 6 * HOUR_MS;
-const FISH_DECAY_ZOMBIE_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecayZombieMs;
-const FISH_DECAY_SKELETON_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecaySkeletonMs;
 const POOP_FALL_MS = 18 * 1000;
 const POOP_DRAW_WIDTH_PX = 36;
 const TANK_WIDTH = 1280;
@@ -1242,7 +1238,64 @@ const DEFAULT_THEME = "dark";
 const TOOLBAR_POSITION_SETTING_ENABLED = false;
 const DISPLAY_POSITION_SETTING_ENABLED = false;
 const CAUSTIC_LIGHTING_SETTING_ENABLED = true;
-const DECOR_SHADOWS_SETTING_ENABLED = false;
+const DECOR_SHADOWS_SETTING_ENABLED = true;
+
+// Shared aquarium depth treatment. Layer 1 is closest to the front glass and
+// Layer 5 sits against the rear of the tank. Keep these values centralized so
+// fish, decor, machinery, shadows, and continuous substrate surfaces all resolve
+// their visual depth from the same source.
+const DEPTH_VISUALS = Object.freeze({
+  1: Object.freeze({ haze: 0, saturation: 1, contrast: 1, blurPx: 0, coolTint: 0, shadowStrength: 1, movementMultiplier: 1 }),
+  2: Object.freeze({ haze: 0.015, saturation: 0.99, contrast: 0.98, blurPx: 0.05, coolTint: 0.01, shadowStrength: 0.88, movementMultiplier: 0.98 }),
+  3: Object.freeze({ haze: 0.03, saturation: 0.97, contrast: 0.96, blurPx: 0.15, coolTint: 0.025, shadowStrength: 0.75, movementMultiplier: 0.96 }),
+  4: Object.freeze({ haze: 0.045, saturation: 0.95, contrast: 0.94, blurPx: 0.25, coolTint: 0.04, shadowStrength: 0.65, movementMultiplier: 0.94 }),
+  5: Object.freeze({ haze: 0.06, saturation: 0.92, contrast: 0.91, blurPx: 0.35, coolTint: 0.05, shadowStrength: 0.55, movementMultiplier: 0.92 })
+});
+const DEPTH_VISUAL_COOL_TINT_RGB = Object.freeze({ r: 76, g: 188, b: 211 });
+const DEPTH_VISUAL_SUBSTRATE_SOFTNESS_MAX_PX = 0.35;
+const SUBSTRATE_GROUND_SHADOW = Object.freeze({
+  startLayer: 1,
+  startAlpha: 0.12,
+  endAlpha: 0.22,
+  color: Object.freeze({ r: 56, g: 43, b: 31 }),
+  hillInsetPx: 1.4,
+  hillAmplitudePx: 5.7,
+  hillSecondaryAmplitudePx: 2.4,
+  hillSegments: 12,
+  topFadeRatio: 0.18,
+  midFadeRatio: 0.38
+});
+const DECOR_GROUND_SHADOWS = Object.freeze({
+  baseAlphaMultiplier: 1.22,
+  baseRadiusXMultiplier: 1.0,
+  baseRadiusYMultiplier: 1.1,
+  baseOffsetY: -2.8,
+  baseMidAlphaMultiplier: 0.62,
+  contactCoreAlphaMultiplier: 1.3,
+  contactSoftAlphaMultiplier: 0.82,
+  contactRadiusXMultiplier: 1.02,
+  contactRadiusYMultiplier: 1.0,
+  shadowDarknessCap: 3
+});
+const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_START_RATIO = 0.5;
+const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_MAX_ALPHA = 0.18;
+const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_RGB = Object.freeze({ r: 58, g: 46, b: 33 });
+const DEBUG_DEPTH_TUNING_STORAGE_KEY = "bubble-borough-debug-depth-tuning-v1";
+const DEPTH_EFFECT_LEVEL_MIN = 0;
+const DEPTH_EFFECT_LEVEL_MAX = 4;
+const DEPTH_EFFECT_LEVEL_DEFAULT = 1;
+const DEPTH_EFFECT_LEVEL_PREFERENCE_KEY = "bubble-borough-depth-effect-level-v1";
+const DEPTH_EFFECT_LEVEL_LABELS = Object.freeze(["Off", "Subtle", "Medium", "Strong", "Max"]);
+const DEFAULT_DEBUG_DEPTH_TUNING = Object.freeze({
+  saturation: 1,
+  contrast: 1,
+  coolTint: 1,
+  haze: 1,
+  substrate: 1,
+  shadow: 1,
+  movement: 1,
+  shadowDarkness: 1.3
+});
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false,
   trypophobiaEnabled: false
@@ -1263,7 +1316,8 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
-  decorShadowsEnabled: false,
+  decorShadowsEnabled: true,
+  depthEffectLevel: DEPTH_EFFECT_LEVEL_DEFAULT,
   simpleTurnAnimationsOnly: false,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
@@ -1350,10 +1404,10 @@ const SAFE_CHUM_PELLET_COLORS = Object.freeze({
   highlight: "#FFB6C1"
 });
 const FILTERED_GORE_DECOR_KEYS = new Set([
-  "gorebag_lure.png",
-  "fishheadeffigy_1.png",
-  "fishheadeffigy_2.png",
-  "fishheadeffigy_3.png"
+  "halloween-gorebag__lure__theme-halloween.png",
+  "halloween-fish-head-effigy__ornament__theme-halloween.png",
+  "halloween-fish-head-effigy__ornament__theme-halloween__v2.png",
+  "halloween-fish-head-effigy__ornament__theme-halloween__v3.png"
 ]);
 const NONE_BACKGROUND_ASSET_KEY = "none.png";
 const DEFAULT_BACKGROUND_ASSET_KEY = NONE_BACKGROUND_ASSET_KEY;
@@ -1789,8 +1843,6 @@ const FISH_TURN_RIG_MAX_DURATION_MS = 3200;
 const FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE = Object.freeze({
   piranha: 0.86,
   sucker: 1.08,
-  zombie: 1.15,
-  skeleton: 0.92
 });
 const FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY = 0.55;
 const FISH_TURN_RIG_VISIBLE_MAX_COLUMNS = 48;
@@ -1799,10 +1851,10 @@ const FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS = 4;
 const FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS = 0.62;
 const fishTurnRigCanvasCache = new WeakMap();
 const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
-  "assets/decor/Cave_Coral_Shelf_1_Trypophobia.png",
-  "assets/decor/Cave_Coral_Shelf_6_Trypophobia.png",
-  "assets/decor/Cave_Coral_Shelf_10_Trypophobia.png",
-  "assets/decor/Cave_Coral_Shelf_9_color2_Trypophobia.png"
+  "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.png",
+  "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.png",
+  "assets/decor/cave_layered/coral-shelf-10__cave-coral__theme-reef__trypophobia__front.png",
+  "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__trypophobia__front__color2.png"
 ].map((path) => path.toLowerCase()));
 const NAUTILUS_STATE_HOVER = "hover";
 const NAUTILUS_STATE_JET = "jet";
@@ -2227,26 +2279,17 @@ const FISH_ACTION_QUEUE_REST_MS = 2 * 1000;
 const BETTA_ATTACK_PASS_CHANCE = 0.001;
 const BETTA_ATTACK_TRIGGER_RANGE_NORM = 0.052;
 const BETTA_ATTACK_RELEASE_RANGE_NORM = 0.074;
-const ZOMBIE_BITE_FATAL_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteFatalMs;
-const ZOMBIE_BITE_BLOOD_INTERVAL_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteBloodIntervalMs;
-const ZOMBIE_BITE_REVIVE_MIN_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteReviveMinMs;
-const ZOMBIE_BITE_REVIVE_MAX_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteReviveMaxMs;
-const ZOMBIE_ATTACK_TARGET_REFRESH_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.attackTargetRefreshMs;
 const FISH_SPAWN_PROTECTION_MS = 15000;
 const PIRANHA_ATTACK_TRIGGER_RANGE_NORM = 0.04;
 const PIRANHA_ATTACK_RELEASE_RANGE_NORM = 0.06;
 const PIRANHA_ATTACK_BUILDUP_MS = 7000;
 const PIRANHA_BITE_DAMAGE_INTERVAL_MS = 900;
 const PIRANHA_BITE_DAMAGE_UNITS = 1;
-const PIRANHA_CONSUMPTION_ZOMBIE_MS = MINUTE_MS / 3;
-const PIRANHA_CONSUMPTION_SKELETON_MS = (2 * MINUTE_MS) / 3;
 const PIRANHA_CONSUMPTION_DURATION_MS = 1 * MINUTE_MS;
 const PIRANHA_BLOOD_CLOUD_INTERVAL_MS = 1200;
 const PIRANHA_TARGET_REFRESH_MS = 650;
 const BLOOD_WATER_TINT_DECAY_PER_SECOND = 0.0034;
 const CHUM_BLOOD_CLOUD_INTERVAL_MS = 1300;
-const UNDEAD_COMFORT_PENALTY = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.undeadComfortPenalty;
-const MAX_UNDEAD_COMFORT_PENALTY = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.maxUndeadComfortPenalty;
 const CORPSE_VIGIL_TRIGGER_RANGE_NORM = 0.16;
 const CAVE_NIGHT_ENTRY_CHANCE = 0.5;
 const CAVE_NIGHT_START_HOUR = 21;
@@ -2583,104 +2626,1945 @@ const CAVE_BEHAVIOR_OVERRIDES = {
 
 const FISH_TYPES = [
   {
-    id: "goldfish",
-    name: "Goldfish",
-    cost: 5,
-    mealCoins: 1,
-    asset: "/assets/fish/goldfish.png",
-    description: "The classic round buddy. Big, cheerful, and always hungry.",
-    width: 405,
-    cycleSeconds: 28,
-    bobSpeed: 1.25,
-    swimStyle: "peaceful",
-    speedMin: 0.02,
-    speedMax: 0.024,
-    targetMinMs: 4400,
-    targetMaxMs: 7600
+    "id": "blue-tang",
+    "name": "Blue Tang",
+    "genetics": "natural",
+    "cost": 28,
+    "mealCoins": 2,
+    "asset": "/assets/fish/bluetang.png",
+    "description": "A bright, energetic reef fish known for its bold blue coloring and constant movement. Blue Tangs love having plenty of room to cruise and rarely spend much time sitting still.",
+    "width": 398,
+    "displayWidth": 260,
+    "bobSpeed": 1.32,
+    "swimStyle": "steady",
+    "speedMin": 0.022,
+    "speedMax": 0.032,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4600,
+    "defaultNames": [
+      "Dory",
+      "Azure",
+      "Bubbles",
+      "Reef",
+      "Sapphire",
+      "Indigo",
+      "Pacific",
+      "Tidal",
+      "Marlin",
+      "Coraline",
+      "Skye",
+      "Cobalt",
+      "Lagoon",
+      "Ripple",
+      "Bali",
+      "Nixie",
+      "Wave",
+      "Blu",
+      "Misty",
+      "Finn"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
   {
-    id: "guppy",
-    name: "Guppy",
-    cost: 4,
-    mealCoins: 1,
-    asset: "/assets/fish/guppy.png",
-    description: "A ribbon-tailed coin helper with a fast little wiggle.",
-    width: 179,
-    cycleSeconds: 23,
-    bobSpeed: 1.45,
-    swimStyle: "sporadic",
-    speedMin: 0.024,
-    speedMax: 0.072,
-    targetMinMs: 1400,
-    targetMaxMs: 3600
+    "id": "goldfish",
+    "name": "Goldfish",
+    "genetics": "natural",
+    "cost": 5,
+    "mealCoins": 1,
+    "asset": "/assets/fish/goldfish.png",
+    "description": "A familiar favorite with a round body, flowing fins, and an easygoing personality. Goldfish spend their days calmly exploring the tank and checking out just about everything. Fun fact: Not actual gold. Who knew?",
+    "width": 405,
+    "displayWidth": 250,
+    "bobSpeed": 1.25,
+    "swimStyle": "peaceful",
+    "speedMin": 0.014,
+    "speedMax": 0.021,
+    "targetMinMs": 4400,
+    "targetMaxMs": 7600,
+    "defaultNames": [
+      "Sunny",
+      "Pebble",
+      "Marmalade",
+      "Pip",
+      "Goldie",
+      "Nugget",
+      "Cheddar",
+      "Biscuit",
+      "Pumpkin",
+      "Butters",
+      "Caramel",
+      "Honey",
+      "Dorito",
+      "Cheeto",
+      "Tango",
+      "Topaz",
+      "Glowy",
+      "Mango",
+      "Scooter",
+      "Waffles"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
   {
-    id: "betta",
-    name: "Betta",
-    cost: 10,
-    mealCoins: 1,
-    asset: "/assets/fish/betta.png",
-    description: "A dramatic, fluttery fish with elegant fins and better payouts.",
-    width: 219,
-    cycleSeconds: 30,
-    bobSpeed: 1.15,
-    swimStyle: "peaceful",
-    speedMin: 0.018,
-    speedMax: 0.022,
-    targetMinMs: 5200,
-    targetMaxMs: 8200
+    "id": "guppy",
+    "name": "Guppy",
+    "genetics": "natural",
+    "cost": 4,
+    "mealCoins": 1,
+    "asset": "/assets/fish/guppy.png",
+    "description": "A small, colorful fish with a big personality and a flowing tail. Guppies are lively swimmers that alternate between quick bursts of energy and relaxed cruising around the tank.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Ribbon",
+      "Skipper",
+      "Twinkle",
+      "Bubbles",
+      "Zip",
+      "Sprout",
+      "Flick",
+      "Pebbles",
+      "Miso",
+      "Jitter",
+      "Gizmo",
+      "Pogo",
+      "Spark",
+      "Scoot",
+      "Pipsqueak",
+      "Tinker",
+      "Nova",
+      "Button",
+      "Wiggles",
+      "Nibbles"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true
   },
   {
-    id: "clownfish",
-    name: "Clownfish",
-    cost: 20,
-    mealCoins: 2,
-    asset: "/assets/fish/clownfish.png",
-    description: "Bright stripes, playful swimming, and a solid meal bonus.",
-    width: 162,
-    cycleSeconds: 24,
-    bobSpeed: 1.35,
-    swimStyle: "steady",
-    caveEnabled: true,
-    speedMin: 0.032,
-    speedMax: 0.042,
-    targetMinMs: 2400,
-    targetMaxMs: 5200
+    "id": "betta",
+    "name": "Betta",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/betta.png",
+    "assetVariants": [
+      "/assets/fish/betta_1.png",
+      "/assets/fish/betta_2.png",
+      "/assets/fish/betta_3.png",
+      "/assets/fish/betta_4.png"
+    ],
+    "description": "A striking fish known for its flowing fins, bold colors, and unmistakable presence. Bettas are graceful swimmers, but they can be highly territorial and aggressive, especially around other bettas.",
+    "width": 219,
+    "bobSpeed": 1.15,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.019,
+    "targetMinMs": 5200,
+    "targetMaxMs": 8200,
+    "defaultNames": [
+      "Velvet",
+      "Nova",
+      "Flare",
+      "Satin",
+      "Blaze",
+      "Crimson",
+      "Phantom",
+      "Silk",
+      "Rogue",
+      "Vanta",
+      "Ember",
+      "Scarlet",
+      "Prince",
+      "Razor",
+      "Onyx",
+      "Luxe",
+      "Draco",
+      "Vesper",
+      "Titan",
+      "Majesty"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
   {
-    id: "angelfish",
-    name: "Angelfish",
-    cost: 36,
-    mealCoins: 2,
-    asset: "/assets/fish/angelfish.png",
-    description: "Tall fins and graceful turns. Fancy fish, fancy coins.",
-    width: 456,
-    cycleSeconds: 33,
-    bobSpeed: 1.05,
-    swimStyle: "peaceful",
-    speedMin: 0.017,
-    speedMax: 0.021,
-    targetMinMs: 5400,
-    targetMaxMs: 8600
+    "id": "clownfish",
+    "name": "Clownfish",
+    "genetics": "natural",
+    "cost": 20,
+    "mealCoins": 2,
+    "asset": "/assets/fish/clownfish.png",
+    "description": "A colorful, energetic fish known for its bold stripes and curious personality. Clownfish often form close bonds with anemones and tend to stick near a favorite part of the tank.",
+    "width": 162,
+    "bobSpeed": 1.35,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.034,
+    "targetMinMs": 2400,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Nemo",
+      "Pennywise",
+      "Coral",
+      "Dash",
+      "Tango",
+      "Patch",
+      "Cheeto",
+      "Skittles",
+      "Jester",
+      "Tiki",
+      "Blaze",
+      "Sunny",
+      "Miso",
+      "Marlin",
+      "Peaches",
+      "Jinx",
+      "Bingo",
+      "Fanta",
+      "Pogo",
+      "Beans"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
   {
-    id: "pufferfish",
-    name: "Pufferfish",
-    cost: 40,
-    mealCoins: 2,
-    asset: "/assets/fish/pufferfish.png",
-    description: "The round little oddball. Expensive, adorable, and profitable.",
-    width: 150,
-    cycleSeconds: 27,
-    bobSpeed: 1.55,
-    swimStyle: "steady",
-    speedMin: 0.026,
-    speedMax: 0.034,
-    targetMinMs: 2600,
-    targetMaxMs: 5600
+    "id": "angelfish",
+    "name": "Angelfish",
+    "genetics": "natural",
+    "cost": 36,
+    "mealCoins": 2,
+    "asset": "/assets/fish/angelfish.png",
+    "assetVariants": [
+      "/assets/fish/angelfish_1.png",
+      "/assets/fish/angelfish_2.png",
+      "/assets/fish/angelfish_3.png",
+      "/assets/fish/angelfish_4.png"
+    ],
+    "description": "A graceful fish known for its tall body, long fins, and slow, sweeping movements. Angelfish usually carry themselves calmly, but they can become territorial as they mature, especially when pairing or breeding.",
+    "width": 456,
+    "displayWidth": 235,
+    "bobSpeed": 1.05,
+    "swimStyle": "peaceful",
+    "speedMin": 0.014,
+    "speedMax": 0.02,
+    "targetMinMs": 5400,
+    "targetMaxMs": 8600,
+    "defaultNames": [
+      "Halo",
+      "Opal",
+      "Glint",
+      "Pearl",
+      "Seraph",
+      "Ivory",
+      "Luna",
+      "Celeste",
+      "Aurora",
+      "Grace",
+      "Nimbus",
+      "Shimmer",
+      "Eden",
+      "Dove",
+      "Solace",
+      "Angelica",
+      "Cloud",
+      "Moonbeam",
+      "Starlight",
+      "Mirage"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
+  {
+    "id": "pufferfish",
+    "name": "Pufferfish",
+    "genetics": "natural",
+    "cost": 40,
+    "mealCoins": 2,
+    "asset": "/assets/fish/pufferfish.png",
+    "description": "A curious little oddball with a round body, expressive face, and plenty of personality. Pufferfish are known for investigating their surroundings and, when seriously threatened, inflating themselves into a much larger shape.",
+    "width": 150,
+    "bobSpeed": 1.55,
+    "swimStyle": "steady",
+    "speedMin": 0.014,
+    "speedMax": 0.024,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5600,
+    "defaultNames": [
+      "Puffin",
+      "Marsh",
+      "Button",
+      "Plum",
+      "Chonk",
+      "Spud",
+      "Wobble",
+      "Boba",
+      "Pickles",
+      "Tater",
+      "Gumball",
+      "Pudge",
+      "Mochi",
+      "Pompom",
+      "Squish",
+      "Porkchop",
+      "Biscuit",
+      "Nugget",
+      "Waffles",
+      "Dumpling"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "zebra-danio",
+    "name": "Zebra Danio",
+    "genetics": "natural",
+    "cost": 4,
+    "mealCoins": 1,
+    "asset": "/assets/fish/zebradanio.png",
+    "description": "A small, energetic fish known for its bold horizontal stripes and nonstop activity. Zebra Danios are quick, social swimmers that love racing back and forth and rarely stay still for long.",
+    "width": 143,
+    "bobSpeed": 1.5,
+    "swimStyle": "sporadic",
+    "speedMin": 0.032,
+    "speedMax": 0.052,
+    "targetMinMs": 1200,
+    "targetMaxMs": 3200,
+    "defaultNames": [
+      "Zig",
+      "Dash",
+      "Stripe",
+      "Volt",
+      "Zoom",
+      "Racer",
+      "Streak",
+      "Flash",
+      "Skid",
+      "Bolt",
+      "Turbo",
+      "Rocket",
+      "Pepper",
+      "Jolt",
+      "Whip",
+      "Jitter",
+      "Sonic",
+      "Flicker",
+      "Quickdraw",
+      "Skippy"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "cherry-barb",
+    "name": "Cherry Barb",
+    "genetics": "natural",
+    "cost": 5,
+    "mealCoins": 1,
+    "asset": "/assets/fish/cherrybarb.png",
+    "description": "A small, peaceful fish known for its warm red coloring and relaxed personality. Cherry Barbs are social swimmers that do especially well in groups and tend to explore the tank at an easy, steady pace.",
+    "width": 165,
+    "bobSpeed": 1.28,
+    "swimStyle": "steady",
+    "speedMin": 0.02,
+    "speedMax": 0.03,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4600,
+    "defaultNames": [
+      "Cherry",
+      "Blush",
+      "Ruby",
+      "Ember",
+      "Scarlet",
+      "Poppy",
+      "Rose",
+      "Berry",
+      "Cranberry",
+      "Maraschino",
+      "Rosie",
+      "Crimson",
+      "Garnet",
+      "Valentine",
+      "Sangria",
+      "Twizzler",
+      "Blazer",
+      "Cupid",
+      "Reddy",
+      "Jam"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "rainbowfish",
+    "name": "Rainbowfish",
+    "genetics": "natural",
+    "cost": 16,
+    "mealCoins": 1,
+    "asset": "/assets/fish/rainbowfish.png",
+    "description": "A lively, shimmering fish known for its metallic colors and graceful movement. Rainbowfish are active, social swimmers that look especially striking as they glide through the tank and catch the light.",
+    "width": 241,
+    "bobSpeed": 1.2,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.04,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5600,
+    "defaultNames": [
+      "Prism",
+      "Iris",
+      "Glow",
+      "Aura",
+      "Skittles",
+      "Disco",
+      "Neon",
+      "Sunbeam",
+      "Mirage",
+      "Twinkle",
+      "Pixel",
+      "Kaleido",
+      "Shimmer",
+      "Sparkle",
+      "Flair",
+      "Confetti",
+      "Radiance",
+      "Glimmer",
+      "Nova",
+      "Luster"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "royal-gramma",
+    "name": "Royal Gramma",
+    "genetics": "natural",
+    "cost": 20,
+    "mealCoins": 2,
+    "asset": "/assets/fish/royalgramma.png",
+    "description": "A striking little fish known for its vivid purple and yellow coloring. Royal Grammas tend to stay close to rocks, caves, and other hiding places, often hovering nearby before darting back to safety.",
+    "width": 260,
+    "bobSpeed": 1.18,
+    "swimStyle": "peaceful",
+    "speedMin": 0.016,
+    "speedMax": 0.024,
+    "targetMinMs": 3200,
+    "targetMaxMs": 6200,
+    "defaultNames": [
+      "Royal",
+      "Velour",
+      "Crown",
+      "Majesty",
+      "Regal",
+      "Prince",
+      "Queenie",
+      "Scepter",
+      "Velvet",
+      "Amethyst",
+      "Goldie",
+      "Monarch",
+      "Duke",
+      "Baron",
+      "Luxe",
+      "Gilded",
+      "Violet",
+      "Imperial",
+      "Treasure",
+      "Sultan"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "yellow-tang",
+    "name": "Yellow Tang",
+    "genetics": "natural",
+    "cost": 24,
+    "mealCoins": 2,
+    "asset": "/assets/fish/yellowtang.png",
+    "assetVariants": [
+      "/assets/fish/yellowtang_1.png"
+    ],
+    "description": "A bright, active fish known for its vivid yellow coloring and constant grazing. Yellow Tangs spend much of their time cruising around the tank and picking at algae as they explore.",
+    "width": 360,
+    "displayWidth": 245,
+    "bobSpeed": 1.25,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.034,
+    "targetMinMs": 2400,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Sunny",
+      "Lemon",
+      "Zest",
+      "Goldie",
+      "Banana",
+      "Butter",
+      "Dandelion",
+      "Sunkist",
+      "Yuzu",
+      "Nacho",
+      "Mustard",
+      "Topaz",
+      "Blondie",
+      "Canary",
+      "Sunbeam",
+      "Dijon",
+      "Cheese",
+      "Marigold",
+      "Mellow",
+      "Pikachu"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "discus",
+    "name": "Discus",
+    "genetics": "natural",
+    "cost": 32,
+    "mealCoins": 2,
+    "asset": "/assets/fish/discus.png",
+    "description": "An elegant, round-bodied fish known for its striking colors and calm, deliberate movement. Discus tend to glide gracefully through the tank and have a reputation for being a little more delicate than the average aquarium fish.",
+    "width": 488,
+    "displayWidth": 260,
+    "bobSpeed": 1.05,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.018,
+    "targetMinMs": 5200,
+    "targetMaxMs": 8600,
+    "defaultNames": [
+      "Solar",
+      "Halo",
+      "Ember",
+      "Flare",
+      "Apollo",
+      "Orbit",
+      "Nova",
+      "Helios",
+      "Sundrop",
+      "Phoenix",
+      "Inferno",
+      "Comet",
+      "Blaze",
+      "Aurora",
+      "Solstice",
+      "Zenith",
+      "Lumen",
+      "Vortex",
+      "Corona",
+      "Mirage"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "moor-goldfish",
+    "name": "Black Moor Goldfish",
+    "genetics": "natural",
+    "cost": 4,
+    "mealCoins": 1,
+    "asset": "/assets/fish/moorgoldfish.png",
+    "description": "A distinctive goldfish known for its deep black coloring, rounded body, and large telescope eyes. Black Moors are gentle, unhurried swimmers that tend to drift calmly around the tank.",
+    "width": 378,
+    "displayWidth": 250,
+    "bobSpeed": 1.1,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.018,
+    "targetMinMs": 5200,
+    "targetMaxMs": 8200,
+    "defaultNames": [
+      "Shadow",
+      "Orb",
+      "Midnight",
+      "Pebble",
+      "Inky",
+      "Smokey",
+      "Moon",
+      "Raven",
+      "Void",
+      "Eclipse",
+      "Jet",
+      "Morpheus",
+      "Obsidian",
+      "Noir",
+      "Phantom",
+      "Ash",
+      "Coal",
+      "Salem",
+      "Soot",
+      "Gloom"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "chili-rasbora",
+    "name": "Chili Rasbora",
+    "genetics": "natural",
+    "cost": 3,
+    "mealCoins": 1,
+    "asset": "/assets/fish/ChiliRasbora.png",
+    "assetVariants": [
+      "/assets/fish/ChiliRasbora_1.png",
+      "/assets/fish/ChiliRasbora_2.png",
+      "/assets/fish/ChiliRasbora_3.png",
+      "/assets/fish/ChiliRasbora_4.png"
+    ],
+    "description": "A tiny, peaceful fish known for its brilliant red coloring and lively personality. Chili Rasboras feel most at home in groups, weaving through plants and open spaces in quick little bursts.",
+    "width": 105,
+    "bobSpeed": 1.48,
+    "swimStyle": "sporadic",
+    "speedMin": 0.022,
+    "speedMax": 0.036,
+    "targetMinMs": 1500,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Pepper",
+      "Chili",
+      "Paprika",
+      "Pico",
+      "Ruby",
+      "Ember",
+      "Dot",
+      "Pip",
+      "Saffron",
+      "Crimson",
+      "Speck",
+      "Miso",
+      "Pep",
+      "Berry",
+      "Flick",
+      "Tango",
+      "Niblet",
+      "Rosie",
+      "Spark",
+      "Tiny"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "ember-tetra",
+    "name": "Ember Tetra",
+    "genetics": "natural",
+    "cost": 4,
+    "mealCoins": 1,
+    "asset": "/assets/fish/embertetra.png",
+    "assetVariants": [
+      "/assets/fish/embertetra_1.png",
+      "/assets/fish/embertetra_2.png",
+      "/assets/fish/embertetra_3.png",
+      "/assets/fish/embertetra_4.png"
+    ],
+    "description": "A tiny, peaceful fish known for its warm orange coloring and gentle nature. Ember Tetras are happiest in groups, where they spend much of their time calmly schooling through the middle of the tank.",
+    "width": 110,
+    "bobSpeed": 1.42,
+    "swimStyle": "steady",
+    "speedMin": 0.022,
+    "speedMax": 0.034,
+    "targetMinMs": 1900,
+    "targetMaxMs": 4300,
+    "defaultNames": [
+      "Ember",
+      "Cinder",
+      "Sunny",
+      "Tangerine",
+      "Glow",
+      "Spark",
+      "Copper",
+      "Maple",
+      "Mango",
+      "Peach",
+      "Flame",
+      "Poppy",
+      "Ginger",
+      "Amber",
+      "Flicker",
+      "Clementine",
+      "Torch",
+      "Honey",
+      "Blaze",
+      "Apricot"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "harlequin-rasbora",
+    "name": "Harlequin Rasbora",
+    "genetics": "natural",
+    "cost": 6,
+    "mealCoins": 1,
+    "asset": "/assets/fish/HarlequinRasbora.png",
+    "assetVariants": [
+      "/assets/fish/HarlequinRasbora_1.png",
+      "/assets/fish/HarlequinRasbora_2.png",
+      "/assets/fish/HarlequinRasbora_3.png",
+      "/assets/fish/HarlequinRasbora_4.png"
+    ],
+    "description": "A peaceful, active fish known for its coppery coloring and distinctive black markings. Harlequin Rasboras are social swimmers that do best in groups and fit comfortably into calm community tanks.",
+    "width": 155,
+    "bobSpeed": 1.32,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.036,
+    "targetMinMs": 2000,
+    "targetMaxMs": 4500,
+    "defaultNames": [
+      "Harley",
+      "Jester",
+      "Patch",
+      "Copper",
+      "Ace",
+      "Domino",
+      "Trickster",
+      "Tango",
+      "Penny",
+      "Rook",
+      "Mosaic",
+      "Maple",
+      "Quinn",
+      "Pip",
+      "Clover",
+      "Pixel",
+      "Rascal",
+      "Scout",
+      "Marble",
+      "Harlow"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "pencilfish",
+    "name": "Golden Pencilfish",
+    "genetics": "natural",
+    "cost": 7,
+    "mealCoins": 1,
+    "asset": "/assets/fish/Pencilfish.png",
+    "assetVariants": [
+      "/assets/fish/Pencilfish_1.png",
+      "/assets/fish/Pencilfish_2.png",
+      "/assets/fish/Pencilfish_3.png",
+      "/assets/fish/Pencilfish_4.png"
+    ],
+    "description": "A slender, peaceful fish known for its golden coloring and delicate shape. Golden Pencilfish prefer staying near plants and cover, moving in relaxed groups with the occasional quick burst or harmless sparring display.",
+    "width": 185,
+    "bobSpeed": 1.24,
+    "swimStyle": "steady",
+    "speedMin": 0.018,
+    "speedMax": 0.028,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5600,
+    "defaultNames": [
+      "Pencil",
+      "Graphite",
+      "Sketch",
+      "Dash",
+      "Line",
+      "Nib",
+      "Scribble",
+      "Reed",
+      "Twig",
+      "Quill",
+      "Stripe",
+      "Ink",
+      "Ruler",
+      "Streak",
+      "Doodle",
+      "Slate",
+      "Pixel",
+      "Copper",
+      "Fineliner",
+      "Taper"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "rummy-nose-tetra",
+    "name": "Rummy-Nose Tetra",
+    "genetics": "natural",
+    "cost": 7,
+    "mealCoins": 1,
+    "asset": "/assets/fish/RummyNoseTetra.png",
+    "assetVariants": [
+      "/assets/fish/RummyNoseTetra_1.png",
+      "/assets/fish/RummyNoseTetra_2.png",
+      "/assets/fish/RummyNoseTetra_3.png",
+      "/assets/fish/RummyNoseTetra_4.png"
+    ],
+    "description": "A peaceful, social fish known for its bright red nose and tightly coordinated schooling. Rummy-Nose Tetras move through the tank in impressive unison, and their coloring becomes especially vivid when they’re comfortable.",
+    "width": 158,
+    "bobSpeed": 1.36,
+    "swimStyle": "steady",
+    "speedMin": 0.026,
+    "speedMax": 0.038,
+    "targetMinMs": 1800,
+    "targetMaxMs": 4100,
+    "defaultNames": [
+      "Rummy",
+      "Ruby",
+      "Rouge",
+      "Beacon",
+      "Signal",
+      "Cherry",
+      "Blush",
+      "Scarlet",
+      "Radar",
+      "Pinot",
+      "Rosy",
+      "Flash",
+      "Nosey",
+      "Pepper",
+      "Crimson",
+      "Dash",
+      "Merlot",
+      "Berry",
+      "Spark",
+      "Socks"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "otocinclus",
+    "name": "Dwarf Sucker Catfish",
+    "genetics": "natural",
+    "cost": 6,
+    "mealCoins": 0,
+    "asset": "/assets/fish/otocinclus.png",
+    "fallbackAsset": "/assets/fish/pufferfish.png",
+    "description": "A small, hardworking grazer that spends much of its time attached to glass, plants, and other surfaces. Dwarf Sucker Catfish steadily browse for algae and biofilm, helping keep the tank a little cleaner as they go.",
+    "width": 170,
+    "bobSpeed": 0.2,
+    "swimStyle": "peaceful",
+    "speedMin": 0.00009,
+    "speedMax": 0.00016,
+    "targetMinMs": 26000,
+    "targetMaxMs": 52000,
+    "behavior": "sucker",
+    "diet": "detritus",
+    "cleanupMinMs": 660000,
+    "cleanupMaxMs": 1320000,
+    "cleanupStrength": 0.16,
+    "defaultNames": [
+      "Mochi",
+      "Peb",
+      "Smudge",
+      "Suction",
+      "Otis",
+      "Crumb",
+      "Scooter",
+      "Niblet",
+      "Lint",
+      "Dusty",
+      "Toasty",
+      "Scrub",
+      "Mop",
+      "Tiny Tank",
+      "Gremlin",
+      "Speck",
+      "Doobie",
+      "Plink",
+      "Snout",
+      "Tidbit"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "blue-ram",
+    "name": "Blue Ram",
+    "genetics": "natural",
+    "cost": 11,
+    "mealCoins": 1,
+    "asset": "/assets/fish/BlueRam.png",
+    "description": "A small, colorful cichlid known for its brilliant blue markings and confident personality. Blue Rams usually move with calm, deliberate turns, but they can become territorial when pairing or guarding a chosen spot.",
+    "width": 240,
+    "bobSpeed": 1.18,
+    "swimStyle": "peaceful",
+    "speedMin": 0.016,
+    "speedMax": 0.024,
+    "targetMinMs": 4200,
+    "targetMaxMs": 7600,
+    "defaultNames": [
+      "Lapis",
+      "Indigo",
+      "Cobalt",
+      "Marina",
+      "Sapphire",
+      "Rambo",
+      "Azure",
+      "Mako",
+      "Triton",
+      "Borealis",
+      "Koda",
+      "Denim",
+      "Navy",
+      "Bluey",
+      "Aegean",
+      "Zephyr",
+      "Storm",
+      "Glacier",
+      "Echo",
+      "Rio"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "gourami",
+    "name": "Gourami",
+    "genetics": "natural",
+    "cost": 18,
+    "mealCoins": 1,
+    "asset": "/assets/fish/Gourami.png",
+    "description": "A graceful fish known for its flowing fins, long feelers, and calm presence. Gouramis tend to move at an easy pace and often explore the tank with slow, deliberate turns near the surface.",
+    "width": 158,
+    "bobSpeed": 1.08,
+    "swimStyle": "peaceful",
+    "speedMin": 0.014,
+    "speedMax": 0.021,
+    "targetMinMs": 5200,
+    "targetMaxMs": 8600,
+    "defaultNames": [
+      "Pearl",
+      "Lotus",
+      "Velour",
+      "Halo",
+      "Sage",
+      "Willow",
+      "Silk",
+      "Opaline",
+      "Lily",
+      "Serene",
+      "Breeze",
+      "Moonpetal",
+      "Ivory",
+      "Sora",
+      "Clover",
+      "Mallow",
+      "Zen",
+      "Fable",
+      "Aster",
+      "Nimbus"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "wonder-killifish",
+    "name": "Wonder Killifish",
+    "genetics": "natural",
+    "cost": 15,
+    "mealCoins": 1,
+    "asset": "/assets/fish/wonderkillifish.png",
+    "description": "A flashy little hunter known for its bold markings, curious nature, and sudden bursts of speed. Wonder Killifish often patrol near the surface, watching everything around them before darting off after something interesting.",
+    "width": 243,
+    "bobSpeed": 1.34,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.038,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3400,
+    "defaultNames": [
+      "Comet",
+      "Glint",
+      "Flicker",
+      "Nova",
+      "Rocket",
+      "Vandal",
+      "Rascal",
+      "Jinx",
+      "Maverick",
+      "Blitz",
+      "Pistol",
+      "Riot",
+      "Zippy",
+      "Bandit",
+      "Rumble",
+      "Hex",
+      "Chaos",
+      "Skipper",
+      "Ace",
+      "Havoc"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "neon-tetra",
+    "name": "Neon Tetra",
+    "genetics": "natural",
+    "cost": 5,
+    "mealCoins": 1,
+    "asset": "/assets/fish/NeonTetra.png",
+    "description": "A tiny, peaceful fish known for its glowing blue stripe and vivid red coloring. Neon Tetras are social swimmers that look their best in groups, moving together in lively little schools.",
+    "width": 136,
+    "bobSpeed": 1.42,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.036,
+    "targetMinMs": 2000,
+    "targetMaxMs": 4200,
+    "defaultNames": [
+      "Neon",
+      "Zip",
+      "Spark",
+      "Glimmer",
+      "Laser",
+      "Pixel",
+      "Circuit",
+      "Glowstick",
+      "Static",
+      "Blink",
+      "Plasma",
+      "Twitch",
+      "Tesla",
+      "Radon",
+      "Strobe",
+      "Jellybean",
+      "Arc",
+      "Lumen",
+      "Dash",
+      "Photon"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "celestial-pearl-danio",
+    "name": "Celestial Pearl Danio",
+    "genetics": "natural",
+    "cost": 3,
+    "mealCoins": 1,
+    "asset": "/assets/fish/CelestialPearlDanio.png",
+    "assetVariants": [
+      "/assets/fish/CelestialPearlDanio_1.png",
+      "/assets/fish/CelestialPearlDanio_2.png",
+      "/assets/fish/CelestialPearlDanio_3.png",
+      "/assets/fish/CelestialPearlDanio_4.png"
+    ],
+    "description": "A tiny, striking fish covered in pearl-like spots with flashes of red and orange on its fins. Celestial Pearl Danios are curious little swimmers that alternate between quick darts and brief, watchful pauses.",
+    "width": 105,
+    "bobSpeed": 1.38,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.034,
+    "targetMinMs": 1500,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Starlit",
+      "Pearlie",
+      "Orbit",
+      "Dot",
+      "Cosmo",
+      "Nova",
+      "Galaxy",
+      "Pip",
+      "Speck",
+      "Twinkle",
+      "Comet",
+      "Astro",
+      "Starbean",
+      "Niblet",
+      "Luna",
+      "Glimmer",
+      "Sparkle",
+      "Pluto",
+      "Skittle",
+      "Blinky"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "molly",
+    "name": "Molly",
+    "genetics": "natural",
+    "cost": 7,
+    "mealCoins": 1,
+    "asset": "/assets/fish/molly.png",
+    "description": "A hardy, easygoing fish known for its rounded shape, active nature, and friendly demeanor. Mollies spend much of their time steadily exploring the tank and tend to get along well with other peaceful fish.",
+    "width": 287,
+    "bobSpeed": 1.22,
+    "swimStyle": "steady",
+    "speedMin": 0.02,
+    "speedMax": 0.03,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Mallow",
+      "Biscuit",
+      "Sunny",
+      "Daisy",
+      "Poppy",
+      "Butterbean",
+      "Pudding",
+      "Cookie",
+      "Muffin",
+      "Nilla",
+      "Taffy",
+      "Clover",
+      "Honeybun",
+      "Pebbles",
+      "Toffee",
+      "Sundae",
+      "Bunny",
+      "Pancake",
+      "Winnie",
+      "Sprinkles"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true
+  },
+  {
+    "id": "swordtail",
+    "name": "Swordtail",
+    "genetics": "natural",
+    "cost": 9,
+    "mealCoins": 1,
+    "asset": "/assets/fish/Swordtail.png",
+    "description": "A sleek, active fish best known for the long, sword-like extension on the male’s tail. Swordtails are livebearers, giving birth to free-swimming young instead of laying eggs, and spend much of their time confidently cruising the tank.",
+    "width": 220,
+    "bobSpeed": 1.3,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.036,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4800,
+    "defaultNames": [
+      "Blade",
+      "Lancer",
+      "Flash",
+      "Sable",
+      "Rapier",
+      "Dagger",
+      "Slash",
+      "Fencer",
+      "Viper",
+      "Striker",
+      "Edge",
+      "Katana",
+      "Rogue",
+      "Spike",
+      "Hunter",
+      "Arrow",
+      "Rex",
+      "Spear",
+      "Bandit",
+      "Jett"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true
+  },
+  {
+    "id": "livebearer",
+    "name": "Livebearer",
+    "genetics": "natural",
+    "cost": 8,
+    "mealCoins": 1,
+    "asset": "/assets/fish/Livebearer.png",
+    "description": "A lively, social fish best known for giving birth to free-swimming young instead of laying eggs. Livebearers are active, curious swimmers that settle easily into peaceful community tanks.",
+    "width": 141,
+    "bobSpeed": 1.26,
+    "swimStyle": "steady",
+    "speedMin": 0.02,
+    "speedMax": 0.032,
+    "targetMinMs": 2400,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Coral",
+      "Willow",
+      "Miso",
+      "Poppy",
+      "Skipper",
+      "Pebble",
+      "Rosie",
+      "Sunny",
+      "Blinky",
+      "Noodle",
+      "Daisy",
+      "Pickles",
+      "Clover",
+      "Biscuit",
+      "Tango",
+      "Bubbles",
+      "Pip",
+      "Sprout",
+      "Mango",
+      "Wiggles"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true
+  },
+  {
+    "id": "piranha",
+    "name": "Piranha",
+    "genetics": "natural",
+    "cost": 12,
+    "mealCoins": 1,
+    "asset": "/assets/fish/piranha.png",
+    "fallbackAsset": "/assets/fish/cherrybarb.png",
+    "description": "A sharp-toothed predator with a reputation that speaks for itself. Piranhas hunt in groups, ignore ordinary pellets, and will quickly turn most living tankmates into lunch. Why buy one? Seriously. Why?",
+    "width": 284,
+    "bobSpeed": 1.44,
+    "swimStyle": "sporadic",
+    "speedMin": 0.022,
+    "speedMax": 0.04,
+    "targetMinMs": 1100,
+    "targetMaxMs": 2600,
+    "behavior": "piranha",
+    "diet": "chum",
+    "defaultNames": [
+      "Razor",
+      "Chomp",
+      "Scar",
+      "Fang",
+      "Snap",
+      "Ripley",
+      "Nipper",
+      "Riot",
+      "Jaws",
+      "Slash"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "koi",
+    "name": "Koi",
+    "genetics": "natural",
+    "cost": 30,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Koi_1.png",
+    "assetVariants": [
+      "/assets/fish/Koi_2.png",
+      "/assets/fish/Koi_3.png",
+      "/assets/fish/Koi_4.png",
+      "/assets/fish/Koi_5.png"
+    ],
+    "description": "A large, peaceful ornamental carp bred for bold colors and striking patterns. Koi are steady, social swimmers that cruise open water and nose around the bottom for food, so they appreciate plenty of room to move.",
+    "width": 420,
+    "displayWidth": 280,
+    "bobSpeed": 1,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.019,
+    "targetMinMs": 4800,
+    "targetMaxMs": 8200,
+    "defaultNames": [
+      "Kohaku",
+      "Sumi",
+      "Mikan",
+      "Sakura",
+      "Yuki",
+      "Hoshi",
+      "Mochi",
+      "Kumo",
+      "Akari",
+      "Tora",
+      "Nami",
+      "Kiku",
+      "Beni",
+      "Shiro",
+      "Gin",
+      "Koi Boy",
+      "Marble",
+      "Lantern",
+      "Pond",
+      "Lucky"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "diet": "pellet",
+    "breedingMethod": "egg-scatterer",
+    "spawnPreference": "plants-or-substrate"
+  },
+  {
+    "id": "lionfish",
+    "name": "Lionfish",
+    "genetics": "natural",
+    "cost": 35,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Lionfish_1.png",
+    "assetVariants": [
+      "/assets/fish/Lionfish_2.png",
+      "/assets/fish/Lionfish_3.png",
+      "/assets/fish/Lionfish_4.png",
+      "/assets/fish/Lionfish_5.png"
+    ],
+    "description": "A slow, deliberate reef predator with broad fan-like fins and venomous spines. Lionfish hover near rockwork and shelter, then stalk chum with outstretched fins before a sudden short strike.",
+    "width": 340,
+    "displayWidth": 270,
+    "bobSpeed": 1.05,
+    "swimStyle": "steady",
+    "speedMin": 0.012,
+    "speedMax": 0.021,
+    "targetMinMs": 3800,
+    "targetMaxMs": 7200,
+    "defaultNames": [
+      "Leo",
+      "Stripe",
+      "Spines",
+      "Raja",
+      "Ember",
+      "Flare",
+      "Bandit",
+      "Crown",
+      "Venom",
+      "Mane",
+      "Rook",
+      "Sable",
+      "Torch",
+      "Razor",
+      "Coral",
+      "Regal",
+      "Fang",
+      "Bristle",
+      "Marquis",
+      "Roar"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "diet": "chum",
+    "chumOnly": true,
+    "breedingMethod": "floating-egg-mass",
+    "spawnPreference": "open-water"
+  },
+  {
+    "id": "bull-shark",
+    "name": "Bull Shark",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Shark",
+    "cost": 42,
+    "mealCoins": 3,
+    "asset": "/assets/fish/Bull_Shark.png",
+    "assetVariants": [
+      "/assets/fish/Bull_Shark_1.png",
+      "/assets/fish/Bull_Shark_2.png",
+      "/assets/fish/Bull_Shark_3.png",
+      "/assets/fish/Bull_Shark_4.png"
+    ],
+    "description": "A proven success in the PROTEUS BIODYNE marine scaling program. Our goldfish-sized Bull Shark demonstrates excellent specimen stability while retaining the adaptability, confidence, and predatory response profile of a mature animal. Chum recognition remains exceptionally strong, territorial movement is consistent, and predatory retention meets all behavioral integrity targets. Cohabitation performance is considered acceptable under normal feeding conditions. Periods of nutritional deficiency may result in opportunistic reassessment of nearby tankmates.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 405,
+    "displayWidth": 310,
+    "bobSpeed": 1.08,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.044,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4800,
+    "behavior": "shark",
+    "diet": "chum",
+    "chumOnly": true,
+    "desperationPredator": true,
+    "heartCount": 10,
+    "defaultNames": [
+      "Bully",
+      "Brackish",
+      "Rumble",
+      "Breaker",
+      "Tide",
+      "Mako",
+      "Riptide",
+      "Muddy",
+      "Brawler",
+      "Jaws"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "complex",
+    "liveBirth": false
+  },
+  {
+    "id": "great-white-shark",
+    "name": "Great White Shark",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Shark",
+    "cost": 55,
+    "mealCoins": 4,
+    "asset": "/assets/fish/Great_White_Shark.png",
+    "description": "A flagship achievement in PROTEUS BIODYNE biological miniaturization. This goldfish-sized Great White Shark maintains exceptional behavioral integrity, preserving the patrol patterns, feeding responses, and predatory instincts expected from a full-grown apex predator. Specimen stability remains high despite the extreme reduction in body mass, with reliable chum acquisition and excellent predatory retention. Interaction with neighboring specimens is minimal while nutritional requirements are satisfied. Hunger-related pursuit behavior is considered an expected expression of retained phenotype.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 405,
+    "displayWidth": 310,
+    "bobSpeed": 0.96,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.046,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5600,
+    "behavior": "shark",
+    "diet": "chum",
+    "chumOnly": true,
+    "desperationPredator": true,
+    "heartCount": 10,
+    "defaultNames": [
+      "Whitecap",
+      "Brine",
+      "Glacier",
+      "Silver",
+      "Breaker",
+      "Mistral",
+      "Mariner",
+      "Finley",
+      "Pearl",
+      "Moby"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "complex",
+    "liveBirth": false
+  },
+  {
+    "id": "hammerhead-shark",
+    "name": "Hammerhead Shark",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Shark",
+    "cost": 48,
+    "mealCoins": 3,
+    "asset": "/assets/fish/Hammerhead_Shark.png",
+    "assetVariants": [
+      "/assets/fish/Hammerhead_Shark_1.png",
+      "/assets/fish/Hammerhead_Shark_2.png",
+      "/assets/fish/Hammerhead_Shark_3.png",
+      "/assets/fish/Hammerhead_Shark_4.png"
+    ],
+    "description": "A highly successful product of the PROTEUS BIODYNE marine development program. Our goldfish-sized Hammerhead Shark exhibits strong specimen stability, full sensory retention, and an unusually high level of environmental engagement. Wide-ranging patrol behavior has been preserved alongside rapid chum acquisition and dependable feeding response. Behavioral testing confirms that miniaturization has produced no meaningful reduction in exploratory drive or predatory function, exceeding several original development targets.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 405,
+    "displayWidth": 310,
+    "bobSpeed": 1.12,
+    "swimStyle": "steady",
+    "speedMin": 0.026,
+    "speedMax": 0.042,
+    "targetMinMs": 2100,
+    "targetMaxMs": 4700,
+    "behavior": "shark",
+    "diet": "chum",
+    "chumOnly": true,
+    "desperationPredator": true,
+    "heartCount": 10,
+    "defaultNames": [
+      "Hammer",
+      "Radar",
+      "Scout",
+      "Wedge",
+      "Sonar",
+      "Banner",
+      "Sweep",
+      "Tally",
+      "Sail",
+      "Echo"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "complex",
+    "liveBirth": false
+  },
+  {
+    "id": "orca",
+    "name": "Orca",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Whale",
+    "cost": 60,
+    "mealCoins": 4,
+    "asset": "/assets/fish/Orca.png",
+    "description": "One of the most significant achievements in PROTEUS BIODYNE history. Advanced biological scaling has produced a stable, goldfish-sized Orca while preserving cognitive performance, social recognition, communication, emotional complexity, and behavioral memory at levels consistent with the full-sized animal. Long-term observation confirms persistent social bonding and individual recognition across specimens. Respiratory architecture was intentionally retained without modification, requiring routine surfacing and periodic breaching. Internal assessments classify cognitive retention as exceptional and commercial viability as highly favorable.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 405,
+    "displayWidth": 320,
+    "bobSpeed": 1.02,
+    "swimStyle": "steady",
+    "speedMin": 0.03,
+    "speedMax": 0.048,
+    "targetMinMs": 2200,
+    "targetMaxMs": 5000,
+    "behavior": "shark",
+    "diet": "chum",
+    "chumOnly": true,
+    "desperationPredator": true,
+    "heartCount": 10,
+    "defaultNames": [
+      "Koa",
+      "Echo",
+      "Nalu",
+      "Tala",
+      "Pod",
+      "Comet",
+      "Wave",
+      "Rook",
+      "Cedar",
+      "Orion"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 1,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "complex",
+    "liveBirth": true
+  },
+  {
+    "id": "sunfish",
+    "name": "Ocean Sunfish",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 24,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Sunfish.png",
+    "description": "Developed under the PROTEUS BIODYNE Compact Marine Initiative, the Ocean Sunfish represents a successful conversion of one of the world's largest bony fish into a commercially practical aquarium specimen. Miniaturization achieved target scale without compromising body plan, temperament, surface-oriented behavior, or characteristic locomotion. Specimen stability has remained exceptionally high throughout evaluation, with no significant behavioral degradation observed. The resulting goldfish-sized Sunfish offers full phenotype retention at a fraction of the spatial requirement.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 330,
+    "displayWidth": 230,
+    "bobSpeed": 0.82,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.018,
+    "targetMinMs": 4200,
+    "targetMaxMs": 8200,
+    "heartCount": 7,
+    "defaultNames": [
+      "Sunny",
+      "Pancake",
+      "Mellow",
+      "Float",
+      "Moon",
+      "Dapple",
+      "Drift",
+      "Sol",
+      "Mochi",
+      "Luma"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "seahorse",
+    "name": "Seahorse",
+    "genetics": "natural",
+    "type": "Seahorse",
+    "cost": 18,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Seahorse.png",
+    "description": "A delicate, upright swimmer that prefers drifting to rushing. Seahorses spend much of their time hovering near plants and other perches, often using their curled tails to hold on while they rest and watch the tank around them.",
+    "width": 95,
+    "bobSpeed": 0.74,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.016,
+    "targetMinMs": 3800,
+    "targetMaxMs": 7600,
+    "renderMotionProfile": "seahorse",
+    "defaultNames": [
+      "Tails",
+      "Pip",
+      "Kelp",
+      "Coral",
+      "Moss",
+      "Sway",
+      "Twig",
+      "Nori",
+      "Wisp",
+      "Dune"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [
+        "plants"
+      ],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "pilot-fish",
+    "name": "Pilot Fish",
+    "genetics": "natural",
+    "type": "Fish",
+    "cost": 24,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Pilot_Fish.png",
+    "assetVariants": [
+      "/assets/fish/Pilot_Fish_1.png",
+      "/assets/fish/Pilot_Fish_2.png",
+      "/assets/fish/Pilot_Fish_3.png",
+      "/assets/fish/Pilot_Fish_4.png"
+    ],
+    "description": "An active, curious fish known for following larger animals through open water. In the wild, Pilot Fish often shadow sharks and other big swimmers, picking through scraps and investigating whatever their much larger companions leave behind.",
+    "width": 320,
+    "displayWidth": 245,
+    "bobSpeed": 1.28,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.044,
+    "targetMinMs": 1900,
+    "targetMaxMs": 4300,
+    "defaultNames": [
+      "Pilot",
+      "Stripe",
+      "Wingman",
+      "Scout",
+      "Shadow",
+      "Skipper",
+      "Escort",
+      "Radar",
+      "Buddy",
+      "Dash"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  }
 ];
-
 
 const WATER_TYPE_META = Object.freeze({
   freshwater: {
@@ -2785,158 +4669,3731 @@ const SWIM_STYLE_DEFAULTS = {
 };
 
 const DECOR_META = {
-  "Halloween_Haunted_Tree.png": {
-    name: "Haunted Tree",
-    width: 300,
-    defaultScale: 2,
-    categories: ["ornaments", "halloween"],
-    fishBehavior: { hangout: ["spooky", "hardscape"] },
-    theme: "Halloween"
+  "halloween-seaweed__plant__theme-halloween.png": {
+    "name": "Haunted Seaweed",
+    "width": 644,
+    "defaultScale": 1,
+    "categories": [
+      "plant"
+    ],
+    "theme": "halloween",
+    "description": "Dark, eerie seaweed that sways in the tank with considerably more menace than ordinary seaweed should possess.",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "halloween",
+      "grazable",
+      "perchable",
+      "sway",
+      "spooky"
+    ]
   },
-  "Halloween_Cauldron_Bubbler.png": {
-    name: "Haunted Cauldron Bubbler",
-    width: 125,
-    defaultScale: 1,
-    categories: ["bubbler", "ornaments", "halloween"],
-    fishBehavior: { hangout: ["bubbler", "hardscape"] },
-    theme: "Halloween"
+  "amazon-sword__plant__theme-natural.png": {
+    "name": "Amazon Sword",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A amazon sword decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_JackOLantern_bubbler.png": {
-    name: "Jack-o'-Lantern Bubbler",
-    width: 125,
-    defaultScale: 1,
-    categories: ["bubbler", "ornaments", "halloween"],
-    fishBehavior: { hangout: ["bubbler", "hardscape"] },
-    theme: "Halloween"
+  "anubias-rock__plant-rock__theme-natural.png": {
+    "name": "Anubias Rock",
+    "cost": 4,
+    "width": 495,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A hardy Anubias growing directly from a rock. Conveniently combines plant and stone into one tidy little decoration.",
+    "categories": [
+      "plant",
+      "rock"
+    ],
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "rock",
+      "natural",
+      "hardscape",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_1.png": {
-    name: "Gravestone 1",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "bacopa__plant__theme-natural.png": {
+    "name": "Bacopa",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A bacopa decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_2.png": {
-    name: "Gravestone 2",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "bronze-red-crypt__plant__theme-natural.png": {
+    "name": "Bronze Red Crypt",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A bronze red crypt decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_3.png": {
-    name: "Gravestone 3",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "cabomba__plant__theme-natural.png": {
+    "name": "Cabomba",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A cabomba decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_4.png": {
-    name: "Gravestone 4",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "cryptocoryne__plant__theme-natural.png": {
+    "name": "Cryptocoryne",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A cryptocoryne decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_5.png": {
-    name: "Gravestone 5",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "hornwort__plant__theme-natural.png": {
+    "name": "Hornwort",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A hornwort decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Seaweed.png": {
-    name: "Haunted Seaweed",
-    width: 644,
-    defaultScale: 1,
-    categories: ["plants", "halloween"],
-    theme: "Halloween"
+  "java-fern-cluster__plant__theme-natural.png": {
+    "name": "Java Fern Cluster",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A java fern cluster decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Floatingseaweed.png": {
-    name: "Haunted Floating Seaweed",
-    width: 525,
-    defaultScale: 1,
-    categories: ["plants", "halloween"],
-    theme: "Halloween"
+  "java-moss__plant__theme-natural.png": {
+    "name": "Java Moss",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A java moss decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Ghost_Ship.png": {
-    name: "Ghost Ship",
-    width: 600,
-    defaultScale: 1.5,
-    categories: ["ornaments", "halloween"],
-    fishBehavior: { hangout: ["hardscape", "spooky"] },
-    theme: "Halloween"
+  "ludwigia__plant__theme-natural.png": {
+    "name": "Ludwigia",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A ludwigia decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "castle-tower.png": {
-    name: "Castle Ruin",
-    cost: 16,
-    width: 198,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "marimo-moss-ball__plant__theme-natural.png": {
+    "name": "Marimo Moss Ball",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A marimo moss ball decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "coral-bloom.png": {
-    name: "Coral Bloom",
-    cost: 6,
-    width: 140,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "monte-carlo-carpet__plant__theme-natural.png": {
+    "name": "Monte Carlo Carpet",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A monte carlo carpet decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "seaweed-bunch.png": {
-    name: "Seaweed Bunch",
-    cost: 4,
-    width: 298,
-    defaultScale: 1
+  "red-stem__plant__theme-natural.png": {
+    "name": "Red Stem",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A red stem decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "treasure-chest.png": {
-    name: "Treasure Chest",
-    cost: 10,
-    width: 150,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "rotala__plant__theme-natural.png": {
+    "name": "Rotala",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A rotala decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "anubia-rock_seaweed.png": {
-    name: "Anubias Rock",
-    cost: 8,
-    width: 495,
-    defaultScale: 1
+  "small-moss-patch__plant__theme-natural.png": {
+    "name": "Small Moss Patch",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A small moss patch decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "driftwood-root.png": {
-    name: "Driftwood Root",
-    cost: 14,
-    width: 660,
-    defaultScale: 1
+  "tiger-lotus__plant__theme-natural.png": {
+    "name": "Tiger Lotus",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A tiger lotus decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "moss-bridge.png": {
-    name: "Moss Bridge",
-    cost: 13,
-    width: 698,
-    defaultScale: 1
+  "vallisneria-clump__plant__theme-natural.png": {
+    "name": "Vallisneria Clump",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A vallisneria clump decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "pagoda-lantern.png": {
-    name: "Pagoda Lantern",
-    cost: 15,
-    width: 176,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "vallisneria-cutout__plant__theme-natural.png": {
+    "name": "Vallisneria Cutout",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A vallisneria cutout decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "slate-cave.png": {
-    name: "Slate Cave",
-    cost: 11,
-    width: 620,
-    defaultScale: 1
+  "water-wisteria__plant__theme-natural.png": {
+    "name": "Water Wisteria",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A water wisteria decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "terracotta-hide.png": {
-    name: "Terracotta Hide",
-    cost: 9,
-    width: 158,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "hammer-coral__coral__theme-reef.png": {
+    "name": "Hammer Coral",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A hammer coral decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "leather-coral__coral__theme-reef.png": {
+    "name": "Leather Coral",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A leather coral decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "macroalgae__plant__theme-reef.png": {
+    "name": "Macroalgae",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A macroalgae decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "reef",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
+  },
+  "large-mushroom-coral__coral__theme-reef.png": {
+    "name": "Mushroom Coral",
+    "cost": 15,
+    "width": 510,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A low, rounded coral with soft curves and plenty of texture. An easy way to add a natural reef look without taking over the tank.",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "mushroom-coral-colony__coral__theme-reef.png": {
+    "name": "Mushroom Coral Colony",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A mushroom coral colony decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "sea-anemone__coral__theme-reef.png": {
+    "name": "Sea Anemone 2",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A soft mass of waving tentacles that brings constant gentle movement to the aquarium. Clownfish may approve.",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway",
+      "anemone",
+      "clownfish-host"
+    ]
+  },
+  "sea-anemone__coral__theme-reef__v2.png": {
+    "name": "Sea Anemone 5",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A colorful sea anemone with flowing tentacles that sway with the water and make the tank feel a little more alive.",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway",
+      "anemone",
+      "clownfish-host"
+    ]
+  },
+  "sea-fan-gorgonian__coral__theme-reef.png": {
+    "name": "Sea Fan Gorgonian",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A sea fan gorgonian decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "seaweed__plant__theme-reef.png": {
+    "name": "Seaweed",
+    "cost": 4,
+    "width": 280,
+    "defaultScale": 1,
+    "theme": "reef",
+    "description": "A simple patch of flowing seaweed that adds height, movement, and a little extra greenery to the tank.",
+    "categories": [
+      "plant"
+    ],
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "reef",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
+  },
+  "seaweed-bunch__plant__theme-reef.png": {
+    "name": "Seaweed Bunch",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A seaweed bunch decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "reef",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
+  },
+  "torch-coral__coral__theme-reef.png": {
+    "name": "Torch Coral",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A torch coral decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "frozen-bubbler__bubbler__theme-frozen.png": {
+    "name": "Frozen Bubbler",
+    "cost": 8,
+    "width": 340,
+    "defaultScale": 1,
+    "description": "A frozen bubbler decoration for the aquarium.",
+    "categories": [
+      "bubbler"
+    ],
+    "theme": "frozen",
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "frozen",
+      "hardscape",
+      "bubble-emitter"
+    ],
+    "bubbler": {
+      "spoutQty": 1
+    }
+  },
+  "halloween-cauldron__bubbler__theme-halloween__front.png": {
+    "name": "Haunted Cauldron Bubbler",
+    "width": 125,
+    "defaultScale": 1,
+    "categories": [
+      "bubbler"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "bubbler",
+        "hardscape"
+      ]
+    },
+    "bubbler": {
+      "spoutQty": 1,
+      "spouts": [
+        {
+          "horizontalLocation": 0.5,
+          "verticalLocation": 0.17,
+          "intensity": 5,
+          "speed": 1,
+          "spread": 48,
+          "fadeDistance": 210,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "halloween",
+    "description": "A cauldron that churns away on the aquarium floor, releasing a steady stream of bubbles. Whatever is brewing inside probably should not be tasted. Also: Completely Adjustable and Customizable!",
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "halloween",
+      "hardscape",
+      "bubble-emitter",
+      "spooky"
+    ]
+  },
+  "halloween-jack-o-lantern__bubbler__theme-halloween__front.png": {
+    "name": "Jack-o'-Lantern Bubbler",
+    "width": 125,
+    "defaultScale": 1,
+    "categories": [
+      "bubbler"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "bubbler",
+        "hardscape"
+      ]
+    },
+    "bubbler": {
+      "spoutQty": 1,
+      "spouts": [
+        {
+          "horizontalLocation": 0.5,
+          "verticalLocation": 0.16,
+          "intensity": 4,
+          "speed": 1,
+          "spread": 46,
+          "fadeDistance": 205,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "halloween",
+    "description": "A grinning jack-o'-lantern that releases a steady stream of bubbles. The pumpkin remains suspiciously intact underwater. Also: Completely Adjustable and Customizable!",
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "halloween",
+      "hardscape",
+      "bubble-emitter",
+      "spooky"
+    ]
+  },
+  "volcano__bubbler__theme-natural__front.png": {
+    "name": "Volcano Bubbler 1",
+    "cost": 16,
+    "width": 390,
+    "defaultScale": 1,
+    "bubbler": {
+      "spoutQty": 1,
+      "spouts": [
+        {
+          "horizontalLocation": 0.5,
+          "intensity": 15,
+          "speed": 2,
+          "spread": 40,
+          "fadeDistance": 250,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "natural",
+    "description": "A miniature volcano that continuously sends bubbles toward the surface. Considerably safer than the full-sized version. Also: Completely Adjustable and Customizable!",
+    "categories": [
+      "bubbler"
+    ],
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "natural",
+      "hardscape",
+      "bubble-emitter"
+    ]
+  },
+  "volcano__bubbler__theme-natural__v2__front.png": {
+    "name": "Volcano Bubbler 2",
+    "cost": 18,
+    "width": 375,
+    "defaultScale": 1,
+    "bubbler": {
+      "spoutQty": 2,
+      "spouts": [
+        {
+          "horizontalLocation": 0.3,
+          "intensity": 15,
+          "speed": 2,
+          "spread": 20,
+          "fadeDistance": 200,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        },
+        {
+          "horizontalLocation": 0.6,
+          "intensity": 10,
+          "speed": 2,
+          "spread": 20,
+          "fadeDistance": 200,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "natural",
+    "description": "A bubbling volcanic decoration that adds constant movement to the tank without requiring an evacuation plan. Also: Completely Adjustable and Customizable!",
+    "categories": [
+      "bubbler"
+    ],
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "natural",
+      "hardscape",
+      "bubble-emitter"
+    ]
+  },
+  "treasure-chest__bubbler__theme-treasure__front.png": {
+    "name": "Treasure Chest Bubbler",
+    "cost": 8,
+    "width": 233,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": [
+        "hardscape"
+      ]
+    },
+    "bubbler": {
+      "spoutQty": 1,
+      "spouts": [
+        {
+          "horizontalLocation": 0.5,
+          "intensity": 4,
+          "speed": 1,
+          "spread": 50,
+          "fadeDistance": 200,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "treasure",
+    "description": "A little sunken treasure chest that releases a steady stream of bubbles. The treasure itself appears to be mostly air. Also: Completely Adjustable and Customizable!",
+    "categories": [
+      "bubbler"
+    ],
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "treasure",
+      "hardscape",
+      "bubble-emitter"
+    ]
+  },
+  "broken-pot-fragment__cave__theme-artificial__front.png": {
+    "name": "Broken Pot Fragment",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A broken pot fragment decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "broken-terracotta-pot__cave__theme-artificial__front.png": {
+    "name": "Broken Terracotta Pot",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A broken terracotta pot decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "ceramic-tube-cluster__cave__theme-artificial__front.png": {
+    "name": "Ceramic Tube Cluster",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A ceramic tube cluster decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "clay-multi__cave__theme-artificial__front.png": {
+    "name": "Clay Multi",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A clay multi decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "extra-narrow-pleco-tubes__cave__theme-artificial__front.png": {
+    "name": "Extra Narrow Pleco Tubes",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A extra narrow pleco tubes decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "pvc-pipe__cave__theme-artificial__front.png": {
+    "name": "PVC Pipe",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A pvc pipe decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "terracotta-pot__cave__theme-artificial__front.png": {
+    "name": "Terracotta Pot",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A terracotta pot decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "terracotta-tunnel__cave__theme-artificial__front.png": {
+    "name": "Terracotta Tunnel",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A terracotta tunnel decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "blue-castle__cave__theme-fantasy__front.png": {
+    "name": "Castle Cave 1",
+    "cost": 16,
+    "width": 595,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 3,
+      "entries": [
+        {
+          "id": "left-front",
+          "x": 0.24,
+          "y": 0.82,
+          "side": "front"
+        },
+        {
+          "id": "center-front",
+          "x": 0.44,
+          "y": 0.65,
+          "side": "front"
+        },
+        {
+          "id": "right-front",
+          "x": 0.62,
+          "y": 0.84,
+          "side": "front"
+        }
+      ],
+      "seatCount": 3,
+      "seats": [
+        {
+          "id": "left-seat",
+          "x": 0.24,
+          "y": 0.82
+        },
+        {
+          "id": "center-seat",
+          "x": 0.44,
+          "y": 0.65
+        },
+        {
+          "id": "right-seat",
+          "x": 0.62,
+          "y": 0.84
+        }
+      ]
+    },
+    "theme": "fantasy",
+    "description": "A tiny underwater castle that gives the tank a touch of fantasy and its residents somewhere suitably dramatic to hide.",
+    "categories": [
+      "cave"
+    ],
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "fantasy",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "wizard-castle__cave__theme-fantasy__front.png": {
+    "name": "Castle Cave 2",
+    "cost": 16,
+    "width": 600,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 3,
+      "entries": [
+        {
+          "id": "main-both",
+          "x": 0.49,
+          "y": 0.69,
+          "side": "both"
+        },
+        {
+          "id": "right-front",
+          "x": 0.76,
+          "y": 0.84,
+          "side": "front"
+        },
+        {
+          "id": "far-right-front",
+          "x": 0.92,
+          "y": 0.89,
+          "side": "front"
+        }
+      ],
+      "seatCount": 3,
+      "seats": [
+        {
+          "id": "main-upper",
+          "x": 0.5,
+          "y": 0.74,
+          "facing": "right"
+        },
+        {
+          "id": "right-seat",
+          "x": 0.76,
+          "y": 0.84,
+          "facing": "left"
+        },
+        {
+          "id": "main-lower",
+          "x": 0.51,
+          "y": 0.78,
+          "facing": "left"
+        }
+      ]
+    },
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "main_front",
+          "approachX": 0.49,
+          "approachY": 0.76,
+          "mouthX": 0.5,
+          "mouthY": 0.67,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "path": [
+            {
+              "x": 0.5,
+              "y": 0.6
+            },
+            {
+              "x": 0.49,
+              "y": 0.55
+            }
+          ]
+        },
+        {
+          "id": "side_layer4",
+          "approachX": 0.74,
+          "approachY": 0.62,
+          "mouthX": 0.69,
+          "mouthY": 0.6,
+          "outsideLayer": 4,
+          "insideLayer": 4,
+          "path": [
+            {
+              "x": 0.63,
+              "y": 0.57
+            },
+            {
+              "x": 0.56,
+              "y": 0.54
+            }
+          ]
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "main_chamber",
+          "x": 0.52,
+          "y": 0.52,
+          "layer": 4,
+          "portalIds": [
+            "main_front",
+            "side_layer4"
+          ]
+        }
+      ]
+    },
+    "theme": "fantasy",
+    "description": "A miniature castle with enough openings and shelter to double as a proper fish hideout. Royal residency not guaranteed.",
+    "categories": [
+      "cave"
+    ],
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "fantasy",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "frozen-cave__cave__theme-frozen__front.png": {
+    "name": "Frozen Cave",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A frozen cave decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "frozen",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "frozen",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "frozen-cave__cave__theme-frozen__v2__front.png": {
+    "name": "Frozen Cave 2",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A frozen cave 2 decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "frozen",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "frozen",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "halloween-crypt__cave__theme-halloween__front.png": {
+    "name": "Crypt Cave",
+    "width": 590,
+    "defaultScale": 1,
+    "categories": [
+      "cave"
+    ],
+    "theme": "halloween",
+    "description": "A miniature stone crypt with enough room inside for fish that prefer their hiding places a little more gothic.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "halloween",
+      "hardscape",
+      "shelter",
+      "spooky"
+    ]
+  },
+  "halloween-haunted-house__cave__theme-halloween__front.png": {
+    "name": "Haunted House Cave",
+    "width": 590,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 3,
+      "entries": [
+        {
+          "id": "left-cellar",
+          "x": 0.18,
+          "y": 0.86,
+          "side": "front"
+        },
+        {
+          "id": "front-door",
+          "x": 0.5,
+          "y": 0.69,
+          "side": "front"
+        },
+        {
+          "id": "right-cellar",
+          "x": 0.84,
+          "y": 0.86,
+          "side": "front"
+        }
+      ],
+      "seatCount": 3,
+      "seats": [
+        {
+          "id": "left-cellar-seat",
+          "x": 0.18,
+          "y": 0.84,
+          "facing": "right",
+          "entryIds": [
+            "left-cellar"
+          ]
+        },
+        {
+          "id": "front-door-seat",
+          "x": 0.5,
+          "y": 0.67,
+          "facing": "right",
+          "entryIds": [
+            "front-door"
+          ]
+        },
+        {
+          "id": "right-cellar-seat",
+          "x": 0.84,
+          "y": 0.84,
+          "facing": "left",
+          "entryIds": [
+            "right-cellar"
+          ]
+        }
+      ]
+    },
+    "categories": [
+      "cave"
+    ],
+    "theme": "halloween",
+    "description": "A miniature haunted house with enough room inside for brave fish, scared fish, or fish that simply want somewhere dark to sit.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "halloween",
+      "hardscape",
+      "shelter",
+      "spooky"
+    ]
+  },
+  "coconut-shell-hideaway__cave__theme-natural__front.png": {
+    "name": "Coconut Shell Hideaway",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A coconut shell hideaway decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "natural",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "hollow-mossy-driftwood__cave-wood__theme-natural__front.png": {
+    "name": "Hollow Mossy Driftwood",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A hollow mossy driftwood decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "wood",
+      "natural",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "live-root-overhang__cave-wood__theme-natural__front.png": {
+    "name": "Live Root Overhang",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A live root overhang decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "wood",
+      "natural",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "mangrove-roots__cave-wood__theme-natural__front.png": {
+    "name": "Mangrove Roots",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A mangrove roots decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "wood",
+      "natural",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "slate__cave-rock__theme-natural__front.png": {
+    "name": "Slate Cave",
+    "cost": 12,
+    "width": 620,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 1,
+      "entries": [
+        {
+          "id": "main-front",
+          "x": 0.51,
+          "y": 0.67,
+          "side": "front"
+        }
+      ],
+      "seatCount": 2,
+      "seats": [
+        {
+          "id": "left-seat",
+          "x": 0.42,
+          "y": 0.64,
+          "facing": "right"
+        },
+        {
+          "id": "right-seat",
+          "x": 0.6,
+          "y": 0.64,
+          "facing": "left"
+        }
+      ]
+    },
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "main_front",
+          "approachX": 0.5,
+          "approachY": 0.77,
+          "mouthX": 0.5,
+          "mouthY": 0.67,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "path": [
+            {
+              "x": 0.5,
+              "y": 0.61
+            },
+            {
+              "x": 0.5,
+              "y": 0.56
+            }
+          ]
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "center",
+          "x": 0.5,
+          "y": 0.53,
+          "layer": 4,
+          "portalIds": [
+            "main_front"
+          ]
+        }
+      ]
+    },
+    "theme": "natural",
+    "description": "A sturdy little shelter built from stacked slate. Simple, rocky, and perfect for fish that appreciate some privacy.",
+    "categories": [
+      "cave",
+      "rock"
+    ],
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "natural",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "slate-stack__cave-rock__theme-natural__front.png": {
+    "name": "Slate Stack",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A slate stack decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "natural",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "tangled-driftwood-rootscape__cave-wood__theme-natural__front.png": {
+    "name": "Tangled Driftwood Rootscape",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A tangled driftwood rootscape decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "wood",
+      "natural",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-1__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 1",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A rocky coral shelf with a sheltered space underneath. Part reef decoration, part cozy hiding place.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-10__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 10",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A substantial coral shelf with a protected hollow below, giving the tank a more layered reef landscape.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-2__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 2",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A layered coral shelf that creates a shaded little retreat beneath the reef.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-3__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 3",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A sturdy coral-covered shelf with enough room underneath for curious fish to disappear for a while.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-4__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 4",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A reef shelf with a natural hollow beneath it, adding both height and a tucked-away hiding spot.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-5__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 5",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A rugged coral shelf that gives the tank a bit of reef structure and a quiet space underneath.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-6__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 6",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-7__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 7",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A broad reef shelf with a built-in hiding place beneath it. Basically beachfront property for fish.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-9__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 9",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A rocky coral overhang that adds depth to the reef and a shady little spot underneath.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coralline-live-rock__cave-rock-coral__theme-reef__front.png": {
+    "name": "Coralline Live Rock",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A coralline live rock decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "rock",
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "live-rock-cluster__cave-rock__theme-reef__front.png": {
+    "name": "Live Rock Cluster",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A live rock cluster decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "rock"
+    ],
+    "theme": "reef",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "reef",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "sea-anemone-1__cave-coral__theme-reef__front.png": {
+    "name": "Sea Anemone Cave 1",
+    "cost": 14,
+    "width": 420,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable",
+      "anemone",
+      "clownfish-host"
+    ],
+    "motionBehavior": "anchored_sway",
+    "motionLayer": "front",
+    "motionSplitY": 0.55,
+    "motionSwaySide": "above"
+  },
+  "sea-anemone-3__cave-coral__theme-reef__front.png": {
+    "name": "Sea Anemone Cave 3",
+    "cost": 14,
+    "width": 420,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable",
+      "anemone",
+      "clownfish-host"
+    ],
+    "motionBehavior": "anchored_sway",
+    "motionLayer": "front",
+    "motionSplitY": 0.55,
+    "motionSwaySide": "above"
+  },
+  "sea-anemone-4__cave-coral__theme-reef__front.png": {
+    "name": "Sea Anemone Cave 4",
+    "cost": 14,
+    "width": 420,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable",
+      "anemone",
+      "clownfish-host"
+    ],
+    "motionBehavior": "anchored_sway",
+    "motionLayer": "front",
+    "motionSplitY": 0.55,
+    "motionSwaySide": "above"
+  },
+  "seashell-cluster__cave-coral__theme-reef__front.png": {
+    "name": "Seashell Cluster",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A seashell cluster decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "meteor__cave-rock__theme-space__front.png": {
+    "name": "Meteor Cave",
+    "cost": 16,
+    "width": 585,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 1,
+      "entries": [
+        {
+          "id": "main-front",
+          "x": 0.56,
+          "y": 0.67,
+          "side": "front"
+        }
+      ],
+      "seatCount": 2,
+      "seats": [
+        {
+          "id": "upper-seat",
+          "x": 0.5,
+          "y": 0.55,
+          "facing": "right"
+        },
+        {
+          "id": "lower-seat",
+          "x": 0.49,
+          "y": 0.72,
+          "facing": "right"
+        }
+      ]
+    },
+    "theme": "space",
+    "description": "A strange rocky formation that looks suspiciously like it fell from somewhere much farther away. Conveniently, it also has a cave.",
+    "categories": [
+      "cave",
+      "rock"
+    ],
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "space",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A bright fishing lure placed inside an aquarium for reasons nobody has fully explained. Fortunately, the fish seem more curious than concerned.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v2.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A colorful fishing lure dangling where no fishing should be happening. The fish seem fascinated by it, which is probably exactly what the lure wants.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v3.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A shiny little lure suspended in the aquarium. Completely harmless here, although the fish may have some understandable trust issues.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v4.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A fishing lure repurposed as aquarium decor. It catches attention instead of fish now.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v5.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A suspiciously enticing lure left hanging in the tank. No hook-related incidents have been reported.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v6.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A bright piece of fishing tackle that gives curious fish something unusual to investigate. Thankfully, nobody is actually fishing.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v7.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A decorative lure that sparkles just enough to get every nearby fish interested in absolutely nothing.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "halloween-gorebag__lure__theme-halloween.png": {
+    "name": "Gorebag",
+    "cost": 10,
+    "width": 200,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A peculiar decoration known only as Gorebag. Nobody remembers where it came from, and asking questions has not helped.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "halloween",
+      "sway",
+      "spooky"
+    ]
+  },
+  "frozen-glacier__rock__theme-frozen.png": {
+    "name": "Frozen Glacier",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen glacier decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "floating_bob",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape",
+      "surface-cover"
+    ]
+  },
+  "frozen-iceberg__rock__theme-frozen.png": {
+    "name": "Frozen Iceberg",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen iceberg decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "floating_bob",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape",
+      "surface-cover"
+    ]
+  },
+  "halloween-webs__ornament__theme-halloween.png": {
+    "name": "Aquarium Webs",
+    "width": 175,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A little spider web to put wherever. How the web remains perfectly intact underwater is a problem for someone else to solve.",
+    "behavior": "floating_bob",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "surface-cover",
+      "spooky"
+    ]
+  },
+  "halloween-skeleton__ornament__theme-halloween.png": {
+    "name": "Floating Fish Skeleton",
+    "width": 220,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A fish skeleton that quietly floats in the aquarium. It probably fake, though. Right?",
+    "behavior": "floating_bob",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "surface-cover",
+      "spooky"
+    ]
+  },
+  "halloween-ghost__ornament__theme-halloween.png": {
+    "name": "Floating Ghost",
+    "width": 170,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "spooky"
+      ],
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A little ghost that quietly floats in the aquarium.",
+    "behavior": "floating_bob",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "surface-cover",
+      "spooky"
+    ]
+  },
+  "halloween-floating-seaweed__plant__theme-halloween.png": {
+    "name": "Haunted Floating Seaweed",
+    "width": 525,
+    "defaultScale": 1,
+    "categories": [
+      "plant"
+    ],
+    "theme": "halloween",
+    "description": "Eerie floating seaweed. It looks like it is rotting.",
+    "behavior": "floating_sway",
+    "tags": [
+      "plant",
+      "halloween",
+      "grazable",
+      "perchable",
+      "surface-cover",
+      "sway",
+      "spooky"
+    ]
+  },
+  "floating-lettuce-root__plant__theme-natural.png": {
+    "name": "Floating Lettuce Root",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A floating lettuce root decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "floating_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "surface-cover",
+      "sway"
+    ]
+  },
+  "floating-swamp-moss__plant__theme-natural.png": {
+    "name": "Floating Swamp Moss",
+    "theme": "natural",
+    "cost": 5,
+    "width": 510,
+    "defaultScale": 1,
+    "description": "A loose patch of eerie swamp moss suspended in the water. Damp, gloomy, and somehow thriving.",
+    "categories": [
+      "plant"
+    ],
+    "behavior": "floating_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "surface-cover",
+      "sway"
+    ]
+  },
+  "floating-seaweed__plant__theme-reef.png": {
+    "name": "Floating Seaweed",
+    "cost": 4,
+    "width": 220,
+    "defaultScale": 1,
+    "theme": "reef",
+    "description": "Loose seaweed that drifts above the aquarium floor instead of staying politely planted where it belongs.",
+    "categories": [
+      "plant"
+    ],
+    "behavior": "floating_sway",
+    "tags": [
+      "plant",
+      "reef",
+      "grazable",
+      "perchable",
+      "surface-cover",
+      "sway"
+    ]
+  },
+  "frozen-anchor__ornament__theme-frozen.png": {
+    "name": "Frozen Anchor",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen anchor decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-arch__ornament__theme-frozen.png": {
+    "name": "Frozen Arch",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen arch decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-arch__ornament__theme-frozen__v2.png": {
+    "name": "Frozen Arch 2",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen arch 2 decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-column__ornament__theme-frozen.png": {
+    "name": "Frozen Column",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen column decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-column__ornament__theme-frozen__v2.png": {
+    "name": "Frozen Column 2",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen column 2 decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-column__ornament__theme-frozen__v3.png": {
+    "name": "Frozen Column 3",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen column 3 decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-crystals__rock__theme-frozen.png": {
+    "name": "Frozen Crystals",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen crystals decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-fossil__rock__theme-frozen.png": {
+    "name": "Frozen Fossil",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen fossil decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen.png": {
+    "name": "Frozen Plant",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen__v2.png": {
+    "name": "Frozen Plant 2",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant 2 decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen__v3.png": {
+    "name": "Frozen Plant 3",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant 3 decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen__v4.png": {
+    "name": "Frozen Plant 4",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant 4 decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen__v5.png": {
+    "name": "Frozen Plant 5",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant 5 decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-rock__rock__theme-frozen.png": {
+    "name": "Frozen Rock",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen rock decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-rock__rock__theme-frozen__v2.png": {
+    "name": "Frozen Rock 2",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen rock 2 decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-root__wood__theme-frozen.png": {
+    "name": "Frozen Root",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen root decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "frozen",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "frozen-treasure__ornament__theme-frozen.png": {
+    "name": "Frozen Treasure",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen treasure decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-ufo__ornament__theme-frozen.png": {
+    "name": "Frozen UFO",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen ufo decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-sunken-submarine__ornament__theme-frozen.png": {
+    "name": "Plane Crash",
+    "cost": 12,
+    "width": 613,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "hide"
+    },
+    "theme": "frozen",
+    "description": "A miniature aircraft wreck resting on the aquarium floor. The investigation remains ongoing.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-ship__ornament__theme-frozen.png": {
+    "name": "Shipwreck",
+    "cost": 15,
+    "width": 616,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "hide"
+    },
+    "theme": "frozen",
+    "description": "A sunken ship left to slowly become part of the aquarium. Dramatic enough to tell a story without taking the whole tank hostage.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "halloween-spider__ornament__theme-halloween.png": {
+    "name": "Aquarium Spider",
+    "width": 150,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "spooky"
+      ],
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A spider. In the aquarium. We agree that this raises several questions, but none of them have improved the situation.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-fish-head-effigy__ornament__theme-halloween__v3.png": {
+    "name": "Danio Fish Head Effigy",
+    "cost": 3,
+    "width": 70,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "spooky",
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A Danio fish-head effigy. Pretty ominous and completely unnecessary.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-ghost-ship__ornament__theme-halloween.png": {
+    "name": "Ghost Ship",
+    "width": 600,
+    "defaultScale": 1.5,
+    "categories": [
+      "ornament"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "hardscape",
+        "spooky"
+      ]
+    },
+    "theme": "halloween",
+    "description": "A spectral shipwreck that appears to have sailed directly into the aquarium. Its crew has yet to make themselves available for questions.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween.png": {
+    "name": "Gravestone 1",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A tiny weathered gravestone for giving the aquarium floor a proper little graveyard atmosphere.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween__v2.png": {
+    "name": "Gravestone 2",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A miniature gravestone that adds just the right amount of unnecessary morbidity to the tank.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween__v3.png": {
+    "name": "Gravestone 3",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A worn little grave marker that looks perfectly at home among caves, dead plants, and other questionable aquarium decisions.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween__v4.png": {
+    "name": "Gravestone 4",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A small gravestone for building an underwater cemetery. Nobody is quite sure who is buried there.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween__v5.png": {
+    "name": "Gravestone 5",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A lonely little grave marker with just enough weathering to suggest it has been underwater much longer than it should have been.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-fish-head-effigy__ornament__theme-halloween__v2.png": {
+    "name": "Guppy Fish Head Effigy",
+    "cost": 3,
+    "width": 70,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "spooky",
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A guppy head mounted on a stake.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-haunted-tree__ornament__theme-halloween.png": {
+    "name": "Haunted Tree",
+    "width": 300,
+    "defaultScale": 2,
+    "categories": [
+      "ornament"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "spooky",
+        "hardscape"
+      ]
+    },
+    "theme": "halloween",
+    "description": "A twisted old tree that looks thoroughly dead.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-fish-head-effigy__ornament__theme-halloween.png": {
+    "name": "Neon Fish Head Effigy",
+    "cost": 3,
+    "width": 70,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "spooky",
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A bloody fish-head effigy. Tasteful is probably not the word, but memorable definitely is.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "alder-cone-cluster__botanical__theme-natural.png": {
+    "name": "Alder Cone Cluster",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A alder cone cluster decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "autumn-leaf-litter-mound__botanical__theme-natural.png": {
+    "name": "Autumn Leaf Litter Mound",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A autumn leaf litter mound decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "branch-canopy__wood__theme-natural.png": {
+    "name": "Branch Canopy",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A branch canopy decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "dirt__rock__theme-natural.png": {
+    "name": "Dirt Mound",
+    "cost": 3,
+    "width": 480,
+    "defaultScale": 1,
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "description": "A small mound of loose earth for giving the aquarium floor a more uneven, natural look. Sometimes dirt really is the decoration.",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "dried-catappa-leaf-pile__botanical__theme-natural.png": {
+    "name": "Dried Catappa Leaf Pile",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A dried catappa leaf pile decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "driftwood__wood__theme-natural.png": {
+    "name": "Driftwood",
+    "cost": 10,
+    "width": 675,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A weathered piece of driftwood with plenty of natural bends and texture. Simple, classic, and nearly impossible to make look out of place.",
+    "categories": [
+      "wood"
+    ],
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "driftwood-root__wood__theme-natural.png": {
+    "name": "Driftwood Root",
+    "cost": 10,
+    "width": 660,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A gnarled mass of weathered roots that adds natural shape and texture to the aquarium floor.",
+    "categories": [
+      "wood"
+    ],
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "flat-spawning-stone__rock__theme-natural.png": {
+    "name": "Flat Spawning Stone",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A flat spawning stone decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "mixed-leaf-litter-scatter__botanical__theme-natural.png": {
+    "name": "Mixed Leaf Litter Scatter",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A mixed leaf litter scatter decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "moss-bridge__wood-plant__theme-natural.png": {
+    "name": "Moss Bridge",
+    "cost": 10,
+    "width": 698,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A small bridge softened by a layer of moss. Equal parts peaceful garden feature and tiny fish infrastructure.",
+    "categories": [
+      "wood",
+      "plant"
+    ],
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "plant",
+      "natural",
+      "hardscape",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "moss-covered-driftwood__wood-plant__theme-natural.png": {
+    "name": "Moss Covered Driftwood",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A moss covered driftwood decoration for the aquarium.",
+    "categories": [
+      "wood",
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "plant",
+      "natural",
+      "hardscape",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "moss-covered-rock-formation__rock-plant__theme-natural.png": {
+    "name": "Moss Covered Rock Formation",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A moss covered rock formation decoration for the aquarium.",
+    "categories": [
+      "rock",
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "plant",
+      "natural",
+      "hardscape",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "river-stone-mound__rock__theme-natural.png": {
+    "name": "River Stone Mound",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A river stone mound decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural.png": {
+    "name": "Rock 1",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A rock. A perfectly respectable rock, in fact. Useful for filling gaps, building little landscapes, or simply adding more rock.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural__v2.png": {
+    "name": "Rock 2",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A simple aquarium rock for adding natural texture wherever the tank needs a little more structure.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural__v3.png": {
+    "name": "Rock 3",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A sturdy decorative rock that fits comfortably into just about any aquarium layout.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural__v4.png": {
+    "name": "Rock 4",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A natural-looking stone for breaking up open spaces and giving the aquarium floor a little more shape.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural__v5.png": {
+    "name": "Rock 5",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A straightforward piece of rock decor. No gimmicks, no bubbles, just dependable geology.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "root-debris-scatter__wood__theme-natural.png": {
+    "name": "Root Debris Scatter",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A root debris scatter decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "seed-pod-cluster__botanical__theme-natural.png": {
+    "name": "Seed Pod Cluster",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A seed pod cluster decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "single-catappa-leaf__botanical__theme-natural.png": {
+    "name": "Single Catappa Leaf",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A single catappa leaf decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "single-loose-leaf__botanical__theme-natural.png": {
+    "name": "Single Loose Leaf",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A single loose leaf decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "single-twig__botanical__theme-natural.png": {
+    "name": "Single Twig",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A single twig decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "small-botanical-scatter-pieces__botanical__theme-natural.png": {
+    "name": "Small Botanical Scatter Pieces",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A small botanical scatter pieces decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "small-branch-pile__wood__theme-natural.png": {
+    "name": "Small Branch Pile",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A small branch pile decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "small-stone-shard-cluster__rock__theme-natural.png": {
+    "name": "Small Stone Shard Cluster",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A small stone shard cluster decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "small-wood-branch-cluster__wood__theme-natural.png": {
+    "name": "Small Wood Branch Cluster",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A small wood branch cluster decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "sprawling-spider-wood-rootscape__wood__theme-natural.png": {
+    "name": "Sprawling Spider Wood Rootscape",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A sprawling spider wood rootscape decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "stone-pebble-cluster__rock__theme-natural.png": {
+    "name": "Stone Pebble Cluster",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A stone pebble cluster decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "twig-and-pod-mix__botanical__theme-natural.png": {
+    "name": "Twig And Pod Mix",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A twig and pod mix decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "volcanic-rock-bricks__rock__theme-natural.png": {
+    "name": "Volcanic Rock 1",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A dark, rugged piece of volcanic rock with plenty of rough texture and character.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape",
+      "volcanic",
+      "sharp"
+    ]
+  },
+  "volcanic-rock-bricks__rock__theme-natural__v2.png": {
+    "name": "Volcanic Rock 2",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A porous-looking volcanic stone that adds a harsher, more dramatic edge to the aquarium floor.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape",
+      "volcanic",
+      "sharp"
+    ]
+  },
+  "volcanic-rock-bricks__rock__theme-natural__v3.png": {
+    "name": "Volcanic Rock 3",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A chunk of dark volcanic rock for building rocky formations, caves, or anything that needs a little ancient lava energy.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape",
+      "volcanic",
+      "sharp"
+    ]
+  },
+  "volcanic-rock-bricks__rock__theme-natural__v4.png": {
+    "name": "Volcanic Rock 4",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A rough volcanic stone with a naturally dramatic look. Thankfully, the volcano part is no longer active.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape",
+      "volcanic",
+      "sharp"
+    ]
+  },
+  "barnacle-covered-reef-rock__rock-coral__theme-reef.png": {
+    "name": "Barnacle Covered Reef Rock",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A barnacle covered reef rock decoration for the aquarium.",
+    "categories": [
+      "rock",
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "brain-coral__coral__theme-reef.png": {
+    "name": "Brain Coral",
+    "cost": 12,
+    "width": 300,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A dense coral covered in winding, maze-like ridges. Compact, colorful, and just strange enough to earn its name.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef.png": {
+    "name": "Branch Coral 1",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A branching coral formation that adds height, color, and a little reef complexity to the tank.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v10.png": {
+    "name": "Branch Coral 10",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A natural-looking coral cluster with branching growth, perfect for rounding out a larger reef display.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v2.png": {
+    "name": "Branch Coral 2",
+    "cost": 10,
+    "width": 240,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A lively cluster of branching coral that helps fill open spaces with natural reef texture.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v3.png": {
+    "name": "Branch Coral 3",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A decorative branching coral with plenty of little arms reaching into the water around it.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v4.png": {
+    "name": "Branch Coral 4",
+    "cost": 10,
+    "width": 260,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A colorful coral formation that brings a bit of reef structure and vertical interest to the aquarium.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v5.png": {
+    "name": "Branch Coral 5",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A branching coral cluster made for building out colorful reef scenes without overwhelming the tank.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v6.png": {
+    "name": "Branch Coral 6",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A compact branching coral that adds texture and depth wherever the tank is looking a little too empty.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v7.png": {
+    "name": "Branch Coral 7",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A decorative coral with branching growth that gives the tank a busier, more established reef look.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v8.png": {
+    "name": "Branch Coral 8",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A branching coral formation that works nicely tucked between rocks, caves, and other reef decorations.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v9.png": {
+    "name": "Branch Coral 9",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A colorful piece of branching coral that adds a little height and life to the aquarium floor.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "zoanthid-mat__coral__theme-reef.png": {
+    "name": "Zoanthid Mat",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A zoanthid mat decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "transit-tube__transit__theme-artificial__front.png": {
+    "name": "Borough Transit Tube",
+    "cost": 28,
+    "width": 230,
+    "defaultScale": 0.58,
+    "categories": [
+      "transit"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "hardscape"
+      ],
+      "occupancyLimit": 1,
+      "note": "Name and link two tubes to give fish a fast route between neighborhoods. It only bubbles while in use."
+    },
+    "theme": "artificial",
+    "description": "Link two named tubes to create a fast route between neighborhoods. The tube stays quiet until a fish enters, then bubbles to life as it carries the fish across the Borough like an italian plumber.",
+    "behavior": "transit",
+    "tags": [
+      "transit",
+      "artificial",
+      "hardscape",
+      "transport"
+    ]
   }
 };
 
 const DECOR_KEY_ALIASES = Object.freeze({
-  "anubia-rock.png": "anubia-rock_seaweed.png",
-  "anubias-rock.png": "anubia-rock_seaweed.png",
-  "Halloween_Cauldron.png": "Halloween_Cauldron_Bubbler.png",
-  "halloween_cauldron.png": "Halloween_Cauldron_Bubbler.png",
-  "Halloween_JackOLantern.png": "Halloween_JackOLantern_bubbler.png",
-  "halloween_jackolantern.png": "Halloween_JackOLantern_bubbler.png",
-  "Halloween_skeleton_lure.png": "Halloween_Floating_skeleton.png",
-  "halloween_skeleton_lure.png": "Halloween_Floating_skeleton.png"
+  "anubia-rock.png": "anubias-rock__plant-rock__theme-natural.png",
+  "anubia-rock_seaweed.png": "anubias-rock__plant-rock__theme-natural.png",
+  "anubias-rock.png": "anubias-rock__plant-rock__theme-natural.png",
+  "blue_castle_cave.png": "blue-castle__cave__theme-fantasy__front.png",
+  "brain_coral.png": "brain-coral__coral__theme-reef.png",
+  "castle-cave.png": "wizard-castle__cave__theme-fantasy__front.png",
+  "cave_coral_shelf_1.png": "coral-shelf-1__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_10.png": "coral-shelf-10__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_2.png": "coral-shelf-2__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_3.png": "coral-shelf-3__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_4.png": "coral-shelf-4__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_5.png": "coral-shelf-5__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_6.png": "coral-shelf-6__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_7.png": "coral-shelf-7__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_9.png": "coral-shelf-9__cave-coral__theme-reef__front.png",
+  "cave_sea_anemone_1.png": "sea-anemone-1__cave-coral__theme-reef__front.png",
+  "cave_sea_anemone_3.png": "sea-anemone-3__cave-coral__theme-reef__front.png",
+  "cave_sea_anemone_4.png": "sea-anemone-4__cave-coral__theme-reef__front.png",
+  "coral_1.png": "coral__coral__theme-reef.png",
+  "coral_10.png": "coral__coral__theme-reef__v10.png",
+  "coral_2.png": "coral__coral__theme-reef__v2.png",
+  "coral_3.png": "coral__coral__theme-reef__v3.png",
+  "coral_4.png": "coral__coral__theme-reef__v4.png",
+  "coral_5.png": "coral__coral__theme-reef__v5.png",
+  "coral_6.png": "coral__coral__theme-reef__v6.png",
+  "coral_7.png": "coral__coral__theme-reef__v7.png",
+  "coral_8.png": "coral__coral__theme-reef__v8.png",
+  "coral_9.png": "coral__coral__theme-reef__v9.png",
+  "dirt.png": "dirt__rock__theme-natural.png",
+  "driftwood-root.png": "driftwood-root__wood__theme-natural.png",
+  "driftwood.png": "driftwood__wood__theme-natural.png",
+  "fishheadeffigy_1.png": "halloween-fish-head-effigy__ornament__theme-halloween.png",
+  "fishheadeffigy_2.png": "halloween-fish-head-effigy__ornament__theme-halloween__v2.png",
+  "fishheadeffigy_3.png": "halloween-fish-head-effigy__ornament__theme-halloween__v3.png",
+  "fishing_lure.png": "fishing-lure__lure__theme-artificial.png",
+  "fishing_lure_1.png": "fishing-lure__lure__theme-artificial__v2.png",
+  "fishing_lure_2.png": "fishing-lure__lure__theme-artificial__v3.png",
+  "fishing_lure_3.png": "fishing-lure__lure__theme-artificial__v4.png",
+  "fishing_lure_4.png": "fishing-lure__lure__theme-artificial__v5.png",
+  "fishing_lure_5.png": "fishing-lure__lure__theme-artificial__v6.png",
+  "fishing_lure_6.png": "fishing-lure__lure__theme-artificial__v7.png",
+  "floating_halloween_ghost.png": "halloween-ghost__ornament__theme-halloween.png",
+  "floating_swampmoss_1.png": "floating-swamp-moss__plant__theme-natural.png",
+  "floatingseaweed_1.png": "floating-seaweed__plant__theme-reef.png",
+  "gorebag_lure.png": "halloween-gorebag__lure__theme-halloween.png",
+  "halloween_cauldron.png": "halloween-cauldron__bubbler__theme-halloween__front.png",
+  "halloween_cauldron_bubbler.png": "halloween-cauldron__bubbler__theme-halloween__front.png",
+  "halloween_crypt_cave.png": "halloween-crypt__cave__theme-halloween__front.png",
+  "halloween_floating_skeleton.png": "halloween-skeleton__ornament__theme-halloween.png",
+  "halloween_floatingseaweed.png": "halloween-floating-seaweed__plant__theme-halloween.png",
+  "halloween_ghost_ship.png": "halloween-ghost-ship__ornament__theme-halloween.png",
+  "halloween_gravestone_1.png": "halloween-gravestone__ornament__theme-halloween.png",
+  "halloween_gravestone_2.png": "halloween-gravestone__ornament__theme-halloween__v2.png",
+  "halloween_gravestone_3.png": "halloween-gravestone__ornament__theme-halloween__v3.png",
+  "halloween_gravestone_4.png": "halloween-gravestone__ornament__theme-halloween__v4.png",
+  "halloween_gravestone_5.png": "halloween-gravestone__ornament__theme-halloween__v5.png",
+  "halloween_haunted_house_cave.png": "halloween-haunted-house__cave__theme-halloween__front.png",
+  "halloween_haunted_tree.png": "halloween-haunted-tree__ornament__theme-halloween.png",
+  "halloween_jackolantern.png": "halloween-jack-o-lantern__bubbler__theme-halloween__front.png",
+  "halloween_jackolantern_bubbler.png": "halloween-jack-o-lantern__bubbler__theme-halloween__front.png",
+  "halloween_seaweed.png": "halloween-seaweed__plant__theme-halloween.png",
+  "halloween_skeleton_lure.png": "halloween-skeleton__ornament__theme-halloween.png",
+  "halloween_spider.png": "halloween-spider__ornament__theme-halloween.png",
+  "halloween_webs.png": "halloween-webs__ornament__theme-halloween.png",
+  "meteor_cave.png": "meteor__cave-rock__theme-space__front.png",
+  "moss-bridge.png": "moss-bridge__wood-plant__theme-natural.png",
+  "mushroomcoral_seaweed.png": "large-mushroom-coral__coral__theme-reef.png",
+  "plane-wreck.png": "frozen-sunken-submarine__ornament__theme-frozen.png",
+  "rock_1_bricks.png": "rock-bricks__rock__theme-natural.png",
+  "rock_2_bricks.png": "rock-bricks__rock__theme-natural__v2.png",
+  "rock_3_bricks.png": "rock-bricks__rock__theme-natural__v3.png",
+  "rock_4_bricks.png": "rock-bricks__rock__theme-natural__v4.png",
+  "rock_5_bricks.png": "rock-bricks__rock__theme-natural__v5.png",
+  "sea_anemone_2.png": "sea-anemone__coral__theme-reef.png",
+  "sea_anemone_5.png": "sea-anemone__coral__theme-reef__v2.png",
+  "seaweed-bunch.png": "seaweed-bunch__plant__theme-reef.png",
+  "seaweed_1.png": "seaweed__plant__theme-reef.png",
+  "shipwreck.png": "frozen-ship__ornament__theme-frozen.png",
+  "slate-cave.png": "slate__cave-rock__theme-natural__front.png",
+  "transit-tube.png": "transit-tube__transit__theme-artificial__front.png",
+  "treasure-chest_bubbler.png": "treasure-chest__bubbler__theme-treasure__front.png",
+  "volcanic_rock_1_bricks.png": "volcanic-rock-bricks__rock__theme-natural.png",
+  "volcanic_rock_2_bricks.png": "volcanic-rock-bricks__rock__theme-natural__v2.png",
+  "volcanic_rock_3_bricks.png": "volcanic-rock-bricks__rock__theme-natural__v3.png",
+  "volcanic_rock_4_bricks.png": "volcanic-rock-bricks__rock__theme-natural__v4.png",
+  "volcano-1_bubbler.png": "volcano__bubbler__theme-natural__front.png",
+  "volcano-2_bubbler.png": "volcano__bubbler__theme-natural__v2__front.png"
 });
 const DECOR_RGB_COLOR_SETTING = "rgb";
 const DECOR_COLORIZE_SETTING_SUFFIX = "Colorize";
@@ -2984,9 +8441,31 @@ const dom = {
   debugFishBehaviorPreviewScaleY: document.querySelector("#debugFishBehaviorPreviewScaleY"),
   debugFishBehaviorPreviewTilt: document.querySelector("#debugFishBehaviorPreviewTilt"),
   debugFishBehaviorPreviewDescription: document.querySelector("#debugFishBehaviorPreviewDescription"),
+  debugDecorPreviewButton: document.querySelector("#debugDecorPreviewButton"),
+  debugDecorPreview: document.querySelector("#debugDecorPreview"),
+  closeDebugDecorPreview: document.querySelector("#closeDebugDecorPreview"),
+  debugDecorPreviewSelect: document.querySelector("#debugDecorPreviewSelect"),
+  debugDecorPreviewLayer: document.querySelector("#debugDecorPreviewLayer"),
+  debugDecorPreviewSnapButton: document.querySelector("#debugDecorPreviewSnapButton"),
+  debugDecorPreviewResetButton: document.querySelector("#debugDecorPreviewResetButton"),
+  debugDecorPreviewCanvas: document.querySelector("#debugDecorPreviewCanvas"),
+  debugDecorPreviewStatus: document.querySelector("#debugDecorPreviewStatus"),
+  debugDecorPreviewSize: document.querySelector("#debugDecorPreviewSize"),
+  debugDecorPreviewSizeOutput: document.querySelector("#debugDecorPreviewSizeOutput"),
+  debugDecorPreviewFlipX: document.querySelector("#debugDecorPreviewFlipX"),
+  debugDecorPreviewFlipY: document.querySelector("#debugDecorPreviewFlipY"),
+  debugDecorPreviewShowFootprint: document.querySelector("#debugDecorPreviewShowFootprint"),
+  debugDecorPreviewColors: document.querySelector("#debugDecorPreviewColors"),
+  debugDecorPreviewBottom: document.querySelector("#debugDecorPreviewBottom"),
+  debugDecorPreviewOffset: document.querySelector("#debugDecorPreviewOffset"),
+  debugDecorPreviewFootprint: document.querySelector("#debugDecorPreviewFootprint"),
   debugNotificationUiButton: document.querySelector("#debugNotificationUiButton"),
   debugFishActionIndicatorsButton: document.querySelector("#debugFishActionIndicatorsButton"),
   debugFrameProfilerButton: document.querySelector("#debugFrameProfilerButton"),
+  debugDepthTuner: document.querySelector("#debugDepthTuner"),
+  debugDepthTunerReadout: document.querySelector("#debugDepthTunerReadout"),
+  debugDepthTunerResetButton: document.querySelector("#debugDepthTunerResetButton"),
+  debugDepthTunerCopyButton: document.querySelector("#debugDepthTunerCopyButton"),
   debugLivingBoroughPanel: document.querySelector("#debugLivingBoroughPanel"),
   resetMealsButton: document.querySelector("#resetMealsButton"),
   addHundredCoinsButton: document.querySelector("#addHundredCoinsButton"),
@@ -3160,6 +8639,8 @@ const dom = {
   waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
   causticLightingToggleInput: document.querySelector("#causticLightingToggleInput"),
   decorShadowsToggleInput: document.querySelector("#decorShadowsToggleInput"),
+  depthEffectLevelInput: document.querySelector("#depthEffectLevelInput"),
+  depthEffectLevelOutput: document.querySelector("#depthEffectLevelOutput"),
   simpleTurnAnimationsToggleInput: document.querySelector("#simpleTurnAnimationsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
@@ -3377,6 +8858,7 @@ const runtime = {
   customImageStorageTestPromise: null,
   customImageStorageFallbackWarningShown: false,
   customImageObjectUrls: new Map(),
+  missingCustomImageWarnings: new Set(),
   customImageCleanupQueued: false,
   editingTankNameId: null,
   editingTankNameValue: "",
@@ -3420,6 +8902,9 @@ const runtime = {
   debugNotificationUiEnabled: false,
   debugFishActionIndicatorsEnabled: false,
   debugFrameProfilerEnabled: false,
+  debugDepthTuning: null,
+  debugDepthTuningLoaded: false,
+  debugDepthTuningApplyTimer: 0,
   frameProfilerCurrent: null,
   frameProfilerSamples: [],
   frameProfilerLongFrameCount: 0,
@@ -3664,6 +9149,17 @@ const runtime = {
   debugFishBehaviorPreviewFrame: 0,
   debugFishBehaviorPreviewFish: null,
   debugFishBehaviorPreviewLoadToken: 0,
+  debugDecorPreviewOpen: false,
+  debugDecorPreviewDecorKey: "",
+  debugDecorPreviewItem: null,
+  debugDecorPreviewFrame: 0,
+  debugDecorPreviewLoadToken: 0,
+  debugDecorPreviewScalePercent: 100,
+  debugDecorPreviewPointerId: null,
+  debugDecorPreviewDragOffsetX: 0,
+  debugDecorPreviewDragOffsetY: 0,
+  debugDecorPreviewTransform: null,
+  debugDecorPreviewSnapped: true,
   aspectRatioLocked: FIXED_16_9_ASPECT_RATIO,
   hiddenKeySequenceBuffer: "",
   debugBreedingSequence: null,
@@ -4299,6 +9795,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         activityRegulation: normalizeCustomFishActivityRegulation(pending.activityRegulation),
         swimZone: normalizeCustomFishSwimZone(pending.swimZone),
         socialAffinity: normalizeCustomFishSocialAffinity(pending.socialAffinity),
+        liveBirth: pending.liveBirth === true,
         turnAnimation: String(pending.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
         createdAt: now
       }, speciesKey);
@@ -6765,27 +12262,98 @@ function isSeasonalDecorAvailable(decor, now = Date.now()) {
 }
 
 function deriveDecorCategories(entry, key) {
-  const configured = normalizeStringList(entry?.categories || entry?.category);
+  const configured = normalizeStringList(entry?.categories || entry?.category)
+    .map((value) => value.toLowerCase())
+    .filter((value) => value && value !== "halloween" && value !== "frozen" && value !== "reef" && value !== "natural");
   if (configured.length) {
-    const categories = configured.map((value) => value.toLowerCase());
-    if (isHalloweenDecor({ ...entry, key }) && !categories.includes("halloween")) categories.push("halloween");
-    return categories;
+    return [...new Set(configured.flatMap((value) => value.split("-")).filter(Boolean))];
+  }
+
+  const fileKey = String(key || entry?.file || "").toLowerCase();
+  const conventionMatch = fileKey.match(/^[^/]+__([^_]+?)(?:__theme-[^_]+)?(?:__|\.)/);
+  if (conventionMatch) {
+    return [...new Set(conventionMatch[1].split("-").filter(Boolean))];
   }
 
   const bucket = new Set();
-  const haystack = `${String(entry?.name || "")} ${String(key || "")}`.toLowerCase();
-  if (/cave|hide|wreck|castle|house|arch/.test(haystack)) {
-    bucket.add("caves");
-  }
-  if (/weed|plant|moss|anub|coral/.test(haystack)) {
-    bucket.add("plants");
-  }
-  if (/shell|rock|driftwood|bridge|lantern|chest/.test(haystack)) {
-    bucket.add("ornaments");
-  }
-  if (!bucket.size) bucket.add("ornaments");
-  if (isHalloweenDecor({ ...entry, key })) bucket.add("halloween");
+  const haystack = `${String(entry?.name || "")} ${fileKey}`.toLowerCase();
+  if (/cave|hide|wreck|castle|house|arch/.test(haystack)) bucket.add("cave");
+  if (/weed|plant|moss|anub|algae/.test(haystack)) bucket.add("plant");
+  if (/coral|anemone|reef/.test(haystack)) bucket.add("coral");
+  if (/rock|stone|slate|meteor/.test(haystack)) bucket.add("rock");
+  if (/wood|root|branch|twig/.test(haystack)) bucket.add("wood");
+  if (/lure/.test(haystack)) bucket.add("lure");
+  if (/bubbler/.test(haystack)) bucket.add("bubbler");
+  if (!bucket.size) bucket.add("ornament");
   return [...bucket];
+}
+
+function normalizeDecorBehaviorType(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return ["static", "anchored_sway", "floating_bob", "floating_sway", "ceiling_sway", "cave_layered", "bubbler", "transit"].includes(normalized)
+    ? normalized
+    : "";
+}
+
+function getDecorCatalogRecord(itemOrKey) {
+  const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey || itemOrKey?.key;
+  if (!decorKey) return null;
+  return runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[decorKey] || null;
+}
+
+function getDecorCategoryList(itemOrKey) {
+  const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey || itemOrKey?.key;
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return deriveDecorCategories(decor, decorKey).map((value) => String(value || "").toLowerCase()).filter(Boolean);
+}
+
+function decorHasCategory(itemOrKey, category) {
+  const target = String(category || "").trim().toLowerCase();
+  return target ? getDecorCategoryList(itemOrKey).includes(target) : false;
+}
+
+function getDecorTagList(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return normalizeStringList(decor?.tags).map((value) => value.toLowerCase());
+}
+
+function decorHasTag(itemOrKey, tag) {
+  const target = String(tag || "").trim().toLowerCase();
+  return target ? getDecorTagList(itemOrKey).includes(target) : false;
+}
+
+function getDecorTheme(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return String(decor?.theme || "").trim().toLowerCase();
+}
+
+function decorHasTheme(itemOrKey, theme) {
+  return getDecorTheme(itemOrKey) === String(theme || "").trim().toLowerCase();
+}
+
+function getDecorBehaviorType(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return normalizeDecorBehaviorType(decor?.behavior);
+}
+
+function getDecorMotionBehaviorType(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return normalizeDecorBehaviorType(decor?.motionBehavior) || getDecorBehaviorType(itemOrKey);
+}
+
+function getDecorMotionLayer(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  const layer = String(decor?.motionLayer || "").trim().toLowerCase();
+  return ["front", "bg", "all"].includes(layer) ? layer : "all";
+}
+
+function getDecorAssetPathForKey(decorKey = "") {
+  const normalizedKey = normalizeDecorKey(decorKey);
+  const decor = runtime.decorMap?.get?.(normalizedKey) || runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[normalizedKey] || runtime.decorMeta?.[decorKey] || null;
+  if (decor?.path) return decor.path;
+  const behavior = normalizeDecorBehaviorType(decor?.behavior);
+  const encodedKey = String(normalizedKey || decorKey).split("/").map((part) => encodeURIComponent(part)).join("/");
+  return resolveAppUrl(behavior ? `assets/decor/${behavior}/${encodedKey}` : `assets/decor/${encodedKey}`);
 }
 
 function normalizeDecorHangoutTypes(value) {
@@ -6965,9 +12533,6 @@ function getUnlockRequirementLabel(requirement) {
     case "borough-legends":
       return "Borough Legends";
     case "spooky-keeper":
-    case "corpse-zombie":
-      return "Spooky Keeper";
-    case "corpse-skeleton":
       return "Spooky Keeper";
     default:
       return requirement ? titleFromFile(requirement) : "";
@@ -7180,10 +12745,13 @@ function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
   if (isChumOnlyFish(fish)) {
     return isPredatorMealFood(foodKey);
   }
-  if (isPiranhaSpecies(fish) || isZombieFish(fish) || (isZombieSkeletonModeAvailable() && fish.speciesId === "zombie-fish")) {
+  if (fish.speciesId === "pilot-fish" && foodKey === "chum") {
+    return true;
+  }
+  if (isPiranhaSpecies(fish)) {
     return isPredatorMealFood(foodKey);
   }
-  if (isSkeletonFish(fish) || isMealFreeFish(fish)) {
+  if (isMealFreeFish(fish)) {
     return false;
   }
   return isNormalMealFood(foodKey);
@@ -7231,63 +12799,46 @@ function getTankComfortDecorTags(tank = getCurrentTank()) {
   const tags = new Set();
   const placedDecor = Array.isArray(tank?.placedDecor) ? tank.placedDecor : [];
   for (const item of placedDecor) {
-    const decorKey = String(item?.decorKey || "").toLowerCase();
-    const decor = runtime.decorMap.get(item?.decorKey) || runtime.decorMeta[item?.decorKey] || {};
-    const categories = Array.isArray(decor.categories) && decor.categories.length
-      ? decor.categories
-      : deriveDecorCategories(decor, decorKey);
-    for (const category of categories) {
-      const normalized = String(category || "").toLowerCase();
-      if (normalized === "plants" || normalized === "plant") {
-        tags.add("plants");
-        tags.add("seaweed_algae");
-      }
-      if (normalized === "caves" || normalized === "hide") {
-        tags.add("cave");
-        tags.add("hardscape");
-      }
-      if (normalized === "ornaments" || normalized === "hardscape") {
-        tags.add("hardscape");
-      }
-      if (normalized === "bubbler") {
-        tags.add("bubbler");
-      }
-      if (normalized === "custom") {
-        tags.add("hardscape");
-      }
+    const categories = new Set(getDecorCategoryList(item));
+    const metadataTags = new Set(getDecorTagList(item));
+    const behavior = getDecorBehaviorType(item);
+    const theme = getDecorTheme(item);
+
+    if (categories.has("plant")) {
+      tags.add("plants");
+      tags.add("seaweed_algae");
     }
-    if (decor.caveSettings || decor.caveBehavior || /cave|hide|wreck|castle|plane|arch/.test(decorKey)) {
+    if (categories.has("cave")) {
       tags.add("cave");
       tags.add("hardscape");
     }
-    if (decor.bubbler || isBubblerDecorKey(decorKey) || isCustomBubblerDecorKey(decorKey)) {
-      tags.add("bubbler");
-    }
-    if (/seaweed|moss|anub|plant|kelp|algae/.test(decorKey)) {
-      tags.add("plants");
-      tags.add("seaweed_algae");
-      tags.add("surface_cover");
-    }
-    if (/floating|surface/.test(decorKey)) {
-      tags.add("surface_cover");
-    }
-    if (/driftwood|root/.test(decorKey)) {
-      tags.add("driftwood");
-      tags.add("hardscape");
-      tags.add("seaweed_algae");
-    }
-    if (/coral|reef|mushroomcoral/.test(decorKey)) {
+    if (categories.has("coral")) {
       tags.add("coral");
       tags.add("hardscape");
     }
-    if (/spooky|effigy|gorebag|fishhead/.test(decorKey) || String(decor.theme || "").toLowerCase() === "spooky") {
-      tags.add("spooky");
-    }
-    if (/rock|volcanic|arch|bridge|chest|slate|meteor|castle|ship|plane/.test(decorKey)) {
+    if (["rock", "wood", "ornament", "transit"].some((category) => categories.has(category))) {
       tags.add("hardscape");
     }
-    if (/volcanic|rock_[0-9]|_bricks/.test(decorKey)) {
+    if (categories.has("wood")) {
+      tags.add("driftwood");
+    }
+    if (categories.has("bubbler") || isBubblerDecorKey(item.decorKey) || isCustomBubblerDecorKey(item.decorKey)) {
+      tags.add("bubbler");
+      tags.add("hardscape");
+    }
+    if (["floating_bob", "floating_sway"].includes(behavior)) {
+      tags.add("surface_cover");
+    }
+    if (theme === "halloween" || metadataTags.has("spooky")) {
+      tags.add("spooky");
+    }
+    if (metadataTags.has("volcanic") || metadataTags.has("sharp")) {
       tags.add("sharp_decor");
+    }
+    for (const tag of metadataTags) {
+      if (["plants", "seaweed_algae", "cave", "coral", "hardscape", "driftwood", "bubbler", "surface_cover", "spooky", "sharp_decor"].includes(tag)) {
+        tags.add(tag);
+      }
     }
   }
   return tags;
@@ -7310,12 +12861,11 @@ function getTankComfortFacts(tank = getCurrentTank(), now = Date.now()) {
     spacePoints,
     hasBetta: livingFish.some((fish) => fish.speciesId === "betta"),
     hasPuffer: livingFish.some((fish) => fish.speciesId === "pufferfish"),
-    hasAggressivePredator: livingFish.some((fish) => isPiranhaSpecies(fish) || isZombieFish(fish) || fish.speciesId === "pufferfish"),
+    hasAggressivePredator: livingFish.some((fish) => isPiranhaSpecies(fish) || fish.speciesId === "pufferfish"),
     hasTang: livingFish.some((fish) => fish.speciesId === "yellow-tang" || fish.speciesId === "blue-tang"),
     hasFastEater: livingFish.some((fish) => ["zebra-danio", "rainbowfish", "swordtail"].includes(fish.speciesId)),
     hasFinNipper: livingFish.some((fish) => ["zebra-danio", "betta", "piranha"].includes(fish.speciesId)),
-    surfaceFishCount: livingFish.filter((fish) => ["wonder-killifish", "gourami", "betta"].includes(fish.speciesId)).length,
-    hasTheCure: (Array.isArray(tank?.medicineEffects) ? tank.medicineEffects : []).some((effect) => effect?.type === "antidote" && (effect.endsAt || 0) > now)
+    surfaceFishCount: livingFish.filter((fish) => ["wonder-killifish", "gourami", "betta"].includes(fish.speciesId)).length
   };
 }
 
@@ -7369,7 +12919,7 @@ function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts 
     case "betta_present":
       return otherFish.some((other) => other.speciesId === "betta");
     case "aggressive_predator":
-      return otherFish.some((other) => isPiranhaSpecies(other) || isZombieFish(other) || other.speciesId === "pufferfish");
+      return otherFish.some((other) => isPiranhaSpecies(other) || other.speciesId === "pufferfish");
     case "fin_nipper":
       return otherFish.some((other) => ["zebra-danio", "betta", "piranha"].includes(other.speciesId));
     case "large_fish":
@@ -7392,14 +12942,9 @@ function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts 
       return otherFish.some((other) => ["zebra-danio", "rainbowfish", "swordtail"].includes(other.speciesId));
     case "community_fish":
       if (isPiranhaSpecies(fish)) {
-        return otherFish.some((other) => !isPiranhaSpecies(other) && !isUndeadFish(other));
-      }
-      if (isZombieFish(fish)) {
-        return otherFish.some((other) => !isUndeadFish(other));
+        return otherFish.some((other) => !isPiranhaSpecies(other));
       }
       return otherFish.length > 0;
-    case "the_cure":
-      return facts.hasTheCure;
     default:
       return false;
   }
@@ -7641,7 +13186,7 @@ function shouldShowMedicineInStore(medicine) {
   if (!medicine) {
     return false;
   }
-  return (isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled()) || medicine.id !== "antidote";
+  return medicine.id !== "antidote";
 }
 
 function isFilteredGoreDecor(decorOrKey) {
@@ -8131,7 +13676,8 @@ function getAquariumExpansionCost(targetState = state) {
 }
 
 function isTransitTubeDecorKey(decorKey = "") {
-  return normalizeDecorKey(decorKey) === "transit-tube.png";
+  const key = normalizeDecorKey(decorKey);
+  return decorHasCategory(key, "transit") || getDecorBehaviorType(key) === "transit";
 }
 
 function getAllTransitTubes(targetState = state) {
@@ -8508,6 +14054,166 @@ function sellCurrentTank() {
   return sellAquariumTank(getCurrentTank()?.id);
 }
 
+function prepareFishForTankStorageTransfer(fish, now = Date.now()) {
+  if (!fish) return null;
+  const dead = isFishDead(fish);
+  const storageMoodTone = !dead ? (getFishCareStatus(fish, now)?.tone || "good") : "";
+  clearPiranhaAttackState(fish);
+  clearFishCaveBehavior(fish);
+  clearFishBoroughServiceReservation(fish);
+  fish.coarseActivity = null;
+  fish.feedingPelletId = null;
+  fish.comfortDamageProgressMs = 0;
+  fish.hangoutDecorId = null;
+  fish.residenceDecorId = null;
+  fish.favoriteSpot = null;
+  fish.entryStartedAt = null;
+  fish.entryDurationMs = 0;
+  fish.entryFromYNorm = null;
+  fish.entrySplashTriggered = false;
+  fish.turnStartedAt = null;
+  fish.turnDurationMs = 0;
+  fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
+  fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
+  fish.turnFromDirection = fish.displayDirection;
+  fish.turnToDirection = fish.displayDirection;
+  fish.turnFromAngle = fish.displayAngle;
+  fish.turnToAngle = fish.displayAngle;
+  fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
+  fish.piranhaConsumptionStartedAt = null;
+  fish.piranhaConsumptionEndsAt = null;
+  fish.piranhaLastBloodAt = null;
+  fish.activity = dead ? "dead" : "roam";
+  if (!dead) {
+    const effectiveBehavior = getEffectiveFishBehavior(fish);
+    const storageLayer = effectiveBehavior === "sucker"
+      ? getSuckerFishGlassLayer(fish)
+      : fish.tankLayer || DEFAULT_TANK_LAYER;
+    setFishTankLayers(fish, storageLayer, storageLayer);
+  }
+  fish.storageFrozen = true;
+  fish.storageMoodTone = storageMoodTone;
+  fish.storedAt = now;
+  fish.frozenMealSlotKey = getCurrentMealSlot(now)?.key || "";
+  fish.frozenLastSimulatedAt = now;
+  return fish;
+}
+
+function returnSoldTankFishToStorage(tank, now = Date.now()) {
+  const fishList = Array.isArray(tank?.fish) ? tank.fish : [];
+  if (!fishList.length) return 0;
+  const fishIds = new Set(fishList.map((fish) => String(fish?.id || "")).filter(Boolean));
+  withActiveTank(tank.id, () => {
+    for (const fish of fishList) {
+      prepareFishForTankStorageTransfer(fish, now);
+    }
+  });
+  state.storedFish ||= [];
+  state.storedFish.push(...fishList);
+  tank.fish = [];
+  tank.pendingPoops = Array.isArray(tank.pendingPoops)
+    ? tank.pendingPoops.filter((poop) => !fishIds.has(String(poop?.fishId || "")))
+    : [];
+  if (Array.isArray(tank.floatingPellets)) {
+    for (const pellet of tank.floatingPellets) {
+      if (fishIds.has(String(pellet?.targetFishId || ""))) pellet.targetFishId = "";
+    }
+  }
+  for (const fishId of fishIds) {
+    runtime.pendingNeighborhoodTravel.delete(fishId);
+    runtime.activeFishCavePlans.delete(fishId);
+    runtime.fishShadowPlaneCache.delete(fishId);
+    runtime.fishGravelPebbleActions.delete(fishId);
+  }
+  if (fishIds.has(String(runtime.selectedFishId || ""))) runtime.selectedFishId = null;
+  if (fishIds.has(String(runtime.debugForcedCaveFishId || ""))) clearDebugCaveTestSelection();
+  return fishList.length;
+}
+
+function returnSoldTankDecorToStorage(tank) {
+  const decorList = Array.isArray(tank?.placedDecor) ? tank.placedDecor : [];
+  if (!decorList.length) return 0;
+  state.decorInventory ||= {};
+  for (const item of decorList) {
+    const decorKey = String(item?.decorKey || "");
+    if (!decorKey) continue;
+    clearDecorResidenceAssignments(item.id, { save: false });
+    clearDecorBoroughServiceReservations(item.id);
+    state.decorInventory[decorKey] = Math.max(0, Math.floor(Number(state.decorInventory[decorKey]) || 0)) + 1;
+    if (runtime.dragState?.placedId === item.id) runtime.dragState = null;
+    if (runtime.decorResizeState?.placedId === item.id) runtime.decorResizeState = null;
+    runtime.selectedDecorIds = runtime.selectedDecorIds.filter((id) => id !== item.id);
+    if (runtime.selectedPlacedDecorId === item.id) runtime.selectedPlacedDecorId = null;
+    if (runtime.bubblerSettingsDecorId === item.id) runtime.bubblerSettingsDecorId = null;
+    if (runtime.customDecorSettingsDecorId === item.id) runtime.customDecorSettingsDecorId = null;
+  }
+  tank.placedDecor = [];
+  tank.gravelLivePebbles = [];
+  return decorList.length;
+}
+
+function returnSoldTankDispenserToStorage(tank, storageTank) {
+  const dispenser = tank?.autoDispenser;
+  if (!dispenser || !storageTank) return 0;
+  const storedCount = Math.max(0, Math.floor(Number(dispenser.storedCount) || 0));
+  const unitCount = storedCount + (dispenser.installed ? 1 : 0);
+  if (!unitCount) return 0;
+
+  // Loaded food belongs to the player, not to a tank that is being removed.
+  // Return it to the normal food inventory before collapsing the dispenser(s)
+  // into the receiving tank's equipment-storage count.
+  state.foodInventory ||= {};
+  for (const pellet of Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : []) {
+    const foodKey = String(pellet?.foodKey || "");
+    if (!foodKey) continue;
+    state.foodInventory[foodKey] = Math.max(0, Math.floor(Number(state.foodInventory[foodKey]) || 0)) + 1;
+  }
+
+  const receiving = createDefaultAutoDispenserState(storageTank.autoDispenser);
+  receiving.storedCount = Math.max(0, Math.floor(Number(receiving.storedCount) || 0)) + unitCount;
+  receiving.stored = receiving.storedCount > 0;
+  storageTank.autoDispenser = receiving;
+  tank.autoDispenser = createDefaultAutoDispenserState();
+  return unitCount;
+}
+
+function returnSoldTankMachineryToStorage(tankId, now = Date.now()) {
+  const tankMachinery = getMachineryList().filter((item) => item?.tankId === tankId);
+  if (!tankMachinery.length) return 0;
+  const returnedIds = new Set();
+  for (const item of tankMachinery) {
+    returnedIds.add(item.id);
+    runtime.pendingMachineryTravel.delete(item.id);
+    if (item.type === MACHINERY_TYPE_SUBMARINE) {
+      const stored = createStoredSubmarineState(item, now);
+      if (stored) state.storedSubmarines = [...getStoredSubmarineStates(), stored];
+      state.submarineOwned = true;
+    } else if (item.type === MACHINERY_TYPE_BOAT) {
+      const stored = createStoredBoatState(item, now);
+      if (stored) state.storedBoats = [...getStoredBoatStates(), stored];
+      state.boatOwned = true;
+    }
+  }
+  state.storedSubmarine = getStoredSubmarineStates()[0] || null;
+  state.storedBoat = getStoredBoatStates()[0] || null;
+  state.machinery = getMachineryList().filter((item) => !returnedIds.has(item?.id));
+  if (returnedIds.has(runtime.selectedMachineryId)) {
+    runtime.selectedMachineryId = null;
+    closeEditEquipmentTrayContextMenu({ render: false });
+  }
+  runtime.equipmentEditTrayTab = "storage";
+  return returnedIds.size;
+}
+
+function returnSoldTankContentsToStorage(tank, storageTank, now = Date.now()) {
+  if (!tank) return { fish: 0, decor: 0, equipment: 0 };
+  const fish = returnSoldTankFishToStorage(tank, now);
+  const decor = returnSoldTankDecorToStorage(tank);
+  const machinery = returnSoldTankMachineryToStorage(tank.id, now);
+  const dispenser = returnSoldTankDispenserToStorage(tank, storageTank);
+  return { fish, decor, equipment: machinery + dispenser };
+}
+
 function sellAquariumTank(tankId) {
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     showToast("Selling is disabled while Peaceful Mode is enabled.");
@@ -8523,20 +14229,21 @@ function sellAquariumTank(tankId) {
     return false;
   }
 
-  if (!isTankEmpty(tank)) {
-    showToast("Only empty tanks can be sold.");
-    return false;
-  }
-
+  const now = Date.now();
   const resaleValue = getTankResaleValue(tank);
   const currentIndex = state.tanks.findIndex((entry) => entry.id === tank.id);
   const soldActiveTank = state.activeTankId === tank.id;
-  state.tanks = state.tanks.filter((entry) => entry.id !== tank.id);
+  const remainingTanks = state.tanks.filter((entry) => entry.id !== tank.id);
+  const storageTank = remainingTanks.find((entry) => entry.id === state.activeTankId)
+    || remainingTanks[Math.max(0, currentIndex - 1)]
+    || remainingTanks[0]
+    || null;
+  const returned = returnSoldTankContentsToStorage(tank, storageTank, now);
+  state.tanks = remainingTanks;
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + resaleValue);
-  recordWalletTransaction({ amount: resaleValue, direction: "credit", now: Date.now(), place: getTankLabel(tank), label: `Sold ${getTankLabel(tank)}` });
+  recordWalletTransaction({ amount: resaleValue, direction: "credit", now, place: getTankLabel(tank), label: `Sold ${getTankLabel(tank)}` });
   if (soldActiveTank) {
-    const fallbackTank = state.tanks[Math.max(0, currentIndex - 1)] || state.tanks[0];
-    state.activeTankId = fallbackTank?.id || null;
+    state.activeTankId = storageTank?.id || state.tanks[0]?.id || null;
   }
   for (const [key] of Object.entries(state.boroughTravelWalls || {})) {
     if (key.split("|").includes(tank.id)) delete state.boroughTravelWalls[key];
@@ -8548,7 +14255,12 @@ function sellAquariumTank(tankId) {
   }
   runtime.editingTankNameId = null;
   runtime.editingTankNameValue = "";
-  pushEvent(`Sold ${getTankLabel(tank, currentIndex)} for ${resaleValue} ${pluralize("coin", resaleValue)}.`, Date.now());
+  const returnedSummary = [
+    returned.fish ? `${returned.fish} ${pluralize("fish", returned.fish)}` : "",
+    returned.decor ? `${returned.decor} decor` : "",
+    returned.equipment ? `${returned.equipment} equipment` : ""
+  ].filter(Boolean).join(", ");
+  pushEvent(`Sold ${getTankLabel(tank, currentIndex)} for ${resaleValue} ${pluralize("coin", resaleValue)}.${returnedSummary ? ` Returned to storage: ${returnedSummary}.` : ""}`, now);
   saveState();
   playCoinSoundEffect();
   renderUi(Date.now());
@@ -8853,7 +14565,7 @@ async function handleProteusDesignerChangeEvent(event) {
       openCustomFishCreationOverlay(dataUrl, titleFromFile(file.name || "Custom Fish"), {
         width: image.naturalWidth || image.width || CUSTOM_FISH_DEFAULT_WIDTH,
         height: image.naturalHeight || image.height || CUSTOM_FISH_DEFAULT_WIDTH
-      });
+      }, { preserveParameters: true });
       if (runtime.proteusDesignerOpen === true) renderStoreOverlay();
     } catch (error) {
       console.error(error);
@@ -9069,6 +14781,7 @@ function handleWebPageNavigation(event) {
       runtime.pendingCustomFishUpload.activityRegulation = "";
       runtime.pendingCustomFishUpload.swimZone = "";
       runtime.pendingCustomFishUpload.socialAffinity = "adaptive";
+      runtime.pendingCustomFishUpload.liveBirth = false;
       runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
       renderStoreOverlay();
     }
@@ -9084,14 +14797,34 @@ function handleWebPageNavigation(event) {
     submitProteusDesignerSpecimen(designerSubmit);
     return;
   }
+  if (target?.closest("[data-websurf-delete-unstarred]")) {
+    deleteUnstarredWebSurfMail();
+    renderStoreOverlay();
+    return;
+  }
   if (target?.closest("[data-websurf-mark-all-read]")) {
     markAllWebSurfMailRead();
     renderStoreOverlay();
     return;
   }
+  const starMailButton = target?.closest("[data-websurf-star-mail]");
+  if (starMailButton) {
+    toggleWebSurfMailStarred(starMailButton.dataset.websurfStarMail);
+    renderStoreOverlay();
+    return;
+  }
+  const trashMailButton = target?.closest("[data-websurf-trash-mail]");
+  if (trashMailButton && !trashMailButton.disabled) {
+    trashWebSurfMail(trashMailButton.dataset.websurfTrashMail);
+    renderStoreOverlay();
+    return;
+  }
   const silenceSenderButton = target?.closest("[data-websurf-silence-sender]");
   if (silenceSenderButton) {
-    toggleWebSurfSenderSilenced(silenceSenderButton.dataset.websurfSilenceSender);
+    toggleWebSurfSenderSilenced(
+      silenceSenderButton.dataset.websurfSilenceSender,
+      silenceSenderButton.dataset.websurfSilenceSenderId
+    );
     renderStoreOverlay();
     return;
   }
@@ -9390,30 +15123,21 @@ function getCustomDecorAssetForItem(item) {
 }
 
 function isDecorFloatingKey(decorKey = "") {
-  return String(decorKey || "").toLowerCase().includes("floating");
+  return ["floating_bob", "floating_sway"].includes(getDecorMotionBehaviorType(decorKey));
 }
 
 function isDecorSeaweedKey(decorKey = "") {
-  const normalizedKey = String(decorKey || "").toLowerCase();
-  return normalizedKey.includes("seaweed") || /sea[_\s-]?anemone/.test(normalizedKey);
+  return ["anchored_sway", "floating_sway", "ceiling_sway"].includes(getDecorMotionBehaviorType(decorKey));
 }
 
 function isDecorLureKey(decorKey = "") {
-  const normalizedKey = String(decorKey || "").toLowerCase();
-  if (normalizedKey.includes("lure")) {
-    return true;
-  }
-
-  const decor = typeof runtime !== "undefined" ? runtime.decorMap?.get?.(decorKey) : null;
-  return /\blure\b/i.test(String(decor?.name || ""));
+  return decorHasCategory(decorKey, "lure") || getDecorBehaviorType(decorKey) === "ceiling_sway";
 }
 
 function getDecorMotionCapabilities(itemOrKey) {
   const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey;
-  const decor = runtime.decorMap.get(decorKey);
-  const frozenDecor = /(^|[_\s-])frozen([_\s.-]|$)/i.test(String(decorKey || ""))
-    || /^frozen\b/i.test(String(decor?.name || ""))
-    || String(decor?.theme || "").trim().toLowerCase() === "frozen";
+  const decor = getDecorCatalogRecord(decorKey) || {};
+  const frozenDecor = decorHasTheme(decorKey, "frozen");
   const customMotionType = isCustomDecorAssetKey(decorKey)
     ? normalizeCustomDecorMotionType(decor?.motionType)
     : "";
@@ -9434,36 +15158,49 @@ function getDecorMotionCapabilities(itemOrKey) {
     };
   }
 
-  const isLure = isDecorLureKey(decorKey);
-  const isFloating = isDecorFloatingKey(decorKey) || isLure;
-  const isSeaweed = !frozenDecor && (isDecorSeaweedKey(decorKey) || isLure);
+  const behavior = getDecorMotionBehaviorType(decorKey);
+  const isLure = decorHasCategory(decorKey, "lure") || behavior === "ceiling_sway";
+  const hasBob = ["floating_bob", "floating_sway"].includes(behavior);
+  const hasSway = !frozenDecor && ["anchored_sway", "floating_sway", "ceiling_sway"].includes(behavior);
+  const defaultSplit = Number.isFinite(Number(decor?.motionSplitY))
+    ? Number(decor.motionSplitY)
+    : behavior === "floating_sway"
+      ? 0.25
+      : behavior === "ceiling_sway"
+        ? 0.7
+        : 0.75;
+  const defaultSide = decor?.motionSwaySide || (["floating_sway", "ceiling_sway"].includes(behavior) ? "below" : "above");
+  const labelByBehavior = {
+    anchored_sway: "Anchored sway",
+    floating_bob: "Floating object",
+    floating_sway: "Floating sway",
+    ceiling_sway: "Suspended lure",
+    cave_layered: "Layered cave",
+    bubbler: "Bubbler",
+    transit: "Transit tube",
+    static: "Static object"
+  };
+  const summaryByBehavior = {
+    anchored_sway: "Anchored in place while the flexible portion sways.",
+    floating_bob: "Bobs gently as one rigid object.",
+    floating_sway: "Bobs as a whole while the hanging portion sways.",
+    ceiling_sway: "Anchored to the water surface while the hanging portion sways.",
+    cave_layered: "Layered hide with no whole-object motion.",
+    bubbler: "Solid bubbler decoration.",
+    transit: "Solid transit equipment.",
+    static: "Solid and still."
+  };
   return {
-    motionType: "",
-    hasBob: isFloating,
-    hasSway: isSeaweed,
+    motionType: behavior,
+    hasBob,
+    hasSway,
     isLure,
-    isFloating,
-    isSeaweed,
-    label: isLure
-      ? "Lure"
-      : isFloating && isSeaweed
-        ? "Floating/Suspended Object"
-        : isFloating
-          ? "Floating Object"
-          : isSeaweed
-            ? "Seaweed"
-            : "Static Object",
-    summary: isLure
-      ? "Bobs and sways like a suspended object."
-      : isFloating && isSeaweed
-        ? "Bobs gently while the selected portion sways."
-        : isFloating
-          ? "Bobs gently."
-          : isSeaweed
-            ? "Sways from the selected line."
-            : "Solid and still.",
-    defaultSwaySplitY: isLure ? 0.7 : isFloating && isSeaweed ? 0.25 : 0.75,
-    defaultSwaySide: isLure || (isFloating && isSeaweed) ? "below" : "above",
+    isFloating: hasBob,
+    isSeaweed: hasSway,
+    label: labelByBehavior[behavior] || "Static object",
+    summary: summaryByBehavior[behavior] || "Solid and still.",
+    defaultSwaySplitY: sanitizeCustomDecorMotionSplit(defaultSplit),
+    defaultSwaySide: normalizeDecorSwaySide(defaultSide),
     defaultMotionIntensity: DEFAULT_CUSTOM_DECOR_MOTION_INTENSITY
   };
 }
@@ -13567,6 +19304,7 @@ function clearPrimaryToolModes() {
   runtime.pointerDown = false;
   runtime.lastScrubPoint = null;
   resetScrubWipeSoundState();
+  resetStageRenderViewAfterToolClose();
 }
 
 function getPlacedDecorById(placedId) {
@@ -14026,7 +19764,7 @@ async function init() {
   await initializeCloudSaveRuntime();
   applyLoadingOverlayBackground(getSavedActiveTankCandidate(earlyRawState));
 
-  const [backgroundResponse, tankResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
+  const [backgroundResponse, tankResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, decorCatalog, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
     fetchAssetList("backgrounds"),
     fetchAssetList("tank"),
     fetchAssetList("fish"),
@@ -14035,14 +19773,13 @@ async function init() {
     fetchAssetList("decor"),
     fetchAssetList("sucker-fish"),
     fetchFishCatalog(),
-    fetchZombieSkeletonFishCatalog(),
     fetchDecorCatalog(),
     fetchBackgroundCatalogMeta(),
     fetchFoodAndMedCatalog()
   ]);
 
   runtime.suckerFishCatalog = suckerFishResponse;
-  const baseFishResponse = fishResponse.filter((item) => !isZombieSkeletonAssetFile(item));
+  const baseFishResponse = fishResponse;
   const normalizedDecorMeta = normalizeDecorMeta(decorCatalog);
   runtime.decorMeta = normalizedDecorMeta;
   runtime.foodAndMedCatalog = normalizeFoodAndMedCatalog(foodAndMedCatalog);
@@ -14050,25 +19787,11 @@ async function init() {
     assetFolders: {
       fish: baseFishResponse,
       "sucker-fish": suckerFishResponse
-    },
-    includeZombieSkeletonStageAssets: false,
-    allowZombieSkeletonFish: false
+    }
   });
-  const normalizedZombieSkeletonFishCatalog = ZOMBIE_SKELETON_BEHAVIOR_ENABLED
-    ? normalizeFishCatalog(zombieSkeletonFishCatalog, {
-      assetFolders: {},
-      includeZombieSkeletonStageAssets: false,
-      allowZombieSkeletonFish: true
-    })
-    : [];
-  const normalizedDavyMutationCatalog = normalizeFishCatalog({ fish: getDavyMutationCatalogDefinitions() }, {
-    assetFolders: {},
-    includeZombieSkeletonStageAssets: false,
-    allowZombieSkeletonFish: false
-  });
+  const normalizedDavyMutationCatalog = normalizeFishCatalog({ fish: getDavyMutationCatalogDefinitions() }, { assetFolders: {} });
   const normalizedFishCatalog = [
     ...normalizedBaseFishCatalog,
-    ...normalizedZombieSkeletonFishCatalog,
     ...normalizedDavyMutationCatalog
   ];
   await discoverFishAppearanceVariants(normalizedFishCatalog, [...baseFishResponse, ...suckerFishResponse]);
@@ -14158,11 +19881,7 @@ async function init() {
     ...Object.values(runtime.foodAndMedCatalog?.items?.medicine || {}).flatMap((entry) => [
       entry.image ? resolveFoodAndMedAssetPath(entry.image) : ""
     ].filter(Boolean)),
-    ...getOwnedFishPreloadPaths(),
-    ...new Set(runtime.fishCatalog.flatMap((fish) => [
-      ...getFishDeathAssetCandidates(fish, "zombie"),
-      ...getFishDeathAssetCandidates(fish, "skeleton")
-    ]))
+    ...getOwnedFishPreloadPaths()
   ]), { maxAttempts: 1 });
 
   const criticalFishImagePaths = [...new Set(getAllTankFish(state)
@@ -14482,6 +20201,9 @@ function syncDebugToolsAuthorization() {
   const enabled = isDebugAccountAuthorized() && getDebugToolsPreference();
   const changed = runtime.debugToolsEnabled !== enabled;
   runtime.debugToolsEnabled = enabled;
+  if (changed) {
+    invalidateTankDepthVisualCaches();
+  }
 
   if (!enabled) {
     runtime.debugSidebarOpen = false;
@@ -14511,7 +20233,11 @@ function setDebugToolsEnabled(enabled) {
     // Debug access still works for this session if local storage is unavailable.
   }
 
+  const debugModeChanged = runtime.debugToolsEnabled !== nextEnabled;
   runtime.debugToolsEnabled = nextEnabled;
+  if (debugModeChanged) {
+    invalidateTankDepthVisualCaches();
+  }
   if (!nextEnabled) {
     runtime.debugSidebarOpen = false;
     if (runtime.debugFishBehaviorPreviewOpen) {
@@ -14600,6 +20326,7 @@ function setupDebugMenuButtons() {
       config.extraClass || ""
     );
   }
+  syncDebugDepthTunerControls();
 }
 
 function toggleDebugSidebar() {
@@ -14671,9 +20398,7 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     ? fish.blockedDecorId
     : "";
 
-  if (hasPendingZombieRevival(fish)) {
-    detailParts.push("reviving soon");
-  } else if (isFishDead(fish)) {
+  if (isFishDead(fish)) {
     detailParts.push(isFishBeingConsumedByPiranhas(fish, now) ? "being consumed" : "dead drift");
   } else if (breedingRole) {
     detailParts.push(`debug breeding ${breedingRole}`);
@@ -14685,8 +20410,6 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     detailParts.push(`gravel ${gravelAction?.stage || "play"}`);
   } else if (panicActive) {
     detailParts.push("panic swim");
-  } else if (hasZombieBiteInfection(fish)) {
-    detailParts.push("zombie bite reaction");
   } else if (hangoutDecorId) {
     detailParts.push(`hangout ${fish.hangoutZoneType || "decor"}`);
   } else if (blockedDecorId) {
@@ -14695,10 +20418,6 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     detailParts.push("glass grazing");
   } else if (effectiveBehavior === "piranha") {
     detailParts.push(getActivePiranhaPrey(now) ? "swarm hunting" : "predator patrol");
-  } else if (effectiveBehavior === "zombie") {
-    detailParts.push("zombie hunt");
-  } else if (effectiveBehavior === "skeleton") {
-    detailParts.push("skeleton patrol");
   } else {
     detailParts.push("free swim");
   }
@@ -14748,6 +20467,59 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   if (behaviorSignals[0]?.debugText) {
     detailParts.unshift(behaviorSignals[0].debugText);
     signatureParts.push(`behavior-signal:${behaviorSignals[0].type}`);
+  }
+
+  const relationships = sanitizeFishRelationships(fish.relationships);
+  const nearestRelationship = state.fish
+    .filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry) && relationships[entry.id])
+    .map((entry) => ({
+      fish: entry,
+      relation: relationships[entry.id],
+      distance: Math.hypot((entry.xNorm || 0.5) - (fish.xNorm || 0.5), (entry.yNorm || 0.5) - (fish.yNorm || 0.5))
+    }))
+    .sort((left, right) => left.distance - right.distance)[0] || null;
+  if (nearestRelationship) {
+    detailParts.push(`rel ${nearestRelationship.fish.name}: ${nearestRelationship.relation.kind} ${Math.round(Number(nearestRelationship.relation.score) || 0)}`);
+    signatureParts.push(`rel:${nearestRelationship.fish.id}:${nearestRelationship.relation.kind}:${Math.round(Number(nearestRelationship.relation.score) || 0)}`);
+  }
+
+  if (species.id === "pufferfish") {
+    const tapState = runtime.pufferRapidTapByFishId?.get?.(fish.id) || null;
+    const taps = Math.max(0, Math.floor(Number(tapState?.count) || 0));
+    const puffState = isPufferInflatedActive(fish, now)
+      ? "inflated"
+      : isPufferDeflatingActive(fish, now)
+        ? "deflating"
+        : "normal";
+    const cooldownSeconds = Math.max(0, Math.ceil(((Number(fish.pufferCooldownUntil) || 0) - now) / 1000));
+    const threat = getPufferThreatLevel(fish, species, now);
+    detailParts.push(`puffer ${puffState} taps ${taps}/${getPufferRapidTapTriggerCount()} threat ${threat.toFixed(2)} cd ${cooldownSeconds}s`);
+    signatureParts.push(`puffer:${puffState}:${taps}:${Math.round(threat * 100)}:${cooldownSeconds}`);
+  }
+  if (species.id === "betta" && fish.bettaRivalTargetId) {
+    const rival = state.fish.find((entry) => entry?.id === fish.bettaRivalTargetId) || null;
+    const phase = (Number(fish.bettaRivalYieldUntil) || 0) > now
+      ? "yield"
+      : (Number(fish.bettaRivalChaseUntil) || 0) > now
+        ? (fish.bettaRivalRole || "chase")
+        : (Number(fish.bettaRivalDisplayUntil) || 0) > now
+          ? "display"
+          : "cooldown";
+    detailParts.push(`betta ${phase}${rival ? ` vs ${rival.name}` : ""}`);
+    signatureParts.push(`betta:${phase}:${fish.bettaRivalTargetId}`);
+  }
+  if (species.id === "yellow-tang" && (Number(fish.yellowTangGrazeUntil) || 0) > now) {
+    detailParts.push(`grazing ${fish.yellowTangGrazeDecorId ? "decor" : "gravel"}`);
+  }
+  if (species.id === "seahorse" && (Number(fish.seahorsePerchUntil) || 0) > now) {
+    detailParts.push(`perch ${fish.seahorsePerchDecorId || "target"}`);
+  }
+  if (species.id === "pencilfish" && (Number(fish.pencilSparUntil) || 0) > now) {
+    detailParts.push(`spar ${fish.pencilSparPartnerId || "partner"}`);
+  }
+  if (fish.territoryTargetFishId && (Number(fish.territoryTargetUntil) || 0) > now) {
+    const territoryTarget = state.fish.find((entry) => entry?.id === fish.territoryTargetFishId) || null;
+    detailParts.push(`territory target ${territoryTarget?.name || fish.territoryTargetFishId}`);
   }
   if (fish.personality) {
     detailParts.push(`trait ${fish.personality}`);
@@ -16170,7 +21942,29 @@ function bindEvents() {
   dom.debugFishBehaviorPreviewBehavior?.addEventListener("change", (event) => {
     setDebugFishBehaviorPreviewBehavior(event.currentTarget.value);
   });
+  dom.debugDecorPreviewButton?.addEventListener("click", () => openDebugDecorPreview());
+  dom.closeDebugDecorPreview?.addEventListener("click", () => closeDebugDecorPreview());
+  dom.debugDecorPreview?.querySelector("[data-debug-decor-preview-close]")?.addEventListener("click", () => closeDebugDecorPreview());
+  dom.debugDecorPreviewSelect?.addEventListener("change", (event) => setDebugDecorPreviewDecor(event.currentTarget.value));
+  dom.debugDecorPreviewLayer?.addEventListener("change", (event) => setDebugDecorPreviewLayer(event.currentTarget.value));
+  dom.debugDecorPreviewSnapButton?.addEventListener("click", () => snapDebugDecorPreviewToLayer());
+  dom.debugDecorPreviewResetButton?.addEventListener("click", () => resetDebugDecorPreview());
+  dom.debugDecorPreviewSize?.addEventListener("input", (event) => setDebugDecorPreviewSize(event.currentTarget.value));
+  dom.debugDecorPreviewFlipX?.addEventListener("change", (event) => setDebugDecorPreviewFlip("x", event.currentTarget.checked));
+  dom.debugDecorPreviewFlipY?.addEventListener("change", (event) => setDebugDecorPreviewFlip("y", event.currentTarget.checked));
+  dom.debugDecorPreviewShowFootprint?.addEventListener("change", () => requestDebugDecorPreviewRender());
+  dom.debugDecorPreviewColors?.addEventListener("input", (event) => handleDebugDecorPreviewColorInput(event));
+  dom.debugDecorPreviewColors?.addEventListener("change", (event) => handleDebugDecorPreviewColorInput(event));
+  dom.debugDecorPreviewCanvas?.addEventListener("pointerdown", (event) => beginDebugDecorPreviewDrag(event));
+  dom.debugDecorPreviewCanvas?.addEventListener("pointermove", (event) => moveDebugDecorPreviewDrag(event));
+  dom.debugDecorPreviewCanvas?.addEventListener("pointerup", (event) => endDebugDecorPreviewDrag(event));
+  dom.debugDecorPreviewCanvas?.addEventListener("pointercancel", (event) => endDebugDecorPreviewDrag(event));
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && runtime.debugDecorPreviewOpen) {
+      event.preventDefault();
+      closeDebugDecorPreview();
+      return;
+    }
     if (event.key === "Escape" && runtime.debugFishBehaviorPreviewOpen) {
       event.preventDefault();
       closeDebugFishBehaviorPreview();
@@ -16180,6 +21974,14 @@ function bindEvents() {
   dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
   dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
   dom.debugFrameProfilerButton?.addEventListener("click", () => toggleDebugFrameProfiler());
+  dom.debugDepthTuner?.addEventListener("input", (event) => {
+    const input = event.target?.closest?.("[data-depth-tuning-key]");
+    if (input) {
+      handleDebugDepthTuningInput(input);
+    }
+  });
+  dom.debugDepthTunerResetButton?.addEventListener("click", () => resetDebugDepthTuner());
+  dom.debugDepthTunerCopyButton?.addEventListener("click", () => copyDebugDepthTunerValues());
   dom.feedButton.addEventListener("click", () => {
     if (!guardTutorialToolbarControl("feedButton")) {
       return;
@@ -16686,6 +22488,16 @@ function bindEvents() {
   });
   dom.decorShadowsToggleInput?.addEventListener("change", (event) => {
     setDecorShadowsEnabled(event.currentTarget?.checked);
+  });
+  dom.depthEffectLevelInput?.addEventListener("input", (event) => {
+    const depthLevel = normalizeDepthEffectLevel(event.currentTarget?.value);
+    if (dom.depthEffectLevelOutput) {
+      dom.depthEffectLevelOutput.textContent = `${depthLevel} · ${DEPTH_EFFECT_LEVEL_LABELS[depthLevel] || "Custom"}`;
+    }
+    setDepthEffectLevel(depthLevel);
+  });
+  dom.depthEffectLevelInput?.addEventListener("change", (event) => {
+    setDepthEffectLevel(event.currentTarget?.value);
   });
   dom.simpleTurnAnimationsToggleInput?.addEventListener("change", (event) => {
     setSimpleTurnAnimationsOnly(event.currentTarget?.checked);
@@ -18834,6 +24646,15 @@ function updatePlayfieldCssVariables() {
   dom.tankStage.style.setProperty("--playfield-bottom", `${top + height}px`);
 }
 
+function resetStageRenderViewAfterToolClose() {
+  runtime.stageRenderViewTarget = null;
+  runtime.stageRenderViewTargetKey = null;
+  runtime.stageRenderViewLastFrameAt = 0;
+  runtime.stageEditViewAmount = 0;
+  updateStageRenderView(performance.now(), { immediate: true });
+  dom.tankStage?.classList.remove("is-decor-edit-framed");
+}
+
 function getStageRenderViewTarget() {
   const layout = getTankStageLayoutSize();
   if (!layout.width || !layout.height) {
@@ -19114,11 +24935,6 @@ async function fetchFishCatalog() {
   }
 }
 
-async function fetchZombieSkeletonFishCatalog() {
-  // The per-species zombie and skeleton assets have been retired.
-  return { fish: [], variants: [] };
-}
-
 async function fetchDecorCatalog() {
   try {
     const response = await fetch(resolveAppUrl(DECOR_CATALOG_PATH), { cache: "no-store" });
@@ -19320,12 +25136,22 @@ function normalizeDecorMeta(payload) {
         ? entry.name.trim()
         : titleFromFile(key),
       description: typeof entry.description === "string" ? entry.description.trim() : "",
-      theme: isHalloweenDecor({ ...entry, key }) ? "Halloween" : normalizeCatalogTheme(entry.theme),
+      theme: normalizeCatalogTheme(entry.theme) || (isHalloweenDecor({ ...entry, key }) ? "halloween" : null),
       cost: Number.isFinite(entry.cost) ? entry.cost : 8,
       width: Number.isFinite(entry.width) ? entry.width : 140,
       defaultScale: Number.isFinite(entry.defaultScale) ? entry.defaultScale : DEFAULT_DECOR_SCALE,
       waterTypes: normalizeStringList(entry.waterTypes || entry.waterType).map((value) => normalizeWaterType(value)).filter(Boolean),
       categories: deriveDecorCategories(entry, key),
+      tags: normalizeStringList(entry.tags).map((value) => value.toLowerCase()),
+      behavior: normalizeDecorBehaviorType(entry.behavior),
+      motionBehavior: normalizeDecorBehaviorType(entry.motionBehavior),
+      motionLayer: ["front", "bg", "all"].includes(String(entry.motionLayer || "").trim().toLowerCase())
+        ? String(entry.motionLayer).trim().toLowerCase()
+        : "all",
+      motionSplitY: Number.isFinite(Number(entry.motionSplitY)) ? clamp(Number(entry.motionSplitY), 0.05, 0.95) : null,
+      motionSwaySide: ["above", "below"].includes(String(entry.motionSwaySide || "").trim().toLowerCase())
+        ? String(entry.motionSwaySide).trim().toLowerCase()
+        : "",
       fishBehavior: normalizeDecorFishBehaviorMeta(entry, key),
       moodDelta: clamp(Number(entry.moodDelta) || 0, -0.2, 0.2),
       caveBehavior: normalizeCaveBehaviorMeta(entry.caveBehavior),
@@ -19399,7 +25225,7 @@ function hasBubblerSpoutMetaFields(entry) {
 }
 
 function isBubblerDecorFileKey(decorKey = "") {
-  return /_bubbler\.[^.]+$/i.test(String(decorKey || "").trim());
+  return /(?:^|__)bubbler(?:__|\.)/i.test(String(decorKey || "").trim());
 }
 
 function normalizeBubblerHorizontalPosition(value) {
@@ -19949,70 +25775,59 @@ function resolveSpeciesMealCoins(species) {
 
 function getDecorCompanionType(decorKey = "") {
   const key = String(decorKey || "").toLowerCase();
+  const stem = key.replace(/\.[^.]+$/, "");
+  const tokens = stem.split("__").slice(2);
+  const has = (token) => tokens.includes(token);
+  const hasTrypophobia = has("trypophobia");
 
-  if (/_color1_trypophobia\.[^.]+$/.test(key)) {
-    return "color1Trypophobia";
+  for (const color of ["color1", "color2", "color3"]) {
+    if (has(color)) return hasTrypophobia ? `${color}Trypophobia` : color;
   }
+  if (hasTrypophobia) return "trypophobia";
+  if (has("shadow-footprint") || has("shadowfootprint") || has("footprint")) return "shadowFootprint";
+  if (has("bg")) return "bg";
+  if (has("mask")) return "mask";
+  if (has("light")) return "light";
+  if (has("mid")) return "mid";
+  if (has("trigger") || has("triggers")) return "trigger";
+  if (has("seat") || has("seats")) return "seats";
+  if (has("front")) return "base";
 
-  if (/_color2_trypophobia\.[^.]+$/.test(key)) {
-    return "color2Trypophobia";
-  }
-
-  if (/_color3_trypophobia\.[^.]+$/.test(key)) {
-    return "color3Trypophobia";
-  }
-
-  if (/_trypophobia\.[^.]+$/.test(key)) {
-    return "trypophobia";
-  }
-
-  if (/_color1\.[^.]+$/.test(key)) {
-    return "color1";
-  }
-
-  if (/_color2\.[^.]+$/.test(key)) {
-    return "color2";
-  }
-
-  if (/_color3\.[^.]+$/.test(key)) {
-    return "color3";
-  }
-
-  if (/_(?:triggers|trigger)\.[^.]+$/.test(key)) {
-    return "trigger";
-  }
-
-  if (/_(?:seats|seat)\.[^.]+$/.test(key)) {
-    return "seats";
-  }
-
-  if (/_bg\.[^.]+$/.test(key)) {
-    return "bg";
-  }
-
-  if (/_mask\.[^.]+$/.test(key)) {
-    return "mask";
-  }
-
-  if (/_light\.[^.]+$/.test(key)) {
-    return "light";
-  }
-
-  if (/_mid\.[^.]+$/.test(key)) {
-    return "mid";
-  }
-
+  // Legacy support for existing saves and old custom content.
+  if (/_color1_trypophobia\.[^.]+$/.test(key)) return "color1Trypophobia";
+  if (/_color2_trypophobia\.[^.]+$/.test(key)) return "color2Trypophobia";
+  if (/_color3_trypophobia\.[^.]+$/.test(key)) return "color3Trypophobia";
+  if (/_trypophobia\.[^.]+$/.test(key)) return "trypophobia";
+  if (/_color1\.[^.]+$/.test(key)) return "color1";
+  if (/_color2\.[^.]+$/.test(key)) return "color2";
+  if (/_color3\.[^.]+$/.test(key)) return "color3";
+  if (/_(?:triggers|trigger)\.[^.]+$/.test(key)) return "trigger";
+  if (/_(?:seats|seat)\.[^.]+$/.test(key)) return "seats";
+  if (/(?:_shadow[-_]?footprint|_footprint)\.[^.]+$/.test(key)) return "shadowFootprint";
+  if (/_bg\.[^.]+$/.test(key)) return "bg";
+  if (/_mask\.[^.]+$/.test(key)) return "mask";
+  if (/_light\.[^.]+$/.test(key)) return "light";
+  if (/_mid\.[^.]+$/.test(key)) return "mid";
   return "base";
 }
 
 function getDecorBaseKey(decorKey = "") {
-  const key = String(decorKey || "").toLowerCase();
-  return key
+  const original = String(decorKey || "");
+  const extensionMatch = original.match(/(\.[^.]+)$/);
+  const extension = extensionMatch?.[1] || "";
+  const stem = extension ? original.slice(0, -extension.length) : original;
+  if (stem.includes("__")) {
+    const removable = new Set(["front", "bg", "mask", "shadow-footprint", "shadowfootprint", "footprint", "light", "mid", "trypophobia", "color1", "color2", "color3", "trigger", "triggers", "seat", "seats"]);
+    const parts = stem.split("__").filter((part, index) => index < 2 || !removable.has(part.toLowerCase()));
+    return `${parts.join("__")}${extension}`.toLowerCase();
+  }
+  return original.toLowerCase()
     .replace(/_color[123]_trypophobia(?=\.[^.]+$)/, "")
     .replace(/_trypophobia(?=\.[^.]+$)/, "")
     .replace(/_color[123](?=\.[^.]+$)/, "")
     .replace(/_(?:triggers|trigger)(?=\.[^.]+$)/, "")
     .replace(/_(?:seats|seat)(?=\.[^.]+$)/, "")
+    .replace(/_(?:shadow[-_]?footprint|footprint)(?=\.[^.]+$)/, "")
     .replace(/_bg(?=\.[^.]+$)/, "")
     .replace(/_mask(?=\.[^.]+$)/, "")
     .replace(/_light(?=\.[^.]+$)/, "")
@@ -20087,10 +25902,15 @@ function getExpectedCaveCompanionPaths(baseItem, meta = {}) {
   if (!baseItem?.key || !meta?.caveSettings) return [];
   const extensionMatch = baseItem.key.match(/(\.[^.]+)$/);
   if (!extensionMatch) return [];
-  const stem = baseItem.key.slice(0, -extensionMatch[1].length);
-  return ["_bg", "_color2", "_color3"].map((suffix) => resolveAppUrl(
-    `assets/decor/${encodeURIComponent(`${stem}${suffix}${extensionMatch[1]}`)}`
-  ));
+  const baseKey = getDecorBaseKey(baseItem.key);
+  const stem = baseKey.slice(0, -extensionMatch[1].length);
+  const rawPath = String(baseItem.path || "").replace(/[?#].*$/, "");
+  const directory = rawPath.includes("/") ? rawPath.slice(0, rawPath.lastIndexOf("/") + 1) : "assets/decor/";
+  return [
+    `${stem}__bg${extensionMatch[1]}`,
+    `${stem}__front__color2${extensionMatch[1]}`,
+    `${stem}__front__color3${extensionMatch[1]}`
+  ].map((file) => resolveAppUrl(`${directory}${encodeURIComponent(file)}`));
 }
 
 function buildDecorCatalog(items, catalogMeta = {}) {
@@ -20105,6 +25925,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         base: null,
         bg: null,
         mask: null,
+        shadowFootprint: null,
         mid: null,
         light: null,
         color1: null,
@@ -20133,10 +25954,11 @@ function buildDecorCatalog(items, catalogMeta = {}) {
       grouped.set(baseKey, {
         base: {
           key,
-          path: resolveAppUrl(`assets/decor/${encodeURIComponent(key)}`)
+          path: getDecorAssetPathForKey(key)
         },
         bg: null,
         mask: null,
+        shadowFootprint: null,
         mid: null,
         light: null,
         color1: null,
@@ -20167,12 +25989,14 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         path: group.base.path,
         bgPath: group.bg?.path || null,
         maskPath: group.mask?.path || null,
+        shadowFootprintPath: group.shadowFootprint?.path || null,
         midPath: group.mid?.path || null,
         lightPath: group.light?.path || null,
         triggerPath: group.trigger?.path || null,
         seatsPath: group.seats?.path || null,
         hasBg: Boolean(group.bg),
         hasMask: Boolean(group.mask),
+        hasShadowFootprint: Boolean(group.shadowFootprint),
         hasMid: Boolean(group.mid),
         hasLight: Boolean(group.light),
         hasTrigger: Boolean(group.trigger),
@@ -20185,8 +26009,14 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         expectedCaveCompanionPaths,
         name: meta.name || titleFromFile(group.base.key),
         description: meta.description || "",
-        theme: isHalloweenDecor({ ...meta, key: group.base.key }) ? "Halloween" : normalizeCatalogTheme(meta.theme),
+        theme: normalizeCatalogTheme(meta.theme) || (isHalloweenDecor({ ...meta, key: group.base.key }) ? "halloween" : null),
         categories: deriveDecorCategories(meta, group.base.key),
+        tags: normalizeStringList(meta.tags).map((value) => value.toLowerCase()),
+        behavior: normalizeDecorBehaviorType(meta.behavior),
+        motionBehavior: normalizeDecorBehaviorType(meta.motionBehavior),
+        motionLayer: meta.motionLayer || "all",
+        motionSplitY: Number.isFinite(Number(meta.motionSplitY)) ? Number(meta.motionSplitY) : null,
+        motionSwaySide: meta.motionSwaySide || "",
         cost: Number.isFinite(meta.cost) ? meta.cost : 8,
         width: Number.isFinite(meta.width) ? meta.width : 140,
         defaultScale: Number.isFinite(meta.defaultScale) ? meta.defaultScale : DEFAULT_DECOR_SCALE,
@@ -20227,7 +26057,7 @@ function isCustomBubblerDecorKey(decorKey = "") {
 function getDecorThumbnailPath(decor) {
   if (decor?.thumbnailPath) return decor.thumbnailPath;
   const path = String(decor?.path || "");
-  const match = path.match(/(?:^|\/)assets\/decor\/([^/?#]+\.png)(?:[?#].*)?$/i);
+  const match = path.match(/(?:^|\/)assets\/decor\/(.+?\.png)(?:[?#].*)?$/i);
   return match
     ? `assets/generated/previews/decor/${match[1]}.webp`
     : path;
@@ -20241,12 +26071,14 @@ function buildVirtualDecorCatalogEntries() {
       thumbnailPath: CUSTOM_BUBBLER_THUMBNAIL_IMAGE,
       bgPath: null,
       maskPath: null,
+      shadowFootprintPath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
+      hasShadowFootprint: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -20271,12 +26103,14 @@ function buildVirtualDecorCatalogEntries() {
       path: CUSTOM_DECOR_SHOP_IMAGE,
       bgPath: null,
       maskPath: null,
+      shadowFootprintPath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
+      hasShadowFootprint: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -20302,12 +26136,14 @@ function buildVirtualDecorCatalogEntries() {
       path: CUSTOM_HIDE_SHOP_IMAGE,
       bgPath: null,
       maskPath: null,
+      shadowFootprintPath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
       seatsPath: null,
       hasBg: false,
       hasMask: false,
+      hasShadowFootprint: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -20525,8 +26361,6 @@ function buildVirtualFishCatalogEntries() {
       mealCoinOverride: null,
       asset: CUSTOM_FISH_SHOP_IMAGE,
       assetVariants: [CUSTOM_FISH_SHOP_IMAGE],
-      zombieAssetVariants: [],
-      skeletonAssetVariants: [],
       fallbackAsset: CUSTOM_FISH_SHOP_IMAGE,
       assetFolder: "web/proteus",
       description: "A bespoke biological design service from PROTEUS BIODYNE, developed for clients seeking an organism tailored to precise visual, behavioral, and environmental requirements.",
@@ -20555,7 +26389,6 @@ function buildVirtualFishCatalogEntries() {
       shadowScale: 0.28,
       defaultScale: DEFAULT_FISH_SCALE,
       unlockRequirement: null,
-      undeadType: null,
       heartCount: null,
       needs: {
         decor: [],
@@ -20592,9 +26425,6 @@ function getCustomFishBehaviorProfiles() {
 }
 
 function getCustomFishBehaviorKey(profile) {
-  if (typeof profile?.undeadType === "string" && profile.undeadType.trim()) {
-    return profile.undeadType.trim().toLowerCase();
-  }
   if (typeof profile?.behavior === "string" && profile.behavior.trim() && profile.behavior.trim().toLowerCase() !== "free") {
     return profile.behavior.trim().toLowerCase();
   }
@@ -20696,24 +26526,35 @@ function formatCustomFishBehaviorOption(profile) {
   return `${formatCustomFishBehaviorLabel(profile)} (${profile.name})`;
 }
 
-function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", dimensions = {}) {
+function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", dimensions = {}, options = {}) {
   const naturalWidth = Math.max(1, Math.round(Number(dimensions.width) || CUSTOM_FISH_DEFAULT_WIDTH));
   const naturalHeight = Math.max(1, Math.round(Number(dimensions.height) || CUSTOM_FISH_DEFAULT_WIDTH));
+  const previous = options.preserveParameters === true && runtime.pendingCustomFishUpload
+    ? runtime.pendingCustomFishUpload
+    : null;
+  const defaultProfile = getDefaultCustomFishBehaviorProfile();
   const pending = {
     dataUrl,
-    flipX: false,
-    rotation: 0,
+    flipX: previous ? Boolean(previous.flipX) : false,
+    rotation: previous ? sanitizeCustomFishRotation(previous.rotation) : 0,
     suggestedName: sanitizeCustomFishName(suggestedName, "Custom Fish"),
-    name: sanitizeCustomFishName(suggestedName, "Custom Fish"),
-    width: clamp(CUSTOM_FISH_DEFAULT_WIDTH, CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH),
+    name: previous
+      ? sanitizeCustomFishName(previous.name || previous.suggestedName, suggestedName)
+      : sanitizeCustomFishName(suggestedName, "Custom Fish"),
+    width: clamp(
+      previous ? Number(previous.width) || CUSTOM_FISH_DEFAULT_WIDTH : CUSTOM_FISH_DEFAULT_WIDTH,
+      CUSTOM_FISH_MIN_WIDTH,
+      CUSTOM_FISH_MAX_WIDTH
+    ),
     naturalWidth,
     naturalHeight,
-    behaviorProfileId: normalizeCustomFishBehaviorProfileId(""),
-    diet: getDefaultCustomFishDiet(getDefaultCustomFishBehaviorProfile()),
-    activityRegulation: "",
-    swimZone: "",
-    socialAffinity: "adaptive",
-    turnAnimation: "simple"
+    behaviorProfileId: normalizeCustomFishBehaviorProfileId(previous?.behaviorProfileId || ""),
+    diet: previous ? normalizeCustomFishDiet(previous.diet) : getDefaultCustomFishDiet(defaultProfile),
+    activityRegulation: previous ? normalizeCustomFishActivityRegulation(previous.activityRegulation) : "",
+    swimZone: previous ? normalizeCustomFishSwimZone(previous.swimZone) : "",
+    socialAffinity: previous ? normalizeCustomFishSocialAffinity(previous.socialAffinity) : "adaptive",
+    liveBirth: previous?.liveBirth === true,
+    turnAnimation: String(previous?.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
   const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
   if (runtime.proteusDesignerOpen === true && beginEngineeredAquaticSpecimenDesign(activeOrderId)) {
@@ -21034,6 +26875,7 @@ function sanitizeCustomFishAssetEntry(entry, key) {
     activityRegulation: normalizeCustomFishActivityRegulation(entry.activityRegulation),
     swimZone: normalizeCustomFishSwimZone(entry.swimZone),
     socialAffinity: normalizeCustomFishSocialAffinity(entry.socialAffinity),
+    liveBirth: entry.liveBirth === true || entry.live_birth === true || entry.Live_birth === true,
     turnAnimation: String(entry.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
@@ -21082,8 +26924,6 @@ function buildCustomFishCatalogEntry(asset) {
     mealCoinOverride: null,
     asset: imagePath,
     assetVariants: [imagePath],
-    zombieAssetVariants: [],
-    skeletonAssetVariants: [],
     fallbackAsset: imagePath,
     assetFolder: "custom",
     description: profile
@@ -21113,7 +26953,6 @@ function buildCustomFishCatalogEntry(asset) {
     shadowScale: clamp(Number(profile?.shadowScale) || 0.28, 0.14, 0.5),
     defaultScale: DEFAULT_FISH_SCALE,
     unlockRequirement: null,
-    undeadType: typeof profile?.undeadType === "string" && profile.undeadType.trim() ? profile.undeadType : null,
     heartCount: null,
     needs: {
       decor: [],
@@ -21131,6 +26970,7 @@ function buildCustomFishCatalogEntry(asset) {
     activityRegulation,
     swimZone: normalizeCustomFishSwimZone(asset.swimZone),
     socialAffinity: normalizeCustomFishSocialAffinity(asset.socialAffinity),
+    liveBirth: asset.liveBirth === true,
     turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
   species.mealCoins = resolveSpeciesMealCoins(species);
@@ -21167,10 +27007,7 @@ function normalizeFishCatalog(payload, options = {}) {
     : Array.isArray(payload?.fish)
       ? payload.fish
       : [];
-  const allowZombieSkeletonFish = options.allowZombieSkeletonFish === true;
-
   return entries
-    .filter((entry) => allowZombieSkeletonFish || !isZombieSkeletonCatalogSpecies(entry))
     .map((entry, index) => normalizeFishDefinition(entry, index, options))
     .filter(Boolean);
 }
@@ -21239,21 +27076,6 @@ function resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, fallbackA
     || (allowDirect ? resolveAppUrl(`${resolveFishCatalogAssetFolderPath(assetFolder)}/${encodeCatalogAssetPath(normalizedAssetFile)}`) : null);
 }
 
-function resolveFishCatalogStageAssets(assetFiles, assetFolder, folderAssets, stage) {
-  const normalizedStage = String(stage || "").trim().toLowerCase();
-  if (!["zombie", "skeleton"].includes(normalizedStage)) {
-    return [];
-  }
-
-  return collectFishCatalogAssetFiles(assetFiles)
-    .map((assetFile) => deriveFishStageAssetFile(assetFile, normalizedStage))
-    .map((assetFile) => resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, null, {
-      allowFallback: false,
-      allowDirect: false
-    }))
-    .filter((value, index, list) => Boolean(value) && list.indexOf(value) === index);
-}
-
 function normalizeFishDefinition(entry, index, options = {}) {
   if (!entry || typeof entry !== "object") {
     return null;
@@ -21309,27 +27131,6 @@ function normalizeFishDefinition(entry, index, options = {}) {
     .map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, fallbackAsset))
     .filter(Boolean)]
     .filter((value, assetIndex, list) => list.indexOf(value) === assetIndex);
-  const includeZombieSkeletonStageAssets = options.includeZombieSkeletonStageAssets === true;
-  const explicitZombieAssetFiles = collectFishCatalogAssetFiles(entry.zombieAsset, entry.zombieImage, entry.zombieFile, entry.zombieAssetVariants, entry.zombieAssets);
-  const explicitSkeletonAssetFiles = collectFishCatalogAssetFiles(entry.skeletonAsset, entry.skeletonImage, entry.skeletonFile, entry.skeletonAssetVariants, entry.skeletonAssets);
-  const zombieAssetVariants = includeZombieSkeletonStageAssets
-    ? (explicitZombieAssetFiles.length
-      ? explicitZombieAssetFiles.map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, null, {
-        allowFallback: false,
-        allowDirect: false
-      }))
-      : resolveFishCatalogStageAssets(assetSourceFiles, assetFolder, folderAssets, "zombie"))
-      .filter((value, assetIndex, list) => Boolean(value) && list.indexOf(value) === assetIndex)
-    : [];
-  const skeletonAssetVariants = includeZombieSkeletonStageAssets
-    ? (explicitSkeletonAssetFiles.length
-      ? explicitSkeletonAssetFiles.map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, null, {
-        allowFallback: false,
-        allowDirect: false
-      }))
-      : resolveFishCatalogStageAssets(assetSourceFiles, assetFolder, folderAssets, "skeleton"))
-      .filter((value, assetIndex, list) => Boolean(value) && list.indexOf(value) === assetIndex)
-    : [];
 
   const speedMinFloor = behavior === "sucker" ? 0.00005 : 0.012;
   const speedMaxCeiling = behavior === "sucker" ? 0.006 : 0.095;
@@ -21339,16 +27140,13 @@ function normalizeFishDefinition(entry, index, options = {}) {
     id,
     seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
     name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : titleFromFile(id),
-    theme: normalizeCatalogTheme(entry.theme),
-    waterType: normalizeWaterType(entry.waterType, inferWaterTypeFromTheme(entry.theme, "freshwater")),
+    genetics: String(entry.genetics || "natural").trim().toLowerCase() === "enhanced" ? "enhanced" : "natural",
     cost: Math.max(1, Math.floor(Number(entry.cost ?? entry.price) || 1)),
     mealCoins: 0,
     mealCoinOverride: Number.isFinite(explicitMealCoinOverride) ? Math.max(0, Math.round(explicitMealCoinOverride)) : null,
     asset: resolvedAsset,
     overlayAsset,
     assetVariants: resolvedAssetVariants,
-    zombieAssetVariants,
-    skeletonAssetVariants,
     fallbackAsset,
     assetFolder,
     description: typeof entry.description === "string" && entry.description.trim()
@@ -21371,6 +27169,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     type: speciesType,
     turnAnimation,
     chumOnly: entry.chumOnly === true,
+    liveBirth: entry.liveBirth === true || entry.live_birth === true || entry.Live_birth === true,
     desperationPredator: entry.desperationPredator === true,
     renderMotionProfile,
     cleanupMinMs: Math.max(60 * 1000, Math.floor(Number(entry.cleanupMinMs) || Number(entry.cleanupMinutesMin) * 60 * 1000 || 12 * 60 * 1000)),
@@ -21386,9 +27185,6 @@ function normalizeFishDefinition(entry, index, options = {}) {
         ? entry.unlockRequirement.trim().toLowerCase()
         : null
     ),
-    undeadType: typeof entry.undeadType === "string" && entry.undeadType.trim()
-      ? entry.undeadType.trim().toLowerCase()
-      : null,
     heartCount: Number.isFinite(explicitHeartCount)
       ? clamp(Math.round(explicitHeartCount), MIN_FISH_HEARTS, MAX_FISH_HEARTS)
       : null,
@@ -21602,8 +27398,18 @@ function getFishBehaviorProfile(speciesOrFish) {
     slowGraceful: Boolean(profile?.slowGraceful),
     nightActive: Boolean(profile?.nightActive),
     detritusDiet: Boolean(profile?.detritusDiet) || species?.diet === "detritus",
-    predatorDiet: Boolean(profile?.predatorDiet) || behavior === "piranha"
+    predatorDiet: Boolean(profile?.predatorDiet) || behavior === "piranha",
+    desperationPredator: Boolean(profile?.desperationPredator)
   };
+}
+
+function isPredatoryFishSpecies(speciesOrFish) {
+  return getFishBehaviorProfile(speciesOrFish).predatorDiet === true;
+}
+
+function isLargePredatoryFishSpecies(speciesOrFish) {
+  const profile = getFishBehaviorProfile(speciesOrFish);
+  return profile.desperationPredator === true || profile.group === "shark-cruiser" || profile.group === "orca-pod";
 }
 
 function getFishLocomotionProfile(speciesOrFish) {
@@ -22261,7 +28067,6 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
     !fish
     || (!hasIllnessUnlocked() && options.bypassUnlock !== true)
     || isFishDead(fish)
-    || isUndeadFish(fish)
     || hasActiveFishDisease(fish)
     || sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_IMMUNE
     || (Number(fish.temporaryImmunityUntil) || 0) > now
@@ -22294,7 +28099,7 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
 }
 
 function maybeSeedDavyJonesViralIllness(fish, now = Date.now()) {
-  if (!fish || isFishDead(fish) || isUndeadFish(fish) || Math.random() >= DAVY_JONES_VIRAL_PURCHASE_CHANCE) {
+  if (!fish || isFishDead(fish) || Math.random() >= DAVY_JONES_VIRAL_PURCHASE_CHANCE) {
     return false;
   }
   const infected = infectFishWithDisease(
@@ -22354,7 +28159,7 @@ function getNewFishDiseaseCarrierChance(now = Date.now()) {
 }
 
 function maybeSeedNewFishDiseaseCarrier(fish, now = Date.now()) {
-  if (!fish || !hasIllnessUnlocked() || isUndeadFish(fish)) {
+  if (!fish || !hasIllnessUnlocked()) {
     return false;
   }
   return Math.random() < getNewFishDiseaseCarrierChance(now)
@@ -22363,7 +28168,7 @@ function maybeSeedNewFishDiseaseCarrier(fish, now = Date.now()) {
 }
 
 function getDailyFishDiseaseChance(fish, now = Date.now()) {
-  if (!fish || !hasIllnessUnlocked() || hasActiveFishDisease(fish) || isFishDead(fish) || isUndeadFish(fish)) {
+  if (!fish || !hasIllnessUnlocked() || hasActiveFishDisease(fish) || isFishDead(fish)) {
     return 0;
   }
 
@@ -22657,7 +28462,7 @@ function pushDiseaseSignalHistoryEvent(fish, signalType, now = Date.now()) {
 
 function shouldFishRefuseFoodForDisease(fish, foodKey = "basic", now = Date.now()) {
   if (foodKey === "halloweenCandy" || hasActiveCandyBoost(fish, now)) return false;
-  if (!fish || isFishDead(fish) || isMealFreeFish(fish) || isUndeadFish(fish)) {
+  if (!fish || isFishDead(fish) || isMealFreeFish(fish)) {
     return false;
   }
   if (!canFoodSatisfyFishMeal(fish, foodKey)) {
@@ -22885,6 +28690,97 @@ function drawFishDiseaseBubbles(fish, species, pose, width, height, now = Date.n
   }
 }
 
+function drawFishPufferBubbleBurst(fish, species, pose, width, height, now = Date.now()) {
+  if (!isPufferfishSpecies(species) || !Array.isArray(fish?.pufferInflationBubbles) || !fish.pufferInflationBubbles.length) {
+    return;
+  }
+
+  const stableScale = getViewportStableAssetScale();
+  const palette = getBubbleOrbPalette(DEFAULT_BUBBLER_BUBBLE_COLOR, {
+    fillOpacity: 0.26,
+    colorize: true
+  });
+  const waterlineStopY = WATER_SURFACE_Y + Math.max(2 * stableScale, 2);
+  const nextBubbles = [];
+  const renderedBubbles = [];
+  for (const bubble of fish.pufferInflationBubbles) {
+    const ageMs = now - Number(bubble.createdAt);
+    if (ageMs < 0) {
+      nextBubbles.push(bubble);
+      continue;
+    }
+
+    const radius = Number(bubble.radius) || 3.2;
+    const availableTravelPx = Math.max(14 * stableScale, Number(bubble.sourceY) - waterlineStopY);
+    const travelDurationMs = clamp(availableTravelPx * 20, 850, 2400);
+    const popProgress = clamp((ageMs - travelDurationMs) / 150, 0, 1);
+    if (ageMs > travelDurationMs + 150) {
+      continue;
+    }
+
+    nextBubbles.push(bubble);
+    const travelProgress = clamp(ageMs / travelDurationMs, 0, 1);
+    const spawnFade = clamp(ageMs / 180, 0, 1);
+    const x = Number(bubble.sourceX)
+      + Number(bubble.driftX) * travelProgress
+      + Math.sin(now / 1700 + Number(bubble.wobblePhase)) * Number(bubble.wobble) * (0.3 + travelProgress * 0.7);
+    const y = Math.max(
+      Number(bubble.sourceY) - availableTravelPx * travelProgress,
+      waterlineStopY + radius * stableScale
+    );
+    const alpha = clamp(spawnFade * (popProgress > 0 ? 1 - popProgress : 1), 0, 1);
+    if (alpha <= 0.008 && popProgress <= 0) {
+      continue;
+    }
+
+    renderedBubbles.push({
+      x,
+      y,
+      radius,
+      alpha,
+      stretch: Number(bubble.stretch) || 1,
+      popProgress,
+      seed: bubble.seed,
+      malform: popProgress > 0
+        ? null
+        : {
+          seed: bubble.seed ^ 0x51f0ea1d,
+          amount: 0.2,
+          phase: now / 3800 + Number(bubble.wobblePhase),
+          rotation: Math.sin(now / 5400 + Number(bubble.seed)) * 0.06,
+          speed: 0.45
+        }
+    });
+  }
+
+  fish.pufferInflationBubbles = nextBubbles.slice(-getPufferInflationBubbleCountMax());
+  renderedBubbles.forEach((bubble) => {
+    if (bubble.popProgress > 0) {
+      drawBubblePopBurstToContext(
+        tankContext,
+        bubble.x,
+        bubble.y,
+        bubble.radius,
+        bubble.alpha,
+        palette,
+        stableScale,
+        bubble.seed,
+        bubble.popProgress,
+        {
+          count: Math.max(5, BUBBLER_POP_MICRO_BUBBLE_COUNT - 1),
+          burstScale: 1,
+          surfaceY: waterlineStopY
+        }
+      );
+      return;
+    }
+
+    drawBubbleOrbToContext(tankContext, bubble.x, bubble.y, bubble.radius, bubble.alpha, bubble.stretch, palette, stableScale, {
+      malform: bubble.malform
+    });
+  });
+}
+
 function processDiseaseDailyRisk(fish, now = Date.now()) {
   const dayKey = getLocalDayKey(now);
   if (!fish || !hasIllnessUnlocked() || fish.lastIllnessRiskDayKey === dayKey) {
@@ -22926,7 +28822,7 @@ function processFishDisease(now = Date.now()) {
   const cleanliness = getDiseaseTankCleanliness(now);
 
   for (const fish of state.fish) {
-    if (!fish || isFishDead(fish) || isUndeadFish(fish)) {
+    if (!fish || isFishDead(fish)) {
       if (hasActiveFishDisease(fish)) {
         changed = resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now) || changed;
       }
@@ -23093,7 +28989,7 @@ function processFishDiseaseExposure(now = Date.now()) {
         !targetFish
         || targetFish.id === sourceFish.id
         || isFishDead(targetFish)
-        || isUndeadFish(targetFish)
+       
         || hasActiveFishDisease(targetFish)
       ) {
         continue;
@@ -23311,7 +29207,7 @@ function applyDiseaseAvoidanceTarget(fish, species, now = Date.now()) {
 }
 
 function maybeApplyDiseaseAvoidanceReaction(fish, species, now = Date.now()) {
-  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish) || isUndeadFish(fish)) {
+  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish)) {
     return false;
   }
   if (!hasVisibleDiseaseAvoidanceSource(now)) {
@@ -23476,7 +29372,7 @@ function getRelationshipKindForFish(fish, otherFish) {
   if (!fish || !otherFish || fish.id === otherFish.id) {
     return "neutral";
   }
-  if (isPiranhaSpecies(otherFish) || isZombieFish(otherFish) || isSkeletonFish(otherFish)) {
+  if (isPiranhaSpecies(otherFish)) {
     return "fear";
   }
   const personality = getFishPersonality(fish);
@@ -23488,6 +29384,27 @@ function getRelationshipKindForFish(fish, otherFish) {
     && ["bull-shark", "great-white-shark", "hammerhead-shark", "orca"].includes(otherSpecies?.id)
   ) {
     return "friend";
+  }
+  if (
+    otherSpecies?.id !== species?.id
+    && getSpeciesConflictTags(species).includes("aggressive_predator")
+    && isPredatoryFishSpecies(otherFish)
+  ) {
+    return "fear";
+  }
+  if (species?.id === "betta" && otherSpecies?.id === "betta") {
+    return "rival";
+  }
+  const dislikedTypes = normalizeStringList(species?.dislikedTypes).map((value) => value.toLowerCase().replace(/[_\s]+/g, "-"));
+  if (dislikedTypes.length) {
+    const otherTypeCandidates = new Set([
+      String(otherSpecies?.id || "").toLowerCase(),
+      String(otherSpecies?.behavior || "").toLowerCase(),
+      String(getFishBehaviorProfile(otherSpecies).group || "").toLowerCase()
+    ].filter(Boolean));
+    if (dislikedTypes.some((value) => otherTypeCandidates.has(value))) {
+      return "dislike";
+    }
   }
   if (personality === "social" || personality === "follower" || getFishBehaviorProfile(species).group === "small-social") {
     if (species?.id === otherSpecies?.id || getFishBehaviorProfile(otherSpecies).group === "small-social") {
@@ -23667,6 +29584,292 @@ function getAvoidanceEscapeTarget(fish, species, threatFish, options = {}) {
   };
 }
 
+
+function getBettaRivalDispositionScore(fish) {
+  const personality = getFishPersonality(fish);
+  const bonuses = {
+    territorial: 0.34,
+    standoffish: 0.2,
+    bold: 0.18,
+    hunter: 0.16,
+    display: 0.12,
+    curious: 0.04,
+    greedy: 0.03,
+    sensitive: -0.12,
+    shy: -0.2,
+    gentle: -0.22,
+    nervous: -0.16
+  };
+  return clamp(0.5 + (Number(bonuses[personality]) || 0), 0.12, 0.92);
+}
+
+function isBettaRivalPair(fish, otherFish) {
+  if (!fish || !otherFish || fish.id === otherFish.id || isFishDead(fish) || isFishDead(otherFish)) {
+    return false;
+  }
+  return getSpeciesForFish(fish)?.id === "betta" && getSpeciesForFish(otherFish)?.id === "betta";
+}
+
+function getBettaRivalCandidate(fish, relationships, nearbyAll, now = Date.now()) {
+  if (!fish || getSpeciesForFish(fish)?.id !== "betta") {
+    return null;
+  }
+  const activeTargetId = typeof fish.bettaRivalTargetId === "string" ? fish.bettaRivalTargetId : "";
+  if (activeTargetId) {
+    const activeTarget = state.fish.find((entry) => entry?.id === activeTargetId && isBettaRivalPair(fish, entry)) || null;
+    if (activeTarget && getTankContainingFish(activeTarget.id)?.id === getTankContainingFish(fish.id)?.id) {
+      return {
+        fish: activeTarget,
+        relation: relationships[activeTarget.id] || { kind: "rival", score: -50, updatedAt: now },
+        distance: Math.hypot((fish.xNorm || 0.5) - (activeTarget.xNorm || 0.5), (fish.yNorm || 0.5) - (activeTarget.yNorm || 0.5))
+      };
+    }
+    fish.bettaRivalTargetId = "";
+  }
+
+  return (nearbyAll || []).find((entry) => (
+    entry?.fish
+    && isBettaRivalPair(fish, entry.fish)
+    && entry.relation?.kind === "rival"
+    && entry.distance <= 0.42
+    && (!entry.fish.bettaRivalTargetId || entry.fish.bettaRivalTargetId === fish.id)
+  )) || null;
+}
+
+function setBettaRivalDisplayPair(fish, rival, now = Date.now()) {
+  if (!isBettaRivalPair(fish, rival)) {
+    return false;
+  }
+  const until = now + randomBetween(3200, 5600);
+  for (const participant of [fish, rival]) {
+    participant.bettaRivalTargetId = participant.id === fish.id ? rival.id : fish.id;
+    participant.bettaRivalDisplayUntil = until;
+    participant.bettaRivalChaseUntil = 0;
+    participant.bettaRivalRole = "display";
+    participant.bettaRivalNipAt = 0;
+    participant.bettaRivalNippedTargetId = "";
+    participant.targetAt = Math.min(Number(participant.targetAt) || now, now + 220);
+  }
+  setFishBehaviorIntent(rival, "betta display", fish.name || "rival Betta", now, {
+    targetId: fish.id,
+    targetName: fish.name || "",
+    durationMs: until - now
+  });
+  return true;
+}
+
+function chooseBettaRivalAggressor(fish, rival) {
+  const fishScore = getBettaRivalDispositionScore(fish) + Math.random() * 0.18;
+  const rivalScore = getBettaRivalDispositionScore(rival) + Math.random() * 0.18;
+  return fishScore >= rivalScore ? fish : rival;
+}
+
+function resolveBettaRivalEncounter(aggressor, loser, now = Date.now(), options = {}) {
+  if (
+    !aggressor
+    || !loser
+    || aggressor.id === loser.id
+    || getSpeciesForFish(aggressor)?.id !== "betta"
+    || getSpeciesForFish(loser)?.id !== "betta"
+  ) {
+    return false;
+  }
+  const nipped = options.nipped === true;
+  const loserDead = isFishDead(loser);
+  const cooldownUntil = now + randomBetween(nipped ? 22000 : 14000, nipped ? 36000 : 26000);
+  aggressor.bettaRivalDisplayUntil = 0;
+  aggressor.bettaRivalChaseUntil = 0;
+  aggressor.bettaRivalRole = "";
+  aggressor.bettaRivalNipAt = 0;
+  aggressor.bettaRivalNippedTargetId = nipped ? loser.id : "";
+  aggressor.bettaRivalCooldownUntil = cooldownUntil;
+  aggressor.bettaRivalTargetId = "";
+  aggressor.targetAt = now;
+
+  loser.bettaRivalDisplayUntil = 0;
+  loser.bettaRivalChaseUntil = 0;
+  loser.bettaRivalRole = "";
+  loser.bettaRivalNipAt = 0;
+  loser.bettaRivalNippedTargetId = "";
+  loser.bettaRivalTargetId = "";
+  loser.targetAt = now;
+
+  if (!loserDead) {
+    loser.bettaRivalYieldUntil = now + randomBetween(nipped ? 11000 : 6500, nipped ? 18000 : 11000);
+    loser.bettaRivalCooldownUntil = cooldownUntil;
+    loser.bettaRivalTargetId = aggressor.id;
+    reinforceFishAvoidanceRelationship(loser, aggressor, now, { severity: nipped ? 0.46 : 0.2 });
+  } else {
+    loser.bettaRivalYieldUntil = 0;
+    loser.bettaRivalCooldownUntil = 0;
+  }
+
+  setFishBehaviorIntent(aggressor, "betta confrontation", loserDead ? "rival defeated" : "rival yielded", now, {
+    targetId: loser.id,
+    targetName: loser.name || "",
+    durationMs: 2200
+  });
+  if (!loserDead) {
+    setFishBehaviorIntent(loser, "betta yield", aggressor.name || "rival Betta", now, {
+      targetId: aggressor.id,
+      targetName: aggressor.name || "",
+      durationMs: Math.max(1800, loser.bettaRivalYieldUntil - now)
+    });
+  }
+  return true;
+}
+
+function startBettaRivalChase(fish, rival, now = Date.now()) {
+  if (!isBettaRivalPair(fish, rival)) {
+    return false;
+  }
+  const aggressor = chooseBettaRivalAggressor(fish, rival);
+  const loser = aggressor.id === fish.id ? rival : fish;
+  const chaseUntil = now + randomBetween(2400, 4300);
+  aggressor.bettaRivalTargetId = loser.id;
+  aggressor.bettaRivalDisplayUntil = 0;
+  aggressor.bettaRivalChaseUntil = chaseUntil;
+  aggressor.bettaRivalRole = "aggressor";
+  aggressor.bettaRivalNipAt = now + randomBetween(650, 1450);
+  aggressor.bettaRivalNippedTargetId = "";
+  aggressor.targetAt = now;
+
+  loser.bettaRivalTargetId = aggressor.id;
+  loser.bettaRivalDisplayUntil = 0;
+  loser.bettaRivalChaseUntil = chaseUntil;
+  loser.bettaRivalRole = "flee";
+  loser.targetAt = now;
+  return true;
+}
+
+function getBettaRivalDisplayTarget(fish, species, rival, now = Date.now()) {
+  const side = (fish.xNorm || 0.5) <= (rival.xNorm || 0.5) ? -1 : 1;
+  const offset = 0.055;
+  const targetLayer = getFishTankLayer(rival);
+  return {
+    xNorm: clamp((rival.xNorm || 0.5) + side * offset, 0.08, 0.92),
+    yNorm: clampFishYNormToLayer((rival.yNorm || 0.5) + Math.sin(now / 520 + (fish.phase || 0) * Math.PI * 2) * 0.012, fish, species, targetLayer, { minYNorm: 0.14, maxYNorm: 0.82 }),
+    targetLayer,
+    targetAt: now + randomBetween(420, 720),
+    intentType: "betta display",
+    intentCause: `rival ${rival.name || "Betta"}`,
+    intentTargetId: rival.id,
+    intentTargetName: rival.name || "Betta",
+    slow: true
+  };
+}
+
+function pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now = Date.now(), options = {}) {
+  if (species?.id !== "betta" || !fish || isFishDead(fish)) {
+    return null;
+  }
+  const candidate = getBettaRivalCandidate(fish, relationships, nearbyAll, now);
+  if (!candidate?.fish) {
+    fish.bettaRivalTargetId = "";
+    fish.bettaRivalDisplayUntil = 0;
+    fish.bettaRivalChaseUntil = 0;
+    fish.bettaRivalRole = "";
+    return null;
+  }
+  const rival = candidate.fish;
+  const distance = candidate.distance;
+
+  if ((Number(fish.bettaRivalYieldUntil) || 0) > now) {
+    const escape = getAvoidanceEscapeTarget(fish, species, rival, {
+      retreatNorm: randomBetween(0.18, 0.27),
+      verticalScale: 0.7,
+      cornerThreatRadius: 0.4
+    });
+    return {
+      xNorm: escape?.xNorm ?? fish.xNorm,
+      yNorm: escape?.yNorm ?? fish.yNorm,
+      targetLayer: escape?.targetLayer ?? getFishTankLayer(fish),
+      targetAt: now + randomBetween(650, 1150),
+      intentType: "betta yield",
+      intentCause: rival.name || "rival Betta",
+      intentTargetId: rival.id,
+      intentTargetName: rival.name || "Betta"
+    };
+  }
+
+  if ((Number(fish.bettaRivalChaseUntil) || 0) > now) {
+    if (fish.bettaRivalRole === "flee") {
+      const escape = getAvoidanceEscapeTarget(fish, species, rival, {
+        retreatNorm: randomBetween(0.16, 0.25),
+        verticalScale: 0.76,
+        cornerThreatRadius: 0.42
+      });
+      return {
+        xNorm: escape?.xNorm ?? fish.xNorm,
+        yNorm: escape?.yNorm ?? fish.yNorm,
+        targetLayer: escape?.targetLayer ?? getFishTankLayer(fish),
+        targetAt: now + randomBetween(460, 760),
+        intentType: "betta confrontation",
+        intentCause: `chased by ${rival.name || "rival"}`,
+        intentTargetId: rival.id,
+        intentTargetName: rival.name || "Betta"
+      };
+    }
+    return {
+      xNorm: clamp((rival.xNorm || 0.5) + randomBetween(-0.018, 0.018), 0.08, 0.92),
+      yNorm: clamp((rival.yNorm || 0.5) + randomBetween(-0.012, 0.012), 0.14, 0.82),
+      targetLayer: getFishTankLayer(rival),
+      targetAt: now + randomBetween(380, 650),
+      intentType: "betta confrontation",
+      intentCause: `chasing ${rival.name || "rival"}`,
+      intentTargetId: rival.id,
+      intentTargetName: rival.name || "Betta"
+    };
+  }
+
+  if ((Number(fish.bettaRivalDisplayUntil) || 0) > now) {
+    return getBettaRivalDisplayTarget(fish, species, rival, now);
+  }
+
+  if ((Number(fish.bettaRivalDisplayUntil) || 0) > 0 && (Number(fish.bettaRivalDisplayUntil) || 0) <= now) {
+    const aggression = Math.max(getBettaRivalDispositionScore(fish), getBettaRivalDispositionScore(rival));
+    const escalateChance = clamp(0.12 + aggression * 0.28, 0.12, 0.38);
+    if (isViolenceEnabled() && Math.random() < escalateChance) {
+      startBettaRivalChase(fish, rival, now);
+      return pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, options);
+    }
+    const aggressor = chooseBettaRivalAggressor(fish, rival);
+    const loser = aggressor.id === fish.id ? rival : fish;
+    resolveBettaRivalEncounter(aggressor, loser, now, { nipped: false });
+    return loser.id === fish.id
+      ? pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, options)
+      : null;
+  }
+
+  if ((Number(fish.bettaRivalCooldownUntil) || 0) > now) {
+    return null;
+  }
+
+  const shouldBegin = options.force === true || distance <= 0.16 || (distance <= 0.34 && Math.random() < 0.32);
+  if (!shouldBegin) {
+    return null;
+  }
+
+  fish.bettaRivalTargetId = rival.id;
+  rival.bettaRivalTargetId = fish.id;
+  if (distance > 0.115) {
+    const side = (fish.xNorm || 0.5) <= (rival.xNorm || 0.5) ? -1 : 1;
+    return {
+      xNorm: clamp((rival.xNorm || 0.5) + side * 0.085, 0.08, 0.92),
+      yNorm: clamp((rival.yNorm || 0.5) + randomBetween(-0.018, 0.018), 0.14, 0.82),
+      targetLayer: getFishTankLayer(rival),
+      targetAt: now + randomBetween(700, 1100),
+      intentType: "betta confrontation",
+      intentCause: `approaching rival ${rival.name || "Betta"}`,
+      intentTargetId: rival.id,
+      intentTargetName: rival.name || "Betta"
+    };
+  }
+
+  setBettaRivalDisplayPair(fish, rival, now);
+  return getBettaRivalDisplayTarget(fish, species, rival, now);
+}
+
 function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options = {}) {
   const relationships = sanitizeFishRelationships(fish?.relationships);
   if (!fish || !species) {
@@ -23682,7 +29885,15 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
     }))
     .sort((left, right) => left.distance - right.distance);
   const nearby = nearbyAll.filter((entry) => entry.relation);
-  const threat = nearby.find((entry) => ["fear", "dislike", "rival"].includes(entry.relation.kind) && entry.distance <= 0.34);
+  const bettaRivalTarget = pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, options);
+  if (bettaRivalTarget) {
+    return bettaRivalTarget;
+  }
+  const threat = nearby.find((entry) => (
+    ["fear", "dislike", "rival"].includes(entry.relation.kind)
+    && entry.distance <= 0.34
+    && !(species?.id === "betta" && getSpeciesForFish(entry.fish)?.id === "betta" && entry.relation.kind === "rival")
+  ));
   if (threat) {
     const escape = getAvoidanceEscapeTarget(fish, species, threat.fish, {
       retreatNorm: randomBetween(0.18, 0.32),
@@ -23892,8 +30103,496 @@ function pickPersonalityDecorBehaviorTarget(fish, species, now = Date.now()) {
   return null;
 }
 
+function reinforceFishAvoidanceRelationship(observer, aggressor, now = Date.now(), options = {}) {
+  if (!observer || !aggressor || observer.id === aggressor.id || isFishDead(observer) || isFishDead(aggressor)) {
+    return false;
+  }
+  const relationships = sanitizeFishRelationships(observer.relationships);
+  const previous = relationships[aggressor.id] || { kind: "neutral", score: 0, updatedAt: now };
+  const severity = clamp(Number(options.severity) || 0.25, 0.05, 1);
+  const scoreDrop = 10 + severity * 34;
+  const nextScore = clamp((Number(previous.score) || 0) - scoreDrop, -100, 100);
+  const observerSpecies = getSpeciesForFish(observer);
+  const aggressorSpecies = getSpeciesForFish(aggressor);
+  const sameBetta = observerSpecies?.id === "betta" && aggressorSpecies?.id === "betta";
+  const nextKind = sameBetta
+    ? "rival"
+    : nextScore <= -55
+      ? "fear"
+      : "dislike";
+  relationships[aggressor.id] = { kind: nextKind, score: nextScore, updatedAt: now };
+  observer.relationships = relationships;
+  observer.relationshipNextCheckAt = Math.max(Number(observer.relationshipNextCheckAt) || 0, now + BEHAVIOR_RELATIONSHIP_CHECK_MS);
+  return true;
+}
+
+function teachNearbyFishFromAggression(victim, aggressor, now = Date.now(), severity = 0.35) {
+  if (!victim || !aggressor) return false;
+  let changed = reinforceFishAvoidanceRelationship(victim, aggressor, now, { severity });
+  const homeTank = getTankContainingFish(victim.id);
+  for (const witness of state.fish || []) {
+    if (!witness || witness.id === victim.id || witness.id === aggressor.id || isFishDead(witness)) continue;
+    if (getTankContainingFish(witness.id)?.id !== homeTank?.id) continue;
+    const distance = Math.hypot((witness.xNorm || 0.5) - (victim.xNorm || 0.5), (witness.yNorm || 0.5) - (victim.yNorm || 0.5));
+    if (distance > 0.24) continue;
+    changed = reinforceFishAvoidanceRelationship(witness, aggressor, now, { severity: severity * 0.45 }) || changed;
+  }
+  return changed;
+}
+
+function getBehaviorDecorCandidates(pattern) {
+  const matcher = pattern instanceof RegExp ? pattern : /$^/;
+  return (state.placedDecor || []).filter((item) => matcher.test(String(item?.decorKey || "").toLowerCase()));
+}
+
+function pickKoiSubstrateForageBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "koi") return null;
+  if (options.force !== true && Math.random() > 0.22) return null;
+
+  const nearbyNaturalDecor = getBehaviorDecorCandidates(/plant|moss|wood|root|rock|stone|driftwood/);
+  const decor = nearbyNaturalDecor.length && Math.random() < 0.42
+    ? nearbyNaturalDecor[Math.floor(Math.random() * nearbyNaturalDecor.length)]
+    : null;
+  if (decor) {
+    return {
+      xNorm: clamp((Number(decor.xNorm) || 0.5) + randomBetween(-0.08, 0.08), 0.1, 0.9),
+      yNorm: clamp(Math.max(Number(decor.yNorm) || 0.76, randomBetween(0.78, 0.88)), 0.68, 0.9),
+      targetLayer: getDecorTankLayer(decor),
+      targetAt: now + randomBetween(1500, 2800),
+      hangoutDecorId: decor.id,
+      zoneType: "hardscape",
+      intentType: "forage substrate",
+      intentCause: "bottom foraging",
+      slow: true
+    };
+  }
+
+  return {
+    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.2, 0.2), 0.1, 0.9),
+    yNorm: clampFishYNormToLayer(randomBetween(0.82, 0.9), fish, species, TANK_DEPTH_LAYERS, { minYNorm: 0.76, maxYNorm: 0.92 }),
+    targetLayer: TANK_DEPTH_LAYERS,
+    targetAt: now + randomBetween(1400, 2600),
+    intentType: "forage substrate",
+    intentCause: "bottom foraging",
+    slow: true
+  };
+}
+
+function pickLionfishShelterBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "lionfish") return null;
+  if (options.force !== true && Math.random() > 0.48) return null;
+
+  const shelter = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["hide", "hardscape", "plant"],
+    chanceMultiplier: 2.4,
+    lingerMultiplier: 1.75,
+    occupancyLimit: 1,
+    preferBackLayer: true,
+    force: options.force === true
+  });
+  if (!shelter) return null;
+  return {
+    ...shelter,
+    targetAt: now + Math.max(2800, Number(shelter.lingerMs) || 0),
+    intentType: "shelter hover",
+    intentCause: "ambush cover",
+    slow: true
+  };
+}
+
+function pickYellowTangGrazeBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "yellow-tang") return null;
+  let decor = null;
+  if ((Number(fish.yellowTangGrazeUntil) || 0) > now && fish.yellowTangGrazeDecorId) {
+    decor = (state.placedDecor || []).find((item) => item.id === fish.yellowTangGrazeDecorId) || null;
+  }
+  if (!decor && options.force !== true && Math.random() > 0.34) return null;
+  if (!decor) {
+    const candidates = getBehaviorDecorCandidates(/seaweed|kelp|algae|moss|anub|plant|driftwood/);
+    decor = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+    fish.yellowTangGrazeUntil = now + randomBetween(5200, 9800);
+    fish.yellowTangGrazeDecorId = decor?.id || "";
+    fish.yellowTangGrazePhase = Math.random() * Math.PI * 2;
+  }
+
+  if ((Number(fish.yellowTangLastCleanAt) || 0) + 15000 <= now && !isTutorialTankDirtinessLocked()) {
+    const dirtiness = getBaseTankDirtiness(now);
+    if (dirtiness > 0.001) {
+      rebaseTankDirtiness(now, Math.max(0, dirtiness - 0.0025));
+      fish.yellowTangLastCleanAt = now;
+      runtime.tankStateDirty = true;
+    }
+  }
+
+  if (decor) {
+    const phase = Number(fish.yellowTangGrazePhase) || 0;
+    fish.yellowTangGrazePhase = phase + randomBetween(0.8, 1.35);
+    const radius = randomBetween(0.035, 0.075);
+    return {
+      xNorm: clamp((Number(decor.xNorm) || 0.5) + Math.cos(fish.yellowTangGrazePhase) * radius, 0.08, 0.92),
+      yNorm: clamp((Number(decor.yNorm) || 0.58) + Math.sin(fish.yellowTangGrazePhase) * radius * 0.65, 0.2, 0.84),
+      targetLayer: getDecorTankLayer(decor),
+      targetAt: now + randomBetween(900, 1700),
+      hangoutDecorId: decor.id,
+      zoneType: "plant",
+      intentType: "graze seaweed",
+      intentCause: "algae browsing",
+      slow: true
+    };
+  }
+
+  fish.yellowTangGrazeUntil = now + randomBetween(3600, 6800);
+  const xNorm = clamp((fish.xNorm || 0.5) + randomBetween(-0.14, 0.14), 0.1, 0.9);
+  return {
+    xNorm,
+    yNorm: clampFishYNormToLayer(randomBetween(0.8, 0.9), fish, species, TANK_DEPTH_LAYERS, { minYNorm: 0.72, maxYNorm: 0.92 }),
+    targetLayer: TANK_DEPTH_LAYERS,
+    targetAt: now + randomBetween(900, 1600),
+    intentType: "graze gravel",
+    intentCause: "algae browsing",
+    slow: true
+  };
+}
+
+function pickMollyGrazeBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "molly" || (options.force !== true && Math.random() > 0.12)) return null;
+  const plants = getBehaviorDecorCandidates(/seaweed|kelp|algae|moss|plant/);
+  const decor = plants.length ? plants[Math.floor(Math.random() * plants.length)] : null;
+  if (decor) {
+    return {
+      xNorm: clamp((Number(decor.xNorm) || 0.5) + randomBetween(-0.055, 0.055), 0.08, 0.92),
+      yNorm: clamp((Number(decor.yNorm) || 0.58) + randomBetween(-0.04, 0.05), 0.18, 0.84),
+      targetLayer: getDecorTankLayer(decor),
+      targetAt: now + randomBetween(1200, 2400),
+      hangoutDecorId: decor.id,
+      zoneType: "plant",
+      intentType: "social graze",
+      intentCause: "opportunistic grazing",
+      slow: true
+    };
+  }
+  return {
+    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.12, 0.12), 0.08, 0.92),
+    yNorm: randomBetween(0.72, 0.86),
+    targetLayer: TANK_DEPTH_LAYERS,
+    targetAt: now + randomBetween(1000, 1900),
+    intentType: "social graze",
+    intentCause: "opportunistic grazing",
+    slow: true
+  };
+}
+
+function pickSunfishSurfaceBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "sunfish") return null;
+  if ((Number(fish.sunfishSurfaceVisitUntil) || 0) <= now) {
+    fish.sunfishSurfaceVisitUntil = 0;
+    if (options.force !== true && Math.random() > 0.2) return null;
+    fish.sunfishSurfaceVisitUntil = now + randomBetween(7000, 13000);
+    fish.sunfishSurfaceVisitXNorm = clamp((fish.xNorm || 0.5) + randomBetween(-0.12, 0.12), 0.16, 0.84);
+  }
+  return {
+    xNorm: Number(fish.sunfishSurfaceVisitXNorm) || fish.xNorm,
+    yNorm: randomBetween(0.16, 0.21),
+    targetLayer: clampTankLayer(Math.min(getFishTankLayer(fish), 2)),
+    targetAt: Math.min(Number(fish.sunfishSurfaceVisitUntil) || now + 5000, now + 5000),
+    intentType: "surface visit",
+    intentCause: "surface excursion",
+    slow: true
+  };
+}
+
+function pickSeahorsePerchBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "seahorse") return null;
+  let decor = null;
+  if ((Number(fish.seahorsePerchUntil) || 0) > now && fish.seahorsePerchDecorId) {
+    decor = (state.placedDecor || []).find((item) => item.id === fish.seahorsePerchDecorId) || null;
+  }
+  if (!decor) {
+    fish.seahorsePerchUntil = 0;
+    fish.seahorsePerchDecorId = "";
+    fish.seahorsePerchXNorm = null;
+    fish.seahorsePerchYNorm = null;
+    if (options.force !== true && Math.random() > 0.24) return null;
+    const candidates = getBehaviorDecorCandidates(/seaweed|kelp|plant|moss|coral|driftwood|root/);
+    if (!candidates.length) return null;
+    decor = candidates[Math.floor(Math.random() * candidates.length)];
+    fish.seahorsePerchDecorId = decor.id;
+    fish.seahorsePerchUntil = now + randomBetween(8500, 16000);
+    const side = (fish.xNorm || 0.5) < (Number(decor.xNorm) || 0.5) ? -1 : 1;
+    fish.seahorsePerchXNorm = clamp((Number(decor.xNorm) || 0.5) + side * randomBetween(0.018, 0.038), 0.08, 0.92);
+    fish.seahorsePerchYNorm = clamp((Number(decor.yNorm) || 0.55) + randomBetween(-0.025, 0.035), 0.2, 0.82);
+  }
+  if (!Number.isFinite(Number(fish.seahorsePerchXNorm)) || !Number.isFinite(Number(fish.seahorsePerchYNorm))) {
+    const side = (fish.xNorm || 0.5) < (Number(decor.xNorm) || 0.5) ? -1 : 1;
+    fish.seahorsePerchXNorm = clamp((Number(decor.xNorm) || 0.5) + side * 0.028, 0.08, 0.92);
+    fish.seahorsePerchYNorm = clamp(Number(decor.yNorm) || 0.55, 0.2, 0.82);
+  }
+  return {
+    xNorm: fish.seahorsePerchXNorm,
+    yNorm: fish.seahorsePerchYNorm,
+    targetLayer: getDecorTankLayer(decor),
+    targetAt: Math.min(Number(fish.seahorsePerchUntil) || now + 6000, now + 6000),
+    hangoutDecorId: decor.id,
+    zoneType: "perch",
+    intentType: "perched",
+    intentCause: "perch anchoring",
+    slow: true
+  };
+}
+
+function pickPencilfishSparBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "pencilfish") return null;
+  let partner = fish.pencilSparPartnerId
+    ? state.fish.find((entry) => entry?.id === fish.pencilSparPartnerId && !isFishDead(entry))
+    : null;
+  if (!partner || (Number(fish.pencilSparUntil) || 0) <= now) {
+    fish.pencilSparPartnerId = "";
+    fish.pencilSparUntil = 0;
+    if (options.force !== true && Math.random() > 0.14) return null;
+    const tankId = getTankContainingFish(fish.id)?.id;
+    const candidates = state.fish.filter((entry) => (
+      entry && entry.id !== fish.id && !isFishDead(entry) && entry.speciesId === "pencilfish"
+      && getTankContainingFish(entry.id)?.id === tankId
+      && (Number(entry.pencilSparUntil) || 0) <= now
+    ));
+    if (!candidates.length) return null;
+    partner = candidates[Math.floor(Math.random() * candidates.length)];
+    const until = now + randomBetween(4200, 7200);
+    fish.pencilSparPartnerId = partner.id;
+    fish.pencilSparUntil = until;
+    partner.pencilSparPartnerId = fish.id;
+    partner.pencilSparUntil = until;
+    setFishBehaviorIntent(partner, "harmless spar", fish.name || "Pencilfish", now, { targetId: fish.id, targetName: fish.name || "", durationMs: until - now });
+  }
+  const side = String(fish.id).localeCompare(String(partner.id)) < 0 ? -1 : 1;
+  const midX = ((fish.xNorm || 0.5) + (partner.xNorm || 0.5)) / 2;
+  const midY = ((fish.yNorm || 0.35) + (partner.yNorm || 0.35)) / 2;
+  return {
+    xNorm: clamp(midX + side * randomBetween(0.028, 0.05), 0.08, 0.92),
+    yNorm: clamp(midY + randomBetween(-0.025, 0.025), 0.16, 0.48),
+    targetLayer: getFishTankLayer(partner),
+    targetAt: Math.min(Number(fish.pencilSparUntil) || now + 900, now + randomBetween(550, 900)),
+    intentType: "harmless spar",
+    intentCause: "display sparring",
+    intentTargetId: partner.id,
+    intentTargetName: partner.name || "Pencilfish",
+    speed: normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.82)))
+  };
+}
+
+function pickAngelfishTerritoryBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "angelfish" || !isFishAdult(fish, now)) return null;
+  const homeId = getFishResidenceDecorId(fish);
+  const home = homeId ? (state.placedDecor || []).find((item) => item.id === homeId) : null;
+  if (!home) return null;
+  const homeX = Number(home.xNorm) || 0.5;
+  const homeY = Number(home.yNorm) || 0.55;
+  const intruder = state.fish
+    .filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry))
+    .map((entry) => ({ fish: entry, distance: Math.hypot((entry.xNorm || 0.5) - homeX, (entry.yNorm || 0.5) - homeY) }))
+    .filter((entry) => entry.distance <= 0.22)
+    .sort((a,b) => a.distance-b.distance)[0]?.fish || null;
+  if (intruder) {
+    reinforceFishAvoidanceRelationship(intruder, fish, now, { severity: 0.16 });
+    fish.territoryTargetFishId = intruder.id;
+    fish.territoryTargetUntil = now + 4200;
+    return {
+      xNorm: clamp((intruder.xNorm || 0.5) + (homeX - (intruder.xNorm || 0.5)) * 0.28, 0.08, 0.92),
+      yNorm: clamp((intruder.yNorm || 0.5) + (homeY - (intruder.yNorm || 0.5)) * 0.28, 0.14, 0.82),
+      targetLayer: getFishTankLayer(intruder),
+      targetAt: now + randomBetween(650, 1200),
+      intentType: "territorial warning",
+      intentCause: "adult home territory",
+      intentTargetId: intruder.id,
+      intentTargetName: intruder.name || "intruder"
+    };
+  }
+  if (options.force !== true && Math.random() > 0.42) return null;
+  return {
+    xNorm: clamp(homeX + randomBetween(-0.06, 0.06), 0.08, 0.92),
+    yNorm: clamp(homeY + randomBetween(-0.045, 0.045), 0.16, 0.82),
+    targetLayer: getDecorTankLayer(home),
+    targetAt: now + randomBetween(2200, 4800),
+    hangoutDecorId: home.id,
+    zoneType: "territory",
+    intentType: "guard home",
+    intentCause: "adult angelfish territory",
+    slow: true
+  };
+}
+
+function getBlueRamGuardedEgg(fish) {
+  if (!fish || fish.speciesId !== "blue-ram") return null;
+  return (state.fishEggs || []).find((egg) => {
+    if (!egg || egg.hatchedAt || egg.speciesId !== "blue-ram") return false;
+    const parentIds = Array.isArray(egg.parentIds) ? egg.parentIds : [];
+    if (parentIds.length) {
+      return parentIds.includes(fish.id);
+    }
+    // Legacy eggs created before parent IDs were saved can still fall back to
+    // display names. All newly created eggs use stable IDs.
+    return Array.isArray(egg.parentNames) && egg.parentNames.includes(fish.name);
+  }) || null;
+}
+
+function pickBlueRamTerritoryBehaviorTarget(fish, species, now = Date.now()) {
+  if (species?.id !== "blue-ram" || !isFishAdult(fish, now)) return null;
+  const egg = getBlueRamGuardedEgg(fish);
+  const frisky = (Number(state.foodBuffs?.friskyUntil) || 0) > now;
+  const centerX = egg ? Number(egg.xNorm) || 0.5 : fish.xNorm || 0.5;
+  const centerY = egg ? Number(egg.yNorm) || 0.72 : fish.yNorm || 0.5;
+  let intruders = state.fish.filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry));
+  if (egg) {
+    intruders = intruders.filter((entry) => Math.hypot((entry.xNorm || 0.5) - centerX, (entry.yNorm || 0.5) - centerY) <= 0.2);
+  } else if (frisky) {
+    intruders = intruders.filter((entry) => entry.speciesId !== "blue-ram" && Math.hypot((entry.xNorm || 0.5) - centerX, (entry.yNorm || 0.5) - centerY) <= 0.36);
+  } else {
+    return null;
+  }
+  const intruder = intruders.sort((a,b) => Math.hypot((a.xNorm||0.5)-centerX,(a.yNorm||0.5)-centerY)-Math.hypot((b.xNorm||0.5)-centerX,(b.yNorm||0.5)-centerY))[0] || null;
+  if (intruder) {
+    reinforceFishAvoidanceRelationship(intruder, fish, now, { severity: egg ? 0.2 : 0.12 });
+    fish.territoryTargetFishId = intruder.id;
+    fish.territoryTargetUntil = now + 3800;
+    return {
+      xNorm: clamp((intruder.xNorm || 0.5) + (centerX - (intruder.xNorm || 0.5)) * 0.18, 0.08, 0.92),
+      yNorm: clamp((intruder.yNorm || 0.5) + (centerY - (intruder.yNorm || 0.5)) * 0.18, 0.14, 0.86),
+      targetLayer: getFishTankLayer(intruder),
+      targetAt: now + randomBetween(600, 1100),
+      intentType: egg ? "guard egg" : "breeding aggression",
+      intentCause: egg ? "egg territory" : "frisky food",
+      intentTargetId: intruder.id,
+      intentTargetName: intruder.name || "intruder"
+    };
+  }
+  if (egg) {
+    return {
+      xNorm: clamp(centerX + randomBetween(-0.055, 0.055), 0.08, 0.92),
+      yNorm: clamp(centerY - randomBetween(0.035, 0.075), 0.18, 0.86),
+      targetLayer: clampTankLayer(Number(egg.tankLayer) || getFishTankLayer(fish)),
+      targetAt: now + randomBetween(1800, 3600),
+      intentType: "guard egg",
+      intentCause: "egg territory",
+      slow: true
+    };
+  }
+  return null;
+}
+
+function pickSurfaceAmbushBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "wonder-killifish" || (options.force !== true && Math.random() > 0.3)) return null;
+  return {
+    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.12, 0.12), 0.1, 0.9),
+    yNorm: randomBetween(0.14, 0.2),
+    targetLayer: clampTankLayer(Math.min(getFishTankLayer(fish), 2)),
+    targetAt: now + randomBetween(2200, 4800),
+    intentType: "surface ambush",
+    intentCause: "surface ambush",
+    slow: true
+  };
+}
+
+function pickPilotCompanionBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "pilot-fish" || (options.force !== true && Math.random() > 0.2)) return null;
+  const companions = state.fish.filter((entry) => entry && !isFishDead(entry) && ["bull-shark", "great-white-shark", "hammerhead-shark", "orca"].includes(entry.speciesId));
+  if (!companions.length) return null;
+  const companion = companions.sort((a,b) => Math.hypot((a.xNorm||0.5)-(fish.xNorm||0.5),(a.yNorm||0.5)-(fish.yNorm||0.5))-Math.hypot((b.xNorm||0.5)-(fish.xNorm||0.5),(b.yNorm||0.5)-(fish.yNorm||0.5)))[0];
+  return {
+    xNorm: clamp((companion.xNorm || 0.5) + randomBetween(-0.08, 0.08), 0.08, 0.92),
+    yNorm: clamp((companion.yNorm || 0.5) + randomBetween(-0.05, 0.05), 0.14, 0.82),
+    targetLayer: getFishTankLayer(companion),
+    targetAt: now + randomBetween(2600, 5200),
+    intentType: "pilot escort",
+    intentCause: "large-animal association",
+    intentTargetId: companion.id,
+    intentTargetName: companion.name || "large companion"
+  };
+}
+
+function getFishSignatureBehaviorFacingDirection(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  if (!fish || !species || isFishDead(fish) || fish.caveState || fish.activity !== "roam") {
+    return null;
+  }
+  if (species.id === "yellow-tang" && (Number(fish.yellowTangGrazeUntil) || 0) > now && fish.yellowTangGrazeDecorId) {
+    const decor = (state.placedDecor || []).find((item) => item?.id === fish.yellowTangGrazeDecorId) || null;
+    if (decor) {
+      const distance = Math.hypot((fish.xNorm || 0.5) - (Number(decor.xNorm) || 0.5), (fish.yNorm || 0.5) - (Number(decor.yNorm) || 0.5));
+      if (distance <= 0.12) {
+        return (Number(decor.xNorm) || 0.5) >= (fish.xNorm || 0.5) ? 1 : -1;
+      }
+    }
+  }
+  if (species.id === "betta" && (Number(fish.bettaRivalDisplayUntil) || 0) > now && fish.bettaRivalTargetId) {
+    const rival = state.fish.find((entry) => entry?.id === fish.bettaRivalTargetId && !isFishDead(entry)) || null;
+    if (rival) {
+      return (rival.xNorm || 0.5) >= (fish.xNorm || 0.5) ? 1 : -1;
+    }
+  }
+  if (species.id === "pencilfish" && (Number(fish.pencilSparUntil) || 0) > now && fish.pencilSparPartnerId) {
+    const partner = state.fish.find((entry) => entry?.id === fish.pencilSparPartnerId && !isFishDead(entry)) || null;
+    if (partner) {
+      return (partner.xNorm || 0.5) >= (fish.xNorm || 0.5) ? 1 : -1;
+    }
+  }
+  return null;
+}
+
+function getFishSignatureBehaviorKey(speciesOrFish) {
+  const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
+  switch (species?.id) {
+    case "yellow-tang": return "algae-browse";
+    case "molly": return "opportunistic-graze";
+    case "sunfish": return "surface-visit";
+    case "seahorse": return "perch";
+    case "pencilfish": return "spar";
+    case "angelfish": return "home-territory";
+    case "blue-ram": return "breeding-territory";
+    case "wonder-killifish": return "surface-ambush";
+    case "pilot-fish": return "large-animal-association";
+    case "betta": return "rival-display";
+    case "koi": return "substrate-forage";
+    case "lionfish": return "shelter-ambush";
+    default: return "";
+  }
+}
+
+function pickSpeciesSignatureBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  switch (getFishSignatureBehaviorKey(species)) {
+    case "algae-browse":
+      return pickYellowTangGrazeBehaviorTarget(fish, species, now, options);
+    case "opportunistic-graze":
+      return pickMollyGrazeBehaviorTarget(fish, species, now, options);
+    case "surface-visit":
+      return pickSunfishSurfaceBehaviorTarget(fish, species, now, options);
+    case "perch":
+      return pickSeahorsePerchBehaviorTarget(fish, species, now, options);
+    case "spar":
+      return pickPencilfishSparBehaviorTarget(fish, species, now, options);
+    case "home-territory":
+      return pickAngelfishTerritoryBehaviorTarget(fish, species, now, options);
+    case "breeding-territory":
+      return pickBlueRamTerritoryBehaviorTarget(fish, species, now);
+    case "surface-ambush":
+      return pickSurfaceAmbushBehaviorTarget(fish, species, now, options);
+    case "large-animal-association":
+      return pickPilotCompanionBehaviorTarget(fish, species, now, options);
+    case "substrate-forage":
+      return pickKoiSubstrateForageBehaviorTarget(fish, species, now, options);
+    case "shelter-ambush":
+      return pickLionfishShelterBehaviorTarget(fish, species, now, options);
+    default:
+      return null;
+  }
+}
+
+function pickMovementPatternBehaviorTarget(fish, species, now = Date.now()) {
+  // Kept as a compatibility entry point. Signature behaviors are selected by
+  // species capability now, while movementPattern is reserved for locomotion.
+  return pickSpeciesSignatureBehaviorTarget(fish, species, now);
+}
+
 function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
-  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish) || isUndeadFish(fish)) {
+  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish)) {
     return false;
   }
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
@@ -23915,6 +30614,10 @@ function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   }
   const threatTarget = pickRelationshipBehaviorTarget(fish, species, now, { onlyThreat: true });
   if (threatTarget && applyBehaviorTarget(fish, species, threatTarget, now)) {
+    return true;
+  }
+  const movementPatternTarget = pickMovementPatternBehaviorTarget(fish, species, now);
+  if (movementPatternTarget && applyBehaviorTarget(fish, species, movementPatternTarget, now)) {
     return true;
   }
   const feedingMemoryTarget = pickFeedingMemoryBehaviorTarget(fish, species, now);
@@ -23960,7 +30663,7 @@ function recordFishFeedingMemory(fish, pellet, now = Date.now()) {
 
 function shouldFishRefuseFoodForComfort(fish, foodKey = "basic", now = Date.now()) {
   if (foodKey === "halloweenCandy" || hasActiveCandyBoost(fish, now)) return false;
-  if (!fish || isMealFreeFish(fish) || isUndeadFish(fish)) {
+  if (!fish || isMealFreeFish(fish)) {
     return false;
   }
 
@@ -24064,8 +30767,8 @@ function getRuntimeImageSourceKey(sourceImage) {
 }
 // </bundle-source>
 
-// <bundle-source path="fish/undead-and-appearance.js">
-// Source fragment: fish/undead-and-appearance.js
+// <bundle-source path="fish/appearance.js">
+// Source fragment: fish/appearance.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
@@ -24130,84 +30833,8 @@ function getSpeciesForFish(fish) {
   return mergedSpecies;
 }
 
-function isCatalogUndeadShopSpecies(species) {
-  return Boolean(isZombieSkeletonModeAvailable() && isZombieSkeletonCatalogSpecies(species));
-}
-
-function getUndeadTemplateStageForSpecies(species) {
-  return isCatalogUndeadShopSpecies(species) ? species.undeadType : null;
-}
-
-function getUndeadTemplateFishSpeciesCandidates(stage) {
-  if (!["zombie", "skeleton"].includes(stage)) {
-    return [];
-  }
-
-  return runtime.fishCatalog.filter((entry) => (
-    entry
-    && !isUndeadSpecies(entry)
-    && getFishDeathAssetCandidates(entry, stage).some((path) => runtime.images.has(path))
-  ));
-}
-
-function pickRandomUndeadTemplateSpeciesId(stage, candidates = getUndeadTemplateFishSpeciesCandidates(stage)) {
-  const pool = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
-  if (!pool.length) {
-    return null;
-  }
-
-  return pool[Math.floor(Math.random() * pool.length)]?.id || null;
-}
-
-function getStoredFishUndeadTemplateSpecies(fish, species = getSpeciesForFish(fish)) {
-  const stage = getUndeadTemplateStageForSpecies(species);
-  if (!stage) {
-    return null;
-  }
-
-  const templateSpeciesId = typeof fish?.undeadTemplateSpeciesId === "string"
-    ? fish.undeadTemplateSpeciesId.trim()
-    : "";
-  const templateSpecies = templateSpeciesId ? runtime.fishMap.get(templateSpeciesId) : null;
-  if (!templateSpecies || isUndeadSpecies(templateSpecies)) {
-    return null;
-  }
-
-  if (!runtime.images.size) {
-    return templateSpecies;
-  }
-
-  return getFishDeathAssetCandidates(templateSpecies, stage).some((path) => runtime.images.has(path))
-    ? templateSpecies
-    : null;
-}
-
-function getStableUndeadTemplateSpecies(
-  fish,
-  species = getSpeciesForFish(fish),
-  candidates = getUndeadTemplateFishSpeciesCandidates(getUndeadTemplateStageForSpecies(species))
-) {
-  const stage = getUndeadTemplateStageForSpecies(species);
-  const pool = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
-  if (!stage || !pool.length) {
-    return null;
-  }
-
-  const seed = hashStringToUint32(`${fish?.id || ""}|${fish?.speciesId || ""}|undead-template|${stage}`);
-  return pool[seed % pool.length] || pool[0] || null;
-}
-
-function getFishUndeadTemplateSpecies(fish, species = getSpeciesForFish(fish)) {
-  const storedSpecies = getStoredFishUndeadTemplateSpecies(fish, species);
-  if (storedSpecies) {
-    return storedSpecies;
-  }
-
-  return getStableUndeadTemplateSpecies(fish, species);
-}
-
 function getFishDisplaySourceSpecies(fish, species = getSpeciesForFish(fish)) {
-  return getFishUndeadTemplateSpecies(fish, species) || species || null;
+  return species || null;
 }
 
 function getFishDisplayScaleForSpecies(species = null) {
@@ -24361,18 +30988,25 @@ function getSuckerFishViewAssetPath(species, fish, view) {
 
 function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date.now()) {
   const widthSpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  if (!widthSpecies) {
-    return (runtime.fishSizeRange?.min || FISH_CATALOG_WIDTH_MIN)
+  const baseWidth = !widthSpecies
+    ? (runtime.fishSizeRange?.min || FISH_CATALOG_WIDTH_MIN)
       * getFishDisplayScaleForSpecies()
       * getFishLayerDepthScaleMultiplier(fish, now)
+      * getMobileViewportObjectScaleMultiplier("fish")
+    : getFishVisualCatalogWidth(widthSpecies)
+      * getFishEffectiveScale(fish, species, now)
+      * getFishDisplayScaleForSpecies(widthSpecies)
+      * getFishLayerDepthScaleMultiplier(fish, now)
       * getMobileViewportObjectScaleMultiplier("fish");
-  }
 
-  return getFishVisualCatalogWidth(widthSpecies)
-    * getFishEffectiveScale(fish, species, now)
-    * getFishDisplayScaleForSpecies(widthSpecies)
-    * getFishLayerDepthScaleMultiplier(fish, now)
-    * getMobileViewportObjectScaleMultiplier("fish");
+  if (species?.id === "pufferfish" && isPufferInflatedActive(fish, now)) {
+    return baseWidth * 2;
+  }
+  if (species?.id === "pufferfish" && isPufferDeflatingActive(fish, now)) {
+    const deflationProgress = getPufferDeflationProgress(fish, now);
+    return baseWidth * (2 - deflationProgress);
+  }
+  return baseWidth;
 }
 
 function getFishAppearanceVariantSeed(fish, species = getSpeciesForFish(fish)) {
@@ -24419,134 +31053,35 @@ function getFishAssetPath(fish, species = getSpeciesForFish(fish)) {
   return variants[normalizeFishAppearanceVariantIndex(fish?.appearanceVariant, species, fish)] || variants[0] || species?.fallbackAsset || species?.asset || null;
 }
 
-function appendAssetSuffix(path, suffix) {
-  if (typeof path !== "string" || !path.trim() || typeof suffix !== "string" || !suffix.trim()) {
+function getPufferInflatedAssetPathForBaseAsset(baseAsset) {
+  if (typeof baseAsset !== "string" || !baseAsset.trim()) {
     return null;
   }
 
-  const trimmed = path.trim();
-  const queryIndex = trimmed.indexOf("?");
-  const basePath = queryIndex === -1 ? trimmed : trimmed.slice(0, queryIndex);
-  const suffixQuery = queryIndex === -1 ? "" : trimmed.slice(queryIndex);
-  if (!/\.[^./\\]+$/.test(basePath)) {
-    return null;
-  }
-
-  return `${basePath.replace(/(\.[^./\\]+)$/, `${suffix}$1`)}${suffixQuery}`;
-}
-
-function deriveFishStageAssetFile(assetFile, stage) {
-  const normalizedStage = String(stage || "").trim().toLowerCase();
-  if (typeof assetFile !== "string" || !assetFile.trim() || !["zombie", "skeleton"].includes(normalizedStage)) {
-    return null;
-  }
-
-  const trimmed = assetFile.trim();
-  const queryIndex = trimmed.indexOf("?");
-  const basePath = queryIndex === -1 ? trimmed : trimmed.slice(0, queryIndex);
-  const suffixQuery = queryIndex === -1 ? "" : trimmed.slice(queryIndex);
-  const match = basePath.match(/^(.*?)(?:_(zombie|skeleton))?(\.[^./\\]+)$/i);
-  if (!match) {
-    return appendAssetSuffix(trimmed, `_${normalizedStage}`);
-  }
-
-  const [, stem, , extension] = match;
-  return `${stem}_${normalizedStage}${extension}${suffixQuery}`;
-}
-
-function getFishDeathAssetCandidates(species, stage) {
-  if (!ZOMBIE_SKELETON_BEHAVIOR_ENABLED || !species || !isZombieSkeletonStage(stage)) {
-    return [];
-  }
-
-  const explicitCandidates = stage === "zombie"
-    ? species.zombieAssetVariants
-    : species.skeletonAssetVariants;
-
-  return Array.isArray(explicitCandidates)
-    ? explicitCandidates.filter((path, index, entries) => Boolean(path) && entries.indexOf(path) === index)
-    : [];
-}
-
-function getBorrowedFishDeathAssetPool(stage, species = null) {
-  const excludedPaths = new Set(getFishDeathAssetCandidates(species, stage));
-  return runtime.fishCatalog
-    .flatMap((entry) => getFishDeathAssetCandidates(entry, stage))
-    .filter((path, index, entries) => Boolean(path) && entries.indexOf(path) === index && !excludedPaths.has(path));
-}
-
-function getStableBorrowedFishDeathAssetPath(fish, stage, pool = []) {
-  const candidates = Array.isArray(pool) ? pool.filter(Boolean) : [];
-  if (!candidates.length) {
-    return null;
-  }
-
-  const seed = hashStringToUint32(`${fish?.id || ""}|${fish?.speciesId || ""}|${stage}`);
-  return candidates[seed % candidates.length] || candidates[0] || null;
-}
-
-function getFishDeathAssetPath(fish, species = getSpeciesForFish(fish), stage) {
-  if (!species || !["zombie", "skeleton"].includes(stage)) {
-    return null;
-  }
-
-  const ownCandidates = getFishDeathAssetCandidates(species, stage);
-  const ownLoadedCandidate = ownCandidates.find((path) => runtime.images.has(path));
-  if (ownLoadedCandidate) {
-    return ownLoadedCandidate;
-  }
-
-  const borrowedPool = getBorrowedFishDeathAssetPool(stage, species);
-  const loadedBorrowedPool = borrowedPool.filter((path) => runtime.images.has(path));
-  const borrowedCandidate = getStableBorrowedFishDeathAssetPath(
-    fish,
-    stage,
-    loadedBorrowedPool.length ? loadedBorrowedPool : borrowedPool
+  return baseAsset.replace(
+    /(pufferfish)(?:_(\d+))?(\.[^./\?]+)(\?.*)?$/i,
+    (_match, stem, variantIndex, extension, query = "") => (
+      variantIndex
+        ? `${stem}_inflated_${variantIndex}${extension}${query}`
+        : `${stem}_inflated${extension}${query}`
+    )
   );
-  if (borrowedCandidate) {
-    return borrowedCandidate;
-  }
-
-  return ownCandidates[0] || null;
 }
 
-function getFishZombieVariantAssetPath(fish, species = getSpeciesForFish(fish)) {
-  return getFishDeathAssetPath(fish, species, "zombie")
-    || getFishAssetPath(fish, species)
-    || species?.fallbackAsset
-    || species?.asset
-    || null;
+function getPufferInflatedDisplayAssetPath(fish, species = getSpeciesForFish(fish)) {
+  if (!fish || species?.id !== "pufferfish") {
+    return null;
+  }
+
+  const baseAsset = getFishAssetPath(fish, species) || species.asset || species.fallbackAsset || null;
+  return getPufferInflatedAssetPathForBaseAsset(baseAsset);
 }
 
 function getFishDecayStage(fish, now = Date.now()) {
   if (!isFishDead(fish)) {
     return null;
   }
-
-  if (!isGoreEnabled() || !isZombieSkeletonModeAvailable()) {
-    return null;
-  }
-
-  if (isFishBeingConsumedByPiranhas(fish, now)) {
-    const elapsed = Math.max(0, now - Number(fish.piranhaConsumptionStartedAt || now));
-    if (elapsed >= PIRANHA_CONSUMPTION_SKELETON_MS) {
-      return "skeleton";
-    }
-    if (elapsed >= PIRANHA_CONSUMPTION_ZOMBIE_MS) {
-      return "zombie";
-    }
-    return "fresh";
-  }
-
-  const deadAt = Number.isFinite(Number(fish?.deadAt)) ? Number(fish.deadAt) : now;
-  const elapsed = Math.max(0, now - deadAt);
-  if (elapsed >= FISH_DECAY_SKELETON_MS) {
-    return "skeleton";
-  }
-  if (elapsed >= FISH_DECAY_ZOMBIE_MS) {
-    return "zombie";
-  }
-  return "fresh";
+  return isGoreEnabled() ? "fresh" : null;
 }
 
 function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = Date.now()) {
@@ -24554,10 +31089,12 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
     return null;
   }
 
-  const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-  const selectedAlternate = Boolean(fish?.appearanceVariantKey && fish.appearanceVariantKey !== getFishAppearanceVariantKey(displaySpecies.asset));
-  const selectedFishAsset = getFishAssetPath(fish, displaySpecies);
-  const livingSucker = !isFishDead(fish) && species?.behavior === "sucker";
+  const selectedAlternate = Boolean(
+    fish?.appearanceVariantKey
+    && fish.appearanceVariantKey !== getFishAppearanceVariantKey(species.asset)
+  );
+  const selectedFishAsset = getFishAssetPath(fish, species);
+  const livingSucker = !isFishDead(fish) && species.behavior === "sucker";
   const suckerTransition = livingSucker ? getSuckerFishViewTransitionState(fish, now) : null;
   const stableSuckerView = livingSucker
     ? (isSuckerFishFreeSwimming(fish, species, now)
@@ -24565,43 +31102,20 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
       : (typeof isFrontGlassSuckerFish === "function" && isFrontGlassSuckerFish(fish, species, now) ? "front" : "back"))
     : null;
   const suckerView = suckerTransition?.currentView || stableSuckerView;
-  const suckerViewAsset = suckerView
-    ? (getSuckerFishViewAssetPath(displaySpecies, fish, suckerView) || getSuckerFishViewAssetPath(species, fish, suckerView))
-    : null;
-  const undeadBaseStage = isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled() ? getUndeadTemplateStageForSpecies(species) : null;
-  const preferredBaseAsset = suckerViewAsset || (isZombieVariantFish(fish)
-    ? getFishZombieVariantAssetPath(fish, displaySpecies)
-    : undeadBaseStage
-      ? (
-        getFishDeathAssetPath(fish, displaySpecies, undeadBaseStage)
-        || getFishAssetPath(fish, displaySpecies)
-        || displaySpecies.asset
-        || displaySpecies.fallbackAsset
-        || species.asset
-        || species.fallbackAsset
-        || null
-      )
-      : (getFishAssetPath(fish, displaySpecies) || displaySpecies.asset || displaySpecies.fallbackAsset || species.asset || species.fallbackAsset || null));
+  const suckerViewAsset = suckerView ? getSuckerFishViewAssetPath(species, fish, suckerView) : null;
+  const preferredBaseAsset = suckerViewAsset
+    || selectedFishAsset
+    || species.asset
+    || species.fallbackAsset
+    || null;
   const baseAsset = selectedAlternate && selectedFishAsset
     ? (suckerViewAsset || selectedFishAsset)
-    : [
-      preferredBaseAsset,
-      displaySpecies.fallbackAsset,
-      displaySpecies.asset,
-      species.fallbackAsset,
-      species.asset
-    ].find((path) => path && runtime.images.has(path)) || preferredBaseAsset;
-  const stage = isGoreEnabled() ? getFishDecayStage(fish, now) : null;
-  if (
-    !stage
-    || stage === "fresh"
-    || (stage === "zombie" && isZombieVariantFish(fish))
-    || (undeadBaseStage && stage === undeadBaseStage)
-  ) {
-    return baseAsset;
+    : [preferredBaseAsset, species.fallbackAsset, species.asset]
+      .find((path) => path && runtime.images.has(path)) || preferredBaseAsset;
+  if (species.id === "pufferfish" && isPufferPuffVisualActive(fish, now)) {
+    return getPufferInflatedDisplayAssetPath(fish, species) || baseAsset;
   }
-
-  return getFishDeathAssetPath(fish, displaySpecies, stage) || baseAsset;
+  return baseAsset;
 }
 
 function getFishCatalogAssetPath(species) {
@@ -24620,38 +31134,16 @@ function getFishCorpseDisplayState(fish, now = Date.now()) {
   if (!isFishDead(fish)) {
     return null;
   }
-
   if (isFishBeingConsumedByPiranhas(fish, now)) {
     return "devoured";
   }
-
-  if (!isGoreEnabled()) {
-    return "deceased";
-  }
-
-  return getFishDecayStage(fish, now) || "fresh";
+  return isGoreEnabled() ? "fresh" : "deceased";
 }
 
 function getFishCorpseStateLabel(fish, now = Date.now()) {
   const stateLabel = getFishCorpseDisplayState(fish, now);
-  if (stateLabel === "devoured") {
-    return "Being devoured";
-  }
-  if (hasPendingZombieRevival(fish)) {
-    return "Turning into a zombie";
-  }
-  if (stateLabel === "deceased") {
-    return "Deceased";
-  }
-  if (stateLabel === "skeleton") {
-    return "Skeleton remains";
-  }
-  if (stateLabel === "zombie") {
-    return "Decaying corpse";
-  }
-  if (stateLabel === "fresh") {
-    return "Fresh corpse";
-  }
+  if (stateLabel === "devoured") return "Being devoured";
+  if (stateLabel === "fresh") return "Fresh corpse";
   return "Deceased";
 }
 
@@ -24708,9 +31200,6 @@ function hasFishBeenInTankLongEnoughToBreed(fish, now = Date.now()) {
 }
 
 function isDetritusFish(target) {
-  if (target?.speciesId && isUndeadFish(target)) {
-    return false;
-  }
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
   return species?.diet === "detritus";
 }
@@ -24722,108 +31211,23 @@ function isBrineShrimpSpecies(target) {
 
 function isMealFreeFish(target) {
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
-  if (
-    isPiranhaSpecies(target)
-    || isZombieFish(target)
-    || (isZombieSkeletonModeAvailable() && (species?.id === "zombie-fish" || target?.speciesId === "zombie-fish"))
-  ) {
-    return false;
-  }
-  if (isZombieVariantFish(target)) {
-    return false;
-  }
   return species?.diet === "detritus" || species?.diet === "none";
-}
-
-function isZombieVariantFish(target) {
-  return Boolean(target?.speciesId && target.zombieVariant && isZombieSkeletonModeAvailable() && isGoreEnabled());
-}
-
-function isZombieFish(target) {
-  const species = target?.speciesId ? getSpeciesForFish(target) : target;
-  return Boolean(isZombieVariantFish(target) || (isZombieModeEnabled() && species?.undeadType === "zombie"));
-}
-
-function isSkeletonFish(target) {
-  const species = target?.speciesId ? getSpeciesForFish(target) : target;
-  return Boolean(isZombieModeEnabled() && species?.undeadType === "skeleton");
-}
-
-function isUndeadSpecies(target) {
-  const species = target?.speciesId ? getSpeciesForFish(target) : target;
-  return Boolean(isZombieSkeletonUndeadType(species?.undeadType));
-}
-
-function isUndeadFish(target) {
-  return isZombieFish(target) || isSkeletonFish(target);
 }
 
 function hasDefinedFiniteNumber(value) {
   return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
 }
 
-function hasZombieBiteInfection(fish) {
-  return Boolean(
-    fish
-    && !isFishDead(fish)
-    && hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-  );
-}
-
-function hasPendingZombieRevival(fish) {
-  return Boolean(
-    fish
-    && isFishDead(fish)
-    && hasDefinedFiniteNumber(fish.zombieReviveAt)
-  );
-}
-
-function usesZombieHunterBehavior(target) {
-  return usesZombieSkeletonHunterBehavior({
-    enabled: isZombieModeEnabled(),
-    target,
-    isZombieFish
-  });
-}
-
 function getEffectiveFishBehavior(target) {
   const fish = target?.speciesId ? target : null;
   const species = fish ? getSpeciesForFish(fish) : target;
-  if (!species) {
-    return null;
-  }
-
-  const zombieSkeletonBehavior = getZombieSkeletonEffectiveBehavior({
-    enabled: isZombieModeEnabled(),
-    fish,
-    species,
-    isZombieVariantFish
-  });
-  if (zombieSkeletonBehavior) {
-    return zombieSkeletonBehavior;
-  }
-  if (fish && isSuckerFishFreeSwimming(fish, species)) {
-    return "steady";
-  }
+  if (!species) return null;
+  if (fish && isSuckerFishFreeSwimming(fish, species)) return "steady";
   return species.behavior || "steady";
 }
 
 function getFishDisplaySpeciesName(fish, species = getSpeciesForFish(fish)) {
-  if (!species) {
-    return "Fish";
-  }
-
-  const displaySpecies = getFishDisplaySourceSpecies(fish, species);
-  if (isZombieVariantFish(fish)) {
-    return `Zombie ${displaySpecies?.name || species.name}`;
-  }
-  if (isCatalogUndeadShopSpecies(species) && displaySpecies && displaySpecies.id !== species.id) {
-    if (!isViolenceAndGoreEnabled()) {
-      return displaySpecies.name;
-    }
-    return `${species.undeadType === "skeleton" ? "Skeleton" : "Zombie"} ${displaySpecies.name}`;
-  }
-  return species.name;
+  return species?.name || "Fish";
 }
 
 function getFishInspectorSpeciesLabel(fish, species = getSpeciesForFish(fish)) {
@@ -24832,9 +31236,6 @@ function getFishInspectorSpeciesLabel(fish, species = getSpeciesForFish(fish)) {
 }
 
 function isPiranhaSpecies(target) {
-  if (target?.speciesId && isUndeadFish(target)) {
-    return false;
-  }
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
   return species?.behavior === "piranha";
 }
@@ -25472,7 +31873,7 @@ function loadState() {
 function sanitizeAccountProfile(rawProfile) {
   const source = rawProfile && typeof rawProfile === "object" ? rawProfile : {};
   const username = typeof source.username === "string"
-    ? source.username.trim().replace(/\s+/g, " ").slice(0, 32)
+    ? source.username.trim().replace(/\s+/g, " ").slice(0, 20)
     : "";
   const userId = typeof source.userId === "string" ? source.userId.trim().slice(0, 80) : "";
   return { username, userId };
@@ -25528,6 +31929,60 @@ function sanitizePurchaseHistory(rawHistory) {
       } : {})
     };
   }).filter(Boolean).sort((left, right) => right.placedAt - left.placedAt).slice(0, 250);
+}
+
+function sanitizeWebSurfMailStates(rawStates) {
+  const source = rawStates && typeof rawStates === "object" && !Array.isArray(rawStates) ? rawStates : {};
+  const entries = Object.entries(source);
+  return Object.fromEntries(entries.map(([rawId, rawEntry]) => {
+    const id = String(rawId || "").trim().slice(0, 180);
+    const entry = rawEntry && typeof rawEntry === "object" ? rawEntry : {};
+    return [id, {
+      status: Number(entry.status) === 0 ? 0 : 1,
+      starred: entry.starred === true || Number(entry.starred) === 1 ? 1 : 0,
+      trashed: entry.trashed === true || Number(entry.trashed) === 1 ? 1 : 0
+    }];
+  }).filter(([id]) => id));
+}
+
+function sanitizeWebSurfSenderStates(rawStates) {
+  const source = rawStates && typeof rawStates === "object" && !Array.isArray(rawStates) ? rawStates : {};
+  const entries = Object.entries(source);
+  return Object.fromEntries(entries.map(([rawId, rawEntry]) => {
+    const id = String(rawId || "").trim().slice(0, 120);
+    const entry = rawEntry && typeof rawEntry === "object" ? rawEntry : {};
+    return [id, {
+      sender: typeof entry.sender === "string" ? entry.sender.trim().slice(0, 120) : "",
+      status: Number(entry.status) === 0 ? 0 : 1
+    }];
+  }).filter(([id]) => id));
+}
+
+function sanitizeWebSurfSentEmails(rawEmails) {
+  if (!Array.isArray(rawEmails)) return [];
+  return rawEmails.map((rawEmail) => {
+    if (!rawEmail || typeof rawEmail !== "object") return null;
+    const id = typeof rawEmail.id === "string" && rawEmail.id.trim()
+      ? rawEmail.id.trim().slice(0, 180)
+      : createId("mail");
+    const sender = typeof rawEmail.sender === "string" && rawEmail.sender.trim()
+      ? rawEmail.sender.trim().slice(0, 120)
+      : "-FIN";
+    const senderId = typeof rawEmail.senderId === "string" ? rawEmail.senderId.trim().slice(0, 120) : "";
+    const templateId = typeof rawEmail.templateId === "string" ? rawEmail.templateId.trim().slice(0, 120) : "";
+    const subject = typeof rawEmail.subject === "string" ? rawEmail.subject.slice(0, 180) : "";
+    const preview = typeof rawEmail.preview === "string" ? rawEmail.preview.slice(0, 320) : "";
+    const destination = typeof rawEmail.destination === "string" ? rawEmail.destination.slice(0, 80) : "";
+    const icon = typeof rawEmail.icon === "string" ? rawEmail.icon.slice(0, 400) : "assets/icons/WebSurf_icon.png";
+    const time = Number.isFinite(Number(rawEmail.time)) ? Math.max(0, Number(rawEmail.time)) : Date.now();
+    const data = rawEmail.data && typeof rawEmail.data === "object" && !Array.isArray(rawEmail.data)
+      ? {
+        orderId: typeof rawEmail.data.orderId === "string" ? rawEmail.data.orderId.slice(0, 100) : "",
+        speciesId: typeof rawEmail.data.speciesId === "string" ? rawEmail.data.speciesId.slice(0, 100) : ""
+      }
+      : {};
+    return { id, sender, senderId, templateId, subject, preview, destination, icon, time, data };
+  }).filter(Boolean).sort((left, right) => Number(right.time) - Number(left.time));
 }
 
 function getAccountUsernameForUser(userId = "") {
@@ -25593,6 +32048,44 @@ function normalizeToolbarTileColor(value) {
   return DEFAULT_UI_SETTINGS.toolbarTileColor;
 }
 
+function normalizeDepthEffectLevel(value, legacyEnabled = undefined) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) {
+    return clamp(Math.round(numeric), DEPTH_EFFECT_LEVEL_MIN, DEPTH_EFFECT_LEVEL_MAX);
+  }
+  // Migrate saves created before the 0-4 depth intensity control existed.
+  if (legacyEnabled === false) {
+    return DEPTH_EFFECT_LEVEL_MIN;
+  }
+  return DEPTH_EFFECT_LEVEL_DEFAULT;
+}
+
+function getSavedDepthEffectLevelPreference() {
+  try {
+    const raw = localStorage.getItem(DEPTH_EFFECT_LEVEL_PREFERENCE_KEY);
+    if (raw === null || raw === "") {
+      return null;
+    }
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric)) {
+      return null;
+    }
+    return normalizeDepthEffectLevel(numeric);
+  } catch {
+    return null;
+  }
+}
+
+function saveDepthEffectLevelPreference(value) {
+  const depthEffectLevel = normalizeDepthEffectLevel(value);
+  try {
+    localStorage.setItem(DEPTH_EFFECT_LEVEL_PREFERENCE_KEY, String(depthEffectLevel));
+  } catch {
+    // The normal save state still carries this setting if localStorage is unavailable.
+  }
+  return depthEffectLevel;
+}
+
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   return {
@@ -25615,7 +32108,8 @@ function sanitizeUiSettings(rawSettings) {
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
-    decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
+    decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled !== false,
+    depthEffectLevel: getSavedDepthEffectLevelPreference() ?? normalizeDepthEffectLevel(source.depthEffectLevel, source.depthEffectsEnabled),
     simpleTurnAnimationsOnly: source.simpleTurnAnimationsOnly === true,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
@@ -25878,7 +32372,6 @@ function getPeacefulModeFishSnapshot(fish) {
     "acquiredAt", "tankAddedAt", "growthStartedAt", "growthEndsAt",
     "diseaseLastProgressAt", "nextDiseaseCheckAt", "nextSymptomCheckAt", "nextDiseaseSpreadCheckAt",
     "diseaseTreatedUntil", "temporaryImmunityUntil", "nextGreenBubbleAt",
-    "zombieBiteStartedAt", "zombieBiteLastBloodAt", "zombieReviveAt",
     "nextWasteAt", "lastNeighborhoodMoveAt", "lastAteAt", "breedCooldownUntil"
   ];
   const timers = {};
@@ -25951,7 +32444,6 @@ function enforcePeacefulModeState(now = Date.now()) {
       fish.needsUpdatedAt = now;
       fish.comfortDamageProgressMs = 0;
       clearPiranhaAttackState(fish);
-      clearZombieAttackState(fish);
     }
   }
   for (const fish of Array.isArray(state.storedFish) ? state.storedFish : []) {
@@ -25965,7 +32457,6 @@ function enforcePeacefulModeState(now = Date.now()) {
     fish.needsUpdatedAt = now;
     fish.comfortDamageProgressMs = 0;
     clearPiranhaAttackState(fish);
-    clearZombieAttackState(fish);
   }
   clearBloodEffectClouds();
   runtime.bloodWaterTint = 0;
@@ -26090,14 +32581,6 @@ function isGoreEnabled() {
   return !isPeacefulModeEnabled() && isViolenceAndGoreEnabled();
 }
 
-function isZombieSkeletonModeAvailable() {
-  return ZOMBIE_SKELETON_BEHAVIOR_ENABLED;
-}
-
-function isZombieModeEnabled() {
-  return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
-}
-
 function getAssetFileName(value = "") {
   return String(value || "")
     .replace(/\?.*$/, "")
@@ -26107,33 +32590,13 @@ function getAssetFileName(value = "") {
     .toLowerCase();
 }
 
-function isZombieSkeletonAssetPath(value = "") {
-  const normalizedPath = String(value || "").replaceAll("\\", "/").replace(/\?.*$/, "").toLowerCase();
-  const fileName = getAssetFileName(normalizedPath);
-  return normalizedPath.includes("/zombie_skeleton_fish/")
-    || /_(zombie|skeleton)\.[^.]+$/i.test(fileName);
-}
-
 function isGoreOnlyAssetPath(value = "") {
-  const fileName = getAssetFileName(value);
-  return FILTERED_GORE_DECOR_KEYS.has(fileName)
-    || fileName === "zombie-virus-antidote-drops.png";
+  return FILTERED_GORE_DECOR_KEYS.has(getAssetFileName(value));
 }
 
 function shouldPreloadAssetForCurrentContentSettings(path) {
-  if (!path) {
-    return false;
-  }
-  if (isZombieSkeletonAssetPath(path)) {
-    return isZombieSkeletonModeAvailable();
-  }
-  if (getAssetFileName(path) === "zombie-virus-antidote-drops.png") {
-    return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
-  }
-  if (isGoreOnlyAssetPath(path)) {
-    return isViolenceAndGoreEnabled();
-  }
-  return true;
+  if (!path) return false;
+  return !isGoreOnlyAssetPath(path) || isViolenceAndGoreEnabled();
 }
 
 function filterPreloadPathsForCurrentContentSettings(paths) {
@@ -26141,24 +32604,11 @@ function filterPreloadPathsForCurrentContentSettings(paths) {
 }
 
 function isContentGatedAssetPath(path) {
-  return isZombieSkeletonAssetPath(path) || isGoreOnlyAssetPath(path);
+  return isGoreOnlyAssetPath(path);
 }
 
 function getContentGatedPreloadPaths() {
-  const paths = [
-    ...getPlacedDecorPreloadPaths(),
-    ...(isZombieSkeletonModeAvailable()
-      ? runtime.fishCatalog.flatMap((fish) => [
-        ...getFishDeathAssetCandidates(fish, "zombie"),
-        ...getFishDeathAssetCandidates(fish, "skeleton")
-      ])
-      : []),
-    getMedicineCatalogEntries().antidote?.image
-      ? resolveFoodAndMedAssetPath(getMedicineCatalogEntries().antidote.image)
-      : ""
-  ];
-
-  return filterPreloadPathsForCurrentContentSettings(paths.filter(isContentGatedAssetPath));
+  return filterPreloadPathsForCurrentContentSettings(getPlacedDecorPreloadPaths().filter(isContentGatedAssetPath));
 }
 
 async function preloadContentGatedAssetsForCurrentSettings() {
@@ -26178,19 +32628,6 @@ function shouldPersistReconciledState(rawState) {
   return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION || !welcomeMailCurrent;
 }
 
-
-function getSpeciesWaterType(speciesOrFish) {
-  const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
-  if (!species) {
-    return "freshwater";
-  }
-
-  if (species.waterType) {
-    return normalizeWaterType(species.waterType);
-  }
-
-  return inferWaterTypeFromTheme(species.theme, "freshwater");
-}
 
 function canDecorLiveInCurrentTank(decorOrKey, tank = getCurrentTank()) {
   return true;
@@ -26613,6 +33050,9 @@ function reconcileState(rawState) {
     lifetimeDeaths: 0,
     accountProfile: sanitizeAccountProfile(null),
     purchaseHistory: [],
+    webSurfMailStates: {},
+    webSurfSenderStates: {},
+    webSurfSentEmails: [],
     engineeredSpecimenDesignCredits: 0,
     engineeredSpecimenDesignOrderIds: [],
     engineeredSpecimenCompletedOrderIds: [],
@@ -26708,6 +33148,9 @@ function reconcileState(rawState) {
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     accountProfile: sanitizeAccountProfile(incoming.accountProfile),
     purchaseHistory: sanitizePurchaseHistory(incoming.purchaseHistory),
+    webSurfMailStates: sanitizeWebSurfMailStates(incoming.webSurfMailStates),
+    webSurfSenderStates: sanitizeWebSurfSenderStates(incoming.webSurfSenderStates),
+    webSurfSentEmails: sanitizeWebSurfSentEmails(incoming.webSurfSentEmails),
     engineeredSpecimenDesignCredits: Math.max(0, Math.floor(Number(incoming.engineeredSpecimenDesignCredits) || 0)),
     engineeredSpecimenDesignOrderIds: Array.isArray(incoming.engineeredSpecimenDesignOrderIds)
       ? incoming.engineeredSpecimenDesignOrderIds.filter((id) => typeof id === "string").slice(0, 20)
@@ -27593,12 +34036,6 @@ function sanitizeFish(fish, options = {}) {
     ? normalizeSuckerFishGlassLayer(Number.isFinite(Number(fish.desiredTankLayer)) ? Number(fish.desiredTankLayer) : baseTankLayer)
     : clampTankLayer(Number.isFinite(Number(fish.desiredTankLayer)) ? Number(fish.desiredTankLayer) : (fish.desiredDrawLayer === "back" ? Math.max(baseTankLayer, 4) : baseTankLayer));
   const dead = Number.isFinite(fish.deadAt) || rawHealthUnits === 0;
-  const storedUndeadTemplateSpeciesId = typeof fish.undeadTemplateSpeciesId === "string"
-    ? fish.undeadTemplateSpeciesId.trim()
-    : "";
-  const storedUndeadTemplateSpecies = storedUndeadTemplateSpeciesId
-    ? runtime.fishMap.get(storedUndeadTemplateSpeciesId)
-    : null;
   const pickedPersonality = pickFishPersonality(species);
   const storedPersonality = normalizeBehaviorPersonality(fish.personality);
   const storedCoarseActivity = fish.coarseActivity && typeof fish.coarseActivity === "object"
@@ -27626,27 +34063,11 @@ function sanitizeFish(fish, options = {}) {
   return {
     id: String(fish.id || createId("fish")),
     speciesId: fish.speciesId,
-    undeadTemplateSpeciesId: isCatalogUndeadShopSpecies(species)
-      && storedUndeadTemplateSpecies
-      && !isUndeadSpecies(storedUndeadTemplateSpecies)
-      ? storedUndeadTemplateSpecies.id
-      : null,
     name: typeof fish.name === "string" && fish.name.trim() ? fish.name : buildFishName(fish.speciesId, []),
     acquiredAt: Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now,
     tankAddedAt: Number.isFinite(fish.tankAddedAt) ? fish.tankAddedAt : (Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now),
     deadAt: Number.isFinite(fish.deadAt) ? fish.deadAt : null,
-    zombieVariant: Boolean(fish.zombieVariant),
-    // Predator combat is intentionally not resumed across reloads.
-    zombieBiteStartedAt: null,
-    zombieBiteLastBloodAt: null,
-    zombieBiteAttackerId: null,
-    zombieReviveAt: dead && hasDefinedFiniteNumber(fish.zombieReviveAt)
-      ? Number(fish.zombieReviveAt)
-      : null,
-    zombieReviveSourceId: dead && typeof fish.zombieReviveSourceId === "string" && fish.zombieReviveSourceId.trim()
-      ? fish.zombieReviveSourceId.trim()
-      : null,
-    decayStage: dead && ["fresh", "zombie", "skeleton"].includes(fish.decayStage) ? fish.decayStage : null,
+    decayStage: dead && fish.decayStage === "fresh" ? "fresh" : null,
     piranhaConsumptionStartedAt: dead && hasDefinedFiniteNumber(fish.piranhaConsumptionStartedAt)
       ? Number(fish.piranhaConsumptionStartedAt)
       : null,
@@ -27677,6 +34098,7 @@ function sanitizeFish(fish, options = {}) {
     favoriteSpot: sanitizeFavoriteSpot(fish.favoriteSpot),
     residenceDecorId: typeof fish.residenceDecorId === "string" && fish.residenceDecorId ? fish.residenceDecorId : null,
     parentNames: Array.isArray(fish.parentNames) ? fish.parentNames.map((name) => String(name).slice(0, 40)).slice(0, 2) : [],
+    parentIds: Array.isArray(fish.parentIds) ? fish.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2) : [],
     celebratedAgeMilestones: Array.isArray(fish.celebratedAgeMilestones)
       ? fish.celebratedAgeMilestones.map((value) => Math.max(0, Math.floor(Number(value) || 0))).filter(Boolean).slice(0, 8)
       : [],
@@ -27720,6 +34142,14 @@ function sanitizeFish(fish, options = {}) {
     nextDiseaseSpreadCheckAt: Number.isFinite(Number(fish.nextDiseaseSpreadCheckAt)) ? Math.max(0, Number(fish.nextDiseaseSpreadCheckAt)) : 0,
     nextSymptomCheckAt: Number.isFinite(Number(fish.nextSymptomCheckAt)) ? Math.max(0, Number(fish.nextSymptomCheckAt)) : 0,
     nextGreenBubbleAt: Number.isFinite(Number(fish.nextGreenBubbleAt)) ? Math.max(0, Number(fish.nextGreenBubbleAt)) : 0,
+    pufferInflatedAt: Number.isFinite(Number(fish.pufferInflatedAt)) ? Math.max(0, Number(fish.pufferInflatedAt)) : 0,
+    pufferInflatedUntil: Number.isFinite(Number(fish.pufferInflatedUntil)) ? Math.max(0, Number(fish.pufferInflatedUntil)) : 0,
+    pufferWobbleUntil: Number.isFinite(Number(fish.pufferWobbleUntil)) ? Math.max(0, Number(fish.pufferWobbleUntil)) : 0,
+    pufferRiseUntil: Number.isFinite(Number(fish.pufferRiseUntil)) ? Math.max(0, Number(fish.pufferRiseUntil)) : 0,
+    pufferCooldownUntil: Number.isFinite(Number(fish.pufferCooldownUntil)) ? Math.max(0, Number(fish.pufferCooldownUntil)) : 0,
+    pufferGlassStressUntil: Number.isFinite(Number(fish.pufferGlassStressUntil)) ? Math.max(0, Number(fish.pufferGlassStressUntil)) : 0,
+    pufferInflatedSwimSpeed: Number.isFinite(Number(fish.pufferInflatedSwimSpeed)) ? normalizeFishSpeed(species, Number(fish.pufferInflatedSwimSpeed)) : 0,
+    pufferDriftPhase: Number.isFinite(Number(fish.pufferDriftPhase)) ? Number(fish.pufferDriftPhase) : Math.random() * Math.PI * 2,
     lastIllnessRiskDayKey: typeof fish.lastIllnessRiskDayKey === "string" ? fish.lastIllnessRiskDayKey : "",
     lastIllnessSignalAtByType: sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType),
     glassTapStressEndsAt: Array.isArray(fish.glassTapStressEndsAt)
@@ -27762,7 +34192,6 @@ function sanitizeFish(fish, options = {}) {
     activity: fish.activity === "feeding"
       && species?.diet !== "detritus"
       && species?.diet !== "none"
-      && !fish.zombieVariant
       ? "feeding"
       : "roam",
     feedingPelletId: typeof fish.feedingPelletId === "string" ? fish.feedingPelletId : null,
@@ -27950,12 +34379,16 @@ function sanitizeFishEgg(egg) {
   const parentNames = Array.isArray(egg.parentNames)
     ? egg.parentNames.map((name) => sanitizeTankName(name, "")).filter(Boolean).slice(0, 2)
     : [];
+  const parentIds = Array.isArray(egg.parentIds)
+    ? egg.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
+    : [];
   const fishColor = snapFishInheritanceColorToAvailable(egg.fishColor ?? egg.colorSetting ?? "");
 
   return {
     id: String(egg.id || createId("egg")),
     speciesId,
     parentNames,
+    parentIds,
     createdAt,
     hatchAt,
     hatchedAt,
@@ -27965,8 +34398,9 @@ function sanitizeFishEgg(egg) {
     fishColorize: fishColor ? normalizeDecorColorizeSetting(egg.fishColorize ?? false) : false,
     xNorm,
     startYNorm,
-    yNorm: targetYNorm,
-    tankLayer
+    yNorm: egg?.buoyancy === "floating" ? clamp(Number(egg.yNorm) || targetYNorm, 0.16, 0.46) : targetYNorm,
+    tankLayer,
+    buoyancy: egg?.buoyancy === "floating" ? "floating" : "sinking"
   };
 }
 
@@ -28029,21 +34463,23 @@ function sanitizeDecorScaleDefaults(defaults) {
 
 function migrateLegacyHalloweenDecorScaleDefaults(defaults, incomingVersion) {
   if (incomingVersion >= 46) return defaults;
+  // Keys have already been normalized by sanitizeDecorScaleDefaults, so legacy
+  // stock scale cleanup must target the current canonical decor keys.
   const legacyScales = {
     ...(incomingVersion < 44 ? {
-      "Halloween_Seaweed.png": [1, 1.3],
-      "Halloween_Floatingseaweed.png": [1, 1.34],
-      "Halloween_Ghost_Ship.png": [1]
+      "halloween-seaweed__plant__theme-halloween.png": [1, 1.3],
+      "halloween-floating-seaweed__plant__theme-halloween.png": [1, 1.34],
+      "halloween-ghost-ship__ornament__theme-halloween.png": [1]
     } : {}),
     ...(incomingVersion < 45 ? {
-      "Halloween_Haunted_Tree.png": [1, 1.2],
-      "Halloween_Cauldron_Bubbler.png": [1, 0.72],
-      "Halloween_JackOLantern_bubbler.png": [1, 0.68]
+      "halloween-haunted-tree__ornament__theme-halloween.png": [1, 1.2],
+      "halloween-cauldron__bubbler__theme-halloween__front.png": [1, 0.72],
+      "halloween-jack-o-lantern__bubbler__theme-halloween__front.png": [1, 0.68]
     } : {}),
-    "Halloween_Seaweed.png": [...(incomingVersion < 44 ? [1, 1.3] : []), 1.55],
-    "Halloween_Floatingseaweed.png": [...(incomingVersion < 44 ? [1, 1.34] : []), 1.15],
-    "Halloween_Cauldron_Bubbler.png": [...(incomingVersion < 45 ? [1, 0.72] : []), 0.7],
-    "Halloween_JackOLantern_bubbler.png": [...(incomingVersion < 45 ? [1, 0.68] : []), 0.7]
+    "halloween-seaweed__plant__theme-halloween.png": [...(incomingVersion < 44 ? [1, 1.3] : []), 1.55],
+    "halloween-floating-seaweed__plant__theme-halloween.png": [...(incomingVersion < 44 ? [1, 1.34] : []), 1.15],
+    "halloween-cauldron__bubbler__theme-halloween__front.png": [...(incomingVersion < 45 ? [1, 0.72] : []), 0.7],
+    "halloween-jack-o-lantern__bubbler__theme-halloween__front.png": [...(incomingVersion < 45 ? [1, 0.68] : []), 0.7]
   };
   const nextDefaults = { ...defaults };
   for (const [key, scales] of Object.entries(legacyScales)) {
@@ -28321,7 +34757,7 @@ function sanitizePlacedDecor(item) {
   if (worldAnchors) {
     Object.assign(sanitized, worldAnchors);
   }
-  if (decorKey === "transit-tube.png") {
+  if (isTransitTubeDecorKey(decorKey)) {
     sanitized.transitTubeName = sanitizeTankName(item.transitTubeName, "Transit Tube");
     sanitized.transitTubeColor = normalizeDecorColorSetting(item.transitTubeColor || "");
     const linkedId = String(item.transitTubeLinkedId || "").trim();
@@ -29621,21 +36057,14 @@ function resolveDecorVerticalUnit(item, unit) {
 }
 
 function isCaveDecorKey(decorKey = "") {
-  const key = String(decorKey || "").toLowerCase();
-  if (/_bubbler\.[^.]+$/.test(key)) {
-    return false;
-  }
-  const decor = runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[decorKey] || null;
-  const categories = Array.isArray(decor?.categories) ? decor.categories.map((entry) => String(entry).toLowerCase()) : [];
+  const decor = getDecorCatalogRecord(decorKey) || null;
   if (isCustomHideAssetKey(decorKey) || decor?.customType === "hide") {
     return true;
   }
-  // Several real hides are named houses, ships, arches, or castles. Limiting
-  // this to filenames containing "cave" silently excluded them from cave
-  // navigation even though their catalog declares the Caves category.
-  return (key.includes("cave") || categories.includes("caves"))
-    && !key.includes("_bg")
-    && !key.includes("_mid");
+  if (isBubblerDecorKey(decorKey) || decorHasCategory(decorKey, "bubbler")) {
+    return false;
+  }
+  return decorHasCategory(decorKey, "cave") || getDecorBehaviorType(decorKey) === "cave_layered";
 }
 
 function getDecorBubblerMeta(decorKey = "") {
@@ -29747,12 +36176,7 @@ function getPlacedDecorBubblerMeta(item, decor) {
 }
 
 function getDecorFrontLayer(decorKey, layer) {
-  const clamped = clampTankLayer(layer);
-  if (!isCaveDecorKey(decorKey)) {
-    return clamped;
-  }
-
-  return clamp(clamped, 1, TANK_DEPTH_LAYERS - (isThreeLayerCaveDecorKey(decorKey) ? 2 : 1));
+  return clampTankLayer(layer);
 }
 
 function isThreeLayerCaveDecorKey(decorKey = "") {
@@ -29781,17 +36205,16 @@ function getDecorLayerSpan(decorKey, layer) {
     };
   }
 
-  const threeLayerCave = isThreeLayerCaveDecorKey(decorKey);
-  const mid = threeLayerCave ? frontLayer + 1 : null;
-  const back = frontLayer + (threeLayerCave ? 2 : 1);
-
+  // Caves occupy one user-facing tank layer. Their back artwork, interior fish,
+  // and front artwork are rendered as private sublayers within that layer.
   return {
     front: frontLayer,
-    mid,
-    back,
+    mid: frontLayer,
+    back: frontLayer,
     min: frontLayer,
-    max: back,
-    label: `Layers ${frontLayer}-${back}`
+    max: frontLayer,
+    label: `Layer ${frontLayer}`,
+    sublayers: Object.freeze({ back: 10, interior: 20, front: 30 })
   };
 }
 // </bundle-source>
@@ -29810,8 +36233,8 @@ function getCaveInsideLayerForItem(item) {
     return clampTankLayer(CAVE_SEAT_LOCKED_LAYER);
   }
 
-  const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
-  return clampTankLayer(span.mid || span.back || CAVE_SEAT_LOCKED_LAYER);
+  // Cave interiors are a render sublayer, not a separate global tank layer.
+  return clampTankLayer(getDecorTankLayer(item));
 }
 
 function isCaveNightWindow(timestamp = Date.now()) {
@@ -30219,11 +36642,7 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
     }
 
     const distanceScore = Math.hypot(fish.xNorm - trigger.xNorm, fish.yNorm - trigger.yNorm);
-    const frontLayer = clampTankLayer(
-      Number.isFinite(Number(matchedPortal?.portal?.outsideLayer))
-        ? Number(matchedPortal.portal.outsideLayer)
-        : (CAVE_ALLOWED_OUTSIDE_LAYERS.includes(currentLayer) ? currentLayer : 2)
-    );
+    const frontLayer = clampTankLayer(getDecorTankLayer(item));
     const backLayer = getCaveInsideLayerForItem(item);
     const layerPenalty = Math.abs(currentLayer - frontLayer) * 0.08;
     const lingerMinMs = Math.max(CAVE_TRIGGER_COOLDOWN_MS + 2000, Number.isFinite(profile?.lingerMinMs) ? profile.lingerMinMs : 12000);
@@ -30286,13 +36705,10 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
       continue;
     }
 
-    const portalOutsideLayer = clampTankLayer(portal.outsideLayer || 2);
+    // The portal geometry still determines where the fish enters, but cave
+    // travel stays inside the cave's selected main tank layer.
     const portalInsideLayer = getCaveInsideLayerForItem(item);
-    if (!CAVE_ALLOWED_OUTSIDE_LAYERS.includes(portalOutsideLayer)) {
-      continue;
-    }
-
-    const frontLayer = portalOutsideLayer;
+    const frontLayer = clampTankLayer(getDecorTankLayer(item));
     const backLayer = portalInsideLayer;
     const entryDirection = Math.abs(mouth.xNorm - approach.xNorm) > 0.0001
       ? (mouth.xNorm >= approach.xNorm ? 1 : -1)
@@ -30306,9 +36722,7 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
 
     for (const slot of slotPool) {
       const inside = mapDecorLocalPointToTankNorm(item, slot.x, slot.y);
-      const slotLayer = isThreeLayerCaveDecorKey(item.decorKey)
-        ? portalInsideLayer
-        : clampTankLayer(slot.layer || portalInsideLayer);
+      const slotLayer = portalInsideLayer;
       const seatDirection = getCaveSeatFacingDirection(slot, entryDirection);
       if (!inside) {
         continue;
@@ -30397,8 +36811,8 @@ function collectCaveBehaviorPlansForFish(fish, now = Date.now(), options = {}) {
     .filter((entry) => Boolean(entry.plan))
     .sort((left, right) => {
       if (fish.speciesId === "clownfish") {
-        const leftAnemone = /anemone/i.test(String(left.item?.decorKey || ""));
-        const rightAnemone = /anemone/i.test(String(right.item?.decorKey || ""));
+        const leftAnemone = decorHasTag(left.item?.decorKey, "anemone") || decorHasCategory(left.item?.decorKey, "coral");
+        const rightAnemone = decorHasTag(right.item?.decorKey, "anemone") || decorHasCategory(right.item?.decorKey, "coral");
         if (leftAnemone !== rightAnemone) {
           return leftAnemone ? -1 : 1;
         }
@@ -30961,14 +37375,14 @@ function reconcileLooseGravelPebbles(pebbles, placedDecor = state?.placedDecor |
 }
 
 function getDecorPebbleProfile(decorKey = "") {
-  const key = decorKey.toLowerCase();
-  if (/(castle|cave|terracotta|bridge|arch|hide|pagoda)/.test(key)) {
+  const categories = new Set(getDecorCategoryList(decorKey));
+  if (categories.has("cave")) {
     return { insetRatio: 0.16, baseHeightRatio: 0.13, maxLiftPx: 16 };
   }
-  if (/(rock|shell|driftwood|root|chest)/.test(key)) {
+  if (["rock", "wood"].some((category) => categories.has(category))) {
     return { insetRatio: 0.18, baseHeightRatio: 0.1, maxLiftPx: 13 };
   }
-  if (/(coral|seaweed|grass|anubias|moss|bloom|bunch)/.test(key)) {
+  if (categories.has("coral") || categories.has("plant")) {
     return { insetRatio: 0.22, baseHeightRatio: 0.075, maxLiftPx: 10 };
   }
   return { insetRatio: 0.18, baseHeightRatio: 0.09, maxLiftPx: 12 };
@@ -32211,7 +38625,7 @@ async function storeCustomImageDataUrl(dataUrl, source = "custom-image") {
       if (record?.id) {
         return {
           imageRefId: record.id,
-          dataUrl: "",
+          dataUrl,
           runtimeUrl: createRuntimeImageUrl(record.id, blob)
         };
       }
@@ -32254,7 +38668,7 @@ async function resolveStoredCustomImage(target, options) {
       const stored = await storeCustomImageDataUrl(embeddedDataUrl, source);
       if (stored.imageRefId) {
         target[refField] = stored.imageRefId;
-        target[dataField] = "";
+        target[dataField] = embeddedDataUrl;
         setRuntimeImageSource(target, runtimeField, stored.runtimeUrl);
         return true;
       }
@@ -32262,6 +38676,7 @@ async function resolveStoredCustomImage(target, options) {
       console.warn("Custom image migration failed.", error);
     }
 
+    target[dataField] = embeddedDataUrl;
     setRuntimeImageSource(target, runtimeField, embeddedDataUrl);
     return changed;
   }
@@ -32275,6 +38690,17 @@ async function resolveStoredCustomImage(target, options) {
     const blob = await getCustomImageBlob(existingRefId);
     if (blob) {
       setRuntimeImageSource(target, runtimeField, createRuntimeImageUrl(existingRefId, blob));
+      if (!embeddedDataUrl) {
+        try {
+          const hydratedDataUrl = await blobToDataUrl(blob);
+          if (isDataImageUrl(hydratedDataUrl)) {
+            target[dataField] = hydratedDataUrl;
+            changed = true;
+          }
+        } catch (error) {
+          console.warn("Custom image backup embedding failed.", error);
+        }
+      }
     } else {
       setRuntimeImageSource(target, runtimeField, "");
     }
@@ -32398,6 +38824,53 @@ function scheduleCustomImageStorageCleanup() {
   }, 0);
 }
 
+function warnMissingCustomImageOnce(issueKey, error) {
+  if (!(runtime.missingCustomImageWarnings instanceof Set)) {
+    runtime.missingCustomImageWarnings = new Set();
+  }
+  if (runtime.missingCustomImageWarnings.has(issueKey)) {
+    return;
+  }
+  runtime.missingCustomImageWarnings.add(issueKey);
+  console.warn(issueKey, error);
+}
+
+async function tryRecoverCustomImageDataUrl(owner, options, refId) {
+  const runtimeSource = getStoredImageSource(owner, options.runtimeField, options.dataField, "");
+  if (!runtimeSource) {
+    return "";
+  }
+  try {
+    if (isDataImageUrl(runtimeSource)) {
+      const blob = dataUrlToBlob(runtimeSource);
+      if (refId) {
+        await putCustomImageBlob(blob, options.source || "custom-image", refId);
+        createRuntimeImageUrl(refId, blob);
+      }
+      return runtimeSource;
+    }
+    if (/^blob:/i.test(runtimeSource) || /^https?:/i.test(runtimeSource)) {
+      const response = await fetch(runtimeSource);
+      if (!response.ok) {
+        throw new Error(`Custom image recovery fetch failed (${response.status}).`);
+      }
+      const blob = await response.blob();
+      if (!(blob instanceof Blob)) {
+        throw new Error("Custom image recovery did not produce a blob.");
+      }
+      if (refId) {
+        await putCustomImageBlob(blob, options.source || "custom-image", refId);
+        createRuntimeImageUrl(refId, blob);
+      }
+      const dataUrl = await blobToDataUrl(blob);
+      return isDataImageUrl(dataUrl) ? dataUrl : "";
+    }
+  } catch (error) {
+    warnMissingCustomImageOnce(`Custom image recovery failed for ${options.issueLabel || options.refField || "asset"} ${refId || "(no id)"}.`, error);
+  }
+  return "";
+}
+
 async function getCustomImageExportDataUrl(owner, options) {
   const embeddedDataUrl = isDataImageUrl(owner?.[options.dataField]) ? owner[options.dataField] : "";
   if (embeddedDataUrl) {
@@ -32410,16 +38883,74 @@ async function getCustomImageExportDataUrl(owner, options) {
   }
 
   const blob = await getCustomImageBlob(refId);
-  if (!blob) {
-    throw new Error("A custom image is missing from browser storage. Re-import or remove it before exporting.");
+  if (blob) {
+    const dataUrl = await blobToDataUrl(blob);
+    if (!isDataImageUrl(dataUrl)) {
+      throw new Error("A custom image could not be exported.");
+    }
+    return dataUrl;
   }
 
-  const dataUrl = await blobToDataUrl(blob);
-  if (!isDataImageUrl(dataUrl)) {
-    throw new Error("A custom image could not be exported.");
+  const recoveredDataUrl = await tryRecoverCustomImageDataUrl(owner, options, refId);
+  if (isDataImageUrl(recoveredDataUrl)) {
+    return recoveredDataUrl;
   }
 
-  return dataUrl;
+  const error = new Error("A custom image is missing from browser storage. Re-import or remove it before exporting.");
+  warnMissingCustomImageOnce(`Missing custom image storage for ${options.issueLabel || options.refField || "asset"} ${refId}.`, error);
+  throw error;
+}
+
+function clearPortableExportTankLocalBackground(targetTank) {
+  if (!targetTank || typeof targetTank !== "object") {
+    return;
+  }
+  delete targetTank.localBackgroundImageRefId;
+  delete targetTank.localBackgroundImageDataUrl;
+  if (isLocalImageBackgroundKey(targetTank.selectedBackground)) {
+    targetTank.selectedBackground = DEFAULT_TANK_BACKGROUND_KEY;
+  }
+}
+
+function removeBrokenCustomDecorFromPortableExport(targetState, decorKey) {
+  if (!targetState || !decorKey) {
+    return;
+  }
+  if (targetState.customDecorAssets && typeof targetState.customDecorAssets === "object") {
+    delete targetState.customDecorAssets[decorKey];
+  }
+  if (targetState.decorInventory && typeof targetState.decorInventory === "object") {
+    delete targetState.decorInventory[decorKey];
+  }
+  for (const tank of getAllTanks(targetState)) {
+    if (Array.isArray(tank?.placedDecor)) {
+      tank.placedDecor = tank.placedDecor.filter(item => item?.decorKey !== decorKey);
+    }
+  }
+  if (Array.isArray(targetState.savedDecorLayouts)) {
+    for (const layout of targetState.savedDecorLayouts) {
+      if (Array.isArray(layout?.items)) {
+        layout.items = layout.items.filter(item => item?.decorKey !== decorKey);
+      }
+    }
+  }
+}
+
+function removeBrokenCustomFishFromPortableExport(targetState, speciesId) {
+  if (!targetState || !speciesId) {
+    return;
+  }
+  if (targetState.customFishAssets && typeof targetState.customFishAssets === "object") {
+    delete targetState.customFishAssets[speciesId];
+  }
+  if (Array.isArray(targetState.storedFish)) {
+    targetState.storedFish = targetState.storedFish.filter(fish => fish?.speciesId !== speciesId);
+  }
+  for (const tank of getAllTanks(targetState)) {
+    if (Array.isArray(tank?.fish)) {
+      tank.fish = tank.fish.filter(fish => fish?.speciesId !== speciesId);
+    }
+  }
 }
 
 async function createPortableExportState(sourceState = state) {
@@ -32434,14 +38965,22 @@ async function createPortableExportState(sourceState = state) {
       continue;
     }
 
-    const dataUrl = await getCustomImageExportDataUrl(sourceTank, {
-      refField: "localBackgroundImageRefId",
-      dataField: "localBackgroundImageDataUrl"
-    });
-    if (dataUrl) {
-      exportTank.localBackgroundImageDataUrl = dataUrl;
+    try {
+      const dataUrl = await getCustomImageExportDataUrl(sourceTank, {
+        refField: "localBackgroundImageRefId",
+        dataField: "localBackgroundImageDataUrl",
+        runtimeField: "runtimeLocalBackgroundImageUrl",
+        source: "local-background",
+        issueLabel: `tank-background-${index + 1}`
+      });
+      if (dataUrl) {
+        exportTank.localBackgroundImageDataUrl = dataUrl;
+      }
+      delete exportTank.localBackgroundImageRefId;
+    } catch (error) {
+      console.warn("Portable export skipped a missing local background image.", error);
+      clearPortableExportTankLocalBackground(exportTank);
     }
-    delete exportTank.localBackgroundImageRefId;
   }
 
   for (const [key, sourceAsset] of Object.entries(sourceState.customDecorAssets || {})) {
@@ -32450,24 +38989,35 @@ async function createPortableExportState(sourceState = state) {
       continue;
     }
 
-    const path = await getCustomImageExportDataUrl(sourceAsset, {
-      refField: "imageRefId",
-      dataField: "path"
-    });
-    if (path) {
-      exportAsset.path = path;
-    }
-    delete exportAsset.imageRefId;
-
-    if (sourceAsset?.customType === "hide" || isCustomHideAssetKey(sourceAsset?.key)) {
-      const bgPath = await getCustomImageExportDataUrl(sourceAsset, {
-        refField: "bgImageRefId",
-        dataField: "bgPath"
+    try {
+      const path = await getCustomImageExportDataUrl(sourceAsset, {
+        refField: "imageRefId",
+        dataField: "path",
+        runtimeField: "runtimePath",
+        source: sourceAsset?.customType === "hide" ? "custom-hide-front" : "custom-decor",
+        issueLabel: key
       });
-      if (bgPath) {
-        exportAsset.bgPath = bgPath;
+      if (path) {
+        exportAsset.path = path;
       }
-      delete exportAsset.bgImageRefId;
+      delete exportAsset.imageRefId;
+
+      if (sourceAsset?.customType === "hide" || isCustomHideAssetKey(sourceAsset?.key)) {
+        const bgPath = await getCustomImageExportDataUrl(sourceAsset, {
+          refField: "bgImageRefId",
+          dataField: "bgPath",
+          runtimeField: "runtimeBgPath",
+          source: "custom-hide-background",
+          issueLabel: `${key}-background`
+        });
+        if (bgPath) {
+          exportAsset.bgPath = bgPath;
+        }
+        delete exportAsset.bgImageRefId;
+      }
+    } catch (error) {
+      console.warn(`Portable export removed a custom decor asset with missing image storage: ${key}`, error);
+      removeBrokenCustomDecorFromPortableExport(exportState, key);
     }
   }
 
@@ -32477,14 +39027,22 @@ async function createPortableExportState(sourceState = state) {
       continue;
     }
 
-    const path = await getCustomImageExportDataUrl(sourceAsset, {
-      refField: "imageRefId",
-      dataField: "path"
-    });
-    if (path) {
-      exportAsset.path = path;
+    try {
+      const path = await getCustomImageExportDataUrl(sourceAsset, {
+        refField: "imageRefId",
+        dataField: "path",
+        runtimeField: "runtimePath",
+        source: "custom-fish",
+        issueLabel: key
+      });
+      if (path) {
+        exportAsset.path = path;
+      }
+      delete exportAsset.imageRefId;
+    } catch (error) {
+      console.warn(`Portable export removed a custom fish asset with missing image storage: ${key}`, error);
+      removeBrokenCustomFishFromPortableExport(exportState, key);
     }
-    delete exportAsset.imageRefId;
   }
 
   return exportState;
@@ -34058,7 +40616,6 @@ function syncCurrentTankState(now, options = {}) {
   }
   changed = processFishBehaviorState(now) || changed;
   if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
-    changed = processZombieInfections(now) || changed;
     changed = processFishDecayStates(now) || changed;
     changed = processDetritusFish(now) || changed;
     changed = applyCriticalComfortHealthEffects(now) || changed;
@@ -34447,7 +41004,7 @@ function getCriticalTankConditionStartAt(now) {
 }
 
 function applyCriticalComfortHealthEffects(now) {
-  const livingFish = getLivingTankFish().filter((fish) => !isUndeadFish(fish) || !isGoreEnabled());
+  const livingFish = getLivingTankFish();
   if (!livingFish.length) {
     return false;
   }
@@ -34524,51 +41081,23 @@ function applyCriticalComfortHealthEffects(now) {
 
 function processFishDecayStates(now) {
   let changed = false;
-  const stageMessages = [];
   const allFish = [...state.fish, ...state.storedFish];
 
   for (const fish of allFish) {
-    if (!isFishDead(fish)) {
-      if (
-        fish.decayStage !== null
-        || fish.piranhaConsumptionStartedAt !== null
-        || fish.piranhaConsumptionEndsAt !== null
-        || fish.piranhaLastBloodAt !== null
-      ) {
-        fish.decayStage = null;
-        fish.piranhaConsumptionStartedAt = null;
-        fish.piranhaConsumptionEndsAt = null;
-        fish.piranhaLastBloodAt = null;
-        changed = true;
-      }
-      continue;
-    }
-
-    const nextStage = getFishDecayStage(fish, now);
+    const nextStage = isFishDead(fish) ? getFishDecayStage(fish, now) : null;
     if (fish.decayStage !== nextStage) {
       fish.decayStage = nextStage;
       changed = true;
-
-      if (nextStage === "zombie") {
-        if (!unlockFishSpecies("zombie-fish", now, "Zombie Fish unlocked after a fish decayed into a zombie.")) {
-          stageMessages.push(`${fish.name} decayed into a zombie.`);
-        }
-      } else if (nextStage === "skeleton") {
-        if (!unlockFishSpecies("skeleton-fish", now, "Skeleton Fish unlocked after a fish decayed down to bones.")) {
-          stageMessages.push(`${fish.name} decayed down to a skeleton.`);
-        }
-      }
+    }
+    if (!isFishDead(fish) && (fish.piranhaConsumptionStartedAt !== null || fish.piranhaConsumptionEndsAt !== null || fish.piranhaLastBloodAt !== null)) {
+      fish.piranhaConsumptionStartedAt = null;
+      fish.piranhaConsumptionEndsAt = null;
+      fish.piranhaLastBloodAt = null;
+      changed = true;
     }
   }
 
-  for (const message of stageMessages) {
-    pushEvent(message, now);
-  }
-
-  if (finalizePiranhaConsumedFish(getCompletedPiranhaConsumedFish(now), now)) {
-    changed = true;
-  }
-
+  if (finalizePiranhaConsumedFish(getCompletedPiranhaConsumedFish(now), now)) changed = true;
   return changed;
 }
 
@@ -36636,10 +43165,13 @@ function drawSubmarineRedLightOverlay(submarine, metrics, now = Date.now()) {
   if (!frame) return;
   const [sourceX, sourceY, sourceWidth, sourceHeight] = frame.rect;
   tankContext.save();
+  const depthLayer = metrics.tankLayer || submarine.tankLayer || SUBMARINE_DEFAULT_TANK_LAYER;
+  const depthOverlay = getTankDepthTreatedImage(overlay, depthLayer) || overlay;
+  tankContext.globalAlpha *= getTankDepthObjectAlpha(depthLayer);
   tankContext.translate(metrics.x, metrics.y);
   tankContext.rotate(metrics.rotation || 0);
   tankContext.scale(metrics.direction * (Number(metrics.turnScaleX) || 1), Number(metrics.turnScaleY) || 1);
-  tankContext.drawImage(overlay, sourceX, sourceY, sourceWidth, sourceHeight, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
+  tankContext.drawImage(depthOverlay, sourceX, sourceY, sourceWidth, sourceHeight, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
   tankContext.restore();
 }
 
@@ -36972,16 +43504,19 @@ function drawMachinery(now, layer = 2) {
   drawBoatBubbleBursts(now, layer);
   for (const { machinery, metrics } of machineryForLayer) {
     const isBoat = machinery.type === MACHINERY_TYPE_BOAT;
+    const depthLayer = layer === 0 ? 1 : (metrics.tankLayer || layer || 1);
     tankContext.save();
+    tankContext.globalAlpha *= getTankDepthObjectAlpha(depthLayer);
     tankContext.translate(metrics.x, metrics.y);
     tankContext.rotate(metrics.rotation || 0);
     tankContext.scale(metrics.direction * (Number(metrics.turnScaleX) || 1), Number(metrics.turnScaleY) || 1);
     if (isUsableRuntimeImage(metrics.image)) {
       const imagePath = isBoat ? getMachineryImagePath(MACHINERY_TYPE_BOAT) : getMachineryImagePath(MACHINERY_TYPE_SUBMARINE);
       const drawImage = getMachineryTintedImage(imagePath, metrics.image, machinery);
+      const depthDrawImage = getTankDepthTreatedImage(drawImage, depthLayer) || drawImage;
       const colorFilter = getMachineryColorCycleFilter(machinery, now);
-      if (colorFilter !== "none") tankContext.filter = colorFilter;
-      tankContext.drawImage(drawImage, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
+      tankContext.filter = colorFilter;
+      tankContext.drawImage(depthDrawImage, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
     } else {
       tankContext.fillStyle = "rgba(28,62,78,0.95)";
       tankContext.strokeStyle = "rgba(111,224,255,0.85)";
@@ -37675,6 +44210,12 @@ function getFoodPelletSettledAgeMs(pellet, now = Date.now()) {
 function canFishTargetFoodPellet(fish, pellet, now = Date.now()) {
   if (!pellet || !canFishEatFoodPellet(fish, pellet.foodKey, now)) {
     return false;
+  }
+
+  if (fish?.speciesId === "pilot-fish" && pellet.foodKey === "chum") {
+    if (!pellet.settled) return false;
+    const scrapAgeMs = getFoodPelletSettledAgeMs(pellet, now);
+    if (scrapAgeMs < 2500 || scrapAgeMs > FOOD_PELLET_SETTLED_STALE_TARGET_MS) return false;
   }
 
   if (!pellet.settled) {
@@ -38565,7 +45106,7 @@ function applySelectedMedicineAtPoint(point, now = Date.now()) {
   if (!shouldShowMedicineInStore(medicine)) {
     runtime.medicineModeKey = "";
     renderUi(now);
-    showToast("Enable Violence & Gore to use The Cure.");
+    showToast("That medicine is not currently available.");
     return true;
   }
 
@@ -38626,23 +45167,6 @@ function processTankMedicineEffects(now = Date.now()) {
         }
         effect.nextTickAt += MEDICINE_HEAL_INTERVAL_MS;
       }
-    } else if (effect.type === "antidote" && !effect.resolvedAt && now >= effect.startedAt + 1000) {
-      for (const fish of [...state.fish]) {
-        if (isZombieVariantFish(fish)) {
-          fish.zombieVariant = false;
-          fish.zombieBiteStartedAt = null;
-          fish.zombieBiteLastBloodAt = null;
-          fish.zombieBiteAttackerId = null;
-          fish.zombieReviveAt = null;
-          fish.zombieReviveSourceId = null;
-          changed = true;
-        } else if (isSkeletonFish(fish) && !isFishDead(fish)) {
-          fish.healthUnits = 0;
-          markFishAsDead(fish, now, `${fish.name} could not survive the antidote.`);
-          changed = true;
-        }
-      }
-      effect.resolvedAt = now;
     }
   }
 
@@ -38719,21 +45243,7 @@ function createFishRecord(speciesId, options = {}) {
           ? Number(options.desiredTankLayer)
           : DEFAULT_TANK_LAYER
       );
-  const undeadTemplateStage = getUndeadTemplateStageForSpecies(species);
-  const requestedUndeadTemplateSpeciesId = typeof options.undeadTemplateSpeciesId === "string"
-    ? options.undeadTemplateSpeciesId.trim()
-    : "";
-  const requestedUndeadTemplateSpecies = requestedUndeadTemplateSpeciesId
-    ? runtime.fishMap.get(requestedUndeadTemplateSpeciesId)
-    : null;
-  const undeadTemplateSpecies = requestedUndeadTemplateSpecies && !isUndeadSpecies(requestedUndeadTemplateSpecies)
-    ? requestedUndeadTemplateSpecies
-    : (
-      undeadTemplateStage
-        ? runtime.fishMap.get(pickRandomUndeadTemplateSpeciesId(undeadTemplateStage) || "")
-        : null
-    );
-  const scaleSpeciesId = undeadTemplateSpecies?.id || speciesId;
+  const scaleSpeciesId = speciesId;
   const scale = clamp(
     Number.isFinite(Number(options.scale)) ? Number(options.scale) : getFishScaleDefault(scaleSpeciesId),
     FISH_SCALE_MIN,
@@ -38764,19 +45274,12 @@ function createFishRecord(speciesId, options = {}) {
   const fish = {
     id: fishId,
     speciesId,
-    undeadTemplateSpeciesId: isCatalogUndeadShopSpecies(species) ? (undeadTemplateSpecies?.id || null) : null,
     name: typeof options.name === "string" && options.name.trim()
       ? options.name.trim()
       : buildFishName(speciesId, takenNames),
     acquiredAt: now,
     tankAddedAt: Number.isFinite(Number(options.tankAddedAt)) ? Number(options.tankAddedAt) : now,
     deadAt: null,
-    zombieVariant: Boolean(options.zombieVariant),
-    zombieBiteStartedAt: null,
-    zombieBiteLastBloodAt: null,
-    zombieBiteAttackerId: null,
-    zombieReviveAt: null,
-    zombieReviveSourceId: null,
     decayStage: null,
     piranhaConsumptionStartedAt: null,
     piranhaConsumptionEndsAt: null,
@@ -38803,6 +45306,7 @@ function createFishRecord(speciesId, options = {}) {
     favoriteSpot: sanitizeFavoriteSpot(options.favoriteSpot),
     residenceDecorId: typeof options.residenceDecorId === "string" && options.residenceDecorId ? options.residenceDecorId : null,
     parentNames: Array.isArray(options.parentNames) ? options.parentNames.map((name) => String(name).slice(0, 40)).slice(0, 2) : [],
+    parentIds: Array.isArray(options.parentIds) ? options.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2) : [],
     celebratedAgeMilestones: [],
     visitedNeighborhoodIds: getCurrentTank()?.id ? [getCurrentTank().id] : [],
     needs: sanitizeFishNeeds(options.needs, null, now),
@@ -38833,6 +45337,14 @@ function createFishRecord(speciesId, options = {}) {
     nextDiseaseSpreadCheckAt: now + randomDelay(DISEASE_SPREAD_CHECK_MIN_MS, DISEASE_SPREAD_CHECK_MAX_MS),
     nextSymptomCheckAt: now + randomDelay(DISEASE_SYMPTOM_CHECK_MIN_MS, DISEASE_SYMPTOM_CHECK_MAX_MS),
     nextGreenBubbleAt: 0,
+    pufferInflatedAt: 0,
+    pufferInflatedUntil: 0,
+    pufferWobbleUntil: 0,
+    pufferRiseUntil: 0,
+    pufferCooldownUntil: 0,
+    pufferGlassStressUntil: 0,
+    pufferInflatedSwimSpeed: 0,
+    pufferDriftPhase: Math.random() * Math.PI * 2,
     lastIllnessRiskDayKey: "",
     lastIllnessSignalAtByType: {},
     xNorm: initialPosition.xNorm,
@@ -38948,7 +45460,7 @@ function getBreedableFishGroups(now = Date.now(), options = {}) {
     : null;
 
   for (const fish of state.fish) {
-    if (!fish || isFishDead(fish) || isUndeadFish(fish) || !isFishAdult(fish, now)) {
+    if (!fish || isFishDead(fish) || !isFishAdult(fish, now)) {
       continue;
     }
 
@@ -39002,9 +45514,73 @@ function createBabyFishFromSpecies(speciesId, now = Date.now(), options = {}) {
     yNorm: clamp(anchorYNorm + randomBetween(-0.012, 0.012), 0.14, 0.8),
     targetXNorm: clamp(anchorXNorm + randomBetween(-0.05, 0.05), 0.08, 0.92),
     targetYNorm: clamp(anchorYNorm + randomBetween(-0.04, 0.04), 0.14, 0.8),
+    appearanceVariant: Number.isFinite(Number(options.appearanceVariant)) ? Number(options.appearanceVariant) : undefined,
+    parentNames: Array.isArray(options.parentNames) ? options.parentNames : [],
+    parentIds: Array.isArray(options.parentIds) ? options.parentIds : [],
     fishColor: normalizeDecorColorSetting(options.fishColor ?? ""),
     fishColorize: normalizeDecorColorizeSetting(options.fishColorize ?? false)
   });
+}
+
+function spawnBreedingOffspring(speciesId, now = Date.now(), options = {}) {
+  const species = runtime.fishMap.get(speciesId);
+  if (!species) return null;
+  const parentNames = Array.isArray(options.parentNames)
+    ? options.parentNames.map((name) => sanitizeTankName(name, "")).filter(Boolean).slice(0, 2)
+    : [];
+  const parentIds = Array.isArray(options.parentIds)
+    ? options.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
+    : [];
+  const tankLayer = species.behavior === "sucker"
+    ? SUCKER_FISH_BACK_GLASS_LAYER
+    : clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : DEFAULT_TANK_LAYER);
+
+  if (species.liveBirth === true) {
+    const variants = getFishAssetVariants(species);
+    const appearanceVariant = variants.length > 1 ? Math.floor(Math.random() * variants.length) : 0;
+    const baby = createBabyFishFromSpecies(speciesId, now, {
+      anchorXNorm: options.xNorm,
+      anchorYNorm: options.yNorm,
+      tankLayer,
+      appearanceVariant,
+      parentNames,
+      parentIds,
+      fishColor: options.fishColor,
+      fishColorize: options.fishColorize
+    });
+    if (!baby) return null;
+    addFishToTank(baby, now);
+    return { kind: "live", baby, species, parentNames, parentIds };
+  }
+
+  const eggSpawnOptions = {
+    xNorm: options.xNorm,
+    yNorm: options.yNorm,
+    parentNames,
+    parentIds,
+    tankLayer,
+    fishColor: options.fishColor,
+    fishColorize: options.fishColorize
+  };
+  if (species.breedingMethod === "egg-scatterer") {
+    eggSpawnOptions.yNorm = randomBetween(0.72, 0.84);
+  } else if (species.breedingMethod === "floating-egg-mass") {
+    eggSpawnOptions.yNorm = randomBetween(0.2, 0.36);
+    eggSpawnOptions.startYNorm = eggSpawnOptions.yNorm;
+  }
+  const egg = createFishEggRecord(speciesId, now, eggSpawnOptions);
+  if (!egg) return null;
+  addFishEggToTank(egg);
+  return { kind: "egg", egg, species, parentNames, parentIds };
+}
+
+function getBreedingOffspringMessage(result) {
+  if (!result) return "";
+  const parents = result.parentNames || [];
+  const parentLabel = parents.length >= 2 ? `${parents[0]} and ${parents[1]}` : "a breeding pair";
+  return result.kind === "live"
+    ? `${result.baby?.name || "A baby fish"} the ${result.species?.name || "fish"} was born after ${parentLabel} paired up.`
+    : `An egg appeared after ${parentLabel} paired up.`;
 }
 
 function getAvailableFishInheritanceColors() {
@@ -39118,14 +45694,22 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
   const tankLayer = species.behavior === "sucker"
     ? SUCKER_FISH_BACK_GLASS_LAYER
     : clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : DEFAULT_TANK_LAYER);
-  const targetYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
-  const startYNorm = clamp(
-    Number.isFinite(Number(options.startYNorm)) ? Number(options.startYNorm) : (Number(options.yNorm) || targetYNorm - 0.18),
-    0.14,
-    Math.max(0.16, targetYNorm - 0.01)
-  );
+  const floatingEggMass = species.breedingMethod === "floating-egg-mass";
+  const targetYNorm = floatingEggMass
+    ? clamp(Number(options.yNorm) || randomBetween(0.2, 0.36), 0.16, 0.46)
+    : getFishEggTargetYNorm(xNorm, tankLayer);
+  const startYNorm = floatingEggMass
+    ? targetYNorm
+    : clamp(
+      Number.isFinite(Number(options.startYNorm)) ? Number(options.startYNorm) : (Number(options.yNorm) || targetYNorm - 0.18),
+      0.14,
+      Math.max(0.16, targetYNorm - 0.01)
+    );
   const parentNames = Array.isArray(options.parentNames)
     ? options.parentNames.map((name) => sanitizeTankName(name, "")).filter(Boolean).slice(0, 2)
+    : [];
+  const parentIds = Array.isArray(options.parentIds)
+    ? options.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
     : [];
   const fishColor = snapFishInheritanceColorToAvailable(options.fishColor ?? "");
 
@@ -39133,6 +45717,7 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
     id: createId("egg"),
     speciesId,
     parentNames,
+    parentIds,
     createdAt: now,
     hatchAt: now + FISH_EGG_INCUBATION_MS,
     hatchedAt: null,
@@ -39143,7 +45728,8 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
     xNorm,
     startYNorm,
     yNorm: targetYNorm,
-    tankLayer
+    tankLayer,
+    buoyancy: floatingEggMass ? "floating" : "sinking"
   };
 }
 
@@ -39176,7 +45762,8 @@ function hatchFishEgg(egg, now = Date.now()) {
     tankLayer: egg.tankLayer,
     fishColor: snapFishInheritanceColorToAvailable(egg.fishColor),
     fishColorize: egg.fishColorize,
-    parentNames: egg.parentNames
+    parentNames: egg.parentNames,
+    parentIds: egg.parentIds
   });
   if (!baby) {
     return false;
@@ -39297,25 +45884,24 @@ function processFishBreedingForSlot(slot) {
       { minYNorm: 0.18, maxYNorm: 0.76 }
     );
     const colorInheritance = getBreedingEggColorInheritance(parents, slot.end);
-    const egg = createFishEggRecord(speciesId, slot.end, {
+    const offspring = spawnBreedingOffspring(speciesId, slot.end, {
       xNorm: anchorXNorm,
       yNorm: anchorYNorm,
       parentNames: [parents[0].name, parents[1].name],
+      parentIds: [parents[0].id, parents[1].id],
       tankLayer: eggLayer,
       fishColor: colorInheritance.fishColor,
       fishColorize: colorInheritance.fishColorize
     });
-    if (!egg) {
+    if (!offspring) {
       continue;
     }
-
-    addFishEggToTank(egg);
     const cooldownUntil = slot.end + BREEDING_COOLDOWN_MS;
     for (const parent of parents) {
       parent.breedCooldownUntil = cooldownUntil;
     }
 
-    pushEvent(`An egg appeared after ${parents[0].name} and ${parents[1].name} paired up.`, slot.end);
+    pushEvent(getBreedingOffspringMessage(offspring), slot.end, getCurrentTank(), { type: "birth", fishId: offspring.baby?.id || "", score: 1 });
     changed = true;
   }
 
@@ -39394,26 +45980,26 @@ function updateDebugBreedingSequence(now) {
   const eggLayer = Number.isFinite(Number(sequence.eggLayer))
     ? clampTankLayer(sequence.eggLayer)
     : getBreedingEggTankLayer(species, sequence.targetLayer);
-  const egg = createFishEggRecord(sequence.speciesId, now, {
+  const offspring = spawnBreedingOffspring(sequence.speciesId, now, {
     xNorm: sequence.anchorXNorm,
     yNorm: sequence.anchorYNorm,
     parentNames: [leftFish.name, rightFish.name],
+    parentIds: [leftFish.id, rightFish.id],
     tankLayer: eggLayer,
     fishColor: colorInheritance.fishColor,
     fishColorize: colorInheritance.fishColorize
   });
-  if (egg) {
-    addFishEggToTank(egg);
+  if (offspring) {
     const cooldownUntil = now + BREEDING_COOLDOWN_MS;
     leftFish.breedCooldownUntil = cooldownUntil;
     rightFish.breedCooldownUntil = cooldownUntil;
     leftFish.targetAt = now;
     rightFish.targetAt = now;
-    pushEvent(`An egg appeared after ${leftFish.name} and ${rightFish.name} paired up.`, now);
+    pushEvent(getBreedingOffspringMessage(offspring), now, getCurrentTank(), { type: "birth", fishId: offspring.baby?.id || "", score: 1 });
     clearDebugBreedingSequence();
     saveState();
     renderUi(now);
-    showToast(`${species?.name || "Fish"} egg settled into the gravel.`);
+    showToast(offspring.kind === "live" ? `${offspring.baby?.name || "A baby fish"} was born.` : `${species?.name || "Fish"} egg settled into the gravel.`);
     return null;
   }
 
@@ -39790,7 +46376,7 @@ function updateFishBreedingSequence(now = Date.now()) {
   const eggLayer = Number.isFinite(Number(sequence.eggLayer))
     ? clampTankLayer(sequence.eggLayer)
     : getBreedingEggTankLayer(species, sequence.targetLayer);
-  const egg = createFishEggRecord(sequence.speciesId, now, {
+  const offspring = spawnBreedingOffspring(sequence.speciesId, now, {
     xNorm: sequence.anchorXNorm,
     yNorm: sequence.anchorYNorm,
     parentNames: [leftFish.name, rightFish.name],
@@ -39798,17 +46384,16 @@ function updateFishBreedingSequence(now = Date.now()) {
     fishColor: colorInheritance.fishColor,
     fishColorize: colorInheritance.fishColorize
   });
-  if (egg) {
-    addFishEggToTank(egg);
+  if (offspring) {
     const cooldownUntil = now + BREEDING_COOLDOWN_MS;
     leftFish.breedCooldownUntil = cooldownUntil;
     rightFish.breedCooldownUntil = cooldownUntil;
     leftFish.targetAt = now;
     rightFish.targetAt = now;
-    pushEvent(`An egg appeared after ${leftFish.name} and ${rightFish.name} paired up.`, now);
+    pushEvent(getBreedingOffspringMessage(offspring), now, getCurrentTank(), { type: "birth", fishId: offspring.baby?.id || "", score: 1 });
     clearFishBreedingSequence();
     markFishActionStateDirty(now);
-    showToast(`${species?.name || "Fish"} egg settled into the gravel.`);
+    showToast(offspring.kind === "live" ? `${offspring.baby?.name || "A baby fish"} was born.` : `${species?.name || "Fish"} egg settled into the gravel.`);
     return null;
   }
 
@@ -39958,7 +46543,6 @@ function getFishActionPartners(fish, options = {}) {
         isFishAdult(otherFish, now)
         && hasFishBeenInTankLongEnoughToBreed(otherFish, now)
         && (Number(otherFish.breedCooldownUntil) || 0) <= now
-        && !isUndeadFish(otherFish)
       ))
     ))
     .map((otherFish) => {
@@ -40109,7 +46693,7 @@ function getFishActionAvailability(action, fish, now = Date.now()) {
         ? { enabled: true, title: baseTitle }
         : { enabled: false, title: `${baseTitle}: add another living fish` };
     case "breed":
-      return getFishActionPartner(fish, { sameSpeciesOnly: true, requireBreedReady: true, now }) && isFishAdult(fish, now) && hasFishBeenInTankLongEnoughToBreed(fish, now) && (Number(fish.breedCooldownUntil) || 0) <= now && !isUndeadFish(fish)
+      return getFishActionPartner(fish, { sameSpeciesOnly: true, requireBreedReady: true, now }) && isFishAdult(fish, now) && hasFishBeenInTankLongEnoughToBreed(fish, now) && (Number(fish.breedCooldownUntil) || 0) <= now
         ? { enabled: true, title: baseTitle }
         : { enabled: false, title: `${baseTitle}: needs two ready adult fish of the same species` };
     case "inspect":
@@ -40689,7 +47273,7 @@ function triggerFishActionAvoid(fish, species, now = Date.now(), item = null) {
 }
 
 function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
-  if (!isFishAdult(fish, now) || !hasFishBeenInTankLongEnoughToBreed(fish, now) || (Number(fish.breedCooldownUntil) || 0) > now || isUndeadFish(fish)) {
+  if (!isFishAdult(fish, now) || !hasFishBeenInTankLongEnoughToBreed(fish, now) || (Number(fish.breedCooldownUntil) || 0) > now) {
     showFishRoutineToast(fish, `${fish.name} is not ready to mate.`);
     return false;
   }
@@ -41176,7 +47760,7 @@ function processFishNeedsAutonomy(now = Date.now()) {
   for (const id of nextDecisions.keys()) if (!livingIds.has(id)) nextDecisions.delete(id);
   for (const fish of living) {
     if (runtime.fishDragState?.fishId === fish.id || fish.caveState || fish.activity !== "roam"
-      || Number(fish.panicUntil) > now || isUndeadFish(fish) || runtime.debugAutonomyPausedFishIds?.has?.(fish.id)) continue;
+      || Number(fish.panicUntil) > now || runtime.debugAutonomyPausedFishIds?.has?.(fish.id)) continue;
     const queue = getFishActionQueueState(fish.id);
     // Feeding interrupts passive routines through the existing feeding system.
     // Never repeatedly cancel an active behavior while waiting for a meal.
@@ -41665,10 +48249,6 @@ async function buyFish(speciesId, options = {}) {
     return { ok: false, reason: "missing-species" };
   }
 
-  if (isUndeadSpecies(species) && !isViolenceAndGoreEnabled()) {
-    showToast("Enable Violence & Gore to buy undead fish.");
-    return { ok: false, reason: "content-locked" };
-  }
 
   if (!isFishSpeciesShopUnlocked(species)) {
     showToast(`${species.name} has not been unlocked yet.`);
@@ -41775,6 +48355,9 @@ async function buyFish(speciesId, options = {}) {
     });
     if (!transaction.ok) {
       return transaction;
+    }
+    if (options.purchaseSource === "davyjoneslocker" && typeof queueDavyJonesFulfillmentEmail === "function") {
+      queueDavyJonesFulfillmentEmail(fish, species, purchaseCompletedAt + 1);
     }
     return {
       ok: true,
@@ -41962,7 +48545,6 @@ function getPendingFishBuyAnotherDetails() {
 
   const cost = getFishPurchaseCost(details.fish.speciesId);
   const customFish = isCustomFishAssetKey(details.fish.speciesId);
-  const goreLocked = isUndeadSpecies(details.species) && !isViolenceAndGoreEnabled();
   const unlocked = customFish
     ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
     : isFishSpeciesShopUnlocked(details.baseSpecies);
@@ -41970,10 +48552,9 @@ function getPendingFishBuyAnotherDetails() {
     ...details,
     cost,
     customFish,
-    goreLocked,
     unlocked,
     canAfford: state.coins >= cost,
-    canBuy: unlocked && !goreLocked
+    canBuy: unlocked
   };
 }
 
@@ -42005,7 +48586,7 @@ function openFishBuyAnotherConfirmation(fishId) {
     getDetails: getPendingFishBuyAnotherDetails,
     missingMessage: "Choose a fish first.",
     validate: (details) => details?.goreLocked
-      ? "Enable Violence & Gore to buy undead fish."
+      ? "Enable Violence & Gore to buy this fish."
       : !details?.unlocked
         ? `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`
         : !details?.canAfford
@@ -42040,7 +48621,7 @@ function confirmFishBuyAnother() {
     missingMessage: "That fish is no longer available.",
     validate: (details) => !details?.canBuy
       ? (details?.goreLocked
-      ? "Enable Violence & Gore to buy undead fish."
+      ? "Enable Violence & Gore to buy this fish."
       : `${details?.baseSpecies?.name || "That fish"} has not been unlocked yet.`)
       : !details?.canAfford
         ? getInsufficientFundsMessage()
@@ -42292,7 +48873,7 @@ function buyBackground(backgroundKey) {
     return;
   }
 
-  return performCoinTransaction({
+  const result = performCoinTransaction({
     amount: background.cost,
     insufficientMessage: `You need ${background.cost} ${pluralize("coin", background.cost)} for ${background.name}.`,
     apply: () => {
@@ -42302,6 +48883,10 @@ function buyBackground(backgroundKey) {
     event: { type: "purchase", tone: "positive", text: `Unlocked the ${background.name} background.` },
     toast: `${background.name} unlocked and applied.`
   });
+  if (result?.ok) {
+    void ensureBackgroundImageReady(backgroundKey);
+  }
+  return result;
 }
 
 
@@ -43884,7 +50469,9 @@ function beginFishEggDrag(egg, point, pointerId) {
 
   const now = Date.now();
   const tankLayer = getFishEggTankLayer(egg);
-  const targetYNorm = getFishEggTargetYNorm(egg.xNorm, tankLayer);
+  const targetYNorm = egg.buoyancy === "floating"
+    ? clamp(Number(egg.yNorm) || 0.28, 0.16, 0.46)
+    : getFishEggTargetYNorm(egg.xNorm, tankLayer);
   const pose = getFishEggPose(egg, now);
   const currentXNorm = clamp(Number(egg.xNorm) || 0.5, 0.08, 0.92);
   const currentYNorm = clamp((pose?.y ?? targetYNorm * TANK_HEIGHT) / TANK_HEIGHT, 0.12, targetYNorm);
@@ -43936,8 +50523,11 @@ function updateDraggedFishEgg(point) {
 
   const xNorm = clamp(point.x / TANK_WIDTH + drag.offsetXNorm, 0.08, 0.92);
   const tankLayer = getFishEggTankLayer(egg);
-  const targetYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
-  const yNorm = clamp(point.y / TANK_HEIGHT + drag.offsetYNorm, 0.12, targetYNorm);
+  const floorYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
+  const yNorm = egg.buoyancy === "floating"
+    ? clamp(point.y / TANK_HEIGHT + drag.offsetYNorm, 0.16, 0.46)
+    : clamp(point.y / TANK_HEIGHT + drag.offsetYNorm, 0.12, floorYNorm);
+  const targetYNorm = egg.buoyancy === "floating" ? yNorm : floorYNorm;
   const movedDistance = Math.hypot(
     (xNorm - drag.startXNorm) * TANK_WIDTH,
     (yNorm - drag.startYNorm) * TANK_HEIGHT
@@ -43982,17 +50572,20 @@ function finalizeFishEggDrag() {
 
   const tankLayer = getFishEggTankLayer(egg);
   const xNorm = clamp(Number(egg.xNorm) || drag.startXNorm || 0.5, 0.08, 0.92);
-  const targetYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
-  const currentYNorm = clamp(
-    Number.isFinite(Number(egg.dragYNorm)) ? Number(egg.dragYNorm) : targetYNorm,
-    0.12,
-    targetYNorm
-  );
+  const floorYNorm = getFishEggTargetYNorm(xNorm, tankLayer);
+  const currentYNorm = egg.buoyancy === "floating"
+    ? clamp(Number.isFinite(Number(egg.dragYNorm)) ? Number(egg.dragYNorm) : Number(egg.yNorm) || 0.28, 0.16, 0.46)
+    : clamp(
+      Number.isFinite(Number(egg.dragYNorm)) ? Number(egg.dragYNorm) : floorYNorm,
+      0.12,
+      floorYNorm
+    );
+  const targetYNorm = egg.buoyancy === "floating" ? currentYNorm : floorYNorm;
 
   egg.xNorm = xNorm;
   egg.startYNorm = currentYNorm;
   egg.yNorm = targetYNorm;
-  egg.releasedAt = now;
+  egg.releasedAt = egg.buoyancy === "floating" ? null : now;
   delete egg.dragYNorm;
 
   saveState();
@@ -44041,10 +50634,6 @@ function storeFish(fishId, options = {}) {
 
   const fish = state.fish[index];
   const dead = isFishDead(fish);
-  if (!dead && hasZombieBiteInfection(fish)) {
-    showToast(`${fish.name} is panicking from a zombie bite and can't be stored right now.`);
-    return false;
-  }
   if (dead && isFishBeingConsumedByPiranhas(fish)) {
     showToast(`${fish.name} is already being devoured by piranhas.`);
     return false;
@@ -44063,7 +50652,6 @@ function storeFish(fishId, options = {}) {
   preserveTankDirtinessThroughChange(now, () => {
     state.fish.splice(index, 1);
     clearPiranhaAttackState(fish);
-    clearZombieAttackState(fish);
     fish.feedingPelletId = null;
     fish.comfortDamageProgressMs = 0;
     clearFishCaveBehavior(fish);
@@ -44569,25 +51157,6 @@ function getLivingPiranhaFish() {
   return state.fish.filter((fish) => !isFishDead(fish) && isPiranhaSpecies(fish));
 }
 
-function getLivingZombieHunters() {
-  return state.fish.filter((fish) => !isFishDead(fish) && usesZombieHunterBehavior(fish));
-}
-
-function getLivingZombieHunterIds() {
-  return new Set(getLivingZombieHunters().map((fish) => fish.id));
-}
-
-function hasValidZombieBiteSource(fish, zombieHunterIds = getLivingZombieHunterIds()) {
-  if (!fish) {
-    return false;
-  }
-
-  const attackerId = typeof fish.zombieBiteAttackerId === "string" && fish.zombieBiteAttackerId.trim()
-    ? fish.zombieBiteAttackerId.trim()
-    : null;
-  return Boolean(attackerId && zombieHunterIds.has(attackerId));
-}
-
 function hasPiranhaContext() {
   return PIRANHA_BEHAVIOR_ENABLED && getLivingPiranhaFish().length > 0;
 }
@@ -44829,9 +51398,7 @@ function pickDeadFishVigilTarget(fish, species, now) {
   if (
     !nearest
     || nearest.distanceNorm > CORPSE_VIGIL_TRIGGER_RANGE_NORM
-    || isUndeadFish(fish)
     || isPiranhaSpecies(fish)
-    || hasZombieBiteInfection(fish)
   ) {
     return null;
   }
@@ -44893,7 +51460,7 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
     !alreadyDead
     && isFishProtectedFromPredators(fish, now)
     && typeof reasonText === "string"
-    && /zombie bite|piranhas?/i.test(reasonText)
+    && /piranhas?/i.test(reasonText)
   ) {
     scrubProtectedFishPredatorState(fish, now);
     return false;
@@ -44903,11 +51470,6 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
   const previousDirtiness = shouldRebase ? getBaseTankDirtiness(now) : null;
   fish.deadAt = alreadyDead && Number.isFinite(fish.deadAt) ? fish.deadAt : now;
   fish.decayStage = "fresh";
-  fish.zombieBiteStartedAt = null;
-  fish.zombieBiteLastBloodAt = null;
-  fish.zombieBiteAttackerId = null;
-  fish.zombieReviveAt = null;
-  fish.zombieReviveSourceId = null;
   fish.piranhaAttackStartedAt = null;
   fish.piranhaLastDamageAt = null;
   fish.sharkLastAttackAt = 0;
@@ -46363,11 +52925,12 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function getDavyMutationCatalogDefinitions() {
-  const folder = "web/davy/mutations";
+  const folder = "fish";
   return [
     {
       id: "davy-bioluminescent-cherub-goldfish",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Cherub Puff Goldfish",
       description: "A consumer-focused companion specimen engineered around fancy goldfish, pufferfish, and permanently juvenile developmental traits. Oversized eyes, rounded proportions, a translucent glowing belly, and a tiny bioluminescent forehead organ were intentionally selected to maximize perceived cuteness. The result is undeniably adorable. Thinking too hard about why it looks that way is not recommended.",
       davyBehaviorLabel: "Affectionate companion",
@@ -46398,6 +52961,7 @@ function getDavyMutationCatalogDefinitions() {
     {
       id: "davy-bioluminescent-angler-pike",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Dwarf Siren Pike",
       description: "An experimental ambush predator built around a dwarf pike genome and reinforced with deep-sea, electric, regenerative, and camouflage adaptations. Its luminous lure, expandable throat structure, exposed bioelectric organs, and highly modified fins make the specimen difficult to mistake for anything naturally occurring. It is remarkably patient. Until it isn’t.",
       davyBehaviorLabel: "Patient ambush predator",
@@ -46428,6 +52992,7 @@ function getDavyMutationCatalogDefinitions() {
     {
       id: "davy-bioluminescent-glass-fangfish",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Glass Needle Spitter",
       description: "A two-inch laboratory curiosity combining pygmy fish genetics with transparent tissue, bioluminescent organs, precision water projection, defensive inflation, and disproportionately large predatory teeth. Most of its internal anatomy remains visible through the body wall. Small enough to disappear behind a filter tube. Strange enough that you will immediately notice when it does.",
       davyBehaviorLabel: "Nervous cover dart",
@@ -46458,6 +53023,7 @@ function getDavyMutationCatalogDefinitions() {
     {
       id: "davy-dwarf-chimera-barracuda",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Dwarf Chimera Barracuda",
       description: "A compact apex predator assembled from barracuda, cuttlefish, electric eel, lionfish, and mantis shrimp genetics. Adaptive camouflage, electrostunning organs, venomous dorsal defenses, and enhanced motion tracking were compressed into a specimen small enough for domestic aquariums. Extremely fast. Extremely observant. Technically ornamental.",
       davyBehaviorLabel: "Active patrol predator",
@@ -46488,6 +53054,7 @@ function getDavyMutationCatalogDefinitions() {
     {
       id: "davy-dwarf-hyperfin",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Dwarf Hyperfin",
       description: "A compact high-performance fish engineered from some of the fastest and most efficient swimmers in the animal kingdom. Streamlined musculature, drag-reducing skin, stabilizing finlets, and an oversized cardiovascular system allow the Dwarf Hyperfin to accelerate with startling force while remaining small enough for a home aquarium. At rest, it is elegant. At speed, it becomes difficult to follow with your eyes.",
       davyBehaviorLabel: "High-speed open-water runner",
@@ -46662,6 +53229,7 @@ function getStoreProductFacets(kind, entry) {
     return {
       Availability: [isFishSpeciesShopUnlocked(entry) ? "Available now" : "Locked"],
       Seller: [seller],
+      Genetics: [entry.genetics === "enhanced" ? "Enhanced" : "Natural"],
       Type: [entry.behavior === "free" ? "Free swimming" : entry.behavior || "custom", ...(entry.caveEnabled ? ["Cave fish"] : [])],
       Diet: [entry.diet || "omnivore"]
     };
@@ -46838,8 +53406,11 @@ function renderShopThemePill(theme) {
     : "";
 }
 
-function renderFishShopThemePill(theme) {
-  return normalizeWaterType(theme, null) ? "" : renderShopThemePill(theme);
+function renderFishShopGeneticsPill(genetics) {
+  const normalized = String(genetics || "").trim().toLowerCase();
+  if (normalized !== "natural" && normalized !== "enhanced") return "";
+  const label = normalized === "enhanced" ? "Enhanced" : "Natural";
+  return `<div class="shop-theme-pill">${escapeHtml(label)}</div>`;
 }
 
 function normalizeShopSearchText(value) {
@@ -47089,7 +53660,6 @@ function getFishShopCatalog() {
     species
     && !HIDDEN_FISH_OPTION_IDS.has(species.id)
     && (!isDavyMutationSpecies(species) || davyOffer?.species?.id === species.id)
-    && ((isZombieSkeletonModeAvailable() && isGoreEnabled()) || !isUndeadSpecies(species))
   ));
 }
 
@@ -47438,7 +54008,6 @@ function getFishInspectorBehaviorProfiles() {
     && !species.customUploadProduct
     && !isCustomFishShopKey(species.id)
     && !isCustomFishAssetKey(species.id)
-    && (!isUndeadSpecies(species) || isViolenceAndGoreEnabled())
   ));
 }
 
@@ -47971,6 +54540,22 @@ function clearLocalBackgroundImage() {
   renderUi(Date.now());
 }
 
+function ensureBackgroundImageReady(backgroundKey, options = {}) {
+  const background = runtime.backgroundMap.get(backgroundKey);
+  if (!background || isCustomBackgroundKey(background.key) || isLocalImageBackgroundKey(background.key) || !background.path) {
+    return Promise.resolve(false);
+  }
+  if (isUsableRuntimeImage(runtime.images.get(background.path))) {
+    return Promise.resolve(true);
+  }
+  return preloadImagePath(background.path).then((result) => {
+    if (result.loaded && state?.selectedBackground === backgroundKey && options.render !== false) {
+      renderTank(Date.now());
+    }
+    return result.loaded === true;
+  });
+}
+
 function selectBackground(backgroundKey) {
   if (!runtime.backgroundMap.has(backgroundKey)) {
     return;
@@ -47990,7 +54575,7 @@ function selectBackground(backgroundKey) {
     return;
   }
 
-  return updateTankAppearance({
+  const changed = updateTankAppearance({
     changes: { selectedBackground: backgroundKey },
     event: {
       type: "appearance",
@@ -47998,6 +54583,10 @@ function selectBackground(backgroundKey) {
       text: `Switched the tank background to ${runtime.backgroundMap.get(backgroundKey).name}.`
     }
   });
+  if (changed) {
+    void ensureBackgroundImageReady(backgroundKey);
+  }
+  return changed;
 }
 
 function selectTankAsset(tankKey) {
@@ -48101,6 +54690,122 @@ function setDebugFrameProfilerEnabled(enabled) {
 
 function toggleDebugFrameProfiler() {
   return setDebugFrameProfilerEnabled(!runtime.debugFrameProfilerEnabled);
+}
+
+function formatDebugDepthTuningPercent(value) {
+  return `${Math.round((Number(value) || 0) * 100)}%`;
+}
+
+function getDebugDepthTuningSummaryText() {
+  const tuning = getDebugTankDepthTuning();
+  const layer5 = getTankDepthVisualPreset(5);
+  return [
+    `Saturation ${formatDebugDepthTuningPercent(tuning.saturation)}`,
+    `Contrast ${formatDebugDepthTuningPercent(tuning.contrast)}`,
+    `Cyan ${formatDebugDepthTuningPercent(tuning.coolTint)}`,
+    `Haze ${formatDebugDepthTuningPercent(tuning.haze)}`,
+    `Gravel ${formatDebugDepthTuningPercent(tuning.substrate)}`,
+    `Shadows ${formatDebugDepthTuningPercent(tuning.shadow)}`,
+    `Motion ${formatDebugDepthTuningPercent(tuning.movement)}`,
+    `Ground shadow darkness ${formatDebugDepthTuningPercent(tuning.shadowDarkness)}`,
+    `Layer 5 effective: sat ${(layer5.saturation * 100).toFixed(1)}%, contrast ${(layer5.contrast * 100).toFixed(1)}%, cyan ${(layer5.coolTint * 100).toFixed(1)}%, haze ${(layer5.haze * 100).toFixed(1)}%, shadow ${(layer5.shadowStrength * 100).toFixed(1)}%, motion ${(layer5.movementMultiplier * 100).toFixed(1)}%`
+  ].join(" | ");
+}
+
+function syncDebugDepthTunerControls() {
+  if (!dom.debugDepthTuner) {
+    return;
+  }
+  const tuning = getDebugTankDepthTuning();
+  dom.debugDepthTuner.querySelectorAll("[data-depth-tuning-key]").forEach((input) => {
+    const key = input.dataset.depthTuningKey;
+    if (!(key in tuning)) {
+      return;
+    }
+    const percent = Math.round(tuning[key] * 100);
+    if (Number(input.value) !== percent) {
+      input.value = String(percent);
+    }
+    const output = dom.debugDepthTuner.querySelector(`[data-depth-tuning-output="${key}"]`);
+    if (output) {
+      output.textContent = `${percent}%`;
+    }
+  });
+  if (dom.debugDepthTunerReadout) {
+    const layer5 = getTankDepthVisualPreset(5);
+    dom.debugDepthTunerReadout.textContent = [
+      `Layer 5 → saturation ${(layer5.saturation * 100).toFixed(1)}%`,
+      `contrast ${(layer5.contrast * 100).toFixed(1)}%`,
+      `cyan ${(layer5.coolTint * 100).toFixed(1)}%`,
+      `haze ${(layer5.haze * 100).toFixed(1)}%`,
+      `shadow ${(layer5.shadowStrength * 100).toFixed(1)}%`,
+      `motion ${(layer5.movementMultiplier * 100).toFixed(1)}%`,
+      `darkness ${(getDebugGroundShadowDarknessMultiplier() * 100).toFixed(0)}%`
+    ].join(" · ");
+  }
+}
+
+function scheduleDebugDepthTuningCacheRefresh() {
+  if (runtime.debugDepthTuningApplyTimer) {
+    clearTimeout(runtime.debugDepthTuningApplyTimer);
+  }
+  runtime.debugDepthTuningApplyTimer = window.setTimeout(() => {
+    runtime.debugDepthTuningApplyTimer = 0;
+    invalidateTankDepthVisualCaches();
+    if (runtime.boroughOverviewOpen) {
+      renderAquariumOverview();
+    }
+  }, 120);
+}
+
+function handleDebugDepthTuningInput(input) {
+  const key = input?.dataset?.depthTuningKey;
+  if (!key || !(key in DEFAULT_DEBUG_DEPTH_TUNING)) {
+    return;
+  }
+  const multiplier = clamp((Number(input.value) || 0) / 100, 0, key === "shadow" || key === "movement"
+    ? 2
+    : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4));
+  setDebugTankDepthTuningValue(key, multiplier, { invalidate: false });
+  syncDebugDepthTunerControls();
+  scheduleDebugDepthTuningCacheRefresh();
+}
+
+function resetDebugDepthTuner() {
+  if (runtime.debugDepthTuningApplyTimer) {
+    clearTimeout(runtime.debugDepthTuningApplyTimer);
+    runtime.debugDepthTuningApplyTimer = 0;
+  }
+  resetDebugTankDepthTuning();
+  syncDebugDepthTunerControls();
+  if (runtime.boroughOverviewOpen) {
+    renderAquariumOverview();
+  }
+  showToast("Depth tuner reset to 100%.");
+}
+
+async function copyDebugDepthTunerValues() {
+  const summary = getDebugDepthTuningSummaryText();
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(summary);
+    copied = true;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = summary;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      copied = document.execCommand("copy");
+    } catch {
+      copied = false;
+    }
+    textarea.remove();
+  }
+  showToast(copied ? "Depth tuner values copied." : "Could not copy depth tuner values.");
+  return summary;
 }
 
 function beginDebugFrameProfile(frameTime, rafGapMs = 0) {
@@ -48439,10 +55144,7 @@ function reviveFishForDebug(fish, now = Date.now()) {
   fish.turnDurationMs = 0;
   fish.sharkLastAttackAt = 0;
 
-  clearZombieAttackState(fish);
   clearPiranhaAttackState(fish);
-  fish.zombieReviveAt = null;
-  fish.zombieReviveSourceId = null;
   fish.piranhaConsumptionStartedAt = null;
   fish.piranhaConsumptionEndsAt = null;
   fish.piranhaLastBloodAt = null;
@@ -48969,13 +55671,19 @@ function getDebugBehaviorScenarioOptions(action) {
       return { allowPredatorSpecial: true };
     case "disease":
       return { allowSuckerSpecial: true, allowPredatorSpecial: true };
+    case "species-signature":
+      return { allowPredatorSpecial: true };
+    case "puffer-inflate":
+    case "puffer-deflate":
+    case "puffer-taps":
+      return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowPredatorSpecial: true };
     case "oto-back":
     case "oto-swim":
     case "oto-front":
     case "oto-normal":
       return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowSuckerSpecial: true };
     case "clear":
-      return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowUndead: true, allowSuckerSpecial: true, allowPredatorSpecial: true, allowDead: true };
+      return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowSuckerSpecial: true, allowPredatorSpecial: true, allowDead: true };
     default:
       return { disallowSpecial: true };
   }
@@ -49011,14 +55719,11 @@ function getDebugBehaviorBlockReason(fish, species = getSpeciesForFish(fish), op
   ) {
     return "That fish is already using a gravel behavior.";
   }
-  if (!options.allowUndead && isUndeadFish(fish)) {
-    return "Zombie and skeleton fish keep their own behavior debug path.";
-  }
 
   const effectiveBehavior = getEffectiveFishBehavior(fish, species);
   if (
     options.disallowSpecial
-    && ["sucker", "piranha", "zombie", "skeleton"].includes(effectiveBehavior)
+    && ["sucker", "piranha"].includes(effectiveBehavior)
   ) {
     return `${getDebugFishDisplayName(fish, species)} uses protected ${effectiveBehavior} behavior.`;
   }
@@ -49197,9 +55902,6 @@ function isDebugBehaviorSteeringBlocked(fish, species, steering, now = Date.now(
     return true;
   }
   const effectiveBehavior = getEffectiveFishBehavior(fish, species);
-  if (isUndeadFish(fish) && !steering.allowUndead) {
-    return true;
-  }
   if (effectiveBehavior === "sucker" && !steering.allowSuckerSpecial) {
     return true;
   }
@@ -49853,6 +56555,148 @@ function triggerDebugOtocinclusState(forcedState, now = Date.now()) {
   );
 }
 
+
+function getDebugSpeciesSignatureAvailability(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  const key = getFishSignatureBehaviorKey(species);
+  if (!key && species?.id !== "betta") {
+    return { enabled: false, reason: "this species has no dedicated signature-behavior scenario yet" };
+  }
+  if (species?.id === "seahorse" && !getBehaviorDecorCandidates(/seaweed|kelp|plant|moss|coral|driftwood|root/).length) {
+    return { enabled: false, reason: "add plant, seaweed, coral, driftwood, or root decor for a perch" };
+  }
+  if (species?.id === "pencilfish") {
+    const partner = state.fish.find((entry) => entry && entry.id !== fish.id && !isFishDead(entry) && entry.speciesId === "pencilfish");
+    if (!partner) return { enabled: false, reason: "add a second living Pencilfish" };
+  }
+  if (species?.id === "betta") {
+    const rival = state.fish.find((entry) => entry && entry.id !== fish.id && !isFishDead(entry) && entry.speciesId === "betta");
+    if (!rival) return { enabled: false, reason: "add a second living Betta" };
+  }
+  if (species?.id === "angelfish") {
+    if (!isFishAdult(fish, now)) return { enabled: false, reason: "Angelfish territorial behavior begins at adulthood" };
+    if (!getFishResidenceDecorId(fish) && !hasDebugDecorHangoutZone(["hide", "hardscape"])) {
+      return { enabled: false, reason: "assign a home or add a cave/hardscape" };
+    }
+  }
+  if (species?.id === "blue-ram" && !isFishAdult(fish, now)) {
+    return { enabled: false, reason: "Blue Ram breeding territory behavior requires an adult fish" };
+  }
+  if (species?.id === "pilot-fish") {
+    const companion = state.fish.find((entry) => entry && !isFishDead(entry) && ["bull-shark", "great-white-shark", "hammerhead-shark", "orca"].includes(entry.speciesId));
+    if (!companion) return { enabled: false, reason: "add a living shark or Orca" };
+  }
+  return { enabled: true, reason: "" };
+}
+
+function triggerDebugSpeciesSignatureBehavior(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("species-signature");
+  if (!selection) return;
+  const { fish, species } = selection;
+  const availability = getDebugSpeciesSignatureAvailability(fish, species, now);
+  if (!availability.enabled) {
+    showToast(`Cannot test species AI: ${availability.reason}.`);
+    return;
+  }
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("species-signature"))) {
+    return;
+  }
+
+  let target = null;
+  if (species.id === "betta") {
+    const rival = state.fish.find((entry) => entry && entry.id !== fish.id && !isFishDead(entry) && entry.speciesId === "betta") || null;
+    if (rival) {
+      setDebugFishRelationship(fish, rival, "rival", now);
+      setDebugFishRelationship(rival, fish, "rival", now);
+      const relationships = sanitizeFishRelationships(fish.relationships);
+      const nearbyAll = state.fish
+        .filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry))
+        .map((entry) => ({
+          fish: entry,
+          relation: relationships[entry.id],
+          distance: Math.hypot((fish.xNorm || 0.5) - (entry.xNorm || 0.5), (fish.yNorm || 0.5) - (entry.yNorm || 0.5))
+        }))
+        .sort((left, right) => left.distance - right.distance);
+      fish.bettaRivalCooldownUntil = 0;
+      fish.bettaRivalYieldUntil = 0;
+      rival.bettaRivalCooldownUntil = 0;
+      rival.bettaRivalYieldUntil = 0;
+      target = pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, { force: true });
+    }
+  } else if (species.id === "angelfish") {
+    if (!getFishResidenceDecorId(fish)) {
+      const zone = getCachedDecorHangoutZones().find((entry) => ["hide", "hardscape"].includes(entry.type)) || null;
+      if (zone) fish.residenceDecorId = zone.decorId;
+    }
+    target = pickAngelfishTerritoryBehaviorTarget(fish, species, now, { force: true });
+  } else if (species.id === "blue-ram") {
+    let egg = getBlueRamGuardedEgg(fish);
+    if (!egg) {
+      egg = createFishEggRecord("blue-ram", now, {
+        xNorm: clamp((fish.xNorm || 0.5) + 0.035, 0.12, 0.88),
+        yNorm: clamp((fish.yNorm || 0.6) + 0.08, 0.24, 0.84),
+        tankLayer: getFishTankLayer(fish),
+        parentNames: [fish.name],
+        parentIds: [fish.id]
+      });
+      if (egg) addFishEggToTank(egg);
+    }
+    target = pickBlueRamTerritoryBehaviorTarget(fish, species, now);
+  } else {
+    target = pickSpeciesSignatureBehaviorTarget(fish, species, now, { force: true });
+  }
+
+  if (!target || !applyBehaviorTarget(fish, species, target, now)) {
+    showToast(`${species.name || fish.name} has no available signature behavior target right now.`);
+    return;
+  }
+  fish.behaviorNextThinkAt = 0;
+  finishDebugBehaviorScenario(
+    fish,
+    `Debug forced ${fish.name} signature behavior: ${target.intentType || getFishSignatureBehaviorKey(species)}.`,
+    `${fish.name}: ${target.intentType || "signature behavior"}.`,
+    now
+  );
+}
+
+function triggerDebugPufferInflation(mode, now = Date.now()) {
+  const action = mode === "deflate" ? "puffer-deflate" : mode === "taps" ? "puffer-taps" : "puffer-inflate";
+  const selection = getDebugBehaviorSelectedFishOrToast(action);
+  if (!selection) return;
+  const { fish, species } = selection;
+  if (species?.id !== "pufferfish") {
+    showToast("Select a Pufferfish first.");
+    return;
+  }
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions(action))) {
+    return;
+  }
+
+  if (mode === "deflate") {
+    if (!isPufferPuffVisualActive(fish, now)) {
+      showToast(`${fish.name} is not inflated.`);
+      return;
+    }
+    fish.pufferInflatedUntil = now;
+    fish.pufferWobbleUntil = Math.min(Number(fish.pufferWobbleUntil) || now, now);
+    fish.pufferRiseUntil = Math.min(Number(fish.pufferRiseUntil) || now, now);
+    fish.targetAt = now + getPufferDeflationDurationMs();
+    finishDebugBehaviorScenario(fish, `Debug started ${fish.name} deflation.`, `${fish.name}: deflation started.`, now);
+    return;
+  }
+
+  clearPufferInflationState(fish, { clearCooldown: true });
+  if (mode === "taps") {
+    const tapStates = runtime.pufferRapidTapByFishId || (runtime.pufferRapidTapByFishId = new Map());
+    tapStates.set(fish.id, { startedAt: now - 900, count: getPufferRapidTapGuaranteedCount() - 1, lastTapAt: now - 80 });
+    recordPufferRapidGlassTap(fish, species, now);
+    finishDebugBehaviorScenario(fish, `Debug simulated twelve rapid glass taps near ${fish.name}.`, `${fish.name}: 12-tap harassment test.`, now);
+    return;
+  }
+
+  startPufferInflation(fish, species, now);
+  finishDebugBehaviorScenario(fish, `Debug forced ${fish.name} to inflate.`, `${fish.name}: puffed.`, now);
+}
+
 function triggerDebugBehaviorScenario(action) {
   if (!isDebugModeEnabled()) {
     return;
@@ -49881,6 +56725,18 @@ function triggerDebugBehaviorScenario(action) {
       break;
     case "disease":
       triggerDebugBehaviorDisease();
+      break;
+    case "species-signature":
+      triggerDebugSpeciesSignatureBehavior();
+      break;
+    case "puffer-inflate":
+      triggerDebugPufferInflation("inflate");
+      break;
+    case "puffer-deflate":
+      triggerDebugPufferInflation("deflate");
+      break;
+    case "puffer-taps":
+      triggerDebugPufferInflation("taps");
       break;
     case "oto-back":
       triggerDebugOtocinclusState("back");
@@ -50357,6 +57213,495 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
 }
 
+
+function getDebugDecorPreviewEntries() {
+  return [...runtime.decorMap.entries()]
+    .filter(([, decor]) => decor?.path && !(typeof isCustomDecorUploadShopKey === "function" && isCustomDecorUploadShopKey(decor.key || "")))
+    .map(([key, decor]) => ({ key, decor, name: decor.name || titleFromFile(key) }))
+    .sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: "base", numeric: true }));
+}
+
+function populateDebugDecorPreviewSelect() {
+  const select = dom.debugDecorPreviewSelect;
+  if (!select) {
+    return [];
+  }
+  const entries = getDebugDecorPreviewEntries();
+  select.innerHTML = entries.map(({ key, name }) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`).join("");
+  const preferredKey = runtime.debugDecorPreviewDecorKey && runtime.decorMap.has(runtime.debugDecorPreviewDecorKey)
+    ? runtime.debugDecorPreviewDecorKey
+    : entries[0]?.key || "";
+  runtime.debugDecorPreviewDecorKey = preferredKey;
+  if (preferredKey) {
+    select.value = preferredKey;
+  }
+  return entries;
+}
+
+function createDebugDecorPreviewItem(decorKey = runtime.debugDecorPreviewDecorKey) {
+  const decor = runtime.decorMap.get(decorKey);
+  if (!decor) {
+    return null;
+  }
+  const selectedLayer = clampTankLayer(Number(dom.debugDecorPreviewLayer?.value) || 3);
+  const baseScale = clamp(Number(decor.defaultScale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+  return {
+    id: `debug-decor-preview-${decorKey}`,
+    decorKey,
+    xNorm: 0.5,
+    yNorm: 0.8,
+    scale: baseScale,
+    tankLayer: selectedLayer,
+    flipped: false,
+    flippedY: false,
+    caveColorSettings: {}
+  };
+}
+
+function getDebugDecorPreviewBaseScale() {
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  return clamp(Number(decor?.defaultScale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+}
+
+function requestDebugDecorPreviewRender() {
+  if (!runtime.debugDecorPreviewOpen || runtime.debugDecorPreviewFrame) {
+    return;
+  }
+  runtime.debugDecorPreviewFrame = requestAnimationFrame(renderDebugDecorPreviewFrame);
+}
+
+function getDebugDecorPreviewColorLayers(decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey)) {
+  if (!decor || typeof getVisibleDecorColorLayers !== "function") {
+    return [];
+  }
+  return getVisibleDecorColorLayers(decor).filter((layer) => layer?.id && (layer.isBaseLayer || layer.path || layer.paths?.length));
+}
+
+function renderDebugDecorPreviewColorControls() {
+  const container = dom.debugDecorPreviewColors;
+  const item = runtime.debugDecorPreviewItem;
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  if (!container || !item || !decor) {
+    return;
+  }
+  const layers = getDebugDecorPreviewColorLayers(decor);
+  if (!layers.length) {
+    container.innerHTML = '<p class="debug-decor-preview-empty">This decor has no configurable color layers.</p>';
+    return;
+  }
+  const settings = getPlacedCaveColorSettings(item, decor);
+  const colorize = getPlacedCaveColorizeSettings(item, decor);
+  container.innerHTML = layers.map((layer, index) => {
+    const active = normalizeHexColor(settings[layer.id] || "");
+    const fallback = ["#55c8e8", "#8ddf79", "#d08edc"][index % 3];
+    const label = getCaveColorLayerLabel(layer, layers, decor);
+    return `
+      <label class="debug-decor-preview-color-row" data-debug-decor-color-layer="${escapeHtml(layer.id)}">
+        <input type="checkbox" data-debug-decor-color-enabled ${active ? "checked" : ""} />
+        <span>${escapeHtml(label)}</span>
+        <input type="color" data-debug-decor-color-value value="${escapeHtml(active || fallback)}" ${active ? "" : "disabled"} />
+      </label>
+    `;
+  }).join("");
+}
+
+function handleDebugDecorPreviewColorInput(event) {
+  const item = runtime.debugDecorPreviewItem;
+  const row = event.target?.closest?.("[data-debug-decor-color-layer]");
+  if (!item || !row) {
+    return;
+  }
+  const layerId = row.getAttribute("data-debug-decor-color-layer") || "";
+  if (!layerId) {
+    return;
+  }
+  const enabled = row.querySelector("[data-debug-decor-color-enabled]")?.checked === true;
+  const picker = row.querySelector("[data-debug-decor-color-value]");
+  if (picker) {
+    picker.disabled = !enabled;
+  }
+  item.caveColorSettings ||= {};
+  if (!enabled) {
+    delete item.caveColorSettings[layerId];
+    delete item.caveColorSettings[getDecorColorizeSettingKey(layerId)];
+  } else {
+    item.caveColorSettings[layerId] = normalizeHexColor(picker?.value || "#55c8e8") || "#55c8e8";
+    item.caveColorSettings[getDecorColorizeSettingKey(layerId)] = true;
+  }
+  requestDebugDecorPreviewRender();
+}
+
+function syncDebugDecorPreviewControls() {
+  const item = runtime.debugDecorPreviewItem;
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  if (!item || !decor) {
+    return;
+  }
+  const baseScale = getDebugDecorPreviewBaseScale();
+  const percent = clamp(Math.round((item.scale / Math.max(0.0001, baseScale)) * 100), 25, 250);
+  runtime.debugDecorPreviewScalePercent = percent;
+  if (dom.debugDecorPreviewSize) dom.debugDecorPreviewSize.value = String(percent);
+  if (dom.debugDecorPreviewSizeOutput) dom.debugDecorPreviewSizeOutput.textContent = `${percent}%`;
+  if (dom.debugDecorPreviewFlipX) dom.debugDecorPreviewFlipX.checked = item.flipped === true;
+  if (dom.debugDecorPreviewFlipY) dom.debugDecorPreviewFlipY.checked = item.flippedY === true;
+  if (dom.debugDecorPreviewLayer) dom.debugDecorPreviewLayer.value = String(getDecorTankLayer(item));
+  renderDebugDecorPreviewColorControls();
+}
+
+function snapDebugDecorPreviewToLayer(options = {}) {
+  const item = runtime.debugDecorPreviewItem;
+  if (!item) {
+    return;
+  }
+  if (options.center !== false) {
+    item.xNorm = 0.5;
+  }
+  const targetY = getTankLayerBottomBoundaryY(getDecorTankLayer(item));
+  for (let pass = 0; pass < 2; pass += 1) {
+    const bounds = getPlacedDecorGroundBounds(item) || getPlacedDecorBounds(item);
+    if (!bounds) {
+      break;
+    }
+    item.yNorm = clamp(item.yNorm + (targetY - bounds.bottom) / Math.max(1, TANK_HEIGHT), 0.02, 1.05);
+  }
+  runtime.debugDecorPreviewSnapped = true;
+  requestDebugDecorPreviewRender();
+}
+
+function resetDebugDecorPreview() {
+  const decorKey = runtime.debugDecorPreviewDecorKey;
+  if (!decorKey || !runtime.decorMap.has(decorKey)) {
+    return;
+  }
+  runtime.debugDecorPreviewScalePercent = 100;
+  runtime.debugDecorPreviewItem = createDebugDecorPreviewItem(decorKey);
+  if (dom.debugDecorPreviewShowFootprint) dom.debugDecorPreviewShowFootprint.checked = false;
+  syncDebugDecorPreviewControls();
+  snapDebugDecorPreviewToLayer({ center: true });
+}
+
+function setDebugDecorPreviewDecor(decorKey) {
+  if (!runtime.decorMap.has(decorKey)) {
+    return;
+  }
+  runtime.debugDecorPreviewDecorKey = decorKey;
+  runtime.debugDecorPreviewItem = createDebugDecorPreviewItem(decorKey);
+  runtime.debugDecorPreviewScalePercent = 100;
+  const decor = runtime.decorMap.get(decorKey);
+  const token = ++runtime.debugDecorPreviewLoadToken;
+  if (dom.debugDecorPreviewStatus) dom.debugDecorPreviewStatus.textContent = `Loading ${decor.name || titleFromFile(decorKey)}…`;
+  void preloadDecorArtwork(decor).then(() => {
+    if (!runtime.debugDecorPreviewOpen || token !== runtime.debugDecorPreviewLoadToken) return;
+    snapDebugDecorPreviewToLayer({ center: true });
+    syncDebugDecorPreviewControls();
+    requestDebugDecorPreviewRender();
+  });
+  syncDebugDecorPreviewControls();
+  snapDebugDecorPreviewToLayer({ center: true });
+}
+
+function setDebugDecorPreviewLayer(layer) {
+  const item = runtime.debugDecorPreviewItem;
+  if (!item) return;
+  item.tankLayer = clampTankLayer(Number(layer) || 1);
+  snapDebugDecorPreviewToLayer({ center: false });
+}
+
+function setDebugDecorPreviewSize(value) {
+  const item = runtime.debugDecorPreviewItem;
+  if (!item) return;
+  const percent = clamp(Math.round(Number(value) || 100), 25, 250);
+  runtime.debugDecorPreviewScalePercent = percent;
+  item.scale = clamp(getDebugDecorPreviewBaseScale() * percent / 100, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+  if (dom.debugDecorPreviewSizeOutput) dom.debugDecorPreviewSizeOutput.textContent = `${percent}%`;
+  if (runtime.debugDecorPreviewSnapped) {
+    snapDebugDecorPreviewToLayer({ center: false });
+  } else {
+    requestDebugDecorPreviewRender();
+  }
+}
+
+function setDebugDecorPreviewFlip(axis, checked) {
+  const item = runtime.debugDecorPreviewItem;
+  if (!item) return;
+  if (axis === "y") item.flippedY = checked === true;
+  else item.flipped = checked === true;
+  if (runtime.debugDecorPreviewSnapped) snapDebugDecorPreviewToLayer({ center: false });
+  else requestDebugDecorPreviewRender();
+}
+
+function openDebugDecorPreview() {
+  if (!isDebugModeEnabled() || !dom.debugDecorPreview) {
+    return;
+  }
+  if (runtime.debugFishBehaviorPreviewOpen) {
+    closeDebugFishBehaviorPreview();
+  }
+  populateDebugDecorPreviewSelect();
+  runtime.debugDecorPreviewOpen = true;
+  document.body.classList.add("debug-decor-preview-open");
+  dom.debugDecorPreview.hidden = false;
+  const key = runtime.debugDecorPreviewDecorKey || dom.debugDecorPreviewSelect?.value || "";
+  if (key) {
+    setDebugDecorPreviewDecor(key);
+  }
+  requestDebugDecorPreviewRender();
+  dom.debugDecorPreviewSelect?.focus();
+}
+
+function closeDebugDecorPreview() {
+  runtime.debugDecorPreviewOpen = false;
+  runtime.debugDecorPreviewLoadToken += 1;
+  runtime.debugDecorPreviewPointerId = null;
+  runtime.debugDecorPreviewTransform = null;
+  if (runtime.debugDecorPreviewFrame) {
+    cancelAnimationFrame(runtime.debugDecorPreviewFrame);
+    runtime.debugDecorPreviewFrame = 0;
+  }
+  if (dom.debugDecorPreview) dom.debugDecorPreview.hidden = true;
+  document.body.classList.remove("debug-decor-preview-open");
+  dom.debugDecorPreviewButton?.focus();
+}
+
+function getDebugDecorPreviewTankPoint(event) {
+  const canvas = dom.debugDecorPreviewCanvas;
+  const transform = runtime.debugDecorPreviewTransform;
+  if (!canvas || !transform) return null;
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  return {
+    x: (x - transform.offsetX) / Math.max(0.0001, transform.scale),
+    y: (y - transform.offsetY) / Math.max(0.0001, transform.scale)
+  };
+}
+
+function beginDebugDecorPreviewDrag(event) {
+  if (!runtime.debugDecorPreviewOpen || !runtime.debugDecorPreviewItem || event.button !== 0) return;
+  const point = getDebugDecorPreviewTankPoint(event);
+  if (!point) return;
+  const bounds = getPlacedDecorBounds(runtime.debugDecorPreviewItem);
+  if (bounds && (point.x < bounds.left - 20 || point.x > bounds.right + 20 || point.y < bounds.top - 20 || point.y > bounds.bottom + 20)) {
+    return;
+  }
+  event.preventDefault();
+  runtime.debugDecorPreviewPointerId = event.pointerId;
+  runtime.debugDecorPreviewDragOffsetX = runtime.debugDecorPreviewItem.xNorm * TANK_WIDTH - point.x;
+  runtime.debugDecorPreviewDragOffsetY = runtime.debugDecorPreviewItem.yNorm * TANK_HEIGHT - point.y;
+  runtime.debugDecorPreviewSnapped = false;
+  dom.debugDecorPreviewCanvas?.setPointerCapture?.(event.pointerId);
+}
+
+function moveDebugDecorPreviewDrag(event) {
+  if (runtime.debugDecorPreviewPointerId !== event.pointerId || !runtime.debugDecorPreviewItem) return;
+  const point = getDebugDecorPreviewTankPoint(event);
+  if (!point) return;
+  event.preventDefault();
+  const anchorX = point.x + runtime.debugDecorPreviewDragOffsetX;
+  const anchorY = point.y + runtime.debugDecorPreviewDragOffsetY;
+  runtime.debugDecorPreviewItem.xNorm = clamp(anchorX / Math.max(1, TANK_WIDTH), 0, 1);
+  runtime.debugDecorPreviewItem.yNorm = clamp(anchorY / Math.max(1, TANK_HEIGHT), 0.03, 1.04);
+  requestDebugDecorPreviewRender();
+}
+
+function endDebugDecorPreviewDrag(event) {
+  if (runtime.debugDecorPreviewPointerId !== event.pointerId) return;
+  runtime.debugDecorPreviewPointerId = null;
+  dom.debugDecorPreviewCanvas?.releasePointerCapture?.(event.pointerId);
+  requestDebugDecorPreviewRender();
+}
+
+function drawDebugDecorPreviewBackdrop(context) {
+  const floorBounds = getTankFloorDrawBounds();
+  const waterGradient = context.createLinearGradient(0, WATER_SURFACE_Y, 0, floorBounds.bottom);
+  waterGradient.addColorStop(0, "#58c8ef");
+  waterGradient.addColorStop(0.55, "#1789d0");
+  waterGradient.addColorStop(1, "#0d5ea8");
+  context.fillStyle = "#071522";
+  context.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  context.fillStyle = waterGradient;
+  context.fillRect(GLASS_MARGIN_X, WATER_SURFACE_Y, TANK_WIDTH - GLASS_MARGIN_X * 2, floorBounds.bottom - WATER_SURFACE_Y);
+
+  context.save();
+  traceTankFloorMaskPath(context, floorBounds);
+  context.clip();
+  const gravelGradient = context.createLinearGradient(0, floorBounds.drawTop, 0, floorBounds.bottom);
+  gravelGradient.addColorStop(0, "#9b8c6d");
+  gravelGradient.addColorStop(0.55, "#766449");
+  gravelGradient.addColorStop(1, "#4f402f");
+  context.fillStyle = gravelGradient;
+  context.fillRect(floorBounds.left, floorBounds.drawTop, floorBounds.drawWidth, floorBounds.bottom - floorBounds.drawTop + 2);
+  context.globalAlpha = 0.14;
+  context.fillStyle = "#e1d6b9";
+  for (let x = floorBounds.left + 8; x < floorBounds.right; x += 21) {
+    const surface = getTankFloorMaskSurfaceYAtX(x, floorBounds);
+    for (let y = surface + 7 + ((x * 13) % 11); y < floorBounds.bottom; y += 19) {
+      context.beginPath();
+      context.arc(x + ((y * 7) % 9) - 4, y, 2.2, 0, Math.PI * 2);
+      context.fill();
+    }
+  }
+  context.restore();
+
+  for (let layer = 1; layer <= 5; layer += 1) {
+    const y = getTankLayerBottomBoundaryY(layer);
+    const selected = layer === getDecorTankLayer(runtime.debugDecorPreviewItem);
+    context.save();
+    context.setLineDash(selected ? [] : [9, 8]);
+    context.lineWidth = selected ? 2.4 : 1.2;
+    context.strokeStyle = selected ? "rgba(255, 222, 114, 0.85)" : "rgba(220, 247, 255, 0.22)";
+    context.beginPath();
+    context.moveTo(GLASS_MARGIN_X + 8, y);
+    context.lineTo(TANK_WIDTH - GLASS_MARGIN_X - 8, y);
+    context.stroke();
+    context.fillStyle = selected ? "rgba(255, 232, 148, 0.95)" : "rgba(220, 247, 255, 0.45)";
+    context.font = "700 15px system-ui, sans-serif";
+    context.fillText(`L${layer}`, GLASS_MARGIN_X + 16, y - 7);
+    context.restore();
+  }
+}
+
+function drawDebugDecorPreviewFootprint(context, item, decor, drawX, drawY, width, height) {
+  if (!dom.debugDecorPreviewShowFootprint?.checked || !decor?.shadowFootprintPath) return;
+  const footprintImage = runtime.images.get(decor.shadowFootprintPath);
+  if (!isUsableRuntimeImage(footprintImage)) return;
+  context.save();
+  const flipX = isDecorHorizontallyFlipped(item);
+  const flipY = isDecorVerticallyFlipped(item);
+  let x = drawX;
+  let y = drawY;
+  if (flipX || flipY) {
+    context.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
+    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+    x = flipX ? 0 : drawX;
+    y = flipY ? 0 : drawY;
+  }
+  context.globalAlpha = 0.58;
+  context.globalCompositeOperation = "screen";
+  context.filter = "invert(34%) sepia(95%) saturate(5200%) hue-rotate(318deg) brightness(118%) contrast(120%)";
+  context.drawImage(footprintImage, x, y, width, height);
+  context.filter = "none";
+  context.restore();
+}
+
+function drawDebugDecorPreviewArtwork(context, item, decor, now) {
+  const image = runtime.images.get(decor.path);
+  if (!isUsableRuntimeImage(image)) return false;
+  const width = getDecorDisplayWidth(decor, item);
+  const height = width * (image.height / Math.max(1, image.width));
+  const x = item.xNorm * TANK_WIDTH;
+  const y = item.yNorm * TANK_HEIGHT;
+  const drawX = x - width / 2;
+  const drawY = y - height;
+  const motion = getDecorMotion(item, now);
+
+  if (decor.bgPath) {
+    const bgImage = runtime.images.get(decor.bgPath);
+    if (isUsableRuntimeImage(bgImage)) {
+      const bgHeight = width * (bgImage.height / Math.max(1, bgImage.width));
+      if (!drawCaveBackgroundLayerToContext(context, item, decor, now, {
+        drawX,
+        drawY,
+        bgDrawY: y - bgHeight,
+        width,
+        baseHeight: height,
+        motion
+      })) {
+        drawDecorImageLayerToContext(context, bgImage, drawX, y - bgHeight, width, bgHeight, item, now, motion);
+      }
+    }
+  }
+
+  if (decor.midPath) {
+    const midImage = runtime.images.get(decor.midPath);
+    if (isUsableRuntimeImage(midImage)) {
+      const midHeight = width * (midImage.height / Math.max(1, midImage.width));
+      drawDecorImageLayerToContext(context, midImage, drawX, y - midHeight, width, midHeight, item, now, motion);
+    }
+  }
+
+  if (!drawCaveColorLayersToContext(context, item, decor, now, { drawX, drawY, width, height, motion })) {
+    drawDecorImageLayerToContext(context, image, drawX, drawY, width, height, item, now, motion);
+  }
+
+  if (decor.lightPath) {
+    const lightImage = runtime.images.get(decor.lightPath);
+    if (isUsableRuntimeImage(lightImage)) {
+      const lightHeight = width * (lightImage.height / Math.max(1, lightImage.width));
+      context.save();
+      context.globalCompositeOperation = "screen";
+      drawDecorImageLayerToContext(context, lightImage, drawX, y - lightHeight, width, lightHeight, item, now, motion);
+      context.restore();
+    }
+  }
+
+  drawDebugDecorPreviewFootprint(context, item, decor, drawX, drawY, width, height);
+  return true;
+}
+
+function updateDebugDecorPreviewReadouts() {
+  const item = runtime.debugDecorPreviewItem;
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  if (!item || !decor) return;
+  const groundBounds = getPlacedDecorGroundBounds(item) || getPlacedDecorBounds(item);
+  const layerY = getTankLayerBottomBoundaryY(getDecorTankLayer(item));
+  const offset = groundBounds ? groundBounds.bottom - layerY : 0;
+  if (dom.debugDecorPreviewBottom) dom.debugDecorPreviewBottom.textContent = groundBounds ? `${Math.round(groundBounds.bottom)} px` : "Unavailable";
+  if (dom.debugDecorPreviewOffset) dom.debugDecorPreviewOffset.textContent = `${offset >= 0 ? "+" : ""}${Math.round(offset)} px`;
+  if (dom.debugDecorPreviewFootprint) dom.debugDecorPreviewFootprint.textContent = decor.shadowFootprintPath ? "Helper PNG" : "Auto";
+  if (dom.debugDecorPreviewStatus) {
+    const width = Math.round(getDecorDisplayWidth(decor, item));
+    dom.debugDecorPreviewStatus.textContent = `${decor.name || titleFromFile(item.decorKey)} · ${width}px · Layer ${getDecorTankLayer(item)}${runtime.debugDecorPreviewSnapped ? " · snapped" : ""}`;
+  }
+}
+
+function renderDebugDecorPreviewFrame() {
+  runtime.debugDecorPreviewFrame = 0;
+  if (!runtime.debugDecorPreviewOpen || !dom.debugDecorPreviewCanvas || !runtime.debugDecorPreviewItem) return;
+  const canvas = dom.debugDecorPreviewCanvas;
+  const context = canvas.getContext("2d");
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  if (!context || !decor) return;
+
+  const viewport = resizeDebugFishBehaviorPreviewCanvas(canvas, context);
+  context.clearRect(0, 0, viewport.width, viewport.height);
+  const scale = Math.min(viewport.width / Math.max(1, TANK_WIDTH), viewport.height / Math.max(1, TANK_HEIGHT));
+  const offsetX = (viewport.width - TANK_WIDTH * scale) / 2;
+  const offsetY = (viewport.height - TANK_HEIGHT * scale) / 2;
+  runtime.debugDecorPreviewTransform = { scale, offsetX, offsetY };
+
+  context.save();
+  context.translate(offsetX, offsetY);
+  context.scale(scale, scale);
+  drawDebugDecorPreviewBackdrop(context);
+
+  if (areDecorShadowsEnabled()) {
+    context.save();
+    context.globalCompositeOperation = "multiply";
+    drawDecorContactShadow(context, runtime.debugDecorPreviewItem);
+    context.restore();
+  }
+
+  const paths = getDecorArtworkPaths(decor);
+  const needsLoad = paths.some((path) => path && !isUsableRuntimeImage(runtime.images.get(path)));
+  if (needsLoad) {
+    void preloadDecorArtwork(decor).then(() => requestDebugDecorPreviewRender());
+  }
+  drawDebugDecorPreviewArtwork(context, runtime.debugDecorPreviewItem, decor, Date.now());
+
+  const anchorX = runtime.debugDecorPreviewItem.xNorm * TANK_WIDTH;
+  const anchorY = runtime.debugDecorPreviewItem.yNorm * TANK_HEIGHT;
+  context.strokeStyle = "rgba(255,255,255,0.52)";
+  context.lineWidth = 1.4 / Math.max(0.001, scale);
+  context.beginPath();
+  context.arc(anchorX, anchorY, 5 / Math.max(0.001, scale), 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+
+  updateDebugDecorPreviewReadouts();
+  runtime.debugDecorPreviewFrame = requestAnimationFrame(renderDebugDecorPreviewFrame);
+}
+
 function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now()) {
   const species = getSpeciesForFish(selectedFish);
   const config = DEBUG_BEHAVIOR_BUTTON_CONFIGS.find((entry) => entry.action === action);
@@ -50373,6 +57718,18 @@ function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now
   }
 
   switch (action) {
+    case "species-signature": {
+      const availability = getDebugSpeciesSignatureAvailability(selectedFish, species, now);
+      return availability.enabled
+        ? { enabled: true, title }
+        : { enabled: false, title: `${title}: ${availability.reason}` };
+    }
+    case "puffer-inflate":
+    case "puffer-deflate":
+    case "puffer-taps":
+      return species?.id === "pufferfish"
+        ? { enabled: true, title }
+        : { enabled: false, title: `${title}: select a Pufferfish` };
     case "hide":
       return hasDebugDecorHangoutZone(["plant", "hide", "spooky"])
         ? { enabled: true, title }
@@ -50554,10 +57911,6 @@ function infectSelectedFishDebug() {
   const now = Date.now();
   if (isFishDead(fish)) {
     showToast(`${fish.name} is already dead.`);
-    return;
-  }
-  if (isUndeadFish(fish)) {
-    showToast(`${fish.name} cannot use the regular illness debug path.`);
     return;
   }
 
@@ -51318,8 +58671,80 @@ function getActiveGlassTapStressEnds(fish, now = Date.now()) {
     : [];
 }
 
+function getPufferRapidTapWindowMs() { return 4200; }
+function getPufferRapidTapTriggerCount() { return 9; }
+function getPufferRapidTapGuaranteedCount() { return 12; }
+function getPufferHarassmentStressDurationMs() { return 20 * MINUTE_MS; }
+function getPufferHarassmentStressPenalty() { return 0.1; }
+
+function getPufferRapidTapTriggerChance(tapCount) {
+  if (tapCount >= getPufferRapidTapGuaranteedCount()) return 1;
+  if (tapCount >= 11) return 0.8;
+  if (tapCount >= 10) return 0.5;
+  if (tapCount >= getPufferRapidTapTriggerCount()) return 0.2;
+  return 0;
+}
+
+function getPufferHarassmentStressPenaltyForFish(fish, now = Date.now()) {
+  return isPufferfishSpecies(fish) && (Number(fish?.pufferGlassStressUntil) || 0) > now
+    ? getPufferHarassmentStressPenalty()
+    : 0;
+}
+
 function getFishGlassTapStressPenalty(fish, now = Date.now()) {
-  return getActiveGlassTapStressEnds(fish, now).length * GLASS_TAP_STRESS_PENALTY;
+  return getActiveGlassTapStressEnds(fish, now).length * GLASS_TAP_STRESS_PENALTY
+    + getPufferHarassmentStressPenaltyForFish(fish, now);
+}
+
+function recordPufferRapidGlassTap(fish, species, now = Date.now()) {
+  if (!fish || species?.id !== "pufferfish" || isFishDead(fish)) {
+    return false;
+  }
+
+  const tapStates = runtime.pufferRapidTapByFishId || (runtime.pufferRapidTapByFishId = new Map());
+  const previous = tapStates.get(fish.id);
+  const withinWindow = previous && now - Number(previous.startedAt) <= getPufferRapidTapWindowMs();
+  const stateForFish = withinWindow
+    ? previous
+    : { startedAt: now, count: 0 };
+  stateForFish.count = Math.max(0, Math.floor(Number(stateForFish.count) || 0)) + 1;
+  stateForFish.lastTapAt = now;
+  tapStates.set(fish.id, stateForFish);
+
+  if (stateForFish.count < getPufferRapidTapTriggerCount()) {
+    return false;
+  }
+
+  const chance = getPufferRapidTapTriggerChance(stateForFish.count);
+  if (chance <= 0 || Math.random() >= chance) {
+    return false;
+  }
+
+  fish.pufferGlassStressUntil = Math.max(
+    Number(fish.pufferGlassStressUntil) || 0,
+    now + getPufferHarassmentStressDurationMs()
+  );
+
+  // One rapid-tap burst should produce one defensive event. Continuing to tap
+  // starts a new harassment window instead of rerolling every frame.
+  tapStates.delete(fish.id);
+
+  if (isPufferInflatedActive(fish, now) || (Number(fish.pufferCooldownUntil) || 0) > now) {
+    return true;
+  }
+
+  const inflated = startPufferInflation(fish, species, now);
+  if (inflated) {
+    const tank = getCurrentTank();
+    if (tank) {
+      pushEvent(`${fish.name} puffed up after repeated glass tapping.`, now, tank, {
+        score: -1,
+        type: "glass_tap_stress",
+        fishId: fish.id
+      });
+    }
+  }
+  return inflated || true;
 }
 
 function hasTankGlassTapStressEventToday(tank, now = Date.now()) {
@@ -51451,6 +58876,7 @@ function scareNearbyFishFromGlassTap(point, now = Date.now()) {
 
     if (distance <= GLASS_TAP_STRESS_RADIUS_PX) {
       stressChanged = recordGlassTapStressForFish(fish, now) || stressChanged;
+      stressChanged = recordPufferRapidGlassTap(fish, species, now) || stressChanged;
     }
 
     const fallbackAngle = Math.random() * Math.PI * 2;
@@ -52138,7 +59564,7 @@ function hasAllLivingFishNeedsMet(now = Date.now()) {
 }
 
 function isCommunityMilestoneFish(fish) {
-  return Boolean(fish && !isPiranhaSpecies(fish) && !isUndeadFish(fish) && fish.speciesId !== "pufferfish");
+  return Boolean(fish && !isPiranhaSpecies(fish) && fish.speciesId !== "pufferfish");
 }
 
 function hasCommunityMilestoneTank(recentAverageComfort = 0) {
@@ -52249,7 +59675,6 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     oldestLivingFishAgeMs,
     daysSinceLastDeath,
     hasSparklingFish: livingFish.some((fish) => getFishComfort(fish, now).value >= 0.95),
-    hasSaltwaterFish: livingFish.some((fish) => getSpeciesWaterType(fish) === "saltwater"),
     cleanRecapStreak90,
     cleanRecapStreak95,
     allMealsSatisfiedStreak,
@@ -52421,6 +59846,7 @@ function saveState() {
 
   ensureBubbleBodegaRescueOffer(Date.now());
   applyProgressMilestones(null, Date.now());
+  if (typeof syncWebSurfMailPersistence === "function") syncWebSurfMailPersistence();
 
   const customDecorPruned = pruneCustomDecorAssets(state);
   const customFishPruned = pruneCustomFishAssets(state);
@@ -54242,9 +61668,11 @@ function formatFishShopBehavior(species) {
   if (species.id === "sunfish") {
     return "Gentle drifter";
   }
-
-  if (isUndeadSpecies(species)) {
-    return "Undead aggressor";
+  if (species.id === "koi") {
+    return "Broad bottom cruiser";
+  }
+  if (species.id === "lionfish") {
+    return "Shelter ambush hoverer";
   }
 
   if (species.behavior === "sucker") {
@@ -54343,7 +61771,7 @@ function renderFishShop() {
           ? `Debug unlocked (${lockedRequirementLabel})`
           : "Unlocked";
       const behaviorWarning = isPiranhaSpecies(fish)
-        ? "Warning: attacks and can kill non-undead tankmates when aggressive behavior is enabled."
+        ? "Warning: attacks and can kill tankmates when aggressive behavior is enabled."
         : "";
       return `
         <article class="shop-card ${locked ? "is-locked" : ""} ${isDavyMutation ? "is-davy-mutation" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
@@ -54351,7 +61779,7 @@ function renderFishShop() {
           <div class="shop-meta shop-card-main">
             <div>
               <strong>${escapeHtml(fish.name)}</strong>
-              ${renderFishShopThemePill(fish.theme)}
+              ${renderFishShopGeneticsPill(fish.genetics)}
               ${[fish.description, ...(Array.isArray(fish.aboutParagraphs) ? fish.aboutParagraphs : [])]
                 .filter((paragraph) => typeof paragraph === "string" && paragraph.trim())
                 .map((paragraph) => `<div class="fish-meta">${escapeHtml(paragraph)}</div>`)
@@ -55071,12 +62499,10 @@ function renderAquariumOverview() {
     const serviceMarkup = `<span class="borough-cell-services">${serviceParts.join(" · ")}</span>`;
     const editing = runtime.editingTankNameId === cell.id;
     const resaleValue = getTankResaleValue(cell);
-    const canSell = tanks.length > 1 && isTankEmpty(cell);
+    const canSell = tanks.length > 1;
     const sellTitle = tanks.length <= 1
       ? "You need to keep at least one tank"
-      : !isTankEmpty(cell)
-        ? "Move all fish and decor out before selling this tank"
-        : `Sell ${getTankLabel(cell)} for ${resaleValue} coins`;
+      : `Sell ${getTankLabel(cell)} for ${resaleValue} coins. Fish, decor, and equipment will return to storage.`;
     const rightNeighbor = getAquariumSectionAt(cell.gridX + 1, cell.gridY);
     const wallBlocked = rightNeighbor ? isBoroughTravelWallBlocked(cell, rightNeighbor) : false;
     const wallMarkup = rightNeighbor
@@ -55167,15 +62593,17 @@ function renderBoroughOverviewFish(now = Date.now(), options = {}) {
       context.save();
       context.translate(x, y);
       context.scale(direction, 1);
-      context.globalAlpha = 0.9;
+      const depthLayer = getFishTankLayer(fish);
+      context.globalAlpha = 0.9 * getTankDepthObjectAlpha(depthLayer);
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "low";
       const species = getSpeciesForFish(fish);
       const imagePath = getFishDisplayAssetPath(fish, species, now);
       const image = imagePath ? runtime.images.get(imagePath) : null;
       if (image?.complete && image.naturalWidth) {
-        const aspect = image.naturalWidth / Math.max(1, image.naturalHeight);
-        context.drawImage(image, -fishSize * aspect, -fishSize, fishSize * aspect * 2, fishSize * 2);
+        const depthImage = getTankDepthTreatedImage(image, depthLayer) || image;
+        const aspect = depthImage.width / Math.max(1, depthImage.height);
+        context.drawImage(depthImage, -fishSize * aspect, -fishSize, fishSize * aspect * 2, fishSize * 2);
       } else {
         context.fillStyle = getBoroughOverviewFishColor(fish);
         context.beginPath();
@@ -56232,7 +63660,6 @@ function buildManagementFishRow(fish, now = Date.now()) {
   const baseSpecies = getBaseSpeciesForFish(fish) || species;
   const dead = isFishDead(fish);
   const juvenile = !dead && isFishJuvenile(fish, now);
-  const infected = !dead && hasZombieBiteInfection(fish);
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
@@ -56240,16 +63667,14 @@ function buildManagementFishRow(fish, now = Date.now()) {
     ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
     : isFishSpeciesShopUnlocked(baseSpecies);
   const canSell = Boolean(baseSpecies) && !dead && !isFishBeingConsumedByPiranhas(fish, now) && !juvenile;
-  const canStore = !dead && !infected;
+  const canStore = !dead;
   const status = dead
     ? getFishCorpseStateLabel(fish, now)
-    : infected
-      ? "Infected"
-      : juvenile
-        ? "Growing"
-        : fish.healthUnits < maxHealthUnits
-          ? `${fish.healthUnits}/${maxHealthUnits} health`
-          : "Healthy";
+    : juvenile
+      ? "Growing"
+      : fish.healthUnits < maxHealthUnits
+        ? `${fish.healthUnits}/${maxHealthUnits} health`
+        : "Healthy";
 
   return `
     <article class="management-browser-item">
@@ -56292,7 +63717,7 @@ function buildTankManagementFishBrowser(now = Date.now()) {
 function buildManagementDecorRow(item) {
   const decor = runtime.decorMap.get(item.decorKey) || {
     name: titleFromFile(item.decorKey),
-    path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`)
+    path: getDecorAssetPathForKey(item.decorKey)
   };
   const grouped = isPlacedDecorGrouped(item);
   const resaleValue = getResaleValue(decor?.cost || 0);
@@ -57859,6 +65284,11 @@ function handleCustomFishUtilityOverlayBodyClick(ctx, target) {
 }
 
 function handleCustomFishUtilityOverlayChange(ctx, target) {
+  const liveBirthToggle = target?.closest?.("[data-custom-fish-live-birth-toggle]");
+  if (liveBirthToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.liveBirth = liveBirthToggle.checked;
+    return true;
+  }
   const turnToggle = target?.closest?.("[data-custom-fish-turn-toggle]");
   if (turnToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
     runtime.pendingCustomFishUpload.turnAnimation = turnToggle.checked ? "complex" : "simple";
@@ -58226,7 +65656,7 @@ function bubbleBankTransactionMatchesFilter(entry, filter) {
   return !earned && entry.direction === "debit" && getBubbleBankTransactionCategory(entry) === filter;
 }
 
-function getWebSurfReadMailIds() {
+function getLegacyWebSurfReadMailIds() {
   try {
     const parsed = JSON.parse(localStorage.getItem(WEBSURF_MAIL_READ_STORAGE_KEY) || "[]");
     return new Set(Array.isArray(parsed) ? parsed.map(String).slice(-120) : []);
@@ -58235,52 +65665,213 @@ function getWebSurfReadMailIds() {
   }
 }
 
-function saveWebSurfReadMailIds(readIds) {
-  try {
-    localStorage.setItem(WEBSURF_MAIL_READ_STORAGE_KEY, JSON.stringify([...readIds].slice(-120)));
-  } catch {}
-}
-
-function getWebSurfSilencedSenders() {
+function getLegacyWebSurfSilencedSenderKeys() {
   try {
     const parsed = JSON.parse(localStorage.getItem(WEBSURF_SILENCED_SENDERS_STORAGE_KEY) || "[]");
-    return new Set(Array.isArray(parsed) ? parsed.map((sender) => String(sender).toLowerCase()).slice(-80) : []);
+    return new Set(Array.isArray(parsed)
+      ? parsed.map((sender) => normalizeWebSurfSenderIdentity(sender)).filter(Boolean).slice(-80)
+      : []);
   } catch {
     return new Set();
   }
 }
 
-function saveWebSurfSilencedSenders(senders) {
-  try {
-    localStorage.setItem(WEBSURF_SILENCED_SENDERS_STORAGE_KEY, JSON.stringify([...senders].slice(-80)));
-  } catch {}
+function normalizeWebSurfSenderIdentity(sender) {
+  return String(sender || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96);
 }
 
-function toggleWebSurfSenderSilenced(sender) {
-  const normalized = String(sender || "").trim().toLowerCase();
-  if (!normalized) return;
-  const senders = getWebSurfSilencedSenders();
-  if (senders.has(normalized)) senders.delete(normalized);
-  else senders.add(normalized);
-  saveWebSurfSilencedSenders(senders);
+function getWebSurfSenderId(sender) {
+  const identity = normalizeWebSurfSenderIdentity(sender) || "unknown";
+  return `sender-${identity}`;
 }
 
-function isWebSurfMailUnread(message, readIds = getWebSurfReadMailIds(), silencedSenders = getWebSurfSilencedSenders()) {
-  return !readIds.has(message.id) && !silencedSenders.has(String(message.sender || "").toLowerCase());
+function ensureWebSurfSenderState(sender, explicitSenderId = "") {
+  if (!state) return { senderId: getWebSurfSenderId(sender), sender: String(sender || ""), status: 1 };
+  state.webSurfSenderStates ||= {};
+  const senderId = String(explicitSenderId || getWebSurfSenderId(sender)).trim().slice(0, 120) || getWebSurfSenderId(sender);
+  const senderName = String(sender || "").trim().slice(0, 120);
+  let entry = state.webSurfSenderStates[senderId];
+  if (!entry || typeof entry !== "object") {
+    const legacySilenced = getLegacyWebSurfSilencedSenderKeys().has(normalizeWebSurfSenderIdentity(senderName));
+    entry = { sender: senderName, status: legacySilenced ? 0 : 1 };
+    state.webSurfSenderStates[senderId] = entry;
+  } else {
+    entry.sender = senderName || String(entry.sender || "").slice(0, 120);
+    entry.status = Number(entry.status) === 0 ? 0 : 1;
+  }
+  return { senderId, ...entry };
+}
+
+function ensureWebSurfMailState(message) {
+  const id = String(message?.id || "").trim().slice(0, 180);
+  if (!id) return { status: 1, starred: 0, trashed: 0 };
+  if (!state) return { status: 1, starred: message?.favorite === true ? 1 : 0, trashed: 0 };
+  state.webSurfMailStates ||= {};
+  let entry = state.webSurfMailStates[id];
+  if (!entry || typeof entry !== "object") {
+    const legacyRead = getLegacyWebSurfReadMailIds().has(id);
+    entry = {
+      status: legacyRead ? 0 : 1,
+      starred: message?.favorite === true ? 1 : 0,
+      trashed: 0
+    };
+    state.webSurfMailStates[id] = entry;
+  } else {
+    entry.status = Number(entry.status) === 0 ? 0 : 1;
+    entry.starred = entry.starred === true || Number(entry.starred) === 1 ? 1 : 0;
+    entry.trashed = entry.trashed === true || Number(entry.trashed) === 1 ? 1 : 0;
+  }
+  return entry;
+}
+
+function getWebSurfMailStatus(messageOrId) {
+  if (messageOrId && typeof messageOrId === "object") return ensureWebSurfMailState(messageOrId);
+  const id = String(messageOrId || "");
+  if (!id) return { status: 1, starred: 0, trashed: 0 };
+  return ensureWebSurfMailState({ id });
+}
+
+function isWebSurfSenderSilenced(messageOrSender) {
+  const sender = typeof messageOrSender === "object" ? messageOrSender?.sender : messageOrSender;
+  const senderId = typeof messageOrSender === "object" ? messageOrSender?.senderId : "";
+  return ensureWebSurfSenderState(sender, senderId).status === 0;
+}
+
+function toggleWebSurfSenderSilenced(sender, senderId = "") {
+  const entry = ensureWebSurfSenderState(sender, senderId);
+  if (!state?.webSurfSenderStates?.[entry.senderId]) return;
+  state.webSurfSenderStates[entry.senderId].status = entry.status === 0 ? 1 : 0;
+  saveState();
+}
+
+function isWebSurfMailUnread(message) {
+  return ensureWebSurfMailState(message).status === 1;
+}
+
+function isWebSurfMailStarred(message) {
+  return ensureWebSurfMailState(message).starred === 1;
+}
+
+function isWebSurfMailTrashed(message) {
+  return ensureWebSurfMailState(message).trashed === 1;
+}
+
+function shouldWebSurfMailAlert(message) {
+  return isWebSurfMailUnread(message) && !isWebSurfSenderSilenced(message);
 }
 
 function markWebSurfMailRead(mailId) {
   const id = String(mailId || "");
   if (!id) return;
-  const readIds = getWebSurfReadMailIds();
-  readIds.add(id);
-  saveWebSurfReadMailIds(readIds);
+  const entry = getWebSurfMailStatus(id);
+  if (entry.status === 0) return;
+  entry.status = 0;
+  saveState();
 }
 
 function markAllWebSurfMailRead() {
-  const readIds = getWebSurfReadMailIds();
-  getWebSurfInboxMessages().forEach((message) => readIds.add(message.id));
-  saveWebSurfReadMailIds(readIds);
+  let changed = false;
+  getWebSurfInboxMessages().forEach((message) => {
+    const entry = ensureWebSurfMailState(message);
+    if (entry.status === 0) return;
+    entry.status = 0;
+    changed = true;
+  });
+  if (changed) saveState();
+}
+
+function toggleWebSurfMailStarred(mailId) {
+  const id = String(mailId || "");
+  if (!id) return false;
+  const message = getWebSurfInboxMessages().find((entry) => entry.id === id) || { id };
+  const entry = ensureWebSurfMailState(message);
+  entry.starred = entry.starred === 1 ? 0 : 1;
+  if (entry.starred === 1) entry.trashed = 0;
+  saveState();
+  return entry.starred === 1;
+}
+
+function trashWebSurfMail(mailId) {
+  const id = String(mailId || "");
+  if (!id) return false;
+  const message = getWebSurfInboxMessages().find((entry) => entry.id === id) || { id };
+  const entry = ensureWebSurfMailState(message);
+  if (entry.starred === 1) {
+    showToast("Unstar this email before deleting it.");
+    return false;
+  }
+  entry.trashed = 1;
+  entry.status = 0;
+  if (runtime.webSurfSelectedMailId === id) runtime.webSurfSelectedMailId = "";
+  saveState();
+  return true;
+}
+
+function deleteUnstarredWebSurfMail() {
+  let deleted = 0;
+  for (const message of getWebSurfInboxMessages()) {
+    const entry = ensureWebSurfMailState(message);
+    if (entry.starred === 1 || entry.trashed === 1) continue;
+    entry.trashed = 1;
+    entry.status = 0;
+    if (runtime.webSurfSelectedMailId === message.id) runtime.webSurfSelectedMailId = "";
+    deleted += 1;
+  }
+  if (deleted) saveState();
+  return deleted;
+}
+
+function syncWebSurfMailPersistence() {
+  if (!state) return;
+  getWebSurfInboxMessages();
+}
+
+function getDavyJonesFulfillmentVariants() {
+  return [
+    { templateId: "davy_fulfillment_done", subject: "done", preview: "its there. thx as always" },
+    { templateId: "davy_fulfillment_there", subject: "there", preview: "dropped off. appreciate it" },
+    { templateId: "davy_fulfillment_all_set", subject: "all set", preview: "taken care of. thx" },
+    { templateId: "davy_fulfillment_delivered", subject: "delivered", preview: "should be there now. thx again" },
+    { templateId: "davy_fulfillment_thx", subject: "thx", preview: "another one done. appreciate it" }
+  ];
+}
+
+function queueDavyJonesFulfillmentEmail(fish = null, species = null, now = Date.now()) {
+  if (!state) return null;
+  state.webSurfSentEmails ||= [];
+  const variants = getDavyJonesFulfillmentVariants();
+  const lastTemplateId = state.webSurfSentEmails.find((email) => /^davy_fulfillment_/.test(String(email?.templateId || "")))?.templateId || "";
+  const choices = variants.filter((variant) => variants.length <= 1 || variant.templateId !== lastTemplateId);
+  const variant = choices[Math.floor(Math.random() * choices.length)] || variants[0];
+  const sender = "-FIN";
+  const senderId = getWebSurfSenderId(sender);
+  const message = {
+    id: createId("mail"),
+    templateId: variant.templateId,
+    sender,
+    senderId,
+    subject: variant.subject,
+    preview: variant.preview,
+    destination: "",
+    icon: "assets/web/davy/icons/davy_icon.png",
+    time: Math.max(1, Number(now) || Date.now()),
+    data: { speciesId: String(species?.id || fish?.speciesId || "").slice(0, 100) }
+  };
+  state.webSurfSentEmails.unshift(message);
+  state.webSurfSentEmails = sanitizeWebSurfSentEmails(state.webSurfSentEmails);
+  ensureWebSurfSenderState(sender, senderId);
+  const mailState = ensureWebSurfMailState(message);
+  mailState.status = 1;
+  mailState.starred = 0;
+  mailState.trashed = 0;
+  saveState();
+  syncWebSurfUnreadBadge();
+  return message;
 }
 
 function loadWebSurfAutoEmailConfig() {
@@ -58357,11 +65948,7 @@ function isProteusOrder(order) {
 }
 
 function isDavyMutationOrder(order) {
-  return (order?.items || []).some((item) => {
-    const key = String(item?.key || "");
-    const image = String(item?.image || "");
-    return /(?:^|:)davy-/.test(key) || /web\/davy\/mutations/i.test(image);
-  });
+  return (order?.items || []).some((item) => /(?:^|:)davy-/.test(String(item?.key || "")));
 }
 
 function isEngineeredAquaticSpecimenOrder(order) {
@@ -58559,12 +66146,28 @@ function getWebSurfInboxMessages() {
       id: `auto-davy_jones_invitation-${firstDavyPurchase.id}`,
       templateId: "davy_jones_invitation",
       data,
-      sender: template?.sender || "FIN",
-      subject: template?.subject || "Regarding Your Purchase",
-      preview: template?.preview || "A private seller left you a message.",
+      sender: template?.sender || "-FIN",
+      subject: template?.subject || "hi",
+      preview: template?.preview || "thx for the business",
       destination: "davy-locker-unlock",
       icon: "assets/web/davy/icons/davy_icon.png",
       time: (Number(firstDavyPurchase.placedAt) || 0) + 1
+    });
+  }
+
+  for (const sentEmail of sanitizeWebSurfSentEmails(state?.webSurfSentEmails)) {
+    const template = getWebSurfAutoEmailTemplate(sentEmail.templateId);
+    messages.push({
+      id: sentEmail.id,
+      templateId: sentEmail.templateId,
+      data: sentEmail.data || {},
+      sender: template?.sender || sentEmail.sender || "-FIN",
+      senderId: sentEmail.senderId || getWebSurfSenderId(template?.sender || sentEmail.sender || "-FIN"),
+      subject: template?.subject || sentEmail.subject || "done",
+      preview: template?.preview || sentEmail.preview || "its there. thx as always",
+      destination: sentEmail.destination || "",
+      icon: sentEmail.icon || "assets/web/davy/icons/davy_icon.png",
+      time: Number(sentEmail.time) || 0
     });
   }
 
@@ -58608,18 +66211,24 @@ function getWebSurfInboxMessages() {
   }
 
   return messages
-    .sort((left, right) => (Number(right.time) || 0) - (Number(left.time) || 0))
-    .slice(0, 40);
+    .map((message) => {
+      const sender = String(message.sender || "unknown").trim() || "unknown";
+      const senderId = String(message.senderId || getWebSurfSenderId(sender));
+      const enriched = { ...message, sender, senderId };
+      ensureWebSurfSenderState(sender, senderId);
+      ensureWebSurfMailState(enriched);
+      return enriched;
+    })
+    .filter((message) => !isWebSurfMailTrashed(message))
+    .sort((left, right) => (Number(right.time) || 0) - (Number(left.time) || 0));
 }
 
 function syncWebSurfUnreadBadge() {
   if (!dom.webSurfUnreadBadge) return;
-  const readIds = getWebSurfReadMailIds();
-  const silencedSenders = getWebSurfSilencedSenders();
-  const unreadCount = getWebSurfInboxMessages().filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
-  dom.webSurfUnreadBadge.hidden = unreadCount === 0;
-  dom.webSurfUnreadBadge.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
-  dom.webSurfUnreadBadge.setAttribute("aria-label", `${unreadCount} unread WebSurf ${unreadCount === 1 ? "message" : "messages"}`);
+  const alertCount = getWebSurfInboxMessages().filter((message) => shouldWebSurfMailAlert(message)).length;
+  dom.webSurfUnreadBadge.hidden = alertCount === 0;
+  dom.webSurfUnreadBadge.textContent = alertCount > 9 ? "9+" : String(alertCount);
+  dom.webSurfUnreadBadge.setAttribute("aria-label", `${alertCount} new WebSurf ${alertCount === 1 ? "message" : "messages"}`);
 }
 
 function formatWebSurfMailTime(timestamp) {
@@ -58703,6 +66312,15 @@ function renderWebSurfAutoEmailBody(message) {
     if (block.type === "completion_note") {
       return `<div class="websurf-email-completion-note">${renderWebSurfEmailInlineText(block.text, data)}</div>`;
     }
+    if (block.type === "link_line") {
+      const destination = String(block.destination || template.action?.destination || "");
+      const label = String(block.label || template.action?.label || "Open");
+      const prefix = renderWebSurfEmailInlineText(block.text || "", data);
+      if (destination === "davy-locker-unlock") {
+        return `<p>${prefix}<a class="websurf-email-hyperlink" href="#davyjoneslocker.hadal" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(label)}</a></p>`;
+      }
+      return `<p>${prefix}${escapeHtml(label)}</p>`;
+    }
     if (block.type === "action") {
       const action = template.action || {};
       if (action.destination === "davy-locker-unlock") {
@@ -58769,27 +66387,31 @@ function renderWebSurfHomePage() {
   const username = profile.username || getAccountUsernameForUser(profile.userId);
   const addressName = String(username || "user").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") || "user";
   const messages = getWebSurfInboxMessages();
-  const readIds = getWebSurfReadMailIds();
-  const silencedSenders = getWebSurfSilencedSenders();
-  const unreadCount = messages.filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
+  const unreadCount = messages.filter((message) => isWebSurfMailUnread(message)).length;
+  const deletableCount = messages.filter((message) => !isWebSurfMailStarred(message)).length;
   const proteusDiscovered = Boolean(window.hasDiscoveredProteus?.());
   const davyLockerUnlocked = state?.davyJonesLockerUnlocked === true;
+  const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
   const mailMarkup = messages.map((message) => {
-    const senderKey = String(message.sender || "").toLowerCase();
-    const silenced = silencedSenders.has(senderKey);
-    const unread = isWebSurfMailUnread(message, readIds, silencedSenders);
+    const mailState = ensureWebSurfMailState(message);
+    const silenced = isWebSurfSenderSilenced(message);
+    const unread = mailState.status === 1;
+    const starred = mailState.starred === 1;
     const selected = runtime.webSurfSelectedMailId === message.id;
+    const preview = message.templateId
+      ? renderWebSurfEmailInlineText(getWebSurfAutoEmailTemplate(message.templateId)?.preview || message.preview, message.data)
+      : escapeHtml(message.preview);
     return `<article class="websurf-mail-item ${selected ? "is-open" : ""}">
-      <button type="button" class="websurf-mail-row ${unread ? "is-unread" : ""} ${silenced ? "is-silenced" : ""}" data-websurf-mail-id="${escapeHtml(message.id)}" aria-expanded="${selected}">
-        ${message.favorite
-          ? `<span class="websurf-mail-favorite" title="Favorited" aria-label="Favorited"><img ${assetImageAttributes(message.favoriteIcon || "assets/icons/other.png")} alt="" aria-hidden="true" /></span>`
-          : `<span class="websurf-mail-status" aria-hidden="true"></span>`}
-        <img ${assetImageAttributes(message.icon)} alt="" aria-hidden="true" />
-        <span class="websurf-mail-sender">${escapeHtml(message.sender)}${silenced ? `<small>Silenced</small>` : ""}</span>
-        <span class="websurf-mail-copy"><strong>${escapeHtml(message.subject)}</strong><small>${message.templateId ? renderWebSurfEmailInlineText(getWebSurfAutoEmailTemplate(message.templateId)?.preview || message.preview, message.data) : escapeHtml(message.preview)}</small></span>
-        <time>${escapeHtml(formatWebSurfMailTime(message.time))}</time>
-      </button>
-      ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}">${silenced ? "Unsilence sender" : "Silence sender"}</button></div></div>` : ""}
+      <div class="websurf-mail-row-shell ${unread ? "is-unread" : ""} ${silenced ? "is-silenced" : ""}">
+        <button type="button" class="websurf-mail-star ${starred ? "is-starred" : ""}" data-websurf-star-mail="${escapeHtml(message.id)}" aria-pressed="${starred}" aria-label="${starred ? "Unstar email" : "Star email"}" title="${starred ? "Unstar email" : "Star email to protect it from deletion"}"><span aria-hidden="true">${starred ? "★" : ""}</span></button>
+        <button type="button" class="websurf-mail-row ${unread ? "is-unread" : ""} ${silenced ? "is-silenced" : ""}" data-websurf-mail-id="${escapeHtml(message.id)}" aria-expanded="${selected}">
+          <img ${assetImageAttributes(message.icon)} alt="" aria-hidden="true" />
+          <span class="websurf-mail-sender">${escapeHtml(message.sender)}${silenced ? `<small>Silenced</small>` : ""}</span>
+          <span class="websurf-mail-copy"><strong>${escapeHtml(message.subject)}</strong><small>${preview}</small></span>
+          <time>${escapeHtml(formatWebSurfMailTime(message.time))}</time>
+        </button>
+      </div>
+      ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-trash-button" data-websurf-trash-mail="${escapeHtml(message.id)}" aria-label="Delete email" title="${starred ? "Unstar this email before deleting it" : "Delete email"}" ${starred ? "disabled" : ""}>${trashIcon}</button><button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}" data-websurf-silence-sender-id="${escapeHtml(message.senderId)}">${silenced ? "Unsilence sender" : "Silence sender"}</button></div></div>` : ""}
     </article>`;
   }).join("");
   return `<header class="websurf-home-header">
@@ -58809,7 +66431,7 @@ function renderWebSurfHomePage() {
       </section>
       <div class="websurf-dashboard-grid">
         <section class="websurf-inbox" aria-labelledby="websurfInboxTitle">
-          <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></header>
+          <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><div class="websurf-inbox-header-actions"><button type="button" data-websurf-delete-unstarred ${deletableCount ? "" : "disabled"}>Delete Unstarred</button><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></div></header>
           <div class="websurf-mail-list">${mailMarkup}</div>
         </section>
         <aside class="websurf-account-card" aria-label="WebSurf account">
@@ -59893,6 +67515,7 @@ function renderCustomFishCreationOverlay() {
   const flipped = Boolean(pending.flipX);
   const complexTurnaround = String(pending.turnAnimation || "simple").trim().toLowerCase() === "complex";
   const diet = normalizeCustomFishDiet(pending.diet);
+  const liveBirth = pending.liveBirth === true;
   const transform = getPendingCustomFishTransform(pending);
 
   return `
@@ -59955,6 +67578,13 @@ function renderCustomFishCreationOverlay() {
             value="${width}"
             data-custom-fish-size-input />
         </label>
+        <label class="cave-colorize-toggle custom-fish-live-birth-toggle">
+          <input
+            type="checkbox"
+            data-custom-fish-live-birth-toggle
+            ${liveBirth ? "checked" : ""} />
+          <span>Live birth instead of eggs</span>
+        </label>
         <label class="cave-colorize-toggle custom-fish-turn-toggle">
           <input
             type="checkbox"
@@ -60010,6 +67640,7 @@ function renderProteusDesignerWorkspace() {
   const activityRegulation = getCustomFishActivityRegulationDisplay(pending?.activityRegulation, behaviorProfile);
   const swimZone = getCustomFishSwimZoneDisplay(pending?.swimZone, behaviorProfile);
   const socialAffinity = normalizeCustomFishSocialAffinity(pending?.socialAffinity);
+  const liveBirth = pending?.liveBirth === true;
   const transform = getPendingCustomFishTransform(pending);
   const disabled = hasImage ? "" : "disabled";
 
@@ -60102,6 +67733,11 @@ function renderProteusDesignerWorkspace() {
           </label>
 
           <div class="proteus-designer-toggle-row">
+            <label class="proteus-designer-toggle" title="Off: lays eggs. On: gives birth to live young.">
+              <input type="checkbox" data-custom-fish-live-birth-toggle ${liveBirth ? "checked" : ""} ${disabled} />
+              <span>Live Birth <small>(off = eggs)</small></span>
+            </label>
+
             <label class="proteus-designer-toggle">
               <input type="checkbox" data-custom-fish-turn-toggle ${complexTurnaround ? "checked" : ""} ${disabled} />
               <span>Advanced Turn Animation</span>
@@ -60510,6 +68146,13 @@ function renderSettingsOverlay() {
   if (dom.decorShadowsToggleInput) {
     dom.decorShadowsToggleInput.checked = uiSettings.decorShadowsEnabled;
     dom.decorShadowsToggleInput.closest(".settings-toggle-row")?.toggleAttribute("hidden", !DECOR_SHADOWS_SETTING_ENABLED);
+  }
+  if (dom.depthEffectLevelInput instanceof HTMLInputElement) {
+    const depthLevel = normalizeDepthEffectLevel(uiSettings.depthEffectLevel);
+    dom.depthEffectLevelInput.value = String(depthLevel);
+    if (dom.depthEffectLevelOutput) {
+      dom.depthEffectLevelOutput.textContent = `${depthLevel} · ${DEPTH_EFFECT_LEVEL_LABELS[depthLevel] || "Custom"}`;
+    }
   }
   if (dom.simpleTurnAnimationsToggleInput) {
     dom.simpleTurnAnimationsToggleInput.checked = uiSettings.simpleTurnAnimationsOnly === true;
@@ -60939,7 +68582,7 @@ function getDecorTrayEntryById(entryId) {
     }
     const decor = runtime.decorMap.get(item.decorKey) || {
       name: titleFromFile(item.decorKey),
-      path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`),
+      path: getDecorAssetPathForKey(item.decorKey),
       cost: 0
     };
     return {
@@ -60960,7 +68603,7 @@ function getDecorTrayEntryById(entryId) {
   }
   const decor = runtime.decorMap.get(decorKey) || {
     name: titleFromFile(decorKey),
-    path: resolveAppUrl(`assets/decor/${encodeURIComponent(decorKey)}`),
+    path: getDecorAssetPathForKey(decorKey),
     cost: 0
   };
   return {
@@ -60978,7 +68621,7 @@ function getDecorTrayEntries() {
   return getStoredDecorEntries().map(([decorKey, count]) => {
     const decor = runtime.decorMap.get(decorKey) || {
       name: titleFromFile(decorKey),
-      path: resolveAppUrl(`assets/decor/${encodeURIComponent(decorKey)}`),
+      path: getDecorAssetPathForKey(decorKey),
       cost: 0
     };
     return {
@@ -61003,7 +68646,7 @@ function getInTankDecorTrayEntries() {
     .map((item) => {
       const decor = runtime.decorMap.get(item.decorKey) || {
         name: titleFromFile(item.decorKey),
-        path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`),
+        path: getDecorAssetPathForKey(item.decorKey),
         cost: 0
       };
       return {
@@ -62037,7 +69680,7 @@ function renderEditFishTray() {
   const dataKey = [
     runtime.fishEditMode ? "1" : "0",
     runtime.fishEditTrayTab,
-    ...trayEntries.map(({ fish, inStorage, dead }) => [fish.id, fish.name, fish.speciesId, fish.undeadTemplateSpeciesId || "", Number(fish.scale || 1).toFixed(2), inStorage ? "storage" : "tank", dead ? "dead" : "living", !inStorage && !dead ? getFishTrayMoodTone(fish, trayRenderNow) : "neutral"].join(":"))
+    ...trayEntries.map(({ fish, inStorage, dead }) => [fish.id, fish.name, fish.speciesId, Number(fish.scale || 1).toFixed(2), inStorage ? "storage" : "tank", dead ? "dead" : "living", !inStorage && !dead ? getFishTrayMoodTone(fish, trayRenderNow) : "neutral"].join(":"))
   ].join("|");
 
   if (shouldRebuildRenderSection("edit-fish-tray-data", dataKey)) {
@@ -62354,7 +69997,6 @@ function renderFishList(now) {
       fish.id,
       fish.name,
       fish.speciesId,
-      fish.undeadTemplateSpeciesId || "",
       fish.healthUnits,
       Number(fish.scale).toFixed(2),
       fish.acquiredAt,
@@ -62367,7 +70009,6 @@ function renderFishList(now) {
       fish.id,
       fish.name,
       fish.speciesId,
-      fish.undeadTemplateSpeciesId || "",
       fish.healthUnits,
       Number(fish.scale).toFixed(2),
       fish.acquiredAt,
@@ -62498,9 +70139,6 @@ function renderManagedFishCard(fish, now, options = {}) {
   const detritusFish = isDetritusFish(fish);
   const mealFreeFish = isMealFreeFish(fish);
   const goreEnabled = isGoreEnabled();
-  const undeadFish = goreEnabled && isUndeadFish(fish);
-  const zombieHunterFish = !dead && usesZombieHunterBehavior(fish);
-  const zombieBittenFish = hasZombieBiteInfection(fish);
   const piranhaFish = isPiranhaSpecies(fish);
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const criticalComfort = !inStorage && !dead && comfort.value <= 0;
@@ -62510,87 +70148,48 @@ function renderManagedFishCard(fish, now, options = {}) {
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const corpseState = getFishCorpseDisplayState(fish, now);
   const beingConsumed = corpseState === "devoured";
-  const awaitingZombieRise = dead && hasPendingZombieRevival(fish);
   const corpsePressure = !inStorage && hasExposedDeadTankFish(now);
   const showDisposeButton = dead && !beingConsumed;
   const status = inStorage
-    ? (dead
-      ? awaitingZombieRise
-        ? "Stored corpse will rise as a zombie soon."
-        : corpseState === "skeleton"
-          ? "Stored skeleton awaiting disposal."
-          : corpseState === "zombie"
-            ? "Stored zombie remains awaiting disposal."
-            : (goreEnabled ? "Stored remains awaiting disposal." : "Stored dead fish awaiting disposal.")
-      : "Stored safely outside the tank.")
+    ? (dead ? (goreEnabled ? "Stored remains awaiting disposal." : "Stored dead fish awaiting disposal.") : "Stored safely outside the tank.")
     : dead
       ? beingConsumed
-        ? (goreEnabled ? "Piranhas are stripping it to the bone." : "Piranhas are disposing of the remains.")
-        : !goreEnabled
-          ? "Dead and awaiting disposal."
-          : awaitingZombieRise
-            ? "A zombie bite is raising it back up."
-            : corpseState === "skeleton"
-              ? "Reduced to a skeleton."
-              : corpseState === "zombie"
-                ? "Rotting into a zombie."
-                : "Freshly dead and floating at the surface."
+        ? (goreEnabled ? "Piranhas are consuming the remains." : "Piranhas are disposing of the remains.")
+        : (goreEnabled ? "Freshly dead and floating at the surface." : "Dead and awaiting disposal.")
       : criticalComfort
-        ? corpsePressure
-          ? "Panicking while a dead fish fouls the water."
-          : "Tank conditions are dangerously filthy."
-        : zombieBittenFish
-          ? "Bleeding out from a zombie bite."
-          : zombieHunterFish
-            ? "Stalking living fish for a bite."
-            : undeadFish
-              ? "Ignores hunger and dirty water, but unnerves the living."
-              : piranhaFish
-                ? (goreEnabled ? (getActivePiranhaPrey(now) ? "Blood frenzy in progress." : "Hunting any non-undead fish or corpse.") : "Tracks chum without attacking tankmates.")
-                : juvenile
-                  ? "Growing into full size."
-                  : detritusFish
-                    ? "Suctioned to the back glass."
-                    : hungerValue <= FISH_HUNGER_CRITICAL_THRESHOLD
-                      ? "Starving"
-                      : hungerValue <= FISH_HUNGER_LOW_THRESHOLD
-                        ? hungerLabel
-                        : needsSnapshot
-                          ? `${needsSnapshot.mood.label} - ${hungerLabel}`
-                          : "Waiting";
+        ? (corpsePressure ? "Panicking while a dead fish fouls the water." : "Tank conditions are dangerously filthy.")
+        : piranhaFish
+          ? (goreEnabled ? (getActivePiranhaPrey(now) ? "Blood frenzy in progress." : "Hunting tankmates or corpses.") : "Tracks chum without attacking tankmates.")
+          : juvenile
+            ? "Growing into full size."
+            : detritusFish
+              ? "Suctioned to the back glass."
+              : hungerValue <= FISH_HUNGER_CRITICAL_THRESHOLD
+                ? "Starving"
+                : hungerValue <= FISH_HUNGER_LOW_THRESHOLD
+                  ? hungerLabel
+                  : needsSnapshot
+                    ? `${needsSnapshot.mood.label} - ${hungerLabel}`
+                    : "Waiting";
   const healthNote = dead
     ? beingConsumed
       ? (goreEnabled
-        ? "Piranhas will carry this fish through the zombie and skeleton stages automatically, then finish it off. No disposal needed."
+        ? "Piranhas will finish consuming this fish automatically. No manual disposal needed."
         : "Piranhas will finish disposing of this fish automatically. No manual disposal needed.")
-      : !goreEnabled
-        ? "This fish died. Gore is off, so it will not decay or rise again."
-        : awaitingZombieRise
-          ? "Dispose of this corpse before it rises again as a zombie variant."
-          : corpseState === "skeleton"
-            ? "This fish has reached the skeleton stage. The Skeleton Fish shop unlock triggers here."
-            : corpseState === "zombie"
-              ? "This fish has reached the zombie stage. Leave it another 12 hours to reach the skeleton unlock."
-              : "Leave it for 12 hours to reach the zombie stage, then another 12 hours to become a skeleton."
+      : "This fish is dead and awaiting disposal."
     : criticalComfort
-      ? corpsePressure
+      ? (corpsePressure
         ? "Comfort is 0% while a dead fish stays in the tank. Remove it fast."
-        : "Comfort is 0% at maximum dirtiness. Clean the tank before health keeps dropping."
-      : zombieBittenFish
-        ? "A zombie bite makes this fish panic, spill blood every second, and die in about 30 seconds."
-        : zombieHunterFish
-          ? "Zombie hunters bite living non-undead fish, then their victims bleed out and may rise again in 1-2 minutes if left alone."
-          : undeadFish
-            ? "Undead fish ignore hunger, discomfort, and dirty water, but reduce nearby living fish comfort by about 10% and may lash out."
-            : piranhaFish
-              ? (goreEnabled ? "Piranhas ignore pellets, devour any non-undead fish in the tank, and cloud the water red while feeding." : "Piranhas still go after chum, but they will leave the rest of the tank alone.")
-              : juvenile
-                ? "Baby fish start at 25% size and grow to full size over a few days."
-                : detritusFish
-                  ? "Feeds on grime and poop instead of pellets."
-                  : fish.healthUnits < maxHealthUnits
-                    ? "Health does not recover from ordinary food. Use First Aid or a Clinic service."
-                    : "Full hearts and thriving.";
+        : "Comfort is 0% at maximum dirtiness. Clean the tank before health keeps dropping.")
+      : piranhaFish
+        ? (goreEnabled ? "Piranhas ignore pellets, eat chum, may devour tankmates, and cloud the water red while feeding." : "Piranhas still go after chum, but they will leave the rest of the tank alone.")
+        : juvenile
+          ? "Baby fish start at 25% size and grow to full size over a few days."
+          : detritusFish
+            ? "Feeds on grime and poop instead of pellets."
+            : fish.healthUnits < maxHealthUnits
+              ? "Health does not recover from ordinary food. Use First Aid or a Clinic service."
+              : "Full hearts and thriving.";
   const rewardLabel = dead
     ? "No feeding care coins"
     : detritusFish
@@ -62617,15 +70216,10 @@ function renderManagedFishCard(fish, now, options = {}) {
           <span class="fish-trait">${inStorage ? (dead ? `Status: ${getFishCorpseStateLabel(fish, now)}` : "Storage") : dead ? `Status: ${getFishCorpseStateLabel(fish, now)}` : `Comfort: ${comfort.label}`}</span>
           ${juvenile ? `<span class="fish-trait">Stage: Baby</span>` : ""}
           ${detritusFish ? `<span class="fish-trait">Diet: grime + waste</span>` : ""}
-          ${piranhaFish ? `<span class="fish-trait">Diet: live prey</span>` : ""}
-          ${undeadFish ? `<span class="fish-trait">Diet: none</span>` : ""}
-          ${zombieBittenFish && !dead ? `<span class="fish-trait">Status: Infected</span>` : ""}
-          ${goreEnabled && dead && awaitingZombieRise ? `<span class="fish-trait">Decay: Rising zombie</span>` : ""}
-          ${goreEnabled && dead && corpseState === "zombie" ? `<span class="fish-trait">Decay: Zombie</span>` : ""}
-          ${goreEnabled && dead && corpseState === "skeleton" ? `<span class="fish-trait">Decay: Skeleton</span>` : ""}
+          ${piranhaFish ? `<span class="fish-trait">Diet: chum + live prey</span>` : ""}
           ${dead && corpseState === "devoured" ? `<span class="fish-trait">Decay: Piranha feeding</span>` : ""}
           ${!dead ? `<span class="fish-trait">Grime load: +${dirtinessLoadPercent}%</span>` : ""}
-          <span class="fish-trait">Swim: ${zombieHunterFish ? "Undead hunter" : isDavyMutationSpecies(species) ? formatFishShopBehavior(species) : formatSwimStyle(species.swimStyle)}</span>
+          <span class="fish-trait">Swim: ${isDavyMutationSpecies(species) ? formatFishShopBehavior(species) : formatSwimStyle(species.swimStyle)}</span>
           <span class="fish-trait">Age: ${age}</span>
         </div>
         <div class="mini-note fish-health-note">${healthNote}</div>
@@ -63316,7 +70910,7 @@ function renderFishInspector(now) {
   const purchaseCost = canBuyAnother ? getFishPurchaseCost(fish.speciesId) : 0;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
   const canSell = Boolean(baseSpecies) && !dead && !beingConsumed && !isFishJuvenile(fish);
-  const canStore = !inStorage && !dead && !hasZombieBiteInfection(fish);
+  const canStore = !inStorage && !dead;
   const comfort = inStorage ? { label: "Stored", value: 1 } : getFishComfort(fish, now);
   const needsSnapshot = inStorage || dead ? null : getFishNeedsSnapshot(fish, now);
   dom.fishInspector.hidden = false;
@@ -63727,7 +71321,7 @@ function renderDecorInventory() {
     .map(([key, count]) => {
       const decor = runtime.decorMap.get(key) || {
         name: titleFromFile(key),
-        path: resolveAppUrl(`assets/decor/${encodeURIComponent(key)}`)
+        path: getDecorAssetPathForKey(key)
       };
       const disabledByContent = !canUseDecorWithCurrentContentSettings(key);
       const placing = !disabledByContent && runtime.placementMode?.decorKey === key;
@@ -63822,7 +71416,7 @@ function renderPlacedDecor() {
     .map((item) => {
       const decor = runtime.decorMap.get(item.decorKey) || {
         name: titleFromFile(item.decorKey),
-        path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`)
+        path: getDecorAssetPathForKey(item.decorKey)
       };
       const grouped = isPlacedDecorGrouped(item);
       const selected = getSelectedDecorIdSet().has(item.id);
@@ -64582,6 +72176,9 @@ function renderControls(now) {
   if (dom.debugSidebar) {
     dom.debugSidebar.hidden = !debugMode || !runtime.debugSidebarOpen;
   }
+  if (debugMode && runtime.debugSidebarOpen) {
+    syncDebugDepthTunerControls();
+  }
   if (dom.debugNotificationUiButton) {
     dom.debugNotificationUiButton.disabled = !debugMode;
     dom.debugNotificationUiButton.classList.toggle("is-active", runtime.debugNotificationUiEnabled);
@@ -65069,14 +72666,12 @@ function getPiranhaTargetCandidate(now = Date.now()) {
       fish
       && fish.id !== draggedFishId
       && !isPiranhaSpecies(fish)
-      && !isUndeadFish(fish)
       && !isFishBeingConsumedByPiranhas(fish, now)
       && (
         isValidPiranhaConsumptionPrey(fish)
         || (
           !isFishDead(fish)
           && !isFishProtectedFromPredators(fish, now)
-          && !hasZombieBiteInfection(fish)
         )
       )
     ))
@@ -65117,19 +72712,293 @@ function clearFishPanicState(fish) {
   fish.panicSpeedBoost = null;
 }
 
-function clearZombieAttackState(fish) {
+function getPufferInflationMinDurationMs() { return 5200; }
+function getPufferInflationMaxDurationMs() { return 7200; }
+function getPufferInflationWobbleMs() { return 1800; }
+function getPufferInflationRiseMs() { return 3000; }
+function getPufferInflationCooldownMs() { return 12000; }
+function getPufferDeflationDurationMs() { return 780; }
+function getPufferInflationBubbleCountMin() { return 12; }
+function getPufferInflationBubbleCountMax() { return 18; }
+function getPufferInflationTriggerThreat() { return 0.72; }
+
+function isPufferfishSpecies(target) {
+  if (!target) {
+    return false;
+  }
+  const species = typeof target.id === "string" && typeof target.asset === "string"
+    ? target
+    : getSpeciesForFish(target);
+  return species?.id === "pufferfish";
+}
+
+function isPufferInflatedActive(fish, now = Date.now()) {
+  return Boolean(isPufferfishSpecies(fish) && (Number(fish?.pufferInflatedUntil) || 0) > now && !isFishDead(fish));
+}
+
+function isPufferDeflatingActive(fish, now = Date.now()) {
+  const inflatedUntil = Number(fish?.pufferInflatedUntil) || 0;
+  return Boolean(
+    isPufferfishSpecies(fish)
+    && inflatedUntil > 0
+    && now >= inflatedUntil
+    && now < inflatedUntil + getPufferDeflationDurationMs()
+    && !isFishDead(fish)
+  );
+}
+
+function isPufferPuffVisualActive(fish, now = Date.now()) {
+  return isPufferInflatedActive(fish, now) || isPufferDeflatingActive(fish, now);
+}
+
+function getPufferDeflationProgress(fish, now = Date.now()) {
+  if (!isPufferDeflatingActive(fish, now)) {
+    return isPufferInflatedActive(fish, now) ? 0 : 1;
+  }
+  const inflatedUntil = Number(fish.pufferInflatedUntil) || now;
+  const rawProgress = clamp((now - inflatedUntil) / getPufferDeflationDurationMs(), 0, 1);
+  return rawProgress * rawProgress * (3 - 2 * rawProgress);
+}
+
+function getPufferInflationWobbleAmount(fish, now = Date.now()) {
+  if (!isPufferInflatedActive(fish, now)) {
+    return 0;
+  }
+  const wobbleUntil = Number(fish.pufferWobbleUntil) || 0;
+  const strongWobbleProgress = wobbleUntil > now
+    ? clamp((wobbleUntil - now) / getPufferInflationWobbleMs(), 0, 1)
+    : 0;
+  return 0.28 + strongWobbleProgress * 0.72;
+}
+
+function clearPufferInflationState(fish, options = {}) {
   if (!fish) {
     return;
   }
-
-  fish.zombieBiteStartedAt = null;
-  fish.zombieBiteLastBloodAt = null;
-  fish.zombieBiteAttackerId = null;
-  clearFishPanicState(fish);
-  if (!isFishDead(fish)) {
-    fish.zombieReviveAt = null;
-    fish.zombieReviveSourceId = null;
+  fish.pufferInflatedAt = 0;
+  fish.pufferInflatedUntil = 0;
+  fish.pufferWobbleUntil = 0;
+  fish.pufferRiseUntil = 0;
+  fish.pufferInflatedSwimSpeed = 0;
+  if (options.clearCooldown) {
+    fish.pufferCooldownUntil = 0;
   }
+  if (options.clearBurst !== false) {
+    fish.pufferInflationBubbles = [];
+  }
+}
+
+function buildPufferInflationBubbleBurst(fish, species, now = Date.now()) {
+  const width = getFishDisplayWidth(fish, species, now);
+  const image = runtime.images.get(getFishDisplayAssetPath(fish, species, now) || species?.asset || "");
+  const height = width * (image?.width ? image.height / image.width : 0.58);
+  const facing = getFishFacingDirection(fish) || 1;
+  const baseX = fish.xNorm * TANK_WIDTH + facing * width * 0.12;
+  const baseY = fish.yNorm * TANK_HEIGHT - height * 0.06;
+  const count = Math.round(randomBetween(getPufferInflationBubbleCountMin(), getPufferInflationBubbleCountMax()));
+  const bubbles = [];
+
+  for (let index = 0; index < count; index += 1) {
+    bubbles.push({
+      createdAt: now + randomBetween(0, 180),
+      sourceX: clamp(baseX + randomBetween(-width * 0.18, width * 0.18), GLASS_MARGIN_X + 10, TANK_WIDTH - GLASS_MARGIN_X - 10),
+      sourceY: clamp(baseY + randomBetween(-height * 0.16, height * 0.12), WATER_SURFACE_Y + 14, TANK_HEIGHT - GLASS_MARGIN_BOTTOM - 10),
+      driftX: randomBetween(-18, 18),
+      wobble: randomBetween(0.8, 3.2),
+      wobblePhase: Math.random() * Math.PI * 2,
+      radius: randomBetween(2.4, 5.8),
+      stretch: randomBetween(0.9, 1.18),
+      seed: Math.floor(Math.random() * 0x7fffffff)
+    });
+  }
+
+  return bubbles;
+}
+
+function getPufferThreatLevel(fish, species, now = Date.now()) {
+  if (!isPufferfishSpecies(species) || !fish || isFishDead(fish)) {
+    return 0;
+  }
+
+  let threat = 0;
+  // Generic panic is intentionally not a puff trigger. A single glass tap
+  // creates a short panic response for nearby fish, and puffers should only
+  // inflate from the dedicated rapid-tap harassment path or an imminent
+  // biological attack. Mere proximity to a predator is not enough.
+  const maxHealthUnits = Math.max(1, getFishMaxHealthUnits(fish, species));
+  if ((Number(fish.healthUnits) || maxHealthUnits) <= Math.max(1, maxHealthUnits - 2)) {
+    threat = Math.max(threat, 0.5);
+  }
+
+  // If a piranha swarm has already committed to this fish, inflation is a
+  // legitimate emergency response regardless of where an individual piranha
+  // happens to be on this exact frame.
+  if ((Number(fish.piranhaAttackStartedAt) || 0) > 0) {
+    threat = Math.max(threat, 0.98);
+  }
+
+  const homeTank = getTankContainingFish(fish.id);
+  if (!homeTank) {
+    return threat;
+  }
+
+  for (const otherFish of state.fish) {
+    if (!otherFish || otherFish.id === fish.id || isFishDead(otherFish)) {
+      continue;
+    }
+    const otherTank = getTankContainingFish(otherFish.id);
+    if (!otherTank || otherTank.id !== homeTank.id) {
+      continue;
+    }
+    const otherSpecies = getSpeciesForFish(otherFish);
+    if (!otherSpecies) {
+      continue;
+    }
+
+    const schoolingPredator = isPiranhaSpecies(otherFish);
+    const largePredator = isLargePredatoryFishSpecies(otherFish);
+    const predatorySpecies = otherSpecies.id !== "pufferfish" && isPredatoryFishSpecies(otherFish);
+    const fishWidth = getFishDisplayWidth(fish, species, now);
+    const otherWidth = getFishDisplayWidth(otherFish, otherSpecies, now);
+    const distanceNorm = Math.hypot(
+      (otherFish.xNorm || 0.5) - (fish.xNorm || 0.5),
+      (otherFish.yNorm || 0.5) - (fish.yNorm || 0.5)
+    );
+
+    // Sharks and Orcas normally cruising through the same water are only an
+    // alerting presence. In this game they become a true puff trigger only
+    // when they are in the same desperation state that can actually produce a
+    // bite and have closed to roughly attack distance.
+    if (largePredator) {
+      const predatorIsDesperate = (
+        getFishNeedValue(otherFish, "hunger", now) <= FISH_HUNGER_CRITICAL_THRESHOLD
+        && Number(otherFish.healthUnits) <= 2
+        && otherFish.activity === "roam"
+      );
+      const imminentRange = Math.max(
+        SHARK_DESPERATION_ATTACK_RANGE_NORM * 1.35,
+        ((fishWidth + otherWidth) * 0.42) / TANK_WIDTH
+      );
+      if (predatorIsDesperate && distanceNorm <= imminentRange) {
+        threat = Math.max(threat, 0.96);
+      } else {
+        // The puffer can still register the nearby animal as stressful, but
+        // this deliberately remains below the inflation threshold.
+        const awarenessRange = Math.max(0.16, Math.min(0.32, 0.17 + ((fishWidth + otherWidth) / TANK_WIDTH) * 0.8));
+        if (distanceNorm <= awarenessRange) {
+          const proximity = 1 - clamp(distanceNorm / awarenessRange, 0, 1);
+          threat = Math.max(threat, 0.38 + proximity * 0.22);
+        }
+      }
+      continue;
+    }
+
+    // Other predators can alarm a puffer without making every casual pass an
+    // inflation event. Active piranha attacks are handled above.
+    const bodySizeThreat = predatorySpecies && otherWidth >= fishWidth * 1.1;
+    if (!schoolingPredator && !bodySizeThreat) {
+      continue;
+    }
+
+    const awarenessRange = Math.max(0.08, Math.min(0.22, 0.11 + ((fishWidth + otherWidth) / TANK_WIDTH) * 0.7));
+    if (distanceNorm > awarenessRange) {
+      continue;
+    }
+    const proximity = 1 - clamp(distanceNorm / awarenessRange, 0, 1);
+    threat = Math.max(threat, 0.36 + proximity * 0.24);
+  }
+
+  return clamp(threat, 0, 1);
+}
+
+function startPufferInflation(fish, species, now = Date.now()) {
+  if (!isPufferfishSpecies(species) || !fish || isFishDead(fish)) {
+    return false;
+  }
+
+  const durationMs = randomBetween(getPufferInflationMinDurationMs(), getPufferInflationMaxDurationMs());
+  fish.pufferInflatedAt = now;
+  fish.pufferInflatedUntil = now + durationMs;
+  fish.pufferWobbleUntil = now + getPufferInflationWobbleMs();
+  fish.pufferRiseUntil = now + getPufferInflationRiseMs();
+  fish.pufferCooldownUntil = now + durationMs + getPufferInflationCooldownMs();
+  fish.pufferInflatedSwimSpeed = normalizeFishSpeed(
+    species,
+    Math.max(species.speedMin * 0.42, Math.min(species.speedMax * 0.34, species.speedMin + (species.speedMax - species.speedMin) * 0.12))
+  );
+  // Inflation is the defensive response. Once the fish puffs, it stops doing
+  // a full-speed panic dash and becomes awkward and buoyant instead.
+  fish.panicUntil = null;
+  fish.panicSpeedBoost = null;
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  fish.targetAt = now + 180;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.pufferInflationBubbles = buildPufferInflationBubbleBurst(fish, species, now);
+  setFishBehaviorIntent(fish, "defensive puff", "threatened", now, { durationMs });
+  return true;
+}
+
+function updatePufferInflationMotionTarget(fish, species, now = Date.now()) {
+  if (!isPufferInflatedActive(fish, now)) {
+    return false;
+  }
+
+  const driftPhase = Number.isFinite(Number(fish.pufferDriftPhase))
+    ? Number(fish.pufferDriftPhase)
+    : (fish.pufferDriftPhase = Math.random() * Math.PI * 2);
+  const riseBias = (Number(fish.pufferRiseUntil) || 0) > now ? 0.05 : 0.02;
+  const lateralDrift = Math.sin(now / 780 + driftPhase) * 0.026;
+  const targetLayer = getFishTankLayer(fish);
+  fish.targetXNorm = clamp((fish.xNorm || 0.5) + lateralDrift, 0.1, 0.9);
+  fish.targetYNorm = clampFishYNormToLayer(
+    (fish.yNorm || 0.5) - riseBias + Math.sin(now / 540 + driftPhase * 1.3) * 0.006,
+    fish,
+    species,
+    targetLayer,
+    { minYNorm: 0.16, maxYNorm: 0.72 }
+  );
+  fish.targetAt = now + 220;
+  fish.swimSpeed = Number(fish.pufferInflatedSwimSpeed) || normalizeFishSpeed(species, species.speedMin * 0.42);
+  setFishDesiredTankLayer(fish, targetLayer);
+  return true;
+}
+
+function updatePufferInflationState(fish, species, now = Date.now()) {
+  if (!isPufferfishSpecies(species) || !fish) {
+    return false;
+  }
+  if (isFishDead(fish)) {
+    clearPufferInflationState(fish);
+    return false;
+  }
+
+  if (isPufferInflatedActive(fish, now)) {
+    return true;
+  }
+
+  if (isPufferDeflatingActive(fish, now)) {
+    fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 120);
+    fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
+    return true;
+  }
+
+  if ((Number(fish.pufferInflatedUntil) || 0) > 0 && now >= Number(fish.pufferInflatedUntil) + getPufferDeflationDurationMs()) {
+    clearPufferInflationState(fish, { clearBurst: false });
+    fish.targetAt = Math.min(Number(fish.targetAt) || now, now + 80);
+    fish.swimSpeed = normalizeFishSpeed(species);
+  }
+
+  if ((Number(fish.pufferCooldownUntil) || 0) > now) {
+    return false;
+  }
+
+  if (getPufferThreatLevel(fish, species, now) >= getPufferInflationTriggerThreat()) {
+    return startPufferInflation(fish, species, now);
+  }
+
+  return false;
 }
 
 function resetLivingFishPredatorState(fish, now = Date.now(), options = {}) {
@@ -65138,7 +73007,7 @@ function resetLivingFishPredatorState(fish, now = Date.now(), options = {}) {
   }
 
   clearFishPanicState(fish);
-  clearZombieAttackState(fish);
+  clearPufferInflationState(fish, { clearCooldown: true });
   clearPiranhaAttackState(fish);
   fish.piranhaConsumptionStartedAt = null;
   fish.piranhaConsumptionEndsAt = null;
@@ -65178,7 +73047,7 @@ function applyContentSettingsEffects(now = Date.now()) {
     runtime.bettaPassLocks.clear();
   }
 
-  if ((!violenceAndGoreEnabled || !isZombieSkeletonModeAvailable()) && runtime.medicineModeKey === "antidote") {
+  if (runtime.medicineModeKey === "antidote") {
     runtime.medicineModeKey = "";
   }
 
@@ -65192,12 +73061,6 @@ function applyContentSettingsEffects(now = Date.now()) {
       continue;
     }
 
-    const hasZombieState = (
-      hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-      || hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-      || hasDefinedFiniteNumber(fish.zombieReviveAt)
-      || (typeof fish.zombieReviveSourceId === "string" && fish.zombieReviveSourceId.trim())
-    );
     const hasPiranhaState = (
       hasDefinedFiniteNumber(fish.piranhaAttackStartedAt)
       || hasDefinedFiniteNumber(fish.piranhaLastDamageAt)
@@ -65205,13 +73068,6 @@ function applyContentSettingsEffects(now = Date.now()) {
       || hasDefinedFiniteNumber(fish.piranhaConsumptionEndsAt)
       || hasDefinedFiniteNumber(fish.piranhaLastBloodAt)
     );
-
-    if (!violenceAndGoreEnabled && hasZombieState) {
-      clearZombieAttackState(fish);
-      fish.zombieReviveAt = null;
-      fish.zombieReviveSourceId = null;
-      changed = true;
-    }
 
     if (!violenceAndGoreEnabled && hasPiranhaState) {
       clearPiranhaAttackState(fish);
@@ -65487,7 +73343,40 @@ function setDecorShadowsEnabled(value) {
   state.uiSettings = nextSettings;
   saveState();
   renderUi(Date.now(), { full: false });
-  showToast(nextSettings.decorShadowsEnabled ? "Decor shadows on." : "Decor shadows off.");
+  showToast(nextSettings.decorShadowsEnabled ? "Shadows on." : "Shadows off.");
+}
+
+function setDepthEffectLevel(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const depthEffectLevel = saveDepthEffectLevelPreference(value);
+  if (currentSettings.depthEffectLevel === depthEffectLevel) {
+    if (state.uiSettings?.depthEffectLevel !== depthEffectLevel) {
+      state.uiSettings = sanitizeUiSettings({
+        ...currentSettings,
+        depthEffectLevel
+      });
+      saveState();
+    }
+    return;
+  }
+
+  state.uiSettings = sanitizeUiSettings({
+    ...currentSettings,
+    depthEffectLevel
+  });
+  saveState();
+  invalidateTankDepthVisualCaches();
+  runtime.boroughOverviewSnapshotQueue = [];
+  renderUi(Date.now(), { full: false });
+  renderTank(Date.now());
+  const label = DEPTH_EFFECT_LEVEL_LABELS[depthEffectLevel] || "Custom";
+  showToast(depthEffectLevel === 0
+    ? "Aquarium depth effects off."
+    : `Aquarium depth level ${depthEffectLevel}: ${label}.`);
 }
 
 function setSimpleTurnAnimationsOnly(value) {
@@ -65680,15 +73569,6 @@ function scrubProtectedFishPredatorState(fish, now = Date.now()) {
   let changed = false;
 
   if (
-    hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-    || hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-    || hasDefinedFiniteNumber(fish.zombieReviveAt)
-  ) {
-    clearZombieAttackState(fish);
-    changed = true;
-  }
-
-  if (
     hasDefinedFiniteNumber(fish.piranhaAttackStartedAt)
     || hasDefinedFiniteNumber(fish.piranhaLastDamageAt)
     || hasDefinedFiniteNumber(fish.piranhaConsumptionStartedAt)
@@ -65727,35 +73607,11 @@ function scrubImpossiblePredatorState(now = Date.now()) {
   }
 
   let changed = false;
-  const zombieHunterIds = getLivingZombieHunterIds();
   const piranhaContext = hasPiranhaContext();
 
   for (const fish of [...state.fish, ...state.storedFish]) {
     if (!fish) {
       continue;
-    }
-
-    if (
-      (
-        hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-        || hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-      )
-      && !hasValidZombieBiteSource(fish, zombieHunterIds)
-    ) {
-      clearZombieAttackState(fish);
-      changed = true;
-    }
-
-    if (
-      isFishDead(fish)
-      && hasDefinedFiniteNumber(fish.zombieReviveAt)
-      && typeof fish.zombieReviveSourceId === "string"
-      && fish.zombieReviveSourceId.trim()
-      && !zombieHunterIds.has(fish.zombieReviveSourceId.trim())
-    ) {
-      fish.zombieReviveAt = null;
-      fish.zombieReviveSourceId = null;
-      changed = true;
     }
 
     if (
@@ -65778,8 +73634,7 @@ function scrubImpossiblePredatorState(now = Date.now()) {
     }
 
     if (
-      !hasZombieBiteInfection(fish)
-      && !isFishCriticallyLowHealth(fish)
+      !isFishCriticallyLowHealth(fish)
       && (
         hasDefinedFiniteNumber(fish.panicUntil)
         || hasDefinedFiniteNumber(fish.panicSpeedBoost)
@@ -65791,42 +73646,6 @@ function scrubImpossiblePredatorState(now = Date.now()) {
   }
 
   return changed;
-}
-
-function isValidZombieBiteTarget(fish, now = Date.now()) {
-  if (!fish) {
-    return false;
-  }
-
-  if (isFishDead(fish)) {
-    return false;
-  }
-
-  if (isPiranhaSpecies(fish)) {
-    return false;
-  }
-
-  if (isUndeadFish(fish)) {
-    return false;
-  }
-
-  if (isFishProtectedFromPredators(fish, now)) {
-    return false;
-  }
-
-  if (hasZombieBiteInfection(fish)) {
-    return false;
-  }
-
-  if (hasDefinedFiniteNumber(fish.piranhaAttackStartedAt)) {
-    return false;
-  }
-
-  if (isFishBeingConsumedByPiranhas(fish, now)) {
-    return false;
-  }
-
-  return true;
 }
 
 function isValidPiranhaPrey(fish, now = Date.now()) {
@@ -65842,15 +73661,7 @@ function isValidPiranhaPrey(fish, now = Date.now()) {
     return false;
   }
 
-  if (isUndeadFish(fish)) {
-    return false;
-  }
-
   if (isFishProtectedFromPredators(fish, now)) {
-    return false;
-  }
-
-  if (hasZombieBiteInfection(fish)) {
     return false;
   }
 
@@ -65870,7 +73681,7 @@ function isValidPiranhaConsumptionPrey(fish) {
     return false;
   }
 
-  if (isPiranhaSpecies(fish) || isUndeadFish(fish)) {
+  if (isPiranhaSpecies(fish)) {
     return false;
   }
 
@@ -66075,189 +73886,8 @@ function handlePiranhaSwarm(now, deltaSeconds) {
   }
 }
 
-function getZombieAttackTarget(attacker, now = Date.now()) {
-  if (!attacker || isFishDead(attacker) || !usesZombieHunterBehavior(attacker)) {
-    return null;
-  }
-
-  const draggedFishId = runtime.fishDragState?.fishId || null;
-  return state.fish
-    .filter((fish) => (
-      fish
-      && fish.id !== draggedFishId
-      && fish.id !== attacker.id
-      && isValidZombieBiteTarget(fish, now)
-    ))
-    .sort((left, right) => {
-      const leftDistance = Math.hypot(left.xNorm - attacker.xNorm, left.yNorm - attacker.yNorm);
-      const rightDistance = Math.hypot(right.xNorm - attacker.xNorm, right.yNorm - attacker.yNorm);
-      return leftDistance - rightDistance
-        || (left.tankAddedAt || left.acquiredAt || 0) - (right.tankAddedAt || right.acquiredAt || 0);
-    })[0] || null;
-}
-
-function infectFishWithZombieBite(target, attacker, now = Date.now()) {
-  if (
-    !target
-    || !attacker
-    || isFishDead(target)
-    || isFishDead(attacker)
-    || isUndeadFish(target)
-    || hasZombieBiteInfection(target)
-    || isFishProtectedFromPredators(target, now)
-    || hasDefinedFiniteNumber(target.piranhaAttackStartedAt)
-    || isFishBeingConsumedByPiranhas(target, now)
-  ) {
-    return false;
-  }
-
-  target.zombieBiteStartedAt = now;
-  target.zombieBiteLastBloodAt = now;
-  target.zombieBiteAttackerId = attacker.id;
-  target.zombieReviveAt = null;
-  target.zombieReviveSourceId = null;
-  makeFishScurryFromAttack(target, attacker, now);
-  attacker.lastAteAt = now;
-  const mealCoins = recordFishMealCredit(attacker, now);
-  applyFishMealWindowFoodIntake(attacker, now, { satiate: false, countBasedOverfeed: true });
-  pushEvent(
-    mealCoins > 0
-      ? `${attacker.name} bit ${target.name} with a zombie bite and earned ${mealCoins} ${pluralize("coin", mealCoins)}.`
-      : `${attacker.name} bit ${target.name} with a zombie bite.`,
-    now
-  );
-  return true;
-}
-
-function reviveFishAsZombieVariant(fish, now = Date.now()) {
-  const species = getSpeciesForFish(fish);
-  if (
-    !fish
-    || !species
-    || !isFishDead(fish)
-    || isUndeadFish(fish)
-    || isFishBeingConsumedByPiranhas(fish, now)
-  ) {
-    return false;
-  }
-
-  fish.deadAt = null;
-  fish.zombieVariant = true;
-  fish.zombieBiteStartedAt = null;
-  fish.zombieBiteLastBloodAt = null;
-  fish.zombieBiteAttackerId = null;
-  fish.zombieReviveAt = null;
-  fish.zombieReviveSourceId = null;
-  fish.decayStage = null;
-  fish.piranhaConsumptionStartedAt = null;
-  fish.piranhaConsumptionEndsAt = null;
-  fish.piranhaLastBloodAt = null;
-  clearPiranhaAttackState(fish);
-  fish.healthUnits = getFishMaxHealthUnits(fish, species);
-  fish.fedStreak = 0;
-  fish.missedMealsInRow = 0;
-  fish.comfortDamageProgressMs = 0;
-  fish.activity = "roam";
-  fish.feedingPelletId = null;
-  fish.hangoutDecorId = null;
-  fish.blockedDecorId = null;
-  fish.blockedDecorUntil = null;
-  fish.wallAvoidUntil = now + 600;
-  fish.panicUntil = null;
-  fish.panicSpeedBoost = null;
-  fish.targetXNorm = clamp(fish.xNorm + randomBetween(-0.16, 0.16), 0.08, 0.92);
-  fish.targetYNorm = clamp(randomBetween(0.26, 0.64), 0.14, 0.8);
-  fish.targetAt = now + ZOMBIE_ATTACK_TARGET_REFRESH_MS;
-  fish.swimSpeed = normalizeFishSpeed(
-    species,
-    randomBetween(Math.max(species.speedMin, species.speedMax * 0.82), species.speedMax)
-  );
-  clearFishSchoolFollowState(fish);
-  clearFishCaveBehavior(fish);
-  setFishTankLayers(
-    fish,
-    getEffectiveFishBehavior(fish, species) === "sucker"
-      ? TANK_DEPTH_LAYERS
-      : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, Number(fish.tankLayer) || DEFAULT_TANK_LAYER))),
-    getEffectiveFishBehavior(fish, species) === "sucker"
-      ? TANK_DEPTH_LAYERS
-      : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, Number(fish.tankLayer) || DEFAULT_TANK_LAYER)))
-  );
-  unlockFishSpecies("zombie-fish", now, "Zombie Fish unlocked after a fish rose again as a zombie.");
-  spawnBloodCloud(fish.xNorm, fish.yNorm, 1.4);
-  pushEvent(`${fish.name} rose again as a zombie ${species.name.toLowerCase()}.`, now);
-  return true;
-}
-
-function processZombieInfections(now) {
-  let changed = false;
-
-  if (!isViolenceEnabled() || !isZombieModeEnabled()) {
-    for (const fish of state.fish) {
-      if (
-        hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-        || hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-        || hasDefinedFiniteNumber(fish.zombieReviveAt)
-        || (typeof fish.zombieReviveSourceId === "string" && fish.zombieReviveSourceId.trim())
-      ) {
-        clearZombieAttackState(fish);
-        fish.zombieReviveAt = null;
-        fish.zombieReviveSourceId = null;
-        changed = true;
-      }
-    }
-
-    return changed;
-  }
-
-  for (const fish of state.fish) {
-    if (hasZombieBiteInfection(fish)) {
-      if (!hasValidZombieBiteSource(fish)) {
-        clearZombieAttackState(fish);
-        changed = true;
-        continue;
-      }
-
-      if (
-        !hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-        || now - Number(fish.zombieBiteLastBloodAt) >= ZOMBIE_BITE_BLOOD_INTERVAL_MS
-      ) {
-        spawnBloodCloud(
-          clamp(fish.xNorm + randomBetween(-0.004, 0.004), 0.08, 0.92),
-          clamp(fish.yNorm + randomBetween(-0.004, 0.004), 0.14, 0.8),
-          1.1
-        );
-        fish.zombieBiteLastBloodAt = now;
-        changed = true;
-      }
-
-      if (now - Number(fish.zombieBiteStartedAt) >= ZOMBIE_BITE_FATAL_MS) {
-        const reviveSourceId = typeof fish.zombieBiteAttackerId === "string" && fish.zombieBiteAttackerId.trim()
-          ? fish.zombieBiteAttackerId.trim()
-          : null;
-        if (markFishAsDead(fish, now, `${fish.name} bled out after a zombie bite.`)) {
-          changed = true;
-        }
-        fish.zombieReviveAt = now + randomBetween(ZOMBIE_BITE_REVIVE_MIN_MS, ZOMBIE_BITE_REVIVE_MAX_MS);
-        fish.zombieReviveSourceId = reviveSourceId;
-        changed = true;
-      }
-      continue;
-    }
-
-    if (hasPendingZombieRevival(fish) && now >= Number(fish.zombieReviveAt) && reviveFishAsZombieVariant(fish, now)) {
-      changed = true;
-    }
-  }
-
-  return changed;
-}
-
 function canFishUsePassAttack(species) {
-  return Boolean(species && (
-    species.id === "betta"
-    || canZombieSkeletonUsePassAttack({ enabled: isZombieModeEnabled(), species })
-  ));
+  return Boolean(species?.id === "betta");
 }
 
 function canFishPassAttackTarget(attackerSpecies, target) {
@@ -66265,66 +73895,91 @@ function canFishPassAttackTarget(attackerSpecies, target) {
     return false;
   }
 
-  const zombieSkeletonTargetAllowed = canZombieSkeletonPassAttackTarget({
-    enabled: isZombieModeEnabled(),
-    attackerSpecies,
-    target,
-    isUndeadFish
-  });
-  if (zombieSkeletonTargetAllowed !== null) {
-    return zombieSkeletonTargetAllowed;
+  if (attackerSpecies.id === "betta" && getSpeciesForFish(target)?.id === "betta") {
+    // Betta-vs-Betta encounters use the dedicated display/chase/yield state
+    // machine instead of the generic incidental pass-nip system.
+    return false;
   }
 
   return true;
 }
 
-function handleZombieBiteAttacks(now) {
-  if (!state?.fish?.length || !isViolenceEnabled() || !isZombieModeEnabled()) {
+function handleBettaRivalAttacks(now = Date.now()) {
+  if (!Array.isArray(state?.fish) || !state.fish.length) {
     return;
   }
+  let changed = false;
+  const messages = [];
 
-  const draggedFishId = runtime.fishDragState?.fishId || null;
-  const activeBreedingRuntimeSequence = runtime.fishBreedingSequence || runtime.debugBreedingSequence;
-  const breedingFishIds = activeBreedingRuntimeSequence
-    ? new Set([activeBreedingRuntimeSequence.leftFishId, activeBreedingRuntimeSequence.rightFishId].filter(Boolean))
-    : null;
-  const landedMessages = [];
-
-  for (const attacker of state.fish) {
-    if (
-      isFishDead(attacker)
-      || attacker.id === draggedFishId
-      || breedingFishIds?.has(attacker.id)
-      || !usesZombieHunterBehavior(attacker)
-      || attacker.activity !== "roam"
-      || Number(attacker.motionLevel) < 0.14
-    ) {
+  for (const aggressor of state.fish) {
+    if (!aggressor || isFishDead(aggressor) || getSpeciesForFish(aggressor)?.id !== "betta") {
+      continue;
+    }
+    const chaseUntil = Number(aggressor.bettaRivalChaseUntil) || 0;
+    if (aggressor.bettaRivalRole !== "aggressor" || chaseUntil <= 0) {
+      continue;
+    }
+    const target = state.fish.find((entry) => entry?.id === aggressor.bettaRivalTargetId && !isFishDead(entry)) || null;
+    if (!target || !isBettaRivalPair(aggressor, target)) {
+      aggressor.bettaRivalChaseUntil = 0;
+      aggressor.bettaRivalRole = "";
+      aggressor.bettaRivalTargetId = "";
+      changed = true;
       continue;
     }
 
-    const target = getZombieAttackTarget(attacker, now);
-    if (!target || breedingFishIds?.has(target.id)) {
+    if (now >= chaseUntil) {
+      resolveBettaRivalEncounter(aggressor, target, now, { nipped: false });
+      changed = true;
       continue;
     }
 
-    if (Math.hypot(attacker.xNorm - target.xNorm, attacker.yNorm - target.yNorm) > BETTA_ATTACK_TRIGGER_RANGE_NORM) {
+    if (!isViolenceEnabled() || now < (Number(aggressor.bettaRivalNipAt) || 0)) {
+      continue;
+    }
+    if (aggressor.bettaRivalNippedTargetId === target.id) {
+      continue;
+    }
+    const distance = Math.hypot((aggressor.xNorm || 0.5) - (target.xNorm || 0.5), (aggressor.yNorm || 0.5) - (target.yNorm || 0.5));
+    if (distance > BETTA_ATTACK_TRIGGER_RANGE_NORM * 1.15) {
       continue;
     }
 
-    if (!infectFishWithZombieBite(target, attacker, now)) {
+    aggressor.bettaRivalNippedTargetId = target.id;
+    const outcome = applyFishDamage(
+      target,
+      1,
+      now,
+      `${aggressor.name} nipped ${target.name} during a Betta confrontation.`,
+      `${target.name} died after a Betta confrontation with ${aggressor.name}.`
+    );
+    if (!outcome.changed) {
+      resolveBettaRivalEncounter(aggressor, target, now, { nipped: false });
+      changed = true;
       continue;
     }
 
-    landedMessages.push(`${attacker.name} bit ${target.name}.`);
+    if (!outcome.dead) {
+      makeFishScurryFromAttack(target, aggressor, now);
+      teachNearbyFishFromAggression(target, aggressor, now, 0.44);
+    } else {
+      spawnBloodCloud(target.xNorm, target.yNorm, 1.25);
+    }
+    resolveBettaRivalEncounter(aggressor, target, now, { nipped: true });
+    messages.push(outcome.dead
+      ? `${aggressor.name} fatally injured ${target.name}.`
+      : `${aggressor.name} won a Betta confrontation and ${target.name} backed off.`);
+    changed = true;
   }
 
-  if (!landedMessages.length) {
+  if (!changed) {
     return;
   }
-
   saveState();
   renderUi(now);
-  showToast(landedMessages.length === 1 ? landedMessages[0] : `${landedMessages.length} zombie bites landed.`);
+  if (messages.length) {
+    showToast(messages.length === 1 ? messages[0] : `${messages.length} Betta confrontations escalated.`);
+  }
 }
 
 function handleBettaPassAttacks(now) {
@@ -66429,10 +74084,8 @@ function getSharkDesperationTarget(attacker, now = Date.now()) {
       && fish.id !== attacker.id
       && fish.id !== draggedFishId
       && !isFishDead(fish)
-      && !isUndeadFish(fish)
       && !isDesperationPredatorFish(fish)
       && !isFishProtectedFromPredators(fish, now)
-      && !hasZombieBiteInfection(fish)
     ))
     .sort((left, right) => (
       Math.hypot(left.xNorm - attacker.xNorm, left.yNorm - attacker.yNorm)
@@ -67526,7 +75179,7 @@ function getNearestDavyMutationTankmate(fish, predicate = null) {
 
 function isPeacefulDavyCompanionTarget(otherFish, otherSpecies) {
   if (!otherFish || !otherSpecies || isFishDead(otherFish) || isDavyMutationSpecies(otherSpecies)) return false;
-  if (isPiranhaSpecies(otherFish) || usesZombieHunterBehavior(otherFish)) return false;
+  if (isPiranhaSpecies(otherFish)) return false;
   const speciesType = getFishSpeciesType(otherSpecies);
   return speciesType !== "shark" && speciesType !== "whale";
 }
@@ -67820,6 +75473,35 @@ function assignDavyMutationSwimTarget(fish, species, now = Date.now()) {
   return false;
 }
 
+function getLionfishFeedingControl(fish, species, pellet, pelletPose, now = Date.now()) {
+  if (species?.id !== "lionfish" || !fish || !pellet || !pelletPose || pellet.foodKey !== "chum") return null;
+
+  if (fish.lionfishFoodReactionPelletId !== pellet.id) {
+    fish.lionfishFoodReactionPelletId = pellet.id;
+    fish.lionfishFoodReactionStartedAt = now;
+    fish.lionfishFoodBurstUntil = 0;
+  }
+  const elapsed = Math.max(0, now - (Number(fish.lionfishFoodReactionStartedAt) || now));
+
+  if (elapsed < 850) {
+    setFishBehaviorIntent(fish, "stalking food", "ambush feeding", now, { durationMs: 1100 });
+    return { handled: true, xNorm: fish.xNorm, yNorm: fish.yNorm, targetAt: now + 180 };
+  }
+  if (elapsed < 1650) {
+    setFishBehaviorIntent(fish, "cornering food", "ambush feeding", now, { durationMs: 1000 });
+    return {
+      handled: true,
+      xNorm: fish.xNorm + (pelletPose.xNorm - fish.xNorm) * 0.34,
+      yNorm: fish.yNorm + (pelletPose.yNorm - fish.yNorm) * 0.34,
+      targetAt: now + 260
+    };
+  }
+
+  if (!(Number(fish.lionfishFoodBurstUntil) > now)) fish.lionfishFoodBurstUntil = now + 820;
+  setFishBehaviorIntent(fish, "pouncing on food", "ambush feeding", now, { durationMs: 1100 });
+  return null;
+}
+
 function getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now = Date.now()) {
   const behaviorKey = getDavyMutationBehaviorKey(species);
   if (!behaviorKey || !fish || !pellet || !pelletPose) return null;
@@ -67968,11 +75650,6 @@ function updateFishMotion(now, deltaSeconds) {
         : (fish.id === activeBreedingSequence.rightFish.id ? "right" : null))
       : null;
     const piranhaLockedOnPrey = isPiranhaSpecies(fish) && Boolean(activePiranhaPrey);
-    const zombieAttackTarget = !piranhaLockedOnPrey && !breedingRole && usesZombieHunterBehavior(fish)
-      ? getZombieAttackTarget(fish, now)
-      : null;
-    const zombieLockedOnTarget = Boolean(zombieAttackTarget);
-    const zombieBittenVictim = hasZombieBiteInfection(fish);
     let pellet = null;
     let pelletPose = null;
     let pelletBounds = null;
@@ -68189,62 +75866,6 @@ function updateFishMotion(now, deltaSeconds) {
       fish.hangoutZoneType = null;
       fish.panicUntil = null;
       fish.panicSpeedBoost = null;
-    } else if (zombieLockedOnTarget) {
-      clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
-      clearForcedGravelDigPrompt(fish);
-      if (fish.caveState) {
-        abortFishCaveBehavior(fish, now, false);
-      }
-      fish.activity = "roam";
-      fish.feedingPelletId = null;
-      fish.hangoutDecorId = null;
-      fish.blockedDecorId = null;
-      fish.blockedDecorUntil = null;
-      fish.panicUntil = null;
-      fish.panicSpeedBoost = null;
-      clearFishSchoolFollowState(fish);
-      fish.targetXNorm = clamp(
-        zombieAttackTarget.xNorm + (zombieAttackTarget.xNorm >= fish.xNorm ? -1 : 1) * randomBetween(0.005, 0.02),
-        0.08,
-        0.92
-      );
-      fish.targetYNorm = clamp(zombieAttackTarget.yNorm + randomBetween(-0.018, 0.018), 0.14, 0.8);
-      fish.targetAt = now + ZOMBIE_ATTACK_TARGET_REFRESH_MS;
-      setFishDesiredTankLayer(
-        fish,
-        effectiveBehavior === "sucker"
-          ? getSuckerFishGlassLayer(fish)
-          : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, getFishTankLayer(zombieAttackTarget))))
-      );
-      fish.swimSpeed = normalizeFishSpeed(
-        species,
-        randomBetween(Math.max(species.speedMin, species.speedMax * 0.84), species.speedMax)
-      );
-    } else if (zombieBittenVictim) {
-      clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
-      clearForcedGravelDigPrompt(fish);
-      if (fish.caveState) {
-        abortFishCaveBehavior(fish, now, false);
-      }
-      fish.activity = "roam";
-      fish.feedingPelletId = null;
-      fish.hangoutDecorId = null;
-      fish.blockedDecorId = null;
-      fish.blockedDecorUntil = null;
-      clearFishSchoolFollowState(fish);
-      fish.panicUntil = now + 900;
-      fish.panicSpeedBoost = Math.max(Number(fish.panicSpeedBoost) || 0, randomBetween(2.15, 2.85));
-      if (now >= fish.targetAt) {
-        fish.targetXNorm = clamp(fish.xNorm + randomBetween(-0.24, 0.24), 0.08, 0.92);
-        fish.targetYNorm = clamp(fish.yNorm + randomBetween(-0.18, 0.18), 0.14, 0.8);
-        fish.targetAt = now + randomBetween(260, 720);
-      }
-      setFishDesiredTankLayer(
-        fish,
-        effectiveBehavior === "sucker"
-          ? getSuckerFishGlassLayer(fish)
-          : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, getFishTankLayer(fish))))
-      );
     } else if (piranhaLockedOnPrey) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
@@ -68285,11 +75906,15 @@ function updateFishMotion(now, deltaSeconds) {
         }
         pelletPose = getPelletPose(pellet, now);
         pelletBounds = getPelletHitBounds(pellet, now);
-        const davyFeedingControl = getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now);
-        if (davyFeedingControl?.handled) {
-          fish.targetXNorm = clamp(davyFeedingControl.xNorm, 0.08, 0.92);
-          fish.targetYNorm = clamp(davyFeedingControl.yNorm, 0.14, pellet.settled ? 0.9 : 0.82);
-          fish.targetAt = Number(davyFeedingControl.targetAt) || now + 300;
+        const lionfishFeedingControl = getLionfishFeedingControl(fish, species, pellet, pelletPose, now);
+        const davyFeedingControl = lionfishFeedingControl?.handled
+          ? null
+          : getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now);
+        const feedingControl = lionfishFeedingControl?.handled ? lionfishFeedingControl : davyFeedingControl;
+        if (feedingControl?.handled) {
+          fish.targetXNorm = clamp(feedingControl.xNorm, 0.08, 0.92);
+          fish.targetYNorm = clamp(feedingControl.yNorm, 0.14, pellet.settled ? 0.9 : 0.82);
+          fish.targetAt = Number(feedingControl.targetAt) || now + 300;
         } else {
           const mouthChaseTarget = getFishTargetNormForMouthPoint(
             fish,
@@ -68335,20 +75960,23 @@ function updateFishMotion(now, deltaSeconds) {
       const queuedFishActionActive = Boolean(activeQueuedFishAction);
       const queuedPebbleActionActive = activeQueuedFishAction?.action === "pebble";
       const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
+      const pufferInflatedOwnsMovement = updatePufferInflationState(fish, species, now);
 
-      if (!panicOwnsMovement && fish.activity === "roam" && !breedingRole && !fish.caveState && !debugCaveTestFish && !queuedFishActionActive) {
+      if (!panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !breedingRole && !fish.caveState && !debugCaveTestFish && !queuedFishActionActive) {
         maybeStartFishGravelPebbleAction(fish, species, now, deltaSeconds);
       }
 
-      const gravelPebbleOwnsMovement = !panicOwnsMovement && !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
-      const caveBehaviorOwnsMovement = !panicOwnsMovement && !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
+      const gravelPebbleOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
+      const caveBehaviorOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
       const fishActionOwnsMovement = !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
         && !debugCaveTestFish
         && updateQueuedFishActionControl(fish, species, now);
       const debugBehaviorOwnsMovement = !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
@@ -68357,6 +75985,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !debugCaveTestFish
         && updateDebugBehaviorSteering(fish, species, now);
       const diseaseAvoidanceOwnsMovement = !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
@@ -68372,6 +76001,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !debugBehaviorOwnsMovement
         && !diseaseAvoidanceOwnsMovement
         && !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !pendingTravel
         && now >= fish.targetAt
       ) {
@@ -68383,7 +76013,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
-      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !panicOwnsMovement && !pendingTravel) {
+      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !panicOwnsMovement && !pufferInflatedOwnsMovement && !pendingTravel) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
       }
@@ -68401,20 +76031,26 @@ function updateFishMotion(now, deltaSeconds) {
       }
     }
 
+    const pufferInflatedOwnsMovement = isPufferPuffVisualActive(fish, now);
+    if (pufferInflatedOwnsMovement) {
+      updatePufferInflationMotionTarget(fish, species, now);
+    }
+
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
     const moveDistance = Math.hypot(moveDx, moveDy);
     const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
-    const activeDebugSteering = !panicOwnsMovement && fish.activity === "roam" && !fish.caveState
+    const activeDebugSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
       ? getActiveDebugBehaviorSteering(fish, now)
       : null;
-    const activeFishActionSteering = !panicOwnsMovement && fish.activity === "roam" && !fish.caveState
+    const activeFishActionSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
       ? getActiveFishActionSteering(fish, now)
       : null;
     const activeQueuedFishAction = !fish.caveState
       ? getActiveFishActionQueueItem(fish, now)
       : null;
     const isDirectedSwim = panicOwnsMovement
+      || pufferInflatedOwnsMovement
       || whaleBreathOwnsMovement
       || fish.activity === "feeding"
       || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
@@ -68434,12 +76070,11 @@ function updateFishMotion(now, deltaSeconds) {
     if (pendingTravel) {
       motionTarget = Math.max(motionTarget, 0.58);
     }
+    if (pufferInflatedOwnsMovement) {
+      motionTarget = Math.max(motionTarget, (Number(fish.pufferWobbleUntil) || 0) > now ? 0.28 : 0.18);
+    }
     if (panicOwnsMovement) {
       motionTarget = Math.max(motionTarget, 0.9);
-    } else if (zombieLockedOnTarget) {
-      motionTarget = Math.max(motionTarget, 0.78);
-    } else if (zombieBittenVictim) {
-      motionTarget = Math.max(motionTarget, 0.92);
     } else if (activeFishActionSteering?.type === "zoomies") {
       motionTarget = Math.max(motionTarget, 0.86);
     } else if (activeFishActionSteering?.type === "follow") {
@@ -68498,6 +76133,13 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
+      if (pufferInflatedOwnsMovement) {
+        speedMultiplier *= (Number(fish.pufferWobbleUntil) || 0) > now ? 0.46 : 0.34;
+      }
+      if (species?.id === "lionfish" && Number(fish.lionfishFoodBurstUntil) > now) {
+        speedMultiplier *= 1.72;
+      }
+
       if (
         isFishCriticallyLowHealth(fish)
         && fish.activity !== "feeding"
@@ -68505,12 +76147,6 @@ function updateFishMotion(now, deltaSeconds) {
         && fish.activity !== FISH_GRAVEL_DIG_ACTIVITY
       ) {
         speedMultiplier *= 1.22;
-      }
-
-      if (zombieLockedOnTarget) {
-        speedMultiplier *= 1.18;
-      } else if (zombieBittenVictim) {
-        speedMultiplier *= 1.24;
       }
 
       if (isPiranhaSpecies(fish)) {
@@ -68757,6 +76393,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       } else if (!handledDirectionThisFrame) {
         const debugFaceDirection = panicOwnsMovement ? null : getDebugBehaviorFacingDirection(fish, now);
+        const signatureBehaviorFacing = panicOwnsMovement ? null : getFishSignatureBehaviorFacingDirection(fish, species, now);
         const facingDx = fish.activity === "feeding" && pelletPose
           ? pelletPose.xNorm - fish.xNorm
           : fish.targetXNorm - fish.xNorm;
@@ -68765,6 +76402,9 @@ function updateFishMotion(now, deltaSeconds) {
           : null;
         if (debugFaceDirection !== null) {
           setFishDirection(fish, debugFaceDirection, species, now);
+          handledDirectionThisFrame = true;
+        } else if (signatureBehaviorFacing !== null) {
+          setFishDirection(fish, signatureBehaviorFacing, species, now);
           handledDirectionThisFrame = true;
         } else if (schoolFollowFacing !== null) {
           setFishDirection(fish, schoolFollowFacing, species, now);
@@ -68789,8 +76429,14 @@ function updateFishMotion(now, deltaSeconds) {
     const debugFaceDirectionAtRest = !panicOwnsMovement && !handledDirectionThisFrame
       ? getDebugBehaviorFacingDirection(fish, now)
       : null;
+    const signatureBehaviorFacingAtRest = !panicOwnsMovement && !handledDirectionThisFrame
+      ? getFishSignatureBehaviorFacingDirection(fish, species, now)
+      : null;
     if (debugFaceDirectionAtRest !== null && fish.activity === "roam" && !fish.caveState) {
       setFishDirection(fish, debugFaceDirectionAtRest, species, now);
+      handledDirectionThisFrame = true;
+    } else if (signatureBehaviorFacingAtRest !== null && fish.activity === "roam" && !fish.caveState) {
+      setFishDirection(fish, signatureBehaviorFacingAtRest, species, now);
       handledDirectionThisFrame = true;
     }
 
@@ -68877,7 +76523,7 @@ function updateFishMotion(now, deltaSeconds) {
   scrubImpossiblePredatorState(now);
   scrubProtectedTankFishPredatorState(now);
   handlePiranhaSwarm(now, deltaSeconds);
-  handleZombieBiteAttacks(now);
+  handleBettaRivalAttacks(now);
   handleBettaPassAttacks(now);
   handleSharkDesperationAttacks(now);
   updateFishPebbleTosses(now);
@@ -70191,6 +77837,530 @@ function materializeCoarseFishActivities(targetTank = getCurrentTank(), now = Da
 }
 // </bundle-source>
 
+// <bundle-source path="rendering/depth-visuals.js">
+// Source fragment: rendering/depth-visuals.js
+// Assembled into ../app.js by scripts/build-app-bundle.cjs.
+//
+// IMPORTANT PERFORMANCE NOTE:
+// Depth treatment must never depend on live Canvas2D blur/filter passes for every
+// sprite or for the full gravel bed. Even sub-pixel blur/filter chains can push
+// browsers onto expensive GPU paths. Static object artwork is therefore treated
+// once and cached. The substrate uses one inexpensive source-over gradient.
+
+function getTankDepthParentLayer(layer) {
+  const numeric = Number(layer);
+  if (!Number.isFinite(numeric)) {
+    return 1;
+  }
+  // Fractional/internal cave ordering inherits the parent layer. A cave on
+  // 2.1/2.2/2.3 therefore receives the same treatment as Layer 2.
+  const parent = Number.isInteger(numeric) ? numeric : Math.floor(numeric);
+  return clampTankLayer(parent);
+}
+
+function normalizeDebugTankDepthTuning(source = {}) {
+  const normalized = {};
+  for (const [key, fallback] of Object.entries(DEFAULT_DEBUG_DEPTH_TUNING)) {
+    const raw = Number(source?.[key]);
+    const max = key === "shadow" || key === "movement"
+      ? 2
+      : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4);
+    normalized[key] = Number.isFinite(raw) ? clamp(raw, 0, max) : fallback;
+  }
+  return normalized;
+}
+
+function loadDebugTankDepthTuning() {
+  if (runtime.debugDepthTuningLoaded && runtime.debugDepthTuning) {
+    return runtime.debugDepthTuning;
+  }
+  let saved = null;
+  try {
+    const raw = localStorage.getItem(DEBUG_DEPTH_TUNING_STORAGE_KEY);
+    saved = raw ? JSON.parse(raw) : null;
+  } catch {
+    saved = null;
+  }
+  runtime.debugDepthTuning = normalizeDebugTankDepthTuning(saved || DEFAULT_DEBUG_DEPTH_TUNING);
+  runtime.debugDepthTuningLoaded = true;
+  return runtime.debugDepthTuning;
+}
+
+function getDebugTankDepthTuning() {
+  return loadDebugTankDepthTuning();
+}
+
+function getTankDepthEffectLevel() {
+  return normalizeDepthEffectLevel(getUiSettings().depthEffectLevel);
+}
+
+function getTankDepthLevelMultiplier(key, level = getTankDepthEffectLevel()) {
+  const normalizedLevel = normalizeDepthEffectLevel(level);
+  if (normalizedLevel <= DEPTH_EFFECT_LEVEL_MIN) {
+    return 0;
+  }
+  if (key === "shadow" || key === "movement") {
+    // Shadow/motion tuning has a deliberately narrower safe range than the
+    // color/depth treatment. Spread 100% -> 200% evenly across levels 1 -> 4.
+    const progress = (normalizedLevel - 1) / Math.max(1, DEPTH_EFFECT_LEVEL_MAX - 1);
+    return 1 + progress;
+  }
+  // Visual channels map directly to the tuner scale: 1=100%, 4=400%.
+  return normalizedLevel;
+}
+
+function getActiveTankDepthTuning() {
+  const depthLevel = getTankDepthEffectLevel();
+  const channelTuning = isDebugModeEnabled()
+    ? getDebugTankDepthTuning()
+    : DEFAULT_DEBUG_DEPTH_TUNING;
+  const effective = {};
+  for (const [key, fallback] of Object.entries(DEFAULT_DEBUG_DEPTH_TUNING)) {
+    const channelMultiplier = Number(channelTuning?.[key]);
+    const max = key === "shadow" || key === "movement"
+      ? 2
+      : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4);
+    const multiplier = Number.isFinite(channelMultiplier) ? channelMultiplier : fallback;
+    const levelMultiplier = getTankDepthLevelMultiplier(key, depthLevel);
+    effective[key] = clamp(levelMultiplier * multiplier, 0, max);
+  }
+  return effective;
+}
+
+function saveDebugTankDepthTuning() {
+  try {
+    localStorage.setItem(DEBUG_DEPTH_TUNING_STORAGE_KEY, JSON.stringify(getDebugTankDepthTuning()));
+  } catch {
+    // Tuning remains active for the current session if storage is unavailable.
+  }
+}
+
+function invalidateTankDepthVisualCaches() {
+  runtime.depthVisualImageCache = new WeakMap();
+  if (runtime.boroughOverviewSnapshotCache instanceof Map) {
+    runtime.boroughOverviewSnapshotCache.clear();
+  }
+  runtime.boroughOverviewSnapshotRenderedAt = 0;
+  runtime.boroughOverviewFishRenderedAt = 0;
+}
+
+function setDebugTankDepthTuningValue(key, value, options = {}) {
+  if (!(key in DEFAULT_DEBUG_DEPTH_TUNING)) {
+    return getDebugTankDepthTuning();
+  }
+  const tuning = getDebugTankDepthTuning();
+  const max = key === "shadow" || key === "movement"
+    ? 2
+    : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4);
+  tuning[key] = clamp(Number(value) || 0, 0, max);
+  if (options.persist !== false) {
+    saveDebugTankDepthTuning();
+  }
+  if (options.invalidate !== false) {
+    invalidateTankDepthVisualCaches();
+  }
+  return tuning;
+}
+
+function resetDebugTankDepthTuning() {
+  runtime.debugDepthTuning = normalizeDebugTankDepthTuning(DEFAULT_DEBUG_DEPTH_TUNING);
+  runtime.debugDepthTuningLoaded = true;
+  saveDebugTankDepthTuning();
+  invalidateTankDepthVisualCaches();
+  return runtime.debugDepthTuning;
+}
+
+function getTankDepthVisualPreset(layer) {
+  const parentLayer = getTankDepthParentLayer(layer);
+  const base = DEPTH_VISUALS[parentLayer] || DEPTH_VISUALS[1];
+  const tuning = getActiveTankDepthTuning();
+  return {
+    haze: clamp(base.haze * tuning.haze, 0, 1),
+    saturation: clamp(1 - (1 - base.saturation) * tuning.saturation, 0, 1),
+    contrast: clamp(1 - (1 - base.contrast) * tuning.contrast, 0, 1),
+    blurPx: base.blurPx,
+    coolTint: clamp(base.coolTint * tuning.coolTint, 0, 1),
+    shadowStrength: clamp(1 - (1 - base.shadowStrength) * tuning.shadow, 0, 1),
+    movementMultiplier: clamp(1 - (1 - base.movementMultiplier) * tuning.movement, 0.5, 1)
+  };
+}
+
+function interpolateTankDepthVisuals(fromVisuals, toVisuals, amount) {
+  const t = clamp(Number(amount) || 0, 0, 1);
+  const from = fromVisuals || DEPTH_VISUALS[1];
+  const to = toVisuals || from;
+  const lerp = (left, right) => Number(left || 0) + (Number(right || 0) - Number(left || 0)) * t;
+  return {
+    haze: lerp(from.haze, to.haze),
+    saturation: lerp(from.saturation, to.saturation),
+    contrast: lerp(from.contrast, to.contrast),
+    blurPx: lerp(from.blurPx, to.blurPx),
+    coolTint: lerp(from.coolTint, to.coolTint),
+    shadowStrength: lerp(from.shadowStrength, to.shadowStrength),
+    movementMultiplier: lerp(from.movementMultiplier, to.movementMultiplier)
+  };
+}
+
+function getTankDepthReferencePoints() {
+  return Array.from({ length: TANK_DEPTH_LAYERS }, (_, index) => {
+    const layer = index + 1;
+    return {
+      layer,
+      y: getTankLayerBottomBoundaryY(layer),
+      visuals: getTankDepthVisualPreset(layer)
+    };
+  }).sort((left, right) => left.y - right.y);
+}
+
+function getContinuousTankDepthVisualAtY(yPosition) {
+  const y = Number(yPosition);
+  const references = getTankDepthReferencePoints();
+  if (!references.length || !Number.isFinite(y)) {
+    return getTankDepthVisualPreset(1);
+  }
+  if (y <= references[0].y) {
+    return references[0].visuals;
+  }
+  const last = references[references.length - 1];
+  if (y >= last.y) {
+    return last.visuals;
+  }
+  for (let index = 0; index < references.length - 1; index += 1) {
+    const from = references[index];
+    const to = references[index + 1];
+    if (y < from.y || y > to.y) {
+      continue;
+    }
+    const span = Math.max(0.0001, to.y - from.y);
+    return interpolateTankDepthVisuals(from.visuals, to.visuals, (y - from.y) / span);
+  }
+  return last.visuals;
+}
+
+function areTankDepthEffectsEnabled() {
+  return getTankDepthEffectLevel() > DEPTH_EFFECT_LEVEL_MIN;
+}
+
+function getTankDepthCanvasFilter() {
+  // Kept as a compatibility shim for older callers. Depth filters are NOT
+  // applied live anymore. Live filter()/blur() on every sprite was the primary
+  // cause of the severe FPS/GPU regression.
+  return "none";
+}
+
+function combineTankCanvasFilters(...filters) {
+  const normalized = filters
+    .flatMap((filter) => String(filter || "").trim().split(/\s+(?=[a-z-]+\()/i))
+    .map((filter) => filter.trim())
+    .filter((filter) => filter && filter !== "none");
+  return normalized.length ? normalized.join(" ") : "none";
+}
+
+function getTankDepthObjectAlpha() {
+  // Depth should not make objects transparent/ghosted.
+  return 1;
+}
+
+function getTankDepthShadowStrength(layer) {
+  return areTankDepthEffectsEnabled() ? getTankDepthVisualPreset(layer).shadowStrength : 1;
+}
+
+function getDebugGroundShadowDarknessMultiplier() {
+  const fallback = Number(DEFAULT_DEBUG_DEPTH_TUNING?.shadowDarkness) || 1.3;
+  if (!isDebugModeEnabled()) {
+    return clamp(fallback, 0.25, DECOR_GROUND_SHADOWS.shadowDarknessCap);
+  }
+  const value = Number(getDebugTankDepthTuning()?.shadowDarkness);
+  return clamp(value || fallback, 0.25, DECOR_GROUND_SHADOWS.shadowDarknessCap);
+}
+
+function getTankDepthMovementMultiplier(layer) {
+  return areTankDepthEffectsEnabled() ? getTankDepthVisualPreset(layer).movementMultiplier : 1;
+}
+
+function getTankDepthImageDimensions(image) {
+  return {
+    width: Math.max(1, Math.round(Number(image?.naturalWidth || image?.videoWidth || image?.width) || 1)),
+    height: Math.max(1, Math.round(Number(image?.naturalHeight || image?.videoHeight || image?.height) || 1))
+  };
+}
+
+function getTankDepthImageCache() {
+  if (!(runtime.depthVisualImageCache instanceof WeakMap)) {
+    runtime.depthVisualImageCache = new WeakMap();
+  }
+  return runtime.depthVisualImageCache;
+}
+
+function applyTankDepthPixelTreatment(imageData, visuals) {
+  const pixels = imageData?.data;
+  if (!pixels || !visuals) {
+    return imageData;
+  }
+
+  const saturation = clamp(Number(visuals.saturation) || 1, 0, 2);
+  const contrast = clamp(Number(visuals.contrast) || 1, 0, 2);
+
+  // The authored values remain centralized in DEPTH_VISUALS. Their pixel-space
+  // contribution is intentionally restrained so Layer 5 still reads as a clean
+  // home aquarium rather than foggy water.
+  const coolAmount = clamp((Number(visuals.coolTint) || 0) * 0.62, 0, 0.25);
+  const hazeAmount = clamp((Number(visuals.haze) || 0) * 0.24, 0, 0.20);
+  const cool = DEPTH_VISUAL_COOL_TINT_RGB;
+  const haze = { r: 164, g: 208, b: 220 };
+
+  for (let index = 0; index < pixels.length; index += 4) {
+    if (pixels[index + 3] <= 1) {
+      continue;
+    }
+
+    let r = pixels[index];
+    let g = pixels[index + 1];
+    let b = pixels[index + 2];
+
+    // Saturation reduction.
+    const luminance = r * 0.2126 + g * 0.7152 + b * 0.0722;
+    r = luminance + (r - luminance) * saturation;
+    g = luminance + (g - luminance) * saturation;
+    b = luminance + (b - luminance) * saturation;
+
+    // Contrast reduction around midpoint.
+    r = 127.5 + (r - 127.5) * contrast;
+    g = 127.5 + (g - 127.5) * contrast;
+    b = 127.5 + (b - 127.5) * contrast;
+
+    // Subtle clean-water cyan contamination and haze. Alpha is preserved.
+    r = r * (1 - coolAmount) + cool.r * coolAmount;
+    g = g * (1 - coolAmount) + cool.g * coolAmount;
+    b = b * (1 - coolAmount) + cool.b * coolAmount;
+
+    r = r * (1 - hazeAmount) + haze.r * hazeAmount;
+    g = g * (1 - hazeAmount) + haze.g * hazeAmount;
+    b = b * (1 - hazeAmount) + haze.b * hazeAmount;
+
+    pixels[index] = clamp(Math.round(r), 0, 255);
+    pixels[index + 1] = clamp(Math.round(g), 0, 255);
+    pixels[index + 2] = clamp(Math.round(b), 0, 255);
+  }
+
+  return imageData;
+}
+
+function getTankDepthTreatedImage(image, layer) {
+  if (!image || !areTankDepthEffectsEnabled()) {
+    return image;
+  }
+
+  const parentLayer = getTankDepthParentLayer(layer);
+  if (parentLayer <= 1) {
+    return image;
+  }
+
+  const cache = getTankDepthImageCache();
+  let byLayer = cache.get(image);
+  if (!byLayer) {
+    byLayer = new Map();
+    cache.set(image, byLayer);
+  }
+  if (byLayer.has(parentLayer)) {
+    return byLayer.get(parentLayer) || image;
+  }
+
+  const { width, height } = getTankDepthImageDimensions(image);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) {
+    byLayer.set(parentLayer, image);
+    return image;
+  }
+
+  try {
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    const imageData = context.getImageData(0, 0, width, height);
+    applyTankDepthPixelTreatment(imageData, getTankDepthVisualPreset(parentLayer));
+    context.putImageData(imageData, 0, 0);
+    byLayer.set(parentLayer, canvas);
+    return canvas;
+  } catch (error) {
+    // Custom/user images can theoretically be non-readable in some browsers.
+    // Fall back to the original art instead of reintroducing a live GPU filter.
+    byLayer.set(parentLayer, image);
+    return image;
+  }
+}
+
+function getTankDepthWaterlineY() {
+  const direct = Number(WATER_SURFACE_Y);
+  if (Number.isFinite(direct)) {
+    return direct;
+  }
+  if (typeof getViewportAnchoredWaterSurfaceY === "function") {
+    const fallback = Number(getViewportAnchoredWaterSurfaceY());
+    if (Number.isFinite(fallback)) {
+      return fallback;
+    }
+  }
+  return 0;
+}
+
+function drawTankDepthAwareImageToContext(context, image, layer, bounds, drawImageFn, options = {}) {
+  if (!image || typeof drawImageFn !== "function") {
+    return;
+  }
+
+  const left = Number(bounds?.left);
+  const top = Number(bounds?.top);
+  const width = Number(bounds?.width);
+  const height = Number(bounds?.height);
+  if (!Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    drawImageFn(context, image, "normal");
+    return;
+  }
+
+  const parentLayer = getTankDepthParentLayer(layer);
+  if (!areTankDepthEffectsEnabled() || parentLayer <= 1) {
+    drawImageFn(context, image, "normal");
+    return;
+  }
+
+  const waterlineY = Number.isFinite(Number(options.waterlineY))
+    ? Number(options.waterlineY)
+    : getTankDepthWaterlineY();
+  if (!Number.isFinite(waterlineY)) {
+    drawImageFn(context, getTankDepthTreatedImage(image, parentLayer) || image, "depth");
+    return;
+  }
+
+  const objectTop = top;
+  const objectBottom = top + height;
+  const depthImage = getTankDepthTreatedImage(image, parentLayer) || image;
+
+  // Waterline masking is intentionally strict. No treated pixel may be drawn
+  // above the visible water surface. The previous soft overlap/feather let the
+  // depth-treated copy bleed several transformed pixels into the dry portion
+  // of top-mounted equipment.
+  if (objectBottom <= waterlineY) {
+    drawImageFn(context, image, "normal");
+    return;
+  }
+  if (objectTop >= waterlineY) {
+    drawImageFn(context, depthImage, "depth");
+    return;
+  }
+
+  const drawPass = (clipTop, clipBottom, passImage, passType) => {
+    if (!Number.isFinite(clipTop) || !Number.isFinite(clipBottom) || clipBottom <= clipTop) {
+      return;
+    }
+    context.save();
+    context.beginPath();
+    context.rect(left, clipTop, width, clipBottom - clipTop);
+    context.clip();
+    drawImageFn(context, passImage, passType);
+    context.restore();
+  };
+
+  drawPass(objectTop, Math.min(objectBottom, waterlineY), image, "normal");
+  drawPass(Math.max(objectTop, waterlineY), objectBottom, depthImage, "depth");
+}
+
+function getTankDepthSubstrateGradientStops(bounds, valueKey) {
+  const top = Number(bounds?.drawTop);
+  const bottom = Number(bounds?.bottom);
+  const span = Math.max(1, bottom - top);
+  const sample = (y) => {
+    const visuals = getContinuousTankDepthVisualAtY(y);
+    return Number(visuals?.[valueKey]) || 0;
+  };
+  const stops = [{ offset: 0, value: sample(top) }];
+  for (const point of getTankDepthReferencePoints()) {
+    if (point.y <= top || point.y >= bottom) {
+      continue;
+    }
+    stops.push({ offset: clamp((point.y - top) / span, 0, 1), value: Number(point.visuals?.[valueKey]) || 0 });
+  }
+  stops.push({ offset: 1, value: sample(bottom) });
+  return stops.sort((left, right) => left.offset - right.offset);
+}
+
+function getTankDepthSubstrateOverlayStyle(visuals) {
+  const coolTint = clamp(Number(visuals?.coolTint) || 0, 0, 1);
+  const haze = clamp(Number(visuals?.haze) || 0, 0, 1);
+  const saturationLoss = clamp(1 - (Number(visuals?.saturation) || 1), 0, 1);
+  const contrastLoss = clamp(1 - (Number(visuals?.contrast) || 1), 0, 1);
+
+  // One extremely light source-over wash replaces four blend-mode passes plus
+  // a full-size blur copy. This keeps gravel texture crisp and avoids a visible
+  // "effect layer" sitting on top of the substrate.
+  const substrateStrength = getActiveTankDepthTuning().substrate;
+  const alpha = clamp(
+    (coolTint * 0.30
+      + haze * 0.18
+      + saturationLoss * 0.05
+      + contrastLoss * 0.04) * substrateStrength,
+    0,
+    0.16
+  );
+
+  return {
+    r: 118,
+    g: 190,
+    b: 205,
+    alpha
+  };
+}
+
+function createTankDepthSubstrateOverlayGradient(context, bounds) {
+  const gradient = context.createLinearGradient(0, bounds.drawTop, 0, bounds.bottom);
+  const top = Number(bounds.drawTop);
+  const bottom = Number(bounds.bottom);
+  const span = Math.max(1, bottom - top);
+  const stops = [
+    { y: top, visuals: getContinuousTankDepthVisualAtY(top) },
+    ...getTankDepthReferencePoints().filter((point) => point.y > top && point.y < bottom),
+    { y: bottom, visuals: getContinuousTankDepthVisualAtY(bottom) }
+  ];
+
+  for (const stop of stops) {
+    const style = getTankDepthSubstrateOverlayStyle(stop.visuals);
+    const offset = clamp((Number(stop.y) - top) / span, 0, 1);
+    gradient.addColorStop(
+      offset,
+      `rgba(${style.r},${style.g},${style.b},${style.alpha.toFixed(4)})`
+    );
+  }
+  return gradient;
+}
+
+function drawContinuousTankDepthSubstrateSoftness() {
+  // Intentionally no-op. Sub-pixel Canvas2D blur still creates a costly live
+  // filter/compositing path and produced visible smearing on gravel. The
+  // contrast/saturation/tint cues are sufficient at aquarium scale.
+}
+
+function drawContinuousTankDepthSubstrateTreatment(context, bounds) {
+  if (!areTankDepthEffectsEnabled()) {
+    return;
+  }
+
+  context.save();
+  traceTankFloorMaskPath(context, bounds);
+  context.clip();
+  context.globalCompositeOperation = "source-over";
+  context.fillStyle = createTankDepthSubstrateOverlayGradient(context, bounds);
+  context.fillRect(
+    bounds.left,
+    bounds.drawTop,
+    bounds.drawWidth,
+    Math.max(1, bounds.bottom - bounds.drawTop + 2)
+  );
+  context.restore();
+}
+// </bundle-source>
+
 // <bundle-source path="rendering/tank-and-water.js">
 // Source fragment: rendering/tank-and-water.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
@@ -70222,7 +78392,12 @@ function renderTank(now) {
     if (layer === 3) {
       drawAmbientBubbles(now, 2);
     }
-    drawDecor(layer, now);
+    // Each cave owns private back/interior/front sublayers inside its selected
+    // main tank layer. Normal decor remains on the main layer and fish only
+    // enter the cave sublayer while actively travelling through that cave.
+    drawDecor(layer, now, { pass: "base" });
+    drawFish(now, layer, { excludeBehavior: "sucker", caveInteriorOnly: true });
+    drawDecor(layer, now, { pass: "cave-front" });
     drawPoops(now, layer);
     if (layer !== TANK_DEPTH_LAYERS) {
       drawWaterParticles(now, layer);
@@ -70230,9 +78405,9 @@ function renderTank(now) {
     drawFishEggs(now, layer);
     //drawLooseGravel(now, { surfaceKind: "decor", decorLayer: layer });
     if (layer !== TANK_DEPTH_LAYERS && layer !== SUCKER_FISH_FRONT_GLASS_LAYER) {
-      drawFish(now, layer, { onlyBehavior: "sucker" });
+      drawFish(now, layer, { onlyBehavior: "sucker", excludeCaveInterior: true });
     }
-    drawFish(now, layer, { excludeBehavior: "sucker" });
+    drawFish(now, layer, { excludeBehavior: "sucker", excludeCaveInterior: true });
     // A tossed pebble belongs with the layer where it will land and disturb
     // gravel, rather than being painted behind every fish and ornament.
     drawFishPebbleTosses(now, layer);
@@ -70250,7 +78425,6 @@ function renderTank(now) {
   drawBoroughEdgeBursts(now);
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
-  drawUnderwaterLightingPass(now);
   drawLightweightCausticOverlay(now);
   //drawLooseGravel(now, { transientOnly: true });
   // Dirty-water color is cached into grimeCanvas instead of painted every frame.
@@ -70491,46 +78665,6 @@ function drawLightweightCausticOverlay(now) {
   tankContext.globalCompositeOperation = "screen";
   tankContext.globalAlpha = 1;
   tankContext.drawImage(field.canvas, 0, 0, field.canvas.width, field.canvas.height, 0, 0, width, TANK_HEIGHT);
-  tankContext.restore();
-}
-
-function drawUnderwaterLightingPass(now) {
-  const tankBottom = Math.max(WATER_SURFACE_Y + 24, TANK_HEIGHT);
-  const pulse = 0.985 + Math.sin((Number(now) || 0) * 0.00011) * 0.015;
-
-  // Soft cool illumination from above.
-  tankContext.save();
-  tankContext.globalCompositeOperation = "screen";
-  const topLight = tankContext.createLinearGradient(0, WATER_SURFACE_Y, 0, tankBottom);
-  topLight.addColorStop(0, `rgba(176, 222, 255, ${(0.105 * pulse).toFixed(4)})`);
-  topLight.addColorStop(0.12, `rgba(126, 188, 235, ${(0.055 * pulse).toFixed(4)})`);
-  topLight.addColorStop(0.34, `rgba(84, 146, 208, ${(0.018 * pulse).toFixed(4)})`);
-  topLight.addColorStop(0.58, "rgba(84, 146, 208, 0)");
-  topLight.addColorStop(1, "rgba(84, 146, 208, 0)");
-  tankContext.fillStyle = topLight;
-  tankContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, tankBottom - WATER_SURFACE_Y);
-  tankContext.restore();
-
-  // Gentle depth darkening so the floor area feels deeper without crushing color.
-  tankContext.save();
-  tankContext.globalCompositeOperation = "multiply";
-  const depthShade = tankContext.createLinearGradient(0, WATER_SURFACE_Y, 0, tankBottom);
-  depthShade.addColorStop(0, "rgba(255, 255, 255, 0)");
-  depthShade.addColorStop(0.42, "rgba(233, 241, 252, 0.018)");
-  depthShade.addColorStop(0.72, "rgba(145, 170, 198, 0.06)");
-  depthShade.addColorStop(1, "rgba(26, 44, 68, 0.16)");
-  tankContext.fillStyle = depthShade;
-  tankContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, tankBottom - WATER_SURFACE_Y);
-  tankContext.restore();
-
-  // Tiny bit of bottom ambient occlusion to help the lower tank feel denser.
-  tankContext.save();
-  const floorGlow = tankContext.createLinearGradient(0, tankBottom - 180, 0, tankBottom);
-  floorGlow.addColorStop(0, "rgba(0, 0, 0, 0)");
-  floorGlow.addColorStop(0.5, "rgba(6, 10, 20, 0.028)");
-  floorGlow.addColorStop(1, "rgba(4, 8, 18, 0.055)");
-  tankContext.fillStyle = floorGlow;
-  tankContext.fillRect(0, Math.max(WATER_SURFACE_Y, tankBottom - 180), TANK_WIDTH, 180);
   tankContext.restore();
 }
 
@@ -70920,12 +79054,52 @@ function drawTankBackdrop() {
   tankContext.restore();
 }
 
+function drawBackgroundBaseArtToContext(context, background, image, left, top, width, height) {
+  if (image) {
+    drawImageCover(context, image, left, top, width, height);
+    return;
+  }
+  if (isCustomBackgroundKey(background?.key)) {
+    if (!isAnimatedBackgroundEnabled()) {
+      context.fillStyle = createCustomBackgroundFill(context, left, top, width, height);
+      context.fillRect(left, top, width, height);
+    }
+    return;
+  }
+  const gradient = context.createLinearGradient(0, top, 0, TANK_HEIGHT);
+  gradient.addColorStop(0, "#10171c");
+  gradient.addColorStop(1, "#05090d");
+  context.fillStyle = gradient;
+  context.fillRect(left, top, width, height);
+}
+
+function getBackgroundDepthSourceSurface(background, image, width, height) {
+  const key = [background?.key || "default", image?.src || image?.currentSrc || "no-image", width, height].join("|");
+  const cached = runtime.backgroundDepthSourceSurface;
+  if (cached && cached.key === key && cached.canvas) {
+    return cached.canvas;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width));
+  canvas.height = Math.max(1, Math.round(height));
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+  drawBackgroundBaseArtToContext(context, background, image, 0, 0, canvas.width, canvas.height);
+  runtime.backgroundDepthSourceSurface = { key, canvas };
+  return canvas;
+}
+
 function drawBackground(now = Date.now()) {
   const background = runtime.backgroundMap.get(state.selectedBackground);
   const localImage = isLocalImageBackgroundKey(background?.key) ? runtime.images.get(getLocalBackgroundImageDataUrl()) : null;
   const image = background && !isCustomBackgroundKey(background.key) && !isLocalImageBackgroundKey(background.key)
     ? runtime.images.get(background.path)
     : localImage;
+  if (background?.path && !image && !isCustomBackgroundKey(background.key) && !isLocalImageBackgroundKey(background.key)) {
+    requestRuntimeImageRecovery(background.path, { kind: "background", id: background.key });
+  }
   const backgroundLeft = GLASS_MARGIN_X;
   const backgroundTop = 0;
   const backgroundWidth = TANK_WIDTH - GLASS_MARGIN_X * 2;
@@ -70938,19 +79112,24 @@ function drawBackground(now = Date.now()) {
   tankContext.rect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
   tankContext.clip();
 
-  if (image) {
-    drawImageCover(tankContext, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
-  } else if (isCustomBackgroundKey(background?.key)) {
-    if (!isAnimatedBackgroundEnabled()) {
-      tankContext.fillStyle = createCustomBackgroundFill(tankContext, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
-      tankContext.fillRect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+  if (areTankDepthEffectsEnabled()) {
+    const backgroundSurface = getBackgroundDepthSourceSurface(background, image, backgroundWidth, backgroundHeight);
+    if (backgroundSurface) {
+      drawTankDepthAwareImageToContext(
+        tankContext,
+        backgroundSurface,
+        TANK_DEPTH_LAYERS,
+        { left: backgroundLeft, top: backgroundTop, width: backgroundWidth, height: backgroundHeight },
+        (context, sourceImage) => {
+          context.drawImage(sourceImage, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+        },
+        { waterlineY: waterTop }
+      );
+    } else {
+      drawBackgroundBaseArtToContext(tankContext, background, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
     }
   } else {
-    const gradient = tankContext.createLinearGradient(0, backgroundTop, 0, TANK_HEIGHT);
-    gradient.addColorStop(0, "#10171c");
-    gradient.addColorStop(1, "#05090d");
-    tankContext.fillStyle = gradient;
-    tankContext.fillRect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    drawBackgroundBaseArtToContext(tankContext, background, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
   }
   tankContext.restore();
 
@@ -71909,8 +80088,19 @@ function drawAutoDispenser(now = Date.now()) {
   const loadedCount = getAutoDispenserLoadedCount(dispenser);
 
   tankContext.save();
+  const depthLayer = clampTankLayer(dispenser.tankLayer ?? AUTO_DISPENSER_DEFAULT_TANK_LAYER);
+  tankContext.globalAlpha *= getTankDepthObjectAlpha(depthLayer);
   if (backgroundImage) {
-    tankContext.drawImage(backgroundImage, layout.x, layout.y, layout.width, layout.height);
+    drawTankDepthAwareImageToContext(
+      tankContext,
+      backgroundImage,
+      depthLayer,
+      { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
+      (renderContext, renderImage) => {
+        renderContext.drawImage(renderImage, layout.x, layout.y, layout.width, layout.height);
+      },
+      { featherPx: 1.25 }
+    );
   }
 
   tankContext.save();
@@ -71935,7 +80125,16 @@ function drawAutoDispenser(now = Date.now()) {
   tankContext.restore();
 
   if (foregroundImage) {
-    tankContext.drawImage(foregroundImage, layout.x, layout.y, layout.width, layout.height);
+    drawTankDepthAwareImageToContext(
+      tankContext,
+      foregroundImage,
+      depthLayer,
+      { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
+      (renderContext, renderImage) => {
+        renderContext.drawImage(renderImage, layout.x, layout.y, layout.width, layout.height);
+      },
+      { featherPx: 1.25 }
+    );
   }
 
   drawAutoDispenserStatusLight(layout, loadedCount, now);
@@ -72637,49 +80836,82 @@ function drawCustomGravelFloor(bounds, now = Date.now()) {
 }
 
 function drawGravelDepthTreatment(bounds) {
-  const floorHeight = Math.max(1, bounds.bottom - bounds.drawTop);
+  drawContinuousTankDepthSubstrateTreatment(tankContext, bounds);
+}
+
+function getSubstrateGroundShadowMaskYAtX(x, bounds, startY, bottomY) {
+  const inset = Math.max(0, Number(SUBSTRATE_GROUND_SHADOW.hillInsetPx) || 0);
+  const amplitude = Math.max(0, Number(SUBSTRATE_GROUND_SHADOW.hillAmplitudePx) || 0);
+  const secondaryAmplitude = Math.max(0, Number(SUBSTRATE_GROUND_SHADOW.hillSecondaryAmplitudePx) || 0);
+  const maxTopY = Math.min(bottomY - 1, startY + inset + amplitude + secondaryAmplitude);
+  const t = clamp((x - bounds.left) / Math.max(1, bounds.drawWidth), 0, 1);
+
+  // Follow the randomized main gravel hill profile, but compress it into a much
+  // smaller vertical range so the shadow top never climbs into the Layer 1 line.
+  const baseHillY = getTankFloorMaskSurfaceYAtX(x, bounds);
+  const hillDelta = baseHillY - bounds.baseTop;
+  const profile = getTankFloorMaskHillProfile();
+  const correlatedWave = inset + amplitude * 0.52 + hillDelta * 0.18;
+  const detailWave = ((Math.sin(t * Math.PI * 2 * (profile.shortFrequency * 0.92) + profile.shortPhase + 0.45) + 1) * 0.5) * secondaryAmplitude;
+  const crestBias = Math.sin(t * Math.PI) * Math.min(secondaryAmplitude * 0.45, 0.9);
+
+  return clamp(
+    startY + correlatedWave + detailWave - crestBias,
+    startY + inset,
+    maxTopY
+  );
+}
+
+function traceSubstrateGroundShadowMaskPath(context, bounds, startY, bottomY) {
+  const segments = Math.max(8, Math.floor(Number(SUBSTRATE_GROUND_SHADOW.hillSegments) || 8));
+
+  context.beginPath();
+  context.moveTo(bounds.left, bottomY);
+  context.lineTo(bounds.left, getSubstrateGroundShadowMaskYAtX(bounds.left, bounds, startY, bottomY));
+
+  for (let index = 0; index <= segments; index++) {
+    const t = index / segments;
+    const x = bounds.left + bounds.drawWidth * t;
+    context.lineTo(x, getSubstrateGroundShadowMaskYAtX(x, bounds, startY, bottomY));
+  }
+
+  context.lineTo(bounds.left + bounds.drawWidth, bottomY);
+  context.closePath();
+}
+
+function drawSubstrateGroundShadow(bounds) {
+  if (!areDecorShadowsEnabled()) {
+    return;
+  }
+  const startY = clamp(
+    getTankLayerBottomBoundaryY(SUBSTRATE_GROUND_SHADOW.startLayer),
+    bounds.drawTop,
+    bounds.bottom
+  );
+  const bottomY = Math.max(startY + 1, bounds.bottom);
+  const gradient = tankContext.createLinearGradient(0, startY, 0, bottomY);
+  const { r, g, b } = SUBSTRATE_GROUND_SHADOW.color;
+  const alphaMultiplier = getDebugGroundShadowDarknessMultiplier();
+  const topFadeRatio = clamp(Number(SUBSTRATE_GROUND_SHADOW.topFadeRatio) || 0.16, 0.04, 0.45);
+  const midFadeRatio = clamp(Number(SUBSTRATE_GROUND_SHADOW.midFadeRatio) || 0.34, topFadeRatio + 0.04, 0.75);
+  gradient.addColorStop(0, `rgba(${r},${g},${b},0.0000)`);
+  gradient.addColorStop(topFadeRatio, `rgba(${r},${g},${b},${(SUBSTRATE_GROUND_SHADOW.startAlpha * alphaMultiplier * 0.45).toFixed(4)})`);
+  gradient.addColorStop(midFadeRatio, `rgba(${r},${g},${b},${(SUBSTRATE_GROUND_SHADOW.startAlpha * alphaMultiplier).toFixed(4)})`);
+  gradient.addColorStop(1, `rgba(${r},${g},${b},${(SUBSTRATE_GROUND_SHADOW.endAlpha * alphaMultiplier).toFixed(4)})`);
 
   tankContext.save();
   traceTankFloorMaskPath(tankContext, bounds);
   tankContext.clip();
-
-  // Subtle depth darkening lowers the visual competition of the substrate and
-  // makes the lower gravel read as receding away from the lit water column.
+  traceSubstrateGroundShadowMaskPath(tankContext, bounds, startY, bottomY);
+  tankContext.clip();
   tankContext.globalCompositeOperation = "multiply";
-  const depthShade = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.bottom);
-  depthShade.addColorStop(0, "rgba(255, 255, 255, 0)");
-  depthShade.addColorStop(0.34, "rgba(238, 242, 248, 0.012)");
-  depthShade.addColorStop(0.68, "rgba(106, 119, 139, 0.055)");
-  depthShade.addColorStop(1, "rgba(30, 37, 50, 0.145)");
-  tankContext.fillStyle = depthShade;
-  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, floorHeight + 2);
-
-  // A narrow feather just inside the gravel crest softens the hard water-to-
-  // substrate seam without painting haze over the open water.
-  const crestBlendHeight = Math.min(70, Math.max(34, floorHeight * 0.24));
-  const crestShade = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.drawTop + crestBlendHeight);
-  crestShade.addColorStop(0, "rgba(39, 51, 67, 0.075)");
-  crestShade.addColorStop(0.32, "rgba(64, 76, 94, 0.038)");
-  crestShade.addColorStop(1, "rgba(255, 255, 255, 0)");
-  tankContext.fillStyle = crestShade;
-  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, crestBlendHeight);
-
-  // Slight edge falloff keeps the saturated gravel from feeling like a flat
-  // banner and reinforces the curved glass/tank depth near the sides.
-  const edgeShade = tankContext.createRadialGradient(
-    bounds.left + bounds.drawWidth * 0.5,
-    bounds.drawTop + floorHeight * 0.32,
-    bounds.drawWidth * 0.16,
-    bounds.left + bounds.drawWidth * 0.5,
-    bounds.drawTop + floorHeight * 0.36,
-    bounds.drawWidth * 0.66
+  tankContext.fillStyle = gradient;
+  tankContext.fillRect(
+    bounds.left,
+    startY,
+    bounds.drawWidth,
+    Math.max(1, bottomY - startY + 2)
   );
-  edgeShade.addColorStop(0, "rgba(255, 255, 255, 0)");
-  edgeShade.addColorStop(0.72, "rgba(198, 207, 219, 0.012)");
-  edgeShade.addColorStop(1, "rgba(51, 61, 76, 0.06)");
-  tankContext.fillStyle = edgeShade;
-  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, floorHeight + 2);
-
   tankContext.restore();
 }
 
@@ -72694,8 +80926,11 @@ function drawTankFloor(now = Date.now()) {
 
   tankContext.restore();
 
-  drawGravelDepthTreatment(bounds);
+  // Loose pebbles are part of the continuous substrate surface, so draw them
+  // before the shared depth pass instead of leaving them visually detached.
   drawCustomGravelLoosePebbles(bounds, now);
+  drawGravelDepthTreatment(bounds);
+  drawSubstrateGroundShadow(bounds);
 }
 
 function getGravelGrimeIntensity(dirtiness = getTankDirtiness(Date.now())) {
@@ -73786,7 +82021,9 @@ function drawBubblerLightLayerToContext(context, item, decor, now = Date.now(), 
   const flickerAlpha = getBubblerLightFlickerAlpha(item, now);
 
   context.save();
-  context.globalAlpha = baseAlpha * flickerAlpha;
+  const depthLayer = getDecorTankLayer(item);
+  const depthLightImage = getTankDepthTreatedImage(lightImage, depthLayer) || lightImage;
+  context.globalAlpha = baseAlpha * flickerAlpha * getTankDepthObjectAlpha(depthLayer);
   const flipX = isDecorHorizontallyFlipped(item);
   const flipY = isDecorVerticallyFlipped(item);
   if (flipX || flipY) {
@@ -73795,7 +82032,7 @@ function drawBubblerLightLayerToContext(context, item, decor, now = Date.now(), 
     drawX = flipX ? 0 : drawX;
     drawY = flipY ? 0 : drawY;
   }
-  drawDecorMotionImageToContext(context, lightImage, drawX, drawY, width, height, item, now, motion);
+  drawDecorMotionImageToContext(context, depthLightImage, drawX, drawY, width, height, item, now, motion);
   context.restore();
   return true;
 }
@@ -73880,19 +82117,39 @@ function drawDecorImageLayerToContext(context, image, drawX, drawY, width, heigh
     return;
   }
 
-  const resolvedMotion = motion || getDecorMotion(item, now);
+  const baseMotion = motion || getDecorMotion(item, now);
+  const motionLayer = getDecorMotionLayer(item);
+  const renderedLayer = receivesCaustics ? "front" : "bg";
+  const resolvedMotion = motionLayer === "all" || motionLayer === renderedLayer
+    ? baseMotion
+    : { ...baseMotion, isFloating: false, isSeaweed: false, isLure: false, customMotionType: "", bobX: 0, bobY: 0 };
   context.save();
-  context.globalAlpha = clamp(alpha, 0, 1);
+  const depthLayer = getDecorTankLayer(item);
+  context.globalAlpha = clamp(alpha, 0, 1) * getTankDepthObjectAlpha(depthLayer);
   const flipX = isDecorHorizontallyFlipped(item);
   const flipY = isDecorVerticallyFlipped(item);
-  if (flipX || flipY) {
-    context.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
-    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-    drawX = flipX ? 0 : drawX;
-    drawY = flipY ? 0 : drawY;
-  }
-  drawDecorMotionImageToContext(context, image, drawX, drawY, width, height, item, now, resolvedMotion);
-  markLightweightCausticDecorImage(context, image, drawX, drawY, width, height, item, now, resolvedMotion, receivesCaustics);
+  drawTankDepthAwareImageToContext(
+    context,
+    image,
+    depthLayer,
+    { left: drawX, top: drawY, width, height },
+    (renderContext, renderImage, passType) => {
+      renderContext.save();
+      let renderX = drawX;
+      let renderY = drawY;
+      if (flipX || flipY) {
+        renderContext.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
+        renderContext.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+        renderX = flipX ? 0 : drawX;
+        renderY = flipY ? 0 : drawY;
+      }
+      drawDecorMotionImageToContext(renderContext, renderImage, renderX, renderY, width, height, item, now, resolvedMotion);
+      if (passType === "depth") {
+        markLightweightCausticDecorImage(renderContext, renderImage, renderX, renderY, width, height, item, now, resolvedMotion, receivesCaustics);
+      }
+      renderContext.restore();
+    }
+  );
   context.restore();
 }
 
@@ -73978,7 +82235,6 @@ function getDecorSliceOffset(item, now, t, motion = null) {
 }
 
 function getDecorMotion(item, now) {
-  const key = String(item?.decorKey || "").toLowerCase();
   const phase = item.xNorm * 11.73 + item.yNorm * 7.19;
   const decor = runtime.decorMap.get(item?.decorKey);
   const capabilities = getDecorMotionCapabilities(item);
@@ -73989,12 +82245,13 @@ function getDecorMotion(item, now) {
   const customMotionConfig = customMotionType ? getCustomDecorMotionTypeConfig(customMotionType) : null;
   const isFloating = Boolean(capabilities.hasBob);
   const isSeaweed = Boolean(capabilities.hasSway);
-  const customMotionIntensity = motionSettings.swayIntensity;
-  const isLure = capabilities.isLure || key.includes("lure");
-  const lureBobX = isLure
+  const depthMovementMultiplier = getTankDepthMovementMultiplier(getDecorTankLayer(item));
+  const customMotionIntensity = motionSettings.swayIntensity * depthMovementMultiplier;
+  const isLure = Boolean(capabilities.isLure);
+  const lureBobX = isLure && capabilities.hasBob
     ? (Math.sin(now / (980 / motionSettings.bobSpeed) + phase * 0.85) * 2.1 + Math.sin(now / (1630 / motionSettings.bobSpeed) + phase * 1.4) * 0.7) * motionSettings.bobIntensity
     : 0;
-  const lureBobY = isLure
+  const lureBobY = isLure && capabilities.hasBob
     ? (Math.sin(now / (790 / motionSettings.bobSpeed) + phase) * 2.2 + Math.cos(now / (1280 / motionSettings.bobSpeed) + phase * 0.7) * 0.85) * motionSettings.bobIntensity
     : 0;
 
@@ -74008,13 +82265,13 @@ function getDecorMotion(item, now) {
     customMotionIntensity,
     swaySplitY: motionSettings.swaySplitY,
     swaySide: motionSettings.swaySide,
-    swayIntensity: motionSettings.swayIntensity,
-    bobIntensity: motionSettings.bobIntensity,
+    swayIntensity: motionSettings.swayIntensity * depthMovementMultiplier,
+    bobIntensity: motionSettings.bobIntensity * depthMovementMultiplier,
     swaySpeed: motionSettings.swaySpeed,
     bobSpeed: motionSettings.bobSpeed,
     phase,
-    bobX: isLure ? lureBobX : isFloating ? Math.sin(now / (980 / motionSettings.bobSpeed) + phase * 0.85) * 0.8 * motionSettings.bobIntensity : 0,
-    bobY: isLure ? lureBobY : isFloating ? Math.sin(now / (760 / motionSettings.bobSpeed) + phase) * 1.4 * motionSettings.bobIntensity : 0
+    bobX: (isLure ? lureBobX : isFloating ? Math.sin(now / (980 / motionSettings.bobSpeed) + phase * 0.85) * 0.8 * motionSettings.bobIntensity : 0) * depthMovementMultiplier,
+    bobY: (isLure ? lureBobY : isFloating ? Math.sin(now / (760 / motionSettings.bobSpeed) + phase) * 1.4 * motionSettings.bobIntensity : 0) * depthMovementMultiplier
   };
 }
 
@@ -74060,7 +82317,8 @@ function pruneFishShadowPlaneCache() {
 }
 
 function getDecorContactSpans(item, decor) {
-  const mask = getImageAlphaMask(decor.path);
+  const contactPath = decor?.shadowFootprintPath || decor?.path;
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(contactPath) : null;
   if (!mask?.bounds || !mask.alpha) return null;
   if (!runtime.decorContactSpanCache) runtime.decorContactSpanCache = new WeakMap();
   let variants = runtime.decorContactSpanCache.get(mask);
@@ -74086,6 +82344,7 @@ function getDecorContactSpans(item, decor) {
   variants.set(flippedY, spans);
   return spans;
 }
+
 
 function getDecorContactShadowMetrics(item) {
   const decor = runtime.decorMap.get(item?.decorKey);
@@ -74113,25 +82372,49 @@ function getDecorContactShadowMetrics(item) {
     return null;
   }
 
-  const aspectFootprint = clamp(width / Math.max(width, height), 0.32, 1);
-  const radiusX = clamp(width * (0.255 + aspectFootprint * 0.118), 16, 226);
-  const radiusY = clamp(radiusX * 0.16, 5, 30);
-  const centerX = (bounds.left + bounds.right) * 0.5;
-  const lightOffsetX = clamp(radiusX * 0.075, 2, 12);
+  const spans = getDecorContactSpans(item, decor);
+  const footprintPath = decor.shadowFootprintPath || decor.path;
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(footprintPath) : null;
+  const footprint = mask?.bounds
+    ? {
+      left: mask.bounds.minX / mask.width,
+      right: (mask.bounds.maxX + 1) / mask.width
+    }
+    : (Array.isArray(spans) && spans.length
+      ? {
+        left: Math.min(...spans.map((span) => span.left)),
+        right: Math.max(...spans.map((span) => span.right))
+      }
+      : { left: 0.1, right: 0.9 });
+  const spriteWidth = getDecorDisplayWidth(decor, item);
+  const resolveHorizontalUnit = typeof resolveDecorHorizontalUnit === "function"
+    ? resolveDecorHorizontalUnit
+    : ((_item, unit) => unit);
+  const footprintLeft = resolveHorizontalUnit(item, footprint.left);
+  const footprintRight = resolveHorizontalUnit(item, footprint.right);
+  const footprintCenterX = Number.isFinite(Number(item?.xNorm)) && Number.isFinite(typeof TANK_WIDTH !== "undefined" ? TANK_WIDTH : NaN)
+    ? Number(item.xNorm) * TANK_WIDTH + ((footprintLeft + footprintRight) / 2 - 0.5) * spriteWidth
+    : (bounds.left + bounds.right) * 0.5;
+  const footprintWidthPx = Math.max(8, Math.abs(footprintRight - footprintLeft) * spriteWidth);
+  const radiusX = clamp(footprintWidthPx * 0.5, 8, 280);
+  const footprintHeightBoost = clamp((footprintWidthPx - 90) / 180, 0, 1);
+  const radiusY = clamp(radiusX * (0.16 + footprintHeightBoost * 0.08), 4, 24);
   const shadowY = clamp(
-    anchorY - 0.5,
+    anchorY - (3.9 + footprintHeightBoost * 1.2),
     WATER_SURFACE_Y + 20,
     getVisibleTankFloorBottomY() + 8
   );
 
   return {
-    x: centerX + lightOffsetX,
+    x: footprintCenterX,
     y: shadowY,
     radiusX,
     radiusY,
-    alpha: 0.30 * groundingStrength,
-    spans: getDecorContactSpans(item, decor),
-    spriteWidth: getDecorDisplayWidth(decor, item)
+    boundsWidth: width,
+    footprintHeightBoost,
+    alpha: 0.48 * groundingStrength * getTankDepthShadowStrength(getDecorTankLayer(item)) * (typeof getDebugGroundShadowDarknessMultiplier === "function" ? getDebugGroundShadowDarknessMultiplier() : 1),
+    spans,
+    spriteWidth
   };
 }
 
@@ -74144,19 +82427,43 @@ function drawDecorContactShadow(context, item) {
   context.save();
   traceTankFloorMaskPath(context, getTankFloorDrawBounds());
   context.clip();
-  const spans = shadow.spans || [{ left: 0.22, right: 0.78 }];
+  // Base grounding shadow follows an explicit invisible footprint helper when
+  // present, otherwise it falls back to the visible sprite alpha bounds.
+  context.save();
+  context.translate(shadow.x, shadow.y + DECOR_GROUND_SHADOWS.baseOffsetY);
+  context.scale(
+    Math.max(8, shadow.radiusX * DECOR_GROUND_SHADOWS.baseRadiusXMultiplier),
+    clamp(shadow.radiusY * (DECOR_GROUND_SHADOWS.baseRadiusYMultiplier + shadow.footprintHeightBoost * 0.42), 5, 26)
+  );
+  let gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+  gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * DECOR_GROUND_SHADOWS.baseAlphaMultiplier})`);
+  gradient.addColorStop(0.74, `rgba(3, 9, 14, ${(shadow.alpha * DECOR_GROUND_SHADOWS.baseMidAlphaMultiplier).toFixed(4)})`);
+  gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(0, 0, 1, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+
+  const spans = shadow.spans || [{ left: 0.16, right: 0.84 }];
   for (const span of spans) {
     const left = resolveDecorHorizontalUnit(item, span.left);
     const right = resolveDecorHorizontalUnit(item, span.right);
     const x = item.xNorm * TANK_WIDTH + ((left + right) / 2 - 0.5) * shadow.spriteWidth;
-    const radius = Math.max(2, Math.abs(right - left) * shadow.spriteWidth / 2);
-    // Local soft occlusion plus a tight core; gaps under arches stay open.
+    const radius = Math.max(3, Math.abs(right - left) * shadow.spriteWidth / 2);
+
+    // Local soft occlusion plus a tighter core; gaps under arches stay open.
     for (const core of [false, true]) {
       context.save();
-      context.translate(x, shadow.y);
-      context.scale(radius * (core ? 1.02 : 1.1), core ? 1.5 : clamp(radius * 0.065, 2, 6));
-      const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
-      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * (core ? 0.88 : 0.42)})`);
+      context.translate(x, shadow.y - (1.4 + shadow.footprintHeightBoost * 0.8));
+      context.scale(
+        radius * (core ? DECOR_GROUND_SHADOWS.contactRadiusXMultiplier * 0.96 : DECOR_GROUND_SHADOWS.contactRadiusXMultiplier),
+        core
+          ? clamp(shadow.radiusY * (0.82 + shadow.footprintHeightBoost * 0.22), 2, 10)
+          : clamp(shadow.radiusY * (DECOR_GROUND_SHADOWS.contactRadiusYMultiplier + shadow.footprintHeightBoost * 0.34), 4, 16)
+      );
+      gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * (core ? DECOR_GROUND_SHADOWS.contactCoreAlphaMultiplier : DECOR_GROUND_SHADOWS.contactSoftAlphaMultiplier)})`);
       gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
       context.fillStyle = gradient;
       context.beginPath();
@@ -74169,6 +82476,10 @@ function drawDecorContactShadow(context, item) {
 }
 
 function drawGroundShadows(now) {
+  if (!areDecorShadowsEnabled()) {
+    return;
+  }
+
   tankContext.save();
   tankContext.globalCompositeOperation = "multiply";
   tankContext.beginPath();
@@ -74179,10 +82490,8 @@ function drawGroundShadows(now) {
     getVisibleTankFloorBottomY() - WATER_SURFACE_Y + 12
   );
   tankContext.clip();
-  if (areDecorShadowsEnabled()) {
-    for (const item of state.placedDecor) {
-      drawDecorContactShadow(tankContext, item);
-    }
+  for (const item of state.placedDecor) {
+    drawDecorContactShadow(tankContext, item);
   }
   pruneFishShadowPlaneCache();
   for (const fish of state.fish) {
@@ -74202,7 +82511,7 @@ function drawGroundShadows(now) {
       pose.y + height * 0.14,
       width,
       height,
-      0.15,
+      0.15 * getTankDepthShadowStrength(getFishTankLayer(fish)) * getDebugGroundShadowDarknessMultiplier(),
       species.shadowScale || 0.28,
       shadowPlaneY
     );
@@ -74343,7 +82652,8 @@ function comparePlacedDecorHitOrder(left, right) {
   return right.yNorm - left.yNorm;
 }
 
-function drawDecor(layer = null, now = Date.now()) {
+function drawDecor(layer = null, now = Date.now(), options = {}) {
+  const pass = options.pass === "cave-front" ? "cave-front" : "base";
   const sorted = [...state.placedDecor]
     .filter((item) => {
       if (layer === null) {
@@ -74366,10 +82676,27 @@ function drawDecor(layer = null, now = Date.now()) {
     }
 
     const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
+    const cave = isCaveDecorKey(item.decorKey);
+    const transitTube = isTransitTubeDecorKey(item.decorKey);
+
+    if (pass === "cave-front" && !cave) {
+      continue;
+    }
+    if (pass === "base" && cave && layer !== null && layer !== span.front) {
+      continue;
+    }
 
     let imagePath = decor.path;
-
-    if (isCaveDecorKey(item.decorKey) || isTransitTubeDecorKey(item.decorKey)) {
+    if (cave) {
+      if (pass === "base") {
+        if (!decor.bgPath) {
+          continue;
+        }
+        imagePath = decor.bgPath;
+      } else {
+        imagePath = decor.path;
+      }
+    } else if (transitTube) {
       if (layer === span.back && decor.bgPath) {
         imagePath = decor.bgPath;
       } else if (layer === span.front) {
@@ -74393,6 +82720,47 @@ function drawDecor(layer = null, now = Date.now()) {
     const drawX = x - width / 2;
     const drawY = y - height;
     const motion = getDecorMotion(item, now);
+
+    if (cave && pass === "base") {
+      const bgHeight = width * (image.height / Math.max(1, image.width));
+      if (drawCaveBackgroundLayerToContext(tankContext, item, decor, now, {
+        drawX,
+        bgDrawY: y - bgHeight,
+        width,
+        baseHeight: height,
+        motion
+      })) {
+        continue;
+      }
+      drawDecorImageLayer(image, drawX, y - bgHeight, width, bgHeight, item, now, motion);
+      continue;
+    }
+
+    if (cave && pass === "cave-front") {
+      if (decor.bubbler) {
+        drawBubblerLightLayerToContext(tankContext, item, decor, now, {
+          drawX,
+          drawY,
+          width,
+          height,
+          motion
+        });
+        drawDecorBubblerEffect(item, decor, image, now);
+      }
+      if (!decor.bubbler || !isCustomBubblerDecorKey(item.decorKey) || runtime.editTankMode) {
+        if (!drawCaveColorLayersToContext(tankContext, item, decor, now, {
+          drawX,
+          drawY,
+          width,
+          height,
+          motion
+        })) {
+          drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion);
+        }
+      }
+      continue;
+    }
+
     if (layer === span.front && decor.bubbler) {
       const bgImage = decor.bgPath ? runtime.images.get(decor.bgPath) : null;
       if (bgImage) {
@@ -74429,9 +82797,9 @@ function drawDecor(layer = null, now = Date.now()) {
       continue;
     }
 
-    if (layer === span.back && (hasDecorCaveColorLayers(decor) || isTransitTubeDecorKey(item.decorKey))) {
+    if (layer === span.back && (hasDecorCaveColorLayers(decor) || transitTube)) {
       const bgHeight = width * (image.height / Math.max(1, image.width));
-      if (isTransitTubeDecorKey(item.decorKey)) {
+      if (transitTube) {
         drawDecorImageLayer(image, drawX, drawY, width, height, item, now, motion);
         continue;
       }
@@ -74807,7 +83175,7 @@ function drawPoops(now, layer = null) {
     tankContext.save();
     tankContext.translate(pose.x, pose.y + 4);
     tankContext.rotate(pose.wobble);
-    tankContext.globalAlpha = 0.9;
+    tankContext.globalAlpha = 0.9 * depthAlpha;
     tankContext.drawImage(pose.sprite, -pose.width / 2, -pose.height * 0.88, pose.width, pose.height);
     tankContext.restore();
   }
@@ -75061,12 +83429,15 @@ function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
   tankContext.restore();
 }
 
-function getFishSameLayerRenderPriority(fish) {
-  if (!fish?.caveDecorId || !["enter", "inside", "exit", "depart"].includes(fish.caveState)) {
-    return 0;
-  }
+function isFishInCaveRenderSublayer(fish) {
+  return Boolean(
+    fish?.caveDecorId
+    && ["enter", "inside", "exit", "depart"].includes(fish.caveState)
+  );
+}
 
-  return 1;
+function getFishSameLayerRenderPriority(fish) {
+  return isFishInCaveRenderSublayer(fish) ? 1 : 0;
 }
 
 function drawFishPebbleTosses(now, layer = null) {
@@ -75185,11 +83556,13 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
   const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
 
   tankContext.save();
-  tankContext.translate(pose.x + pose.swayX, pose.y);
+  const depthLayer = getFishTankLayer(fish);
+  const depthAlpha = getTankDepthObjectAlpha(depthLayer);
+  tankContext.translate(pose.x + pose.swayX * getTankDepthMovementMultiplier(depthLayer), pose.y);
   tankContext.scale(pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1), 1);
   tankContext.rotate(pose.tilt);
   tankContext.scale(pose.bodyScaleX, pose.bodyScaleY);
-  tankContext.globalAlpha = 0.82;
+  tankContext.globalAlpha = 0.82 * depthAlpha;
   tankContext.fillStyle = bodyColor;
   tankContext.beginPath();
   tankContext.ellipse(fishDrawX + width * 0.55, 0, width * 0.34, height * 0.42, 0, 0, Math.PI * 2);
@@ -75210,13 +83583,13 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
 
 function getFishDepthLightingStyle(poseY) {
   const floorBottom = Math.max(WATER_SURFACE_Y + 1, getVisibleTankFloorBottomY());
-  const depth = clamp((Number(poseY) - WATER_SURFACE_Y) / Math.max(1, floorBottom - WATER_SURFACE_Y), 0, 1);
-  const brightnessPercent = Math.round(101 - depth * 5);
-  const saturationPercent = Math.round(101 - depth * 4);
-  const highlightAlpha = 0.085 - depth * 0.04;
+  const waterColumnProgress = clamp((Number(poseY) - WATER_SURFACE_Y) / Math.max(1, floorBottom - WATER_SURFACE_Y), 0, 1);
+  const highlightAlpha = 0.085 - waterColumnProgress * 0.04;
   return {
-    depth,
-    filter: `brightness(${brightnessPercent}%) saturate(${saturationPercent}%)`,
+    depth: waterColumnProgress,
+    // Layer-based color/softness now comes exclusively from DEPTH_VISUALS.
+    // This function only retains the independent top-light highlight.
+    filter: "none",
     highlightAlpha: clamp(highlightAlpha, 0.035, 0.085)
   };
 }
@@ -76587,6 +84960,13 @@ function drawFish(now, layer = null, options = {}) {
     if (options.excludeBehavior && effectiveBehavior === options.excludeBehavior) {
       continue;
     }
+    const caveInteriorFish = isFishInCaveRenderSublayer(fish);
+    if (options.caveInteriorOnly === true && !caveInteriorFish) {
+      continue;
+    }
+    if (options.excludeCaveInterior === true && caveInteriorFish) {
+      continue;
+    }
 
     const suckerFreeSwimming = effectiveBehavior === "sucker"
       ? isSuckerFishFreeSwimming(fish, species, now)
@@ -76640,10 +85020,14 @@ function drawFish(now, layer = null, options = {}) {
       ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.renderImage : transitionToSprite.renderImage)
       : getFishTintedImage(imagePath, image, fish);
     const pose = getFishPose(fish, species, now);
+    const depthLayer = getFishTankLayer(fish);
+    const depthMovementMultiplier = getTankDepthMovementMultiplier(depthLayer);
+    const visualSwayX = pose.swayX * depthMovementMultiplier;
+    const visualWiggle = pose.wiggle * depthMovementMultiplier;
     const width = getFishDisplayWidth(fish, species, now);
     const height = width * (image.height / image.width);
     const healthRatio = getFishHealthRatio(fish, species);
-    const fishDrawX = -width / 2 + pose.wiggle * width * 0.018;
+    const fishDrawX = -width / 2 + visualWiggle * width * 0.018;
     const useSuckerFacePivot = (
       SUCKER_FISH_FACE_PIVOT_ENABLED
       && !pose.isDead
@@ -76669,7 +85053,7 @@ function drawFish(now, layer = null, options = {}) {
 
     const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
-    tankContext.translate(pose.x + pose.swayX, pose.y);
+    tankContext.translate(pose.x + visualSwayX, pose.y);
     tankContext.scale(genericTurnRigActive ? 1 : (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)), 1);
     if (useSuckerFacePivot) {
       tankContext.translate(suckerFacePivotX, suckerFacePivotY);
@@ -76718,9 +85102,10 @@ function drawFish(now, layer = null, options = {}) {
     const comfort = !pose.isDead ? getFishComfort(fish, now) : null;
     const fishLighting = getFishDepthLightingStyle(pose.y);
     const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now, comfort?.value);
-    const fishRenderFilter = fishBaseFilter === "none"
-      ? fishLighting.filter
-      : `${fishBaseFilter} ${fishLighting.filter}`;
+    const fishRenderFilter = combineTankCanvasFilters(
+      fishBaseFilter,
+      fishLighting.filter
+    );
     const drawFishSpriteLayer = (sprite, scaleY = 1, alpha = 1) => {
       if (!sprite?.sourceImage || !sprite?.renderImage || alpha <= 0) return;
       const spriteHeight = width * (sprite.sourceImage.height / sprite.sourceImage.width);
@@ -76728,7 +85113,7 @@ function drawFish(now, layer = null, options = {}) {
         ? -spriteHeight / 2
         : spriteHeight / 2;
       tankContext.save();
-      tankContext.globalAlpha *= clamp(alpha, 0, 1);
+      tankContext.globalAlpha *= clamp(alpha, 0, 1) * getTankDepthObjectAlpha(depthLayer);
       if (isHalloweenModeActive(now)) {
         tankContext.globalAlpha *= 0.55;
       }
@@ -76737,16 +85122,17 @@ function drawFish(now, layer = null, options = {}) {
         tankContext.scale(1, Math.max(SUCKER_FISH_VIEW_TRANSITION_MIN_SCALE_Y, scaleY));
         tankContext.translate(0, -surfaceFlipPivotY);
       }
+      const depthRenderImage = getTankDepthTreatedImage(sprite.renderImage, depthLayer) || sprite.renderImage;
       tankContext.filter = fishRenderFilter;
       if (genericTurnRigActive) {
-        drawFishTurnaroundRig(tankContext, sprite.renderImage, fishDrawX, width, spriteHeight, fish, now);
+        drawFishTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
         if (getFishTurnRigProgress(fish, now) >= FISH_TURN_RIG_INTERNAL_TIMELINE_MAX) {
           fish.turnFinalFrameRenderedAt = now;
         }
-        markLightweightCausticTurnaroundRig(tankContext, sprite.renderImage, fishDrawX, width, spriteHeight, fish, now);
+        markLightweightCausticTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
       } else {
-        tankContext.drawImage(sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
-        markLightweightCausticImage(tankContext, sprite.renderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
       }
       tankContext.filter = "none";
       if (!pose.isDead && !genericTurnRigActive) {
@@ -76772,6 +85158,7 @@ function drawFish(now, layer = null, options = {}) {
     drawFishHeldGravelPebble(fish, species, now, pose, width, height);
     tankContext.restore();
     drawFishDiseaseBubbles(fish, species, pose, width, height, now);
+    drawFishPufferBubbleBurst(fish, species, pose, width, height, now);
     drawFishBirthdayHat(fish, pose, width, height, now);
 
     if ((!pose.isBeingConsumed && pose.isDead) || fish.healthUnits === 1) {
@@ -76782,7 +85169,7 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.textBaseline = "middle";
       tankContext.fillText(
         pose.isDead ? "\u2620\uFE0F" : "\u{1F494}",
-        pose.x + pose.swayX,
+        pose.x + visualSwayX,
         statusY
       );
       tankContext.restore();
@@ -77492,6 +85879,25 @@ function getFishPose(fish, species, now) {
     const tailSway = Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
     tilt = clamp(tilt * 0.28 + verticalDrift + tailSway, -0.38, 0.38);
   }
+  const behaviorIntentType = String(fish.behaviorIntent?.type || "");
+  const yellowTangGrazing = species?.id === "yellow-tang" && (Number(fish.yellowTangGrazeUntil) || 0) > now;
+  const yellowTangPecking = yellowTangGrazing && /graze/i.test(behaviorIntentType);
+  const yellowTangGravelPecking = yellowTangPecking && /gravel/i.test(behaviorIntentType);
+  const seahorsePerched = species?.id === "seahorse" && (Number(fish.seahorsePerchUntil) || 0) > now && Boolean(fish.seahorsePerchDecorId);
+  const bettaDisplaying = species?.id === "betta" && /betta (?:display|confrontation)/i.test(behaviorIntentType);
+  const pencilSparring = species?.id === "pencilfish" && /harmless spar/i.test(behaviorIntentType);
+  const yellowTangPeckPulse = yellowTangPecking
+    ? Math.pow(Math.max(0, Math.sin(now / 118 + fish.phase * Math.PI * 2)), 4)
+    : 0;
+  if (yellowTangGrazing) {
+    const noseDip = yellowTangPecking
+      ? renderDirection * (0.035 + yellowTangPeckPulse * (yellowTangGravelPecking ? 0.24 : 0.16))
+      : 0;
+    tilt = clamp(tilt * 0.38 + noseDip + Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.025, -0.34, 0.34);
+  }
+  if (seahorsePerched) {
+    tilt = clamp(tilt * 0.3 + Math.sin(now / 1100 + fish.phase * Math.PI) * 0.018, -0.16, 0.16);
+  }
   const debugPoseSteering = fish.activity === "roam" && !fish.caveState
     ? getActiveDebugBehaviorSteering(fish, now)
     : null;
@@ -77501,12 +85907,28 @@ function getFishPose(fish, species, now) {
       : renderDirection;
     tilt = clamp(tilt * 0.35 - faceDirection * 0.2, -0.34, 0.34);
   }
+  const pufferInflated = isPufferInflatedActive(fish, now);
+  const pufferWobbleAmount = pufferInflated ? getPufferInflationWobbleAmount(fish, now) : 0;
+  if (pufferInflated) {
+    tilt = clamp(
+      tilt * 0.22 + Math.sin(now / 170 + fish.phase * Math.PI * 2.4) * (0.1 + pufferWobbleAmount * 0.22),
+      -0.42,
+      0.42
+    );
+  }
   const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch)
     * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)))
-    * (forcedDigPrompt ? 0.97 : 1);
+    * (forcedDigPrompt ? 0.97 : 1)
+    * (pufferInflated ? (0.98 - pufferWobbleAmount * 0.025 + Math.sin(now / 210 + fish.phase * Math.PI) * 0.012) : 1)
+    * (bettaDisplaying ? 0.97 : 1)
+    * (pencilSparring ? 0.985 : 1);
   const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78))
     * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)))
-    * (forcedDigPrompt ? 1.04 : 1);
+    * (forcedDigPrompt ? 1.04 : 1)
+    * (pufferInflated ? (1.03 + pufferWobbleAmount * 0.038 + Math.abs(Math.sin(now / 190 + fish.phase * Math.PI * 1.2)) * 0.012) : 1)
+    * (bettaDisplaying ? 1.06 : 1)
+    * (pencilSparring ? 1.018 : 1)
+    * (seahorsePerched ? 0.99 : 1);
   const turnSway = turnProgress === null || useComplexTurn
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * (0.35 + motionLevel * 0.95);
@@ -77516,11 +85938,15 @@ function getFishPose(fish, species, now) {
     direction: fish.direction || 1,
     facingScaleX: renderDirection,
     tilt,
-    wiggle,
+    wiggle: seahorsePerched ? wiggle * 0.24 : wiggle,
     bodyScaleX,
     bodyScaleY,
-    swayX: wiggle * (0.7 + motionLevel * 1.55)
-      + turnSway * (entryProgress === null ? 1 : entryRightingEase),
+    swayX: (seahorsePerched ? wiggle * 0.12 : wiggle * (0.7 + motionLevel * 1.55))
+      + turnSway * (entryProgress === null ? 1 : entryRightingEase)
+      + (yellowTangGrazing ? Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.45 + renderDirection * yellowTangPeckPulse * 1.15 : 0)
+      + (bettaDisplaying ? Math.sin(now / 180 + fish.phase * Math.PI * 2) * 0.8 : 0)
+      + (pencilSparring ? Math.sin(now / 155 + fish.phase * Math.PI * 2.2) * 0.95 : 0)
+      + (pufferInflated ? Math.sin(now / 145 + fish.phase * Math.PI * 2.3) * (1.2 + pufferWobbleAmount * 2.1) : 0),
     isDead: false
   };
 }
@@ -78628,16 +87054,10 @@ function drawDecorBubbleStreams(now) {
 }
 
 function getDecorBubbleIntensity(decorKey) {
-  const key = decorKey.toLowerCase();
-  if (/(coral|seaweed|grass|moss|anubias|bloom|bunch)/.test(key)) {
-    return 1.45;
-  }
-  if (/(castle|cave|terracotta|pagoda|bridge|arch)/.test(key)) {
-    return 1.05;
-  }
-  if (/(rock|driftwood|chest|shell)/.test(key)) {
-    return 0.6;
-  }
+  const categories = new Set(getDecorCategoryList(decorKey));
+  if (categories.has("plant") || categories.has("coral")) return 1.45;
+  if (categories.has("cave")) return 1.05;
+  if (["rock", "wood", "ornament"].some((category) => categories.has(category))) return 0.6;
   return 0.35;
 }
 
@@ -79037,20 +87457,6 @@ function findFishAtPoint(x, y, now) {
   return null;
 }
 
-function getUndeadComfortPenalty(fish) {
-  if (!fish || isUndeadFish(fish) || !isGoreEnabled()) {
-    return 0;
-  }
-
-  const undeadNeighbors = state.fish.filter((otherFish) => (
-    otherFish
-    && otherFish.id !== fish.id
-    && !isFishDead(otherFish)
-    && isUndeadFish(otherFish)
-  )).length;
-  return clamp(undeadNeighbors * UNDEAD_COMFORT_PENALTY, 0, MAX_UNDEAD_COMFORT_PENALTY);
-}
-
 function updateComfortHistoryEvents(now = Date.now()) {
   let changed = false;
   const dayKey = getLocalDayKey(now);
@@ -79087,10 +87493,6 @@ function getFishComfort(fish, now) {
     return { value: 1, label: "Calm" };
   }
 
-  if (isUndeadFish(fish) && isGoreEnabled()) {
-    return { value: 1, label: "Undead" };
-  }
-
   const dirtiness = getTankDirtiness(now);
   if (hasExposedDeadTankFish(now) || dirtiness >= CRITICAL_TANK_DIRTINESS) {
     return { value: 0, label: "Critical" };
@@ -79114,7 +87516,6 @@ function getFishComfort(fish, now) {
   const spacePoints = getTankSpaceComfortPoints(getCurrentTank());
   const activeConflicts = getFishConflictStatus(fish, getCurrentTank(), now).filter((conflict) => conflict.active);
   const conflictPenalty = Math.min(COMFORT_COMPONENTS.maxConflictPenalty, activeConflicts.length * COMFORT_COMPONENTS.conflictPenalty);
-  const undeadPenalty = getUndeadComfortPenalty(fish);
   const glassTapStressPenalty = getFishGlassTapStressPenalty(fish, now);
   const diseasePenalty = getFishDiseaseComfortPenalty(fish, now);
   const comfortValue = clamp(
@@ -79127,7 +87528,6 @@ function getFishComfort(fish, now) {
       + mealBoost
       - conflictPenalty
     ) / 100
-    - undeadPenalty
     - glassTapStressPenalty
     - diseasePenalty,
     0,
@@ -79176,7 +87576,7 @@ function getFishNeedsSnapshot(fish, now = Date.now()) {
 }
 
 function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fish?.needs, fish, now)) {
-  if (!fish || isFishDead(fish) || isUndeadFish(fish)) return null;
+  if (!fish || isFishDead(fish)) return null;
   if (hasActiveCandyBoost(fish, now)) return { tone: "good", text: "Candy boost: all stats full for " + formatDuration(fish.candyBoostUntil - now) + "." };
   if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
     return { tone: "danger", text: "Very hungry. Drop some food into the tank." };
@@ -79284,7 +87684,7 @@ function getFishSocialNeedTarget(fish) {
 
 function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   const species = getSpeciesForFish(fish);
-  if (!fish || !species || isFishDead(fish) || isUndeadFish(fish)) return null;
+  if (!fish || !species || isFishDead(fish)) return null;
   const unboostedMs = Number(fish.candyBoostUntil) > 0
     ? Math.min(elapsedMs, Math.max(0, now - Number(fish.candyBoostUntil))) : elapsedMs;
   const hours = Math.max(0, unboostedMs) / HOUR_MS;
@@ -79302,9 +87702,6 @@ function updateFishNeeds(now = Date.now()) {
   }
   let changed = false;
   for (const fish of getLivingTankFish()) {
-    if (isUndeadFish(fish)) {
-      continue;
-    }
     fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
     const previousUpdatedAt = Number.isFinite(Number(fish.needsUpdatedAt)) ? Number(fish.needsUpdatedAt) : now;
     const elapsedMs = clamp(now - previousUpdatedAt, 0, FISH_NEEDS_MAX_OFFLINE_MS);
@@ -79710,13 +88107,30 @@ function getPlacedDecorGroundBounds(item) {
     return null;
   }
 
-  // Grounding is based on the visible pixels of the primary decor artwork, not
-  // the transparent PNG rectangle or optional companion/effect layers.
-  // This makes the visible bottom of the object the physical foot everywhere.
+  // The optional shadow-footprint helper is invisible game data. Its opaque
+  // pixels define the physical substrate contact/bottom for placement while the
+  // visible artwork still defines the object's top and horizontal bounds.
   const primaryBounds = decor.path
     ? getPlacedDecorOpaqueBounds(item, decor.path)
     : null;
-  return primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
+  const visibleBounds = primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
+  const footprintBounds = decor.shadowFootprintPath
+    ? getPlacedDecorOpaqueBounds(item, decor.shadowFootprintPath)
+    : null;
+
+  if (!visibleBounds) {
+    return footprintBounds;
+  }
+  if (!footprintBounds) {
+    return visibleBounds;
+  }
+
+  return {
+    left: visibleBounds.left,
+    right: visibleBounds.right,
+    top: visibleBounds.top,
+    bottom: footprintBounds.bottom
+  };
 }
 
 function getDecorShapeDescriptor(item, imagePathOverride = null) {
@@ -84998,7 +93412,7 @@ function renderCloudAccountPanel() {
               <span class="cloud-account-editor-icon" aria-hidden="true"><img data-sprite-src="assets/icons/edit.png" alt="" /></span>
               <div><strong id="cloudUsernameEditorTitle">Edit Username</strong><span>Choose the name shown for this Bubble Borough account.</span></div>
             </div>
-            <input class="cloud-account-editor-input" type="text" maxlength="32" autocomplete="nickname" placeholder="Choose a name" value="${escapeHtml(username)}" data-cloud-settings-username>
+            <input class="cloud-account-editor-input" type="text" maxlength="20" autocomplete="nickname" placeholder="Choose a name" value="${escapeHtml(username)}" data-cloud-settings-username>
             <div class="cloud-account-editor-actions">
               <button class="small-button" type="button" data-cloud-save-username>Save</button>
               <button class="small-button alt" type="button" data-cloud-cancel-username>Cancel</button>
@@ -85287,7 +93701,7 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
-      "path": "assets/fish/Angelfish.webp",
+      "path": "assets/fish/angelfish__genetics-natural.webp",
       "version": "944a8d5043d2",
       "width": 1024,
       "height": 1536,
@@ -85324,13 +93738,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Angelfish",
+        "root": "assets/generated/sprites/fish/angelfish__genetics-natural",
         "version": "0342a21d176d-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Betta.webp",
+      "path": "assets/fish/betta__genetics-natural.webp",
       "version": "92c3c5e2562d",
       "width": 1024,
       "height": 1338,
@@ -85367,13 +93781,142 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Betta",
+        "root": "assets/generated/sprites/fish/betta__genetics-natural",
         "version": "dfdb209f7607-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/BlueRam.webp",
+      "path": "assets/fish/bioluminescent-angler-pike__genetics-enhanced.webp",
+      "version": "1a7788398270",
+      "width": 1024,
+      "height": 1029,
+      "frames": {
+        "DNA_Bioluminescent_Angler_Pike_1.png": [
+          0,
+          0,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_5.png": [
+          512,
+          0,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_4.png": [
+          0,
+          343,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_3.png": [
+          512,
+          343,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_2.png": [
+          0,
+          686,
+          512,
+          343
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/bioluminescent-angler-pike__genetics-enhanced",
+        "version": "65f89046db81-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/bioluminescent-cherub-goldfish__genetics-enhanced.webp",
+      "version": "9b229893ce22",
+      "width": 1024,
+      "height": 1089,
+      "frames": {
+        "DNA_Bioluminescent _Cherub_Goldfish_1.png": [
+          0,
+          0,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_5.png": [
+          512,
+          0,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_4.png": [
+          0,
+          363,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_3.png": [
+          512,
+          363,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_2.png": [
+          0,
+          726,
+          512,
+          363
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/bioluminescent-cherub-goldfish__genetics-enhanced",
+        "version": "96c706e9cddb-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/bioluminescent-glass-fangfish__genetics-enhanced.webp",
+      "version": "fbb5049ca221",
+      "width": 1024,
+      "height": 618,
+      "frames": {
+        "DNA_Bioluminescent_Glass_Fangfish_1.png": [
+          0,
+          0,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_5.png": [
+          512,
+          0,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_4.png": [
+          0,
+          206,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_3.png": [
+          512,
+          206,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_2.png": [
+          0,
+          412,
+          512,
+          206
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/bioluminescent-glass-fangfish__genetics-enhanced",
+        "version": "9f36e613a2c5-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/blue-ram__genetics-natural.webp",
       "version": "18fc10022329",
       "width": 1024,
       "height": 1023,
@@ -85410,13 +93953,56 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/BlueRam",
+        "root": "assets/generated/sprites/fish/blue-ram__genetics-natural",
         "version": "a0051938a50e-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Bull_Shark.webp",
+      "path": "assets/fish/blue-tang__genetics-natural.webp",
+      "version": "9d8c302ddfa1",
+      "width": 1024,
+      "height": 702,
+      "frames": {
+        "bluetang.png": [
+          0,
+          0,
+          512,
+          234
+        ],
+        "bluetang_1.png": [
+          512,
+          0,
+          512,
+          234
+        ],
+        "bluetang_2.png": [
+          0,
+          234,
+          512,
+          234
+        ],
+        "bluetang_3.png": [
+          512,
+          234,
+          512,
+          234
+        ],
+        "bluetang_4.png": [
+          0,
+          468,
+          512,
+          234
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/blue-tang__genetics-natural",
+        "version": "4a6c75fcadfa-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/bull-shark__genetics-enhanced.webp",
       "version": "5029dc65c1d6",
       "width": 1024,
       "height": 837,
@@ -85453,13 +94039,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Bull_Shark",
+        "root": "assets/generated/sprites/fish/bull-shark__genetics-enhanced",
         "version": "0f9f12d46c99-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/CelestialPearlDanio.webp",
+      "path": "assets/fish/celestial-pearl-danio__genetics-natural.webp",
       "version": "8afdbe5878f0",
       "width": 1024,
       "height": 672,
@@ -85496,13 +94082,56 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/CelestialPearlDanio",
+        "root": "assets/generated/sprites/fish/celestial-pearl-danio__genetics-natural",
         "version": "6344a7a14a99-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/ChiliRasbora.webp",
+      "path": "assets/fish/cherry-barb__genetics-natural.webp",
+      "version": "be06e0e1353c",
+      "width": 1024,
+      "height": 636,
+      "frames": {
+        "cherrybarb.png": [
+          0,
+          0,
+          512,
+          212
+        ],
+        "cherrybarb_1.png": [
+          512,
+          0,
+          512,
+          212
+        ],
+        "cherrybarb_2.png": [
+          0,
+          212,
+          512,
+          212
+        ],
+        "cherrybarb_3.png": [
+          512,
+          212,
+          512,
+          212
+        ],
+        "cherrybarb_4.png": [
+          0,
+          424,
+          512,
+          212
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/cherry-barb__genetics-natural",
+        "version": "5924ecdac823-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/chili-rasbora__genetics-natural.webp",
       "version": "57017e250caf",
       "width": 972,
       "height": 615,
@@ -85539,13 +94168,185 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/ChiliRasbora",
+        "root": "assets/generated/sprites/fish/chili-rasbora__genetics-natural",
         "version": "9aa9d42eaeb2-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Embertetra.webp",
+      "path": "assets/fish/clownfish__genetics-natural.webp",
+      "version": "5d784984e259",
+      "width": 1024,
+      "height": 948,
+      "frames": {
+        "clownfish.png": [
+          0,
+          0,
+          512,
+          316
+        ],
+        "clownfish_1.png": [
+          512,
+          0,
+          512,
+          316
+        ],
+        "clownfish_2.png": [
+          0,
+          316,
+          512,
+          316
+        ],
+        "clownfish_3.png": [
+          512,
+          316,
+          512,
+          316
+        ],
+        "clownfish_4.png": [
+          0,
+          632,
+          512,
+          316
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/clownfish__genetics-natural",
+        "version": "b6d734010ef4-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/discus__genetics-natural.webp",
+      "version": "5d8360881740",
+      "width": 1024,
+      "height": 1281,
+      "frames": {
+        "discus.png": [
+          0,
+          0,
+          512,
+          427
+        ],
+        "discus_1.png": [
+          512,
+          0,
+          512,
+          427
+        ],
+        "discus_2.png": [
+          0,
+          427,
+          512,
+          427
+        ],
+        "discus_3.png": [
+          512,
+          427,
+          512,
+          427
+        ],
+        "discus_4.png": [
+          0,
+          854,
+          512,
+          427
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/discus__genetics-natural",
+        "version": "2208359cffea-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/dwarf-chimera-barracuda__genetics-enhanced.webp",
+      "version": "b457cbd38e2e",
+      "width": 1024,
+      "height": 828,
+      "frames": {
+        "DNA_Dwarf_Chimera_Barracuda_1.png": [
+          0,
+          0,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_5.png": [
+          512,
+          0,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_4.png": [
+          0,
+          276,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_3.png": [
+          512,
+          276,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_2.png": [
+          0,
+          552,
+          512,
+          276
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/dwarf-chimera-barracuda__genetics-enhanced",
+        "version": "6c466272f623-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/dwarf-hyperfin__genetics-enhanced.webp",
+      "version": "f8b51e7b9063",
+      "width": 1024,
+      "height": 573,
+      "frames": {
+        "DNA_Dwarf_Hyperfin_5.png": [
+          0,
+          0,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_4.png": [
+          512,
+          0,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_3.png": [
+          0,
+          191,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_2.png": [
+          512,
+          191,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_1.png": [
+          0,
+          382,
+          512,
+          191
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/dwarf-hyperfin__genetics-enhanced",
+        "version": "7aa8c114c794-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/ember-tetra__genetics-natural.webp",
       "version": "1b06ea654eea",
       "width": 1024,
       "height": 750,
@@ -85582,13 +94383,56 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Embertetra",
+        "root": "assets/generated/sprites/fish/ember-tetra__genetics-natural",
         "version": "dd03ffcd5044-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Gourami.webp",
+      "path": "assets/fish/goldfish__genetics-natural.webp",
+      "version": "1a51b44ae397",
+      "width": 1024,
+      "height": 921,
+      "frames": {
+        "goldfish.png": [
+          0,
+          0,
+          512,
+          307
+        ],
+        "goldfish_1.png": [
+          512,
+          0,
+          512,
+          307
+        ],
+        "goldfish_2.png": [
+          0,
+          307,
+          512,
+          307
+        ],
+        "goldfish_3.png": [
+          512,
+          307,
+          512,
+          307
+        ],
+        "goldfish_4.png": [
+          0,
+          614,
+          512,
+          307
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/goldfish__genetics-natural",
+        "version": "b5504eb8af66-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/gourami__genetics-natural.webp",
       "version": "0ca338cdaeae",
       "width": 1024,
       "height": 846,
@@ -85625,13 +94469,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Gourami",
+        "root": "assets/generated/sprites/fish/gourami__genetics-natural",
         "version": "82d84ff64088-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Great_White_Shark.webp",
+      "path": "assets/fish/great-white-shark__genetics-enhanced.webp",
       "version": "fb61539824a2",
       "width": 1024,
       "height": 777,
@@ -85668,13 +94512,56 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Great_White_Shark",
+        "root": "assets/generated/sprites/fish/great-white-shark__genetics-enhanced",
         "version": "bee11c41c587-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Hammerhead_Shark.webp",
+      "path": "assets/fish/guppy__genetics-natural.webp",
+      "version": "72ef30d797be",
+      "width": 1024,
+      "height": 849,
+      "frames": {
+        "guppy.png": [
+          0,
+          0,
+          512,
+          283
+        ],
+        "guppy_1.png": [
+          512,
+          0,
+          512,
+          283
+        ],
+        "guppy_2.png": [
+          0,
+          283,
+          512,
+          283
+        ],
+        "guppy_3.png": [
+          512,
+          283,
+          512,
+          283
+        ],
+        "guppy_4.png": [
+          0,
+          566,
+          512,
+          283
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/guppy__genetics-natural",
+        "version": "35c4870ddb8b-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/hammerhead-shark__genetics-enhanced.webp",
       "version": "2b40a2419017",
       "width": 1024,
       "height": 807,
@@ -85717,13 +94604,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Hammerhead_Shark",
+        "root": "assets/generated/sprites/fish/hammerhead-shark__genetics-enhanced",
         "version": "5c9579854c3a-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/HarlequinRasbora.webp",
+      "path": "assets/fish/harlequin-rasbora__genetics-natural.webp",
       "version": "86c1f3dba937",
       "width": 1024,
       "height": 747,
@@ -85760,13 +94647,99 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/HarlequinRasbora",
+        "root": "assets/generated/sprites/fish/harlequin-rasbora__genetics-natural",
         "version": "87976d1cab1c-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Livebearer.webp",
+      "path": "assets/fish/koi__genetics-natural.webp",
+      "version": "3222892413b0",
+      "width": 1024,
+      "height": 1035,
+      "frames": {
+        "Koi_1.png": [
+          0,
+          0,
+          512,
+          345
+        ],
+        "Koi_5.png": [
+          512,
+          0,
+          512,
+          345
+        ],
+        "Koi_4.png": [
+          0,
+          345,
+          512,
+          345
+        ],
+        "Koi_3.png": [
+          512,
+          345,
+          512,
+          345
+        ],
+        "Koi_2.png": [
+          0,
+          690,
+          512,
+          345
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/koi__genetics-natural",
+        "version": "db48623f16b7-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/lionfish__genetics-natural.webp",
+      "version": "96263951f4a7",
+      "width": 1024,
+      "height": 1536,
+      "frames": {
+        "Lionfish_3.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "Lionfish_2.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "Lionfish_1.png": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "Lionfish_4.png": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "Lionfish_5.png": [
+          0,
+          1024,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/lionfish__genetics-natural",
+        "version": "b8665b73de5f-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/livebearer__genetics-natural.webp",
       "version": "9501e11d282f",
       "width": 1024,
       "height": 627,
@@ -85803,13 +94776,60 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Livebearer",
+        "root": "assets/generated/sprites/fish/livebearer__genetics-natural",
         "version": "6ebc4a082427-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Moorgoldfish.webp",
+      "path": "assets/fish/molly__genetics-natural.webp",
+      "version": "19bb77f48e81",
+      "width": 1024,
+      "height": 864,
+      "frames": {
+        "molly.png": [
+          0,
+          0,
+          512,
+          288
+        ],
+        "molly_1.png": [
+          512,
+          0,
+          512,
+          288
+        ],
+        "molly_2.png": [
+          0,
+          288,
+          512,
+          288
+        ],
+        "molly_3.png": [
+          512,
+          288,
+          512,
+          288
+        ],
+        "molly_4.png": [
+          0,
+          576,
+          512,
+          288
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/molly__genetics-natural",
+        "version": "593da5769561-v1",
+        "standalone": false
+      },
+      "aliases": {
+        "molly1.png": "molly_1.png",
+        "molly2.png": "molly_2.png"
+      }
+    },
+    {
+      "path": "assets/fish/moor-goldfish__genetics-natural.webp",
       "version": "255c798a50ba",
       "width": 1024,
       "height": 1152,
@@ -85846,13 +94866,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Moorgoldfish",
+        "root": "assets/generated/sprites/fish/moor-goldfish__genetics-natural",
         "version": "0e44bbdffd2d-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/NeonTetra.webp",
+      "path": "assets/fish/neon-tetra__genetics-natural.webp",
       "version": "5ec5bb9cffc8",
       "width": 1002,
       "height": 627,
@@ -85889,13 +94909,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/NeonTetra",
+        "root": "assets/generated/sprites/fish/neon-tetra__genetics-natural",
         "version": "005467200adf-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Orca.webp",
+      "path": "assets/fish/orca__genetics-enhanced.webp",
       "version": "1a36efff9123",
       "width": 1024,
       "height": 714,
@@ -85932,13 +94952,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Orca",
+        "root": "assets/generated/sprites/fish/orca__genetics-enhanced",
         "version": "70c262ba40d9-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Otocinclus.webp",
+      "path": "assets/fish/otocinclus__genetics-natural.webp",
       "version": "8bf3b2b0ac6f",
       "width": 1500,
       "height": 712,
@@ -86017,7 +95037,7 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Otocinclus",
+        "root": "assets/generated/sprites/fish/otocinclus__genetics-natural",
         "version": "9c5424459440-v1",
         "standalone": false
       },
@@ -86029,7 +95049,7 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
-      "path": "assets/fish/Pencilfish.webp",
+      "path": "assets/fish/pencilfish__genetics-natural.webp",
       "version": "1a26409449dd",
       "width": 988,
       "height": 477,
@@ -86066,13 +95086,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Pencilfish",
+        "root": "assets/generated/sprites/fish/pencilfish__genetics-natural",
         "version": "8c90bb806129-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Pilot_Fish.webp",
+      "path": "assets/fish/pilot-fish__genetics-natural.webp",
       "version": "c60b6f42e59c",
       "width": 1024,
       "height": 798,
@@ -86109,490 +95129,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Pilot_Fish",
+        "root": "assets/generated/sprites/fish/pilot-fish__genetics-natural",
         "version": "e867a6c57c58-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/RummyNoseTetra.webp",
-      "version": "6cb3520effc7",
-      "width": 992,
-      "height": 699,
-      "frames": {
-        "RummyNoseTetra.png": [
-          0,
-          0,
-          496,
-          233
-        ],
-        "RummyNoseTetra_4.png": [
-          496,
-          0,
-          496,
-          233
-        ],
-        "RummyNoseTetra_3.png": [
-          0,
-          233,
-          496,
-          233
-        ],
-        "RummyNoseTetra_2.png": [
-          496,
-          233,
-          496,
-          233
-        ],
-        "RummyNoseTetra_1.png": [
-          0,
-          466,
-          496,
-          233
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/RummyNoseTetra",
-        "version": "249087f88be9-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Seahorse.webp",
-      "version": "4b2c3a73ea04",
-      "width": 630,
-      "height": 1536,
-      "frames": {
-        "Seahorse.png": [
-          0,
-          0,
-          315,
-          512
-        ],
-        "Seahorse_1.png": [
-          315,
-          0,
-          315,
-          512
-        ],
-        "Seahorse_2.png": [
-          0,
-          512,
-          315,
-          512
-        ],
-        "Seahorse_3.png": [
-          315,
-          512,
-          315,
-          512
-        ],
-        "Seahorse_4.png": [
-          0,
-          1024,
-          315,
-          512
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Seahorse",
-        "version": "0e3bcc85d985-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Sunfish.webp",
-      "version": "114464f81971",
-      "width": 728,
-      "height": 1152,
-      "frames": {
-        "Sunfish.png": [
-          0,
-          0,
-          364,
-          384
-        ],
-        "Sunfish_1.png": [
-          364,
-          0,
-          364,
-          384
-        ],
-        "Sunfish_2.png": [
-          0,
-          384,
-          364,
-          384
-        ],
-        "Sunfish_3.png": [
-          364,
-          384,
-          364,
-          384
-        ],
-        "Sunfish_4.png": [
-          0,
-          768,
-          364,
-          384
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Sunfish",
-        "version": "c81ea7e5c47b-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Swordtail.webp",
-      "version": "07b9120d369b",
-      "width": 990,
-      "height": 540,
-      "frames": {
-        "Swordtail.png": [
-          0,
-          0,
-          495,
-          180
-        ],
-        "Swordtail_1.png": [
-          495,
-          0,
-          495,
-          180
-        ],
-        "Swordtail_2.png": [
-          0,
-          180,
-          495,
-          180
-        ],
-        "Swordtail_3.png": [
-          495,
-          180,
-          495,
-          180
-        ],
-        "Swordtail_4.png": [
-          0,
-          360,
-          495,
-          180
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Swordtail",
-        "version": "464bb6c71c12-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/bluetang.webp",
-      "version": "9d8c302ddfa1",
-      "width": 1024,
-      "height": 702,
-      "frames": {
-        "bluetang.png": [
-          0,
-          0,
-          512,
-          234
-        ],
-        "bluetang_1.png": [
-          512,
-          0,
-          512,
-          234
-        ],
-        "bluetang_2.png": [
-          0,
-          234,
-          512,
-          234
-        ],
-        "bluetang_3.png": [
-          512,
-          234,
-          512,
-          234
-        ],
-        "bluetang_4.png": [
-          0,
-          468,
-          512,
-          234
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/bluetang",
-        "version": "4a6c75fcadfa-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/cherrybarb.webp",
-      "version": "be06e0e1353c",
-      "width": 1024,
-      "height": 636,
-      "frames": {
-        "cherrybarb.png": [
-          0,
-          0,
-          512,
-          212
-        ],
-        "cherrybarb_1.png": [
-          512,
-          0,
-          512,
-          212
-        ],
-        "cherrybarb_2.png": [
-          0,
-          212,
-          512,
-          212
-        ],
-        "cherrybarb_3.png": [
-          512,
-          212,
-          512,
-          212
-        ],
-        "cherrybarb_4.png": [
-          0,
-          424,
-          512,
-          212
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/cherrybarb",
-        "version": "5924ecdac823-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/clownfish.webp",
-      "version": "5d784984e259",
-      "width": 1024,
-      "height": 948,
-      "frames": {
-        "clownfish.png": [
-          0,
-          0,
-          512,
-          316
-        ],
-        "clownfish_1.png": [
-          512,
-          0,
-          512,
-          316
-        ],
-        "clownfish_2.png": [
-          0,
-          316,
-          512,
-          316
-        ],
-        "clownfish_3.png": [
-          512,
-          316,
-          512,
-          316
-        ],
-        "clownfish_4.png": [
-          0,
-          632,
-          512,
-          316
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/clownfish",
-        "version": "b6d734010ef4-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/discus.webp",
-      "version": "5d8360881740",
-      "width": 1024,
-      "height": 1281,
-      "frames": {
-        "discus.png": [
-          0,
-          0,
-          512,
-          427
-        ],
-        "discus_1.png": [
-          512,
-          0,
-          512,
-          427
-        ],
-        "discus_2.png": [
-          0,
-          427,
-          512,
-          427
-        ],
-        "discus_3.png": [
-          512,
-          427,
-          512,
-          427
-        ],
-        "discus_4.png": [
-          0,
-          854,
-          512,
-          427
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/discus",
-        "version": "2208359cffea-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/goldfish.webp",
-      "version": "1a51b44ae397",
-      "width": 1024,
-      "height": 921,
-      "frames": {
-        "goldfish.png": [
-          0,
-          0,
-          512,
-          307
-        ],
-        "goldfish_1.png": [
-          512,
-          0,
-          512,
-          307
-        ],
-        "goldfish_2.png": [
-          0,
-          307,
-          512,
-          307
-        ],
-        "goldfish_3.png": [
-          512,
-          307,
-          512,
-          307
-        ],
-        "goldfish_4.png": [
-          0,
-          614,
-          512,
-          307
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/goldfish",
-        "version": "b5504eb8af66-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/guppy.webp",
-      "version": "72ef30d797be",
-      "width": 1024,
-      "height": 849,
-      "frames": {
-        "guppy.png": [
-          0,
-          0,
-          512,
-          283
-        ],
-        "guppy_1.png": [
-          512,
-          0,
-          512,
-          283
-        ],
-        "guppy_2.png": [
-          0,
-          283,
-          512,
-          283
-        ],
-        "guppy_3.png": [
-          512,
-          283,
-          512,
-          283
-        ],
-        "guppy_4.png": [
-          0,
-          566,
-          512,
-          283
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/guppy",
-        "version": "35c4870ddb8b-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/molly.webp",
-      "version": "19bb77f48e81",
-      "width": 1024,
-      "height": 864,
-      "frames": {
-        "molly.png": [
-          0,
-          0,
-          512,
-          288
-        ],
-        "molly_1.png": [
-          512,
-          0,
-          512,
-          288
-        ],
-        "molly_2.png": [
-          0,
-          288,
-          512,
-          288
-        ],
-        "molly_3.png": [
-          512,
-          288,
-          512,
-          288
-        ],
-        "molly_4.png": [
-          0,
-          576,
-          512,
-          288
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/molly",
-        "version": "593da5769561-v1",
-        "standalone": false
-      },
-      "aliases": {
-        "molly1.png": "molly_1.png",
-        "molly2.png": "molly_2.png"
-      }
-    },
-    {
-      "path": "assets/fish/piranha.webp",
+      "path": "assets/fish/piranha__genetics-natural.webp",
       "version": "6f66fd9eee60",
       "width": 1024,
       "height": 843,
@@ -86629,56 +95172,99 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/piranha",
+        "root": "assets/generated/sprites/fish/piranha__genetics-natural",
         "version": "a87ff1d71f68-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/pufferfish.webp",
-      "version": "76be80087f84",
-      "width": 1024,
-      "height": 906,
+      "path": "assets/fish/pufferfish__genetics-natural.webp",
+      "version": "6e12111ca370",
+      "width": 1156,
+      "height": 1281,
       "frames": {
         "pufferfish.png": [
           0,
           0,
-          512,
-          302
+          578,
+          427
         ],
         "pufferfish_1.png": [
-          512,
+          578,
           0,
-          512,
-          302
+          578,
+          427
         ],
         "pufferfish_2.png": [
           0,
-          302,
-          512,
-          302
+          427,
+          578,
+          427
         ],
         "pufferfish_3.png": [
-          512,
-          302,
-          512,
-          302
+          578,
+          427,
+          578,
+          427
         ],
         "pufferfish_4.png": [
           0,
-          604,
-          512,
-          302
+          854,
+          578,
+          427
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/pufferfish",
-        "version": "5613d775ea98-v1",
+        "root": "assets/generated/sprites/fish/pufferfish__genetics-natural",
+        "version": "64a54fd44548-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/rainbowfish.webp",
+      "path": "assets/fish/pufferfish__genetics-natural__state-inflated.webp",
+      "version": "63cbbcd391c6",
+      "width": 1156,
+      "height": 1281,
+      "frames": {
+        "pufferfish_inflated.png": [
+          0,
+          0,
+          578,
+          427
+        ],
+        "pufferfish_inflated_1.png": [
+          578,
+          0,
+          578,
+          427
+        ],
+        "pufferfish_inflated_2.png": [
+          0,
+          427,
+          578,
+          427
+        ],
+        "pufferfish_inflated_3.png": [
+          578,
+          427,
+          578,
+          427
+        ],
+        "pufferfish_inflated_4.png": [
+          0,
+          854,
+          578,
+          427
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/pufferfish__genetics-natural__state-inflated",
+        "version": "a5e01eb81e67-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/rainbowfish__genetics-natural.webp",
       "version": "3f340b6fb3ce",
       "width": 1024,
       "height": 768,
@@ -86715,13 +95301,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/rainbowfish",
+        "root": "assets/generated/sprites/fish/rainbowfish__genetics-natural",
         "version": "5d5171fe1048-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/royalgramma.webp",
+      "path": "assets/fish/royal-gramma__genetics-natural.webp",
       "version": "14c53fd3e356",
       "width": 1024,
       "height": 768,
@@ -86758,13 +95344,185 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/royalgramma",
+        "root": "assets/generated/sprites/fish/royal-gramma__genetics-natural",
         "version": "102f665de3bd-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/wonderkillifish.webp",
+      "path": "assets/fish/rummy-nose-tetra__genetics-natural.webp",
+      "version": "6cb3520effc7",
+      "width": 992,
+      "height": 699,
+      "frames": {
+        "RummyNoseTetra.png": [
+          0,
+          0,
+          496,
+          233
+        ],
+        "RummyNoseTetra_4.png": [
+          496,
+          0,
+          496,
+          233
+        ],
+        "RummyNoseTetra_3.png": [
+          0,
+          233,
+          496,
+          233
+        ],
+        "RummyNoseTetra_2.png": [
+          496,
+          233,
+          496,
+          233
+        ],
+        "RummyNoseTetra_1.png": [
+          0,
+          466,
+          496,
+          233
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/rummy-nose-tetra__genetics-natural",
+        "version": "249087f88be9-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/seahorse__genetics-natural.webp",
+      "version": "4b2c3a73ea04",
+      "width": 630,
+      "height": 1536,
+      "frames": {
+        "Seahorse.png": [
+          0,
+          0,
+          315,
+          512
+        ],
+        "Seahorse_1.png": [
+          315,
+          0,
+          315,
+          512
+        ],
+        "Seahorse_2.png": [
+          0,
+          512,
+          315,
+          512
+        ],
+        "Seahorse_3.png": [
+          315,
+          512,
+          315,
+          512
+        ],
+        "Seahorse_4.png": [
+          0,
+          1024,
+          315,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/seahorse__genetics-natural",
+        "version": "0e3bcc85d985-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/sunfish__genetics-enhanced.webp",
+      "version": "114464f81971",
+      "width": 728,
+      "height": 1152,
+      "frames": {
+        "Sunfish.png": [
+          0,
+          0,
+          364,
+          384
+        ],
+        "Sunfish_1.png": [
+          364,
+          0,
+          364,
+          384
+        ],
+        "Sunfish_2.png": [
+          0,
+          384,
+          364,
+          384
+        ],
+        "Sunfish_3.png": [
+          364,
+          384,
+          364,
+          384
+        ],
+        "Sunfish_4.png": [
+          0,
+          768,
+          364,
+          384
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/sunfish__genetics-enhanced",
+        "version": "c81ea7e5c47b-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/swordtail__genetics-natural.webp",
+      "version": "07b9120d369b",
+      "width": 990,
+      "height": 540,
+      "frames": {
+        "Swordtail.png": [
+          0,
+          0,
+          495,
+          180
+        ],
+        "Swordtail_1.png": [
+          495,
+          0,
+          495,
+          180
+        ],
+        "Swordtail_2.png": [
+          0,
+          180,
+          495,
+          180
+        ],
+        "Swordtail_3.png": [
+          495,
+          180,
+          495,
+          180
+        ],
+        "Swordtail_4.png": [
+          0,
+          360,
+          495,
+          180
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/swordtail__genetics-natural",
+        "version": "464bb6c71c12-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/wonder-killifish__genetics-natural.webp",
       "version": "fc89623cc903",
       "width": 1024,
       "height": 585,
@@ -86801,13 +95559,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/wonderkillifish",
+        "root": "assets/generated/sprites/fish/wonder-killifish__genetics-natural",
         "version": "7e87ecc8ee3c-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/yellowtang.webp",
+      "path": "assets/fish/yellow-tang__genetics-natural.webp",
       "version": "995f1ae488ff",
       "width": 996,
       "height": 1170,
@@ -86844,13 +95602,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/yellowtang",
+        "root": "assets/generated/sprites/fish/yellow-tang__genetics-natural",
         "version": "99d8869766f2-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/zebradanio.webp",
+      "path": "assets/fish/zebra-danio__genetics-natural.webp",
       "version": "b4fad5c0c61d",
       "width": 1024,
       "height": 504,
@@ -86887,7 +95645,7 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/zebradanio",
+        "root": "assets/generated/sprites/fish/zebra-danio__genetics-natural",
         "version": "7ec070d27a74-v1",
         "standalone": false
       }
@@ -87465,221 +96223,6 @@ function getSpriteSheetDefinitions() {
         "version": "3df6080e5987-v1",
         "standalone": false
       }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish.webp",
-      "version": "9b229893ce22",
-      "width": 1024,
-      "height": 1089,
-      "frames": {
-        "DNA_Bioluminescent _Cherub_Goldfish_1.png": [
-          0,
-          0,
-          512,
-          363
-        ],
-        "DNA_Bioluminescent _Cherub_Goldfish_5.png": [
-          512,
-          0,
-          512,
-          363
-        ],
-        "DNA_Bioluminescent _Cherub_Goldfish_4.png": [
-          0,
-          363,
-          512,
-          363
-        ],
-        "DNA_Bioluminescent _Cherub_Goldfish_3.png": [
-          512,
-          363,
-          512,
-          363
-        ],
-        "DNA_Bioluminescent _Cherub_Goldfish_2.png": [
-          0,
-          726,
-          512,
-          363
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish",
-        "version": "96c706e9cddb-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Bioluminescent_Angler_Pike.webp",
-      "version": "1a7788398270",
-      "width": 1024,
-      "height": 1029,
-      "frames": {
-        "DNA_Bioluminescent_Angler_Pike_1.png": [
-          0,
-          0,
-          512,
-          343
-        ],
-        "DNA_Bioluminescent_Angler_Pike_5.png": [
-          512,
-          0,
-          512,
-          343
-        ],
-        "DNA_Bioluminescent_Angler_Pike_4.png": [
-          0,
-          343,
-          512,
-          343
-        ],
-        "DNA_Bioluminescent_Angler_Pike_3.png": [
-          512,
-          343,
-          512,
-          343
-        ],
-        "DNA_Bioluminescent_Angler_Pike_2.png": [
-          0,
-          686,
-          512,
-          343
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike",
-        "version": "65f89046db81-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish.webp",
-      "version": "fbb5049ca221",
-      "width": 1024,
-      "height": 618,
-      "frames": {
-        "DNA_Bioluminescent_Glass_Fangfish_1.png": [
-          0,
-          0,
-          512,
-          206
-        ],
-        "DNA_Bioluminescent_Glass_Fangfish_5.png": [
-          512,
-          0,
-          512,
-          206
-        ],
-        "DNA_Bioluminescent_Glass_Fangfish_4.png": [
-          0,
-          206,
-          512,
-          206
-        ],
-        "DNA_Bioluminescent_Glass_Fangfish_3.png": [
-          512,
-          206,
-          512,
-          206
-        ],
-        "DNA_Bioluminescent_Glass_Fangfish_2.png": [
-          0,
-          412,
-          512,
-          206
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish",
-        "version": "9f36e613a2c5-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda.webp",
-      "version": "b457cbd38e2e",
-      "width": 1024,
-      "height": 828,
-      "frames": {
-        "DNA_Dwarf_Chimera_Barracuda_1.png": [
-          0,
-          0,
-          512,
-          276
-        ],
-        "DNA_Dwarf_Chimera_Barracuda_5.png": [
-          512,
-          0,
-          512,
-          276
-        ],
-        "DNA_Dwarf_Chimera_Barracuda_4.png": [
-          0,
-          276,
-          512,
-          276
-        ],
-        "DNA_Dwarf_Chimera_Barracuda_3.png": [
-          512,
-          276,
-          512,
-          276
-        ],
-        "DNA_Dwarf_Chimera_Barracuda_2.png": [
-          0,
-          552,
-          512,
-          276
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda",
-        "version": "6c466272f623-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Dwarf_Hyperfin.webp",
-      "version": "f8b51e7b9063",
-      "width": 1024,
-      "height": 573,
-      "frames": {
-        "DNA_Dwarf_Hyperfin_5.png": [
-          0,
-          0,
-          512,
-          191
-        ],
-        "DNA_Dwarf_Hyperfin_4.png": [
-          512,
-          0,
-          512,
-          191
-        ],
-        "DNA_Dwarf_Hyperfin_3.png": [
-          0,
-          191,
-          512,
-          191
-        ],
-        "DNA_Dwarf_Hyperfin_2.png": [
-          512,
-          191,
-          512,
-          191
-        ],
-        "DNA_Dwarf_Hyperfin_1.png": [
-          0,
-          382,
-          512,
-          191
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin",
-        "version": "7aa8c114c794-v1",
-        "standalone": false
-      }
     }
   ];
 }
@@ -87882,7 +96425,7 @@ function getDecorArtworkPaths(decor) {
   if (!decor) return [];
   return [...new Set([
     decor.path, decor.bgPath, decor.midPath, decor.lightPath, decor.maskPath,
-    decor.triggerPath, decor.seatsPath,
+    decor.shadowFootprintPath, decor.triggerPath, decor.seatsPath,
     ...(Array.isArray(decor.caveColorLayers) ? decor.caveColorLayers.flatMap(layer => [
       ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
       ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])

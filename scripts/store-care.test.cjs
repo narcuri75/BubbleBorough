@@ -61,7 +61,7 @@ test("Halloween candy targets every living creature and uses a large readable sp
   for (const creature of [
     { name: "ordinary", activity: "roam", healthUnits: 12 },
     { name: "shark", activity: "roam", healthUnits: 12, speciesId: "great-white" },
-    { name: "skeleton", activity: "roam", healthUnits: 12, speciesId: "skeleton-fish" },
+    { name: "clownfish", activity: "roam", healthUnits: 12, speciesId: "clownfish" },
     { name: "grazer", activity: "roam", healthUnits: 12, speciesId: "otocinclus" }
   ]) assert.equal(c.canFishEatFoodPellet(creature, "halloweenCandy", Date.now()), true);
   assert.deepEqual({ ...c.getFoodSpriteVisualSize("halloweenCandy", 1, 1) }, { maxSize: 48, minSize: 22 });
@@ -69,7 +69,7 @@ test("Halloween candy targets every living creature and uses a large readable sp
 });
 
 test("offline hunger decay only counts time after the candy expires", () => {
-  const c = harness({ isUndeadFish: () => false, isMealFreeFish: () => false, getPersonalityNeedModifier: () => 1 });
+  const c = harness({ isMealFreeFish: () => false, getPersonalityNeedModifier: () => 1 });
   addFunctions(c, "fish/meals-and-needs.js", ["calculateFishNeedDeltas"]);
   const start = Date.now();
   const fish = { activity: "roam", healthUnits: 12, candyBoostUntil: start + DAY_MS };
@@ -208,7 +208,7 @@ function offscreenFeedingHarness(foodKey = "basic") {
   for (const name of ["isTutorialTankDirtinessLocked", "scrubImpossiblePredatorState", "scrubProtectedTankFishPredatorState",
     "updateFishNeeds", "processSmartAutoFeeder", "processBoroughStructureServices", "processFishNeedsAutonomy",
     "processFishEggs", "updatePelletSettledState", "processTankMedicineEffects", "processFishDisease",
-    "processFishBehaviorState", "processZombieInfections", "processFishDecayStates", "processDetritusFish",
+    "processFishBehaviorState", "processFishDecayStates", "processDetritusFish",
     "applyCriticalComfortHealthEffects", "updateComfortHistoryEvents", "maybeGenerateDailyRecapForTank",
     "normalizeCurrentTankShellState", "pruneTankState"]) c[name] = () => false;
   addFunctions(c, "fish/feeding-and-medicine.js", ["canFishEatFoodPellet", "canFishTargetFoodPellet", "assignPelletToFish",

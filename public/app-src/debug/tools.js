@@ -84,6 +84,122 @@ function toggleDebugFrameProfiler() {
   return setDebugFrameProfilerEnabled(!runtime.debugFrameProfilerEnabled);
 }
 
+function formatDebugDepthTuningPercent(value) {
+  return `${Math.round((Number(value) || 0) * 100)}%`;
+}
+
+function getDebugDepthTuningSummaryText() {
+  const tuning = getDebugTankDepthTuning();
+  const layer5 = getTankDepthVisualPreset(5);
+  return [
+    `Saturation ${formatDebugDepthTuningPercent(tuning.saturation)}`,
+    `Contrast ${formatDebugDepthTuningPercent(tuning.contrast)}`,
+    `Cyan ${formatDebugDepthTuningPercent(tuning.coolTint)}`,
+    `Haze ${formatDebugDepthTuningPercent(tuning.haze)}`,
+    `Gravel ${formatDebugDepthTuningPercent(tuning.substrate)}`,
+    `Shadows ${formatDebugDepthTuningPercent(tuning.shadow)}`,
+    `Motion ${formatDebugDepthTuningPercent(tuning.movement)}`,
+    `Ground shadow darkness ${formatDebugDepthTuningPercent(tuning.shadowDarkness)}`,
+    `Layer 5 effective: sat ${(layer5.saturation * 100).toFixed(1)}%, contrast ${(layer5.contrast * 100).toFixed(1)}%, cyan ${(layer5.coolTint * 100).toFixed(1)}%, haze ${(layer5.haze * 100).toFixed(1)}%, shadow ${(layer5.shadowStrength * 100).toFixed(1)}%, motion ${(layer5.movementMultiplier * 100).toFixed(1)}%`
+  ].join(" | ");
+}
+
+function syncDebugDepthTunerControls() {
+  if (!dom.debugDepthTuner) {
+    return;
+  }
+  const tuning = getDebugTankDepthTuning();
+  dom.debugDepthTuner.querySelectorAll("[data-depth-tuning-key]").forEach((input) => {
+    const key = input.dataset.depthTuningKey;
+    if (!(key in tuning)) {
+      return;
+    }
+    const percent = Math.round(tuning[key] * 100);
+    if (Number(input.value) !== percent) {
+      input.value = String(percent);
+    }
+    const output = dom.debugDepthTuner.querySelector(`[data-depth-tuning-output="${key}"]`);
+    if (output) {
+      output.textContent = `${percent}%`;
+    }
+  });
+  if (dom.debugDepthTunerReadout) {
+    const layer5 = getTankDepthVisualPreset(5);
+    dom.debugDepthTunerReadout.textContent = [
+      `Layer 5 → saturation ${(layer5.saturation * 100).toFixed(1)}%`,
+      `contrast ${(layer5.contrast * 100).toFixed(1)}%`,
+      `cyan ${(layer5.coolTint * 100).toFixed(1)}%`,
+      `haze ${(layer5.haze * 100).toFixed(1)}%`,
+      `shadow ${(layer5.shadowStrength * 100).toFixed(1)}%`,
+      `motion ${(layer5.movementMultiplier * 100).toFixed(1)}%`,
+      `darkness ${(getDebugGroundShadowDarknessMultiplier() * 100).toFixed(0)}%`
+    ].join(" · ");
+  }
+}
+
+function scheduleDebugDepthTuningCacheRefresh() {
+  if (runtime.debugDepthTuningApplyTimer) {
+    clearTimeout(runtime.debugDepthTuningApplyTimer);
+  }
+  runtime.debugDepthTuningApplyTimer = window.setTimeout(() => {
+    runtime.debugDepthTuningApplyTimer = 0;
+    invalidateTankDepthVisualCaches();
+    if (runtime.boroughOverviewOpen) {
+      renderAquariumOverview();
+    }
+  }, 120);
+}
+
+function handleDebugDepthTuningInput(input) {
+  const key = input?.dataset?.depthTuningKey;
+  if (!key || !(key in DEFAULT_DEBUG_DEPTH_TUNING)) {
+    return;
+  }
+  const multiplier = clamp((Number(input.value) || 0) / 100, 0, key === "shadow" || key === "movement"
+    ? 2
+    : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4));
+  setDebugTankDepthTuningValue(key, multiplier, { invalidate: false });
+  syncDebugDepthTunerControls();
+  scheduleDebugDepthTuningCacheRefresh();
+}
+
+function resetDebugDepthTuner() {
+  if (runtime.debugDepthTuningApplyTimer) {
+    clearTimeout(runtime.debugDepthTuningApplyTimer);
+    runtime.debugDepthTuningApplyTimer = 0;
+  }
+  resetDebugTankDepthTuning();
+  syncDebugDepthTunerControls();
+  if (runtime.boroughOverviewOpen) {
+    renderAquariumOverview();
+  }
+  showToast("Depth tuner reset to 100%.");
+}
+
+async function copyDebugDepthTunerValues() {
+  const summary = getDebugDepthTuningSummaryText();
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(summary);
+    copied = true;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = summary;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      copied = document.execCommand("copy");
+    } catch {
+      copied = false;
+    }
+    textarea.remove();
+  }
+  showToast(copied ? "Depth tuner values copied." : "Could not copy depth tuner values.");
+  return summary;
+}
+
 function beginDebugFrameProfile(frameTime, rafGapMs = 0) {
   if (!runtime.debugFrameProfilerEnabled) {
     runtime.frameProfilerCurrent = null;
@@ -420,10 +536,7 @@ function reviveFishForDebug(fish, now = Date.now()) {
   fish.turnDurationMs = 0;
   fish.sharkLastAttackAt = 0;
 
-  clearZombieAttackState(fish);
   clearPiranhaAttackState(fish);
-  fish.zombieReviveAt = null;
-  fish.zombieReviveSourceId = null;
   fish.piranhaConsumptionStartedAt = null;
   fish.piranhaConsumptionEndsAt = null;
   fish.piranhaLastBloodAt = null;
@@ -950,13 +1063,19 @@ function getDebugBehaviorScenarioOptions(action) {
       return { allowPredatorSpecial: true };
     case "disease":
       return { allowSuckerSpecial: true, allowPredatorSpecial: true };
+    case "species-signature":
+      return { allowPredatorSpecial: true };
+    case "puffer-inflate":
+    case "puffer-deflate":
+    case "puffer-taps":
+      return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowPredatorSpecial: true };
     case "oto-back":
     case "oto-swim":
     case "oto-front":
     case "oto-normal":
       return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowSuckerSpecial: true };
     case "clear":
-      return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowUndead: true, allowSuckerSpecial: true, allowPredatorSpecial: true, allowDead: true };
+      return { allowActiveCave: true, allowFeeding: true, allowGravelAction: true, allowSuckerSpecial: true, allowPredatorSpecial: true, allowDead: true };
     default:
       return { disallowSpecial: true };
   }
@@ -992,14 +1111,11 @@ function getDebugBehaviorBlockReason(fish, species = getSpeciesForFish(fish), op
   ) {
     return "That fish is already using a gravel behavior.";
   }
-  if (!options.allowUndead && isUndeadFish(fish)) {
-    return "Zombie and skeleton fish keep their own behavior debug path.";
-  }
 
   const effectiveBehavior = getEffectiveFishBehavior(fish, species);
   if (
     options.disallowSpecial
-    && ["sucker", "piranha", "zombie", "skeleton"].includes(effectiveBehavior)
+    && ["sucker", "piranha"].includes(effectiveBehavior)
   ) {
     return `${getDebugFishDisplayName(fish, species)} uses protected ${effectiveBehavior} behavior.`;
   }
@@ -1178,9 +1294,6 @@ function isDebugBehaviorSteeringBlocked(fish, species, steering, now = Date.now(
     return true;
   }
   const effectiveBehavior = getEffectiveFishBehavior(fish, species);
-  if (isUndeadFish(fish) && !steering.allowUndead) {
-    return true;
-  }
   if (effectiveBehavior === "sucker" && !steering.allowSuckerSpecial) {
     return true;
   }
@@ -1834,6 +1947,148 @@ function triggerDebugOtocinclusState(forcedState, now = Date.now()) {
   );
 }
 
+
+function getDebugSpeciesSignatureAvailability(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  const key = getFishSignatureBehaviorKey(species);
+  if (!key && species?.id !== "betta") {
+    return { enabled: false, reason: "this species has no dedicated signature-behavior scenario yet" };
+  }
+  if (species?.id === "seahorse" && !getBehaviorDecorCandidates(/seaweed|kelp|plant|moss|coral|driftwood|root/).length) {
+    return { enabled: false, reason: "add plant, seaweed, coral, driftwood, or root decor for a perch" };
+  }
+  if (species?.id === "pencilfish") {
+    const partner = state.fish.find((entry) => entry && entry.id !== fish.id && !isFishDead(entry) && entry.speciesId === "pencilfish");
+    if (!partner) return { enabled: false, reason: "add a second living Pencilfish" };
+  }
+  if (species?.id === "betta") {
+    const rival = state.fish.find((entry) => entry && entry.id !== fish.id && !isFishDead(entry) && entry.speciesId === "betta");
+    if (!rival) return { enabled: false, reason: "add a second living Betta" };
+  }
+  if (species?.id === "angelfish") {
+    if (!isFishAdult(fish, now)) return { enabled: false, reason: "Angelfish territorial behavior begins at adulthood" };
+    if (!getFishResidenceDecorId(fish) && !hasDebugDecorHangoutZone(["hide", "hardscape"])) {
+      return { enabled: false, reason: "assign a home or add a cave/hardscape" };
+    }
+  }
+  if (species?.id === "blue-ram" && !isFishAdult(fish, now)) {
+    return { enabled: false, reason: "Blue Ram breeding territory behavior requires an adult fish" };
+  }
+  if (species?.id === "pilot-fish") {
+    const companion = state.fish.find((entry) => entry && !isFishDead(entry) && ["bull-shark", "great-white-shark", "hammerhead-shark", "orca"].includes(entry.speciesId));
+    if (!companion) return { enabled: false, reason: "add a living shark or Orca" };
+  }
+  return { enabled: true, reason: "" };
+}
+
+function triggerDebugSpeciesSignatureBehavior(now = Date.now()) {
+  const selection = getDebugBehaviorSelectedFishOrToast("species-signature");
+  if (!selection) return;
+  const { fish, species } = selection;
+  const availability = getDebugSpeciesSignatureAvailability(fish, species, now);
+  if (!availability.enabled) {
+    showToast(`Cannot test species AI: ${availability.reason}.`);
+    return;
+  }
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions("species-signature"))) {
+    return;
+  }
+
+  let target = null;
+  if (species.id === "betta") {
+    const rival = state.fish.find((entry) => entry && entry.id !== fish.id && !isFishDead(entry) && entry.speciesId === "betta") || null;
+    if (rival) {
+      setDebugFishRelationship(fish, rival, "rival", now);
+      setDebugFishRelationship(rival, fish, "rival", now);
+      const relationships = sanitizeFishRelationships(fish.relationships);
+      const nearbyAll = state.fish
+        .filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry))
+        .map((entry) => ({
+          fish: entry,
+          relation: relationships[entry.id],
+          distance: Math.hypot((fish.xNorm || 0.5) - (entry.xNorm || 0.5), (fish.yNorm || 0.5) - (entry.yNorm || 0.5))
+        }))
+        .sort((left, right) => left.distance - right.distance);
+      fish.bettaRivalCooldownUntil = 0;
+      fish.bettaRivalYieldUntil = 0;
+      rival.bettaRivalCooldownUntil = 0;
+      rival.bettaRivalYieldUntil = 0;
+      target = pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, { force: true });
+    }
+  } else if (species.id === "angelfish") {
+    if (!getFishResidenceDecorId(fish)) {
+      const zone = getCachedDecorHangoutZones().find((entry) => ["hide", "hardscape"].includes(entry.type)) || null;
+      if (zone) fish.residenceDecorId = zone.decorId;
+    }
+    target = pickAngelfishTerritoryBehaviorTarget(fish, species, now, { force: true });
+  } else if (species.id === "blue-ram") {
+    let egg = getBlueRamGuardedEgg(fish);
+    if (!egg) {
+      egg = createFishEggRecord("blue-ram", now, {
+        xNorm: clamp((fish.xNorm || 0.5) + 0.035, 0.12, 0.88),
+        yNorm: clamp((fish.yNorm || 0.6) + 0.08, 0.24, 0.84),
+        tankLayer: getFishTankLayer(fish),
+        parentNames: [fish.name],
+        parentIds: [fish.id]
+      });
+      if (egg) addFishEggToTank(egg);
+    }
+    target = pickBlueRamTerritoryBehaviorTarget(fish, species, now);
+  } else {
+    target = pickSpeciesSignatureBehaviorTarget(fish, species, now, { force: true });
+  }
+
+  if (!target || !applyBehaviorTarget(fish, species, target, now)) {
+    showToast(`${species.name || fish.name} has no available signature behavior target right now.`);
+    return;
+  }
+  fish.behaviorNextThinkAt = 0;
+  finishDebugBehaviorScenario(
+    fish,
+    `Debug forced ${fish.name} signature behavior: ${target.intentType || getFishSignatureBehaviorKey(species)}.`,
+    `${fish.name}: ${target.intentType || "signature behavior"}.`,
+    now
+  );
+}
+
+function triggerDebugPufferInflation(mode, now = Date.now()) {
+  const action = mode === "deflate" ? "puffer-deflate" : mode === "taps" ? "puffer-taps" : "puffer-inflate";
+  const selection = getDebugBehaviorSelectedFishOrToast(action);
+  if (!selection) return;
+  const { fish, species } = selection;
+  if (species?.id !== "pufferfish") {
+    showToast("Select a Pufferfish first.");
+    return;
+  }
+  if (!prepareFishForDebugBehavior(fish, species, now, getDebugBehaviorScenarioOptions(action))) {
+    return;
+  }
+
+  if (mode === "deflate") {
+    if (!isPufferPuffVisualActive(fish, now)) {
+      showToast(`${fish.name} is not inflated.`);
+      return;
+    }
+    fish.pufferInflatedUntil = now;
+    fish.pufferWobbleUntil = Math.min(Number(fish.pufferWobbleUntil) || now, now);
+    fish.pufferRiseUntil = Math.min(Number(fish.pufferRiseUntil) || now, now);
+    fish.targetAt = now + getPufferDeflationDurationMs();
+    finishDebugBehaviorScenario(fish, `Debug started ${fish.name} deflation.`, `${fish.name}: deflation started.`, now);
+    return;
+  }
+
+  clearPufferInflationState(fish, { clearCooldown: true });
+  if (mode === "taps") {
+    const tapStates = runtime.pufferRapidTapByFishId || (runtime.pufferRapidTapByFishId = new Map());
+    tapStates.set(fish.id, { startedAt: now - 900, count: getPufferRapidTapGuaranteedCount() - 1, lastTapAt: now - 80 });
+    recordPufferRapidGlassTap(fish, species, now);
+    finishDebugBehaviorScenario(fish, `Debug simulated twelve rapid glass taps near ${fish.name}.`, `${fish.name}: 12-tap harassment test.`, now);
+    return;
+  }
+
+  startPufferInflation(fish, species, now);
+  finishDebugBehaviorScenario(fish, `Debug forced ${fish.name} to inflate.`, `${fish.name}: puffed.`, now);
+}
+
 function triggerDebugBehaviorScenario(action) {
   if (!isDebugModeEnabled()) {
     return;
@@ -1862,6 +2117,18 @@ function triggerDebugBehaviorScenario(action) {
       break;
     case "disease":
       triggerDebugBehaviorDisease();
+      break;
+    case "species-signature":
+      triggerDebugSpeciesSignatureBehavior();
+      break;
+    case "puffer-inflate":
+      triggerDebugPufferInflation("inflate");
+      break;
+    case "puffer-deflate":
+      triggerDebugPufferInflation("deflate");
+      break;
+    case "puffer-taps":
+      triggerDebugPufferInflation("taps");
       break;
     case "oto-back":
       triggerDebugOtocinclusState("back");
@@ -2338,6 +2605,495 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   runtime.debugFishBehaviorPreviewFrame = requestAnimationFrame(renderDebugFishBehaviorPreviewFrame);
 }
 
+
+function getDebugDecorPreviewEntries() {
+  return [...runtime.decorMap.entries()]
+    .filter(([, decor]) => decor?.path && !(typeof isCustomDecorUploadShopKey === "function" && isCustomDecorUploadShopKey(decor.key || "")))
+    .map(([key, decor]) => ({ key, decor, name: decor.name || titleFromFile(key) }))
+    .sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: "base", numeric: true }));
+}
+
+function populateDebugDecorPreviewSelect() {
+  const select = dom.debugDecorPreviewSelect;
+  if (!select) {
+    return [];
+  }
+  const entries = getDebugDecorPreviewEntries();
+  select.innerHTML = entries.map(({ key, name }) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`).join("");
+  const preferredKey = runtime.debugDecorPreviewDecorKey && runtime.decorMap.has(runtime.debugDecorPreviewDecorKey)
+    ? runtime.debugDecorPreviewDecorKey
+    : entries[0]?.key || "";
+  runtime.debugDecorPreviewDecorKey = preferredKey;
+  if (preferredKey) {
+    select.value = preferredKey;
+  }
+  return entries;
+}
+
+function createDebugDecorPreviewItem(decorKey = runtime.debugDecorPreviewDecorKey) {
+  const decor = runtime.decorMap.get(decorKey);
+  if (!decor) {
+    return null;
+  }
+  const selectedLayer = clampTankLayer(Number(dom.debugDecorPreviewLayer?.value) || 3);
+  const baseScale = clamp(Number(decor.defaultScale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+  return {
+    id: `debug-decor-preview-${decorKey}`,
+    decorKey,
+    xNorm: 0.5,
+    yNorm: 0.8,
+    scale: baseScale,
+    tankLayer: selectedLayer,
+    flipped: false,
+    flippedY: false,
+    caveColorSettings: {}
+  };
+}
+
+function getDebugDecorPreviewBaseScale() {
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  return clamp(Number(decor?.defaultScale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+}
+
+function requestDebugDecorPreviewRender() {
+  if (!runtime.debugDecorPreviewOpen || runtime.debugDecorPreviewFrame) {
+    return;
+  }
+  runtime.debugDecorPreviewFrame = requestAnimationFrame(renderDebugDecorPreviewFrame);
+}
+
+function getDebugDecorPreviewColorLayers(decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey)) {
+  if (!decor || typeof getVisibleDecorColorLayers !== "function") {
+    return [];
+  }
+  return getVisibleDecorColorLayers(decor).filter((layer) => layer?.id && (layer.isBaseLayer || layer.path || layer.paths?.length));
+}
+
+function renderDebugDecorPreviewColorControls() {
+  const container = dom.debugDecorPreviewColors;
+  const item = runtime.debugDecorPreviewItem;
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  if (!container || !item || !decor) {
+    return;
+  }
+  const layers = getDebugDecorPreviewColorLayers(decor);
+  if (!layers.length) {
+    container.innerHTML = '<p class="debug-decor-preview-empty">This decor has no configurable color layers.</p>';
+    return;
+  }
+  const settings = getPlacedCaveColorSettings(item, decor);
+  const colorize = getPlacedCaveColorizeSettings(item, decor);
+  container.innerHTML = layers.map((layer, index) => {
+    const active = normalizeHexColor(settings[layer.id] || "");
+    const fallback = ["#55c8e8", "#8ddf79", "#d08edc"][index % 3];
+    const label = getCaveColorLayerLabel(layer, layers, decor);
+    return `
+      <label class="debug-decor-preview-color-row" data-debug-decor-color-layer="${escapeHtml(layer.id)}">
+        <input type="checkbox" data-debug-decor-color-enabled ${active ? "checked" : ""} />
+        <span>${escapeHtml(label)}</span>
+        <input type="color" data-debug-decor-color-value value="${escapeHtml(active || fallback)}" ${active ? "" : "disabled"} />
+      </label>
+    `;
+  }).join("");
+}
+
+function handleDebugDecorPreviewColorInput(event) {
+  const item = runtime.debugDecorPreviewItem;
+  const row = event.target?.closest?.("[data-debug-decor-color-layer]");
+  if (!item || !row) {
+    return;
+  }
+  const layerId = row.getAttribute("data-debug-decor-color-layer") || "";
+  if (!layerId) {
+    return;
+  }
+  const enabled = row.querySelector("[data-debug-decor-color-enabled]")?.checked === true;
+  const picker = row.querySelector("[data-debug-decor-color-value]");
+  if (picker) {
+    picker.disabled = !enabled;
+  }
+  item.caveColorSettings ||= {};
+  if (!enabled) {
+    delete item.caveColorSettings[layerId];
+    delete item.caveColorSettings[getDecorColorizeSettingKey(layerId)];
+  } else {
+    item.caveColorSettings[layerId] = normalizeHexColor(picker?.value || "#55c8e8") || "#55c8e8";
+    item.caveColorSettings[getDecorColorizeSettingKey(layerId)] = true;
+  }
+  requestDebugDecorPreviewRender();
+}
+
+function syncDebugDecorPreviewControls() {
+  const item = runtime.debugDecorPreviewItem;
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  if (!item || !decor) {
+    return;
+  }
+  const baseScale = getDebugDecorPreviewBaseScale();
+  const percent = clamp(Math.round((item.scale / Math.max(0.0001, baseScale)) * 100), 25, 250);
+  runtime.debugDecorPreviewScalePercent = percent;
+  if (dom.debugDecorPreviewSize) dom.debugDecorPreviewSize.value = String(percent);
+  if (dom.debugDecorPreviewSizeOutput) dom.debugDecorPreviewSizeOutput.textContent = `${percent}%`;
+  if (dom.debugDecorPreviewFlipX) dom.debugDecorPreviewFlipX.checked = item.flipped === true;
+  if (dom.debugDecorPreviewFlipY) dom.debugDecorPreviewFlipY.checked = item.flippedY === true;
+  if (dom.debugDecorPreviewLayer) dom.debugDecorPreviewLayer.value = String(getDecorTankLayer(item));
+  renderDebugDecorPreviewColorControls();
+}
+
+function snapDebugDecorPreviewToLayer(options = {}) {
+  const item = runtime.debugDecorPreviewItem;
+  if (!item) {
+    return;
+  }
+  if (options.center !== false) {
+    item.xNorm = 0.5;
+  }
+  const targetY = getTankLayerBottomBoundaryY(getDecorTankLayer(item));
+  for (let pass = 0; pass < 2; pass += 1) {
+    const bounds = getPlacedDecorGroundBounds(item) || getPlacedDecorBounds(item);
+    if (!bounds) {
+      break;
+    }
+    item.yNorm = clamp(item.yNorm + (targetY - bounds.bottom) / Math.max(1, TANK_HEIGHT), 0.02, 1.05);
+  }
+  runtime.debugDecorPreviewSnapped = true;
+  requestDebugDecorPreviewRender();
+}
+
+function resetDebugDecorPreview() {
+  const decorKey = runtime.debugDecorPreviewDecorKey;
+  if (!decorKey || !runtime.decorMap.has(decorKey)) {
+    return;
+  }
+  runtime.debugDecorPreviewScalePercent = 100;
+  runtime.debugDecorPreviewItem = createDebugDecorPreviewItem(decorKey);
+  if (dom.debugDecorPreviewShowFootprint) dom.debugDecorPreviewShowFootprint.checked = false;
+  syncDebugDecorPreviewControls();
+  snapDebugDecorPreviewToLayer({ center: true });
+}
+
+function setDebugDecorPreviewDecor(decorKey) {
+  if (!runtime.decorMap.has(decorKey)) {
+    return;
+  }
+  runtime.debugDecorPreviewDecorKey = decorKey;
+  runtime.debugDecorPreviewItem = createDebugDecorPreviewItem(decorKey);
+  runtime.debugDecorPreviewScalePercent = 100;
+  const decor = runtime.decorMap.get(decorKey);
+  const token = ++runtime.debugDecorPreviewLoadToken;
+  if (dom.debugDecorPreviewStatus) dom.debugDecorPreviewStatus.textContent = `Loading ${decor.name || titleFromFile(decorKey)}…`;
+  void preloadDecorArtwork(decor).then(() => {
+    if (!runtime.debugDecorPreviewOpen || token !== runtime.debugDecorPreviewLoadToken) return;
+    snapDebugDecorPreviewToLayer({ center: true });
+    syncDebugDecorPreviewControls();
+    requestDebugDecorPreviewRender();
+  });
+  syncDebugDecorPreviewControls();
+  snapDebugDecorPreviewToLayer({ center: true });
+}
+
+function setDebugDecorPreviewLayer(layer) {
+  const item = runtime.debugDecorPreviewItem;
+  if (!item) return;
+  item.tankLayer = clampTankLayer(Number(layer) || 1);
+  snapDebugDecorPreviewToLayer({ center: false });
+}
+
+function setDebugDecorPreviewSize(value) {
+  const item = runtime.debugDecorPreviewItem;
+  if (!item) return;
+  const percent = clamp(Math.round(Number(value) || 100), 25, 250);
+  runtime.debugDecorPreviewScalePercent = percent;
+  item.scale = clamp(getDebugDecorPreviewBaseScale() * percent / 100, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
+  if (dom.debugDecorPreviewSizeOutput) dom.debugDecorPreviewSizeOutput.textContent = `${percent}%`;
+  if (runtime.debugDecorPreviewSnapped) {
+    snapDebugDecorPreviewToLayer({ center: false });
+  } else {
+    requestDebugDecorPreviewRender();
+  }
+}
+
+function setDebugDecorPreviewFlip(axis, checked) {
+  const item = runtime.debugDecorPreviewItem;
+  if (!item) return;
+  if (axis === "y") item.flippedY = checked === true;
+  else item.flipped = checked === true;
+  if (runtime.debugDecorPreviewSnapped) snapDebugDecorPreviewToLayer({ center: false });
+  else requestDebugDecorPreviewRender();
+}
+
+function openDebugDecorPreview() {
+  if (!isDebugModeEnabled() || !dom.debugDecorPreview) {
+    return;
+  }
+  if (runtime.debugFishBehaviorPreviewOpen) {
+    closeDebugFishBehaviorPreview();
+  }
+  populateDebugDecorPreviewSelect();
+  runtime.debugDecorPreviewOpen = true;
+  document.body.classList.add("debug-decor-preview-open");
+  dom.debugDecorPreview.hidden = false;
+  const key = runtime.debugDecorPreviewDecorKey || dom.debugDecorPreviewSelect?.value || "";
+  if (key) {
+    setDebugDecorPreviewDecor(key);
+  }
+  requestDebugDecorPreviewRender();
+  dom.debugDecorPreviewSelect?.focus();
+}
+
+function closeDebugDecorPreview() {
+  runtime.debugDecorPreviewOpen = false;
+  runtime.debugDecorPreviewLoadToken += 1;
+  runtime.debugDecorPreviewPointerId = null;
+  runtime.debugDecorPreviewTransform = null;
+  if (runtime.debugDecorPreviewFrame) {
+    cancelAnimationFrame(runtime.debugDecorPreviewFrame);
+    runtime.debugDecorPreviewFrame = 0;
+  }
+  if (dom.debugDecorPreview) dom.debugDecorPreview.hidden = true;
+  document.body.classList.remove("debug-decor-preview-open");
+  dom.debugDecorPreviewButton?.focus();
+}
+
+function getDebugDecorPreviewTankPoint(event) {
+  const canvas = dom.debugDecorPreviewCanvas;
+  const transform = runtime.debugDecorPreviewTransform;
+  if (!canvas || !transform) return null;
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  return {
+    x: (x - transform.offsetX) / Math.max(0.0001, transform.scale),
+    y: (y - transform.offsetY) / Math.max(0.0001, transform.scale)
+  };
+}
+
+function beginDebugDecorPreviewDrag(event) {
+  if (!runtime.debugDecorPreviewOpen || !runtime.debugDecorPreviewItem || event.button !== 0) return;
+  const point = getDebugDecorPreviewTankPoint(event);
+  if (!point) return;
+  const bounds = getPlacedDecorBounds(runtime.debugDecorPreviewItem);
+  if (bounds && (point.x < bounds.left - 20 || point.x > bounds.right + 20 || point.y < bounds.top - 20 || point.y > bounds.bottom + 20)) {
+    return;
+  }
+  event.preventDefault();
+  runtime.debugDecorPreviewPointerId = event.pointerId;
+  runtime.debugDecorPreviewDragOffsetX = runtime.debugDecorPreviewItem.xNorm * TANK_WIDTH - point.x;
+  runtime.debugDecorPreviewDragOffsetY = runtime.debugDecorPreviewItem.yNorm * TANK_HEIGHT - point.y;
+  runtime.debugDecorPreviewSnapped = false;
+  dom.debugDecorPreviewCanvas?.setPointerCapture?.(event.pointerId);
+}
+
+function moveDebugDecorPreviewDrag(event) {
+  if (runtime.debugDecorPreviewPointerId !== event.pointerId || !runtime.debugDecorPreviewItem) return;
+  const point = getDebugDecorPreviewTankPoint(event);
+  if (!point) return;
+  event.preventDefault();
+  const anchorX = point.x + runtime.debugDecorPreviewDragOffsetX;
+  const anchorY = point.y + runtime.debugDecorPreviewDragOffsetY;
+  runtime.debugDecorPreviewItem.xNorm = clamp(anchorX / Math.max(1, TANK_WIDTH), 0, 1);
+  runtime.debugDecorPreviewItem.yNorm = clamp(anchorY / Math.max(1, TANK_HEIGHT), 0.03, 1.04);
+  requestDebugDecorPreviewRender();
+}
+
+function endDebugDecorPreviewDrag(event) {
+  if (runtime.debugDecorPreviewPointerId !== event.pointerId) return;
+  runtime.debugDecorPreviewPointerId = null;
+  dom.debugDecorPreviewCanvas?.releasePointerCapture?.(event.pointerId);
+  requestDebugDecorPreviewRender();
+}
+
+function drawDebugDecorPreviewBackdrop(context) {
+  const floorBounds = getTankFloorDrawBounds();
+  const waterGradient = context.createLinearGradient(0, WATER_SURFACE_Y, 0, floorBounds.bottom);
+  waterGradient.addColorStop(0, "#58c8ef");
+  waterGradient.addColorStop(0.55, "#1789d0");
+  waterGradient.addColorStop(1, "#0d5ea8");
+  context.fillStyle = "#071522";
+  context.fillRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
+  context.fillStyle = waterGradient;
+  context.fillRect(GLASS_MARGIN_X, WATER_SURFACE_Y, TANK_WIDTH - GLASS_MARGIN_X * 2, floorBounds.bottom - WATER_SURFACE_Y);
+
+  context.save();
+  traceTankFloorMaskPath(context, floorBounds);
+  context.clip();
+  const gravelGradient = context.createLinearGradient(0, floorBounds.drawTop, 0, floorBounds.bottom);
+  gravelGradient.addColorStop(0, "#9b8c6d");
+  gravelGradient.addColorStop(0.55, "#766449");
+  gravelGradient.addColorStop(1, "#4f402f");
+  context.fillStyle = gravelGradient;
+  context.fillRect(floorBounds.left, floorBounds.drawTop, floorBounds.drawWidth, floorBounds.bottom - floorBounds.drawTop + 2);
+  context.globalAlpha = 0.14;
+  context.fillStyle = "#e1d6b9";
+  for (let x = floorBounds.left + 8; x < floorBounds.right; x += 21) {
+    const surface = getTankFloorMaskSurfaceYAtX(x, floorBounds);
+    for (let y = surface + 7 + ((x * 13) % 11); y < floorBounds.bottom; y += 19) {
+      context.beginPath();
+      context.arc(x + ((y * 7) % 9) - 4, y, 2.2, 0, Math.PI * 2);
+      context.fill();
+    }
+  }
+  context.restore();
+
+  for (let layer = 1; layer <= 5; layer += 1) {
+    const y = getTankLayerBottomBoundaryY(layer);
+    const selected = layer === getDecorTankLayer(runtime.debugDecorPreviewItem);
+    context.save();
+    context.setLineDash(selected ? [] : [9, 8]);
+    context.lineWidth = selected ? 2.4 : 1.2;
+    context.strokeStyle = selected ? "rgba(255, 222, 114, 0.85)" : "rgba(220, 247, 255, 0.22)";
+    context.beginPath();
+    context.moveTo(GLASS_MARGIN_X + 8, y);
+    context.lineTo(TANK_WIDTH - GLASS_MARGIN_X - 8, y);
+    context.stroke();
+    context.fillStyle = selected ? "rgba(255, 232, 148, 0.95)" : "rgba(220, 247, 255, 0.45)";
+    context.font = "700 15px system-ui, sans-serif";
+    context.fillText(`L${layer}`, GLASS_MARGIN_X + 16, y - 7);
+    context.restore();
+  }
+}
+
+function drawDebugDecorPreviewFootprint(context, item, decor, drawX, drawY, width, height) {
+  if (!dom.debugDecorPreviewShowFootprint?.checked || !decor?.shadowFootprintPath) return;
+  const footprintImage = runtime.images.get(decor.shadowFootprintPath);
+  if (!isUsableRuntimeImage(footprintImage)) return;
+  context.save();
+  const flipX = isDecorHorizontallyFlipped(item);
+  const flipY = isDecorVerticallyFlipped(item);
+  let x = drawX;
+  let y = drawY;
+  if (flipX || flipY) {
+    context.translate(flipX ? drawX + width : 0, flipY ? drawY + height : 0);
+    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+    x = flipX ? 0 : drawX;
+    y = flipY ? 0 : drawY;
+  }
+  context.globalAlpha = 0.58;
+  context.globalCompositeOperation = "screen";
+  context.filter = "invert(34%) sepia(95%) saturate(5200%) hue-rotate(318deg) brightness(118%) contrast(120%)";
+  context.drawImage(footprintImage, x, y, width, height);
+  context.filter = "none";
+  context.restore();
+}
+
+function drawDebugDecorPreviewArtwork(context, item, decor, now) {
+  const image = runtime.images.get(decor.path);
+  if (!isUsableRuntimeImage(image)) return false;
+  const width = getDecorDisplayWidth(decor, item);
+  const height = width * (image.height / Math.max(1, image.width));
+  const x = item.xNorm * TANK_WIDTH;
+  const y = item.yNorm * TANK_HEIGHT;
+  const drawX = x - width / 2;
+  const drawY = y - height;
+  const motion = getDecorMotion(item, now);
+
+  if (decor.bgPath) {
+    const bgImage = runtime.images.get(decor.bgPath);
+    if (isUsableRuntimeImage(bgImage)) {
+      const bgHeight = width * (bgImage.height / Math.max(1, bgImage.width));
+      if (!drawCaveBackgroundLayerToContext(context, item, decor, now, {
+        drawX,
+        drawY,
+        bgDrawY: y - bgHeight,
+        width,
+        baseHeight: height,
+        motion
+      })) {
+        drawDecorImageLayerToContext(context, bgImage, drawX, y - bgHeight, width, bgHeight, item, now, motion);
+      }
+    }
+  }
+
+  if (decor.midPath) {
+    const midImage = runtime.images.get(decor.midPath);
+    if (isUsableRuntimeImage(midImage)) {
+      const midHeight = width * (midImage.height / Math.max(1, midImage.width));
+      drawDecorImageLayerToContext(context, midImage, drawX, y - midHeight, width, midHeight, item, now, motion);
+    }
+  }
+
+  if (!drawCaveColorLayersToContext(context, item, decor, now, { drawX, drawY, width, height, motion })) {
+    drawDecorImageLayerToContext(context, image, drawX, drawY, width, height, item, now, motion);
+  }
+
+  if (decor.lightPath) {
+    const lightImage = runtime.images.get(decor.lightPath);
+    if (isUsableRuntimeImage(lightImage)) {
+      const lightHeight = width * (lightImage.height / Math.max(1, lightImage.width));
+      context.save();
+      context.globalCompositeOperation = "screen";
+      drawDecorImageLayerToContext(context, lightImage, drawX, y - lightHeight, width, lightHeight, item, now, motion);
+      context.restore();
+    }
+  }
+
+  drawDebugDecorPreviewFootprint(context, item, decor, drawX, drawY, width, height);
+  return true;
+}
+
+function updateDebugDecorPreviewReadouts() {
+  const item = runtime.debugDecorPreviewItem;
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  if (!item || !decor) return;
+  const groundBounds = getPlacedDecorGroundBounds(item) || getPlacedDecorBounds(item);
+  const layerY = getTankLayerBottomBoundaryY(getDecorTankLayer(item));
+  const offset = groundBounds ? groundBounds.bottom - layerY : 0;
+  if (dom.debugDecorPreviewBottom) dom.debugDecorPreviewBottom.textContent = groundBounds ? `${Math.round(groundBounds.bottom)} px` : "Unavailable";
+  if (dom.debugDecorPreviewOffset) dom.debugDecorPreviewOffset.textContent = `${offset >= 0 ? "+" : ""}${Math.round(offset)} px`;
+  if (dom.debugDecorPreviewFootprint) dom.debugDecorPreviewFootprint.textContent = decor.shadowFootprintPath ? "Helper PNG" : "Auto";
+  if (dom.debugDecorPreviewStatus) {
+    const width = Math.round(getDecorDisplayWidth(decor, item));
+    dom.debugDecorPreviewStatus.textContent = `${decor.name || titleFromFile(item.decorKey)} · ${width}px · Layer ${getDecorTankLayer(item)}${runtime.debugDecorPreviewSnapped ? " · snapped" : ""}`;
+  }
+}
+
+function renderDebugDecorPreviewFrame() {
+  runtime.debugDecorPreviewFrame = 0;
+  if (!runtime.debugDecorPreviewOpen || !dom.debugDecorPreviewCanvas || !runtime.debugDecorPreviewItem) return;
+  const canvas = dom.debugDecorPreviewCanvas;
+  const context = canvas.getContext("2d");
+  const decor = runtime.decorMap.get(runtime.debugDecorPreviewDecorKey);
+  if (!context || !decor) return;
+
+  const viewport = resizeDebugFishBehaviorPreviewCanvas(canvas, context);
+  context.clearRect(0, 0, viewport.width, viewport.height);
+  const scale = Math.min(viewport.width / Math.max(1, TANK_WIDTH), viewport.height / Math.max(1, TANK_HEIGHT));
+  const offsetX = (viewport.width - TANK_WIDTH * scale) / 2;
+  const offsetY = (viewport.height - TANK_HEIGHT * scale) / 2;
+  runtime.debugDecorPreviewTransform = { scale, offsetX, offsetY };
+
+  context.save();
+  context.translate(offsetX, offsetY);
+  context.scale(scale, scale);
+  drawDebugDecorPreviewBackdrop(context);
+
+  if (areDecorShadowsEnabled()) {
+    context.save();
+    context.globalCompositeOperation = "multiply";
+    drawDecorContactShadow(context, runtime.debugDecorPreviewItem);
+    context.restore();
+  }
+
+  const paths = getDecorArtworkPaths(decor);
+  const needsLoad = paths.some((path) => path && !isUsableRuntimeImage(runtime.images.get(path)));
+  if (needsLoad) {
+    void preloadDecorArtwork(decor).then(() => requestDebugDecorPreviewRender());
+  }
+  drawDebugDecorPreviewArtwork(context, runtime.debugDecorPreviewItem, decor, Date.now());
+
+  const anchorX = runtime.debugDecorPreviewItem.xNorm * TANK_WIDTH;
+  const anchorY = runtime.debugDecorPreviewItem.yNorm * TANK_HEIGHT;
+  context.strokeStyle = "rgba(255,255,255,0.52)";
+  context.lineWidth = 1.4 / Math.max(0.001, scale);
+  context.beginPath();
+  context.arc(anchorX, anchorY, 5 / Math.max(0.001, scale), 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+
+  updateDebugDecorPreviewReadouts();
+  runtime.debugDecorPreviewFrame = requestAnimationFrame(renderDebugDecorPreviewFrame);
+}
+
 function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now()) {
   const species = getSpeciesForFish(selectedFish);
   const config = DEBUG_BEHAVIOR_BUTTON_CONFIGS.find((entry) => entry.action === action);
@@ -2354,6 +3110,18 @@ function getDebugBehaviorButtonAvailability(action, selectedFish, now = Date.now
   }
 
   switch (action) {
+    case "species-signature": {
+      const availability = getDebugSpeciesSignatureAvailability(selectedFish, species, now);
+      return availability.enabled
+        ? { enabled: true, title }
+        : { enabled: false, title: `${title}: ${availability.reason}` };
+    }
+    case "puffer-inflate":
+    case "puffer-deflate":
+    case "puffer-taps":
+      return species?.id === "pufferfish"
+        ? { enabled: true, title }
+        : { enabled: false, title: `${title}: select a Pufferfish` };
     case "hide":
       return hasDebugDecorHangoutZone(["plant", "hide", "spooky"])
         ? { enabled: true, title }
@@ -2535,10 +3303,6 @@ function infectSelectedFishDebug() {
   const now = Date.now();
   if (isFishDead(fish)) {
     showToast(`${fish.name} is already dead.`);
-    return;
-  }
-  if (isUndeadFish(fish)) {
-    showToast(`${fish.name} cannot use the regular illness debug path.`);
     return;
   }
 

@@ -40,6 +40,12 @@ function canFishTargetFoodPellet(fish, pellet, now = Date.now()) {
     return false;
   }
 
+  if (fish?.speciesId === "pilot-fish" && pellet.foodKey === "chum") {
+    if (!pellet.settled) return false;
+    const scrapAgeMs = getFoodPelletSettledAgeMs(pellet, now);
+    if (scrapAgeMs < 2500 || scrapAgeMs > FOOD_PELLET_SETTLED_STALE_TARGET_MS) return false;
+  }
+
   if (!pellet.settled) {
     return true;
   }
@@ -928,7 +934,7 @@ function applySelectedMedicineAtPoint(point, now = Date.now()) {
   if (!shouldShowMedicineInStore(medicine)) {
     runtime.medicineModeKey = "";
     renderUi(now);
-    showToast("Enable Violence & Gore to use The Cure.");
+    showToast("That medicine is not currently available.");
     return true;
   }
 
@@ -989,23 +995,6 @@ function processTankMedicineEffects(now = Date.now()) {
         }
         effect.nextTickAt += MEDICINE_HEAL_INTERVAL_MS;
       }
-    } else if (effect.type === "antidote" && !effect.resolvedAt && now >= effect.startedAt + 1000) {
-      for (const fish of [...state.fish]) {
-        if (isZombieVariantFish(fish)) {
-          fish.zombieVariant = false;
-          fish.zombieBiteStartedAt = null;
-          fish.zombieBiteLastBloodAt = null;
-          fish.zombieBiteAttackerId = null;
-          fish.zombieReviveAt = null;
-          fish.zombieReviveSourceId = null;
-          changed = true;
-        } else if (isSkeletonFish(fish) && !isFishDead(fish)) {
-          fish.healthUnits = 0;
-          markFishAsDead(fish, now, `${fish.name} could not survive the antidote.`);
-          changed = true;
-        }
-      }
-      effect.resolvedAt = now;
     }
   }
 

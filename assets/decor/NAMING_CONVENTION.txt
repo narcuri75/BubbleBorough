@@ -1,0 +1,7 @@
+Naming convention
+<identity>__<sort-tag>__theme-<theme>[__variant][__special][__layer][__colorN].png
+
+Behavior comes from the folder name.
+Broad sort tags are used for store grouping and filtering: plant, cave, rock, coral, wood, botanical, ornament, lure, bubbler, transit, plus simple hybrids like cave-coral or rock-coral.
+
+Themes used in this pass: natural, reef, halloween, frozen, fantasy, artificial, treasure, space.

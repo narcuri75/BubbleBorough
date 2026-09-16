@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "931695a7-83f4-4d93-8971-deb3de98d382",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "875b5939-206d-474e-a2f8-353f2851ba83",
+          "width": 512,
+          "height": 307,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish.png"
+        },
+        {
+          "id": "69c1ec25-0053-48e8-b63a-20ba4317b77f",
+          "width": 512,
+          "height": 307,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_1.png"
+        },
+        {
+          "id": "56ce9d64-be26-4364-8686-af0e374bcf48",
+          "width": 512,
+          "height": 307,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_2.png"
+        },
+        {
+          "id": "b468bc31-52d5-4e8a-8c3f-3a73010e08c4",
+          "width": 512,
+          "height": 307,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_3.png"
+        },
+        {
+          "id": "77d17334-31cb-400a-b7de-6f19d2ed2962",
+          "width": 512,
+          "height": 307,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_4.png"
+        }
+      ]
+    }
+  ]
+}

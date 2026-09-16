@@ -21,6 +21,7 @@ function renderCustomFishCreationOverlay() {
   const flipped = Boolean(pending.flipX);
   const complexTurnaround = String(pending.turnAnimation || "simple").trim().toLowerCase() === "complex";
   const diet = normalizeCustomFishDiet(pending.diet);
+  const liveBirth = pending.liveBirth === true;
   const transform = getPendingCustomFishTransform(pending);
 
   return `
@@ -83,6 +84,13 @@ function renderCustomFishCreationOverlay() {
             value="${width}"
             data-custom-fish-size-input />
         </label>
+        <label class="cave-colorize-toggle custom-fish-live-birth-toggle">
+          <input
+            type="checkbox"
+            data-custom-fish-live-birth-toggle
+            ${liveBirth ? "checked" : ""} />
+          <span>Live birth instead of eggs</span>
+        </label>
         <label class="cave-colorize-toggle custom-fish-turn-toggle">
           <input
             type="checkbox"
@@ -138,6 +146,7 @@ function renderProteusDesignerWorkspace() {
   const activityRegulation = getCustomFishActivityRegulationDisplay(pending?.activityRegulation, behaviorProfile);
   const swimZone = getCustomFishSwimZoneDisplay(pending?.swimZone, behaviorProfile);
   const socialAffinity = normalizeCustomFishSocialAffinity(pending?.socialAffinity);
+  const liveBirth = pending?.liveBirth === true;
   const transform = getPendingCustomFishTransform(pending);
   const disabled = hasImage ? "" : "disabled";
 
@@ -230,6 +239,11 @@ function renderProteusDesignerWorkspace() {
           </label>
 
           <div class="proteus-designer-toggle-row">
+            <label class="proteus-designer-toggle" title="Off: lays eggs. On: gives birth to live young.">
+              <input type="checkbox" data-custom-fish-live-birth-toggle ${liveBirth ? "checked" : ""} ${disabled} />
+              <span>Live Birth <small>(off = eggs)</small></span>
+            </label>
+
             <label class="proteus-designer-toggle">
               <input type="checkbox" data-custom-fish-turn-toggle ${complexTurnaround ? "checked" : ""} ${disabled} />
               <span>Advanced Turn Animation</span>
@@ -638,6 +652,17 @@ function renderSettingsOverlay() {
   if (dom.decorShadowsToggleInput) {
     dom.decorShadowsToggleInput.checked = uiSettings.decorShadowsEnabled;
     dom.decorShadowsToggleInput.closest(".settings-toggle-row")?.toggleAttribute("hidden", !DECOR_SHADOWS_SETTING_ENABLED);
+  }
+  if (dom.depthEffectLevelInput instanceof HTMLInputElement) {
+    const depthLevel = normalizeDepthEffectLevel(uiSettings.depthEffectLevel);
+    dom.depthEffectLevelInput.value = String(depthLevel);
+    if (dom.depthEffectLevelOutput) {
+      dom.depthEffectLevelOutput.textContent = `${depthLevel} · ${DEPTH_EFFECT_LEVEL_LABELS[depthLevel] || "Custom"}`;
+    }
+  }
+  if (dom.backgroundDepthHazeToggleInput) {
+    dom.backgroundDepthHazeToggleInput.checked = uiSettings.backgroundDepthHazeEnabled !== false;
+    dom.backgroundDepthHazeToggleInput.disabled = normalizeDepthEffectLevel(uiSettings.depthEffectLevel) <= DEPTH_EFFECT_LEVEL_MIN;
   }
   if (dom.simpleTurnAnimationsToggleInput) {
     dom.simpleTurnAnimationsToggleInput.checked = uiSettings.simpleTurnAnimationsOnly === true;
@@ -1067,7 +1092,7 @@ function getDecorTrayEntryById(entryId) {
     }
     const decor = runtime.decorMap.get(item.decorKey) || {
       name: titleFromFile(item.decorKey),
-      path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`),
+      path: getDecorAssetPathForKey(item.decorKey),
       cost: 0
     };
     return {
@@ -1088,7 +1113,7 @@ function getDecorTrayEntryById(entryId) {
   }
   const decor = runtime.decorMap.get(decorKey) || {
     name: titleFromFile(decorKey),
-    path: resolveAppUrl(`assets/decor/${encodeURIComponent(decorKey)}`),
+    path: getDecorAssetPathForKey(decorKey),
     cost: 0
   };
   return {
@@ -1106,7 +1131,7 @@ function getDecorTrayEntries() {
   return getStoredDecorEntries().map(([decorKey, count]) => {
     const decor = runtime.decorMap.get(decorKey) || {
       name: titleFromFile(decorKey),
-      path: resolveAppUrl(`assets/decor/${encodeURIComponent(decorKey)}`),
+      path: getDecorAssetPathForKey(decorKey),
       cost: 0
     };
     return {
@@ -1131,7 +1156,7 @@ function getInTankDecorTrayEntries() {
     .map((item) => {
       const decor = runtime.decorMap.get(item.decorKey) || {
         name: titleFromFile(item.decorKey),
-        path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`),
+        path: getDecorAssetPathForKey(item.decorKey),
         cost: 0
       };
       return {
@@ -2165,7 +2190,7 @@ function renderEditFishTray() {
   const dataKey = [
     runtime.fishEditMode ? "1" : "0",
     runtime.fishEditTrayTab,
-    ...trayEntries.map(({ fish, inStorage, dead }) => [fish.id, fish.name, fish.speciesId, fish.undeadTemplateSpeciesId || "", Number(fish.scale || 1).toFixed(2), inStorage ? "storage" : "tank", dead ? "dead" : "living", !inStorage && !dead ? getFishTrayMoodTone(fish, trayRenderNow) : "neutral"].join(":"))
+    ...trayEntries.map(({ fish, inStorage, dead }) => [fish.id, fish.name, fish.speciesId, Number(fish.scale || 1).toFixed(2), inStorage ? "storage" : "tank", dead ? "dead" : "living", !inStorage && !dead ? getFishTrayMoodTone(fish, trayRenderNow) : "neutral"].join(":"))
   ].join("|");
 
   if (shouldRebuildRenderSection("edit-fish-tray-data", dataKey)) {
@@ -2482,7 +2507,6 @@ function renderFishList(now) {
       fish.id,
       fish.name,
       fish.speciesId,
-      fish.undeadTemplateSpeciesId || "",
       fish.healthUnits,
       Number(fish.scale).toFixed(2),
       fish.acquiredAt,
@@ -2495,7 +2519,6 @@ function renderFishList(now) {
       fish.id,
       fish.name,
       fish.speciesId,
-      fish.undeadTemplateSpeciesId || "",
       fish.healthUnits,
       Number(fish.scale).toFixed(2),
       fish.acquiredAt,
@@ -2626,9 +2649,6 @@ function renderManagedFishCard(fish, now, options = {}) {
   const detritusFish = isDetritusFish(fish);
   const mealFreeFish = isMealFreeFish(fish);
   const goreEnabled = isGoreEnabled();
-  const undeadFish = goreEnabled && isUndeadFish(fish);
-  const zombieHunterFish = !dead && usesZombieHunterBehavior(fish);
-  const zombieBittenFish = hasZombieBiteInfection(fish);
   const piranhaFish = isPiranhaSpecies(fish);
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const criticalComfort = !inStorage && !dead && comfort.value <= 0;
@@ -2638,87 +2658,48 @@ function renderManagedFishCard(fish, now, options = {}) {
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const corpseState = getFishCorpseDisplayState(fish, now);
   const beingConsumed = corpseState === "devoured";
-  const awaitingZombieRise = dead && hasPendingZombieRevival(fish);
   const corpsePressure = !inStorage && hasExposedDeadTankFish(now);
   const showDisposeButton = dead && !beingConsumed;
   const status = inStorage
-    ? (dead
-      ? awaitingZombieRise
-        ? "Stored corpse will rise as a zombie soon."
-        : corpseState === "skeleton"
-          ? "Stored skeleton awaiting disposal."
-          : corpseState === "zombie"
-            ? "Stored zombie remains awaiting disposal."
-            : (goreEnabled ? "Stored remains awaiting disposal." : "Stored dead fish awaiting disposal.")
-      : "Stored safely outside the tank.")
+    ? (dead ? (goreEnabled ? "Stored remains awaiting disposal." : "Stored dead fish awaiting disposal.") : "Stored safely outside the tank.")
     : dead
       ? beingConsumed
-        ? (goreEnabled ? "Piranhas are stripping it to the bone." : "Piranhas are disposing of the remains.")
-        : !goreEnabled
-          ? "Dead and awaiting disposal."
-          : awaitingZombieRise
-            ? "A zombie bite is raising it back up."
-            : corpseState === "skeleton"
-              ? "Reduced to a skeleton."
-              : corpseState === "zombie"
-                ? "Rotting into a zombie."
-                : "Freshly dead and floating at the surface."
+        ? (goreEnabled ? "Piranhas are consuming the remains." : "Piranhas are disposing of the remains.")
+        : (goreEnabled ? "Freshly dead and floating at the surface." : "Dead and awaiting disposal.")
       : criticalComfort
-        ? corpsePressure
-          ? "Panicking while a dead fish fouls the water."
-          : "Tank conditions are dangerously filthy."
-        : zombieBittenFish
-          ? "Bleeding out from a zombie bite."
-          : zombieHunterFish
-            ? "Stalking living fish for a bite."
-            : undeadFish
-              ? "Ignores hunger and dirty water, but unnerves the living."
-              : piranhaFish
-                ? (goreEnabled ? (getActivePiranhaPrey(now) ? "Blood frenzy in progress." : "Hunting any non-undead fish or corpse.") : "Tracks chum without attacking tankmates.")
-                : juvenile
-                  ? "Growing into full size."
-                  : detritusFish
-                    ? "Suctioned to the back glass."
-                    : hungerValue <= FISH_HUNGER_CRITICAL_THRESHOLD
-                      ? "Starving"
-                      : hungerValue <= FISH_HUNGER_LOW_THRESHOLD
-                        ? hungerLabel
-                        : needsSnapshot
-                          ? `${needsSnapshot.mood.label} - ${hungerLabel}`
-                          : "Waiting";
+        ? (corpsePressure ? "Panicking while a dead fish fouls the water." : "Tank conditions are dangerously filthy.")
+        : piranhaFish
+          ? (goreEnabled ? (getActivePiranhaPrey(now) ? "Blood frenzy in progress." : "Hunting tankmates or corpses.") : "Tracks chum without attacking tankmates.")
+          : juvenile
+            ? "Growing into full size."
+            : detritusFish
+              ? "Suctioned to the back glass."
+              : hungerValue <= FISH_HUNGER_CRITICAL_THRESHOLD
+                ? "Starving"
+                : hungerValue <= FISH_HUNGER_LOW_THRESHOLD
+                  ? hungerLabel
+                  : needsSnapshot
+                    ? `${needsSnapshot.mood.label} - ${hungerLabel}`
+                    : "Waiting";
   const healthNote = dead
     ? beingConsumed
       ? (goreEnabled
-        ? "Piranhas will carry this fish through the zombie and skeleton stages automatically, then finish it off. No disposal needed."
+        ? "Piranhas will finish consuming this fish automatically. No manual disposal needed."
         : "Piranhas will finish disposing of this fish automatically. No manual disposal needed.")
-      : !goreEnabled
-        ? "This fish died. Gore is off, so it will not decay or rise again."
-        : awaitingZombieRise
-          ? "Dispose of this corpse before it rises again as a zombie variant."
-          : corpseState === "skeleton"
-            ? "This fish has reached the skeleton stage. The Skeleton Fish shop unlock triggers here."
-            : corpseState === "zombie"
-              ? "This fish has reached the zombie stage. Leave it another 12 hours to reach the skeleton unlock."
-              : "Leave it for 12 hours to reach the zombie stage, then another 12 hours to become a skeleton."
+      : "This fish is dead and awaiting disposal."
     : criticalComfort
-      ? corpsePressure
+      ? (corpsePressure
         ? "Comfort is 0% while a dead fish stays in the tank. Remove it fast."
-        : "Comfort is 0% at maximum dirtiness. Clean the tank before health keeps dropping."
-      : zombieBittenFish
-        ? "A zombie bite makes this fish panic, spill blood every second, and die in about 30 seconds."
-        : zombieHunterFish
-          ? "Zombie hunters bite living non-undead fish, then their victims bleed out and may rise again in 1-2 minutes if left alone."
-          : undeadFish
-            ? "Undead fish ignore hunger, discomfort, and dirty water, but reduce nearby living fish comfort by about 10% and may lash out."
-            : piranhaFish
-              ? (goreEnabled ? "Piranhas ignore pellets, devour any non-undead fish in the tank, and cloud the water red while feeding." : "Piranhas still go after chum, but they will leave the rest of the tank alone.")
-              : juvenile
-                ? "Baby fish start at 25% size and grow to full size over a few days."
-                : detritusFish
-                  ? "Feeds on grime and poop instead of pellets."
-                  : fish.healthUnits < maxHealthUnits
-                    ? "Health does not recover from ordinary food. Use First Aid or a Clinic service."
-                    : "Full hearts and thriving.";
+        : "Comfort is 0% at maximum dirtiness. Clean the tank before health keeps dropping.")
+      : piranhaFish
+        ? (goreEnabled ? "Piranhas ignore pellets, eat chum, may devour tankmates, and cloud the water red while feeding." : "Piranhas still go after chum, but they will leave the rest of the tank alone.")
+        : juvenile
+          ? "Baby fish start at 25% size and grow to full size over a few days."
+          : detritusFish
+            ? "Feeds on grime and poop instead of pellets."
+            : fish.healthUnits < maxHealthUnits
+              ? "Health does not recover from ordinary food. Use First Aid or a Clinic service."
+              : "Full hearts and thriving.";
   const rewardLabel = dead
     ? "No feeding care coins"
     : detritusFish
@@ -2745,15 +2726,10 @@ function renderManagedFishCard(fish, now, options = {}) {
           <span class="fish-trait">${inStorage ? (dead ? `Status: ${getFishCorpseStateLabel(fish, now)}` : "Storage") : dead ? `Status: ${getFishCorpseStateLabel(fish, now)}` : `Comfort: ${comfort.label}`}</span>
           ${juvenile ? `<span class="fish-trait">Stage: Baby</span>` : ""}
           ${detritusFish ? `<span class="fish-trait">Diet: grime + waste</span>` : ""}
-          ${piranhaFish ? `<span class="fish-trait">Diet: live prey</span>` : ""}
-          ${undeadFish ? `<span class="fish-trait">Diet: none</span>` : ""}
-          ${zombieBittenFish && !dead ? `<span class="fish-trait">Status: Infected</span>` : ""}
-          ${goreEnabled && dead && awaitingZombieRise ? `<span class="fish-trait">Decay: Rising zombie</span>` : ""}
-          ${goreEnabled && dead && corpseState === "zombie" ? `<span class="fish-trait">Decay: Zombie</span>` : ""}
-          ${goreEnabled && dead && corpseState === "skeleton" ? `<span class="fish-trait">Decay: Skeleton</span>` : ""}
+          ${piranhaFish ? `<span class="fish-trait">Diet: chum + live prey</span>` : ""}
           ${dead && corpseState === "devoured" ? `<span class="fish-trait">Decay: Piranha feeding</span>` : ""}
           ${!dead ? `<span class="fish-trait">Grime load: +${dirtinessLoadPercent}%</span>` : ""}
-          <span class="fish-trait">Swim: ${zombieHunterFish ? "Undead hunter" : isDavyMutationSpecies(species) ? formatFishShopBehavior(species) : formatSwimStyle(species.swimStyle)}</span>
+          <span class="fish-trait">Swim: ${isDavyMutationSpecies(species) ? formatFishShopBehavior(species) : formatSwimStyle(species.swimStyle)}</span>
           <span class="fish-trait">Age: ${age}</span>
         </div>
         <div class="mini-note fish-health-note">${healthNote}</div>
@@ -3444,7 +3420,7 @@ function renderFishInspector(now) {
   const purchaseCost = canBuyAnother ? getFishPurchaseCost(fish.speciesId) : 0;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
   const canSell = Boolean(baseSpecies) && !dead && !beingConsumed && !isFishJuvenile(fish);
-  const canStore = !inStorage && !dead && !hasZombieBiteInfection(fish);
+  const canStore = !inStorage && !dead;
   const comfort = inStorage ? { label: "Stored", value: 1 } : getFishComfort(fish, now);
   const needsSnapshot = inStorage || dead ? null : getFishNeedsSnapshot(fish, now);
   dom.fishInspector.hidden = false;
@@ -3855,7 +3831,7 @@ function renderDecorInventory() {
     .map(([key, count]) => {
       const decor = runtime.decorMap.get(key) || {
         name: titleFromFile(key),
-        path: resolveAppUrl(`assets/decor/${encodeURIComponent(key)}`)
+        path: getDecorAssetPathForKey(key)
       };
       const disabledByContent = !canUseDecorWithCurrentContentSettings(key);
       const placing = !disabledByContent && runtime.placementMode?.decorKey === key;

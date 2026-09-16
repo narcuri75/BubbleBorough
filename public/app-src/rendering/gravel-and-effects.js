@@ -401,49 +401,82 @@ function drawCustomGravelFloor(bounds, now = Date.now()) {
 }
 
 function drawGravelDepthTreatment(bounds) {
-  const floorHeight = Math.max(1, bounds.bottom - bounds.drawTop);
+  drawContinuousTankDepthSubstrateTreatment(tankContext, bounds);
+}
+
+function getSubstrateGroundShadowMaskYAtX(x, bounds, startY, bottomY) {
+  const inset = Math.max(0, Number(SUBSTRATE_GROUND_SHADOW.hillInsetPx) || 0);
+  const amplitude = Math.max(0, Number(SUBSTRATE_GROUND_SHADOW.hillAmplitudePx) || 0);
+  const secondaryAmplitude = Math.max(0, Number(SUBSTRATE_GROUND_SHADOW.hillSecondaryAmplitudePx) || 0);
+  const maxTopY = Math.min(bottomY - 1, startY + inset + amplitude + secondaryAmplitude);
+  const t = clamp((x - bounds.left) / Math.max(1, bounds.drawWidth), 0, 1);
+
+  // Follow the randomized main gravel hill profile, but compress it into a much
+  // smaller vertical range so the shadow top never climbs into the Layer 1 line.
+  const baseHillY = getTankFloorMaskSurfaceYAtX(x, bounds);
+  const hillDelta = baseHillY - bounds.baseTop;
+  const profile = getTankFloorMaskHillProfile();
+  const correlatedWave = inset + amplitude * 0.52 + hillDelta * 0.18;
+  const detailWave = ((Math.sin(t * Math.PI * 2 * (profile.shortFrequency * 0.92) + profile.shortPhase + 0.45) + 1) * 0.5) * secondaryAmplitude;
+  const crestBias = Math.sin(t * Math.PI) * Math.min(secondaryAmplitude * 0.45, 0.9);
+
+  return clamp(
+    startY + correlatedWave + detailWave - crestBias,
+    startY + inset,
+    maxTopY
+  );
+}
+
+function traceSubstrateGroundShadowMaskPath(context, bounds, startY, bottomY) {
+  const segments = Math.max(8, Math.floor(Number(SUBSTRATE_GROUND_SHADOW.hillSegments) || 8));
+
+  context.beginPath();
+  context.moveTo(bounds.left, bottomY);
+  context.lineTo(bounds.left, getSubstrateGroundShadowMaskYAtX(bounds.left, bounds, startY, bottomY));
+
+  for (let index = 0; index <= segments; index++) {
+    const t = index / segments;
+    const x = bounds.left + bounds.drawWidth * t;
+    context.lineTo(x, getSubstrateGroundShadowMaskYAtX(x, bounds, startY, bottomY));
+  }
+
+  context.lineTo(bounds.left + bounds.drawWidth, bottomY);
+  context.closePath();
+}
+
+function drawSubstrateGroundShadow(bounds) {
+  if (!areDecorShadowsEnabled()) {
+    return;
+  }
+  const startY = clamp(
+    getTankLayerBottomBoundaryY(SUBSTRATE_GROUND_SHADOW.startLayer),
+    bounds.drawTop,
+    bounds.bottom
+  );
+  const bottomY = Math.max(startY + 1, bounds.bottom);
+  const gradient = tankContext.createLinearGradient(0, startY, 0, bottomY);
+  const { r, g, b } = SUBSTRATE_GROUND_SHADOW.color;
+  const alphaMultiplier = getDebugGroundShadowDarknessMultiplier();
+  const topFadeRatio = clamp(Number(SUBSTRATE_GROUND_SHADOW.topFadeRatio) || 0.16, 0.04, 0.45);
+  const midFadeRatio = clamp(Number(SUBSTRATE_GROUND_SHADOW.midFadeRatio) || 0.34, topFadeRatio + 0.04, 0.75);
+  gradient.addColorStop(0, `rgba(${r},${g},${b},0.0000)`);
+  gradient.addColorStop(topFadeRatio, `rgba(${r},${g},${b},${(SUBSTRATE_GROUND_SHADOW.startAlpha * alphaMultiplier * 0.45).toFixed(4)})`);
+  gradient.addColorStop(midFadeRatio, `rgba(${r},${g},${b},${(SUBSTRATE_GROUND_SHADOW.startAlpha * alphaMultiplier).toFixed(4)})`);
+  gradient.addColorStop(1, `rgba(${r},${g},${b},${(SUBSTRATE_GROUND_SHADOW.endAlpha * alphaMultiplier).toFixed(4)})`);
 
   tankContext.save();
   traceTankFloorMaskPath(tankContext, bounds);
   tankContext.clip();
-
-  // Subtle depth darkening lowers the visual competition of the substrate and
-  // makes the lower gravel read as receding away from the lit water column.
+  traceSubstrateGroundShadowMaskPath(tankContext, bounds, startY, bottomY);
+  tankContext.clip();
   tankContext.globalCompositeOperation = "multiply";
-  const depthShade = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.bottom);
-  depthShade.addColorStop(0, "rgba(255, 255, 255, 0)");
-  depthShade.addColorStop(0.34, "rgba(238, 242, 248, 0.012)");
-  depthShade.addColorStop(0.68, "rgba(106, 119, 139, 0.055)");
-  depthShade.addColorStop(1, "rgba(30, 37, 50, 0.145)");
-  tankContext.fillStyle = depthShade;
-  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, floorHeight + 2);
-
-  // A narrow feather just inside the gravel crest softens the hard water-to-
-  // substrate seam without painting haze over the open water.
-  const crestBlendHeight = Math.min(70, Math.max(34, floorHeight * 0.24));
-  const crestShade = tankContext.createLinearGradient(0, bounds.drawTop, 0, bounds.drawTop + crestBlendHeight);
-  crestShade.addColorStop(0, "rgba(39, 51, 67, 0.075)");
-  crestShade.addColorStop(0.32, "rgba(64, 76, 94, 0.038)");
-  crestShade.addColorStop(1, "rgba(255, 255, 255, 0)");
-  tankContext.fillStyle = crestShade;
-  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, crestBlendHeight);
-
-  // Slight edge falloff keeps the saturated gravel from feeling like a flat
-  // banner and reinforces the curved glass/tank depth near the sides.
-  const edgeShade = tankContext.createRadialGradient(
-    bounds.left + bounds.drawWidth * 0.5,
-    bounds.drawTop + floorHeight * 0.32,
-    bounds.drawWidth * 0.16,
-    bounds.left + bounds.drawWidth * 0.5,
-    bounds.drawTop + floorHeight * 0.36,
-    bounds.drawWidth * 0.66
+  tankContext.fillStyle = gradient;
+  tankContext.fillRect(
+    bounds.left,
+    startY,
+    bounds.drawWidth,
+    Math.max(1, bottomY - startY + 2)
   );
-  edgeShade.addColorStop(0, "rgba(255, 255, 255, 0)");
-  edgeShade.addColorStop(0.72, "rgba(198, 207, 219, 0.012)");
-  edgeShade.addColorStop(1, "rgba(51, 61, 76, 0.06)");
-  tankContext.fillStyle = edgeShade;
-  tankContext.fillRect(bounds.left, bounds.drawTop, bounds.drawWidth, floorHeight + 2);
-
   tankContext.restore();
 }
 
@@ -458,8 +491,11 @@ function drawTankFloor(now = Date.now()) {
 
   tankContext.restore();
 
-  drawGravelDepthTreatment(bounds);
+  // Loose pebbles are part of the continuous substrate surface, so draw them
+  // before the shared depth pass instead of leaving them visually detached.
   drawCustomGravelLoosePebbles(bounds, now);
+  drawGravelDepthTreatment(bounds);
+  drawSubstrateGroundShadow(bounds);
 }
 
 function getGravelGrimeIntensity(dirtiness = getTankDirtiness(Date.now())) {

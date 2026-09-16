@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "e0dd01f1-2e7b-4cce-83b3-4155959b7215",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "ec691629-7c1c-48e2-97c4-cb7216086559",
+          "width": 512,
+          "height": 266,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Pilot_Fish.png"
+        },
+        {
+          "id": "d7a2ad3a-2e43-4c07-ba16-968d4eac8206",
+          "width": 512,
+          "height": 266,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Pilot_Fish_2.png"
+        },
+        {
+          "id": "429f8ede-ed1b-4d6b-9b29-42cb68851e74",
+          "width": 512,
+          "height": 266,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Pilot_Fish_1.png"
+        },
+        {
+          "id": "27a60c0b-8fd2-4946-a491-01570083268b",
+          "width": 512,
+          "height": 266,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Pilot_Fish_3.png"
+        },
+        {
+          "id": "cd1c4faf-25c9-4644-b46a-809ca6de1890",
+          "width": 512,
+          "height": 266,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Pilot_Fish_4.png"
+        }
+      ]
+    }
+  ]
+}

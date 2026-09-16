@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "84cebfd5-7eaa-4f8c-abc2-2c4911df8e79",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "23fab38d-7ac6-4074-b409-3b43b3ffcc13",
+          "width": 498,
+          "height": 390,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "yellowtang.png"
+        },
+        {
+          "id": "d407b23a-7cee-42e7-9b94-a78c212183ab",
+          "width": 498,
+          "height": 390,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "yellowtang_1.png"
+        },
+        {
+          "id": "769e9eb2-7a70-43ee-ba9d-ae78716b3ccc",
+          "width": 498,
+          "height": 390,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "yellowtang_2.png"
+        },
+        {
+          "id": "5792b6ac-ed5f-49cb-9e30-41fa0adbeb1c",
+          "width": 498,
+          "height": 390,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "yellowtang_3.png"
+        },
+        {
+          "id": "37a3ed8a-68b3-4d77-8bee-fac89a56f1af",
+          "width": 498,
+          "height": 390,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "yellowtang_4.png"
+        }
+      ]
+    }
+  ]
+}

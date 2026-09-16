@@ -951,7 +951,7 @@ async function storeCustomImageDataUrl(dataUrl, source = "custom-image") {
       if (record?.id) {
         return {
           imageRefId: record.id,
-          dataUrl: "",
+          dataUrl,
           runtimeUrl: createRuntimeImageUrl(record.id, blob)
         };
       }
@@ -994,7 +994,7 @@ async function resolveStoredCustomImage(target, options) {
       const stored = await storeCustomImageDataUrl(embeddedDataUrl, source);
       if (stored.imageRefId) {
         target[refField] = stored.imageRefId;
-        target[dataField] = "";
+        target[dataField] = embeddedDataUrl;
         setRuntimeImageSource(target, runtimeField, stored.runtimeUrl);
         return true;
       }
@@ -1002,6 +1002,7 @@ async function resolveStoredCustomImage(target, options) {
       console.warn("Custom image migration failed.", error);
     }
 
+    target[dataField] = embeddedDataUrl;
     setRuntimeImageSource(target, runtimeField, embeddedDataUrl);
     return changed;
   }
@@ -1015,6 +1016,17 @@ async function resolveStoredCustomImage(target, options) {
     const blob = await getCustomImageBlob(existingRefId);
     if (blob) {
       setRuntimeImageSource(target, runtimeField, createRuntimeImageUrl(existingRefId, blob));
+      if (!embeddedDataUrl) {
+        try {
+          const hydratedDataUrl = await blobToDataUrl(blob);
+          if (isDataImageUrl(hydratedDataUrl)) {
+            target[dataField] = hydratedDataUrl;
+            changed = true;
+          }
+        } catch (error) {
+          console.warn("Custom image backup embedding failed.", error);
+        }
+      }
     } else {
       setRuntimeImageSource(target, runtimeField, "");
     }
@@ -1138,6 +1150,53 @@ function scheduleCustomImageStorageCleanup() {
   }, 0);
 }
 
+function warnMissingCustomImageOnce(issueKey, error) {
+  if (!(runtime.missingCustomImageWarnings instanceof Set)) {
+    runtime.missingCustomImageWarnings = new Set();
+  }
+  if (runtime.missingCustomImageWarnings.has(issueKey)) {
+    return;
+  }
+  runtime.missingCustomImageWarnings.add(issueKey);
+  console.warn(issueKey, error);
+}
+
+async function tryRecoverCustomImageDataUrl(owner, options, refId) {
+  const runtimeSource = getStoredImageSource(owner, options.runtimeField, options.dataField, "");
+  if (!runtimeSource) {
+    return "";
+  }
+  try {
+    if (isDataImageUrl(runtimeSource)) {
+      const blob = dataUrlToBlob(runtimeSource);
+      if (refId) {
+        await putCustomImageBlob(blob, options.source || "custom-image", refId);
+        createRuntimeImageUrl(refId, blob);
+      }
+      return runtimeSource;
+    }
+    if (/^blob:/i.test(runtimeSource) || /^https?:/i.test(runtimeSource)) {
+      const response = await fetch(runtimeSource);
+      if (!response.ok) {
+        throw new Error(`Custom image recovery fetch failed (${response.status}).`);
+      }
+      const blob = await response.blob();
+      if (!(blob instanceof Blob)) {
+        throw new Error("Custom image recovery did not produce a blob.");
+      }
+      if (refId) {
+        await putCustomImageBlob(blob, options.source || "custom-image", refId);
+        createRuntimeImageUrl(refId, blob);
+      }
+      const dataUrl = await blobToDataUrl(blob);
+      return isDataImageUrl(dataUrl) ? dataUrl : "";
+    }
+  } catch (error) {
+    warnMissingCustomImageOnce(`Custom image recovery failed for ${options.issueLabel || options.refField || "asset"} ${refId || "(no id)"}.`, error);
+  }
+  return "";
+}
+
 async function getCustomImageExportDataUrl(owner, options) {
   const embeddedDataUrl = isDataImageUrl(owner?.[options.dataField]) ? owner[options.dataField] : "";
   if (embeddedDataUrl) {
@@ -1150,16 +1209,74 @@ async function getCustomImageExportDataUrl(owner, options) {
   }
 
   const blob = await getCustomImageBlob(refId);
-  if (!blob) {
-    throw new Error("A custom image is missing from browser storage. Re-import or remove it before exporting.");
+  if (blob) {
+    const dataUrl = await blobToDataUrl(blob);
+    if (!isDataImageUrl(dataUrl)) {
+      throw new Error("A custom image could not be exported.");
+    }
+    return dataUrl;
   }
 
-  const dataUrl = await blobToDataUrl(blob);
-  if (!isDataImageUrl(dataUrl)) {
-    throw new Error("A custom image could not be exported.");
+  const recoveredDataUrl = await tryRecoverCustomImageDataUrl(owner, options, refId);
+  if (isDataImageUrl(recoveredDataUrl)) {
+    return recoveredDataUrl;
   }
 
-  return dataUrl;
+  const error = new Error("A custom image is missing from browser storage. Re-import or remove it before exporting.");
+  warnMissingCustomImageOnce(`Missing custom image storage for ${options.issueLabel || options.refField || "asset"} ${refId}.`, error);
+  throw error;
+}
+
+function clearPortableExportTankLocalBackground(targetTank) {
+  if (!targetTank || typeof targetTank !== "object") {
+    return;
+  }
+  delete targetTank.localBackgroundImageRefId;
+  delete targetTank.localBackgroundImageDataUrl;
+  if (isLocalImageBackgroundKey(targetTank.selectedBackground)) {
+    targetTank.selectedBackground = DEFAULT_TANK_BACKGROUND_KEY;
+  }
+}
+
+function removeBrokenCustomDecorFromPortableExport(targetState, decorKey) {
+  if (!targetState || !decorKey) {
+    return;
+  }
+  if (targetState.customDecorAssets && typeof targetState.customDecorAssets === "object") {
+    delete targetState.customDecorAssets[decorKey];
+  }
+  if (targetState.decorInventory && typeof targetState.decorInventory === "object") {
+    delete targetState.decorInventory[decorKey];
+  }
+  for (const tank of getAllTanks(targetState)) {
+    if (Array.isArray(tank?.placedDecor)) {
+      tank.placedDecor = tank.placedDecor.filter(item => item?.decorKey !== decorKey);
+    }
+  }
+  if (Array.isArray(targetState.savedDecorLayouts)) {
+    for (const layout of targetState.savedDecorLayouts) {
+      if (Array.isArray(layout?.items)) {
+        layout.items = layout.items.filter(item => item?.decorKey !== decorKey);
+      }
+    }
+  }
+}
+
+function removeBrokenCustomFishFromPortableExport(targetState, speciesId) {
+  if (!targetState || !speciesId) {
+    return;
+  }
+  if (targetState.customFishAssets && typeof targetState.customFishAssets === "object") {
+    delete targetState.customFishAssets[speciesId];
+  }
+  if (Array.isArray(targetState.storedFish)) {
+    targetState.storedFish = targetState.storedFish.filter(fish => fish?.speciesId !== speciesId);
+  }
+  for (const tank of getAllTanks(targetState)) {
+    if (Array.isArray(tank?.fish)) {
+      tank.fish = tank.fish.filter(fish => fish?.speciesId !== speciesId);
+    }
+  }
 }
 
 async function createPortableExportState(sourceState = state) {
@@ -1174,14 +1291,22 @@ async function createPortableExportState(sourceState = state) {
       continue;
     }
 
-    const dataUrl = await getCustomImageExportDataUrl(sourceTank, {
-      refField: "localBackgroundImageRefId",
-      dataField: "localBackgroundImageDataUrl"
-    });
-    if (dataUrl) {
-      exportTank.localBackgroundImageDataUrl = dataUrl;
+    try {
+      const dataUrl = await getCustomImageExportDataUrl(sourceTank, {
+        refField: "localBackgroundImageRefId",
+        dataField: "localBackgroundImageDataUrl",
+        runtimeField: "runtimeLocalBackgroundImageUrl",
+        source: "local-background",
+        issueLabel: `tank-background-${index + 1}`
+      });
+      if (dataUrl) {
+        exportTank.localBackgroundImageDataUrl = dataUrl;
+      }
+      delete exportTank.localBackgroundImageRefId;
+    } catch (error) {
+      console.warn("Portable export skipped a missing local background image.", error);
+      clearPortableExportTankLocalBackground(exportTank);
     }
-    delete exportTank.localBackgroundImageRefId;
   }
 
   for (const [key, sourceAsset] of Object.entries(sourceState.customDecorAssets || {})) {
@@ -1190,24 +1315,35 @@ async function createPortableExportState(sourceState = state) {
       continue;
     }
 
-    const path = await getCustomImageExportDataUrl(sourceAsset, {
-      refField: "imageRefId",
-      dataField: "path"
-    });
-    if (path) {
-      exportAsset.path = path;
-    }
-    delete exportAsset.imageRefId;
-
-    if (sourceAsset?.customType === "hide" || isCustomHideAssetKey(sourceAsset?.key)) {
-      const bgPath = await getCustomImageExportDataUrl(sourceAsset, {
-        refField: "bgImageRefId",
-        dataField: "bgPath"
+    try {
+      const path = await getCustomImageExportDataUrl(sourceAsset, {
+        refField: "imageRefId",
+        dataField: "path",
+        runtimeField: "runtimePath",
+        source: sourceAsset?.customType === "hide" ? "custom-hide-front" : "custom-decor",
+        issueLabel: key
       });
-      if (bgPath) {
-        exportAsset.bgPath = bgPath;
+      if (path) {
+        exportAsset.path = path;
       }
-      delete exportAsset.bgImageRefId;
+      delete exportAsset.imageRefId;
+
+      if (sourceAsset?.customType === "hide" || isCustomHideAssetKey(sourceAsset?.key)) {
+        const bgPath = await getCustomImageExportDataUrl(sourceAsset, {
+          refField: "bgImageRefId",
+          dataField: "bgPath",
+          runtimeField: "runtimeBgPath",
+          source: "custom-hide-background",
+          issueLabel: `${key}-background`
+        });
+        if (bgPath) {
+          exportAsset.bgPath = bgPath;
+        }
+        delete exportAsset.bgImageRefId;
+      }
+    } catch (error) {
+      console.warn(`Portable export removed a custom decor asset with missing image storage: ${key}`, error);
+      removeBrokenCustomDecorFromPortableExport(exportState, key);
     }
   }
 
@@ -1217,14 +1353,22 @@ async function createPortableExportState(sourceState = state) {
       continue;
     }
 
-    const path = await getCustomImageExportDataUrl(sourceAsset, {
-      refField: "imageRefId",
-      dataField: "path"
-    });
-    if (path) {
-      exportAsset.path = path;
+    try {
+      const path = await getCustomImageExportDataUrl(sourceAsset, {
+        refField: "imageRefId",
+        dataField: "path",
+        runtimeField: "runtimePath",
+        source: "custom-fish",
+        issueLabel: key
+      });
+      if (path) {
+        exportAsset.path = path;
+      }
+      delete exportAsset.imageRefId;
+    } catch (error) {
+      console.warn(`Portable export removed a custom fish asset with missing image storage: ${key}`, error);
+      removeBrokenCustomFishFromPortableExport(exportState, key);
     }
-    delete exportAsset.imageRefId;
   }
 
   return exportState;

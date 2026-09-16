@@ -10,24 +10,8 @@ const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1
 const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
-import {
-  ZOMBIE_SKELETON_BEHAVIOR_CONFIG,
-  ZOMBIE_SKELETON_COMFORT_PROFILES,
-  ZOMBIE_SKELETON_FEATURE_DEFAULT_ENABLED,
-  ZOMBIE_SKELETON_FISH_CATALOG_PATH,
-  ZOMBIE_SKELETON_PROGRESSION_UNLOCKS,
-  canZombieSkeletonPassAttackTarget,
-  canZombieSkeletonUsePassAttack,
-  getZombieSkeletonEffectiveBehavior,
-  isZombieSkeletonAssetFile,
-  isZombieSkeletonCatalogSpecies,
-  isZombieSkeletonStage,
-  isZombieSkeletonUndeadType,
-  mergeZombieSkeletonStageAssets,
-  usesZombieSkeletonHunterBehavior
-} from "./zombie_skeleton_behaviors.js?v=20260427b";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 49;
+const STATE_VERSION = 50;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -51,8 +35,6 @@ const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
 let appConfig = DEFAULT_APP_CONFIG;
 const DEBUG_AUTHORIZED_USER_ID = "37128461-efc9-4997-bdc9-b5e55d6c02df";
 const DEBUG_TOOLS_PREFERENCE_KEY = "bubble-borough-debug-tools-v1";
-// Toggle this to keep zombie/skeleton fish behavior and assets out of the main catalog.
-const ZOMBIE_SKELETON_BEHAVIOR_ENABLED = ZOMBIE_SKELETON_FEATURE_DEFAULT_ENABLED;
 const DEBUG_FISH_BEHAVIOR_LOG_LIMIT = 600;
 const TUTORIAL_MODE_DISABLED = "disabled";
 const TUTORIAL_MODE_GUIDED = "guided-live";
@@ -174,6 +156,10 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugBehaviorFollowButton", domKey: "debugBehaviorFollowButton", action: "follow", icon: "&#128101;", label: "Follow", title: "Debug: Follow A Friend" },
   { id: "debugBehaviorAvoidButton", domKey: "debugBehaviorAvoidButton", action: "avoid", icon: "&#8618;&#65039;", label: "Avoid", title: "Debug: Avoid A Feared Fish" },
   { id: "debugBehaviorDiseaseButton", domKey: "debugBehaviorDiseaseButton", action: "disease", icon: "&#129658;", label: "Symptom Test", title: "Debug: Disease Symptom Test" },
+  { id: "debugBehaviorSpeciesSignatureButton", domKey: "debugBehaviorSpeciesSignatureButton", action: "species-signature", icon: "&#129504;", label: "Test Species AI", title: "Debug: Force the selected species' signature behavior", extraClass: "wide" },
+  { id: "debugPufferInflateButton", domKey: "debugPufferInflateButton", action: "puffer-inflate", icon: "&#128167;", label: "Puffer Puff", title: "Debug: Force the selected Pufferfish to inflate" },
+  { id: "debugPufferDeflateButton", domKey: "debugPufferDeflateButton", action: "puffer-deflate", icon: "&#128168;", label: "Puffer Deflate", title: "Debug: Force the selected Pufferfish into deflation" },
+  { id: "debugPufferRapidTapsButton", domKey: "debugPufferRapidTapsButton", action: "puffer-taps", icon: "&#128070;", label: "Puffer 12 Taps", title: "Debug: Simulate twelve rapid nearby glass taps on the selected Pufferfish", extraClass: "wide" },
   { id: "debugOtocinclusBackButton", domKey: "debugOtocinclusBackButton", action: "oto-back", icon: "&#8595;&#65039;", label: "Oto Back Glass", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to the back glass" },
   { id: "debugOtocinclusSwimButton", domKey: "debugOtocinclusSwimButton", action: "oto-swim", icon: "&#128031;", label: "Oto Swim", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to free swim" },
   { id: "debugOtocinclusFrontButton", domKey: "debugOtocinclusFrontButton", action: "oto-front", icon: "&#8593;&#65039;", label: "Oto Front Glass", title: "Debug: Force Otocinclus / Dwarf Sucker Catfish to the front glass" },
@@ -333,6 +319,7 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "livebearer": { group: "small-social", personalities: ["social", "routine-loving", "curious", "follower"], rare: ["greedy", "shy", "bold"] },
   "clownfish": { group: "open-water-cruiser", personalities: ["social", "curious", "bold", "homebody"], rare: ["greedy", "routine-loving", "territorial"] },
   "goldfish": { group: "slow-graceful", personalities: ["greedy", "gentle", "routine-loving", "curious"], rare: ["bold", "homebody", "sensitive"], slowGraceful: true },
+  "koi": { group: "slow-graceful", personalities: ["social", "gentle", "routine-loving", "greedy"], rare: ["curious", "digger", "bold"], slowGraceful: true },
   "betta": { group: "slow-graceful", personalities: ["display", "standoffish", "territorial", "sensitive"], rare: ["curious", "homebody", "greedy"], slowGraceful: true },
   "angelfish": { group: "slow-graceful", personalities: ["display", "gentle", "sensitive", "social"], rare: ["territorial", "homebody", "curious"], slowGraceful: true },
   "discus": { group: "slow-graceful", personalities: ["display", "sensitive", "gentle", "routine-loving"], rare: ["shy", "social", "homebody"], slowGraceful: true },
@@ -355,6 +342,7 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
   "pufferfish": { group: "special-predator", personalities: ["curious", "greedy", "standoffish", "explorer"], rare: ["hunter", "territorial", "sensitive"], predatorDiet: true },
+  "lionfish": { group: "special-predator", personalities: ["hunter", "homebody", "standoffish", "routine-loving"], rare: ["curious", "territorial", "bold"], predatorDiet: true },
   "bull-shark": { group: "shark-cruiser", personalities: ["bold", "explorer", "territorial", "routine-loving"], rare: ["hunter", "curious", "standoffish"], predatorDiet: true, desperationPredator: true },
   "great-white-shark": { group: "shark-cruiser", personalities: ["hunter", "bold", "explorer", "territorial"], rare: ["curious", "standoffish", "routine-loving"], predatorDiet: true, desperationPredator: true },
   "hammerhead-shark": { group: "shark-cruiser", personalities: ["curious", "explorer", "bold", "social"], rare: ["hunter", "territorial", "gentle"], predatorDiet: true, desperationPredator: true },
@@ -649,6 +637,24 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     speedMaxBlend: 0.42, dartChance: 0.07, dartSpeedMinBlend: 0.86,
     targetDurationScale: 1.22
   }),
+  "koi": createFishLocomotionProfile({
+    movementPattern: "broad-bottom-cruise", preferredY: 0.6, verticalSpread: 0.52,
+    targetDistanceMin: 0.28, targetDistanceMax: 0.68, headingPersistence: 0.82,
+    hoverChance: 0.035, hoverMinMs: 900, hoverMaxMs: 2100, schoolStrength: 0.46,
+    schoolSpacingScale: 1.28, schoolDurationScale: 1.34, schoolVerticalJitterScale: 0.72,
+    structureAffinity: 0.82, caveAffinity: 0.05, startleStrength: 0.82,
+    startleRecoveryScale: 1.08, turnDurationScale: 1.32, speedMinBlend: 0.3,
+    speedMaxBlend: 0.68, targetDurationScale: 1.24
+  }),
+  "lionfish": createFishLocomotionProfile({
+    movementPattern: "shelter-hover-glide", preferredY: 0.56, verticalSpread: 0.48,
+    targetDistanceMin: 0.06, targetDistanceMax: 0.3, headingPersistence: 0.5,
+    hoverChance: 0.44, hoverMinMs: 1400, hoverMaxMs: 4300, schoolStrength: 0,
+    structureAffinity: 2.15, caveAffinity: 2.35, homeRangeStrength: 0.76,
+    homeRangeRadius: 0.18, startleStrength: 0.68, startleRecoveryScale: 1.18,
+    turnDurationScale: 1.52, speedMinBlend: 0.02, speedMaxBlend: 0.38,
+    dartChance: 0.035, dartSpeedMinBlend: 0.88, targetDurationScale: 1.38
+  }),
   "bull-shark": createFishLocomotionProfile({
     movementPattern: "wide-cruise", preferredY: 0.46, verticalSpread: 0.56,
     targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.97,
@@ -798,7 +804,6 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "betta": { mealCoins: 1, unlock: "happy-habitat", needs: ["plants", "cave"], conflicts: ["betta_present", "community_fish", "fin_nipper"] },
   "blue-ram": { mealCoins: 1, unlock: "happy-habitat", needs: ["cave", "plants"], conflicts: ["fast_eater", "aggressive_predator"] },
   "piranha": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "cave"], conflicts: ["community_fish", "overcrowded"] },
-  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? ZOMBIE_SKELETON_COMFORT_PROFILES : {}),
   "wonder-killifish": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "open_water"], conflicts: ["tiny_fish", "surface_crowding"] },
   "rainbowfish": { mealCoins: 1, unlock: "happy-habitat", needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded", "aggressive_predator"] },
   "gourami": { mealCoins: 1, unlock: "happy-habitat", needs: ["surface_cover", "plants"], conflicts: ["betta_present", "fin_nipper"] },
@@ -807,8 +812,10 @@ const FISH_COMFORT_PROFILES = Object.freeze({
   "clownfish": { mealCoins: 2, unlock: "happy-habitat", needs: ["coral", "cave"], conflicts: ["same_species", "aggressive_predator"] },
   "royal-gramma": { mealCoins: 2, unlock: "happy-habitat", needs: ["cave", "hardscape"], conflicts: ["same_species"] },
   "yellow-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["seaweed_algae", "open_water"], conflicts: ["tang_present", "overcrowded"] },
-  "blue-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["cave", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
+  "blue-tang": { mealCoins: 2, unlock: "master-keeper", needs: ["open_water", "seaweed_algae"], conflicts: ["tang_present", "overcrowded"] },
   "pufferfish": { mealCoins: 2, unlock: "marine-curator", needs: ["cave", "hardscape"], conflicts: ["community_fish", "puffer_present"] },
+  "koi": { mealCoins: 2, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
+  "lionfish": { mealCoins: 2, unlock: null, needs: ["cave", "coral"], conflicts: ["overcrowded"] },
   "bull-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
   "great-white-shark": { mealCoins: 4, unlock: "borough-legends", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
   "hammerhead-shark": { mealCoins: 3, unlock: "marine-curator", needs: ["open_water", "hardscape"], conflicts: ["overcrowded"] },
@@ -824,7 +831,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     requirement: "Finish a Daily Recap with score 3+.",
     reward: 3,
     unlocks: ["chili-rasbora", "ember-tetra", "neon-tetra", "celestial-pearl-danio", "moor-goldfish"],
-    decorUnlocks: ["floating_swampmoss_1.png", "fishing_lure.png", "treasure-chest_bubbler.png"],
+    decorUnlocks: ["floating-swamp-moss__plant__theme-natural.png", "fishing-lure__lure__theme-artificial.png", "treasure-chest__bubbler__theme-treasure__front.png"],
     isMet: (stats) => stats.latestScore >= 3,
     progress: (stats) => [{ value: (Number(stats.latestScore) || 0) / 3, label: `Latest recap score ${Math.max(0, Number(stats.latestScore) || 0)}/3` }]
   },
@@ -834,7 +841,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
     reward: 8,
     unlocks: ["harlequin-rasbora", "pencilfish", "rummy-nose-tetra", "otocinclus", "molly", "livebearer", "swordtail"],
-    decorUnlocks: ["driftwood-root.png", "driftwood.png", "moss-bridge.png", "slate-cave.png", "Plane-wreck.png"],
+    decorUnlocks: ["driftwood-root__wood__theme-natural.png", "driftwood__wood__theme-natural.png", "moss-bridge__wood-plant__theme-natural.png", "slate__cave-rock__theme-natural__front.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
     progress: (stats) => [
       { value: (Number(stats.goodRecaps) || 0) / 3, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 3)}/3` },
@@ -847,7 +854,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     requirement: "Keep any fish alive for 7 days and recent average comfort at 80%+.",
     reward: 12,
     unlocks: ["betta", "blue-ram", "piranha", "wonder-killifish", "rainbowfish", "gourami", "clownfish", "royal-gramma", "seahorse"],
-    decorUnlocks: ["Shipwreck.png", "mushroomcoral_seaweed.png", "Castle-Cave.png", "blue_castle_cave.png", "meteor_cave.png", "volcano-1_bubbler.png", "volcano-2_bubbler.png", "__custom-decor-shop__", "__custom-hide-shop__"],
+    decorUnlocks: ["large-mushroom-coral__coral__theme-reef.png", "wizard-castle__cave__theme-fantasy__front.png", "blue-castle__cave__theme-fantasy__front.png", "meteor__cave-rock__theme-space__front.png", "volcano__bubbler__theme-natural__front.png", "volcano__bubbler__theme-natural__v2__front.png", "__custom-decor-shop__", "__custom-hide-shop__"],
     isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80,
     progress: (stats) => [
       { value: (Number(stats.oldestLivingFishAgeMs) || 0) / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, WEEK_MS))}/7d` },
@@ -870,13 +877,12 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "marine-curator",
     label: "Marine Curator",
-    requirement: "Keep any fish alive for 21 days, own a saltwater fish, and finish 10 good recaps.",
+    requirement: "Keep any fish alive for 21 days and finish 10 good recaps.",
     reward: 20,
     unlocks: ["pufferfish", "bull-shark", "hammerhead-shark"],
     decorUnlocks: [],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= 21 * DAY_MS && stats.hasSaltwaterFish && stats.goodRecaps >= 10,
+    isMet: (stats) => stats.oldestLivingFishAgeMs >= 21 * DAY_MS && stats.goodRecaps >= 10,
     progress: (stats) => [
-      { value: stats.hasSaltwaterFish ? 1 : 0, label: stats.hasSaltwaterFish ? "Saltwater fish owned" : "Needs a saltwater fish" },
       { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (21 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 21 * DAY_MS))}/21d` },
       { value: (Number(stats.goodRecaps) || 0) / 10, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 10)}/10` }
     ]
@@ -1156,29 +1162,21 @@ const PROGRESSION_MILESTONES = Object.freeze([
   }
 ]);
 const DECOR_UNLOCK_REQUIREMENTS = Object.freeze({
-  "fishing_lure.png": "first-care",
-  "treasure-chest_bubbler.png": "first-care",
-  "floating_swampmoss_1.png": "first-care",
-  "driftwood-root.png": "stable-tank",
-  "driftwood.png": "stable-tank",
-  "moss-bridge.png": "stable-tank",
-  "slate-cave.png": "stable-tank",
-  "Plane-wreck.png": "stable-tank",
-  "Shipwreck.png": "happy-habitat",
-  "mushroomcoral_seaweed.png": "happy-habitat",
-  "Castle-Cave.png": "happy-habitat",
-  "blue_castle_cave.png": "happy-habitat",
-  "meteor_cave.png": "happy-habitat",
-  "volcano-1_bubbler.png": "happy-habitat",
-  "volcano-2_bubbler.png": "happy-habitat",
+  "fishing-lure__lure__theme-artificial.png": "first-care",
+  "treasure-chest__bubbler__theme-treasure__front.png": "first-care",
+  "floating-swamp-moss__plant__theme-natural.png": "first-care",
+  "driftwood-root__wood__theme-natural.png": "stable-tank",
+  "driftwood__wood__theme-natural.png": "stable-tank",
+  "moss-bridge__wood-plant__theme-natural.png": "stable-tank",
+  "slate__cave-rock__theme-natural__front.png": "stable-tank",
+  "large-mushroom-coral__coral__theme-reef.png": "happy-habitat",
+  "wizard-castle__cave__theme-fantasy__front.png": "happy-habitat",
+  "blue-castle__cave__theme-fantasy__front.png": "happy-habitat",
+  "meteor__cave-rock__theme-space__front.png": "happy-habitat",
+  "volcano__bubbler__theme-natural__front.png": "happy-habitat",
+  "volcano__bubbler__theme-natural__v2__front.png": "happy-habitat",
   "__custom-decor-shop__": "happy-habitat",
   "__custom-hide-shop__": "happy-habitat",
-  ...(ZOMBIE_SKELETON_BEHAVIOR_ENABLED ? {
-    "gorebag_lure.png": "spooky-keeper",
-    "fishheadeffigy_1.png": "spooky-keeper",
-    "fishheadeffigy_2.png": "spooky-keeper",
-    "fishheadeffigy_3.png": "spooky-keeper"
-  } : {})
 });
 const MANAGEMENT_HISTORY_PAGE_SIZE = 12;
 const MAX_TANK_EVENT_HISTORY = 2000;
@@ -1197,8 +1195,6 @@ const BOROUGH_NOTIFICATION_COOLDOWN_MS = 22 * 1000;
 const BOROUGH_NOTIFICATION_DUPLICATE_MS = 3 * MINUTE_MS;
 const NOTIFICATION_CENTER_HISTORY_LIMIT = 60;
 const CRITICAL_COMFORT_HEALTH_TICK_MS = 6 * HOUR_MS;
-const FISH_DECAY_ZOMBIE_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecayZombieMs;
-const FISH_DECAY_SKELETON_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.fishDecaySkeletonMs;
 const POOP_FALL_MS = 18 * 1000;
 const POOP_DRAW_WIDTH_PX = 36;
 const TANK_WIDTH = 1280;
@@ -1239,7 +1235,68 @@ const DEFAULT_THEME = "dark";
 const TOOLBAR_POSITION_SETTING_ENABLED = false;
 const DISPLAY_POSITION_SETTING_ENABLED = false;
 const CAUSTIC_LIGHTING_SETTING_ENABLED = true;
-const DECOR_SHADOWS_SETTING_ENABLED = false;
+const DECOR_SHADOWS_SETTING_ENABLED = true;
+
+// Shared aquarium depth treatment. Layer 1 is closest to the front glass and
+// Layer 5 sits against the rear of the tank. Keep these values centralized so
+// fish, decor, machinery, shadows, and continuous substrate surfaces all resolve
+// their visual depth from the same source.
+const DEPTH_VISUALS = Object.freeze({
+  1: Object.freeze({ haze: 0, saturation: 1, contrast: 1, blurPx: 0, coolTint: 0, shadowStrength: 1, movementMultiplier: 1 }),
+  2: Object.freeze({ haze: 0.015, saturation: 0.99, contrast: 0.98, blurPx: 0.05, coolTint: 0.01, shadowStrength: 0.88, movementMultiplier: 0.98 }),
+  3: Object.freeze({ haze: 0.03, saturation: 0.97, contrast: 0.96, blurPx: 0.15, coolTint: 0.025, shadowStrength: 0.75, movementMultiplier: 0.96 }),
+  4: Object.freeze({ haze: 0.045, saturation: 0.95, contrast: 0.94, blurPx: 0.25, coolTint: 0.04, shadowStrength: 0.65, movementMultiplier: 0.94 }),
+  5: Object.freeze({ haze: 0.06, saturation: 0.92, contrast: 0.91, blurPx: 0.35, coolTint: 0.05, shadowStrength: 0.55, movementMultiplier: 0.92 })
+});
+const DEPTH_VISUAL_COOL_TINT_RGB = Object.freeze({ r: 76, g: 188, b: 211 });
+const DEPTH_VISUAL_SUBSTRATE_SOFTNESS_MAX_PX = 0.35;
+// The rear background is behind Layer 5, but a standard aquarium is shallow.
+// Use only a restrained fraction of the Layer 5 treatment so the background
+// recedes without looking like deep water or fog.
+const BACKGROUND_DEPTH_VISUAL_STRENGTH = 0.65;
+const SUBSTRATE_GROUND_SHADOW = Object.freeze({
+  startLayer: 1,
+  startAlpha: 0.12,
+  endAlpha: 0.22,
+  color: Object.freeze({ r: 56, g: 43, b: 31 }),
+  hillInsetPx: 1.4,
+  hillAmplitudePx: 5.7,
+  hillSecondaryAmplitudePx: 2.4,
+  hillSegments: 12,
+  topFadeRatio: 0.18,
+  midFadeRatio: 0.38
+});
+const DECOR_GROUND_SHADOWS = Object.freeze({
+  baseAlphaMultiplier: 1.22,
+  baseRadiusXMultiplier: 1.0,
+  baseRadiusYMultiplier: 1.1,
+  baseOffsetY: -2.8,
+  baseMidAlphaMultiplier: 0.62,
+  contactCoreAlphaMultiplier: 1.3,
+  contactSoftAlphaMultiplier: 0.82,
+  contactRadiusXMultiplier: 1.02,
+  contactRadiusYMultiplier: 1.0,
+  shadowDarknessCap: 3
+});
+const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_START_RATIO = 0.5;
+const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_MAX_ALPHA = 0.18;
+const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_RGB = Object.freeze({ r: 58, g: 46, b: 33 });
+const DEBUG_DEPTH_TUNING_STORAGE_KEY = "bubble-borough-debug-depth-tuning-v1";
+const DEPTH_EFFECT_LEVEL_MIN = 0;
+const DEPTH_EFFECT_LEVEL_MAX = 4;
+const DEPTH_EFFECT_LEVEL_DEFAULT = 1;
+const DEPTH_EFFECT_LEVEL_PREFERENCE_KEY = "bubble-borough-depth-effect-level-v1";
+const DEPTH_EFFECT_LEVEL_LABELS = Object.freeze(["Off", "Subtle", "Medium", "Strong", "Max"]);
+const DEFAULT_DEBUG_DEPTH_TUNING = Object.freeze({
+  saturation: 1,
+  contrast: 1,
+  coolTint: 1,
+  haze: 1,
+  substrate: 1,
+  shadow: 1,
+  movement: 1,
+  shadowDarkness: 1.3
+});
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false,
   trypophobiaEnabled: false
@@ -1260,7 +1317,9 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   ambientBubblesEnabled: true,
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
-  decorShadowsEnabled: false,
+  decorShadowsEnabled: true,
+  depthEffectLevel: DEPTH_EFFECT_LEVEL_DEFAULT,
+  backgroundDepthHazeEnabled: true,
   simpleTurnAnimationsOnly: false,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
@@ -1347,10 +1406,10 @@ const SAFE_CHUM_PELLET_COLORS = Object.freeze({
   highlight: "#FFB6C1"
 });
 const FILTERED_GORE_DECOR_KEYS = new Set([
-  "gorebag_lure.png",
-  "fishheadeffigy_1.png",
-  "fishheadeffigy_2.png",
-  "fishheadeffigy_3.png"
+  "halloween-gorebag__lure__theme-halloween.png",
+  "halloween-fish-head-effigy__ornament__theme-halloween.png",
+  "halloween-fish-head-effigy__ornament__theme-halloween__v2.png",
+  "halloween-fish-head-effigy__ornament__theme-halloween__v3.png"
 ]);
 const NONE_BACKGROUND_ASSET_KEY = "none.png";
 const DEFAULT_BACKGROUND_ASSET_KEY = NONE_BACKGROUND_ASSET_KEY;
@@ -1786,8 +1845,6 @@ const FISH_TURN_RIG_MAX_DURATION_MS = 3200;
 const FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE = Object.freeze({
   piranha: 0.86,
   sucker: 1.08,
-  zombie: 1.15,
-  skeleton: 0.92
 });
 const FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY = 0.55;
 const FISH_TURN_RIG_VISIBLE_MAX_COLUMNS = 48;
@@ -1796,10 +1853,10 @@ const FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS = 4;
 const FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS = 0.62;
 const fishTurnRigCanvasCache = new WeakMap();
 const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
-  "assets/decor/Cave_Coral_Shelf_1_Trypophobia.png",
-  "assets/decor/Cave_Coral_Shelf_6_Trypophobia.png",
-  "assets/decor/Cave_Coral_Shelf_10_Trypophobia.png",
-  "assets/decor/Cave_Coral_Shelf_9_color2_Trypophobia.png"
+  "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.png",
+  "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.png",
+  "assets/decor/cave_layered/coral-shelf-10__cave-coral__theme-reef__trypophobia__front.png",
+  "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__trypophobia__front__color2.png"
 ].map((path) => path.toLowerCase()));
 const NAUTILUS_STATE_HOVER = "hover";
 const NAUTILUS_STATE_JET = "jet";
@@ -2224,26 +2281,17 @@ const FISH_ACTION_QUEUE_REST_MS = 2 * 1000;
 const BETTA_ATTACK_PASS_CHANCE = 0.001;
 const BETTA_ATTACK_TRIGGER_RANGE_NORM = 0.052;
 const BETTA_ATTACK_RELEASE_RANGE_NORM = 0.074;
-const ZOMBIE_BITE_FATAL_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteFatalMs;
-const ZOMBIE_BITE_BLOOD_INTERVAL_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteBloodIntervalMs;
-const ZOMBIE_BITE_REVIVE_MIN_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteReviveMinMs;
-const ZOMBIE_BITE_REVIVE_MAX_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.biteReviveMaxMs;
-const ZOMBIE_ATTACK_TARGET_REFRESH_MS = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.attackTargetRefreshMs;
 const FISH_SPAWN_PROTECTION_MS = 15000;
 const PIRANHA_ATTACK_TRIGGER_RANGE_NORM = 0.04;
 const PIRANHA_ATTACK_RELEASE_RANGE_NORM = 0.06;
 const PIRANHA_ATTACK_BUILDUP_MS = 7000;
 const PIRANHA_BITE_DAMAGE_INTERVAL_MS = 900;
 const PIRANHA_BITE_DAMAGE_UNITS = 1;
-const PIRANHA_CONSUMPTION_ZOMBIE_MS = MINUTE_MS / 3;
-const PIRANHA_CONSUMPTION_SKELETON_MS = (2 * MINUTE_MS) / 3;
 const PIRANHA_CONSUMPTION_DURATION_MS = 1 * MINUTE_MS;
 const PIRANHA_BLOOD_CLOUD_INTERVAL_MS = 1200;
 const PIRANHA_TARGET_REFRESH_MS = 650;
 const BLOOD_WATER_TINT_DECAY_PER_SECOND = 0.0034;
 const CHUM_BLOOD_CLOUD_INTERVAL_MS = 1300;
-const UNDEAD_COMFORT_PENALTY = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.undeadComfortPenalty;
-const MAX_UNDEAD_COMFORT_PENALTY = ZOMBIE_SKELETON_BEHAVIOR_CONFIG.maxUndeadComfortPenalty;
 const CORPSE_VIGIL_TRIGGER_RANGE_NORM = 0.16;
 const CAVE_NIGHT_ENTRY_CHANCE = 0.5;
 const CAVE_NIGHT_START_HOUR = 21;
@@ -2580,104 +2628,1945 @@ const CAVE_BEHAVIOR_OVERRIDES = {
 
 const FISH_TYPES = [
   {
-    id: "goldfish",
-    name: "Goldfish",
-    cost: 5,
-    mealCoins: 1,
-    asset: "/assets/fish/goldfish.png",
-    description: "The classic round buddy. Big, cheerful, and always hungry.",
-    width: 405,
-    cycleSeconds: 28,
-    bobSpeed: 1.25,
-    swimStyle: "peaceful",
-    speedMin: 0.02,
-    speedMax: 0.024,
-    targetMinMs: 4400,
-    targetMaxMs: 7600
+    "id": "blue-tang",
+    "name": "Blue Tang",
+    "genetics": "natural",
+    "cost": 28,
+    "mealCoins": 2,
+    "asset": "/assets/fish/bluetang.png",
+    "description": "A bright, energetic reef fish known for its bold blue coloring and constant movement. Blue Tangs love having plenty of room to cruise and rarely spend much time sitting still.",
+    "width": 398,
+    "displayWidth": 260,
+    "bobSpeed": 1.32,
+    "swimStyle": "steady",
+    "speedMin": 0.022,
+    "speedMax": 0.032,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4600,
+    "defaultNames": [
+      "Dory",
+      "Azure",
+      "Bubbles",
+      "Reef",
+      "Sapphire",
+      "Indigo",
+      "Pacific",
+      "Tidal",
+      "Marlin",
+      "Coraline",
+      "Skye",
+      "Cobalt",
+      "Lagoon",
+      "Ripple",
+      "Bali",
+      "Nixie",
+      "Wave",
+      "Blu",
+      "Misty",
+      "Finn"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
   {
-    id: "guppy",
-    name: "Guppy",
-    cost: 4,
-    mealCoins: 1,
-    asset: "/assets/fish/guppy.png",
-    description: "A ribbon-tailed coin helper with a fast little wiggle.",
-    width: 179,
-    cycleSeconds: 23,
-    bobSpeed: 1.45,
-    swimStyle: "sporadic",
-    speedMin: 0.024,
-    speedMax: 0.072,
-    targetMinMs: 1400,
-    targetMaxMs: 3600
+    "id": "goldfish",
+    "name": "Goldfish",
+    "genetics": "natural",
+    "cost": 5,
+    "mealCoins": 1,
+    "asset": "/assets/fish/goldfish.png",
+    "description": "A familiar favorite with a round body, flowing fins, and an easygoing personality. Goldfish spend their days calmly exploring the tank and checking out just about everything. Fun fact: Not actual gold. Who knew?",
+    "width": 405,
+    "displayWidth": 250,
+    "bobSpeed": 1.25,
+    "swimStyle": "peaceful",
+    "speedMin": 0.014,
+    "speedMax": 0.021,
+    "targetMinMs": 4400,
+    "targetMaxMs": 7600,
+    "defaultNames": [
+      "Sunny",
+      "Pebble",
+      "Marmalade",
+      "Pip",
+      "Goldie",
+      "Nugget",
+      "Cheddar",
+      "Biscuit",
+      "Pumpkin",
+      "Butters",
+      "Caramel",
+      "Honey",
+      "Dorito",
+      "Cheeto",
+      "Tango",
+      "Topaz",
+      "Glowy",
+      "Mango",
+      "Scooter",
+      "Waffles"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
   {
-    id: "betta",
-    name: "Betta",
-    cost: 10,
-    mealCoins: 1,
-    asset: "/assets/fish/betta.png",
-    description: "A dramatic, fluttery fish with elegant fins and better payouts.",
-    width: 219,
-    cycleSeconds: 30,
-    bobSpeed: 1.15,
-    swimStyle: "peaceful",
-    speedMin: 0.018,
-    speedMax: 0.022,
-    targetMinMs: 5200,
-    targetMaxMs: 8200
+    "id": "guppy",
+    "name": "Guppy",
+    "genetics": "natural",
+    "cost": 4,
+    "mealCoins": 1,
+    "asset": "/assets/fish/guppy.png",
+    "description": "A small, colorful fish with a big personality and a flowing tail. Guppies are lively swimmers that alternate between quick bursts of energy and relaxed cruising around the tank.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Ribbon",
+      "Skipper",
+      "Twinkle",
+      "Bubbles",
+      "Zip",
+      "Sprout",
+      "Flick",
+      "Pebbles",
+      "Miso",
+      "Jitter",
+      "Gizmo",
+      "Pogo",
+      "Spark",
+      "Scoot",
+      "Pipsqueak",
+      "Tinker",
+      "Nova",
+      "Button",
+      "Wiggles",
+      "Nibbles"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true
   },
   {
-    id: "clownfish",
-    name: "Clownfish",
-    cost: 20,
-    mealCoins: 2,
-    asset: "/assets/fish/clownfish.png",
-    description: "Bright stripes, playful swimming, and a solid meal bonus.",
-    width: 162,
-    cycleSeconds: 24,
-    bobSpeed: 1.35,
-    swimStyle: "steady",
-    caveEnabled: true,
-    speedMin: 0.032,
-    speedMax: 0.042,
-    targetMinMs: 2400,
-    targetMaxMs: 5200
+    "id": "betta",
+    "name": "Betta",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/betta.png",
+    "assetVariants": [
+      "/assets/fish/betta_1.png",
+      "/assets/fish/betta_2.png",
+      "/assets/fish/betta_3.png",
+      "/assets/fish/betta_4.png"
+    ],
+    "description": "A striking fish known for its flowing fins, bold colors, and unmistakable presence. Bettas are graceful swimmers, but they can be highly territorial and aggressive, especially around other bettas.",
+    "width": 219,
+    "bobSpeed": 1.15,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.019,
+    "targetMinMs": 5200,
+    "targetMaxMs": 8200,
+    "defaultNames": [
+      "Velvet",
+      "Nova",
+      "Flare",
+      "Satin",
+      "Blaze",
+      "Crimson",
+      "Phantom",
+      "Silk",
+      "Rogue",
+      "Vanta",
+      "Ember",
+      "Scarlet",
+      "Prince",
+      "Razor",
+      "Onyx",
+      "Luxe",
+      "Draco",
+      "Vesper",
+      "Titan",
+      "Majesty"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
   {
-    id: "angelfish",
-    name: "Angelfish",
-    cost: 36,
-    mealCoins: 2,
-    asset: "/assets/fish/angelfish.png",
-    description: "Tall fins and graceful turns. Fancy fish, fancy coins.",
-    width: 456,
-    cycleSeconds: 33,
-    bobSpeed: 1.05,
-    swimStyle: "peaceful",
-    speedMin: 0.017,
-    speedMax: 0.021,
-    targetMinMs: 5400,
-    targetMaxMs: 8600
+    "id": "clownfish",
+    "name": "Clownfish",
+    "genetics": "natural",
+    "cost": 20,
+    "mealCoins": 2,
+    "asset": "/assets/fish/clownfish.png",
+    "description": "A colorful, energetic fish known for its bold stripes and curious personality. Clownfish often form close bonds with anemones and tend to stick near a favorite part of the tank.",
+    "width": 162,
+    "bobSpeed": 1.35,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.034,
+    "targetMinMs": 2400,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Nemo",
+      "Pennywise",
+      "Coral",
+      "Dash",
+      "Tango",
+      "Patch",
+      "Cheeto",
+      "Skittles",
+      "Jester",
+      "Tiki",
+      "Blaze",
+      "Sunny",
+      "Miso",
+      "Marlin",
+      "Peaches",
+      "Jinx",
+      "Bingo",
+      "Fanta",
+      "Pogo",
+      "Beans"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
   {
-    id: "pufferfish",
-    name: "Pufferfish",
-    cost: 40,
-    mealCoins: 2,
-    asset: "/assets/fish/pufferfish.png",
-    description: "The round little oddball. Expensive, adorable, and profitable.",
-    width: 150,
-    cycleSeconds: 27,
-    bobSpeed: 1.55,
-    swimStyle: "steady",
-    speedMin: 0.026,
-    speedMax: 0.034,
-    targetMinMs: 2600,
-    targetMaxMs: 5600
+    "id": "angelfish",
+    "name": "Angelfish",
+    "genetics": "natural",
+    "cost": 36,
+    "mealCoins": 2,
+    "asset": "/assets/fish/angelfish.png",
+    "assetVariants": [
+      "/assets/fish/angelfish_1.png",
+      "/assets/fish/angelfish_2.png",
+      "/assets/fish/angelfish_3.png",
+      "/assets/fish/angelfish_4.png"
+    ],
+    "description": "A graceful fish known for its tall body, long fins, and slow, sweeping movements. Angelfish usually carry themselves calmly, but they can become territorial as they mature, especially when pairing or breeding.",
+    "width": 456,
+    "displayWidth": 235,
+    "bobSpeed": 1.05,
+    "swimStyle": "peaceful",
+    "speedMin": 0.014,
+    "speedMax": 0.02,
+    "targetMinMs": 5400,
+    "targetMaxMs": 8600,
+    "defaultNames": [
+      "Halo",
+      "Opal",
+      "Glint",
+      "Pearl",
+      "Seraph",
+      "Ivory",
+      "Luna",
+      "Celeste",
+      "Aurora",
+      "Grace",
+      "Nimbus",
+      "Shimmer",
+      "Eden",
+      "Dove",
+      "Solace",
+      "Angelica",
+      "Cloud",
+      "Moonbeam",
+      "Starlight",
+      "Mirage"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
   },
+  {
+    "id": "pufferfish",
+    "name": "Pufferfish",
+    "genetics": "natural",
+    "cost": 40,
+    "mealCoins": 2,
+    "asset": "/assets/fish/pufferfish.png",
+    "description": "A curious little oddball with a round body, expressive face, and plenty of personality. Pufferfish are known for investigating their surroundings and, when seriously threatened, inflating themselves into a much larger shape.",
+    "width": 150,
+    "bobSpeed": 1.55,
+    "swimStyle": "steady",
+    "speedMin": 0.014,
+    "speedMax": 0.024,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5600,
+    "defaultNames": [
+      "Puffin",
+      "Marsh",
+      "Button",
+      "Plum",
+      "Chonk",
+      "Spud",
+      "Wobble",
+      "Boba",
+      "Pickles",
+      "Tater",
+      "Gumball",
+      "Pudge",
+      "Mochi",
+      "Pompom",
+      "Squish",
+      "Porkchop",
+      "Biscuit",
+      "Nugget",
+      "Waffles",
+      "Dumpling"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "zebra-danio",
+    "name": "Zebra Danio",
+    "genetics": "natural",
+    "cost": 4,
+    "mealCoins": 1,
+    "asset": "/assets/fish/zebradanio.png",
+    "description": "A small, energetic fish known for its bold horizontal stripes and nonstop activity. Zebra Danios are quick, social swimmers that love racing back and forth and rarely stay still for long.",
+    "width": 143,
+    "bobSpeed": 1.5,
+    "swimStyle": "sporadic",
+    "speedMin": 0.032,
+    "speedMax": 0.052,
+    "targetMinMs": 1200,
+    "targetMaxMs": 3200,
+    "defaultNames": [
+      "Zig",
+      "Dash",
+      "Stripe",
+      "Volt",
+      "Zoom",
+      "Racer",
+      "Streak",
+      "Flash",
+      "Skid",
+      "Bolt",
+      "Turbo",
+      "Rocket",
+      "Pepper",
+      "Jolt",
+      "Whip",
+      "Jitter",
+      "Sonic",
+      "Flicker",
+      "Quickdraw",
+      "Skippy"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "cherry-barb",
+    "name": "Cherry Barb",
+    "genetics": "natural",
+    "cost": 5,
+    "mealCoins": 1,
+    "asset": "/assets/fish/cherrybarb.png",
+    "description": "A small, peaceful fish known for its warm red coloring and relaxed personality. Cherry Barbs are social swimmers that do especially well in groups and tend to explore the tank at an easy, steady pace.",
+    "width": 165,
+    "bobSpeed": 1.28,
+    "swimStyle": "steady",
+    "speedMin": 0.02,
+    "speedMax": 0.03,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4600,
+    "defaultNames": [
+      "Cherry",
+      "Blush",
+      "Ruby",
+      "Ember",
+      "Scarlet",
+      "Poppy",
+      "Rose",
+      "Berry",
+      "Cranberry",
+      "Maraschino",
+      "Rosie",
+      "Crimson",
+      "Garnet",
+      "Valentine",
+      "Sangria",
+      "Twizzler",
+      "Blazer",
+      "Cupid",
+      "Reddy",
+      "Jam"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "rainbowfish",
+    "name": "Rainbowfish",
+    "genetics": "natural",
+    "cost": 16,
+    "mealCoins": 1,
+    "asset": "/assets/fish/rainbowfish.png",
+    "description": "A lively, shimmering fish known for its metallic colors and graceful movement. Rainbowfish are active, social swimmers that look especially striking as they glide through the tank and catch the light.",
+    "width": 241,
+    "bobSpeed": 1.2,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.04,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5600,
+    "defaultNames": [
+      "Prism",
+      "Iris",
+      "Glow",
+      "Aura",
+      "Skittles",
+      "Disco",
+      "Neon",
+      "Sunbeam",
+      "Mirage",
+      "Twinkle",
+      "Pixel",
+      "Kaleido",
+      "Shimmer",
+      "Sparkle",
+      "Flair",
+      "Confetti",
+      "Radiance",
+      "Glimmer",
+      "Nova",
+      "Luster"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "royal-gramma",
+    "name": "Royal Gramma",
+    "genetics": "natural",
+    "cost": 20,
+    "mealCoins": 2,
+    "asset": "/assets/fish/royalgramma.png",
+    "description": "A striking little fish known for its vivid purple and yellow coloring. Royal Grammas tend to stay close to rocks, caves, and other hiding places, often hovering nearby before darting back to safety.",
+    "width": 260,
+    "bobSpeed": 1.18,
+    "swimStyle": "peaceful",
+    "speedMin": 0.016,
+    "speedMax": 0.024,
+    "targetMinMs": 3200,
+    "targetMaxMs": 6200,
+    "defaultNames": [
+      "Royal",
+      "Velour",
+      "Crown",
+      "Majesty",
+      "Regal",
+      "Prince",
+      "Queenie",
+      "Scepter",
+      "Velvet",
+      "Amethyst",
+      "Goldie",
+      "Monarch",
+      "Duke",
+      "Baron",
+      "Luxe",
+      "Gilded",
+      "Violet",
+      "Imperial",
+      "Treasure",
+      "Sultan"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "yellow-tang",
+    "name": "Yellow Tang",
+    "genetics": "natural",
+    "cost": 24,
+    "mealCoins": 2,
+    "asset": "/assets/fish/yellowtang.png",
+    "assetVariants": [
+      "/assets/fish/yellowtang_1.png"
+    ],
+    "description": "A bright, active fish known for its vivid yellow coloring and constant grazing. Yellow Tangs spend much of their time cruising around the tank and picking at algae as they explore.",
+    "width": 360,
+    "displayWidth": 245,
+    "bobSpeed": 1.25,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.034,
+    "targetMinMs": 2400,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Sunny",
+      "Lemon",
+      "Zest",
+      "Goldie",
+      "Banana",
+      "Butter",
+      "Dandelion",
+      "Sunkist",
+      "Yuzu",
+      "Nacho",
+      "Mustard",
+      "Topaz",
+      "Blondie",
+      "Canary",
+      "Sunbeam",
+      "Dijon",
+      "Cheese",
+      "Marigold",
+      "Mellow",
+      "Pikachu"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "discus",
+    "name": "Discus",
+    "genetics": "natural",
+    "cost": 32,
+    "mealCoins": 2,
+    "asset": "/assets/fish/discus.png",
+    "description": "An elegant, round-bodied fish known for its striking colors and calm, deliberate movement. Discus tend to glide gracefully through the tank and have a reputation for being a little more delicate than the average aquarium fish.",
+    "width": 488,
+    "displayWidth": 260,
+    "bobSpeed": 1.05,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.018,
+    "targetMinMs": 5200,
+    "targetMaxMs": 8600,
+    "defaultNames": [
+      "Solar",
+      "Halo",
+      "Ember",
+      "Flare",
+      "Apollo",
+      "Orbit",
+      "Nova",
+      "Helios",
+      "Sundrop",
+      "Phoenix",
+      "Inferno",
+      "Comet",
+      "Blaze",
+      "Aurora",
+      "Solstice",
+      "Zenith",
+      "Lumen",
+      "Vortex",
+      "Corona",
+      "Mirage"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "moor-goldfish",
+    "name": "Black Moor Goldfish",
+    "genetics": "natural",
+    "cost": 4,
+    "mealCoins": 1,
+    "asset": "/assets/fish/moorgoldfish.png",
+    "description": "A distinctive goldfish known for its deep black coloring, rounded body, and large telescope eyes. Black Moors are gentle, unhurried swimmers that tend to drift calmly around the tank.",
+    "width": 378,
+    "displayWidth": 250,
+    "bobSpeed": 1.1,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.018,
+    "targetMinMs": 5200,
+    "targetMaxMs": 8200,
+    "defaultNames": [
+      "Shadow",
+      "Orb",
+      "Midnight",
+      "Pebble",
+      "Inky",
+      "Smokey",
+      "Moon",
+      "Raven",
+      "Void",
+      "Eclipse",
+      "Jet",
+      "Morpheus",
+      "Obsidian",
+      "Noir",
+      "Phantom",
+      "Ash",
+      "Coal",
+      "Salem",
+      "Soot",
+      "Gloom"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "chili-rasbora",
+    "name": "Chili Rasbora",
+    "genetics": "natural",
+    "cost": 3,
+    "mealCoins": 1,
+    "asset": "/assets/fish/ChiliRasbora.png",
+    "assetVariants": [
+      "/assets/fish/ChiliRasbora_1.png",
+      "/assets/fish/ChiliRasbora_2.png",
+      "/assets/fish/ChiliRasbora_3.png",
+      "/assets/fish/ChiliRasbora_4.png"
+    ],
+    "description": "A tiny, peaceful fish known for its brilliant red coloring and lively personality. Chili Rasboras feel most at home in groups, weaving through plants and open spaces in quick little bursts.",
+    "width": 105,
+    "bobSpeed": 1.48,
+    "swimStyle": "sporadic",
+    "speedMin": 0.022,
+    "speedMax": 0.036,
+    "targetMinMs": 1500,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Pepper",
+      "Chili",
+      "Paprika",
+      "Pico",
+      "Ruby",
+      "Ember",
+      "Dot",
+      "Pip",
+      "Saffron",
+      "Crimson",
+      "Speck",
+      "Miso",
+      "Pep",
+      "Berry",
+      "Flick",
+      "Tango",
+      "Niblet",
+      "Rosie",
+      "Spark",
+      "Tiny"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "ember-tetra",
+    "name": "Ember Tetra",
+    "genetics": "natural",
+    "cost": 4,
+    "mealCoins": 1,
+    "asset": "/assets/fish/embertetra.png",
+    "assetVariants": [
+      "/assets/fish/embertetra_1.png",
+      "/assets/fish/embertetra_2.png",
+      "/assets/fish/embertetra_3.png",
+      "/assets/fish/embertetra_4.png"
+    ],
+    "description": "A tiny, peaceful fish known for its warm orange coloring and gentle nature. Ember Tetras are happiest in groups, where they spend much of their time calmly schooling through the middle of the tank.",
+    "width": 110,
+    "bobSpeed": 1.42,
+    "swimStyle": "steady",
+    "speedMin": 0.022,
+    "speedMax": 0.034,
+    "targetMinMs": 1900,
+    "targetMaxMs": 4300,
+    "defaultNames": [
+      "Ember",
+      "Cinder",
+      "Sunny",
+      "Tangerine",
+      "Glow",
+      "Spark",
+      "Copper",
+      "Maple",
+      "Mango",
+      "Peach",
+      "Flame",
+      "Poppy",
+      "Ginger",
+      "Amber",
+      "Flicker",
+      "Clementine",
+      "Torch",
+      "Honey",
+      "Blaze",
+      "Apricot"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "harlequin-rasbora",
+    "name": "Harlequin Rasbora",
+    "genetics": "natural",
+    "cost": 6,
+    "mealCoins": 1,
+    "asset": "/assets/fish/HarlequinRasbora.png",
+    "assetVariants": [
+      "/assets/fish/HarlequinRasbora_1.png",
+      "/assets/fish/HarlequinRasbora_2.png",
+      "/assets/fish/HarlequinRasbora_3.png",
+      "/assets/fish/HarlequinRasbora_4.png"
+    ],
+    "description": "A peaceful, active fish known for its coppery coloring and distinctive black markings. Harlequin Rasboras are social swimmers that do best in groups and fit comfortably into calm community tanks.",
+    "width": 155,
+    "bobSpeed": 1.32,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.036,
+    "targetMinMs": 2000,
+    "targetMaxMs": 4500,
+    "defaultNames": [
+      "Harley",
+      "Jester",
+      "Patch",
+      "Copper",
+      "Ace",
+      "Domino",
+      "Trickster",
+      "Tango",
+      "Penny",
+      "Rook",
+      "Mosaic",
+      "Maple",
+      "Quinn",
+      "Pip",
+      "Clover",
+      "Pixel",
+      "Rascal",
+      "Scout",
+      "Marble",
+      "Harlow"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "pencilfish",
+    "name": "Golden Pencilfish",
+    "genetics": "natural",
+    "cost": 7,
+    "mealCoins": 1,
+    "asset": "/assets/fish/Pencilfish.png",
+    "assetVariants": [
+      "/assets/fish/Pencilfish_1.png",
+      "/assets/fish/Pencilfish_2.png",
+      "/assets/fish/Pencilfish_3.png",
+      "/assets/fish/Pencilfish_4.png"
+    ],
+    "description": "A slender, peaceful fish known for its golden coloring and delicate shape. Golden Pencilfish prefer staying near plants and cover, moving in relaxed groups with the occasional quick burst or harmless sparring display.",
+    "width": 185,
+    "bobSpeed": 1.24,
+    "swimStyle": "steady",
+    "speedMin": 0.018,
+    "speedMax": 0.028,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5600,
+    "defaultNames": [
+      "Pencil",
+      "Graphite",
+      "Sketch",
+      "Dash",
+      "Line",
+      "Nib",
+      "Scribble",
+      "Reed",
+      "Twig",
+      "Quill",
+      "Stripe",
+      "Ink",
+      "Ruler",
+      "Streak",
+      "Doodle",
+      "Slate",
+      "Pixel",
+      "Copper",
+      "Fineliner",
+      "Taper"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "rummy-nose-tetra",
+    "name": "Rummy-Nose Tetra",
+    "genetics": "natural",
+    "cost": 7,
+    "mealCoins": 1,
+    "asset": "/assets/fish/RummyNoseTetra.png",
+    "assetVariants": [
+      "/assets/fish/RummyNoseTetra_1.png",
+      "/assets/fish/RummyNoseTetra_2.png",
+      "/assets/fish/RummyNoseTetra_3.png",
+      "/assets/fish/RummyNoseTetra_4.png"
+    ],
+    "description": "A peaceful, social fish known for its bright red nose and tightly coordinated schooling. Rummy-Nose Tetras move through the tank in impressive unison, and their coloring becomes especially vivid when they’re comfortable.",
+    "width": 158,
+    "bobSpeed": 1.36,
+    "swimStyle": "steady",
+    "speedMin": 0.026,
+    "speedMax": 0.038,
+    "targetMinMs": 1800,
+    "targetMaxMs": 4100,
+    "defaultNames": [
+      "Rummy",
+      "Ruby",
+      "Rouge",
+      "Beacon",
+      "Signal",
+      "Cherry",
+      "Blush",
+      "Scarlet",
+      "Radar",
+      "Pinot",
+      "Rosy",
+      "Flash",
+      "Nosey",
+      "Pepper",
+      "Crimson",
+      "Dash",
+      "Merlot",
+      "Berry",
+      "Spark",
+      "Socks"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 5,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "otocinclus",
+    "name": "Dwarf Sucker Catfish",
+    "genetics": "natural",
+    "cost": 6,
+    "mealCoins": 0,
+    "asset": "/assets/fish/otocinclus.png",
+    "fallbackAsset": "/assets/fish/pufferfish.png",
+    "description": "A small, hardworking grazer that spends much of its time attached to glass, plants, and other surfaces. Dwarf Sucker Catfish steadily browse for algae and biofilm, helping keep the tank a little cleaner as they go.",
+    "width": 170,
+    "bobSpeed": 0.2,
+    "swimStyle": "peaceful",
+    "speedMin": 0.00009,
+    "speedMax": 0.00016,
+    "targetMinMs": 26000,
+    "targetMaxMs": 52000,
+    "behavior": "sucker",
+    "diet": "detritus",
+    "cleanupMinMs": 660000,
+    "cleanupMaxMs": 1320000,
+    "cleanupStrength": 0.16,
+    "defaultNames": [
+      "Mochi",
+      "Peb",
+      "Smudge",
+      "Suction",
+      "Otis",
+      "Crumb",
+      "Scooter",
+      "Niblet",
+      "Lint",
+      "Dusty",
+      "Toasty",
+      "Scrub",
+      "Mop",
+      "Tiny Tank",
+      "Gremlin",
+      "Speck",
+      "Doobie",
+      "Plink",
+      "Snout",
+      "Tidbit"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "blue-ram",
+    "name": "Blue Ram",
+    "genetics": "natural",
+    "cost": 11,
+    "mealCoins": 1,
+    "asset": "/assets/fish/BlueRam.png",
+    "description": "A small, colorful cichlid known for its brilliant blue markings and confident personality. Blue Rams usually move with calm, deliberate turns, but they can become territorial when pairing or guarding a chosen spot.",
+    "width": 240,
+    "bobSpeed": 1.18,
+    "swimStyle": "peaceful",
+    "speedMin": 0.016,
+    "speedMax": 0.024,
+    "targetMinMs": 4200,
+    "targetMaxMs": 7600,
+    "defaultNames": [
+      "Lapis",
+      "Indigo",
+      "Cobalt",
+      "Marina",
+      "Sapphire",
+      "Rambo",
+      "Azure",
+      "Mako",
+      "Triton",
+      "Borealis",
+      "Koda",
+      "Denim",
+      "Navy",
+      "Bluey",
+      "Aegean",
+      "Zephyr",
+      "Storm",
+      "Glacier",
+      "Echo",
+      "Rio"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "gourami",
+    "name": "Gourami",
+    "genetics": "natural",
+    "cost": 18,
+    "mealCoins": 1,
+    "asset": "/assets/fish/Gourami.png",
+    "description": "A graceful fish known for its flowing fins, long feelers, and calm presence. Gouramis tend to move at an easy pace and often explore the tank with slow, deliberate turns near the surface.",
+    "width": 158,
+    "bobSpeed": 1.08,
+    "swimStyle": "peaceful",
+    "speedMin": 0.014,
+    "speedMax": 0.021,
+    "targetMinMs": 5200,
+    "targetMaxMs": 8600,
+    "defaultNames": [
+      "Pearl",
+      "Lotus",
+      "Velour",
+      "Halo",
+      "Sage",
+      "Willow",
+      "Silk",
+      "Opaline",
+      "Lily",
+      "Serene",
+      "Breeze",
+      "Moonpetal",
+      "Ivory",
+      "Sora",
+      "Clover",
+      "Mallow",
+      "Zen",
+      "Fable",
+      "Aster",
+      "Nimbus"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "wonder-killifish",
+    "name": "Wonder Killifish",
+    "genetics": "natural",
+    "cost": 15,
+    "mealCoins": 1,
+    "asset": "/assets/fish/wonderkillifish.png",
+    "description": "A flashy little hunter known for its bold markings, curious nature, and sudden bursts of speed. Wonder Killifish often patrol near the surface, watching everything around them before darting off after something interesting.",
+    "width": 243,
+    "bobSpeed": 1.34,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.038,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3400,
+    "defaultNames": [
+      "Comet",
+      "Glint",
+      "Flicker",
+      "Nova",
+      "Rocket",
+      "Vandal",
+      "Rascal",
+      "Jinx",
+      "Maverick",
+      "Blitz",
+      "Pistol",
+      "Riot",
+      "Zippy",
+      "Bandit",
+      "Rumble",
+      "Hex",
+      "Chaos",
+      "Skipper",
+      "Ace",
+      "Havoc"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "neon-tetra",
+    "name": "Neon Tetra",
+    "genetics": "natural",
+    "cost": 5,
+    "mealCoins": 1,
+    "asset": "/assets/fish/NeonTetra.png",
+    "description": "A tiny, peaceful fish known for its glowing blue stripe and vivid red coloring. Neon Tetras are social swimmers that look their best in groups, moving together in lively little schools.",
+    "width": 136,
+    "bobSpeed": 1.42,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.036,
+    "targetMinMs": 2000,
+    "targetMaxMs": 4200,
+    "defaultNames": [
+      "Neon",
+      "Zip",
+      "Spark",
+      "Glimmer",
+      "Laser",
+      "Pixel",
+      "Circuit",
+      "Glowstick",
+      "Static",
+      "Blink",
+      "Plasma",
+      "Twitch",
+      "Tesla",
+      "Radon",
+      "Strobe",
+      "Jellybean",
+      "Arc",
+      "Lumen",
+      "Dash",
+      "Photon"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "celestial-pearl-danio",
+    "name": "Celestial Pearl Danio",
+    "genetics": "natural",
+    "cost": 3,
+    "mealCoins": 1,
+    "asset": "/assets/fish/CelestialPearlDanio.png",
+    "assetVariants": [
+      "/assets/fish/CelestialPearlDanio_1.png",
+      "/assets/fish/CelestialPearlDanio_2.png",
+      "/assets/fish/CelestialPearlDanio_3.png",
+      "/assets/fish/CelestialPearlDanio_4.png"
+    ],
+    "description": "A tiny, striking fish covered in pearl-like spots with flashes of red and orange on its fins. Celestial Pearl Danios are curious little swimmers that alternate between quick darts and brief, watchful pauses.",
+    "width": 105,
+    "bobSpeed": 1.38,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.034,
+    "targetMinMs": 1500,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Starlit",
+      "Pearlie",
+      "Orbit",
+      "Dot",
+      "Cosmo",
+      "Nova",
+      "Galaxy",
+      "Pip",
+      "Speck",
+      "Twinkle",
+      "Comet",
+      "Astro",
+      "Starbean",
+      "Niblet",
+      "Luna",
+      "Glimmer",
+      "Sparkle",
+      "Pluto",
+      "Skittle",
+      "Blinky"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "molly",
+    "name": "Molly",
+    "genetics": "natural",
+    "cost": 7,
+    "mealCoins": 1,
+    "asset": "/assets/fish/molly.png",
+    "description": "A hardy, easygoing fish known for its rounded shape, active nature, and friendly demeanor. Mollies spend much of their time steadily exploring the tank and tend to get along well with other peaceful fish.",
+    "width": 287,
+    "bobSpeed": 1.22,
+    "swimStyle": "steady",
+    "speedMin": 0.02,
+    "speedMax": 0.03,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Mallow",
+      "Biscuit",
+      "Sunny",
+      "Daisy",
+      "Poppy",
+      "Butterbean",
+      "Pudding",
+      "Cookie",
+      "Muffin",
+      "Nilla",
+      "Taffy",
+      "Clover",
+      "Honeybun",
+      "Pebbles",
+      "Toffee",
+      "Sundae",
+      "Bunny",
+      "Pancake",
+      "Winnie",
+      "Sprinkles"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true
+  },
+  {
+    "id": "swordtail",
+    "name": "Swordtail",
+    "genetics": "natural",
+    "cost": 9,
+    "mealCoins": 1,
+    "asset": "/assets/fish/Swordtail.png",
+    "description": "A sleek, active fish best known for the long, sword-like extension on the male’s tail. Swordtails are livebearers, giving birth to free-swimming young instead of laying eggs, and spend much of their time confidently cruising the tank.",
+    "width": 220,
+    "bobSpeed": 1.3,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.036,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4800,
+    "defaultNames": [
+      "Blade",
+      "Lancer",
+      "Flash",
+      "Sable",
+      "Rapier",
+      "Dagger",
+      "Slash",
+      "Fencer",
+      "Viper",
+      "Striker",
+      "Edge",
+      "Katana",
+      "Rogue",
+      "Spike",
+      "Hunter",
+      "Arrow",
+      "Rex",
+      "Spear",
+      "Bandit",
+      "Jett"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true
+  },
+  {
+    "id": "livebearer",
+    "name": "Livebearer",
+    "genetics": "natural",
+    "cost": 8,
+    "mealCoins": 1,
+    "asset": "/assets/fish/Livebearer.png",
+    "description": "A lively, social fish best known for giving birth to free-swimming young instead of laying eggs. Livebearers are active, curious swimmers that settle easily into peaceful community tanks.",
+    "width": 141,
+    "bobSpeed": 1.26,
+    "swimStyle": "steady",
+    "speedMin": 0.02,
+    "speedMax": 0.032,
+    "targetMinMs": 2400,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Coral",
+      "Willow",
+      "Miso",
+      "Poppy",
+      "Skipper",
+      "Pebble",
+      "Rosie",
+      "Sunny",
+      "Blinky",
+      "Noodle",
+      "Daisy",
+      "Pickles",
+      "Clover",
+      "Biscuit",
+      "Tango",
+      "Bubbles",
+      "Pip",
+      "Sprout",
+      "Mango",
+      "Wiggles"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true
+  },
+  {
+    "id": "piranha",
+    "name": "Piranha",
+    "genetics": "natural",
+    "cost": 12,
+    "mealCoins": 1,
+    "asset": "/assets/fish/piranha.png",
+    "fallbackAsset": "/assets/fish/cherrybarb.png",
+    "description": "A sharp-toothed predator with a reputation that speaks for itself. Piranhas hunt in groups, ignore ordinary pellets, and will quickly turn most living tankmates into lunch. Why buy one? Seriously. Why?",
+    "width": 284,
+    "bobSpeed": 1.44,
+    "swimStyle": "sporadic",
+    "speedMin": 0.022,
+    "speedMax": 0.04,
+    "targetMinMs": 1100,
+    "targetMaxMs": 2600,
+    "behavior": "piranha",
+    "diet": "chum",
+    "defaultNames": [
+      "Razor",
+      "Chomp",
+      "Scar",
+      "Fang",
+      "Snap",
+      "Ripley",
+      "Nipper",
+      "Riot",
+      "Jaws",
+      "Slash"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "koi",
+    "name": "Koi",
+    "genetics": "natural",
+    "cost": 30,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Koi_1.png",
+    "assetVariants": [
+      "/assets/fish/Koi_2.png",
+      "/assets/fish/Koi_3.png",
+      "/assets/fish/Koi_4.png",
+      "/assets/fish/Koi_5.png"
+    ],
+    "description": "A large, peaceful ornamental carp bred for bold colors and striking patterns. Koi are steady, social swimmers that cruise open water and nose around the bottom for food, so they appreciate plenty of room to move.",
+    "width": 420,
+    "displayWidth": 280,
+    "bobSpeed": 1,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.019,
+    "targetMinMs": 4800,
+    "targetMaxMs": 8200,
+    "defaultNames": [
+      "Kohaku",
+      "Sumi",
+      "Mikan",
+      "Sakura",
+      "Yuki",
+      "Hoshi",
+      "Mochi",
+      "Kumo",
+      "Akari",
+      "Tora",
+      "Nami",
+      "Kiku",
+      "Beni",
+      "Shiro",
+      "Gin",
+      "Koi Boy",
+      "Marble",
+      "Lantern",
+      "Pond",
+      "Lucky"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "diet": "pellet",
+    "breedingMethod": "egg-scatterer",
+    "spawnPreference": "plants-or-substrate"
+  },
+  {
+    "id": "lionfish",
+    "name": "Lionfish",
+    "genetics": "natural",
+    "cost": 35,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Lionfish_1.png",
+    "assetVariants": [
+      "/assets/fish/Lionfish_2.png",
+      "/assets/fish/Lionfish_3.png",
+      "/assets/fish/Lionfish_4.png",
+      "/assets/fish/Lionfish_5.png"
+    ],
+    "description": "A slow, deliberate reef predator with broad fan-like fins and venomous spines. Lionfish hover near rockwork and shelter, then stalk chum with outstretched fins before a sudden short strike.",
+    "width": 340,
+    "displayWidth": 270,
+    "bobSpeed": 1.05,
+    "swimStyle": "steady",
+    "speedMin": 0.012,
+    "speedMax": 0.021,
+    "targetMinMs": 3800,
+    "targetMaxMs": 7200,
+    "defaultNames": [
+      "Leo",
+      "Stripe",
+      "Spines",
+      "Raja",
+      "Ember",
+      "Flare",
+      "Bandit",
+      "Crown",
+      "Venom",
+      "Mane",
+      "Rook",
+      "Sable",
+      "Torch",
+      "Razor",
+      "Coral",
+      "Regal",
+      "Fang",
+      "Bristle",
+      "Marquis",
+      "Roar"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "diet": "chum",
+    "chumOnly": true,
+    "breedingMethod": "floating-egg-mass",
+    "spawnPreference": "open-water"
+  },
+  {
+    "id": "bull-shark",
+    "name": "Bull Shark",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Shark",
+    "cost": 42,
+    "mealCoins": 3,
+    "asset": "/assets/fish/Bull_Shark.png",
+    "assetVariants": [
+      "/assets/fish/Bull_Shark_1.png",
+      "/assets/fish/Bull_Shark_2.png",
+      "/assets/fish/Bull_Shark_3.png",
+      "/assets/fish/Bull_Shark_4.png"
+    ],
+    "description": "A proven success in the PROTEUS BIODYNE marine scaling program. Our goldfish-sized Bull Shark demonstrates excellent specimen stability while retaining the adaptability, confidence, and predatory response profile of a mature animal. Chum recognition remains exceptionally strong, territorial movement is consistent, and predatory retention meets all behavioral integrity targets. Cohabitation performance is considered acceptable under normal feeding conditions. Periods of nutritional deficiency may result in opportunistic reassessment of nearby tankmates.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 405,
+    "displayWidth": 310,
+    "bobSpeed": 1.08,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.044,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4800,
+    "behavior": "shark",
+    "diet": "chum",
+    "chumOnly": true,
+    "desperationPredator": true,
+    "heartCount": 10,
+    "defaultNames": [
+      "Bully",
+      "Brackish",
+      "Rumble",
+      "Breaker",
+      "Tide",
+      "Mako",
+      "Riptide",
+      "Muddy",
+      "Brawler",
+      "Jaws"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "complex",
+    "liveBirth": false
+  },
+  {
+    "id": "great-white-shark",
+    "name": "Great White Shark",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Shark",
+    "cost": 55,
+    "mealCoins": 4,
+    "asset": "/assets/fish/Great_White_Shark.png",
+    "description": "A flagship achievement in PROTEUS BIODYNE biological miniaturization. This goldfish-sized Great White Shark maintains exceptional behavioral integrity, preserving the patrol patterns, feeding responses, and predatory instincts expected from a full-grown apex predator. Specimen stability remains high despite the extreme reduction in body mass, with reliable chum acquisition and excellent predatory retention. Interaction with neighboring specimens is minimal while nutritional requirements are satisfied. Hunger-related pursuit behavior is considered an expected expression of retained phenotype.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 405,
+    "displayWidth": 310,
+    "bobSpeed": 0.96,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.046,
+    "targetMinMs": 2600,
+    "targetMaxMs": 5600,
+    "behavior": "shark",
+    "diet": "chum",
+    "chumOnly": true,
+    "desperationPredator": true,
+    "heartCount": 10,
+    "defaultNames": [
+      "Whitecap",
+      "Brine",
+      "Glacier",
+      "Silver",
+      "Breaker",
+      "Mistral",
+      "Mariner",
+      "Finley",
+      "Pearl",
+      "Moby"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "complex",
+    "liveBirth": false
+  },
+  {
+    "id": "hammerhead-shark",
+    "name": "Hammerhead Shark",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Shark",
+    "cost": 48,
+    "mealCoins": 3,
+    "asset": "/assets/fish/Hammerhead_Shark.png",
+    "assetVariants": [
+      "/assets/fish/Hammerhead_Shark_1.png",
+      "/assets/fish/Hammerhead_Shark_2.png",
+      "/assets/fish/Hammerhead_Shark_3.png",
+      "/assets/fish/Hammerhead_Shark_4.png"
+    ],
+    "description": "A highly successful product of the PROTEUS BIODYNE marine development program. Our goldfish-sized Hammerhead Shark exhibits strong specimen stability, full sensory retention, and an unusually high level of environmental engagement. Wide-ranging patrol behavior has been preserved alongside rapid chum acquisition and dependable feeding response. Behavioral testing confirms that miniaturization has produced no meaningful reduction in exploratory drive or predatory function, exceeding several original development targets.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 405,
+    "displayWidth": 310,
+    "bobSpeed": 1.12,
+    "swimStyle": "steady",
+    "speedMin": 0.026,
+    "speedMax": 0.042,
+    "targetMinMs": 2100,
+    "targetMaxMs": 4700,
+    "behavior": "shark",
+    "diet": "chum",
+    "chumOnly": true,
+    "desperationPredator": true,
+    "heartCount": 10,
+    "defaultNames": [
+      "Hammer",
+      "Radar",
+      "Scout",
+      "Wedge",
+      "Sonar",
+      "Banner",
+      "Sweep",
+      "Tally",
+      "Sail",
+      "Echo"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "complex",
+    "liveBirth": false
+  },
+  {
+    "id": "orca",
+    "name": "Orca",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Whale",
+    "cost": 60,
+    "mealCoins": 4,
+    "asset": "/assets/fish/Orca.png",
+    "description": "One of the most significant achievements in PROTEUS BIODYNE history. Advanced biological scaling has produced a stable, goldfish-sized Orca while preserving cognitive performance, social recognition, communication, emotional complexity, and behavioral memory at levels consistent with the full-sized animal. Long-term observation confirms persistent social bonding and individual recognition across specimens. Respiratory architecture was intentionally retained without modification, requiring routine surfacing and periodic breaching. Internal assessments classify cognitive retention as exceptional and commercial viability as highly favorable.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 405,
+    "displayWidth": 320,
+    "bobSpeed": 1.02,
+    "swimStyle": "steady",
+    "speedMin": 0.03,
+    "speedMax": 0.048,
+    "targetMinMs": 2200,
+    "targetMaxMs": 5000,
+    "behavior": "shark",
+    "diet": "chum",
+    "chumOnly": true,
+    "desperationPredator": true,
+    "heartCount": 10,
+    "defaultNames": [
+      "Koa",
+      "Echo",
+      "Nalu",
+      "Tala",
+      "Pod",
+      "Comet",
+      "Wave",
+      "Rook",
+      "Cedar",
+      "Orion"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 1,
+        "alike": true
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "complex",
+    "liveBirth": true
+  },
+  {
+    "id": "sunfish",
+    "name": "Ocean Sunfish",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 24,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Sunfish.png",
+    "description": "Developed under the PROTEUS BIODYNE Compact Marine Initiative, the Ocean Sunfish represents a successful conversion of one of the world's largest bony fish into a commercially practical aquarium specimen. Miniaturization achieved target scale without compromising body plan, temperament, surface-oriented behavior, or characteristic locomotion. Specimen stability has remained exceptionally high throughout evaluation, with no significant behavioral degradation observed. The resulting goldfish-sized Sunfish offers full phenotype retention at a fraction of the spatial requirement.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 330,
+    "displayWidth": 230,
+    "bobSpeed": 0.82,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.018,
+    "targetMinMs": 4200,
+    "targetMaxMs": 8200,
+    "heartCount": 7,
+    "defaultNames": [
+      "Sunny",
+      "Pancake",
+      "Mellow",
+      "Float",
+      "Moon",
+      "Dapple",
+      "Drift",
+      "Sol",
+      "Mochi",
+      "Luma"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "seahorse",
+    "name": "Seahorse",
+    "genetics": "natural",
+    "type": "Seahorse",
+    "cost": 18,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Seahorse.png",
+    "description": "A delicate, upright swimmer that prefers drifting to rushing. Seahorses spend much of their time hovering near plants and other perches, often using their curled tails to hold on while they rest and watch the tank around them.",
+    "width": 95,
+    "bobSpeed": 0.74,
+    "swimStyle": "peaceful",
+    "speedMin": 0.012,
+    "speedMax": 0.016,
+    "targetMinMs": 3800,
+    "targetMaxMs": 7600,
+    "renderMotionProfile": "seahorse",
+    "defaultNames": [
+      "Tails",
+      "Pip",
+      "Kelp",
+      "Coral",
+      "Moss",
+      "Sway",
+      "Twig",
+      "Nori",
+      "Wisp",
+      "Dune"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [
+        "plants"
+      ],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  },
+  {
+    "id": "pilot-fish",
+    "name": "Pilot Fish",
+    "genetics": "natural",
+    "type": "Fish",
+    "cost": 24,
+    "mealCoins": 2,
+    "asset": "/assets/fish/Pilot_Fish.png",
+    "assetVariants": [
+      "/assets/fish/Pilot_Fish_1.png",
+      "/assets/fish/Pilot_Fish_2.png",
+      "/assets/fish/Pilot_Fish_3.png",
+      "/assets/fish/Pilot_Fish_4.png"
+    ],
+    "description": "An active, curious fish known for following larger animals through open water. In the wild, Pilot Fish often shadow sharks and other big swimmers, picking through scraps and investigating whatever their much larger companions leave behind.",
+    "width": 320,
+    "displayWidth": 245,
+    "bobSpeed": 1.28,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.044,
+    "targetMinMs": 1900,
+    "targetMaxMs": 4300,
+    "defaultNames": [
+      "Pilot",
+      "Stripe",
+      "Wingman",
+      "Scout",
+      "Shadow",
+      "Skipper",
+      "Escort",
+      "Radar",
+      "Buddy",
+      "Dash"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false
+  }
 ];
-
 
 const WATER_TYPE_META = Object.freeze({
   freshwater: {
@@ -2782,158 +4671,3731 @@ const SWIM_STYLE_DEFAULTS = {
 };
 
 const DECOR_META = {
-  "Halloween_Haunted_Tree.png": {
-    name: "Haunted Tree",
-    width: 300,
-    defaultScale: 2,
-    categories: ["ornaments", "halloween"],
-    fishBehavior: { hangout: ["spooky", "hardscape"] },
-    theme: "Halloween"
+  "halloween-seaweed__plant__theme-halloween.png": {
+    "name": "Haunted Seaweed",
+    "width": 644,
+    "defaultScale": 1,
+    "categories": [
+      "plant"
+    ],
+    "theme": "halloween",
+    "description": "Dark, eerie seaweed that sways in the tank with considerably more menace than ordinary seaweed should possess.",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "halloween",
+      "grazable",
+      "perchable",
+      "sway",
+      "spooky"
+    ]
   },
-  "Halloween_Cauldron_Bubbler.png": {
-    name: "Haunted Cauldron Bubbler",
-    width: 125,
-    defaultScale: 1,
-    categories: ["bubbler", "ornaments", "halloween"],
-    fishBehavior: { hangout: ["bubbler", "hardscape"] },
-    theme: "Halloween"
+  "amazon-sword__plant__theme-natural.png": {
+    "name": "Amazon Sword",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A amazon sword decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_JackOLantern_bubbler.png": {
-    name: "Jack-o'-Lantern Bubbler",
-    width: 125,
-    defaultScale: 1,
-    categories: ["bubbler", "ornaments", "halloween"],
-    fishBehavior: { hangout: ["bubbler", "hardscape"] },
-    theme: "Halloween"
+  "anubias-rock__plant-rock__theme-natural.png": {
+    "name": "Anubias Rock",
+    "cost": 4,
+    "width": 495,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A hardy Anubias growing directly from a rock. Conveniently combines plant and stone into one tidy little decoration.",
+    "categories": [
+      "plant",
+      "rock"
+    ],
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "rock",
+      "natural",
+      "hardscape",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_1.png": {
-    name: "Gravestone 1",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "bacopa__plant__theme-natural.png": {
+    "name": "Bacopa",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A bacopa decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_2.png": {
-    name: "Gravestone 2",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "bronze-red-crypt__plant__theme-natural.png": {
+    "name": "Bronze Red Crypt",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A bronze red crypt decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_3.png": {
-    name: "Gravestone 3",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "cabomba__plant__theme-natural.png": {
+    "name": "Cabomba",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A cabomba decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_4.png": {
-    name: "Gravestone 4",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "cryptocoryne__plant__theme-natural.png": {
+    "name": "Cryptocoryne",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A cryptocoryne decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Gravestone_5.png": {
-    name: "Gravestone 5",
-    width: 288,
-    defaultScale: 1,
-    categories: ["ornaments", "halloween"],
-    theme: "Halloween"
+  "hornwort__plant__theme-natural.png": {
+    "name": "Hornwort",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A hornwort decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Seaweed.png": {
-    name: "Haunted Seaweed",
-    width: 644,
-    defaultScale: 1,
-    categories: ["plants", "halloween"],
-    theme: "Halloween"
+  "java-fern-cluster__plant__theme-natural.png": {
+    "name": "Java Fern Cluster",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A java fern cluster decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Floatingseaweed.png": {
-    name: "Haunted Floating Seaweed",
-    width: 525,
-    defaultScale: 1,
-    categories: ["plants", "halloween"],
-    theme: "Halloween"
+  "java-moss__plant__theme-natural.png": {
+    "name": "Java Moss",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A java moss decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "Halloween_Ghost_Ship.png": {
-    name: "Ghost Ship",
-    width: 600,
-    defaultScale: 1.5,
-    categories: ["ornaments", "halloween"],
-    fishBehavior: { hangout: ["hardscape", "spooky"] },
-    theme: "Halloween"
+  "ludwigia__plant__theme-natural.png": {
+    "name": "Ludwigia",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A ludwigia decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "castle-tower.png": {
-    name: "Castle Ruin",
-    cost: 16,
-    width: 198,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "marimo-moss-ball__plant__theme-natural.png": {
+    "name": "Marimo Moss Ball",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A marimo moss ball decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "coral-bloom.png": {
-    name: "Coral Bloom",
-    cost: 6,
-    width: 140,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "monte-carlo-carpet__plant__theme-natural.png": {
+    "name": "Monte Carlo Carpet",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A monte carlo carpet decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "seaweed-bunch.png": {
-    name: "Seaweed Bunch",
-    cost: 4,
-    width: 298,
-    defaultScale: 1
+  "red-stem__plant__theme-natural.png": {
+    "name": "Red Stem",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A red stem decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "treasure-chest.png": {
-    name: "Treasure Chest",
-    cost: 10,
-    width: 150,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "rotala__plant__theme-natural.png": {
+    "name": "Rotala",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A rotala decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "anubia-rock_seaweed.png": {
-    name: "Anubias Rock",
-    cost: 8,
-    width: 495,
-    defaultScale: 1
+  "small-moss-patch__plant__theme-natural.png": {
+    "name": "Small Moss Patch",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A small moss patch decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "driftwood-root.png": {
-    name: "Driftwood Root",
-    cost: 14,
-    width: 660,
-    defaultScale: 1
+  "tiger-lotus__plant__theme-natural.png": {
+    "name": "Tiger Lotus",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A tiger lotus decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "moss-bridge.png": {
-    name: "Moss Bridge",
-    cost: 13,
-    width: 698,
-    defaultScale: 1
+  "vallisneria-clump__plant__theme-natural.png": {
+    "name": "Vallisneria Clump",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A vallisneria clump decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "pagoda-lantern.png": {
-    name: "Pagoda Lantern",
-    cost: 15,
-    width: 176,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "vallisneria-cutout__plant__theme-natural.png": {
+    "name": "Vallisneria Cutout",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A vallisneria cutout decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "slate-cave.png": {
-    name: "Slate Cave",
-    cost: 11,
-    width: 620,
-    defaultScale: 1
+  "water-wisteria__plant__theme-natural.png": {
+    "name": "Water Wisteria",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A water wisteria decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
   },
-  "terracotta-hide.png": {
-    name: "Terracotta Hide",
-    cost: 9,
-    width: 158,
-    defaultScale: DEFAULT_DECOR_SCALE
+  "hammer-coral__coral__theme-reef.png": {
+    "name": "Hammer Coral",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A hammer coral decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "leather-coral__coral__theme-reef.png": {
+    "name": "Leather Coral",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A leather coral decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "macroalgae__plant__theme-reef.png": {
+    "name": "Macroalgae",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A macroalgae decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "reef",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
+  },
+  "large-mushroom-coral__coral__theme-reef.png": {
+    "name": "Mushroom Coral",
+    "cost": 15,
+    "width": 510,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A low, rounded coral with soft curves and plenty of texture. An easy way to add a natural reef look without taking over the tank.",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "mushroom-coral-colony__coral__theme-reef.png": {
+    "name": "Mushroom Coral Colony",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A mushroom coral colony decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "sea-anemone__coral__theme-reef.png": {
+    "name": "Sea Anemone 2",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A soft mass of waving tentacles that brings constant gentle movement to the aquarium. Clownfish may approve.",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway",
+      "anemone",
+      "clownfish-host"
+    ]
+  },
+  "sea-anemone__coral__theme-reef__v2.png": {
+    "name": "Sea Anemone 5",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A colorful sea anemone with flowing tentacles that sway with the water and make the tank feel a little more alive.",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway",
+      "anemone",
+      "clownfish-host"
+    ]
+  },
+  "sea-fan-gorgonian__coral__theme-reef.png": {
+    "name": "Sea Fan Gorgonian",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A sea fan gorgonian decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "seaweed__plant__theme-reef.png": {
+    "name": "Seaweed",
+    "cost": 4,
+    "width": 280,
+    "defaultScale": 1,
+    "theme": "reef",
+    "description": "A simple patch of flowing seaweed that adds height, movement, and a little extra greenery to the tank.",
+    "categories": [
+      "plant"
+    ],
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "reef",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
+  },
+  "seaweed-bunch__plant__theme-reef.png": {
+    "name": "Seaweed Bunch",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A seaweed bunch decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "plant",
+      "reef",
+      "grazable",
+      "perchable",
+      "sway"
+    ]
+  },
+  "torch-coral__coral__theme-reef.png": {
+    "name": "Torch Coral",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A torch coral decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "anchored_sway",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable",
+      "sway"
+    ]
+  },
+  "frozen-bubbler__bubbler__theme-frozen.png": {
+    "name": "Frozen Bubbler",
+    "cost": 8,
+    "width": 340,
+    "defaultScale": 1,
+    "description": "A frozen bubbler decoration for the aquarium.",
+    "categories": [
+      "bubbler"
+    ],
+    "theme": "frozen",
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "frozen",
+      "hardscape",
+      "bubble-emitter"
+    ],
+    "bubbler": {
+      "spoutQty": 1
+    }
+  },
+  "halloween-cauldron__bubbler__theme-halloween__front.png": {
+    "name": "Haunted Cauldron Bubbler",
+    "width": 125,
+    "defaultScale": 1,
+    "categories": [
+      "bubbler"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "bubbler",
+        "hardscape"
+      ]
+    },
+    "bubbler": {
+      "spoutQty": 1,
+      "spouts": [
+        {
+          "horizontalLocation": 0.5,
+          "verticalLocation": 0.17,
+          "intensity": 5,
+          "speed": 1,
+          "spread": 48,
+          "fadeDistance": 210,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "halloween",
+    "description": "A cauldron that churns away on the aquarium floor, releasing a steady stream of bubbles. Whatever is brewing inside probably should not be tasted. Also: Completely Adjustable and Customizable!",
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "halloween",
+      "hardscape",
+      "bubble-emitter",
+      "spooky"
+    ]
+  },
+  "halloween-jack-o-lantern__bubbler__theme-halloween__front.png": {
+    "name": "Jack-o'-Lantern Bubbler",
+    "width": 125,
+    "defaultScale": 1,
+    "categories": [
+      "bubbler"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "bubbler",
+        "hardscape"
+      ]
+    },
+    "bubbler": {
+      "spoutQty": 1,
+      "spouts": [
+        {
+          "horizontalLocation": 0.5,
+          "verticalLocation": 0.16,
+          "intensity": 4,
+          "speed": 1,
+          "spread": 46,
+          "fadeDistance": 205,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "halloween",
+    "description": "A grinning jack-o'-lantern that releases a steady stream of bubbles. The pumpkin remains suspiciously intact underwater. Also: Completely Adjustable and Customizable!",
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "halloween",
+      "hardscape",
+      "bubble-emitter",
+      "spooky"
+    ]
+  },
+  "volcano__bubbler__theme-natural__front.png": {
+    "name": "Volcano Bubbler 1",
+    "cost": 16,
+    "width": 390,
+    "defaultScale": 1,
+    "bubbler": {
+      "spoutQty": 1,
+      "spouts": [
+        {
+          "horizontalLocation": 0.5,
+          "intensity": 15,
+          "speed": 2,
+          "spread": 40,
+          "fadeDistance": 250,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "natural",
+    "description": "A miniature volcano that continuously sends bubbles toward the surface. Considerably safer than the full-sized version. Also: Completely Adjustable and Customizable!",
+    "categories": [
+      "bubbler"
+    ],
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "natural",
+      "hardscape",
+      "bubble-emitter"
+    ]
+  },
+  "volcano__bubbler__theme-natural__v2__front.png": {
+    "name": "Volcano Bubbler 2",
+    "cost": 18,
+    "width": 375,
+    "defaultScale": 1,
+    "bubbler": {
+      "spoutQty": 2,
+      "spouts": [
+        {
+          "horizontalLocation": 0.3,
+          "intensity": 15,
+          "speed": 2,
+          "spread": 20,
+          "fadeDistance": 200,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        },
+        {
+          "horizontalLocation": 0.6,
+          "intensity": 10,
+          "speed": 2,
+          "spread": 20,
+          "fadeDistance": 200,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "natural",
+    "description": "A bubbling volcanic decoration that adds constant movement to the tank without requiring an evacuation plan. Also: Completely Adjustable and Customizable!",
+    "categories": [
+      "bubbler"
+    ],
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "natural",
+      "hardscape",
+      "bubble-emitter"
+    ]
+  },
+  "treasure-chest__bubbler__theme-treasure__front.png": {
+    "name": "Treasure Chest Bubbler",
+    "cost": 8,
+    "width": 233,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": [
+        "hardscape"
+      ]
+    },
+    "bubbler": {
+      "spoutQty": 1,
+      "spouts": [
+        {
+          "horizontalLocation": 0.5,
+          "intensity": 4,
+          "speed": 1,
+          "spread": 50,
+          "fadeDistance": 200,
+          "bubbleColor": [
+            "",
+            "",
+            ""
+          ],
+          "bubbleOpacity": 3
+        }
+      ]
+    },
+    "theme": "treasure",
+    "description": "A little sunken treasure chest that releases a steady stream of bubbles. The treasure itself appears to be mostly air. Also: Completely Adjustable and Customizable!",
+    "categories": [
+      "bubbler"
+    ],
+    "behavior": "bubbler",
+    "tags": [
+      "bubbler",
+      "treasure",
+      "hardscape",
+      "bubble-emitter"
+    ]
+  },
+  "broken-pot-fragment__cave__theme-artificial__front.png": {
+    "name": "Broken Pot Fragment",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A broken pot fragment decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "broken-terracotta-pot__cave__theme-artificial__front.png": {
+    "name": "Broken Terracotta Pot",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A broken terracotta pot decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "ceramic-tube-cluster__cave__theme-artificial__front.png": {
+    "name": "Ceramic Tube Cluster",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A ceramic tube cluster decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "clay-multi__cave__theme-artificial__front.png": {
+    "name": "Clay Multi",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A clay multi decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "extra-narrow-pleco-tubes__cave__theme-artificial__front.png": {
+    "name": "Extra Narrow Pleco Tubes",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A extra narrow pleco tubes decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "pvc-pipe__cave__theme-artificial__front.png": {
+    "name": "PVC Pipe",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A pvc pipe decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "terracotta-pot__cave__theme-artificial__front.png": {
+    "name": "Terracotta Pot",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A terracotta pot decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "terracotta-tunnel__cave__theme-artificial__front.png": {
+    "name": "Terracotta Tunnel",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A terracotta tunnel decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "artificial",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "artificial",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "blue-castle__cave__theme-fantasy__front.png": {
+    "name": "Castle Cave 1",
+    "cost": 16,
+    "width": 595,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 3,
+      "entries": [
+        {
+          "id": "left-front",
+          "x": 0.24,
+          "y": 0.82,
+          "side": "front"
+        },
+        {
+          "id": "center-front",
+          "x": 0.44,
+          "y": 0.65,
+          "side": "front"
+        },
+        {
+          "id": "right-front",
+          "x": 0.62,
+          "y": 0.84,
+          "side": "front"
+        }
+      ],
+      "seatCount": 3,
+      "seats": [
+        {
+          "id": "left-seat",
+          "x": 0.24,
+          "y": 0.82
+        },
+        {
+          "id": "center-seat",
+          "x": 0.44,
+          "y": 0.65
+        },
+        {
+          "id": "right-seat",
+          "x": 0.62,
+          "y": 0.84
+        }
+      ]
+    },
+    "theme": "fantasy",
+    "description": "A tiny underwater castle that gives the tank a touch of fantasy and its residents somewhere suitably dramatic to hide.",
+    "categories": [
+      "cave"
+    ],
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "fantasy",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "wizard-castle__cave__theme-fantasy__front.png": {
+    "name": "Castle Cave 2",
+    "cost": 16,
+    "width": 600,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 3,
+      "entries": [
+        {
+          "id": "main-both",
+          "x": 0.49,
+          "y": 0.69,
+          "side": "both"
+        },
+        {
+          "id": "right-front",
+          "x": 0.76,
+          "y": 0.84,
+          "side": "front"
+        },
+        {
+          "id": "far-right-front",
+          "x": 0.92,
+          "y": 0.89,
+          "side": "front"
+        }
+      ],
+      "seatCount": 3,
+      "seats": [
+        {
+          "id": "main-upper",
+          "x": 0.5,
+          "y": 0.74,
+          "facing": "right"
+        },
+        {
+          "id": "right-seat",
+          "x": 0.76,
+          "y": 0.84,
+          "facing": "left"
+        },
+        {
+          "id": "main-lower",
+          "x": 0.51,
+          "y": 0.78,
+          "facing": "left"
+        }
+      ]
+    },
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "main_front",
+          "approachX": 0.49,
+          "approachY": 0.76,
+          "mouthX": 0.5,
+          "mouthY": 0.67,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "path": [
+            {
+              "x": 0.5,
+              "y": 0.6
+            },
+            {
+              "x": 0.49,
+              "y": 0.55
+            }
+          ]
+        },
+        {
+          "id": "side_layer4",
+          "approachX": 0.74,
+          "approachY": 0.62,
+          "mouthX": 0.69,
+          "mouthY": 0.6,
+          "outsideLayer": 4,
+          "insideLayer": 4,
+          "path": [
+            {
+              "x": 0.63,
+              "y": 0.57
+            },
+            {
+              "x": 0.56,
+              "y": 0.54
+            }
+          ]
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "main_chamber",
+          "x": 0.52,
+          "y": 0.52,
+          "layer": 4,
+          "portalIds": [
+            "main_front",
+            "side_layer4"
+          ]
+        }
+      ]
+    },
+    "theme": "fantasy",
+    "description": "A miniature castle with enough openings and shelter to double as a proper fish hideout. Royal residency not guaranteed.",
+    "categories": [
+      "cave"
+    ],
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "fantasy",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "frozen-cave__cave__theme-frozen__front.png": {
+    "name": "Frozen Cave",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A frozen cave decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "frozen",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "frozen",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "frozen-cave__cave__theme-frozen__v2__front.png": {
+    "name": "Frozen Cave 2",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A frozen cave 2 decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "frozen",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "frozen",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "halloween-crypt__cave__theme-halloween__front.png": {
+    "name": "Crypt Cave",
+    "width": 590,
+    "defaultScale": 1,
+    "categories": [
+      "cave"
+    ],
+    "theme": "halloween",
+    "description": "A miniature stone crypt with enough room inside for fish that prefer their hiding places a little more gothic.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "halloween",
+      "hardscape",
+      "shelter",
+      "spooky"
+    ]
+  },
+  "halloween-haunted-house__cave__theme-halloween__front.png": {
+    "name": "Haunted House Cave",
+    "width": 590,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 3,
+      "entries": [
+        {
+          "id": "left-cellar",
+          "x": 0.18,
+          "y": 0.86,
+          "side": "front"
+        },
+        {
+          "id": "front-door",
+          "x": 0.5,
+          "y": 0.69,
+          "side": "front"
+        },
+        {
+          "id": "right-cellar",
+          "x": 0.84,
+          "y": 0.86,
+          "side": "front"
+        }
+      ],
+      "seatCount": 3,
+      "seats": [
+        {
+          "id": "left-cellar-seat",
+          "x": 0.18,
+          "y": 0.84,
+          "facing": "right",
+          "entryIds": [
+            "left-cellar"
+          ]
+        },
+        {
+          "id": "front-door-seat",
+          "x": 0.5,
+          "y": 0.67,
+          "facing": "right",
+          "entryIds": [
+            "front-door"
+          ]
+        },
+        {
+          "id": "right-cellar-seat",
+          "x": 0.84,
+          "y": 0.84,
+          "facing": "left",
+          "entryIds": [
+            "right-cellar"
+          ]
+        }
+      ]
+    },
+    "categories": [
+      "cave"
+    ],
+    "theme": "halloween",
+    "description": "A miniature haunted house with enough room inside for brave fish, scared fish, or fish that simply want somewhere dark to sit.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "halloween",
+      "hardscape",
+      "shelter",
+      "spooky"
+    ]
+  },
+  "coconut-shell-hideaway__cave__theme-natural__front.png": {
+    "name": "Coconut Shell Hideaway",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A coconut shell hideaway decoration for the aquarium.",
+    "categories": [
+      "cave"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "natural",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "hollow-mossy-driftwood__cave-wood__theme-natural__front.png": {
+    "name": "Hollow Mossy Driftwood",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A hollow mossy driftwood decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "wood",
+      "natural",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "live-root-overhang__cave-wood__theme-natural__front.png": {
+    "name": "Live Root Overhang",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A live root overhang decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "wood",
+      "natural",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "mangrove-roots__cave-wood__theme-natural__front.png": {
+    "name": "Mangrove Roots",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A mangrove roots decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "wood",
+      "natural",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "slate__cave-rock__theme-natural__front.png": {
+    "name": "Slate Cave",
+    "cost": 12,
+    "width": 620,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 1,
+      "entries": [
+        {
+          "id": "main-front",
+          "x": 0.51,
+          "y": 0.67,
+          "side": "front"
+        }
+      ],
+      "seatCount": 2,
+      "seats": [
+        {
+          "id": "left-seat",
+          "x": 0.42,
+          "y": 0.64,
+          "facing": "right"
+        },
+        {
+          "id": "right-seat",
+          "x": 0.6,
+          "y": 0.64,
+          "facing": "left"
+        }
+      ]
+    },
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "main_front",
+          "approachX": 0.5,
+          "approachY": 0.77,
+          "mouthX": 0.5,
+          "mouthY": 0.67,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "path": [
+            {
+              "x": 0.5,
+              "y": 0.61
+            },
+            {
+              "x": 0.5,
+              "y": 0.56
+            }
+          ]
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "center",
+          "x": 0.5,
+          "y": 0.53,
+          "layer": 4,
+          "portalIds": [
+            "main_front"
+          ]
+        }
+      ]
+    },
+    "theme": "natural",
+    "description": "A sturdy little shelter built from stacked slate. Simple, rocky, and perfect for fish that appreciate some privacy.",
+    "categories": [
+      "cave",
+      "rock"
+    ],
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "natural",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "slate-stack__cave-rock__theme-natural__front.png": {
+    "name": "Slate Stack",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A slate stack decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "natural",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "tangled-driftwood-rootscape__cave-wood__theme-natural__front.png": {
+    "name": "Tangled Driftwood Rootscape",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A tangled driftwood rootscape decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "wood",
+      "natural",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-1__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 1",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A rocky coral shelf with a sheltered space underneath. Part reef decoration, part cozy hiding place.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-10__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 10",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A substantial coral shelf with a protected hollow below, giving the tank a more layered reef landscape.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-2__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 2",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A layered coral shelf that creates a shaded little retreat beneath the reef.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-3__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 3",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A sturdy coral-covered shelf with enough room underneath for curious fish to disappear for a while.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-4__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 4",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A reef shelf with a natural hollow beneath it, adding both height and a tucked-away hiding spot.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-5__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 5",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A rugged coral shelf that gives the tank a bit of reef structure and a quiet space underneath.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-6__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 6",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-7__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 7",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A broad reef shelf with a built-in hiding place beneath it. Basically beachfront property for fish.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coral-shelf-9__cave-coral__theme-reef__front.png": {
+    "name": "Coral Shelf Cave 9",
+    "cost": 16,
+    "width": 520,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A rocky coral overhang that adds depth to the reef and a shady little spot underneath.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "coralline-live-rock__cave-rock-coral__theme-reef__front.png": {
+    "name": "Coralline Live Rock",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A coralline live rock decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "rock",
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "live-rock-cluster__cave-rock__theme-reef__front.png": {
+    "name": "Live Rock Cluster",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A live rock cluster decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "rock"
+    ],
+    "theme": "reef",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "reef",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "sea-anemone-1__cave-coral__theme-reef__front.png": {
+    "name": "Sea Anemone Cave 1",
+    "cost": 14,
+    "width": 420,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable",
+      "anemone",
+      "clownfish-host"
+    ],
+    "motionBehavior": "anchored_sway",
+    "motionLayer": "front",
+    "motionSplitY": 0.55,
+    "motionSwaySide": "above"
+  },
+  "sea-anemone-3__cave-coral__theme-reef__front.png": {
+    "name": "Sea Anemone Cave 3",
+    "cost": 14,
+    "width": 420,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable",
+      "anemone",
+      "clownfish-host"
+    ],
+    "motionBehavior": "anchored_sway",
+    "motionLayer": "front",
+    "motionSplitY": 0.55,
+    "motionSwaySide": "above"
+  },
+  "sea-anemone-4__cave-coral__theme-reef__front.png": {
+    "name": "Sea Anemone Cave 4",
+    "cost": 14,
+    "width": 420,
+    "defaultScale": 1,
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable",
+      "anemone",
+      "clownfish-host"
+    ],
+    "motionBehavior": "anchored_sway",
+    "motionLayer": "front",
+    "motionSplitY": 0.55,
+    "motionSwaySide": "above"
+  },
+  "seashell-cluster__cave-coral__theme-reef__front.png": {
+    "name": "Seashell Cluster",
+    "cost": 8,
+    "width": 420,
+    "defaultScale": 1,
+    "description": "A seashell cluster decoration for the aquarium.",
+    "categories": [
+      "cave",
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "coral",
+      "reef",
+      "hardscape",
+      "shelter",
+      "perchable"
+    ]
+  },
+  "meteor__cave-rock__theme-space__front.png": {
+    "name": "Meteor Cave",
+    "cost": 16,
+    "width": 585,
+    "defaultScale": 1,
+    "caveSettings": {
+      "entryCount": 1,
+      "entries": [
+        {
+          "id": "main-front",
+          "x": 0.56,
+          "y": 0.67,
+          "side": "front"
+        }
+      ],
+      "seatCount": 2,
+      "seats": [
+        {
+          "id": "upper-seat",
+          "x": 0.5,
+          "y": 0.55,
+          "facing": "right"
+        },
+        {
+          "id": "lower-seat",
+          "x": 0.49,
+          "y": 0.72,
+          "facing": "right"
+        }
+      ]
+    },
+    "theme": "space",
+    "description": "A strange rocky formation that looks suspiciously like it fell from somewhere much farther away. Conveniently, it also has a cave.",
+    "categories": [
+      "cave",
+      "rock"
+    ],
+    "behavior": "cave_layered",
+    "tags": [
+      "cave",
+      "rock",
+      "space",
+      "hardscape",
+      "shelter"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A bright fishing lure placed inside an aquarium for reasons nobody has fully explained. Fortunately, the fish seem more curious than concerned.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v2.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A colorful fishing lure dangling where no fishing should be happening. The fish seem fascinated by it, which is probably exactly what the lure wants.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v3.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A shiny little lure suspended in the aquarium. Completely harmless here, although the fish may have some understandable trust issues.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v4.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A fishing lure repurposed as aquarium decor. It catches attention instead of fish now.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v5.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A suspiciously enticing lure left hanging in the tank. No hook-related incidents have been reported.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v6.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A bright piece of fishing tackle that gives curious fish something unusual to investigate. Thankfully, nobody is actually fishing.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "fishing-lure__lure__theme-artificial__v7.png": {
+    "name": "Fishing Lure",
+    "cost": 6,
+    "width": 255,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "artificial",
+    "variantGroup": "fishing_lure",
+    "description": "A decorative lure that sparkles just enough to get every nearby fish interested in absolutely nothing.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "artificial",
+      "sway"
+    ]
+  },
+  "halloween-gorebag__lure__theme-halloween.png": {
+    "name": "Gorebag",
+    "cost": 10,
+    "width": 200,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "lure",
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A peculiar decoration known only as Gorebag. Nobody remembers where it came from, and asking questions has not helped.",
+    "categories": [
+      "lure"
+    ],
+    "behavior": "ceiling_sway",
+    "tags": [
+      "lure",
+      "halloween",
+      "sway",
+      "spooky"
+    ]
+  },
+  "frozen-glacier__rock__theme-frozen.png": {
+    "name": "Frozen Glacier",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen glacier decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "floating_bob",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape",
+      "surface-cover"
+    ]
+  },
+  "frozen-iceberg__rock__theme-frozen.png": {
+    "name": "Frozen Iceberg",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen iceberg decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "floating_bob",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape",
+      "surface-cover"
+    ]
+  },
+  "halloween-webs__ornament__theme-halloween.png": {
+    "name": "Aquarium Webs",
+    "width": 175,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A little spider web to put wherever. How the web remains perfectly intact underwater is a problem for someone else to solve.",
+    "behavior": "floating_bob",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "surface-cover",
+      "spooky"
+    ]
+  },
+  "halloween-skeleton__ornament__theme-halloween.png": {
+    "name": "Floating Fish Skeleton",
+    "width": 220,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A fish skeleton that quietly floats in the aquarium. It probably fake, though. Right?",
+    "behavior": "floating_bob",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "surface-cover",
+      "spooky"
+    ]
+  },
+  "halloween-ghost__ornament__theme-halloween.png": {
+    "name": "Floating Ghost",
+    "width": 170,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "spooky"
+      ],
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A little ghost that quietly floats in the aquarium.",
+    "behavior": "floating_bob",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "surface-cover",
+      "spooky"
+    ]
+  },
+  "halloween-floating-seaweed__plant__theme-halloween.png": {
+    "name": "Haunted Floating Seaweed",
+    "width": 525,
+    "defaultScale": 1,
+    "categories": [
+      "plant"
+    ],
+    "theme": "halloween",
+    "description": "Eerie floating seaweed. It looks like it is rotting.",
+    "behavior": "floating_sway",
+    "tags": [
+      "plant",
+      "halloween",
+      "grazable",
+      "perchable",
+      "surface-cover",
+      "sway",
+      "spooky"
+    ]
+  },
+  "floating-lettuce-root__plant__theme-natural.png": {
+    "name": "Floating Lettuce Root",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A floating lettuce root decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "floating_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "surface-cover",
+      "sway"
+    ]
+  },
+  "floating-swamp-moss__plant__theme-natural.png": {
+    "name": "Floating Swamp Moss",
+    "theme": "natural",
+    "cost": 5,
+    "width": 510,
+    "defaultScale": 1,
+    "description": "A loose patch of eerie swamp moss suspended in the water. Damp, gloomy, and somehow thriving.",
+    "categories": [
+      "plant"
+    ],
+    "behavior": "floating_sway",
+    "tags": [
+      "plant",
+      "natural",
+      "grazable",
+      "perchable",
+      "surface-cover",
+      "sway"
+    ]
+  },
+  "floating-seaweed__plant__theme-reef.png": {
+    "name": "Floating Seaweed",
+    "cost": 4,
+    "width": 220,
+    "defaultScale": 1,
+    "theme": "reef",
+    "description": "Loose seaweed that drifts above the aquarium floor instead of staying politely planted where it belongs.",
+    "categories": [
+      "plant"
+    ],
+    "behavior": "floating_sway",
+    "tags": [
+      "plant",
+      "reef",
+      "grazable",
+      "perchable",
+      "surface-cover",
+      "sway"
+    ]
+  },
+  "frozen-anchor__ornament__theme-frozen.png": {
+    "name": "Frozen Anchor",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen anchor decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-arch__ornament__theme-frozen.png": {
+    "name": "Frozen Arch",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen arch decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-arch__ornament__theme-frozen__v2.png": {
+    "name": "Frozen Arch 2",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen arch 2 decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-column__ornament__theme-frozen.png": {
+    "name": "Frozen Column",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen column decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-column__ornament__theme-frozen__v2.png": {
+    "name": "Frozen Column 2",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen column 2 decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-column__ornament__theme-frozen__v3.png": {
+    "name": "Frozen Column 3",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen column 3 decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-crystals__rock__theme-frozen.png": {
+    "name": "Frozen Crystals",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen crystals decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-fossil__rock__theme-frozen.png": {
+    "name": "Frozen Fossil",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen fossil decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen.png": {
+    "name": "Frozen Plant",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen__v2.png": {
+    "name": "Frozen Plant 2",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant 2 decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen__v3.png": {
+    "name": "Frozen Plant 3",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant 3 decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen__v4.png": {
+    "name": "Frozen Plant 4",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant 4 decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-plant__plant__theme-frozen__v5.png": {
+    "name": "Frozen Plant 5",
+    "cost": 8,
+    "width": 280,
+    "defaultScale": 1,
+    "description": "A frozen plant 5 decoration for the aquarium.",
+    "categories": [
+      "plant"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "plant",
+      "frozen",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "frozen-rock__rock__theme-frozen.png": {
+    "name": "Frozen Rock",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen rock decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-rock__rock__theme-frozen__v2.png": {
+    "name": "Frozen Rock 2",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A frozen rock 2 decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-root__wood__theme-frozen.png": {
+    "name": "Frozen Root",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen root decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "frozen",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "frozen-treasure__ornament__theme-frozen.png": {
+    "name": "Frozen Treasure",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen treasure decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-ufo__ornament__theme-frozen.png": {
+    "name": "Frozen UFO",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A frozen ufo decoration for the aquarium.",
+    "categories": [
+      "ornament"
+    ],
+    "theme": "frozen",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-sunken-submarine__ornament__theme-frozen.png": {
+    "name": "Plane Crash",
+    "cost": 12,
+    "width": 613,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "hide"
+    },
+    "theme": "frozen",
+    "description": "A miniature aircraft wreck resting on the aquarium floor. The investigation remains ongoing.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "frozen-ship__ornament__theme-frozen.png": {
+    "name": "Shipwreck",
+    "cost": 15,
+    "width": 616,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "hide"
+    },
+    "theme": "frozen",
+    "description": "A sunken ship left to slowly become part of the aquarium. Dramatic enough to tell a story without taking the whole tank hostage.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "frozen",
+      "hardscape"
+    ]
+  },
+  "halloween-spider__ornament__theme-halloween.png": {
+    "name": "Aquarium Spider",
+    "width": 150,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "spooky"
+      ],
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A spider. In the aquarium. We agree that this raises several questions, but none of them have improved the situation.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-fish-head-effigy__ornament__theme-halloween__v3.png": {
+    "name": "Danio Fish Head Effigy",
+    "cost": 3,
+    "width": 70,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "spooky",
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A Danio fish-head effigy. Pretty ominous and completely unnecessary.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-ghost-ship__ornament__theme-halloween.png": {
+    "name": "Ghost Ship",
+    "width": 600,
+    "defaultScale": 1.5,
+    "categories": [
+      "ornament"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "hardscape",
+        "spooky"
+      ]
+    },
+    "theme": "halloween",
+    "description": "A spectral shipwreck that appears to have sailed directly into the aquarium. Its crew has yet to make themselves available for questions.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween.png": {
+    "name": "Gravestone 1",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A tiny weathered gravestone for giving the aquarium floor a proper little graveyard atmosphere.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween__v2.png": {
+    "name": "Gravestone 2",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A miniature gravestone that adds just the right amount of unnecessary morbidity to the tank.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween__v3.png": {
+    "name": "Gravestone 3",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A worn little grave marker that looks perfectly at home among caves, dead plants, and other questionable aquarium decisions.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween__v4.png": {
+    "name": "Gravestone 4",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A small gravestone for building an underwater cemetery. Nobody is quite sure who is buried there.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-gravestone__ornament__theme-halloween__v5.png": {
+    "name": "Gravestone 5",
+    "width": 288,
+    "defaultScale": 1,
+    "categories": [
+      "ornament"
+    ],
+    "theme": "halloween",
+    "description": "A lonely little grave marker with just enough weathering to suggest it has been underwater much longer than it should have been.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-fish-head-effigy__ornament__theme-halloween__v2.png": {
+    "name": "Guppy Fish Head Effigy",
+    "cost": 3,
+    "width": 70,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "spooky",
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A guppy head mounted on a stake.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-haunted-tree__ornament__theme-halloween.png": {
+    "name": "Haunted Tree",
+    "width": 300,
+    "defaultScale": 2,
+    "categories": [
+      "ornament"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "spooky",
+        "hardscape"
+      ]
+    },
+    "theme": "halloween",
+    "description": "A twisted old tree that looks thoroughly dead.",
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "halloween-fish-head-effigy__ornament__theme-halloween.png": {
+    "name": "Neon Fish Head Effigy",
+    "cost": 3,
+    "width": 70,
+    "defaultScale": 1,
+    "fishBehavior": {
+      "hangout": "spooky",
+      "occupancyLimit": 1
+    },
+    "theme": "halloween",
+    "description": "A bloody fish-head effigy. Tasteful is probably not the word, but memorable definitely is.",
+    "categories": [
+      "ornament"
+    ],
+    "behavior": "static",
+    "tags": [
+      "ornament",
+      "halloween",
+      "hardscape",
+      "spooky"
+    ]
+  },
+  "alder-cone-cluster__botanical__theme-natural.png": {
+    "name": "Alder Cone Cluster",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A alder cone cluster decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "autumn-leaf-litter-mound__botanical__theme-natural.png": {
+    "name": "Autumn Leaf Litter Mound",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A autumn leaf litter mound decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "branch-canopy__wood__theme-natural.png": {
+    "name": "Branch Canopy",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A branch canopy decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "dirt__rock__theme-natural.png": {
+    "name": "Dirt Mound",
+    "cost": 3,
+    "width": 480,
+    "defaultScale": 1,
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "description": "A small mound of loose earth for giving the aquarium floor a more uneven, natural look. Sometimes dirt really is the decoration.",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "dried-catappa-leaf-pile__botanical__theme-natural.png": {
+    "name": "Dried Catappa Leaf Pile",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A dried catappa leaf pile decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "driftwood__wood__theme-natural.png": {
+    "name": "Driftwood",
+    "cost": 10,
+    "width": 675,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A weathered piece of driftwood with plenty of natural bends and texture. Simple, classic, and nearly impossible to make look out of place.",
+    "categories": [
+      "wood"
+    ],
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "driftwood-root__wood__theme-natural.png": {
+    "name": "Driftwood Root",
+    "cost": 10,
+    "width": 660,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A gnarled mass of weathered roots that adds natural shape and texture to the aquarium floor.",
+    "categories": [
+      "wood"
+    ],
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "flat-spawning-stone__rock__theme-natural.png": {
+    "name": "Flat Spawning Stone",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A flat spawning stone decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "mixed-leaf-litter-scatter__botanical__theme-natural.png": {
+    "name": "Mixed Leaf Litter Scatter",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A mixed leaf litter scatter decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "moss-bridge__wood-plant__theme-natural.png": {
+    "name": "Moss Bridge",
+    "cost": 10,
+    "width": 698,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A small bridge softened by a layer of moss. Equal parts peaceful garden feature and tiny fish infrastructure.",
+    "categories": [
+      "wood",
+      "plant"
+    ],
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "plant",
+      "natural",
+      "hardscape",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "moss-covered-driftwood__wood-plant__theme-natural.png": {
+    "name": "Moss Covered Driftwood",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A moss covered driftwood decoration for the aquarium.",
+    "categories": [
+      "wood",
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "plant",
+      "natural",
+      "hardscape",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "moss-covered-rock-formation__rock-plant__theme-natural.png": {
+    "name": "Moss Covered Rock Formation",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A moss covered rock formation decoration for the aquarium.",
+    "categories": [
+      "rock",
+      "plant"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "plant",
+      "natural",
+      "hardscape",
+      "grazable",
+      "perchable"
+    ]
+  },
+  "river-stone-mound__rock__theme-natural.png": {
+    "name": "River Stone Mound",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A river stone mound decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural.png": {
+    "name": "Rock 1",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A rock. A perfectly respectable rock, in fact. Useful for filling gaps, building little landscapes, or simply adding more rock.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural__v2.png": {
+    "name": "Rock 2",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A simple aquarium rock for adding natural texture wherever the tank needs a little more structure.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural__v3.png": {
+    "name": "Rock 3",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A sturdy decorative rock that fits comfortably into just about any aquarium layout.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural__v4.png": {
+    "name": "Rock 4",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A natural-looking stone for breaking up open spaces and giving the aquarium floor a little more shape.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "rock-bricks__rock__theme-natural__v5.png": {
+    "name": "Rock 5",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A straightforward piece of rock decor. No gimmicks, no bubbles, just dependable geology.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "root-debris-scatter__wood__theme-natural.png": {
+    "name": "Root Debris Scatter",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A root debris scatter decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "seed-pod-cluster__botanical__theme-natural.png": {
+    "name": "Seed Pod Cluster",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A seed pod cluster decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "single-catappa-leaf__botanical__theme-natural.png": {
+    "name": "Single Catappa Leaf",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A single catappa leaf decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "single-loose-leaf__botanical__theme-natural.png": {
+    "name": "Single Loose Leaf",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A single loose leaf decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "single-twig__botanical__theme-natural.png": {
+    "name": "Single Twig",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A single twig decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "small-botanical-scatter-pieces__botanical__theme-natural.png": {
+    "name": "Small Botanical Scatter Pieces",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A small botanical scatter pieces decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "small-branch-pile__wood__theme-natural.png": {
+    "name": "Small Branch Pile",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A small branch pile decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "small-stone-shard-cluster__rock__theme-natural.png": {
+    "name": "Small Stone Shard Cluster",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A small stone shard cluster decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "small-wood-branch-cluster__wood__theme-natural.png": {
+    "name": "Small Wood Branch Cluster",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A small wood branch cluster decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "sprawling-spider-wood-rootscape__wood__theme-natural.png": {
+    "name": "Sprawling Spider Wood Rootscape",
+    "cost": 8,
+    "width": 320,
+    "defaultScale": 1,
+    "description": "A sprawling spider wood rootscape decoration for the aquarium.",
+    "categories": [
+      "wood"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "wood",
+      "natural",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "stone-pebble-cluster__rock__theme-natural.png": {
+    "name": "Stone Pebble Cluster",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A stone pebble cluster decoration for the aquarium.",
+    "categories": [
+      "rock"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape"
+    ]
+  },
+  "twig-and-pod-mix__botanical__theme-natural.png": {
+    "name": "Twig And Pod Mix",
+    "cost": 8,
+    "width": 220,
+    "defaultScale": 1,
+    "description": "A twig and pod mix decoration for the aquarium.",
+    "categories": [
+      "botanical"
+    ],
+    "theme": "natural",
+    "behavior": "static",
+    "tags": [
+      "botanical",
+      "natural"
+    ]
+  },
+  "volcanic-rock-bricks__rock__theme-natural.png": {
+    "name": "Volcanic Rock 1",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A dark, rugged piece of volcanic rock with plenty of rough texture and character.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape",
+      "volcanic",
+      "sharp"
+    ]
+  },
+  "volcanic-rock-bricks__rock__theme-natural__v2.png": {
+    "name": "Volcanic Rock 2",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A porous-looking volcanic stone that adds a harsher, more dramatic edge to the aquarium floor.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape",
+      "volcanic",
+      "sharp"
+    ]
+  },
+  "volcanic-rock-bricks__rock__theme-natural__v3.png": {
+    "name": "Volcanic Rock 3",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A chunk of dark volcanic rock for building rocky formations, caves, or anything that needs a little ancient lava energy.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape",
+      "volcanic",
+      "sharp"
+    ]
+  },
+  "volcanic-rock-bricks__rock__theme-natural__v4.png": {
+    "name": "Volcanic Rock 4",
+    "cost": 1,
+    "width": 100,
+    "defaultScale": 1,
+    "theme": "natural",
+    "description": "A rough volcanic stone with a naturally dramatic look. Thankfully, the volcano part is no longer active.",
+    "categories": [
+      "rock"
+    ],
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "natural",
+      "hardscape",
+      "volcanic",
+      "sharp"
+    ]
+  },
+  "barnacle-covered-reef-rock__rock-coral__theme-reef.png": {
+    "name": "Barnacle Covered Reef Rock",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A barnacle covered reef rock decoration for the aquarium.",
+    "categories": [
+      "rock",
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "static",
+    "tags": [
+      "rock",
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "brain-coral__coral__theme-reef.png": {
+    "name": "Brain Coral",
+    "cost": 12,
+    "width": 300,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A dense coral covered in winding, maze-like ridges. Compact, colorful, and just strange enough to earn its name.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef.png": {
+    "name": "Branch Coral 1",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A branching coral formation that adds height, color, and a little reef complexity to the tank.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v10.png": {
+    "name": "Branch Coral 10",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A natural-looking coral cluster with branching growth, perfect for rounding out a larger reef display.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v2.png": {
+    "name": "Branch Coral 2",
+    "cost": 10,
+    "width": 240,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A lively cluster of branching coral that helps fill open spaces with natural reef texture.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v3.png": {
+    "name": "Branch Coral 3",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A decorative branching coral with plenty of little arms reaching into the water around it.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v4.png": {
+    "name": "Branch Coral 4",
+    "cost": 10,
+    "width": 260,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A colorful coral formation that brings a bit of reef structure and vertical interest to the aquarium.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v5.png": {
+    "name": "Branch Coral 5",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A branching coral cluster made for building out colorful reef scenes without overwhelming the tank.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v6.png": {
+    "name": "Branch Coral 6",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A compact branching coral that adds texture and depth wherever the tank is looking a little too empty.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v7.png": {
+    "name": "Branch Coral 7",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A decorative coral with branching growth that gives the tank a busier, more established reef look.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v8.png": {
+    "name": "Branch Coral 8",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A branching coral formation that works nicely tucked between rocks, caves, and other reef decorations.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "coral__coral__theme-reef__v9.png": {
+    "name": "Branch Coral 9",
+    "cost": 10,
+    "width": 280,
+    "defaultScale": 1,
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "description": "A colorful piece of branching coral that adds a little height and life to the aquarium floor.",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "zoanthid-mat__coral__theme-reef.png": {
+    "name": "Zoanthid Mat",
+    "cost": 8,
+    "width": 300,
+    "defaultScale": 1,
+    "description": "A zoanthid mat decoration for the aquarium.",
+    "categories": [
+      "coral"
+    ],
+    "theme": "reef",
+    "behavior": "static",
+    "tags": [
+      "coral",
+      "reef",
+      "hardscape",
+      "perchable"
+    ]
+  },
+  "transit-tube__transit__theme-artificial__front.png": {
+    "name": "Borough Transit Tube",
+    "cost": 28,
+    "width": 230,
+    "defaultScale": 0.58,
+    "categories": [
+      "transit"
+    ],
+    "fishBehavior": {
+      "hangout": [
+        "hardscape"
+      ],
+      "occupancyLimit": 1,
+      "note": "Name and link two tubes to give fish a fast route between neighborhoods. It only bubbles while in use."
+    },
+    "theme": "artificial",
+    "description": "Link two named tubes to create a fast route between neighborhoods. The tube stays quiet until a fish enters, then bubbles to life as it carries the fish across the Borough like an italian plumber.",
+    "behavior": "transit",
+    "tags": [
+      "transit",
+      "artificial",
+      "hardscape",
+      "transport"
+    ]
   }
 };
 
 const DECOR_KEY_ALIASES = Object.freeze({
-  "anubia-rock.png": "anubia-rock_seaweed.png",
-  "anubias-rock.png": "anubia-rock_seaweed.png",
-  "Halloween_Cauldron.png": "Halloween_Cauldron_Bubbler.png",
-  "halloween_cauldron.png": "Halloween_Cauldron_Bubbler.png",
-  "Halloween_JackOLantern.png": "Halloween_JackOLantern_bubbler.png",
-  "halloween_jackolantern.png": "Halloween_JackOLantern_bubbler.png",
-  "Halloween_skeleton_lure.png": "Halloween_Floating_skeleton.png",
-  "halloween_skeleton_lure.png": "Halloween_Floating_skeleton.png"
+  "anubia-rock.png": "anubias-rock__plant-rock__theme-natural.png",
+  "anubia-rock_seaweed.png": "anubias-rock__plant-rock__theme-natural.png",
+  "anubias-rock.png": "anubias-rock__plant-rock__theme-natural.png",
+  "blue_castle_cave.png": "blue-castle__cave__theme-fantasy__front.png",
+  "brain_coral.png": "brain-coral__coral__theme-reef.png",
+  "castle-cave.png": "wizard-castle__cave__theme-fantasy__front.png",
+  "cave_coral_shelf_1.png": "coral-shelf-1__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_10.png": "coral-shelf-10__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_2.png": "coral-shelf-2__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_3.png": "coral-shelf-3__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_4.png": "coral-shelf-4__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_5.png": "coral-shelf-5__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_6.png": "coral-shelf-6__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_7.png": "coral-shelf-7__cave-coral__theme-reef__front.png",
+  "cave_coral_shelf_9.png": "coral-shelf-9__cave-coral__theme-reef__front.png",
+  "cave_sea_anemone_1.png": "sea-anemone-1__cave-coral__theme-reef__front.png",
+  "cave_sea_anemone_3.png": "sea-anemone-3__cave-coral__theme-reef__front.png",
+  "cave_sea_anemone_4.png": "sea-anemone-4__cave-coral__theme-reef__front.png",
+  "coral_1.png": "coral__coral__theme-reef.png",
+  "coral_10.png": "coral__coral__theme-reef__v10.png",
+  "coral_2.png": "coral__coral__theme-reef__v2.png",
+  "coral_3.png": "coral__coral__theme-reef__v3.png",
+  "coral_4.png": "coral__coral__theme-reef__v4.png",
+  "coral_5.png": "coral__coral__theme-reef__v5.png",
+  "coral_6.png": "coral__coral__theme-reef__v6.png",
+  "coral_7.png": "coral__coral__theme-reef__v7.png",
+  "coral_8.png": "coral__coral__theme-reef__v8.png",
+  "coral_9.png": "coral__coral__theme-reef__v9.png",
+  "dirt.png": "dirt__rock__theme-natural.png",
+  "driftwood-root.png": "driftwood-root__wood__theme-natural.png",
+  "driftwood.png": "driftwood__wood__theme-natural.png",
+  "fishheadeffigy_1.png": "halloween-fish-head-effigy__ornament__theme-halloween.png",
+  "fishheadeffigy_2.png": "halloween-fish-head-effigy__ornament__theme-halloween__v2.png",
+  "fishheadeffigy_3.png": "halloween-fish-head-effigy__ornament__theme-halloween__v3.png",
+  "fishing_lure.png": "fishing-lure__lure__theme-artificial.png",
+  "fishing_lure_1.png": "fishing-lure__lure__theme-artificial__v2.png",
+  "fishing_lure_2.png": "fishing-lure__lure__theme-artificial__v3.png",
+  "fishing_lure_3.png": "fishing-lure__lure__theme-artificial__v4.png",
+  "fishing_lure_4.png": "fishing-lure__lure__theme-artificial__v5.png",
+  "fishing_lure_5.png": "fishing-lure__lure__theme-artificial__v6.png",
+  "fishing_lure_6.png": "fishing-lure__lure__theme-artificial__v7.png",
+  "floating_halloween_ghost.png": "halloween-ghost__ornament__theme-halloween.png",
+  "floating_swampmoss_1.png": "floating-swamp-moss__plant__theme-natural.png",
+  "floatingseaweed_1.png": "floating-seaweed__plant__theme-reef.png",
+  "gorebag_lure.png": "halloween-gorebag__lure__theme-halloween.png",
+  "halloween_cauldron.png": "halloween-cauldron__bubbler__theme-halloween__front.png",
+  "halloween_cauldron_bubbler.png": "halloween-cauldron__bubbler__theme-halloween__front.png",
+  "halloween_crypt_cave.png": "halloween-crypt__cave__theme-halloween__front.png",
+  "halloween_floating_skeleton.png": "halloween-skeleton__ornament__theme-halloween.png",
+  "halloween_floatingseaweed.png": "halloween-floating-seaweed__plant__theme-halloween.png",
+  "halloween_ghost_ship.png": "halloween-ghost-ship__ornament__theme-halloween.png",
+  "halloween_gravestone_1.png": "halloween-gravestone__ornament__theme-halloween.png",
+  "halloween_gravestone_2.png": "halloween-gravestone__ornament__theme-halloween__v2.png",
+  "halloween_gravestone_3.png": "halloween-gravestone__ornament__theme-halloween__v3.png",
+  "halloween_gravestone_4.png": "halloween-gravestone__ornament__theme-halloween__v4.png",
+  "halloween_gravestone_5.png": "halloween-gravestone__ornament__theme-halloween__v5.png",
+  "halloween_haunted_house_cave.png": "halloween-haunted-house__cave__theme-halloween__front.png",
+  "halloween_haunted_tree.png": "halloween-haunted-tree__ornament__theme-halloween.png",
+  "halloween_jackolantern.png": "halloween-jack-o-lantern__bubbler__theme-halloween__front.png",
+  "halloween_jackolantern_bubbler.png": "halloween-jack-o-lantern__bubbler__theme-halloween__front.png",
+  "halloween_seaweed.png": "halloween-seaweed__plant__theme-halloween.png",
+  "halloween_skeleton_lure.png": "halloween-skeleton__ornament__theme-halloween.png",
+  "halloween_spider.png": "halloween-spider__ornament__theme-halloween.png",
+  "halloween_webs.png": "halloween-webs__ornament__theme-halloween.png",
+  "meteor_cave.png": "meteor__cave-rock__theme-space__front.png",
+  "moss-bridge.png": "moss-bridge__wood-plant__theme-natural.png",
+  "mushroomcoral_seaweed.png": "large-mushroom-coral__coral__theme-reef.png",
+  "plane-wreck.png": "frozen-sunken-submarine__ornament__theme-frozen.png",
+  "rock_1_bricks.png": "rock-bricks__rock__theme-natural.png",
+  "rock_2_bricks.png": "rock-bricks__rock__theme-natural__v2.png",
+  "rock_3_bricks.png": "rock-bricks__rock__theme-natural__v3.png",
+  "rock_4_bricks.png": "rock-bricks__rock__theme-natural__v4.png",
+  "rock_5_bricks.png": "rock-bricks__rock__theme-natural__v5.png",
+  "sea_anemone_2.png": "sea-anemone__coral__theme-reef.png",
+  "sea_anemone_5.png": "sea-anemone__coral__theme-reef__v2.png",
+  "seaweed-bunch.png": "seaweed-bunch__plant__theme-reef.png",
+  "seaweed_1.png": "seaweed__plant__theme-reef.png",
+  "shipwreck.png": "frozen-ship__ornament__theme-frozen.png",
+  "slate-cave.png": "slate__cave-rock__theme-natural__front.png",
+  "transit-tube.png": "transit-tube__transit__theme-artificial__front.png",
+  "treasure-chest_bubbler.png": "treasure-chest__bubbler__theme-treasure__front.png",
+  "volcanic_rock_1_bricks.png": "volcanic-rock-bricks__rock__theme-natural.png",
+  "volcanic_rock_2_bricks.png": "volcanic-rock-bricks__rock__theme-natural__v2.png",
+  "volcanic_rock_3_bricks.png": "volcanic-rock-bricks__rock__theme-natural__v3.png",
+  "volcanic_rock_4_bricks.png": "volcanic-rock-bricks__rock__theme-natural__v4.png",
+  "volcano-1_bubbler.png": "volcano__bubbler__theme-natural__front.png",
+  "volcano-2_bubbler.png": "volcano__bubbler__theme-natural__v2__front.png"
 });
 const DECOR_RGB_COLOR_SETTING = "rgb";
 const DECOR_COLORIZE_SETTING_SUFFIX = "Colorize";
@@ -2981,9 +8443,31 @@ const dom = {
   debugFishBehaviorPreviewScaleY: document.querySelector("#debugFishBehaviorPreviewScaleY"),
   debugFishBehaviorPreviewTilt: document.querySelector("#debugFishBehaviorPreviewTilt"),
   debugFishBehaviorPreviewDescription: document.querySelector("#debugFishBehaviorPreviewDescription"),
+  debugDecorPreviewButton: document.querySelector("#debugDecorPreviewButton"),
+  debugDecorPreview: document.querySelector("#debugDecorPreview"),
+  closeDebugDecorPreview: document.querySelector("#closeDebugDecorPreview"),
+  debugDecorPreviewSelect: document.querySelector("#debugDecorPreviewSelect"),
+  debugDecorPreviewLayer: document.querySelector("#debugDecorPreviewLayer"),
+  debugDecorPreviewSnapButton: document.querySelector("#debugDecorPreviewSnapButton"),
+  debugDecorPreviewResetButton: document.querySelector("#debugDecorPreviewResetButton"),
+  debugDecorPreviewCanvas: document.querySelector("#debugDecorPreviewCanvas"),
+  debugDecorPreviewStatus: document.querySelector("#debugDecorPreviewStatus"),
+  debugDecorPreviewSize: document.querySelector("#debugDecorPreviewSize"),
+  debugDecorPreviewSizeOutput: document.querySelector("#debugDecorPreviewSizeOutput"),
+  debugDecorPreviewFlipX: document.querySelector("#debugDecorPreviewFlipX"),
+  debugDecorPreviewFlipY: document.querySelector("#debugDecorPreviewFlipY"),
+  debugDecorPreviewShowFootprint: document.querySelector("#debugDecorPreviewShowFootprint"),
+  debugDecorPreviewColors: document.querySelector("#debugDecorPreviewColors"),
+  debugDecorPreviewBottom: document.querySelector("#debugDecorPreviewBottom"),
+  debugDecorPreviewOffset: document.querySelector("#debugDecorPreviewOffset"),
+  debugDecorPreviewFootprint: document.querySelector("#debugDecorPreviewFootprint"),
   debugNotificationUiButton: document.querySelector("#debugNotificationUiButton"),
   debugFishActionIndicatorsButton: document.querySelector("#debugFishActionIndicatorsButton"),
   debugFrameProfilerButton: document.querySelector("#debugFrameProfilerButton"),
+  debugDepthTuner: document.querySelector("#debugDepthTuner"),
+  debugDepthTunerReadout: document.querySelector("#debugDepthTunerReadout"),
+  debugDepthTunerResetButton: document.querySelector("#debugDepthTunerResetButton"),
+  debugDepthTunerCopyButton: document.querySelector("#debugDepthTunerCopyButton"),
   debugLivingBoroughPanel: document.querySelector("#debugLivingBoroughPanel"),
   resetMealsButton: document.querySelector("#resetMealsButton"),
   addHundredCoinsButton: document.querySelector("#addHundredCoinsButton"),
@@ -3157,6 +8641,9 @@ const dom = {
   waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
   causticLightingToggleInput: document.querySelector("#causticLightingToggleInput"),
   decorShadowsToggleInput: document.querySelector("#decorShadowsToggleInput"),
+  depthEffectLevelInput: document.querySelector("#depthEffectLevelInput"),
+  depthEffectLevelOutput: document.querySelector("#depthEffectLevelOutput"),
+  backgroundDepthHazeToggleInput: document.querySelector("#backgroundDepthHazeToggleInput"),
   simpleTurnAnimationsToggleInput: document.querySelector("#simpleTurnAnimationsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
@@ -3374,6 +8861,7 @@ const runtime = {
   customImageStorageTestPromise: null,
   customImageStorageFallbackWarningShown: false,
   customImageObjectUrls: new Map(),
+  missingCustomImageWarnings: new Set(),
   customImageCleanupQueued: false,
   editingTankNameId: null,
   editingTankNameValue: "",
@@ -3417,6 +8905,9 @@ const runtime = {
   debugNotificationUiEnabled: false,
   debugFishActionIndicatorsEnabled: false,
   debugFrameProfilerEnabled: false,
+  debugDepthTuning: null,
+  debugDepthTuningLoaded: false,
+  debugDepthTuningApplyTimer: 0,
   frameProfilerCurrent: null,
   frameProfilerSamples: [],
   frameProfilerLongFrameCount: 0,
@@ -3661,6 +9152,17 @@ const runtime = {
   debugFishBehaviorPreviewFrame: 0,
   debugFishBehaviorPreviewFish: null,
   debugFishBehaviorPreviewLoadToken: 0,
+  debugDecorPreviewOpen: false,
+  debugDecorPreviewDecorKey: "",
+  debugDecorPreviewItem: null,
+  debugDecorPreviewFrame: 0,
+  debugDecorPreviewLoadToken: 0,
+  debugDecorPreviewScalePercent: 100,
+  debugDecorPreviewPointerId: null,
+  debugDecorPreviewDragOffsetX: 0,
+  debugDecorPreviewDragOffsetY: 0,
+  debugDecorPreviewTransform: null,
+  debugDecorPreviewSnapped: true,
   aspectRatioLocked: FIXED_16_9_ASPECT_RATIO,
   hiddenKeySequenceBuffer: "",
   debugBreedingSequence: null,
@@ -4296,6 +9798,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         activityRegulation: normalizeCustomFishActivityRegulation(pending.activityRegulation),
         swimZone: normalizeCustomFishSwimZone(pending.swimZone),
         socialAffinity: normalizeCustomFishSocialAffinity(pending.socialAffinity),
+        liveBirth: pending.liveBirth === true,
         turnAnimation: String(pending.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
         createdAt: now
       }, speciesKey);

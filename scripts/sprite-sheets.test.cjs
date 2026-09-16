@@ -71,14 +71,12 @@ test("renamed sheet frames retain legacy paths and authored grid order", async (
 
 test("Otocinclus keeps all four appearances across normal, front-glass and swimming poses", async () => {
   const { context: c } = runtimeContext();
-  vm.runInContext(fs.readFileSync(path.join(root, "public/app-src/fish/undead-and-appearance.js"), "utf8"), c);
+  vm.runInContext(fs.readFileSync(path.join(root, "public/app-src/fish/appearance.js"), "utf8"), c);
   Object.assign(c, {
     getFishDisplaySourceSpecies: (_fish, species) => species,
     isFishDead: fish => fish.dead,
     isSuckerFishFreeSwimming: fish => fish.swimming,
     isFrontGlassSuckerFish: fish => fish.front,
-    isZombieSkeletonModeAvailable: () => false,
-    isZombieVariantFish: () => false,
     isGoreEnabled: () => false
   });
   const species = { id: "otocinclus", behavior: "sucker", asset: "assets/fish/otocinclus.png" };

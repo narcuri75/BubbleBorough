@@ -29,14 +29,12 @@ function getPiranhaTargetCandidate(now = Date.now()) {
       fish
       && fish.id !== draggedFishId
       && !isPiranhaSpecies(fish)
-      && !isUndeadFish(fish)
       && !isFishBeingConsumedByPiranhas(fish, now)
       && (
         isValidPiranhaConsumptionPrey(fish)
         || (
           !isFishDead(fish)
           && !isFishProtectedFromPredators(fish, now)
-          && !hasZombieBiteInfection(fish)
         )
       )
     ))
@@ -77,19 +75,293 @@ function clearFishPanicState(fish) {
   fish.panicSpeedBoost = null;
 }
 
-function clearZombieAttackState(fish) {
+function getPufferInflationMinDurationMs() { return 5200; }
+function getPufferInflationMaxDurationMs() { return 7200; }
+function getPufferInflationWobbleMs() { return 1800; }
+function getPufferInflationRiseMs() { return 3000; }
+function getPufferInflationCooldownMs() { return 12000; }
+function getPufferDeflationDurationMs() { return 780; }
+function getPufferInflationBubbleCountMin() { return 12; }
+function getPufferInflationBubbleCountMax() { return 18; }
+function getPufferInflationTriggerThreat() { return 0.72; }
+
+function isPufferfishSpecies(target) {
+  if (!target) {
+    return false;
+  }
+  const species = typeof target.id === "string" && typeof target.asset === "string"
+    ? target
+    : getSpeciesForFish(target);
+  return species?.id === "pufferfish";
+}
+
+function isPufferInflatedActive(fish, now = Date.now()) {
+  return Boolean(isPufferfishSpecies(fish) && (Number(fish?.pufferInflatedUntil) || 0) > now && !isFishDead(fish));
+}
+
+function isPufferDeflatingActive(fish, now = Date.now()) {
+  const inflatedUntil = Number(fish?.pufferInflatedUntil) || 0;
+  return Boolean(
+    isPufferfishSpecies(fish)
+    && inflatedUntil > 0
+    && now >= inflatedUntil
+    && now < inflatedUntil + getPufferDeflationDurationMs()
+    && !isFishDead(fish)
+  );
+}
+
+function isPufferPuffVisualActive(fish, now = Date.now()) {
+  return isPufferInflatedActive(fish, now) || isPufferDeflatingActive(fish, now);
+}
+
+function getPufferDeflationProgress(fish, now = Date.now()) {
+  if (!isPufferDeflatingActive(fish, now)) {
+    return isPufferInflatedActive(fish, now) ? 0 : 1;
+  }
+  const inflatedUntil = Number(fish.pufferInflatedUntil) || now;
+  const rawProgress = clamp((now - inflatedUntil) / getPufferDeflationDurationMs(), 0, 1);
+  return rawProgress * rawProgress * (3 - 2 * rawProgress);
+}
+
+function getPufferInflationWobbleAmount(fish, now = Date.now()) {
+  if (!isPufferInflatedActive(fish, now)) {
+    return 0;
+  }
+  const wobbleUntil = Number(fish.pufferWobbleUntil) || 0;
+  const strongWobbleProgress = wobbleUntil > now
+    ? clamp((wobbleUntil - now) / getPufferInflationWobbleMs(), 0, 1)
+    : 0;
+  return 0.28 + strongWobbleProgress * 0.72;
+}
+
+function clearPufferInflationState(fish, options = {}) {
   if (!fish) {
     return;
   }
-
-  fish.zombieBiteStartedAt = null;
-  fish.zombieBiteLastBloodAt = null;
-  fish.zombieBiteAttackerId = null;
-  clearFishPanicState(fish);
-  if (!isFishDead(fish)) {
-    fish.zombieReviveAt = null;
-    fish.zombieReviveSourceId = null;
+  fish.pufferInflatedAt = 0;
+  fish.pufferInflatedUntil = 0;
+  fish.pufferWobbleUntil = 0;
+  fish.pufferRiseUntil = 0;
+  fish.pufferInflatedSwimSpeed = 0;
+  if (options.clearCooldown) {
+    fish.pufferCooldownUntil = 0;
   }
+  if (options.clearBurst !== false) {
+    fish.pufferInflationBubbles = [];
+  }
+}
+
+function buildPufferInflationBubbleBurst(fish, species, now = Date.now()) {
+  const width = getFishDisplayWidth(fish, species, now);
+  const image = runtime.images.get(getFishDisplayAssetPath(fish, species, now) || species?.asset || "");
+  const height = width * (image?.width ? image.height / image.width : 0.58);
+  const facing = getFishFacingDirection(fish) || 1;
+  const baseX = fish.xNorm * TANK_WIDTH + facing * width * 0.12;
+  const baseY = fish.yNorm * TANK_HEIGHT - height * 0.06;
+  const count = Math.round(randomBetween(getPufferInflationBubbleCountMin(), getPufferInflationBubbleCountMax()));
+  const bubbles = [];
+
+  for (let index = 0; index < count; index += 1) {
+    bubbles.push({
+      createdAt: now + randomBetween(0, 180),
+      sourceX: clamp(baseX + randomBetween(-width * 0.18, width * 0.18), GLASS_MARGIN_X + 10, TANK_WIDTH - GLASS_MARGIN_X - 10),
+      sourceY: clamp(baseY + randomBetween(-height * 0.16, height * 0.12), WATER_SURFACE_Y + 14, TANK_HEIGHT - GLASS_MARGIN_BOTTOM - 10),
+      driftX: randomBetween(-18, 18),
+      wobble: randomBetween(0.8, 3.2),
+      wobblePhase: Math.random() * Math.PI * 2,
+      radius: randomBetween(2.4, 5.8),
+      stretch: randomBetween(0.9, 1.18),
+      seed: Math.floor(Math.random() * 0x7fffffff)
+    });
+  }
+
+  return bubbles;
+}
+
+function getPufferThreatLevel(fish, species, now = Date.now()) {
+  if (!isPufferfishSpecies(species) || !fish || isFishDead(fish)) {
+    return 0;
+  }
+
+  let threat = 0;
+  // Generic panic is intentionally not a puff trigger. A single glass tap
+  // creates a short panic response for nearby fish, and puffers should only
+  // inflate from the dedicated rapid-tap harassment path or an imminent
+  // biological attack. Mere proximity to a predator is not enough.
+  const maxHealthUnits = Math.max(1, getFishMaxHealthUnits(fish, species));
+  if ((Number(fish.healthUnits) || maxHealthUnits) <= Math.max(1, maxHealthUnits - 2)) {
+    threat = Math.max(threat, 0.5);
+  }
+
+  // If a piranha swarm has already committed to this fish, inflation is a
+  // legitimate emergency response regardless of where an individual piranha
+  // happens to be on this exact frame.
+  if ((Number(fish.piranhaAttackStartedAt) || 0) > 0) {
+    threat = Math.max(threat, 0.98);
+  }
+
+  const homeTank = getTankContainingFish(fish.id);
+  if (!homeTank) {
+    return threat;
+  }
+
+  for (const otherFish of state.fish) {
+    if (!otherFish || otherFish.id === fish.id || isFishDead(otherFish)) {
+      continue;
+    }
+    const otherTank = getTankContainingFish(otherFish.id);
+    if (!otherTank || otherTank.id !== homeTank.id) {
+      continue;
+    }
+    const otherSpecies = getSpeciesForFish(otherFish);
+    if (!otherSpecies) {
+      continue;
+    }
+
+    const schoolingPredator = isPiranhaSpecies(otherFish);
+    const largePredator = isLargePredatoryFishSpecies(otherFish);
+    const predatorySpecies = otherSpecies.id !== "pufferfish" && isPredatoryFishSpecies(otherFish);
+    const fishWidth = getFishDisplayWidth(fish, species, now);
+    const otherWidth = getFishDisplayWidth(otherFish, otherSpecies, now);
+    const distanceNorm = Math.hypot(
+      (otherFish.xNorm || 0.5) - (fish.xNorm || 0.5),
+      (otherFish.yNorm || 0.5) - (fish.yNorm || 0.5)
+    );
+
+    // Sharks and Orcas normally cruising through the same water are only an
+    // alerting presence. In this game they become a true puff trigger only
+    // when they are in the same desperation state that can actually produce a
+    // bite and have closed to roughly attack distance.
+    if (largePredator) {
+      const predatorIsDesperate = (
+        getFishNeedValue(otherFish, "hunger", now) <= FISH_HUNGER_CRITICAL_THRESHOLD
+        && Number(otherFish.healthUnits) <= 2
+        && otherFish.activity === "roam"
+      );
+      const imminentRange = Math.max(
+        SHARK_DESPERATION_ATTACK_RANGE_NORM * 1.35,
+        ((fishWidth + otherWidth) * 0.42) / TANK_WIDTH
+      );
+      if (predatorIsDesperate && distanceNorm <= imminentRange) {
+        threat = Math.max(threat, 0.96);
+      } else {
+        // The puffer can still register the nearby animal as stressful, but
+        // this deliberately remains below the inflation threshold.
+        const awarenessRange = Math.max(0.16, Math.min(0.32, 0.17 + ((fishWidth + otherWidth) / TANK_WIDTH) * 0.8));
+        if (distanceNorm <= awarenessRange) {
+          const proximity = 1 - clamp(distanceNorm / awarenessRange, 0, 1);
+          threat = Math.max(threat, 0.38 + proximity * 0.22);
+        }
+      }
+      continue;
+    }
+
+    // Other predators can alarm a puffer without making every casual pass an
+    // inflation event. Active piranha attacks are handled above.
+    const bodySizeThreat = predatorySpecies && otherWidth >= fishWidth * 1.1;
+    if (!schoolingPredator && !bodySizeThreat) {
+      continue;
+    }
+
+    const awarenessRange = Math.max(0.08, Math.min(0.22, 0.11 + ((fishWidth + otherWidth) / TANK_WIDTH) * 0.7));
+    if (distanceNorm > awarenessRange) {
+      continue;
+    }
+    const proximity = 1 - clamp(distanceNorm / awarenessRange, 0, 1);
+    threat = Math.max(threat, 0.36 + proximity * 0.24);
+  }
+
+  return clamp(threat, 0, 1);
+}
+
+function startPufferInflation(fish, species, now = Date.now()) {
+  if (!isPufferfishSpecies(species) || !fish || isFishDead(fish)) {
+    return false;
+  }
+
+  const durationMs = randomBetween(getPufferInflationMinDurationMs(), getPufferInflationMaxDurationMs());
+  fish.pufferInflatedAt = now;
+  fish.pufferInflatedUntil = now + durationMs;
+  fish.pufferWobbleUntil = now + getPufferInflationWobbleMs();
+  fish.pufferRiseUntil = now + getPufferInflationRiseMs();
+  fish.pufferCooldownUntil = now + durationMs + getPufferInflationCooldownMs();
+  fish.pufferInflatedSwimSpeed = normalizeFishSpeed(
+    species,
+    Math.max(species.speedMin * 0.42, Math.min(species.speedMax * 0.34, species.speedMin + (species.speedMax - species.speedMin) * 0.12))
+  );
+  // Inflation is the defensive response. Once the fish puffs, it stops doing
+  // a full-speed panic dash and becomes awkward and buoyant instead.
+  fish.panicUntil = null;
+  fish.panicSpeedBoost = null;
+  fish.activity = "roam";
+  fish.feedingPelletId = null;
+  fish.targetAt = now + 180;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.pufferInflationBubbles = buildPufferInflationBubbleBurst(fish, species, now);
+  setFishBehaviorIntent(fish, "defensive puff", "threatened", now, { durationMs });
+  return true;
+}
+
+function updatePufferInflationMotionTarget(fish, species, now = Date.now()) {
+  if (!isPufferInflatedActive(fish, now)) {
+    return false;
+  }
+
+  const driftPhase = Number.isFinite(Number(fish.pufferDriftPhase))
+    ? Number(fish.pufferDriftPhase)
+    : (fish.pufferDriftPhase = Math.random() * Math.PI * 2);
+  const riseBias = (Number(fish.pufferRiseUntil) || 0) > now ? 0.05 : 0.02;
+  const lateralDrift = Math.sin(now / 780 + driftPhase) * 0.026;
+  const targetLayer = getFishTankLayer(fish);
+  fish.targetXNorm = clamp((fish.xNorm || 0.5) + lateralDrift, 0.1, 0.9);
+  fish.targetYNorm = clampFishYNormToLayer(
+    (fish.yNorm || 0.5) - riseBias + Math.sin(now / 540 + driftPhase * 1.3) * 0.006,
+    fish,
+    species,
+    targetLayer,
+    { minYNorm: 0.16, maxYNorm: 0.72 }
+  );
+  fish.targetAt = now + 220;
+  fish.swimSpeed = Number(fish.pufferInflatedSwimSpeed) || normalizeFishSpeed(species, species.speedMin * 0.42);
+  setFishDesiredTankLayer(fish, targetLayer);
+  return true;
+}
+
+function updatePufferInflationState(fish, species, now = Date.now()) {
+  if (!isPufferfishSpecies(species) || !fish) {
+    return false;
+  }
+  if (isFishDead(fish)) {
+    clearPufferInflationState(fish);
+    return false;
+  }
+
+  if (isPufferInflatedActive(fish, now)) {
+    return true;
+  }
+
+  if (isPufferDeflatingActive(fish, now)) {
+    fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 120);
+    fish.swimSpeed = normalizeFishSpeed(species, species.speedMin);
+    return true;
+  }
+
+  if ((Number(fish.pufferInflatedUntil) || 0) > 0 && now >= Number(fish.pufferInflatedUntil) + getPufferDeflationDurationMs()) {
+    clearPufferInflationState(fish, { clearBurst: false });
+    fish.targetAt = Math.min(Number(fish.targetAt) || now, now + 80);
+    fish.swimSpeed = normalizeFishSpeed(species);
+  }
+
+  if ((Number(fish.pufferCooldownUntil) || 0) > now) {
+    return false;
+  }
+
+  if (getPufferThreatLevel(fish, species, now) >= getPufferInflationTriggerThreat()) {
+    return startPufferInflation(fish, species, now);
+  }
+
+  return false;
 }
 
 function resetLivingFishPredatorState(fish, now = Date.now(), options = {}) {
@@ -98,7 +370,7 @@ function resetLivingFishPredatorState(fish, now = Date.now(), options = {}) {
   }
 
   clearFishPanicState(fish);
-  clearZombieAttackState(fish);
+  clearPufferInflationState(fish, { clearCooldown: true });
   clearPiranhaAttackState(fish);
   fish.piranhaConsumptionStartedAt = null;
   fish.piranhaConsumptionEndsAt = null;
@@ -138,7 +410,7 @@ function applyContentSettingsEffects(now = Date.now()) {
     runtime.bettaPassLocks.clear();
   }
 
-  if ((!violenceAndGoreEnabled || !isZombieSkeletonModeAvailable()) && runtime.medicineModeKey === "antidote") {
+  if (runtime.medicineModeKey === "antidote") {
     runtime.medicineModeKey = "";
   }
 
@@ -152,12 +424,6 @@ function applyContentSettingsEffects(now = Date.now()) {
       continue;
     }
 
-    const hasZombieState = (
-      hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-      || hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-      || hasDefinedFiniteNumber(fish.zombieReviveAt)
-      || (typeof fish.zombieReviveSourceId === "string" && fish.zombieReviveSourceId.trim())
-    );
     const hasPiranhaState = (
       hasDefinedFiniteNumber(fish.piranhaAttackStartedAt)
       || hasDefinedFiniteNumber(fish.piranhaLastDamageAt)
@@ -165,13 +431,6 @@ function applyContentSettingsEffects(now = Date.now()) {
       || hasDefinedFiniteNumber(fish.piranhaConsumptionEndsAt)
       || hasDefinedFiniteNumber(fish.piranhaLastBloodAt)
     );
-
-    if (!violenceAndGoreEnabled && hasZombieState) {
-      clearZombieAttackState(fish);
-      fish.zombieReviveAt = null;
-      fish.zombieReviveSourceId = null;
-      changed = true;
-    }
 
     if (!violenceAndGoreEnabled && hasPiranhaState) {
       clearPiranhaAttackState(fish);
@@ -447,7 +706,65 @@ function setDecorShadowsEnabled(value) {
   state.uiSettings = nextSettings;
   saveState();
   renderUi(Date.now(), { full: false });
-  showToast(nextSettings.decorShadowsEnabled ? "Decor shadows on." : "Decor shadows off.");
+  showToast(nextSettings.decorShadowsEnabled ? "Shadows on." : "Shadows off.");
+}
+
+function setDepthEffectLevel(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const depthEffectLevel = saveDepthEffectLevelPreference(value);
+  if (currentSettings.depthEffectLevel === depthEffectLevel) {
+    if (state.uiSettings?.depthEffectLevel !== depthEffectLevel) {
+      state.uiSettings = sanitizeUiSettings({
+        ...currentSettings,
+        depthEffectLevel
+      });
+      saveState();
+    }
+    return;
+  }
+
+  state.uiSettings = sanitizeUiSettings({
+    ...currentSettings,
+    depthEffectLevel
+  });
+  saveState();
+  invalidateTankDepthVisualCaches();
+  runtime.boroughOverviewSnapshotQueue = [];
+  renderUi(Date.now(), { full: false });
+  renderTank(Date.now());
+  const label = DEPTH_EFFECT_LEVEL_LABELS[depthEffectLevel] || "Custom";
+  showToast(depthEffectLevel === 0
+    ? "Aquarium depth effects off."
+    : `Aquarium depth level ${depthEffectLevel}: ${label}.`);
+}
+
+function setBackgroundDepthHazeEnabled(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    backgroundDepthHazeEnabled: Boolean(value)
+  });
+  if (currentSettings.backgroundDepthHazeEnabled === nextSettings.backgroundDepthHazeEnabled) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  invalidateTankDepthVisualCaches();
+  runtime.boroughOverviewSnapshotQueue = [];
+  renderUi(Date.now(), { full: false });
+  renderTank(Date.now());
+  showToast(nextSettings.backgroundDepthHazeEnabled
+    ? "Background depth haze on."
+    : "Background depth haze off.");
 }
 
 function setSimpleTurnAnimationsOnly(value) {
@@ -640,15 +957,6 @@ function scrubProtectedFishPredatorState(fish, now = Date.now()) {
   let changed = false;
 
   if (
-    hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-    || hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-    || hasDefinedFiniteNumber(fish.zombieReviveAt)
-  ) {
-    clearZombieAttackState(fish);
-    changed = true;
-  }
-
-  if (
     hasDefinedFiniteNumber(fish.piranhaAttackStartedAt)
     || hasDefinedFiniteNumber(fish.piranhaLastDamageAt)
     || hasDefinedFiniteNumber(fish.piranhaConsumptionStartedAt)
@@ -687,35 +995,11 @@ function scrubImpossiblePredatorState(now = Date.now()) {
   }
 
   let changed = false;
-  const zombieHunterIds = getLivingZombieHunterIds();
   const piranhaContext = hasPiranhaContext();
 
   for (const fish of [...state.fish, ...state.storedFish]) {
     if (!fish) {
       continue;
-    }
-
-    if (
-      (
-        hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-        || hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-      )
-      && !hasValidZombieBiteSource(fish, zombieHunterIds)
-    ) {
-      clearZombieAttackState(fish);
-      changed = true;
-    }
-
-    if (
-      isFishDead(fish)
-      && hasDefinedFiniteNumber(fish.zombieReviveAt)
-      && typeof fish.zombieReviveSourceId === "string"
-      && fish.zombieReviveSourceId.trim()
-      && !zombieHunterIds.has(fish.zombieReviveSourceId.trim())
-    ) {
-      fish.zombieReviveAt = null;
-      fish.zombieReviveSourceId = null;
-      changed = true;
     }
 
     if (
@@ -738,8 +1022,7 @@ function scrubImpossiblePredatorState(now = Date.now()) {
     }
 
     if (
-      !hasZombieBiteInfection(fish)
-      && !isFishCriticallyLowHealth(fish)
+      !isFishCriticallyLowHealth(fish)
       && (
         hasDefinedFiniteNumber(fish.panicUntil)
         || hasDefinedFiniteNumber(fish.panicSpeedBoost)
@@ -751,42 +1034,6 @@ function scrubImpossiblePredatorState(now = Date.now()) {
   }
 
   return changed;
-}
-
-function isValidZombieBiteTarget(fish, now = Date.now()) {
-  if (!fish) {
-    return false;
-  }
-
-  if (isFishDead(fish)) {
-    return false;
-  }
-
-  if (isPiranhaSpecies(fish)) {
-    return false;
-  }
-
-  if (isUndeadFish(fish)) {
-    return false;
-  }
-
-  if (isFishProtectedFromPredators(fish, now)) {
-    return false;
-  }
-
-  if (hasZombieBiteInfection(fish)) {
-    return false;
-  }
-
-  if (hasDefinedFiniteNumber(fish.piranhaAttackStartedAt)) {
-    return false;
-  }
-
-  if (isFishBeingConsumedByPiranhas(fish, now)) {
-    return false;
-  }
-
-  return true;
 }
 
 function isValidPiranhaPrey(fish, now = Date.now()) {
@@ -802,15 +1049,7 @@ function isValidPiranhaPrey(fish, now = Date.now()) {
     return false;
   }
 
-  if (isUndeadFish(fish)) {
-    return false;
-  }
-
   if (isFishProtectedFromPredators(fish, now)) {
-    return false;
-  }
-
-  if (hasZombieBiteInfection(fish)) {
     return false;
   }
 
@@ -830,7 +1069,7 @@ function isValidPiranhaConsumptionPrey(fish) {
     return false;
   }
 
-  if (isPiranhaSpecies(fish) || isUndeadFish(fish)) {
+  if (isPiranhaSpecies(fish)) {
     return false;
   }
 
@@ -1035,189 +1274,8 @@ function handlePiranhaSwarm(now, deltaSeconds) {
   }
 }
 
-function getZombieAttackTarget(attacker, now = Date.now()) {
-  if (!attacker || isFishDead(attacker) || !usesZombieHunterBehavior(attacker)) {
-    return null;
-  }
-
-  const draggedFishId = runtime.fishDragState?.fishId || null;
-  return state.fish
-    .filter((fish) => (
-      fish
-      && fish.id !== draggedFishId
-      && fish.id !== attacker.id
-      && isValidZombieBiteTarget(fish, now)
-    ))
-    .sort((left, right) => {
-      const leftDistance = Math.hypot(left.xNorm - attacker.xNorm, left.yNorm - attacker.yNorm);
-      const rightDistance = Math.hypot(right.xNorm - attacker.xNorm, right.yNorm - attacker.yNorm);
-      return leftDistance - rightDistance
-        || (left.tankAddedAt || left.acquiredAt || 0) - (right.tankAddedAt || right.acquiredAt || 0);
-    })[0] || null;
-}
-
-function infectFishWithZombieBite(target, attacker, now = Date.now()) {
-  if (
-    !target
-    || !attacker
-    || isFishDead(target)
-    || isFishDead(attacker)
-    || isUndeadFish(target)
-    || hasZombieBiteInfection(target)
-    || isFishProtectedFromPredators(target, now)
-    || hasDefinedFiniteNumber(target.piranhaAttackStartedAt)
-    || isFishBeingConsumedByPiranhas(target, now)
-  ) {
-    return false;
-  }
-
-  target.zombieBiteStartedAt = now;
-  target.zombieBiteLastBloodAt = now;
-  target.zombieBiteAttackerId = attacker.id;
-  target.zombieReviveAt = null;
-  target.zombieReviveSourceId = null;
-  makeFishScurryFromAttack(target, attacker, now);
-  attacker.lastAteAt = now;
-  const mealCoins = recordFishMealCredit(attacker, now);
-  applyFishMealWindowFoodIntake(attacker, now, { satiate: false, countBasedOverfeed: true });
-  pushEvent(
-    mealCoins > 0
-      ? `${attacker.name} bit ${target.name} with a zombie bite and earned ${mealCoins} ${pluralize("coin", mealCoins)}.`
-      : `${attacker.name} bit ${target.name} with a zombie bite.`,
-    now
-  );
-  return true;
-}
-
-function reviveFishAsZombieVariant(fish, now = Date.now()) {
-  const species = getSpeciesForFish(fish);
-  if (
-    !fish
-    || !species
-    || !isFishDead(fish)
-    || isUndeadFish(fish)
-    || isFishBeingConsumedByPiranhas(fish, now)
-  ) {
-    return false;
-  }
-
-  fish.deadAt = null;
-  fish.zombieVariant = true;
-  fish.zombieBiteStartedAt = null;
-  fish.zombieBiteLastBloodAt = null;
-  fish.zombieBiteAttackerId = null;
-  fish.zombieReviveAt = null;
-  fish.zombieReviveSourceId = null;
-  fish.decayStage = null;
-  fish.piranhaConsumptionStartedAt = null;
-  fish.piranhaConsumptionEndsAt = null;
-  fish.piranhaLastBloodAt = null;
-  clearPiranhaAttackState(fish);
-  fish.healthUnits = getFishMaxHealthUnits(fish, species);
-  fish.fedStreak = 0;
-  fish.missedMealsInRow = 0;
-  fish.comfortDamageProgressMs = 0;
-  fish.activity = "roam";
-  fish.feedingPelletId = null;
-  fish.hangoutDecorId = null;
-  fish.blockedDecorId = null;
-  fish.blockedDecorUntil = null;
-  fish.wallAvoidUntil = now + 600;
-  fish.panicUntil = null;
-  fish.panicSpeedBoost = null;
-  fish.targetXNorm = clamp(fish.xNorm + randomBetween(-0.16, 0.16), 0.08, 0.92);
-  fish.targetYNorm = clamp(randomBetween(0.26, 0.64), 0.14, 0.8);
-  fish.targetAt = now + ZOMBIE_ATTACK_TARGET_REFRESH_MS;
-  fish.swimSpeed = normalizeFishSpeed(
-    species,
-    randomBetween(Math.max(species.speedMin, species.speedMax * 0.82), species.speedMax)
-  );
-  clearFishSchoolFollowState(fish);
-  clearFishCaveBehavior(fish);
-  setFishTankLayers(
-    fish,
-    getEffectiveFishBehavior(fish, species) === "sucker"
-      ? TANK_DEPTH_LAYERS
-      : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, Number(fish.tankLayer) || DEFAULT_TANK_LAYER))),
-    getEffectiveFishBehavior(fish, species) === "sucker"
-      ? TANK_DEPTH_LAYERS
-      : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, Number(fish.tankLayer) || DEFAULT_TANK_LAYER)))
-  );
-  unlockFishSpecies("zombie-fish", now, "Zombie Fish unlocked after a fish rose again as a zombie.");
-  spawnBloodCloud(fish.xNorm, fish.yNorm, 1.4);
-  pushEvent(`${fish.name} rose again as a zombie ${species.name.toLowerCase()}.`, now);
-  return true;
-}
-
-function processZombieInfections(now) {
-  let changed = false;
-
-  if (!isViolenceEnabled() || !isZombieModeEnabled()) {
-    for (const fish of state.fish) {
-      if (
-        hasDefinedFiniteNumber(fish.zombieBiteStartedAt)
-        || hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-        || hasDefinedFiniteNumber(fish.zombieReviveAt)
-        || (typeof fish.zombieReviveSourceId === "string" && fish.zombieReviveSourceId.trim())
-      ) {
-        clearZombieAttackState(fish);
-        fish.zombieReviveAt = null;
-        fish.zombieReviveSourceId = null;
-        changed = true;
-      }
-    }
-
-    return changed;
-  }
-
-  for (const fish of state.fish) {
-    if (hasZombieBiteInfection(fish)) {
-      if (!hasValidZombieBiteSource(fish)) {
-        clearZombieAttackState(fish);
-        changed = true;
-        continue;
-      }
-
-      if (
-        !hasDefinedFiniteNumber(fish.zombieBiteLastBloodAt)
-        || now - Number(fish.zombieBiteLastBloodAt) >= ZOMBIE_BITE_BLOOD_INTERVAL_MS
-      ) {
-        spawnBloodCloud(
-          clamp(fish.xNorm + randomBetween(-0.004, 0.004), 0.08, 0.92),
-          clamp(fish.yNorm + randomBetween(-0.004, 0.004), 0.14, 0.8),
-          1.1
-        );
-        fish.zombieBiteLastBloodAt = now;
-        changed = true;
-      }
-
-      if (now - Number(fish.zombieBiteStartedAt) >= ZOMBIE_BITE_FATAL_MS) {
-        const reviveSourceId = typeof fish.zombieBiteAttackerId === "string" && fish.zombieBiteAttackerId.trim()
-          ? fish.zombieBiteAttackerId.trim()
-          : null;
-        if (markFishAsDead(fish, now, `${fish.name} bled out after a zombie bite.`)) {
-          changed = true;
-        }
-        fish.zombieReviveAt = now + randomBetween(ZOMBIE_BITE_REVIVE_MIN_MS, ZOMBIE_BITE_REVIVE_MAX_MS);
-        fish.zombieReviveSourceId = reviveSourceId;
-        changed = true;
-      }
-      continue;
-    }
-
-    if (hasPendingZombieRevival(fish) && now >= Number(fish.zombieReviveAt) && reviveFishAsZombieVariant(fish, now)) {
-      changed = true;
-    }
-  }
-
-  return changed;
-}
-
 function canFishUsePassAttack(species) {
-  return Boolean(species && (
-    species.id === "betta"
-    || canZombieSkeletonUsePassAttack({ enabled: isZombieModeEnabled(), species })
-  ));
+  return Boolean(species?.id === "betta");
 }
 
 function canFishPassAttackTarget(attackerSpecies, target) {
@@ -1225,66 +1283,91 @@ function canFishPassAttackTarget(attackerSpecies, target) {
     return false;
   }
 
-  const zombieSkeletonTargetAllowed = canZombieSkeletonPassAttackTarget({
-    enabled: isZombieModeEnabled(),
-    attackerSpecies,
-    target,
-    isUndeadFish
-  });
-  if (zombieSkeletonTargetAllowed !== null) {
-    return zombieSkeletonTargetAllowed;
+  if (attackerSpecies.id === "betta" && getSpeciesForFish(target)?.id === "betta") {
+    // Betta-vs-Betta encounters use the dedicated display/chase/yield state
+    // machine instead of the generic incidental pass-nip system.
+    return false;
   }
 
   return true;
 }
 
-function handleZombieBiteAttacks(now) {
-  if (!state?.fish?.length || !isViolenceEnabled() || !isZombieModeEnabled()) {
+function handleBettaRivalAttacks(now = Date.now()) {
+  if (!Array.isArray(state?.fish) || !state.fish.length) {
     return;
   }
+  let changed = false;
+  const messages = [];
 
-  const draggedFishId = runtime.fishDragState?.fishId || null;
-  const activeBreedingRuntimeSequence = runtime.fishBreedingSequence || runtime.debugBreedingSequence;
-  const breedingFishIds = activeBreedingRuntimeSequence
-    ? new Set([activeBreedingRuntimeSequence.leftFishId, activeBreedingRuntimeSequence.rightFishId].filter(Boolean))
-    : null;
-  const landedMessages = [];
-
-  for (const attacker of state.fish) {
-    if (
-      isFishDead(attacker)
-      || attacker.id === draggedFishId
-      || breedingFishIds?.has(attacker.id)
-      || !usesZombieHunterBehavior(attacker)
-      || attacker.activity !== "roam"
-      || Number(attacker.motionLevel) < 0.14
-    ) {
+  for (const aggressor of state.fish) {
+    if (!aggressor || isFishDead(aggressor) || getSpeciesForFish(aggressor)?.id !== "betta") {
+      continue;
+    }
+    const chaseUntil = Number(aggressor.bettaRivalChaseUntil) || 0;
+    if (aggressor.bettaRivalRole !== "aggressor" || chaseUntil <= 0) {
+      continue;
+    }
+    const target = state.fish.find((entry) => entry?.id === aggressor.bettaRivalTargetId && !isFishDead(entry)) || null;
+    if (!target || !isBettaRivalPair(aggressor, target)) {
+      aggressor.bettaRivalChaseUntil = 0;
+      aggressor.bettaRivalRole = "";
+      aggressor.bettaRivalTargetId = "";
+      changed = true;
       continue;
     }
 
-    const target = getZombieAttackTarget(attacker, now);
-    if (!target || breedingFishIds?.has(target.id)) {
+    if (now >= chaseUntil) {
+      resolveBettaRivalEncounter(aggressor, target, now, { nipped: false });
+      changed = true;
       continue;
     }
 
-    if (Math.hypot(attacker.xNorm - target.xNorm, attacker.yNorm - target.yNorm) > BETTA_ATTACK_TRIGGER_RANGE_NORM) {
+    if (!isViolenceEnabled() || now < (Number(aggressor.bettaRivalNipAt) || 0)) {
+      continue;
+    }
+    if (aggressor.bettaRivalNippedTargetId === target.id) {
+      continue;
+    }
+    const distance = Math.hypot((aggressor.xNorm || 0.5) - (target.xNorm || 0.5), (aggressor.yNorm || 0.5) - (target.yNorm || 0.5));
+    if (distance > BETTA_ATTACK_TRIGGER_RANGE_NORM * 1.15) {
       continue;
     }
 
-    if (!infectFishWithZombieBite(target, attacker, now)) {
+    aggressor.bettaRivalNippedTargetId = target.id;
+    const outcome = applyFishDamage(
+      target,
+      1,
+      now,
+      `${aggressor.name} nipped ${target.name} during a Betta confrontation.`,
+      `${target.name} died after a Betta confrontation with ${aggressor.name}.`
+    );
+    if (!outcome.changed) {
+      resolveBettaRivalEncounter(aggressor, target, now, { nipped: false });
+      changed = true;
       continue;
     }
 
-    landedMessages.push(`${attacker.name} bit ${target.name}.`);
+    if (!outcome.dead) {
+      makeFishScurryFromAttack(target, aggressor, now);
+      teachNearbyFishFromAggression(target, aggressor, now, 0.44);
+    } else {
+      spawnBloodCloud(target.xNorm, target.yNorm, 1.25);
+    }
+    resolveBettaRivalEncounter(aggressor, target, now, { nipped: true });
+    messages.push(outcome.dead
+      ? `${aggressor.name} fatally injured ${target.name}.`
+      : `${aggressor.name} won a Betta confrontation and ${target.name} backed off.`);
+    changed = true;
   }
 
-  if (!landedMessages.length) {
+  if (!changed) {
     return;
   }
-
   saveState();
   renderUi(now);
-  showToast(landedMessages.length === 1 ? landedMessages[0] : `${landedMessages.length} zombie bites landed.`);
+  if (messages.length) {
+    showToast(messages.length === 1 ? messages[0] : `${messages.length} Betta confrontations escalated.`);
+  }
 }
 
 function handleBettaPassAttacks(now) {
@@ -1389,10 +1472,8 @@ function getSharkDesperationTarget(attacker, now = Date.now()) {
       && fish.id !== attacker.id
       && fish.id !== draggedFishId
       && !isFishDead(fish)
-      && !isUndeadFish(fish)
       && !isDesperationPredatorFish(fish)
       && !isFishProtectedFromPredators(fish, now)
-      && !hasZombieBiteInfection(fish)
     ))
     .sort((left, right) => (
       Math.hypot(left.xNorm - attacker.xNorm, left.yNorm - attacker.yNorm)
@@ -2486,7 +2567,7 @@ function getNearestDavyMutationTankmate(fish, predicate = null) {
 
 function isPeacefulDavyCompanionTarget(otherFish, otherSpecies) {
   if (!otherFish || !otherSpecies || isFishDead(otherFish) || isDavyMutationSpecies(otherSpecies)) return false;
-  if (isPiranhaSpecies(otherFish) || usesZombieHunterBehavior(otherFish)) return false;
+  if (isPiranhaSpecies(otherFish)) return false;
   const speciesType = getFishSpeciesType(otherSpecies);
   return speciesType !== "shark" && speciesType !== "whale";
 }
@@ -2780,6 +2861,35 @@ function assignDavyMutationSwimTarget(fish, species, now = Date.now()) {
   return false;
 }
 
+function getLionfishFeedingControl(fish, species, pellet, pelletPose, now = Date.now()) {
+  if (species?.id !== "lionfish" || !fish || !pellet || !pelletPose || pellet.foodKey !== "chum") return null;
+
+  if (fish.lionfishFoodReactionPelletId !== pellet.id) {
+    fish.lionfishFoodReactionPelletId = pellet.id;
+    fish.lionfishFoodReactionStartedAt = now;
+    fish.lionfishFoodBurstUntil = 0;
+  }
+  const elapsed = Math.max(0, now - (Number(fish.lionfishFoodReactionStartedAt) || now));
+
+  if (elapsed < 850) {
+    setFishBehaviorIntent(fish, "stalking food", "ambush feeding", now, { durationMs: 1100 });
+    return { handled: true, xNorm: fish.xNorm, yNorm: fish.yNorm, targetAt: now + 180 };
+  }
+  if (elapsed < 1650) {
+    setFishBehaviorIntent(fish, "cornering food", "ambush feeding", now, { durationMs: 1000 });
+    return {
+      handled: true,
+      xNorm: fish.xNorm + (pelletPose.xNorm - fish.xNorm) * 0.34,
+      yNorm: fish.yNorm + (pelletPose.yNorm - fish.yNorm) * 0.34,
+      targetAt: now + 260
+    };
+  }
+
+  if (!(Number(fish.lionfishFoodBurstUntil) > now)) fish.lionfishFoodBurstUntil = now + 820;
+  setFishBehaviorIntent(fish, "pouncing on food", "ambush feeding", now, { durationMs: 1100 });
+  return null;
+}
+
 function getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now = Date.now()) {
   const behaviorKey = getDavyMutationBehaviorKey(species);
   if (!behaviorKey || !fish || !pellet || !pelletPose) return null;
@@ -2928,11 +3038,6 @@ function updateFishMotion(now, deltaSeconds) {
         : (fish.id === activeBreedingSequence.rightFish.id ? "right" : null))
       : null;
     const piranhaLockedOnPrey = isPiranhaSpecies(fish) && Boolean(activePiranhaPrey);
-    const zombieAttackTarget = !piranhaLockedOnPrey && !breedingRole && usesZombieHunterBehavior(fish)
-      ? getZombieAttackTarget(fish, now)
-      : null;
-    const zombieLockedOnTarget = Boolean(zombieAttackTarget);
-    const zombieBittenVictim = hasZombieBiteInfection(fish);
     let pellet = null;
     let pelletPose = null;
     let pelletBounds = null;
@@ -3149,62 +3254,6 @@ function updateFishMotion(now, deltaSeconds) {
       fish.hangoutZoneType = null;
       fish.panicUntil = null;
       fish.panicSpeedBoost = null;
-    } else if (zombieLockedOnTarget) {
-      clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
-      clearForcedGravelDigPrompt(fish);
-      if (fish.caveState) {
-        abortFishCaveBehavior(fish, now, false);
-      }
-      fish.activity = "roam";
-      fish.feedingPelletId = null;
-      fish.hangoutDecorId = null;
-      fish.blockedDecorId = null;
-      fish.blockedDecorUntil = null;
-      fish.panicUntil = null;
-      fish.panicSpeedBoost = null;
-      clearFishSchoolFollowState(fish);
-      fish.targetXNorm = clamp(
-        zombieAttackTarget.xNorm + (zombieAttackTarget.xNorm >= fish.xNorm ? -1 : 1) * randomBetween(0.005, 0.02),
-        0.08,
-        0.92
-      );
-      fish.targetYNorm = clamp(zombieAttackTarget.yNorm + randomBetween(-0.018, 0.018), 0.14, 0.8);
-      fish.targetAt = now + ZOMBIE_ATTACK_TARGET_REFRESH_MS;
-      setFishDesiredTankLayer(
-        fish,
-        effectiveBehavior === "sucker"
-          ? getSuckerFishGlassLayer(fish)
-          : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, getFishTankLayer(zombieAttackTarget))))
-      );
-      fish.swimSpeed = normalizeFishSpeed(
-        species,
-        randomBetween(Math.max(species.speedMin, species.speedMax * 0.84), species.speedMax)
-      );
-    } else if (zombieBittenVictim) {
-      clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
-      clearForcedGravelDigPrompt(fish);
-      if (fish.caveState) {
-        abortFishCaveBehavior(fish, now, false);
-      }
-      fish.activity = "roam";
-      fish.feedingPelletId = null;
-      fish.hangoutDecorId = null;
-      fish.blockedDecorId = null;
-      fish.blockedDecorUntil = null;
-      clearFishSchoolFollowState(fish);
-      fish.panicUntil = now + 900;
-      fish.panicSpeedBoost = Math.max(Number(fish.panicSpeedBoost) || 0, randomBetween(2.15, 2.85));
-      if (now >= fish.targetAt) {
-        fish.targetXNorm = clamp(fish.xNorm + randomBetween(-0.24, 0.24), 0.08, 0.92);
-        fish.targetYNorm = clamp(fish.yNorm + randomBetween(-0.18, 0.18), 0.14, 0.8);
-        fish.targetAt = now + randomBetween(260, 720);
-      }
-      setFishDesiredTankLayer(
-        fish,
-        effectiveBehavior === "sucker"
-          ? getSuckerFishGlassLayer(fish)
-          : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, getFishTankLayer(fish))))
-      );
     } else if (piranhaLockedOnPrey) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
@@ -3245,11 +3294,15 @@ function updateFishMotion(now, deltaSeconds) {
         }
         pelletPose = getPelletPose(pellet, now);
         pelletBounds = getPelletHitBounds(pellet, now);
-        const davyFeedingControl = getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now);
-        if (davyFeedingControl?.handled) {
-          fish.targetXNorm = clamp(davyFeedingControl.xNorm, 0.08, 0.92);
-          fish.targetYNorm = clamp(davyFeedingControl.yNorm, 0.14, pellet.settled ? 0.9 : 0.82);
-          fish.targetAt = Number(davyFeedingControl.targetAt) || now + 300;
+        const lionfishFeedingControl = getLionfishFeedingControl(fish, species, pellet, pelletPose, now);
+        const davyFeedingControl = lionfishFeedingControl?.handled
+          ? null
+          : getDavyMutationFeedingControl(fish, species, pellet, pelletPose, now);
+        const feedingControl = lionfishFeedingControl?.handled ? lionfishFeedingControl : davyFeedingControl;
+        if (feedingControl?.handled) {
+          fish.targetXNorm = clamp(feedingControl.xNorm, 0.08, 0.92);
+          fish.targetYNorm = clamp(feedingControl.yNorm, 0.14, pellet.settled ? 0.9 : 0.82);
+          fish.targetAt = Number(feedingControl.targetAt) || now + 300;
         } else {
           const mouthChaseTarget = getFishTargetNormForMouthPoint(
             fish,
@@ -3295,20 +3348,23 @@ function updateFishMotion(now, deltaSeconds) {
       const queuedFishActionActive = Boolean(activeQueuedFishAction);
       const queuedPebbleActionActive = activeQueuedFishAction?.action === "pebble";
       const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
+      const pufferInflatedOwnsMovement = updatePufferInflationState(fish, species, now);
 
-      if (!panicOwnsMovement && fish.activity === "roam" && !breedingRole && !fish.caveState && !debugCaveTestFish && !queuedFishActionActive) {
+      if (!panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !breedingRole && !fish.caveState && !debugCaveTestFish && !queuedFishActionActive) {
         maybeStartFishGravelPebbleAction(fish, species, now, deltaSeconds);
       }
 
-      const gravelPebbleOwnsMovement = !panicOwnsMovement && !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
-      const caveBehaviorOwnsMovement = !panicOwnsMovement && !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
+      const gravelPebbleOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
+      const caveBehaviorOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
       const fishActionOwnsMovement = !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
         && !debugCaveTestFish
         && updateQueuedFishActionControl(fish, species, now);
       const debugBehaviorOwnsMovement = !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
@@ -3317,6 +3373,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !debugCaveTestFish
         && updateDebugBehaviorSteering(fish, species, now);
       const diseaseAvoidanceOwnsMovement = !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !breedingRole
         && !gravelPebbleOwnsMovement
         && !caveBehaviorOwnsMovement
@@ -3332,6 +3389,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !debugBehaviorOwnsMovement
         && !diseaseAvoidanceOwnsMovement
         && !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !pendingTravel
         && now >= fish.targetAt
       ) {
@@ -3343,7 +3401,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
-      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !panicOwnsMovement && !pendingTravel) {
+      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !panicOwnsMovement && !pufferInflatedOwnsMovement && !pendingTravel) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
       }
@@ -3361,20 +3419,26 @@ function updateFishMotion(now, deltaSeconds) {
       }
     }
 
+    const pufferInflatedOwnsMovement = isPufferPuffVisualActive(fish, now);
+    if (pufferInflatedOwnsMovement) {
+      updatePufferInflationMotionTarget(fish, species, now);
+    }
+
     const moveDx = fish.targetXNorm - fish.xNorm;
     const moveDy = fish.targetYNorm - fish.yNorm;
     const moveDistance = Math.hypot(moveDx, moveDy);
     const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
-    const activeDebugSteering = !panicOwnsMovement && fish.activity === "roam" && !fish.caveState
+    const activeDebugSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
       ? getActiveDebugBehaviorSteering(fish, now)
       : null;
-    const activeFishActionSteering = !panicOwnsMovement && fish.activity === "roam" && !fish.caveState
+    const activeFishActionSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
       ? getActiveFishActionSteering(fish, now)
       : null;
     const activeQueuedFishAction = !fish.caveState
       ? getActiveFishActionQueueItem(fish, now)
       : null;
     const isDirectedSwim = panicOwnsMovement
+      || pufferInflatedOwnsMovement
       || whaleBreathOwnsMovement
       || fish.activity === "feeding"
       || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
@@ -3394,12 +3458,11 @@ function updateFishMotion(now, deltaSeconds) {
     if (pendingTravel) {
       motionTarget = Math.max(motionTarget, 0.58);
     }
+    if (pufferInflatedOwnsMovement) {
+      motionTarget = Math.max(motionTarget, (Number(fish.pufferWobbleUntil) || 0) > now ? 0.28 : 0.18);
+    }
     if (panicOwnsMovement) {
       motionTarget = Math.max(motionTarget, 0.9);
-    } else if (zombieLockedOnTarget) {
-      motionTarget = Math.max(motionTarget, 0.78);
-    } else if (zombieBittenVictim) {
-      motionTarget = Math.max(motionTarget, 0.92);
     } else if (activeFishActionSteering?.type === "zoomies") {
       motionTarget = Math.max(motionTarget, 0.86);
     } else if (activeFishActionSteering?.type === "follow") {
@@ -3458,6 +3521,13 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
+      if (pufferInflatedOwnsMovement) {
+        speedMultiplier *= (Number(fish.pufferWobbleUntil) || 0) > now ? 0.46 : 0.34;
+      }
+      if (species?.id === "lionfish" && Number(fish.lionfishFoodBurstUntil) > now) {
+        speedMultiplier *= 1.72;
+      }
+
       if (
         isFishCriticallyLowHealth(fish)
         && fish.activity !== "feeding"
@@ -3465,12 +3535,6 @@ function updateFishMotion(now, deltaSeconds) {
         && fish.activity !== FISH_GRAVEL_DIG_ACTIVITY
       ) {
         speedMultiplier *= 1.22;
-      }
-
-      if (zombieLockedOnTarget) {
-        speedMultiplier *= 1.18;
-      } else if (zombieBittenVictim) {
-        speedMultiplier *= 1.24;
       }
 
       if (isPiranhaSpecies(fish)) {
@@ -3717,6 +3781,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       } else if (!handledDirectionThisFrame) {
         const debugFaceDirection = panicOwnsMovement ? null : getDebugBehaviorFacingDirection(fish, now);
+        const signatureBehaviorFacing = panicOwnsMovement ? null : getFishSignatureBehaviorFacingDirection(fish, species, now);
         const facingDx = fish.activity === "feeding" && pelletPose
           ? pelletPose.xNorm - fish.xNorm
           : fish.targetXNorm - fish.xNorm;
@@ -3725,6 +3790,9 @@ function updateFishMotion(now, deltaSeconds) {
           : null;
         if (debugFaceDirection !== null) {
           setFishDirection(fish, debugFaceDirection, species, now);
+          handledDirectionThisFrame = true;
+        } else if (signatureBehaviorFacing !== null) {
+          setFishDirection(fish, signatureBehaviorFacing, species, now);
           handledDirectionThisFrame = true;
         } else if (schoolFollowFacing !== null) {
           setFishDirection(fish, schoolFollowFacing, species, now);
@@ -3749,8 +3817,14 @@ function updateFishMotion(now, deltaSeconds) {
     const debugFaceDirectionAtRest = !panicOwnsMovement && !handledDirectionThisFrame
       ? getDebugBehaviorFacingDirection(fish, now)
       : null;
+    const signatureBehaviorFacingAtRest = !panicOwnsMovement && !handledDirectionThisFrame
+      ? getFishSignatureBehaviorFacingDirection(fish, species, now)
+      : null;
     if (debugFaceDirectionAtRest !== null && fish.activity === "roam" && !fish.caveState) {
       setFishDirection(fish, debugFaceDirectionAtRest, species, now);
+      handledDirectionThisFrame = true;
+    } else if (signatureBehaviorFacingAtRest !== null && fish.activity === "roam" && !fish.caveState) {
+      setFishDirection(fish, signatureBehaviorFacingAtRest, species, now);
       handledDirectionThisFrame = true;
     }
 
@@ -3837,7 +3911,7 @@ function updateFishMotion(now, deltaSeconds) {
   scrubImpossiblePredatorState(now);
   scrubProtectedTankFishPredatorState(now);
   handlePiranhaSwarm(now, deltaSeconds);
-  handleZombieBiteAttacks(now);
+  handleBettaRivalAttacks(now);
   handleBettaPassAttacks(now);
   handleSharkDesperationAttacks(now);
   updateFishPebbleTosses(now);

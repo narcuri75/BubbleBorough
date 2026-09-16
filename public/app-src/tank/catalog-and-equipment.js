@@ -39,27 +39,98 @@ function isSeasonalDecorAvailable(decor, now = Date.now()) {
 }
 
 function deriveDecorCategories(entry, key) {
-  const configured = normalizeStringList(entry?.categories || entry?.category);
+  const configured = normalizeStringList(entry?.categories || entry?.category)
+    .map((value) => value.toLowerCase())
+    .filter((value) => value && value !== "halloween" && value !== "frozen" && value !== "reef" && value !== "natural");
   if (configured.length) {
-    const categories = configured.map((value) => value.toLowerCase());
-    if (isHalloweenDecor({ ...entry, key }) && !categories.includes("halloween")) categories.push("halloween");
-    return categories;
+    return [...new Set(configured.flatMap((value) => value.split("-")).filter(Boolean))];
+  }
+
+  const fileKey = String(key || entry?.file || "").toLowerCase();
+  const conventionMatch = fileKey.match(/^[^/]+__([^_]+?)(?:__theme-[^_]+)?(?:__|\.)/);
+  if (conventionMatch) {
+    return [...new Set(conventionMatch[1].split("-").filter(Boolean))];
   }
 
   const bucket = new Set();
-  const haystack = `${String(entry?.name || "")} ${String(key || "")}`.toLowerCase();
-  if (/cave|hide|wreck|castle|house|arch/.test(haystack)) {
-    bucket.add("caves");
-  }
-  if (/weed|plant|moss|anub|coral/.test(haystack)) {
-    bucket.add("plants");
-  }
-  if (/shell|rock|driftwood|bridge|lantern|chest/.test(haystack)) {
-    bucket.add("ornaments");
-  }
-  if (!bucket.size) bucket.add("ornaments");
-  if (isHalloweenDecor({ ...entry, key })) bucket.add("halloween");
+  const haystack = `${String(entry?.name || "")} ${fileKey}`.toLowerCase();
+  if (/cave|hide|wreck|castle|house|arch/.test(haystack)) bucket.add("cave");
+  if (/weed|plant|moss|anub|algae/.test(haystack)) bucket.add("plant");
+  if (/coral|anemone|reef/.test(haystack)) bucket.add("coral");
+  if (/rock|stone|slate|meteor/.test(haystack)) bucket.add("rock");
+  if (/wood|root|branch|twig/.test(haystack)) bucket.add("wood");
+  if (/lure/.test(haystack)) bucket.add("lure");
+  if (/bubbler/.test(haystack)) bucket.add("bubbler");
+  if (!bucket.size) bucket.add("ornament");
   return [...bucket];
+}
+
+function normalizeDecorBehaviorType(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return ["static", "anchored_sway", "floating_bob", "floating_sway", "ceiling_sway", "cave_layered", "bubbler", "transit"].includes(normalized)
+    ? normalized
+    : "";
+}
+
+function getDecorCatalogRecord(itemOrKey) {
+  const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey || itemOrKey?.key;
+  if (!decorKey) return null;
+  return runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[decorKey] || null;
+}
+
+function getDecorCategoryList(itemOrKey) {
+  const decorKey = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey || itemOrKey?.key;
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return deriveDecorCategories(decor, decorKey).map((value) => String(value || "").toLowerCase()).filter(Boolean);
+}
+
+function decorHasCategory(itemOrKey, category) {
+  const target = String(category || "").trim().toLowerCase();
+  return target ? getDecorCategoryList(itemOrKey).includes(target) : false;
+}
+
+function getDecorTagList(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return normalizeStringList(decor?.tags).map((value) => value.toLowerCase());
+}
+
+function decorHasTag(itemOrKey, tag) {
+  const target = String(tag || "").trim().toLowerCase();
+  return target ? getDecorTagList(itemOrKey).includes(target) : false;
+}
+
+function getDecorTheme(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return String(decor?.theme || "").trim().toLowerCase();
+}
+
+function decorHasTheme(itemOrKey, theme) {
+  return getDecorTheme(itemOrKey) === String(theme || "").trim().toLowerCase();
+}
+
+function getDecorBehaviorType(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return normalizeDecorBehaviorType(decor?.behavior);
+}
+
+function getDecorMotionBehaviorType(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  return normalizeDecorBehaviorType(decor?.motionBehavior) || getDecorBehaviorType(itemOrKey);
+}
+
+function getDecorMotionLayer(itemOrKey) {
+  const decor = getDecorCatalogRecord(itemOrKey) || (itemOrKey && typeof itemOrKey === "object" ? itemOrKey : {});
+  const layer = String(decor?.motionLayer || "").trim().toLowerCase();
+  return ["front", "bg", "all"].includes(layer) ? layer : "all";
+}
+
+function getDecorAssetPathForKey(decorKey = "") {
+  const normalizedKey = normalizeDecorKey(decorKey);
+  const decor = runtime.decorMap?.get?.(normalizedKey) || runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[normalizedKey] || runtime.decorMeta?.[decorKey] || null;
+  if (decor?.path) return decor.path;
+  const behavior = normalizeDecorBehaviorType(decor?.behavior);
+  const encodedKey = String(normalizedKey || decorKey).split("/").map((part) => encodeURIComponent(part)).join("/");
+  return resolveAppUrl(behavior ? `assets/decor/${behavior}/${encodedKey}` : `assets/decor/${encodedKey}`);
 }
 
 function normalizeDecorHangoutTypes(value) {
@@ -239,9 +310,6 @@ function getUnlockRequirementLabel(requirement) {
     case "borough-legends":
       return "Borough Legends";
     case "spooky-keeper":
-    case "corpse-zombie":
-      return "Spooky Keeper";
-    case "corpse-skeleton":
       return "Spooky Keeper";
     default:
       return requirement ? titleFromFile(requirement) : "";
@@ -454,10 +522,13 @@ function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
   if (isChumOnlyFish(fish)) {
     return isPredatorMealFood(foodKey);
   }
-  if (isPiranhaSpecies(fish) || isZombieFish(fish) || (isZombieSkeletonModeAvailable() && fish.speciesId === "zombie-fish")) {
+  if (fish.speciesId === "pilot-fish" && foodKey === "chum") {
+    return true;
+  }
+  if (isPiranhaSpecies(fish)) {
     return isPredatorMealFood(foodKey);
   }
-  if (isSkeletonFish(fish) || isMealFreeFish(fish)) {
+  if (isMealFreeFish(fish)) {
     return false;
   }
   return isNormalMealFood(foodKey);
@@ -505,63 +576,46 @@ function getTankComfortDecorTags(tank = getCurrentTank()) {
   const tags = new Set();
   const placedDecor = Array.isArray(tank?.placedDecor) ? tank.placedDecor : [];
   for (const item of placedDecor) {
-    const decorKey = String(item?.decorKey || "").toLowerCase();
-    const decor = runtime.decorMap.get(item?.decorKey) || runtime.decorMeta[item?.decorKey] || {};
-    const categories = Array.isArray(decor.categories) && decor.categories.length
-      ? decor.categories
-      : deriveDecorCategories(decor, decorKey);
-    for (const category of categories) {
-      const normalized = String(category || "").toLowerCase();
-      if (normalized === "plants" || normalized === "plant") {
-        tags.add("plants");
-        tags.add("seaweed_algae");
-      }
-      if (normalized === "caves" || normalized === "hide") {
-        tags.add("cave");
-        tags.add("hardscape");
-      }
-      if (normalized === "ornaments" || normalized === "hardscape") {
-        tags.add("hardscape");
-      }
-      if (normalized === "bubbler") {
-        tags.add("bubbler");
-      }
-      if (normalized === "custom") {
-        tags.add("hardscape");
-      }
+    const categories = new Set(getDecorCategoryList(item));
+    const metadataTags = new Set(getDecorTagList(item));
+    const behavior = getDecorBehaviorType(item);
+    const theme = getDecorTheme(item);
+
+    if (categories.has("plant")) {
+      tags.add("plants");
+      tags.add("seaweed_algae");
     }
-    if (decor.caveSettings || decor.caveBehavior || /cave|hide|wreck|castle|plane|arch/.test(decorKey)) {
+    if (categories.has("cave")) {
       tags.add("cave");
       tags.add("hardscape");
     }
-    if (decor.bubbler || isBubblerDecorKey(decorKey) || isCustomBubblerDecorKey(decorKey)) {
-      tags.add("bubbler");
-    }
-    if (/seaweed|moss|anub|plant|kelp|algae/.test(decorKey)) {
-      tags.add("plants");
-      tags.add("seaweed_algae");
-      tags.add("surface_cover");
-    }
-    if (/floating|surface/.test(decorKey)) {
-      tags.add("surface_cover");
-    }
-    if (/driftwood|root/.test(decorKey)) {
-      tags.add("driftwood");
-      tags.add("hardscape");
-      tags.add("seaweed_algae");
-    }
-    if (/coral|reef|mushroomcoral/.test(decorKey)) {
+    if (categories.has("coral")) {
       tags.add("coral");
       tags.add("hardscape");
     }
-    if (/spooky|effigy|gorebag|fishhead/.test(decorKey) || String(decor.theme || "").toLowerCase() === "spooky") {
-      tags.add("spooky");
-    }
-    if (/rock|volcanic|arch|bridge|chest|slate|meteor|castle|ship|plane/.test(decorKey)) {
+    if (["rock", "wood", "ornament", "transit"].some((category) => categories.has(category))) {
       tags.add("hardscape");
     }
-    if (/volcanic|rock_[0-9]|_bricks/.test(decorKey)) {
+    if (categories.has("wood")) {
+      tags.add("driftwood");
+    }
+    if (categories.has("bubbler") || isBubblerDecorKey(item.decorKey) || isCustomBubblerDecorKey(item.decorKey)) {
+      tags.add("bubbler");
+      tags.add("hardscape");
+    }
+    if (["floating_bob", "floating_sway"].includes(behavior)) {
+      tags.add("surface_cover");
+    }
+    if (theme === "halloween" || metadataTags.has("spooky")) {
+      tags.add("spooky");
+    }
+    if (metadataTags.has("volcanic") || metadataTags.has("sharp")) {
       tags.add("sharp_decor");
+    }
+    for (const tag of metadataTags) {
+      if (["plants", "seaweed_algae", "cave", "coral", "hardscape", "driftwood", "bubbler", "surface_cover", "spooky", "sharp_decor"].includes(tag)) {
+        tags.add(tag);
+      }
     }
   }
   return tags;
@@ -584,12 +638,11 @@ function getTankComfortFacts(tank = getCurrentTank(), now = Date.now()) {
     spacePoints,
     hasBetta: livingFish.some((fish) => fish.speciesId === "betta"),
     hasPuffer: livingFish.some((fish) => fish.speciesId === "pufferfish"),
-    hasAggressivePredator: livingFish.some((fish) => isPiranhaSpecies(fish) || isZombieFish(fish) || fish.speciesId === "pufferfish"),
+    hasAggressivePredator: livingFish.some((fish) => isPiranhaSpecies(fish) || fish.speciesId === "pufferfish"),
     hasTang: livingFish.some((fish) => fish.speciesId === "yellow-tang" || fish.speciesId === "blue-tang"),
     hasFastEater: livingFish.some((fish) => ["zebra-danio", "rainbowfish", "swordtail"].includes(fish.speciesId)),
     hasFinNipper: livingFish.some((fish) => ["zebra-danio", "betta", "piranha"].includes(fish.speciesId)),
-    surfaceFishCount: livingFish.filter((fish) => ["wonder-killifish", "gourami", "betta"].includes(fish.speciesId)).length,
-    hasTheCure: (Array.isArray(tank?.medicineEffects) ? tank.medicineEffects : []).some((effect) => effect?.type === "antidote" && (effect.endsAt || 0) > now)
+    surfaceFishCount: livingFish.filter((fish) => ["wonder-killifish", "gourami", "betta"].includes(fish.speciesId)).length
   };
 }
 
@@ -643,7 +696,7 @@ function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts 
     case "betta_present":
       return otherFish.some((other) => other.speciesId === "betta");
     case "aggressive_predator":
-      return otherFish.some((other) => isPiranhaSpecies(other) || isZombieFish(other) || other.speciesId === "pufferfish");
+      return otherFish.some((other) => isPiranhaSpecies(other) || other.speciesId === "pufferfish");
     case "fin_nipper":
       return otherFish.some((other) => ["zebra-danio", "betta", "piranha"].includes(other.speciesId));
     case "large_fish":
@@ -666,14 +719,9 @@ function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts 
       return otherFish.some((other) => ["zebra-danio", "rainbowfish", "swordtail"].includes(other.speciesId));
     case "community_fish":
       if (isPiranhaSpecies(fish)) {
-        return otherFish.some((other) => !isPiranhaSpecies(other) && !isUndeadFish(other));
-      }
-      if (isZombieFish(fish)) {
-        return otherFish.some((other) => !isUndeadFish(other));
+        return otherFish.some((other) => !isPiranhaSpecies(other));
       }
       return otherFish.length > 0;
-    case "the_cure":
-      return facts.hasTheCure;
     default:
       return false;
   }
@@ -915,7 +963,7 @@ function shouldShowMedicineInStore(medicine) {
   if (!medicine) {
     return false;
   }
-  return (isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled()) || medicine.id !== "antidote";
+  return medicine.id !== "antidote";
 }
 
 function isFilteredGoreDecor(decorOrKey) {

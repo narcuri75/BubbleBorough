@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "ec0bb24b-66a1-49c5-935c-ce22a2e2101f",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "ea0cfedd-8573-41bc-92da-0c764cee9f73",
+          "width": 512,
+          "height": 281,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha.png"
+        },
+        {
+          "id": "d15fbe6f-6f48-4cce-9caf-0fd0cb807bbf",
+          "width": 512,
+          "height": 281,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_1.png"
+        },
+        {
+          "id": "f1af0147-c436-407c-8a29-d96b62b9e6b5",
+          "width": 512,
+          "height": 281,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_2.png"
+        },
+        {
+          "id": "ac327e48-fbcf-4c7d-816f-69d92887881a",
+          "width": 512,
+          "height": 281,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_3.png"
+        },
+        {
+          "id": "ab856bb4-b9be-4690-ac0a-f0a61cf31399",
+          "width": 512,
+          "height": 281,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_4.png"
+        }
+      ]
+    }
+  ]
+}

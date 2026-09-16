@@ -188,8 +188,18 @@ function getFishBehaviorProfile(speciesOrFish) {
     slowGraceful: Boolean(profile?.slowGraceful),
     nightActive: Boolean(profile?.nightActive),
     detritusDiet: Boolean(profile?.detritusDiet) || species?.diet === "detritus",
-    predatorDiet: Boolean(profile?.predatorDiet) || behavior === "piranha"
+    predatorDiet: Boolean(profile?.predatorDiet) || behavior === "piranha",
+    desperationPredator: Boolean(profile?.desperationPredator)
   };
+}
+
+function isPredatoryFishSpecies(speciesOrFish) {
+  return getFishBehaviorProfile(speciesOrFish).predatorDiet === true;
+}
+
+function isLargePredatoryFishSpecies(speciesOrFish) {
+  const profile = getFishBehaviorProfile(speciesOrFish);
+  return profile.desperationPredator === true || profile.group === "shark-cruiser" || profile.group === "orca-pod";
 }
 
 function getFishLocomotionProfile(speciesOrFish) {
@@ -847,7 +857,6 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
     !fish
     || (!hasIllnessUnlocked() && options.bypassUnlock !== true)
     || isFishDead(fish)
-    || isUndeadFish(fish)
     || hasActiveFishDisease(fish)
     || sanitizeDiseaseState(fish.diseaseState) === DISEASE_STATE_IMMUNE
     || (Number(fish.temporaryImmunityUntil) || 0) > now
@@ -880,7 +889,7 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
 }
 
 function maybeSeedDavyJonesViralIllness(fish, now = Date.now()) {
-  if (!fish || isFishDead(fish) || isUndeadFish(fish) || Math.random() >= DAVY_JONES_VIRAL_PURCHASE_CHANCE) {
+  if (!fish || isFishDead(fish) || Math.random() >= DAVY_JONES_VIRAL_PURCHASE_CHANCE) {
     return false;
   }
   const infected = infectFishWithDisease(
@@ -940,7 +949,7 @@ function getNewFishDiseaseCarrierChance(now = Date.now()) {
 }
 
 function maybeSeedNewFishDiseaseCarrier(fish, now = Date.now()) {
-  if (!fish || !hasIllnessUnlocked() || isUndeadFish(fish)) {
+  if (!fish || !hasIllnessUnlocked()) {
     return false;
   }
   return Math.random() < getNewFishDiseaseCarrierChance(now)
@@ -949,7 +958,7 @@ function maybeSeedNewFishDiseaseCarrier(fish, now = Date.now()) {
 }
 
 function getDailyFishDiseaseChance(fish, now = Date.now()) {
-  if (!fish || !hasIllnessUnlocked() || hasActiveFishDisease(fish) || isFishDead(fish) || isUndeadFish(fish)) {
+  if (!fish || !hasIllnessUnlocked() || hasActiveFishDisease(fish) || isFishDead(fish)) {
     return 0;
   }
 
@@ -1243,7 +1252,7 @@ function pushDiseaseSignalHistoryEvent(fish, signalType, now = Date.now()) {
 
 function shouldFishRefuseFoodForDisease(fish, foodKey = "basic", now = Date.now()) {
   if (foodKey === "halloweenCandy" || hasActiveCandyBoost(fish, now)) return false;
-  if (!fish || isFishDead(fish) || isMealFreeFish(fish) || isUndeadFish(fish)) {
+  if (!fish || isFishDead(fish) || isMealFreeFish(fish)) {
     return false;
   }
   if (!canFoodSatisfyFishMeal(fish, foodKey)) {
@@ -1471,6 +1480,97 @@ function drawFishDiseaseBubbles(fish, species, pose, width, height, now = Date.n
   }
 }
 
+function drawFishPufferBubbleBurst(fish, species, pose, width, height, now = Date.now()) {
+  if (!isPufferfishSpecies(species) || !Array.isArray(fish?.pufferInflationBubbles) || !fish.pufferInflationBubbles.length) {
+    return;
+  }
+
+  const stableScale = getViewportStableAssetScale();
+  const palette = getBubbleOrbPalette(DEFAULT_BUBBLER_BUBBLE_COLOR, {
+    fillOpacity: 0.26,
+    colorize: true
+  });
+  const waterlineStopY = WATER_SURFACE_Y + Math.max(2 * stableScale, 2);
+  const nextBubbles = [];
+  const renderedBubbles = [];
+  for (const bubble of fish.pufferInflationBubbles) {
+    const ageMs = now - Number(bubble.createdAt);
+    if (ageMs < 0) {
+      nextBubbles.push(bubble);
+      continue;
+    }
+
+    const radius = Number(bubble.radius) || 3.2;
+    const availableTravelPx = Math.max(14 * stableScale, Number(bubble.sourceY) - waterlineStopY);
+    const travelDurationMs = clamp(availableTravelPx * 20, 850, 2400);
+    const popProgress = clamp((ageMs - travelDurationMs) / 150, 0, 1);
+    if (ageMs > travelDurationMs + 150) {
+      continue;
+    }
+
+    nextBubbles.push(bubble);
+    const travelProgress = clamp(ageMs / travelDurationMs, 0, 1);
+    const spawnFade = clamp(ageMs / 180, 0, 1);
+    const x = Number(bubble.sourceX)
+      + Number(bubble.driftX) * travelProgress
+      + Math.sin(now / 1700 + Number(bubble.wobblePhase)) * Number(bubble.wobble) * (0.3 + travelProgress * 0.7);
+    const y = Math.max(
+      Number(bubble.sourceY) - availableTravelPx * travelProgress,
+      waterlineStopY + radius * stableScale
+    );
+    const alpha = clamp(spawnFade * (popProgress > 0 ? 1 - popProgress : 1), 0, 1);
+    if (alpha <= 0.008 && popProgress <= 0) {
+      continue;
+    }
+
+    renderedBubbles.push({
+      x,
+      y,
+      radius,
+      alpha,
+      stretch: Number(bubble.stretch) || 1,
+      popProgress,
+      seed: bubble.seed,
+      malform: popProgress > 0
+        ? null
+        : {
+          seed: bubble.seed ^ 0x51f0ea1d,
+          amount: 0.2,
+          phase: now / 3800 + Number(bubble.wobblePhase),
+          rotation: Math.sin(now / 5400 + Number(bubble.seed)) * 0.06,
+          speed: 0.45
+        }
+    });
+  }
+
+  fish.pufferInflationBubbles = nextBubbles.slice(-getPufferInflationBubbleCountMax());
+  renderedBubbles.forEach((bubble) => {
+    if (bubble.popProgress > 0) {
+      drawBubblePopBurstToContext(
+        tankContext,
+        bubble.x,
+        bubble.y,
+        bubble.radius,
+        bubble.alpha,
+        palette,
+        stableScale,
+        bubble.seed,
+        bubble.popProgress,
+        {
+          count: Math.max(5, BUBBLER_POP_MICRO_BUBBLE_COUNT - 1),
+          burstScale: 1,
+          surfaceY: waterlineStopY
+        }
+      );
+      return;
+    }
+
+    drawBubbleOrbToContext(tankContext, bubble.x, bubble.y, bubble.radius, bubble.alpha, bubble.stretch, palette, stableScale, {
+      malform: bubble.malform
+    });
+  });
+}
+
 function processDiseaseDailyRisk(fish, now = Date.now()) {
   const dayKey = getLocalDayKey(now);
   if (!fish || !hasIllnessUnlocked() || fish.lastIllnessRiskDayKey === dayKey) {
@@ -1512,7 +1612,7 @@ function processFishDisease(now = Date.now()) {
   const cleanliness = getDiseaseTankCleanliness(now);
 
   for (const fish of state.fish) {
-    if (!fish || isFishDead(fish) || isUndeadFish(fish)) {
+    if (!fish || isFishDead(fish)) {
       if (hasActiveFishDisease(fish)) {
         changed = resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now) || changed;
       }
@@ -1679,7 +1779,7 @@ function processFishDiseaseExposure(now = Date.now()) {
         !targetFish
         || targetFish.id === sourceFish.id
         || isFishDead(targetFish)
-        || isUndeadFish(targetFish)
+       
         || hasActiveFishDisease(targetFish)
       ) {
         continue;
@@ -1897,7 +1997,7 @@ function applyDiseaseAvoidanceTarget(fish, species, now = Date.now()) {
 }
 
 function maybeApplyDiseaseAvoidanceReaction(fish, species, now = Date.now()) {
-  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish) || isUndeadFish(fish)) {
+  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish)) {
     return false;
   }
   if (!hasVisibleDiseaseAvoidanceSource(now)) {
@@ -2062,7 +2162,7 @@ function getRelationshipKindForFish(fish, otherFish) {
   if (!fish || !otherFish || fish.id === otherFish.id) {
     return "neutral";
   }
-  if (isPiranhaSpecies(otherFish) || isZombieFish(otherFish) || isSkeletonFish(otherFish)) {
+  if (isPiranhaSpecies(otherFish)) {
     return "fear";
   }
   const personality = getFishPersonality(fish);
@@ -2074,6 +2174,27 @@ function getRelationshipKindForFish(fish, otherFish) {
     && ["bull-shark", "great-white-shark", "hammerhead-shark", "orca"].includes(otherSpecies?.id)
   ) {
     return "friend";
+  }
+  if (
+    otherSpecies?.id !== species?.id
+    && getSpeciesConflictTags(species).includes("aggressive_predator")
+    && isPredatoryFishSpecies(otherFish)
+  ) {
+    return "fear";
+  }
+  if (species?.id === "betta" && otherSpecies?.id === "betta") {
+    return "rival";
+  }
+  const dislikedTypes = normalizeStringList(species?.dislikedTypes).map((value) => value.toLowerCase().replace(/[_\s]+/g, "-"));
+  if (dislikedTypes.length) {
+    const otherTypeCandidates = new Set([
+      String(otherSpecies?.id || "").toLowerCase(),
+      String(otherSpecies?.behavior || "").toLowerCase(),
+      String(getFishBehaviorProfile(otherSpecies).group || "").toLowerCase()
+    ].filter(Boolean));
+    if (dislikedTypes.some((value) => otherTypeCandidates.has(value))) {
+      return "dislike";
+    }
   }
   if (personality === "social" || personality === "follower" || getFishBehaviorProfile(species).group === "small-social") {
     if (species?.id === otherSpecies?.id || getFishBehaviorProfile(otherSpecies).group === "small-social") {
@@ -2253,6 +2374,292 @@ function getAvoidanceEscapeTarget(fish, species, threatFish, options = {}) {
   };
 }
 
+
+function getBettaRivalDispositionScore(fish) {
+  const personality = getFishPersonality(fish);
+  const bonuses = {
+    territorial: 0.34,
+    standoffish: 0.2,
+    bold: 0.18,
+    hunter: 0.16,
+    display: 0.12,
+    curious: 0.04,
+    greedy: 0.03,
+    sensitive: -0.12,
+    shy: -0.2,
+    gentle: -0.22,
+    nervous: -0.16
+  };
+  return clamp(0.5 + (Number(bonuses[personality]) || 0), 0.12, 0.92);
+}
+
+function isBettaRivalPair(fish, otherFish) {
+  if (!fish || !otherFish || fish.id === otherFish.id || isFishDead(fish) || isFishDead(otherFish)) {
+    return false;
+  }
+  return getSpeciesForFish(fish)?.id === "betta" && getSpeciesForFish(otherFish)?.id === "betta";
+}
+
+function getBettaRivalCandidate(fish, relationships, nearbyAll, now = Date.now()) {
+  if (!fish || getSpeciesForFish(fish)?.id !== "betta") {
+    return null;
+  }
+  const activeTargetId = typeof fish.bettaRivalTargetId === "string" ? fish.bettaRivalTargetId : "";
+  if (activeTargetId) {
+    const activeTarget = state.fish.find((entry) => entry?.id === activeTargetId && isBettaRivalPair(fish, entry)) || null;
+    if (activeTarget && getTankContainingFish(activeTarget.id)?.id === getTankContainingFish(fish.id)?.id) {
+      return {
+        fish: activeTarget,
+        relation: relationships[activeTarget.id] || { kind: "rival", score: -50, updatedAt: now },
+        distance: Math.hypot((fish.xNorm || 0.5) - (activeTarget.xNorm || 0.5), (fish.yNorm || 0.5) - (activeTarget.yNorm || 0.5))
+      };
+    }
+    fish.bettaRivalTargetId = "";
+  }
+
+  return (nearbyAll || []).find((entry) => (
+    entry?.fish
+    && isBettaRivalPair(fish, entry.fish)
+    && entry.relation?.kind === "rival"
+    && entry.distance <= 0.42
+    && (!entry.fish.bettaRivalTargetId || entry.fish.bettaRivalTargetId === fish.id)
+  )) || null;
+}
+
+function setBettaRivalDisplayPair(fish, rival, now = Date.now()) {
+  if (!isBettaRivalPair(fish, rival)) {
+    return false;
+  }
+  const until = now + randomBetween(3200, 5600);
+  for (const participant of [fish, rival]) {
+    participant.bettaRivalTargetId = participant.id === fish.id ? rival.id : fish.id;
+    participant.bettaRivalDisplayUntil = until;
+    participant.bettaRivalChaseUntil = 0;
+    participant.bettaRivalRole = "display";
+    participant.bettaRivalNipAt = 0;
+    participant.bettaRivalNippedTargetId = "";
+    participant.targetAt = Math.min(Number(participant.targetAt) || now, now + 220);
+  }
+  setFishBehaviorIntent(rival, "betta display", fish.name || "rival Betta", now, {
+    targetId: fish.id,
+    targetName: fish.name || "",
+    durationMs: until - now
+  });
+  return true;
+}
+
+function chooseBettaRivalAggressor(fish, rival) {
+  const fishScore = getBettaRivalDispositionScore(fish) + Math.random() * 0.18;
+  const rivalScore = getBettaRivalDispositionScore(rival) + Math.random() * 0.18;
+  return fishScore >= rivalScore ? fish : rival;
+}
+
+function resolveBettaRivalEncounter(aggressor, loser, now = Date.now(), options = {}) {
+  if (
+    !aggressor
+    || !loser
+    || aggressor.id === loser.id
+    || getSpeciesForFish(aggressor)?.id !== "betta"
+    || getSpeciesForFish(loser)?.id !== "betta"
+  ) {
+    return false;
+  }
+  const nipped = options.nipped === true;
+  const loserDead = isFishDead(loser);
+  const cooldownUntil = now + randomBetween(nipped ? 22000 : 14000, nipped ? 36000 : 26000);
+  aggressor.bettaRivalDisplayUntil = 0;
+  aggressor.bettaRivalChaseUntil = 0;
+  aggressor.bettaRivalRole = "";
+  aggressor.bettaRivalNipAt = 0;
+  aggressor.bettaRivalNippedTargetId = nipped ? loser.id : "";
+  aggressor.bettaRivalCooldownUntil = cooldownUntil;
+  aggressor.bettaRivalTargetId = "";
+  aggressor.targetAt = now;
+
+  loser.bettaRivalDisplayUntil = 0;
+  loser.bettaRivalChaseUntil = 0;
+  loser.bettaRivalRole = "";
+  loser.bettaRivalNipAt = 0;
+  loser.bettaRivalNippedTargetId = "";
+  loser.bettaRivalTargetId = "";
+  loser.targetAt = now;
+
+  if (!loserDead) {
+    loser.bettaRivalYieldUntil = now + randomBetween(nipped ? 11000 : 6500, nipped ? 18000 : 11000);
+    loser.bettaRivalCooldownUntil = cooldownUntil;
+    loser.bettaRivalTargetId = aggressor.id;
+    reinforceFishAvoidanceRelationship(loser, aggressor, now, { severity: nipped ? 0.46 : 0.2 });
+  } else {
+    loser.bettaRivalYieldUntil = 0;
+    loser.bettaRivalCooldownUntil = 0;
+  }
+
+  setFishBehaviorIntent(aggressor, "betta confrontation", loserDead ? "rival defeated" : "rival yielded", now, {
+    targetId: loser.id,
+    targetName: loser.name || "",
+    durationMs: 2200
+  });
+  if (!loserDead) {
+    setFishBehaviorIntent(loser, "betta yield", aggressor.name || "rival Betta", now, {
+      targetId: aggressor.id,
+      targetName: aggressor.name || "",
+      durationMs: Math.max(1800, loser.bettaRivalYieldUntil - now)
+    });
+  }
+  return true;
+}
+
+function startBettaRivalChase(fish, rival, now = Date.now()) {
+  if (!isBettaRivalPair(fish, rival)) {
+    return false;
+  }
+  const aggressor = chooseBettaRivalAggressor(fish, rival);
+  const loser = aggressor.id === fish.id ? rival : fish;
+  const chaseUntil = now + randomBetween(2400, 4300);
+  aggressor.bettaRivalTargetId = loser.id;
+  aggressor.bettaRivalDisplayUntil = 0;
+  aggressor.bettaRivalChaseUntil = chaseUntil;
+  aggressor.bettaRivalRole = "aggressor";
+  aggressor.bettaRivalNipAt = now + randomBetween(650, 1450);
+  aggressor.bettaRivalNippedTargetId = "";
+  aggressor.targetAt = now;
+
+  loser.bettaRivalTargetId = aggressor.id;
+  loser.bettaRivalDisplayUntil = 0;
+  loser.bettaRivalChaseUntil = chaseUntil;
+  loser.bettaRivalRole = "flee";
+  loser.targetAt = now;
+  return true;
+}
+
+function getBettaRivalDisplayTarget(fish, species, rival, now = Date.now()) {
+  const side = (fish.xNorm || 0.5) <= (rival.xNorm || 0.5) ? -1 : 1;
+  const offset = 0.055;
+  const targetLayer = getFishTankLayer(rival);
+  return {
+    xNorm: clamp((rival.xNorm || 0.5) + side * offset, 0.08, 0.92),
+    yNorm: clampFishYNormToLayer((rival.yNorm || 0.5) + Math.sin(now / 520 + (fish.phase || 0) * Math.PI * 2) * 0.012, fish, species, targetLayer, { minYNorm: 0.14, maxYNorm: 0.82 }),
+    targetLayer,
+    targetAt: now + randomBetween(420, 720),
+    intentType: "betta display",
+    intentCause: `rival ${rival.name || "Betta"}`,
+    intentTargetId: rival.id,
+    intentTargetName: rival.name || "Betta",
+    slow: true
+  };
+}
+
+function pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now = Date.now(), options = {}) {
+  if (species?.id !== "betta" || !fish || isFishDead(fish)) {
+    return null;
+  }
+  const candidate = getBettaRivalCandidate(fish, relationships, nearbyAll, now);
+  if (!candidate?.fish) {
+    fish.bettaRivalTargetId = "";
+    fish.bettaRivalDisplayUntil = 0;
+    fish.bettaRivalChaseUntil = 0;
+    fish.bettaRivalRole = "";
+    return null;
+  }
+  const rival = candidate.fish;
+  const distance = candidate.distance;
+
+  if ((Number(fish.bettaRivalYieldUntil) || 0) > now) {
+    const escape = getAvoidanceEscapeTarget(fish, species, rival, {
+      retreatNorm: randomBetween(0.18, 0.27),
+      verticalScale: 0.7,
+      cornerThreatRadius: 0.4
+    });
+    return {
+      xNorm: escape?.xNorm ?? fish.xNorm,
+      yNorm: escape?.yNorm ?? fish.yNorm,
+      targetLayer: escape?.targetLayer ?? getFishTankLayer(fish),
+      targetAt: now + randomBetween(650, 1150),
+      intentType: "betta yield",
+      intentCause: rival.name || "rival Betta",
+      intentTargetId: rival.id,
+      intentTargetName: rival.name || "Betta"
+    };
+  }
+
+  if ((Number(fish.bettaRivalChaseUntil) || 0) > now) {
+    if (fish.bettaRivalRole === "flee") {
+      const escape = getAvoidanceEscapeTarget(fish, species, rival, {
+        retreatNorm: randomBetween(0.16, 0.25),
+        verticalScale: 0.76,
+        cornerThreatRadius: 0.42
+      });
+      return {
+        xNorm: escape?.xNorm ?? fish.xNorm,
+        yNorm: escape?.yNorm ?? fish.yNorm,
+        targetLayer: escape?.targetLayer ?? getFishTankLayer(fish),
+        targetAt: now + randomBetween(460, 760),
+        intentType: "betta confrontation",
+        intentCause: `chased by ${rival.name || "rival"}`,
+        intentTargetId: rival.id,
+        intentTargetName: rival.name || "Betta"
+      };
+    }
+    return {
+      xNorm: clamp((rival.xNorm || 0.5) + randomBetween(-0.018, 0.018), 0.08, 0.92),
+      yNorm: clamp((rival.yNorm || 0.5) + randomBetween(-0.012, 0.012), 0.14, 0.82),
+      targetLayer: getFishTankLayer(rival),
+      targetAt: now + randomBetween(380, 650),
+      intentType: "betta confrontation",
+      intentCause: `chasing ${rival.name || "rival"}`,
+      intentTargetId: rival.id,
+      intentTargetName: rival.name || "Betta"
+    };
+  }
+
+  if ((Number(fish.bettaRivalDisplayUntil) || 0) > now) {
+    return getBettaRivalDisplayTarget(fish, species, rival, now);
+  }
+
+  if ((Number(fish.bettaRivalDisplayUntil) || 0) > 0 && (Number(fish.bettaRivalDisplayUntil) || 0) <= now) {
+    const aggression = Math.max(getBettaRivalDispositionScore(fish), getBettaRivalDispositionScore(rival));
+    const escalateChance = clamp(0.12 + aggression * 0.28, 0.12, 0.38);
+    if (isViolenceEnabled() && Math.random() < escalateChance) {
+      startBettaRivalChase(fish, rival, now);
+      return pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, options);
+    }
+    const aggressor = chooseBettaRivalAggressor(fish, rival);
+    const loser = aggressor.id === fish.id ? rival : fish;
+    resolveBettaRivalEncounter(aggressor, loser, now, { nipped: false });
+    return loser.id === fish.id
+      ? pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, options)
+      : null;
+  }
+
+  if ((Number(fish.bettaRivalCooldownUntil) || 0) > now) {
+    return null;
+  }
+
+  const shouldBegin = options.force === true || distance <= 0.16 || (distance <= 0.34 && Math.random() < 0.32);
+  if (!shouldBegin) {
+    return null;
+  }
+
+  fish.bettaRivalTargetId = rival.id;
+  rival.bettaRivalTargetId = fish.id;
+  if (distance > 0.115) {
+    const side = (fish.xNorm || 0.5) <= (rival.xNorm || 0.5) ? -1 : 1;
+    return {
+      xNorm: clamp((rival.xNorm || 0.5) + side * 0.085, 0.08, 0.92),
+      yNorm: clamp((rival.yNorm || 0.5) + randomBetween(-0.018, 0.018), 0.14, 0.82),
+      targetLayer: getFishTankLayer(rival),
+      targetAt: now + randomBetween(700, 1100),
+      intentType: "betta confrontation",
+      intentCause: `approaching rival ${rival.name || "Betta"}`,
+      intentTargetId: rival.id,
+      intentTargetName: rival.name || "Betta"
+    };
+  }
+
+  setBettaRivalDisplayPair(fish, rival, now);
+  return getBettaRivalDisplayTarget(fish, species, rival, now);
+}
+
 function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options = {}) {
   const relationships = sanitizeFishRelationships(fish?.relationships);
   if (!fish || !species) {
@@ -2268,7 +2675,15 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
     }))
     .sort((left, right) => left.distance - right.distance);
   const nearby = nearbyAll.filter((entry) => entry.relation);
-  const threat = nearby.find((entry) => ["fear", "dislike", "rival"].includes(entry.relation.kind) && entry.distance <= 0.34);
+  const bettaRivalTarget = pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, options);
+  if (bettaRivalTarget) {
+    return bettaRivalTarget;
+  }
+  const threat = nearby.find((entry) => (
+    ["fear", "dislike", "rival"].includes(entry.relation.kind)
+    && entry.distance <= 0.34
+    && !(species?.id === "betta" && getSpeciesForFish(entry.fish)?.id === "betta" && entry.relation.kind === "rival")
+  ));
   if (threat) {
     const escape = getAvoidanceEscapeTarget(fish, species, threat.fish, {
       retreatNorm: randomBetween(0.18, 0.32),
@@ -2478,8 +2893,496 @@ function pickPersonalityDecorBehaviorTarget(fish, species, now = Date.now()) {
   return null;
 }
 
+function reinforceFishAvoidanceRelationship(observer, aggressor, now = Date.now(), options = {}) {
+  if (!observer || !aggressor || observer.id === aggressor.id || isFishDead(observer) || isFishDead(aggressor)) {
+    return false;
+  }
+  const relationships = sanitizeFishRelationships(observer.relationships);
+  const previous = relationships[aggressor.id] || { kind: "neutral", score: 0, updatedAt: now };
+  const severity = clamp(Number(options.severity) || 0.25, 0.05, 1);
+  const scoreDrop = 10 + severity * 34;
+  const nextScore = clamp((Number(previous.score) || 0) - scoreDrop, -100, 100);
+  const observerSpecies = getSpeciesForFish(observer);
+  const aggressorSpecies = getSpeciesForFish(aggressor);
+  const sameBetta = observerSpecies?.id === "betta" && aggressorSpecies?.id === "betta";
+  const nextKind = sameBetta
+    ? "rival"
+    : nextScore <= -55
+      ? "fear"
+      : "dislike";
+  relationships[aggressor.id] = { kind: nextKind, score: nextScore, updatedAt: now };
+  observer.relationships = relationships;
+  observer.relationshipNextCheckAt = Math.max(Number(observer.relationshipNextCheckAt) || 0, now + BEHAVIOR_RELATIONSHIP_CHECK_MS);
+  return true;
+}
+
+function teachNearbyFishFromAggression(victim, aggressor, now = Date.now(), severity = 0.35) {
+  if (!victim || !aggressor) return false;
+  let changed = reinforceFishAvoidanceRelationship(victim, aggressor, now, { severity });
+  const homeTank = getTankContainingFish(victim.id);
+  for (const witness of state.fish || []) {
+    if (!witness || witness.id === victim.id || witness.id === aggressor.id || isFishDead(witness)) continue;
+    if (getTankContainingFish(witness.id)?.id !== homeTank?.id) continue;
+    const distance = Math.hypot((witness.xNorm || 0.5) - (victim.xNorm || 0.5), (witness.yNorm || 0.5) - (victim.yNorm || 0.5));
+    if (distance > 0.24) continue;
+    changed = reinforceFishAvoidanceRelationship(witness, aggressor, now, { severity: severity * 0.45 }) || changed;
+  }
+  return changed;
+}
+
+function getBehaviorDecorCandidates(pattern) {
+  const matcher = pattern instanceof RegExp ? pattern : /$^/;
+  return (state.placedDecor || []).filter((item) => matcher.test(String(item?.decorKey || "").toLowerCase()));
+}
+
+function pickKoiSubstrateForageBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "koi") return null;
+  if (options.force !== true && Math.random() > 0.22) return null;
+
+  const nearbyNaturalDecor = getBehaviorDecorCandidates(/plant|moss|wood|root|rock|stone|driftwood/);
+  const decor = nearbyNaturalDecor.length && Math.random() < 0.42
+    ? nearbyNaturalDecor[Math.floor(Math.random() * nearbyNaturalDecor.length)]
+    : null;
+  if (decor) {
+    return {
+      xNorm: clamp((Number(decor.xNorm) || 0.5) + randomBetween(-0.08, 0.08), 0.1, 0.9),
+      yNorm: clamp(Math.max(Number(decor.yNorm) || 0.76, randomBetween(0.78, 0.88)), 0.68, 0.9),
+      targetLayer: getDecorTankLayer(decor),
+      targetAt: now + randomBetween(1500, 2800),
+      hangoutDecorId: decor.id,
+      zoneType: "hardscape",
+      intentType: "forage substrate",
+      intentCause: "bottom foraging",
+      slow: true
+    };
+  }
+
+  return {
+    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.2, 0.2), 0.1, 0.9),
+    yNorm: clampFishYNormToLayer(randomBetween(0.82, 0.9), fish, species, TANK_DEPTH_LAYERS, { minYNorm: 0.76, maxYNorm: 0.92 }),
+    targetLayer: TANK_DEPTH_LAYERS,
+    targetAt: now + randomBetween(1400, 2600),
+    intentType: "forage substrate",
+    intentCause: "bottom foraging",
+    slow: true
+  };
+}
+
+function pickLionfishShelterBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "lionfish") return null;
+  if (options.force !== true && Math.random() > 0.48) return null;
+
+  const shelter = pickDecorHangoutTarget(species, fish, now, {
+    allowedZoneTypes: ["hide", "hardscape", "plant"],
+    chanceMultiplier: 2.4,
+    lingerMultiplier: 1.75,
+    occupancyLimit: 1,
+    preferBackLayer: true,
+    force: options.force === true
+  });
+  if (!shelter) return null;
+  return {
+    ...shelter,
+    targetAt: now + Math.max(2800, Number(shelter.lingerMs) || 0),
+    intentType: "shelter hover",
+    intentCause: "ambush cover",
+    slow: true
+  };
+}
+
+function pickYellowTangGrazeBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "yellow-tang") return null;
+  let decor = null;
+  if ((Number(fish.yellowTangGrazeUntil) || 0) > now && fish.yellowTangGrazeDecorId) {
+    decor = (state.placedDecor || []).find((item) => item.id === fish.yellowTangGrazeDecorId) || null;
+  }
+  if (!decor && options.force !== true && Math.random() > 0.34) return null;
+  if (!decor) {
+    const candidates = getBehaviorDecorCandidates(/seaweed|kelp|algae|moss|anub|plant|driftwood/);
+    decor = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+    fish.yellowTangGrazeUntil = now + randomBetween(5200, 9800);
+    fish.yellowTangGrazeDecorId = decor?.id || "";
+    fish.yellowTangGrazePhase = Math.random() * Math.PI * 2;
+  }
+
+  if ((Number(fish.yellowTangLastCleanAt) || 0) + 15000 <= now && !isTutorialTankDirtinessLocked()) {
+    const dirtiness = getBaseTankDirtiness(now);
+    if (dirtiness > 0.001) {
+      rebaseTankDirtiness(now, Math.max(0, dirtiness - 0.0025));
+      fish.yellowTangLastCleanAt = now;
+      runtime.tankStateDirty = true;
+    }
+  }
+
+  if (decor) {
+    const phase = Number(fish.yellowTangGrazePhase) || 0;
+    fish.yellowTangGrazePhase = phase + randomBetween(0.8, 1.35);
+    const radius = randomBetween(0.035, 0.075);
+    return {
+      xNorm: clamp((Number(decor.xNorm) || 0.5) + Math.cos(fish.yellowTangGrazePhase) * radius, 0.08, 0.92),
+      yNorm: clamp((Number(decor.yNorm) || 0.58) + Math.sin(fish.yellowTangGrazePhase) * radius * 0.65, 0.2, 0.84),
+      targetLayer: getDecorTankLayer(decor),
+      targetAt: now + randomBetween(900, 1700),
+      hangoutDecorId: decor.id,
+      zoneType: "plant",
+      intentType: "graze seaweed",
+      intentCause: "algae browsing",
+      slow: true
+    };
+  }
+
+  fish.yellowTangGrazeUntil = now + randomBetween(3600, 6800);
+  const xNorm = clamp((fish.xNorm || 0.5) + randomBetween(-0.14, 0.14), 0.1, 0.9);
+  return {
+    xNorm,
+    yNorm: clampFishYNormToLayer(randomBetween(0.8, 0.9), fish, species, TANK_DEPTH_LAYERS, { minYNorm: 0.72, maxYNorm: 0.92 }),
+    targetLayer: TANK_DEPTH_LAYERS,
+    targetAt: now + randomBetween(900, 1600),
+    intentType: "graze gravel",
+    intentCause: "algae browsing",
+    slow: true
+  };
+}
+
+function pickMollyGrazeBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "molly" || (options.force !== true && Math.random() > 0.12)) return null;
+  const plants = getBehaviorDecorCandidates(/seaweed|kelp|algae|moss|plant/);
+  const decor = plants.length ? plants[Math.floor(Math.random() * plants.length)] : null;
+  if (decor) {
+    return {
+      xNorm: clamp((Number(decor.xNorm) || 0.5) + randomBetween(-0.055, 0.055), 0.08, 0.92),
+      yNorm: clamp((Number(decor.yNorm) || 0.58) + randomBetween(-0.04, 0.05), 0.18, 0.84),
+      targetLayer: getDecorTankLayer(decor),
+      targetAt: now + randomBetween(1200, 2400),
+      hangoutDecorId: decor.id,
+      zoneType: "plant",
+      intentType: "social graze",
+      intentCause: "opportunistic grazing",
+      slow: true
+    };
+  }
+  return {
+    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.12, 0.12), 0.08, 0.92),
+    yNorm: randomBetween(0.72, 0.86),
+    targetLayer: TANK_DEPTH_LAYERS,
+    targetAt: now + randomBetween(1000, 1900),
+    intentType: "social graze",
+    intentCause: "opportunistic grazing",
+    slow: true
+  };
+}
+
+function pickSunfishSurfaceBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "sunfish") return null;
+  if ((Number(fish.sunfishSurfaceVisitUntil) || 0) <= now) {
+    fish.sunfishSurfaceVisitUntil = 0;
+    if (options.force !== true && Math.random() > 0.2) return null;
+    fish.sunfishSurfaceVisitUntil = now + randomBetween(7000, 13000);
+    fish.sunfishSurfaceVisitXNorm = clamp((fish.xNorm || 0.5) + randomBetween(-0.12, 0.12), 0.16, 0.84);
+  }
+  return {
+    xNorm: Number(fish.sunfishSurfaceVisitXNorm) || fish.xNorm,
+    yNorm: randomBetween(0.16, 0.21),
+    targetLayer: clampTankLayer(Math.min(getFishTankLayer(fish), 2)),
+    targetAt: Math.min(Number(fish.sunfishSurfaceVisitUntil) || now + 5000, now + 5000),
+    intentType: "surface visit",
+    intentCause: "surface excursion",
+    slow: true
+  };
+}
+
+function pickSeahorsePerchBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "seahorse") return null;
+  let decor = null;
+  if ((Number(fish.seahorsePerchUntil) || 0) > now && fish.seahorsePerchDecorId) {
+    decor = (state.placedDecor || []).find((item) => item.id === fish.seahorsePerchDecorId) || null;
+  }
+  if (!decor) {
+    fish.seahorsePerchUntil = 0;
+    fish.seahorsePerchDecorId = "";
+    fish.seahorsePerchXNorm = null;
+    fish.seahorsePerchYNorm = null;
+    if (options.force !== true && Math.random() > 0.24) return null;
+    const candidates = getBehaviorDecorCandidates(/seaweed|kelp|plant|moss|coral|driftwood|root/);
+    if (!candidates.length) return null;
+    decor = candidates[Math.floor(Math.random() * candidates.length)];
+    fish.seahorsePerchDecorId = decor.id;
+    fish.seahorsePerchUntil = now + randomBetween(8500, 16000);
+    const side = (fish.xNorm || 0.5) < (Number(decor.xNorm) || 0.5) ? -1 : 1;
+    fish.seahorsePerchXNorm = clamp((Number(decor.xNorm) || 0.5) + side * randomBetween(0.018, 0.038), 0.08, 0.92);
+    fish.seahorsePerchYNorm = clamp((Number(decor.yNorm) || 0.55) + randomBetween(-0.025, 0.035), 0.2, 0.82);
+  }
+  if (!Number.isFinite(Number(fish.seahorsePerchXNorm)) || !Number.isFinite(Number(fish.seahorsePerchYNorm))) {
+    const side = (fish.xNorm || 0.5) < (Number(decor.xNorm) || 0.5) ? -1 : 1;
+    fish.seahorsePerchXNorm = clamp((Number(decor.xNorm) || 0.5) + side * 0.028, 0.08, 0.92);
+    fish.seahorsePerchYNorm = clamp(Number(decor.yNorm) || 0.55, 0.2, 0.82);
+  }
+  return {
+    xNorm: fish.seahorsePerchXNorm,
+    yNorm: fish.seahorsePerchYNorm,
+    targetLayer: getDecorTankLayer(decor),
+    targetAt: Math.min(Number(fish.seahorsePerchUntil) || now + 6000, now + 6000),
+    hangoutDecorId: decor.id,
+    zoneType: "perch",
+    intentType: "perched",
+    intentCause: "perch anchoring",
+    slow: true
+  };
+}
+
+function pickPencilfishSparBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "pencilfish") return null;
+  let partner = fish.pencilSparPartnerId
+    ? state.fish.find((entry) => entry?.id === fish.pencilSparPartnerId && !isFishDead(entry))
+    : null;
+  if (!partner || (Number(fish.pencilSparUntil) || 0) <= now) {
+    fish.pencilSparPartnerId = "";
+    fish.pencilSparUntil = 0;
+    if (options.force !== true && Math.random() > 0.14) return null;
+    const tankId = getTankContainingFish(fish.id)?.id;
+    const candidates = state.fish.filter((entry) => (
+      entry && entry.id !== fish.id && !isFishDead(entry) && entry.speciesId === "pencilfish"
+      && getTankContainingFish(entry.id)?.id === tankId
+      && (Number(entry.pencilSparUntil) || 0) <= now
+    ));
+    if (!candidates.length) return null;
+    partner = candidates[Math.floor(Math.random() * candidates.length)];
+    const until = now + randomBetween(4200, 7200);
+    fish.pencilSparPartnerId = partner.id;
+    fish.pencilSparUntil = until;
+    partner.pencilSparPartnerId = fish.id;
+    partner.pencilSparUntil = until;
+    setFishBehaviorIntent(partner, "harmless spar", fish.name || "Pencilfish", now, { targetId: fish.id, targetName: fish.name || "", durationMs: until - now });
+  }
+  const side = String(fish.id).localeCompare(String(partner.id)) < 0 ? -1 : 1;
+  const midX = ((fish.xNorm || 0.5) + (partner.xNorm || 0.5)) / 2;
+  const midY = ((fish.yNorm || 0.35) + (partner.yNorm || 0.35)) / 2;
+  return {
+    xNorm: clamp(midX + side * randomBetween(0.028, 0.05), 0.08, 0.92),
+    yNorm: clamp(midY + randomBetween(-0.025, 0.025), 0.16, 0.48),
+    targetLayer: getFishTankLayer(partner),
+    targetAt: Math.min(Number(fish.pencilSparUntil) || now + 900, now + randomBetween(550, 900)),
+    intentType: "harmless spar",
+    intentCause: "display sparring",
+    intentTargetId: partner.id,
+    intentTargetName: partner.name || "Pencilfish",
+    speed: normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.82)))
+  };
+}
+
+function pickAngelfishTerritoryBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "angelfish" || !isFishAdult(fish, now)) return null;
+  const homeId = getFishResidenceDecorId(fish);
+  const home = homeId ? (state.placedDecor || []).find((item) => item.id === homeId) : null;
+  if (!home) return null;
+  const homeX = Number(home.xNorm) || 0.5;
+  const homeY = Number(home.yNorm) || 0.55;
+  const intruder = state.fish
+    .filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry))
+    .map((entry) => ({ fish: entry, distance: Math.hypot((entry.xNorm || 0.5) - homeX, (entry.yNorm || 0.5) - homeY) }))
+    .filter((entry) => entry.distance <= 0.22)
+    .sort((a,b) => a.distance-b.distance)[0]?.fish || null;
+  if (intruder) {
+    reinforceFishAvoidanceRelationship(intruder, fish, now, { severity: 0.16 });
+    fish.territoryTargetFishId = intruder.id;
+    fish.territoryTargetUntil = now + 4200;
+    return {
+      xNorm: clamp((intruder.xNorm || 0.5) + (homeX - (intruder.xNorm || 0.5)) * 0.28, 0.08, 0.92),
+      yNorm: clamp((intruder.yNorm || 0.5) + (homeY - (intruder.yNorm || 0.5)) * 0.28, 0.14, 0.82),
+      targetLayer: getFishTankLayer(intruder),
+      targetAt: now + randomBetween(650, 1200),
+      intentType: "territorial warning",
+      intentCause: "adult home territory",
+      intentTargetId: intruder.id,
+      intentTargetName: intruder.name || "intruder"
+    };
+  }
+  if (options.force !== true && Math.random() > 0.42) return null;
+  return {
+    xNorm: clamp(homeX + randomBetween(-0.06, 0.06), 0.08, 0.92),
+    yNorm: clamp(homeY + randomBetween(-0.045, 0.045), 0.16, 0.82),
+    targetLayer: getDecorTankLayer(home),
+    targetAt: now + randomBetween(2200, 4800),
+    hangoutDecorId: home.id,
+    zoneType: "territory",
+    intentType: "guard home",
+    intentCause: "adult angelfish territory",
+    slow: true
+  };
+}
+
+function getBlueRamGuardedEgg(fish) {
+  if (!fish || fish.speciesId !== "blue-ram") return null;
+  return (state.fishEggs || []).find((egg) => {
+    if (!egg || egg.hatchedAt || egg.speciesId !== "blue-ram") return false;
+    const parentIds = Array.isArray(egg.parentIds) ? egg.parentIds : [];
+    if (parentIds.length) {
+      return parentIds.includes(fish.id);
+    }
+    // Legacy eggs created before parent IDs were saved can still fall back to
+    // display names. All newly created eggs use stable IDs.
+    return Array.isArray(egg.parentNames) && egg.parentNames.includes(fish.name);
+  }) || null;
+}
+
+function pickBlueRamTerritoryBehaviorTarget(fish, species, now = Date.now()) {
+  if (species?.id !== "blue-ram" || !isFishAdult(fish, now)) return null;
+  const egg = getBlueRamGuardedEgg(fish);
+  const frisky = (Number(state.foodBuffs?.friskyUntil) || 0) > now;
+  const centerX = egg ? Number(egg.xNorm) || 0.5 : fish.xNorm || 0.5;
+  const centerY = egg ? Number(egg.yNorm) || 0.72 : fish.yNorm || 0.5;
+  let intruders = state.fish.filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry));
+  if (egg) {
+    intruders = intruders.filter((entry) => Math.hypot((entry.xNorm || 0.5) - centerX, (entry.yNorm || 0.5) - centerY) <= 0.2);
+  } else if (frisky) {
+    intruders = intruders.filter((entry) => entry.speciesId !== "blue-ram" && Math.hypot((entry.xNorm || 0.5) - centerX, (entry.yNorm || 0.5) - centerY) <= 0.36);
+  } else {
+    return null;
+  }
+  const intruder = intruders.sort((a,b) => Math.hypot((a.xNorm||0.5)-centerX,(a.yNorm||0.5)-centerY)-Math.hypot((b.xNorm||0.5)-centerX,(b.yNorm||0.5)-centerY))[0] || null;
+  if (intruder) {
+    reinforceFishAvoidanceRelationship(intruder, fish, now, { severity: egg ? 0.2 : 0.12 });
+    fish.territoryTargetFishId = intruder.id;
+    fish.territoryTargetUntil = now + 3800;
+    return {
+      xNorm: clamp((intruder.xNorm || 0.5) + (centerX - (intruder.xNorm || 0.5)) * 0.18, 0.08, 0.92),
+      yNorm: clamp((intruder.yNorm || 0.5) + (centerY - (intruder.yNorm || 0.5)) * 0.18, 0.14, 0.86),
+      targetLayer: getFishTankLayer(intruder),
+      targetAt: now + randomBetween(600, 1100),
+      intentType: egg ? "guard egg" : "breeding aggression",
+      intentCause: egg ? "egg territory" : "frisky food",
+      intentTargetId: intruder.id,
+      intentTargetName: intruder.name || "intruder"
+    };
+  }
+  if (egg) {
+    return {
+      xNorm: clamp(centerX + randomBetween(-0.055, 0.055), 0.08, 0.92),
+      yNorm: clamp(centerY - randomBetween(0.035, 0.075), 0.18, 0.86),
+      targetLayer: clampTankLayer(Number(egg.tankLayer) || getFishTankLayer(fish)),
+      targetAt: now + randomBetween(1800, 3600),
+      intentType: "guard egg",
+      intentCause: "egg territory",
+      slow: true
+    };
+  }
+  return null;
+}
+
+function pickSurfaceAmbushBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "wonder-killifish" || (options.force !== true && Math.random() > 0.3)) return null;
+  return {
+    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.12, 0.12), 0.1, 0.9),
+    yNorm: randomBetween(0.14, 0.2),
+    targetLayer: clampTankLayer(Math.min(getFishTankLayer(fish), 2)),
+    targetAt: now + randomBetween(2200, 4800),
+    intentType: "surface ambush",
+    intentCause: "surface ambush",
+    slow: true
+  };
+}
+
+function pickPilotCompanionBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  if (species?.id !== "pilot-fish" || (options.force !== true && Math.random() > 0.2)) return null;
+  const companions = state.fish.filter((entry) => entry && !isFishDead(entry) && ["bull-shark", "great-white-shark", "hammerhead-shark", "orca"].includes(entry.speciesId));
+  if (!companions.length) return null;
+  const companion = companions.sort((a,b) => Math.hypot((a.xNorm||0.5)-(fish.xNorm||0.5),(a.yNorm||0.5)-(fish.yNorm||0.5))-Math.hypot((b.xNorm||0.5)-(fish.xNorm||0.5),(b.yNorm||0.5)-(fish.yNorm||0.5)))[0];
+  return {
+    xNorm: clamp((companion.xNorm || 0.5) + randomBetween(-0.08, 0.08), 0.08, 0.92),
+    yNorm: clamp((companion.yNorm || 0.5) + randomBetween(-0.05, 0.05), 0.14, 0.82),
+    targetLayer: getFishTankLayer(companion),
+    targetAt: now + randomBetween(2600, 5200),
+    intentType: "pilot escort",
+    intentCause: "large-animal association",
+    intentTargetId: companion.id,
+    intentTargetName: companion.name || "large companion"
+  };
+}
+
+function getFishSignatureBehaviorFacingDirection(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  if (!fish || !species || isFishDead(fish) || fish.caveState || fish.activity !== "roam") {
+    return null;
+  }
+  if (species.id === "yellow-tang" && (Number(fish.yellowTangGrazeUntil) || 0) > now && fish.yellowTangGrazeDecorId) {
+    const decor = (state.placedDecor || []).find((item) => item?.id === fish.yellowTangGrazeDecorId) || null;
+    if (decor) {
+      const distance = Math.hypot((fish.xNorm || 0.5) - (Number(decor.xNorm) || 0.5), (fish.yNorm || 0.5) - (Number(decor.yNorm) || 0.5));
+      if (distance <= 0.12) {
+        return (Number(decor.xNorm) || 0.5) >= (fish.xNorm || 0.5) ? 1 : -1;
+      }
+    }
+  }
+  if (species.id === "betta" && (Number(fish.bettaRivalDisplayUntil) || 0) > now && fish.bettaRivalTargetId) {
+    const rival = state.fish.find((entry) => entry?.id === fish.bettaRivalTargetId && !isFishDead(entry)) || null;
+    if (rival) {
+      return (rival.xNorm || 0.5) >= (fish.xNorm || 0.5) ? 1 : -1;
+    }
+  }
+  if (species.id === "pencilfish" && (Number(fish.pencilSparUntil) || 0) > now && fish.pencilSparPartnerId) {
+    const partner = state.fish.find((entry) => entry?.id === fish.pencilSparPartnerId && !isFishDead(entry)) || null;
+    if (partner) {
+      return (partner.xNorm || 0.5) >= (fish.xNorm || 0.5) ? 1 : -1;
+    }
+  }
+  return null;
+}
+
+function getFishSignatureBehaviorKey(speciesOrFish) {
+  const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
+  switch (species?.id) {
+    case "yellow-tang": return "algae-browse";
+    case "molly": return "opportunistic-graze";
+    case "sunfish": return "surface-visit";
+    case "seahorse": return "perch";
+    case "pencilfish": return "spar";
+    case "angelfish": return "home-territory";
+    case "blue-ram": return "breeding-territory";
+    case "wonder-killifish": return "surface-ambush";
+    case "pilot-fish": return "large-animal-association";
+    case "betta": return "rival-display";
+    case "koi": return "substrate-forage";
+    case "lionfish": return "shelter-ambush";
+    default: return "";
+  }
+}
+
+function pickSpeciesSignatureBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  switch (getFishSignatureBehaviorKey(species)) {
+    case "algae-browse":
+      return pickYellowTangGrazeBehaviorTarget(fish, species, now, options);
+    case "opportunistic-graze":
+      return pickMollyGrazeBehaviorTarget(fish, species, now, options);
+    case "surface-visit":
+      return pickSunfishSurfaceBehaviorTarget(fish, species, now, options);
+    case "perch":
+      return pickSeahorsePerchBehaviorTarget(fish, species, now, options);
+    case "spar":
+      return pickPencilfishSparBehaviorTarget(fish, species, now, options);
+    case "home-territory":
+      return pickAngelfishTerritoryBehaviorTarget(fish, species, now, options);
+    case "breeding-territory":
+      return pickBlueRamTerritoryBehaviorTarget(fish, species, now);
+    case "surface-ambush":
+      return pickSurfaceAmbushBehaviorTarget(fish, species, now, options);
+    case "large-animal-association":
+      return pickPilotCompanionBehaviorTarget(fish, species, now, options);
+    case "substrate-forage":
+      return pickKoiSubstrateForageBehaviorTarget(fish, species, now, options);
+    case "shelter-ambush":
+      return pickLionfishShelterBehaviorTarget(fish, species, now, options);
+    default:
+      return null;
+  }
+}
+
+function pickMovementPatternBehaviorTarget(fish, species, now = Date.now()) {
+  // Kept as a compatibility entry point. Signature behaviors are selected by
+  // species capability now, while movementPattern is reserved for locomotion.
+  return pickSpeciesSignatureBehaviorTarget(fish, species, now);
+}
+
 function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
-  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish) || isUndeadFish(fish)) {
+  if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish)) {
     return false;
   }
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
@@ -2501,6 +3404,10 @@ function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   }
   const threatTarget = pickRelationshipBehaviorTarget(fish, species, now, { onlyThreat: true });
   if (threatTarget && applyBehaviorTarget(fish, species, threatTarget, now)) {
+    return true;
+  }
+  const movementPatternTarget = pickMovementPatternBehaviorTarget(fish, species, now);
+  if (movementPatternTarget && applyBehaviorTarget(fish, species, movementPatternTarget, now)) {
     return true;
   }
   const feedingMemoryTarget = pickFeedingMemoryBehaviorTarget(fish, species, now);
@@ -2546,7 +3453,7 @@ function recordFishFeedingMemory(fish, pellet, now = Date.now()) {
 
 function shouldFishRefuseFoodForComfort(fish, foodKey = "basic", now = Date.now()) {
   if (foodKey === "halloweenCandy" || hasActiveCandyBoost(fish, now)) return false;
-  if (!fish || isMealFreeFish(fish) || isUndeadFish(fish)) {
+  if (!fish || isMealFreeFish(fish)) {
     return false;
   }
 

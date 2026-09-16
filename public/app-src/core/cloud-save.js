@@ -1223,7 +1223,7 @@ function renderCloudAccountPanel() {
               <span class="cloud-account-editor-icon" aria-hidden="true"><img data-sprite-src="assets/icons/edit.png" alt="" /></span>
               <div><strong id="cloudUsernameEditorTitle">Edit Username</strong><span>Choose the name shown for this Bubble Borough account.</span></div>
             </div>
-            <input class="cloud-account-editor-input" type="text" maxlength="32" autocomplete="nickname" placeholder="Choose a name" value="${escapeHtml(username)}" data-cloud-settings-username>
+            <input class="cloud-account-editor-input" type="text" maxlength="20" autocomplete="nickname" placeholder="Choose a name" value="${escapeHtml(username)}" data-cloud-settings-username>
             <div class="cloud-account-editor-actions">
               <button class="small-button" type="button" data-cloud-save-username>Save</button>
               <button class="small-button alt" type="button" data-cloud-cancel-username>Cancel</button>

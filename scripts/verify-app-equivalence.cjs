@@ -3,7 +3,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const ts = require("../desktop-app/node_modules/typescript");
+const ts = require("typescript");
 
 const projectRoot = path.resolve(__dirname, "..");
 const originalPath = process.argv[2] ? path.resolve(process.argv[2]) : null;

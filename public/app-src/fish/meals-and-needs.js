@@ -1099,16 +1099,10 @@ function drawDecorBubbleStreams(now) {
 }
 
 function getDecorBubbleIntensity(decorKey) {
-  const key = decorKey.toLowerCase();
-  if (/(coral|seaweed|grass|moss|anubias|bloom|bunch)/.test(key)) {
-    return 1.45;
-  }
-  if (/(castle|cave|terracotta|pagoda|bridge|arch)/.test(key)) {
-    return 1.05;
-  }
-  if (/(rock|driftwood|chest|shell)/.test(key)) {
-    return 0.6;
-  }
+  const categories = new Set(getDecorCategoryList(decorKey));
+  if (categories.has("plant") || categories.has("coral")) return 1.45;
+  if (categories.has("cave")) return 1.05;
+  if (["rock", "wood", "ornament"].some((category) => categories.has(category))) return 0.6;
   return 0.35;
 }
 
@@ -1508,20 +1502,6 @@ function findFishAtPoint(x, y, now) {
   return null;
 }
 
-function getUndeadComfortPenalty(fish) {
-  if (!fish || isUndeadFish(fish) || !isGoreEnabled()) {
-    return 0;
-  }
-
-  const undeadNeighbors = state.fish.filter((otherFish) => (
-    otherFish
-    && otherFish.id !== fish.id
-    && !isFishDead(otherFish)
-    && isUndeadFish(otherFish)
-  )).length;
-  return clamp(undeadNeighbors * UNDEAD_COMFORT_PENALTY, 0, MAX_UNDEAD_COMFORT_PENALTY);
-}
-
 function updateComfortHistoryEvents(now = Date.now()) {
   let changed = false;
   const dayKey = getLocalDayKey(now);
@@ -1558,10 +1538,6 @@ function getFishComfort(fish, now) {
     return { value: 1, label: "Calm" };
   }
 
-  if (isUndeadFish(fish) && isGoreEnabled()) {
-    return { value: 1, label: "Undead" };
-  }
-
   const dirtiness = getTankDirtiness(now);
   if (hasExposedDeadTankFish(now) || dirtiness >= CRITICAL_TANK_DIRTINESS) {
     return { value: 0, label: "Critical" };
@@ -1585,7 +1561,6 @@ function getFishComfort(fish, now) {
   const spacePoints = getTankSpaceComfortPoints(getCurrentTank());
   const activeConflicts = getFishConflictStatus(fish, getCurrentTank(), now).filter((conflict) => conflict.active);
   const conflictPenalty = Math.min(COMFORT_COMPONENTS.maxConflictPenalty, activeConflicts.length * COMFORT_COMPONENTS.conflictPenalty);
-  const undeadPenalty = getUndeadComfortPenalty(fish);
   const glassTapStressPenalty = getFishGlassTapStressPenalty(fish, now);
   const diseasePenalty = getFishDiseaseComfortPenalty(fish, now);
   const comfortValue = clamp(
@@ -1598,7 +1573,6 @@ function getFishComfort(fish, now) {
       + mealBoost
       - conflictPenalty
     ) / 100
-    - undeadPenalty
     - glassTapStressPenalty
     - diseasePenalty,
     0,
@@ -1647,7 +1621,7 @@ function getFishNeedsSnapshot(fish, now = Date.now()) {
 }
 
 function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fish?.needs, fish, now)) {
-  if (!fish || isFishDead(fish) || isUndeadFish(fish)) return null;
+  if (!fish || isFishDead(fish)) return null;
   if (hasActiveCandyBoost(fish, now)) return { tone: "good", text: "Candy boost: all stats full for " + formatDuration(fish.candyBoostUntil - now) + "." };
   if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
     return { tone: "danger", text: "Very hungry. Drop some food into the tank." };
@@ -1755,7 +1729,7 @@ function getFishSocialNeedTarget(fish) {
 
 function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   const species = getSpeciesForFish(fish);
-  if (!fish || !species || isFishDead(fish) || isUndeadFish(fish)) return null;
+  if (!fish || !species || isFishDead(fish)) return null;
   const unboostedMs = Number(fish.candyBoostUntil) > 0
     ? Math.min(elapsedMs, Math.max(0, now - Number(fish.candyBoostUntil))) : elapsedMs;
   const hours = Math.max(0, unboostedMs) / HOUR_MS;
@@ -1773,9 +1747,6 @@ function updateFishNeeds(now = Date.now()) {
   }
   let changed = false;
   for (const fish of getLivingTankFish()) {
-    if (isUndeadFish(fish)) {
-      continue;
-    }
     fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
     const previousUpdatedAt = Number.isFinite(Number(fish.needsUpdatedAt)) ? Number(fish.needsUpdatedAt) : now;
     const elapsedMs = clamp(now - previousUpdatedAt, 0, FISH_NEEDS_MAX_OFFLINE_MS);

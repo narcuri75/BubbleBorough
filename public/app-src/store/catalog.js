@@ -2,11 +2,12 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function getDavyMutationCatalogDefinitions() {
-  const folder = "web/davy/mutations";
+  const folder = "fish";
   return [
     {
       id: "davy-bioluminescent-cherub-goldfish",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Cherub Puff Goldfish",
       description: "A consumer-focused companion specimen engineered around fancy goldfish, pufferfish, and permanently juvenile developmental traits. Oversized eyes, rounded proportions, a translucent glowing belly, and a tiny bioluminescent forehead organ were intentionally selected to maximize perceived cuteness. The result is undeniably adorable. Thinking too hard about why it looks that way is not recommended.",
       davyBehaviorLabel: "Affectionate companion",
@@ -37,6 +38,7 @@ function getDavyMutationCatalogDefinitions() {
     {
       id: "davy-bioluminescent-angler-pike",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Dwarf Siren Pike",
       description: "An experimental ambush predator built around a dwarf pike genome and reinforced with deep-sea, electric, regenerative, and camouflage adaptations. Its luminous lure, expandable throat structure, exposed bioelectric organs, and highly modified fins make the specimen difficult to mistake for anything naturally occurring. It is remarkably patient. Until it isn’t.",
       davyBehaviorLabel: "Patient ambush predator",
@@ -67,6 +69,7 @@ function getDavyMutationCatalogDefinitions() {
     {
       id: "davy-bioluminescent-glass-fangfish",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Glass Needle Spitter",
       description: "A two-inch laboratory curiosity combining pygmy fish genetics with transparent tissue, bioluminescent organs, precision water projection, defensive inflation, and disproportionately large predatory teeth. Most of its internal anatomy remains visible through the body wall. Small enough to disappear behind a filter tube. Strange enough that you will immediately notice when it does.",
       davyBehaviorLabel: "Nervous cover dart",
@@ -97,6 +100,7 @@ function getDavyMutationCatalogDefinitions() {
     {
       id: "davy-dwarf-chimera-barracuda",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Dwarf Chimera Barracuda",
       description: "A compact apex predator assembled from barracuda, cuttlefish, electric eel, lionfish, and mantis shrimp genetics. Adaptive camouflage, electrostunning organs, venomous dorsal defenses, and enhanced motion tracking were compressed into a specimen small enough for domestic aquariums. Extremely fast. Extremely observant. Technically ornamental.",
       davyBehaviorLabel: "Active patrol predator",
@@ -127,6 +131,7 @@ function getDavyMutationCatalogDefinitions() {
     {
       id: "davy-dwarf-hyperfin",
       seller: "Private Seller",
+      genetics: "enhanced",
       name: "Dwarf Hyperfin",
       description: "A compact high-performance fish engineered from some of the fastest and most efficient swimmers in the animal kingdom. Streamlined musculature, drag-reducing skin, stabilizing finlets, and an oversized cardiovascular system allow the Dwarf Hyperfin to accelerate with startling force while remaining small enough for a home aquarium. At rest, it is elegant. At speed, it becomes difficult to follow with your eyes.",
       davyBehaviorLabel: "High-speed open-water runner",
@@ -301,6 +306,7 @@ function getStoreProductFacets(kind, entry) {
     return {
       Availability: [isFishSpeciesShopUnlocked(entry) ? "Available now" : "Locked"],
       Seller: [seller],
+      Genetics: [entry.genetics === "enhanced" ? "Enhanced" : "Natural"],
       Type: [entry.behavior === "free" ? "Free swimming" : entry.behavior || "custom", ...(entry.caveEnabled ? ["Cave fish"] : [])],
       Diet: [entry.diet || "omnivore"]
     };
@@ -477,8 +483,11 @@ function renderShopThemePill(theme) {
     : "";
 }
 
-function renderFishShopThemePill(theme) {
-  return normalizeWaterType(theme, null) ? "" : renderShopThemePill(theme);
+function renderFishShopGeneticsPill(genetics) {
+  const normalized = String(genetics || "").trim().toLowerCase();
+  if (normalized !== "natural" && normalized !== "enhanced") return "";
+  const label = normalized === "enhanced" ? "Enhanced" : "Natural";
+  return `<div class="shop-theme-pill">${escapeHtml(label)}</div>`;
 }
 
 function normalizeShopSearchText(value) {
@@ -728,7 +737,6 @@ function getFishShopCatalog() {
     species
     && !HIDDEN_FISH_OPTION_IDS.has(species.id)
     && (!isDavyMutationSpecies(species) || davyOffer?.species?.id === species.id)
-    && ((isZombieSkeletonModeAvailable() && isGoreEnabled()) || !isUndeadSpecies(species))
   ));
 }
 

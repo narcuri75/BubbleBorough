@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "5e27827e-64bc-467d-b2ef-4e8f6c1bf265",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "614989a3-909e-4bdf-8bc9-e5b84333cae1",
+          "width": 512,
+          "height": 288,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly.png"
+        },
+        {
+          "id": "71969a00-f0d2-492d-93b3-ed6cd522aed4",
+          "width": 512,
+          "height": 288,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_1.png"
+        },
+        {
+          "id": "1a8f8662-fe1c-4029-aa30-ad366e778761",
+          "width": 512,
+          "height": 288,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_2.png"
+        },
+        {
+          "id": "4007366a-97bb-4a1f-afe5-8aca3c8b52bf",
+          "width": 512,
+          "height": 288,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_3.png"
+        },
+        {
+          "id": "6b53e499-ef62-4b12-af72-3156f760039f",
+          "width": 512,
+          "height": 288,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_4.png"
+        }
+      ]
+    }
+  ]
+}

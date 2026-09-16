@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "9ca0b0a1-4198-413b-957b-4a86ffc8b77b",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "f21be245-bc26-44c4-be4a-04cc788b00f8",
+          "width": 512,
+          "height": 446,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_4.png"
+        },
+        {
+          "id": "87d03184-852a-46fc-8c8d-6e878222032c",
+          "width": 512,
+          "height": 446,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_1.png"
+        },
+        {
+          "id": "f508135e-772b-4e0a-88ba-e228520699b4",
+          "width": 512,
+          "height": 446,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta.png"
+        },
+        {
+          "id": "bcd98a5c-f360-4d49-94df-8589b9ac8d5a",
+          "width": 512,
+          "height": 446,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_3.png"
+        },
+        {
+          "id": "1d03e79f-fdfe-49ea-94ea-05322d19cee7",
+          "width": 512,
+          "height": 446,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_2.png"
+        }
+      ]
+    }
+  ]
+}

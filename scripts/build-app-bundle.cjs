@@ -11,6 +11,8 @@ const manifestPath = path.join(sourceRoot, "module-manifest.json");
 const inventoryPath = path.join(sourceRoot, "function-inventory.json");
 const outputPath = path.join(projectRoot, "public", "app.js");
 const checkOnly = process.argv.includes("--check");
+require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "sync-decor-fallback.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
+require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "sync-fish-fallback.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-sprite-delivery.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-background-delivery.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-loose-decor-previews.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });

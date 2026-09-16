@@ -1,0 +1,12 @@
+Fish sprite-sheet naming convention
+<fish-id>__genetics-<natural|enhanced>[__state-<state>].webp
+<fish-id>__genetics-<natural|enhanced>[__state-<state>].json
+
+Rules:
+- WEBP and coordinate JSON always share the exact same stem.
+- All fish live in the same fish folder.
+- genetics-natural and genetics-enhanced are explicit and sortable.
+- Special whole-sheet states use __state-..., such as pufferfish inflated.
+- Variant coordinates and virtual sprite names stay inside the sidecar JSON.
+- fish-types.json no longer contains the unused theme/habitat field.
+- fish-types.json uses genetics: natural|enhanced for its catalog entries.

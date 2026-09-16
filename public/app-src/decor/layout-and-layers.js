@@ -123,12 +123,6 @@ function sanitizeFish(fish, options = {}) {
     ? normalizeSuckerFishGlassLayer(Number.isFinite(Number(fish.desiredTankLayer)) ? Number(fish.desiredTankLayer) : baseTankLayer)
     : clampTankLayer(Number.isFinite(Number(fish.desiredTankLayer)) ? Number(fish.desiredTankLayer) : (fish.desiredDrawLayer === "back" ? Math.max(baseTankLayer, 4) : baseTankLayer));
   const dead = Number.isFinite(fish.deadAt) || rawHealthUnits === 0;
-  const storedUndeadTemplateSpeciesId = typeof fish.undeadTemplateSpeciesId === "string"
-    ? fish.undeadTemplateSpeciesId.trim()
-    : "";
-  const storedUndeadTemplateSpecies = storedUndeadTemplateSpeciesId
-    ? runtime.fishMap.get(storedUndeadTemplateSpeciesId)
-    : null;
   const pickedPersonality = pickFishPersonality(species);
   const storedPersonality = normalizeBehaviorPersonality(fish.personality);
   const storedCoarseActivity = fish.coarseActivity && typeof fish.coarseActivity === "object"
@@ -156,27 +150,11 @@ function sanitizeFish(fish, options = {}) {
   return {
     id: String(fish.id || createId("fish")),
     speciesId: fish.speciesId,
-    undeadTemplateSpeciesId: isCatalogUndeadShopSpecies(species)
-      && storedUndeadTemplateSpecies
-      && !isUndeadSpecies(storedUndeadTemplateSpecies)
-      ? storedUndeadTemplateSpecies.id
-      : null,
     name: typeof fish.name === "string" && fish.name.trim() ? fish.name : buildFishName(fish.speciesId, []),
     acquiredAt: Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now,
     tankAddedAt: Number.isFinite(fish.tankAddedAt) ? fish.tankAddedAt : (Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now),
     deadAt: Number.isFinite(fish.deadAt) ? fish.deadAt : null,
-    zombieVariant: Boolean(fish.zombieVariant),
-    // Predator combat is intentionally not resumed across reloads.
-    zombieBiteStartedAt: null,
-    zombieBiteLastBloodAt: null,
-    zombieBiteAttackerId: null,
-    zombieReviveAt: dead && hasDefinedFiniteNumber(fish.zombieReviveAt)
-      ? Number(fish.zombieReviveAt)
-      : null,
-    zombieReviveSourceId: dead && typeof fish.zombieReviveSourceId === "string" && fish.zombieReviveSourceId.trim()
-      ? fish.zombieReviveSourceId.trim()
-      : null,
-    decayStage: dead && ["fresh", "zombie", "skeleton"].includes(fish.decayStage) ? fish.decayStage : null,
+    decayStage: dead && fish.decayStage === "fresh" ? "fresh" : null,
     piranhaConsumptionStartedAt: dead && hasDefinedFiniteNumber(fish.piranhaConsumptionStartedAt)
       ? Number(fish.piranhaConsumptionStartedAt)
       : null,
@@ -207,6 +185,7 @@ function sanitizeFish(fish, options = {}) {
     favoriteSpot: sanitizeFavoriteSpot(fish.favoriteSpot),
     residenceDecorId: typeof fish.residenceDecorId === "string" && fish.residenceDecorId ? fish.residenceDecorId : null,
     parentNames: Array.isArray(fish.parentNames) ? fish.parentNames.map((name) => String(name).slice(0, 40)).slice(0, 2) : [],
+    parentIds: Array.isArray(fish.parentIds) ? fish.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2) : [],
     celebratedAgeMilestones: Array.isArray(fish.celebratedAgeMilestones)
       ? fish.celebratedAgeMilestones.map((value) => Math.max(0, Math.floor(Number(value) || 0))).filter(Boolean).slice(0, 8)
       : [],
@@ -250,6 +229,14 @@ function sanitizeFish(fish, options = {}) {
     nextDiseaseSpreadCheckAt: Number.isFinite(Number(fish.nextDiseaseSpreadCheckAt)) ? Math.max(0, Number(fish.nextDiseaseSpreadCheckAt)) : 0,
     nextSymptomCheckAt: Number.isFinite(Number(fish.nextSymptomCheckAt)) ? Math.max(0, Number(fish.nextSymptomCheckAt)) : 0,
     nextGreenBubbleAt: Number.isFinite(Number(fish.nextGreenBubbleAt)) ? Math.max(0, Number(fish.nextGreenBubbleAt)) : 0,
+    pufferInflatedAt: Number.isFinite(Number(fish.pufferInflatedAt)) ? Math.max(0, Number(fish.pufferInflatedAt)) : 0,
+    pufferInflatedUntil: Number.isFinite(Number(fish.pufferInflatedUntil)) ? Math.max(0, Number(fish.pufferInflatedUntil)) : 0,
+    pufferWobbleUntil: Number.isFinite(Number(fish.pufferWobbleUntil)) ? Math.max(0, Number(fish.pufferWobbleUntil)) : 0,
+    pufferRiseUntil: Number.isFinite(Number(fish.pufferRiseUntil)) ? Math.max(0, Number(fish.pufferRiseUntil)) : 0,
+    pufferCooldownUntil: Number.isFinite(Number(fish.pufferCooldownUntil)) ? Math.max(0, Number(fish.pufferCooldownUntil)) : 0,
+    pufferGlassStressUntil: Number.isFinite(Number(fish.pufferGlassStressUntil)) ? Math.max(0, Number(fish.pufferGlassStressUntil)) : 0,
+    pufferInflatedSwimSpeed: Number.isFinite(Number(fish.pufferInflatedSwimSpeed)) ? normalizeFishSpeed(species, Number(fish.pufferInflatedSwimSpeed)) : 0,
+    pufferDriftPhase: Number.isFinite(Number(fish.pufferDriftPhase)) ? Number(fish.pufferDriftPhase) : Math.random() * Math.PI * 2,
     lastIllnessRiskDayKey: typeof fish.lastIllnessRiskDayKey === "string" ? fish.lastIllnessRiskDayKey : "",
     lastIllnessSignalAtByType: sanitizeDiseaseSignalMap(fish.lastIllnessSignalAtByType),
     glassTapStressEndsAt: Array.isArray(fish.glassTapStressEndsAt)
@@ -292,7 +279,6 @@ function sanitizeFish(fish, options = {}) {
     activity: fish.activity === "feeding"
       && species?.diet !== "detritus"
       && species?.diet !== "none"
-      && !fish.zombieVariant
       ? "feeding"
       : "roam",
     feedingPelletId: typeof fish.feedingPelletId === "string" ? fish.feedingPelletId : null,
@@ -480,12 +466,16 @@ function sanitizeFishEgg(egg) {
   const parentNames = Array.isArray(egg.parentNames)
     ? egg.parentNames.map((name) => sanitizeTankName(name, "")).filter(Boolean).slice(0, 2)
     : [];
+  const parentIds = Array.isArray(egg.parentIds)
+    ? egg.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
+    : [];
   const fishColor = snapFishInheritanceColorToAvailable(egg.fishColor ?? egg.colorSetting ?? "");
 
   return {
     id: String(egg.id || createId("egg")),
     speciesId,
     parentNames,
+    parentIds,
     createdAt,
     hatchAt,
     hatchedAt,
@@ -495,8 +485,9 @@ function sanitizeFishEgg(egg) {
     fishColorize: fishColor ? normalizeDecorColorizeSetting(egg.fishColorize ?? false) : false,
     xNorm,
     startYNorm,
-    yNorm: targetYNorm,
-    tankLayer
+    yNorm: egg?.buoyancy === "floating" ? clamp(Number(egg.yNorm) || targetYNorm, 0.16, 0.46) : targetYNorm,
+    tankLayer,
+    buoyancy: egg?.buoyancy === "floating" ? "floating" : "sinking"
   };
 }
 
@@ -559,21 +550,23 @@ function sanitizeDecorScaleDefaults(defaults) {
 
 function migrateLegacyHalloweenDecorScaleDefaults(defaults, incomingVersion) {
   if (incomingVersion >= 46) return defaults;
+  // Keys have already been normalized by sanitizeDecorScaleDefaults, so legacy
+  // stock scale cleanup must target the current canonical decor keys.
   const legacyScales = {
     ...(incomingVersion < 44 ? {
-      "Halloween_Seaweed.png": [1, 1.3],
-      "Halloween_Floatingseaweed.png": [1, 1.34],
-      "Halloween_Ghost_Ship.png": [1]
+      "halloween-seaweed__plant__theme-halloween.png": [1, 1.3],
+      "halloween-floating-seaweed__plant__theme-halloween.png": [1, 1.34],
+      "halloween-ghost-ship__ornament__theme-halloween.png": [1]
     } : {}),
     ...(incomingVersion < 45 ? {
-      "Halloween_Haunted_Tree.png": [1, 1.2],
-      "Halloween_Cauldron_Bubbler.png": [1, 0.72],
-      "Halloween_JackOLantern_bubbler.png": [1, 0.68]
+      "halloween-haunted-tree__ornament__theme-halloween.png": [1, 1.2],
+      "halloween-cauldron__bubbler__theme-halloween__front.png": [1, 0.72],
+      "halloween-jack-o-lantern__bubbler__theme-halloween__front.png": [1, 0.68]
     } : {}),
-    "Halloween_Seaweed.png": [...(incomingVersion < 44 ? [1, 1.3] : []), 1.55],
-    "Halloween_Floatingseaweed.png": [...(incomingVersion < 44 ? [1, 1.34] : []), 1.15],
-    "Halloween_Cauldron_Bubbler.png": [...(incomingVersion < 45 ? [1, 0.72] : []), 0.7],
-    "Halloween_JackOLantern_bubbler.png": [...(incomingVersion < 45 ? [1, 0.68] : []), 0.7]
+    "halloween-seaweed__plant__theme-halloween.png": [...(incomingVersion < 44 ? [1, 1.3] : []), 1.55],
+    "halloween-floating-seaweed__plant__theme-halloween.png": [...(incomingVersion < 44 ? [1, 1.34] : []), 1.15],
+    "halloween-cauldron__bubbler__theme-halloween__front.png": [...(incomingVersion < 45 ? [1, 0.72] : []), 0.7],
+    "halloween-jack-o-lantern__bubbler__theme-halloween__front.png": [...(incomingVersion < 45 ? [1, 0.68] : []), 0.7]
   };
   const nextDefaults = { ...defaults };
   for (const [key, scales] of Object.entries(legacyScales)) {
@@ -851,7 +844,7 @@ function sanitizePlacedDecor(item) {
   if (worldAnchors) {
     Object.assign(sanitized, worldAnchors);
   }
-  if (decorKey === "transit-tube.png") {
+  if (isTransitTubeDecorKey(decorKey)) {
     sanitized.transitTubeName = sanitizeTankName(item.transitTubeName, "Transit Tube");
     sanitized.transitTubeColor = normalizeDecorColorSetting(item.transitTubeColor || "");
     const linkedId = String(item.transitTubeLinkedId || "").trim();
@@ -2151,21 +2144,14 @@ function resolveDecorVerticalUnit(item, unit) {
 }
 
 function isCaveDecorKey(decorKey = "") {
-  const key = String(decorKey || "").toLowerCase();
-  if (/_bubbler\.[^.]+$/.test(key)) {
-    return false;
-  }
-  const decor = runtime.decorMap?.get?.(decorKey) || runtime.decorMeta?.[decorKey] || null;
-  const categories = Array.isArray(decor?.categories) ? decor.categories.map((entry) => String(entry).toLowerCase()) : [];
+  const decor = getDecorCatalogRecord(decorKey) || null;
   if (isCustomHideAssetKey(decorKey) || decor?.customType === "hide") {
     return true;
   }
-  // Several real hides are named houses, ships, arches, or castles. Limiting
-  // this to filenames containing "cave" silently excluded them from cave
-  // navigation even though their catalog declares the Caves category.
-  return (key.includes("cave") || categories.includes("caves"))
-    && !key.includes("_bg")
-    && !key.includes("_mid");
+  if (isBubblerDecorKey(decorKey) || decorHasCategory(decorKey, "bubbler")) {
+    return false;
+  }
+  return decorHasCategory(decorKey, "cave") || getDecorBehaviorType(decorKey) === "cave_layered";
 }
 
 function getDecorBubblerMeta(decorKey = "") {
@@ -2277,12 +2263,7 @@ function getPlacedDecorBubblerMeta(item, decor) {
 }
 
 function getDecorFrontLayer(decorKey, layer) {
-  const clamped = clampTankLayer(layer);
-  if (!isCaveDecorKey(decorKey)) {
-    return clamped;
-  }
-
-  return clamp(clamped, 1, TANK_DEPTH_LAYERS - (isThreeLayerCaveDecorKey(decorKey) ? 2 : 1));
+  return clampTankLayer(layer);
 }
 
 function isThreeLayerCaveDecorKey(decorKey = "") {
@@ -2311,16 +2292,15 @@ function getDecorLayerSpan(decorKey, layer) {
     };
   }
 
-  const threeLayerCave = isThreeLayerCaveDecorKey(decorKey);
-  const mid = threeLayerCave ? frontLayer + 1 : null;
-  const back = frontLayer + (threeLayerCave ? 2 : 1);
-
+  // Caves occupy one user-facing tank layer. Their back artwork, interior fish,
+  // and front artwork are rendered as private sublayers within that layer.
   return {
     front: frontLayer,
-    mid,
-    back,
+    mid: frontLayer,
+    back: frontLayer,
     min: frontLayer,
-    max: back,
-    label: `Layers ${frontLayer}-${back}`
+    max: frontLayer,
+    label: `Layer ${frontLayer}`,
+    sublayers: Object.freeze({ back: 10, interior: 20, front: 30 })
   };
 }

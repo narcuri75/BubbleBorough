@@ -1,16 +1,470 @@
 {
   "decor": [
     {
-      "file": "seaweed-bunch.png",
-      "name": "Seaweed Bunch",
-      "cost": 2,
-      "width": 298,
+      "file": "halloween-seaweed__plant__theme-halloween.png",
+      "name": "Haunted Seaweed",
+      "width": 644,
       "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A simple cluster of flowing seaweed that adds movement and a little extra life to the tank. Looks right at home tucked between rocks, caves, or other decorations."
+      "categories": [
+        "plant"
+      ],
+      "theme": "halloween",
+      "description": "Dark, eerie seaweed that sways in the tank with considerably more menace than ordinary seaweed should possess.",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "halloween",
+        "grazable",
+        "perchable",
+        "sway",
+        "spooky"
+      ]
     },
     {
-      "file": "mushroomcoral_seaweed.png",
+      "file": "amazon-sword__plant__theme-natural.png",
+      "name": "Amazon Sword",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A amazon sword decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "anubias-rock__plant-rock__theme-natural.png",
+      "name": "Anubias Rock",
+      "cost": 4,
+      "width": 495,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A hardy Anubias growing directly from a rock. Conveniently combines plant and stone into one tidy little decoration.",
+      "categories": [
+        "plant",
+        "rock"
+      ],
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "rock",
+        "natural",
+        "hardscape",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "bacopa__plant__theme-natural.png",
+      "name": "Bacopa",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A bacopa decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "bronze-red-crypt__plant__theme-natural.png",
+      "name": "Bronze Red Crypt",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A bronze red crypt decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "cabomba__plant__theme-natural.png",
+      "name": "Cabomba",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A cabomba decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "cryptocoryne__plant__theme-natural.png",
+      "name": "Cryptocoryne",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A cryptocoryne decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "hornwort__plant__theme-natural.png",
+      "name": "Hornwort",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A hornwort decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "java-fern-cluster__plant__theme-natural.png",
+      "name": "Java Fern Cluster",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A java fern cluster decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "java-moss__plant__theme-natural.png",
+      "name": "Java Moss",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A java moss decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "ludwigia__plant__theme-natural.png",
+      "name": "Ludwigia",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A ludwigia decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "marimo-moss-ball__plant__theme-natural.png",
+      "name": "Marimo Moss Ball",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A marimo moss ball decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "monte-carlo-carpet__plant__theme-natural.png",
+      "name": "Monte Carlo Carpet",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A monte carlo carpet decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "red-stem__plant__theme-natural.png",
+      "name": "Red Stem",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A red stem decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "rotala__plant__theme-natural.png",
+      "name": "Rotala",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A rotala decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "small-moss-patch__plant__theme-natural.png",
+      "name": "Small Moss Patch",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A small moss patch decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "tiger-lotus__plant__theme-natural.png",
+      "name": "Tiger Lotus",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A tiger lotus decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "vallisneria-clump__plant__theme-natural.png",
+      "name": "Vallisneria Clump",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A vallisneria clump decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "vallisneria-cutout__plant__theme-natural.png",
+      "name": "Vallisneria Cutout",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A vallisneria cutout decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "water-wisteria__plant__theme-natural.png",
+      "name": "Water Wisteria",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A water wisteria decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "hammer-coral__coral__theme-reef.png",
+      "name": "Hammer Coral",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A hammer coral decoration for the aquarium.",
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "behavior": "anchored_sway",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "leather-coral__coral__theme-reef.png",
+      "name": "Leather Coral",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A leather coral decoration for the aquarium.",
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "behavior": "anchored_sway",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "macroalgae__plant__theme-reef.png",
+      "name": "Macroalgae",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A macroalgae decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "reef",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "reef",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
+    },
+    {
+      "file": "large-mushroom-coral__coral__theme-reef.png",
       "name": "Mushroom Coral",
       "cost": 15,
       "width": 510,
@@ -18,461 +472,614 @@
       "categories": [
         "coral"
       ],
-      "theme": "Regular",
-      "description": "A low, rounded coral with soft curves and plenty of texture. An easy way to add a natural reef look without taking over the tank."
+      "theme": "reef",
+      "description": "A low, rounded coral with soft curves and plenty of texture. An easy way to add a natural reef look without taking over the tank.",
+      "behavior": "anchored_sway",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable",
+        "sway"
+      ]
     },
     {
-      "file": "Brain_Coral.png",
-      "name": "Brain Coral",
-      "cost": 12,
+      "file": "mushroom-coral-colony__coral__theme-reef.png",
+      "name": "Mushroom Coral Colony",
+      "cost": 8,
       "width": 300,
       "defaultScale": 1,
+      "description": "A mushroom coral colony decoration for the aquarium.",
       "categories": [
         "coral"
       ],
-      "theme": "Regular",
-      "description": "A dense coral covered in winding, maze-like ridges. Compact, colorful, and just strange enough to earn its name."
-    },
-    {
-      "file": "Coral_1.png",
-      "name": "Branch Coral 1",
-      "cost": 10,
-      "width": 280,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A branching coral formation that adds height, color, and a little reef complexity to the tank."
-    },
-    {
-      "file": "Coral_2.png",
-      "name": "Branch Coral 2",
-      "cost": 10,
-      "width": 240,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A lively cluster of branching coral that helps fill open spaces with natural reef texture."
-    },
-    {
-      "file": "Coral_3.png",
-      "name": "Branch Coral 3",
-      "cost": 10,
-      "width": 280,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A decorative branching coral with plenty of little arms reaching into the water around it."
-    },
-    {
-      "file": "Coral_4.png",
-      "name": "Branch Coral 4",
-      "cost": 10,
-      "width": 260,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A colorful coral formation that brings a bit of reef structure and vertical interest to the aquarium."
-    },
-    {
-      "file": "Coral_5.png",
-      "name": "Branch Coral 5",
-      "cost": 10,
-      "width": 280,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A branching coral cluster made for building out colorful reef scenes without overwhelming the tank."
-    },
-    {
-      "file": "Coral_6.png",
-      "name": "Branch Coral 6",
-      "cost": 10,
-      "width": 280,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A compact branching coral that adds texture and depth wherever the tank is looking a little too empty."
-    },
-    {
-      "file": "Coral_7.png",
-      "name": "Branch Coral 7",
-      "cost": 10,
-      "width": 280,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A decorative coral with branching growth that gives the tank a busier, more established reef look."
-    },
-    {
-      "file": "Coral_8.png",
-      "name": "Branch Coral 8",
-      "cost": 10,
-      "width": 280,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A branching coral formation that works nicely tucked between rocks, caves, and other reef decorations."
-    },
-    {
-      "file": "Coral_9.png",
-      "name": "Branch Coral 9",
-      "cost": 10,
-      "width": 280,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A colorful piece of branching coral that adds a little height and life to the aquarium floor."
-    },
-    {
-      "file": "Coral_10.png",
-      "name": "Branch Coral 10",
-      "cost": 10,
-      "width": 280,
-      "defaultScale": 1,
-      "categories": [
-        "coral"
-      ],
-      "theme": "Regular",
-      "description": "A natural-looking coral cluster with branching growth, perfect for rounding out a larger reef display."
-    },
-    {
-      "file": "Cave_Coral_Shelf_1.png",
-      "name": "Coral Shelf Cave 1",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
+      "theme": "reef",
+      "behavior": "anchored_sway",
+      "tags": [
         "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A rocky coral shelf with a sheltered space underneath. Part reef decoration, part cozy hiding place."
+        "reef",
+        "hardscape",
+        "perchable",
+        "sway"
+      ]
     },
     {
-      "file": "Cave_Coral_Shelf_2.png",
-      "name": "Coral Shelf Cave 2",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
-        "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A layered coral shelf that creates a shaded little retreat beneath the reef."
-    },
-    {
-      "file": "Cave_Coral_Shelf_3.png",
-      "name": "Coral Shelf Cave 3",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
-        "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A sturdy coral-covered shelf with enough room underneath for curious fish to disappear for a while."
-    },
-    {
-      "file": "Cave_Coral_Shelf_4.png",
-      "name": "Coral Shelf Cave 4",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
-        "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A reef shelf with a natural hollow beneath it, adding both height and a tucked-away hiding spot."
-    },
-    {
-      "file": "Cave_Coral_Shelf_5.png",
-      "name": "Coral Shelf Cave 5",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
-        "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A rugged coral shelf that gives the tank a bit of reef structure and a quiet space underneath."
-    },
-    {
-      "file": "Cave_Coral_Shelf_6.png",
-      "name": "Coral Shelf Cave 6",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
-        "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor."
-    },
-    {
-      "file": "Cave_Coral_Shelf_7.png",
-      "name": "Coral Shelf Cave 7",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
-        "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A broad reef shelf with a built-in hiding place beneath it. Basically beachfront property for fish."
-    },
-    {
-      "file": "Cave_Coral_Shelf_9.png",
-      "name": "Coral Shelf Cave 9",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
-        "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A rocky coral overhang that adds depth to the reef and a shady little spot underneath."
-    },
-    {
-      "file": "Cave_Coral_Shelf_10.png",
-      "name": "Coral Shelf Cave 10",
-      "cost": 16,
-      "width": 520,
-      "defaultScale": 1,
-      "categories": [
-        "coral",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A substantial coral shelf with a protected hollow below, giving the tank a more layered reef landscape."
-    },
-    {
-      "file": "Sea_Anemone_2.png",
+      "file": "sea-anemone__coral__theme-reef.png",
       "name": "Sea Anemone 2",
       "cost": 8,
       "width": 320,
       "defaultScale": 1,
       "categories": [
-        "plants"
+        "coral"
       ],
-      "theme": "Regular",
-      "description": "A soft mass of waving tentacles that brings constant gentle movement to the aquarium. Clownfish may approve."
+      "theme": "reef",
+      "description": "A soft mass of waving tentacles that brings constant gentle movement to the aquarium. Clownfish may approve.",
+      "behavior": "anchored_sway",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable",
+        "sway",
+        "anemone",
+        "clownfish-host"
+      ]
     },
     {
-      "file": "Sea_Anemone_5.png",
+      "file": "sea-anemone__coral__theme-reef__v2.png",
       "name": "Sea Anemone 5",
       "cost": 8,
       "width": 320,
       "defaultScale": 1,
       "categories": [
-        "plants"
+        "coral"
       ],
-      "theme": "Regular",
-      "description": "A colorful sea anemone with flowing tentacles that sway with the water and make the tank feel a little more alive."
+      "theme": "reef",
+      "description": "A colorful sea anemone with flowing tentacles that sway with the water and make the tank feel a little more alive.",
+      "behavior": "anchored_sway",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable",
+        "sway",
+        "anemone",
+        "clownfish-host"
+      ]
     },
     {
-      "file": "Cave_Sea_Anemone_1.png",
-      "name": "Sea Anemone Cave 1",
-      "cost": 14,
-      "width": 420,
+      "file": "sea-fan-gorgonian__coral__theme-reef.png",
+      "name": "Sea Fan Gorgonian",
+      "cost": 8,
+      "width": 300,
       "defaultScale": 1,
+      "description": "A sea fan gorgonian decoration for the aquarium.",
       "categories": [
-        "plants",
-        "caves"
+        "coral"
       ],
-      "theme": "Regular",
-      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly."
+      "theme": "reef",
+      "behavior": "anchored_sway",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable",
+        "sway"
+      ]
     },
     {
-      "file": "Cave_Sea_Anemone_3.png",
-      "name": "Sea Anemone Cave 3",
-      "cost": 14,
-      "width": 420,
-      "defaultScale": 1,
-      "categories": [
-        "plants",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly."
-    },
-    {
-      "file": "Cave_Sea_Anemone_4.png",
-      "name": "Sea Anemone Cave 4",
-      "cost": 14,
-      "width": 420,
-      "defaultScale": 1,
-      "categories": [
-        "plants",
-        "caves"
-      ],
-      "theme": "Regular",
-      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly."
-    },
-    {
-      "file": "dirt.png",
-      "name": "Dirt Mound",
-      "cost": 3,
-      "width": 480,
-      "defaultScale": 1,
-      "categories": [
-        "ornaments"
-      ],
-      "theme": "Regular",
-      "description": "A small mound of loose earth for giving the aquarium floor a more uneven, natural look. Sometimes dirt really is the decoration."
-    },
-    {
-      "file": "floatingseaweed_1.png",
-      "name": "Floating Seaweed",
-      "cost": 4,
-      "width": 220,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "Loose seaweed that drifts above the aquarium floor instead of staying politely planted where it belongs."
-    },
-    {
-      "file": "seaweed_1.png",
+      "file": "seaweed__plant__theme-reef.png",
       "name": "Seaweed",
       "cost": 4,
       "width": 280,
       "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A simple patch of flowing seaweed that adds height, movement, and a little extra greenery to the tank."
+      "theme": "reef",
+      "description": "A simple patch of flowing seaweed that adds height, movement, and a little extra greenery to the tank.",
+      "categories": [
+        "plant"
+      ],
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "reef",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
     },
     {
-      "file": "anubia-rock_seaweed.png",
-      "name": "Anubias Rock",
-      "cost": 4,
-      "width": 495,
+      "file": "seaweed-bunch__plant__theme-reef.png",
+      "name": "Seaweed Bunch",
+      "cost": 8,
+      "width": 280,
       "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A hardy Anubias growing directly from a rock. Conveniently combines plant and stone into one tidy little decoration."
+      "description": "A seaweed bunch decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "reef",
+      "behavior": "anchored_sway",
+      "tags": [
+        "plant",
+        "reef",
+        "grazable",
+        "perchable",
+        "sway"
+      ]
     },
     {
-      "file": "moss-bridge.png",
-      "name": "Moss Bridge",
-      "cost": 10,
-      "width": 698,
+      "file": "torch-coral__coral__theme-reef.png",
+      "name": "Torch Coral",
+      "cost": 8,
+      "width": 300,
       "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A small bridge softened by a layer of moss. Equal parts peaceful garden feature and tiny fish infrastructure."
+      "description": "A torch coral decoration for the aquarium.",
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "behavior": "anchored_sway",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable",
+        "sway"
+      ]
     },
     {
-      "file": "driftwood-root.png",
-      "name": "Driftwood Root",
-      "cost": 10,
-      "width": 660,
+      "file": "frozen-bubbler__bubbler__theme-frozen.png",
+      "name": "Frozen Bubbler",
+      "cost": 8,
+      "width": 340,
       "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A gnarled mass of weathered roots that adds natural shape and texture to the aquarium floor."
+      "description": "A frozen bubbler decoration for the aquarium.",
+      "categories": [
+        "bubbler"
+      ],
+      "theme": "frozen",
+      "behavior": "bubbler",
+      "tags": [
+        "bubbler",
+        "frozen",
+        "hardscape",
+        "bubble-emitter"
+      ],
+      "bubbler": {
+        "spoutQty": 1
+      }
     },
     {
-      "file": "slate-cave.png",
-      "name": "Slate Cave",
-      "cost": 12,
-      "width": 620,
+      "file": "halloween-cauldron__bubbler__theme-halloween__front.png",
+      "name": "Haunted Cauldron Bubbler",
+      "width": 125,
+      "defaultScale": 1,
+      "categories": [
+        "bubbler"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "bubbler",
+          "hardscape"
+        ]
+      },
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
+            "horizontalLocation": 0.5,
+            "verticalLocation": 0.17,
+            "intensity": 5,
+            "speed": 1,
+            "spread": 48,
+            "fadeDistance": 210,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
+      },
+      "theme": "halloween",
+      "description": "A cauldron that churns away on the aquarium floor, releasing a steady stream of bubbles. Whatever is brewing inside probably should not be tasted. Also: Completely Adjustable and Customizable!",
+      "behavior": "bubbler",
+      "tags": [
+        "bubbler",
+        "halloween",
+        "hardscape",
+        "bubble-emitter",
+        "spooky"
+      ]
+    },
+    {
+      "file": "halloween-jack-o-lantern__bubbler__theme-halloween__front.png",
+      "name": "Jack-o'-Lantern Bubbler",
+      "width": 125,
+      "defaultScale": 1,
+      "categories": [
+        "bubbler"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "bubbler",
+          "hardscape"
+        ]
+      },
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
+            "horizontalLocation": 0.5,
+            "verticalLocation": 0.16,
+            "intensity": 4,
+            "speed": 1,
+            "spread": 46,
+            "fadeDistance": 205,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
+      },
+      "theme": "halloween",
+      "description": "A grinning jack-o'-lantern that releases a steady stream of bubbles. The pumpkin remains suspiciously intact underwater. Also: Completely Adjustable and Customizable!",
+      "behavior": "bubbler",
+      "tags": [
+        "bubbler",
+        "halloween",
+        "hardscape",
+        "bubble-emitter",
+        "spooky"
+      ]
+    },
+    {
+      "file": "volcano__bubbler__theme-natural__front.png",
+      "name": "Volcano Bubbler 1",
+      "cost": 16,
+      "width": 390,
+      "defaultScale": 1,
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
+            "horizontalLocation": 0.5,
+            "intensity": 15,
+            "speed": 2,
+            "spread": 40,
+            "fadeDistance": 250,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
+      },
+      "theme": "natural",
+      "description": "A miniature volcano that continuously sends bubbles toward the surface. Considerably safer than the full-sized version. Also: Completely Adjustable and Customizable!",
+      "categories": [
+        "bubbler"
+      ],
+      "behavior": "bubbler",
+      "tags": [
+        "bubbler",
+        "natural",
+        "hardscape",
+        "bubble-emitter"
+      ]
+    },
+    {
+      "file": "volcano__bubbler__theme-natural__v2__front.png",
+      "name": "Volcano Bubbler 2",
+      "cost": 18,
+      "width": 375,
+      "defaultScale": 1,
+      "bubbler": {
+        "spoutQty": 2,
+        "spouts": [
+          {
+            "horizontalLocation": 0.3,
+            "intensity": 15,
+            "speed": 2,
+            "spread": 20,
+            "fadeDistance": 200,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          },
+          {
+            "horizontalLocation": 0.6,
+            "intensity": 10,
+            "speed": 2,
+            "spread": 20,
+            "fadeDistance": 200,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
+      },
+      "theme": "natural",
+      "description": "A bubbling volcanic decoration that adds constant movement to the tank without requiring an evacuation plan. Also: Completely Adjustable and Customizable!",
+      "categories": [
+        "bubbler"
+      ],
+      "behavior": "bubbler",
+      "tags": [
+        "bubbler",
+        "natural",
+        "hardscape",
+        "bubble-emitter"
+      ]
+    },
+    {
+      "file": "treasure-chest__bubbler__theme-treasure__front.png",
+      "name": "Treasure Chest Bubbler",
+      "cost": 8,
+      "width": 233,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": [
+          "hardscape"
+        ]
+      },
+      "bubbler": {
+        "spoutQty": 1,
+        "spouts": [
+          {
+            "horizontalLocation": 0.5,
+            "intensity": 4,
+            "speed": 1,
+            "spread": 50,
+            "fadeDistance": 200,
+            "bubbleColor": [
+              "",
+              "",
+              ""
+            ],
+            "bubbleOpacity": 3
+          }
+        ]
+      },
+      "theme": "treasure",
+      "description": "A little sunken treasure chest that releases a steady stream of bubbles. The treasure itself appears to be mostly air. Also: Completely Adjustable and Customizable!",
+      "categories": [
+        "bubbler"
+      ],
+      "behavior": "bubbler",
+      "tags": [
+        "bubbler",
+        "treasure",
+        "hardscape",
+        "bubble-emitter"
+      ]
+    },
+    {
+      "file": "broken-pot-fragment__cave__theme-artificial__front.png",
+      "name": "Broken Pot Fragment",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A broken pot fragment decoration for the aquarium.",
+      "categories": [
+        "cave"
+      ],
+      "theme": "artificial",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "artificial",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "broken-terracotta-pot__cave__theme-artificial__front.png",
+      "name": "Broken Terracotta Pot",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A broken terracotta pot decoration for the aquarium.",
+      "categories": [
+        "cave"
+      ],
+      "theme": "artificial",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "artificial",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "ceramic-tube-cluster__cave__theme-artificial__front.png",
+      "name": "Ceramic Tube Cluster",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A ceramic tube cluster decoration for the aquarium.",
+      "categories": [
+        "cave"
+      ],
+      "theme": "artificial",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "artificial",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "clay-multi__cave__theme-artificial__front.png",
+      "name": "Clay Multi",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A clay multi decoration for the aquarium.",
+      "categories": [
+        "cave"
+      ],
+      "theme": "artificial",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "artificial",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "extra-narrow-pleco-tubes__cave__theme-artificial__front.png",
+      "name": "Extra Narrow Pleco Tubes",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A extra narrow pleco tubes decoration for the aquarium.",
+      "categories": [
+        "cave"
+      ],
+      "theme": "artificial",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "artificial",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "pvc-pipe__cave__theme-artificial__front.png",
+      "name": "PVC Pipe",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A pvc pipe decoration for the aquarium.",
+      "categories": [
+        "cave"
+      ],
+      "theme": "artificial",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "artificial",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "terracotta-pot__cave__theme-artificial__front.png",
+      "name": "Terracotta Pot",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A terracotta pot decoration for the aquarium.",
+      "categories": [
+        "cave"
+      ],
+      "theme": "artificial",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "artificial",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "terracotta-tunnel__cave__theme-artificial__front.png",
+      "name": "Terracotta Tunnel",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A terracotta tunnel decoration for the aquarium.",
+      "categories": [
+        "cave"
+      ],
+      "theme": "artificial",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "artificial",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "blue-castle__cave__theme-fantasy__front.png",
+      "name": "Castle Cave 1",
+      "cost": 16,
+      "width": 595,
       "defaultScale": 1,
       "caveSettings": {
-        "entryCount": 1,
+        "entryCount": 3,
         "entries": [
           {
-            "id": "main-front",
-            "x": 0.51,
-            "y": 0.67,
+            "id": "left-front",
+            "x": 0.24,
+            "y": 0.82,
+            "side": "front"
+          },
+          {
+            "id": "center-front",
+            "x": 0.44,
+            "y": 0.65,
+            "side": "front"
+          },
+          {
+            "id": "right-front",
+            "x": 0.62,
+            "y": 0.84,
             "side": "front"
           }
         ],
-        "seatCount": 2,
+        "seatCount": 3,
         "seats": [
           {
             "id": "left-seat",
-            "x": 0.42,
-            "y": 0.64,
-            "facing": "right"
+            "x": 0.24,
+            "y": 0.82
+          },
+          {
+            "id": "center-seat",
+            "x": 0.44,
+            "y": 0.65
           },
           {
             "id": "right-seat",
-            "x": 0.6,
-            "y": 0.64,
-            "facing": "left"
+            "x": 0.62,
+            "y": 0.84
           }
         ]
       },
-      "caveBehavior": {
-        "portals": [
-          {
-            "id": "main_front",
-            "approachX": 0.5,
-            "approachY": 0.77,
-            "mouthX": 0.5,
-            "mouthY": 0.67,
-            "outsideLayer": 2,
-            "insideLayer": 4,
-            "path": [
-              {
-                "x": 0.5,
-                "y": 0.61
-              },
-              {
-                "x": 0.5,
-                "y": 0.56
-              }
-            ]
-          }
-        ],
-        "insideSlots": [
-          {
-            "id": "center",
-            "x": 0.5,
-            "y": 0.53,
-            "layer": 4,
-            "portalIds": [
-              "main_front"
-            ]
-          }
-        ]
-      },
-      "theme": "Regular",
-      "description": "A sturdy little shelter built from stacked slate. Simple, rocky, and perfect for fish that appreciate some privacy."
+      "theme": "fantasy",
+      "description": "A tiny underwater castle that gives the tank a touch of fantasy and its residents somewhere suitably dramatic to hide.",
+      "categories": [
+        "cave"
+      ],
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "fantasy",
+        "hardscape",
+        "shelter"
+      ]
     },
     {
-      "file": "Shipwreck.png",
-      "name": "Shipwreck",
-      "cost": 15,
-      "width": 616,
-      "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "hide"
-      },
-      "theme": "Regular",
-      "description": "A sunken ship left to slowly become part of the aquarium. Dramatic enough to tell a story without taking the whole tank hostage."
-    },
-    {
-      "file": "Castle-Cave.png",
+      "file": "wizard-castle__cave__theme-fantasy__front.png",
       "name": "Castle Cave 2",
       "cost": 16,
       "width": 600,
@@ -575,550 +1182,78 @@
           }
         ]
       },
-      "theme": "Fantasy",
-      "description": "A miniature castle with enough openings and shelter to double as a proper fish hideout. Royal residency not guaranteed."
+      "theme": "fantasy",
+      "description": "A miniature castle with enough openings and shelter to double as a proper fish hideout. Royal residency not guaranteed.",
+      "categories": [
+        "cave"
+      ],
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "fantasy",
+        "hardscape",
+        "shelter"
+      ]
     },
     {
-      "file": "Plane-wreck.png",
-      "name": "Plane Crash",
-      "cost": 12,
-      "width": 613,
-      "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "hide"
-      },
-      "theme": "Regular",
-      "description": "A miniature aircraft wreck resting on the aquarium floor. The investigation remains ongoing."
-    },
-    {
-      "file": "blue_castle_cave.png",
-      "name": "Castle Cave 1",
-      "cost": 16,
-      "width": 595,
-      "defaultScale": 1,
-      "caveSettings": {
-        "entryCount": 3,
-        "entries": [
-          {
-            "id": "left-front",
-            "x": 0.24,
-            "y": 0.82,
-            "side": "front"
-          },
-          {
-            "id": "center-front",
-            "x": 0.44,
-            "y": 0.65,
-            "side": "front"
-          },
-          {
-            "id": "right-front",
-            "x": 0.62,
-            "y": 0.84,
-            "side": "front"
-          }
-        ],
-        "seatCount": 3,
-        "seats": [
-          {
-            "id": "left-seat",
-            "x": 0.24,
-            "y": 0.82
-          },
-          {
-            "id": "center-seat",
-            "x": 0.44,
-            "y": 0.65
-          },
-          {
-            "id": "right-seat",
-            "x": 0.62,
-            "y": 0.84
-          }
-        ]
-      },
-      "theme": "Fantasy",
-      "description": "A tiny underwater castle that gives the tank a touch of fantasy and its residents somewhere suitably dramatic to hide."
-    },
-    {
-      "file": "meteor_cave.png",
-      "name": "Meteor Cave",
-      "cost": 16,
-      "width": 585,
-      "defaultScale": 1,
-      "caveSettings": {
-        "entryCount": 1,
-        "entries": [
-          {
-            "id": "main-front",
-            "x": 0.56,
-            "y": 0.67,
-            "side": "front"
-          }
-        ],
-        "seatCount": 2,
-        "seats": [
-          {
-            "id": "upper-seat",
-            "x": 0.5,
-            "y": 0.55,
-            "facing": "right"
-          },
-          {
-            "id": "lower-seat",
-            "x": 0.49,
-            "y": 0.72,
-            "facing": "right"
-          }
-        ]
-      },
-      "theme": "Regular",
-      "description": "A strange rocky formation that looks suspiciously like it fell from somewhere much farther away. Conveniently, it also has a cave."
-    },
-    {
-      "file": "driftwood.png",
-      "name": "Driftwood",
-      "cost": 10,
-      "width": 675,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A weathered piece of driftwood with plenty of natural bends and texture. Simple, classic, and nearly impossible to make look out of place."
-    },
-    {
-      "file": "fishing_lure.png",
-      "name": "Fishing Lure",
-      "cost": 6,
-      "width": 255,
-      "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "lure",
-        "occupancyLimit": 1
-      },
-      "theme": "Regular",
-      "variantGroup": "fishing_lure",
-      "description": "A bright fishing lure placed inside an aquarium for reasons nobody has fully explained. Fortunately, the fish seem more curious than concerned."
-    },
-    {
-      "file": "gorebag_lure.png",
-      "name": "Gorebag",
-      "cost": 10,
-      "width": 200,
-      "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "lure",
-        "occupancyLimit": 1
-      },
-      "theme": "Spooky",
-      "description": "A peculiar decoration known only as Gorebag. Nobody remembers where it came from, and asking questions has not helped."
-    },
-    {
-      "file": "fishheadeffigy_1.png",
-      "name": "Neon Fish Head Effigy",
-      "cost": 3,
-      "width": 70,
-      "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "spooky",
-        "occupancyLimit": 1
-      },
-      "theme": "Spooky",
-      "description": "A bloody fish-head effigy. Tasteful is probably not the word, but memorable definitely is."
-    },
-    {
-      "file": "fishheadeffigy_2.png",
-      "name": "Guppy Fish Head Effigy",
-      "cost": 3,
-      "width": 70,
-      "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "spooky",
-        "occupancyLimit": 1
-      },
-      "theme": "Spooky",
-      "description": "A guppy head mounted on a stake."
-    },
-    {
-      "file": "fishheadeffigy_3.png",
-      "name": "Danio Fish Head Effigy",
-      "cost": 3,
-      "width": 70,
-      "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "spooky",
-        "occupancyLimit": 1
-      },
-      "theme": "Spooky",
-      "description": "A Danio fish-head effigy. Pretty ominous and completely unnecessary."
-    },
-    {
-      "file": "rock_1_bricks.png",
-      "name": "Rock 1",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A rock. A perfectly respectable rock, in fact. Useful for filling gaps, building little landscapes, or simply adding more rock."
-    },
-    {
-      "file": "rock_2_bricks.png",
-      "name": "Rock 2",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A simple aquarium rock for adding natural texture wherever the tank needs a little more structure."
-    },
-    {
-      "file": "rock_3_bricks.png",
-      "name": "Rock 3",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A sturdy decorative rock that fits comfortably into just about any aquarium layout."
-    },
-    {
-      "file": "rock_4_bricks.png",
-      "name": "Rock 4",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A natural-looking stone for breaking up open spaces and giving the aquarium floor a little more shape."
-    },
-    {
-      "file": "rock_5_bricks.png",
-      "name": "Rock 5",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A straightforward piece of rock decor. No gimmicks, no bubbles, just dependable geology."
-    },
-    {
-      "file": "volcanic_rock_1_bricks.png",
-      "name": "Volcanic Rock 1",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A dark, rugged piece of volcanic rock with plenty of rough texture and character."
-    },
-    {
-      "file": "volcanic_rock_2_bricks.png",
-      "name": "Volcanic Rock 2",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A porous-looking volcanic stone that adds a harsher, more dramatic edge to the aquarium floor."
-    },
-    {
-      "file": "volcanic_rock_3_bricks.png",
-      "name": "Volcanic Rock 3",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A chunk of dark volcanic rock for building rocky formations, caves, or anything that needs a little ancient lava energy."
-    },
-    {
-      "file": "volcanic_rock_4_bricks.png",
-      "name": "Volcanic Rock 4",
-      "cost": 1,
-      "width": 100,
-      "defaultScale": 1,
-      "theme": "Regular",
-      "description": "A rough volcanic stone with a naturally dramatic look. Thankfully, the volcano part is no longer active."
-    },
-    {
-      "file": "volcano-1_bubbler.png",
-      "name": "Volcano Bubbler 1",
-      "cost": 16,
-      "width": 390,
-      "defaultScale": 1,
-      "bubbler": {
-        "spoutQty": 1,
-        "spouts": [
-          {
-            "horizontalLocation": 0.5,
-            "intensity": 15,
-            "speed": 2,
-            "spread": 40,
-            "fadeDistance": 250,
-            "bubbleColor": [
-              "",
-              "",
-              ""
-            ],
-            "bubbleOpacity": 3
-          }
-        ]
-      },
-      "theme": "Regular",
-      "description": "A miniature volcano that continuously sends bubbles toward the surface. Considerably safer than the full-sized version. Also: Completely Adjustable and Customizable!"
-    },
-    {
-      "file": "volcano-2_bubbler.png",
-      "name": "Volcano Bubbler 2",
-      "cost": 18,
-      "width": 375,
-      "defaultScale": 1,
-      "bubbler": {
-        "spoutQty": 2,
-        "spouts": [
-          {
-            "horizontalLocation": 0.3,
-            "intensity": 15,
-            "speed": 2,
-            "spread": 20,
-            "fadeDistance": 200,
-            "bubbleColor": [
-              "",
-              "",
-              ""
-            ],
-            "bubbleOpacity": 3
-          },
-          {
-            "horizontalLocation": 0.6,
-            "intensity": 10,
-            "speed": 2,
-            "spread": 20,
-            "fadeDistance": 200,
-            "bubbleColor": [
-              "",
-              "",
-              ""
-            ],
-            "bubbleOpacity": 3
-          }
-        ]
-      },
-      "theme": "Regular",
-      "description": "A bubbling volcanic decoration that adds constant movement to the tank without requiring an evacuation plan. Also: Completely Adjustable and Customizable!"
-    },
-    {
-      "file": "treasure-chest_bubbler.png",
-      "name": "Treasure Chest Bubbler",
+      "file": "frozen-cave__cave__theme-frozen__front.png",
+      "name": "Frozen Cave",
       "cost": 8,
-      "width": 233,
+      "width": 420,
       "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": [
-          "hardscape"
-        ]
-      },
-      "bubbler": {
-        "spoutQty": 1,
-        "spouts": [
-          {
-            "horizontalLocation": 0.5,
-            "intensity": 4,
-            "speed": 1,
-            "spread": 50,
-            "fadeDistance": 200,
-            "bubbleColor": [
-              "",
-              "",
-              ""
-            ],
-            "bubbleOpacity": 3
-          }
-        ]
-      },
-      "theme": "Regular",
-      "description": "A little sunken treasure chest that releases a steady stream of bubbles. The treasure itself appears to be mostly air. Also: Completely Adjustable and Customizable!"
-    },
-    {
-      "file": "floating_swampmoss_1.png",
-      "name": "Floating Swamp Moss",
-      "theme": "Spooky",
-      "cost": 5,
-      "width": 510,
-      "defaultScale": 1,
-      "description": "A loose patch of eerie swamp moss suspended in the water. Damp, gloomy, and somehow thriving."
-    },
-    {
-      "file": "transit-tube.png",
-      "name": "Borough Transit Tube",
-      "cost": 28,
-      "width": 230,
-      "defaultScale": 0.58,
+      "description": "A frozen cave decoration for the aquarium.",
       "categories": [
-        "ornaments",
-        "services"
+        "cave"
       ],
-      "fishBehavior": {
-        "hangout": [
-          "hardscape"
-        ],
-        "occupancyLimit": 1,
-        "note": "Name and link two tubes to give fish a fast route between neighborhoods. It only bubbles while in use."
-      },
-      "theme": "Borough",
-      "description": "Link two named tubes to create a fast route between neighborhoods. The tube stays quiet until a fish enters, then bubbles to life as it carries the fish across the Borough like an italian plumber."
+      "theme": "frozen",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "frozen",
+        "hardscape",
+        "shelter"
+      ]
     },
     {
-      "file": "Floating_Halloween_Ghost.png",
-      "name": "Floating Ghost",
-      "width": 170,
+      "file": "frozen-cave__cave__theme-frozen__v2__front.png",
+      "name": "Frozen Cave 2",
+      "cost": 8,
+      "width": 420,
       "defaultScale": 1,
+      "description": "A frozen cave 2 decoration for the aquarium.",
       "categories": [
-        "ornaments",
-        "halloween"
+        "cave"
       ],
-      "fishBehavior": {
-        "hangout": [
-          "spooky"
-        ],
-        "occupancyLimit": 1
-      },
-      "theme": "Halloween",
-      "description": "A little ghost that quietly floats in the aquarium."
+      "theme": "frozen",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "frozen",
+        "hardscape",
+        "shelter"
+      ]
     },
     {
-      "file": "Halloween_Cauldron_Bubbler.png",
-      "name": "Haunted Cauldron Bubbler",
-      "width": 125,
-      "defaultScale": 1,
-      "categories": [
-        "bubbler",
-        "ornaments",
-        "halloween"
-      ],
-      "fishBehavior": {
-        "hangout": [
-          "bubbler",
-          "hardscape"
-        ]
-      },
-      "bubbler": {
-        "spoutQty": 1,
-        "spouts": [
-          {
-            "horizontalLocation": 0.5,
-            "verticalLocation": 0.17,
-            "intensity": 5,
-            "speed": 1,
-            "spread": 48,
-            "fadeDistance": 210,
-            "bubbleColor": [
-              "",
-              "",
-              ""
-            ],
-            "bubbleOpacity": 3
-          }
-        ]
-      },
-      "theme": "Halloween",
-      "description": "A cauldron that churns away on the aquarium floor, releasing a steady stream of bubbles. Whatever is brewing inside probably should not be tasted. Also: Completely Adjustable and Customizable!"
-    },
-    {
-      "file": "Halloween_Crypt_Cave.png",
+      "file": "halloween-crypt__cave__theme-halloween__front.png",
       "name": "Crypt Cave",
       "width": 590,
       "defaultScale": 1,
       "categories": [
-        "caves",
-        "halloween"
+        "cave"
       ],
-      "theme": "Halloween",
-      "description": "A miniature stone crypt with enough room inside for fish that prefer their hiding places a little more gothic."
+      "theme": "halloween",
+      "description": "A miniature stone crypt with enough room inside for fish that prefer their hiding places a little more gothic.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "halloween",
+        "hardscape",
+        "shelter",
+        "spooky"
+      ]
     },
     {
-      "file": "Halloween_Floatingseaweed.png",
-      "name": "Haunted Floating Seaweed",
-      "width": 525,
-      "defaultScale": 1,
-      "categories": [
-        "plants",
-        "halloween"
-      ],
-      "theme": "Halloween",
-      "description": "Eerie floating seaweed. It looks like it is rotting."
-    },
-    {
-      "file": "Halloween_Ghost_Ship.png",
-      "name": "Ghost Ship",
-      "width": 600,
-      "defaultScale": 1.5,
-      "categories": [
-        "ornaments",
-        "halloween"
-      ],
-      "fishBehavior": {
-        "hangout": [
-          "hardscape",
-          "spooky"
-        ]
-      },
-      "theme": "Halloween",
-      "description": "A spectral shipwreck that appears to have sailed directly into the aquarium. Its crew has yet to make themselves available for questions."
-    },
-    {
-      "file": "Halloween_Gravestone_1.png",
-      "name": "Gravestone 1",
-      "width": 288,
-      "defaultScale": 1,
-      "categories": [
-        "ornaments",
-        "halloween"
-      ],
-      "theme": "Halloween",
-      "description": "A tiny weathered gravestone for giving the aquarium floor a proper little graveyard atmosphere."
-    },
-    {
-      "file": "Halloween_Gravestone_2.png",
-      "name": "Gravestone 2",
-      "width": 288,
-      "defaultScale": 1,
-      "categories": [
-        "ornaments",
-        "halloween"
-      ],
-      "theme": "Halloween",
-      "description": "A miniature gravestone that adds just the right amount of unnecessary morbidity to the tank."
-    },
-    {
-      "file": "Halloween_Gravestone_3.png",
-      "name": "Gravestone 3",
-      "width": 288,
-      "defaultScale": 1,
-      "categories": [
-        "ornaments",
-        "halloween"
-      ],
-      "theme": "Halloween",
-      "description": "A worn little grave marker that looks perfectly at home among caves, dead plants, and other questionable aquarium decisions."
-    },
-    {
-      "file": "Halloween_Gravestone_4.png",
-      "name": "Gravestone 4",
-      "width": 288,
-      "defaultScale": 1,
-      "categories": [
-        "ornaments",
-        "halloween"
-      ],
-      "theme": "Halloween",
-      "description": "A small gravestone for building an underwater cemetery. Nobody is quite sure who is buried there."
-    },
-    {
-      "file": "Halloween_Gravestone_5.png",
-      "name": "Gravestone 5",
-      "width": 288,
-      "defaultScale": 1,
-      "categories": [
-        "ornaments",
-        "halloween"
-      ],
-      "theme": "Halloween",
-      "description": "A lonely little grave marker with just enough weathering to suggest it has been underwater much longer than it should have been."
-    },
-    {
-      "file": "Halloween_Haunted_House_Cave.png",
+      "file": "halloween-haunted-house__cave__theme-halloween__front.png",
       "name": "Haunted House Cave",
       "width": 590,
       "defaultScale": 1,
@@ -1176,88 +1311,891 @@
         ]
       },
       "categories": [
-        "caves",
-        "halloween"
+        "cave"
       ],
-      "theme": "Halloween",
-      "description": "A miniature haunted house with enough room inside for brave fish, scared fish, or fish that simply want somewhere dark to sit."
+      "theme": "halloween",
+      "description": "A miniature haunted house with enough room inside for brave fish, scared fish, or fish that simply want somewhere dark to sit.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "halloween",
+        "hardscape",
+        "shelter",
+        "spooky"
+      ]
     },
     {
-      "file": "Halloween_Haunted_Tree.png",
-      "name": "Haunted Tree",
-      "width": 300,
-      "defaultScale": 2,
-      "categories": [
-        "ornaments",
-        "halloween"
-      ],
-      "fishBehavior": {
-        "hangout": [
-          "spooky",
-          "hardscape"
-        ]
-      },
-      "theme": "Halloween",
-      "description": "A twisted old tree that looks thoroughly dead."
-    },
-    {
-      "file": "Halloween_JackOLantern_bubbler.png",
-      "name": "Jack-o'-Lantern Bubbler",
-      "width": 125,
+      "file": "coconut-shell-hideaway__cave__theme-natural__front.png",
+      "name": "Coconut Shell Hideaway",
+      "cost": 8,
+      "width": 420,
       "defaultScale": 1,
+      "description": "A coconut shell hideaway decoration for the aquarium.",
       "categories": [
-        "bubbler",
-        "ornaments",
-        "halloween"
+        "cave"
       ],
-      "fishBehavior": {
-        "hangout": [
-          "bubbler",
-          "hardscape"
-        ]
-      },
-      "bubbler": {
-        "spoutQty": 1,
-        "spouts": [
+      "theme": "natural",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "natural",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "hollow-mossy-driftwood__cave-wood__theme-natural__front.png",
+      "name": "Hollow Mossy Driftwood",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A hollow mossy driftwood decoration for the aquarium.",
+      "categories": [
+        "cave",
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "wood",
+        "natural",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "live-root-overhang__cave-wood__theme-natural__front.png",
+      "name": "Live Root Overhang",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A live root overhang decoration for the aquarium.",
+      "categories": [
+        "cave",
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "wood",
+        "natural",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "mangrove-roots__cave-wood__theme-natural__front.png",
+      "name": "Mangrove Roots",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A mangrove roots decoration for the aquarium.",
+      "categories": [
+        "cave",
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "wood",
+        "natural",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "slate__cave-rock__theme-natural__front.png",
+      "name": "Slate Cave",
+      "cost": 12,
+      "width": 620,
+      "defaultScale": 1,
+      "caveSettings": {
+        "entryCount": 1,
+        "entries": [
           {
-            "horizontalLocation": 0.5,
-            "verticalLocation": 0.16,
-            "intensity": 4,
-            "speed": 1,
-            "spread": 46,
-            "fadeDistance": 205,
-            "bubbleColor": [
-              "",
-              "",
-              ""
-            ],
-            "bubbleOpacity": 3
+            "id": "main-front",
+            "x": 0.51,
+            "y": 0.67,
+            "side": "front"
+          }
+        ],
+        "seatCount": 2,
+        "seats": [
+          {
+            "id": "left-seat",
+            "x": 0.42,
+            "y": 0.64,
+            "facing": "right"
+          },
+          {
+            "id": "right-seat",
+            "x": 0.6,
+            "y": 0.64,
+            "facing": "left"
           }
         ]
       },
-      "theme": "Halloween",
-      "description": "A grinning jack-o'-lantern that releases a steady stream of bubbles. The pumpkin remains suspiciously intact underwater. Also: Completely Adjustable and Customizable!"
-    },
-    {
-      "file": "Halloween_Seaweed.png",
-      "name": "Haunted Seaweed",
-      "width": 644,
-      "defaultScale": 1,
+      "caveBehavior": {
+        "portals": [
+          {
+            "id": "main_front",
+            "approachX": 0.5,
+            "approachY": 0.77,
+            "mouthX": 0.5,
+            "mouthY": 0.67,
+            "outsideLayer": 2,
+            "insideLayer": 4,
+            "path": [
+              {
+                "x": 0.5,
+                "y": 0.61
+              },
+              {
+                "x": 0.5,
+                "y": 0.56
+              }
+            ]
+          }
+        ],
+        "insideSlots": [
+          {
+            "id": "center",
+            "x": 0.5,
+            "y": 0.53,
+            "layer": 4,
+            "portalIds": [
+              "main_front"
+            ]
+          }
+        ]
+      },
+      "theme": "natural",
+      "description": "A sturdy little shelter built from stacked slate. Simple, rocky, and perfect for fish that appreciate some privacy.",
       "categories": [
-        "plants",
-        "halloween"
+        "cave",
+        "rock"
       ],
-      "theme": "Halloween",
-      "description": "Dark, eerie seaweed that sways in the tank with considerably more menace than ordinary seaweed should possess."
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "rock",
+        "natural",
+        "hardscape",
+        "shelter"
+      ]
     },
     {
-      "file": "Halloween_Spider.png",
-      "name": "Aquarium Spider",
-      "width": 150,
+      "file": "slate-stack__cave-rock__theme-natural__front.png",
+      "name": "Slate Stack",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A slate stack decoration for the aquarium.",
+      "categories": [
+        "cave",
+        "rock"
+      ],
+      "theme": "natural",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "rock",
+        "natural",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "tangled-driftwood-rootscape__cave-wood__theme-natural__front.png",
+      "name": "Tangled Driftwood Rootscape",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A tangled driftwood rootscape decoration for the aquarium.",
+      "categories": [
+        "cave",
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "wood",
+        "natural",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-1__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 1",
+      "cost": 16,
+      "width": 520,
       "defaultScale": 1,
       "categories": [
-        "ornaments",
-        "halloween"
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A rocky coral shelf with a sheltered space underneath. Part reef decoration, part cozy hiding place.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-10__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 10",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A substantial coral shelf with a protected hollow below, giving the tank a more layered reef landscape.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-2__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 2",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A layered coral shelf that creates a shaded little retreat beneath the reef.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-3__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 3",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A sturdy coral-covered shelf with enough room underneath for curious fish to disappear for a while.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-4__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 4",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A reef shelf with a natural hollow beneath it, adding both height and a tucked-away hiding spot.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-5__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 5",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A rugged coral shelf that gives the tank a bit of reef structure and a quiet space underneath.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-6__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 6",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-7__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 7",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A broad reef shelf with a built-in hiding place beneath it. Basically beachfront property for fish.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral-shelf-9__cave-coral__theme-reef__front.png",
+      "name": "Coral Shelf Cave 9",
+      "cost": 16,
+      "width": 520,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A rocky coral overhang that adds depth to the reef and a shady little spot underneath.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coralline-live-rock__cave-rock-coral__theme-reef__front.png",
+      "name": "Coralline Live Rock",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A coralline live rock decoration for the aquarium.",
+      "categories": [
+        "cave",
+        "rock",
+        "coral"
+      ],
+      "theme": "reef",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "rock",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "live-rock-cluster__cave-rock__theme-reef__front.png",
+      "name": "Live Rock Cluster",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A live rock cluster decoration for the aquarium.",
+      "categories": [
+        "cave",
+        "rock"
+      ],
+      "theme": "reef",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "rock",
+        "reef",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "sea-anemone-1__cave-coral__theme-reef__front.png",
+      "name": "Sea Anemone Cave 1",
+      "cost": 14,
+      "width": 420,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable",
+        "anemone",
+        "clownfish-host"
+      ],
+      "motionBehavior": "anchored_sway",
+      "motionLayer": "front",
+      "motionSplitY": 0.55,
+      "motionSwaySide": "above"
+    },
+    {
+      "file": "sea-anemone-3__cave-coral__theme-reef__front.png",
+      "name": "Sea Anemone Cave 3",
+      "cost": 14,
+      "width": 420,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable",
+        "anemone",
+        "clownfish-host"
+      ],
+      "motionBehavior": "anchored_sway",
+      "motionLayer": "front",
+      "motionSplitY": 0.55,
+      "motionSwaySide": "above"
+    },
+    {
+      "file": "sea-anemone-4__cave-coral__theme-reef__front.png",
+      "name": "Sea Anemone Cave 4",
+      "cost": 14,
+      "width": 420,
+      "defaultScale": 1,
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable",
+        "anemone",
+        "clownfish-host"
+      ],
+      "motionBehavior": "anchored_sway",
+      "motionLayer": "front",
+      "motionSplitY": 0.55,
+      "motionSwaySide": "above"
+    },
+    {
+      "file": "seashell-cluster__cave-coral__theme-reef__front.png",
+      "name": "Seashell Cluster",
+      "cost": 8,
+      "width": 420,
+      "defaultScale": 1,
+      "description": "A seashell cluster decoration for the aquarium.",
+      "categories": [
+        "cave",
+        "coral"
+      ],
+      "theme": "reef",
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "coral",
+        "reef",
+        "hardscape",
+        "shelter",
+        "perchable"
+      ]
+    },
+    {
+      "file": "meteor__cave-rock__theme-space__front.png",
+      "name": "Meteor Cave",
+      "cost": 16,
+      "width": 585,
+      "defaultScale": 1,
+      "caveSettings": {
+        "entryCount": 1,
+        "entries": [
+          {
+            "id": "main-front",
+            "x": 0.56,
+            "y": 0.67,
+            "side": "front"
+          }
+        ],
+        "seatCount": 2,
+        "seats": [
+          {
+            "id": "upper-seat",
+            "x": 0.5,
+            "y": 0.55,
+            "facing": "right"
+          },
+          {
+            "id": "lower-seat",
+            "x": 0.49,
+            "y": 0.72,
+            "facing": "right"
+          }
+        ]
+      },
+      "theme": "space",
+      "description": "A strange rocky formation that looks suspiciously like it fell from somewhere much farther away. Conveniently, it also has a cave.",
+      "categories": [
+        "cave",
+        "rock"
+      ],
+      "behavior": "cave_layered",
+      "tags": [
+        "cave",
+        "rock",
+        "space",
+        "hardscape",
+        "shelter"
+      ]
+    },
+    {
+      "file": "fishing-lure__lure__theme-artificial.png",
+      "name": "Fishing Lure",
+      "cost": 6,
+      "width": 255,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
+      },
+      "theme": "artificial",
+      "variantGroup": "fishing_lure",
+      "description": "A bright fishing lure placed inside an aquarium for reasons nobody has fully explained. Fortunately, the fish seem more curious than concerned.",
+      "categories": [
+        "lure"
+      ],
+      "behavior": "ceiling_sway",
+      "tags": [
+        "lure",
+        "artificial",
+        "sway"
+      ]
+    },
+    {
+      "name": "Fishing Lure",
+      "cost": 6,
+      "width": 255,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
+      },
+      "theme": "artificial",
+      "variantGroup": "fishing_lure",
+      "file": "fishing-lure__lure__theme-artificial__v2.png",
+      "description": "A colorful fishing lure dangling where no fishing should be happening. The fish seem fascinated by it, which is probably exactly what the lure wants.",
+      "categories": [
+        "lure"
+      ],
+      "behavior": "ceiling_sway",
+      "tags": [
+        "lure",
+        "artificial",
+        "sway"
+      ]
+    },
+    {
+      "name": "Fishing Lure",
+      "cost": 6,
+      "width": 255,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
+      },
+      "theme": "artificial",
+      "variantGroup": "fishing_lure",
+      "file": "fishing-lure__lure__theme-artificial__v3.png",
+      "description": "A shiny little lure suspended in the aquarium. Completely harmless here, although the fish may have some understandable trust issues.",
+      "categories": [
+        "lure"
+      ],
+      "behavior": "ceiling_sway",
+      "tags": [
+        "lure",
+        "artificial",
+        "sway"
+      ]
+    },
+    {
+      "name": "Fishing Lure",
+      "cost": 6,
+      "width": 255,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
+      },
+      "theme": "artificial",
+      "variantGroup": "fishing_lure",
+      "file": "fishing-lure__lure__theme-artificial__v4.png",
+      "description": "A fishing lure repurposed as aquarium decor. It catches attention instead of fish now.",
+      "categories": [
+        "lure"
+      ],
+      "behavior": "ceiling_sway",
+      "tags": [
+        "lure",
+        "artificial",
+        "sway"
+      ]
+    },
+    {
+      "name": "Fishing Lure",
+      "cost": 6,
+      "width": 255,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
+      },
+      "theme": "artificial",
+      "variantGroup": "fishing_lure",
+      "file": "fishing-lure__lure__theme-artificial__v5.png",
+      "description": "A suspiciously enticing lure left hanging in the tank. No hook-related incidents have been reported.",
+      "categories": [
+        "lure"
+      ],
+      "behavior": "ceiling_sway",
+      "tags": [
+        "lure",
+        "artificial",
+        "sway"
+      ]
+    },
+    {
+      "name": "Fishing Lure",
+      "cost": 6,
+      "width": 255,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
+      },
+      "theme": "artificial",
+      "variantGroup": "fishing_lure",
+      "file": "fishing-lure__lure__theme-artificial__v6.png",
+      "description": "A bright piece of fishing tackle that gives curious fish something unusual to investigate. Thankfully, nobody is actually fishing.",
+      "categories": [
+        "lure"
+      ],
+      "behavior": "ceiling_sway",
+      "tags": [
+        "lure",
+        "artificial",
+        "sway"
+      ]
+    },
+    {
+      "name": "Fishing Lure",
+      "cost": 6,
+      "width": 255,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
+      },
+      "theme": "artificial",
+      "variantGroup": "fishing_lure",
+      "file": "fishing-lure__lure__theme-artificial__v7.png",
+      "description": "A decorative lure that sparkles just enough to get every nearby fish interested in absolutely nothing.",
+      "categories": [
+        "lure"
+      ],
+      "behavior": "ceiling_sway",
+      "tags": [
+        "lure",
+        "artificial",
+        "sway"
+      ]
+    },
+    {
+      "file": "halloween-gorebag__lure__theme-halloween.png",
+      "name": "Gorebag",
+      "cost": 10,
+      "width": 200,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "lure",
+        "occupancyLimit": 1
+      },
+      "theme": "halloween",
+      "description": "A peculiar decoration known only as Gorebag. Nobody remembers where it came from, and asking questions has not helped.",
+      "categories": [
+        "lure"
+      ],
+      "behavior": "ceiling_sway",
+      "tags": [
+        "lure",
+        "halloween",
+        "sway",
+        "spooky"
+      ]
+    },
+    {
+      "file": "frozen-glacier__rock__theme-frozen.png",
+      "name": "Frozen Glacier",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A frozen glacier decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "frozen",
+      "behavior": "floating_bob",
+      "tags": [
+        "rock",
+        "frozen",
+        "hardscape",
+        "surface-cover"
+      ]
+    },
+    {
+      "file": "frozen-iceberg__rock__theme-frozen.png",
+      "name": "Frozen Iceberg",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A frozen iceberg decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "frozen",
+      "behavior": "floating_bob",
+      "tags": [
+        "rock",
+        "frozen",
+        "hardscape",
+        "surface-cover"
+      ]
+    },
+    {
+      "file": "halloween-webs__ornament__theme-halloween.png",
+      "name": "Aquarium Webs",
+      "width": 175,
+      "defaultScale": 1,
+      "categories": [
+        "ornament"
+      ],
+      "theme": "halloween",
+      "description": "A little spider web to put wherever. How the web remains perfectly intact underwater is a problem for someone else to solve.",
+      "behavior": "floating_bob",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "surface-cover",
+        "spooky"
+      ]
+    },
+    {
+      "file": "halloween-skeleton__ornament__theme-halloween.png",
+      "name": "Floating Fish Skeleton",
+      "width": 220,
+      "defaultScale": 1,
+      "categories": [
+        "ornament"
+      ],
+      "theme": "halloween",
+      "description": "A fish skeleton that quietly floats in the aquarium. It probably fake, though. Right?",
+      "behavior": "floating_bob",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "surface-cover",
+        "spooky"
+      ]
+    },
+    {
+      "file": "halloween-ghost__ornament__theme-halloween.png",
+      "name": "Floating Ghost",
+      "width": 170,
+      "defaultScale": 1,
+      "categories": [
+        "ornament"
       ],
       "fishBehavior": {
         "hangout": [
@@ -1265,117 +2203,1607 @@
         ],
         "occupancyLimit": 1
       },
-      "theme": "Halloween",
-      "description": "A spider. In the aquarium. We agree that this raises several questions, but none of them have improved the situation."
+      "theme": "halloween",
+      "description": "A little ghost that quietly floats in the aquarium.",
+      "behavior": "floating_bob",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "surface-cover",
+        "spooky"
+      ]
     },
     {
-      "file": "Halloween_Floating_skeleton.png",
-      "name": "Floating Fish Skeleton",
+      "file": "halloween-floating-seaweed__plant__theme-halloween.png",
+      "name": "Haunted Floating Seaweed",
+      "width": 525,
+      "defaultScale": 1,
+      "categories": [
+        "plant"
+      ],
+      "theme": "halloween",
+      "description": "Eerie floating seaweed. It looks like it is rotting.",
+      "behavior": "floating_sway",
+      "tags": [
+        "plant",
+        "halloween",
+        "grazable",
+        "perchable",
+        "surface-cover",
+        "sway",
+        "spooky"
+      ]
+    },
+    {
+      "file": "floating-lettuce-root__plant__theme-natural.png",
+      "name": "Floating Lettuce Root",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A floating lettuce root decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "floating_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "surface-cover",
+        "sway"
+      ]
+    },
+    {
+      "file": "floating-swamp-moss__plant__theme-natural.png",
+      "name": "Floating Swamp Moss",
+      "theme": "natural",
+      "cost": 5,
+      "width": 510,
+      "defaultScale": 1,
+      "description": "A loose patch of eerie swamp moss suspended in the water. Damp, gloomy, and somehow thriving.",
+      "categories": [
+        "plant"
+      ],
+      "behavior": "floating_sway",
+      "tags": [
+        "plant",
+        "natural",
+        "grazable",
+        "perchable",
+        "surface-cover",
+        "sway"
+      ]
+    },
+    {
+      "file": "floating-seaweed__plant__theme-reef.png",
+      "name": "Floating Seaweed",
+      "cost": 4,
       "width": 220,
       "defaultScale": 1,
+      "theme": "reef",
+      "description": "Loose seaweed that drifts above the aquarium floor instead of staying politely planted where it belongs.",
       "categories": [
-        "ornaments",
+        "plant"
+      ],
+      "behavior": "floating_sway",
+      "tags": [
+        "plant",
+        "reef",
+        "grazable",
+        "perchable",
+        "surface-cover",
+        "sway"
+      ]
+    },
+    {
+      "file": "frozen-anchor__ornament__theme-frozen.png",
+      "name": "Frozen Anchor",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen anchor decoration for the aquarium.",
+      "categories": [
+        "ornament"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-arch__ornament__theme-frozen.png",
+      "name": "Frozen Arch",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen arch decoration for the aquarium.",
+      "categories": [
+        "ornament"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-arch__ornament__theme-frozen__v2.png",
+      "name": "Frozen Arch 2",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen arch 2 decoration for the aquarium.",
+      "categories": [
+        "ornament"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-column__ornament__theme-frozen.png",
+      "name": "Frozen Column",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen column decoration for the aquarium.",
+      "categories": [
+        "ornament"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-column__ornament__theme-frozen__v2.png",
+      "name": "Frozen Column 2",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen column 2 decoration for the aquarium.",
+      "categories": [
+        "ornament"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-column__ornament__theme-frozen__v3.png",
+      "name": "Frozen Column 3",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen column 3 decoration for the aquarium.",
+      "categories": [
+        "ornament"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-crystals__rock__theme-frozen.png",
+      "name": "Frozen Crystals",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A frozen crystals decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-fossil__rock__theme-frozen.png",
+      "name": "Frozen Fossil",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A frozen fossil decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-plant__plant__theme-frozen.png",
+      "name": "Frozen Plant",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A frozen plant decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "plant",
+        "frozen",
+        "grazable",
+        "perchable"
+      ]
+    },
+    {
+      "file": "frozen-plant__plant__theme-frozen__v2.png",
+      "name": "Frozen Plant 2",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A frozen plant 2 decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "plant",
+        "frozen",
+        "grazable",
+        "perchable"
+      ]
+    },
+    {
+      "file": "frozen-plant__plant__theme-frozen__v3.png",
+      "name": "Frozen Plant 3",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A frozen plant 3 decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "plant",
+        "frozen",
+        "grazable",
+        "perchable"
+      ]
+    },
+    {
+      "file": "frozen-plant__plant__theme-frozen__v4.png",
+      "name": "Frozen Plant 4",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A frozen plant 4 decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "plant",
+        "frozen",
+        "grazable",
+        "perchable"
+      ]
+    },
+    {
+      "file": "frozen-plant__plant__theme-frozen__v5.png",
+      "name": "Frozen Plant 5",
+      "cost": 8,
+      "width": 280,
+      "defaultScale": 1,
+      "description": "A frozen plant 5 decoration for the aquarium.",
+      "categories": [
+        "plant"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "plant",
+        "frozen",
+        "grazable",
+        "perchable"
+      ]
+    },
+    {
+      "file": "frozen-rock__rock__theme-frozen.png",
+      "name": "Frozen Rock",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A frozen rock decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-rock__rock__theme-frozen__v2.png",
+      "name": "Frozen Rock 2",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A frozen rock 2 decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-root__wood__theme-frozen.png",
+      "name": "Frozen Root",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen root decoration for the aquarium.",
+      "categories": [
+        "wood"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "frozen",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "frozen-treasure__ornament__theme-frozen.png",
+      "name": "Frozen Treasure",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen treasure decoration for the aquarium.",
+      "categories": [
+        "ornament"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-ufo__ornament__theme-frozen.png",
+      "name": "Frozen UFO",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A frozen ufo decoration for the aquarium.",
+      "categories": [
+        "ornament"
+      ],
+      "theme": "frozen",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-sunken-submarine__ornament__theme-frozen.png",
+      "name": "Plane Crash",
+      "cost": 12,
+      "width": 613,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "hide"
+      },
+      "theme": "frozen",
+      "description": "A miniature aircraft wreck resting on the aquarium floor. The investigation remains ongoing.",
+      "categories": [
+        "ornament"
+      ],
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "frozen-ship__ornament__theme-frozen.png",
+      "name": "Shipwreck",
+      "cost": 15,
+      "width": 616,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "hide"
+      },
+      "theme": "frozen",
+      "description": "A sunken ship left to slowly become part of the aquarium. Dramatic enough to tell a story without taking the whole tank hostage.",
+      "categories": [
+        "ornament"
+      ],
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "frozen",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "halloween-spider__ornament__theme-halloween.png",
+      "name": "Aquarium Spider",
+      "width": 150,
+      "defaultScale": 1,
+      "categories": [
+        "ornament"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "spooky"
+        ],
+        "occupancyLimit": 1
+      },
+      "theme": "halloween",
+      "description": "A spider. In the aquarium. We agree that this raises several questions, but none of them have improved the situation.",
+      "behavior": "static",
+      "tags": [
+        "ornament",
         "halloween",
-        "floating"
-      ],
-      "theme": "Halloween",
-      "description": "A fish skeleton that quietly floats in the aquarium. It probably fake, though. Right?"
+        "hardscape",
+        "spooky"
+      ]
     },
     {
-      "file": "Halloween_webs.png",
-      "name": "Aquarium Webs",
-      "width": 175,
+      "file": "halloween-fish-head-effigy__ornament__theme-halloween__v3.png",
+      "name": "Danio Fish Head Effigy",
+      "cost": 3,
+      "width": 70,
+      "defaultScale": 1,
+      "fishBehavior": {
+        "hangout": "spooky",
+        "occupancyLimit": 1
+      },
+      "theme": "halloween",
+      "description": "A Danio fish-head effigy. Pretty ominous and completely unnecessary.",
+      "categories": [
+        "ornament"
+      ],
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
+    },
+    {
+      "file": "halloween-ghost-ship__ornament__theme-halloween.png",
+      "name": "Ghost Ship",
+      "width": 600,
+      "defaultScale": 1.5,
+      "categories": [
+        "ornament"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "hardscape",
+          "spooky"
+        ]
+      },
+      "theme": "halloween",
+      "description": "A spectral shipwreck that appears to have sailed directly into the aquarium. Its crew has yet to make themselves available for questions.",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
+    },
+    {
+      "file": "halloween-gravestone__ornament__theme-halloween.png",
+      "name": "Gravestone 1",
+      "width": 288,
       "defaultScale": 1,
       "categories": [
-        "ornaments",
-        "halloween"
+        "ornament"
       ],
-      "theme": "Halloween",
-      "description": "A little spider web to put wherever. How the web remains perfectly intact underwater is a problem for someone else to solve."
+      "theme": "halloween",
+      "description": "A tiny weathered gravestone for giving the aquarium floor a proper little graveyard atmosphere.",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
     },
     {
-      "name": "Fishing Lure",
-      "cost": 6,
-      "width": 255,
+      "file": "halloween-gravestone__ornament__theme-halloween__v2.png",
+      "name": "Gravestone 2",
+      "width": 288,
       "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "lure",
-        "occupancyLimit": 1
-      },
-      "theme": "Regular",
-      "variantGroup": "fishing_lure",
-      "file": "fishing_lure_1.png",
-      "description": "A colorful fishing lure dangling where no fishing should be happening. The fish seem fascinated by it, which is probably exactly what the lure wants."
+      "categories": [
+        "ornament"
+      ],
+      "theme": "halloween",
+      "description": "A miniature gravestone that adds just the right amount of unnecessary morbidity to the tank.",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
     },
     {
-      "name": "Fishing Lure",
-      "cost": 6,
-      "width": 255,
+      "file": "halloween-gravestone__ornament__theme-halloween__v3.png",
+      "name": "Gravestone 3",
+      "width": 288,
       "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "lure",
-        "occupancyLimit": 1
-      },
-      "theme": "Regular",
-      "variantGroup": "fishing_lure",
-      "file": "fishing_lure_2.png",
-      "description": "A shiny little lure suspended in the aquarium. Completely harmless here, although the fish may have some understandable trust issues."
+      "categories": [
+        "ornament"
+      ],
+      "theme": "halloween",
+      "description": "A worn little grave marker that looks perfectly at home among caves, dead plants, and other questionable aquarium decisions.",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
     },
     {
-      "name": "Fishing Lure",
-      "cost": 6,
-      "width": 255,
+      "file": "halloween-gravestone__ornament__theme-halloween__v4.png",
+      "name": "Gravestone 4",
+      "width": 288,
       "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "lure",
-        "occupancyLimit": 1
-      },
-      "theme": "Regular",
-      "variantGroup": "fishing_lure",
-      "file": "fishing_lure_3.png",
-      "description": "A fishing lure repurposed as aquarium decor. It catches attention instead of fish now."
+      "categories": [
+        "ornament"
+      ],
+      "theme": "halloween",
+      "description": "A small gravestone for building an underwater cemetery. Nobody is quite sure who is buried there.",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
     },
     {
-      "name": "Fishing Lure",
-      "cost": 6,
-      "width": 255,
+      "file": "halloween-gravestone__ornament__theme-halloween__v5.png",
+      "name": "Gravestone 5",
+      "width": 288,
       "defaultScale": 1,
-      "fishBehavior": {
-        "hangout": "lure",
-        "occupancyLimit": 1
-      },
-      "theme": "Regular",
-      "variantGroup": "fishing_lure",
-      "file": "fishing_lure_4.png",
-      "description": "A suspiciously enticing lure left hanging in the tank. No hook-related incidents have been reported."
+      "categories": [
+        "ornament"
+      ],
+      "theme": "halloween",
+      "description": "A lonely little grave marker with just enough weathering to suggest it has been underwater much longer than it should have been.",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
     },
     {
-      "name": "Fishing Lure",
-      "cost": 6,
-      "width": 255,
+      "file": "halloween-fish-head-effigy__ornament__theme-halloween__v2.png",
+      "name": "Guppy Fish Head Effigy",
+      "cost": 3,
+      "width": 70,
       "defaultScale": 1,
       "fishBehavior": {
-        "hangout": "lure",
+        "hangout": "spooky",
         "occupancyLimit": 1
       },
-      "theme": "Regular",
-      "variantGroup": "fishing_lure",
-      "file": "fishing_lure_5.png",
-      "description": "A bright piece of fishing tackle that gives curious fish something unusual to investigate. Thankfully, nobody is actually fishing."
+      "theme": "halloween",
+      "description": "A guppy head mounted on a stake.",
+      "categories": [
+        "ornament"
+      ],
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
     },
     {
-      "name": "Fishing Lure",
-      "cost": 6,
-      "width": 255,
+      "file": "halloween-haunted-tree__ornament__theme-halloween.png",
+      "name": "Haunted Tree",
+      "width": 300,
+      "defaultScale": 2,
+      "categories": [
+        "ornament"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "spooky",
+          "hardscape"
+        ]
+      },
+      "theme": "halloween",
+      "description": "A twisted old tree that looks thoroughly dead.",
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
+    },
+    {
+      "file": "halloween-fish-head-effigy__ornament__theme-halloween.png",
+      "name": "Neon Fish Head Effigy",
+      "cost": 3,
+      "width": 70,
       "defaultScale": 1,
       "fishBehavior": {
-        "hangout": "lure",
+        "hangout": "spooky",
         "occupancyLimit": 1
       },
-      "theme": "Regular",
-      "variantGroup": "fishing_lure",
-      "file": "fishing_lure_6.png",
-      "description": "A decorative lure that sparkles just enough to get every nearby fish interested in absolutely nothing."
+      "theme": "halloween",
+      "description": "A bloody fish-head effigy. Tasteful is probably not the word, but memorable definitely is.",
+      "categories": [
+        "ornament"
+      ],
+      "behavior": "static",
+      "tags": [
+        "ornament",
+        "halloween",
+        "hardscape",
+        "spooky"
+      ]
+    },
+    {
+      "file": "alder-cone-cluster__botanical__theme-natural.png",
+      "name": "Alder Cone Cluster",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A alder cone cluster decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "autumn-leaf-litter-mound__botanical__theme-natural.png",
+      "name": "Autumn Leaf Litter Mound",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A autumn leaf litter mound decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "branch-canopy__wood__theme-natural.png",
+      "name": "Branch Canopy",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A branch canopy decoration for the aquarium.",
+      "categories": [
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "natural",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "dirt__rock__theme-natural.png",
+      "name": "Dirt Mound",
+      "cost": 3,
+      "width": 480,
+      "defaultScale": 1,
+      "categories": [
+        "rock"
+      ],
+      "theme": "natural",
+      "description": "A small mound of loose earth for giving the aquarium floor a more uneven, natural look. Sometimes dirt really is the decoration.",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "dried-catappa-leaf-pile__botanical__theme-natural.png",
+      "name": "Dried Catappa Leaf Pile",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A dried catappa leaf pile decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "driftwood__wood__theme-natural.png",
+      "name": "Driftwood",
+      "cost": 10,
+      "width": 675,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A weathered piece of driftwood with plenty of natural bends and texture. Simple, classic, and nearly impossible to make look out of place.",
+      "categories": [
+        "wood"
+      ],
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "natural",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "driftwood-root__wood__theme-natural.png",
+      "name": "Driftwood Root",
+      "cost": 10,
+      "width": 660,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A gnarled mass of weathered roots that adds natural shape and texture to the aquarium floor.",
+      "categories": [
+        "wood"
+      ],
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "natural",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "flat-spawning-stone__rock__theme-natural.png",
+      "name": "Flat Spawning Stone",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A flat spawning stone decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "mixed-leaf-litter-scatter__botanical__theme-natural.png",
+      "name": "Mixed Leaf Litter Scatter",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A mixed leaf litter scatter decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "moss-bridge__wood-plant__theme-natural.png",
+      "name": "Moss Bridge",
+      "cost": 10,
+      "width": 698,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A small bridge softened by a layer of moss. Equal parts peaceful garden feature and tiny fish infrastructure.",
+      "categories": [
+        "wood",
+        "plant"
+      ],
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "plant",
+        "natural",
+        "hardscape",
+        "grazable",
+        "perchable"
+      ]
+    },
+    {
+      "file": "moss-covered-driftwood__wood-plant__theme-natural.png",
+      "name": "Moss Covered Driftwood",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A moss covered driftwood decoration for the aquarium.",
+      "categories": [
+        "wood",
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "plant",
+        "natural",
+        "hardscape",
+        "grazable",
+        "perchable"
+      ]
+    },
+    {
+      "file": "moss-covered-rock-formation__rock-plant__theme-natural.png",
+      "name": "Moss Covered Rock Formation",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A moss covered rock formation decoration for the aquarium.",
+      "categories": [
+        "rock",
+        "plant"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "plant",
+        "natural",
+        "hardscape",
+        "grazable",
+        "perchable"
+      ]
+    },
+    {
+      "file": "river-stone-mound__rock__theme-natural.png",
+      "name": "River Stone Mound",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A river stone mound decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "rock-bricks__rock__theme-natural.png",
+      "name": "Rock 1",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A rock. A perfectly respectable rock, in fact. Useful for filling gaps, building little landscapes, or simply adding more rock.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "rock-bricks__rock__theme-natural__v2.png",
+      "name": "Rock 2",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A simple aquarium rock for adding natural texture wherever the tank needs a little more structure.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "rock-bricks__rock__theme-natural__v3.png",
+      "name": "Rock 3",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A sturdy decorative rock that fits comfortably into just about any aquarium layout.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "rock-bricks__rock__theme-natural__v4.png",
+      "name": "Rock 4",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A natural-looking stone for breaking up open spaces and giving the aquarium floor a little more shape.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "rock-bricks__rock__theme-natural__v5.png",
+      "name": "Rock 5",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A straightforward piece of rock decor. No gimmicks, no bubbles, just dependable geology.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "root-debris-scatter__wood__theme-natural.png",
+      "name": "Root Debris Scatter",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A root debris scatter decoration for the aquarium.",
+      "categories": [
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "natural",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "seed-pod-cluster__botanical__theme-natural.png",
+      "name": "Seed Pod Cluster",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A seed pod cluster decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "single-catappa-leaf__botanical__theme-natural.png",
+      "name": "Single Catappa Leaf",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A single catappa leaf decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "single-loose-leaf__botanical__theme-natural.png",
+      "name": "Single Loose Leaf",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A single loose leaf decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "single-twig__botanical__theme-natural.png",
+      "name": "Single Twig",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A single twig decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "small-botanical-scatter-pieces__botanical__theme-natural.png",
+      "name": "Small Botanical Scatter Pieces",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A small botanical scatter pieces decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "small-branch-pile__wood__theme-natural.png",
+      "name": "Small Branch Pile",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A small branch pile decoration for the aquarium.",
+      "categories": [
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "natural",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "small-stone-shard-cluster__rock__theme-natural.png",
+      "name": "Small Stone Shard Cluster",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A small stone shard cluster decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "small-wood-branch-cluster__wood__theme-natural.png",
+      "name": "Small Wood Branch Cluster",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A small wood branch cluster decoration for the aquarium.",
+      "categories": [
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "natural",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "sprawling-spider-wood-rootscape__wood__theme-natural.png",
+      "name": "Sprawling Spider Wood Rootscape",
+      "cost": 8,
+      "width": 320,
+      "defaultScale": 1,
+      "description": "A sprawling spider wood rootscape decoration for the aquarium.",
+      "categories": [
+        "wood"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "wood",
+        "natural",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "stone-pebble-cluster__rock__theme-natural.png",
+      "name": "Stone Pebble Cluster",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A stone pebble cluster decoration for the aquarium.",
+      "categories": [
+        "rock"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape"
+      ]
+    },
+    {
+      "file": "twig-and-pod-mix__botanical__theme-natural.png",
+      "name": "Twig And Pod Mix",
+      "cost": 8,
+      "width": 220,
+      "defaultScale": 1,
+      "description": "A twig and pod mix decoration for the aquarium.",
+      "categories": [
+        "botanical"
+      ],
+      "theme": "natural",
+      "behavior": "static",
+      "tags": [
+        "botanical",
+        "natural"
+      ]
+    },
+    {
+      "file": "volcanic-rock-bricks__rock__theme-natural.png",
+      "name": "Volcanic Rock 1",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A dark, rugged piece of volcanic rock with plenty of rough texture and character.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape",
+        "volcanic",
+        "sharp"
+      ]
+    },
+    {
+      "file": "volcanic-rock-bricks__rock__theme-natural__v2.png",
+      "name": "Volcanic Rock 2",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A porous-looking volcanic stone that adds a harsher, more dramatic edge to the aquarium floor.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape",
+        "volcanic",
+        "sharp"
+      ]
+    },
+    {
+      "file": "volcanic-rock-bricks__rock__theme-natural__v3.png",
+      "name": "Volcanic Rock 3",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A chunk of dark volcanic rock for building rocky formations, caves, or anything that needs a little ancient lava energy.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape",
+        "volcanic",
+        "sharp"
+      ]
+    },
+    {
+      "file": "volcanic-rock-bricks__rock__theme-natural__v4.png",
+      "name": "Volcanic Rock 4",
+      "cost": 1,
+      "width": 100,
+      "defaultScale": 1,
+      "theme": "natural",
+      "description": "A rough volcanic stone with a naturally dramatic look. Thankfully, the volcano part is no longer active.",
+      "categories": [
+        "rock"
+      ],
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "natural",
+        "hardscape",
+        "volcanic",
+        "sharp"
+      ]
+    },
+    {
+      "file": "barnacle-covered-reef-rock__rock-coral__theme-reef.png",
+      "name": "Barnacle Covered Reef Rock",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A barnacle covered reef rock decoration for the aquarium.",
+      "categories": [
+        "rock",
+        "coral"
+      ],
+      "theme": "reef",
+      "behavior": "static",
+      "tags": [
+        "rock",
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "brain-coral__coral__theme-reef.png",
+      "name": "Brain Coral",
+      "cost": 12,
+      "width": 300,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A dense coral covered in winding, maze-like ridges. Compact, colorful, and just strange enough to earn its name.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef.png",
+      "name": "Branch Coral 1",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A branching coral formation that adds height, color, and a little reef complexity to the tank.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v10.png",
+      "name": "Branch Coral 10",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A natural-looking coral cluster with branching growth, perfect for rounding out a larger reef display.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v2.png",
+      "name": "Branch Coral 2",
+      "cost": 10,
+      "width": 240,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A lively cluster of branching coral that helps fill open spaces with natural reef texture.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v3.png",
+      "name": "Branch Coral 3",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A decorative branching coral with plenty of little arms reaching into the water around it.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v4.png",
+      "name": "Branch Coral 4",
+      "cost": 10,
+      "width": 260,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A colorful coral formation that brings a bit of reef structure and vertical interest to the aquarium.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v5.png",
+      "name": "Branch Coral 5",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A branching coral cluster made for building out colorful reef scenes without overwhelming the tank.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v6.png",
+      "name": "Branch Coral 6",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A compact branching coral that adds texture and depth wherever the tank is looking a little too empty.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v7.png",
+      "name": "Branch Coral 7",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A decorative coral with branching growth that gives the tank a busier, more established reef look.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v8.png",
+      "name": "Branch Coral 8",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A branching coral formation that works nicely tucked between rocks, caves, and other reef decorations.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "coral__coral__theme-reef__v9.png",
+      "name": "Branch Coral 9",
+      "cost": 10,
+      "width": 280,
+      "defaultScale": 1,
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "description": "A colorful piece of branching coral that adds a little height and life to the aquarium floor.",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "zoanthid-mat__coral__theme-reef.png",
+      "name": "Zoanthid Mat",
+      "cost": 8,
+      "width": 300,
+      "defaultScale": 1,
+      "description": "A zoanthid mat decoration for the aquarium.",
+      "categories": [
+        "coral"
+      ],
+      "theme": "reef",
+      "behavior": "static",
+      "tags": [
+        "coral",
+        "reef",
+        "hardscape",
+        "perchable"
+      ]
+    },
+    {
+      "file": "transit-tube__transit__theme-artificial__front.png",
+      "name": "Borough Transit Tube",
+      "cost": 28,
+      "width": 230,
+      "defaultScale": 0.58,
+      "categories": [
+        "transit"
+      ],
+      "fishBehavior": {
+        "hangout": [
+          "hardscape"
+        ],
+        "occupancyLimit": 1,
+        "note": "Name and link two tubes to give fish a fast route between neighborhoods. It only bubbles while in use."
+      },
+      "theme": "artificial",
+      "description": "Link two named tubes to create a fast route between neighborhoods. The tube stays quiet until a fish enters, then bubbles to life as it carries the fish across the Borough like an italian plumber.",
+      "behavior": "transit",
+      "tags": [
+        "transit",
+        "artificial",
+        "hardscape",
+        "transport"
+      ]
     }
   ]
 }

@@ -400,9 +400,11 @@ function formatFishShopBehavior(species) {
   if (species.id === "sunfish") {
     return "Gentle drifter";
   }
-
-  if (isUndeadSpecies(species)) {
-    return "Undead aggressor";
+  if (species.id === "koi") {
+    return "Broad bottom cruiser";
+  }
+  if (species.id === "lionfish") {
+    return "Shelter ambush hoverer";
   }
 
   if (species.behavior === "sucker") {
@@ -501,7 +503,7 @@ function renderFishShop() {
           ? `Debug unlocked (${lockedRequirementLabel})`
           : "Unlocked";
       const behaviorWarning = isPiranhaSpecies(fish)
-        ? "Warning: attacks and can kill non-undead tankmates when aggressive behavior is enabled."
+        ? "Warning: attacks and can kill tankmates when aggressive behavior is enabled."
         : "";
       return `
         <article class="shop-card ${locked ? "is-locked" : ""} ${isDavyMutation ? "is-davy-mutation" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
@@ -509,7 +511,7 @@ function renderFishShop() {
           <div class="shop-meta shop-card-main">
             <div>
               <strong>${escapeHtml(fish.name)}</strong>
-              ${renderFishShopThemePill(fish.theme)}
+              ${renderFishShopGeneticsPill(fish.genetics)}
               ${[fish.description, ...(Array.isArray(fish.aboutParagraphs) ? fish.aboutParagraphs : [])]
                 .filter((paragraph) => typeof paragraph === "string" && paragraph.trim())
                 .map((paragraph) => `<div class="fish-meta">${escapeHtml(paragraph)}</div>`)
@@ -1229,12 +1231,10 @@ function renderAquariumOverview() {
     const serviceMarkup = `<span class="borough-cell-services">${serviceParts.join(" · ")}</span>`;
     const editing = runtime.editingTankNameId === cell.id;
     const resaleValue = getTankResaleValue(cell);
-    const canSell = tanks.length > 1 && isTankEmpty(cell);
+    const canSell = tanks.length > 1;
     const sellTitle = tanks.length <= 1
       ? "You need to keep at least one tank"
-      : !isTankEmpty(cell)
-        ? "Move all fish and decor out before selling this tank"
-        : `Sell ${getTankLabel(cell)} for ${resaleValue} coins`;
+      : `Sell ${getTankLabel(cell)} for ${resaleValue} coins. Fish, decor, and equipment will return to storage.`;
     const rightNeighbor = getAquariumSectionAt(cell.gridX + 1, cell.gridY);
     const wallBlocked = rightNeighbor ? isBoroughTravelWallBlocked(cell, rightNeighbor) : false;
     const wallMarkup = rightNeighbor
@@ -1325,15 +1325,17 @@ function renderBoroughOverviewFish(now = Date.now(), options = {}) {
       context.save();
       context.translate(x, y);
       context.scale(direction, 1);
-      context.globalAlpha = 0.9;
+      const depthLayer = getFishTankLayer(fish);
+      context.globalAlpha = 0.9 * getTankDepthObjectAlpha(depthLayer);
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "low";
       const species = getSpeciesForFish(fish);
       const imagePath = getFishDisplayAssetPath(fish, species, now);
       const image = imagePath ? runtime.images.get(imagePath) : null;
       if (image?.complete && image.naturalWidth) {
-        const aspect = image.naturalWidth / Math.max(1, image.naturalHeight);
-        context.drawImage(image, -fishSize * aspect, -fishSize, fishSize * aspect * 2, fishSize * 2);
+        const depthImage = getTankDepthTreatedImage(image, depthLayer) || image;
+        const aspect = depthImage.width / Math.max(1, depthImage.height);
+        context.drawImage(depthImage, -fishSize * aspect, -fishSize, fishSize * aspect * 2, fishSize * 2);
       } else {
         context.fillStyle = getBoroughOverviewFishColor(fish);
         context.beginPath();

@@ -49,8 +49,26 @@ async function generateDelivery(checkOnly = false) {
     manifest.sheets[sheet.path] = entry;
     generated += 1;
   }
-  if (!checkOnly) fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-  console.log(`Sprite delivery: ${sheets.length} sheets checked; ${generated} regenerated.`);
+  const currentFiles = new Set(Object.values(manifest.sheets).flatMap(entry => Object.keys(entry.files || {})));
+  const staleFiles = [...new Set(Object.values(previous.sheets || {}).flatMap(entry => Object.keys(entry.files || {})))]
+    .filter(file => !currentFiles.has(file) && fs.existsSync(path.join(root, file)));
+  if (checkOnly && staleFiles.length) {
+    throw new Error(`Obsolete sprite delivery images: ${staleFiles.join(", ")}. Run npm run build:app.`);
+  }
+  if (!checkOnly) {
+    for (const file of staleFiles) fs.unlinkSync(path.join(root, file));
+    const spriteRoot = path.join(root, "assets/generated/sprites");
+    const prune = directory => {
+      if (!fs.existsSync(directory)) return;
+      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        if (entry.isDirectory()) prune(path.join(directory, entry.name));
+      }
+      if (directory !== spriteRoot && !fs.readdirSync(directory).length) fs.rmdirSync(directory);
+    };
+    prune(spriteRoot);
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+  }
+  console.log(`Sprite delivery: ${sheets.length} sheets checked; ${generated} regenerated; ${staleFiles.length} stale files removed.`);
 }
 
 if (require.main === module) generateDelivery(process.argv.includes("--check")).catch(error => { console.error(error.message); process.exitCode = 1; });

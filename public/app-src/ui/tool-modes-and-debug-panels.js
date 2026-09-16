@@ -500,6 +500,7 @@ function clearPrimaryToolModes() {
   runtime.pointerDown = false;
   runtime.lastScrubPoint = null;
   resetScrubWipeSoundState();
+  resetStageRenderViewAfterToolClose();
 }
 
 function getPlacedDecorById(placedId) {
@@ -959,7 +960,7 @@ async function init() {
   await initializeCloudSaveRuntime();
   applyLoadingOverlayBackground(getSavedActiveTankCandidate(earlyRawState));
 
-  const [backgroundResponse, tankResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, zombieSkeletonFishCatalog, decorCatalog, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
+  const [backgroundResponse, tankResponse, fishResponse, gravelResponse, bubbleResponse, decorResponse, suckerFishResponse, fishCatalog, decorCatalog, backgroundCatalogMeta, foodAndMedCatalog] = await Promise.all([
     fetchAssetList("backgrounds"),
     fetchAssetList("tank"),
     fetchAssetList("fish"),
@@ -968,14 +969,13 @@ async function init() {
     fetchAssetList("decor"),
     fetchAssetList("sucker-fish"),
     fetchFishCatalog(),
-    fetchZombieSkeletonFishCatalog(),
     fetchDecorCatalog(),
     fetchBackgroundCatalogMeta(),
     fetchFoodAndMedCatalog()
   ]);
 
   runtime.suckerFishCatalog = suckerFishResponse;
-  const baseFishResponse = fishResponse.filter((item) => !isZombieSkeletonAssetFile(item));
+  const baseFishResponse = fishResponse;
   const normalizedDecorMeta = normalizeDecorMeta(decorCatalog);
   runtime.decorMeta = normalizedDecorMeta;
   runtime.foodAndMedCatalog = normalizeFoodAndMedCatalog(foodAndMedCatalog);
@@ -983,25 +983,11 @@ async function init() {
     assetFolders: {
       fish: baseFishResponse,
       "sucker-fish": suckerFishResponse
-    },
-    includeZombieSkeletonStageAssets: false,
-    allowZombieSkeletonFish: false
+    }
   });
-  const normalizedZombieSkeletonFishCatalog = ZOMBIE_SKELETON_BEHAVIOR_ENABLED
-    ? normalizeFishCatalog(zombieSkeletonFishCatalog, {
-      assetFolders: {},
-      includeZombieSkeletonStageAssets: false,
-      allowZombieSkeletonFish: true
-    })
-    : [];
-  const normalizedDavyMutationCatalog = normalizeFishCatalog({ fish: getDavyMutationCatalogDefinitions() }, {
-    assetFolders: {},
-    includeZombieSkeletonStageAssets: false,
-    allowZombieSkeletonFish: false
-  });
+  const normalizedDavyMutationCatalog = normalizeFishCatalog({ fish: getDavyMutationCatalogDefinitions() }, { assetFolders: {} });
   const normalizedFishCatalog = [
     ...normalizedBaseFishCatalog,
-    ...normalizedZombieSkeletonFishCatalog,
     ...normalizedDavyMutationCatalog
   ];
   await discoverFishAppearanceVariants(normalizedFishCatalog, [...baseFishResponse, ...suckerFishResponse]);
@@ -1091,11 +1077,7 @@ async function init() {
     ...Object.values(runtime.foodAndMedCatalog?.items?.medicine || {}).flatMap((entry) => [
       entry.image ? resolveFoodAndMedAssetPath(entry.image) : ""
     ].filter(Boolean)),
-    ...getOwnedFishPreloadPaths(),
-    ...new Set(runtime.fishCatalog.flatMap((fish) => [
-      ...getFishDeathAssetCandidates(fish, "zombie"),
-      ...getFishDeathAssetCandidates(fish, "skeleton")
-    ]))
+    ...getOwnedFishPreloadPaths()
   ]), { maxAttempts: 1 });
 
   const criticalFishImagePaths = [...new Set(getAllTankFish(state)
@@ -1415,6 +1397,9 @@ function syncDebugToolsAuthorization() {
   const enabled = isDebugAccountAuthorized() && getDebugToolsPreference();
   const changed = runtime.debugToolsEnabled !== enabled;
   runtime.debugToolsEnabled = enabled;
+  if (changed) {
+    invalidateTankDepthVisualCaches();
+  }
 
   if (!enabled) {
     runtime.debugSidebarOpen = false;
@@ -1444,7 +1429,11 @@ function setDebugToolsEnabled(enabled) {
     // Debug access still works for this session if local storage is unavailable.
   }
 
+  const debugModeChanged = runtime.debugToolsEnabled !== nextEnabled;
   runtime.debugToolsEnabled = nextEnabled;
+  if (debugModeChanged) {
+    invalidateTankDepthVisualCaches();
+  }
   if (!nextEnabled) {
     runtime.debugSidebarOpen = false;
     if (runtime.debugFishBehaviorPreviewOpen) {
@@ -1533,6 +1522,7 @@ function setupDebugMenuButtons() {
       config.extraClass || ""
     );
   }
+  syncDebugDepthTunerControls();
 }
 
 function toggleDebugSidebar() {
@@ -1604,9 +1594,7 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     ? fish.blockedDecorId
     : "";
 
-  if (hasPendingZombieRevival(fish)) {
-    detailParts.push("reviving soon");
-  } else if (isFishDead(fish)) {
+  if (isFishDead(fish)) {
     detailParts.push(isFishBeingConsumedByPiranhas(fish, now) ? "being consumed" : "dead drift");
   } else if (breedingRole) {
     detailParts.push(`debug breeding ${breedingRole}`);
@@ -1618,8 +1606,6 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     detailParts.push(`gravel ${gravelAction?.stage || "play"}`);
   } else if (panicActive) {
     detailParts.push("panic swim");
-  } else if (hasZombieBiteInfection(fish)) {
-    detailParts.push("zombie bite reaction");
   } else if (hangoutDecorId) {
     detailParts.push(`hangout ${fish.hangoutZoneType || "decor"}`);
   } else if (blockedDecorId) {
@@ -1628,10 +1614,6 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     detailParts.push("glass grazing");
   } else if (effectiveBehavior === "piranha") {
     detailParts.push(getActivePiranhaPrey(now) ? "swarm hunting" : "predator patrol");
-  } else if (effectiveBehavior === "zombie") {
-    detailParts.push("zombie hunt");
-  } else if (effectiveBehavior === "skeleton") {
-    detailParts.push("skeleton patrol");
   } else {
     detailParts.push("free swim");
   }
@@ -1681,6 +1663,59 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   if (behaviorSignals[0]?.debugText) {
     detailParts.unshift(behaviorSignals[0].debugText);
     signatureParts.push(`behavior-signal:${behaviorSignals[0].type}`);
+  }
+
+  const relationships = sanitizeFishRelationships(fish.relationships);
+  const nearestRelationship = state.fish
+    .filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry) && relationships[entry.id])
+    .map((entry) => ({
+      fish: entry,
+      relation: relationships[entry.id],
+      distance: Math.hypot((entry.xNorm || 0.5) - (fish.xNorm || 0.5), (entry.yNorm || 0.5) - (fish.yNorm || 0.5))
+    }))
+    .sort((left, right) => left.distance - right.distance)[0] || null;
+  if (nearestRelationship) {
+    detailParts.push(`rel ${nearestRelationship.fish.name}: ${nearestRelationship.relation.kind} ${Math.round(Number(nearestRelationship.relation.score) || 0)}`);
+    signatureParts.push(`rel:${nearestRelationship.fish.id}:${nearestRelationship.relation.kind}:${Math.round(Number(nearestRelationship.relation.score) || 0)}`);
+  }
+
+  if (species.id === "pufferfish") {
+    const tapState = runtime.pufferRapidTapByFishId?.get?.(fish.id) || null;
+    const taps = Math.max(0, Math.floor(Number(tapState?.count) || 0));
+    const puffState = isPufferInflatedActive(fish, now)
+      ? "inflated"
+      : isPufferDeflatingActive(fish, now)
+        ? "deflating"
+        : "normal";
+    const cooldownSeconds = Math.max(0, Math.ceil(((Number(fish.pufferCooldownUntil) || 0) - now) / 1000));
+    const threat = getPufferThreatLevel(fish, species, now);
+    detailParts.push(`puffer ${puffState} taps ${taps}/${getPufferRapidTapTriggerCount()} threat ${threat.toFixed(2)} cd ${cooldownSeconds}s`);
+    signatureParts.push(`puffer:${puffState}:${taps}:${Math.round(threat * 100)}:${cooldownSeconds}`);
+  }
+  if (species.id === "betta" && fish.bettaRivalTargetId) {
+    const rival = state.fish.find((entry) => entry?.id === fish.bettaRivalTargetId) || null;
+    const phase = (Number(fish.bettaRivalYieldUntil) || 0) > now
+      ? "yield"
+      : (Number(fish.bettaRivalChaseUntil) || 0) > now
+        ? (fish.bettaRivalRole || "chase")
+        : (Number(fish.bettaRivalDisplayUntil) || 0) > now
+          ? "display"
+          : "cooldown";
+    detailParts.push(`betta ${phase}${rival ? ` vs ${rival.name}` : ""}`);
+    signatureParts.push(`betta:${phase}:${fish.bettaRivalTargetId}`);
+  }
+  if (species.id === "yellow-tang" && (Number(fish.yellowTangGrazeUntil) || 0) > now) {
+    detailParts.push(`grazing ${fish.yellowTangGrazeDecorId ? "decor" : "gravel"}`);
+  }
+  if (species.id === "seahorse" && (Number(fish.seahorsePerchUntil) || 0) > now) {
+    detailParts.push(`perch ${fish.seahorsePerchDecorId || "target"}`);
+  }
+  if (species.id === "pencilfish" && (Number(fish.pencilSparUntil) || 0) > now) {
+    detailParts.push(`spar ${fish.pencilSparPartnerId || "partner"}`);
+  }
+  if (fish.territoryTargetFishId && (Number(fish.territoryTargetUntil) || 0) > now) {
+    const territoryTarget = state.fish.find((entry) => entry?.id === fish.territoryTargetFishId) || null;
+    detailParts.push(`territory target ${territoryTarget?.name || fish.territoryTargetFishId}`);
   }
   if (fish.personality) {
     detailParts.push(`trait ${fish.personality}`);

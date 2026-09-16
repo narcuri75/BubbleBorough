@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "6a8dbee8-2332-430e-ad5b-ffd7aa5be3a3",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "55cb3fa7-fdcf-415f-9e2b-4f43cda559b1",
+          "width": 512,
+          "height": 279,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Bull_Shark_3.png"
+        },
+        {
+          "id": "5db15779-f4c3-4de0-8428-db7e98856653",
+          "width": 512,
+          "height": 279,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Bull_Shark_2.png"
+        },
+        {
+          "id": "e075e68a-4a41-49d0-852f-92e4eaf74a97",
+          "width": 512,
+          "height": 279,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Bull_Shark_1.png"
+        },
+        {
+          "id": "533a91c8-5e49-479c-aaec-47ba57069c36",
+          "width": 512,
+          "height": 279,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Bull_Shark_4.png"
+        },
+        {
+          "id": "bbba4124-445a-4041-a878-6d0d966c054c",
+          "width": 512,
+          "height": 279,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Bull_Shark.png"
+        }
+      ]
+    }
+  ]
+}

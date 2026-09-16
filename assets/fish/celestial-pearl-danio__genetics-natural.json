@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "4e25d786-b0eb-45c1-920a-ab37ad7400e4",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "a867a417-6169-4a11-86bb-c96f4b03239b",
+          "width": 512,
+          "height": 224,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "CelestialPearlDanio.png"
+        },
+        {
+          "id": "2eed8fb2-eb3e-4bbf-a7a9-084a429bef28",
+          "width": 512,
+          "height": 224,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "CelestialPearlDanio_2.png"
+        },
+        {
+          "id": "c299e135-ff09-41c9-8afd-e27c6521b86b",
+          "width": 512,
+          "height": 224,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "CelestialPearlDanio_3.png"
+        },
+        {
+          "id": "7a867dda-69a0-414c-9b83-51c880a0960c",
+          "width": 512,
+          "height": 224,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "CelestialPearlDanio_4.png"
+        },
+        {
+          "id": "a26a2e8d-df19-4f17-bbea-8962872323f6",
+          "width": 512,
+          "height": 224,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "CelestialPearlDanio_1.png"
+        }
+      ]
+    }
+  ]
+}

@@ -237,7 +237,6 @@ function syncCurrentTankState(now, options = {}) {
   }
   changed = processFishBehaviorState(now) || changed;
   if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
-    changed = processZombieInfections(now) || changed;
     changed = processFishDecayStates(now) || changed;
     changed = processDetritusFish(now) || changed;
     changed = applyCriticalComfortHealthEffects(now) || changed;
@@ -626,7 +625,7 @@ function getCriticalTankConditionStartAt(now) {
 }
 
 function applyCriticalComfortHealthEffects(now) {
-  const livingFish = getLivingTankFish().filter((fish) => !isUndeadFish(fish) || !isGoreEnabled());
+  const livingFish = getLivingTankFish();
   if (!livingFish.length) {
     return false;
   }
@@ -703,51 +702,23 @@ function applyCriticalComfortHealthEffects(now) {
 
 function processFishDecayStates(now) {
   let changed = false;
-  const stageMessages = [];
   const allFish = [...state.fish, ...state.storedFish];
 
   for (const fish of allFish) {
-    if (!isFishDead(fish)) {
-      if (
-        fish.decayStage !== null
-        || fish.piranhaConsumptionStartedAt !== null
-        || fish.piranhaConsumptionEndsAt !== null
-        || fish.piranhaLastBloodAt !== null
-      ) {
-        fish.decayStage = null;
-        fish.piranhaConsumptionStartedAt = null;
-        fish.piranhaConsumptionEndsAt = null;
-        fish.piranhaLastBloodAt = null;
-        changed = true;
-      }
-      continue;
-    }
-
-    const nextStage = getFishDecayStage(fish, now);
+    const nextStage = isFishDead(fish) ? getFishDecayStage(fish, now) : null;
     if (fish.decayStage !== nextStage) {
       fish.decayStage = nextStage;
       changed = true;
-
-      if (nextStage === "zombie") {
-        if (!unlockFishSpecies("zombie-fish", now, "Zombie Fish unlocked after a fish decayed into a zombie.")) {
-          stageMessages.push(`${fish.name} decayed into a zombie.`);
-        }
-      } else if (nextStage === "skeleton") {
-        if (!unlockFishSpecies("skeleton-fish", now, "Skeleton Fish unlocked after a fish decayed down to bones.")) {
-          stageMessages.push(`${fish.name} decayed down to a skeleton.`);
-        }
-      }
+    }
+    if (!isFishDead(fish) && (fish.piranhaConsumptionStartedAt !== null || fish.piranhaConsumptionEndsAt !== null || fish.piranhaLastBloodAt !== null)) {
+      fish.piranhaConsumptionStartedAt = null;
+      fish.piranhaConsumptionEndsAt = null;
+      fish.piranhaLastBloodAt = null;
+      changed = true;
     }
   }
 
-  for (const message of stageMessages) {
-    pushEvent(message, now);
-  }
-
-  if (finalizePiranhaConsumedFish(getCompletedPiranhaConsumedFish(now), now)) {
-    changed = true;
-  }
-
+  if (finalizePiranhaConsumedFish(getCompletedPiranhaConsumedFish(now), now)) changed = true;
   return changed;
 }
 

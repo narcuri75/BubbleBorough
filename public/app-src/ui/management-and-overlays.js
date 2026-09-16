@@ -896,7 +896,6 @@ function buildManagementFishRow(fish, now = Date.now()) {
   const baseSpecies = getBaseSpeciesForFish(fish) || species;
   const dead = isFishDead(fish);
   const juvenile = !dead && isFishJuvenile(fish, now);
-  const infected = !dead && hasZombieBiteInfection(fish);
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
   const resaleValue = getResaleValue(baseSpecies?.cost || 0);
@@ -904,16 +903,14 @@ function buildManagementFishRow(fish, now = Date.now()) {
     ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
     : isFishSpeciesShopUnlocked(baseSpecies);
   const canSell = Boolean(baseSpecies) && !dead && !isFishBeingConsumedByPiranhas(fish, now) && !juvenile;
-  const canStore = !dead && !infected;
+  const canStore = !dead;
   const status = dead
     ? getFishCorpseStateLabel(fish, now)
-    : infected
-      ? "Infected"
-      : juvenile
-        ? "Growing"
-        : fish.healthUnits < maxHealthUnits
-          ? `${fish.healthUnits}/${maxHealthUnits} health`
-          : "Healthy";
+    : juvenile
+      ? "Growing"
+      : fish.healthUnits < maxHealthUnits
+        ? `${fish.healthUnits}/${maxHealthUnits} health`
+        : "Healthy";
 
   return `
     <article class="management-browser-item">
@@ -956,7 +953,7 @@ function buildTankManagementFishBrowser(now = Date.now()) {
 function buildManagementDecorRow(item) {
   const decor = runtime.decorMap.get(item.decorKey) || {
     name: titleFromFile(item.decorKey),
-    path: resolveAppUrl(`assets/decor/${encodeURIComponent(item.decorKey)}`)
+    path: getDecorAssetPathForKey(item.decorKey)
   };
   const grouped = isPlacedDecorGrouped(item);
   const resaleValue = getResaleValue(decor?.cost || 0);
@@ -2523,6 +2520,11 @@ function handleCustomFishUtilityOverlayBodyClick(ctx, target) {
 }
 
 function handleCustomFishUtilityOverlayChange(ctx, target) {
+  const liveBirthToggle = target?.closest?.("[data-custom-fish-live-birth-toggle]");
+  if (liveBirthToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
+    runtime.pendingCustomFishUpload.liveBirth = liveBirthToggle.checked;
+    return true;
+  }
   const turnToggle = target?.closest?.("[data-custom-fish-turn-toggle]");
   if (turnToggle instanceof HTMLInputElement && runtime.pendingCustomFishUpload) {
     runtime.pendingCustomFishUpload.turnAnimation = turnToggle.checked ? "complex" : "simple";
@@ -2890,7 +2892,7 @@ function bubbleBankTransactionMatchesFilter(entry, filter) {
   return !earned && entry.direction === "debit" && getBubbleBankTransactionCategory(entry) === filter;
 }
 
-function getWebSurfReadMailIds() {
+function getLegacyWebSurfReadMailIds() {
   try {
     const parsed = JSON.parse(localStorage.getItem(WEBSURF_MAIL_READ_STORAGE_KEY) || "[]");
     return new Set(Array.isArray(parsed) ? parsed.map(String).slice(-120) : []);
@@ -2899,52 +2901,213 @@ function getWebSurfReadMailIds() {
   }
 }
 
-function saveWebSurfReadMailIds(readIds) {
-  try {
-    localStorage.setItem(WEBSURF_MAIL_READ_STORAGE_KEY, JSON.stringify([...readIds].slice(-120)));
-  } catch {}
-}
-
-function getWebSurfSilencedSenders() {
+function getLegacyWebSurfSilencedSenderKeys() {
   try {
     const parsed = JSON.parse(localStorage.getItem(WEBSURF_SILENCED_SENDERS_STORAGE_KEY) || "[]");
-    return new Set(Array.isArray(parsed) ? parsed.map((sender) => String(sender).toLowerCase()).slice(-80) : []);
+    return new Set(Array.isArray(parsed)
+      ? parsed.map((sender) => normalizeWebSurfSenderIdentity(sender)).filter(Boolean).slice(-80)
+      : []);
   } catch {
     return new Set();
   }
 }
 
-function saveWebSurfSilencedSenders(senders) {
-  try {
-    localStorage.setItem(WEBSURF_SILENCED_SENDERS_STORAGE_KEY, JSON.stringify([...senders].slice(-80)));
-  } catch {}
+function normalizeWebSurfSenderIdentity(sender) {
+  return String(sender || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96);
 }
 
-function toggleWebSurfSenderSilenced(sender) {
-  const normalized = String(sender || "").trim().toLowerCase();
-  if (!normalized) return;
-  const senders = getWebSurfSilencedSenders();
-  if (senders.has(normalized)) senders.delete(normalized);
-  else senders.add(normalized);
-  saveWebSurfSilencedSenders(senders);
+function getWebSurfSenderId(sender) {
+  const identity = normalizeWebSurfSenderIdentity(sender) || "unknown";
+  return `sender-${identity}`;
 }
 
-function isWebSurfMailUnread(message, readIds = getWebSurfReadMailIds(), silencedSenders = getWebSurfSilencedSenders()) {
-  return !readIds.has(message.id) && !silencedSenders.has(String(message.sender || "").toLowerCase());
+function ensureWebSurfSenderState(sender, explicitSenderId = "") {
+  if (!state) return { senderId: getWebSurfSenderId(sender), sender: String(sender || ""), status: 1 };
+  state.webSurfSenderStates ||= {};
+  const senderId = String(explicitSenderId || getWebSurfSenderId(sender)).trim().slice(0, 120) || getWebSurfSenderId(sender);
+  const senderName = String(sender || "").trim().slice(0, 120);
+  let entry = state.webSurfSenderStates[senderId];
+  if (!entry || typeof entry !== "object") {
+    const legacySilenced = getLegacyWebSurfSilencedSenderKeys().has(normalizeWebSurfSenderIdentity(senderName));
+    entry = { sender: senderName, status: legacySilenced ? 0 : 1 };
+    state.webSurfSenderStates[senderId] = entry;
+  } else {
+    entry.sender = senderName || String(entry.sender || "").slice(0, 120);
+    entry.status = Number(entry.status) === 0 ? 0 : 1;
+  }
+  return { senderId, ...entry };
+}
+
+function ensureWebSurfMailState(message) {
+  const id = String(message?.id || "").trim().slice(0, 180);
+  if (!id) return { status: 1, starred: 0, trashed: 0 };
+  if (!state) return { status: 1, starred: message?.favorite === true ? 1 : 0, trashed: 0 };
+  state.webSurfMailStates ||= {};
+  let entry = state.webSurfMailStates[id];
+  if (!entry || typeof entry !== "object") {
+    const legacyRead = getLegacyWebSurfReadMailIds().has(id);
+    entry = {
+      status: legacyRead ? 0 : 1,
+      starred: message?.favorite === true ? 1 : 0,
+      trashed: 0
+    };
+    state.webSurfMailStates[id] = entry;
+  } else {
+    entry.status = Number(entry.status) === 0 ? 0 : 1;
+    entry.starred = entry.starred === true || Number(entry.starred) === 1 ? 1 : 0;
+    entry.trashed = entry.trashed === true || Number(entry.trashed) === 1 ? 1 : 0;
+  }
+  return entry;
+}
+
+function getWebSurfMailStatus(messageOrId) {
+  if (messageOrId && typeof messageOrId === "object") return ensureWebSurfMailState(messageOrId);
+  const id = String(messageOrId || "");
+  if (!id) return { status: 1, starred: 0, trashed: 0 };
+  return ensureWebSurfMailState({ id });
+}
+
+function isWebSurfSenderSilenced(messageOrSender) {
+  const sender = typeof messageOrSender === "object" ? messageOrSender?.sender : messageOrSender;
+  const senderId = typeof messageOrSender === "object" ? messageOrSender?.senderId : "";
+  return ensureWebSurfSenderState(sender, senderId).status === 0;
+}
+
+function toggleWebSurfSenderSilenced(sender, senderId = "") {
+  const entry = ensureWebSurfSenderState(sender, senderId);
+  if (!state?.webSurfSenderStates?.[entry.senderId]) return;
+  state.webSurfSenderStates[entry.senderId].status = entry.status === 0 ? 1 : 0;
+  saveState();
+}
+
+function isWebSurfMailUnread(message) {
+  return ensureWebSurfMailState(message).status === 1;
+}
+
+function isWebSurfMailStarred(message) {
+  return ensureWebSurfMailState(message).starred === 1;
+}
+
+function isWebSurfMailTrashed(message) {
+  return ensureWebSurfMailState(message).trashed === 1;
+}
+
+function shouldWebSurfMailAlert(message) {
+  return isWebSurfMailUnread(message) && !isWebSurfSenderSilenced(message);
 }
 
 function markWebSurfMailRead(mailId) {
   const id = String(mailId || "");
   if (!id) return;
-  const readIds = getWebSurfReadMailIds();
-  readIds.add(id);
-  saveWebSurfReadMailIds(readIds);
+  const entry = getWebSurfMailStatus(id);
+  if (entry.status === 0) return;
+  entry.status = 0;
+  saveState();
 }
 
 function markAllWebSurfMailRead() {
-  const readIds = getWebSurfReadMailIds();
-  getWebSurfInboxMessages().forEach((message) => readIds.add(message.id));
-  saveWebSurfReadMailIds(readIds);
+  let changed = false;
+  getWebSurfInboxMessages().forEach((message) => {
+    const entry = ensureWebSurfMailState(message);
+    if (entry.status === 0) return;
+    entry.status = 0;
+    changed = true;
+  });
+  if (changed) saveState();
+}
+
+function toggleWebSurfMailStarred(mailId) {
+  const id = String(mailId || "");
+  if (!id) return false;
+  const message = getWebSurfInboxMessages().find((entry) => entry.id === id) || { id };
+  const entry = ensureWebSurfMailState(message);
+  entry.starred = entry.starred === 1 ? 0 : 1;
+  if (entry.starred === 1) entry.trashed = 0;
+  saveState();
+  return entry.starred === 1;
+}
+
+function trashWebSurfMail(mailId) {
+  const id = String(mailId || "");
+  if (!id) return false;
+  const message = getWebSurfInboxMessages().find((entry) => entry.id === id) || { id };
+  const entry = ensureWebSurfMailState(message);
+  if (entry.starred === 1) {
+    showToast("Unstar this email before deleting it.");
+    return false;
+  }
+  entry.trashed = 1;
+  entry.status = 0;
+  if (runtime.webSurfSelectedMailId === id) runtime.webSurfSelectedMailId = "";
+  saveState();
+  return true;
+}
+
+function deleteUnstarredWebSurfMail() {
+  let deleted = 0;
+  for (const message of getWebSurfInboxMessages()) {
+    const entry = ensureWebSurfMailState(message);
+    if (entry.starred === 1 || entry.trashed === 1) continue;
+    entry.trashed = 1;
+    entry.status = 0;
+    if (runtime.webSurfSelectedMailId === message.id) runtime.webSurfSelectedMailId = "";
+    deleted += 1;
+  }
+  if (deleted) saveState();
+  return deleted;
+}
+
+function syncWebSurfMailPersistence() {
+  if (!state) return;
+  getWebSurfInboxMessages();
+}
+
+function getDavyJonesFulfillmentVariants() {
+  return [
+    { templateId: "davy_fulfillment_done", subject: "done", preview: "its there. thx as always" },
+    { templateId: "davy_fulfillment_there", subject: "there", preview: "dropped off. appreciate it" },
+    { templateId: "davy_fulfillment_all_set", subject: "all set", preview: "taken care of. thx" },
+    { templateId: "davy_fulfillment_delivered", subject: "delivered", preview: "should be there now. thx again" },
+    { templateId: "davy_fulfillment_thx", subject: "thx", preview: "another one done. appreciate it" }
+  ];
+}
+
+function queueDavyJonesFulfillmentEmail(fish = null, species = null, now = Date.now()) {
+  if (!state) return null;
+  state.webSurfSentEmails ||= [];
+  const variants = getDavyJonesFulfillmentVariants();
+  const lastTemplateId = state.webSurfSentEmails.find((email) => /^davy_fulfillment_/.test(String(email?.templateId || "")))?.templateId || "";
+  const choices = variants.filter((variant) => variants.length <= 1 || variant.templateId !== lastTemplateId);
+  const variant = choices[Math.floor(Math.random() * choices.length)] || variants[0];
+  const sender = "-FIN";
+  const senderId = getWebSurfSenderId(sender);
+  const message = {
+    id: createId("mail"),
+    templateId: variant.templateId,
+    sender,
+    senderId,
+    subject: variant.subject,
+    preview: variant.preview,
+    destination: "",
+    icon: "assets/web/davy/icons/davy_icon.png",
+    time: Math.max(1, Number(now) || Date.now()),
+    data: { speciesId: String(species?.id || fish?.speciesId || "").slice(0, 100) }
+  };
+  state.webSurfSentEmails.unshift(message);
+  state.webSurfSentEmails = sanitizeWebSurfSentEmails(state.webSurfSentEmails);
+  ensureWebSurfSenderState(sender, senderId);
+  const mailState = ensureWebSurfMailState(message);
+  mailState.status = 1;
+  mailState.starred = 0;
+  mailState.trashed = 0;
+  saveState();
+  syncWebSurfUnreadBadge();
+  return message;
 }
 
 function loadWebSurfAutoEmailConfig() {
@@ -3021,11 +3184,7 @@ function isProteusOrder(order) {
 }
 
 function isDavyMutationOrder(order) {
-  return (order?.items || []).some((item) => {
-    const key = String(item?.key || "");
-    const image = String(item?.image || "");
-    return /(?:^|:)davy-/.test(key) || /web\/davy\/mutations/i.test(image);
-  });
+  return (order?.items || []).some((item) => /(?:^|:)davy-/.test(String(item?.key || "")));
 }
 
 function isEngineeredAquaticSpecimenOrder(order) {
@@ -3223,12 +3382,28 @@ function getWebSurfInboxMessages() {
       id: `auto-davy_jones_invitation-${firstDavyPurchase.id}`,
       templateId: "davy_jones_invitation",
       data,
-      sender: template?.sender || "FIN",
-      subject: template?.subject || "Regarding Your Purchase",
-      preview: template?.preview || "A private seller left you a message.",
+      sender: template?.sender || "-FIN",
+      subject: template?.subject || "hi",
+      preview: template?.preview || "thx for the business",
       destination: "davy-locker-unlock",
       icon: "assets/web/davy/icons/davy_icon.png",
       time: (Number(firstDavyPurchase.placedAt) || 0) + 1
+    });
+  }
+
+  for (const sentEmail of sanitizeWebSurfSentEmails(state?.webSurfSentEmails)) {
+    const template = getWebSurfAutoEmailTemplate(sentEmail.templateId);
+    messages.push({
+      id: sentEmail.id,
+      templateId: sentEmail.templateId,
+      data: sentEmail.data || {},
+      sender: template?.sender || sentEmail.sender || "-FIN",
+      senderId: sentEmail.senderId || getWebSurfSenderId(template?.sender || sentEmail.sender || "-FIN"),
+      subject: template?.subject || sentEmail.subject || "done",
+      preview: template?.preview || sentEmail.preview || "its there. thx as always",
+      destination: sentEmail.destination || "",
+      icon: sentEmail.icon || "assets/web/davy/icons/davy_icon.png",
+      time: Number(sentEmail.time) || 0
     });
   }
 
@@ -3272,18 +3447,24 @@ function getWebSurfInboxMessages() {
   }
 
   return messages
-    .sort((left, right) => (Number(right.time) || 0) - (Number(left.time) || 0))
-    .slice(0, 40);
+    .map((message) => {
+      const sender = String(message.sender || "unknown").trim() || "unknown";
+      const senderId = String(message.senderId || getWebSurfSenderId(sender));
+      const enriched = { ...message, sender, senderId };
+      ensureWebSurfSenderState(sender, senderId);
+      ensureWebSurfMailState(enriched);
+      return enriched;
+    })
+    .filter((message) => !isWebSurfMailTrashed(message))
+    .sort((left, right) => (Number(right.time) || 0) - (Number(left.time) || 0));
 }
 
 function syncWebSurfUnreadBadge() {
   if (!dom.webSurfUnreadBadge) return;
-  const readIds = getWebSurfReadMailIds();
-  const silencedSenders = getWebSurfSilencedSenders();
-  const unreadCount = getWebSurfInboxMessages().filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
-  dom.webSurfUnreadBadge.hidden = unreadCount === 0;
-  dom.webSurfUnreadBadge.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
-  dom.webSurfUnreadBadge.setAttribute("aria-label", `${unreadCount} unread WebSurf ${unreadCount === 1 ? "message" : "messages"}`);
+  const alertCount = getWebSurfInboxMessages().filter((message) => shouldWebSurfMailAlert(message)).length;
+  dom.webSurfUnreadBadge.hidden = alertCount === 0;
+  dom.webSurfUnreadBadge.textContent = alertCount > 9 ? "9+" : String(alertCount);
+  dom.webSurfUnreadBadge.setAttribute("aria-label", `${alertCount} new WebSurf ${alertCount === 1 ? "message" : "messages"}`);
 }
 
 function formatWebSurfMailTime(timestamp) {
@@ -3367,6 +3548,15 @@ function renderWebSurfAutoEmailBody(message) {
     if (block.type === "completion_note") {
       return `<div class="websurf-email-completion-note">${renderWebSurfEmailInlineText(block.text, data)}</div>`;
     }
+    if (block.type === "link_line") {
+      const destination = String(block.destination || template.action?.destination || "");
+      const label = String(block.label || template.action?.label || "Open");
+      const prefix = renderWebSurfEmailInlineText(block.text || "", data);
+      if (destination === "davy-locker-unlock") {
+        return `<p>${prefix}<a class="websurf-email-hyperlink" href="#davyjoneslocker.hadal" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(label)}</a></p>`;
+      }
+      return `<p>${prefix}${escapeHtml(label)}</p>`;
+    }
     if (block.type === "action") {
       const action = template.action || {};
       if (action.destination === "davy-locker-unlock") {
@@ -3433,27 +3623,31 @@ function renderWebSurfHomePage() {
   const username = profile.username || getAccountUsernameForUser(profile.userId);
   const addressName = String(username || "user").toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "") || "user";
   const messages = getWebSurfInboxMessages();
-  const readIds = getWebSurfReadMailIds();
-  const silencedSenders = getWebSurfSilencedSenders();
-  const unreadCount = messages.filter((message) => isWebSurfMailUnread(message, readIds, silencedSenders)).length;
+  const unreadCount = messages.filter((message) => isWebSurfMailUnread(message)).length;
+  const deletableCount = messages.filter((message) => !isWebSurfMailStarred(message)).length;
   const proteusDiscovered = Boolean(window.hasDiscoveredProteus?.());
   const davyLockerUnlocked = state?.davyJonesLockerUnlocked === true;
+  const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
   const mailMarkup = messages.map((message) => {
-    const senderKey = String(message.sender || "").toLowerCase();
-    const silenced = silencedSenders.has(senderKey);
-    const unread = isWebSurfMailUnread(message, readIds, silencedSenders);
+    const mailState = ensureWebSurfMailState(message);
+    const silenced = isWebSurfSenderSilenced(message);
+    const unread = mailState.status === 1;
+    const starred = mailState.starred === 1;
     const selected = runtime.webSurfSelectedMailId === message.id;
+    const preview = message.templateId
+      ? renderWebSurfEmailInlineText(getWebSurfAutoEmailTemplate(message.templateId)?.preview || message.preview, message.data)
+      : escapeHtml(message.preview);
     return `<article class="websurf-mail-item ${selected ? "is-open" : ""}">
-      <button type="button" class="websurf-mail-row ${unread ? "is-unread" : ""} ${silenced ? "is-silenced" : ""}" data-websurf-mail-id="${escapeHtml(message.id)}" aria-expanded="${selected}">
-        ${message.favorite
-          ? `<span class="websurf-mail-favorite" title="Favorited" aria-label="Favorited"><img ${assetImageAttributes(message.favoriteIcon || "assets/icons/other.png")} alt="" aria-hidden="true" /></span>`
-          : `<span class="websurf-mail-status" aria-hidden="true"></span>`}
-        <img ${assetImageAttributes(message.icon)} alt="" aria-hidden="true" />
-        <span class="websurf-mail-sender">${escapeHtml(message.sender)}${silenced ? `<small>Silenced</small>` : ""}</span>
-        <span class="websurf-mail-copy"><strong>${escapeHtml(message.subject)}</strong><small>${message.templateId ? renderWebSurfEmailInlineText(getWebSurfAutoEmailTemplate(message.templateId)?.preview || message.preview, message.data) : escapeHtml(message.preview)}</small></span>
-        <time>${escapeHtml(formatWebSurfMailTime(message.time))}</time>
-      </button>
-      ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}">${silenced ? "Unsilence sender" : "Silence sender"}</button></div></div>` : ""}
+      <div class="websurf-mail-row-shell ${unread ? "is-unread" : ""} ${silenced ? "is-silenced" : ""}">
+        <button type="button" class="websurf-mail-star ${starred ? "is-starred" : ""}" data-websurf-star-mail="${escapeHtml(message.id)}" aria-pressed="${starred}" aria-label="${starred ? "Unstar email" : "Star email"}" title="${starred ? "Unstar email" : "Star email to protect it from deletion"}"><span aria-hidden="true">${starred ? "★" : ""}</span></button>
+        <button type="button" class="websurf-mail-row ${unread ? "is-unread" : ""} ${silenced ? "is-silenced" : ""}" data-websurf-mail-id="${escapeHtml(message.id)}" aria-expanded="${selected}">
+          <img ${assetImageAttributes(message.icon)} alt="" aria-hidden="true" />
+          <span class="websurf-mail-sender">${escapeHtml(message.sender)}${silenced ? `<small>Silenced</small>` : ""}</span>
+          <span class="websurf-mail-copy"><strong>${escapeHtml(message.subject)}</strong><small>${preview}</small></span>
+          <time>${escapeHtml(formatWebSurfMailTime(message.time))}</time>
+        </button>
+      </div>
+      ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-trash-button" data-websurf-trash-mail="${escapeHtml(message.id)}" aria-label="Delete email" title="${starred ? "Unstar this email before deleting it" : "Delete email"}" ${starred ? "disabled" : ""}>${trashIcon}</button><button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}" data-websurf-silence-sender-id="${escapeHtml(message.senderId)}">${silenced ? "Unsilence sender" : "Silence sender"}</button></div></div>` : ""}
     </article>`;
   }).join("");
   return `<header class="websurf-home-header">
@@ -3473,7 +3667,7 @@ function renderWebSurfHomePage() {
       </section>
       <div class="websurf-dashboard-grid">
         <section class="websurf-inbox" aria-labelledby="websurfInboxTitle">
-          <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></header>
+          <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><div class="websurf-inbox-header-actions"><button type="button" data-websurf-delete-unstarred ${deletableCount ? "" : "disabled"}>Delete Unstarred</button><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></div></header>
           <div class="websurf-mail-list">${mailMarkup}</div>
         </section>
         <aside class="websurf-account-card" aria-label="WebSurf account">

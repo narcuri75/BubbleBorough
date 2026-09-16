@@ -118,7 +118,7 @@ function loadState() {
 function sanitizeAccountProfile(rawProfile) {
   const source = rawProfile && typeof rawProfile === "object" ? rawProfile : {};
   const username = typeof source.username === "string"
-    ? source.username.trim().replace(/\s+/g, " ").slice(0, 32)
+    ? source.username.trim().replace(/\s+/g, " ").slice(0, 20)
     : "";
   const userId = typeof source.userId === "string" ? source.userId.trim().slice(0, 80) : "";
   return { username, userId };
@@ -174,6 +174,60 @@ function sanitizePurchaseHistory(rawHistory) {
       } : {})
     };
   }).filter(Boolean).sort((left, right) => right.placedAt - left.placedAt).slice(0, 250);
+}
+
+function sanitizeWebSurfMailStates(rawStates) {
+  const source = rawStates && typeof rawStates === "object" && !Array.isArray(rawStates) ? rawStates : {};
+  const entries = Object.entries(source);
+  return Object.fromEntries(entries.map(([rawId, rawEntry]) => {
+    const id = String(rawId || "").trim().slice(0, 180);
+    const entry = rawEntry && typeof rawEntry === "object" ? rawEntry : {};
+    return [id, {
+      status: Number(entry.status) === 0 ? 0 : 1,
+      starred: entry.starred === true || Number(entry.starred) === 1 ? 1 : 0,
+      trashed: entry.trashed === true || Number(entry.trashed) === 1 ? 1 : 0
+    }];
+  }).filter(([id]) => id));
+}
+
+function sanitizeWebSurfSenderStates(rawStates) {
+  const source = rawStates && typeof rawStates === "object" && !Array.isArray(rawStates) ? rawStates : {};
+  const entries = Object.entries(source);
+  return Object.fromEntries(entries.map(([rawId, rawEntry]) => {
+    const id = String(rawId || "").trim().slice(0, 120);
+    const entry = rawEntry && typeof rawEntry === "object" ? rawEntry : {};
+    return [id, {
+      sender: typeof entry.sender === "string" ? entry.sender.trim().slice(0, 120) : "",
+      status: Number(entry.status) === 0 ? 0 : 1
+    }];
+  }).filter(([id]) => id));
+}
+
+function sanitizeWebSurfSentEmails(rawEmails) {
+  if (!Array.isArray(rawEmails)) return [];
+  return rawEmails.map((rawEmail) => {
+    if (!rawEmail || typeof rawEmail !== "object") return null;
+    const id = typeof rawEmail.id === "string" && rawEmail.id.trim()
+      ? rawEmail.id.trim().slice(0, 180)
+      : createId("mail");
+    const sender = typeof rawEmail.sender === "string" && rawEmail.sender.trim()
+      ? rawEmail.sender.trim().slice(0, 120)
+      : "-FIN";
+    const senderId = typeof rawEmail.senderId === "string" ? rawEmail.senderId.trim().slice(0, 120) : "";
+    const templateId = typeof rawEmail.templateId === "string" ? rawEmail.templateId.trim().slice(0, 120) : "";
+    const subject = typeof rawEmail.subject === "string" ? rawEmail.subject.slice(0, 180) : "";
+    const preview = typeof rawEmail.preview === "string" ? rawEmail.preview.slice(0, 320) : "";
+    const destination = typeof rawEmail.destination === "string" ? rawEmail.destination.slice(0, 80) : "";
+    const icon = typeof rawEmail.icon === "string" ? rawEmail.icon.slice(0, 400) : "assets/icons/WebSurf_icon.png";
+    const time = Number.isFinite(Number(rawEmail.time)) ? Math.max(0, Number(rawEmail.time)) : Date.now();
+    const data = rawEmail.data && typeof rawEmail.data === "object" && !Array.isArray(rawEmail.data)
+      ? {
+        orderId: typeof rawEmail.data.orderId === "string" ? rawEmail.data.orderId.slice(0, 100) : "",
+        speciesId: typeof rawEmail.data.speciesId === "string" ? rawEmail.data.speciesId.slice(0, 100) : ""
+      }
+      : {};
+    return { id, sender, senderId, templateId, subject, preview, destination, icon, time, data };
+  }).filter(Boolean).sort((left, right) => Number(right.time) - Number(left.time));
 }
 
 function getAccountUsernameForUser(userId = "") {
@@ -239,6 +293,44 @@ function normalizeToolbarTileColor(value) {
   return DEFAULT_UI_SETTINGS.toolbarTileColor;
 }
 
+function normalizeDepthEffectLevel(value, legacyEnabled = undefined) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) {
+    return clamp(Math.round(numeric), DEPTH_EFFECT_LEVEL_MIN, DEPTH_EFFECT_LEVEL_MAX);
+  }
+  // Migrate saves created before the 0-4 depth intensity control existed.
+  if (legacyEnabled === false) {
+    return DEPTH_EFFECT_LEVEL_MIN;
+  }
+  return DEPTH_EFFECT_LEVEL_DEFAULT;
+}
+
+function getSavedDepthEffectLevelPreference() {
+  try {
+    const raw = localStorage.getItem(DEPTH_EFFECT_LEVEL_PREFERENCE_KEY);
+    if (raw === null || raw === "") {
+      return null;
+    }
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric)) {
+      return null;
+    }
+    return normalizeDepthEffectLevel(numeric);
+  } catch {
+    return null;
+  }
+}
+
+function saveDepthEffectLevelPreference(value) {
+  const depthEffectLevel = normalizeDepthEffectLevel(value);
+  try {
+    localStorage.setItem(DEPTH_EFFECT_LEVEL_PREFERENCE_KEY, String(depthEffectLevel));
+  } catch {
+    // The normal save state still carries this setting if localStorage is unavailable.
+  }
+  return depthEffectLevel;
+}
+
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   return {
@@ -261,7 +353,9 @@ function sanitizeUiSettings(rawSettings) {
     ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
-    decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled === true,
+    decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled !== false,
+    depthEffectLevel: getSavedDepthEffectLevelPreference() ?? normalizeDepthEffectLevel(source.depthEffectLevel, source.depthEffectsEnabled),
+    backgroundDepthHazeEnabled: source.backgroundDepthHazeEnabled !== false,
     simpleTurnAnimationsOnly: source.simpleTurnAnimationsOnly === true,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
@@ -524,7 +618,6 @@ function getPeacefulModeFishSnapshot(fish) {
     "acquiredAt", "tankAddedAt", "growthStartedAt", "growthEndsAt",
     "diseaseLastProgressAt", "nextDiseaseCheckAt", "nextSymptomCheckAt", "nextDiseaseSpreadCheckAt",
     "diseaseTreatedUntil", "temporaryImmunityUntil", "nextGreenBubbleAt",
-    "zombieBiteStartedAt", "zombieBiteLastBloodAt", "zombieReviveAt",
     "nextWasteAt", "lastNeighborhoodMoveAt", "lastAteAt", "breedCooldownUntil"
   ];
   const timers = {};
@@ -597,7 +690,6 @@ function enforcePeacefulModeState(now = Date.now()) {
       fish.needsUpdatedAt = now;
       fish.comfortDamageProgressMs = 0;
       clearPiranhaAttackState(fish);
-      clearZombieAttackState(fish);
     }
   }
   for (const fish of Array.isArray(state.storedFish) ? state.storedFish : []) {
@@ -611,7 +703,6 @@ function enforcePeacefulModeState(now = Date.now()) {
     fish.needsUpdatedAt = now;
     fish.comfortDamageProgressMs = 0;
     clearPiranhaAttackState(fish);
-    clearZombieAttackState(fish);
   }
   clearBloodEffectClouds();
   runtime.bloodWaterTint = 0;
@@ -736,14 +827,6 @@ function isGoreEnabled() {
   return !isPeacefulModeEnabled() && isViolenceAndGoreEnabled();
 }
 
-function isZombieSkeletonModeAvailable() {
-  return ZOMBIE_SKELETON_BEHAVIOR_ENABLED;
-}
-
-function isZombieModeEnabled() {
-  return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
-}
-
 function getAssetFileName(value = "") {
   return String(value || "")
     .replace(/\?.*$/, "")
@@ -753,33 +836,13 @@ function getAssetFileName(value = "") {
     .toLowerCase();
 }
 
-function isZombieSkeletonAssetPath(value = "") {
-  const normalizedPath = String(value || "").replaceAll("\\", "/").replace(/\?.*$/, "").toLowerCase();
-  const fileName = getAssetFileName(normalizedPath);
-  return normalizedPath.includes("/zombie_skeleton_fish/")
-    || /_(zombie|skeleton)\.[^.]+$/i.test(fileName);
-}
-
 function isGoreOnlyAssetPath(value = "") {
-  const fileName = getAssetFileName(value);
-  return FILTERED_GORE_DECOR_KEYS.has(fileName)
-    || fileName === "zombie-virus-antidote-drops.png";
+  return FILTERED_GORE_DECOR_KEYS.has(getAssetFileName(value));
 }
 
 function shouldPreloadAssetForCurrentContentSettings(path) {
-  if (!path) {
-    return false;
-  }
-  if (isZombieSkeletonAssetPath(path)) {
-    return isZombieSkeletonModeAvailable();
-  }
-  if (getAssetFileName(path) === "zombie-virus-antidote-drops.png") {
-    return isZombieSkeletonModeAvailable() && isViolenceAndGoreEnabled();
-  }
-  if (isGoreOnlyAssetPath(path)) {
-    return isViolenceAndGoreEnabled();
-  }
-  return true;
+  if (!path) return false;
+  return !isGoreOnlyAssetPath(path) || isViolenceAndGoreEnabled();
 }
 
 function filterPreloadPathsForCurrentContentSettings(paths) {
@@ -787,24 +850,11 @@ function filterPreloadPathsForCurrentContentSettings(paths) {
 }
 
 function isContentGatedAssetPath(path) {
-  return isZombieSkeletonAssetPath(path) || isGoreOnlyAssetPath(path);
+  return isGoreOnlyAssetPath(path);
 }
 
 function getContentGatedPreloadPaths() {
-  const paths = [
-    ...getPlacedDecorPreloadPaths(),
-    ...(isZombieSkeletonModeAvailable()
-      ? runtime.fishCatalog.flatMap((fish) => [
-        ...getFishDeathAssetCandidates(fish, "zombie"),
-        ...getFishDeathAssetCandidates(fish, "skeleton")
-      ])
-      : []),
-    getMedicineCatalogEntries().antidote?.image
-      ? resolveFoodAndMedAssetPath(getMedicineCatalogEntries().antidote.image)
-      : ""
-  ];
-
-  return filterPreloadPathsForCurrentContentSettings(paths.filter(isContentGatedAssetPath));
+  return filterPreloadPathsForCurrentContentSettings(getPlacedDecorPreloadPaths().filter(isContentGatedAssetPath));
 }
 
 async function preloadContentGatedAssetsForCurrentSettings() {
@@ -824,19 +874,6 @@ function shouldPersistReconciledState(rawState) {
   return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION || !welcomeMailCurrent;
 }
 
-
-function getSpeciesWaterType(speciesOrFish) {
-  const species = speciesOrFish?.speciesId ? getSpeciesForFish(speciesOrFish) : speciesOrFish;
-  if (!species) {
-    return "freshwater";
-  }
-
-  if (species.waterType) {
-    return normalizeWaterType(species.waterType);
-  }
-
-  return inferWaterTypeFromTheme(species.theme, "freshwater");
-}
 
 function canDecorLiveInCurrentTank(decorOrKey, tank = getCurrentTank()) {
   return true;
@@ -1259,6 +1296,9 @@ function reconcileState(rawState) {
     lifetimeDeaths: 0,
     accountProfile: sanitizeAccountProfile(null),
     purchaseHistory: [],
+    webSurfMailStates: {},
+    webSurfSenderStates: {},
+    webSurfSentEmails: [],
     engineeredSpecimenDesignCredits: 0,
     engineeredSpecimenDesignOrderIds: [],
     engineeredSpecimenCompletedOrderIds: [],
@@ -1354,6 +1394,9 @@ function reconcileState(rawState) {
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     accountProfile: sanitizeAccountProfile(incoming.accountProfile),
     purchaseHistory: sanitizePurchaseHistory(incoming.purchaseHistory),
+    webSurfMailStates: sanitizeWebSurfMailStates(incoming.webSurfMailStates),
+    webSurfSenderStates: sanitizeWebSurfSenderStates(incoming.webSurfSenderStates),
+    webSurfSentEmails: sanitizeWebSurfSentEmails(incoming.webSurfSentEmails),
     engineeredSpecimenDesignCredits: Math.max(0, Math.floor(Number(incoming.engineeredSpecimenDesignCredits) || 0)),
     engineeredSpecimenDesignOrderIds: Array.isArray(incoming.engineeredSpecimenDesignOrderIds)
       ? incoming.engineeredSpecimenDesignOrderIds.filter((id) => typeof id === "string").slice(0, 20)

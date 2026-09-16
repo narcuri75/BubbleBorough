@@ -100,7 +100,7 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
-      "path": "assets/fish/Angelfish.webp",
+      "path": "assets/fish/angelfish__genetics-natural.webp",
       "version": "944a8d5043d2",
       "width": 1024,
       "height": 1536,
@@ -137,13 +137,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Angelfish",
+        "root": "assets/generated/sprites/fish/angelfish__genetics-natural",
         "version": "0342a21d176d-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Betta.webp",
+      "path": "assets/fish/betta__genetics-natural.webp",
       "version": "92c3c5e2562d",
       "width": 1024,
       "height": 1338,
@@ -180,13 +180,142 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Betta",
+        "root": "assets/generated/sprites/fish/betta__genetics-natural",
         "version": "dfdb209f7607-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/BlueRam.webp",
+      "path": "assets/fish/bioluminescent-angler-pike__genetics-enhanced.webp",
+      "version": "1a7788398270",
+      "width": 1024,
+      "height": 1029,
+      "frames": {
+        "DNA_Bioluminescent_Angler_Pike_1.png": [
+          0,
+          0,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_5.png": [
+          512,
+          0,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_4.png": [
+          0,
+          343,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_3.png": [
+          512,
+          343,
+          512,
+          343
+        ],
+        "DNA_Bioluminescent_Angler_Pike_2.png": [
+          0,
+          686,
+          512,
+          343
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/bioluminescent-angler-pike__genetics-enhanced",
+        "version": "65f89046db81-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/bioluminescent-cherub-goldfish__genetics-enhanced.webp",
+      "version": "9b229893ce22",
+      "width": 1024,
+      "height": 1089,
+      "frames": {
+        "DNA_Bioluminescent _Cherub_Goldfish_1.png": [
+          0,
+          0,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_5.png": [
+          512,
+          0,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_4.png": [
+          0,
+          363,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_3.png": [
+          512,
+          363,
+          512,
+          363
+        ],
+        "DNA_Bioluminescent _Cherub_Goldfish_2.png": [
+          0,
+          726,
+          512,
+          363
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/bioluminescent-cherub-goldfish__genetics-enhanced",
+        "version": "96c706e9cddb-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/bioluminescent-glass-fangfish__genetics-enhanced.webp",
+      "version": "fbb5049ca221",
+      "width": 1024,
+      "height": 618,
+      "frames": {
+        "DNA_Bioluminescent_Glass_Fangfish_1.png": [
+          0,
+          0,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_5.png": [
+          512,
+          0,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_4.png": [
+          0,
+          206,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_3.png": [
+          512,
+          206,
+          512,
+          206
+        ],
+        "DNA_Bioluminescent_Glass_Fangfish_2.png": [
+          0,
+          412,
+          512,
+          206
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/bioluminescent-glass-fangfish__genetics-enhanced",
+        "version": "9f36e613a2c5-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/blue-ram__genetics-natural.webp",
       "version": "18fc10022329",
       "width": 1024,
       "height": 1023,
@@ -223,13 +352,56 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/BlueRam",
+        "root": "assets/generated/sprites/fish/blue-ram__genetics-natural",
         "version": "a0051938a50e-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Bull_Shark.webp",
+      "path": "assets/fish/blue-tang__genetics-natural.webp",
+      "version": "9d8c302ddfa1",
+      "width": 1024,
+      "height": 702,
+      "frames": {
+        "bluetang.png": [
+          0,
+          0,
+          512,
+          234
+        ],
+        "bluetang_1.png": [
+          512,
+          0,
+          512,
+          234
+        ],
+        "bluetang_2.png": [
+          0,
+          234,
+          512,
+          234
+        ],
+        "bluetang_3.png": [
+          512,
+          234,
+          512,
+          234
+        ],
+        "bluetang_4.png": [
+          0,
+          468,
+          512,
+          234
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/blue-tang__genetics-natural",
+        "version": "4a6c75fcadfa-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/bull-shark__genetics-enhanced.webp",
       "version": "5029dc65c1d6",
       "width": 1024,
       "height": 837,
@@ -266,13 +438,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Bull_Shark",
+        "root": "assets/generated/sprites/fish/bull-shark__genetics-enhanced",
         "version": "0f9f12d46c99-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/CelestialPearlDanio.webp",
+      "path": "assets/fish/celestial-pearl-danio__genetics-natural.webp",
       "version": "8afdbe5878f0",
       "width": 1024,
       "height": 672,
@@ -309,13 +481,56 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/CelestialPearlDanio",
+        "root": "assets/generated/sprites/fish/celestial-pearl-danio__genetics-natural",
         "version": "6344a7a14a99-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/ChiliRasbora.webp",
+      "path": "assets/fish/cherry-barb__genetics-natural.webp",
+      "version": "be06e0e1353c",
+      "width": 1024,
+      "height": 636,
+      "frames": {
+        "cherrybarb.png": [
+          0,
+          0,
+          512,
+          212
+        ],
+        "cherrybarb_1.png": [
+          512,
+          0,
+          512,
+          212
+        ],
+        "cherrybarb_2.png": [
+          0,
+          212,
+          512,
+          212
+        ],
+        "cherrybarb_3.png": [
+          512,
+          212,
+          512,
+          212
+        ],
+        "cherrybarb_4.png": [
+          0,
+          424,
+          512,
+          212
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/cherry-barb__genetics-natural",
+        "version": "5924ecdac823-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/chili-rasbora__genetics-natural.webp",
       "version": "57017e250caf",
       "width": 972,
       "height": 615,
@@ -352,13 +567,185 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/ChiliRasbora",
+        "root": "assets/generated/sprites/fish/chili-rasbora__genetics-natural",
         "version": "9aa9d42eaeb2-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Embertetra.webp",
+      "path": "assets/fish/clownfish__genetics-natural.webp",
+      "version": "5d784984e259",
+      "width": 1024,
+      "height": 948,
+      "frames": {
+        "clownfish.png": [
+          0,
+          0,
+          512,
+          316
+        ],
+        "clownfish_1.png": [
+          512,
+          0,
+          512,
+          316
+        ],
+        "clownfish_2.png": [
+          0,
+          316,
+          512,
+          316
+        ],
+        "clownfish_3.png": [
+          512,
+          316,
+          512,
+          316
+        ],
+        "clownfish_4.png": [
+          0,
+          632,
+          512,
+          316
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/clownfish__genetics-natural",
+        "version": "b6d734010ef4-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/discus__genetics-natural.webp",
+      "version": "5d8360881740",
+      "width": 1024,
+      "height": 1281,
+      "frames": {
+        "discus.png": [
+          0,
+          0,
+          512,
+          427
+        ],
+        "discus_1.png": [
+          512,
+          0,
+          512,
+          427
+        ],
+        "discus_2.png": [
+          0,
+          427,
+          512,
+          427
+        ],
+        "discus_3.png": [
+          512,
+          427,
+          512,
+          427
+        ],
+        "discus_4.png": [
+          0,
+          854,
+          512,
+          427
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/discus__genetics-natural",
+        "version": "2208359cffea-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/dwarf-chimera-barracuda__genetics-enhanced.webp",
+      "version": "b457cbd38e2e",
+      "width": 1024,
+      "height": 828,
+      "frames": {
+        "DNA_Dwarf_Chimera_Barracuda_1.png": [
+          0,
+          0,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_5.png": [
+          512,
+          0,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_4.png": [
+          0,
+          276,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_3.png": [
+          512,
+          276,
+          512,
+          276
+        ],
+        "DNA_Dwarf_Chimera_Barracuda_2.png": [
+          0,
+          552,
+          512,
+          276
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/dwarf-chimera-barracuda__genetics-enhanced",
+        "version": "6c466272f623-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/dwarf-hyperfin__genetics-enhanced.webp",
+      "version": "f8b51e7b9063",
+      "width": 1024,
+      "height": 573,
+      "frames": {
+        "DNA_Dwarf_Hyperfin_5.png": [
+          0,
+          0,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_4.png": [
+          512,
+          0,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_3.png": [
+          0,
+          191,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_2.png": [
+          512,
+          191,
+          512,
+          191
+        ],
+        "DNA_Dwarf_Hyperfin_1.png": [
+          0,
+          382,
+          512,
+          191
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/dwarf-hyperfin__genetics-enhanced",
+        "version": "7aa8c114c794-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/ember-tetra__genetics-natural.webp",
       "version": "1b06ea654eea",
       "width": 1024,
       "height": 750,
@@ -395,13 +782,56 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Embertetra",
+        "root": "assets/generated/sprites/fish/ember-tetra__genetics-natural",
         "version": "dd03ffcd5044-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Gourami.webp",
+      "path": "assets/fish/goldfish__genetics-natural.webp",
+      "version": "1a51b44ae397",
+      "width": 1024,
+      "height": 921,
+      "frames": {
+        "goldfish.png": [
+          0,
+          0,
+          512,
+          307
+        ],
+        "goldfish_1.png": [
+          512,
+          0,
+          512,
+          307
+        ],
+        "goldfish_2.png": [
+          0,
+          307,
+          512,
+          307
+        ],
+        "goldfish_3.png": [
+          512,
+          307,
+          512,
+          307
+        ],
+        "goldfish_4.png": [
+          0,
+          614,
+          512,
+          307
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/goldfish__genetics-natural",
+        "version": "b5504eb8af66-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/gourami__genetics-natural.webp",
       "version": "0ca338cdaeae",
       "width": 1024,
       "height": 846,
@@ -438,13 +868,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Gourami",
+        "root": "assets/generated/sprites/fish/gourami__genetics-natural",
         "version": "82d84ff64088-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Great_White_Shark.webp",
+      "path": "assets/fish/great-white-shark__genetics-enhanced.webp",
       "version": "fb61539824a2",
       "width": 1024,
       "height": 777,
@@ -481,13 +911,56 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Great_White_Shark",
+        "root": "assets/generated/sprites/fish/great-white-shark__genetics-enhanced",
         "version": "bee11c41c587-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Hammerhead_Shark.webp",
+      "path": "assets/fish/guppy__genetics-natural.webp",
+      "version": "72ef30d797be",
+      "width": 1024,
+      "height": 849,
+      "frames": {
+        "guppy.png": [
+          0,
+          0,
+          512,
+          283
+        ],
+        "guppy_1.png": [
+          512,
+          0,
+          512,
+          283
+        ],
+        "guppy_2.png": [
+          0,
+          283,
+          512,
+          283
+        ],
+        "guppy_3.png": [
+          512,
+          283,
+          512,
+          283
+        ],
+        "guppy_4.png": [
+          0,
+          566,
+          512,
+          283
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/guppy__genetics-natural",
+        "version": "35c4870ddb8b-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/hammerhead-shark__genetics-enhanced.webp",
       "version": "2b40a2419017",
       "width": 1024,
       "height": 807,
@@ -530,13 +1003,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Hammerhead_Shark",
+        "root": "assets/generated/sprites/fish/hammerhead-shark__genetics-enhanced",
         "version": "5c9579854c3a-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/HarlequinRasbora.webp",
+      "path": "assets/fish/harlequin-rasbora__genetics-natural.webp",
       "version": "86c1f3dba937",
       "width": 1024,
       "height": 747,
@@ -573,13 +1046,99 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/HarlequinRasbora",
+        "root": "assets/generated/sprites/fish/harlequin-rasbora__genetics-natural",
         "version": "87976d1cab1c-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Livebearer.webp",
+      "path": "assets/fish/koi__genetics-natural.webp",
+      "version": "3222892413b0",
+      "width": 1024,
+      "height": 1035,
+      "frames": {
+        "Koi_1.png": [
+          0,
+          0,
+          512,
+          345
+        ],
+        "Koi_5.png": [
+          512,
+          0,
+          512,
+          345
+        ],
+        "Koi_4.png": [
+          0,
+          345,
+          512,
+          345
+        ],
+        "Koi_3.png": [
+          512,
+          345,
+          512,
+          345
+        ],
+        "Koi_2.png": [
+          0,
+          690,
+          512,
+          345
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/koi__genetics-natural",
+        "version": "db48623f16b7-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/lionfish__genetics-natural.webp",
+      "version": "96263951f4a7",
+      "width": 1024,
+      "height": 1536,
+      "frames": {
+        "Lionfish_3.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "Lionfish_2.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "Lionfish_1.png": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "Lionfish_4.png": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "Lionfish_5.png": [
+          0,
+          1024,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/lionfish__genetics-natural",
+        "version": "b8665b73de5f-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/livebearer__genetics-natural.webp",
       "version": "9501e11d282f",
       "width": 1024,
       "height": 627,
@@ -616,13 +1175,60 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Livebearer",
+        "root": "assets/generated/sprites/fish/livebearer__genetics-natural",
         "version": "6ebc4a082427-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Moorgoldfish.webp",
+      "path": "assets/fish/molly__genetics-natural.webp",
+      "version": "19bb77f48e81",
+      "width": 1024,
+      "height": 864,
+      "frames": {
+        "molly.png": [
+          0,
+          0,
+          512,
+          288
+        ],
+        "molly_1.png": [
+          512,
+          0,
+          512,
+          288
+        ],
+        "molly_2.png": [
+          0,
+          288,
+          512,
+          288
+        ],
+        "molly_3.png": [
+          512,
+          288,
+          512,
+          288
+        ],
+        "molly_4.png": [
+          0,
+          576,
+          512,
+          288
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/molly__genetics-natural",
+        "version": "593da5769561-v1",
+        "standalone": false
+      },
+      "aliases": {
+        "molly1.png": "molly_1.png",
+        "molly2.png": "molly_2.png"
+      }
+    },
+    {
+      "path": "assets/fish/moor-goldfish__genetics-natural.webp",
       "version": "255c798a50ba",
       "width": 1024,
       "height": 1152,
@@ -659,13 +1265,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Moorgoldfish",
+        "root": "assets/generated/sprites/fish/moor-goldfish__genetics-natural",
         "version": "0e44bbdffd2d-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/NeonTetra.webp",
+      "path": "assets/fish/neon-tetra__genetics-natural.webp",
       "version": "5ec5bb9cffc8",
       "width": 1002,
       "height": 627,
@@ -702,13 +1308,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/NeonTetra",
+        "root": "assets/generated/sprites/fish/neon-tetra__genetics-natural",
         "version": "005467200adf-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Orca.webp",
+      "path": "assets/fish/orca__genetics-enhanced.webp",
       "version": "1a36efff9123",
       "width": 1024,
       "height": 714,
@@ -745,13 +1351,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Orca",
+        "root": "assets/generated/sprites/fish/orca__genetics-enhanced",
         "version": "70c262ba40d9-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Otocinclus.webp",
+      "path": "assets/fish/otocinclus__genetics-natural.webp",
       "version": "8bf3b2b0ac6f",
       "width": 1500,
       "height": 712,
@@ -830,7 +1436,7 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Otocinclus",
+        "root": "assets/generated/sprites/fish/otocinclus__genetics-natural",
         "version": "9c5424459440-v1",
         "standalone": false
       },
@@ -842,7 +1448,7 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
-      "path": "assets/fish/Pencilfish.webp",
+      "path": "assets/fish/pencilfish__genetics-natural.webp",
       "version": "1a26409449dd",
       "width": 988,
       "height": 477,
@@ -879,13 +1485,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Pencilfish",
+        "root": "assets/generated/sprites/fish/pencilfish__genetics-natural",
         "version": "8c90bb806129-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/Pilot_Fish.webp",
+      "path": "assets/fish/pilot-fish__genetics-natural.webp",
       "version": "c60b6f42e59c",
       "width": 1024,
       "height": 798,
@@ -922,490 +1528,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/Pilot_Fish",
+        "root": "assets/generated/sprites/fish/pilot-fish__genetics-natural",
         "version": "e867a6c57c58-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/RummyNoseTetra.webp",
-      "version": "6cb3520effc7",
-      "width": 992,
-      "height": 699,
-      "frames": {
-        "RummyNoseTetra.png": [
-          0,
-          0,
-          496,
-          233
-        ],
-        "RummyNoseTetra_4.png": [
-          496,
-          0,
-          496,
-          233
-        ],
-        "RummyNoseTetra_3.png": [
-          0,
-          233,
-          496,
-          233
-        ],
-        "RummyNoseTetra_2.png": [
-          496,
-          233,
-          496,
-          233
-        ],
-        "RummyNoseTetra_1.png": [
-          0,
-          466,
-          496,
-          233
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/RummyNoseTetra",
-        "version": "249087f88be9-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Seahorse.webp",
-      "version": "4b2c3a73ea04",
-      "width": 630,
-      "height": 1536,
-      "frames": {
-        "Seahorse.png": [
-          0,
-          0,
-          315,
-          512
-        ],
-        "Seahorse_1.png": [
-          315,
-          0,
-          315,
-          512
-        ],
-        "Seahorse_2.png": [
-          0,
-          512,
-          315,
-          512
-        ],
-        "Seahorse_3.png": [
-          315,
-          512,
-          315,
-          512
-        ],
-        "Seahorse_4.png": [
-          0,
-          1024,
-          315,
-          512
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Seahorse",
-        "version": "0e3bcc85d985-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Sunfish.webp",
-      "version": "114464f81971",
-      "width": 728,
-      "height": 1152,
-      "frames": {
-        "Sunfish.png": [
-          0,
-          0,
-          364,
-          384
-        ],
-        "Sunfish_1.png": [
-          364,
-          0,
-          364,
-          384
-        ],
-        "Sunfish_2.png": [
-          0,
-          384,
-          364,
-          384
-        ],
-        "Sunfish_3.png": [
-          364,
-          384,
-          364,
-          384
-        ],
-        "Sunfish_4.png": [
-          0,
-          768,
-          364,
-          384
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Sunfish",
-        "version": "c81ea7e5c47b-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/Swordtail.webp",
-      "version": "07b9120d369b",
-      "width": 990,
-      "height": 540,
-      "frames": {
-        "Swordtail.png": [
-          0,
-          0,
-          495,
-          180
-        ],
-        "Swordtail_1.png": [
-          495,
-          0,
-          495,
-          180
-        ],
-        "Swordtail_2.png": [
-          0,
-          180,
-          495,
-          180
-        ],
-        "Swordtail_3.png": [
-          495,
-          180,
-          495,
-          180
-        ],
-        "Swordtail_4.png": [
-          0,
-          360,
-          495,
-          180
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/Swordtail",
-        "version": "464bb6c71c12-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/bluetang.webp",
-      "version": "9d8c302ddfa1",
-      "width": 1024,
-      "height": 702,
-      "frames": {
-        "bluetang.png": [
-          0,
-          0,
-          512,
-          234
-        ],
-        "bluetang_1.png": [
-          512,
-          0,
-          512,
-          234
-        ],
-        "bluetang_2.png": [
-          0,
-          234,
-          512,
-          234
-        ],
-        "bluetang_3.png": [
-          512,
-          234,
-          512,
-          234
-        ],
-        "bluetang_4.png": [
-          0,
-          468,
-          512,
-          234
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/bluetang",
-        "version": "4a6c75fcadfa-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/cherrybarb.webp",
-      "version": "be06e0e1353c",
-      "width": 1024,
-      "height": 636,
-      "frames": {
-        "cherrybarb.png": [
-          0,
-          0,
-          512,
-          212
-        ],
-        "cherrybarb_1.png": [
-          512,
-          0,
-          512,
-          212
-        ],
-        "cherrybarb_2.png": [
-          0,
-          212,
-          512,
-          212
-        ],
-        "cherrybarb_3.png": [
-          512,
-          212,
-          512,
-          212
-        ],
-        "cherrybarb_4.png": [
-          0,
-          424,
-          512,
-          212
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/cherrybarb",
-        "version": "5924ecdac823-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/clownfish.webp",
-      "version": "5d784984e259",
-      "width": 1024,
-      "height": 948,
-      "frames": {
-        "clownfish.png": [
-          0,
-          0,
-          512,
-          316
-        ],
-        "clownfish_1.png": [
-          512,
-          0,
-          512,
-          316
-        ],
-        "clownfish_2.png": [
-          0,
-          316,
-          512,
-          316
-        ],
-        "clownfish_3.png": [
-          512,
-          316,
-          512,
-          316
-        ],
-        "clownfish_4.png": [
-          0,
-          632,
-          512,
-          316
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/clownfish",
-        "version": "b6d734010ef4-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/discus.webp",
-      "version": "5d8360881740",
-      "width": 1024,
-      "height": 1281,
-      "frames": {
-        "discus.png": [
-          0,
-          0,
-          512,
-          427
-        ],
-        "discus_1.png": [
-          512,
-          0,
-          512,
-          427
-        ],
-        "discus_2.png": [
-          0,
-          427,
-          512,
-          427
-        ],
-        "discus_3.png": [
-          512,
-          427,
-          512,
-          427
-        ],
-        "discus_4.png": [
-          0,
-          854,
-          512,
-          427
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/discus",
-        "version": "2208359cffea-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/goldfish.webp",
-      "version": "1a51b44ae397",
-      "width": 1024,
-      "height": 921,
-      "frames": {
-        "goldfish.png": [
-          0,
-          0,
-          512,
-          307
-        ],
-        "goldfish_1.png": [
-          512,
-          0,
-          512,
-          307
-        ],
-        "goldfish_2.png": [
-          0,
-          307,
-          512,
-          307
-        ],
-        "goldfish_3.png": [
-          512,
-          307,
-          512,
-          307
-        ],
-        "goldfish_4.png": [
-          0,
-          614,
-          512,
-          307
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/goldfish",
-        "version": "b5504eb8af66-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/guppy.webp",
-      "version": "72ef30d797be",
-      "width": 1024,
-      "height": 849,
-      "frames": {
-        "guppy.png": [
-          0,
-          0,
-          512,
-          283
-        ],
-        "guppy_1.png": [
-          512,
-          0,
-          512,
-          283
-        ],
-        "guppy_2.png": [
-          0,
-          283,
-          512,
-          283
-        ],
-        "guppy_3.png": [
-          512,
-          283,
-          512,
-          283
-        ],
-        "guppy_4.png": [
-          0,
-          566,
-          512,
-          283
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/guppy",
-        "version": "35c4870ddb8b-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/fish/molly.webp",
-      "version": "19bb77f48e81",
-      "width": 1024,
-      "height": 864,
-      "frames": {
-        "molly.png": [
-          0,
-          0,
-          512,
-          288
-        ],
-        "molly_1.png": [
-          512,
-          0,
-          512,
-          288
-        ],
-        "molly_2.png": [
-          0,
-          288,
-          512,
-          288
-        ],
-        "molly_3.png": [
-          512,
-          288,
-          512,
-          288
-        ],
-        "molly_4.png": [
-          0,
-          576,
-          512,
-          288
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/fish/molly",
-        "version": "593da5769561-v1",
-        "standalone": false
-      },
-      "aliases": {
-        "molly1.png": "molly_1.png",
-        "molly2.png": "molly_2.png"
-      }
-    },
-    {
-      "path": "assets/fish/piranha.webp",
+      "path": "assets/fish/piranha__genetics-natural.webp",
       "version": "6f66fd9eee60",
       "width": 1024,
       "height": 843,
@@ -1442,56 +1571,99 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/piranha",
+        "root": "assets/generated/sprites/fish/piranha__genetics-natural",
         "version": "a87ff1d71f68-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/pufferfish.webp",
-      "version": "76be80087f84",
-      "width": 1024,
-      "height": 906,
+      "path": "assets/fish/pufferfish__genetics-natural.webp",
+      "version": "6e12111ca370",
+      "width": 1156,
+      "height": 1281,
       "frames": {
         "pufferfish.png": [
           0,
           0,
-          512,
-          302
+          578,
+          427
         ],
         "pufferfish_1.png": [
-          512,
+          578,
           0,
-          512,
-          302
+          578,
+          427
         ],
         "pufferfish_2.png": [
           0,
-          302,
-          512,
-          302
+          427,
+          578,
+          427
         ],
         "pufferfish_3.png": [
-          512,
-          302,
-          512,
-          302
+          578,
+          427,
+          578,
+          427
         ],
         "pufferfish_4.png": [
           0,
-          604,
-          512,
-          302
+          854,
+          578,
+          427
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/pufferfish",
-        "version": "5613d775ea98-v1",
+        "root": "assets/generated/sprites/fish/pufferfish__genetics-natural",
+        "version": "64a54fd44548-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/rainbowfish.webp",
+      "path": "assets/fish/pufferfish__genetics-natural__state-inflated.webp",
+      "version": "63cbbcd391c6",
+      "width": 1156,
+      "height": 1281,
+      "frames": {
+        "pufferfish_inflated.png": [
+          0,
+          0,
+          578,
+          427
+        ],
+        "pufferfish_inflated_1.png": [
+          578,
+          0,
+          578,
+          427
+        ],
+        "pufferfish_inflated_2.png": [
+          0,
+          427,
+          578,
+          427
+        ],
+        "pufferfish_inflated_3.png": [
+          578,
+          427,
+          578,
+          427
+        ],
+        "pufferfish_inflated_4.png": [
+          0,
+          854,
+          578,
+          427
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/pufferfish__genetics-natural__state-inflated",
+        "version": "a5e01eb81e67-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/rainbowfish__genetics-natural.webp",
       "version": "3f340b6fb3ce",
       "width": 1024,
       "height": 768,
@@ -1528,13 +1700,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/rainbowfish",
+        "root": "assets/generated/sprites/fish/rainbowfish__genetics-natural",
         "version": "5d5171fe1048-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/royalgramma.webp",
+      "path": "assets/fish/royal-gramma__genetics-natural.webp",
       "version": "14c53fd3e356",
       "width": 1024,
       "height": 768,
@@ -1571,13 +1743,185 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/royalgramma",
+        "root": "assets/generated/sprites/fish/royal-gramma__genetics-natural",
         "version": "102f665de3bd-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/wonderkillifish.webp",
+      "path": "assets/fish/rummy-nose-tetra__genetics-natural.webp",
+      "version": "6cb3520effc7",
+      "width": 992,
+      "height": 699,
+      "frames": {
+        "RummyNoseTetra.png": [
+          0,
+          0,
+          496,
+          233
+        ],
+        "RummyNoseTetra_4.png": [
+          496,
+          0,
+          496,
+          233
+        ],
+        "RummyNoseTetra_3.png": [
+          0,
+          233,
+          496,
+          233
+        ],
+        "RummyNoseTetra_2.png": [
+          496,
+          233,
+          496,
+          233
+        ],
+        "RummyNoseTetra_1.png": [
+          0,
+          466,
+          496,
+          233
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/rummy-nose-tetra__genetics-natural",
+        "version": "249087f88be9-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/seahorse__genetics-natural.webp",
+      "version": "4b2c3a73ea04",
+      "width": 630,
+      "height": 1536,
+      "frames": {
+        "Seahorse.png": [
+          0,
+          0,
+          315,
+          512
+        ],
+        "Seahorse_1.png": [
+          315,
+          0,
+          315,
+          512
+        ],
+        "Seahorse_2.png": [
+          0,
+          512,
+          315,
+          512
+        ],
+        "Seahorse_3.png": [
+          315,
+          512,
+          315,
+          512
+        ],
+        "Seahorse_4.png": [
+          0,
+          1024,
+          315,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/seahorse__genetics-natural",
+        "version": "0e3bcc85d985-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/sunfish__genetics-enhanced.webp",
+      "version": "114464f81971",
+      "width": 728,
+      "height": 1152,
+      "frames": {
+        "Sunfish.png": [
+          0,
+          0,
+          364,
+          384
+        ],
+        "Sunfish_1.png": [
+          364,
+          0,
+          364,
+          384
+        ],
+        "Sunfish_2.png": [
+          0,
+          384,
+          364,
+          384
+        ],
+        "Sunfish_3.png": [
+          364,
+          384,
+          364,
+          384
+        ],
+        "Sunfish_4.png": [
+          0,
+          768,
+          364,
+          384
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/sunfish__genetics-enhanced",
+        "version": "c81ea7e5c47b-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/swordtail__genetics-natural.webp",
+      "version": "07b9120d369b",
+      "width": 990,
+      "height": 540,
+      "frames": {
+        "Swordtail.png": [
+          0,
+          0,
+          495,
+          180
+        ],
+        "Swordtail_1.png": [
+          495,
+          0,
+          495,
+          180
+        ],
+        "Swordtail_2.png": [
+          0,
+          180,
+          495,
+          180
+        ],
+        "Swordtail_3.png": [
+          495,
+          180,
+          495,
+          180
+        ],
+        "Swordtail_4.png": [
+          0,
+          360,
+          495,
+          180
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/swordtail__genetics-natural",
+        "version": "464bb6c71c12-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/wonder-killifish__genetics-natural.webp",
       "version": "fc89623cc903",
       "width": 1024,
       "height": 585,
@@ -1614,13 +1958,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/wonderkillifish",
+        "root": "assets/generated/sprites/fish/wonder-killifish__genetics-natural",
         "version": "7e87ecc8ee3c-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/yellowtang.webp",
+      "path": "assets/fish/yellow-tang__genetics-natural.webp",
       "version": "995f1ae488ff",
       "width": 996,
       "height": 1170,
@@ -1657,13 +2001,13 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/yellowtang",
+        "root": "assets/generated/sprites/fish/yellow-tang__genetics-natural",
         "version": "99d8869766f2-v1",
         "standalone": false
       }
     },
     {
-      "path": "assets/fish/zebradanio.webp",
+      "path": "assets/fish/zebra-danio__genetics-natural.webp",
       "version": "b4fad5c0c61d",
       "width": 1024,
       "height": 504,
@@ -1700,7 +2044,7 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/fish/zebradanio",
+        "root": "assets/generated/sprites/fish/zebra-danio__genetics-natural",
         "version": "7ec070d27a74-v1",
         "standalone": false
       }
@@ -2276,221 +2620,6 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/misc/Particles",
         "version": "3df6080e5987-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish.webp",
-      "version": "9b229893ce22",
-      "width": 1024,
-      "height": 1089,
-      "frames": {
-        "DNA_Bioluminescent _Cherub_Goldfish_1.png": [
-          0,
-          0,
-          512,
-          363
-        ],
-        "DNA_Bioluminescent _Cherub_Goldfish_5.png": [
-          512,
-          0,
-          512,
-          363
-        ],
-        "DNA_Bioluminescent _Cherub_Goldfish_4.png": [
-          0,
-          363,
-          512,
-          363
-        ],
-        "DNA_Bioluminescent _Cherub_Goldfish_3.png": [
-          512,
-          363,
-          512,
-          363
-        ],
-        "DNA_Bioluminescent _Cherub_Goldfish_2.png": [
-          0,
-          726,
-          512,
-          363
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent _Cherub_Goldfish",
-        "version": "96c706e9cddb-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Bioluminescent_Angler_Pike.webp",
-      "version": "1a7788398270",
-      "width": 1024,
-      "height": 1029,
-      "frames": {
-        "DNA_Bioluminescent_Angler_Pike_1.png": [
-          0,
-          0,
-          512,
-          343
-        ],
-        "DNA_Bioluminescent_Angler_Pike_5.png": [
-          512,
-          0,
-          512,
-          343
-        ],
-        "DNA_Bioluminescent_Angler_Pike_4.png": [
-          0,
-          343,
-          512,
-          343
-        ],
-        "DNA_Bioluminescent_Angler_Pike_3.png": [
-          512,
-          343,
-          512,
-          343
-        ],
-        "DNA_Bioluminescent_Angler_Pike_2.png": [
-          0,
-          686,
-          512,
-          343
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Angler_Pike",
-        "version": "65f89046db81-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish.webp",
-      "version": "fbb5049ca221",
-      "width": 1024,
-      "height": 618,
-      "frames": {
-        "DNA_Bioluminescent_Glass_Fangfish_1.png": [
-          0,
-          0,
-          512,
-          206
-        ],
-        "DNA_Bioluminescent_Glass_Fangfish_5.png": [
-          512,
-          0,
-          512,
-          206
-        ],
-        "DNA_Bioluminescent_Glass_Fangfish_4.png": [
-          0,
-          206,
-          512,
-          206
-        ],
-        "DNA_Bioluminescent_Glass_Fangfish_3.png": [
-          512,
-          206,
-          512,
-          206
-        ],
-        "DNA_Bioluminescent_Glass_Fangfish_2.png": [
-          0,
-          412,
-          512,
-          206
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Bioluminescent_Glass_Fangfish",
-        "version": "9f36e613a2c5-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda.webp",
-      "version": "b457cbd38e2e",
-      "width": 1024,
-      "height": 828,
-      "frames": {
-        "DNA_Dwarf_Chimera_Barracuda_1.png": [
-          0,
-          0,
-          512,
-          276
-        ],
-        "DNA_Dwarf_Chimera_Barracuda_5.png": [
-          512,
-          0,
-          512,
-          276
-        ],
-        "DNA_Dwarf_Chimera_Barracuda_4.png": [
-          0,
-          276,
-          512,
-          276
-        ],
-        "DNA_Dwarf_Chimera_Barracuda_3.png": [
-          512,
-          276,
-          512,
-          276
-        ],
-        "DNA_Dwarf_Chimera_Barracuda_2.png": [
-          0,
-          552,
-          512,
-          276
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Chimera_Barracuda",
-        "version": "6c466272f623-v1",
-        "standalone": false
-      }
-    },
-    {
-      "path": "assets/web/davy/mutations/DNA_Dwarf_Hyperfin.webp",
-      "version": "f8b51e7b9063",
-      "width": 1024,
-      "height": 573,
-      "frames": {
-        "DNA_Dwarf_Hyperfin_5.png": [
-          0,
-          0,
-          512,
-          191
-        ],
-        "DNA_Dwarf_Hyperfin_4.png": [
-          512,
-          0,
-          512,
-          191
-        ],
-        "DNA_Dwarf_Hyperfin_3.png": [
-          0,
-          191,
-          512,
-          191
-        ],
-        "DNA_Dwarf_Hyperfin_2.png": [
-          512,
-          191,
-          512,
-          191
-        ],
-        "DNA_Dwarf_Hyperfin_1.png": [
-          0,
-          382,
-          512,
-          191
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/web/davy/mutations/DNA_Dwarf_Hyperfin",
-        "version": "7aa8c114c794-v1",
         "standalone": false
       }
     }

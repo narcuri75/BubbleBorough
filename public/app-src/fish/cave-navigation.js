@@ -11,8 +11,8 @@ function getCaveInsideLayerForItem(item) {
     return clampTankLayer(CAVE_SEAT_LOCKED_LAYER);
   }
 
-  const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
-  return clampTankLayer(span.mid || span.back || CAVE_SEAT_LOCKED_LAYER);
+  // Cave interiors are a render sublayer, not a separate global tank layer.
+  return clampTankLayer(getDecorTankLayer(item));
 }
 
 function isCaveNightWindow(timestamp = Date.now()) {
@@ -420,11 +420,7 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
     }
 
     const distanceScore = Math.hypot(fish.xNorm - trigger.xNorm, fish.yNorm - trigger.yNorm);
-    const frontLayer = clampTankLayer(
-      Number.isFinite(Number(matchedPortal?.portal?.outsideLayer))
-        ? Number(matchedPortal.portal.outsideLayer)
-        : (CAVE_ALLOWED_OUTSIDE_LAYERS.includes(currentLayer) ? currentLayer : 2)
-    );
+    const frontLayer = clampTankLayer(getDecorTankLayer(item));
     const backLayer = getCaveInsideLayerForItem(item);
     const layerPenalty = Math.abs(currentLayer - frontLayer) * 0.08;
     const lingerMinMs = Math.max(CAVE_TRIGGER_COOLDOWN_MS + 2000, Number.isFinite(profile?.lingerMinMs) ? profile.lingerMinMs : 12000);
@@ -487,13 +483,10 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
       continue;
     }
 
-    const portalOutsideLayer = clampTankLayer(portal.outsideLayer || 2);
+    // The portal geometry still determines where the fish enters, but cave
+    // travel stays inside the cave's selected main tank layer.
     const portalInsideLayer = getCaveInsideLayerForItem(item);
-    if (!CAVE_ALLOWED_OUTSIDE_LAYERS.includes(portalOutsideLayer)) {
-      continue;
-    }
-
-    const frontLayer = portalOutsideLayer;
+    const frontLayer = clampTankLayer(getDecorTankLayer(item));
     const backLayer = portalInsideLayer;
     const entryDirection = Math.abs(mouth.xNorm - approach.xNorm) > 0.0001
       ? (mouth.xNorm >= approach.xNorm ? 1 : -1)
@@ -507,9 +500,7 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
 
     for (const slot of slotPool) {
       const inside = mapDecorLocalPointToTankNorm(item, slot.x, slot.y);
-      const slotLayer = isThreeLayerCaveDecorKey(item.decorKey)
-        ? portalInsideLayer
-        : clampTankLayer(slot.layer || portalInsideLayer);
+      const slotLayer = portalInsideLayer;
       const seatDirection = getCaveSeatFacingDirection(slot, entryDirection);
       if (!inside) {
         continue;
@@ -598,8 +589,8 @@ function collectCaveBehaviorPlansForFish(fish, now = Date.now(), options = {}) {
     .filter((entry) => Boolean(entry.plan))
     .sort((left, right) => {
       if (fish.speciesId === "clownfish") {
-        const leftAnemone = /anemone/i.test(String(left.item?.decorKey || ""));
-        const rightAnemone = /anemone/i.test(String(right.item?.decorKey || ""));
+        const leftAnemone = decorHasTag(left.item?.decorKey, "anemone") || decorHasCategory(left.item?.decorKey, "coral");
+        const rightAnemone = decorHasTag(right.item?.decorKey, "anemone") || decorHasCategory(right.item?.decorKey, "coral");
         if (leftAnemone !== rightAnemone) {
           return leftAnemone ? -1 : 1;
         }
@@ -1162,14 +1153,14 @@ function reconcileLooseGravelPebbles(pebbles, placedDecor = state?.placedDecor |
 }
 
 function getDecorPebbleProfile(decorKey = "") {
-  const key = decorKey.toLowerCase();
-  if (/(castle|cave|terracotta|bridge|arch|hide|pagoda)/.test(key)) {
+  const categories = new Set(getDecorCategoryList(decorKey));
+  if (categories.has("cave")) {
     return { insetRatio: 0.16, baseHeightRatio: 0.13, maxLiftPx: 16 };
   }
-  if (/(rock|shell|driftwood|root|chest)/.test(key)) {
+  if (["rock", "wood"].some((category) => categories.has(category))) {
     return { insetRatio: 0.18, baseHeightRatio: 0.1, maxLiftPx: 13 };
   }
-  if (/(coral|seaweed|grass|anubias|moss|bloom|bunch)/.test(key)) {
+  if (categories.has("coral") || categories.has("plant")) {
     return { insetRatio: 0.22, baseHeightRatio: 0.075, maxLiftPx: 10 };
   }
   return { insetRatio: 0.18, baseHeightRatio: 0.09, maxLiftPx: 12 };

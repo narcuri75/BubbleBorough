@@ -28,7 +28,12 @@ function renderTank(now) {
     if (layer === 3) {
       drawAmbientBubbles(now, 2);
     }
-    drawDecor(layer, now);
+    // Each cave owns private back/interior/front sublayers inside its selected
+    // main tank layer. Normal decor remains on the main layer and fish only
+    // enter the cave sublayer while actively travelling through that cave.
+    drawDecor(layer, now, { pass: "base" });
+    drawFish(now, layer, { excludeBehavior: "sucker", caveInteriorOnly: true });
+    drawDecor(layer, now, { pass: "cave-front" });
     drawPoops(now, layer);
     if (layer !== TANK_DEPTH_LAYERS) {
       drawWaterParticles(now, layer);
@@ -36,9 +41,9 @@ function renderTank(now) {
     drawFishEggs(now, layer);
     //drawLooseGravel(now, { surfaceKind: "decor", decorLayer: layer });
     if (layer !== TANK_DEPTH_LAYERS && layer !== SUCKER_FISH_FRONT_GLASS_LAYER) {
-      drawFish(now, layer, { onlyBehavior: "sucker" });
+      drawFish(now, layer, { onlyBehavior: "sucker", excludeCaveInterior: true });
     }
-    drawFish(now, layer, { excludeBehavior: "sucker" });
+    drawFish(now, layer, { excludeBehavior: "sucker", excludeCaveInterior: true });
     // A tossed pebble belongs with the layer where it will land and disturb
     // gravel, rather than being painted behind every fish and ornament.
     drawFishPebbleTosses(now, layer);
@@ -56,7 +61,6 @@ function renderTank(now) {
   drawBoroughEdgeBursts(now);
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
-  drawUnderwaterLightingPass(now);
   drawLightweightCausticOverlay(now);
   //drawLooseGravel(now, { transientOnly: true });
   // Dirty-water color is cached into grimeCanvas instead of painted every frame.
@@ -297,46 +301,6 @@ function drawLightweightCausticOverlay(now) {
   tankContext.globalCompositeOperation = "screen";
   tankContext.globalAlpha = 1;
   tankContext.drawImage(field.canvas, 0, 0, field.canvas.width, field.canvas.height, 0, 0, width, TANK_HEIGHT);
-  tankContext.restore();
-}
-
-function drawUnderwaterLightingPass(now) {
-  const tankBottom = Math.max(WATER_SURFACE_Y + 24, TANK_HEIGHT);
-  const pulse = 0.985 + Math.sin((Number(now) || 0) * 0.00011) * 0.015;
-
-  // Soft cool illumination from above.
-  tankContext.save();
-  tankContext.globalCompositeOperation = "screen";
-  const topLight = tankContext.createLinearGradient(0, WATER_SURFACE_Y, 0, tankBottom);
-  topLight.addColorStop(0, `rgba(176, 222, 255, ${(0.105 * pulse).toFixed(4)})`);
-  topLight.addColorStop(0.12, `rgba(126, 188, 235, ${(0.055 * pulse).toFixed(4)})`);
-  topLight.addColorStop(0.34, `rgba(84, 146, 208, ${(0.018 * pulse).toFixed(4)})`);
-  topLight.addColorStop(0.58, "rgba(84, 146, 208, 0)");
-  topLight.addColorStop(1, "rgba(84, 146, 208, 0)");
-  tankContext.fillStyle = topLight;
-  tankContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, tankBottom - WATER_SURFACE_Y);
-  tankContext.restore();
-
-  // Gentle depth darkening so the floor area feels deeper without crushing color.
-  tankContext.save();
-  tankContext.globalCompositeOperation = "multiply";
-  const depthShade = tankContext.createLinearGradient(0, WATER_SURFACE_Y, 0, tankBottom);
-  depthShade.addColorStop(0, "rgba(255, 255, 255, 0)");
-  depthShade.addColorStop(0.42, "rgba(233, 241, 252, 0.018)");
-  depthShade.addColorStop(0.72, "rgba(145, 170, 198, 0.06)");
-  depthShade.addColorStop(1, "rgba(26, 44, 68, 0.16)");
-  tankContext.fillStyle = depthShade;
-  tankContext.fillRect(0, WATER_SURFACE_Y, TANK_WIDTH, tankBottom - WATER_SURFACE_Y);
-  tankContext.restore();
-
-  // Tiny bit of bottom ambient occlusion to help the lower tank feel denser.
-  tankContext.save();
-  const floorGlow = tankContext.createLinearGradient(0, tankBottom - 180, 0, tankBottom);
-  floorGlow.addColorStop(0, "rgba(0, 0, 0, 0)");
-  floorGlow.addColorStop(0.5, "rgba(6, 10, 20, 0.028)");
-  floorGlow.addColorStop(1, "rgba(4, 8, 18, 0.055)");
-  tankContext.fillStyle = floorGlow;
-  tankContext.fillRect(0, Math.max(WATER_SURFACE_Y, tankBottom - 180), TANK_WIDTH, 180);
   tankContext.restore();
 }
 
@@ -732,6 +696,9 @@ function drawBackground(now = Date.now()) {
   const image = background && !isCustomBackgroundKey(background.key) && !isLocalImageBackgroundKey(background.key)
     ? runtime.images.get(background.path)
     : localImage;
+  if (background?.path && !image && !isCustomBackgroundKey(background.key) && !isLocalImageBackgroundKey(background.key)) {
+    requestRuntimeImageRecovery(background.path, { kind: "background", id: background.key });
+  }
   const backgroundLeft = GLASS_MARGIN_X;
   const backgroundTop = 0;
   const backgroundWidth = TANK_WIDTH - GLASS_MARGIN_X * 2;
@@ -745,7 +712,10 @@ function drawBackground(now = Date.now()) {
   tankContext.clip();
 
   if (image) {
-    drawImageCover(tankContext, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    const renderedBackground = areTankBackgroundDepthEffectsEnabled()
+      ? getTankBackgroundDepthTreatedImage(image)
+      : image;
+    drawImageCover(tankContext, renderedBackground, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
   } else if (isCustomBackgroundKey(background?.key)) {
     if (!isAnimatedBackgroundEnabled()) {
       tankContext.fillStyle = createCustomBackgroundFill(tankContext, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
@@ -1715,8 +1685,19 @@ function drawAutoDispenser(now = Date.now()) {
   const loadedCount = getAutoDispenserLoadedCount(dispenser);
 
   tankContext.save();
+  const depthLayer = clampTankLayer(dispenser.tankLayer ?? AUTO_DISPENSER_DEFAULT_TANK_LAYER);
+  tankContext.globalAlpha *= getTankDepthObjectAlpha(depthLayer);
   if (backgroundImage) {
-    tankContext.drawImage(backgroundImage, layout.x, layout.y, layout.width, layout.height);
+    drawTankDepthAwareImageToContext(
+      tankContext,
+      backgroundImage,
+      depthLayer,
+      { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
+      (renderContext, renderImage) => {
+        renderContext.drawImage(renderImage, layout.x, layout.y, layout.width, layout.height);
+      },
+      { featherPx: 1.25 }
+    );
   }
 
   tankContext.save();
@@ -1741,7 +1722,16 @@ function drawAutoDispenser(now = Date.now()) {
   tankContext.restore();
 
   if (foregroundImage) {
-    tankContext.drawImage(foregroundImage, layout.x, layout.y, layout.width, layout.height);
+    drawTankDepthAwareImageToContext(
+      tankContext,
+      foregroundImage,
+      depthLayer,
+      { left: layout.x, top: layout.y, width: layout.width, height: layout.height },
+      (renderContext, renderImage) => {
+        renderContext.drawImage(renderImage, layout.x, layout.y, layout.width, layout.height);
+      },
+      { featherPx: 1.25 }
+    );
   }
 
   drawAutoDispenserStatusLight(layout, loadedCount, now);

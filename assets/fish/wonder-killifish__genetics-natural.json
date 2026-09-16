@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "2375b804-57e2-4cee-a2d0-ed55aba9363f",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "bfdb50e3-c6b6-45b0-bf61-1bf1916caeec",
+          "width": 512,
+          "height": 195,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wonderkillifish.png"
+        },
+        {
+          "id": "36b041bc-558f-4036-8848-947270d7b516",
+          "width": 512,
+          "height": 195,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wonderkillifish_1.png"
+        },
+        {
+          "id": "1e053f7d-7bd3-4b02-8f96-a7620f3de35a",
+          "width": 512,
+          "height": 195,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wonderkillifish_2.png"
+        },
+        {
+          "id": "a99150e1-f7ad-478d-8698-71a332fbbec0",
+          "width": 512,
+          "height": 195,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wonderkillifish_3.png"
+        },
+        {
+          "id": "7f4472ae-68a0-4769-8837-00a404ef807f",
+          "width": 512,
+          "height": 195,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wonderkillifish_4.png"
+        }
+      ]
+    }
+  ]
+}

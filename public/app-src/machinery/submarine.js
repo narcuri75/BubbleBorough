@@ -2014,10 +2014,13 @@ function drawSubmarineRedLightOverlay(submarine, metrics, now = Date.now()) {
   if (!frame) return;
   const [sourceX, sourceY, sourceWidth, sourceHeight] = frame.rect;
   tankContext.save();
+  const depthLayer = metrics.tankLayer || submarine.tankLayer || SUBMARINE_DEFAULT_TANK_LAYER;
+  const depthOverlay = getTankDepthTreatedImage(overlay, depthLayer) || overlay;
+  tankContext.globalAlpha *= getTankDepthObjectAlpha(depthLayer);
   tankContext.translate(metrics.x, metrics.y);
   tankContext.rotate(metrics.rotation || 0);
   tankContext.scale(metrics.direction * (Number(metrics.turnScaleX) || 1), Number(metrics.turnScaleY) || 1);
-  tankContext.drawImage(overlay, sourceX, sourceY, sourceWidth, sourceHeight, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
+  tankContext.drawImage(depthOverlay, sourceX, sourceY, sourceWidth, sourceHeight, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
   tankContext.restore();
 }
 
@@ -2350,16 +2353,19 @@ function drawMachinery(now, layer = 2) {
   drawBoatBubbleBursts(now, layer);
   for (const { machinery, metrics } of machineryForLayer) {
     const isBoat = machinery.type === MACHINERY_TYPE_BOAT;
+    const depthLayer = layer === 0 ? 1 : (metrics.tankLayer || layer || 1);
     tankContext.save();
+    tankContext.globalAlpha *= getTankDepthObjectAlpha(depthLayer);
     tankContext.translate(metrics.x, metrics.y);
     tankContext.rotate(metrics.rotation || 0);
     tankContext.scale(metrics.direction * (Number(metrics.turnScaleX) || 1), Number(metrics.turnScaleY) || 1);
     if (isUsableRuntimeImage(metrics.image)) {
       const imagePath = isBoat ? getMachineryImagePath(MACHINERY_TYPE_BOAT) : getMachineryImagePath(MACHINERY_TYPE_SUBMARINE);
       const drawImage = getMachineryTintedImage(imagePath, metrics.image, machinery);
+      const depthDrawImage = getTankDepthTreatedImage(drawImage, depthLayer) || drawImage;
       const colorFilter = getMachineryColorCycleFilter(machinery, now);
-      if (colorFilter !== "none") tankContext.filter = colorFilter;
-      tankContext.drawImage(drawImage, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
+      tankContext.filter = colorFilter;
+      tankContext.drawImage(depthDrawImage, -metrics.width / 2, -metrics.height / 2, metrics.width, metrics.height);
     } else {
       tankContext.fillStyle = "rgba(28,62,78,0.95)";
       tankContext.strokeStyle = "rgba(111,224,255,0.85)";

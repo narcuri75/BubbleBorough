@@ -19,6 +19,10 @@
     if (card.dataset.storeFacets) {
       try {
         const facets = JSON.parse(raw);
+        for (const [group, list] of Object.entries(facets)) {
+          if (!Array.isArray(list)) continue;
+          facets[group] = list.filter(value => !/^(?:undead|non[- ]?undead)$/i.test(String(value || "").trim()));
+        }
         facetCache.set(card, { raw, facets });
         return facets;
       } catch { return {}; }
@@ -54,7 +58,7 @@
     for (const [group, selected] of Object.entries(current())) {
       if (!selected.size) continue;
       if (!groups.has(group)) groups.set(group, new Set());
-      selected.forEach(value => groups.get(group).add(value));
+      selected.forEach(value => { if (!/^(?:undead|non[- ]?undead)$/i.test(String(value || "").trim())) groups.get(group).add(value); });
     }
     const focus = document.activeElement;
     const focusGroup = focus?.dataset.facetGroup;

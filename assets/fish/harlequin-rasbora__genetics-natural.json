@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "8e984529-cb9b-47d5-970d-f8857d3e0099",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "c282bd2a-ef07-49cc-9203-4036f761fef6",
+          "width": 512,
+          "height": 249,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "HarlequinRasbora_2.png"
+        },
+        {
+          "id": "c6963bdf-a56d-49e7-bd91-4d166c7e394c",
+          "width": 512,
+          "height": 249,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "HarlequinRasbora_3.png"
+        },
+        {
+          "id": "5d94a990-29cf-46b8-8e56-bcb965a36324",
+          "width": 512,
+          "height": 249,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "HarlequinRasbora_4.png"
+        },
+        {
+          "id": "eb1c18ea-44ed-4aec-9752-eb688152af89",
+          "width": 512,
+          "height": 249,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "HarlequinRasbora_1.png"
+        },
+        {
+          "id": "936360b8-a373-40f6-a1bd-30c550625215",
+          "width": 512,
+          "height": 249,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "HarlequinRasbora.png"
+        }
+      ]
+    }
+  ]
+}

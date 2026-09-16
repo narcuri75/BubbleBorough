@@ -118,25 +118,6 @@ function getLivingPiranhaFish() {
   return state.fish.filter((fish) => !isFishDead(fish) && isPiranhaSpecies(fish));
 }
 
-function getLivingZombieHunters() {
-  return state.fish.filter((fish) => !isFishDead(fish) && usesZombieHunterBehavior(fish));
-}
-
-function getLivingZombieHunterIds() {
-  return new Set(getLivingZombieHunters().map((fish) => fish.id));
-}
-
-function hasValidZombieBiteSource(fish, zombieHunterIds = getLivingZombieHunterIds()) {
-  if (!fish) {
-    return false;
-  }
-
-  const attackerId = typeof fish.zombieBiteAttackerId === "string" && fish.zombieBiteAttackerId.trim()
-    ? fish.zombieBiteAttackerId.trim()
-    : null;
-  return Boolean(attackerId && zombieHunterIds.has(attackerId));
-}
-
 function hasPiranhaContext() {
   return PIRANHA_BEHAVIOR_ENABLED && getLivingPiranhaFish().length > 0;
 }
@@ -378,9 +359,7 @@ function pickDeadFishVigilTarget(fish, species, now) {
   if (
     !nearest
     || nearest.distanceNorm > CORPSE_VIGIL_TRIGGER_RANGE_NORM
-    || isUndeadFish(fish)
     || isPiranhaSpecies(fish)
-    || hasZombieBiteInfection(fish)
   ) {
     return null;
   }
@@ -442,7 +421,7 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
     !alreadyDead
     && isFishProtectedFromPredators(fish, now)
     && typeof reasonText === "string"
-    && /zombie bite|piranhas?/i.test(reasonText)
+    && /piranhas?/i.test(reasonText)
   ) {
     scrubProtectedFishPredatorState(fish, now);
     return false;
@@ -452,11 +431,6 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
   const previousDirtiness = shouldRebase ? getBaseTankDirtiness(now) : null;
   fish.deadAt = alreadyDead && Number.isFinite(fish.deadAt) ? fish.deadAt : now;
   fish.decayStage = "fresh";
-  fish.zombieBiteStartedAt = null;
-  fish.zombieBiteLastBloodAt = null;
-  fish.zombieBiteAttackerId = null;
-  fish.zombieReviveAt = null;
-  fish.zombieReviveSourceId = null;
   fish.piranhaAttackStartedAt = null;
   fish.piranhaLastDamageAt = null;
   fish.sharkLastAttackAt = 0;

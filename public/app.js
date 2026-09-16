@@ -1253,6 +1253,10 @@ const DEPTH_VISUALS = Object.freeze({
 });
 const DEPTH_VISUAL_COOL_TINT_RGB = Object.freeze({ r: 76, g: 188, b: 211 });
 const DEPTH_VISUAL_SUBSTRATE_SOFTNESS_MAX_PX = 0.35;
+// The rear background is behind Layer 5, but a standard aquarium is shallow.
+// Use only a restrained fraction of the Layer 5 treatment so the background
+// recedes without looking like deep water or fog.
+const BACKGROUND_DEPTH_VISUAL_STRENGTH = 0.65;
 const SUBSTRATE_GROUND_SHADOW = Object.freeze({
   startLayer: 1,
   startAlpha: 0.12,
@@ -1318,6 +1322,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   causticLightingEnabled: true,
   decorShadowsEnabled: true,
   depthEffectLevel: DEPTH_EFFECT_LEVEL_DEFAULT,
+  backgroundDepthHazeEnabled: true,
   simpleTurnAnimationsOnly: false,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
@@ -8641,6 +8646,7 @@ const dom = {
   decorShadowsToggleInput: document.querySelector("#decorShadowsToggleInput"),
   depthEffectLevelInput: document.querySelector("#depthEffectLevelInput"),
   depthEffectLevelOutput: document.querySelector("#depthEffectLevelOutput"),
+  backgroundDepthHazeToggleInput: document.querySelector("#backgroundDepthHazeToggleInput"),
   simpleTurnAnimationsToggleInput: document.querySelector("#simpleTurnAnimationsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
@@ -22499,6 +22505,9 @@ function bindEvents() {
   dom.depthEffectLevelInput?.addEventListener("change", (event) => {
     setDepthEffectLevel(event.currentTarget?.value);
   });
+  dom.backgroundDepthHazeToggleInput?.addEventListener("change", (event) => {
+    setBackgroundDepthHazeEnabled(event.currentTarget?.checked);
+  });
   dom.simpleTurnAnimationsToggleInput?.addEventListener("change", (event) => {
     setSimpleTurnAnimationsOnly(event.currentTarget?.checked);
   });
@@ -32110,6 +32119,7 @@ function sanitizeUiSettings(rawSettings) {
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled !== false,
     depthEffectLevel: getSavedDepthEffectLevelPreference() ?? normalizeDepthEffectLevel(source.depthEffectLevel, source.depthEffectsEnabled),
+    backgroundDepthHazeEnabled: source.backgroundDepthHazeEnabled !== false,
     simpleTurnAnimationsOnly: source.simpleTurnAnimationsOnly === true,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
@@ -68154,6 +68164,10 @@ function renderSettingsOverlay() {
       dom.depthEffectLevelOutput.textContent = `${depthLevel} · ${DEPTH_EFFECT_LEVEL_LABELS[depthLevel] || "Custom"}`;
     }
   }
+  if (dom.backgroundDepthHazeToggleInput) {
+    dom.backgroundDepthHazeToggleInput.checked = uiSettings.backgroundDepthHazeEnabled !== false;
+    dom.backgroundDepthHazeToggleInput.disabled = normalizeDepthEffectLevel(uiSettings.depthEffectLevel) <= DEPTH_EFFECT_LEVEL_MIN;
+  }
   if (dom.simpleTurnAnimationsToggleInput) {
     dom.simpleTurnAnimationsToggleInput.checked = uiSettings.simpleTurnAnimationsOnly === true;
   }
@@ -73379,6 +73393,31 @@ function setDepthEffectLevel(value) {
     : `Aquarium depth level ${depthEffectLevel}: ${label}.`);
 }
 
+function setBackgroundDepthHazeEnabled(value) {
+  if (!state) {
+    return;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    backgroundDepthHazeEnabled: Boolean(value)
+  });
+  if (currentSettings.backgroundDepthHazeEnabled === nextSettings.backgroundDepthHazeEnabled) {
+    return;
+  }
+
+  state.uiSettings = nextSettings;
+  saveState();
+  invalidateTankDepthVisualCaches();
+  runtime.boroughOverviewSnapshotQueue = [];
+  renderUi(Date.now(), { full: false });
+  renderTank(Date.now());
+  showToast(nextSettings.backgroundDepthHazeEnabled
+    ? "Background depth haze on."
+    : "Background depth haze off.");
+}
+
 function setSimpleTurnAnimationsOnly(value) {
   if (!state) {
     return;
@@ -78041,6 +78080,24 @@ function areTankDepthEffectsEnabled() {
   return getTankDepthEffectLevel() > DEPTH_EFFECT_LEVEL_MIN;
 }
 
+function areTankBackgroundDepthEffectsEnabled() {
+  return areTankDepthEffectsEnabled() && getUiSettings().backgroundDepthHazeEnabled !== false;
+}
+
+function getTankBackgroundDepthVisualPreset() {
+  const layer5 = getTankDepthVisualPreset(TANK_DEPTH_LAYERS);
+  const strength = clamp(Number(BACKGROUND_DEPTH_VISUAL_STRENGTH) || 0, 0, 1);
+  return {
+    haze: layer5.haze * strength,
+    saturation: 1 - (1 - layer5.saturation) * strength,
+    contrast: 1 - (1 - layer5.contrast) * strength,
+    blurPx: 0,
+    coolTint: layer5.coolTint * strength,
+    shadowStrength: 1,
+    movementMultiplier: 1
+  };
+}
+
 function getTankDepthCanvasFilter() {
   // Kept as a compatibility shim for older callers. Depth filters are NOT
   // applied live anymore. Live filter()/blur() on every sprite was the primary
@@ -78188,6 +78245,46 @@ function getTankDepthTreatedImage(image, layer) {
     // Custom/user images can theoretically be non-readable in some browsers.
     // Fall back to the original art instead of reintroducing a live GPU filter.
     byLayer.set(parentLayer, image);
+    return image;
+  }
+}
+
+function getTankBackgroundDepthTreatedImage(image) {
+  if (!image || !areTankBackgroundDepthEffectsEnabled()) {
+    return image;
+  }
+
+  const cache = getTankDepthImageCache();
+  let byLayer = cache.get(image);
+  if (!byLayer) {
+    byLayer = new Map();
+    cache.set(image, byLayer);
+  }
+  const cacheKey = "background-depth";
+  if (byLayer.has(cacheKey)) {
+    return byLayer.get(cacheKey) || image;
+  }
+
+  const { width, height } = getTankDepthImageDimensions(image);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) {
+    byLayer.set(cacheKey, image);
+    return image;
+  }
+
+  try {
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    const imageData = context.getImageData(0, 0, width, height);
+    applyTankDepthPixelTreatment(imageData, getTankBackgroundDepthVisualPreset());
+    context.putImageData(imageData, 0, 0);
+    byLayer.set(cacheKey, canvas);
+    return canvas;
+  } catch {
+    byLayer.set(cacheKey, image);
     return image;
   }
 }
@@ -79054,43 +79151,6 @@ function drawTankBackdrop() {
   tankContext.restore();
 }
 
-function drawBackgroundBaseArtToContext(context, background, image, left, top, width, height) {
-  if (image) {
-    drawImageCover(context, image, left, top, width, height);
-    return;
-  }
-  if (isCustomBackgroundKey(background?.key)) {
-    if (!isAnimatedBackgroundEnabled()) {
-      context.fillStyle = createCustomBackgroundFill(context, left, top, width, height);
-      context.fillRect(left, top, width, height);
-    }
-    return;
-  }
-  const gradient = context.createLinearGradient(0, top, 0, TANK_HEIGHT);
-  gradient.addColorStop(0, "#10171c");
-  gradient.addColorStop(1, "#05090d");
-  context.fillStyle = gradient;
-  context.fillRect(left, top, width, height);
-}
-
-function getBackgroundDepthSourceSurface(background, image, width, height) {
-  const key = [background?.key || "default", image?.src || image?.currentSrc || "no-image", width, height].join("|");
-  const cached = runtime.backgroundDepthSourceSurface;
-  if (cached && cached.key === key && cached.canvas) {
-    return cached.canvas;
-  }
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(width));
-  canvas.height = Math.max(1, Math.round(height));
-  const context = canvas.getContext("2d");
-  if (!context) {
-    return null;
-  }
-  drawBackgroundBaseArtToContext(context, background, image, 0, 0, canvas.width, canvas.height);
-  runtime.backgroundDepthSourceSurface = { key, canvas };
-  return canvas;
-}
-
 function drawBackground(now = Date.now()) {
   const background = runtime.backgroundMap.get(state.selectedBackground);
   const localImage = isLocalImageBackgroundKey(background?.key) ? runtime.images.get(getLocalBackgroundImageDataUrl()) : null;
@@ -79112,24 +79172,22 @@ function drawBackground(now = Date.now()) {
   tankContext.rect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
   tankContext.clip();
 
-  if (areTankDepthEffectsEnabled()) {
-    const backgroundSurface = getBackgroundDepthSourceSurface(background, image, backgroundWidth, backgroundHeight);
-    if (backgroundSurface) {
-      drawTankDepthAwareImageToContext(
-        tankContext,
-        backgroundSurface,
-        TANK_DEPTH_LAYERS,
-        { left: backgroundLeft, top: backgroundTop, width: backgroundWidth, height: backgroundHeight },
-        (context, sourceImage) => {
-          context.drawImage(sourceImage, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
-        },
-        { waterlineY: waterTop }
-      );
-    } else {
-      drawBackgroundBaseArtToContext(tankContext, background, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+  if (image) {
+    const renderedBackground = areTankBackgroundDepthEffectsEnabled()
+      ? getTankBackgroundDepthTreatedImage(image)
+      : image;
+    drawImageCover(tankContext, renderedBackground, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+  } else if (isCustomBackgroundKey(background?.key)) {
+    if (!isAnimatedBackgroundEnabled()) {
+      tankContext.fillStyle = createCustomBackgroundFill(tankContext, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+      tankContext.fillRect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
     }
   } else {
-    drawBackgroundBaseArtToContext(tankContext, background, image, backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
+    const gradient = tankContext.createLinearGradient(0, backgroundTop, 0, TANK_HEIGHT);
+    gradient.addColorStop(0, "#10171c");
+    gradient.addColorStop(1, "#05090d");
+    tankContext.fillStyle = gradient;
+    tankContext.fillRect(backgroundLeft, backgroundTop, backgroundWidth, backgroundHeight);
   }
   tankContext.restore();
 
@@ -82317,8 +82375,7 @@ function pruneFishShadowPlaneCache() {
 }
 
 function getDecorContactSpans(item, decor) {
-  const contactPath = decor?.shadowFootprintPath || decor?.path;
-  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(contactPath) : null;
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(decor.path) : null;
   if (!mask?.bounds || !mask.alpha) return null;
   if (!runtime.decorContactSpanCache) runtime.decorContactSpanCache = new WeakMap();
   let variants = runtime.decorContactSpanCache.get(mask);
@@ -82373,8 +82430,7 @@ function getDecorContactShadowMetrics(item) {
   }
 
   const spans = getDecorContactSpans(item, decor);
-  const footprintPath = decor.shadowFootprintPath || decor.path;
-  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(footprintPath) : null;
+  const mask = typeof getImageAlphaMask === "function" ? getImageAlphaMask(decor.path) : null;
   const footprint = mask?.bounds
     ? {
       left: mask.bounds.minX / mask.width,
@@ -82427,8 +82483,8 @@ function drawDecorContactShadow(context, item) {
   context.save();
   traceTankFloorMaskPath(context, getTankFloorDrawBounds());
   context.clip();
-  // Base grounding shadow follows an explicit invisible footprint helper when
-  // present, otherwise it falls back to the visible sprite alpha bounds.
+  // Base grounding shadow follows the opaque sprite footprint instead of the transparent canvas,
+  // so it stays directly under the decor and fades out at the real sprite edges.
   context.save();
   context.translate(shadow.x, shadow.y + DECOR_GROUND_SHADOWS.baseOffsetY);
   context.scale(
@@ -83171,6 +83227,9 @@ function drawPoops(now, layer = null) {
     if (!pose?.sprite) {
       continue;
     }
+
+    const depthLayer = getPoopTankLayer(poop);
+    const depthAlpha = getTankDepthObjectAlpha(depthLayer);
 
     tankContext.save();
     tankContext.translate(pose.x, pose.y + 4);
@@ -88107,30 +88166,13 @@ function getPlacedDecorGroundBounds(item) {
     return null;
   }
 
-  // The optional shadow-footprint helper is invisible game data. Its opaque
-  // pixels define the physical substrate contact/bottom for placement while the
-  // visible artwork still defines the object's top and horizontal bounds.
+  // Grounding is based on the visible pixels of the primary decor artwork, not
+  // the transparent PNG rectangle or optional companion/effect layers.
+  // This makes the visible bottom of the object the physical foot everywhere.
   const primaryBounds = decor.path
     ? getPlacedDecorOpaqueBounds(item, decor.path)
     : null;
-  const visibleBounds = primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
-  const footprintBounds = decor.shadowFootprintPath
-    ? getPlacedDecorOpaqueBounds(item, decor.shadowFootprintPath)
-    : null;
-
-  if (!visibleBounds) {
-    return footprintBounds;
-  }
-  if (!footprintBounds) {
-    return visibleBounds;
-  }
-
-  return {
-    left: visibleBounds.left,
-    right: visibleBounds.right,
-    top: visibleBounds.top,
-    bottom: footprintBounds.bottom
-  };
+  return primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
 }
 
 function getDecorShapeDescriptor(item, imagePathOverride = null) {
@@ -96425,7 +96467,7 @@ function getDecorArtworkPaths(decor) {
   if (!decor) return [];
   return [...new Set([
     decor.path, decor.bgPath, decor.midPath, decor.lightPath, decor.maskPath,
-    decor.shadowFootprintPath, decor.triggerPath, decor.seatsPath,
+    decor.triggerPath, decor.seatsPath,
     ...(Array.isArray(decor.caveColorLayers) ? decor.caveColorLayers.flatMap(layer => [
       ...(Array.isArray(layer.paths) ? layer.paths : [layer.path]),
       ...(Array.isArray(layer.legacyPaths) ? layer.legacyPaths : [])

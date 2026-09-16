@@ -28683,18 +28683,19 @@
       "module": "rendering/fish-and-effects.js",
       "sourceLine": 4,
       "originalLine": 56393,
-      "characters": 638,
-      "sourceHash": "5279745a560085aa8a30f4ad3e01c126cb4ed75110938e79d7755914593053b7",
+      "characters": 746,
+      "sourceHash": "a607ab54fbad536d54cde3d79277aca7b862d598efd18643dc153734f6b6014c",
       "calls": [
         "clampTankLayer",
         "getPoopPose",
-        "getPoopTankLayer"
+        "getPoopTankLayer",
+        "getTankDepthObjectAlpha"
       ]
     },
     {
       "name": "getFishEggTankLayer",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 25,
+      "sourceLine": 28,
       "originalLine": 56415,
       "characters": 148,
       "sourceHash": "a80957acaf368066ae510bc8d78b14316e97881b6c06434631339367661a92a4",
@@ -28705,7 +28706,7 @@
     {
       "name": "getFishEggIncubationProgress",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 31,
+      "sourceLine": 34,
       "originalLine": 56421,
       "characters": 390,
       "sourceHash": "5081f0f6c7dbbadb625541838811ef23b20373d6422c4b16f06dac6d473c3e26",
@@ -28716,7 +28717,7 @@
     {
       "name": "getFishEggGrowthScale",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 41,
+      "sourceLine": 44,
       "originalLine": 56431,
       "characters": 660,
       "sourceHash": "7d6a7ae49291fe41bb1635318db0bbb5f540c0f639963c3ef0aaba4d4190192f",
@@ -28727,7 +28728,7 @@
     {
       "name": "getFishEggSpritePath",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 58,
+      "sourceLine": 61,
       "originalLine": 56448,
       "characters": 267,
       "sourceHash": "d084d630cc85a32ab2641ac8f098e6a5ef52075fbeffc98c3c8570477ba6da6d",
@@ -28738,7 +28739,7 @@
     {
       "name": "getFishEggPose",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 68,
+      "sourceLine": 71,
       "originalLine": 56458,
       "characters": 2386,
       "sourceHash": "4e056c6eb37c28008b08c2693dffa13187833f4d8ba859d7efa557725e47e051",
@@ -28756,7 +28757,7 @@
     {
       "name": "drawFishEggFallback",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 126,
+      "sourceLine": 129,
       "originalLine": 56516,
       "characters": 2894,
       "sourceHash": "d871dc17ebd77c6d974a005d6916a2aae522f34923ad231dc4af03ea09d612c2",
@@ -28769,7 +28770,7 @@
     {
       "name": "drawFishEggs",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 202,
+      "sourceLine": 205,
       "originalLine": 56605,
       "characters": 1293,
       "sourceHash": "0c5e39726ec0fdb57907659a7438a1c4e8a943c2fdaf840b6e08e58900f4d318",
@@ -28784,7 +28785,7 @@
     {
       "name": "drawFishHeldGravelPebble",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 244,
+      "sourceLine": 247,
       "originalLine": 56677,
       "characters": 1023,
       "sourceHash": "4235e4fc8d8570460cb59951170dbc641b0400a79a2a94a6f322c82f0fd3e996",
@@ -28798,7 +28799,7 @@
     {
       "name": "isFishInCaveRenderSublayer",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 273,
+      "sourceLine": 276,
       "originalLine": null,
       "characters": 160,
       "sourceHash": "363f95501ac232a7e38ea732df489a287b5c96fe6b724aca9c2493977372ba4b",
@@ -28807,7 +28808,7 @@
     {
       "name": "getFishSameLayerRenderPriority",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 280,
+      "sourceLine": 283,
       "originalLine": 56706,
       "characters": 100,
       "sourceHash": "67ed2a3018373d50cf1cd8d92481243bb9b2d9076f7d43d30acecbdb9c39c9a4",
@@ -28818,7 +28819,7 @@
     {
       "name": "drawFishPebbleTosses",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 284,
+      "sourceLine": 287,
       "originalLine": 56714,
       "characters": 1095,
       "sourceHash": "df3b47a7e5487e0243f40df97939863f3a7c5f4a304f1b42e0e7d3319d211772",
@@ -28831,7 +28832,7 @@
     {
       "name": "fitDebugFishBehaviorLine",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 319,
+      "sourceLine": 322,
       "originalLine": 56770,
       "characters": 394,
       "sourceHash": "fd773b217a2af9b33db05c0bea8338ad552975ded1301c5146ba9f653c35e898",
@@ -28840,7 +28841,7 @@
     {
       "name": "drawDebugFishBehaviorBroadcast",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 333,
+      "sourceLine": 336,
       "originalLine": 56784,
       "characters": 2077,
       "sourceHash": "a8c362d272ea513d9688542dfad5521ada6b5606f4f46daad0625f5d0541beb2",
@@ -28854,7 +28855,7 @@
     {
       "name": "drawMissingFishArtworkFallback",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 392,
+      "sourceLine": 395,
       "originalLine": null,
       "characters": 1465,
       "sourceHash": "5d47148d78b55ffe7c4c4cd61337aec424747e45f40e459ec38fdb769b6ae7f4",
@@ -28871,7 +28872,7 @@
     {
       "name": "getFishDepthLightingStyle",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 425,
+      "sourceLine": 428,
       "originalLine": null,
       "characters": 583,
       "sourceHash": "3bbe6e21c739bc3916a48cea6250c24e1aa6eccea729b375fdd064fbcd4a98e5",
@@ -28883,7 +28884,7 @@
     {
       "name": "getFishTopLightOverlay",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 438,
+      "sourceLine": 441,
       "originalLine": null,
       "characters": 1299,
       "sourceHash": "ecb784ed0171d9e13e77ac6f24bc128e6d94e72f21d41b62fa2c93917da30021",
@@ -28894,7 +28895,7 @@
     {
       "name": "drawFishTopLightOverlay",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 478,
+      "sourceLine": 481,
       "originalLine": null,
       "characters": 524,
       "sourceHash": "e0b397e776140441d71d71e4d5eafd9fbf2f41600931b3415cd770f5c4899596",
@@ -28906,7 +28907,7 @@
     {
       "name": "compareFishRenderRecords",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 493,
+      "sourceLine": 496,
       "originalLine": null,
       "characters": 194,
       "sourceHash": "5c2e47ec821870ca923b52116520310ef9a2df4d952e0f168effae527ed90f3d",
@@ -28915,7 +28916,7 @@
     {
       "name": "prepareFishRenderFrameCache",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 501,
+      "sourceLine": 504,
       "originalLine": null,
       "characters": 2239,
       "sourceHash": "585f4610b120839a70c6e3648b2e2130e403b7a4ba1546cb50c45c4396e29350",
@@ -28934,7 +28935,7 @@
     {
       "name": "getFishTurnRigCanvas",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 575,
+      "sourceLine": 578,
       "originalLine": null,
       "characters": 1369,
       "sourceHash": "a97b04e84fd5df463bc76a6ac838461ee69da8e6ecbc30e0b4e8620128346bab",
@@ -28945,7 +28946,7 @@
     {
       "name": "shouldUseFishTurnRigForSprite",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 649,
+      "sourceLine": 652,
       "originalLine": null,
       "characters": 752,
       "sourceHash": "bb71ad0d47d989022293d806169e23fcd92cce91ba24676bd55150fa1620b9b4",
@@ -28956,7 +28957,7 @@
     {
       "name": "getFishTurnRigProgress",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 698,
+      "sourceLine": 701,
       "originalLine": null,
       "characters": 421,
       "sourceHash": "d4351bfa53327a61f4a1bd0d0a8124a0c43df06c1642c603e230a43b3c3dedcd",
@@ -28967,7 +28968,7 @@
     {
       "name": "getFishTurnRigState",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 729,
+      "sourceLine": 732,
       "originalLine": null,
       "characters": 374,
       "sourceHash": "4ec46be69553c5f16c42d285d9a248c59be6c206d45b55f15446ad58911b24f2",
@@ -28978,7 +28979,7 @@
     {
       "name": "getFishTurnRigPhaseProgress",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 758,
+      "sourceLine": 761,
       "originalLine": null,
       "characters": 322,
       "sourceHash": "c8ec6d6ee488c9cf830d695046755972182095f71c4f08fbf05b24639d3dcb6c",
@@ -28989,7 +28990,7 @@
     {
       "name": "getFishTurnRigCollapseProgress",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 786,
+      "sourceLine": 789,
       "originalLine": null,
       "characters": 396,
       "sourceHash": "0c3ff1b356941fcf36d8d0c3a615aee5b9323bfa98f3760f64eff3d00030d5c2",
@@ -29000,7 +29001,7 @@
     {
       "name": "getFishTurnRigRebuildProgress",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 810,
+      "sourceLine": 813,
       "originalLine": null,
       "characters": 314,
       "sourceHash": "585ad22c40f57ca2f0d3b169946703eb95ab1e9ca17b2d5416da2ef3d6f72a4b",
@@ -29011,7 +29012,7 @@
     {
       "name": "buildFishTurnRigOriginalBody",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 829,
+      "sourceLine": 832,
       "originalLine": null,
       "characters": 615,
       "sourceHash": "962b7005a7e7fe32b3379a1fffca41cc9cfcdd44f312628d6b7b4d0f1570721c",
@@ -29022,7 +29023,7 @@
     {
       "name": "buildFishTurnRigEmergingHead",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 868,
+      "sourceLine": 871,
       "originalLine": null,
       "characters": 761,
       "sourceHash": "0fa4ccc382ebf010c97bc30fb1a98a2aa2f25b374292368cb6a9931c39a48e05",
@@ -29033,7 +29034,7 @@
     {
       "name": "buildFishTurnRigEmergingTail",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 922,
+      "sourceLine": 925,
       "originalLine": null,
       "characters": 557,
       "sourceHash": "056f69ebd663047999441ef51a35c46ec8564aa339b21ec4f8c877b308c580c4",
@@ -29044,7 +29045,7 @@
     {
       "name": "withFishTurnRigBodyScales",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 965,
+      "sourceLine": 968,
       "originalLine": null,
       "characters": 686,
       "sourceHash": "ab3e2538d8a53a08fcf880acf36437ecf73ca7891487c811a4b7b2ca9c89d6cd",
@@ -29053,7 +29054,7 @@
     {
       "name": "withFishTurnRigChainScales",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1016,
+      "sourceLine": 1019,
       "originalLine": null,
       "characters": 758,
       "sourceHash": "0e8f0a5206ade8cd353b457cad7ffb1378f06043b9ce40edcc22b5139f7d5526",
@@ -29062,7 +29063,7 @@
     {
       "name": "measureFishTurnRigOriginalLayout",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1071,
+      "sourceLine": 1074,
       "originalLine": null,
       "characters": 700,
       "sourceHash": "127201bead9ea790c69e1b5335ee176b2be3f047098296f937203f803d67f87c",
@@ -29073,7 +29074,7 @@
     {
       "name": "drawFishTurnRigTextureSegment",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1127,
+      "sourceLine": 1130,
       "originalLine": null,
       "characters": 2673,
       "sourceHash": "e63c3563fef26b50b0390ca8f545033f97679a67ab269558f377629530426fa5",
@@ -29084,7 +29085,7 @@
     {
       "name": "drawFishTurnRigOriginal",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1307,
+      "sourceLine": 1310,
       "originalLine": null,
       "characters": 803,
       "sourceHash": "eef3af2e08f6a53693473d6d44ad3c2f5a329dee2cdae51bbdb0df3802d15110",
@@ -29095,7 +29096,7 @@
     {
       "name": "drawFishTurnRigLeftChain",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1365,
+      "sourceLine": 1368,
       "originalLine": null,
       "characters": 1913,
       "sourceHash": "ab8defec1c1e6a5167060497d1f832f4d51544ddee012499c8698de908ee03cf",
@@ -29108,7 +29109,7 @@
     {
       "name": "drawFishTurnRigRightChain",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1495,
+      "sourceLine": 1498,
       "originalLine": null,
       "characters": 1919,
       "sourceHash": "1817802c086b9586cd61f49fd38dae73a06b7ae5e3066b948f2d2d8b718c33fe",
@@ -29121,7 +29122,7 @@
     {
       "name": "drawFishTurnaroundRig",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1625,
+      "sourceLine": 1628,
       "originalLine": null,
       "characters": 2155,
       "sourceHash": "675ffdd08d595aaf1dd31b32d5e048691c418584c6a301313f4523bfc1581177",
@@ -29140,7 +29141,7 @@
     {
       "name": "drawFish",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1781,
+      "sourceLine": 1784,
       "originalLine": 56843,
       "characters": 13720,
       "sourceHash": "70b650e620854f0ac4302fe4be3804c5692302de9f69ede6f4688ff99d1a21f2",
@@ -29192,7 +29193,7 @@
     {
       "name": "drawWaterSurface",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2098,
+      "sourceLine": 2101,
       "originalLine": 56995,
       "characters": 1232,
       "sourceHash": "4ee646237f1974b72bdb4c1142530e5ed6201e0a2ec42f61eb1acbc86d4c3a48",
@@ -29201,7 +29202,7 @@
     {
       "name": "drawSplashBursts",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2139,
+      "sourceLine": 2142,
       "originalLine": 57036,
       "characters": 2170,
       "sourceHash": "6ebd7fd4177aae783d3e6af05e42eadc2628af977385ada5a1a909191ec254b4",
@@ -29213,7 +29214,7 @@
     {
       "name": "drawGlassTapEffects",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2206,
+      "sourceLine": 2209,
       "originalLine": 57103,
       "characters": 3142,
       "sourceHash": "5bb6235ad81e7f5e038de679f0cc7ae1a595d11d232791d83a4628d7332added",
@@ -29225,7 +29226,7 @@
     {
       "name": "drawRearGrime",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2296,
+      "sourceLine": 2299,
       "originalLine": null,
       "characters": 2343,
       "sourceHash": "53abb52d78dfe8037eea446f8766a26d0d51fd9f1c95c05c3b2ce980f03dbb6d",
@@ -29241,7 +29242,7 @@
     {
       "name": "drawGrime",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2351,
+      "sourceLine": 2354,
       "originalLine": 57194,
       "characters": 2228,
       "sourceHash": "2b50b41fc4edfbfbb976f040d6cc8940a036b628d3d7d160f02ab5fdb71e74d1",
@@ -29257,7 +29258,7 @@
     {
       "name": "drawCleaningSparkles",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2411,
+      "sourceLine": 2414,
       "originalLine": 57217,
       "characters": 2419,
       "sourceHash": "54ab38ef5b67f07b37a530c954732173d03f361e689c92d885fbd33bdeea7057",
@@ -29270,7 +29271,7 @@
     {
       "name": "getFishPose",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2481,
+      "sourceLine": 2484,
       "originalLine": 57313,
       "characters": 16103,
       "sourceHash": "e437e973a36d0c02d6c952a093428e3f00a6e4cc0fb03ecd3f0a2f0d8ed64a7d",

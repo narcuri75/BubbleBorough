@@ -83441,6 +83441,9 @@ function drawPoops(now, layer = null) {
       continue;
     }
 
+    const depthLayer = getPoopTankLayer(poop);
+    const depthAlpha = getTankDepthObjectAlpha(depthLayer);
+
     tankContext.save();
     tankContext.translate(pose.x, pose.y + 4);
     tankContext.rotate(pose.wobble);
